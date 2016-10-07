@@ -280,7 +280,7 @@ bool CHeavyMountedWeapon::CanUse(EntityId userId) const
 		if (ownerId == 0 || ownerId == userId)
 			return true;
 	}
-	else if(IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(userId))
+	else if(IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(userId))
 	{
 		IItem* pItem = pActor->GetCurrentItem(false);
 		if(pItem)
@@ -817,7 +817,7 @@ void CHeavyMountedWeapon::FinishRipOff()
 	
 	RemoveViewLimits();
 
-	if(IsClient() && gEnv->pGame->GetIGameFramework()->GetClientActorId()==GetOwnerId())
+	if(IsClient() && gEnv->pGameFramework->GetClientActorId()==GetOwnerId())
 	{
 		if(IEntity* pEntity = GetEntity())
 		{
@@ -891,7 +891,7 @@ IMPLEMENT_RMI(CHeavyMountedWeapon, SvRequestRipOff)
 
 IMPLEMENT_RMI(CHeavyMountedWeapon, ClRipOff)
 {
-	IActor *pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(params.ownerId);
+	IActor *pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(params.ownerId);
 	if(pActor && (!m_rippingOff || m_rippedOff))
 	{
 		SetUnMountedConfiguration();

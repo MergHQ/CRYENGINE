@@ -34,7 +34,6 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/IProcess.h>
 #include <CrySystem/IBudgetingSystem.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
@@ -92,6 +91,8 @@
 #include "CryWaterMark.h"
 
 #include "ExtensionSystem/CryPluginManager.h"
+#include "ProjectManager/ProjectManager.h"
+
 WATERMARKDATA(_m);
 
 #if USE_STEAM
@@ -220,7 +221,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	}
 
 #if CRY_PLATFORM_WINDOWS
-	m_hInst = NULL;
 	m_hWnd = NULL;
 	#if _MSC_VER < 1000
 	int sbh = _set_sbh_threshold(1016);
@@ -254,6 +254,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bNoAssertDialog = false;
 	m_env.bTesting = false;
 
+	m_env.pGameFramework = startupParams.pGameFramework;
+
 #if CRY_PLATFORM_DURANGO
 	m_env.ePLM_State = EPLM_UNDEFINED;
 #endif
@@ -270,6 +272,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	gEnv = &m_env;
 #endif
 	//////////////////////////////////////////////////////////////////////////
+
+	m_randomGenerator.SetState(m_Time.GetAsyncTime().GetMicroSecondsAsInt64());
 
 	m_pStreamEngine = NULL;
 	m_PhysThread = 0;
@@ -443,7 +447,6 @@ CSystem::~CSystem()
 
 	SAFE_DELETE(m_pImeManager);
 	UnregisterWindowMessageHandler(this);
-	CRY_ASSERT(m_windowMessageHandlers.empty() && "There exists a dangling window message handler somewhere");
 
 	FreeLib(m_dll.hNetwork);
 	FreeLib(m_dll.hAI);
@@ -595,17 +598,8 @@ void CSystem::ShutDown()
 				m_env.pNetwork->FastShutdown();
 			}
 
-			//@TODO: release game.
-			//SAFE_RELEASE(m_env.pGame);
-			//FreeLib(m_dll.hGame);
-
 			SAFE_RELEASE(m_env.pRenderer);
 			FreeLib(m_dll.hRenderer);
-
-			if (m_env.pGame != NULL)
-			{
-				m_env.pGame->Shutdown();
-			}
 
 			// Shut down audio as late as possible but before the console gets released!
 			SAFE_RELEASE(m_env.pAudioSystem);
@@ -637,8 +631,7 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();
-	//@TODO: Release game.
-	//SAFE_RELEASE(m_env.pGame);
+
 	if (m_env.pPhysicalWorld)
 	{
 		m_env.pPhysicalWorld->SetPhysicsStreamer(0);
@@ -779,6 +772,8 @@ void CSystem::ShutDown()
 	// Shut down audio as late as possible but before the streaming system and console get released!
 	SAFE_RELEASE(m_env.pAudioSystem);
 
+	SAFE_DELETE(m_pProjectManager);
+
 	// Shut down the CryPak system after audio!
 	SAFE_DELETE(m_env.pCryPak);
 
@@ -831,20 +826,11 @@ void CSystem::Quit()
 			m_pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_FAST_SHUTDOWN, 0, 0);
 		}
 
-		//Ensure that the load ticker is not currently running. It can perform tasks on the network systems while they're being shut down
-		if (m_env.pGame && m_env.pGame->GetIGameFramework())
-		{
-			m_env.pGame->GetIGameFramework()->StopNetworkStallTicker();
-		}
-
 		if (m_env.pNetwork)
 			m_env.pNetwork->FastShutdown();
 
 		// HACK! to save cvars on quit.
 		SaveConfiguration();
-
-		if (m_env.pGame)
-			m_env.pGame->Shutdown();
 
 		if (gEnv->pFlashUI)
 			gEnv->pFlashUI->Shutdown();
@@ -1004,7 +990,7 @@ public:
 #ifdef ENABLE_LW_PROFILERS
 				QueryPerformanceCounter(&stepStart);
 #endif
-				IGameFramework* pIGameFramework = gEnv->pGame->GetIGameFramework();
+				IGameFramework* pIGameFramework = gEnv->pGameFramework;
 				while ((step = m_stepRequested) > 0 || m_doZeroStep)
 				{
 					stepped = true;
@@ -1226,10 +1212,10 @@ void CSystem::SleepIfInactive()
 		{
 			PumpWindowMessage(true, m_hWnd);
 		}
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+		if (gEnv->pGameFramework)
 		{
 			// During the time demo, do not sleep even in inactive window.
-			if (gEnv->pGame->GetIGameFramework()->IsInTimeDemo())
+			if (gEnv->pGameFramework->IsInTimeDemo())
 				break;
 		}
 		Sleep(5);
@@ -1402,6 +1388,28 @@ extern DWORD g_idDebugThreads[];
 extern int g_nDebugThreads;
 int prev_sys_float_exceptions = -1;
 
+
+//////////////////////////////////////////////////////////////////////
+void CSystem::PrePhysicsUpdate()
+{
+	if (m_env.pGameFramework)
+	{
+		m_env.pGameFramework->PrePhysicsUpdate();
+	}
+
+	if (m_pPluginManager)
+	{
+		m_pPluginManager->Update(IPluginUpdateListener::EUpdateType_PrePhysicsUpdate);
+	}
+
+	//////////////////////////////////////////////////////////////////////
+	//update entity system
+	if (m_env.pEntitySystem && g_cvars.sys_entitysystem)
+	{
+		m_env.pEntitySystem->PrePhysicsUpdate();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////
 bool CSystem::Update(int updateFlags, int nPauseMode)
 {
@@ -1539,13 +1547,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		m_bPaused = true;
 	else
 		m_bPaused = false;
-
-	if (m_env.pGame)
-	{
-		//bool bDevMode = m_env.pGame->GetModuleState( EGameDevMode );
-		//if (bDevMode != m_bInDevMode)
-		//SetDevMode(bDevMode);
-	}
 
 #if CRY_PLATFORM_WINDOWS
 	if (m_bInDevMode && g_cvars.sys_vtune != 0)
@@ -1724,7 +1725,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
 	//////////////////////////////////////////////////////////////////////
 	//update sound system Part 1 if in Editor / in Game Mode Viewsystem updates the Listeners
-	if (!m_env.IsEditorGameMode() && m_env.pGame)
+	if (!m_env.IsEditorGameMode())
 	{
 		if ((updateFlags & ESYSUPDATE_EDITOR) != 0 && !bNoUpdate && nPauseMode != 1)
 		{
@@ -1732,20 +1733,18 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 			// Updating all views here is a bit of a workaround, since we need
 			//	to ensure that sound listeners owned by inactive views are also
 			//	marked as inactive. Ideally that should happen when exiting game mode.
-			if (IGameFramework* const pIGameFramework = m_env.pGame->GetIGameFramework())
+
+			gEnv->pGameFramework->GetIViewSystem()->UpdateSoundListeners();
+
+			/*if (IView* const pActiveView = pIGameFramework->GetIViewSystem()->GetActiveView())
 			{
-				pIGameFramework->GetIViewSystem()->UpdateSoundListeners();
+			   EntityId const nListenerID = pActiveView->GetSoundListenerID();
 
-				/*if (IView* const pActiveView = pIGameFramework->GetIViewSystem()->GetActiveView())
-				   {
-				   EntityId const nListenerID = pActiveView->GetSoundListenerID();
-
-				   if (nListenerID != INVALID_ENTITYID)
-				   {
-				    pIGameFramework->GetIViewSystem()->UpdateSoundListeners();
-				   }
-				   }*/
-			}
+			   if (nListenerID != INVALID_ENTITYID)
+			   {
+			    pIGameFramework->GetIViewSystem()->UpdateSoundListeners();
+			   }
+			}*/
 		}
 	}
 
@@ -1776,23 +1775,9 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 			//////////////////////////////////////////////////////////////////////
 			// update entity system (a little bit) before physics
-			if (nPauseMode != 1)
+			if (nPauseMode != 1 && !bNoUpdate)
 			{
-				if (!bNoUpdate)
-				{
-					//////////////////////////////////////////////////////////////////////
-					//update game
-					if (m_env.pGame)
-					{
-						m_env.pGame->GetIGameFramework()->PrePhysicsUpdate();
-					}
-					//////////////////////////////////////////////////////////////////////
-					//update entity system
-					if (m_env.pEntitySystem && g_cvars.sys_entitysystem)
-					{
-						m_env.pEntitySystem->PrePhysicsUpdate();
-					}
-				}
+				PrePhysicsUpdate();
 			}
 
 			// intermingle physics/AI updates so that if we get a big timestep (frame rate glitch etc) the
@@ -1899,23 +1884,9 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 			//////////////////////////////////////////////////////////////////////
 			// update entity system (a little bit) before physics
-			if (nPauseMode != 1)
+			if (nPauseMode != 1 && !bNoUpdate)
 			{
-				if (!bNoUpdate)
-				{
-					//////////////////////////////////////////////////////////////////////
-					//update game
-					if (m_env.pGame)
-					{
-						m_env.pGame->GetIGameFramework()->PrePhysicsUpdate();
-					}
-					//////////////////////////////////////////////////////////////////////
-					//update entity system
-					if (m_env.pEntitySystem && g_cvars.sys_entitysystem)
-					{
-						m_env.pEntitySystem->PrePhysicsUpdate();
-					}
-				}
+				PrePhysicsUpdate();
 			}
 
 			if ((nPauseMode != 1) && !(updateFlags & ESYSUPDATE_IGNORE_PHYSICS))
@@ -2076,6 +2047,14 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		//CryLog("Task calculate PI = %f ", Pi); // Thats funny , but it works :-)
 	}
 #endif
+
+	m_pSystemEventDispatcher->Update();
+
+	if (m_pPluginManager)
+	{
+		m_pPluginManager->Update(IPluginUpdateListener::EUpdateType_Update);
+	}
+
 	//Now update frame statistics
 	CTimeValue cur_time = gEnv->pTimer->GetAsyncTime();
 
@@ -2092,10 +2071,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	m_updateTimes.push_back(std::make_pair(cur_time, updateTime));
 
 	UpdateUpdateTimes();
-
-	m_pSystemEventDispatcher->Update();
-
-	m_pPluginManager->Update(updateFlags, nPauseMode);
 
 	return !m_bQuit;
 
@@ -2715,6 +2690,12 @@ void CSystem::SetConfigSpec(ESystemConfigSpec spec, bool bClient)
 ESystemConfigSpec CSystem::GetMaxConfigSpec() const
 {
 	return m_nMaxConfigSpec;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IProjectManager* CSystem::GetIProjectManager()
+{
+	return m_pProjectManager;
 }
 
 //////////////////////////////////////////////////////////////////////////

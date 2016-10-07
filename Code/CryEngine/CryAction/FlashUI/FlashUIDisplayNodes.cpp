@@ -747,7 +747,7 @@ public:
 		case eFE_Initialize:
 			break;
 		case eFE_Activate:
-			IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+			IGameFramework* pGameFramework = gEnv->pGameFramework;
 
 			if (IsPortActive(pActInfo, EIP_Cast))
 			{

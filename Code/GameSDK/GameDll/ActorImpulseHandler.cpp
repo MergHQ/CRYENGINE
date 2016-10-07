@@ -102,7 +102,7 @@ CActorImpulseHandler::CActorImpulseHandler(CActor& actor) : m_actor(actor)
 //////////////////////////////////////////////////////////////////////////
 void CActorImpulseHandler::ReadXmlData(const IItemParamsNode* pRootNode)
 {
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 
 	// If we change the SharedParamsManager to accept CRCs on its interface we could compute this once and store

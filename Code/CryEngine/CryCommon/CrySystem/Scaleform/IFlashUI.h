@@ -1711,6 +1711,9 @@ public:
 	//! Reload UI xml files.
 	virtual void Reload() = 0;
 
+	//! Clear UI Actions
+	virtual void ClearUIActions() = 0;
+
 	//! Shut down.
 	virtual void Shutdown() = 0;
 

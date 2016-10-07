@@ -195,12 +195,12 @@ public:
 					{
 						char* levelName;
 						char* levelPath;
-						gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+						gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 						szSavePath = levelPath;
 					}
 					else
 					{
-						ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+						ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 						if (pLevel)
 						{
 							szSavePath = pLevel->GetPath();
@@ -321,12 +321,12 @@ public:
 					{
 						char* levelName;
 						char* levelPath;
-						gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+						gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 						szLoadPath = levelPath;
 					}
 					else
 					{
-						ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+						ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 						if (pLevel)
 						{
 							szLoadPath = pLevel->GetPath();

@@ -26,6 +26,8 @@
 #include "HardwareMouse.h"
 #include <CryCore/Platform/WindowsUtils.h>
 
+#include <CryCore/Platform/CryLibrary.h>
+
 #if CRY_PLATFORM_WINDOWS
 	#include <CryRenderer/IImage.h>
 #endif
@@ -636,7 +638,7 @@ bool CHardwareMouse::SetCursor(int idc_cursor_id)
 	{
 		if (!m_hCursor)
 		{
-			m_hCursor = ::LoadCursor(GetModuleHandle(0), MAKEINTRESOURCE(idc_cursor_id));
+			m_hCursor = ::LoadCursor(CryGetCurrentModule(), MAKEINTRESOURCE(idc_cursor_id));
 
 			if (!m_hCursor)
 			{

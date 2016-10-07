@@ -1352,7 +1352,7 @@ void CNetChannel::GC_AddPingReadout(float elapsedRemote, float sinceSent, float 
 
 	if (!m_pDebugHistory)
 	{
-		m_pDebugHistory = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+		m_pDebugHistory = gEnv->pGameFramework->CreateDebugHistoryManager();
 	}
 
 	if (!m_pElapsedRemote)

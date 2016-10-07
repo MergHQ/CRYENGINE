@@ -49,7 +49,7 @@ void CMountedGunController::Update(EntityId mountedGunID, float frameTime)
 {
 	CRY_ASSERT_MESSAGE(m_pControlledPlayer, "Controlled player not initialized");
 
-	CItem* pMountedGun = static_cast<CItem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mountedGunID));
+	CItem* pMountedGun = static_cast<CItem*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(mountedGunID));
 
 	bool canUpdateMountedGun = (pMountedGun != NULL) && (pMountedGun->GetStats().mounted);
 

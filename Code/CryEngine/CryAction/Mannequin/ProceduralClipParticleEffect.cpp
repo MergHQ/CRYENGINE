@@ -136,7 +136,7 @@ public:
 
 	virtual void OnEnter(float blendTime, float duration, const SPlayParticleEffectParams& params)
 	{
-		if (gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->GetMannequinInterface().IsSilentPlaybackMode())
+		if (gEnv->IsEditor() && gEnv->pGameFramework->GetMannequinInterface().IsSilentPlaybackMode())
 			return;
 
 		if (gEnv->IsDedicated())
@@ -309,7 +309,7 @@ void CParticleEffectContext::StartEffect(SParticleEffectClipData& data, const SP
 
 		if (data.pEmitter)
 		{
-			IMannequin& mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+			IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
 			const uint32 numListeners = mannequinInterface.GetNumMannequinGameListeners();
 			for (uint32 itListeners = 0; itListeners < numListeners; ++itListeners)
 			{

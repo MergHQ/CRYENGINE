@@ -32,7 +32,7 @@ CInventory::CInventory()
 //------------------------------------------------------------------------
 CInventory::~CInventory()
 {
-	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
+	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGameFramework);
 	pCryAction->GetInventoryScriptBind()->DetachFrom(this);
 }
 
@@ -41,7 +41,7 @@ bool CInventory::Init(IGameObject* pGameObject)
 {
 	SetGameObject(pGameObject);
 	// attach script bind
-	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
+	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGameFramework);
 	pCryAction->GetInventoryScriptBind()->AttachTo(this);
 
 	m_pGameFrameWork = pCryAction;
@@ -65,7 +65,7 @@ bool CInventory::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPar
 void CInventory::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	// attach script bind
-	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
+	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGameFramework);
 	pCryAction->GetInventoryScriptBind()->AttachTo(this);
 
 	m_pActor = pCryAction->GetIActorSystem()->GetActor(pGameObject->GetEntityId());
@@ -224,7 +224,7 @@ void CInventory::PostSerialize()
 	const bool ownerActorIsClientNotInVehicle = (m_pActor != NULL) && m_pActor->IsClient() && (m_pActor->GetLinkedVehicle() == NULL);
 	if (ownerActorIsClientNotInVehicle)
 	{
-		IItem* pCurrentItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_stats.currentItemId);
+		IItem* pCurrentItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(m_stats.currentItemId);
 		if ((pCurrentItem != NULL) && (pCurrentItem->GetOwnerId() == 0))
 		{
 			if (pCurrentItem->CanUse(m_pActor->GetEntityId()))
@@ -585,7 +585,7 @@ void CInventory::Destroy()
 	if (!GetISystem()->IsSerializingFile())
 	{
 		IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-		IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
 		TInventoryVector deleteList = m_stats.slots;
 		for (TInventoryIt it = deleteList.begin(); it != deleteList.end(); ++it)
@@ -620,7 +620,7 @@ void CInventory::Clear(bool forceClear)
 
 	if (!gEnv->bServer)
 	{
-		IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
 		TInventoryIt end = m_stats.slots.end();
 		for (TInventoryIt it = m_stats.slots.begin(); it != end; ++it)
@@ -745,7 +745,7 @@ int CInventory::GetCountOfClass(const char* className) const
 //------------------------------------------------------------------------
 int CInventory::GetCountOfCategory(const char* categoryName) const
 {
-	IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
 	int count = 0;
 	TInventoryCIt end = m_stats.slots.end();
@@ -778,7 +778,7 @@ int CInventory::GetCountOfUniqueId(uint8 uniqueId) const
 	if (!uniqueId)
 		return 0;
 
-	IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
 	int count = 0;
 	TInventoryCIt end = m_stats.slots.end();
@@ -866,7 +866,7 @@ IItem* CInventory::GetItemByName(const char* name) const
 	{
 		if (IEntity* pEntity = pEntitySystem->GetEntity(*it))
 			if (!strcmp(pEntity->GetName(), name))
-				return gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pEntity->GetId());
+				return gEnv->pGameFramework->GetIItemSystem()->GetItem(pEntity->GetId());
 	}
 
 	return 0;
@@ -1354,7 +1354,7 @@ IMPLEMENT_RMI(CInventory, SvReq_AddItem)
 {
 	TRMIInventory_Item Info(params);
 
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GiveItem(GetActor(), Info.m_ItemClass.c_str(), false, true, true);
+	gEnv->pGameFramework->GetIItemSystem()->GiveItem(GetActor(), Info.m_ItemClass.c_str(), false, true, true);
 
 	return true;
 }

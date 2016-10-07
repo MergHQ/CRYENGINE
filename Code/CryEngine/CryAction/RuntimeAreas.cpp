@@ -14,7 +14,7 @@ CRuntimeAreaManager::CRuntimeAreaManager()
 	runtimeObjectDesc.sScriptFile = "";
 
 	static IGameFramework::CGameObjectExtensionCreator<CRuntimeAreaObject> runtimeObjectCreator;
-	gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(runtimeObjectDesc.sName, &runtimeObjectCreator, &runtimeObjectDesc);
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(runtimeObjectDesc.sName, &runtimeObjectCreator, &runtimeObjectDesc);
 
 	FillAudioControls();
 }

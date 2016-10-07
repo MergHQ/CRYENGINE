@@ -2417,27 +2417,27 @@ public:
 			bool bUseZeroRot = GetPortBool(pActInfo, EIP_UseZeroRot);
 
 			string memo = GetPortString(pActInfo, EIP_Memo);
-			const char* entityName = pActInfo->pEntity->GetName();
+			const char* szEntityName = pActInfo->pEntity->GetName();
 
-			bool isPlayer = GetISystem()->GetIGame()->GetIGameFramework()->GetClientActorId() == pActInfo->pEntity->GetId();
+			const bool bIsPlayer = CCryAction::GetCryAction()->GetClientActorId() == pActInfo->pEntity->GetId();
 
-			if (memo.empty() && isPlayer == 0)
+			if (memo.empty() && bIsPlayer == 0)
 			{
 				memo = "<no memo>";
 			}
 
 			if (vPos.IsZero())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", entityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", szEntityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
 			}
 			else if (!memo.empty())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", entityName, memo.c_str());
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", szEntityName, memo.c_str());
 			}
 
 			Matrix34 tm;
-			bool applyRot = vRot != NULL && (!vRot->IsZero() || bUseZeroRot);
-			if (!applyRot)
+			bool bApplyRot = vRot != nullptr && (!vRot->IsZero() || bUseZeroRot);
+			if (!bApplyRot)
 			{
 				tm = pActInfo->pEntity->GetWorldTM();
 			}

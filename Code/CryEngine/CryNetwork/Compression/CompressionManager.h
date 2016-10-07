@@ -91,6 +91,9 @@ public:
 	const string& GetAccDirectory() const;
 	const string& GetUseDirectory() const;
 
+protected:
+	void LoadCompressionPolicy(const char* fileName, XmlNodeRef rootNode, bool bUseCompression);
+
 private:
 #if USE_SYSTEM_ALLOCATOR
 	typedef std::unordered_map<uint32, _smart_ptr<ICompressionPolicy>, stl::hash_uint32>                                                                                                                  TCompressionPoliciesMap;

@@ -1833,8 +1833,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);
 
-	if (gEnv->pGame)
-		gEnv->pGame->OnRenderScene(passInfo);
+	if (auto* pGame = gEnv->pGameFramework->GetIGame())
+		pGame->OnRenderScene(passInfo);
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Start asynchronous cull queue processing if enabled
@@ -3016,14 +3016,14 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			                     DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms        AI", fTimeMS);
 		}
 
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+		if (gEnv->pGameFramework)
 		{
 	#if CRY_PLATFORM_MOBILE
 			const float maxVal = 4.f;
 	#else
 			const float maxVal = 50.f;
 	#endif
-			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(gEnv->pGame->GetIGameFramework()->GetPreUpdateTicks());
+			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(gEnv->pGameFramework->GetPreUpdateTicks());
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
 			                     DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms    Action", fTimeMS);
 		}

@@ -283,7 +283,7 @@ CEquipmentLoadout::CEquipmentLoadout()
 	LoadItemDefinitions();					// Load item definitions from xml.
 	LoadDefaultEquipmentPackages(); // Load default from xml.
 
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->AddListener(this, true);
 	}
@@ -325,7 +325,7 @@ bool CEquipmentLoadout::CompareWeapons(const SLoadoutWeapon &elem1, const SLoado
 //------------------------------------------------------------------------
 CEquipmentLoadout::~CEquipmentLoadout()
 {
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->RemoveListener(this);
 	}

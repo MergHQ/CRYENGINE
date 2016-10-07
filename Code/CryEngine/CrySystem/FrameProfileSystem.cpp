@@ -20,7 +20,6 @@
 #include <CryCore/StlUtils.h>
 #include <CrySystem/IConsole.h>
 #include <CryInput/IHardwareMouse.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 

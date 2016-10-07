@@ -12,37 +12,40 @@ CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
 #endif
 
 CGame::CGame()
-	: m_pGameFramework(nullptr)
 {
-	GetISystem()->SetIGame(this);
 }
 
 CGame::~CGame()
 {
-	if (m_pGameFramework->StartedGameContext())
+	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+
+	if (gEnv->pGameFramework->StartedGameContext())
 	{
-		m_pGameFramework->EndGameContext();
+		gEnv->pGameFramework->EndGameContext();
 	}
 
-	GetISystem()->SetIGame(nullptr);
+	UnregisterGameFlowNodes();
 }
 
-bool CGame::Init(IGameFramework* pFramework)
+bool CGame::Init()
 {
-	m_pGameFramework = pFramework;
 	CGameFactory::Init();
-	m_pGameFramework->SetGameGUID(GAME_GUID);
+	gEnv->pGameFramework->SetGameGUID(GAME_GUID);
+
+	// Request loading of the example map next frame
+	gEnv->pConsole->ExecuteString("map example", false, true);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 
 	return true;
 }
 
 void CGame::RegisterGameFlowNodes()
 {
-	IFlowSystem* pFlowSystem = m_pGameFramework->GetIFlowSystem();
+#ifndef _LIB
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
 	if (pFlowSystem)
 	{
 		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
-
 		while (pFactory)
 		{
 			pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
@@ -51,13 +54,42 @@ void CGame::RegisterGameFlowNodes()
 
 		CGameFactory::RegisterEntityFlowNodes();
 	}
+#endif
+}
+
+void CGame::UnregisterGameFlowNodes()
+{
+#ifndef _LIB
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	if (pFlowSystem)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			pFlowSystem->UnregisterType(pFactory->m_sClassName);
+			pFactory = pFactory->m_pNext;
+		}
+
+		CGameFactory::UnregisterEntityFlowNodes();
+	}
+#endif
+}
+
+void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	switch (event)
+	{
+	case ESYSTEM_EVENT_REGISTER_FLOWNODES:
+		{
+			RegisterGameFlowNodes();
+		}
+		break;
+	}
 }
 
 int CGame::Update(bool haveFocus, unsigned int updateFlags)
 {
-	const bool bRun = m_pGameFramework->PreUpdate(haveFocus, updateFlags);
-	m_pGameFramework->PostUpdate(haveFocus, updateFlags);
-	return bRun ? 1 : 0;
+	return 1;
 }
 
 void CGame::Shutdown()

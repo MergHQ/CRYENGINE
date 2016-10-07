@@ -2,7 +2,17 @@
 
 #include "StdAfx.h"
 #include "MonoRuntime.h"
-#include "MonoLibrary.h"
+
+#include "Wrappers/RootMonoDomain.h"
+#include "Wrappers/AppDomain.h"
+#include "Wrappers/MonoLibrary.h"
+#include "Wrappers/MonoClass.h"
+#include "Wrappers/MonoObject.h"
+
+#include "ManagedPlugin.h"
+
+#include "NativeComponents/Actor.h"
+#include "NativeComponents/GameRules.h"
 
 #include <CrySystem/ILog.h>
 
@@ -11,6 +21,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/exception.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#pragma comment(lib, "mono-2.0.lib")
@@ -38,32 +49,51 @@ static IMiniLog::ELogType s_monoToEngineLevels[] =
 	IMiniLog::eComment
 };
 
-CMonoRuntime::CMonoRuntime(const char* szProjectDllDir)
-	: m_logLevel(eMLL_NULL)
-	, m_pLibCommon(nullptr)
-	, m_pLibCore(nullptr)
-	, m_pDomainHandler(nullptr)
-	, m_pDomainGlobal(nullptr)
-	, m_pDomainPlugins(nullptr)
-	, m_listeners(5)
-	, m_bSearchOpen(false)
+void OnReloadRequested(IConsoleCmdArgs *pArgs)
 {
-	cry_strcpy(m_sProjectDllDir, szProjectDllDir);
+	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->ReloadPluginDomain();
+}
+
+CMonoRuntime::CMonoRuntime()
+	: m_pLibCommon(nullptr)
+	, m_pLibCore(nullptr)
+	, m_pRootDomain(nullptr)
+	, m_pPluginDomain(nullptr)
+	, m_listeners(5)
+{
+	REGISTER_COMMAND("mono_reload", OnReloadRequested, VF_NULL, "Used to reload all mono plug-ins");
 }
 
 CMonoRuntime::~CMonoRuntime()
 {
-	StopPluginDomain();
+	if (m_pLibCore != nullptr)
+	{
+		// Get the equivalent of gEnv
+		auto pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
+		CRY_ASSERT(pEngineClass != nullptr);
 
-	mono_runtime_cleanup(m_pDomainPlugins);
-	mono_jit_cleanup(m_pDomainGlobal);
+		// Call the static Shutdown function
+		pEngineClass->InvokeMethod("OnEngineShutdown");
+	}
+
+	for (auto it = m_domainLookupMap.begin(); it != m_domainLookupMap.end(); ++it)
+	{
+		// Root domain HAS to be deleted last, its destructor shuts down the entire runtime!
+		if (it->second != m_pRootDomain)
+		{
+			it->second->Release();
+			it->second = nullptr;
+		}
+	}
+
+	SAFE_DELETE(m_pRootDomain);
+
+	gEnv->pMonoRuntime = nullptr;
 }
 
-void CMonoRuntime::Initialize(EMonoLogLevel logLevel)
+bool CMonoRuntime::Initialize()
 {
 	CryLog("[Mono] Initialize Mono Runtime . . . ");
-
-	CryGetExecutableFolder(CRY_ARRAY_COUNT(m_sBaseDirectory), m_sBaseDirectory);
 
 #ifndef _RELEASE
 	mono_debug_init(MONO_DEBUG_FORMAT_MONO);
@@ -74,84 +104,63 @@ void CMonoRuntime::Initialize(EMonoLogLevel logLevel)
 	mono_jit_parse_options(sizeof(options) / sizeof(char*), options);
 #endif
 
+	char engineRoot[_MAX_PATH];
+	CryFindEngineRootFolder(_MAX_PATH, engineRoot);
+
 	char sMonoLib[_MAX_PATH];
-	sprintf_s(sMonoLib, "%smono\\lib", m_sBaseDirectory);
+	sprintf_s(sMonoLib, "%s\\Engine\\mono\\lib", engineRoot);
 	char sMonoEtc[_MAX_PATH];
-	sprintf_s(sMonoEtc, "%smono\\etc", m_sBaseDirectory);
+	sprintf_s(sMonoEtc, "%s\\Engine\\mono\\etc", engineRoot);
+
+	if (!gEnv->pCryPak->IsFileExist(sMonoLib) || !gEnv->pCryPak->IsFileExist(sMonoEtc))
+	{
+		CryLogAlways("Failed to initialize Mono runtime, Mono directory was not found or incomplete in Engine directory");
+		delete this;
+
+		return false;
+	}
 
 	mono_set_dirs(sMonoLib, sMonoEtc);
-	m_logLevel = logLevel;
-	mono_trace_set_level_string(s_monoLogLevels[m_logLevel]);
+
+	mono_trace_set_level_string(s_monoLogLevels[0]);
 
 	mono_trace_set_log_handler(MonoLogCallback, this);
 	mono_trace_set_print_handler(MonoPrintCallback);
 	mono_trace_set_printerr_handler(MonoPrintErrorCallback);
-	mono_install_assembly_load_hook(MonoLoadHook, this);
-	mono_install_assembly_search_hook(MonoSearchHook, this);
-	mono_install_assembly_refonly_search_hook(MonoSearchHook, this);
 
-	m_pDomainGlobal = mono_jit_init_version("CryEngine", "v4.0.30319");
-	if (m_pDomainGlobal)
-	{
-		m_pDomainHandler = LoadDomainHandlerLibrary("CryEngine.DomainHandler");
-		if (m_pDomainHandler)
-		{
-			CryLog("[Mono] Initialization done.");
-		}
-	}
-	else
-	{
-		gEnv->pLog->LogError("[Mono] Could not create CryEngine domain");
-		CryLog("[Mono] Initialization failed!");
-	}
-}
+	mono_install_assembly_search_hook(MonoAssemblySearchCallback, (void *)1);
+	mono_install_assembly_refonly_search_hook(MonoAssemblySearchCallback, (void *)0);
 
-bool CMonoRuntime::LoadBinary(const char* szBinaryPath)
-{
-	if (!m_pDomainPlugins)
-	{
-		LaunchPluginDomain();
-	}
+	m_pRootDomain = new CRootMonoDomain();
+	m_pRootDomain->Initialize();
 
-	if (!m_pDomainPlugins) // Invalid app domain
-	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "No valid app domain for mono assembly found! (%s)", szBinaryPath);
-		return false;
-	}
+	m_domainLookupMap.insert(TDomainLookupMap::value_type(m_pRootDomain->GetHandle(), m_pRootDomain));
 
-	IMonoLibrary* pLibrary = LoadLibrary(szBinaryPath);
-	if (!pLibrary)
-	{
-		gEnv->pLog->LogError("[Mono] could not initialize plugin '%s'!", szBinaryPath);
-		return false;
-	}
-
-	// Make sure debugger is connected.
-	CrySleep(100);
-
-	// DBG
-	gEnv->pLog->Log("[Mono] Loaded Libraries:");
-	for (Libraries::const_iterator it = m_loadedLibraries.begin(); it != m_loadedLibraries.end(); ++it)
-	{
-		if ((*it)->IsInMemory())
-			gEnv->pLog->Log("[Mono]   %s (In Memory)", (*it)->GetImageName());
-		else
-			gEnv->pLog->Log("[Mono]   %s", (*it)->GetImageName());
-	}
-	//// ~DBG
-
+	CryLog("[Mono] Initialization done.");
 	return true;
 }
 
-bool CMonoRuntime::UnloadBinary(const char* szBinaryPath)
+// This function is required seeing as ICryPak::IsFileExist only works for files in the game directory
+// Should be replaced if that function is fixed.
+bool DoesFileExist(const char* path)
 {
-	if (!ExcludePlugin(szBinaryPath))
+	if (auto pHandle = gEnv->pCryPak->FOpen(path, "rb", ICryPak::FLAGS_PATH_REAL))
 	{
-		CryLog("Can't find loaded instance of c# plugin '%s', skipping unload...", szBinaryPath);
-		return false;
+		gEnv->pCryPak->FClose(pHandle);
+		return true;
 	}
 
-	return ReloadPluginDomain();
+	return false;
+}
+
+std::shared_ptr<ICryPlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
+{
+	if (!DoesFileExist(szBinaryPath))
+	{
+		return nullptr;
+	}
+
+	return std::shared_ptr<ICryPlugin>(new CManagedPlugin(szBinaryPath));
 }
 
 void CMonoRuntime::Update(int updateFlags, int nPauseMode)
@@ -162,53 +171,11 @@ void CMonoRuntime::Update(int updateFlags, int nPauseMode)
 	}
 }
 
-ICryEngineBasePlugin* CMonoRuntime::GetPlugin(const char* szBinaryPath) const
-{
-	for (ExplicitLibraries::const_iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
-	{
-		if (!strcmp(it->m_binaryPath, szBinaryPath))
-		{
-			return it->m_pPlugin;
-		}
-	}
-
-	return nullptr;
-}
-
-bool CMonoRuntime::RunMethod(const ICryEngineBasePlugin* pPlugin, const char* szMethodName) const
-{
-	for (ExplicitLibraries::const_iterator itExplicit = m_explicitLibraries.begin(); itExplicit != m_explicitLibraries.end(); ++itExplicit)
-	{
-		if (itExplicit->m_pPlugin == pPlugin && itExplicit->m_pLibrary)
-		{
-			return itExplicit->m_pLibrary->RunMethod(szMethodName);
-		}
-	}
-
-	return false;
-}
-
-template<class T>
-int CMonoRuntime::ReadAll(string fileName, T** data)
-{
-	_finddata_t fd;
-	intptr_t handle = gEnv->pCryPak->FindFirst(fileName.c_str(), &fd, ICryPak::FLAGS_PATH_REAL, true);
-	if (handle < 0)
-		return 0;
-
-	FILE* f = gEnv->pCryPak->FOpen(fileName, "rb", ICryPak::FLAGS_PATH_REAL);
-	int size = gEnv->pCryPak->FGetSize(f);
-	*data = new T[size];
-	gEnv->pCryPak->FRead(*data, size, f);
-	gEnv->pCryPak->FClose(f);
-	return size;
-}
-
 void CMonoRuntime::MonoLogCallback(const char* szLogDomain, const char* szLogLevel, const char* szMessage, mono_bool is_fatal, void* pUserData)
 {
 	IMiniLog::ELogType engineLvl = IMiniLog::eComment;
 	if (szLogLevel)
-		for (int i = 1; i < 7; i++)
+		for (int i = 1; i < CRY_ARRAY_COUNT(s_monoLogLevels); i++)
 			if (_stricmp(s_monoLogLevels[i], szLogLevel) == 0)
 			{
 				engineLvl = s_monoToEngineLevels[i];
@@ -216,6 +183,13 @@ void CMonoRuntime::MonoLogCallback(const char* szLogDomain, const char* szLogLev
 			}
 
 	gEnv->pLog->LogWithType(engineLvl, "[Mono][%s][%s] %s", szLogDomain, szLogLevel, szMessage);
+
+#if CRY_PLATFORM_WINDOWS && !defined(RELEASE)
+	if (IsDebuggerPresent())
+	{
+		__debugbreak();
+	}
+#endif
 }
 
 void CMonoRuntime::MonoPrintCallback(const char* szMessage, mono_bool is_stdout)
@@ -226,303 +200,215 @@ void CMonoRuntime::MonoPrintCallback(const char* szMessage, mono_bool is_stdout)
 void CMonoRuntime::MonoPrintErrorCallback(const char* szMessage, mono_bool is_stdout)
 {
 	gEnv->pLog->LogError("[Mono] %s", szMessage);
+
+#if CRY_PLATFORM_WINDOWS && !defined(RELEASE)
+	if (IsDebuggerPresent())
+	{
+		__debugbreak();
+	}
+#endif
 }
 
-void CMonoRuntime::MonoLoadHook(MonoAssembly* pAssembly, void* pUserData)
+MonoAssembly* CMonoRuntime::MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData)
 {
-	CMonoRuntime* pRuntime = (CMonoRuntime*)pUserData;
-	if (!pRuntime)
+	bool bRefOnly = ((int)pUserData == 0);
+
+	auto* pDomain = static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->GetActiveDomain();
+
+	const char* assemblyName = mono_assembly_name_get_name(pAssemblyName);
+
+	if (auto* pLibrary = static_cast<CMonoDomain*>(pDomain)->LoadLibrary(assemblyName, bRefOnly))
+	{
+		return pLibrary->GetAssembly();
+	}
+
+	return nullptr;
+}
+
+IMonoDomain* CMonoRuntime::GetRootDomain()
+{
+	return m_pRootDomain;
+}
+
+IMonoDomain* CMonoRuntime::GetActiveDomain()
+{
+	MonoDomain* pActiveMonoDomain = mono_domain_get();
+	auto* pDomain = FindDomainByHandle(pActiveMonoDomain);
+	if (pDomain != nullptr)
+	{
+		return pDomain;
+	}
+
+	pDomain = new CAppDomain(pActiveMonoDomain);
+	m_domainLookupMap.insert(TDomainLookupMap::value_type(pActiveMonoDomain, pDomain));
+
+	return pDomain;
+}
+
+IMonoDomain* CMonoRuntime::CreateDomain(char* name, bool bActivate)
+{
+	auto* pAppDomain = new CAppDomain(name, bActivate);
+	m_domainLookupMap.insert(TDomainLookupMap::value_type(pAppDomain->GetHandle(), pAppDomain));
+
+	return pAppDomain;
+}
+
+IMonoAssembly* CMonoRuntime::GetCryCommonLibrary() const
+{
+	return m_pLibCommon; 
+}
+
+IMonoAssembly* CMonoRuntime::GetCryCoreLibrary() const
+{
+	return m_pLibCore; 
+}
+
+template<class T>
+struct CEntityComponentCreator : public IGameObjectExtensionCreatorBase
+{
+	IGameObjectExtensionPtr Create()
+	{
+		return ComponentCreate_DeleteWithRelease<T>();
+	}
+
+	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
+	{
+		*ppRMI = nullptr;
+		*nCount = 0;
+	}
+};
+
+void CMonoRuntime::RegisterManagedActor(const char* actorClassName)
+{
+	if (gEnv->pEntitySystem->GetClassRegistry()->FindClass(actorClassName) != nullptr)
+	{
+		//HandleException((MonoObject*)mono_get_exception_argument("className", "Tried to register actor twice!"));
 		return;
-
-	IMonoLibrary* pLib = pRuntime->GetLibrary(pAssembly);
-	if (!pLib)
-	{
-		pLib = new CMonoLibrary(pAssembly);
-		pRuntime->m_loadedLibraries.push_back(pLib);
 	}
+
+	const char* rulesName = "ManagedGameRules";
+
+	if (gEnv->pEntitySystem->GetClassRegistry()->FindClass(rulesName) != nullptr)
+	{
+		HandleException((MonoObject*)mono_get_exception_argument("className", "Tried to register actor twice!"));
+		return;
+	}
+
+	IEntityClassRegistry::SEntityClassDesc clsDesc;
+	
+	static CEntityComponentCreator<CManagedGameRules> gameRulesCreator;
+	clsDesc.sName = rulesName;
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &gameRulesCreator, &clsDesc);
+
+	CManagedGameRules::s_actorClassName = actorClassName;
+	gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules(rulesName, rulesName, false);
+
+	gEnv->pConsole->GetCVar("sv_gamerulesdefault")->Set(rulesName);
+	gEnv->pConsole->GetCVar("sv_gamerules")->Set(rulesName);
+
+	static CEntityComponentCreator<CManagedActor> actorCreator;
+	clsDesc.sName = actorClassName;
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &actorCreator, &clsDesc);
 }
 
-MonoAssembly* CMonoRuntime::MonoSearchHook(MonoAssemblyName* pAssemblyName, void* pUserData)
+CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoDomain* pDomain)
 {
-	CMonoRuntime* pRuntime = (CMonoRuntime*)pUserData;
-	if (!pRuntime || pRuntime->m_bSearchOpen)
+	auto domainIt = m_domainLookupMap.find(pDomain);
+	if (domainIt == m_domainLookupMap.end())
 	{
-		return nullptr;
+		domainIt = m_domainLookupMap.insert(TDomainLookupMap::value_type(pDomain, new CAppDomain(pDomain))).first;
 	}
 
-	string asmName = mono_assembly_name_get_name(pAssemblyName);
-
-	if (strcmp("dll", PathUtil::GetExt(asmName.c_str())))
-	{
-		asmName += ".dll";
-	}
-
-	MonoImageOpenStatus status = MONO_IMAGE_ERROR_ERRNO;
-	string fName = PathUtil::Make(pRuntime->m_sBaseDirectory, asmName.c_str());
-
-	//Prefer project dll if available
-	string fProjectName = PathUtil::Make(pRuntime->m_sProjectDllDir, asmName.c_str());
-	if (FILE* pHandle = gEnv->pCryPak->FOpen(fProjectName.c_str(), "rb", ICryPak::FLAGS_PATH_REAL))
-	{
-		gEnv->pCryPak->FClose(pHandle);
-		fName = fProjectName;
-	}
-
-	char* dataImg;
-	int nImg = ReadAll(fName, &dataImg);
-	if (nImg <= 0)
-	{
-		return nullptr;
-	}
-
-	pRuntime->m_bSearchOpen = true;
-	MonoImage* pImg = mono_image_open_from_data_full(dataImg, nImg, false, &status, 0);
-
-	// load debug information
-#ifndef _RELEASE
-	string fNameDbg = fName + ".mdb";
-	mono_byte* dataDbg;
-	int nDbg = ReadAll(fNameDbg, &dataDbg);
-	if (nDbg > 0)
-	{
-		mono_debug_open_image_from_memory(pImg, dataDbg, nDbg);
-	}
-#endif
-	// load assembly and set data
-	MonoAssembly* pAsm = mono_assembly_load_from_full(pImg, asmName.c_str(), &status, 0);
-	// store the memory image of the assembly, so that we can delete it, when unloading the assembly
-	IMonoLibrary* pLib = pRuntime->GetLibrary(pAsm);
-	if (!pLib)
-	{
-		pLib = new CMonoLibrary(pAsm, dataImg);
-		pRuntime->m_loadedLibraries.push_back(pLib);
-	}
-	else
-	{
-		((CMonoLibrary*)pLib)->SetData(dataImg);
-	}
-#ifndef _RELEASE
-	if (nDbg > 0)
-	{
-		((CMonoLibrary*)pLib)->SetDebugData(dataDbg);
-	}
-#endif
-	pRuntime->m_bSearchOpen = false;
-
-	return pAsm;
+	return domainIt->second;
 }
 
-SMonoDomainHandlerLibrary* CMonoRuntime::LoadDomainHandlerLibrary(const char* szLibraryName)
+CAppDomain* CMonoRuntime::LaunchPluginDomain()
 {
-	IMonoLibrary* pLib = LoadLibrary(szLibraryName);
-	if (pLib)
-	{
-		CMonoLibrary* pCLib = static_cast<CMonoLibrary*>(pLib);
-		SMonoDomainHandlerLibrary* pDomainHandler = new SMonoDomainHandlerLibrary(pCLib);
+	if (m_pPluginDomain != nullptr)
+		return m_pPluginDomain;
 
-		if (pDomainHandler && pDomainHandler->Initialize())
+	// Create the plugin domain and activate it
+	if (m_pPluginDomain = static_cast<CAppDomain*>(CreateDomain("CryEngine.Plugins", true)))
+	{
+		char executableFolder[_MAX_PATH];
+		CryGetExecutableFolder(_MAX_PATH, executableFolder);
+
+		string libraryPath = PathUtil::Make(executableFolder, "CryEngine.Common");
+		m_pLibCommon = m_pPluginDomain->LoadLibrary(libraryPath);
+		if (m_pLibCommon == nullptr)
 		{
-			return pDomainHandler;
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed common library %s", libraryPath.c_str());
+
+			delete m_pPluginDomain;
+			m_pPluginDomain = nullptr;
+
+			return nullptr;
 		}
+
+		libraryPath = PathUtil::Make(executableFolder, "CryEngine.Core");
+		m_pLibCore = m_pPluginDomain->LoadLibrary(libraryPath);
+		if (m_pLibCore == nullptr)
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core library %s", libraryPath.c_str());
+
+			delete m_pPluginDomain;
+			m_pPluginDomain = nullptr;
+
+			return nullptr;
+		}
+
+		// Get the equivalent of gEnv
+		auto pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
+		CRY_ASSERT(pEngineClass != nullptr);
+
+		// Call the static Initialize function
+		pEngineClass->InvokeMethod("OnEngineStart");
+
+		return m_pPluginDomain;
 	}
 
 	return nullptr;
 }
 
-IMonoLibrary* CMonoRuntime::LoadLibrary(const char* szBinaryPath)
+void CMonoRuntime::ReloadPluginDomain()
 {
-	gEnv->pLog->LogWithType(IMiniLog::eMessage, "[Mono] Load Library: %s", szBinaryPath);
+	// Trigger removal of C++ listeners, since the memory they belong to will be invalid shortly
+	auto pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
+	CRY_ASSERT(pEngineClass != nullptr);
 
-	string binaryFile = PathUtil::GetFile(szBinaryPath);
-	string binaryPath = PathUtil::GetPathWithoutFilename(szBinaryPath);
+	// Call the static Shutdown function
+	pEngineClass->InvokeMethod("OnUnloadStart");
 
-	MonoImageOpenStatus status = MonoImageOpenStatus::MONO_IMAGE_ERROR_ERRNO;
-	MonoAssemblyName* pAsmName = mono_assembly_name_new(binaryFile.c_str());
-	MonoAssembly* pAsm = mono_assembly_load(pAsmName, m_sProjectDllDir, &status);
-	mono_assembly_name_free(pAsmName);
-
-	if (!pAsm)
+	if (m_pPluginDomain->Reload())
 	{
-		return nullptr;
+		static_cast<CMonoClass*>(pEngineClass.get())->ReloadClass();
+
+		// Notify the framework so that internal listeners etc. can be added again.
+		pEngineClass->InvokeMethod("OnReloadDone");
 	}
-
-	IMonoLibrary* pLib = GetLibrary(pAsm);
-	if (!pLib)
-	{
-		pLib = new CMonoLibrary(pAsm);
-		m_loadedLibraries.push_back(pLib);
-	}
-
-	if (mono_domain_get() == m_pDomainPlugins)
-	{
-		ICryEngineBasePlugin* pPlugin = pLib->Initialize(m_pDomainPlugins, m_pDomainHandler);
-		if (pPlugin != nullptr)
-		{
-			bool bExist = false;
-			for (ExplicitLibraries::iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
-			{
-				if (!stricmp(it->m_binaryPath.c_str(), szBinaryPath))
-				{
-					it->m_pPlugin = pPlugin;
-					it->m_pLibrary = pLib;
-					it->m_bIsExcluded = false;
-					bExist = true;
-				}
-			}
-
-			if (!bExist)
-			{
-				m_explicitLibraries.push_back(SExplicitPluginContainer(pPlugin, pLib, false, string(szBinaryPath)));
-			}
-		}
-	}
-
-	return pLib;
 }
 
-IMonoLibrary* CMonoRuntime::GetLibrary(MonoAssembly* pAssembly)
+void CMonoRuntime::HandleException(MonoObject* pException)
 {
-	for (Libraries::iterator it = m_loadedLibraries.begin(); it != m_loadedLibraries.end(); ++it)
+#if CRY_PLATFORM_WINDOWS && !defined(RELEASE)
+	if (IsDebuggerPresent())
 	{
-		if (((CMonoLibrary*)*it)->GetAssembly() == pAssembly)
+		if (MonoString* pString = mono_object_to_string(pException, nullptr))
 		{
-			return *it;
+			const char* errorMessage = mono_string_to_utf8(pString);
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Handled managed exception with debugger attached:\n%s", errorMessage);
+
+			__debugbreak();
 		}
 	}
-
-	return nullptr;
-}
-
-bool CMonoRuntime::LaunchPluginDomain()
-{
-	if (m_pDomainPlugins)
-	{
-		StopPluginDomain();
-	}
-
-	CRY_ASSERT(m_pDomainPlugins == nullptr);
-
-	m_pDomainPlugins = mono_domain_create_appdomain("CryEngine.Plugins", nullptr);
-	mono_domain_set(m_pDomainPlugins, 1);
-
-#ifndef _RELEASE
-	mono_debug_domain_create(m_pDomainPlugins);
 #endif
 
-	if (m_pDomainPlugins)
-	{
-		m_pLibCommon = LoadLibrary("CryEngine.Common");
-		m_pLibCore = LoadLibrary("CryEngine.Core");
+	void* args[1];
+	args[0] = pException;
 
-		return (m_pLibCommon && m_pLibCore && m_pLibCore->Initialize(m_pDomainPlugins, m_pDomainHandler));
-	}
+	auto pExceptionHandlerClass = m_pLibCore->GetTemporaryClass("CryEngine.Debugging", "ExceptionHandler");
+	CRY_ASSERT(pExceptionHandlerClass != nullptr);
 
-	return false;
-}
-
-bool CMonoRuntime::ReloadPluginDomain()
-{
-	bool bError = !StopPluginDomain();
-	for (ExplicitLibraries::const_iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
-	{
-		if (!it->m_bIsExcluded)
-		{
-			if (!LoadBinary(it->m_binaryPath.c_str()))
-			{
-				bError = true;
-			}
-		}
-	}
-
-	return !bError;
-}
-
-bool CMonoRuntime::StopPluginDomain()
-{
-	if (m_pDomainPlugins)
-	{
-		for (Libraries::const_reverse_iterator it = m_loadedLibraries.rbegin(); it != m_loadedLibraries.rend() - 2; ++it)
-		{
-			(*it)->RunMethod("Shutdown");
-		}
-
-		mono_domain_set(m_pDomainGlobal, 1);
-#ifndef _RELEASE
-		//mono_debug_domain_unload(m_pDomainPlugins);
-#endif
-		mono_domain_unload(m_pDomainPlugins);
-
-		// we remove everything BUT mscorelib, which is hosted by the global app domain
-		while (m_loadedLibraries.size() > 1)
-		{
-			delete m_loadedLibraries.back();
-			m_loadedLibraries.pop_back();
-		}
-
-		CRY_ASSERT(m_loadedLibraries.size() == 1);
-
-		m_pLibCore = nullptr;
-		m_pLibCommon = nullptr;
-		m_pDomainPlugins = nullptr;
-	}
-
-	return true;
-}
-
-bool CMonoRuntime::ExcludePlugin(const char* szBinaryPath)
-{
-	for (ExplicitLibraries::iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
-	{
-		if (!stricmp(it->m_binaryPath.c_str(), szBinaryPath))
-		{
-			it->m_bIsExcluded = true;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-const char* CMonoRuntime::TryGetPlugin(MonoDomain* pDomain, const char* szAssembly)
-{
-	for (Libraries::const_iterator it = m_loadedLibraries.begin(); it != m_loadedLibraries.end(); ++it)
-	{
-		CMonoLibrary* pLib = static_cast<CMonoLibrary*>(*it);
-		if (!pLib)
-		{
-			continue;
-		}
-
-		MonoImage* pImage = mono_assembly_get_image(pLib->GetAssembly());
-		if (!pImage)
-		{
-			continue;
-		}
-
-		MonoMethodDesc* pMethodDesc = mono_method_desc_new("CryEngine.ReflectionHelper:FindPluginInstance()", true);
-		MonoMethod* pMethod = mono_method_desc_search_in_image(pMethodDesc, pImage);
-		if (!pMethod)
-		{
-			continue;
-		}
-
-		void* args[1];
-		args[0] = mono_string_new(pDomain, szAssembly);
-
-		MonoObject* pReturn = mono_runtime_invoke(pMethod, nullptr, args, nullptr);
-		if (!pReturn)
-		{
-			continue;
-		}
-
-		MonoString* pStr = mono_object_to_string(pReturn, nullptr);
-		if (!pStr)
-		{
-			continue;
-		}
-
-		return mono_string_to_utf8(pStr);
-	}
-
-	return nullptr;
+	// Call the static Initialize function
+	pExceptionHandlerClass->InvokeMethod("Display", nullptr, args, 1);
 }

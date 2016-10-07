@@ -118,7 +118,6 @@ class CCryAction :
 
 public:
 	CCryAction();
-	virtual ~CCryAction();
 
 	// IGameFramework
 	void                                  ClearTimers();
@@ -134,13 +133,13 @@ public:
 	virtual void                          RegisterFactory(const char* name, ISaveGame*(*func)(), bool);
 	virtual void                          RegisterFactory(const char* name, ILoadGame*(*func)(), bool);
 
-	virtual bool                          Init(SSystemInitParams& startupParams);
+	virtual bool                          StartEngine(SSystemInitParams& startupParams);
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
-	virtual void                          Shutdown();
+	virtual void                          ShutdownEngine();
+	virtual void                          ShutdownEngineFast();
 	virtual void                          PrePhysicsUpdate() /*override*/;
-	virtual bool                          PreUpdate(bool haveFocus, unsigned int updateFlags);
-	virtual void                          PostUpdate(bool haveFocus, unsigned int updateFlags);
+	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -231,6 +230,8 @@ public:
 
 	virtual bool                          SaveGame(const char* path, bool bQuick = false, bool bForceImmediate = false, ESaveGameReason reason = eSGR_QuickSave, bool ignoreDelay = false, const char* checkpointName = NULL);
 	virtual ELoadGameResult               LoadGame(const char* path, bool quick = false, bool ignoreDelay = false);
+	virtual TSaveGameName                 CreateSaveGameName();
+
 	virtual void                          ScheduleEndLevel(const char* nextLevel = "");
 	virtual void                          ScheduleEndLevelNow(const char* nextLevel);
 
@@ -270,6 +271,9 @@ public:
 	virtual bool                  ShouldMigrateNub(CrySessionHandle sessionHandle);
 
 	virtual ISharedParamsManager* GetISharedParamsManager();
+
+	virtual IGame* GetIGame();
+
 	virtual float                 GetLoadSaveDelay() const { return m_lastSaveLoad; }
 
 	virtual IGameVolumes*         GetIGameVolumesManager() const;
@@ -365,9 +369,19 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
+	bool                    PreUpdate(bool haveFocus, unsigned int updateFlags);
+	int                     Update(bool haveFocus, unsigned int updateFlags);
+	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
+
 private:
 	void InitScriptBinds();
 	void ReleaseScriptBinds();
+
+	bool InitGame(SSystemInitParams& startupParams);
+	bool ShutdownGame();
+
+	int  Run(const char* szAutoStartLevelName);
+
 	void InitForceFeedbackSystem();
 	void InitGameVolumesManager();
 
@@ -607,6 +621,18 @@ private:
 	ESaveGameReason m_delayedSaveGameReason;
 	int             m_delayedSaveCountDown;
 
+	struct SExternalGameLibrary
+	{
+		string dllName;
+		HMODULE dllHandle;
+		IGameStartup* pGameStartup;
+		IGame* pGame;
+
+		SExternalGameLibrary() : dllName(""), dllHandle(0), pGameStartup(nullptr), pGame(nullptr) {}
+		bool IsValid() const { return (dllHandle != 0 && pGameStartup != nullptr && pGame != nullptr); }
+		void Reset() { dllName = ""; dllHandle = 0; pGameStartup = nullptr; pGame = nullptr; }
+	};
+
 	struct SLocalAllocs
 	{
 		string m_delayedSaveGameName;
@@ -655,6 +681,9 @@ private:
 	uint32                  m_PreUpdateTicks;
 
 	CNetMessageDistpatcher* m_pNetMsgDispatcher;
+	SExternalGameLibrary    m_externalGameLibrary;
+
+	CTimeValue              m_levelStartTime;
 };
 
 #endif //__CRYACTION_H__

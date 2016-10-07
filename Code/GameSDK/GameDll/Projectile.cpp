@@ -1388,7 +1388,7 @@ void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 #if !defined(_RELEASE)
 						if (g_pGameCVars->i_debug_projectiles > 2)
 						{
-							IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+							IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 							pDebug->Begin("CProjectile::UpdateWhizSound", true);
 							pDebug->AddCone(soundPos, dir, 0.1f, 1.0f, ColorF(0.0f, 0.0f, 1.0f, 1.0f), 5.0f);
 							pDebug->AddLine(m_last, pos, ColorF(0.0f, 0.0f, 1.0f, 1.0f), 5.0f);
@@ -1905,7 +1905,7 @@ bool CProjectile::CanCollisionsDamageTarget(IEntity* pTarget) const
 	if (pTarget)
 	{
 		bool isOwner = pTarget->GetId() == m_ownerId || pTarget->GetId() == GetEntityId();
-		bool isActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pTarget->GetId()) != 0;
+		bool isActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pTarget->GetId()) != 0;
 		const SCollisionParams* pCollisionParams = m_pAmmoParams->pCollision;
 		return !isOwner && isActor &&
 		       pCollisionParams && ((pCollisionParams->damageScale * pCollisionParams->damageLimit) != 0.0f); // Damage limit or damage scale of 0.0f won't cause any damage, so skip it
@@ -2143,7 +2143,7 @@ bool CProjectile::ProximityDetector_SP(float proxyRadius)
 	query.box.max = proxyCenter + Vec3(proxyRadius, proxyRadius, proxyRadius);
 	gEnv->pEntitySystem->QueryProximity(query);
 
-	CActor* pOwnerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_ownerId));
+	CActor* pOwnerActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(m_ownerId));
 	if (pOwnerActor && pOwnerActor->IsDead())
 		return false;
 

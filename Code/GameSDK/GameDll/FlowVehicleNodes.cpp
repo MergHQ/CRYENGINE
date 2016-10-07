@@ -74,7 +74,7 @@ CFlowVehicleEntityAttachment::CFlowVehicleEntityAttachment(SActivationInfo* pAct
 
 	if (IEntity* pEntity = pActivationInfo->pEntity)
 	{
-		IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+		IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 		assert(pVehicleSystem);
 
 		if (pVehicleSystem->GetVehicle(pEntity->GetId()))
@@ -125,7 +125,7 @@ void CFlowVehicleEntityAttachment::ProcessEvent(EFlowEvent flowEvent, SActivatio
 	{
 		if (IEntity* pEntity = pActivationInfo->pEntity)
 		{
-			IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+			IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 			assert(pVehicleSystem);
 
 			if (pEntity->GetId() != m_vehicleId)
@@ -163,7 +163,7 @@ IVehicle* CFlowVehicleEntityAttachment::GetVehicle()
 	if (!m_vehicleId)
 		return NULL;
 
-	IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	assert(pVehicleSystem);
 
 	return pVehicleSystem->GetVehicle(m_vehicleId);
@@ -175,7 +175,7 @@ CVehicleActionEntityAttachment* CFlowVehicleEntityAttachment::GetVehicleAction()
 	if (!m_vehicleId)
 		return NULL;
 
-	IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	assert(pVehicleSystem);
 
 	if (IVehicle* pVehicle = pVehicleSystem->GetVehicle(m_vehicleId))
@@ -293,7 +293,7 @@ public:
 		}
 
 		IVehicle* pVehicle;
-		pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_entityId);
+		pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_entityId);
 
 		if (pVehicle)
 		{
@@ -309,7 +309,7 @@ public:
 		m_bActive = bActive;
 
 		IVehicle* pVehicle;
-		pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_entityId);
+		pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_entityId);
 
 		if (bActive)
 		{
@@ -352,7 +352,7 @@ public:
 				return;
 
 			IVehicle* pVehicle;
-			pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle || pVehicle->IsDestroyed())
 			{
 				return;
@@ -418,7 +418,7 @@ public:
 			}
 
 			IVehicle* pVehicle;
-			pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle || pVehicle->IsDestroyed())
 			{
 				SetActive(false);
@@ -462,7 +462,7 @@ public:
 		}
 		else if (event == eVE_Hit) // Needed to detect collision in C2 code since above is disabled
 		{
-			IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+			IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 			if (pGameRules)
 			{
 				const int collisionHitType = pGameRules->GetHitTypeId("collision");
@@ -563,7 +563,7 @@ public:
 				if (!pActInfo->pEntity)
 					return;
 
-				pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+				pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 				pVehicle = pVehicleSystem->GetVehicle(pActInfo->pEntity->GetId());
 
 				if (!pVehicleSystem || !pVehicle)
@@ -584,7 +584,7 @@ public:
 
 		case eFE_Update:
 			{
-				pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+				pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 				pVehicle = pVehicleSystem->GetVehicle(pActInfo->pEntity->GetId());
 
 				if (!pVehicleSystem || !pActInfo->pEntity || !pVehicle)
@@ -642,7 +642,7 @@ public:
 
 					for (int i = 0; i < pVehicle->GetWeaponCount(); i++)
 					{
-						IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+						IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 						IWeapon* currentWeapon;
 						EntityId currentEntityId;
 						IItem* pItem;

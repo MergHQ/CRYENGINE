@@ -31,7 +31,7 @@ void CUIGameEvents::InitEventSystem()
 	if (!gEnv->pFlashUI)
 		return;
 
-	m_pGameFramework = gEnv->pGame->GetIGameFramework();
+	m_pGameFramework = gEnv->pGameFramework;
 	m_pLevelSystem = m_pGameFramework ? m_pGameFramework->GetILevelSystem() : NULL;
 
 	assert(m_pLevelSystem && m_pGameFramework);

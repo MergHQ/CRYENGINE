@@ -273,7 +273,7 @@ void CUIHUD3D::SpawnHudEntities()
 		return;
 
 	const char* hudprefab = NULL;
-	IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 	if (pGameRules)
 	{
 		IScriptTable* pTable = pGameRules->GetEntity()->GetScriptTable();

@@ -542,14 +542,18 @@ bool CNetwork::Init(int ncpu)
 	m_cpuCount = ncpu;
 
 	m_gameTime = gEnv->pTimer->GetFrameStartTime();
-	m_pMessageQueueConfig = CMessageQueue::LoadConfig("Scripts/Network/Scheduler.xml");
-	if (!m_pMessageQueueConfig)
+	m_pMessageQueueConfig = CMessageQueue::LoadConfig("Engine/Config/DefaultScripts/Scheduler.xml");
+	CRY_ASSERT(m_pMessageQueueConfig != nullptr);
+
+	const char* gameOverrideXml = "Scripts/Network/Scheduler.xml";
+	if (gEnv->pCryPak->IsFileExist(gameOverrideXml))
 	{
-		const char *msg = "Network Config loading failed: Scripts/Network/Scheduler.xml";
-		// Dedicated won't accept connections at all without scheduler.
-		gEnv->IsDedicated() ? CryFatalError(msg) :
-			CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING, msg);
+		if (XmlNodeRef rootNode = gEnv->pSystem->LoadXmlFromFile(gameOverrideXml))
+		{
+			m_pMessageQueueConfig->Read(rootNode);
+		}
 	}
+
 	m_schedulerVersion = 1;
 
 	if (!m_pResolver)
@@ -1831,21 +1835,6 @@ ISimpleHttpServer* CNetwork::GetSimpleHttpServerSingleton()
 ICryLobby* CNetwork::GetLobby()
 {
 	return gEnv->pLobby;
-}
-
-void CNetwork::ReloadScheduler()
-{
-	ASSERT_GLOBAL_LOCK;
-
-	CMessageQueue::CConfig* old = m_pMessageQueueConfig;
-	m_pMessageQueueConfig = CMessageQueue::LoadConfig(PathUtil::GetGameFolder() + "/Scripts/Network/Scheduler.xml");
-	if (m_pMessageQueueConfig)
-	{
-		CMessageQueue::DestroyConfig(old);
-		m_schedulerVersion++;
-	}
-	else
-		m_pMessageQueueConfig = old;
 }
 
 void CNetwork::SetNetGameInfo(SNetGameInfo info)

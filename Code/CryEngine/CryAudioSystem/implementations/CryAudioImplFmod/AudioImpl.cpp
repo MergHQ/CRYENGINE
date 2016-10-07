@@ -7,6 +7,7 @@
 #include "AudioImplCVars.h"
 #include "ATLEntities.h"
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/CryPath.h>
 
@@ -189,14 +190,13 @@ void CAudioImpl::Update(float const deltaTime)
 ///////////////////////////////////////////////////////////////////////////
 EAudioRequestStatus CAudioImpl::Init()
 {
-	string const gameFolder = PathUtil::GetGameFolder().c_str();
-
-	if (gameFolder.empty())
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - FMOD>: Needs a valid asset folder to proceed!");
 	}
 
-	m_regularSoundBankFolder = gameFolder.c_str();
+	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
 	m_regularSoundBankFolder += FMOD_IMPL_DATA_ROOT;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
@@ -224,7 +224,8 @@ EAudioRequestStatus CAudioImpl::Init()
 	m_fullImplString += " Header: ";
 	m_fullImplString += headerVersion;
 	m_fullImplString += " (";
-	m_fullImplString += gameFolder + CRY_NATIVE_PATH_SEPSTR FMOD_IMPL_DATA_ROOT ")";
+	m_fullImplString += szAssetDirectory;
+	m_fullImplString += CRY_NATIVE_PATH_SEPSTR FMOD_IMPL_DATA_ROOT ")";
 #endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	int sampleRate = 0;

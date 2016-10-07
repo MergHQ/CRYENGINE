@@ -472,9 +472,9 @@ IEntity* CResponseActor::GetLinkedEntity() const
 {
 	if (m_linkedEntityID == INVALID_ENTITYID)  //if no actor exists, we assume it's a virtual speaker (radio, walkie talkie...) and therefore use the client actor
 	{
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+		if (gEnv->pGameFramework)
 		{
-			return gEnv->pGame->GetIGameFramework()->GetClientEntity();
+			return gEnv->pGameFramework->GetClientEntity();
 		}
 		return nullptr;
 	}

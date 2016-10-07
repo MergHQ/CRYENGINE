@@ -346,7 +346,7 @@ void netProfileEndProfile()
 {
 	netProfileSumBits(s_netProfileRoot);
 
-	IGameFramework* pFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pFramework = gEnv->pGameFramework;
 	INetNub* pNub = NULL;
 	int numChannels = 0;
 
@@ -739,18 +739,17 @@ void netProfileTick()
 	}
 
 	s_netProfileNumRemoteClients = 0;
-	IGameFramework* pFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
-	if (pFramework)
+	if (gEnv->pGameFramework)
 	{
 		{
 			INetNub* pNub = NULL;
 			if (gEnv->bServer)
 			{
-				pNub = pFramework->GetServerNetNub();
+				pNub = gEnv->pGameFramework->GetServerNetNub();
 			}
 			else
 			{
-				pNub = pFramework->GetClientNetNub();
+				pNub = gEnv->pGameFramework->GetClientNetNub();
 			}
 
 			if (pNub)

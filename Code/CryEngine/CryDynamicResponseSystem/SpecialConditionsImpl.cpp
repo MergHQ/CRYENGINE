@@ -6,7 +6,6 @@
 #include <CryDynamicResponseSystem/IDynamicResponseCondition.h>
 #include <CryMath/Random.h>
 #include <CryString/StringUtils.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMemory/CrySizer.h>
 #include <CrySerialization/Decorators/Range.h>
@@ -54,7 +53,7 @@ CGameTokenCondition::~CGameTokenCondition()
 {
 	if (m_pCachedToken)
 	{
-		IGameTokenSystem* pGTSys = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+		IGameTokenSystem* pGTSys = gEnv->pGameFramework->GetIGameTokenSystem();
 		if (pGTSys)
 		{
 			pGTSys->UnregisterListener(m_pCachedToken->GetName(), this);
@@ -82,7 +81,17 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_tokenName, "Token", "Token");
 
-	m_pCachedToken = (gEnv->pGame) ? gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem()->FindToken(m_tokenName.c_str()) : nullptr;
+	if (gEnv->pGameFramework)
+	{
+		if (auto* pGameTokenSystem = gEnv->pGameFramework->GetIGameTokenSystem())
+		{
+			m_pCachedToken = pGameTokenSystem->FindToken(m_tokenName.c_str());
+		}
+		else
+			m_pCachedToken = nullptr;
+	}
+	else
+		m_pCachedToken = nullptr;
 
 	if (ar.isEdit() &&
 	    ((m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool) || (ar.isOutput() && (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String)))) //for booleans/strings range-tests would not make much sense
@@ -179,7 +188,7 @@ bool CGameTokenCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
 	if (!m_pCachedToken)
 	{
-		IGameTokenSystem* pGTSys = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+		IGameTokenSystem* pGTSys = gEnv->pGameFramework->GetIGameTokenSystem();
 
 		m_pCachedToken = pGTSys->FindToken(m_tokenName.c_str());
 		if (!m_pCachedToken)

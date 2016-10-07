@@ -29,7 +29,7 @@ void CRenderPipelineProfiler::BeginFrame()
 {
 	m_recordData = IsEnabled();
 
-	if (gEnv->IsEditor() && !gcpRendD3D->m_CurrContext->m_bMainViewport)
+	if (gEnv->IsEditor() && !gcpRendD3D->IsCurrentContextMainVP())
 		m_recordData = false;
 
 	if (!m_recordData)

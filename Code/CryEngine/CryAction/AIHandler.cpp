@@ -1243,7 +1243,7 @@ IActor* CAIHandler::GetActor() const
 	CRY_ASSERT(m_pEntity);
 	if (!m_pEntity)
 		return NULL;
-	IActorSystem* pASystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pASystem = gEnv->pGameFramework->GetIActorSystem();
 	if (!pASystem)
 		return NULL;
 	return pASystem->GetActor(m_pEntity->GetId());

@@ -46,9 +46,6 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed?0:wparam);
-			break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			CTriMesh::CleanupGlobalLoadState();
 			g_pPhysWorlds[0]->SortThunks();

@@ -90,7 +90,7 @@ bool IncreaseResourceMaxLimit(int iResource, rlim_t uMax)
 }
 
 #if defined(_LIB)
-extern "C" DLL_IMPORT IGameStartup* CreateGameStartup();
+extern "C" DLL_IMPORT IGameFramework* CreateGameFramework();
 #endif
 
 size_t fopenwrapper_basedir_maxsize = MAX_PATH;
@@ -470,8 +470,6 @@ int RunGame(const char *commandLine)
 	}
 	LOGI( "system.cfg found in: %s", g_androidPakPath );
 
-	int exitCode = 0;
-
 	size_t uDefStackSize;
 
 	if (!IncreaseResourceMaxLimit(RLIMIT_CORE, RLIM_INFINITY) || !GetDefaultThreadStackSize(&uDefStackSize) ||
@@ -481,7 +479,6 @@ int RunGame(const char *commandLine)
 	SSystemInitParams startupParams;
 	memset(&startupParams, 0, sizeof(SSystemInitParams));
 
-	startupParams.hInstance = 0;
 	cry_strcpy(startupParams.szSystemCmdLine, commandLine);
 #if defined(DEDICATED_SERVER)
 	startupParams.sLogFileName = "Server.log";
@@ -506,61 +503,51 @@ int RunGame(const char *commandLine)
 
 	chdir( androidGetPakPath() );
 
-	HMODULE gameDll = 0;
+	HMODULE frameworkDll = 0;
 
 #ifndef _LIB
-	CEngineConfig engineCfg;
-	// workaround: compute .so name from dll name
-	string dll_name = engineCfg.m_gameDLL.c_str();
-
-	string::size_type extension_pos = dll_name.rfind(".dll");
-	string shared_lib_name = string(CrySharedLibraryPrefix) + dll_name.substr(0, extension_pos) + string(CrySharedLibraryExtension);
-
-	gameDll = CryLoadLibrary(shared_lib_name.c_str());
-	if( !gameDll )
+	frameworkDll = CryLoadLibrary("libCryAction");
+	if (!frameworkDll)
 	{
-		LOGE("ERROR: failed to load GAME DLL (%s)\n", dlerror());
+		LOGE("ERROR: failed to load CryAction! (%s)\n", dlerror());
 		RunGame_EXIT(1);
 	}
+
 	// get address of startup function
-	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(gameDll, "CreateGameStartup");
-	if (!CreateGameStartup)
+	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(frameworkDll, "CreateGameFramework");
+	if (!CreateGameFramework)
 	{
-		// dll is not a compatible game dll
-		CryFreeLibrary(gameDll);
-		LOGE("ERROR: Specified Game DLL is not valid!\n");
+		CryFreeLibrary(frameworkDll);
+		LOGE("ERROR: Specified CryAction library is not valid!\n");
 		RunGame_EXIT(1);
 	}
 #endif //_LIB
 
-	// create the startup interface
-	IGameStartup* pGameStartup = CreateGameStartup();
-
 	const char *const szAutostartLevel
 		= linux_autoload_level[0] ? linux_autoload_level : NULL;
 
-	if (!pGameStartup)
+	// create the startup interface
+	IGameFramework* pFramework = CreateGameFramework();
+	if (!pFramework)
 	{
-		LOGE("ERROR: Failed to create the GameStartup Interface!\n");
+#ifndef _LIB
+		CryFreeLibrary(frameworkDll);
+#endif
+
+		LOGE("ERROR: Failed to create the Game Framework Interface!\n");
 		RunGame_EXIT(1);
 	}
 
-	// run the game
-	IGame *game = pGameStartup->Init(startupParams);
-	if (game)
-	{
-		exitCode = pGameStartup->Run(szAutostartLevel);
-		pGameStartup->Shutdown();
-		pGameStartup = 0;
-		RunGame_EXIT(exitCode);
-	}
+	pFramework->StartEngine(startupParams);
 
-	// if initialization failed, we still need to call shutdown
-	pGameStartup->Shutdown();
-	pGameStartup = 0;
+	// The main engine loop has exited at this point, shut down
+	pFramework->ShutdownEngine();
 
-	fprintf(stderr, "ERROR: Failed to initialize the GameStartup Interface!\n");
-	RunGame_EXIT(exitCode);
+#ifndef LIB
+	CryFreeLibrary(frameworkDll);
+#endif
+
+	RunGame_EXIT(0);
 }
 
 // An unreferenced function.  This function is needed to make sure that

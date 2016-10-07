@@ -19,7 +19,6 @@
 #include <CrySystem/ISystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryGame/IGame.h>
 #include "IViewSystem.h"
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryGame/IGameFramework.h>
@@ -324,11 +323,7 @@ void CRealtimeRemoteUpdateListener::LoadEntities(XmlNodeRef& root)
 	if (bRemoveAllOld)
 	{
 		IEntityItPtr pIt = pEntitySystem->GetEntityIterator();
-
-		if (!gEnv->pGame)
-			return;
-
-		IGameFramework* piGameFramework(gEnv->pGame->GetIGameFramework());
+		IGameFramework* piGameFramework(gEnv->pGameFramework);
 		IEntity* piRulesEntity(NULL);
 		if (piGameFramework)
 		{

@@ -18,7 +18,7 @@ void CViewExtension::Release()
 {
 	GetGameObject()->ReleaseView(this);
 
-	gEnv->pGame->GetIGameFramework()->GetIViewSystem()->RemoveView(m_viewId);
+	gEnv->pGameFramework->GetIViewSystem()->RemoveView(m_viewId);
 	gEnv->pConsole->UnregisterVariable("gamezero_cam_fov", true);
 
 	ISimpleExtension::Release();
@@ -34,7 +34,7 @@ void CViewExtension::PostInit(IGameObject* pGameObject)
 
 void CViewExtension::CreateView()
 {
-	IViewSystem* pViewSystem = gEnv->pGame->GetIGameFramework()->GetIViewSystem();
+	IViewSystem* pViewSystem = gEnv->pGameFramework->GetIViewSystem();
 	IView* pView = pViewSystem->CreateView();
 
 	pView->LinkTo(GetGameObject());

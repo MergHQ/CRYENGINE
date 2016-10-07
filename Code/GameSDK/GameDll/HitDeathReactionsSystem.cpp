@@ -217,7 +217,7 @@ CHitDeathReactionsSystem::SReactionsProfile::~SReactionsProfile()
 {
 	if (timerId)
 	{
-		gEnv->pGame->GetIGameFramework()->RemoveTimer(timerId);
+		gEnv->pGameFramework->RemoveTimer(timerId);
 		timerId = 0;
 	}
 }
@@ -508,7 +508,7 @@ struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<
 	{
 		if (bRequest)
 		{
-			IActor* piActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId);
+			IActor* piActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entityId);
 			if (piActor)
 			{
 				IEntity* pEntity = piActor->GetEntity();
@@ -797,12 +797,12 @@ void CHitDeathReactionsSystem::RequestReactionAnimsForActor(const CActor& actor,
 							// present that means this request is actually neutralizing a previous release
 							if (profile.timerId)
 							{
-								gEnv->pGame->GetIGameFramework()->RemoveTimer(profile.timerId);
+								gEnv->pGameFramework->RemoveTimer(profile.timerId);
 								profile.timerId = 0;
 							}
 							else
 							{
-								profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_REQUEST_TIMER_SECONDS),
+								profile.timerId = gEnv->pGameFramework->AddTimer(CTimeValue(HYSTERESIS_REQUEST_TIMER_SECONDS),
 								                                                             false, functor(*this, &CHitDeathReactionsSystem::OnRequestAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
 							}
 						}
@@ -852,12 +852,12 @@ void CHitDeathReactionsSystem::ReleaseReactionAnimsForActor(const CActor& actor,
 								// present that means this release is actually neutralizing a previous request
 								if (profile.timerId)
 								{
-									gEnv->pGame->GetIGameFramework()->RemoveTimer(profile.timerId);
+									gEnv->pGameFramework->RemoveTimer(profile.timerId);
 									profile.timerId = 0;
 								}
 								else
 								{
-									profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_RELEASE_TIMER_SECONDS),
+									profile.timerId = gEnv->pGameFramework->AddTimer(CTimeValue(HYSTERESIS_RELEASE_TIMER_SECONDS),
 									                                                             false, functor(*this, &CHitDeathReactionsSystem::OnReleaseAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
 								}
 							}
@@ -941,7 +941,7 @@ void CHitDeathReactionsSystem::PreloadActorData(SmartScriptTable pActorPropertie
 	const char* szAnimDatabase = NULL;
 	if (pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
 	{
-		IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 		mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
 	}
 }
@@ -1293,7 +1293,7 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsParams(const CActor& actor, 
 	CRY_ASSERT(pDeathReactions.get());
 	CRY_ASSERT(pCollisionReactions.get());
 
-	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const CTagDefinition* pTagDefinition = mannequinSys.GetAnimationDatabaseManager().LoadTagDefs(MANQ_TAG_FILENAME, true);
 
 	if (pTagDefinition)
@@ -1368,7 +1368,7 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsConfig(const CActor& actor, 
 		const char* szAnimDatabase = NULL;
 		if (pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
 		{
-			IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+			IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 			pHitDeathReactionsConfig->piOptionalAnimationADB = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
 		}
 

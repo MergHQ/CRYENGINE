@@ -263,7 +263,10 @@ public:
 
 private:
 	IActionListener*           m_pActionDelegate;
+
 	IGameObjectView*           m_pViewDelegate;
+	IView*                     m_pView;
+
 	IGameObjectProfileManager* m_pProfileManager;
 
 	uint8                      m_profiles[NUM_ASPECTS];

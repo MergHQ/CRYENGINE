@@ -1634,7 +1634,7 @@ void CWeapon::ProcessAllAccessoryAmmoCapacities(IInventory* pOwnerInventory, boo
 void CWeapon::PickUp(EntityId picker, bool sound, bool select, bool keepHistory, const char* setup)
 {
 	SetOwnerId(picker);
-	if(IsClient() && gEnv->pGame->GetIGameFramework()->GetClientActorId()==picker)
+	if(IsClient() && gEnv->pGameFramework->GetClientActorId()==picker)
 	{
 		if(IEntity* pEntity = GetEntity())
 		{

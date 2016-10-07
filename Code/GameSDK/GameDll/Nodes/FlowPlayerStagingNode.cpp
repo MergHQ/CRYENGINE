@@ -66,7 +66,7 @@ public:
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo, EIP_Target));
 				if (pEntity)
 				{
-					CActor* pPlayerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+					CActor* pPlayerActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 					if (pPlayerActor)
 					{
 						SActorStats* pActorStats = pPlayerActor->GetActorStats();
@@ -84,7 +84,7 @@ public:
 			}
 			if (IsPortActive(pActInfo, EIP_Unlink))
 			{
-				CActor* pPlayerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+				CActor* pPlayerActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 				if (pPlayerActor)
 				{
 					SActorStats* pActorStats = pPlayerActor->GetActorStats();

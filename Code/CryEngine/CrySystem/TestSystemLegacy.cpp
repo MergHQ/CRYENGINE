@@ -7,7 +7,6 @@
 #include <CryEntitySystem/IEntitySystem.h>          // IEntityIt
 #include <CrySystem/IConsole.h>                     // IConsole
 #include <Cry3DEngine/I3DEngine.h>                  // I3DEngine
-#include <CryGame/IGame.h>                          // IGame
 #include <CryGame/IGameFramework.h>                 // IGameFramework
 #include "TestSystemLegacy.h"
 #include "DebugCallStack.h"                 // DebugCallStack
@@ -125,17 +124,15 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 		return;
 	}
 
-	IGame* pGame = gEnv->pGame;
-
 	if (stricmp(m_sParameter.c_str(), "LevelStats") == 0)
-		if (pGame)
+		if (gEnv->pGameFramework)
 		{
 			static CLevelListener listener(*this);
 
 			if (m_bFirstUpdate)
 			{
 				DeactivateCrashDialog();
-				pGame->GetIGameFramework()->GetILevelSystem()->AddListener(&listener);
+				gEnv->pGameFramework->GetILevelSystem()->AddListener(&listener);
 			}
 		}
 
@@ -153,7 +150,7 @@ void CTestSystemLegacy::LogLevelStats()
 	char sVersion[128];
 	ver.ToString(sVersion);
 
-	GetILog()->Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGame->GetIGameFramework()->GetLevelName(), sVersion);
+	GetILog()->Log("   LevelStats Level='%s'   Ver=%s", gEnv->pGameFramework->GetLevelName(), sVersion);
 
 	{
 		// copied from CBudgetingSystem::MonitorSystemMemory
@@ -200,8 +197,6 @@ void CTestSystemLegacy::Update()
 	if (m_sParameter.empty())
 		return;
 
-	IGame* pGame = gEnv->pGame;
-
 	if (m_bFirstUpdate)
 	{
 		if (stricmp(m_sParameter.c_str(), "TimeDemo") == 0)
@@ -229,7 +224,6 @@ void CTestSystemLegacy::BeforeRender()
 	if (m_sParameter.empty())
 		return;
 
-	IGame* pGame = gEnv->pGame;
 	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IRenderer* pRenderer = gEnv->pRenderer;
 

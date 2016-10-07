@@ -551,7 +551,7 @@ bool CFlowNode_FeatureTest::StartNextTestRun()
 		ActivateOutput(&m_actInfo, eOutputPorts_Start, true);
 	}
 
-	CPlayer* pPlayerActor = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer* pPlayerActor = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 	if (pPlayerActor)
 		pPlayerActor->SetThirdPerson(m_running);
 

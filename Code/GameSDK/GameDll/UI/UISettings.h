@@ -43,7 +43,7 @@ struct SNullCVar : public ICVar
 	virtual bool IsConstCVar() const { return 0; }
 
 	virtual void SetOnChangeCallback( ConsoleVarFunc pChangeFunc ){return;}
-	virtual void AddOnChangeFunctor( const SFunctor& pChangeFunctor) {return;}
+	virtual uint64 AddOnChangeFunctor( const SFunctor& pChangeFunctor) {return 0;}
 	virtual bool RemoveOnChangeFunctor(const uint64 nElement) {return true;}
 	virtual uint64 GetNumberOfOnChangeFunctors()const {return 0;}
 	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex)const {static SFunctor oDummy;return oDummy;};

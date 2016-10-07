@@ -308,7 +308,7 @@ void CGameRulesStandardScoring::OnPlayerScoringEventToAllTeamWithInfo(const int 
 	CGameRules::TPlayers::const_iterator  end = teamPlayers.end();
 	for (; it!=end; ++it)
 	{
-		CPlayer  *loopPlr = static_cast< CPlayer* >( gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(*it) );
+		CPlayer  *loopPlr = static_cast< CPlayer* >( gEnv->pGameFramework->GetIActorSystem()->GetActor(*it) );
 		OnPlayerScoringEventWithInfo(loopPlr->GetEntityId(), scoreInfo);
 	}
 }

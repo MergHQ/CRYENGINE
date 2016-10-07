@@ -755,9 +755,9 @@ void CHost::FillHostInfo(CHostInfoPacket& outHostInfo) const
 	outHostInfo.screenWidth = gEnv->pRenderer ? gEnv->pRenderer->GetWidth() : 0;
 	outHostInfo.screenHeight = gEnv->pRenderer ? gEnv->pRenderer->GetHeight() : 0;
 
-	if (gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		ILevelSystem* pSystem = gEnv->pGame->GetIGameFramework()->GetILevelSystem();
+		ILevelSystem* pSystem = gEnv->pGameFramework->GetILevelSystem();
 		if (NULL != pSystem)
 		{
 			ILevel* pLevel = pSystem->GetCurrentLevel();

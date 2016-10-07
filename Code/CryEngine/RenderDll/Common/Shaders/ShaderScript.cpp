@@ -12,7 +12,6 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
 #include "../Common/Shaders/RemoteCompiler.h"
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #if CRY_PLATFORM_WINDOWS

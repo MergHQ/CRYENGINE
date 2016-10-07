@@ -121,12 +121,6 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 int g_iTraceAllocations = 0;
 
 //////////////////////////////////////////////////////////////////////////
-// global random number generator used by cry_random functions
-namespace CryRandom_Internal
-{
-CRndGen g_random_generator;
-}
-//////////////////////////////////////////////////////////////////////////
 
 // If we use cry memory manager this should be also included in every module.
 	#if defined(USING_CRY_MEMORY_MANAGER)
@@ -280,7 +274,7 @@ void CrySetCurrentWorkingDirectory(const char* szWorkingDirectory)
 void CryGetExecutableFolder(unsigned int pathSize, char* szPath)
 {
 	WCHAR filePath[512];
-	size_t nLen = GetModuleFileNameW(GetModuleHandle(NULL), filePath, CRY_ARRAY_COUNT(filePath));
+	size_t nLen = GetModuleFileNameW(CryGetCurrentModule(), filePath, CRY_ARRAY_COUNT(filePath));
 
 	if (nLen >= CRY_ARRAY_COUNT(filePath))
 	{
@@ -395,6 +389,17 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 
 	#endif // CRY_PLATFORM_WINAPI
 
+//////////////////////////////////////////////////////////////////////////
+void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
+{
+	char szEngineRootDir[_MAX_PATH];
+	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
+
+#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
+	CrySetCurrentWorkingDirectory(szEngineRootDir);
+#endif
+}
+
 #if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
 //////////////////////////////////////////////////////////////////////////
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
@@ -450,18 +455,17 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
-{
-	char szEngineRootDir[_MAX_PATH];
-	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
-	CrySetCurrentWorkingDirectory(szEngineRootDir);
-}
 #elif CRY_PLATFORM_ORBIS
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
 	cry_strcpy(szEngineRootPath, engineRootPathSize, ".");
 }
+
+void CryGetExecutableFolder(unsigned int nBufferLength, char* lpBuffer)
+{
+	CryFindEngineRootFolder(nBufferLength, lpBuffer);
+}
+
 #elif CRY_PLATFORM_ANDROID
 
 extern const char*    androidGetPakPath();

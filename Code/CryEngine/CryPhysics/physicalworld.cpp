@@ -3077,8 +3077,9 @@ float CPhysicalWorld::IsAffectedByExplosion(IPhysicalEntity *pobj, Vec3 *impulse
 int CPhysicalWorld::DeformPhysicalEntity(IPhysicalEntity *pient, const Vec3 &ptHit,const Vec3 &dirHit,float r, int flags)
 {
 	// craig - experimental fix: i think the random number in GetExplosionShape() is upsetting things in MP
+	SScopedRandomSeedChange randomSeedChange;
 	if (m_vars.bMultiplayer)
-		cry_random_seed(1234567);
+		randomSeedChange.Seed(1234567);
 
 	int i,bEntChanged,bPartChanged;
 	CPhysicalEntity *pent = (CPhysicalEntity*)pient;

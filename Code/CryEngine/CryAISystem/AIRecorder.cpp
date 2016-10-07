@@ -1008,7 +1008,7 @@ void CAIRecorder::GetCompleteFilename(char const* szFilename, bool bAppendFileCo
 	if (!szFilename || !szFilename[0])
 	{
 		// Use current level
-		szFilename = PathUtil::GetFileName(gEnv->pGame->GetIGameFramework()->GetLevelName());
+		szFilename = PathUtil::GetFileName(gEnv->pGameFramework->GetLevelName());
 	}
 
 	if (!szFilename || !szFilename[0])

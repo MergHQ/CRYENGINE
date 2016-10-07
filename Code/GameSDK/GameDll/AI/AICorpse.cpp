@@ -346,7 +346,7 @@ void CAICorpse::SetupFromSource( IEntity& sourceEntity, ICharacterInstance& char
 	// Moving everything from one slot into another will also clear the render proxies in the source.
 	// Thus, we need to invalidate the model so that it will be properly reloaded when a non-pooled
 	// entity is restored from a save-game.
-	CActor* sourceActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(sourceEntity.GetId()));
+	CActor* sourceActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(sourceEntity.GetId()));
 	if (sourceActor != NULL)
 	{
 		sourceActor->InvalidateCurrentModelName();

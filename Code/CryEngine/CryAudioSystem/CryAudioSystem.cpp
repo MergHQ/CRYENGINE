@@ -47,11 +47,6 @@ public:
 				g_audioMemoryPoolPrimary.Cleanup();
 				break;
 			}
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			{
-				cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-				break;
-			}
 		case ESYSTEM_EVENT_ACTIVATE:
 			{
 				// When Alt+Tabbing out of the application while it's in fullscreen mode
@@ -276,7 +271,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			PrepareAudioSystem(gEnv->pAudioSystem);
 
 			// Then load level specific controls data and preloads.
-			string const levelName = PathUtil::GetFileName(gEnv->pGame->GetIGameFramework()->GetLevelName());
+			string const levelName = PathUtil::GetFileName(gEnv->pGameFramework->GetLevelName());
 
 			if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
 			{
@@ -304,32 +299,25 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			}
 
 			// Then adjust the listener transformation to the active view's transformation.
-			IGame* const pIGame = gEnv->pGame;
-
-			if (pIGame != nullptr)
+			if (gEnv->pGameFramework != nullptr)
 			{
-				IGameFramework* const pIGameFramework = pIGame->GetIGameFramework();
+				IViewSystem* const pIViewSystem = gEnv->pGameFramework->GetIViewSystem();
 
-				if (pIGameFramework != nullptr)
+				if (pIViewSystem != nullptr)
 				{
-					IViewSystem* const pIViewSystem = pIGameFramework->GetIViewSystem();
+					IView* const pActiveView = pIViewSystem->GetActiveView();
 
-					if (pIViewSystem != nullptr)
+					if (pActiveView != nullptr)
 					{
-						IView* const pActiveView = pIViewSystem->GetActiveView();
+						EntityId const id = pActiveView->GetLinkedId();
+						IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(id);
 
-						if (pActiveView != nullptr)
+						if (pIEntity != nullptr)
 						{
-							EntityId const id = pActiveView->GetLinkedId();
-							IEntity const* pIEntity = gEnv->pEntitySystem->GetEntity(id);
+							SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData4(pIEntity->GetWorldTM());
+							request.pData = &requestData4;
 
-							if (pIEntity != nullptr)
-							{
-								SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData4(pIEntity->GetWorldTM());
-								request.pData = &requestData4;
-
-								gEnv->pAudioSystem->PushRequest(request);
-							}
+							gEnv->pAudioSystem->PushRequest(request);
 						}
 					}
 				}

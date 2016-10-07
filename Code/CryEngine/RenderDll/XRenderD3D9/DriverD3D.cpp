@@ -2018,7 +2018,7 @@ void CD3D9Renderer::CaptureFrameBuffer()
 
 void CD3D9Renderer::ResolveSupersampledBackbuffer()
 {
-	if (IsEditorMode() && (m_CurrContext->m_nSSSamplesX <= 1 || m_CurrContext->m_nSSSamplesY <= 1))
+	if (IsEditorMode() && (!m_CurrContext || (m_CurrContext->m_nSSSamplesX <= 1 || m_CurrContext->m_nSSSamplesY <= 1)))
 		return;
 
 	PROFILE_LABEL_SCOPE("RESOLVE_SUPERSAMPLED");
@@ -2051,7 +2051,7 @@ void CD3D9Renderer::ResolveSupersampledBackbuffer()
 
 void CD3D9Renderer::ScaleBackbufferToViewport()
 {
-	if (m_CurrContext->m_nSSSamplesX > 1 || m_CurrContext->m_nSSSamplesY > 1)
+	if (m_CurrContext && (m_CurrContext->m_nSSSamplesX > 1 || m_CurrContext->m_nSSSamplesY > 1))
 	{
 		PROFILE_LABEL_SCOPE("STRETCH_TO_VIEWPORT");
 
@@ -3319,7 +3319,7 @@ void CD3D9Renderer::RenderDebug(bool bRenderStats)
 
 void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 {
-	if (gEnv->IsEditor() && !m_CurrContext->m_bMainViewport)
+	if (gEnv->IsEditor() && !IsCurrentContextMainVP())
 		return;
 
 	if (m_bDeviceLost)
@@ -4355,7 +4355,7 @@ void CD3D9Renderer::RT_EndFrame()
 			ClientRect.right = m_CurrContext->m_Width;
 			ClientRect.bottom = m_CurrContext->m_Height;
 			//hReturn = m_pSwapChain->Present(0, dwFlags);
-			if (m_CurrContext->m_pSwapChain)
+			if (m_CurrContext && m_CurrContext->m_pSwapChain)
 			{
 				hReturn = m_CurrContext->m_pSwapChain->Present(0, dwFlags);
 				if (hReturn == DXGI_ERROR_INVALID_CALL)
@@ -5646,7 +5646,7 @@ bool CD3D9Renderer::RayIntersectMesh(IRenderMesh* pMesh, const Ray& ray, Vec3& h
 
 int CD3D9Renderer::RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* pUOut, float* pVOut)
 {
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 
 	// Setup ray + optionally skip 1 entity
 	ray_hit rayHit;

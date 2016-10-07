@@ -1,12 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
 using CryEngine.Attributes;
+using System;
 
 namespace CryEngine.EntitySystem
 {
 	/// <summary>
-	/// Allows you to provide (Sandbox-relevant) metadata for CESharp entity classes. Only used for types inheriting from 'BaseEntity'
+	/// Allows you to provide (Sandbox-relevant) metadata for CESharp entity classes. Only used for types inheriting from 'Entity'
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 	public sealed class EntityClassAttribute : Attribute
@@ -35,7 +35,7 @@ namespace CryEngine.EntitySystem
 		/// <summary>
 		/// Helper function to determine if any custom Sandbox info has been set.
 		/// </summary>
-		public bool HasEditorInfo { get { return !(String.IsNullOrEmpty(EditorPath) && String.IsNullOrEmpty(Helper) && String.IsNullOrEmpty(Icon)); }}
+		public bool HasEditorInfo { get { return !(String.IsNullOrEmpty(EditorPath) && String.IsNullOrEmpty(Helper) && String.IsNullOrEmpty(Icon)); } }
 		#endregion
 
 		#region Constructors
@@ -194,5 +194,14 @@ namespace CryEngine.EntitySystem
 			Default = defaultValue;
 		}
 		#endregion
+	}
+
+	/// <summary>
+	/// Attribute indicating that an entity represents a player
+	/// This is used to automatically spawn entities when clients connect
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+	public sealed class PlayerEntityAttribute : Attribute
+	{
 	}
 }

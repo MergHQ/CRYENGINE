@@ -74,7 +74,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	assert(m_pGameFramework);
 	m_pGameplayRecorder = m_pGameFramework->GetIGameplayRecorder();
 	assert(m_pGameplayRecorder);
-	m_pActorSys = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	m_pActorSys = gEnv->pGameFramework->GetIActorSystem();
 	assert(m_pActorSys);
 
 	bool  boo;

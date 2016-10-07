@@ -55,7 +55,7 @@ void CHUDEventTranslator::Clear( void )
 {
 	CHUDEventDispatcher::RemoveHUDEventListener(this);
 
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->UnregisterListener(this);
+	gEnv->pGameFramework->GetIItemSystem()->UnregisterListener(this);
 
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	if(pGameRules)
@@ -66,7 +66,7 @@ void CHUDEventTranslator::Clear( void )
 
 	UnsubscribeWeapon(m_currentWeapon);
 
-	CPlayer* pPlayer = (CPlayer*)gEnv->pGame->GetIGameFramework()->GetClientActor();
+	CPlayer* pPlayer = (CPlayer*)gEnv->pGameFramework->GetClientActor();
 	if(pPlayer)
 	{
 		pPlayer->UnregisterPlayerEventListener(this);
@@ -76,10 +76,10 @@ void CHUDEventTranslator::Clear( void )
 			pInventory->RemoveListener(this);
 	}
 
-	gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->UnregisterVehicleUsageEventListener(m_currentActor, this);
+	gEnv->pGameFramework->GetIVehicleSystem()->UnregisterVehicleUsageEventListener(m_currentActor, this);
 	if(m_currentVehicle)
 	{
-		IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_currentVehicle);
+		IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_currentVehicle);
 		if(pVehicle)
 		{
 			pVehicle->UnregisterVehicleEventListener(this);
@@ -91,7 +91,7 @@ void CHUDEventTranslator::Clear( void )
 
 void CHUDEventTranslator::OnSetActorItem(IActor *pActor, IItem *pItem)
 {
-	if(!pActor || pActor->GetEntityId() != gEnv->pGame->GetIGameFramework()->GetClientActorId())
+	if(!pActor || pActor->GetEntityId() != gEnv->pGameFramework->GetClientActorId())
 		return;
 
 	if(m_currentWeapon)
@@ -153,7 +153,7 @@ void CHUDEventTranslator::OnAddAccessory(IEntityClass* pAccessoryClass)
 
 void CHUDEventTranslator::OnHit(const HitInfo& hitInfo)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != hitInfo.shooterId && clientId != hitInfo.targetId)
 		return;
 
@@ -170,7 +170,7 @@ void CHUDEventTranslator::OnHit(const HitInfo& hitInfo)
 
 void CHUDEventTranslator::OnStartReload(IWeapon *pWeapon, EntityId shooterId, IEntityClass* pAmmoType)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != shooterId)
 		return;
 
@@ -182,7 +182,7 @@ void CHUDEventTranslator::OnStartReload(IWeapon *pWeapon, EntityId shooterId, IE
 
 void CHUDEventTranslator::OnEndReload(IWeapon *pWeapon, EntityId shooterId, IEntityClass* pAmmoType)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != shooterId)
 		return;
 
@@ -195,7 +195,7 @@ void CHUDEventTranslator::OnEndReload(IWeapon *pWeapon, EntityId shooterId, IEnt
 
 void CHUDEventTranslator::OnSetAmmoCount(IWeapon *pWeapon, EntityId shooterId)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != shooterId)
 		return;
 
@@ -223,7 +223,7 @@ void CHUDEventTranslator::OnDeath(IActor* pActor, bool bIsGod)
 	// countdown when they shouldn't
 	if (!gEnv->bMultiplayer)
 	{
-		EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		if( clientId == pActor->GetEntityId() )
 		{
 			CHUDEventDispatcher::CallEvent(SHUDEvent( eHUDEvent_OnLocalPlayerDeath ));
@@ -233,7 +233,7 @@ void CHUDEventTranslator::OnDeath(IActor* pActor, bool bIsGod)
 
 void CHUDEventTranslator::OnEntityKilled(const HitInfo &hitInfo)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	const bool clientDeath = (clientId == hitInfo.targetId);
 	const bool suicide = (hitInfo.shooterId == hitInfo.targetId);
 	if(clientDeath && !suicide)
@@ -253,7 +253,7 @@ void CHUDEventTranslator::OnEntityKilled(const HitInfo &hitInfo)
 
 void CHUDEventTranslator::OnHealthChanged(IActor* pActor, float newHealth)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != pActor->GetEntityId() )
 		return;
 
@@ -267,7 +267,7 @@ void CHUDEventTranslator::OnHealthChanged(IActor* pActor, float newHealth)
 
 void CHUDEventTranslator::OnItemPickedUp(IActor* pActor, EntityId itemId)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId != pActor->GetEntityId() )
 		return;
 
@@ -290,7 +290,7 @@ void CHUDEventTranslator::SubscribeWeapon(EntityId weapon)
 {
 	if(weapon)
 	{
-		IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weapon);
+		IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weapon);
 		if(pItem)
 		{
 			IWeapon* pWeapon = pItem->GetIWeapon();
@@ -310,7 +310,7 @@ void CHUDEventTranslator::UnsubscribeWeapon(EntityId weapon)
 {
 	if(weapon)
 	{
-		IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weapon);
+		IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weapon);
 		if(pItem)
 		{
 			IWeapon* pWeapon = pItem->GetIWeapon();
@@ -360,7 +360,7 @@ void CHUDEventTranslator::OnEndUse(const EntityId playerId, IVehicle* pVehicle)
 		UnsubscribeWeapon(m_currentWeapon);
 
 		//check for detached vehicle weapons, weapon won't be set again when leaving the vehicle with the weapon
-		IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 		if(pLocalActor) 
 		{
 			IItem* pItem = pLocalActor->GetCurrentItem();
@@ -472,7 +472,7 @@ void CHUDEventTranslator::OnHUDEvent( const SHUDEvent& event )
 
 void CHUDEventTranslator::OnInitGameRules( void )
 {
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->RegisterListener(this);
+	gEnv->pGameFramework->GetIItemSystem()->RegisterListener(this);
 
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	if(pGameRules)
@@ -484,7 +484,7 @@ void CHUDEventTranslator::OnInitGameRules( void )
 
 void CHUDEventTranslator::OnInitLocalPlayer( void )
 {
-	IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 	// May be called from HUD reload, before player is ready; in 
 	// which case this will be called when the player _is_ ready.
 	if(!pLocalActor) 
@@ -503,15 +503,15 @@ void CHUDEventTranslator::OnInitLocalPlayer( void )
 	if (pInventory)
 		pInventory->AddListener(this);
 
-	EntityId currentActor = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId currentActor = gEnv->pGameFramework->GetClientActorId();
 	if(m_currentActor && m_currentActor!=currentActor)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->UnregisterVehicleUsageEventListener(m_currentActor, this);
+		gEnv->pGameFramework->GetIVehicleSystem()->UnregisterVehicleUsageEventListener(m_currentActor, this);
 	}
 	
 	m_currentActor = currentActor;
 
-	gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->RegisterVehicleUsageEventListener( currentActor, this );
+	gEnv->pGameFramework->GetIVehicleSystem()->RegisterVehicleUsageEventListener( currentActor, this );
 
 	IVehicle* pLinkedVehicle = pLocalPlayer->GetLinkedVehicle();
 	if(pLinkedVehicle)

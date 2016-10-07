@@ -97,7 +97,7 @@ IItem* CPlayerRotation::GetCurrentItem(bool includeVehicle)
 	{
 		if (EntityId weaponId = pVehicle->GetCurrentWeaponId(m_player.GetEntity()->GetId())) 
 		{
-			if (IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId))    
+			if (IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId))    
 			{
 				if (IWeapon* pWeapon = pItem->GetIWeapon())
 				{

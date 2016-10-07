@@ -224,7 +224,7 @@ public:
 			{
 				if (InputEntityIsLocalPlayer(pActInfo))
 				{
-					IForceFeedbackSystem* pForceFeedback = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+					IForceFeedbackSystem* pForceFeedback = gEnv->pGameFramework->GetIForceFeedbackSystem();
 
 					if (IsPortActive(pActInfo, eIP_Play))
 					{
@@ -307,7 +307,7 @@ public:
 
 		case eFE_Update:
 			{
-				IForceFeedbackSystem* pForceFeedback = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+				IForceFeedbackSystem* pForceFeedback = gEnv->pGameFramework->GetIForceFeedbackSystem();
 				if (pForceFeedback)
 				{
 					pForceFeedback->AddFrameCustomForceFeedback(GetPortFloat(pActInfo, eIP_HighPassMultiplier), GetPortFloat(pActInfo, eIP_LowPassMultiplier));

@@ -8,6 +8,7 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 #include <CryAudio/IAudioSystem.h>
+#include <CrySystem/IProjectManager.h>
 
 // SDL Mixer
 #include <SDL_mixer.h>
@@ -50,16 +51,15 @@ void OnStandaloneFileFinished(AudioStandaloneFileId const filesInstanceId, const
 CAudioImpl::CAudioImpl()
 	: m_pCVarFileExtension(nullptr)
 {
-	m_gameFolder = PathUtil::GetGameFolder();
-
-	if (m_gameFolder.empty())
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio - SDLMixer>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - SDLMixer>: Needs a valid asset folder to proceed!");
 	}
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	m_fullImplString = "SDL Mixer 2.0.1 (";
-	m_fullImplString += m_gameFolder + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
+	m_fullImplString += szAssetDirectory + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
 #endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #if CRY_PLATFORM_WINDOWS
@@ -445,7 +445,7 @@ void CAudioImpl::DeleteAudioFileEntry(IAudioFileEntry* const pOldAudioFileEntry)
 char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pFileEntryInfo)
 {
 	static CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> s_path;
-	s_path = m_gameFolder.c_str();
+	s_path = PathUtil::GetGameFolder().c_str();
 	s_path += s_szSDLSoundLibraryPath;
 
 	return s_path.c_str();

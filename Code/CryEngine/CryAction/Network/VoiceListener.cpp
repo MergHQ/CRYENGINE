@@ -184,7 +184,7 @@ void CVoiceListener::UpdateSound3dPan()
 	//	assume players are far apart always
 
 	Vec3 sourcePos = GetEntity()->GetWorldPos();
-	IActor* playerActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* playerActor = gEnv->pGameFramework->GetClientActor();
 	if (playerActor)
 	{
 		//    Vec3 playerPos = playerActor->GetEntity()->GetWorldPos();

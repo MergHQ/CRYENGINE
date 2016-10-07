@@ -452,7 +452,7 @@ bool CGameRulesSPDamageHandling::SvOnHitScaled(const HitInfo& hitInfo)
 					if (aiActor && shooter != pVictimEntity && !aiActor->CanDamageTarget(pVictimEntity->GetAI()))
 					{
 #ifndef _RELEASE
-						if (pVictimEntity->GetId() == gEnv->pGame->GetIGameFramework()->GetClientActorId())
+						if (pVictimEntity->GetId() == gEnv->pGameFramework->GetClientActorId())
 							m_fakeHits.push_back(FakeHitDebug(gEnv->pTimer->GetFrameStartTime()));
 #endif
 						modifiedHitInfo.damage = 1.0f;

@@ -42,7 +42,7 @@ CVehicleMountedWeapon::CVehicleMountedWeapon()
 //------------------------------------------------------------------------
 void CVehicleMountedWeapon::StartUse(EntityId userId)
 {
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!IsRippingOff() && pVehicle)
 	{ 
 		m_pOwnerSeat = pVehicle->GetWeaponParentSeat(GetEntityId());
@@ -110,7 +110,7 @@ void CVehicleMountedWeapon::Update( SEntityUpdateContext& ctx, int update)
 //------------------------------------------------------------------------
 void CVehicleMountedWeapon::CorrectRipperEntityPosition(float timeStep)
 {
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if(pVehicle)
 	{
 		const IEntity* pVehicleEnt = pVehicle->GetEntity();
@@ -167,7 +167,7 @@ void CVehicleMountedWeapon::CorrectRipperEntityPosition(float timeStep)
 //------------------------------------------------------------------------
 bool CVehicleMountedWeapon::CheckWaterLevel() const
 {
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!pVehicle)
 		return true;
 
@@ -196,7 +196,7 @@ void CVehicleMountedWeapon::SetAmmoCount(IEntityClass* pAmmoType, int count)
 void CVehicleMountedWeapon::SetInventoryAmmoCount(IEntityClass* pAmmoType, int count)
 {
  	IActor* pOwner = GetOwnerActor();
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 
 	if (pVehicle && pOwner && !pOwner->IsPlayer())
 	{
@@ -213,7 +213,7 @@ bool CVehicleMountedWeapon::CanZoom() const
 	if (!CHeavyMountedWeapon::CanZoom())
 		return false;
 
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if(pVehicle && !IsRippedOff())
 	{
 		if (m_pSeatUser != m_pOwnerSeat)
@@ -256,11 +256,11 @@ void CVehicleMountedWeapon::PostSerialize()
 //----------------------------------------------------------------------
 void CVehicleMountedWeapon::PerformRipOff(CActor* pOwner)
 {
-	IActionMapManager* pMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+	IActionMapManager* pMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	assert(pMapManager);
 	pMapManager->EnableActionMap("vehicle_general", false);
 
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if(pVehicle)
 	{
 		SVehicleEventParams params;
@@ -320,7 +320,7 @@ bool CVehicleMountedWeapon::CanUse( EntityId userId ) const
 		return false;
 	}
 
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 
 	//Ask the owning vehicle if we can use it
 	if (!IsRippingOff() && pVehicle)
@@ -337,10 +337,10 @@ bool CVehicleMountedWeapon::CanUse( EntityId userId ) const
 
 void CVehicleMountedWeapon::Use( EntityId userId )
 {
-	IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!IsRippingOff() && pVehicle)
 	{ 
-		IActor* pUserActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(userId);
+		IActor* pUserActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(userId);
 		if(pUserActor && pUserActor->IsPlayer())
 		{
 			CPlayer* pPlayer = static_cast<CPlayer*>(pUserActor);

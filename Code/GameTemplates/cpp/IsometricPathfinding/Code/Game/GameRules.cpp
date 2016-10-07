@@ -5,12 +5,10 @@
 #include "StdAfx.h"
 #include "GameRules.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 #include "Player/Player.h"
 #include "Entities/Gameplay/SpawnPoint.h"
-
-#include "FlowNodes/Helpers/FlowGameEntityNode.h"
 
 #include <IActorSystem.h>
 
@@ -19,17 +17,15 @@ class CRulesRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CGameRules>("GameRules");
-
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		CGamePlugin::RegisterEntityWithDefaultComponent<CGameRules>("GameRules");
 
 		// Get the default game rules name
 		// Note that this is not necessary, feel free to replace your game rules name with a custom string here
 		// It is possible to have multiple game rules implementations registered.
 		ICVar *pDefaultGameRulesVar = gEnv->pConsole->GetCVar("sv_gamerulesdefault");
 
-		pGameFramework->GetIGameRulesSystem()->RegisterGameRules(pDefaultGameRulesVar->GetString(), "GameRules");
-		pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias(pDefaultGameRulesVar->GetString(), pDefaultGameRulesVar->GetString());
+		gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules(pDefaultGameRulesVar->GetString(), "GameRules");
+		gEnv->pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias(pDefaultGameRulesVar->GetString(), pDefaultGameRulesVar->GetString());
 	}
 };
 
@@ -37,7 +33,7 @@ CRulesRegistrator g_gameRulesRegistrator;
 
 CGameRules::~CGameRules()
 {
-	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
+	gEnv->pGameFramework->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
 }
 
 bool CGameRules::Init(IGameObject *pGameObject)
@@ -47,14 +43,14 @@ bool CGameRules::Init(IGameObject *pGameObject)
 	if (!pGameObject->BindToNetwork())
 		return false;
 
-	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(this);
+	gEnv->pGameFramework->GetIGameRulesSystem()->SetCurrentGameRules(this);
 
 	return true;
 }
 
 bool CGameRules::OnClientConnect(int channelId, bool isReset)
 {
-	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	
 	// Called when a new client connects to the server
 	// Occurs during level load for the local player
@@ -64,7 +60,7 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 
 void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, const char *desc, bool keepClient)
 {
-	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	if(IActor *pActor = pActorSystem->GetActorByChannelId(channelId))
 	{
 		pActorSystem->RemoveActor(pActor->GetEntityId());
@@ -73,7 +69,7 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
-	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 	if (auto *pActor = pActorSystem->GetActorByChannelId(channelId))
 	{

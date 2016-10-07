@@ -316,8 +316,8 @@ public:
 	virtual const sUpdateTimes*  GetUpdateTimeStats(uint32&, uint32&) override;
 	virtual void                 FillRandomMT(uint32* pOutWords, uint32 numWords) override;
 
-	IGame*                       GetIGame() override            { return m_env.pGame; }
-	IGameFramework*              GetIGameFramework() override   { return m_env.pGameFramework; }
+	virtual CRndGen& GetRandomGenerator() override { return m_randomGenerator; }
+
 	INetwork*                    GetINetwork() override         { return m_env.pNetwork; }
 	IRenderer*                   GetIRenderer() override        { return m_env.pRenderer; }
 	IInput*                      GetIInput() override           { return m_env.pInput; }
@@ -357,6 +357,7 @@ public:
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
 	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem; }
 	ICryPluginManager*           GetIPluginManager() override         { return m_pPluginManager; }
+	IProjectManager*             GetIProjectManager() override;
 
 	IResourceManager*            GetIResourceManager() override;
 	ITextModeConsole*            GetITextModeConsole() override;
@@ -384,8 +385,6 @@ public:
 		return m_pProgressListener;
 	};
 
-	void         SetIGame(IGame* pGame) override                                                { m_env.pGame = pGame; }
-	void         SetIGameFramework(IGameFramework* pGameFramework) override                     { m_env.pGameFramework = pGameFramework; }
 	void         SetIFlowSystem(IFlowSystem* pFlowSystem) override                              { m_env.pFlowSystem = pFlowSystem; }
 	void         SetIDialogSystem(IDialogSystem* pDialogSystem) override                        { m_env.pDialogSystem = pDialogSystem; }
 	void         SetIDynamicResponseSystem(DRS::IDynamicResponseSystem* pDynamicResponseSystem) { m_env.pDynamicResponseSystem = pDynamicResponseSystem; }
@@ -461,8 +460,6 @@ public:
 	virtual ESystemConfigSpec GetConfigSpec(bool bClient = true) override;
 	virtual void              SetConfigSpec(ESystemConfigSpec spec, bool bClient) override;
 	virtual ESystemConfigSpec GetMaxConfigSpec() const override;
-
-	void                      LoadProjectConfiguration();
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual int        SetThreadState(ESubsystem subsys, bool bActive) override;
@@ -536,7 +533,7 @@ private:
 	bool InitInput();
 
 	bool InitConsole();
-	bool InitRenderer(WIN_HINSTANCE hinst, WIN_HWND hwnd);
+	bool InitRenderer(WIN_HWND hwnd);
 	bool InitPhysics();
 	bool InitPhysicsRenderer();
 
@@ -597,6 +594,7 @@ private:
 	bool        ReLaunchMediaCenter();
 	void        LogSystemInfo();
 	void        UpdateAudioSystems();
+	void        PrePhysicsUpdate();
 
 	// recursive
 	// Arguments:
@@ -868,7 +866,6 @@ private: // ------------------------------------------------------
 #endif // defined(CVARS_WHITELIST)
 
 	WIN_HWND      m_hWnd;
-	WIN_HINSTANCE m_hInst;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered
@@ -918,6 +915,9 @@ private: // ------------------------------------------------------
 	// MT random generator
 	CryCriticalSection m_mtLock;
 	CMTRand_int32*     m_pMtState;
+
+	// The random generator used by the engine and all its modules
+	CRndGen            m_randomGenerator;
 
 public:
 	//! Pointer to the download manager
@@ -1020,6 +1020,7 @@ protected: // -------------------------------------------------------------
 	ITextModeConsole*                         m_pTextModeConsole;
 	INotificationNetwork*                     m_pNotificationNetwork;
 	CCryPluginManager*                        m_pPluginManager;
+	class CProjectManager*                    m_pProjectManager;
 
 	string                                    m_binariesDir;
 	string                                    m_currentLanguageAudio;

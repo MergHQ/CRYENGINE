@@ -4,7 +4,7 @@
 #ifdef INCLUDE_VR_RENDERING
 
 	#include <CrySystem/VR/IHMDDevice.h>
-	#include <../CryPlugins/CryOSVR/Interface/IHmdOSVRDevice.h>
+	#include <../CryPlugins/VR/CryOSVR/Interface/IHmdOSVRDevice.h>
 	#include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;

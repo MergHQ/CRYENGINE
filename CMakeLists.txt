@@ -51,8 +51,6 @@ endif ()
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
 
 if(WIN32)
-	set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
-
 	if (NOT METADATA_COMPANY)
 		set(METADATA_COMPANY "Crytek GmbH")
 	endif()
@@ -106,9 +104,9 @@ option(EXTENSION_CRYLOBBY "Enable CryLobby" ON)
 
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
-option(PLUGIN_OCULUSPLUGIN "Oculus support" ON)
-option(PLUGIN_OPENVRPLUGIN "OpenVR support" ON)
-option(PLUGIN_OSVRPLUGIN "OSVR support" ON)
+option(PLUGIN_VR_OCULUS "Oculus support" ON)
+option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+option(PLUGIN_VR_OSVR "OSVR support" ON)
 
 if(WIN32 OR WIN64)
 	option(OPTION_CRYMONO "C# support" OFF)
@@ -339,6 +337,9 @@ if (WIN32)
 	#add_subdirectory(Code/CryExtensions/GameStream)
 endif (WIN32)
 
+# Mandatory plugin, contains entities required by the engine
+add_subdirectory(Code/CryPlugins/CryDefaultEntities/Module)
+
 # CryExtensions
 if (EXTENSION_CRYDESCRIPTOR)
 	#add_subdirectory(Code/CryExtensions/CryDescriptor)
@@ -365,14 +366,14 @@ if (PLUGIN_FPS)
 	add_subdirectory(Code/CryPlugins/CryFramesPerSecond/Module)
 endif()
 # VR plugins
-if (PLUGIN_OCULUS)
-	add_subdirectory(Code/CryPlugins/CryOculusVR/Module)
+if (PLUGIN_VR_OCULUS)
+	add_subdirectory(Code/CryPlugins/VR/CryOculusVR/Module)
 endif()
-if (PLUGIN_OPENVR)	
-	add_subdirectory(Code/CryPlugins/CryOpenVR/Module)
+if (PLUGIN_VR_OPENVR)	
+	add_subdirectory(Code/CryPlugins/VR/CryOpenVR/Module)
 endif()	
-if (PLUGIN_OSVR)	
-	add_subdirectory(Code/CryPlugins/CryOSVR/Module)
+if (PLUGIN_VR_OSVR)	
+	add_subdirectory(Code/CryPlugins/VR/CryOSVR/Module)
 endif()
 
 add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11

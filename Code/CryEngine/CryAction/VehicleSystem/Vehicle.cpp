@@ -395,16 +395,20 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	    || s_normalHitTypeId == 0 || s_fireHitTypeId == 0 || s_punishHitTypeId == 0)
 	{
 		IGameRules* pGR = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-		s_repairHitTypeId = pGR->GetHitTypeId("repair");
-		s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
-		s_collisionHitTypeId = pGR->GetHitTypeId("collision");
-		s_normalHitTypeId = pGR->GetHitTypeId("normal");
-		s_fireHitTypeId = pGR->GetHitTypeId("fire");
-		s_punishHitTypeId = pGR->GetHitTypeId("punish");
-		s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
+		if (pGR)
+		{
+			s_repairHitTypeId = pGR->GetHitTypeId("repair");
+			s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
+			s_collisionHitTypeId = pGR->GetHitTypeId("collision");
+			s_normalHitTypeId = pGR->GetHitTypeId("normal");
+			s_fireHitTypeId = pGR->GetHitTypeId("fire");
+			s_punishHitTypeId = pGR->GetHitTypeId("punish");
+			s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
 
-		assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
-		       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
+				&& s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+		}
+		CRY_ASSERT_MESSAGE(pGR, "No valid game rules set!");
 	}
 
 	if (gEnv->bMultiplayer && (CCryActionCVars::Get().g_multiplayerEnableVehicles == 0))
@@ -1119,13 +1123,13 @@ void CVehicle::SetAmmoCount(IEntityClass* pAmmoType, int amount)
 		// then trigger a reload
 		if (oldAmount == 0 && amount != 0 && gEnv->IsClient())
 		{
-			if (IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem())
+			if (IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem())
 			{
 				int weaponCount = GetWeaponCount();
 				for (int i = 0; i < weaponCount; ++i)
 				{
 					IItem* pItem = pItemSystem->GetItem(GetWeaponId(i));
-					if (pItem && pItem->GetOwnerId() == gEnv->pGame->GetIGameFramework()->GetClientActorId())
+					if (pItem && pItem->GetOwnerId() == gEnv->pGameFramework->GetClientActorId())
 					{
 						if (IWeapon* pWeapon = pItem->GetIWeapon())
 						{
@@ -1582,7 +1586,7 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 
 			if (m_hasAuthority && !gEnv->bServer && VehicleCVars().v_serverControlled && VehicleCVars().v_clientPredict)
 			{
-				const INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetClientChannel();
+				const INetChannel* pNetChannel = gEnv->pGameFramework->GetClientChannel();
 				if (pNetChannel)
 				{
 					m_smoothedPing = pNetChannel->GetPing(true);
@@ -4902,7 +4906,7 @@ void CVehicle::CheckFlippedStatus(const float deltaTime)
 			IVehicleSeat* pSeat = it->second;
 			if (pSeat && pSeat->GetPassenger())
 			{
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 				if (pActor && !pActor->IsPlayer())
 				{
 					ai = true;
@@ -4981,7 +4985,7 @@ void CVehicle::ProcessFlipped()
 		IVehicleSeat* pSeat = it->second;
 		if (pSeat && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && !pActor->IsPlayer())
 			{
 				ai = true;
@@ -4995,11 +4999,11 @@ void CVehicle::ProcessFlipped()
 		// if AI guys inside, we blow up in any case
 		// if not, we only blow up if no players are around
 		const float r = VehicleCVars().v_FlippedExplosionPlayerMinDistance;
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 		if (!gEnv->bMultiplayer)
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			IActor* pActor = gEnv->pGameFramework->GetClientActor();
 			if (pActor)
 			{
 				float distSq = pActor->GetEntity()->GetWorldPos().GetSquaredDistance(worldTM.GetTranslation());
@@ -5714,7 +5718,7 @@ void CVehicle::KillPassengersInExposedSeats(bool includePlayers)
 		IVehicleSeat* pSeat = seatIter->second;
 		if (pSeat && pSeat->IsPassengerExposed() && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && (!pActor->IsPlayer() || includePlayers))
 			{
 				if (!pActor->IsDead())

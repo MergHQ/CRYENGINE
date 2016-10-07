@@ -19,7 +19,6 @@
 #include <CryNetwork/INetwork.h>  // EvenBalance - M. Quinn
 #include "System.h"
 #include <CryString/CryPath.h>          // PathUtil::ReplaceExtension()
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryString/UnicodeFunctions.h>
 
@@ -940,9 +939,9 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 		char sTime[21];
 		if (dwCVarState == 5) // Log_IncludeTime
 		{
-			if (gEnv->pGame)
+			if (gEnv->pGameFramework)
 			{
-				CTimeValue serverTime = gEnv->pGame->GetIGameFramework()->GetServerTime();
+				CTimeValue serverTime = gEnv->pGameFramework->GetServerTime();
 				cry_sprintf(sTime, "<%.2f> ", serverTime.GetSeconds());
 				tempString.insert(0, sTime);
 			}

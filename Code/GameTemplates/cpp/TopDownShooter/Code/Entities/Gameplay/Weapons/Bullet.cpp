@@ -1,14 +1,14 @@
 #include "StdAfx.h"
 #include "Bullet.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 class CBulletRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CBullet>("Bullet");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CBullet>("Bullet");
 
 		RegisterCVars();
 	}
@@ -17,7 +17,7 @@ class CBulletRegistrator
 	{
 		m_pGeometry = gEnv->pConsole->RegisterString("w_bulletGeometry", "Objects/Default/primitive_sphere.cgf", VF_CHEAT, "Sets the path to the geometry assigned to every weapon bullet");
 
-		REGISTER_CVAR2("w_bulletMass", &m_mass, 50.f, VF_CHEAT, "Sets the mass of each individual bullet fired by weapons");
+		REGISTER_CVAR2("w_bulletMass", &m_mass, 5000.f, VF_CHEAT, "Sets the mass of each individual bullet fired by weapons");
 		REGISTER_CVAR2("w_bulletInitialVelocity", &m_initialVelocity, 10.f, VF_CHEAT, "Sets the initial velocity of each individual bullet fired by weapons");
 	}
 

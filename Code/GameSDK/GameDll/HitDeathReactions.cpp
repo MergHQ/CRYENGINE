@@ -83,7 +83,7 @@ protected:
 		if( gEnv->bMultiplayer && m_isDeathReaction )
 		{
 			const EntityId entID = m_rootScope->GetEntityId();
-			IActor* piActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( entID );
+			IActor* piActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( entID );
 			if( piActor )
 			{
 				if( gEnv->bServer )
@@ -710,7 +710,7 @@ bool CHitDeathReactions::OnHit(const HitInfo& hitInfo, float fCausedDamage/* = 0
 	// In single player only the player's hits will trigger hit reactions
 	if (!gEnv->bMultiplayer)
 	{
-		if( (hitInfo.shooterId != LOCAL_PLAYER_ENTITY_ID) && (gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( hitInfo.shooterId ) != NULL) )
+		if( (hitInfo.shooterId != LOCAL_PLAYER_ENTITY_ID) && (gEnv->pGameFramework->GetIActorSystem()->GetActor( hitInfo.shooterId ) != NULL) )
 		{
 			return false;
 		}
@@ -1599,7 +1599,7 @@ bool CHitDeathReactions::CanPlayHitReaction() const
 		(!pActorStats || (!pActorStats->isGrabbed &&											// Not grabbed by pick and throw
 											!pActorStats->isInBlendRagdoll &&								// Not in a ragdoll blend (FallAndPlay).
 											(pActorStats->spectacularKillPartner == 0))) && // Not taking part on a spectacular kill
-		!gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager()->IsActorBusy(m_actor.GetEntityId()) && // Not in a cooperative animation
+		!gEnv->pGameFramework->GetICooperativeAnimationManager()->IsActorBusy(m_actor.GetEntityId()) && // Not in a cooperative animation
 		((m_actor.GetActorClass() != CPlayer::GetActorClassType()) || !static_cast<CPlayer&>(m_actor).IsPlayingSmartObjectAction()) // Block hit reactions based on if the actor is playing smart objects
 		;
 }
@@ -1623,7 +1623,7 @@ bool CHitDeathReactions::CanPlayDeathReaction() const
 											!pActorStats->bStealthKilling &&							// Not a stealthkill victim.
 											!pActorStats->bStealthKilled &&								// Not a stealthkill killer.
 											!pActorStats->isRagDoll)) &&									// Not ragdollized already
-		!gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager()->IsActorBusy(m_actor.GetEntityId()) && // Not in a cooperative animation
+		!gEnv->pGameFramework->GetICooperativeAnimationManager()->IsActorBusy(m_actor.GetEntityId()) && // Not in a cooperative animation
 		!m_bInSmartObject &&
 		( m_actor.GetAnimatedCharacter()->GetActionController() != NULL )		// AC might be NULL if returned to the EntityPool - defend it.
 		;
@@ -2719,7 +2719,7 @@ TagState CHitDeathReactions::MergeCurrentFragTagState( const IActionController* 
 
 void CHitDeathReactions::GeneratePostDeathTags()
 {
-	const CTagDefinition* pTagDefinition = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager().LoadTagDefs( "Animations/Mannequin/ADB/hitDeathTags.xml", true );
+	const CTagDefinition* pTagDefinition = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager().LoadTagDefs( "Animations/Mannequin/ADB/hitDeathTags.xml", true );
 	
 	if (!pTagDefinition)
 	{
@@ -2846,7 +2846,7 @@ void CHitDeathReactionsPhysics::IntersectionTestComplete( const QueuedIntersecti
 		const Vec3& vRelDir = pCharacter->GetISkeletonAnim()->GetRelMovement().t.GetNormalized();
 		const Vec3& vAbsDir = ownerActor.GetEntity()->GetWorldTM().TransformVector(vRelDir);
 
-		IPersistantDebug* pPersistantDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug* pPersistantDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		pPersistantDebug->Begin("CHitDeathReactions::OnDataReceived", false);
 		pPersistantDebug->AddCone(vConeDrawPos, result.normal, 0.1f, 0.8f, Col_Red, fTime);
 		pPersistantDebug->AddCone(vConeDrawPos, vAbsDir, 0.1f, 0.8f, Col_Blue, fTime);

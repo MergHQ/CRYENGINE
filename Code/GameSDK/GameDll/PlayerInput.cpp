@@ -97,6 +97,12 @@ CPlayerInput::CPlayerInput( CPlayer * pPlayer ) :
 {
 	m_pPlayer->GetGameObject()->CaptureActions(this);
 
+	IActionMapManager* pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
+
+	pActionMapManager->EnableActionMap("default", true);
+	pActionMapManager->EnableActionMap("debug", true);
+	pActionMapManager->EnableActionMap("player", true);
+
 #if FREE_CAM_SPLINE_ENABLED
 	m_freeCamPlaying = false;
 	m_freeCamCurrentIndex = 0;
@@ -521,7 +527,7 @@ void CPlayerInput::DrawDebugInfo()
 	// process the input as in PreProcess, but without scaling
 	Ang3 processedDeltaRot(UpdateXIInputs(m_xi_deltaRotationRaw, false));
 
-	IUIDraw* pUIDraw = gEnv->pGame->GetIGameFramework()->GetIUIDraw();
+	IUIDraw* pUIDraw = gEnv->pGameFramework->GetIUIDraw();
 	pUIDraw->PreRender();
 
 	// Draw enclosing circle
@@ -541,7 +547,7 @@ void CPlayerInput::DrawDebugInfo()
 	pUIDraw->PostRender();
 
 	// to improve following the movement
-	IPersistantDebug* pPersistantDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+	IPersistantDebug* pPersistantDebug = gEnv->pGameFramework->GetIPersistantDebug();
 	pPersistantDebug->Begin("CPlayerInput::DrawDebugInfo", false);
 
 	float fTraceRawXStart = fX + (m_debugDrawStats.lastRaw.z * fRadius);
@@ -1736,7 +1742,7 @@ bool CPlayerInput::OnActionMannequinDebugPlayer(EntityId entityId, const ActionI
 
 	if(ICVar* pCVar = gEnv->pConsole->GetCVar("mn_debug"))
 	{
-		EntityId actorEntityId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId actorEntityId = gEnv->pGameFramework->GetClientActorId();
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(actorEntityId);
 
 		if(pEntity)

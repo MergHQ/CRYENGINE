@@ -162,7 +162,7 @@ void CKVoltBullet::DamageEnemiesInRange(float range, Vec3 pos, EntityId ignoreId
 
 			if(targetId != ignoreId)
 			{
-				CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetId));
+				CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(targetId));
 
 				//We don't want the kvolt killing people inside vehicles in MP
 				if (pActor != NULL && !pActor->IsDead() && !pActor->IsFriendlyEntity(m_ownerId) && (!gEnv->bMultiplayer || !pActor->GetLinkedVehicle()))

@@ -85,142 +85,21 @@
 %include "../../../../CryEngine/CryCommon/CryMath/CryHalf.inl"
 %include "../../../../CryEngine/CryCommon/CryMath/Cry_Math.h"
 %include "../../../../CryEngine/CryCommon/CryMath/Cry_Geo.h"
-%typemap(cscode) Vec2_tpl<f32>
-%{
-	public static Vec2 operator +(Vec2 a, Vec2 b) { return op_Plus(a, b); }
-	public static Vec2 operator -(Vec2 a, Vec2 b) { return op_Minus(a, b); }
-	public static Vec2 operator *(Vec2 v, float f) { return v.op_Multiply(f); }
-	public static Vec2 operator /(Vec2 v, float f) { return v.op_Divide(f); }
-	public static Vec2 operator *(float f, Vec2 v) { return v.op_Multiply(f); }
-	public static Vec2 operator /(float f, Vec2 v) { return v.op_Divide(f); }
-	public static Vec2 operator -(Vec2 v) { return v.op_Minus(); }
-
-	public static Vec2 Zero { get { return new Vec2(0, 0); } }
-	public static Vec2 One { get{ return new Vec2 (1, 1);} }
-	public static Vec2 Up { get{ return new Vec2 (0, 1);} }
-	public static Vec2 Down { get{ return new Vec2 (0, -1);} }
-	public static Vec2 Forward { get{ return new Vec2 (1, 0);} }
-
-	public Vec2 Normalized { get { return GetNormalized (); } }
-	public float Magnitude { get { return GetLength (); } }
-%}
-%extend Vec2_tpl<f32>{
-	static Vec2_tpl<f32> op_Minus(Vec2_tpl<f32> a, Vec2_tpl<f32> b) { return a - b; }
-	static Vec2_tpl<f32> op_Plus(Vec2_tpl<f32> a, Vec2_tpl<f32> b) { return a + b; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Vector2.h"
 %template(Vec2) Vec2_tpl<f32>;
-%typemap(cscode) Vec3_tpl<f32>
-%{
-	public static Vec3 operator +(Vec3 a, Vec3 b) { return op_Plus(a, b); }
-	public static Vec3 operator -(Vec3 a, Vec3 b) { return op_Minus(a, b); }
-	public static Vec3 operator *(Vec3 v, float f) { return v.op_Multiply(f); }
-	public static Vec3 operator /(Vec3 v, float f) { return v.op_Divide(f); }
-	public static Vec3 operator *(float f, Vec3 v) { return v.op_Multiply(f); }
-	public static Vec3 operator /(float f, Vec3 v) { return v.op_Divide(f); }
-	public static Vec3 operator -(Vec3 v) { return v.op_Minus(); }
-	public static Vec3 operator *(Vec3 v, Quat q) { return op_MultiplyVQ(v, q); }
-	public static Vec3 operator *(Quat q, Vec3 v) { return op_MultiplyQV(q, v); }
-	public static Vec3 operator %(Vec3 a, Vec3 b) { return op_AndVV(a, b); }
-	
-	public static Vec3 Zero { get { return new Vec3(0, 0, 0); } }
-	public static Vec3 One { get{ return new Vec3 (1, 1, 1);} }
-	public static Vec3 Up { get{ return new Vec3 (0, 0, 1);} }
-	public static Vec3 Down { get{ return new Vec3 (0, 0, -1);} }
-	public static Vec3 Left { get{ return new Vec3 (-1, 0, 0);} }
-	public static Vec3 Right { get{ return new Vec3 (1, 0, 0);} }
-	public static Vec3 Forward { get{ return new Vec3 (0, 1, 0);} }
-
-	public Vec3 Normalized { get { return GetNormalized (); } }
-	public float Magnitude { get { return GetLength (); } }
-%}
-%extend Vec3_tpl<f32>{
-	static Vec3_tpl<f32> op_Minus(Vec3_tpl<f32> a, Vec3_tpl<f32> b) { return a - b; }
-	static Vec3_tpl<f32> op_Plus(Vec3_tpl<f32> a, Vec3_tpl<f32> b) { return a + b; }
-	static Vec3_tpl<f32> op_MultiplyVQ(Vec3_tpl<f32> v, Quat_tpl<f32> q) { return v * q; }
-	static Vec3_tpl<f32> op_MultiplyQV(Quat_tpl<f32> q, Vec3_tpl<f32> v) { return q * v; }
-	static Vec3_tpl<f32> op_AndVV(Vec3_tpl<f32> a, Vec3_tpl<f32> b) { return a % b; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Vector3.h"
 %template(Vec3) Vec3_tpl<f32>;
-%typemap(cscode) Ang3_tpl<f32>
-%{
-	public static Ang3 operator +(Ang3 a, Ang3 b) { return op_Plus(a, b); }
-	public static Ang3 operator -(Ang3 a, Ang3 b) { return op_Minus(a, b); }
-	public static Ang3 operator *(Ang3 v, float f) { return v.op_Multiply(f); }
-%}
-%extend Ang3_tpl<f32>{
-	static Ang3_tpl<f32> op_Minus(Ang3_tpl<f32> a, Ang3_tpl<f32> b) { return a - b; }
-	static Ang3_tpl<f32> op_Plus(Ang3_tpl<f32> a, Ang3_tpl<f32> b) { return a + b; }
-	static Ang3_tpl<f32> op_Multiply(Ang3_tpl<f32> v, float f) { return v * f; }
-}
 %template(Ang3) Ang3_tpl<f32>;
-%typemap(cscode) Vec4_tpl<f32>
-%{
-	public static Vec4 operator +(Vec4 a, Vec4 b) { return op_Plus(a, b); }
-	public static Vec4 operator -(Vec4 a, Vec4 b) { return op_Minus(a, b); }
-	public static Vec4 operator *(Vec4 v, float f) { return v.op_Multiply(f); }
-	public static Vec4 operator /(Vec4 v, float f) { return v.op_Divide(f); }
-%}
-%extend Vec4_tpl<f32>{
-	static Vec4_tpl<f32> op_Minus(Vec4_tpl<f32> a, Vec4_tpl<f32> b) { return a - b; }
-	static Vec4_tpl<f32> op_Plus(Vec4_tpl<f32> a, Vec4_tpl<f32> b) { return a + b; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Vector4.h"
 %template(Vec4) Vec4_tpl<f32>;
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_MatrixDiag.h"
 %template(Diag33) Diag33_tpl<f32>;
-%typemap(cscode) Matrix33_tpl<f32>
-%{
-	public static Matrix34 operator *(Matrix33 m1, Matrix34 m2) { return op_MultiplyM33M34(m1, m2); }
-%}
-%extend Matrix33_tpl<f32> {
-public:
-	static Matrix34 op_MultiplyM33M34(Matrix33 m1, Matrix34 m2) { return m1 * m2; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix33.h"
 %template(Matrix33) Matrix33_tpl<f32>;
-%typemap(cscode) Matrix34_tpl<f32>
-%{
-	public static Matrix34 operator *(Matrix34 a, Matrix34 b) { return op_MultiplyMM(a, b); }
-	public static Vec3 operator *(Matrix34 a, Vec3 b) { return op_MultiplyMV(a, b); }
-	public static Matrix34 operator *(Matrix34 a, float b) { return op_MultiplyMF(a, b); }
-	public Vec3 Position { get{ return GetTranslation ();} }
-%}
-%extend Matrix34_tpl<f32>{
-	static Matrix34_tpl<f32> op_MultiplyMM(Matrix34_tpl<f32> a, Matrix34_tpl<f32> b) { return a * b; }
-	static Vec3_tpl<f32> op_MultiplyMV(Matrix34_tpl<f32> a, Vec3_tpl<f32> b) { return a * b; }
-	static Matrix34_tpl<f32> op_MultiplyMF(Matrix34_tpl<f32> a, float b) { return a * b; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix34.h"
 %template(Matrix34) Matrix34_tpl<f32>;
-%typemap(cscode) Matrix44_tpl<f32>
-%{
-	public static Matrix44 operator *(Matrix44 a, Matrix44 b) { return op_MultiplyMM(a, b); }
-%}
-%extend Matrix44_tpl<f32>{
-	static Matrix44_tpl<f32> op_MultiplyMM(Matrix44_tpl<f32> a, Matrix44_tpl<f32> b) { return a * b; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Matrix44.h"
 %template(Matrix44) Matrix44_tpl<f32>;
-%typemap(cscode) Quat_tpl<f32>
-%{
-	public static Quat operator +(Quat a, Quat b) { return op_Plus(a, b); }
-	public static Quat operator -(Quat a, Quat b) { return op_Minus(a, b); }
-	public static Quat operator *(Quat a, Quat b) { return op_MultiplyQQ(a, b); }
-	public static Quat operator *(Quat a, float f) { return op_MultiplyQF(a, f); }
-	public static Quat operator /(Quat a, float f) { return op_DivideQF(a, f); }
-	
-	public static Quat Identity { get { return Quat.CreateIdentity(); } }
-	public Vec3 Forward { get { return new Vec3(GetFwdX(), GetFwdY(), GetFwdZ()); } }
-%}
-%extend Quat_tpl<f32>{
-	static Quat_tpl<f32> op_Plus(Quat_tpl<f32> a, Quat_tpl<f32> b) { return a + b; }
-	static Quat_tpl<f32> op_Minus(Quat_tpl<f32> a, Quat_tpl<f32> b) { return a - b; }
-	static Quat_tpl<f32> op_MultiplyQQ(Quat_tpl<f32> a, Quat_tpl<f32> b) { return a * b; }
-	static Quat_tpl<f32> op_MultiplyQF(Quat_tpl<f32> a, float f) { return a * f; }
-	static Quat_tpl<f32> op_DivideQF(Quat_tpl<f32> a, float f) { return a / f; }
-}
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Quat.h"
 %template(Quat) Quat_tpl<f32>;
 %template(QuatTS) QuatTS_tpl<f32>;

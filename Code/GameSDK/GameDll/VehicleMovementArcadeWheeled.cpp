@@ -215,7 +215,7 @@ bool CVehicleMovementArcadeWheeled::Init(IVehicle* pVehicle, const CVehicleParam
 
 	sharedParamsName.Format("%s::%s::CVehicleMovementArcadeWheeled", pVehicle->GetEntity()->GetClass()->GetName(), pVehicle->GetModification());
 
-	ISharedParamsManager	*pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager	*pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 
 	CRY_ASSERT(pSharedParamsManager);
 
@@ -1082,7 +1082,7 @@ void CVehicleMovementArcadeWheeled::OnEvent(EVehicleMovementEvent event, const S
 			{
 				if (IEntity* otherEntity = (IEntity*)otherPhys->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
 				{
-					if (IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(otherEntity->GetId()))
+					if (IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(otherEntity->GetId()))
 					{
 						m_collisionNorm = n * pCollision->normImpulse;
 					}

@@ -209,7 +209,7 @@ bool CSpectacularKill::CanExecuteOnTarget(const CActor* pTarget, const SSpectacu
 		return false;
 
 	// Can't start if they are taking part on other cooperative animation
-	ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+	ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 	if (pCooperativeAnimationManager->IsActorBusy(m_pOwner->GetEntityId()) ||	pCooperativeAnimationManager->IsActorBusy(m_targetId))
 	{
 		SK_DEBUG_LOG("Can't start from %s to %s: some of them are taking part in a cooperative animation already", m_pOwner->GetEntity()->GetName(), pTarget->GetEntity()->GetName());
@@ -282,7 +282,7 @@ void CSpectacularKill::Update(float frameTime)
 
 	if (IsBusy())
 	{
-		ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+		ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 
 		if (!pTargetActor || 
 			(!pCooperativeAnimationManager->IsActorBusy(m_pOwner->GetEntityId()) &&
@@ -360,7 +360,7 @@ void CSpectacularKill::End(bool bKillerDied/* = false*/)
 	if (!IsBusy())
 		return;
 
-	ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+	ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 
 	CActor* pTarget = GetTarget();
 	CRY_ASSERT(pTarget);
@@ -464,7 +464,7 @@ bool CSpectacularKill::StartOnTarget(CActor* pTargetActor)
 		animParams.bPreventFallingThroughTerrain = false;
 		animParams.bNoCollisionsBetweenFirstActorAndRest = true;
 
-		ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+		ICooperativeAnimationManager* pCooperativeAnimationManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 		bool bStarted = pCooperativeAnimationManager->StartNewCooperativeAnimation(killerParams, targetParams, animParams);
 		if (bStarted)
 		{
@@ -621,7 +621,7 @@ void CSpectacularKill::ReadXmlData( const IItemParamsNode* pRootNode)
 {
 	CRY_ASSERT(pRootNode);
 
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 
 	// If we change the SharedParamsManager to accept CRCs on its interface we could compute this once and store

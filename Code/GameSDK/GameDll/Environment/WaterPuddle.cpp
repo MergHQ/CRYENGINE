@@ -32,7 +32,7 @@ namespace
 
 	bool GetVolumeInfoForEntity(EntityId entityId, IGameVolumes::VolumeInfo* volumeInfo)
 	{
-		IGameVolumes* pGameVolumesMgr = gEnv->pGame->GetIGameFramework()->GetIGameVolumesManager();
+		IGameVolumes* pGameVolumesMgr = gEnv->pGameFramework->GetIGameVolumesManager();
 		if (pGameVolumesMgr != NULL)
 		{
 			return pGameVolumesMgr->GetVolumeInfoForEntity(entityId, volumeInfo);

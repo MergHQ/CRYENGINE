@@ -832,21 +832,16 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 
 	if (pEntity)
 	{
-		if (gEnv->pGame)
+		if (gEnv->pGameFramework)
 		{
-			IGameFramework* pFramework = gEnv->pGame->GetIGameFramework();
+			INetContext* pContext = gEnv->pGameFramework->GetNetContext();
 
-			if (pFramework)
+			if (pContext)
 			{
-				INetContext* pContext = pFramework->GetNetContext();
-
-				if (pContext)
+				if (pContext->IsBound(pEntity->GetId()))
 				{
-					if (pContext->IsBound(pEntity->GetId()))
-					{
-						// If the network is still there and this entity is still bound to it force an unbind.
-						pContext->UnbindObject(pEntity->GetId());
-					}
+					// If the network is still there and this entity is still bound to it force an unbind.
+					pContext->UnbindObject(pEntity->GetId());
 				}
 			}
 		}

@@ -94,11 +94,11 @@ void CGameStateRecorder::Enable(bool bEnable, bool bRecording)
 
 	if(m_bEnable && bRecording)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->RegisterListener(this);
+		gEnv->pGameFramework->GetIGameplayRecorder()->RegisterListener(this);
 	}
 	else
 	{
-		gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->UnregisterListener(this);
+		gEnv->pGameFramework->GetIGameplayRecorder()->UnregisterListener(this);
 	}
 	
 	if(m_bEnable)
@@ -132,7 +132,7 @@ void CGameStateRecorder::StartSession()
 	// send game events to record the initial game state
 /*	if(m_mode)
 	{
-		CActor *pActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CActor *pActor = static_cast<CActor *>(gEnv->pGameFramework->GetClientActor());
 */
 		
 	m_pSingleActor = GetActorOfName(filterName);
@@ -155,7 +155,7 @@ void CGameStateRecorder::StartSession()
 				IAIObject* pObject = it->GetObject();
 				if(pObject)
 				{
-					CActor* pActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pObject->GetEntityID()));
+					CActor* pActor = static_cast<CActor *>(gEnv->pGameFramework->GetIActorSystem()->GetActor(pObject->GetEntityID()));
 					if(pActor)
 						AddActorToStats(pActor);
 				}
@@ -169,7 +169,7 @@ void CGameStateRecorder::StartSession()
 				IAIObject* pObject = it->GetObject();
 				if(pObject)
 				{
-					CActor* pActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pObject->GetEntityID()));
+					CActor* pActor = static_cast<CActor *>(gEnv->pGameFramework->GetIActorSystem()->GetActor(pObject->GetEntityID()));
 					if(pActor)
 						AddActorToStats(pActor);
 				}
@@ -290,7 +290,7 @@ void CGameStateRecorder::Update()
 		{
 			case GPM_SingleActor:
 				{
-					//CActor *pActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+					//CActor *pActor = static_cast<CActor *>(gEnv->pGameFramework->GetClientActor());
 					//if(pActor && !pActor->GetSpectatorMode() && pActor->IsPlayer())
 					if(m_pSingleActor)
 					{
@@ -365,7 +365,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 
 				if(!m_bRecording)
 				{
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor)
 					{
 						if(m_bLogWarning)
@@ -399,7 +399,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 					if(iti != Items.end())
 						iti->second.fireMode = recFireModeIdx;
 
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor && pActor->GetInventory())
 					{
 						IItem* pItem = pActor->GetInventory()->GetItemByName(sel);
@@ -430,7 +430,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 				{
 					it->second -= (uint16)event.value;
 				
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor)
 					{
 						CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -461,7 +461,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 				{
 					if( !bRecording && (event.value > 0 || demo_forceGameState==2)) // EVENT.VALUE > 0 means initialization
 					{
-						CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+						CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 						if(pActor && pActor->GetInventory())
 						{
 							IItem* pItem = pActor->GetInventory()->GetItemByName(itemName);
@@ -473,7 +473,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 
 				if(m_bLogWarning)
 				{	
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor)
 					{
 						IItem* pItem = pActor->GetCurrentItem();
@@ -509,7 +509,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 				{
 					it->second.count++;
 
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor && !m_bRecording)
 					{
 						CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -554,7 +554,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 
 				if( !m_bRecording)
 				{
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor)
 					{
 						CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -585,7 +585,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 				else
 					it->second++;
 
-				CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+				CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 				if(pActor)
 				{
 					CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -618,7 +618,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 
 					if(demo_forceGameState == 2)
 					{
-						CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+						CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 						if(pActor)
 						{
 							CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -662,7 +662,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 
 						if(!bRecording && (m_bLogWarning || demo_forceGameState==2))
 						{
-							CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+							CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 							if(pActor)
 							{
 								CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -707,7 +707,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 			{
 				if(!bRecording)
 				{
-					CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+					CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 					if(pActor)
 					{
 						CInventory* pInventory = (CInventory*)(pActor->GetInventory());
@@ -745,7 +745,7 @@ void CGameStateRecorder::OnRecordedGameplayEvent(IEntity *pEntity, const Gamepla
 										IEntity * pGrabbedEntity = gEnv->pEntitySystem->FindEntityByName(itemName);
 										if(pGrabbedEntity)
 										{
-											CActor *pActor = (CActor*)(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
+											CActor *pActor = (CActor*)(gEnv->pGameFramework->GetIActorSystem()->GetActor(id));
 											if(pActor)
 											{
 												IItem* pItem = GetItemOfName(pActor,itemName);
@@ -784,7 +784,7 @@ void CGameStateRecorder::OnGameplayEvent(IEntity *pEntity, const GameplayEvent &
 		return;
 	}
 
-	CActor *pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityID));
+	CActor *pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(entityID));
 	if(!pActor)
 	{
 		GameWarning("TimeDemo:GameState::OnGamePlayEvent: Entity %s has no actor", pEntity->GetName());
@@ -1261,7 +1261,7 @@ TItemName CGameStateRecorder::GetItemName(EntityId id, CItem** pItemOut)
 {
 	if(id)
 	{
-		CItem* pItem = (CItem*)(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(id));
+		CItem* pItem = (CItem*)(gEnv->pGameFramework->GetIItemSystem()->GetItem(id));
 		if(pItem != NULL && pItem->GetEntity())
 		{
 			if(pItemOut)
@@ -1436,12 +1436,12 @@ CActor* CGameStateRecorder::GetActorOfName( const char* name)
 		return NULL;
 
 	if(!strcmpi(name,"player"))
-		return static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		return static_cast<CActor *>(gEnv->pGameFramework->GetClientActor());
 	else
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(name);
 		if(pEntity)
-			return static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId()));
+			return static_cast<CActor *>(gEnv->pGameFramework->GetIActorSystem()->GetActor(pEntity->GetId()));
 	}
 	return NULL;
 }

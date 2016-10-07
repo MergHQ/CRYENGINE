@@ -82,7 +82,7 @@ struct SPositionAdjuster
 		m_delta.zero();
 		m_deltaRot.SetIdentity();
 
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entity.GetId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entity.GetId());
 		m_pAnimatedCharacter = pActor ? pActor->GetAnimatedCharacter() : NULL;
 	}
 
@@ -794,7 +794,7 @@ public:
 
 	void UpdateDeltas(QuatT& animStartLoc)
 	{
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_entity->GetId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entity->GetId());
 		IAnimatedCharacter* pAnimatedCharacter = pActor ? pActor->GetAnimatedCharacter() : NULL;
 		const Vec3 vExpectedMovement = pAnimatedCharacter ? pAnimatedCharacter->GetExpectedEntMovement() : Vec3Constants<float>::fVec3_Zero;
 

@@ -40,7 +40,6 @@
 #include <CrySystem/ITextModeConsole.h>
 #include "HardwareMouse.h"
 #include <CryEntitySystem/IEntitySystem.h> // <> required for Interfuscator
-#include <CryGame/IGame.h>
 #include "NullImplementation/NULLRenderAuxGeom.h"
 
 #include "MiniGUI/MiniGUI.h"
@@ -219,9 +218,6 @@ void CSystem::RenderEnd(bool bRenderStats)
 		 */
 
 		GetPlatformOS()->RenderEnd();
-
-		if (m_env.pGame)
-			m_env.pGame->RenderGameWarnings();
 
 #if !defined (_RELEASE)
 		// Flush render data and swap buffers.

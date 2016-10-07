@@ -2375,7 +2375,7 @@ void CSingle::OnHostMigrationCompleted()
 	// trying to reload since it wasn't server at the time, it could also have got past the point where refilling
 	// should happen while it was still a client.  Either situation would result in no ammo being given.
 
-	if (m_reloadPending && (m_pWeapon->GetOwnerId() == g_pGame->GetClientActorId()))
+	if (m_reloadPending && (m_pWeapon->GetOwnerId() == gEnv->pGameFramework->GetClientActorId()))
 	{
 		m_reloadPending = false;
 

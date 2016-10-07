@@ -37,6 +37,8 @@
 	#include <CrySystem/ICmdLine.h>
 	#include <CryString/UnicodeFunctions.h>
 
+	#include <CryCore/Platform/CryLibrary.h>
+
 CDXInput* CDXInput::This = 0;
 
 CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
@@ -65,7 +67,7 @@ bool CDXInput::Init()
 
 	gEnv->pLog->Log("Initializing DirectInput\n");
 
-	HRESULT hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&m_pDI, 0);
+	HRESULT hr = DirectInput8Create(CryGetCurrentModule(), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&m_pDI, 0);
 
 	if (FAILED(hr))
 	{

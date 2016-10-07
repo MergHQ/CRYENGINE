@@ -102,7 +102,7 @@ CProjectile* SShootHelper::Shoot(EntityId ownerID, const EntityId weaponID, cons
 	pAmmo->SetParams(CProjectile::SProjectileDesc(ownerID, 0, weaponID, damage, 0.f, 0.f, 0.f, hitTypeId, 0, false));
 	pAmmo->Launch(firePos, fireDir, Vec3(0.0f, 0.0f, 0.0f));
 	pAmmo->SetFiredViaProxy(isProxy);
-	pAmmo->SetRemote(ownerID != g_pGame->GetClientActorId());
+	pAmmo->SetRemote(ownerID != gEnv->pGameFramework->GetClientActorId());
 
 	return pAmmo;
 }

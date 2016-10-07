@@ -405,7 +405,7 @@ bool CGameRulesMPDamageHandling::SvOnHitScaled( const HitInfo &hitInfo )
 				if(fNewHealth != fPreviousHealth)
 				{
 					SVehicleDestroyedParams params(hitInfo.targetId, hitInfo.weaponId, hitInfo.type, hitInfo.projectileClassId);
-					if(hitInfo.shooterId == g_pGame->GetClientActorId())
+					if(hitInfo.shooterId == gEnv->pGameFramework->GetClientActorId())
 					{
 						CPersistantStats::GetInstance()->OnClientDestroyedVehicle(params);
 					}
@@ -988,7 +988,7 @@ void CGameRulesMPDamageHandling::SvOnCollision(const IEntity *pVictimEntity, con
 		{
 			// Try to find the kicker
 			CTimeValue time = gEnv->pTimer->GetAsyncTime();
-			IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+			IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 			IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 			IActor* pActor = pActorIterator->Next();
 			float lowestTime = 5.f;

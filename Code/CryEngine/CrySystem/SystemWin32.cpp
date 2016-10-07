@@ -16,7 +16,6 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryCore/Platform/CryLibrary.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryString/StringUtils.h>
@@ -486,20 +485,18 @@ void CSystem::CollectMemStats(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose, s
 
 	}
 
-	if (m_env.pGame)
+	if (m_env.pGameFramework)
 	{
 		{
-			SIZER_COMPONENT_NAME(pSizer, "Game");
+			SIZER_COMPONENT_NAME(pSizer, "GameFramework");
 			{
 				SIZER_COMPONENT_NAME(pSizer, "$Allocations waste");
-				const char* szGameDllName = gEnv->pConsole->GetCVar("sys_dll_game")->GetString();
-				const SmallModuleInfo* info = FindModuleInfo(stats, szGameDllName);
+				const SmallModuleInfo* info = FindModuleInfo(stats, "CryAction.dll");
 				if (info)
 					pSizer->AddObject(info, info->memInfo.allocated - info->memInfo.requested);
 			}
 
-			m_env.pGame->GetMemoryStatistics(pSizer);
-			m_env.pGame->GetIGameFramework()->GetMemoryUsage(pSizer);
+			m_env.pGameFramework->GetMemoryUsage(pSizer);
 		}
 	}
 

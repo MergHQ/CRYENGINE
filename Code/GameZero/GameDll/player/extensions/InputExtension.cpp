@@ -36,7 +36,7 @@ void CInputExtension::PostInit(IGameObject* pGameObject)
 {
 	RegisterInputHandler();
 
-	IActionMapManager* pActionMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+	IActionMapManager* pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	if (pActionMapManager)
 	{
 		pActionMapManager->InitActionMaps("libs/config/defaultprofile.xml");

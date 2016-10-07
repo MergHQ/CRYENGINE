@@ -1161,7 +1161,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						m_iCurMannequinKey = key;
 
 						const uint32 valueName = CCrc32::ComputeLowercase(manKey.m_fragmentName);
-						IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+						IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
 
 						if (pGameObject)
 						{
@@ -2374,10 +2374,10 @@ void CAnimEntityNode::AnimateLookAt(CLookAtTrack* pTrack, SAnimContext& animCont
 				m_lookAtLocalPlayer = false;
 				pTargetEntity = gEnv->pEntitySystem->FindEntityByName(key.m_selection);
 			}
-			else if (gEnv->pGame)
+			else if (gEnv->pGameFramework)
 			{
 				m_lookAtLocalPlayer = true;
-				IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+				IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 
 				if (pLocalActor)
 				{

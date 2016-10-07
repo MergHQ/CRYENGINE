@@ -30,12 +30,12 @@ CSegmentedWorld::CSegmentedWorld()
 	, m_pPoolAllocator(nullptr)
 	, m_bInitialWorldReady(false)
 {
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->pGame->GetIGameFramework()->GetILevelSystem(), "Unable to register as levelsystem listener!");
-		if (gEnv->pGame->GetIGameFramework()->GetILevelSystem())
+		CRY_ASSERT_MESSAGE(gEnv->pGameFramework->GetILevelSystem(), "Unable to register as levelsystem listener!");
+		if (gEnv->pGameFramework->GetILevelSystem())
 		{
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->AddListener(this);
+			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 		}
 	}
 }
@@ -44,10 +44,10 @@ CSegmentedWorld::~CSegmentedWorld()
 {
 	SAFE_DELETE(m_pPoolAllocator);
 
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		if (gEnv->pGame->GetIGameFramework()->GetILevelSystem())
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->RemoveListener(this);
+		if (gEnv->pGameFramework->GetILevelSystem())
+			gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
 	}
 }
 
@@ -381,7 +381,7 @@ void CSegmentedWorld::PostUpdate()
 	// correct the player's position after specified by flownode
 	if (!m_bInitialWorldReady)
 	{
-		IActor* pClientPlayer = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pClientPlayer = gEnv->pGameFramework->GetClientActor();
 		if (!pClientPlayer || pClientPlayer->IsDead())
 			return;
 
@@ -406,7 +406,7 @@ void CSegmentedWorld::Update()
 	if (gEnv->p3DEngine->GetSegmentsManager() != this)
 		return;
 
-	IActor* pClientPlayer = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientPlayer = gEnv->pGameFramework->GetClientActor();
 	if (!pClientPlayer || pClientPlayer->IsDead() || !m_bInitialWorldReady)
 		return;
 
@@ -465,7 +465,7 @@ void CSegmentedWorld::Update()
 					pEnt->SetPos(entPos, 0, true);
 				}
 
-				if (IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEnt->GetId()))
+				if (IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEnt->GetId()))
 					pVehicle->OffsetPosition(offset);
 			}
 

@@ -746,7 +746,7 @@ void CAfterMatchAwards::ClCalculateAward(EAfterMatchAwards inAward)
 	{
 		DbgLog("CAfterMatchAwards::ClCalculateAward() inAward=%s - is an award to be calculated by local clients", GetNameForAward(inAward));
 
-		EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 
 		CalculateAwardForActor(inAward, localClientId);
 	}
@@ -928,7 +928,7 @@ int CAfterMatchAwards::CalculateAward(EAfterMatchAwards inAward)
 			DbgLog("CAfterMatchAwards::CalculateAward() SERVER - inAward=%s is an award that needs calculating fully on the server", GetNameForAward(inAward));
 
 			// Gather all the award workings for every actor
-			IActorSystem *pActorSystem=gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+			IActorSystem *pActorSystem=gEnv->pGameFramework->GetIActorSystem();
 			IActorIteratorPtr pActorIterator=pActorSystem->CreateActorIterator();
 			while (CActor* pActor = (CActor*)pActorIterator->Next())
 			{
@@ -1090,7 +1090,7 @@ void CAfterMatchAwards::CalculateAwards()
 	}
 
 	// cache the local client so we can look at its awards later
-	m_localClientEntityIdWas=gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	m_localClientEntityIdWas=gEnv->pGameFramework->GetClientActorId();
 }
 
 void CAfterMatchAwards::EnteredGame()
@@ -1111,7 +1111,7 @@ void CAfterMatchAwards::StartCalculatingAwards()
 		m_timeOutLeftWaitingForClients = k_timeOutWaitingForClients;
 
 		// ensure that we have all the actors in our map
-		IActorSystem *pActorSystem=gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem *pActorSystem=gEnv->pGameFramework->GetIActorSystem();
 		IActorIteratorPtr pActorIterator=pActorSystem->CreateActorIterator();
 		while (CActor* pActor = (CActor*)pActorIterator->Next())
 		{
@@ -1134,7 +1134,7 @@ void CAfterMatchAwards::ClSendAwardsToServer()
 {
 	DbgLog("CAfterMatchAwards::ClSendAwardsToServer() - sending calculated awards for local client to server");
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	SAwardsForPlayer *awards = GetAwardsForActor(localClientId);
 
 	CRY_ASSERT_MESSAGE(awards, "ClSendAwardsToServer() has failed to find the awards for local client");
@@ -1170,7 +1170,7 @@ void CAfterMatchAwards::SvSendAwardsToClients()
 {
 	DbgLog("CAfterMatchAwards::SendAwardsToClients()");
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	ActorAwardsMap::const_iterator it = m_actorAwards.begin();
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)

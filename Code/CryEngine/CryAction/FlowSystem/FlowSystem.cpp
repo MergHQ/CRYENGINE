@@ -239,10 +239,7 @@ void CFlowSystem::RegisterAllNodeTypes()
 
 	LoadExtensions("Libs/FlowNodes");
 
-#ifndef _LIB
-	// register game specific flownodes
-	gEnv->pGame->RegisterGameFlowNodes();
-#endif
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_REGISTER_FLOWNODES, 0, 0);
 
 	// register entity type flownodes after the game
 	RegisterEntityTypes();
@@ -701,7 +698,10 @@ void CFlowSystem::LoadBlacklistedFlownodeXML()
 	if (!m_blacklistNode)
 	{
 		const string filename = BLACKLIST_FILE_PATH;
-		m_blacklistNode = gEnv->pSystem->LoadXmlFromFile(filename);
+		if (gEnv->pCryPak->IsFileExist(BLACKLIST_FILE_PATH))
+		{
+			m_blacklistNode = gEnv->pSystem->LoadXmlFromFile(filename);
+		}
 	}
 }
 

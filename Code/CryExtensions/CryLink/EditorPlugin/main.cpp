@@ -100,9 +100,8 @@ PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
 	{
 		ModuleInitISystem(pSystem, "CryLink");
 
-		if(CryLinkService::IFramework* pFramework = pSystem->GetIGame()->GetIGameFramework()->QueryExtension<CryLinkService::IFramework>())
+		if(CryLinkService::IFramework* pFramework = gEnv->pGameFramework->QueryExtension<CryLinkService::IFramework>())
 		{
-			pFramework = gEnv->pGame->GetIGameFramework()->QueryExtension<CryLinkService::IFramework>();
 			CCryLinkEditorPlugin* pPlugin = new CCryLinkEditorPlugin(pFramework->GetService());
 			if(pPlugin->Init())
 			{

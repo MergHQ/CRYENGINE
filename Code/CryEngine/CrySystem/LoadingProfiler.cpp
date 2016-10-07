@@ -258,8 +258,7 @@ public:
 			}
 		}
 
-		if (event != ESYSTEM_EVENT_RANDOM_SEED)
-			lastEvent = event;
+		lastEvent = event;
 	}
 };
 

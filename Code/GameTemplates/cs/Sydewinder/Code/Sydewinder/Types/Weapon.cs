@@ -1,14 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using CryEngine.Sydewinder.Types;
-using CryEngine.Sydewinder.UI;
 using CryEngine.Common;
-using CryEngine.Components;
 using CryEngine.EntitySystem;
 
 namespace CryEngine.Sydewinder
-{	
+{
 	/// <summary>
 	/// Weapon base.
 	/// </summary>
@@ -23,7 +19,7 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Fire this instance.
 		/// </summary>
-		public abstract void Fire(Vec3 position);
+		public abstract void Fire(Vector3 position);
 	}
 
 	/// <summary>
@@ -32,13 +28,13 @@ namespace CryEngine.Sydewinder
 	/// </summary>
 	public class Gun : WeaponBase
 	{
-		private IParticleEffect _shot = Env.ParticleManager.FindEffect("spaceship.Weapon.player_shot");
-		private IParticleEffect _shotSmoke = Env.ParticleManager.FindEffect("spaceship.Weapon.player_shot_smoke");
+		private IParticleEffect _shot = Engine.ParticleManager.FindEffect("spaceship.Weapon.player_shot");
+		private IParticleEffect _shotSmoke = Engine.ParticleManager.FindEffect("spaceship.Weapon.player_shot_smoke");
 
-		public static Gun Create(Vec3 firingDirection)
+		public static Gun Create(Vector3 firingDirection)
 		{
-			// We need an ID. Otherwise we can not add this to pool.
-			var gun = Entity.Instantiate<Gun>(Vec3.Zero, Quat.Identity);
+			// We need an Id. Otherwise we can not add this to pool.
+			var gun = Entity.Spawn<Gun>(Vector3.Zero, Quaternion.Identity);
 			gun.Speed = firingDirection;
 
 			// This is currently used to register Gun for receiving update calls (Move) which decreases the cool-downtimer.
@@ -46,7 +42,7 @@ namespace CryEngine.Sydewinder
 			return gun;
 		}
 
-		public override void Fire(Vec3 position)//, Vec3 fireDirection)
+		public override void Fire(Vector3 position)//, Vector3 fireDirection)
 		{	
 			// Do not allow to fire weapon while preparing for next shot.
 			if (CoolDownTime > 0)
@@ -57,7 +53,7 @@ namespace CryEngine.Sydewinder
 			AudioManager.PlayTrigger ("laser_player");
 		}
 
-		public override Vec3 Move()
+		public override Vector3 Move()
 		{
 			if (CoolDownTime > 0)
 				CoolDownTime -= FrameTime.Delta;
@@ -68,7 +64,7 @@ namespace CryEngine.Sydewinder
 		/*protected override void OnCollision(DestroyableBase hitEnt)
 		{
 			if (!(hitEnt is ProjectileBase))
-				GamePool.FlagForPurge(ID);
+				GamePool.FlagForPurge(Id);
 		}*/
 	}
 
@@ -78,12 +74,12 @@ namespace CryEngine.Sydewinder
 	/// </summary>
 	public class LightGun : WeaponBase
 	{
-		private IParticleEffect _shot = Env.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot");
-		private IParticleEffect _shotSmoke = Env.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot_smoke");
+		private IParticleEffect _shot = Engine.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot");
+		private IParticleEffect _shotSmoke = Engine.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot_smoke");
 
-		public static LightGun Create(Vec3 firingDirection)
+		public static LightGun Create(Vector3 firingDirection)
 		{
-			var lightGun = Entity.Instantiate<LightGun> (Vec3.Zero, Quat.Identity);
+			var lightGun = Entity.Spawn<LightGun> (Vector3.Zero, Quaternion.Identity);
 			lightGun.Speed = firingDirection;
 
 			// Weapon is usded by enemy. Prevent from firing immediatelly after spawn.
@@ -94,7 +90,7 @@ namespace CryEngine.Sydewinder
 			return lightGun;
 		}
 
-		public override void Fire(Vec3 position)
+		public override void Fire(Vector3 position)
 		{	
 			// Do not allow to fire weapon while preparing for next shot.
 			if (CoolDownTime > 0)
@@ -109,7 +105,7 @@ namespace CryEngine.Sydewinder
 			CoolDownTime = 1.5f;
 		}
 
-		public override Vec3 Move()
+		public override Vector3 Move()
 		{
 			if (CoolDownTime > 0)
 				CoolDownTime -= FrameTime.Delta;
@@ -120,7 +116,7 @@ namespace CryEngine.Sydewinder
 		/*protected override void OnCollision(DestroyableBase hitEnt)
 		{
 			if (!(hitEnt is ProjectileBase))
-				GamePool.FlagForPurge(ID);
+				GamePool.FlagForPurge(Id);
 		}*/
 	}
 
@@ -149,14 +145,14 @@ namespace CryEngine.Sydewinder
 				LoadParticleEmitter(2, WeaponSmokeParticleEffect);
 		}
 
-		public override Vec3 Move()
+		public override Vector3 Move()
 		{			
 			if (LifeTime > 0) 
 			{
 				LifeTime -= FrameTime.Delta;			
 			}
 			else				
-				GamePool.FlagForPurge(ID); // Let destroy current projectile.
+				GamePool.FlagForPurge(Id); // Let destroy current projectile.
 
 			return base.Move();
 		}
@@ -164,7 +160,7 @@ namespace CryEngine.Sydewinder
 		protected override void OnCollision(DestroyableBase hitEnt)
 		{
 			// Always remove projectile on collision.
-			GamePool.FlagForPurge (ID);
+			GamePool.FlagForPurge (Id);
 
 			// Kill particle trail (bullet)
 			if (WeaponBulletParticleEffect != null)
@@ -177,10 +173,15 @@ namespace CryEngine.Sydewinder
 	/// </summary>
 	public class DefaultAmmo : ProjectileBase
 	{
-		public static DefaultAmmo Create(Vec3 pos, Vec3 speed, bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect) 
+		public static DefaultAmmo Create(Vector3 pos, Vector3 speed, bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect) 
 		{
-			var ammo = Entity.Instantiate<DefaultAmmo> (pos, Quat.Identity, 0.5f, "objects/default/primitive_sphere.cgf");
-			ammo.LifeTime = 3f;
+			var ammo = Entity.Spawn<DefaultAmmo> (pos, Quaternion.Identity, 0.5f);
+
+            ammo.LoadGeometry(0, "objects/default/primitive_sphere.cgf");
+
+            ammo.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+
+            ammo.LifeTime = 3f;
 			ammo.Speed = speed;
 			ammo.IsHostile = isHostile;
 			ammo.WeaponSmokeParticleEffect = weaponSmokeParticleEffect;

@@ -78,7 +78,7 @@ void CFlowVehiclePassenger::ProcessEvent(EFlowEvent flowEvent, SActivationInfo* 
 			{
 				if (m_actorId && m_seatId > 0)
 				{
-					IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actorId);
+					IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actorId);
 
 					if (pActor)
 					{

@@ -526,7 +526,7 @@ void CGameRulesMPSpawningBase::ClRequestRevive(EntityId playerId)
 		return;
 	}
 
-	CActor *pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId));
+	CActor *pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId));
 
 	if (pActor)
 	{
@@ -538,7 +538,7 @@ void CGameRulesMPSpawningBase::ClRequestRevive(EntityId playerId)
 			CryLog("[SPAWN] CGameRulesMPSpawningBase::ClRequestRevive() Requesting revive via RMI ");
 
 			EntityId spawnPointId = GetSpawnLocation(playerId);
-			if(playerId==g_pGame->GetClientActorId())
+			if(playerId==gEnv->pGameFramework->GetClientActorId())
 			{
 				if(IEntity* pSpawnPoint = gEnv->pEntitySystem->GetEntity(spawnPointId))
 				{
@@ -630,7 +630,7 @@ bool CGameRulesMPSpawningBase::SvRequestRevive(EntityId playerId, EntityId prefe
 					int nPlayerTeam = m_pGameRules->GetTeam(playerId); 
 					if (m_teamGame==(nPlayerTeam!=0))
 					{
-						const INetChannel*  pNetChannel = gEnv->pGame->GetIGameFramework()->GetNetChannel(uActorChannel);
+						const INetChannel*  pNetChannel = gEnv->pGameFramework->GetNetChannel(uActorChannel);
 						const float  netLag = ((pActor->IsClient() || !pNetChannel) ? 0 : ((pNetChannel->GetPing(true) * 1000.f) * 0.5f));  // GetPing() is the round journey, so 0.5 gives us the 1-way trip.
 						CRY_ASSERT(netLag >= 0.f);
 
@@ -676,7 +676,7 @@ bool CGameRulesMPSpawningBase::SvRequestRevive(EntityId playerId, EntityId prefe
 void CGameRulesMPSpawningBase::PerformRevive(EntityId playerId, int teamId, EntityId preferredSpawnId)
 {
 	// no inherited call - not implemented in CGameRulesSpawningBase
-	CActor *pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId));
+	CActor *pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId));
 
 	CRY_ASSERT_MESSAGE(gEnv->bServer, "CGameRulesMPSpawningBase::PerformRevive() being called when NOT a server. This is wrong!");
 

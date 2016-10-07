@@ -567,14 +567,10 @@ void CGameEffectsSystem::Update(float frameTime)
 
 	// Get pause state
 	bool isPaused = false;
-	IGame* pGame = gEnv->pGame;
-	if(pGame)
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
+	if(pGameFramework)
 	{
-		IGameFramework* pGameFramework = pGame->GetIGameFramework();
-		if(pGameFramework)
-		{
-			isPaused = pGameFramework->IsGamePaused();
-		}
+		isPaused = pGameFramework->IsGamePaused();
 	}
 
 	// Update effects

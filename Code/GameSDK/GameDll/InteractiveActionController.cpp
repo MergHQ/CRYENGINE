@@ -61,7 +61,7 @@ public:
 			ICharacterInstance *targetChar = m_target->GetCharacter(0);
 			if (targetChar)
 			{
-				IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+				IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 				const IAnimationDatabase *animDB = mannequinSys.GetAnimationDatabaseManager().Load("Animations/Mannequin/ADB/interactiveObjects.adb");
 				m_rootScope->GetActionController().SetScopeContext(PlayerMannequin.contextIDs.SlaveObject, *m_target, targetChar, animDB);
 

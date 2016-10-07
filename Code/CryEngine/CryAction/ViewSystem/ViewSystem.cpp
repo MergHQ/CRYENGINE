@@ -61,7 +61,10 @@ CViewSystem::CViewSystem(ISystem* const pSystem) :
 	               "Sets Debug information of the ViewSystem.");
 
 	REGISTER_CVAR2("cl_DefaultNearPlane", &m_fDefaultCameraNearZ, DEFAULT_NEAR, 0,
-	               "The default camera near plane. ");
+		"The default camera near plane. ");
+
+	REGISTER_CVAR2("cl_ViewApplyHmdOffset", &m_bApplyHmdOffset, 1, 0,
+		"Enables default engine HMD positional / rotational offset");
 
 	//Register as level system listener
 	if (CCryAction::GetCryAction()->GetILevelSystem())

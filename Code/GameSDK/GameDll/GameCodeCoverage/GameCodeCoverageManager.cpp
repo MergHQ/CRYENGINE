@@ -831,7 +831,7 @@ void CGameCodeCoverageManager::CheckWhichCheckpointsAreValidForGameState()
 {
 	if (IsContextValid())
 	{
-		IGameRulesSystem * gameRulesSystem = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem();
+		IGameRulesSystem * gameRulesSystem = gEnv->pGameFramework->GetIGameRulesSystem();
 		IGameRules * rules = gameRulesSystem->GetCurrentGameRules();
 		const char * rulesName = rules ? rules->GetEntity()->GetClass()->GetName() : NULL;
 

@@ -52,7 +52,7 @@ def feature_copy_mono_binaries(self):
 	mono_lib_node = mono_node.make_node("lib/mono")
 	mono_etc_node = mono_node.make_node("etc/mono")
 	
-	tgt_folder = output_folder.make_node("mono")
+	tgt_folder = output_folder.make_node("../../Engine/mono")
 	
 	for src_path_node in [mono_lib_node, mono_etc_node]:
 		for path, subdirs, files in os.walk(src_path_node.abspath(), followlinks=True):

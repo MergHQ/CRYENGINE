@@ -99,7 +99,6 @@ struct IInput;
 struct IKeyboard;
 struct ICVar;
 struct IConsole;
-struct IGame;
 struct IEntitySystem;
 struct IProcess;
 struct ICryPak;

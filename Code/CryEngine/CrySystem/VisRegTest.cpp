@@ -75,7 +75,7 @@ void CVisRegTest::Init(IConsoleCmdArgs* pParams)
 	}
 
 	gEnv->pTimer->SetTimeScale(0);
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	gEnv->pSystem->GetRandomGenerator().Seed(0);
 	srand(0);
 }
 
@@ -197,7 +197,7 @@ void CVisRegTest::ExecCommands()
 			gEnv->pTimer->SetTimer(ITimer::ETIMER_GAME, 0);
 			gEnv->pTimer->SetTimer(ITimer::ETIMER_UI, 0);
 			gEnv->pConsole->ExecuteString("t_FixedStep 0.033333");
-			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+			gEnv->pSystem->GetRandomGenerator().Seed(0);
 			srand(0);
 			break;
 		case eCMDConsoleCmd:
@@ -240,7 +240,7 @@ void CVisRegTest::LoadMap(const char* mapName)
 	gEnv->pTimer->SetTimer(ITimer::ETIMER_GAME, 0);
 	gEnv->pTimer->SetTimer(ITimer::ETIMER_UI, 0);
 	gEnv->pConsole->ExecuteString("t_FixedStep 0");
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	gEnv->pSystem->GetRandomGenerator().Seed(0);
 	srand(0);
 
 	// Disable user input

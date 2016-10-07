@@ -2940,9 +2940,9 @@ private:
 #if !defined(SYS_ENV_AS_STRUCT)
 		assert(gEnv != NULL);
 #endif
-		assert(gEnv->pGame != NULL);
+		assert(gEnv->pGameFramework != NULL);
 
-		IGameFramework* gameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* gameFramework = gEnv->pGameFramework;
 		IF_UNLIKELY (gameFramework == NULL)
 		{
 			return NULL;

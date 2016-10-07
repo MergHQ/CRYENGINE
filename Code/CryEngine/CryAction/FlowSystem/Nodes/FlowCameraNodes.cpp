@@ -231,7 +231,7 @@ public:
 	{
 		SInputParams inputParams;
 		ReadCurrentInputParams(pActInfo, inputParams);
-		IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGF = gEnv->pGameFramework;
 		IView* pView = 0;
 		IView* pActiveView = pGF->GetIViewSystem()->GetActiveView();
 		eViewType viewType = inputParams.view;
@@ -428,11 +428,7 @@ public:
 
 	void CreateView()
 	{
-		if (gEnv->pGame == NULL)
-			return;
-
-		IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
-
+		IGameFramework* pGF = gEnv->pGameFramework;
 		if (pGF == NULL)
 			return;
 

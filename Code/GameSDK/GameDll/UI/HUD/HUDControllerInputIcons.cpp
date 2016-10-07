@@ -55,11 +55,10 @@ bool CControllerInputRenderInfo::SetText(const char * text)
 bool CControllerInputRenderInfo::CreateForInput(const char * mapName, const char * inputName)
 {
 	CRY_ASSERT(gEnv);
-	CRY_ASSERT(gEnv->pGame);
-	CRY_ASSERT(gEnv->pGame->GetIGameFramework());
-	CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIActionMapManager());
+	CRY_ASSERT(gEnv->pGameFramework);
+	CRY_ASSERT(gEnv->pGameFramework->GetIActionMapManager());
 
-	IActionMap* pActionMap = gEnv->pGame->GetIGameFramework()->GetIActionMapManager()->GetActionMap(mapName);
+	IActionMap* pActionMap = gEnv->pGameFramework->GetIActionMapManager()->GetActionMap(mapName);
 	if (pActionMap)
 	{
 		const IActionMapAction* pAction = pActionMap->GetAction(ActionId(inputName));

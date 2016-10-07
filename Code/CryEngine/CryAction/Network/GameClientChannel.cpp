@@ -271,7 +271,7 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 		GetGameContext()->SetLevelName(levelName.c_str());
 		GetGameContext()->SetGameRules(rulesClass.c_str());
 		//
-		IActor* pDemoPlayPlayer = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetOriginalDemoSpectator();
+		IActor* pDemoPlayPlayer = gEnv->pGameFramework->GetIActorSystem()->GetOriginalDemoSpectator();
 		// clear all entities slot - because render data will be released in LoadLevel and these releases are not clears entities slots data (FogVolume for example)
 		CScopedRemoveObjectUnlock unlockRemovals(CCryAction::GetCryAction()->GetGameContext());
 		IEntityItPtr i = gEnv->pEntitySystem->GetEntityIterator();
@@ -300,7 +300,6 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 		}
 		if (pDemoPlayPlayer)
 		{
-			gEnv->pGame->PlayerIdSet(pDemoPlayPlayer->GetEntityId());
 			CCryAction::GetCryAction()->OnActionEvent(eAE_inGame);
 		}
 	}
@@ -356,10 +355,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		const EntityId entityId = pEntity->GetId();
 
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
-		if (param.bClientActor)
-		{
-			gEnv->pGame->PlayerIdSet(entityId);
-		}
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
 			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
@@ -370,16 +365,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		CRY_ASSERT(pGameObject);
 		if (param.bClientActor)
 		{
-			// Note: Consider removing all this, this check might not be even needed
-			if (CCryActionCVars::Get().cl_initClientActor != 0)
-			{
-				IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
-				if (!pActor)
-				{
-					CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING,
-						"Client actor spawned entity is not an actor");
-				}
-			}
 			SetPlayerId(entityId);
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
@@ -456,9 +441,6 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 		gEnv->pScriptSystem->SetGlobalToNull(LOCAL_ACTOR_VARIABLE);
 		gEnv->pScriptSystem->SetGlobalToNull(LOCAL_CHANNELID_VARIABLE);
 	}
-
-	if (gEnv->pGame)
-		gEnv->pGame->PlayerIdSet(id);
 }
 
 void CGameClientChannel::CallOnSetPlayerId()

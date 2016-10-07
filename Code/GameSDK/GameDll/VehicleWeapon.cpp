@@ -107,7 +107,7 @@ void CVehicleWeapon::StartUse(EntityId userId)
   { 
 		const EntityId vehicleId = GetEntity()->GetParent()->GetId();
 		m_vehicleId = vehicleId;
-    IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(vehicleId);
+    IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(vehicleId);
     assert(pVehicle && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
 
     if (pVehicle)
@@ -383,7 +383,7 @@ void CVehicleWeapon::GetCacheName(const IEntityClass* pClass, const bool bIsThir
 //---------------------------------------------------------------------
 IVehicle* CVehicleWeapon::GetVehicle() const
 {
-	return gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	return gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 }
 
 void CVehicleWeapon::UpdateCurrentActionController()

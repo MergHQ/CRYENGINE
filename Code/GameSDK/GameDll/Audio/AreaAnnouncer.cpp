@@ -160,7 +160,7 @@ void CAreaAnnouncer::Update(const float dt)
 #if !defined(_RELEASE)
 	if(aa_debug)
 	{
-		const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		TAudioSignalID signal = BuildAnnouncement(clientId);
 		CryWatch("Signal %d", signal);
 	}
@@ -198,7 +198,7 @@ void CAreaAnnouncer::EntityRevived(EntityId entityId)
 	if (!AnnouncerRequired())
 			return;
 
-	const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(entityId == clientId)
 	{
 		CGameRules *pGameRules = g_pGame->GetGameRules();
@@ -218,7 +218,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 	const int k_areaCount = m_areaList.size();
 	if (k_areaCount > 0)
 	{
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 		if (CActor* pClientActor = static_cast<CActor*>(pActorSystem->GetActor(clientId)))
 		{
@@ -317,7 +317,7 @@ void CAreaAnnouncer::CmdPlay(IConsoleCmdArgs* pCmdArgs)
 	{
 		int randA = cry_random(0U, pAA->m_areaList.size() - 1);
 
-		const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		CAudioSignalPlayer::JustPlay(pAA->m_areaList[randA].m_signal[pAA->GetAreaAnnouncerTeamIndex(clientId)]);
 
 		CryLogAlways("Playing - %s_%d", pAA->m_areaList[randA].m_name, pAA->GetAreaAnnouncerTeamIndex(clientId));

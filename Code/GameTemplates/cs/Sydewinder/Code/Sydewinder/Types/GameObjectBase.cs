@@ -1,12 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
 using CryEngine.Common;
-using CryEngine.Sydewinder.UI;
-using System.Collections.Generic;
-using CryEngine.Sydewinder.Types;
-using CryEngine.Components;
 using CryEngine.EntitySystem;
+using System;
 
 namespace CryEngine.Sydewinder
 {
@@ -40,7 +36,6 @@ namespace CryEngine.Sydewinder
 		/// </summary>
 		private bool _isVelocitySet = false;
 
-		private Vec3 _speed = Vec3.Zero;
 		private bool _pausePositionSwitch = false;
 
 		protected IParticleEffect DestroyParticleEffect;
@@ -50,25 +45,27 @@ namespace CryEngine.Sydewinder
 		public Int32 MaxLife { get; private set; }
 		public bool IsAlive { get{ return Life > 0; } }
 
-		public Vec3 Speed 
-		{ 
-			get { return _speed; } 
-			set { _speed = value ?? Vec3.Zero; }
-		}
+		public Vector3 Speed { get; set; }
 
 		public DestroyableBase()
 		{
-			Life = MaxLife = 100;
-			DestroyParticleEffect = Env.ParticleManager.FindEffect("spaceship.Destruction.explosion_blue");
-			ExplosionTrigger = string.Format ("enemy_explosion_0{0}", 1 + Rand.NextInt(3));
+			Revive();
+
+			DestroyParticleEffect = Engine.ParticleManager.FindEffect("spaceship.Destruction.explosion_blue");
+			ExplosionTrigger = string.Format ("enemy_explosion_0{0}", 1 + Random.Next(3));
 
 			SubscribeToCollision();
 			OnEntityCollision += Collision;
 		}
 
+		public void Revive()
+		{
+			Life = MaxLife = 100;
+		}
+
 		private void Collision(Entity hitEnt)
 		{
-			var hitObj = GamePool.GetMoveableByEntityId(hitEnt.ID);
+			var hitObj = GamePool.GetMoveableByEntityId(hitEnt.Id);
 
 			// Check if one of the objects is already dead.
 			if (IsAlive && hitObj != null)
@@ -85,29 +82,25 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Move this instance. May be overriden in inheriting classes.
 		/// </summary>
-		public virtual Vec3 Move()
+		public virtual Vector3 Move()
 		{
 			// HAndle null?
 			if (!Exists)
-				return Vec3.Zero;
+				return Vector3.Zero;
 
 			// Empty jetPosition means x, y and z are all 0.
 			if (this is ProjectileBase)
 			{
 				if(!_isVelocitySet)
-				{
-					if (PhysicalEntity != null) 
-					{
-						var peASV = new pe_action_set_velocity();
-						peASV.v = Speed;
-						PhysicalEntity.Action(peASV);
-					}
-					_isVelocitySet = true;
+                {
+                    Physics.Velocity = Speed;
+
+                    _isVelocitySet = true;
 				}
 				return Position;
 			}
 
-			Vec3 newPosition = Position + Speed * FrameTime.Delta; 
+			Vector3 newPosition = Position + Speed * FrameTime.Delta; 
 			Position = newPosition;
 			return newPosition;
 		}
@@ -122,7 +115,7 @@ namespace CryEngine.Sydewinder
 				return;
 
 			_pausePositionSwitch = !_pausePositionSwitch;
-			Position = Position + new Vec3(_pausePositionSwitch ? 0.00001f : -0.00001f, 0, 0);
+			Position = Position + new Vector3(_pausePositionSwitch ? 0.00001f : -0.00001f, 0, 0);
 		}
 		#endregion
 

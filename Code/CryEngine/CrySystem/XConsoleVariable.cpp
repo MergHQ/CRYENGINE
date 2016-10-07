@@ -99,9 +99,11 @@ void CXConsoleVariableBase::SetOnChangeCallback(ConsoleVarFunc pChangeFunc)
 	m_pChangeFunc = pChangeFunc;
 }
 
-void CXConsoleVariableBase::AddOnChangeFunctor(const SFunctor& pChangeFunctor)
+uint64 CXConsoleVariableBase::AddOnChangeFunctor(const SFunctor& pChangeFunctor)
 {
 	m_cpChangeFunctors.push_back(pChangeFunctor);
+
+	return m_cpChangeFunctors.size() - 1;
 }
 
 uint64 CXConsoleVariableBase::GetNumberOfOnChangeFunctors() const
@@ -562,7 +564,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& rGroup, const ICVa
 		}
 		else
 		{
-			if (gEnv->pSystem && gEnv->pSystem->GetIGame())
+			if (gEnv->pSystem)
 			{
 				// Do not warn about D3D registered cvars, which carry the prefix "q_", as they are not actually registered with the cvar system.
 				if (strcmp(rKey.c_str(), "q") == -1)

@@ -32,7 +32,6 @@
 #include <CrySystem/ITimer.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryGame/IGameFramework.h>
-#include <CryGame/IGame.h>
 #include <CryMovie/AnimKey_impl.h>
 #include <../CryAction/IViewSystem.h>
 
@@ -756,7 +755,7 @@ bool CMovieSystem::AbortSequence(IAnimSequence* pSequence, bool bLeaveTime)
 	}
 
 	// to avoid any camera blending after aborting a cut scene
-	IViewSystem* pViewSystem = gEnv->pGame->GetIGameFramework()->GetIViewSystem();
+	IViewSystem* pViewSystem = gEnv->pGameFramework->GetIViewSystem();
 
 	if (pViewSystem)
 	{

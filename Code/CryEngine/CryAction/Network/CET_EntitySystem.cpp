@@ -93,16 +93,16 @@ public:
 	{
 		// reset a bunch of subsystems
 		gEnv->p3DEngine->ResetParticlesAndDecals();
-		gEnv->pGame->GetIGameFramework()->ResetBrokenGameObjects();
+		gEnv->pGameFramework->ResetBrokenGameObjects();
 		gEnv->pPhysicalWorld->ResetDynamicEntities();
 		gEnv->pFlowSystem->Reset(false);
-		gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reset();
+		gEnv->pGameFramework->GetIItemSystem()->Reset();
 		gEnv->pDialogSystem->Reset(false);
-		gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->Reset(false);
+		gEnv->pGameFramework->GetIMaterialEffects()->Reset(false);
 
 		if (gEnv->pAISystem)
 		{
-			ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 			if (pLevel)
 			{
 				gEnv->pAISystem->FlushSystem();

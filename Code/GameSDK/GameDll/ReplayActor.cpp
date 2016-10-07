@@ -160,7 +160,7 @@ void CReplayActor::OnRemove()
 //------------------------------------------------------------------------
 void CReplayActor::SetupActionController(const char *controllerDef, const char *animDB1P, const char *animDB3P)
 {
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef *pContDef = NULL;
 	if (controllerDef)
 	{
@@ -213,7 +213,7 @@ void CReplayActor::UpdateScopeContexts()
 		//--- Update variable scope contexts
 		CItem *pItem = static_cast<CItem*>(g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_gunId));
 		ICharacterInstance *pICharInst = (m_flags & eRAF_FirstPerson) && pItem ? pItem->GetEntity()->GetCharacter(0) : NULL;
-		IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
 		const int contextID = PlayerMannequin.contextIDs.Weapon;
 		if (contextID >= 0)

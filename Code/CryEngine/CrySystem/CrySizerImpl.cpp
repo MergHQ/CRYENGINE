@@ -4,7 +4,6 @@
 #include <CrySystem/ITimer.h>
 #include <CryMemory/CrySizer.h>
 #include "CrySizerImpl.h"
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 CrySizerImpl::CrySizerImpl() : m_pResourceCollector(0)

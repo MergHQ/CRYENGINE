@@ -71,14 +71,14 @@ const CPlayerStateAnimationControlled::TStateIndex CPlayerStateAnimationControll
 		m_flags.AddFlags(EPlayerStateFlags_Ground);
 		if(player.IsPlayer())
 		{
-			gEnv->pGame->GetIGameFramework()->AllowSave( false );
+			gEnv->pGameFramework->AllowSave( false );
 		}
 		break;
 	case STATE_EVENT_EXIT:
 		m_flags.ClearFlags(EPlayerStateFlags_Ground);
 		if(player.IsPlayer())
 		{
-			gEnv->pGame->GetIGameFramework()->AllowSave( true );
+			gEnv->pGameFramework->AllowSave( true );
 		}
 		break;
 	case PLAYER_EVENT_COOP_ANIMATION_FINISHED:

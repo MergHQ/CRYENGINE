@@ -44,7 +44,7 @@ void CVehicleAnimationComponent::Initialise(CVehicle& vehicle, const CVehiclePar
 	const char* passengerADB = mannequinTable.getAttr("passengerADB");
 	const char* tag = mannequinTable.getAttr("tag");
 
-	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
 	m_pADBVehicle = mannequinSys.GetAnimationDatabaseManager().Load(vehicleADB);
 	m_pADBPassenger = mannequinSys.GetAnimationDatabaseManager().Load(passengerADB);

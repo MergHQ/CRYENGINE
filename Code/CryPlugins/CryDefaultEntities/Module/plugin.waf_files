@@ -1,0 +1,81 @@
+{
+	"NoUberFile" :
+	{
+		"Root" :
+		[
+		  "StdAfx.cpp"
+		]
+	},
+	"CryDefaultEntities_uber_0.cpp" :
+	{
+		"Root" :
+		[
+		  "PluginDll.cpp",
+		  "PluginDll.h",
+		  "resource.h",
+		  "StdAfx.cpp",
+		  "StdAfx.h"
+		],
+		"Helpers" :
+		[
+			"Helpers/ISimpleExtension.h",
+			"Helpers/NativeEntityBase.cpp",
+			"Helpers/NativeEntityBase.h",
+			"Helpers/EntityFlowNode.cpp",
+			"Helpers/EntityFlowNode.h"
+		],
+		"Lights" :
+		[
+			"Lights/EnvironmentProbe.cpp",
+			"Lights/EnvironmentProbe.h",
+			"Lights/LightEntity.cpp",
+			"Lights/LightEntity.h"
+		],
+		"Cameras" :
+		[
+			"Cameras/CameraSource.cpp",
+			"Cameras/CameraSource.h"
+		],
+		"Audio" :
+		[
+			"Audio/AudioAreaAmbienceEntity.cpp",
+			"Audio/AudioAreaAmbienceEntity.h",
+			"Audio/AudioTriggerSpotEntity.cpp",
+			"Audio/AudioTriggerSpotEntity.h",
+			"Audio/AudioEntitiesUtils.h",
+			"Audio/AudioEntitiesUtils.cpp"
+		],
+		"Particles" :
+		[
+			"Particles/ParticleEntity.cpp",
+			"Particles/ParticleEntity.h"
+		],
+		"Clouds" :
+		[
+			"Clouds/CloudEntity.cpp",
+			"Clouds/CloudEntity.h"
+		],
+		"Geometry" :
+		[
+			"Geometry/GeomEntity.cpp",
+			"Geometry/GeomEntity.h"
+		],
+		"Debug" :
+		[
+			"Debug/Comment.cpp",
+			"Debug/Comment.h"
+		],
+		"Physics" :
+		[
+			"Physics/RigidBody.cpp",
+			"Physics/RigidBody.h",
+			"Physics/RopeEntity.cpp",
+			"Physics/RopeEntity.h"
+		],
+		"Triggers" :
+		[
+			"Triggers/TriggerEntity.cpp",
+			"Triggers/TriggerEntity.h"
+		]
+	}
+}

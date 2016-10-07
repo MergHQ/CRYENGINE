@@ -481,7 +481,7 @@ void CPlayer::PostProcessAnimation(ICharacterInstance *pCharacter)
 		s_StateMachineDebugEntityID = 0;
 		if (0 == strcmp(pName, "1"))
 		{
-			if (IActor * pActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+			if (IActor * pActor = gEnv->pGameFramework->GetClientActor())
 				s_StateMachineDebugEntityID = pActor->GetEntityId();
 		}
 		else if (IEntity * pEntity = gEnv->pEntitySystem->FindEntityByName(pName))
@@ -674,7 +674,7 @@ CPlayer::~CPlayer()
 {
 	if(!gEnv->bMultiplayer && IsPlayer())
 	{
-		if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+		if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 		{
 			pProfileMan->RemoveListener(this);
 		}
@@ -1115,7 +1115,7 @@ void CPlayer::InitLocalPlayer()
 	
 	if(!gEnv->bMultiplayer)
 	{
-		if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+		if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 		{
 			pProfileMan->AddListener(this, true);
 		}
@@ -1393,7 +1393,7 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 				{
 					if (IsClient())
 					{
-						assert( GetEntityId() == gEnv->pGame->GetIGameFramework()->GetClientActor()->GetEntityId() );
+						assert( GetEntityId() == gEnv->pGameFramework->GetClientActor()->GetEntityId() );
 						SHUDEvent hudEvent_initLocalPlayerEditor(eHUDEvent_OnInitLocalPlayer);
 						hudEvent_initLocalPlayerEditor.AddData(static_cast<int>(GetEntityId()));
 						CHUDEventDispatcher::CallEvent(hudEvent_initLocalPlayerEditor);
@@ -1885,7 +1885,7 @@ void CPlayer::CreateInputClass(bool client)
 	CCCPOINT (PlayerState_CreateInputClassDuringUpdate);
 
 	// init input systems if required
-	if (client) //|| ((demoMode == 2) && this == gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetOriginalDemoSpectator()))
+	if (client) //|| ((demoMode == 2) && this == gEnv->pGameFramework->GetIActorSystem()->GetOriginalDemoSpectator()))
 	{
 #if (USE_DEDICATED_INPUT)
 		if ( gEnv->IsDedicated() )
@@ -1965,7 +1965,7 @@ void CPlayer::UpdateAnimationState(const SActorFrameMovementParams &frameMovemen
 	CWeapon *pWeapon = GetWeapon(GetCurrentItemId());
 	ICharacterInstance *pICharInst = pWeapon ? pWeapon->GetEntity()->GetCharacter(0) : NULL;
 	IActionController *pActionController = GetAnimatedCharacter()->GetActionController();
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
 	if (IsAIControlled())
 	{
@@ -2533,7 +2533,7 @@ IEntity *CPlayer::LinkToVehicle(EntityId vehicleId)
 	EntityId playerId = GetEntityId();
 	if (pLinkedEntity)
 	{
-		IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(vehicleId);
+		IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(vehicleId);
 		
 		if (IVehicleSeat *pSeat = pVehicle->GetSeatForPassenger(playerId))
 		{
@@ -2618,7 +2618,7 @@ void CPlayer::StartInteractiveAction(EntityId entityId, int interactionIndex)
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( false );
+		gEnv->pGameFramework->AllowSave( false );
 	}
 
 	if(entityId)
@@ -2667,7 +2667,7 @@ void CPlayer::StartInteractiveActionByName( const char* interaction, bool bUpdat
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( false );
+		gEnv->pGameFramework->AllowSave( false );
 	}
 
 	SStateEventInteractiveAction actionEvent( interaction, bUpdateVisibility, actionSpeed );
@@ -2678,7 +2678,7 @@ void CPlayer::EndInteractiveAction(EntityId entityId)
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( true );
+		gEnv->pGameFramework->AllowSave( true );
 	}
 }
 
@@ -2747,7 +2747,7 @@ void CPlayer::ClearForcedLookObjectId()
 bool CPlayer::CanMove() const
 {
 	return (!m_pHitDeathReactions || m_pHitDeathReactions->CanActorMove()) &&
-		!gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager()->IsActorBusy(GetEntityId());
+		!gEnv->pGameFramework->GetICooperativeAnimationManager()->IsActorBusy(GetEntityId());
 }
 
 void CPlayer::SufferingHighLatency(bool highLatency)
@@ -3439,7 +3439,7 @@ void CPlayer::SpawnCorpse()
 				if(pTeamVisManager)
 				{
 					CGameRules* pGameRules = g_pGame->GetGameRules();
-					pTeamVisManager->RefreshTeamMaterial(pCloneEntity, false, pGameRules ? pGameRules->GetThreatRating(g_pGame->GetClientActorId(), GetEntityId())==CGameRules::eFriendly : true );
+					pTeamVisManager->RefreshTeamMaterial(pCloneEntity, false, pGameRules ? pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), GetEntityId())==CGameRules::eFriendly : true );
 				}
 
 				CRecordingSystem *pRecordingSystem = g_pGame->GetRecordingSystem();
@@ -6660,7 +6660,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 	if(gEnv->IsClient() && (mode || spinf->mode) && m_pPlayerInput.get())
 		m_pPlayerInput->Reset();
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalPlayer = localClientId != 0 && GetEntityId() == localClientId ? true : false;
 
 	if (!othEntId && mode)
@@ -7002,7 +7002,7 @@ void CPlayer::NetKill(const KillParams &killParams)
 			ToggleThirdPerson();
 		}
 
-		if(killParams.shooterId == gEnv->pGame->GetIGameFramework()->GetClientActorId() && killParams.shooterId != killParams.targetId)
+		if(killParams.shooterId == gEnv->pGameFramework->GetClientActorId() && killParams.shooterId != killParams.targetId)
 		{
 			CAudioSignalPlayer::JustPlay("Human_Feedback_KilledByPlayerHit_MP", killParams.shooterId);
 		}
@@ -9026,7 +9026,7 @@ void CPlayer::NetSetInStealthKill(bool inKill, EntityId targetId, uint8 animInde
 void CPlayer::StopStealthKillTargetMovement(EntityId playerId)
 {
 	//Stop moving the target player on their local machine
-	IActor* pTargetActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId);
+	IActor* pTargetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId);
 	if(pTargetActor)
 	{
 		CRY_ASSERT_MESSAGE(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "CPlayer::NetSetInStealthKill - Expected player; got something else");

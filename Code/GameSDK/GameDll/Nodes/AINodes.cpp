@@ -158,7 +158,7 @@ CGunTurret* CFlowNode_SetTurretFaction::GetTurret(IEntity& entity) const
 	if ((strcmp(entityClassName, "AutoTurret") == 0) ||
 			(strcmp(entityClassName, "HumanTurret") == 0))
 	{
-		if (IItem* item = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(entity.GetId()))
+		if (IItem* item = gEnv->pGameFramework->GetIItemSystem()->GetItem(entity.GetId()))
 		{
 			return static_cast<CGunTurret*>(item);
 		}

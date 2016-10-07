@@ -15,7 +15,6 @@
 #include "GameServerChannel.h"
 #include "GameClientChannel.h"
 #include "IActorSystem.h"
-#include <CryGame/IGame.h>
 #include "IGameSessionHandler.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
@@ -40,14 +39,12 @@
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>
-#include "CET_ActionMap.h"
 #include "CET_ClassRegistry.h"
 #include "CET_CVars.h"
 #include "CET_EntitySystem.h"
 #include "CET_GameRules.h"
 #include "CET_LevelLoading.h"
 #include "CET_NetConfig.h"
-#include "CET_View.h"
 
 #include "NetDebug.h"
 
@@ -495,12 +492,6 @@ bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int e
 	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
-	
-	if (gEnv->IsClient() && HasContextFlag(eGSF_InitClientActor))
-	{
-		AddDisableActionMap(pEst, eCVS_Begin);
-	}
-	
 	if (gEnv->IsEditor())
 	{
 		AddEstablishedContext(pEst, eCVS_EstablishContext, establishedToken);
@@ -636,18 +627,6 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	if (isClient && !HasContextFlag(eGSF_Server))
 	{
 		AddLoadLevelTasks(pEst, false, flags, &pLoadingStarted, establishedSerial, bIsChannelMigrating);
-	}
-
-	if (isClient && HasContextFlag(eGSF_InitClientActor))
-	{
-		AddInitActionMap_ClientActor(pEst, eCVS_InGame);
-		if (bIsChannelMigrating)
-		{
-			AddClearViews(pEst, eCVS_InGame);
-		}
-		AddInitView_ClientActor(pEst, eCVS_InGame);
-
-		AddDisableKeyboardMouse(pEst, eCVS_InGame);
 	}
 
 	if (isClient)
@@ -1806,11 +1785,11 @@ IHostMigrationEventListener::EHostMigrationReturn CGameContext::OnInitiate(SHost
 	// (such as health and ammo counts) that aren't normally transmitted
 	// to other clients). This info could be sent as part of the
 	// migrating player connection string, or a discrete message.
-	IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 	if (pGameRules)
 	{
 		pGameRules->ClearAllMigratingPlayers();
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 		IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 		IActor* pActor = pActorIterator->Next();
 

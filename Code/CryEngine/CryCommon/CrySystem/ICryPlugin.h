@@ -8,11 +8,22 @@
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 struct SSystemInitParams;
-
-//! Base Interface for plugins.
-struct ICryPlugin : public ICryUnknown
+struct IPluginUpdateListener
 {
-	CRYINTERFACE_DECLARE(ICryPlugin, 0xf899cf661df04f60, 0xa341a8a7ffdf9de5);
+	enum EPluginUpdateType
+	{
+		EUpdateType_NoUpdate         = BIT(0),
+		EUpdateType_PrePhysicsUpdate = BIT(1),
+		EUpdateType_Update           = BIT(2)
+	};
+
+	virtual ~IPluginUpdateListener() {}
+	virtual void OnPluginUpdate(EPluginUpdateType updateType) = 0;
+};
+
+struct ICryPlugin : public ICryUnknown, IPluginUpdateListener
+{
+	CRYINTERFACE_DECLARE(ICryPlugin, 0xF491A0DB38634FCA, 0xB6E6BCFE2D98EEA2);
 
 	//! Retrieve name of the plugin.
 	virtual const char* GetName() const = 0;
@@ -23,26 +34,17 @@ struct ICryPlugin : public ICryUnknown
 	//! This is called to initialize the new plugin.
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) = 0;
 
-	virtual void OnGameStart() = 0;
+	virtual bool RegisterFlowNodes() { return false; }
+	virtual bool UnregisterFlowNodes() { return false; }
 
-	virtual void Update(int updateFlags, int nPauseMode) = 0;
-
-	virtual void OnGameStop() = 0;
-
-	virtual bool RegisterFlowNodes()                               { return false; }
-
-	virtual bool UnregisterFlowNodes()                             { return false; }
-
-	void         SetAssetDirectory(const char* szAssetDirectory)   { cry_strcpy(m_szAssetDirectory, szAssetDirectory); }
-	void         SetBinaryDirectory(const char* szBinaryDirectory) { cry_strcpy(m_szBinaryDirectory, szBinaryDirectory); }
+	uint8 GetUpdateFlags() const { return m_updateFlags; }
+	
+	void SetUpdateFlags(uint8 flags) { m_updateFlags = flags; }
 
 protected:
-	char                         m_szAssetDirectory[_MAX_PATH];
-	char                         m_szBinaryDirectory[_MAX_PATH];
+	uint8 m_updateFlags;
 	std::vector<TFlowNodeTypeId> m_registeredFlowNodeIds;
 };
-
-DECLARE_SHARED_POINTERS(ICryPlugin);
 
 #ifndef _LIB
 	#define USE_CRYPLUGIN_FLOWNODES                                    \
@@ -61,14 +63,9 @@ DECLARE_SHARED_POINTERS(ICryPlugin);
 	    CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;                    \
 	    while (pFactory)                                                                    \
 	    {                                                                                   \
-	      char szNameBuffer[256];                                                           \
-	      cry_strcpy(szNameBuffer, GetName());                                              \
-	      cry_strcat(szNameBuffer, ":");                                                    \
-	      cry_strcat(szNameBuffer, pFactory->m_sClassName);                                 \
-	                                                                                        \
-	      TFlowNodeTypeId nodeId = gEnv->pFlowSystem->RegisterType(szNameBuffer, pFactory); \
+	      TFlowNodeTypeId nodeId = gEnv->pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory); \
 	      m_registeredFlowNodeIds.push_back(nodeId);                                        \
-	      CryLog("Successfully registered flownode '%s'", szNameBuffer);                    \
+	      CryLog("Successfully registered flownode '%s'", pFactory->m_sClassName);          \
 	                                                                                        \
 	      pFactory = pFactory->m_pNext;                                                     \
 	    }                                                                                   \

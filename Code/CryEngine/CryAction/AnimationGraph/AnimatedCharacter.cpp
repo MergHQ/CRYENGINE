@@ -117,7 +117,7 @@ CAnimatedCharacter::CAnimatedCharacter() : m_listeners(1)
 {
 	InitVars();
 
-	m_debugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+	m_debugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 	CryCreateClassInstance("AnimationPoseAlignerC3", m_pPoseAligner);
 }
@@ -375,7 +375,7 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 
 		if (m_pActionController)
 		{
-			IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+			IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 			const char* szAnimDatabase = 0;
 			const char* szSoundDatabase = 0;
 			if ((pSourceTable->GetValue("AnimDatabase3P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase3P", szAnimDatabase)) && szAnimDatabase)
@@ -1423,7 +1423,7 @@ void CAnimatedCharacter::DeleteActionController()
 
 void CAnimatedCharacter::SetActionController(const char* filename)
 {
-	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef* contDef = mannequinSys.GetAnimationDatabaseManager().LoadControllerDef(filename);
 
 	DeleteActionController();
@@ -1850,7 +1850,7 @@ void Preload(struct IScriptTable* pEntityScript)
 	// Cache Mannequin related files
 	bool hasActionController = false;
 	{
-		IMannequin& mannequinSystem = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSystem = gEnv->pGameFramework->GetMannequinInterface();
 		IAnimationDatabaseManager& animationDatabaseManager = mannequinSystem.GetAnimationDatabaseManager();
 
 		const char* szAnimationDatabase1p = 0;

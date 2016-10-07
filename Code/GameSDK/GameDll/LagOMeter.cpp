@@ -57,7 +57,7 @@ CLagOMeter::~CLagOMeter()
 
 void CLagOMeter::OnClientRequestHit(HitInfo &hitInfo)
 {
-	CRY_ASSERT(hitInfo.shooterId == g_pGame->GetClientActorId());
+	CRY_ASSERT(hitInfo.shooterId == gEnv->pGameFramework->GetClientActorId());
 	hitInfo.lagOMeterHitId = m_rollingHitId;
 	m_hitHistory[m_rollingHitId].requestTime = gEnv->pTimer->GetAsyncTime();
 	++m_rollingHitId;
@@ -71,7 +71,7 @@ void CLagOMeter::OnClientRequestHit(HitInfo &hitInfo)
 void CLagOMeter::OnClientReceivedKill(const CActor::KillParams &killParams)
 {
 	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
-	if (killParams.shooterId == g_pGame->GetClientActorId())
+	if (killParams.shooterId == gEnv->pGameFramework->GetClientActorId())
 	{
 		// Try to find the corresponding request hit info to see how far lagged behind we are
 		int index = killParams.lagOMeterHitId;

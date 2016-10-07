@@ -6,7 +6,6 @@
 #include <CryMovie/IMovieSystem.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #include "D3DPostProcess.h"

@@ -377,7 +377,8 @@ int CTriMesh::Subtract(IGeometry *pGeom, geom_world_data *pdata1,geom_world_data
 				return 0;
 		}
 	}
-	cry_random_seed( 12102012 );
+
+	SScopedRandomSeedChange seedChange(12102012);
 
 	{	WriteLock lock0(m_lockUpdate);
 	if (!ExpandVtxList())

@@ -152,100 +152,94 @@ ILINE int CMessageQueue::SMsgEntOrderingInfo::LatencyBucket() const
 	return int(latencyClass) * 2 + (latencyClass == eLC_DontCare ? bandwidthExceeded : 0);
 }
 
-class CMessageQueue::CConfig
+bool CMessageQueue::CConfig::Read(XmlNodeRef n)
 {
-public:
-	bool Read(XmlNodeRef n)
+	for (int i = 0; i < n->getChildCount(); i++)
 	{
-		for (int i = 0; i < n->getChildCount(); i++)
+		XmlNodeRef child = n->getChild(i);
+		if (0 == strcmp("Group", child->getTag()))
 		{
-			XmlNodeRef child = n->getChild(i);
-			if (0 == strcmp("Group", child->getTag()))
+			SAccountingGroupPolicy pol;
+			pol.maxBandwidth = -1;
+			pol.maxLatency = -1;
+			pol.discardLatency = -1;
+			pol.priority = 0;
+			pol.numPulses = 0;
+			pol.drawn = false;
+			child->getAttr("bandwidth", pol.maxBandwidth);
+			child->getAttr("latency", pol.maxLatency);
+			child->getAttr("priority", pol.priority);
+			child->getAttr("discardLatency", pol.discardLatency);
+			child->getAttr("drawn", pol.drawn);
+
+			const char* name = child->getAttr("name");
+			if (!name[0])
+				return false;
+
+			if (!pol.distanceScaler.Load(child))
 			{
-				SAccountingGroupPolicy pol;
-				pol.maxBandwidth = -1;
-				pol.maxLatency = -1;
-				pol.discardLatency = -1;
-				pol.priority = 0;
-				pol.numPulses = 0;
-				pol.drawn = false;
-				child->getAttr("bandwidth", pol.maxBandwidth);
-				child->getAttr("latency", pol.maxLatency);
-				child->getAttr("priority", pol.priority);
-				child->getAttr("discardLatency", pol.discardLatency);
-				child->getAttr("drawn", pol.drawn);
+				NetWarning("Distance scaling for group %s failed", name);
+				return false;
+			}
+			if (!pol.dirScaler.Load(child))
+			{
+				NetWarning("Direction scaling for group %s failed", name);
+				return false;
+			}
 
-				const char* name = child->getAttr("name");
-				if (!name[0])
-					return false;
-
-				if (!pol.distanceScaler.Load(child))
+			for (int j = 0; j < child->getChildCount(); j++)
+			{
+				XmlNodeRef cfg = child->getChild(j);
+				if (0 == strcmp("Pulse", cfg->getTag()))
 				{
-					NetWarning("Distance scaling for group %s failed", name);
-					return false;
-				}
-				if (!pol.dirScaler.Load(child))
-				{
-					NetWarning("Direction scaling for group %s failed", name);
-					return false;
-				}
-
-				for (int j = 0; j < child->getChildCount(); j++)
-				{
-					XmlNodeRef cfg = child->getChild(j);
-					if (0 == strcmp("Pulse", cfg->getTag()))
+					if (pol.numPulses == MAXIMUM_PULSES_PER_STATE)
 					{
-						if (pol.numPulses == MAXIMUM_PULSES_PER_STATE)
-						{
-							NetWarning("Too many pulses for group");
-							return false;
-						}
-						SAccountingGroupPulse& pulse = pol.pulses[pol.numPulses++];
-						if (!pulse.scaler.Load(cfg))
-							return false;
-						const char* keyName = cfg->getAttr("name");
-						if (!keyName[0])
-							return false;
-						if (!StringToKey(keyName, pulse.name))
-						{
-							NetWarning("Couldn't load pulse %s", keyName);
-							return false;
-						}
+						NetWarning("Too many pulses for group");
+						return false;
 					}
-					else
+					SAccountingGroupPulse& pulse = pol.pulses[pol.numPulses++];
+					if (!pulse.scaler.Load(cfg))
+						return false;
+					const char* keyName = cfg->getAttr("name");
+					if (!keyName[0])
+						return false;
+					if (!StringToKey(keyName, pulse.name))
 					{
-						NetWarning("Unknown configuration object %s", child->getTag());
+						NetWarning("Couldn't load pulse %s", keyName);
 						return false;
 					}
 				}
-
-				std::sort(pol.pulses, pol.pulses + pol.numPulses);
-
-				uint32 key = 0;
-				if (!StringToKey(name, key))
+				else
 				{
-					CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
-						"Scheduler policy name should not exceed 4 characters.");
+					NetWarning("Unknown configuration object %s", child->getTag());
 					return false;
 				}
-				m_policy[key] = pol;
 			}
-			else
+
+			std::sort(pol.pulses, pol.pulses + pol.numPulses);
+
+			uint32 key = 0;
+			if (!StringToKey(name, key))
+			{
+				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
+					"Scheduler policy name should not exceed 4 characters.");
 				return false;
+			}
+			m_policy[key] = pol;
 		}
-		return true;
+		else
+			return false;
 	}
+	return true;
+}
 
-	void GetMemoryStatistics(ICrySizer* pSizer)
-	{
-		SIZER_COMPONENT_NAME(pSizer, "CMessageQueue::CConfig");
+void CMessageQueue::CConfig::GetMemoryStatistics(ICrySizer* pSizer)
+{
+	SIZER_COMPONENT_NAME(pSizer, "CMessageQueue::CConfig");
 
-		pSizer->Add(*this);
-		pSizer->AddContainer(m_policy);
-	}
-
-	std::map<uint32, SAccountingGroupPolicy> m_policy;
-};
+	pSizer->Add(*this);
+	pSizer->AddContainer(m_policy);
+}
 
 CMessageQueue::CConfig* CMessageQueue::LoadConfig(const char* name)
 {

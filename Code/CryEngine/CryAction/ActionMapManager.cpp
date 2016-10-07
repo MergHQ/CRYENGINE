@@ -73,7 +73,7 @@ bool CActionMapManager::OnInputEvent(const SInputEvent& event)
 	if (gEnv->pConsole->IsOpened())
 		return false;
 
-	if (gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->IsEditing())
+	if (gEnv->IsEditor() && gEnv->pGameFramework->IsEditing())
 		return false;
 
 	if (event.keyName.c_str() && event.keyName.c_str()[0] == 0)
@@ -1554,7 +1554,7 @@ void CActionMapManager::GetMemoryStatistics(ICrySizer* pSizer)
 bool CActionMapManager::HandleAcceptedEvents(const SInputEvent& event, TBindPriorityList& priorityList)
 {
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -1718,7 +1718,7 @@ bool CActionMapManager::CreateRefiredEventPriorityList(SRefireData* pRefireData,
 	TRefireBindData::const_iterator itEnd = refireBindData.end();
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -1802,7 +1802,7 @@ void CActionMapManager::UpdateRefiringInputs()
 	if (gEnv->pConsole->IsOpened())
 		return;
 
-	if (gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->IsEditing())
+	if (gEnv->IsEditor() && gEnv->pGameFramework->IsEditing())
 		return;
 
 	SetCurrentlyRefiringInput(true);

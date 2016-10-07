@@ -147,6 +147,8 @@ extern "C"
 		gEnv->pWindow = startupParams.hWnd;
 #endif
 
+		gEnv->pGameFramework = startupParams.pGameFramework;
+
 		ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
 		pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
 

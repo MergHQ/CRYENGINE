@@ -40,7 +40,6 @@
 #include <IForceFeedbackSystem.h>
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 #include <IGameplayRecorder.h>
-#include <IGamePhysicsSettings.h>
 #include <IGameSessionHandler.h>
 #include <TestSystem/IGameStateRecorder.h>
 #include <IMetadataRecorder.h>
@@ -58,14 +57,10 @@
 %ignore GameWarning;
 %ignore IGameObject::FullSerialize;
 %ignore IGameObject::NetSerialize;
-%ignore IGameObjectExtension::PostSerialize;
-%ignore IGameObjectExtension::GetNetSerializeAspects;
-%ignore IGameObjectExtension::NetSerialize;
-%ignore IGameObjectExtension::FullSerialize;
-%ignore IGameObjectExtension::GetEntityPoolSignature;
-%ignore IGameObjectExtension::SerializeSpawnInfo;
 %feature("director") IGameObjectExtension;
 %feature("director") IGameObjectExtensionCreatorBase;
+%feature("director") IGameRules;
+%feature("director") IActor;
 
 %include <std_shared_ptr.i>
 %include "../../../CryEngine/CryAction/IGameObject.h"
@@ -261,7 +256,6 @@ SMART_PTR_TEMPLATE(IFlowNodeTypeIterator)
 %include "../../../CryEngine/CryAction/IForceFeedbackSystem.h"
 %include "../../../../CryEngine/CryCommon/CryFlowGraph/IFlowGraphModuleManager.h"
 %include "../../../CryEngine/CryAction/IGameplayRecorder.h"
-%include "../../../CryEngine/CryAction/IGamePhysicsSettings.h"
 %include "../../../CryEngine/CryAction/IGameSessionHandler.h"
 %include "../../../CryEngine/CryAction/TestSystem/IGameStateRecorder.h"
 %include "../../../../CryEngine/CryCommon/CryAction/ILipSyncProvider.h"

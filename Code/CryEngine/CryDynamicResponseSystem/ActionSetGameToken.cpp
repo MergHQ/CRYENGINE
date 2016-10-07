@@ -8,7 +8,6 @@
 #include <CryGame/IGameTokens.h>
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CrySystem/ISystem.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 using namespace CryDRS;
@@ -38,7 +37,7 @@ void CActionSetGameToken::Serialize(Serialization::IArchive& ar)
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IResponseInstance* pResponseInstance)
 {
-	IGameTokenSystem* pTokenSystem = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+	IGameTokenSystem* pTokenSystem = gEnv->pGameFramework->GetIGameTokenSystem();
 	if (m_bCreateTokenIfNotExisting)
 	{
 		pTokenSystem->SetOrCreateToken(m_tokenName.c_str(), TFlowInputData(m_valueToSet, true));

@@ -1175,7 +1175,7 @@ void CGameRulesCombiCaptureObjective::OnRoundStart()
 	}
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-	IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	while (CActor* pActor = (CActor*)pIter->Next())
 	{
 		EntityId actorId = pActor->GetEntityId();

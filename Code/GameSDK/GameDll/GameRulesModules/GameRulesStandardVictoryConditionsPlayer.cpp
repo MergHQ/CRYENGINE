@@ -160,7 +160,7 @@ void CGameRulesStandardVictoryConditionsPlayer::SvOpponentsCheckFailed()
 	{
 		if (gEnv->IsClient())
 		{
-			winnerEid = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+			winnerEid = gEnv->pGameFramework->GetClientActorId();
 		}
 		else
 		{
@@ -364,7 +364,7 @@ void CGameRulesStandardVictoryConditionsPlayer::OnEndGamePlayer( EntityId player
 		}
 
 
-    EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+    EntityId localClient = gEnv->pGameFramework->GetClientActorId();
     if ( shooterEntity == localClient && localClient != 0)
     {
       g_pGame->GetPersistantStats()->IncrementClientStats(EIPS_WinningKill);
@@ -420,7 +420,7 @@ void CGameRulesStandardVictoryConditionsPlayer::OnEndGamePlayer( EntityId player
 		// the server has already increased these stats in the server block above
 		if (!gEnv->bServer)
 		{
-	    EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	    EntityId localClient = gEnv->pGameFramework->GetClientActorId();
 	    if ( shooterEntity == localClient && localClient != 0)
 	    {
 	      g_pGame->GetPersistantStats()->IncrementClientStats(EIPS_WinningKill);

@@ -176,7 +176,7 @@ int CScriptBind_Item::CanUseVehicle(IFunctionHandler *pH, ScriptHandle userId)
 	IEntity* pParent = pItem->GetEntity()->GetParent();
 	if(pParent)
 	{
-		IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pParent->GetId());
+		IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pParent->GetId());
 		if(pVehicle)
 		{
 			return pH->EndFunction(pVehicle->IsUsable((EntityId)userId.n));
@@ -342,7 +342,7 @@ int CScriptBind_Item::OnUsed(IFunctionHandler *pH, ScriptHandle userId)
 	{
 		if(IEntity* pParent = pItem->GetEntity()->GetParent())
 		{
-			IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pParent->GetId());
+			IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pParent->GetId());
 			if(pVehicle)
 			{
 				CPlayer* pPlayer = static_cast<CPlayer*>(pActor);

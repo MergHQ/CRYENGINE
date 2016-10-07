@@ -5,10 +5,9 @@
 #include "Input/PlayerInput.h"
 #include "View/PlayerView.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 #include "Game/GameRules.h"
 
-#include "FlowNodes/Helpers/FlowGameEntityNode.h"
 
 #include "Entities/Gameplay/SpawnPoint.h"
 
@@ -20,11 +19,11 @@ class CPlayerRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CPlayer>("Player");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CPlayer>("Player");
 
-		CGameFactory::RegisterGameObjectExtension<CPlayerMovement>("PlayerMovement");
-		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");
-		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
+		CGamePlugin::RegisterEntityComponent<CPlayerMovement>("PlayerMovement");
+		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
+		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
 		
 		RegisterCVars();
 	}
@@ -59,7 +58,7 @@ CPlayer::CPlayer()
 
 CPlayer::~CPlayer()
 {
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->RemoveActor(GetEntityId());
+	gEnv->pGameFramework->GetIActorSystem()->RemoveActor(GetEntityId());
 }
 
 const CPlayer::SExternalCVars &CPlayer::GetCVars() const
@@ -85,7 +84,7 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
 
 	// Register with the actor system
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
+	gEnv->pGameFramework->GetIActorSystem()->AddActor(GetEntityId(), this);
 }
 
 void CPlayer::HandleEvent(const SGameObjectEvent &event)
@@ -145,7 +144,7 @@ void CPlayer::SelectSpawnPoint()
 	pEntityIterator->MoveFirst();
 
 	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
+	auto extensionId = gEnv->pGameFramework->GetIGameObjectSystem()->GetID("SpawnPoint");
 
 	while (!pEntityIterator->IsEnd())
 	{
@@ -154,7 +153,7 @@ void CPlayer::SelectSpawnPoint()
 		if (pEntity->GetClass() != pSpawnerClass)
 			continue;
 
-		auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+		auto *pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
 		if (pGameObject == nullptr)
 			continue;
 

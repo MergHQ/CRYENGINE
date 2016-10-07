@@ -320,7 +320,7 @@ CPersistantStats::CPersistantStats()
 //---------------------------------------
 CPersistantStats::~CPersistantStats()
 {
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->RemoveListener(this);
 	}
@@ -348,7 +348,7 @@ void CPersistantStats::Init()
 
 	CPlayerProgression::GetInstance()->AddEventListener(this);
 
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->AddListener(this, true);
 	}
@@ -873,7 +873,7 @@ void GetClientScoreInfo( CGameRules* pGameRules, int &position, int &points, Ent
 		const SGameRulesPlayerStat* pClosestCompetitorStat = NULL;
 		int closestCompetitorStatDiff = INT_MAX;
 
-		CActor* pLocalActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CActor* pLocalActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 		if(pLocalActor)
 		{
 			EntityId clientId = pLocalActor->GetEntityId(); 
@@ -1168,7 +1168,7 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 			patchState[0] = patchPakVersion;
 		}
 
-		if( IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager() )
+		if( IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager() )
 		{
 			const char *user = pProfileMan->GetCurrentUser();
 			IPlayerProfile* pProfile = pProfileMan->GetCurrentProfile( user );
@@ -1199,7 +1199,7 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 		pak->FClose(file);
 	}
 	
-	CTelemetryCollector *tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector());
+	CTelemetryCollector *tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 	if(tc)
 	{
 		CStatsRecordingMgr	*pSRM=g_pGame->GetStatsRecorder();
@@ -1573,7 +1573,7 @@ const char * CPersistantStats::GetDerivedStat(EDerivedStringMapPersistantStats s
 
 int CPersistantStats::GetStatForActorThisSession(EStreakIntPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	int result=0;
 
@@ -1601,7 +1601,7 @@ int CPersistantStats::GetStatForActorThisSession(EStreakIntPersistantStats stat,
 
 float CPersistantStats::GetStatForActorThisSession(EStreakFloatPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	float result=0;
 
@@ -1630,7 +1630,7 @@ float CPersistantStats::GetStatForActorThisSession(EStreakFloatPersistantStats s
 //---------------------------------------
 int CPersistantStats::GetStatForActorThisSession(EIntPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	int result=0;
 
@@ -1662,7 +1662,7 @@ int CPersistantStats::GetStatForActorThisSession(EIntPersistantStats stat, Entit
 //---------------------------------------
 float CPersistantStats::GetStatForActorThisSession(EFloatPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	float result=0;
 
@@ -1693,7 +1693,7 @@ float CPersistantStats::GetStatForActorThisSession(EFloatPersistantStats stat, E
 //---------------------------------------
 int CPersistantStats::GetStatForActorThisSession(EMapPersistantStats stat, const char * param, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	int result=0;
 
@@ -1723,7 +1723,7 @@ int CPersistantStats::GetStatForActorThisSession(EMapPersistantStats stat, const
 //---------------------------------------
 int CPersistantStats::GetDerivedStatForActorThisSession(EDerivedIntPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	int statAtSessionStart=0;
 	int statAtSessionEnd=0;
@@ -1755,7 +1755,7 @@ int CPersistantStats::GetDerivedStatForActorThisSession(EDerivedIntPersistantSta
 //---------------------------------------
 float CPersistantStats::GetDerivedStatForActorThisSession(EDerivedFloatPersistantStats stat, EntityId inActorId)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 	float statAtSessionStart=0.f;
 	float statAtSessionEnd=0.f;
@@ -1787,7 +1787,7 @@ float CPersistantStats::GetDerivedStatForActorThisSession(EDerivedFloatPersistan
 
 void CPersistantStats::GetMapStatForActorThisSession(EMapPersistantStats stat, EntityId inActorId, std::vector<int> &result)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalClient = (inActorId == localClientId);
 
 	CRY_DEBUG_LOG(AFTER_MATCH_AWARDS, "CPersistantStats::GetMapStatForActor() stat=%d; inActorId=%d; isLocalClient=%d", stat, inActorId, isLocalClient);
@@ -1850,7 +1850,7 @@ int CPersistantStats::GetCurrentStat(EntityId actorId, EStreakIntPersistantStats
 //---------------------------------------
 SSessionStats* CPersistantStats::GetActorSessionStats(EntityId actorId)
 {
-	EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(clientId == actorId && clientId != 0)
 	{
 		return GetClientPersistantStats();
@@ -1947,7 +1947,7 @@ void CPersistantStats::Update(const float dt)
 	CGameRules* pGameRules = g_pGame->GetGameRules();
   if(pGameRules != NULL && pGameRules->IsGameInProgress())
   {
-    IActor* pClientActor =gEnv->pGame->GetIGameFramework()->GetClientActor();
+    IActor* pClientActor =gEnv->pGameFramework->GetClientActor();
     if(pClientActor != NULL && !pClientActor->IsDead())
     {
 			CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
@@ -2030,7 +2030,7 @@ void CPersistantStats::Update(const float dt)
 
 							CGameRules* pNewGameRules = g_pGame->GetGameRules();
 
-							EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+							EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 							int localClientTeamId = pNewGameRules->GetTeam(localClientId);
 							int corpseTeamId = pNewGameRules->GetTeam(corpseId);
 
@@ -2250,7 +2250,7 @@ void CPersistantStats::EnteredGame()
 
 void CPersistantStats::ClientDisconnect( EntityId clientId )
 {
-	if(clientId == gEnv->pGame->GetIGameFramework()->GetClientActorId())
+	if(clientId == gEnv->pGameFramework->GetClientActorId())
 	{
 		ClearListeners();
 	}
@@ -2259,7 +2259,7 @@ void CPersistantStats::ClientDisconnect( EntityId clientId )
 void CPersistantStats::HandleTaggingEntity(EntityId shooterId, EntityId targetId)
 {
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-	CActor* pLocalActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CActor* pLocalActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 	EntityId localClientId = 0;
 	if (pLocalActor)
 	{
@@ -2326,7 +2326,7 @@ void CPersistantStats::HandleTaggingEntity(EntityId shooterId, EntityId targetId
 //---------------------------------------
 void CPersistantStats::HandleLocalWinningKills()
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 
 	int firstBloodThisSession=GetStatForActorThisSession(EIPS_FirstBlood, localClientId);
 	if (firstBloodThisSession>0)
@@ -2405,7 +2405,7 @@ void CPersistantStats::GameOver(EGameOverType localWinner, bool isClientSpectato
 		const char* gamemodeName = pGameRules->GetEntity()->GetClass()->GetName();
 		if(gamemodeName)
 		{
-			CActor* pClientActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+			CActor* pClientActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 
 			if(pClientActor)
 			{
@@ -2431,7 +2431,7 @@ void CPersistantStats::GameOver(EGameOverType localWinner, bool isClientSpectato
 					pSessionStats->m_mapStats[EMPS_Gamemodes].Update(gamemodeName);
 				}
 
-				const char* mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+				const char* mapName = gEnv->pGameFramework->GetLevelName();
 				if(mapName)
 				{
 					const string& lowerMapName = CryStringUtils::toLower(mapName);
@@ -2489,7 +2489,7 @@ void CPersistantStats::GameOver(EGameOverType localWinner, bool isClientSpectato
 							pSessionStats->m_streakIntStats[ESIPS_OnlineRankedWin].Increment();
 						}
 
-						int clientTeam = pGameRules->GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+						int clientTeam = pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId());
 						int opponentsTeam = 3 - clientTeam;
 						int opponentsTeamScore = pGameRules->GetTeamsScore(opponentsTeam);
 
@@ -2599,7 +2599,7 @@ const bool CPersistantStats::IsClientMVP(CGameRules* pGameRules) const
 	CRY_ASSERT(pPlayStatsMod);
 	if(pPlayStatsMod)
 	{
-		EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		const SGameRulesPlayerStat* pClientStat = pPlayStatsMod->GetPlayerStats(clientId);
 		if(pClientStat)
 		{
@@ -2785,7 +2785,7 @@ void CPersistantStats::ClientScoreEvent(EGameRulesScoreType scoreType, int point
 							{
 								const int numPointsForCapture = pScoringModule->GetTeamPointsByType((EGRST)scoreType);
 
-								const int  clientTeam = pGameRules->GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+								const int  clientTeam = pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId());
 
 								const int  otherTeam = (3 - clientTeam);
 								CRY_ASSERT((otherTeam == 1) || (otherTeam == 2));
@@ -2877,7 +2877,7 @@ void CPersistantStats::OnRoundEnd()
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	EGameMode mode = pGameRules->GetGameMode();
 	SSessionStats *pSessionStats = GetClientPersistantStats();
-	int clientTeam = pGameRules->GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+	int clientTeam = pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId());
 	int opponentsTeam = 3 - clientTeam;
 
 	switch (mode)
@@ -2943,7 +2943,7 @@ bool CPersistantStats::ShouldProcessOnEntityKilled(const HitInfo &hitInfo)
 
 	if(hitInfo.shooterId != 0 && hitInfo.targetId != 0)
 	{
-		IActor* pTargetActor =gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitInfo.targetId);
+		IActor* pTargetActor =gEnv->pGameFramework->GetIActorSystem()->GetActor(hitInfo.targetId);
 		return pTargetActor != NULL;
 	}
 
@@ -2983,7 +2983,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 			else
 			{
 				CPlayer* pShooterPlayer = static_cast<CPlayer*>(pGameRules->GetActorByEntityId(hitInfo.shooterId));
-				CActor* pTargetActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitInfo.targetId));
+				CActor* pTargetActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(hitInfo.targetId));
 
 				// Is this an enemy
 				bool enemy = true;
@@ -3021,7 +3021,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 				}
 				else if(enemy && hitInfo.type == CGameRules::EHitType::EventDamage)
 				{
-					const char* mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+					const char* mapName = gEnv->pGameFramework->GetLevelName();
 					if(mapName)
 					{
 						const string& lowerMapName = CryStringUtils::toLower(mapName);
@@ -3086,7 +3086,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 						}
 						if(pShooterPlayer && pShooterPlayer->IsClient() )
 						{							
-							IItem *pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(hitInfo.weaponId);
+							IItem *pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(hitInfo.weaponId);
 							if(pItem)
 							{
 								CWeapon* pWeapon = static_cast<CWeapon*>(pItem->GetIWeapon());
@@ -3094,7 +3094,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 								{
 									const bool isZoomed = pWeapon->IsZoomed();
 									const bool isFootShot = pTargetActor->IsFootShot(hitInfo);
-									const IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+									const IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 									const CItem::TAccessoryArray& accessoryArray = pWeapon->GetAccessories();
 									const int accesssoryCount = accessoryArray.size();
 									for(int i = 0; i < accesssoryCount; i++)
@@ -3158,7 +3158,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 							if (pRoundsModule)
 							{
 								//if defender
-								int clientTeam = pGameRules->GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+								int clientTeam = pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId());
 								if(pRoundsModule->GetPrimaryTeam() != clientTeam)
 								{
 									pShooterStats->m_streakIntStats[ESIPS_AssaultAttackersKilled].Increment();
@@ -3446,7 +3446,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 					}
 				}
 
-				CActor* pClientActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+				CActor* pClientActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 				if(pClientActor)
 				{
 					//we're not the shooter or the victim
@@ -3716,7 +3716,7 @@ void CPersistantStats::SetNewWeaponListener(IWeapon* pWeapon, EntityId weaponId,
 	
 	pWeapon->AddEventListener(this, "CPersistantStats");
 	
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	if (actorId == localClientId)
 	{
 		SSessionStats *pSessionStats = GetClientPersistantStats();
@@ -3727,7 +3727,7 @@ void CPersistantStats::SetNewWeaponListener(IWeapon* pWeapon, EntityId weaponId,
 //---------------------------------------
 void CPersistantStats::RemoveWeaponListener(EntityId weaponId)
 {
-	IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId);
+	IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId);
 	if(pItem)
 	{
 		IWeapon *pWeapon = pItem->GetIWeapon();
@@ -3772,7 +3772,7 @@ void CPersistantStats::OnShoot(IWeapon *pWeapon, EntityId shooterId, EntityId am
 		{
 			pSessionStats->m_mapStats[EMPS_WeaponShots].Update(weaponName, ammoCost);
 
-			EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+			EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 			if (shooterId == localClientId)
 			{
 				IFireMode* pFireMode = pWeapon->GetFireMode(pWeapon->GetCurrentFireMode());
@@ -3783,7 +3783,7 @@ void CPersistantStats::OnShoot(IWeapon *pWeapon, EntityId shooterId, EntityId am
 			}
 		}
 
-		if( shooterId == g_pGame->GetClientActorId() )
+		if( shooterId == gEnv->pGameFramework->GetClientActorId() )
 		{
 			IActor *pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(shooterId);
 			IEntityClass* pClass = pWeaponImpl->GetEntity()->GetClass();
@@ -3822,7 +3822,7 @@ void CPersistantStats::OnMelee(IWeapon* pWeapon, EntityId shooterId)
 //---------------------------------------
 void CPersistantStats::OnStartReload(IWeapon *pWeapon, EntityId shooterId, IEntityClass* pAmmoType)
 {
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	if (shooterId == localClientId)
 	{
 		SSessionStats *pSessionStats = GetClientPersistantStats();
@@ -4033,7 +4033,7 @@ void CPersistantStats::ClientHit(const HitInfo& hitInfo)
 void CPersistantStats::ClientShot(CGameRules* pGameRules, uint8 hitType, const Vec3& dir)
 {
 	SSessionStats *pSessionStats = GetClientPersistantStats();
-	IActor * pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor * pActor = gEnv->pGameFramework->GetClientActor();
 
 	if (hitType == CGameRules::EHitType::Bullet)
 	{
@@ -4274,7 +4274,7 @@ void CPersistantStats::OnEvent(EPPType type, bool skillKill, void *data)
 //---------------------------------------
 const char* CPersistantStats::GetActorItemName(EntityId actorId)
 {
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
+	IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId);
 	if(pActor)
 	{
 		IItem *pItem = pActor->GetCurrentItem();
@@ -4289,7 +4289,7 @@ const char* CPersistantStats::GetActorItemName(EntityId actorId)
 //---------------------------------------
 const char* CPersistantStats::GetItemName(EntityId weaponId)
 {
-	IItem *pItem=gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId);
+	IItem *pItem=gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId);
 	if(pItem)
 	{
 		return GetItemName(pItem);
@@ -4677,7 +4677,7 @@ const bool CPersistantStats::IsMapParam(const uint32 flag, const char* paramName
 //----------------------------------------------------------
 void CPersistantStats::UpdateClientGrenadeBounce(const Vec3 pos, const float radius)
 {
-	CActor* pClientActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CActor* pClientActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 	if(pClientActor)
 	{
 		IActorIteratorPtr pIt = g_pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
@@ -5180,7 +5180,7 @@ void CPersistantStats::OnGameStarted()
 //------------------------------------------
 void CPersistantStats::OnEnteredVTOL( EntityId playerId )
 {
-	if( playerId == g_pGame->GetClientActorId() )
+	if( playerId == gEnv->pGameFramework->GetClientActorId() )
 	{
 		m_localPlayerInVTOL = true;
 	}
@@ -5189,7 +5189,7 @@ void CPersistantStats::OnEnteredVTOL( EntityId playerId )
 //------------------------------------------
 void CPersistantStats::OnExitedVTOL( EntityId playerId )
 {
-	if( playerId == g_pGame->GetClientActorId()  )
+	if( playerId == gEnv->pGameFramework->GetClientActorId()  )
 	{
 		m_localPlayerInVTOL = false;
 	}
@@ -5239,7 +5239,7 @@ void CPersistantStats::OnClientDestroyedVehicle( const SVehicleDestroyedParams& 
 			}
 		}
 
-		EntityId clientActorId = g_pGame->GetClientActorId();
+		EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
 
 		CGameRules* pGameRules = g_pGame->GetGameRules(); 
 

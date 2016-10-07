@@ -736,7 +736,7 @@ void CPickAndThrowWeapon::EnslaveTarget(bool enslave)
 					const IAnimationDatabase *pAnimDB = NULL;
 					if (!GetGrabTypeParams().dbaFile.empty())
 					{
-						IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+						IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 						pAnimDB = mannequinSys.GetAnimationDatabaseManager().Load(GetGrabTypeParams().dbaFile.c_str());
 					}
 
@@ -1333,7 +1333,7 @@ bool CPickAndThrowWeapon::OnActionMelee(EntityId actorId, const ActionId& action
 				}
 
 				//track melee combo
-				IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( actorId );
+				IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( actorId );
 				CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();
 
 				if( IStatsTracker* pTracker = pRecordingMgr ? pRecordingMgr->GetStatsTracker( pOwnerActor ) : NULL )
@@ -3248,7 +3248,7 @@ int CPickAndThrowWeapon::DoSimpleMeleeHit( const ray_hit& hitResult, EntityId co
 			}
 
 			//Play Material FX
-			IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+			IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 			TMFXEffectId effectId = pMaterialEffects->GetEffectId(GetGrabTypeParams().melee_mfxLibrary.c_str(), hitResult.surface_idx);
 			if (effectId != InvalidEffectId)

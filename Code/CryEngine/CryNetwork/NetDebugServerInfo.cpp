@@ -7,7 +7,6 @@
 	#include "NetDebugServerInfo.h"
 	#include "NetCVars.h"
 	#include <CrySystem/ISystem.h>
-	#include <CryGame/IGame.h>
 	#include <CryGame/IGameFramework.h>
 
 CNetDebugServerInfo::CNetDebugServerInfo()
@@ -25,7 +24,7 @@ void CNetDebugServerInfo::Tick(const SNetworkProfilingStats* const pProfilingSta
 
 void CNetDebugServerInfo::Draw(const SNetworkProfilingStats* const pProfilingStats)
 {
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 
 	if (pGameFramework)
 	{

@@ -1,10 +1,9 @@
 ﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
 using CryEngine.Common;
 
 namespace CryEngine.EntitySystem
-{	
+{
 	public class EntityUpdateListener : IMonoListener
 	{
 		#region Events
@@ -18,29 +17,37 @@ namespace CryEngine.EntitySystem
 		/// <summary>
 		/// This consutrctor will automatically register the MonoListener with CRYENGINE's mono runtime.
 		/// </summary>
-		public EntityUpdateListener ()
+		public EntityUpdateListener()
 		{
-			Global.gEnv.pMonoRuntime.RegisterListener (this);
+			AddListener();
+
+			Engine.EndReload += AddListener;
 		}
 		#endregion
 
 		#region Methods
+		void AddListener()
+		{
+			Global.gEnv.pMonoRuntime.RegisterListener(this);
+		}
+
 		/// <summary>
 		/// Upon dispose the MonoListener will automatically be unregistered from CRYENGINE's mono runtime.
 		/// </summary>
-	 	public override void Dispose ()
+		public override void Dispose()
 		{
-			Global.gEnv.pMonoRuntime.UnregisterListener (this);
-			base.Dispose ();
+			Global.gEnv.pMonoRuntime.UnregisterListener(this);
+
+			base.Dispose();
 		}
 
 		/// <summary>
 		/// Translate 'OnUpdate' callback to managed 'Update' event.
 		/// </summary>
-		public override void OnUpdate (int updateFlags, int nPauseMode)
+		public override void OnUpdate(int updateFlags, int nPauseMode)
 		{
 			if (Update != null)
-				Update (updateFlags, nPauseMode);
+				Update(updateFlags, nPauseMode);
 		}
 		#endregion
 	}

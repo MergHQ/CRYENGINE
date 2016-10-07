@@ -27,7 +27,6 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAgent.h>
 #include <CrySystem/File/ICryPak.h>
-#include <CryGame/IGame.h>
 #include <CrySystem/ITestSystem.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMath/Cry_Camera.h>

@@ -26,7 +26,7 @@ bool CWaypointPath::CreatePath(IEntity* pPathEntity)
 	m_Nodes.clear();
 	m_MaxNodeIndex = -1;
 
-	IGameVolumes* pGameVolumes = gEnv->pGame->GetIGameFramework()->GetIGameVolumesManager();
+	IGameVolumes* pGameVolumes = gEnv->pGameFramework->GetIGameVolumesManager();
 	if (pGameVolumes != NULL)
 	{
 		IGameVolumes::VolumeInfo volumeInfo;

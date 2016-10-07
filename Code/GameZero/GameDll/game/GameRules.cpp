@@ -10,7 +10,7 @@ CGameRules::CGameRules()
 
 CGameRules::~CGameRules()
 {
-	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
+	gEnv->pGameFramework->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
 }
 
 bool CGameRules::Init(IGameObject* pGameObject)
@@ -20,7 +20,7 @@ bool CGameRules::Init(IGameObject* pGameObject)
 	if (!pGameObject->BindToNetwork())
 		return false;
 
-	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(this);
+	gEnv->pGameFramework->GetIGameRulesSystem()->SetCurrentGameRules(this);
 
 	return true;
 }
@@ -45,7 +45,7 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 	if (channelId)
 	{
 		params.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
-		if (INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetNetChannel(channelId))
+		if (INetChannel* pNetChannel = gEnv->pGameFramework->GetNetChannel(channelId))
 		{
 			if (pNetChannel->IsLocal())
 			{

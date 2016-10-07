@@ -19,7 +19,6 @@
 #include "EntitySystem.h"
 #include "EntityObject.h"
 #include <CryMath/GeomQuery.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #include <Cry3DEngine/I3DEngine.h>
@@ -987,7 +986,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 		if ((createParams.nEntitySlotFlagsAdd & ENTITY_SLOT_BREAK_AS_ENTITY_MP) == 0)
 		{
 			// Inform that a new holding entity was created
-			gEnv->pGame->GetIGameFramework()->OnBreakageSpawnedEntity(pEntity, pPhysEnt, pSrcPhysEnt);
+			gEnv->pGameFramework->OnBreakageSpawnedEntity(pEntity, pPhysEnt, pSrcPhysEnt);
 		}
 
 		BreakLogAlways("BREAK: Creating entity, ptr: 0x%p   ID: 0x%08X", pEntity, pEntity->GetId());

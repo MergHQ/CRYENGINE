@@ -2675,7 +2675,7 @@ void CNetContextState::GC_Lazy_TickEstablishers()
 {
 	_smart_ptr<CNetContextState> pThis = this;
 
-	if (!gEnv->pGame->GetIGameFramework()->GetNetContext())
+	if (!gEnv->pGameFramework->GetNetContext())
 	{
 		// Can get in here if the host leaves while we're in the middle of loading, need to abort the tick to avoid
 		// several tasks crashing

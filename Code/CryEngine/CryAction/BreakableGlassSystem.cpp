@@ -247,7 +247,7 @@ int CBreakableGlassSystem::HandleImpact(const EventPhys* pPhysEvent)
 						if (pCollider && pCollider->GetType() == PE_LIVING)
 						{
 							IEntity* pColliderEntity = (IEntity*)pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-							IActor* pActor = pColliderEntity ? gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pColliderEntity->GetId()) : NULL;
+							IActor* pActor = pColliderEntity ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pColliderEntity->GetId()) : NULL;
 
 							if (pActor && pActor->MustBreakGlass())
 							{

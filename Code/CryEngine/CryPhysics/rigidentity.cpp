@@ -3702,7 +3702,7 @@ int CRigidEntity::GetStateSnapshot( TSerialize ser, float time_back, int flags )
 
 /*
 	{
-		IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 		char name[64];
 		cry_sprintf(name, "Send_%p", this);
 		pPD->Begin(name, true);
@@ -4105,7 +4105,7 @@ int CRigidEntity::SetStateFromSnapshot( TSerialize ser, int flags )
 
 /*
 		{
-			IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			char name[64];
 			cry_sprintf(name, "Snap_%p", this);
 			pPD->Begin(name, true);

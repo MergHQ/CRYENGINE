@@ -650,7 +650,7 @@ public:
 
 	virtual ERenderType GetRenderType() const override;
 
-	virtual WIN_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HINSTANCE hinst, WIN_HWND Glhwnd = 0, bool bReInit = false, const SCustomRenderInitArgs* pCustomArgs = 0, bool bShaderCacheGen = false) override = 0;
+	virtual WIN_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd = 0, bool bReInit = false, const SCustomRenderInitArgs* pCustomArgs = 0, bool bShaderCacheGen = false) override = 0;
 
 	virtual WIN_HWND    GetCurrentContextHWND() override  { return GetHWND(); }
 	virtual bool        IsCurrentContextMainVP() override { return true; }

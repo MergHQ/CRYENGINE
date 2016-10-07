@@ -1287,7 +1287,7 @@ bool CGameLobby::CheckDLCRequirements()
 			}
 		}
 
-		gEnv->pGame->AddGameWarning("DlcNotAvailable", NULL);
+		g_pGame->AddGameWarning("DlcNotAvailable", NULL);
 	}
 	return checkOk;
 }
@@ -2080,7 +2080,7 @@ bool CGameLobby::CheckRankRestrictions()
 			if (!bAllowedToJoin)
 			{
 				LeaveSession(true, false);
-				gEnv->pGame->AddGameWarning("RankRestriction", pWarning);
+				g_pGame->AddGameWarning("RankRestriction", pWarning);
 			}
 		}
 	}
@@ -5256,7 +5256,7 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 						}
 #endif
 						LeaveSession(true, false);
-						gEnv->pGame->AddGameWarning("DlcNotAvailable", NULL);
+						g_pGame->AddGameWarning("DlcNotAvailable", NULL);
 					}
 					else
 					{
@@ -6269,7 +6269,7 @@ void CGameLobby::CmdStartGame(IConsoleCmdArgs* pCmdArgs)
 			if (!playersMissingDLC.empty())
 #endif //!defined( _RELEASE )
 			{
-				gEnv->pGame->AddGameWarning("DlcNotAvailable", "a player does not meet DLC requirement");
+				g_pGame->AddGameWarning("DlcNotAvailable", "a player does not meet DLC requirement");
 			}
 			else
 			{
@@ -6546,7 +6546,7 @@ void CGameLobby::InviteAcceptedCallback( UCryLobbyEventData eventData, void *use
 	CGameLobbyManager *pGameLobbyMgr = g_pGame->GetGameLobbyManager();
 	CSquadManager *pSquadMgr = g_pGame->GetSquadManager();
 
-	gEnv->pGame->GetIGameFramework()->InitGameType(true, false);
+	gEnv->pGameFramework->InitGameType(true, false);
 
 	if(pGameLobbyMgr)
 	{
@@ -6590,7 +6590,7 @@ void CGameLobby::GameRulesChanged( const char *pGameRules )
 
 #else
 
-	if (gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->HaveGameRules(pGameRules))
+	if (gEnv->pGameFramework->GetIGameRulesSystem()->HaveGameRules(pGameRules))
 	{
 		ICVar *pCVar = gEnv->pConsole->GetCVar("sv_gamerules");
 		if (pCVar)
@@ -10236,7 +10236,7 @@ void CGameLobby::DoUnload()
 	IGameFramework *pFramework = g_pGame->GetIGameFramework();
 	if (pFramework->StartedGameContext() || pFramework->StartingGameContext())
 	{
-		gEnv->pGame->GetIGameFramework()->ExecuteCommandNextFrame("disconnect");
+		gEnv->pGameFramework->ExecuteCommandNextFrame("disconnect");
 	}
 
 #if 0 // old frontend

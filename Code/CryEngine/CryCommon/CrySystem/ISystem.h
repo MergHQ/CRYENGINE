@@ -22,6 +22,8 @@
 #include <CryMemory/IMemory.h>          // <> required for Interfuscator
 #include <CrySystem/ISystemScheduler.h> // <> required for Interfuscator
 
+#include <CryMath/LCGRandom.h>
+
 struct ISystem;
 struct ILog;
 struct IProfileLogSystem;
@@ -42,7 +44,6 @@ struct ITelemetrySystem;
 struct IProcess;
 struct I3DEngine;
 struct ITimer;
-struct IGame;
 struct IGameFramework;
 struct IGameStartup;
 struct IScriptSystem;
@@ -105,6 +106,7 @@ struct IWindowMessageHandler;
 struct SFunctor;
 struct IScaleformHelper;
 struct ICryPluginManager;
+struct IProjectManager;
 
 class CBootProfilerRecord;
 
@@ -228,13 +230,6 @@ enum ESystemGlobalState
 //! System wide events.
 enum ESystemEvent
 {
-	//! Seeds all random number generators to the same seed number, WParam will hold seed value.
-	//! ##@{
-	ESYSTEM_EVENT_RANDOM_SEED = 1,
-	ESYSTEM_EVENT_RANDOM_ENABLE,
-	ESYSTEM_EVENT_RANDOM_DISABLE,
-	//! ##@}.
-
 	//! Changes to main window focus.
 	//! wparam is not 0 is focused, 0 if not focused.
 	ESYSTEM_EVENT_CHANGE_FOCUS = 10,
@@ -463,6 +458,9 @@ enum ESystemEvent
 
 	//! Sent when a CVar is unregistered
 	ESYSTEM_EVENT_CVAR_UNREGISTERED,
+
+	// Sent when flow nodes should be registered
+	ESYSTEM_EVENT_REGISTER_FLOWNODES,
 };
 
 //! User defined callback, which can be passed to ISystem.
@@ -596,7 +594,6 @@ struct SControllerPairingChanged
 //! Structure passed to Init method of ISystem interface.
 struct SSystemInitParams
 {
-	void*                hInstance;
 	void*                hWnd;
 	ILog*                pLog;           //!< You can specify your own ILog to be used by System.
 	ILogCallback*        pLogCallback;   //!< You can specify your own ILogCallback to be added on log creation (used by Editor).
@@ -610,9 +607,9 @@ struct SSystemInitParams
 	char                 szSystemCmdLine[2048]; //!< Command line.
 	char                 szUserPath[256];       //!< User alias path relative to My Documents folder.
 	char                 szBinariesDir[256];
-	char                 szProjectDllDir[256];
 
 	bool                 bEditor;             //!< When running in Editor mode.
+	bool                 bManualEngineLoop; //!< Whether or not the engine should manage the engine loop by itself
 	bool                 bPreview;            //!< When running in Preview mode (Minimal initialization).
 	bool                 bTestMode;           //!< When running in Automated testing mode.
 	bool                 bDedicatedServer;    //!< When running a dedicated server.
@@ -637,6 +634,7 @@ struct SSystemInitParams
 
 	ISystem*      pSystem;                //!< Pointer to existing ISystem interface, it will be reused if not NULL.
 	IGameStartup* pGameStartup;           //!< Pointer to the calling GameStartup instance, to allow use of some game specific data during engine init.
+	IGameFramework* pGameFramework;       //!< Pointer to the framework that started the engine
 	//! Char szLocalIP[256];              //! local IP address (needed if we have several servers on one machine).
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	void (* pCheckFunc)(void*);            //!< Authentication function (must be set).
@@ -652,7 +650,6 @@ struct SSystemInitParams
 	//! Initialization defaults.
 	SSystemInitParams()
 	{
-		hInstance = NULL;
 		hWnd = NULL;
 		pLog = NULL;
 		pLogCallback = NULL;
@@ -666,8 +663,8 @@ struct SSystemInitParams
 		memset(szSystemCmdLine, 0, sizeof(szSystemCmdLine));
 		memset(szUserPath, 0, sizeof(szUserPath));
 		memset(szBinariesDir, 0, sizeof(szBinariesDir));
-		memset(szProjectDllDir, 0, sizeof(szProjectDllDir));
 		bEditor = false;
+		bManualEngineLoop = false;
 		bPreview = false;
 		bTestMode = false;
 		bDedicatedServer = false;
@@ -811,7 +808,6 @@ struct SSystemGlobalEnvironment
 	IFrameProfileSystem*         pFrameProfileSystem;
 	ITimer*                      pTimer;
 	ICryFont*                    pCryFont;
-	IGame*                       pGame;
 	IGameFramework*              pGameFramework;
 	ILocalMemoryUsage*           pLocalMemoryUsage;
 	IEntitySystem*               pEntitySystem;
@@ -968,9 +964,6 @@ struct SSystemGlobalEnvironment
 	ILINE const bool IsEditing() const
 	{
 #if CRY_PLATFORM_DESKTOP
-		if (!pGame)
-			return bEditor;
-		else
 			return bEditor && !bEditorGameMode;
 #else
 		return false;
@@ -1211,6 +1204,8 @@ struct ISystem
 	//! Fills the output array by random numbers using CMTRand_int32 generator
 	virtual void FillRandomMT(uint32* pOutWords, uint32 numWords) = 0;
 
+	virtual CRndGen& GetRandomGenerator() = 0;
+
 	// Return the related subsystem interface.
 
 	virtual IZLibCompressor*       GetIZLibCompressor() = 0;
@@ -1246,6 +1241,7 @@ struct ISystem
 	virtual IConsole*              GetIConsole() = 0;
 	virtual IRemoteConsole*        GetIRemoteConsole() = 0;
 	virtual ICryPluginManager*     GetIPluginManager() = 0;
+	virtual IProjectManager*       GetIProjectManager() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;
@@ -1256,8 +1252,6 @@ struct ISystem
 
 	virtual WIN_HWND                           GetHWND() = 0;
 
-	virtual IGame*                             GetIGame() = 0;
-	virtual IGameFramework*                    GetIGameFramework() = 0;
 	virtual INetwork*                          GetINetwork() = 0;
 	virtual IRenderer*                         GetIRenderer() = 0;
 	virtual IInput*                            GetIInput() = 0;
@@ -1269,9 +1263,6 @@ struct ISystem
 	virtual void                               SetLoadingProgressListener(ILoadingProgressListener* pListener) = 0;
 	virtual ISystem::ILoadingProgressListener* GetLoadingProgressListener() const = 0;
 
-	//! Game is created after System init, so has to be set explicitly.
-	virtual void SetIGame(IGame* pGame) = 0;
-	virtual void SetIGameFramework(IGameFramework* pGameFramework) = 0;
 	virtual void SetIFlowSystem(IFlowSystem* pFlowSystem) = 0;
 	virtual void SetIDialogSystem(IDialogSystem* pDialogSystem) = 0;
 	virtual void SetIMaterialEffects(IMaterialEffects* pMaterialEffects) = 0;
@@ -1857,7 +1848,7 @@ struct SDummyCVar : ICVar
 	const char*     GetHelp()                                             { return NULL; }
 	bool            IsConstCVar() const                                   { return true; }
 	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc)       { (void)pChangeFunc; }
-	void            AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) {}
+	uint64            AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) { return 0;  }
 	uint64          GetNumberOfOnChangeFunctors() const                   { return 0; }
 	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const        { InvalidAccess(); return *(const SFunctor*)NULL; }
 	bool            RemoveOnChangeFunctor(const uint64 nElement)          { return true; }

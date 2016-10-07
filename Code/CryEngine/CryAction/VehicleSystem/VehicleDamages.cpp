@@ -122,7 +122,7 @@ void CVehicleDamages::ParseDamageMultipliers(TDamageMultipliers& multipliersByHi
 				{
 					uint16 classId(~uint16(0));
 
-					if (ammoType == "default" || gEnv->pGame->GetIGameFramework()->GetNetworkSafeClassId(classId, ammoType.c_str()))
+					if (ammoType == "default" || gEnv->pGameFramework->GetNetworkSafeClassId(classId, ammoType.c_str()))
 					{
 						GetAndInsertMultiplier(multipliersByProjectile, multiplierTable, int(classId));
 					}
@@ -202,7 +202,7 @@ bool CVehicleDamages::ProcessHit(float& damage, const HitInfo& hitInfo, bool spl
 
 #if ENABLE_VEHICLE_DEBUG
 		char str[256];
-		if (gEnv->pGame->GetIGameFramework()->GetNetworkSafeClassName(str, sizeof(str), hitInfo.projectileClassId))
+		if (gEnv->pGameFramework->GetNetworkSafeClassName(str, sizeof(str), hitInfo.projectileClassId))
 		{
 			displayDamageType = "ProjClass: ";
 			displayDamageType += str;

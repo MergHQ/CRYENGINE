@@ -754,7 +754,7 @@ void CSmartPathFollower::ProcessPath()
 		//    else
 		//    {
 		//      // Can't find the floor!!
-		//      IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		//      IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		//      pDebug->AddSphere(endPoint.pos, 0.6f, ColorF(1.0f, 0, 0), 5.0f);
 		//      //AIAssert(false);
 		//    }
@@ -931,8 +931,8 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 #ifndef _RELEASE
 					if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 					{
-						gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
-						gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(1.0f, 0.0f, 0.0f), 1.0f);
+						gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
+						gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(1.0f, 0.0f, 0.0f), 1.0f);
 					}
 #endif
 					isAllowedToShortcut = false;
@@ -942,8 +942,8 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 #ifndef _RELEASE
 				if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 				{
-					gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
-					gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(0.0f, 1.0f, 0.0f), 1.0f);
+					gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
+					gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(0.0f, 1.0f, 0.0f), 1.0f);
 				}
 #endif
 			}

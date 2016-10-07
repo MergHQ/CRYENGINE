@@ -696,7 +696,7 @@ int CUNIXConsole::GetNumPlayers()
 	if (m_pSystem->IsQuitting())
 		return 0;
 
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	CGameServerNub* pGameServerNub = NULL;
 
 	if (pGameFramework == NULL)
@@ -1896,7 +1896,7 @@ void CUNIXConsole::OnUpdate()
 		m_CommandQueue.pop_front();
 	}
 
-	if (IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework())
+	if (IGameFramework* pGameFramework = gEnv->pGameFramework)
 		if (INetNub* pNub = pGameFramework->GetServerNetNub())
 			m_nubStats = pNub->GetStatistics();
 	m_pSystem->GetUpdateStats(m_updStats);
@@ -2284,7 +2284,7 @@ void CNULLConsole::OnUpdate()
 	#if defined(UC_ENABLE_PLAYER_COUNT)
 	if (!gEnv->pSystem->IsQuitting())
 	{
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 		if (pGameFramework)
 		{
 			CGameServerNub* pGameServerNub = reinterpret_cast<CCryAction*>(pGameFramework)->GetGameServerNub();

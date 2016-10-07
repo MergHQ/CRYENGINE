@@ -462,7 +462,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 {
 	s_pTimeDemoRecorder = this;
 
-	//gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
+	//gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 
 	CRY_ASSERT(GetISystem());
 
@@ -541,10 +541,10 @@ void CTimeDemoRecorder::Reset()
 const char* CTimeDemoRecorder::GetCurrentLevelPath()
 {
 	static char buf[_MAX_PATH];
-	gEnv->pGame->GetIGameFramework()->GetAbsLevelPath(buf, sizeof(buf));
+	gEnv->pGameFramework->GetAbsLevelPath(buf, sizeof(buf));
 	return &buf[0];
 	/*
-	   ILevel *pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+	   ILevel *pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 	   if (!pLevel)
 	    return "";
 	   ILevelInfo *pLevelInfo = pLevel->GetLevelInfo();
@@ -671,7 +671,7 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 	m_bPlaying = bEnable;
 
-	IActor* pClActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
 	if (pClActor)
 	{
 		IAnimatedCharacter* pAnimChar = pClActor->GetAnimatedCharacter();
@@ -1479,7 +1479,7 @@ bool CTimeDemoRecorder::RecordFrame()
 		return true;
 	}
 
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	GetISystem()->GetRandomGenerator().Seed(0);
 
 	FrameRecord rec;
 
@@ -1487,7 +1487,7 @@ bool CTimeDemoRecorder::RecordFrame()
 
 	IEntity* pPlayerEntity = NULL;
 
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		pPlayerEntity = pClientActor->GetEntity();
@@ -1609,7 +1609,7 @@ bool CTimeDemoRecorder::PlayFrame()
 	//////////////////////////////////////////////////////////////////////////
 
 	IEntity* pPlayer = NULL;
-	IActor* pClActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
 	if (pClActor)
 	{
 		pPlayer = pClActor->GetEntity();
@@ -1810,7 +1810,7 @@ float CTimeDemoRecorder::RenderInfo(float y)
 
 	if (!m_bPaused && m_demo_gameState && m_fileVersion >= TIMEDEMO_FILE_VERSION_4)
 	{
-		IGameStateRecorder* pGameStateRecorder = gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->GetIGameStateRecorder();
+		IGameStateRecorder* pGameStateRecorder = gEnv->pGameFramework->GetIGameplayRecorder()->GetIGameStateRecorder();
 		if (pGameStateRecorder)
 			retY += pGameStateRecorder->RenderInfo(y + retY, m_bRecording);
 	}
@@ -1887,11 +1887,11 @@ void CTimeDemoRecorder::StartSession()
 	m_prevGodMode = (int)GetConsoleVar("g_godMode");
 
 	if (m_demo_gameState && m_fileVersion >= TIMEDEMO_FILE_VERSION_4)
-		gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(true, this, m_bRecording);
+		gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(true, this, m_bRecording);
 
 	if (m_bPlaying)
 	{
-		IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 		if (pClientActor)
 		{
 			pClientActor->EnableTimeDemo(true);
@@ -1972,11 +1972,11 @@ void CTimeDemoRecorder::StopSession()
 	}
 	SetConsoleVar("mov_NoCutscenes", 0);
 
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 		pClientActor->EnableTimeDemo(false);
 
-	gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
+	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 
 	// Profile.
 	SetConsoleVar("profile_peak", m_oldPeakTolerance);
@@ -1998,8 +1998,8 @@ void CTimeDemoRecorder::ResetSessionLoop()
 		{
 		case 1:
 			// Quick load at the begining of the playback, so we restore initial state as good as possible.
-			if (gEnv->pGame->GetIGameFramework())
-				gEnv->pGame->GetIGameFramework()->LoadGame(GetInitSaveFileName());//, true, true);
+			if (gEnv->pGameFramework)
+				gEnv->pGameFramework->LoadGame(GetInitSaveFileName());//, true, true);
 
 			break;
 
@@ -2012,7 +2012,7 @@ void CTimeDemoRecorder::ResetSessionLoop()
 
 	}
 	// Reset random number generators seed.
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	GetISystem()->GetRandomGenerator().Seed(0);
 
 	m_totalDemoTime.SetMilliSeconds(0);
 	m_currentFrame = 0;
@@ -2484,7 +2484,7 @@ void CTimeDemoRecorder::StartNextChainedLevel()
 //////////////////////////////////////////////////////////////////////////
 string CTimeDemoRecorder::GetCurrentLevelName()
 {
-	return gEnv->pGame->GetIGameFramework()->GetLevelName();
+	return gEnv->pGameFramework->GetLevelName();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2626,7 +2626,7 @@ void CTimeDemoRecorder::ReplayGameState(FrameRecord& rec)
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Game state
-	IGameStateRecorder* pGameStateRecorder = gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->GetIGameStateRecorder();
+	IGameStateRecorder* pGameStateRecorder = gEnv->pGameFramework->GetIGameplayRecorder()->GetIGameStateRecorder();
 	if (pGameStateRecorder && m_fileVersion >= TIMEDEMO_FILE_VERSION_4 && m_demo_gameState)
 	{
 		int n = rec.gameEvents.size();

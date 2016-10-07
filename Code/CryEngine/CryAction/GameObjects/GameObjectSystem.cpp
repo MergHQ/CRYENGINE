@@ -36,45 +36,49 @@ bool CGameObjectSystem::Init()
 
 	memset(&m_defaultProfiles, 0, sizeof(m_defaultProfiles));
 
-	if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFromFile("Scripts/Network/EntityScheduler.xml"))
+	const char* schedulerFile = "Scripts/Network/EntityScheduler.xml";
+	if (gEnv->pCryPak->IsFileExist(schedulerFile))
 	{
-		uint32 defaultPolicy = 0;
-
-		if (XmlNodeRef defpol = schedParams->findChild("Default"))
+		if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFromFile(schedulerFile))
 		{
-			if (!StringToKey(defpol->getAttr("policy"), defaultPolicy))
+			uint32 defaultPolicy = 0;
+
+			if (XmlNodeRef defpol = schedParams->findChild("Default"))
 			{
-				GameWarning("Unable to read Default from EntityScheduler.xml");
+				if (!StringToKey(defpol->getAttr("policy"), defaultPolicy))
+				{
+					GameWarning("Unable to read Default from EntityScheduler.xml");
+				}
 			}
-		}
 
-		m_defaultProfiles.normal = m_defaultProfiles.owned = defaultPolicy;
+			m_defaultProfiles.normal = m_defaultProfiles.owned = defaultPolicy;
 
-		for (int i = 0; i < schedParams->getChildCount(); i++)
-		{
-			XmlNodeRef node = schedParams->getChild(i);
-			if (0 != strcmp(node->getTag(), "Class"))
-				continue;
+			for (int i = 0; i < schedParams->getChildCount(); i++)
+			{
+				XmlNodeRef node = schedParams->getChild(i);
+				if (0 != strcmp(node->getTag(), "Class"))
+					continue;
 
-			string name = node->getAttr("name");
+				string name = node->getAttr("name");
 
-			SEntitySchedulingProfiles p;
-			p.normal = defaultPolicy;
-			if (node->haveAttr("policy"))
-				StringToKey(node->getAttr("policy"), p.normal);
-			p.owned = p.normal;
-			if (node->haveAttr("own"))
-				StringToKey(node->getAttr("own"), p.owned);
+				SEntitySchedulingProfiles p;
+				p.normal = defaultPolicy;
+				if (node->haveAttr("policy"))
+					StringToKey(node->getAttr("policy"), p.normal);
+				p.owned = p.normal;
+				if (node->haveAttr("own"))
+					StringToKey(node->getAttr("own"), p.owned);
 
 #if !defined(_RELEASE)
-			TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(name));
-			if (iter != m_schedulingParams.end())
-			{
-				GameWarning("Class '%s' has been defined multiple times in EntityScheduler.xml", name.c_str());
-			}
+				TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(name));
+				if (iter != m_schedulingParams.end())
+				{
+					GameWarning("Class '%s' has been defined multiple times in EntityScheduler.xml", name.c_str());
+				}
 #endif //#if !defined(_RELEASE)
 
-			m_schedulingParams[name] = p;
+				m_schedulingParams[name] = p;
+			}
 		}
 	}
 
@@ -116,6 +120,11 @@ void CGameObjectSystem::Reset()
 void CGameObjectSystem::LoadSerializationOrderFile()
 {
 	static const char* SERIALIZATIONORDER_FILE = "Scripts/GameObjectSerializationOrder.xml";
+	if (!gEnv->pCryPak->IsFileExist(SERIALIZATIONORDER_FILE))
+	{
+		// Fail silently, we do not require the file
+		return;
+	}
 
 	XmlNodeRef xmlNodeRoot = GetISystem()->LoadXmlFromFile(SERIALIZATIONORDER_FILE);
 

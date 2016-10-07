@@ -23,7 +23,7 @@ void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
 {
 	if (event.event == eGFE_BecomeLocalPlayer)
 	{
-		IActionMapManager *pActionMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+		IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 
 		pActionMapManager->InitActionMaps("Libs/config/defaultprofile.xml");
 		pActionMapManager->Enable(true);

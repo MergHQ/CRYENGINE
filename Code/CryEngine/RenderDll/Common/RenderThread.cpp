@@ -3504,13 +3504,9 @@ void SRenderThread::SyncMainWithRender()
 
 	//gRenDev->m_RP.m_pCurrentRenderView->PrepareForRendering();
 
-	IGameFramework* pGameFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
-	if (pGameFramework && !pGameFramework->IsGamePaused())
+	if (gEnv->pCharacterManager && gEnv->pGameFramework && !gEnv->pGameFramework->IsGamePaused())
 	{
-		if (gEnv->pCharacterManager)
-		{
-			gEnv->pCharacterManager->UpdateRendererFrame();
-		}
+		gEnv->pCharacterManager->UpdateRendererFrame();
 	}
 
 	SignalFlushCond();

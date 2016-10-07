@@ -1517,7 +1517,7 @@ void C3DEngine::LoadParticleEffects(const char* szFolderName)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	if (m_pPartManager && GetSystem()->GetIGame())
+	if (m_pPartManager)
 	{
 		PrintMessage("===== Loading Particle Effects =====");
 

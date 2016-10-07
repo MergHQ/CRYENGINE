@@ -146,7 +146,7 @@ void CVehicleActionDeployRope::OnVehicleEvent(EVehicleEvent event, const SVehicl
 {
 	if(event == eVE_PassengerExit && params.iParam == m_pSeat->GetSeatId())
 	{
-    IActor *actor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(params.entityId);
+    IActor *actor = gEnv->pGameFramework->GetIActorSystem()->GetActor(params.entityId);
     
     if(actor && !actor->IsDead() && !m_pVehicle->IsDestroyed() && !gEnv->pSystem->IsSerializingFile())
 		{
@@ -176,9 +176,9 @@ void CVehicleActionDeployRope::PostSerialize()
 //------------------------------------------------------------------------
 void CVehicleActionDeployRope::Update(const float deltaTime)
 {
-	CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIActorSystem());
+	CRY_ASSERT(gEnv->pGameFramework->GetIActorSystem());
 
-	IActor					*pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actorId);
+	IActor					*pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actorId);
 
 	IRopeRenderNode	*pUpperRope = GetRopeRenderNode(m_upperRopeId);
 
@@ -227,9 +227,9 @@ void CVehicleActionDeployRope::GetMemoryUsage(ICrySizer *pSizer) const
 //------------------------------------------------------------------------
 bool CVehicleActionDeployRope::DeployRope()
 {
-	CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIActorSystem());
+	CRY_ASSERT(gEnv->pGameFramework->GetIActorSystem());
 
-	IActor	*pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actorId);
+	IActor	*pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actorId);
 
 	if(!m_pRopeHelper || !pActor)
 	{
@@ -360,9 +360,9 @@ IRopeRenderNode *CVehicleActionDeployRope::GetRopeRenderNode(EntityId ropeId)
 //------------------------------------------------------------------------
 bool CVehicleActionDeployRope::AttachActorToRope(EntityId actorId, EntityId ropeId)
 {
-	CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIActorSystem());
+	CRY_ASSERT(gEnv->pGameFramework->GetIActorSystem());
 
-	IActor	*pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
+	IActor	*pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId);
 
 	if(!pActor)
 	{

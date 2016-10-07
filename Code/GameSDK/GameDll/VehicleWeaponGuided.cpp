@@ -70,7 +70,7 @@ void CVehicleWeaponGuided::StartFire()
 	if(!m_vehicleId && GetEntity()->GetParent())
 	{
 		m_vehicleId = GetEntity()->GetParent()->GetId();
-		pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+		pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 		CRY_ASSERT(pVehicle && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
 
 		if(m_weaponsharedparams->pVehicleGuided)
@@ -151,7 +151,7 @@ void CVehicleWeaponGuided::Update(SEntityUpdateContext& ctx, int update)
 			if(!m_vehicleId && GetEntity()->GetParent())
 			{
 				m_vehicleId = GetEntity()->GetParent()->GetId();
-				CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
+				CRY_ASSERT(gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
 			}
 
 			IVehicle* pVehicle = GetVehicle();

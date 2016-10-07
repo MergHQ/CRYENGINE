@@ -1368,10 +1368,6 @@ bool CXConsole::OnInputEvent(const SInputEvent& event)
 		m_nCursorPos = 0;
 		if (m_pSystem)
 		{
-			if (!m_bConsoleActive)
-			{
-				//m_pSystem->GetIGame()->SendMessage("Switch");
-			}
 			ShowConsole(false);
 
 			ISystemUserCallback* pCallback = ((CSystem*)m_pSystem)->GetUserCallback();

@@ -46,7 +46,7 @@ struct SItemListAutoComplete : public IConsoleArgumentAutoComplete
 	// Gets number of matches for the argument to auto complete.
 	virtual int GetCount() const
 	{
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 		IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 		return pItemSystem->GetItemParamsCount();
 	}
@@ -54,7 +54,7 @@ struct SItemListAutoComplete : public IConsoleArgumentAutoComplete
 	// Gets argument value by index, nIndex must be in 0 <= nIndex < GetCount()
 	virtual const char* GetValue(int nIndex) const
 	{
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 		IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 		return pItemSystem->GetItemParamName(nIndex);
 	}
@@ -1139,7 +1139,7 @@ void CItemSystem::GiveItemCmd(IConsoleCmdArgs* args)
 	if (args->GetArgCount() < 2)
 		return;
 
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
 	IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
@@ -1177,7 +1177,7 @@ void CItemSystem::GiveItemCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CItemSystem::DropItemCmd(IConsoleCmdArgs* args)
 {
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
 	IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
@@ -1212,7 +1212,7 @@ void CItemSystem::DropItemCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CItemSystem::ListItemNames(IConsoleCmdArgs* args)
 {
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
 	const char* itemName = NULL;
@@ -1231,7 +1231,7 @@ void CItemSystem::GiveItemsHelper(IConsoleCmdArgs* args, bool useGiveable, bool 
 	if (args->GetArgCount() < 1)
 		return;
 
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	IActorSystem* pActorSystem = pGameFramework->GetIActorSystem();
 	CItemSystem* pItemSystem = static_cast<CItemSystem*>(pGameFramework->GetIItemSystem());
 
@@ -1310,7 +1310,7 @@ void CItemSystem::GiveDebugItemsCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CItemSystem::SaveWeaponPositionCmd(IConsoleCmdArgs* args)
 {
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (IActor* pActor = pGameFramework->GetClientActor())
 	{
 		if (IItem* pItem = pActor->GetCurrentItem())
@@ -1332,7 +1332,7 @@ void CItemSystem::GiveAmmoCmd(IConsoleCmdArgs* args)
 	if (!pClass)
 		return;
 
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pActor = gEnv->pGameFramework->GetClientActor();
 	if (!pActor)
 		return;
 
@@ -1433,7 +1433,7 @@ void CItemSystem::SerializePlayerLTLInfo(bool bReading)
 	}
 
 	IXmlSerializer* pSerializer = gEnv->pSystem->GetXmlUtils()->CreateXmlSerializer();
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pActor = gEnv->pGameFramework->GetClientActor();
 	ISerialize* pSer = NULL;
 	if (!bReading)
 		pSer = pSerializer->GetWriter(m_playerLevelToLevelSave);

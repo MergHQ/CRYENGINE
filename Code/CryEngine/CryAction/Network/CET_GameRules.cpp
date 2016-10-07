@@ -322,7 +322,7 @@ public:
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
 		bool loadingSaveGame = CCryAction::GetCryAction()->IsLoadingSaveGame();
-		if (!loadingSaveGame && !GetISystem()->IsSerializingFile() && gEnv->pGame->DoInitialSavegame())
+		if (!loadingSaveGame && !GetISystem()->IsSerializingFile())
 		{
 			CCryAction::GetCryAction()->SaveGame(CCryAction::GetCryAction()->GetStartLevelSaveGameName(), true, true, eSGR_LevelStart);
 		}

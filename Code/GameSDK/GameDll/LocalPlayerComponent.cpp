@@ -291,7 +291,7 @@ void CLocalPlayerComponent::TriggerFadeToBlack()
 	effectParams.pos = m_rPlayer.GetEntity()->GetWorldPos();
 	//effectParams.soundSemantic = eSoundSemantic_HUD;
 
-	gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->ExecuteEffect(m_screenFadeEffectId, effectParams);
+	gEnv->pGameFramework->GetIMaterialEffects()->ExecuteEffect(m_screenFadeEffectId, effectParams);
 }
 
 void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
@@ -347,7 +347,7 @@ void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
 
 void CLocalPlayerComponent::UpdateScreenFadeEffect()
 {
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	if(pMaterialEffects)
 	{
@@ -364,7 +364,7 @@ void CLocalPlayerComponent::ResetScreenFX()
 
 	if(m_screenFadeEffectId != InvalidEffectId)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->StopEffect(m_screenFadeEffectId);
+		gEnv->pGameFramework->GetIMaterialEffects()->StopEffect(m_screenFadeEffectId);
 	}
 }
 

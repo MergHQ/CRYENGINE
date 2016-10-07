@@ -143,7 +143,7 @@ bool EntityEffects::Cloak::DoesCloakFadeByDistance(EntityId ownerEntityId)
 	bool bCloakFadeByDist = false;
 	if(gEnv->bMultiplayer)
 	{
-		CActor* pLocalPlayer = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CActor* pLocalPlayer = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 		if(pLocalPlayer)
 		{
 			bool isEnemy = (pLocalPlayer->IsFriendlyEntity(ownerEntityId) == 0);
@@ -161,7 +161,7 @@ uint8 EntityEffects::Cloak::GetCloakColorChannel(EntityId ownerEntityId)
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	if(pGameRules)
 	{
-		const CGameRules::eThreatRating threatRating = pGameRules->GetThreatRating(g_pGame->GetClientActorId(), ownerEntityId);
+		const CGameRules::eThreatRating threatRating = pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), ownerEntityId);
 		return GetCloakColorChannel(threatRating==CGameRules::eFriendly);
 	}
 	return cloakColorChannel;
@@ -173,7 +173,7 @@ bool EntityEffects::Cloak::IgnoreRefractionColor(EntityId ownerEntityId)
 	bool bIgnoreCloakRefractionColor = false; // Leave default setting for sp
 	if(gEnv->bMultiplayer)
 	{
-		EntityId pLocalPlayerId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId pLocalPlayerId = gEnv->pGameFramework->GetClientActorId();
 		bool isLocalPlayer = (ownerEntityId == pLocalPlayerId);
 		// Local player has no refraction color in mp
 		if(isLocalPlayer)

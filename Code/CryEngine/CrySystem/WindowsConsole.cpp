@@ -293,7 +293,7 @@ void CWindowsConsole::OnUpdate()
 
 		m_lastUpdateTime = now;
 
-		if (IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework())
+		if (IGameFramework* pGameFramework = gEnv->pGameFramework)
 			if (INetNub* pNub = pGameFramework->GetServerNetNub())
 				m_nubStats = pNub->GetStatistics();
 		m_pSystem->GetUpdateStats(m_updStats);

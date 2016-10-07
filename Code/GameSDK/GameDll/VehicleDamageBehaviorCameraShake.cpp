@@ -69,7 +69,7 @@ void CVehicleDamageBehaviorCameraShake::OnVehicleEvent(EVehicleEvent event, cons
 //------------------------------------------------------------------------
 void CVehicleDamageBehaviorCameraShake::ShakeClient(float angle, float shift, float duration, float frequency)
 {
-	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	assert(pActorSystem);
 
 	EntityId clientId = g_pGame->GetIGameFramework()->GetClientActorId();

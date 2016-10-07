@@ -15,8 +15,9 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
+#include <CryCore/Platform/CryLibrary.h>
+
 #if CRY_PLATFORM_WINDOWS
-	#include <CryCore/Platform/CryWindows.h>
 	#include <shellapi.h> // requires <windows.h>
 #endif
 
@@ -40,7 +41,7 @@ void CUnitTestExcelReporter::OnStartTesting(UnitTestRunContext& context)
 	{
 		const char* szWindowClass = "UNIT_TEST_CLASS_WNDCLASS";
 		// Register the window class
-		WNDCLASS wndClass = { 0, ::DefWindowProc, 0, DLGWINDOWEXTRA, GetModuleHandle(0), NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)COLOR_BTNSHADOW, NULL, szWindowClass };
+		WNDCLASS wndClass = { 0, ::DefWindowProc, 0, DLGWINDOWEXTRA, CryGetCurrentModule(), NULL, LoadCursor(NULL, IDC_ARROW), (HBRUSH)COLOR_BTNSHADOW, NULL, szWindowClass };
 		RegisterClass(&wndClass);
 
 		int cwX = CW_USEDEFAULT;
@@ -49,20 +50,20 @@ void CUnitTestExcelReporter::OnStartTesting(UnitTestRunContext& context)
 		int cwH = 600;
 
 		HWND hWnd = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_CONTROLPARENT, szWindowClass, "CryENGINE Settings", WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-		                           cwX, cwY, cwW, cwH, 0, NULL, GetModuleHandle(0), NULL);
+		                           cwX, cwY, cwW, cwH, 0, NULL, CryGetCurrentModule(), NULL);
 
 		hwndEdit = CreateWindow("EDIT", NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL,
 		                        0, 0, 800, 600, // set size in WM_SIZE message
 		                        hWnd,           // parent window
 		                        (HMENU)1,       // edit control ID
-		                        GetModuleHandle(0),
+		                        CryGetCurrentModule(),
 		                        NULL); // pointer not needed
 
 		/*
 		   DWORD dwStyle = WS_POPUP | WS_CAPTION | WS_VISIBLE | WS_CLIPSIBLINGS | DS_3DLOOK | DS_SETFONT | DS_MODALFRAME;
 		   DWORD dwStyleEx = WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE;
 
-		   HINSTANCE hInstance = GetModuleHandle(0);
+		   HINSTANCE hInstance = CryGetCurrentModule();
 		   HWND hWnd = CreateWindowEx( dwStyleEx, "CustomModelessDialog", "Unit Testing", dwStyle, 200,200,500,500, NULL, NULL, hInstance, NULL );
 		 */
 	}

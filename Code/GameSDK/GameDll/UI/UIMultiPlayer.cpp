@@ -182,7 +182,7 @@ void CUIMultiPlayer::PlayerJoined(EntityId playerid, const string& name)
 
 	m_Players[playerid].name = name;
 
-	if (gEnv->pGame->GetIGameFramework()->GetClientActorId() == playerid)
+	if (gEnv->pGameFramework->GetClientActorId() == playerid)
 	{
 		SubmitNewName();
 		return;
@@ -202,7 +202,7 @@ void CUIMultiPlayer::PlayerLeft(EntityId playerid, const string& name)
 {
 	CryLogAlways("[CUIMultiPlayer] PlayerLeft %i %s", playerid, name.c_str() );
 
-	if (gEnv->pGame->GetIGameFramework()->GetClientActorId() == playerid)
+	if (gEnv->pGameFramework->GetClientActorId() == playerid)
 		return;
 
 	// fix up player id in case that the entity was already removed and the Network was not able to resolve entity id
@@ -249,7 +249,7 @@ void CUIMultiPlayer::OnChatReceived(EntityId senderId, int teamFaction, const ch
 ////////////////////////////////////////////////////////////////////////////
 void CUIMultiPlayer::RequestPlayers()
 {
-	IActorIteratorPtr actors = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr actors = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	while (IActor* pActor = actors->Next())
 	{
 		if (pActor->IsPlayer() && m_Players.find(pActor->GetEntityId()) == m_Players.end())
@@ -350,7 +350,7 @@ string CUIMultiPlayer::GetPlayerNameById( EntityId playerid )
 ////////////////////////////////////////////////////////////////////////////
 string CUIMultiPlayer::GetPlayerTeamById( EntityId playerid )
 {
-	IGameFramework * const pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework * const pGameFramework = gEnv->pGameFramework;
 	IActorSystem * const pActorSystem = pGameFramework ? pGameFramework->GetIActorSystem() : NULL;
 	IActor * const pActor = pActorSystem ? pActorSystem->GetActor(playerid) : NULL;
 	if (pActor)

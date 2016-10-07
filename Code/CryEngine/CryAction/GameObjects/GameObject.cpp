@@ -130,6 +130,7 @@ void CGameObject::CreateCVars()
 CGameObject::CGameObject() :
 	m_pActionDelegate(0),
 	m_pViewDelegate(0),
+	m_pView(0),
 	m_pProfileManager(0),
 #if GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA
 	m_pUserData(0),
@@ -973,6 +974,15 @@ bool CGameObject::CaptureView(IGameObjectView* pGOV)
 	if (m_pViewDelegate || !pGOV)
 		return false;
 	m_pViewDelegate = pGOV;
+
+	if (m_pView == nullptr)
+	{
+		m_pView = gEnv->pGameFramework->GetIViewSystem()->CreateView();
+		m_pView->LinkTo(this);
+	}
+
+	gEnv->pGameFramework->GetIViewSystem()->SetActiveView(m_pView);
+
 	return true;
 }
 

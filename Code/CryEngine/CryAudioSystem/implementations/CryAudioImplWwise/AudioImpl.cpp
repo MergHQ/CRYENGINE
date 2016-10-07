@@ -26,6 +26,7 @@
 #endif // WWISE_USE_OCULUS
 
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/IProjectManager.h>
 #include <CryThreading/IThreadManager.h>
 #include <CryThreading/IThreadConfigManager.h>
 
@@ -272,18 +273,17 @@ CAudioImpl::CAudioImpl()
 	, m_pOculusSpatializerLibrary(nullptr)
 #endif // WWISE_USE_OCULUS
 {
-	string sGameFolder = PathUtil::GetGameFolder().c_str();
-
-	if (sGameFolder.empty())
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - Wwise>: Needs a valid asset folder to proceed!");
 	}
 
-	m_regularSoundBankFolder = sGameFolder.c_str();
+	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	m_fullImplString.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, sGameFolder.c_str(), CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
+	m_fullImplString.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, szAssetDirectory, CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
 #endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 

@@ -21,6 +21,8 @@
 #include "GameObjects/GameObject.h"
 #include "IGameSessionHandler.h"
 
+#include "ViewSystem.h"
+
 namespace
 {
 static ICVar* pCamShakeMult = 0;
@@ -119,7 +121,7 @@ void CView::Update(float frameTime, bool isActive)
 			pLinkedTo->PostUpdateView(m_viewParams);
 		}
 
-		const float fNearZ = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetDefaultZNear();
+		const float fNearZ = gEnv->pGameFramework->GetIViewSystem()->GetDefaultZNear();
 
 		//see if the view have to use a custom near clipping plane
 		const float nearPlane = (m_viewParams.nearplane >= 0.01f) ? (m_viewParams.nearplane) : fNearZ;
@@ -137,7 +139,7 @@ void CView::Update(float frameTime, bool isActive)
 			if (pHmdDevice)
 			{
 				const HmdTrackingState& sensorState = pHmdDevice->GetLocalTrackingState();
-				if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable))
+				if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable) && static_cast<CViewSystem*>(gEnv->pGameFramework->GetIViewSystem())->ShouldApplyHmdOffset())
 				{
 					bHmdTrackingEnabled = true;
 				}
@@ -158,7 +160,7 @@ void CView::Update(float frameTime, bool isActive)
 		m_camera.SetFrustum(pSysCam->GetViewSurfaceX(), pSysCam->GetViewSurfaceZ(), fov, nearPlane, farPlane, pSysCam->GetPixelAspectRatio());
 
 		//TODO: (14, 06, 2010, "the player view should always get updated, this due to the hud being visable, without shocking, in cutscenes - todo is to see if we can optimise this code");
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pActor = gEnv->pGameFramework->GetClientActor();
 		if (pActor)
 		{
 			CGameObject* const linkToObj = static_cast<CGameObject*>(pActor->GetEntity()->GetProxy(ENTITY_PROXY_USER));
@@ -212,7 +214,7 @@ void CView::Update(float frameTime, bool isActive)
 
 		// Uses the recorded tracking if time demo is on playback
 		// Otherwise uses real tracking from device
-		ITimeDemoRecorder* pTimeDemoRecorder = gEnv->pGame->GetIGameFramework()->GetITimeDemoRecorder();
+		ITimeDemoRecorder* pTimeDemoRecorder = gEnv->pGameFramework->GetITimeDemoRecorder();
 
 		if (pTimeDemoRecorder && pTimeDemoRecorder->IsPlaying())
 		{
@@ -228,7 +230,7 @@ void CView::Update(float frameTime, bool isActive)
 			if (pHmdReferencePoint && pHmdReferencePoint->GetIVal() == 1) // actor-centered HMD offset
 			{
 				const IEntity* pEnt = GetLinkedEntity();
-				if (const IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+				if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
 				{
 					if (pEnt && pActor->GetEntity() == pEnt)
 					{
@@ -266,7 +268,7 @@ void CView::Update(float frameTime, bool isActive)
 //////////////////////////////////////////////////////////////////////////
 bool CView::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context)
 {
-	ITimeDemoRecorder* pTimeDemoRecorder = gEnv->pGame->GetIGameFramework()->GetITimeDemoRecorder();
+	ITimeDemoRecorder* pTimeDemoRecorder = gEnv->pGameFramework->GetITimeDemoRecorder();
 	if (pTimeDemoRecorder && pTimeDemoRecorder->IsPlaying())
 	{
 		return false;
@@ -279,7 +281,7 @@ bool CView::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevic
 	if (pHmdReferencePoint && pHmdReferencePoint->GetIVal() == 1) // actor-centered HMD offset
 	{
 		const IEntity* pEnt = GetLinkedEntity();
-		if (const IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+		if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
 		{
 			if (pEnt && pActor->GetEntity() == pEnt)
 			{

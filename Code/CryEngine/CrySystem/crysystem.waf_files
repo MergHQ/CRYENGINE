@@ -378,6 +378,10 @@
       "HMDManager.cpp",
       "HMDCVars.h",
       "HMDCVars.cpp"
+    ],
+	"ProjectManager":[
+      "ProjectManager/ProjectManager.h",
+      "ProjectManager/ProjectManager.cpp"
     ]
   },
   "NoUberFile":{

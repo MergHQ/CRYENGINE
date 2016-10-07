@@ -18,7 +18,7 @@ History:
 #ifndef __GAMEPHYSICSSETTINGS_H__
 #define __GAMEPHYSICSSETTINGS_H__
 
-#include "IGamePhysicsSettings.h"
+#include <CrySandbox/IEditorGame.h>
 
 #ifndef _RELEASE
 #define GAME_PHYS_DEBUG

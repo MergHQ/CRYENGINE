@@ -134,7 +134,7 @@ public:
 				if (fileName.empty())
 					return;
 
-				ILevelInfo* pCurrentLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+				ILevelInfo* pCurrentLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 				string path = pCurrentLevel ? pCurrentLevel->GetPath() : "";
 				pathAndfileName.Format("%s/%s", path.c_str(), fileName.c_str());
 

@@ -509,7 +509,6 @@ enum EVerifyType
 #endif
 
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryGame/IGame.h>
 
 
 #if defined(CRY_USE_DX12)

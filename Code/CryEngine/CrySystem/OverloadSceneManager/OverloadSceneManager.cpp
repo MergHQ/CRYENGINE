@@ -4,7 +4,6 @@
 #include "StdAfx.h"
 #include "OverloadSceneManager.h"
 #include <CryAction/IDebugHistory.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryRenderer/IRenderAuxGeom.h>
@@ -382,7 +381,7 @@ void COverloadSceneManager::DebugDrawGraphs()
 	if (m_pDebugHistoryManager == NULL)
 	{
 		static float leftX = 0.6f, topY = 0.1f, width = 0.4f, height = 0.4f, margin = 0.f;
-		m_pDebugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+		m_pDebugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 		m_pDebugHistory = m_pDebugHistoryManager->CreateHistory("vehicle-graph", "");
 		m_pDebugHistory->SetupLayoutRel(leftX, topY, width, height, margin);

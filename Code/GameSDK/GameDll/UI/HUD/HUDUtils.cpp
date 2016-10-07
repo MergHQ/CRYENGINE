@@ -276,7 +276,7 @@ const EFriendState GetFriendlyState( const EntityId entityId, CActor* pLocalActo
 			{
 				if(CSquadManager* pSM = g_pGame->GetSquadManager())
 				{
-					IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId);
+					IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entityId);
 					if(pActor)
 					{
 						uint16 channelId = pActor->GetChannelId();

@@ -2949,7 +2949,7 @@ void CVoxelSegment::ErrorTerminate(const char* format, ...)
 	va_end(args);
 
 	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	if (!gEnv->pGame)
+	if (!gEnv->pGameFramework)
 	{
 		// quick terminate if in developer mode
 		char szTextFull[512];

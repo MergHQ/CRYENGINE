@@ -29,7 +29,7 @@ void CInteractiveObjectRegistry::Init()
 {
 	m_clipLocatorHash = IProceduralClipFactory::THash("PositionAdjustTargetLocator");
 
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	m_pDatabasePlayer = mannequinSys.GetAnimationDatabaseManager().Load(MANN_INTERACTION_FILENAME_PLAYER);
 	m_pDatabaseObject = mannequinSys.GetAnimationDatabaseManager().Load(MANN_INTERACTION_FILENAME_OBJECTS);
 	m_pControllerDef  = mannequinSys.GetAnimationDatabaseManager().LoadControllerDef(MANN_CONTROLLERDEF_FILENAME);
@@ -141,7 +141,7 @@ void CInteractiveObjectRegistry::ApplyInteractionToObject(IEntity *pEntity, cons
 {
 	if (m_pDatabaseObject && m_pControllerDef)
 	{
-		IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 		SAnimationContext animContext(*m_pControllerDef);
 
 		IActionController *pActionController = mannequinSys.CreateActionController(pEntity, animContext);

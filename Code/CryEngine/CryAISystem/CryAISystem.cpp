@@ -27,22 +27,6 @@ CAISystem* g_pAISystem;
  */
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_AI : public ISystemEventListener
-{
-public:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-	{
-		switch (event)
-		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
-		}
-	}
-};
-static CSystemEventListner_AI g_system_event_listener_ai;
-
-//////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryAISystem : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
@@ -56,8 +40,6 @@ class CEngineModule_CryAISystem : public IEngineModule
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		ISystem* pSystem = env.pSystem;
-
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_ai);
 
 		AIInitLog(pSystem);
 

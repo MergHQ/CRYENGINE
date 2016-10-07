@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <../CryPlugins/CryOculusVR/Interface/IHmdOculusRiftDevice.h>
+#include <../CryPlugins/VR/CryOculusVR/Interface/IHmdOculusRiftDevice.h>
 #include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;

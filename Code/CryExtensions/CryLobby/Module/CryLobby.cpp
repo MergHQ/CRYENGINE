@@ -19,7 +19,7 @@
 #if USE_DURANGOLIVE
 	#include "DurangoLive/CryDurangoLiveLobby.h"
 #endif
-#include <CryGame/IGame.h>
+
 #include <CryGame/IGameFramework.h>
 #include "INetworkPrivate.h"
 #include "Protocol/FrameTypes.h"

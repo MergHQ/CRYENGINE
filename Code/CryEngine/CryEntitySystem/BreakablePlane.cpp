@@ -860,7 +860,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 		out.eventSeed = in.eventSeed;
 	}
 
-	cry_random_seed(gEnv->bNoRandomSeed ? 0 : out.eventSeed);
+	SScopedRandomSeedChange seedChange(gEnv->bNoRandomSeed ? 0 : out.eventSeed);
 
 	static ICVar* particle_limit = gEnv->pConsole->GetCVar("g_breakage_particles_limit");
 	int nMaxParticles, nCurParticles = gEnv->pPhysicalWorld->GetEntityCount(PE_PARTICLE), icount = 0, mask;

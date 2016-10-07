@@ -134,4 +134,18 @@ CAnimationGraphCVars::~CAnimationGraphCVars()
 
 	pConsole->UnregisterVariable("ag_turnSpeedParamScale", true);
 
+	pConsole->UnregisterVariable("ac_forceSimpleMovement", true);
+	pConsole->UnregisterVariable("ac_debugAnimEffects", true);
+	pConsole->UnregisterVariable("ac_ColliderModePlayer", true);
+	pConsole->UnregisterVariable("ac_ColliderModeAI", true);
+	pConsole->UnregisterVariable("ac_enableExtraSolidCollider", true);
+	pConsole->UnregisterVariable("ac_debugAnimTarget", true);
+	pConsole->UnregisterVariable("ac_debugLocationsGraphs", true);
+	pConsole->UnregisterVariable("g_landingBobTimeFactor", true);
+	pConsole->UnregisterVariable("g_landingBobLandTimeFactor", true);
+	pConsole->UnregisterVariable("g_distanceForceNoLegRaycasts", true);
+	pConsole->UnregisterVariable("g_groundAlignAll", true);
+	pConsole->UnregisterVariable("ag_turnSpeedSmoothing", true);
+	pConsole->UnregisterVariable("ag_turnAngleSmoothing", true);
+	pConsole->UnregisterVariable("ag_travelSpeedSmoothing", true);
 }

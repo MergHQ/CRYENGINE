@@ -276,6 +276,7 @@ enum EEntityEvent
 
 	//! Sent when triggering entity is near to the area proximity, this event sent to all target entities of the area.
 	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
+	//! fParam[0] = distance
 	ENTITY_EVENT_ENTERNEARAREA,
 
 	//! Sent when triggering entity leaves the near area within proximity region of the outside area border.
@@ -1011,6 +1012,9 @@ struct IEntity
 	//! Loads a light source to the specified slot, or to next available slot.
 	//! \return Slot id where the light source was loaded, or -1 if loading failed.
 	virtual int LoadLight(int nSlot, CDLight* pLight) = 0;
+
+	virtual int LoadCloud(int nSlot, const char* sFilename) = 0;
+	virtual int SetCloudMovementProperties(int nSlot, const struct SCloudMovementProperties& properties) = 0;
 
 	//! Invalidates the entity's and all its children's transformation matrices!
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) = 0;

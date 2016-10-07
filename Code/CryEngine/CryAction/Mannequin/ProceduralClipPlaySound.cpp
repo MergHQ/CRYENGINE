@@ -182,7 +182,7 @@ public:
 		{
 			bool bIsLocalPlayer = false;
 
-			if (IGameFramework* gameFramework = gEnv->pGame->GetIGameFramework())
+			if (IGameFramework* gameFramework = gEnv->pGameFramework)
 			{
 				if (gameFramework->GetClientActorId() == m_entity->GetId())
 				{
@@ -206,7 +206,7 @@ public:
 		bool const playFacial = params.playFacial;
 		bool const isVoice = playFacial || params.isVoice;
 
-		bool bIsSilentPlaybackMode = gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->GetMannequinInterface().IsSilentPlaybackMode();
+		bool bIsSilentPlaybackMode = gEnv->IsEditor() && gEnv->pGameFramework->GetMannequinInterface().IsSilentPlaybackMode();
 
 		ICharacterInstance const* const pCharacterInstance = m_scope->GetCharInst();
 

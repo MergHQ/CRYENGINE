@@ -619,7 +619,7 @@ float CVehicleComponent::ProcessDamage(const HitInfo& hitInfo, bool impact, cons
 	{
 #if ENABLE_VEHICLE_DEBUG
 		char str[256];
-		if (gEnv->pGame->GetIGameFramework()->GetNetworkSafeClassName(str, sizeof(str), hitInfo.projectileClassId))
+		if (gEnv->pGameFramework->GetNetworkSafeClassName(str, sizeof(str), hitInfo.projectileClassId))
 		{
 			pDisplayDamageType = str;
 		}

@@ -51,7 +51,7 @@ bool CVehicleSeatActionSteeringWheel::Init(IVehicle* pVehicle, IVehicleSeat* pSe
 
 	CryFixedStringT<256> sharedParamsName;
 	IEntity* pEntity = pVehicle->GetEntity();
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 	sharedParamsName.Format("%s::%s::CVehicleSeatActionSteeringWheel", pEntity->GetClass()->GetName(), pVehicle->GetModification());
 	m_pSharedParams = CastSharedParamsPtr<SSharedParams>(pSharedParamsManager->Get(sharedParamsName));

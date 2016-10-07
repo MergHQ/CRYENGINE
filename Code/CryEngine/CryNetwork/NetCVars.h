@@ -245,7 +245,6 @@ private:
 
 	static CNetCVars* s_pThis;
 
-	static void ReloadScheduler(IConsoleCmdArgs*);
 	static void DumpObjectState(IConsoleCmdArgs*);
 	static void DumpBlockingRMIs(IConsoleCmdArgs*);
 	static void Stall(IConsoleCmdArgs*);

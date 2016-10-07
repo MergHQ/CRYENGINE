@@ -796,7 +796,7 @@ bool CActionMap::CanProcessInput(const SInputEvent& inputEvent, CActionMap* pAct
 	bool bRes = false;
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -945,7 +945,7 @@ bool CActionMap::IsActionInputTriggered(const SInputEvent& inputEvent, CActionMa
 	}
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);

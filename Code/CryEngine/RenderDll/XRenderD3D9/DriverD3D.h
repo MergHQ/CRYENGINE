@@ -577,7 +577,7 @@ public:
 
 	//===============================================================================
 
-  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HINSTANCE hinst, WIN_HWND Glhwnd=0, bool bReInit=false, const SCustomRenderInitArgs* pCustomArgs=0, bool bShaderCacheGen = false) override;
+  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HWND Glhwnd=0, bool bReInit=false, const SCustomRenderInitArgs* pCustomArgs=0, bool bShaderCacheGen = false) override;
 
 	virtual void GetVideoMemoryUsageStats( size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false ) override;
 
@@ -1459,7 +1459,6 @@ private:
 
 	// Windows context
 	char m_WinTitle[80];
-	HINSTANCE m_hInst;
 	HWND m_hWnd;                   // The main app window
 	HWND m_hWndDesktop;            // The desktop window
 #if CRY_PLATFORM_WINDOWS

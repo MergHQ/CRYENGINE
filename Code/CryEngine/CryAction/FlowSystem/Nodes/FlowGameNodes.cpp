@@ -76,17 +76,7 @@ public:
 
 	bool UpdateEntityIdOutput(SActivationInfo* pActInfo)
 	{
-		EntityId playerId = 0;
-
-		IActor* pActor = CCryAction::GetCryAction()->GetClientActor();
-		if (pActor)
-		{
-			playerId = pActor->GetEntityId();
-		}
-		else if (CCryActionCVars::Get().cl_initClientActor == 0)
-		{
-			playerId = CCryAction::GetCryAction()->GetClientEntityId();
-		}
+		EntityId playerId = CCryAction::GetCryAction()->GetClientEntityId();
 
 		if (playerId != 0)
 		{

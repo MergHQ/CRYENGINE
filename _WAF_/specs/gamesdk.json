@@ -32,6 +32,8 @@
 		"CryScaleformHelper",
 		"CryAction",
 		"HWScripts",
+		
+		"CryDefaultEntities",
 
 		"zlib",
 		"expat",

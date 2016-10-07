@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "CryMatchMaking.h"
 #include "CrySharedLobbyPacket.h"
-#include <CryGame/IGame.h>
+
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "LAN/CryLANLobby.h"
@@ -1727,7 +1727,7 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionViaNub(CryLobbySessionHan
 
 	if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 	{
-		INetNubPrivate* pNub = (INetNubPrivate*)gEnv->pGame->GetIGameFramework()->GetServerNetNub();
+		INetNubPrivate* pNub = (INetNubPrivate*)gEnv->pGameFramework->GetServerNetNub();
 
 		if (pNub)
 		{
@@ -3596,7 +3596,7 @@ bool CCryMatchMaking::IsHostMigrationFinished(CryLobbySessionHandle h)
 	{
 		if (pInfo->ShouldMigrateNub())
 		{
-			INetNubPrivate* pNub = (INetNubPrivate*)gEnv->pGame->GetIGameFramework()->GetServerNetNub();
+			INetNubPrivate* pNub = (INetNubPrivate*)gEnv->pGameFramework->GetServerNetNub();
 
 			if (pNub)
 			{

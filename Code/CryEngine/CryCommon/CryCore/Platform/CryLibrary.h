@@ -52,6 +52,7 @@
 extern HMODULE DurangoLoadLibrary(const char* libName);
 		#define CryLoadLibrary(libName) DurangoLoadLibrary(libName)
 	#endif
+	#define CryGetCurrentModule() ::GetModuleHandle(nullptr)
 	#define CrySharedLibrarySupported true
 	#define CrySharedLibraryPrefix    ""
 	#define CrySharedLibraryExtension ".dll"
@@ -73,6 +74,7 @@ extern HMODULE DurangoLoadLibrary(const char* libName);
 
 	#define CryGetProcAddress(libHandle, procName) ::dlsym(libHandle, procName)
 	#define CryFreeLibrary(libHandle)              ::dlclose(libHandle)
+	#define CryGetCurrentModule()                  ::dlopen(NULL, RTLD_LAZY)
 	#define HMODULE void*
 static const char* gEnvName("MODULE_PATH");
 
@@ -110,7 +112,13 @@ static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInM
 	#define CryGetProcAddress(libHandle, procName) NULL
 	#define CryFreeLibrary(libHandle)
 	#define GetModuleHandle(x)                     0
+
+	#ifdef CRY_PLATFORM_ORBIS
+		#define CryGetCurrentModule() ::dlopen(NULL, RTLD_LAZY)
+	#endif
+
 #endif
+
 #define CryLibraryDefName(libName)               CrySharedLibraryPrefix libName CrySharedLibraryExtension
 #define CryLoadLibraryDefName(libName)           CryLoadLibrary(CryLibraryDefName(libName))
 

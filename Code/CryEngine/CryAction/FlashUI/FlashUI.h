@@ -59,6 +59,7 @@ public:
 	virtual bool                      PostInit() override;
 	virtual void                      Update(float fDeltatime) override;
 	virtual void                      Reload() override;
+	virtual void                      ClearUIActions() override { ClearActions(); }
 	virtual void                      Shutdown() override;
 
 	virtual bool                      LoadElementsFromFile(const char* sFileName) override;

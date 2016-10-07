@@ -370,7 +370,7 @@ namespace BehaviorTree
 			void StartHitTest(EntityId pAttackerEntityId)
 			{
 				assert(pAttackerEntityId);
-				CActor* actorAttacker = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pAttackerEntityId);
+				CActor* actorAttacker = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(pAttackerEntityId);
 				if (IMovementController * pMC = actorAttacker->GetMovementController())
 				{
 					Agent agent(pAttackerEntityId);
@@ -405,7 +405,7 @@ namespace BehaviorTree
 
 			void PlayHitMaterialEffect(const Vec3& position, const Vec3& normal, const int surfaceIdx) const
 			{
-				IMaterialEffects* materialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+				IMaterialEffects* materialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 				TMFXEffectId effectId = materialEffects->GetEffectId(this->materialEffectName.c_str(), surfaceIdx);
 				if (effectId != InvalidEffectId)
 				{
@@ -721,7 +721,7 @@ namespace BehaviorTree
 			}
 
 			Vec3 entityDir(ZERO);
-			CActor* actorAttacker = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(context.entityId);
+			CActor* actorAttacker = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(context.entityId);
 			if (IMovementController * pMC = actorAttacker->GetMovementController())
 			{
 				SMovementState info;
@@ -908,7 +908,7 @@ namespace BehaviorTree
 
 			const EntityId targetEntityID = targetEntity->GetId();
 			const bool objectIsPlayer = (targetEntityID == playerEntityID);
-			const bool objectIsActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetEntityID) != NULL;
+			const bool objectIsActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(targetEntityID) != NULL;
 
 			IF_UNLIKELY (!objectIsActor || !objectIsPlayer)
 				return Running;
@@ -1005,7 +1005,7 @@ namespace BehaviorTree
 
 			void EnableHitReactions(const EntityId _entityId)
 			{
-				CActor* actor = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(_entityId);
+				CActor* actor = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(_entityId);
 				if (actor)
 					actor->EnableHitReactions();
 
@@ -1018,7 +1018,7 @@ namespace BehaviorTree
 				this->enableHitReactionIfDestructed = true;
 				this->entityId = _entityId;
 
-				CActor* actor = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(_entityId);
+				CActor* actor = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(_entityId);
 				if (actor)
 					actor->DisableHitReactions();
 			}

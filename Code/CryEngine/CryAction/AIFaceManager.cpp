@@ -69,7 +69,7 @@ void CAIFaceManager::Reset()
 //------------------------------------------------------------------------------
 void CAIFaceManager::PrecacheSequences()
 {
-	IActorSystem* pASystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pASystem = gEnv->pGameFramework->GetIActorSystem();
 	IActor* pActor = (pASystem && m_pEntity ? pASystem->GetActor(m_pEntity->GetId()) : 0);
 
 	for (e_ExpressionEvent eventType = e_ExpressionEvent(0); eventType <= EE_Count; eventType = e_ExpressionEvent(eventType + 1))
@@ -230,7 +230,7 @@ void CAIFaceManager::SetExpression(e_ExpressionEvent expression, bool forceChang
 //------------------------------------------------------------------------------
 void CAIFaceManager::MakeFace(const char* pFaceName)
 {
-	IActorSystem* pASystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pASystem = gEnv->pGameFramework->GetIActorSystem();
 	if (pASystem)
 	{
 		IActor* pActor = pASystem->GetActor(m_pEntity->GetId());

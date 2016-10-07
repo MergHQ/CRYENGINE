@@ -101,7 +101,7 @@ bool CCooperativeAnimation::AreActorsAlive()
 
 	for (; it != iend; ++it)
 	{
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(it->pActor->GetEntityId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(it->pActor->GetEntityId());
 		CRY_ASSERT(pActor);
 		if (pActor)
 		{
@@ -1022,7 +1022,7 @@ void CCooperativeAnimation::CleanupForFinishedCharacter(SCharacterParams& params
 
 	IAnimatedCharacter* pAC = params.pActor;
 
-	const ICooperativeAnimationManager* const pCAManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+	const ICooperativeAnimationManager* const pCAManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 	CRY_ASSERT(pCAManager);
 
 	CRY_ASSERT_MESSAGE(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");

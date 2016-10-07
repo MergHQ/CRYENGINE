@@ -10,12 +10,89 @@ SGameReleaseConstantCVars* SGameReleaseConstantCVars::m_pThis = NULL;
 SGameReleaseConstantCVars::SGameReleaseConstantCVars()
 {
 	// Only one instance of this object is allowed (stored in GameCvars)
-	assert( m_pThis == NULL );
+	assert(m_pThis == NULL);
 
 	m_pThis = this;
 }
 
-void SGameReleaseConstantCVars::Init( IConsole *pConsole )
+SGameReleaseConstantCVars::~SGameReleaseConstantCVars()
+{
+	// Button mashing sequence (SystemX)
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_initial", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_attack", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_decayStart", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_decayMax", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_decayTimeOutToIncrease", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_buttonMashing_decayRampUpTime", true);
+
+	// SystemX
+	gEnv->pConsole->UnregisterVariable("g_SystemXDebug_State", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemXDebug_HealthStatus", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemXDebug_Movement", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemXDebug_MeleeAttacks", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_Stomp_Radius", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_Sweep_Radius", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_Sweep_ZOffset", true);
+	gEnv->pConsole->UnregisterVariable("g_SystemX_Sweep_SideSelectionThreshold", true);
+
+	// Frontend
+	gEnv->pConsole->UnregisterVariable("g_loadingHintRefreshTimeSP", true);
+	gEnv->pConsole->UnregisterVariable("g_loadingHintRefreshTimeMP", true);
+	gEnv->pConsole->UnregisterVariable("g_storyinfo_openitem_enabled", true);
+	gEnv->pConsole->UnregisterVariable("g_storyinfo_openitem_time", true);
+
+	//HUD tweaking cvars
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Hazards", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Vehicles", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Units", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Items", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Ammo", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Explosives", true);
+	gEnv->pConsole->UnregisterVariable("hud_InterestPoints_ScanDistance_Story", true);
+
+	gEnv->pConsole->UnregisterVariable("hud_ondemandloading_2d", true);
+	gEnv->pConsole->UnregisterVariable("hud_ondemandloading_3d", true);
+
+	//Debug cheats
+	gEnv->pConsole->UnregisterVariable("g_infiniteSprintStamina", true);
+
+	// Flash door panel
+	gEnv->pConsole->UnregisterVariable("g_flashdoorpanel_distancecheckinterval", true);
+
+	//Achievements
+	gEnv->pConsole->UnregisterVariable("g_achievements_aiDetectionDelay", true);
+
+	//STAP
+	gEnv->pConsole->UnregisterVariable("g_stapEnable", true);
+	gEnv->pConsole->UnregisterVariable("g_stapLayer", true);
+	gEnv->pConsole->UnregisterVariable("g_pwaLayer", true);
+	gEnv->pConsole->UnregisterVariable("g_translationPinningEnable", true);
+
+	gEnv->pConsole->UnregisterVariable("STAP_MF_All", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Scope", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_ScopeVertical", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_HeavyWeapon", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Up", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Down", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Left", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Right", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Front", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_Back", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_StrafeLeft", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_StrafeRight", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_VerticalMotion", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_VelFactorVertical", true);
+	gEnv->pConsole->UnregisterVariable("STAP_MF_VelFactorHorizontal", true);
+
+	//Tracers
+	gEnv->pConsole->UnregisterVariable("g_tracers_slowDownAtCameraDistance", true);
+	gEnv->pConsole->UnregisterVariable("g_tracers_minScale", true);
+	gEnv->pConsole->UnregisterVariable("g_tracers_minScaleAtDistance", true);
+	gEnv->pConsole->UnregisterVariable("g_tracers_maxScale", true);
+	gEnv->pConsole->UnregisterVariable("g_tracers_maxScaleAtDistance", true);
+}
+
+void SGameReleaseConstantCVars::Init(IConsole* pConsole)
 {
 	assert(pConsole != NULL);
 	if (pConsole == NULL)

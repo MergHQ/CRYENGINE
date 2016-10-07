@@ -551,7 +551,7 @@ Vec3 CGunTurret::PredictTargetPos(IEntity* pTarget, bool sec)//sec - weapon to u
 	
 	if (g_pGameCVars->i_debug_turrets == eGTD_Prediction)
 	{ 
-		IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		pDebug->Begin("CGunTurret::PredictTargetPos", false);
 		pDebug->AddSphere(tpos+delta, 0.2f, ColorF(1,0,0,1), 1.f);
 		IRenderAuxText::DrawLabelF(vpos, 1.4f, "Predict %s: speed %.1f (dspeed %.1f), acc %.1f, time %.1f", pTarget->GetName(), vel.len(), d_speed, a, time_to);
@@ -1906,7 +1906,7 @@ bool CGunTurret::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 //--------------------------------------------------------------------
 void CGunTurret::DrawDebug()
 {
-  IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+  IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
   pDebug->Begin("CGunTurret::DrawDebug", true);
 
   Vec3 gun(ZERO),rocket(ZERO),radar(ZERO),barrel(ZERO);

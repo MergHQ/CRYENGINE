@@ -102,7 +102,7 @@ namespace CHUDUtils
 	{
 		static Vec3 dummyVal(0,0,0);
 
-		IView *pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+		IView *pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 		if(!pView)
 			return dummyVal;
 
@@ -113,7 +113,7 @@ namespace CHUDUtils
 
 	static Vec3 GetClientDir()
 	{
-		IView *pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+		IView *pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 		if(!pView)
 			return FORWARD_DIRECTION;
 

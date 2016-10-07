@@ -6,7 +6,7 @@
 #include "CryLobby.h"
 #include "CryHostMigration.h"
 #include "CryMatchMaking.h"
-#include <CryGame/IGame.h>
+
 #include <CryGame/IGameFramework.h>
 
 #include <CrySystem/Profilers/IStatoscope.h>
@@ -37,11 +37,11 @@ void CHostMigration::Start(SHostMigrationInfo_Private* pInfo)
 	pInfo->m_state = eHMS_Initiate;
 	gEnv->bHostMigrating = true;
 
-	if (gEnv->pGame)
+	if (gEnv->pGameFramework)
 	{
-		if (gEnv->pGame->GetIGameFramework())
+		if (gEnv->pGameFramework)
 		{
-			pInfo->m_shouldMigrateNub = gEnv->pGame->GetIGameFramework()->ShouldMigrateNub(pInfo->m_session);
+			pInfo->m_shouldMigrateNub = gEnv->pGameFramework->ShouldMigrateNub(pInfo->m_session);
 		}
 	}
 

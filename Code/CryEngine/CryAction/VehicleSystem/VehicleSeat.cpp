@@ -1117,7 +1117,7 @@ bool CVehicleSeat::StandUp()
 		{
 			if (IInventory* pInventory = pActor->GetInventory())
 			{
-				IItem* pCurrentItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pInventory->GetCurrentItem());
+				IItem* pCurrentItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(pInventory->GetCurrentItem());
 				IWeapon* pWeapon = pCurrentItem ? pCurrentItem->GetIWeapon() : NULL;
 				if (!pWeapon || !pWeapon->IsRippedOff())
 					pActor->HolsterItem(false);
@@ -1135,7 +1135,7 @@ bool CVehicleSeat::StandUp()
 				// align the look direction to the current vehicle view direction, to minimise the
 				// snap when exiting
 
-				IView* pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+				IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 
 				if (pView)
 				{
@@ -1147,7 +1147,7 @@ bool CVehicleSeat::StandUp()
 			else
 			{
 				//Make sure we aren't left with any view roll
-				IView* pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+				IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 
 				if (pView)
 				{
@@ -1428,7 +1428,7 @@ bool CVehicleSeat::IsFree(IActor* pInActor)
 //------------------------------------------------------------------------
 void CVehicleSeat::OnAction(const TVehicleActionId actionId, int activationMode, float value)
 {
-	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	CRY_ASSERT(pActorSystem);
 
 	IActor* pActor = pActorSystem->GetActor(m_passengerId);
@@ -1699,7 +1699,7 @@ bool CVehicleSeat::SetView(TVehicleViewId viewId)
 	}
 	else
 	{
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pActor = gEnv->pGameFramework->GetClientActor();
 		if (!pActor || pActor->GetEntityId() != m_passengerId)
 		{
 			return false;

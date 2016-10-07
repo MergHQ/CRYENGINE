@@ -1,7 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using CryEngine.Common;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,12 +17,12 @@ namespace CryEngine.FlowSystem
 		[InputPort("Optional Scene arguments (Syntax: key1=\"value1\", key2=\"value2\")")]
 		public string Args ///< Optional Scene arguments (Syntax: key1="value1", key2="value2").
 		{
-			private set 
+			private set
 			{
-				var argList = value.Split (',').ToList ();
-				ArgMap = argList.Where(x => x.Contains('=')).ToDictionary (x => x.Split ('=') [0], x => x.Split ('=') [1].Trim('"'));
+				var argList = value.Split(',').ToList();
+				ArgMap = argList.Where(x => x.Contains('=')).ToDictionary(x => x.Split('=')[0], x => x.Split('=')[1].Trim('"'));
 			}
-			get 
+			get
 			{
 				return null;
 			}
@@ -44,7 +42,7 @@ namespace CryEngine.FlowSystem
 		public string GetValue(string arg)
 		{
 			string value = null;
-			ArgMap.TryGetValue (arg, out value);
+			ArgMap.TryGetValue(arg, out value);
 			return value;
 		}
 	}

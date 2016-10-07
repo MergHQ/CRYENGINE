@@ -39,10 +39,10 @@ CFlowGraphModuleManager::CFlowGraphModuleManager()
 	fg_debugmodules_filter = REGISTER_STRING("fg_debugmodules_filter", "", VF_NULL, "Only debug modules with this name");
 
 #if !defined (_RELEASE)
-	CRY_ASSERT_MESSAGE(gEnv->pGame->GetIGameFramework(), "Unable to register as Framework listener!");
-	if (gEnv->pGame->GetIGameFramework())
+	CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
+		gEnv->pGameFramework->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
 	}
 #endif
 }
@@ -56,9 +56,9 @@ CFlowGraphModuleManager::~CFlowGraphModuleManager()
 	gEnv->pConsole->UnregisterVariable("fg_debugmodules_filter", true);
 
 #if !defined (_RELEASE)
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		gEnv->pGameFramework->UnregisterListener(this);
 	}
 #endif
 }
@@ -311,7 +311,7 @@ void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam,
 		break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
-			if (gEnv->pGame->GetIGameFramework()->GetILevelSystem()->IsLevelLoaded())
+			if (gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
 				ClearModules();
 		}
 		break;
@@ -493,12 +493,12 @@ void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 		{
 			char* levelName;
 			char* levelPath;
-			gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+			gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 			path = levelPath;
 		}
 		else
 		{
-			ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 			if (pLevel)
 			{
 				path = pLevel->GetPath();

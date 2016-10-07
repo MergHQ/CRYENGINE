@@ -89,8 +89,6 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_CVAR(sw_debugInfo, 1, 0, "Segmented World Debug Info (0=disable, 1=grid, 2=position, 3=memory, 4=color-coded object, 5=seg index, 6=seg index with layer info)");
 	REGISTER_INT("sw_draw_bbox", 1, 0, "Draw bounding box for segments.\nDefault is 1.\n");
 
-	REGISTER_CVAR(cl_initClientActor, 1, VF_NULL, "Enables use of IActor interface for a client and related context establishment tasks (actionmaps, view setup after connection, etc.).\nDefault is 1.\n");
-
 	REGISTER_CVAR2("g_enableMergedMeshRuntimeAreas", &g_enableMergedMeshRuntimeAreas, 0, VF_CHEAT | VF_REQUIRE_APP_RESTART, "Enables the Merged Mesh cluster generation and density precalculations at game/level load");
 
 	if (!gEnv->IsEditor())
@@ -250,8 +248,8 @@ void CCryActionCVars::SWCommandHandler(IConsoleCmdArgs* pArgs)
 			if (pSpawnPointEnt)
 			{
 				ray_hit hit;
-				IEntity* pClientEntity = gEnv->pGame->GetIGameFramework()->GetClientEntity();
-				if (!gEnv->pGame->GetIGameFramework()->GetClientEntity() || (gEnv->pGame->GetIGameFramework()->GetClientEntity()->IsActive() == false))
+				IEntity* pClientEntity = gEnv->pGameFramework->GetClientEntity();
+				if (!gEnv->pGameFramework->GetClientEntity() || (gEnv->pGameFramework->GetClientEntity()->IsActive() == false))
 					return;
 
 				AABB wBox;

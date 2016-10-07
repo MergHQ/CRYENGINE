@@ -871,8 +871,6 @@ IPlayerProfile* CPlayerProfileManager::ActivateProfile(const char* userId, const
 	info->SetLastLoginTime(lastPlayTime);
 	CPlayerProfile* pNewProfile = new CPlayerProfile(this, profileName, userId, false);
 
-	gEnv->pGame->SetUserProfileChanged(true);
-
 	const bool ok = LoadProfile(pEntry, pNewProfile, profileName);
 	if (ok)
 	{

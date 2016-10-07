@@ -44,7 +44,7 @@ void CPlayerPathFinding::PostInit(IGameObject *pGameObject)
 
 		params.use2D = false;
 
-		m_pPathFollower = gEnv->pAISystem->CreatePathFollower(params);
+		m_pPathFollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(params, m_pathObstacles);
 	}
 
 	m_movementAbility.b3DMove = true;
@@ -60,6 +60,8 @@ void CPlayerPathFinding::RequestMoveTo(const Vec3 &position)
 	movementRequest.callback = functor(*this, &CPlayerPathFinding::MovementRequestCallback);
 	movementRequest.style.SetSpeed(MovementStyle::Walk);
 
+	movementRequest.type = MovementRequest::Type::MoveTo;
+
 	m_state = Movement::StillFinding;
 
 	m_movementRequestId = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
@@ -70,6 +72,8 @@ void CPlayerPathFinding::RequestPathTo(MNMPathRequest &request)
 	m_state = Movement::StillFinding;
 
 	request.resultCallback = functor(*this, &CPlayerPathFinding::OnMNMPathResult);
+	request.agentTypeID = m_navigationAgentTypeId;
+
 	m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(this, request);
 }
 

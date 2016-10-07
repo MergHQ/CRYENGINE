@@ -603,7 +603,7 @@ void CNetPlayerInput::UpdateMoveRequest()
 	// debug..
 	if (g_pGameCVars->g_debugNetPlayerInput & 2)
 	{
-		IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 		pPD->Begin( string("update_player_input_") + m_pPlayer->GetEntity()->GetName(), true );
 		Vec3 wp = m_pPlayer->GetEntity()->GetWorldPos();
 		wp.z += 2.0f;
@@ -742,7 +742,7 @@ void CNetPlayerInput::DoSetState(const SSerializedPlayerInput& input )
 	// debug..
 	if (g_pGameCVars->g_debugNetPlayerInput & 1)
 	{
-		IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 		pPD->Begin( string("net_player_input_") + m_pPlayer->GetEntity()->GetName(), true );
 		pPD->AddSphere( moveRequest.GetLookTarget(), 0.5f, ColorF(1,0,1,1), 1.0f );
 		//			pPD->AddSphere( moveRequest.GetMoveTarget(), 0.5f, ColorF(1,1,0,1), 1.0f );

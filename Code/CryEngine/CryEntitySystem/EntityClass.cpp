@@ -32,6 +32,7 @@ CEntityClass::CEntityClass()
 CEntityClass::~CEntityClass()
 {
 	SAFE_RELEASE(m_pEntityScript);
+	SAFE_DELETE(m_pPropertyHandler);
 }
 
 //////////////////////////////////////////////////////////////////////////

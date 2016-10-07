@@ -1883,7 +1883,7 @@ public:
 					CGameRules* pGameRules = g_pGame->GetGameRules();
 					if (pGameRules)
 					{
-						EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+						EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 						int localClientTeamId = pGameRules->GetTeam(localClientId);
 
 						ActivateOutput(&m_ActInfo, localClientTeamId == 2 ? EOP_Team2 : (localClientTeamId == 1 ? EOP_Team1 : EOP_Team0), true);

@@ -128,7 +128,7 @@ namespace Stereo3D
     //////////////////////////////////////////////////////////////////////////
     void CWeaponCheck::CastRays()
     {
-      IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+      IActor* pActor = gEnv->pGameFramework->GetClientActor();
       CPlayer* pPlayer = pActor ? static_cast<CPlayer*>(pActor) : NULL;
       if( !pPlayer ) {
         m_closestDist = 10000.f;

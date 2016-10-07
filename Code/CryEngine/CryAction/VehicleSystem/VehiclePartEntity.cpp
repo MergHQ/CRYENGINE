@@ -144,7 +144,7 @@ void CVehiclePartEntity::Reset()
 							m_createBuddyConstraint = true;
 						}
 
-						INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+						INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 						if (pNetContext)
 						{
 							SNetObjectID netId = pNetContext->GetNetID(m_entityId, false);
@@ -176,7 +176,7 @@ void CVehiclePartEntity::Reset()
 					m_createBuddyConstraint = true;
 				}
 
-				INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+				INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 				if (pNetContext)
 				{
 					SNetObjectID netId = pNetContext->GetNetID(m_entityId, false);

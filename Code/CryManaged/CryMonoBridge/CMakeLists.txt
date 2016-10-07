@@ -10,10 +10,36 @@ add_sources("CryMonoBridge_main_uber_1.cpp"
 		"CryMonoBridge.cpp"
 		"MonoRuntime.h"
 		"MonoRuntime.cpp"
-		"MonoLibrary.h"
-		"MonoLibrary.cpp"
+		"ManagedPlugin.h"
+		"ManagedPlugin.cpp"
 		"resource.h"
 		"StdAfx.h"
+)
+
+add_sources("CryMonoBridge_main_uber_2.cpp"
+	SOURCE_GROUP "Wrappers"
+		"Wrappers/MonoDomain.h"
+		"Wrappers/MonoDomain.cpp"
+		"Wrappers/RootMonoDomain.h"
+		"Wrappers/RootMonoDomain.cpp"
+		"Wrappers/AppDomain.h"
+		"Wrappers/AppDomain.cpp"
+		"Wrappers/MonoLibrary.h"
+		"Wrappers/MonoLibrary.cpp"
+		"Wrappers/MonoClass.h"
+		"Wrappers/MonoClass.cpp"
+		"Wrappers/MonoObject.h"
+		"Wrappers/MonoObject.cpp"
+		"Wrappers/MonoException.h"
+		"Wrappers/MonoException.cpp"
+)
+
+add_sources("CryMonoBridge_main_uber_3.cpp"
+	SOURCE_GROUP "NativeComponents"
+		"NativeComponents/Actor.h"
+		"NativeComponents/Actor.cpp"
+		"NativeComponents/GameRules.h"
+		"NativeComponents/GameRules.cpp"
 )
 
 add_sources("NoUberFile"
@@ -47,7 +73,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryMonoBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+CryEngineModule(CryMonoBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "CryMono")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /bigobj)
 target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
 process_csharp(CryEngine.Common)

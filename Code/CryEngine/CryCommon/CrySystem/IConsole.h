@@ -562,7 +562,7 @@ struct ICVar
 
 	//! Adds a new on change functor to the list.
 	//! It will add from index 1 on (0 is reserved).
-	virtual void AddOnChangeFunctor(const SFunctor& pChangeFunctor) = 0;
+	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) = 0;
 
 	//!  \return The number of registered on change functos.
 	virtual uint64 GetNumberOfOnChangeFunctors() const = 0;

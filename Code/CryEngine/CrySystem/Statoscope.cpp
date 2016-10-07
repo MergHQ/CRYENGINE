@@ -9,7 +9,6 @@
 #include "StdAfx.h"
 #include "Statoscope.h"
 #include "FrameProfileSystem.h"
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -2402,9 +2401,9 @@ void CStatoscope::SetLogFilename()
 		//If we don't have a last map loaded, try to look up the current one now
 		if (m_currentMap.empty())
 		{
-			if (gEnv->pGame)
+			if (gEnv->pGameFramework)
 			{
-				mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+				mapName = gEnv->pGameFramework->GetLevelName();
 			}
 		}
 		//If we tracked the last map loaded then use it here
@@ -2617,9 +2616,9 @@ void CStatoscope::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 
 				const char* mapName = NULL;
 
-				if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+				if (gEnv->pGameFramework)
 				{
-					mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+					mapName = gEnv->pGameFramework->GetLevelName();
 				}
 
 				if (!mapName)

@@ -13,7 +13,6 @@
 #include "RemoteConsole.h"
 
 #ifdef USE_REMOTE_CONSOLE
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <../CryAction/ILevelSystem.h>
 #if 0                         // currently no stroboscope support
@@ -595,9 +594,9 @@ void SRemoteClient::FillAutoCompleteList(std::vector<string>& list)
 	{
 		list.push_back(cmds[i]);
 	}
-	for (int i = 0, end = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetLevelCount(); i < end; ++i)
+	for (int i = 0, end = gEnv->pGameFramework->GetILevelSystem()->GetLevelCount(); i < end; ++i)
 	{
-		ILevelInfo* pLevel    = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetLevelInfo(i);
+		ILevelInfo* pLevel    = gEnv->pGameFramework->GetILevelSystem()->GetLevelInfo(i);
 		string item           = "map ";
 		const char* levelName = pLevel->GetName();
 		int start             = 0;

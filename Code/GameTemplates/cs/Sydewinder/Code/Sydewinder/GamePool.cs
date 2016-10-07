@@ -1,96 +1,103 @@
 ﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using CryEngine.Common;
 using CryEngine.EntitySystem;
+using System.Collections.Generic;
 using System.Linq;
-using CryEngine.Sydewinder.Types;
 
 namespace CryEngine.Sydewinder
 {
-	public static class GamePool
-	{
-		private static Dictionary<uint, DestroyableBase> _gameObjects = new Dictionary<uint, DestroyableBase>();
-		private static List<uint> _flagedForPurge = new List<uint>();
-		private static List<DestroyableBase> _deferredInsert = new List<DestroyableBase>();
-		private static bool _updatingPool = false;
+    public static class GamePool
+    {
+        private static Dictionary<uint, DestroyableBase> _gameObjects = new Dictionary<uint, DestroyableBase>();
+        private static List<uint> _flagedForPurge = new List<uint>();
+        private static List<DestroyableBase> _deferredInsert = new List<DestroyableBase>();
+        private static bool _updatingPool = false;
 
-		public static void AddObjectToPool(DestroyableBase gameObject)
-		{
-			if (_updatingPool)
-				_deferredInsert.Add (gameObject);
-			else {
-				_gameObjects.Add (gameObject.ID, gameObject);
-			}
-		}
+        public static void AddObjectToPool(DestroyableBase gameObject)
+        {
+            if (_updatingPool)
+                _deferredInsert.Add(gameObject);
+            else
+            {
+                _gameObjects.Add(gameObject.Id, gameObject);
+            }
+        }
 
-		/// <summary> 
-		/// Flag for destroy to avoid concurrency while.
-		/// iterating through game objects
-		/// </summary>
-		/// <param name="id">Identifier.</param>
-		public static void FlagForPurge(uint id)
-		{			
-			_flagedForPurge.Add(id);
-		}
+        /// <summary> 
+        /// Flag for destroy to avoid concurrency while.
+        /// iterating through game objects
+        /// </summary>
+        /// <param name="id">Identifier.</param>
+        public static void FlagForPurge(uint id)
+        {
+            _flagedForPurge.Add(id);
+        }
 
-		public static void UpdatePool()
-		{
-			foreach(var item in _deferredInsert)
-				_gameObjects.Add(item.ID, item);
-			_deferredInsert.Clear();
+        public static void UpdatePool()
+        {
+            foreach (var item in _deferredInsert)
+                _gameObjects.Add(item.Id, item);
+            _deferredInsert.Clear();
 
-			_updatingPool = true;
+            _updatingPool = true;
 
-			// Collect active game objects.
-			var removeables = _gameObjects.Values.Where(x => x.IsAlive == false).ToArray();
-			for (int i = 0; i < removeables.Length; i++)
-				RemoveObjectFromPool(removeables [i].ID);			
+            // Collect active game objects.
+            var removeables = _gameObjects.Values.Where(x => x.IsAlive == false).ToArray();
+            for (int i = 0; i < removeables.Length; i++)
+                RemoveObjectFromPool(removeables[i].Id);
 
-			// Move all game objects.
-			foreach (DestroyableBase gameObj in _gameObjects.Values) 
-				gameObj.Move();			
+            // Move all game objects.
+            foreach (DestroyableBase gameObj in _gameObjects.Values)
+                gameObj.Move();
+
+			Player.LocalPlayer.Move();
 
 			// Remove not needed objects.
 			foreach (uint id in _flagedForPurge)
-				RemoveObjectFromPool(id);
+                RemoveObjectFromPool(id);
 
-			_flagedForPurge.Clear();
-			_updatingPool = false;
-		}
+            _flagedForPurge.Clear();
+            _updatingPool = false;
+        }
 
-		/// <summary>
-		/// Avoids physicalized position change by setting same position again.
-		/// Won't remove or purge objects.
-		/// </summary>
-		public static void UpdatePoolForPausedGame()
-		{
-			// Keep position of all game objects
-			foreach (DestroyableBase gameObj in _gameObjects.Values) 
-				gameObj.KeepPosition();
-		}
+        /// <summary>
+        /// Avoids physicalized position change by setting same position again.
+        /// Won't remove or purge objects.
+        /// </summary>
+        public static void UpdatePoolForPausedGame()
+        {
+            // Keep position of all game objects
+            foreach (DestroyableBase gameObj in _gameObjects.Values)
+                gameObj.KeepPosition();
 
-		public static void Clear()
-		{
-			uint[] ids = _gameObjects.Keys.ToArray();
-			foreach (var id in ids)
-				RemoveObjectFromPool(id);
-			_flagedForPurge.Clear();
-		}
+			Player.LocalPlayer.KeepPosition();
+        }
 
-		private static void RemoveObjectFromPool(uint id)
-		{
-			_gameObjects.Remove(id);
-			Entity.ById(id).UnsubscribeFromCollision();
-			Env.EntitySystem.RemoveEntity(id);
-		}
+        public static void Clear()
+        {
+            uint[] ids = _gameObjects.Keys.ToArray();
+            foreach (var id in ids)
+                RemoveObjectFromPool(id);
+            _flagedForPurge.Clear();
+        }
 
-		public static DestroyableBase GetMoveableByEntityId(uint entityId)
-		{
-			DestroyableBase movable = null;
-			_gameObjects.TryGetValue (entityId, out movable);
-			return movable;
-		}
-	}
+        private static void RemoveObjectFromPool(uint id)
+        {
+            _gameObjects.Remove(id);
+            var entity = Entity.Get(id);
+            if (entity != null)
+            {
+                entity.UnsubscribeFromCollision();
+            }
+
+			Entity.Remove(id);
+        }
+
+        public static DestroyableBase GetMoveableByEntityId(uint entityId)
+        {
+            DestroyableBase movable = null;
+            _gameObjects.TryGetValue(entityId, out movable);
+            return movable;
+        }
+    }
 }

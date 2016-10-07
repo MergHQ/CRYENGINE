@@ -426,7 +426,7 @@ public:
 		char msg[256];
 		msg[0] = 0;
 
-		if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(m_id))
+		if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(m_id))
 		{
 			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
 
@@ -530,7 +530,7 @@ protected:
 
 	static T_Derived* QueryExtension(EntityId id)
 	{
-		IGameObject* pGO = gEnv->pGame->GetIGameFramework()->GetGameObject(id);
+		IGameObject* pGO = gEnv->pGameFramework->GetGameObject(id);
 		if (pGO)
 		{
 			return static_cast<T_Derived*>(pGO->QueryExtension(T_Derived::ms_statics.m_extensionId));

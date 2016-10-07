@@ -101,7 +101,7 @@ void CMuzzleEffect::MuzzleFlashEffect(CFireMode* pFireMode, int barrel)
 			if(g_pGameCVars->g_muzzleFlashCull)
 			{
 				EntityId weaponOwnerEntityId = pWeapon->GetOwnerId();
-				EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+				EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 
 				if(weaponOwnerEntityId != localClientId) // Always want to spawn muzzle flash for client
 				{

@@ -10,7 +10,6 @@
 #include <CrySystem/IConsole.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryGame/IGameFramework.h>
-#include <CryGame/IGame.h>
 #include "DialogLineDatabase.h"
 
 namespace
@@ -142,7 +141,7 @@ void CSpeakerManager::Update()
 
 					if (m_displaySubtitlesCVar != 0)
 					{
-						if (gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetClientActorId() == pEntity->GetId())
+						if (gEnv->pGameFramework && gEnv->pGameFramework->GetClientActorId() == pEntity->GetId())
 						{
 							IRenderAuxText::Draw2dLabel(8.0f, currentPos2Y, 2.0f, fColorBlue, false, "%s", it->text.c_str());
 							currentPos2Y += 10.0f;

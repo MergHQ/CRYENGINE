@@ -160,7 +160,7 @@ private:
 			const IActor* pLocalPlayer = CCryAction::GetCryAction()->GetClientActor();
 			const IAIObject* pAILocalPlayer = pLocalPlayer ? pLocalPlayer->GetEntity()->GetAI() : NULL;
 
-			IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+			IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 			while (IActor* pActor = pIter->Next())
 			{
 				if (!pActor->IsPlayer())
@@ -291,7 +291,7 @@ private:
 	int CountCurrentlyActiveAIsInSpecifiedFaction()
 	{
 		int count = 0;
-		IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+		IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 		while (IActor* pActor = pIter->Next())
 		{
 			if (!pActor->IsPlayer() || m_includeHumanPlayers)
@@ -360,7 +360,7 @@ private:
 
 				int aiCount = 0;
 
-				IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+				IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 				while (IActor* pActor = pIter->Next())
 				{
 					if (!pActor->IsPlayer() && !pActor->IsDead())
@@ -2351,7 +2351,7 @@ public:
 						EntityId entityId = GetPortEntityId(pActInfo, IN_ActorFirst + i);
 						if (entityId != 0)
 						{
-							IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId);
+							IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entityId);
 							bool isAlive = pActor && !pActor->IsDead();
 							if (isAlive)
 							{

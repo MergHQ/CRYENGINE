@@ -82,7 +82,7 @@ public:
 	virtual void            Release();
 	virtual void            ForceSet(const char* s);
 	virtual void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc);
-	virtual void            AddOnChangeFunctor(const SFunctor& pChangeFunctor);
+	virtual uint64            AddOnChangeFunctor(const SFunctor& pChangeFunctor);
 	virtual bool            RemoveOnChangeFunctor(const uint64 nElement);
 	virtual uint64          GetNumberOfOnChangeFunctors() const;
 	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const;

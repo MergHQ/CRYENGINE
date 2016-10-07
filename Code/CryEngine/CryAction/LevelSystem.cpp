@@ -486,8 +486,8 @@ void CLevelRotation::Initialise(int nSeed)
 
 	if (nSeed >= 0)
 	{
-		cry_random_seed(nSeed);
-		Log_LevelRotation(" Called cry_random_seed( %d )", nSeed);
+		gEnv->pSystem->GetRandomGenerator().Seed(nSeed);
+		Log_LevelRotation("Seeded random generator with %d", nSeed);
 	}
 
 	if (!m_rotation.empty() && m_randFlags & ePRF_Shuffle)
@@ -1337,9 +1337,12 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 			gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name);
 		}
 
-		gEnv->pGame->LoadExportedLevelData(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name.c_str());
+		if (auto* pGame = gEnv->pGameFramework->GetIGame())
+		{
+			pGame->LoadExportedLevelData(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name.c_str());
+		}
 
-		ICustomActionManager* pCustomActionManager = gEnv->pGame->GetIGameFramework()->GetICustomActionManager();
+		ICustomActionManager* pCustomActionManager = gEnv->pGameFramework->GetICustomActionManager();
 		if (pCustomActionManager)
 		{
 			pCustomActionManager->LoadLibraryActions(CUSTOM_ACTIONS_PATH);
@@ -1494,32 +1497,30 @@ void CLevelSystem::PrecacheLevelRenderData()
 
 	if (pPrecacheVar && pPrecacheVar->GetIVal() > 0)
 	{
+		if (I3DEngine* p3DEngine = gEnv->p3DEngine)
+		{
+			std::vector<Vec3> arrCamOutdoorPositions;
 
-		if (gEnv->pGame)
-			if (I3DEngine* p3DEngine = gEnv->p3DEngine)
+			IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
+			IEntityItPtr pEntityIter = pEntitySystem->GetEntityIterator();
+
+			IEntityClass* pPrecacheCameraClass = pEntitySystem->GetClassRegistry()->FindClass("PrecacheCamera");
+			IEntity* pEntity = nullptr;
+			while (pEntity = pEntityIter->Next())
 			{
-				std::vector<Vec3> arrCamOutdoorPositions;
-
-				IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-				IEntityItPtr pEntityIter = pEntitySystem->GetEntityIterator();
-
-				IEntityClass* pPrecacheCameraClass = pEntitySystem->GetClassRegistry()->FindClass("PrecacheCamera");
-				IEntity* pEntity = NULL;
-				while (pEntity = pEntityIter->Next())
+				if (pEntity->GetClass() == pPrecacheCameraClass)
 				{
-					if (pEntity->GetClass() == pPrecacheCameraClass)
-					{
-						arrCamOutdoorPositions.push_back(pEntity->GetWorldPos());
-					}
+					arrCamOutdoorPositions.push_back(pEntity->GetWorldPos());
 				}
-				Vec3* pPoints = 0;
-				if (arrCamOutdoorPositions.size() > 0)
-				{
-					pPoints = &arrCamOutdoorPositions[0];
-				}
-
-				p3DEngine->PrecacheLevel(true, pPoints, arrCamOutdoorPositions.size());
 			}
+			Vec3* pPoints = 0;
+			if (arrCamOutdoorPositions.size() > 0)
+			{
+				pPoints = &arrCamOutdoorPositions[0];
+			}
+
+			p3DEngine->PrecacheLevel(true, pPoints, arrCamOutdoorPositions.size());
+		}
 	}
 #endif
 	//	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_PRECACHE_END, NULL, NULL);
@@ -2088,9 +2089,9 @@ void CLevelSystem::UnLoadLevel()
 		gEnv->pDialogSystem->Reset(true);
 	}
 
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->Reset(true);
+		gEnv->pGameFramework->GetIMaterialEffects()->Reset(true);
 	}
 
 	if (gEnv->pAISystem)

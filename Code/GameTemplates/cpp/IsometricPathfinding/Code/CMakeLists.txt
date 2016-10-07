@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 3.6.0)
-project (IsometricPathfindingTemplate VERSION 1.0 LANGUAGES CXX)
+project (Game VERSION 1.0 LANGUAGES CXX)
 
 if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
 	# Set startup project to launch Game.exe with this project
-	configure_file ("${PROJECT_NAME}.vcxproj.user.in" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.vcxproj.user")
+	configure_file ("Game.vcxproj.user.in" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.vcxproj.user")
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 endif()
 
@@ -12,40 +12,19 @@ find_package (CryAction REQUIRED)
 
 option(OPTION_PCH "Enable Precompiled headers" ON)
 
-set (SourceGroup_Dll
+set (SourceGroup_PluginMain
 	"StdAfx.cpp"
 	"StdAfx.h"
+	"GamePlugin.cpp"
+	"GamePlugin.h"
 )
-source_group("Dll" FILES ${SourceGroup_Dll})
-
-set (SourceGroup_EditorSpecific
-	"EditorSpecific/EditorGame.cpp"
-	"EditorSpecific/EditorGame.h"
-)
-source_group("EditorSpecific" FILES ${SourceGroup_EditorSpecific})
+source_group("Dll" FILES ${SourceGroup_PluginMain})
 
 set (SourceGroup_Game
-	"Game/Game.cpp"
-	"Game/Game.h"
 	"Game/GameRules.cpp"
 	"Game/GameRules.h"
-	"Game/GameFactory.cpp"
-	"Game/GameFactory.h"
 )
 source_group("Game" FILES ${SourceGroup_Game})
-
-set (SourceGroup_Flownodes
-	"FlowNodes/Helpers/FlowBaseNode.h"
-	"FlowNodes/Helpers/FlowGameEntityNode.cpp"
-	"FlowNodes/Helpers/FlowGameEntityNode.h"
-)
-source_group("Flownodes" FILES ${SourceGroup_Flownodes})
-
-set (SourceGroup_Startup
-	"Startup/GameStartup.cpp"
-	"Startup/GameStartup.h"
-)
-source_group("Startup" FILES ${SourceGroup_Startup})
 
 set (SourceGroup_WeaponEntities
 	"Entities/Gameplay/Weapons/Bullet.cpp"
@@ -64,26 +43,8 @@ source_group("Entities\\Gameplay" FILES ${SourceGroup_GameplayEntities})
 
 set (SourceGroup_EntityHelpers
 	"Entities/Helpers/ISimpleExtension.h"
-	"Entities/Helpers/NativeEntityBase.cpp"
-	"Entities/Helpers/NativeEntityBase.h"
-	"Entities/Helpers/NativeEntityPropertyHandling.cpp"
-	"Entities/Helpers/NativeEntityPropertyHandling.h"
 )
 source_group("Entities\\Helpers" FILES ${SourceGroup_EntityHelpers})
-
-set (SourceGroup_LightEntities
-	"Entities/Lights/LightEntity.cpp"
-	"Entities/Lights/LightEntity.h"
-	"Entities/Lights/EnvironmentProbe.cpp"
-	"Entities/Lights/EnvironmentProbe.h"
-)
-source_group("Entities\\Lights" FILES ${SourceGroup_LightEntities})
-
-set (SourceGroup_PhysicsEntities
-	"Entities/Physics/RigidBody.cpp"
-	"Entities/Physics/RigidBody.h"
-)
-source_group("Entities\\Physics" FILES ${SourceGroup_PhysicsEntities})
 
 set (SourceGroup_Player
 	"Player/Player.cpp"
@@ -123,16 +84,11 @@ set (SourceGroup_PlayerPathfinding
 source_group("Player\\Pathfinding" FILES ${SourceGroup_PlayerPathfinding})
 
 set (SOURCE
-	${SourceGroup_Dll}
-	${SourceGroup_EditorSpecific}
+	${SourceGroup_PluginMain}
 	${SourceGroup_Game}
-	${SourceGroup_Flownodes}
-	${SourceGroup_Startup}
 	${SourceGroup_WeaponEntities}
 	${SourceGroup_GameplayEntities}
 	${SourceGroup_EntityHelpers}
-	${SourceGroup_LightEntities}
-	${SourceGroup_PhysicsEntities}
 	${SourceGroup_Player}
 	${SourceGroup_PlayerAnimations}
 	${SourceGroup_PlayerInput}

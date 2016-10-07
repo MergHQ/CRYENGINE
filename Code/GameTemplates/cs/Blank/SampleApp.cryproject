@@ -1,14 +1,11 @@
 {
-    "content": {
-	    "assets": ["Assets"],
-        "code": ["Code/Game/GameDll"],
-		"libs": [{
-			"name": "Game",
-			"shared": {
-				"win_x64": "bin/win_x64/Game.dll",
-				"win_x86": "bin/win_x86/Game.dll"
-			}
-		}]
+	"content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ]
     },
     "info": {
         "name": "CE# Framework - Sample App"

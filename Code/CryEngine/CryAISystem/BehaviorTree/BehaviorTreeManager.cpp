@@ -26,7 +26,7 @@
 #endif
 
 #if defined (DEBUG_MODULAR_BEHAVIOR_TREE_WEB)
-	#include <CryGame/IGame.h>
+	#include <CryGame/IGameFramework.h>
 	#include <CrySerialization/IArchiveHost.h>
 #endif
 
@@ -49,7 +49,13 @@ static CPipeUser* GetPipeUser(EntityId entityId)
 #if defined (DEBUG_MODULAR_BEHAVIOR_TREE_WEB)
 IGameWebDebugService* GetIGameWebDebugService()
 {
-	return (gEnv && gEnv->pGame) ? gEnv->pGame->GetIWebDebugService() : nullptr;
+	if (gEnv)
+	{
+		if (auto* pGame = gEnv->pGameFramework->GetIGame())
+			return pGame->GetIWebDebugService();
+	}
+
+	return nullptr;
 }
 #endif
 }

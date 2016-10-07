@@ -287,7 +287,7 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 					}
 				}
 
-				if( GetOwnerId() == g_pGame->GetClientActorId() )
+				if( GetOwnerId() == gEnv->pGameFramework->GetClientActorId() )
 				{
 					if( CEquipmentLoadout* pLoadout = g_pGame->GetEquipmentLoadout() )
 					{

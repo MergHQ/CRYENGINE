@@ -382,7 +382,7 @@ void CTelemetryCollector::OutputSessionId(IConsoleCmdArgs *inArgs)
 // test function which uploads the game.log
 void CTelemetryCollector::SubmitGameLog(IConsoleCmdArgs *inArgs)
 {
-	CTelemetryCollector		*tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector());
+	CTelemetryCollector		*tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 	const char				*logFile=gEnv->pSystem->GetILog()->GetFileName();
 
 	if (tc)

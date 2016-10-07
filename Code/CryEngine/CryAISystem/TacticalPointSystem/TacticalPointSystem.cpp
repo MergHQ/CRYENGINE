@@ -1451,7 +1451,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 				IPersistantDebug* pPD = 0;
 				if (CVars.DebugTacticalPointsBlocked)
 				{
-					pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+					pPD = gEnv->pGameFramework->GetIPersistantDebug();
 					pPD->Begin("BadHideSpots", false);
 				}
 
@@ -1575,7 +1575,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 			IPersistantDebug* pPD = NULL;
 			if (CVars.DebugTacticalPointsBlocked)
 			{
-				pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+				pPD = gEnv->pGameFramework->GetIPersistantDebug();
 				pPD->Begin("OccupiedOrUnreachablePoints", false);
 			}
 
@@ -2170,7 +2170,7 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 
 				if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 				{
-					IPersistantDebug* debug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+					IPersistantDebug* debug = gEnv->pGameFramework->GetIPersistantDebug();
 					debug->Begin("eTPQ_T_Visible", false);
 					debug->AddLine(vWaistPos, vWaistPos + vDelta, (result ? Col_Green : Col_Red), 10.0f);
 				}
@@ -2214,7 +2214,7 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 
 					if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 					{
-						IPersistantDebug* debug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+						IPersistantDebug* debug = gEnv->pGameFramework->GetIPersistantDebug();
 						debug->Begin("eTPQ_T_CanShoot", false);
 						debug->AddLine(vPoint, vPoint + vDelta, Col_Blue, 10.0f);
 					}
@@ -2300,7 +2300,7 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 
 				if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 				{
-					IPersistantDebug* debug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+					IPersistantDebug* debug = gEnv->pGameFramework->GetIPersistantDebug();
 					debug->Begin("eTPQ_T_CanShootTwoRayTest", false);
 					debug->AddLine(vPointRight, vPointRight + vDeltaRight, Col_Blue, 10.0f);
 					debug->AddLine(vPointLeft, vPointLeft + vDeltaLeft, Col_Blue, 10.0f);

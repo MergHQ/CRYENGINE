@@ -426,7 +426,9 @@ bool CActor::Init( IGameObject * pGameObject )
 	if (!GetGameObject()->CaptureProfileManager(this))
 		return false;
 
-	m_isClient = (g_pGame->GetClientActorId() == GetEntityId());
+	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
+
+	m_isClient = (gEnv->pGameFramework->GetClientActorId() == GetEntityId());
 
 	IEntity *pEntity = GetEntity();
 	IEntityClass *pEntityClass = pEntity->GetClass();
@@ -437,8 +439,6 @@ bool CActor::Init( IGameObject * pGameObject )
 
 	m_pMovementController = CreateMovementController();
 	GetGameObject()->SetMovementController(m_pMovementController);
-
-	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor( GetEntityId(), this );
 
 	g_pGame->GetActorScriptBind()->AttachTo(this);
 	m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
@@ -690,7 +690,7 @@ void CActor::Revive( EReasonForRevive reasonForRevive )
 	if(IsClient())
 	{
 		// Stop force feedback
-		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 		if(pForceFeedbackSystem)
 		{
 			pForceFeedbackSystem->StopAllEffects();
@@ -1030,11 +1030,11 @@ void CActor::Physicalize(EStance stance)
 	{
 		CCCPOINT(Actor_PhysicalizeNPC);
 	}
-	else if (gEnv->pGame->GetIGameFramework()->GetClientActor() == NULL)
+	else if (gEnv->pGameFramework->GetClientActor() == NULL)
 	{
 		CCCPOINT(Actor_PhysicalizePlayerWhileNoClient);
 	}
-	else if (gEnv->pGame->GetIGameFramework()->GetClientActor() == this)
+	else if (gEnv->pGameFramework->GetClientActor() == this)
 	{
 		CCCPOINT(Actor_PhysicalizeLocalPlayer);
 	}
@@ -2140,7 +2140,7 @@ void CActor::CloakSyncAttachment(IAttachment* pAttachment, bool bFade)
 		if(pAO->GetAttachmentType()==IAttachmentObject::eAttachment_Entity)
 		{
 			CEntityAttachment* pEA = static_cast<CEntityAttachment*>(pAO);
-			if (CItem* pItem = static_cast<CItem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pEA->GetEntityId())))
+			if (CItem* pItem = static_cast<CItem*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(pEA->GetEntityId())))
 			{
 				//Ensure that the entity has the right flags set, though hidden, so that if we unhide it the flags are correct.
 				//	Only do the fade if the object is visible.
@@ -2370,7 +2370,7 @@ void CActor::Kill()
 	if(IsClient())
 	{
 		// Clear force feedback
-		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 		if(pForceFeedbackSystem)
 		{
 			pForceFeedbackSystem->StopAllEffects();
@@ -4066,7 +4066,7 @@ void CActor::ServerExchangeItem(CItem* pCurrentItem, CItem* pNewItem)
 			return;
 		}
 
-		IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 		CWeapon* pCurrentWeapon = static_cast<CWeapon*>(pCurrentItem->GetIWeapon());
 		CWeapon* pNewWeapon = static_cast<CWeapon*>(pNewItem->GetIWeapon());
 		IInventory* pInventory = GetInventory();
@@ -4838,7 +4838,7 @@ void CActor::NetKill(const KillParams &killParams)
 
 	// Once killed, if override impulse specified and if we werent the killer(who has already applied an impulse), force ragdoll and apply.
 	// killParams.ragdoll will only be true if no hit death reaction is currently active. 
-	if(killParams.ragdoll && killParams.impulseScale > 0.0f && (hitInfo.shooterId != gEnv->pGame->GetIGameFramework()->GetClientActorId()))
+	if(killParams.ragdoll && killParams.impulseScale > 0.0f && (hitInfo.shooterId != gEnv->pGameFramework->GetClientActorId()))
 	{
 		ForceRagdollizeAndApplyImpulse(hitInfo); 
 	}
@@ -5667,7 +5667,7 @@ void CActor::ReloadBodyDestruction()
 
 void CActor::GenerateBlendRagdollTags()
 {
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const CTagDefinition* pTagDefinition = mannequinSys.GetAnimationDatabaseManager().FindTagDef( "Animations/Mannequin/ADB/blendRagdollTags.xml" );
 
 	if( pTagDefinition )

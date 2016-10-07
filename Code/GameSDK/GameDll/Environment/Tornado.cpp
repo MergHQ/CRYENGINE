@@ -225,7 +225,7 @@ void CTornado::Update(SEntityUpdateContext &ctx, int updateSlot)
 	}
 	else if (!m_isOnWater)
 	{		
-		IMaterialEffects *mfx = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+		IMaterialEffects *mfx = gEnv->pGameFramework->GetIMaterialEffects();
 		Vec3 down = Vec3(0,0,-1.0f);
 		int matID = mfx->GetDefaultSurfaceIndex();
 

@@ -400,10 +400,10 @@ void CUISettings::OnGetCurrGameSettings()
 ////////////////////////////////////////////////////////////////////////////
 void CUISettings::OnGetLevels( string levelPathFilter )
 {
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetILevelSystem())
+	if (gEnv->pGameFramework && gEnv->pGameFramework->GetILevelSystem())
 	{
 		int i = 0;
-		while ( ILevelInfo* pLevelInfo = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetLevelInfo( i++ ) )
+		while ( ILevelInfo* pLevelInfo = gEnv->pGameFramework->GetILevelSystem()->GetLevelInfo( i++ ) )
 		{
 			string levelPath = pLevelInfo->GetPath();
 			levelPath.MakeLower();
@@ -421,9 +421,9 @@ void CUISettings::OnLogoutUser()
 {
 //TODO: SAFE CURRENT SETTINGS?
 
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if (gEnv->pGameFramework && gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
-		IPlayerProfileManager* pProfileManager = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager();
+		IPlayerProfileManager* pProfileManager = gEnv->pGameFramework->GetIPlayerProfileManager();
 		pProfileManager->LogoutUser(pProfileManager->GetCurrentUser());
 	}
 }

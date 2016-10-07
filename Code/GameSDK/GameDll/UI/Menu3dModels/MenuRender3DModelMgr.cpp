@@ -65,7 +65,7 @@ CMenuRender3DModelMgr::CMenuRender3DModelMgr()
 
 	m_bUserRotation = false;
 
-	gEnv->pGame->GetIGameFramework()->RegisterListener(this, "MenuRender3DModelMgr", FRAMEWORKLISTENERPRIORITY_MENU);
+	gEnv->pGameFramework->RegisterListener(this, "MenuRender3DModelMgr", FRAMEWORKLISTENERPRIORITY_MENU);
 }//-------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ CMenuRender3DModelMgr::~CMenuRender3DModelMgr()
 	stl::free_container(m_sceneSettings.lights);
 
 	// Unregister listeners
-	gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+	gEnv->pGameFramework->UnregisterListener(this);
 }//-------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------

@@ -39,7 +39,7 @@ void CVehicleDamageBehaviorHitPassenger::OnDamageEvent(EVehicleDamageBehaviorEve
 	if (event != eVDBE_Hit)
 		return;
 
-	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	CRY_ASSERT(pActorSystem);
 
 	TVehicleSeatId lastSeatId = m_pVehicle->GetLastSeatId();
@@ -59,7 +59,7 @@ void CVehicleDamageBehaviorHitPassenger::OnDamageEvent(EVehicleDamageBehaviorEve
 
 				if (gEnv->bServer)
 				{
-					if (IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules())
+					if (IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules())
 					{
 						HitInfo hit;
 

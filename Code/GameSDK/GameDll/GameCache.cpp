@@ -49,7 +49,7 @@ bool CGameCache::IsLuaCacheEnabled()
 //////////////////////////////////////////////////////////////////////////
 bool CGameCache::IsClient(EntityId entityId)
 {
-	const EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	return (localClientId == entityId);
 }
 

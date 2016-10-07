@@ -548,7 +548,7 @@ public:
 		if (ser.IsWriting())
 		{
 			bool bWroteIt = false;
-			IActionMapManager* pAMMgr = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+			IActionMapManager* pAMMgr = gEnv->pGameFramework->GetIActionMapManager();
 			if (pAMMgr && m_filterName.empty() == false)
 			{
 				IActionFilter* pFilter = pAMMgr->GetActionFilter(m_filterName.c_str());
@@ -606,8 +606,7 @@ public:
 
 		m_bEnabled = bEnable;
 
-		IGameFramework* pGameFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
-		IActionMapManager* pAMMgr = pGameFramework ? pGameFramework->GetIActionMapManager() : NULL;
+		IActionMapManager* pAMMgr = gEnv->pGameFramework->GetIActionMapManager();
 		if (pAMMgr)
 		{
 			pAMMgr->EnableFilter(m_filterName, bEnable);

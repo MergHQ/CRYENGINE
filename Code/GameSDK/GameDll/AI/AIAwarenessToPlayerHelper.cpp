@@ -90,7 +90,7 @@ void CAIAwarenessToPlayerHelper::RecalculateAwareness()
 	uint8 playerFactionID = factionMap.GetFactionID("Players");
 
 	IAIObject* playerAiObject = NULL;
-	CActor* playerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CActor* playerActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 
 	if (playerActor)
 	{
@@ -109,7 +109,7 @@ void CAIAwarenessToPlayerHelper::RecalculateAwareness()
 	const bool applyProximityToHostileAgentIncrement = m_actualAwareness < kAIAwarenessToPlayerAware && !playerPosition.IsZero();
 
 	// Go through actors
-	IActorIteratorPtr actorIt = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr actorIt = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	if (actorIt)
 	{
 		while (IActor* actor = actorIt->Next())
@@ -193,7 +193,7 @@ CAIAwarenessToPlayerHelper::VisorIconColor CAIAwarenessToPlayerHelper::GetMarker
 	const IAIObject* ai = entity ? entity->GetAI() : NULL;
 	const IAIActor* aiActor = ai ? ai->CastToIAIActor() : NULL;
 	IAIObject* playerAiObject = NULL;
-	CActor* playerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CActor* playerActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 	if (playerActor)
 	{
 		if (IEntity* playerEntity = playerActor->GetEntity())

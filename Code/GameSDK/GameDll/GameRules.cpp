@@ -412,7 +412,7 @@ CGameRules::~CGameRules()
 	if( gEnv->IsClient() )
 	{
 		// Stop force feedback
-		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 		if(pForceFeedbackSystem)
 		{
 			pForceFeedbackSystem->StopAllEffects();
@@ -1206,7 +1206,7 @@ void CGameRules::Update( SEntityUpdateContext& ctx, int updateSlot )
 		CGameLobby *pGameLobby = g_pGame->GetGameLobby();
 		if (pGameLobby && pGameLobby->UseLobbyTeamBalancing())
 		{
-			int localTeamId = GetTeam(g_pGame->GetClientActorId());
+			int localTeamId = GetTeam(gEnv->pGameFramework->GetClientActorId());
 			if ((localTeamId == 1) || (localTeamId == 2))
 			{
 				int otherTeamId = 3 - localTeamId;
@@ -2145,7 +2145,7 @@ void CGameRules::PrecacheList(XmlNodeRef precacheListNode)
 					}
 				case Precache_ADB:
 					{
-						IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+						IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 						if( mannequinSys.GetAnimationDatabaseManager().Load(precacheItem) == NULL )
 						{
 							GameWarning("Unable to precache ADB %s", precacheItem);
@@ -2154,7 +2154,7 @@ void CGameRules::PrecacheList(XmlNodeRef precacheListNode)
 					break;
 				case Precache_ADBTagDefs:
 					{
-						IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+						IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 						if( mannequinSys.GetAnimationDatabaseManager().LoadTagDefs(precacheItem, true) == NULL )
 						{
 							GameWarning("Unable to precache ADB tag defs %s", precacheItem);
@@ -2951,7 +2951,7 @@ void CGameRules::OnKill(IActor *pActor, const HitInfo &hitInfo, bool winningKill
   if ( gEnv->bServer && winningKill )
     GetVictoryConditionsModule()->SetWinningKillVictimShooter(hitInfo.targetId,hitInfo.shooterId);
 
-	IActor *pShooterActor=gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitInfo.shooterId);
+	IActor *pShooterActor=gEnv->pGameFramework->GetIActorSystem()->GetActor(hitInfo.shooterId);
 	
 	if (pShooterActor != NULL && pShooterActor->IsPlayer())
 	{
@@ -2968,7 +2968,7 @@ void CGameRules::OnKill(IActor *pActor, const HitInfo &hitInfo, bool winningKill
 			g_pGame->GetPersistantStats()->UpdateMultiKillStreak(hitInfo.shooterId, hitInfo.targetId);
 		}
 
-		bool isShooterClient = (hitInfo.shooterId == gEnv->pGame->GetIGameFramework()->GetClientActorId());
+		bool isShooterClient = (hitInfo.shooterId == gEnv->pGameFramework->GetClientActorId());
 		if(isShooterClient)
 		{
 			CPlayerProgression::GetInstance()->SkillKillEvent(this, pActor, pShooterActor, hitInfo, firstKill);
@@ -4253,7 +4253,7 @@ void CGameRules::Vote(IActor* pActor, bool yes)
     {
       m_pVotingSystem->Vote(id,GetTeam(id), yes);
 
-			if (id == g_pGame->GetClientActorId())
+			if (id == gEnv->pGameFramework->GetClientActorId())
 			{
 				// For if the client voting is the server - non-dedicated
 				m_bClientKickVotedFor = yes;
@@ -4569,7 +4569,7 @@ void CGameRules::ClientTeamScoreFeedback(int teamId, int prevScore, int newScore
 	}
 
 	//Should this go into scoring module so the module determines if there should be an 'in the lead' announcement?
-	int clientTeam = GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+	int clientTeam = GetTeam(gEnv->pGameFramework->GetClientActorId());
 
 	if(teamId == clientTeam)
 	{
@@ -6395,7 +6395,7 @@ void CGameRules::OnEndGame()
 
 	if(gEnv->IsClient())
 	{
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 
 		// Stop force feedback
 		IForceFeedbackSystem* pForceFeedbackSystem = pGameFramework->GetIForceFeedbackSystem();
@@ -6983,7 +6983,7 @@ void CGameRules::FreezeInput(bool freeze)
 			pVehicleClient->Reset();
 		}
 
-		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 		if(pPlayer)
 		{
 			IPlayerInput* pPlayerInput = pPlayer->GetPlayerInput();
@@ -7464,7 +7464,7 @@ void CGameRules::SetAllPlayerVisibility( const bool bVisible, const bool bInclud
 	{
 		CGameRules::TPlayers players;
 		GetPlayers(players);
-		EntityId localPlayerId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localPlayerId = gEnv->pGameFramework->GetClientActorId();
 
 		CGameRules::TPlayers::const_iterator iter = players.begin();
 		CGameRules::TPlayers::const_iterator end = players.end();
@@ -8128,8 +8128,6 @@ IHostMigrationEventListener::EHostMigrationReturn CGameRules::OnFinalise(SHostMi
 	{
 		pSpawningModule->HostMigrationResumeAddingPlayers();
 	}
-
-	g_pGame->PlayerIdSet(g_pGame->GetIGameFramework()->GetClientActorId());
 
 	CryLogAlways("[Host Migration]: CGameRules::OnFinalise() finished - success");
 	return IHostMigrationEventListener::Listener_Done;

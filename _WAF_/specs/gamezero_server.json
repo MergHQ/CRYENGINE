@@ -32,6 +32,8 @@
 		"CrySystem",
 		"CryAction",
 		"HWScripts",
+		
+		"CryDefaultEntities",
 
 		"zlib",
 		"expat",

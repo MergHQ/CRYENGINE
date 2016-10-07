@@ -364,7 +364,7 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 
 	Vec3 playerPosition = player.GetEntity()->GetWorldPos();
 	IPhysicalEntity* phys = player.GetEntity()->GetPhysics();
-	IMaterialEffects* mfx = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* mfx = gEnv->pGameFramework->GetIMaterialEffects();
 
 	const SActorPhysics& actorPhysics = player.GetActorPhysics();
 	int matID = actorPhysics.groundMaterialIdx != -1 ? actorPhysics.groundMaterialIdx : mfx->GetDefaultSurfaceIndex();

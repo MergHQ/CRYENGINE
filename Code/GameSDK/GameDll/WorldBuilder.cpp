@@ -18,12 +18,12 @@
 //////////////////////////////////////////////////////////////////////////
 CWorldBuilder::CWorldBuilder()
 {
-	if(gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if(gEnv->pGameFramework)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->pGame->GetIGameFramework()->GetILevelSystem(), "Unable to register as levelsystem listener!");
-		if(gEnv->pGame->GetIGameFramework()->GetILevelSystem())
+		CRY_ASSERT_MESSAGE(gEnv->pGameFramework->GetILevelSystem(), "Unable to register as levelsystem listener!");
+		if(gEnv->pGameFramework->GetILevelSystem())
 		{
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->AddListener(this);
+			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 		}
 	}
 }
@@ -31,10 +31,10 @@ CWorldBuilder::CWorldBuilder()
 //////////////////////////////////////////////////////////////////////////
 CWorldBuilder::~CWorldBuilder()
 {		
-	if(gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if(gEnv->pGameFramework)
 	{
-		if(gEnv->pGame->GetIGameFramework()->GetILevelSystem())
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->RemoveListener( this );
+		if(gEnv->pGameFramework->GetILevelSystem())
+			gEnv->pGameFramework->GetILevelSystem()->RemoveListener( this );
 	}
 }
 

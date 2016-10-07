@@ -183,14 +183,14 @@ void CFlashUI::RegisterListeners()
 		gEnv->pInput->AddEventListener(this);
 	}
 
-	CRY_ASSERT_MESSAGE(gEnv->pGame && gEnv->pGame->GetIGameFramework(), "Unable to register as Framework listener!");
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->RegisterListener(this, "FlashUI", FRAMEWORKLISTENERPRIORITY_HUD);
-		CRY_ASSERT_MESSAGE(gEnv->pGame->GetIGameFramework()->GetILevelSystem(), "Unable to register as levelsystem listener!");
-		if (gEnv->pGame->GetIGameFramework()->GetILevelSystem())
+		gEnv->pGameFramework->RegisterListener(this, "FlashUI", FRAMEWORKLISTENERPRIORITY_HUD);
+		CRY_ASSERT_MESSAGE(gEnv->pGameFramework->GetILevelSystem(), "Unable to register as levelsystem listener!");
+		if (gEnv->pGameFramework->GetILevelSystem())
 		{
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->AddListener(this);
+			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 		}
 	}
 
@@ -204,11 +204,11 @@ void CFlashUI::RegisterListeners()
 //------------------------------------------------------------------------------------
 void CFlashUI::UnregisterListeners()
 {
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
-		if (gEnv->pGame->GetIGameFramework()->GetILevelSystem())
-			gEnv->pGame->GetIGameFramework()->GetILevelSystem()->RemoveListener(this);
+		gEnv->pGameFramework->UnregisterListener(this);
+		if (gEnv->pGameFramework->GetILevelSystem())
+			gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
 	}
 
 	if (gEnv->pSystem)
@@ -275,7 +275,7 @@ void CFlashUI::Update(float fDeltaTime)
 
 	const bool isEditor = gEnv->IsEditor();
 
-	if (!isEditor || gEnv->pGame->GetIGameFramework()->IsGameStarted())
+	if (!isEditor || gEnv->pGameFramework->IsGameStarted())
 	{
 
 		if (CV_gfx_reloadonlanguagechange == 1)
@@ -494,7 +494,7 @@ void CFlashUI::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpara
 				UpdateFG();
 			}
 
-			ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 			PreloadTextures(pLevel ? pLevel->GetName() : "");
 
 			m_systemState = eSS_LoadingDone;
@@ -942,9 +942,9 @@ void CFlashUI::SendFlashMouseEvent(SFlashCursorEvent::ECursorState evt, int iX, 
 bool CFlashUI::DisplayVirtualKeyboard(unsigned int flags, const char* title, const char* initialInput, int maxInputLength, IVirtualKeyboardEvents* pInCallback)
 {
 	IPlatformOS* pPlatformOS = gEnv->pSystem->GetPlatformOS();
-	if (pPlatformOS && gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (pPlatformOS && gEnv->pGameFramework)
 	{
-		unsigned int controllerIdx = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager()->GetExclusiveControllerDeviceIndex();
+		unsigned int controllerIdx = gEnv->pGameFramework->GetIPlayerProfileManager()->GetExclusiveControllerDeviceIndex();
 		if (controllerIdx != INVALID_CONTROLLER_INDEX)
 			return pPlatformOS->KeyboardStart(controllerIdx, flags, title, initialInput, maxInputLength, pInCallback);
 	}
@@ -1226,6 +1226,8 @@ void CFlashUI::ClearElements()
 //-------------------------------------------------------------------
 void CFlashUI::ClearActions()
 {
+	m_pUIActionManager->Init();
+
 	for (TUIActionsLookup::iterator iter = m_actions.begin(); iter != m_actions.end(); ++iter)
 		delete *iter;
 
@@ -1293,9 +1295,14 @@ void CFlashUI::LoadFromFile(const char* pFolderName, const char* pSearch, bool (
 void CFlashUI::PreloadTextures(const char* pLevelName)
 {
 	LOADING_TIME_PROFILE_SECTION;
+
 	ReleasePreloadedTextures(false);
+
 	string file;
 	file.Format("%s/%s", CV_gfx_uiaction_folder->GetString(), FLASH_PRELOAD_XML);
+	if (!gEnv->pCryPak->IsFileExist(file))
+		return;
+
 	XmlNodeRef xmlNode = GetISystem()->LoadXmlFromFile(file.c_str());
 
 	string XMLLevelName(pLevelName);

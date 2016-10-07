@@ -19,17 +19,16 @@ const static int BUFF_SIZE = LABEL_LENGTH + 3;
 
 CCodeCheckpointDebugMgr* s_pCodeCheckPointDebugManager = NULL;
 
-bool SortDebugRecord( const CCodeCheckpointDebugMgr::CheckpointDebugRecord& rec1, const CCodeCheckpointDebugMgr::CheckpointDebugRecord& rec2 )
+bool SortDebugRecord(const CCodeCheckpointDebugMgr::CheckpointDebugRecord& rec1, const CCodeCheckpointDebugMgr::CheckpointDebugRecord& rec2)
 {
 	return rec1.m_lastHitTime > rec2.m_lastHitTime;
 }
 
-
-void CmdCodeCheckPointSearch(IConsoleCmdArgs *pArgs)
+void CmdCodeCheckPointSearch(IConsoleCmdArgs* pArgs)
 {
-	if(pArgs->GetArgCount() > 2)
+	if (pArgs->GetArgCount() > 2)
 		CryLogAlways("Usage: %s <substring>", pArgs->GetArg(0));
-	
+
 	CCodeCheckpointDebugMgr::RecordNameCountPairs foundPointNames;
 
 	string searchString;
@@ -40,7 +39,7 @@ void CmdCodeCheckPointSearch(IConsoleCmdArgs *pArgs)
 	CCodeCheckpointDebugMgr::RetrieveCodeCheckpointDebugMgr()->SearchCheckpoints(foundPointNames, searchString);
 
 	CryLogAlways("Search with substring:%s return the following %" PRISIZE_T " hit checkpoints", searchString.c_str(), foundPointNames.size());
-	for(CCodeCheckpointDebugMgr::RecordNameCountPairs::iterator fIt = foundPointNames.begin(); fIt != foundPointNames.end(); ++fIt)
+	for (CCodeCheckpointDebugMgr::RecordNameCountPairs::iterator fIt = foundPointNames.begin(); fIt != foundPointNames.end(); ++fIt)
 		CryLogAlways("Checkpoint:%s Count:%i", fIt->first.c_str(), fIt->second);
 }
 
@@ -48,14 +47,14 @@ CCodeCheckpointDebugMgr* CCodeCheckpointDebugMgr::s_pCodeCheckPointDebugManager 
 
 CCodeCheckpointDebugMgr* CCodeCheckpointDebugMgr::RetrieveCodeCheckpointDebugMgr()
 {
-	if(!s_pCodeCheckPointDebugManager)
+	if (!s_pCodeCheckPointDebugManager)
 		s_pCodeCheckPointDebugManager = new CCodeCheckpointDebugMgr();
 
 	return s_pCodeCheckPointDebugManager;
 }
 
 CCodeCheckpointDebugMgr::CCodeCheckpointDebugMgr()
-:REGISTER_GAME_MECHANISM(CCodeCheckpointDebugMgr),m_timeSinceLastRun(0)
+	: REGISTER_GAME_MECHANISM(CCodeCheckpointDebugMgr), m_timeSinceLastRun(0)
 {
 	m_debug_ccoverage = 0;
 	m_debug_ccoverage_rate = 0.05f;
@@ -71,9 +70,20 @@ CCodeCheckpointDebugMgr::CCodeCheckpointDebugMgr()
 	REGISTER_CVAR2("ft_debug_ccoverage_filter_maxcount", &m_debug_ccoverage_filter_maxcount, m_debug_ccoverage_filter_maxcount, VF_CHEAT, "FEATURE TEST: Only print out checkpoints with less than this number of hits");
 	REGISTER_CVAR2("ft_debug_ccoverage_filter_mincount", &m_debug_ccoverage_filter_mincount, m_debug_ccoverage_filter_mincount, VF_CHEAT, "FEATURE TEST: Only print out checkpoints with more than this number of hit");
 
-	string filePath = PathUtil::Make( "../USER", "CodeCheckpointList.txt" );
+	string filePath = PathUtil::Make("../USER", "CodeCheckpointList.txt");
 	ReadFile(filePath.c_str());
+}
 
+CCodeCheckpointDebugMgr::~CCodeCheckpointDebugMgr()
+{
+	s_pCodeCheckPointDebugManager = nullptr;
+
+	gEnv->pConsole->RemoveCommand("ft_debug_checkpoint_search");
+	gEnv->pConsole->UnregisterVariable("ft_debug_ccoverage", true);
+	gEnv->pConsole->UnregisterVariable("ft_debug_ccoverage_rate", true);
+	gEnv->pConsole->UnregisterVariable("ft_debug_ccoverage_maxlines", true);
+	gEnv->pConsole->UnregisterVariable("ft_debug_ccoverage_filter_maxcount", true);
+	gEnv->pConsole->UnregisterVariable("ft_debug_ccoverage_filter_mincount", true);
 }
 
 /// Searches all registered check points for the given substring and returns their counts in the input list
@@ -87,9 +97,9 @@ void CCodeCheckpointDebugMgr::SearchCheckpoints(RecordNameCountPairs& outputList
 
 void CCodeCheckpointDebugMgr::ReadFile(const char* fileName)
 {
-	FILE * cpFile = gEnv->pCryPak->FOpen(fileName, "r");
+	FILE* cpFile = gEnv->pCryPak->FOpen(fileName, "r");
 
-	if(cpFile)
+	if (cpFile)
 	{
 		// Temporary buffer
 		//char cBuffer[BUFF_SIZE];
@@ -97,10 +107,10 @@ void CCodeCheckpointDebugMgr::ReadFile(const char* fileName)
 		char* lineBlock = new char[BUFF_SIZE + 1];
 		//char* appendBlock = lineBlock;
 
-		while(int numRead = GetLine(lineBlock, cpFile))
+		while (int numRead = GetLine(lineBlock, cpFile))
 		{
 			ICodeCheckpointMgr* pCheckpointManager = gEnv->pCodeCheckpointMgr;
-			if(pCheckpointManager)
+			if (pCheckpointManager)
 				pCheckpointManager->GetCheckpointIndex(lineBlock);
 			RegisterWatchPoint(lineBlock);
 		}
@@ -112,26 +122,25 @@ void CCodeCheckpointDebugMgr::ReadFile(const char* fileName)
 	}
 }
 
-
 ///Getline wrapper to break on newlines as adapted from the old AI Code Coverage Manager
-int CCodeCheckpointDebugMgr::GetLine( char * pBuff, FILE * fp )
-{	
+int CCodeCheckpointDebugMgr::GetLine(char* pBuff, FILE* fp)
+{
 	CRY_ASSERT(pBuff && fp);
 
 	/// Wraps fgets to remove newlines and use correct buffer/string lengths
 
 	/// Must use CryPak FGets on CryPak files
 	/// Will retrieve up to the next newline character in the file buffer.
-	if (!gEnv->pCryPak->FGets( pBuff, BUFF_SIZE, fp ))
+	if (!gEnv->pCryPak->FGets(pBuff, BUFF_SIZE, fp))
 		return 0;
 
 	/// Convert newlines to \0 and discover length
-	int i=0;
+	int i = 0;
 	int nLimit = LABEL_LENGTH + 1;
-	for (; i < nLimit ; i++)
+	for (; i < nLimit; i++)
 	{
 		char c = pBuff[i];
-		if (c == '\n' || c == '\r' || c== '\0') 
+		if (c == '\n' || c == '\r' || c == '\0')
 			break;
 	}
 
@@ -147,20 +156,20 @@ int CCodeCheckpointDebugMgr::GetLine( char * pBuff, FILE * fp )
 	/// Overwrite the last character (usually line terminator) with string delimiter
 	pBuff[i] = '\0';
 
-	if ( i == 0 )
+	if (i == 0)
 		return 0;
 
-	return i+1;
+	return i + 1;
 }
 
 void CCodeCheckpointDebugMgr::Update(float dt)
 {
 	//Don't do any work if we haven't requested this as active
-	if(!m_debug_ccoverage)
+	if (!m_debug_ccoverage)
 		return;
 
 	m_timeSinceLastRun += dt;
-	if( m_timeSinceLastRun > m_debug_ccoverage_rate)
+	if (m_timeSinceLastRun > m_debug_ccoverage_rate)
 	{
 		UpdateRecords();
 		m_timeSinceLastRun = 0;
@@ -173,7 +182,7 @@ void CCodeCheckpointDebugMgr::Update(float dt)
 void CCodeCheckpointDebugMgr::DrawDebugInfo()
 {
 	int displayLevel = m_debug_ccoverage;
-	
+
 	IRenderer* pRenderer = gEnv->pRenderer;
 
 	int totalHit = (int) std::count_if(m_unwatchedPoints.begin(), m_unwatchedPoints.end(), RecordHasHits);
@@ -187,20 +196,20 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 	//Get the sorted output points. For now assume you want to sort based on time
 
 	//Only show watched
-	if(displayLevel == 1)
+	if (displayLevel == 1)
 	{
 		outputPoints.assign(m_watchedPoints.begin(), m_watchedPoints.end());
 		std::sort(outputPoints.begin(), outputPoints.end(), SortDebugRecord);
 	}
 	//Only show unwatched
-	else if(displayLevel == 2)
+	else if (displayLevel == 2)
 	{
 		outputPoints.assign(m_unwatchedPoints.begin(), m_unwatchedPoints.end());
 		std::sort(outputPoints.begin(), outputPoints.end(), SortDebugRecord);
 
 	}
 	//Show both with watched having priority
-	else if(displayLevel == 3)
+	else if (displayLevel == 3)
 	{
 		///Retrieve and sort watched
 		TCheckpointDebugVector watchedPts;
@@ -214,10 +223,10 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 
 		///Combined with watched first
 		outputPoints.assign(watchedPts.begin(), watchedPts.end());
-		outputPoints.insert(outputPoints.end(),unwatchedPts.begin(), unwatchedPts.end());
+		outputPoints.insert(outputPoints.end(), unwatchedPts.begin(), unwatchedPts.end());
 	}
 	//Show both with equal priority
-	else if(displayLevel == 4)
+	else if (displayLevel == 4)
 	{
 		///Combine sort
 		outputPoints.assign(m_unwatchedPoints.begin(), m_unwatchedPoints.end());
@@ -226,10 +235,10 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 	}
 
 	float percHit = 0.0f;
-	if(!m_watchedPoints.empty())
+	if (!m_watchedPoints.empty())
 		percHit = (float) watchedHit / m_watchedPoints.size();
 
-	static float statusColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	static float statusColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float height = (float) 0.05 * pRenderer->GetHeight();
 	IRenderAuxText::Draw2dLabel(30.f, height, 2.f, statusColor, false,
 		"THit: %i | TWatched: %" PRISIZE_T " | WatchedHit: %i | %% WatchedHit: %.2f", 
@@ -238,19 +247,19 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 	//Output the interesting lines
 	float outputOffset = 0.08f;
 	int numberOutput = 0;
-	int maxNumberOutput =  m_debug_ccoverage_maxlines;
-	for(TCheckpointDebugVector::iterator outputIt = outputPoints.begin(); 
-		outputIt != outputPoints.end() && numberOutput < maxNumberOutput;
-		++outputIt)
+	int maxNumberOutput = m_debug_ccoverage_maxlines;
+	for (TCheckpointDebugVector::iterator outputIt = outputPoints.begin();
+	     outputIt != outputPoints.end() && numberOutput < maxNumberOutput;
+	     ++outputIt)
 	{
-		static float watchedColor[] = {1.0f, 0.0f, 1.0f, 1.0f};
-		static float unwatchedColor[] = {0.0f, 0.0f, 1.0f, 1.0f};
+		static float watchedColor[] = { 1.0f, 0.0f, 1.0f, 1.0f };
+		static float unwatchedColor[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
 		//Check filters and skip outputting of ones that don't qualify
 		int filterMin = m_debug_ccoverage_filter_mincount, filterMax = m_debug_ccoverage_filter_maxcount;
-		if(filterMax && (int)outputIt->m_currHitcount > filterMax)
+		if (filterMax && (int)outputIt->m_currHitcount > filterMax)
 			continue;
-		else if(filterMin && (int)outputIt->m_currHitcount < filterMin)
+		else if (filterMin && (int)outputIt->m_currHitcount < filterMin)
 			continue;
 
 		IRenderAuxText::Draw2dLabel(30.f, outputOffset * pRenderer->GetHeight(), 2.f, outputIt->m_queried? watchedColor : unwatchedColor, false,
@@ -258,7 +267,7 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 
 		//Update the display output height
 		outputOffset += 0.03f;
-		 ++numberOutput;
+		++numberOutput;
 	}
 
 }
@@ -272,42 +281,42 @@ void CCodeCheckpointDebugMgr::RegisterWatchPoint(const string& name)
 	bool recordFound = currentLocation != m_watchedPoints.end();
 
 	//Check unwatched
-	if(currentLocation == m_watchedPoints.end())
+	if (currentLocation == m_watchedPoints.end())
 	{
 		currentLocation = std::find_if(m_unwatchedPoints.begin(), m_unwatchedPoints.end(), RecordMatchAndUpdate(name));
 
-		if(currentLocation != m_unwatchedPoints.end())
+		if (currentLocation != m_unwatchedPoints.end())
 		{
 			recordFound = true;
 
 			//Move this record to the appropriate watched location
 			TCheckpointDebugList::iterator currwIt = m_watchedPoints.begin();
-			for(;currwIt != m_watchedPoints.end(); ++currwIt)
+			for (; currwIt != m_watchedPoints.end(); ++currwIt)
 			{
-				if(currentLocation->m_checkPointIdx < currwIt->m_checkPointIdx)
+				if (currentLocation->m_checkPointIdx < currwIt->m_checkPointIdx)
 				{
 					currentLocation->UpdateWatched();
-					m_watchedPoints.insert(currwIt,*currentLocation);
+					m_watchedPoints.insert(currwIt, *currentLocation);
 					break;
 				}
 			}
 
-			if(currwIt == m_watchedPoints.end())
+			if (currwIt == m_watchedPoints.end())
 			{
 				currentLocation->UpdateWatched();
 				m_watchedPoints.push_back(*currentLocation);
 			}
 
 			m_unwatchedPoints.erase(currentLocation);
-		}	
+		}
 	}
 
 	//Point hasn't been reached yet so bookmark it
-	if(!recordFound)
+	if (!recordFound)
 	{
 		//Check if bookmark exists, if so update the count of requests for it
 		TBookmarkMap::iterator currBookmark = m_bookmarkedNames.find(name);
-		if(currBookmark != m_bookmarkedNames.end())
+		if (currBookmark != m_bookmarkedNames.end())
 			++currBookmark->second;
 		else
 			m_bookmarkedNames.insert(std::make_pair(name, 1));
@@ -321,22 +330,22 @@ void CCodeCheckpointDebugMgr::UnregisterWatchPoint(const string& name)
 	//Check for an existing record in the watched points and if found decrement its refcount of watchers
 	TCheckpointDebugList::iterator currentLocation = std::find_if(m_watchedPoints.begin(), m_watchedPoints.end(), RecordMatchAndUpdate(name, -1));
 
-	if(currentLocation != m_watchedPoints.end())
+	if (currentLocation != m_watchedPoints.end())
 	{
 		//If there is no longer a reference to this checkpoint then move it back to the unwatched at the appropriate spot.
-		if(currentLocation->m_refCount <= 0)
+		if (currentLocation->m_refCount <= 0)
 		{
 			TCheckpointDebugList::iterator currwIt = m_unwatchedPoints.begin();
-			for(;currwIt != m_unwatchedPoints.end(); ++currwIt)
+			for (; currwIt != m_unwatchedPoints.end(); ++currwIt)
 			{
-				if(currentLocation->m_checkPointIdx < currwIt->m_checkPointIdx)
+				if (currentLocation->m_checkPointIdx < currwIt->m_checkPointIdx)
 				{
-					m_unwatchedPoints.insert(currwIt,*currentLocation);
+					m_unwatchedPoints.insert(currwIt, *currentLocation);
 					break;
 				}
 			}
 
-			if(currwIt == m_unwatchedPoints.end())
+			if (currwIt == m_unwatchedPoints.end())
 				m_unwatchedPoints.push_back(*currentLocation);
 
 			m_watchedPoints.erase(currentLocation);
@@ -344,14 +353,14 @@ void CCodeCheckpointDebugMgr::UnregisterWatchPoint(const string& name)
 	}
 
 	///If we haven't yet reached the checkpoint somehow then check the bookmarks to see if one was waiting
-	if(currentLocation == m_watchedPoints.end())
+	if (currentLocation == m_watchedPoints.end())
 	{
 		///Check if bookmark exists, if so update the count of requests for it
 		TBookmarkMap::iterator currBookmark = m_bookmarkedNames.find(name);
-		if(currBookmark != m_bookmarkedNames.end())
+		if (currBookmark != m_bookmarkedNames.end())
 		{
 			--currBookmark->second;
-			if(currBookmark->second <= 0)
+			if (currBookmark->second <= 0)
 				m_bookmarkedNames.erase(currBookmark);
 		}
 		else
@@ -361,13 +370,13 @@ void CCodeCheckpointDebugMgr::UnregisterWatchPoint(const string& name)
 	}
 }
 
-void CCodeCheckpointDebugMgr::UpdateRecord(const CCodeCheckpoint* pCheckpoint,CheckpointDebugRecord& record )
+void CCodeCheckpointDebugMgr::UpdateRecord(const CCodeCheckpoint* pCheckpoint, CheckpointDebugRecord& record)
 {
-	if(!pCheckpoint)
+	if (!pCheckpoint)
 		return;
 
 	//Update the existing record
-	if(record.m_prevHitcount < pCheckpoint->HitCount())
+	if (record.m_prevHitcount < pCheckpoint->HitCount())
 	{
 		record.m_prevHitcount = record.m_currHitcount;
 		record.m_currHitcount = pCheckpoint->HitCount();
@@ -385,27 +394,27 @@ void CCodeCheckpointDebugMgr::UpdateRecords()
 
 		size_t currIdx = 0;
 
-		TCheckpointDebugList::iterator unwatchedIt = m_unwatchedPoints.begin(),watchedIt = m_watchedPoints.begin();
+		TCheckpointDebugList::iterator unwatchedIt = m_unwatchedPoints.begin(), watchedIt = m_watchedPoints.begin();
 
 		///Update existing points with their snapshot
 		size_t currSnapShotcount = m_watchedPoints.size() + m_unwatchedPoints.size();
-		while( currIdx < currSnapShotcount && currIdx < nextSnapshotCount)
+		while (currIdx < currSnapShotcount && currIdx < nextSnapshotCount)
 		{
 			string name = pCodeCheckpointMgr->GetCheckPointName(currIdx);
 			const CCodeCheckpoint* pCheckpoint = pCodeCheckpointMgr->GetCheckpoint(currIdx);
 
 			///Check if we are a watched point
-			if(watchedIt != m_watchedPoints.end() && (name == watchedIt->m_name))
+			if (watchedIt != m_watchedPoints.end() && (name == watchedIt->m_name))
 			{
 				CheckpointDebugRecord& currentRec = *watchedIt;
 				UpdateRecord(pCheckpoint, currentRec);
 				++watchedIt;
 			}
 			//Otherwise checked if we are unwatched point
-			else if(unwatchedIt != m_unwatchedPoints.end() && (name == unwatchedIt->m_name))
+			else if (unwatchedIt != m_unwatchedPoints.end() && (name == unwatchedIt->m_name))
 			{
 				CheckpointDebugRecord& currentRec = *unwatchedIt;
-				UpdateRecord(pCheckpoint, currentRec);	
+				UpdateRecord(pCheckpoint, currentRec);
 				++unwatchedIt;
 			}
 			///This should never happen, as each existing point should already have been inserted into either the watched or unwatched vector.
@@ -418,7 +427,7 @@ void CCodeCheckpointDebugMgr::UpdateRecords()
 		}
 
 		///Add entities that are new to this snapshot
-		while(currIdx < nextSnapshotCount)
+		while (currIdx < nextSnapshotCount)
 		{
 			const char* name = pCodeCheckpointMgr->GetCheckPointName(currIdx);
 			const CCodeCheckpoint* pCheckpoint = pCodeCheckpointMgr->GetCheckpoint(currIdx);
@@ -427,7 +436,7 @@ void CCodeCheckpointDebugMgr::UpdateRecords()
 
 			//If we have a current request to watch this point, make sure it goes into watched points
 			TBookmarkMap::iterator bookmarkedIt = m_bookmarkedNames.find(name);
-			if(bookmarkedIt != m_bookmarkedNames.end())
+			if (bookmarkedIt != m_bookmarkedNames.end())
 			{
 				newRecord.UpdateWatched(bookmarkedIt->second);
 				m_watchedPoints.push_back(newRecord);
@@ -436,7 +445,6 @@ void CCodeCheckpointDebugMgr::UpdateRecords()
 			}
 			else
 				m_unwatchedPoints.push_back(newRecord);
-
 
 			++currIdx;
 		}

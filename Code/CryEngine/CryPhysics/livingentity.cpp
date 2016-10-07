@@ -941,7 +941,7 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 
 /*
 		{
-			IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			Vec3 pts[3] = {debugOnlyOriginalHelperPos, helper.pos, m_pos};
 			pPD->Begin("Snap", false);
 			Vec3 bump(0,0,0.2f);

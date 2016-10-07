@@ -665,7 +665,7 @@ bool CDialogActorContext::DoAnimAction(IEntity* pEntity, const string& action, b
 ////////////////////////////////////////////////////////////////////////////
 bool CDialogActorContext::DoAnimActionAG(IEntity* pEntity, const char* sAction)
 {
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_entityID);
+	IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entityID);
 	if (pActor)
 	{
 		m_pAGState = pActor->GetAnimationGraphState();

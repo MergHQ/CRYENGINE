@@ -8,5 +8,4 @@
 %}
 %feature("director") IMonoListener;
 %feature("director") ICryEngineBasePlugin;
-%feature("director") IMonoEntityPropertyHandler;
 %include "../../../../CryEngine/CryCommon/CryMono/IMonoRuntime.h"

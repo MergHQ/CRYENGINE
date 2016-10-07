@@ -17,6 +17,17 @@ class CPlayerPathFinding
 	, public IMovementActorAdapter
 	, public IAIPathAgent
 {
+	// Dummy implementation so we can use IAISystem::CreateAndReturnNewDefaultPathFollower
+	class CPathObstacles
+		: public IPathObstacles
+	{
+		// IPathObstacles
+		virtual bool IsPathIntersectingObstacles(const NavigationMeshID meshID, const Vec3& start, const Vec3& end, float radius) const { return false; }
+		virtual bool IsPointInsideObstacles(const Vec3& position) const { return false; }
+		virtual bool IsLineSegmentIntersectingObstaclesOrCloseToThem(const Lineseg& linesegToTest, float maxDistanceToConsiderClose) const override { return false; }
+		// ~IPathObstacles
+	};
+
 public:
 	CPlayerPathFinding();
 	virtual ~CPlayerPathFinding();
@@ -100,7 +111,7 @@ public:
 	virtual bool GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const override { return false; }
 	virtual bool GetTeleportPosition(Vec3& teleportPos) const override { return false; }
 
-	virtual IPathFollower *GetPathFollower() const override { return m_pPathFollower; }
+	virtual IPathFollower *GetPathFollower() const override { return m_pPathFollower.get(); }
 
 	virtual bool IsPointValidForAgent(const Vec3& pos, uint32 flags) const override { return true; }
 	// ~IAIPathAgent
@@ -127,7 +138,8 @@ protected:
 	MovementRequestID m_movementRequestId;
 	uint32 m_pathFinderRequestId;
 
-	IPathFollower *m_pPathFollower;
+	std::shared_ptr<IPathFollower> m_pPathFollower;
+	CPathObstacles m_pathObstacles;
 
 	Movement::PathfinderState m_state;
 	INavPath *m_pFoundPath;

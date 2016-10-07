@@ -57,13 +57,13 @@ bool CGameRealtimeRemoteUpdateListener::Enable(bool boEnable)
 {
 	if ( boEnable )
 	{	
-		g_pGame->GetIGameFramework()->GetIRealTimeRemoteUpdate()->Enable(true);
-		g_pGame->GetIGameFramework()->GetIRealTimeRemoteUpdate()->AddGameHandler(this);
+		gEnv->pGameFramework->GetIRealTimeRemoteUpdate()->Enable(true);
+		gEnv->pGameFramework->GetIRealTimeRemoteUpdate()->AddGameHandler(this);
 	}
 	else
 	{
-		g_pGame->GetIGameFramework()->GetIRealTimeRemoteUpdate()->Enable(false);
-		g_pGame->GetIGameFramework()->GetIRealTimeRemoteUpdate()->RemoveGameHandler(this);
+		gEnv->pGameFramework->GetIRealTimeRemoteUpdate()->Enable(false);
+		gEnv->pGameFramework->GetIRealTimeRemoteUpdate()->RemoveGameHandler(this);
 	}
 
 	return boEnable;
@@ -121,11 +121,7 @@ void CGameRealtimeRemoteUpdateListener::UpdateCamera(XmlNodeRef oXmlNode)
 
 void CGameRealtimeRemoteUpdateListener::CameraSync()
 {
-	IGame *pGame = gEnv->pGame;
-	if(!pGame)
-		return;
-
-	IGameFramework *pGameFramework=pGame->GetIGameFramework();
+	IGameFramework *pGameFramework=gEnv->pGameFramework;
 	if(!pGameFramework)
 		return;
 
@@ -185,11 +181,7 @@ void CGameRealtimeRemoteUpdateListener::CameraSync()
 
 void CGameRealtimeRemoteUpdateListener::EndCameraSync()
 {
-	IGame *pGame = gEnv->pGame;
-	if(!pGame)
-		return;
-
-	IGameFramework *pGameFramework=pGame->GetIGameFramework();								
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if(!pGameFramework)
 		return;
 

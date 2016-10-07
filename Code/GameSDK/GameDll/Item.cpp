@@ -93,8 +93,8 @@ public:
 	{
 		_this->ClearItemFlags(eIF_ExchangeItemScheduled);
 
-		CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(owner));
-		CItem* pNextItem = static_cast<CItem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(nextItem));
+		CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(owner));
+		CItem* pNextItem = static_cast<CItem*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(nextItem));
 
 		if (!pActor || !pNextItem)
 			return;
@@ -236,7 +236,7 @@ bool CItem::Init( IGameObject *pGameObject )
 	if (!m_pGameFramework)
 	{
 		m_pEntitySystem = gEnv->pEntitySystem;
-		m_pGameFramework= gEnv->pGame->GetIGameFramework();
+		m_pGameFramework= gEnv->pGameFramework;
 		m_pGameplayRecorder = m_pGameFramework->GetIGameplayRecorder();
 		m_pItemSystem = m_pGameFramework->GetIItemSystem();
 
@@ -304,7 +304,7 @@ bool CItem::InitActionController( IEntity* pEntity )
 {
 	if(!m_sharedparams->params.actionControllerFile.empty())
 	{
-		IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 		IAnimationDatabaseManager& animationDatabaseManager = mannequinSys.GetAnimationDatabaseManager();
 
 		const SControllerDef* pControllerDef = animationDatabaseManager.LoadControllerDef( m_sharedparams->params.actionControllerFile.c_str() );
@@ -948,7 +948,7 @@ void CItem::FullSerialize( TSerialize ser )
 			{
 				if(m_owner.GetId())
 				{
-					IActor *pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_owner.GetId());
+					IActor *pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_owner.GetId());
 					CPlayer *pPlayer = static_cast<CPlayer*> (pActor);
 					if(pPlayer)
 					{
@@ -1127,7 +1127,7 @@ void CItem::PostSerialize()
 
 	if(m_postSerializeMountedOwner)
 	{
-		IActor *pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_postSerializeMountedOwner);
+		IActor *pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_postSerializeMountedOwner);
 		CPlayer *pPlayer = static_cast<CPlayer*> (pActor);
 		if(pPlayer && m_sharedparams->params.usable)
 		{
@@ -2048,7 +2048,7 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory,
 	else
 	{
 		//add any attachemnts on the weapon to the "this life's allowed detachments"
-		if( pPickerActor->GetEntityId() == g_pGame->GetClientActorId() )
+		if( pPickerActor->GetEntityId() == gEnv->pGameFramework->GetClientActorId() )
 		{
 			if( CEquipmentLoadout* pLoadout = g_pGame->GetEquipmentLoadout() )
 			{
@@ -2421,7 +2421,7 @@ void CItem::UpdateScopeContexts( IActionController *pController, int nCharacterS
 
 	nCharacterSlot = IsOwnerFP() ? eIGS_FirstPerson : eIGS_ThirdPerson;
 
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SMannequinItemParams *pParams = mannequinSys.GetMannequinUserParamsManager().FindOrCreateParams<SMannequinItemParams>(pController);
 
 	ICharacterInstance *pCharInst = GetEntity()->GetCharacter(nCharacterSlot);

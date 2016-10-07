@@ -28,6 +28,7 @@ struct ISimpleExtension : public IGameObjectExtension
 	virtual void PostRemoteSpawn() override {}
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override {}
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const override {return EEntityEventPriority_GameObject;}
+	virtual const void* GetRMIBase() const override { return nullptr; }
 	//~IGameObjectExtension
 
 	virtual ~ISimpleExtension() {}

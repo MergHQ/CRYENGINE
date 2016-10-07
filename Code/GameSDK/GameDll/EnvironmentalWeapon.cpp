@@ -222,7 +222,7 @@ void CEnvironmentalWeapon::InitWeaponState_Held()
 	DoDetachFromParent();
 
 	// Since we are just forcing weapon state here, we dont run through the longwinded pickup anims etc, we are just forcing state
-	IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+	IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 	if(pOwnerActor)
 	{
 		// Force the player to attach and hold this weapon
@@ -231,7 +231,7 @@ void CEnvironmentalWeapon::InitWeaponState_Held()
 		pPlayer->EnterPickAndThrow(GetEntityId());
 
 		EntityId weaponId = pPlayer->GetInventory()->GetItemByClass(s_pEnvironmentalWeaponClass);
-		CPickAndThrowWeapon* pPickAndThrowWeapon = weaponId ? static_cast<CPickAndThrowWeapon*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId)) : NULL;
+		CPickAndThrowWeapon* pPickAndThrowWeapon = weaponId ? static_cast<CPickAndThrowWeapon*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId)) : NULL;
 		if(pPickAndThrowWeapon)
 		{
 			pPickAndThrowWeapon->QuickAttach();
@@ -331,7 +331,7 @@ void CEnvironmentalWeapon::Release()
 void CEnvironmentalWeapon::RequestUse(EntityId requesterId)
 {
 	// If we are a client, only process use requests if we aren't still waiting on the server for a previous use request (e.g. for HMG weapon). 
-	CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(requesterId));
+	CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(requesterId));
 	if(!gEnv->bServer && pActor && !pActor->IsStillWaitingOnServerUseResponse())
 	{
 		pActor->SetStillWaitingOnServerUseResponse(true);
@@ -374,7 +374,7 @@ bool CEnvironmentalWeapon::Use(EntityId requesterId)
 				// No longer pickable as is held. 
 				pScriptTable->SetValue("bCurrentlyPickable", 0);
 
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(requesterId);
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(requesterId);
 				if(pActor)
 				{
 					SetOwner(requesterId);
@@ -465,7 +465,7 @@ void CEnvironmentalWeapon::SetOwner(EntityId ownerId)
 			if( !m_throwerId )
 			{
 				//released + not thrown = dropped
-				IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId );
+				IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId );
 				CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();
 
 				float health = GetCurrentHealth();
@@ -864,13 +864,13 @@ void CEnvironmentalWeapon::DoVehicleAttach()
 		//get the Vehicle and ask it to link us to the part
 		if( m_parentVehicleId  != 0 )
 		{
-			if( IVehicleSystem* pVSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem() )
+			if( IVehicleSystem* pVSystem = gEnv->pGameFramework->GetIVehicleSystem() )
 			{
 				if( IVehicle* pVehicle = pVSystem->GetVehicle( m_parentVehicleId ) )
 				{
 					m_pLinkedVehicle = pVehicle;
 
-					INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+					INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 					if (pNetContext)
 					{
 						//send an event to attach
@@ -942,7 +942,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 	{
 		if(g_pGameCVars->pl_pickAndThrow.environmentalWeaponHealthDebugEnabled )
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 			if(pActor)
 			{
 				// If this weapon is being held...
@@ -1197,7 +1197,7 @@ void CEnvironmentalWeapon::ProcessEvent(SEntityEvent& event)
 				if( pLink )
 				{
 					//we're attached to a vehicle, get it
-					if( IVehicleSystem* pVSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem() )
+					if( IVehicleSystem* pVSystem = gEnv->pGameFramework->GetIVehicleSystem() )
 					{
 						if( IVehicle* pVehicle = pVSystem->GetVehicle( pLink->entityId ) )
 						{
@@ -2083,7 +2083,7 @@ void CEnvironmentalWeapon::GenerateMaterialEffects(const Vec3& pos, const int su
 		return; 
 	}
 
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	TMFXEffectId effectId = pMaterialEffects->GetEffectId(m_mfxLibraryName.c_str(),surfaceIndex);
 	if (effectId != InvalidEffectId)
@@ -2414,7 +2414,7 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 		{
 			const Vec3 vImpulseVec  = (hitInfo.impulseScale * hitInfo.dir); 
 			
-			IActor* pOwnerActor	= gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+			IActor* pOwnerActor	= gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 			CPlayer* pOwnerPlayer = static_cast<CPlayer*>(pOwnerActor);
 			if(pOwnerActor && pOwnerActor->IsPlayer())
 			{
@@ -2486,7 +2486,7 @@ void CEnvironmentalWeapon::ProcessHitPlayer( IActor* pVictimActor, const EntityH
 		
 		if( m_OwnerId )
 		{	
-			if( IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId ) )
+			if( IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId ) )
 			{
 				if( CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder() )
 				{
@@ -2690,7 +2690,7 @@ void CEnvironmentalWeapon::OnStartChargedThrow()
 	}
 #endif //#ifndef_RELEASE
 
-	IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId );
+	IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId );
 	CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();
 
 	int16 health = (int16)GetCurrentHealth();
@@ -3045,7 +3045,7 @@ void CEnvironmentalWeapon::PerformWeaponSweepTracking()
 			else
 			{
 				// Should really have an m_pDamageZoneHelper.. but for the sake of debugging.. or if the artist hasn't placed one (needs adding if not..)
-				IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+				IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 				if(pOwnerActor)
 				{
 					weaponStartPos = pOwnerActor->GetEntity()->GetWorldPos(); 
@@ -3258,7 +3258,7 @@ bool CEnvironmentalWeapon::IsRooted() const
 
 void CEnvironmentalWeapon:: EntityRevived(EntityId entityId)
 {
-	if(gEnv->IsClient() && gEnv->pGame->GetIGameFramework()->GetClientActorId() == entityId)
+	if(gEnv->IsClient() && gEnv->pGameFramework->GetClientActorId() == entityId)
 	{
 		AttemptToRegisterInteractiveEntity(); 
 	}

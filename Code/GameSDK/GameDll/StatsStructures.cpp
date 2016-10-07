@@ -33,7 +33,7 @@ SSessionStats::SSessionStats()
 //---------------------------------------
 void SSessionStats::UpdateClientGUID()
 {
-	UpdateGUID( gEnv->pGame->GetIGameFramework()->GetClientActorId() );
+	UpdateGUID( gEnv->pGameFramework->GetClientActorId() );
 }
 
 //---------------------------------------

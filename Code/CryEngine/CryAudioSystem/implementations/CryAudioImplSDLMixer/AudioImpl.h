@@ -104,7 +104,6 @@ private:
 	static char const* const s_szSDLEventLoopCountTag;
 	static char const* const s_szSDLEventIdTag;
 
-	string                   m_gameFolder;
 	size_t                   m_memoryAlignment;
 	string                   m_language;
 

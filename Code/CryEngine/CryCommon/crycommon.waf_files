@@ -342,7 +342,12 @@
       "CryMovie/AnimTime.h"
     ],
     "CryMono":[
-      "CryMono/IMonoRuntime.h"
+      "CryMono/IMonoRuntime.h",
+	  "CryMono/IMonoAssembly.h",
+	  "CryMono/IMonoClass.h",
+	  "CryMono/IMonoDomain.h",
+	  "CryMono/IMonoException.h",
+	  "CryMono/IMonoObject.h"
     ],
     "CryAISystem":[
       "CryAISystem/IAIMannequin.h",
