@@ -34,7 +34,6 @@ ILINE CTimeProfiler::~CTimeProfiler()
 #else
 
 ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value)  {}
-ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, float value) {}
 ILINE CTimeProfiler::CTimeProfiler(CParticleProfiler& profiler, CParticleComponentRuntime* pRuntime, EProfileStat stat) : m_profiler(profiler) {}
 ILINE CTimeProfiler::~CTimeProfiler() {}
 
