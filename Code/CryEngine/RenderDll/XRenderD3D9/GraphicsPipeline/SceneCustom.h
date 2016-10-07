@@ -5,6 +5,7 @@
 #include "Common/GraphicsPipelineStage.h"
 #include "Common/GraphicsPipelineStateSet.h"
 #include "Common/SceneRenderPass.h"
+#include "Common/FullscreenPass.h"
 
 struct SGraphicsPipelineStateDescription;
 
