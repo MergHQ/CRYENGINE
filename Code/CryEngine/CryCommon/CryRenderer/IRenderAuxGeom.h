@@ -312,14 +312,10 @@ public:
 		GetAux()->RenderTextQueued(pos, ti, text);
 	}
 
-	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* format, va_list args)
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* text)
 	{
-		if( format && !gEnv->IsDedicated() )
+		if( text && !gEnv->IsDedicated() )
 		{
-			char str[512];
-
-			cry_vsprintf(str, format, args);
-
 			SDrawTextInfo ti;
 			ti.scale = size.val;
 			ti.flags = flags;
@@ -328,11 +324,23 @@ public:
 			ti.color[2] = color.rgba[2];
 			ti.color[3] = color.rgba[3];
 
-			DrawText(pos, ti, str);
+			DrawText(pos, ti, text);
 		}
 	}
 
-	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* label_text, ...) PRINTF_PARAMS(5, 6)
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* format, va_list args)
+	{
+		if( format )
+		{
+			char str[512];
+
+			cry_vsprintf(str, format, args);
+
+			DrawText(pos, size, color, flags, str);
+		}
+	}
+
+	static void DrawTextF(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* label_text, ...) PRINTF_PARAMS(5, 6)
 	{
 		va_list args;
 		va_start(args, label_text);
@@ -340,7 +348,12 @@ public:
 		va_end(args);
 	}
 
-	static void DrawLabel(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(3, 4)
+	static void DrawLabel(Vec3 pos, float font_size, const char* text)
+	{
+		DrawText(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, text);
+	}
+
+	static void DrawLabelF(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(3, 4)
 	{
 		va_list args;
 		va_start(args, label_text);
@@ -348,7 +361,12 @@ public:
 		va_end(args);
 	}
 
-	static void DrawLabelEx(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	static void DrawLabelEx(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* text)
+	{
+		DrawText(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, text);
+	}
+
+	static void DrawLabelExF(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
 	{
 		va_list args;
 		va_start(args, label_text);
@@ -391,18 +409,17 @@ public:
 		va_end(args);
 	}
 
-	static void TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...)
+	static void TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* text)
 	{
-		char buffer[512];
-		va_list args;
-		va_start(args, format);
-		cry_vsprintf(buffer, format, args);
-		va_end(args);
-
-		WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, buffer);
+		WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, "%s", text);
 	}
 
-	static void TextToScreen(float x, float y, const char* format, ...)
+	static void TextToScreen(float x, float y, const char* text)
+	{
+		TextToScreenColor((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, text);
+	}
+
+	static void TextToScreenF(float x, float y, const char* format, ...)
 	{
 		char buffer[512];
 		va_list args;

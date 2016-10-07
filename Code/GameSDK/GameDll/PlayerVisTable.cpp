@@ -854,7 +854,7 @@ void CPlayerVisTableDebugDraw::Update()
 
 				const Vec3 offset(0.0f, 0.0f, 0.4f);
 				pRenderAux->DrawCone(worldRefPosition + offset, -Vec3Constants<float>::fVec3_OneZ, 0.125f, offset.z, color);
-				IRenderAuxText::DrawLabelEx(worldRefPosition, 1.5f, white, true, false, "%.2f", lastUpdateAge);
+				IRenderAuxText::DrawLabelExF(worldRefPosition, 1.5f, white, true, false, "%.2f", lastUpdateAge);
 			}
 			++targetIt;
 		}

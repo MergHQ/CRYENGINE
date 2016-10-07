@@ -1373,7 +1373,7 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		pPhysics->GetStatus(&psv);
     	static float drawColor[4] = {1,1,1,1};
 		const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
-		IRenderAuxText::DrawLabelEx(worldTM.GetTranslation(), 2.0f, drawColor, true, true, "<%s> friction=%s,  enabled=%s, HB=%d", m_pVehicle->GetEntity()->GetName(), m_frictionState==k_frictionUseLowLevel ? "Low" : "Game", m_bMovementProcessingEnabled ? "on" : "off", psv.bHandBrake);
+		IRenderAuxText::DrawLabelExF(worldTM.GetTranslation(), 2.0f, drawColor, true, true, "<%s> friction=%s,  enabled=%s, HB=%d", m_pVehicle->GetEntity()->GetName(), m_frictionState==k_frictionUseLowLevel ? "Low" : "Game", m_bMovementProcessingEnabled ? "on" : "off", psv.bHandBrake);
 	}
 #endif
 
@@ -1560,7 +1560,7 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 
 	if (tScaleTotal != 0.f)
 	{
-		IRenderAuxText::DrawLabel(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
+		IRenderAuxText::DrawLabelF(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
 	}
 
 	if (m_pWind[0])
@@ -1569,11 +1569,11 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		pe_status_pos pos;
 		if (m_pWind[0]->GetParams(&buoy) && m_pWind[0]->GetStatus(&pos))
 		{
-			IRenderAuxText::DrawLabel(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
+			IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
 		}
 		if (m_pWind[1]->GetParams(&buoy) && m_pWind[1]->GetStatus(&pos))
 		{
-			IRenderAuxText::DrawLabel(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
+			IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
 		}
 	}
 

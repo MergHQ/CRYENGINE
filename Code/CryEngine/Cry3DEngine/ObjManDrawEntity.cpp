@@ -387,7 +387,7 @@ void CObjManager::RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistan
 			{
 				sLabel.Format("%s/%s", pEnt->GetName(), pEnt->GetEntityClassName());
 			}
-			IRenderAuxText::DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, "%s", sLabel.c_str());
+			IRenderAuxText::DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, sLabel.c_str());
 		}
 
 		IRenderAuxGeom* pRenAux = GetRenderer()->GetIRenderAuxGeom();

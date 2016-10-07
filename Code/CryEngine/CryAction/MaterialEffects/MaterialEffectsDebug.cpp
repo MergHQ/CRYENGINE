@@ -129,8 +129,8 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 			if (matDefaultDetected)
 				IRenderAuxText::DrawLabelEx(baseText, 1.75f, textColor, true, false, "FIX ME (mat_default)!");
 
-			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * 2.0f), 1.25f, textColor, true, false, "%s / %s", currentFX.materialName1.c_str(), currentFX.materialName2.c_str());
-			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * 3.0f), 1.25f, textColor, true, false, "Lib: %s, FX: %s", pEffectContainer->GetParams().libraryName.c_str(), pEffectContainer->GetParams().name.c_str());
+			IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * 2.0f), 1.25f, textColor, true, false, "%s / %s", currentFX.materialName1.c_str(), currentFX.materialName2.c_str());
+			IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * 3.0f), 1.25f, textColor, true, false, "Lib: %s, FX: %s", pEffectContainer->GetParams().libraryName.c_str(), pEffectContainer->GetParams().name.c_str());
 
 			if (extendedDebugInfo)
 			{
@@ -145,7 +145,7 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 					while (pParticlesNode)
 					{
 						textOffsetCount += 1.0f;
-						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pParticlesNode->m_particleParams.name);
+						IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pParticlesNode->m_particleParams.name);
 						pParticlesNode = pParticlesNode->pNext;
 					}
 				}
@@ -168,7 +168,7 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 							audioDebugLine.append(stack_string().Format("| '%s'='%s' ", switchData.switchName, switchData.switchStateName).c_str());
 						}
 
-						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "%s", audioDebugLine.c_str());
+						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, audioDebugLine.c_str());
 						pAudioNode = pAudioNode->pNext;
 					}
 				}
@@ -182,7 +182,7 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 					while (pDecalNode)
 					{
 						textOffsetCount += 1.0f;
-						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  Mat: %s / Tex: %s", pDecalNode->m_decalParams.material, pDecalNode->m_decalParams.filename);
+						IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  Mat: %s / Tex: %s", pDecalNode->m_decalParams.material, pDecalNode->m_decalParams.filename);
 						pDecalNode = pDecalNode->pNext;
 					}
 				}
@@ -196,7 +196,7 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 					while (pFlowgraphNode)
 					{
 						textOffsetCount += 1.0f;
-						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pFlowgraphNode->m_flowGraphParams.name);
+						IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pFlowgraphNode->m_flowGraphParams.name);
 						pFlowgraphNode = pFlowgraphNode->pNext;
 					}
 				}
@@ -210,7 +210,7 @@ void CVisualDebug::Update(const CMaterialEffects& materialEffects, const float f
 					while (pForceFeedbackNode)
 					{
 						textOffsetCount += 1.0f;
-						IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pForceFeedbackNode->m_forceFeedbackParams.forceFeedbackEventName);
+						IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * textOffsetCount), 1.25f, textColor, true, false, "  %s", pForceFeedbackNode->m_forceFeedbackParams.forceFeedbackEventName);
 						pForceFeedbackNode = pForceFeedbackNode->pNext;
 					}
 				}

@@ -142,7 +142,7 @@ void CryWatch3DTick(float dt)
 		{
 			float fadeaway = min(1.f, s_lingeringWatch3D[i].m_timeLeft);
 			const float col[] = {1.f, 1.f, 1.f, fadeaway};
-			IRenderAuxText::DrawLabelEx(s_lingeringWatch3D[i].m_pos, 3.f, col, false, true, "%s", s_lingeringWatch3D[i].m_text);
+			IRenderAuxText::DrawLabelEx(s_lingeringWatch3D[i].m_pos, 3.f, col, false, true, s_lingeringWatch3D[i].m_text);
 
 			if (s_lingeringWatch3D[i].m_timeLeft > dt)
 			{

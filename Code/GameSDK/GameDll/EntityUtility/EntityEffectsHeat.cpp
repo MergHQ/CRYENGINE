@@ -33,7 +33,7 @@ public:
 		const float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 		const Vec3 entityPosition = ownerEntity->GetWorldPos();
 
-		IRenderAuxText::DrawLabelEx(entityPosition, 1.75f, textColor, true, false, "Thermal vision: %.3f", currentHeat);
+		IRenderAuxText::DrawLabelExF(entityPosition, 1.75f, textColor, true, false, "Thermal vision: %.3f", currentHeat);
 	}
 };
 

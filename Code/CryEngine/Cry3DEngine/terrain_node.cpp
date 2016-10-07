@@ -684,7 +684,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		ColorB colour = ColorB(255 * ((m_nTreeLevel & 1) > 0), 255 * ((m_nTreeLevel & 2) > 0), 255, 255);
 		GetRenderer()->GetIRenderAuxGeom()->DrawAABB(GetBBox(), false, colour, eBBD_Faceted);
 		if (GetCVars()->e_TerrainBBoxes == 3 && m_rangeInfo.nSize)
-			IRenderAuxText::DrawLabel(GetBBox().GetCenter(), 2, "%dx%d", m_rangeInfo.nSize, m_rangeInfo.nSize);
+			IRenderAuxText::DrawLabelF(GetBBox().GetCenter(), 2, "%dx%d", m_rangeInfo.nSize, m_rangeInfo.nSize);
 	}
 
 	if (GetCVars()->e_TerrainDetailMaterialsDebug)
@@ -700,7 +700,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		if (nLayersNum >= GetCVars()->e_TerrainDetailMaterialsDebug)
 		{
 			GetRenderer()->GetIRenderAuxGeom()->DrawAABB(GetBBox(), false, ColorB(255 * ((nLayersNum & 1) > 0), 255 * ((nLayersNum & 2) > 0), 255, 255), eBBD_Faceted);
-			IRenderAuxText::DrawLabel(GetBBox().GetCenter(), 2, "%d", nLayersNum);
+			IRenderAuxText::DrawLabelF(GetBBox().GetCenter(), 2, "%d", nLayersNum);
 		}
 	}
 

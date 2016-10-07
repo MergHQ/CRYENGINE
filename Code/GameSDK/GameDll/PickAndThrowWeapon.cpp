@@ -4363,7 +4363,7 @@ void CPickAndThrowWeapon::DebugDraw()
 		AABB box( Vec3(-boxSize, -boxSize, -boxSize), Vec3( boxSize, boxSize, boxSize ) );
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawAABB( box, mat, false, colorBox, eBBD_Faceted );
 
-		IRenderAuxText::DrawLabelEx( wposCenter, 2, textColor, true, true, "%s", pHelperName );
+		IRenderAuxText::DrawLabelEx( wposCenter, 2, textColor, true, true, pHelperName );
 	}
 }
 

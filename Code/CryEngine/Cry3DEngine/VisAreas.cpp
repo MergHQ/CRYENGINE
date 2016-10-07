@@ -584,7 +584,7 @@ void        CVisArea::PreRender(int nReqursionLevel,
 					float farrColor[4] = { float((nReqursionLevel & 1) > 0), float((nReqursionLevel & 2) > 0), float((nReqursionLevel & 4) > 0), 1 };
 					ColorF c(farrColor[0], farrColor[1], farrColor[2], farrColor[3]);
 					DrawSphere(lstPortVertsSS[i], 0.002f, c);
-					IRenderAuxText::DrawLabelEx(lstPortVertsSS[i], 0.1f, farrColor, false, true, "%d", i);
+					IRenderAuxText::DrawLabelExF(lstPortVertsSS[i], 0.1f, farrColor, false, true, "%d", i);
 				}
 
 			UpdatePortalCameraPlanes(CurCamera, lstPortVertsSS.GetElements(), Upright, passInfo);

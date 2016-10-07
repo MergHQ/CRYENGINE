@@ -1808,7 +1808,7 @@ void CVehicle::DebugDraw(const float frameTime)
 
 		for (TVehiclePartVector::iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
 		{
-			IRenderAuxText::DrawLabelEx(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 
 			/*IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 			   AABB bounds = AABB::CreateTransformedAABB(ite->second->GetWorldTM(), ite->second->GetLocalBounds());
@@ -1827,7 +1827,7 @@ void CVehicle::DebugDraw(const float frameTime)
 				{
 					const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-					IRenderAuxText::DrawLabelEx(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
+					IRenderAuxText::DrawLabelExF(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
 				}
 
 				if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
@@ -1849,7 +1849,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		float damageRatio = GetDamageRatio();
 		string damageStr;
 		damageStr.Format("Health: %.2f/%.2f Damage Ratio: %.2f", m_damageMax * (1.f - damageRatio), m_damageMax, damageRatio);
-		IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, "%s", damageStr.c_str());
+		IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, damageStr.c_str());
 	}
 	else if (cvars.v_debugdraw == eVDB_ClientPredict)
 	{
@@ -1868,7 +1868,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		{
 			Matrix34 tm;
 			ite->second->GetWorldTM(tm);
-			IRenderAuxText::DrawLabelEx(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 			pDB->AddDirection(tm.GetTranslation(), 0.25f, tm.GetColumn(1), ColorF(1, 1, 0, 1), 0.05f);
 		}
 	}
@@ -1883,10 +1883,10 @@ void CVehicle::DebugDraw(const float frameTime)
 			if (IVehicleHelper* pHelper = it->second->GetSitHelper())
 				pos = pHelper->GetVehicleSpaceTranslation();
 
-			IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
+			IRenderAuxText::DrawLabelExF(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
 
 			if (IVehicleHelper* pHelper = it->second->GetEnterHelper())
-				IRenderAuxText::DrawLabelEx(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
+				IRenderAuxText::DrawLabelExF(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
 		}
 	}
 

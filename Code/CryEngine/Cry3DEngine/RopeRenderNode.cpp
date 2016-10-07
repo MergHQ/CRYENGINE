@@ -924,7 +924,7 @@ bool CRopeRenderNode::RenderDebugInfo(const SRendParams& rParams, const SRenderi
 	float color[4] = { 0, 1, 1, 1 };
 
 	if (GetCVars()->e_DebugDraw == 2)          // color coded polygon count
-		IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTris);
+		IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nTris);
 	else if (GetCVars()->e_DebugDraw == 5)  // number of render materials (color coded)
 		IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "1");
 

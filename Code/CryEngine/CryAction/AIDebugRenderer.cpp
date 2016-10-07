@@ -669,7 +669,7 @@ void CAIDebugRenderer::TextToScreen(float fX, float fY, const char* format, ...)
 	cry_vsprintf(buffer, format, args);
 	va_end(args);
 
-	IRenderAuxText::TextToScreen(fX, fY, "%s", buffer);
+	IRenderAuxText::TextToScreen(fX, fY, buffer);
 }
 
 void CAIDebugRenderer::TextToScreenColor(int nX, int nY, float fRed, float fGreen, float fBlue, float fAlpha, const char* format, ...)
@@ -681,7 +681,7 @@ void CAIDebugRenderer::TextToScreenColor(int nX, int nY, float fRed, float fGree
 	cry_vsprintf(buffer, format, args);
 	va_end(args);
 
-	IRenderAuxText::TextToScreenColor(nX, nY, fRed, fGreen, fBlue, fAlpha, "%s", buffer);
+	IRenderAuxText::TextToScreenColor(nX, nY, fRed, fGreen, fBlue, fAlpha, buffer);
 }
 
 void CAIDebugRenderer::Init2DMode()

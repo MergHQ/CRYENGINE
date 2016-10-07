@@ -418,7 +418,7 @@ void CChain::DrawDebug(const QuatT& location)
 	ComputeRootOffsetExtents(offsetMin, offsetMax);
 	offsetMin = min(offsetMin, 0.0f);
 	offsetMax = max(offsetMax, 0.0f);
-	IRenderAuxText::DrawLabel(m_targetPosition, 1.5f,
+	IRenderAuxText::DrawLabelF(m_targetPosition, 1.5f,
 	                           "w %.2f a: %.2f\n"
 	                           "min %.2f\n"
 	                           "max %.2f\n",
@@ -644,7 +644,7 @@ void CPose::DrawDebug(const QuatT& location, const Vec3& groundNormal)
 	gEnv->pRenderer->GetIRenderAuxGeom()->DrawCylinder(
 	  groundPosition, groundNormal, 1.0f, 0.005f, ColorB(0x00, 0x00, 0x00, 0x40), true);
 
-	IRenderAuxText::DrawLabel(location * m_pSkeletonPose->GetAbsJointByID(m_rootJointIndex).t, 1.5f,
+	IRenderAuxText::DrawLabelF(location * m_pSkeletonPose->GetAbsJointByID(m_rootJointIndex).t, 1.5f,
 	                           "h %.2f\n"
 	                           "w %.2f\n",
 	                           m_rootOffsetSmoothed,

@@ -1986,7 +1986,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 									if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
 									{
 										Cry3DEngineBase::Get3DEngine()->DrawBBox(pNode->GetBBox(), Col_Red);
-										IRenderAuxText::DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, "%s", info.pStatObj->GetFilePath());
+										IRenderAuxText::DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, info.pStatObj->GetFilePath());
 									}
 									bSuccess = false;
 								}

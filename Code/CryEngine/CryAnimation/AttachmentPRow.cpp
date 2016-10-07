@@ -534,7 +534,7 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 				if (i0 < i1 || m_cycle)
 					g_pAuxGeom->DrawLine(p0, RGBA8(0xff, 0x00, 0x00, 0x00), p1, RGBA8(0xff, 0x00, 0x00, 0x00));
 				if (m_useDebugSetup || Console::GetInst().ca_DrawAllSimulatedSockets)
-					IRenderAuxText::DrawLabel(p0, 1, "%d", i0);
+					IRenderAuxText::DrawLabelF(p0, 1, "%d", i0);
 			}
 		}
 #endif

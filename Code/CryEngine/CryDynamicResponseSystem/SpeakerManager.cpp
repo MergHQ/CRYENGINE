@@ -149,7 +149,7 @@ void CSpeakerManager::Update()
 						}
 						else
 						{
-							IRenderAuxText::DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, "%s", it->text.c_str());
+							IRenderAuxText::DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, it->text.c_str());
 						}
 					}
 				}

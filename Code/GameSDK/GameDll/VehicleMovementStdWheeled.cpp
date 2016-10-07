@@ -839,11 +839,11 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
         }        
       }
             
-      //IRenderAuxText::DrawLabel(wp.pos, 1.2f, "%.2f", m_wheelStats[i].friction);      
+      //IRenderAuxText::DrawLabelF(wp.pos, 1.2f, "%.2f", m_wheelStats[i].friction);      
 
       if (wparams.bDriving || g_pGameCVars->v_draw_slip>1)
       {
-        IRenderAuxText::DrawLabel(wp.pos, 1.2f, "T: %.2f", m_wheelStats[i].torqueScale);
+        IRenderAuxText::DrawLabelF(wp.pos, 1.2f, "T: %.2f", m_wheelStats[i].torqueScale);
         tScaleTotal += m_wheelStats[i].torqueScale;
       }      
     }    
@@ -872,7 +872,7 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
 
   if (tScaleTotal != 0.f)
   {
-    IRenderAuxText::DrawLabel(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
+    IRenderAuxText::DrawLabelF(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
   }
 
   if (m_pWind[0])
@@ -881,11 +881,11 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
     pe_status_pos pos;
     if (m_pWind[0]->GetParams(&buoy) && m_pWind[0]->GetStatus(&pos))
     {
-      IRenderAuxText::DrawLabel(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
+      IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
     }
     if (m_pWind[1]->GetParams(&buoy) && m_pWind[1]->GetStatus(&pos))
     {
-      IRenderAuxText::DrawLabel(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
+      IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
     }
   }
 }

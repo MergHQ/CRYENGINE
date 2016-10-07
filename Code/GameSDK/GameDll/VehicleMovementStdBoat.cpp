@@ -321,7 +321,7 @@ void CVehicleMovementStdBoat::Update(const float deltaTime)
 		IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		ColorB colorB(0,255,0,255);
 
-		IRenderAuxText::DrawLabel(worldPropPos, 1.3f, "WL: %.2f", waterLevelWorld);
+		IRenderAuxText::DrawLabelF(worldPropPos, 1.3f, "WL: %.2f", waterLevelWorld);
 
 		pGeom->DrawSphere(worldPropPos, 0.15f, colorB);
 		pGeom->DrawSphere(waveLoc, 0.25f, colorB);

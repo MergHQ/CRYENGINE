@@ -229,9 +229,9 @@ void CPhysRenderer::DrawFrame(const Vec3& pnt, const Vec3* axes, const float sca
 			Vec3 p2_dir = (p2 - pnt).GetNormalized() * scale;
 
 			cry_sprintf(str, "%.1f", RAD2DEG(limits[0][j]));
-			IRenderAuxText::DrawLabelEx(pnt + p1_dir, 1.5f, fclr[j], true, true, "%s", str);
+			IRenderAuxText::DrawLabelEx(pnt + p1_dir, 1.5f, fclr[j], true, true, str);
 			cry_sprintf(str, "%.1f", RAD2DEG(limits[1][j]));
-			IRenderAuxText::DrawLabelEx(pnt + p2_dir, 1.5f, fclr[j], true, true, "%s", str);
+			IRenderAuxText::DrawLabelEx(pnt + p2_dir, 1.5f, fclr[j], true, true, str);
 
 			arc_pnts[0] = p1_dir;
 			for (int k = 1; k < num_arc_pnts; ++k)

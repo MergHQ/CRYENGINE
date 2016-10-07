@@ -793,7 +793,7 @@ void CAICorpseManager::DebugDraw()
 			pCorpse->GetEntity()->GetWorldBounds(corpseBbox);
 			const Vec3 refPosition = corpseBbox.IsEmpty() ? pCorpse->GetEntity()->GetWorldPos() : corpseBbox.GetCenter();
 
-			IRenderAuxText::DrawLabel( refPosition, 1.5f, "%s\nPriority %d\n%s\n%s",
+			IRenderAuxText::DrawLabelF( refPosition, 1.5f, "%s\nPriority %d\n%s\n%s",
 				pCorpse->GetEntity()->GetName(), pCorpse->GetPriority(),
 				corpse.flags.AreAnyFlagsActive( CorpseInfo::eFlag_FarAway ) ? "Far away, remove when not visible" : "Not far away",
 				corpse.flags.AreAllFlagsActive( CorpseInfo::eFlag_PhysicsDisabled) ? "Physics disabled" : "Physics enabled" );

@@ -2576,7 +2576,7 @@ float CAttachmentManager::DebugDrawAttachment(IAttachment* pAttachment, ISkin* p
 	static float scalar = 60.0f;
 	float drawOffset = (drawScale * (fDist / scalar));
 
-	IRenderAuxText::DrawLabelEx(drawLoc, drawScale, color, true, true, "%s (%d kb)", pAttachment->GetName(), nTexMemUsage / 1024);
+	IRenderAuxText::DrawLabelExF(drawLoc, drawScale, color, true, true, "%s (%d kb)", pAttachment->GetName(), nTexMemUsage / 1024);
 
 	return drawOffset;
 }

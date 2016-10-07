@@ -960,7 +960,7 @@ int CScriptBind_System::DrawLabel(IFunctionHandler* pH)
 	{
 		float color[] = { r, g, b, alpha };
 
-		IRenderAuxText::DrawLabelEx(vPos, fSize, color, true, true, "%s", text);
+		IRenderAuxText::DrawLabelEx(vPos, fSize, color, true, true, text);
 		//IRenderAuxText::DrawLabel(vPos, fSize, text);
 	}
 

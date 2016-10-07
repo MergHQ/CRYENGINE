@@ -372,7 +372,7 @@ void CVehicleComponent::DebugDraw()
 		char pMessage[256];
 		cry_sprintf(pMessage, "%s - %5.2f (%3.2f)", m_pSharedParams->name.c_str(), m_damage, m_damage / max(1.f, m_pSharedParams->damageMax));
 
-		IRenderAuxText::DrawLabelEx(worldTM * localBounds.GetCenter(), 1.2f, drawColor, true, true, "%s", pMessage);
+		IRenderAuxText::DrawLabelEx(worldTM * localBounds.GetCenter(), 1.2f, drawColor, true, true, pMessage);
 
 		pRenderAux->DrawAABB(localBounds, worldTM, false, RGBA8(255, 0, 0, 255), eBBD_Faceted);
 

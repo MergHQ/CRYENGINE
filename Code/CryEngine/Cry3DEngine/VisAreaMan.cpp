@@ -511,7 +511,7 @@ void CVisAreaManager::PortalsDrawDebug()
 		for (int v = 0; v < m_lstVisAreas.Count(); v++)
 		{
 			DrawBBox(m_lstVisAreas[v]->m_boxArea.min, m_lstVisAreas[v]->m_boxArea.max); //, DPRIM_SOLID_BOX);
-			IRenderAuxText::DrawLabelEx((m_lstVisAreas[v]->m_boxArea.min + m_lstVisAreas[v]->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, "%s", m_lstVisAreas[v]->GetName());
+			IRenderAuxText::DrawLabelEx((m_lstVisAreas[v]->m_boxArea.min + m_lstVisAreas[v]->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, m_lstVisAreas[v]->GetName());
 
 			GetRenderer()->SetMaterialColor(0, 1, 0, 0.25f);
 			DrawBBox(m_lstVisAreas[v]->m_boxStatics, Col_LightGray);
@@ -532,7 +532,7 @@ void CVisAreaManager::PortalsDrawDebug()
 			  64);
 			DrawBBox(pPortal->m_boxArea.min, pPortal->m_boxArea.max, col);
 
-			IRenderAuxText::DrawLabelEx((pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, "%s", pPortal->GetName());
+			IRenderAuxText::DrawLabelEx((pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, pPortal->GetName());
 
 			Vec3 vCenter = (pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f;
 			DrawBBox(vCenter - Vec3(0.1f, 0.1f, 0.1f), vCenter + Vec3(0.1f, 0.1f, 0.1f));
@@ -1884,7 +1884,7 @@ bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
 
 	bool bRes = FindShortestPathToVisArea(pAreaPos, pAreaBox, arrPortals, nRecursion, sv);
 
-	IRenderAuxText::DrawLabel(box.GetCenter(), 2, "-%s-", bRes ? "Y" : "N");
+	IRenderAuxText::DrawLabelF(box.GetCenter(), 2, "-%s-", bRes ? "Y" : "N");
 	IRenderAuxText::DrawLabel(pos, 2, "-X-");
 	DrawLine(pos, box.GetCenter());
 	DrawBBox(box, bRes ? Col_White : Col_NavyBlue);

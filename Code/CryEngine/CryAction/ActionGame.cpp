@@ -4053,7 +4053,7 @@ void CActionGame::DrawBrokenMeshes()
 		if (!iter->second.pent->GetStatus(&sp))
 			continue;
 		Vec3 pos = (sp.BBox[0] + sp.BBox[1]) * 0.5f + sp.pos;
-		IRenderAuxText::DrawLabelEx(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
+		IRenderAuxText::DrawLabelExF(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
 		for (i = 0; i<nTop&& sizes[i]> iter->second.size; i++)
 			;
 		if (i < 16)

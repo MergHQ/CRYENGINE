@@ -362,7 +362,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				if (pTMC) pTMC->PutText(0, i, msgbuf);
 				IPhysicalEntity* pent = pWorld->GetPhysicalEntityById(pInfos[i].id);
 				if (dt > 0.1f && pInfos[i].pName && pent && pent->GetStatus(&sp))
-					IRenderAuxText::DrawLabelEx(sp.pos + Vec3(0, 0, sp.BBox[1].z), 1.4f, fColor, true, true, "%s %.2fms", pInfos[i].pName, dt);
+					IRenderAuxText::DrawLabelExF(sp.pos + Vec3(0, 0, sp.BBox[1].z), 1.4f, fColor, true, true, "%s %.2fms", pInfos[i].pName, dt);
 				pInfos[i].peakAge = pInfos[i].peakAge + 1 & ~mask;
 				//pInfos[i].nCalls=pInfos[i].nTicks = 0;
 			}
@@ -875,7 +875,7 @@ void CSystem::RenderStats()
 #if defined(ENABLE_LW_PROFILERS)
 		if (m_rDisplayInfo->GetIVal() == 2)
 		{
-			IRenderAuxText::TextToScreen(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb",
+			IRenderAuxText::TextToScreenF(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb",
 			  float(DumpMMStats(false)) / 1024.f);
 
 			//if (m_env.pAudioSystem)

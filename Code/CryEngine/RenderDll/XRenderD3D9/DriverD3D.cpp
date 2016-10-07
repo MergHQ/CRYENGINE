@@ -3271,7 +3271,7 @@ void CD3D9Renderer::DebugDrawStats()
 						pfColor = &clrDPInterp.r;
 					}
 
-					IRenderAuxText::DrawLabelEx(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
+					IRenderAuxText::DrawLabelExF(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
 					            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 

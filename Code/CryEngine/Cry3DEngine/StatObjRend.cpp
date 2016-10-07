@@ -412,9 +412,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				else
 					shortName = PathUtil::GetFile(m_szFileName.c_str());
 				if (nNumLods > 1)
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
 				else
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
 			}
 			break;
 
@@ -447,7 +447,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
 
 				return false;
 				//////////////////////////////////////////////////////////////////////////
@@ -504,7 +504,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					const int maxLod = GetMaxUsableLod();
 					const bool bRenderNodeValid(pObj && pObj->m_pRenderNode && ((UINT_PTR)(void*)(pObj->m_pRenderNode) > 0));
 					IRenderNode* pRN = (IRenderNode*)pObj->m_pRenderNode;
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
 					                   nLod, nLod0, maxLod,
 					                   bRenderNodeValid ? pRN->GetLodRatio() : -1, pObj->m_fDistance);
 				}
@@ -518,7 +518,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (m_pRenderMesh)
 				{
 					int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
 				}
 			}
 			break;
@@ -554,7 +554,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nRenderMats);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nRenderMats);
 			}
 			break;
 
@@ -570,7 +570,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					col = pObj->m_II.m_AmbColor;
 				}
 
-				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
 			}
 			break;
 
@@ -578,7 +578,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 			if (m_pRenderMesh)
 			{
 				int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
 			}
 			break;
 
@@ -679,7 +679,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (nPhysTrisCount == 0)
 					color[3] = 0.1f;
 
-				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
 			}
 			return false;
 
@@ -688,7 +688,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				// Show texture usage.
 				if (m_pRenderMesh)
 				{
-					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
 				}
 			}
 			break;
@@ -767,7 +767,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 
 			// text
 			float color[4] = { 0, 1, 1, 1 };
-			IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s", pSubObject->name.c_str());
+			IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, pSubObject->name.c_str());
 		}
 	}
 

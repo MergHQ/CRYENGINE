@@ -269,7 +269,7 @@ void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 		const float fCamDistSq = (vPos - vCamPos).len2();
 		cCol.a = max(0.25f, min(1.0f, 1024.0f / (fCamDistSq + 1e-6f)));
 
-		IRenderAuxText::DrawLabelEx(vPos, 1.3f, (float*)&cCol.r, true, true, "Id: %d\nPos: %.2f %.2f %.2f\nRadius: %.2f\nLights: %d\nOutLights: %d",
+		IRenderAuxText::DrawLabelExF(vPos, 1.3f, (float*)&cCol.r, true, true, "Id: %d\nPos: %.2f %.2f %.2f\nRadius: %.2f\nLights: %d\nOutLights: %d",
 		                       v, vPos.x, vPos.y, vPos.z, lvInfo.vVolume.w, lv.pData.size(), (*(int32*)&lvInfo.vVolume.w) & (1 << 31) ? 1 : 0);
 
 		if (GetCVars()->e_LightVolumesDebug == 2)

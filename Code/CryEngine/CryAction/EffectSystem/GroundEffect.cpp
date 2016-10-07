@@ -265,9 +265,9 @@ void CGroundEffect::Update()
 
 			const char* pEffectName = m_pParticleEffect ? m_pParticleEffect->GetName() : "";
 
-			IRenderAuxText::DrawLabel(pos + Vec3(0.0f, 0.0f, 0.5f), 1.25f, "GO [interaction '%s'], effect '%s', active: %i", m_interaction.c_str(), pEffectName, m_active);
+			IRenderAuxText::DrawLabelF(pos + Vec3(0.0f, 0.0f, 0.5f), 1.25f, "GO [interaction '%s'], effect '%s', active: %i", m_interaction.c_str(), pEffectName, m_active);
 
-			IRenderAuxText::DrawLabel(pos + Vec3(0.0f, 0.0f, 0.0f), 1.25f, "height %.1f/%.1f, base size/count scale %.2f/%.2f", rayPos.z - m_rayWorldIntersectHeight, m_height, m_sizeScale, m_countScale);
+			IRenderAuxText::DrawLabelF(pos + Vec3(0.0f, 0.0f, 0.0f), 1.25f, "height %.1f/%.1f, base size/count scale %.2f/%.2f", rayPos.z - m_rayWorldIntersectHeight, m_height, m_sizeScale, m_countScale);
 		}
 	}
 }

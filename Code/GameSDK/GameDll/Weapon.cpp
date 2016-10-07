@@ -4544,7 +4544,7 @@ void CWeapon::ShowDebugInfo()
 
 	bool pickerHasThisWeapon = pInventory->GetCountOfClass(pWeaponClass->GetName()) != 0;
 
-	IRenderAuxText::DrawLabelEx(baseText, 1.25f, textColor, true, false, pickerHasThisWeapon ? "'Weapon (%s) in inventory" : "Weapon (%s) NOT in inventory", pWeaponClass->GetName());
+	IRenderAuxText::DrawLabelExF(baseText, 1.25f, textColor, true, false, pickerHasThisWeapon ? "'Weapon (%s) in inventory" : "Weapon (%s) NOT in inventory", pWeaponClass->GetName());
 	
 	lineCounter += 2.0f;
 	IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "---- Bonus Ammo -------" );
@@ -4556,7 +4556,7 @@ void CWeapon::ShowDebugInfo()
 		if (bonusAmmo.pAmmoClass)
 		{
 			lineCounter += 1.0f;
-			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", bonusAmmo.pAmmoClass->GetName(), bonusAmmo.count);
+			IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", bonusAmmo.pAmmoClass->GetName(), bonusAmmo.count);
 		}
 	}
 
@@ -4570,7 +4570,7 @@ void CWeapon::ShowDebugInfo()
 		if (ammo.pAmmoClass)
 		{
 			lineCounter += 1.0f;
-			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", ammo.pAmmoClass->GetName(), ammo.count);
+			IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", ammo.pAmmoClass->GetName(), ammo.count);
 		}
 
 	}

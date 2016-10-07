@@ -554,7 +554,7 @@ Vec3 CGunTurret::PredictTargetPos(IEntity* pTarget, bool sec)//sec - weapon to u
 		IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
 		pDebug->Begin("CGunTurret::PredictTargetPos", false);
 		pDebug->AddSphere(tpos+delta, 0.2f, ColorF(1,0,0,1), 1.f);
-		IRenderAuxText::DrawLabel(vpos, 1.4f, "Predict %s: speed %.1f (dspeed %.1f), acc %.1f, time %.1f", pTarget->GetName(), vel.len(), d_speed, a, time_to);
+		IRenderAuxText::DrawLabelF(vpos, 1.4f, "Predict %s: speed %.1f (dspeed %.1f), acc %.1f, time %.1f", pTarget->GetName(), vel.len(), d_speed, a, time_to);
 	}
 
 	return tpos+delta;
@@ -618,7 +618,7 @@ Vec3 CGunTurret::GetSweepPos(IEntity* pTarget, const Vec3& shootPos)
     pGeom->DrawSphere(lastHintPos, 0.3f, col);
     pGeom->DrawSphere(nextHintPos, 0.3f, col);
     pGeom->DrawLine(lastHintPos, col, nextHintPos, col);
-    IRenderAuxText::DrawLabel(currPos, 1.4f, "sweep, hint %i, ratio %.2f)", m_fireHint, sweepRelTime);
+    IRenderAuxText::DrawLabelF(currPos, 1.4f, "sweep, hint %i, ratio %.2f)", m_fireHint, sweepRelTime);
   }
 
   return currPos;  
@@ -1280,7 +1280,7 @@ void CGunTurret::UpdateOrientation(float deltaTime)
   if (g_pGameCVars->i_debug_turrets == eGTD_Basic)
   {
     DrawDebug();
-    //IRenderAuxText::DrawLabel(entity.GetWorldPos(), 1.4f, "%s yaw: %.2f, goalYaw: %.2f (%.2f), goalPitch: %.2f (%.2f/%.2f)", searching?"[search]":"", RAD2DEG(turretAngles.z), RAD2DEG(m_goalYaw), 0.5f*(m_turretparams.yaw_range), RAD2DEG(m_goalPitch), m_turretparams.min_pitch, m_turretparams.max_pitch);
+    //IRenderAuxText::DrawLabelF(entity.GetWorldPos(), 1.4f, "%s yaw: %.2f, goalYaw: %.2f (%.2f), goalPitch: %.2f (%.2f/%.2f)", searching?"[search]":"", RAD2DEG(turretAngles.z), RAD2DEG(m_goalYaw), 0.5f*(m_turretparams.yaw_range), RAD2DEG(m_goalPitch), m_turretparams.min_pitch, m_turretparams.max_pitch);
   }
 }
 

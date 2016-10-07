@@ -2427,15 +2427,15 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, ce->GetEntityTextDescription().c_str());
 			if (timeMs > 0.5f)
 			{
-				IRenderAuxText::DrawLabelEx(wp, 1.3f, colorsYellow, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.3f, colorsYellow, true, true, szProfInfo);
 			}
 			else if (timeMs > 1.0f)
 			{
-				IRenderAuxText::DrawLabelEx(wp, 1.6f, colorsRed, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.6f, colorsRed, true, true, szProfInfo);
 			}
 			else
 			{
-				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
 
 				if (ce->GetPhysicalProxy() && ce->GetPhysicalProxy()->GetPhysicalEntity())
 				{
@@ -2443,19 +2443,19 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 					ce->GetPhysicalProxy()->GetPhysicalEntity()->GetStatus(&pe);
 					cry_sprintf(szProfInfo, "Physics: %8.5f %8.5f %8.5f", pe.pos.x, pe.pos.y, pe.pos.z);
 					wp.z -= 0.1f;
-					IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+					IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
 				}
 
 				Vec3 entPos = ce->GetPos();
 				cry_sprintf(szProfInfo, "Entity:  %8.5f %8.5f %8.5f", entPos.x, entPos.y, entPos.z);
 				wp.z -= 0.1f;
-				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
 			}
 		}
 		else
 		{
 			float colors[4] = { 1, 1, 1, 1 };
-			IRenderAuxText::DrawLabelEx(wp, 1.2f, colors, true, true, "%s", ce->GetEntityTextDescription().c_str());
+			IRenderAuxText::DrawLabelEx(wp, 1.2f, colors, true, true, ce->GetEntityTextDescription().c_str());
 		}
 
 		boundsColor.set(255, 255, 0, 255);
@@ -2483,7 +2483,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 
 		// Draw text.
 		float colors[4] = { color.r, color.g, color.b, 1.0f };
-		IRenderAuxText::DrawLabelEx(ce->GetPos(), 1.2f, colors, true, true, "%s", textToRender);
+		IRenderAuxText::DrawLabelEx(ce->GetPos(), 1.2f, colors, true, true, textToRender);
 
 		// specify color for drawing bounds below
 		boundsColor.set((uint8)(color.r * 255.0f), (uint8)(color.g * 255.0f), (uint8)(color.b * 255.0f), 255);

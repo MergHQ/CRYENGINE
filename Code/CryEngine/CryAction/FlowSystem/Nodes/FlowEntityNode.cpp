@@ -1205,7 +1205,7 @@ public:
 							bEntityInRange = true;
 
 #ifndef _RELEASE
-							if (bDebug) IRenderAuxText::DrawLabel(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
+							if (bDebug) IRenderAuxText::DrawLabelF(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
 #endif
 						}
 

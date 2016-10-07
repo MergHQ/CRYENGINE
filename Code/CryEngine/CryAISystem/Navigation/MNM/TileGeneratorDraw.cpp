@@ -1077,7 +1077,7 @@ void CTileGenerator::DrawSimplifiedContours(const Vec3& origin) const
 
 			renderAuxGeom->DrawLine(v0, vcolor, v1, vcolor, 8.0f);
 			renderAuxGeom->DrawSphere(v1, 0.025f, vcolor);
-			IRenderAuxText::DrawLabel(v1, 1.8f, "%d", (int)s);
+			IRenderAuxText::DrawLabelF(v1, 1.8f, "%d", (int)s);
 
 			v0 = v1;
 		}

@@ -404,7 +404,7 @@ void CREBreakableGlass::DebugDraw(const bool wireframe, const bool data)
 		//      freeBin[GLASSCFG_FRAGMENT_ARRAY_SIZE] = '\0';
 		//
 		//      const float fragFontCol[4] = {1.0f, 1.0f, 0.5f, 1.0f};
-		//      IRenderAuxText::DrawLabelEx(fragCenter, 1.2f, fragFontCol, false, true, "A:%s\nL:%s\nF:%s", activeBin, looseBin, freeBin);
+		//      IRenderAuxText::DrawLabelExF(fragCenter, 1.2f, fragFontCol, false, true, "A:%s\nL:%s\nF:%s", activeBin, looseBin, freeBin);
 	}
 
 	// Draw shatter data
@@ -430,13 +430,13 @@ void CREBreakableGlass::DebugDraw(const bool wireframe, const bool data)
 		//      Vec4* pBasis = m_glassParams.uvBasis;
 		//
 		//      Vec3 center = m_params.matrix.TransformPoint(Vec3(pBasis[0].x, pBasis[0].y, 0.0f));
-		//      IRenderAuxText::DrawLabelEx(center, 1.2f, fragFontCol, false, true, "[0]\n%.3f,%.3f", pBasis[0].z, pBasis[0].w);
+		//      IRenderAuxText::DrawLabelExF(center, 1.2f, fragFontCol, false, true, "[0]\n%.3f,%.3f", pBasis[0].z, pBasis[0].w);
 		//
 		//      center = m_params.matrix.TransformPoint(Vec3(pBasis[1].x, pBasis[1].y, 0.0f));
-		//      IRenderAuxText::DrawLabelEx(center, 1.2f, fragFontCol, false, true, "[1]\n%.3f,%.3f", pBasis[1].z, pBasis[1].w);
+		//      IRenderAuxText::DrawLabelExF(center, 1.2f, fragFontCol, false, true, "[1]\n%.3f,%.3f", pBasis[1].z, pBasis[1].w);
 		//
 		//      center = m_params.matrix.TransformPoint(Vec3(pBasis[2].x, pBasis[2].y, 0.0f));
-		//      IRenderAuxText::DrawLabelEx(center, 1.2f, fragFontCol, false, true, "[2]\n%.3f,%.3f", pBasis[2].z, pBasis[2].w);
+		//      IRenderAuxText::DrawLabelExF(center, 1.2f, fragFontCol, false, true, "[2]\n%.3f,%.3f", pBasis[2].z, pBasis[2].w);
 
 		// Hash grid data overlay
 		//      if (m_pHashGrid)
@@ -518,14 +518,14 @@ void CREBreakableGlass::DrawFragmentDebug(IRenderAuxGeom* const pRenderer, SAuxG
 		// //       triCenter.z = -0.01f;
 		// //       triCenter = m_params.matrix.TransformPoint(triCenter);
 		// //
-		// //       IRenderAuxText::DrawLabelEx(triCenter, 0.5f, triFontCol, false, true, "%i", j);
+		// //       IRenderAuxText::DrawLabelExF(triCenter, 0.5f, triFontCol, false, true, "%i", j);
 		//    }
 
 		// Draw id at fragment center
 		//    Vec3 fragCenter = Vec3(frag.m_center.x, frag.m_center.y, -0.01f);
 		//    fragCenter = m_params.matrix.TransformPoint(fragCenter);
 		//
-		//    IRenderAuxText::DrawLabelEx(fragCenter, 0.8f, fragFontCol, false, true, "%i", i);
+		//    IRenderAuxText::DrawLabelExF(fragCenter, 0.8f, fragFontCol, false, true, "%i", i);
 	}
 
 	// Transform and draw
@@ -571,7 +571,7 @@ void CREBreakableGlass::DrawFragmentDebug(const uint fragIndex, const Matrix34& 
 		const float physFragSize = max(bounds.x, bounds.y) * 0.7f;
 
 		const float fragFontCol[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
-		IRenderAuxText::DrawLabelEx(fragCenter, 0.5f, fragFontCol, false, true, "B:%i, F:%i", buffId, fragIndex);
+		IRenderAuxText::DrawLabelExF(fragCenter, 0.5f, fragFontCol, false, true, "B:%i, F:%i", buffId, fragIndex);
 	}
 
 	if (!temp.IsEmpty())
@@ -653,7 +653,7 @@ void CREBreakableGlass::DrawFragmentConnectionDebug(IRenderAuxGeom* const pRende
 
 		// Draw anchor ID
 		//    float fontCol[4] = {0.5f, 1.0f, 0.25f, 1.0f};
-		//    IRenderAuxText::DrawLabelEx(m_params.matrix.TransformPoint(center), 0.8f, fontCol, false, true, "%i", i);
+		//    IRenderAuxText::DrawLabelExF(m_params.matrix.TransformPoint(center), 0.8f, fontCol, false, true, "%i", i);
 	}
 
 	// Pre-evaluate state bits
