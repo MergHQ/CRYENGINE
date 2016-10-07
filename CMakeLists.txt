@@ -84,6 +84,13 @@ endif()
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	option(OPTION_SANDBOX "Enable Sandbox" OFF)
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+		set(OPTION_SANDBOX OFF)
+	endif()
+	if(OPTION_SANDBOX)
+		# Sandbox cannot be built in release mode
+		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
+	endif()
 endif()
 
 option(OPTION_RC "Include RC in the build" OFF)

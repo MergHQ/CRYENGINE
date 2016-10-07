@@ -54,6 +54,9 @@ macro(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSou
 			foreach(sourcefile ${SOURCES})
 				if (${sourcefile} MATCHES ".*\\.\\c$")
 					set_property(SOURCE "${sourcefile}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
+				elseif (${sourcefile} MATCHES ".*\\.\\qrc$")
+					get_filename_component(QRC_NAME ${sourcefile} NAME_WE)
+					set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/qrc_${QRC_NAME}.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
 				elseif (${sourcefile} STREQUAL ${PrecompiledSource})
 					# No special handling for the pch source required
 				else()
@@ -71,6 +74,10 @@ macro(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSou
 			endforeach(sourcefile)
 			
 			# Disable Precompiled headers on QT generated files
+			get_target_property(IS_AUTOMOC ${TargetProject} AUTOMOC)
+			if(IS_AUTOMOC AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp")
+				file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" "int _dummy_automoc_${TargetProject} = 1;")
+			endif()
 			if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp")
 				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
 				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" PROPERTY "SKIP_AUTOMOC" TRUE)
@@ -660,6 +667,7 @@ macro(process_csharp output_module)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
 		set(secondary_defs -DSWIG_CXX_EXCLUDE_SWIG_INTERFACE_FUNCTIONS -DSWIG_CSHARP_EXCLUDE_STRING_HELPER -DSWIG_CSHARP_EXCLUDE_EXCEPTION_HELPER)
 		target_sources(${THIS_PROJECT} PRIVATE ${f_cpp} ${f_h})
+		EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER(${f_cpp})
 		source_group("Generated" FILES ${f_cpp} ${f_h})
 		set_source_files_properties(${f_h} PROPERTIES HEADER_FILE_ONLY true GENERATED true)
 	endforeach()
