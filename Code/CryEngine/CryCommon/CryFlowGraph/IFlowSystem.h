@@ -1718,9 +1718,9 @@ ILINE Vec3 GetPortVec3(IFlowNode::SActivationInfo* pActInfo, int nPort)
 	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : Vec3Constants<float>::fVec3_Zero;
 }
 
-ILINE const string& GetPortString(IFlowNode::SActivationInfo* pActInfo, int nPort)
+ILINE string GetPortString(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
-	static string result;
+	string result;
 	if (!pActInfo->pInputPorts[nPort].GetValueWithConversion(result))
 		result.clear();
 	return result;

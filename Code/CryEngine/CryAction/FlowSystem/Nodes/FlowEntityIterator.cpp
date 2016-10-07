@@ -606,7 +606,7 @@ public:
 
 	virtual void CalculateMinMax()
 	{
-		const char* area = GetPortString(m_pActInfo, EIP_Area);
+		const string area = GetPortString(m_pActInfo, EIP_Area);
 
 		IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 		if (pEntitySystem)

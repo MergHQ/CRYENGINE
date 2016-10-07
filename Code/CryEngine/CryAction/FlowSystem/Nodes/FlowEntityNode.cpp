@@ -1901,7 +1901,7 @@ public:
 			if (IScriptTable* pScriptTable = pEntity->GetScriptTable())
 			{
 				const string inputPropertyName = GetPortString(pActInfo, IN_SMARTNAME);
-				const char* inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
+				const string inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
 				const bool bPerArchetype = GetPortBool(pActInfo, IN_PERARCHETYPE);
 
 				const size_t pos = inputPropertyName.find_first_of(":");
@@ -2416,23 +2416,23 @@ public:
 
 			bool bUseZeroRot = GetPortBool(pActInfo, EIP_UseZeroRot);
 
-			const char* memo = GetPortString(pActInfo, EIP_Memo).c_str();
+			string memo = GetPortString(pActInfo, EIP_Memo);
 			const char* entityName = pActInfo->pEntity->GetName();
 
 			bool isPlayer = GetISystem()->GetIGame()->GetIGameFramework()->GetClientActorId() == pActInfo->pEntity->GetId();
 
-			if ((memo == NULL || memo[0] == 0) && isPlayer == 0)
+			if (memo.empty() && isPlayer == 0)
 			{
 				memo = "<no memo>";
 			}
 
 			if (vPos.IsZero())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", entityName, (memo != NULL && memo[0] != 0) ? memo : "<no memo>");
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", entityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
 			}
-			else if (memo != NULL && memo[0] != 0)
+			else if (!memo.empty())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", entityName, memo);
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", entityName, memo.c_str());
 			}
 
 			Matrix34 tm;

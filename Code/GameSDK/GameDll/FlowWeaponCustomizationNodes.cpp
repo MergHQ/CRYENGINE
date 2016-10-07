@@ -283,7 +283,7 @@ void CFlashUICheckAccessoryState ::ProcessEvent( EFlowEvent event, SActivationIn
 				if(is_inInventory)
 				{
 					//Get the weapon ID via the Input string
-					const char* weapon_name = GetPortString(pActInfo, eI_Weapon).c_str();
+					const string weapon_name = GetPortString(pActInfo, eI_Weapon);
 					EntityId item = pInventory->GetItemByClass(pRegistry->FindClass(weapon_name));
 
 					//Fetch the actual weapon via the ID

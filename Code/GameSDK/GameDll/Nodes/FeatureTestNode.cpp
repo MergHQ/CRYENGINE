@@ -1486,7 +1486,7 @@ void CFlowNode_SimulateInput::ProcessEvent( EFlowEvent event, SActivationInfo* p
 				if (pClientActor->GetActorClass() == CPlayer::GetActorClassType())
 				{
 					CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
-					const char* action = GetPortString(pActInfo, eInputPorts_Action).c_str();
+					const string action = GetPortString(pActInfo, eInputPorts_Action);
 					const float inputValue = GetPortFloat(pActInfo, eInputPorts_Value);
 
 					IPlayerInput* pPlayerInput = pClientPlayer->GetPlayerInput();

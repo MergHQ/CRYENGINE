@@ -340,7 +340,7 @@ public:
 				{
 					if (IFacialInstance* pInstance = pCharacter->GetFacialInstance())
 					{
-						const char* sSequence = GetPortString(pActInfo, eIP_Sequence).c_str();
+						const string sSequence = GetPortString(pActInfo, eIP_Sequence);
 						if (IFacialAnimSequence* pSequence = pInstance->LoadSequence(sSequence))
 						{
 							int iLayer = GetPortInt(pActInfo, eIP_Layer);

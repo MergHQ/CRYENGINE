@@ -232,19 +232,19 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool IsClassAllowed(const char* entClass)
 	{
-		const char* classFilter = GetPortString(&m_pActInfo, eIP_Class).c_str();
-		if (strcmp(classFilter, "AllClasses") == 0 || strcmp(classFilter, entClass) == 0)
+		const string classFilter = GetPortString(&m_pActInfo, eIP_Class);
+		if ((classFilter == "AllClasses") || (classFilter == entClass))
 		{
 			return true;
 		}
-		else if (strcmp(classFilter, "CustomClasses") == 0)
+		else if (classFilter == "CustomClasses")
 		{
 			string customClasses = GetPortString(&m_pActInfo, eIP_CustomClass);
 			std::vector<string> CustomClassList;
 			splitStringList(&CustomClassList, customClasses.c_str(), ',');
 			for (unsigned int i = 0; i < CustomClassList.size(); i++)
 			{
-				if (strcmp(entClass, CustomClassList[i]) == 0)
+				if (entClass == CustomClassList[i])
 					return true;
 			}
 
@@ -737,12 +737,12 @@ public:
 
 	bool IsClassAllowed(const char* szClassName)
 	{
-		const char* szClassFilter = GetPortString(&m_pActInfo, EIP_ClassName).c_str();
-		if (!strcmp(szClassFilter, "AllClasses") || !strcmp(szClassFilter, szClassName))
+		const string classFilter = GetPortString(&m_pActInfo, EIP_ClassName);
+		if ((classFilter != "AllClasses") || (classFilter != szClassName))
 		{
 			return true;
 		}
-		else if (strcmp(szClassFilter, "CustomClasses") == 0)
+		else if (classFilter == "CustomClasses")
 		{
 			std::vector<string> customClassList;
 			string customClasses = GetPortString(&m_pActInfo, EIP_CustomClass);

@@ -228,7 +228,7 @@ public:
 
 					if (IsPortActive(pActInfo, eIP_Play))
 					{
-						const char* effectName = GetPortString(pActInfo, eIP_EffectName).c_str();
+						const string effectName = GetPortString(pActInfo, eIP_EffectName);
 						ForceFeedbackFxId fxId = pForceFeedback->GetEffectIdByName(effectName);
 						const float intensity = GetPortFloat(pActInfo, eIP_Intensity);
 						const float delay = GetPortFloat(pActInfo, eIP_Delay);
@@ -236,7 +236,7 @@ public:
 					}
 					if (IsPortActive(pActInfo, eIP_Stop))
 					{
-						const char* effectName = GetPortString(pActInfo, eIP_EffectName).c_str();
+						const string effectName = GetPortString(pActInfo, eIP_EffectName);
 						ForceFeedbackFxId fxId = pForceFeedback->GetEffectIdByName(effectName);
 						pForceFeedback->StopForceFeedbackEffect(fxId);
 					}

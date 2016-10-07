@@ -179,7 +179,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->root)
 		{
-			const char* file = GetPortString(pActInfo, EIP_File);
+			const string file = GetPortString(pActInfo, EIP_File);
 			const int loc = GetPortInt(pActInfo, EIP_Location);
 			const bool bOverwrite = GetPortBool(pActInfo, EIP_Overwrite);
 
@@ -306,7 +306,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc))
 		{
-			const char* file = GetPortString(pActInfo, EIP_File);
+			const string file = GetPortString(pActInfo, EIP_File);
 			const int loc = GetPortInt(pActInfo, EIP_Location);
 
 			ICryPak* pPak = gEnv->pCryPak;

@@ -741,7 +741,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, 0))
 			{
-				const char* levelType = GetPortString(pActInfo, IN_TYPE);
+				const string levelType = GetPortString(pActInfo, IN_TYPE);
 				bool bResult = CCryAction::GetCryAction()->GetILevelSystem()->GetCurrentLevel()->IsOfType(levelType);
 
 				ActivateOutput(pActInfo, OUT_RESULT, bResult);
