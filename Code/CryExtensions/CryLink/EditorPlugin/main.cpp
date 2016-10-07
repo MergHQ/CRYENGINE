@@ -4,8 +4,8 @@
 
 #include <CryCore/Platform/platform_impl.inl>
 
-#include <Include/IPlugin.h>
-#include <Include/IEditorClassFactory.h>
+#include <IPlugin.h>
+#include <IEditorClassFactory.h>
 
 #include <CryNetwork/ISimpleHttpServer.h>
 #include <IEditor.h>
@@ -95,8 +95,8 @@ PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
 		return NULL;
 	}
 
-	g_pEditor = pInitParam->pIEditorInterface;
-	if(ISystem *pSystem = pInitParam->pIEditorInterface->GetSystem())
+	g_pEditor = pInitParam->pIEditor;
+	if(ISystem *pSystem = pInitParam->pIEditor->GetSystem())
 	{
 		ModuleInitISystem(pSystem, "CryLink");
 

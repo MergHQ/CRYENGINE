@@ -79,12 +79,11 @@ def load_release_cryengine_settings(conf):
 	
 #############################################################################
 @conf	
-def set_editor_flags(self, kw):
+def set_editor_module_flags(self, kw):
 
+	kw['includes'] = ['.'] + kw['includes'] # ensure module folder is included first
 	kw['includes'] += [
-		'.',
-		self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
-		self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include'),
+		self.CreateRootRelativePath('Code/Sandbox/EditorInterface'),
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon') ,
 		self.CreateRootRelativePath('Code/SDKs/boost'),
@@ -106,6 +105,19 @@ def set_editor_flags(self, kw):
 	kw['features'] += ['qt']
 	kw['use_module'] += [ 'yasli' ]
 	kw['module_extensions'] += [ 'python27' ]
+	
+#############################################################################
+@conf	
+def set_editor_flags(self, kw):
+
+	set_editor_module_flags(self, kw)
+	
+	kw['includes'] += [
+	self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
+	self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')
+	]
+	
+	kw['defines'] += ['SANDBOX_EDITOR_IMPL'] #HACK temporary to achieve GetIEditor() returning IEditorImpl for sandbox only
 
 ###############################################################################
 @conf	

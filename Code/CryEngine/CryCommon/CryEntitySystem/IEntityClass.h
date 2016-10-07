@@ -14,6 +14,7 @@
 #pragma once
 
 #include <CrySerialization/Forward.h>
+#include <CryEntitySystem/IEntityProxy.h>
 
 struct IEntity;
 struct IEntityProxy;

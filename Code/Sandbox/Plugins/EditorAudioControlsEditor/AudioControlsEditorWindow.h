@@ -6,7 +6,7 @@
 #include <IEditor.h>
 #include "ATLControlsModel.h"
 #include <QFileSystemWatcher>
-#include <IViewPane.h>
+#include <QtViewPane.h>
 #include <qobjectdefs.h>
 #include <FileSystem/FileSystem_SubTreeMonitor.h>
 #include <FileSystem/FileSystem_Enumerator.h>

@@ -5,7 +5,6 @@
 #include "QParentWndWidget.h"
 #include "ListSelectionDialog.h"
 #include "QAudioControlEditorIcons.h"
-#include "GameEngine.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ATLControlsResourceDialog.h"
 #include <CryGame/IGameFramework.h>

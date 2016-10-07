@@ -12,7 +12,7 @@
 #include "AudioSystemPanel.h"
 #include "AudioSystemModel.h"
 #include "QConnectionsModel.h"
-
+#include "Undo/IUndoObject.h"
 #include <QDropEvent>
 #include <QEvent>
 #include <QMimeData>

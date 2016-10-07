@@ -475,6 +475,30 @@ macro(set_editor_flags)
 		${EDITOR_DIR}
 		${EDITOR_DIR}/Include	
 		${CMAKE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 		
+		${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorInterface
+		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
+		${SDK_DIR}/boost
+		${SDK_DIR}/yasli
+		${CRY_LIBS_DIR}/yasli
+	)
+	target_compile_definitions( ${THIS_PROJECT} PRIVATE
+		-DWIN32
+		-DCRY_ENABLE_RC_HELPER
+		-DIS_EDITOR_BUILD
+		-DQT_FORCE_ASSERT
+		-DUSE_PYTHON_SCRIPTING 
+	)
+	if(NOT MODULE_DISABLE_MFC)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
+	endif()
+	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
+	use_qt()
+endmacro()
+
+macro(set_editor_module_flags)
+	target_include_directories( ${THIS_PROJECT} PRIVATE
+		${CMAKE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 		
+		${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorInterface
 		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
@@ -514,20 +538,20 @@ endfunction()
 function(CryPlugin target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
-	set_editor_flags()
+	set_editor_module_flags()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /wd4251 /wd4275)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_IMPORTS -DPLUGIN_EXPORTS -DEDITOR_COMMON_IMPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
-	target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox EditorCommon)
+	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
 	apply_compile_settings()	
 endfunction()
 
 function(CryPluginModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
-	set_editor_flags()
+	set_editor_module_flags()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /wd4251 /wd4275)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPLUGIN_EXPORTS -DEDITOR_COMMON_EXPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
 	apply_compile_settings()
@@ -616,7 +640,21 @@ macro(process_csharp output_module)
 	endforeach()
 
 	set(SWIG_EXECUTABLE ${SDK_DIR}/swig/swig)
-	set(mono_inputs)
+
+	if (NOT PRODUCT_NAME)
+		set(PRODUCT_NAME ${THIS_PROJECT})
+	endif()
+	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${output_module}_meta.cs
+		"using System.Reflection;\n"
+		"[assembly: AssemblyProduct(\"${PRODUCT_NAME}\")]\n"
+		"[assembly: AssemblyTitle(\"${PRODUCT_NAME}\")]\n"
+		"[assembly: AssemblyDescription(\"${PRODUCT_NAME}\")]\n"
+		"[assembly: AssemblyVersion(\"${METADATA_VERSION}\")]\n"
+		"[assembly: AssemblyCompany(\"${METADATA_COMPANY}\")]\n"
+		"[assembly: AssemblyCopyright(\"${METADATA_COPYRIGHT}\")]\n"
+		)
+
+	set(mono_inputs ${CMAKE_CURRENT_BINARY_DIR}/${output_module}_meta.cs)
 
 	foreach(f ${swig_inputs})
 		string(LENGTH ${f} flen)

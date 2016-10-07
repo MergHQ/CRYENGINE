@@ -70,10 +70,9 @@ bool CImplementationManager::LoadImplementation()
 			}
 			else
 			{
-				IEditor* pEditor = GetIEditor();
-				if (pEditor)
+				if (GetIEditor())
 				{
-					ms_pAudioSystemImpl = pfnAudioInterface(pEditor->GetSystem());
+					ms_pAudioSystemImpl = pfnAudioInterface(GetIEditor()->GetSystem());
 					if (ms_pAudioSystemImpl)
 					{
 						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");

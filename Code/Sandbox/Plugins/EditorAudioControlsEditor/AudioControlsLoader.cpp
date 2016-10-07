@@ -11,7 +11,7 @@
 #include <IAudioSystemItem.h>
 #include "QAudioControlTreeWidget.h"
 #include "QtUtil.h"
-
+#include "Undo/IUndoObject.h"
 #include <QStandardItem>
 #include "QAudioControlTreeWidget.h"
 #include "QATLControlsTreeModel.h"
@@ -72,7 +72,7 @@ void CAudioControlsLoader::LoadAll()
 
 void CAudioControlsLoader::LoadControls()
 {
-	const CUndoSuspend suspendUndo;
+	const CScopedSuspendUndo suspendUndo;
 
 	// load the global controls
 	LoadAllLibrariesInFolder(ms_controlsPath, "");

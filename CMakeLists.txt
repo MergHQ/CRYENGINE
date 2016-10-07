@@ -450,6 +450,7 @@ if (OPTION_SANDBOX AND WIN64)
 	add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
 
 	add_subdirectory(Code/Sandbox/Plugins/EditorCommon)
+	add_subdirectory(Code/Sandbox/EditorInterface)
 
 	add_subdirectory(Code/Sandbox/Plugins/CryDesigner)	
 	add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor)
