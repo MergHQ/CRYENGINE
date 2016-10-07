@@ -1166,6 +1166,8 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 //////////////////////////////////////////////////////////////////////////
 bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const
 {
+	CRY_ASSERT(pRenderObject == nullptr);
+
 	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA()))
 	{
 		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
@@ -1189,69 +1191,35 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
 		uint32 passMask = 1 << passId;
 
-		if (pTempData)
-			pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
-
-		if (pRenderObject)
+		// Do we have to create a new permanent render object?
+		if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
 		{
-			// if input pRenderObject is not nullptr it is a permanent object that was already created and filled and can be immediately added to the render view.
-			assert(pRenderObject->m_bPermanent);
-
-			passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-			int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-			if (previousMask & passMask) // Object drawn once and can be used to fast add it.
-			{
-				if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-					GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
-
-				return true;
-			}
-			// Permanent object needs to be filled first time,
-			return false;
-		}
-		else
-		{
-			assert(pTempData);
-
-			// Need to create a new render object
 			// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-			{
-				WriteLock lock(pTempData->userData.permanentObjectCreateLock);
+			WriteLock lock(pTempData->userData.permanentObjectCreateLock);
 
-				// If other thread was locked on critical section, and object was already created before, we need just to add it to the view and not create again
-				pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
-				if (pRenderObject)
-				{
-					passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-					int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-					if (previousMask & passMask) // Object drawn once and can be used to fast add it.
-					{
-						if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-							GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
-
-						return true;
-					}
-					// Permanent object needs to be filled first time,
-					return false;
-				}
-				// Mark ready mask for that new object
-				pRenderObject = gEnv->pRenderer->EF_GetObject();
-				passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-				CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-				MemoryBarrier();
-				pTempData->userData.arrPermanentRenderObjects[nLod] = pRenderObject;
-
-				// Store resources modification checksum
-				if (pTempData->IsValid())
-					pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
-			}
-
-			// Return false to fill the object.
-			return false;
+			// Did another thread succeed in creating the object in the meantime?
+			if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
+				pTempData->userData.arrPermanentRenderObjects[nLod] = gEnv->pRenderer->EF_GetObject();
 		}
+
+		pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
+		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
+
+		// Has this object already been filled?
+		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
+		if (previousMask & passMask) // Object drawn once => fast path.
+		{
+			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
+				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
+
+			return true;
+		}
+
+		// Permanent object needs to be filled first time,
+		if (pTempData->IsValid())
+			pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+
+		return false;
 	}
 
 	pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());

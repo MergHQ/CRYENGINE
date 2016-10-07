@@ -503,7 +503,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		for (int nP = 0; nP < 2; nP++)
 			if (bDrawDetailLayersXYZ[nP])
 			{
-				CRenderObject* pDetailObj;
+				CRenderObject* pDetailObj = nullptr;
 
 				CLodValue dymmyLod(1 + nP, 0, 1 + nP);
 				if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pDetailObj, &dymmyLod, passInfo))
