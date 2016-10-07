@@ -4738,7 +4738,7 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 		if (pRNode)
 		{
-			pRNode->m_nInternalFlags &= ~IRenderNode::PERMANENT_RO_INVALID;
+			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
 		}
 
 		if (*ppInputTempData)

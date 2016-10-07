@@ -156,7 +156,12 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 
 	// shader item is not set up yet
 	if (SH.m_nPreprocessFlags == -1)
+	{
+		if (obj->m_bPermanent && obj->m_pRenderNode)
+			obj->m_pRenderNode->InvalidatePermanentRenderObject();
+
 		return;
+	}
 
 	CShader* const __restrict pSH = (CShader*)SH.m_pShader;
 	const uint32 nShaderFlags = pSH->m_Flags;

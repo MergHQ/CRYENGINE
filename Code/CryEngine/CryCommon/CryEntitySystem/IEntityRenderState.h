@@ -426,7 +426,7 @@ struct IRenderNode : public IShadowCaster
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void InvalidatePermanentRenderObject() { m_nInternalFlags |= PERMANENT_RO_INVALID; };
+	ILINE void InvalidatePermanentRenderObject() { CryInterlockedExchangeOr((volatile LONG*)&m_nInternalFlags, uint32(PERMANENT_RO_INVALID)); };
 
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
