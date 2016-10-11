@@ -4204,26 +4204,49 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				renderAuxGeom->DrawTriangle(va, color, vb, color, vc, color);
 			};
 
+			auto drawPath = [](IRenderAuxGeom* pRenderAuxGeom, const CPathHolder<PathPointDescriptor>& path, const ColorB& color, const Vec3& offset)
+			{
+				const size_t pathSize = path.Size();
+				if (pathSize > 0)
+				{
+					const float radius = 0.015f;
+
+					for (size_t j = 0; j < pathSize - 1; ++j)
+					{
+						const Vec3 start = path.At(j);
+						const Vec3 end = path.At(j + 1);
+						pRenderAuxGeom->DrawLine(start + offset, color, end + offset, color, 4.0f);
+						pRenderAuxGeom->DrawSphere(start + offset, radius, color);
+					}
+
+					pRenderAuxGeom->DrawSphere(path.At(pathSize - 1) + offset, radius, color);
+				}
+			};
+
 			IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 
 			const Vec3 startLoc = debugObjectStart->GetEntity() ? debugObjectStart->GetEntity()->GetWorldPos() : debugObjectStart->GetPos();
 			const Vec3 endLoc = debugObjectEnd->GetPos();
-			const MNM::vector3_t fixedPointStartLoc(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
-			const MNM::real_t range = MNM::real_t(1.0f);
 
-			MNM::TriangleID triStart = grid.GetTriangleAt(
-			  fixedPointStartLoc - origin, range, range);
+			const MNM::real_t hrange = MNM::real_t(1.0f);
+			const MNM::real_t vrange = MNM::real_t(1.0f);
+
+			MNM::vector3_t fixedPointStartLoc;
+			const MNM::TriangleID triStart = grid.GetClosestTriangle(
+			  MNM::vector3_t(startLoc) - origin, vrange, hrange, nullptr, &fixedPointStartLoc);
+			//fixedPointStartLoc += origin;
 
 			if (triStart)
 			{
 				MNM::vector3_t a, b, c;
 				grid.GetVertices(triStart, a, b, c);
 
-				drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_GreenYellow));
+				drawTriangle(renderAuxGeom, a, b, c, ColorB(ColorF(Col_GreenYellow, 0.5f)));
 			}
 
-			MNM::TriangleID triEnd = grid.GetTriangleAt(
-			  MNM::vector3_t(MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin, range, range);
+			MNM::vector3_t fixedPointEndLoc;
+			const MNM::TriangleID triEnd = grid.GetClosestTriangle(
+			  MNM::vector3_t(endLoc) - origin, vrange, hrange, nullptr, &fixedPointEndLoc);
 
 			if (triEnd)
 			{
@@ -4238,7 +4261,6 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 			float totalPathLengthSq = 0;
 			if (triStart && triEnd)
 			{
-				const MNM::vector3_t fixedPointEndLoc(MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z));
 				const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
 				const MNM::real_t startToEndDist = startToEnd.lenNoOverflow();
 				MNM::MeshGrid::WayQueryWorkingSet workingSet;
@@ -4286,75 +4308,39 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 						grid.GetVertices(pOutputWay[i].triangleID, a, b, c);
 
-						drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_Maroon));
+						drawTriangle(renderAuxGeom, a, b, c, ColorB(ColorF(Col_Maroon, 0.5f)));
 					}
 				}
 
-				PathPointDescriptor navPathStart(IAISystem::NAV_UNSET, startLoc);
-				PathPointDescriptor navPathEnd(IAISystem::NAV_UNSET, endLoc);
-
-				CPathHolder<PathPointDescriptor> outputPath;
-				for (size_t i = 0; i < outputWaySize; ++i)
+				const bool bPathFound = (result.GetWaySize() != 0);
+				if (bPathFound)
 				{
-					// Using the edge-midpoints of adjacent triangles to build the path.
-					if (i > 0)
+					CPathHolder<PathPointDescriptor> outputPath;
+					if (CMNMPathfinder::ConstructPathFromFoundWay(result, grid, offMeshNavigationManager, fixedPointStartLoc.GetVec3(), fixedPointEndLoc.GetVec3(), *&outputPath))
 					{
-						Vec3 edgeMidPoint;
-						if (grid.CalculateMidEdge(pOutputWay[i - 1].triangleID, pOutputWay[i].triangleID, edgeMidPoint))
+						const Vec3 pathVerticalOffset = Vec3(.0f, .0f, .1f);
+						drawPath(renderAuxGeom, outputPath, Col_Gray, pathVerticalOffset);
+
+						const bool bBeautifyPath = (gAIEnv.CVars.BeautifyPath != 0);
+						CTimeValue stringPullingStartTime = gEnv->pTimer->GetAsyncTime();
+						if (bBeautifyPath)
 						{
-							outputPath.PushFront(PathPointDescriptor(IAISystem::NAV_UNSET, edgeMidPoint + origin.GetVec3()));
+							outputPath.PullPathOnNavigationMesh(grid, gAIEnv.CVars.PathStringPullingIterations);
 						}
-					}
+						stringPullingTotalTime = gEnv->pTimer->GetAsyncTime() - stringPullingStartTime;
 
-					if (pOutputWay[i].offMeshLinkID)
-					{
-						// Grab off-mesh link object
-						const MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(pOutputWay[i].offMeshLinkID);
-						assert(pOffMeshLink);
-
-						if (pOffMeshLink)
+						if (bBeautifyPath)
 						{
-							const bool isLinkSmartObject = pOffMeshLink->GetLinkType() == MNM::OffMeshLink::eLinkType_SmartObject;
-							IAISystem::ENavigationType type = isLinkSmartObject ? IAISystem::NAV_SMARTOBJECT : IAISystem::NAV_CUSTOM_NAVIGATION;
-
-							// Add Entry/Exit points
-							PathPointDescriptor pathPoint(type);
-							pathPoint.iTriId = pOutputWay[i].triangleID;
-
-							// Cache off-mesh link data on the waypoint
-							pathPoint.offMeshLinkData.offMeshLinkID = pOutputWay[i].offMeshLinkID;
-
-							pathPoint.vPos = pOffMeshLink->GetEndPosition();
-							pathPoint.iTriId = 0;
-							outputPath.PushFront(pathPoint);
-
-							pathPoint.vPos = pOffMeshLink->GetStartPosition();
-							pathPoint.iTriId = pOutputWay[i].triangleID;
-							outputPath.PushFront(pathPoint);
+							drawPath(renderAuxGeom, outputPath, Col_Black, pathVerticalOffset);
 						}
-					}
-				}
 
-				const bool pathFound = (result.GetWaySize() != 0);
-				if (pathFound)
-				{
-					outputPath.PushBack(navPathEnd);
-					outputPath.PushFront(navPathStart);
-
-					CTimeValue stringPullingStartTime = gEnv->pTimer->GetAsyncTime();
-					if (gAIEnv.CVars.BeautifyPath)
-					{
-						outputPath.PullPathOnNavigationMesh(meshID, gAIEnv.CVars.PathStringPullingIterations, &pOutputWay[0], outputWaySize);
-					}
-					stringPullingTotalTime = gEnv->pTimer->GetAsyncTime() - stringPullingStartTime;
-					size_t pathSize = outputPath.Size();
-					const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-					for (size_t j = 0; pathSize > 0 && j < pathSize - 1; ++j)
-					{
-						Vec3 start = outputPath.At(j);
-						Vec3 end = outputPath.At(j + 1);
-						renderAuxGeom->DrawLine(start + verticalOffset, Col_Black, end + verticalOffset, Col_Black, 4.0f);
-						totalPathLengthSq += Distance::Point_PointSq(start, end);
+						const size_t pathSize = outputPath.Size();
+						for (size_t j = 0; pathSize > 0 && j < pathSize - 1; ++j)
+						{
+							const Vec3 start = outputPath.At(j);
+							const Vec3 end = outputPath.At(j + 1);
+							totalPathLengthSq += Distance::Point_PointSq(start, end);
+						}
 					}
 				}
 			}

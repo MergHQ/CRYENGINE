@@ -49,21 +49,13 @@ public:
 	const PathHolderPath&                     GetPath() const { return m_path; }
 	inline typename PathHolderPath::size_type Size() const    { return m_path.size(); }
 
-	void                                      PullPathOnNavigationMesh(const NavigationMeshID meshID, uint16 iteration, const MNM::WayTriangleData* way, const size_t maxLenght)
+	void                                      PullPathOnNavigationMesh(const MNM::MeshGrid& grid, uint16 iteration)
 	{
 		FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
-		/*
-		   MNM::WayTriangleData* way is a pointer to an array of maxLenght
-		   elements. It's important to remember that the FindWay returns
-		   that array filled in the opposite order (the first triangle
-		   is the one in the last position)
-		 */
 		if (m_path.size() < 3)
 			return;
 
-		const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-		const MNM::MeshGrid& grid = mesh.grid;
 		const Vec3 gridOrigin = grid.GetParams().origin;
 
 		for (uint16 i = 0; i < iteration; ++i)
@@ -73,8 +65,7 @@ public:
 
 			// Each triplets is associated with two triangles so the way length
 			// should match the iteration through the path points
-			size_t currentPosition = 0;
-			for (; it + 2 != end && currentPosition < maxLenght; ++it)
+			for (; it + 2 != end; ++it)
 			{
 				const T& startPoint = *it;
 				T& middlePoint = *(it + 1);
@@ -92,15 +83,9 @@ public:
 					MNM::vector3_t middleLocation(middle - gridOrigin);
 					MNM::vector3_t endLocation(to - gridOrigin);
 
-					grid.PullString(startLocation, way[currentPosition].triangleID, endLocation, way[currentPosition + 1].triangleID, middleLocation);
+					grid.PullString(startLocation, startPoint.iTriId, endLocation, middlePoint.iTriId, middleLocation);
 					middle = middleLocation.GetVec3() + gridOrigin;
 				}
-
-				// On the exit the smart object the middle point of the triangle
-				// is added in the path, so when the middle point is a smart object
-				// it means we are still in the previous triangle (the way is from the end to the start)
-				if (middlePoint.offMeshLinkData.offMeshLinkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
-					++currentPosition;
 			}
 		}
 	}

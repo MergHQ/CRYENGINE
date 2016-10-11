@@ -18,6 +18,7 @@
 #include "Navigation/MNM/MNM.h"
 #include "Navigation/MNM/MeshGrid.h"
 #include "NavPath.h"
+#include "Navigation/PathHolder.h"
 #include <CryPhysics/AgePriorityQueue.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IPathfinder.h>
@@ -355,6 +356,15 @@ public:
 	size_t                    GetRequestQueueSize() const { return m_requestedPathsQueue.size(); }
 
 	void                      OnNavigationMeshChanged(NavigationMeshID meshId, MNM::TileID tileId);
+
+	// Utility function, which takes a triangles way found by MNM::MeshGrid::FindWay() and converts it into a way-point path.
+	static bool ConstructPathFromFoundWay(
+	  const MNM::MeshGrid::WayQueryResult& way,
+	  const MNM::MeshGrid& grid,
+	  const OffMeshNavigationManager* pOffMeshNavigationManager,
+	  const Vec3& startLocation,
+	  const Vec3& endLocation,
+	  CPathHolder<PathPointDescriptor>& outputPath);
 
 private:
 
