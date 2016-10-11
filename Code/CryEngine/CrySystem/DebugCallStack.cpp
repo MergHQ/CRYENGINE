@@ -845,7 +845,10 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 	char excDesc[MAX_WARNING_LENGTH];
 
 	// make sure the mouse cursor is visible
-	gEnv->pInput->ShowCursor(true);
+	if (gEnv->pInput)
+	{
+		gEnv->pInput->ShowCursor(true);
+	}
 
 	const char* excName;
 	if (m_bIsFatalError || !pex)
