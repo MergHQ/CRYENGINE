@@ -185,10 +185,6 @@ public:
 	int  LoadGeomCache(int nSlot, const char* sFilename);
 #endif
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	int LoadPrismObject(int nSlot);
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	int LoadVolumeObject(int nSlot, const char* sFilename);
 	int SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
 	//////////////////////////////////////////////////////////////////////////

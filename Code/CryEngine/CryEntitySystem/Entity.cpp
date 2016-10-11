@@ -2545,15 +2545,6 @@ int CEntity::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMov
 	return GetRenderProxy()->SetVolumeObjectMovementProperties(nSlot, properties);
 }
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-int CEntity::LoadPrismObject(int nSlot)
-{
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadPrismObject(nSlot);
-}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::RegisterInAISystem(const AIObjectParams& params)
 {

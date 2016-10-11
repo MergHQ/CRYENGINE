@@ -1731,11 +1731,6 @@ CRendElementBase* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_VolumeObject:
 		re = new CREVolumeObject;
 		break;
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	case eDATA_PrismObject:
-		re = new CREPrismObject;
-		break;
-#endif  // EXCLUDE_DOCUMENTATION_PURPOSE
 
 	case eDATA_GameEffect:
 		re = new CREGameEffect;

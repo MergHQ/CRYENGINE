@@ -102,11 +102,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
-
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	SCRIPT_REG_TEMPLFUNC(LoadPrismObject, "nSlot");
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	SCRIPT_REG_TEMPLFUNC(LoadVolumeObject, "nSlot,sFilename");
 	SCRIPT_REG_TEMPLFUNC(SetVolumeObjectMovementProperties, "nSlot,tVolumeObjectMovementProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadParticleEffect, "nSlot,sEffectName,bPrime,fPulsePeriod,fScale,fCountScale,sAttachType,sAttachForm");
@@ -1389,15 +1384,6 @@ int CScriptBind_Entity::SetVolumeObjectMovementProperties(IFunctionHandler* pH, 
 	}
 	return pH->EndFunction(nSlot);
 }
-
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-int CScriptBind_Entity::LoadPrismObject(IFunctionHandler* pH, int nSlot)
-{
-	GET_ENTITY;
-	pEntity->LoadPrismObject(nSlot);
-	return pH->EndFunction(nSlot);
-}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, const char* sEffectName, SmartScriptTable table)

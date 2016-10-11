@@ -69,10 +69,6 @@
 	#include "SVO/SceneTreeManager.h"
 #endif
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	#include "PrismRenderNode.h"
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 threadID Cry3DEngineBase::m_nMainThreadId = 0;
@@ -2941,14 +2937,6 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			IVolumeObjectRenderNode* pRenderNode = new CVolumeObjectRenderNode();
 			return pRenderNode;
 		}
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	case eERType_PrismObject:
-		{
-			IPrismRenderNode* pRenderNode = new CPrismRenderNode();
-			return pRenderNode;
-		}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	case eERType_BreakableGlass:
 		{
 			IBreakableGlassRenderNode* pRenderNode = new CBreakableGlassRenderNode();

@@ -31,7 +31,7 @@ enum EERType
 	eERType_VolumeObject,
 	eERType_Dummy_0, //!< Used to be eERType_AutoCubeMap, preserve order for compatibility.
 	eERType_Rope,
-	eERType_PrismObject,
+	eERType_Dummy_3, //!< Used to be  eERType_PrismObject, preserve order for compatibility.
 	eERType_TerrainSector,
 	eERType_Dummy_2, //!< Used to be eERType_LightPropagationVolume, preserve order for compatibility.
 	eERType_RenderProxy,
@@ -882,12 +882,6 @@ struct IVolumeObjectRenderNode : public IRenderNode
 	virtual void SetMovementProperties(const SVolumeObjectMovementProperties& properties) = 0;
 	// </interfuscator:shuffle>
 };
-
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-struct IPrismRenderNode : public IRenderNode
-{
-};
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
 //////////////////////////////////////////////////////////////////////////
 struct IRopeRenderNode : public IRenderNode

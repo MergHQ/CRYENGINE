@@ -1908,33 +1908,6 @@ int CRenderProxy::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObje
 	return nSlot;
 }
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-int CRenderProxy::LoadPrismObject(int nSlot)
-{
-	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
-
-	pSlot->ReleaseObjects();
-	IPrismRenderNode* pVolObj = (IPrismRenderNode*) GetI3DEngine()->CreateRenderNode(eERType_PrismObject);
-
-	pSlot->pChildRenderNode = pVolObj;
-
-//	pVolObj->LoadVolumeData(sFilename);
-	if (m_pMaterial)
-		pVolObj->SetMaterial(m_pMaterial);
-
-	// Update slot position
-	pSlot->OnXForm(m_pEntity);
-
-	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
-
-	//pSlot->flags |= ENTITY_SLOT_RENDER;
-	pSlot->bUpdate = false;
-	InvalidateBounds(true, true);
-
-	return nSlot;
-}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 //////////////////////////////////////////////////////////////////////////
 ICharacterInstance* CRenderProxy::GetCharacter( int nSlot )
 {

@@ -276,10 +276,6 @@ public:
 	int                           LoadVolumeObject(int nSlot, const char* sFilename);
 	int                           SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
 
-	#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	virtual int LoadPrismObject(int nSlot);
-	#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) override;
 
 	// Load/Save entity parameters in XML node.

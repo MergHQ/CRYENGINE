@@ -3328,7 +3328,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_DistanceCloud);
 		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
-		DRAW_OBJ_STATS(eERType_PrismObject);
 		DRAW_OBJ_STATS(eERType_RenderProxy);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);

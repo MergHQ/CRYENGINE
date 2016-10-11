@@ -221,7 +221,6 @@
 		[
 			"../Common/RendElements/CREParticle.cpp",
 			"../Common/RendElements/CREPostProcess.cpp",
-			"../Common/RendElements/CREPrismObject.cpp",
 			"../Common/RendElements/CRESky.cpp",
 			"../Common/RendElements/CREVolumeObject.cpp",
 			"../Common/RendElements/CREWaterOcean.cpp",

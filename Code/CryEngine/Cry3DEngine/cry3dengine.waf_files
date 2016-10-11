@@ -322,10 +322,8 @@
 		"RenderNodes":
 		[
 			"MergedMeshRenderNode.cpp",
-			"PrismRenderNode.cpp",
 			"DeformableNode.h",
-			"MergedMeshRenderNode.h",
-			"PrismRenderNode.h"
+			"MergedMeshRenderNode.h"
 		],
 		"Effects/Optics":
 		[

@@ -216,8 +216,6 @@ const char*        CRendElement::mfTypeString()
 		return "WaterOcean";
 	case eDATA_VolumeObject:
 		return "VolumeObject";
-	case eDATA_PrismObject:
-		return "PrismObject";
 	case eDATA_DeferredShading:
 		return "DeferredShading";
 	case eDATA_GameEffect:
