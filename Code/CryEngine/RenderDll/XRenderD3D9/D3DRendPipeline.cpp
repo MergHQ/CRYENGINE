@@ -584,18 +584,19 @@ void CD3D9Renderer::EF_Restore()
 // Shutdown shaders pipeline
 void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 {
-	uint32 i, j;
-
 	FX_Invalidate();
 
 	SAFE_DELETE_ARRAY(m_RP.m_SysArray);
-
 	const uint32 n = m_RP.MaxD3DVertexDeclaration();
-	for (j = 0; j < n; j++)
+
+	for (uint32 j = 0; j < n; j++)
 	{
 		m_RP.m_D3DVertexDeclaration[j].m_Declaration.Free();
+	}
 
-		for (i = 0; i < (1 << VSF_NUM); i++)
+	for (uint32 i = 0; i < (1U << VSF_NUM); i++)
+	{
+		for (uint32 j = 0; j < n; j++)
 		{
 			SAFE_RELEASE(m_RP.m_D3DVertexDeclarationCache[i][0][j].m_pDeclaration);
 			SAFE_RELEASE(m_RP.m_D3DVertexDeclarationCache[i][1][j].m_pDeclaration);
