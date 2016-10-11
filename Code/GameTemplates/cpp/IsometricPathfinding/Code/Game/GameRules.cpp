@@ -69,12 +69,16 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
-	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
-
-	if (auto *pActor = pActorSystem->GetActorByChannelId(channelId))
+	// Trigger actor revive, but never do this outside of game mode in the Editor
+	if (!gEnv->IsEditing())
 	{
-		// Trigger actor revive
-		pActor->SetHealth(pActor->GetMaxHealth());
+		auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
+
+		if (auto *pActor = pActorSystem->GetActorByChannelId(channelId))
+		{
+			// Trigger actor revive
+			pActor->SetHealth(pActor->GetMaxHealth());
+		}
 	}
 
 	return true;

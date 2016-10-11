@@ -70,7 +70,7 @@ StackSizeKB:
 	<!-- === DURANGO === -->
 	<!-- =============== -->
 	<Platform name="Durango">
-		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="32"/>
+		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="64"/>
 
 		<!-- [PROCESS] -->
 		<Thread name ="Main" Affinity="0" Priority="Above_Normal"/>
@@ -97,9 +97,9 @@ StackSizeKB:
 		<Thread name ="SysCrashTestOnThread"/>
 		
 		<!-- [SYSTEM] - JobSystem -->
-		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="4" StackSizeKB="32"/>
-		<Thread name ="JobSystem_Worker_1 (Blocking)" Affinity="2" StackSizeKB="32"/>
-		<Thread name ="JobSystem_Worker_2 (Blocking)" Affinity="3" StackSizeKB="32"/>
+		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="4" StackSizeKB="64"/>
+		<Thread name ="JobSystem_Worker_1 (Blocking)" Affinity="2" StackSizeKB="64"/>
+		<Thread name ="JobSystem_Worker_2 (Blocking)" Affinity="3" StackSizeKB="64"/>
 
 		<Thread name ="JobSystem_Worker_0" Affinity="2" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_1" Affinity="3" StackSizeKB="256"/>
@@ -178,7 +178,7 @@ StackSizeKB:
 				
 		<!-- [RenderDLL] -->
 		<Thread name ="RenderThread" Affinity="4" Priority="Highest" StackSizeKB="128"/>
-		<Thread name ="RenderLoadingThread" Affinity="5" Priority="Above_Normal" StackSizeKB="72"/>
+		<Thread name ="RenderLoadingThread" Affinity="5" Priority="Above_Normal" StackSizeKB="128"/>
 		<Thread name ="ShaderCompile" Affinity="5"/>	
 
 			<!-- [SYSTEM] -->
@@ -263,13 +263,13 @@ StackSizeKB:
 	<!-- === PC_Common === -->
 	<!-- ============ -->
 	<Platform name="PC_Common">
-		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="32"/>
+		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="64"/>
 
 		<!-- [PROCESS] -->
 		<Thread name ="Main" Affinity="-1" Priority="Normal"/>
 		
 		<!-- [SYSTEM] - JobSystem -->
-		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="32"/>
+		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>		
 		
 		<!-- [SYSTEM] - Physics -->
@@ -278,7 +278,7 @@ StackSizeKB:
 
 		<!-- [RenderDLL] -->
 		<Thread name ="RenderThread" StackSizeKB="128"/>
-		<Thread name ="RenderLoadingThread" Priority="Above_Normal" StackSizeKB="72"/>
+		<Thread name ="RenderLoadingThread" Priority="Above_Normal" StackSizeKB="128"/>
 		<Thread name ="ShaderCompile"/>	
 
 		<!-- [SYSTEM] -->
@@ -363,7 +363,7 @@ StackSizeKB:
 	<!-- === MAC_Common === -->
 	<!-- ============ -->
 	<Platform name="MAC_Common">
-		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="32"/>
+		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="64"/>
 	</Platform>
 
 	<!-- ============ -->
@@ -376,7 +376,7 @@ StackSizeKB:
 		<Thread name ="Main" Affinity="-1" Priority="Above_Normal"/>
 
 		<!-- [SYSTEM] - JobSystem -->
-		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="32"/>
+		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
@@ -384,8 +384,8 @@ StackSizeKB:
 		<Thread name ="PhysicsWorkerThread_*" StackSizeKB="128"/>
 
 		<!-- [RenderDLL] -->
-		<Thread name ="RenderThread" Priority="Above_Normal" StackSizeKB="128"/>
-		<Thread name ="RenderLoadingThread" Priority="Above_Normal" StackSizeKB="72"/>
+		<Thread name ="RenderThread" Priority="Above_Normal" StackSizeKB="256"/>
+		<Thread name ="RenderLoadingThread" Priority="Above_Normal" StackSizeKB="128"/>
 		<Thread name ="ShaderCompile"/>
 
 		<!-- [SYSTEM] -->
@@ -448,13 +448,13 @@ StackSizeKB:
 	<!-- === ANDROID_Common === -->
 	<!-- ============ -->
 	<Platform name="ANDROID_Common">
-		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="32"/>
+		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="64"/>
 
 		<!-- [PROCESS] -->
 		<Thread name ="Main" Priority="Above_Normal"/>
 
 		<!-- [SYSTEM] - JobSystem -->
-		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="32"/>
+		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
@@ -462,8 +462,8 @@ StackSizeKB:
 		<Thread name ="PhysicsWorkerThread_*" StackSizeKB="128"/>
 
 		<!-- [RenderDLL] -->
-		<Thread name ="RenderThread" Affinity="ignore" Priority="Above_Normal" StackSizeKB="128"/>
-		<Thread name ="RenderLoadingThread" Affinity="ignore" Priority="Above_Normal" StackSizeKB="72"/>
+		<Thread name ="RenderThread" Affinity="ignore" Priority="Above_Normal" StackSizeKB="256"/>
+		<Thread name ="RenderLoadingThread" Affinity="ignore" Priority="Above_Normal" StackSizeKB="128"/>
 		<Thread name ="ShaderCompile"/>
 
 		<!-- [SYSTEM] -->
