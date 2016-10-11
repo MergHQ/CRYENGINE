@@ -73,6 +73,7 @@ def load_clang_common_settings(v):
 		'-Wno-parentheses',
 		'-Wno-switch',
 		'-Wno-unused-function',
+		'-Wno-unused-result',
 		'-Wno-multichar',
 		'-Wno-format-security',
 		'-Wno-empty-body',
