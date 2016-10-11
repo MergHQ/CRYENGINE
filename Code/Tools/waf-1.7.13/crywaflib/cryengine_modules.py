@@ -515,9 +515,19 @@ def ConfigureModuleUsers(ctx, kw):
 		if not lib  in ctx.cry_module_users:
 			ctx.cry_module_users[lib] = []
 		ctx.cry_module_users[lib] += [ kw['target'] ]	
-			
 	
-def LoadAddionalFileSettings(ctx, kw):
+def ConfigureOutputFileOverrideModules(ctx,kw):
+	"""
+	Helper function to maintain a list of modules that have a different output_file_name than their target name
+	"""
+	if not hasattr(ctx, 'cry_module_output_file_name_overrides'):
+		ctx.cry_module_output_file_name_overrides = {}
+		
+	if kw['output_file_name']:
+		out_file_name = kw['output_file_name'][0] if isinstance(kw['output_file_name'],list) else kw['output_file_name']
+		ctx.cry_module_output_file_name_overrides[kw['target']] =  out_file_name	
+	
+def LoadAdditionalFileSettings(ctx, kw):
 	"""
 	Load all settings from the addional_settings parameter, and store them in a lookup map
 	"""
@@ -625,10 +635,13 @@ def ConfigureTaskGenerator(ctx, kw):
 	
 	LoadFileLists(ctx, kw)
 	
-	LoadAddionalFileSettings(ctx, kw)
+	LoadAdditionalFileSettings(ctx, kw)
 
 	# Configure the modules users for static libraries
 	ConfigureModuleUsers(ctx,kw)
+	
+	# Configure modules that have a different module output_file_name than their target name
+	ConfigureOutputFileOverrideModules(ctx,kw)
 		
 	# Handle meta includes for WinRT
 	for meta_include in kw.get('meta_includes', []):
@@ -1342,6 +1355,20 @@ def CryPipelineModule(ctx, *k, **kw):
 
 	ctx.shlib(*k, **kw)
 
+###############################################################################
+# Override lib for targets that have a diffent output_file_name than their target name
+@feature('c', 'cxx', 'use')
+@after_method('apply_link')
+def override_libname(self):
+	platform = self.bld.env['PLATFORM']
+	spec = self.bld.options.project_spec
+	configuration = self.bld.GetConfiguration(self.target)	
+	if platform and not platform == 'project_generator' and not self.bld.cmd == 'generate_uber_files':
+		for target_module, target_override in self.bld.cry_module_output_file_name_overrides.iteritems():
+			if target_module in self.bld.spec_modules(spec, platform, configuration):
+				link_task = getattr(self, 'link_task', None)
+				link_task.env['LIB'] = [ target_override if lib == target_module else lib for lib in link_task.env['LIB']]
+	
 ###############################################################################
 # Helper function to set Flags based on options
 def ApplyBuildOptionSettings(self, kw):
