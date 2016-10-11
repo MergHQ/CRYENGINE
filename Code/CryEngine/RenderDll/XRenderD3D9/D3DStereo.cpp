@@ -601,12 +601,9 @@ CCamera CD3DStereoRenderer::PrepareCamera(int nEye, const CCamera& currentCamera
 void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& passInfo)
 {
 	// for recursive rendering (e.g. rendering to ocean reflection texture), stereo is not needed
-	if (passInfo.IsRecursivePass())
+	if (passInfo.IsRecursivePass() || (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING))
 	{
-		if (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING)
-		{
-			m_renderer.m_pRT->RC_SetStereoEye(0);
-		}
+		m_renderer.m_pRT->RC_SetStereoEye(0);
 
 		RenderScene(sceneFlags, passInfo);
 
@@ -629,7 +626,9 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 		m_bPreviousCameraValid = true;
 	}
 
-	if (!RequiresSequentialSubmission() && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
+
+
+	if (!RequiresSequentialSubmission())
 	{
 		int sceneFlagsDual = SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE;
 
@@ -657,10 +656,10 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer->SelectGPU(GPUMASK_BOTH);
 		}
 	}
-	else if (CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
+	else 
 	{
 		int sceneFlagsLeft = SHDF_STEREO_LEFT_EYE;
-		int sceneFlagsRight = SHDF_NO_SHADOWGEN | SHDF_STEREO_RIGHT_EYE;
+		int sceneFlagsRight = SHDF_STEREO_RIGHT_EYE | SHDF_NO_SHADOWGEN;
 
 		if (g_pMgpu && CRenderer::CV_r_StereoEnableMgpu)
 		{

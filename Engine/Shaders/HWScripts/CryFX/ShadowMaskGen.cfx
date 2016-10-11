@@ -27,55 +27,12 @@ SamplerComparisonState ssShadowComparison     : register(s0) = SS_Shadow2;
 SamplerState           ssShadowPointClamp     : register(s1) = SS_Shadow0;
 SamplerState           ssShadowPointWrap      : register(s2) = SS_PointWrap;
 
-sampler2D maskMSAASampler = sampler_state
-{
- Texture = $BackBuffer;
- MinFilter = POINT;
- MagFilter = POINT;
- MipFilter = POINT;
- AddressU = Clamp;
- AddressV = Clamp;
-};
-
-sampler2D globalScatterSampler = sampler_state
-{
- Texture = textures/lights/beam_glow.dds;
- MinFilter = LINEAR;
- MagFilter = LINEAR;
- MipFilter = NONE;
- AddressU = Wrap;
- AddressV = Wrap;  
-};
-
 #include "ShadowCommon.cfi"
 
 //===========================================================================
 // Basic shadow maps support
-float4 g_vViewPos				: PB_CameraPos;
 
 float4x4 CompMatrix  			: PI_Composite < vsregister = c0; >;    // View*Projection
-
-float4 vProjRatios		: PB_TempData[0];
-
-//rotation to light space
-float4x4 NoiseProjection    : PB_TempMatr0[1];
-float4x4 BlendTexGen        : PB_TempMatr0[2];
-float4x4 ScreenToWorldBasis : PB_TempMatr0[3];
-float4   BlendTcNormalize   : PB_TempData[6];
-
-//FIX: reserve params for common shaders
-float4 vWBasisX		: PB_TempData[10];
-float4 vWBasisY		: PB_TempData[11];
-float4 vWBasisZ		: PB_TempData[12];
-float4 vBasisMagnitudes	: PB_TempData[14];
-
-//XBOX
-float4 ScreenSpaceOffset[4] < register = c32 ; >
-
-float4 BlendInfo 							: PB_TempData[15];
-
-// debug shadow cascade color
-float4  DebugCascadeColor;
 
 cbuffer CBShadowMask : register(b0)
 {
@@ -116,16 +73,6 @@ struct pixout_cl
 	half4 Color : SV_Target0;
 };
 
-struct pixout_cl_void
-{
-};
-
-struct pixout_cl_depth
-{
-	float4 Color : SV_Target0;
-	float  Depth : SV_Depth;
-};
-
 struct pixout_cl_void_depth
 {
 #if !OPENGL
@@ -134,13 +81,6 @@ struct pixout_cl_void_depth
 	//HLSLcc compiler crash issue
 	float Depth    : COLOR3; 
 #endif
-};
-
-struct app2vertShadow
-{
-  IN_P
-  IN_TBASE
-  float3 viewDir : TEXCOORD1;
 };
 
 struct app2vertStencilCull
@@ -164,50 +104,6 @@ struct pixout_StencilCull
 struct pixout_StencilCull_void
 {
 };
-
-
-struct vert2fragShadowDeferredProj
-{
-	float4 HPosition	:	POSITION;
-	float4 ViewPos		:	TEXCOORD0;
-	float4 ViewVect		:	TEXCOORD1;
-	float4 ScreenTC		:	TEXCOORD2;
-};
-
-struct vert2fragShadowDeferred
-{
-	float4 HPosition	:	POSITION;
-	float4 ScreenTC		:	TEXCOORD0;
-#if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	float3 WS_ViewVect	:	TEXCOORD1;
-#endif
-};
-
-
-struct fragInShadowDeferred
-{
-//order should be the  same as ouyput from vert2frag for dx10 
-	float4 WPos	:	SV_POSITION;
-	float4 ScreenTC		:	TEXCOORD0;
-#if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	float3 WS_ViewVect	:	TEXCOORD1;
-#endif
-};
-
-
-struct vert2fragDeferred
-{
-	float4 HPosition		:	POSITION;
-	float2 ScreenTC			:	TEXCOORD0;
-	float3 WS_ViewVect	:	TEXCOORD1;
-};
-
-struct v2fShadowSimple
-{
-  float4 Position : POSITION;
-	float4 vScrPos		: TEXCOORDN;  
-};
-
 
 float4 CalcHomogeneousPos(float SceneDepth, float2 WPos)
 {
@@ -242,62 +138,13 @@ float BlendVP(float3 vp, bool blendOut)
 
 	float fBlendValZ = 0.975;  // Magic number
 
-	vBlend.z = vp.z * c_ShadowMaskConstants.fOneDivFarDist.x;
+	vBlend.z = vp.z * c_ShadowMaskConstants.fOneDivFarDist.y;
 	vBlend.z -= fBlendValZ;
 	vBlend.z *=  1.0f / (1.0f - fBlendValZ);
 
 	float result = saturate(max(max(vBlend.x,vBlend.y),vBlend.z));
 
 	return (blendOut) ? (1.0 - result) : result;
-}
-
-v2fShadowSimple TexturedQuadVS(app2vertStencilCull IN)
-{
-	v2fShadowSimple OUT = (v2fShadowSimple)0; 
-
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.Position = float4(2.0f * (vPos.xy + 0.5f) / g_VS_ScreenSize.xy - 1.0f, vPos.zw);
-
-  // output texture coordinates
-  OUT.vScrPos.xy = IN.baseTC.xy; // + PixelOffset.xy * 0.5
-  return OUT;
-}
-
-
-vert2fragStencilCull SimpleQuadVS(app2vertStencilCull IN)
-{
-	vert2fragStencilCull OUT = (vert2fragStencilCull)0; 
-
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.HPosition = float4(2.0f * (vPos.xy + 0.5f) / g_VS_ScreenSize.xy - 1.0f, vPos.zw);
-
-  // output texture coordinates
-  //OUT.baseTC.xy = IN.baseTC.xy + PixelOffset.xy * 0.5;
-
-  return OUT;
-}
-
-vert2fragStencilCull SimpleQuadVS01(app2vertStencilCull IN)
-{
-	vert2fragStencilCull OUT = (vert2fragStencilCull)0; 
-
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.HPosition = float4(2.0f * vPos.xy - 1.0f, vPos.zw);
-
-  return OUT;
-}
-
-vert2fragStencilCull HiStencilRefreshVS(app2vertShadow IN)
-{
-	vert2fragStencilCull OUT = (vert2fragStencilCull)0; 
-
-	float4 vPos = IN.Position;
-	OUT.HPosition = mul(CompMatrix, vPos);
-
-	return OUT;
 }
 
 vert2fragStencilCull StencilCullVS(app2vertStencilCull IN)
@@ -340,39 +187,9 @@ vert2fragStencilCull FrustumVolumeVS(app2vertStencilCull IN)
 pixout_StencilCull_void StencilCullPS(vert2fragStencilCull IN)
 {
 	pixout_StencilCull_void OUT = (pixout_StencilCull_void)1;
-
 	return OUT;
 }
 
-vert2fragShadowDeferred DeferredShadowVS(app2vertShadow IN)
-{
-	vert2fragShadowDeferred OUT = (vert2fragShadowDeferred)0; 
-
-	OUT.HPosition = Get2dHPos(IN.Position);
-  OUT.ScreenTC.xy = IN.baseTC.xy;
-	OUT.ScreenTC.zw = OUT.ScreenTC.xy*g_VS_ScreenSize.xy/4;
-
-#if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	OUT.WS_ViewVect = IN.viewDir.xyz;
-#endif
-
-	return OUT;
-}
-
-pixout_cl_void_depth CopyDepthTarget(v2fShadowSimple IN)
-{
-	pixout_cl_void_depth OUT = (pixout_cl_depth) 1;
-
-	// Get device depth taking into account nearest depth scaling
-	float fSceneDepth = GetDepthMap(sceneDepthTexture, IN.vScrPos.xy).r;
-	float fNearestScaledLinear = g_PS_ProjRatio.y / (g_PS_NearestScaled.z - g_PS_ProjRatio.x);
-	float2 ProjRatio = (fSceneDepth<fNearestScaledLinear)?g_PS_NearestScaled.xy:g_PS_ProjRatio.xy;
-	float fDevDepth = ProjRatio.x + ProjRatio.y/fSceneDepth;
-
-	OUT.Depth = fDevDepth;
-
-	return OUT;
-}
 
 float4x4 g_mReprojDstToSrc;
 float4x4 g_mReprojSrcToDst;
@@ -456,108 +273,6 @@ half CalcShadow(float4 vShPos, float2 vNoisePos, const bool bContactHardening)
   return fInShadow;
 }
 
-float GetSceneDepthMS(float3 iScreenCoord, int iSample)
-{
-	return sceneDepthTextureMS.Load(iScreenCoord, iSample).x;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Frust Cull
-//////////////////////////////////////////////////////////////////////////
-struct vert2fragFrustClip
-{
-	float4 HPosition	:	POSITION;
-	float4 ViewPos		:	TEXCOORD0;
-	float4 ViewVect		:	TEXCOORD1;
-	float2 ScreenTC		:	TEXCOORD3;
-};
-
-struct fragInFrustClip
-{
-	float4 WPos	:	SV_POSITION;
-	float4 ViewPos		:	TEXCOORD0;
-	float4 ViewVect		:	TEXCOORD1;
-	float2 ScreenTC		:	TEXCOORD3;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-vert2fragStencilCull FrustumClipVolumeVS(app2vertStencilCull IN)
-{
-	vert2fragStencilCull OUT;
-
-	OUT = (vert2fragStencilCull)0; 
-
-	float4 vPos = IN.Position;
-
-#if %_RT_SAMPLE3
-	float4x4 blendMat  = float4x4(BlendInfo.x,0.0f, 0.0f, 0.0f,  // ignoring z-blend for now
-																0.0f, BlendInfo.x,0.0f, 0.0f,
-																0.0f, 0.0f, 			1.0f, 0.0f,
-																0.0f, 0.0f, 			0.0f, 1.0f);
-
-	blendMat = mul(TexGen0,blendMat);
-	vPos = mul(blendMat, vPos);
-#else
-	vPos = mul(TexGen0, vPos);
-#endif
-
-	//normalization
-	vPos.xyz /= vPos.w;
-	vPos.w = 1.0f;
-
-	//final ViewProj transformation
-	OUT.HPosition = mul(CompMatrix,vPos); 
-
-	return OUT;
-}
-
-pixout_StencilCull_void FrustumClipVolumePS(vert2fragStencilCull IN)
-{
-	pixout_StencilCull_void OUT = (pixout_StencilCull_void)1;
-
-	return OUT;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-vert2fragFrustClip FrustumClipVS(app2vertShadow IN)
-{
-	vert2fragFrustClip OUT = (vert2fragFrustClip)0; 
-
-	float4 vPos = IN.Position;
-
-	OUT.HPosition = mul(CompMatrix, vPos); 
-
-  //ViewPos and ViewVect in projective space
-  ShadowTexSpace(float4(g_vViewPos.xyz, 1), TexGen0, fOneDivFarDist.x, OUT.ViewPos);
-  ShadowTexSpace(float4(g_vViewPos.xyz + IN.viewDir.xyz, 1), TexGen0, fOneDivFarDist.x, OUT.ViewVect);
-
-  OUT.ViewVect -= OUT.ViewPos;
-  OUT.ScreenTC.xy = IN.baseTC.xy;
-
-	return OUT;
-}
-
-pixout_cl_void FrustumClipPS(fragInFrustClip IN)
-{
-  pixout_cl_void OUT;
-
-  float SceneDepth = GetLinearDepth( sceneDepthTexture, IN.ScreenTC.xy );  
-
-	//simplified shadow tex space reconstruction
-	float4 P0 = IN.ViewPos + IN.ViewVect * SceneDepth;
-  //float4  P0 = CalcHomogeneousPos(SceneDepth, IN.WPos.xy/*+ScreenSpaceOffset[0].xy*/);
-	P0.xy /= P0.w;
-	
-	float4 clipFrustum;
-	clipFrustum.xy = P0.xy;
-	clipFrustum.zw = 1.0-P0.xy;
-
-	clip( clipFrustum );
-
-	return OUT;
-}
-
 ////////////////////////////////////////////////////////////
 
 float4 ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
@@ -570,23 +285,6 @@ float4 ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
 [earlydepthstencil]
 pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 {
-
-#if !%_RT_SAMPLE0
-	c_ShadowMaskConstants.irreg_kernel_2d     = irreg_kernel_2d;
-	c_ShadowMaskConstants.vCamPos             = vCamPos;
-	c_ShadowMaskConstants.fDepthTestBias      = fDepthTestBias;
-	c_ShadowMaskConstants.fOneDivFarDist      = fOneDivFarDist;
-	c_ShadowMaskConstants.fKernelRadius       = fKernelRadius;
-	c_ShadowMaskConstants.fShadowFadingDist   = fShadowFadingDist;
-	c_ShadowMaskConstants.vInvShadowMapSize   = vInvShadowMapSize;
-	c_ShadowMaskConstants.ScreenToShadowBasis = float4x4(vWBasisX, vWBasisY, vWBasisZ, vBasisMagnitudes);
-	c_ShadowMaskConstants.vAdaption           = vAdaption;
-	c_ShadowMaskConstants.NoiseProjection     = NoiseProjection;
-	c_ShadowMaskConstants.BlendInfo           = BlendInfo;
-	c_ShadowMaskConstants.BlendTexGen         = BlendTexGen;
-	c_ShadowMaskConstants.BlendTcNormalize    = BlendTcNormalize;
-#endif
-
   pixout_cl OUT;
 
   float SceneDepth = sceneDepthTexture.Load(int3(WPos.xy, 0)).x;
@@ -662,56 +360,8 @@ pixout_cl CloudsShadowPS(float4 WPos : SV_POSITION)
 	return OUT;
 }
 
-//----------------------------------------------------------
-samplerCUBE DebugCM  : register(s0);
-sampler2D DebugSM  : register(s0);
-
-struct app2vertDebug
-{
-  IN_P
-	float3 vIdxCoord	: TEXCOORDN;  
-};
-
-struct v2fDebug
-{
-  float4 Position 	: POSITION;
-	float3 vIdxCoord	: TEXCOORDN;  
-};
-
-v2fDebug DebugCMVS(app2vertDebug IN)
-{
-	v2fDebug OUT;
-  OUT.Position = mul(vpMatrix, IN.Position);
-	OUT.vIdxCoord = IN.vIdxCoord;
-	return OUT;
-}
-
-pixout_cl DebugCMPS(v2fDebug IN)
-{
-	pixout_cl OUT;
-
-	OUT.Color.xyz = texCUBE(DebugCM, IN.vIdxCoord).x;
-	OUT.Color.w = 1.0f;
-
-	return OUT;			
-}
-
-pixout_cl DebugSMPS(v2fDebug IN)
-{
-	pixout_cl OUT;
-
-	OUT.Color.xyz = (1.0f - GetTexture2D(DebugSM, IN.vIdxCoord.xy).x);
-	OUT.Color.w = 1.0f;
-
-	return OUT;			
-}
-
-float4 DebugShadowCascadesVS(float4 inPosition : POSITION) : POSITION
-{
-	float4 vPos = inPosition;
-	vPos.y = 1 - vPos.y;
-	return float4(vPos.xy * 2 - 1, vPos.z, 1.0);
-}
+///////////////// debug cascades pass  //////////////////
+float4  DebugCascadeColor;
 
 pixout_cl DebugShadowCascadesPS(float4 inPosition : SV_Position)
 {
@@ -719,44 +369,15 @@ pixout_cl DebugShadowCascadesPS(float4 inPosition : SV_Position)
 	OUT.Color.rgb = DebugCascadeColor.rgb;
 	OUT.Color.w = 1.0f;
 
-	return OUT;			
+	return OUT;
 }
 
 //////////////////////////////// technique ////////////////
-
-technique DebugCubeMap
-{
-  pass p0
-  {
-    VertexShader = DebugCMVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = DebugCMPS();
-  }
-}
-
-technique DebugShadowMap
-{
-  pass p0
-  {
-    VertexShader = DebugCMVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = DebugSMPS();
-  }
-}
-
 technique DebugShadowCascades
 {
 	pass p0
 	{
-		VertexShader = DebugShadowCascadesVS();
+		VertexShader = FullscreenTriVS();
 		
 		ZEnable = false;
 		ZWriteEnable = false;
@@ -767,42 +388,8 @@ technique DebugShadowCascades
 
 technique DeferredShadowPass
 {
-	//Stencil Pre-pass
+  //StencilCull pass for point light sources
   pass p0
-  {
-    VertexShader = FrustumClipVS() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = FrustumClipPS() ShadowMaskGenPS;
-  }
-
-	//Hi-stencil refresh pass
-  pass p1
-  {
-    VertexShader = HiStencilRefreshVS() ShadowMaskGenVS;
-    PixelShader = StencilCullPS() ShadowMaskGenPS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = Back;
-  }
-
-	//Shadow pass
-  pass p2
-  {
-    VertexShader = DeferredShadowVS() ShadowMaskGenVS;
-    PixelShader = DeferredShadowPS() ShadowMaskGenPS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-  
-	//StencilCull pass for point light sources
-  pass p3
   {
     VertexShader = StencilCullVS() ShadowMaskGenVS;
     
@@ -813,8 +400,8 @@ technique DeferredShadowPass
     PixelShader = StencilCullPS() ShadowMaskGenPS;
   }
 
-	//StencilCull pass for point light sources
-  pass p4
+  //StencilCull pass for point light sources
+  pass p1
   {
     VertexShader = FrustumVolumeVS() ShadowMaskGenVS;
     
@@ -823,99 +410,6 @@ technique DeferredShadowPass
     CullMode = Back;
 
     PixelShader = StencilCullPS() ShadowMaskGenPS;
-  }
-
-	//Stencil Pre-pass
-  pass p5
-  {
-    VertexShader = FrustumClipVolumeVS() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = FrustumClipVolumePS() ShadowMaskGenPS;
-  }
-
-	//Clouds shadows
-	pass p6
-	{
-
-		VertexShader = DeferredShadowVS() ShadowMaskGenVS;
-		PixelShader = CloudsShadowPS() ShadowMaskGenPS;
-		ZEnable = false;
-		ZWriteEnable = false;
-		CullMode = None;
-	}
-
-  pass p7
-  {
-    VertexShader = FrustumClipVolumeVS() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = DeferredShadowPS() ShadowMaskGenPS;
-  }
-
-}
-
-technique DeferredSimpleQuad
-{
-	//Stencil Pre-pass
-  pass p0
-  {
-    VertexShader = SimpleQuadVS() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = StencilCullPS() ShadowMaskGenPS;
-  }
-}
-
-technique DeferredSimpleQuad01
-{
-	//Stencil Pre-pass
-  pass p0
-  {
-    VertexShader = SimpleQuadVS01() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = StencilCullPS() ShadowMaskGenPS;
-  }
-}
-
-technique StencilVolume
-{
-  pass p0
-  {
-    VertexShader = StencilCullVS() ShadowMaskGenVS;
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-
-    PixelShader = StencilCullPS() ShadowMaskGenPS;
-  }
-}
-
-technique ResolveDepthTarget
-{
-	//Stencil Pre-pass
-  pass p0
-  {
-    VertexShader = TexturedQuadVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = CopyDepthTarget();
   }
 }
 

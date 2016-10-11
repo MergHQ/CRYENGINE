@@ -22,6 +22,15 @@ void Glow::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
+Glow::Glow(const char* name) 
+	: COpticsElement(name)
+	, m_fFocusFactor(0.3f)
+	, m_fPolyonFactor(32.f)
+	, m_fGamma(1)
+{
+	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
+}
+
 void Glow::Load(IXmlNode* pNode)
 {
 	COpticsElement::Load(pNode);
@@ -46,56 +55,50 @@ void Glow::Load(IXmlNode* pNode)
 void Glow::GenMesh()
 {
 	float ringPos = 1;
-	MeshUtil::GenDisk(m_fSize, (int)m_fPolyonFactor, 1, true, m_globalColor, &ringPos, m_vertBuf, m_idxBuf);
+	MeshUtil::GenDisk(m_fSize, (int)m_fPolyonFactor, 1, true, m_globalColor, &ringPos, m_vertices, m_indices);
 }
 
-void Glow::ApplyDistributionParamsPS(CShader* shader)
-{
-	static CCryNameR lumaParamsName("lumaParams");
-	Vec4 lumaParams(m_fFocusFactor, m_fGamma, 0, 0);
-	shader->FXSetPSFloat(lumaParamsName, &lumaParams, 1);
-}
-
-void Glow::DrawMesh()
-{
-	gcpRendD3D->FX_Commit();
-	DrawMeshTriList();
-}
-
-void Glow::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool Glow::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
+		return true;
 
-	PROFILE_LABEL_SCOPE("Glow");
+	static CCryNameTSCRC techName("Glow");
 
-	gRenDev->m_RP.m_FlagsShader_RT = 0;
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+	
+	m_primitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techName, rtFlags);
+	m_primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
-	static CCryNameTSCRC pGlowTechName("Glow");
-	shader->FXSetTechnique(pGlowTechName);
-	uint nPass;
+	// update constants
+	{
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[i], Vec2(m_globalSize));
 
-	ApplyGeneralFlags(shader);
-	shader->FXBeginPass(0);
+			constants->lumaParams = Vec4(m_fFocusFactor, m_fGamma, 0, 0);
+			constants->meshCenterAndBrt[0] = computeMovementLocationX(context.lightScreenPos[i]);
+			constants->meshCenterAndBrt[1] = computeMovementLocationY(context.lightScreenPos[i]);
+			constants->meshCenterAndBrt[2] = context.lightScreenPos[i].z;
+			constants->meshCenterAndBrt[3] = 1.0f;
 
-	ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-	ApplyExternTintAndBrightnessVS(shader, m_globalColor, m_globalFlareBrightness);
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(false);
+		}
 
-	static CCryNameR meshCenterName("meshCenterAndBrt");
-	float x = computeMovementLocationX(vSrcProjPos);
-	float y = computeMovementLocationY(vSrcProjPos);
-	const Vec4 meshCenterParam(x, y, vSrcProjPos.z, 1);
-	shader->FXSetVSFloat(meshCenterName, &meshCenterParam, 1);
-
-	ApplyDistributionParamsPS(shader);
+		m_primitive.GetConstantManager().EndTypedConstantUpdate(constants);
+	}
 
 	ValidateMesh();
-	ApplyMesh();
-	DrawMesh();
 
-	shader->FXEndPass();
+	m_primitive.SetCustomVertexStream(m_vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+	m_primitive.SetCustomIndexStream(m_indexBuffer, Index16);
+	m_primitive.SetDrawInfo(eptTriangleList, 0, 0, GetIndexCount());
 
-	shader->FXEnd();
+	context.pass.AddPrimitive(&m_primitive);
+
+	return true;
 }

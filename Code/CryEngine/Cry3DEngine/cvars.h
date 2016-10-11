@@ -380,7 +380,6 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_WaterOceanBottom, 1);
 	DeclareConstIntCVar(e_WaterRipplesDebug, 0);
 	int   e_OnDemandPhysics;
-	int   e_GsmViewSpace;
 	float e_ShadowsResScale;
 	DeclareConstIntCVar(e_Recursion, 1);
 	DeclareConstIntCVar(e_StatObjValidate, e_StatObjValidateDefault);

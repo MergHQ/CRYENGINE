@@ -483,6 +483,8 @@
 			"GraphicsPipeline/DepthOfField.cpp",
 			"GraphicsPipeline/Fog.h",
 			"GraphicsPipeline/Fog.cpp",
+			"GraphicsPipeline/LensOptics.h",
+			"GraphicsPipeline/LensOptics.cpp",
 			"GraphicsPipeline/MotionBlur.h",
 			"GraphicsPipeline/MotionBlur.cpp",
 			"GraphicsPipeline/HeightMapAO.h",

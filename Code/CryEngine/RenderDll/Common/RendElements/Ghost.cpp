@@ -19,6 +19,13 @@ void CLensGhost::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
+CLensGhost::CLensGhost(const char* name, CTexture* externalTex)
+	: COpticsElement(name)
+	, m_pTex(externalTex)
+{
+	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
+}
+
 void CLensGhost::Load(IXmlNode* pNode)
 {
 	COpticsElement::Load(pNode);
@@ -31,10 +38,8 @@ void CLensGhost::Load(IXmlNode* pNode)
 		{
 			if (textureName && textureName[0])
 			{
-				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(textureName);
+				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(textureName));
 				SetTexture((CTexture*)pTexture);
-				if (pTexture)
-					pTexture->Release();
 			}
 		}
 	}
@@ -44,64 +49,69 @@ CTexture* CLensGhost::GetTexture()
 {
 	if (!m_pTex)
 	{
-		m_pTex = CTexture::ForName("EngineAssets/Textures/flares/default-flare.tif", FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		if (m_pTex)
-			m_pTex->Release();
+		m_pTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/default-flare.tif", FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown));
 	}
+
 	return m_pTex;
 }
 
-void CLensGhost::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool CLensGhost::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
+		return true;
 
-	PROFILE_LABEL_SCOPE("Ghost");
+	static CCryNameTSCRC techGhost("Ghost");
 
-	gRenDev->m_RP.m_FlagsShader_RT = 0;
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+	ApplyOcclusionBokehFlag(rtFlags);
 
-	vSrcProjPos = computeOrbitPos(vSrcProjPos, m_globalOrbitAngle);
-	CD3D9Renderer* rd = gcpRendD3D;
+	CTexture* pGhostTex = GetTexture() ? GetTexture() : CTexture::s_ptexBlack;
+	m_primitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techGhost, rtFlags);
+	m_primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
+	m_primitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_primitive.SetTexture(0, pGhostTex);
+	m_primitive.SetSampler(0, m_samplerBilinearBorderBlack);
 
-	static CCryNameTSCRC pGhostTechName("Ghost");
-	static CCryNameR texSizeName("baseTexSize");
-	static CCryNameR tileInfoName("ghostTileInfo");
+	// update constants
+	{
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 
-	static STexState bilinearTS(FILTER_LINEAR, true);
-	bilinearTS.SetBorderColor(0);
-	bilinearTS.SetClampMode(TADDR_BORDER, TADDR_BORDER, TADDR_BORDER);
+		if (m_globalOcclusionBokeh) 
+			ApplyOcclusionPattern(constants, m_primitive);
+		else
+			m_primitive.SetTexture(5, CTexture::s_ptexBlack);
 
-	shader->FXSetTechnique(pGhostTechName);
+		ColorF c = m_globalColor;
+		c.NormalizeCol(c);
+		c.ScaleCol(m_globalFlareBrightness);
 
-	uint nPass;
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
+		constants->color = c.toVec4();
+		constants->ghostTileInfo = m_vTileDefinition;
+		constants->baseTexSize = Vec4((float)pGhostTex->GetWidth(), (float)pGhostTex->GetHeight(), 0, 0);
 
-	ApplyGeneralFlags(shader);
-	ApplyOcclusionBokehFlag(shader);
-	shader->FXBeginPass(0);
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[i], Vec2(m_globalSize));
 
-	CTexture* tex = GetTexture() ? GetTexture() : CTexture::s_ptexBlack;
-	tex->Apply(0, CTexture::GetTexState(bilinearTS));
+			Vec3 screenPos = computeOrbitPos(context.lightScreenPos[i], m_globalOrbitAngle);
+			constants->meshCenterAndBrt.x = computeMovementLocationX(screenPos);
+			constants->meshCenterAndBrt.y = computeMovementLocationY(screenPos);
+			constants->meshCenterAndBrt.z = context.lightScreenPos[i].z;
+			constants->meshCenterAndBrt.w = m_globalFlareBrightness;
 
-	const Vec4 texSizeParam((float)tex->GetWidth(), (float)tex->GetHeight(), 0, 0);
-	shader->FXSetVSFloat(texSizeName, &texSizeParam, 1);
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(true);
+		}
 
-	if (m_globalOcclusionBokeh)
-		ApplyOcclusionPattern(shader);
-	else
-		CTexture::s_ptexBlack->Apply(5, CTexture::GetTexState(bilinearTS));
+		m_primitive.GetConstantManager().EndTypedConstantUpdate(constants);
+	}
 
-	shader->FXSetVSFloat(tileInfoName, &m_vTileDefinition, 1);
-	ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
+	context.pass.AddPrimitive(&m_primitive);
 
-	float x = computeMovementLocationX(vSrcProjPos);
-	float y = computeMovementLocationY(vSrcProjPos);
-
-	rd->DrawQuad(x, y, x, y, m_globalColor, m_globalFlareBrightness);
-	shader->FXEndPass();
-
-	shader->FXEnd();
+	return true;
 }
+
 
 #if defined(FLARES_SUPPORT_EDITING)
 	#define MFPtr(FUNC_NAME) (Optics_MFPtr)(&CMultipleGhost::FUNC_NAME)
@@ -188,7 +198,7 @@ void CMultipleGhost::Load(IXmlNode* pNode)
 	}
 }
 
-void CMultipleGhost::GenGhosts(SAuxParams& aux)
+void CMultipleGhost::GenGhosts(const SAuxParams& aux)
 {
 	stable_rand::setSeed(GetRandSeed());
 
@@ -222,15 +232,13 @@ void CMultipleGhost::GenGhosts(SAuxParams& aux)
 	m_bContentDirty = false;
 }
 
-void CMultipleGhost::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool CMultipleGhost::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
-
-	PROFILE_LABEL_SCOPE("MultiGhost");
+		return true;
 
 	if (m_bContentDirty)
-		GenGhosts(aux);
+		GenGhosts(context.auxParams);
 
-	COpticsGroup::Render(shader, vSrcWorldPos, vSrcProjPos, aux);
+	return COpticsGroup::PreparePrimitives(context);
 }

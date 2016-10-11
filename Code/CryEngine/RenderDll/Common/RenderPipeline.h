@@ -439,7 +439,7 @@ enum EBatchFlags
 #define RBPF_MIRRORCULL               (1 << 18) // 0x40000
 
 #define RBPF_ZPASS                    (1 << 19) // 0x80000
-#define RBPF_SHADOWGEN                (1 << 20) // 0x100000
+// UNUSED                             (1 << 20) // 0x100000
 
 #define RBPF_FP_DIRTY                 (1 << 21) // 0x200000
 #define RBPF_FP_MATRIXDIRTY           (1 << 22) // 0x400000
@@ -468,8 +468,8 @@ enum EBatchFlags
 #define RBPF2_MSAA_RESTORE_SAMPLE_MASK            (1 << 4)
 #define RBPF2_READMASK_RESERVED_STENCIL_BIT       (1 << 5)
 #define RBPF2_POST_3D_RENDERER_PASS               (1 << 6)
-#define RBPF2_LENS_OPTICS_COMPOSITE               (1 << 7)
-#define RBPF2_COMMIT_SG                           (1 << 8)
+// unused                                         (1 << 7)
+// unused                                         (1 << 8)
 #define RBPF2_HDR_FP16                            (1 << 9)
 #define RBPF2_CUSTOM_SHADOW_PASS                  (1 << 10)
 #define RBPF2_CUSTOM_RENDER_PASS                  (1 << 11)
@@ -757,13 +757,6 @@ struct SRenderPipeline
 
 	SLightPass m_LPasses[MAX_REND_LIGHTS];
 	float      m_fProfileTime;
-
-	struct ShadowInfo
-	{
-		ShadowMapFrustum* m_pCurShadowFrustum;
-		Vec3              vViewerPos;
-		int               m_nOmniLightSide;
-	}              m_ShadowInfo;
 
 	UVertStreamPtr m_StreamPtrTang;
 	UVertStreamPtr m_NextStreamPtrTang;

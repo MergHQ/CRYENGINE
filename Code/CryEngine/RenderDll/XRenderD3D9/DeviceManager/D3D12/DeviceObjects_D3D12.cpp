@@ -1721,6 +1721,11 @@ void CDeviceGraphicsCommandInterfaceImpl::SetStencilRefImpl(uint8 stencilRefValu
 	m_sharedState.pCommandList->SetStencilRef(stencilRefValue);
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp)
+{
+	CRY_ASSERT_MESSAGE(false, "Depth bias can only be set via PSO on DirectX 12");
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	m_sharedState.pCommandList->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
@@ -1735,6 +1740,12 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DSurface* pView, co
 {
 	const NCryDX12::CView& View = reinterpret_cast<CCryDX12RenderTargetView*>(pView)->GetDX12View();
 	m_sharedState.pCommandList->ClearRenderTargetView(View, Color, NumRects, pRects);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects)
+{
+	const NCryDX12::CView& View = reinterpret_cast<CCryDX12DepthStencilView*>(pView)->GetDX12View();
+	m_sharedState.pCommandList->ClearDepthStencilView(View, D3D12_CLEAR_FLAGS(clearFlags), depth, stencil, numRects, pRects);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

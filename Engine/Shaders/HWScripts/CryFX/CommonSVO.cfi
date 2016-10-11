@@ -73,7 +73,9 @@ float4 texCUBElod(TextureCube t, float3 tc)
 
 float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 {
-	float fDepth = depthTexture.SampleLevel(ssSvoPointClamp, float3(ScreenTC.xy, 0), 0).x;
+	// TODO: GetLinearDepth + GetLinearDepthUnclamped
+	int3 vPixCoord = int3(max(min(ScreenTC * PS_ScreenSize.xy, PS_ScreenSize.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
+	float fDepth = depthTexture.Load(vPixCoord).x;
 	return GetLinearDepth(fDepth);
 }
 

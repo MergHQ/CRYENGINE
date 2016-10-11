@@ -785,24 +785,12 @@ void CTiledShading::Render(CRenderView* pRenderView, Vec4* clipVolumeParams)
 	// Generate shadow mask. Note that in tiled forward only mode the shadow mask is generated in CDeferredShading::DeferredShadingPass()
 	if (CRenderer::CV_r_DeferredShadingTiled > 1)
 	{
-		if (rd->m_nGraphicsPipeline == 0)
-		{
-			PROFILE_LABEL_SCOPE("SHADOWMASK");
+		PrepareShadowCastersList(pRenderView);
 
-			PrepareShadowCastersList(pRenderView);
-			rd->FX_DeferredShadowMaskGen(pRenderView, m_arrShadowCastingLights);
-
-			rd->FX_SetActiveRenderTargets();
-		}
-		else
-		{
-			PrepareShadowCastersList(pRenderView);
-
-			rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
-			rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(pRenderView);
-			rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
-			rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
-		}
+		rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(pRenderView);
+		rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
+		rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
 	}
 
 	PROFILE_LABEL_SCOPE("TILED_SHADING");

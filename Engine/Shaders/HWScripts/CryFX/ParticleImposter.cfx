@@ -208,7 +208,7 @@ pixout ParticleImposterPS(v2f IN)
 		for (int s=0; s<nMsaaSamples; s++) // Ideally would use pre-resolved depth target (note that existing resolved versions use sample0 for proper pixel/sample passes - having a max depth target will require extra mem)
 			sceneDepth =  max(sceneDepth, GetDecodedSceneDepthMS(IN.screenProj/IN.screenProj.w, nMsaaSamples, s));
 	#else
-		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
 	#endif 	
  	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );
 	OUT.Color.a *= softIntersect;
@@ -261,7 +261,7 @@ pixout CustomRenderPassPS(v2f IN)
 	OUT.Color.rgb = dot( OUT.Color.rgb, 1) ;
 
 	#if %SOFT_PARTICLE
- 		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+ 		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
  		half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );
 		OUT.Color.rgb *= softIntersect;
 	#endif

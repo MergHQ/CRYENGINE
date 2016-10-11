@@ -334,7 +334,7 @@ pixout WaterfallPS(v2f IN)
 
   half2 refrNewst = vProject; // reduce refraction near beaches
   float2 refrTC = vNormal.xy  * RefractionBumpScale;
-  float depthRefr = GetLinearDepth(sceneDepthSampler, refrNewst + refrTC.xy);
+  float depthRefr = GetLinearDepth(sceneLinearDepthTex, refrNewst + refrTC.xy);
   float fRefractionMask =  IN.vView.w < depthRefr;
  	//refrTC *= fRefractionMask;
   half3 cRefraction = DecodeHDRBuffer(GetTexture2D(screenMapSampler, refrNewst + refrTC)).xyz;

@@ -12,6 +12,9 @@
 
 CSceneRenderPass::CSceneRenderPass()
 	: m_passFlags(ePassFlags_None)
+	, m_depthConstBias(0.0f)
+	, m_depthSlopeBias(0.0f)
+	, m_depthBiasClamp(0.0f)
 {
 	m_pDepthTarget = nullptr;
 	m_pResourceLayout = nullptr;
@@ -68,6 +71,13 @@ void CSceneRenderPass::SetViewport(const D3DViewPort& viewport)
 	};
 
 	m_scissorRect = scissorRect;
+}
+
+void CSceneRenderPass::SetDepthBias(float constBias, float slopeBias, float biasClamp)
+{ 
+	m_depthConstBias = constBias; 
+	m_depthSlopeBias = slopeBias; 
+	m_depthBiasClamp = biasClamp; 
 }
 
 void CSceneRenderPass::ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget)
@@ -214,6 +224,10 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 	pCommandInterface->SetScissorRects(1, &m_scissorRect);
 	pCommandInterface->SetResourceLayout(m_pResourceLayout.get());
 	pCommandInterface->SetResources(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
+
+#if !defined(CRY_USE_DX12)
+	pCommandInterface->SetDepthBias(m_depthConstBias, m_depthSlopeBias, m_depthBiasClamp);
+#endif
 }
 
 void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
@@ -222,6 +236,10 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->EndProfilerEvent(m_szLabel);
+
+#if !defined(CRY_USE_DX12)
+	pCommandInterface->SetDepthBias(0.0f, 0.0f, 0.0f);
+#endif
 
 #if defined(ENABLE_PROFILING_CODE)
 	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList);

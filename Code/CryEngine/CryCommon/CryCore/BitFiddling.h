@@ -122,7 +122,24 @@ ILINE uint32 clearLowestBit(uint32 x)
 {
 	return x & (x - 1);
 }
+#endif
 
+#if CRY_PLATFORM_TBM
+
+	#define fillFromLowestBit32(x) _blsfill_u32(x)
+	#define fillFromLowestBit64(x) _blsfill_u64(x)
+
+#else
+
+ILINE uint32 fillFromLowestBit32(uint32 x)
+{
+	return x | (x - 1);
+}
+
+ILINE uint64 fillFromLowestBit64(uint64 x)
+{
+	return x | (x - 1);
+}
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

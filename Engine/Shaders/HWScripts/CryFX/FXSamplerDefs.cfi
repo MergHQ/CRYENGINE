@@ -54,17 +54,8 @@ SamplerState ssPointClamp              : register(s9) = SS_PointClamp;
 SamplerState TrilinearWrapSamplerState                = SS_TrilinearWrap;
 SamplerState TrilinearClampSamplerState               = SS_TrilinearClamp;
 
-// TODO: Texture/Sampler split and bind via semantic and fixed slot
-#define SCENEDEPTHMAP  \
-sampler2D sceneDepthSampler = sampler_state \
-{ \
-	Texture = $ZTarget; \
-	MinFilter = POINT; \
-	MagFilter = POINT; \
-	MipFilter = POINT; \
-	AddressU = Clamp; \
-	AddressV = Clamp; \
-};
+#define SCENEDEPTHMAP         Texture2D   sceneLinearDepthTex                                                   = $ZTarget;
+#define SCENEDEPTHMAP_HSCALED Texture2D   sceneLinearDepthTexHalfRes                                            = $ZTargetScaled;
 
 #define CLOUD_SHADOW_MAP \
 sampler2D cloudShadowMap = sampler_state \

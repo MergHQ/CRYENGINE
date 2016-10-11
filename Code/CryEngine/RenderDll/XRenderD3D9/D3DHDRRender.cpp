@@ -69,7 +69,6 @@ public:
 	void MeasureLuminance();
 	void EyeAdaptation();
 	void BloomGeneration();
-	void ProcessLensOptics();
 	void ToneMapping();
 	void ToneMappingDebug();
 	void DrawDebugViews();
@@ -889,37 +888,6 @@ void CHDRPostProcess::BloomGeneration()
 	rd->m_RP.m_FlagsShader_RT = nPrevFlagsShaderRT;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CHDRPostProcess::ProcessLensOptics()
-{
-	gcpRendD3D->m_RP.m_PersFlags2 &= ~RBPF2_LENS_OPTICS_COMPOSITE;
-	if (CRenderer::CV_r_flares)
-	{
-		const uint32 nBatchMask = SRendItem::BatchFlags(EFSLIST_LENSOPTICS);
-		if (nBatchMask & (FB_GENERAL | FB_TRANSPARENT))
-		{
-			PROFILE_LABEL_SCOPE("LENS_OPTICS");
-
-			CTexture* pLensOpticsComposite = CTexture::s_ptexSceneTargetR11G11B10F[0];
-			gcpRendD3D->FX_ClearTarget(pLensOpticsComposite, Clr_Transparent);
-			gcpRendD3D->FX_PushRenderTarget(0, pLensOpticsComposite, 0);
-
-			gcpRendD3D->m_RP.m_PersFlags2 |= RBPF2_NOPOSTAA | RBPF2_LENS_OPTICS_COMPOSITE;
-
-			GetUtils().Log(" +++ Begin lens-optics scene +++ \n");
-			gcpRendD3D->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_GENERAL);
-			gcpRendD3D->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_TRANSPARENT);
-			gcpRendD3D->FX_ResetPipe();
-			GetUtils().Log(" +++ End lens-optics scene +++ \n");
-
-			gcpRendD3D->FX_SetActiveRenderTargets();
-			gcpRendD3D->FX_PopRenderTarget(0);
-			gcpRendD3D->FX_SetActiveRenderTargets();
-		}
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1502,5 +1470,4 @@ void CD3D9Renderer::FX_HDRPostProcessing()
 
 	CHDRPostProcess* pHDRPostProcess = CHDRPostProcess::GetInstance();
 	pHDRPostProcess->Render();
-	pHDRPostProcess->ProcessLensOptics();
 }

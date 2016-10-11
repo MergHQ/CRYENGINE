@@ -742,10 +742,10 @@ pixout BinocularViewPS(vtxOutBinocularView IN)
 #if %_RT_SAMPLE0
 	half4 cSilhouetteColor = (c + c0 + c1 + c2) * 0.25f;
 #else
-	float d = GetDepthMap(_tex1, IN.baseTC0).x;
-	float d0 = GetDepthMap(_tex1, IN.baseTC1).x;
-	float d1 = GetDepthMap(_tex1, IN.baseTC2).x;
-	float d2 = GetDepthMap(_tex1, IN.baseTC3).x;
+	float d  = GetDeviceDepth(_tex1, IN.baseTC0).x;
+	float d0 = GetDeviceDepth(_tex1, IN.baseTC1).x;
+	float d1 = GetDeviceDepth(_tex1, IN.baseTC2).x;
+	float d2 = GetDeviceDepth(_tex1, IN.baseTC3).x;
   float3 cSilhoueteMask = float3(d0, d1, d2) < d;
 
   // Silhouete color masking - need to make sure to get correct color for silhouette
@@ -1345,16 +1345,6 @@ sampler2D rainOccSampler : register(s0) = sampler_state
   AddressV = Clamp;
 };
 
-sampler2D sceneZSampler : register(s1) = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
 sampler2D rainDistOccSampler : register(s2);
 
 sampler2D rainfallSampler  : register(s3) = sampler_state
@@ -1431,7 +1421,7 @@ pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 {
 	pixout OUT = (pixout)0;
 			
-	const float fDepth = GetLinearDepth(sceneZSampler, IN.baseTC.xy) * PS_NearFarClipDist.y;
+	const float fDepth = GetLinearDepth(sceneLinearDepthTex, IN.baseTC.xy, true);
 	const half fNoise = tex2Dlod(noiseSampler, float4(IN.baseTC.zw, 0,0)).x;
 	float fOcc = 0;
 	
@@ -1538,7 +1528,7 @@ pixout SceneRainPS(vtxOutRain IN)
 {
   pixout OUT;
   
-	const float fDepth = GetLinearDepth_ProjTC(depthMapSampler, IN.scaledTCProj) * PS_NearFarClipDist.y;       
+	const float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.scaledTCProj);       
 	const float fSoftIsec = saturate((fDepth-IN.scaledTCProj.w)*2);
 
 	// Soft intersection with depth, attenuate top to minimize artefacts, and soften bottom
@@ -1630,16 +1620,6 @@ sampler2D snowFlakesSampler : register (s6)
   sRGBLookup = false; 
 };
 
-
-sampler2D sceneZSampler = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
 
 sampler2D sceneMapSampler = sampler_state
 {
@@ -1813,7 +1793,7 @@ pixoutSnow SceneSnowPS(vtxOutSnow IN)
 	pixoutSnow OUT = (pixoutSnow) 0;
 
 	// Soft intersection with environment.
-	const half cDepth = GetLinearDepthScaled(sceneDepthSampler, IN.screenProj.xy/IN.screenProj.w);
+	const half cDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
 	const half fWaterAtten = saturate((IN.screenProj.z - (vWaterLevel.x - 0.125h)) * 4.h);
 	const half fSoftIsec = saturate((cDepth-IN.screenProj.w)*2) * fWaterAtten * fWaterAtten;
 

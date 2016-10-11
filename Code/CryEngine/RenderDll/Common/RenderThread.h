@@ -71,6 +71,7 @@ enum ERenderCommand
 	eRC_ReleaseVBStream,
 	eRC_CreateResource,
 	eRC_ReleaseResource,
+	eRC_ReleaseOptics,
 	eRC_ReleaseRenderResources,
 	eRC_PrecacheDefaultShaders,
 	eRC_SubmitWind,
@@ -546,6 +547,7 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ReleaseBaseResource(CBaseResource * pRes);
 	void RC_ReleaseSurfaceResource(SDepthTexture * pRes);
 	void RC_ReleaseResource(SResourceAsync * pRes);
+	void RC_ReleaseOptics(IOpticsElementBase* pOpticsElement);
 	void RC_RelinkTexture(CTexture * pTex);
 	void RC_UnlinkTexture(CTexture * pTex);
 	void RC_CreateREPostProcess(CRendElementBase * *re);

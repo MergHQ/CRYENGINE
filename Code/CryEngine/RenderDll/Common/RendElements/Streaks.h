@@ -7,8 +7,14 @@
 #include "MeshUtil.h"
 
 class CTexture;
-class Streaks : public COpticsElement, public AbstractMeshElement
+
+class Streaks : public COpticsElement
 {
+	struct SShaderParams : COpticsElement::SShaderParamsBase
+	{
+		Vec4 meshCenterAndBrt = Vec4(ZERO);
+	};
+
 private:
 	_smart_ptr<CTexture> m_pSpectrumTex;
 	bool                 m_bUseSpectrumTex;
@@ -23,50 +29,45 @@ private:
 
 	float m_fThickness;
 	int   m_nNoiseSeed;
+	bool  m_meshDirty;
 
 protected:
-	std::vector<std::vector<SVF_P3F_C4B_T2F>> m_separatedMeshList;
-	std::vector<uint16>                       m_separatedMeshIndices;
 
-	// !Override
-	virtual void GenMesh();
-	virtual void ApplySingleMesh(int n);
-	virtual void DrawMesh();
-	void         Invalidate()
+	struct SSeparatedMesh : public AbstractMeshElement
 	{
-		m_meshDirty = true;
-	}
+		SSeparatedMesh() 
+		{}
+
+		SSeparatedMesh(SSeparatedMesh&& other)
+			: primitive(std::move(other.primitive))
+		{}
+
+		void GenMesh() override {};
+
+		CRenderPrimitive             primitive;
+	};
+
+	std::vector<SSeparatedMesh>      m_separatedMeshList;
+	std::vector<uint16>              m_meshIndices;
+	buffer_handle_t                  m_indexBuffer;
+	CConstantBufferPtr               m_constantBuffer;
+
+	CTexture*  GetTexture();
+
+	void UpdateMeshes();
+	void Invalidate() override { m_meshDirty = true; }
 
 public:
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// ctor
-	Streaks(const char* name) :
-		COpticsElement(name, 0.5f),
-		m_fThickness(0.3f),
-		m_nNoiseSeed(81),
-		m_fSizeNoiseStrength(0.8f),
-		m_fThicknessNoiseStrength(0.6f),
-		m_fSpacingNoiseStrength(0.2f),
-		m_bUseSpectrumTex(false)
-	{
-		m_vMovement.x = 1.f;
-		m_vMovement.y = 1.f;
-		m_Color.a = 1.f;
-
-		SetAutoRotation(false);
-		SetAspectRatioCorrection(true);
-		SetColorComplexity(2);
-		SetStreakCount(1);
-
-		m_meshDirty = true;
-	}
+	Streaks(const char* name);
+	virtual ~Streaks();
 
 #if defined(FLARES_SUPPORT_EDITING)
 	void       InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);
 #endif
-	EFlareType GetType() { return eFT_Streaks; }
-	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       Load(IXmlNode* pNode);
+	EFlareType GetType() override            { return eFT_Streaks; }
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	bool       GetEnableSpectrumTex() const  { return m_bUseSpectrumTex; }
 	void       SetEnableSpectrumTex(bool b)  { m_bUseSpectrumTex = b; }
@@ -85,7 +86,11 @@ public:
 	void SetStreakCount(int n)
 	{
 		m_nStreakCount = n;
-		m_separatedMeshList.resize(n);
+
+		// ideally: resize(n) but due to some issue in orbis stl resize tries to call the (deleted) copy constructor.
+		while (m_separatedMeshList.size() < n)
+			m_separatedMeshList.push_back(SSeparatedMesh());
+
 		m_meshDirty = true;
 	}
 
@@ -123,6 +128,4 @@ public:
 		m_fSpacingNoiseStrength = noise;
 		m_meshDirty = true;
 	}
-
-	void GetMemoryUsage(ICrySizer* pSizer) const;
 };

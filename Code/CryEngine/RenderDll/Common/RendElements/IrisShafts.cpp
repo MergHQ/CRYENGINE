@@ -31,6 +31,39 @@ void IrisShafts::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
+IrisShafts::IrisShafts(const char* name)
+	: COpticsElement(name, 0.5f)
+	, m_fThickness(0.3f)
+	, m_fSpread(0.2f)
+	, m_nSmoothLevel(2)
+	, m_nNoiseSeed(81)
+	, m_pBaseTex(0)
+	, m_fSizeNoiseStrength(0.8f)
+	, m_fThicknessNoiseStrength(0.6f)
+	, m_fSpacingNoiseStrength(0.2f)
+	, m_fSpreadNoiseStrength(0.0f)
+	, m_bUseSpectrumTex(false)
+	, m_fPrimaryDir(0)
+	, m_fAngleRange(1)
+	, m_fConcentrationBoost(0)
+	, m_fPrevOcc(-1.f)
+	, m_fBrightnessBoost(0)
+	, m_MaxNumberOfPolygon(0)
+{
+	m_vMovement.x = 1.f;
+	m_vMovement.y = 1.f;
+	m_Color.a = 1.f;
+
+	SetAutoRotation(false);
+	SetAspectRatioCorrection(true);
+	SetColorComplexity(2);
+	SetComplexity(32);
+
+	m_meshDirty = true;
+
+	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
+}
+
 void IrisShafts::Load(IXmlNode* pNode)
 {
 	COpticsElement::Load(pNode);
@@ -48,10 +81,8 @@ void IrisShafts::Load(IXmlNode* pNode)
 		{
 			if (baseTextureName && baseTextureName[0])
 			{
-				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(baseTextureName);
+				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(baseTextureName));
 				SetBaseTex((CTexture*)pTexture);
-				if (pTexture)
-					pTexture->Release();
 			}
 		}
 
@@ -60,10 +91,8 @@ void IrisShafts::Load(IXmlNode* pNode)
 		{
 			if (gradientTexName && gradientTexName[0])
 			{
-				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(gradientTexName);
+				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(gradientTexName));
 				SetSpectrumTex((CTexture*)pTexture);
-				if (pTexture)
-					pTexture->Release();
 			}
 		}
 
@@ -123,8 +152,8 @@ void IrisShafts::GenMesh()
 	float halfAngleRange = m_fAngleRange / 2;
 	ColorF color(1, 1, 1, 1);
 
-	m_vertBuf.clear();
-	m_idxBuf.clear();
+	m_vertices.clear();
+	m_indices.clear();
 
 	std::vector<int> randomTable;
 	randomTable.resize(m_nComplexity);
@@ -162,38 +191,27 @@ void IrisShafts::GenMesh()
 		std::vector<uint16> indices;
 		MeshUtil::GenShaft(size, thickness, dynSmoothLevel, dir - halfAngle, dir + halfAngle, color, vertices, indices);
 
-		int generatedPolyonNum = (int)(indices.size() + m_idxBuf.size()) / 3;
+		int generatedPolyonNum = (int)(indices.size() + m_indices.size()) / 3;
 		if (CRenderer::CV_r_FlaresIrisShaftMaxPolyNum != 0 && generatedPolyonNum > CRenderer::CV_r_FlaresIrisShaftMaxPolyNum)
 			break;
 
-		int indexOffset = m_vertBuf.size();
-		m_vertBuf.insert(m_vertBuf.end(), vertices.begin(), vertices.end());
+		int indexOffset = m_vertices.size();
+		m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
 
 		for (int k = 0, iIndexSize(indices.size()); k < iIndexSize; ++k)
-			m_idxBuf.push_back(indices[k] + indexOffset);
+			m_indices.push_back(indices[k] + indexOffset);
 	}
 }
 
-void IrisShafts::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool IrisShafts::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
+		return true;
 
-	PROFILE_LABEL_SCOPE("IrisShafts");
+	static CCryNameTSCRC techName("IrisShafts");
 
-	gRenDev->m_RP.m_FlagsShader_RT = 0;
-
-	vSrcProjPos = computeOrbitPos(vSrcProjPos, m_globalOrbitAngle);
-	static CCryNameTSCRC pIrisShaftsTechName("IrisShafts");
-	shader->FXSetTechnique(pIrisShaftsTechName);
-	uint nPass;
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
-
-	ApplyGeneralFlags(shader);
-	ApplySpectrumTexFlag(shader, m_bUseSpectrumTex);
-	shader->FXBeginPass(0);
-
-	if (m_globalOcclusionBokeh && !aux.bIgnoreOcclusionQueries)
+	// update occlusion dependent parameters
+	if (m_globalOcclusionBokeh)
 	{
 		RootOpticsElement* root = GetRoot();
 		CFlareSoftOcclusionQuery* occQuery = root->GetOcclusionQuery();
@@ -228,37 +246,54 @@ void IrisShafts::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SA
 		m_fBrightnessBoost = 1;
 	}
 
-	ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-	ApplyExternTintAndBrightnessVS(shader, m_globalColor, m_globalFlareBrightness);
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+	ApplySpectrumTexFlag(rtFlags, m_bUseSpectrumTex);
 
-	static CCryNameR meshCenterName("meshCenterAndBrt");
-	const float x = computeMovementLocationX(vSrcProjPos);
-	const float y = computeMovementLocationY(vSrcProjPos);
-	const Vec4 meshCenterParam(x, y, vSrcProjPos.z, 1);
-	shader->FXSetVSFloat(meshCenterName, &meshCenterParam, 1);
+	m_primitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techName, rtFlags);
+	m_primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
+	m_primitive.SetTexture(0, (m_bUseSpectrumTex && m_pSpectrumTex) ? m_pSpectrumTex.get() : CTexture::s_ptexBlack);
+	m_primitive.SetTexture(1, m_pBaseTex ? m_pBaseTex.get() : CTexture::s_ptexBlack);
+	m_primitive.SetSampler(0, m_samplerBilinearBorderBlack);
 
-	static STexState bilinearTS(FILTER_LINEAR, true);
-	bilinearTS.SetBorderColor(0);
-	bilinearTS.SetClampMode(TADDR_BORDER, TADDR_BORDER, TADDR_BORDER);
-
-	CTexture* pBaseTex = ((CTexture*)m_pBaseTex) ? ((CTexture*)m_pBaseTex) : CTexture::s_ptexBlack;
-	pBaseTex->Apply(1, CTexture::GetTexState(bilinearTS));
-
-	CTexture* pSpectrumTex = (m_bUseSpectrumTex && ((CTexture*)m_pSpectrumTex)) ? ((CTexture*)m_pSpectrumTex) : CTexture::s_ptexBlack;
-	pSpectrumTex->Apply(0, CTexture::GetTexState(bilinearTS));
-
-	if (m_MaxNumberOfPolygon != CRenderer::CV_r_FlaresIrisShaftMaxPolyNum)
+	// update constants
 	{
-		m_meshDirty = true;
-		m_MaxNumberOfPolygon = CRenderer::CV_r_FlaresIrisShaftMaxPolyNum;
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[0], Vec2(m_globalSize));
+
+			Vec3 screenPos = computeOrbitPos(context.lightScreenPos[i], m_globalOrbitAngle);
+			constants->meshCenterAndBrt[0] = computeMovementLocationX(screenPos);
+			constants->meshCenterAndBrt[1] = computeMovementLocationY(screenPos);
+			constants->meshCenterAndBrt[2] = context.lightScreenPos[i].z;
+			constants->meshCenterAndBrt[3] = 1.0f;
+
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(false);
+		}
+
+		m_primitive.GetConstantManager().EndTypedConstantUpdate(constants);
 	}
 
-	ValidateMesh();
 
-	ApplyMesh();
-	DrawMeshTriList();
+	// update mesh
+	{
+		if (m_MaxNumberOfPolygon != CRenderer::CV_r_FlaresIrisShaftMaxPolyNum)
+		{
+			m_meshDirty = true;
+			m_MaxNumberOfPolygon = CRenderer::CV_r_FlaresIrisShaftMaxPolyNum;
+		}
 
-	shader->FXEndPass();
+		ValidateMesh();
 
-	shader->FXEnd();
+		m_primitive.SetCustomVertexStream(m_vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+		m_primitive.SetCustomIndexStream(m_indexBuffer, Index16);
+		m_primitive.SetDrawInfo(eptTriangleList, 0, 0, GetIndexCount());
+	}
+
+	context.pass.AddPrimitive(&m_primitive);
+
+	return true;
 }

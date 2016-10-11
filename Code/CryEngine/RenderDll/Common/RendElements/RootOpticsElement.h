@@ -83,19 +83,19 @@ public:
 	{
 	}
 
-	EFlareType GetType() { return eFT_Root; }
-	void       validateGlobalVars(SAuxParams& aux);
+	EFlareType GetType() override { return eFT_Root; }
+	void       validateGlobalVars(const SAuxParams& aux) override;
 
 #if defined(FLARES_SUPPORT_EDITING)
 	void InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);
 #endif
 
-	void                Load(IXmlNode* pNode);
+	void                Load(IXmlNode* pNode) override;
 
-	void                Render(SLensFlareRenderParam* pParam, const Vec3& vPos);
-	bool                ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender = false, CCamera* pCamera = NULL, bool bIgnoreOcclusionQueries = false);
+	void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) override;
+	bool                ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
 
-	IOpticsElementBase* GetParent() const                          { return NULL; }
+	IOpticsElementBase* GetParent() const override                 { return NULL; }
 
 	float               GetEffectiveSensorSize() const             { return m_fEffectiveSensorSize; }
 	void                SetEffectiveSensorSize(float s)            { m_fEffectiveSensorSize = s; }

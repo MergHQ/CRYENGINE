@@ -72,6 +72,7 @@ public:
 		Vec4     blendInfo;
 		Vec4     blendTcNormalize;
 		float    oneDivFarDist;
+		float    oneDivFarDistBlend;
 		float    depthTestBias;
 		float    kernelRadius;
 		float    invShadowMapSize;

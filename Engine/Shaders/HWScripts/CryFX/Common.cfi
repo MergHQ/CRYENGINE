@@ -208,18 +208,18 @@ float GetGradientMap(sampler2D gradientSampler, float2 vTC, float fGradientAnima
 
 #define USE_DEVICE_DEPTH
 
-float GetDepthMap(sampler2D depthSampler, float2 ScreenTC)
+float GetDeviceDepth(sampler2D depthSampler, float2 ScreenTC)
 {
 	return GetTexture2D(depthSampler, ScreenTC.xy).x;
 }
 
-float GetDepthMap(Texture2D depthTexture, float2 ScreenTC)
+float GetDeviceDepth(Texture2D depthTexture, float2 ScreenTC)
 {
 	int3 vPixCoord = int3(ScreenTC * PS_ScreenSize.xy, 0);
 	return depthTexture.Load(vPixCoord).x;
 }
 
-float GetLinearDepth(float fDevDepth, bool bDrawNearAdjust = true, bool bScaled = false)
+float GetLinearDepth(float fDevDepth, bool bScaled = false)
 {
 	return fDevDepth * (bScaled ? PS_NearFarClipDist.y : 1.0f);
 }
@@ -237,38 +237,49 @@ float GetDeviceDepthH(sampler2D depthSampler, float2 ScreenTC)
 	return Z;
 }
 
-float GetLinearDepth(sampler2D depthSampler, float2 ScreenTC, bool bDrawNearAdjust = true)
+float GetLinearDepth(sampler2D depthSampler, float2 ScreenTC, bool bScaled = false)
 {
 	float fDepth = GetTexture2D(depthSampler, ScreenTC.xy).x;
-	return GetLinearDepth(fDepth, bDrawNearAdjust);
+	return GetLinearDepth(fDepth, bScaled);
 }
 
-float GetLinearDepth(Texture2D depthTexture, float2 ScreenTC, bool bDrawNearAdjust = true)
+float GetLinearDepth(Texture2D depthTexture, float2 ScreenTC, bool bScaled = false)
 {
 	int3 vPixCoord = int3(ScreenTC * PS_ScreenSize.xy, 0);
 	float fDepth = depthTexture.Load(vPixCoord).x;
-	return GetLinearDepth(fDepth, bDrawNearAdjust);
+	return GetLinearDepth(fDepth, bScaled);
 }
 
-float GetLinearDepth_ProjTC(sampler2D depthSampler, float4 ProjTC, bool bDrawNearAdjust = true)
+float GetLinearDepthUnclamped(Texture2D depthTexture, float2 ScreenTC, bool bScaled = false)
 {
-	float fDepth = GetTexture2DProj(depthSampler, ProjTC).x;
-	return GetLinearDepth(fDepth, bDrawNearAdjust);
+	int3 vPixCoord = int3(max(min(ScreenTC * PS_ScreenSize.xy, PS_ScreenSize.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
+	float fDepth = depthTexture.Load(vPixCoord).x;
+	return GetLinearDepth(fDepth, bScaled);
 }
 
-float GetLinearDepthPrecise(sampler2D depthSampler, float2 ScreenTC, bool bDrawNearAdjust = true)
+float GetLinearDepthProj(Texture2D sceneLinearDepthTex, float4 ProjTC)
 {
-	return GetLinearDepth(depthSampler, ScreenTC, bDrawNearAdjust);
+ 	return GetLinearDepth(sceneLinearDepthTex, ProjTC.xy / ProjTC.w);
 }
 
-float GetLinearDepthScaled(sampler2D smpDepth, float2 ScreenTC)
+float GetLinearDepthPrecise(sampler2D depthSampler, float2 ScreenTC)
 {
-	return GetLinearDepth(smpDepth, ScreenTC) * PS_NearFarClipDist.y;
+	return GetLinearDepth(depthSampler, ScreenTC, false);
 }
 
 float GetLinearDepthScaled(Texture2D texDepth, float2 ScreenTC)
 {
-	return GetLinearDepth(texDepth, ScreenTC) * PS_NearFarClipDist.y;
+	return GetLinearDepth(texDepth, ScreenTC, true);
+}
+
+float GetLinearDepthScaledUnclamped(Texture2D texDepth, float2 ScreenTC)
+{
+	return GetLinearDepthUnclamped(texDepth, ScreenTC, true);
+}
+
+float GetLinearDepthScaledProj(Texture2D sceneLinearDepthTex, float4 ProjTC)
+{
+ 	return GetLinearDepth(sceneLinearDepthTex, ProjTC.xy / ProjTC.w, true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,11 +340,6 @@ float UnpackFloatFromVec3(const float3 value)
 	return dot(value, bitSh);
 }
 
-half GetDownscaledDepth(in float4 rawDepth)
-{
-	return rawDepth.x;
-}
-
 half GetUnnormalizedLinearDownscaledDepth(in float4 rawDepth)
 {
 	return rawDepth.x;
@@ -343,12 +349,6 @@ half GetUnnormalizedLinearDownscaledDepth(in sampler2D depthSmp, in float2 scree
 {
 	float4 data = tex2D(depthSmp, screenCoord);
 	return GetUnnormalizedLinearDownscaledDepth(data);
-}
-
-half GetDownscaledDepth(in sampler2D depthSmp, in float2 screenCoord)
-{
-	float4 data = tex2D(depthSmp, screenCoord);
-	return GetDownscaledDepth(data);
 }
 
 // get 2d homogeneous position
@@ -590,14 +590,10 @@ half DecodeGBufferTransmittanceLum( half4 bufferA )
 
 float  NumInstructions		: PI_NumInstructions;
 
-sampler2D DebugMipColorsDiffuseSampler = sampler_state
-{
- Texture = $MipColors_Diffuse;
-};
-sampler2D DebugMipColorsBumpSampler = sampler_state
-{
- Texture = $MipColors_Bump;
-};
+Texture2D DebugMipColorsDiffuse = $MipColors_Diffuse;
+Texture2D DebugMipColorsBump = $MipColors_Bump;
+
+SamplerState DebugMipColorsSamplerState = SS_TrilinearClamp;
 
 float4 DVColor(float2 d)
 { 
@@ -645,10 +641,10 @@ void DebugOutput(out half4 Color, in float4 baseTC)
   if (d < HalfDiag) { dd.z = 1.0;}
   Color = dd;
  #elif %_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && !%_RT_DEBUG3 // 1110
-  float4 mipColor = tex2D(DebugMipColorsDiffuseSampler, baseTC.xy);
+  float4 mipColor = GetTexture2D(DebugMipColorsDiffuse, DebugMipColorsSamplerState, baseTC.xy);
   Color = mipColor;
  #elif !%_RT_DEBUG0 && !%_RT_DEBUG1 && !%_RT_DEBUG2 && %_RT_DEBUG3 // 0001
-  float4 mipColor = tex2D(DebugMipColorsBumpSampler, baseTC.xy);
+  float4 mipColor = GetTexture2D(DebugMipColorsBump, DebugMipColorsSamplerState, baseTC.xy);
   Color = mipColor;
  #elif %_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && %_RT_DEBUG3 // 1111
   Color.xyz = NumInstructions;	// Measure overdraw

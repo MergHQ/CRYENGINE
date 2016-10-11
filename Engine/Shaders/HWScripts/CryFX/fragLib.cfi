@@ -191,7 +191,7 @@ void frag_get_deferred_buffers( inout fragPass pPass )
     #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
       pPass.fSceneDepthRT = GetDecodedSceneDepthMS(tcProj, GetMSAASampleNum(), pPass.IN.uSample );
     #else
-      pPass.fSceneDepthRT = DecodeSceneDepth(sceneDepthSampler, pPass.IN.screenProj.xyww);
+      pPass.fSceneDepthRT = GetLinearDepthScaledProj(sceneLinearDepthTex, pPass.IN.screenProj.xyww);
     #endif
 
 		#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1

@@ -591,6 +591,7 @@ public:
 	virtual void RT_CreateResource(SResourceAsync* pRes) = 0;
 	virtual void RT_ReleaseResource(SResourceAsync* pRes) = 0;
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) = 0;
+	virtual void RT_ReleaseOptics(IOpticsElementBase* pOpticsElement) = 0;
 	virtual void RT_UnbindResources() = 0;
 	virtual void RT_UnbindTMUs() = 0;
 	virtual void RT_CreateRenderResources() = 0;
@@ -848,8 +849,6 @@ public:
 	void         FlushTextMessages(CTextMessages& messages, bool reset);
 
 	// Shadow Mapping
-	virtual bool PrepareDepthMap(CRenderView* pRenderView, ShadowMapFrustum* SMSource, int nFrustumLOD = 0, bool bClearPool = false) = 0;
-	virtual void DrawAllShadowsOnTheScreen() = 0;
 	virtual void OnEntityDeleted(IRenderNode* pRenderNode) override = 0;
 
 	virtual void SetColorOp(byte eCo, byte eAo, byte eCa, byte eAa) override = 0;
@@ -931,6 +930,7 @@ public:
 	virtual void                RT_GraphicsPipelineShutdown() = 0;
 
 	virtual IOpticsElementBase* CreateOptics(EFlareType type) const override;
+	void                        ReleaseOptics(IOpticsElementBase* pOpticsElement) const override;
 
 	virtual bool                EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags) override;
 	virtual bool                EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override = 0;
@@ -1302,7 +1302,6 @@ public:
 	virtual void                EnableLevelUnloading(bool enable) override;
 	virtual void                EnableBatchMode(bool enable) override;
 	virtual bool                IsStereoModeChangePending() override { return false; }
-	virtual void                SetShouldCopyScreenToBackBuffer(bool bEnable) override;
 
 	virtual compute_skinning::IComputeSkinningStorage* GetComputeSkinningStorage() = 0;
 public:
@@ -1454,7 +1453,6 @@ public:
 	uint32 m_nThermalVisionMode : 2;
 	uint32 m_nSonarVisionMode   : 2;
 	uint32 m_nNightVisionMode   : 2;
-	bool   m_bCopyScreenToBackBuffer;
 
 	int    m_nFlushAllPendingTextureStreamingJobs;
 	float  m_fTexturesStreamingGlobalMipFactor;

@@ -30,6 +30,7 @@ class CGpuParticlesStage;
 class CTiledShadingStage;
 class CColorGradingStage;
 class CSceneCustomStage;
+class CLensOpticsStage;
 class CRenderCamera;
 class CCamera;
 
@@ -66,6 +67,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ClipVolumes,
 	eStage_ShadowMask,
 	eStage_ColorGrading,
+	eStage_LensOptics,
 
 	eStage_Count
 };
@@ -123,7 +125,7 @@ public:
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
 	                                  SGraphicsPipelineStateDescription stateDesc,
 	                                  CGraphicsPipelineStateLocalCache* pStateCache);
-	void UpdatePerViewConstantBuffer(const RECT* pCustomViewport = NULL);
+	void UpdatePerViewConstantBuffer(const D3DViewPort* pCustomViewport = nullptr);
 	void UpdatePerViewConstantBuffer(const SViewInfo* pViewInfo, int viewInfoCount, CConstantBufferPtr& pPerViewBuffer);
 	bool FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc);
 
@@ -139,7 +141,7 @@ public:
 	uint32 GetNumInvalidDrawcalls() const          { return m_numInvalidDrawcalls;   }
 
 	int GetViewInfoCount() const;
-	int GetViewInfo(SViewInfo viewInfo[2], const RECT * pCustomViewport = NULL);
+	int GetViewInfo(SViewInfo viewInfo[2], const D3DViewPort * pCustomViewport = NULL);
 	uint32 GetRenderFlags() const { return m_renderingFlags; }
 
 	CConstantBufferPtr        GetPerViewConstantBuffer()         const { return m_pPerViewConstantBuffer; }
@@ -155,6 +157,7 @@ public:
 	CShadowMaskStage*         GetShadowMaskStage()               const { return m_pShadowMaskStage; }
 	CVolumetricFogStage*      GetVolumetricFogStage()            const { return m_pVolumetricFogStage; }
 	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
+	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
 
 public:
 	static void ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDesc, const SShaderProfile& shaderProfile);
@@ -185,6 +188,7 @@ private:
 	CTiledShadingStage*           m_pTiledShadingStage = nullptr;
 	CColorGradingStage*           m_pColorGradingStage = nullptr;
 	CSceneCustomStage*            m_pSceneCustomStage = nullptr;
+	CLensOpticsStage*             m_pLensOpticsStage = nullptr;
 
 	CConstantBufferPtr            m_pPerViewConstantBuffer = nullptr;
 	CDeviceResourceSetPtr         m_pDefaultMaterialResources = nullptr;

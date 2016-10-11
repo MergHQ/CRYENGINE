@@ -143,7 +143,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 			for (const auto& bind : pInstance->m_pBindVars)
 			{
 				if ((bind.m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)) == 0
-				    && bind.m_dwCBufSlot <= eConstantBufferShaderSlot_PerFrame)
+				    && bind.m_dwCBufSlot <= eConstantBufferShaderSlot_PerInstanceLegacy)
 				{
 					usedBuffersSlots.insert(EConstantBufferShaderSlot(bind.m_dwCBufSlot));
 					maxVectorCount = std::max(maxVectorCount, vectorCount[bind.m_dwCBufSlot]);
@@ -153,12 +153,9 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 			CryStackAllocWithSizeVectorCleared(Vec4, maxVectorCount, zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-			if (!pHwShader->s_PF_Params[shaderClass].empty())
-				usedBuffersSlots.insert(eConstantBufferShaderSlot_PerFrame);
-
 			for (auto bufferSlot : usedBuffersSlots)
 			{
-				CRY_ASSERT(bufferSlot >= eConstantBufferShaderSlot_PerBatch && bufferSlot <= eConstantBufferShaderSlot_PerFrame);
+				CRY_ASSERT(bufferSlot >= eConstantBufferShaderSlot_PerBatch && bufferSlot <= eConstantBufferShaderSlot_PerInstanceLegacy);
 				const size_t bufferSize = sizeof(Vec4) * vectorCount[bufferSlot];
 				const size_t updateSize = CDeviceBufferManager::AlignBufferSizeForStreaming(bufferSize);
 
@@ -308,7 +305,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate()
 			const SReflectedBufferUpdateContext& uc = it.second;
 			const SConstantBufferBindInfo& cb = m_constantBuffers[bufferIndex];
 
-			if (cb.pBuffer->m_buffer)
+			if (cb.pBuffer->m_buffer && CHWShader_D3D::s_pDataCB[uc.shaderClass][cb.shaderSlot])
 			{
 				CRY_ASSERT(CHWShader_D3D::s_pCB[uc.shaderClass][cb.shaderSlot][uc.vectorCount] == cb.pBuffer);
 				cb.pBuffer->EndWrite();
@@ -576,10 +573,10 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 
 	// Depth-Stencil
 	{
-		depthStencilDesc.DepthWriteMask = (renderState & GS_DEPTHWRITE) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-		depthStencilDesc.DepthEnable = (renderState & GS_NODEPTHTEST) ? 0 : 1;
+		depthStencilDesc.DepthWriteMask =  (renderState & GS_DEPTHWRITE) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthStencilDesc.DepthEnable    = ((renderState & GS_NODEPTHTEST) && !(renderState & GS_DEPTHWRITE)) ? 0 : 1;
 
-		D3D11_COMPARISON_FUNC DepthFunc[GS_DEPTHFUNC_MASK >> GS_DEPTHFUNC_SHIFT] =
+		static D3D11_COMPARISON_FUNC DepthFunc[GS_DEPTHFUNC_MASK >> GS_DEPTHFUNC_SHIFT] =
 		{
 			D3D11_COMPARISON_LESS_EQUAL,     // GS_DEPTHFUNC_LEQUAL
 			D3D11_COMPARISON_EQUAL,          // GS_DEPTHFUNC_EQUAL
@@ -589,7 +586,10 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 			D3D11_COMPARISON_NOT_EQUAL,      // GS_DEPTHFUNC_NOTEQUAL
 		};
 
-		depthStencilDesc.DepthFunc = DepthFunc[(m_RenderState & GS_DEPTHFUNC_MASK) >> GS_DEPTHFUNC_SHIFT];
+		depthStencilDesc.DepthFunc =
+			(renderState & (GS_NODEPTHTEST|GS_DEPTHWRITE)) == (GS_NODEPTHTEST|GS_DEPTHWRITE)
+			? D3D11_COMPARISON_ALWAYS
+			: DepthFunc[(m_RenderState & GS_DEPTHFUNC_MASK) >> GS_DEPTHFUNC_SHIFT];
 
 		depthStencilDesc.StencilEnable    = (renderState & GS_STENCIL) ? 1 : 0;
 		depthStencilDesc.StencilReadMask  = m_StencilReadMask;
@@ -1385,9 +1385,9 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayout(const SDevic
 		for(auto& rs : layoutDesc.m_ResourceSets)
 			rs.second = CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(rs.second);
 
-		if (pResult = CreateResourceLayoutImpl(resourceLayoutDesc))
+		if (pResult = CreateResourceLayoutImpl(layoutDesc))
 		{
-			m_ResourceLayoutCache[resourceLayoutDesc] = pResult;
+			m_ResourceLayoutCache[layoutDesc] = pResult;
 		}
 	}
 

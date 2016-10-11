@@ -86,16 +86,6 @@ vert2fragCustomRender Common_CustomRenderPassVS(app2vertCustomViews IN)
   return OUT;            
 }
 
-sampler2D depthMapSampler = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
 sampler2D PNoiseSampler = sampler_state
 {
   Texture = EngineAssets/Textures/perlinNoise2D.dds;
@@ -115,7 +105,7 @@ half4 SilhoueteVision( vert2fragCustomRender IN )
 	
 
 #if !%TEMP_EYES
-	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj);
+	float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
 	fMask =  clamp((fDepth - 1.5f) * 0.333f, 0, 1);
 #endif
 
@@ -129,7 +119,7 @@ half4 SilhoueteVisionOptimised( vert2fragCustomRender IN )
 
 
 #if !%TEMP_EYES && !%_RT_SAMPLE5
-	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj);
+	float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
 	fMask = clamp((fDepth - 1.5f) * 0.333f, 0, 1);
 #endif
 
@@ -170,7 +160,7 @@ half4 ThermalVision( vert2fragCustomRender IN )
 	half3 vNormal = mul(cBump.xyz, mTangentToWS);                                      // 3 alu
 	vNormal = normalize( vNormal );
 
-	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj) ;
+	float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
   half fOcclusion =  saturate( 1 - abs(IN.baseTC.z - fDepth )*0.333 ) ;
 
   half3 vView = normalize( -IN.vView.xyz );

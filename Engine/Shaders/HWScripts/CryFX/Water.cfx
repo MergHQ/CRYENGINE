@@ -1082,7 +1082,7 @@ pixout WaterPS(v2f_hs IN)
 	////////////////////////////////////////////////////////////////////////////////////////////////// 	
   // Water edge and foam softness  
 
- 	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+ 	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
  	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );	
 
   //////////////////////////////////////////////////////////////////////////////////////////////////    
@@ -1118,16 +1118,15 @@ pixout WaterPS(v2f_hs IN)
 	float2 refrTC = vNormal.xy * RefractionBumpScale * softIntersect * IN.screenProj.z; 	  
 			
 	#if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
-	
 		float3 depthRefr = float3(
-			GetLinearDepthScaled( sceneDepthSampler, ClampScreenTC(refrNewst + refrTC.xy*1.025)),
-			GetLinearDepthScaled( sceneDepthSampler, ClampScreenTC(refrNewst + refrTC.xy)),
-			GetLinearDepthScaled( sceneDepthSampler, ClampScreenTC(refrNewst + refrTC.xy*0.985))
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, ClampScreenTC(refrNewst + refrTC.xy*1.025)),
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, ClampScreenTC(refrNewst + refrTC.xy)),
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, ClampScreenTC(refrNewst + refrTC.xy*0.985))
 		);
 	#else
-
-		float3 depthRefr = float3( GetLinearDepthScaled( sceneDepthSampler, ClampScreenTC(refrNewst + refrTC.xy)).xxx);
-
+		float3 depthRefr = float3(
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, ClampScreenTC(refrNewst + refrTC.xy)).xxx
+		);
 	#endif
 
 	//if( GetShaderQuality() > QUALITY_LOW )

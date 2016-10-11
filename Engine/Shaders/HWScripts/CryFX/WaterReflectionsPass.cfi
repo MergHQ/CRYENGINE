@@ -3,15 +3,7 @@
 
 float4x4 mViewProjPrev : PB_ViewProjMatrixPrev;
 
-sampler2D sceneDepthSamplerScaled = sampler_state
-{
-	Texture = $ZTargetScaled;
-	MinFilter = POINT;
-	MagFilter = POINT;
-	MipFilter = POINT;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
+SCENEDEPTHMAP_HSCALED
 
 // Compiler workaround
 half4 _DecodeRGBK(in half4 Color, const half fMultiplier, bool bUsePPP= false)
@@ -20,25 +12,10 @@ half4 _DecodeRGBK(in half4 Color, const half fMultiplier, bool bUsePPP= false)
   return Color;
 }
 
-float _GetLinearDepth(sampler2D depthSampler, in float2 screenCoord)
-{
-	float fDepth = tex2Dlod( depthSampler, float4(screenCoord , 0, 0)).x;
-	return GetLinearDepth(fDepth, true);
-}
-
 half _GetUnnormalizedLinearDownscaledDepth(in sampler2D depthSmp, in float2 screenCoord)
 {
 	float4 fDepth = tex2Dlod(depthSmp, float4(screenCoord, 0, 0));
 	return GetUnnormalizedLinearDownscaledDepth(fDepth);
-}
-
-half GetDownscaledDepthRefl(sampler2D depthSampler, half2 uv)
-{
-	half ret;
-	// Sample the regular depth buffer
-	ret = _GetLinearDepth(depthSampler, uv).x;
-
-	return ret;
 }
 
 // Adapted from DeferredShading.cfx SSRefl - todo: generalize for plane
@@ -89,7 +66,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		float4 projPos = rayStart + ray * len;
 		projPos.xy /= projPos.w;
 
-		float fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+		float fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 		bestLen = len;
 
 		{
@@ -131,7 +108,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		projPos = rayStart + ray * len;
 		projPos.xy /= projPos.w;
 
-		fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+		fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 		if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 0
 		{
 			len += stepSize;
@@ -139,7 +116,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 			projPos = rayStart + ray * len;
 			projPos.xy /= projPos.w;
 
-			fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+			fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 			if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 1
 			{
 				len += stepSize;
@@ -147,7 +124,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 				projPos = rayStart + ray * len;
 				projPos.xy /= projPos.w;
 
-				fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+				fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 				if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //2 
 				{
 					len += stepSize;
@@ -155,7 +132,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 					projPos = rayStart + ray * len;
 					projPos.xy /= projPos.w;
 
-					fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+					fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 					if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 3
 					{
 						len += stepSize;
@@ -163,7 +140,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 						projPos = rayStart + ray * len;
 						projPos.xy /= projPos.w;
 
-						fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+						fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 						if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 4
 						{
 							len += stepSize;
@@ -171,7 +148,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 							projPos = rayStart + ray * len;
 							projPos.xy /= projPos.w;
 
-							fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+							fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 							if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //5
 							{
 								len += stepSize;
@@ -179,7 +156,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 								projPos = rayStart + ray * len;
 								projPos.xy /= projPos.w;
 
-								fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+								fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 								if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //6
 								{
 									len += stepSize;
@@ -187,7 +164,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 									projPos = rayStart + ray * len;
 									projPos.xy /= projPos.w;
 
-									fDepthTapBuf = GetDownscaledDepth(sceneDepthSamplerScaled, projPos.xy);					// 1 alu, 1 tex
+									fDepthTapBuf = GetLinearDepthUnclamped(sceneLinearDepthTexHalfRes, projPos.xy);					// 1 alu, 1 tex
 									if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 7
 									{
 										len += stepSize;
@@ -221,7 +198,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		//	float4 projPos = rayStart + ray * len;
 		//	projPos.xy /= projPos.w;
 
-		//	float fDepthTapBuf = _GetLinearDepth(sceneDepthSamplerScaled, float4( projPos.xy, 0, 0 ));					// 1 alu, 1 tex
+		//	float fDepthTapBuf = _GetLinearDepth(sceneLinearDepthTexHalfRes, float4( projPos.xy, 0, 0 ));					// 1 alu, 1 tex
 		//	if( abs(fDepthTapBuf - projPos.z) < intervalSize )
 		//	{
 		//		bestLen = len;
@@ -267,7 +244,7 @@ pixout WaterReflPS(v2f_hs IN)
 	pixout OUT = (pixout) 1;
 
 	const float fDepth = IN.screenProj.w* PS_NearFarClipDist.w;
-	float fDepthCenter = GetDownscaledDepth(sceneDepthSamplerScaled, IN.screenProj.xy / IN.screenProj.w);//* PS_NearFarClipDist.w;					// 1 alu, 1 tex
+	float fDepthCenter = GetLinearDepthProj(sceneLinearDepthTexHalfRes, IN.screenProj);//* PS_NearFarClipDist.w;					// 1 alu, 1 tex
 
 	clip( fDepthCenter - fDepth ); //
 

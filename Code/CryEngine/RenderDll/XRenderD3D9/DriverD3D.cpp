@@ -710,8 +710,7 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 
 		// In case the m_CurrContext is the active context, release the buffers stored in the renderer
 		ReleaseBackBuffers();
-		if (m_CurrContext->m_bMainViewport)
-			m_pBackBufferTexture->SetDevTexture(nullptr);
+		m_pBackBufferTexture->SetDevTexture(nullptr);
 
 		// Force the release of the back-buffer currently bound as a render-target (otherwise resizing the swap-chain will fail, because of outstanding reference)
 		FX_SetRenderTarget(0, (D3DSurface*)nullptr, NULL);
@@ -760,23 +759,20 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 
 	if (m_CurrContext->m_pSwapChain && m_CurrContext->m_pBackBuffer)
 	{
-		if (m_CurrContext->m_bMainViewport)
+		ID3D11Resource* pBackbufferResource;
+		m_CurrContext->m_pBackBuffer->GetResource(&pBackbufferResource);
+
+		if (bBackbufferChanged || (m_pBackBufferTexture->GetDevTexture() && m_pBackBufferTexture->GetDevTexture()->GetBaseTexture() != pBackbufferResource))
 		{
-			ID3D11Resource* pBackbufferResource;
-			m_CurrContext->m_pBackBuffer->GetResource(&pBackbufferResource);
-			
-			if (bBackbufferChanged || (m_pBackBufferTexture->GetDevTexture() && m_pBackBufferTexture->GetDevTexture()->GetBaseTexture() != pBackbufferResource))
-			{
-				CDeviceTexture* pDeviceTexture = new CDeviceTexture((D3DTexture*)pBackbufferResource);
-				m_pBackBufferTexture->SetDevTexture(pDeviceTexture);
-				m_pBackBufferTexture->SetWidth(width);
-				m_pBackBufferTexture->SetHeight(height);
-				m_pBackBufferTexture->ClosestFormatSupported(m_pBackBufferTexture->GetDstFormat());
-			}
-			else
-			{
-				SAFE_RELEASE(pBackbufferResource);
-			}
+			CDeviceTexture* pDeviceTexture = new CDeviceTexture((D3DTexture*)pBackbufferResource);
+			m_pBackBufferTexture->SetDevTexture(pDeviceTexture);
+			m_pBackBufferTexture->SetWidth(width);
+			m_pBackBufferTexture->SetHeight(height);
+			m_pBackBufferTexture->ClosestFormatSupported(m_pBackBufferTexture->GetDstFormat());
+		}
+		else
+		{
+			SAFE_RELEASE(pBackbufferResource);
 		}
 
 		assert(m_nRTStackLevel[0] == 0);
@@ -3722,12 +3718,6 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 
 	VidMemLog();
 
-	{
-		// print shadow maps on the screen
-		static ICVar* pVar = iConsole->GetCVar("e_ShadowsDebug");
-		if (pVar && pVar->GetIVal() >= 1 && pVar->GetIVal() <= 2)
-			DrawAllShadowsOnTheScreen();
-	}
 	#endif
 
 	if (CV_r_DeferredShadingDebug == 1)
@@ -6039,7 +6029,7 @@ void CD3D9Renderer::SetRCamera(const CRenderCamera& cam)
 	//cam.GetProjectionMatrix(*m);
 	mathMatrixPerspectiveOffCenter((Matrix44A*)m, cam.fWL, cam.fWR, cam.fWB, cam.fWT, cam.fNear, cam.fFar);
 
-	const bool bReverseDepth = (CV_r_ReverseDepth != 0 && (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_SHADOWGEN) == 0) ? 1 : 0;
+	const bool bReverseDepth = CV_r_ReverseDepth != 0 ? 1 : 0;
 	const bool bWasReverseDepth = (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0 ? 1 : 0;
 
 	m_RP.m_TI[nThreadID].m_PersFlags &= ~RBPF_REVERSE_DEPTH;

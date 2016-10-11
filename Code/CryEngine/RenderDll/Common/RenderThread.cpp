@@ -988,6 +988,21 @@ void SRenderThread::RC_ReleaseResource(SResourceAsync* pRes)
 	EndCommand(p);
 }
 
+void SRenderThread::RC_ReleaseOptics(IOpticsElementBase* pOpticsElement)
+{
+	if (IsRenderThread() || IsLevelLoadingThread())
+	{
+		gRenDev->RT_ReleaseOptics(pOpticsElement);
+		return;
+	}
+
+	LOADINGLOCK_COMMANDQUEUE
+	byte* p = AddCommand(eRC_ReleaseOptics, sizeof(void*));
+	pOpticsElement->AddRef();
+	AddPointer(p, pOpticsElement);
+	EndCommand(p);
+}
+
 void SRenderThread::RC_UnbindTMUs()
 {
 	if (IsRenderThread())
@@ -2657,6 +2672,12 @@ void SRenderThread::ProcessCommands()
 				gRenDev->RT_ReleaseResource(pRes);
 			}
 			break;
+		case eRC_ReleaseOptics:
+			{
+				IOpticsElementBase* pOpticsElement = ReadCommand<IOpticsElementBase*>(n);
+				gRenDev->RT_ReleaseOptics(pOpticsElement);
+			}
+		break;
 		case eRC_ReleaseRenderResources:
 			{
 				int nFlags = ReadCommand<int>(n);

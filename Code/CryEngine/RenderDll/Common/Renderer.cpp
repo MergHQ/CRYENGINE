@@ -301,7 +301,6 @@ void CRenderer::InitRenderer()
 
 	m_bCollectDrawCallsInfo        = false;
 	m_bCollectDrawCallsInfoPerNode = false;
-	m_bCopyScreenToBackBuffer      = false;
 
 	m_nMeshPoolTimeoutCounter = nMeshPoolMaxTimeoutCounter;
 
@@ -1137,9 +1136,6 @@ void CRenderer::FreeResources(int nFlags)
 	{
 		CRendElement::Cleanup();
 	}
-
-	// free flare queries
-	CRELensOptics::ClearResources();
 
 	if ((nFlags & FRR_RESTORE) && !(nFlags & FRR_SYSTEM))
 		m_cEF.mfInit();
@@ -3670,7 +3666,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 
 		if (rRP.m_nBatchFilter & (FB_MOTIONBLUR | FB_CUSTOM_RENDER | FB_POST_3D_RENDER | FB_LAYER_EFFECT | FB_SOFTALPHATEST | FB_DEBUG))
 			nMisc++;
-		else if (!(rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
+		else
 		{
 			if (rRP.m_nBatchFilter & FB_GENERAL)
 			{
@@ -3688,8 +3684,6 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 				nZpass++;
 			}
 		}
-		else
-			nShadows++;
 	}
 }
 
@@ -4238,6 +4232,11 @@ IOpticsElementBase* CRenderer::CreateOptics(EFlareType type) const
 	return COpticsFactory::GetInstance()->Create(type);
 }
 
+void CRenderer::ReleaseOptics(IOpticsElementBase* pOpticsElement) const
+{
+	m_pRT->RC_ReleaseOptics(pOpticsElement);
+}
+
 void CRenderer::RT_UpdateLightVolumes()
 {
 	SRenderPipeline& rp = gRenDev->m_RP;
@@ -4708,11 +4707,6 @@ void CRenderer::EnableBatchMode(bool enable)
 		gRenDev->m_bEndLevelLoading   = true;
 		gRenDev->m_bStartLevelLoading = false;
 	}
-}
-
-void CRenderer::SetShouldCopyScreenToBackBuffer(bool bEnable)
-{
-	m_bCopyScreenToBackBuffer = bEnable;
 }
 
 bool CRenderer::StopRendererAtFrameEnd(uint timeoutMilliseconds)

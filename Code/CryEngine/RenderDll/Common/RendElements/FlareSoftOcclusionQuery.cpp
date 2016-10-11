@@ -176,7 +176,7 @@ void CFlareSoftOcclusionQuery::BatchReadResults()
 	if (!g_bCreatedGlobalResources)
 		return;
 
-	CTexture::s_ptexFlaresOcclusionRing[s_ringWriteIdx]->GetDevTexture()->AccessCurrStagingResource(0, false, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
+	CTexture::s_ptexFlaresOcclusionRing[s_ringReadIdx]->GetDevTexture()->AccessCurrStagingResource(0, false, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
 		unsigned char* pTexBuf = reinterpret_cast<unsigned char*>(pData);
 		int validLineStrideBytes = s_nIDColMax * 4;
@@ -192,6 +192,7 @@ void CFlareSoftOcclusionQuery::BatchReadResults()
 void CFlareSoftOcclusionQuery::ReadbackSoftOcclQuery()
 {
 	CTexture::s_ptexFlaresOcclusionRing[s_ringWriteIdx]->GetDevTexture()->DownloadToStagingResource(0);
+	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 
 	// sync point. Move to next texture to read and write
 	s_ringReadIdx = (s_ringReadIdx + 1) % s_ringSize;
@@ -203,17 +204,27 @@ CTexture* CFlareSoftOcclusionQuery::GetOcclusionTex()
 	return CTexture::s_ptexFlaresOcclusionRing[s_ringWriteIdx];
 }
 
-void CSoftOcclusionManager::ComputeVisibility()
+CSoftOcclusionManager::CSoftOcclusionManager()
+	: m_nPos(0)
+	, m_indexBuffer(~0u)
+	, m_occlusionVertexBuffer(0u)
+	, m_gatherVertexBuffer(0u)
+{}
+
+CSoftOcclusionManager::~CSoftOcclusionManager()
 {
-	static STexState ShadowTexState(FILTER_POINT, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0);
-	CShader* pShader = CShaderMan::s_ShaderSoftOcclusionQuery;
+	if (m_indexBuffer != ~0u)           gcpRendD3D->m_DevBufMan.Destroy(m_indexBuffer);
+	if (m_occlusionVertexBuffer != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_occlusionVertexBuffer);
+	if (m_gatherVertexBuffer != ~0u)    gcpRendD3D->m_DevBufMan.Destroy(m_gatherVertexBuffer);
+}
 
-	gcpRendD3D->FX_ClearTarget(CTexture::s_ptexFlaresGather, Clr_Transparent);
-	gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexFlaresGather, NULL);
-
-	pShader->FXBeginPass(0);
+bool CSoftOcclusionManager::PrepareOcclusionPrimitive(CRenderPrimitive& primitive)
+{
+	if (m_indexBuffer == ~0u || m_occlusionVertexBuffer == ~0u)
+		return false;
 
 	const uint32 vertexCount = GetSize() * 4;
+	const uint32 indexCount = GetSize() * 3 * 2;
 
 	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, vertexCount, pDeviceVBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -242,64 +253,65 @@ void CSoftOcclusionManager::ComputeVisibility()
 		pDeviceVBAddr[offset + 3].xyz = Vec3(sInfo.x0, sInfo.y0, sInfo.lineardepth);
 	}
 
-	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(pDeviceVBAddr, vertexCount, 0);
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(m_occlusionVertexBuffer, pDeviceVBAddr, vertexCount * sizeof(SVF_P3F_C4B_T2F));
 
-	if (m_bSuccessGenerateIB)
-	{
-		CTexture::s_ptexZTargetScaled->Apply(0, CTexture::GetTexState(ShadowTexState));
+	static CCryNameTSCRC techRenderPlane("RenderPlane");
 
-		gcpRendD3D->FX_Commit();
-
-		if (SUCCEEDED(gcpRendD3D->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
-		{
-			gcpRendD3D->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, vertexCount, 0, m_IndexBufferCount);
-		}
-	}
-	pShader->FXEndPass();
-	gcpRendD3D->FX_PopRenderTarget(0);
-}
-
-bool CSoftOcclusionManager::GenerateIndexBuffer()
-{
-	m_IndexBufferCount = GetSize() * 2 * 3;
-	if (m_IndexBufferCount <= 0)
-		return false;
-
-	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-	CryStackAllocWithSizeVector(uint16, m_IndexBufferCount, pDeviceIBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
-
-	for (int i(0), iSoftOcclusionListSize(GetSize()); i < iSoftOcclusionListSize; ++i)
-	{
-		CFlareSoftOcclusionQuery* pSoftOcclusion = GetSoftOcclusionQuery(i);
-		if (pSoftOcclusion == NULL)
-			continue;
-		int offset0 = i * 6;
-		int offset1 = i * 4;
-		pDeviceIBAddr[offset0 + 0] = offset1 + 0;
-		pDeviceIBAddr[offset0 + 1] = offset1 + 1;
-		pDeviceIBAddr[offset0 + 2] = offset1 + 2;
-		pDeviceIBAddr[offset0 + 3] = offset1 + 2;
-		pDeviceIBAddr[offset0 + 4] = offset1 + 3;
-		pDeviceIBAddr[offset0 + 5] = offset1 + 0;
-	}
-
-	TempDynIB16::CreateFillAndBind(pDeviceIBAddr, m_IndexBufferCount);
+	primitive.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+	primitive.SetTechnique(CShaderMan::s_ShaderSoftOcclusionQuery, techRenderPlane, 0);
+	primitive.SetRenderState(GS_NODEPTHTEST);
+	primitive.SetTexture(0, CTexture::s_ptexZTargetScaled);
+	primitive.SetSampler(0, m_samplerPointBorderBlack);
+	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
+	primitive.SetCustomIndexStream(m_indexBuffer, Index16);
+	primitive.SetCustomVertexStream(m_occlusionVertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+	primitive.SetDrawInfo(eptTriangleList, 0, 0, indexCount);
 
 	return true;
 }
 
-void CSoftOcclusionManager::GatherOcclusions()
+void CSoftOcclusionManager::Init()
 {
-	CShader* pShader = CShaderMan::s_ShaderSoftOcclusionQuery;
-	static STexState GatherTexState(FILTER_POINT, true);
+	const int maxIndexCount = CFlareSoftOcclusionQuery::s_nIDMax * 2 * 3;
+	const int maxVertexCount = CFlareSoftOcclusionQuery::s_nIDMax * 4;
 
-	gcpRendD3D->FX_ClearTarget(CFlareSoftOcclusionQuery::GetOcclusionTex(), Clr_Transparent);
-	gcpRendD3D->FX_PushRenderTarget(0, CFlareSoftOcclusionQuery::GetOcclusionTex(), NULL);
+	m_indexBuffer           = gcpRendD3D->m_DevBufMan.Create(BBT_INDEX_BUFFER, BU_STATIC,   maxIndexCount  * sizeof(uint16));
+	m_occlusionVertexBuffer = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, maxVertexCount * sizeof(SVF_P3F_C4B_T2F));
+	m_gatherVertexBuffer    = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, maxVertexCount * sizeof(SVF_P3F_C4B_T2F));
 
-	pShader->FXBeginPass(1);
-	float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+	if (m_indexBuffer != ~0u)
+	{
+		CryStackAllocWithSizeVector(uint16, maxIndexCount, pDeviceIBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+		for (int i = 0; i < CFlareSoftOcclusionQuery::s_nIDMax; ++i)
+		{
+			int offset0 = i * 6;
+			int offset1 = i * 4;
+			pDeviceIBAddr[offset0 + 0] = offset1 + 0;
+			pDeviceIBAddr[offset0 + 1] = offset1 + 1;
+			pDeviceIBAddr[offset0 + 2] = offset1 + 2;
+			pDeviceIBAddr[offset0 + 3] = offset1 + 2;
+			pDeviceIBAddr[offset0 + 4] = offset1 + 3;
+			pDeviceIBAddr[offset0 + 5] = offset1 + 0;
+		}
+
+		gcpRendD3D->m_DevBufMan.UpdateBuffer(m_indexBuffer, pDeviceIBAddr, maxIndexCount * sizeof(uint16));
+	}
+
+	m_samplerPointBorderBlack = CTexture::GetTexState(STexState(FILTER_POINT, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0));
+	m_samplerPointClamp = CTexture::GetTexState(STexState(FILTER_POINT, true));
+}
+
+bool CSoftOcclusionManager::PrepareGatherPrimitive(CRenderPrimitive& primitive, CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount)
+{
+	CRY_ASSERT(viewInfoCount >= 0);
+
+	if (m_indexBuffer == ~0u || m_gatherVertexBuffer == ~0u)
+		return false;
 
 	const uint32 vertexCount = GetSize() * 4;
+	const uint32 indexCount  = GetSize() * 3 * 2;
+	float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
 
 	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, vertexCount, pDeviceVBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -318,9 +330,9 @@ void CSoftOcclusionManager::GatherOcclusions()
 			pDeviceVBAddr[offset + k].color.dcolor = 0xFFFFFFFF;
 		}
 
-		x0 =  (x0 * 2.0f - 1.0f);
+		x0 = (x0 * 2.0f - 1.0f);
 		y0 = -(y0 * 2.0f - 1.0f);
-		x1 =  (x1 * 2.0f - 1.0f);
+		x1 = (x1 * 2.0f - 1.0f);
 		y1 = -(y1 * 2.0f - 1.0f);
 
 		pDeviceVBAddr[offset + 0].xyz = Vec3(x0, y1, 1);
@@ -329,24 +341,32 @@ void CSoftOcclusionManager::GatherOcclusions()
 		pDeviceVBAddr[offset + 3].xyz = Vec3(x0, y0, 1);
 	}
 
-	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(pDeviceVBAddr, vertexCount, 0);
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(m_gatherVertexBuffer, pDeviceVBAddr, vertexCount * sizeof(SVF_P3F_C4B_T2F));
 
-	if (m_bSuccessGenerateIB)
+	static CCryNameTSCRC techGatherPlane("Gather");
+	primitive.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+	primitive.SetTechnique(CShaderMan::s_ShaderSoftOcclusionQuery, techGatherPlane, 0);
+	primitive.SetRenderState(GS_NODEPTHTEST);
+	primitive.SetTexture(0, CTexture::s_ptexFlaresGather);
+	primitive.SetSampler(0, m_samplerPointClamp);
+	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
+	primitive.SetCustomIndexStream(m_indexBuffer, Index16);
+	primitive.SetCustomVertexStream(m_gatherVertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+	primitive.SetDrawInfo(eptTriangleList, 0, 0, indexCount);
+
+	auto& constantManager = primitive.GetConstantManager();
+	constantManager.BeginNamedConstantUpdate();
 	{
 		static CCryNameR occlusionNormalizedSizeName("occlusionNormalizedSize");
 		const Vec4 occlusionSizeParam(CFlareSoftOcclusionQuery::s_fSectorWidth, CFlareSoftOcclusionQuery::s_fSectorHeight, 0, 0);
-		pShader->FXSetPSFloat(occlusionNormalizedSizeName, &occlusionSizeParam, 1);
-		CTexture::s_ptexFlaresGather->Apply(0, CTexture::GetTexState(GatherTexState));
+		constantManager.SetNamedConstant(occlusionNormalizedSizeName, occlusionSizeParam);
 
-		gcpRendD3D->FX_Commit();
-
-		if (SUCCEEDED(gcpRendD3D->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
-		{
-			gcpRendD3D->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, vertexCount, 0, m_IndexBufferCount);
-		}
+		static CCryNameR hPosScaleName("PS_HPosScale");
+		constantManager.SetNamedConstant(hPosScaleName, pViewInfo[0].downscaleFactor);
 	}
-	pShader->FXEndPass();
-	gcpRendD3D->FX_PopRenderTarget(0);
+	constantManager.EndNamedConstantUpdate();
+
+	return true;
 }
 
 CFlareSoftOcclusionQuery* CSoftOcclusionManager::GetSoftOcclusionQuery(int nIndex) const
@@ -365,23 +385,62 @@ void CSoftOcclusionManager::AddSoftOcclusionQuery(CFlareSoftOcclusionQuery* pQue
 	}
 }
 
-bool CSoftOcclusionManager::Begin()
-{
-	if (GetSize() > 0)
-	{
-		m_bSuccessGenerateIB = GenerateIndexBuffer();
-		return true;
-	}
-	return false;
-}
-
-void CSoftOcclusionManager::End()
+void CSoftOcclusionManager::Reset()
 {
 	m_nPos = 0;
 }
 
-void CSoftOcclusionManager::ClearResources()
+bool CSoftOcclusionManager::Update(CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount)
 {
-	for (int i = 0; i < CFlareSoftOcclusionQuery::s_nIDMax; ++i)
-		m_SoftOcclusionQueries[i] = NULL;
+	if (GetSize() > 0)
+	{
+		CTexture* pOcclusionRT = CTexture::s_ptexFlaresGather;
+		CTexture* pGatherRT = CFlareSoftOcclusionQuery::GetOcclusionTex();
+
+		CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+		pCommandList->GetGraphicsInterface()->ClearSurface(pOcclusionRT->GetSurface(0, 0), Clr_Transparent);
+		pCommandList->GetGraphicsInterface()->ClearSurface(pGatherRT->GetSurface(0, 0), Clr_Transparent);
+
+		// occlusion pass
+		{
+			D3DViewPort viewport;
+			viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+			viewport.Width = (float)pOcclusionRT->GetWidth();
+			viewport.Height = (float)pOcclusionRT->GetHeight();
+			viewport.MinDepth = 0.0f;
+			viewport.MaxDepth = 1.0f;
+
+			m_occlusionPass.SetRenderTarget(0, pOcclusionRT);
+			m_occlusionPass.SetViewport(viewport);
+			m_occlusionPass.ClearPrimitives();
+
+			if (PrepareOcclusionPrimitive(m_occlusionPrimitive))
+			{
+				m_occlusionPass.AddPrimitive(&m_occlusionPrimitive);
+				m_occlusionPass.Execute();
+			}
+		}
+
+		// Gather pass
+		{
+			D3DViewPort viewport;
+			viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+			viewport.Width = (float)pGatherRT->GetWidth();
+			viewport.Height = (float)pGatherRT->GetHeight();
+			viewport.MinDepth = 0.0f;
+			viewport.MaxDepth = 1.0f;
+
+			m_gatherPass.SetRenderTarget(0, pGatherRT);
+			m_gatherPass.SetViewport(viewport);
+			m_gatherPass.ClearPrimitives();
+
+			if (PrepareGatherPrimitive(m_gatherPrimitive, pViewInfo, viewInfoCount))
+			{
+				m_gatherPass.AddPrimitive(&m_gatherPrimitive);
+				m_gatherPass.Execute();
+			}
+		}
+	}
+
+	return m_occlusionPass.GetPrimitiveCount() > 0 && m_gatherPass.GetPrimitiveCount() > 0;
 }

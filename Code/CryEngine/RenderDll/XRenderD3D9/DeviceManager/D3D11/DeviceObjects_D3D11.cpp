@@ -16,10 +16,11 @@ public:
 
 	virtual bool Init(const CDeviceGraphicsPSODesc& psoDesc) final;
 
-	_smart_ptr<ID3D11RasterizerState>                 pRasterizerState;
-	_smart_ptr<ID3D11BlendState>                      pBlendState;
-	_smart_ptr<ID3D11DepthStencilState>               pDepthStencilState;
-	_smart_ptr<ID3D11InputLayout>                     pInputLayout;
+	_smart_ptr<ID3D11RasterizerState>                 m_pRasterizerState;
+	uint32                                            m_RasterizerStateIndex;
+	_smart_ptr<ID3D11BlendState>                      m_pBlendState;
+	_smart_ptr<ID3D11DepthStencilState>               m_pDepthStencilState;
+	_smart_ptr<ID3D11InputLayout>                     m_pInputLayout;
 
 	std::array<void*, eHWSC_Num>                      m_pDeviceShaders;
 
@@ -43,6 +44,7 @@ CDeviceGraphicsPSO_DX11::CDeviceGraphicsPSO_DX11()
 	m_ShaderFlags_RT = 0;
 	m_ShaderFlags_MD = 0;
 	m_ShaderFlags_MDV = 0;
+	m_RasterizerStateIndex = 0;
 
 	m_NumSamplers.fill(0);
 	m_NumSRVs.fill(0);
@@ -54,10 +56,10 @@ bool CDeviceGraphicsPSO_DX11::Init(const CDeviceGraphicsPSODesc& psoDesc)
 	m_bValid = false;
 	m_nUpdateCount++;
 
-	pRasterizerState = NULL;
-	pBlendState = NULL;
-	pDepthStencilState = NULL;
-	pInputLayout = NULL;
+	m_pRasterizerState = nullptr;
+	m_pBlendState = nullptr;
+	m_pDepthStencilState = nullptr;
+	m_pInputLayout = nullptr;
 
 	m_NumSamplers.fill(0);
 	m_NumSRVs.fill(0);
@@ -90,9 +92,10 @@ bool CDeviceGraphicsPSO_DX11::Init(const CDeviceGraphicsPSODesc& psoDesc)
 	if (rasterStateIndex == uint32(-1) || blendStateIndex == uint32(-1) || depthStateIndex == uint32(-1))
 		return false;
 
-	pDepthStencilState = rd->m_StatesDP[depthStateIndex].pState;
-	pRasterizerState = rd->m_StatesRS[rasterStateIndex].pState;
-	pBlendState = rd->m_StatesBL[blendStateIndex].pState;
+	m_pDepthStencilState = rd->m_StatesDP[depthStateIndex].pState;
+	m_pRasterizerState = rd->m_StatesRS[rasterStateIndex].pState;
+	m_RasterizerStateIndex = rasterStateIndex;
+	m_pBlendState = rd->m_StatesBL[blendStateIndex].pState;
 
 	// input layout
 	if (psoDesc.m_VertexFormat != eVF_Unknown)
@@ -102,8 +105,8 @@ bool CDeviceGraphicsPSO_DX11::Init(const CDeviceGraphicsPSODesc& psoDesc)
 	#if defined(FEATURE_PER_SHADER_INPUT_LAYOUT_CACHE)
 			// Try to find InputLayout in the cache
 			const uint32 cacheID = CD3D9Renderer::FX_GetInputLayoutCacheId(pVsInstance->m_VStreamMask_Decl, psoDesc.m_VertexFormat);
-			pInputLayout = pVsInstance->GetCachedInputLayout(cacheID);
-			if (!pInputLayout)
+			m_pInputLayout = pVsInstance->GetCachedInputLayout(cacheID);
+			if (!m_pInputLayout)
 			{
 	#endif
 			uint8 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
@@ -125,18 +128,18 @@ bool CDeviceGraphicsPSO_DX11::Init(const CDeviceGraphicsPSODesc& psoDesc)
 				}
 			}
 
-			pInputLayout = declCache.m_pDeclaration;
+			m_pInputLayout = declCache.m_pDeclaration;
 
 	#if defined(FEATURE_PER_SHADER_INPUT_LAYOUT_CACHE)
 		}
-		if (pInputLayout)
+		if (m_pInputLayout)
 		{
-			pVsInstance->SetCachedInputLayout(pInputLayout, cacheID);
+			pVsInstance->SetCachedInputLayout(m_pInputLayout, cacheID);
 		}
 	#endif
 		}
 
-		if (!pInputLayout)
+		if (!m_pInputLayout)
 			return false;
 	}
 
@@ -585,11 +588,16 @@ void CDeviceCommandListImpl::ResetImpl()
 	m_sharedState.numSamplers.fill(0);
 
 	m_graphicsState.custom.depthStencilState = nullptr;
-	m_graphicsState.custom.rasterState = nullptr;
+	m_graphicsState.custom.rasterizerState = nullptr;
+	m_graphicsState.custom.rasterizerStateIndex = 0;	
 	m_graphicsState.custom.blendState = nullptr;
 	m_graphicsState.custom.inputLayout = nullptr;
 	m_graphicsState.custom.topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	m_graphicsState.custom.bDepthStencilStateDirty = true;
+	m_graphicsState.custom.depthConstBias = 0.0f;
+	m_graphicsState.custom.depthSlopeBias = 0.0f;
+	m_graphicsState.custom.depthBiasClamp = 0.0f;
+	m_graphicsState.custom.bRasterizerStateDirty = true;
 
 	m_computeState.custom.boundUAVs = 0;
 }
@@ -642,11 +650,23 @@ void CDeviceGraphicsCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceGrap
 	const CDeviceGraphicsPSO_DX11* pDevicePSO = reinterpret_cast<const CDeviceGraphicsPSO_DX11*>(devicePSO);
 
 	// RasterState, BlendState
-	if (m_graphicsState.custom.blendState.Set(pDevicePSO->pBlendState))                     rd->m_DevMan.SetBlendState(pDevicePSO->pBlendState, NULL, 0xffffffff);
-	if (m_graphicsState.custom.rasterState.Set(pDevicePSO->pRasterizerState))               rd->m_DevMan.SetRasterState(pDevicePSO->pRasterizerState);
+	if (m_graphicsState.custom.blendState.Set(pDevicePSO->m_pBlendState))
+	{
+		rd->m_DevMan.SetBlendState(pDevicePSO->m_pBlendState, NULL, 0xffffffff);
+	}
+
+	// Rasterizer state: NOTE - we don't know the final depth bias values yet so only mark dirty here and set in actual draw call
+	if (m_graphicsState.custom.rasterizerState.Set(pDevicePSO->m_pRasterizerState))
+	{
+		m_graphicsState.custom.rasterizerStateIndex = pDevicePSO->m_RasterizerStateIndex;
+		m_graphicsState.custom.bRasterizerStateDirty = true;
+	}
 
 	// Depth stencil state: NOTE - we don't know the final stencil ref value yet so only mark dirty here and set in actual draw call
-	if (m_graphicsState.custom.depthStencilState.Set(pDevicePSO->pDepthStencilState))       m_graphicsState.custom.bDepthStencilStateDirty = true;
+	if (m_graphicsState.custom.depthStencilState.Set(pDevicePSO->m_pDepthStencilState))
+	{
+		m_graphicsState.custom.bDepthStencilStateDirty = true;
+	}
 
 	// Shaders
 	const std::array<void*, eHWSC_Num>& shaders = pDevicePSO->m_pDeviceShaders;
@@ -657,7 +677,7 @@ void CDeviceGraphicsCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceGrap
 	if (m_sharedState.shader[eHWSC_Hull].Set(shaders[eHWSC_Hull]))         rd->m_DevMan.BindShader(CDeviceManager::TYPE_HS, (ID3D11Resource*)shaders[eHWSC_Hull]);
 
 	// input layout and topology
-	if (m_graphicsState.custom.inputLayout.Set(pDevicePSO->pInputLayout))           rd->m_DevMan.BindVtxDecl(pDevicePSO->pInputLayout);
+	if (m_graphicsState.custom.inputLayout.Set(pDevicePSO->m_pInputLayout))         rd->m_DevMan.BindVtxDecl(pDevicePSO->m_pInputLayout);
 	if (m_graphicsState.custom.topology.Set(pDevicePSO->m_PrimitiveTopology))       rd->m_DevMan.BindTopology(pDevicePSO->m_PrimitiveTopology);
 
 	// update valid shader mask
@@ -891,6 +911,31 @@ void CDeviceGraphicsCommandInterfaceImpl::ApplyDepthStencilState()
 	}
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::ApplyRasterizerState()
+{
+	if (m_graphicsState.custom.bRasterizerStateDirty)
+	{
+		auto pRasterizerState = m_graphicsState.custom.rasterizerState.cachedValue;
+
+		if (m_graphicsState.custom.depthConstBias != 0.0f || m_graphicsState.custom.depthSlopeBias != 0.0f)
+		{
+			auto& rsDesc = gcpRendD3D->m_StatesRS[m_graphicsState.custom.rasterizerStateIndex].Desc;
+			rsDesc.DepthBias = int(m_graphicsState.custom.depthConstBias);
+			rsDesc.SlopeScaledDepthBias = m_graphicsState.custom.depthSlopeBias;
+			rsDesc.DepthBiasClamp = m_graphicsState.custom.depthBiasClamp;
+
+			uint32 newRasterizerStateIndex = gcpRendD3D->GetOrCreateRasterState(rsDesc);
+			if (newRasterizerStateIndex >= 0)
+			{
+				pRasterizerState = gcpRendD3D->m_StatesRS[newRasterizerStateIndex].pState;
+			}
+		}
+
+		gcpRendD3D->m_DevMan.SetRasterState(pRasterizerState);
+		m_graphicsState.custom.bRasterizerStateDirty = false;
+	}
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages)
 {
 	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
@@ -955,11 +1000,21 @@ void CDeviceGraphicsCommandInterfaceImpl::SetStencilRefImpl(uint8 stencilRefValu
 	m_graphicsState.custom.bDepthStencilStateDirty = true;
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp)
+{
+	m_graphicsState.custom.depthConstBias = constBias;
+	m_graphicsState.custom.depthSlopeBias = slopeBias;
+	m_graphicsState.custom.depthBiasClamp = biasClamp;
+
+	m_graphicsState.custom.bRasterizerStateDirty = true;
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	ApplyDepthStencilState();
+	ApplyRasterizerState();
 
 	if (InstanceCount > 1)
 	{
@@ -980,6 +1035,7 @@ void CDeviceGraphicsCommandInterfaceImpl::DrawIndexedImpl(uint32 IndexCountPerIn
 	#endif
 
 	ApplyDepthStencilState();
+	ApplyRasterizerState();
 
 	if (InstanceCount > 1)
 	{
@@ -995,6 +1051,12 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DSurface* pView, co
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	rd->FX_ClearTarget(pView, ColorF(color[0], color[1], color[2], color[3]), numRects, pRects);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects)
+{
+	CRY_ASSERT(numRects == 0); // not supported on dx11
+	gcpRendD3D->GetDeviceContext().ClearDepthStencilView(pView, D3D11_CLEAR_FLAG(clearFlags), depth, stencil);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -29,10 +29,12 @@ float4 g_CloudColorScale;		// PS constant, .x=Final Cloud Color Multiplier
 
 float4 RTRect : PB_RTRect;
 
-float4 vClearParam;
+float4 vClearColor;
+float4 vClearRect;
+float4 vClearDepth;
 
 sampler2D baseMap : register(s0);
-sampler2D depthMap : register(s1);
+sampler2D depthMap : register(s1); // TODO: remove from C++ code
 sampler2D hdrMap : register(s2);
 
 sampler2D imposterMap
@@ -50,10 +52,10 @@ struct pixout_clouds
 
 struct pixout_clear
 {
-  half4 Color0  : COLOR0;
-  half4 Color1  : COLOR1;
-  half4 Color2  : COLOR2;
-  half4 Color3  : COLOR3;
+  float4 Color0  : SV_Target0;
+  float4 Color1  : SV_Target1;
+  float4 Color2  : SV_Target2;
+  float4 Color3  : SV_Target3;
 };
 
 struct app2vertCS
@@ -155,15 +157,21 @@ vert2fragClear TransformedClearVS(app2vertCloud IN)
   return OUT;
 }
 
-pixout_clear ClearPS(vert2fragClear IN)
+float4 ClearVS(float3 inPosition  : POSITION) : SV_Position
+{
+  float2 clipPos = inPosition.xy * vClearRect.xy + vClearRect.zw;
+  return float4(clipPos, vClearDepth.x, 1.0);
+}
+
+pixout_clear ClearPS()
 {
   pixout_clear OUT;
-
-  OUT.Color0 = IN.Color;
-  OUT.Color1 = IN.Color;
-  OUT.Color2 = IN.Color;
-  OUT.Color3 = IN.Color;
-
+  
+  OUT.Color0 = vClearColor;
+  OUT.Color1 = vClearColor;
+  OUT.Color2 = vClearColor;
+  OUT.Color3 = vClearColor;
+  
   return OUT;
 }
 
@@ -171,7 +179,7 @@ pixout ClearUniformPS(vert2fragClear IN)
 {
   pixout OUT;
 
-  OUT.Color = vClearParam.xyzw;
+  OUT.Color = vClearColor.xyzw;
 
   return OUT;
 }
@@ -398,14 +406,14 @@ pixout CloudImposterPS(vert2fragImp IN)
 	vf.xyz *= alpha;
 	ApplyVolumetricFog(vf, vFog, vtc, vRes.rgb);
 
-	float sceneDepth = DecodeSceneDepth( depthMap, IN.hPosTexProj );
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );
 	float scale = saturate( ( sceneDepth - IN.hPosTexProj.w ) * 0.05 );
 	vRes *= scale * IN.Color.a;
 #else
   half4 vRes = half4( lerp( vFog.xyz * alpha, vFinalCol.xyz, vFog.w ).xyz, alpha );    
 	vRes.xyz = lerp( AvgFogVolumeContrib.xyz * vRes.w, vRes.xyz, AvgFogVolumeContrib.w );			  
 
-	float sceneDepth = DecodeSceneDepth( depthMap, IN.hPosTexProj );
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );
 	float scale = saturate( ( sceneDepth - IN.hPosTexProj.w ) * 0.05 );
 	vRes *= scale * IN.Color.a;
 #endif
@@ -460,7 +468,7 @@ pixout CloudScreenImposterPS(vert2fragCSImp IN)
 
 #if %_RT_VOLUMETRIC_FOG
 	half4 finalColor = half4( color.xyz, alpha );
-	float sceneDepth = GetLinearDepth( depthMap, IN.sceneDepthTC.xy );
+	float sceneDepth = GetLinearDepth( sceneLinearDepthTex, IN.sceneDepthTC.xy );
 	float scale = saturate( ( sceneDepth * IN.NearFar.y - IN.linearDepth ) * 0.05 );
 	float linearDepth = max( IN.linearDepth, sceneDepth * IN.NearFar.y );
 	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.sceneDepthTC.xy, linearDepth);
@@ -473,7 +481,7 @@ pixout CloudScreenImposterPS(vert2fragCSImp IN)
 #else
 	half4 finalColor = half4( lerp( vFog.xyz * alpha, color.xyz, vFog.w ).xyz, alpha );
 	finalColor.xyz = lerp( AvgFogVolumeContrib.xyz * alpha, finalColor.xyz, AvgFogVolumeContrib.w );
-	float sceneDepth = GetLinearDepth( depthMap, IN.sceneDepthTC.xy );
+	float sceneDepth = GetLinearDepth( sceneLinearDepthTex, IN.sceneDepthTC.xy );
 	float scale = saturate( ( sceneDepth * IN.NearFar.y - IN.linearDepth ) * 0.05 );
 	finalColor *= scale * IN.viewDir.a;
 #endif
@@ -505,7 +513,7 @@ pixout_clouds ImposterPostPS(vert2frag IN)
  #endif
 
   half4 vTex = GetTexture2D(baseMap, IN.baseTC.xy);
-  half4 vDepth = GetLinearDepth( depthMap, IN.baseTC.xy );
+  half4 vDepth = GetLinearDepth( sceneLinearDepthTex, IN.baseTC.xy );
   OUT.Color.xyz = vTex.xyz;
   OUT.Color.a = vTex.a;
 
@@ -606,12 +614,8 @@ technique Clear
 {
   pass p0
   {
-    VertexShader = TransformedClearVS() DeferredLightPassVS;
-    
-    ZEnable = false;
-    CullMode = None;
-       
-    PixelShader = ClearPS() DeferredLightPassPS;
+    VertexShader = ClearVS();
+    PixelShader  = ClearPS();
   }
 }
 

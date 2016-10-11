@@ -798,7 +798,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(params.vtxData->DeviceDataHandle, params.vtxData->eVertexFormat, params.vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptLineStrip, 0, baseVertexIndex, params.vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);
@@ -954,7 +954,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(vtxData->DeviceDataHandle, vtxData->eVertexFormat, vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptTriangleStrip, 0, baseVertexIndex, vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);
@@ -1111,7 +1111,7 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(vtxData->DeviceDataHandle, vtxData->eVertexFormat, vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptTriangleStrip, 0, 0, vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);

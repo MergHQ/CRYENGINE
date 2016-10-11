@@ -300,14 +300,9 @@ class CD3D9Renderer final:public CRenderer, public IWindowMessageHandler
 public:
 	enum EDefShadows_Passes
 	{
-		DS_STENCIL_PASS,
-		DS_HISTENCIL_REFRESH,
-		DS_SHADOW_PASS,
 		DS_SHADOW_CULL_PASS,
 		DS_SHADOW_FRUSTUM_CULL_PASS,
-		DS_STENCIL_VOLUME_CLIP,
-		DS_CLOUDS_SEPARATE,
-		DS_VOLUME_SHADOW_PASS,
+
 		DS_PASS_MAX
 	};
 	struct S2DImage
@@ -464,9 +459,7 @@ public:
   void CreateDeferredUnitBox(t_arrDeferredMeshIndBuff& indBuff, t_arrDeferredMeshVertBuff& vertBuff);
   const t_arrDeferredMeshIndBuff& GetDeferredUnitBoxIndexBuffer() const;
 	const t_arrDeferredMeshVertBuff& GetDeferredUnitBoxVertexBuffer() const;
-	virtual bool                     PrepareDepthMap(CRenderView* pRenderView, ShadowMapFrustum* SMSource, int nLightFrustumID = 0, bool bClearPool = false) override;
   void ConfigShadowTexgen(int Num, ShadowMapFrustum * pFr, int nFrustNum = -1, bool bScreenToLocalBasis = false, bool bUseComparisonSampling = true);
-	virtual void                     DrawAllShadowsOnTheScreen() override;
   void DrawAllDynTextures(const char *szFilter, const bool bLogNames, const bool bOnlyIfUsedThisFrame);
 	virtual void                     OnEntityDeleted(IRenderNode* pRenderNode) override;
 
@@ -532,6 +525,7 @@ public:
   virtual void RT_SetCameraInfo() override;
   virtual void RT_CreateResource(SResourceAsync* Res) override;
   virtual void RT_ReleaseResource(SResourceAsync* pRes) override;
+  virtual void RT_ReleaseOptics(IOpticsElementBase* pOpticsElement) override;
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) override;
   virtual void RT_UnbindResources() override;
 	virtual void RT_UnbindTMUs() override;
@@ -567,7 +561,6 @@ public:
 	virtual void RT_SetRendererCVar(ICVar* pCVar, const char* pArgText, const bool bSilentMode=false) override;
 
 	virtual void RT_PresentFast() override;
-	void RT_CopyScreenToBackBuffer();
 	virtual void RT_PrepareStereo(int mode, int output) override;
 
   //===============================================================================
@@ -916,11 +909,8 @@ public:
 	void InsertParticleVideoDataFence();
 
   void FX_StencilTestCurRef(bool bEnable, bool bNoStencilClear=true, bool bStFuncEqual = true);
-	void EF_PrepareCustomShadowMaps(CRenderView* pRenderView);
-	void EF_PrepareAllDepthMaps(CRenderView* pRenderView);
   void FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInds);
 	void FX_StencilFrustumCull(int nStencilID, const SRenderLight* pLight, ShadowMapFrustum* pFrustum, int nAxis);
-	void FX_StencilCullNonConvex(int nStencilID, IRenderMesh* pWaterTightMesh, const Matrix34& mWorldTM);
 
   void FX_ZTargetReadBack();
 
@@ -933,15 +923,10 @@ public:
 
   bool CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, D3DIndexBuffer*& pUnitFrustumIB, D3DVertexBuffer*& pUnitFrustumVB);	
   void FX_CreateDeferredQuad(const SRenderLight* pLight, float maskRTWidth, float maskRTHeight, Matrix44A* pmCurView, Matrix44A* pmCurComposite, float fCustomZ = 0.0f);
-	void FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapFrustum *pShadowFrustum, bool bShadowPass, bool bCloudShadowPass, bool bStencilPrepass, int nLod);
 	bool FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, const CCamera& cam, ShadowMapFrustum *pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest);
 	bool FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, const CCamera& cam, int nFrustumNum, float maskRTWidth, float maskRTHeight);
-	bool FX_DeferredShadows(CRenderView* pRenderView, SRenderLight* pLight, int maskRTWidth, int maskRTHeight);
 	void FX_DeferredShadowsNearFrustum( int maskRTWidth, int maskRTHeight );
 	void FX_SetDeferredShadows();
-	void FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TArray<uint32>& shadowPoolLights);
-  void FX_ShadowBlur(float fShadowBluriness, SDynTexture *tpSrc, CTexture *tpDst, int iShadowMode=-1, bool bScreenVP=false, CTexture *tpDst2=NULL, CTexture *tpSrc2 = NULL);
-	void FX_MergeShadowMaps(CRenderView* pRenderView, ShadowMapFrustum* pDst, const ShadowMapFrustum* pSrc);
 
   void FX_DrawEffectLayerPasses();
   void FX_DrawDebugPasses();
@@ -1010,7 +995,6 @@ public:
   void FX_Invalidate();
   void EF_Restore();
   virtual void FX_SetState(int st, int AlphaRef=-1, int RestoreState = 0) override;
-  void FX_StateRestore(int prevState);
 
   void ChangeLog();
 
@@ -1079,9 +1063,6 @@ public:
 	void FX_ClearTarget(SDepthTexture* pTex, const int nFlags, const float cDepth, const uint8 cStencil);
 	void FX_ClearTarget(SDepthTexture* pTex, const int nFlags);
 	void FX_ClearTarget(SDepthTexture* pTex);
-
-	// shader-implementation of clear
-	void FX_ClearTargetRegion(const uint32 nAdditionalStates = 0);
 
 	bool           FX_GetTargetSurfaces(CTexture* pTarget, D3DSurface*& pTargSurf, SRenderTargetStack* pCur, int nCMSide = -1, int nTarget = 0, uint32 nTileCount = 1);
 	bool           FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDepthTexture* pDepthTarget, uint32 nTileCount = 1);
@@ -1158,7 +1139,6 @@ public:
   static void FX_DrawNormals();
   static void FX_DrawTangents();
 
-  static void FX_FlushShader_ShadowGen();
   static void FX_FlushShader_General();
   static void FX_FlushShader_ZPass();
 

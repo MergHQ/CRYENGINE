@@ -1062,7 +1062,7 @@ pixout WaterPS(v2f_hs IN)
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Water edge softness  
 
- 	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+ 	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
  	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );	
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1075,14 +1075,15 @@ pixout WaterPS(v2f_hs IN)
 	float2 refrTC = GetScaledScreenTC(vNormal.xy * RefractionBumpScale * softIntersect * IN.screenProj.z);
 
 	#if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
-	
-		float3 depthRefr = float3( GetLinearDepthScaled( sceneDepthSampler, refrNewst + refrTC.xy*1.025),
-												  	   GetLinearDepthScaled( sceneDepthSampler, refrNewst + refrTC.xy),
-															 GetLinearDepthScaled( sceneDepthSampler, refrNewst + refrTC.xy*0.985) );
+		float3 depthRefr = float3(
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, refrNewst + refrTC.xy*1.025),
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, refrNewst + refrTC.xy),
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, refrNewst + refrTC.xy*0.985)
+		);
 	#else
-
-		float3 depthRefr = float3( GetLinearDepthScaled( sceneDepthSampler, refrNewst + refrTC.xy).xxx);
-
+		float3 depthRefr = float3(
+			GetLinearDepthScaledUnclamped( sceneLinearDepthTex, refrNewst + refrTC.xy).xxx
+		);
 	#endif
 
 	// Apply refraction mask to bump offsets
@@ -1132,7 +1133,7 @@ pixout WaterPS(v2f_hs IN)
 
 		float2 reflNewst = ( IN.screenProj.xy / IN.screenProj.w );                    
 		float2 reflTC = (vNormal.xy) * ReflectionBumpScale * 0.5* softIntersect * IN.screenProj.z;
-		float depthRefl = GetLinearDepthScaled( sceneDepthSampler, reflNewst + GetScaledScreenTC(reflTC.xy)).x;
+		float depthRefl = GetLinearDepthScaledUnclamped( sceneLinearDepthTex, reflNewst + GetScaledScreenTC(reflTC.xy)).x;
 
 		reflTC *= float2(PS_HPosScale.x, 1);
 		reflTC.y = 1.0 - (1.0 - reflTC.y)*PS_HPosScale.y;

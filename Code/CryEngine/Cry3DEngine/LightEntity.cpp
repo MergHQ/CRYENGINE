@@ -664,7 +664,6 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	// local jitter amount depends on frustum size
 	pFr->fFrustrumSize = 1.0f / (fGSMBoxSize * (float)Get3DEngine()->m_fGsmRange);
 	pFr->nUpdateFrameId = passInfo.GetFrameID();
-	pFr->bAllowViewDependency = GetCVars()->e_GsmViewSpace != 0;
 	pFr->bIncrementalUpdate = false;
 
 	//Get gsm bounds
@@ -1654,21 +1653,8 @@ void CLightEntity::FillFrustumCastersList_SUN(ShadowMapFrustum* pFr, int dwAllow
 	CCamera& FrustCam = pFr->FrustumPlanes[0] = CCamera();
 	Vec3 vLightDir = -pFr->vLightSrcRelPos.normalized();
 
-	Matrix34A mat;
-
-	if (GetCVars()->e_GsmViewSpace > 0)
-	{
-		Matrix44A matView = Matrix44A(passInfo.GetCamera().GetMatrix().GetInverted());
-		Vec3 vEyeLightDir = matView.TransformVector(vLightDir);
-		mat = Matrix33::CreateRotationVDir(vEyeLightDir);
-		mat.SetTranslation(matView.TransformPoint(pFr->vLightSrcRelPos + pFr->vLightSrcRelPos));
-		mat = Matrix34A(passInfo.GetCamera().GetMatrix()) * mat;
-	}
-	else
-	{
-		mat = Matrix33::CreateRotationVDir(vLightDir);
-		mat.SetTranslation(pFr->vLightSrcRelPos + pFr->vProjTranslation);
-	}
+	Matrix34A mat = Matrix33::CreateRotationVDir(vLightDir);
+	mat.SetTranslation(pFr->vLightSrcRelPos + pFr->vProjTranslation);
 
 	FrustCam.SetMatrixNoUpdate(mat);
 	FrustCam.SetFrustum(256, 256, pFr->fFOV * (gf_PI / 180.0f), pFr->fNearDist, pFr->fFarDist);

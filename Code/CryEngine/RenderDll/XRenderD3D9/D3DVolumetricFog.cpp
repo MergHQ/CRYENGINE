@@ -2322,9 +2322,6 @@ void CVolumetricFog::RenderClipVolumeToVolumeStencil(int nClipAreaReservedStenci
 			GetUtils().ShEndPass();
 		}
 
-		CDeferredShading& pDS = CDeferredShading::Instance();
-		pDS.RenderClipVolumesToStencil(nClipAreaReservedStencilBit);
-
 		rd->FX_PopRenderTarget(0);
 	}
 

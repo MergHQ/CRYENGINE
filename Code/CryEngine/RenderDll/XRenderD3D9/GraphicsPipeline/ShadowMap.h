@@ -7,6 +7,7 @@
 #include "Common/SceneRenderPass.h"
 #include "Common/FullscreenPass.h"
 #include "Common/RenderView.h"
+#include "Common/UtilityPasses.h"
 #include <array>
 
 class CShadowMapStage : public CGraphicsPipelineStage
@@ -109,6 +110,8 @@ private:
 	};
 
 private:
+	typedef std::array<CShadowMapPassGroup, CRenderView::eShadowFrustumRenderType_Count> PassGroupList;
+
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& description, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
 	void PrepareShadowPool(CRenderView* pMainView);
@@ -121,11 +124,14 @@ private:
 
 	void UpdateShadowFrustumFromPass(const CShadowMapPass& sourcePass, ShadowMapFrustum& targetFrustum) const;
 	void CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMapPass& targetPass);
+	void ClearShadowMaps(PassGroupList& shadowMapPasses);
 
-	typedef std::array<CShadowMapPassGroup, CRenderView::eShadowFrustumRenderType_Count> PassGroupList;
 
 	PassGroupList            m_ShadowMapPasses;
 	CFullscreenPass          m_CopyShadowMapPass;
+	CClearRegionPass         m_ClearShadowPoolDepthPass;
+	CClearRegionPass         m_ClearShadowPoolColorPass;
+	CClearRegionPass         m_ClearShadowPoolNormalsPass;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
 	CDeviceResourceSetPtr    m_pPerPassResourceSetTemplate;
 };

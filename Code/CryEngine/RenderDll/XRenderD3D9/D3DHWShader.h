@@ -1137,25 +1137,6 @@ public:
 		{
 			memcpy(&s_pDataCB[eSH][nCBufSlot][nReg], vData, (size_t)nVecs << 4);
 		}
-
-		if (nCBufSlot == CB_PER_FRAME && eSH == eHWSC_Vertex && vData != &s_CurVSParams[0])
-		{
-#if CRY_PLATFORM_SSE2
-			if ((((uintptr_t)vData) & 0xf) == 0u)
-			{
-				__m128* const __restrict vDst = (__m128*)&s_CurVSParams[nReg];
-				const __m128* const __restrict vSrc = (const __m128*)vData;
-				for (int i = 0; i < nVecs; i++) _mm_stream_ps((float*)&vDst[i], vSrc[i]);
-#if !CRY_PLATFORM_ORBIS // SFENCE implied on command-buffer submit
-				_mm_sfence();
-#endif
-			}
-			else
-#endif
-			{
-				memcpy(&s_CurVSParams[nReg], vData, (size_t)nVecs << 4);
-			}
-		}
 	}
 	static inline void mfSetGSConst(int nReg, int nCBufSlot, const float* vData, int nParams, int nMaxVecs = 32)
 	{
@@ -1467,11 +1448,8 @@ public:
 
 	static void           mfSetGlobalParams();
 	static void           mfSetCameraParams();
-	static void           mfSetSG();
-	static void           mfSetPF();
 	static void           mfSetCM();
-	static void           mfSetPV(const RECT* pCustomViewport = nullptr);
-	static bool           mfAddGlobalParameter(SCGParam& Param, EHWShaderClass eSH, bool bSG, bool bCam);
+	static void           mfSetPV(const D3DViewPort* pCustomViewport = nullptr);
 	static bool           mfAddGlobalTexture(SCGTexture& Texture);
 	static bool           mfAddGlobalSampler(STexSamplerRT& Sampler);
 
@@ -1541,8 +1519,6 @@ public:
 	static int                          s_nDeviceVSDataSize;
 
 	static std::vector<SCGParam>        s_CM_Params[eHWSC_Num]; // Per-frame parameters
-	static std::vector<SCGParam>        s_PF_Params[eHWSC_Num]; // Per-frame parameters
-	static std::vector<SCGParam>        s_SG_Params[eHWSC_Num]; // Shadow-gen parameters
 
 	static std::vector<SCGTexture>      s_PF_Textures;   // Per-frame textures
 	static std::vector<STexSamplerRT>   s_PF_Samplers;   // Per-frame samplers

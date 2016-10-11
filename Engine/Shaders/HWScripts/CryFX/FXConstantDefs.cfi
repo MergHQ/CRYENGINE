@@ -150,9 +150,6 @@ cbuffer CBPerViewGlobal : register(b13)
 	
 	float4x4  CV_FrustumPlaneEquation;
 
-	float4    CV_ShadowLightPos;
-	float4    CV_ShadowViewPos;
-
 	float4    CV_WindGridOffset;
 	
 	float4x4  CV_ViewMatr;

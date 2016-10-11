@@ -32,6 +32,28 @@ void ChromaticRing::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
+ChromaticRing::ChromaticRing(const char* name)
+	: COpticsElement(name)
+	, m_bUseSpectrumTex(false)
+	, m_fWidth(0.5f)
+	, m_nPolyComplexity(160)
+	, m_nColorComplexity(2)
+	, m_fNoiseStrength(0.0f)
+	, m_fCompletionStart(90.f)
+	, m_fCompletionEnd(270.f)
+	, m_fCompletionFading(45.f)
+{
+	SetSize(0.9f);
+	SetAutoRotation(true);
+	SetAspectRatioCorrection(false);
+
+	m_meshDirty = true;
+
+	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_wireframePrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+}
+
 void ChromaticRing::Load(IXmlNode* pNode)
 {
 	COpticsElement::Load(pNode);
@@ -89,13 +111,6 @@ void ChromaticRing::Load(IXmlNode* pNode)
 	}
 }
 
-void ChromaticRing::DrawMesh()
-{
-	gcpRendD3D->FX_Commit();
-	DrawMeshTriList();
-	DrawMeshWireframe();
-}
-
 float ChromaticRing::computeDynamicSize(const Vec3& vSrcProjPos, const float maxSize)
 {
 	Vec2 dir(vSrcProjPos.x - 0.5f, vSrcProjPos.y - 0.5f);
@@ -104,64 +119,70 @@ float ChromaticRing::computeDynamicSize(const Vec3& vSrcProjPos, const float max
 	return len * hoopDistFactor * maxSize;
 }
 
-void ChromaticRing::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+CTexture* ChromaticRing::GetOrLoadSpectrumTex()
+{
+	if (m_pSpectrumTex == nullptr)
+	{
+		m_pSpectrumTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown));
+	}
+
+	return m_pSpectrumTex;
+}
+
+bool ChromaticRing::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
+		return true;
 
-	PROFILE_LABEL_SCOPE("ChromaticRing");
+	// get rt flags
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+	ApplySpectrumTexFlag(rtFlags, m_bUseSpectrumTex);
 
-	gRenDev->m_RP.m_FlagsShader_RT = 0;
-
-	vSrcProjPos = computeOrbitPos(vSrcProjPos, m_globalOrbitAngle);
-
-	static CCryNameTSCRC pChromaticRingTechName("ChromaticRing");
-	shader->FXSetTechnique(pChromaticRingTechName);
-	uint nPass;
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
-
-	ApplyGeneralFlags(shader);
-	ApplySpectrumTexFlag(shader, m_bUseSpectrumTex);
-	shader->FXBeginPass(0);
-
-	float newSize = computeDynamicSize(vSrcProjPos, m_globalSize);
-
-	float oldSize = m_globalSize;
-	m_globalSize = newSize;
-	ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-	m_globalSize = oldSize;
-	ApplyExternTintAndBrightnessVS(shader, m_globalColor, m_globalFlareBrightness);
-
-	static CCryNameR meshCenterName("meshCenterAndBrt");
-	float x, y;
-	if (m_bLockMovement)
+	// update constants (constant buffer is shared by both primitives, so we only have to update it once)
 	{
-		x = vSrcProjPos.x;
-		y = vSrcProjPos.y;
-	}
-	else
-	{
-		x = computeMovementLocationX(vSrcProjPos);
-		y = computeMovementLocationY(vSrcProjPos);
-	}
-	const Vec4 meshCenterParam(x, y, vSrcProjPos.z, m_globalFlareBrightness);
-	shader->FXSetVSFloat(meshCenterName, &meshCenterParam, 1);
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 
-	static STexState bilinearTS(FILTER_LINEAR, true);
-	bilinearTS.SetBorderColor(0);
-	bilinearTS.SetClampMode(TADDR_BORDER, TADDR_BORDER, TADDR_BORDER);
-	if (m_pSpectrumTex == NULL)
-	{
-		m_pSpectrumTex = CTexture::ForName("EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown);
-		if (m_pSpectrumTex)
-			m_pSpectrumTex->Release();
-	}
-	m_pSpectrumTex->Apply(0, CTexture::GetTexState(bilinearTS));
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			Vec3 screenPos = computeOrbitPos(context.lightScreenPos[i], m_globalOrbitAngle);
+			float newSize  = computeDynamicSize(screenPos, m_globalSize);
 
+			ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[0], Vec2(newSize));
+
+			constants->meshCenterAndBrt[0] = m_bLockMovement ? screenPos.x : computeMovementLocationX(screenPos);
+			constants->meshCenterAndBrt[1] = m_bLockMovement ? screenPos.y : computeMovementLocationY(screenPos);
+			constants->meshCenterAndBrt[2] = screenPos.z;
+			constants->meshCenterAndBrt[3] = m_globalFlareBrightness;
+
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(false);
+		}
+
+		m_primitive.GetConstantManager().EndTypedConstantUpdate(constants);
+	}
+
+	// update mesh
 	ValidateMesh();
-	ApplyMesh();
-	DrawMesh();
-	shader->FXEndPass();
 
-	shader->FXEnd();
+	// now prepare primitives
+	CRenderPrimitive* pPrimitives[] = { &m_primitive, &m_wireframePrimitive };
+
+	for (int i = 0; i < CRY_ARRAY_COUNT(pPrimitives); ++i)
+	{
+		static CCryNameTSCRC techChromaticRing("ChromaticRing");
+
+		auto& prim = *pPrimitives[i];
+		prim.SetTechnique(CShaderMan::s_ShaderLensOptics, techChromaticRing, rtFlags);
+		prim.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | (i==0 ? 0 : GS_WIREFRAME));
+		prim.SetTexture(0, GetOrLoadSpectrumTex());
+		prim.SetSampler(0, m_samplerBilinearBorderBlack);
+		prim.SetCustomVertexStream(m_vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+		prim.SetCustomIndexStream(m_indexBuffer, Index16);
+		prim.SetDrawInfo(eptTriangleList, 0, 0, GetIndexCount());
+
+		context.pass.AddPrimitive(&prim);
+	}
+
+	return true;
 }

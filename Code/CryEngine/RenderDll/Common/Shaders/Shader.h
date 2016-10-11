@@ -33,10 +33,7 @@
 
 #define CB_PER_BATCH        0
 #define CB_PER_INSTANCE     1
-#define CB_PER_FRAME        2
 #define CB_PER_MATERIAL     3
-#define CB_PER_LIGHT        4
-#define CB_PER_SHADOWGEN    5
 #define CB_SKIN_DATA        6
 #define CB_INSTANCE_DATA    7
 #define CB_NUM              8
@@ -613,7 +610,6 @@ enum EHWSRMaskBit
 	HWSR_DECAL_TEXGEN_2D,
 
 	HWSR_SHADOW_MIXED_MAP_G16R16,
-	HWSR_GSM_COMBINED,
 	HWSR_HW_PCF_COMPARE,
 	HWSR_SHADOW_JITTERING,
 	HWSR_POINT_LIGHT,

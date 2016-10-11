@@ -7,29 +7,6 @@
 #include "../Textures/Texture.h"
 #include "../../RenderDll/XRenderD3D9/DriverD3D.h"
 
-class ScreenTile : public AbstractMeshElement
-{
-public:
-	ScreenTile()
-	{
-		ValidateMesh();
-	}
-	void GenMesh()
-	{
-		const int rowCount = 15;
-		const int colCount = 25;
-		MeshUtil::GenScreenTile(-1, -1, 1, 1, ColorF(1, 1, 1, 1), rowCount, colCount, m_vertBuf, m_idxBuf);
-	}
-
-	void Draw()
-	{
-		ApplyMesh();
-		gcpRendD3D->FX_Commit();
-		DrawMeshTriList();
-	}
-};
-static ScreenTile screenTile;
-
 #if defined(FLARES_SUPPORT_EDITING)
 	#define MFPtr(FUNC_NAME) (Optics_MFPtr)(&CameraOrbs::FUNC_NAME)
 void CameraOrbs::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
@@ -69,6 +46,42 @@ void CameraOrbs::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 }
 	#undef MFPtr
 #endif
+
+
+CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
+	: COpticsElement(name, 0.19f)
+	, m_fSizeNoise(0.8f)
+	, m_fBrightnessNoise(0.4f)
+	, m_fRotNoise(0.8f)
+	, m_fClrNoise(0.5f)
+	, m_fIllumRadius(1.f)
+	, m_bUseLensTex(0)
+	, m_bOrbDetailShading(0)
+	, m_bLensDetailShading(0)
+	, m_fLensTexStrength(1.f)
+	, m_fLensDetailShadingStrength(0.157f)
+	, m_fLensDetailBumpiness(0.073f)
+	, m_bAdvancedShading(false)
+	, m_cAmbientDiffuse(LensOpConst::_LO_DEF_CLR_BLK)
+	, m_fAbsorptance(4.0f)
+	, m_fTransparency(0.37f)
+	, m_fScatteringStrength(1.0f)
+	, m_iNoiseSeed(0)
+	, m_spriteAspectRatio(1.0f)
+{
+	m_Color.a = 1.f;
+	SetPerspectiveFactor(0.f);
+	SetRotation(0.7f);
+	SetNumOrbs(numOrbs);
+	m_meshDirty = true;
+
+	m_samplerPointClamp = CTexture::GetTexState(STexState(FILTER_POINT, true));
+
+	// share one constant buffer between both primitives
+	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+}
 
 void CameraOrbs::Load(IXmlNode* pNode)
 {
@@ -183,10 +196,8 @@ void CameraOrbs::Load(IXmlNode* pNode)
 void CameraOrbs::GenMesh()
 {
 	ScatterOrbs();
-	int iTempX, iTempY, iWidth, iHeight;
-	gcpRendD3D->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
-	MeshUtil::GenSprites(m_OrbsList, iWidth / (float)iHeight, true, m_vertBuf, m_idxBuf);
-	MeshUtil::TrianglizeQuadIndices(m_OrbsList.size(), m_idxBuf);
+	MeshUtil::GenSprites(m_OrbsList, m_spriteAspectRatio, true, m_vertices, m_indices);
+	MeshUtil::TrianglizeQuadIndices(m_OrbsList.size(), m_indices);
 }
 
 void CameraOrbs::ScatterOrbs()
@@ -218,10 +229,9 @@ CTexture* CameraOrbs::GetOrbTex()
 {
 	if (!m_pOrbTex)
 	{
-		m_pOrbTex = CTexture::ForName("EngineAssets/Textures/flares/default-orb.tif", FT_DONT_STREAM, eTF_Unknown);
-		if (m_pOrbTex)
-			m_pOrbTex->Release();
+		m_pOrbTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/default-orb.tif", FT_DONT_STREAM, eTF_Unknown));
 	}
+
 	return m_pOrbTex;
 }
 
@@ -229,116 +239,125 @@ CTexture* CameraOrbs::GetLensTex()
 {
 	if (!m_pLensTex)
 	{
-		m_pLensTex = CTexture::ForName("EngineAssets/Textures/flares/Smudgy.tif", FT_DONT_STREAM, eTF_Unknown);
-		if (m_pLensTex)
-			m_pLensTex->Release();
+		m_pLensTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/Smudgy.tif", FT_DONT_STREAM, eTF_Unknown));
 	}
 
 	return m_pLensTex;
 }
 
-void CameraOrbs::ApplyOrbFlags(CShader* shader, bool detailShading) const
+void CameraOrbs::ApplyOrbFlags(uint64& rtFlags, bool detailShading) const
 {
 	if (detailShading)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 }
 
-void CameraOrbs::ApplyLensDetailParams(CShader* shader, float texStength, float detailStrength, float bumpiness) const
-{
-	static CCryNameR lensDetailName("lensDetailParams");
-	const Vec4 lensDetailParam(texStength, detailStrength, bumpiness, 0);
-	shader->FXSetPSFloat(lensDetailName, &lensDetailParam, 1);
-}
-
-void CameraOrbs::ApplyAdvancedShadingFlag(CShader* shader) const
+void CameraOrbs::ApplyAdvancedShadingFlag(uint64& rtFlags) const
 {
 	if (m_bAdvancedShading)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 }
 
-void CameraOrbs::ApplyAdvancedShadingParams(CShader* shader, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const
+void CameraOrbs::ApplyAdvancedShadingParams(SShaderParams& shaderParams, CRenderPrimitive& primitive, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const
 {
-	static CCryNameR ambDiffuseRGBKName("ambientDiffuseRGBK");
-	static CCryNameR advShadingName("advShadingParams");
-
-	static STexState pointTS(FILTER_POINT, true);
 	CTexture* pAmbTex = CTexture::s_ptexSceneTarget;
-	pAmbTex->Apply(1, CTexture::GetTexState(pointTS));
 
-	const Vec4 ambDiffuseRGBKParam(ambDiffuseRGBK.r, ambDiffuseRGBK.g, ambDiffuseRGBK.b, ambDiffuseRGBK.a);
-	const Vec4 advShadingParam(absorptance, transparency, scattering, 0);
-	shader->FXSetPSFloat(ambDiffuseRGBKName, &ambDiffuseRGBKParam, 1);
-	shader->FXSetPSFloat(advShadingName, &advShadingParam, 1);
+	shaderParams.ambientDiffuseRGBK = Vec4(ambDiffuseRGBK.r, ambDiffuseRGBK.g, ambDiffuseRGBK.b, ambDiffuseRGBK.a);
+	shaderParams.advShadingParams = Vec4(absorptance, transparency, scattering, 0);
+	primitive.SetTexture(1, pAmbTex);
+	primitive.SetSampler(1, m_samplerPointClamp);
 }
 
-void CameraOrbs::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool CameraOrbs::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
+		return true;
 
-	PROFILE_LABEL_SCOPE("CameraOrbs");
+	static CCryNameTSCRC techCameraOrbs("CameraOrbs");
+	static CCryNameTSCRC techCameraLens("CameraLens");
 
-	gRenDev->m_RP.m_FlagsShader_RT = 0;
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+	ApplyAdvancedShadingFlag(rtFlags);
+	ApplyOcclusionBokehFlag(rtFlags);
+	ApplyOrbFlags(rtFlags, m_bOrbDetailShading);
 
-	static CCryNameTSCRC pCameraOrbsTechName("CameraOrbs");
-	static CCryNameR lightColorName("lightColorInfo");
+	m_GlowPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techCameraOrbs, rtFlags);
+	m_GlowPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
-	static STexState bilinearTS(FILTER_LINEAR, true);
-	bilinearTS.SetBorderColor(0);
-	bilinearTS.SetClampMode(TADDR_BORDER, TADDR_BORDER, TADDR_BORDER);
+	CTexture* pOrbTex = GetOrbTex();
+	m_GlowPrimitive.SetTexture(0, pOrbTex ? pOrbTex : CTexture::s_ptexBlack);
+	m_GlowPrimitive.SetSampler(0, m_samplerBilinearBorderBlack);
 
-	vSrcProjPos = computeOrbitPos(vSrcProjPos, m_globalOrbitAngle);
+	if (!m_globalOcclusionBokeh)
+		m_GlowPrimitive.SetTexture(5, CTexture::s_ptexBlack);
 
-	shader->FXSetTechnique(pCameraOrbsTechName);
+	// udpate constants
+	{
+		auto constants = m_GlowPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 
-	uint nPass;
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
+		ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[0], Vec2(m_globalSize));
+		constants->lensDetailParams = Vec4(1, 1, GetLensDetailBumpiness(), 0);
+	
+		if (m_bUseLensTex)
+			constants->lensDetailParams2 = Vec4(GetLensTexStrength(), GetLensDetailShadingStrength(), GetLensDetailBumpiness(), 0);
 
-	ApplyGeneralFlags(shader);
-	ApplyAdvancedShadingFlag(shader);
-	ApplyOcclusionBokehFlag(shader);
-	ApplyOrbFlags(shader, m_bOrbDetailShading);
+		if (m_globalOcclusionBokeh)
+			ApplyOcclusionPattern(constants, m_GlowPrimitive);
 
-	shader->FXBeginPass(0);
+		if (m_bAdvancedShading)
+			ApplyAdvancedShadingParams(constants, m_GlowPrimitive, GetAmbientDiffuseRGBK(), GetAbsorptance(), GetTransparency(), GetScatteringStrength());
 
-	const float x = computeMovementLocationX(vSrcProjPos);
-	const float y = computeMovementLocationY(vSrcProjPos);
-	ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-	ApplyVSParam_LightProjPos(shader, Vec3(x, y, aux.linearDepth));
+		const ColorF lightColor = m_globalFlareBrightness * m_globalColor * m_globalColor.a;
+		constants->lightColorInfo[0] = lightColor.r;
+		constants->lightColorInfo[1] = lightColor.g;
+		constants->lightColorInfo[2] = lightColor.b;
+		constants->lightColorInfo[3] = m_fIllumRadius;
 
-	const ColorF lightColor = m_globalFlareBrightness * m_globalColor * m_globalColor.a;
-	const Vec4 lightColorParam(lightColor.r, lightColor.g, lightColor.b, m_fIllumRadius);
-	shader->FXSetVSFloat(lightColorName, &lightColorParam, 1);
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			Vec3 screenPos = computeOrbitPos(context.lightScreenPos[i], m_globalOrbitAngle);
+			const float x = computeMovementLocationX(screenPos);
+			const float y = computeMovementLocationY(screenPos);
 
-	ApplyLensDetailParams(shader, 1, 1, GetLensDetailBumpiness());
-	if (m_globalOcclusionBokeh)
-		ApplyOcclusionPattern(shader);
-	else
-		CTexture::s_ptexBlack->Apply(5, CTexture::GetTexState(bilinearTS));
+			constants->lightProjPos = Vec4(x, y, context.auxParams.linearDepth, 0);
 
-	if (m_bAdvancedShading)
-		ApplyAdvancedShadingParams(shader, GetAmbientDiffuseRGBK(), GetAbsorptance(), GetTransparency(), GetScatteringStrength());
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(true);
+		}
 
-	CTexture* pOrbTex = GetOrbTex() ? GetOrbTex() : CTexture::s_ptexBlack;
-	pOrbTex->Apply(0, CTexture::GetTexState(bilinearTS));
-	ValidateMesh();
-	ApplyMesh();
-	DrawMeshTriList();
-	shader->FXEndPass();
+		m_GlowPrimitive.GetConstantManager().EndTypedConstantUpdate(constants);
+	}
+
+	// geometry
+	{
+		m_spriteAspectRatio = context.pViewInfo[0].viewport.nWidth / float(context.pViewInfo[0].viewport.nHeight);
+
+		ValidateMesh();
+
+		m_GlowPrimitive.SetCustomVertexStream(m_vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+		m_GlowPrimitive.SetCustomIndexStream(m_indexBuffer, Index16);
+		m_GlowPrimitive.SetDrawInfo(eptTriangleList, 0, 0, GetIndexCount());
+	}
+
+	context.pass.AddPrimitive(&m_GlowPrimitive);
 
 	if (m_bUseLensTex)
 	{
-		gRenDev->m_RP.m_FlagsShader_RT = 0;
-		ApplyOrbFlags(shader, m_bLensDetailShading);
-		shader->FXBeginPass(1);
-		if (m_bAdvancedShading)
-			ApplyAdvancedShadingParams(shader, GetAmbientDiffuseRGBK(), GetAbsorptance(), GetTransparency(), GetScatteringStrength());
-		ApplyLensDetailParams(shader, GetLensTexStrength(), GetLensDetailShadingStrength(), GetLensDetailBumpiness());
-		CTexture* pLensTex = GetLensTex() ? GetLensTex() : CTexture::s_ptexBlack;
-		pLensTex->Apply(2, CTexture::GetTexState(bilinearTS));
-		screenTile.Draw();
-		shader->FXEndPass();
+		uint64 rtFlags = 0;
+		ApplyOrbFlags(rtFlags, m_bLensDetailShading);
+
+		m_CameraLensPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techCameraLens, rtFlags);
+		m_CameraLensPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
+		m_CameraLensPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuadTess);
+
+		CTexture* pLensTex = GetLensTex();
+		m_CameraLensPrimitive.SetTexture(0, pOrbTex ? pOrbTex : CTexture::s_ptexBlack);
+		m_CameraLensPrimitive.SetTexture(2, pLensTex ? pLensTex : CTexture::s_ptexBlack);
+		m_CameraLensPrimitive.SetSampler(0, m_samplerBilinearBorderBlack);
+
+		context.pass.AddPrimitive(&m_CameraLensPrimitive);
 	}
 
-	shader->FXEnd();
+	return true;
 }
+

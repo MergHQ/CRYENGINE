@@ -6,6 +6,7 @@
 #include "DriverD3D.h"
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include <CryRenderer/RenderElements/RendElement.h>
+#include <Common/RendElements/MeshUtil.h>
 
 CRenderPrimitive::SPrimitiveGeometry CRenderPrimitive::s_primitiveGeometryCache[CRenderPrimitive::ePrim_Count];
 int CRenderPrimitive::s_nPrimitiveGeometryCacheUsers = 0;
@@ -307,6 +308,21 @@ void CRenderPrimitive::AddPrimitiveGeometryCacheUser()
 				CDeferredRenderUtils::CreateUnitFrustumMesh(nFrustTess, nFrustTess, indices, vertices);
 				initPrimitiveGeometryStreams(s_primitiveGeometryCache[i], vertices, indices);
 			}
+		}
+
+		// fullscreen quad
+		{
+			MeshUtil::GenScreenTile(-1, -1, 1, 1, ColorF(1, 1, 1, 1), 1, 1, vertices, indices);
+			initPrimitiveGeometryStreams(s_primitiveGeometryCache[ePrim_FullscreenQuad], vertices, indices);	
+		}
+
+		// tessellated fullscreen quad
+		{
+			const int rowCount = 15;
+			const int colCount = 25;
+
+			MeshUtil::GenScreenTile(-1, -1, 1, 1, ColorF(1, 1, 1, 1), rowCount, colCount, vertices, indices);
+			initPrimitiveGeometryStreams(s_primitiveGeometryCache[ePrim_FullscreenQuadTess], vertices, indices);
 		}
 	}
 

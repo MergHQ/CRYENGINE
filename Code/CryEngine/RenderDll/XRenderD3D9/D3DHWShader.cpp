@@ -61,8 +61,6 @@ bool CHWShader_D3D::s_bFirstPS = true;
 
 int CHWShader_D3D::s_nActivationFailMask = 0;
 
-std::vector<SCGParam> CHWShader_D3D::s_PF_Params[eHWSC_Num];
-std::vector<SCGParam> CHWShader_D3D::s_SG_Params[eHWSC_Num];
 std::vector<SCGParam> CHWShader_D3D::s_CM_Params[eHWSC_Num];
 
 std::vector<SCGTexture> CHWShader_D3D::s_PF_Textures;        // Per-frame textures
@@ -399,8 +397,6 @@ void CHWShader_D3D::InitialiseContainers()
 	uint32 i;
 	for (i = 0; i < eHWSC_Num; i++)
 	{
-		s_PF_Params[i].reserve(8);
-		s_SG_Params[i].reserve(8);
 		s_CM_Params[i].reserve(8);
 	}
 	s_PF_Textures.reserve(MAX_PF_TEXTURES);
@@ -471,8 +467,6 @@ void CHWShader_D3D::ShutDown()
 	for (int i = 0; i < eHWSC_Num; i++)
 	{
 		stl::free_container(s_CM_Params[i]);
-		stl::free_container(s_PF_Params[i]);
-		stl::free_container(s_SG_Params[i]);
 	}
 	stl::free_container(s_PF_Textures);
 	stl::free_container(s_PF_Samplers);
@@ -1930,10 +1924,6 @@ NO_INLINE void sAlphaTest(UFloat4* sData, const float dissolveRef)
 	sData[0].f[1] = (rRP.m_pCurObject->m_ObjFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
 	sData[0].f[2] = CRenderer::CV_r_ssdoAmountDirect;   // Use free component for SSDO
 	sData[0].f[3] = rRP.m_pShaderResources ? rRP.m_pShaderResources->m_AlphaRef : 0;
-
-	// specific condition for hair zpass - likely better having sAlphaTestHair
-	//if ((rRP.m_pShader->m_Flags2 & EF2_HAIR) && !(rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-	//  sData[0].f[3] = 0.51f;
 }
 
 NO_INLINE void sFurParams(UFloat4* sData)
@@ -2403,29 +2393,6 @@ NO_INLINE void sNumInstructions(UFloat4* sData)
 	sData[0].f[0] = gRenDev->m_RP.m_NumShaderInstructions / CRenderer::CV_r_measureoverdrawscale / 256.0f;
 }
 
-NO_INLINE void sSkyColor(UFloat4* sData)
-{
-	CD3D9Renderer* const __restrict r = gcpRendD3D;
-	SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
-	I3DEngine* pEng = gEnv->p3DEngine;
-	Vec3 v = pEng->GetSkyColor();
-	sData[0].f[0] = v.x;
-	sData[0].f[1] = v.y;
-	sData[0].f[2] = v.z;
-	sData[0].f[3] = true;   // only way of doing test without adding more permutations; srgb always enabled - after updating shader code side, this channel is free
-
-	if (CRenderer::CV_r_PostProcess && CRenderer::CV_r_NightVision == 1)
-	{
-		// If nightvision active, brighten up ambient
-		if (PF.bPE_NVActive)
-		{
-			sData[0].f[0] += 0.25f;  //0.75f;
-			sData[0].f[1] += 0.25f;  //0.75f;
-			sData[0].f[2] += 0.25f;  //0.75f;
-		}
-	}
-}
-
 NO_INLINE void sAmbient(UFloat4* sData, SRenderPipeline& rRP, const CRenderObject::SInstanceInfo& instInfo)
 {
 	sData[0].f[0] = instInfo.m_AmbColor[0];
@@ -2463,11 +2430,6 @@ NO_INLINE void sAmbientOpacity(UFloat4* sData, const CRenderObject::SInstanceInf
 
 	if (pObj->m_nMaterialLayers)
 		s3 *= sGetMaterialLayersOpacity(sData, r);
-
-#if defined(FEATURE_SVO_GI)
-	if ((rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && rRP.m_pShader && (rRP.m_pShader->GetShaderType() == eST_Vegetation) && CSvoRenderer::GetRsmColorMap(*rRP.m_ShadowInfo.m_pCurShadowFrustum))
-		s3 = min(s3, CSvoRenderer::GetInstance()->GetVegetationMaxOpacity());   // use softer occlusion for vegetation
-#endif
 
 	if (!(rRP.m_PersFlags2 & RBPF2_POST_3D_RENDERER_PASS))
 	{
@@ -2657,18 +2619,6 @@ NO_INLINE void sAvgFogVolumeContrib(UFloat4* sData)
 	}
 }
 
-NO_INLINE void sDepthFactor(UFloat4* sData, CD3D9Renderer* r)
-{
-	const CRenderCamera& rc = r->GetRCamera();
-	float zn = rc.fNear;
-	float zf = rc.fFar;
-	//sData[0].f[3] = -(zf/(zf-zn));
-	sData[0].f[3] = 0.0f;
-
-	sData[0].f[0] = 255.0 / 256.0;
-	sData[0].f[1] = 255.0 / 65536.0;
-	sData[0].f[2] = 255.0 / 16777216.0;
-}
 NO_INLINE void sNearFarDist(UFloat4* sData, CD3D9Renderer* r)
 {
 	const CRenderCamera& rc = r->GetRCamera();
@@ -2933,83 +2883,15 @@ void CHWShader_D3D::mfCommitParamsGlobal()
 		mfSetTextures(s_PF_Textures, eHWSC_Pixel);      // Per-frame textures
 		mfSetSamplers_Old(s_PF_Samplers, eHWSC_Pixel);  // Per-frame samplers
 
-		mfSetPF(); // Per-frame parameters
 		mfSetCM(); // Per-camera parameters
 		mfSetPV(); // Per-view parameters
 	}
 
-	if (rRP.m_PersFlags2 & (RBPF2_COMMIT_SG))
-	{
-		rRP.m_PersFlags2 &= ~(RBPF2_COMMIT_SG);
-		mfSetSG(); // Shadow-gen parameters
-	}
-
-	mfCommitCB(CB_PER_FRAME, eHWSC_Vertex, eHWSC_Vertex);
-	mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Vertex, eHWSC_Vertex);
-
-	mfCommitCB(CB_PER_FRAME, eHWSC_Pixel, eHWSC_Pixel);
-	mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Pixel, eHWSC_Pixel);
-
-	if (s_pCurInstGS)
-	{
-		mfCommitCB(CB_PER_FRAME, eHWSC_Geometry, eHWSC_Geometry);
-		mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Geometry, eHWSC_Geometry);
-	}
-	else
-	{
-		mfFreeCB(CB_PER_FRAME, eHWSC_Geometry);
-		mfFreeCB(CB_PER_SHADOWGEN, eHWSC_Geometry);
-	}
-
-	if (s_pCurInstHS)
-	{
-		mfCommitCB(CB_PER_FRAME, eHWSC_Domain, eHWSC_Domain);
-		mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Domain, eHWSC_Domain);
-
-		mfCommitCB(CB_PER_FRAME, eHWSC_Hull, eHWSC_Hull);
-		mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Hull, eHWSC_Hull);
-	}
-	else
-	{
-		mfFreeCB(CB_PER_FRAME, eHWSC_Domain);
-		mfFreeCB(CB_PER_SHADOWGEN, eHWSC_Domain);
-
-		mfFreeCB(CB_PER_FRAME, eHWSC_Hull);
-		mfFreeCB(CB_PER_SHADOWGEN, eHWSC_Hull);
-	}
 
 	if (s_pCurInstCS)
 	{
-		mfCommitCB(CB_PER_FRAME, eHWSC_Compute, eHWSC_Compute);
-		mfCommitCB(CB_PER_SHADOWGEN, eHWSC_Compute, eHWSC_Compute);
-	}
-	else
-	{
-		mfFreeCB(CB_PER_FRAME, eHWSC_Compute);
-		mfFreeCB(CB_PER_SHADOWGEN, eHWSC_Compute);
-	}
-
-	if (s_pCurReqCB[eHWSC_Pixel][CB_PER_LIGHT])
-		mfSetCB(eHWSC_Pixel, CB_PER_LIGHT, s_pCurReqCB[eHWSC_Pixel][CB_PER_LIGHT]);
-	if (s_pCurReqCB[eHWSC_Vertex][CB_PER_LIGHT])
-		mfSetCB(eHWSC_Vertex, CB_PER_LIGHT, s_pCurReqCB[eHWSC_Vertex][CB_PER_LIGHT]);
-
-	if (s_pCurInstGS)
-		mfSetCB(eHWSC_Geometry, CB_PER_FRAME, s_pCurReqCB[eHWSC_Geometry][CB_PER_FRAME]);
-	if (s_pCurInstHS)
-	{
-		mfSetCB(eHWSC_Hull, CB_PER_FRAME, s_pCurReqCB[eHWSC_Hull][CB_PER_FRAME]);
-		mfSetCB(eHWSC_Domain, CB_PER_FRAME, s_pCurReqCB[eHWSC_Domain][CB_PER_FRAME]);
-	}
-	if (s_pCurInstCS)
-	{
-		mfSetCB(eHWSC_Compute, CB_PER_FRAME, s_pCurReqCB[eHWSC_Compute][CB_PER_FRAME]);
 		mfSetCB(eHWSC_Compute, CB_PER_BATCH, s_pCurReqCB[eHWSC_Compute][CB_PER_BATCH]);
 	}
-	if (s_pCurReqCB[eHWSC_Geometry][CB_PER_LIGHT])
-		mfSetCB(eHWSC_Geometry, CB_PER_LIGHT, s_pCurReqCB[eHWSC_Geometry][CB_PER_LIGHT]);
-	if (s_pCurReqCB[eHWSC_Compute][CB_PER_LIGHT])
-		mfSetCB(eHWSC_Compute, CB_PER_LIGHT, s_pCurReqCB[eHWSC_Compute][CB_PER_LIGHT]);
 }
 
 void CHWShader_D3D::mfCommitParams()
@@ -3463,14 +3345,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 	UFloat4* sData = sDataBuffer; // data length must not exceed the lenght of sDataBuffer [=sozeof(36*float4)]
 
-	for (int i = 0; i < nINParams; i++)
-	{
-		if (pParams[i].m_eCGParamType == ECGP_PF_ProjRatio)
-		{
-			g_nCount++;
-		}
-	}
-
 	float* pOutBufferTemp = pOutBuffer;
 	uint32 nOutBufferSize = 0;
 
@@ -3502,74 +3376,11 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 			switch (paramType & 0xff)
 			{
-			case ECGP_Matr_PF_ViewProjMatrix:
-				{
-					TransposeAndStore(sData, r->m_CameraProjMatrix);
-					break;
-				}
-			case ECGP_Matr_PF_ViewProjMatrixPrev:
+				case ECGP_Matr_PB_ViewProjMatrixPrev:
 				{
 					TransposeAndStore(sData, r->m_CameraProjMatrixPrev);
 					break;
 				}
-			case ECGP_Matr_PF_ViewProjZeroMatrix:
-				{
-					//TransposeAndStore(sData, r->m_CameraProjMatrix);
-					TransposeAndStore(sData, r->m_CameraProjZeroMatrix);
-					break;
-				}
-			case ECGP_Matr_PB_ViewProjMatrix_I:
-				{
-					TransposeAndStore(sData, r->m_InvCameraProjMatrix);
-					break;
-				}
-			case ECGP_Matr_PB_ViewProjMatrix_IT:
-				{
-					assert(0);
-					break;
-				}
-			case ECGP_PF_FrustumPlaneEquation:
-				{
-					CCamera* pRC;
-					const SRenderPipeline::ShadowInfo& shadowInfo = rRP.m_ShadowInfo;
-					if ((rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && shadowInfo.m_pCurShadowFrustum)
-					{
-						assert(shadowInfo.m_nOmniLightSide >= 0 && shadowInfo.m_nOmniLightSide < OMNI_SIDES_NUM);
-						pRC = &(shadowInfo.m_pCurShadowFrustum->FrustumPlanes[shadowInfo.m_nOmniLightSide]);
-					}
-					else
-						pRC = &(rRP.m_TI[rRP.m_nProcessThreadID].m_cam);
-					Matrix44A* pMat = alias_cast<Matrix44A*>(&sData[0]);
-					pMat->SetRow4(0, (Vec4&)*pRC->GetFrustumPlane(FR_PLANE_RIGHT));
-					pMat->SetRow4(1, (Vec4&)*pRC->GetFrustumPlane(FR_PLANE_LEFT));
-					pMat->SetRow4(2, (Vec4&)*pRC->GetFrustumPlane(FR_PLANE_TOP));
-					pMat->SetRow4(3, (Vec4&)*pRC->GetFrustumPlane(FR_PLANE_BOTTOM));
-					break;
-				}
-			case ECGP_PF_ShadowLightPos:
-				if ((rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && rRP.m_ShadowInfo.m_pCurShadowFrustum)
-				{
-					const ShadowMapFrustum* pFrust = rRP.m_ShadowInfo.m_pCurShadowFrustum;
-					const Vec3 vLPos = Vec3(
-					  pFrust->vLightSrcRelPos.x + pFrust->vProjTranslation.x,
-					  pFrust->vLightSrcRelPos.y + pFrust->vProjTranslation.y,
-					  pFrust->vLightSrcRelPos.z + pFrust->vProjTranslation.z
-					  );
-					sData[0].f[0] = vLPos.x;
-					sData[0].f[1] = vLPos.y;
-					sData[0].f[2] = vLPos.z;
-				}
-				break;
-			case ECGP_PF_ShadowViewPos:
-				if ((rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && rRP.m_ShadowInfo.m_pCurShadowFrustum)
-				{
-					const Vec3& vViewPos = rRP.m_ShadowInfo.vViewerPos;
-					sData[0].f[0] = vViewPos.x;
-					sData[0].f[1] = vViewPos.y;
-					sData[0].f[2] = vViewPos.z;
-				}
-				break;
-
 			case ECGP_Matr_PB_TerrainBase:
 				pSrc = sGetTerrainBase(sData, r);
 				break;
@@ -3988,7 +3799,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 				sData[0].f[3] = PF.pCausticsParams.x;
 				break;
 
-			case ECGP_PF_SunColor:
+			case ECGP_PB_SunColor:
 				{
 					const SRenderLight* pLight = r->m_RP.m_pSunLight;
 					if (pLight)
@@ -4006,94 +3817,42 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					break;
 				}
 
-			case ECGP_PF_SkyColor:
-				sSkyColor(sData);
-				break;
-
 			case ECGP_PB_CausticsSmoothSunDirection:
 				sCausticsSmoothSunDirection(sData);
 				break;
 
-			case ECGP_PF_SunDirection:
+			case ECGP_PB_SunDirection:
 				sSunDirection(sData);
 				break;
-			case ECGP_PF_FogColor:
-				sData[0].f[0] = rRP.m_TI[rRP.m_nProcessThreadID].m_FS.m_CurColor[0];
-				sData[0].f[1] = rRP.m_TI[rRP.m_nProcessThreadID].m_FS.m_CurColor[1];
-				sData[0].f[2] = rRP.m_TI[rRP.m_nProcessThreadID].m_FS.m_CurColor[2];
-				sData[0].f[3] = 0.0f;
-				break;
-			case ECGP_PF_CameraPos:
+			case ECGP_PB_CameraPos:
 				sData[0].f[0] = vCamPos.x;
 				sData[0].f[1] = vCamPos.y;
 				sData[0].f[2] = vCamPos.z;
 				sData[0].f[3] = (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_MIRRORCULL) ? -1.0f : 1.0f;
 				break;
-			case ECGP_PF_HPosScale:
+			case ECGP_PB_HPosScale:
 				sData[0].f[0] = rRP.m_CurDownscaleFactor.x;
 				sData[0].f[1] = rRP.m_CurDownscaleFactor.y;
 				sData[0].f[2] = r->m_PrevViewportScale.x;
 				sData[0].f[3] = r->m_PrevViewportScale.y;
 				break;
-			case ECGP_PF_ScreenSize:
+			case ECGP_PB_ScreenSize:
 				sGetScreenSize(sData, r);
 				break;
-			case ECGP_PF_Time:
+			case ECGP_PB_Time:
 				//sData[0].f[nComp] = r->m_RP.m_ShaderCurrTime; //r->m_RP.m_RealTime;
 				sData[0].f[nComp] = rRP.m_TI[rRP.m_nProcessThreadID].m_RealTime;
 				assert(ParamBind->m_pData);
 				if (ParamBind->m_pData)
 					sData[0].f[nComp] *= ParamBind->m_pData->d.fData[nComp];
 				break;
-			case ECGP_PF_FrameTime:
+			case ECGP_PB_FrameTime:
 				sData[0].f[nComp] = 1.f / gEnv->pTimer->GetFrameTime();
 				assert(ParamBind->m_pData);
 				if (ParamBind->m_pData)
 					sData[0].f[nComp] *= ParamBind->m_pData->d.fData[nComp];
 				break;
-			case ECGP_PF_ProjRatio:
-				{
-					const CRenderCamera& rc = r->GetRCamera();
-					float zn = rc.fNear;
-					float zf = rc.fFar;
-					float hfov = r->GetCamera().GetHorizontalFov();
-
-					const bool bReverseDepth = (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-					sData[0].f[0] = bReverseDepth ? zn / (zn - zf) : zf / (zf - zn);
-					sData[0].f[1] = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
-					sData[0].f[2] = 1.0f / hfov;
-					sData[0].f[3] = 1.0f;
-				}
-				break;
-			case ECGP_PF_NearestScaled:
-				{
-					const CRenderCamera& rc = r->GetRCamera();
-					I3DEngine* pEng = gEnv->p3DEngine;
-
-					float zn = rc.fNear;
-					float zf = rc.fFar;
-
-					//////////////////////////////////////////////////////////////////////////
-					float fNearZRange = r->CV_r_DrawNearZRange;
-					float fCamScale = (r->CV_r_DrawNearFarPlane / pEng->GetMaxViewDistance());
-
-					//float fDevDepthScale = 1.0f/fNearZRange;
-					float fCombinedScale = fNearZRange * fCamScale;
-					//float2 ProjRatioScale = float2((1.0f/fDevDepthScale), fCombinedScale);
-					//////////////////////////////////////////////////////////////////////////
-
-					const bool bReverseDepth = (r->m_RP.m_TI[r->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-					sData[0].f[0] = bReverseDepth ? 1.0f - zf / (zf - zn) * fNearZRange : zf / (zf - zn) * fNearZRange;
-					sData[0].f[1] = bReverseDepth ? zn / (zf - zn) * fNearZRange * fNearZRange : zn / (zn - zf) * fNearZRange * fNearZRange; // fCombinedScale;
-					sData[0].f[2] = bReverseDepth ? 1.0f - (fNearZRange - 0.001f) : fNearZRange - 0.001f;
-					sData[0].f[3] = 1.0f;
-
-				}
-				break;
-			case ECGP_PF_DepthFactor:
-				sDepthFactor(sData, r);
-				break;
-			case ECGP_PF_NearFarDist:
+			case ECGP_PB_NearFarDist:
 				sNearFarDist(sData, r);
 				break;
 			case ECGP_PB_CloudShadingColorSun:
@@ -4135,10 +3894,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					sData[0].f[1] = (rRP.m_pCurObject->m_ObjFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
 					sData[0].f[2] = 0;
 					sData[0].f[3] = rRP.m_pShaderResources ? rRP.m_pShaderResources->m_AlphaRef : 0;
-					// specific condition for hair zpass - likely better having sAlphaTestHair
-					//if ((rRP.m_pShader->m_Flags2 & EF2_HAIR) && !(rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-					//	sData[0].f[3] = 0.51f;
-					// specific condition for particles - likely better having sAlphaTestParticles
+
 					if (!rRP.m_pShaderResources && (rRP.m_nPassGroupID == EFSLIST_TRANSP || rRP.m_nPassGroupID == EFSLIST_HALFRES_PARTICLES))
 					{
 						const SRenderObjData* pOD = rRP.m_pCurObject->GetObjData();
@@ -5681,7 +5437,7 @@ ED3DShError CHWShader_D3D::mfFallBack(SHWSInstance*& pInst, int nStatus)
 	}
 	if (
 	  m_eSHClass == eHWSC_Geometry || m_eSHClass == eHWSC_Domain || m_eSHClass == eHWSC_Hull ||
-	  (gRenDev->m_RP.m_nBatchFilter & FB_Z) || (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) || gRenDev->m_RP.m_nPassGroupID == EFSLIST_SHADOW_PASS)
+	  (gRenDev->m_RP.m_nBatchFilter & FB_Z) || gRenDev->m_RP.m_nPassGroupID == EFSLIST_SHADOW_PASS)
 		return ED3DShError_CompilingError;
 	if (gRenDev->m_RP.m_pShader)
 	{
@@ -6513,7 +6269,7 @@ void CHWShader_D3D::mfSetCM()
 	}
 }
 
-void CHWShader_D3D::mfSetPV(const RECT* pCustomViewport)
+void CHWShader_D3D::mfSetPV(const D3DViewPort* pCustomViewport)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
@@ -6528,61 +6284,6 @@ void CHWShader_D3D::mfSetPV(const RECT* pCustomViewport)
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_HS, pBuffer, 13);
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_DS, pBuffer, 13);
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_CS, pBuffer, 13);
-}
-
-void CHWShader_D3D::mfSetPF()
-{
-	DETAILED_PROFILE_MARKER("mfSetPF");
-	CD3D9Renderer* r = gcpRendD3D;
-
-	for (EHWShaderClass eClass = eHWSC_Vertex; eClass < eHWSC_Num; eClass = EHWShaderClass(eClass + 1))
-	{
-		if (!s_PF_Params[eClass].empty())
-		{
-			mfSetParameters(&s_PF_Params[eClass][0], s_PF_Params[eClass].size(), eClass, s_nMax_PF_Vecs[eClass]);
-		}
-	}
-}
-
-void CHWShader_D3D::mfSetSG()
-{
-	DETAILED_PROFILE_MARKER("mfSetSG");
-	CD3D9Renderer* r = gcpRendD3D;
-
-	if (r->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN)
-	{
-		assert(r->m_RP.m_ShadowInfo.m_pCurShadowFrustum);
-		if (ShadowMapFrustum* pFrustum = r->m_RP.m_ShadowInfo.m_pCurShadowFrustum)
-		{
-			const int vectorCount = sizeof(HLSL_PerPassConstantBuffer_ShadowGen) / sizeof(Vec4);
-			CConstantBuffer*& pCB = s_pCB[eHWSC_Vertex][CB_PER_SHADOWGEN][vectorCount];
-
-			if (!pCB)
-			{
-				pCB = gcpRendD3D->m_DevBufMan.CreateConstantBufferRaw(vectorCount * sizeof(Vec4));
-			}
-
-			CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen> cb(pCB);
-			cb->CP_ShadowGen_FrustrumInfo = r->m_RP.m_TI[r->m_RP.m_nProcessThreadID].m_vFrustumInfo;
-			cb->CP_ShadowGen_LightPos = Vec4(pFrustum->vLightSrcRelPos + pFrustum->vProjTranslation, 0);
-			cb->CP_ShadowGen_ViewPos = Vec4(r->m_RP.m_ShadowInfo.vViewerPos, 0);
-			cb->CP_ShadowGen_DepthTestBias = r->m_cEF.m_TempVecs[1];
-
-			cb->CP_ShadowGen_VegetationAlphaClamp = Vec4(ZERO);
-#if defined(FEATURE_SVO_GI)
-			if (CSvoRenderer* pSvoRenderer = CSvoRenderer::GetInstance())
-			{
-				cb->CP_ShadowGen_VegetationAlphaClamp.x = pSvoRenderer->GetVegetationMaxOpacity();
-			}
-#endif
-
-			cb.CopyToDevice();
-
-			r->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, cb.GetDeviceConstantBuffer(), CB_PER_SHADOWGEN);
-			r->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_HS, cb.GetDeviceConstantBuffer(), CB_PER_SHADOWGEN);
-			r->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_DS, cb.GetDeviceConstantBuffer(), CB_PER_SHADOWGEN);
-		}
-	}
 }
 
 void CHWShader_D3D::mfSetGlobalParams()
@@ -6644,7 +6345,7 @@ void CHWShader_D3D::mfSetGlobalParams()
 		}
 	}
 
-	r->m_RP.m_PersFlags2 |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM | RBPF2_COMMIT_SG;
+	r->m_RP.m_PersFlags2 |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM;
 	r->m_RP.m_nCommitFlags |= FC_GLOBAL_PARAMS;
 }
 
@@ -6657,92 +6358,6 @@ void CHWShader_D3D::mfSetCameraParams()
 #endif
 	gRenDev->m_RP.m_PersFlags2 |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM;
 	gRenDev->m_RP.m_nCommitFlags |= FC_GLOBAL_PARAMS;
-}
-
-bool CHWShader_D3D::mfAddGlobalParameter(SCGParam& Param, EHWShaderClass eSH, bool bSG, bool bCam)
-{
-	uint32 i;
-	DETAILED_PROFILE_MARKER("mfAddGlobalParameter");
-	if (bCam)
-	{
-		for (i = 0; i < s_CM_Params[eSH].size(); i++)
-		{
-			SCGParam* pP = &s_CM_Params[eSH][i];
-			if (pP->m_Name == Param.m_Name)
-				break;
-		}
-		if (i == s_CM_Params[eSH].size())
-		{
-			s_CM_Params[eSH].push_back(Param);
-			if ((Param.m_dwBind + Param.m_nParameters) > s_nMax_PF_Vecs[eSH])
-			{
-				gRenDev->m_RP.m_PersFlags2 |= RBPF2_COMMIT_CM;
-				gRenDev->m_RP.m_nCommitFlags |= FC_GLOBAL_PARAMS;
-			}
-			s_nMax_PF_Vecs[eSH] = max(Param.m_dwBind + Param.m_nParameters, s_nMax_PF_Vecs[eSH]);
-			return true;
-		}
-	}
-	else if (!bSG)
-	{
-		for (i = 0; i < s_PF_Params[eSH].size(); i++)
-		{
-			SCGParam* pP = &s_PF_Params[eSH][i];
-			if (pP->m_Name == Param.m_Name)
-				break;
-		}
-		if (i == s_PF_Params[eSH].size())
-		{
-			if (eSH == eHWSC_Pixel)
-			{
-				if (strnicmp(Param.m_Name.c_str(), "g_PS", 4))
-				{
-					assert(false);
-					iLog->Log("Error: Attempt to use non-PS global parameter in pixel shader");
-					return false;
-				}
-			}
-			else if (eSH == eHWSC_Vertex)
-			{
-				if (strnicmp(Param.m_Name.c_str(), "g_VS", 4))
-				{
-					assert(false);
-					iLog->Log("Error: Attempt to use non-VS global parameter in vertex shader");
-					return false;
-				}
-			}
-			assert(eSH < eHWSC_Num);
-			s_PF_Params[eSH].push_back(Param);
-			if ((Param.m_dwBind + Param.m_nParameters) > s_nMax_PF_Vecs[eSH])
-			{
-				gRenDev->m_RP.m_PersFlags2 |= RBPF2_COMMIT_PF;
-				gRenDev->m_RP.m_nCommitFlags |= FC_GLOBAL_PARAMS;
-			}
-			s_nMax_PF_Vecs[eSH] = max(Param.m_dwBind + Param.m_nParameters, s_nMax_PF_Vecs[eSH]);
-			return true;
-		}
-	}
-	else
-	{
-		for (i = 0; i < s_SG_Params[eSH].size(); i++)
-		{
-			SCGParam* pP = &s_SG_Params[eSH][i];
-			if (pP->m_Name == Param.m_Name)
-				break;
-		}
-		if (i == s_SG_Params[eSH].size())
-		{
-			s_SG_Params[eSH].push_back(Param);
-			if ((Param.m_dwBind + Param.m_nParameters) > s_nMax_SG_Vecs[eSH])
-			{
-				gRenDev->m_RP.m_PersFlags2 |= RBPF2_COMMIT_SG;
-				gRenDev->m_RP.m_nCommitFlags |= FC_GLOBAL_PARAMS;
-			}
-			s_nMax_SG_Vecs[eSH] = max(Param.m_dwBind + Param.m_nParameters, s_nMax_SG_Vecs[eSH]);
-			return true;
-		}
-	}
-	return false;
 }
 
 bool CHWShader_D3D::mfAddGlobalTexture(SCGTexture& Texture)

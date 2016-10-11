@@ -693,7 +693,7 @@ void CD3D9Renderer::FX_ResetPipe()
 	m_RP.m_FlagsShader_PipelineState = 0;
 	m_RP.m_FlagsShader_LT      = 0;
 	m_RP.m_nCommitFlags        = FC_ALL;
-	m_RP.m_PersFlags2         |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM | RBPF2_COMMIT_SG;
+	m_RP.m_PersFlags2         |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM;
 
 	m_RP.m_nZOcclusionProcess = 0;
 	m_RP.m_nZOcclusionReady   = 1;
@@ -713,8 +713,6 @@ void CD3D9Renderer::FX_ResetPipe()
 			h                  = FX_SetVStream(i, NULL, 0, 0);
 		}
 	}
-
-	//m_RP.m_ShadowInfo.m_pCurShadowFrustum = NULL;
 
 	CHWShader_D3D::mfSetGlobalParams();
 }
@@ -752,7 +750,7 @@ void CD3D9Renderer::RT_SetCameraInfo()
 	}
 
 	bool bApplySubpixelShift = !(m_RP.m_PersFlags2 & RBPF2_NOPOSTAA);
-	bApplySubpixelShift &= !(pShaderThreadInfo->m_PersFlags & (RBPF_DRAWTOTEXTURE | RBPF_SHADOWGEN));
+	bApplySubpixelShift &= !(pShaderThreadInfo->m_PersFlags & RBPF_DRAWTOTEXTURE);
 
 	if (bApplySubpixelShift)
 	{
@@ -1585,7 +1583,7 @@ void CD3D9Renderer::FX_RenderForwardOpaque(void (* RenderFunc)(), const bool bLi
 		FX_MSAASampleFreqStencilSetup(MSAA_STENCILCULL | MSAA_STENCILMASK_SET);   // set stencil mask and enable stencil culling for pixel freq
 #endif
 
-	const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & (RBPF_SHADOWGEN | RBPF_MAKESPRITE)) != 0;
+	const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) != 0;
 
 	if ((m_RP.m_PersFlags2 & RBPF2_ALLOW_DEFERREDSHADING) && !bShadowGenSpritePasses && (!IsRecursiveRenderView()) && !m_wireframe_mode)
 		m_RP.m_PersFlags2 |= RBPF2_FORWARD_SHADING_PASS;
@@ -3455,13 +3453,6 @@ bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRen
 
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
 
-	if ((pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN))
-	{
-		const bool bNearObjOnly = m_RP.m_ShadowInfo.m_pCurShadowFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest;
-		if (bNearObjOnly && !(obj->m_ObjFlags & FOB_NEAREST))
-			return false;
-	}
-
 	if ((obj->m_ObjFlags & FOB_NEAREST) && CV_r_nodrawnear)
 		return false;
 
@@ -3503,7 +3494,7 @@ bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRen
 		HandleDefaultObject();
 	}
 
-	const uint32 nPerfFlagsExcludeMask  = (RBPF_SHADOWGEN | RBPF_ZPASS);
+	const uint32 nPerfFlagsExcludeMask  = RBPF_ZPASS;
 	const uint32 nPerfFlags2ExcludeMask = (RBPF2_THERMAL_RENDERMODE_PASS | RBPF2_MOTIONBLURPASS | RBPF2_THERMAL_RENDERMODE_TRANSPARENT_PASS | RBPF2_CUSTOM_RENDER_PASS);
 
 	if ((m_RP.m_nPassGroupID == EFSLIST_TRANSP)
@@ -3533,24 +3524,7 @@ void CD3D9Renderer::UpdateNearestChange(int flags)
 	const int nProcessThread             = m_RP.m_nProcessThreadID;
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[nProcessThread]);
 
-	const ShadowMapFrustum* pCurFrustum = m_RP.m_ShadowInfo.m_pCurShadowFrustum;
-	const bool bNearObjOnly             = pCurFrustum && (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest) && (m_RP.m_pCurObject->m_ObjFlags & FOB_NEAREST);
-	if (bNearObjOnly && (pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN)) //add additional flag
-	{
-		//set per-object camera view
-		Matrix44A& mPrj            = *pShaderThreadInfo->m_matProj->GetTop();
-		Matrix44A& mView           = *pShaderThreadInfo->m_matView->GetTop();
-		Vec4& vFrustumInfo         = pShaderThreadInfo->m_vFrustumInfo;
-		ShadowMapFrustum& curFrust = *m_RP.m_ShadowInfo.m_pCurShadowFrustum;
-
-		mPrj         = curFrust.mLightProjMatrix;
-		mView        = curFrust.mLightViewMatrix;
-		vFrustumInfo = curFrust.vFrustInfo;
-
-		EF_SetCameraInfo();
-	}
-
-	if (!(pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN) && (m_drawNearFov > 0.0f))
+	if (m_drawNearFov > 0.0f)
 	{
 		if (flags & RBF_NEAREST)
 		{
@@ -4809,7 +4783,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 	// Prepare post processing
 	bool bAllowPostProcess = (nFlags & SHDF_ALLOWPOSTPROCESS) && !nRecurse && (CV_r_PostProcess) && !CV_r_measureoverdraw &&
-	  !(pShaderThreadInfo->m_PersFlags & (RBPF_MAKESPRITE | RBPF_SHADOWGEN));
+	  !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
 
 	bool bAllowSubpixelShift = bAllowPostProcess
 	  && (gcpRendD3D->FX_GetAntialiasingType() & eAT_REQUIRES_SUBPIXELSHIFT_MASK)
@@ -4965,9 +4939,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 			FX_ProcessCharDeformation(pRenderView);
 
 		{
-			bool bLighting = (pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN) == 0;
-			if (!nFlags)
-				bLighting = false;
+			bool bLighting = !nFlags;
 
 			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && CV_r_usezpass)
 			{
@@ -4975,13 +4947,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 				FX_DeferredRainGBuffer();
 				FX_DeferredSnowLayer();
-			}
-
-			//shadow generation
-			if (!nRecurse && !(nFlags & SHDF_NO_SHADOWGEN)) //|SHDF_ALLOWPOSTPROCESS
-			{
-				PROFILE_LABEL_SCOPE("SHADOWMAPS");
-				EF_PrepareAllDepthMaps(pRenderView);
 			}
 
 			// Generate the HDR cloud volume textures for shadow mapping.
@@ -5020,7 +4985,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 				FX_DeferredCaustics();
 			}
 
-			const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & (RBPF_SHADOWGEN | RBPF_MAKESPRITE)) != 0;
+			const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) != 0;
 
 			if (bAllowDeferred && bDeferredScenePasses)
 			{
@@ -5148,11 +5113,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 	CFlashTextureSourceBase::RenderLights();
 
-	if (m_bCopyScreenToBackBuffer)
-	{
-		RT_CopyScreenToBackBuffer();
-	}
-
 	FX_ApplyThreadState(m_RP.m_OldTI[nRecurse], NULL);
 
 	m_RP.m_PS[m_RP.m_nProcessThreadID].m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
@@ -5177,8 +5137,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		pRenderView->Clear();
 		m_RP.m_pSunLight = nullptr;
 
-		m_RP.m_ShadowInfo.m_pCurShadowFrustum = nullptr; // the line above clears shadow frustums, so this pointers becomes invalid
-
 		// Free render objects that could have been used for this frame
 		FreePermanentRenderObjects(m_RP.m_nProcessThreadID);
 	}
@@ -5190,19 +5148,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		assert(m_nRTStackLevel[0] == 0);
 		FX_SetRenderTarget(0, m_pBackBuffer, &m_DepthBufferNative, false);
 }
-}
-
-void CD3D9Renderer::RT_CopyScreenToBackBuffer()
-{
-	// If rendering kill-cam replay top kills....
-	PostProcessUtils().CopyScreenToTexture(CTexture::s_ptexBackBuffer);
-
-	// clear alpha channel on pc to avoid undesired mask being left in it by MSAA
-	gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexBackBuffer, NULL);
-	FX_SetActiveRenderTargets();
-	EF_ClearTargetsLater(FRT_CLEAR_COLOR, Clr_Empty);
-	FX_ClearTargetRegion(GS_COLMASK_A);
-	gcpRendD3D->FX_PopRenderTarget(0);
 }
 
 void CD3D9Renderer::RT_DrawUITextureInternal(S2DImage& img)

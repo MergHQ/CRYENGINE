@@ -64,7 +64,6 @@ public:
 	Vec4         vFrustInfo;
 
 	// flags
-	bool bAllowViewDependency;
 	bool bUseAdditiveBlending;
 	bool bIncrementalUpdate;
 
@@ -158,7 +157,6 @@ public:
 		, mLightProjMatrix(IDENTITY)
 		, mLightViewMatrix(IDENTITY)
 		, vFrustInfo(ZERO)
-		, bAllowViewDependency(false)
 		, bUseAdditiveBlending(false)
 		, bIncrementalUpdate(false)
 		, bOmniDirectionalShadow(false)

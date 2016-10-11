@@ -87,22 +87,6 @@ struct v2fIn
 };
 
 
-float GetSceneDepthInto(in float4 screenProj)
-{
-//#ifdef %_RT_MSAA_QUALITY
-//	float2 lookup = screenProj.xy / screenProj.w;	
-//	float depth = tex2D(sceneDepthSampler, lookup).r;
-//	depth = max(tex2D(sceneDepthSampler, lookup + 2 * PS_ScreenSize.zw).r, depth);
-//	depth = max(tex2D(sceneDepthSampler, lookup - 2 * PS_ScreenSize.zw).r, depth);
-//	depth = max(tex2D(sceneDepthSampler, lookup + 2 * float2(PS_ScreenSize.z, -PS_ScreenSize.w)).r, depth);
-//	depth = max(tex2D(sceneDepthSampler, lookup - 2 * float2(PS_ScreenSize.z, -PS_ScreenSize.w)).r, depth);
-//	return GetLinearDepth(depth) * PS_NearFarClipDist.y;
-//#else
-	float depth = DecodeSceneDepth(sceneDepthSampler, screenProj);
-	return depth;
-//#endif	
-}
-
 float4 CalcHomogeneousPos(float SceneDepth, float2 WPos)
 {
   float4 HPos = vWBasisZ.xyzw + (vWBasisX.xyzw*WPos.x)+(vWBasisY.xyzw*WPos.y);
@@ -193,7 +177,7 @@ pixout WaterVolumeIntoPS( v2fIn IN )
 {
 	pixout OUT = (pixout) 0;  
 	
-	float sceneDepth = GetSceneDepthInto(IN.hPosTexProj);
+	float sceneDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.hPosTexProj);
 	float waterDepth = dot( IN.viewDir, -cameraFrontVector );
 	float volumeDepth = max( sceneDepth - waterDepth, 0 );  
 	float waterVolumeFog = exp2( -cFogColorDensity.w * volumeDepth / max(dot( normalize( IN.viewDir ), -cameraFrontVector ), 0.001) );
@@ -305,7 +289,7 @@ pixout WaterVolumeOutofPS( v2fIn IN )
 	if( t > 0 )
 		viewDir *= pd_c;
 		
-	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );  
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );  
 	float waterDepth = dot( viewDir, -cameraFrontVector );
   float volumeDepth = min( waterDepth, sceneDepth ) / max(dot( normalize( viewDir ), -cameraFrontVector ), 0.001);  
   float waterVolumeFog = exp2( -cFogColorDensity.w * volumeDepth );
@@ -392,7 +376,7 @@ pixout OceanIntoPS( v2f IN )
 	float3 viewDirNorm = normalize( IN.viewDir );
 	float viewDirCorrection = 1.0 / dot( viewDirNorm, -cameraFrontVector );
 
-	float sceneDepth = GetSceneDepthInto(IN.hPosTexProj);  
+	float sceneDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.hPosTexProj);  
 	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -cameraFrontVector ), 0 );
 	volumeDepth *= viewDirCorrection;
 
@@ -499,7 +483,7 @@ pixout OceanOutofPS( v2f IN )
 	if( t1 > 0 )
 		viewDir *= pd_c;
 		  		  
-	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );  
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );  
   float volumeDepth = min( dot( viewDir, -cameraFrontVector ), sceneDepth );  
   volumeDepth *= viewDirCorrection;
   

@@ -723,7 +723,7 @@ void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMap
 	primitive.SetRenderState(gsDepthFunc | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	primitive.SetCullMode(eCULL_Back);
 	primitive.SetCustomVertexStream(m_nearestFullscreenTri, eVF_P3F, sizeof(SVF_P3F));
-	primitive.SetCustomIndexStream(~0u, 0);
+	primitive.SetCustomIndexStream(~0u, RenderIndexType(0));
 	primitive.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CTexture::s_ptexFarPlane);
 	primitive.SetTexture(1, CTexture::s_ptexShadowJitterMap);
 	primitive.SetTexture(2, CTexture::s_ptexZTarget);
@@ -849,7 +849,7 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 		constants->screenToShadowBasis = shadowSamplingInfo.screenToShadowBasis;
 		constants->noiseProjection = shadowSamplingInfo.noiseProjection;
 		constants->blendTcNormalize = Vec4(ZERO);
-		constants->oneDivFarDist = Vec4(shadowSamplingInfo.oneDivFarDist);
+		constants->oneDivFarDist = Vec4(shadowSamplingInfo.oneDivFarDist, shadowSamplingInfo.oneDivFarDistBlend, 0, 0);
 		constants->depthTestBias = Vec4(shadowSamplingInfo.depthTestBias);
 		memcpy(constants->irreg_kernel_2d, shadowMaskStage.m_filterKernel, sizeof(shadowMaskStage.m_filterKernel));
 		constants->kernelRadius = Vec4(shadowSamplingInfo.kernelRadius);
@@ -1223,7 +1223,7 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	}
 
 	// apply per view buffer to all primitives
-	primitives.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
+	primitives.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex | EShaderStage_Pixel);
 	primitives.stencilBackfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
 	primitives.stencilFrontfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
 

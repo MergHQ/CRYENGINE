@@ -103,16 +103,6 @@ sampler2D envMapSamplerRefr
   sRGBLookup = true; 
 };
 
-sampler2D depthMapSampler = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
 sampler2D cloakPaletteMapSampler = sampler_state
 {
   Texture = EngineAssets/Textures/palette/cloak_palette.tif;
@@ -460,7 +450,7 @@ pixout CloakSparksPS(vtxOUTSparks IN)
 	const float fSpeedScale = 0.25f;
   finalColor.xyz = fInterlation * fSparksFinal * max(fSpeedScale, fCloakTransition); // 3 inst
 
-  float fDepth = GetLinearDepth_ProjTC( depthMapSampler, IN.screenPos ) ;  
+  float fDepth = GetLinearDepthProj( sceneLinearDepthTex, IN.screenPos );  
   finalColor.xyz *=  saturate( (fDepth  - IN.screenPos.z )*10000); // soft-ztest // 3 inst
 
   finalColor.xyz *= PS_HDR_RANGE_ADAPT_MAX;

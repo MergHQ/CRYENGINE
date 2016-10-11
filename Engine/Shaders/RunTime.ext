@@ -1078,9 +1078,6 @@ Property
   Precache = VolumeLightInjectionCS
   Precache = VolumetricCloudsPS
   Precache = ReprojectCloudsPS
-	
-  Precache = ShadowMaskGenVS
-  Precache = ShadowMaskGenPS 
 }
 
 // Reserved for post processes/deferred - do not use for light/common shaders

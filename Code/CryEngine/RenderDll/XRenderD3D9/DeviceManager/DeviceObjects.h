@@ -35,9 +35,7 @@ enum EConstantBufferShaderSlot
 	// Z/G-Buffer
 	eConstantBufferShaderSlot_PerBatch          = 0,
 	eConstantBufferShaderSlot_PerInstanceLegacy = 1,
-	eConstantBufferShaderSlot_PerFrame          = 2,
 	eConstantBufferShaderSlot_PerMaterial       = 3,
-	eConstantBufferShaderSlot_PerLight          = 4,
 	eConstantBufferShaderSlot_PerPass           = 5,
 	eConstantBufferShaderSlot_SkinData          = 6,
 	eConstantBufferShaderSlot_InstanceData      = 7,
@@ -377,9 +375,6 @@ public:
 	std::array<ETEX_Format, 4> m_RenderTargetFormats;
 	ETEX_Format                m_DepthStencilFormat;
 	ECull                      m_CullMode;
-	int32                      m_DepthBias;
-	f32                        m_DepthBiasClamp;
-	f32                        m_SlopeScaledDepthBias;
 	ERenderPrimitiveType       m_PrimitiveType;
 	CDeviceResourceLayout*     m_pResourceLayout;
 	bool                       m_bDepthClip;
@@ -641,11 +636,13 @@ public:
 	void SetIndexBuffer(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
 	void SetStencilRef(uint8 stencilRefValue);
+	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
 
 	void Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
-	void ClearSurface(D3DSurface* pView, const float color[4], uint32 numRects, const D3D11_RECT* pRects);
+	void ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 };
 
 STATIC_ASSERT(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceGraphicsCommandInterface cannot contain data members");
@@ -858,7 +855,8 @@ struct SDeviceObjectHelpers
 			++m_CurrentBufferIndex;
 		}
 
-		T*   operator->() { return &m_pCachedData[m_CurrentBufferIndex]; }
+		T*   operator->  () { return &m_pCachedData[m_CurrentBufferIndex]; }
+		     operator T& () { return  m_pCachedData[m_CurrentBufferIndex]; }
 
 	private:
 		// NOTE: enough memory to hold an aligned struct size + the adjustment of a possible unaligned start

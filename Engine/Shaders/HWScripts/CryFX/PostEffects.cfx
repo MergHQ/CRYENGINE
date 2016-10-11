@@ -1733,8 +1733,7 @@ struct _pixoutMRT
 
 float GetStereoDepth( sampler2D depthSampler, float2 ScreenTC )
 {	
-	float depth = GetDepthMap( depthSampler, ScreenTC.xy );
-	float linDepth = GetLinearDepth( depth );
+	float linDepth = GetLinearDepth( depthSampler, ScreenTC.xy );
 	
 	bool isNear = tex2D( _tex2, ScreenTC.xy ).x > 0;
 	

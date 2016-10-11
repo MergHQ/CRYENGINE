@@ -330,7 +330,7 @@ void frag_custom_begin(inout fragPass pPass)
 	// Soft intersection
 	if (SoftIntersection > 0)
 	{
-		float depthDiff = abs( pPass.IN.screenProj.w - DecodeSceneDepth( sceneDepthSampler, pPass.IN.screenProj ) );
+		float depthDiff = abs( pPass.IN.screenProj.w - GetLinearDepthScaledProj( sceneLinearDepthTex, pPass.IN.screenProj ) );
 		pPass.fAlpha *= saturate( lerp( 1, saturate( depthDiff * 100 ), SoftIntersection ) );
 	}
 

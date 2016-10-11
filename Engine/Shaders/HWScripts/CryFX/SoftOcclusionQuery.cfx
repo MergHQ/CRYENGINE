@@ -33,10 +33,12 @@ VS_OUT quadVS( VS_IN IN )
 	return OUT;
 }
 
-sampler2D depthMap : register(s0);
-float4 renderOccPlanePS( VS_OUT IN ) : COLOR
+Texture2D    depthTex : register(t0);
+SamplerState ssDepth  : register(s0);
+
+float4 renderOccPlanePS( VS_OUT IN ) : SV_Target
 {
-	float depth = GetUnnormalizedLinearDownscaledDepth(depthMap, IN.uvz.xy);
+	float depth = GetTexture2D(depthTex, ssDepth, IN.uvz.xy);
 
 	float4 ret;
 	ret.x = saturate(sign(depth-IN.uvz.z));
@@ -45,8 +47,10 @@ float4 renderOccPlanePS( VS_OUT IN ) : COLOR
 
 float4 occlusionNormalizedSize;
 
-sampler2D occMap : register(s0);
-float4 gatherResultPS( VS_OUT IN ) : COLOR
+Texture2D    occTex   : register(t0);
+SamplerState ssGather : register(s0);
+
+float4 gatherResultPS( VS_OUT IN ) : SV_Target
 {
 	half4 result = half4(0,0,0,0);
 	#define occResult result.r
@@ -56,38 +60,38 @@ float4 gatherResultPS( VS_OUT IN ) : COLOR
 	half3 delta = half3( -0.25*occlusionNormalizedSize.x, 0.25*occlusionNormalizedSize.y, 0 );
 	half3 direction = half3( -0.5, 0.5, 0 );
 
-	half texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zz) ).r;
+	half texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.zz) ).r;
 	occResult = texel;
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xz) ).r; // Left
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.xz) ).r; // Left
 	occResult += texel;
 	dirResultVec += texel * normalize(delta.xz*2-1);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zx) ).r; // Up
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.zx) ).r; // Up
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.zx);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zy) ).r; // Bottom
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.zy) ).r; // Bottom
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.zy);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yz) ).r; // Right
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.yz) ).r; // Right
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.yz);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xx) ).r; // Left,Up
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.xx) ).r; // Left,Up
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.xx);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yx) ).r; // Right,Up
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.yx) ).r; // Right,Up
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.yx);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yy) ).r; // Right,Bottom
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.yy) ).r; // Right,Bottom
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.yy);
 
-	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xy) ).r; // Left,Bottom
+	texel = GetTexture2D( occTex, ssGather, ClampScreenTC(IN.uvz.xy + delta.xy) ).r; // Left,Bottom
 	occResult += texel;
 	dirResultVec += texel * normalize(direction.xy);
 
@@ -101,23 +105,20 @@ float4 gatherResultPS( VS_OUT IN ) : COLOR
 	return result;
 }
 
-technique Main
+technique RenderPlane
 {
 	pass p0
 	{
 		VertexShader = quadVS();
-		PixelShader = renderOccPlanePS();
-
-		ZEnable = false;
-	    ZWriteEnable = false;
+		PixelShader  = renderOccPlanePS();
 	}
+}
 
-	pass p1
+technique Gather
+{
+	pass p0
 	{
 		VertexShader = quadVS();
-		PixelShader = gatherResultPS();
-
-		ZEnable = false;
-	    ZWriteEnable = false;
+		PixelShader  = gatherResultPS();
 	}
 }

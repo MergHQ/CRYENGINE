@@ -28,6 +28,7 @@
 #include "TiledShading.h"
 #include "ColorGrading.h"
 #include "WaterRipples.h"
+#include "LensOptics.h"
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -275,6 +276,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CShadowMaskStage>(m_pShadowMaskStage, eStage_ShadowMask);
 	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
 	RegisterStage<CColorGradingStage>(m_pColorGradingStage, eStage_ColorGrading);
+	RegisterStage<CLensOpticsStage>(m_pLensOpticsStage, eStage_LensOptics);
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
@@ -374,7 +376,7 @@ int CStandardGraphicsPipeline::GetViewInfoCount() const
 	return viewInfoCount;
 }
 
-int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo viewInfo[2], const RECT* pCustomViewport)
+int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo viewInfo[2], const D3DViewPort* pCustomViewport)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
@@ -382,17 +384,17 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 	SViewInfo::eFlags viewFlags = SViewInfo::eFlags_None;
 	if (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) viewFlags |= SViewInfo::eFlags_ReverseDepth;
 	if (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_MIRRORCULL)    viewFlags |= SViewInfo::eFlags_MirrorCull;
-	if (!(rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & (RBPF_DRAWTOTEXTURE | RBPF_SHADOWGEN)) && !(rp.m_PersFlags2 & RBPF2_NOPOSTAA))
+	if (!(rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_DRAWTOTEXTURE) && !(rp.m_PersFlags2 & RBPF2_NOPOSTAA))
 		viewFlags |= SViewInfo::eFlags_SubpixelShift;
 
 	SViewport viewport = pRenderer->GetViewport();
 
 	if (pCustomViewport)
 	{
-		viewport.nX = pCustomViewport->left;
-		viewport.nY = pCustomViewport->top;
-		viewport.nWidth = pCustomViewport->right - pCustomViewport->left;
-		viewport.nHeight = pCustomViewport->bottom - pCustomViewport->top;
+		viewport.nX = int(pCustomViewport->TopLeftX);
+		viewport.nY = int(pCustomViewport->TopLeftY);
+		viewport.nWidth = int(pCustomViewport->Width);
+		viewport.nHeight = int(pCustomViewport->Height);
 	}
 
 	int viewInfoCount = 0;
@@ -431,19 +433,7 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 		viewInfo[viewInfoCount].SetLegacyCamera(pRenderer, pRenderer->GetPreviousFrameCameraMatrix());
 		viewInfo[viewInfoCount].viewport = viewport;
 		viewInfo[viewInfoCount].downscaleFactor = Vec4(rp.m_CurDownscaleFactor.x, rp.m_CurDownscaleFactor.y, pRenderer->m_PrevViewportScale.x, pRenderer->m_PrevViewportScale.y);
-
-		if (rp.m_ShadowInfo.m_pCurShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-		{
-			const SRenderPipeline::ShadowInfo& shadowInfo = rp.m_ShadowInfo;
-			assert(shadowInfo.m_nOmniLightSide >= 0 && shadowInfo.m_nOmniLightSide < OMNI_SIDES_NUM);
-
-			CCamera& cam = shadowInfo.m_pCurShadowFrustum->FrustumPlanes[shadowInfo.m_nOmniLightSide];
-			viewInfo[viewInfoCount].pFrustumPlanes = cam.GetFrustumPlane(0);
-		}
-		else
-		{
-			viewInfo[viewInfoCount].pFrustumPlanes = pRenderer->GetCamera().GetFrustumPlane(0);
-		}
+		viewInfo[viewInfoCount].pFrustumPlanes = pRenderer->GetCamera().GetFrustumPlane(0);
 
 		++viewInfoCount;
 	}
@@ -451,7 +441,7 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 	return viewInfoCount;
 }
 
-void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const RECT* pCustomViewport)
+void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const D3DViewPort* pCustomViewport)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
@@ -570,20 +560,6 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_FrustumPlaneEquation.SetRow4(2, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_TOP]);
 		cb.CV_FrustumPlaneEquation.SetRow4(3, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_BOTTOM]);
 
-		// Shadow specific
-		{
-			const ShadowMapFrustum* pShadowFrustum = rp.m_ShadowInfo.m_pCurShadowFrustum;
-			if (pShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-			{
-				cb.CV_ShadowLightPos = Vec4(pShadowFrustum->vLightSrcRelPos + pShadowFrustum->vProjTranslation, 0);
-				cb.CV_ShadowViewPos = Vec4(rp.m_ShadowInfo.vViewerPos, 0);
-			}
-			else
-			{
-				cb.CV_ShadowLightPos = Vec4(0, 0, 0, 0);
-				cb.CV_ShadowViewPos = Vec4(0, 0, 0, 0);
-			}
-		}
 
 		if (gRenDev->m_pCurWindGrid)
 		{
@@ -874,36 +850,10 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	m_pBloomStage->Execute();
 
 	// Lens optics
+	if (CRenderer::CV_r_flares)
 	{
-		pRenderer->m_RP.m_PersFlags2 &= ~RBPF2_LENS_OPTICS_COMPOSITE;
-		if (CRenderer::CV_r_flares)
-		{
-			const uint32 nBatchMask = SRendItem::BatchFlags(EFSLIST_LENSOPTICS);
-			if (nBatchMask & (FB_GENERAL | FB_TRANSPARENT))
-			{
-				PROFILE_LABEL_SCOPE("LENS_OPTICS");
-
-				SwitchToLegacyPipeline();
-
-				CTexture* pLensOpticsComposite = CTexture::s_ptexSceneTargetR11G11B10F[0];
-				pRenderer->FX_ClearTarget(pLensOpticsComposite, Clr_Transparent);
-				pRenderer->FX_PushRenderTarget(0, pLensOpticsComposite, 0);
-
-				pRenderer->m_RP.m_PersFlags2 |= RBPF2_NOPOSTAA | RBPF2_LENS_OPTICS_COMPOSITE;
-
-				GetUtils().Log(" +++ Begin lens-optics scene +++ \n");
-				pRenderer->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_GENERAL);
-				pRenderer->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_TRANSPARENT);
-				pRenderer->FX_ResetPipe();
-				GetUtils().Log(" +++ End lens-optics scene +++ \n");
-
-				pRenderer->FX_SetActiveRenderTargets();
-				pRenderer->FX_PopRenderTarget(0);
-				pRenderer->FX_SetActiveRenderTargets();
-
-				SwitchFromLegacyPipeline();
-			}
-		}
+		PROFILE_LABEL_SCOPE("LENS_OPTICS");
+		m_pLensOpticsStage->Execute(m_pCurrentRenderView);
 	}
 
 	m_pSunShaftsStage->Execute();
@@ -939,9 +889,7 @@ void CStandardGraphicsPipeline::Execute()
 
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{
-		SwitchToLegacyPipeline();
 		m_pShadowMapStage->Prepare(m_pCurrentRenderView);
-		SwitchFromLegacyPipeline();
 	}
 
 	if (pRenderer->m_nGraphicsPipeline >= 2)

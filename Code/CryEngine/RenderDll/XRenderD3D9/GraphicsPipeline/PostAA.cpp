@@ -4,6 +4,7 @@
 #include "PostAA.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
+#include "GraphicsPipeline/LensOptics.h"
 
 struct PostAAConstants
 {
@@ -250,7 +251,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 
-	if (pRenderer->m_RP.m_PersFlags2 & RBPF2_LENS_OPTICS_COMPOSITE)
+	if (pRenderer->GetGraphicsPipeline().GetLensOpticsStage()->HasContent())
 	{
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (CRenderer::CV_r_FlaresChromaShift > 0.5f / (float)pRenderer->GetWidth())  // Only relevant if bigger than half pixel

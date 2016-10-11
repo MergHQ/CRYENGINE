@@ -280,8 +280,7 @@ bool CREGeomCache::mfDraw(CShader* ef, SShaderPass* sfm)
 	Matrix34A matrix = pRenderObject->m_II.m_Matrix;
 	CHWShader_D3D* const pCurVS = (CHWShader_D3D*)sfm->m_VShader;
 
-	const bool bIsShadowPass = (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) != 0;
-	const CCamera& camera = bIsShadowPass ? rRP.m_ShadowInfo.m_pCurShadowFrustum->FrustumPlanes[rRP.m_ShadowInfo.m_nOmniLightSide] : gRenDev->GetCamera();
+	const CCamera& camera = gRenDev->GetCamera();
 
 	Matrix44A prevMatrix;
 	CMotionBlur::GetPrevObjToWorldMat(rRP.m_pCurObject, prevMatrix);
@@ -291,7 +290,7 @@ bool CREGeomCache::mfDraw(CShader* ef, SShaderPass* sfm)
 	const int oldFlagsPerFlush = rRP.m_FlagsPerFlush;
 	bool bResetVertexDecl = false;
 
-	const bool bRelativeToCam = (!(rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && !(rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST));
+	const bool bRelativeToCam = !(rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST);
 	const Vec3& vRelativeToCamPos = bRelativeToCam ? gRenDev->GetRCamera().vOrigin : Vec3(ZERO);
 
 #ifdef SUPPORTS_STATIC_INST_CB

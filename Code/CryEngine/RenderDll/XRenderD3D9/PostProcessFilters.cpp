@@ -489,13 +489,6 @@ void CPostAA::ApplyComposites(CTexture* pCurrRT)
 	if (gcpRendD3D->FX_GetAntialiasingType() & eAT_SMAA_2TX_MASK)
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 
-	if (gcpRendD3D->m_RP.m_PersFlags2 & RBPF2_LENS_OPTICS_COMPOSITE)
-	{
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-		if (CRenderer::CV_r_FlaresChromaShift > 0.5f / (float) gcpRendD3D->GetWidth())  // only relevant if bigger than half pixel
-			gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE3];
-	}
-
 	if (CRenderer::CV_r_colorRangeCompression)
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 	else

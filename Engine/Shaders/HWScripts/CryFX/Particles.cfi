@@ -774,7 +774,7 @@ half ApplySoftIntersection( inout half4 cFinal, float4 WPos, half fThicknessK )
 	for (int s=0; s<nMsaaSamples; s++) // Ideally would use pre-resolved depth target (note that existing resolved versions use sample0 for proper pixel/sample passes - having a max depth target will require extra mem)
 		fDepth =  max(fDepth, GetDecodedSceneDepthMS(WPos.xy, nMsaaSamples, s));
 #else
-	const half fDepth = GetLinearDepthScaled( sceneDepthSampler, WPos.xy ).x; // todo: pre-computed linear depth could save a bunch
+	const half fDepth = GetLinearDepthScaled( sceneLinearDepthTex, WPos.xy ).x; // todo: pre-computed linear depth could save a bunch
 #endif
 
 	const half fDist = max(min(fDepth-WPos.w, WPos.w), 0.0);

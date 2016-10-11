@@ -252,7 +252,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenDepthClip, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowsUseClipVolume, SHADOWS_CLIP_VOL_DEFAULT_VAL);
-	static int CV_r_shadowblur;
 	DeclareStaticConstIntCVar(CV_r_ShadowGenMode, 1);
 	static int CV_r_ShadowsCache;
 	static int CV_r_ShadowsCacheFormat;
@@ -342,6 +341,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_shadersdebug, 0);
 	DeclareStaticConstIntCVar(CV_r_shadersignoreincludeschanging, 0);
 	DeclareStaticConstIntCVar(CV_r_shaderslazyunload, 0);
+	DeclareStaticConstIntCVar(CV_r_shadersCompileStrict, 0);
+	DeclareStaticConstIntCVar(CV_r_shadersCompileCompatible, 1);
 	static int CV_r_shadersAllowCompilation;
 	DeclareStaticConstIntCVar(CV_r_shaderscompileautoactivate, 0);
 	DeclareStaticConstIntCVar(CV_r_shadersediting, 0);

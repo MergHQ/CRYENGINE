@@ -2196,6 +2196,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual float               EF_GetWaterZElevation(float fX, float fY) = 0;
 
 	virtual IOpticsElementBase* CreateOptics(EFlareType type) const = 0;
+	virtual void                ReleaseOptics(IOpticsElementBase* pOpticsElement) const = 0;
 
 	//! Used for pausing timer related stuff.
 	//! Example: For texture animations, and shader 'time' parameter.
@@ -2342,9 +2343,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Determine if a switch to stereo mode will occur at the start of the next frame.
 	virtual bool IsStereoModeChangePending() = 0;
-
-	//! Set whether or not the screen should be copied into the back buffer each frame.
-	virtual void SetShouldCopyScreenToBackBuffer(bool bEnable) = 0;
 
 	//! Wait for all particle ComputeVertices jobs to finish.
 	virtual void SyncComputeVerticesJobs() = 0;

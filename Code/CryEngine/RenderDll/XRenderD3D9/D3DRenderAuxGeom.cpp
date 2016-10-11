@@ -1411,6 +1411,7 @@ void CRenderAuxGeomD3D::AdjustRenderStates(const SAuxGeomRenderFlags& renderFlag
 	case e_DepthTestOff:
 		{
 			curRenderStates |= GS_NODEPTHTEST;
+			curRenderStates &= ~GS_DEPTHWRITE;
 			break;
 		}
 	case e_DepthTestOn:

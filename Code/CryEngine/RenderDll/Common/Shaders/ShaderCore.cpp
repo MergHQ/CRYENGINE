@@ -1026,8 +1026,6 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_SPRITE] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_AMBIENT_OCCLUSION")
 				g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION] = gb->m_Mask;
-			else if (gb->m_ParamName == "%_RT_GSM_COMBINED")
-				g_HWSR_MaskBit[HWSR_GSM_COMBINED] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_DEBUG0")
 				g_HWSR_MaskBit[HWSR_DEBUG0] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_DEBUG1")

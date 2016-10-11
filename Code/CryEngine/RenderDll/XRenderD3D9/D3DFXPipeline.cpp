@@ -299,58 +299,6 @@ void CD3D9Renderer::EF_ClearTargetsLater(uint32 nFlags)
 	//		uint8(m_pNewTarget[0]->m_pSurfDepth->pTex->GetClearColor().g));
 }
 
-void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/)
-{
-	assert(m_pRT->IsRenderThread());
-
-	CRenderObject* pObj      = m_RP.m_pCurObject;
-	CShader* pSHSave         = m_RP.m_pShader;
-	SShaderTechnique* pSHT   = m_RP.m_pCurTechnique;
-	SShaderPass* pPass       = m_RP.m_pCurPass;
-	CShaderResources* pShRes = m_RP.m_pShaderResources;
-
-	gRenDev->m_cEF.mfRefreshSystemShader("Common", CShaderMan::s_ShaderCommon);
-
-	FX_SetMSAAFlagsRT();
-
-	m_RP.m_PersFlags1 |= RBPF1_IN_CLEAR;
-	CShader* pSH     = CShaderMan::s_ShaderCommon;
-	uint32   nPasses = 0;
-	pSH->FXSetTechnique("Clear");
-	bool bSuccess = pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-	bSuccess &= pSH->FXBeginPass(0);
-	int nState = GS_NODEPTHTEST;
-	if (m_pNewTarget[0]->m_ClearFlags & (CLEAR_ZBUFFER | CLEAR_STENCIL))
-	{
-		nState = GS_DEPTHFUNC_GREAT;
-		if (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
-			nState = ReverseDepthHelper::ConvertDepthFunc(nState);
-
-		nState &= ~GS_NODEPTHTEST;
-		nState |= GS_DEPTHWRITE;
-	}
-
-	m_pNewTarget[0]->m_ClearFlags = 0;
-
-	nState |= nAdditionalStates;
-
-	FX_SetState(nState, -1);
-	D3DSetCull(eCULL_None);
-	float fX = (float)m_CurViewport.nWidth;
-	float fY = (float)m_CurViewport.nHeight;
-	if (bSuccess)
-	{
-		DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, m_pNewTarget[0]->m_ReqColor, 1.0f, fX, fY, fX, fY);
-	}
-	m_RP.m_PersFlags1 &= ~RBPF1_IN_CLEAR;
-
-	m_RP.m_pCurObject       = pObj;
-	m_RP.m_pShader          = pSHSave;
-	m_RP.m_pCurTechnique    = pSHT;
-	m_RP.m_pCurPass         = pPass;
-	m_RP.m_pShaderResources = pShRes;
-}
-
 void CD3D9Renderer::FX_SetActiveRenderTargets()
 {
 	DETAILED_PROFILE_MARKER("FX_SetActiveRenderTargets");
@@ -542,16 +490,10 @@ void CD3D9Renderer::FX_ClearTarget(CTexture* pTex, const ColorF& cClear, const u
 		return;
 	}
 
-	// TODO: implement depth-clear as depth-only for DX11, gives max performance and probably just resets the depth-surface meta-data
-	int ox, oy, ow, oh;
-	FX_PushRenderTarget(0, pTex, nullptr);
-	GetViewport(&ox, &oy, &ow, &oh);
-	RT_SetViewport(pRects->left, pRects->top, pRects->right - pRects->left, pRects->bottom - pRects->top);
-	FX_SetActiveRenderTargets();
-	EF_ClearTargetsLater(FRT_CLEAR_COLOR, cClear);
-	FX_ClearTargetRegion();
-	FX_PopRenderTarget(0);
-	SetViewport(ox, oy, ow, oh);
+	GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	CClearRegionPass().Execute(pTex, cClear, numRects, pRects);
+	GetGraphicsPipeline().SwitchToLegacyPipeline();
+
 #endif
 }
 
@@ -652,16 +594,9 @@ void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex, const int nFlags, const 
 		return;
 	}
 
-	// TODO: implement depth-clear as depth-only for DX11, gives max performance and probably just resets the depth-surface meta-data
-	int ox, oy, ow, oh;
-	FX_PushRenderTarget(0, (D3DSurface*)nullptr, pTex);
-	GetViewport(&ox, &oy, &ow, &oh);
-	RT_SetViewport(pRects->left, pRects->top, pRects->right - pRects->left, pRects->bottom - pRects->top);
-	FX_SetActiveRenderTargets();
-	EF_ClearTargetsLater(nFlags, Clr_Empty, cDepth, cStencil);
-	FX_ClearTargetRegion();
-	FX_PopRenderTarget(0);
-	SetViewport(ox, oy, ow, oh);
+	GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	CClearRegionPass().Execute(pTex, nFlags, cDepth, cStencil, numRects, pRects);
+	GetGraphicsPipeline().SwitchToLegacyPipeline();
 #endif
 }
 
@@ -926,7 +861,7 @@ void CD3D9Renderer::EF_Scissor(bool bEnable, int sX, int sY, int sWdt, int sHgt)
 void CD3D9Renderer::RT_SetScissor(bool bEnable, int sX, int sY, int sWdt, int sHgt)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
-	if (!CV_r_scissor || (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
+	if (!CV_r_scissor)
 		return;
 	D3D11_RECT scRect;
 	if (bEnable)
@@ -968,7 +903,7 @@ void CD3D9Renderer::RT_SetScissor(bool bEnable, int sX, int sY, int sWdt, int sH
 
 bool CD3D9Renderer::EF_GetScissorState(int& sX, int& sY, int& sWdt, int& sHgt)
 {
-	if (!CV_r_scissor || (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
+	if (!CV_r_scissor)
 		return false;
 
 	sX   = m_scissorPrevX;
@@ -1272,33 +1207,6 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 			for (size_t i = 0; i < RT_STACK_WIDTH; ++i)
 				BS.Desc.RenderTarget[i].BlendEnable = FALSE;
 		}
-
-		// Need to disable color write to MRTs for shadow map alpha blending (not supported by all hw)
-		if ((m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN) && m_pNewTarget[1])
-		{
-			bDirtyBS = true;
-			uint32 nMask = 0xfffffff0 | ((st & GS_COLMASK_MASK) >> GS_COLMASK_SHIFT);
-			nMask = (~nMask) & 0xf;
-			BS.Desc.RenderTarget[0].RenderTargetWriteMask = nMask;
-			if (st & GS_BLEND_MASK)
-			{
-				BS.Desc.IndependentBlendEnable = TRUE;
-				for (size_t i = 1; i < RT_STACK_WIDTH; ++i)
-				{
-					BS.Desc.RenderTarget[i].RenderTargetWriteMask = 0;
-					BS.Desc.RenderTarget[i].BlendEnable           = FALSE;
-				}
-			}
-			else
-			{
-				BS.Desc.IndependentBlendEnable = FALSE;
-				for (size_t i = 1; i < RT_STACK_WIDTH; ++i)
-				{
-					BS.Desc.RenderTarget[i].RenderTargetWriteMask = nMask;
-					BS.Desc.RenderTarget[i].BlendEnable           = TRUE;
-				}
-			}
-		}
 	}
 
 	if (Changed & GS_DEPTHWRITE)
@@ -1312,6 +1220,8 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 
 	if (Changed & GS_NODEPTHTEST)
 	{
+		CRY_ASSERT((st & (GS_NODEPTHTEST | GS_DEPTHWRITE)) != (GS_NODEPTHTEST | GS_DEPTHWRITE)); // new graphics pipeline treats this case differently
+
 		bDirtyDS = true;
 		if (st & GS_NODEPTHTEST)
 			DS.Desc.DepthEnable = FALSE;
@@ -1372,7 +1282,7 @@ void CD3D9Renderer::FX_ZState(uint32& nState)
 
 void CD3D9Renderer::FX_HairState(uint32& nState, const SShaderPass* pPass)
 {
-	if ((m_RP.m_nPassGroupID == EFSLIST_GENERAL || m_RP.m_nPassGroupID == EFSLIST_TRANSP) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN | RBPF_ZPASS))
+	if ((m_RP.m_nPassGroupID == EFSLIST_GENERAL || m_RP.m_nPassGroupID == EFSLIST_TRANSP) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_ZPASS)
 	  && !(m_RP.m_PersFlags2 & (RBPF2_MOTIONBLURPASS)))
 	{
 		// reset quality settings. BEWARE: these are used by shadows as well
@@ -1477,7 +1387,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 	if (rRP.m_pShader->m_Flags2 & EF2_HAIR)
 		FX_HairState(State, pPass);
 	else if ((m_RP.m_nPassGroupID == EFSLIST_TRANSP) &&
-	  !(rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN | RBPF_ZPASS)))
+	  !(rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_ZPASS))
 	{
 		// Depth fixup for transparent geometry
 		if (m_RP.m_pShader->m_Flags2 & EF2_DEPTH_FIXUP)
@@ -2150,12 +2060,6 @@ void CD3D9Renderer::FX_DrawIndexedMesh (const ERenderPrimitiveType nPrimType)
 
 			int nFirstIndexId = pChunk->nFirstIndexId;
 			int nNumIndices   = pChunk->nNumIndices;
-
-			if (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN) && (gRenDev->m_RP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES))
-			{
-				IMaterial* pMaterial = (m_RP.m_pCurObject) ? (m_RP.m_pCurObject->m_pCurrMaterial) : NULL;
-				((CREMeshImpl*)m_RP.m_pRE)->m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(pChunk, pMaterial, nNumVerts, nNumIndices);
-			}
 
 			ERenderPrimitiveType eType = eptTriangleList;
 			// SHWSkinBatch *pBatch = pChunk->m_pHWSkinBatch;
@@ -3160,12 +3064,6 @@ void CD3D9Renderer::FX_DrawShader_General(CShader* ef, SShaderTechnique* pTech)
 			if (!slw->m_VShader || !slw->m_PShader || (curPassBit & m_RP.m_CurPassBitMask))
 				continue;
 
-			if (rTI.m_PersFlags & RBPF_SHADOWGEN)
-			{
-				if (slw->m_eCull == eCULL_None)
-					m_cEF.m_TempVecs[1][0] = rTI.m_vFrustumInfo.w;
-			}
-
 			FX_CommitStates(pTech, slw, (slw->m_PassFlags & SHPF_NOMATSTATE) == 0);
 
 			bool bSkinned = (m_RP.m_pCurObject->m_ObjFlags & FOB_SKINNED) && !CV_r_character_nodeform;
@@ -4120,7 +4018,6 @@ void CD3D9Renderer::FX_FlushShader_General()
 	}
 
 	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
-	assert(!(rTI.m_PersFlags & RBPF_SHADOWGEN));
 	assert(!(rRP.m_nBatchFilter & FB_Z));
 
 	if (!rRP.m_sExcludeShader.empty())
@@ -4315,176 +4212,6 @@ void CD3D9Renderer::FX_FlushShader_General()
 #endif
 }
 
-void CD3D9Renderer::FX_FlushShader_ShadowGen()
-{
-	CD3D9Renderer* const __restrict rd      = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
-	if (!rRP.m_pRE && !rRP.m_RendNumVerts)
-		return;
-
-	CShader* ef = rRP.m_pShader;
-	if (!ef)
-		return;
-
-	if (!rRP.m_sExcludeShader.empty())
-	{
-		char nm[1024];
-		cry_strcpy(nm, ef->GetName());
-		strlwr(nm);
-		if (strstr(rRP.m_sExcludeShader.c_str(), nm))
-			return;
-	}
-
-	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
-	assert(rTI.m_PersFlags & RBPF_SHADOWGEN);
-	assert(!(rTI.m_PersFlags & RBPF_MAKESPRITE));
-
-#ifdef DO_RENDERLOG
-	if (rd->m_LogFile)
-	{
-		if (CV_r_log == 3)
-			rd->Logv("\n\n.. Start %s flush: '%s' ..\n", "ShadowGen", ef->GetName());
-		if (CV_r_log >= 3)
-			rd->Logv("\n");
-	}
-#endif
-
-	SPipeStat& rPS = rRP.m_PS[rRP.m_nProcessThreadID];
-#ifndef _RELEASE
-	sBatchStats(rRP);
-#endif
-	CRenderObject* pObj = rRP.m_pCurObject;
-
-#if defined(HW_INSTANCING_ENABLED)
-	sDetectInstancing(ef, pObj);
-#endif
-
-	// Techniques draw cycle...
-	SShaderTechnique* __restrict pTech = ef->mfGetStartTechnique(rRP.m_nShaderTechnique);
-	assert(pTech);
-	if (!pTech || pTech->m_nTechnique[TTYPE_SHADOWGEN] < 0)
-		return;
-	rRP.m_nShaderTechniqueType = TTYPE_SHADOWGEN;
-
-	if (rd->m_RP.m_pRE)
-		rd->m_RP.m_pRE = rd->m_RP.m_RIs[0][0]->pElem;
-
-	rRP.m_pRootTechnique = pTech;
-
-	pTech = ef->m_HWTechniques[pTech->m_nTechnique[TTYPE_SHADOWGEN]];
-
-	const SRenderPipeline::ShadowInfo& shadowInfo = rd->m_RP.m_ShadowInfo;
-
-	if (ef->m_eSHDType == eSHDT_Terrain)
-	{
-		if (shadowInfo.m_pCurShadowFrustum->m_Flags & DLF_DIRECTIONAL)
-		{
-			rd->D3DSetCull(eCULL_None);
-			rd->m_RP.m_FlagsPerFlush |= RBSI_LOCKCULL;
-		}
-		else
-		{
-
-			//Flipped matrix for point light sources
-			//front faces culling by default for terrain
-			rd->D3DSetCull(eCULL_Front);
-			rd->m_RP.m_FlagsPerFlush |= RBSI_LOCKCULL;
-			//reset slope bias here as well
-		}
-	}
-
-	/////////////////////////////////
-	SStateRaster curRS = rd->m_StatesRS[rd->m_nCurStateRS];
-	if (CV_r_ShadowGenDepthClip == 0)
-	{
-		if (rTI.m_vFrustumInfo.x > 100.0f)
-		{
-			SStateRaster customRS = curRS;
-			customRS.Desc.DepthClipEnable = false;
-			rd->SetRasterState(&customRS);
-		}
-	}
-
-	// RSMs
-#if defined(FEATURE_SVO_GI)
-	if (CSvoRenderer::GetRsmColorMap(*shadowInfo.m_pCurShadowFrustum))
-#else
-	if (false)
-#endif
-	{
-		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-
-		if (!(shadowInfo.m_pCurShadowFrustum->m_Flags & DLF_DIRECTIONAL))
-			rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_CUBEMAP0] | g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
-
-		rd->D3DSetCull(eCULL_Back);
-
-		const uint64 objFlags = rRP.m_ObjFlags;
-		if (objFlags & FOB_DECAL_TEXGEN_2D)
-			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_DECAL_TEXGEN_2D];
-	}
-	else if (rRP.m_PersFlags2 & (RBPF2_DRAWTOCUBE | RBPF2_DISABLECOLORWRITES))
-	{
-		if (rRP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES)
-			rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
-		if (rRP.m_PersFlags2 & RBPF2_DRAWTOCUBE)
-			rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
-	}
-#ifdef TESSELLATION_RENDERER
-	if ((pObj->m_ObjFlags & FOB_NEAREST) || !(pObj->m_ObjFlags & FOB_ALLOW_TESSELLATION))
-		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-#endif
-
-	//per-object bias for Shadow Generation
-	rd->m_cEF.m_TempVecs[1][0] = 0.0f;
-
-	if (rd->m_RP.m_pShaderResources)
-	{
-		if (rd->m_RP.m_pShaderResources->m_ResFlags & MTL_FLAG_2SIDED)
-		{
-			//handle terrain self-shadowing and two-sided geom
-			rd->m_cEF.m_TempVecs[1][0] = rTI.m_vFrustumInfo.w;
-		}
-
-	}
-
-	if (!rd->FX_SetResourcesState())
-		return;
-
-	//rd->EF_ApplyQuality();
-
-	if (rRP.m_ObjFlags & FOB_BENDED)
-		rRP.m_FlagsShader_MDV |= MDV_BENDING;
-	rRP.m_FlagsShader_RT |= rRP.m_pCurObject->m_nRTMask;
-	if (rRP.m_RIs[0].Num() <= 1 && !(rRP.m_ObjFlags & FOB_TRANS_MASK))
-		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_OBJ_IDENTITY];
-
-	// check if MTL_LAYER_BIT_CLOAK_DISSOLVE and some bits in MTL_LAYER_BLEND_CLOAK are set.
-	if ((rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) && (rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BIT_CLOAK_DISSOLVE))
-	{
-		if ((rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK)      //fully blended, dont render
-			return;
-		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
-	}
-
-	if (rRP.m_ObjFlags & FOB_NEAREST)
-	{
-		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_NEAREST];
-	}
-
-	if (rRP.m_ObjFlags & FOB_DISSOLVE)
-	{
-		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
-	}
-
-	rRP.m_pCurTechnique = pTech;
-	rd->FX_DrawTechnique(ef, pTech);
-
-#ifdef DO_RENDERLOG
-	sLogFlush("Flush ShadowGen", ef, pTech);
-#endif
-}
-
 void CD3D9Renderer::FX_FlushShader_ZPass()
 {
 	CD3D9Renderer* const __restrict rd      = gcpRendD3D;
@@ -4506,7 +4233,6 @@ void CD3D9Renderer::FX_FlushShader_ZPass()
 	}
 
 	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
-	assert(!(rTI.m_PersFlags & RBPF_SHADOWGEN));
 	assert(rRP.m_nBatchFilter & (FB_Z | FB_ZPREPASS | FB_POST_3D_RENDER));
 	assert(!(rTI.m_PersFlags & RBPF_MAKESPRITE));
 

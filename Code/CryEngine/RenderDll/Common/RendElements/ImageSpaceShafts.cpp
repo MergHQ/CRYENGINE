@@ -23,6 +23,23 @@ void ImageSpaceShafts::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups
 	#undef MFPtr
 #endif
 
+ImageSpaceShafts::ImageSpaceShafts(const char* name)
+	: COpticsElement(name)
+	, m_bTexDirty(true)
+	, m_bHighQualityMode(false)
+{
+	m_Color.a = 1.f;
+	SetSize(0.7f);
+
+	m_samplerStateBilinearClamp = CTexture::GetTexState(STexState(FILTER_BILINEAR, true));
+
+	// share one constant buffer between both primitives
+	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	m_occlusionPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_shaftGenPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch,     pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_blendPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch,     pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+}
+
 void ImageSpaceShafts::Load(IXmlNode* pNode)
 {
 	COpticsElement::Load(pNode);
@@ -43,10 +60,8 @@ void ImageSpaceShafts::Load(IXmlNode* pNode)
 		{
 			if (pGoboTexName && pGoboTexName[0])
 			{
-				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(pGoboTexName);
+				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(pGoboTexName));
 				SetGoboTex((CTexture*)pTexture);
-				if (pTexture)
-					pTexture->Release();
 			}
 		}
 		else
@@ -88,87 +103,131 @@ void ImageSpaceShafts::InitTextures()
 	m_bTexDirty = false;
 }
 
-static STexState s_isPointTS(FILTER_POINT, true);
-static STexState s_isBilinearTS(FILTER_BILINEAR, true);
+bool ImageSpaceShafts::PrepareOcclusion(CTexture* pDestRT, CTexture* pGoboTex, int samplerState)
+{
+	// prepare pass
+	D3DViewPort viewport;
+	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+	viewport.Width = (float)pDestRT->GetWidth();
+	viewport.Height = (float)pDestRT->GetHeight();
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
 
-void ImageSpaceShafts::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+	m_occlusionPass.ClearPrimitives();
+	m_occlusionPass.SetRenderTarget(0, m_pOccBuffer);
+	m_occlusionPass.SetViewport(viewport);
+
+	// prepare primitive
+	static CCryNameTSCRC occlusionTech("ImageSpaceShaftsOcclusion");
+
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+
+	m_occlusionPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, occlusionTech, rtFlags);
+	m_occlusionPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
+	m_occlusionPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_occlusionPrimitive.SetTexture(0, pGoboTex ? pGoboTex : CTexture::s_ptexBlack);
+	m_occlusionPrimitive.SetTexture(1, CTexture::s_ptexZTargetScaled);
+	m_occlusionPrimitive.SetSampler(0, samplerState);
+
+	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(pDestRT->GetSurface(0, 0), Clr_Empty);
+
+	m_occlusionPass.AddPrimitive(&m_occlusionPrimitive);
+
+	return true;
+}
+
+bool ImageSpaceShafts::PrepareShaftGen(CTexture* pDestRT, CTexture* pOcclTex, int samplerState)
+{
+	// prepare pass
+	D3DViewPort viewport;
+	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+	viewport.Width = (float)pDestRT->GetWidth();
+	viewport.Height = (float)pDestRT->GetHeight();
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	m_shaftGenPass.ClearPrimitives();
+	m_shaftGenPass.SetRenderTarget(0, pDestRT);
+	m_shaftGenPass.SetViewport(viewport);
+
+	// prepare primitive
+	static CCryNameTSCRC occlusionTech("ImageSpaceShaftsGen");
+
+	uint64 rtFlags = 0;
+	ApplyGeneralFlags(rtFlags);
+
+	m_shaftGenPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, occlusionTech, rtFlags);
+	m_shaftGenPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE_A_ZERO);
+	m_shaftGenPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_shaftGenPrimitive.SetTexture(0, pOcclTex);
+	m_shaftGenPrimitive.SetSampler(0, samplerState);
+
+	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(pDestRT->GetSurface(0, 0), Clr_Empty);
+
+	m_shaftGenPass.AddPrimitive(&m_shaftGenPrimitive);
+
+	return true;
+}
+
+bool ImageSpaceShafts::PreparePrimitives(const SPreparePrimitivesContext& context)
 {
 	if (!IsVisible())
-		return;
-
-	CD3D9Renderer* rd = gcpRendD3D;
+		return true;
 
 	if (!m_pOccBuffer || m_bTexDirty)
 		InitTextures();
 
-	PROFILE_LABEL_SCOPE("ImagesSpaceShafts");
-
-	vSrcProjPos = computeOrbitPos(vSrcProjPos, m_globalOrbitAngle);
-
-	static CCryNameTSCRC pImageSpaceShaftsTechName("ImageSpaceShafts");
-	shader->FXSetTechnique(pImageSpaceShaftsTechName);
-	uint nPass;
-	shader->FXBegin(&nPass, FEF_DONTSETTEXTURES);
-	static CCryNameR texSizeName("baseTexSize");
-
-	Vec4 texSizeParam(1, 1, 0, 0);
-
+	// update constants first
 	{
-		PROFILE_LABEL_SCOPE("ImagesSpaceShafts-Occ");
+		auto constants = m_occlusionPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 
-		gRenDev->m_RP.m_FlagsShader_RT = 0;
+		ColorF c = m_globalColor;
+		c.NormalizeCol(c);
+		c.ScaleCol(m_globalFlareBrightness);
 
-		rd->FX_ClearTarget(m_pOccBuffer, Clr_Empty);
-		rd->FX_PushRenderTarget(0, m_pOccBuffer, NULL, -1, false);
+		constants->color = c.toVec4();
+		constants->screenSize.x = float(m_pOccBuffer->GetWidth());
+		constants->screenSize.y = float(m_pOccBuffer->GetHeight());
+		constants->screenSize.z = float(m_pDraftBuffer->GetWidth());
+		constants->screenSize.w = float(m_pDraftBuffer->GetHeight());
+		constants->sceneDepth.x = context.auxParams.linearDepth;
 
-		ApplyGeneralFlags(shader);
-		shader->FXBeginPass(0);
+		for (int i = 0; i < context.viewInfoCount; ++i)
+		{
+			Vec3 screenPos = computeOrbitPos(context.lightScreenPos[i], m_globalOrbitAngle);
+			ApplyCommonParams(constants, context.pViewInfo->viewport, screenPos, Vec2(m_globalSize));
 
-		CTexture* pGoboTex = ((CTexture*)m_pGoboTex) ? ((CTexture*)m_pGoboTex) : CTexture::s_ptexBlack;
-		pGoboTex->Apply(0, CTexture::GetTexState(s_isBilinearTS));
-		CTexture::s_ptexZTargetScaled->Apply(1, CTexture::GetTexState(s_isBilinearTS));
+			constants->meshCenterAndBrt = Vec4(screenPos, 1.0f);
 
-		ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-		shader->FXSetVSFloat(texSizeName, &texSizeParam, 1);
+			if (i < context.viewInfoCount - 1)
+				constants.BeginStereoOverride(true);
+		}
 
-		rd->DrawQuad(vSrcProjPos.x, vSrcProjPos.y, vSrcProjPos.x, vSrcProjPos.y, m_globalColor, aux.linearDepth);
-		shader->FXEndPass();
-
-		rd->FX_PopRenderTarget(0);
+		m_occlusionPrimitive.GetConstantManager().EndTypedConstantUpdate(constants);
 	}
 
+	// prepare occlusion and shaft gen prepasses first
 	{
-		PROFILE_LABEL_SCOPE("ImagesSpaceShafts-Gen");
+		if (PrepareOcclusion(m_pOccBuffer, m_pGoboTex.get(), m_samplerStateBilinearClamp))
+			context.prePasses.push_back(&m_occlusionPass);
 
-		gRenDev->m_RP.m_FlagsShader_RT = 0;
-
-		rd->FX_ClearTarget(m_pDraftBuffer, Clr_Empty);
-		rd->FX_PushRenderTarget(0, m_pDraftBuffer, NULL, -1, false);
-
-		ApplyGeneralFlags(shader);
-		shader->FXBeginPass(1);
-
-		ApplyCommonVSParams(shader, vSrcWorldPos, vSrcProjPos);
-		shader->FXSetVSFloat(texSizeName, &texSizeParam, 1);
-		m_pOccBuffer->Apply(1, CTexture::GetTexState(s_isBilinearTS));
-
-		rd->DrawQuad(vSrcProjPos.x, vSrcProjPos.y, vSrcProjPos.x, vSrcProjPos.y, m_globalColor, m_globalShaftBrightness);
-		shader->FXEndPass();
-
-		rd->FX_PopRenderTarget(0);
+		if (PrepareShaftGen(m_pDraftBuffer, m_pOccBuffer, m_samplerStateBilinearClamp))
+			context.prePasses.push_back(&m_shaftGenPass);
 	}
 
+	// regular pass primitive
 	{
-		PROFILE_LABEL_SCOPE("ImagesSpaceShafts-BLEND");
+		static CCryNameTSCRC blendTech("ImageSpaceShaftsBlend");
 
-		gRenDev->m_RP.m_FlagsShader_RT = 0;
+		m_blendPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, blendTech, 0);
+		m_blendPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
+		m_blendPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+		m_blendPrimitive.SetTexture(0, m_pDraftBuffer);
+		m_blendPrimitive.SetSampler(0, m_samplerStateBilinearClamp);
 
-		m_pDraftBuffer->Apply(1, CTexture::GetTexState(s_isBilinearTS));
-
-		shader->FXBeginPass(2);
-		rd->DrawQuad(0, 0, 0, 0, m_globalColor, m_globalShaftBrightness);
-		shader->FXEndPass();
+		context.pass.AddPrimitive(&m_blendPrimitive);
 	}
 
-	shader->FXEnd();
+	return true;
 }

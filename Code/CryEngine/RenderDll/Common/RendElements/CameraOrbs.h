@@ -8,6 +8,15 @@
 class CTexture;
 class CameraOrbs : public COpticsElement, public AbstractMeshElement
 {
+	struct SShaderParams : SShaderParamsBase
+	{
+		Vec4 lightColorInfo;
+		Vec4 lensDetailParams;
+		Vec4 lensDetailParams2;
+		Vec4 ambientDiffuseRGBK;
+		Vec4 advShadingParams;
+	};
+
 private:
 	_smart_ptr<CTexture>     m_pOrbTex;
 	_smart_ptr<CTexture>     m_pLensTex;
@@ -37,6 +46,10 @@ private:
 	float                    m_fClrNoise;
 
 	std::vector<SpritePoint> m_OrbsList;
+	CRenderPrimitive         m_GlowPrimitive;
+	CRenderPrimitive         m_CameraLensPrimitive;
+	int                      m_samplerPointClamp;
+	float                    m_spriteAspectRatio;
 
 	static const int         MAX_ORBS_NUMBER = 10000;
 
@@ -45,47 +58,16 @@ protected:
 #if defined(FLARES_SUPPORT_EDITING)
 	void InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);
 #endif
-	void GenMesh();
-	void DrawMesh(uint32 vOffset, uint32 iOffset);
-	void Invalidate()
-	{
-		m_meshDirty = true;
-	}
+	void GenMesh()    override;
+	void Invalidate() override  { m_meshDirty = true; }
 
 public:
-
-	CameraOrbs(const char* name, const int numOrbs = 100) :
-		COpticsElement(name, 0.19f),
-		m_fSizeNoise(0.8f),
-		m_fBrightnessNoise(0.4f),
-		m_fRotNoise(0.8f),
-		m_fClrNoise(0.5f),
-		m_fIllumRadius(1.f),
-		m_bUseLensTex(0),
-		m_bOrbDetailShading(0),
-		m_bLensDetailShading(0),
-		m_fLensTexStrength(1.f),
-		m_fLensDetailShadingStrength(0.157f),
-		m_fLensDetailBumpiness(0.073f),
-		m_bAdvancedShading(false),
-		m_cAmbientDiffuse(LensOpConst::_LO_DEF_CLR_BLK),
-		m_fAbsorptance(4.0f),
-		m_fTransparency(0.37f),
-		m_fScatteringStrength(1.0f),
-		m_iNoiseSeed(0)
-	{
-		m_Color.a = 1.f;
-		SetPerspectiveFactor(0.f);
-		SetRotation(0.7f);
-		SetNumOrbs(numOrbs);
-		m_meshDirty = true;
-	}
+	CameraOrbs(const char* name, const int numOrbs = 100);
 
 protected:
-	void ApplyOrbFlags(CShader* shader, bool detailShading) const;
-	void ApplyLensDetailParams(CShader* shader, float texStength, float detailStrength, float bumpiness) const;
-	void ApplyAdvancedShadingFlag(CShader* shader) const;
-	void ApplyAdvancedShadingParams(CShader* shader, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const;
+	void ApplyOrbFlags(uint64& rtFlags, bool detailShading) const;
+	void ApplyAdvancedShadingFlag(uint64& rtFlags) const;
+	void ApplyAdvancedShadingParams(SShaderParams& shaderParams, CRenderPrimitive& primitive, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const;
 
 public:
 
@@ -104,11 +86,9 @@ public:
 		}
 	}
 
-	EFlareType GetType()                                                                         { return eFT_CameraOrbs; }
-	void       PreRender(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)  {}
-	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       PostRender(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux) {}
-	void       Load(IXmlNode* pNode);
+	EFlareType GetType() override                 { return eFT_CameraOrbs; }
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	CTexture*  GetOrbTex();
 	CTexture*  GetLensTex();
@@ -199,7 +179,7 @@ public:
 	float  GetScatteringStrength() const     { return m_fScatteringStrength; }
 	void   SetScatteringStrength(float s)    { m_fScatteringStrength = s; }
 
-	void   GetMemoryUsage(ICrySizer* pSizer) const
+	void   GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this) + GetMeshDataSize());
 	}

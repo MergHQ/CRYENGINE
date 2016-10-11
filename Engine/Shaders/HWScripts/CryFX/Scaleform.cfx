@@ -236,7 +236,7 @@ half4 PremultiplyAlpha( half4 col )
 //////////////////////////////////////////////////
 // SolidColor
 
-half4 PS_SolidColor( v2f_XY_noTex IN ) : COLOR
+half4 PS_SolidColor( v2f_XY_noTex IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -267,7 +267,7 @@ half4 CxformTexture( v2f_XY IN )
 	return res;
 }
 
-half4 PS_CxformTexture( v2f_XY IN ) : COLOR
+half4 PS_CxformTexture( v2f_XY IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -278,7 +278,7 @@ half4 PS_CxformTexture( v2f_XY IN ) : COLOR
 	return PremultiplyAlpha( CxformTexture( IN ) );
 }
 
-half4 PS_CxformMultiplyTexture( v2f_XY IN ) : COLOR
+half4 PS_CxformMultiplyTexture( v2f_XY IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -318,7 +318,7 @@ half4 GlyphTexture( v2f_Glyph IN )
 	return res;
 }
 
-half4 PS_GlyphTexture( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphTexture( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -329,7 +329,7 @@ half4 PS_GlyphTexture( v2f_Glyph IN ) : COLOR
 	return PremultiplyAlpha( GlyphTexture( IN ) );
 }
 
-half4 PS_GlyphMultiplyTexture( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphMultiplyTexture( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -362,7 +362,7 @@ technique GlyphMultiplyTexture
 //////////////////////////////////////////////////
 // GlyphAlphaTexture
 
-half4 PS_GlyphAlphaTexture( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphAlphaTexture( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -407,7 +407,7 @@ half4 GlyphTextureYUV( v2f_Glyph IN )
 	return res;
 }
 
-half4 PS_GlyphTextureYUV( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphTextureYUV( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -418,7 +418,7 @@ half4 PS_GlyphTextureYUV( v2f_Glyph IN ) : COLOR
 	return PremultiplyAlpha( GlyphTextureYUV( IN ) );
 }
 
-half4 PS_GlyphMultiplyTextureYUV( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphMultiplyTextureYUV( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -457,7 +457,7 @@ half4 GlyphTextureYUVA( v2f_Glyph IN )
 	return res;
 }
 
-half4 PS_GlyphTextureYUVA( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphTextureYUVA( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -468,7 +468,7 @@ half4 PS_GlyphTextureYUVA( v2f_Glyph IN ) : COLOR
 	return PremultiplyAlpha( GlyphTextureYUVA( IN ) );
 }
 
-half4 PS_GlyphMultiplyTextureYUVA( v2f_Glyph IN ) : COLOR
+half4 PS_GlyphMultiplyTextureYUVA( v2f_Glyph IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -507,7 +507,7 @@ half4 CxformGouraud( v2f_XY_C_F_noTex IN )
 	return half4( res.rgb, res.a * IN.spec.a );
 }
 
-half4 PS_CxformGouraud( v2f_XY_C_F_noTex IN ) : COLOR
+half4 PS_CxformGouraud( v2f_XY_C_F_noTex IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -518,7 +518,7 @@ half4 PS_CxformGouraud( v2f_XY_C_F_noTex IN ) : COLOR
 	return PremultiplyAlpha( CxformGouraud( IN ) );
 }
 
-half4 PS_CxformGouraudMultiply( v2f_XY_C_F_noTex IN ) : COLOR
+half4 PS_CxformGouraudMultiply( v2f_XY_C_F_noTex IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -556,7 +556,7 @@ half4 CxformGouraudNoAddAlpha( v2f_XY_C IN )
 	return IN.diff * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 }
 
-half4 PS_CxformGouraudNoAddAlpha( v2f_XY_C IN ) : COLOR
+half4 PS_CxformGouraudNoAddAlpha( v2f_XY_C IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -567,7 +567,7 @@ half4 PS_CxformGouraudNoAddAlpha( v2f_XY_C IN ) : COLOR
 	return PremultiplyAlpha( CxformGouraudNoAddAlpha( IN ) );
 }
 
-half4 PS_CxformGouraudMultiplyNoAddAlpha( v2f_XY_C IN ) : COLOR
+half4 PS_CxformGouraudMultiplyNoAddAlpha( v2f_XY_C IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -608,7 +608,7 @@ half4 CxformGouraudTexture( v2f_XY_C_F IN )
 	return half4( res.rgb, res.a * IN.spec.a );
 }
 
-half4 PS_CxformGouraudTexture( v2f_XY_C_F IN ) : COLOR
+half4 PS_CxformGouraudTexture( v2f_XY_C_F IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -619,7 +619,7 @@ half4 PS_CxformGouraudTexture( v2f_XY_C_F IN ) : COLOR
 	return PremultiplyAlpha( CxformGouraudTexture( IN ) );
 }
 
-half4 PS_CxformGouraudMultiplyTexture( v2f_XY_C_F IN ) : COLOR
+half4 PS_CxformGouraudMultiplyTexture( v2f_XY_C_F IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -660,7 +660,7 @@ half4 Cxform2Texture( v2f_XY_C_F_T2 IN )
 	return res * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 }
 
-half4 PS_Cxform2Texture( v2f_XY_C_F_T2 IN ) : COLOR
+half4 PS_Cxform2Texture( v2f_XY_C_F_T2 IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -671,7 +671,7 @@ half4 PS_Cxform2Texture( v2f_XY_C_F_T2 IN ) : COLOR
 	return PremultiplyAlpha( Cxform2Texture( IN ) );
 }
 
-half4 PS_CxformMultiply2Texture( v2f_XY_C_F_T2 IN ) : COLOR
+half4 PS_CxformMultiply2Texture( v2f_XY_C_F_T2 IN ) : SV_Target
 {
  #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
    half4 ret = 0;
@@ -703,7 +703,7 @@ technique CxformMultiply2Texture
 //////////////////////////////////////////////////
 // flash filters
 
-float4 PS_InnerShadow_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadow_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -720,7 +720,7 @@ float4 PS_InnerShadow_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -739,7 +739,7 @@ float4 PS_InnerShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowHighlightKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -758,7 +758,7 @@ float4 PS_InnerShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -775,7 +775,7 @@ float4 PS_InnerShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowMul_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowMul_Box2( v2f_Glyph IN ) : SV_Target
 {	
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -793,7 +793,7 @@ float4 PS_InnerShadowMul_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowMulHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -813,7 +813,7 @@ float4 PS_InnerShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -833,7 +833,7 @@ float4 PS_InnerShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_InnerShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_InnerShadowMulKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -851,7 +851,7 @@ float4 PS_InnerShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_Shadow_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_Shadow_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -868,7 +868,7 @@ float4 PS_Shadow_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -886,7 +886,7 @@ float4 PS_ShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowHighlightKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -905,7 +905,7 @@ float4 PS_ShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -923,7 +923,7 @@ float4 PS_ShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowMul_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowMul_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -941,7 +941,7 @@ float4 PS_ShadowMul_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowMulHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -960,7 +960,7 @@ float4 PS_ShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;	
@@ -980,7 +980,7 @@ float4 PS_ShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowMulKnockout_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1000,7 +1000,7 @@ float4 PS_ShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
 }
 
 
-float4 PS_Shadowonly_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_Shadowonly_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;	
@@ -1016,7 +1016,7 @@ float4 PS_Shadowonly_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowonlyHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowonlyHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1033,7 +1033,7 @@ float4 PS_ShadowonlyHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowonlyMul_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowonlyMul_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1050,7 +1050,7 @@ float4 PS_ShadowonlyMul_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_ShadowonlyMulHighlight_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_ShadowonlyMulHighlight_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1068,7 +1068,7 @@ float4 PS_ShadowonlyMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_BlurFilter_Box1( v2f_Glyph IN ) : COLOR
+float4 PS_BlurFilter_Box1( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float  i = 0.0f;
@@ -1082,7 +1082,7 @@ float4 PS_BlurFilter_Box1( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_BlurFilterMul_Box1( v2f_Glyph IN ) : COLOR
+float4 PS_BlurFilterMul_Box1( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1098,7 +1098,7 @@ float4 PS_BlurFilterMul_Box1( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_BlurFilter_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_BlurFilter_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2  i = 0.0f;
@@ -1113,7 +1113,7 @@ float4 PS_BlurFilter_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_BlurFilterMul_Box2( v2f_Glyph IN ) : COLOR
+float4 PS_BlurFilterMul_Box2( v2f_Glyph IN ) : SV_Target
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
@@ -1129,14 +1129,14 @@ float4 PS_BlurFilterMul_Box2( v2f_Glyph IN ) : COLOR
 	return fcolor;
 }
 
-float4 PS_GlyphTextureMat( v2f_Glyph IN ) : COLOR
+float4 PS_GlyphTextureMat( v2f_Glyph IN ) : SV_Target
 {
 	float4 c = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	float4 fcolor = mul(c, cColorTransformMat) + cBitmapColorTransform[1] * (c.a + cBitmapColorTransform[1].a);
 	return fcolor;
 }
 
-float4 PS_GlyphTextureMatMul( v2f_Glyph IN ) : COLOR
+float4 PS_GlyphTextureMatMul( v2f_Glyph IN ) : SV_Target
 {
 	float4 c = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	float4 fcolor = mul(c, cColorTransformMat) + cBitmapColorTransform[1] * (c.a + cBitmapColorTransform[1].a);

@@ -229,6 +229,11 @@ inline void CDeviceGraphicsCommandInterface::SetStencilRef(uint8 stencilRefValue
 	}
 }
 
+inline void CDeviceGraphicsCommandInterface::SetDepthBias(float constBias, float slopeBias, float biasClamp)
+{
+	SetDepthBiasImpl(constBias, slopeBias, biasClamp);
+}
+
 inline void CDeviceGraphicsCommandInterface::Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	if (m_graphicsState.validResourceBindings == m_graphicsState.requiredResourceBindings)
@@ -328,9 +333,14 @@ inline void CDeviceGraphicsCommandInterface::DrawIndexed(uint32 IndexCountPerIns
 	}
 }
 
-inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DSurface* pView, const float color[4], uint32 numRects, const D3D11_RECT* pRect)
+inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects, const D3D11_RECT* pRects)
 {
-	ClearSurfaceImpl(pView, color, numRects, pRect);
+	ClearSurfaceImpl(pView, (float*)&color, numRects, pRects);
+}
+
+inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects)
+{
+	ClearSurfaceImpl(pView, clearFlags, depth, stencil, numRects, pRects);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

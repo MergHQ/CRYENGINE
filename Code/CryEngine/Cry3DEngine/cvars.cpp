@@ -442,8 +442,6 @@ void CVars::Init()
 	                   "Debug GSM bounds regions calculation");
 	DefineConstIntCVar(e_GsmStats, 0, VF_CHEAT,
 	                   "Show GSM statistics 0=off, 1=enable debug to the screens");
-	REGISTER_CVAR(e_GsmViewSpace, 0, VF_NULL,
-	              "0=world axis aligned GSM layout, 1=Rotate GSM frustums depending on view camera");
 	REGISTER_CVAR(e_RNTmpDataPoolMaxFrames, 300, VF_CHEAT,
 	              "Cache RNTmpData at least for X framres");
 

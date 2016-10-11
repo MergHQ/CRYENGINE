@@ -16,12 +16,8 @@ float Script : STANDARDSGLOBAL
 
 //=============================================================
 
-float4 ScreenSize  : PB_ScreenSize;
-
 /// Un-Tweakables //////////////////////
 
-float4 SampleWeights[14];
-float4 SampleOffsets[14];
 float4 BlurOffset;
 float4 PixelOffset < vsregister = VS_REG_PB_0; >
 
@@ -30,9 +26,6 @@ float4 PixelOffset < vsregister = VS_REG_PB_0; >
 
 sampler2D BlurSrcSampler : register(s0);
 sampler2D zMap : register(s1); 
-sampler2D zMapScaled : register(s2);
-
-sampler2D DiffuseLBuffer : register(s3);
 
 /////////////////////////////
 // structs
@@ -40,233 +33,8 @@ struct app2vertShadow
 {
   IN_P
   float2 baseTC     : TEXCOORD0;
-	IN_C0
+  IN_C0
 };
-
-struct vert2fragShadow
-{
-  float4 HPosition  : POSITION;
-  float2 baseTC     : TEXCOORD0;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DownsampleDepthPS( vert2fragShadow IN,
-                        out float4 oColor : COLOR,
-                        out float oDepth : DEPTH )
-{
-    float2 vTexCoord = IN.baseTC.xy;
-
-    float4 SampledDepth;
-    asm {
-        tfetch2D SampledDepth.x___, vTexCoord, BlurSrcSampler, OffsetX = -0.5, OffsetY = -0.5
-        tfetch2D SampledDepth._x__, vTexCoord, BlurSrcSampler, OffsetX =  0.5, OffsetY = -0.5
-        tfetch2D SampledDepth.__x_, vTexCoord, BlurSrcSampler, OffsetX = -0.5, OffsetY =  0.5
-        tfetch2D SampledDepth.___x, vTexCoord, BlurSrcSampler, OffsetX =  0.5, OffsetY =  0.5
-    };
-    
-    SampledDepth.xy = max( SampledDepth.xy, SampledDepth.zw );
-    SampledDepth.x = max( SampledDepth.x, SampledDepth.y );
-
-    oColor = SampledDepth.x;
-    oDepth = SampledDepth.x;
-}
-
-void MSAAResampleVS( app2vertShadow IN, 
-                    out float4 vPosition : POSITION, 
-                    out float4 vTexCoord_1_2 : TEXCOORD0, 
-                    out float4 vTexCoord_2_4 : TEXCOORD1 )
-{
-    // Position in screen space.
-    float4 vPos = IN.Position;
-    vPosition = mul(vpMatrix, vPos);
-    vPosition.xyzw/=vPosition.w;
-    vPosition.zw=1.0f;
-
-		// reminder for nick: dont hardcoded values like this
-    //float2 vTexCoordIn = IN.baseTC.xy + (float2(0.5f/1280.0f, 0.5f/720.0f) ); //PixelOffset.xy * 0.5
-		float2 vTexCoordIn = IN.baseTC.xy + (float2(0.5f/1152.0f, 0.5f/720.0f) ); //PixelOffset.xy * 0.5
-    
-    // Write unnormalized texcoords, divided by 1, 2, 4
-    // The redundant data saves ALU operations in the pixel shader
-    vTexCoord_1_2.xy = float2( 1152.0f, 720.0f ) * vTexCoordIn;
-    vTexCoord_1_2.zw = float2( 576.0f, 360.0f ) * vTexCoordIn;
-    vTexCoord_2_4.xy = float2( 576.0f, 360.0f ) * vTexCoordIn;
-    vTexCoord_2_4.zw = float2( 288.0f, 180.0f ) * vTexCoordIn;
-
-}
-
-void MSAAResamplePS(in float4 vTexCoord_1_2 : TEXCOORD0, 
-                    in float4 vTexCoord_2_4 : TEXCOORD1,
-                    out float4 oColor : COLOR)
-{
-
-    //MS resampling
-    // Swap the lowest two position bits ( 00->00, 01->10, 10->01, 11->11 )
-    vTexCoord_1_2 = floor( vTexCoord_1_2 );
-    vTexCoord_2_4 = floor( vTexCoord_2_4 );
-    float2 Eq_1_or_3_mod_4 = vTexCoord_1_2.xy - 2.0f * vTexCoord_2_4.xy;
-    float2 Eq_2_or_3_mod_4 = vTexCoord_1_2.zw - 2.0f * vTexCoord_2_4.zw;
-    float2 offset = Eq_1_or_3_mod_4 - Eq_2_or_3_mod_4;
-    float2 vTexCoord = vTexCoord_1_2.xy + offset;
- 
-    float4 vTexel;
-    asm { 
-        tfetch2D vTexel, vTexCoord, BlurSrcSampler, UnnormalizedTextureCoords=true, MinFilter=point, MagFilter=point, OffsetX=0.5, OffsetY=0.5 
-    };
-
-    oColor = vTexel;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-///////////////// shadows pixel shader //////////////////
-
-pixout ShadowBlurGenPS(vert2fragShadow IN)
-{
-  pixout OUT;
-
-  float2 PassOffset = BlurOffset.xy;
-
-	// Sample pixels on either side
-	int nSamples = 4;
-	float4 vSum = 0;
-	float4 vSample = float4(0,0,0,0);
-	for(int i=0; i<nSamples; i++)
-	{
-		float4 vSample = tex2D(BlurSrcSampler, IN.baseTC.xy - i * PassOffset);
-
-		/*if (vSample1.x>vSample.x)
-		{
-			vSample = vSample1;
-			vSum += max(vSample,float4(0.0f,0.0f,0.0f,0.0f));
-		} */
-		vSum += 2.0f*max(vSample,float4(0.0f,0.0f,0.0f,0.0f));
-
-	}
-
-	OUT.Color = vSum;
-
-  return OUT;
-}
-
-
-///////////////// vertex shader //////////////////
-vert2fragShadow ShadowBlurVS(app2vertShadow IN)
-{
-  vert2fragShadow OUT = (vert2fragShadow)0; 
-
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.HPosition = mul(vpMatrix, vPos);
-
-  // output texture coordinates
-  OUT.baseTC.xy = IN.baseTC.xy + PixelOffset.xy * 0.5;
-
-  return OUT;
-}
-
-vert2fragShadow ShadowBlurTransformedColVS(app2vertShadow IN)
-{
-  vert2fragShadow OUT = (vert2fragShadow)0; 
-
-  // Position in screen space.
-  float4 vPos = IN.Position;
-  OUT.HPosition = float4(2.0f * (vPos.xy + 0.5f) / ScreenSize.xy - 1.0f, vPos.zw);
-
-  // output texture coordinates
-  OUT.baseTC.xy = IN.baseTC.xy + PixelOffset.xy * 0.5;
-
-  return OUT;
-}
-
-///////////////// shadows pixel shader //////////////////
-
-pixout ShadowBlurScreenPS(vert2fragShadow IN)
-{
-  pixout OUT;
-
-  float4 color = tex2D(BlurSrcSampler, IN.baseTC.xy);
-	color *= SampleWeights[0]*2.f;
-
-	// Sample pixels on either side
-	for(int i=1; i<9; i++)
-	{
-		color += tex2D(BlurSrcSampler, IN.baseTC.xy + (BlurOffset.xy * i)) * SampleWeights[i];
-		color += tex2D(BlurSrcSampler, IN.baseTC.xy - (BlurOffset.xy * i)) * SampleWeights[i];
-	}
-
-	OUT.Color = color*0.5f;
-
-  return OUT;
-}
-
-// more expensive but without shadow leaking
-void OpaqueSample( vert2fragShadow IN, float2 vPixOffset, float fRefDepth, inout float fSumWeight, inout float4 cColor )
-{
-	float2 offset = IN.baseTC.xy + BlurOffset.xy * vPixOffset;
-
-	float fDepth = GetLinearDepth( zMap,offset );
-
-	float fDiff = 20000*(fDepth-fRefDepth);
-	float fDist = saturate(0.5 - fDiff*fDiff);
-
-	float fWeight = fDist;
-			
-	cColor += tex2D(BlurSrcSampler,offset) * fWeight;
-
-	fSumWeight += fWeight;
-}
-
-// more expensive but without shadow leaking
-pixout ShadowBlurScreenOpaquePS(vert2fragShadow IN)
-{
-	pixout OUT;
-
-	// inner sample
-	float4 cColor = tex2D(BlurSrcSampler, IN.baseTC.xy);
-
-	float fRefDepth = GetLinearDepth( zMap, IN.baseTC.xy );
-
-	float fSumWeight = 1.0f;
-
-	// sharp inner cross
-	OpaqueSample(IN,float2(-1, 0),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2( 1, 0),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2( 0,-1),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2( 0, 1),fRefDepth,fSumWeight,cColor);
-
-	// blurred edges - works on ATI and NVidia
-	OpaqueSample(IN,float2( 1,-1),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2(-1,-1),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2( 1, 1),fRefDepth,fSumWeight,cColor);
-	OpaqueSample(IN,float2(-1, 1),fRefDepth,fSumWeight,cColor);
-
-	cColor/=fSumWeight;	
-
-	OUT.Color = cColor;
-
-  return OUT;
-}
-
-
-pixout ShadowBlurGauss5x5PS(vert2fragShadow IN)
-{
-  pixout OUT;
-
-  half4 vSample = 0;
-
-  for(int i=0; i<9; i++)
-  {
-    half4 vTex = tex2D(BlurSrcSampler, IN.baseTC.xy + SampleOffsets[i].xy);
-    vSample += SampleWeights[i] * vTex;
-  }
-    
-  OUT.Color = vSample;
-
-  return OUT;
-}
 
 ///////////////// SSDO blur //////////////////
 
@@ -352,7 +120,7 @@ pixout HMAO_Blur_PS(vtxOut IN)
 {
 	pixout OUT = (pixout)0;
 	
-	const int halfKernelWidth = 2;	
+	const int halfKernelWidth = 2;
 	
 	const float2 centerDepth = DepthTex.Load(int3(IN.baseTC.zw,0)).rg;
 	const float similarity = PS_NearFarClipDist.y * 0.5f;
@@ -397,48 +165,6 @@ pixout HMAO_Blur_PS(vtxOut IN)
 
 //////////////////////////////// technique ////////////////
 
-technique ShadowBlurGen
-{
-  pass p0
-  {
-    VertexShader = ShadowBlurVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = ShadowBlurGenPS();
-  }
-}
-
-technique ShadowBlurScreen
-{
-  pass p0
-  {
-    VertexShader = ShadowBlurVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = ShadowBlurScreenPS();
-  }
-}
-
-technique ShadowBlurScreenOpaque
-{
-  pass p0
-  {
-    VertexShader = ShadowBlurVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = ShadowBlurScreenOpaquePS();
-  }
-}
-
 technique SSDO_Blur
 {
   pass p0
@@ -454,20 +180,6 @@ technique HMAO_Blur
   {
     VertexShader = SSDO_Blur_VS();
     PixelShader = HMAO_Blur_PS() ResolvePS;
-  }
-}
-
-technique ShadowGaussBlur5x5
-{
-  pass p0
-  {
-    VertexShader = ShadowBlurTransformedColVS();
-    
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-
-    PixelShader = ShadowBlurGauss5x5PS();
   }
 }
 

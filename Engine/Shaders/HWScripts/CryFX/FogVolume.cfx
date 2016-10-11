@@ -128,7 +128,7 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
 	float t0 = dot( front, -CV_CameraFrontVector );		
 	float t1 = dot( back, -CV_CameraFrontVector );
 
-	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj ) + d;	
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj ) + d;	
 	sceneDepth = min( sceneDepth, t1 );
 	back = lerp( front, back, saturate( ( sceneDepth - t0 ) / ( t1 - t0 ) ) );
 
@@ -151,7 +151,7 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
 		#endif
 		float sceneDepth = GetDecodedSceneDepthMS( IN.hPosTexProj / IN.hPosTexProj.w, GetMSAASampleNum(), uSample );
 	#else
-		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );
+		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );
 	#endif
 	float tI = sceneDepth / dot( cameraLookDirInWS, -CV_CameraFrontVector );
 	tI = max( tS, min( tI, tE ) ); // clamp to range [tS, tE]
@@ -309,7 +309,7 @@ pixout FogVolumeBoxPS( v2f_box IN )
 		#endif
 		float	sceneDepth = GetDecodedSceneDepthMS( IN.hPosTexProj / IN.hPosTexProj.w, GetMSAASampleNum(), uSample );
 	#else
-		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );
+		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.hPosTexProj );
 	#endif
 	float tI = sceneDepth / dot( cameraLookDirInWS, -CV_CameraFrontVector );
 	tI = max( tS, min( tI, tE ) ); // clamp to range [tS, tE]

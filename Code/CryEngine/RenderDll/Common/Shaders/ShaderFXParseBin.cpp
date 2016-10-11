@@ -2461,7 +2461,6 @@ bool CShaderManBin::ParseBinFX_Texture(CParserBin& Parser, SParserFrame& Frame, 
 
 void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXParam>& AffectedParams, TArray<int>& AffectedFunc, SFXParam* pParam, EHWShaderClass eSHClass, uint32 dwType, SShaderTechnique* pShTech)
 {
-	static uint32 eT_ShadowGen[] = { CParserBin::GetCRC32("ShadowGenVS"), CParserBin::GetCRC32("ShadowGenPS"), CParserBin::GetCRC32("ShadowGenGS") };
 	if (!CParserBin::PlatformSupportsConstantBuffers())
 	{
 		//if (pParam->m_Name.c_str()[0] != '_')
@@ -2470,10 +2469,6 @@ void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXPara
 			{
 				if (pParam->m_nRegister[eSHClass] >= 0 && pParam->m_nRegister[eSHClass] < 10000)
 				{
-					if (pParam->m_nCB == CB_PER_SHADOWGEN && dwType != eT_ShadowGen[eSHClass])
-						return;
-					if ((pShTech->m_Flags & FHF_NOLIGHTS) && pParam->m_nCB == CB_PER_LIGHT)
-						return;
 					if ((pShTech->m_Flags & FHF_NOLIGHTS) && pParam->m_nCB == CB_PER_MATERIAL && !(pParam->m_nFlags & PF_TWEAKABLE_MASK))
 						return;
 					if (pParam->m_Semantic.empty() && pParam->m_Values.c_str()[0] == '(')
@@ -2484,7 +2479,7 @@ void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXPara
 			}
 		}
 	}
-	else if (pParam->m_nCB == CB_PER_LIGHT || pParam->m_nCB == CB_PER_MATERIAL || pParam->m_nCB == CB_PER_FRAME || pParam->m_nCB == CB_PER_SHADOWGEN)
+	else if (pParam->m_nCB == CB_PER_MATERIAL)
 	{
 		if (pParam->m_nRegister[eSHClass] < 0 || pParam->m_nRegister[eSHClass] >= 1000)
 			return;
@@ -2957,7 +2952,8 @@ inline bool CompareVars(const SFXParam* a, const SFXParam* b)
 		return (nCB0 < nCB1);
 	return (nReg0 < nReg1);
 }
-EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_INSTANCE, eT_PER_FRAME, eT_PER_MATERIAL, eT_PER_LIGHT, eT_PER_SHADOWGEN, eT_SKIN_DATA, eT_INSTANCE_DATA };
+
+EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_INSTANCE, eT_unknown, eT_PER_MATERIAL, eT_unknown, eT_unknown, eT_SKIN_DATA, eT_INSTANCE_DATA };
 
 void CShaderManBin::AddParameterToScript(CParserBin& Parser, SFXParam* pr, PodArray<uint32>& SHData, EHWShaderClass eSHClass, int nCB)
 {
@@ -3016,7 +3012,7 @@ void CShaderManBin::AddParameterToScript(CParserBin& Parser, SFXParam* pr, PodAr
 	if (nReg >= 0 && nReg < 10000)
 	{
 		SHData.push_back(eT_colon);
-		if (nCB == CB_PER_MATERIAL || nCB == CB_PER_FRAME || nCB == CB_PER_LIGHT || nCB == CB_PER_SHADOWGEN)
+		if (nCB == CB_PER_MATERIAL)
 			SHData.push_back(eT_packoffset);
 		else
 			SHData.push_back(eT_register);
@@ -4484,18 +4480,10 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 							Pr.m_nCB = CB_SKIN_DATA;
 						else if (!assign[0] || !strnicmp(assign, "PB_", 3))
 							Pr.m_nCB = CB_PER_BATCH;
-						else if (!assign[0] || !strnicmp(assign, "SG_", 3))
-							Pr.m_nCB = CB_PER_SHADOWGEN;
 						else if (!strnicmp(assign, "PI_", 3) || !strnicmp(assign, "SI_", 3))
 							Pr.m_nCB = CB_PER_INSTANCE;
-						else if (!strnicmp(assign, "PF_", 3))
-							Pr.m_nCB = CB_PER_FRAME;
 						else if (!strnicmp(assign, "PM_", 3))
-						{
 							Pr.m_nCB = CB_PER_MATERIAL;
-						}
-						else if (!strnicmp(assign, "PL_", 3))
-							Pr.m_nCB = CB_PER_LIGHT;
 						else if (!strnicmp(assign, "register", 8))
 							Pr.m_nCB = CB_PER_BATCH;
 						else

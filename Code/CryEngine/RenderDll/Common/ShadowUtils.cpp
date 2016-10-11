@@ -927,6 +927,7 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetShadowSamplingInfo(ShadowMapF
 	result.blendInfo = blendInfo;
 	result.blendTcNormalize = blendTcNormalize;
 	result.oneDivFarDist = 1.0f / pFr->fFarDist;
+	result.oneDivFarDistBlend = pFr->pPrevFrustum ? (1.0f / pFr->pPrevFrustum->fFarDist) : (1.0f / pFr->fFarDist);
 	result.depthTestBias = pFr->fDepthConstBias * ((pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 3.0f : 1.0f);
 	result.kernelRadius = kernelSize;
 	result.invShadowMapSize = 1.0f / pFr->nTexSize;

@@ -6,6 +6,9 @@
 #include <CryMath/Cry_Vector2.h>
 #include "Timeline.h"
 
+#include "XRenderD3D9/GraphicsPipeline/Common/PrimitiveRenderPass.h"
+#include "XRenderD3D9/GraphicsPipeline/StandardGraphicsPipeline.h"
+
 class CTexture;
 class CShader;
 class RootOpticsElement;
@@ -161,38 +164,37 @@ class CSoftOcclusionManager
 {
 public:
 
-	CSoftOcclusionManager()
-	{
-		m_nPos = 0;
-		m_IndexBufferOffset = 0;
-		m_IndexBufferCount = 0;
-		m_bSuccessGenerateIB = false;
-	}
+	CSoftOcclusionManager();
+	~CSoftOcclusionManager();
+
+	void Init();
 
 	void AddSoftOcclusionQuery(CFlareSoftOcclusionQuery* pQuery, const Vec3& vPos);
-
-	bool Begin();
-	void End();
-
-	int  GetSize()
-	{
-		return m_nPos;
-	}
-
 	CFlareSoftOcclusionQuery* GetSoftOcclusionQuery(int nIndex) const;
 
-	void                      GatherOcclusions();
-	void                      ComputeVisibility();
+	int  GetSize() const { return m_nPos; }
+	void Reset();
 
-	void                      ClearResources();
+	bool                      Update(CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount);
+
 private:
 
-	bool GenerateIndexBuffer();
-
-	bool   m_bSuccessGenerateIB;
-	uint32 m_IndexBufferOffset;
-	uint32 m_IndexBufferCount;
+	bool                      PrepareOcclusionPrimitive(CRenderPrimitive& primitive);
+	bool                      PrepareGatherPrimitive(CRenderPrimitive& primitive, CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount);
 
 	int    m_nPos;
 	_smart_ptr<CFlareSoftOcclusionQuery> m_SoftOcclusionQueries[CFlareSoftOcclusionQuery::s_nIDMax];
+
+	CRenderPrimitive m_occlusionPrimitive;
+	CRenderPrimitive m_gatherPrimitive;
+
+	CPrimitiveRenderPass m_occlusionPass;
+	CPrimitiveRenderPass m_gatherPass;
+
+	int   m_samplerPointBorderBlack;
+	int   m_samplerPointClamp;
+
+	buffer_handle_t m_indexBuffer;
+	buffer_handle_t m_occlusionVertexBuffer;
+	buffer_handle_t m_gatherVertexBuffer;
 };

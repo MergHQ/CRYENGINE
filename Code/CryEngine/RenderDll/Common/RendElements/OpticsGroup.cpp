@@ -70,26 +70,28 @@ void                COpticsGroup::SetElementAt(int i, IOpticsElementBase* elem)
 	((COpticsElement*)&*children[i])->SetParent(this);
 }
 
-void COpticsGroup::validateGlobalVars(SAuxParams& aux)
+void COpticsGroup::validateGlobalVars(const SAuxParams& aux)
 {
 	COpticsElement::validateGlobalVars(aux);
 	validateChildrenGlobalVars(aux);
 }
-void COpticsGroup::validateChildrenGlobalVars(SAuxParams& aux)
+void COpticsGroup::validateChildrenGlobalVars(const SAuxParams& aux)
 {
 	for (uint i = 0; i < children.size(); i++)
 		((COpticsElement*)GetElementAt(i))->validateGlobalVars(aux);
 }
 
-void COpticsGroup::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux)
+bool COpticsGroup::PreparePrimitives(const COpticsElement::SPreparePrimitivesContext& context)
 {
-	PROFILE_LABEL_SCOPE("LensEfxGroup");
+	bool bResult = true;
 
 	for (uint i = 0; i < children.size(); i++)
 	{
 		if (GetElementAt(i)->IsEnabled())
-			((COpticsElement*)GetElementAt(i))->Render(shader, vSrcWorldPos, vSrcProjPos, aux);
+			bResult &= reinterpret_cast<COpticsElement*>(GetElementAt(i))->PreparePrimitives(context);
 	}
+
+	return bResult;
 }
 
 void COpticsGroup::GetMemoryUsage(ICrySizer* pSizer) const

@@ -249,7 +249,6 @@ float CRendererCVars::CV_r_ShadowsParticleNormalEffect;
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenMode);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsUseClipVolume);
-int CRendererCVars::CV_r_shadowblur;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadowtexformat);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskResolution);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskDownScale);
@@ -284,6 +283,8 @@ float CRendererCVars::CV_r_imposterratio;
 int CRendererCVars::CV_r_impostersupdateperframe;
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
+AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
+AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
 #if CRY_PLATFORM_DESKTOP
 int CRendererCVars::CV_r_shadersorbis;
 int CRendererCVars::CV_r_shadersdurango;
@@ -1764,10 +1765,6 @@ void CRendererCVars::InitCVars()
 	                    ".\n"
 	                    "Usage: r_ShadowsUseClipVolume [0=Disable/1=Enable");
 
-	REGISTER_CVAR3("r_ShadowBlur", CV_r_shadowblur, SHADOWS_BLUR_DEFAULT_VAL, VF_DUMPTODISK,
-	               "Selected shadow map screenspace blurring technique.\n"
-	               "Usage: r_ShadowBlur [0=no blurring(fastest)/1=blur/2=blur/3=blur without leaking(slower)]");
-
 	DefineConstIntCVar3("r_ShadowTexFormat", CV_r_shadowtexformat, 0, VF_NULL,
 	                    "0=use D32 texture format for depth map\n"
 	                    "1=use D16 texture format for depth map\n"
@@ -2409,6 +2406,8 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShadersLazyUnload", CV_r_shaderslazyunload, 0, VF_NULL, "");
+	DefineConstIntCVar3("r_ShadersCompileStrict", CV_r_shadersCompileStrict, 0, VF_NULL, "");
+	DefineConstIntCVar3("r_ShadersCompileCompatible", CV_r_shadersCompileCompatible, 1, VF_NULL, "");
 
 	REGISTER_CVAR3_CB("r_ShadersAllowCompilation", CV_r_shadersAllowCompilation, SHADERS_ALLOW_COMPILATION_DEFAULT_VAL, VF_NULL, "", OnChange_CV_r_ShadersAllowCompiliation);
 

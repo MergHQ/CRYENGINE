@@ -138,7 +138,7 @@ pixout SunShaftsMaskGenPS(vtxOut IN)
 
   int nQuality = GetShaderQuality();
 
-  half sceneDepth = GetDownscaledDepth(_tex0, IN.baseTC.xy);
+  half sceneDepth = GetLinearDepth(_tex0, IN.baseTC.xy);
   OUT.Color = half4(sceneDepth, sceneDepth, sceneDepth, 1 - sceneDepth.x);
 
   half3 sceneCol = 0.25.xxx;
@@ -255,7 +255,7 @@ pixout SunShaftsDisplayPS(vtxOutAAOpt IN)
 #endif
 
 	// propagate original alpha
-	OUT.Color.a = cScreen.a; //saturate( (GetLinearDepth(_tex4, IN.baseTC.xy).x * PS_NearFarClipDist.y - 0.85f)*100 );
+	OUT.Color.a = cScreen.a; //saturate( (GetLinearDepth(_tex4, IN.baseTC.xy, true).x - 0.85f)*100 );
 
   return OUT;
 }

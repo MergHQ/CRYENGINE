@@ -15,28 +15,28 @@ public:
 	COpticsReference(const char* name);
 	~COpticsReference(){}
 
-	EFlareType          GetType()                    { return eFT_Reference; }
-	bool                IsGroup() const              { return false; }
+	EFlareType          GetType() override                    { return eFT_Reference; }
+	bool                IsGroup() const override              { return false; }
 
-	string              GetName() const              { return m_name;  }
-	void                SetName(const char* ch_name) { m_name = ch_name; }
-	void                Load(IXmlNode* pNode);
+	string              GetName() const override              { return m_name;  }
+	void                SetName(const char* ch_name) override { m_name = ch_name; }
+	void                Load(IXmlNode* pNode) override;
 
-	IOpticsElementBase* GetParent() const  { return NULL;  }
+	IOpticsElementBase* GetParent() const override            { return NULL;  }
 
-	bool                IsEnabled() const  { return true;  }
-	void                SetEnabled(bool b) {}
-	void                AddElement(IOpticsElementBase* pElement);
-	void                InsertElement(int nPos, IOpticsElementBase* pElement);
-	void                Remove(int i);
-	void                RemoveAll();
-	int                 GetElementCount() const;
-	IOpticsElementBase* GetElementAt(int i) const;
+	bool                IsEnabled() const override            { return true;  }
+	void                SetEnabled(bool b) override           {}
+	void                AddElement(IOpticsElementBase* pElement) override;
+	void                InsertElement(int nPos, IOpticsElementBase* pElement) override;
+	void                Remove(int i) override;
+	void                RemoveAll() override;
+	int                 GetElementCount() const override;
+	IOpticsElementBase* GetElementAt(int i) const override;
 
-	void                GetMemoryUsage(ICrySizer* pSizer) const;
-	void                Invalidate();
+	void                GetMemoryUsage(ICrySizer* pSizer) const override;
+	void                Invalidate() override;
 
-	void                Render(SLensFlareRenderParam* pParam, const Vec3& vPos);
+	void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) override;
 
 public:
 	string                             m_name;

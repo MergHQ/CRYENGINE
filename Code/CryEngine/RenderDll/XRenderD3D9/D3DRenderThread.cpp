@@ -535,6 +535,11 @@ void CD3D9Renderer::RT_ReleaseResource(SResourceAsync* pRes)
 	delete pRes;
 }
 
+void CD3D9Renderer::RT_ReleaseOptics(IOpticsElementBase* pOpticsElement)
+{
+	SAFE_RELEASE(pOpticsElement);
+}
+
 void CD3D9Renderer::RT_UnbindTMUs()
 {
 	D3DShaderResource* pTex[MAX_TMU] = { NULL };

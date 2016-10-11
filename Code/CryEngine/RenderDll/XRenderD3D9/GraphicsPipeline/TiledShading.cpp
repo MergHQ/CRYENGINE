@@ -520,7 +520,7 @@ void CTiledShadingStage::Execute()
 		s_prevTexAOColorBleed = pTexAOColorBleed->GetID();
 	}
 
-	RECT viewport = { 0, 0, screenWidth, screenHeight };
+	D3DViewPort viewport = { 0.f, 0.f, float(screenWidth), float(screenHeight), 0.f, 1.f };
 	rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer(&viewport);
 	m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, rd->GetGraphicsPipeline().GetPerViewConstantBuffer());
 

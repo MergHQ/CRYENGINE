@@ -38,14 +38,16 @@ public:
 	enum EPrimitiveType
 	{
 		ePrim_Triangle,
-		ePrim_UnitBox,        // axis aligned box ( 0, 0, 0) - (1,1,1)
-		ePrim_CenteredBox,    // axis aligned box (-1,-1,-1) - (1,1,1)
-		ePrim_Projector,      // pyramid shape with sparsely tessellated ground plane
-		ePrim_Projector1,     // pyramid shape with semi densely tessellated ground plane
-		ePrim_Projector2,     // pyramid shape with densely tessellated ground plane
-		ePrim_ClipProjector,  // same as ePrim_Projector  but with even denser tessellation
-		ePrim_ClipProjector1, // same as ePrim_Projector1 but with even denser tessellation
-		ePrim_ClipProjector2, // same as ePrim_Projector2 but with even denser tessellation
+		ePrim_UnitBox,            // axis aligned box ( 0, 0, 0) - (1,1,1)
+		ePrim_CenteredBox,        // axis aligned box (-1,-1,-1) - (1,1,1)
+		ePrim_Projector,          // pyramid shape with sparsely tessellated ground plane
+		ePrim_Projector1,         // pyramid shape with semi densely tessellated ground plane
+		ePrim_Projector2,         // pyramid shape with densely tessellated ground plane
+		ePrim_ClipProjector,      // same as ePrim_Projector  but with even denser tessellation
+		ePrim_ClipProjector1,     // same as ePrim_Projector1 but with even denser tessellation
+		ePrim_ClipProjector2,     // same as ePrim_Projector2 but with even denser tessellation
+		ePrim_FullscreenQuad,     // fullscreen quad
+		ePrim_FullscreenQuadTess, // tessellated fullscreen quad
 		ePrim_Custom,
 
 		ePrim_Count,
@@ -94,7 +96,7 @@ public:
 	void          SetInlineConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages = EShaderStage_Pixel);
 	void          SetPrimitiveType(EPrimitiveType primitiveType);
 	void          SetCustomVertexStream(buffer_handle_t vertexBuffer, EVertexFormat vertexFormat, uint32 vertexStride);
-	void          SetCustomIndexStream(buffer_handle_t indexBuffer, uint32 indexStride);
+	void          SetCustomIndexStream(buffer_handle_t indexBuffer, RenderIndexType indexType);
 	void          SetDrawInfo(ERenderPrimitiveType primType, uint32 vertexBaseOffset, uint32 vertexOrIndexOffset, uint32 vertexOrIndexCount);
 
 	bool          IsDirty() const;
@@ -174,7 +176,7 @@ public:
 	bool   AddPrimitive(SCompiledRenderPrimitive* pPrimitive);
 	void   UndoAddPrimitive()  { CRY_ASSERT(!m_compiledPrimitives.empty()); m_compiledPrimitives.pop_back(); }
 
-	uint32 GetPrimitiveCount() { return m_compiledPrimitives.size();  }
+	uint32 GetPrimitiveCount() const { return m_compiledPrimitives.size();  }
 
 	void   Execute();
 
@@ -291,10 +293,10 @@ inline void CRenderPrimitive::SetCustomVertexStream(buffer_handle_t vertexBuffer
 	ASSIGN_VALUE(m_primitiveType, ePrim_Custom, eDirty_Geometry);
 }
 
-inline void CRenderPrimitive::SetCustomIndexStream(buffer_handle_t indexBuffer, uint32 indexStride)
+inline void CRenderPrimitive::SetCustomIndexStream(buffer_handle_t indexBuffer, RenderIndexType indexType)
 {
 	ASSIGN_VALUE(m_primitiveGeometry.indexStream.hStream, indexBuffer, eDirty_Geometry);
-	ASSIGN_VALUE(m_primitiveGeometry.indexStream.nStride, indexStride, eDirty_Geometry);
+	ASSIGN_VALUE(m_primitiveGeometry.indexStream.nStride, indexType, eDirty_Geometry);
 	ASSIGN_VALUE(m_primitiveType, ePrim_Custom, eDirty_Geometry);
 }
 

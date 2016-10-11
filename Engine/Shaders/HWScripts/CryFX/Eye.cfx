@@ -318,7 +318,7 @@ void frag_custom_begin(inout fragPass pPass)
       #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
         pPass.fSceneDepthRT = GetDecodedSceneDepthMS(tcProj, GetMSAASampleNum(), pPass.IN.uSample );
       #else
-        pPass.fSceneDepthRT = DecodeSceneDepth(sceneDepthSampler, pPass.IN.screenProj.xyww);
+        pPass.fSceneDepthRT = GetLinearDepthScaledProj(sceneLinearDepthTex, pPass.IN.screenProj.xyww);
       #endif
 
 	pPass.cSpecularMap = half4(MatSpecColor.xyz, 1);

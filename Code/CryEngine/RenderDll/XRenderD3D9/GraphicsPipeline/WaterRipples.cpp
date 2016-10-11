@@ -73,7 +73,7 @@ void CWaterRipplesStage::Init()
 		prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
 		prim.SetCullMode(eCULL_None);
 		prim.SetCustomVertexStream(m_vertexBuffer, sVertexFormat, sVertexStride);
-		prim.SetCustomIndexStream(~0u, 0);
+		prim.SetCustomIndexStream(~0u, RenderIndexType(0));
 		prim.SetDrawInfo(eptTriangleStrip, 0, vertexOffset, sVertexCount);
 
 		// only update blue channel: current frame

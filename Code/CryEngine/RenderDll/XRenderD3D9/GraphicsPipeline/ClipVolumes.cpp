@@ -175,8 +175,6 @@ void CClipVolumesStage::Prepare(CRenderView* pRenderView)
 
 			if (pRenderMesh = reinterpret_cast<CRenderMesh*>(volume.m_pRenderMesh.get()))
 			{
-				pRenderMesh->CheckUpdate(pRenderMesh->_GetVertexFormat(), 0);
-
 				hVertexStream = pRenderMesh->_GetVBStream(VSF_GENERAL);
 				hIndexStream = pRenderMesh->_GetIBStream();
 
