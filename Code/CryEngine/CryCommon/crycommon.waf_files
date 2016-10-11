@@ -661,7 +661,6 @@
           "CrySerialization/Decorators/OutputFilePath.h",
           "CrySerialization/Decorators/OutputFilePathImpl.h",
           "CrySerialization/Decorators/Range.h",
-          "CrySerialization/Decorators/RangeImpl.h",
           "CrySerialization/Decorators/ResourceFilePath.h",
           "CrySerialization/Decorators/ResourceFilePathImpl.h",
           "CrySerialization/Decorators/ResourceFolderPath.h",
