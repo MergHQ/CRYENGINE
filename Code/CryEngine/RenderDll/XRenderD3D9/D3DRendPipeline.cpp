@@ -3723,7 +3723,7 @@ void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendEle
 
 static void sBatchFilter(uint32 nFilter, char* sFilt)
 {
-	STATIC_ASSERT((1 << ((CRY_ARRAY_COUNT(sBatchList)) - 1) <= FB_MASK), "Batch techniques/flags list mismatch");
+	static_assert((1 << ((CRY_ARRAY_COUNT(sBatchList)) - 1) <= FB_MASK), "Batch techniques/flags list mismatch");
 
 	sFilt[0] = 0;
 	int n = 0;
@@ -3776,7 +3776,7 @@ void CD3D9Renderer::OldPipeline_ProcessBatchesList(CRenderView::RenderItems& ren
 	}
 
 #ifdef DO_RENDERLOG
-	STATIC_ASSERT(((CRY_ARRAY_COUNT(sDescList)) == EFSLIST_NUM), "Batch techniques/flags list mismatch");
+	static_assert(((CRY_ARRAY_COUNT(sDescList)) == EFSLIST_NUM), "Batch techniques/flags list mismatch");
 
 	if (CV_r_log)
 	{

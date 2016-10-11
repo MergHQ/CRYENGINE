@@ -367,7 +367,7 @@ struct SPaintColor
 		case CTileGenerator::Paint::BadPaint:
 			return Col_DarkSlateBlue;
 		}
-		STATIC_ASSERT(CTileGenerator::Paint::OkPaintStart == 2, "There are unknown values before TileGenerator::Paint::OkPaintStart");
+		static_assert(CTileGenerator::Paint::OkPaintStart == 2, "There are unknown values before TileGenerator::Paint::OkPaintStart");
 		return ColorFromNumber(r - CTileGenerator::Paint::OkPaintStart);
 	}
 };

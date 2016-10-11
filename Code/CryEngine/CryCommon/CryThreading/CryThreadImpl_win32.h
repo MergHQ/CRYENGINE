@@ -11,9 +11,9 @@ namespace CryMT
 namespace detail
 {
 
-STATIC_ASSERT(sizeof(CRY_CRITICAL_SECTION) == sizeof(CRITICAL_SECTION), "Win32 CRITICAL_SECTION size does not match CRY_CRITICAL_SECTION");
-STATIC_ASSERT(sizeof(CRY_SRWLOCK) == sizeof(SRWLOCK), "Win32 SRWLOCK size does not match CRY_SRWLOCK");
-STATIC_ASSERT(sizeof(CRY_CONDITION_VARIABLE) == sizeof(CONDITION_VARIABLE), "Win32 CONDITION_VARIABLE size does not match CRY_CONDITION_VARIABLE");
+static_assert(sizeof(CRY_CRITICAL_SECTION) == sizeof(CRITICAL_SECTION), "Win32 CRITICAL_SECTION size does not match CRY_CRITICAL_SECTION");
+static_assert(sizeof(CRY_SRWLOCK) == sizeof(SRWLOCK), "Win32 SRWLOCK size does not match CRY_SRWLOCK");
+static_assert(sizeof(CRY_CONDITION_VARIABLE) == sizeof(CONDITION_VARIABLE), "Win32 CONDITION_VARIABLE size does not match CRY_CONDITION_VARIABLE");
 
 //////////////////////////////////////////////////////////////////////////
 //CryLock_SRWLOCK
@@ -23,7 +23,7 @@ STATIC_ASSERT(sizeof(CRY_CONDITION_VARIABLE) == sizeof(CONDITION_VARIABLE), "Win
 CRY_SRWLOCK::CRY_SRWLOCK()
 	: SRWLock_(0)
 {
-	STATIC_ASSERT(sizeof(SRWLock_) == sizeof(PSRWLOCK), "RWLock-pointer has invalid size");
+	static_assert(sizeof(SRWLock_) == sizeof(PSRWLOCK), "RWLock-pointer has invalid size");
 	InitializeSRWLock(reinterpret_cast<PSRWLOCK>(&SRWLock_));
 }
 
@@ -34,7 +34,7 @@ CRY_SRWLOCK::CRY_SRWLOCK()
 //////////////////////////////////////////////////////////////////////////
 CRY_CONDITION_VARIABLE::CRY_CONDITION_VARIABLE()
 {
-	STATIC_ASSERT(sizeof(condVar_) == sizeof(PCONDITION_VARIABLE), "ConditionVariable-pointer has invalid size");
+	static_assert(sizeof(condVar_) == sizeof(PCONDITION_VARIABLE), "ConditionVariable-pointer has invalid size");
 	InitializeConditionVariable(reinterpret_cast<PCONDITION_VARIABLE>(&condVar_));
 }
 
@@ -179,7 +179,7 @@ bool CryLock_CriticalSection::TryLock()
 CryLock_WinMutex::CryLock_WinMutex()
 	: m_win32_lock_type(CreateMutex(NULL, FALSE, NULL))
 {
-	STATIC_ASSERT(sizeof(HANDLE) == sizeof(m_win32_lock_type), "WinMutex-pointer has invalid size");
+	static_assert(sizeof(HANDLE) == sizeof(m_win32_lock_type), "WinMutex-pointer has invalid size");
 }
 CryLock_WinMutex::~CryLock_WinMutex()
 {

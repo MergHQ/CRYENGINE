@@ -149,7 +149,7 @@ AABB RotateAABB(const AABB& aabb, const Matrix33& mat)
 
 CVolumetricFog::CVolumetricFog()
 {
-	STATIC_ASSERT(MaxFrameNum >= MAX_GPU_NUM, "MaxFrameNum must be more than or equal to MAX_GPU_NUM.");
+	static_assert(MaxFrameNum >= MAX_GPU_NUM, "MaxFrameNum must be more than or equal to MAX_GPU_NUM.");
 
 	for (int i = 0; i < MaxFrameNum; ++i)
 		m_viewProj[i].SetIdentity();

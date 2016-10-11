@@ -7,8 +7,6 @@
 
 #include <CryCore/MetaUtils.h>
 
-#define STATIC_ASSERT(condition, errMessage) static_assert(condition, errMessage)
-
 template<int left, int right> struct static_max
 {
 	enum

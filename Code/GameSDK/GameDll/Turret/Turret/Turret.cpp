@@ -125,11 +125,11 @@ namespace TurretBehaviorStateNames
 
 	ETurretBehaviorState FindId( const char* const name )
 	{
-		STATIC_ASSERT( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
 
 		for ( size_t i = 0; i < eTurretBehaviorState_Count; ++i )
 		{

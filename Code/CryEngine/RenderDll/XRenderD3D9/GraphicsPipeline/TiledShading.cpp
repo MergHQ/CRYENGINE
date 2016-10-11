@@ -31,8 +31,8 @@ struct VolumeLightListGenConstants
 CTiledShadingStage::CTiledShadingStage()
 	: m_passCullingShading(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
 {
-	STATIC_ASSERT(sizeof(STiledLightVolumeInfo) % 16 == 0, "STiledLightVolumeInfo should be 16 byte aligned for GPU performance");
-	STATIC_ASSERT(MaxNumTileLights <= 256 && LightTileSizeX == 8 && LightTileSizeY == 8, "Volumes don't support other settings");
+	static_assert(sizeof(STiledLightVolumeInfo) % 16 == 0, "STiledLightVolumeInfo should be 16 byte aligned for GPU performance");
+	static_assert(MaxNumTileLights <= 256 && LightTileSizeX == 8 && LightTileSizeY == 8, "Volumes don't support other settings");
 }
 
 CTiledShadingStage::~CTiledShadingStage()

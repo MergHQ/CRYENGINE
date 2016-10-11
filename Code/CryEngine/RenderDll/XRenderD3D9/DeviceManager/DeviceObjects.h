@@ -645,7 +645,7 @@ public:
 	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 };
 
-STATIC_ASSERT(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceGraphicsCommandInterface cannot contain data members");
+static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceGraphicsCommandInterface cannot contain data members");
 
 class CDeviceComputeCommandInterface : public CDeviceComputeCommandInterfaceImpl
 {
@@ -666,7 +666,7 @@ public:
 	void ClearUAV(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 };
 
-STATIC_ASSERT(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
+static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
 
 class CDeviceCommandList : public CDeviceCommandListImpl
 {
@@ -688,7 +688,7 @@ public:
 #endif
 };
 
-STATIC_ASSERT(sizeof(CDeviceCommandList) == sizeof(CDeviceCommandListImpl), "CDeviceCommandList cannot contain data members");
+static_assert(sizeof(CDeviceCommandList) == sizeof(CDeviceCommandListImpl), "CDeviceCommandList cannot contain data members");
 
 typedef std::shared_ptr<CDeviceCommandList> CDeviceCommandListPtr;
 typedef CDeviceCommandList&                 CDeviceCommandListRef;

@@ -753,9 +753,9 @@ typedef uint64 RuntimeDataID;
 
 inline RuntimeDataID MakeRuntimeDataID(const EntityId entityID, const NodeID nodeID)
 {
-	STATIC_ASSERT(sizeof(entityID) == 4, "Expected entity id to be 4 bytes");
-	STATIC_ASSERT(sizeof(nodeID) == 4, "Expected node id to be 4 bytes");
-	STATIC_ASSERT(sizeof(RuntimeDataID) == 8, "Expected runtime data id to be 8 bytes");
+	static_assert(sizeof(entityID) == 4, "Expected entity id to be 4 bytes");
+	static_assert(sizeof(nodeID) == 4, "Expected node id to be 4 bytes");
+	static_assert(sizeof(RuntimeDataID) == 8, "Expected runtime data id to be 8 bytes");
 
 	const RuntimeDataID runtimeDataID = (uint64)entityID | (((uint64)nodeID) << 32);
 	return runtimeDataID;

@@ -3990,7 +3990,7 @@ static uint32 ComputePresentInterval(bool vsync, uint32 refreshNumerator, uint32
 
 void CD3D9Renderer::IssueFrameFences()
 {
-	STATIC_ASSERT(CRY_ARRAY_COUNT(m_frameFences) == MAX_FRAMES_IN_FLIGHT, "Unexpected size for m_frameFences");
+	static_assert(CRY_ARRAY_COUNT(m_frameFences) == MAX_FRAMES_IN_FLIGHT, "Unexpected size for m_frameFences");
 
 	if (!m_frameFences[0])
 	{
