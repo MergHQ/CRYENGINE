@@ -601,7 +601,7 @@ struct ICharacterInstance : IMeshObj
 #include <CryAnimation/IAnimationPoseModifier.h>                                                    // <> required for Interfuscator
 
 #ifndef SKELETON_ANIMATION_LAYER_COUNT
-#define SKELETON_ANIMATION_LAYER_COUNT 16
+#define SKELETON_ANIMATION_LAYER_COUNT 32
 #endif
 
 struct ISkeletonAnim
