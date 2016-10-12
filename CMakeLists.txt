@@ -475,8 +475,13 @@ if (OPTION_SANDBOX AND WIN64)
 	add_subdirectory(Code/Sandbox/Plugins/PerforcePlugin)
 endif()
 
-if (WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
-	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen EXCLUDE_FROM_ALL)
+
+if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
+	option(OPTION_SHADERCACHEGEN "Build the shader cache generator." OFF)
+endif()
+
+if (OPTION_SHADERCACHEGEN)
+	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen)
 endif()
 
 if (OPTION_RC AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/rc")
