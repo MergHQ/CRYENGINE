@@ -25,13 +25,16 @@ CSceneRenderPass::CSceneRenderPass()
 		m_pColorTargets[i] = nullptr;
 }
 
-void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList)
+void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList, uint32 excludeFilter, bool drawCompiledRenderObject)
 {
-	assert(stageID < MAX_PIPELINE_SCENE_STAGES);
+	// the scene render passes which draw CCompiledRenderObject must follow the strict rule of PSOs array and PSO cache in CCompiledRenderObject
+	const bool drawable = (drawCompiledRenderObject && stageID < MAX_PIPELINE_SCENE_STAGES) || !drawCompiledRenderObject;
+	assert(drawable);
 	m_stageID = stageID;
 	m_passID = stagePassID;
 	m_technique = technique;
-	m_batchFilter = filter;
+	m_batchFilter = drawable ? filter : 0;
+	m_excludeFilter = excludeFilter;
 	m_renderList = renderList;
 }
 
@@ -155,6 +158,9 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 		if (!(ri.nBatchFlags & passContext.batchFilter))
 			continue;
 
+		if (ri.nBatchFlags & passContext.batchExcludeFilter)
+			continue;
+
 		CRenderObject* pObject = ri.pObj;
 		CRendElementBase* pRE = ri.pElem;
 
@@ -256,7 +262,7 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	if (m_batchFilter != FB_MASK && !(nBatchFlags & m_batchFilter))
 		return;
 
-	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter);
+	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter, m_excludeFilter);
 
 	passContext.nProcessThreadID = rp.m_nProcessThreadID;
 	passContext.nFrameID = rp.m_TI[rp.m_nProcessThreadID].m_nFrameID;

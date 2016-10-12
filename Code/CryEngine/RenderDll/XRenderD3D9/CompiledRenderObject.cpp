@@ -592,6 +592,8 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 	}
 #endif
 
+	assert(passContext.stageID < MAX_PIPELINE_SCENE_STAGES);
+	assert(passContext.passID < MAX_PIPELINE_SCENE_STAGE_PASSES);
 	const CDeviceGraphicsPSOPtr& pPso = m_pso[passContext.stageID][passContext.passID];
 
 	if (!pPso || !pPso->IsValid() || !m_materialResourceSet->IsValid())

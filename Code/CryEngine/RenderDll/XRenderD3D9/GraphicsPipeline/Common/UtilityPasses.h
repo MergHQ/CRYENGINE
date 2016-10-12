@@ -56,7 +56,7 @@ public:
 		, m_distribution(-FLT_MIN)
 	{
 	}
-	void Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution);
+	void Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly = false);
 
 protected:
 	float GaussianDistribution1D(float x, float rho);

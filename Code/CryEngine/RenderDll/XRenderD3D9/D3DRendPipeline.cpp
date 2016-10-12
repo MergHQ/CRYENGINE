@@ -30,6 +30,7 @@
 #include "GraphicsPipeline/Common/SceneRenderPass.h"
 #include "GraphicsPipeline/ComputeSkinning.h"
 #include "GraphicsPipeline/WaterRipples.h"
+#include "GraphicsPipeline/Water.h"
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
 
@@ -504,7 +505,11 @@ void CD3D9Renderer::EF_Init()
 	texState.SetComparisonFilter(true);
 	m_nLinearClampComparisonSampler = CTexture::GetTexState(texState);
 	m_nBilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nBilinearClampSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_nBilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
+	m_nTrilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nTrilinearClampSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
+	m_nTrilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
 
 	CDeferredShading::CreateDeferredShading();
 
@@ -1748,7 +1753,7 @@ bool CD3D9Renderer::FX_FogScene()
 		//////////////////////////////////////////////////////////////////////////
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-		const bool renderFogShadow = m_bVolFogShadowsEnabled && !m_bVolumetricFogEnabled;
+		const bool renderFogShadow = m_bVolFogShadowsEnabled;
 
 		Vec4 volFogShadowRange;
 		{
@@ -1810,7 +1815,7 @@ bool CD3D9Renderer::FX_FogScene()
 				m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE5] | g_HWSR_MaskBit[HWSR_SAMPLE4]);
 				if (renderFogCloudShadow)
 					m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
-				if (renderFogCloudShadow && m_bVolumetricCloudsEnabled)
+				if (m_bVolumetricCloudsEnabled)
 					m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 
 				static CCryNameTSCRC TechName0("FogPassVolShadowsInterleavePassLegacy");
@@ -2369,74 +2374,6 @@ void CD3D9Renderer::FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticI
 	PostProcessUtils().Log(" +++ End watervolume caustics preprocessing +++ \n");
 }
 
-bool CD3D9Renderer::FX_WaterVolumesCausticsUpdateGrid(N3DEngineCommon::SCausticInfo& causticInfo)
-{
-	// 16 bit index limit, can only do max 256x256 grid.
-	// could use hardware tessellation to reduce memory and increase tessellation amount for higher precision.
-	const uint32 nCausticMeshWidth  = clamp_tpl(CRenderer::CV_r_watervolumecausticsdensity, 16, 255);
-	const uint32 nCausticMeshHeight = clamp_tpl(CRenderer::CV_r_watervolumecausticsdensity, 16, 255);
-
-	// Update the grid mesh if required.
-	if ((!causticInfo.m_pCausticQuadMesh || causticInfo.m_nCausticMeshWidth != nCausticMeshWidth || causticInfo.m_nCausticMeshHeight != nCausticMeshHeight))
-	{
-		// Make sure we aren't recreating the mesh.
-		causticInfo.m_pCausticQuadMesh = NULL;
-
-		const uint32 nCausticVertexCount = (nCausticMeshWidth + 1) * (nCausticMeshHeight + 1);
-		const uint32 nCausticIndexCount  = (nCausticMeshWidth * nCausticMeshHeight) * 6;
-
-		// Store the new resolution and vertex/index counts.
-		causticInfo.m_nCausticMeshWidth  = nCausticMeshWidth;
-		causticInfo.m_nCausticMeshHeight = nCausticMeshHeight;
-		causticInfo.m_nVertexCount       = nCausticVertexCount;
-		causticInfo.m_nIndexCount        = nCausticIndexCount;
-
-		// Reciprocal for scaling.
-		float fRecipW = 1.0f / (float) nCausticMeshWidth;
-		float fRecipH = 1.0f / (float) nCausticMeshHeight;
-
-		// Buffers.
-		SVF_P3F_C4B_T2F* pCausticQuads = new SVF_P3F_C4B_T2F[nCausticVertexCount];
-		vtx_idx* pCausticIndices       = new vtx_idx[nCausticIndexCount];
-
-		// Fill vertex buffer.
-		for (uint32 y = 0; y <= nCausticMeshHeight; ++y)
-		{
-			for (uint32 x = 0; x <= nCausticMeshWidth; ++x)
-			{
-				pCausticQuads[y * (nCausticMeshWidth + 1) + x].xyz = Vec3(((float) x) * fRecipW, ((float) y) * fRecipH, 0.0f);
-			}
-		}
-
-		// Fill index buffer.
-		for (uint32 y = 0; y < nCausticMeshHeight; ++y)
-		{
-			for (uint32 x = 0; x < nCausticMeshWidth; ++x)
-			{
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6]     = y * (nCausticMeshWidth + 1) + x;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 1] = y * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 2] = (y + 1) * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 3] = (y + 1) * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 4] = (y + 1) * (nCausticMeshWidth + 1) + x;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 5] = y * (nCausticMeshWidth + 1) + x;
-			}
-		}
-
-		// Create the mesh.
-		causticInfo.m_pCausticQuadMesh = gRenDev->CreateRenderMeshInitialized(pCausticQuads, nCausticVertexCount, eVF_P3F_C4B_T2F, pCausticIndices, nCausticIndexCount, prtTriangleList, "WaterCausticMesh", "WaterCausticMesh");
-
-		// Delete the temporary buffers.
-		delete[] pCausticQuads;
-		delete[] pCausticIndices;
-	}
-
-	// If we created the mesh, return true.
-	if (causticInfo.m_pCausticQuadMesh)
-		return true;
-
-	return false;
-}
-
 void CD3D9Renderer::FX_WaterVolumesCaustics(CRenderView* pRenderView)
 {
 	uint64 nPrevFlagsShaderRT = gRenDev->m_RP.m_FlagsShader_RT;
@@ -2523,7 +2460,8 @@ void CD3D9Renderer::FX_WaterVolumesCaustics(CRenderView* pRenderView)
 		// for future:
 		// - merge this somehow with shadow gen for correct projection/intersection with geometry (and lighting) - can use shadow map for position reconstruction of world around volume and project caustic geometry to it.
 		// - try hardware tessellation to increase quality and reduce memory (perhaps do projection per volume instead of as a single pass, that way it's basically screen-space)
-		if (FX_WaterVolumesCausticsUpdateGrid(causticInfo)) // returns true if the mesh is valid
+		bool bVertexUpdated = false;
+		if (CWaterStage::UpdateCausticsGrid(causticInfo, bVertexUpdated, gRenDev)) // returns true if the mesh is valid
 		{
 			static CCryNameTSCRC pTechNameCaustics("WaterCausticsGen");
 			PROFILE_LABEL_SCOPE("CAUSTICS_GEN");
@@ -3214,6 +3152,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 		case SPRID_SCANTEXWATER:
 			if (!(m_RP.m_TI[m_RP.m_nFillThreadID].m_PersFlags & RBPF_DRAWTOTEXTURE))
 			{
+				bool bTryPreprocess = false;
 				CRenderObject* pObj = pr->m_pObject;
 				int nT              = pr->m_nTech;
 				if (nT < 0)
@@ -3224,7 +3163,10 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 				{
 					SHRenderTarget* pTarg = pTech->m_RTargets[j];
 					if (pTarg->m_eOrder == eRO_PreProcess)
+					{
+						bTryPreprocess = true;
 						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+					}
 				}
 				if (pRes)
 				{
@@ -3232,8 +3174,48 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 					{
 						SHRenderTarget* pTarg = pRes->m_RTargets[j];
 						if (pTarg->m_eOrder == eRO_PreProcess)
+						{
+							bTryPreprocess = true;
 							bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+						}
 					}
+				}
+
+				// NOTE: try water reflection pre-process again because it wouldn't be executed when the shader uses only Texture and SamplerState instead of Sampler.
+				const uint64 ENVIRONMENT_MAP_MASK = 0x4; // this is defined in Water.ext as %ENVIRONMENT_MAP.
+				if (!bTryPreprocess
+					&& pr->m_RE->mfGetType() == eDATA_WaterOcean
+					&& ((pr->m_Shader->m_nMaskGenFX & ENVIRONMENT_MAP_MASK) == 0))
+				{
+					CREWaterOcean* pOcean = static_cast<CREWaterOcean*>(pr->m_RE);
+					SHRenderTarget* pTarg = pOcean->GetReflectionRenderTarget();
+					bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+
+#if !defined(RELEASE) && defined(_DEBUG)
+					static string ENVIRONMENT_MAP_NAME("%ENVIRONMENT_MAP");
+					auto* pShaderGenBase = pr->m_Shader->GetGenerationParams();
+					bool findParameter = false;
+					if(pShaderGenBase)
+					{
+						for(unsigned nBaseBit(0); nBaseBit < pShaderGenBase->m_BitMask.size(); ++nBaseBit)
+						{
+							SShaderGenBit* pBaseBit = pShaderGenBase->m_BitMask[nBaseBit];
+
+							if(!pBaseBit->m_ParamName.empty())
+							{
+								if(ENVIRONMENT_MAP_NAME == pBaseBit->m_ParamName)
+								{
+									if (ENVIRONMENT_MAP_MASK == pBaseBit->m_Mask)
+									{
+										findParameter = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+					CRY_ASSERT(findParameter);
+#endif
 				}
 			}
 			break;
@@ -4689,13 +4671,14 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
 
+	int nRecurse = pRenderView->IsRecursive() ? 1 : 0;
+	FX_ApplyThreadState(TI, &m_RP.m_OldTI[nRecurse]);
+
 	////////////////////////////////////////////////
 	{
 		PROFILE_FRAME(WaitForRenderView);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
-
-	int nRecurse = pRenderView->IsRecursive() ? 1 : 0;
 
 	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
 	RT_RenderUITextures();
@@ -4750,7 +4733,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	m_bDeferredDecals = false;
 	uint32 nSaveRendFlags = m_RP.m_nRendFlags;
 	m_RP.m_nRendFlags = nFlags;
-	FX_ApplyThreadState(TI, &m_RP.m_OldTI[nRecurse]);
 
 	const bool bHDRRendering = (nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
 	const bool bNewGraphicsPipeline = m_nGraphicsPipeline >= 1 && !pRenderView->IsRecursive() && (nFlags & SHDF_ALLOWPOSTPROCESS) && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);

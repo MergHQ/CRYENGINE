@@ -90,7 +90,7 @@ void CFogStage::Execute()
 	const bool bReverseDepth = (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 	const bool bVolumtricFog = (rd->m_bVolumetricFogEnabled != 0);
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	const bool bVolFogShadow = (rd->m_bVolFogShadowsEnabled) && !bVolumtricFog;
+	const bool bVolFogShadow = (rd->m_bVolFogShadowsEnabled != 0);
 #else
 	const bool bVolFogShadow = false;
 #endif
@@ -307,15 +307,14 @@ void CFogStage::ExecuteVolumetricFogShadow()
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	const bool bCloudShadow = rd->m_bVolFogCloudShadowsEnabled;
-	const bool bVolCloudShadow = bCloudShadow && (rd->m_bVolumetricCloudsEnabled);
+	const bool bVolCloudShadow = rd->m_bVolumetricCloudsEnabled;
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 
 	// ray cast into sun shadow maps
 	{
-		uint64 rtMask = 0;
 		CShadowUtils::SShadowCascades cascades;
-		bool bSunShadow = CShadowUtils::SetupShadowsForFog(rtMask, cascades, RenderView());
+		bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, RenderView());
 
 		uint32 inputFlag = 0;
 		inputFlag |= bCloudShadow ? BIT(0) : 0;
@@ -324,6 +323,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 		if (m_passVolFogShadowRaycast.InputChanged(inputFlag, CRenderer::CV_r_FogShadowsMode))
 		{
+			uint64 rtMask = 0;
 			rtMask |= bCloudShadow ? g_HWSR_MaskBit[HWSR_SAMPLE5] : 0;
 			rtMask |= bVolCloudShadow ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 

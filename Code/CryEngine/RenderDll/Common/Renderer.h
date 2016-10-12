@@ -1415,6 +1415,7 @@ public:
 #endif
 	uint32    m_bVolumetricFogEnabled          : 1;
 	uint32    m_bVolumetricCloudsEnabled       : 1;
+	uint32    m_bDeferredRainEnabled           : 1;
 
 	uint8     m_nDisableTemporalEffects;
 	bool      m_bUseGPUFriendlyBatching[2];

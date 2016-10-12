@@ -519,6 +519,8 @@
 			"GraphicsPipeline/VolumetricClouds.cpp",
 			"GraphicsPipeline/VolumetricFog.h",
 			"GraphicsPipeline/VolumetricFog.cpp",
+			"GraphicsPipeline/Water.h",
+			"GraphicsPipeline/Water.cpp",
 			"GraphicsPipeline/WaterRipples.h",
 			"GraphicsPipeline/WaterRipples.cpp"
 		]

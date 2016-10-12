@@ -17,6 +17,7 @@ class CScreenSpaceSSSStage;
 class CVolumetricFogStage;
 class CFogStage;
 class CVolumetricCloudsStage;
+class CWaterStage;
 class CWaterRipplesStage;
 class CMotionBlurStage;
 class CDepthOfFieldStage;
@@ -56,6 +57,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ScreenSpaceSSS,
 	eStage_VolumetricFog,
 	eStage_Fog,
+	eStage_Water,
 	eStage_WaterRipples,
 	eStage_MotionBlur,
 	eStage_DepthOfField,
@@ -157,6 +159,7 @@ public:
 	CShadowMaskStage*         GetShadowMaskStage()               const { return m_pShadowMaskStage; }
 	CVolumetricFogStage*      GetVolumetricFogStage()            const { return m_pVolumetricFogStage; }
 	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
+	CWaterStage*              GetWaterStage()                    const { return m_pWaterStage; }
 	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
 
 public:
@@ -175,6 +178,7 @@ private:
 	CVolumetricFogStage*          m_pVolumetricFogStage = nullptr;
 	CFogStage*                    m_pFogStage = nullptr;
 	CVolumetricCloudsStage*       m_pVolumetricCloudsStage = nullptr;
+	CWaterStage*                  m_pWaterStage;
 	CWaterRipplesStage*           m_pWaterRipplesStage;
 	CMotionBlurStage*             m_pMotionBlurStage = nullptr;
 	CDepthOfFieldStage*           m_pDepthOfFieldStage = nullptr;

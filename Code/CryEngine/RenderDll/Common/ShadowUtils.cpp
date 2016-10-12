@@ -657,40 +657,11 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	return abs(crop.x) <= 1.0f && abs(crop.x + crop.z) <= 1.0f && abs(crop.y) <= 1.0f && abs(crop.y + crop.w) <= 1.0f;
 }
 
-bool CShadowUtils::SetupShadowsForFog(uint64& rtMask, SShadowCascades& shadowCascades, CRenderView* pRenderView)
+bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, CRenderView* pRenderView)
 {
 	CRY_ASSERT(pRenderView != nullptr);
 
-	rtMask |= (g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE] | g_HWSR_MaskBit[HWSR_PARTICLE_SHADOW]);
-
-	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
-
-	// fill shadow cascades with default shadow map texture.
-	std::fill(std::begin(shadowCascades.pShadowMap), std::end(shadowCascades.pShadowMap), CTexture::s_ptexFarPlane);
-
-	// check all shadow map textures are valid and set them to array.
-	bool valid = true;
-	const int32 size = static_cast<int32>(shadowFrustumArray.size());
-	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
-	for (int32 i = 0; i < count; ++i)
-	{
-		auto pFrustm = shadowFrustumArray[i];
-		if (pFrustm && pFrustm->pFrustum && pFrustm->pFrustum->pDepthTex)
-		{
-			if (pFrustm->pFrustum->pDepthTex == CTexture::s_ptexFarPlane)
-			{
-				valid = false;
-			}
-
-			shadowCascades.pShadowMap[i] = pFrustm->pFrustum->pDepthTex;
-		}
-	}
-
-	// cloud shadow map
-	shadowCascades.pCloudShadowMap =
-	  (gcpRendD3D->GetCloudShadowTextureId() > 0)
-	  ? CTexture::GetByID(gcpRendD3D->GetCloudShadowTextureId())
-	  : CTexture::s_ptexWhite;
+	const bool valid = GetShadowCascades(shadowCascades, pRenderView);
 
 	gcpRendD3D->FX_SetupForwardShadows(pRenderView, false);
 
@@ -780,6 +751,110 @@ template void CShadowUtils::SetShadowCascadesToRenderPass(
   int32 cloudShadowTexSlot,
   const SShadowCascades& shadowCascades);
 
+bool CShadowUtils::GetShadowCascades(SShadowCascades& shadowCascades, CRenderView* pRenderView)
+{
+	CRY_ASSERT(pRenderView != nullptr);
+
+	auto cloudShadowTexId = gcpRendD3D->GetCloudShadowTextureId();
+
+	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
+
+	// fill shadow cascades with default shadow map texture.
+	std::fill(std::begin(shadowCascades.pShadowMap), std::end(shadowCascades.pShadowMap), CTexture::s_ptexFarPlane);
+
+	// check all shadow map textures are valid and set them to array.
+	bool valid = true;
+	const int32 size = static_cast<int32>(shadowFrustumArray.size());
+	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
+	for (int32 i = 0; i < count; ++i)
+	{
+		auto pFrustm = shadowFrustumArray[i];
+		if (pFrustm && pFrustm->pFrustum && pFrustm->pFrustum->pDepthTex)
+		{
+			if (pFrustm->pFrustum->pDepthTex == CTexture::s_ptexFarPlane)
+			{
+				valid = false;
+			}
+
+			shadowCascades.pShadowMap[i] = pFrustm->pFrustum->pDepthTex;
+		}
+	}
+
+	// cloud shadow map
+	shadowCascades.pCloudShadowMap =
+		(cloudShadowTexId > 0)
+		? CTexture::GetByID(cloudShadowTexId)
+		: CTexture::s_ptexWhite;
+
+	return valid;
+}
+
+bool CShadowUtils::GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, CRenderView* pRenderView)
+{
+	CRY_ASSERT(pRenderView != nullptr);
+
+	EShaderQuality shaderQuality = gcpRendD3D->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
+	SCGParamsPF& PF = gcpRendD3D->m_cEF.m_PF[gcpRendD3D->m_RP.m_nProcessThreadID];
+	const bool bCloudShadow = gcpRendD3D->m_bCloudShadowsEnabled && (gcpRendD3D->GetCloudShadowTextureId() > 0);
+
+	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
+
+	memset(&samplingInfo, 0, sizeof(samplingInfo));
+
+	// gather sun shadow sampling info.
+	SShadowSamplingInfo info;
+	Matrix44 lightViewProj;
+	uint32 nCascadeMask = 0;
+	bool valid = true;
+	const int32 size = static_cast<int32>(shadowFrustumArray.size());
+	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
+	for (int32 i = 0; i < count; ++i)
+	{
+		auto pFrustm = shadowFrustumArray[i];
+		if (pFrustm && pFrustm->pFrustum)
+		{
+			nCascadeMask |= 0x1 << i;
+
+			GetForwardShadowSamplingInfo(info, lightViewProj, pFrustm->pFrustum, 0);
+
+			samplingInfo.shadowTexGen[i] = info.shadowTexGen;
+			samplingInfo.invShadowMapSize[i] = info.invShadowMapSize;
+			samplingInfo.depthTestBias[i] = info.depthTestBias;
+			samplingInfo.oneDivFarDist[i] = info.oneDivFarDist;
+			if (i == 0)
+			{
+				samplingInfo.kernelRadius.x = info.kernelRadius;
+				samplingInfo.kernelRadius.y = info.kernelRadius;
+
+				// only do full pcf filtering on nearest shadow cascade
+				if(pFrustm->pFrustum->nShadowMapLod != 0)
+				{
+					nCascadeMask |= eForwardShadowFlags_Cascade0_SingleTap;
+				}
+			}
+		}
+		else
+		{
+			valid = false;
+		}
+	}
+
+	// cloud shadow map parameters.
+	samplingInfo.cloudShadowParams = PF.pCloudShadowParams;
+	samplingInfo.cloudShadowAnimParams = PF.pCloudShadowAnimParams;
+	if (bCloudShadow)
+	{
+		nCascadeMask |= eForwardShadowFlags_CloudsShadows;
+	}
+
+	memcpy(samplingInfo.irregKernel2d, PF.irregularFilterKernel, sizeof(samplingInfo.irregKernel2d));
+	static_assert(sizeof(samplingInfo.irregKernel2d) == sizeof(PF.irregularFilterKernel), "Both sizes must be same.");
+
+	// store cascade mask and misc bit mask.
+	samplingInfo.kernelRadius.z = alias_cast<float>(nCascadeMask);
+
+	return valid;
+}
 
 Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide)
 {
@@ -827,47 +902,21 @@ Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum,
 }
 
 
-CShadowUtils::SShadowSamplingInfo CShadowUtils::GetShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset)
+CShadowUtils::SShadowSamplingInfo CShadowUtils::GetDeferredShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset)
 {
-	// shadowTexGen: world -> shadow tex space
-	Matrix44 lightViewProj = pFr->mLightViewMatrix;
-	if (pFr->bOmniDirectionalShadow)
-	{
-		Matrix44 lightView, lightProj;
-		CShadowUtils::GetCubemapFrustum(FTYP_SHADOWOMNIPROJECTION, pFr, nSide, &lightProj, &lightView);
-
-		lightViewProj = lightView * lightProj;
-	}
-
-	Matrix44 clipToTex    = CShadowUtils::GetClipToTexSpaceMatrix(pFr, nSide);
-	Matrix44 shadowTexGen = (lightViewProj * clipToTex).GetTransposed();
+	CShadowUtils::SShadowSamplingInfo result;
+	Matrix44 lightViewProj;
+	GetForwardShadowSamplingInfo(result, lightViewProj, pFr, nSide);
 
 	// screenToWorldBasis: screen -> world space
 	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPosShadowSpace, vWBasisMagnitues;
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(shadowTexGen, cam, subpixelOffset, float(viewport.nWidth), float(viewport.nHeight), vWBasisX, vWBasisY, vWBasisZ, vCamPosShadowSpace, true, nullptr);
+	CShadowUtils::ProjectScreenToWorldExpansionBasis(result.shadowTexGen, cam, subpixelOffset, float(viewport.nWidth), float(viewport.nHeight), vWBasisX, vWBasisY, vWBasisZ, vCamPosShadowSpace, true, nullptr);
 	Vec4r vWBasisMagnitudes = Vec4r(vWBasisX.GetLength(), vWBasisY.GetLength(), vWBasisZ.GetLength(), 1.0f);
 
 	// noise projection
 	Matrix33 mRotMatrix(lightViewProj);
 	mRotMatrix.orthonormalizeFastLH();
-	Matrix44 noiseProjection = Matrix44r(mRotMatrix).GetTransposed() * Matrix44r(shadowTexGen).GetInverted();
-
-	// filter kernel size
-	float kernelSize;
-	if (pFr->m_Flags & DLF_DIRECTIONAL)
-	{
-		float fFilteredArea = gcpRendD3D->GetShadowJittering() * (pFr->fWidthS + pFr->fBlurS);
-		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest)
-			fFilteredArea *= 0.1;
-
-		kernelSize = fFilteredArea;
-	}
-	else
-	{
-		kernelSize = 2.0f; //constant penumbra for now
-		if (pFr->bOmniDirectionalShadow)
-			kernelSize *= 1.0f / 3.0f;
-	}
+	Matrix44 noiseProjection = Matrix44r(mRotMatrix).GetTransposed() * Matrix44r(result.shadowTexGen).GetInverted();
 
 	// cascade blending related
 	Matrix44 blendTexGen(ZERO);
@@ -908,15 +957,13 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetShadowSamplingInfo(ShadowMapF
 			blendTexGen.SetRow4(1, vWBasisPrevY);
 			blendTexGen.SetRow4(2, vWBasisPrevZ);
 			blendTexGen.SetRow4(3, vCamPosShadowSpacePrev);
-			
+
 			float fBlendValPrev = pPrevFr->fBlendVal;
 			blendInfo.z = fBlendValPrev;
 			blendInfo.w = 1.0f / (1.0f - fBlendValPrev);
 		}
 	}
 
-	CShadowUtils::SShadowSamplingInfo result;
-	result.shadowTexGen = shadowTexGen;
 	result.screenToShadowBasis.SetRow4(0, vWBasisX / vWBasisMagnitudes.x);
 	result.screenToShadowBasis.SetRow4(1, vWBasisY / vWBasisMagnitudes.y);
 	result.screenToShadowBasis.SetRow4(2, vWBasisZ / vWBasisMagnitudes.z);
@@ -926,14 +973,53 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetShadowSamplingInfo(ShadowMapF
 	result.camPosShadowSpace = vCamPosShadowSpace;
 	result.blendInfo = blendInfo;
 	result.blendTcNormalize = blendTcNormalize;
-	result.oneDivFarDist = 1.0f / pFr->fFarDist;
 	result.oneDivFarDistBlend = pFr->pPrevFrustum ? (1.0f / pFr->pPrevFrustum->fFarDist) : (1.0f / pFr->fFarDist);
-	result.depthTestBias = pFr->fDepthConstBias * ((pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 3.0f : 1.0f);
-	result.kernelRadius = kernelSize;
-	result.invShadowMapSize = 1.0f / pFr->nTexSize;
-	result.shadowFadingDist = pFr->fShadowFadingDist;
 
 	return result;
+}
+
+void CShadowUtils::GetForwardShadowSamplingInfo(
+	SShadowSamplingInfo& samplingInfo,
+	Matrix44& lightViewProj,
+	const ShadowMapFrustum* pFr,
+	int nSide)
+{
+	// shadowTexGen: world -> shadow tex space
+	lightViewProj = pFr->mLightViewMatrix;
+	if (pFr->bOmniDirectionalShadow)
+	{
+		Matrix44 lightView, lightProj;
+		CShadowUtils::GetCubemapFrustum(FTYP_SHADOWOMNIPROJECTION, pFr, nSide, &lightProj, &lightView);
+
+		lightViewProj = lightView * lightProj;
+	}
+
+	Matrix44 clipToTex = CShadowUtils::GetClipToTexSpaceMatrix(pFr, nSide);
+	Matrix44 shadowTexGen = (lightViewProj * clipToTex).GetTransposed();
+
+	// filter kernel size
+	float kernelSize;
+	if (pFr->m_Flags & DLF_DIRECTIONAL)
+	{
+		float fFilteredArea = gcpRendD3D->GetShadowJittering() * (pFr->fWidthS + pFr->fBlurS);
+		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest)
+			fFilteredArea *= 0.1;
+
+		kernelSize = fFilteredArea;
+	}
+	else
+	{
+		kernelSize = 2.0f; //constant penumbra for now
+		if (pFr->bOmniDirectionalShadow)
+			kernelSize *= 1.0f / 3.0f;
+	}
+
+	samplingInfo.shadowTexGen = shadowTexGen;
+	samplingInfo.oneDivFarDist = 1.0f / pFr->fFarDist;
+	samplingInfo.depthTestBias = pFr->fDepthConstBias * ((pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 3.0f : 1.0f);
+	samplingInfo.kernelRadius = kernelSize;
+	samplingInfo.invShadowMapSize = 1.0f / pFr->nTexSize;
+	samplingInfo.shadowFadingDist = pFr->fShadowFadingDist;
 }
 
 CShadowUtils::CShadowUtils()

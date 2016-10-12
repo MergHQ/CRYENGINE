@@ -11,6 +11,7 @@
 #include "D3DTiledShading.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/ShadowMask.h"
+#include "GraphicsPipeline/Water.h"
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
 #endif
@@ -3545,7 +3546,19 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	}
 #endif
 
-	rd->FX_WaterVolumesCaustics(pRenderView);
+	if (rd->m_nGraphicsPipeline == 0)
+	{
+		rd->FX_WaterVolumesCaustics(pRenderView);
+	}
+	else
+	{
+		auto* pWaterStage = rd->GetGraphicsPipeline().GetWaterStage();
+		if (pWaterStage && !bTiledDeferredShading)
+		{
+			// NOTE: when tiled deferred shading is enabled, this function is called in CWaterStage::ExecuteWaterVolumeCaustics().
+			pWaterStage->ExecuteDeferredWaterVolumeCaustics(bTiledDeferredShading);
+		}
+	}
 
 	if (bTiledDeferredShading)
 	{

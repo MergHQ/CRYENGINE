@@ -349,7 +349,7 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 	SSnowParams& snowVolParams = m_p3DEngineCommon.m_SnowInfo;
 
 	bool bRenderSnow = ((snowVolParams.m_fSnowAmount > 0.05f || snowVolParams.m_fFrostAmount > 0.05f) && snowVolParams.m_fRadius > 0.05f && CV_r_snow > 0);
-	bool bRenderRain = (rainVolParams.fAmount * CRenderer::CV_r_rainamount > 0.05f && rainVolParams.fRadius > 0.05f && CV_r_rain > 0);
+	bool bRenderRain = m_bDeferredRainEnabled;
 
 	bool bRender = bRenderSnow || bRenderRain;
 	if (!bRender)
@@ -390,12 +390,10 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 
 bool CD3D9Renderer::FX_DeferredRainGBuffer()
 {
-	const SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
-	CEffectParam* pParam = PostEffectMgr()->GetByName("SceneRain_Active");
-	if (pParam == 0 || pParam->GetParam() < 0.5f
-	    || rainVolParams.fCurrentAmount < 0.05f
-	    || rainVolParams.fRadius < 0.05f)
+	if (!m_bDeferredRainEnabled)
+	{
 		return false;
+	}
 
 	PROFILE_LABEL_SCOPE("DEFERRED_RAIN_GBUFFER");
 
@@ -436,6 +434,8 @@ bool CD3D9Renderer::FX_DeferredRainGBuffer()
 
 	uint64 nFlagsShaderRTSave = m_RP.m_FlagsShader_RT;
 	m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0]);
+
+	const SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
 
 	if (rainVolParams.bApplyOcclusion)
 	{

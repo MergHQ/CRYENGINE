@@ -110,7 +110,6 @@ Property
   Precache = GeneralDS
   Precache = GeneralHS
   Precache = ShadowGenVS  
-  Precache = CausticsVS
   Precache = GeneralPS
   Precache = CustomRenderHS
   Precache = CustomRenderDS
@@ -191,7 +190,6 @@ Property
   Precache = DetailVS
   Precache = GlowVS
   Precache = FurVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = MethaGenVS
@@ -480,7 +478,6 @@ Property
   Precache = FurPS
   Precache = SpritePS
   Precache = DetailVS  
-  Precache = CausticsVS
   Precache = ParticlePS
   Precache = MethaGenVS
   Precache = MethaGenPS
@@ -544,7 +541,6 @@ Property
   Precache = FurPS
   Precache = SpritePS
   Precache = DetailVS  
-  Precache = CausticsVS
   Precache = ParticlePS
   Precache = MethaGenVS
   Precache = MethaGenPS  
@@ -592,7 +588,6 @@ Property
   Precache = DetailVS
   Precache = GlowVS
   Precache = MotionBlurVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = DebugPassVS
   Precache = DebugPassPS
@@ -619,7 +614,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = MethaGenVS
 	Precache = DebugPassVS
@@ -646,7 +640,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = MethaGenVS
   Precache = DebugPassVS
@@ -826,7 +819,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -854,7 +846,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -899,7 +890,6 @@ Property
   Precache = VoxTerrainVS
   Precache = ZVS
   Precache = ShadowGenVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
 }
 
@@ -1126,7 +1116,6 @@ Property
   Mask = 0x800000000000
   Precache = ShadowVS
   Precache = ShadowPS
-  Precache = FogPassVolShadowsInterleavePassPS
   Precache = ShadowGenVS
   Precache = ShadowGenPS
   
@@ -1134,7 +1123,6 @@ Property
   Precache = ShadowMaskGenVS
   Precache = ShadowMaskGenPS
 
-  Precache = WaterFogVolume_PS
   Precache = DemosaicDiffusePS
   Precache = ConeTraceDiffusePS
 }
@@ -1158,7 +1146,6 @@ Property
 		Precache = MotionBlurVS
 		Precache = FurVS
 		Precache = SoftAlphaTestPassVS
-		Precache = CausticsVS
 		Precache = CustomRenderVS
 		Precache = EffectLayerVS
 		Precache = CloakVS
@@ -1166,6 +1153,13 @@ Property
 		Precache = DebugPassVS
 		Precache = CloakVS
 		Precache = DynamicOverlay
+
+		Precache = WaterSurfaceVS
+		Precache = WaterSurfacePS
+		Precache = WaterSurfaceHS
+		Precache = WaterSurfaceDS
+		Precache = WaterFogVolume_VS
+		Precache = WaterFogVolume_PS
 }
 
 Property

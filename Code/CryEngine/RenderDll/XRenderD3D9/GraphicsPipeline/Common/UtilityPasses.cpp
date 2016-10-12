@@ -195,7 +195,7 @@ void CGaussianBlurPass::ComputeParams(int texWidth, int texHeight, int numSample
 	}
 }
 
-void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution)
+void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -217,6 +217,7 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	int texFilter = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
 
 	static CCryNameTSCRC techDefault("GaussBlurBilinear");
+	static CCryNameTSCRC techAlphaBlur("GaussAlphaBlur");
 	static CCryNameR clampTCName("clampTC");
 	static CCryNameR param0Name("psWeights");
 	static CCryNameR param1Name("PI_psOffsets");
@@ -236,9 +237,11 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 		m_distribution = distribution;
 	}
 
+	auto& techName = bAlphaOnly ? techAlphaBlur : techDefault;
+
 	// Horizontal
 	m_passH.SetRenderTarget(0, pTempRT);
-	m_passH.SetTechnique(pShader, techDefault, 0);
+	m_passH.SetTechnique(pShader, techName, 0);
 	m_passH.SetState(GS_NODEPTHTEST);
 	m_passH.SetTextureSamplerPair(0, pScrDestRT, texFilter);
 
@@ -250,7 +253,7 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 
 	// Vertical
 	m_passV.SetRenderTarget(0, pScrDestRT);
-	m_passV.SetTechnique(pShader, techDefault, 0);
+	m_passV.SetTechnique(pShader, techName, 0);
 	m_passV.SetState(GS_NODEPTHTEST);
 	m_passV.SetTextureSamplerPair(0, pTempRT, texFilter);
 

@@ -133,6 +133,7 @@ void CRenderer::InitRenderer()
 #endif
 	m_bVolumetricFogEnabled = false;
 	m_bVolumetricCloudsEnabled = false;
+	m_bDeferredRainEnabled = false;
 
 	m_nDisableTemporalEffects = 0;
 

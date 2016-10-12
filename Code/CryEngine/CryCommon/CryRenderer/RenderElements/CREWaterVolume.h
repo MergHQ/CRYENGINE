@@ -1,27 +1,36 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CREWATERVOLUME_
-#define _CREWATERVOLUME_
-
 #pragma once
 
-#include <CryRenderer/VertexFormats.h>
+class CDeviceCommandList;
+namespace watervolume
+{
+struct SCompiledWaterVolume;
+}
 
 class CREWaterVolume : public CRendElementBase
 {
 public:
 	CREWaterVolume();
-
 	virtual ~CREWaterVolume();
-	virtual void mfPrepare(bool bCheckOverflow);
-	virtual bool mfDraw(CShader* ef, SShaderPass* sfm);
-	virtual void mfGetPlane(Plane& pl);
-	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj);
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void mfPrepare(bool bCheckOverflow) override;
+	virtual bool mfDraw(CShader* ef, SShaderPass* sfm) override;
+	virtual void mfGetPlane(Plane& pl) override;
+	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
+
+	virtual bool Compile(CRenderObject* pObj) override;
+	virtual void DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
+
+private:
+	void PrepareForUse(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const;
+	void UpdatePerInstanceCB(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj, bool bRenderFogShadowWater, bool bCaustics) const;
+	void UpdateVertex(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bFullscreen);
 
 public:
 	struct SParams
@@ -87,11 +96,25 @@ public:
 		float m_fogDensity;
 	};
 
+private:
+	struct SBufferInfo
+	{
+		stream_handle_t handle;
+		size_t          size;
+
+		SBufferInfo() : handle(~0u), size(0) {}
+	};
+
 public:
 	const SParams*      m_pParams;
 	const SOceanParams* m_pOceanParams;
 	bool                m_drawWaterSurface;
 	bool                m_drawFastPath;
-};
 
-#endif // #ifndef _CREWATERVOLUME_
+private:
+	SBufferInfo m_vertexBuffer;
+	SBufferInfo m_indexBuffer;
+	SBufferInfo m_vertexBufferQuad;
+
+	std::unique_ptr<watervolume::SCompiledWaterVolume> m_pCompiledObject;
+};

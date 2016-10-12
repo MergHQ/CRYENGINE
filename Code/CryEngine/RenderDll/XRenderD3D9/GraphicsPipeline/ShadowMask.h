@@ -35,7 +35,6 @@ private:
 
 	CTexture*                                               m_pShadowMaskRT;
 	CConstantBufferPtr                                      m_pPerViewConstantBuffer;
-	float                                                   m_filterKernel[8][4];
 
 	CStandardGraphicsPipeline::SViewInfo                    m_viewInfo[2];
 	int                                                     m_viewInfoCount;

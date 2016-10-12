@@ -285,8 +285,6 @@ static SParamDB sParams[] =
 
 	SParamDB(PARAM(PB_PullVerticesInfo,                      ECGP_PB_PullVerticesInfo),                      0),
 
-	SParamDB(PARAM(PI_OceanMat,                              ECGP_Matr_PI_OceanMat),                         0),
-
 	SParamDB(PARAM(PI_WrinklesMask0,                         ECGP_PI_WrinklesMask0),                         0),
 	SParamDB(PARAM(PI_WrinklesMask1,                         ECGP_PI_WrinklesMask1),                         0),
 	SParamDB(PARAM(PI_WrinklesMask2,                         ECGP_PI_WrinklesMask2),                         0),

@@ -1194,7 +1194,6 @@ public:
 
 	void FX_WaterVolumesCaustics(CRenderView* pRenderView);
   void FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticInfo & causticInfo);
-  bool FX_WaterVolumesCausticsUpdateGrid(N3DEngineCommon::SCausticInfo & causticInfo);
 
 	// This method takes CRenderView prepared by 3D engine after it fully finished,and send it to the Renderer for drawing.
 	void SubmitRenderViewForRendering(void (* RenderFunc)(), int nFlags, SViewport& VP, const SRenderingPassInfo& passInfo, bool bSync3DEngineJobs);
@@ -1354,7 +1353,11 @@ public:
 	int m_nPointClampSampler;
 	int m_nLinearClampComparisonSampler;
 	int m_nBilinearWrapSampler;
+	int m_nBilinearClampSampler;
 	int m_nBilinearBorderSampler;
+	int m_nTrilinearWrapSampler;
+	int m_nTrilinearClampSampler;
+	int m_nTrilinearBorderSampler;
 
 	CCryNameR m_nmInstancingParams;
 	CCryNameR m_nmInstancingData;

@@ -825,10 +825,6 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 		clampTC = Vec4(0.0f, gRenDev->m_RP.m_CurDownscaleFactor.x, 0.0f, gRenDev->m_RP.m_CurDownscaleFactor.y);
 	}
 
-	//SetTexture(pTex, 0, FILTER_LINEAR);
-	CShaderMan::s_shPostEffects->FXSetPSFloat(clampTCName, &clampTC, 1);
-	CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, pWeightsPS, nHalfSamples);
-
 	//for(int p(1); p<= nAmount; ++p)
 	{
 		//Horizontal
@@ -839,6 +835,9 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 
 		// !force updating constants per-pass! (dx10..)
 		CShaderMan::s_shPostEffects->FXBeginPass(0);
+
+		CShaderMan::s_shPostEffects->FXSetPSFloat(clampTCName, &clampTC, 1);
+		CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, pWeightsPS, nHalfSamples);
 
 		pTex->Apply(0, CTexture::GetTexState(sTexState));
 		if (pMask)
@@ -857,6 +856,9 @@ void SD3DPostEffectsUtils::TexBlurGaussian(CTexture* pTex, int nAmount, float fS
 
 		// !force updating constants per-pass! (dx10..)
 		CShaderMan::s_shPostEffects->FXBeginPass(0);
+
+		CShaderMan::s_shPostEffects->FXSetPSFloat(clampTCName, &clampTC, 1);
+		CShaderMan::s_shPostEffects->FXSetPSFloat(pParam0Name, pWeightsPS, nHalfSamples);
 
 		CShaderMan::s_shPostEffects->FXSetVSFloat(pParam1Name, pVParams, nHalfSamples);
 		pTempRT->Apply(0, CTexture::GetTexState(sTexState));

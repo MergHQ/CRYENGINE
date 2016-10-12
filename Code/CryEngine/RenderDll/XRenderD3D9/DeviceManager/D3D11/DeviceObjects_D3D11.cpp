@@ -650,20 +650,20 @@ void CDeviceGraphicsCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceGrap
 	const CDeviceGraphicsPSO_DX11* pDevicePSO = reinterpret_cast<const CDeviceGraphicsPSO_DX11*>(devicePSO);
 
 	// RasterState, BlendState
-	if (m_graphicsState.custom.blendState.Set(pDevicePSO->m_pBlendState))
+	if (m_graphicsState.custom.blendState.Set(pDevicePSO->m_pBlendState.get()))
 	{
 		rd->m_DevMan.SetBlendState(pDevicePSO->m_pBlendState, NULL, 0xffffffff);
 	}
 
 	// Rasterizer state: NOTE - we don't know the final depth bias values yet so only mark dirty here and set in actual draw call
-	if (m_graphicsState.custom.rasterizerState.Set(pDevicePSO->m_pRasterizerState))
+	if (m_graphicsState.custom.rasterizerState.Set(pDevicePSO->m_pRasterizerState.get()))
 	{
 		m_graphicsState.custom.rasterizerStateIndex = pDevicePSO->m_RasterizerStateIndex;
 		m_graphicsState.custom.bRasterizerStateDirty = true;
 	}
 
 	// Depth stencil state: NOTE - we don't know the final stencil ref value yet so only mark dirty here and set in actual draw call
-	if (m_graphicsState.custom.depthStencilState.Set(pDevicePSO->m_pDepthStencilState))
+	if (m_graphicsState.custom.depthStencilState.Set(pDevicePSO->m_pDepthStencilState.get()))
 	{
 		m_graphicsState.custom.bDepthStencilStateDirty = true;
 	}
@@ -677,7 +677,7 @@ void CDeviceGraphicsCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceGrap
 	if (m_sharedState.shader[eHWSC_Hull].Set(shaders[eHWSC_Hull]))         rd->m_DevMan.BindShader(CDeviceManager::TYPE_HS, (ID3D11Resource*)shaders[eHWSC_Hull]);
 
 	// input layout and topology
-	if (m_graphicsState.custom.inputLayout.Set(pDevicePSO->m_pInputLayout))         rd->m_DevMan.BindVtxDecl(pDevicePSO->m_pInputLayout);
+	if (m_graphicsState.custom.inputLayout.Set(pDevicePSO->m_pInputLayout.get()))   rd->m_DevMan.BindVtxDecl(pDevicePSO->m_pInputLayout);
 	if (m_graphicsState.custom.topology.Set(pDevicePSO->m_PrimitiveTopology))       rd->m_DevMan.BindTopology(pDevicePSO->m_PrimitiveTopology);
 
 	// update valid shader mask

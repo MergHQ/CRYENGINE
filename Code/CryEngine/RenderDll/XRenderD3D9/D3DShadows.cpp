@@ -679,9 +679,6 @@ void CD3D9Renderer::ConfigShadowTexgen(int Num, ShadowMapFrustum* pFr, int nFrus
 //=============================================================================================================
 void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations)
 {
-	const int FORWARD_SHADOWS_CASCADE0_SINGLE_TAP = 0x10;
-	const int FORWARD_SHADOWS_CLOUD_SHADOWS = 0x20;
-
 	const int nThreadID = m_RP.m_nProcessThreadID;
 
 	auto& SMFrustums = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
@@ -713,11 +710,11 @@ void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseSh
 
 	// only do full pcf filtering on nearest shadow cascade
 	if (nCascadeMask > 0 && SMFrustums[0]->pFrustum->nShadowMapLod != 0)
-		nCascadeMask |= FORWARD_SHADOWS_CASCADE0_SINGLE_TAP;
+		nCascadeMask |= CShadowUtils::eForwardShadowFlags_Cascade0_SingleTap;
 
 	if (m_bCloudShadowsEnabled && m_cloudShadowTexId > 0)
 	{
-		nCascadeMask |= FORWARD_SHADOWS_CLOUD_SHADOWS;
+		nCascadeMask |= CShadowUtils::eForwardShadowFlags_CloudsShadows;
 
 		if (bUseShaderPermutations)
 			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];

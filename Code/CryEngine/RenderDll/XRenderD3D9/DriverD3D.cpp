@@ -1473,15 +1473,6 @@ void CD3D9Renderer::RT_BeginFrame()
 		m_bShadowsEnabled = pCVarShadows && pCVarShadows->GetIVal() != 0;
 		m_bCloudShadowsEnabled = pCVarShadowsClouds && pCVarShadowsClouds->GetIVal() != 0;
 
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		Vec3 volFogShadowEnable(0, 0, 0);
-		if (gEnv->p3DEngine)
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_ENABLE, volFogShadowEnable);
-
-		m_bVolFogShadowsEnabled = m_bShadowsEnabled && CV_r_FogShadows != 0 && volFogShadowEnable.x != 0;
-		m_bVolFogCloudShadowsEnabled = m_bVolFogShadowsEnabled && m_bCloudShadowsEnabled && m_cloudShadowTexId > 0 && volFogShadowEnable.y != 0;
-#endif
-
 		static ICVar* pCVarVolumetricFog = nullptr;
 		if (!pCVarVolumetricFog) pCVarVolumetricFog = iConsole->GetCVar("e_VolumetricFog");
 		bool bVolumetricFog = pCVarVolumetricFog && (pCVarVolumetricFog->GetIVal() != 0);
@@ -1500,6 +1491,21 @@ void CD3D9Renderer::RT_BeginFrame()
 		if (!pCVarClouds) pCVarClouds = iConsole->GetCVar("e_Clouds");
 		bool renderClouds = (pCVarClouds && (pCVarClouds->GetIVal() != 0)) ? true : false;
 		m_bVolumetricCloudsEnabled = renderClouds && (CRenderer::CV_r_VolumetricClouds > 0);
+
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+		Vec3 volFogShadowEnable(0, 0, 0);
+		if (gEnv->p3DEngine)
+			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_ENABLE, volFogShadowEnable);
+
+		m_bVolFogShadowsEnabled = m_bShadowsEnabled && CV_r_FogShadows != 0 && volFogShadowEnable.x != 0 && !m_bVolumetricFogEnabled;
+		m_bVolFogCloudShadowsEnabled = m_bVolFogShadowsEnabled && m_bCloudShadowsEnabled && m_cloudShadowTexId > 0 && volFogShadowEnable.y != 0 && !m_bVolumetricCloudsEnabled;
+#endif
+
+		SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
+		m_bDeferredRainEnabled = (rainVolParams.fAmount * CRenderer::CV_r_rainamount > 0.05f
+		                          && rainVolParams.fCurrentAmount > 0.05f
+		                          && rainVolParams.fRadius > 0.05f
+		                          && CV_r_rain > 0);
 
 		m_nGraphicsPipeline = CV_r_GraphicsPipeline;
 	}
@@ -2323,7 +2329,7 @@ void CD3D9Renderer::DebugDrawStats1()
 		}
 	}
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Static: (app: %.3f Mb, dev VB: %.3f Mb, dev IB: %.3f Mb)",
-	            nMemApp / 1024.0f / 1024.0f, nMemDevVB / 1024.0f / 1024.0f, nMemDevIB / 1024.0f / 1024.0f);
+	                            nMemApp / 1024.0f / 1024.0f, nMemDevVB / 1024.0f / 1024.0f, nMemDevIB / 1024.0f / 1024.0f);
 
 	for (i = 0; i < BBT_MAX; i++)
 		for (int j = 0; j < BU_MAX; j++)
@@ -2332,13 +2338,13 @@ void CD3D9Renderer::DebugDrawStats1()
 			if (m_DevBufMan.GetStats((BUFFER_BIND_TYPE)i, (BUFFER_USAGE)j, stats) == false)
 				continue;
 			IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Pool '%10s': size %5.3f banks %4" PRISIZE_T " allocs %6d frag %3.3f pinned %4d moving %4d",
-			            stats.buffer_descr.c_str()
-			            , (stats.num_banks * stats.bank_size) / (1024.f * 1024.f)
-			            , stats.num_banks
-			            , stats.allocator_stats.nInUseBlocks
-			            , (stats.allocator_stats.nCapacity - stats.allocator_stats.nInUseSize - stats.allocator_stats.nLargestFreeBlockSize) / (float)max(stats.allocator_stats.nCapacity, (size_t)1)
-			            , stats.allocator_stats.nPinnedBlocks
-			            , stats.allocator_stats.nMovingBlocks);
+			                            stats.buffer_descr.c_str()
+			                            , (stats.num_banks * stats.bank_size) / (1024.f * 1024.f)
+			                            , stats.num_banks
+			                            , stats.allocator_stats.nInUseBlocks
+			                            , (stats.allocator_stats.nCapacity - stats.allocator_stats.nInUseSize - stats.allocator_stats.nLargestFreeBlockSize) / (float)max(stats.allocator_stats.nCapacity, (size_t)1)
+			                            , stats.allocator_stats.nPinnedBlocks
+			                            , stats.allocator_stats.nMovingBlocks);
 		}
 
 	nMemDevVB = 0;
@@ -3162,28 +3168,28 @@ void CD3D9Renderer::DebugDrawStats20()
 	ColorF col = Col_Yellow;
 	IRenderAuxText::Draw2dLabel(30, 50, 1.5f, &col.r, false, "Compiled Render Objects");
 	IRenderAuxText::Draw2dLabel(30, 80, 1.5f, &col.r, false, "Objects: Modified: %-5d  Temporary: %-5d  Incomplete: %-5d",
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nModifiedCompiledObjects,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nTempCompiledObjects,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nIncompleteCompiledObjects);
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nModifiedCompiledObjects,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nTempCompiledObjects,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nIncompleteCompiledObjects);
 	IRenderAuxText::Draw2dLabel(30, 110, 1.5f, &col.r, false, "State Changes: PSO [%d] PT [%d] L [%d] I [%d] RS [%d]",
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumPSOSwitches,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumTopologySets,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumLayoutSwitches,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumInlineSets,
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumResourceSetSwitches);
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumPSOSwitches,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumTopologySets,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumLayoutSwitches,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumInlineSets,
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumResourceSetSwitches);
 	IRenderAuxText::Draw2dLabel(30, 140, 1.5f, &col.r, false, "Resource bindings Mem[GPU,CPU]: VB [%d,%d] IB [%d,%d] CB [%d,%d] / [%d,%d] UB [%d,%d] TEX [%d,%d]",
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[1],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundIndexBuffers[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundIndexBuffers[1],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundConstBuffers[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundConstBuffers[1],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundInlineBuffers[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundInlineBuffers[1],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformBuffers[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformBuffers[1],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformTextures[0],
-	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformTextures[1]);
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[1],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundIndexBuffers[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundIndexBuffers[1],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundConstBuffers[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundConstBuffers[1],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundInlineBuffers[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundInlineBuffers[1],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformBuffers[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformBuffers[1],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformTextures[0],
+	                            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundUniformTextures[1]);
 #endif
 }
 
@@ -3268,7 +3274,7 @@ void CD3D9Renderer::DebugDrawStats()
 					}
 
 					IRenderAuxText::DrawLabelExF(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
-					            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
+					                            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 
 				IRenderAuxText::Draw2dLabel(40.f, 40.f, 1.3f, &clrInfo.r, false, "Instance drawcall count (zpass/general/transparent/shadows/misc)");
@@ -3299,7 +3305,7 @@ void CD3D9Renderer::DebugDrawStats()
 					uint32 nDrawcalls = pInfo.nShadows + pInfo.nZpass + pInfo.nGeneral + pInfo.nTransparent + pInfo.nMisc;
 
 					IRenderAuxText::Draw2dLabel(970.f, 65.f, 1.5f, yellow, false, "Draw calls: %d \n  zpass: %d\n  general: %d\n  transparent: %d\n  shadows: %d\n  misc: %d\n",
-					            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
+					                            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 			}
 		}
@@ -6519,7 +6525,7 @@ void CD3D9Renderer::ResetToDefault()
 	;
 	RS.Desc.FillMode = D3D11_FILL_SOLID;
 	SetRasterState(&RS);
-	
+
 	// Reset cached scissor state
 	m_bScissorPrev = false;
 

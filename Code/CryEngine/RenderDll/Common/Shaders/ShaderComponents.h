@@ -80,7 +80,6 @@ enum ECGParam
 	ECGP_PI_WrinklesMask0,
 	ECGP_PI_WrinklesMask1,
 	ECGP_PI_WrinklesMask2,
-	ECGP_Matr_PI_OceanMat,
 	ECGP_PB_AmbientOpacity,
 
 	ECGP_PB_Scalar,
@@ -302,6 +301,8 @@ public:
 	Vec4     pVolumetricFogHeightDensityParams;      // ECGP_PB_VolumetricFogHeightDensityParams
 	Vec4     pVolumetricFogHeightDensityRampParams;  // ECGP_PB_VolumetricFogHeightDensityRampParams
 	Vec4     pVolumetricFogDistanceParams;           // ECGP_PB_VolumetricFogDistanceParams
+
+	float    irregularFilterKernel[8][4];
 };
 
 enum EOperation

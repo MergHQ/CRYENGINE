@@ -627,13 +627,13 @@ void CCommandList::BindResourceView(const CView& assumedview, const TRange<UINT>
 		break;
 
 	case EVT_ShaderResourceView:
-		DX12_ASSERT(resource.GetD3D12Resource(), "No resource to create SRV from!");
 		if (INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle())
 		{
 			m_pD3D12Device->CopyDescriptorsSimple(1, dstHandle, view.GetDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
 		else
 		{
+			DX12_ASSERT(resource.GetD3D12Resource(), "No resource to create SRV from!");
 			m_pD3D12Device->CreateShaderResourceView(resource.GetD3D12Resource(), &view.GetSRVDesc(), dstHandle);
 		}
 
@@ -648,13 +648,13 @@ void CCommandList::BindResourceView(const CView& assumedview, const TRange<UINT>
 		break;
 
 	case EVT_UnorderedAccessView:
-		DX12_ASSERT(resource.GetD3D12Resource(), "No resource to create UAV from!");
 		if (INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle())
 		{
 			m_pD3D12Device->CopyDescriptorsSimple(1, dstHandle, view.GetDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
 		else
 		{
+			DX12_ASSERT(resource.GetD3D12Resource(), "No resource to create UAV from!");
 			m_pD3D12Device->CreateUnorderedAccessView(resource.GetD3D12Resource(), nullptr, &view.GetUAVDesc(), dstHandle);
 		}
 

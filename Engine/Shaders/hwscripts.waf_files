@@ -40,6 +40,7 @@
 		[
 			"HWScripts/CryFX/Water.cfx",
 			"HWScripts/CryFX/WaterCausticsPass.cfi",
+			"HWScripts/CryFX/WaterCommon.cfi",
 			"HWScripts/CryFX/Waterfall.cfx",
 			"HWScripts/CryFX/WaterFogVolume.cfx",
 			"HWScripts/CryFX/WaterOceanBottom.cfx",

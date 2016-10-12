@@ -2164,33 +2164,6 @@ inline void sAppendClipSpaceAdaptation(Matrix44A* __restrict pTransform)
 #endif //defined(OPENGL) && CRY_OPENGL_MODIFY_PROJECTIONS
 }
 
-NO_INLINE void sOceanMat(UFloat4* sData)
-{
-	const CRenderCamera& cam(gRenDev->GetRCamera());
-
-	Matrix44A viewMat;
-	viewMat.m00 = cam.vX.x;
-	viewMat.m01 = cam.vY.x;
-	viewMat.m02 = cam.vZ.x;
-	viewMat.m03 = 0;
-	viewMat.m10 = cam.vX.y;
-	viewMat.m11 = cam.vY.y;
-	viewMat.m12 = cam.vZ.y;
-	viewMat.m13 = 0;
-	viewMat.m20 = cam.vX.z;
-	viewMat.m21 = cam.vY.z;
-	viewMat.m22 = cam.vZ.z;
-	viewMat.m23 = 0;
-	viewMat.m30 = 0;
-	viewMat.m31 = 0;
-	viewMat.m32 = 0;
-	viewMat.m33 = 1;
-	Matrix44A* pMat = alias_cast<Matrix44A*>(&sData[0]);
-	*pMat = viewMat * (*gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_matProj->GetTop());
-	*pMat = pMat->GetTransposed();
-	sAppendClipSpaceAdaptation(pMat);
-}
-
 NO_INLINE void sResInfo(UFloat4* sData, int texIdx)    // EFTT_DIFFUSE, EFTT_GLOSS, ... etc (but NOT EFTT_BUMP!)
 {
 	sIdentityLine(sData);
@@ -2831,6 +2804,18 @@ void CRenderer::UpdateConstParamsPF(const SRenderingPassInfo& passInfo)
 
 	// ECGP_PB_VolumetricFogDistanceParams
 	PF.pVolumetricFogDistanceParams = sGetVolumetricFogDistanceParams(gcpRendD3D);
+
+	// irregular filter kernel for shadow map sampling
+	EShaderQuality shaderQuality = gRenDev->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
+	int32 sampleCountByQuality[eSQ_Max] =
+	{
+		4,  // eSQ_Low
+		8,  // eSQ_Medium
+		16, // eSQ_High
+		16, // eSQ_VeryHigh
+	};
+	ZeroArray(PF.irregularFilterKernel);
+	CShadowUtils::GetIrregKernel(PF.irregularFilterKernel, sampleCountByQuality[shaderQuality]);
 }
 
 void CHWShader_D3D::mfCommitParamsMaterial()
@@ -3145,9 +3130,6 @@ float* CHWShader_D3D::mfSetParametersPI(SCGParam* pParams, const int nINParams, 
 			break;
 		case ECGP_PI_NumInstructions:
 			sNumInstructions(sData);
-			break;
-		case ECGP_Matr_PI_OceanMat:
-			sOceanMat(sData);
 			break;
 		default:
 			assert(0);
@@ -4266,14 +4248,12 @@ bool CHWShader_D3D::mfSetSamplers(const std::vector<SCGSampler>& Samplers, EHWSh
 
 		case ECGS_TrilinearClamp:
 			{
-				const static int nTStateTrilinearClamp = CTexture::GetTexState(STexState(FILTER_TRILINEAR, true));
-				CTexture::SetSamplerState(nTStateTrilinearClamp, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nTrilinearClampSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_TrilinearWrap:
 			{
-				const static int nTStateTrilinearWrap = CTexture::GetTexState(STexState(FILTER_TRILINEAR, false));
-				CTexture::SetSamplerState(nTStateTrilinearWrap, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nTrilinearWrapSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_MatAnisoHighWrap:
@@ -4288,26 +4268,22 @@ bool CHWShader_D3D::mfSetSamplers(const std::vector<SCGSampler>& Samplers, EHWSh
 			break;
 		case ECGS_MatTrilinearWrap:
 			{
-				const static int nTStateTrilinearWrap = CTexture::GetTexState(STexState(FILTER_TRILINEAR, false));
-				CTexture::SetSamplerState(nTStateTrilinearWrap, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nTrilinearWrapSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_MatBilinearWrap:
 			{
-				const static int nTStateBilinearWrap = CTexture::GetTexState(STexState(FILTER_BILINEAR, false));
-				CTexture::SetSamplerState(nTStateBilinearWrap, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nBilinearWrapSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_MatTrilinearClamp:
 			{
-				const static int nTStateTrilinearClamp = CTexture::GetTexState(STexState(FILTER_TRILINEAR, true));
-				CTexture::SetSamplerState(nTStateTrilinearClamp, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nTrilinearClampSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_MatBilinearClamp:
 			{
-				const static int nTStateBilinearClamp = CTexture::GetTexState(STexState(FILTER_BILINEAR, true));
-				CTexture::SetSamplerState(nTStateBilinearClamp, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nBilinearClampSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_MatAnisoHighBorder:
@@ -4317,8 +4293,7 @@ bool CHWShader_D3D::mfSetSamplers(const std::vector<SCGSampler>& Samplers, EHWSh
 			break;
 		case ECGS_MatTrilinearBorder:
 			{
-				const static int nTStateTrilinearBorder = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
-				CTexture::SetSamplerState(nTStateTrilinearBorder, nSUnit, eSHClass);
+				CTexture::SetSamplerState(gcpRendD3D->m_nTrilinearBorderSampler, nSUnit, eSHClass);
 			}
 			break;
 		case ECGS_PointClamp:
@@ -4683,14 +4658,16 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			break;
 		case ECGT_WaterVolumeRefl:
 			{
-				CTexture* tex = CTexture::s_ptexWaterVolumeRefl[0];
-				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
+				const uint32 nCurrWaterVolID = gRenDev->GetFrameID(false) % 2;
+				CTexture* pTex = CTexture::s_ptexWaterVolumeRefl[nCurrWaterVolID] ? CTexture::s_ptexWaterVolumeRefl[nCurrWaterVolID] : CTexture::s_ptexBlack;
+				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
 		case ECGT_WaterVolumeReflPrev:
 			{
-				CTexture* tex = CTexture::s_ptexWaterVolumeRefl[1];
-				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
+				const uint32 nPrevWaterVolID = (gRenDev->GetFrameID(false) + 1) % 2;
+				CTexture* pTex = CTexture::s_ptexWaterVolumeRefl[nPrevWaterVolID] ? CTexture::s_ptexWaterVolumeRefl[nPrevWaterVolID] : CTexture::s_ptexBlack;
+				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
 		case ECGT_RainOcclusion:

@@ -51,6 +51,9 @@ void DrawCompiledRenderItemsToCommandList(
 		if (!(ri.nBatchFlags & passContext.batchFilter))
 			continue;
 
+		if (ri.nBatchFlags & passContext.batchExcludeFilter)
+			continue;
+
 		if (!ri.pCompiledObject)
 			continue;
 
@@ -58,7 +61,9 @@ void DrawCompiledRenderItemsToCommandList(
 		{
 			// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
 			SRendItem& nextri = (*renderItems)[i + 1];
-			if ((nextri.nBatchFlags & passContext.batchFilter) && nextri.pCompiledObject)
+			if ((nextri.nBatchFlags & passContext.batchFilter)
+			   && !(nextri.nBatchFlags & passContext.batchExcludeFilter)
+			   && nextri.pCompiledObject)
 			{
 				if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
 				{

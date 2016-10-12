@@ -724,8 +724,8 @@ void CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)
 	// per view CB
 	{
 		CStandardGraphicsPipeline::SViewInfo viewInfo;
-		viewInfo.pCamera = &pMainView->GetCamera();
-		viewInfo.pRenderCamera = &pMainView->GetRenderCamera();
+		viewInfo.pCamera = &pMainView->GetCamera(CCamera::eEye_Left);
+		viewInfo.pRenderCamera = &pMainView->GetRenderCamera(CCamera::eEye_Left);
 		viewInfo.cameraProjZeroMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjNearestMatrix = m_ViewProjMatrix;

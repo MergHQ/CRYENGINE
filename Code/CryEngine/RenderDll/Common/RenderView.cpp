@@ -1,4 +1,4 @@
-﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "RenderView.h"
@@ -693,7 +693,8 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 		// This item will need a temporary compiled object
 		EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
 		bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
-		if (bMeshCompatibleRenderElement) // temporary disable for these types
+		bool bCompiledRenderElement = (reType == eDATA_WaterVolume || reType == eDATA_WaterOcean);
+		if (bMeshCompatibleRenderElement || bCompiledRenderElement) // temporary disable for these types
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObjectTemporary(pObj, pElem, shaderItem);

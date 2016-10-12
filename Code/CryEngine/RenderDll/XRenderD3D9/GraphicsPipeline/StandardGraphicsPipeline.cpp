@@ -16,6 +16,7 @@
 #include "VolumetricFog.h"
 #include "Fog.h"
 #include "VolumetricClouds.h"
+#include "Water.h"
 #include "MotionBlur.h"
 #include "DepthOfField.h"
 #include "SunShafts.h"
@@ -262,6 +263,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CVolumetricFogStage>(m_pVolumetricFogStage, eStage_VolumetricFog);
 	RegisterStage<CFogStage>(m_pFogStage, eStage_Fog);
 	RegisterStage<CVolumetricCloudsStage>(m_pVolumetricCloudsStage, eStage_VolumetricClouds);
+	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CWaterRipplesStage>(m_pWaterRipplesStage, eStage_WaterRipples);
 	RegisterStage<CMotionBlurStage>(m_pMotionBlurStage, eStage_MotionBlur);
 	RegisterStage<CDepthOfFieldStage>(m_pDepthOfFieldStage, eStage_DepthOfField);
@@ -687,6 +689,7 @@ void CStandardGraphicsPipeline::SwitchToLegacyPipeline()
 	CHWShader::s_pCurDS = nullptr;
 	CHWShader::s_pCurHS = nullptr;
 	CHWShader::s_pCurCS = nullptr;
+	CHWShader_D3D::s_nActivationFailMask = 0;
 
 	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 
@@ -707,6 +710,8 @@ void CStandardGraphicsPipeline::SwitchToLegacyPipeline()
 
 void CStandardGraphicsPipeline::SwitchFromLegacyPipeline()
 {
+	CHWShader_D3D::s_nActivationFailMask = 0;
+
 	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 }
 
@@ -715,14 +720,14 @@ std::array<int, EFSS_MAX> CStandardGraphicsPipeline::GetDefaultMaterialSamplers(
 	std::array<int, EFSS_MAX> result =
 	{
 		{
-			gcpRendD3D->m_nMaterialAnisoHighSampler,                                                             // EFSS_ANISO_HIGH
-			gcpRendD3D->m_nMaterialAnisoLowSampler,                                                              // EFSS_ANISO_LOW
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),         // EFSS_TRILINEAR
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),          // EFSS_BILINEAR
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),      // EFSS_TRILINEAR_CLAMP
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),       // EFSS_BILINEAR_CLAMP
-			gcpRendD3D->m_nMaterialAnisoSamplerBorder,                                                           // EFSS_ANISO_HIGH_BORDER
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0)),   // EFSS_TRILINEAR_BORDER
+			gcpRendD3D->m_nMaterialAnisoHighSampler,   // EFSS_ANISO_HIGH
+			gcpRendD3D->m_nMaterialAnisoLowSampler,    // EFSS_ANISO_LOW
+			gcpRendD3D->m_nTrilinearWrapSampler,       // EFSS_TRILINEAR
+			gcpRendD3D->m_nBilinearWrapSampler,        // EFSS_BILINEAR
+			gcpRendD3D->m_nTrilinearClampSampler,      // EFSS_TRILINEAR_CLAMP
+			gcpRendD3D->m_nBilinearClampSampler,       // EFSS_BILINEAR_CLAMP
+			gcpRendD3D->m_nMaterialAnisoSamplerBorder, // EFSS_ANISO_HIGH_BORDER
+			gcpRendD3D->m_nTrilinearBorderSampler,     // EFSS_TRILINEAR_BORDER
 		}
 	};
 
@@ -965,8 +970,9 @@ void CStandardGraphicsPipeline::Execute()
 		pRenderer->FX_DeferredSnowLayer();
 	}
 
-	// Generate cloud volume textures for shadow mapping.
 	SwitchFromLegacyPipeline();
+
+	// Generate cloud volume textures for shadow mapping.
 	m_pVolumetricCloudsStage->ExecuteShadowGen();
 
 	// SVOGI
@@ -1001,6 +1007,9 @@ void CStandardGraphicsPipeline::Execute()
 	// Screen Space Obscurance
 	m_pScreenSpaceObscuranceStage->Execute(pHeightMapFrustum, pHeightMapAOScreenDepthTex, pHeightMapAOTex);
 
+	// Water volume caustics
+	m_pWaterStage->ExecuteWaterVolumeCaustics();
+
 	pRenderer->m_RP.m_PersFlags2 |= RBPF2_NOSHADERFOG;
 
 	// Deferred shading
@@ -1023,13 +1032,10 @@ void CStandardGraphicsPipeline::Execute()
 	// Opaque forward passes
 	m_pSceneForwardStage->Execute_Opaque();
 
-	// Deferred water caustics
-	{
-		pRenderer->FX_ResetPipe();
-		pRenderer->FX_DeferredCaustics();
-	}
-
 	SwitchFromLegacyPipeline();
+
+	// Deferred ocean caustics
+	m_pWaterStage->ExecuteDeferredOceanCaustics();
 
 	// Fog
 	{
@@ -1045,20 +1051,26 @@ void CStandardGraphicsPipeline::Execute()
 		m_pVolumetricCloudsStage->Execute();
 	}
 
-	SwitchToLegacyPipeline();
-
-	// Water volumes
+	// Water fog volumes
 	{
-		pRenderer->FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, pRenderFunc, false, FB_BELOW_WATER, 0);
+		m_pWaterStage->ExecuteWaterFogVolumeBeforeTransparent();
 	}
 
 	pRenderer->UpdatePrevMatrix(true);
 
+	SwitchToLegacyPipeline();
+
 	// Transparent (below water)
 	m_pSceneForwardStage->Execute_TransparentBelowWater();
 
+	SwitchFromLegacyPipeline();
+
 	// Ocean and water volumes
-	pRenderer->FX_RenderWater(pRenderFunc);
+	{
+		m_pWaterStage->Execute();
+	}
+
+	SwitchToLegacyPipeline();
 
 	// Transparent (above water)
 	m_pSceneForwardStage->Execute_TransparentAboveWater();

@@ -14,7 +14,7 @@ public:
 
 	CSceneRenderPass();
 
-	void SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList = EFSLIST_GENERAL);
+	void SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList = EFSLIST_GENERAL, uint32 excludeFilter = 0, bool drawCompiledRenderObject = true);
 	void SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources);
 	void SetRenderTargets(SDepthTexture* pDepthTarget, CTexture* pColorTarget0, CTexture* pColorTarget1 = NULL, CTexture* pColorTarget2 = NULL, CTexture* pColorTarget3 = NULL);
 	void ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget);
@@ -54,6 +54,7 @@ protected:
 	uint32                   m_stageID : 16;
 	uint32                   m_passID  : 16;
 	uint32                   m_batchFilter;
+	uint32                   m_excludeFilter;
 	EPassFlags               m_passFlags;
 	ERenderListID            m_renderList;
 
