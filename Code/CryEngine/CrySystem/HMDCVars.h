@@ -17,6 +17,7 @@ public:
 	static int hmd_info;
 	static int hmd_social_screen;
 	static int hmd_social_screen_keep_aspect;
+	static float hmd_resolution_scale;
 	static ICVar* pSelectedHmdNameVar;
 
 	static void OnHmdRecenter(IConsoleCmdArgs* pArgs) 
@@ -45,6 +46,9 @@ public:
 		                        "1 - On\n"
 		               );
 
+		REGISTER_CVAR2("hmd_resolution_scale", &hmd_resolution_scale, hmd_resolution_scale,
+			VF_NULL, "Scales rendered resolution");
+
 		pSelectedHmdNameVar = gEnv->pConsole->RegisterString("hmd_device", "", VF_NULL, 
 						"Specifies the name of the VR device to use\nAvailable options depend on VR plugins registered with the engine");
 
@@ -62,6 +66,8 @@ public:
 			pConsole->UnregisterVariable("hmd_social_screen");
 			pConsole->UnregisterVariable("hmd_device");
 			pConsole->UnregisterVariable("hmd_recenter_pose");
+
+			pConsole->UnregisterVariable("hmd_resolution_scale");
 		}
 
 	}

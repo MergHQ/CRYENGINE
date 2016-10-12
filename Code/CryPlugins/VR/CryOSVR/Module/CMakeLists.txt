@@ -29,7 +29,7 @@ end_sources()
 #END-FILE-LIST
 
 if (WIN64)
-	CryEngineStaticModule(CryOSVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+	CryEngineModule(CryOSVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 	target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/SDKs/OSVR/include )
 

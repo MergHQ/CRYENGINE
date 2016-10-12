@@ -46,6 +46,8 @@ public:
 	virtual void                    UpdateTrackingState(EVRComponent) override;
 	virtual const HmdTrackingState& GetNativeTrackingState() const override;
 	virtual const HmdTrackingState& GetLocalTrackingState() const override;
+	virtual Quad GetPlayArea() const override { return Quad(ZERO); }
+	virtual Vec2 GetPlayAreaSize() const override { return Vec2(ZERO); }
 
 	virtual const IHmdController*   GetController() const override;
 	virtual const EHmdSocialScreen  GetSocialScreenType(bool* pKeepAspect = nullptr) const override;

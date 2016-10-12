@@ -67,8 +67,6 @@
 		],
 		"Physics" :
 		[
-			"Physics/RigidBody.cpp",
-			"Physics/RigidBody.h",
 			"Physics/RopeEntity.cpp",
 			"Physics/RopeEntity.h"
 		],

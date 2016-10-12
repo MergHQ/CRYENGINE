@@ -47,16 +47,10 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 	if (gEnv->IsDedicated())
 		return;
 
+	CNativeEntityBase::ProcessEvent(event);
+
 	switch (event.event)
 	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
 	case ENTITY_EVENT_ENTERNEARAREA:
 		{
 			m_areaState = EAreaState::Near;
@@ -145,7 +139,7 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CAudioAreaAmbienceEntity::Reset()
+void CAudioAreaAmbienceEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 

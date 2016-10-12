@@ -16,26 +16,26 @@ class Controller : public IHmdController
 {
 public:
 	// IHmdController
-	virtual bool                    IsConnected(EHmdController id)                const override                { return (m_controllerMapping[id] < vr::k_unMaxTrackedDeviceCount); }
-	virtual bool                    IsButtonPressed(EHmdController controllerId, EKeyId id)   const override    { return (id < OPENVR_BASE || id > eKI_Motion_OpenVR_TouchPadBtn) ? false : (m_state[controllerId].buttonsPressed & vr::ButtonMaskFromId((vr::EVRButtonId)(m_symbols[id - OPENVR_BASE]->devSpecId & (~OPENVR_SPECIAL)))) > 0; }
-	virtual bool                    IsButtonTouched(EHmdController controllerId, EKeyId id)   const override    { return (id < OPENVR_BASE || id > eKI_Motion_OpenVR_TouchPadBtn) ? false : (m_state[controllerId].buttonsTouched & vr::ButtonMaskFromId((vr::EVRButtonId)(m_symbols[id - OPENVR_BASE]->devSpecId & (~OPENVR_SPECIAL)))) > 0; }
-	virtual bool                    IsGestureTriggered(EHmdController controllerId, EKeyId id)  const override  { return false; }                          // OpenVR does not have gesture support (yet?)
-	virtual float                   GetTriggerValue(EHmdController controllerId, EKeyId id)   const override    { return m_state[controllerId].trigger; }  // we only have one trigger => ignore trigger id
-	virtual Vec2                    GetThumbStickValue(EHmdController controllerId, EKeyId id)  const override  { return m_state[controllerId].touchPad; } // we only have one 'stick' (/the touch pad) => ignore thumb stick id
+	virtual bool                    IsConnected(EHmdController id) const override;
+	virtual bool                    IsButtonPressed(EHmdController controllerId, EKeyId id) const override { return (id < OPENVR_BASE || id > eKI_Motion_OpenVR_TouchPadBtn) ? false : (m_state[controllerId].buttonsPressed & vr::ButtonMaskFromId((vr::EVRButtonId)(m_symbols[id - OPENVR_BASE]->devSpecId & (~OPENVR_SPECIAL)))) > 0; }
+	virtual bool                    IsButtonTouched(EHmdController controllerId, EKeyId id) const override { return (id < OPENVR_BASE || id > eKI_Motion_OpenVR_TouchPadBtn) ? false : (m_state[controllerId].buttonsTouched & vr::ButtonMaskFromId((vr::EVRButtonId)(m_symbols[id - OPENVR_BASE]->devSpecId & (~OPENVR_SPECIAL)))) > 0; }
+	virtual bool                    IsGestureTriggered(EHmdController controllerId, EKeyId id) const override { return false; }                           // OpenVR does not have gesture support (yet?)
+	virtual float                   GetTriggerValue(EHmdController controllerId, EKeyId id) const override { return m_state[controllerId].trigger; }   // we only have one trigger => ignore trigger id
+	virtual Vec2                    GetThumbStickValue(EHmdController controllerId, EKeyId id)const override { return m_state[controllerId].touchPad; }  // we only have one 'stick' (/the touch pad) => ignore thumb stick id
 
-	virtual const HmdTrackingState& GetNativeTrackingState(EHmdController controller) const override            { return m_state[controller].nativePose; }
-	virtual const HmdTrackingState& GetLocalTrackingState(EHmdController controller)  const override            { return m_state[controller].localPose; }
+	virtual const HmdTrackingState& GetNativeTrackingState(EHmdController controller) const override { return m_state[controller].nativePose; }
+	virtual const HmdTrackingState& GetLocalTrackingState(EHmdController controller) const override { return m_state[controller].localPose; }
 
-	virtual void                    ApplyForceFeedback(EHmdController id, float freq, float amplitude) override {}
-	virtual void                    SetLightColor(EHmdController id, TLightColor color) override                {}
-	virtual TLightColor             GetControllerColor(EHmdController id) const override                        { return 0; }
-	virtual uint32                  GetCaps(EHmdController id) const override                                   { return (eCaps_Buttons | eCaps_Tracking | eCaps_Sticks | eCaps_Capacitors); }
+	virtual void                    ApplyForceFeedback(EHmdController id, float freq, float amplitude) override;
+	virtual void                    SetLightColor(EHmdController id, TLightColor color) override {}
+	virtual TLightColor             GetControllerColor(EHmdController id) const override { return 0; }
+	virtual uint32                  GetCaps(EHmdController id) const override { return (eCaps_Buttons | eCaps_Tracking | eCaps_Sticks | eCaps_Capacitors); }
 	// ~IHmdController
 
 private:
 	friend class Device;
 
-	Controller();
+	Controller(vr::IVRSystem* pSystem);
 	virtual ~Controller() override;
 
 	struct SControllerState
@@ -81,6 +81,8 @@ private:
 	SControllerState         m_state[eHmdController_OpenVR_MaxNumOpenVRControllers],
 	                         m_previousState[eHmdController_OpenVR_MaxNumOpenVRControllers];
 	vr::TrackedDeviceIndex_t m_controllerMapping[eHmdController_OpenVR_MaxNumOpenVRControllers];
+
+	vr::IVRSystem*           m_pSystem;
 };
 }
 }

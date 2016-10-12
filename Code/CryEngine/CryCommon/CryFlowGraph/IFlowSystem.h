@@ -1625,6 +1625,10 @@ struct IFlowSystem
 	//! Unregister previously registered type, keeps internal type ids valid
 	virtual bool UnregisterType(const char* typeName) = 0;
 
+	//! Checks whether the flow system has finished registering all node types and sent ESYSTEM_EVENT_REGISTER_FLOWNODES
+	//! If this is true flow nodes have to be manually registered via the RegisterType function.
+	virtual bool HasRegisteredDefaultFlowNodes() = 0;
+
 	//! Gets a type name from a flow node type ID.
 	virtual const char* GetTypeName(TFlowNodeTypeId typeId) = 0;
 

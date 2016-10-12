@@ -175,6 +175,7 @@ CFlowSystem::CFlowSystem()
 	, m_pModuleManager(NULL)
 	, m_blacklistNode(NULL)
 	, m_nextNodeTypeID(InvalidFlowNodeTypeId)
+	, m_bRegisteredDefaultNodes(false)
 {
 	LoadBlacklistedFlownodeXML();
 }
@@ -247,6 +248,8 @@ void CFlowSystem::RegisterAllNodeTypes()
 	// this has to come after all other nodes are reloaded
 	// as it will trigger the editor to reload the fg classes!
 	GetModuleManager()->ScanForModules(); // reload all modules (since they need to register the start and end node types)
+
+	m_bRegisteredDefaultNodes = true;
 }
 
 void CFlowSystem::LoadExtensions(string path)

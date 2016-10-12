@@ -10,12 +10,13 @@
 namespace CryVR {
 namespace OpenVR {
 
-	#define VRC_AXIS_THRESHOLD 0.5f
+#define VRC_AXIS_THRESHOLD 0.5f
 
-	#define MAPSYMBOL(EKI, DEV_KEY_ID, KEY_NAME, KEY_TYPE) m_symbols[EKI - OPENVR_BASE] = MapSymbol(DEV_KEY_ID, EKI, KEY_NAME, KEY_TYPE, 0);
+#define MAPSYMBOL(EKI, DEV_KEY_ID, KEY_NAME, KEY_TYPE) m_symbols[EKI - OPENVR_BASE] = MapSymbol(DEV_KEY_ID, EKI, KEY_NAME, KEY_TYPE, 0);
 
 // -------------------------------------------------------------------------
-Controller::Controller()
+Controller::Controller(vr::IVRSystem* pSystem)
+	: m_pSystem(pSystem)
 {
 	memset(&m_previousState, 0, sizeof(m_previousState));
 	memset(&m_state, 0, sizeof(m_state));
@@ -39,7 +40,7 @@ bool Controller::Init()
 	return true;
 }
 
-	#undef MapSymbol
+#undef MapSymbol
 
 // -------------------------------------------------------------------------
 Controller::~Controller()
@@ -270,6 +271,21 @@ void Controller::OnControllerDisconnect(vr::TrackedDeviceIndex_t controllerId)
 			break;
 		}
 	}
+}
+
+// -------------------------------------------------------------------------
+bool Controller::IsConnected(EHmdController id) const
+{
+	return m_pSystem->IsTrackedDeviceConnected(m_controllerMapping[id]);
+}
+
+// -------------------------------------------------------------------------
+void Controller::ApplyForceFeedback(EHmdController id, float freq, float amplitude)
+{
+	auto axisId = vr::k_EButton_SteamVR_Touchpad - vr::k_EButton_Axis0;
+	auto durationMicroSeconds = (ushort)clamp_tpl(freq, 0.f, 5000.f);
+
+	m_pSystem->TriggerHapticPulse(m_controllerMapping[id], axisId, durationMicroSeconds);
 }
 
 } // namespace OpenVR

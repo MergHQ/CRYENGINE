@@ -452,7 +452,7 @@ struct SEntityPropertyGroupHelper
 	}
 
 protected:
-	string                  m_name;
+	const char*             m_name;
 
 	IEntityPropertyHandler* m_pHandler;
 };

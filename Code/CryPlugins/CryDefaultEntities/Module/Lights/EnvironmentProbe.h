@@ -46,19 +46,16 @@ public:
 	virtual ~CEnvironmentProbeEntity() {}
 
 	// CNativeEntityBase
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
 
 protected:
-	// Called on entity spawn, or when the state of the entity changes in Editor
-	void Reset();
-
 	void GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse);
 
 	// Specifies the entity geometry slot in which the light is loaded, -1 if not currently loaded
 	// We default to using slot 1 for this light sample, in case the user would want to put geometry into slot 0.
 	int m_lightSlot;
 
-	// Light parameters, updated in the Reset function
+	// Light parameters, updated in the OnResetState function
 	CDLight m_light;
 };

@@ -133,12 +133,8 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	endif()
 	
 	if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-		get_target_property(archout ${TargetProject} ARCHIVE_OUTPUT_DIRECTORY)
 		get_target_property(libout ${TargetProject} LIBRARY_OUTPUT_DIRECTORY)
 		get_target_property(runout ${TargetProject} RUNTIME_OUTPUT_DIRECTORY)
-		if (NOT archout)
-			set(archout ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-		endif()
 		if (NOT libout)
 			set(libout ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 		endif()
@@ -149,7 +145,6 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 		# Iterate Debug/Release configs and adds _DEBUG or _RELEASE
 		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
 			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-			set_target_properties(${TargetProject} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${archout})
 			set_target_properties(${TargetProject} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${libout})
 			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout})
 		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
@@ -541,7 +536,6 @@ function(CryPlugin target)
 	set_editor_module_flags()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /wd4251 /wd4275)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_IMPORTS -DPLUGIN_EXPORTS -DEDITOR_COMMON_IMPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
-	set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
@@ -596,7 +590,6 @@ function(CryPipelineModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	set_rc_flags()
-	set_property(TARGET ${THIS_PROJECT} PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/rc)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/rc)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/rc)
 	if(WIN32)
@@ -646,6 +639,8 @@ macro(process_csharp output_module)
 	endif()
 	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${output_module}_meta.cs
 		"using System.Reflection;\n"
+		"using System.Runtime.CompilerServices;\n"
+		"[assembly: InternalsVisibleTo(\"CryEngine.Core\")]\n"
 		"[assembly: AssemblyProduct(\"${PRODUCT_NAME}\")]\n"
 		"[assembly: AssemblyTitle(\"${PRODUCT_NAME}\")]\n"
 		"[assembly: AssemblyDescription(\"${PRODUCT_NAME}\")]\n"

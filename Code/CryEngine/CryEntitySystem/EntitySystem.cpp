@@ -714,6 +714,11 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 		if (params.guid)
 			RegisterEntityGuid(params.guid, params.id);
 
+		if (params.entityNode && params.pClass->GetPropertyHandler())
+		{
+			params.pClass->GetPropertyHandler()->LoadEntityXMLProperties(pEntity, params.entityNode);
+		}
+
 		if (bAutoInit)
 		{
 			if (!InitEntity(pEntity, params))   // calls DeleteEntity() on failure

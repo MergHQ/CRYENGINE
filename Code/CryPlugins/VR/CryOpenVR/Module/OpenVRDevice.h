@@ -36,6 +36,8 @@ public:
 	virtual void                    UpdateTrackingState(EVRComponent type) override;
 	virtual const HmdTrackingState& GetNativeTrackingState() const override;
 	virtual const HmdTrackingState& GetLocalTrackingState() const override;
+	virtual Quad                    GetPlayArea() const override;
+	virtual Vec2                    GetPlayAreaSize() const override;
 	virtual const IHmdController*   GetController() const override      { return &m_controller; }
 	virtual const EHmdSocialScreen  GetSocialScreenType(bool* pKeepAspect = nullptr) const override;
 	virtual int                     GetControllerCount() const override { __debugbreak(); return 2; /* OPENVR_TODO */ }

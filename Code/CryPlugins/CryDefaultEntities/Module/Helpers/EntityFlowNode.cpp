@@ -111,6 +111,12 @@ void CEntityFlowNodeFactory::Close()
 	// add null entries at end
 	m_outputs.push_back( OutputPortConfig<bool>(0,0) );
 	m_inputs.push_back( InputPortConfig<bool>(0,false) );
+
+	// Special case if we're registering after the ESYSTEM_EVENT_REGISTER_FLOWNODES event has been sent.
+	if (gEnv->pFlowSystem->HasRegisteredDefaultFlowNodes())
+	{
+		gEnv->pFlowSystem->RegisterType(m_sClassName, this);
+	}
 }
 
 void CEntityFlowNodeFactory::GetConfiguration( SFlowNodeConfig& config )

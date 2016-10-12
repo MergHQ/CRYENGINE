@@ -22,12 +22,8 @@ public:
 	virtual ~CDefaultParticleEntity() {}
 
 	// CNativeEntityBase
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
-
-protected:
-	// Called on entity spawn, or when the state of the entity changes in Editor
-	void Reset();
 
 protected:
 	int m_particleSlot;

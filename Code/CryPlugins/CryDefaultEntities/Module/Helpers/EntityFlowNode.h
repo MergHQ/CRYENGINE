@@ -121,3 +121,16 @@ protected:
 	_smart_ptr<CEntityFlowNodeFactory> m_pClass;
 	EntityId m_entityId;
 };
+
+struct IFlowNodeRegistrator
+{
+	IFlowNodeRegistrator() : m_pFlowNodeFactory(nullptr) {}
+
+	virtual ~IFlowNodeRegistrator()
+	{
+		SAFE_DELETE(m_pFlowNodeFactory);
+	}
+
+protected:
+	CEntityFlowNodeFactory* m_pFlowNodeFactory;
+};

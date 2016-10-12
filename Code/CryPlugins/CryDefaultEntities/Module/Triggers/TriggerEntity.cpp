@@ -5,6 +5,7 @@
 
 class CTriggerEntityRegistrator
 	: public IEntityRegistrator
+	, public IFlowNodeRegistrator
 {
 	virtual void Register() override
 	{
@@ -36,8 +37,6 @@ class CTriggerEntityRegistrator
 
 		m_pFlowNodeFactory->Close();
 	}
-
-	CEntityFlowNodeFactory* m_pFlowNodeFactory;
 };
 
 CTriggerEntityRegistrator g_triggerEntityRegistrator;

@@ -31,7 +31,7 @@ end_sources()
 #END-FILE-LIST
 
 if(WIN32 OR WIN64 OR APPLE OR LINUX)
-	CryEngineStaticModule(CryOpenVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+	CryEngineModule(CryOpenVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 	target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/SDKs/OpenVR/headers )
 

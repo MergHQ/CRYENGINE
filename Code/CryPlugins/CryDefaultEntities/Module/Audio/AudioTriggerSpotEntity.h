@@ -40,13 +40,15 @@ public:
 	// CNativeEntityBase
 	virtual void PostInit(IGameObject* pGameObject) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
+
 #if !defined(_RELEASE)
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 #endif
+
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
 
 private:
-	void        Reset();
 	void        Stop();
 	void        Play();
 	void        StartPlayingBehaviour();

@@ -1,10 +1,13 @@
 #include "StdAfx.h"
 #include "GeomEntity.h"
 
+#include "Helpers/EntityFlowNode.h"
+
 #include <CryPhysics/physinterface.h>
 
 class CGeomEntityRegistrator
 	: public IEntityRegistrator
+	, public IFlowNodeRegistrator
 {
 	virtual void Register() override
 	{
@@ -20,28 +23,53 @@ class CGeomEntityRegistrator
 		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
 
 		RegisterEntityPropertyObject(pPropertyHandler, "Geometry", "object_Model", "", "Sets the object of the entity");
-		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "-1", "Sets the mass of the entity, a negative value means we won't physicalize", -1, 100000.f);
+		RegisterEntityPropertyEnum(pPropertyHandler, "Physicalize", "", "1", "Determines the physicalization type of the entity - None, Static or Rigid (movable)", 0, 2);
+		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "1", "Sets the mass of the entity", 0.00001f, 100000.f);
+
+		// Register flow node
+		m_pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
+
+		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnCollision"));
+
+		m_pFlowNodeFactory->Close();
 	}
 };
 
 CGeomEntityRegistrator g_geomEntityRegistrator;
 
-void CGeomEntity::ProcessEvent(SEntityEvent& event)
+void CGeomEntity::PostInit(IGameObject *pGameObject)
 {
-	switch (event.event)
+	CNativeEntityBase::PostInit(pGameObject);
+
+	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_CASTSHADOW);
+
+	// Make sure we get logged collision events
+	// Note the difference between immediate (directly on the physics thread) and logged (delayed to run on main thread) physics events.
+	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+
+	const int requiredEvents[] = { eGFE_OnCollision };
+	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
+}
+
+void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
+{
+	if (event.event == eGFE_OnCollision)
 	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
+		// Collision info can be retrieved using the event pointer
+		EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
+
+		if (IEntity* pOtherEntity = gEnv->pEntitySystem->GetEntityFromPhysics(physCollision->pEntity[1]))
+		{
+			ActivateFlowNodeOutput(eOutputPort_OnCollision, TFlowInputData(pOtherEntity->GetId()));
+		}
+		else
+		{
+			ActivateFlowNodeOutput(eOutputPort_OnCollision, TFlowInputData());
+		}
 	}
 }
 
-void CGeomEntity::Reset()
+void CGeomEntity::OnResetState()
 {
 	const char* modelPath = GetPropertyValue(eProperty_Model);
 	if (strlen(modelPath) > 0)
@@ -51,14 +79,23 @@ void CGeomEntity::Reset()
 		const int geometrySlot = 0;
 		LoadMesh(geometrySlot, modelPath);
 
-		float mass = GetPropertyFloat(eProperty_Mass);
-		if (mass > 0)
-		{
-			SEntityPhysicalizeParams physicalizationParams;
-			physicalizationParams.type = PE_STATIC;
-			physicalizationParams.mass = mass;
+		SEntityPhysicalizeParams physicalizationParams;
 
-			GetEntity()->Physicalize(physicalizationParams);
+		switch ((EPhysicalizationType)GetPropertyInt(eProperty_PhysicalizationType))
+		{
+			case ePhysicalizationType_None:
+				physicalizationParams.type = PE_NONE;
+				break;
+			case ePhysicalizationType_Static:
+				physicalizationParams.type = PE_STATIC;
+				break;
+			case ePhysicalizationType_Rigid:
+				physicalizationParams.type = PE_RIGID;
+				break;
 		}
+
+		physicalizationParams.mass = GetPropertyFloat(eProperty_Mass);
+
+		GetEntity()->Physicalize(physicalizationParams);
 	}
 }

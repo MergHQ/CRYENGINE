@@ -1152,7 +1152,9 @@ void CD3DStereoRenderer::OnResolutionChanged()
 void CD3DStereoRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
 {
 	if (m_pHmdRenderer != nullptr)
+	{
 		m_pHmdRenderer->CalculateBackbufferResolution(eyeWidth, eyeHeight, pBackbufferWidth, pBackbufferHeight);
+	}
 	else
 	{
 		switch (m_output)
@@ -1190,8 +1192,12 @@ void CD3DStereoRenderer::OnHmdDeviceChanged(IHmdDevice* pHmdDevice)
 	HmdDeviceInfo deviceInfo;
 	m_pHmdDevice->GetDeviceInfo(deviceInfo);
 
-	m_renderer.SetWidth(deviceInfo.screenWidth / 2);
-	m_renderer.SetHeight(deviceInfo.screenHeight);
+	float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
+	int screenWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
+	int screenHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
+
+	gEnv->pConsole->GetCVar("r_width")->Set(screenWidth);
+	gEnv->pConsole->GetCVar("r_height")->Set(screenHeight);
 }
 
 IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)

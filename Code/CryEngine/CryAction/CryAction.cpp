@@ -3509,6 +3509,9 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 	{
 		pGameToEditor->SetUIEnums("LipSyncType", &gs_lipSyncExtensionNamesForExposureToEditor.front(), lipSyncCount);
 	}
+
+	const char* physicalizationTypes[] = { "None=0", "Static=1", "Rigid=2" };
+	pGameToEditor->SetUIEnums("Physicalize", physicalizationTypes, CRY_ARRAY_COUNT(physicalizationTypes));
 }
 
 //------------------------------------------------------------------------

@@ -34,12 +34,11 @@ public:
 
 	// CNativeEntityBase
 	virtual void ProcessEvent(SEntityEvent& event) override;
+
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
 
 protected:
-	// Called on entity spawn, or when the state of the entity changes in Editor
-	void       Reset();
-
 	void       Play(AudioControlId triggerId);
 	void       Stop();
 

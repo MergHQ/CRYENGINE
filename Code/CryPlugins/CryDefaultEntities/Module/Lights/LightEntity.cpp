@@ -5,6 +5,7 @@
 
 class CLightRegistrator
 	: public IEntityRegistrator
+	, public IFlowNodeRegistrator
 {
 public:
 	virtual void Register() override
@@ -84,8 +85,6 @@ public:
 
 		m_pFlowNodeFactory->Close();
 	}
-
-	CEntityFlowNodeFactory* m_pFlowNodeFactory;
 };
 
 CLightRegistrator g_lightRegistrator;
@@ -97,25 +96,7 @@ CDefaultLightEntity::CDefaultLightEntity()
 {
 }
 
-void CDefaultLightEntity::ProcessEvent(SEntityEvent& event)
-{
-	if (gEnv->IsDedicated())
-		return;
-
-	switch (event.event)
-	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
-	}
-}
-
-void CDefaultLightEntity::Reset()
+void CDefaultLightEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
@@ -283,18 +264,18 @@ void CDefaultLightEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SA
 	{
 		pLightEntity->m_bActive = GetPortBool(pActInfo, eInputPorts_Active);
 
-		pLightEntity->Reset();
+		pLightEntity->OnResetState();
 	}
 	else if (IsPortActive(pActInfo, eInputPorts_Enable))
 	{
 		pLightEntity->m_bActive = true;
 
-		pLightEntity->Reset();
+		pLightEntity->OnResetState();
 	}
 	else if (IsPortActive(pActInfo, eInputPorts_Disable))
 	{
 		pLightEntity->m_bActive = false;
 
-		pLightEntity->Reset();
+		pLightEntity->OnResetState();
 	}
 }

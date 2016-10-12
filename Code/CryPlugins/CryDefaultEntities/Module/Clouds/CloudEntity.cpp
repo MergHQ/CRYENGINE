@@ -51,25 +51,7 @@ bool CCloudEntity::Init(IGameObject* pGameObject)
 	return true;
 }
 
-void CCloudEntity::ProcessEvent(SEntityEvent& event)
-{
-	if (gEnv->IsDedicated())
-		return;
-
-	switch (event.event)
-	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, reset on game mode change, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
-	}
-}
-
-void CCloudEntity::Reset()
+void CCloudEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 

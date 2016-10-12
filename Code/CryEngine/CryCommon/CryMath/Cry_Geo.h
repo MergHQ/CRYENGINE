@@ -177,29 +177,6 @@ template<typename F> struct Lineseg_tpl
 typedef Lineseg_tpl<float> Lineseg;
 typedef Lineseg_tpl<real>  Linesegr;
 
-template<typename F> struct Triangle_tpl
-{
-
-	Vec3_tpl<F> v0, v1, v2;
-
-	//! Default Lineseg constructor (without initialisation).
-	ILINE Triangle_tpl(void) {}
-	ILINE Triangle_tpl(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c) { v0 = a; v1 = b; v2 = c; }
-	ILINE void operator()(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c) { v0 = a; v1 = b; v2 = c; }
-
-	~Triangle_tpl(void) {};
-
-	Vec3_tpl<F> GetNormal() const
-	{
-		return ((v1 - v0) ^ (v2 - v0)).GetNormalized();
-	}
-
-	F GetArea() const
-	{
-		return 0.5f * (v1 - v0).Cross(v2 - v0).GetLength();
-	}
-};
-
 struct Cone
 {
 
@@ -614,6 +591,52 @@ template<typename F> struct OBB_tpl
 
 	~OBB_tpl(void) {};
 };
+
+template<typename F> struct Triangle_tpl
+{
+
+	Vec3_tpl<F> v0, v1, v2;
+
+	//! Default Lineseg constructor (without initialisation).
+	ILINE Triangle_tpl(void) {}
+	ILINE Triangle_tpl(type_zero) { v0 = ZERO; v1 = ZERO; v2 = ZERO; }
+	ILINE Triangle_tpl(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c) { v0 = a; v1 = b; v2 = c; }
+	ILINE void operator()(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c) { v0 = a; v1 = b; v2 = c; }
+
+	~Triangle_tpl(void) {};
+
+	Vec3_tpl<F> GetNormal() const
+	{
+		return ((v1 - v0) ^ (v2 - v0)).GetNormalized();
+	}
+
+	F GetArea() const
+	{
+		return 0.5f * (v1 - v0).Cross(v2 - v0).GetLength();
+	}
+};
+
+template<typename F> struct Quad_tpl
+{
+	Vec3_tpl<F> vCorners[4];
+
+	ILINE Quad_tpl(void) {}
+	ILINE Quad_tpl(type_zero) { vCorners[0] = ZERO; vCorners[1] = ZERO; vCorners[2] = ZERO; vCorners[3] = ZERO; }
+	ILINE Quad_tpl(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c, const Vec3_tpl<F>& d) { vCorners[0] = a; vCorners[1] = b; vCorners[2] = c; vCorners[3] = d; }
+	ILINE void operator()(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b, const Vec3_tpl<F>& c, const Vec3_tpl<F>& d) { vCorners[0] = a; vCorners[1] = b; vCorners[2] = c; vCorners[3] = d; }
+
+	AABB GetBounds() const
+	{
+		AABB bounds(AABB::RESET);
+		bounds.Add(vCorners[0]);
+		bounds.Add(vCorners[1]);
+		bounds.Add(vCorners[2]);
+		bounds.Add(vCorners[3]);
+		return bounds;
+	}
+};
+
+typedef Quad_tpl<float> Quad;
 
 struct Sphere
 {

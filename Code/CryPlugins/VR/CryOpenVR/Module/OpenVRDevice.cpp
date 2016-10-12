@@ -184,6 +184,7 @@ static ICVar* pParallax = nullptr;
 Device::Device(vr::IVRSystem* pSystem)
 	: m_refCount(1)     //OpenVRResources.cpp assumes refcount is 1 on allocation
 	, m_system(pSystem)
+	, m_controller(pSystem)
 	, m_lastFrameID_UpdateTrackingState(-1)
 	, m_devInfo()
 	, m_hasInputFocus(false)
@@ -371,10 +372,10 @@ void Device::AddRef()
 void Device::Release()
 {
 	long refCount = CryInterlockedDecrement(&m_refCount);
-	#if !defined(_RELEASE)
+#if !defined(_RELEASE)
 	IF (refCount < 0, 0)
 		__debugbreak();
-	#endif
+#endif
 	IF (refCount == 0, 0)
 	{
 		delete this;
@@ -456,7 +457,7 @@ void Device::UpdateTrackingState(EVRComponent type)
 
 	const int frameID = pRenderer->GetFrameID(false);
 
-	#if !defined(_RELEASE)
+#if !defined(_RELEASE)
 	if (!gEnv->IsEditor())// we currently assume one system update per frame rendered, which is not always the case in editor (i.e. no level)
 	{
 		if (((type & eVRComponent_Hmd) != 0) && (CryGetCurrentThreadId() != gEnv->mMainThreadId) && (m_bLoadingScreenActive == false))
@@ -470,7 +471,7 @@ void Device::UpdateTrackingState(EVRComponent type)
 		}
 	}
 	m_lastFrameID_UpdateTrackingState = frameID;
-	#endif
+#endif
 
 	vr::Compositor_FrameTiming ft;
 	ft.m_nSize = sizeof(vr::Compositor_FrameTiming);
@@ -619,7 +620,7 @@ void Device::UpdateInternal(EInternalUpdate type)
 		for (int id = 0; id < RenderLayer::eQuadLayers_Total; id++)
 		{
 			m_overlays[id].pos = vr::RawConvert(Matrix34::CreateTranslationMat(Vec3(0, 0, -m_hmdQuadDistance)));
-			if(m_hmdQuadAbsolute)
+			if (m_hmdQuadAbsolute)
 				m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, CPlugin_OpenVR::s_hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
 			else
 				m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
@@ -695,14 +696,14 @@ void Device::CreateDevice()
 	gEnv->pLog->Log("[HMD][OpenVR] --- FOVH: %.2f", RAD2DEG(fovh));
 	gEnv->pLog->Log("[HMD][OpenVR] --- FOVV: %.2f", RAD2DEG(fovv));
 
-	#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINDOWS
 	// the following is (hopefully just) a (temporary) hack to shift focus back to the CryEngine window, after (potentially) spawning the SteamVR Compositor
 	if (!gEnv->IsEditor())
 	{
 		LockSetForegroundWindow(LSFW_UNLOCK);
 		SetForegroundWindow((HWND)gEnv->pSystem->GetHWND());
 	}
-	#endif
+#endif
 }
 
 // -------------------------------------------------------------------------
@@ -755,6 +756,41 @@ void Device::RecenterPose()
 const HmdTrackingState& Device::GetLocalTrackingState() const
 {
 	return m_hmdTrackingDisabled ? m_disabledTrackingState : m_localStates[vr::k_unTrackedDeviceIndex_Hmd];
+}
+
+// -------------------------------------------------------------------------
+Quad Device::GetPlayArea() const
+{
+	if (auto* pChaperone = vr::VRChaperone())
+	{
+		vr::HmdQuad_t hmdQuad;
+		if (pChaperone->GetPlayAreaRect(&hmdQuad))
+		{
+			Quad result;
+			result.vCorners[0] = HmdVec3ToWorldVec3(Vec3(hmdQuad.vCorners[0].v[0], hmdQuad.vCorners[0].v[1], hmdQuad.vCorners[0].v[2]));
+			result.vCorners[1] = HmdVec3ToWorldVec3(Vec3(hmdQuad.vCorners[1].v[0], hmdQuad.vCorners[1].v[1], hmdQuad.vCorners[1].v[2]));
+			result.vCorners[2] = HmdVec3ToWorldVec3(Vec3(hmdQuad.vCorners[2].v[0], hmdQuad.vCorners[2].v[1], hmdQuad.vCorners[2].v[2]));
+			result.vCorners[3] = HmdVec3ToWorldVec3(Vec3(hmdQuad.vCorners[3].v[0], hmdQuad.vCorners[3].v[1], hmdQuad.vCorners[3].v[2]));
+			return result;
+		}
+	}
+
+	return Quad(ZERO);
+}
+
+// -------------------------------------------------------------------------
+Vec2 Device::GetPlayAreaSize() const
+{
+	if (auto* pChaperone = vr::VRChaperone())
+	{
+		Vec2 result;
+		if (pChaperone->GetPlayAreaSize(&result.x, &result.y))
+		{
+			return result;
+		}
+	}
+
+	return Vec2(ZERO);
 }
 
 // -------------------------------------------------------------------------

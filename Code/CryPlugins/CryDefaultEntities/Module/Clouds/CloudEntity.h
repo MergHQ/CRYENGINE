@@ -29,14 +29,10 @@ public:
 	virtual ~CCloudEntity() {}
 
 	// CNativeEntityBase
-	virtual bool Init(IGameObject* pGameObject) override;
+	virtual bool Init(IGameObject* pGameObject) final;
 
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void OnResetState() final;
 	// ~CNativeEntityBase
-
-protected:
-	// Called on entity spawn, or when the state of the entity changes in Editor
-	void Reset();
 
 protected:
 	int m_cloudSlot;

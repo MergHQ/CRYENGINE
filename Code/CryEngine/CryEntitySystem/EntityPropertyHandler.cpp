@@ -28,26 +28,25 @@ bool CEntityPropertyHandler::OnRemove(IEntity *pEntity)
 
 void CEntityPropertyHandler::LoadEntityXMLProperties(IEntity *pEntity, const XmlNodeRef& xml)
 {
-	if(auto propertiesNode = xml->findChild("Properties"))
+	LOADING_TIME_PROFILE_SECTION;
+
+	// Find (or insert) property storage entry for this entity
+	auto entityPropertyStorageIt = m_entityPropertyMap.find(pEntity);
+	if (entityPropertyStorageIt == m_entityPropertyMap.end())
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		AddSinkListener();
 
-		// Find (or insert) property storage entry for this entity
-		auto entityPropertyStorageIt = m_entityPropertyMap.find(pEntity);
-		if (entityPropertyStorageIt == m_entityPropertyMap.end())
-		{
-			AddSinkListener();
+		// Create the entry and reserve bucket count
+		entityPropertyStorageIt = m_entityPropertyMap.insert(TEntityPropertyMap::value_type(pEntity, CEntityPropertyHandler::TPropertyStorage(m_propertyDefinitions.size()))).first;
+	}
 
-			// Create the entry and reserve bucket count
-			entityPropertyStorageIt = m_entityPropertyMap.insert(TEntityPropertyMap::value_type(pEntity, CEntityPropertyHandler::TPropertyStorage(m_propertyDefinitions.size()))).first;
-		}
-
+	if (XmlNodeRef propertiesNode = xml->findChild("Properties"))
+	{
 		// Load default group of properties
-		LoadEntityXMLGroupProperties(entityPropertyStorageIt->second, xml, true);
 		LoadEntityXMLGroupProperties(entityPropertyStorageIt->second, propertiesNode, true);
 
 		// Load folders
-		for(auto i = 0; i < propertiesNode->getChildCount(); i++)
+		for (auto i = 0; i < propertiesNode->getChildCount(); i++)
 		{
 			LoadEntityXMLGroupProperties(entityPropertyStorageIt->second, propertiesNode->getChild(i), false);
 		}

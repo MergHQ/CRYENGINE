@@ -58,6 +58,8 @@ void CAudioTriggerSpotEntity::PostInit(IGameObject* pGameObject)
 #if !defined(_RELEASE)
 	pGameObject->EnableUpdateSlot(this, 0);
 #endif
+
+	CNativeEntityBase::PostInit(pGameObject);
 }
 
 void CAudioTriggerSpotEntity::ProcessEvent(SEntityEvent& event)
@@ -65,16 +67,10 @@ void CAudioTriggerSpotEntity::ProcessEvent(SEntityEvent& event)
 	if (gEnv->IsDedicated())
 		return;
 
+	CNativeEntityBase::ProcessEvent(event);
+
 	switch (event.event)
 	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
 	case ENTITY_EVENT_ENTERNEARAREA:
 		{
 
@@ -137,7 +133,7 @@ void CAudioTriggerSpotEntity::OnAudioTriggerFinished(SAudioRequestInfo const* co
 	pAudioTriggerSpot->TriggerFinished(pAudioRequestInfo->audioControlId);
 }
 
-void CAudioTriggerSpotEntity::Reset()
+void CAudioTriggerSpotEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 

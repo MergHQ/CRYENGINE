@@ -13,6 +13,12 @@ class CNativeEntityBase
 public:
 	virtual ~CNativeEntityBase() {}
 
+	// ISimpleExtension
+	virtual void PostInit(IGameObject* pGameObject) override;
+
+	virtual void ProcessEvent(SEntityEvent& event) override;
+	// ~ISimpleExtension
+
 	// Retrieves the current string value of a property
 	const char* GetPropertyValue(int index) const;
 	// Sets the string value of a property
@@ -47,4 +53,8 @@ public:
 		evnt.nParam[1] = (INT_PTR)&inputData;
 		GetEntity()->SendEvent(evnt);
 	}
+
+	// Called when the entity needs to have its model, physics etc reset.
+	// Usually on level load or when properties are changed.
+	virtual void OnResetState() {}
 };
