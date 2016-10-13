@@ -10,13 +10,20 @@ public:
 		eProperty_Model = 0,
 		eProperty_PhysicalizationType,
 		eProperty_Mass,
+		eProperty_Hide,
 
 		eNumProperties,
 	};
 
+	enum EInputPorts
+	{
+		eInputPort_OnHide = 0,
+	};
+
 	enum EOutputPorts
 	{
-		eOutputPort_OnCollision = 0,
+		eOutputPort_OnHide = 0,
+		eOutputPort_OnCollision
 	};
 
 	enum EPhysicalizationType
@@ -27,6 +34,7 @@ public:
 	};
 
 public:
+	CGeomEntity();
 	virtual ~CGeomEntity() {}
 
 	// ISimpleExtension
@@ -37,6 +45,11 @@ public:
 	virtual void OnResetState() final;
 	// ~ISimpleExtension
 
+public:
+	static void OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
+
 protected:
 	IPhysicalEntity* m_pPhysEnt;
+
+	bool m_bHide;
 };

@@ -25,10 +25,15 @@ class CGeomEntityRegistrator
 		RegisterEntityPropertyObject(pPropertyHandler, "Geometry", "object_Model", "", "Sets the object of the entity");
 		RegisterEntityPropertyEnum(pPropertyHandler, "Physicalize", "", "1", "Determines the physicalization type of the entity - None, Static or Rigid (movable)", 0, 2);
 		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "1", "Sets the mass of the entity", 0.00001f, 100000.f);
+		RegisterEntityProperty<bool>(pPropertyHandler, "Hide", "", "0", "Sets the visibility of the entity");
 
 		// Register flow node
 		m_pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
 
+		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Hide", ""));
+		m_pFlowNodeFactory->m_activateCallback = CGeomEntity::OnFlowgraphActivation;
+
+		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnHide"));
 		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnCollision"));
 
 		m_pFlowNodeFactory->Close();
@@ -36,6 +41,11 @@ class CGeomEntityRegistrator
 };
 
 CGeomEntityRegistrator g_geomEntityRegistrator;
+
+CGeomEntity::CGeomEntity()
+	: m_bHide(false)
+{
+}
 
 void CGeomEntity::PostInit(IGameObject *pGameObject)
 {
@@ -71,6 +81,19 @@ void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
 
 void CGeomEntity::OnResetState()
 {
+	if (GetPropertyBool(eProperty_Hide) != GetEntity()->IsHidden())
+	{
+		m_bHide = GetPropertyBool(eProperty_Hide);
+	}
+	else if (m_bHide != GetEntity()->IsHidden())
+	{
+		SetPropertyBool(eProperty_Hide, m_bHide);
+	}
+
+	GetEntity()->Hide(m_bHide);
+
+	ActivateFlowNodeOutput(eOutputPort_OnHide, TFlowInputData(m_bHide));
+
 	const char* modelPath = GetPropertyValue(eProperty_Model);
 	if (strlen(modelPath) > 0)
 	{
@@ -97,5 +120,17 @@ void CGeomEntity::OnResetState()
 		physicalizationParams.mass = GetPropertyFloat(eProperty_Mass);
 
 		GetEntity()->Physicalize(physicalizationParams);
+	}
+}
+
+void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode)
+{
+	auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId);
+	auto* pGeomEntity = static_cast<CGeomEntity*>(pGameObject->QueryExtension("GeomEntity"));
+
+	if (IsPortActive(pActInfo, eInputPort_OnHide))
+	{
+		pGeomEntity->m_bHide = GetPortBool(pActInfo, eInputPort_OnHide);
+		pGeomEntity->OnResetState();
 	}
 }
