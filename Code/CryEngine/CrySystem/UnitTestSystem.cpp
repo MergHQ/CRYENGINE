@@ -1493,4 +1493,190 @@ CRY_UNIT_TEST(CUT_RingBuffer)
 	}
 }
 
+	#include <CryCore/CryVariant.h>
+
+CRY_UNIT_TEST(CUT_Variant)
+{
+	// Default initialization
+	{
+		CryVariant<string, Vec3, short, int> v;
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v));
+		CRY_UNIT_TEST_ASSERT(v.index() == 0);
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v) == string());
+	}
+
+	// Emplace & Get
+	{
+		CryVariant<int, string> v;
+		
+		v.emplace<int>(5);
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get<0>(v) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<int>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<int>(&v)) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<string>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<0>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<0>(&v)) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<1>(&v) == nullptr);
+
+		v.emplace<string>("Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get<1>(v) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get_if<int>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<string>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<string>(&v)) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get_if<0>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<1>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<1>(&v)) == "Hello World");
+
+		v.emplace<0>(5);
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get<0>(v) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<int>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<int>(&v)) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<string>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<0>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<0>(&v)) == 5);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<1>(&v) == nullptr);
+
+		v.emplace<1>("Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get<1>(v) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get_if<int>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<string>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<string>(&v)) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::get_if<0>(&v) == nullptr);
+		CRY_UNIT_TEST_ASSERT(stl::get_if<1>(&v) != nullptr);
+		CRY_UNIT_TEST_ASSERT((*stl::get_if<1>(&v)) == "Hello World");
+	}
+
+	// Equals
+	{
+		CryVariant<bool, int> v1, v2;
+		
+		v1.emplace<bool>(true);
+		v2.emplace<bool>(true);
+		CRY_UNIT_TEST_ASSERT(v1 == v2);
+		CRY_UNIT_TEST_ASSERT(!(v1 != v2));
+
+		v1.emplace<bool>(true);
+		v2.emplace<bool>(false);
+		CRY_UNIT_TEST_ASSERT(!(v1 == v2));
+		CRY_UNIT_TEST_ASSERT(v1 != v2);
+
+		v1.emplace<bool>(true);
+		v2.emplace<int>(1);
+		CRY_UNIT_TEST_ASSERT(!(v1 == v2));
+		CRY_UNIT_TEST_ASSERT(v1 != v2);
+	}
+
+	// Less (used for sorting in stl containers)
+	{
+		CryVariant<bool, int> v1, v2;
+
+		v1.emplace<int>(0);
+		v2.emplace<int>(5);
+		CRY_UNIT_TEST_ASSERT(v1 < v2);
+		CRY_UNIT_TEST_ASSERT(!(v2 < v1));
+
+		v1.emplace<int>(0);
+		v2.emplace<int>(0);
+		CRY_UNIT_TEST_ASSERT(!(v1 < v2));
+		CRY_UNIT_TEST_ASSERT(!(v2 < v1));
+
+		v1.emplace<bool>(true);
+		v2.emplace<int>(0);
+		CRY_UNIT_TEST_ASSERT(v1 < v2);
+		CRY_UNIT_TEST_ASSERT(!(v2 < v1));
+	}
+
+	// Copy & Move
+	{
+		CryVariant<int, string> v1, v2;
+
+		v1.emplace<int>(0);
+		v2.emplace<int>(1);
+		v1 = v2;
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v1) == 1);
+
+		v1.emplace<string>("Hello");
+		v2.emplace<string>("World");
+		v1 = v2;
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v1) == "World");
+
+		v1.emplace<int>(0);
+		v2.emplace<string>("Hello World");
+		v1 = v2;
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v1));
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v1) == "Hello World");
+
+		v1.emplace<int>(0);
+		v2.emplace<int>(1);
+		v1 = std::move(v2);
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v1) == 1);
+
+		v1.emplace<string>("Hello");
+		v2.emplace<string>("World");
+		v1 = std::move(v2);
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v1) == "World");
+
+		v1.emplace<int>(0);
+		v2.emplace<string>("Hello World");
+		v1 = std::move(v2);
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v1));
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v1) == "Hello World");
+
+		v1.emplace<string>("Hello World");
+		CryVariant<int, string> v3(v1);
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v3));
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v3) == "Hello World");
+
+		v1.emplace<string>("Hello World");
+		CryVariant<int, string> v4(std::move(v1));
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v4));
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v4) == "Hello World");
+	}
+
+	// Swap
+	{
+		CryVariant<int, string> v1, v2;
+
+		v1.emplace<int>(0);
+		v2.emplace<int>(1);
+		v1.swap(v2);
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<int>(v1));
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v1) == 1);
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<int>(v2));
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v2) == 0);
+
+		v1.emplace<int>(0);
+		v2.emplace<string>("Hello World");
+		v1.swap(v2);
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<string>(v1));
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v1) == "Hello World");
+		CRY_UNIT_TEST_ASSERT(stl::holds_alternative<int>(v2));
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v2) == 0);
+	}
+
+	// Visit
+	{
+		auto visitor = [](CryVariant<int, string>& v)
+		{
+			if (stl::holds_alternative<int>(v))
+				v.emplace<int>(stl::get<int>(v) * 2);
+			else
+				v.emplace<string>(stl::get<string>(v) + " " + stl::get<string>(v));
+		};
+
+		CryVariant<int, string> v1, v2;
+		v1.emplace<int>(5);
+		v2.emplace<string>("Hello World");
+
+		stl::visit(visitor, v1);
+		stl::visit(visitor, v2);
+		CRY_UNIT_TEST_ASSERT(stl::get<int>(v1) == 10);
+		CRY_UNIT_TEST_ASSERT(stl::get<string>(v2) == "Hello World Hello World");
+	}
+}
+
 #endif //CRY_UNIT_TESTING

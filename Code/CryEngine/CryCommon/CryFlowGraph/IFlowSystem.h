@@ -1706,8 +1706,8 @@ ILINE int GetPortInt(IFlowNode::SActivationInfo* pActInfo, int nPort)
 
 ILINE EntityId GetPortEntityId(IFlowNode::SActivationInfo* pActInfo, int nPort)
 {
-	EntityId x = *(pActInfo->pInputPorts[nPort].GetPtr<EntityId>());
-	return x;
+	EntityId result;
+	return pActInfo->pInputPorts[nPort].GetValueWithConversion(result) ? result : INVALID_ENTITYID;
 }
 
 ILINE float GetPortFloat(IFlowNode::SActivationInfo* pActInfo, int nPort)

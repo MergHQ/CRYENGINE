@@ -752,10 +752,7 @@ void CConvertAddrVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(co
 bool ConvertAddr(const TNetAddress& addrIn, CRYSOCKADDR* pSockAddr, int* addrLen)
 {
 	CConvertAddrVisitor v(pSockAddr, addrLen);
-	if (addrIn.index() != stl::variant_npos)
-	{
-		stl::visit(v, addrIn);
-	}
+	stl::visit(v, addrIn);
 	return v.Ok();
 }
 

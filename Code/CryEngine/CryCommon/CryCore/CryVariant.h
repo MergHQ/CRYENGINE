@@ -20,6 +20,11 @@ struct get_index<T, CryVariant<T, Types...>> : std::integral_constant<size_t, 0>
 
 template<class T, class U, class... Types>
 struct get_index<T, CryVariant<U, Types...>> : std::integral_constant<size_t, get_index<T, CryVariant<Types...>>::value + 1> {};
+
+static_assert(get_index<bool, CryVariant<bool, char, short, int>>::value == 0, "Wrong variant index found.");
+static_assert(get_index<char, CryVariant<bool, char, short, int>>::value == 1, "Wrong variant index found.");
+static_assert(get_index<short, CryVariant<bool, char, short, int>>::value == 2, "Wrong variant index found.");
+static_assert(get_index<int, CryVariant<bool, char, short, int>>::value == 3, "Wrong variant index found.");
 }
 
 namespace stl
@@ -30,6 +35,7 @@ struct variant_size;
 template<class... Types>
 struct variant_size<CryVariant<Types...>> : std::integral_constant<size_t, sizeof...(Types)> {};
 
+static_assert(variant_size<CryVariant<bool, char, short, int>>::value == 4, "Wrong variant size.");
 
 template<size_t, class>
 struct variant_alternative;
@@ -42,6 +48,11 @@ struct variant_alternative<0, CryVariant<T, Types...>>
 {
 	typedef T type;
 };
+
+static_assert(std::is_same<variant_alternative<0, CryVariant<bool, char, short, int>>::type, bool>::value, "Wrong variant alternative found.");
+static_assert(std::is_same<variant_alternative<1, CryVariant<bool, char, short, int>>::type, char>::value, "Wrong variant alternative found.");
+static_assert(std::is_same<variant_alternative<2, CryVariant<bool, char, short, int>>::type, short>::value, "Wrong variant alternative found.");
+static_assert(std::is_same<variant_alternative<3, CryVariant<bool, char, short, int>>::type, int>::value, "Wrong variant alternative found.");
 
 constexpr size_t variant_npos = -1;
 
@@ -132,9 +143,10 @@ class CryVariant
 
 public:
 	CryVariant()
-		: m_index(stl::variant_npos)
+		: m_index(0)
 	{
-		memset(&m_data, 0, sizeof(m_data));
+		typedef typename stl::variant_alternative<0, CryVariant<TArgs...>>::type type;
+		new (&m_data) type();
 	}
 
 	CryVariant(const CryVariant& other)
@@ -195,9 +207,16 @@ public:
 	{
 		if (*this != other)
 		{
-			auto temp = other;
-			other = *this;
-			*this = temp;
+			if (index() == other.index())
+			{
+				helper_type::swap_value(*this, other);
+			}
+			else
+			{
+				auto temp = std::move(other);
+				other = std::move(*this);
+				*this = std::move(temp);
+			}
 		}
 	}
 
@@ -268,7 +287,7 @@ struct CryVariant<TArgs...>::variant_helper<T, Types...>
 
 	static void copy_value(const CryVariant<TArgs...>& from, CryVariant<TArgs...>& to)
 	{
-		if (from.index() != stl::variant_npos)
+		if (!from.valueless_by_exception())
 		{
 			if (stl::holds_alternative<T>(from))
 			{
@@ -289,7 +308,7 @@ struct CryVariant<TArgs...>::variant_helper<T, Types...>
 
 	static void destroy_value(CryVariant<TArgs...>& variant)
 	{
-		if (variant.index() != stl::variant_npos)
+		if (!variant.valueless_by_exception())
 		{
 			if (stl::holds_alternative<T>(variant))
 			{
@@ -305,11 +324,11 @@ struct CryVariant<TArgs...>::variant_helper<T, Types...>
 
 	static void move_value(CryVariant<TArgs...>&& from, CryVariant<TArgs...>& to)
 	{
-		if (from.index() != stl::variant_npos)
+		if (!from.valueless_by_exception())
 		{
 			if (stl::holds_alternative<T>(from))
 			{
-				to.emplace<T>(stl::get<T>(from));
+				to.emplace<T>(std::move(stl::get<T>(from)));
 				to.m_index = from.index();
 				destroy_value(from);
 			}
@@ -324,6 +343,22 @@ struct CryVariant<TArgs...>::variant_helper<T, Types...>
 			destroy_value(to);
 		}
 	}
+
+	static void swap_value(CryVariant<TArgs...>& lhs, CryVariant<TArgs...>& rhs)
+	{
+		if (!lhs.valueless_by_exception() && !rhs.valueless_by_exception())
+		{
+			if (stl::holds_alternative<T>(lhs))
+			{
+				CRY_ASSERT_MESSAGE(stl::holds_alternative<T>(rhs), "Both variants need to contain the same type!");
+				std::swap(stl::get<T>(lhs), stl::get<T>(rhs));
+			}
+			else
+			{
+				variant_helper<Types...>::swap_value(lhs, rhs);
+			}
+		}
+	}
 };
 
 template<class... TArgs>
@@ -335,4 +370,5 @@ struct CryVariant<TArgs...>::variant_helper
 	static void copy_value(const CryVariant<TArgs...>& from, CryVariant<TArgs...>& to)         { destroy_value(to); }
 	static void destroy_value(CryVariant<TArgs...>&)                                           {}
 	static void move_value(CryVariant<TArgs...>&&, CryVariant<TArgs...>&)                      {}
+	static void swap_value(CryVariant<TArgs...>&, CryVariant<TArgs...>&)                       {}
 };

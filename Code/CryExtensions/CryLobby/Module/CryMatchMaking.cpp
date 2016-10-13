@@ -129,6 +129,10 @@ CCryMatchMaking::CCryMatchMaking(CCryLobby* lobby, CCryLobbyService* service, EC
 	m_hostMigrationStateCheckSession = CryLobbyInvalidSessionHandle;
 		#endif
 	#endif
+
+	#if MATCHMAKING_USES_DEDICATED_SERVER_ARBITRATOR
+	m_arbitratorAddr = SNullAddr();
+	#endif
 }
 
 	#define GAME_SESSION_HANDLE_BASE         0x80000000   // Make sure the top bit of a CrySessionHandle is always set so if a CrySessionHandle gets promoted to a CryLobbySessionHandle it will generate a runtime error.
