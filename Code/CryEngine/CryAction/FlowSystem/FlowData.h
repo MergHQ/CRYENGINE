@@ -126,14 +126,15 @@ public:
 
 	EntityId     GetEntityId()
 	{
-		EntityId id = 0;
 		if (m_hasEntity)
 		{
-			EntityId* pTemp = m_pInputData[0].GetPtr<EntityId>();
-			if (pTemp)
-				id = *pTemp;
+			EntityId id = INVALID_ENTITYID;
+			if (m_pInputData[0].GetValueWithConversion(id))
+			{
+				return id;
+			}
 		}
-		return id;
+		return INVALID_ENTITYID;
 	}
 
 	void CompleteActivationInfo(IFlowNode::SActivationInfo*);
