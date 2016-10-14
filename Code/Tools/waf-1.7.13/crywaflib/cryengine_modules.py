@@ -575,13 +575,45 @@ def LoadAdditionalFileSettings(ctx, kw):
 			# All fine, add file name to dictonary
 			kw['file_specifc_settings'][file_abspath] = setting
 			setting['source'] = []
+			
+def ApplyMonolithicBuildSettings(ctx, kw):	
 
+	# Add collected settings to link task	
+	kw['use']  += ctx.monolitic_build_settings['use']
+	kw['use_module']  += ctx.monolitic_build_settings['use_module']	
+	kw['lib']  += ctx.monolitic_build_settings['lib']
+	kw['libpath']    += ctx.monolitic_build_settings['libpath']
+	kw['linkflags']  += ctx.monolitic_build_settings['linkflags']
+	
+	# Add game specific files
+	prefix = kw['project_name'] + '_'
+	kw['use']  += ctx.monolitic_build_settings[prefix + 'use']
+	kw['use_module'] += ctx.monolitic_build_settings[prefix + 'use_module']
+	kw['lib']  += ctx.monolitic_build_settings[prefix + 'lib']
+	kw['libpath']    += ctx.monolitic_build_settings[prefix + 'libpath']
+	kw['linkflags']  += ctx.monolitic_build_settings[prefix + 'linkflags']
+	
+	kw['use']  = _preserved_order_remove_duplicates(kw['use'])
+	kw['use_module'] = _preserved_order_remove_duplicates(kw['use_module'])
+	kw['lib']  = _preserved_order_remove_duplicates(kw['lib'])
+	kw['libpath']   = _preserved_order_remove_duplicates(kw['libpath'])
+	kw['linkflags'] = _preserved_order_remove_duplicates(kw['linkflags'])
+	
 @conf
 def PostprocessBuildModules(ctx, *k, **kw):
 	if hasattr(ctx, '_processed_modules'):
 		return
 	ctx._processed_modules = True
 	platform = ctx.env['PLATFORM']
+	
+	if not ctx.env['PLATFORM'] == 'project_generator' and not ctx.cmd == 'generate_uber_files' and not ctx.cmd == 'configure':	
+		for (target_module, kw_target_module) in target_modules.items():
+			if not BuildTaskGenerator(ctx, kw_target_module):
+				continue
+			# Configure the modules users for static libraries
+			if _is_monolithic_build(ctx, kw_target_module['target']) and kw_target_module.get('is_monolithic_host', None):
+				ApplyMonolithicBuildSettings(ctx, kw_target_module)
+				ConfigureModuleUsers(ctx,kw_target_module)
 
 	for (target_module, kw_target_module) in target_modules.items():
 		target = kw_target_module['target']
@@ -638,7 +670,8 @@ def ConfigureTaskGenerator(ctx, kw):
 	LoadAdditionalFileSettings(ctx, kw)
 
 	# Configure the modules users for static libraries
-	ConfigureModuleUsers(ctx,kw)
+	if not _is_monolithic_build(ctx, target):
+		ConfigureModuleUsers(ctx,kw)
 	
 	# Configure modules that have a different module output_file_name than their target name
 	ConfigureOutputFileOverrideModules(ctx,kw)
@@ -681,10 +714,15 @@ def MonolithicBuildModule(ctx, *k, **kw):
 			ctx.monolitic_build_settings[key] = []
 		ctx.monolitic_build_settings[key] += values
 		
-	_append(prefix + 'use', 			[ kw['target'] ] )
-	_append(prefix + 'lib', 				kw['lib'] )
-	_append(prefix + 'libpath', 		kw['libpath'] )
-	_append(prefix + 'linkflags', 	kw['linkflags'] )
+	_append(prefix + 'use',         [ kw['target']] + kw['use'] )
+	_append(prefix + 'use_module',    kw['use_module']  )
+	_append(prefix + 'lib',           kw['lib'] )
+	_append(prefix + 'libpath',       kw['libpath'] )
+	_append(prefix + 'linkflags',     kw['linkflags'] )
+	
+	# Remove use and use_module as passed on to the monolithic parent_uber_file
+	kw['use'] = []
+	kw['use_module'] = []	
 
 	# Adjust own task gen settings
 	# When compiling as monolithic, set this define so modules are aware of this
@@ -796,7 +834,7 @@ def CryEngineModule(ctx, *k, **kw):
 	# Temp monolothinc build hack for android
 	if 'android' in ctx.env['PLATFORM']:
 		kw['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-		kw['features'] += [ 'apply_monolithic_build_settings' ]
+		kw['is_monolithic_host'] = True
 		active_project_name = ctx.spec_game_projects(ctx.game_project)
 		
 		if len (active_project_name) != 1:
@@ -863,7 +901,6 @@ def CryEngineStaticModule(ctx, *k, **kw):
 	
 ###############################################################################
 @feature('create_static_library')
-@before_method('apply_monolithic_build_settings')
 @before_method('process_source')
 def tg_create_static_library(self):
 	"""
@@ -892,7 +929,7 @@ def tg_create_static_library(self):
 		if depth > 100:
 			fatal('Circular dependency introduced, including at least module' + self.target)
 		if len(node_users) == 0:
-			if not node in out:
+			if not node in out and depth != 1: #depth == 1: Do not build a static library that is not referenced by anything
 				out += [ node ]
 		else:
 			for user in node_users:
@@ -1085,7 +1122,7 @@ def CryLauncher(ctx, *k, **kw):
 		
 		if _is_monolithic_build(ctx, kw_per_launcher['target']):	
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
+			kw_per_launcher['is_monolithic_host'] = True
 		
 		ctx.program(*k, **kw_per_launcher)
 		counter += 1
@@ -1158,7 +1195,7 @@ def CryDedicatedServer(ctx, *k, **kw):
 		
 		if _is_monolithic_build(ctx, kw_per_launcher['target']):
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
+			kw_per_launcher['is_monolithic_host'] = True
 
 		ctx.program(*k, **kw_per_launcher)
 		counter += 1
@@ -1622,9 +1659,9 @@ def ApplySpecSpecificSettings(ctx, kw, platform, configuration, spec):
 
 ###############################################################################		
 def _is_monolithic_build(ctx, target):
-	if ctx.env['PLATFORM'] == 'project_generator':
+	if ctx.env['PLATFORM'] == 'project_generator' or ctx.cmd == 'generate_uber_files' or ctx.cmd == 'configure':
 		return False
-
+		
 	spec = ctx.options.project_spec
 	platform = ctx.env['PLATFORM']
 	configuration = ctx.GetConfiguration(target)		
@@ -1637,27 +1674,6 @@ def _is_monolithic_build(ctx, target):
 		return True
 		
 	return False
-
-@feature('apply_monolithic_build_settings')
-@before_method('process_source')
-def apply_monolithic_build_settings(self):
-	# Add collected settings to link task	
-	self.use  += self.bld.monolitic_build_settings['use']
-	self.lib  += self.bld.monolitic_build_settings['lib']
-	self.libpath    += self.bld.monolitic_build_settings['libpath']
-	self.linkflags  += self.bld.monolitic_build_settings['linkflags']
-	
-	# Add game specific files
-	prefix = self.project_name + '_'
-	self.use  += self.bld.monolitic_build_settings[prefix + 'use']
-	self.lib  += self.bld.monolitic_build_settings[prefix + 'lib']
-	self.libpath    += self.bld.monolitic_build_settings[prefix + 'libpath']
-	self.linkflags  += self.bld.monolitic_build_settings[prefix + 'linkflags']
-	
-	self.use  = _preserved_order_remove_duplicates(self.use)
-	self.lib  = _preserved_order_remove_duplicates(self.lib)
-	self.libpath   = _preserved_order_remove_duplicates(self.libpath)
-	self.linkflags = _preserved_order_remove_duplicates(self.linkflags)
 
 @feature('copy_bin_output_to_all_platform_output_folders')
 @after_method('set_pdb_flags')
