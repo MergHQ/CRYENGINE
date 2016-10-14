@@ -72,6 +72,7 @@ struct SFlowSystemConversion
 		return true;
 	}
 };
+
 namespace detail
 {
 	template<class To, size_t I = 0>
@@ -111,6 +112,23 @@ namespace detail
 		return true;
 	}
 
+	template<size_t I = 0>
+	ILINE bool ConvertVariant(const TFlowInputDataVariant& from, TFlowInputDataVariant& to)
+	{
+		if (from.index() == I)
+		{
+			typename stl::variant_alternative<I, TFlowInputDataVariant>::type temp;
+			if (!ConvertVariant(from, temp))
+				return false;
+			to = temp;
+			return true;
+		}
+		else
+		{
+			return ConvertVariant<TFlowInputDataVariant, I + 1>(from, to);
+		}
+	}
+
 #define FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(T) \
 template<> \
 ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant&, T&) \
@@ -125,7 +143,49 @@ ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(co
 	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(Vec3);
 	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(string);
 	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(bool);
+	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(TFlowInputDataVariant);
 #undef FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION
+
+	template<class From, size_t I = 0>
+	ILINE bool ConvertToVariant(const From& from, TFlowInputDataVariant& to)
+	{
+		if (to.index() == I)
+		{
+			typedef typename stl::variant_alternative<I, TFlowInputDataVariant>::type TypeInVariant;
+			if (std::is_same<TypeInVariant, From>::value)
+			{
+				to = from;
+			}
+			else
+			{
+				TypeInVariant temp;
+				if (!SFlowSystemConversion<From, TypeInVariant>::ConvertValue(from, temp))
+					return false;
+				to = temp;
+			}
+			return true;
+		}
+		else
+		{
+			return ConvertToVariant<From, I + 1>(from, to);
+		}
+	}
+#define FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(T) \
+template<> \
+ILINE bool ConvertToVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const T&, TFlowInputDataVariant&) \
+{ \
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	return false; \
+}
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(SFlowSystemVoid);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(int);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(float);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(EntityId);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(Vec3);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(string);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(bool);
+	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(TFlowInputDataVariant);
+#undef FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION
 }
 template<class To>
 struct SFlowSystemConversion<TFlowInputDataVariant, To>
@@ -153,6 +213,14 @@ struct SFlowSystemConversion<TFlowInputDataVariant, Vec3>
 		return detail::ConvertVariant(from, to);
 	}
 };
+template<>
+struct SFlowSystemConversion<TFlowInputDataVariant, TFlowInputDataVariant>
+{
+	static ILINE bool ConvertValue(const TFlowInputDataVariant& from, TFlowInputDataVariant& to)
+	{
+		return detail::ConvertVariant(from, to);
+	}
+};
 
 #define FLOWSYSTEM_NO_CONVERSION(T)                                                   \
   template<> struct SFlowSystemConversion<T, T> {                                     \
@@ -165,7 +233,6 @@ FLOWSYSTEM_NO_CONVERSION(EntityId);
 FLOWSYSTEM_NO_CONVERSION(Vec3);
 FLOWSYSTEM_NO_CONVERSION(string);
 FLOWSYSTEM_NO_CONVERSION(bool);
-FLOWSYSTEM_NO_CONVERSION(TFlowInputDataVariant);
 #undef FLOWSYSTEM_NO_CONVERSION
 
 //! Specialization for converting to bool to avoid compiler warnings.
@@ -334,6 +401,32 @@ struct SFlowSystemConversion<Vec3, bool>
 	{
 		to = from.GetLengthSquared() > 0;
 		return true;
+	}
+};
+
+//! Conversions to variant
+template<class From>
+struct SFlowSystemConversion<From, TFlowInputDataVariant>
+{
+	static ILINE bool ConvertValue(const From& from, TFlowInputDataVariant& to)
+	{
+		return detail::ConvertToVariant(from, to);
+	}
+};
+template<>
+struct SFlowSystemConversion<SFlowSystemVoid, TFlowInputDataVariant>
+{
+	static ILINE bool ConvertValue(const SFlowSystemVoid& from, TFlowInputDataVariant& to)
+	{
+		return detail::ConvertToVariant(from, to);
+	}
+};
+template<>
+struct SFlowSystemConversion<Vec3, TFlowInputDataVariant>
+{
+	static ILINE bool ConvertValue(const Vec3& from, TFlowInputDataVariant& to)
+	{
+		return detail::ConvertToVariant(from, to);
 	}
 };
 
