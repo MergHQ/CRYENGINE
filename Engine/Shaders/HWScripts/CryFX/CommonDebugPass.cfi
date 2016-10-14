@@ -65,7 +65,7 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   int3 vPixCoord = int3(IN.HPosition.xy, 0);
   float sceneDepth = SceneDepthTex.Load(vPixCoord);
 
-  if (fragmentDepth < 0.99 * sceneDepth)
+  if (fragmentDepth < 0.999 * sceneDepth)
   {
     // set the fragment as occluded in regular scene
     selectionID |= HIDDEN_FLAG;
