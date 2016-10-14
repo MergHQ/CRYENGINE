@@ -33,9 +33,6 @@ CryCriticalSection CGraphicsDeviceConstantBuffer::s_accessLock;
 	#define DEVBUFFERMAN_ASSERT(x) (void)0
 #endif
 
-// VERIFY
-#define DEVBUFFERMAN_VERIFY(x) assert(x)
-
 #ifdef TRACK_DEVBUFFER_WITH_MEMREPLAY
 	#define DB_MEMREPLAY_SCOPE(a, b)               MEMREPLAY_SCOPE(a, b)
 	#define DB_MEMREPLAY_SCOPE_ALLOC(a, b, c)      MEMREPLAY_SCOPE_ALLOC(a, b, c)
@@ -670,7 +667,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::READ] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::READ] == 0);
 
 		D3D11_BOX contents;
 		contents.left = offset;
@@ -782,7 +779,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::READ] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::READ] == 0);
 
 		D3D11_BOX contents;
 		contents.left = offset;
@@ -998,7 +995,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size && offset);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::READ] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::READ] == 0);
 
 		D3D11_BOX contents;
 		contents.left = offset;
@@ -1040,7 +1037,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::WRITE] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::WRITE] == 0);
 
 		m_resources.m_staged_open[SStagingResources::WRITE] = 1;
 
@@ -1101,7 +1098,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size && offset);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::READ] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::READ] == 0);
 
 		D3D11_BOX contents;
 		contents.left = offset;
@@ -1141,7 +1138,7 @@ error:
 		MEMORY_SCOPE_CHECK_HEAP();
 		DEVBUFFERMAN_ASSERT(buffer && size);
 		DEVBUFFERMAN_ASSERT(size <= s_PoolConfig.m_pool_bank_size);
-		DEVBUFFERMAN_VERIFY(m_resources.m_staged_open[SStagingResources::WRITE] == 0);
+		DEVBUFFERMAN_ASSERT(m_resources.m_staged_open[SStagingResources::WRITE] == 0);
 
 		CDeviceManager::UploadContents<false>(m_resources.m_staging_buffers[SStagingResources::WRITE], 0, 0, size, D3D11_MAP_WRITE, src);
 
@@ -1415,7 +1412,7 @@ struct CDynamicDefragAllocator
 		, m_item_table(table)
 	{}
 
-	~CDynamicDefragAllocator() { DEVBUFFERMAN_VERIFY(m_defrag_allocator == NULL); }
+	~CDynamicDefragAllocator() { DEVBUFFERMAN_ASSERT(m_defrag_allocator == NULL); }
 
 	bool Initialize(IDefragAllocatorPolicy* policy, bool bestFit)
 	{
@@ -1449,7 +1446,7 @@ struct CDynamicDefragAllocator
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
 		MEMORY_SCOPE_CHECK_HEAP();
-		DEVBUFFERMAN_VERIFY(size);
+		DEVBUFFERMAN_ASSERT(size);
 		IDefragAllocator::Hdl hdl = m_defrag_allocator->Allocate(size, NULL);
 		if (hdl == IDefragAllocator::InvalidHdl)
 			return ~0u;
@@ -1483,7 +1480,8 @@ struct CDynamicDefragAllocator
 
 	void PinItem(SBufferPoolItem* item)
 	{
-		DEVBUFFERMAN_VERIFY((m_defrag_allocator->Pin(item->m_defrag_handle) & s_PoolConfig.m_pool_bank_mask) == item->m_offset);
+		UINT_PTR temp = m_defrag_allocator->Pin(item->m_defrag_handle) & s_PoolConfig.m_pool_bank_mask;
+		DEVBUFFERMAN_ASSERT(temp == item->m_offset);
 	}
 	void UnpinItem(SBufferPoolItem* item)
 	{
@@ -1522,7 +1520,7 @@ struct CPartitionAllocator
 	}
 	~CPartitionAllocator()
 	{
-		DEVBUFFERMAN_VERIFY(m_partition == 0);
+		DEVBUFFERMAN_ASSERT(m_partition == 0);
 		UnsetStreamSources(m_buffer);
 		SAFE_RELEASE(m_buffer);
 	}
@@ -2407,7 +2405,7 @@ retry:
 	{
 		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
 
-		DEVBUFFERMAN_VERIFY(item->m_used);
+		DEVBUFFERMAN_ASSERT(item->m_used);
 		IF (item->m_bank != ~0u, 1)
 			m_allocator.PinItem(item);
 #if !BUFFER_USE_STAGED_UPDATES
