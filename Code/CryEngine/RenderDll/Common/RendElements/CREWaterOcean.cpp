@@ -197,18 +197,6 @@ void CREWaterOcean::mfGetPlane(Plane& pl)
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CREWaterOcean::mfPrepare(bool bCheckOverflow)
-{
-	if (bCheckOverflow)
-		gRenDev->FX_CheckOverflow(0, 0, this);
-	gRenDev->m_RP.m_pRE = this;
-	gRenDev->m_RP.m_RendNumIndices = 0;
-	gRenDev->m_RP.m_RendNumVerts = 0;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Vec4* CREWaterOcean::GetDisplaceGrid() const
 {
 	//assert( m_pWaterSim );
@@ -352,110 +340,6 @@ void CREWaterOcean::ReleaseOcean()
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool CREWaterOcean::mfDraw(CShader* ef, SShaderPass* sfm)
-{
-	if (!m_nVerticesCount
-	    || !m_nIndicesCount
-	    || m_vertexBufferHandle == water::invalidBufferHandle
-	    || m_indexBufferHandle == water::invalidBufferHandle)
-	{
-		return false;
-	}
-
-	CD3D9Renderer* rd(gcpRendD3D);
-	SRenderPipeline& RESTRICT_REFERENCE rp = rd->m_RP;
-
-	if (m_oceanParam[rp.m_nProcessThreadID].bWaterOceanFFT)
-	{
-		FrameUpdate();
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-
-	uint64 nFlagsShaderRTprev = rd->m_RP.m_FlagsShader_RT;
-	uint32 nFlagsPF2prev = rd->m_RP.m_PersFlags2;
-
-	//  rd->m_RP.m_PersFlags2 &= ~(RBPF2_COMMIT_PF|RBPF2_COMMIT_CM);
-
-	// render
-	uint32 nPasses(0);
-
-	// set streams
-	HRESULT hr(S_OK);
-
-	STexStageInfo pPrevTexState0 = CTexture::s_TexStages[0];
-	STexStageInfo pPrevTexState1 = CTexture::s_TexStages[1];
-
-	STexState pState(FILTER_BILINEAR, false);
-	const int texStateID(CTexture::GetTexState(pState));
-
-	N3DEngineCommon::SOceanInfo& OceanInfo = gRenDev->m_p3DEngineCommon.m_OceanInfo;
-	Vec4& pParams = OceanInfo.m_vMeshParams;
-
-	uint32 nPrevStateOr = rd->m_RP.m_StateOr;
-	uint32 nPrevStateAnd = rd->m_RP.m_StateAnd;
-
-	ef->FXSetTechnique("Water");
-	ef->FXBegin(&nPasses, 0);
-
-	if (0 == nPasses)
-		return false;
-
-	if (gRenDev->GetRCamera().vOrigin.z > OceanInfo.m_fWaterLevel)
-	{
-		rd->m_RP.m_StateAnd |= GS_DEPTHFUNC_MASK;
-		rd->m_RP.m_StateOr |= GS_DEPTHWRITE | GS_DEPTHFUNC_LEQUAL;
-	}
-
-	ef->FXBeginPass(0);
-
-	hr = rd->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F);
-	if (!FAILED(hr))
-	{
-		// commit all render changes
-		rd->FX_Commit();
-
-		size_t vbOffset = 0;
-		size_t ibOffset = 0;
-		auto* pVB = rd->m_DevBufMan.GetD3DVB(m_vertexBufferHandle, &vbOffset);
-		auto* pIB = rd->m_DevBufMan.GetD3DIB(m_indexBufferHandle, &ibOffset);
-		if (!pVB || !pIB)
-		{
-			return false;
-		}
-
-		rd->FX_SetVStream(0, pVB, vbOffset, sizeof(SVF_P3F_C4B_T2F));
-		rd->FX_SetIStream(pIB, 0, (m_nIndexSizeof == 2 ? Index16 : Index32));
-
-		ERenderPrimitiveType eType = rd->m_bUseWaterTessHW ? eptTriangleList : eptTriangleStrip;
-#ifdef WATER_TESSELLATION_RENDERER
-		if (CHWShader_D3D::s_pCurInstHS)
-			eType = ept3ControlPointPatchList;
-#endif
-		rd->FX_DrawIndexedPrimitive(eType, 0, 0, m_nVerticesCount, 0, m_nIndicesCount);
-	}
-
-	ef->FXEndPass();
-	ef->FXEnd();
-
-	rd->m_RP.m_StateOr = nPrevStateOr;
-	rd->m_RP.m_StateAnd = nPrevStateAnd;
-
-	CTexture::s_TexStages[0] = pPrevTexState0;
-	CTexture::s_TexStages[1] = pPrevTexState1;
-
-	gcpRendD3D->FX_ResetPipe();
-
-	rd->m_RP.m_FlagsShader_RT = nFlagsShaderRTprev;
-	rd->m_RP.m_PersFlags2 = nFlagsPF2prev;
-
-	return true;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -539,7 +423,7 @@ bool CREWaterOcean::Compile(CRenderObject* pObj)
 
 	pObj->m_ObjFlags |= cro.m_bHasTessellation ? FOB_ALLOW_TESSELLATION : 0;
 
-	// TODO: remove this if old graphics pipeline is removed.
+	// TODO: remove this if old graphics pipeline and material preview is removed.
 	// NOTE: this is to use a typed constant buffer instead of per batch constant buffer.
 	psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_COMPUTE_SKINNING];
 

@@ -19,7 +19,6 @@
 #include "D3DStereo.h"
 #include "D3DPostProcess.h"
 #include "StatoscopeRenderStats.h"
-#include "D3DVolumetricClouds.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 
 #include <CryMovie/AnimKey.h>
@@ -389,7 +388,6 @@ void CD3D9Renderer::InitRenderer()
 	m_pStereoRenderer = new CD3DStereoRenderer(*this, (EStereoDevice)CRenderer::CV_r_StereoDevice);
 	m_pGraphicsPipeline = new CStandardGraphicsPipeline();
 	m_pTiledShading = new CTiledShading();
-	m_pVolumetricCloudMan = new CVolumetricCloudManager();
 
 	m_pPipelineProfiler = NULL;
 #ifdef USE_PIX_DURANGO

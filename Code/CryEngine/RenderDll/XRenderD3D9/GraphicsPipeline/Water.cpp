@@ -317,22 +317,8 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	// process water ripples
 	if (!bEmpty && bWaterRipple && pWaterRipplesStage)
 	{
-		if (pWaterRipplesStage)
-		{
-			gRenDev->FX_PushVP();
-
-			if (pWaterRipplesStage->IsVisible(pRenderView))
-			{
-				// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-				// TODO: remove this dependency.
-				rd->m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-			}
-
-			pWaterRipplesStage->Prepare(pRenderView);
-			pWaterRipplesStage->Execute(pRenderView);
-
-			gRenDev->FX_PopVP();
-		}
+		pWaterRipplesStage->Prepare(pRenderView);
+		pWaterRipplesStage->Execute(pRenderView);
 	}
 
 	// Check if there are any water volumes that have caustics enabled
@@ -718,7 +704,7 @@ void CWaterStage::Execute()
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	// TODO: these should be kept in new graphics pipeline.
+	// TODO: these should be kept in new graphics pipeline when main viewport is rendered.
 	CRY_ASSERT(!(rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_MAKESPRITE));
 	CRY_ASSERT(rd->m_RP.m_nRendFlags & (SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS));
 
@@ -753,9 +739,6 @@ void CWaterStage::Execute()
 	// render water fog volumes after water.
 	PreparePerPassResources(nullptr, false, ePass_FogVolume);
 	ExecuteSceneRenderPass(pRenderView, m_passWaterFogVolumeAfterWater, EFSLIST_WATER_VOLUMES);
-
-	// TODO: remove this dependency.
-	rd->m_RP.m_PersFlags2 &= ~(RBPF2_WATERRIPPLES | RBPF2_RAINRIPPLES);
 }
 
 bool CWaterStage::CreatePipelineStates(uint32 passMask, DevicePipelineStatesArray& stateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
@@ -825,7 +808,7 @@ bool CWaterStage::CreatePipelineState(
 		modifier(psoDesc);
 	}
 
-	uint32 nPersFlags2 = 0;
+	bool bWaterRipples = false;
 
 	switch (passID)
 	{
@@ -833,7 +816,7 @@ bool CWaterStage::CreatePipelineState(
 		{
 			m_passWaterReflectionGen.ExtractRenderTargetFormats(psoDesc);
 
-			nPersFlags2 = RBPF2_WATERRIPPLES;
+			bWaterRipples = true;
 		}
 		break;
 	case CWaterStage::ePass_FogVolume:
@@ -845,14 +828,14 @@ bool CWaterStage::CreatePipelineState(
 		{
 			m_passWaterSurface.ExtractRenderTargetFormats(psoDesc);
 
-			nPersFlags2 = RBPF2_WATERRIPPLES;
+			bWaterRipples = true;
 		}
 		break;
 	case CWaterStage::ePass_CausticsGen:
 		{
 			m_passWaterCausticsSrcGen.ExtractRenderTargetFormats(psoDesc);
 
-			nPersFlags2 = RBPF2_WATERRIPPLES;
+			bWaterRipples = true;
 		}
 		break;
 	default:
@@ -862,7 +845,7 @@ bool CWaterStage::CreatePipelineState(
 
 	// always adds the shader runtime mask for water ripples to avoid shader permutations.
 	// TODO: move shader runtime masks to shader constants to avoid shader permutations after removing old graphics pipeline.
-	psoDesc.m_ShaderFlags_RT |= (nPersFlags2 & RBPF2_WATERRIPPLES) ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
+	psoDesc.m_ShaderFlags_RT |= bWaterRipples ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
 
 	const bool bReverseDepth = (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 	if (bReverseDepth)
@@ -991,10 +974,10 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 		{
 			CShadowUtils::GetShadowCascades(cascades, RenderView());
 		}
-		m_pPerPassResources->SetTexture(ePerPassTexture_ShadoeMap0, cascades.pShadowMap[0], SResourceView::DefaultView, EShaderStage_Pixel);
-		m_pPerPassResources->SetTexture(ePerPassTexture_ShadoeMap1, cascades.pShadowMap[1], SResourceView::DefaultView, EShaderStage_Pixel);
-		m_pPerPassResources->SetTexture(ePerPassTexture_ShadoeMap2, cascades.pShadowMap[2], SResourceView::DefaultView, EShaderStage_Pixel);
-		m_pPerPassResources->SetTexture(ePerPassTexture_ShadoeMap3, cascades.pShadowMap[3], SResourceView::DefaultView, EShaderStage_Pixel);
+		m_pPerPassResources->SetTexture(ePerPassTexture_ShadowMap0, cascades.pShadowMap[0], SResourceView::DefaultView, EShaderStage_Pixel);
+		m_pPerPassResources->SetTexture(ePerPassTexture_ShadowMap1, cascades.pShadowMap[1], SResourceView::DefaultView, EShaderStage_Pixel);
+		m_pPerPassResources->SetTexture(ePerPassTexture_ShadowMap2, cascades.pShadowMap[2], SResourceView::DefaultView, EShaderStage_Pixel);
+		m_pPerPassResources->SetTexture(ePerPassTexture_ShadowMap3, cascades.pShadowMap[3], SResourceView::DefaultView, EShaderStage_Pixel);
 
 		// volumetric fog shadow
 		m_pPerPassResources->SetTexture(ePerPassTexture_VolFogShadow, pVolFogShadowTex, SResourceView::DefaultView, EShaderStage_Pixel);

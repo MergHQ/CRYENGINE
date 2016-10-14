@@ -46,10 +46,10 @@ public:
 		ePerPassTexture_Foam                  = 17,
 		ePerPassTexture_RainRipple            = 18,
 
-		ePerPassTexture_ShadoeMap0            = 19,
-		ePerPassTexture_ShadoeMap1            = 20,
-		ePerPassTexture_ShadoeMap2            = 21,
-		ePerPassTexture_ShadoeMap3            = 22,
+		ePerPassTexture_ShadowMap0            = 19,
+		ePerPassTexture_ShadowMap1            = 20,
+		ePerPassTexture_ShadowMap2            = 21,
+		ePerPassTexture_ShadowMap3            = 22,
 
 		ePerPassTexture_VolFogShadow          = 23,
 		ePerPassTexture_VolumetricFog         = 24,

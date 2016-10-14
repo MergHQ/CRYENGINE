@@ -11,7 +11,6 @@
 #include "D3DTiledShading.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
-#include "D3DVolumetricFog.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
@@ -734,11 +733,6 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 
 	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, tileLightsCullUploadSize);
 	m_LightShadeInfoBuf.UpdateBufferContent(tileLightsShade, tileLightsShadeUploadSize);
-
-	if (rd->m_nGraphicsPipeline == 0)
-	{
-		rd->GetVolumetricFog().PrepareLightList(pRenderView, lightLists[0], lightLists[1], lightLists[2], firstShadowLight, curShadowPoolLight);
-	}
 }
 
 void CTiledShading::PrepareShadowCastersList(CRenderView* pRenderView)

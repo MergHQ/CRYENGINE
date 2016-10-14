@@ -462,7 +462,7 @@ enum EBatchFlags
 
 // m_RP.m_PersFlags2
 #define RBPF2_NOSHADERFOG                         (1 << 0)
-#define RBPF2_RAINRIPPLES                         (1 << 1)
+// unused                                         (1 << 1)
 #define RBPF2_NOALPHABLEND                        (1 << 2)
 #define RBPF2_SINGLE_FORWARD_LIGHT_PASS           (1 << 3)
 #define RBPF2_MSAA_RESTORE_SAMPLE_MASK            (1 << 4)
@@ -484,7 +484,7 @@ enum EBatchFlags
 
 #define RBPF2_THERMAL_RENDERMODE_TRANSPARENT_PASS (1 << 17)
 #define RBPF2_NOALPHATEST                         (1 << 18)
-#define RBPF2_WATERRIPPLES                        (1 << 19)
+// unused                                         (1 << 19)
 #define RBPF2_ALLOW_DEFERREDSHADING               (1 << 20)
 
 #define RBPF2_COMMIT_PF                           (1 << 21)

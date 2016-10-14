@@ -49,17 +49,8 @@
 			"D3DTexturesStreaming.cpp",
 			"D3DTextureStreamPool.cpp",
 			"D3DTiledShading.cpp",
-			"D3DVolumetricFog.cpp",
-			"D3DVolumetricClouds.cpp",
 			"CompiledRenderObject.cpp"
 		],
-		
-		"Header Files":
-		[
-			"D3DVolumetricFog.h",
-			"D3DVolumetricClouds.h"
-		],
-				
 		"Source Files/Benchmark Customization": [
 			"BenchmarkCustom/BenchmarkRendererSensor.h",
 			"BenchmarkCustom/BenchmarkRendererSensor.cpp"

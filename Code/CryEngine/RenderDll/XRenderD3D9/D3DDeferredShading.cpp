@@ -362,7 +362,6 @@ void CDeferredShading::ResetLights()
 void CDeferredShading::ReleaseData()
 {
 	gcpRendD3D->GetTiledShading().Clear();
-	gcpRendD3D->GetVolumetricFog().ClearAll();
 
 	for (uint32 iThread = 0; iThread < 2; ++iThread)
 	{
@@ -1435,9 +1434,6 @@ void CDeferredShading::PrepareClipVolumeData(bool& bOutdoorVisible)
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const bool bMSAA = rd->m_RP.m_MSAAData.Type ? true : false;
 	const int nClipVolumeReservedStencilBit = BIT_STENCIL_INSIDE_CLIPVOLUME;
-
-	if (rd->m_bVolumetricFogEnabled && rd->m_nGraphicsPipeline == 0)
-		rd->GetVolumetricFog().ClearVolumeStencil();
 
 	// fetch clip volume shader data from clip volume stage
 	const Vec4* pVolumeParams; uint32 numVolumes;
@@ -3271,9 +3267,6 @@ void CDeferredShading::CreateDeferredMaps()
 
 	gcpRendD3D->GetTiledShading().CreateResources();
 
-	if ((CRenderer::CV_r_GraphicsPipeline == 0) && (gcpRendD3D->m_nGraphicsPipeline == 0))
-		gcpRendD3D->GetVolumetricFog().CreateResources();
-
 	// shadow mask
 	{
 		if (CTexture::s_ptexShadowMask)
@@ -3546,11 +3539,7 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	}
 #endif
 
-	if (rd->m_nGraphicsPipeline == 0)
-	{
-		rd->FX_WaterVolumesCaustics(pRenderView);
-	}
-	else
+	if (rd->m_nGraphicsPipeline > 0)
 	{
 		auto* pWaterStage = rd->GetGraphicsPipeline().GetWaterStage();
 		if (pWaterStage && !bTiledDeferredShading)

@@ -14,8 +14,6 @@ public:
 	CREWaterVolume();
 	virtual ~CREWaterVolume();
 
-	virtual void mfPrepare(bool bCheckOverflow) override;
-	virtual bool mfDraw(CShader* ef, SShaderPass* sfm) override;
 	virtual void mfGetPlane(Plane& pl) override;
 	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj) override;
 

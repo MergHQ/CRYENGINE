@@ -13,14 +13,6 @@
 #include "PostEffects.h"
 #include "PostProcessUtils.h"
 
-std::vector<CWaterRipples::SWaterHit> CWaterRipples::s_pWaterHitsMGPU;
-Vec3 CWaterRipples::s_CameraPos = Vec3(ZERO);
-Vec2 CWaterRipples::s_SimOrigin = Vec2(ZERO);
-int CWaterRipples::s_nUpdateMask;
-Vec4 CWaterRipples::s_vParams = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-Vec4 CWaterRipples::s_vLookupParams = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-bool CWaterRipples::s_bInitializeSim;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Engine specific post-effects
 ////////////////////////////////////////////////////////////////////////////////////////////////////

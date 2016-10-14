@@ -51,7 +51,6 @@ struct SGraphicsPipelinePassContext;
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "D3DDeferredShading.h"
 #include "D3DTiledShading.h"
-#include "D3DVolumetricFog.h"
 #include "PipelineProfiler.h"
 #include "D3DDebug.h"
 #include "DeviceInfo.h"
@@ -888,7 +887,6 @@ public:
   void FX_DrawShader_General(CShader *ef, SShaderTechnique *pTech);
 	void FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations = false);
 	void FX_SetupShadowsForTransp();
-	void FX_SetupShadowsForFog();
 	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRendElementBase* pRE);
 
   // hdr src texture is optional, if not specified uses default hdr destination target
@@ -941,13 +939,9 @@ public:
 	void FX_HDRRangeAdaptUpdate();
 
   void FX_RenderForwardOpaque(void (*RenderFunc)(), const bool bLighting, const bool bAllowDeferred);
-	void FX_RenderWater(void (*RenderFunc)());
-  void FX_RenderFog();
 
   bool FX_ZScene(bool bEnable, bool bUseHDR, bool bClearZBuffer, bool bRenderNormalsOnly = false, bool bZPrePass = false);  
   bool FX_FogScene();
-	bool FX_DeferredCaustics();
-	bool FX_DeferredWaterVolumeCaustics(const N3DEngineCommon::SCausticInfo & causticInfo);
 	bool FX_DeferredRainOcclusionMap(const N3DEngineCommon::ArrOccluders & arrOccluders, const SRainParams & rainVolParams);
 	bool FX_DeferredRainOcclusion();
 	bool FX_DeferredRainPreprocess();
@@ -1182,7 +1176,6 @@ public:
 	void FX_ProcessSkinRenderLists(int nList, void (*RenderFunc)(), bool bLighting);
 	void FX_ProcessEyeOverlayRenderLists(int nList, void (*RenderFunc)(), bool bLightin);
 	void FX_ProcessHalfResParticlesRenderList(CRenderView* pRenderView, int nList, void (* RenderFunc)(), bool bLighting);
-	void FX_WaterVolumesPreprocess();
   void FX_ProcessPostRenderLists(uint32 nBatchFilter);
 
   void FX_ProcessRenderList(int nList, uint32 nBatchFilter);
@@ -1191,9 +1184,6 @@ public:
 	void OldPipeline_ProcessRenderList(CRenderView::RenderItems& renderItems, int nums, int nume, int nList, void (* RenderFunc)(), bool bLighting, uint32 nBatchFilter = FB_GENERAL, uint32 nBatchExcludeFilter = 0);
 	void OldPipeline_ProcessBatchesList(CRenderView::RenderItems& renderItems, int nums, int nume, uint32 nBatchFilter, uint32 nBatchExcludeFilter = 0);
 	void FX_ProcessCharDeformation(CRenderView* pRenderView);
-
-	void FX_WaterVolumesCaustics(CRenderView* pRenderView);
-  void FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticInfo & causticInfo);
 
 	// This method takes CRenderView prepared by 3D engine after it fully finished,and send it to the Renderer for drawing.
 	void SubmitRenderViewForRendering(void (* RenderFunc)(), int nFlags, SViewport& VP, const SRenderingPassInfo& passInfo, bool bSync3DEngineJobs);
@@ -1232,10 +1222,6 @@ public:
 
 	CStandardGraphicsPipeline& GetGraphicsPipeline() { return *m_pGraphicsPipeline; }
 	CTiledShading &GetTiledShading() { return *m_pTiledShading; }
-
-	CVolumetricFog& GetVolumetricFog() { return m_volumetricFog; }
-
-	CVolumetricCloudManager& GetVolumetricCloud() { return *m_pVolumetricCloudMan; }
 
 	CD3DStereoRenderer& GetS3DRend() const { return *m_pStereoRenderer; }
 	virtual bool        IsStereoEnabled() const override;
@@ -1489,9 +1475,6 @@ private:
 	CStandardGraphicsPipeline* m_pGraphicsPipeline;
 	CTiledShading* m_pTiledShading;
 	CD3DStereoRenderer* m_pStereoRenderer;
-	CVolumetricFog m_volumetricFog;
-
-	CVolumetricCloudManager* m_pVolumetricCloudMan;
 
 	std::vector<_smart_ptr<D3DSurface> > m_pBackBuffers;
 	D3DSurface*  m_pBackBuffer;

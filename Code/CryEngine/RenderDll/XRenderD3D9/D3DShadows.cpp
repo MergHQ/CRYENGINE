@@ -741,15 +741,3 @@ void CD3D9Renderer::FX_SetupShadowsForTransp()
 	FX_SetupForwardShadows(m_RP.m_pCurrentRenderView, bLegacyShaderPermutations);
 }
 
-void CD3D9Renderer::FX_SetupShadowsForFog()
-{
-	PROFILE_FRAME(FX_SetupShadowsForFog);
-
-	m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_POINT_LIGHT] | g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE] | g_HWSR_MaskBit[HWSR_SHADOW_JITTERING] |
-	                           g_HWSR_MaskBit[HWSR_SHADOW_MIXED_MAP_G16R16]);
-
-	m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE] | g_HWSR_MaskBit[HWSR_PARTICLE_SHADOW];
-
-	FX_SetupForwardShadows(m_RP.m_pCurrentRenderView);
-}
-

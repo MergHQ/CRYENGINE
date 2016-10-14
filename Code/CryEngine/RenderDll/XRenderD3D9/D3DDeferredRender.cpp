@@ -4,7 +4,6 @@
 #include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
-#include "D3DVolumetricClouds.h"
 
 #include "Common/RenderView.h"
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"

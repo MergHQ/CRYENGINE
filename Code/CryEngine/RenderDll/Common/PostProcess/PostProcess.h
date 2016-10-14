@@ -21,7 +21,6 @@ enum EPostEffectID
 {
 	ePFX_Invalid     = -1,
 	ePFX_WaterVolume = 0,
-	ePFX_WaterRipples,
 
 	ePFX_SceneRain,
 

@@ -738,7 +738,7 @@ SVolumetricFogParams GetVolumetricFogParams()
 
 #if !%_RT_SAMPLE2
 	params.sunDir = vfSunDir.xyz;
-	params.densityClamp = vfSunDir.w;
+	params.padding0 = 0.0f;
 
 	params.nearDist = vfSamplingParams.x;
 	params.invFarMinusNearDist = vfSamplingParams.y;
@@ -758,10 +758,10 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.blendMode = vfScatteringBlendParams.y;
 
 	params.cDiffuse1 = vfScatteringColor.xyz;
-	params.padding0 = 0.0f;
+	params.padding1 = 0.0f;
 
 	params.cDiffuse2 = vfScatteringSecondaryColor.xyz;
-	params.padding1 = 0.0f;
+	params.padding2 = 0.0f;
 
 	params.anisotropy1.x = vfScatteringParams.z;
 	params.anisotropy1.y = vfScatteringParams.w;
@@ -792,7 +792,7 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.timeParams = vfTimeParams;
 #else
 	params.sunDir = vc.vfSunDir.xyz;
-	params.densityClamp = vc.vfSunDir.w;
+	params.padding0 = 0.0f;
 
 	params.nearDist = vc.vfSamplingParams.x;
 	params.invFarMinusNearDist = vc.vfSamplingParams.y;
@@ -812,10 +812,10 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.blendMode = vc.vfScatteringBlendParams.y;
 
 	params.cDiffuse1 = vc.vfScatteringColor.xyz;
-	params.padding0 = 0.0f;
+	params.padding1 = 0.0f;
 
 	params.cDiffuse2 = vc.vfScatteringSecondaryColor.xyz;
-	params.padding1 = 0.0f;
+	params.padding2 = 0.0f;
 
 	params.anisotropy1.x = vc.vfScatteringParams.z;
 	params.anisotropy1.y = vc.vfScatteringParams.w;

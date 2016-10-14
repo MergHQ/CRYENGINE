@@ -3539,10 +3539,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 						CRY_ASSERT(pStage);
 						param = pStage->GetGlobalEnvProbeShaderParam0();
 					}
-					else
-					{
-						param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam0();
-					}
 					sData[0].f[0] = param.x;
 					sData[0].f[1] = param.y;
 					sData[0].f[2] = param.z;
@@ -3558,10 +3554,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 						auto pStage = r->GetGraphicsPipeline().GetVolumetricFogStage();
 						CRY_ASSERT(pStage);
 						param = pStage->GetGlobalEnvProbeShaderParam1();
-					}
-					else
-					{
-						param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam1();
 					}
 					sData[0].f[0] = param.x;
 					sData[0].f[1] = param.y;
@@ -3939,16 +3931,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					sData[0].f[1] = param.y;
 					sData[0].f[2] = param.z;
 					sData[0].f[3] = param.w;
-				}
-				else if (CPostEffectsMgr* pPostEffectsMgr = PostEffectMgr())
-				{
-					if (CWaterRipples* pWaterRipplesTech = (CWaterRipples*)pPostEffectsMgr->GetEffect(ePFX_WaterRipples))
-					{
-						sData[0].f[0] = pWaterRipplesTech->GetLookupParams().x;
-						sData[0].f[1] = pWaterRipplesTech->GetLookupParams().y;
-						sData[0].f[2] = pWaterRipplesTech->GetLookupParams().z;
-						sData[0].f[3] = pWaterRipplesTech->GetLookupParams().w;
-					}
 				}
 				break;
 
@@ -4593,10 +4575,6 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 					CRY_ASSERT(pStage);
 					pTex = pStage->GetGlobalEnvProbeTex0();
 				}
-				else
-				{
-					pTex = rd->GetVolumetricFog().GetGlobalEnvProbeTex0();
-				}
 				pTex = (pTex != nullptr) ? pTex : CTexture::s_ptexBlackCM;
 				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
@@ -4609,10 +4587,6 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 					auto pStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
 					CRY_ASSERT(pStage);
 					pTex = pStage->GetGlobalEnvProbeTex1();
-				}
-				else
-				{
-					pTex = rd->GetVolumetricFog().GetGlobalEnvProbeTex1();
 				}
 				pTex = (pTex != nullptr) ? pTex : CTexture::s_ptexBlackCM;
 				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);

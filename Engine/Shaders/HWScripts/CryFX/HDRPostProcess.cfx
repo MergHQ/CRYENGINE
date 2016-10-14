@@ -73,12 +73,6 @@ struct app2vertToneMap
   float3 CamVec       : TEXCOORD1;
 };
 
-struct app2vertFogLegacy
-{
-  IN_P
-  float3 CamVec    : TEXCOORD0;
-};
-
 struct app2vertFog
 {
   IN_P
@@ -128,18 +122,6 @@ vert2frag TransformedVS(app2vertToneMap IN)
 	OUT.CamVec.xyz = IN.CamVec;
   
   return OUT;
-}
-
-vert2fragFog PreTransformedFogLegacyVS(app2vertFogLegacy IN)
-{
-	vert2fragFog OUT = (vert2fragFog)0;
-
-  OUT.baseTC.xy = GetScaledScreenTC(IN.Position.xy * float2(0.5, -0.5) + 0.5);
-	OUT.CamVec.xyz = IN.CamVec.xyz;
-
-	OUT.HPosition = IN.Position;
-
-	return OUT;
 }
 
 vert2fragFog PreTransformedFogVS(app2vertFog IN)
@@ -1080,73 +1062,6 @@ technique HDRFinalDebugPass
   {
     VertexShader = FullscreenTriVS();
     PixelShader = HDRFinalDebugScenePS();
-  }
-}
-
-//======================================================================
-
-technique MultiGSMShadowedFogLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = MultiGSMShadowedFogPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassWithLightningLegacy
-{
-  pass p0
-  {    
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassWithLightningPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassVolShadowsInterleavePassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassVolShadowsInterleavePassPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassVolShadowsGatherPassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassVolShadowsGatherPassPS() FogPassVolShadowsGatherPass;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }
 

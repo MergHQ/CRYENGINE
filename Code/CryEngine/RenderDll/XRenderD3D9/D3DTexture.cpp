@@ -4301,8 +4301,6 @@ void CTexture::CreateSystemTargets()
 
 		gcpRendD3D->GetGraphicsPipeline().Init();
 		gcpRendD3D->GetTiledShading().CreateResources();
-		if ((CRenderer::CV_r_GraphicsPipeline == 0) && (gcpRendD3D->m_nGraphicsPipeline == 0))
-			gcpRendD3D->GetVolumetricFog().CreateResources();
 
 		// Create post effects targets
 		SPostEffectsUtils::Create();
