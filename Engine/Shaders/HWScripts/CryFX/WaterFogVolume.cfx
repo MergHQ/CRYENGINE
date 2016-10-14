@@ -162,9 +162,9 @@ pixout WaterVolumeIntoPS( v2fIn IN )
 	float2 screenTC = IN.hPosTexProj.xy / IN.hPosTexProj.w;
 
 	float sceneDepth = wvGetLinearDepthScaled(screenTC.xy);
-	float waterDepth = dot( IN.viewDir, -CV_CameraFrontVector );
+	float waterDepth = dot( IN.viewDir, -CV_CameraFrontVector.xyz );
 	float volumeDepth = max( sceneDepth - waterDepth, 0 );  
-	float waterVolumeFog = exp2( -params.cFogColorDensity.w * volumeDepth / max(dot( normalize( IN.viewDir ), -CV_CameraFrontVector ), 0.001) );
+	float waterVolumeFog = exp2( -params.cFogColorDensity.w * volumeDepth / max(dot( normalize( IN.viewDir ), -CV_CameraFrontVector.xyz ), 0.001) );
 	half4 worldPos = float4(IN.viewDir.xyz + g_VS_WorldViewPos.xyz,1);
  
 	half3 cFogColor = params.cFogColorDensity.xyz;
@@ -268,8 +268,8 @@ pixout WaterVolumeOutofPS( v2fOutof IN )
 		viewDir *= pd_c;
 
 	float sceneDepth = wvGetLinearDepthScaled(IN.baseTC.xy);
-	float waterDepth = dot( viewDir, -CV_CameraFrontVector );
-	float volumeDepth = min( waterDepth, sceneDepth ) / max(dot( normalize( viewDir ), -CV_CameraFrontVector ), 0.001f);
+	float waterDepth = dot( viewDir, -CV_CameraFrontVector.xyz );
+	float volumeDepth = min( waterDepth, sceneDepth ) / max(dot( normalize( viewDir ), -CV_CameraFrontVector.xyz ), 0.001f);
 	float waterVolumeFog = exp2( -params.cFogColorDensity.w * volumeDepth );
 
 	OUT.Color = half4( params.cFogColorDensity.xyz * PS_HDR_RANGE_ADAPT_MAX, waterVolumeFog );
@@ -363,11 +363,11 @@ pixout OceanIntoPS( v2f IN )
 	SWaterVolumeParams params = GetWaterVolumeParams();
 
 	float3 viewDirNorm = normalize( IN.viewDir );
-	float viewDirCorrection = 1.0f / dot( viewDirNorm, -CV_CameraFrontVector );
+	float viewDirCorrection = 1.0f / dot( viewDirNorm, -CV_CameraFrontVector.xyz );
 
 	float2 baseTC = IN.hPosTexProj.xy / IN.hPosTexProj.w;
 	float sceneDepth = wvGetLinearDepthScaled(baseTC.xy);
-	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -CV_CameraFrontVector ), 0.0f );
+	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -CV_CameraFrontVector.xyz ), 0.0f );
 	volumeDepth *= viewDirCorrection;
 
 	const float3 fogColor = params.cFogColorDensity.xyz;
@@ -468,7 +468,7 @@ pixout OceanOutofPS( v2fOutof IN )
 	float3 viewDir = cameraToWorldPos;
 
 	float3 viewDirNorm = normalize( viewDir );
-	float viewDirCorrection = 1.0 / dot( viewDirNorm, -CV_CameraFrontVector );
+	float viewDirCorrection = 1.0 / dot( viewDirNorm, -CV_CameraFrontVector.xyz );
 
 	// float perpdist = dot( g_VS_WorldViewPos, params.cFogPlane.xyz ) + params.cFogPlane.w;
 	const float perpdist = params.cPerpDist.x;
@@ -482,7 +482,7 @@ pixout OceanOutofPS( v2fOutof IN )
 		viewDir *= pd_c;
 
 	float sceneDepth = wvGetLinearDepthScaled(IN.baseTC.xy);
-	float volumeDepth = min( dot( viewDir, -CV_CameraFrontVector ), sceneDepth );
+	float volumeDepth = min( dot( viewDir, -CV_CameraFrontVector.xyz ), sceneDepth );
 	volumeDepth *= viewDirCorrection;
 
 	volumeDepth = max( volumeDepth, 0.0f );

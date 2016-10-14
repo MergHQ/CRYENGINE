@@ -910,10 +910,12 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 
 		// per pass samplers
 		static int32 aniso16xClampSampler = CTexture::GetTexState(STexState(FILTER_ANISO16X, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
-		static int32 aniso16xWrapSampler = CTexture::GetTexState(STexState(FILTER_ANISO16X, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
 		m_pPerPassResources->SetSampler(ePerPassSampler_Aniso16xClamp, aniso16xClampSampler, EShaderStage_AllWithoutCompute);
-		m_pPerPassResources->SetSampler(ePerPassSampler_Aniso16xWrap, aniso16xWrapSampler, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetSampler(ePerPassSampler_LinearClampComp, pRenderer->m_nLinearClampComparisonSampler, EShaderStage_AllWithoutCompute);
+
+		// NOTE: overwrite default material sampler to avoid the limitation of DXOrbis.
+		static int32 aniso16xWrapSampler = CTexture::GetTexState(STexState(FILTER_ANISO16X, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+		m_pPerPassResources->SetSampler(ePerPassSampler_Aniso16xWrap, aniso16xWrapSampler, EShaderStage_AllWithoutCompute);
 	}
 
 	CTexture* pVolFogShadowTex = CTexture::s_ptexBlack;

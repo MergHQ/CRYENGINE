@@ -69,16 +69,18 @@ public:
 
 	enum EPerPassSampler
 	{
+		ePerPassSampler_Aniso16xWrap = 0,
+
 		ePerPassSampler_PointWrap = EFSS_MAX,
 		ePerPassSampler_PointClamp,
 
 		ePerPassSampler_Aniso16xClamp,
-		ePerPassSampler_Aniso16xWrap,
 		ePerPassSampler_LinearClampComp,
 
 		ePerPassSampler_Count,
 	};
-	static_assert(ePerPassSampler_Count <= 16, "Too many sampler states in one graphics pipeline stage");
+	// NOTE: DXOrbis only supports 12 sampler state slots at this time, don't use s12 or higher if DXOrbis support is desired!
+	static_assert(ePerPassSampler_Count <= 12, "Too many sampler states for DXOrbis");
 
 	static const uint32 RainRippleTexCount = 24;
 
