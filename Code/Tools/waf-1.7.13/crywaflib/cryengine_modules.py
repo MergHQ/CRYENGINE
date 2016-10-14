@@ -1153,7 +1153,7 @@ def CryDedicatedServer(ctx, *k, **kw):
 	else: #  Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
 
-	exectuable_name_clash = Counter( [ ctx.get_executable_name(project) for project in active_projects ] )
+	exectuable_name_clash = Counter( [ ctx.get_dedicated_server_executable_name(project) for project in active_projects ] )
 
 	orig_target = kw['target']
 	counter = 1
