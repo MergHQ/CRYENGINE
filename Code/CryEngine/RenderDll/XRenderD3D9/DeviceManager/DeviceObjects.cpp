@@ -71,19 +71,30 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 bool SDeviceObjectHelpers::CheckTessellationSupport(SShaderItem& shaderItem)
 {
 	// TTYPE_ZPREPASS doesn't support tessellation
-	EShaderTechniqueID techniquesInUse[] = { TTYPE_Z, TTYPE_SHADOWGEN };
-	::CShader* pShader = reinterpret_cast<::CShader*>(shaderItem.m_pShader);
-
-	bool bResult = false;
-	for (int i = 0; i < CRY_ARRAY_COUNT(techniquesInUse); ++i)
+	EShaderTechniqueID techniquesInUse[] = { TTYPE_GENERAL, TTYPE_Z, TTYPE_SHADOWGEN };
+	for (auto techType : techniquesInUse)
 	{
-		if (auto pShaderTechnique = pShader->GetTechnique(shaderItem.m_nTechnique, techniquesInUse[i], true))
+		if (CheckTessellationSupport(shaderItem, techType))
 		{
-			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
-			bResult |= (shaderPass.m_DShader && shaderPass.m_HShader);
+			return true;
 		}
 	}
+	return false;
+}
 
+bool SDeviceObjectHelpers::CheckTessellationSupport(SShaderItem& shaderItem, EShaderTechniqueID techniqueId)
+{
+	bool bResult = false;
+	::CShader* pShader = reinterpret_cast<::CShader*>(shaderItem.m_pShader);
+	if (pShader)
+	{
+		auto pShaderTechnique = pShader->GetTechnique(shaderItem.m_nTechnique, techniqueId, true);
+		if (pShaderTechnique)
+		{
+			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
+			bResult = (shaderPass.m_DShader && shaderPass.m_HShader);
+		}
+	}
 	return bResult;
 }
 

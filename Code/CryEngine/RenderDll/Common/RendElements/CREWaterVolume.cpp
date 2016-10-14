@@ -182,6 +182,10 @@ bool CREWaterVolume::Compile(CRenderObject* pObj)
 		return false;
 	}
 
+	// NOTE: workaround for tessellation for water.
+	//       FOB_ALLOW_TESSELLATION is forcibly added in CRenderer::EF_AddEf_NotVirtual() even if shader doesn't have domain and hull shaders.
+	pObj->m_ObjFlags &= ~FOB_ALLOW_TESSELLATION;
+
 	// create PSOs which match to specific material.
 	EVertexFormat vertexFormat = eVF_P3F_C4B_T2F;
 	SGraphicsPipelineStateDescription psoDescription(
@@ -193,6 +197,24 @@ bool CREWaterVolume::Compile(CRenderObject* pObj)
 	  0 /*geomInfo.CalcStreamMask()*/,
 	  eptTriangleList // tessellation is handled in CreatePipelineStates(). ept3ControlPointPatchList is used in that case.
 	  );
+
+	// apply shader quality
+	{
+		const uint64 quality = g_HWSR_MaskBit[HWSR_QUALITY];
+		const uint64 quality1 = g_HWSR_MaskBit[HWSR_QUALITY1];
+		switch((rd->GetShaderProfile(pShader->m_eShaderType)).GetShaderQuality())
+		{
+		case eSQ_Medium:
+			psoDescription.objectRuntimeMask |= quality;
+			break;
+		case eSQ_High:
+			psoDescription.objectRuntimeMask |= quality1;
+			break;
+		case eSQ_VeryHigh:
+			psoDescription.objectRuntimeMask |= (quality | quality1);
+			break;
+		}
+	}
 
 	// TODO: remove this if old graphics pipeline and material preview is removed.
 	// NOTE: this is to use a typed constant buffer instead of per batch constant buffer.
@@ -263,7 +285,7 @@ bool CREWaterVolume::Compile(CRenderObject* pObj)
 	cro.m_bHasTessellation = 0;
 #ifdef WATER_TESSELLATION_RENDERER
 	// Enable tessellation for water geometry
-	if (bAllowTessellation && (pShader->m_Flags2 & EF2_HW_TESSELLATION))
+	if (bAllowTessellation && SDeviceObjectHelpers::CheckTessellationSupport(shaderItem, TTYPE_GENERAL))
 	{
 		cro.m_bHasTessellation = 1;
 	}

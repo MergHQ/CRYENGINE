@@ -937,6 +937,7 @@ struct SDeviceObjectHelpers
 
 	// Check if shader has tessellation support
 	static bool CheckTessellationSupport(SShaderItem& shaderItem);
+	static bool CheckTessellationSupport(SShaderItem& shaderItem, EShaderTechniqueID techniqueId);
 };
 
 template<typename T>
