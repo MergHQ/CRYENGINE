@@ -453,9 +453,10 @@ void CFrameProfileSystem::AddFrameProfiler(CFrameProfiler* pProfiler)
 	pProfiler->m_colorIdentifier = (int)pProfiler->m_description & PROFILE_TYPE_CHECK_MASK;
 
 	#if ALLOW_BROFILER
-	pProfiler->m_brofilerEventDescription = ::Profiler::EventDescription::Create(
-	  pProfiler->m_name, pProfiler->m_fileName, pProfiler->m_fileLine,
-	  profile_colors[pProfiler->m_colorIdentifier].pack_argb8888());
+	pProfiler->m_brofilerEventDescription = std::shared_ptr<::Profiler::EventDescription>(::Profiler::EventDescription::Create(
+		pProfiler->m_name, pProfiler->m_fileName, pProfiler->m_fileLine,
+		profile_colors[pProfiler->m_colorIdentifier].pack_argb8888()),
+		[](::Profiler::EventDescription* pDesc) { ::Profiler::EventDescription::DestroyEventDescription(pDesc); });
 	#endif
 
 	// Set default thread id.
@@ -482,7 +483,7 @@ void CFrameProfileSystem::RemoveFrameProfiler(CFrameProfiler* pProfiler)
 		return;
 
 	#if ALLOW_BROFILER
-	::Profiler::EventDescription::DestroyEventDescription(pProfiler->m_brofilerEventDescription);
+	pProfiler->m_brofilerEventDescription = nullptr; // shared_ptr, the description might be destroyed after this
 	#endif
 
 	SAFE_DELETE(pProfiler->m_pGraph);
@@ -538,10 +539,6 @@ CFrameProfiler* CFrameProfileSystem::SProfilerThreads::NewThreadProfiler(CFrameP
 	m_pReservedProfilers = pProfiler->m_pNextThread;
 
 	// Init.
-	#if ALLOW_BROFILER
-	::Profiler::EventDescription * tempBrofilerEventDesc = pProfiler->m_brofilerEventDescription;
-	#endif
-
 	memset(pProfiler, 0, sizeof(*pProfiler));
 	pProfiler->m_name = pMainProfiler->m_name;
 	pProfiler->m_fileName = pMainProfiler->m_fileName;
@@ -553,12 +550,8 @@ CFrameProfiler* CFrameProfileSystem::SProfilerThreads::NewThreadProfiler(CFrameP
 	pProfiler->m_colorIdentifier = pMainProfiler->m_colorIdentifier;
 
 	#if ALLOW_BROFILER
-	pProfiler->m_brofilerEventDescription = tempBrofilerEventDesc;
-	pProfiler->m_brofilerEventDescription->name = pMainProfiler->m_brofilerEventDescription->name;
-	pProfiler->m_brofilerEventDescription->file = pMainProfiler->m_brofilerEventDescription->file;
-	pProfiler->m_brofilerEventDescription->line = pMainProfiler->m_brofilerEventDescription->line;
-	pProfiler->m_brofilerEventDescription->index = pMainProfiler->m_brofilerEventDescription->index;
-	pProfiler->m_brofilerEventDescription->color = pMainProfiler->m_brofilerEventDescription->color;
+	// Brofiler is checking the current threadId with every update call - no need to create separate EventDescription per thread
+	pProfiler->m_brofilerEventDescription = pMainProfiler->m_brofilerEventDescription;
 	#endif
 
 	// Insert in frame profiler list.
