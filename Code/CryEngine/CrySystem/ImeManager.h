@@ -1,11 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CrySystem/IImeManager.h>
 #include <CrySystem/IWindowMessageHandler.h>
 
 // IME manager utility
 // This class is responsible for handling IME specific window messages
-class CImeManager : IWindowMessageHandler
+class CImeManager : public IImeManager, public IWindowMessageHandler
 {
 	// No copy/assign
 	CImeManager(const CImeManager&);
@@ -16,7 +17,7 @@ public:
 	virtual ~CImeManager();
 
 	// Check if IME is supported
-	inline bool IsImeSupported() { return m_pScaleformMessageHandler != NULL; }
+	virtual bool IsImeSupported() { return m_pScaleformMessageHandler != NULL; }
 
 	// This is called by Scaleform in the case that IME support is compiled in
 	// Returns false if IME should not be used

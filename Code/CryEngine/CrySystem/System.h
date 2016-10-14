@@ -508,7 +508,7 @@ public:
 	virtual void          UnregisterWindowMessageHandler(IWindowMessageHandler* pHandler) override;
 	virtual int           PumpWindowMessage(bool bAll, WIN_HWND hWnd) override;
 	virtual bool          IsImeSupported() const override;
-	virtual CImeManager*  GetImeManager() const { return m_pImeManager; }
+	virtual IImeManager*  GetImeManager() const override { return m_pImeManager; }
 
 	// IWindowMessageHandler
 #if CRY_PLATFORM_WINDOWS
@@ -1050,7 +1050,7 @@ protected: // -------------------------------------------------------------
 	bool m_bIsSteamInitialized;
 
 	std::vector<IWindowMessageHandler*> m_windowMessageHandlers;
-	CImeManager*                        m_pImeManager;
+	IImeManager*                        m_pImeManager;
 
 	// Keeping a copy of startup params for deferred module loading (see CryLobby).
 	const SSystemInitParams m_startupParams;

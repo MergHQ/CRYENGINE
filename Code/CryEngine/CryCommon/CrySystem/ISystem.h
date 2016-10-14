@@ -107,6 +107,7 @@ struct SFunctor;
 struct IScaleformHelper;
 struct ICryPluginManager;
 struct IProjectManager;
+class IImeManager;
 
 class CBootProfilerRecord;
 
@@ -1572,6 +1573,9 @@ struct ISystem
 	//! Note: This flag depends on compile-time settings, it cannot be enabled or disabled at runtime
 	//! However, the support itself can typically be enabled/disabled through CVar
 	virtual bool IsImeSupported() const = 0;
+
+	//! Returns the IME manager in use.
+	virtual IImeManager* GetImeManager() const = 0;
 };
 
 //! This is a very important function for the dedicated server - it lets us run >1000 players per piece of server hardware.
