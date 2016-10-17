@@ -2080,6 +2080,8 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	if (startupParams.bExecuteCommandLine)
 		GetISystem()->ExecuteCommandLine();
 
+	gEnv->pConsole->ExecuteString("exec autoexec.cfg");
+
 	// game got initialized, time to finalize framework initialization
 	if (CompleteInit())
 	{
@@ -2151,8 +2153,6 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 //------------------------------------------------------------------------
 int CCryAction::Run(const char* szAutoStartLevelName)
 {
-	gEnv->pConsole->ExecuteString("exec autoexec.cfg");
-
 	if (szAutoStartLevelName[0])
 	{
 		//load savegame
