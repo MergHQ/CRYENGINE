@@ -1547,22 +1547,6 @@ struct IFlowGraph : public NFlowSystemUtils::IFlowSystemTyped
 		ActivatePort(addr, value);
 	}
 
-	int GetPortInt(IFlowNode::SActivationInfo* pActInfo, int nPort)
-	{
-		return *(pActInfo->GetInputPort(nPort)->GetPtr<int>());
-	}
-	string GetPortString(IFlowNode::SActivationInfo* pActInfo, int nPort)
-	{
-		const string* p_x = (pActInfo->GetInputPort(nPort)->GetPtr<string>());
-		if (p_x)
-			return *p_x;
-		return "";
-	}
-	bool GetPortBool(IFlowNode::SActivationInfo* pActInfo, int nPort)
-	{
-		bool* p_x = pActInfo->GetInputPort(nPort)->GetPtr<bool>();
-		return (p_x != NULL) ? ((*p_x) == 1) : false;
-	}
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//! Graph tokens are gametokens which are unique to a particular flow graph.
