@@ -149,20 +149,20 @@ def cmd_build(args):
 			sys.exit (errcode)		
 
 	#--- cmake
-
-	project_path= os.path.dirname (os.path.abspath (args.project_file))
-	solution_dir= get_solution_dir (args)
-	
-	subcmd= (
-		cmake_path,
-		'--build', solution_dir,
-		'--config', args.config
-	)
-	
-	print_subprocess (subcmd)
-	errcode= subprocess.call(subcmd, cwd= project_path)
-	if errcode != 0:
-		sys.exit (errcode)
+	if cryproject.cmakelists_dir(project) is not None:
+		project_path= os.path.dirname (os.path.abspath (args.project_file))
+		solution_dir= get_solution_dir (args)
+		
+		subcmd= (
+			cmake_path,
+			'--build', solution_dir,
+			'--config', args.config
+		)
+		
+		print_subprocess (subcmd)
+		errcode= subprocess.call(subcmd, cwd= project_path)
+		if errcode != 0:
+			sys.exit (errcode)
 
 
 #--- PROJGEN ---
@@ -265,18 +265,16 @@ def cmd_projgen(args):
 	project= cryproject.load (args.project_file)
 	if project is None:
 		error_project_json_decode (args.project_file)
-	
-	cmake_path= get_cmake_path()
-	if cmake_path is None:
-		error_cmake_not_found()
-	
+		
 	#--- remove old files
 	
 	dirname= os.path.dirname (os.path.abspath (args.project_file))
 	prevcwd= os.getcwd()
 	os.chdir (dirname)
 	
-	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('projgen_%y%m%d_'), dirname)
+	if not os.path.isdir ('Backup'):
+		os.mkdir ('Backup')	
+	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('projgen_%y%m%d_'), os.path.join (dirname, 'Backup'))
 	file= os.fdopen(fd, 'wb')
 	backup= zipfile.ZipFile (file, 'w', zipfile.ZIP_DEFLATED)
 	
@@ -301,41 +299,46 @@ def cmd_projgen(args):
 	backup_deletefiles (zfilename)	
 	os.chdir (prevcwd)
 	
-	#---
+	#--- csharp
 	
 	csharp= project.get ("csharp")
 	if csharp:
 		csharp_copylinks (args, update= False)
 		csharp_userfile (args, csharp)
 	
-	#---
+	#--- cpp
+	cmakelists_dir= cryproject.cmakelists_dir(project)
+	if cmakelists_dir is not None:
+		cmake_path= get_cmake_path()
+		if cmake_path is None:
+			error_cmake_not_found()
+			
+		project_path= os.path.abspath (os.path.dirname (args.project_file))
+		solution_path= os.path.join (project_path, get_solution_dir (args))
+		engine_path= get_engine_path()
 		
-	project_path= os.path.abspath (os.path.dirname (args.project_file))
-	solution_path= os.path.join (project_path, get_solution_dir (args))
-	engine_path= get_engine_path()
-	
-	subcmd= (
-		cmake_path,
-		'-Wno-dev',
-		{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
-		'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
-		'-DCryEngine_DIR:PATH=%s' % engine_path,
-		'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
-		os.path.join (project_path, cryproject.cmakelists_dir(project))
-	)
-	
-	if not os.path.isdir (solution_path):
-		os.makedirs (solution_path)
-
-	print_subprocess (subcmd)
-	errcode= subprocess.call(subcmd, cwd= solution_path)
-	if errcode != 0:
-		sys.exit (errcode)
+		subcmd= (
+			cmake_path,
+			'-Wno-dev',
+			{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
+			'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
+			'-DCryEngine_DIR:PATH=%s' % engine_path,
+			'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
+			os.path.join (project_path, cmakelists_dir)
+		)
 		
+		if not os.path.isdir (solution_path):
+			os.makedirs (solution_path)
+	
+		print_subprocess (subcmd)
+		errcode= subprocess.call(subcmd, cwd= solution_path)
+		if errcode != 0:
+			sys.exit (errcode)
+			
 	cmd_build (args)
 	
 #--- OPEN ---
@@ -348,7 +351,7 @@ def cmd_open (args):
 	if project is None:
 		error_project_json_decode (args.project_file)
 	
-	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'Game.exe')
+	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'GameLauncher.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 		
@@ -512,8 +515,10 @@ def cmd_upgrade (args):
 	(dirname, basename)= os.path.split (os.path.abspath (args.project_file))
 	prevcwd= os.getcwd()
 	os.chdir (dirname)
-		
-	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('upgrade_%y%m%d_'), dirname)
+	
+	if not os.path.isdir ('Backup'):
+		os.mkdir ('Backup')
+	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('upgrade_%y%m%d_'), os.path.join ('Backup', dirname))
 	file= os.fdopen(fd, 'wb')
 	backup= zipfile.ZipFile (file, 'w', zipfile.ZIP_DEFLATED)
 	restore= zipfile.ZipFile (restore_path, 'r')

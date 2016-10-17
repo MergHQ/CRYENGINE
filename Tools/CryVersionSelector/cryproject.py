@@ -36,7 +36,7 @@ def asset_dir(self):
 	return self['content'].get ('assets', [None])[0]
 
 def cmakelists_dir(self):
-	return self['content']['code'][0]
+	return self['content'].get ('code', [None])[0]
 
 def require_list(self):
 	return self.get ('require', [])
