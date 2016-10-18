@@ -507,6 +507,7 @@ add_sources("NoUberFile"
 		"GNM/GnmResourceLookup.hpp"
 		"GNM/GnmResourceSet.hpp"
 		"GNM/GnmResourceSet.cpp"
+		"GNM/GnmScratch.hpp"
 		"GNM/GnmShader.hpp"
 		"GNM/GnmShaderCompiler.hpp"
 		"GNM/GnmShaderLoader.cpp"
@@ -1021,7 +1022,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-set(gnm_compiler_version "ORBIS/V030")
+set(gnm_compiler_version "ORBIS/V031")
 
 set(extra_defines -DCRY_GNM_SHADER_COMPILER_VERSION="${gnm_compiler_version}")
 	if (NOT EXISTS ${SDK_DIR}/NVAPI)

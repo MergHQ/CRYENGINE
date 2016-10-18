@@ -32,6 +32,7 @@ def build(bld):
 		
 		orbis_file_list   = 'orbis_lobby.waf_files',
 		orbis_lib         = [ 'SceNpCommerce_stub_weak', 'SceJson2_stub_weak' ],
+		orbis_cxxflags    = [ '-Wno-deprecated-declarations' ],
 
 		durango_file_list    = 'durango_lobby.waf_files',
 		durango_lib          = [ 'Ws2_32', 'uuid' ],

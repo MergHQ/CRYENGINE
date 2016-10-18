@@ -951,16 +951,18 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 
 		pObj->m_dynamicData.vertices.AddList(pVertices, pObj->m_serializedData.numVertices);
 
-		// Would be nice to have a preprocessor check for support of 32-bit indices
-	#if defined(CRY_PLATFORM_MOBILE) || defined(CRY_PLATFORM_ORBIS)
-		// Strided copy, need to cast uint32 from uint16 since we exported from PC (uint32 vertices) and load on console / mobile (uint16)
-		for (uint32 i = 0; i < pChunk->m_roadData.numIndices; i++)
+		if (sizeof(vtx_idx) != sizeof(uint32))
 		{
-			pObj->m_dynamicData.indices.Add(pIndices[i]);
+			// Strided copy, need to cast uint32 from uint16 since we exported from PC (uint32 vertices) and load on console / mobile (uint16)
+			for (uint32 i = 0; i < pChunk->m_roadData.numIndices; i++)
+			{
+				pObj->m_dynamicData.indices.Add(static_cast<vtx_idx>(pIndices[i]));
+			}
 		}
-	#else
-		pObj->m_dynamicData.indices.AddList(pIndices, pObj->m_serializedData.numIndices);
-	#endif
+		else
+		{
+			pObj->m_dynamicData.indices.AddList(reinterpret_cast<vtx_idx*>(pIndices), pObj->m_serializedData.numIndices);
+		}
 
 		pObj->m_dynamicData.tangents.AddList(pTangents, pObj->m_serializedData.numTangents);
 

@@ -27,18 +27,6 @@
 	#define CRY_ITERATOR_DEBUGGING 0
 #endif
 
-// Orbis SDK 3.008.061: Workaround for bug in STL (target/include/xutility, line 878, newline of macro not escaped).
-// This introduces a compilation error when _ITERATOR_DEBUG_LEVEL == 2, thus we disable debug iterators entirely.
-#if CRY_PLATFORM_ORBIS && CRY_ITERATOR_DEBUGGING
-	#include "sdk_version.h"
-	#if SCE_ORBIS_SDK_VERSION == 0x03008061u || SCE_ORBIS_SDK_VERSION == 0x03008081u
-		#undef CRY_ITERATOR_DEBUGGING
-		#define CRY_ITERATOR_DEBUGGING 0
-	#else
-		#pragma message ("Note: Check if this workaround is still necessary, and remove if possible")
-	#endif
-#endif
-
 // For Dinkumware style STL (as shipped with MSVC and Orbis SDK), we set:
 // _HAS_ITERATOR_DEBUGGING
 // _ITERATOR_DEBUG_LEVEL
