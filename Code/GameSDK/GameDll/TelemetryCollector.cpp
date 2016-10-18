@@ -360,6 +360,7 @@ CTelemetryCollector::~CTelemetryCollector()
 		ic->UnregisterVariable(m_telemetryUploadErrorLog->GetName());
 		ic->UnregisterVariable(m_telemetryUploadGameLog->GetName());
 		ic->UnregisterVariable(m_telemetryCompressGameLog->GetName());
+		ic->UnregisterVariable(m_telemetryUploadInProgress->GetName());
 		ic->RemoveCommand(k_telemetry_submitLogCommand);
 		ic->RemoveCommand(k_telemetry_getSessionIdCommand);
 	}
