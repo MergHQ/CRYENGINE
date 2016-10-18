@@ -18,11 +18,13 @@ public:
 	enum EInputPorts
 	{
 		eInputPort_OnHide = 0,
+		eInputPort_OnUnHide,
 	};
 
 	enum EOutputPorts
 	{
 		eOutputPort_OnHide = 0,
+		eOutputPort_OnUnHide,
 		eOutputPort_OnCollision
 	};
 

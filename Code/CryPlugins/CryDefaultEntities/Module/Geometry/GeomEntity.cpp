@@ -7,7 +7,6 @@
 
 class CGeomEntityRegistrator
 	: public IEntityRegistrator
-	, public IFlowNodeRegistrator
 {
 	virtual void Register() override
 	{
@@ -28,15 +27,18 @@ class CGeomEntityRegistrator
 		RegisterEntityProperty<bool>(pPropertyHandler, "Hide", "", "0", "Sets the visibility of the entity");
 
 		// Register flow node
-		m_pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
+		// Factory will be destroyed by flowsystem during shutdown
+		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
 
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Hide", ""));
-		m_pFlowNodeFactory->m_activateCallback = CGeomEntity::OnFlowgraphActivation;
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Hide", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("UnHide", ""));
+		pFlowNodeFactory->m_activateCallback = CGeomEntity::OnFlowgraphActivation;
 
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnHide"));
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnCollision"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnHide"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnUnHide"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnCollision"));
 
-		m_pFlowNodeFactory->Close();
+		pFlowNodeFactory->Close();
 	}
 };
 
@@ -81,18 +83,26 @@ void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
 
 void CGeomEntity::OnResetState()
 {
-	if (GetPropertyBool(eProperty_Hide) != GetEntity()->IsHidden())
+	bool bWasHidden = GetEntity()->IsHidden();
+
+	if (GetPropertyBool(eProperty_Hide) != bWasHidden)
 	{
 		m_bHide = GetPropertyBool(eProperty_Hide);
-	}
-	else if (m_bHide != GetEntity()->IsHidden())
-	{
-		SetPropertyBool(eProperty_Hide, m_bHide);
 	}
 
 	GetEntity()->Hide(m_bHide);
 
-	ActivateFlowNodeOutput(eOutputPort_OnHide, TFlowInputData(m_bHide));
+	if (bWasHidden != GetEntity()->IsHidden())
+	{
+		if (GetEntity()->IsHidden())
+		{
+			ActivateFlowNodeOutput(eOutputPort_OnHide, TFlowInputData(!bWasHidden));
+		}
+		else
+		{
+			ActivateFlowNodeOutput(eOutputPort_OnUnHide, TFlowInputData(bWasHidden));
+		}
+	}
 
 	const char* modelPath = GetPropertyValue(eProperty_Model);
 	if (strlen(modelPath) > 0)
@@ -125,12 +135,13 @@ void CGeomEntity::OnResetState()
 
 void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode)
 {
-	auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId);
-	auto* pGeomEntity = static_cast<CGeomEntity*>(pGameObject->QueryExtension("GeomEntity"));
-
-	if (IsPortActive(pActInfo, eInputPort_OnHide))
+	if (auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId))
 	{
-		pGeomEntity->m_bHide = GetPortBool(pActInfo, eInputPort_OnHide);
-		pGeomEntity->OnResetState();
+		auto* pGeomEntity = static_cast<CGeomEntity*>(pGameObject->QueryExtension("GeomEntity"));
+		if (IsPortActive(pActInfo, eInputPort_OnHide) || IsPortActive(pActInfo, eInputPort_OnUnHide))
+		{
+			pGeomEntity->m_bHide = IsPortActive(pActInfo, eInputPort_OnHide);
+			pGeomEntity->OnResetState();
+		}
 	}
 }

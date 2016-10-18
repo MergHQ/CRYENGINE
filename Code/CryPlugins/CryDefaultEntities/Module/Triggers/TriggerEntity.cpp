@@ -5,7 +5,6 @@
 
 class CTriggerEntityRegistrator
 	: public IEntityRegistrator
-	, public IFlowNodeRegistrator
 {
 	virtual void Register() override
 	{
@@ -23,19 +22,20 @@ class CTriggerEntityRegistrator
 		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
 
 		// Register flow node
-		m_pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AreaTrigger");
+		// Factory will be destroyed by flowsystem during shutdown
+		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AreaTrigger");
 
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig_Void("Disable", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig_Void("Disable", ""));
 
-		m_pFlowNodeFactory->m_activateCallback = CTriggerEntity::OnFlowgraphActivation;
+		pFlowNodeFactory->m_activateCallback = CTriggerEntity::OnFlowgraphActivation;
 
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig_Void("Disabled"));
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig_Void("Enabled"));
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("Enter"));
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("Leave"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig_Void("Disabled"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig_Void("Enabled"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("Enter"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("Leave"));
 
-		m_pFlowNodeFactory->Close();
+		pFlowNodeFactory->Close();
 	}
 };
 

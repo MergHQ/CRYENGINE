@@ -5,7 +5,6 @@
 
 class CLightRegistrator
 	: public IEntityRegistrator
-	, public IFlowNodeRegistrator
 {
 public:
 	virtual void Register() override
@@ -73,17 +72,18 @@ public:
 		}
 
 		// Register flow node
-		m_pFlowNodeFactory = new CEntityFlowNodeFactory("entity:Light");
+		// Factory will be destroyed by flowsystem during shutdown
+		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:Light");
 
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Active", ""));
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
-		m_pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Disable", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Active", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Disable", ""));
 
-		m_pFlowNodeFactory->m_activateCallback = CDefaultLightEntity::OnFlowgraphActivation;
+		pFlowNodeFactory->m_activateCallback = CDefaultLightEntity::OnFlowgraphActivation;
 
-		m_pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("Active"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("Active"));
 
-		m_pFlowNodeFactory->Close();
+		pFlowNodeFactory->Close();
 	}
 };
 

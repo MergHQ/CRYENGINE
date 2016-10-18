@@ -11,6 +11,11 @@ CEntityFlowNodeFactory::CEntityFlowNodeFactory(const char* className)
 CEntityFlowNodeFactory::~CEntityFlowNodeFactory()
 {
 	Reset();
+
+	if (!gEnv->pFlowSystem->UnregisterType(m_sClassName))
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CryDefaultEntities] Error unregistering flownode '%s'", m_sClassName);
+	}
 }
 
 void CEntityFlowNodeFactory::Reset()
@@ -115,6 +120,7 @@ void CEntityFlowNodeFactory::Close()
 	// Special case if we're registering after the ESYSTEM_EVENT_REGISTER_FLOWNODES event has been sent.
 	if (gEnv->pFlowSystem->HasRegisteredDefaultFlowNodes())
 	{
+		// handing over factory ownership to flowsystem (will also delete it on shutdown)
 		gEnv->pFlowSystem->RegisterType(m_sClassName, this);
 	}
 }
