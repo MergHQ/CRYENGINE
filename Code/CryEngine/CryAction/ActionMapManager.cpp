@@ -501,6 +501,52 @@ const TActionListeners& CActionMapManager::GetExtraActionListeners() const
 }
 
 //------------------------------------------------------------------------
+bool CActionMapManager::AddFlowgraphNodeActionListener(IActionListener* pFlowgraphNodeActionListener, const char* actionMap)
+{
+	if ((actionMap != NULL) && (actionMap[0] != '\0'))
+	{
+		TActionMapMap::iterator	iActionMap = m_actionMaps.find(CONST_TEMP_STRING(actionMap));
+		if(iActionMap != m_actionMaps.end())
+		{
+			iActionMap->second->AddFlowNodeActionListener(pFlowgraphNodeActionListener);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		stl::push_back_unique(m_ExtraActionListeners, pFlowgraphNodeActionListener);
+		return true;
+	}
+}
+
+//------------------------------------------------------------------------
+bool CActionMapManager::RemoveFlowgraphNodeActionListener(IActionListener* pFlowgraphNodeActionListener, const char* actionMap)
+{
+	if ((actionMap != NULL) && (actionMap[0] != '\0'))
+	{
+		TActionMapMap::iterator	iActionMap = m_actionMaps.find(CONST_TEMP_STRING(actionMap));
+		if(iActionMap != m_actionMaps.end())
+		{
+			iActionMap->second->RemoveFlowNodeActionListener(pFlowgraphNodeActionListener);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		stl::find_and_erase(m_ExtraActionListeners, pFlowgraphNodeActionListener);
+		return true;
+	}
+}
+
+//------------------------------------------------------------------------
 void CActionMapManager::AddAlwaysActionListener(TBlockingActionListener pActionListener)
 {
 	// Don't add if already exists
@@ -1601,6 +1647,8 @@ bool CActionMapManager::HandleAcceptedEvents(const SInputEvent& event, TBindPrio
 
 			return true;
 		}
+
+		pActionMap->NotifyFlowNodeActionListeners(actionID, currentState, event.value);
 
 		// TODO: Remove always action listeners and integrate into 1 prioritized type
 		// Process the always events first, then process normal if not handled

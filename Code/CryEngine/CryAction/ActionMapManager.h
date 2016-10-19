@@ -68,6 +68,9 @@ public:
 	virtual bool                          RemoveExtraActionListener(IActionListener* pExtraActionListener, const char* actionMap = NULL);
 	virtual const TActionListeners&       GetExtraActionListeners() const;
 
+	virtual bool                          AddFlowgraphNodeActionListener(IActionListener* pExtraActionListener, const char* actionMap = NULL);
+	virtual bool                          RemoveFlowgraphNodeActionListener(IActionListener* pExtraActionListener, const char* actionMap = NULL);
+
 	virtual void                          AddAlwaysActionListener(TBlockingActionListener pActionListener); // TODO: Remove always action listeners and integrate into 1 prioritized type
 	virtual void                          RemoveAlwaysActionListener(TBlockingActionListener pActionListener);
 	virtual void                          RemoveAllAlwaysActionListeners();
