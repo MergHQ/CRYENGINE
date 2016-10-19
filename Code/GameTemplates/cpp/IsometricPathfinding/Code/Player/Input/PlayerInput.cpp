@@ -11,7 +11,14 @@
 CPlayerInput::CPlayerInput()
 	: m_pCursorEntity(nullptr)
 {
+	if (gEnv->pGameFramework)
+		gEnv->pGameFramework->RegisterListener(this, "PlayerInput", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+}
 
+CPlayerInput::~CPlayerInput()
+{
+	if (gEnv->pGameFramework)
+		gEnv->pGameFramework->UnregisterListener(this);
 }
 
 void CPlayerInput::PostInit(IGameObject *pGameObject)
@@ -47,6 +54,11 @@ void CPlayerInput::ProcessEvent(SEntityEvent &event)
 			}
 		}
 		break;
+		case ENTITY_EVENT_DONE:
+		{
+			GetGameObject()->ReleaseActions(this);
+		}
+		break;
 	}
 }
 
@@ -67,16 +79,16 @@ void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
 		}
 
 		GetGameObject()->CaptureActions(this);
-
-		// Make sure that this extension is updated regularly via the Update function below
-		GetGameObject()->EnableUpdateSlot(this, 0);
-
+		
 		m_cursorPositionInWorld = ZERO;
 	}
 }
 
 void CPlayerInput::SpawnCursorEntity()
 {
+	if (gEnv->IsEditing())
+		return;
+
 	CRY_ASSERT(m_pCursorEntity == nullptr);
 
 	SEntitySpawnParams spawnParams;
@@ -105,13 +117,11 @@ void CPlayerInput::SpawnCursorEntity()
 	}
 }
 
-void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CPlayerInput::OnPostUpdate(float fDeltaTime)
 {
 	float mouseX, mouseY;
-
 	gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
 
-	// Invert mouse Y
 	mouseY = gEnv->pRenderer->GetHeight() - mouseY;
 
 	Vec3 vPos0(0, 0, 0);

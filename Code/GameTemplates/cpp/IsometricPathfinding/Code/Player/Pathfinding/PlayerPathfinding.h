@@ -119,6 +119,8 @@ public:
 	void RequestMoveTo(const Vec3 &position);
 	void CancelCurrentRequest();
 	bool IsProcessingRequest() { return m_movementRequestId != 0; }
+	void Reset();
+	void InitAI();
 
 protected:
 	void MovementRequestCallback(const MovementRequestResult &result) {}

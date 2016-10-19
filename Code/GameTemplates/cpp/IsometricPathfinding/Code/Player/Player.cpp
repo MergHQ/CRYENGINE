@@ -123,6 +123,12 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			{
 				// Make sure to revive player when respawning in Editor
 				SetHealth(GetMaxHealth());
+				
+				m_pPathFinding->InitAI();
+			}
+			else
+			{
+				m_pCurrentWeapon = nullptr;
 			}
 		}
 		break;
@@ -152,6 +158,11 @@ void CPlayer::SetHealth(float health)
 	// Find a spawn point and move the entity there
 	SelectSpawnPoint();
 
+	if (m_pCurrentWeapon == nullptr)
+	{
+		CreateWeapon("Rifle");
+	}
+
 	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.
 	if (m_bAlive)
 		return;
@@ -166,12 +177,6 @@ void CPlayer::SetHealth(float health)
 
 	// Set the player geometry, this also triggers physics proxy creation
 	SetPlayerModel();
-
-	// Spawn the player with a weapon
-	if (m_pCurrentWeapon == nullptr)
-	{
-		CreateWeapon("Rifle");
-	}
 }
 
 void CPlayer::SelectSpawnPoint()

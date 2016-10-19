@@ -15,15 +15,26 @@ CPlayerPathFinding::CPlayerPathFinding()
 
 CPlayerPathFinding::~CPlayerPathFinding()
 {
-	gEnv->pAISystem->GetMovementSystem()->UnregisterEntity(GetEntityId());
-
-	SAFE_RELEASE(m_pPathFollower);
-	SAFE_RELEASE(m_pFoundPath);
+	Reset();
 }
 
 void CPlayerPathFinding::PostInit(IGameObject *pGameObject)
 {
-	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+	InitAI();
+}
+
+void CPlayerPathFinding::Reset()
+{
+	gEnv->pAISystem->GetMovementSystem()->UnregisterEntity(GetEntityId());
+	m_pPathFollower.reset();
+	SAFE_RELEASE(m_pFoundPath);
+}
+
+void CPlayerPathFinding::InitAI()
+{
+	Reset();
+
+	m_pPlayer = static_cast<CPlayer *>(GetGameObject()->QueryExtension("Player"));
 
 	m_navigationAgentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID("MediumSizedCharacters");
 

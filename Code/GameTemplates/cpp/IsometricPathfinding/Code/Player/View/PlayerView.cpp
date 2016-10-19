@@ -25,6 +25,14 @@ void CPlayerView::PostInit(IGameObject *pGameObject)
 	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 }
 
+void CPlayerView::ProcessEvent(SEntityEvent &event)
+{
+	if (event.event == ENTITY_EVENT_DONE)
+	{
+		GetGameObject()->ReleaseView(this);
+	}
+}
+
 void CPlayerView::HandleEvent(const SGameObjectEvent &event)
 {
 	if (event.event == eGFE_BecomeLocalPlayer)
