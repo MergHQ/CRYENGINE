@@ -53,8 +53,6 @@ CWheeledVehicleEntity::CWheeledVehicleEntity(CPhysicalWorld *pworld, IGeneralMem
 	, m_maxTilt(0.866f)
 	, m_wheelMassScale(0.0f)
 {
-	ZeroArray(m_susp);
-
 	m_engineMinw = m_engineMaxw*0.05f;
 	m_wengine = m_engineIdlew = m_engineMaxw*0.1f;
 	m_engineShiftUpw = m_engineMaxw*0.5f;
@@ -105,7 +103,7 @@ int CWheeledVehicleEntity::SetParams(pe_params *_params, int bThreadSafe)
 					m_susp[i-m_nHullParts].ptc0 = m_parts[i].q*m_parts[i].pPhysGeomProxy->origin + m_parts[i].pos;
 				}
 				(m_susp[i-m_nHullParts].flags0 &= params->flagsAND) |= params->flagsOR;
-				(m_susp[i-m_nHullParts].flagsCollider0 &= params->flagsColliderOR) |= params->flagsColliderOR;
+				(m_susp[i-m_nHullParts].flagsCollider0 &= params->flagsColliderAND) |= params->flagsColliderOR;
 				m_parts[i].flagsCollider = 0;
 			}
 		}
@@ -329,7 +327,6 @@ int CWheeledVehicleEntity::Action(pe_action *_action, int bThreadSafe)
 				{ WriteLock lock(m_lockUpdate); 
 					for(i=0;i<m_nParts-m_nHullParts;i++) {
 						m_susp[i].q=m_parts[i+m_nHullParts].q = Quat::CreateRotationAA(m_susp[i].steer,Vec3(0,0,-1))*m_susp[i].q0;
-						//GetRotationAA(m_susp[i].steer,Vec3(0,0,-1))*GetRotationAA(m_susp[i].rot,Vec3(-1,0,0))*m_susp[i].q0;
 						Vec3 ptc1 = m_parts[i+m_nHullParts].q*m_parts[i+m_nHullParts].pPhysGeomProxy->origin + m_susp[i].pos0;
 						(m_parts[i+m_nHullParts].pos = m_susp[i].pos0+m_susp[i].ptc0-ptc1).z -= m_susp[i].curlen-m_susp[i].len0;
 						m_susp[i].pos = m_parts[i+m_nHullParts].pos;
@@ -370,7 +367,6 @@ int CWheeledVehicleEntity::GetStatus(pe_status* _status) const
 		Vec3 prevpos,ptc1; 
 		quaternionf prevq;
 		iwheel = i-m_nHullParts;
-		assert(iwheel < NMAXWHEELS);
 		if ((unsigned int)iwheel<(unsigned int)(m_nParts-m_nHullParts)) {
 			// only rotate wheels when status pos is requested; keep them unrotated internally
 			SpinLock(&m_lockUpdate,0,iLock=WRITE_LOCK_VAL);
@@ -489,7 +485,8 @@ void CWheeledVehicleEntity::RecalcSuspStiffness()
 	if (m_body.Minv<=0)
 		return;
 	Vec3 cm=(m_body.pos-m_pos)*m_qrot, sz=(m_BBox[1]-m_BBox[0]), r;
-	int i,j, idx[NMAXWHEELS]; const int numWheels = m_nParts - m_nHullParts;
+	const int numWheels = m_nParts - m_nHullParts;
+	int i,j, *idx = (int*)alloca(numWheels*sizeof(int)); 
 	float scale[2]={0.f,0.f}, force[2]={0.f,0.f}, torque[2]={0.f,0.f}, y, w, denom;
 	float e = max(max(sz.x,sz.y),sz.z)*0.02f;
 	Matrix33 R,Iinv; 
@@ -591,7 +588,7 @@ int CWheeledVehicleEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams *_par
 	m_parts[m_nParts-1].flags |= geom_monitor_contacts;
 	pgeom = m_parts[m_nParts-1].pPhysGeom;
 
-	if (params->bDriving<0 || m_nParts-m_nHullParts>NMAXWHEELS) {
+	if (params->bDriving<0) {
 		if (m_nParts > nPartsOld) {
 			if (m_nHullParts < m_nParts-1) {
 				geom defpart;
@@ -606,6 +603,11 @@ int CWheeledVehicleEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams *_par
 		}
 	} else {
 		int idx = m_nParts-1-m_nHullParts;
+		if (idx>=m_suspAlloc) {
+			ReallocateList(m_susp, m_suspAlloc, idx+4&~3, true);
+			m_suspAlloc = idx+4 & ~3;
+			for(i=m_nHullParts; i<m_nParts; i++) m_parts[i].pNewCoords = (coord_block_BBox*)&m_susp[i-m_nHullParts].pos;
+		}
 		m_susp[idx].bDriving = params->bDriving;
 		m_susp[idx].iAxle = params->iAxle;
 		m_susp[idx].bCanBrake = params->bCanBrake;
@@ -644,7 +646,6 @@ int CWheeledVehicleEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams *_par
 
 		Vec3 r = m_susp[idx].pt-m_body.pos+m_pos;
 		Matrix33 R,Iinv; 
-		//(!m_qrot*m_body.q).getmatrix(R); //Q2M_IVO
 		R = Matrix33(!m_qrot*m_body.q);
 		Iinv = R*m_body.Ibody_inv*R.T();
 		if (m_body.Minv>0)
@@ -1700,8 +1701,6 @@ int CWheeledVehicleEntity::SetStateFromSnapshot(CStream &stm, int flags)
 
 void SWheeledVehicleEntityNetSerialize::Serialize( TSerialize ser, int nSusp )
 {
-	assert(nSusp <= NMAXWHEELS);
-	
 	if (ser.GetSerializationTarget()!=eST_Network) {
 		ser.BeginGroup("wheels");
 		for (int i=0; i<nSusp; i++)
@@ -1735,12 +1734,12 @@ int CWheeledVehicleEntity::GetStateSnapshot(TSerialize ser, float time_back, int
 
 int CWheeledVehicleEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 {
-	static suspension_point susp[NMAXWHEELS];
+	static suspension_point suspDummy;
 
 	bool commit = ser.ShouldCommitValues();
 
 	SWheeledVehicleEntityNetSerialize helper;
-	helper.pSusp = commit? m_susp : susp;
+	helper.pSusp = commit? strided_pointer<suspension_point>(m_susp) : strided_pointer<suspension_point>(&suspDummy,0);
 	helper.Serialize( ser, m_nParts - m_nHullParts );
 
 	if (ser.ShouldCommitValues())
