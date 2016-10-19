@@ -882,6 +882,9 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		}
 
 		CMergedMeshRenderNode* pObj = m_pMergedMeshesManager->GetNode((pChunk->m_Extents.max + pChunk->m_Extents.min) * 0.5f + segmentOffset);
+		if (pObj->StreamedIn()) // MM is already streamed in
+			return;
+
 		pRN = pObj;
 
 #ifdef WH_MMRN_DEBUG
@@ -1082,6 +1085,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 				pMatName = pMaterial ? pMaterial->GetName() : "";
 			Warning("Warning: Removed placement decal at (%4.2f, %4.2f, %4.2f) with invalid material \"%s\"!\n", pChunk->m_pos.x, pChunk->m_pos.y, pChunk->m_pos.z, pMatName);
 			pObj->ReleaseNode();
+			pRN = NULL;
 		}
 		else
 		{
@@ -1094,8 +1098,13 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		// read common info
 		SWaterVolumeChunk* pChunk(StepData<SWaterVolumeChunk>(pPtr, eEndian));
 
+		const int volumeTypeAndMiscBitShift = 24;
+
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
+			int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift;
+			const float *pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
+
 			for (uint32 j(0); j < pChunk->m_numVertices; ++j)
 			{
 				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
@@ -1112,7 +1121,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		CWaterVolumeRenderNode* pObj(new CWaterVolumeRenderNode());
 		pRN = pObj;
 
-		int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> 24, auxCntDst;
+		int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift, auxCntDst;
 		float* pAuxDataDst = pObj->GetAuxSerializationDataPtr(auxCntDst);
 		const float* pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
 		memcpy(pAuxDataDst, pAuxDataDst, min(auxCntSrc, auxCntDst) * sizeof(float));
@@ -1298,6 +1307,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 				pMatName = pMaterial ? pMaterial->GetName() : "";
 			Warning("Warning: Removed distance cloud at (%4.2f, %4.2f, %4.2f) with invalid material \"%s\"!\n", pChunk->m_pos.x, pChunk->m_pos.y, pChunk->m_pos.z, pMatName);
 			pObj->ReleaseNode();
+			pRN = NULL;
 		}
 		else
 		{

@@ -1004,7 +1004,7 @@ void StatInstGroup::Update(CVars* pCVars, int nGeomDetailScreenRes)
 	}
 
 #if defined(FEATURE_SVO_GI)
-	IMaterial* pMat = pMaterial ? pMaterial : (pStatObj ? pStatObj->GetMaterial() : 0);
+	IMaterial* pMat = pMaterial ? pMaterial.get() : (pStatObj ? pStatObj->GetMaterial() : 0);
 	if (pMat && (Cry3DEngineBase::GetCVars()->e_svoTI_Active >= 0) && (gEnv->IsEditor() || Cry3DEngineBase::GetCVars()->e_svoTI_Apply))
 		pMat->SetKeepLowResSysCopyForDiffTex();
 #endif

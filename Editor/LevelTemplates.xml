@@ -125,7 +125,7 @@
       <HalfresKernelPrimary type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <HalfresKernelSecondary type="BOOL" value="1" TipCVar="e_svoTI_*"/>
       <UseLightProbes type="BOOL" value="0" TipCVar="e_svoTI_*"/>
-      <VoxelizaionLODRatio type="Float" value="1.8" min="0.5" max="4" TipCVar="e_svoTI_*"/>
+      <VoxelizaionLODRatio type="Float" value="1" min="0.5" max="4" TipCVar="e_svoTI_*"/>
       <VoxelPoolResolution type="Int" value="128" min="128" max="256" TipCVar="e_svo*"/>
       <SSAOAmount type="Float" value="0.7" min="0" max="1" TipCVar="e_svoTI_*"/>
       <ObjectsMaxViewDistance type="Float" value="48" min="0" max="128" TipCVar="e_svoTI_*"/>
@@ -137,7 +137,8 @@
       <Troposphere_Brightness type="Float" value="1.0" TipCVar="e_svoTI_*"/>
       <AnalyticalOccluders type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <AnalyticalGI type="BOOL" value="0" TipCVar="e_svoTI_*"/>
-      <TranslucentBrightness type="Float" value="2.5"  min="0" max="3" TipCVar="e_svoTI_*"/>
+      <TraceVoxels type="BOOL" value="1" TipCVar="e_svoTI_*"/>
+      <TranslucentBrightness type="Float" value="2.5"  min="0" max="8" TipCVar="e_svoTI_*"/>
     </Total_Illumination_v2>
 
   </Environment>

@@ -316,7 +316,6 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		// update RGB1
 		rp.SetOutputUAV(2, vp_RGB0.pTex);
 		rp.SetOutputUAV(7, vp_RGB1.pTex);
-		rp.SetOutputUAV(5, vp_NORM.pTex);
 
 		if (vp_DYNL.pUAV) rp.SetOutputUAV(6, vp_DYNL.pTex);
 
@@ -692,6 +691,12 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * p
 		vData.y = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetHeight());
 		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
 	}
+
+	{
+		static CCryNameR paramName("SVO_DepthTargetRes");
+		Vec4 vData((float)rd->GetWidth(), (float)rd->GetHeight(), 0, 0);
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
+	}
 }
 
 void CSvoRenderer::DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts)
@@ -885,9 +890,6 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 template<class T>
 void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa, int nStageNorm)
 {
-	if (e_svoTI_AnalyticalGI)
-		return;
-
 	rp.SetTexture(0, ((CTexture*)texInfo.pTexTree));
 
 	rp.SetTexture(1, CTexture::s_ptexBlack);
@@ -1271,6 +1273,24 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 			break;
 		}
 
+	case ECGP_PB_SvoParams8:
+	{
+		sData[0].f[0] = pSR->e_svoTI_VoxelOpacityMultiplier;
+		sData[0].f[1] = pSR->e_svoTI_SkyLightBottomMultiplier;
+		sData[0].f[2] = 0;
+		sData[0].f[3] = 0;
+		break;
+	}
+
+	case ECGP_PB_SvoParams9:
+	{
+		sData[0].f[0] = 0;
+		sData[0].f[1] = 0;
+		sData[0].f[2] = 0;
+		sData[0].f[3] = 0;
+		break;
+	}
+
 	default:
 		bRes = false;
 	}
@@ -1338,7 +1358,7 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier) // read sun light and shadow map during final cone tracing
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
 
-	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count()) // read sun light and shadow map during final cone tracing
+	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count()) // use point lights and shadow maps during final cone tracing
 		rtFlags |= g_HWSR_MaskBit[HWSR_POINT_LIGHT];
 
 	if (bPixelShader && e_svoTI_SSDepthTrace) // SS depth trace
@@ -1349,6 +1369,9 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 
 	if (e_svoTI_AnalyticalGI)
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
+
+	if (e_svoTI_TraceVoxels)
+		rtFlags |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
 
 	if (m_texInfo.arrPortalsPos[0].z)
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
@@ -1461,7 +1484,7 @@ bool CSvoRenderer::SetSamplers(int nCustomID, EHWShaderClass eSHClass, int nTUni
 CTexture* CSvoRenderer::GetTroposphereMinRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_MIN && ((m_pRT_AIR_MIN)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (IsActive() && e_svoTI_Troposphere_Active && m_pRT_AIR_MIN)
 		return m_pRT_AIR_MIN;
 	#endif
 	return NULL;
@@ -1470,7 +1493,7 @@ CTexture* CSvoRenderer::GetTroposphereMinRT()
 CTexture* CSvoRenderer::GetTroposphereMaxRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_MAX && ((m_pRT_AIR_MAX)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (IsActive() && e_svoTI_Troposphere_Active && m_pRT_AIR_MAX)
 		return m_pRT_AIR_MAX;
 	#endif
 	return NULL;
@@ -1479,7 +1502,7 @@ CTexture* CSvoRenderer::GetTroposphereMaxRT()
 CTexture* CSvoRenderer::GetTroposphereShadRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_SHAD && ((m_pRT_AIR_SHAD)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (IsActive() && e_svoTI_Troposphere_Active && m_pRT_AIR_SHAD)
 		return m_pRT_AIR_SHAD;
 	#endif
 	return NULL;
@@ -1536,25 +1559,9 @@ void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 template<class T>
 void CSvoRenderer::SetupRsmSun(T & rp)
 {
-	int t0, t1, t2;
-	if (e_svoTI_AnalyticalGI)
-	{
-		t0 = 0;
-		t1 = 1;
-		t2 = 2;
-	}
-	else
-	{
-		t0 = 12;
-		t1 = 13;
-		t2 = 9;
-	}
-
-	int nLightID = 0;
-
-	threadID m_nThreadID = gcpRendD3D->m_RP.m_nProcessThreadID;
-
-	CRenderView* pRenderView = gcpRendD3D->m_RP.RenderView();
+	const int rsmDepthTexSlot = 29;
+	const int rsmColorTexSlot = 30;
+	const int rsmNormlTexSlot = 31;
 
 	static CCryNameR lightProjParamName("SVO_RsmSunShadowProj");
 	static CCryNameR rsmSunColparamName("SVO_RsmSunCol");
@@ -1562,6 +1569,7 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 	Matrix44A shadowMat;
 	shadowMat.SetIdentity();
 
+	CRenderView* pRenderView = gcpRendD3D->m_RP.RenderView();
 	auto& SMFrustums = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
 	int nFrIdx = 0;
 	for (nFrIdx = 0; nFrIdx < SMFrustums.size(); nFrIdx++)
@@ -1576,20 +1584,11 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 		ShadowMapFrustum& firstFrustum = *SMFrustums[nFrIdx]->pFrustum;
 		gcpRendD3D->ConfigShadowTexgen(0, &firstFrustum, 0);
 
-		if (firstFrustum.bUseShadowsPool)
-		{
-			STexState TS;
-			TS.SetFilterMode(FILTER_POINT);
-			TS.SetClampMode(TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP);
-			TS.m_bSRGBLookup = false;
-			rp.SetTexture(t0, CTexture::s_ptexRT_ShadowPool, CTexture::GetTexState(TS));
-		}
-		else
-		{
-			rp.SetTexture(t0, firstFrustum.pDepthTex);
-			rp.SetTexture(t1, GetRsmColorMap(firstFrustum));
-			rp.SetTexture(t2, GetRsmNormlMap(firstFrustum));
-		}
+		assert(!firstFrustum.bUseShadowsPool);
+
+		rp.SetTexture(rsmDepthTexSlot, firstFrustum.pDepthTex);
+		rp.SetTexture(rsmColorTexSlot, GetRsmColorMap(firstFrustum));
+		rp.SetTexture(rsmNormlTexSlot, GetRsmNormlMap(firstFrustum));
 
 		// set up shadow matrix
 		shadowMat = gRenDev->m_TempMatrices[0][0];
@@ -1609,9 +1608,9 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 	}
 	else
 	{
-		rp.SetTexture(t0, CTexture::s_ptexBlack);
-		rp.SetTexture(t1, CTexture::s_ptexBlack);
-		rp.SetTexture(t2, CTexture::s_ptexBlack);
+		rp.SetTexture(rsmDepthTexSlot, CTexture::s_ptexBlack);
+		rp.SetTexture(rsmColorTexSlot, CTexture::s_ptexBlack);
+		rp.SetTexture(rsmNormlTexSlot, CTexture::s_ptexBlack);
 		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
 		Vec4 vData(0, 0, 0, 0);

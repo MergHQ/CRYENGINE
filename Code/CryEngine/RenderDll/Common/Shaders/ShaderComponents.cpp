@@ -341,6 +341,8 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_SvoParams5,                            ECGP_PB_SvoParams5),                            0),
 	SParamDB(PARAM(PB_SvoParams6,                            ECGP_PB_SvoParams6),                            0),
 	SParamDB(PARAM(PB_SvoParams7,                            ECGP_PB_SvoParams7),                            0),
+	SParamDB(PARAM(PB_SvoParams8,                            ECGP_PB_SvoParams8),                            0),
+	SParamDB(PARAM(PB_SvoParams9,                            ECGP_PB_SvoParams9),                            0),
 #endif
 
 	SParamDB()

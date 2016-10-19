@@ -207,7 +207,6 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 		{
 			psoDesc.m_RenderTargetFormats[0] = eTF_R8G8B8A8;
 			psoDesc.m_RenderTargetFormats[1] = eTF_R8G8B8A8;
-			psoDesc.m_RenderTargetFormats[2] = eTF_R8G8B8A8;
 		}
 	}
 
@@ -671,7 +670,9 @@ void CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)
 	// update per pass textures
 	{
 		int nTerrainTex0 = 0, nTerrainTex1 = 0, nTerrainTex2 = 0;
-		gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
+		ITerrain * pTerrain = gEnv->p3DEngine->GetITerrain();
+		if (pTerrain)
+			pTerrain->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
 		m_pPerPassResources->SetTexture(EPerPassTexture_WindGrid, CTexture::s_ptexWindGrid, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResources->SetTexture(EPerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), SResourceView::DefaultViewSRGB, shaderStages);

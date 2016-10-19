@@ -108,13 +108,9 @@ void CFogStage::Execute()
 #if defined(FEATURE_SVO_GI)
 		// activate support for SVO atmosphere in fog shader
 		CSvoRenderer* pSR = CSvoRenderer::GetInstance();
-		const bool bSVOGI =
-		  (pSR
-		   && pSR->GetTroposphereMinRT()
-		   && pSR->GetTroposphereShadRT()
-		   && pSR->GetTroposphereMaxRT());
+		const int nSvoGiTexId = (pSR && pSR->GetTroposphereMinRT()) ? pSR->GetTroposphereMinRT()->GetTextureID() : 0;
 #else
-		const bool bSVOGI = false;
+		const int nSvoGiTexId = 0;
 #endif
 		const int viewInfoCount = rd->GetGraphicsPipeline().GetViewInfoCount();
 		const bool bSinglePassStereo = (viewInfoCount > 1) ? true : false;
@@ -122,7 +118,7 @@ void CFogStage::Execute()
 		// prevent fog depth clipping if volumetric fog, SVOGI, or single pass stereo rendering are activated.
 		bool useFogDepthTest = (CRenderer::CV_r_FogDepthTest != 0.0f)
 		                       && !bVolumtricFog
-		                       && !bSVOGI
+		                       && !nSvoGiTexId
 		                       && !bSinglePassStereo;
 
 		f32 fogDepth = 0.0f;
@@ -135,16 +131,15 @@ void CFogStage::Execute()
 
 		uint32 inputFlag = 0;
 		inputFlag |= bVolFogShadow ? BIT(0) : 0;
-		inputFlag |= bSVOGI ? BIT(1) : 0;
 		inputFlag |= bVolumtricFog ? BIT(2) : 0;
 		inputFlag |= useFogDepthTest ? BIT(3) : 0;
 		inputFlag |= bReverseDepth ? BIT(4) : 0;
 
-		if (m_passFog.InputChanged(inputFlag, CTexture::s_ptexHDRTarget->GetTextureID()))
+		if (m_passFog.InputChanged(inputFlag, CTexture::s_ptexHDRTarget->GetTextureID(), nSvoGiTexId))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bVolFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
-			rtMask |= bSVOGI ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+			rtMask |= nSvoGiTexId ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 			rtMask |= bVolumtricFog ? g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG] : 0;
 
 			static CCryNameTSCRC techName("FogPass");
@@ -170,7 +165,7 @@ void CFogStage::Execute()
 			}
 #endif
 #if defined(FEATURE_SVO_GI)
-			else if (bSVOGI)
+			else if (nSvoGiTexId)
 			{
 				// bind SVO atmosphere
 				m_passFog.SetTextureSamplerPair(12, pSR->GetTroposphereMinRT(), m_samplerPointClamp);
@@ -252,8 +247,8 @@ void CFogStage::Execute()
 #if defined(FEATURE_SVO_GI)
 		static CCryNameR sSVO_AirTextureScale("SVO_AirTextureScale");
 		Vec4 vSVO_AirTextureScale(
-		  bSVOGI ? float(width / pSR->GetTroposphereMinRT()->GetWidth()) : 0.0f,
-		  bSVOGI ? float(height / pSR->GetTroposphereMinRT()->GetHeight()) : 0.0f,
+			nSvoGiTexId ? float(width / pSR->GetTroposphereMinRT()->GetWidth()) : 0.0f,
+			nSvoGiTexId ? float(height / pSR->GetTroposphereMinRT()->GetHeight()) : 0.0f,
 		  0.0f, 0.0f);
 		m_passFog.SetConstant(sSVO_AirTextureScale, vSVO_AirTextureScale, eHWSC_Pixel);
 #endif

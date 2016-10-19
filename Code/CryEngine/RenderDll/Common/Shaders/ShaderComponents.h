@@ -226,6 +226,8 @@ enum ECGParam
 	ECGP_PB_SvoParams5,
 	ECGP_PB_SvoParams6,
 	ECGP_PB_SvoParams7,
+	ECGP_PB_SvoParams8,
+	ECGP_PB_SvoParams9,
 #endif
 
 	ECGP_COUNT,

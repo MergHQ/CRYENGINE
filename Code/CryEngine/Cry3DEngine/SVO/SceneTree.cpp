@@ -345,7 +345,10 @@ bool CSvoEnv::Render()
 
 	static int nPrev_UpdateGeometry = GetCVars()->e_svoTI_UpdateGeometry;
 	if (!nPrev_UpdateGeometry && GetCVars()->e_svoTI_UpdateGeometry && m_bReady && m_pSvoRoot)
+	{
 		DetectMovement_StaticGeom();
+		CVoxelSegment::m_nVoxTrisCounter = 0;
+	}
 	nPrev_UpdateGeometry = GetCVars()->e_svoTI_UpdateGeometry;
 
 	bool bMultiUserMode = false;
@@ -912,9 +915,9 @@ void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nNodeKey, CR
 
 	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
-	const float fNodeToCamDist = m_nodeBox.GetDistance(vCamPos) * 1.25f;
+	const float fNodeToCamDist = m_nodeBox.GetDistance(vCamPos);
 
-	const float fBoxSizeRated = fBoxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionLODRatio / 1.50f * 1.25f;
+	const float fBoxSizeRated = fBoxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionLODRatio;
 
 	bool bDrawThisNode = false;
 
@@ -2333,18 +2336,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	// Total illumination
 	if (GetCVars()->e_svoTI_Active >= 0)
-	{
 		GetCVars()->e_svoTI_Apply = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Active", "0"));
-
-		//    if(GetCVars()->e_svoTI_Apply)
-		//    {
-		//      GetCVars()->e_svoTI_Active = 1;
-		//      GetCVars()->e_GI = 0;
-		//      GetCVars()->e_Clouds = 0;
-		//      if(ICVar * pV = gEnv->pConsole->GetCVar("r_UseAlphaBlend"))
-		//        pV->Set(0);
-		//    }
-	}
 
 	GetCVars()->e_svoVoxelPoolResolution = 64;
 	int nVoxelPoolResolution = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelPoolResolution", "0"));
@@ -2411,6 +2403,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	GetCVars()->e_svoTI_AnalyticalOccluders = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalOccluders", "0"));
 	GetCVars()->e_svoTI_AnalyticalGI = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalGI", "0"));
+	GetCVars()->e_svoTI_TraceVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TraceVoxels", "1"));
 
 	int nLowSpecMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "LowSpecMode", "0"));
 	if (nLowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg

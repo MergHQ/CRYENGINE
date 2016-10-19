@@ -47,31 +47,31 @@ float4    SVO_CloudShadowParams;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Textures
 
-Texture2D sceneGBuffer0    : register(t14);
-Texture2D sceneGBuffer1    : register(t5);
-Texture2D sceneGBuffer2    : register(t7);
-Texture2D sceneSvoMap      : register(t13);
+Texture2D sceneGBuffer0 : register(t14);
+Texture2D sceneGBuffer1 : register(t5);
+Texture2D sceneGBuffer2 : register(t7);
+Texture2D sceneSvoMap : register(t13);
 
-Texture2D sceneAld         : register(t10);
-Texture2D sceneRgb         : register(t11);
+Texture2D sceneAld : register(t10);
+Texture2D sceneRgb : register(t11);
 
-Texture2D sceneAldMin      : register(t10);
-Texture2D sceneRgbMin      : register(t11);
-Texture2D sceneAldMax      : register(t12);
-Texture2D sceneRgbMax      : register(t13);
+Texture2D sceneAldMin : register(t10);
+Texture2D sceneRgbMin : register(t11);
+Texture2D sceneAldMax : register(t12);
+Texture2D sceneRgbMax : register(t13);
 
-Texture2D sceneRgbMinPrev  : register(t6);
-Texture2D sceneAldMinPrev  : register(t9);
-Texture2D sceneRgbMaxPrev  : register(t12);
-Texture2D sceneAldMaxPrev  : register(t13);
+Texture2D sceneRgbMinPrev : register(t6);
+Texture2D sceneAldMinPrev : register(t9);
+Texture2D sceneRgbMaxPrev : register(t12);
+Texture2D sceneAldMaxPrev : register(t13);
 
-Texture2D sceneFinOutPrev  : register(t9);
-Texture2D sceneDiffuseFin  : register(t15);
+Texture2D sceneFinOutPrev : register(t9);
+Texture2D sceneDiffuseFin : register(t15);
 
-Texture2D sceneVelocity    : register(t8);
+Texture2D sceneVelocity : register(t8);
 
 Texture2D shadowFromClouds : register(t15);
-Texture2D noiseMap2D       : register(t15);
+Texture2D noiseMap2D : register(t15);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Structures
@@ -85,8 +85,8 @@ struct vtxOutWPOS
 struct vtxInWPOS
 {
 	IN_P
-	IN_TBASE
-	float3 CamVec : TEXCOORD1;
+		IN_TBASE
+		float3 CamVec : TEXCOORD1;
 };
 
 struct pixoutMRT
@@ -123,6 +123,7 @@ struct pixout_RenderAtmosphere
 // _RT_AMBIENT_OCCLUSION				Sun RSM Inject in modes 1-2
 // _RT_VOLUMETRIC_FOG						Use RSM albedo colors and normals
 // _RT_LIGHTVOLUME1             Analytical GI mode - voxels are not used
+// _RT_TILED_SHADING            Enable voxels tracing
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -193,7 +194,7 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 
 float3 GetWorldSpaceNormals(float2 tc, out float fTransmittanceY, float3 vCamVec)
 {
-	half4 bufferA = tex2Dlod(sceneGBuffer0, tc);
+	half4 bufferA = tex2DlodPC(sceneGBuffer0, tc);
 	float3 vNorm0 = DecodeGBufferNormal(bufferA);
 	if (IsDiffuseMode())
 		fTransmittanceY = saturate(DecodeGBufferTransmittanceLum(bufferA));
@@ -204,7 +205,7 @@ float3 GetWorldSpaceNormals(float2 tc, out float fTransmittanceY, float3 vCamVec
 
 MaterialAttribsCommon DecodeGBufferChannels(in float2 tc)
 {
-	return DecodeGBuffer(tex2Dlod(sceneGBuffer0, tc), tex2Dlod(sceneGBuffer1, tc), tex2Dlod(sceneGBuffer2, tc));
+	return DecodeGBuffer(tex2DlodPC(sceneGBuffer0, tc), tex2DlodPC(sceneGBuffer1, tc), tex2DlodPC(sceneGBuffer2, tc));
 }
 
 float3 GetVoxCenter(uint3 coord, uint3 coord0, uint3 coord1, float4 voxAreaMin, float4 voxAreaMax)
@@ -300,7 +301,7 @@ float3 GetSkyColor(const float3 vDir, const float fConeSev)
 #endif
 
 #if %_RT_SAMPLE1
-	float3 vAmb = DecodeHDRCubemap(texCUBElod(globalSpecCM, half4(vDir, saturate(1.f - fConeSev)*3.f))) * SvoParamsMisc.w;
+	float3 vAmb = DecodeHDRCubemap(texCUBElodLC(globalSpecCM, half4(vDir, saturate(1.f - fConeSev)*3.f))) * SvoParamsMisc.w;
 #else
 	float3 vAmb = vSkyColorTop;
 #endif
@@ -479,7 +480,7 @@ struct SAnalyticalOccluder
 	float4 C;
 };
 
-#define SVO_MAX_ANALYTICAL_OCCLUDERS 48
+#define SVO_MAX_ANALYTICAL_OCCLUDERS 32
 
 float4 SVO_AnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS * 4];
 float4 SVO_PostOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS * 4];
@@ -494,6 +495,8 @@ float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fD
 {
 	float fHitDist = 1000;
 
+#if !ORBIS
+
 	float fOccl = 0;
 
 	const float fDistM = length(r.startpoint.xyz - PS_WorldViewPos.xyz);
@@ -502,19 +505,19 @@ float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fD
 	{
 		SAnalyticalOccluder oc;
 
-		if(bPostOccl)
+		if (bPostOccl)
 		{
 			oc.P0 = SVO_PostOccluders[n * 4 + 0];
 			oc.P1 = SVO_PostOccluders[n * 4 + 1];
 			oc.P2 = SVO_PostOccluders[n * 4 + 2];
-			oc.C  = SVO_PostOccluders[n * 4 + 3];
+			oc.C = SVO_PostOccluders[n * 4 + 3];
 		}
 		else
 		{
 			oc.P0 = SVO_AnalyticalOccluders[n * 4 + 0];
 			oc.P1 = SVO_AnalyticalOccluders[n * 4 + 1];
 			oc.P2 = SVO_AnalyticalOccluders[n * 4 + 2];
-      oc.C  = SVO_AnalyticalOccluders[n * 4 + 3];
+			oc.C = SVO_AnalyticalOccluders[n * 4 + 3];
 		}
 
 		if (!oc.P0.w)
@@ -593,9 +596,9 @@ float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fD
 			fRadius = 0;
 		}
 
-		if(fRayDist<=0)
+		if (fRayDist <= 0)
 		{
-			if(fOrigDist < fHitDist && fOrigDist < fRayLen)
+			if (fOrigDist < fHitDist && fOrigDist < fRayLen)
 				fHitDist = fOrigDist;
 		}
 
@@ -603,7 +606,7 @@ float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fD
 		if (fOrigDist>0)
 		{
 			fO *= saturate(.5 + dot(vSegDir, r.direction));
-			if(!bHardOcclusion)
+			if (!bHardOcclusion)
 				fO *= saturate(1 - fOrigDist / fRayLen);
 		}
 
@@ -611,6 +614,8 @@ float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fD
 	}
 
 	vC = lerp(vC, float4(0, 0, 0, 1), fOccl);
+
+#endif
 
 	return fHitDist;
 }
@@ -620,24 +625,27 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 	float fAoHitDist = 1000;
 	float fAoOpacity = 0;
 
+#if !ORBIS
 #if %_RT_LIGHTVOLUME1
 	{
 		float4 vC = 0;
 		float fDirectionality = 1;
 		Ray r2 = r;
-		r2.startpoint += r2.direction * 0.005f;
+		r2.startpoint += r2.direction * 0.01f;
 		fAoHitDist = ProcessAnalyticalOccluders(fRayLen, r2, vC, fDirectionality, false);
 		fAoOpacity = vC.a;
 	}
+#endif
 #endif
 
 	float4 vPos1 = 0; vNor1 = 0;
 	float4 vC = 0;
 
-#if !%_RT_LIGHTVOLUME1
+#if %_RT_TILED_SHADING
 	vC = ConeTraceTree(r, fConeSev, vPos1, vNor1, bSpecular ? (length(r.startpoint - PS_WorldViewPos.xyz)*.25 + .25) : 0, min(fAoHitDist + VOX_MIN_VOX_SIZE, fRayLen), 0.f, 1.f, 0, fMultTriRT, 0, false, bSpecular, bForceUseLighting, vSurfNorm);
-#else
+#endif
 
+#if !ORBIS
 #if %_RT_LIGHT_TEX_PROJ && %_RT_LIGHTVOLUME1
 	if (fAoHitDist<200)
 	{
@@ -651,12 +659,12 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 
 		if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
 		{
-			float fShadowDepth = tex2Dlod(rsmSunShadowMapNoVox, float4(vShadTC.xy, 0, 0)).r;
+			float fShadowDepth = tex2DlodPC(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
 			vSunLight = (fShadowDepth > vShadTC.z + .00005);
 
 #if %_RT_VOLUMETRIC_FOG
-			half4 vMatColor = tex2Dlod(rsmSunColorsMapNoVox, float4(vShadTC.xy, 0, 0)).rgba;
-			half3 vMatNormal = tex2Dlod(rsmSunNormalMapNoVox, float4(vShadTC.xy, 0, 0)).rgb;
+			half4 vMatColor = tex2DlodPC(rsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
+			half3 vMatNormal = tex2DlodPC(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
 #else
 			half4 vMatColor = half4(SvoParamsMisc2.zzz, 0.15f);
 			half3 vMatNormal = 0;
@@ -677,12 +685,11 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 
 			if (dot(vMatNormal, r.direction) < 0.85)
 #endif
-				if(SvoParamsCommon.z)
+				if (SvoParamsCommon.z)
 					vC.xyz += abs(1.f / SvoParamsCommon.z) * vRGBD.xyz * (vRGBD.a) * saturate(1 - 0);
 		}
 	}
 #endif
-
 #endif
 
 	vC.a = max(fAoOpacity, vC.a);
@@ -694,8 +701,8 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 
 #if !%_RT_LIGHTVOLUME1
 	// prevent sky light leaking from the bottom
-	if (r.direction.z < 0 && VOX_CONE_MAX_LEN > 16.f)
-		vC.a = 1;
+	if (r.direction.z < 0)
+		vC.a = lerp(1.f, vC.a, SvoParamsMisc4.y);
 #endif
 #endif
 
@@ -788,7 +795,7 @@ float3 Reproject(in half2 vScreenPos, in float fDepth, in float3x4 matReproj)
 	pos.xy /= pos.z;
 	pos.z *= fDepth;
 
-	float2 vMV = tex2Dlod(sceneVelocity, vScreenPos);
+	float2 vMV = tex2DlodPC(sceneVelocity, vScreenPos);
 	if (vMV.x != 0)
 		pos.xy = vScreenPos + DecodeMotionVector(vMV);
 
@@ -861,21 +868,24 @@ float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness,
 	return fMinBlend;
 }
 
-float4 SVO_PortalsPos[16];
-float4 SVO_PortalsDir[16];
+#define SVO_MAX_PORTALS 8
 
-#define MAX_BEST_PORTALS 2
+float4 SVO_PortalsPos[SVO_MAX_PORTALS];
+float4 SVO_PortalsDir[SVO_MAX_PORTALS];
 
-void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX_BEST_PORTALS])
+#define MAX_BEST_PORTALS 3
+
+void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX_BEST_PORTALS], out float4 arrBestPortalDir[MAX_BEST_PORTALS])
 {
 	float arrBestW[MAX_BEST_PORTALS];
 	for (int n = 0; n < MAX_BEST_PORTALS; n++)
 	{
 		arrBestW[n] = 0;
 		arrBestPortalPos[n] = 0;
+		arrBestPortalDir[n] = 0;
 	}
 
-	for (int p = 0; p < 16; p++)
+	for (int p = 0; p < SVO_MAX_PORTALS; p++)
 	{
 		if (SVO_PortalsPos[p].z)
 		{
@@ -900,6 +910,7 @@ void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX
 				if (fW > arrBestW[nWorstSlot])
 				{
 					arrBestPortalPos[nWorstSlot] = SVO_PortalsPos[p];
+					arrBestPortalDir[nWorstSlot] = SVO_PortalsDir[p];
 					arrBestW[nWorstSlot] = fW;
 				}
 			}
@@ -1037,13 +1048,15 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 	bool bSameMinMaxDepth = (abs(fDepthMax - fDepthMin)*PS_NearFarClipDist.y < .1) && (dot(vNorMin, vNorMax) > .7);
 
+#if !ORBIS
+
 #if %_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
 
 	OUT.Specular *= SvoParamsCommon.z;
 	OUT.Specular1 *= SvoParamsCommon.z;
 
-	float4 arrPortOut[2] = 
-	{ 
+	float4 arrPortOut[2] =
+	{
 		float4(0, 0, 0, 0),
 		float4(0, 0, 0, 0)
 	};
@@ -1062,11 +1075,13 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 		{
 			float4 arrBestPortalPos[MAX_BEST_PORTALS];
-			FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+			float4 arrBestPortalDir[MAX_BEST_PORTALS];
+			FindBestPortals(vPos0, vNor0, arrBestPortalPos, arrBestPortalDir);
 
-			for (int nPort = 0; nPort<MAX_BEST_PORTALS; nPort++)
+			for (int nPort = 0; nPort < MAX_BEST_PORTALS; nPort++)
 			{
 				float4 bestPortalPos = arrBestPortalPos[nPort];
+				float4 bestPortalDir = arrBestPortalDir[nPort];
 				if (bestPortalPos.z)
 				{
 					float3 lightPos = bestPortalPos;
@@ -1082,7 +1097,9 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 					else
 						vC4 = float4(0, 0, 0, 1);
 
-					float fBr = GetSkyColor(vNor0, 0).b * saturate(1 - vC4.w) * saturate(dot(normalize(vNor0), r.direction)) * saturate(1 / (fDist + 1));
+					float fBr = GetSkyColor(vNor0, 0).b * saturate(1 - vC4.w) * saturate(dot(normalize(vNor0), r.direction)) * saturate(1 / (fDist*0.5f + 1));
+
+					fBr *= saturate(16 * dot(-bestPortalDir, r.direction));
 
 					if (!nPass)
 					{
@@ -1098,7 +1115,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 			}
 		}
 
-		if(bSameMinMaxDepth)
+		if (bSameMinMaxDepth)
 		{
 			arrPortOut[1] = arrPortOut[0];
 			break;
@@ -1142,6 +1159,8 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 		OUT.Specular1 *= saturate(1 - vC.w);
 #endif
 	}
+#endif
+
 #endif
 
 	float3 vReprojTC_Min = Reproject(IN.baseTC.xy, fDepthMin, SVO_ReprojectionMatrix);
@@ -1345,9 +1364,9 @@ void ConeTrace_LM_PS(in vtxOutWPOS IN, out float4 vALD, out float4 vRGB)
 
 	float fNewDepth = SampleLinearDepth(sceneDepth, IN.baseTC.xy);
 
-	int nAtlasOffset = tex2Dlod(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).w;
+	int nAtlasOffset = tex2DlodPC(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).w;
 
-	if (nAtlasOffset < 0 || tex2Dlod(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).z)
+	if (nAtlasOffset < 0 || tex2DlodPC(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).z)
 	{
 		vALD = float4(0, 0, 0, 0);
 		vRGB = 0.1;
@@ -1429,7 +1448,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 #if %_RT_MOTION_BLUR
 	const int nPassesNum = 2;
 #else
-	const int nPassesNum = IsDiffuseMode() ? 1 : 2;
+	const int nPassesNum = 1;
 #endif
 
 	for (int p = 0; p<nPassesNum; p++)
@@ -1488,15 +1507,18 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		r.startpoint = vPos0;
 
-#if !%_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1
+#if !%_RT_SAMPLE5 && %_RT_TILED_SHADING
 		r.startpoint += (vFocus * saturate(1 - fAverTransmittanceY * 4) + r.direction * .3) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
 #endif
-		
+
+#if !ORBIS
 #if %_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
-		if(SvoTreeSettings5.y)
+		if (SvoTreeSettings5.y)
 		{
 			float4 arrBestPortalPos[MAX_BEST_PORTALS];
-			FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+			float4 arrBestPortalDir[MAX_BEST_PORTALS];
+			FindBestPortals(vPos0, vNor0, arrBestPortalPos, arrBestPortalDir);
+
 			float4 bestPortalPos = arrBestPortalPos[i&int(MAX_BEST_PORTALS - 1)];
 			float3 lightPos = bestPortalPos;
 			float lightSize = bestPortalPos.w;
@@ -1514,7 +1536,8 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 			}
 		}
 #endif
-		
+#endif
+
 		float4 vC = 0;
 
 		float fRayLen;
@@ -1846,7 +1869,7 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 
 			bool bFogVolumes = true;
 
-			float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+			float4 vOPAC = LoadTexel(brickPool_Opac, coord);
 			bool bAir = (!vOPAC.x && !vOPAC.y && !vOPAC.z);
 
 			if (bAir)
@@ -1856,7 +1879,7 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 			else
 			{
 				// get geom normal
-				vNor0 = UINT_TO_FlOAT4(UAV_5[coord]);
+				vNor0 = LoadTexel(brickPool_Norm, coord);
 				vNor0.xyz = (vNor0.zyx - .5) * 2;
 			}
 
@@ -1906,11 +1929,11 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 			{
 			float2 tc = vShadTC.xy + float2(x,y) / 1024.f * fFilerScale;
 
-			float fShadowDepth = tex2Dlod(rsmSunShadowMap, float4(tc,0,0)).r;
+			float fShadowDepth = tex2DlodPC(rsmSunShadowMap, float4(tc,0,0)).r;
 
 			float fSunVis = saturate(1.f - abs(fShadowDepth - vShadTC.z - 0.00025)*1000 / fFilerScale);
 
-			vSunLightAlbedo.xyz += tex2Dlod(rsmSunColorsMap, float4(tc,0,0)).xyz*fSunVis;
+			vSunLightAlbedo.xyz += tex2DlodPC(rsmSunColorsMap, float4(tc,0,0)).xyz*fSunVis;
 
 			vSunLightAlbedo.w += 1.f;
 			}
@@ -1951,7 +1974,9 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 			if (SvoTreeSettings5.x > 0)
 			{
 				float4 arrBestPortalPos[MAX_BEST_PORTALS];
-				FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+				float4 arrBestPortalDir[MAX_BEST_PORTALS];
+				FindBestPortals(vPos0, vNor0, arrBestPortalPos, arrBestPortalDir);
+
 				for (int i = 0; i < MAX_BEST_PORTALS; i++)
 				{
 					float4 bestPortalPos = arrBestPortalPos[i];
@@ -1966,7 +1991,7 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 						r.direction = vDir;
 						r.startpoint = vPos0;
 						float4 vNor1 = 0;
-						vRGB.xyz += ConeTraceTreeAndSkyEx(fDist, r, SvoParamsDiffuse.x, vNor1, 1.f, 0, false, false, true) * SvoTreeSettings5.x / MAX_BEST_PORTALS * saturate(fDist / lightSize);
+						vRGB.xyz += ConeTraceTreeAndSkyEx(fDist, r, SvoParamsDiffuse.x, vNor1, 1.f, 0, false, false, true) * SvoTreeSettings5.x / 2 * saturate(fDist / lightSize);
 					}
 				}
 			}
@@ -2030,7 +2055,7 @@ void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupT
 
 		float4 pixel = UINT_TO_FlOAT4(UAV_2[coord]);
 
-		float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+		float4 vOPAC = LoadTexel(brickPool_Opac, coord);
 		bool bAir = (!vOPAC.x && !vOPAC.y && !vOPAC.z);
 
 		if (!bAir)
@@ -2045,7 +2070,7 @@ void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupT
 				bool bFogVolumes = true;
 
 				// compute geom normal
-				//				vNor0 = tex3DlodLC( brickPool_Norm,  float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0) );				
+				//				vNor0 = LoadTexel( brickPool_Norm,  coord );				
 				//			vNor0.xyz = (vNor0.zyx-.5)*2;
 
 				float4 vALD = 0; float4 vRGB = 0;
@@ -2068,8 +2093,8 @@ void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupT
 
 							if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
 							{
-								float fShadowDepth = tex2Dlod(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
-								half3 vMatNormal = tex2Dlod(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
+								float fShadowDepth = tex2DlodPC(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
+								half3 vMatNormal = tex2DlodPC(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
 
 								if (dot(vMatNormal, 1) < 0.01)
 									vMatNormal = float3(0, 0, 1); // terrain
@@ -2114,12 +2139,12 @@ void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThrea
 
 		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
 
-		float4 pixel = tex3DlodLC(brickPool_Rgbs, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+		float4 pixel = LoadTexel(brickPool_Rgbs, coord);
 
 		pixel.xyz = DecodeHDR(pixel);
 		pixel.w = 0;
 
-		float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+		float4 vOPAC = LoadTexel(brickPool_Opac, coord);
 		const bool bSolid = (vOPAC.x || vOPAC.y || vOPAC.z);
 
 #if !%_RT_SAMPLE2
@@ -2133,16 +2158,17 @@ void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThrea
 		if (SvoParamsInject.y && (coord.x <= coord1.x && coord.y <= coord1.y && coord.z <= coord1.z))
 		{
 			// get world normal
-			float3 vNor0 = tex3DlodLC(brickPool_Norm, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+			float3 vNor0 = LoadTexel(brickPool_Norm, coord);
 			vNor0.xyz = 2 * (vNor0.zyx - 0.5f);
 
 			if (!bSolid)
 				vNor0 = float3(0, 0, 1);
 			else
 			{
+				/*
 				float3 vNormD = 0;
 
-				float pixel_c = UINT_TO_FlOAT4(UAV_0[coord]).w;
+				float pixel_c = tex3DlodLC(brickPool_Norm, vTC).w;
 
 				for (int x = -1; x <= 1; x++)
 					for (int y = -1; y <= 1; y++)
@@ -2153,7 +2179,10 @@ void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThrea
 							if (coord_n.x <= coord1.x && coord_n.y <= coord1.y && coord_n.z <= coord1.z)
 								if (coord_n.x >= coord0.x && coord_n.y >= coord0.y && coord_n.z >= coord0.z)
 								{
-									float pixel_n = UINT_TO_FlOAT4(UAV_0[coord_n]).w;
+									float4 vTC_N = float4(1.f / VOX_TEX_POOL_DIM * coord_n.xyz + 0.5f / VOX_TEX_POOL_DIM, 0);
+
+									float pixel_n = tex3DlodLC(brickPool_Norm, vTC_N).w;
+
 									vNormD += float3(x, y, z)*(pixel_c - pixel_n);
 								}
 						}
@@ -2162,6 +2191,10 @@ void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThrea
 
 				if (length(vNormD) > length(vNor0))
 					vNor0.xyz = normalize(vNormD);
+				*/
+
+				if (length(vNor0) < .25)
+					return;
 
 				vNor0.xyz = normalize(vNor0.xyz);
 			}
@@ -2375,7 +2408,7 @@ void BoxGenGS_GS(point vert2FragGeneral InPos[1], inout TriangleStream<vtxOutWPO
 
 		OUT.HPosition = mul(g_VS_ViewProjMatr, OUT.HPosition); // transform into screen space
 
-		//OUT.baseTC.xy = (OUT.HPosition.xy / OUT.HPosition.w / 2 + .5);
+																													 //OUT.baseTC.xy = (OUT.HPosition.xy / OUT.HPosition.w / 2 + .5);
 
 		if (v == 10 || v == 14)
 			SpriteStream.RestartStrip();
@@ -2413,10 +2446,10 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 		const float4 tc = float4(tc1, 0, 0);
 
-		const float4 vDiff_RGB_Min = tex2Dlod(sceneRgbMin, tc);
-		const float4 vDiff_ALD_Min = tex2Dlod(sceneAldMin, tc);
-		const float4 vDiff_RGB_Max = tex2Dlod(sceneRgbMax, tc);
-		const float4 vDiff_ALD_Max = tex2Dlod(sceneAldMax, tc);
+		const float4 vDiff_RGB_Min = tex2DlodPC(sceneRgbMin, tc);
+		const float4 vDiff_ALD_Min = tex2DlodPC(sceneAldMin, tc);
+		const float4 vDiff_RGB_Max = tex2DlodPC(sceneRgbMax, tc);
+		const float4 vDiff_ALD_Max = tex2DlodPC(sceneAldMax, tc);
 
 		const float fDepthMin = vDiff_RGB_Min.w;
 		const float fDepthMax = vDiff_RGB_Max.w;
@@ -2426,8 +2459,18 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 		float4 vDiff_RGB = lerp(vDiff_RGB_Min, vDiff_RGB_Max, fLerp);
 		float4 vDiff_ALD = lerp(vDiff_ALD_Min, vDiff_ALD_Max, fLerp);
 
+#if %_RT_LIGHTVOLUME1
+		const float fDepth1 = SampleLinearDepth(sceneDepth, tc.xy);
+#else
 		const float fDepth1 = vDiff_RGB.w;
+#endif
+
+#if %_RT_LIGHTVOLUME1
+		float fTr = 0;
+		const float3 vNorm = normalize(GetWorldSpaceNormals(tc.xy, fTr, normalize(IN.CamVec.xyz)).xyz);
+#else
 		const float3 vNorm = vDiff_ALD;
+#endif
 
 		float fDotTest = lerp(.25, saturate(fTransmittanceY * 4 + dot(normalize(vNorm), vFocus) - fDotMax), saturate(length(vNorm) / max(0.0001, vDiff_ALD.w) * 8.f)) + .001;
 
@@ -2474,7 +2517,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 		OUT.Diffuse.xyz = lerp(vRGB * fIntensity, vRGB * vALD.w, pow(gbuffer.Smoothness, 2));
 
-		float4 vFinalDiffuse = tex2Dlod(sceneDiffuseFin, float4(IN.baseTC.xy, 0, 0));
+		float4 vFinalDiffuse = tex2DlodPC(sceneDiffuseFin, float4(IN.baseTC.xy, 0, 0));
 
 		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 3 - .75, 1)));
 
@@ -2495,7 +2538,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 	float3 vReprojTC = Reproject(IN.baseTC.xy, fDepthC, SVO_ReprojectionMatrix);
 
-	float4 valPrev = tex2Dlod(sceneFinOutPrev, float4(vReprojTC.xy, 0, 0));
+	float4 valPrev = tex2DlodPC(sceneFinOutPrev, float4(vReprojTC.xy, 0, 0));
 
 	float fOut = vReprojTC.x < 0 || vReprojTC.x > 1 || vReprojTC.y < 0 || vReprojTC.y > 1;
 
@@ -2519,92 +2562,92 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 technique SvoDebugDraw
 {
 	pass p0
-	{
-		VertexShader = VoxelRayTraceVS() GeneralVS;
-		PixelShader = SvoDebugDrawPS() GeneralPS;
-		CullMode = None;
-	}
+{
+	VertexShader = VoxelRayTraceVS() GeneralVS;
+PixelShader = SvoDebugDrawPS() GeneralPS;
+CullMode = None;
+}
 }
 
 technique ConeTracePass
-	{
-		pass p0
-		{
-			VertexShader = RenderLightingCommonVS();
-			PixelShader = ConeTracePS();
-			CullMode = None;
-		}
-	}
+{
+	pass p0
+{
+	VertexShader = RenderLightingCommonVS();
+PixelShader = ConeTracePS();
+CullMode = None;
+}
+}
 
 #ifdef SVO_LMAPS
 
-	technique ConeTracePS_NID
-		{
-			pass p0
-			{
-				VertexShader = VoxelRayTraceVS_GS();
-				GeometryShader = BoxGenGS_GS();
-				PixelShader = ConeTracePS_NID_GS();
+technique ConeTracePS_NID
+{
+	pass p0
+{
+	VertexShader = VoxelRayTraceVS_GS();
+GeometryShader = BoxGenGS_GS();
+PixelShader = ConeTracePS_NID_GS();
 
-				ZEnable = true;
-				ZWriteEnable = true;
-				CullMode = Front;
-			}
-		}
+ZEnable = true;
+ZWriteEnable = true;
+CullMode = Front;
+}
+}
 
 #endif
 
-		technique RenderAtmosphere
-			{
-				pass p0
-				{
-					VertexShader = RenderLightingCommonVS();
-					PixelShader = RenderAtmospherePS();
-					CullMode = None;
-				}
-			}
+technique RenderAtmosphere
+{
+	pass p0
+{
+	VertexShader = RenderLightingCommonVS();
+PixelShader = RenderAtmospherePS();
+CullMode = None;
+}
+}
 
-			technique DemosaicPass
-				{
-					pass p0
-					{
-						VertexShader = RenderLightingCommonVS();
-						PixelShader = DemosaicPS();
-						CullMode = None;
-					}
-				}
+technique DemosaicPass
+{
+	pass p0
+{
+	VertexShader = RenderLightingCommonVS();
+PixelShader = DemosaicPS();
+CullMode = None;
+}
+}
 
-				technique UpScalePass
-					{
-						pass p0
-						{
-							VertexShader = RenderLightingCommonVS();
-							PixelShader = UpScalePS();
-							CullMode = None;
-						}
-					}
+technique UpScalePass
+{
+	pass p0
+{
+	VertexShader = RenderLightingCommonVS();
+PixelShader = UpScalePS();
+CullMode = None;
+}
+}
 
-					/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					// Compute techniques
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Compute techniques
 
-					technique
-					ComputeClearBricks{ pass p0{ ComputeShader =
-					ComputeClearBricks(); } }
+technique
+ComputeClearBricks{ pass p0{ ComputeShader =
+ComputeClearBricks(); } }
 
-					technique
-					ComputeInjectAtmosphere{ pass p0{ ComputeShader =
-					ComputeInjectAtmosphere(); } }
+technique
+ComputeInjectAtmosphere{ pass p0{ ComputeShader =
+ComputeInjectAtmosphere(); } }
 
-					technique
-					ComputeDirectStaticLighting{ pass p0{ ComputeShader =
-					ComputeDirectStaticLighting(); } }
+technique
+ComputeDirectStaticLighting{ pass p0{ ComputeShader =
+ComputeDirectStaticLighting(); } }
 
-					technique
-					ComputeDirectDynamicLighting{ pass p0{ ComputeShader =
-					ComputeDirectDynamicLighting(); } }
+technique
+ComputeDirectDynamicLighting{ pass p0{ ComputeShader =
+ComputeDirectDynamicLighting(); } }
 
-					technique
-					ComputePropagateLighting{ pass p0{ ComputeShader =
-					ComputePropagateLighting(); } }
+technique
+ComputePropagateLighting{ pass p0{ ComputeShader =
+ComputePropagateLighting(); } }
 
 #endif // FEATURE_SVO_GI

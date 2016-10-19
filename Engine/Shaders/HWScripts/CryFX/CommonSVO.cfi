@@ -23,12 +23,15 @@ float4 SvoParamsMisc2    : PB_SvoParams6; // point light mult, 0, 0, 0
 float4 SvoParamsSkyColor : PB_SvoParams4; // r, g, b, mult
 float4 SvoParamsSpecular : PB_SvoParams3; // wid, caust mult, air brightness, mult
 float4 SvoParamsMisc3    : PB_SvoParams7; // AO len, AO soft
+float4 SvoParamsMisc4    : PB_SvoParams8; // VoxelOpacityMultiplier, SkyLightBottomMultiplier
+float4 SvoParamsMisc5    : PB_SvoParams9; // 
 
 float4x4 SVO_ViewProj;
 float4x4 SVO_ViewProjPrev;
 float4x4 SVO_RsmSunShadowProj;
 float4   SVO_RsmSunCol;
 float4   SVO_RsmSunDir;
+float4   SVO_DepthTargetRes;
 
 float4x4	SVO_LightCol0;
 float4x4	SVO_LightCol1;
@@ -41,9 +44,19 @@ SamplerState ssSvoPointClamp : register(s0);
 SamplerState ssSvoLinearClamp : register(s1);
 SamplerState ssSvoLinearWrap : register(s2);
 
-float4 tex3Dlod(Texture3D t, float3 tc)
+float4 tex3DlodPC(Texture3D t, float3 tc)
 {
 	return t.SampleLevel(ssSvoPointClamp, tc, 0);
+}
+
+float4 LoadTexel(Texture3D t, uint3 coord)
+{
+	return t.Load(uint4(coord, 0));
+}
+
+float4 LoadTexel(Texture2D t, uint2 coord)
+{
+	return t.Load(uint4(coord, 0, 0));
 }
 
 float4 tex3DlodLC(Texture3D t, float3 tc)
@@ -51,7 +64,7 @@ float4 tex3DlodLC(Texture3D t, float3 tc)
 	return t.SampleLevel(ssSvoLinearClamp, tc, 0);
 }
 
-float4 tex2Dlod(Texture2D t, float2 tc)
+float4 tex2DlodPC(Texture2D t, float2 tc)
 {
 	return t.SampleLevel(ssSvoPointClamp, tc, 0);
 }
@@ -66,7 +79,7 @@ float4 tex2DlodLW(Texture2D t, float2 tc)
 	return t.SampleLevel(ssSvoLinearWrap, tc, 0);
 }
 
-float4 texCUBElod(TextureCube t, float3 tc)
+float4 texCUBElodLC(TextureCube t, float3 tc)
 {
 	return t.SampleLevel(ssSvoLinearClamp, tc, 0);
 }
@@ -74,7 +87,7 @@ float4 texCUBElod(TextureCube t, float3 tc)
 float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 {
 	// TODO: GetLinearDepth + GetLinearDepthUnclamped
-	int3 vPixCoord = int3(max(min(ScreenTC * PS_ScreenSize.xy, PS_ScreenSize.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
+	int3 vPixCoord = int3(max(min(ScreenTC * SVO_DepthTargetRes.xy, SVO_DepthTargetRes.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
 	float fDepth = depthTexture.Load(vPixCoord).x;
 	return GetLinearDepth(fDepth);
 }
@@ -88,7 +101,7 @@ float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 
 #define VOX_MIN_NODE_SIZE (SvoTreeSettings0.y)
 #define VOX_BRICK_TEXRES	(SvoTreeSettings0.z)
-#define VOX_MIN_VOX_SIZE	(VOX_MIN_NODE_SIZE / VOX_BRICK_TEXRES)
+#define VOX_MIN_VOX_SIZE	(SvoTreeSettings0.y / SvoTreeSettings0.z)
 #define VOX_MAX_NODE_SIZE (SvoTreeSettings1.x)
 #define VOX_MAX_RT_DIST		(SvoTreeSettings1.y)
 #define VOX_CONE_MAX_LEN	(SvoParamsDiffuse.y)
@@ -158,15 +171,11 @@ Texture3D brickPool_NTri : register (t6);
 TextureCube globalSpecCM : register (t6);
 #endif
 
-Texture2D rsmSunShadowMapNoVox : register(t0);
-Texture2D rsmSunColorsMapNoVox : register(t1);
-Texture2D rsmSunNormalMapNoVox : register(t2);
-
 Texture2D sceneTargetPrev : register(t12);
 
-Texture2D rsmSunShadowMap : register(t12);
-Texture2D rsmSunColorsMap : register(t13);
-Texture2D rsmSunNormalMap : register(t9);
+Texture2D rsmSunShadowMap : register(t29);
+Texture2D rsmSunColorsMap : register(t30);
+Texture2D rsmSunNormalMap : register(t31);
 
 Texture2D ForwRsmPoolCol : register(t26);
 Texture2D ForwRsmPoolNor : register(t27);
@@ -364,10 +373,10 @@ float ReadNodeCropBox(float3 tcMin, out float4 voxAreaMin, out float4 voxAreaMax
 	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
 	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
 
-	voxAreaMin = tex3Dlod(brickPool_Tree, float4(tcMin, 0));
-	voxAreaMax = tex3Dlod(brickPool_Tree, float4(tcMin + float3(fTexelSizeXY, 0, 0), 0));
+	voxAreaMin = tex3DlodPC(brickPool_Tree, float4(tcMin, 0));
+	voxAreaMax = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(fTexelSizeXY, 0, 0), 0));
 
-	return tex3Dlod(brickPool_Tree, float4(tcMin + float3(0, 0, fTexelSizeZ), 0)).x;
+	return tex3DlodPC(brickPool_Tree, float4(tcMin + float3(0, 0, fTexelSizeZ), 0)).x;
 }
 
 float3 ComputeDataTC(int nAtlasOffset)
@@ -389,7 +398,7 @@ int ReadChildPtr(float3 tcMin, int nChildId)
 	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
 	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
 
-	float4 childPtrT = tex3Dlod(brickPool_Tree, float4(tcMin + float3(nChildId<4 ? 0 : fTexelSizeXY, fTexelSizeXY, 0), 0));
+	float4 childPtrT = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(nChildId<4 ? 0 : fTexelSizeXY, fTexelSizeXY, 0), 0));
 	return childPtrT[nChildId & 3];
 }
 
@@ -482,7 +491,7 @@ float ReadIsoValTrilinear(float3 texTC)
 {
 	return ReadDecodeIso(texTC);
 
-	//	return tex3Dlod( brickPool_Rgbs,  float4(texTC.xyz, 0) ).r;
+	//	return tex3DlodPC( brickPool_Rgbs,  float4(texTC.xyz, 0) ).r;
 
 	/*
 	float2 MapParams = float2 (VOX_TEX_POOL_DIM.x, 1.f / VOX_TEX_POOL_DIM.y );
@@ -677,7 +686,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 
 		{
 			// get first triangle id and tris count
-			float4 vValII = tex3Dlod(brickPool_NTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
+			float4 vValII = tex3DlodPC(brickPool_NTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
 			int nFirstTriII =
 				+int(vValII.r * 255)
 				+ int(vValII.g * 255) * 256
@@ -690,7 +699,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 
 				int3 vTCII = int3(nTCII & 255, (nTCII / 256) & 255, (nTCII / 256 / 256) & 255);
 
-				float4 vVal = tex3Dlod(brickPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / 256.f);
+				float4 vVal = tex3DlodPC(brickPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / 256.f);
 
 				// get triangle id
 				int nTriId =
@@ -703,9 +712,9 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 				int3 nTC = int3(nTriId & 255, (nTriId / 256) & 255, (nTriId / 256 / 256) & 255);
 
 				// load triangle vertices
-				float4 v0 = tex3Dlod(brickPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / 256.f);
-				float4 v1 = tex3Dlod(brickPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / 256.f);
-				float4 v2 = tex3Dlod(brickPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / 256.f);
+				float4 v0 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / 256.f);
+				float4 v1 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / 256.f);
+				float4 v2 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / 256.f);
 
 				// intersect
 				float3 vHitPoint = 0;
@@ -730,7 +739,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 		if (vNearestTC.x >= 0)
 		{
 			// load vertices TC
-			float4 vInf = tex3Dlod(brickPool_Tris, float4(vNearestTC.x + 3, vNearestTC.y, vNearestTC.z, 0) / 256.f);
+			float4 vInf = tex3DlodPC(brickPool_Tris, float4(vNearestTC.x + 3, vNearestTC.y, vNearestTC.z, 0) / 256.f);
 
 			float2 t0 = ExtractTC(arrNearestTriVerts[0].w);
 			float2 t1 = ExtractTC(arrNearestTriVerts[1].w);
@@ -994,7 +1003,7 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 					vReprojTC.xy = vReprojTC.xy*0.5f + 0.5f;
 					vReprojTC.y = 1 - vReprojTC.y;
 
-					float3 vSSR = tex2Dlod(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
+					float3 vSSR = tex2DlodPC(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
 					vRgbOut.xyz += vSSR.xyz * vRGBD.a * saturate(1 - vRgbOut.a);
 				}
 #endif
@@ -1047,6 +1056,8 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 		const float fVoxSize = ocNodeSize / VOX_BRICK_TEXRES;
 
+		float3 vRayDirABS = normalize(abs(r.direction));
+
 		while(1)
 		{
 			float fStepSize = bAirOnlyMode ? 1.f : 0.5f; // todo: pass from outside
@@ -1075,7 +1086,8 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 			{
 				vNORA = tex3DlodLC(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
 
-				vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0)) / max(0.1f, vNORA.a);
+				vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0));
+				vRGBD.xyz /= max(0.1f, vNORA.a);
 
 				if (nDebugMode != 2)
 					vRGBD.xyz = DecodeHDR(vRGBD);
@@ -1092,7 +1104,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 			if (!bAirOnlyMode)
 			{
-				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, dot(vOPAC.zyx, normalize(abs(r.direction)))));
+				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, dot(vOPAC.zyx, vRayDirABS)));
 			}
 			else
 			{
@@ -1107,9 +1119,9 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 			}
 
 			fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
-			float fOverDist = saturate((fDistanceMax - fDistance) / fVoxSize);
+			const float fOverDist = 1;// saturate((fDistanceMax - fDistance) / fVoxSize);
 
-			vRGBD.a = saturate(vRGBD.a) * pow(saturate(1.f - fDistance / fDistanceMax), .5);
+			vRGBD.a = saturate(vRGBD.a * SvoParamsMisc4.x);// *pow(saturate(1.f - fDistance / fDistanceMax), .5);
 
 			//if(vRGBD.a > fAlphaRefMin && vRGBD.a > 0 && vRGBD.a <= fAlphaRefMax)
 			{
@@ -1152,12 +1164,12 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 					vShadTC.xy /= vShadTC.w;
 					if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
 					{
-						float fShadowDepth = tex2Dlod(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
+						float fShadowDepth = tex2DlodPC(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
 						vSunLight = (fShadowDepth > vShadTC.z + .0007);
 
 #if %_RT_VOLUMETRIC_FOG
-						half4 vMatColor = tex2Dlod(rsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
-						half3 vMatNormal = tex2Dlod(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
+						half4 vMatColor = tex2DlodPC(rsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
+						half3 vMatNormal = tex2DlodPC(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
 #else
 						half4 vMatColor = half4(SvoParamsMisc2.zzz, 0.15f);
 						half3 vMatNormal = 0;
@@ -1209,7 +1221,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 						vReprojTC.xy = vReprojTC.xy*0.5f + 0.5f;
 						vReprojTC.y = 1 - vReprojTC.y;
 
-						float3 vSSR = tex2Dlod(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
+						float3 vSSR = tex2DlodPC(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
 						vRgbOut.xyz += vSSR.xyz * saturate(fSurDens*fFade) * saturate(1 - vRgbOut.a);
 					}
 #endif
@@ -1619,7 +1631,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 
 // hemi-sphere
 
-const static float3 kernel_HS_512[512] =
+static float3 kernel_HS_512[512] =
 {
 	float3(-0.615241, 0.246533, 0.748800),
 	float3(-0.043896, 0.577149, 0.815458),
@@ -2132,10 +2144,10 @@ const static float3 kernel_HS_512[512] =
 	float3(0.211330, -0.083186, 0.973868),
 	float3(0.672525, -0.121364, 0.730055),
 	float3(0.227295, -0.668052, 0.708550),
-	float3(0.527499, -0.579715, 0.621027),
+	float3(0.527499, -0.579715, 0.621027)
 };
 
-const static float3 kernel_S_512[512] =
+static float3 kernel_S_512[512] =
 {
 	float3(-0.110998, -0.863143, -0.492610),
 	float3(-0.227532, 0.678302, 0.698667),
@@ -2648,10 +2660,10 @@ const static float3 kernel_S_512[512] =
 	float3(0.581957, 0.518610, 0.626394),
 	float3(0.914163, -0.140978, -0.380041),
 	float3(0.401158, -0.872122, 0.280135),
-	float3(0.624162, -0.763886, 0.164012),
+	float3(0.624162, -0.763886, 0.164012)
 };
 
-const static float3 kernel_HS_256[256] =
+static float3 kernel_HS_256[256] =
 {
 	float3(-0.527747, 0.119389, 0.840969),
 	float3(-0.072454, 0.516697, 0.853097),
@@ -2908,10 +2920,10 @@ const static float3 kernel_HS_256[256] =
 	float3(-0.407163, -0.764607, 0.499595),
 	float3(0.361514, -0.787228, 0.499580),
 	float3(-0.120250, 0.857859, 0.499618),
-	float3(0.395487, -0.256278, 0.881993),
+	float3(0.395487, -0.256278, 0.881993)
 };
 
-const static float3 kernel_HS_128[128] =
+static float3 kernel_HS_128[128] =
 {
 	float3(0.378169, 0.622113, 0.685539),
 	float3(0.739083, -0.452051, 0.499406),
@@ -3040,10 +3052,10 @@ const static float3 kernel_HS_128[128] =
 	float3(-0.054456, 0.413412, 0.908914),
 	float3(0.561422, -0.164099, 0.811096),
 	float3(-0.015350, 0.711156, 0.702867),
-	float3(-0.205112, -0.439208, 0.874657),
+	float3(-0.205112, -0.439208, 0.874657)
 };
 
-const static float3 kernel_S_128[128] =
+static float3 kernel_S_128[128] =
 {
 	float3(-0.400773, 0.331119, 0.854249),
 	float3(0.216972, -0.431971, 0.875400),
@@ -3172,10 +3184,10 @@ const static float3 kernel_S_128[128] =
 	float3(0.025769, -0.971450, 0.235839),
 	float3(-0.482893, 0.054955, -0.873953),
 	float3(0.485430, 0.227534, -0.844148),
-	float3(0.706470, -0.501444, -0.499453),
+	float3(0.706470, -0.501444, -0.499453)
 };
 
-const static float3 kernel_HS_64[64] =
+static float3 kernel_HS_64[64] =
 {
 	float3(-0.534693, 0.068143, 0.842295),
 	float3(-0.099921, 0.481922, 0.870498),
@@ -3240,10 +3252,10 @@ const static float3 kernel_HS_64[64] =
 	float3(0.599841, -0.102179, 0.793568),
 	float3(-0.267736, -0.630860, 0.728239),
 	float3(0.342928, 0.795822, 0.499067),
-	float3(0.756106, -0.423491, 0.498958),
+	float3(0.756106, -0.423491, 0.498958)
 };
 
-const static float3 kernel_S_64[64] =
+static float3 kernel_S_64[64] =
 {
 	float3(-0.182543, 0.821262, 0.540562),
 	float3(-0.380227, -0.842966, 0.380572),
@@ -3308,10 +3320,10 @@ const static float3 kernel_S_64[64] =
 	float3(-0.890770, 0.232752, -0.390328),
 	float3(0.503405, 0.816547, -0.282551),
 	float3(0.858983, -0.485483, 0.162647),
-	float3(0.405588, 0.355539, -0.842075),
+	float3(0.405588, 0.355539, -0.842075)
 };
 
-const static float3 kernel_HS_32[32] =
+static float3 kernel_HS_32[32] =
 {
 	float3(-0.514748, 0.006141, 0.857319),
 	float3(-0.275770, 0.575362, 0.770006),
@@ -3344,10 +3356,10 @@ const static float3 kernel_HS_32[32] =
 	float3(-0.247153, -0.518479, 0.818593),
 	float3(0.645359, -0.578623, 0.498706),
 	float3(0.133137, -0.254264, 0.957927),
-	float3(0.032093, 0.577059, 0.816072),
+	float3(0.032093, 0.577059, 0.816072)
 };
 
-const static float3 kernel_S_32[32] =
+static float3 kernel_S_32[32] =
 {
 	float3(-0.866867, 0.387031, -0.314242),
 	float3(0.869669, -0.454003, 0.193796),
@@ -3380,10 +3392,10 @@ const static float3 kernel_S_32[32] =
 	float3(-0.322009, -0.797401, 0.510354),
 	float3(0.813971, -0.376220, -0.442618),
 	float3(-0.185646, -0.239586, -0.952961),
-	float3(0.369399, 0.711567, 0.597676),
+	float3(0.369399, 0.711567, 0.597676)
 };
 
-const static float3 kernel_HS_16[16] =
+static float3 kernel_HS_16[16] =
 {
 	float3(0.188020, 0.358958, 0.914220),
 	float3(0.415860, -0.048357, 0.908142),
@@ -3400,10 +3412,10 @@ const static float3 kernel_HS_16[16] =
 	float3(0.122670, -0.412326, 0.902740),
 	float3(0.334456, 0.800416, 0.497468),
 	float3(-0.288950, 0.421420, 0.859601),
-	float3(0.701216, 0.508936, 0.499280),
+	float3(0.701216, 0.508936, 0.499280)
 };
 
-const static float3 kernel_HS_8[8] =
+static float3 kernel_HS_8[8] =
 {
 	float3(0.024513, 0.574757, 0.817957),
 	float3(0.680559, 0.538709, 0.496622),
@@ -3412,20 +3424,20 @@ const static float3 kernel_HS_8[8] =
 	float3(-0.629731, 0.597428, 0.496507),
 	float3(-0.329830, 0.014175, 0.943934),
 	float3(-0.021927, -0.572613, 0.819533),
-	float3(-0.682322, -0.536106, 0.497018),
+	float3(-0.682322, -0.536106, 0.497018)
 };
 
-const static float3 kernel_HS_4[4] =
+static float3 kernel_HS_4[4] =
 {
 	normalize(float3(1, -1, 0.7)),
 	normalize(float3(1, 1, 0.7)),
 	normalize(float3(-1, -1, 0.7)),
-	normalize(float3(-1, 1, 0.7)),
+	normalize(float3(-1, 1, 0.7))
 };
 
 // full sphere
 
-const static float3 kernel_S_8_box[8] =
+static float3 kernel_S_8_box[8] =
 {
 	float3(1, 1, 1),
 	float3(-1, 1, 1),
@@ -3434,10 +3446,10 @@ const static float3 kernel_S_8_box[8] =
 	float3(1, 1, -1),
 	float3(-1, 1, -1),
 	float3(1, -1, -1),
-	float3(-1, -1, -1),
+	float3(-1, -1, -1)
 };
 
-const static float3 kernel_S_8[8] =
+static float3 kernel_S_8[8] =
 {
 	float3(-0.825149, 0.149162, -0.544867),
 	float3(-0.449977, 0.778477, 0.437600),
@@ -3446,10 +3458,10 @@ const static float3 kernel_S_8[8] =
 	float3(-0.741538, -0.396629, 0.541117),
 	float3(0.694981, 0.718114, 0.036235),
 	float3(0.875026, -0.483035, -0.031718),
-	float3(0.331499, 0.001090, 0.943455),
+	float3(0.331499, 0.001090, 0.943455)
 };
 
-const static float3 kernel_S_16[16] =
+static float3 kernel_S_16[16] =
 {
 	float3(-0.888271, -0.085257, -0.451338),
 	float3(-0.374271, 0.559964, -0.739162),
@@ -3466,10 +3478,10 @@ const static float3 kernel_S_16[16] =
 	float3(0.730612, 0.567148, 0.380197),
 	float3(0.245251, 0.132155, 0.960410),
 	float3(-0.802549, -0.516613, 0.298374),
-	float3(0.489315, -0.668274, -0.560340),
+	float3(0.489315, -0.668274, -0.560340)
 };
 
-const static float3 box_expansion[18] =
+static float3 box_expansion[18] =
 {
 	float3(1, 1, 1),
 	float3(0, 1, 1),

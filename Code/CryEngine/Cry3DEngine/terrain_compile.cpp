@@ -657,6 +657,8 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 					CryPathString sMtlName = matName.szFileName;
 					sMtlName = PathUtil::MakeGamePath(sMtlName);
 					rTable[tableIndex] = matName.szFileName[0] ? GetMatMan()->LoadMaterial(sMtlName) : NULL;
+					if (rTable[tableIndex])
+						rTable[tableIndex]->AddRef();
 
 					SLICE_AND_SLEEP();
 				}

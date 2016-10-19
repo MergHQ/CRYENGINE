@@ -133,6 +133,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL,
                    "Enable basic support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (shadow capsules are defined in .chrparams file)");
 REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalGI, 0, VF_EXPERIMENTAL,
 	                 "Completely replace voxel tracing with analytical shapes tracing\nLight bouncing is supported only in integration mode 0");
+REGISTER_CVAR_AUTO(int, e_svoTI_TraceVoxels, 1, VF_EXPERIMENTAL,
+									 "Include voxels into tracing\nAllows to exclude voxel tracing if only proxies are needed");
 REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
 									 "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass");
 
@@ -186,6 +188,8 @@ REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
 	#endif // DUMP_UI_PARAMETERS
 #endif   // CVAR_CPP
 
+REGISTER_CVAR_AUTO(float, e_svoTI_VoxelOpacityMultiplier, 1, VF_NULL, "Allows making voxels more opaque, helps reducing light leaks");
+REGISTER_CVAR_AUTO(float, e_svoTI_SkyLightBottomMultiplier, 0, VF_NULL, "Modulates sky light coming from the bottom");
 REGISTER_CVAR_AUTO(int, e_svoTI_Apply, 0, VF_NULL, "Allows to temporary deactivate GI for debug purposes");
 REGISTER_CVAR_AUTO(float, e_svoTI_Diffuse_Spr, 0, VF_NULL, "Adjusts the kernel of diffuse tracing; big value will merge all cones into single vector");
 REGISTER_CVAR_AUTO(int, e_svoTI_Diffuse_Cache, 0, VF_NULL, "Pre-bake lighting in SVO and use it instead of cone tracing");

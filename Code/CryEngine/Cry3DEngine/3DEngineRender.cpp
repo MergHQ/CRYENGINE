@@ -1896,7 +1896,7 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (GetOceanRenderFlags() & OCR_NO_DRAW || !GetVisAreaManager() || GetCVars()->e_DefaultMaterial)
+	if (GetOceanRenderFlags() & OCR_NO_DRAW || !GetVisAreaManager() || GetCVars()->e_DefaultMaterial || !GetTerrain())
 		return;
 
 	bool bOceanIsForcedByVisAreaFlags = GetVisAreaManager()->IsOceanVisible();

@@ -2294,11 +2294,11 @@ struct I3DEngine : public IProcess
 		bool   bSvoFreeze;
 		Sphere helperInfo;
 
-	#define SVO_MAX_PORTALS 16
+	#define SVO_MAX_PORTALS 8
 		Vec4 arrPortalsPos[SVO_MAX_PORTALS];
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
-	#define SVO_MAX_ANALYTICAL_OCCLUDERS 48
+	#define SVO_MAX_ANALYTICAL_OCCLUDERS 32
 		SAnalyticalOccluder arrAnalyticalOccluders[2][SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;

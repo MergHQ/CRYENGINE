@@ -58,10 +58,10 @@ PodArrayRT<IMaterial*> CVoxelSegment::m_arrLockedMaterials;
 PodArray<CVoxelSegment*> CVoxelSegment::m_arrLoadedSegments;
 SRenderingPassInfo* CVoxelSegment::m_pCurrPassInfo = 0;
 
-	#if CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_ORBIS
 int   _fseeki64(FILE* pFile, int64 nOffset, int nOrigin) { return fseek(pFile, (int32)nOffset, nOrigin); }
 int64 _ftelli64(FILE* pFile)                             { return ftell(pFile); }
-	#endif
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Streaming engine
@@ -102,11 +102,20 @@ public:
 
 	void        ThreadEntry();
 
+  #if CRY_PLATFORM_ORBIS
+	static void* FileReadThreadFunc(void* pUD)
+	{
+		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
+		pEng->ThreadEntry();
+		return NULL;
+	}
+  #else
 	static void FileReadThreadFunc(void* pUD)
 	{
 		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
 		pEng->ThreadEntry();
 	}
+  #endif
 
 	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForFileRead;
 	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForSyncCallBack;
@@ -148,6 +157,14 @@ public:
 			m_threadId = 0;
 			m_thread = (void*)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FileReadThreadFunc, (void*)this, 0, (LPDWORD)&m_threadId);
 			SetThreadPriority(m_thread, THREAD_PRIORITY_BELOW_NORMAL);
+	#elif CRY_PLATFORM_ORBIS
+			ScePthread m_thread0;
+			::scePthreadCreate(&m_thread0, nullptr, FileReadThreadFunc, (void*)this, "VoxelThread_0");
+			::scePthreadSetprio(m_thread0, THREAD_PRIORITY_BELOW_NORMAL);
+
+			ScePthread m_thread1;
+			::scePthreadCreate(&m_thread1, nullptr, FileReadThreadFunc, (void*)this, "VoxelThread_1");
+			::scePthreadSetprio(m_thread1, THREAD_PRIORITY_BELOW_NORMAL);
 	#else
 			_beginthread(FileReadThreadFunc, 0, (void*)this);
 			_beginthread(FileReadThreadFunc, 0, (void*)this);
@@ -1118,7 +1135,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		if (!gSvoEnv->m_nTexNormPoolId)
 		{
 			gSvoEnv->m_nTexNormPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
-			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
+			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadOnly);
 			m_nSvoDataPoolsCounter++;
 		}
 
@@ -1856,7 +1873,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					if (pNode->GetGIMode() != IRenderNode::eGM_StaticVoxelization)
 						continue;
 
-					float fMaxViewDist = pNode->GetMaxViewDist();
+					float fMaxViewDist = pNode->GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio;
 
 					float fMinAllowedViewDist = (pNode->GetRenderNodeType() == eERType_Vegetation) ? (GetCVars()->e_svoTI_ObjectsMaxViewDistance * 2) : GetCVars()->e_svoTI_ObjectsMaxViewDistance;
 

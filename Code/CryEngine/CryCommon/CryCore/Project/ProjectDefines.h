@@ -308,7 +308,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 //------------------------------------------------------
 // Modules   : Renderer, Engine
 // Platform  : DX11
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO /*|| CRY_PLATFORM_ORBIS*/
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	#define FEATURE_SVO_GI
 	#if CRY_PLATFORM_WINDOWS
 		#define FEATURE_SVO_GI_ALLOW_HQ

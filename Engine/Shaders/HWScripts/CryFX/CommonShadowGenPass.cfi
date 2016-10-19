@@ -63,7 +63,6 @@ v2f_sh Common_SG_VS(app2vertSGGeneral IN_common)
 		_TCModify(baseTC, baseTC, vertPassPos.Position, OUT.Normal, TS_DIFFUSE);
 		OUT.baseTC = baseTC.xy;
 	#endif
-	OUT.Depth2 = HPosition.zw;
 #endif
 
 #if !%_RT_CUBEMAP0 
@@ -127,7 +126,6 @@ struct pixout_shadow
 #if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
   float4 Color   : COLOR0;
   half4  Normal	 : COLOR1;
-  float4 Depth2  : COLOR2;
 #endif
 
 #if !OPENGL
@@ -181,7 +179,6 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 			OUT.Color.a = 1.f;
 		#endif
 
-	OUT.Depth2 = IN.Depth2.x / IN.Depth2.y;
 	OUT.Normal.xyz = normalize(half3(IN.Normal.xyz))*.5h+.5h;
 	OUT.Normal.w = 1;
 #endif

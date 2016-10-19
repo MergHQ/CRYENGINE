@@ -169,7 +169,6 @@ void CSvoManager::Render()
 		GetCVars()->e_svoTI_Active = 1;
 		GetCVars()->e_svoLoadTree = 1;
 		GetCVars()->e_svoRender = 1;
-		GetCVars()->e_GI = 0;
 
 		if (GetCVars()->e_svoTI_Troposphere_Active)
 		{
@@ -208,7 +207,7 @@ void CSvoManager::Render()
 				while (gSvoEnv->m_fSvoFreezeTime > 0)
 				{
 					gSvoEnv->Render();
-					CrySleep(0);
+					CrySleep(5);
 				}
 
 				gSvoEnv->m_fSvoFreezeTime = -1;
