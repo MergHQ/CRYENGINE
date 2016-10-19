@@ -17,9 +17,11 @@
 class CFlowNodeEntityMaterial : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowNodeEntityMaterial(SActivationInfo* pActInfo)
+	CFlowNodeEntityMaterial(SActivationInfo * pActInfo) {}
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
 	{
-	};
+		return new CFlowNodeEntityMaterial(pActInfo);
+	}
 
 	enum EInputs
 	{
@@ -505,13 +507,11 @@ public:
 		m_pMaterial = NULL;
 	}
 
-	/*
-	   virtual IFlowNodePtr Clone( SActivationInfo *pActInfo )
-	   {
-	   pActInfo->m_pUserData = (void*)(UINT_PTR)m_entityId;
-	   return new CFlowNodeEntityMaterialShaderParam(pActInfo);
-	   };
-	 */
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
+	{
+		return new CFlowNodeEntityMaterialShaderParams(pActInfo);
+	}
+
 	enum EInputPorts
 	{
 		EIP_Get = 0,

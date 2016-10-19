@@ -223,6 +223,11 @@ public:
 	{
 	}
 
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
+	{
+		return new CFlowNode_AIActiveCountInFaction(pActInfo);
+	}
+
 	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] =

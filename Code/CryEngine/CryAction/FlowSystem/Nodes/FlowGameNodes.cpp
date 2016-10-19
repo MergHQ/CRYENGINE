@@ -555,7 +555,7 @@ public:
 	}
 };
 
-class CFlowGetSupportedGameRulesForMap : public CFlowBaseNode<eNCT_Instanced>
+class CFlowGetSupportedGameRulesForMap : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -626,7 +626,7 @@ public:
 	}
 };
 
-class CFlowGetStateOfEntity : public CFlowBaseNode<eNCT_Instanced>
+class CFlowGetStateOfEntity : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -689,7 +689,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFlowIsLevelOfType : public CFlowBaseNode<eNCT_Instanced>
+class CFlowIsLevelOfType : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -709,8 +709,8 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("Check",   _HELP("Check if level is of given type")),
-			InputPortConfig<string>("Type", "",                                       _HELP("type you want to check against"),0, _UICONFIG("enum_global:level_types")),
+			InputPortConfig_Void("Check", _HELP("Check if level is of given type")),
+			InputPortConfig<string>("Type", "", _HELP("Type you want to check against"),0, _UICONFIG("enum_global:level_types")),
 			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {

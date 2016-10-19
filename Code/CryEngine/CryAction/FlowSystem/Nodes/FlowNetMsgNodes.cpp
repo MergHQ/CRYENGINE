@@ -30,9 +30,12 @@ public:
 		OUT_ERROR,
 	};
 
-	CFlowNode_MsgSender(SActivationInfo* pActInfo)
+	CFlowNode_MsgSender(SActivationInfo* pActInfo) {}
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
 	{
+		return new CFlowNode_MsgSender(pActInfo);
 	}
+
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
@@ -125,6 +128,10 @@ public:
 	~CFlowNode_MsgReceiver()
 	{
 		Enable(false); // This unregisters the listener
+	}
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo) override
+	{
+		return new CFlowNode_MsgReceiver(pActInfo);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config) override

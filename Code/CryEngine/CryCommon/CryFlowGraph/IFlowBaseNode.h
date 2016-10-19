@@ -11,7 +11,6 @@ enum ENodeCloneType
 {
 	eNCT_Singleton, // node has only one instance; not cloned
 	eNCT_Instanced, // new instance of the node will be created
-	eNCT_Cloned     // node clone method will be called
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,16 +101,6 @@ public:
 		{
 			return new T(pActInfo);
 		}
-		else if (T::myCloneType == eNCT_Cloned)
-		{
-			if (m_pInstance.get())
-				return m_pInstance->Clone(pActInfo);
-			else
-			{
-				m_pInstance = new T(pActInfo);
-				return m_pInstance;
-			}
-		}
 		else
 		{
 			assert(false);
@@ -163,7 +152,7 @@ public:
 	virtual void         AddRef()                                                  { ++m_refs; };
 	virtual void         Release()                                                 { if (0 >= --m_refs) delete this; };
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)                          { assert(false); return this; }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)                          = 0;
 	virtual bool         SerializeXML(SActivationInfo*, const XmlNodeRef&, bool)   { return true; }
 	virtual void         Serialize(SActivationInfo*, TSerialize ser)               {}
 	virtual void         PostSerialize(SActivationInfo*)                           {}
@@ -194,8 +183,19 @@ public:
 	static const int myCloneType = CLONE_TYPE;
 };
 
-// specialization for singleton nodes: Clone() is
-//	marked so derived classes cannot override it.
+// specialization for instanced nodes: Clone() is purely virtual to force derived classes to override it
+template<>
+class CFlowBaseNode<eNCT_Instanced> : public CFlowBaseNodeInternal
+{
+public:
+	CFlowBaseNode() : CFlowBaseNodeInternal() {}
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) = 0;
+
+	static const int myCloneType = eNCT_Instanced;
+};
+
+// specialization for singleton nodes: Clone() is marked final so that derived classes cannot override it.
 template<>
 class CFlowBaseNode<eNCT_Singleton> : public CFlowBaseNodeInternal
 {

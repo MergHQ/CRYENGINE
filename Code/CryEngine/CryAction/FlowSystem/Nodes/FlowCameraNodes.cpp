@@ -329,6 +329,11 @@ public:
 		}
 	}
 
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_CameraView(pActInfo);
+	}
+
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
@@ -451,7 +456,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFlowNode_CameraTransform : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_CameraTransform : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_CameraTransform(SActivationInfo* pActInfo){}

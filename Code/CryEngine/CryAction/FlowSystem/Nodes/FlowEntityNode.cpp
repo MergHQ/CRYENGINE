@@ -3194,7 +3194,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Call a LUA function on an entity
-class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -3312,7 +3312,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Returns the entity ID of the gamerules
-class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs

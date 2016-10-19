@@ -828,7 +828,7 @@ public:
 	}
 };
 
-class CVRRenderLayerTexture : public CFlowBaseNode<eNCT_Instanced>
+class CVRRenderLayerTexture : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum INPUTS
 	{

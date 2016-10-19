@@ -164,7 +164,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 class CFlowNode_Helicopter_FollowPath
 	: public CFlowBaseNode<eNCT_Instanced>
-	  , public IEntityEventListener
+	, public IEntityEventListener
 {
 	enum INPUTS
 	{
@@ -195,6 +195,11 @@ public:
 	~CFlowNode_Helicopter_FollowPath()
 	{
 		UnregisterAsPathNotificationListener();
+	}
+
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
+	{
+		return new CFlowNode_Helicopter_FollowPath(pActInfo);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

@@ -92,6 +92,11 @@ class CFlowNode_PhysicsSleepQuery : public CFlowBaseNode<eNCT_Instanced>
 public:
 	CFlowNode_PhysicsSleepQuery(SActivationInfo* pActInfo) : m_Activated(false) {}
 
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_PhysicsSleepQuery(pActInfo);
+	}
+
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
@@ -720,6 +725,11 @@ public:
 	CFlowNode_Constraint(SActivationInfo* pActInfo) : m_id(1000) {};
 	~CFlowNode_Constraint() {}
 
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_Constraint(pActInfo);
+	}
+
 	struct SConstraintRec
 	{
 		SConstraintRec() : next(0), prev(0), pent(0), pNode(0), idConstraint(-1), bBroken(0), minEnergy(0), minEnergyRagdoll(0.0f) {}
@@ -1002,6 +1012,11 @@ public:
 				g_listeners.erase(iter++);
 			}
 			else iter++;
+	}
+
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_Collision(pActInfo);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
