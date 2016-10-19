@@ -2470,7 +2470,6 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 									ptail->m_next_coll = pentlist[j]; ptail = pentlist[j]; ptail->m_next_coll = 0;
 									ptail->m_bMoved = 0;
 								}
-								time_interval = min(time_interval, pentlist[j]->GetMaxTimeStep(time_interval));
 							}
 					}
 
