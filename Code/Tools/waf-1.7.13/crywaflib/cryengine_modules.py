@@ -748,6 +748,9 @@ def BuildTaskGenerator(ctx, kw):
 	platform = ctx.env['PLATFORM']
 	configuration = ctx.GetConfiguration(target)
 	
+	if not spec:
+		return False
+		
 	if ctx.cmd == 'configure':
 		return False 		# Dont build during configure
 		
