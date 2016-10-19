@@ -273,13 +273,13 @@ void CATLAudioObject::ReportPrepUnprepTriggerImpl(AudioTriggerImplId const audio
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId)
 {
-	m_switchStates.emplace(audioSwitchId, audioSwitchStateId);
+	m_switchStates[audioSwitchId] = audioSwitchStateId;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetParameter(AudioControlId const audioParameterId, float const value)
 {
-	m_parameters.emplace(audioParameterId, value);
+	m_parameters[audioParameterId] = value;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -287,7 +287,7 @@ void CATLAudioObject::SetEnvironmentAmount(AudioEnvironmentId const audioEnviron
 {
 	if (amount > 0.0f)
 	{
-		m_environments.emplace(audioEnvironmentId, amount);
+		m_environments[audioEnvironmentId] = amount;
 	}
 	else
 	{
