@@ -11,6 +11,7 @@
     <RootNamespace>CryEngine.SampleApp</RootNamespace>
     <AssemblyName>CryEngine.SampleApp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+	<UseMSBuildEngine>False</UseMSBuildEngine>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Name>CryEngine.SampleApp</Name>
