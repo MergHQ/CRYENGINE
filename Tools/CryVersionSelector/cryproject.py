@@ -24,13 +24,12 @@ def is_valid (self):
 def engine_id(self):
 	return self.get ('require', {}).get ('engine')
 	
-def shared_tuple(self, platform, config):
-	lib= self['content']['libs'][0]
-	return (lib['name'], lib.get('shared', {}).get (platform))
-
 def shared_dir(self, platform, config):
-	name, shared= shared_tuple (self, platform, config)
-	return os.path.dirname (shared)
+	lib= self['content'].get ('libs', [None])[0]
+	if lib is None:
+		return os.path.join ("bin", platform)
+
+	return os.path.dirname (lib.get('shared', {}).get (platform))
 
 def asset_dir(self):
 	return self['content'].get ('assets', [None])[0]

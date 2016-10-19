@@ -226,12 +226,12 @@ def csharp_copylinks (args, update= True):
 def csharp_userfile (args, csharp):
 	dirname= os.path.dirname (args.project_file)
 	engine_path= get_engine_path()
+	tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameLauncher.exe')
+	projectfile_path= os.path.abspath (args.project_file)
 		
 	#--- debug file
 	user_settings= csharp.get("monodev", {}).get("user")
 	if user_settings:
-		tool_path= os.path.join (engine_path, 'bin', args.platform, 'Game.exe')
-		projectfile_path= os.path.abspath (args.project_file)
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -245,7 +245,6 @@ def csharp_userfile (args, csharp):
 
 	user_settings= csharp.get("msdev", {}).get("user")
 	if user_settings:
-		projectfile_path= os.path.abspath (args.project_file)
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
