@@ -2360,6 +2360,50 @@ struct IGeometry
 		float maxLayerReusage;         //!< stop growing a box if it goes through already used cells (> than this percentage)
 		float maxVoxIslandConnections; //!< ignore isolated voxel islands that have more than this amount of connections to the used ones
 	};
+	struct SProxifyParams
+	{
+		SProxifyParams() : ncells(50), islandMap(-1ll), maxLineDot(0.88f), maxLineDist(2.0f), minLineCells(8), minSurfCells(50), surfPrimIters(1.0f), surfMinNormLen(0.5f), surfMergeDist(4.0f),
+			surfNormRefineThresh(0.94f), primVoxInflate(1.5f), primRefillThresh(0.6f), primVfillSurf(0.85f), primVfillLine(0.6f), primSurfOutside(0.4f), capsHRratio(4.0f), maxGeoms(128),
+			surfMeshMinCells(80), surfMeshIters(7), lenVtxNorm(1.0f), surfRefineWithMesh(1), surfMaxAndMinNorms(0), inflatePrims(0), inflateMeshes(0), nVoxPatches(0),
+			mergeIslands(1), convexHull(0), closeHoles(0), forceBBox(0), findPrimSurfaces(1), findPrimLines(1), findMeshes(1), storeVox(0), reuseVox(0), flipCurCell(0)
+		{ MARK_UNUSED qForced, pVoxPatches; }
+		int          ncells;
+		uint64       islandMap;
+		Quat         qForced;
+		float        maxLineDot, maxLineDist;
+		int          minLineCells;
+		int          minSurfCells;
+		float        surfPrimIters;
+		float        surfMinNormLen;
+		float        surfMergeDist;
+		float        surfNormRefineThresh;
+		float        primVoxInflate;
+		float        primRefillThresh;
+		float        primVfillSurf;
+		float        primVfillLine;
+		float        primSurfOutside;
+		float        capsHRratio;
+		int          maxGeoms;
+		int          surfMeshMinCells;
+		int          surfMeshIters;
+		float        lenVtxNorm;
+		float        inflatePrims;
+		float        inflateMeshes;
+		Vec3i*       pVoxPatches;
+		int          nVoxPatches;
+		unsigned int mergeIslands       : 1;
+		unsigned int convexHull         : 1;
+		unsigned int closeHoles         : 1;
+		unsigned int forceBBox          : 1;
+		unsigned int findPrimSurfaces   : 1;
+		unsigned int findPrimLines      : 1;
+		unsigned int findMeshes         : 1;
+		unsigned int surfMaxAndMinNorms : 1;
+		unsigned int surfRefineWithMesh : 1;
+		unsigned int storeVox           : 1;
+		unsigned int reuseVox           : 1;
+		unsigned int flipCurCell        : 1;
+	};
 	// <interfuscator:shuffle>
 	virtual ~IGeometry(){}
 	virtual int  GetType() = 0; //!< see enum geomtypes
@@ -2431,6 +2475,8 @@ struct IGeometry
 	virtual void  CompactMemory() = 0; //!< used only by non-breakable meshes to compact non-shared vertices into same contingous block of memory
 	//! Boxify: attempts to build a set of boxes covering the geometry's volume (only supported by trimeshes)
 	virtual int   Boxify(primitives::box* pboxes, int nMaxBoxes, const SBoxificationParams& params) = 0;
+	//! Proxies: attempts to build a set of primitives and meshes to approximate the mesh
+	virtual int   Proxify(IGeometry**& pOutGeoms, SProxifyParams* pparams = 0) = 0;
 	//! Sanity check the geometry. i.e. its tree doesn't have an excessive depth. returns 0 if fails
 	virtual int   SanityCheck() = 0;
 	// </interfuscator:shuffle>

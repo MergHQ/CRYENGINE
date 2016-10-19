@@ -115,12 +115,15 @@ template<class ftype> ILINE int sgn_safe(const quotient_tpl<ftype> &op) { return
 template<class ftype> ILINE sgnnz_result_type(ftype) sgnnz_safe(const quotient_tpl<ftype> &op) { return sgnnz(op.x*op.y); }
 template<class ftype> ILINE isneg_result_type(ftype) isneg_safe(const quotient_tpl<ftype> &op) { return isneg(op.x*op.y); }
 template<class ftype> ILINE int isnonneg_safe(const quotient_tpl<ftype> &op) { return isnonneg(op.x)*isnonneg(op.y); }
+template<class ftype> ILINE int inrange(const quotient_tpl<ftype> &op, ftype end0, ftype end1) { return isneg(sgn_safe(op-end0)*sgn_safe(op-end1)); }
 
 namespace crymath {
 
 template<class ftype> ILINE quotient_tpl<ftype> abs(const quotient_tpl<ftype> op) { return quotient_tpl<ftype>(abs(op.x), abs(op.y)); }
 
 } // namespace crymath
+
+template<class ftype> ILINE quotient_tpl<ftype> sqr_signed(const quotient_tpl<ftype>& op)  { return op * crymath::abs(op); }
 
 template<class ftype> ILINE quotient_tpl<ftype> fake_atan2(ftype y,ftype x) {
 	quotient_tpl<ftype> res;

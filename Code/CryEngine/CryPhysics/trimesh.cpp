@@ -55,13 +55,13 @@ CTriMesh::CTriMesh()
 	, m_nSubtracts(0)
 	, m_pUsedTriMap(nullptr)
 	, m_ivtx0(0)
-{
+	, m_voxgrid(0)
+{ 
 	ZeroArray(m_pHashGrid);
 	ZeroArray(m_pHashData);
 
 	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_bConvex) == CRY_ARRAY_COUNT(m_ConvexityTolerance));
-	for(int i=0;i<CRY_ARRAY_COUNT(m_bConvex);i++)
-	{
+	for(int i=0;i<CRY_ARRAY_COUNT(m_bConvex);i++)	{
 		m_bConvex[i]=0;
 		m_ConvexityTolerance[i]=-1;
 	}
@@ -90,6 +90,7 @@ CTriMesh::~CTriMesh()
 	if (m_pVtxMap) delete[] m_pVtxMap;
 	if (m_pMeshUpdate) delete m_pMeshUpdate;
 	if (m_pUsedTriMap) delete[] m_pUsedTriMap;
+	if (m_voxgrid) delete m_voxgrid;
 }
 
 inline void swap(int *v, int i1,int i2)
@@ -2550,7 +2551,7 @@ void CTriMesh::PrepareForRayTest(float raylen)
 
 
 void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &hashsize, grid &hashgrid,index_t *&pHashGrid,index_t *&pHashData,
-																		float rcellsize)
+																		float rcellsize, float pad, const index_t* pIndices, int nTris)
 {
 	float maxsz,tsx,tex,tsy,tey,ts,te;
 	Vec2 sz,pt[3],edge[3],step,rstep,ptc,sg;
@@ -2558,18 +2559,21 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 	int i,itri,ipass,bFilled,imax,ix,iy,idx;
 	index_t dummy,*pgrid,iHashMax=0;
 	Vec3 ptcur,origin;
+	if (!pIndices) {
+		pIndices=m_pIndices; nTris=m_nTris;
+	}
 
-	maxsz = max(hashsize.x,hashsize.y)*1E-5f;
+	maxsz = max(hashsize.x,hashsize.y)*pad;
 	sz.set(hashsize.x+maxsz, hashsize.y+maxsz);
 	sz.x = max(0.0001f, max(sz.x, sz.y*0.001f));
 	sz.y = max(sz.y, sz.x*0.001f); // make sure sz[imax]/sz[imax^1] produces sane results
 	imax = isneg(sz.x-sz.y);
 	if (rcellsize==0) {
-		isz[imax] = float2int(sqrt_tpl(m_nTris*2*sz[imax]/sz[imax^1]));
-		isz[imax^1] = max(1,m_nTris*2/max(1,isz[imax]));
+		isz[imax] = float2int(sqrt_tpl(nTris*2*sz[imax]/sz[imax^1]));
+		isz[imax^1] = max(1,nTris*2/max(1,isz[imax]));
 	} else {
-		isz.x = float2int(sz.x*rcellsize+0.5f);
-		isz.y = float2int(sz.y*rcellsize+0.5f);
+		isz.x = float2int(sz.x*rcellsize+0.499f);
+		isz.y = float2int(sz.y*rcellsize+0.499f);
 	}
 	const int maxhash = 4*(1<<sizeof(index_t)); // 64 on PC, 16 on consoles
 	isz.x = min_safe(maxhash,max_safe(1,isz.x));
@@ -2581,11 +2585,11 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 	pHashData = &dummy;
 
 	for(ipass=0;ipass<2;ipass++) {
-		for(itri=m_nTris-1;itri>=0;itri--) { // iterate tris in reversed order to get them in accending order in grid (since the algorithm reverses order)
-			i = isneg(m_pNormals[itri]*hashplane.n)<<1;
-			ptcur = m_pVertices[m_pIndices[itri*3+i]]-origin; pt[0].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
-			ptcur = m_pVertices[m_pIndices[itri*3+1]]-origin; pt[1].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
-			ptcur = m_pVertices[m_pIndices[itri*3+(i^2)]]-origin; pt[2].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
+		for(itri=nTris-1;itri>=0;itri--) { // iterate tris in reversed order to get them in accending order in grid (since the algorithm reverses order)
+			i = isneg((m_pVertices[pIndices[itri*3+1]]-m_pVertices[pIndices[itri*3]] ^ m_pVertices[pIndices[itri*3+2]]-m_pVertices[pIndices[itri*3]])*hashplane.n)<<1;
+			ptcur = m_pVertices[pIndices[itri*3+i]]-origin; pt[0].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
+			ptcur = m_pVertices[pIndices[itri*3+1]]-origin; pt[1].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
+			ptcur = m_pVertices[pIndices[itri*3+(i^2)]]-origin; pt[2].set(ptcur*hashplane.axes[0],ptcur*hashplane.axes[1]);
 			edge[0] = pt[1]-pt[0]; edge[1] = pt[2]-pt[1]; edge[2] = pt[0]-pt[2];
 			irect[1] = irect[0].set(float2int(pt[0].x*rstep.x-0.5f), float2int(pt[0].y*rstep.y-0.5f));
 			ipt.set(float2int(pt[1].x*rstep.x-0.5f), float2int(pt[1].y*rstep.y-0.5f));
@@ -2636,6 +2640,14 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 
 int CTriMesh::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world_data *pdata2, intersection_params *pparams, geom_contact *&pcontacts)
 {
+	if (m_voxgrid && pCollider->GetType()==GEOM_RAY) {
+		const ray& aray = ((CRayGeom*)pCollider)->m_ray;
+		Vec3 org=aray.origin, dir=aray.dir;
+		if (pdata1)
+			org=((org-pdata1->offset)*pdata1->R)/pdata1->scale, dir=(dir*pdata1->R)/pdata1->scale;
+		m_voxgrid->lastHit = m_voxgrid->RayTrace(org,dir);
+	}
+
 	if (pCollider->GetType()==GEOM_RAY && m_nHashPlanes>0) {
 		ray aray;
 		index_t trilist[3][1024];
@@ -3148,9 +3160,15 @@ float CTriMesh::GetIslandDisk(int matid, const Vec3 &ptref, Vec3 &center,Vec3 &n
 void CTriMesh::DrawWireframe(IPhysRenderer *pRenderer, geom_world_data *gwd, int iLevel, int idxColor)
 {
 	int i,ix,iy;
+	if (iLevel<0 && m_voxgrid && m_voxgrid->data)	{
+		Vec3 offs(ZERO); Quat q(IDENTITY); float scale=1;
+		if (gwd)
+			offs=gwd->offset, q=Quat(gwd->R), scale=gwd->scale;
+		m_voxgrid->DrawHelpers(pRenderer,offs,q,scale, -iLevel-1);
+	}
 	if (iLevel==0)
 		pRenderer->DrawGeometry(this,gwd,idxColor);
-	else {
+	else if (iLevel>=0) {
 		int iCaller = get_iCaller();
 		BV *pbbox;
 		ResetGlobalPrimsBuffers(iCaller);
@@ -3585,65 +3603,110 @@ namespace TriMeshStaticData
 }
 
 
-CTriMesh::voxgrid CTriMesh::Voxelize(quaternionf q, float celldim)
+inline Vec3i float2int(const Vec3 &v) { return Vec3i(float2int(v.x),float2int(v.y),float2int(v.z)); }
+
+template<bool rngchk> CTriMesh::voxgrid_tpl<rngchk> CTriMesh::Voxelize(quaternionf q, float celldim, const index_t* pIndices, int nTris, int pad)
 {
-	int i,ix,iy,iz;
+	int i,ix,iy,iz,idmask=-1;
 	float rcelldim = 1.0f/celldim;
-	Vec3 ptmin,ptmax;	ptmin=ptmax=q*m_pVertices[m_pIndices[0]];
-	for(i=1;i<m_nTris*3;i++) {
-		Vec3 pt = m_pVertices[m_pIndices[i]]*q;
+	char *pIds=0, id0=0;
+	if (!pIndices) {
+		pIndices=m_pIndices; nTris=m_nTris;	pIds=m_pIds;
+	}
+	if (!pIds) {
+		pIds=&id0; idmask=0;
+	}
+	Vec3 ptmin,ptmax;	ptmin=ptmax=m_pVertices[pIndices[0]]*q;
+	for(i=1;i<nTris*3;i++) {
+		Vec3 pt = m_pVertices[pIndices[i]]*q;
 		ptmin = min(ptmin,pt); ptmax = max(ptmax,pt);
 	}
 	Vec3 c=(ptmin+ptmax)*0.5f, sz=(ptmax-ptmin)*0.5f;
-	Vec3i voxdim; for(i=0;i<3;i++) voxdim[i] = float2int(sz[i]*rcelldim+0.5f);
-	voxgrid grid(voxdim,q*c);	grid.q=q;	grid.celldim=celldim;
+	Vec3i voxdim = float2int(sz*rcelldim+Vec3(0.5f))+Vec3i(pad+1);
+	voxdim.x&=~1; voxdim.y&=~1; voxdim.z&=~1;
+	voxgrid_tpl<rngchk> grid(voxdim,q*c);	grid.q=q;	grid.celldim=celldim;	grid.rcelldim=rcelldim;
 
-	for(i=0;i<m_nTris;i++) {
-		Vec3 vtx[3]; for(int j=0;j<3;j++) vtx[j] = m_pVertices[m_pIndices[i*3+j]]*q-c;
+	for(i=0;i<nTris;i++) if (pIds[i&idmask]>=0) {
+		Vec3 vtx[3]; for(int j=0;j<3;j++) vtx[j] = m_pVertices[pIndices[i*3+j]]*q-c;
 		float area = Vec2(vtx[1])-Vec2(vtx[0])^Vec2(vtx[2])-Vec2(vtx[0]);
-		if (fabs_tpl(area)>1e-10f) {
-			char dir = sgnnz(area)*2;
+		if (fabs(area)*sqr(rcelldim)>1e-6f) {
+			int dir = sgnnz(area);
 			Vec3 zblend = Vec3(vtx[0].z,vtx[1].z,vtx[2].z)/area;
-			ptmin = (vtx[0]+vtx[1]+vtx[2])*(rcelldim*(1.0f/3));
-			grid(float2int(ptmin.x-0.5f),float2int(ptmin.y-0.5f),float2int(ptmin.z-0.5f)) |= 1;
 			ptmin = min(min(vtx[0],vtx[1]),vtx[2])*rcelldim; ptmax=max(max(vtx[0],vtx[1]),vtx[2])*rcelldim;
 			Vec2i iBBox[2] = { Vec2i(float2int(ptmin.x-0.5f),float2int(ptmin.y-0.5f)), Vec2i(float2int(ptmax.x+0.5f),float2int(ptmax.y+0.5f)) };
 			for(ix=iBBox[0].x;ix<iBBox[1].x;ix++) for(iy=iBBox[0].y;iy<iBBox[1].y;iy++) {
 				Vec2 pt=Vec2(ix+0.5f,iy+0.5f)*celldim, ptx[3]={ Vec2(vtx[0])-pt,Vec2(vtx[1]-pt),Vec2(vtx[2])-pt };
 				Vec3 coord = Vec3(ptx[1]^ptx[2], ptx[2]^ptx[0], ptx[0]^ptx[1]);
-				if (min(min(coord.x*area,coord.y*area),coord.z*area) > 0) {
-					grid(ix,iy,iz=float2int((coord*zblend)*rcelldim-0.5f)) |= 1;
-					for(;iz>=-voxdim.z;iz--)
+				if (min(min(coord.x*area,coord.y*area),coord.z*area) > 0)
+					for(iz=float2int((coord*zblend)*rcelldim)-1; iz>=-voxdim.z; iz--)
 						grid(ix,iy,iz) += dir;
-				}
 			}
 		}
 	}
 	vox_iterate(grid,ix,iy,iz) {
-		char &vox = grid(ix,iy,iz); vox = (vox|vox>>1)&1;
+		int &vox = grid(ix,iy,iz); vox = min(1,max(0,vox));
 	}
 	return grid;
 }
 
-#include "boxgeom.h"
-void CTriMesh::voxgrid::DrawHelpers(IPhysRenderer *pRenderer, const Vec3& pos,const quaternionf& qrot,float scale)
+template<bool rngchk> Vec3i CTriMesh::voxgrid_tpl<rngchk>::RayTrace(const Vec3& orgw, const Vec3& dirw)
 {
-	int ix,iy,iz;
-	box boxvox; boxvox.center.zero(); boxvox.Basis.SetIdentity(); boxvox.size=Vec3(celldim*0.49f*scale);
-	CBoxGeom boxGeom; boxGeom.CreateBox(&boxvox);
-	geom_world_data gwd;
-	gwd.R = Matrix33(qrot*q);
-	Vec3 offs0 = pos + qrot*center*scale;
-	vox_iterate((*this),ix,iy,iz) if ((*this)(ix,iy,iz)&1) {
-		gwd.offset = offs0+gwd.R*Vec3(ix+0.5f,iy+0.5f,iz+0.5f)*celldim*scale;
-		pRenderer->DrawGeometry(&boxGeom,&gwd,6-((*this)(ix,iy,iz)&2));
+	Vec3 org=(orgw-center)*q, dir=dirw*q, diff=org.abs()-Vec3(sz)*celldim;
+	Vec3_tpl<quotientf> t;
+	int i;
+	if (max(max(diff.x,diff.y),diff.z)>0) {
+		for(i=0;i<3;i++) t[i].set(-sz[i]*celldim-org[i]*sgnnz(dir[i]), fabs(dir[i]));
+		quotientf tmax = max(max(t[0],t[1]),t[2]);
+		if (tmax<=0 || sqr_signed(tmax)>dir.len2())
+			return Vec3i(0);
+		Vec3 offs = dir*tmax.val();
+		org += offs; dir -= offs;
 	}
+	Vec3i iorg=float2int(org*rcelldim-Vec3(0.5f)), idir=Vec3i(sgnnz(dir.x),sgnnz(dir.y),sgnnz(dir.z)), istep=max(idir,Vec3i(0));	
+	for(i=0;i<3;i++) iorg[i] = min(sz[i]-1,max(-sz[i],iorg[i]));
+	do {
+		if ((*this)(iorg) & bitVis)
+			return iorg;
+		for(i=0;i<3;i++) t[i].set(((iorg[i]+istep[i])*celldim-org[i])*idir[i], fabs(dir[i]));
+		i = idxmin3(t);	
+	} while (inrange(iorg[i]+=idir[i], -sz[i]-1,sz[i]) && ((Vec3(iorg)+Vec3(0.5f))*celldim-org).len2()<dir.len2());
+	return sz;
 }
 
-void CTriMesh::voxgrid::alloc()
+#include "boxgeom.h"
+template<bool rngchk> void CTriMesh::voxgrid_tpl<rngchk>::DrawHelpers(IPhysRenderer *pRenderer, const Vec3& pos,const quaternionf& qrot,float scale, int flags)
 {
-	int alloc=sz.GetVolume()*8+1;
-	memset(data=new char[alloc],0,alloc);
+	int ix,iy,iz,bitmax,v;
+	box boxvox; boxvox.center.zero(); boxvox.Basis.SetIdentity(); boxvox.size=Vec3(0.49f);
+	CBoxGeom boxGeom; boxGeom.CreateBox(&boxvox);
+	geom_world_data gwd;
+	gwd.R = Matrix33(qrot*q);	gwd.scale = celldim*scale;
+	Vec3 offs0 = pos + qrot*center*scale;
+	union {	float f; uint i; } u = { bitVis };
+	bitmax = (u.i>>23)-127;	bitmax += (bitVis>>bitmax)-1;
+
+	vox_iterate((*this),ix,iy,iz) if ((v=(*this)(ix,iy,iz))&bitVis) {
+		gwd.offset = offs0+gwd.R*Vec3(ix+0.5f,iy+0.5f,iz+0.5f)*gwd.scale;
+		pRenderer->DrawGeometry(&boxGeom, &gwd, 4+(v>>bitmax-1&2));
+	}
+
+	if (flags & 1) {
+		if (surf.norm && surf.vtx) for(ix=0;ix<surf.ncells;ix++)
+			pRenderer->DrawLine(pos+qrot*surf.vtx[ix]*scale, pos+qrot*(surf.vtx[ix]+surf.norm[ix]*celldim*2)*scale, 4);
+		if (surf.nbcnt && surf.vtx) for(ix=0;ix<surf.ncells;ix++) for(iy=surf.nbcnt[ix];iy<surf.nbcnt[ix+1];iy++)
+			pRenderer->DrawLine(pos+qrot*surf.vtx[ix]*scale, pos+qrot*surf.vtx[surf.nbidx[iy]]*scale, 2);
+	}
+
+	if (lastHit.x<sz.x) {
+		char buf[32]; sprintf(buf,"%d,%d,%d",lastHit.x,lastHit.y,lastHit.z);
+		if (bitVis==4) {
+			strcat(buf," (");	strcat(ltoa(packnb(*this,lastHit,2,4).count,buf+strlen(buf),10),")");	
+		}
+		pRenderer->DrawText(pos+qrot*(center+q*Vec3(lastHit)*celldim)*scale,buf,1, ((*this)(lastHit) & bitVis)==bitVis);
+	}
+
+	for(Vec3 dir(1,ix=0,0); ix<3; ix++,dir=dir.GetRotated(Vec3(1/sqrt3),-0.5f,sqrt3*0.5f))
+		pRenderer->DrawLine(offs0-gwd.R*dir*sz[ix]*gwd.scale, offs0+gwd.R*dir*sz[ix]*gwd.scale, 2);
 }
 
 quotientf EdgeDistSq(const CTriMesh &mesh, int istart,int iend,int ivtx)
@@ -3778,11 +3841,11 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 
 	for(i=0;i<nPatches;i++) triarea[i]=i;
 	qsort(triarea,strided_pointer<float>(&patches[0].area,sizeof(tripatch)),0,nPatches-1);
-	voxgrid voxmain = Voxelize(Quat(IDENTITY),celldim);
+	voxgrid voxmain = Voxelize<true>(Quat(IDENTITY),celldim);
 	for(i=nPatches-1;i>=0;i--) {
 		if (patches[j = triarea[i]].area<0)
 			continue;
-		voxgrid voxpatch = Voxelize(patches[j].q,celldim);
+		voxgrid voxpatch = Voxelize<true>(patches[j].q,celldim);
 		int iz0,iz1,nReused,nFilled;
 		Vec3 offs = voxpatch.q*Vec3(0.5f)+(voxpatch.center-voxmain.center)*rcelldim-Vec3(0.5f);
 		vox_iterate(voxpatch,ix,iy,iz) { // copy 'used' markers from the main grid
@@ -3793,7 +3856,7 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 		Vec2i ibbox[2] = { Vec2i(float2int(bbox[0].x*rcelldim-0.5f),float2int(bbox[0].y*rcelldim-0.5f)), Vec2i(float2int(bbox[1].x*rcelldim+0.5f),float2int(bbox[1].y*rcelldim+0.5f)) };
 		for(iz=iz0=iz1=float2int(((patches[j].center-voxpatch.center)*voxpatch.q).z*rcelldim-0.5f); iz>=-voxpatch.sz.z; iz--) {
 			for(ix=ibbox[0].x,nFilled=nReused=0;ix<ibbox[1].x;ix++) for(iy=ibbox[0].y;iy<ibbox[1].y;iy++)	{
-				char &vox=voxpatch(ix,iy,iz); nFilled+=vox&1; nReused+=vox>>1;
+				int &vox=voxpatch(ix,iy,iz); nFilled+=vox&1; nReused+=vox>>1; 
 			}	// grow the patch's box 'down' while it has enough volume filled
 			if (nFilled < (ibbox[1].x-ibbox[0].x)*(ibbox[1].y-ibbox[0].y)*minLayerFilling)
 				break;
@@ -3808,7 +3871,7 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 				voxmain(float2int(pt1.x),float2int(pt1.y),float2int(pt1.z)) |= val;
 			}
 		}
-		voxmain(-1,0,0)=0; voxpatch.free();
+		voxmain(-1,0,0)=0; voxpatch.Free();
 		Vec3_tpl<Vec3> axes(patches[j].q*Vec3(1,0,0),patches[j].q*Vec3(0,1,0),patches[j].q*Vec3(0,0,1));
 		float z = (patches[j].center-voxpatch.center)*axes.z-iz1*celldim;
 		for(ix=i-1;ix>=0;ix--) if (patches[iy=triarea[ix]].area>0) { // remove patches that coincide "enough" with the new box's faces
@@ -3845,7 +3908,7 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 		do { // locate islands of 'unused' voxel; build semi-optimal boxes around them
 			Vec3i ivox=queueVox[++itail], ivox1,d;
 			for(d=Vec3(1); d.z<4; i=++d.x>>2,d.x-=3&-i,i=(d.y+=i)>>2,d.y-=3&-i,d.z+=i) {
-				char &buddy = voxmain(ivox1=ivox+d-Vec3i(2)); j += iszero((buddy&7)-3);
+				int &buddy = voxmain(ivox1=ivox+d-Vec3i(2)); j += iszero((buddy&7)-3);
 				if ((buddy&7)==1)
 					buddy|=4, queueVox[ihead=min(ihead+1,(int)(CRY_ARRAY_COUNT(queueVox))-1)]=ivox1, ci+=ivox1;
 			}
@@ -3875,11 +3938,1027 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 		pboxes[nboxes++].size = (ptmax-ptmin+Vec3(1))*0.5f*celldim;
 	}
 	boxnomore:
-	voxmain.free();	delete[] vtxmask; delete[] edges; delete[] pt2d;
+	voxmain.Free();	delete[] vtxmask; delete[] edges; delete[] pt2d;
 	delete[] tri2patch; delete[] triarea; delete[] areas;
 
 	return nboxes;
 }
+
+static int ineighb[27*4] = {-1};
+static Vec3i idx2dir[27],idx2dir1[19];
+static int dirIsAxis;
+static float inv[27] = {0};
+
+template<class itype> inline int getNextBit(itype& mask)
+{
+	if (!mask)
+		return -1;
+	int bit = ilog2((mask^mask-1)+1)-1;
+	mask &= ~((itype)1<<bit);
+	return bit;
+}
+
+inline int check_islands(unsigned int mask, Vec4i *centers=0)
+{
+	int queue[32],ihead,itail,nislands=0;
+	for(; mask; nislands++) {
+		for(queue[0]=getNextBit(mask),itail=0,ihead=1; itail!=ihead; )
+			for(int idx=queue[itail++],i=0,j;i<4;i++) if (mask & 1<<(j=ineighb[idx*4+i]))
+				mask &= ~(1<<(queue[ihead++]=j));
+		if (centers) {
+			Vec3i c(0); for(int i=0;i<ihead;i++) c+=idx2dir[queue[i]];
+			centers[nislands] = Vec4i(c,ihead);
+		}
+	}
+	return nislands;
+}
+
+inline int packdir(const Vec3i& idir) { return (idir.z&31)<<10 | (idir.y&31)<<5 | (idir.x&31); }
+inline Vec3i unpackdir(int i,int bit) { i=(unsigned int)i>>bit & ~(bit>>31); return Vec3i((i<<32-5)>>32-5, (i<<32-10)>>32-5, (i<<32-15)>>32-5); }
+
+struct SNbList {
+	int mask;
+	int count,count1;
+};
+template<bool rngchk> inline SNbList packnb(CTriMesh::voxgrid_tpl<rngchk>& vox, const Vec3i& ic,int ibit,int ibitDir) 
+{ 
+	SNbList res; res.mask=res.count=res.count1=0;
+	Vec3i dir0 = unpackdir(vox(ic),ibitDir);
+	for(int i=0,j,j0,v; i<27; res.count+=j, res.count1+=j0 & dirIsAxis>>i++) {
+		Vec3i dir1 = unpackdir(v=vox(ic+idx2dir[i]),ibitDir);
+		res.mask |= (j = (j0=v>>ibit & 1) & ~(dir0*dir1>>31))<<i;
+	}
+	return res;
+}
+template<bool rngchk> inline int packnb(CTriMesh::voxgrid_tpl<rngchk>& vox, const Vec3i& ic,int ibit) 
+{ 
+	int mask=0; 
+	for(int i=0;i<27;i++)
+		mask |= (vox(ic+idx2dir[i])>>ibit & 1)<<i;
+	return mask;
+}
+
+inline void count_neighbors(CTriMesh::voxgrid_tpl<false>& vox, int bitSrc, int bitDst, int auxAND=-1)
+{	// count neighbors in principal directions using running sums
+	Vec3i ic,dc;
+	auxAND &= ~(7<<bitDst);
+	for(int ix=0,mask=1; ix<3; ix++,mask=7,bitSrc=bitDst) {
+		int iy=inc_mod3[ix], iz=dec_mod3[ix], sum,v0,v1,auxAdd=ix>>1;
+		for(ic[iz]=-vox.sz[iz]+1;ic[iz]<vox.sz[iz]-1;ic[iz]++) for(ic[iy]=-vox.sz[iy]+1;ic[iy]<vox.sz[iy]-1;ic[iy]++)
+			for(ic[ix]=-vox.sz[ix]+1,dc.zero()[ix]=1,v0=0,sum=vox(ic)>>bitSrc&mask; ic[ix]<vox.sz[ix]-1; ic[ix]++,v0=v1) {
+				v1 = vox(ic)>>bitSrc & mask; 
+				sum += vox(ic+dc)-v0;
+				(vox(ic) &= auxAND) |= sum+auxAdd<<bitDst;
+			}
+	}
+}
+
+inline int dilatable(CTriMesh::voxgrid_tpl<false>& vox, const Vec3i& ic)
+{ 
+	if ((vox(ic) & 2+8)!=2)
+		return 0;
+	SNbList nb = packnb(vox,ic,1,4);
+	if (!inrange(nb.count-1,3,21))	// has 4..20 neighbors
+		return 0;
+	int res = 
+		check_islands(nb.mask&~(1<<13))==1 && // all neighbors are in one island if the center is removed
+		check_islands(nb.mask^(1<<27)-1)==1;	 // all free neighbors are in one island if the center stays
+	vox(ic) |= (res^1)<<3;
+	return res;
+}
+
+inline int is_line(const SNbList& nb, int maxIsleSz, Vec3i *idir=0)
+{
+	static Vec4i isle[19];
+	int state0=nb.mask>>13&1, count=nb.count-state0, mask=nb.mask&~(1<<13);
+	if (count<2)
+		return 0;
+	else if (count==2) {
+		int i=getNextBit(mask), j=ilog2(mask);
+		if (idir)	{
+			idir[0]=idx2dir[i]; idir[1]=idx2dir[j];
+		}
+		return isneg(idx2dir[i]*idx2dir[j]);
+	} else if (check_islands(mask,isle)==2 && max(max(Vec3i(isle[0])*Vec3i(isle[1]),isle[0].w-maxIsleSz-1),isle[1].w-maxIsleSz)<0) {
+		if (idir) for(int i=0;i<2;i++) 
+			idir[i] = float2int(Vec3(Vec3i(isle[i])).GetNormalizedFast());
+		return 1;
+	}
+	return 0;
+}
+
+inline Vec3i trace_line(CTriMesh::voxgrid_tpl<false>& vox, const Vec3i& ic, Vec3i indir, int ibit)
+{
+	int imax = 13;
+	for(int i=0;i<27;i++) if (idx2dir[i]*indir>idx2dir[imax]*indir && vox(ic+idx2dir[i]) & 1<<ibit)
+		imax = i;
+	return imax!=13 ? idx2dir[imax] : Vec3i(0);
+}
+
+inline bool is_surface(CTriMesh::voxgrid_tpl<false>& vox, const Vec3i& ic)
+{
+	int ncnt=0;
+	for(int i=0;i<6;i++) { // count filled face neighbors
+		Vec3 ic1=ic; ic1[i>>1] += (i<<1&2)-1;
+		ncnt += vox(ic1)&1;
+	}
+	return ncnt<6;
+}
+
+template<class t_prim> inline int cell_inside(CTriMesh::voxgrid_tpl<false>&, const t_prim&, const Vec3i&);
+template<> inline int cell_inside(CTriMesh::voxgrid_tpl<false> &vox, const box& box, const Vec3i& ipt)
+{
+	Vec3 ptloc = (box.Basis*((Vec3(ipt)+Vec3(0.5f))*vox.celldim-box.center)).abs()-box.size;
+	return isneg(max(max(ptloc.x,ptloc.y),ptloc.z));	
+}
+template<> inline int cell_inside(CTriMesh::voxgrid_tpl<false> &vox, const cylinder& cyl, const Vec3i& ipt)
+{
+	Vec3 ptloc = (Vec3(ipt)+Vec3(0.5f))*vox.celldim-cyl.center;
+	return isneg(max(fabs(ptloc*cyl.axis)-cyl.hh, (ptloc-cyl.axis*(cyl.axis*ptloc)).len2()-sqr(cyl.r)));
+}
+template<> inline int cell_inside(CTriMesh::voxgrid_tpl<false> &vox, const capsule& caps, const Vec3i& ipt)
+{
+	Vec3 ptloc = (Vec3(ipt)+Vec3(0.5f))*vox.celldim-caps.center; 
+	float h = caps.axis*ptloc; ptloc -= caps.axis*min(caps.hh,max(-caps.hh,h));
+	return isneg(ptloc.len2()-sqr(caps.r));
+}
+
+#define voxiter_BBox for(ipt.x=BBox[0].x;ipt.x<=BBox[1].x;ipt.x++) for(ipt.y=BBox[0].y;ipt.y<=BBox[1].y;ipt.y++) for(ipt.z=BBox[0].z;ipt.z<=BBox[1].z;ipt.z++)
+template<class t_prim> void RemovePrim(CTriMesh::voxgrid_tpl<false>& vox, Vec3i* BBox, const t_prim& prim, float fillThresh=0.5f)
+{
+	Vec3i ipt;
+	for(int ipass=0;ipass<3;ipass++)
+		for(int iz=0; iz<3; iz++)	{	// trace lines in xyz; blend inside/outside state along the length; average between xyz, fill if >0.5
+			int ix=inc_mod3[iz], iy=dec_mod3[iz];
+			for(ipt[ix]=BBox[0][ix];ipt[ix]<=BBox[1][ix];ipt[ix]++) for(ipt[iy]=BBox[0][iy];ipt[iy]<=BBox[1][iy];ipt[iy]++) {
+				int bounds[2] = { 1<<29 }; float val[3];	
+				for(ipt[iz]=BBox[0][iz];ipt[iz]<=BBox[1][iz];ipt[iz]++) {
+					int i = cell_inside(vox,prim,ipt); 
+					bounds[0] += ipt[iz]-bounds[0] & (1<<29)-1-bounds[0]>>31 & -i; 
+					bounds[1] += ipt[iz]-bounds[1] & -i;
+				}
+				if (bounds[0]==1<<29)
+					continue;
+				if (!ipass) {
+					for(int i=0;i<2;i++) { ipt[iz]=bounds[i]; val[i]=(vox(ipt)&1 & isneg(fabs_tpl(bounds[i])-(vox.sz[iz]-2-(bounds[i]>>31))))*1024; }
+					float dval = (val[1]-val[0])/max(1,bounds[1]-bounds[0]);
+					for(ipt[iz]=bounds[0];ipt[iz]<=bounds[1];ipt[iz]++,val[0]+=dval)
+						vox(ipt) += float2int(val[0])<<19;
+				} else if (bounds[1]>bounds[0]+1)	{
+					float sum,k=0.5f; 
+					for(ipt[iz]=bounds[0],sum=vox(ipt)>>19,val[0]=val[1]=0; ipt[iz]<bounds[1]; ipt[iz]++, val[0]=val[1],val[1]=val[2],k=1.0f/3) {
+						val[2] = vox(ipt)>>19;
+						(vox(ipt) &= ~0u>>13) |= float2int((sum += (vox(ipt+ort[iz])>>19)-val[0])*k)<<19;
+					}
+					(vox(ipt) &= ~0u>>13) |= float2int((sum-val[0])*(1.0f/2))<<19;
+				}
+			}
+		}	
+	int thresh = float2int(1024*3*fillThresh);
+	voxiter_BBox if (cell_inside(vox,prim,ipt)) { 
+		int& v=vox(ipt), fill=isneg(thresh-(v>>19)); 
+		v = fill | v & ~(1|-1<<19); 
+	}	
+}
+
+Vec2i CheckPrim(CTriMesh::voxgrid_tpl<false>& vox, int itype, const primitive *prim, float &V, float inflate=0, float fillThresh=-1)
+{
+	Vec3i BBox[2] = { -vox.sz+Vec3i(1), vox.sz-Vec3i(2) }, ipt;
+	Vec2i ncells(0);
+
+	switch (itype) {
+		case box::type:	{
+			box box = *(primitives::box*)prim; 
+			box.Basis *= Matrix33(vox.q); box.center = (box.center-vox.center)*vox.q;
+			V = box.size.GetVolume()*8;
+			box.size += Vec3(inflate);
+			Matrix33 mtx = box.Basis; 
+			Vec3 sz = box.size*mtx.Fabs();
+			BBox[0] = max(BBox[0], float2int((box.center-sz)*vox.rcelldim));
+			BBox[1] = min(BBox[1], float2int((box.center+sz)*vox.rcelldim));
+			if (fillThresh<0)	voxiter_BBox { 
+				int i = cell_inside(vox,box,ipt); ncells += Vec2i(i & vox(ipt) & 1,i);	
+			}	else
+				RemovePrim(vox,BBox,box,fillThresh);
+		}	break;
+
+		case cylinder::type: {
+			cylinder cyl = *(cylinder*)prim; 
+			cyl.axis = cyl.axis*vox.q; cyl.center = (cyl.center-vox.center)*vox.q;
+			V = gf_PI*sqr(cyl.r)*2*cyl.hh;
+			cyl.r += inflate; cyl.hh += inflate;
+			for(int i=0;i<3;i++) {
+				Vec3 ax = cyl.axis*cyl.axis[i]; ax[i]-=1; ax.normalize()*=cyl.r;
+				BBox[0][i] = max(BBox[0][i], float2int((cyl.center[i]-fabs(ax[i])-fabs(cyl.axis[i])*cyl.hh)*vox.rcelldim));
+				BBox[1][i] = min(BBox[1][i], float2int((cyl.center[i]+fabs(ax[i])+fabs(cyl.axis[i])*cyl.hh)*vox.rcelldim));
+			}
+			if (fillThresh<0) voxiter_BBox { 
+				int i = cell_inside(vox,cyl,ipt); ncells += Vec2i(i & vox(ipt) & 1,i);	
+			}	else
+				RemovePrim(vox,BBox,cyl,fillThresh);
+		}	break;
+
+		case capsule::type: {
+			capsule caps = *(capsule*)prim;	
+			caps.axis = caps.axis*vox.q; caps.center = (caps.center-vox.center)*vox.q;
+			V = gf_PI*sqr(caps.r)*2*caps.hh+4.0f/3*gf_PI*cube(caps.r);
+			caps.r += inflate; caps.hh += inflate;
+			BBox[0] = max(BBox[0], float2int((caps.center-Vec3(caps.r)-caps.axis.abs()*caps.hh)*vox.rcelldim));
+			BBox[1] = min(BBox[1], float2int((caps.center+Vec3(caps.r)+caps.axis.abs()*caps.hh)*vox.rcelldim));
+			if (fillThresh<0) voxiter_BBox { 
+				int i = cell_inside(vox,caps,ipt); ncells += Vec2i(i & vox(ipt) & 1,i);	
+			}	else
+				RemovePrim(vox,BBox,caps,fillThresh);
+		}	break;
+	}
+	return ncells;
+}
+
+struct SVoxLine {
+	Vec3 ends[2];
+	int closed;
+};
+struct SVoxSurf {
+	Vec3 center;
+	Vec3 norm;
+	int count;
+	float rating;
+	box sbox;
+	cylinder cyl;
+};
+
+inline bool MergeLine(SVoxLine& ldst, const SVoxLine& lsrc)
+{
+	Vec3 org[]={ ldst.ends[0],lsrc.ends[0] }, dir[]={ ldst.ends[1]-ldst.ends[0], lsrc.ends[1]-lsrc.ends[0] };
+	int len[]={ dir[0].len2(), dir[1].len2() }, i=isneg(len[0]-len[1]), closed[]={ ldst.closed,lsrc.closed };
+	if (sqr(dir[0]*dir[1])>len[0]*len[1]*sqr(0.95f)	&& // almost parallel
+			fabs_tpl((org[0]*2+dir[0]-org[1]*2-dir[1])*dir[i]) <= len[i]+fabs_tpl(dir[0]*dir[1]) && // ends overlap along the longest dir
+			((org[i^1]-org[i]^dir[i]).len2() <= len[i]*4 || (org[i^1]+dir[i^1]-org[i]^dir[i]).len2() <= len[i]*4)) // distance is <=2 voxels
+	{
+		Vec3 pt[] = { org[i],org[i^1],org[i^1]+dir[i^1] }, ptlen = Vec3(0,(pt[1]-org[i])*dir[i],(pt[2]-org[i])*dir[i]);
+		ldst.ends[0] = pt[idxmin3(ptlen)];
+		pt[0] += dir[i]; ptlen[0] = len[i];
+		ldst.ends[1] = pt[idxmax3(ptlen)];
+		for(int iendDst=ldst.closed=0;iendDst<2;iendDst++) for(int isrc=0;isrc<2;isrc++) for(int iendSrc=0;iendSrc<2;iendSrc++) 
+			ldst.closed |= iszero((org[isrc]+dir[isrc]*iendSrc-ldst.ends[iendDst]).len2())<<iendDst & closed[isrc];
+		return true;
+	}
+	return false;
+}
+
+#include "cylindergeom.h"
+#include "capsulegeom.h"
+
+int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
+{
+	SProxifyParams params;
+	if (pparams) params = *pparams;
+	int isle,nTris,nIslands, i,j;
+	Vec3i ic;
+	index_t *pTris=0;
+	int *nbcnt=0,*nbidx=0,nbcntAlloc=0,nbidxAlloc=0,nGeoms=0;
+	Vec3r *norm[2] = {0,0};
+	Vec3 *vtx=0, *pNormals=0;
+	int *pVtxMap = params.convexHull ? new int[m_nVertices+(m_nVertices>>5)+1] : 0;
+	const int MAXPRIMS = 256;
+	SVoxLine voxline[MAXPRIMS];
+	SVoxSurf voxsurf[MAXPRIMS];
+	CGeometry **pGeoms = new CGeometry*[params.maxGeoms];
+	CRayGeom gray;
+
+	if (ineighb[0]<0)	{
+		for(ic.z=0,dirIsAxis=0;ic.z<3;ic.z++) for(ic.y=0;ic.y<3;ic.y++) for(ic.x=0;ic.x<3;ic.x++) {
+			for(Vec3i ic1(j=0);ic1.z<3;ic1.z++) for(ic1.y=0;ic1.y<3;ic1.y++) for(ic1.x=0;ic1.x<3;ic1.x++)
+				if ((ic-ic1).len2()==1 && ic1.len2()!=3) 
+					ineighb[ic*Vec3i(1,3,9)*4+j++] = ic1*Vec3i(1,3,9); 
+			if (j<4)
+				ineighb[ic*Vec3i(1,3,9)*4+j] = ineighb[ic*Vec3i(1,3,9)*4];
+			idx2dir[ic*Vec3i(1,3,9)] = ic-Vec3i(1);
+			dirIsAxis |= iszero((ic-Vec3i(1)).len2()-1) << ic*Vec3i(1,3,9);
+		}
+		for(i=j=0;i<27;j+=inrange(idx2dir[i++].len2(),0,3))	idx2dir1[j]=idx2dir[i];
+		for(i=1;i<27;i++) inv[i] = 1.0f/i;
+	}
+
+	auto GetIsland = [this,&pTris,&pNormals,&nTris](int isle) 
+	{
+		for(int i=m_pIslands[isle].itri; i!=0x7fff; i=m_pTri2Island[i].inext) {
+			((Vec3_tpl<index_t>*)pTris)[nTris] = ((Vec3_tpl<index_t>*)m_pIndices)[i];
+			pNormals[nTris++] = m_pNormals[i];
+		}
+		return nTris;
+	};
+	auto qhullIslands = [this,&pTris,&pNormals,pVtxMap](uint64 islandMap)
+	{
+		memset(pVtxMap+m_nVertices,0,((m_nVertices>>5)+1)*sizeof(int));
+		int imin=m_nVertices,imax=-1,i,j;
+		for(int isle=getNextBit(islandMap); isle>=0; isle=getNextBit(islandMap)) 
+			for(i=m_pIslands[isle].itri; i!=0x7fff; i=m_pTri2Island[i].inext) for(j=0;j<3;j++) {
+				int ivtx = m_pIndices[i*3+j];
+				pVtxMap[m_nVertices+(ivtx>>5)] |= 1<<(ivtx&31);
+				imin=min(imin,ivtx); imax=max(imax,ivtx);
+			}
+		for(i=imin,j=0; i<=imax; i++) if (pVtxMap[m_nVertices+(i>>5)] & 1<<(i&31)) {
+			pVtxMap[j]=i;	swap(m_pVertices[i], m_pVertices[j++]);
+		}
+		delete[] pTris;
+		int nTris = qhull(m_pVertices,j,pTris);
+		if (nTris>m_nTris || !pNormals) {
+			delete pNormals; pNormals = new Vec3[max(nTris,m_nTris)];
+		}
+		for(i=0;i<nTris;i++)
+			pNormals[i] = (m_pVertices[pTris[i*3+1]]-m_pVertices[pTris[i*3]] ^ m_pVertices[pTris[i*3+2]]-m_pVertices[pTris[i*3]]).normalized();
+		for(i=imax; i>=imin; i--) if (pVtxMap[m_nVertices+(i>>5)] & 1<<(i&31))
+			swap(m_pVertices[i],m_pVertices[--j]);
+		for(i=0;i<nTris*3;i++) pTris[i]=pVtxMap[pTris[i]];
+		return nTris;
+	};
+
+	if (params.reuseVox & params.flipCurCell) {
+		if (!m_voxgrid || m_voxgrid->lastHit.x>=m_voxgrid->sz.x)
+			return 0;
+		for(i=0;i<m_voxgrid->nflips && (m_voxgrid->flipHist[i]-m_voxgrid->lastHit).len2();i++);
+		if (i<m_voxgrid->nflips)
+			memmove(m_voxgrid->flipHist+i,m_voxgrid->flipHist+i+1,(--m_voxgrid->nflips-i)*sizeof(Vec3i));
+		else {
+			if (!(m_voxgrid->nflips & 15))
+				ReallocateList(m_voxgrid->flipHist,m_voxgrid->nflips,m_voxgrid->nflips+16);
+			m_voxgrid->flipHist[m_voxgrid->nflips++] = m_voxgrid->lastHit;
+		}
+	}
+
+	nIslands = BuildIslandMap();
+	params.islandMap &= (1ull<<nIslands)-1;
+
+	if (params.closeHoles) {
+		char *pHoleEdges = new char[m_nVertices*3];
+		int *pHoleVtx = new int[m_nVertices], *pHoleTris = new int[m_nVertices*6];
+		int nTrisAlloc=m_nTris, nTris00=m_nTris;
+		Vec2 *pHoleVtx2d = new Vec2[m_nVertices];
+		uint64 mask = params.islandMap;
+		memset(pHoleEdges, 0, m_nVertices*3);
+
+		for(isle=getNextBit(mask); isle>=0; isle=getNextBit(mask)) {
+			int nTris0=m_nTris, itriLast;
+			for(i=m_pIslands[isle].itri; i!=0x7fff; i=m_pTri2Island[i].inext)
+				for(int ivtx=(itriLast=i,0);ivtx<3;ivtx++) if (m_pTopology[i].ibuddy[ivtx]<0) {
+					Vec2i mark(-1,0); int count=10,nHoleVtx=0;
+					for(int iedge=ivtx,itri=i,itri1;(itri-mark.x|iedge-mark.y);) if ((itri1=m_pTopology[itri].ibuddy[inc_mod3[iedge]])>=0)	{
+						iedge=GetEdgeByBuddy(itri1,itri); itri=itri1;
+						mark -= (Vec2i(itri,iedge)-mark)*(--count>>31);	count&=63;
+					}	else {
+						if (pHoleEdges[itri] & 1<<(iedge=inc_mod3[iedge]))
+							break;
+						pHoleEdges[itri] |= 1<<iedge;
+						pHoleVtx[nHoleVtx++] = m_pIndices[itri*3+iedge];
+						mark.set(-1,0);	count=10;
+					}
+					if (!nHoleVtx)
+						continue;
+					Vec3 c(0),ntest(0); float brdlen=0;
+					for(int j1=j=0;j<nHoleVtx;j++) { 
+						float seglen = (m_pVertices[pHoleVtx[j1=j+1&j+1-nHoleVtx>>31]]-m_pVertices[pHoleVtx[j]]).len();
+						c += (m_pVertices[pHoleVtx[j1]]+m_pVertices[pHoleVtx[j]])*seglen; brdlen+=seglen;
+					}	
+					c /= brdlen*2;
+					Matrix33 C(ZERO),Ctmp,Ctmp1;
+					for(j=0;j<nHoleVtx;j++) {
+						Vec3 p0 = m_pVertices[pHoleVtx[j]]-c, p1 = m_pVertices[pHoleVtx[j+1&j+1-nHoleVtx>>31]]-c;
+						float seglen = (p1-p0).len(); ntest += p0^p1;
+						(dotproduct_matrix(p0,p0,Ctmp) += dotproduct_matrix(p1,p1,Ctmp1))*=2;
+						Ctmp+=dotproduct_matrix(p0,p1,Ctmp1);	C+=(Ctmp+dotproduct_matrix(p1,p0,Ctmp1))*seglen;
+					}
+					Vec3 n = SVD3x3(C); n *= sgnnz(ntest*n);
+					Vec3 axisx=n.GetOrthogonal().normalized(), axisy=n^axisx;
+					for(j=0;j<nHoleVtx;j++)
+						pHoleVtx2d[j].set(axisx*(m_pVertices[pHoleVtx[j]]-c), axisy*(m_pVertices[pHoleVtx[j]]-c));
+					MARK_UNUSED pHoleVtx2d[nHoleVtx].x;
+					int nHoleTris = TriangulatePoly(pHoleVtx2d,nHoleVtx+1,pHoleTris,m_nVertices*6);
+					if (m_nTris+nHoleTris>nTrisAlloc) {
+						ReallocateList(m_pIndices,m_nTris*3,(nTrisAlloc=max(m_nTris+nHoleTris,nTrisAlloc+256))*3,false,!(m_flags & mesh_shared_idx));
+						ReallocateList(m_pNormals,m_nTris,nTrisAlloc);
+						if (m_pIds) ReallocateList(m_pIds,m_nTris,nTrisAlloc);
+						ReallocateList(m_pTri2Island,m_nTris,nTrisAlloc,true);
+						ReallocateList(m_pTopology,m_nTris,nTrisAlloc);
+					}
+					for(j=0;j<nHoleTris;j++) {
+						for(int ivtx=0;ivtx<3;ivtx++) m_pIndices[(m_nTris+j)*3+ivtx] = pHoleVtx[pHoleTris[j*3+2-ivtx]];
+						m_pTri2Island[m_nTris+j].iprev=isle; m_pTri2Island[m_nTris+j].inext=m_nTris+j+1;
+						RecalcTriNormal(m_nTris+j);
+					}
+					m_nTris += nHoleTris;
+				}
+			if (m_nTris>nTris0) {
+				m_pTri2Island[itriLast].inext = nTris0; 
+				m_pTri2Island[m_nTris-1].inext = 0x7fff;
+			}
+		}
+		delete[] pHoleVtx2d; delete[] pHoleTris; 
+		delete[] pHoleVtx; delete[] pHoleEdges;
+
+		if (m_nTris>nTris00) {
+			if (m_pTree->GetType()==BVT_OBB) {
+				COBBTree &bvt = *(COBBTree*)m_pTree;
+				OBBnode *nodes = bvt.m_pNodes+bvt.m_pNodes[0].ichild;
+				if (bvt.m_pNodes[0].ntris || nodes[1].ichild+nodes[1].ntris!=nTris00) {
+					if (bvt.m_nNodesAlloc<bvt.m_nNodes+2)
+						ReallocateList(bvt.m_pNodes, bvt.m_nNodes,bvt.m_nNodesAlloc=bvt.m_nNodes+2);
+					nodes = bvt.m_pNodes+bvt.m_nNodes;
+					nodes[0] = bvt.m_pNodes[0]; nodes[1] = bvt.m_pNodes[0];
+					nodes[0].iparent = nodes[1].iparent = 0;
+					bvt.m_pNodes[0].ichild = bvt.m_nNodes;
+					nodes[1].ichild = nTris00;
+					bvt.m_nNodes += 2;
+				}
+				nodes[1].ntris = m_nTris-nTris00;
+				Matrix33& Basis	 = *(Matrix33*)nodes[1].axes;
+				for(i=nodes[1].ichild*3,nodes[1].center.zero(); i<(nodes[1].ichild+nodes[1].ntris)*3; i++)
+					nodes[1].center += m_pVertices[m_pIndices[i]];
+				for(i=nodes[1].ichild*3,nodes[1].size.zero(),nodes[1].center/=nodes[1].ntris*3; i<(nodes[1].ichild+nodes[1].ntris)*3; i++)
+					nodes[1].size = max(nodes[1].size, (Basis*(m_pVertices[m_pIndices[i]]-nodes[1].center)).abs());
+			}
+			CalculateTopology(m_pIndices);
+		}
+	}
+
+	if (params.mergeIslands) {
+		if ((params.islandMap & (1ull<<nIslands)-1)==(1<<nIslands)-1 && !params.convexHull) {
+			pTris=m_pIndices;	pNormals=m_pNormals; nTris=m_nTris; 
+		} else if (!params.convexHull) {
+			pTris = new index_t[m_nTris*3];	pNormals = new Vec3[m_nTris];
+			for(i=getNextBit(params.islandMap),nTris=0; i>=0; i=getNextBit(params.islandMap))
+				GetIsland(i);
+		} else
+			nTris = qhullIslands(params.islandMap);
+		isle=0; params.islandMap=0; goto GotIslands;
+	} else {
+		pTris = new index_t[m_nTris*3];	pNormals = new Vec3[m_nTris];
+	}
+
+	for(isle=getNextBit(params.islandMap); isle>=0 && nGeoms<params.maxGeoms; isle=getNextBit(params.islandMap)) {
+		nTris = params.convexHull ? qhullIslands(1ull<<isle) : GetIsland(isle);
+		GotIslands:
+		// voxelize with global eigenmatrix
+		Vec3r axes[3],center;	ComputeMeshEigenBasis(m_pVertices,strided_pointer<index_t>(pTris),nTris,axes,center);
+		Quat qgrid = is_unused(params.qForced) ? Quat(Matrix33(axes[0],axes[1],axes[2])) : params.qForced;
+		Vec3 BBox[2]; BBox[0]=BBox[1] = m_pVertices[pTris[0]]*qgrid;
+		for(i=1; i<nTris*3; i++) {
+			Vec3 v=m_pVertices[pTris[i]]*qgrid;
+			BBox[0]=min(BBox[0],v); BBox[1]=max(BBox[1],v);
+		}
+		Vec3 sz = BBox[1]-BBox[0];
+		if (params.forceBBox) {
+			box bbox;	bbox.Basis = Matrix33(!qgrid);
+			bbox.size = sz*0.5f+Vec3(params.inflatePrims); 
+			bbox.center = qgrid*(BBox[0]+BBox[1])*0.5f;
+			pGeoms[nGeoms++] = (new CBoxGeom)->CreateBox(&bbox); 
+			continue;
+		}
+		float celldim = max(max(sz.x,sz.y),sz.z)*1.001f/params.ncells;
+		voxgrid_tpl<false> vox;
+		if (params.reuseVox)
+			memcpy(&vox, m_voxgrid, sizeof(vox));
+		else 
+			vox = Voxelize<false>(qgrid,celldim,pTris,nTris,1);
+		vox.persistent = false;
+		sz = Vec3(vox.sz)*vox.celldim;
+
+		Vec3i *queue = new Vec3i[vox.sz.GetVolume()*8+1];
+		int ihead=0,itail;
+		auto build_surface = [&](int bit,int bitIdx,int bitDir,bool useCorners) 
+		{
+			Vec3i *pidx2dir; int ndirs,j0,has0;
+			if (useCorners)
+				pidx2dir=idx2dir,ndirs=27,j0=13,has0=1;
+			else
+				pidx2dir=idx2dir1,ndirs=18,j0=32,has0=0;
+			if (nbcntAlloc < ihead+1)	{
+				ReallocateList(nbcnt,0,nbcntAlloc=ihead+1);
+				for(j=0;j<2;j++) ReallocateList(norm[j],0,nbcntAlloc);
+				ReallocateList(vtx,0,nbcntAlloc);
+			}
+			for(i=0;i<ihead;i++) {
+				Vec3i dir0 = unpackdir(vox(queue[i]),bitDir); uint v;
+				for(j=0,nbcnt[i]=-has0;j<ndirs;j++)
+					v=vox(queue[i]+pidx2dir[j]), nbcnt[i] += v>>bit & 1 & ~(dir0*unpackdir(v,bitDir)>>31);
+			}
+			for(i=0,nbcnt[ihead]=0;i<ihead;i++) nbcnt[i+1]+=nbcnt[i];
+			if (nbidxAlloc < nbcnt[ihead])
+				ReallocateList(nbidx,0,nbidxAlloc=nbcnt[ihead]);
+			for(i=0;i<ihead;i++) {
+				Vec3i dir0 = unpackdir(vox(queue[i]),bitDir); uint v;
+				for(j=0;j<ndirs;j++) if ((v=vox(queue[i]+pidx2dir[j]))>>bit & ~iszero(j-j0) & 1 && unpackdir(v,bitDir)*dir0>=0)
+					nbidx[--nbcnt[i]] = v>>bitIdx;
+			}
+		};
+
+		if (params.findPrimLines | params.findPrimSurfaces) {
+			// dilate the grid until only skeletons are left, store results in bit 1
+			vox_iterate1(vox,ic) vox(ic)|=(vox(ic)&1)<<1; 
+			vox_iterate1(vox,ic) if (dilatable(vox,ic))
+				queue[ihead++] = ic;
+			for(i=ihead;i>0;i--) vox(queue[i-1])&=1;
+			for(;i<ihead;i++)	if (is_line(packnb(vox,queue[i],1,4),3)) {
+				vox(queue[i])|=2; queue[i--]=queue[--ihead];
+			}
+ 			for(int ilayer=itail=0,ihead1; itail<ihead; ilayer++) {
+				for(ihead1=ihead;itail<ihead;) for(j=0,ic=queue[itail++];j<27;j++) if ((vox(ic+idx2dir[j])&6)==2)
+					vox(queue[ihead1++]=ic+idx2dir[j]) |= 4;
+				for(i=ihead;i<ihead1;i++) {
+					Vec3i dir(0); for(j=0,ic=queue[i];j<27;j++) // accumulate from-outside dir for the potential next layer
+						dir += idx2dir[j]*(vox(ic+idx2dir[j])>>1&1^1);
+					(vox(ic) &= 3+8) |= packdir(dir)<<4;
+				}
+				for(i=j=ihead;i<ihead1;i++) if (dilatable(vox,queue[i]))
+					queue[ihead++] = queue[i];
+				for(i=ihead;i>j;i--) vox(queue[i-1])&=~2;
+				for(;i<ihead;i++) if (is_line(packnb(vox,queue[i],1,4),3)) {
+					vox(queue[i])|=2; queue[i--]=queue[--ihead];
+				}
+			}
+			vox_iterate1(vox,ic) vox(ic)&=~(8|4);
+		}
+
+		int nline=0,nsurf=0;
+		SNbList nb;
+		if (params.findPrimSurfaces) vox_iterate1(vox,ic) 
+			if ((vox(ic)&(2|8))==2 && inrange((nb=packnb(vox,ic,1,4)).count,4,21) && nb.count1<6 && check_islands(nb.mask^(1<<27)-1)==2 && nsurf<MAXPRIMS) {	// find surface skeletons
+				for(queue[itail=0]=ic,ihead=1,vox(ic)|=8|4; itail!=ihead; )
+					for(Vec3i ic1=queue[i=0,itail++]; i<27; i++) // trace voxels with 4..12 neighbors and 2 islands of free neighbors
+						if ((vox(ic1+idx2dir[i])&(2|4))==2 && inrange((nb=packnb(vox,ic1+idx2dir[i],1,4)).count,4,21) && nb.count1<6 && check_islands(nb.mask^(1<<27)-1)==2)
+							(vox(queue[ihead] = ic1+idx2dir[i]) &= ~0u>>13) |= 8|4|ihead<<19, ihead = min((1<<13)-1,ihead+1);
+				int clearMask = 4;
+				if (ihead >= params.minSurfCells) {
+					Vec3 c(ZERO),Ibody; Matrix33 I(ZERO),Basis;
+					for(i=0; i<ihead; c+=queue[i++]);
+					for(i=0,c/=ihead; i<ihead; i++) {
+						Matrix33 Ipt(ZERO); I+=OffsetInertiaTensor(Ipt,Vec3(queue[i])-c,1.0f);
+					}
+					matrixf eigenMtx(3,3,0,&Basis(0,0));
+					matrixf(3,3,mtx_symmetric,&I(0,0)).jacobi_transformation(eigenMtx,&Ibody.x);
+					float Iz=Ibody[i=idxmin3(Ibody)], Ix=max(max(Ibody.x,Ibody.y),Ibody.z), Iy=Ibody.x+Ibody.y+Ibody.z-Ix-Iz;
+					if (min(Ix,Iy) > Iz*(0.5f+sqr(params.capsHRratio)*(1.0f/6)) && nline<MAXPRIMS) { 
+						// if the surface's inertia tensor it similar to that of a long rod, register it as a line candidate as well
+						Vec3 axis = Basis.GetRow(i);
+						float end0=(queue[0]-c)*axis, end1=end0, end;
+						for(i=1;i<ihead;i++) {
+							end0 = min(end0, end=(Vec3(queue[i])-c)*axis);
+							end1 = max(end1, end);
+						}
+						voxline[nline].ends[0] = c+axis*end0;
+						voxline[nline].ends[1] = c+axis*end1;
+						voxline[nline++].closed = 0;
+					}
+					build_surface(2,19,4,true);
+					for(i=0;i<ihead;i++) {
+						Matrix33 C(ZERO),tmp;
+						for(j=nbcnt[i];j<nbcnt[i+1];j++)
+							C += dotproduct_matrix(Vec3(queue[nbidx[j]]-queue[i]),Vec3(queue[nbidx[j]]-queue[i]),tmp);
+						Vec3 n=SVD3x3(C), dir(0);
+						n *= sgnnz(n*unpackdir(vox(queue[i]),4));
+						for(j=nbcnt[i];j<nbcnt[i+1];j++)
+							dir += queue[nbidx[j]]-queue[i];
+						if ((dir-n*(n*dir)).len2()>1)
+							n *= 0.5f;
+						norm[0][i] = n;
+					}
+					for(int iter=sqrt(ihead)*0.5f*params.surfPrimIters; iter>0; iter--,swap(norm[1],norm[0]))
+						for(i=0;i<ihead;i++) { // average normals from neighbors
+							Vec3r n(ZERO); for(j=nbcnt[i];j<nbcnt[i+1];j++) n+=norm[0][nbidx[j]];
+							norm[1][i] = n*inv[nbcnt[i+1]-nbcnt[i]];
+						}
+					if (vox.surf.norm)	for(i=0;i<ihead;i++)
+						vox.surf.norm[&vox(queue[i])-vox.data] = norm[0][i];
+					for(i=0; i<ihead && nsurf<MAXPRIMS; i++) {
+						for(j=nbcnt[i];j<nbcnt[i+1] && norm[0][nbidx[j]].len2()<norm[0][i].len2();j++);
+						if (j==nbcnt[i+1] && norm[0][i].len2()>sqr(params.surfMinNormLen)) { // find local maxima of normal lengths - they are centers of box/cylider candidates
+							int is; Vec3 n = norm[0][i].normalized();
+							for(is=0;is<nsurf && ((voxsurf[is].center-queue[i]).len2()>sqr(params.surfMergeDist) || fabs(voxsurf[is].norm*n)<0.95f);is++);
+							if (is==nsurf) {
+								memset(voxsurf+nsurf, 0, sizeof(voxsurf[0]));
+								voxsurf[nsurf].center = queue[i];
+								voxsurf[nsurf].norm = n;
+								voxsurf[nsurf].rating = norm[0][i].len();
+								voxsurf[nsurf++].count = 1;
+							}	else {
+								voxsurf[is].center = (voxsurf[is].center*voxsurf[is].count+queue[i])/(voxsurf[is].count+1);
+								voxsurf[is].norm = (voxsurf[is].norm+n*sgnnz(n*voxsurf[is].norm)).normalized();
+								voxsurf[is].rating = max(voxsurf[is].rating, (float)norm[0][i].len());
+								voxsurf[is].count++;
+							}
+						}
+					}
+				}	else
+					clearMask = 8;
+				for(i=0;i<ihead;i++) vox(queue[i]) &= ~(clearMask | -1<<19);
+			}
+
+			Vec3i idir[2];
+			if (params.findPrimLines) vox_iterate1(vox,ic) 
+				if ((vox(ic)&(2|4|8))==2 && is_line(packnb(vox,ic,1,4),5,idir) && nline<MAXPRIMS) { // find line skeletons
+					int closed[2] = {0,0}; ihead=0;
+					for(Vec3i ic1=ic; (closed[0]=(idir[0].x|idir[0].y|idir[0].z)) && (vox(ic1+idir[0])&(2|8))==2 && packnb(vox,ic1+idir[0],1,4).count1<6; 
+							ic1+=idir[0],idir[0]=trace_line(vox,ic1,ic1-ic,1))
+						queue[ihead++] = ic1+idir[0];
+					for(i=ihead-1,itail=0; itail<i; itail++,i--)
+						swap(queue[i],queue[itail]);
+					queue[ihead++] = ic;
+					for(Vec3i ic1=ic; (closed[1]=(idir[1].x|idir[1].y|idir[1].z)) && (vox(ic1+idir[1])&(2|8))==2 && packnb(vox,ic1+idir[1],1,4).count1<6; 
+							ic1+=idir[1],idir[1]=trace_line(vox,ic1,ic1-ic,1))
+						queue[ihead++] = ic1+idir[1];
+					ihead = min(ihead,vox.sz.GetVolume()*8+1>>1);
+					if (ihead<=4)
+						continue;
+					Vec3 *pt = (Vec3*)(queue+ihead), pt0,pt1,pt2,sum;
+					for(i=0;i<ihead;i++) pt[i] = queue[i];
+					for(int iter=0;iter<2;iter++)	{ // several averaging passes
+						pt0.zero(); pt1=pt[0]; pt[0]=(sum=pt[0]+pt[1])*0.5f; 
+						for(i=1; i<ihead-1; i++,pt0=pt1,pt1=pt2) {
+							pt2 = pt[i]; pt[i] = (sum+=pt[i+1]-pt0)*(1.0f/3);
+						}	pt[i] = (sum-pt0)*0.5f;
+					}
+					for(int i0=(i=2)-2; i<ihead-2; i++) {	// find local minima of (-1..0),(0..+1) dirs dot, treat them as borders if below threshold
+						float dot[3]; for(j=-1;j<=1;j++)
+							dot[j+1] = Vec3(pt[i+1+j]-pt[i+j]).GetNormalizedFast()*Vec3(pt[i+j]-pt[i-1+j]).GetNormalizedFast();
+						int i1 = i+(ihead-1-i & ihead-4-i>>31);
+						if (idxmin3(dot)==1 && dot[1]<params.maxLineDot || i1==ihead-1) {
+							for(j=i0+1; j<i1 && (pt[j]-pt[i0]^pt[i1]-pt[i0]).len2()<(pt[i1]-pt[i0]).len2()*sqr(params.maxLineDist); j++);
+							if (i1-i0>=params.minLineCells && j==i1) { // register capsule candidate
+								for(j=i0;j<=i1;j++) vox(queue[j])|=4;
+								for(j=0,voxline[nline].closed=0;j<2;j++) voxline[nline].closed |= (closed[j]&1)<<j;
+								voxline[nline].ends[0] = float2int(pt[i0]); 
+								voxline[nline].ends[1] = float2int(pt[i1]);
+								for(j=0;j<nline;j++) if (MergeLine(voxline[j],voxline[nline])) {
+									if (j!=nline-1) 
+										swap(voxline[j],voxline[nline-1]); 
+									j=0; --nline;
+								}
+								nline++;
+							}
+							i0 = i1+1;
+						}
+					}
+				}
+
+		float raylen = sz.x+sz.y+sz.z;
+		const int NRAYS = 64;
+		const float cosTick=cos(2*gf_PI/NRAYS), sinTick=sin(2*gf_PI/NRAYS);
+		Vec3 pthit[NRAYS],nhit[NRAYS];
+		quotientf hratio[NRAYS];
+		int nhits,nGeoms0=nGeoms;
+
+		auto LongestNormStreak = [&](std::function<bool(const Vec3&,const Vec3&)> ncheck)
+		{	// find the longest streak or norms that pass a check
+			Vec2i rngmax(-NRAYS>>1,ncheck(nhit[NRAYS>>1],nhit[NRAYS>>1]) ? 1:0), rngcur=rngmax;
+			for(i=rngcur.x+1; i<NRAYS && rngmax.y<NRAYS; i++)
+				if (ncheck(nhit[rngcur.x&NRAYS-1],nhit[i&NRAYS-1]))
+					rngcur.y++; 
+				else if (!rngcur.y)
+					rngcur.x = i+1;
+				else {
+					rngmax += (rngcur-rngmax)*isneg(rngmax.y-rngcur.y);
+					rngcur.set(i--,0);
+				}
+			return rngmax.y>rngcur.y ? rngmax:rngcur;
+		};
+
+		auto CheckOppo = [&](int start,int len, int minlen, float maxdiff, const Vec3& c,const Vec3& axis) 
+		{	// find the longest streak of hits opposing [start,start+len) with same-ish ratio to the original hits
+			for(i=start;i<start+len;i++) hratio[i-start].set((pthit[i+(NRAYS>>1)&NRAYS-1]-c)*axis, (pthit[i&NRAYS-1]-c)*axis);
+			for(i=0;i<len-1;i++) for(j=len-1;j>i;j--) if (hratio[j]<hratio[j-1])
+				swap(hratio[j],hratio[j+1]); // sort maxlen hits by ratios to the opposing hit dist 
+			Vec2i rngmax(2-len,1), rngcur=rngmax;
+			for(i=rngcur.x+1; max(max(i,rngmax.y),rngcur.y)<len; i++)
+				if (inrange(hratio[i+(len&i>>31)]/hratio[i-1+(len&i-1>>31)], 0.95f,1.05f))
+					rngcur.y++;
+				else {
+					rngmax += (rngcur-rngmax)*isneg(rngmax.y-rngcur.y);
+					rngcur.set(i,1);
+				}
+			rngmax = rngmax.y>rngcur.y ? rngmax:rngcur;
+			return rngmax.y>=minlen && inrange(hratio[rngmax.x+(len&rngmax.x>>31)],-1-maxdiff,-1+maxdiff) ? hratio[rngmax.x+(len&rngmax.x>>31)] : quotientf(-1);
+		};
+
+		auto IntersectRay = [&gray,this]()	-> geom_contact*
+		{
+			geom_contact *pcont; 
+			for(int icont=Intersect(&gray,0,0,0,pcont)-1; icont>=0;icont--) if (pcont[icont].id[0]>=0 && pcont[icont].n*gray.m_dirn>0)
+				return pcont+icont;
+			return 0;
+		};
+
+		for(int isurf=0; isurf<nsurf; isurf++) { // surface (box or cylinder) candidates
+			Vec3 c=gray.m_ray.origin=vox.center+vox.q*(Vec3(voxsurf[isurf].center)+Vec3(0.5f))*vox.celldim, n=vox.q*voxsurf[isurf].norm;
+			gray.m_ray.dir = (gray.m_dirn = n)*raylen;
+			// shoot ray from center in +-z to find thickness; refine center and thickness if possible
+			for(i=nhits=0,nhit[0].zero(),nhit[1].zero(); i<2; i++,gray.m_dirn.Flip(),gray.m_ray.dir.Flip()) 
+				if (geom_contact *pcont = IntersectRay())
+					nhit[nhits]=pcont->n, pthit[nhits++]=pcont->pt;
+			if (max(fabs(nhit[0]*n),fabs(nhit[1]*n)) > params.surfNormRefineThresh) {
+				gray.m_ray.dir = (gray.m_dirn = n = nhit[isneg(fabs(nhit[0]*n)-fabs(nhit[1]*n))])*(sz.x+sz.y+sz.z);
+				for(i=nhits=0; i<2; i++,gray.m_dirn.Flip(),gray.m_ray.dir.Flip()) 
+					if (geom_contact *pcont = IntersectRay())
+						pthit[nhits++] = pcont->pt;
+			}
+			if (nhits==2 && fabs((pthit[1]-pthit[0])*n)*0.5f-min(fabs(n*(pthit[0]-c)),fabs(n*(pthit[1]-c))) < vox.celldim*1.5f)
+				c = (pthit[0]+pthit[1])*0.5f;
+			float zh = max(fabs(n*(pthit[0]-c)),fabs(n*(pthit[1]-c)));
+			gray.m_ray.dir = (gray.m_dirn = n.GetOrthogonal().normalized())*raylen;
+			memset(nhit,0,sizeof(nhit));	memset(pthit,0,sizeof(pthit));
+			for(i=nhits=0; i<NRAYS; i++,gray.m_ray.dir=(gray.m_dirn=gray.m_dirn.GetRotated(n,cosTick,sinTick))*raylen) 
+				if (geom_contact *pcont = IntersectRay())	{
+					pthit[i]=pcont->pt; nhit[i]=pcont->n; nhits++; // shoot a fan of rays around center
+				}
+			if (nhits*2 < NRAYS)
+				continue;
+			
+			float r0=0, r=0;
+			for(i=0;i<NRAYS;i++) r0+=(pthit[i]-c).len()*nhit[i].len2(); // r0 - average dist
+			for(i=j=0,r0/=nhits; i<NRAYS; i++) {
+				float ri = (pthit[i]-c).len()*nhit[i].len2(); 
+				int inrng = isneg(fabs(ri-r0)-r0*0.2f);
+				r += ri*inrng; j += inrng;
+			}
+			cylinder cyl;
+			cyl.r = j*3>nhits	? r/j : r0;	// average dist without extremes
+			cyl.center=c;	cyl.axis=n; cyl.hh=zh;
+
+			box box; 
+			// axisx = longest streak of same-ish normals
+			Vec2i rng = LongestNormStreak([](const Vec3& n0,const Vec3& ni) { return n0*ni>0.99f; });
+			Vec3 axisx = nhit[rng.x&NRAYS-1], axisy = n^(axisx-=n*(axisx*n)).normalize();
+			for(box.size.x=0,i=rng.x; i<rng.x+rng.y; i++) 
+				box.size.x = max(box.size.x,(pthit[i&NRAYS-1]-c)*axisx);
+			float sizeopp = box.size.x*CheckOppo(rng.x,rng.y,rng.y>>1,0.2f, c,axisx).val();
+			c += axisx*(box.size.x+sizeopp)*0.5f; box.size.x = (box.size.x-sizeopp)*0.5f;
+			rng = LongestNormStreak([&axisy](const Vec3& n0,const Vec3& ni) { return fabs(axisy*ni)>0.95f && n0*ni>0; });
+			i=sgnnz(axisy*nhit[rng.x&NRAYS-1]); axisx*=i; axisy*=i;
+			for(box.size.y=0,i=rng.x; i<rng.x+rng.y; i++) 
+				box.size.y = max(box.size.y,(pthit[i&NRAYS-1]-c)*axisy); // size.y - from the longest streak of normals close to axisy
+			sizeopp = box.size.y*CheckOppo(rng.x,rng.y,rng.y>>1,0.2f, c,axisy).val();
+			c += axisy*(box.size.y+sizeopp)*0.5f; box.size.y = (box.size.y-sizeopp)*0.5f;
+			box.center = c;	box.size.z = zh;
+			box.Basis = Matrix33(axisx,axisy,n).T();
+			voxsurf[isurf].sbox = box;
+			voxsurf[isurf].cyl = cyl;
+		}
+
+		for(i=0;i<nsurf-1;i++) for(j=nsurf-1;j>i;j--) if (voxsurf[j].sbox.size.GetVolume()>voxsurf[j-1].sbox.size.GetVolume())
+			swap(voxsurf[j],voxsurf[j-1]); // sort surfaces by decreasing box volumes
+
+		for(i=0; i<nsurf && voxsurf[i].sbox.size.GetVolume()>0 && nGeoms<params.maxGeoms; i++) {
+			float Vbox[2],Vcyl[2];
+			Vec2i ncellBox[2],ncellCyl[2];
+			ncellBox[1] = CheckPrim(vox, box::type, &voxsurf[i].sbox, Vbox[0], vox.celldim);
+			ncellCyl[1] = CheckPrim(vox, cylinder::type, &voxsurf[i].cyl, Vcyl[0], vox.celldim);
+			Vbox[1] = (ncellBox[0] = CheckPrim(vox, box::type, &voxsurf[i].sbox, Vbox[0])).x*cube(vox.celldim);
+			Vcyl[1] = (ncellCyl[0] = CheckPrim(vox, cylinder::type, &voxsurf[i].cyl, Vcyl[0])).x*cube(vox.celldim);
+			bool okBox = Vbox[1] > Vbox[0]*params.primVfillSurf && ncellBox[1].x-ncellBox[0].x < (ncellBox[1].y-ncellBox[0].y)*params.primSurfOutside;
+			bool okCyl = Vcyl[1] > Vcyl[0]*params.primVfillSurf && ncellCyl[1].x-ncellCyl[0].x < (ncellCyl[1].y-ncellCyl[0].y)*params.primSurfOutside;
+			if (!okCyl && okBox || okCyl && okBox && quotientf(Vbox[1],Vbox[0])>quotientf(Vcyl[1],Vcyl[0])) {
+				voxsurf[i].sbox.size += Vec3(params.inflatePrims);
+				pGeoms[nGeoms++] = (new CBoxGeom)->CreateBox(&voxsurf[i].sbox); 
+				CheckPrim(vox, box::type,&voxsurf[i].sbox, Vbox[0], vox.celldim*params.primVoxInflate, params.primRefillThresh);
+			} else if (okCyl) {
+				voxsurf[i].cyl.r+=params.inflatePrims; voxsurf[i].cyl.hh+=params.inflatePrims;
+				pGeoms[nGeoms++] = (new CCylinderGeom)->CreateCylinder(&voxsurf[i].cyl);
+				CheckPrim(vox, cylinder::type,&voxsurf[i].cyl, Vcyl[0], vox.celldim*params.primVoxInflate, params.primRefillThresh);
+			}
+		}
+
+		for(i=0;i<nline-1;i++) for(j=nline-1;j>i;j--) if ((voxline[j].ends[1]-voxline[j].ends[0]).len2()>(voxline[j-1].ends[1]-voxline[j-1].ends[0]).len2())
+			swap(voxline[j],voxline[j-1]); // sor line by decreasing line lengths
+
+		for(int iline=0; iline<nline && nGeoms<params.maxGeoms; iline++) {	// line (capsule or cylinder) condidates
+			Vec3 end[2]; for(i=0;i<2;i++) end[i]=vox.center+vox.q*(Vec3(voxline[iline].ends[i])+Vec3(0.5f))*vox.celldim;
+			Vec3 c0=(end[0]+end[1])*0.5f, c,n=(end[1]-end[0]).normalized();
+			// shoot a fan of rays around center
+			gray.m_ray.origin = c0;
+			gray.m_ray.dir = (gray.m_dirn = n.GetOrthogonal().normalized())*raylen;
+			memset(nhit,0,sizeof(nhit));	memset(pthit,0,sizeof(pthit));
+			Matrix33 C(ZERO),tmp;	float len;
+			for(i=nhits=0,c.zero(),len=0; i<NRAYS; i++,gray.m_ray.dir=(gray.m_dirn=gray.m_dirn.GetRotated(n,cosTick,sinTick))*raylen) 
+				if (geom_contact *pcont = IntersectRay())	{	// shoot a fan of rays around the center
+					if (i>0 && nhit[i-1].len2()>0) {
+						float leni = (pcont->pt-pthit[i-1]).len(); 
+						c += (pcont->pt+pthit[i-1])*leni; len+=leni;
+					}
+					pthit[i]=pcont->pt; nhit[i]=pcont->n; nhits++; 
+					C += dotproduct_matrix(pcont->n,pcont->n,tmp);
+				}
+			if (nhit[0].len2()*nhit[i-1].len2()>0) {
+				float leni = (pthit[0]-pthit[i-1]).len();
+				c += (pthit[0]+pthit[i-1])*leni; len+=leni;
+			}
+			if (nhits*2 < NRAYS || !len)
+				continue;
+			cylinder cyl;
+			gray.m_ray.origin = c/=len*2;	 
+			cyl.axis = SVD3x3(C);	cyl.axis *= sgnnz(n*cyl.axis);
+			gray.m_ray.dir = (gray.m_dirn = cyl.axis.GetOrthogonal().normalized())*raylen;
+			for(i=nhits=0,cyl.r=0; i<NRAYS; i++,gray.m_ray.dir=(gray.m_dirn=gray.m_dirn.GetRotated(cyl.axis,cosTick,sinTick))*raylen) 
+				if (geom_contact *pcont = IntersectRay())
+					cyl.r+=pcont->t, nhits++;
+			int type = cylinder::type;
+			cyl.r /= nhits;	
+			gray.m_ray.dir = (gray.m_dirn=-cyl.axis)*raylen;
+			for(i=0;i<2;i++,gray.m_dirn.Flip(),gray.m_ray.dir.Flip()) if (geom_contact *pcont = IntersectRay())	{
+				float curlen = (end[i]-c)*gray.m_dirn;
+				if (inrange((pcont->pt-c)*gray.m_dirn, curlen,curlen*1.5f))
+					end[i] = pcont->pt;
+			}
+			cyl.hh = ((end[1]-end[0])*cyl.axis)*0.5f;
+			cyl.center = c+cyl.axis*(cyl.axis*(end[1]-c)-cyl.hh);
+			if (cyl.hh*2 > cyl.r*params.capsHRratio) {
+				type = capsule::type;
+				for(i=0;i<2;i++) if (!(voxline[iline].closed & 1<<i))	// open end = cap sphere end
+					cyl.center+=cyl.axis*cyl.r*(0.5f-i), cyl.hh-=cyl.r*0.5f;
+				else { // closed end - start as cylinder end end reduce until end voxel is occupied
+					Vec3 ax=cyl.axis*(i*2-1), pt=cyl.center+ax*cyl.r;
+					voxgrid &voxsafe = *(voxgrid*)&vox;
+					float h; for(h=cyl.hh; h>cyl.hh-cyl.r && !(voxsafe(float2int(((pt+ax*h-vox.center)*vox.q)*vox.rcelldim))&1); h-=vox.celldim);
+					if (h>cyl.hh-cyl.r) {
+						h = (cyl.hh-h)*0.5f; cyl.center-=ax*h, cyl.hh-=h;
+					}
+				}
+			}
+			float Vcyl[2]; Vcyl[0] = CheckPrim(vox,type,&cyl,Vcyl[1]).x*cube(vox.celldim);
+			if (Vcyl[0] > Vcyl[1]*params.primVfillLine)	{ // output cylinder or capsyle
+				cyl.hh+=params.inflatePrims; cyl.r+=params.inflatePrims;
+				pGeoms[nGeoms++] = type==capsule::type ?  (new CCapsuleGeom)->CreateCapsule((capsule*)&cyl) : (new CCylinderGeom)->CreateCylinder(&cyl);
+				CheckPrim(vox, type,&cyl, Vcyl[1], vox.celldim*params.primVoxInflate, params.primRefillThresh);
+			}
+		}
+
+		if (nGeoms>=params.maxGeoms)
+			break;
+
+		// make 2 hashplanes with the same res
+		grid hashgrid[2];
+		index_t *pHashGrid[2],*pHashData[2],*pCellTris=new index_t[nTris*3];
+		coord_plane hashplane;
+		hashplane.origin = vox.center;
+		for(i=0;i<2;i++) {
+			hashplane.n=vox.q*ort[i]; hashplane.axes[0]=vox.q*ort[inc_mod3[i]]; hashplane.axes[1]=vox.q*ort[dec_mod3[i]];
+			HashTrianglesToPlane(hashplane, Vec2(sz[inc_mod3[i]],sz[dec_mod3[i]])*2, hashgrid[i],pHashGrid[i],pHashData[i], 1/celldim, 0,pTris,nTris);
+		}
+
+		if ((params.findPrimLines | params.findPrimSurfaces | params.reuseVox) & params.findMeshes) 
+			vox_iterate1(vox,ic) vox(ic)&=1;
+		if (params.findMeshes) vox_iterate1(vox,ic) if ((vox(ic)&3)==1 && is_surface(vox,ic)) {
+			for(vox(queue[0]=ic)|=2,ihead=1,itail=0; itail<ihead;) // trace voxel surfaces
+				for(Vec3i ic1=queue[i=0,itail++];i<27;i++) if ((vox(ic1+idx2dir[i])&3)==1 && is_surface(vox,ic1+idx2dir[i]))
+					vox(queue[ihead]=ic1+idx2dir[i]) |= 2|ihead<<4, ihead++;
+			if (ihead<params.surfMeshMinCells)
+				continue;
+			build_surface(1,4,-1,true);
+
+			for(i=0;i<ihead;i++) { // for each surface voxel, refine vertex/normal from the original mesh
+				vtx[i] = vox.center+vox.q*(Vec3(queue[i])+Vec3(0.5f))*vox.celldim;
+				int nCellTris=0,offsEnd=params.surfRefineWithMesh ? 14:0;
+				for(int offs=0,icell[2]; offs<offsEnd; offs+=2) { // collect triangles	in the vicinity
+					Vec4i ipt = Vec4i(queue[i]+vox.sz,0); ipt[offs>>2]+=1-(offs&2);
+					for(j=0;j<2;j++) icell[j] = Vec2i(ipt[inc_mod3[j]],ipt[dec_mod3[j]])*hashgrid[j].stride;
+					int ntris = intersect_lists(pHashData[0]+pHashGrid[0][icell[0]],pHashGrid[0][icell[0]+1]-pHashGrid[0][icell[0]], 
+						pHashData[1]+pHashGrid[1][icell[1]],pHashGrid[1][icell[1]+1]-pHashGrid[1][icell[1]], pCellTris+nCellTris);
+					nCellTris = unite_lists(pCellTris,nCellTris, pCellTris+nCellTris,ntris, pCellTris+(j=nCellTris+ntris),nTris*3-nCellTris-ntris);
+					memcpy(pCellTris, pCellTris+j, nCellTris*sizeof(pCellTris[0]));
+				}
+
+				struct closest_point { 
+					closest_point(quotientf d2,const Vec3& pt,int i0,int i1=-1) : dist2(d2),pt(pt),ivtx0(i0),ivtx1(i1+(i0+1&i1>>31)) {}
+					quotientf dist2; Vec3 pt; int ivtx0,ivtx1; 
+				} ptbest = closest_point(quotientf(sqr(vox.celldim),1),Vec3(0),-2);
+				for(int itri=0,ivtx; itri<nCellTris; itri++) { // find the closest point on the mesh
+					Vec3 v[3],edge,n=pNormals[pCellTris[itri]]; float dist,len2;
+					for(ivtx=0;ivtx<3;ivtx++) v[ivtx] = m_pVertices[pTris[pCellTris[itri]*3+ivtx]];
+					for(ivtx=0;ivtx<3;ivtx++) if ((v[inc_mod3[ivtx]]-v[ivtx] ^ vtx[i]-v[ivtx])*n < 0) {
+						for(j=0;j<3;j++) if (len2=(edge=v[inc_mod3[j]]-v[j]).len2(), inrange(edge*(vtx[i]-v[j]),0.0f,len2)) 
+							if (quotientf(dist=(vtx[i]-v[j]^edge).len2(),len2) < ptbest.dist2)
+								ptbest = closest_point(quotientf(dist,len2), v[j]*len2+edge*(edge*(vtx[i]-v[j])), pTris[pCellTris[itri]*3+j], pTris[pCellTris[itri]*3+inc_mod3[j]]);
+						ivtx = idxmin3(Vec3((v[0]-vtx[i]).len2(),(v[1]-vtx[i]).len2(),(v[2]-vtx[i]).len2()));
+						if ((dist=(v[ivtx]-vtx[i]).len2()) < ptbest.dist2)
+							ptbest = closest_point(quotientf(dist), v[ivtx], pTris[pCellTris[itri]*3+ivtx]); 
+						break;
+					}
+					if (ivtx==3 && sqr(dist = (vtx[i]-v[0])*n) < ptbest.dist2)
+						ptbest = closest_point(quotientf(sqr(dist)), vtx[i]-n*dist,-1), norm[0][i]=n;
+				}
+
+				if (ptbest.ivtx0!=-2) {
+					if (ptbest.ivtx0>=0)	{ // if closest pt is edge or vertex, average normal from all involved tris
+						for(int itri=(norm[0][i].zero(),0);itri<nCellTris;itri++) {
+							for(int idx=j=0;idx<3;idx++) {
+								int ivtx = pTris[pCellTris[itri]*3+idx];
+								j += iszero(ivtx-ptbest.ivtx0) + iszero(ivtx-ptbest.ivtx1);
+							}
+							norm[0][i] += pNormals[pCellTris[itri]]*isneg(1-j);
+						}	
+						norm[0][i].normalize();
+					}
+					vtx[i] = ptbest.pt*(ptbest.dist2.y==1.0f ? 1.0f:1.0f/ptbest.dist2.y);
+				}	else {
+					Matrix33 C(ZERO),tmp;	// compute normal from voxel neighbors
+					for(j=nbcnt[i];j<nbcnt[i+1];j++)
+						C += dotproduct_matrix(Vec3(queue[nbidx[j]]-queue[i]),Vec3(queue[nbidx[j]]-queue[i]),tmp);
+					Vec3 n=SVD3x3(C); Vec3i dir[2]={Vec3i(0),Vec3i(0)};
+					for(j=0;j<27;j++) dir[vox(queue[i]+idx2dir[j])&1] += idx2dir[j]; 
+					j = isneg(dir[0].len2()-dir[1].len2());
+					norm[0][i] = vox.q*n*(sgnnz(n*dir[j])*(1-j*2));
+				}
+			}
+
+			for(int iter=params.surfMeshIters; iter>0; iter--,swap(norm[1],norm[0]))
+				for(i=0;i<ihead;i++) { // average normals from neighbors
+					Vec3 n(ZERO); for(j=nbcnt[i];j<nbcnt[i+1];j++) n+=norm[0][nbidx[j]];
+					norm[1][i] = n*inv[nbcnt[i+1]-nbcnt[i]];
+				}
+
+			if (params.storeVox) {
+				vox.surf.Free();	// save debug info
+				memcpy(vox.surf.cells=new Vec3i[vox.surf.ncells=ihead], queue, ihead*sizeof(Vec3i));
+				memcpy(vox.surf.vtx=new Vec3[ihead], vtx, ihead*sizeof(Vec3));
+				for(i=0,vox.surf.norm=new Vec3[ihead];i<ihead;i++) vox.surf.norm[i]=norm[0][i];
+				memcpy(vox.surf.nbcnt=new int[ihead+1], nbcnt, (ihead+1)*sizeof(int));
+				memcpy(vox.surf.nbidx=new int[nbcnt[ihead]], nbidx, nbcnt[ihead]*sizeof(int));
+				vox.bitVis = 6;
+			}
+
+			for(i=0;i<ihead;i++) // mark voxels with local minima normals as vertices
+				for(float minmax=1-(int)params.surfMaxAndMinNorms*2; minmax<=1; minmax+=2) {
+					for(j=nbcnt[i];j<nbcnt[i+1] && norm[0][nbidx[j]].len2()*minmax>norm[0][i].len2()*minmax;j++);
+					vox(queue[i]) |= iszero(j-nbcnt[i+1])<<2;
+				}
+
+			// if clusters of vertices are possible:
+			// find cluster's center
+			// find axis that minimizes ((pt[i]-c)*axis)^2
+			// find vertices wit min and max projections on this axis
+
+			for(i=0;i<vox.nflips;i++)
+				vox(vox.flipHist[i]) ^= (vox(vox.flipHist[i]) & 2)<<1;
+
+			int *voridx=(int*)norm[1], *vqueue=voridx+ihead, *vtxidx=vqueue+ihead, *edges=vtxidx+ihead, vhead,vtail,nvtx,nedges,nTris=0;
+			Vec3_tpl<unsigned short> *pOutTris = (Vec3_tpl<unsigned short>*)(edges+ihead);
+			memset(voridx,-1,ihead*sizeof(int));
+			for(i=vhead=nvtx=0;i<ihead;i++) if (vox(queue[i]) & 4) {
+				vtxidx[nvtx] = i;	// output a vertex
+				vtx[voridx[vqueue[vhead++] = i] = nvtx++] = vtx[i]+norm[0][i]*params.inflateMeshes;	
+			}
+			for(vtail=nedges=0; vtail<vhead;) { // grow voronoi regions around vertices; output edges when regions meet
+				i = vqueue[vtail++];
+				if (nedges+nbcnt[i+1]-nbcnt[i] > ihead)
+					break; // edge buffer overflow
+				int ilastVtx = -1;
+				for(j=nbcnt[i];j<nbcnt[i+1];j++) if (voridx[nbidx[j]]<0) 
+					voridx[vqueue[vhead++] = nbidx[j]] = voridx[i];
+				else if (voridx[i]<voridx[nbidx[j]] && voridx[nbidx[j]]!=ilastVtx)
+					edges[nedges++] = voridx[i]<<16 | (ilastVtx=voridx[nbidx[j]]);
+			}
+			for(i=0,memset(nbcnt,0,(nvtx+1)*sizeof(nbcnt[0]));i<nedges;i++) 
+				nbcnt[edges[i]>>16]++;
+			for(i=0;i<nvtx;i++) nbcnt[i+1]+=nbcnt[i];
+			for(i=0,memset(nbidx,-1,nbcnt[nvtx]*sizeof(nbidx[0]));i<nedges;i++)	{ // register only unique vtxi-vtxj edges
+				int v0=edges[i]>>16, v1=edges[i]&0xffff;
+				for(j=nbcnt[v0];j<nbcnt[v0+1] && nbidx[j]>=0 && nbidx[j]!=v1;j++);
+				if (j==nbcnt[v0+1] || nbidx[j]<0)
+					nbidx[--nbcnt[v0]] = v1;
+			}
+			for(i=0;i<nvtx;i++) for(j=nbcnt[i];j<nbcnt[i+1]-1 && nbidx[j]>=0;j++)
+				for(int j1=j+1;j1<nbcnt[i+1] && nbidx[j1]>=0;j1++) { // create a triangle if any 2 connections of vtxi are connected to each other
+					int v0=min(nbidx[j],nbidx[j1]), v1=nbidx[j]+nbidx[j1]-v0;
+					for(int j2=nbcnt[v0]; j2<nbcnt[v0+1] && nbidx[j2]>=0; j2++) if (nbidx[j2]==v1) {
+						int flip = -isneg((vtx[v0]-vtx[i]^vtx[v1]-vtx[i])*(norm[0][vtxidx[i]]+norm[0][vtxidx[v0]]+norm[0][vtxidx[v1]]));
+						pOutTris[nTris++].Set(i,v0+(v1-v0&flip),v1+(v0-v1&flip)); break;
+					}
+				}
+
+			if (nvtx && nTris) {
+				CTriMesh *pMesh = new CTriMesh();
+				pGeoms[nGeoms++] = pMesh->CreateTriMesh(vtx,&pOutTris[0].x,(char*)pOutTris,0,nTris,(nTris<11 ? mesh_SingleBB : mesh_AABB|mesh_AABB_rotated|mesh_OBB)|mesh_multicontact1);
+				if (nGeoms>=params.maxGeoms)
+					break;
+			}
+		}
+		delete[] queue;
+		for(i=0;i<2;i++) delete[] pHashGrid[i], delete[] pHashData[i]; delete[] pCellTris;
+		if (params.storeVox) {
+			if (m_voxgrid) delete m_voxgrid;
+			(*(m_voxgrid=new voxgrid_tpl<false>)=vox).persistent = true;
+		}	else if (!params.reuseVox)
+			vox.Free();
+	}
+
+	if (pTris!=m_pIndices) delete[] pTris;
+	if (pNormals!=m_pNormals) delete[] pNormals;
+	delete[] pVtxMap;
+	delete[] nbcnt; delete[] nbidx;
+	delete[] norm[0]; delete[] norm[1]; delete[] vtx;
+	
+	pOutGeoms = (IGeometry**)pGeoms;
+	return nGeoms;
+}
+
 
 int CTriMesh::SanityCheck()
 {
