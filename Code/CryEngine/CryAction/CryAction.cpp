@@ -2546,7 +2546,10 @@ bool CCryAction::ShutdownGame()
 		}
 
 		m_externalGameLibrary.pGameStartup->Shutdown();
-		CryFreeLibrary(m_externalGameLibrary.dllHandle);
+		if (m_externalGameLibrary.dllHandle)
+		{
+			CryFreeLibrary(m_externalGameLibrary.dllHandle);
+		}
 		m_externalGameLibrary.Reset();
 	}
 

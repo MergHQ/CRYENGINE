@@ -629,7 +629,7 @@ private:
 		IGame* pGame;
 
 		SExternalGameLibrary() : dllName(""), dllHandle(0), pGameStartup(nullptr), pGame(nullptr) {}
-		bool IsValid() const { return (dllHandle != 0 && pGameStartup != nullptr && pGame != nullptr); }
+		bool IsValid() const { return (pGameStartup != nullptr && pGame != nullptr); }
 		void Reset() { dllName = ""; dllHandle = 0; pGameStartup = nullptr; pGame = nullptr; }
 	};
 
