@@ -2007,23 +2007,6 @@ void CGameContext::EndUpdateObjects()
 	}
 }
 
-void CGameContext::PlayerIdSet(EntityId id)
-{
-#ifndef OLD_VOICE_SYSTEM_DEPRECATED
-	if (m_pVoiceController)
-		m_pVoiceController->PlayerIdSet(id);
-#endif
-	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
-	{
-		pEnt->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
-		if (CGameObject* pGO = (CGameObject*) pEnt->GetProxy(ENTITY_PROXY_USER))
-		{
-			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);
-			pGO->SendEvent(goe);
-		}
-	}
-}
-
 void CGameContext::GetMemoryUsage(ICrySizer* s) const
 {
 	s->Add(*this);

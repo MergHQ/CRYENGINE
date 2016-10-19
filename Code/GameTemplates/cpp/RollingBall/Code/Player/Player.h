@@ -50,8 +50,6 @@ public:
 	// ISimpleActor
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
-
-	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 
 	virtual void SetHealth(float health) override;
@@ -61,8 +59,6 @@ public:
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
 	CPlayerView *GetView() const { return m_pView; }
-
-	const bool IsLocalClient() const { return m_bIsLocalClient; }
 
 	const SExternalCVars &GetCVars() const;
 
@@ -76,6 +72,5 @@ protected:
 	CPlayerView *m_pView;
 	CPlayerAnimations *m_pAnimations;
 
-	bool m_bIsLocalClient;
 	bool m_bAlive;
 };

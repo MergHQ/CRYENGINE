@@ -157,6 +157,14 @@ struct SSpectatorInfo
 
 struct SMeleeHitParams
 {
+	SMeleeHitParams()
+		: m_targetId(INVALID_ENTITYID)
+		, m_hitOffset(ZERO)
+		, m_hitNormal(ZERO)
+		, m_surfaceIdx(0)
+		, m_boostedMelee(false)
+	{}
+
 	EntityId m_targetId;
 	Vec3 m_hitOffset;
 	Vec3 m_hitNormal;
@@ -585,7 +593,6 @@ public:
 	virtual bool Init( IGameObject * pGameObject ) override;
 	virtual void PostInit( IGameObject * pGameObject ) override;
 	void ReloadClientXmlData();
-	virtual void InitLocalPlayer() override;
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual bool GetEntityPoolSignature( TSerialize signature ) override;
@@ -1430,6 +1437,8 @@ private:
 	void UpdateCrouchAndLeanReferencePoints();
 
 	virtual void ReadDataFromXML(bool isReloading = false) override;
+
+	virtual void InitLocalPlayer() override;
 
 	static void StrikeTargetPosition(const int currentPoint, const int numberOfPoints, Vec3& targetPos);
 

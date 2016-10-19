@@ -27,17 +27,8 @@ CPlayerView::~CPlayerView()
 
 void CPlayerView::PostInit(IGameObject *pGameObject)
 {
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
-}
-
-void CPlayerView::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		// Register for UpdateView callbacks
-		GetGameObject()->CaptureView(this);
-	}
+	// Register for UpdateView callbacks
+	GetGameObject()->CaptureView(this);
 }
 
 void CPlayerView::UpdateView(SViewParams &viewParams)

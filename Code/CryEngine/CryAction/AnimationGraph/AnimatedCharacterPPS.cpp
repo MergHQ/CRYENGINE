@@ -45,7 +45,7 @@ bool CAnimatedCharacter::EvaluateSimpleMovementConditions() const
 		return true;
 
 	//--- Don't do simplified movement for the player client
-	if (m_isPlayer && m_isClient)
+	if (m_isPlayer && GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 		return false;
 
 	if ((m_pCharacter == NULL) || !m_pCharacter->IsCharacterVisible())
@@ -132,7 +132,7 @@ void CAnimatedCharacter::UpdateSkeletonSettings()
 	{
 		m_pSkeletonAnim->SetAnimationDrivenMotion(1); // Tell motion playback to calculate root/locator trajectory.
 
-		if (m_isPlayer && m_isClient)
+		if (m_isPlayer && GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 		{
 			// Force the client skeleton to update always, even when seemingly invisible
 			m_pSkeletonPose->SetForceSkeletonUpdate(ISkeletonPose::kForceSkeletonUpdatesInfinitely);
@@ -1069,8 +1069,9 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 		// Enable the loosen stuck checks (essentially disabling an addition sanity
 		// check in livingentity::step) for all animated characters except for the
 		// local player instance (remote clients' livingentities get synchronized).
-		pf.flagsOR = pef_pushable_by_players | (lef_loosen_stuck_checks & - (int)!m_isClient);
-		pf.flagsAND = ~(pef_ignore_areas | (lef_loosen_stuck_checks & - (int)m_isClient));
+		bool bIsClient = GetEntityId() == CCryAction::GetCryAction()->GetClientActorId();
+		pf.flagsOR = pef_pushable_by_players | (lef_loosen_stuck_checks & - (int)!bIsClient);
+		pf.flagsAND = ~(pef_ignore_areas | (lef_loosen_stuck_checks & - (int)bIsClient));
 	}
 	else if (m_colliderMode == eColliderMode_NonPushable)
 	{

@@ -421,14 +421,10 @@ bool CActor::Init( IGameObject * pGameObject )
 {
 	SetGameObject(pGameObject);
 
-	if (!GetGameObject()->CaptureView(this))
-		return false;
 	if (!GetGameObject()->CaptureProfileManager(this))
 		return false;
 
 	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
-
-	m_isClient = (gEnv->pGameFramework->GetClientActorId() == GetEntityId());
 
 	IEntity *pEntity = GetEntity();
 	IEntityClass *pEntityClass = pEntity->GetClass();
@@ -1918,7 +1914,17 @@ void CActor::ReadDataFromXML(bool isReloading/* = false*/)
 	{
 		m_pImpulseHandler->ReadXmlData(pEntityClassParamsNode);
 	}
-};
+}
+
+void CActor::InitLocalPlayer()
+{
+	CryLog("%s '%s' is becoming local actor", GetEntity()->GetClass()->GetName(), GetEntity()->GetName());
+	INDENT_LOG_DURING_SCOPE();
+
+	m_isClient = true;
+
+	SetupLocalPlayer();
+}
 
 bool CActor::UpdateStance()
 {
@@ -2852,7 +2858,7 @@ void CActor::SetParamsFromLua(SmartScriptTable &rTable)
 
 bool CActor::IsClient() const
 {
-	return m_isClient;
+	return m_isClient || (GetEntityId() == gEnv->pGameFramework->GetClientActorId());
 }
 
 bool CActor::IsPlayer() const
@@ -3129,17 +3135,6 @@ void CActor::HandleEvent( const SGameObjectEvent& event )
 		{
 			assert(m_pAnimatedCharacter);
 			m_pAnimatedCharacter->RequestPhysicalColliderMode(eColliderMode_Disabled, eColliderModeLayer_Game, "Actor::HandleEvent");
-		}
-		break;
-	case eGFE_BecomeLocalPlayer:
-		{
-			CryLog ("%s '%s' is becoming local actor", GetEntity()->GetClass()->GetName(), GetEntity()->GetName());
-			INDENT_LOG_DURING_SCOPE();
-
-
-			m_isClient = true;
-
-			SetupLocalPlayer();
 		}
 		break;
 	case eGFE_RagdollPhysicalized:
@@ -5914,6 +5909,8 @@ void CActor::OnSpectateModeStatusChanged( bool spectate )
 void CActor::SetupLocalPlayer()
 {
 	IEntity *pEntity = GetEntity();
+
+	GetGameObject()->CaptureView(this);
 
 	if(GetSpectatorState() != eASS_SpectatorMode)
 	{

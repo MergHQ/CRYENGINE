@@ -552,7 +552,7 @@ public:
 	void UpdateBodyDestruction(float frameTime);
 	virtual void ReadDataFromXML(bool isReloading = false);
 
-	virtual void InitLocalPlayer() override {}
+	virtual void InitLocalPlayer() override;
 
 	virtual void SetIKPos(const char *pLimbName, const Vec3& goalPos, int priority) override;
 

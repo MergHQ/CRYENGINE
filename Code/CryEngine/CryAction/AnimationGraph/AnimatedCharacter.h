@@ -311,7 +311,6 @@ public:
 	void       PrepareAnimatedCharacterForUpdate();
 	void       GenerateMovementRequest();
 	void       PrepareAndStartAnimProc();
-	ILINE bool IsClient() const { return m_isClient; }
 
 private:
 	void PerformSimpleMovement();
@@ -531,7 +530,6 @@ private:
 	// Not serialized
 	// TODO: Pack these as bits instead.
 	bool m_isPlayer;
-	bool m_isClient;
 
 	// Not serialized
 	CTimeValue m_curFrameStartTime;

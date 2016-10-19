@@ -411,8 +411,6 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 {
 	CGameChannel::SetPlayerId(id);
 
-	CCryAction::GetCryAction()->GetGameContext()->PlayerIdSet(id);
-
 	IScriptSystem* pSS = gEnv->pScriptSystem;
 
 	if (id)
@@ -450,21 +448,28 @@ void CGameClientChannel::CallOnSetPlayerId()
 		return;
 
 	IScriptTable* pScriptTable = pPlayer->GetScriptTable();
-	if (!pScriptTable)
-		return;
-
-	SmartScriptTable client;
-	if (pScriptTable->GetValue("Client", client))
+	if (pScriptTable)
 	{
-		if (pScriptTable->GetScriptSystem()->BeginCall(client, "OnSetPlayerId"))
+		SmartScriptTable client;
+		if (pScriptTable->GetValue("Client", client))
 		{
-			pScriptTable->GetScriptSystem()->PushFuncParam(pScriptTable);
-			pScriptTable->GetScriptSystem()->EndCall();
+			if (pScriptTable->GetScriptSystem()->BeginCall(client, "OnSetPlayerId"))
+			{
+				pScriptTable->GetScriptSystem()->PushFuncParam(pScriptTable);
+				pScriptTable->GetScriptSystem()->EndCall();
+			}
 		}
 	}
 
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(GetPlayerId()))
 		pActor->InitLocalPlayer();
+
+#ifndef OLD_VOICE_SYSTEM_DEPRECATED
+	if (m_pVoiceController)
+		m_pVoiceController->PlayerIdSet(id);
+#endif
+
+	pPlayer->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
 }
 
 bool CGameClientChannel::HookCreateActor(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)

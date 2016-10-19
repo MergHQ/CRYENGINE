@@ -257,7 +257,6 @@ namespace
 			eGFE_DisableBlendRagdoll,
 			eCGE_EnablePhysicalCollider,
 			eCGE_DisablePhysicalCollider,
-			eGFE_BecomeLocalPlayer,
 
 			// HitDeath.
 			eCGE_ReactionEnd,
@@ -787,6 +786,10 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	m_modifiableValues.DbgInit(pEntity);
 #endif
 
+	m_stealthKill.Init(this);
+	m_spectacularKill.Init(this);
+	m_largeObjectInteraction.Init(this);
+
 	if (IsClient())
 	{
 		InitLocalPlayer();
@@ -796,11 +799,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	SelectMovementHierarchy();
 
 	m_heatController.InitWithEntity(pEntity, GetBaseHeat());
-
-	m_spectacularKill.Init(this);
-
-	m_stealthKill.Init(this);
-	m_largeObjectInteraction.Init(this);
 
 	if (m_pAnimatedCharacter)
 	{
@@ -1090,12 +1088,12 @@ void CPlayer::ReadDataFromXML(bool isClientReloading /*= false*/)
 
 void CPlayer::InitLocalPlayer()
 {
-	CRY_ASSERT(IsClient());
-
-	if (m_pPlayerTypeComponent )
+	if (m_pPlayerTypeComponent)
 	{
 		return;
 	}
+
+	CActor::InitLocalPlayer();
 
 	CGameLobby* pGameLobby = g_pGame->GetGameLobby();
 	if(pGameLobby && pGameLobby->GetSpectatorStatusFromChannelId(GetGameObject()->GetChannelId()))
@@ -1172,10 +1170,7 @@ void CPlayer::InitLocalPlayer()
 			}
 		}
 
-		if (IsClient())
-		{
-			m_netPlayerProgression.OwnClientConnected();
-		}
+		m_netPlayerProgression.OwnClientConnected();
 
 		if(pGameRules)
 		{
@@ -1221,6 +1216,57 @@ void CPlayer::InitLocalPlayer()
 	IEntity *pEntity = GetEntity();
 	// These flags are needed for the correct handling of the merged mesh collision sounds
 	pEntity->SetFlagsExtended(pEntity->GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE | ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES);
+
+	GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
+	CGodMode::GetInstance().ClearCheckpointData();
+	if (gEnv->bMultiplayer)
+	{
+		CryLog("Local player name = %s", GetEntity()->GetName());
+	}
+
+	if (!(g_pGame->IsGameSessionHostMigrating() && gEnv->bServer))
+	{
+		FullyUpdateActorModel();
+
+		if (gEnv->bMultiplayer)
+		{
+			CryFixedStringT<64> signalName;
+			signalName.Format("Player_Footstep_Gear_MP_Team%d%s", CLAMP(pGameRules->GetTeam(GetEntityId()), 1, 2), IsClient() ? "_FP" : "");
+			m_sounds[ESound_Gear_Run].audioSignalPlayer.SetSignal(signalName.c_str());
+		}
+
+		ResetScreenFX();
+		ResetFPView();
+		UnRegisterInAutoAimManager();
+
+		if (gEnv->bMultiplayer)
+		{
+			const SHUDEvent hudevent_rescanActors(eHUDEvent_RescanActors);
+			CHUDEventDispatcher::CallEvent(hudevent_rescanActors);
+
+			OnLocalPlayerChangeTeam();
+
+			CreateInputClass(true);
+		}
+
+		PhysicalizeLocalPlayerAdditionalParts();
+
+		StateMachineHandleEventMovement(SStateEvent(PLAYER_EVENT_BECOME_LOCALPLAYER));
+	}
+
+	pGameRules->OwnClientConnected_NotifyListeners();
+
+	if (IGameRulesStateModule* pStateModule = pGameRules->GetStateModule())
+	{
+		pStateModule->OwnClientEnteredGame(*this);
+	}
+
+	// Now we *finally* have correct info for client actor id + team id, we need to force a refresh of all players
+	CTeamVisualizationManager* pTeamVisManager = g_pGame->GetGameRules()->GetTeamVisualizationManager();
+	if (pTeamVisManager)
+	{
+		pTeamVisManager->OnPlayerTeamChange(GetEntityId());
+	}
 }
 
 bool CPlayer::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
@@ -6042,61 +6088,6 @@ void CPlayer::HandleEvent( const SGameObjectEvent& event )
 			if (!bHandled)
 			{
 				CActor::HandleEvent(event);
-
-				if (event.event == eGFE_BecomeLocalPlayer)
-				{
-					GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
-					CGodMode::GetInstance().ClearCheckpointData();
-					if (gEnv->bMultiplayer)
-					{
-						CryLog("Local player name = %s", GetEntity()->GetName());
-					}
-					
-					CGameRules *pGameRules = g_pGame->GetGameRules();
-					if (!(g_pGame->IsGameSessionHostMigrating() && gEnv->bServer))
-					{
-						FullyUpdateActorModel();
-
-						if (gEnv->bMultiplayer)
-						{
-							CryFixedStringT<64> signalName;
-							signalName.Format("Player_Footstep_Gear_MP_Team%d%s", CLAMP(pGameRules->GetTeam(GetEntityId()), 1, 2), IsClient() ? "_FP" : "");
-							m_sounds[ESound_Gear_Run].audioSignalPlayer.SetSignal(signalName.c_str());
-						}
-
-						ResetScreenFX();
-						ResetFPView();
-						UnRegisterInAutoAimManager();
-						
-						if (gEnv->bMultiplayer)
-						{
-							const SHUDEvent hudevent_rescanActors(eHUDEvent_RescanActors);
-							CHUDEventDispatcher::CallEvent(hudevent_rescanActors);
-
-							OnLocalPlayerChangeTeam();
-
-							CreateInputClass(true);
-						}
-
-						PhysicalizeLocalPlayerAdditionalParts();
-
-						StateMachineHandleEventMovement( SStateEvent(PLAYER_EVENT_BECOME_LOCALPLAYER) );
-					}
-
-					pGameRules->OwnClientConnected_NotifyListeners();
-
-					if(IGameRulesStateModule * pStateModule = pGameRules->GetStateModule())
-					{
-						pStateModule->OwnClientEnteredGame(*this);
-					}
-
-					// Now we *finally* have correct info for client actor id + team id, we need to force a refresh of all players
-					CTeamVisualizationManager* pTeamVisManager = g_pGame->GetGameRules()->GetTeamVisualizationManager();
-					if(pTeamVisManager)
-					{
-						pTeamVisManager->OnPlayerTeamChange(GetEntityId()); 
-					}
-				}
 			}
 			break;
 		}

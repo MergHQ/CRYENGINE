@@ -21,8 +21,8 @@ void CPlayerView::PostInit(IGameObject *pGameObject)
 {
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
 
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
+	// Register for UpdateView callbacks
+	GetGameObject()->CaptureView(this);
 }
 
 void CPlayerView::ProcessEvent(SEntityEvent &event)
@@ -30,15 +30,6 @@ void CPlayerView::ProcessEvent(SEntityEvent &event)
 	if (event.event == ENTITY_EVENT_DONE)
 	{
 		GetGameObject()->ReleaseView(this);
-	}
-}
-
-void CPlayerView::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		// Register for UpdateView callbacks
-		GetGameObject()->CaptureView(this);
 	}
 }
 

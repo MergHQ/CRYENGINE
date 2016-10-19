@@ -1924,7 +1924,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 		m_pGameObjectSystem->RegisterEvent(eGFE_OnBreakable2d, "OnBreakable2d");
 		m_pGameObjectSystem->RegisterEvent(eGFE_OnBecomeVisible, "OnBecomeVisible");
 		m_pGameObjectSystem->RegisterEvent(eGFE_PreShatter, "PreShatter");
-		m_pGameObjectSystem->RegisterEvent(eGFE_BecomeLocalPlayer, "BecomeLocalPlayer");
 		m_pGameObjectSystem->RegisterEvent(eGFE_DisablePhysics, "DisablePhysics");
 		m_pGameObjectSystem->RegisterEvent(eGFE_EnablePhysics, "EnablePhysics");
 		m_pGameObjectSystem->RegisterEvent(eGFE_ScriptEvent, "ScriptEvent");

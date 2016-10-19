@@ -412,7 +412,6 @@ enum EGameFrameworkEvent
 	eGFE_OnBreakable2d,
 	eGFE_OnBecomeVisible,
 	eGFE_PreShatter,
-	eGFE_BecomeLocalPlayer,
 	eGFE_DisablePhysics,
 	eGFE_EnablePhysics,
 	eGFE_ScriptEvent,

@@ -68,7 +68,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_PrepareAnimatedCh
 		{
 			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_PrepareAnimatedCharacterForUpdate;
 
-			if (m_pAnimCharacter->IsClient())
+			if (m_pAnimCharacter->GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 			{
 				// we want the client StartAnimProc to happen after both CActor and GenMoveRequest.
 				priority += EEntityEventPriority_Client;
@@ -99,7 +99,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_StartAnimProc::Ge
 		{
 			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_StartAnimProc;
 
-			if (m_pAnimCharacter->IsClient())
+			if (m_pAnimCharacter->GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 			{
 				// we want the client StartAnimProc to happen after both CActor and GenMoveRequest.
 				priority += EEntityEventPriority_Client;
@@ -130,7 +130,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_GenerateMoveReque
 		{
 			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_AnimatedCharacter;
 
-			if (m_pAnimCharacter->IsClient())
+			if (m_pAnimCharacter->GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 			{
 				priority += EEntityEventPriority_Client;
 			}

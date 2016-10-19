@@ -17,8 +17,6 @@ public:
 
 	// ISimpleExtension
 	virtual void PostInit(IGameObject* pGameObject) override;
-
-	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	// ~ISimpleExtension
 
 	// IGameObjectView

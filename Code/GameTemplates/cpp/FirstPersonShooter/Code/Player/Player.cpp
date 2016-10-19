@@ -63,7 +63,6 @@ CPlayer::CPlayer()
 	, m_pMovement(nullptr)
 	, m_pView(nullptr)
 	, m_bAlive(false)
-	, m_bIsLocalClient(false)
 	, m_pCurrentWeapon(nullptr)
 {
 }
@@ -87,9 +86,6 @@ bool CPlayer::Init(IGameObject *pGameObject)
 
 void CPlayer::PostInit(IGameObject *pGameObject)
 {
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
-
 	m_pMovement = static_cast<CPlayerMovement *>(GetGameObject()->AcquireExtension("PlayerMovement"));
 	m_pAnimations = static_cast<CPlayerAnimations *>(GetGameObject()->AcquireExtension("PlayerAnimations"));
 	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
@@ -98,14 +94,6 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 
 	// Register with the actor system
 	gEnv->pGameFramework->GetIActorSystem()->AddActor(GetEntityId(), this);
-}
-
-void CPlayer::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		m_bIsLocalClient = true;
-	}
 }
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
