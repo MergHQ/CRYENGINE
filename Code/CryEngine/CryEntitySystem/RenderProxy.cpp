@@ -1954,9 +1954,8 @@ IGeomCacheRenderNode* CRenderProxy::GetGeomCacheRenderNode( int nSlot )
 IMaterial* CRenderProxy::GetRenderMaterial( int nSlot )
 {
 	CEntityObject *pSlot = NULL;
-	nSlot = GetSlotIdx(nSlot);
 	if (nSlot >= 0)
-		pSlot = GetSlot(nSlot);
+		pSlot = GetSlot(GetSlotIdx(nSlot));
 	else
 	{
 		for (uint32 i = 0; i < m_slots.size(); i++)
