@@ -573,6 +573,7 @@ struct ICVar
 	//! Removes an on change functor.
 	//! \return true if removal was successful.
 	virtual bool RemoveOnChangeFunctor(const uint64 nElement) = 0;
+	virtual bool RemoveOnChangeFunctor(const SFunctor& changeFunctor) = 0;
 
 	//! Get the current callback function.
 	virtual ConsoleVarFunc GetOnChangeCallback() const = 0;
