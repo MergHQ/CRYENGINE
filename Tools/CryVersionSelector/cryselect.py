@@ -59,8 +59,12 @@ def error_engine_path_not_found (args, engine_version):
 		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (602)
 
-def error_engine_tool_not_found (path):
-	sys.stderr.write ("'%s' not found. Please re-register CRYENGINE version that includes the required tool.\n" % path)
+def error_engine_tool_not_found (args, path):
+	message= "'%s' not found. Please re-register CRYENGINE version that includes the required tool.\n" % path
+	if args.silent:
+		sys.stderr.write (message)
+	else:
+		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (620)
 
 def print_subprocess (cmd):
@@ -445,9 +449,10 @@ def cmd_upgrade (args):
 		]
 
 	if not os.path.isfile (subcmd[-1]):
-		error_engine_tool_not_found (subcmd[-1])
-		
-	subcmd.extend (sys.argv[1:])
+		error_engine_tool_not_found (args, subcmd[-1])
+	
+	sys_argv= [x for x in sys.argv[1:] if x not in ('--silent', )]
+	subcmd.extend (sys_argv)
 
 	print_subprocess (subcmd)
 	sys.exit (subprocess.call(subcmd))
@@ -481,8 +486,9 @@ def cmd_run (args, sys_argv= sys.argv[1:]):
 		]
 
 	if not os.path.isfile (subcmd[-1]):
-		error_engine_tool_not_found (subcmd[-1])
+		error_engine_tool_not_found (args, subcmd[-1])
 
+	sys_argv= [x for x in sys_argv if x not in ('--silent', )]
 	subcmd.extend (sys_argv)
 
 	(temp_fd, temp_path)= tempfile.mkstemp(suffix='.out', prefix=args.command + '_', text=True)
