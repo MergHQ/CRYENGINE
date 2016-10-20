@@ -747,10 +747,7 @@ def BuildTaskGenerator(ctx, kw):
 	spec = ctx.options.project_spec
 	platform = ctx.env['PLATFORM']
 	configuration = ctx.GetConfiguration(target)
-	
-	if not spec:
-		return False
-		
+			
 	if ctx.cmd == 'configure':
 		return False 		# Dont build during configure
 		
@@ -765,6 +762,9 @@ def BuildTaskGenerator(ctx, kw):
 	# Always include all projects when generating project for IDEs
 	if ctx.env['PLATFORM'] == 'project_generator':
 		return True
+	
+	if not spec:
+		return False
 			
 	if target in ctx.spec_modules():
 		return True		# Skip project is it is not part of the current spec
