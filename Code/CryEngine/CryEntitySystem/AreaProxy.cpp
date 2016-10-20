@@ -258,15 +258,18 @@ void CAreaProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 		int nId = 0, nGroup = 0, nPriority = 0;
 		float fProximity = 0;
 		float fHeight = 0;
+		float innerFadeDistance = 0.0f;
 
 		areaNode->getAttr("Id", nId);
 		areaNode->getAttr("Group", nGroup);
 		areaNode->getAttr("Proximity", fProximity);
 		areaNode->getAttr("Priority", nPriority);
+		areaNode->getAttr("InnerFadeDistance", innerFadeDistance);
 		m_pArea->SetID(nId);
 		m_pArea->SetGroup(nGroup);
 		m_pArea->SetProximity(fProximity);
 		m_pArea->SetPriority(nPriority);
+		m_pArea->SetInnerFadeDistance(innerFadeDistance);
 		const char* token(0);
 
 		XmlNodeRef pointsNode = areaNode->findChild("Points");
@@ -483,6 +486,7 @@ void CAreaProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 		areaNode->setAttr("Group", m_pArea->GetGroup());
 		areaNode->setAttr("Proximity", m_pArea->GetProximity());
 		areaNode->setAttr("Priority", m_pArea->GetPriority());
+		areaNode->setAttr("InnerFadeDistance", m_pArea->GetInnerFadeDistance());
 
 		EEntityAreaType const type = m_pArea->GetAreaType();
 
