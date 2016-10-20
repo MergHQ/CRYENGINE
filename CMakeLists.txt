@@ -37,7 +37,8 @@ if(ANDROID)
 	unset(WIN64)
 endif(ANDROID)
 
-project(CryEngine_CMake_${BUILD_PLATFORM} CXX C)
+set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
+project(${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM} CXX C)
 
 set(MODULES CACHE INTERNAL "Modules for monolithic builds" FORCE)
 set(GAME_MODULES CACHE INTERNAL "Game Modules for monolithic builds" FORCE)
@@ -93,14 +94,6 @@ endif()
 
 option(OPTION_RC "Include RC in the build" OFF)
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
-
-#Extensions
-
-#option(EXTENSION_CRYDESCRIPTOR "Enable CryDescriptor" ON)
-#option(EXTENSION_CRYDRSCOMMON "Enable CryDRSCommonElements" ON)
-option(EXTENSION_CRYLOBBY "Enable CryLobby" ON)
-#option(EXTENSION_SCHEMATYC "Enable Schematyc" ON)
-#option(EXTENSION_CRYLINK "Enable CryLink" ON)
 
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
@@ -303,6 +296,14 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/SDL_mixer.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/Boost.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/ncurses.cmake)
 
+if (OPTION_SANDBOX AND WIN64)
+	# Find Qt before including any plugin subdirectories
+	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
+	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
+	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")
+endif()
+
+
 # CryEngine
 add_subdirectory(Code/CryEngine/Cry3DEngine)
 add_subdirectory(Code/CryEngine/CryAction)
@@ -341,25 +342,7 @@ endif (WIN32)
 add_subdirectory(Code/CryPlugins/CryDefaultEntities/Module)
 
 # CryExtensions
-if (EXTENSION_CRYDESCRIPTOR)
-	#add_subdirectory(Code/CryExtensions/CryDescriptor)
-endif()	
-if (EXTENSION_CRYDRSCOMMON)
-	#add_subdirectory(Code/CryExtensions/CryDrsCommonElements/Module)
-endif()
-
-if (EXTENSION_CRYLOBBY)
-	add_subdirectory(Code/CryExtensions/CryLobby/Module)
-endif()
-if (EXTENSION_SCHEMATYC)
-	#add_subdirectory(Code/CryExtensions/CrySchematyc)
-endif()
-if (EXTENSION_CRYLINK)
-	#add_subdirectory(Code/CryExtensions/CryLink/Module)
-endif()
-
-
-
+add_subdirectory(Code/CryExtensions)
 
 # Example plugin
 if (PLUGIN_FPS)
@@ -383,16 +366,7 @@ add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 
 
 # Game
-option(OPTION_GAMESDK "Build GameSDK sample project" ON)
-option(OPTION_GAMEZERO "Build GameZero sample project" OFF)
-
-if (OPTION_GAMESDK) 
-	add_subdirectory(Code/GameSDK/GameDll)
-endif()
-
-if (OPTION_GAMEZERO) 
-	add_subdirectory(Code/GameZero/GameDll)
-endif()
+add_subdirectories_glob("Code/Game*")
 
 if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged/CryMonoBridge)
@@ -434,13 +408,8 @@ add_subdirectory(Code/Libs/oculus)
 # Sandbox Editor
 if (OPTION_SANDBOX AND WIN64)
 	MESSAGE(STATUS "Include Sandbox Editor")
-	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 	set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
-	set(CMAKE_AUTOMOC ON)
-	set(CMAKE_AUTORCC ON)
-	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
-	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")	
 
 	set(EDITOR_DIR "${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorQt" )
 	add_subdirectory(Code/Sandbox/EditorQt)
@@ -464,7 +433,7 @@ if (OPTION_SANDBOX AND WIN64)
 	endif()
 	if (AUDIO_WWISE)
 		add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorWwise)
-	endif()	
+	endif()
 	add_subdirectory(Code/Sandbox/Plugins/EditorAnimation)
 	add_subdirectory(Code/Sandbox/Plugins/EditorDynamicResponseSystem)
 	add_subdirectory(Code/Sandbox/Plugins/EditorEnvironment)

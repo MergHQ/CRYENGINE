@@ -1,5 +1,5 @@
 # Copy required additional files from 3rdparty to the binary folder
-set(DEPLOY_FILES "" CACHE STRING "List of files to deploy before running")
+set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
 set (BinaryFileList_Win64
 	Code/SDKs/XT_13_4/bin_vc14/*.dll
@@ -31,12 +31,9 @@ set (BinaryFileList_LINUX64
 	)
 
 macro(deploy_runtime_file source destination)
-	add_custom_command(OUTPUT ${destination} 
-		COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CMAKE_SOURCE_DIR}/Tools/CMake/deploy_runtime_files.cmake
-		COMMENT "Deploying ${source}"
-		DEPENDS ${source})
-
+	list(APPEND DEPLOY_FILES ${source})
 	list(APPEND DEPLOY_FILES ${destination})
+	set(DEPLOY_FILES "${DEPLOY_FILES}" CACHE INTERNAL "List of files to deploy before running")
 endmacro()
 
 macro(deploy_runtime_files fileexpr)
@@ -90,5 +87,27 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_dir(Code/SDKs/Mono ../../Engine/Mono)
 	endif()
 
-	add_custom_target(deployrt ALL DEPENDS ${DEPLOY_FILES})
+	if(DEPLOY_FILES)
+		set(DEPLOY_DESTINATIONS)
+
+		list(LENGTH DEPLOY_FILES deployFilesCount)
+		math(EXPR idxRangeEnd "${deployFilesCount} - 1")
+
+		foreach(idx RANGE 0 ${idxRangeEnd} 2)
+			math(EXPR idxIncr "${idx} + 1")
+			list(GET DEPLOY_FILES ${idx} source)
+			list(GET DEPLOY_FILES ${idxIncr} destination)
+
+			add_custom_command(OUTPUT ${destination} 
+				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CMAKE_SOURCE_DIR}/Tools/CMake/deploy_runtime_files.cmake
+				COMMENT "Deploying ${source}"
+				DEPENDS ${source})
+
+			list(APPEND DEPLOY_DESTINATIONS ${destination})
+		endforeach(idx)
+
+		add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
+	endif()
 endmacro()
+
+
