@@ -38,6 +38,8 @@ private:
 
 	AudioObjectId const m_id;
 	FMOD_3D_ATTRIBUTES  m_attributes;
+	float               m_obstruction;
+	float               m_occlusion;
 
 	AudioEvents         m_audioEvents;
 	typedef std::map<CAudioParameter const* const, float>    AudioParameters;
