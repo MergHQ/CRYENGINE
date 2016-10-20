@@ -1,21 +1,8 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   MaterialEffects.h
-//  Version:     v1.00
-//  Created:     28/11/2006 by JohnN/AlexL
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef __MATERIALEFFECTS_H__
-#define __MATERIALEFFECTS_H__
-
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
 #pragma once
 
 #include <CryAction/IMaterialEffects.h>
+#include <CryCore/Containers/CryListenerSet.h>
 
 #include "MFXLibrary.h"
 #include "MFXContainer.h"
@@ -44,6 +31,7 @@ private:
 	typedef std::map<const TPtrIndex, TIndex>                            TPointerToLookupTable;
 	typedef std::map<string, TIndex, stl::less_stricmp<string>>          TCustomNameToLookupTable;
 	typedef std::vector<TMFXContainerPtr>                                TMFXContainers;
+	typedef CListenerSet<IMaterialEffectsListener*>                      TEffectsListeners;
 
 	struct SDelayedEffect
 	{
@@ -107,6 +95,12 @@ public:
 	virtual IFlowGraphPtr       LoadNewMatFXFlowGraph(const string& filename);
 	virtual void                EnumerateEffectNames(EnumerateMaterialEffectsDataCallback& callback, const char* szLibraryName) const;
 	virtual void                EnumerateLibraryNames(EnumerateMaterialEffectsDataCallback& callback) const;
+	virtual void                LoadFXLibraryFromXMLInMemory(const char* szName, XmlNodeRef root);
+	virtual void                UnloadFXLibrariesWithPrefix(const char* szName);
+	virtual void                SetAnimFXEvents(IAnimFXEvents* pAnimEvents)                        { m_pAnimFXEvents = pAnimEvents; }
+	virtual IAnimFXEvents*      GetAnimFXEvents()                                                  { return m_pAnimFXEvents; }
+	virtual void                AddListener(IMaterialEffectsListener* pListener, const char* name) { m_listeners.Add(pListener, name); }
+	virtual void                RemoveListener(IMaterialEffectsListener* pListener)                { m_listeners.Remove(pListener); }
 	// ~IMaterialEffects
 
 	void                GetMemoryUsage(ICrySizer* s) const;
@@ -164,6 +158,10 @@ private:
 	bool                m_bUpdateMode;
 	bool                m_bDataInitialized;
 	CMaterialFGManager* m_pMaterialFGManager;
+	IAnimFXEvents*      m_pAnimFXEvents;
+
+	// other systems can respond to internal events
+	TEffectsListeners m_listeners;
 
 	// The libraries we have loaded
 	TFXLibrariesMap m_mfxLibraries;
@@ -192,5 +190,3 @@ private:
 	MaterialEffectsUtils::CVisualDebug* m_pVisualDebug;
 #endif
 };
-
-#endif
