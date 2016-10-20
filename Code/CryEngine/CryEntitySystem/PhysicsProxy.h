@@ -176,6 +176,8 @@ protected:
 
 	void             RemapChildAttachIds(CEntity* pent, attachMask& idmaskSrc, attachMask& idmaskDst, int* idmap);
 
+	bool             TriggerEventIfStateChanged(IPhysicalEntity* pPhysEntity, const pe_status_pos* pPrevStatus) const;
+
 	uint32   m_nFlags;
 
 	CEntity* m_pEntity;
