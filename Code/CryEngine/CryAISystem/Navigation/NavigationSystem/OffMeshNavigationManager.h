@@ -157,6 +157,18 @@ private:
 				offMeshLinkIDList.push_back(callbackData.linkID);
 			}
 		}
+		void               OnLinkRepairRequestForSmartObjectServiced(const MNM::SOffMeshOperationCallbackData& callbackData)
+		{
+			if (!callbackData.operationSucceeded)
+			{
+				auto it = std::find(offMeshLinkIDList.begin(), offMeshLinkIDList.end(), callbackData.linkID);
+				assert(it != offMeshLinkIDList.end());
+				if (it != offMeshLinkIDList.end())
+				{
+					offMeshLinkIDList.erase(it);
+				}
+			}
+		}
 
 	private:
 		TLinkIDList offMeshLinkIDList;
@@ -165,6 +177,9 @@ private:
 	typedef stl::STLPoolAllocator<OffMeshLinkIDList, stl::PoolAllocatorSynchronizationSinglethreaded> TSOClassInfoAllocator;
 	typedef std::map<uint32, OffMeshLinkIDList, std::less<uint32>, TSOClassInfoAllocator>             TSOClassInfo;
 	typedef std::map<EntityId, TSOClassInfo>                                                          TRegisteredObjects;
+
+	OffMeshLinkIDList* GetClassInfoFromLinkInfo(const SLinkInfo& linkInfo);
+
 	TRegisteredObjects m_registeredObjects;
 
 	// List of registered links

@@ -650,6 +650,13 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 				// to know, that link data was cloned (there is no event about refreshed connections). That means, if the game-side holds a
 				// pointer to the link, it will become dangling and will lead to crash.
 				request.bCloneLinkData = false;
+
+				OffMeshLinkIDList* linkIDList = GetClassInfoFromLinkInfo(linkInfo);
+				if (linkIDList)
+				{
+					//stored linkID is removed from OffMeshLinkIDList in callback, when the link cannot be added again.
+					request.SetCallback(functor(*linkIDList, &OffMeshNavigationManager::OffMeshLinkIDList::OnLinkRepairRequestForSmartObjectServiced));
+				}
 				QueueCustomLinkAddition(request);
 			}
 
@@ -702,6 +709,29 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			}
 		}
 	}
+}
+
+OffMeshNavigationManager::OffMeshLinkIDList* OffMeshNavigationManager::GetClassInfoFromLinkInfo(const SLinkInfo& linkInfo)
+{
+	EntityId entityId = linkInfo.offMeshLink->GetEntityIdForOffMeshLink();
+	TRegisteredObjects::iterator objectIt = m_registeredObjects.find(entityId);
+	if (objectIt != m_registeredObjects.end())
+	{
+		TSOClassInfo* classInfos = &objectIt->second;
+		for (TSOClassInfo::iterator classIt = classInfos->begin(); classIt != classInfos->end(); ++classIt)
+		{
+			const OffMeshLinkIDList::TLinkIDList& linkList = classIt->second.GetLinkIDList();
+			for (size_t i = 0; i < linkList.size(); ++i)
+			{
+				if (linkList[i] == linkInfo.offMeshLink->GetLinkId())
+				{
+					return &classIt->second;
+				}
+			}
+		}
+	}
+	assert(0);
+	return nullptr;
 }
 
 void OffMeshNavigationManager::Clear()
