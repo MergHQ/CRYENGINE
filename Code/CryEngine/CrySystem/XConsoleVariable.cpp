@@ -99,9 +99,11 @@ void CXConsoleVariableBase::SetOnChangeCallback(ConsoleVarFunc pChangeFunc)
 	m_pChangeFunc = pChangeFunc;
 }
 
-void CXConsoleVariableBase::AddOnChangeFunctor(const SFunctor& pChangeFunctor)
+uint64 CXConsoleVariableBase::AddOnChangeFunctor(const SFunctor& pChangeFunctor)
 {
 	m_cpChangeFunctors.push_back(pChangeFunctor);
+
+	return m_cpChangeFunctors.size() - 1;
 }
 
 uint64 CXConsoleVariableBase::GetNumberOfOnChangeFunctors() const
@@ -127,6 +129,17 @@ bool CXConsoleVariableBase::RemoveOnChangeFunctor(const uint64 nElement)
 	if (nElement < m_cpChangeFunctors.size())
 	{
 		m_cpChangeFunctors.erase(m_cpChangeFunctors.begin() + (size_t)nElement);
+		return true;
+	}
+	return false;
+}
+
+bool CXConsoleVariableBase::RemoveOnChangeFunctor(const SFunctor& changeFunctor)
+{
+	const auto it = std::find(std::begin(m_cpChangeFunctors), std::end(m_cpChangeFunctors), changeFunctor);
+	if (it != std::end(m_cpChangeFunctors))
+	{
+		m_cpChangeFunctors.erase(it);
 		return true;
 	}
 	return false;
