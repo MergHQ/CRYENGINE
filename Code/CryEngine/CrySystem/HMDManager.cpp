@@ -47,10 +47,10 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 		{
 			if (gEnv->pConsole)
 			{
-				if (gEnv->pConsole->GetCVar("sys_vr_support")->GetIVal() > 0)
-				{
-					gEnv->pSystem->LoadConfiguration("vr.cfg", 0, eLoadConfigGame);
+				ICVar* pVrSupportVar = gEnv->pConsole->GetCVar("sys_vr_support");
 
+				if (pVrSupportVar->GetIVal() > 0)
+				{
 					m_pHmdDevice = nullptr;
 
 					const char *selectedHmdName = CryVR::CVars::pSelectedHmdNameVar->GetString();
@@ -61,6 +61,13 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 						hmdIt = m_availableDeviceMap.find(selectedHmdName);
 						if (hmdIt == m_availableDeviceMap.end())
 						{
+							pVrSupportVar->Set(0);
+
+							if (gEnv->pRenderer != nullptr)
+							{
+								gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+							}
+
 							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to select unavailable VR device %s!", selectedHmdName);
 							return;
 						}
@@ -70,6 +77,13 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 						hmdIt = m_availableDeviceMap.begin();
 						if (hmdIt == m_availableDeviceMap.end())
 						{
+							pVrSupportVar->Set(0);
+
+							if (gEnv->pRenderer != nullptr)
+							{
+								gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+							}
+
 							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "VR support was enabled, but no VR device was detected!");
 							return;
 						}
@@ -78,6 +92,8 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 					m_pHmdDevice = hmdIt->second;
 
 					gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+
+					gEnv->pSystem->LoadConfiguration("vr.cfg", 0, eLoadConfigGame);
 				}
 				else if(m_pHmdDevice != nullptr)
 				{

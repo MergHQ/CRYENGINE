@@ -4,6 +4,7 @@
 #include "Helpers/EntityFlowNode.h"
 
 #include <CryPhysics/physinterface.h>
+#include <CryAnimation/ICryAnimation.h>
 
 class CGeomEntityRegistrator
 	: public IEntityRegistrator
@@ -25,6 +26,14 @@ class CGeomEntityRegistrator
 		RegisterEntityPropertyEnum(pPropertyHandler, "Physicalize", "", "1", "Determines the physicalization type of the entity - None, Static or Rigid (movable)", 0, 2);
 		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "1", "Sets the mass of the entity", 0.00001f, 100000.f);
 		RegisterEntityProperty<bool>(pPropertyHandler, "Hide", "", "0", "Sets the visibility of the entity");
+
+		{
+			SEntityPropertyGroupHelper animationGroup(pPropertyHandler, "Animations");
+
+			RegisterEntityProperty<string>(pPropertyHandler, "Animation", "", "", "Specifies the animation to play");
+			RegisterEntityProperty<float>(pPropertyHandler, "Speed", "", "1", "Speed at which to play the animation", 0.00001f, 10000.f);
+			RegisterEntityProperty<bool>(pPropertyHandler, "Loop", "", "1", "Whether or not the animation should loop or only play once");
+		}
 
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
@@ -104,13 +113,13 @@ void CGeomEntity::OnResetState()
 		}
 	}
 
-	const char* modelPath = GetPropertyValue(eProperty_Model);
-	if (strlen(modelPath) > 0)
+	const char* szModelPath = GetPropertyValue(eProperty_Model);
+	if (strlen(szModelPath) > 0)
 	{
 		auto& gameObject = *GetGameObject();
 
 		const int geometrySlot = 0;
-		LoadMesh(geometrySlot, modelPath);
+		LoadMesh(geometrySlot, szModelPath);
 
 		SEntityPhysicalizeParams physicalizationParams;
 
@@ -130,6 +139,23 @@ void CGeomEntity::OnResetState()
 		physicalizationParams.mass = GetPropertyFloat(eProperty_Mass);
 
 		GetEntity()->Physicalize(physicalizationParams);
+
+		const char* szAnimationName = GetPropertyValue(eProperty_Animation);
+		if (strlen(szAnimationName) > 0)
+		{
+			if (auto* pCharacter = GetEntity()->GetCharacter(geometrySlot))
+			{
+				CryCharAnimationParams animParams;
+				animParams.m_fPlaybackSpeed = GetPropertyFloat(eProperty_Speed);
+				animParams.m_nFlags = GetPropertyBool(eProperty_Loop) ? CA_LOOP_ANIMATION : 0;
+
+				pCharacter->GetISkeletonAnim()->StartAnimation(szAnimationName, animParams);
+			}
+			else
+			{
+				gEnv->pLog->LogWarning("Tried to play back animation %s on entity with no character! Make sure to use a CDF or CHR geometry file!", szAnimationName);
+			}
+		}
 	}
 }
 

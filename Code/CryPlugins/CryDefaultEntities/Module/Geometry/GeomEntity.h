@@ -12,6 +12,12 @@ public:
 		eProperty_Mass,
 		eProperty_Hide,
 
+		ePropertyGroup_AnimationsBegin,
+		eProperty_Animation,
+		eProperty_Speed,
+		eProperty_Loop,
+		ePropertyGroup_AnimationsEnd,
+
 		eNumProperties,
 	};
 
