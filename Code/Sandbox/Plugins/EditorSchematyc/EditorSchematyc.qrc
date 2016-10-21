@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="schematyc/script_constructor.ico">icons/script_constructor.png</file>
+		<file alias="schematyc/script_destructor.ico">icons/script_destructor.png</file>
+		<file alias="schematyc/script_function.ico">icons/script_function.png</file>
+		<file alias="schematyc/script_interface.ico">icons/script_interface.png</file>
+		<file alias="schematyc/script_signal.ico">icons/script_signal.png</file>
+		<file alias="schematyc/script_signal_receiver.ico">icons/script_signal_receiver.png</file>
+		<file alias="schematyc/script_state.ico">icons/script_state.png</file>
+		<file alias="schematyc/script_state_machine.ico">icons/script_state_machine.png</file>
+		<file alias="schematyc/script_timer.ico">icons/script_timer.png</file>
+		<file alias="schematyc/script_variable.ico">icons/script_variable.png</file>	
+    </qresource>
+</RCC>

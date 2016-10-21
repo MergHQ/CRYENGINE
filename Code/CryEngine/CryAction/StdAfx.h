@@ -69,6 +69,14 @@ inline void GameWarning(const char*, ...) PRINTF_PARAMS(1, 2);
 #include <IGameplayRecorder.h>
 #include <CryGame/GameUtils.h>
 
+#ifdef USE_SCHEMATYC_CORE
+#include <CrySchematyc/CoreAPI.h>
+#endif
+
+#ifdef USE_SCHEMATYC_STD_ENV
+#include <CrySchematyc/STDEnvAPI.h>
+#endif
+
 #pragma warning(disable: 4018)  // conditional expression is constant
 #pragma warning(disable: 4018)  // conditional expression is constant
 #pragma warning(disable: 4503)  // decorated name length exceeded, name was truncated

@@ -1876,3 +1876,28 @@ CryParticleEditor--CFeatureGridStyle {
 
 /* CryGraphEditor -------------------------------------------------------- */
 /* ----------------------------------------------------------------------- */
+
+
+CrySchematycEditor--CComponentsWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}
+
+CrySchematycEditor--CObjectStructureWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}
+
+CrySchematycEditor--CVariablesWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}

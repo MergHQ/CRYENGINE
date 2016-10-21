@@ -3970,7 +3970,7 @@ void CActionGame::RegisterBrokenMesh(IPhysicalEntity* pPhysEnt, IGeometry* pPhys
 					m_totBreakageSize -= iter->second.size;
 					m_mapBrokenMeshes.erase(iter);
 				}
-			uint32 eraseTo = min((size_t)(id + 1), m_brokenMeshRemovals.size());
+			size_t eraseTo = min((size_t)(id + 1), m_brokenMeshRemovals.size());
 			m_brokenMeshRemovals.erase(m_brokenMeshRemovals.begin(), m_brokenMeshRemovals.begin() + eraseTo);
 			return;
 		}

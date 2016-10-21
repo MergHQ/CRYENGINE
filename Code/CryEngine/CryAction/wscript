@@ -17,7 +17,11 @@ def build(bld):
 		win_lib    = 'Shell32',
 
 		use_module = [
-			'md5'
+			'md5',
+			'CryLink', 
+			'CrySchematycCore', 
+			'CrySchematycSTDEnv', 
+			'yasli'
 		],
 		durango_use_module= [
 			'jsmn'

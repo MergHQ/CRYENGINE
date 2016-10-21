@@ -31,6 +31,9 @@
 		"CryAudioCommon",
 		"CrySystem",
 		"CryAction",
+		"CrySchematycCore",
+		"CrySchematycSTDEnv",
+		"CrySensorSystem",
 		"HWScripts",
 		
 		"CryDefaultEntities",

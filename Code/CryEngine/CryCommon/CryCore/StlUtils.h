@@ -85,6 +85,13 @@ unsigned countElements(const std::vector<T>& arrT, const T& x)
  */
 namespace stl
 {
+//! Implementation of std::make_unique - missing from C++/11
+//! Remove when all compilers provide the default implementation.
+template<class T, class... TArgs> inline std::unique_ptr<T> make_unique(TArgs&&... args)
+{
+	return (std::unique_ptr<T>(new T(std::forward<TArgs>(args)...)));
+}
+
 //! Compare member of class/struct.
 //! e.g. Sort Vec3s by x component
 //! std::sort(vec3s.begin(), vec3s.end(), stl::member_compare<Vec3, float, &Vec3::x>());

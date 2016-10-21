@@ -101,6 +101,8 @@ option(PLUGIN_VR_OCULUS "Oculus support" ON)
 option(PLUGIN_VR_OPENVR "OpenVR support" ON)
 option(PLUGIN_VR_OSVR "OSVR support" ON)
 
+option(PLUGIN_SCHEMATYC "Enable Schematyc" ON)
+
 if(WIN32 OR WIN64)
 	option(OPTION_CRYMONO "C# support" OFF)
 endif()
@@ -344,6 +346,10 @@ add_subdirectory(Code/CryPlugins/CryDefaultEntities/Module)
 # CryExtensions
 add_subdirectory(Code/CryExtensions)
 
+if (PLUGIN_SCHEMATYC)
+	add_subdirectory(Code/CryPlugins/CrySensorSystem/Module)
+endif()
+
 # Example plugin
 if (PLUGIN_FPS)
 	add_subdirectory(Code/CryPlugins/CryFramesPerSecond/Module)
@@ -358,6 +364,8 @@ endif()
 if (PLUGIN_VR_OSVR)	
 	add_subdirectory(Code/CryPlugins/VR/CryOSVR/Module)
 endif()
+
+
 
 add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 		CryFont CryNetwork CryMovie CryInput CryAISystem CryAnimation Cry3DEngine
@@ -438,6 +446,9 @@ if (OPTION_SANDBOX AND WIN64)
 	add_subdirectory(Code/Sandbox/Plugins/EditorDynamicResponseSystem)
 	add_subdirectory(Code/Sandbox/Plugins/EditorEnvironment)
 	add_subdirectory(Code/Sandbox/Plugins/EditorParticle)
+	if (PLUGIN_SCHEMATYC)
+		add_subdirectory(Code/Sandbox/Plugins/EditorSchematyc)
+	endif()
 	add_subdirectory(Code/Sandbox/Plugins/EditorTrackView)
 	add_subdirectory(Code/Sandbox/Plugins/FbxPlugin)
 	add_subdirectory(Code/Sandbox/Plugins/MeshImporter)

@@ -183,16 +183,6 @@
 #include "LipSync/LipSync_TransitionQueue.h"
 #include "LipSync/LipSync_FacialInstance.h"
 
-#if defined(USE_SCHEMATYC_CORE)
-	#include "Schematyc/Schematyc_ICompiler.h"
-	#include "Schematyc/Schematyc_IFramework.h"
-	#include "Schematyc/Env/Schematyc_IEnvRegistry.h"
-	#include "Schematyc/Script/Schematyc_IScriptRegistry.h"
-	#if defined(USE_SCHEMATYC_BASE_ENV)
-		#include "Schematyc/BaseEnv_BaseEnv.h"
-	#endif
-#endif
-
 #ifdef _LIB
 extern "C" IGameStartup* CreateGameStartup();
 #endif //_LIB
@@ -308,9 +298,6 @@ CCryAction::CCryAction()
 	m_pGameplayAnalyst(0),
 	m_pGameRulesSystem(0),
 	m_pFlowSystem(0),
-#if defined(USE_SCHEMATYC_BASE_ENV)
-	m_pSchematycBaseEnv(0),
-#endif
 	m_pGameObjectSystem(0),
 	m_pScriptRMI(0),
 	m_pUIDraw(0),
@@ -1938,10 +1925,10 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	// Create Schematyc framework
 	if (Schematyc::CreateFramework(static_cast<IGameFramework*>(this)))
 	{
-	#if defined(USE_SCHEMATYC_BASE_ENV)
-		// Create base Schematyc environment
-		m_pSchematycBaseEnv = new SchematycBaseEnv::CBaseEnv();
-	#endif
+#if defined(USE_SCHEMATYC_STD_ENV)
+		// Create Schematyc standard environment
+		Schematyc::CreateSTDEnv(static_cast<IGameFramework*>(this));
+#endif
 	}
 #endif
 
@@ -2629,9 +2616,6 @@ void CCryAction::ShutdownEngine()
 	SAFE_DELETE(m_pGameObjectSystem);
 	SAFE_DELETE(m_pMannequin);
 	SAFE_DELETE(m_pTimeDemoRecorder);
-#if defined(USE_SCHEMATYC_BASE_ENV)
-	SAFE_DELETE(m_pSchematycBaseEnv);
-#endif
 	SAFE_DELETE(m_pGameSerialize);
 	SAFE_DELETE(m_pPersistantDebug);
 	SAFE_DELETE(m_pPlayerProfileManager);
@@ -2735,8 +2719,8 @@ void CCryAction::PrePhysicsUpdate()
 		pGame->PrePhysicsUpdate();  // required if PrePhysicsUpdate() is overriden in game
 	}
 
-#if defined(USE_SCHEMATYC_BASE_ENV)
-	m_pSchematycBaseEnv->PrePhysicsUpdate();
+#if defined(USE_SCHEMATYC_CORE)
+	GetSchematycFramework().PrePhysicsUpdate();
 #endif
 }
 
@@ -2900,11 +2884,8 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
 
-#if defined(USE_SCHEMATYC_BASE_ENV)
-	if (m_pSchematycBaseEnv)
-	{
-		m_pSchematycBaseEnv->Update();
-	}
+#if defined(USE_SCHEMATYC_CORE)
+	GetSchematycFramework().Update();
 #endif
 
 	CRConServerListener::GetSingleton().Update();
@@ -3533,10 +3514,11 @@ void CCryAction::GetEditorLevel(char** levelName, char** levelFolder)
 void CCryAction::LoadSchematycFiles()
 {
 #if defined(USE_SCHEMATYC_CORE)
-	// We do loading of Schematyc environments just once. Usually this is called
-	// in CryAction::CompleteInit() after the game has been initialized.
-	// If the game needs to use Schematyc during game initialization, this
-	// function can be called earlier.
+	// Schematyc environments must be initialize before loading files.
+	// Usually this function is called in CryAction::CompleteInit() after
+	// the game has been initialized, however if the game needs to use
+	// Schematyc during game initialization it can be called earlier.
+
 	static bool bLoadSchematycFiles = true;
 	if (bLoadSchematycFiles)
 	{
@@ -3546,12 +3528,12 @@ void CCryAction::LoadSchematycFiles()
 			schematycFramework.GetLogRecorder().Begin();
 		}
 
-		CryLogAlways("[Schematyc]: Loading files...");
+		CryLogAlways("[Schematyc]: Loading...");
 		CryLogAlways("[Schematyc]: Loading settings");
-		schematycFramework.GetEnvRegistry().LoadAllSettings();
-		CryLogAlways("[Schematyc]: Loading script files");
+		schematycFramework.GetSettingsManager().LoadAllSettings();
+		CryLogAlways("[Schematyc]: Loading scripts");
 		schematycFramework.GetScriptRegistry().Load();
-		CryLogAlways("[Schematyc]: Compiling script files");
+		CryLogAlways("[Schematyc]: Compiling scripts");
 		schematycFramework.GetCompiler().CompileAll();
 		CryLogAlways("[Schematyc]: Loading complete");
 

@@ -108,10 +108,6 @@ class CSegmentedWorld;
 
 class CNetMessageDistpatcher;
 
-#if defined(USE_SCHEMATYC_BASE_ENV)
-namespace SchematycBaseEnv { class CBaseEnv; }
-#endif
-
 class CCryAction :
 	public IGameFramework
 {
@@ -511,9 +507,6 @@ private:
 	CGameplayRecorder*            m_pGameplayRecorder;
 	CGameRulesSystem*             m_pGameRulesSystem;
 	CFlowSystem*                  m_pFlowSystem;
-#if defined(USE_SCHEMATYC_BASE_ENV)
-	SchematycBaseEnv::CBaseEnv*   m_pSchematycBaseEnv;
-#endif
 	CGameObjectSystem*            m_pGameObjectSystem;
 	CUIDraw*                      m_pUIDraw;
 	CScriptRMI*                   m_pScriptRMI;

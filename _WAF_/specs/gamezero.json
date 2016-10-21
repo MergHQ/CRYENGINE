@@ -31,6 +31,9 @@
 		"CrySystem",
 		"CryScaleformHelper",
 		"CryAction",
+		"CrySchematycCore",
+		"CrySchematycSTDEnv",
+		"CrySensorSystem",
 		"HWScripts",
 		
 		"CryDefaultEntities",
