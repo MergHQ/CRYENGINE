@@ -1990,6 +1990,8 @@ void CAuxGeomCB::Flush(bool reset)
 		SAuxGeomCBRawDataPackaged data = SAuxGeomCBRawDataPackaged(AccessData());
 		m_pRenderAuxGeom->Flush(data, lastFlushPos, curFlushPos, reset);
 	}
+
+	m_pRenderAuxGeom->FlushTextMessages(m_cbCurrent->m_TextMessages, reset);
 }
 
 void CAuxGeomCB::Commit(uint frames)
@@ -2002,38 +2004,6 @@ void CAuxGeomCB::Process()
 	m_pRenderAuxGeom->FlushTextMessages(m_cbCurrent->m_TextMessages, true);
 	m_lastFlushPos = 0;
 	m_cbCurrent->Reset();
-}
-
-void CAuxGeomCBMainThread::Commit(uint frames)
-{
-	m_cbCurrent->SetUsed(true);
-	m_cbCurrent->SetCount(frames);
-
-	Flush(true);
-
-	assert(m_cbCurrent->m_curTransMatIdx == -1);
-	m_cbCurrent->m_curTransMatIdx = -1;
-	m_cbCurrent->m_curWorldMatIdx = -1;
-
-	for (CBList::iterator it = m_cbData.begin(); it != m_cbData.end(); ++it)
-	{
-		if (!(*it)->IsUsed()) m_cbCurrent = *it;
-	}
-
-	if (m_cbCurrent->IsUsed())
-	{
-		m_cbCurrent = AddCBuffer();
-	}
-
-	m_lastFlushPos = 0;
-
-	m_cbCurrent->Reset();
-}
-
-void CAuxGeomCBMainThread::Process()
-{
-	//m_pRenderAuxGeom->FlushTextMessages(m_CBReady->m_TextMessages, true);
-	//m_CBReady->SetUsed(false);
 }
 
 void CAuxGeomCBWorkerThread::Flush()

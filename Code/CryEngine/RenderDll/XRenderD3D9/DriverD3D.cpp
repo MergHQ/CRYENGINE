@@ -4146,6 +4146,16 @@ void CD3D9Renderer::RT_EndFrame()
 	if (m_pPipelineProfiler && !bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
 
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	if( m_pRenderAuxGeomD3D )
+	{
+		if( CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom() )
+		{
+			aux->Flush(true);
+		}
+	}
+#endif
+
 	GetS3DRend().DisplayStereo();
 
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
@@ -4153,6 +4163,16 @@ void CD3D9Renderer::RT_EndFrame()
 
 	if (m_pPipelineProfiler && bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	if( m_pRenderAuxGeomD3D )
+	{
+		if( CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom() )
+		{
+			aux->Flush(true);
+		}
+	}
+#endif
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)

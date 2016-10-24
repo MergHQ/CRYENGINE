@@ -1605,11 +1605,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 		m_curWorldMatrixIdx = -1;
 	}
 
-	if (reset)
-	{
-		FlushTextMessages(data.m_pData->m_TextMessages, true);
-		data.m_pData->SetUsed(false);
-	}
+	FlushTextMessages(data.m_pData->m_TextMessages, !reset);
 }
 
 void CRenderAuxGeomD3D::Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset)

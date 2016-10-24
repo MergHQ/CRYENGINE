@@ -389,23 +389,13 @@ protected:
 	}
 };
 
-class CAuxGeomCBMainThread : public CAuxGeomCB
+class CAuxGeomCBWorkerThread : public CAuxGeomCB
 {
-protected:
+	SAuxGeomCBRawData*          m_cbProcessed;
 	SAuxGeomCBRawData* volatile m_CBReady;
 
 public:
-	CAuxGeomCBMainThread(IRenderAuxGeomImpl* pRenderAuxGeom) : CAuxGeomCB(pRenderAuxGeom), m_CBReady(0) {}
-	virtual void Commit(uint frames = 0);
-	virtual void Process();
-};
-
-class CAuxGeomCBWorkerThread : public CAuxGeomCBMainThread
-{
-	SAuxGeomCBRawData* m_cbProcessed;
-
-public:
-	CAuxGeomCBWorkerThread(IRenderAuxGeomImpl* pRenderAuxGeom) : CAuxGeomCBMainThread(pRenderAuxGeom), m_cbProcessed(0) {}
+	CAuxGeomCBWorkerThread(IRenderAuxGeomImpl* pRenderAuxGeom) : CAuxGeomCB(pRenderAuxGeom), m_cbProcessed(), m_CBReady() {}
 	virtual void Flush();
 	virtual void Commit(uint frames = 0);
 	virtual void Process();

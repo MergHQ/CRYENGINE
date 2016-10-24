@@ -182,7 +182,6 @@ private:
 					gRenDev->GetThreadIDs(mainThreadID, renderThreadID);
 
 					if (tid == renderThreadID)    pAuxGeomCB = new CAuxGeomCB(pRenderAuxGeomImpl);
-					else if (tid == mainThreadID) pAuxGeomCB = new CAuxGeomCBMainThread(pRenderAuxGeomImpl);
 					else                          pAuxGeomCB = new CAuxGeomCBWorkerThread(pRenderAuxGeomImpl);
 
 					m_rwlLocal.WLock();
