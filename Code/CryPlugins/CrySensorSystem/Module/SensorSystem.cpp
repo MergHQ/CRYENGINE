@@ -49,6 +49,15 @@ CSensorSystem::CSensorSystem()
 
 CSensorSystem::~CSensorSystem()
 {
+	if (gEnv->pConsole)
+	{
+		gEnv->pConsole->UnregisterVariable("sensor_Debug");
+		gEnv->pConsole->UnregisterVariable("sensor_DebugRange");
+
+		gEnv->pConsole->RemoveCommand("sensor_SetOctreeDepth");
+		gEnv->pConsole->RemoveCommand("sensor_SetOctreeBounds");
+	}
+
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 
 	CRY_ASSERT(ms_pInstance == this);

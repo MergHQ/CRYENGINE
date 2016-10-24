@@ -6,8 +6,6 @@
 
 struct SPluginContainer;
 
-typedef std::vector<SPluginContainer> TPluginList;
-
 class CCryPluginManager final : public ICryPluginManager, public ISystemEventListener
 {
 public:
@@ -51,7 +49,7 @@ private:
 
 	static void             ReloadPluginCmd(IConsoleCmdArgs* pArgs);
 	
-	TPluginList m_pluginContainer;
+	std::vector<SPluginContainer> m_pluginContainer;
 	std::map<IPluginEventListener*, std::vector<CryClassID>> m_pluginListenerMap;
 
 	const SSystemInitParams   m_systemInitParams;

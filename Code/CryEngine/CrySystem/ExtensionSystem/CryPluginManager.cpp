@@ -377,7 +377,7 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path, c
 bool CCryPluginManager::UnloadAllPlugins()
 {
 	bool bError = false;
-	for (auto it = m_pluginContainer.begin(); it != m_pluginContainer.end();)
+	for (auto it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
 	{
 		if (!it->Shutdown())
 		{
@@ -386,9 +386,9 @@ bool CCryPluginManager::UnloadAllPlugins()
 
 		// notification to listeners, that plugin got un-initialized
 		NotifyEventListeners(it->m_pluginClassId, IPluginEventListener::EPluginEvent::Unloaded);
-
-		it = m_pluginContainer.erase(it);
 	}
+
+	m_pluginContainer.clear();
 
 	return !bError;
 }

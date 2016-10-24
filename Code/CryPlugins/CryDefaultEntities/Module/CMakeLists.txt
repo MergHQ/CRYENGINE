@@ -50,6 +50,9 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 	SOURCE_GROUP "Triggers"
 		"Triggers/TriggerEntity.cpp"
 		"Triggers/TriggerEntity.h"
+	SOURCE_GROUP "AI"
+		"AI/TagPoint.cpp"
+		"AI/TagPoint.h"
 )
 
 add_sources("NoUberFile"

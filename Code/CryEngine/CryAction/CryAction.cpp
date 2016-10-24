@@ -2651,7 +2651,11 @@ void CCryAction::ShutdownEngine()
 
 	SAFE_DELETE(m_pNetMsgDispatcher);
 
-	stl::free_container(m_frameworkExtensions);
+	// Delete framework extensions in the reverse order of creation to avoid dependencies crashing
+	while (m_frameworkExtensions.size() > 0)
+	{
+		m_frameworkExtensions.pop_back();
+	}
 
 	// Shutdown pFlashUI after shutdown since FlowSystem will hold UIFlowNodes until deletion
 	// this will allow clean dtor for all UIFlowNodes
