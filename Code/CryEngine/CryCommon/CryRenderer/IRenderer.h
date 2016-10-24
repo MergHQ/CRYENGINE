@@ -1223,6 +1223,7 @@ enum EDrawTextFlags
 
 	eDrawText_DepthTest      = BIT(9),  //!< Text should be occluded by world geometry using the depth buffer.
 	eDrawText_IgnoreOverscan = BIT(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
+	eDrawText_LegacyBehavior = BIT(11)  //!< Reserved for internal system use.
 };
 
 // Debug stats/views for Partial resolves

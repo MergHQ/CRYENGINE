@@ -1689,13 +1689,13 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 {
 	if (m_pFont && m_pRenderer)
 	{
-		float csize = 0.8f * 14;
-		int   flags = eDrawText_Monospace | eDrawText_CenterV | eDrawText_2D;
+		const int   flags  = eDrawText_Monospace | eDrawText_CenterV | eDrawText_2D;
+		const int fontSize = 14;
+		float csize        = 0.8f * fontSize;
+		float fCharWidth   = 0.5f * fontSize;
 
 		float yPos = nScrollPos - csize - 3.0f;
 		float xPos = LINE_BORDER;
-
-		float fCharWidth = (1.16f * 0.5f);
 
 		//Draw the input line
 		if (m_bConsoleActive && !m_nProgressRange)

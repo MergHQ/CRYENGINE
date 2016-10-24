@@ -556,7 +556,7 @@ void DrawText(float x, float y, float size, ColorF color, const char* text)
 	float sx = VIRTUAL_SCREEN_WIDTH / aspect;
 	float sy = VIRTUAL_SCREEN_HEIGHT;
 
-	IRenderAuxText::DrawText(Vec3(x * sx, y * sy, 1.f), IRenderAuxText::ASize(size * 1.55f / aspect, size * 1.1f), color, eDrawText_800x600 | eDrawText_2D, text);
+	IRenderAuxText::DrawText(Vec3(x * sx, y * sy, 1.f), IRenderAuxText::ASize(size * 1.55f / aspect, size * 1.1f), color, eDrawText_800x600 | eDrawText_2D | eDrawText_LegacyBehavior, text);
 }
 
 void DrawText(float x, float y, float size, ColorF color, const char* format, va_list args)

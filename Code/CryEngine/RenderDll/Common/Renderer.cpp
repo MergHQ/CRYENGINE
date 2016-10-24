@@ -560,154 +560,155 @@ void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
 	int vx, vy, vw, vh;
 	GetViewport(&vx, &vy, &vw, &vh);
 
-	while (const CTextMessages::CTextMessageHeader* pEntry = messages.GetNextEntry())
+	while( const CTextMessages::CTextMessageHeader* pEntry = messages.GetNextEntry() )
 	{
 		const CTextMessages::SText* pText = pEntry->CastTo_Text();
 
 		Vec3 vPos(0, 0, 0);
-		int  nDrawFlags    = 0;
+		int  nDrawFlags = 0;
 		const char* szText = 0;
 		Vec4  vColor(1, 1, 1, 1);
 		Vec2 fSize;
+		bool bDraw = true;
 
-		if (pText)
+		if( !pText )
 		{
-			nDrawFlags = pText->m_nDrawFlags;
-			szText     = pText->GetText();
-			vPos       = pText->m_vPos;
-			vColor     = pText->m_Color.toVec4() * 1.0f / 255.0f;
-			fSize      = pText->m_fFontSize;
+			return;
 		}
 
-		bool b800x600 = (nDrawFlags & eDrawText_800x600) != 0;
+		nDrawFlags = pText->m_nDrawFlags;
+		szText = pText->GetText();
+		vPos = pText->m_vPos;
+		vColor = pText->m_Color.toVec4() * 1.0f / 255.0f;
+		fSize = pText->m_fFontSize;
 
-		float fMaxPosX = 100.0f;
-		float fMaxPosY = 100.0f;
 
-		if (!b800x600)
+		if( (nDrawFlags & eDrawText_LegacyBehavior) == 0 )
 		{
-			fMaxPosX = (float)vw;
-			fMaxPosY = (float)vh;
-		}
 
-		float sx, sy, sz;
+			bool b800x600 = (nDrawFlags & eDrawText_800x600) != 0;
 
-		if (!(nDrawFlags & eDrawText_2D))
-		{
-			float fDist = 1;   //GetDistance(pTextInfo->pos,GetCamera().GetPosition());
+			float fMaxPosX = 100.0f;
+			float fMaxPosY = 100.0f;
 
-			float K = GetCamera().GetFarPlane() / fDist;
-			if (fDist > GetCamera().GetFarPlane() * 0.5)
-				vPos = GetCamera().GetPosition() + K * (vPos - GetCamera().GetPosition());
-
-			ProjectToScreen(vPos.x, vPos.y, vPos.z, &sx, &sy, &sz);
-		}
-		else
-		{
-			if (b800x600)
+			if( !b800x600 )
 			{
-				// Make 2D coords in range 0-100
-				sx = (vPos.x) / vw * 100;
-				sy = (vPos.y) / vh * 100;
+				fMaxPosX = (float)vw;
+				fMaxPosY = (float)vh;
+			}
+
+			if( !(nDrawFlags & eDrawText_2D) )
+			{
+				float fDist = 1;   //GetDistance(pTextInfo->pos,GetCamera().GetPosition());
+
+				float K = GetCamera().GetFarPlane() / fDist;
+				if( fDist > GetCamera().GetFarPlane() * 0.5 )
+					vPos = GetCamera().GetPosition() + K * (vPos - GetCamera().GetPosition());
+
+				float sx, sy, sz;
+				ProjectToScreen(vPos.x, vPos.y, vPos.z, &sx, &sy, &sz);
+
+				vPos.x = sx;
+				vPos.y = sy;
+				vPos.z = sz;
 			}
 			else
 			{
-				sx = vPos.x;
-				sy = vPos.y;
+				if( b800x600 )
+				{
+					// Make 2D coords in range 0-100
+					vPos.x *= 100.0f / vw;
+					vPos.y *= 100.0f / vh;
+				}
 			}
 
-			sz = vPos.z;
+			bDraw = vPos.x >= 0 && vPos.x <= fMaxPosX;
+			bDraw &= vPos.y >= 0 && vPos.y <= fMaxPosY;
+			bDraw &= vPos.z >= 0 && vPos.z <= 1;
+			// 
+			// 			if( nDrawFlags & eDrawText_DepthTest )
+			// 			{
+			// 				sz = 1.0f - 2.0f * sz;
+			// 			}
+			// 			else
+			// 			{
+			// 				sz = 1.0f;
+			// 			}
+
+			vPos.x *= (b800x600 ? 8.f : 1.f);
+			vPos.y *= (b800x600 ? 6.f : 1.f);
 		}
 
-		if (sx >= 0 && sx <= fMaxPosX)
-			if (sy >= 0 && sy <= fMaxPosY)
-				if (sz >= 0 && sz <= 1)
+		if( szText && bDraw )
+		{
+			IF(!m_pDefaultFont, 0)
+				return;
+
+			IFFont* pFont = m_pDefaultFont;
+
+			const float r = CLAMP(vColor[0], 0.0f, 1.0f);
+			const float g = CLAMP(vColor[1], 0.0f, 1.0f);
+			const float b = CLAMP(vColor[2], 0.0f, 1.0f);
+			const float a = CLAMP(vColor[3], 0.0f, 1.0f);
+
+			STextDrawContext ctx;
+			ctx.SetColor(ColorF(r, g, b, a));
+			ctx.SetCharWidthScale(1.0f);
+			ctx.EnableFrame((nDrawFlags & eDrawText_Framed) != 0);
+
+			if( nDrawFlags & eDrawText_Monospace )
+			{
+				if( nDrawFlags & eDrawText_FixedSize )
+					ctx.SetSizeIn800x600(false);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+				ctx.SetCharWidthScale(0.5f);
+				ctx.SetProportional(false);
+
+				if( nDrawFlags & eDrawText_800x600 )
+					ScaleCoordInternal(vPos.x, vPos.y);
+			}
+			else if( nDrawFlags & eDrawText_FixedSize )
+			{
+				ctx.SetSizeIn800x600(false);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+				ctx.SetProportional(true);
+
+				if( nDrawFlags & eDrawText_800x600 )
+					ScaleCoordInternal(vPos.x, vPos.y);
+			}
+			else
+			{
+				ctx.SetSizeIn800x600(true);
+				ctx.SetProportional(false);
+				ctx.SetCharWidthScale(0.5f);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+			}
+
+			// align left/right/center
+			if( nDrawFlags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right) )
+			{
+				Vec2 textSize = pFont->GetTextSize(szText, true, ctx);
+
+				// If we're using virtual 800x600 coordinates, convert the text size from
+				// pixels to that before using it as an offset.
+				if( ctx.m_sizeIn800x600 )
 				{
-					if (szText)
-					{
-						if (nDrawFlags & eDrawText_DepthTest)
-						{
-							sz = 1.0f - 2.0f * sz;
-						}
-						else
-						{
-							sz = 1.0f;
-						}
-
-						sx *=  (b800x600 ? 8.f : 1.f);
-						sy *=  (b800x600 ? 6.f : 1.f);
-
-						{
-							IF(!m_pDefaultFont, 0)
-								return;
-
-							IFFont* pFont = m_pDefaultFont;
-
-							const float r = CLAMP(vColor[0], 0.0f, 1.0f);
-							const float g = CLAMP(vColor[1], 0.0f, 1.0f);
-							const float b = CLAMP(vColor[2], 0.0f, 1.0f);
-							const float a = CLAMP(vColor[3], 0.0f, 1.0f);
-
-							STextDrawContext ctx;
-							ctx.SetColor(ColorF(r, g, b, a));
-							ctx.SetCharWidthScale(1.0f);
-							ctx.EnableFrame((nDrawFlags & eDrawText_Framed) != 0);
-
-							if( nDrawFlags & eDrawText_Monospace )
-							{
-								if( nDrawFlags & eDrawText_FixedSize )
-									ctx.SetSizeIn800x600(false);
-								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
-								ctx.SetCharWidthScale(0.5f);
-								ctx.SetProportional(false);
-
-								if( nDrawFlags & eDrawText_800x600 )
-									ScaleCoordInternal(sx, sy);
-							}
-							else if( nDrawFlags & eDrawText_FixedSize )
-							{
-								ctx.SetSizeIn800x600(false);
-								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
-								ctx.SetProportional(true);
-
-								if( nDrawFlags & eDrawText_800x600 )
-									ScaleCoordInternal(sx, sy);
-							}
-							else
-							{
-								ctx.SetSizeIn800x600(true);
-								ctx.SetProportional(false);
-								ctx.SetCharWidthScale(0.5f);
-								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
-							}
-
-							// align left/right/center
-							if( nDrawFlags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right) )
-							{
-								Vec2 textSize = pFont->GetTextSize(szText, true, ctx);
-
-								// If we're using virtual 800x600 coordinates, convert the text size from
-								// pixels to that before using it as an offset.
-								if( ctx.m_sizeIn800x600 )
-								{
-									textSize.x /= ScaleCoordXInternal(1.0f);
-									textSize.y /= ScaleCoordYInternal(1.0f);
-								}
-
-								if     ( nDrawFlags & eDrawText_Center ) sx -= textSize.x * 0.5f;
-								else if( nDrawFlags & eDrawText_Right  ) sx -= textSize.x;
-
-								if( nDrawFlags & eDrawText_CenterV )
-									sy -= textSize.y * 0.5f;
-							}
-
-							// Pass flags so that overscan borders can be applied if necessary
-							ctx.SetFlags(nDrawFlags);
-
-							pFont->DrawString(sx, sy, sz, szText, true, ctx);
-						}
-					}
+					textSize.x /= ScaleCoordXInternal(1.0f);
+					textSize.y /= ScaleCoordYInternal(1.0f);
 				}
+
+				if( nDrawFlags & eDrawText_Center ) vPos.x -= textSize.x * 0.5f;
+				else if( nDrawFlags & eDrawText_Right ) vPos.x -= textSize.x;
+
+				if( nDrawFlags & eDrawText_CenterV )
+					vPos.y -= textSize.y * 0.5f;
+			}
+
+			// Pass flags so that overscan borders can be applied if necessary
+			ctx.SetFlags(nDrawFlags);
+
+			pFont->DrawString(vPos.x, vPos.y, vPos.z, szText, true, ctx);
+		}
 	}
 
 	messages.Clear(!reset);
