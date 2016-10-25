@@ -91,6 +91,9 @@ CVehicleMovementStdWheeled::CVehicleMovementStdWheeled()
 	m_ktiltCW[0] = m_ktiltCW[1] = m_ktiltCW[2] = 1; 
 	m_stiltCW = 40;
 	m_maxxCW = 100;
+	m_maxxCWcam = 0.5f;
+	m_offsCWcam.zero();
+	memset(m_posxCWhist, 0, sizeof(m_posxCWhist));
 	m_minVelSteerLean = 0;
 	m_dampingy = 0;
 	m_velWheelDisable = 0;
@@ -138,6 +141,8 @@ bool CVehicleMovementStdWheeled::Init(IVehicle* pVehicle, const CVehicleParams& 
 	MOVEMENT_VALUE_OPT("driverMoveXSteer", m_ktiltCW[1], table);
 	MOVEMENT_VALUE_OPT("driverMoveXSteerHarder", m_ktiltCW[2], table);
 	MOVEMENT_VALUE_OPT("driverMaxMoveX", m_maxxCW, table);
+	MOVEMENT_VALUE_OPT("driverCamMaxMoveX", m_maxxCWcam, table);
+	MOVEMENT_VALUE_OPT("driverCamOffs", m_offsCWcam, table);
 	MOVEMENT_VALUE_OPT("driverSpeed", m_stiltCW, table);
 	MOVEMENT_VALUE_OPT("minVelSteerLean", m_minVelSteerLean, table);
 	MOVEMENT_VALUE_OPT("rollDamping", m_dampingy, table);
@@ -958,6 +963,27 @@ void CVehicleMovementStdWheeled::Update(const float deltaTime)
 			}
 
 			m_reverseTimer = 0.f;
+		}
+	}
+
+	if (m_massCW>0)
+	{
+		if (IVehicleHelper *pCam = m_pVehicle->GetHelper("driver_ghostview_pos"))
+		{
+			Matrix34 &mtx = const_cast<Matrix34&>(pCam->GetLocalTM());
+			Quat rot = m_pVehicle->GetEntity()->GetRotation();
+			Vec3 xworld = rot*Vec3(1,0,0); xworld.z = 0;
+			const int sz = sizeof(m_posxCWhist)/sizeof(m_posxCWhist[0]);
+			if ((m_dtHist -= gEnv->pTimer->GetFrameRate()) < 0)
+			{
+				m_dtHist += 0.2f;
+				for(int i=sz-1; i>=1; --i)
+					m_posxCWhist[i] = m_posxCWhist[i-1];
+				m_posxCWhist[0] = m_posxCW;
+			}
+			float xsum = m_posxCW;
+			for(int i=0; i<sz; xsum+=m_posxCWhist[i++]);
+			mtx.SetTranslation(Vec3(0,m_pos0CW.y,m_poszCW) + (xworld.normalized()*rot)*max(-m_maxxCWcam,min(m_maxxCWcam,xsum/sz)) + m_offsCWcam);
 		}
 	}
 

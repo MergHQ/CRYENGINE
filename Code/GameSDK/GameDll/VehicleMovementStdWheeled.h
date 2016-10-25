@@ -230,6 +230,9 @@ protected:
 	float m_kzCW;
 	float m_maxxCW;
 	float m_posxCW, m_poszCW, m_velxCW;
+	float m_maxxCWcam;
+	Vec3 m_offsCWcam;
+	float m_posxCWhist[8],m_dtHist;
 	float m_ktiltCW[3], m_stiltCW;
 	float m_minVelSteerLean;
 
