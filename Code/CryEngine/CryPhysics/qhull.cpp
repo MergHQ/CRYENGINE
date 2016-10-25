@@ -547,11 +547,12 @@ int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges, int nMaxContacts)
 			ppt_best = (ptitem2d*)((intptr_t)ppt&imask | (intptr_t)ppt_best&~imask);
 		} while((ppt=ppt->next)!=edges[i].plist);
 		// trace contour from i cw while edges are facing the point ppt_best (pstart - 1st edge to be deleted)
-		for(pstart=edges+i; pstart->prev!=edges+i && 
+		/*for(pstart=edges+i; pstart->prev!=edges+i && 
 			(ppt_best->pt-pstart->prev->pvtx->pt ^ pstart->pvtx->pt-pstart->prev->pvtx->pt)>0; pstart=pstart->prev);
 		// trace contour from i ccw while edges are facing the point ppt_best (pend - edge after the last edge to be deleted)
 		for(pend=edges[i].next; pend!=edges+i && 
-			(ppt_best->pt-pend->pvtx->pt ^ pend->next->pvtx->pt-pend->pvtx->pt)>0; pend=pend->next);
+			(ppt_best->pt-pend->pvtx->pt ^ pend->next->pvtx->pt-pend->pvtx->pt)>0; pend=pend->next);*/
+		pstart=edges+i; pend=edges[i].next;
 		// delete point ppt_best from the ith edge associated list
 		delete_item(ppt_best,edges[i].plist);
 		// merge point lists for edges pstart-pend
