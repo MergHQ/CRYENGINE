@@ -60,8 +60,6 @@
     "ObjectWidgets": [
       "Schematyc_ComponentsWidget.cpp",
       "Schematyc_ComponentsWidget.h",
-      "Schematyc_StatesWidget.cpp",
-      "Schematyc_StatesWidget.h",
       "Schematyc_ObjectStructureWidget.cpp",
       "Schematyc_ObjectStructureWidget.h",
       "Schematyc_PropertiesWidget.cpp",
