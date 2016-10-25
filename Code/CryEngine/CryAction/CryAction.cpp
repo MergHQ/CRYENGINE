@@ -2651,11 +2651,7 @@ void CCryAction::ShutdownEngine()
 
 	SAFE_DELETE(m_pNetMsgDispatcher);
 
-	// Delete framework extensions in the reverse order of creation to avoid dependencies crashing
-	while (m_frameworkExtensions.size() > 0)
-	{
-		m_frameworkExtensions.pop_back();
-	}
+	ReleaseExtensions();
 
 	// Shutdown pFlashUI after shutdown since FlowSystem will hold UIFlowNodes until deletion
 	// this will allow clean dtor for all UIFlowNodes
@@ -4573,7 +4569,11 @@ void CCryAction::RegisterExtension(ICryUnknownPtr pExtension)
 
 void CCryAction::ReleaseExtensions()
 {
-	m_frameworkExtensions.clear();
+	// Delete framework extensions in the reverse order of creation to avoid dependencies crashing
+	while (m_frameworkExtensions.size() > 0)
+	{
+		m_frameworkExtensions.pop_back();
+	}
 }
 
 ICryUnknownPtr CCryAction::QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const

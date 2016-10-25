@@ -1688,7 +1688,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		IRopeRenderNode* pRope = (IRopeRenderNode*)pForeignData;
 		pSrcEntity = g_pIEntitySystem->GetEntityFromID(pRope->GetEntityOwner());
 		SEntitySpawnParams params;
-		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
+		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("Rope");
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED;
 		params.sName = "rope_piece";
 		pNewEntity = (CEntity*)gEnv->pEntitySystem->SpawnEntity(params, false);

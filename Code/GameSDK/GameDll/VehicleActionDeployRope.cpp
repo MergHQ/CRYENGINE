@@ -267,7 +267,7 @@ EntityId CVehicleActionDeployRope::CreateRope(IPhysicalEntity *pLinkedEntity, co
 
 	params.sName	= ropeName;
 	params.nFlags	= ENTITY_FLAG_CLIENT_ONLY;
-	params.pClass	= gEnv->pEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
+	params.pClass	= gEnv->pEntitySystem->GetClassRegistry()->FindClass("Rope");
 
 	IEntity	*pRopeEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 
