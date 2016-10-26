@@ -82,7 +82,7 @@ if(WIN32 OR WIN64)
 endif()
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
-	option(OPTION_SANDBOX "Enable Sandbox" OFF)
+	option(OPTION_SANDBOX "Enable Sandbox" ON)
 	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		set(OPTION_SANDBOX OFF)
 	endif()
@@ -93,7 +93,7 @@ if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 endif()
 
 option(OPTION_RC "Include RC in the build" OFF)
-option(OPTION_PCH "Enable Precompiled Headers" OFF)
+option(OPTION_PCH "Enable Precompiled Headers" ON)
 
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
