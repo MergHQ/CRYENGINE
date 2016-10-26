@@ -103,12 +103,12 @@ void SSessionStats::Clear()
 //---------------------------------------
 void SSessionStats::ResetClientSessionStats()
 {
-	COMPILE_TIME_ASSERT(ESIPS_Max == CRY_ARRAY_COUNT(m_streakIntStats));
+	static_assert(ESIPS_Max == CRY_ARRAY_COUNT(m_streakIntStats), "Unexpected array size!");
 	for(int i = 0; i < ESIPS_Max; i++)
 	{
 		m_streakIntStats[i].ResetSession();
 	}
-	COMPILE_TIME_ASSERT(ESFPS_Max == CRY_ARRAY_COUNT(m_streakFloatStats));
+	static_assert(ESFPS_Max == CRY_ARRAY_COUNT(m_streakFloatStats), "Unexpected array size!");
 	for(int i = 0; i < ESFPS_Max; i++)
 	{
 		m_streakFloatStats[i].ResetSession();

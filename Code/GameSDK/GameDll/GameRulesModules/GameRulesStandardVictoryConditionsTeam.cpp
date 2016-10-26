@@ -678,7 +678,7 @@ void CGameRulesStandardVictoryConditionsTeam::ClUpdatedTimeLimit()
 	// depending on the length of game these soundTime thresholds can sometimes get whacked out of chronological order
 	// e.g in a 2 minute game the "1min" threshold will come before the "halfway" threshold (Should be only valid case)
 	// In this case we will entirely skip the halfway signal
-	COMPILE_TIME_ASSERT(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime));
+	static_assert(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime), "Unexpected array size!");
 	for(int i = 0; i < (eSVC_size - 1); i++)
 	{
 		if(m_currentSoundTime[i] <= m_currentSoundTime[i + 1])
@@ -749,7 +749,7 @@ void CGameRulesStandardVictoryConditionsTeam::UpdateTimeLimitSounds()
 		int csi = m_currentSound;
 
 		// Skip ones that should have already happened (for mid-game joins)
-		COMPILE_TIME_ASSERT(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime));
+		static_assert(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime), "Unexpected array size!");
 		while ((csi < eSVC_size) && (timeRemaining <= m_currentSoundTime[csi] - 1.0f))
 		{
 			CryLog("skipping over csi=%d (%s) as timeRemaining is less than m_currentSoundTime=%f minus 1.0f", csi, s_ESVC_SoundsListStrs[csi], m_currentSoundTime[csi]);

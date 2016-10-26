@@ -3766,7 +3766,7 @@ SVehicleNetState CVehicleMovementArcadeWheeled::GetVehicleNetState()
 	SArcadeWheeledNetState arcadeWheeledNetState;
 	arcadeWheeledNetState.m_steering = m_steering;
 	SVehicleNetState state;
-	COMPILE_TIME_ASSERT(sizeof(SArcadeWheeledNetState) <= sizeof(SVehicleNetState));
+	static_assert(sizeof(SArcadeWheeledNetState) <= sizeof(SVehicleNetState), "Invalid type size!");
 	memcpy(&state, &arcadeWheeledNetState, sizeof(SArcadeWheeledNetState));
 	return state;
 }

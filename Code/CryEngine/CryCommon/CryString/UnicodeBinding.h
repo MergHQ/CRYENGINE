@@ -182,7 +182,7 @@ struct SBindObject
 	      >::type
 	    >::type CharType;
 	static const size_t FixedSize = extent<T>::value;
-	COMPILE_TIME_ASSERT(!is_array<T>::value || FixedSize > 0);
+	static_assert(!is_array<T>::value || FixedSize > 0, "'T' must be an array with at least one element!");
 	static const bool   isConstArray = is_array<T>::value && is_const<typename remove_extent<T>::type>::value;
 	static const bool   isBufferArray = is_array<T>::value && !isConstArray;
 	static const bool   isPointer = is_pointer<T>::value;
@@ -362,7 +362,7 @@ struct SInferEncoding
 	  sizeof(CharType) == 1 ? eEncoding_UTF8 :
 	  sizeof(CharType) == 2 ? eEncoding_UTF16 :
 	  eEncoding_UTF32;
-	COMPILE_TIME_ASSERT(value != eEncoding_UTF32 || sizeof(CharType) == 4);
+	static_assert(value != eEncoding_UTF32 || sizeof(CharType) == 4, "Invalid type size for this encoding!");
 };
 
 //! Pick the base character type to use during input or output with this element type.
@@ -376,7 +376,7 @@ struct SBindCharacter
 template<typename T, bool Input>
 struct SBindCharacter<T, Input, false, false>
 {
-	COMPILE_TIME_ASSERT(is_arithmetic<T>::value);
+	static_assert(is_arithmetic<T>::value, "'T' must be an arithmetic type!");
 	typedef typename remove_cv<T>::type                                               UnqualifiedType;
 	typedef typename conditional<Input, const UnqualifiedType, UnqualifiedType>::type type;
 };
@@ -385,14 +385,14 @@ struct SBindCharacter<T, Input, false, true>
 {
 	typedef typename conditional<Input, const uint16, uint16>::type type;
 	typedef typename SDependentType<QChar, Input>::type             ActuallyQChar; //!< Force two-phase name lookup on QChar.
-	COMPILE_TIME_ASSERT(sizeof(ActuallyQChar) == sizeof(type));                    //!< In case Qt ever changes QChar.
+	static_assert(sizeof(ActuallyQChar) == sizeof(type), "Invalid type size!");    //!< In case Qt ever changes QChar.
 };
 
 //! Pick the pointer type to use during input or output with buffers (potentially inside string types).
 template<typename T, bool Input>
 struct SBindPointer
 {
-	COMPILE_TIME_ASSERT(is_pointer<T>::value || is_array<T>::value);
+	static_assert(is_pointer<T>::value || is_array<T>::value, "'T' must be a pointer or array type!");
 	typedef typename conditional<
 	    is_pointer<T>::value,
 	    typename remove_pointer<T>::type,
@@ -422,8 +422,8 @@ inline T SafeCast(SourceChar* ptr, typename SRequire<is_integral<SourceChar>::va
 {
 	// Allow casts from pointer-to-integral to unrelated pointer-to-integral, provided they are of the same size.
 	typedef typename remove_pointer<T>::type TargetChar;
-	COMPILE_TIME_ASSERT(is_integral<SourceChar>::value && is_integral<TargetChar>::value);
-	COMPILE_TIME_ASSERT(sizeof(SourceChar) == sizeof(TargetChar));
+	static_assert(is_integral<SourceChar>::value && is_integral<TargetChar>::value, "'SourceChar' and 'TargetChar' need to be integral types!");
+	static_assert(sizeof(SourceChar) == sizeof(TargetChar), "Invalid type size!");
 	return reinterpret_cast<T>(ptr);
 }
 template<typename T, typename SourceChar>
@@ -431,12 +431,12 @@ inline T SafeCast(SourceChar* ptr, typename SRequire<is_same<typename remove_cv<
 {
 	// Allow casts from pointer-to-QChar to unrelated pointer-to-integral, provided they are of the same size.
 	typedef typename remove_pointer<T>::type TargetChar;
-	COMPILE_TIME_ASSERT(is_integral<TargetChar>::value);
-	COMPILE_TIME_ASSERT(sizeof(SourceChar) == sizeof(TargetChar));
+	static_assert(is_integral<TargetChar>::value, "'TargetChar' needs to be an integral type!");
+	static_assert(sizeof(SourceChar) == sizeof(TargetChar), "Invalid type size!");
 	return reinterpret_cast<T>(ptr);
 }
 template<typename T, typename SourceChar>
-inline T SafeCast(SourceChar* ptr, typename SRequire<!is_integral<SourceChar>::value&& !is_same<typename remove_cv<SourceChar>::type, QChar>::value>::type* = 0)
+inline T SafeCast(SourceChar* ptr, typename SRequire<!is_integral<SourceChar>::value && !is_same<typename remove_cv<SourceChar>::type, QChar>::value>::type* = 0)
 {
 	// Any other casts that are allowed by C++.
 	return static_cast<T>(ptr);
@@ -568,7 +568,7 @@ inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, 
 template<typename InputStringType, typename Sink>
 inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, eBind_Literal> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	typedef typename SBindPointer<InputStringType, true>::type PointerType;
 	const size_t length = extent<InputStringType>::value - 1;
 	PointerType ptr = SafeCast<PointerType>(in);
@@ -585,7 +585,7 @@ inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, 
 template<typename InputStringType, typename Sink>
 inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, eBind_Buffer> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	typedef typename SBindPointer<InputStringType, true>::type          PointerType;
 	typedef typename SBindPointer<InputStringType, true>::BoundCharType CharType;
 	const size_t length = extent<InputStringType>::value;
@@ -606,7 +606,7 @@ inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, 
 template<typename InputStringType, typename Sink>
 inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, eBind_NullTerminated> )
 {
-	COMPILE_TIME_ASSERT(is_pointer<InputStringType>::value);
+	static_assert(is_pointer<InputStringType>::value, "'T' must be a pointer type!");
 	typedef typename SBindPointer<InputStringType, true>::type          PointerType;
 	typedef typename SBindPointer<InputStringType, true>::BoundCharType CharType;
 	PointerType ptr = SafeCast<PointerType>(in);
@@ -630,7 +630,7 @@ inline void Feed(const InputStringType& in, Sink& out, integral_constant<EBind, 
 template<typename InputCharType, typename Sink>
 inline void Feed(const InputCharType& in, Sink& out, integral_constant<EBind, eBind_CodePoint> )
 {
-	COMPILE_TIME_ASSERT(is_arithmetic<InputCharType>::value);
+	static_assert(is_arithmetic<InputCharType>::value, "'T' must be an arithmetic type!");
 	const uint32 item = static_cast<uint32>(in);
 	out(item);
 }
@@ -660,7 +660,7 @@ inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, 
 template<typename InputStringType>
 inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, eBind_Literal> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	return extent<InputStringType>::value - 1;
 }
 
@@ -669,7 +669,7 @@ inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, 
 template<typename InputStringType>
 inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, eBind_Buffer> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	typedef typename remove_extent<InputStringType>::type CharType;
 	return SCharacterTrait<CharType>::StrNLen(in, extent<InputStringType>::value);
 }
@@ -687,7 +687,7 @@ inline size_t EncodedLength(const SPackedBuffer<InputCharType*>& in, integral_co
 template<typename InputStringType>
 inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, eBind_NullTerminated> )
 {
-	COMPILE_TIME_ASSERT(is_pointer<InputStringType>::value);
+	static_assert(is_pointer<InputStringType>::value, "'T' must be a pointer type!");
 	typedef typename remove_pointer<InputStringType>::type CharType;
 	return in ? SCharacterTrait<CharType>::StrLen(in) : 0;
 }
@@ -697,7 +697,7 @@ inline size_t EncodedLength(const InputStringType& in, integral_constant<EBind, 
 template<typename InputCharType>
 inline size_t EncodedLength(const InputCharType& in, integral_constant<EBind, eBind_CodePoint> )
 {
-	COMPILE_TIME_ASSERT(is_arithmetic<InputCharType>::value);
+	static_assert(is_arithmetic<InputCharType>::value, "'T' must be an arithmetic type!");
 	return 1;
 }
 
@@ -721,7 +721,7 @@ inline const void* EncodedPointer(const InputStringType& in, integral_constant<E
 template<typename InputStringType>
 inline const void* EncodedPointer(const InputStringType& in, integral_constant<EBind, eBind_Literal> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	return in;     // We can just let the array type decay to a pointer.
 }
 
@@ -729,7 +729,7 @@ inline const void* EncodedPointer(const InputStringType& in, integral_constant<E
 template<typename InputStringType>
 inline const void* EncodedPointer(const InputStringType& in, integral_constant<EBind, eBind_Buffer> )
 {
-	COMPILE_TIME_ASSERT(is_array<InputStringType>::value && extent<InputStringType>::value > 0);
+	static_assert(is_array<InputStringType>::value && extent<InputStringType>::value > 0, "'T' must be an array with at least one element!");
 	return in;     // We can just let the array type decay to a pointer.
 }
 
@@ -737,7 +737,7 @@ inline const void* EncodedPointer(const InputStringType& in, integral_constant<E
 template<typename InputStringType>
 inline const void* EncodedPointer(const InputStringType& in, integral_constant<EBind, eBind_NullTerminated> )
 {
-	COMPILE_TIME_ASSERT(is_pointer<InputStringType>::value);
+	static_assert(is_pointer<InputStringType>::value, "'T' must be a pointer type!");
 	return in;     // Implied
 }
 
@@ -745,7 +745,7 @@ inline const void* EncodedPointer(const InputStringType& in, integral_constant<E
 template<typename InputCharType>
 inline const void* EncodedPointer(const InputCharType& in, integral_constant<EBind, eBind_CodePoint> )
 {
-	COMPILE_TIME_ASSERT(is_arithmetic<InputCharType>::value);
+	static_assert(is_arithmetic<InputCharType>::value, "'T' must be an arithmetic type!");
 	return &in;     // Take the address of the parameter (which is kept on the stack of the caller).
 }
 

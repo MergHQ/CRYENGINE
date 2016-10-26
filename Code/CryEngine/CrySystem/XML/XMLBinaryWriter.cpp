@@ -112,7 +112,7 @@ bool XMLBinary::CXMLBinaryWriter::WriteNode(IDataWriter* pFile, XmlNodeRef node,
 
 	BinaryFileHeader header;
 	static const char signature[] = "CryXmlB";
-	COMPILE_TIME_ASSERT(sizeof(signature) == sizeof(header.szSignature));
+	static_assert(sizeof(signature) == sizeof(header.szSignature), "Wrong signature size!");
 	memcpy(header.szSignature, signature, sizeof(header.szSignature));
 	nTheoreticalPosition += sizeof(header);
 	align(nTheoreticalPosition, nAlignment);

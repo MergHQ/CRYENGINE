@@ -97,9 +97,9 @@ enum ELayerList
 
 // helper functions
 //inline const char * GetLayerList_UICONFIG() { COMPILE_TIME_ASSERT(eLayerList_SceneLayer_0 == 0 && eLayerList_Total == eLayerList_QuadLayer_1 + 1); return "enum_int:SCENE3D_0,QUAD_0, QUAD_1"; }
-inline const char*  GetLayerType_UICONFIG()             { COMPILE_TIME_ASSERT(eLayer_Scene3D == 0 && eLayer_NumLayerTypes == 3); return "enum_int:SCENE3D=0,QUAD=1,QUAD_LOCKED=2"; }
-inline const char*  GetQuadLayer_UICONFIG()             { COMPILE_TIME_ASSERT(eQuadLayers_0 == 0 && eQuadLayers_Total == eQuadLayers_1 + 1); return "enum_int:QUAD_0=0, QUAD_1=1"; }
-inline const char*  GetQuadLayerType_UICONFIG()         { COMPILE_TIME_ASSERT(eLayer_Quad == 1 && eLayer_Quad_HeadLoked == 2); return "enum_int:QuadFree=1, QuadLocked=2"; }
+inline const char*  GetLayerType_UICONFIG()             { static_assert(eLayer_Scene3D == 0 && eLayer_NumLayerTypes == 3, "Unexpected enum value!"); return "enum_int:SCENE3D=0,QUAD=1,QUAD_LOCKED=2"; }
+inline const char*  GetQuadLayer_UICONFIG()             { static_assert(eQuadLayers_0 == 0 && eQuadLayers_Total == eQuadLayers_1 + 1, "Unexpected enum value!"); return "enum_int:QUAD_0=0, QUAD_1=1"; }
+inline const char*  GetQuadLayerType_UICONFIG()         { static_assert(eLayer_Quad == 1 && eLayer_Quad_HeadLoked == 2, "Unexpected enum value!"); return "enum_int:QuadFree=1, QuadLocked=2"; }
 inline bool         IsQuadLayer(TLayerId id)            { return id >= eQuadLayers_0 && id < eQuadLayers_Total; }
 inline bool         IsScene3DLayer(TLayerId id)         { return id >= eSceneLayers_0 && id < eSceneLayers_Total; }
 inline EQuadLayers  SafeCastToQuadLayer(TLayerId id)    { return IsQuadLayer(id) ? static_cast<EQuadLayers>(id) : eQuadLayers_0; }

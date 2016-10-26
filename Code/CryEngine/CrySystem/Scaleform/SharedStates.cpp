@@ -359,7 +359,7 @@ void CryGFxLog::LogMessageVarg(LogMessageType messageType, const char* pFmt, va_
 	{
 		const char prefix[] = "<Flash> ";
 
-		COMPILE_TIME_ASSERT(sizeof(prefix) + 128 <= sizeof(logBuf));
+		static_assert(sizeof(prefix) + 128 <= sizeof(logBuf), "Invalid array size!");
 
 		// prefix
 		{

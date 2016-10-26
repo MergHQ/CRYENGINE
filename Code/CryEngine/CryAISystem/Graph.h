@@ -84,7 +84,7 @@ inline const char* StringFromTypeIndex(int typeIndex)
 	};
 	const int STRING_COUNT = CRY_ARRAY_COUNT(navTypeStrings);
 
-	COMPILE_TIME_ASSERT(STRING_COUNT == static_cast<int>(IAISystem::NAV_TYPE_COUNT));
+	static_assert(STRING_COUNT == static_cast<int>(IAISystem::NAV_TYPE_COUNT), "Unexpected array size!");
 
 	if (typeIndex < 0)
 		return "<Invalid Nav Type>";

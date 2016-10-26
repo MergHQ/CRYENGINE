@@ -1,13 +1,15 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BASETYPES_H__
-#define __BASETYPES_H__
+#pragma once
 
-#include <CryCore/Assert/CompileTimeAssert.h>
+// SWIG can't handle static_assert so we hide it behind a macro.
+#if SWIG
+#define static_assert(...)
+#endif
 
-COMPILE_TIME_ASSERT(sizeof(char) == 1);
-COMPILE_TIME_ASSERT(sizeof(float) == 4);
-COMPILE_TIME_ASSERT(sizeof(int) >= 4);
+static_assert(sizeof(char) == 1, "Wrong type size!");
+static_assert(sizeof(float) == 4, "Wrong type size!");
+static_assert(sizeof(int) >= 4, "Wrong type size!");
 
 typedef unsigned char  uchar;
 typedef signed char    schar;
@@ -26,44 +28,42 @@ typedef signed long        slong;
 typedef unsigned long long ulonglong;
 typedef signed long long   slonglong;
 
-COMPILE_TIME_ASSERT(sizeof(uchar) == sizeof(schar));
-COMPILE_TIME_ASSERT(sizeof(ushort) == sizeof(sshort));
-COMPILE_TIME_ASSERT(sizeof(uint) == sizeof(sint));
-COMPILE_TIME_ASSERT(sizeof(ulong) == sizeof(slong));
-COMPILE_TIME_ASSERT(sizeof(ulonglong) == sizeof(slonglong));
+static_assert(sizeof(uchar) == sizeof(schar), "Wrong type size!");
+static_assert(sizeof(ushort) == sizeof(sshort), "Wrong type size!");
+static_assert(sizeof(uint) == sizeof(sint), "Wrong type size!");
+static_assert(sizeof(ulong) == sizeof(slong), "Wrong type size!");
+static_assert(sizeof(ulonglong) == sizeof(slonglong), "Wrong type size!");
 
-COMPILE_TIME_ASSERT(sizeof(uchar) <= sizeof(ushort));
-COMPILE_TIME_ASSERT(sizeof(ushort) <= sizeof(uint));
-COMPILE_TIME_ASSERT(sizeof(uint) <= sizeof(ulong));
-COMPILE_TIME_ASSERT(sizeof(ulong) <= sizeof(ulonglong));
+static_assert(sizeof(uchar) <= sizeof(ushort), "Wrong type size!");
+static_assert(sizeof(ushort) <= sizeof(uint), "Wrong type size!");
+static_assert(sizeof(uint) <= sizeof(ulong), "Wrong type size!");
+static_assert(sizeof(ulong) <= sizeof(ulonglong), "Wrong type size!");
 
 typedef schar int8;
 typedef schar sint8;
 typedef uchar uint8;
-COMPILE_TIME_ASSERT(sizeof(uint8) == 1);
-COMPILE_TIME_ASSERT(sizeof(sint8) == 1);
+static_assert(sizeof(uint8) == 1, "Wrong type size!");
+static_assert(sizeof(sint8) == 1, "Wrong type size!");
 
 typedef sshort int16;
 typedef sshort sint16;
 typedef ushort uint16;
-COMPILE_TIME_ASSERT(sizeof(uint16) == 2);
-COMPILE_TIME_ASSERT(sizeof(sint16) == 2);
+static_assert(sizeof(uint16) == 2, "Wrong type size!");
+static_assert(sizeof(sint16) == 2, "Wrong type size!");
 
 typedef sint int32;
 typedef sint sint32;
 typedef uint uint32;
-COMPILE_TIME_ASSERT(sizeof(uint32) == 4);
-COMPILE_TIME_ASSERT(sizeof(sint32) == 4);
+static_assert(sizeof(uint32) == 4, "Wrong type size!");
+static_assert(sizeof(sint32) == 4, "Wrong type size!");
 
 typedef slonglong int64;
 typedef slonglong sint64;
 typedef ulonglong uint64;
-COMPILE_TIME_ASSERT(sizeof(uint64) == 8);
-COMPILE_TIME_ASSERT(sizeof(sint64) == 8);
+static_assert(sizeof(uint64) == 8, "Wrong type size!");
+static_assert(sizeof(sint64) == 8, "Wrong type size!");
 
 typedef float  f32;
 typedef double f64;
-COMPILE_TIME_ASSERT(sizeof(f32) == 4);
-COMPILE_TIME_ASSERT(sizeof(f64) == 8);
-
-#endif
+static_assert(sizeof(f32) == 4, "Wrong type size!");
+static_assert(sizeof(f64) == 8, "Wrong type size!");

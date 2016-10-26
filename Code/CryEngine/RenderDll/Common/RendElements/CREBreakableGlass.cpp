@@ -90,7 +90,7 @@ CREBreakableGlass::CREBreakableGlass()
 	TGlassDefFragmentArray sizeTestArray1;
 	TGlassFragmentIndexArray sizeTestArray2;
 
-	COMPILE_TIME_ASSERT(GLASSCFG_FRAGMENT_ARRAY_SIZE <= 32);
+	static_assert(GLASSCFG_FRAGMENT_ARRAY_SIZE <= 32, "Invalid array size!");
 	CRY_ASSERT(POLY_ARRAY_SIZE == sizeTestArray1.max_size());
 	CRY_ASSERT(POLY_ARRAY_SIZE == sizeTestArray2.max_size());
 #endif

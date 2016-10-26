@@ -130,14 +130,14 @@ COculusController::COculusController() : m_pSession(nullptr)
 	memset(&m_symbols, 0, sizeof(m_symbols));
 
 	// sanity check on some enums defined elsewhere or constructed from external enums, specially if they are use for indexing arrays
-	COMPILE_TIME_ASSERT(
+	static_assert(
 	  ((eHmdController_OculusLeftHand == 0 && eHmdController_OculusRightHand == 1) ||
 	   (eHmdController_OculusLeftHand == 1 && eHmdController_OculusRightHand == 0)) &&
-	  eHmdController_MaxNumOculusControllers == 2);
-	COMPILE_TIME_ASSERT(
+	  eHmdController_MaxNumOculusControllers == 2, "Invalid enum values!");
+	static_assert(
 	  eHmdControllerTriggers_LT == 0 && eHmdControllerTriggers_RT == 1 &&
 	  eHmdControllerTriggers_LT2 == 2 && eHmdControllerTriggers_RT2 == 3 &&
-	  eHmdControllerTriggers_MaxNumTriggers == 4);
+	  eHmdControllerTriggers_MaxNumTriggers == 4, "Invalid enum values!");
 
 	m_controllerEnumMap[eHmdController_OculusLeftHand] = ovrControllerType_LTouch;
 	m_controllerEnumMap[eHmdController_OculusRightHand] = ovrControllerType_RTouch;

@@ -91,7 +91,7 @@ void CZLibCompressor::Release()
 
 void CZLibCompressor::MD5Init(SMD5Context* pIOCtx)
 {
-	COMPILE_TIME_ASSERT(sizeof(*pIOCtx) == sizeof(MD5Context));
+	static_assert(sizeof(*pIOCtx) == sizeof(MD5Context), "Invalid type size!");
 
 	::MD5Init((MD5Context*)pIOCtx);
 }

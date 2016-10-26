@@ -3489,19 +3489,19 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 							file.Write(pNodes, sizeof(MNM::Tile::SBVNode) * nodesCount);
 
 							// Compile-time asserts to catch data type changes - don't forget to bump BAI file version number
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetLinksCount()));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetTrianglesCount()));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetVerticesCount()));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetBVNodesCount()));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(trianglesCount));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(verticesCount));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(saveLinkCount));
-							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(nodesCount));
-							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::Vertex) == 6);
-							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::STriangle) == 16);
-							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::SLink) == 2);
-							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::SBVNode) == 14);
-							COMPILE_TIME_ASSERT(sizeof(uint32) == sizeof(tile.GetHashValue()));
+							static_assert(sizeof(uint16) == sizeof(tile.GetLinksCount()), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(tile.GetTrianglesCount()), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(tile.GetVerticesCount()), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(tile.GetBVNodesCount()), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(trianglesCount), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(verticesCount), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(saveLinkCount), "Invalid type size!");
+							static_assert(sizeof(uint16) == sizeof(nodesCount), "Invalid type size!");
+							static_assert(sizeof(MNM::Tile::Vertex) == 6, "Invalid type size!");
+							static_assert(sizeof(MNM::Tile::STriangle) == 16, "Invalid type size!");
+							static_assert(sizeof(MNM::Tile::SLink) == 2, "Invalid type size!");
+							static_assert(sizeof(MNM::Tile::SBVNode) == 14, "Invalid type size!");
+							static_assert(sizeof(uint32) == sizeof(tile.GetHashValue()), "Invalid type size!");
 						}
 					}
 

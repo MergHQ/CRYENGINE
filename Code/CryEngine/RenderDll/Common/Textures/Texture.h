@@ -1261,7 +1261,7 @@ struct SResourceView
 
 	SResourceView(uint64 nKey = DefaultView)
 	{
-		COMPILE_TIME_ASSERT(sizeof(m_Desc) <= sizeof(KeyType));
+		static_assert(sizeof(m_Desc) <= sizeof(KeyType), "Invalid type size!");
 
 		m_Desc.Key = nKey;
 		m_pDeviceResourceView = NULL;

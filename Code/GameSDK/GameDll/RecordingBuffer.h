@@ -20,7 +20,7 @@ struct CRY_ALIGN(4) SRecording_Packet
 		: size(0)
 		, type(eRBPT_Invalid)
 	{
-		COMPILE_TIME_ASSERT( alignof(SRecording_Packet) == 4 );
+		static_assert(alignof(SRecording_Packet) == 4, "Invalid type alignment!");
 	}
 	uint16 size;
 	uint8 type;

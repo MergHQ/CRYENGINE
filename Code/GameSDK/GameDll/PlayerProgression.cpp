@@ -631,8 +631,8 @@ void CPlayerProgression::Event(EPPType type, bool skillKill, void *data)
 	DEBUG_XP("Event %s", s_eventName[type], m_events[type]);
 
 	// these two enums must stay in sync for the cast below to be valid
-	COMPILE_TIME_ASSERT(int(k_XPRsn_EPP_TeamRadar)==int(EPP_TeamRadar));
-	COMPILE_TIME_ASSERT(int(k_XPRsn_EPP_FlushedAssist)==int(EPP_FlushedAssist));
+	static_assert(static_cast<int>(k_XPRsn_EPP_TeamRadar) == static_cast<int>(EPP_TeamRadar), "Unexpected enum value!");
+	static_assert(static_cast<int>(k_XPRsn_EPP_FlushedAssist) == static_cast<int>(EPP_FlushedAssist), "Unexpected enum value!");
 
 	EXPReason		reason;
 	if (type==EPP_Invalid)

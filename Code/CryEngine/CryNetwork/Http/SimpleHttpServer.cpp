@@ -601,7 +601,7 @@ void CSimpleHttpServerInternal::SendToWebsocket(int connectionID, IHttpWebsocket
 					pHeader->len = 127;
 
 					uint64 sz = bufferSize;
-					COMPILE_TIME_ASSERT(sizeof(uint64) == 8);
+					static_assert(sizeof(uint64) == 8, "Invalid type size!");
 					SwapEndian(sz, eBigEndian);
 					memcpy(pHeader + 1, (char*)&sz, 8);
 				}

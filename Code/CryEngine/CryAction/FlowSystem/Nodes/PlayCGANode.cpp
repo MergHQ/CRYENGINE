@@ -1837,7 +1837,7 @@ public:
 						bool bForceStart = GetPortBool(pActInfo, eIN_FORCESTART);
 						bool bLooping = GetPortBool(pActInfo, eIN_LOOP);
 						EAlignmentRef eAlignment = static_cast<EAlignmentRef>(GetPortInt(pActInfo, eIN_ALIGNMENTTYPE));
-						COMPILE_TIME_ASSERT(eAF_Max == 5);   // change this flowGraph node here and at the inputs if new alignment types are added
+						static_assert(eAF_Max == 5, "Array size changed, code might need to be updated!");
 
 						bool onlyOneChar = false;
 						if (!pActor02 && !pActor03 && !pActor04)

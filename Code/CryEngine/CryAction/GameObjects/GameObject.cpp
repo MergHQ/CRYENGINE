@@ -156,7 +156,7 @@ CGameObject::CGameObject() :
 	m_bNeedsNetworkRebind(false),
 	m_cachedParentId(0)
 {
-	COMPILE_TIME_ASSERT(eGFE_Last <= 64);
+	static_assert(eGFE_Last <= 64, "Unexpected enum value!");
 
 	if (!m_pGOS)
 		m_pGOS = (CGameObjectSystem*) CCryAction::GetCryAction()->GetIGameObjectSystem();

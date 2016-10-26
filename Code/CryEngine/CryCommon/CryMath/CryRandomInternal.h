@@ -6,7 +6,6 @@
 #include <limits>              // std::numeric_limits
 #include <type_traits>         // std::make_unsigned
 #include <CryCore/BaseTypes.h> // uint32, uint64
-#include <CryCore/Assert/CompileTimeAssert.h>
 #include "Cry_Vector2.h"
 #include "Cry_Vector3.h"
 #include "Cry_Vector4.h"
@@ -17,10 +16,10 @@ namespace CryRandom_Internal
 template<class R, class T, size_t size>
 struct BoundedRandomUint
 {
-	COMPILE_TIME_ASSERT(std::numeric_limits<T>::is_integer);
-	COMPILE_TIME_ASSERT(!std::numeric_limits<T>::is_signed);
-	COMPILE_TIME_ASSERT(sizeof(T) == size);
-	COMPILE_TIME_ASSERT(sizeof(T) <= sizeof(uint32));
+	static_assert(std::numeric_limits<T>::is_integer, "'T' is not an integer value!");
+	static_assert(!std::numeric_limits<T>::is_signed, "'T' is not an unsigned value!");
+	static_assert(sizeof(T) == size, "sizeof(T) does not match the specified size!");
+	static_assert(sizeof(T) <= sizeof(uint32), "sizeof(T) is too big!");
 
 	inline static T Get(R& randomGenerator, const T maxValue)
 	{
@@ -34,9 +33,9 @@ struct BoundedRandomUint
 template<class R, class T>
 struct BoundedRandomUint<R, T, 8>
 {
-	COMPILE_TIME_ASSERT(std::numeric_limits<T>::is_integer);
-	COMPILE_TIME_ASSERT(!std::numeric_limits<T>::is_signed);
-	COMPILE_TIME_ASSERT(sizeof(T) == sizeof(uint64));
+	static_assert(std::numeric_limits<T>::is_integer, "'T' is not an integer value!");
+	static_assert(!std::numeric_limits<T>::is_signed, "'T' is not an unsigned value!");
+	static_assert(sizeof(T) == sizeof(uint64), "Wrong type size!");
 
 	inline static T Get(R& randomGenerator, const T maxValue)
 	{
@@ -58,11 +57,11 @@ struct BoundedRandom;
 template<class R, class T>
 struct BoundedRandom<R, T, true>
 {
-	COMPILE_TIME_ASSERT(std::numeric_limits<T>::is_integer);
+	static_assert(std::numeric_limits<T>::is_integer, "'T' is not an integer value!");
 	typedef typename std::make_unsigned<T>::type UT;
-	COMPILE_TIME_ASSERT(sizeof(T) == sizeof(UT));
-	COMPILE_TIME_ASSERT(std::numeric_limits<UT>::is_integer);
-	COMPILE_TIME_ASSERT(!std::numeric_limits<UT>::is_signed);
+	static_assert(sizeof(T) == sizeof(UT), "Wrong type size!");
+	static_assert(std::numeric_limits<UT>::is_integer, "'UT' is not an integer value!");
+	static_assert(!std::numeric_limits<UT>::is_signed, "'UT' is not an unsigned value!");
 
 	inline static T Get(R& randomGenerator, T minValue, T maxValue)
 	{
@@ -77,7 +76,7 @@ struct BoundedRandom<R, T, true>
 template<class R, class T>
 struct BoundedRandom<R, T, false>
 {
-	COMPILE_TIME_ASSERT(!std::numeric_limits<T>::is_integer);
+	static_assert(!std::numeric_limits<T>::is_integer, "'T' must not be an integer value!");
 
 	inline static T Get(R& randomGenerator, const T minValue, const T maxValue)
 	{
@@ -132,7 +131,7 @@ template<class R, class VT>
 inline VT GetRandomUnitVector(R& randomGenerator)
 {
 	typedef typename VT::value_type T;
-	COMPILE_TIME_ASSERT(!std::numeric_limits<T>::is_integer);
+	static_assert(!std::numeric_limits<T>::is_integer, "'T' must not be an integer value!");
 
 	VT res;
 	T lenSquared;
@@ -155,5 +154,3 @@ inline VT GetRandomUnitVector(R& randomGenerator)
 }
 
 } // namespace CryRandom_Internal
-
-// eof

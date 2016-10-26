@@ -21,16 +21,16 @@ bool Match(IAISystem::tNavCapMask type, IAISystem::tNavCapMask mask)
 CGraphNodeManager::CGraphNodeManager() :
 	m_freeBuckets(IAISystem::NAV_TYPE_COUNT, BucketHeader::InvalidNextFreeBucketIdx)
 {
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Unset) % 4) == 0 && sizeof(GraphNode_Unset) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Triangular) % 4) == 0 && sizeof(GraphNode_Triangular) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_WaypointHuman) % 4) == 0 && sizeof(GraphNode_WaypointHuman) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Waypoint3DSurface) % 4) == 0 && sizeof(GraphNode_Waypoint3DSurface) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Flight) % 4) == 0 && sizeof(GraphNode_Flight) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Volume) % 4) == 0 && sizeof(GraphNode_Volume) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Road) % 4) == 0 && sizeof(GraphNode_Road) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_SmartObject) % 4) == 0 && sizeof(GraphNode_SmartObject) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_Free2D) % 4) == 0 && sizeof(GraphNode_Free2D) < 1024);
-	COMPILE_TIME_ASSERT((sizeof(GraphNode_CustomNav) % 4) == 0 && sizeof(GraphNode_CustomNav) < 1024);
+	static_assert((sizeof(GraphNode_Unset) % 4) == 0 && sizeof(GraphNode_Unset) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Triangular) % 4) == 0 && sizeof(GraphNode_Triangular) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_WaypointHuman) % 4) == 0 && sizeof(GraphNode_WaypointHuman) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Waypoint3DSurface) % 4) == 0 && sizeof(GraphNode_Waypoint3DSurface) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Flight) % 4) == 0 && sizeof(GraphNode_Flight) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Volume) % 4) == 0 && sizeof(GraphNode_Volume) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Road) % 4) == 0 && sizeof(GraphNode_Road) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_SmartObject) % 4) == 0 && sizeof(GraphNode_SmartObject) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_Free2D) % 4) == 0 && sizeof(GraphNode_Free2D) < 1024, "Invalid type size!");
+	static_assert((sizeof(GraphNode_CustomNav) % 4) == 0 && sizeof(GraphNode_CustomNav) < 1024, "Invalid type size!");
 
 	m_typeSizes[0] = sizeof(GraphNode_Unset);
 	m_typeSizes[1] = sizeof(GraphNode_Triangular);
@@ -73,7 +73,7 @@ void CGraphNodeManager::Clear(IAISystem::tNavCapMask typeMask)
 
 unsigned CGraphNodeManager::CreateNode(IAISystem::tNavCapMask type, const Vec3& pos, unsigned ID)
 {
-	COMPILE_TIME_ASSERT(BUCKET_SIZE <= 255);
+	static_assert(BUCKET_SIZE <= 255, "Invalid bucket size!");
 
 	int typeIndex = TypeIndexFromType(type);
 	if (typeIndex < 0)

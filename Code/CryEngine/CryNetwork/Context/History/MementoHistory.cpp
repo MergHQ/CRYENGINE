@@ -222,7 +222,7 @@ bool CMementoHistory::Serialize(const SSerializeParams& sp)
 	TSerialize ser = sp.ser;
 	uint8 newProfile = sp.profile;
 
-	COMPILE_TIME_ASSERT(MaxProfilesPerAspect <= 8);        // If this fails, increase the size of the policy below
+	static_assert(MaxProfilesPerAspect <= 8, "Invalid profile count!");        // If this fails, increase the size of the policy below
 	ser.Value("profile", newProfile, 'ui3');
 	if (newProfile != sp.profile)
 	{

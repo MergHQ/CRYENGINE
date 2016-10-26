@@ -888,8 +888,8 @@ public:
 	// ISplineEvaluator
 	virtual int GetNumDimensions() const
 	{
-		COMPILE_TIME_ASSERT(sizeof(value_type) % sizeof(ElemType) == 0);
-		COMPILE_TIME_ASSERT(DIM > 0 && DIM <= 4);
+		static_assert(sizeof(value_type) % sizeof(ElemType) == 0, "Invalid type sizes!");
+		static_assert(DIM > 0 && DIM <= 4, "Invalid dimension count!");
 		return DIM;
 	}
 	virtual int GetKeyCount() const

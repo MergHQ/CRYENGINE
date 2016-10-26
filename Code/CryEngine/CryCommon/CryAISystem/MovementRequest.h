@@ -91,7 +91,7 @@ struct MovementRequest
 	#ifdef COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG
 	static const char* GetTypeAsDebugName(Type type)
 	{
-		COMPILE_TIME_ASSERT(CountTypes == 2); // If this fails, then most likely a new value in the Type enum got introduced.
+		static_assert(CountTypes == 2, "Constant value is not as expected!"); // If this fails, then most likely a new value in the Type enum got introduced.
 
 		if (type == MoveTo)
 			return "MoveTo";

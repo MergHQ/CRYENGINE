@@ -1490,7 +1490,7 @@ bool COctreeNode::IsObjectTypeInTheBox(EERType objType, const AABB& WSBBox)
 
 void COctreeNode::GenerateStatObjAndMatTables(std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, SHotUpdateInfo* pExportInfo)
 {
-	COMPILE_TIME_ASSERT(eERType_TypesNum == 25);//if eERType number is changed, have to check this code.
+	static_assert(eERType_TypesNum == 25, "Array size changed, code might need to be updated!");
 	AABB* pBox = (pExportInfo && !pExportInfo->areaBox.IsReset()) ? &pExportInfo->areaBox : NULL;
 
 	if (pBox && !Overlap::AABB_AABB(GetNodeBox(), *pBox))

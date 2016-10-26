@@ -94,12 +94,12 @@ CPhysicalEntity::CPhysicalEntity(CPhysicalWorld *pworld, IGeneralMemoryHeap* pHe
 	, m_pStructure(nullptr)
 { 
 	//CPhysicalPlaceholder
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBox) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_BBox) == 2, "Invalid array size!");
 	m_BBox[0].zero();
 	m_BBox[1].zero(); 
 	m_iSimClass = 0; 
 	m_iGThunk0 = 0;
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_ig) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_ig) == 2, "Invalid array size!");
 	m_ig[0].x=m_ig[1].x=m_ig[0].y=m_ig[1].y = GRID_REG_PENDING;
 	m_bProcessed = 0;
 	m_id = -1;

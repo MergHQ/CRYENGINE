@@ -932,7 +932,7 @@ struct SmallDynStorage
 
 		AP& allocator()
 		{
-			COMPILE_TIME_ASSERT(sizeof(AP) == sizeof(A));
+			static_assert(sizeof(AP) == sizeof(A), "Invalid type size!");
 			return static_cast<AP&>(static_cast<A&>(*this));
 		}
 

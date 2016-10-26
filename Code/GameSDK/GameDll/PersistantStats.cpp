@@ -422,7 +422,7 @@ void CPersistantStats::InitMapParams()
 void CPersistantStats::InitStreakParams()
 {
 	SSessionStats *pSessionStats = GetClientPersistantStats();
-	COMPILE_TIME_ASSERT(ESIPS_Max == CRY_ARRAY_COUNT(pSessionStats->m_streakIntStats));
+	static_assert(ESIPS_Max == CRY_ARRAY_COUNT(pSessionStats->m_streakIntStats), "Unexpected array size!");
 	for(int i = 0; i < ESIPS_Max; i++)
 	{
 		if(s_streakIntStatsFlags[i] & eSF_StreakMultiSession)
@@ -430,7 +430,7 @@ void CPersistantStats::InitStreakParams()
 			pSessionStats->m_streakIntStats[i].m_multiSession = true;
 		}
 	}
-	COMPILE_TIME_ASSERT(ESFPS_Max == CRY_ARRAY_COUNT(pSessionStats->m_streakFloatStats));
+	static_assert(ESFPS_Max == CRY_ARRAY_COUNT(pSessionStats->m_streakFloatStats), "Unexpected array size!");
 	for(int i = 0; i < ESFPS_Max; i++)
 	{
 		if(s_streakFloatStatsFlags[i] & eSF_StreakMultiSession)
@@ -1085,7 +1085,7 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 	//level map stats
 	int levelsData[32];
 	const int levelNamesCount = CRY_ARRAY_COUNT(sz_levelNames);
-	COMPILE_TIME_ASSERT(levelNamesCount <= CRY_ARRAY_COUNT(levelsData));
+	static_assert(levelNamesCount <= CRY_ARRAY_COUNT(levelsData), "Invalid level name count!");
 
 	if((s_mapStatsFlags[EMPS_Levels] & flags) == flags)
 	{
@@ -1105,7 +1105,7 @@ void CPersistantStats::SaveTelemetryInternal(const char* filenameNoExt, const SS
 
 	int weaponData[256];
 	const int weaponNamesCount = CRY_ARRAY_COUNT(sz_weaponNames);
-	COMPILE_TIME_ASSERT(weaponNamesCount * weaponRange <= CRY_ARRAY_COUNT(weaponData));
+	static_assert(weaponNamesCount * weaponRange <= CRY_ARRAY_COUNT(weaponData), "Invalid array size!");
 
 	for(int i = 0; i < weaponNamesCount; i++)
 	{

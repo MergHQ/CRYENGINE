@@ -625,8 +625,8 @@ protected:
 
 	static inline S FromFloat(float fIn)
 	{
-		COMPILE_TIME_ASSERT(sizeof(S) <= 4);
-		COMPILE_TIME_ASSERT(nEXP_BITS > 0 && nEXP_BITS <= 8 && nEXP_BITS < sizeof(S) * 8 - 4);
+		static_assert(sizeof(S) <= 4, "Invalid type size!");
+		static_assert(nEXP_BITS > 0 && nEXP_BITS <= 8 && nEXP_BITS < sizeof(S) * 8 - 4, "Unexpected number of bits used for the exponent!");
 
 		// Clamp to allowed range.
 		float fClamped = clamp_tpl(fIn * fROUNDER(), fMIN(), fMAX());

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryCore/Assert/CompileTimeAssert.h>
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Count the number of leading zeros
 // Result ranges from 0 to 32/64
@@ -327,14 +325,14 @@ struct CompileTimeIntegerLog2<1>
 template<>
 struct CompileTimeIntegerLog2<0>; //!< Keep it undefined, we cannot represent "minus infinity" result.
 
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<1>::result == 0);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<2>::result == 1);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<3>::result == 1);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<4>::result == 2);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<5>::result == 2);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<255>::result == 7);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<256>::result == 8);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2<257>::result == 8);
+static_assert(CompileTimeIntegerLog2<1>::result == 0, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<2>::result == 1, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<3>::result == 1, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<4>::result == 2, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<5>::result == 2, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<255>::result == 7, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<256>::result == 8, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2<257>::result == 8, "Wrong calculation result!");
 
 template<uint32 ILOG>
 struct CompileTimeIntegerLog2_RoundUp
@@ -344,14 +342,14 @@ struct CompileTimeIntegerLog2_RoundUp
 template<>
 struct CompileTimeIntegerLog2_RoundUp<0>; //!< We can return 0, but let's keep it undefined (same as CompileTimeIntegerLog2<0>).
 
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<1>::result == 0);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<2>::result == 1);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<3>::result == 2);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<4>::result == 2);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<5>::result == 3);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<255>::result == 8);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<256>::result == 8);
-COMPILE_TIME_ASSERT(CompileTimeIntegerLog2_RoundUp<257>::result == 9);
+static_assert(CompileTimeIntegerLog2_RoundUp<1>::result == 0, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<2>::result == 1, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<3>::result == 2, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<4>::result == 2, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<5>::result == 3, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<255>::result == 8, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<256>::result == 8, "Wrong calculation result!");
+static_assert(CompileTimeIntegerLog2_RoundUp<257>::result == 9, "Wrong calculation result!");
 
 // Character-to-bitfield mapping
 

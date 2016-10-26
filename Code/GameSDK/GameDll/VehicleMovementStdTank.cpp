@@ -44,7 +44,7 @@ CVehicleMovementTank::CVehicleMovementTank()
 	, m_steeringImpulseRelaxMin(0.f)
 	, m_steeringImpulseRelaxMax(0.f)
 {
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_drivingWheels) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_drivingWheels) == 2, "Invalid array size!");
 	m_drivingWheels[0] = m_drivingWheels[1] = 0;
 
 	m_steerSpeed = 0.f;

@@ -615,7 +615,7 @@ bool CMeshCompiler::Compile(CMesh& mesh, int flags)
 	// m_thash_table[] contains a std::vector<SBasisFace> per subset.
 	// Vector contains faces belonging to the subset.
 	// Face contains three indices of elements in bases[].
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_thash_table) == MAX_SUB_MATERIALS);
+	static_assert(CRY_ARRAY_COUNT(m_thash_table) == MAX_SUB_MATERIALS, "Invalid array size!");
 	for (int i = 0; i < MAX_SUB_MATERIALS; ++i)
 	{
 		m_thash_table[i].clear();
@@ -774,7 +774,7 @@ bool CMeshCompiler::Compile(CMesh& mesh, int flags)
 	// m_vhash_table[] contains a std::vector<SMeshFace> per subset.
 	// Vector contains faces belonging to the subset.
 	// Face contains three indices of elements in mesh.m_pVertices[].
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_vhash_table) == MAX_SUB_MATERIALS);
+	static_assert(CRY_ARRAY_COUNT(m_vhash_table) == MAX_SUB_MATERIALS, "Invalid array size!");
 	for (int i = 0; i < MAX_SUB_MATERIALS; ++i)
 	{
 		m_vhash_table[i].clear();

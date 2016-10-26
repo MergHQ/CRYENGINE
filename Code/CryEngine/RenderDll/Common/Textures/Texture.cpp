@@ -366,7 +366,7 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_pFileTexMips = NULL;
 	m_fCurrentMipBias = 0.f;
 
-	COMPILE_TIME_ASSERT(MaxStreamTasks < 32767);
+	static_assert(MaxStreamTasks < 32767, "Too many stream tasks!");
 
 	if (devTexToOwn)
 	{
@@ -385,8 +385,8 @@ CTexture::~CTexture()
 {
 	// sizes of these structures should NOT exceed L2 cache line!
 #if CRY_PLATFORM_64BIT
-	COMPILE_TIME_ASSERT((offsetof(CTexture, m_composition) - offsetof(CTexture, m_pFileTexMips)) <= 64);
-	//COMPILE_TIME_ASSERT((offsetof(CTexture, m_pFileTexMips) % 64) == 0);
+	static_assert((offsetof(CTexture, m_composition) - offsetof(CTexture, m_pFileTexMips)) <= 64, "Invalid offset!");
+	//static_assert((offsetof(CTexture, m_pFileTexMips) % 64) == 0, "Invalid offset!");
 #endif
 
 #ifndef _RELEASE

@@ -28,7 +28,7 @@ History:
 CSpawningVisTable::CSpawningVisTable()
 {
 	//Ensure that we have enough bits in the variable type that we are using to store the spawn visibility in
-	COMPILE_TIME_ASSERT(CSpawningVisTable::kMaxNumPlayers <= CSpawningVisTable::kNumBits);
+	static_assert(CSpawningVisTable::kMaxNumPlayers <= CSpawningVisTable::kNumBits, "Too many players!");
 
 	m_spawnVisData.reserve(kInitialNumSpawns);
 	m_spawnTeamList.reserve(kInitialNumSpawns);

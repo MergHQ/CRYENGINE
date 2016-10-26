@@ -60,7 +60,7 @@ CTriMesh::CTriMesh()
 	ZeroArray(m_pHashGrid);
 	ZeroArray(m_pHashData);
 
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_bConvex) == CRY_ARRAY_COUNT(m_ConvexityTolerance));
+	static_assert(CRY_ARRAY_COUNT(m_bConvex) == CRY_ARRAY_COUNT(m_ConvexityTolerance), "Invalid array size!");
 	for(int i=0;i<CRY_ARRAY_COUNT(m_bConvex);i++)	{
 		m_bConvex[i]=0;
 		m_ConvexityTolerance[i]=-1;

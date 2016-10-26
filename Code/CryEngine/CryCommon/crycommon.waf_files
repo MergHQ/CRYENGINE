@@ -80,8 +80,7 @@
         "Assert":[
           "CryCore/Assert/CryAssert_impl.h",
           "CryCore/Assert/CryAssert.h",
-          "CryCore/Assert/CompileTimeUtils.h",
-          "CryCore/Assert/CompileTimeAssert.h"
+          "CryCore/Assert/CompileTimeUtils.h"
         ]
       },
       {

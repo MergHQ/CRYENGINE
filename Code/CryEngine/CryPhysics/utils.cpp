@@ -466,7 +466,7 @@ static inline int GetProjCubePlane(const Vec3 &in)
 {
 	// This breaks strict aliasing, but for this is okay
 	// since the points are const and stored on the heap!
-	COMPILE_TIME_ASSERT(sizeof(int32)==sizeof(float));
+	static_assert(sizeof(int32)==sizeof(float), "Invalid type size!");
 	const int32* pt = (const int32*)&in;
 	int iPlane = isneg(iabsf(pt[0])-iabsf(pt[1]));
 	iPlane |= isneg(iabsf(pt[iPlane])-iabsf(pt[2]))<<1; iPlane &= 2|(iPlane>>1^1);

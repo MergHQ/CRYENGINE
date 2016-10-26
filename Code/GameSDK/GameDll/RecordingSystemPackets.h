@@ -634,7 +634,7 @@ struct SRecording_ProceduralBreakHappened : SRecording_Packet
 	{
 		size = sizeof(SRecording_ProceduralBreakHappened);
 		type = eTPP_ProceduralBreakHappened;
-		COMPILE_TIME_ASSERT( alignof(SRecording_ProceduralBreakHappened) == 4 );
+		static_assert(alignof(SRecording_ProceduralBreakHappened) == 4, "Invalid type alignment!");
 	}
 
 	uint16 uBreakEventIndex;

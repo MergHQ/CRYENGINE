@@ -4403,8 +4403,8 @@ static void RecordClipCmd(IConsoleCmdArgs* pArgs)
 		const size_t MAX_WSTR_BUFFER = 64;
 
 		// make sure the description string has always a reasonable size and the default string is withing size range
-		COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(DEFAULT_CLIP_DESC) <= MAX_WSTR_BUFFER);
-		COMPILE_TIME_ASSERT(MAX_WSTR_BUFFER >= 8 && MAX_WSTR_BUFFER <= 64);
+		static_assert(CRY_ARRAY_COUNT(DEFAULT_CLIP_DESC) <= MAX_WSTR_BUFFER, "Invalid string length!");
+		static_assert(MAX_WSTR_BUFFER >= 8 && MAX_WSTR_BUFFER <= 64, "Invalid buffer size!");
 
 		// parameters to keep
 		static CryFixedWStringT<MAX_WSTR_BUFFER> sParamFixedWStrDescription(DEFAULT_CLIP_DESC);

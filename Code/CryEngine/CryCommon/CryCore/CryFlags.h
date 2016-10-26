@@ -12,13 +12,12 @@
 	#define __CryFlags_h__
 
 	#include <limits> // std::numeric_limits
-	#include <CryCore/Assert/CompileTimeAssert.h>
 
 template<typename STORAGE>
 class CCryFlags
 {
 	// the reason for the following assert: AreMultipleFlagsActive() works incorrect if STORAGE is signed
-	COMPILE_TIME_ASSERT(!std::numeric_limits<STORAGE>::is_signed);
+	static_assert(!std::numeric_limits<STORAGE>::is_signed, "'STORAGE' must not be a signed type!");
 public:
 	CCryFlags() : m_bitStorage(0) {}
 	ILINE void    AddFlags(STORAGE flags)                  { m_bitStorage |= flags; }

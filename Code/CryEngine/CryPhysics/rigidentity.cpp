@@ -117,7 +117,7 @@ CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_hasAuthority(false)
 #endif
 {	 
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBoxNew) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_BBoxNew) == 2, "Invalid array size!");
 	m_BBoxNew[0].zero();
 	m_BBoxNew[1].zero();
 

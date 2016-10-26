@@ -371,7 +371,7 @@ static inline bool IsHexDigit(int ch)
 
 void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* Combinations, const char* pCombinations, int nType)
 {
-	COMPILE_TIME_ASSERT(SHADER_LIST_VER != SHADER_SERIALISE_VER);
+	static_assert(SHADER_LIST_VER != SHADER_SERIALISE_VER, "Version mismatch!");
 
 	char str[2048];
 	bool bFromFile = (Combinations == NULL);

@@ -640,8 +640,8 @@ inline void CryStringT<T >::_move(value_type* dest, const value_type* src, size_
 template<class T>
 inline void CryStringT<T >::_set(value_type* dest, value_type ch, size_type count)
 {
-	COMPILE_TIME_ASSERT(sizeof(value_type) == sizeof(T));
-	COMPILE_TIME_ASSERT(sizeof(value_type) == 1);
+	static_assert(sizeof(value_type) == sizeof(T), "Invalid type size!");
+	static_assert(sizeof(value_type) == 1, "Invalid type size!");
 	memset(dest, ch, count);
 }
 
@@ -649,7 +649,7 @@ inline void CryStringT<T >::_set(value_type* dest, value_type ch, size_type coun
 template<>
 inline void CryStringT<wchar_t >::_set(value_type* dest, value_type ch, size_type count)
 {
-	COMPILE_TIME_ASSERT(sizeof(value_type) == sizeof(wchar_t));
+	static_assert(sizeof(value_type) == sizeof(wchar_t), "Invalid type size!");
 	wmemset(dest, ch, count);
 }
 

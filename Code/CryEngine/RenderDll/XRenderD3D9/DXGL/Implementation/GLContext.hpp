@@ -62,9 +62,9 @@ enum
 #endif // DXGL_STREAMING_CONSTANT_BUFFERS
 };
 
-COMPILE_TIME_ASSERT((uint32)MAX_TEXTURE_SLOTS <= (uint32)SUnitMap::MAX_TEXTURE_SLOT_IN_MAP);
-COMPILE_TIME_ASSERT((uint32)MAX_SAMPLER_SLOTS <= (uint32)SUnitMap::MAX_SAMPLER_SLOT_IN_MAP);
-COMPILE_TIME_ASSERT((uint32)MAX_TEXTURE_UNITS <= (uint32)SUnitMap::MAX_TEXTURE_UNIT_IN_MAP);
+static_assert((uint32)MAX_TEXTURE_SLOTS <= (uint32)SUnitMap::MAX_TEXTURE_SLOT_IN_MAP, "Invalid texture slot limit!");
+static_assert((uint32)MAX_SAMPLER_SLOTS <= (uint32)SUnitMap::MAX_SAMPLER_SLOT_IN_MAP, "Invalid sampler slot slimit!");
+static_assert((uint32)MAX_TEXTURE_UNITS <= (uint32)SUnitMap::MAX_TEXTURE_UNIT_IN_MAP, "Invalid texture unit limit!");
 
 inline uint32 TextureSlot(EShaderType eStage, uint32 uIndex)        { return uIndex + eStage * MAX_STAGE_TEXTURE_SLOTS; }
 inline uint32 SamplerSlot(EShaderType eStage, uint32 uIndex)        { return uIndex + eStage * MAX_STAGE_SAMPLER_SLOTS; }

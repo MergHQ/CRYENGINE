@@ -55,7 +55,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
-	COMPILE_TIME_ASSERT(sizeof(TFace) == 6);
+	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
 
@@ -378,7 +378,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 	LOADING_TIME_PROFILE_SECTION_ARGS(szFilePath);
 
-	COMPILE_TIME_ASSERT(sizeof(TFace) == 6);
+	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
 

@@ -7169,7 +7169,7 @@ void CD3D9Renderer::GetLogVBuffers()
 		string final;
 		char tmp[128];
 
-		COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(sStreamNames) == VSF_NUM);
+		static_assert(CRY_ARRAY_COUNT(sStreamNames) == VSF_NUM, "Invalid array size!");
 		for (int i = 0; i < VSF_NUM; i++)
 		{
 			int nSize = iter->item<& CRenderMesh::m_Chain>()->GetStreamStride(i);

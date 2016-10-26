@@ -353,7 +353,6 @@ inline int IsHeapValid()
 // Assert dialog box macros
 #include <CryCore/Assert/CryAssert.h>
 
-#include <CryCore/Assert/CompileTimeAssert.h>
 // Platform dependent functions that emulate Win32 API. Mostly used only for debugging!
 
 enum EQuestionResult

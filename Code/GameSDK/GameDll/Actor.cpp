@@ -1773,7 +1773,7 @@ void CActor::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
 			PrefetchLine(m_boneTrans, 0);	PrefetchLine(m_boneTrans, 128);	PrefetchLine(m_boneTrans, 256);	PrefetchLine(m_boneTrans, 384);
-			COMPILE_TIME_ASSERT(sizeof(m_boneTrans) > 384);
+			static_assert(sizeof(m_boneTrans) > 384, "Invalid type size!");
 
 			ICharacterInstance *pCharacter = GetEntity()->GetCharacter(0);
 			ISkeletonPose *pSkelPose = pCharacter ? pCharacter->GetISkeletonPose() : NULL;

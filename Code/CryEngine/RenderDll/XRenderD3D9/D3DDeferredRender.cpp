@@ -206,7 +206,7 @@ bool CD3D9Renderer::CreateAuxiliaryMeshes()
 		CDeferredRenderUtils::CreateUnitFrustumMesh(nFrustTess, nFrustTess, arrDeferredInds, arrDeferredVerts);
 		SAFE_RELEASE(m_pUnitFrustumVB[SHAPE_PROJECTOR + i]);
 		SAFE_RELEASE(m_pUnitFrustumIB[SHAPE_PROJECTOR + i]);
-		COMPILE_TIME_ASSERT(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]));
+		static_assert(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]), "Invalid type size!");
 		CreateUnitVolumeMesh(arrDeferredInds, arrDeferredVerts, m_pUnitFrustumIB[SHAPE_PROJECTOR + i], m_pUnitFrustumVB[SHAPE_PROJECTOR + i]);
 		m_UnitFrustVBSize[SHAPE_PROJECTOR + i] = arrDeferredVerts.size();
 		m_UnitFrustIBSize[SHAPE_PROJECTOR + i] = arrDeferredInds.size();
@@ -219,7 +219,7 @@ bool CD3D9Renderer::CreateAuxiliaryMeshes()
 		CDeferredRenderUtils::CreateUnitFrustumMesh(nClipFrustTess, nClipFrustTess, arrDeferredInds, arrDeferredVerts);
 		SAFE_RELEASE(m_pUnitFrustumVB[SHAPE_CLIP_PROJECTOR + i]);
 		SAFE_RELEASE(m_pUnitFrustumIB[SHAPE_CLIP_PROJECTOR + i]);
-		COMPILE_TIME_ASSERT(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]));
+		static_assert(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]), "Invalid type size!");
 		CreateUnitVolumeMesh(arrDeferredInds, arrDeferredVerts, m_pUnitFrustumIB[SHAPE_CLIP_PROJECTOR + i], m_pUnitFrustumVB[SHAPE_CLIP_PROJECTOR + i]);
 		m_UnitFrustVBSize[SHAPE_CLIP_PROJECTOR + i] = arrDeferredVerts.size();
 		m_UnitFrustIBSize[SHAPE_CLIP_PROJECTOR + i] = arrDeferredInds.size();
@@ -230,7 +230,7 @@ bool CD3D9Renderer::CreateAuxiliaryMeshes()
 	CDeferredRenderUtils::CreateUnitSphere(2, arrDeferredInds, arrDeferredVerts);
 	SAFE_RELEASE(m_pUnitFrustumVB[SHAPE_SPHERE]);
 	SAFE_RELEASE(m_pUnitFrustumIB[SHAPE_SPHERE]);
-	COMPILE_TIME_ASSERT(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]));
+	static_assert(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]), "Invalid type size!");
 	CreateUnitVolumeMesh(arrDeferredInds, arrDeferredVerts, m_pUnitFrustumIB[SHAPE_SPHERE], m_pUnitFrustumVB[SHAPE_SPHERE]);
 	m_UnitFrustVBSize[SHAPE_SPHERE] = arrDeferredVerts.size();
 	m_UnitFrustIBSize[SHAPE_SPHERE] = arrDeferredInds.size();
@@ -239,7 +239,7 @@ bool CD3D9Renderer::CreateAuxiliaryMeshes()
 	CDeferredRenderUtils::CreateUnitBox(arrDeferredInds, arrDeferredVerts);
 	SAFE_RELEASE(m_pUnitFrustumVB[SHAPE_BOX]);
 	SAFE_RELEASE(m_pUnitFrustumIB[SHAPE_BOX]);
-	COMPILE_TIME_ASSERT(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]));
+	static_assert(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]), "Invalid type size!");
 	CreateUnitVolumeMesh(arrDeferredInds, arrDeferredVerts, m_pUnitFrustumIB[SHAPE_BOX], m_pUnitFrustumVB[SHAPE_BOX]);
 	m_UnitFrustVBSize[SHAPE_BOX] = arrDeferredVerts.size();
 	m_UnitFrustIBSize[SHAPE_BOX] = arrDeferredInds.size();
@@ -248,7 +248,7 @@ bool CD3D9Renderer::CreateAuxiliaryMeshes()
 	CDeferredRenderUtils::CreateSimpleLightFrustumMesh(arrDeferredInds, arrDeferredVerts);
 	SAFE_RELEASE(m_pUnitFrustumVB[SHAPE_SIMPLE_PROJECTOR]);
 	SAFE_RELEASE(m_pUnitFrustumIB[SHAPE_SIMPLE_PROJECTOR]);
-	COMPILE_TIME_ASSERT(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]));
+	static_assert(kUnitObjectIndexSizeof == sizeof(arrDeferredInds[0]), "Invalid type size!");
 	CreateUnitVolumeMesh(arrDeferredInds, arrDeferredVerts, m_pUnitFrustumIB[SHAPE_SIMPLE_PROJECTOR], m_pUnitFrustumVB[SHAPE_SIMPLE_PROJECTOR]);
 	m_UnitFrustVBSize[SHAPE_SIMPLE_PROJECTOR] = arrDeferredVerts.size();
 	m_UnitFrustIBSize[SHAPE_SIMPLE_PROJECTOR] = arrDeferredInds.size();

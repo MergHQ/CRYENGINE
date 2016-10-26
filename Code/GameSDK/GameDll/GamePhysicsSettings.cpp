@@ -36,7 +36,7 @@ int CGamePhysicsSettings::GetBit(uint32 a)
 
 void CGamePhysicsSettings::Init()
 {
-	COMPILE_TIME_ASSERT((k_num_collision_classes+k_num_game_collision_classes)<=MAX_COLLISION_CLASSES);
+	static_assert((k_num_collision_classes+k_num_game_collision_classes)<=MAX_COLLISION_CLASSES, "Too many collision classes!");
 
 	// Automatically construct a list of string names for the collision clas enums
 
@@ -71,7 +71,7 @@ void CGamePhysicsSettings::ExportToLua()
 	{
 		if (m_names[i][0])
 		{
-			COMPILE_TIME_ASSERT(MAX_COLLISION_CLASSES <= 23); //LUA can't support flags beyond bit 23 due to using floats
+			static_assert(MAX_COLLISION_CLASSES <= 23, "Too many collision classes!"); //LUA can't support flags beyond bit 23 due to using floats
 
 			stack_string name;
 			name.Format("bT_%s", m_names[i]);  // Annoyingly we need to prefix with a b to make it a bool in lua

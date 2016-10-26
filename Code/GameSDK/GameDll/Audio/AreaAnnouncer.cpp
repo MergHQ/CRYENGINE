@@ -118,7 +118,7 @@ void CAreaAnnouncer::LoadAnnouncementArea(const IEntity* pEntity, const char* ar
 	{
 		SAnnouncementArea area;
 		area.m_areaProxyId = pEntity->GetId();
-		COMPILE_TIME_ASSERT(sizeof(area.m_signal) == sizeof(signal));
+		static_assert(sizeof(area.m_signal) == sizeof(signal), "Invalid type size!");
 		memcpy(area.m_signal, signal, sizeof(area.m_signal));
 
 #if !defined(_RELEASE)

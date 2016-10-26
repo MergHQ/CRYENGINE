@@ -11,7 +11,6 @@
 #include <CryCore/Platform/platform.h> // Needed for LARGE_INTEGER (for consoles).
 
 #include <CryCore/Assert/CryAssert.h>
-#include <CryCore/Assert/CompileTimeAssert.h>
 
 #include <CrySystem/XML/IXml.h> // <> required for Interfuscator
 #include "IValidator.h"         // <> required for Interfuscator
@@ -1881,11 +1880,11 @@ struct SDummyCVar : ICVar
 	#define CONSOLE_CONST_CVAR_MODE
 	#define DeclareConstIntCVar(name, defaultValue)                          enum : int { name = (defaultValue) }
 	#define DeclareStaticConstIntCVar(name, defaultValue)                    enum : int { name = (defaultValue) }
-	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) { COMPILE_TIME_ASSERT((int)(defaultValue) == (int)(name)); REGISTER_DUMMY_CVAR(int, strname, defaultValue); }
-	#define DefineConstIntCVar(name, defaultValue, flags, help)              { COMPILE_TIME_ASSERT((int)(defaultValue) == (int)(name)); REGISTER_DUMMY_CVAR(int, ( # name), defaultValue); }
+	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) { static_assert(static_cast<int>(defaultValue) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, strname, defaultValue); }
+	#define DefineConstIntCVar(name, defaultValue, flags, help)              { static_assert(static_cast<int>(defaultValue) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, ( # name), defaultValue); }
 
 //! DefineConstIntCVar2 is deprecated, any such instance can be converted to the 3 variant by removing the quotes around the first parameter.
-	#define DefineConstIntCVar3(name, _var_, defaultValue, flags, help) { COMPILE_TIME_ASSERT((int)(defaultValue) == (int)(_var_)); REGISTER_DUMMY_CVAR(int, name, defaultValue); }
+	#define DefineConstIntCVar3(name, _var_, defaultValue, flags, help) { static_assert(static_cast<int>(defaultValue) == static_cast<int>(_var_), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, name, defaultValue); }
 	#define AllocateConstIntCVar(scope, name)
 
 	#define DefineConstFloatCVar(name, flags, help) { REGISTER_DUMMY_CVAR(float, ( # name), name ## Default); }
@@ -1976,33 +1975,33 @@ static void AssertConsoleExists(void)
 #define ILLEGAL_DEV_FLAGS (VF_NET_SYNCED | VF_CHEAT | VF_CHEAT_ALWAYS_CHECK | VF_CHEAT_NOCHECK | VF_READONLY | VF_CONST_CVAR)
 
 #if defined(_RELEASE)
-	#define REGISTER_CVAR_DEV_ONLY(_var, _def_val, _flags, _comment)                               NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); _var = _def_val
-	#define REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); _var = _def_val /* _onchangefunction consumed; callback not available */
-	#define REGISTER_STRING_DEV_ONLY(_name, _def_val, _flags, _comment)                            NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_STRING_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_INT_DEV_ONLY(_name, _def_val, _flags, _comment)                               NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_INT_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_INT64_DEV_ONLY(_name, _def_val, _flags, _comment)                             NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_FLOAT_DEV_ONLY(_name, _def_val, _flags, _comment)                             NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)                  /* consumed; pure cvar not available */
-	#define REGISTER_CVAR2_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); *(_var) = _def_val
-	#define REGISTER_CVAR2_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); *(_var) = _def_val
-	#define REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); _var = _def_val
-	#define REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) NULL; COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0); _var = _def_val
+	#define REGISTER_CVAR_DEV_ONLY(_var, _def_val, _flags, _comment)                               NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val
+	#define REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val /* _onchangefunction consumed; callback not available */
+	#define REGISTER_STRING_DEV_ONLY(_name, _def_val, _flags, _comment)                            NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_STRING_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_INT_DEV_ONLY(_name, _def_val, _flags, _comment)                               NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_INT_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_INT64_DEV_ONLY(_name, _def_val, _flags, _comment)                             NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_FLOAT_DEV_ONLY(_name, _def_val, _flags, _comment)                             NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
+	#define REGISTER_CVAR2_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); *(_var) = _def_val
+	#define REGISTER_CVAR2_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); *(_var) = _def_val
+	#define REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val
+	#define REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val
 	#define REGISTER_COMMAND_DEV_ONLY(_name, _func, _flags, _comment)                              /* consumed; command not available */
 #else
-	#define REGISTER_CVAR_DEV_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR(_var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB(_var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_STRING_DEV_ONLY(_name, _def_val, _flags, _comment)                            REGISTER_STRING(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_STRING_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      REGISTER_STRING_CB(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT_DEV_ONLY(_name, _def_val, _flags, _comment)                               REGISTER_INT(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         REGISTER_INT_CB(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT64_DEV_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_INT64(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_FLOAT_DEV_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_FLOAT(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR2_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR2(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR2_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR2_CB(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_COMMAND_DEV_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND(_name, _func, ((_flags) | VF_DEV_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
+	#define REGISTER_CVAR_DEV_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR(_var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB(_var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_STRING_DEV_ONLY(_name, _def_val, _flags, _comment)                            REGISTER_STRING(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_STRING_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      REGISTER_STRING_CB(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT_DEV_ONLY(_name, _def_val, _flags, _comment)                               REGISTER_INT(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT_CB_DEV_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         REGISTER_INT_CB(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT64_DEV_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_INT64(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_FLOAT_DEV_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_FLOAT(_name, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR2_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR2(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR2_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR2_CB(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_COMMAND_DEV_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND(_name, _func, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 #endif // defined(_RELEASE)
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2011,19 +2010,19 @@ static void AssertConsoleExists(void)
 //! (1) Registered as real cvars in all non release builds
 //! (2) Registered as real cvars in release on dedi servers only, otherwise treated as DEV_ONLY type cvars (see above)
 #if defined(_RELEASE) && defined(DEDICATED_SERVER)
-	#define REGISTER_CVAR_DEDI_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR_CB_DEDI_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_STRING_DEDI_ONLY(_name, _def_val, _flags, _comment)                            REGISTER_STRING(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_STRING_CB_DEDI_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      REGISTER_STRING_CB(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT_DEDI_ONLY(_name, _def_val, _flags, _comment)                               REGISTER_INT(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT_CB_DEDI_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         REGISTER_INT_CB(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_INT64_DEDI_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_INT64(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_FLOAT_DEDI_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_FLOAT(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR2_DEDI_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR2(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR2_CB_DEDI_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR2_CB(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR3_DEDI_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_CVAR3_CB_DEDI_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
-	#define REGISTER_COMMAND_DEDI_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND(_name, _func, ((_flags) | VF_DEDI_ONLY), _comment); COMPILE_TIME_ASSERT(((_flags) & ILLEGAL_DEV_FLAGS) == 0)
+	#define REGISTER_CVAR_DEDI_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR_CB_DEDI_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_STRING_DEDI_ONLY(_name, _def_val, _flags, _comment)                            REGISTER_STRING(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_STRING_CB_DEDI_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)      REGISTER_STRING_CB(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT_DEDI_ONLY(_name, _def_val, _flags, _comment)                               REGISTER_INT(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT_CB_DEDI_ONLY(_name, _def_val, _flags, _comment, _onchangefunction)         REGISTER_INT_CB(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_INT64_DEDI_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_INT64(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_FLOAT_DEDI_ONLY(_name, _def_val, _flags, _comment)                             REGISTER_FLOAT(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR2_DEDI_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR2(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR2_CB_DEDI_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR2_CB(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR3_DEDI_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_CVAR3_CB_DEDI_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
+	#define REGISTER_COMMAND_DEDI_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND(_name, _func, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 #else
 	#define REGISTER_CVAR_DEDI_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR_DEV_ONLY(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment)
 	#define REGISTER_CVAR_CB_DEDI_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction)

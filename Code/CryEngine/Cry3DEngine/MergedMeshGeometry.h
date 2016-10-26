@@ -253,7 +253,7 @@ struct CRY_ALIGN(SMMRMSkinVertex_ALIGN) SMMRMSkinVertex
 	}
 
 };
-COMPILE_TIME_ASSERT(sizeof(SMMRMSkinVertex) == SMMRMSkinVertex_SIZE);
+static_assert(sizeof(SMMRMSkinVertex) == SMMRMSkinVertex_SIZE, "Invalid type size!");
 
 struct CRY_ALIGN(16) SMMRMChunk
 {
