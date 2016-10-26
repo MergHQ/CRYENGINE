@@ -50,6 +50,6 @@ if(WIN32 OR WIN64 OR APPLE OR LINUX)
 	target_link_libraries(${THIS_PROJECT} PRIVATE ${openvr_api})
 	
 	if(LINUX)
-		target_compile_definitions(${THIS_PROJECT} PRIVATE -fPIC)
+		target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
 	endif()
 endif()

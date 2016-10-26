@@ -43,5 +43,5 @@ target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryE
 target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryExtensions/CryLink/Interface)
 
 if(LINUX)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -fPIC)
+        target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
 endif()

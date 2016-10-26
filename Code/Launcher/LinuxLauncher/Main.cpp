@@ -1,9 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SystemInit.h"
-//#include <ISystem.h>
-//#include "../../CryEngine/Cry3DEngine/StdAfx.h"
+#include <CrySystem/ISystem.h>
 
 #include <CryCore/Platform/platform_impl.inl>
 

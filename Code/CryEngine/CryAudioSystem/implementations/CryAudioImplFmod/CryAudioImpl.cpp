@@ -31,11 +31,11 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "CryAudioImplFmod", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     { return "CryAudioImplFmod"; }
-	virtual char const* GetCategory() { return "CryAudio"; }
+	virtual char const* GetName()     override { return "CryAudioImplFmod"; }
+	virtual char const* GetCategory() override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		// Initialize memory pools.
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Audio Implementation Memory Pool Primary");
