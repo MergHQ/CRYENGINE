@@ -18,6 +18,7 @@ struct MovementRequestID
 	MovementRequestID& operator++()                           { ++id; return *this; }
 	bool               operator==(unsigned int otherID) const { return id == otherID; }
 	operator unsigned int() const { return id; }
+	bool IsInvalid() const { return id == 0; }
 
 	static MovementRequestID Invalid() { return MovementRequestID(); }
 };

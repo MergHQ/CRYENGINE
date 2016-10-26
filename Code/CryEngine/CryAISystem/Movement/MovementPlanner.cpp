@@ -39,7 +39,7 @@ bool GenericPlanner::IsUpdateNeeded() const
 
 void GenericPlanner::StartWorkingOnRequest(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context)
 {
-	m_amountOfFailedReplanning = 0;
+	m_replanningAfterFailCount = 0;
 	m_pendingPathReplanning.Clear();
 	StartWorkingOnRequest_Internal(requestId, request, context);
 }
@@ -106,6 +106,8 @@ void GenericPlanner::CancelCurrentRequest(MovementActor& actor)
 	//
 	// Let's see how it works out in practice :)
 	//
+
+	m_requestId = MovementRequestID();
 }
 
 IPlanner::Status GenericPlanner::Update(const MovementUpdateContext& context)
@@ -226,13 +228,40 @@ void GenericPlanner::GetStatus(MovementRequestStatus& status) const
 	else
 	{
 		status.id = MovementRequestStatus::ExecutingPlan;
-		status.currentBlockIndex = m_plan.GetCurrentBlockIndex();
+	}
+
+	if (m_plan.GetBlockCount() > 0)
+	{
+		status.planStatus.abandoned = m_requestId.IsInvalid();
+		status.planStatus.currentBlockIndex = m_plan.GetCurrentBlockIndex();
+
+		switch (m_plan.GetLastStatus())
+		{
+		case Plan::Status::Running:
+			status.planStatus.status = MovementRequestStatus::PlanStatus::Running;
+			break;
+		case Plan::Status::CantBeFinished:
+			status.planStatus.status = MovementRequestStatus::PlanStatus::CantFinish;
+			break;
+		case Plan::Status::Finished:
+			status.planStatus.status = MovementRequestStatus::PlanStatus::Finished;
+			break;
+		default:
+			status.planStatus.status = MovementRequestStatus::PlanStatus::None;
+			break;
+		}
 
 		for (uint32 i = 0, n = m_plan.GetBlockCount(); i < n; ++i)
 		{
 			const char* blockName = m_plan.GetBlock(i)->GetName();
-			status.blockInfos.push_back(blockName);
+			status.planStatus.blockInfos.push_back(blockName);
 		}
+	}
+	else
+	{
+		status.planStatus.status = MovementRequestStatus::PlanStatus::None;
+		status.planStatus.abandoned = false;
+		status.planStatus.currentBlockIndex = Plan::NoBlockIndex;
 	}
 }
 
@@ -286,7 +315,6 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 			// The current plan can't be finished. We'll re-plan as soon as
 			// we can to see if we can satisfy the request.
 			// Note: it could become necessary to add a "retry count".
-			++m_amountOfFailedReplanning;
 			if (m_request.style.IsMovingAlongDesignedPath())
 			{
 				status.SetMovingAlongPathFailed(m_plan.GetRequestId());
@@ -295,6 +323,8 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 			{
 				if (CanReplan(m_request))
 				{
+					++m_replanningAfterFailCount;
+
 					context.actor.Log("Movement plan couldn't be finished, re-planning.");
 					const MovementRequest replanRequest = m_request;
 					StartWorkingOnRequest_Internal(m_requestId, replanRequest, context);
@@ -497,6 +527,6 @@ void GenericPlanner::ProduceStopPlan(const MovementUpdateContext& context)
 
 bool GenericPlanner::CanReplan(const MovementRequest& request) const
 {
-	return m_amountOfFailedReplanning < s_maxAllowedReplanning;
+	return m_replanningAfterFailCount < s_maxAllowedReplanning;
 }
 }
