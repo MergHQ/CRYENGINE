@@ -5071,13 +5071,7 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_streaming_in_blocks", &g_cvars.sys_streaming_in_blocks, 1, VF_NULL,
 	               "Streaming of large files happens in blocks");
 
-#if CRY_PLATFORM_WINDOWS && !defined(_RELEASE)
-	#define CVAR_FPE_DEFAULT_VALUE 1
-#else
-	#define CVAR_FPE_DEFAULT_VALUE 0
-#endif
-
-	REGISTER_CVAR2("sys_float_exceptions", &g_cvars.sys_float_exceptions, CVAR_FPE_DEFAULT_VALUE, 0,
+	REGISTER_CVAR2("sys_float_exceptions", &g_cvars.sys_float_exceptions, 0, 0,
 	               "Floating Point Exceptions:\n"
 	               "  0 = Disabled\n"
 	               "  1 = Basic [ZERODIVIDE, INVALID] \n"

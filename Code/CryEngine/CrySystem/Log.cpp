@@ -192,7 +192,7 @@ void CLog::RegisterConsoleVariables()
 		m_pLogVerbosityOverridesWriteToFile = REGISTER_INT("log_VerbosityOverridesWriteToFile", 1, VF_DUMPTODISK, "when enabled, setting log_verbosity to 0 will stop all logging including writing to file");
 
 		// put time into begin of the string if requested by cvar
-		m_pLogIncludeTime = REGISTER_INT("log_IncludeTime", 0, 0,
+		m_pLogIncludeTime = REGISTER_INT("log_IncludeTime", 1, 0,
 		                                 "Toggles time stamping of log entries.\n"
 		                                 "Usage: log_IncludeTime [0/1/2/3/4/5]\n"
 		                                 "  0=off (default)\n"

@@ -291,7 +291,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	bool bRes = true;
 
 	//Use user folder on export?
-	SSShaderRes* pSR = InitSResource(pSH, false /*((gRenDev->m_cEF.m_nCombinations > 0) || !CRenderer::CV_r_shadersuserfolder)*/, false);
+	SSShaderRes* pSR = InitSResource(pSH, false /*((gRenDev->m_cEF.m_nCombinations > 0)*/, false);
 
 	uint32 i;
 	int j;

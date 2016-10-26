@@ -1858,9 +1858,9 @@ void CRendererCVars::InitCVars()
 	                                             "Usage: r_ShowDynTexturesFilter start*\n"
 	                                             "Default is *. Set to 'pattern' to show only specific textures (activate r_ShowDynTextures)");
 
-	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "8core5", VF_NULL,
+	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "0.0.0.0", VF_NULL,
 	                                            "Usage: r_ShaderCompilerServer localhost \n"
-	                                            "Default is 8core5 ");
+	                                            "Default is 0.0.0.0 ");
 																							
 	CV_r_ShaderCompilerFolderName = REGISTER_STRING("r_ShaderCompilerFolderName", "", VF_NULL,
 	                                             "Usage: r_ShaderCompilerFolderName foldername \n"
@@ -2412,14 +2412,14 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3_CB("r_ShadersAllowCompilation", CV_r_shadersAllowCompilation, SHADERS_ALLOW_COMPILATION_DEFAULT_VAL, VF_NULL, "", OnChange_CV_r_ShadersAllowCompiliation);
 
 	REGISTER_CVAR3("r_ShadersRemoteCompiler", CV_r_shadersremotecompiler, 0, VF_DUMPTODISK, "Enables remote shader compilation on dedicated machine");
-	REGISTER_CVAR3("r_ShadersAsyncCompiling", CV_r_shadersasynccompiling, 1, VF_NULL,
+	REGISTER_CVAR3("r_ShadersAsyncCompiling", CV_r_shadersasynccompiling, 3, VF_NULL,
 	               "Enable asynchronous shader compiling\n"
 	               "Usage: r_ShadersAsyncCompiling [0/1/2/3]\n"
 	               " 0 = off, (stalling) shaders compiling\n"
 	               " 1 = on, shaders are compiled in parallel, missing shaders are rendered in yellow\n"
 	               " 2 = on, shaders are compiled in parallel, missing shaders are not rendered\n"
 	               " 3 = on, shaders are compiled in parallel in precache mode");
-	REGISTER_CVAR3("r_ShadersAsyncActivation", CV_r_shadersasyncactivation, 1, VF_NULL,
+	REGISTER_CVAR3("r_ShadersAsyncActivation", CV_r_shadersasyncactivation, 0, VF_NULL,
 	               "Enable asynchronous shader activation\n"
 	               "Usage: r_ShadersAsyncActivation [0/1]\n"
 	               " 0 = off, (stalling) synchronous shaders activation\n"

@@ -57,7 +57,7 @@ extern int CryMemoryGetAllocatedSize();
 void CSystem::CreateRendererVars()
 {
 	int iFullScreenDefault  = 1;
-	int iDisplayInfoDefault = 0;
+	int iDisplayInfoDefault = 1;
 	int iWidthDefault       = 1280;
 	int iHeightDefault      = 720;
 #if CRY_PLATFORM_DURANGO
