@@ -429,8 +429,8 @@ public:
 	virtual NavigationVolumeID CreateVolume(Vec3* vertices, size_t vertexCount, float height, NavigationVolumeID requestedID) override;
 	virtual void               DestroyVolume(NavigationVolumeID volumeID) override;
 	virtual void               SetVolume(NavigationVolumeID volumeID, Vec3* vertices, size_t vertexCount, float height) override;
-	virtual bool               ValidateVolume(NavigationVolumeID volumeID) override;
-	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) override;
+	virtual bool               ValidateVolume(NavigationVolumeID volumeID) const override;
+	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) const override;
 
 #ifdef SW_NAVMESH_USE_GUID
 	virtual void SetMeshBoundaryVolume(NavigationMeshID meshID, NavigationVolumeID volumeID, NavigationVolumeGUID volumeGUID) override;
@@ -676,6 +676,8 @@ private:
 	void ClearAllAccessibility(uint8 resetValue);
 	void ComputeAccessibility(IAIObject* pIAIObject, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
 #endif
+
+	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
 	typedef std::deque<TileTask> TileTaskQueue;
 	TileTaskQueue m_tileQueue;

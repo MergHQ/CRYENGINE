@@ -138,8 +138,8 @@ struct INavigationSystem
 	virtual NavigationVolumeID CreateVolume(Vec3* vertices, size_t vertexCount, float height, NavigationVolumeID requestedID) = 0;
 	virtual void               DestroyVolume(NavigationVolumeID volumeID) = 0;
 	virtual void               SetVolume(NavigationVolumeID volumeID, Vec3* vertices, size_t vertexCount, float height) = 0;
-	virtual bool               ValidateVolume(NavigationVolumeID volumeID) = 0;
-	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) = 0;
+	virtual bool               ValidateVolume(NavigationVolumeID volumeID) const = 0;
+	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) const = 0;
 
 #ifdef SW_NAVMESH_USE_GUID
 	virtual void SetExclusionVolume(const NavigationAgentTypeID* agentTypeIDs, size_t agentTypeIDCount, NavigationVolumeID volumeID, NavigationVolumeGUID guid) = 0;

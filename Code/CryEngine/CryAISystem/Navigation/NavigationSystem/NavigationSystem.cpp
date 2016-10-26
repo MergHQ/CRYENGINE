@@ -10,9 +10,14 @@
 #include <CryCore/Platform/CryWindows.h>
 
 // BAI navigation file version history
+// Changes in version 9
+//  - Navigation volumes storage is changed:
+//    * all used navigation volumes are saved (including exclusion volumes, which were missing before);
+//    * navigation area names saved together with volume data;
+//    * volumes stored only onces, instead of storing them together with each mesh.
 // Changes in version 8
 //  - struct MNM::Tile::STriangle layout is changed - now it has triangle flags
-#define BAI_NAVIGATION_FILE_VERSION 8
+#define BAI_NAVIGATION_FILE_VERSION 9
 
 #define MAX_NAME_LENGTH             512
 #if defined(SW_NAVMESH_USE_GUID)
@@ -363,6 +368,8 @@ void NavigationSystem::DestroyMesh(NavigationMeshID meshID)
 	{
 		NavigationMesh& mesh = m_meshes[meshID];
 
+		AILogComment("NavigationSystem::DestroyMesh meshID = %u '%s'", (unsigned int)meshID, mesh.name.c_str());
+
 		for (size_t t = 0; t < m_runningTasks.size(); ++t)
 		{
 			if (m_results[m_runningTasks[t]].meshID == meshID)
@@ -453,6 +460,14 @@ void NavigationSystem::SetMeshBoundaryVolume(NavigationMeshID meshID, Navigation
 		{
 			++mesh.version;
 		}
+
+		if (!m_volumes.validate(volumeID))
+		{
+			AIWarning("NavigationSystem::SetMeshBoundaryVolume: setting invalid volumeID %u for a mesh %u '%s'", (unsigned int)volumeID, (unsigned int)meshID, mesh.name.c_str());
+			volumeID = NavigationVolumeID();
+		}
+
+		AILogComment("NavigationSystem::SetMeshBoundaryVolume: set volumeID %u for a mesh %u '%s'", (unsigned int)volumeID, (unsigned int)meshID, mesh.name.c_str());
 
 		mesh.boundary = volumeID;
 #ifdef SW_NAVMESH_USE_GUID
@@ -609,12 +624,12 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 	}
 }
 
-bool NavigationSystem::ValidateVolume(NavigationVolumeID volumeID)
+bool NavigationSystem::ValidateVolume(NavigationVolumeID volumeID) const
 {
 	return m_volumes.validate(volumeID);
 }
 
-NavigationVolumeID NavigationSystem::GetVolumeID(NavigationMeshID meshID)
+NavigationVolumeID NavigationSystem::GetVolumeID(NavigationMeshID meshID) const
 {
 	// This function is used to retrieve the correct ID of the volume boundary connected to the mesh.
 	// After restoring the navigation data it could be that the cached volume id in the Sandbox SapeObject
@@ -689,6 +704,7 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 					else
 					{
 						++mesh.version;
+						AILogComment("NavigationSystem::SetExclusionVolume: volumeID %u for a mesh %u '%s'", (unsigned int)volumeID, (unsigned int)meshID, mesh.name.c_str());
 						mesh.boundary = NavigationVolumeID();
 						recomputeAABB = true;
 					}
@@ -1132,6 +1148,12 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 	else
 	{
 		index = firstFree;
+
+		if (!m_volumes.validate(mesh.boundary))
+		{
+			AIWarning("NavigationSystem::SpawnJob: Detected non-valid mesh boundary volume (%u) for mesh %u '%s', skipping", (unsigned int)mesh.boundary, (unsigned int)meshID, mesh.name.c_str());
+			return false;
+		}
 
 		def = &m_volumeDefCopy[index];
 		def->meshID = meshID;
@@ -2112,6 +2134,8 @@ void NavigationSystem::Clear()
 			DestroyVolume(NavigationVolumeID(m_volumes.get_index_id(i)));
 	}
 
+	m_volumesManager.Clear();
+
 #ifdef SW_NAVMESH_USE_GUID
 	m_swMeshes.clear();
 	m_swVolumes.clear();
@@ -2799,6 +2823,24 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 	return 0;
 }
 
+// Helper function to read various navigationId types from file without creating intermediate uint32.
+template<typename TId>
+static void ReadNavigationIdType(CCryFile& file, TId& outId)
+{
+	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
+	uint32 id;
+	file.ReadType(&id);
+	outId = TId(id);
+}
+
+template<typename TId>
+static void WriteNavigationIdType(CCryFile& file, const TId& id)
+{
+	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
+	const uint32 uid = id;
+	file.WriteType<uint32>(&uid);
+}
+
 bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Navigation Meshes (Read File)");
@@ -2856,27 +2898,68 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 #endif
 		}
 
-		std::vector<Vec3> boundaryVertexBuffer;
-		boundaryVertexBuffer.reserve(32);
-
 		if (fileVersionCompatible)
 		{
-			// Reading areas Names/ID
-			uint32 areasCount = 0;
-			file.ReadType(&areasCount);
-			for (uint32 i = 0; i < areasCount; ++i)
+			// Loading boundary volumes, their ID's and names
 			{
-				uint32 areaNameLength = 0;
-				char areaName[MAX_NAME_LENGTH];
-				file.ReadType(&areaNameLength);
-				areaNameLength = std::min(areaNameLength, (uint32)MAX_NAME_LENGTH - 1);
-				file.ReadType(areaName, areaNameLength);
-				areaName[areaNameLength] = '\0';
-				uint32 areaIDUint32 = 0;
-				file.ReadType(&areaIDUint32);
-#if !defined(SEG_WORLD)
-				m_volumesManager.RegisterAreaFromLoadedData(areaName, NavigationVolumeID(areaIDUint32));
-#endif
+				std::vector<Vec3> volumeVerticesBuffer;
+				std::vector<char> volumeAreaNameBuffer;
+				string volumeAreaName;
+
+				uint32 usedVolumesCount;
+				file.ReadType(&usedVolumesCount);
+
+				for (uint32 idx = 0; idx < usedVolumesCount; ++idx)
+				{
+					// Read volume data
+					NavigationVolumeID volumeId;
+					float volumeHeight;
+					uint32 verticesCount;
+					uint32 volumeAreaNameSize;
+
+					ReadNavigationIdType(file, volumeId);
+					file.ReadType(&volumeHeight);
+					file.ReadType(&verticesCount);
+
+					volumeVerticesBuffer.resize(verticesCount);
+					for (uint32 vtxIdx = 0; vtxIdx < verticesCount; ++vtxIdx)
+					{
+						Vec3& vtx = volumeVerticesBuffer[vtxIdx];
+						file.ReadType(&vtx.x, 3);
+					}
+
+					file.ReadType(&volumeAreaNameSize);
+					if (volumeAreaNameSize > 0)
+					{
+						volumeAreaNameBuffer.resize(volumeAreaNameSize, '\0');
+						file.ReadType(&volumeAreaNameBuffer.front(), volumeAreaNameSize);
+
+						volumeAreaName.assign(&volumeAreaNameBuffer.front(), (&volumeAreaNameBuffer.back()) + 1);
+					}
+					else
+					{
+						volumeAreaName.clear();
+					}
+
+					// Create volume
+
+					if (volumeId == NavigationVolumeID())
+					{
+						AIWarning("NavigationSystem::ReadFromFile: file contains invalid Navigation Volume ID");
+						continue;
+					}
+
+					if (m_volumes.validate(volumeId))
+					{
+						AIWarning("NavigationSystem::ReadFromFile: Navigation Volume with volumeId=%u (name '%s') is already registered", (unsigned int)volumeId, volumeAreaName.c_str());
+						continue;
+					}
+
+					const NavigationVolumeID createdVolumeId = CreateVolume(&volumeVerticesBuffer.front(), verticesCount, volumeHeight, volumeId);
+					CRY_ASSERT(volumeId == createdVolumeId);
+
+					m_volumesManager.RegisterAreaFromLoadedData(volumeAreaName.c_str(), volumeId);
+				}
 			}
 
 			uint32 agentsCount;
@@ -2942,9 +3025,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					NavigationVolumeGUID boundaryGUID = 0;
 					file.ReadType(&boundaryGUID);
 #else
-					uint32 boundaryIDuint32 = 0;
-					file.ReadType(&boundaryIDuint32);
-					NavigationVolumeID boundaryID = NavigationVolumeID(boundaryIDuint32);
+					NavigationVolumeID boundaryID;
+					ReadNavigationIdType(file, boundaryID);
 #endif
 
 					{
@@ -2980,27 +3062,6 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						}
 					}
 
-					//Saving the volume used by the boundary
-					MNM::BoundingVolume volume;
-					file.ReadType(&(volume.height));
-					uint32 totalVertices = 0;
-					file.ReadType(&totalVertices);
-					boundaryVertexBuffer.clear();
-					for (uint32 vertexCounter = 0; vertexCounter < totalVertices; ++vertexCounter)
-					{
-						Vec3 vertex(ZERO);
-						file.ReadType(&vertex);
-						boundaryVertexBuffer.push_back(vertex);
-					}
-#ifdef SW_NAVMESH_USE_GUID
-					NavigationVolumeID boundaryID = CreateVolume(&boundaryVertexBuffer[0], totalVertices, volume.height, boundaryGUID);
-#else
-					if (!m_volumes.validate(boundaryID))
-					{
-						CreateVolume(&boundaryVertexBuffer[0], totalVertices, volume.height, boundaryID);
-					}
-#endif
-
 					// Reading mesh exclusion shapes
 					uint32 exclusionShapesCount = 0;
 					file.ReadType(&exclusionShapesCount);
@@ -3015,11 +3076,11 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 							exclusions.push_back(it->second);
 					}
 #else
+					exclusions.reserve(exclusionShapesCount);
 					for (uint32 exclusionsCounter = 0; exclusionsCounter < exclusionShapesCount; ++exclusionsCounter)
 					{
-						uint32 exclusionIDuint32 = 0;
-						file.ReadType(&exclusionIDuint32);
-						NavigationVolumeID exclusionId = NavigationVolumeID(exclusionIDuint32);
+						NavigationVolumeID exclusionId;
+						ReadNavigationIdType(file, exclusionId);
 						// Save the exclusion shape with the read ID
 						exclusions.push_back(exclusionId);
 					}
@@ -3148,6 +3209,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 		file.Close();
 	}
 
+	m_volumesManager.ValidateAndSanitizeLoadedAreas(*this);
+
 	ENavigationEvent navigationEvent = (bAfterExporting) ? MeshReloadedAfterExporting : MeshReloaded;
 	UpdateAllListener(navigationEvent);
 
@@ -3231,6 +3294,48 @@ uint16 FilterOffMeshLinksForTile(const MNM::STile& tile, MNM::Tile::STriangle* p
 	return newLinkCount;
 }
 
+void NavigationSystem::GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const
+{
+	// #MNM_TODO pavloi 2016.10.21: it may be faster to iterate through m_volumes and gather all volumes from there.
+	// But there is no guarantee yet, that the registered volumes are actually used.
+
+	usedVolumes.reserve(m_volumes.size() * m_agentTypes.size());
+
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			CRY_ASSERT(m_meshes.validate(meshInfo.id));
+			const NavigationMesh& mesh = m_meshes.get(meshInfo.id);
+
+			CRY_ASSERT(mesh.boundary);
+			CRY_ASSERT(m_volumes.validate(mesh.boundary));
+			if (mesh.boundary && m_volumes.validate(mesh.boundary))
+			{
+				usedVolumes.push_back(mesh.boundary);
+			}
+		}
+
+		for (const NavigationVolumeID& volumeId : agentType.exclusions)
+		{
+			CRY_ASSERT(volumeId);
+			CRY_ASSERT(m_volumes.validate(volumeId));
+			if (volumeId && m_volumes.validate(volumeId))
+			{
+				usedVolumes.push_back(volumeId);
+			}
+		}
+	}
+	std::sort(usedVolumes.begin(), usedVolumes.end());
+	auto lastUniqueIter = std::unique(usedVolumes.begin(), usedVolumes.end());
+	usedVolumes.erase(lastUniqueIter, usedVolumes.end());
+
+	if (usedVolumes.size() != m_volumes.size())
+	{
+		AIWarning("NavigationSystem::GatherNavigationVolumesToSave: there are registered navigation volumes, which are not used by any navigation mesh. They will not be saved.");
+	}
+}
+
 #if defined(SEG_WORLD)
 bool NavigationSystem::SaveToFile(const char* fileName, const AABB& segmentAABB) const PREFAST_SUPPRESS_WARNING(6262)
 #else
@@ -3258,34 +3363,41 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 		file.Write(&useGUID, sizeof(useGUID));
 	#endif
 
-		// Saving areas Names/ID
-	#if defined(SEG_WORLD)
-		uint32 actualWrittenAreasCount = 0;
-		size_t areasCountDataPosition = file.GetPosition();
-	#endif
-		std::vector<string> areas;
-		m_volumesManager.GetVolumesNames(areas);
-		uint32 areasCount = areas.size();
-		file.Write(&areasCount, sizeof(areasCount));
-		std::vector<string>::iterator areaIt = areas.begin();
-		std::vector<string>::iterator areaEnd = areas.end();
-		for (; areaIt != areaEnd; ++areaIt)
+		// Saving boundary volumes, their ID's and names
 		{
-			uint32 areaIDUint32 = m_volumesManager.GetAreaID(areaIt->c_str());
-
-	#ifdef SEG_WORLD
-			const MNM::BoundingVolume& volume = m_volumes[areaIDUint32];
-			if (!segmentAABB.IsIntersectBox(volume.aabb))
-				continue;
-
-			++actualWrittenAreasCount;
+	#if SEG_WORLD
+			static_assert(false, "Segmented world is deprecated and not supported anymore by the current implementation of NavigationSystem");
 	#endif
 
-			uint32 areaNameLength = areaIt->length();
-			areaNameLength = std::min(areaNameLength, (uint32)MAX_NAME_LENGTH - 1);
-			file.Write(&areaNameLength, sizeof(areaNameLength));
-			file.Write((areaIt->c_str()), sizeof(char) * areaNameLength);
-			file.Write(&areaIDUint32, sizeof(areaIDUint32));
+			std::vector<NavigationVolumeID> usedVolumes;
+			GatherNavigationVolumesToSave(*&usedVolumes);
+
+			const uint32 usedVolumesCount = static_cast<uint32>(usedVolumes.size());
+			file.WriteType(&usedVolumesCount);
+
+			string volumeAreaName;
+			for (uint32 idx = 0; idx < usedVolumesCount; ++idx)
+			{
+				const NavigationVolumeID volumeId = usedVolumes[idx];
+				CRY_ASSERT(m_volumes.validate(volumeId));
+				const MNM::BoundingVolume& volume = m_volumes.get(volumeId);
+
+				const uint32 verticesCount = volume.vertices.size();
+
+				volumeAreaName.clear();
+				m_volumesManager.GetAreaName(volumeId, *&volumeAreaName);
+				const uint32 volumeAreaNameSize = static_cast<uint32>(volumeAreaName.size());
+
+				WriteNavigationIdType(file, volumeId);
+				file.WriteType(&volume.height);
+				file.WriteType(&verticesCount);
+				for (const Vec3& vertex : volume.vertices)
+				{
+					file.WriteType(&vertex.x, 3);
+				}
+				file.WriteType(&volumeAreaNameSize);
+				file.WriteType(volumeAreaName.c_str(), volumeAreaNameSize);
+			}
 		}
 
 		// Saving number of agents
@@ -3356,14 +3468,14 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				file.Write(&totalMeshMemory, sizeof(totalMeshMemory));
 
 				// Saving mesh boundary id
-				uint32 boundaryIDuint32 = mesh.boundary;
 				/*
 				   Let's check if this boundary id matches the id of the
 				   volume stored in the volumes manager.
 				   It's an additional check for the consistency of the
 				   saved binary data.
 				 */
-				if (m_volumesManager.GetAreaID(mesh.name.c_str()) != mesh.boundary)
+
+				if (!m_volumes.validate(mesh.boundary) || m_volumesManager.GetAreaID(mesh.name.c_str()) != mesh.boundary)
 				{
 					CryMessageBox("Sandbox detected a possible data corruption during the save of the navigation mesh."
 					              "Trigger a full rebuild and re-export to engine to fix"
@@ -3372,20 +3484,8 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 	#ifdef SW_NAVMESH_USE_GUID
 				file.Write(&mesh.boundaryGUID, sizeof(mesh.boundaryGUID));
 	#else
-				file.Write(&(boundaryIDuint32), sizeof(boundaryIDuint32));
+				WriteNavigationIdType(file, mesh.boundary);
 	#endif
-
-				// Saving the volume used by the boundary
-				file.Write(&(volume.height), sizeof(volume.height));
-				uint32 totalVertices = volume.vertices.size();
-				file.Write(&totalVertices, sizeof(totalVertices));
-				MNM::BoundingVolume::Boundary::const_iterator vertIt = volume.vertices.begin();
-				MNM::BoundingVolume::Boundary::const_iterator vertEnd = volume.vertices.end();
-				for (; vertIt != vertEnd; ++vertIt)
-				{
-					const Vec3& vertex = *vertIt;
-					file.Write(&vertex, sizeof(vertex));
-				}
 
 				// Saving mesh exclusion shapes
 	#ifdef SW_NAVMESH_USE_GUID
@@ -3401,8 +3501,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
 				for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
 				{
-					uint32 exclusionIDuint32 = mesh.exclusions[exclusionCounter];
-					file.Write(&(exclusionIDuint32), sizeof(exclusionIDuint32));
+					WriteNavigationIdType(file, mesh.exclusions[exclusionCounter]);
 				}
 	#endif
 
