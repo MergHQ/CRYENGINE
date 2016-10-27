@@ -790,11 +790,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	m_spectacularKill.Init(this);
 	m_largeObjectInteraction.Init(this);
 
-	if (IsClient())
-	{
-		InitLocalPlayer();
-	}
-
 	// This must come after CActor::Init as it's that function that determines whether we're a player or an AI.
 	SelectMovementHierarchy();
 
@@ -807,16 +802,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	}
 
 	m_pickingUpCarryObject = false;
-
-	// IsClient should be trustworthy on player init these days, don't think AI
-	// needs a vehicle client, and remote representations of players shouldn't either
-	if(IsClient())
-	{
-		IVehicleSystem* pVehicleSystem = g_pGame->GetIGameFramework()->GetIVehicleSystem();
-		IVehicleClient *pVehicleClient = pVehicleSystem->GetVehicleClient();
-		m_pVehicleClient = static_cast<CVehicleClient*>(pVehicleClient);
-		assert(m_pVehicleClient);
-	}
 
 	if (IsPlayer())
 	{
@@ -1088,10 +1073,10 @@ void CPlayer::ReadDataFromXML(bool isClientReloading /*= false*/)
 
 void CPlayer::InitLocalPlayer()
 {
+	CRY_ASSERT(!m_pPlayerTypeComponent);
+
 	if (m_pPlayerTypeComponent)
-	{
 		return;
-	}
 
 	CActor::InitLocalPlayer();
 
@@ -1267,6 +1252,13 @@ void CPlayer::InitLocalPlayer()
 	{
 		pTeamVisManager->OnPlayerTeamChange(GetEntityId());
 	}
+
+	// Just create for local player instance, don't think AI needs a 
+	// vehicle client, and remote representations of players shouldn't either
+	IVehicleSystem* pVehicleSystem = g_pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleClient *pVehicleClient = pVehicleSystem->GetVehicleClient();
+	m_pVehicleClient = static_cast<CVehicleClient*>(pVehicleClient);
+	assert(m_pVehicleClient);
 }
 
 bool CPlayer::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
@@ -3725,7 +3717,7 @@ void CPlayer::Revive( EReasonForRevive reasonForRevive )
 		pCharacter->GetISkeletonPose()->SetDefaultPose();
 	}
 
-	if (isClient)
+	if (isClient && m_pPlayerTypeComponent)
 	{
 		//--- Ensure the close combat target is cleared to avoid being pulled towards him on respawn
 		g_pGame->GetAutoAimManager().SetCloseCombatSnapTarget(0, 0.f, 0.f);
@@ -4581,7 +4573,7 @@ void CPlayer::SetHealth(float health )
 // 				}
 			}
 		}
-		else if(isClient)
+		else if(isClient && m_pPlayerTypeComponent)
 		{
 			m_pPlayerTypeComponent->UpdatePlayerLowHealthStatus(oldHealth);
 		}
@@ -6744,7 +6736,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 
 		StateMachineHandleEventMovement( PLAYER_EVENT_SPECTATE );
 
-		if( gEnv->IsClient() && isLocalPlayer )
+		if( gEnv->IsClient() && isLocalPlayer && m_pPlayerTypeComponent)
 		{
 			g_pGame->GetUI()->ActivateDefaultState(); // should pick "mp_spectator" unless killcam or endgame etc.
 			SetClientSoundmood(ESoundmood_Spectating);
@@ -7337,7 +7329,7 @@ CPlayer::StagePlayer(bool bStage, SStagingParams* pStagingParams /* = 0 */)
 
 void CPlayer::ResetScreenFX()
 {
-	if (IsClient())
+	if (IsClient() && m_pPlayerTypeComponent)
 	{	
 		m_pPlayerTypeComponent->ResetScreenFX();
 	}

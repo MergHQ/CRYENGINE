@@ -3178,9 +3178,6 @@ void CGame::Shutdown()
 		SAFE_DELETE(m_pPlaylistManager);
 	}
 
-	if (m_pUIManager)
-		m_pUIManager->Shutdown();
-
 	CBullet::StaticShutdown();
 
 	CFrontEndModelCache::Allow3dFrontEndAssets(false, true);

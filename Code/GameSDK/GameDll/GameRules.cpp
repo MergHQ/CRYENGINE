@@ -1702,22 +1702,26 @@ void CGameRules::ProcessEvent( SEntityEvent& event)
 		if(gEnv->IsClient())
 		{
 			// Enabling of game type specific action maps must be done here instead of the Init() as it needs to happen after the CCET_DisableActionMap context task
-			IActionMapManager *pActionMapMan = g_pGame->GetIGameFramework()->GetIActionMapManager();
-			IActionMap *pAM = NULL;
-			pActionMapMan->EnableActionMap("multiplayer",bIsMultiplayer);
-			pActionMapMan->EnableActionMap("singleplayer",!bIsMultiplayer);
+			IActionMapManager* pActionMapManager = g_pGame->GetIGameFramework()->GetIActionMapManager();
+			IActionMap* pGameRulesActionMap = nullptr;
+
+			pActionMapManager->SetDefaultActionEntity(gEnv->pGameFramework->GetClientActorId(), true);
+
+			pActionMapManager->EnableActionMap("multiplayer", bIsMultiplayer);
+			pActionMapManager->EnableActionMap("singleplayer",!bIsMultiplayer);
+
 			if(bIsMultiplayer)
 			{
-				pAM=pActionMapMan->GetActionMap("multiplayer");
+				pGameRulesActionMap = pActionMapManager->GetActionMap("multiplayer");
 			}
 			else
 			{
-				pAM=pActionMapMan->GetActionMap("singleplayer");
+				pGameRulesActionMap = pActionMapManager->GetActionMap("singleplayer");
 			}
 
-			if(pAM)
+			if(pGameRulesActionMap)
 			{
-				pAM->SetActionListener(GetEntity()->GetId());
+				pGameRulesActionMap->SetActionListener(GetEntity()->GetId());
 			}
 		}
 
