@@ -749,7 +749,7 @@ void CItemSystem::SetActorItem(IActor* pActor, EntityId itemId, bool keepHistory
 		notifier->OnSetActorItem(pActor, pItem);
 	}
 
-	if (pItem == NULL && itemId != 0)
+	if (pItem == nullptr && itemId != INVALID_ENTITYID)
 	{
 #ifndef _RELEASE
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(itemId);

@@ -494,8 +494,8 @@ void CInventory::ProcessEvent(SEntityEvent& event)
 			else
 			{
 				// leaving game mode
-				if (m_stats.currentItemId != m_editorstats.currentItemId)
-					m_pGameFrameWork->GetIItemSystem()->SetActorItem(m_pActor, m_editorstats.currentItemId, false);
+				if (m_stats.currentItemId != INVALID_ENTITYID)
+					m_pGameFrameWork->GetIItemSystem()->SetActorItem(m_pActor, INVALID_ENTITYID, false);
 				m_stats = m_editorstats;
 
 				//Validate inventory, some things might have changed, like some FG removing items while in editor game
