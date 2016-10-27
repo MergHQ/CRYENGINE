@@ -815,13 +815,15 @@ void CView::CreateAudioListener()
 		SEntitySpawnParams oEntitySpawnParams;
 		oEntitySpawnParams.sName = "AudioListener";
 		oEntitySpawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioListener");
-		m_pAudioListener = gEnv->pEntitySystem->SpawnEntity(oEntitySpawnParams, true);
 
+		// We don't want the audio listener to serialize as the entity gets completely removed and recreated during save/load!
+		// NOTE: If we set ENTITY_FLAG_NO_SAVE *after* we spawn the entity, it will make it to m_dynamicEntities in GameSerialize.cpp
+		// (via CGameSerialize::OnSpawn) and GameSerialize will attempt to serialize it despite the flag with current (5.2.2) implementation
+		oEntitySpawnParams.nFlags = ENTITY_FLAG_TRIGGER_AREAS | ENTITY_FLAG_NO_SAVE;
+		oEntitySpawnParams.nFlagsExtended = ENTITY_FLAG_EXTENDED_AUDIO_LISTENER;
+		m_pAudioListener = gEnv->pEntitySystem->SpawnEntity(oEntitySpawnParams, true);
 		if (m_pAudioListener != nullptr)
 		{
-			// We don't want the audio listener to serialize as the entity gets completely removed and recreated during save/load!
-			m_pAudioListener->SetFlags(m_pAudioListener->GetFlags() | (ENTITY_FLAG_TRIGGER_AREAS | ENTITY_FLAG_NO_SAVE));
-			m_pAudioListener->SetFlagsExtended(m_pAudioListener->GetFlagsExtended() | ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
 			gEnv->pEntitySystem->AddEntityEventListener(m_pAudioListener->GetId(), ENTITY_EVENT_DONE, this);
 			CryFixedStringT<64> sTemp;
 			sTemp.Format("AudioListener(%d)", static_cast<int>(m_pAudioListener->GetId()));
