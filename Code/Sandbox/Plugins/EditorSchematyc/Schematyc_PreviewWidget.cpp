@@ -13,6 +13,10 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <QPropertyTree/QPropertyTree.h>
 
+#include "Objects/DisplayContext.h"
+#include "QViewportEvents.h"
+#include "IEditor.h"
+
 namespace Schematyc
 {
 const Vec3 CPreviewWidget::ms_defaultOrbitTarget = Vec3(0.0f, 0.0f, 1.0f);
@@ -25,6 +29,8 @@ CPreviewWidget::CPreviewWidget(QWidget* pParent)
 	m_pSplitter = new QSplitter(Qt::Horizontal, this);
 	m_pSettings = new QPropertyTree(this);
 	m_pViewport = new QViewport(gEnv, this);
+	m_pViewportAdapter.reset(new CDisplayViewportAdapter(m_pViewport));
+
 	m_pControlLayout = new QBoxLayout(QBoxLayout::LeftToRight);
 	m_pShowHideSettingsButton = new QPushButton(">> Show Settings", this);
 
@@ -37,6 +43,7 @@ CPreviewWidget::CPreviewWidget(QWidget* pParent)
 	m_viewportSettings.camera.moveSpeed = 0.2f;
 
 	connect(m_pViewport, SIGNAL(SignalRender(const SRenderContext &)), SLOT(OnRender(const SRenderContext &)));
+	connect(m_pViewport, SIGNAL(SignalMouse(const SMouseEvent&)), SLOT(OnMouse(const SMouseEvent&)));
 	connect(m_pShowHideSettingsButton, SIGNAL(clicked()), this, SLOT(OnShowHideSettingsButtonClicked()));
 }
 
@@ -213,6 +220,73 @@ void CPreviewWidget::OnRender(const SRenderContext& context)
 		};
 		pObject->VisitComponents(ObjectComponentConstVisitor::FromLambda(visitComponent));
 	}
+
+	DisplayContext dc;
+	dc.SetView(m_pViewportAdapter.get());
+
+	m_gizmoManager.Display(dc);
+}
+
+// TODO: Either move it somewhere reusable or completely remove IEditor or QViewport style events
+void CPreviewWidget::IEditorEventFromQViewportEvent(const SMouseEvent& qEvt, CPoint& p, EMouseEvent& evt, int& flags)
+{
+	p.x = qEvt.x;
+	p.y = qEvt.y;
+	flags = 0;
+
+	if (qEvt.control)
+	{
+		flags |= MK_CONTROL;
+	}
+	if (qEvt.shift)
+	{
+		flags |= MK_SHIFT;
+	}
+
+	if (qEvt.type == SMouseEvent::MOVE)
+	{
+		evt = eMouseMove;
+	}
+	else if (qEvt.type == SMouseEvent::PRESS)
+	{
+		if (qEvt.button == SMouseEvent::BUTTON_LEFT)
+		{
+			evt = eMouseLDown;
+		}
+		else if (qEvt.button == SMouseEvent::BUTTON_RIGHT)
+		{
+			evt = eMouseRDown;
+		}
+		else if (qEvt.button == SMouseEvent::BUTTON_MIDDLE)
+		{
+			evt = eMouseMDown;
+		}
+	}
+	else if (qEvt.type == SMouseEvent::RELEASE)
+	{
+		if (qEvt.button == SMouseEvent::BUTTON_LEFT)
+		{
+			evt = eMouseLUp;
+		}
+		else if (qEvt.button == SMouseEvent::BUTTON_RIGHT)
+		{
+			evt = eMouseRUp;
+		}
+		else if (qEvt.button == SMouseEvent::BUTTON_MIDDLE)
+		{
+			evt = eMouseMUp;
+		}
+	}
+}
+
+void CPreviewWidget::OnMouse(const SMouseEvent& qEvt)
+{
+	CPoint p;
+	EMouseEvent evt;
+	int flags;
+	IEditorEventFromQViewportEvent(qEvt, p, evt, flags);
+
+	m_gizmoManager.HandleMouseInput(m_pViewportAdapter.get(), evt, p, flags);
 }
 
 void CPreviewWidget::OnShowHideSettingsButtonClicked()
