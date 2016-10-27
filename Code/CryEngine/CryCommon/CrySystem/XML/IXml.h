@@ -344,6 +344,15 @@ public:
 		return true;
 	}
 
+	//! Gets string attribute.
+	bool getAttr(const char* key, string& value) const
+	{
+		if (!haveAttr(key))
+			return false;
+		value = getAttr(key);
+		return true;
+	}
+
 	//! Sets GUID attribute.
 	void setAttr(const char* key, REFGUID value)
 	{
