@@ -5265,7 +5265,7 @@ void CRenderMesh::DrawImmediately()
 
 	if (FAILED(hr))
 	{
-		assert(!"CRenderMesh::DrawImmediately failed");
+		// can fail due to asynchronous shader compilation.
 		return;
 	}
 
