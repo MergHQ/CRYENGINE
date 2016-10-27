@@ -1661,18 +1661,6 @@ void SRenderThread::RC_PopVP()
 		gRenDev->FX_PopVP();
 }
 
-void SRenderThread::RC_FlushTextMessages()
-{
-	if (!IsRenderThread())
-	{
-		LOADINGLOCK_COMMANDQUEUE
-		byte* p = AddCommand(eRC_FlushTextMessages, 0);
-		EndCommand(p);
-	}
-	else
-		gRenDev->RT_FlushTextMessages();
-}
-
 void SRenderThread::RC_FlushTextureStreaming(bool bAbort)
 {
 	if (!IsRenderThread())
@@ -3059,9 +3047,6 @@ void SRenderThread::ProcessCommands()
 		case eRC_PopVP:
 			gRenDev->FX_PopVP();
 			break;
-		case eRC_FlushTextMessages:
-			gRenDev->RT_FlushTextMessages();
-			break;
 		case eRC_FlushTextureStreaming:
 			{
 				bool bAbort = ReadCommand<DWORD>(n) != 0;
@@ -3217,10 +3202,6 @@ void SRenderThread::ProcessCommands()
 			{
 				if (m_eVideoThreadMode == eVTM_Disabled)
 					gRenDev->RT_RenderDebug();
-				else
-				{
-					gRenDev->RT_FlushTextMessages();
-				}
 			}
 			break;
 

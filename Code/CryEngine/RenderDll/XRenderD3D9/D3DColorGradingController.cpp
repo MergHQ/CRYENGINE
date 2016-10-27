@@ -377,8 +377,6 @@ void CColorGradingControllerD3D::DrawDebugInfo() const
 	else
 		DrawLayer(x, y, w, h, m_pChartStatic, 1, PathUtil::GetFile(m_pChartStatic->GetName()));
 
-	m_pRenderer->RT_FlushTextMessages();
-
 	m_pRenderer->Set2DMode(false, 0, 0);
 #endif // #if !defined(_RELEASE)
 }

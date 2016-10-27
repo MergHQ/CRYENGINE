@@ -4113,8 +4113,6 @@ void CD3D9Renderer::DrawAllDynTextures(const char* szFilter, const bool bLogName
 	}
 
 	Set2DMode(false, m_width, m_height);
-
-	RT_FlushTextMessages();
 #endif
 }
 

@@ -2093,7 +2093,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void                     SetMaterialColor(float r, float g, float b, float a) = 0;
 
 	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, char* text, ColorF& color, float fScale) = 0;
-	virtual void                     FlushTextMessages() = 0;
 
 	// NOTE: deprecated
 	virtual void ClearTargetsImmediately(uint32 nFlags) = 0;

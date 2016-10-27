@@ -1108,7 +1108,6 @@ void CD3D9Renderer::PostMeasureOverdraw()
 			//WriteXY(nX+10, nY+10, 1, 1,  1,1,1,1, "-- 10 instructions --");
 		}
 		Set2DMode(false, 1, 1);
-		RT_FlushTextMessages();
 	}
 #endif //_RELEASE
 }
@@ -1138,8 +1137,6 @@ void CD3D9Renderer::DrawTexelsPerMeterInfo()
 		IRenderAuxText::Draw2dLabel(x - 2, y - 20, 1.2f, color, false, "0");
 		IRenderAuxText::Draw2dLabel(x + w / 2 - 5, y - 20, 1.2f, color, false, "%.0f", CV_r_TexelsPerMeter);
 		IRenderAuxText::Draw2dLabel(x + w - 50, y - 20, 1.2f, color, false, ">= %.0f", CV_r_TexelsPerMeter * 2.0f);
-
-		RT_FlushTextMessages();
 	}
 #endif
 }
@@ -4121,16 +4118,6 @@ void CD3D9Renderer::RT_EndFrame()
 	//char str[1024];
 	//cry_sprintf(str, "Frame: %d", m_RP.m_TI[m_RP.m_nProcessThreadID].m_nFrameUpdateID);
 	//PrintToScreen(5,50, 16, str);
-
-	if (!IsRecursiveRenderView())
-	{
-		if (gEnv->pConsole)
-		{
-			//PROFILE_LABEL_PUSH_SKIP_GPU("Text");
-			RT_FlushTextMessages();
-			//PROFILE_LABEL_POP_SKIP_GPU("Text");
-		}
-	}
 
 	//PROFILE_LABEL_POP_SKIP_GPU("Frame");
 

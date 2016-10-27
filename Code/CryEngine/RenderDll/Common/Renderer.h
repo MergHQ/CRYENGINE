@@ -582,7 +582,6 @@ public:
 	virtual void RT_ShutDown(uint32 nFlags) = 0;
 	virtual bool RT_CreateDevice() = 0;
 	virtual void RT_Reset() = 0;
-	virtual void RT_FlushTextMessages();
 	virtual void RT_SetCull(int nMode) = 0;
 	virtual void RT_SetScissor(bool bEnable, int x, int y, int width, int height) = 0;
 	virtual void RT_SelectGPU(int nGPU) = 0;
@@ -845,9 +844,6 @@ public:
 	                       const float projMatrix[16],
 	                       const int viewport[4]) override = 0;
 	virtual int  UnProjectFromScreen(float sx, float sy, float sz, float* px, float* py, float* pz) override = 0;
-
-	virtual void FlushTextMessages() override;
-	void         FlushTextMessages(CTextMessages& messages, bool reset);
 
 	// Shadow Mapping
 	virtual void OnEntityDeleted(IRenderNode* pRenderNode) override = 0;
@@ -1569,7 +1565,6 @@ protected:
 	float                                      m_pixelAspectRatio;
 	float                                      m_shadowJittering;
 	StaticArray<int, MAX_GSM_LODS_NUM>         m_CachedShadowsResolution;
-	CTextMessages                              m_TextMessages[RT_COMMAND_BUF_COUNT]; // [ThreadID], temporary stores 2d/3d text messages to render them at the end of the frame
 
 	CSkinningDataPool                          m_SkinningDataPool[3];        // Tripple Buffered for motion blur
 	std::array<std::vector<SSkinningData*>, 3> m_computeSkinningData;

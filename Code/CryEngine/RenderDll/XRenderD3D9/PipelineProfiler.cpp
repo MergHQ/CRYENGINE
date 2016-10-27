@@ -540,8 +540,6 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 		IRenderAuxText::Draw2dLabel(xpos + 450, ypos, 1.5f, &color.r, false, "%i", section.numDIPs);
 		IRenderAuxText::Draw2dLabel(xpos + 500, ypos, 1.5f, &color.r, false, "%i", section.numPolys);
 	}
-
-	rd->RT_FlushTextMessages();
 #endif
 }
 
@@ -679,8 +677,6 @@ void CRenderPipelineProfiler::DisplayOverviewStats()
 			DebugUI::DrawTableColumn(0.05f, 0.27f, i, "%-20s  %4.1f ms  %2.0f %%", statsGroups[i].name, stats.gpuTimeSmoothed, stats.gpuTimeSmoothed / targetFrameTime * 100.0f);
 		}
 	}
-
-	rd->RT_FlushTextMessages();
 #endif
 }
 

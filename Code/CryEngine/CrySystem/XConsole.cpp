@@ -1622,8 +1622,6 @@ void CXConsole::Draw()
 	if (m_pRenderer->GetIRenderAuxGeom())
 		m_pRenderer->GetIRenderAuxGeom()->Flush();
 
-	m_pRenderer->FlushTextMessages();
-
 	m_pRenderer->PushProfileMarker("DISPLAY_CONSOLE");
 
 	if (m_nScrollPos <= 0)

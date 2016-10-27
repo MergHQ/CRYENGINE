@@ -50,7 +50,6 @@ enum ERenderCommand
 	eRC_BeginFrame,
 	eRC_EndFrame,
 	eRC_ClearBuffersImmediately,
-	eRC_FlushTextMessages,
 	eRC_FlushTextureStreaming,
 	eRC_ReleaseSystemTextures,
 	eRC_PreloadTextures,
@@ -578,7 +577,6 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ReleaseDeviceTexture(CTexture * pTex);
 	void RC_PrecacheResource(ITexture * pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1);
 	void RC_ClearTargetsImmediately(int8 nType, uint32 nFlags, const ColorF &vColor, float depth);
-	void RC_FlushTextMessages();
 	void RC_FlushTextureStreaming(bool bAbort);
 	void RC_ReleaseSystemTextures();
 	void RC_AuxFlush(IRenderAuxGeomImpl * pAux, SAuxGeomCBRawDataPackaged & data, size_t begin, size_t end, bool reset);
