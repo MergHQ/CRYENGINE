@@ -31,6 +31,9 @@ struct ICodeCheckpointMgr
 	//! Used by code checkpoints to register themselves with the manager.
 	virtual void RegisterCheckpoint(CCodeCheckpoint* pCheckpoint) = 0;
 
+	//! Manually unregister checkpoints when their module gets invalidated
+	virtual void UnRegisterCheckpoint(const char* szName) = 0;
+
 	//! Performs a (possibly) expensive lookup by name for a given checkpoint index.
 	//! \return Index to blank record if not found.
 	virtual size_t GetCheckpointIndex(const char* name) = 0;
