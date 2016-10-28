@@ -244,6 +244,7 @@ void IDebugCallStack::WriteLineToLog(const char* format, ...)
 
 void IDebugCallStack::Screenshot(const char* szFileName)
 {
+#if !defined(DEDICATED_SERVER)
 	WriteLineToLog("Attempting to create error screenshot \"%s\"", szFileName);
 
 	static int g_numScreenshots = 0;
@@ -262,6 +263,7 @@ void IDebugCallStack::Screenshot(const char* szFileName)
 	{
 		WriteLineToLog("Ignoring multiple calls to Screenshot");
 	}
+#endif //!defined(DEDICATED_SERVER)
 }
 
 //#endif

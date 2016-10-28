@@ -5308,6 +5308,10 @@ void CSystem::CreateSystemVars()
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR2("sys_highrestimer", &g_cvars.sys_highrestimer, 0, VF_REQUIRE_APP_RESTART, "Enables high resolution system timer.");
 #endif
+
+#if CRY_PLATFORM_WINDOWS
+	((DebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

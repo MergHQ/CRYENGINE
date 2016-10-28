@@ -93,6 +93,8 @@
 #include "ExtensionSystem/CryPluginManager.h"
 #include "ProjectManager/ProjectManager.h"
 
+#include "DebugCallStack.h"
+
 WATERMARKDATA(_m);
 
 #if USE_STEAM
@@ -487,6 +489,10 @@ CSystem::~CSystem()
 
 	// The FrameProfileSystem should clean up as late as possible as some modules create profilers during shutdown!
 	m_FrameProfileSystem.Done();
+
+#if CRY_PLATFORM_WINDOWS
+	((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -608,6 +614,10 @@ void CSystem::ShutDown()
 			SAFE_RELEASE(m_env.pProfileLogSystem);
 			m_env.pLog->FlushAndClose();
 			SAFE_RELEASE(m_env.pLog);   // creates log backup
+
+	#if CRY_PLATFORM_WINDOWS
+			((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
+	#endif
 
 	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 			return; //safe clean return

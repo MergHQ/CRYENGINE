@@ -20,6 +20,11 @@
 	#include "DurangoDebugCallstack.h"
 #endif
 
+#ifdef CRY_USE_CRASHRPT
+	#include <CrashRpt.h>
+extern bool g_bCrashRptInstalled;
+#endif // CRY_USE_CRASHRPT
+
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
@@ -60,12 +65,29 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 		break;
-	case DLL_THREAD_ATTACH:
-
-		break;
-	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 		break;
+
+	//////////////////////////////////////////////////////////////////////////
+	case DLL_THREAD_ATTACH:
+	#ifdef CRY_USE_CRASHRPT
+		if (g_bCrashRptInstalled)
+		{
+			crInstallToCurrentThread2(0);
+		}
+	#endif //CRY_USE_CRASHRPT
+		break;
+
+	//////////////////////////////////////////////////////////////////////////
+	case DLL_THREAD_DETACH:
+	#ifdef CRY_USE_CRASHRPT
+		if (g_bCrashRptInstalled)
+		{
+			crUninstallFromCurrentThread();
+		}
+	#endif //CRY_USE_CRASHRPT
+		break;
+
 	}
 	//	int sbh = _set_sbh_threshold(1016);
 

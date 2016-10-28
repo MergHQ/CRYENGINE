@@ -17,6 +17,10 @@ set (BinaryFileList_Win64
 
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
+
+	${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe
+	${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini
+
 	)
 
 set (BinaryFileList_Win32
@@ -24,6 +28,10 @@ set (BinaryFileList_Win32
 	${CryEngine_DIR}/Code/SDKs/Mono/bin/x86/mono-2.0.dll
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/Debuggers/x86/dbghelp.dll"
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
+
+	${SDK_DIR}/CrashRpt/1403/bin/CrashSender1403.exe
+	${SDK_DIR}/CrashRpt/1403/bin/crashrpt_lang.ini
+
 	)
 
 set (BinaryFileList_LINUX64

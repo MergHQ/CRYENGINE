@@ -81,6 +81,10 @@ if(WIN32 OR WIN64)
 	option(OPTION_CRYMONO "C# support" OFF)
 endif()
 
+if (WIN32 OR WIN64)
+	option(OPTION_ENABLE_CRASHRPT "Enable CrashRpt crash reporting library" ON)
+endif()
+
 # Print current project settings
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 MESSAGE(STATUS "CMAKE_GENERATOR = ${CMAKE_GENERATOR}")
