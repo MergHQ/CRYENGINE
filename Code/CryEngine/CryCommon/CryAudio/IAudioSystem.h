@@ -641,7 +641,11 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> : publ
 
 	virtual ~SAudioObjectRequestData() override = default;
 
-	CAudioObjectTransformation const& transformation;
+	// We opt for copying the transformation instead of storing a reference in order to prevent a potential dangling-reference bug.
+	// Callers might pass a vector or matrix to the constructor, which implicitly convert to CAudioObjectTransformation.
+	// Implicit conversion introduces a temporary object, and a reference could potentially dangle, as the temporary gets destroyed before this request gets passed to CAudioSystem::PushRequest,
+	// where it gets ultimately copied for internal processing.
+	CAudioObjectTransformation const transformation;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -775,8 +779,12 @@ struct SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> : 
 
 	virtual ~SAudioListenerRequestData() override = default;
 
-	CAudioObjectTransformation const& transformation;
-	CATLListener* const               pListener;
+	// We opt for copying the transformation instead of storing a reference in order to prevent a potential dangling-reference bug.
+	// Callers might pass a vector or matrix to the constructor, which implicitly convert to CAudioObjectTransformation.
+	// Implicit conversion introduces a temporary object, and a reference could potentially dangle, as the temporary gets destroyed before this request gets passed to CAudioSystem::PushRequest,
+	// where it gets ultimately copied for internal processing.
+	CAudioObjectTransformation const transformation;
+	CATLListener* const              pListener;
 };
 
 //////////////////////////////////////////////////////////////////////////
