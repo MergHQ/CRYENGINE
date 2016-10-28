@@ -37,8 +37,6 @@ set(CLANG_COMMON_FLAGS
 	-fvisibility=hidden
 	-fPIC
 
-	-msse2
-
 	-D_HAS_C9X
 	-Wno-write-strings
 	-Wno-logical-op-parentheses
@@ -55,6 +53,10 @@ set(CLANG_COMMON_FLAGS
 	-funwind-tables
 	-gfull
 )
+
+if(NOT ANDROID)
+set(CLANG_COMMON_FLAGS ${CLANG_COMMON_FLAGS} -msse2)
+endif()
 
 string(REPLACE ";" " " CLANG_COMMON_FLAGS "${CLANG_COMMON_FLAGS}")
 

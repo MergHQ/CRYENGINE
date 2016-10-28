@@ -51,6 +51,12 @@ def build(bld):
 		orbis_release_lib = [ 'SceGnm_lto', 'SceGnmx_lto' ],
 	)
 
+	#androidDefines = [ 'GLEW_MX', 'DXGL_ANDROID_GL' ]
+	#androidFilelist = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_egl.waf_files']
+	
+	androidFilelist = ['mesh_baker.waf_files', 'opengl_loader_gles2.waf_files', 'opengl_loader_egl.waf_files']
+	androidDefines = [ 'GLEW_MX', 'OPENGL_ES' ]
+
 	bld.CryEngineModule(
 		target      = 'CryRenderOpenGL',
 		vs_filter   = 'CryEngine',
@@ -79,14 +85,14 @@ def build(bld):
 		linux_x64_libpath  = [ Path('Code/Tools/HLSLCrossCompiler/lib/linux')],
 		linux_module_extensions = [ 'sdl2' ],
 
-		android_file_list  = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_egl.waf_files'],
+		android_file_list  = androidFilelist,
 		android_includes   = [ Path('Code/CryEngine/CrySystem'),
 		                       Path('Code/SDKs/SDL2/include/linux'),
 		                       Path('Code/SDKs/SDL2/include/SDL'),
 		                       Path('Code/Tools/SDLExtension/src/include'),
 		                       Path('Code/Tools/HLSLCrossCompiler/include')
 		                     ],
-		android_defines    = [ 'GLEW_MX', 'DXGL_ANDROID_GL' ]
+		android_defines    = androidDefines
 	)
 
 	# CryRenderD3D12 can only be built using VS 2015.

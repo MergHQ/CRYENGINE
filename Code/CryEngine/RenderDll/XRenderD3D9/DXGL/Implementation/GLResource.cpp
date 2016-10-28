@@ -1777,6 +1777,11 @@ SShaderViewPtr SBuffer::CreateUnorderedAccessView(EGIFormat eFormat, uint32 uFir
 		return NULL;
 	}
 
+	if (spTextureBufferView == nullptr) 
+	{
+		return nullptr;
+	}
+
 	SShaderImageViewPtr spImageView(new SShaderImageView(SShaderImageViewConfiguration(eImageFormat, 0, -1, GL_READ_WRITE)));
 	if (!spImageView->Init(spTextureBufferView, pContext))
 		return NULL;
@@ -2636,17 +2641,46 @@ STexturePtr CreateTexture2D(const D3D11_TEXTURE2D_DESC& kDesc, const D3D11_SUBRE
 #if !DXGL_SUPPORT_CUBEMAP_ARRAYS
 			if (bArray) { DXGL_NOT_IMPLEMENTED; return NULL; }
 			STexturePtr spTexture(
-			  new STexture(
-			    kDesc.Width, kDesc.Height, 1,
-			    GL_TEXTURE_CUBE_MAP,
-			    eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
-#else
+				new STexture(
+					kDesc.Width, kDesc.Height, 1,
+					GL_TEXTURE_CUBE_MAP,
+					eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
+#elif DXGLES //HACK add cubemap array support with EXT_texture_cube_map_array & windows
+
+	#ifdef CRY_PLATFORM_WINDOWS
+			STexturePtr spTexture = STexturePtr(
+				new STexture(
+					kDesc.Width, kDesc.Height, 1,
+					bArray ? GL_TEXTURE_CUBE_MAP_ARRAY : GL_TEXTURE_CUBE_MAP,
+					eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
+	#else
+			STexturePtr spTexture;
+			if (DXGL_GL_EXTENSION_SUPPORTED(EXT_texture_cube_map_array))
+			{
+				spTexture = STexturePtr(
+					new STexture(
+						kDesc.Width, kDesc.Height, 1,
+						bArray ? GL_TEXTURE_CUBE_MAP_ARRAY_EXT : GL_TEXTURE_CUBE_MAP,
+						eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
+			}
+			else {
+				if (bArray) { DXGL_NOT_IMPLEMENTED; return NULL; }
+				spTexture = (
+					new STexture(
+						kDesc.Width, kDesc.Height, 1,
+						GL_TEXTURE_CUBE_MAP,
+						eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
+			}
+	#endif
+
+#else 
 			STexturePtr spTexture(
-			  new STexture(
-			    kDesc.Width, kDesc.Height, 1,
-			    bArray ? GL_TEXTURE_CUBE_MAP_ARRAY : GL_TEXTURE_CUBE_MAP,
-			    eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
+				new STexture(
+					kDesc.Width, kDesc.Height, 1,
+					bArray ? GL_TEXTURE_CUBE_MAP_ARRAY : GL_TEXTURE_CUBE_MAP,
+					eGIFormat, GetNumMipLevels(kDesc), kDesc.ArraySize));
 #endif
+
 
 			InitializeTexture2D<SCubePartition>(spTexture, bArray, bStaging, pInitialData, kDesc.CPUAccessFlags, pContext, pFormatInfo);
 
@@ -3164,7 +3198,7 @@ SQueryPtr CreateQuery(const D3D11_QUERY_DESC& kDesc, CContext*)
 		break;
 #endif //DXGL_SUPPORT_TIMER_QUERIES
 	default:
-		DXGL_NOT_IMPLEMENTED
+		//DXGL_NOT_IMPLEMENTED
 		break;
 	}
 

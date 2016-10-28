@@ -1688,8 +1688,13 @@ void CD3D9Renderer::FX_LinearizeDepth()
 	FX_SetState(GS_NODEPTHTEST);
 
 	D3DShaderResource* depthReadOnlySRV = gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->GetDeviceDepthReadOnlySRV(0, -1, false);
-	m_DevMan.BindSRV(CDeviceManager::TYPE_PS, &depthReadOnlySRV, 16, 1);
 
+
+	gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->ApplyTexture(0);
+#if defined(OPENGL_ES)
+	auto ts = CTexture::GetTexState(STexState(FILTER_POINT, true));
+	gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->ApplySamplerState(0, eHWSC_Pixel, ts);
+#endif
 	static CCryNameR pParamName0("NearProjection");
 
 	I3DEngine* pEng = gEnv->p3DEngine;

@@ -127,10 +127,17 @@ void CTiledShading::CreateResources()
 	{
 		m_clipVolumeInfoBuf.Create(MaxNumClipVolumes, sizeof(STiledClipVolumeInfo), DXGI_FORMAT_UNKNOWN, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
 	}
+#if defined(OPENGL_ES)
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_R16G16B16A16F;
+	ETEX_Format textureAtlasFormatSpot = eTF_EAC_R11;
+#else
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_BC6UH;
+	ETEX_Format textureAtlasFormatSpot = eTF_BC4U;
+#endif
 
 	if (!m_specularProbeAtlas.texArray)
 	{
-		m_specularProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledSpecProbeTexArr", eTT_Cube, SpecProbeSize, SpecProbeSize, AtlasArrayDim, IntegerLog2(SpecProbeSize) - 1, 0, eTF_BC6UH);
+		m_specularProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledSpecProbeTexArr", eTT_Cube, SpecProbeSize, SpecProbeSize, AtlasArrayDim, IntegerLog2(SpecProbeSize) - 1, 0, textureAtlasFormatSpecDiff);
 		m_specularProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_specularProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -144,7 +151,7 @@ void CTiledShading::CreateResources()
 
 	if (!m_diffuseProbeAtlas.texArray)
 	{
-		m_diffuseProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledDiffuseProbeTexArr", eTT_Cube, DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim, 1, 0, eTF_BC6UH);
+		m_diffuseProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledDiffuseProbeTexArr", eTT_Cube, DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim, 1, 0, textureAtlasFormatSpecDiff);
 		m_diffuseProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_diffuseProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -159,7 +166,7 @@ void CTiledShading::CreateResources()
 	if (!m_spotTexAtlas.texArray)
 	{
 		// Note: BC4 has 4x4 as lowest mipmap
-		m_spotTexAtlas.texArray = CTexture::CreateTextureArray("$TiledSpotTexArr", eTT_2D, SpotTexSize, SpotTexSize, AtlasArrayDim, IntegerLog2(SpotTexSize) - 1, 0, eTF_BC4U);
+		m_spotTexAtlas.texArray = CTexture::CreateTextureArray("$TiledSpotTexArr", eTT_2D, SpotTexSize, SpotTexSize, AtlasArrayDim, IntegerLog2(SpotTexSize) - 1, 0, textureAtlasFormatSpot);
 		m_spotTexAtlas.items.resize(AtlasArrayDim);
 
 		if (m_spotTexAtlas.texArray->GetFlags() & FT_FAILED)

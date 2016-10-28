@@ -4265,15 +4265,22 @@ CGpuBuffer::STrackedGpuBuffer::STrackedGpuBuffer(CGpuBuffer* pGpuBuffer, const v
 		if (pGpuBuffer->m_flags & DX11BUF_BIND_SRV)
 		{
 			ID3D11ShaderResourceView* pSrv;
-			gcpRendD3D->GetDevice().CreateShaderResourceView(m_pBuffer, &pGpuBuffer->m_srvDesc, &pSrv);
-			m_pSRV.Assign_NoAddRef(pSrv);
+			hr = gcpRendD3D->GetDevice().CreateShaderResourceView(m_pBuffer, &pGpuBuffer->m_srvDesc, &pSrv);
+			if (SUCCEEDED(hr)) 
+			{
+				m_pSRV.Assign_NoAddRef(pSrv);
+			}
 		}
 
 		if (pGpuBuffer->m_flags & DX11BUF_BIND_UAV)
 		{
 			ID3D11UnorderedAccessView* pUav;
-			gcpRendD3D->GetDevice().CreateUnorderedAccessView(m_pBuffer, &pGpuBuffer->m_uavDesc, &pUav);
-			m_pUAV.Assign_NoAddRef(pUav);
+			hr = gcpRendD3D->GetDevice().CreateUnorderedAccessView(m_pBuffer, &pGpuBuffer->m_uavDesc, &pUav);
+			if (SUCCEEDED(hr))
+			{
+				m_pUAV.Assign_NoAddRef(pUav);
+			}
+			
 		}
 	}
 }

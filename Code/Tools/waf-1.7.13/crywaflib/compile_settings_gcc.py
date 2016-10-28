@@ -197,6 +197,7 @@ def load_profile_gcc_settings(conf):
 	
 	COMPILER_FLAGS = [
 		'-O2',
+		'-fno-strict-aliasing'
 		]
 	
 	v['CFLAGS'] += COMPILER_FLAGS

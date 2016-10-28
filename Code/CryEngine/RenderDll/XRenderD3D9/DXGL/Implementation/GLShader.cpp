@@ -660,6 +660,86 @@ bool InitializeShaderReflectionFromInput(SShaderReflection* pReflection, const v
 #endif
 }
 
+
+#if defined(OPENGL_ES)
+bool ReplaceEntries(const std::string* stringsToSearch, const std::string* stringsToReplace, size_t count, std::string& out, const GLchar* in, size_t inStrLen)
+{
+	out = std::string(in, 0, inStrLen);
+	bool linesChanged = false;
+	for (int j = 0; j < count; ++j)
+	{
+		const std::string& searchStr = stringsToSearch[j];
+		const std::string& replaceString = stringsToReplace[j];
+		size_t np = out.find(searchStr);
+		while (np != string::npos)
+		{
+			linesChanged = true;
+			out.replace(np, searchStr.size(), replaceString);
+			np = out.find(searchStr);
+		}
+	}
+	return linesChanged;
+}
+
+
+
+bool CompileShaderFromSources(GLuint* puName, const GLchar* aszSources[], GLint aiSourceLengths[], uint32 uNumSources, GLenum eGLShaderType)
+{
+
+	//GLESHACK Fix shader compilation error where numerical values are out of bounds or floating point vector has for some reason been interpreted as vector of integers                                                     
+	const std::string searchStrings[] = { "ivec4(4290838528, 4290838528, 4290838528, 0)", "4294967232", "4290772992", "2147483648", "4294967295" };
+	const std::string replaceStrings[] = { "vec4(0.000000000, 0.00000000, 0.0000000,0.0)", "65535", "65535", "65535", "65535" };
+
+
+	std::string sources[4];
+	const GLchar* sourcesC[4];
+	GLint srcLengths[4];
+	for (int i = 0; i < uNumSources; ++i)
+	{
+
+		const GLchar* src = aszSources[i];
+
+		bool linesChanged = ReplaceEntries(searchStrings, replaceStrings, sizeof(searchStrings) / sizeof(std::string), sources[i], src, aiSourceLengths[i]);
+
+		sourcesC[i] = sources[i].c_str();
+		srcLengths[i] = sources[i].size();
+	}
+
+
+
+
+	if (SupportSeparablePrograms())
+	{
+		*puName = glCreateShaderProgramv(eGLShaderType, uNumSources, sourcesC);
+
+		if ((*puName) == 0)
+			return false;
+
+		if (!VerifyProgramStatus(*puName, GL_LINK_STATUS))
+			return false;
+	}
+	else
+	{
+		*puName = glCreateShader(eGLShaderType);
+		if ((*puName) == 0)
+			return false;
+		glShaderSource(*puName, uNumSources, sourcesC, srcLengths);
+		glCompileShader(*puName);
+
+		if (!VerifyShaderStatus(*puName, GL_COMPILE_STATUS))
+			return false;
+
+#if defined(glReleaseShaderCompiler)
+		DXGL_TODO("Check whether this is actually useful")
+			glReleaseShaderCompiler();
+#endif //defined(glReleaseShaderCompiler)
+	}
+	return true;
+}
+
+#else
+
+
 bool CompileShaderFromSources(GLuint* puName, const GLchar* aszSources[], GLint aiSourceLengths[], uint32 uNumSources, GLenum eGLShaderType)
 {
 	if (SupportSeparablePrograms())
@@ -685,11 +765,12 @@ bool CompileShaderFromSources(GLuint* puName, const GLchar* aszSources[], GLint 
 
 #if defined(glReleaseShaderCompiler)
 		DXGL_TODO("Check whether this is actually useful")
-		glReleaseShaderCompiler();
+			glReleaseShaderCompiler();
 #endif //defined(glReleaseShaderCompiler)
 	}
 	return true;
 }
+#endif
 
 bool FindShaderSymbolByType(const uint32* puSymbols, uint32 uNumSymbols, SYMBOL_TYPE eType, uint32* puID, uint32* puValue)
 {
