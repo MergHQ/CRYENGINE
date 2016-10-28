@@ -92,14 +92,14 @@ ILINE uint64 countTrailingZeros64(uint64 x)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if CRY_COMPILER_GCC || CRY_COMPILER_CLANG
 
-inline uint32 circularShift(uint32 nbits, uint32 i)
+inline uint32 circularShift(uint32 shiftBits, uint32 value)
 {
-	return (i << nbits) | (i >> (32 - nbits));
+	return (value << shiftBits) | (value >> (32 - shiftBits));
 }
 
 #else  // Windows implementation
 
-	#define circularShift(nbits, i) _rotl(nbits, i)
+	#define circularShift(shiftBits, value) _rotl(value, shiftBits)
 
 #endif
 
