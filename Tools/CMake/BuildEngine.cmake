@@ -31,7 +31,6 @@ endif()
 
 
 include_directories("${CryEngine_DIR}/Code/CryEngine/CryCommon")
-#include_directories("${CryEngine_DIR}/Code/CryEngine/CryAction")
 include_directories("${CryEngine_DIR}/Code/Libs/yasli")
 include_directories("${SDK_DIR}/yasli")
 include_directories("${SDK_DIR}/boost")
@@ -46,6 +45,7 @@ add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryAudioSystem/implementation
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio")
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer")
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise")
+add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryAudioSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem")
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryCommon" "${CMAKE_BINARY_DIR}/CryEngine/CryCommon")
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryDynamicResponseSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryDynamicResponseSystem")
 add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/CryEntitySystem" "${CMAKE_BINARY_DIR}/CryEngine/CryEntitySystem")
@@ -60,7 +60,6 @@ add_subdirectory ("${CryEngine_DIR}/Code/CryEngine/RenderDll/XRenderD3D9" "${CMA
 
 #libs
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/bigdigits" "${CMAKE_BINARY_DIR}/Libs/bigdigits")
-#add_subdirectory ("${CryEngine_DIR}/Code/Libs/curl" "${CMAKE_BINARY_DIR}/Libs/curl")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/expat" "${CMAKE_BINARY_DIR}/Libs/expat")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/freetype" "${CMAKE_BINARY_DIR}/Libs/freetype")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/jsmn" "${CMAKE_BINARY_DIR}/Libs/jsmn")
@@ -69,15 +68,13 @@ add_subdirectory ("${CryEngine_DIR}/Code/Libs/lz4" "${CMAKE_BINARY_DIR}/Libs/lz4
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/lzma" "${CMAKE_BINARY_DIR}/Libs/lzma")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/lzss" "${CMAKE_BINARY_DIR}/Libs/lzss")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/md5" "${CMAKE_BINARY_DIR}/Libs/md5")
-#add_subdirectory ("${CryEngine_DIR}/Code/Libs/strophe" "${CMAKE_BINARY_DIR}/Libs/strophe")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/tomcrypt" "${CMAKE_BINARY_DIR}/Libs/tomcrypt")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/yasli" "${CMAKE_BINARY_DIR}/Libs/yasli")
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/zlib" "${CMAKE_BINARY_DIR}/Libs/zlib")
 
 #extensions
-#include_directories("${CryEngine_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface")
-add_subdirectory ("${CryEngine_DIR}/Code/CryExtensions/CryLink" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink")
-add_subdirectory ("${CryEngine_DIR}/Code/CryExtensions/CrySchematyc" "${CMAKE_BINARY_DIR}/CryExtensions/CrySchematyc")
+#add_subdirectory ("${CryEngine_DIR}/Code/CryExtensions/CryLink" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink")
+#add_subdirectory ("${CryEngine_DIR}/Code/CryExtensions/CrySchematyc" "${CMAKE_BINARY_DIR}/CryExtensions/CrySchematyc")
 
 #plugins
 # Mandatory plugin, contains entities required by the engine

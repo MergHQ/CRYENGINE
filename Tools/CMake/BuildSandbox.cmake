@@ -4,20 +4,6 @@ set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
 #modules
 include("${CryEngine_DIR}/Tools/CMake/modules/FbxSdk.cmake")
 
-# Find Qt before including any plugin subdirectories
-if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-	set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64)
-elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-	set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2013_64)
-elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-	set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2012_64)
-endif()
-set(Qt5_DIR ${QT_DIR})
-
-find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
-set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
-set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")
-
 #---
 
 set(EDITOR_DIR "${CryEngine_DIR}/Code/Sandbox/EditorQt" )

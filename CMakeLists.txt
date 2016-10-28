@@ -240,6 +240,22 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/SDL2_mixer.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/Boost.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/ncurses.cmake)
 
+if (OPTION_SANDBOX AND WIN64)
+	# Find Qt before including any plugin subdirectories
+	if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64)
+	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
+		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2013_64)
+	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
+		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2012_64)
+	endif()
+	set(Qt5_DIR ${QT_DIR})
+
+	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
+	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
+	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")
+endif()
+
 # CryEngine
 include ("${CryEngine_DIR}/Tools/CMake/BuildEngine.cmake")
 
@@ -253,7 +269,7 @@ if (WIN32)
 endif (WIN32)
 
 # CryExtensions
-add_subdirectory(Code/CryExtensions/CryLobby)
+add_subdirectory(Code/CryExtensions)
 
 if (PLUGIN_SCHEMATYC)
 	add_subdirectory(Code/CryPlugins/CrySensorSystem/Module)
