@@ -113,7 +113,7 @@ macro(set_solution_folder folder target)
 endmacro()
 
 MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
-	target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DCODE_BASE_FOLDER=\"${CMAKE_SOURCE_DIR}/Code/\"")
+	target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DCODE_BASE_FOLDER=\"${CryEngine_DIR}/Code/\"")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ${COMMON_LIBS} )
 	IF(DURANGO)
 		set_target_properties_for_durango(${TargetProject})
@@ -176,7 +176,7 @@ function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 			           COMMAND ${CMAKE_COMMAND} -DUBER_FILE=${unit_build_file} 
 				   			    -DSRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 							    -DSRC_FILES="${unit_sources}"
-							    -P ${CMAKE_SOURCE_DIR}/Tools/CMake/write_uber_file.cmake)
+							    -P "${CryEngine_DIR}/Tools/CMake/write_uber_file.cmake")
 
 		# Group Uber files in solution project
 		source_group("UBER FILES" FILES ${unit_build_file})
@@ -469,9 +469,9 @@ macro(set_editor_flags)
 	target_include_directories( ${THIS_PROJECT} PRIVATE
 		${EDITOR_DIR}
 		${EDITOR_DIR}/Include	
-		${CMAKE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 		
-		${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorInterface
-		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
+		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon 		
+		${CryEngine_DIR}/Code/Sandbox/EditorInterface
+		${CryEngine_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
 		${CRY_LIBS_DIR}/yasli
@@ -492,9 +492,9 @@ endmacro()
 
 macro(set_editor_module_flags)
 	target_include_directories( ${THIS_PROJECT} PRIVATE
-		${CMAKE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 		
-		${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorInterface
-		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
+		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon 		
+		${CryEngine_DIR}/Code/Sandbox/EditorInterface
+		${CryEngine_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
 		${CRY_LIBS_DIR}/yasli
@@ -564,11 +564,11 @@ macro(set_rc_flags)
 		-DNOT_USE_CRY_MEMORY_MANAGER
 	)
 	target_include_directories( ${THIS_PROJECT} PRIVATE 
-		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
+		${CryEngine_DIR}/Code/CryEngine/CryCommon 
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
 		${CRY_LIBS_DIR}/yasli
-		${CMAKE_SOURCE_DIR}/Code/Sandbox/Plugins/EditorCommon 
+		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon 
 	)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli )
 endmacro()
@@ -582,7 +582,7 @@ macro(set_pipeline_flags)
 		-DNOT_USE_CRY_MEMORY_MANAGER
 	)
 	target_include_directories( ${THIS_PROJECT} PRIVATE 
-		${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon 
+		${CryEngine_DIR}/Code/CryEngine/CryCommon 
 	)
 endmacro()
 
@@ -590,8 +590,8 @@ function(CryPipelineModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	set_rc_flags()
-	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/rc)
-	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/rc)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CryEngine_DIR}/Tools/rc)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CryEngine_DIR}/Tools/rc)
 	if(WIN32)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
 	endif()
@@ -702,7 +702,7 @@ macro(process_csharp output_module)
 			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${f}
 			DEPENDS ${swig_deps}
 		)
-	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
+	set_property(DIRECTORY ${CryEngine_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
 		set(secondary_defs -DSWIG_CXX_EXCLUDE_SWIG_INTERFACE_FUNCTIONS -DSWIG_CSHARP_EXCLUDE_STRING_HELPER -DSWIG_CSHARP_EXCLUDE_EXCEPTION_HELPER)
 		target_sources(${THIS_PROJECT} PRIVATE ${f_cpp} ${f_h})
 		EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER(${f_cpp})

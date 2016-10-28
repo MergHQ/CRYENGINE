@@ -1008,7 +1008,7 @@ if(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE jsmn)
 endif()
 
-target_include_directories(CryAction INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction> $<INSTALL_INTERFACE:include/CryAction>)
+target_include_directories(CryAction INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/CryAction>)
 
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.hpp")
