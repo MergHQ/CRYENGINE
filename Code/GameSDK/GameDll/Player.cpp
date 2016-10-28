@@ -1088,6 +1088,8 @@ void CPlayer::InitLocalPlayer()
 
 	m_pPlayerTypeComponent = new CLocalPlayerComponent(*this);
 
+	ReloadClientXmlData();
+
 	GetGameObject()->SetUpdateSlotEnableCondition( this, 0, eUEC_WithoutAI );
 
 	IInteractor * pInteractor = GetInteractor();

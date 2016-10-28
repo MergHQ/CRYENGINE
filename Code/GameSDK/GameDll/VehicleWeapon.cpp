@@ -331,9 +331,10 @@ void CVehicleWeapon::UpdateFPView(float frameTime)
 //---------------------------------------------------------------------
 void CVehicleWeapon::OnVehicleEvent(EVehicleEvent event, const SVehicleEventParams& params)
 {
-	CRY_ASSERT(GetOwnerId() == g_pGame->GetIGameFramework()->GetClientActorId());
 	if (event == eVE_ViewChanged)
 	{
+		CRY_ASSERT(GetOwnerId() == g_pGame->GetIGameFramework()->GetClientActorId());
+
 		const bool isThirdPerson = params.bParam;
 		AudioCache(true, isThirdPerson);	//enable what is currently needed (automatically uncache previously unneeded
 	}
