@@ -293,6 +293,8 @@ if (OPTION_SANDBOX AND WIN64)
 	include ("${CryEngine_DIR}/Tools/CMake/BuildSandbox.cmake")
 endif()
 
+# UQS: Optional plugin; option PLUGIN_CRYUQS to enable/disable it resides in its own sub directory
+add_subdirectory(Code/CryPlugins/CryUQS)
 
 if(WIN64 AND EXISTS "${CryEngine_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
 	option(OPTION_SHADERCACHEGEN "Build the shader cache generator." OFF)
