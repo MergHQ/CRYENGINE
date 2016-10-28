@@ -51,7 +51,6 @@
       "CryCore/FunctorBaseMember.h",
       "CryCore/functor.h",
       "CryCore/Base64.h",
-      "CryCore/MetaUtils.h",
       "CryCore/BoostHelpers.h",
       "CryCore/CrtDebugStats.h",
       "CryCore/CryCustomTypes.h",
