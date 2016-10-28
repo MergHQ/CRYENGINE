@@ -13,6 +13,8 @@ extern AudioParameterToIndexMap g_parameterToIndex;
 //////////////////////////////////////////////////////////////////////////
 CAudioObject::CAudioObject(AudioObjectId const _id)
 	: m_id(_id)
+	, m_obstruction(0.0f)
+	, m_occlusion(0.0f)
 {
 	ZeroStruct(m_attributes);
 
@@ -104,6 +106,8 @@ bool CAudioObject::SetAudioEvent(CAudioEvent* const pAudioEvent)
 		{
 			pAudioEvent->TrySetEnvironment(environmentPair.first, environmentPair.second);
 		}
+
+		pAudioEvent->SetObstructionOcclusion(m_obstruction, m_occlusion);
 
 		fmodResult = pAudioEvent->GetInstance()->start();
 		ASSERT_FMOD_OK;
@@ -348,6 +352,9 @@ void CAudioObject::SetObstructionOcclusion(float const obstruction, float const 
 	{
 		pAudioEvent->SetObstructionOcclusion(obstruction, occlusion);
 	}
+
+	m_obstruction = obstruction;
+	m_occlusion = occlusion;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -356,4 +363,6 @@ void CAudioObject::Reset()
 	m_audioEvents.clear();
 	m_audioParameters.clear();
 	m_audioSwitches.clear();
+	m_obstruction = 0.0f;
+	m_occlusion = 0.0f;
 }

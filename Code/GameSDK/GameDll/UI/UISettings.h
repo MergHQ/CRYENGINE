@@ -21,37 +21,38 @@
 struct SNullCVar : public ICVar
 {
 	virtual ~SNullCVar() {}
-	virtual void Release() { return; }
-	virtual int GetIVal() const { return 0; }
-	virtual int64 GetI64Val() const { return 0; }
-	virtual float GetFVal() const { return 0; }
-	virtual const char *GetString() const { return "NULL"; }
+	virtual void Release() override { return; }
+	virtual int GetIVal() const override { return 0; }
+	virtual int64 GetI64Val() const override { return 0; }
+	virtual float GetFVal() const override { return 0; }
+	virtual const char *GetString() const override { return "NULL"; }
 #if defined( DEDICATED_SERVER )
-	virtual void SetDataProbeString( const char* pDataProbeString )  { return; }
+	virtual void SetDataProbeString(const char* pDataProbeString) override { return; }
 #endif
-	virtual const char *GetDataProbeString() const { return "NULL"; }
-	virtual void Set(const char* s) { return; }
-	virtual void ForceSet(const char* s) { return; }
-	virtual void Set(const float f) { return; }
-	virtual void Set(const int i) { return; }
-	virtual void ClearFlags (int flags) { return; }
-	virtual int GetFlags() const { return 0; }
-	virtual int SetFlags( int flags ) { return 0; }
-	virtual int GetType() { return 0; }
-	virtual const char* GetName() const { return "NULL"; }
-	virtual const char* GetHelp() { return "NULL"; }
-	virtual bool IsConstCVar() const { return 0; }
+	virtual const char *GetDataProbeString() const override { return "NULL"; }
+	virtual void Set(const char* s) override { return; }
+	virtual void ForceSet(const char* s) override { return; }
+	virtual void Set(const float f) override { return; }
+	virtual void Set(const int i) override { return; }
+	virtual void ClearFlags (int flags) override { return; }
+	virtual int GetFlags() const override { return 0; }
+	virtual int SetFlags(int flags) override { return 0; }
+	virtual int GetType() override { return 0; }
+	virtual const char* GetName() const override { return "NULL"; }
+	virtual const char* GetHelp() override { return "NULL"; }
+	virtual bool IsConstCVar() const override { return 0; }
 
-	virtual void SetOnChangeCallback( ConsoleVarFunc pChangeFunc ){return;}
-	virtual void AddOnChangeFunctor( const SFunctor& pChangeFunctor) {return;}
-	virtual bool RemoveOnChangeFunctor(const uint64 nElement) {return true;}
-	virtual uint64 GetNumberOfOnChangeFunctors()const {return 0;}
-	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex)const {static SFunctor oDummy;return oDummy;};
-	virtual ConsoleVarFunc GetOnChangeCallback() const {return NULL;}
+	virtual void SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override { return; }
+	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) override { return 0; }
+	virtual bool RemoveOnChangeFunctor(const uint64 nElement) override { return true; }
+	virtual bool RemoveOnChangeFunctor(const SFunctor& changeFunctor) override { return true; }
+	virtual uint64 GetNumberOfOnChangeFunctors() const override { return 0; }
+	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override { static SFunctor oDummy; return oDummy; }
+	virtual ConsoleVarFunc GetOnChangeCallback() const override { return nullptr; }
 
-	virtual void GetMemoryUsage( class ICrySizer* pSizer ) const { return; }
-	virtual int GetRealIVal() const { return 0; }
-	virtual void DebugLog( const int iExpectedValue, const EConsoleLogMode mode ) const {}
+	virtual void GetMemoryUsage( class ICrySizer* pSizer ) const override { return; }
+	virtual int GetRealIVal() const override { return 0; }
+	virtual void DebugLog(const int iExpectedValue, const EConsoleLogMode mode) const override {}
 
 	static SNullCVar* Get()
 	{

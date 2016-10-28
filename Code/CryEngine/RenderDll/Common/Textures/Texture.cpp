@@ -3796,6 +3796,7 @@ bool CFlashTextureSourceBase::CreateTexFromFlashFile(const char* name)
 		if (m_pElement)
 		{
 			CFlashPlayerInstanceWrapperUIElement* pInstanceWrapper = new CFlashPlayerInstanceWrapperUIElement();
+			m_pElement->SetVisible(true);
 			pInstanceWrapper->SetUIElement(m_pElement);
 			pInstanceWrapper->Activate(true, this);
 			m_pFlashPlayer = pInstanceWrapper;
