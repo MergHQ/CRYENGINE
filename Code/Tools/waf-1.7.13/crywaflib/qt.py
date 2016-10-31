@@ -62,7 +62,7 @@ def get_qt_root_path(self):
 	elif msvc_version == 12:
 		qt_base = 'msvc2013_64'
 	elif msvc_version == 14:
-		qt_base = 'msvc2015_64'
+		qt_base = 'msvc2015_64/Qt'
 	else:
 		self.fatal('[ERROR] Unable to find QT build to use for MSVC %d' % msvc_version)
 

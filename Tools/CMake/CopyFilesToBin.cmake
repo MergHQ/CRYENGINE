@@ -13,7 +13,7 @@ set (BinaryFileList_Win64
 
 	${CryEngine_DIR}/Code/SDKs/OSVR/dll/*.dll
 
-	${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/bin/*.dll
+	${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/bin/*.dll
 
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
 	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
@@ -82,8 +82,8 @@ macro(copy_binary_files_to_target)
 	endif()
 
 	if (WIN64) 
-		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/plugins/platforms/*.dll platforms)
-		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/plugins/imageformats/*.dll imageformats)
+		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
+		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
 
 		deploy_runtime_files("${CryEngine_DIR}/Code/SDKs/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
 	elseif(WIN32)

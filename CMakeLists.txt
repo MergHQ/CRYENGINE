@@ -243,7 +243,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/ncurses.cmake)
 if (OPTION_SANDBOX AND WIN64)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64)
+		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt)
 	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 		set(QT_DIR ${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2013_64)
 	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
