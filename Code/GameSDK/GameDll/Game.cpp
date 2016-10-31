@@ -116,8 +116,6 @@
 #include "Network/Squad/SquadManager.h"
 #include "Network/Lobby/PlaylistActivityTracker.h"
 
-#include "Utility/ManualFrameStep.h"
-
 #include "GameCodeCoverage/GameCodeCoverageManager.h"
 #include "GameCodeCoverage/GameCodeCoverageGUI.h"
 
@@ -524,11 +522,8 @@ CGame::CGame()
 #if CRY_PLATFORM_DURANGO
 	m_userChangedDoSignOutAndIn(false),
 #endif
-	m_pMovingPlatformMgr(NULL)
-#if ENABLE_MANUAL_FRAME_STEP
-	, m_pManualFrameStep(new CManualFrameStepManager())
-#endif
-	, m_stereoOutputFunctorId(0)
+	m_pMovingPlatformMgr(NULL),
+	m_stereoOutputFunctorId(0)
 {
 	static_assert(eCGE_Last <= 64, "Unexpected enum value!");
 
@@ -681,9 +676,6 @@ CGame::~CGame()
 	SAFE_DELETE(m_pMovingPlatformMgr);
 	SAFE_DELETE(m_pMatchMakingTelemetry);
 	SAFE_DELETE(m_pWorldBuilder);
-#if ENABLE_MANUAL_FRAME_STEP
-	SAFE_DELETE(m_pManualFrameStep);
-#endif
 
 	if (m_pLobbySessionHandler != NULL)
 	{
@@ -2442,14 +2434,6 @@ void CGame::UpdateSaveIcon()
 int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WARNING(6262)
 {
 	CryProfile::ProfilerFrameStart(gEnv->nMainFrameID);
-
-#if ENABLE_MANUAL_FRAME_STEP
-	const bool shouldBlock = m_pManualFrameStep->Update();
-	if (shouldBlock)
-	{
-		return 1;
-	}
-#endif
 
 #if defined(USER_timf)
 	if (m_needMultiplayerFrontEndAssets)

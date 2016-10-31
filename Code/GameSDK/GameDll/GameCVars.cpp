@@ -1932,8 +1932,6 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(g_minPlayersForRankedGame, 4, VF_NET_SYNCED, "Amount of players required before a game actually starts");
 	REGISTER_CVAR(g_gameStartingMessageTime, 10.f, 0, "Time between messages telling the player that the game hasn't started yet");
 
-	REGISTER_CVAR(g_manualFrameStepFrequency, 0.0f, VF_NULL, "manually step through frames with a fixed time step");
-
 	g_presaleURL=REGISTER_STRING("g_presaleURL","http://www.mycrysis.com/redeemcode/",VF_CHEAT|VF_READONLY, "url to redirect presale users to");
 
 	g_messageOfTheDay=REGISTER_STRING("g_messageOfTheDay","",VF_INVISIBLE, " message of the day");
@@ -3321,7 +3319,6 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_hud3d_cameraOffsetZ", true);
 	pConsole->UnregisterVariable("g_hud3D_cameraOverride", true);
 
-	pConsole->UnregisterVariable("g_manualFrameStepFrequency", true);
 	pConsole->UnregisterVariable("g_presaleURL", true);
 	pConsole->UnregisterVariable("g_messageOfTheDay", true);
 	pConsole->UnregisterVariable("g_serverImageUrl", true);

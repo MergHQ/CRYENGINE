@@ -107,6 +107,7 @@ struct ITimeDemoRecorder;
 class CSegmentedWorld;
 
 class CNetMessageDistpatcher;
+class CManualFrameStepController;
 
 class CCryAction :
 	public IGameFramework
@@ -268,7 +269,7 @@ public:
 
 	virtual ISharedParamsManager* GetISharedParamsManager();
 
-	virtual IGame* GetIGame();
+	virtual IGame*                GetIGame();
 
 	virtual float                 GetLoadSaveDelay() const { return m_lastSaveLoad; }
 
@@ -285,42 +286,43 @@ protected:
 
 public:
 
-	static CCryAction*        GetCryAction() { return m_pThis; }
+	static CCryAction*          GetCryAction() { return m_pThis; }
 
-	bool                      ControlsEntity(EntityId id) const;
+	bool                        ControlsEntity(EntityId id) const;
 
-	virtual CGameServerNub*   GetGameServerNub();
-	CGameClientNub*           GetGameClientNub();
-	CGameContext*             GetGameContext();
-	CScriptBind_Vehicle*      GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
-	CScriptBind_VehicleSeat*  GetVehicleSeatScriptBind() { return m_pScriptBindVehicleSeat; }
-	CScriptBind_Inventory*    GetInventoryScriptBind()   { return m_pScriptInventory; }
-	CPersistantDebug*         GetPersistantDebug()       { return m_pPersistantDebug; }
-	CSignalTimer*             GetSignalTimer();
-	CRangeSignaling*          GetRangeSignaling();
-	virtual IPersistantDebug* GetIPersistantDebug();
-	virtual IGameStatsConfig* GetIGameStatsConfig();
-	CColorGradientManager*    GetColorGradientManager() const { return m_pColorGradientManager; }
+	virtual CGameServerNub*     GetGameServerNub();
+	CGameClientNub*             GetGameClientNub();
+	CGameContext*               GetGameContext();
+	CScriptBind_Vehicle*        GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
+	CScriptBind_VehicleSeat*    GetVehicleSeatScriptBind() { return m_pScriptBindVehicleSeat; }
+	CScriptBind_Inventory*      GetInventoryScriptBind()   { return m_pScriptInventory; }
+	CPersistantDebug*           GetPersistantDebug()       { return m_pPersistantDebug; }
+	CSignalTimer*               GetSignalTimer();
+	CRangeSignaling*            GetRangeSignaling();
+	virtual IPersistantDebug*   GetIPersistantDebug();
+	virtual IGameStatsConfig*   GetIGameStatsConfig();
+	CColorGradientManager*      GetColorGradientManager() const { return m_pColorGradientManager; }
 
-	virtual void              AddBreakEventListener(IBreakEventListener* pListener);
-	virtual void              RemoveBreakEventListener(IBreakEventListener* pListener);
+	virtual void                AddBreakEventListener(IBreakEventListener* pListener);
+	virtual void                RemoveBreakEventListener(IBreakEventListener* pListener);
 
-	void                      OnBreakEvent(uint16 uBreakEventIndex);
-	void                      OnPartRemoveEvent(int32 iPartRemoveEventIndex);
+	void                        OnBreakEvent(uint16 uBreakEventIndex);
+	void                        OnPartRemoveEvent(int32 iPartRemoveEventIndex);
 
-	virtual void              RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
-	virtual void              UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
+	virtual void                RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
+	virtual void                UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
 
-	CDialogSystem*            GetDialogSystem()             { return m_pDialogSystem; }
-	CTimeOfDayScheduler*      GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
+	CDialogSystem*              GetDialogSystem()             { return m_pDialogSystem; }
+	CTimeOfDayScheduler*        GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
 
-	CGameStatsConfig*         GetGameStatsConfig();
-	IGameStatistics*          GetIGameStatistics();
+	CGameStatsConfig*           GetGameStatsConfig();
+	IGameStatistics*            GetIGameStatistics();
 
-	IGameSessionHandler*      GetIGameSessionHandler();
-	void                      SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
+	IGameSessionHandler*        GetIGameSessionHandler();
+	void                        SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
 
-	CNetMessageDistpatcher*   GetNetMessageDispatcher() { return m_pNetMsgDispatcher; }
+	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
+	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
 
 	//	INetQueryListener* GetLanQueryListener() {return m_pLanQueryListener;}
 	bool                          LoadingScreenEnabled() const;
@@ -591,12 +593,12 @@ private:
 	TFrameworkExtensions m_frameworkExtensions;
 
 	// console variables
-	ICVar *m_pEnableLoadingScreen;
-	ICVar *m_pCheats;
-	ICVar *m_pShowLanBrowserCVAR;
-	ICVar *m_pDebugSignalTimers;
-  ICVar *m_pDebugRangeSignaling;
-	ICVar *m_pAsyncLevelLoad;
+	ICVar* m_pEnableLoadingScreen;
+	ICVar* m_pCheats;
+	ICVar* m_pShowLanBrowserCVAR;
+	ICVar* m_pDebugSignalTimers;
+	ICVar* m_pDebugRangeSignaling;
+	ICVar* m_pAsyncLevelLoad;
 
 	bool   m_bShowLanBrowser;
 	//
@@ -616,14 +618,14 @@ private:
 
 	struct SExternalGameLibrary
 	{
-		string dllName;
-		HMODULE dllHandle;
+		string        dllName;
+		HMODULE       dllHandle;
 		IGameStartup* pGameStartup;
-		IGame* pGame;
+		IGame*        pGame;
 
 		SExternalGameLibrary() : dllName(""), dllHandle(0), pGameStartup(nullptr), pGame(nullptr) {}
 		bool IsValid() const { return (pGameStartup != nullptr && pGame != nullptr); }
-		void Reset() { dllName = ""; dllHandle = 0; pGameStartup = nullptr; pGame = nullptr; }
+		void Reset()         { dllName = ""; dllHandle = 0; pGameStartup = nullptr; pGame = nullptr; }
 	};
 
 	struct SLocalAllocs
@@ -666,17 +668,18 @@ private:
 	} m_connectRepeatedly;
 #endif
 
-	float                   m_lastSaveLoad;
-	float                   m_lastFrameTimeUI;
+	float                       m_lastSaveLoad;
+	float                       m_lastFrameTimeUI;
 
-	bool                    m_pbSvEnabled;
-	bool                    m_pbClEnabled;
-	uint32                  m_PreUpdateTicks;
+	bool                        m_pbSvEnabled;
+	bool                        m_pbClEnabled;
+	uint32                      m_PreUpdateTicks;
 
-	CNetMessageDistpatcher* m_pNetMsgDispatcher;
-	SExternalGameLibrary    m_externalGameLibrary;
+	CNetMessageDistpatcher*     m_pNetMsgDispatcher;
+	CManualFrameStepController* m_pManualFrameStepController;
+	SExternalGameLibrary        m_externalGameLibrary;
 
-	CTimeValue              m_levelStartTime;
+	CTimeValue                  m_levelStartTime;
 };
 
 #endif //__CRYACTION_H__

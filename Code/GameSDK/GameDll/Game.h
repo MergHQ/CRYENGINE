@@ -52,12 +52,6 @@
 	#define ENABLE_CONSOLE_GAME_DEBUG_COMMANDS 0
 #endif
 
-#ifndef _RELEASE
-	#define ENABLE_MANUAL_FRAME_STEP 1
-#else
-	#define ENABLE_MANUAL_FRAME_STEP 0
-#endif
-
 #define USE_REGION_FILTER 1
 #define MAX_LOCAL_USERS   4
 
@@ -161,7 +155,6 @@ class CStatsEntityIdRegistry;
 
 class CMovingPlatformMgr;
 class CGamePhysicsSettings;
-class CManualFrameStepManager;
 
 namespace Graphics
 {
@@ -1025,10 +1018,6 @@ private:
 	DeferredKills m_deferredKills;
 #if CRY_PLATFORM_DURANGO
 	bool          m_userChangedDoSignOutAndIn;
-#endif
-
-#if ENABLE_MANUAL_FRAME_STEP
-	CManualFrameStepManager* m_pManualFrameStep;
 #endif
 
 	uint64                   m_stereoOutputFunctorId;

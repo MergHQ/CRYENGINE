@@ -964,8 +964,6 @@ struct SCVars
 	float pl_legs_colliders_dist;
 	float pl_legs_colliders_scale;
 
-	float g_manualFrameStepFrequency;
-
 	SPowerSprintParams	 pl_power_sprint;
 	SJumpAirControl pl_jump_control;
 	SPlayerHealth pl_health;

@@ -195,6 +195,7 @@ extern "C" IGameStartup* CreateGameStartup();
 	#include "PlayerProfiles/PlayerProfileImplNoSave.h"
 #endif
 #include "Network/NetMsgDispatcher.h"
+#include "ManualFrameStep.h"
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
@@ -365,7 +366,8 @@ CCryAction::CCryAction()
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
-	m_pNetMsgDispatcher(0)
+	m_pNetMsgDispatcher(0),
+	m_pManualFrameStepController(nullptr)
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
@@ -668,7 +670,7 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		paramCheck.AddParam("record");
 		paramCheck.AddParam("server");
 		paramCheck.AddParam("nonblocking"); //If this is set, map load and player connection become non-blocking operations.
-		paramCheck.AddParam("nb"); //This flag previously made initial server connection non-blocking. This is now always enabled.
+		paramCheck.AddParam("nb");          //This flag previously made initial server connection non-blocking. This is now always enabled.
 		paramCheck.AddParam("x");
 		//
 		for (int i = 2; i < args->GetArgCount(); i++)
@@ -1925,10 +1927,10 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	// Create Schematyc framework
 	if (Schematyc::CreateFramework(static_cast<IGameFramework*>(this)))
 	{
-#if defined(USE_SCHEMATYC_STD_ENV)
+	#if defined(USE_SCHEMATYC_STD_ENV)
 		// Create Schematyc standard environment
 		Schematyc::CreateSTDEnv(static_cast<IGameFramework*>(this));
-#endif
+	#endif
 	}
 #endif
 
@@ -2055,6 +2057,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
+	m_pManualFrameStepController = new CManualFrameStepController();
 
 	if (gEnv->pRenderer)
 	{
@@ -2095,7 +2098,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 		if (strlen(gameDLLName) == 0)
 			return false;
 
-		HMODULE hGameDll   = 0;
+		HMODULE hGameDll = 0;
 
 #if !defined(_LIB)
 		hGameDll = CryLoadLibrary(gameDLLName);
@@ -2174,7 +2177,7 @@ int CCryAction::Run(const char* szAutoStartLevelName)
 	return 1;
 #endif
 
-	for (;;)
+	for (;; )
 	{
 		if (!Update(true, 0))
 		{
@@ -2221,33 +2224,46 @@ int CCryAction::Update(bool haveFocus, unsigned int updateFlags)
 #endif
 	}
 
-	int returnCode  = 1;
-	const bool bRun = PreUpdate(haveFocus, updateFlags);
+	bool bBlockUpdate = false;
 
-	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
+	if (m_pManualFrameStepController)
 	{
-		returnCode = pGame->Update(haveFocus, updateFlags);
+		const auto manualStepResult = m_pManualFrameStepController->Update();
+		bBlockUpdate = (manualStepResult == EManualFrameStepResult::Block);
 	}
 
-	PostUpdate(haveFocus, updateFlags);
+	bool bRun = bBlockUpdate;
+	int gameUpdateResult = 1;
 
-/*
-	if (!m_fullScreenCVarSetup && gEnv->pConsole)
+	if (!bBlockUpdate)
 	{
-		ICVar* pVar = gEnv->pConsole->GetCVar("r_Fullscreen");
-		if (pVar)
+		bRun = PreUpdate(haveFocus, updateFlags);
+
+		if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 		{
-			pVar->SetOnChangeCallback(FullScreenCVarChanged);
-			m_fullScreenCVarSetup = true;
+			gameUpdateResult = pGame->Update(haveFocus, updateFlags);
 		}
+
+		PostUpdate(haveFocus, updateFlags);
 	}
-*/
+
+	/*
+	   if (!m_fullScreenCVarSetup && gEnv->pConsole)
+	   {
+	    ICVar* pVar = gEnv->pConsole->GetCVar("r_Fullscreen");
+	    if (pVar)
+	    {
+	      pVar->SetOnChangeCallback(FullScreenCVarChanged);
+	      m_fullScreenCVarSetup = true;
+	    }
+	   }
+	 */
 
 #if ENABLE_AUTO_TESTER
 	s_autoTesterSingleton.Update();
 #endif
 
-	return (bRun && returnCode > 0) ? 1 : 0;
+	return (bRun && (gameUpdateResult > 0)) ? 1 : 0;
 }
 
 //------------------------------------------------------------------------
@@ -2441,9 +2457,9 @@ bool CCryAction::CompleteInit()
 #if defined(CRY_UNIT_TESTING)
 	if (CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager())
 	{
-#if defined(_LIB)
+	#if defined(_LIB)
 		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
-#endif
+	#endif
 
 		const ICmdLineArg* pSkipUnitTest = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests");
 		if (!pSkipUnitTest)
@@ -2649,6 +2665,7 @@ void CCryAction::ShutdownEngine()
 		SAFE_DELETE(m_pAIProxyManager);
 	}
 
+	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
 
 	ReleaseExtensions();

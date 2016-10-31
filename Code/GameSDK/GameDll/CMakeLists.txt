@@ -957,8 +957,6 @@ add_sources("CryGameSDKDLL_uber_22.cpp"
 	SOURCE_GROUP "Utility"
 		"StatsAgentPipe.cpp"
 		"StatsAgentPipe.h"
-		"Utility/ManualFrameStep.h"
-		"Utility/ManualFrameStep.cpp"
 )
 
 add_sources("CryGameSDKDLL_uber_23.cpp"

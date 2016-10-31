@@ -49,6 +49,7 @@
 #include "NetDebug.h"
 
 #include "NetMsgDispatcher.h"
+#include "ManualFrameStep.h"
 
 #define VERBOSE_TRACE_CONTEXT_SPAWNS 0
 
@@ -2271,6 +2272,8 @@ void CGameContext::DefineContextProtocols(IProtocolBuilder* pBuilder, bool serve
 	CCryAction* cca = CCryAction::GetCryAction();
 	if (cca->GetNetMessageDispatcher())
 		cca->GetNetMessageDispatcher()->DefineProtocol(pBuilder);
+	if (cca->GetManualFrameStepController())
+		cca->GetManualFrameStepController()->DefineProtocol(pBuilder);
 }
 
 void CGameContext::PlaybackBreakage(int breakId, INetBreakagePlaybackPtr pBreakage)
