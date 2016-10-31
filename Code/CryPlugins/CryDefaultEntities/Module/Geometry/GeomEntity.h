@@ -9,6 +9,7 @@ public:
 	{
 		eProperty_Model = 0,
 		eProperty_PhysicalizationType,
+		eProperty_ReceiveCollisionEvents,
 		eProperty_Mass,
 		eProperty_Hide,
 
@@ -31,7 +32,8 @@ public:
 	{
 		eOutputPort_OnHide = 0,
 		eOutputPort_OnUnHide,
-		eOutputPort_OnCollision
+		eOutputPort_OnCollision,
+		eOutputPort_CollisionSurfaceName
 	};
 
 	enum EPhysicalizationType

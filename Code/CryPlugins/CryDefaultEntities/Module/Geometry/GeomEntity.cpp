@@ -24,6 +24,7 @@ class CGeomEntityRegistrator
 
 		RegisterEntityPropertyObject(pPropertyHandler, "Geometry", "object_Model", "", "Sets the object of the entity");
 		RegisterEntityPropertyEnum(pPropertyHandler, "Physicalize", "", "1", "Determines the physicalization type of the entity - None, Static or Rigid (movable)", 0, 2);
+		RegisterEntityProperty<bool>(pPropertyHandler, "ReceiveCollisionEvents", "", "0", "Whether or not the entity should receive and report on collision events, for example to activate flownode output ports");
 		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "1", "Sets the mass of the entity", 0.00001f, 100000.f);
 		RegisterEntityProperty<bool>(pPropertyHandler, "Hide", "", "0", "Sets the visibility of the entity");
 
@@ -45,7 +46,8 @@ class CGeomEntityRegistrator
 
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnHide"));
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnUnHide"));
-		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnCollision"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("OnCollision"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<string>("CollisionSurfaceName"));
 
 		pFlowNodeFactory->Close();
 	}
@@ -63,13 +65,6 @@ void CGeomEntity::PostInit(IGameObject *pGameObject)
 	CNativeEntityBase::PostInit(pGameObject);
 
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_CASTSHADOW);
-
-	// Make sure we get logged collision events
-	// Note the difference between immediate (directly on the physics thread) and logged (delayed to run on main thread) physics events.
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
-
-	const int requiredEvents[] = { eGFE_OnCollision };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 }
 
 void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
@@ -78,6 +73,13 @@ void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
 	{
 		// Collision info can be retrieved using the event pointer
 		EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
+
+		ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+		if(ISurfaceType* pSurfaceType = pSurfaceTypeManager->GetSurfaceType(physCollision->idmat[1]))
+		{
+			string surfaceTypeName = pSurfaceType->GetName();
+			ActivateFlowNodeOutput(eOutputPort_CollisionSurfaceName, TFlowInputData(surfaceTypeName));
+		}
 
 		if (IEntity* pOtherEntity = gEnv->pEntitySystem->GetEntityFromPhysics(physCollision->pEntity[1]))
 		{
@@ -139,6 +141,23 @@ void CGeomEntity::OnResetState()
 		physicalizationParams.mass = GetPropertyFloat(eProperty_Mass);
 
 		GetEntity()->Physicalize(physicalizationParams);
+
+		bool bReceiveCollisionEvents = GetPropertyBool(eProperty_ReceiveCollisionEvents);
+
+		// Make sure we get logged collision events
+		// Note the difference between immediate (directly on the physics thread) and logged (delayed to run on main thread) physics events.
+		GetGameObject()->EnablePhysicsEvent(bReceiveCollisionEvents, eEPE_OnCollisionLogged);
+
+		const int requiredEvents[] = { eGFE_OnCollision };
+
+		if (bReceiveCollisionEvents)
+		{
+			GetGameObject()->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
+		}
+		else
+		{
+			GetGameObject()->UnRegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
+		}
 
 		const char* szAnimationName = GetPropertyValue(eProperty_Animation);
 		if (strlen(szAnimationName) > 0)
