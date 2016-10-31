@@ -757,11 +757,14 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 		            0.0f, 0.0f, 1.0f, 1.0f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f);
 
 #if !defined(STRIP_RENDER_THREAD)
-		// Blit the accumulated commands from the renderloading thread into the current fill command queue
-		// : Currently hacked into the RC_UpdateMaterialConstants command, but will be generalized soon
-		void* buf = m_pRT->m_Commands[m_pRT->m_nCurThreadFill].Grow(m_pRT->m_CommandsLoading.size());
-		memcpy(buf, &m_pRT->m_CommandsLoading[0], m_pRT->m_CommandsLoading.size());
-		m_pRT->m_CommandsLoading.Free();
+		if(m_pRT->m_CommandsLoading.size() > 0)
+		{
+			// Blit the accumulated commands from the renderloading thread into the current fill command queue
+			// : Currently hacked into the RC_UpdateMaterialConstants command, but will be generalized soon
+			void* buf = m_pRT->m_Commands[m_pRT->m_nCurThreadFill].Grow(m_pRT->m_CommandsLoading.size());
+			memcpy(buf, &m_pRT->m_CommandsLoading[0], m_pRT->m_CommandsLoading.size());
+			m_pRT->m_CommandsLoading.Free();
+		}
 #endif // !defined(STRIP_RENDER_THREAD)
 	}
 }

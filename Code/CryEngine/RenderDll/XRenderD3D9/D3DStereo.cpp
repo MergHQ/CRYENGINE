@@ -61,8 +61,6 @@ CD3DStereoRenderer::CD3DStereoRenderer(CD3D9Renderer& renderer, EStereoDevice de
 	, m_nvStereoStrength(0.0f)
 	, m_nvStereoActivated(0)
 	, m_curEye(LEFT_EYE)
-	, m_frontBufWidth(0)
-	, m_frontBufHeight(0)
 	, m_stereoStrength(0.0f)
 	, m_zeroParallaxPlaneDist(0.25f)
 	, m_maxSeparationScene(0.0f)
@@ -388,9 +386,6 @@ void CD3DStereoRenderer::DisableStereo()
 
 void CD3DStereoRenderer::ChangeOutputFormat()
 {
-	m_frontBufWidth = 0;
-	m_frontBufHeight = 0;
-
 	ShutdownHmdRenderer();
 }
 
@@ -424,7 +419,7 @@ void CD3DStereoRenderer::PrepareStereo(EStereoMode mode, EStereoOutput output)
 	if (m_mode != mode || m_output != output)
 	{
 		m_renderer.ForceFlushRTCommands();
-
+		
 		if (m_mode != mode)
 		{
 			m_mode = mode;
@@ -1149,29 +1144,36 @@ void CD3DStereoRenderer::OnResolutionChanged()
 	}
 }
 
-void CD3DStereoRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
+void CD3DStereoRenderer::CalculateBackbufferResolution(int nativeWidth, int nativeHeight, int* pRenderWidth, int *pRenderHeight)
 {
-	if (m_pHmdRenderer != nullptr)
+	switch (m_output)
 	{
-		m_pHmdRenderer->CalculateBackbufferResolution(eyeWidth, eyeHeight, pBackbufferWidth, pBackbufferHeight);
-	}
-	else
-	{
-		switch (m_output)
-		{
 		case STEREO_OUTPUT_SIDE_BY_SIDE:
-			*pBackbufferWidth = eyeWidth * 2;
-			*pBackbufferHeight = eyeHeight;
+			*pRenderWidth = nativeWidth * 2;
+			*pRenderHeight = nativeHeight;
 			break;
 		case STEREO_OUTPUT_ABOVE_AND_BELOW:
-			*pBackbufferWidth = eyeWidth;
-			*pBackbufferHeight = eyeHeight * 2;
+			*pRenderWidth = nativeWidth;
+			*pRenderHeight = nativeHeight * 2;
+			break;
+		case STEREO_OUTPUT_HMD:
+			{
+				// Update renderer resolution
+				HmdDeviceInfo deviceInfo;
+				m_pHmdDevice->GetDeviceInfo(deviceInfo);
+
+				float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
+				int screenWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
+				int screenHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
+
+				*pRenderWidth = screenWidth / 2;
+				*pRenderHeight = screenHeight;
+			}
 			break;
 		default:
-			*pBackbufferWidth = eyeWidth;
-			*pBackbufferHeight = eyeHeight;
+			*pRenderWidth = nativeWidth;
+			*pRenderHeight = nativeHeight;
 			break;
-		}
 	}
 }
 
@@ -1187,17 +1189,6 @@ void CD3DStereoRenderer::OnHmdDeviceChanged(IHmdDevice* pHmdDevice)
 
 	// Make sure PrepareStereo is called in Update by specifying a device
 	SelectDefaultDevice();
-
-	// Update renderer resolution
-	HmdDeviceInfo deviceInfo;
-	m_pHmdDevice->GetDeviceInfo(deviceInfo);
-
-	float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
-	int screenWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
-	int screenHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
-
-	gEnv->pConsole->GetCVar("r_width")->Set(screenWidth);
-	gEnv->pConsole->GetCVar("r_height")->Set(screenHeight);
 }
 
 IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)

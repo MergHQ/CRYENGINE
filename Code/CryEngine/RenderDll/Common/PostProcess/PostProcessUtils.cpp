@@ -40,9 +40,9 @@ int SPostEffectsUtils::m_nFrustrumFrameID = 0;
 bool SPostEffectsUtils::Create()
 {
 	const SViewport& MainVp = gRenDev->m_MainViewport;
-	const bool bCreatePostAA = CRenderer::CV_r_AntialiasingMode && !CTexture::IsTextureExist(CTexture::s_ptexPrevBackBuffer[0][0]);
+	const bool bCreatePostAA = CRenderer::CV_r_AntialiasingMode && (!CTexture::IsTextureExist(CTexture::s_ptexPrevBackBuffer[0][0])) || (gRenDev->IsStereoEnabled() && !CTexture::s_ptexPrevBackBuffer[0][1]);
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0]);
-	if (!CTexture::s_ptexBackBufferScaled[0] || m_pScreenRect.right != MainVp.nWidth || m_pScreenRect.bottom != MainVp.nHeight || bCreatePostAA || bCreateCaustics || gRenDev->IsStereoEnabled())
+	if (!CTexture::s_ptexBackBufferScaled[0] || m_pScreenRect.right != MainVp.nWidth || m_pScreenRect.bottom != MainVp.nHeight || bCreatePostAA || bCreateCaustics)
 	{
 		assert(gRenDev);
 

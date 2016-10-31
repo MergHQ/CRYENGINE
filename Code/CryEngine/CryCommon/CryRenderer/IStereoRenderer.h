@@ -170,8 +170,6 @@ struct IHmdRenderer
 	virtual bool Initialize() = 0;
 	virtual void Shutdown() = 0;
 
-	virtual void CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight) = 0;
-
 	virtual void ReleaseBuffers() = 0;
 	virtual void OnResolutionChanged() = 0;
 

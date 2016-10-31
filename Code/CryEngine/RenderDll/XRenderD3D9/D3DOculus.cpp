@@ -309,12 +309,6 @@ void CD3DOculusRenderer::Shutdown()
 	ReleaseBuffers();
 }
 
-void CD3DOculusRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
-}
-
 void CD3DOculusRenderer::OnResolutionChanged()
 {
 	if (m_uEyeWidth != m_pRenderer->GetWidth() ||

@@ -223,12 +223,6 @@ void CD3DOpenVRRenderer::Shutdown()
 	ReleaseBuffers();
 }
 
-void CD3DOpenVRRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
-}
-
 void CD3DOpenVRRenderer::OnResolutionChanged()
 {
 	if (m_uEyeWidth != m_renderer->GetWidth() ||

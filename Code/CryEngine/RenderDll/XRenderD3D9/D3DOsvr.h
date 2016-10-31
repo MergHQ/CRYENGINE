@@ -23,7 +23,6 @@ public:
 	// IHDMRenderer implementation
 	virtual bool                      Initialize() override;
 	virtual void                      Shutdown() override;
-	virtual void                      CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight) override;
 	virtual void                      OnResolutionChanged() override;
 	virtual void                      ReleaseBuffers() override;
 	virtual void                      PrepareFrame() override;

@@ -127,11 +127,7 @@ void CD3DOsvrRenderer::Shutdown()
 	m_pDevice->ShutdownRenderer();
 
 }
-void CD3DOsvrRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
-}
+
 void CD3DOsvrRenderer::OnResolutionChanged()
 {
 	if (m_eyeWidth != m_pRenderer->GetWidth() ||
@@ -141,10 +137,12 @@ void CD3DOsvrRenderer::OnResolutionChanged()
 		Initialize();
 	}
 }
+
 void CD3DOsvrRenderer::ReleaseBuffers()
 {
 
 }
+
 void CD3DOsvrRenderer::PrepareFrame()
 {
 	m_pStereoRenderer->SetEyeTextures(m_eyeTextures[0].textures[m_currentFrame], m_eyeTextures[1].textures[m_currentFrame]);

@@ -863,6 +863,12 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 			{
 				clearColorRects[numClearColorRects++] = localLightPass.GetScissorRect();
 			}
+
+			if (numClearDepthRects == CRY_ARRAY_COUNT(clearDepthRects)
+				|| numClearColorRects == CRY_ARRAY_COUNT(clearColorRects))
+			{
+				break;
+			}
 		}
 
 		SDepthTexture* pShadowPool = &shadowMapPasses[CRenderView::eShadowFrustumRenderType_LocalLight][0].m_currentDepthTarget;

@@ -1206,14 +1206,12 @@ void CD3D9Renderer::CalculateResolutions(int width, int height, bool bUseNativeR
 	*pNativeHeight = height;
 #endif
 
+	*pBackbufferWidth = *pNativeWidth;
+	*pBackbufferHeight = *pNativeHeight;
+
 	if (m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
 	{
-		m_pStereoRenderer->CalculateBackbufferResolution(*pNativeWidth, *pNativeHeight, pBackbufferWidth, pBackbufferHeight);
-	}
-	else
-	{
-		*pBackbufferWidth = *pNativeWidth;
-		*pBackbufferHeight = *pNativeHeight;
+		m_pStereoRenderer->CalculateBackbufferResolution(*pNativeWidth, *pNativeHeight, pRenderWidth, pRenderHeight);
 	}
 
 	if (m_windowParametersOverridden)

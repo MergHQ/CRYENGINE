@@ -84,7 +84,7 @@ public:
 	void              ProcessScene(int sceneFlags, const SRenderingPassInfo& passInfo);
 	void              ReleaseBuffers();
 	void              OnResolutionChanged();
-	void              CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight);
+	void              CalculateBackbufferResolution(int nativeWidth, int nativeHeight, int* pRenderWidth, int *pRenderHeight);
 
 	void              SubmitFrameToHMD();
 	void              DisplayStereo();
@@ -160,8 +160,6 @@ private:
 
 	StereoEye     m_curEye;
 	CCryNameR     m_SourceSizeParamName;
-
-	uint32        m_frontBufWidth, m_frontBufHeight;
 
 	float         m_stereoStrength;
 	float         m_zeroParallaxPlaneDist;
