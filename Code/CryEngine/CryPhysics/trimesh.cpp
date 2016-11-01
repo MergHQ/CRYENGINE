@@ -2658,7 +2658,7 @@ int CTriMesh::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world
 		indexed_triangle atri;
 		prim_inters inters;
 		unprojection_mode unproj;
-		int i,j,i1,jmax,nSmallSteps,iEdge,bActive,bThreadSafe,bThreadSafeMesh, nContacts=0;
+		int i,j,i1,jmax,nSmallSteps,iEdge,bActive,bThreadSafe,bThreadSafeMesh,overflowed=0,valid=0, nContacts=0;
 		int iCaller = get_iCaller();
 		intptr_t idmask = ~iszero_mask(m_pIds);
 		char idnull=(char)-1, *pidnull=&idnull, *pIds=(char*)((intptr_t)m_pIds&idmask|(intptr_t)pidnull&~idmask);
@@ -2742,12 +2742,18 @@ int CTriMesh::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world
 				nTris[iListPlane] = unite_lists(m_pHashData[iPlane]+m_pHashGrid[iPlane][iCell],m_pHashGrid[iPlane][iCell+1]-m_pHashGrid[iPlane][iCell],
 					trilist[iListTmp],nTris[iListTmp], trilist[iListPlane],sizeof(trilist[0])/sizeof(trilist[0][0]));
 			}
-			if (iPlane>0) {
-				nTris[iListTmp] = intersect_lists(trilist[iListRes],nTris[iListRes], trilist[iListPlane],nTris[iListPlane], trilist[iListTmp]);
-				iListRes = iListTmp;
-			}	else
-				iListRes = iListPlane;
+			if (nTris[iListPlane] < sizeof(trilist[0])/sizeof(trilist[0][0])) {
+				if (iPlane>0 && !overflowed) {
+					nTris[iListTmp] = intersect_lists(trilist[iListRes],nTris[iListRes], trilist[iListPlane],nTris[iListPlane], trilist[iListTmp]);
+					iListRes = iListTmp;
+				}	else
+					iListRes = iListPlane;
+				overflowed = 0;	valid = 1;
+			} else
+				overflowed = 1;
 		}
+		if (!valid)
+			goto skiphashes;
 
 		if (nTris[iListRes]) {
 			for(i=0;i<nTris[iListRes] && g_nTotContacts+nContacts<g_maxContacts;i++) {
