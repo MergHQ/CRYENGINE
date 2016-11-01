@@ -1798,9 +1798,9 @@ void CAnimatedCharacter::GenerateMovementRequest()
 
 	UpdateCharacterPtrs();
 
-	UpdateSimpleMovementConditions();
-
 	RefreshAnimTarget();
+
+	UpdateSimpleMovementConditions();
 
 	PreAnimationUpdate();
 
