@@ -97,7 +97,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingnoupload);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingonlyvideo);
 int CRendererCVars::CV_r_texturesstreamingsync;
-AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingResidencyEnabled);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingUpdateType);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPrecacheRounds);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingSuppress);
@@ -114,18 +113,12 @@ int CRendererCVars::CV_r_texturesstreamingDeferred;
 #if defined(SUPPORTS_INPLACE_TEXTURE_STREAMING)
 int CRendererCVars::CV_r_texturesstreamingInPlace;
 #endif
-float CRendererCVars::CV_r_texturesstreamingResidencyTimeTestLimit;
 float CRendererCVars::CV_r_rain_maxviewdist;
 float CRendererCVars::CV_r_rain_maxviewdist_deferred;
 float CRendererCVars::CV_r_measureoverdrawscale;
-float CRendererCVars::CV_r_texturesstreamingResidencyTime;
-float CRendererCVars::CV_r_texturesstreamingResidencyThrottle;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingmipfading);
 int CRendererCVars::CV_r_TexturesStreamPoolSize;
 int CRendererCVars::CV_r_TexturesStreamPoolSecondarySize;
-int CRendererCVars::CV_r_texturesstreampooldefragmentation;
-int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
-int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxamount;
 int CRendererCVars::CV_r_texturesskiplowermips;
 int CRendererCVars::CV_r_rendertargetpoolsize;
 float CRendererCVars::CV_r_TexturesStreamingMaxRequestedMB;
@@ -769,10 +762,10 @@ void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 {
 	if (gEnv->p3DEngine)  // 3DEngine not initialized during ShaderCacheGen
 	{
-	CTexture::GenerateCachedShadowMaps();
-	gEnv->p3DEngine->SetShadowsGSMCache(true);
-	gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
-}
+		CTexture::GenerateCachedShadowMaps();
+		gEnv->p3DEngine->SetShadowsGSMCache(true);
+		gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
+	}
 }
 
 void CRendererCVars::OnChange_GeomInstancingThreshold(ICVar* pVar)
@@ -1133,7 +1126,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
 	               "Toggles tile based shading.\n"
-								 "0 - Off"
+	               "0 - Off"
 	               "1 - Tiled forward shading for transparent objects\n"
 	               "2 - Tiled deferred and forward shading\n"
 	               "3 - Tiled deferred and forward shading using volume rasterization for light list generation\n");
@@ -1789,7 +1782,7 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_ShadowsStencilPrePass [0/1]");
 	DefineConstIntCVar3("r_ShadowMaskStencilPrepass", CV_r_ShadowMaskStencilPrepass, 0, VF_NULL,
 	                    "1=Run explicit stencil prepass for shadow mask generation (as opposed to merged stencil/sampling passes)");
-	
+
 	REGISTER_CVAR3("r_ShadowsDepthBoundNV", CV_r_ShadowsDepthBoundNV, 0, VF_NULL,
 	               "1=use NV Depth Bound extension\n"
 	               "Usage: r_ShadowsDepthBoundNV [0/1]");
@@ -2150,13 +2143,6 @@ void CRendererCVars::InitCVars()
 
 	int nDefaultDefragState = 0;
 
-	REGISTER_CVAR3("r_texturesstreampooldefragmentation", CV_r_texturesstreampooldefragmentation, nDefaultDefragState, VF_NULL,
-	               "Enabled CPU (1), GPU(2) and disable (0) textures stream pool defragmentation.\n");
-	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxmoves", CV_r_texturesstreampooldefragmentationmaxmoves, 8, VF_NULL,
-	               "Specify the maximum number of blocks to move per defragmentation update");
-	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxamount", CV_r_texturesstreampooldefragmentationmaxamount, 512 * 1024, VF_NULL,
-	               "Specify the limit (in bytes) that defrag update will stop");
-
 	REGISTER_CVAR3("r_texturesskiplowermips", CV_r_texturesskiplowermips, 0, VF_NULL,
 	               "Enabled skipping lower mips for X360.\n");
 
@@ -2173,23 +2159,7 @@ void CRendererCVars::InitCVars()
 	               "All textures will be streamed in the main thread. Useful for debug purposes.\n"
 	               "Usage: r_TexturesStreamingSync [0/1]\n"
 	               "Default is 0 (off).");
-	DefineConstIntCVar3("r_TexturesStreamingResidencyEnabled", CV_r_texturesstreamingResidencyEnabled, 1, VF_NULL,
-	                    "Toggle for resident textures streaming support.\n"
-	                    "Usage: r_TexturesStreamingResidencyEnabled [toggle]"
-	                    "Default is 0, 1 for enabled");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyTimeTestLimit", CV_r_texturesstreamingResidencyTimeTestLimit, 5.0f, VF_NULL,
-	               "Time limit to use for mip thrashing calculation in seconds.\n"
-	               "Usage: r_TexturesStreamingResidencyTimeTestLimit [time]"
-	               "Default is 5 seconds");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyTime", CV_r_texturesstreamingResidencyTime, 10.0f, VF_NULL,
-	               "Time to keep textures resident for before allowing them to be removed from memory.\n"
-	               "Usage: r_TexturesStreamingResidencyTime [Time]\n"
-	               "Default is 10 seconds");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyThrottle", CV_r_texturesstreamingResidencyThrottle, 0.5f, VF_NULL,
-	               "Ratio for textures to become resident.\n"
-	               "Usage: r_TexturesStreamingResidencyThrottle [ratio]"
-	               "Default is 0.5"
-	               "Max is 1.0 means textures will become resident sooner, Min 0.0 means textures will not become resident");
+
 	REGISTER_CVAR3("r_TexturesStreamingMaxRequestedMB", CV_r_TexturesStreamingMaxRequestedMB, 2.f, VF_NULL,
 	               "Maximum amount of texture data requested from streaming system in MB.\n"
 	               "Usage: r_TexturesStreamingMaxRequestedMB [size]\n"

@@ -108,9 +108,6 @@ public:
 	static int   CV_r_dyntexatlasdyntexsrcsize;
 	static int   CV_r_texminanisotropy;
 	static int   CV_r_texmaxanisotropy;
-	static int   CV_r_texturesstreampooldefragmentation;
-	static int   CV_r_texturesstreampooldefragmentationmaxmoves;
-	static int   CV_r_texturesstreampooldefragmentationmaxamount;
 	static int   CV_r_texturesskiplowermips;
 	static int   CV_r_rendertargetpoolsize;
 	static int   CV_r_texturesstreamingsync;
@@ -304,7 +301,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingnoupload, 0);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingonlyvideo, 0);
-	DeclareStaticConstIntCVar(CV_r_texturesstreamingResidencyEnabled, 1);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingmipfading, 8);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingUpdateType, TEXSTREAMING_UPDATETYPE_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingPrecacheRounds, 1);
@@ -479,9 +475,6 @@ public:
 	static float CV_r_TexturesStreamingMipBias;
 	static int   CV_r_TexturesStreamingMipClampDVD;
 	static int   CV_r_TexturesStreamingDisableNoStreamDuringLoad;
-	static float CV_r_texturesstreamingResidencyTimeTestLimit;
-	static float CV_r_texturesstreamingResidencyTime;
-	static float CV_r_texturesstreamingResidencyThrottle;
 	static float CV_r_envtexupdateinterval;
 	static float CV_r_TextureLodDistanceRatio;
 	static float CV_r_water_godrays_distortion;

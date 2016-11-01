@@ -1449,9 +1449,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 
 void CRenderer::RT_PrepareLevelTexStreaming()
 {
-	if (CRenderer::CV_r_texturesstreampooldefragmentation)
-	{
-	}
 }
 
 void CRenderer::RT_PostLevelLoading()
