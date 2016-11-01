@@ -3048,7 +3048,7 @@ L_done:;
 		}
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-		if (!gEnv->IsDedicated())
+		if (!gEnv->IsDedicated() && !m_bShaderCacheGenMode)
 		{
 			if (!InitializeEngineModule(DLL_SCALEFORM, "EngineModule_ScaleformHelper", false))
 			{
@@ -5053,12 +5053,8 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_streaming_debug_filter_min_time", &g_cvars.sys_streaming_debug_filter_min_time, 0.f, VF_NULL, "Show only slow items.");
 	REGISTER_CVAR2("sys_streaming_resetstats", &g_cvars.sys_streaming_resetstats, 0, VF_NULL,
 	               "Reset all the streaming stats");
-#if defined(DEDICATED_SERVER)
-	#define DEFAULT_USE_OPTICAL_DRIVE_THREAD 0
-#else
-	#define DEFAULT_USE_OPTICAL_DRIVE_THREAD 1
-#endif // defined(DEDICATED_SERVER)
-	REGISTER_CVAR2("sys_streaming_use_optical_drive_thread", &g_cvars.sys_streaming_use_optical_drive_thread, DEFAULT_USE_OPTICAL_DRIVE_THREAD, VF_NULL,
+
+	REGISTER_CVAR2("sys_streaming_use_optical_drive_thread", &g_cvars.sys_streaming_use_optical_drive_thread, 0, VF_NULL,
 	               "Allow usage of an extra optical drive thread for faster streaming from 2 medias");
 
 	g_cvars.sys_localization_folder = REGISTER_STRING_CB("sys_localization_folder", "localization", VF_NULL,
@@ -5309,6 +5305,7 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_highrestimer", &g_cvars.sys_highrestimer, 0, VF_REQUIRE_APP_RESTART, "Enables high resolution system timer.");
 #endif
 
+	g_cvars.sys_intromoviesduringinit = 0;
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
 #endif
