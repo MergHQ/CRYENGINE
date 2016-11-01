@@ -9,7 +9,6 @@ set(crashrpt_src_dir ${crashrpt_dir}/reporting/crashrpt)
 aux_source_directory( ${crashrpt_src_dir} crashrpt_SOURCES )
 file( GLOB header_files ${crashrpt_src_dir}/*.h )
 
-list(APPEND crashrpt_SOURCES ${crashrpt_src_dir}/CrashRpt.rc ${crashrpt_src_dir}/CrashRpt.def)
 list(APPEND crashrpt_SOURCES ${header_files} )
 
 # Define _UNICODE (use wide-char encoding)
