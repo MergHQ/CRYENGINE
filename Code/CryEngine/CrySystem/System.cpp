@@ -1769,7 +1769,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	//////////////////////////////////////////////////////////////////////
 	// update physic system
 	//static float time_zero = 0;
-	if (!m_bUIFrameworkMode)
+	if (!m_bUIFrameworkMode && bNotLoading)
 	{
 		if (m_sys_physics_enable_MT->GetIVal() > 0 && !gEnv->IsDedicated())
 			CreatePhysicsThread();
