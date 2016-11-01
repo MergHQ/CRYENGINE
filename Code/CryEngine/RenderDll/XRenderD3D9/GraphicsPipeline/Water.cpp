@@ -162,8 +162,10 @@ CWaterStage::CWaterStage()
 	, m_pOceanWavesTex(nullptr)
 	, m_pOceanCausticsTex(nullptr)
 	, m_rainRippleTexIndex(0)
+	, m_frameIdWaterSim(0)
 {
 	std::fill(std::begin(m_pRainRippleTex), std::end(m_pRainRippleTex), nullptr);
+	std::fill(std::begin(m_oceanAnimationParams), std::end(m_oceanAnimationParams), Vec4(0.0f));
 }
 
 CWaterStage::~CWaterStage()
@@ -259,6 +261,8 @@ void CWaterStage::Init()
 
 void CWaterStage::Prepare(CRenderView* pRenderView)
 {
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
 	auto& waterRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER);
 	auto& waterVolumeRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER_VOLUMES);
 	const bool isEmpty = waterRenderItems.empty() && waterVolumeRenderItems.empty();
@@ -277,7 +281,9 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 	}
 
 	// Activate puddle generation
-	if (!isEmpty)
+	m_bWaterNormalGen = (rd->m_RP.m_eQuality > eRQ_Low && !isEmpty) ? true : false;
+	// TODO: remove after old graphics pipeline is removed.
+	if (m_bWaterNormalGen)
 	{
 		CEffectParam* pParam = PostEffectMgr()->GetByName("WaterVolume_Amount");
 		CRY_ASSERT(pParam);
@@ -285,8 +291,6 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 		if (pParam)
 			pParam->SetParam(1.0f);
 	}
-
-	// TODO: manage the resource creation of CTexture::s_ptexWaterVolumeRefl
 }
 
 void CWaterStage::ExecuteWaterVolumeCaustics()
@@ -321,14 +325,20 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 		pWaterRipplesStage->Execute(pRenderView);
 	}
 
+	// generate normal texture for water volumes and ocean.
+	if (m_bWaterNormalGen && rd->m_CurRenderEye == LEFT_EYE)
+	{
+		ExecuteWaterNormalGen();
+	}
+
 	// Check if there are any water volumes that have caustics enabled
 	bool isEmpty = bEmpty;
 	if (!bEmpty)
 	{
 		auto& RESTRICT_REFERENCE RI = pRenderView->GetRenderItems(EFSLIST_WATER);
 
-		int curRI = 0;
-		int endRI = RI.size();
+		int32 curRI = 0;
+		int32 endRI = RI.size();
 
 		isEmpty = true;
 
@@ -900,7 +910,7 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 	{
 		// default material samplers
 		auto materialSamplers = pRenderer->GetGraphicsPipeline().GetDefaultMaterialSamplers();
-		for (int i = 0; i < materialSamplers.size(); ++i)
+		for (int32 i = 0; i < materialSamplers.size(); ++i)
 		{
 			m_pPerPassResources->SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
 		}
@@ -932,13 +942,7 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 		pVolumetricFogTex = CTexture::s_ptexVolumetricFog;
 	}
 
-	bool bWaterVolume = false;
-	CEffectParam* pParam = PostEffectMgr()->GetByName("WaterVolume_Amount");
-	if (pParam)
-	{
-		bWaterVolume = (pParam->GetParam() == 1.0f);
-	}
-	auto* pWaterVolumeNormalTex = bWaterVolume ? CTexture::s_ptexWaterVolumeDDN : CTexture::s_ptexFlatBump;
+	auto* pWaterNormalTex = m_bWaterNormalGen ? CTexture::s_ptexWaterVolumeDDN : CTexture::s_ptexFlatBump;
 
 	// NOTE: update this resource set at every frame, otherwise have double resource sets.
 	const int32 currWaterVolID = GetCurrentFrameID(frameID);
@@ -991,7 +995,7 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 		m_pPerPassResources->SetTexture(ePerPassTexture_VolFogGlobalEnvProbe1, pVolFogStage->GetGlobalEnvProbeTex1(), SResourceView::DefaultView, EShaderStage_Pixel);
 
 		m_pPerPassResources->SetTexture(ePerPassTexture_WaterRipple, CTexture::s_ptexWaterRipplesDDN, SResourceView::DefaultView, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
-		m_pPerPassResources->SetTexture(ePerPassTexture_WaterVolumeNormal, pWaterVolumeNormalTex, SResourceView::DefaultView, EShaderStage_Pixel | EShaderStage_Domain);
+		m_pPerPassResources->SetTexture(ePerPassTexture_WaterNormal, pWaterNormalTex, SResourceView::DefaultView, EShaderStage_Pixel | EShaderStage_Domain);
 
 		if (passId == ePass_ReflectionGen)
 		{
@@ -1128,6 +1132,105 @@ void CWaterStage::UpdatePerPassResources(CRenderView& renderView)
 	}
 }
 
+void CWaterStage::ExecuteWaterNormalGen()
+{
+	PROFILE_LABEL_SCOPE("WATER_NORMAL_GEN");
+
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+	CRY_ASSERT(rd->m_CurRenderEye == LEFT_EYE);
+
+	const int32 nGridSize = 64;
+
+	const int32 frameID = SPostEffectsUtils::m_iFrameCounter % 2;
+
+	// Create texture if required
+	CTexture* pTexture = CTexture::s_ptexWaterVolumeTemp[frameID];
+	if (!CTexture::IsTextureExist(pTexture))
+	{
+		if (!pTexture->Create2DTexture(nGridSize, nGridSize, 1,
+		                               FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
+		                               0, eTF_R32G32B32A32F, eTF_R32G32B32A32F))
+		{
+			return;
+		}
+	}
+
+	// spawn water simulation job for next frame.
+	{
+		int32 nCurFrameID = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_nFrameID;
+		if (m_frameIdWaterSim != nCurFrameID)
+		{
+			Vec4 pCurrParams0, pCurrParams1;
+			gEnv->p3DEngine->GetOceanAnimationParams(pCurrParams0, pCurrParams1);
+
+			// TODO: this water sim is shared with CREWaterOcean and CWaterStage. the sim result also could be shared.
+			// Update sim settings
+			auto& pParams0 = m_oceanAnimationParams[0];
+			auto& pParams1 = m_oceanAnimationParams[1];
+			if (WaterSimMgr()->NeedInit() || pCurrParams0.x != pParams0.x || pCurrParams0.y != pParams0.y ||
+			    pCurrParams0.z != pParams0.z || pCurrParams0.w != pParams0.w || pCurrParams1.x != pParams1.x ||
+			    pCurrParams1.y != pParams1.y || pCurrParams1.z != pParams1.z || pCurrParams1.w != pParams1.w)
+			{
+				pParams0 = pCurrParams0;
+				pParams1 = pCurrParams1;
+				WaterSimMgr()->Create(1.0, pParams0.x, pParams0.z, 1.0f, 1.0f);
+			}
+
+			// Copy data..
+			if (CTexture::IsTextureExist(pTexture))
+			{
+				//const float fUpdateTime = 2.f*0.125f*gEnv->pTimer->GetCurrTime();
+				const float fUpdateTime = 0.125f * gEnv->pTimer->GetCurrTime();// / clamp_tpl<float>(pParams1.x, 0.55f, 1.0f);
+
+				void* pRawPtr = nullptr;
+				WaterSimMgr()->Update(nCurFrameID, fUpdateTime, true, pRawPtr);
+
+				Vec4* pDispGrid = WaterSimMgr()->GetDisplaceGrid();
+
+				const uint32 pitch = 4 * sizeof(f32) * nGridSize;
+				const uint32 width = nGridSize;
+				const uint32 height = nGridSize;
+
+				STALL_PROFILER("update subresource")
+
+				CDeviceTexture * pDevTex = pTexture->GetDevTexture();
+				pDevTex->UploadFromStagingResource(0, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
+				{
+					cryMemcpy(pData, pDispGrid, 4 * width * height * sizeof(f32));
+					return true;
+				});
+			}
+			m_frameIdWaterSim = nCurFrameID;
+		}
+	}
+
+	// generate water normal from the simulation result.
+	{
+		auto& pass = m_passWaterNormalGen;
+
+		if (pass.InputChanged())
+		{
+			static CCryNameTSCRC techName("WaterVolumesNormalGen");
+			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
+			pass.SetRenderTarget(0, CTexture::s_ptexWaterVolumeDDN);
+			pass.SetState(GS_NODEPTHTEST);
+
+			pass.SetTextureSamplerPair(0, pTexture, rd->m_nBilinearWrapSampler);
+		}
+
+		pass.BeginConstantUpdate();
+
+		static CCryNameR pParamName("waterVolumesParams");
+		Vec4 vParams = Vec4(64.0f, 64.0f, 64.0f, 64.0f);
+		pass.SetConstant(pParamName, vParams);
+
+		pass.Execute();
+	}
+
+	// generate mipmap.
+	m_passWaterNormalMipmapGen.Execute(CTexture::s_ptexWaterVolumeDDN);
+}
+
 void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo, CRenderView* pRenderView)
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
@@ -1191,7 +1294,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		float fHeight = static_cast<float>(CTexture::s_ptexWaterCaustics[0]->GetHeight());
 
 		D3DViewPort viewport = { 0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f };
-		rd->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
+		rd->RT_SetViewport(0, 0, int32(viewport.Width), int32(viewport.Height));
 		pass.SetViewport(viewport);
 
 		CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
@@ -1362,7 +1465,7 @@ void CWaterStage::ExecuteReflection(CRenderView* pRenderView)
 			renderItemDrawer.WaitForDrawSubmission();
 		}
 
-		m_passMipmapGen.Execute(pCurrWaterVolRefl);
+		m_passWaterReflectionMipmapGen.Execute(pCurrWaterVolRefl);
 	}
 }
 
@@ -1373,7 +1476,7 @@ void CWaterStage::ExecuteSceneRenderPass(CRenderView* pRenderView, CSceneRenderP
 	const bool bReverseDepth = (threadInfo.m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 
 	D3DViewPort viewport = { 0.f, 0.f, float(rd->m_MainViewport.nWidth), float(rd->m_MainViewport.nHeight), 0.0f, 1.0f };
-	rd->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
+	rd->RT_SetViewport(0, 0, int32(viewport.Width), int32(viewport.Height));
 	pass.SetViewport(viewport);
 
 	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;

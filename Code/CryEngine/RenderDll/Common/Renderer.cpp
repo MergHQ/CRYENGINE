@@ -3799,9 +3799,6 @@ void S3DEngineCommon::UpdateRainOccInfo(int nThreadID)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-namespace WaterVolumeStaticData {
-	void GetMemoryUsage(ICrySizer* pSizer);
-}
 
 void CRenderer::GetMemoryUsage(ICrySizer* pSizer)
 {
@@ -3809,7 +3806,9 @@ void CRenderer::GetMemoryUsage(ICrySizer* pSizer)
 #if 0  //XXXXXXXXXXXXXXXXXXXXXXX
 	pSizer->AddObject(m_DevBufMan);
 #endif
-	WaterVolumeStaticData::GetMemoryUsage(pSizer);
+
+	if(m_pWaterSimMgr)
+		m_pWaterSimMgr->GetMemoryUsage(pSizer);
 }
 
 // retrieves the bandwidth calculations for the audio streaming

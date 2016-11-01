@@ -31,15 +31,13 @@ struct a2v3
 struct v2f
 {
 	float4 hPos : POSITION; 
-	float4 hPosTexProj : TEXCOORD0;
-	float3 viewDir : TEXCOORD1_centroid;
+	float3 viewDir : TEXCOORD0_centroid;
 };
 
 struct v2fIn
 {
 	float4 WPos : SV_POSITION;
-	float4 hPosTexProj : TEXCOORD0;
-	float3 viewDir : TEXCOORD1_centroid;
+	float3 viewDir : TEXCOORD0_centroid;
 };
 
 struct v2fOutof
@@ -142,11 +140,6 @@ v2f WaterVolumeIntoVS( a2v IN )
 	OUT.hPos.z *= params.cViewerColorToWaterPlane.x; // effectively prevent any clipping and depth test rejection by muliplying homogeneous z by zero (if close enough to water surface)
 #endif
 
-	OUT.hPosTexProj = hPos;
-	OUT.hPosTexProj.x = (  OUT.hPosTexProj.x + OUT.hPosTexProj.w ) * 0.5;
-	OUT.hPosTexProj.y = ( -OUT.hPosTexProj.y + OUT.hPosTexProj.w ) * 0.5;
-	OUT.hPosTexProj.xy = GetScaledScreenTC(OUT.hPosTexProj.xy);
-
 	OUT.viewDir = mul( (float3x4)params.PerInstanceWorldMatrix, vPos ).xyz - g_VS_WorldViewPos.xyz;
 
 	return OUT;
@@ -159,7 +152,7 @@ pixout WaterVolumeIntoPS( v2fIn IN )
 
 	SWaterVolumeParams params = GetWaterVolumeParams();
 
-	float2 screenTC = IN.hPosTexProj.xy / IN.hPosTexProj.w;
+	float2 screenTC = IN.WPos.xy * CV_ScreenSize.zw * 2.0f;
 
 	float sceneDepth = wvGetLinearDepthScaled(screenTC.xy);
 	float waterDepth = dot( IN.viewDir, -CV_CameraFrontVector.xyz );
@@ -344,11 +337,6 @@ v2f OceanIntoVS( a2v IN )
 	OUT.hPos.z += 0.001f; // should match offset of terrain base layer to reduce z fighting in distance as much as possible!
 	OUT.hPos.z *= params.cViewerColorToWaterPlane.x; // effectively prevent any clipping and depth test rejection by muliplying homogeneous z by zero (if close enough to water surface)
 #endif
-	
-	OUT.hPosTexProj = hPos;
-	OUT.hPosTexProj.x = (  OUT.hPosTexProj.x + OUT.hPosTexProj.w ) * 0.5;
-	OUT.hPosTexProj.y = ( -OUT.hPosTexProj.y + OUT.hPosTexProj.w ) * 0.5;
-	OUT.hPosTexProj.xy = GetScaledScreenTC(OUT.hPosTexProj.xy);
 
 	OUT.viewDir = vPos;
 
@@ -365,7 +353,8 @@ pixout OceanIntoPS( v2f IN )
 	float3 viewDirNorm = normalize( IN.viewDir );
 	float viewDirCorrection = 1.0f / dot( viewDirNorm, -CV_CameraFrontVector.xyz );
 
-	float2 baseTC = IN.hPosTexProj.xy / IN.hPosTexProj.w;
+	float2 baseTC = IN.hPos.xy * CV_ScreenSize.zw * 2.0f;
+
 	float sceneDepth = wvGetLinearDepthScaled(baseTC.xy);
 	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -CV_CameraFrontVector.xyz ), 0.0f );
 	volumeDepth *= viewDirCorrection;
@@ -393,7 +382,7 @@ pixout OceanIntoPS( v2f IN )
 	float alpha = 1.0f - a;
 	float2 tc = baseTC.xy;
 	float len = length(IN.viewDir.xyz);
-	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, tc.xy, IN.hPosTexProj.w, false, len);
+	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, tc.xy, IN.hPos.w, false, len);
 	float4 vf = GetVolumetricFogValueJittered(vfs, vtc);
 	half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, IN.viewDir.xyz, len);
 	vf.xyz *= alpha;
@@ -403,7 +392,7 @@ pixout OceanIntoPS( v2f IN )
 	// add additional volumetric fog for compensating lost in water.
 	float thresholdTarget = 0.05f;
 	float tdist = log2(thresholdTarget) / -fogDensity;
-	vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, tc.xy, min( tdist + IN.hPosTexProj.w, sceneDepth ));
+	vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, tc.xy, min( tdist + IN.hPos.w, sceneDepth ));
 	float4 vfAlt = GetVolumetricFogValue(vfs, vtc);
 	vfAlt.xyz *= alpha;
 	col.xyz = col.xyz + max(0.0f, (vfAlt.xyz - vf.xyz) * thresholdTarget);

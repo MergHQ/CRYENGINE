@@ -713,16 +713,11 @@ public:
 		m_nID = ePFX_WaterVolume;
 
 		AddParamFloatNoTransition("WaterVolume_Amount", m_pAmount, 0.0f);
-		m_nCurrSimID = 0;
 	}
 
 	virtual bool Preprocess();
 	virtual void Render();
 	virtual void Reset(bool bOnSpecChange = false);
-	int          GetCurrentPuddle()
-	{
-		return m_nCurrSimID;
-	}
 
 	virtual const char* GetName() const
 	{
@@ -733,7 +728,6 @@ private:
 
 	// float
 	CEffectParam* m_pAmount;
-	int           m_nCurrSimID;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

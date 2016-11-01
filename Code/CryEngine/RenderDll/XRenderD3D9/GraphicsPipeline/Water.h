@@ -57,7 +57,7 @@ public:
 		ePerPassTexture_VolFogGlobalEnvProbe1 = 26,
 
 		ePerPassTexture_WaterRipple           = 27,
-		ePerPassTexture_WaterVolumeNormal     = 28,
+		ePerPassTexture_WaterNormal           = 28,
 		ePerPassTexture_SceneDepth            = 29,
 		ePerPassTexture_Refraction            = 30,
 		ePerPassTexture_Reflection            = 31,
@@ -69,9 +69,9 @@ public:
 
 	enum EPerPassSampler
 	{
-		ePerPassSampler_Aniso16xWrap = 0,
+		ePerPassSampler_Aniso16xWrap = 1,
 
-		ePerPassSampler_PointWrap = EFSS_MAX,
+		ePerPassSampler_PointWrap    = EFSS_MAX,
 		ePerPassSampler_PointClamp,
 
 		ePerPassSampler_Aniso16xClamp,
@@ -111,6 +111,7 @@ private:
 	bool  PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderView, bool bOnInit, EPass passId);
 	void  UpdatePerPassResources(CRenderView& renderView);
 
+	void  ExecuteWaterNormalGen();
 	void  ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo, CRenderView* pRenderView);
 	void  ExecuteReflection(CRenderView* pRenderView);
 
@@ -120,6 +121,8 @@ private:
 	int32 GetPreviousFrameID(const int32 frameID) const;
 
 private:
+	CFullscreenPass                           m_passWaterNormalGen;
+	CMipmapGenPass                            m_passWaterNormalMipmapGen;
 	CSceneRenderPass                          m_passWaterCausticsSrcGen;
 	CFullscreenPass                           m_passWaterCausticsDilation;
 	CGaussianBlurPass                         m_passBlurWaterCausticsGen0;
@@ -131,7 +134,7 @@ private:
 	CSceneRenderPass                          m_passWaterFogVolumeBeforeWater;
 	CStretchRectPass                          m_passCopySceneTargetReflection;
 	CSceneRenderPass                          m_passWaterReflectionGen;
-	CMipmapGenPass                            m_passMipmapGen;
+	CMipmapGenPass                            m_passWaterReflectionMipmapGen;
 	CStretchRectPass                          m_passCopySceneTarget;
 	CSceneRenderPass                          m_passWaterSurface;
 	CSceneRenderPass                          m_passWaterFogVolumeAfterWater;
@@ -152,6 +155,10 @@ private:
 	CTexture*                                 m_pOceanCausticsTex;
 
 	std::array<CTexture*, RainRippleTexCount> m_pRainRippleTex;
-
 	uint32 m_rainRippleTexIndex;
+
+	int32  m_frameIdWaterSim;
+	Vec4   m_oceanAnimationParams[2];
+
+	bool   m_bWaterNormalGen;
 };

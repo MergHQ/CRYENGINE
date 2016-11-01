@@ -395,7 +395,7 @@ Texture2D sceneDepthTex : register(t29) = TS_ZTarget;
 Texture2D refractionTex : register(t30) = TS_SceneTarget;
 Texture2D reflectionTex : register(t31) = TS_WaterVolumeRefl;
 
-SamplerState aniso16xWrapSState : register(s0) = SS_MaterialAnisoHighWrap;
+SamplerState aniso16xWrapSState : register(s1) = SS_MaterialAnisoHighWrap;
 SamplerState aniso16xClampSState : register(s10) = SS_MaterialAnisoHighWrap;
 SamplerComparisonState linearClampCompSState : register(s11) = SS_Shadow2;
 

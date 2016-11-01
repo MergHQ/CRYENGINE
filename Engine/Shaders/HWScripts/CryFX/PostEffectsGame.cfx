@@ -1112,37 +1112,40 @@ technique ColorGrading
 
 /// Specific data ////////////////////////
 
+Texture2D waterVolumeDisplacementTex : register(t0);
+SamplerState waterVolumeDisplacementSampler : register(s0);
+
 float4 waterVolumesParams;
 
 pixout waterVolumesNormalGenPS(vtxOut IN)
 {
-  pixout OUT;
+	pixout OUT;
 
-  float p0 = tex2D( _tex0, IN.baseTC.xy ).z;
-  float p1 = tex2D( _tex0, IN.baseTC.xy + float2(1,0) / waterVolumesParams.w).z;
-  float p2 = tex2D( _tex0, IN.baseTC.xy + float2(0,1) / waterVolumesParams.w).z;
+	float p0 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy, 0.0f).z;
+	float p1 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy + (float2(1, 0) / waterVolumesParams.w), 0.0f).z;
+	float p2 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy + (float2(0, 1) / waterVolumesParams.w), 0.0f).z;
 
-  float v0 = p0 - p1;
-  float v1 = p0 - p2;
+	float v0 = p0 - p1;
+	float v1 = p0 - p2;
 
-  float3 vNormal = float3(float2(v0, v1), 8);
-  vNormal = normalize(vNormal.xyz);                                                              // 3 inst
- 
-  // eTF_A8B8G8R8S
-  OUT.Color.xyz = vNormal;
-  OUT.Color.w = p0 / 20.0;
+	float3 vNormal = float3(float2(v0, v1), 8);
+	vNormal = normalize(vNormal.xyz);
 
-  return OUT;
+	// eTF_A8B8G8R8S
+	OUT.Color.xyz = vNormal;
+	OUT.Color.w = p0 / 20.0;
+
+	return OUT;
 }
 
 technique WaterVolumesNormalGen
 {
-  pass p0
-  {
-    VertexShader = BaseVS();
-    PixelShader = waterVolumesNormalGenPS();    
-    CullMode = None;    
-  }
+	pass p0
+	{
+		VertexShader = FullscreenTriVS();
+		PixelShader = waterVolumesNormalGenPS();
+		CullMode = None;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -12,8 +12,8 @@ public:
 	CWaterRipplesStage();
 	~CWaterRipplesStage();
 
-	void Init();
-	void Prepare(CRenderView* pRenderView);
+	void Init() override;
+	void Prepare(CRenderView* pRenderView) override;
 
 	void Execute(CRenderView* pRenderView);
 

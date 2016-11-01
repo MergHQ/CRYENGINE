@@ -418,6 +418,11 @@ void CWaterFlow::Reset(bool bOnSpecChange)
 
 bool CWaterVolume::Preprocess()
 {
+	if(gRenDev->m_nGraphicsPipeline > 0)
+	{
+		return false;
+	}
+
 	if (!gRenDev->m_RP.m_eQuality)
 		return false;
 

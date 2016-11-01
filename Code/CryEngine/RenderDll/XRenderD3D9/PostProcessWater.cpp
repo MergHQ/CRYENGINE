@@ -145,16 +145,6 @@ void CWaterFlow::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace WaterVolumeStaticData
-{
-CWater* pWaterSim = 0;
-void GetMemoryUsage(ICrySizer* pSizer)
-{
-	if (pWaterSim)
-		pWaterSim->GetMemoryUsage(pSizer);
-}
-}
-
 void CWaterVolume::Render()
 {
 	PROFILE_LABEL_SCOPE("WATERVOLUME_TEXGEN");
@@ -165,9 +155,6 @@ void CWaterVolume::Render()
 
 	{
 		static int nFrameID = 0;
-
-		// remember ptr of WaterSim to access it with CrySizer
-		WaterVolumeStaticData::pWaterSim = WaterSimMgr();
 
 		const int nGridSize = 64;
 
