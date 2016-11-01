@@ -407,7 +407,10 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pDiskProfiler = NULL;
 
 #if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler::GetInstance().Init(this);
+	if (!startupParams.bShaderCacheGen)
+	{
+		CBootProfiler::GetInstance().Init(this);
+	}
 #endif
 
 	InitThreadSystem();
