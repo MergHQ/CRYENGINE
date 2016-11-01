@@ -252,7 +252,7 @@ void CFlowNode_AISequenceEnd::ProcessEvent(EFlowEvent event, SActivationInfo* pA
 			if (IsPortActive(pActInfo, InputPort_End))
 			{
 				const SequenceId assignedSequenceId = GetAssignedSequenceId();
-				assert(assignedSequenceId);
+				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "AISequence:End node doesn't have any sequence assigned.");
 				if (!assignedSequenceId)
 					return;
 
