@@ -475,7 +475,7 @@ CBootProfilerRecord* CBootProfiler::StartBlock(const char* name, const char* arg
 {
 	if (CBootProfilerSession* pSession = m_pCurrentSession)
 	{
-		const unsigned int curThread = CryGetCurrentThreadId();
+		const threadID curThread = CryGetCurrentThreadId();
 		const unsigned int threadIndex = gThreadsInterface.GetThreadIndexByID(curThread);
 		sessionIndex = CBootProfilerSession::sSessionCounter;
 		return pSession->StartBlock(name, args, threadIndex);
@@ -514,6 +514,7 @@ void CBootProfiler::StartFrame(const char* name)
 	if (prev_CV_sys_bp_frames_threshold == 0.0f && CV_sys_bp_frames_threshold != 0.0f)
 	{
 		gThreadsInterface.Reset();
+		gEnv->bBootProfilerEnabledFrames = true;
 	}
 	prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
 
@@ -587,6 +588,11 @@ void CBootProfiler::StopFrame()
 
 		m_pPreviousSession = pSession;
 		m_pCurrentSession = nullptr;
+
+		if (bDisablingThresholdMode)
+		{
+			gEnv->bBootProfilerEnabledFrames = false;
+		}
 	}
 
 	prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
@@ -630,6 +636,7 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 		}
 	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
 		{
+			CV_sys_bp_time_threshold = 0.1f;
 			StartSession("level");
 			break;
 		}
@@ -642,6 +649,8 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 			//level loading can be stopped here, or m_levelLoadAdditionalFrames can be used to prolong dump for this amount of frames
 			StopSession();
 			//m_levelLoadAdditionalFrames = 20;
+
+			CV_sys_bp_time_threshold = 0.0f; //gather all blocks when in runtime
 			break;
 		}
 	}
