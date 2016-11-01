@@ -2838,6 +2838,8 @@ int CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity *pent, int bGridLocked)
 			for(; pent0->m_prev && pent0->m_prev->m_pOuterEntity==pent->m_pOuterEntity; bPermanent|=(pent0=pent0->m_prev)->m_bPermanent);
 			for(; pent1->m_next && pent1->m_next->m_pOuterEntity==pent->m_pOuterEntity; bPermanent|=(pent1=pent1->m_next)->m_bPermanent);
 		}
+		if (pent->m_iPrevSimClass==iSimClass && pent->m_bPrevPermanent==bPermanent)
+			return 0;
 
 		if (iPrevSimClass<8u) {
 			if (pent1->m_next) pent1->m_next->m_prev = pent0->m_prev;
