@@ -8,8 +8,8 @@ set(MSVC_COMMON_FLAGS
 	/Gy		# Enable function level linking
 	/GR- 		# Disable RTTI
 	/utf-8		# Set source and execution charset to utf-8
-	/Wv:18
-
+	/Wv:18		# Disable warnings until SDK depedencies switch to UTF-8/ASCII.
+	/MP
 	/bigobj
 
 	#/Wx
@@ -19,8 +19,8 @@ string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
 # Override cxx flags
 set(CMAKE_CXX_FLAGS "${MSVC_COMMON_FLAGS}" CACHE STRING "C++ Common Flags" FORCE)
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zo" CACHE STRING "C Flags" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zo" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "/MDd /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C Flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
 
 # Create PDBs (/Zi)
 # Create better debug info (/Zo)

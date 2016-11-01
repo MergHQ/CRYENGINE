@@ -2,21 +2,21 @@
 set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
 set (BinaryFileList_Win64
-	${CryEngine_DIR}/Code/SDKs/XT_13_4/bin_vc14/*.dll
-	${CryEngine_DIR}/Code/SDKs/Mono/bin/x64/mono-2.0.dll
+	${SDK_DIR}/XT_13_4/bin_vc14/*.dll
+	${SDK_DIR}/Mono/bin/x64/mono-2.0.dll
 
-	${CryEngine_DIR}/Code/SDKs/Brofiler/ProfilerCore64.dll
+	${SDK_DIR}/Brofiler/ProfilerCore64.dll
 
-	${CryEngine_DIR}/Code/SDKs/audio/oculus/wwise/bin/plugins/OculusSpatializer.dll
+	${SDK_DIR}/audio/oculus/wwise/bin/plugins/OculusSpatializer.dll
 
-	${CryEngine_DIR}/Code/SDKs/OpenVR/bin/win64/*.*
+	${SDK_DIR}/OpenVR/bin/win64/*.*
 
-	${CryEngine_DIR}/Code/SDKs/OSVR/dll/*.dll
+	${SDK_DIR}/OSVR/dll/*.dll
 
-	${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/bin/*.dll
+	${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll
 
-	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
-	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
 
 	${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe
 	${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini
@@ -24,10 +24,10 @@ set (BinaryFileList_Win64
 	)
 
 set (BinaryFileList_Win32
-	${CryEngine_DIR}/Code/SDKs/Brofiler/ProfilerCore32.dll
-	${CryEngine_DIR}/Code/SDKs/Mono/bin/x86/mono-2.0.dll
-	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/Debuggers/x86/dbghelp.dll"
-	"${CryEngine_DIR}/Code/SDKs/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
+	${SDK_DIR}/Brofiler/ProfilerCore32.dll
+	${SDK_DIR}/Mono/bin/x86/mono-2.0.dll
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
 
 	${SDK_DIR}/CrashRpt/1403/bin/CrashSender1403.exe
 	${SDK_DIR}/CrashRpt/1403/bin/crashrpt_lang.ini
@@ -35,7 +35,7 @@ set (BinaryFileList_Win32
 	)
 
 set (BinaryFileList_LINUX64
-	${CryEngine_DIR}/Code/SDKs/ncurses/lib/libncursesw.so.6
+	${SDK_DIR}/ncurses/lib/libncursesw.so.6
 	)
 
 macro(deploy_runtime_file source destination)
@@ -76,18 +76,18 @@ macro(copy_binary_files_to_target)
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
-
+  
 	if (ORBIS)
-		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Orbis/target/sce_module/*.prx app/sce_module)
+		deploy_runtime_files(${SDK_DIR}/Orbis/target/sce_module/*.prx app/sce_module)
 	endif()
 
 	if (WIN64) 
-		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
-		deploy_runtime_files(${CryEngine_DIR}/Code/SDKs/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
+		deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
+		deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
 
-		deploy_runtime_files("${CryEngine_DIR}/Code/SDKs/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
 	elseif(WIN32)
-		deploy_runtime_files("${CryEngine_DIR}/Code/SDKs/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
+		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
 	endif ()
 
 	if(WIN32 AND OPTION_CRYMONO)

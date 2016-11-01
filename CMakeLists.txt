@@ -28,8 +28,6 @@ if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	endif()
 endif()
 
-include(${CryEngine_DIR}/Tools/CMake/CopyFilesToBin.cmake)
-
 set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
 project(${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM} CXX C)
 
@@ -117,6 +115,9 @@ set(CRY_EXTENSIONS_DIR ${CryEngine_DIR}/Code/CryExtensions)
 set(WINSDK_SDK_DIR "${SDK_DIR}/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
+
+# Must be included after SDK_DIR definition
+include(${CryEngine_DIR}/Tools/CMake/CopyFilesToBin.cmake)
 
 # custom defines
 set(global_defines "CRYENGINE_DEFINE")
