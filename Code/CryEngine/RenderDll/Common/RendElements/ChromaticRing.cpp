@@ -49,7 +49,7 @@ ChromaticRing::ChromaticRing(const char* name)
 
 	m_meshDirty = true;
 
-	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
 	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_wireframePrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }

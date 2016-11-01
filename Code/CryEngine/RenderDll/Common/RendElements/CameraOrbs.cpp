@@ -78,7 +78,7 @@ CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 	m_samplerPointClamp = CTexture::GetTexState(STexState(FILTER_POINT, true));
 
 	// share one constant buffer between both primitives
-	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
 	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }
@@ -297,7 +297,7 @@ bool CameraOrbs::PreparePrimitives(const SPreparePrimitivesContext& context)
 
 		ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[0], Vec2(m_globalSize));
 		constants->lensDetailParams = Vec4(1, 1, GetLensDetailBumpiness(), 0);
-	
+
 		if (m_bUseLensTex)
 			constants->lensDetailParams2 = Vec4(GetLensTexStrength(), GetLensDetailShadingStrength(), GetLensDetailBumpiness(), 0);
 

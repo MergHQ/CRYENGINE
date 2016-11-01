@@ -22,13 +22,15 @@ void Glow::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
-Glow::Glow(const char* name) 
+Glow::Glow(const char* name)
 	: COpticsElement(name)
 	, m_fFocusFactor(0.3f)
 	, m_fPolyonFactor(32.f)
 	, m_fGamma(1)
 {
-	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
+	CConstantBufferPtr pcb = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+
+	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pcb, EShaderStage_Vertex | EShaderStage_Pixel);
 }
 
 void Glow::Load(IXmlNode* pNode)
@@ -67,7 +69,7 @@ bool Glow::PreparePrimitives(const SPreparePrimitivesContext& context)
 
 	uint64 rtFlags = 0;
 	ApplyGeneralFlags(rtFlags);
-	
+
 	m_primitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techName, rtFlags);
 	m_primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
