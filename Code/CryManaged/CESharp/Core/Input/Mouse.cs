@@ -228,6 +228,9 @@ namespace CryEngine
 
 		public static void HitScenes(int x, int y)
 		{
+            if (!Global.gEnv.pGameFramework.GetILevelSystem().IsLevelLoaded())
+                return;
+
 			HitEntityId = 0;
 			float u = 0, v = 0;
 			var mouseDir = Camera.Unproject(x, y);
