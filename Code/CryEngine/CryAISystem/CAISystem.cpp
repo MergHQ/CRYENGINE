@@ -2265,8 +2265,6 @@ void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 		// don't flush all areas here if we're in segmented world
 		if (!gEnv->p3DEngine->GetSegmentsManager()) //@TODO: make seg-world manager available from gEnv.
 			FlushAllAreas();
-#else
-		FlushAllAreas();
 #endif
 
 		unsigned numAreas;
@@ -2315,8 +2313,7 @@ void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 // // loads the triangulation for this level and mission
 //
 //-----------------------------------------------------------------------------------------------------------
-void CAISystem::LoadNavigationData(const char* szLevel, const char* szMission,
-                                   const bool bRequiredQuickLoading /* = false */, const bool bAfterExporting /* = false */)
+void CAISystem::LoadNavigationData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags /*= eAILoadDataFlag_AllSystems*/)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Navigation, 0, "AI Navigation");
 
@@ -2330,32 +2327,50 @@ void CAISystem::LoadNavigationData(const char* szLevel, const char* szMission,
 
 	if (m_bInitialized)
 		Reset(IAISystem::RESET_INTERNAL_LOAD);
-	m_pNavigation->LoadNavigationData(szLevel, szMission);
 
-	if (!bRequiredQuickLoading)
+	FlushAllAreas();
+
+	if (loadDataFlags & eAILoadDataFlag_DesignedAreas)
 	{
-		//////////////////////////////////////////////////////////////////////////
-		/// MNM
-		/// First clear any previous data, and then load stored meshes
-		/// Note smart objects must go after, they will link to the mesh after is loaded
-		gAIEnv.pNavigationSystem->Clear();
-		ISegmentsManager* pSegmentsManager = gEnv->p3DEngine->GetSegmentsManager();
-		if (gEnv->IsEditor() || !pSegmentsManager)
+		m_pNavigation->LoadNavigationData(szLevel, szMission);
+	}
+
+	if (loadDataFlags & eAILoadDataFlag_MNM)
+	{
+		if ((loadDataFlags & eAILoadDataFlag_QuickLoad) == 0)
 		{
-			char mnmFileName[1024] = { 0 };
-			cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
-			gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
+			LoadMNM(szLevel, szMission, (loadDataFlags & eAILoadDataFlag_AfterExport) != 0);
 		}
-#ifdef DEDICATED_SERVER
 		else
 		{
-			// load ai data from segment pak instead
-			pSegmentsManager->ForceLoadSegments(ISegmentsManager::slfNavigation);
+			// TODO: We will need to restore navmesh to desired (initial or saved) state in the case there are some dynamic changes to navmesh
 		}
-#endif
 	}
 
 	m_pSmartObjectManager->SoftReset(); // Re-register smart objects
+}
+
+void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterExporting)
+{
+	//////////////////////////////////////////////////////////////////////////
+	/// MNM
+	/// First clear any previous data, and then load stored meshes
+	/// Note smart objects must go after, they will link to the mesh after is loaded
+	gAIEnv.pNavigationSystem->Clear();
+	ISegmentsManager* pSegmentsManager = gEnv->p3DEngine->GetSegmentsManager();
+	if (gEnv->IsEditor() || !pSegmentsManager)
+	{
+		char mnmFileName[1024] = { 0 };
+		cry_sprintf(mnmFileName, "%s/mnmnav%s.bai", szLevel, szMission);
+		gAIEnv.pNavigationSystem->ReadFromFile(mnmFileName, bAfterExporting);
+	}
+#ifdef DEDICATED_SERVER
+	else
+	{
+		// load ai data from segment pak instead
+		pSegmentsManager->ForceLoadSegments(ISegmentsManager::slfNavigation);
+	}
+#endif
 }
 
 void CAISystem::LoadCover(const char* szLevel, const char* szMission)
@@ -2369,7 +2384,7 @@ void CAISystem::LoadCover(const char* szLevel, const char* szMission)
 	gAIEnv.pCoverSystem->ReadSurfacesFromFile(coverFileName);
 }
 
-void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const bool bRequiredQuickLoading /* = false */)
+void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags /*= eAILoadDataFlag_AllSystems*/)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -2378,22 +2393,26 @@ void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const 
 	                 ("Loading AI data for level %s without a mission: AI navigation will be broken!",
 	                  szLevel ? szLevel : "<None>"));
 
-	bool bLoadAI = true;
 	if (gEnv->bMultiplayer)
 	{
-		bLoadAI = IsEnabled();
-		if (ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem"))
+		if (!IsEnabled())
+			return;
+
+		ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem");
+		if (pEnableAI && !pEnableAI->GetIVal())
 		{
-			if (!pEnableAI->GetIVal())
-			{
-				bLoadAI = false;
-			}
+			return;
 		}
 	}
-	if (bLoadAI)
+
+	SetLevelPath(szLevel);
+
+	if (loadDataFlags & eAILoadDataFlag_Navigation)
 	{
-		SetLevelPath(szLevel);
-		LoadNavigationData(szLevel, szMission, bRequiredQuickLoading);
+		LoadNavigationData(szLevel, szMission, loadDataFlags);
+	}
+	if (loadDataFlags & eAILoadDataFlag_Covers)
+	{
 		LoadCover(szLevel, szMission);
 	}
 }
@@ -2698,22 +2717,6 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 		CAIRadialOcclusionRaycast::UpdateActiveCount();
 
 		m_lightManager.Update(false);
-
-		if (m_pNavigation->GetNavDataState() == CNavigation::NDS_BAD)
-		{
-			static CTimeValue lastTime = frameStartTime;
-			if ((frameStartTime - lastTime).GetMilliSecondsAsInt64() > 5000)
-			{
-				AIWarning("*** AI navigation is bad. Please regenerate. AI SYSTEM IS NOT UPDATED");
-				lastTime = frameStartTime;
-			}
-			return;
-		}
-		else if (m_pNavigation->GetNavDataState() != CNavigation::NDS_OK)
-		{
-			gAIEnv.pPerceptionManager->Update(m_frameDeltaTime);
-			return;
-		}
 
 #ifdef STOPPER_CAN_USE_COUNTER
 		CCalculationStopper::m_useCounter = gAIEnv.CVars.UseCalculationStopperCounter != 0;

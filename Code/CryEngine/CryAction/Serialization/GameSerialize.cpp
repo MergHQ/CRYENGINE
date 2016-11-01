@@ -798,7 +798,10 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 			const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
 			const char* const szGameTypeName = pGameTypeInfo ? pGameTypeInfo->name.c_str() : "";
 			if (gEnv->pAISystem)
-				gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, requireQuickLoad);
+			{
+				const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems | (bIsQuickLoading ? eAILoadDataFlag_QuickLoad : eAILoadDataFlag_None);
+				gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, loadDataFlags);
+			}
 		}
 
 		checkpoint.Check("AIFlush");
@@ -1565,7 +1568,10 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 		const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
 		const char* const szGameTypeName = pGameTypeInfo ? pGameTypeInfo->name.c_str() : "";
 		if (gEnv->pAISystem)
-			gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, requireQuickLoad);
+		{
+			const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems | (bIsQuickLoading ? eAILoadDataFlag_QuickLoad : eAILoadDataFlag_None);
+			gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, loadDataFlags);
+		}
 	}
 
 	loadEnv.m_bHaveReserved = true;
