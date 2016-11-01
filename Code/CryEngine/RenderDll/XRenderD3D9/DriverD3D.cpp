@@ -6087,15 +6087,6 @@ void CD3D9Renderer::SetCamera(const CCamera& cam)
 	//mathMatrixPerspectiveFov(m, fov, cam.GetProjRatio(), cam.GetNearPlane(), cam.GetFarPlane());
 	//D3DXMatrixPerspectiveFovRH(m, fov, cam.GetProjRatio(), cam.GetNearPlane(), cam.GetFarPlane());
 
-	if (!IsRecursiveRenderView() && (m_RenderTileInfo.nGridSizeX > 1.f || m_RenderTileInfo.nGridSizeY > 1.f))
-	{
-		// shift and scale viewport
-		(*m).m00 *= m_RenderTileInfo.nGridSizeX;
-		(*m).m11 *= m_RenderTileInfo.nGridSizeY;
-		(*m).m20 = (m_RenderTileInfo.nGridSizeX - 1) - m_RenderTileInfo.nPosX * 2.0f;
-		(*m).m21 = -((m_RenderTileInfo.nGridSizeY - 1) - m_RenderTileInfo.nPosY * 2.0f);
-	}
-
 	Matrix44_tpl<f64> mCam44T = mCam34.GetTransposed();
 	Matrix44_tpl<f64> mView64;
 	mathMatrixLookAtInverse(&mView64, &mCam44T);
