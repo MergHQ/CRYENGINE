@@ -188,7 +188,7 @@ void CUqsDatabaseSerializationCache::BuildTypeInfoToNameMap()
 CUqsEditorContext::CUqsEditorContext()
 {
 	m_pQueryListProvider.reset(
-	  new CQueryListProvider(uqs::core::IHubPlugin::GetHub().GetEditorLibraryProvider(), *this));
+	  new CQueryListProvider(*this));
 	m_pQueryListProvider->Populate();
 }
 

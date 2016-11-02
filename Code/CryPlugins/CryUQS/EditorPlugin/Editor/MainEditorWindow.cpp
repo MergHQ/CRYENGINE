@@ -14,6 +14,7 @@
 #include <QAbstractButton>
 #include <QDialogButtonbox>
 #include <QLineEdit>
+#include <QMessageBox>
 
 #include <QPropertyTree/QPropertyTree.h>
 #include <Controls/QuestionDialog.h>
@@ -102,6 +103,13 @@ CMainEditorWindow::CMainEditorWindow()
 	connect(&m_editorContext.GetQueryListProvider(), &CQueryListProvider::DocumentAboutToBeRemoved, this, &CMainEditorWindow::OnDocumentAboutToBeRemoved);
 
 	BuildMenu();
+
+	// disable everything if the UQS engine plugin was not loaded
+	if (!uqs::core::IHubPlugin::GetHubPtr())
+	{
+		QMessageBox::warning(this, "UQS engine-plugin not loaded", "The UQS Editor will be disabled as the UQS core engine-plugin hasn't been loaded.");
+		setEnabled(false);
+	}
 }
 
 CMainEditorWindow::~CMainEditorWindow()
@@ -116,6 +124,19 @@ CMainEditorWindow::~CMainEditorWindow()
 	}
 
 	GetIEditor()->UnregisterNotifyListener(this);
+}
+
+const char* CMainEditorWindow::GetPaneTitle() const
+{
+	// check for whether the UQS engine plugin has been loaded
+	if (uqs::core::IHubPlugin::GetHubPtr())
+	{
+		return "UQS Editor";
+	}
+	else
+	{
+		return "UQS Editor (disabled due to the UQS engine-plugin not being loaded)";
+	}
 }
 
 void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)

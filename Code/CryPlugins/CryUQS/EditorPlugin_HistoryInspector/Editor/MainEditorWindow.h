@@ -28,7 +28,7 @@ public:
 	~CMainEditorWindow();
 
 	// CDockableWindow
-	virtual const char*                       GetPaneTitle() const override        { return "UQS Query History Inspector"; }
+	virtual const char*                       GetPaneTitle() const override;
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~CDockableWindow
 

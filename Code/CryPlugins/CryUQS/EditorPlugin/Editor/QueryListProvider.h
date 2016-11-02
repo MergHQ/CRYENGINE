@@ -43,7 +43,7 @@ class CQueryListProvider : public Explorer::IExplorerEntryProvider
 {
 	Q_OBJECT
 public:
-	explicit CQueryListProvider(uqs::datasource::IEditorLibraryProvider* pProvider, CUqsEditorContext& editorContext);
+	explicit CQueryListProvider(CUqsEditorContext& editorContext);
 	~CQueryListProvider();
 	void                              Populate();
 
@@ -87,6 +87,5 @@ private:
 private:
 
 	Explorer::CEntryList<SUqsQueryEntry>     m_queries;
-	uqs::datasource::IEditorLibraryProvider* m_pProvider;
 	CUqsEditorContext&                       m_editorContext;
 };

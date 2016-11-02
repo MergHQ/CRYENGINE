@@ -78,9 +78,8 @@ void SUqsQueryEntry::SetDocument(std::unique_ptr<CUqsQueryDocument>&& pDocument)
 // CQueryListProvider
 //////////////////////////////////////////////////////////////////////////
 
-CQueryListProvider::CQueryListProvider(uqs::datasource::IEditorLibraryProvider* pProvider, CUqsEditorContext& editorContext)
+CQueryListProvider::CQueryListProvider(CUqsEditorContext& editorContext)
 	: m_queries()
-	, m_pProvider(pProvider)
 	, m_editorContext(editorContext)
 {}
 
@@ -110,10 +109,13 @@ void CQueryListProvider::Populate()
 {
 	m_queries.Clear();
 
-	if (m_pProvider)
+	if (uqs::core::IHub* pHub = uqs::core::IHubPlugin::GetHubPtr())
 	{
-		SListQueriesVisitor visitor(m_queries);
-		m_pProvider->GetQueriesList(visitor);
+		if (uqs::datasource::IEditorLibraryProvider* pProvider = pHub->GetEditorLibraryProvider())
+		{
+			SListQueriesVisitor visitor(m_queries);
+			pProvider->GetQueriesList(visitor);
+		}
 	}
 }
 

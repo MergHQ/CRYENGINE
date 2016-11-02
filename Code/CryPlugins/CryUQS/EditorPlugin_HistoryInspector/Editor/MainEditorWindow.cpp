@@ -416,6 +416,19 @@ CMainEditorWindow::~CMainEditorWindow()
 	GetIEditor()->UnregisterNotifyListener(this);
 }
 
+const char* CMainEditorWindow::GetPaneTitle() const
+{
+	// check for whether the UQS engine plugin has been loaded
+	if (uqs::core::IHubPlugin::GetHubPtr())
+	{
+		return "UQS Query History Inspector";
+	}
+	else
+	{
+		return "UQS Query History Inspector (disabled due to the UQS engine-plugin not being loaded)";
+	}
+}
+
 void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 {
 	switch (ev)
