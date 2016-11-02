@@ -831,7 +831,9 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 
 	// Wait a reasonable amount of time for the render thread to reach a safe point
 	const uint timeoutMs = 200;
-	gEnv->pRenderer->StopRendererAtFrameEnd(timeoutMs);
+
+	if (gEnv->pRenderer)
+		gEnv->pRenderer->StopRendererAtFrameEnd(timeoutMs);
 
 	// Ensure all threads have finished writing to log before suspending them.
 	// Otherwise we run the risk of suspending a thread which is holding a WinApi lock

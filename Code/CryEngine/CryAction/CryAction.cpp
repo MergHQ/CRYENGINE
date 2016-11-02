@@ -765,7 +765,7 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		}
 	}
 
-	if (gEnv->pNetwork->GetLobby() &&
+	if (CCryAction::GetCryAction()->GetIGameSessionHandler() &&
 	    !CCryAction::GetCryAction()->GetIGameSessionHandler()->ShouldCallMapCommand(tempLevel, tempGameRules))
 	{
 		return;
