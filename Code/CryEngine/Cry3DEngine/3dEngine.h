@@ -559,11 +559,6 @@ public:
 	virtual void                      LockCGFResources();
 	virtual void                      UnlockCGFResources();
 
-	//! paint voxel shape
-	virtual IMemoryBlock* Voxel_GetObjects(Vec3 vPos, float fRadius, int nSurfaceTypeId, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget);
-	virtual void          Voxel_Paint(Vec3 vPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fMinVoxelSize);
-	virtual void          Voxel_SetFlags(bool bPhysics, bool bSimplify, bool bShadows, bool bMaterials);
-
 	virtual void          SerializeState(TSerialize ser);
 	virtual void          PostSerialize(bool bReading);
 
@@ -1061,8 +1056,6 @@ public:
 	virtual ITerrain*             GetITerrain()             { return (ITerrain*)m_pTerrain; }
 	virtual IVisAreaManager*      GetIVisAreaManager()      { return (IVisAreaManager*)m_pVisAreaManager; }
 	virtual IMergedMeshesManager* GetIMergedMeshesManager() { return (IMergedMeshesManager*)m_pMergedMeshesManager; }
-
-	virtual IVoxTerrain*          GetIVoxTerrain();
 
 	virtual ITerrain*             CreateTerrain(const STerrainInfo& TerrainInfo);
 	void                          DeleteTerrain();

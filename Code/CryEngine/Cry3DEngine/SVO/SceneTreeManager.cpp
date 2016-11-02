@@ -252,8 +252,4 @@ void CSvoManager::RegisterMovement(const AABB& objBox)
 		gSvoEnv->m_pSvoRoot->RegisterMovement(objBox);
 }
 
-void CSvoManager::Voxel_Paint(Vec3 vPaintPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fVoxelSize)
-{
-}
-
 #endif

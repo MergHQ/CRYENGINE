@@ -3919,24 +3919,6 @@ Vec3 C3DEngine::GetTerrainSurfaceNormal(Vec3 vPos)
 	return m_pTerrain ? m_pTerrain->GetTerrainSurfaceNormal(vPos, 0.5f * GetHeightMapUnitSize()) : Vec3(0.f, 0.f, 1.f);
 }
 
-IMemoryBlock* C3DEngine::Voxel_GetObjects(Vec3 vPos, float fRadius, int nSurfaceTypeId, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget)
-{
-	return 0;
-}
-
-void C3DEngine::Voxel_Paint(Vec3 vPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fVoxelSize)
-{
-}
-
-IVoxTerrain* C3DEngine::GetIVoxTerrain()
-{
-	return 0;
-}
-
-void C3DEngine::Voxel_SetFlags(bool bPhysics, bool bSimplify, bool bShadows, bool bMaterials)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 IIndexedMesh* C3DEngine::CreateIndexedMesh()
 {

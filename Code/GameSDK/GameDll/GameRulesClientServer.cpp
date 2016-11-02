@@ -774,13 +774,6 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 void CGameRules::ClientExplosion(SExplosionContainer &explosionContainer)
 {
 	ExplosionInfo& explosionInfo = explosionContainer.m_explosionInfo;
-
-	// let 3D engine know about explosion (will create holes and remove vegetation)
-	if (explosionInfo.hole_size > 1.0f && gEnv->p3DEngine->GetIVoxTerrain())
-	{
-		gEnv->p3DEngine->OnExplosion(explosionInfo.pos, explosionInfo.hole_size, true);
-	}
-
 	TExplosionAffectedEntities affectedEntities;
 		
 	CalculateExplosionAffectedEntities(explosionInfo, affectedEntities);
