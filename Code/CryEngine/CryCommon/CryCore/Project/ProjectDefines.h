@@ -48,11 +48,6 @@
 	#undef TOOLS_SUPPORT_ORBIS
 #endif
 
-// 2015/08/26: Latest PVR TexLib doesn't have VS2015 libs yet so it won't link with VS2015.
-#if _MSC_VER >= 1900
-	#undef TOOLS_SUPPORT_POWERVR
-#endif
-
 // Type used for vertex indices
 #if defined(RESOURCE_COMPILER)
 typedef uint32 vtx_idx;
