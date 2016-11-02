@@ -69,7 +69,7 @@ private:
 			return strcmp(a, b) < 0;
 		}
 	};
-	std::map<const char*, const SNetMessageDef*, LTStr, stl::STLGlobalAllocator<std::pair<const char*, const SNetMessageDef*>>> m_nameToDef;
+	std::map<const char*, const SNetMessageDef*, LTStr, stl::STLGlobalAllocator<std::pair<const char* const, const SNetMessageDef*>>> m_nameToDef;
 };
 
 #endif

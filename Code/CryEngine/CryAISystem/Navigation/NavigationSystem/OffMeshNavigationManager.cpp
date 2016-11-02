@@ -677,7 +677,7 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 		//////////////////////////////////////////////////////////////////////////
 		/// Find object's smart classes which were unable to register before to be
 		/// registered again because of the change
-		for (TRegisteredObjects::const_iterator objectIt = m_registeredObjects.begin(); objectIt != m_registeredObjects.end(); ++objectIt)
+		for (auto objectIt = m_registeredObjects.cbegin(), iterEnd = m_registeredObjects.cend(); objectIt != iterEnd; ++objectIt)
 		{
 			const TSOClassInfo classInfos = objectIt->second;
 			for (TSOClassInfo::const_iterator classIt = classInfos.begin(); classIt != classInfos.end(); ++classIt)
@@ -692,7 +692,7 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 
 		//////////////////////////////////////////////////////////////////////////
 		/// Register again those objects which could have been affected by the change
-		for (std::vector<EntityId>::const_iterator objectIt = tempObjectIds.begin(); objectIt != tempObjectIds.end(); ++objectIt)
+		for (auto objectIt = tempObjectIds.cbegin(), iterEnd = tempObjectIds.cend(); objectIt != iterEnd; ++objectIt)
 		{
 			CSmartObject* pSmartObject = CSmartObjectManager::GetSmartObject(*objectIt);
 			assert(pSmartObject);

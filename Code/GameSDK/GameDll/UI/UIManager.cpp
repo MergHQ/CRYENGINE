@@ -64,8 +64,12 @@ void CUIManager::Init()
 
 	m_pWarningManager = new CWarningsManager();
 	m_pOptions = new CProfileOptions();
-	m_pScreenLayoutMan = new ScreenLayoutManager();
-	m_p2DRendUtils = new C2DRenderUtils(m_pScreenLayoutMan);
+
+	if (gEnv->pRenderer)
+	{
+		m_pScreenLayoutMan = new ScreenLayoutManager();
+		m_p2DRendUtils = new C2DRenderUtils(m_pScreenLayoutMan);
+	}
 	m_pHudSilhouettes = new CHUDSilhouettes();
 	m_pCVars = new CUICVars();
 	m_pMOSystem = new CHUDMissionObjectiveSystem();

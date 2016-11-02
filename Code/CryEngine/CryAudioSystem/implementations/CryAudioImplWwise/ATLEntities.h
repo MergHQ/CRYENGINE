@@ -17,7 +17,7 @@ typedef std::vector<AkUniqueID, STLSoundAllocator<AkUniqueID>> TAKUniqueIDVector
 struct SAudioObject final : public IAudioObject
 {
 	typedef std::map<AkAuxBusID, float, std::less<AkAuxBusID>,
-	                 STLSoundAllocator<std::pair<AkAuxBusID, float>>> TEnvironmentImplMap;
+	                 STLSoundAllocator<std::pair<AkAuxBusID const, float>>> TEnvironmentImplMap;
 
 	explicit SAudioObject(AkGameObjectID const _id, bool const _bHasPosition)
 		: id(_id)

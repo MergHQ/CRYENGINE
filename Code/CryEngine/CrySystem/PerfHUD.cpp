@@ -391,7 +391,7 @@ void CPerfHUD::InitUI(IMiniGUI* pGUI)
 	CreateCVarMenuItem(pStatsMenu, "Poly / Lod info", "e_debugDraw", 0, 1);
 	CreateCVarMenuItem(pStatsMenu, "Texture Memory Usage", "e_debugDraw", 0, 4);
 	CreateCVarMenuItem(pStatsMenu, "Detailed Render Stats", "r_Stats", 0, 1);
-	CreateCVarMenuItem(pStatsMenu, "Shader Stats", "r_ProfileShaders", 0, 1);
+	CreateCVarMenuItem(pStatsMenu, "Shader Stats", "r_profiler", 0, 2);
 	CreateCVarMenuItem(pStatsMenu, "Flash Stats", "sys_flash_info", 0, 1);
 
 	//
@@ -408,7 +408,7 @@ void CPerfHUD::InitUI(IMiniGUI* pGUI)
 	}
 
 	CreateCVarMenuItem(pMenu, "Profiler", "profile", 0, 1);
-	CreateCVarMenuItem(pMenu, "Thread Summary", "r_showmt", 0, 1);
+	CreateCVarMenuItem(pMenu, "Thread Summary", "r_profiler", 0, 1);
 	CreateCVarMenuItem(pMenu, "Track File Access", "sys_PakLogInvalidFileAccess", 0, 1);
 
 	//FPS Buckets

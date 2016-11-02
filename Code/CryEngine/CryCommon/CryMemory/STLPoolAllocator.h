@@ -67,6 +67,8 @@ struct STLPoolAllocatorKungFu : public STLPoolAllocatorStatic<sizeof(T), L, A, F
 template<class T, class L = PSyncMultiThread, size_t A = 0, bool FreeWhenEmpty = false>
 class STLPoolAllocator : public SAllocatorConstruct
 {
+	static_assert(!std::is_const<T>::value, "bad type");
+
 public:
 	typedef size_t    size_type;
 	typedef ptrdiff_t difference_type;

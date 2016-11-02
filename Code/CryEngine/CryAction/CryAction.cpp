@@ -1803,7 +1803,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	// init gEnv->pFlashUI
 
-	if (!gEnv->IsDedicated())
+	if (gEnv->pRenderer)
 	{
 		IFlashUIPtr pFlashUI = GetIFlashUIPtr();
 		m_pSystem->SetIFlashUI(pFlashUI ? pFlashUI.get() : NULL);

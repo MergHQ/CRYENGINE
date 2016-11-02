@@ -711,7 +711,7 @@ void CSystem::Render()
 	{
 		if (m_pProcess->GetFlags() & PROC_3DENGINE)
 		{
-			if (!gEnv->IsEditing())  // Editor calls it's own rendering update
+			if (!m_env.IsEditing())  // Editor calls it's own rendering update
 			{
 
 #if !defined(_RELEASE)
@@ -719,25 +719,22 @@ void CSystem::Render()
 					m_pTestSystem->BeforeRender();
 #endif
 
-				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
+				if (m_env.pRenderer && m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
-					    gEnv->IsDedicated() || (gEnv->pRenderer && gEnv->pRenderer->IsPost3DRendererEnabled()))
+						m_env.IsDedicated() || m_env.pRenderer->IsPost3DRendererEnabled())
 					{
 						GetIRenderer()->SetViewport(0, 0, GetIRenderer()->GetWidth(), GetIRenderer()->GetHeight());
 						m_env.p3DEngine->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
 					}
 					else
 					{
-						if (gEnv->pRenderer)
-						{
-							// force rendering of black screen to be sure we don't only render the clear color (which is the fog color by default)
-							gEnv->pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
-							gEnv->pRenderer->Draw2dImage(0, 0, 800, 600, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.f,
-							  0.0f, 0.0f, 0.0f, 1.0f, 0.f);
-						}
+						// force rendering of black screen to be sure we don't only render the clear color (which is the fog color by default)
+						m_env.pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
+						m_env.pRenderer->Draw2dImage(0, 0, 800, 600, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.f, 0.0f, 0.0f, 0.0f, 1.0f, 0.f);
 					}
 				}
+
 #if !defined(_RELEASE)
 				if (m_pVisRegTest)
 					m_pVisRegTest->AfterRender();
@@ -768,9 +765,9 @@ void CSystem::Render()
 #if !defined (_RELEASE) && CRY_PLATFORM_DURANGO
 	RenderPhysicsHelpers();
 #endif
-	if (gEnv->pRenderer)
+	if (m_env.pRenderer)
 	{
-		gEnv->pRenderer->SwitchToNativeResolutionBackbuffer();
+		m_env.pRenderer->SwitchToNativeResolutionBackbuffer();
 	}
 }
 

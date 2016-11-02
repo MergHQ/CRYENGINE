@@ -4,7 +4,7 @@ set(ANDROID TRUE)
 set(GCC_VERSION 4.9)
 
 set(NDKROOT $ENV{NDKROOT})
-set(CMAKE_ANDROID_API 19)
+set(CMAKE_ANDROID_API 23)
 set(CMAKE_ARCH "armv7-a")
 set(CMAKE_SYSTEM_PROCESSOR "armv7-a")
 
@@ -218,8 +218,15 @@ macro(configure_android_launcher name)
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
 	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
 
+	set(so_paths)
+	if(NOT OPTION_STATIC_LINKING)
+		foreach(mod ${SHARED_MODULES})
+			set(so_paths "${so_paths} ${NATIVE_OUTDIR}\\lib${mod}.so")
+		endforeach()
+	endif()
+
 	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD
-		COMMAND copy ${NATIVE_OUTDIR}\\lib${name}.so ${apk_folder_native}\\lib\\armeabi-v7a\\lib${name}.so
+		COMMAND copy ${NATIVE_OUTDIR}\\lib${name}.so ${so_paths} ${apk_folder_native}\\lib\\armeabi-v7a\\
 		COMMAND call $ENV{ANT_HOME}/bin/ant clean
 		COMMAND call $ENV{ANT_HOME}/bin/ant debug
 		COMMAND copy ${apk_folder_native}\\bin\\${name}-debug.apk ${NATIVE_OUTDIR}\\${name}.apk WORKING_DIRECTORY ${apk_folder})	

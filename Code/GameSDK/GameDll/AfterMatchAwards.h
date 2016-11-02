@@ -176,7 +176,7 @@ protected:
 	typedef std::vector<EntityId> ActorsVector;
 
 	//Sessions are stored for every player for the current session
-	typedef std::map<EntityId, SAwardsForPlayer, std::less<EntityId>, stl::STLGlobalAllocator<std::pair<EntityId, SAwardsForPlayer> > > ActorAwardsMap;
+	typedef std::map<EntityId, SAwardsForPlayer, std::less<EntityId>, stl::STLGlobalAllocator<std::pair<const EntityId, SAwardsForPlayer> > > ActorAwardsMap;
 	ActorAwardsMap m_actorAwards;
 
 	CPersistantStats *m_persistantStats;

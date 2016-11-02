@@ -174,7 +174,7 @@ private:
 		TLinkIDList offMeshLinkIDList;
 	};
 
-	typedef stl::STLPoolAllocator<OffMeshLinkIDList, stl::PoolAllocatorSynchronizationSinglethreaded> TSOClassInfoAllocator;
+	typedef stl::STLPoolAllocator<std::pair<const uint32, OffMeshLinkIDList>, stl::PoolAllocatorSynchronizationSinglethreaded> TSOClassInfoAllocator;
 	typedef std::map<uint32, OffMeshLinkIDList, std::less<uint32>, TSOClassInfoAllocator>             TSOClassInfo;
 	typedef std::map<EntityId, TSOClassInfo>                                                          TRegisteredObjects;
 

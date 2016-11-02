@@ -34,7 +34,7 @@ private:
 	CATLEvent* GetInternalInstance();
 	void       ReleaseInternalInstance(CATLEvent* const pOldEvent);
 
-	typedef std::map<AudioEventId, CATLEvent*, std::less<AudioEventId>, STLSoundAllocator<std::pair<AudioEventId, CATLEvent*>>>
+	typedef std::map<AudioEventId, CATLEvent*, std::less<AudioEventId>, STLSoundAllocator<std::pair<AudioEventId const, CATLEvent*>>>
 	  TActiveEventMap;
 
 	TActiveEventMap m_activeAudioEvents;

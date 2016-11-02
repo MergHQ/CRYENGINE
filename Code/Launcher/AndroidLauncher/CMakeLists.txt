@@ -22,7 +22,6 @@ if(ANDROID)
 		SOURCE_GROUP "External Source Files"
 			${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android.c
 			${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c
-			${NDKROOT}/sources/android/native_app_glue/android_native_app_glue.c
 	)
 
 	foreach(game_module ${GAME_MODULES})
@@ -47,7 +46,7 @@ if(ANDROID)
 		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib")
 		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib")
 		set_property(TARGET ${current_launcher} PROPERTY ANDROID_JAVA_SOURCE_DIR .)
-		target_link_libraries(${current_launcher} PRIVATE ${game_module} c log m android EGL GLESv1_CM OpenSLES ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
+		target_link_libraries(${current_launcher} PRIVATE ${game_module} c log ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
 	endforeach()
 
 else()

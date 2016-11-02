@@ -524,7 +524,7 @@ protected:
 public:
 
 	// classes now keep track of all their instances
-	typedef std::multimap<float, CSmartObject*, std::less<float>, stl::STLPoolAllocator<std::pair<float, CSmartObject*>, stl::PoolAllocatorSynchronizationSinglethreaded>> MapSmartObjectsByPos;
+	typedef std::multimap<float, CSmartObject*, std::less<float>, stl::STLPoolAllocator<std::pair<const float, CSmartObject*>, stl::PoolAllocatorSynchronizationSinglethreaded>> MapSmartObjectsByPos;
 	MapSmartObjectsByPos m_MapObjectsByPos; // map of all smart objects indexed by their position
 
 	typedef std::vector<SmartObjectHelper*> VectorHelpers;

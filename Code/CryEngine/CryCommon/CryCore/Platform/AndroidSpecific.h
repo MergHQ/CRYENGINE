@@ -10,8 +10,8 @@
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef _CRY_COMMON_ANDROID_SPECIFIC_HDR_
-#define _CRY_COMMON_ANDROID_SPECIFIC_HDR_
+#pragma once
+
 
 #define CRY_FORCE_MALLOC_NEW_ALIGN
 
@@ -117,4 +117,43 @@ extern int wcsnicmp(const wchar_t* s1, const wchar_t* s2, size_t count);
 	#define fprintf(...) (void) 0
 #endif
 
-#endif //_CRY_COMMON_ANDROID_SPECIFIC_HDR_
+
+////////////////////////////////////////
+// TEMPORARY HARDCODED PATHS
+// Could be pulled into CryCommon
+////////////////////////////////////////
+
+// Get path to user folder
+inline const char* CryGetUserStoragePath()
+{
+	return "/data/user/0/com.crytek.cryengine/files";
+}
+
+// Get path to project root. i.e. assets are stored in a subfolder here
+inline const char* CryGetProjectStoragePath()
+{
+	return "/storage/emulated/0";
+}
+
+// Returns path to CRYENGINE and Crytek provided 3rd Party shared libraries 
+inline const char* CryGetSharedLibraryStoragePath()
+{
+	return "/data/data/com.crytek.cryengine/lib";
+}
+
+#include <dlfcn.h>
+// Returns a handle to the launcher
+inline void* CryGetLauncherModuleHandle()
+{
+	// Calling dlopen(NULL, RTLD_LAZY):
+	//   Native App: [might work]   
+	//   Java App: [doesn't work]: Java -> Native e.g. via SDL2: ::dlopen(NULL, RTLD_LAZY) does not return handle of launcher but of process that loaded the launcher's .so file
+	static void* hLauncherModule = ::dlopen("/data/data/com.crytek.cryengine/lib/libAndroidLauncher.so", RTLD_LAZY);
+	return hLauncherModule;
+
+	// On Linux
+	//return ::dlopen(NULL, RTLD_LAZY);
+
+	// On Windows
+	//GetModuleHandle(0)
+}

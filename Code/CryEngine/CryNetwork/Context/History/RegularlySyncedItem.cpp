@@ -362,7 +362,7 @@ void CRegularlySyncedItems::Verify()
 {
 	/*
 	   #if DETAIL_REGULARLY_SYNCED_ITEM_DEBUG
-	   std::map<uint32, uint32, std::less<uint32>, STLMementoAllocator<std::pair<uint32, uint32> > have;
+	   std::map<uint32, uint32, std::less<uint32>, STLMementoAllocator<std::pair<const uint32, uint32> > have;
 
 	   for (size_t i=0; i<m_freeElems.size(); i++)
 	   {

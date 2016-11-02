@@ -1380,7 +1380,8 @@ bool CAreaManager::SIsNotInGrid::operator()(SAreaCacheEntry const& cacheEntry) c
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAreaManager::SRemoveIfNoAreasLeft::operator()(VectorMap<EntityId, SAreasCache>::value_type& cacheEntry) const
+template<typename K, typename V>
+bool CAreaManager::SRemoveIfNoAreasLeft::operator()(std::pair<K, V>& cacheEntry) const
 {
 	bool bResult = false;
 	TAreaCacheVector::iterator Iter(cacheEntry.second.entries.begin());

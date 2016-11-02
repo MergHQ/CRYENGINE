@@ -5,14 +5,15 @@ from waflib.TaskGen import after_method, before_method, feature, extension
 from waflib import Utils
 import os.path
 
-android_target_version = 19
-android_compiler_version = 4.9
+android_target_version = 23
+android_gcc_version = 4.9
 android_app_name = "CRYENGINE SDK"
+android_launcher_name = "AndroidLauncher"
 android_package_name = "com.crytek.cryengine"
 android_version_code = "1"
 android_version_name = "1.0"
 android_debuggable = "true"
-android_min_sdk_version = "17"
+android_min_sdk_version = "23"
 android_permissions_required = ["WRITE_EXTERNAL_STORAGE", "INTERNET"]
 
 ANT_BUILD_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
@@ -82,10 +83,9 @@ APP_MANIFEST_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 			android:label="@string/app_name"
 			android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 			android:screenOrientation="landscape"
+			android:keepScreenOn="true"
 			android:configChanges="orientation|keyboardHidden">
 
-			<!-- Tell NativeActivity the name of our .so -->
-			<meta-data android:name="android.app.lib_name" android:value="AndroidLauncher" />
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
@@ -96,6 +96,11 @@ APP_MANIFEST_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 </manifest> 
 <!-- END_INCLUDE(manifest) -->
 '''
+
+JAVA_LOAD_SHARED_LIB_LIST_TEMPLATE = r'''${for shared_lib_to in xml_data['shared_libs']}${shared_lib_to}
+${endfor} '''
+
+
 
 COMPILE_TEMPLATE = '''def f(xml_data):
 	lst = []
@@ -173,7 +178,7 @@ def rm_blank_lines(txt):
 
 
 @conf
-def check_win_x64_android_arm_gcc_installed(conf):
+def check_win_x64_android_arm_installed(conf):
 	"""Check compiler is actually installed on executing machine
 	"""
 	v = conf.env
@@ -199,14 +204,11 @@ def check_win_x64_android_arm_gcc_installed(conf):
 	# Configure platform and compiler mutations
 	platform_target = '/platforms/android-' + str(android_target_version)
 	compiler_target = '/arch-arm'
-	compiler_version = str(android_compiler_version)
-	toolchain = 'arm-linux-androideabi-' + compiler_version
+	toolchain = 'llvm'
 
 	android_sdk_platform_target = android_sdk_home + platform_target
 	android_ndk_platform_compiler_target = android_ndk_home + platform_target + compiler_target
 	android_ndk_toolchain_target = android_ndk_home + '/toolchains/' + toolchain + '/prebuilt/windows-x86_64'
-	if not os.path.exists(android_ndk_toolchain_target): # Fallback if the 64 bit compiler is not found
-		android_ndk_toolchain_target = android_ndk_home + '/toolchains/' + toolchain + '/prebuilt/windows'
 
 	# Validate paths
 	for path in [android_sdk_platform_target, android_ndk_platform_compiler_target, android_ndk_toolchain_target]:
@@ -218,7 +220,7 @@ def check_win_x64_android_arm_gcc_installed(conf):
 
 
 @conf
-def load_win_x64_android_arm_gcc_common_settings(conf):
+def load_win_x64_android_arm_common_settings(conf):
 	"""Setup all compiler and linker settings shared over all win_x64_arm_linux_androideabi_4_8 configurations
 	"""
 
@@ -254,22 +256,40 @@ def load_win_x64_android_arm_gcc_common_settings(conf):
 	# Configure platform and compiler mutations
 	platform_target = '/platforms/android-' + str(android_target_version)
 	compiler_target = '/arch-arm'
-	compiler_version = str(android_compiler_version)
-	toolchain = 'arm-linux-androideabi-' + compiler_version
+
+	clang_toolchain = 'llvm'
+	gnu_toolchain = 'arm-linux-androideabi-' + str(android_gcc_version)
+	
+		
 
 	android_sdk_platform_target = android_sdk_home + platform_target
 	android_ndk_platform_compiler_target = android_ndk_home + platform_target + compiler_target
-	android_ndk_toolchain_target = android_ndk_home + '/toolchains/' + toolchain + '/prebuilt/windows-x86_64'
-	if not os.path.exists(android_ndk_toolchain_target): # Fallback if the 64 bit compiler is not found
-		android_ndk_toolchain_target = android_ndk_home + '/toolchains/' + toolchain + '/prebuilt/windows'
+	
+	# Clang
+	android_ndk_clang_toolchain_target = android_ndk_home + '/toolchains/' + clang_toolchain + '/prebuilt/windows-x86_64'
+	
+	# GNU
+	android_ndk_gcc_toolchain_target = android_ndk_home + '/toolchains/' + gnu_toolchain + '/prebuilt/windows-x86_64'
+	
 
-	android_stl_home = android_ndk_home + '/sources/cxx-stl/gnu-libstdc++/' + compiler_version
+	# LLVM STL
+	#android_stl_home = android_ndk_home + '/sources/cxx-stl/llvm-libc++'
+	#android_stl_include_paths =  [android_stl_home + '/libcxx/include']
+	#android_stl_lib_name = 'c++_shared'
 
-	v['AR'] = android_ndk_toolchain_target + '/bin/arm-linux-androideabi-ar'
-	v['CC'] = android_ndk_toolchain_target + '/bin/arm-linux-androideabi-gcc.exe'
-	v['CXX'] = android_ndk_toolchain_target + '/bin/arm-linux-androideabi-g++.exe'
-	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = android_ndk_toolchain_target + '/bin/arm-linux-androideabi-g++.exe'
-	v['STRIP'] = android_ndk_toolchain_target + '/bin/arm-linux-androideabi-strip.exe'
+
+	# GNU STL 
+	android_stl_home =  android_ndk_home + '/sources/cxx-stl/gnu-libstdc++/' + str(android_gcc_version) 
+	android_stl_include_paths =  [android_stl_home + '/include', android_stl_home + 'libs/armeabi-v7a/include', android_stl_home + 'include/backward']
+	android_stl_lib_name = 'gnustl_shared'
+	
+	android_stl_lib = android_stl_home + '/libs/armeabi-v7a/lib' + android_stl_lib_name + '.so'
+
+	v['AR'] = android_ndk_gcc_toolchain_target + '/arm-linux-androideabi/bin/ar.exe'
+	v['CC'] = android_ndk_clang_toolchain_target + '/bin/clang.exe'
+	v['CXX'] = android_ndk_clang_toolchain_target + '/bin/clang++.exe'
+	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = android_ndk_clang_toolchain_target + '/bin/clang++.exe'
+	v['STRIP'] = android_ndk_gcc_toolchain_target + '/arm-linux-androideabi/bin/strip.exe'
 
 	v['JAR'] = android_java_home + '/bin/jar.exe'
 	v['JAVAC'] = android_java_home +'/bin/javac.exe'
@@ -282,7 +302,11 @@ def load_win_x64_android_arm_gcc_common_settings(conf):
 	v['ANDROID_SDL_HOME'] = android_stl_home 
 	v['ANDROID_SDK_HOME'] = android_sdk_home 
 	v['ANDROID_JAVA_HOME'] = android_java_home
-
+	v['ANDROID_ANT_HOME'] = android_ant_home 
+	
+	v['ANDROID_SDL_LIB_PATH'] = android_stl_lib
+	v['ANDROID_SDL_LIB_NAME'] = android_stl_lib_name
+		
 	v['cprogram_PATTERN'] 	= '%s'
 	v['cxxprogram_PATTERN'] = '%s'
 	v['cshlib_PATTERN'] 	= 'lib%s.so'
@@ -296,87 +320,226 @@ def load_win_x64_android_arm_gcc_common_settings(conf):
 		v['DEFINES'] += ['HAS_STPCPY=1']
 
 	# Setup global include paths
-	v['INCLUDES'] += [ 
+	v['INCLUDES'] += android_stl_include_paths + [ 
 		android_ndk_platform_compiler_target + '/usr/include', 
 		android_stl_home + '/include', 
 		android_stl_home + '/libs/armeabi-v7a/include',
 		android_ndk_home + '/sources/android/support/include',
-		android_ndk_home + '/sources/android/native_app_glue',
-		conf.CreateRootRelativePath('Code/Tools/SDLExtension/src/include'),
+		android_ndk_home + '/sources/android/native_app_glue'
 		]
-
+		
 	# Setup global library search path
 	v['LIBPATH'] += [
-		android_stl_home + 'libs/armeabi-v7a',
-		platform_target + '/usr/lib'
+		android_stl_home + '/libs/armeabi-v7a',
+		android_ndk_home + platform_target + '/arch-arm/usr/lib'
 	]
-	# Introduce the compiler to generate 32 bit code
-	v['CFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a' ]
-	v['CXXFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a' ]
 	
-	v['CFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
-	v['CXXFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
-	v['LINKFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target, android_stl_home + '/libs/armeabi-v7a/libgnustl_shared.so']
+	v['LIB'] = [ 'c', android_stl_lib_name , 'log', 'm', 'android', ] + v['LIB']
+	# Introduce the compiler to generate 32 bit code
+	#-ffunction-sections 
+	#-funwind-tables 
+	#-fstack-protector-strong 
+	#-no-canonical-prefixes 
+	#-march=armv7-a 
+	#-mfloat-abi=softfp 
+	#-mfpu=vfpv3-d16 
+	#-fno-integrated-as 
+	#-mthumb 
+	#-Wa,--noexecstack 
+	#-Wformat -Werror=format-security 
+	#-fno-exceptions 
+	#-fno-rtti -g 
+	#
+	#-DANDROID 
+	#-ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC -MD
+ 
+	
+	common_flag = [
+	'-target', 'armv7-none-linux-androideabi', 
+	'-gcc-toolchain', android_ndk_gcc_toolchain_target, 
+	'--sysroot=' + android_ndk_platform_compiler_target,
+	'-march=armv7-a' 	]
+	
+	compiler_flags = common_flag +[
+	'-g',
+	'-mfpu=neon',
+	'-fpic'
+	]
+		
+	
+	# LINKER
+	#-DANDROID 
+	#-ffunction-sections 
+	#-funwind-tables 
+	#-fstack-protector-strong 
+	#-no-canonical-prefixes 
+	#-march=armv7-a 
+	#-mfloat-abi=softfp 
+	#-mfpu=vfpv3-d16 
+	#-fno-integrated-as 
+	#-mthumb 
+	#-Wa,--noexecstack -Wformat 
+	#-Werror=format-security 
+	#-Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -Wl,--gc-sections -Wl,-z,nocopyreloc 
+	#-pie 
+	#-fPIE  -lm 
+	
+	# Compiler
+	#cxx_flags = [
+	#-cc1 
+	#-triple armv7-none-linux-android 
+	#-S -disable-free 
+	#-disable-llvm-verifier 
+	#-main-file-name Cry3DEngine_main_2_uber.cpp 
+	#-mrelocation-model pic 
+	#-pic-level 2 
+	#-mthread-model posix 
+	#-mdisable-fp-elim 
+	#-relaxed-aliasing 
+	#-fmath-errno 
+	#-masm-verbose 
+	#-no-integrated-as 
+	#-mconstructor-aliases 
+	#-munwind-tables 
+	#-fuse-init-array 
+	#-target-cpu cortex-a8 
+	#-target-feature 
+	#+soft-float-abi 
+	#-target-feature 
+	#-fp-only-sp 
+	#-target-feature 
+	#-d16 
+	#-target-feature +vfp3 
+	#-target-feature -fp16 
+	#-target-feature -vfp4 
+	#-target-feature -fp-armv8 
+	#-target-feature +neon 
+	#-target-feature -crypto 
+	#-target-abi aapcs-linux 
+	#-mfloat-abi soft 
+	#-target-linker-version 2.24 
+	#-dwarf-column-info 
+	#-debug-info-kind=standalone 
+	#-dwarf-version=4 
+	#-debugger-tuning=gdb 
+	#-ffunction-sections
+	#-fdata-sections 
+	#-resource-dir "C:\NVPACK\android-sdk-windows\ndk-bundle\toolchains\llvm\prebuilt\windows-x86_64\bin\..\lib64\clang\3.8.256229" 
+	#-dependency-file "Code\CryEngine\Cry3DEngine\CMakeFiles\Cry3DEngine.dir\Cry3DEngine_main_2_uber.cpp.o.d" 
+	#-sys-header-deps 
+	#-MT Code/CryEngine/Cry3DEngine/CMakeFiles/Cry3DEngine.dir/Cry3DEngine_main_2_uber.cpp.o 
+	#-isystem D:/code/marioc_FRWP1MARIOC_cemain/Code/CryEngine/CryCommon 
+	#-isystem D:/code/marioc_FRWP1MARIOC_cemain/Code/SDKs/boost 
+	#-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include 
+	#-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include
+	#-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward 
+	#-D ANDROID 
+	#-D ANDROID_NDK
+	#-D CRY_IS_MONOLITHIC_BUILD
+	#-D CRY_MOBILE
+	#-D DISABLE_IMPORTGL
+	#-D HAS_STPCPY=1 -D LINUX -D LINUX32 -D PROFILE -D _DLL -D _LIB -D _LINUX -D _MT -D _PROFILE -D __ANDROID__ -D __ARM_ARCH_7A__ -I D:/code/marioc_FRWP1MARIOC_cemain/Code/CryEngine/Cry3DEngine -I D:/code/marioc_FRWP1MARIOC_cemain/Code/Libs/yasli -I D:/code/marioc_FRWP1MARIOC_cemain/Code/Libs/yasli/../../SDKs/yasli -I D:/code/marioc_FRWP1MARIOC_cemain/Code/Libs/lz4/../../SDKs/lz4/lib -D ANDROID -D ANDROID -isysroot C:/NVPACK/android-sdk-windows/ndk-bundle/platforms/android-21/arch-arm -internal-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/platforms/android-21/arch-arm/usr/local/include -internal-isystem "C:\NVPACK\android-sdk-windows\ndk-bundle\toolchains\llvm\prebuilt\windows-x86_64\bin\..\lib64\clang\3.8.256229\include" -internal-externc-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/platforms/android-21/arch-arm/include -internal-externc-isystem C:/NVPACK/android-sdk-windows/ndk-bundle/platforms/android-21/arch-arm/usr/include -O0 -Wformat -Werror=format-security -Wformat -Werror=format-security -Wno-switch -Wno-parentheses -Wno-multichar -Wno-format-security -Wno-unused-value -Wno-comment -Wno-sizeof-pointer-memaccess -Wno-empty-body -Wno-writable-strings -Wno-logical-op-parentheses -Wno-invalid-offsetof -Wno-tautological-compare -Wno-shift-negative-value -Wno-null-conversion -Wno-c++11-narrowing -Wno-write-strings -Wno-narrowing -std=c++11 -fdeprecated-macro -fno-dwarf-directory-asm -fdebug-compilation-dir "E:\AndroidStudioProjects\MyFirstCmakeTest\app\.externalNativeBuild\cmake\debug\armeabi-v7a" 
+	#-ferror-limit 19 -fmessage-length 0 -femulated-tls -stack-protector 2 -fallow-half-arguments-and-returns -fno-rtti -fobjc-runtime=gcc 
+	#-fdiagnostics-show-option 
+ 
+ 
+	v['CFLAGS'] += compiler_flags
+	v['CXXFLAGS'] += compiler_flags
+	
+	#v['CFLAGS'] += ['-march=armeabi-v7a']
+	#v['CXXFLAGS'] += ['-march=armeabi-v7a']
+	
+	#v['CFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
+	#v['CXXFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
+	v['LINKFLAGS'] += common_flag + [ v['ANDROID_SDL_LIB_PATH'] ]
 
+	
+def remove_unsupported_clang_options(conf):
 
+	v = conf.env
+	
+	# Android-clang/Android-ld doesn't understand --rpath=$ORIGIN, so let's remove it to eliminate a linker warning
+	unsupported_linkflag = '--rpath=$ORIGIN'
+	for linkflag in v['LINKFLAGS']:
+		if unsupported_linkflag in linkflag: # Account for -Wl prefix
+			v['LINKFLAGS'].remove(linkflag)
+			break
+	
+@feature('cshlib', 'cxxshlib')
+@after_method('apply_link', 'propagate_uselib_vars')
+def apply_soname_to_linker(self):
+	if not self.env.SONAME_ST:
+		return
+		
+	libname = self.link_task.outputs[0].name
+	self.env.append_value('LINKFLAGS', self.env.SONAME_ST % libname)
+	
 @conf
-def load_debug_win_x64_android_arm_gcc_settings(conf):
+def load_debug_win_x64_android_arm_settings(conf):
 	"""Setup all compiler and linker settings shared over all win_x64_arm_linux_androideabi_4_8 configurations for
 	the 'debug' configuration
 	"""
 	v = conf.env
-	conf.load_win_x64_android_arm_gcc_common_settings()
+	conf.load_win_x64_android_arm_common_settings()
 
 	## Load addional shared settings
 	conf.load_debug_cryengine_settings()
-	conf.load_debug_gcc_settings()
+	conf.load_debug_clang_settings()
 	#conf.load_debug_linux_settings()
 	#conf.load_debug_linux_x64_settings()
+	
+	remove_unsupported_clang_options(conf)
 
 
 @conf
-def load_profile_win_x64_android_arm_gcc_settings(conf):
+def load_profile_win_x64_android_arm_settings(conf):
 	"""Setup all compiler and linker settings shared over all win_x64_arm_linux_androideabi_4_8 configurations for
 	the 'profile' configuration
 	"""
 	v = conf.env
-	conf.load_win_x64_android_arm_gcc_common_settings()
+	conf.load_win_x64_android_arm_common_settings()
 
 	# Load addional shared settings
 	conf.load_profile_cryengine_settings()
-	conf.load_profile_gcc_settings()
+	conf.load_profile_clang_settings()
 	#conf.load_profile_linux_settings()
 	#conf.load_profile_linux_x64_settings()	
+	
+	remove_unsupported_clang_options(conf)
 
 
 @conf
-def load_performance_win_x64_android_arm_gcc_settings(conf):
+def load_performance_win_x64_android_arm_settings(conf):
 	"""Setup all compiler and linker settings shared over all win_x64_arm_linux_androideabi_4_8 configurations for
 	the 'performance' configuration
 	"""
 	v = conf.env
-	conf.load_win_x64_android_arm_gcc_common_settings()
+	conf.load_win_x64_android_arm_common_settings()
 
 	# Load addional shared settings
 	conf.load_performance_cryengine_settings()
-	conf.load_performance_gcc_settings()
+	conf.load_performance_clang_settings()
 	#conf.load_performance_linux_settings()
 	#conf.load_performance_linux_x64_settings()
+	
+	remove_unsupported_clang_options(conf)
 
 
 @conf
-def load_release_win_x64_android_arm_gcc_settings(conf):
+def load_release_win_x64_android_arm_settings(conf):
 	"""Setup all compiler and linker settings shared over all win_x64_arm_linux_androideabi_4_8 configurations for
 	the 'release' configuration
 	"""
 	v = conf.env
-	conf.load_win_x64_android_arm_gcc_common_settings()
+	conf.load_win_x64_android_arm_common_settings()
 
 	# Load addional shared settings
 	conf.load_release_cryengine_settings()
-	conf.load_release_gcc_settings()
+	conf.load_release_clang_settings()
 	#conf.load_release_linux_settings()
 	#conf.load_release_linux_x64_settings()
+	
+	remove_unsupported_clang_options(conf)
 
 
 from waflib.TaskGen import feature, before_method
@@ -452,6 +615,15 @@ def process_android_java_files(self):
 	string_xml_task = self.create_task('generate_file', None, string_xml_node)
 	string_xml_task.file_content = template(string_xml_data)
 	string_xml_dir.mkdir()
+	
+	# Create text file containing all dlls to load on startup
+	template = compile_template(JAVA_LOAD_SHARED_LIB_LIST_TEMPLATE)
+	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', 'SDL2Ext', self.output_file_name] }
+	shared_lib_startup_dir = apk_folder.make_node('assets')
+	shared_lib_startup_node = shared_lib_startup_dir.make_node('startup_native_shared_lib.txt')
+	shared_lib_startup_task = self.create_task('generate_file', None, shared_lib_startup_node)
+	shared_lib_startup_task.file_content = template(shared_libs)
+	shared_lib_startup_dir.mkdir()
 
 	# Create android manifest
 	template = compile_template(APP_MANIFEST_TEMPLATE)
@@ -482,17 +654,26 @@ def process_android_java_files(self):
 	build_properties_task = self.create_task('create_ant_properties', None, build_properties_node)
 
 	# Clean ant task
-	inputs = [jar_final_path, build_xml_node, string_xml_node, app_manifest_xml_node, build_properties_node]
+	inputs = [jar_final_path, build_xml_node, string_xml_node, shared_lib_startup_node, app_manifest_xml_node, build_properties_node]
 	self.ant_clean_task = self.create_task('execute_ant', inputs, None)
 	self.ant_clean_task.output_dir = apk_folder
 	self.ant_clean_task.command = 'clean'
+	self.bld.ant_clean_task = self.ant_clean_task
+	
+	# Hacky way of ensuring all packaged .so files make it into the .apk
+	if hasattr(self.bld, 'packaging_tasks'):
+		for task in self.bld.packaging_tasks:
+			self.bld.ant_clean_task.set_run_after(task)
+			target_dir = os.path.dirname(task.outputs[0].abspath())
+			if not os.path.exists(target_dir):
+				os.makedirs(target_dir)
 
 	# Build ant task
 	ant_apk_node = apk_folder.make_node('bin').make_node(self.target + '-debug.apk')
 	self.ant_build_task = self.create_task('execute_ant', None, ant_apk_node)
 	self.ant_build_task.output_dir = apk_folder
 	self.ant_build_task.command = 'debug'
-	self.ant_build_task.set_run_after(self.ant_clean_task)
+	self.ant_build_task.set_run_after(self.ant_clean_task)	
 
 	apk_folder.make_node('src').mkdir()
 	apk_folder.make_node('gen').mkdir()
@@ -534,6 +715,8 @@ class javac(Task.Task):
 		cmd += [ '-classpath', env['ANDROID_CLASSPATH'] ]
 		cmd += [ '-d', self.output_dir.abspath() ]
 		cmd += [ '-Xlint:deprecation' ]
+		cmd += [ '-source', '1.7']
+		cmd += [ '-target', '1.7']
 
 		#files = [a.path_from(bld.bldnode) for a in self.inputs]
 		files = [a.path_from(self.output_dir) for a in self.inputs]
@@ -660,13 +843,16 @@ class strip_shared_lib(Task.Task):
 def add_android_lib_copy(self):
 	if not 'android' in self.bld.cmd or self.bld.cmd == "msvs":
 		return 
-
+		
 	if not getattr(self, 'link_task', None):
 		return
 
 	if self._type == 'stlib': # Do not copy static libs
 		return
 
+	if not self.target in  self.bld.deploy_modules_to_package:
+		return	
+	
 	bld = self.bld
 	platform	= bld.env['PLATFORM']
 	configuration	= bld.env['CONFIGURATION']
@@ -676,23 +862,26 @@ def add_android_lib_copy(self):
 	apk_lib_folder = apk_folder.make_node('lib')
 
 	# Add external libs
-	android_shared_libs = { 'armeabi-v7a': [
-		bld.env['ANDROID_SDL_HOME'] + '/libs/armeabi-v7a/libgnustl_shared.so',
-		bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
-		bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so'),
-		bld.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-armeabi-v7a/libSDL2.so')
-	]}
+	if getattr(self, 'is_package_host', False):	
+		android_shared_libs = { 'armeabi-v7a': [
+			bld.env['ANDROID_SDL_LIB_PATH'],
+			bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
+			bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so'),
+			bld.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-armeabi-v7a/libSDL2.so')
+		]}
+	else:
+		android_shared_libs = {'armeabi-v7a': [] }
 
 	# Add internal libs
 	if not 'armeabi-v7a' in android_shared_libs:
-		android_shared_libs['armeabi-v7a'] = []
+		android_shared_libs['armeabi-v7a'] = []		
 	for src in self.link_task.outputs:
 		android_shared_libs['armeabi-v7a'].append(src.abspath())
 
 	# Original shared lib output path (not stripped)(for debugger)
 	debug_lib_output = bld.get_output_folders(platform, configuration)[0].make_node('lib_debug')
 	debug_lib_output.mkdir()
-
+	
 	for lib_dir, shared_libs in android_shared_libs.iteritems():
 		tgt_dir = apk_lib_folder.make_node(lib_dir)
 		tgt_dir.mkdir()
@@ -710,7 +899,15 @@ def add_android_lib_copy(self):
 			# Strip lib and add to apk directory
 			tgt_stripped = tgt_dir.make_node(shared_lib_basename)
 			task = self.create_task('strip_shared_lib',src, tgt_stripped)
-			self.ant_clean_task.set_run_after(task)
+			
+			# Hacky way of ensuring all packaged .so files make it into the .apk
+			try:				
+				self.bld.ant_clean_task.set_run_after(task)
+			except:
+				try:					
+					self.bld.packaging_tasks += [task]
+				except:					
+					self.bld.packaging_tasks = [task]
 
 ###############################################################################
 class generate_file(Task.Task):
@@ -809,35 +1006,3 @@ class execute_ant(Task.Task):
 		
 		ret = self.exec_command(cmd, cwd=self.output_dir.abspath(), env=env.env or None)
 		return ret
-
-###############################################################################
-# Function to generate the copy tasks for build outputs	
-@after_method('process_source')
-@before_method('apply_link')
-@feature('android_hack')
-def force_add_dependent_android_files(self):
-
-	# ANDROID HACK
-	# Add android dependent files from none src or build folder to build pipeline
-
-	if not 'android' in self.bld.cmd or self.bld.cmd == "msvs":
-		return 
-
-	bld = self.bld
-	env = bld.env
-
-	special_sources = []
-	android_sdl_home = self.bld.env['ANDROID_SDL_HOME']
-	if android_sdl_home:
-		special_sources += [ bld.root.make_node(bld.CreateRootRelativePath('/Code/Tools/SDLExtension/src/jni/SDLExt_android.c')) ]
-		special_sources += [ bld.root.make_node(bld.CreateRootRelativePath('/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c')) ]
-
-	android_ndk_home = bld.env['ANDROID_NDK_HOME']
-	if android_ndk_home:
-		special_sources += [ bld.root.make_node(android_ndk_home + '/sources/android/native_app_glue/android_native_app_glue.c') ]
-
-	# Create compile tasks
-	self.source +=  special_sources
-	for node in special_sources: 
-		self.get_hook(node)(self, node)
-

@@ -29,8 +29,6 @@
 
 #if CRY_PLATFORM_APPLE
 	#include "../CrySystem/SystemUtilsApple.h"
-#elif CRY_PLATFORM_ANDROID
-extern const char* androidGetInternalPath();
 #endif
 
 #if CRY_PLATFORM_ANDROID
@@ -1927,7 +1925,7 @@ int CryGetWritableDirectory(unsigned int nBufferLength, char* lpBuffer)
 #if CRY_PLATFORM_IOS
 	return AppleGetUserLibraryDirectory(lpBuffer, nBufferLength);
 #elif CRY_PLATFORM_ANDROID
-	const char* path = androidGetInternalPath();
+	const char* path = CryGetUserStoragePath();
 	const size_t len = strlen(path);
 	if (len + 1 > nBufferLength)
 		return 0;

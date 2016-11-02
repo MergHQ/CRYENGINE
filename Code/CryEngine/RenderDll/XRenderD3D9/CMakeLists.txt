@@ -1103,6 +1103,7 @@ if (RENDERER_OPENGL)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -DGLEW_MX -DOPENGL_ES)
 
 		target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CrySystem ${SDK_DIR}/SDL2/include/SDL ${SDK_DIR}/SDL2/include/linux ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)	
+		target_link_libraries(${THIS_PROJECT} PRIVATE EGL GLESv1_CM SDL2)
 	endif()
 else()
 	CryFileContainer(CryRenderOpenGL SOLUTION_FOLDER "CryEngine")

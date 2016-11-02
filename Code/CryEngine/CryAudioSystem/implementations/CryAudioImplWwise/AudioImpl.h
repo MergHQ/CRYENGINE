@@ -131,7 +131,7 @@ private:
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_regularSoundBankFolder;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_localizedSoundBankFolder;
 
-	typedef std::map<TAudioGamepadUniqueID, AkUInt8, std::less<TAudioGamepadUniqueID>, STLSoundAllocator<std::pair<TAudioGamepadUniqueID, AkUInt8>>> AudioInputDevices;
+	typedef std::map<TAudioGamepadUniqueID, AkUInt8, std::less<TAudioGamepadUniqueID>, STLSoundAllocator<std::pair<TAudioGamepadUniqueID const, AkUInt8>>> AudioInputDevices;
 	AudioInputDevices m_mapInputDevices;
 
 #if !defined(WWISE_FOR_RELEASE)

@@ -73,7 +73,7 @@ class CEntity : public IEntity
 	CEntity(SEntitySpawnParams& params);
 
 public:
-	typedef std::pair<int, IEntityProxyPtr> TProxyPair;
+	typedef std::pair<const int, IEntityProxyPtr> TProxyPair;
 
 	// Entity destructor.
 	// Should only be called from Entity System.

@@ -476,7 +476,7 @@ private:
 	#if USE_SYSTEM_ALLOCATOR
 	typedef std::map<uint32, uint32, std::greater<uint32>>                                                 TBucketMap;
 	#else
-	typedef std::map<uint32, uint32, std::greater<uint32>, STLMementoAllocator<std::pair<uint32, uint32>>> TBucketMap;
+	typedef std::map<uint32, uint32, std::greater<uint32>, STLMementoAllocator<std::pair<const uint32, uint32>>> TBucketMap;
 	#endif
 
 	int                    m_curLatencyBucket;

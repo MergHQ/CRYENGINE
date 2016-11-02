@@ -66,6 +66,8 @@ def build(bld):
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
+		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
 		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
@@ -75,24 +77,19 @@ def build(bld):
 		
 		darwin_file_list = 'mesh_baker.waf_files',
 		darwin_includes  = [ Path('Code/SDKs/SDL2/include/SDL'), Path('Code/SDKs/SDL2/include/mac'), Path('Code/Tools/HLSLCrossCompiler/include') ],
-		darwin_lib       = [ 'SDL2', 'HLSLcc' ],
-		darwin_libpath   = [ Path('Code/SDKs/SDL2/lib/mac'), Path('Code/Tools/HLSLCrossCompiler/lib/mac') ],
+		darwin_lib       = [ 'HLSLcc' ],
+		darwin_libpath   = [ Path('Code/Tools/HLSLCrossCompiler/lib/mac') ],
 		darwin_framework = [ 'OpenGL', 'ApplicationServices', 'IOKit' ],
 
 		linux_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_glx.waf_files'],
 		linux_lib          = [ 'HLSLcc' ],
 		linux_includes     = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
 		linux_x64_libpath  = [ Path('Code/Tools/HLSLCrossCompiler/lib/linux')],
-		linux_module_extensions = [ 'sdl2' ],
-
+				
 		android_file_list  = androidFilelist,
-		android_includes   = [ Path('Code/CryEngine/CrySystem'),
-		                       Path('Code/SDKs/SDL2/include/linux'),
-		                       Path('Code/SDKs/SDL2/include/SDL'),
-		                       Path('Code/Tools/SDLExtension/src/include'),
-		                       Path('Code/Tools/HLSLCrossCompiler/include')
-		                     ],
-		android_defines    = androidDefines
+		android_includes   = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
+		android_defines    = androidDefines,
+		android_lib        = ['EGL', 'GLESv1_CM', 'GLESv2', 'GLESv3'],
 	)
 
 	# CryRenderD3D12 can only be built using VS 2015.

@@ -737,7 +737,7 @@ int ResourceParticleParams::LoadResources(const char* pEffectName)
 		return 0;
 	}
 
-	if (ResourcesLoaded() || gEnv->IsDedicated())
+	if (ResourcesLoaded() || !gEnv->pRenderer)
 	{
 		ComputeShaderData();
 		ComputeEnvironmentFlags();

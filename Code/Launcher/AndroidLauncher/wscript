@@ -6,13 +6,8 @@ def build(bld):
 	# Run Ant (perhaps we can get around this step)  cp libAndroidLauncher.so lib/armeabi-v7a/libAndroidLauncher.so && ant debug
 	# External Build System (? -> .apk) must be the configuration type
 
-	common_libpaths = [ Path('Code/SDKs/SDL2/lib/android-armeabi-v7a') ]
-
-	common_linkerflags_shared_libs = [ Path('Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so') ]
-
 	common_linkerflags = ["-Wl,--no-whole-archive",
 												'-Wl,--no-undefined',
-												'-fuse-ld=bfd',
 												'-Wl,-z,relro',
 												'-Wl,-z,now',
 												'-Wl,-z,noexecstack',
@@ -23,34 +18,18 @@ def build(bld):
 		target      = 'AndroidLauncher',
 		vs_filter   = 'Launcher',		
 		android_file_list   = 'androidlauncher.waf_files',
+		is_package_host     = True,
 		
-		features		=	['android_launcher','android_hack'],
-		cflags			=	[ '-g2', '-gdwarf-2', '-marm', '-fpic', '-ffunction-sections', '-funwind-tables', '-march=armv7-a',  '-mfloat-abi=softfp', '-mfpu=neon', '-fno-omit-frame-pointer', '-fno-strict-aliasing', '-funswitch-loops' ],
-		cxxflags		=	[ '-Wno-Error', '-g2', '-gdwarf-2', '-marm', '-fpic', '-ffunction-sections', '-funwind-tables', '-march=armv7-a',  '-mfloat-abi=softfp', '-mfpu=neon', '-fno-omit-frame-pointer', '-fno-strict-aliasing', '-funswitch-loops' ],
+		
+		features		=	['android_launcher'],
+		cflags			=	[ '-g2', '-gdwarf-2', '-ffunction-sections', '-funwind-tables',   '-fno-omit-frame-pointer', '-fno-strict-aliasing' ],
+		cxxflags		=	[ '-g2', '-gdwarf-2',  '-ffunction-sections', '-funwind-tables', '-fno-omit-frame-pointer', '-fno-strict-aliasing'],
 		defines			=	[ 'ANDROID_NDK', 'ANDROID', 'DISABLE_IMPORTGL', ' __ANDROID__', '__ARM_EABI__', '__ARM_ARCH_5__', '__ARM_ARCH_5T__', '__ARM_ARCH_5E__', '__ARM_ARCH_5TE__', '__ARM_ARCH_7__', '__ARM_ARCH_7A__' ],
-		lib					=	[ 'SDL2', 'c', 'log', 'm', 'android', 'gcc', 'EGL', 'GLESv1_CM', 'OpenSLES' ],
-		
-		debug_libpath					=	common_libpaths + [ Path('Code/SDKs/Scaleform/Lib/android-armeabi-v7a/Debug'),						
-													                      Path('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Debug/lib')	],		
+		lib				=	[ 'OpenSLES' ],
+		module_extensions  = ['sdl2', 'sdl2_ext', 'scaleform'],
 
-		profile_libpath				=	common_libpaths + [ Path('Code/SDKs/Scaleform/Lib/android-armeabi-v7a/Release'),
-																						    Path('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib')	],
-
-		performance_libpath		=	common_libpaths + [ Path('Code/SDKs/Scaleform/Lib/android-armeabi-v7a/Release'),
-																								Path('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib')	],
-
-		release_libpath				=	common_libpaths + [ Path('Code/SDKs/Scaleform/Lib/android-armeabi-v7a/Release'),
-																								Path('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib') ],
-
-		debug_linkflags        = common_linkerflags_shared_libs + common_linkerflags,
-		profile_linkflags      = common_linkerflags_shared_libs + common_linkerflags,
-		performance_linkflags  = common_linkerflags_shared_libs + common_linkerflags,
-		release_linkflags      = common_linkerflags_shared_libs + common_linkerflags,
-
-		includes		=	[ 
-										Path('Code/CryEngine/CrySystem'), 
-										Path('Code/SDKs/SDL2/include/linux'), 
-										Path('Code/SDKs/SDL2/include/android-armeabi-v7a'), 
-										Path('Code/Tools/SDLExtension/src/include')
-									]
+		debug_linkflags        = common_linkerflags,
+		profile_linkflags      = common_linkerflags,
+		performance_linkflags  = common_linkerflags,
+		release_linkflags      = common_linkerflags,
 	)

@@ -72,7 +72,7 @@ private:
 	#if USE_SYSTEM_ALLOCATOR
 	typedef std::map<uint32, TVoicePacketPtr, std::less<uint32>>                                                            PacketMap;
 	#else
-	typedef std::map<uint32, TVoicePacketPtr, std::less<uint32>, stl::STLPoolAllocator<std::pair<uint32, TVoicePacketPtr>>> PacketMap;
+	typedef std::map<uint32, TVoicePacketPtr, std::less<uint32>, stl::STLPoolAllocator<std::pair<const uint32, TVoicePacketPtr>>> PacketMap;
 	#endif
 	PacketMap      m_packets;
 	uint32         m_counter;

@@ -48,7 +48,7 @@ private:
 #if USE_SYSTEM_ALLOCATOR
 	std::multimap<CTimeValue, int, std::less<CTimeValue>> m_slowCallbacks;
 #else
-	std::multimap<CTimeValue, int, std::less<CTimeValue>, stl::STLPoolAllocator<std::pair<CTimeValue, int>, stl::PoolAllocatorSynchronizationSinglethreaded>> m_slowCallbacks;
+	std::multimap<CTimeValue, int, std::less<CTimeValue>, stl::STLPoolAllocator<std::pair<const CTimeValue, int>, stl::PoolAllocatorSynchronizationSinglethreaded>> m_slowCallbacks;
 #endif
 
 	struct SCallbackInfo

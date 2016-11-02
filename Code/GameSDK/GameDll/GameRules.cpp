@@ -680,7 +680,7 @@ bool CGameRules::Init( IGameObject * pGameObject )
 #endif
 	}
 
-	if (!gEnv->IsEditor() && !gEnv->IsDedicated())
+	if (!gEnv->IsEditor() && gEnv->pRenderer)
 	{
 		SHUDEvent initGameRules;
 		initGameRules.eventType = eHUDEvent_OnInitGameRules;

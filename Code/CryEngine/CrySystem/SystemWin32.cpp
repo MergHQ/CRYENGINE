@@ -66,10 +66,6 @@ LINK_SYSTEM_LIBRARY("wininet.lib")
 LINK_SYSTEM_LIBRARY("Winmm.lib")
 #endif
 
-#if CRY_PLATFORM_ANDROID
-extern const char* androidGetInternalPath();
-#endif
-
 #if CRY_PLATFORM_APPLE
 	#include "SystemUtilsApple.h"
 #endif
@@ -1556,7 +1552,7 @@ void CSystem::ChangeUserPath(const char* sUserPath)
 	m_env.pCryPak->MakeDir(userFolder.c_str());
 	m_sys_user_folder->Set(userFolder.c_str());
 #elif CRY_PLATFORM_ANDROID
-	userFolder = androidGetInternalPath();
+	userFolder = CryGetUserStoragePath();
 	m_sys_user_folder->Set(userFolder.c_str());
 	m_env.pCryPak->MakeDir(userFolder.c_str());
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID

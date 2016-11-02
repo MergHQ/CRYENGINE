@@ -17,7 +17,7 @@ public:
 	static const char* ACTIONMAPS_TAG; // "ActionMaps";
 	static const char* VERSION_TAG;    // "Version";
 
-	typedef std::map<string, TFlowInputData, std::less<string>, stl::STLGlobalAllocator<std::pair<string, TFlowInputData>>> TAttributeMap;
+	typedef std::map<string, TFlowInputData, std::less<string>, stl::STLGlobalAllocator<std::pair<const string, TFlowInputData>>> TAttributeMap;
 
 	CPlayerProfile(CPlayerProfileManager* pManager, const char* name, const char* userId, bool bIsPreview = false);
 	virtual ~CPlayerProfile();

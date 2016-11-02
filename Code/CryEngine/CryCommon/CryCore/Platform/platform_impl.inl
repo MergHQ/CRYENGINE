@@ -468,12 +468,11 @@ void CryGetExecutableFolder(unsigned int nBufferLength, char* lpBuffer)
 
 #elif CRY_PLATFORM_ANDROID
 
-extern const char*    androidGetPakPath();
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
 	// Hack! Android currently does not support a directory layout, there is an explicit search in main for GameSDK/GameData.pak
 	// and the executable folder is not related to the engine or game folder. - 18/03/2016
-	cry_strcpy(szEngineRootPath, engineRootPathSize, androidGetPakPath());
+	cry_strcpy(szEngineRootPath, engineRootPathSize, CryGetProjectStoragePath());
 }
 
 #endif 

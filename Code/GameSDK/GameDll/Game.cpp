@@ -2368,7 +2368,7 @@ void CGame::UpdateInviteAcceptedState()
 
 void CGame::UpdateSaveIcon()
 {
-	if (gEnv->IsDedicated())
+	if (!gEnv->pRenderer)
 		return;
 
 	static const float MAX_ICON_DISPLAY_TIME = 10.0f; // TODO: Failsafe. If required, fine tune this to the game.

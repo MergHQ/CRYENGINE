@@ -740,7 +740,7 @@ void CPlayerInput::PreUpdate()
 	bool animControlled(m_pPlayer->m_stats.animationControlledID!=0);
 
 	// If there was a recent serialization, ignore the delta rotation, since it's accumulated over several frames.
-	if ((m_lastSerializeFrameID + 2) > gEnv->pRenderer->GetFrameID())
+	if (gEnv->pRenderer && ((m_lastSerializeFrameID + 2) > gEnv->pRenderer->GetFrameID()))
 		deltaRotation.Set(0,0,0);
 
 	// Aim & look forward along the 'BaseQuat' direction

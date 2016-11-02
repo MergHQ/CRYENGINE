@@ -71,24 +71,24 @@ struct SAudioStandaloneFileData : public SUserDataBase
 
 // CATLAudioObject-related typedefs
 typedef std::map<AudioStandaloneFileId, SAudioStandaloneFileData, std::less<AudioStandaloneFileId>,
-                 STLSoundAllocator<std::pair<AudioStandaloneFileId, SAudioStandaloneFileData>>> ObjectStandaloneFileMap;
+                 STLSoundAllocator<std::pair<AudioStandaloneFileId const, SAudioStandaloneFileData>>> ObjectStandaloneFileMap;
 
 typedef std::set<CATLEvent*, std::less<CATLEvent*>, STLSoundAllocator<CATLEvent*>> ObjectEventSet;
 
 typedef std::map<AudioTriggerImplId, SAudioTriggerImplState, std::less<AudioTriggerImplId>,
-                 STLSoundAllocator<std::pair<AudioTriggerImplId, SAudioTriggerImplState>>> ObjectTriggerImplStates;
+                 STLSoundAllocator<std::pair<AudioTriggerImplId const, SAudioTriggerImplState>>> ObjectTriggerImplStates;
 
 typedef std::map<AudioTriggerInstanceId, SAudioTriggerInstanceState, std::less<AudioTriggerInstanceId>,
-                 STLSoundAllocator<std::pair<AudioTriggerInstanceId, SAudioTriggerInstanceState>>> ObjectTriggerStates;
+                 STLSoundAllocator<std::pair<AudioTriggerInstanceId const, SAudioTriggerInstanceState>>> ObjectTriggerStates;
 
 typedef std::map<AudioControlId, AudioSwitchStateId, std::less<AudioControlId>,
-                 STLSoundAllocator<std::pair<AudioControlId, AudioSwitchStateId>>> ObjectStateMap;
+                 STLSoundAllocator<std::pair<AudioControlId const, AudioSwitchStateId>>> ObjectStateMap;
 
 typedef std::map<AudioControlId, float, std::less<AudioControlId>,
-                 STLSoundAllocator<std::pair<AudioControlId, float>>> ObjectRtpcMap;
+                 STLSoundAllocator<std::pair<AudioControlId const, float>>> ObjectRtpcMap;
 
 typedef std::map<AudioEnvironmentId, float, std::less<AudioEnvironmentId>,
-                 STLSoundAllocator<std::pair<AudioEnvironmentId, float>>> ObjectEnvironmentMap;
+                 STLSoundAllocator<std::pair<AudioEnvironmentId const, float>>> ObjectEnvironmentMap;
 
 class CATLAudioObject final
 {
@@ -222,7 +222,7 @@ private:
 	};
 
 	typedef std::map<AudioControlId, CStateDebugDrawData, std::less<AudioControlId>,
-	                 STLSoundAllocator<std::pair<AudioControlId, CStateDebugDrawData>>> StateDrawInfoMap;
+	                 STLSoundAllocator<std::pair<AudioControlId const, CStateDebugDrawData>>> StateDrawInfoMap;
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

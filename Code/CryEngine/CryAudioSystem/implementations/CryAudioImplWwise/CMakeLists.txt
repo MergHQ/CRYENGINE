@@ -55,6 +55,7 @@ if (AUDIO_WWISE)
 	elseif(ANDROID)
 		set( WWISE_PLATFORM_PATH android-9_armeabi-v7a )
 		set( WWISE_PLATFORM_PREFIX ANDROID )
+		target_link_libraries(${THIS_PROJECT} PRIVATE OpenSLES)
 	endif()
 
 	if ((WIN64 OR WIN32 OR DURANGO) AND MSVC)

@@ -526,6 +526,13 @@ def ConfigureOutputFileOverrideModules(ctx,kw):
 	if kw['output_file_name']:
 		out_file_name = kw['output_file_name'][0] if isinstance(kw['output_file_name'],list) else kw['output_file_name']
 		ctx.cry_module_output_file_name_overrides[kw['target']] =  out_file_name	
+
+def AddModuleToPackage(ctx, kw):
+	# Package the output of the following module (only used for android right now)
+	if not hasattr(ctx, 'deploy_modules_to_package'):
+		ctx.deploy_modules_to_package = []
+
+	ctx.deploy_modules_to_package += [kw['target']]
 	
 def LoadAdditionalFileSettings(ctx, kw):
 	"""
@@ -829,27 +836,27 @@ def CryEngineModule(ctx, *k, **kw):
 
 	if not BuildTaskGenerator(ctx, kw):
 		return
-
-	if _is_monolithic_build(ctx, kw['target']) and not kw['target'].startswith('AndroidLauncher'): # For monolithc builds, simply collect all build settings
-		MonolithicBuildModule(ctx, getattr(ctx, 'game_project', None), *k, **kw)
-		return
 	
-	# Temp monolothinc build hack for android
-	if 'android' in ctx.env['PLATFORM']:
-		kw['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-		kw['is_monolithic_host'] = True
-		active_project_name = ctx.spec_game_projects(ctx.game_project)
-		
-		if len (active_project_name) != 1:
-			Logs.warn("Multiple project names found: %s, but only one is supported for android - using '%s'." % (active_project_name, active_project_name[0]))
-			active_project_name = active_project_name[0]
+	if _is_monolithic_build(ctx, kw['target']): # For monolithc builds, simply collect all build settings
+		if not kw.get('is_package_host', False):	
+			MonolithicBuildModule(ctx, getattr(ctx, 'game_project', None), *k, **kw)
+			return
+		else:
+			kw['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
+			kw['is_monolithic_host'] = True
+			active_project_name = ctx.spec_game_projects(ctx.game_project)
 			
-		kw['project_name'] = "".join(active_project_name)
-	
+			if len (active_project_name) != 1:
+				Logs.warn("Multiple project names found: %s, but only one is supported for android - using '%s'." % (active_project_name, active_project_name[0]))
+				active_project_name = active_project_name[0]
+				
+			kw['project_name'] = "".join(active_project_name)
+		
 	kw['features'] 			+= [ 'generate_rc_file' ]		# Always Generate RC files for Engine DLLs
 	if ctx.env['PLATFORM'] == 'darwin_x64':
 		kw['mac_bundle'] 		= True										# Always create a Mac Bundle on darwin	
 
+	AddModuleToPackage(ctx, kw)
 	ctx.shlib(*k, **kw)
 
 @conf
@@ -863,6 +870,7 @@ def CreateDynamicModule(ctx, *k, **kw):
 	if not BuildTaskGenerator(ctx, kw):
 		return
 
+	AddModuleToPackage(ctx, kw)
 	ctx.shlib(*k, **kw)
 
 def CreateStaticModule(ctx, *k, **kw):
@@ -932,7 +940,7 @@ def tg_create_static_library(self):
 		if depth > 100:
 			fatal('Circular dependency introduced, including at least module' + self.target)
 		if len(node_users) == 0:
-			if not node in out and depth != 1: #depth == 1: Do not build a static library that is not referenced by anything
+			if not node in out and depth != 1: #depth != 1: Do not build a static library that is not referenced by anything
 				out += [ node ]
 		else:
 			for user in node_users:
@@ -1111,6 +1119,7 @@ def CryLauncher(ctx, *k, **kw):
 		# Setup values for Launcher Projects
 		kw_per_launcher['features'] 			+= [ 'generate_rc_file' ]	
 		kw_per_launcher['is_launcher'] 			= True
+		kw_per_launcher['is_package_host'] 		= True
 		kw_per_launcher['resource_path'] 		= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 		= project
 		executable_name = ctx.get_executable_name(project)
@@ -1184,6 +1193,7 @@ def CryDedicatedServer(ctx, *k, **kw):
 		
 		kw_per_launcher['features'] 					+= [ 'generate_rc_file' ]
 		kw_per_launcher['is_dedicated_server']			= True
+		kw_per_launcher['is_package_host'] 	            = True
 		kw_per_launcher['resource_path'] 				= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 				= project
 		executable_name = ctx.get_dedicated_server_executable_name( project )

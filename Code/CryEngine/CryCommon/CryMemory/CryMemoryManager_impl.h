@@ -81,13 +81,17 @@ struct _CryMemoryManagerPoolHelper
 #ifndef _LIB
 		HMODULE hMod;
 		int iter;
-	#if CRY_PLATFORM_DURANGO
+	#if CRY_PLATFORM_ANDROID
+		for (iter = 0, hMod = CryGetLauncherModuleHandle(); hMod; iter++)
+	#elif CRY_PLATFORM_POSIX
+		for (iter = 0, hMod = ::dlopen(NULL, RTLD_LAZY); hMod; iter++)
+	#elif CRY_PLATFORM_DURANGO
 		// HMODULE set to NULL should take the main executable where allocator functions should be defined,
 		// but needs to be tested. GetModuleHandle() is not available on Metro style apps.
 		hMod = CryLoadLibrary("CrySystem.dll");
 		for (iter = 0; iter < 2; iter++)
 	#else
-		for (iter = 0, hMod = CryGetCurrentModule(); hMod; iter++)
+		for (iter = 0, hMod = GetModuleHandle(0); hMod; iter++)
 	#endif
 		{
 			_CryMalloc = (FNC_CryMalloc)CryGetProcAddress(hMod, DLL_ENTRY_CRYMALLOC);

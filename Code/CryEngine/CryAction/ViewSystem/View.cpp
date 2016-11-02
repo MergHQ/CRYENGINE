@@ -144,16 +144,17 @@ void CView::Update(float frameTime, bool isActive)
 					bHmdTrackingEnabled = true;
 				}
 			}
-		}
 
-		if (pHmdManager->IsStereoSetupOk())
-		{
-			const IHmdDevice* pDev = pHmdManager->GetHmdDevice();
-			const HmdTrackingState& sensorState = pDev->GetLocalTrackingState();
-			if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable))
+
+			if (pHmdManager->IsStereoSetupOk())
 			{
-				float arf_notUsed;
-				pDev->GetCameraSetupInfo(fov, arf_notUsed);
+				const IHmdDevice* pDev = pHmdManager->GetHmdDevice();
+				const HmdTrackingState& sensorState = pDev->GetLocalTrackingState();
+				if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable))
+				{
+					float arf_notUsed;
+					pDev->GetCameraSetupInfo(fov, arf_notUsed);
+				}
 			}
 		}
 

@@ -4,8 +4,8 @@ set(CMAKE_CROSSCOMPILING "TRUE")
 set(ANDROID TRUE)
 set(CMAKE_SYSTEM_NAME "VCMDDAndroid")
 set(CMAKE_SYSTEM_VERSION 2.0)
-set(CMAKE_ANDROID_API 21)
-set(CMAKE_ANDROID_API_MIN 17)
+set(CMAKE_ANDROID_API 23)
+set(CMAKE_ANDROID_API_MIN 23)
 
 set(VC_MDD_ANDROID_API_LEVEL "android-${CMAKE_ANDROID_API}")
 set(VC_MDD_ANDROID_PLATFORM_TOOLSET "Clang_3_8") # "Clang_3_6","Clang_3_8","Gcc_4_9"
@@ -71,7 +71,7 @@ MESSAGE(STATUS "BUILD_CPU_ARCHITECTURE = ${BUILD_CPU_ARCHITECTURE}" )
 MESSAGE(STATUS "BUILD_PLATFORM = ${BUILD_CPU_ARCHITECTURE}" )
 
 # Build whole archives only on android
-set( CMAKE_SHARED_LINKER_FLAGS "-Wl,--whole-archive -Wl,-Bdynamic -Wl,--allow-multiple-definition" )
+set( CMAKE_SHARED_LINKER_FLAGS "-rdynamic -Wl,--whole-archive -Wl,-Bdynamic -Wl,--allow-multiple-definition" )
 set( CMAKE_STATIC_LINKER_FLAGS "-Wl,--whole-archive -Wl,-Bstatic -Wl,--allow-multiple-definition" )
 set( CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition" )
 	
@@ -208,7 +208,7 @@ macro(configure_android_build)
 		"		-->\n"
 		"\n"
 		"		<!-- version-tag: 1 -->\n"
-		"		<import file=\"\\\${sdk.dir}/tools/ant/build.xml\" />\n"
+		"		<import file=\"\${sdk.dir}/tools/ant/build.xml\" />\n"
 		"	</project>\n"		
 	)
 
@@ -229,6 +229,8 @@ macro(configure_android_build)
 
 endmacro()
 
+
+
 macro(configure_android_launcher)
 	set(apk_folder "${CMAKE_BINARY_DIR}/apk_data")
 
@@ -247,7 +249,21 @@ macro(configure_android_launcher)
 
 	#Make ANT run
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
-	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
+	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)	
+	
+	set(shared_copy)
+	if(NOT OPTION_STATIC_LINKING)
+		foreach(mod ${SHARED_MODULES})
+			set(shared_copy ${shared_copy} COMMAND copy ${NATIVE_OUTDIR}\\lib${mod}.so ${apk_folder_native}\\lib\\armeabi-v7a )
+		endforeach()
+	endif()
+
+	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD
+		COMMAND copy ${NATIVE_OUTDIR}\\lib${THIS_PROJECT}.so ${apk_folder_native}\\lib\\armeabi-v7a
+		${shared_copy}
+		COMMAND call $ENV{ANT_HOME}/bin/ant clean
+		COMMAND call $ENV{ANT_HOME}/bin/ant debug
+		COMMAND copy ${apk_folder_native}\\bin\\${THIS_PROJECT}-debug.apk ${NATIVE_OUTDIR}\\${THIS_PROJECT}.apk WORKING_DIRECTORY ${apk_folder})		
 
 	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.Packaging.androidproj
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -268,6 +284,9 @@ macro(configure_android_launcher)
 	string(UUID UUID_PACKAGING_PROJECT NAMESPACE ${UUID_NAMESPACE} NAME ${THIS_PROJECT} TYPE MD5)
 	file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.Packaging.androidproj	 
 		"</ItemGroup>\n"
+		"<ItemGroup>"
+		"<ProjectReference Include=\"${THIS_PROJECT}.vcxproj\" />"
+		"</ItemGroup>"
 		"<PropertyGroup Label=\"Globals\">\n"
 			"<MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>\n"
 			"<ProjectVersion>1.0</ProjectVersion>\n"

@@ -106,6 +106,7 @@ ANDROID_PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'" Label="Configuration">
 		<ConfigurationType>Application</ConfigurationType>
 		<OutDir>${b.outdir}</OutDir>
+		<AndroidAPILevel>android-${xml:b.android_platform_target_version}</AndroidAPILevel>
 		${if getattr(b, 'output_file', None)}
 		<TargetName>${xml:b.output_file}.apk</TargetName>
 		${endif}
@@ -152,7 +153,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 			<ApplicationType>Android</ApplicationType>
 			<ApplicationTypeRevision>2.0</ApplicationTypeRevision>
 		${endif}
-		${if project.name != 'AndroidLauncher'}
+		${if project.is_package_host()}
 			<ProjectGuid>{${project.uuid}}</ProjectGuid>
 			<Keyword>${project.get_project_keyword()}</Keyword>
 			<ProjectName>${project.name}</ProjectName>
@@ -164,7 +165,14 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'" Label="Configuration">
 		<ConfigurationType>${project.get_project_type()}</ConfigurationType>
 		<OutDir>${b.outdir}</OutDir>		
-		<PlatformToolset>${xml:b.platform_toolset}</PlatformToolset>		
+		<PlatformToolset>${xml:b.platform_toolset}</PlatformToolset>
+		${if project.is_android_project()}
+			<AndroidAPILevel>android-${xml:b.android_platform_target_version}</AndroidAPILevel>
+			<PlatformToolset>Clang_3_8</PlatformToolset>
+		${else}
+			<PlatformToolset>${xml:b.platform_toolset}</PlatformToolset>			
+		${endfor}
+		
 	</PropertyGroup>
 	${endfor}
 	
@@ -480,7 +488,7 @@ def convert_waf_platform_to_vs_platform(self, platform):
 	if platform == 'cppcheck':
 		return 'CppCheck'
 	
-	if platform == 'android_arm_gcc':
+	if platform == 'android_arm':
 		return 'ARM'
 		
 	print('to_vs error ' + platform)
@@ -508,7 +516,7 @@ def convert_vs_platform_to_waf_platform(self, platform):
 		return 'cppcheck'
 		
 	if platform == 'ARM':
-		return 'android_arm_gcc'
+		return 'android_arm'
 		
 	print('to_waf error ' + platform)
 	return 'UNKNOWN'
@@ -823,7 +831,7 @@ def strip_unsupported_msbuild_platforms(conf):
 		'durango' : 'Durango',
 		'orbis' 	: 'ORBIS',
 		'cppcheck': 'CppCheck',
-		'android_arm_gcc' : 'ARM'	
+		'android_arm' : 'ARM'	
 		}
 
 	installed_platforms = []
@@ -924,6 +932,7 @@ class vsnode(object):
 		self.vspath = '' # path in visual studio (name for dirs, absolute path for projects)
 		self.uuid = '' # string, mandatory
 		self.parent = None # parent node for visual studio nesting
+		self.android_target_version = '23' #android target platform version
 
 	def get_waf(self):
 		"""
@@ -1061,6 +1070,7 @@ class vsnode_project(vsnode):
 				x = build_property()
 				x.outdir = ''
 				x.platform_toolset = ''
+				x.android_platform_target_version = ''
 
 				waf_platform = self.ctx.convert_vs_platform_to_waf_platform(p)				
 
@@ -1107,6 +1117,9 @@ class vsnode_project(vsnode):
 	def is_android_project(self):
 		return False
 		
+	def is_package_host(self):					
+		return False
+		
 	def get_project_type(self):
 	
 		if self.is_android_project():
@@ -1126,6 +1139,7 @@ class vsnode_alias(vsnode_project):
 		self.name = name
 		self.output_file = ''		
 		self.project_filter = {}
+		android_platform_target_version = ''
 		
 		tools_version_lookup = { '11.0': '4.0', '12.0': '12.0', '14.0': '14.0' }
 		max_msvc_version = 0
@@ -1170,6 +1184,7 @@ class vsnode_build_all(vsnode_alias):
 			
 			current_env = self.ctx.all_envs[waf_platform + '_' + waf_configuration]
 			x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
+			x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else ""
 						
 			x.target_spec = waf_spec
 			x.target_config = waf_platform + '_' + waf_configuration
@@ -1305,11 +1320,18 @@ class vsnode_target(vsnode_alias):
 				return True
 		return False
 		
+	def is_package_host(self):					
+		return getattr(self.tg, 'is_package_host', False)
+		
 	def is_android_launcher_project(self):
 		for feature in self.tg.features:
 			if 'android_launcher' in feature:
 				return True
 		return False
+		
+	def get_android_platform_version(self):
+		print "===", self.ctx.env['ANDROID_TARGET_VERSION']
+		return str(self.ctx.env['ANDROID_TARGET_VERSION'])
 		
 	def get_project_type(self):			
 		if self.is_android_project():
@@ -1459,8 +1481,9 @@ class vsnode_target(vsnode_alias):
 				waf_platform = self.ctx.convert_vs_platform_to_waf_platform(x.platform)
 				waf_configuration = self.ctx.convert_vs_configuration_to_waf_configuration(x.configuration)
 				
-				current_env = self.ctx.all_envs[waf_platform + '_' + waf_configuration]				
+				current_env = self.ctx.all_envs[waf_platform + '_' + waf_configuration]	
 				x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
+				x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else "23"
 								
 				if not hasattr(self.tg ,'link_task') and 'create_static_library' not in self.tg.features:
 					continue
@@ -1525,7 +1548,7 @@ class vsnode_target(vsnode_alias):
 					x.output_path = os.path.dirname(x.output_file)
 					x.assembly_name = output_file_name
 					x.output_type = os.path.splitext(x.output_file)[1][1:] # e.g. ".dll" to "dll"
-					
+
 				else: # Project with multiple game project targets
 					# Save project info 
 					output_file_name = 'Error__Invalid_startup_project__%s__Selected_project_has_multiple_targets' % (target.replace(' ', '_'))

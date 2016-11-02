@@ -389,7 +389,7 @@ public:
 		: TATLControl(audioSwitchId, dataScope)
 	{}
 
-	typedef std::map<AudioSwitchStateId, CATLSwitchState const*, std::less<AudioSwitchStateId>, STLSoundAllocator<std::pair<AudioSwitchStateId, CATLSwitchState const*>>> AudioStates;
+	typedef std::map<AudioSwitchStateId, CATLSwitchState const*, std::less<AudioSwitchStateId>, STLSoundAllocator<std::pair<AudioSwitchStateId const, CATLSwitchState const*>>> AudioStates;
 	AudioStates audioSwitchStates;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -562,12 +562,12 @@ public:
 };
 
 //-------------------- ATLObject container typedefs --------------------------
-typedef std::map<AudioControlId, CATLTrigger const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId, CATLTrigger const*>>>                               AudioTriggerLookup;
-typedef std::map<AudioControlId, CATLRtpc const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId, CATLRtpc const*>>>                                     AudioRtpcLookup;
-typedef std::map<AudioControlId, CATLSwitch const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId, CATLSwitch const*>>>                                 AudioSwitchLookup;
-typedef std::map<AudioPreloadRequestId, CATLPreloadRequest*, std::less<AudioPreloadRequestId>, STLSoundAllocator<std::pair<AudioPreloadRequestId, CATLPreloadRequest*>>>        AudioPreloadRequestLookup;
-typedef std::map<AudioEnvironmentId, CATLAudioEnvironment const*, std::less<AudioEnvironmentId>, STLSoundAllocator<std::pair<AudioEnvironmentId, CATLAudioEnvironment const*>>> AudioEnvironmentLookup;
-typedef std::map<AudioStandaloneFileId, CATLStandaloneFile*, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, CATLStandaloneFile*>>>        AudioStandaloneFileLookup;
+typedef std::map<AudioControlId, CATLTrigger const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId const, CATLTrigger const*>>>                               AudioTriggerLookup;
+typedef std::map<AudioControlId, CATLRtpc const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId const, CATLRtpc const*>>>                                     AudioRtpcLookup;
+typedef std::map<AudioControlId, CATLSwitch const*, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId const, CATLSwitch const*>>>                                 AudioSwitchLookup;
+typedef std::map<AudioPreloadRequestId, CATLPreloadRequest*, std::less<AudioPreloadRequestId>, STLSoundAllocator<std::pair<AudioPreloadRequestId const, CATLPreloadRequest*>>>        AudioPreloadRequestLookup;
+typedef std::map<AudioEnvironmentId, CATLAudioEnvironment const*, std::less<AudioEnvironmentId>, STLSoundAllocator<std::pair<AudioEnvironmentId const, CATLAudioEnvironment const*>>> AudioEnvironmentLookup;
+typedef std::map<AudioStandaloneFileId, CATLStandaloneFile*, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId const, CATLStandaloneFile*>>>        AudioStandaloneFileLookup;
 
 //------------------------ ATLInternal Entity Data ----------------------------
 struct SATLSwitchStateImplData_internal final : public CryAudio::Impl::IAudioSwitchState

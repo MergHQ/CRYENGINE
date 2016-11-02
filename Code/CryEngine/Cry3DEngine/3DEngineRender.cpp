@@ -678,6 +678,11 @@ static std::vector<SDebugFrustrum> g_DebugFrustrums;
 void C3DEngine::DebugDraw_Draw()
 {
 #ifndef _RELEASE
+	if (!gEnv->pRenderer)
+	{
+		return;
+	}
+
 	if (m_DebugDrawListMgr.IsEnabled())
 		m_DebugDrawListMgr.Update();
 

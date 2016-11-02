@@ -45,7 +45,7 @@ public:
 private:
 
 	// Internal type definitions.
-	typedef std::map<AudioFileEntryId, CATLAudioFileEntry*, std::less<AudioFileEntryId>, STLSoundAllocator<std::pair<AudioFileEntryId, CATLAudioFileEntry*>>> AudioFileEntries;
+	typedef std::map<AudioFileEntryId, CATLAudioFileEntry*, std::less<AudioFileEntryId>, STLSoundAllocator<std::pair<AudioFileEntryId const, CATLAudioFileEntry*>>> AudioFileEntries;
 
 	// IStreamCallback
 	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned int nError) override;

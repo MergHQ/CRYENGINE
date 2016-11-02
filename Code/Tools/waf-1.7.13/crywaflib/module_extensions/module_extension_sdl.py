@@ -23,11 +23,25 @@ def module_extensions_sdl2(ctx, kw, entry_prefix, platform, configuration):
 		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/include/linux') ]
 		kw[entry_prefix + 'lib']      += [ 'SDL2' ]
 		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/lib/linux_x64') ]
+	elif platform.startswith('android'):
+		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/include/android-armeabi-v7a') ]
+		kw[entry_prefix + 'lib']      += [ 'SDL2' ]
+		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-armeabi-v7a') ]
 	else:
 		return
 
 	if not platform  == 'project_generator':
 		kw[entry_prefix + 'features'] += [ 'copy_sdl2_binaries' ]
+
+@module_extension('sdl2_ext')
+def module_extensions_sdl2_ext(ctx, kw, entry_prefix, platform, configuration):
+
+	if platform.startswith('android'):
+		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/src/include') ]
+		kw[entry_prefix + 'lib']      += [ 'SDL2Ext' ]
+		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-armeabi-v7a') ]
+	else:
+		return		
 
 @feature('copy_sdl2_binaries')
 @run_once
@@ -50,7 +64,9 @@ def feature_copy_sdl2_binaries(self):
 	elif platform.startswith('linux_x64'):
 		files_to_copy = ['libSDL2-2.0.so.0']
 		libfolder = 'linux_x64'
-
+	elif platform.startswith('android'):
+		return # do nothing
+	
 	else:
 		Logs.error('[ERROR] WAF does not support SDL2 for platform %s.' % platform)
 		return

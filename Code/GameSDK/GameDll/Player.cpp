@@ -956,7 +956,7 @@ void CPlayer::PostInit( IGameObject * pGameObject )
 
 void CPlayer::RegisterOnHUD( void )
 {
-	if( IsPlayer() && !m_registeredOnHUD )
+	if( IsPlayer() && !m_registeredOnHUD && gEnv->pRenderer )
 	{
 		// For all remote players
 		CGameRules* pGameRules = g_pGame->GetGameRules(); 

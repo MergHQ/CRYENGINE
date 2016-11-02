@@ -115,11 +115,6 @@ inline bool IsModPath(const char* originalPath)
 }
 #endif
 
-#if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
-extern const char* androidGetMainExpName();
-extern const char* androidGetPatchExpName();
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 // IResourceList implementation class.
 //////////////////////////////////////////////////////////////////////////
@@ -3684,76 +3679,14 @@ ICryArchive* CCryPak::OpenArchive(
 	ZipDir::CachePtr pZip = NULL;
 #endif
 
-	// if valid data is given and read only, then don't check if file excists
+	// if valid data is given and read only, then don't check if file exists
 	if (pData && nFlags & ICryArchive::FLAGS_OPTIMIZED_READ_ONLY)
 	{
 		bFileExists = true;
 	}
 	else
 	{
-#if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
-		/// There are four type of pak files:
-		/// 1. Physical pak file:  pak file exists in file system
-		///    bContainedInPakFile = false;
-		///    bContainedInApkPackage = false;
-		/// 2. Uncompressed Asset file contained in Apk package (assets.ogg):
-		///    bContainedInPakFile = false;
-		///    bContainedInApkPackage = true;
-		/// 3. Pak file contained in physical pak file:
-		///    bContainedInPakFile = true;
-		///    bContainedInApkPackage = false;
-		/// 4. Pak file contained in asset:
-		///    bContainedInPakFile = true;
-		///    bContainedInApkPackage = true;
-		/// Directory cache will be created using different functions in
-		/// ZipDirCacheFactory according to the file type.
-
-		if (access(szFullPath, R_OK) == 0)
-		{
-			/// Found the requested file on file system
-			bFileExists = true;
-			bContainedInPakFile = false;
-			bContainedInApkPackage = false;
-
-			const char* filename = PathUtil::GetFile(szFullPath);
-
-			if (strcmp(filename, androidGetMainExpName()) == 0)
-			{
-				bIsMainObbExpFile = true;
-			}
-			else if (strcmp(filename, androidGetPatchExpName()) == 0)
-			{
-				bIsPatchObbExpFile = true;
-			}
-		}
-		else
-		{
-			unsigned int nDumbFlags;
-			pFileEntry = FindPakFileEntry(szFullPath, nDumbFlags, &pZip);
-			if (pFileEntry != NULL)
-			{
-				/// Found requested pak file inside opened pak file,
-				bFileExists = true;
-				bContainedInPakFile = true;
-
-				/// It is contained in APK package if its containing
-				/// pak file have a positive offset relative to the
-				/// beginning of apk package.
-				bContainedInApkPackage = (pZip->GetAssetOffset() > 0);
-			}
-			else
-			{
-				AAsset* pAsset = AAssetManager_open(m_pAssetManager, szFullPath, AASSET_MODE_RANDOM);
-				if (pAsset)
-				{
-					bFileExists = true;
-					bContainedInPakFile = false;
-					bContainedInApkPackage = true;
-					AAsset_close(pAsset);
-				}
-			}
-		}
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		if (access(szFullPath, R_OK) == 0)
 			bFileExists = true;
 #else

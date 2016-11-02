@@ -154,9 +154,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 
 	Cry3DEngineBase::m_nMainThreadId = CryGetCurrentThreadId();
 	Cry3DEngineBase::m_pSystem = pSystem;
-#if !defined(DEDICATED_SERVER)
 	Cry3DEngineBase::m_pRenderer = gEnv->pRenderer;
-#endif
 	Cry3DEngineBase::m_pTimer = gEnv->pTimer;
 	Cry3DEngineBase::m_pLog = gEnv->pLog;
 	Cry3DEngineBase::m_pPhysicalWorld = gEnv->pPhysicalWorld;
@@ -1993,7 +1991,7 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 	m_pObjManager->RemoveFromRenderAllObjectDebugInfo(pEnt);
 
 #if !defined(_RELEASE)
-	if (!gEnv->IsDedicated())
+	if (gEnv->pRenderer)
 	{
 		//As render nodes can be deleted in many places, it's possible that the map of render nodes used by stats gathering (r_stats 6, perfHUD, debug gun, Statoscope) could get aliased.
 		//Ensure that this node is removed from the map to prevent a dereference after deletion.

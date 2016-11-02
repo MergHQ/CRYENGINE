@@ -914,7 +914,7 @@ class copy_outputs(Task):
 @after_method('apply_map_file')
 @feature('c', 'cxx')
 def add_install_copy(self, output_folders = None):
-	if self.bld.cmd == "msvs":
+	if self.bld.cmd == "msvs" or 'android' in self.bld.env['PLATFORM']:
 		return
 
 	if not getattr(self, 'link_task', None):
@@ -1036,10 +1036,8 @@ def get_output_folders(self, platform, configuration, target_spec = None, game_p
 		path += self.options.out_folder_darwin32
 	elif platform == 'darwin_x64':
 		path += self.options.out_folder_darwin64
-	elif platform == 'android_arm_gcc':
-		path += self.options.out_folder_android		
-	elif platform == 'android_arm_clang':
-		path += self.options.out_folder_android		
+	elif platform == 'android_arm':
+		path += self.options.out_folder_android
 	else:
 		path += 'bin/platform_unknown'
 				

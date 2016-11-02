@@ -274,9 +274,9 @@ struct SDynTexture : public IDynTexture
 	ETEX_Format GetFormat() { return m_eTF; }
 	bool        FreeTextures(bool bOldOnly, int nNeedSpace);
 
-	typedef std::multimap<unsigned int, CTexture*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<unsigned int, CTexture*>, stl::PoolAllocatorSynchronizationSinglethreaded>>           TextureSubset;
+	typedef std::multimap<unsigned int, CTexture*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<const unsigned int, CTexture*>, stl::PoolAllocatorSynchronizationSinglethreaded>>           TextureSubset;
 	typedef TextureSubset::iterator                                                                                                                                                               TextureSubsetItor;
-	typedef std::multimap<unsigned int, TextureSubset*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<unsigned int, TextureSubset*>, stl::PoolAllocatorSynchronizationSinglethreaded>> TextureSet;
+	typedef std::multimap<unsigned int, TextureSubset*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<const  unsigned int, TextureSubset*>, stl::PoolAllocatorSynchronizationSinglethreaded>> TextureSet;
 	typedef TextureSet::iterator                                                                                                                                                                  TextureSetItor;
 
 	static TextureSet    s_availableTexturePool2D_BC1;

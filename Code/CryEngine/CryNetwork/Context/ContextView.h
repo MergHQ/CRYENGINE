@@ -554,7 +554,7 @@ private:
 		return mask;
 	}
 
-	typedef std::map<SAttachmentIndex, IRMIMessageBodyPtr, std::less<SAttachmentIndex>, STLMementoAllocator<std::pair<SAttachmentIndex, IRMIMessageBodyPtr>>> TAttachmentMap;
+	typedef std::map<SAttachmentIndex, IRMIMessageBodyPtr, std::less<SAttachmentIndex>, STLMementoAllocator<std::pair<const SAttachmentIndex, IRMIMessageBodyPtr>>> TAttachmentMap;
 	std::auto_ptr<TAttachmentMap> m_pAttachments[2];
 
 #if ENABLE_DEFERRED_RMI_QUEUE
@@ -566,7 +566,7 @@ protected:
 #if USE_SYSTEM_ALLOCATOR
 	typedef std::multimap<SNetObjectID, SSendableHandle, std::less<SNetObjectID>>                                                                TSendablesMap;
 #else
-	typedef std::multimap<SNetObjectID, SSendableHandle, std::less<SNetObjectID>, STLMementoAllocator<std::pair<SNetObjectID, SSendableHandle>>> TSendablesMap;
+	typedef std::multimap<SNetObjectID, SSendableHandle, std::less<SNetObjectID>, STLMementoAllocator<std::pair<const SNetObjectID, SSendableHandle>>> TSendablesMap;
 #endif
 	std::auto_ptr<TSendablesMap> m_pSendables;
 
@@ -584,7 +584,7 @@ private:
 
 	SNetObjectID                             m_witness;
 	VectorMap<SNetObjectID, SSendableHandle> m_voiceMessageHandles;
-	typedef std::map<SNetObjectID, NetworkAspectType, std::less<SNetObjectID>, STLMementoAllocator<std::pair<SNetObjectID, NetworkAspectType>>> TEarlyPartialUpdateIDs;
+	typedef std::map<SNetObjectID, NetworkAspectType, std::less<SNetObjectID>, STLMementoAllocator<std::pair<const SNetObjectID, NetworkAspectType>>> TEarlyPartialUpdateIDs;
 	std::auto_ptr<TEarlyPartialUpdateIDs>    m_pEarlyPartialUpdateIDs;
 
 	CTimeValue                               m_remotePhysicsTime;

@@ -346,7 +346,7 @@ void CD3D9Renderer::FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInd
 		newState &= ~GS_NODEPTHTEST;
 		//	newState |= GS_NODEPTHTEST;
 		newState |= GS_DEPTHWRITE;
-		newState |= ((~(0xF)) << GS_COLMASK_SHIFT) & GS_COLMASK_MASK;
+		newState |= (~(0xF << GS_COLMASK_SHIFT)) & GS_COLMASK_MASK;
 
 		if (CV_r_DebugLightVolumes > 1)
 		{

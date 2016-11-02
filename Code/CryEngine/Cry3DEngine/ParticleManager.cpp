@@ -170,6 +170,11 @@ struct SortEffectStats
 
 void CParticleManager::CollectEffectStats(TEffectStats& mapEffectStats, float SParticleCounts::* pSortField) const
 {
+	CRY_ASSERT_MESSAGE(false, "CParticleManager::CollectEffectStats is deprecated");
+
+	/* Disabled as sorting a std::sort on a map is not allowed
+	//
+
 	SParticleCounts countsTotal;
 	for (const auto& e : m_Emitters)
 	{
@@ -186,8 +191,10 @@ void CParticleManager::CollectEffectStats(TEffectStats& mapEffectStats, float SP
 	// Add total to list.
 	mapEffectStats[NULL] = countsTotal;
 
+	
 	// Re-sort by selected stat.
 	std::sort(mapEffectStats.begin(), mapEffectStats.end(), SortEffectStats(pSortField));
+	*/
 }
 
 void CParticleManager::GetCounts(SParticleCounts& counts)

@@ -26,8 +26,6 @@ def build(bld):
 
 		pch  = 'StdAfx.cpp',
 
-		android_includes = [ Path('Code/SDKs/SDL2/include/linux'), Path('Code/SDKs/SDL2/include/SDL')],
-
 		module_extensions       = scaleform_module_extension_list,
 		linux_module_extensions = [ 'ncurses' ],
 
@@ -49,7 +47,6 @@ def build(bld):
 		darwin_lib  = [ 'ncurses', 'm'],
 		linux_lib   = [ 'm'],
 		durango_lib = [ 'uuid', 'acphal' ],
-		android_lib = [ 'm' ],
 
 		orbis_lib   =       [ 'SceMsgDialog_stub_weak', 'SceImeDialog_stub_weak' ],
 		orbis_debug_lib =   [ 'SceDbg_stub_weak' ],
