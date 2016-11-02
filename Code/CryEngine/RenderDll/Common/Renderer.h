@@ -457,7 +457,8 @@ struct SRainOccluders
 
 struct SCausticInfo
 {
-	SCausticInfo() : m_pCausticQuadMesh(0), m_nCausticMeshWidth(0), m_nCausticMeshHeight(0), m_nCausticQuadTaps(0), m_nVertexCount(0), m_nIndexCount(0)
+	SCausticInfo() : m_pCausticQuadMesh(0), m_nCausticMeshWidth(0), m_nCausticMeshHeight(0), m_nCausticQuadTaps(0), m_nVertexCount(0), m_nIndexCount(0),
+		m_mCausticMatr(IDENTITY), m_mCausticViewMatr(IDENTITY)
 	{
 	}
 

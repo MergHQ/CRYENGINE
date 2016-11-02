@@ -725,7 +725,7 @@ inline void DecompressQuat(Quat& q, const SMMRMInstance& i)
 	q.v.y = qy / (float)(1 << 7);
 	q.v.z = qz / (float)(1 << 7);
 	q.w = qw / (float)(1 << 7);
-	q.NormalizeFast();
+	q.Normalize();
 }
 
 inline void ConvertInstanceAbsolute(Vec3& abs, const uint16 (&pos)[3], const Vec3& origin, const Vec3& rotationOrigin, float zRotation, const float fExtents)

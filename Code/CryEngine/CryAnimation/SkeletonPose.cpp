@@ -303,8 +303,9 @@ void CSkeletonPose::ApplyRecoilAnimation(f32 fDuration, f32 fKinematicImpact, f3
 float CSkeletonPose::GetExtent(EGeomForm eForm)
 {
 	CGeomExtent& extent = m_Extents.Make(eForm);
-	if (!extent)
+	if (!extent.TotalExtent())
 	{
+		extent.Clear();
 		extent.ReserveParts(m_arrCGAJoints.size());
 
 		for (auto& joint : m_arrCGAJoints)

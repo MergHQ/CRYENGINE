@@ -88,8 +88,8 @@ private:
 	TEffectNameMap             m_effects;
 	TParticleEmitters          m_emitters;
 	std::vector<TParticleHeap> m_memHeap;
-	QuatT                      m_lastCameraPose;
-	QuatT                      m_cameraMotion;
+	QuatT                      m_lastCameraPose = ZERO;
+	QuatT                      m_cameraMotion = ZERO;
 	uint                       m_nextEmitterId;
 };
 
