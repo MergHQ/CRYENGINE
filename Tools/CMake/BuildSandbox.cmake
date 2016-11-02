@@ -6,6 +6,8 @@ include("${CryEngine_DIR}/Tools/CMake/modules/FbxSdk.cmake")
 
 #---
 
+add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Libs/CryQt" "${CMAKE_BINARY_DIR}/Sandbox/Libs/CryQt")
+
 set(EDITOR_DIR "${CryEngine_DIR}/Code/Sandbox/EditorQt" )
 add_subdirectory("${CryEngine_DIR}/Code/Sandbox/EditorQt" "${CMAKE_BINARY_DIR}/Sandbox/EditorQt")
 add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/3DConnexionPlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/3DConnexionPlugin")

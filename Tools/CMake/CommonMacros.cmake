@@ -465,52 +465,38 @@ function(CryFileContainer target)
 	endif()
 endfunction()
 
+macro(set_editor_module_flags)
+	target_include_directories( ${THIS_PROJECT} PRIVATE
+		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon
+		${CryEngine_DIR}/Code/Sandbox/EditorInterface
+		${CryEngine_DIR}/Code/CryEngine/CryCommon 
+		${SDK_DIR}/boost
+		${SDK_DIR}/yasli
+		${CRY_LIBS_DIR}/yasli
+	)
+	target_compile_definitions( ${THIS_PROJECT} PRIVATE
+		-DWIN32
+		-DCRY_ENABLE_RC_HELPER
+		-DIS_EDITOR_BUILD
+		-DQT_FORCE_ASSERT
+		-DUSE_PYTHON_SCRIPTING 
+	)
+	if(NOT MODULE_DISABLE_MFC)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
+	endif()
+	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
+	use_qt()
+	
+	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/Sandbox/Libs/CryQt)
+	target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
+endmacro()
+
 macro(set_editor_flags)
 	target_include_directories( ${THIS_PROJECT} PRIVATE
 		${EDITOR_DIR}
-		${EDITOR_DIR}/Include	
-		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon 		
-		${CryEngine_DIR}/Code/Sandbox/EditorInterface
-		${CryEngine_DIR}/Code/CryEngine/CryCommon 
-		${SDK_DIR}/boost
-		${SDK_DIR}/yasli
-		${CRY_LIBS_DIR}/yasli
+		${EDITOR_DIR}/Include
 	)
-	target_compile_definitions( ${THIS_PROJECT} PRIVATE
-		-DWIN32
-		-DCRY_ENABLE_RC_HELPER
-		-DIS_EDITOR_BUILD
-		-DQT_FORCE_ASSERT
-		-DUSE_PYTHON_SCRIPTING 
-	)
-	if(NOT MODULE_DISABLE_MFC)
-		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
-	endif()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
-	use_qt()
-endmacro()
-
-macro(set_editor_module_flags)
-	target_include_directories( ${THIS_PROJECT} PRIVATE
-		${CryEngine_DIR}/Code/Sandbox/Plugins/EditorCommon 		
-		${CryEngine_DIR}/Code/Sandbox/EditorInterface
-		${CryEngine_DIR}/Code/CryEngine/CryCommon 
-		${SDK_DIR}/boost
-		${SDK_DIR}/yasli
-		${CRY_LIBS_DIR}/yasli
-	)
-	target_compile_definitions( ${THIS_PROJECT} PRIVATE
-		-DWIN32
-		-DCRY_ENABLE_RC_HELPER
-		-DIS_EDITOR_BUILD
-		-DQT_FORCE_ASSERT
-		-DUSE_PYTHON_SCRIPTING 
-	)
-	if(NOT MODULE_DISABLE_MFC)
-		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
-	endif()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
-	use_qt()
+	set_editor_module_flags()
 endmacro()
 
 function(CryEditor target)

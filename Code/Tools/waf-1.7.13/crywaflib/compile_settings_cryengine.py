@@ -105,6 +105,9 @@ def set_editor_module_flags(self, kw):
 	kw['features'] += ['qt']
 	kw['use_module'] += [ 'yasli' ]
 	kw['module_extensions'] += [ 'python27' ]
+
+	kw['use'] += ['CryQt']
+	kw['includes'] += [self.CreateRootRelativePath('Code/Sandbox/Libs/CryQt')]
 	
 #############################################################################
 @conf	
