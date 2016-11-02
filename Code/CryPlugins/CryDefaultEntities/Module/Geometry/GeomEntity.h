@@ -11,7 +11,6 @@ public:
 		eProperty_PhysicalizationType,
 		eProperty_ReceiveCollisionEvents,
 		eProperty_Mass,
-		eProperty_Hide,
 
 		ePropertyGroup_AnimationsBegin,
 		eProperty_Animation,
@@ -49,6 +48,8 @@ public:
 
 	// ISimpleExtension
 	virtual void PostInit(IGameObject *pGameObject) final;
+
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
 	virtual void HandleEvent(const SGameObjectEvent &event) final;
 

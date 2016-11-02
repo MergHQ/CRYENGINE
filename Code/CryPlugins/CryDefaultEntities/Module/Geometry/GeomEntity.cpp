@@ -26,7 +26,6 @@ class CGeomEntityRegistrator
 		RegisterEntityPropertyEnum(pPropertyHandler, "Physicalize", "", "1", "Determines the physicalization type of the entity - None, Static or Rigid (movable)", 0, 2);
 		RegisterEntityProperty<bool>(pPropertyHandler, "ReceiveCollisionEvents", "", "0", "Whether or not the entity should receive and report on collision events, for example to activate flownode output ports");
 		RegisterEntityProperty<float>(pPropertyHandler, "Mass", "", "1", "Sets the mass of the entity", 0.00001f, 100000.f);
-		RegisterEntityProperty<bool>(pPropertyHandler, "Hide", "", "0", "Sets the visibility of the entity");
 
 		{
 			SEntityPropertyGroupHelper animationGroup(pPropertyHandler, "Animations");
@@ -67,6 +66,14 @@ void CGeomEntity::PostInit(IGameObject *pGameObject)
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_CASTSHADOW);
 }
 
+void CGeomEntity::ProcessEvent(SEntityEvent& event)
+{
+	if (event.event == ENTITY_EVENT_HIDE || event.event == ENTITY_EVENT_UNHIDE)
+	{
+		m_bHide = (event.event == ENTITY_EVENT_HIDE);
+	}
+}
+
 void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
 {
 	if (event.event == eGFE_OnCollision)
@@ -94,24 +101,17 @@ void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
 
 void CGeomEntity::OnResetState()
 {
-	bool bWasHidden = GetEntity()->IsHidden();
-
-	if (GetPropertyBool(eProperty_Hide) != bWasHidden)
+	if (m_bHide != GetEntity()->IsHidden())
 	{
-		m_bHide = GetPropertyBool(eProperty_Hide);
-	}
+		GetEntity()->Hide(m_bHide);
 
-	GetEntity()->Hide(m_bHide);
-
-	if (bWasHidden != GetEntity()->IsHidden())
-	{
 		if (GetEntity()->IsHidden())
 		{
-			ActivateFlowNodeOutput(eOutputPort_OnHide, TFlowInputData(!bWasHidden));
+			ActivateFlowNodeOutput(eOutputPort_OnHide, TFlowInputData(m_bHide));
 		}
 		else
 		{
-			ActivateFlowNodeOutput(eOutputPort_OnUnHide, TFlowInputData(bWasHidden));
+			ActivateFlowNodeOutput(eOutputPort_OnUnHide, TFlowInputData(!m_bHide));
 		}
 	}
 
