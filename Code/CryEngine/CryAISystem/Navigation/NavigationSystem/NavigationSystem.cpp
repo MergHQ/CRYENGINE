@@ -4358,7 +4358,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 			CTimeValue timeTotal(0ll);
 			CTimeValue stringPullingTotalTime(0ll);
-			float totalPathLengthSq = 0;
+			float totalPathLength = 0;
 			if (triStart && triEnd)
 			{
 				const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
@@ -4439,7 +4439,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 						{
 							const Vec3 start = outputPath.At(j);
 							const Vec3 end = outputPath.At(j + 1);
-							totalPathLengthSq += Distance::Point_PointSq(start, end);
+							totalPathLength += Distance::Point_Point(start, end);
 						}
 					}
 				}
@@ -4452,7 +4452,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 			dc->Draw2dLabel(10.0f, 172.0f, 1.3f, Col_White, false,
 			                "Start: %08x  -  End: %08x - Total Pathfinding time: %.4fms -- Type of prediction for the point inside each triangle: %s", triStart, triEnd, timeTotal.GetMilliSeconds(), predictionName.c_str());
 			dc->Draw2dLabel(10.0f, 184.0f, 1.3f, Col_White, false,
-			                "String pulling operation - Iteration %d  -  Total time: %.4fms -- Total Length: %f", gAIEnv.CVars.PathStringPullingIterations, stringPullingTotalTime.GetMilliSeconds(), sqrt(totalPathLengthSq));
+			                "String pulling operation - Iteration %d  -  Total time: %.4fms -- Total Length: %f", gAIEnv.CVars.PathStringPullingIterations, stringPullingTotalTime.GetMilliSeconds(), totalPathLength);
 		}
 	}
 }
