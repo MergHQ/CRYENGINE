@@ -1543,9 +1543,9 @@ void CRendererCVars::InitCVars()
 	               "Bigger value increases temporal stability but also overall image blurriness\n"
 	               "Smaller value decreases temporal stability but gives overall sharper image");
 
-	DefineConstIntCVar3("CV_r_AntialiasingModeEditor", CV_r_AntialiasingModeEditor, 1, VF_NULL,
+	DefineConstIntCVar3("r_AntialiasingModeEditor", CV_r_AntialiasingModeEditor, 1, VF_NULL,
 	                    "Sets antialiasing modes to editing mode (disables jitter on modes using camera jitter which can cause flickering of helper objects)\n"
-	                    "Usage: CV_r_AntialiasingModeEditor [0/1]");
+	                    "Usage: r_AntialiasingModeEditor [0/1]");
 
 	DefineConstIntCVar3("r_MotionVectors", CV_r_MotionVectors, 1, VF_NULL,
 	                    "Enables generation of motion vectors for dynamic objects\n");
