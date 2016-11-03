@@ -266,7 +266,7 @@ void CSystem::RenderPhysicsHelpers()
 	if (m_bIgnoreUpdates)
 		return;
 
-	if (gEnv->pPhysicalWorld)
+	if (gEnv->pPhysicalWorld && m_pPhysRenderer)
 	{
 		char str[128];
 		if (StrToPhysHelpers(m_p_draw_helpers_str->GetString()) != m_env.pPhysicalWorld->GetPhysVars()->iDrawHelpers)
