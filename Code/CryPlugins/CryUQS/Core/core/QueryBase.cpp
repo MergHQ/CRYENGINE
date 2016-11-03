@@ -4,6 +4,9 @@
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
+// make the global Serialize() functions available for use in yasli serialization
+using uqs::core::Serialize;
+
 namespace uqs
 {
 	namespace core
