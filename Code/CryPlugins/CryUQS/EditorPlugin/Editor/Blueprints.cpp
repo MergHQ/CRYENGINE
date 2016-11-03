@@ -614,18 +614,26 @@ void CFunctionSerializationHelper::Reset(const SItemTypeName& typeName, const CU
 			
 			if (bIsLiteral)
 			{
-				m_itemLiteral = CItemLiteral(typeName, context);
-
-				if (m_itemLiteral.IsSerializable() && !IsStringEmpty(m_funcParam))
+				if (!m_itemLiteral.IsExist() || m_itemLiteral.GetTypeName() != typeName)
 				{
-					// TODO pavloi 2016.09.01: this should happen when we read everything from textual blueprint, 
-					// but the code and initialization order I wrote is such a dense spaghetti, that it doesn't seem easy anymore.
-					if (m_itemLiteral.SetFromStringLiteral(m_funcParam))
-					{
-						m_funcParam.clear();
-					}
+					m_itemLiteral = CItemLiteral(typeName, context);
 				}
+
+				// TODO pavloi 2016.09.01: this should happen when we read everything from textual blueprint, 
+				// but the code and initialization order I wrote is such a dense spaghetti, that it doesn't seem easy anymore.
+				ReserializeFunctionLiteralFromParam();
 			}
+		}
+	}
+}
+
+void CFunctionSerializationHelper::ReserializeFunctionLiteralFromParam()
+{
+	if (m_itemLiteral.IsSerializable() && !IsStringEmpty(m_funcParam))
+	{
+		if (m_itemLiteral.SetFromStringLiteral(m_funcParam))
+		{
+			m_funcParam.clear();
 		}
 	}
 }
@@ -664,6 +672,11 @@ bool CFunctionSerializationHelper::SerializeFunctionName(
 					if (!m_itemLiteral.IsExist())
 					{
 						m_itemLiteral = CItemLiteral(function.returnType, context);
+
+						if (oldFunctionIdx == npos)
+						{
+							ReserializeFunctionLiteralFromParam();
+						}
 					}
 					break;
 

@@ -123,6 +123,7 @@ public:
 	CFunctionSerializationHelper(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	void Reset(const SItemTypeName& typeName, const CUqsDocSerializationContext& context);
+	void ReserializeFunctionLiteralFromParam();
 
 	bool SerializeFunctionName(
 	  Serialization::IArchive& archive,
