@@ -7,12 +7,6 @@
 
 #include <CryFlowGraph/IFlowSystem.h>
 
-#if 0
-	#define FLOWGRAPH_BIT_VAR(type, name, bits) type name
-#else
-	#define FLOWGRAPH_BIT_VAR(type, name, bits) type name: bits
-#endif
-
 class CFlowData : public IFlowNodeData
 {
 public:
@@ -152,21 +146,18 @@ public:
 
 private:
 	// REMEMBER: When adding members update CFlowData::Swap(CFlowData&)
-	//																																								  32 Bit        64 Bit
-	TFlowInputData* m_pInputData;                                           // ptr			4							8
-	int*            m_pOutputFirstEdge;                                     // ptr			4							8
-	IFlowNodePtr    m_pImpl;                                                // int+ptr	8 (4+4)				12 (4+8)
-	string          m_name;                                                 //					4							8
-	HSCRIPTFUNCTION m_getFlowgraphForwardingEntity;                         // ptr			4							8
-	uint8           m_nInputs;                                              // uint8		1							1
-	uint8           m_nOutputs;                                             // uint8		1							1
-	EntityId        m_forwardingEntityID;                                   // uint32		4
-	FLOWGRAPH_BIT_VAR(uint16, m_typeId, TYPE_BITS);                         // 12 Bits					// uint16		2							2
-	FLOWGRAPH_BIT_VAR(uint16, m_hasEntity, 1);                              // ..
-	FLOWGRAPH_BIT_VAR(uint16, m_failedGettingFlowgraphForwardingEntity, 1); // ..
-	FLOWGRAPH_BIT_VAR(uint16, m_reserved, 1);                               // ..
-	//																																			------------------------------
-	//																																								   32 Bytes    48 Bytes
+	// should be well packed
+	TFlowInputData* m_pInputData;
+	int* m_pOutputFirstEdge;
+	IFlowNodePtr m_pImpl;
+	string m_name;
+	HSCRIPTFUNCTION m_getFlowgraphForwardingEntity;
+	EntityId m_forwardingEntityID;
+	uint8  m_nInputs;
+	uint8  m_nOutputs;
+	uint16 m_typeId : TYPE_BITS;
+	uint16 m_hasEntity : 1; // note: subsequent bitfields need to have the same variable type to be packed together in msvc (it's implementation defined ch.9.6)
+	uint16 m_failedGettingFlowgraphForwardingEntity : 1;
 
 	void              DoGetConfiguration(SFlowNodeConfig& config) const;
 	bool              ForwardingActivated(IFlowNode::SActivationInfo*, IFlowNode::EFlowEvent);

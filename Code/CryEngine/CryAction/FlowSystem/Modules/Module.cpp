@@ -1,51 +1,53 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   Module.cpp
-   $Id$
-   Description: Module container
-
-   -------------------------------------------------------------------------
-   History:
-   - 03/04/11   : Sascha Hoba - Kevin Kirst
-
- *********************************************************************/
-
 #include "StdAfx.h"
 #include "Module.h"
+
+#include "FlowSystem/FlowSystem.h"
+#include "ModuleManager.h"
 #include "FlowModuleNodes.h"
 #include "ILevelSystem.h"
 
-IModuleInstance* CFlowGraphModule::CInstanceIterator::Next()
-{
-	if (m_cur == m_pModule->m_instances.end())
-		return NULL;
-	IModuleInstance* pCur = &(*m_cur);
-	++m_cur;
-	return pCur;
-}
-
-////////////////////////////////////////////////////
 CFlowGraphModule::CFlowGraphModule(TModuleId moduleId)
 {
-	m_pRootGraph = NULL;
 	m_Id = moduleId;
-	m_nextInstanceId = 0;
 	m_type = IFlowGraphModule::eT_Global;
+	m_pRootGraph = nullptr;
+	m_nextInstanceId = 0;
+	m_pInstanceBeingCreated = nullptr;
 
 	m_startNodeTypeId = InvalidFlowNodeTypeId;
 	m_returnNodeTypeId = InvalidFlowNodeTypeId;
 	m_callNodeTypeId = InvalidFlowNodeTypeId;
 }
 
-////////////////////////////////////////////////////
 CFlowGraphModule::~CFlowGraphModule()
 {
 	Destroy();
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CFlowGraphModule::Destroy()
+{
+	ClearCallNodesForInstances();
+	ClearGlobalControlNodes();
+
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			instanceIt->second.m_pGraph = nullptr;
+		}
+		entityIt->second.clear();
+	}
+	m_runningInstances.clear();
+
+	m_pRootGraph = nullptr;
+
+	UnregisterNodes();
+}
+
+/* Serialization */
+
 bool CFlowGraphModule::PreLoadModule(const char* fileName)
 {
 	m_fileName = fileName;
@@ -104,7 +106,6 @@ bool CFlowGraphModule::PreLoadModule(const char* fileName)
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CFlowGraphModule::LoadModuleGraph(const char* moduleName, const char* fileName)
 {
 	assert(m_name == moduleName);
@@ -149,7 +150,6 @@ bool CFlowGraphModule::LoadModuleGraph(const char* moduleName, const char* fileN
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CFlowGraphModule::SaveModuleXml(XmlNodeRef saveTo)
 {
 	if (!m_pRootGraph || !saveTo)
@@ -161,186 +161,385 @@ bool CFlowGraphModule::SaveModuleXml(XmlNodeRef saveTo)
 	// NB: don't save our graph here, just the module ports (graph is saved
 	//	by the calling code)
 
-	if (m_modulePorts.size() > 0)
+	if (m_moduleInpPorts.size() > 0 || m_moduleOutPorts.size() > 0)
 	{
 		XmlNodeRef inputs = saveTo->newChild("ModuleInputsOutputs");
-		for (size_t i = 0; i < m_modulePorts.size(); ++i)
+		for (size_t i = 0; i < m_moduleInpPorts.size(); ++i)
 		{
 			XmlNodeRef ioChild = inputs->newChild("Port");
-			ioChild->setAttr("Name", m_modulePorts[i].name);
-			ioChild->setAttr("Type", m_modulePorts[i].type);
-			ioChild->setAttr("Input", m_modulePorts[i].input);
+			ioChild->setAttr("Name", m_moduleInpPorts[i].name);
+			ioChild->setAttr("Type", m_moduleInpPorts[i].type);
+			ioChild->setAttr("Input", true);
+		}
+		for (size_t i = 0; i < m_moduleOutPorts.size(); ++i)
+		{
+			XmlNodeRef ioChild = inputs->newChild("Port");
+			ioChild->setAttr("Name", m_moduleOutPorts[i].name);
+			ioChild->setAttr("Type", m_moduleOutPorts[i].type);
+			ioChild->setAttr("Input", false);
 		}
 	}
 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::Destroy()
+/* (Un)Register generated nodes */
+
+void CFlowGraphModule::RegisterNodes()
 {
-	m_pRootGraph = NULL;
-
-	TInstanceList::iterator i = m_instances.begin();
-	TInstanceList::iterator end = m_instances.end();
-	for (; i != end; ++i)
+	IFlowGraphModuleManager* pMgr = gEnv->pFlowSystem ? gEnv->pFlowSystem->GetIModuleManager() : NULL;
+	if (pMgr)
 	{
-		i->pGraph = NULL;
+		m_startNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetStartNodeName(m_name), new CFlowModuleStartNodeFactory(this));
+		m_returnNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetReturnNodeName(m_name), new CFlowModuleReturnNodeFactory(this));
+		m_callNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetCallerNodeName(m_name), new CFlowModuleCallNodeFactory(this));
 	}
-	m_instances.clear();
-
-	UnregisterNodes();
 }
 
-//////////////////////////////////////////////////////////////////////////
-TModuleInstanceId CFlowGraphModule::CreateInstance(TFlowGraphId callerGraphId, TFlowNodeId callerNodeId, TModuleParams const& params, const ModuleInstanceReturnCallback& returnCallback)
+void CFlowGraphModule::UnregisterNodes()
 {
-	TModuleInstanceId result = MODULEINSTANCE_INVALID;
+	IFlowGraphModuleManager* pMgr = gEnv->pFlowSystem ? gEnv->pFlowSystem->GetIModuleManager() : NULL;
+	if (pMgr)
+	{
+		gEnv->pFlowSystem->UnregisterType(pMgr->GetStartNodeName(m_name));
+		gEnv->pFlowSystem->UnregisterType(pMgr->GetReturnNodeName(m_name));
+		gEnv->pFlowSystem->UnregisterType(pMgr->GetCallerNodeName(m_name));
+	}
+}
+
+/* Module Ports */
+
+size_t CFlowGraphModule::GetModuleInputPortCount() const
+{
+	return m_moduleInpPorts.size();
+}
+
+size_t CFlowGraphModule::GetModuleOutputPortCount() const
+{
+	return m_moduleOutPorts.size();
+}
+
+const IFlowGraphModule::SModulePortConfig* CFlowGraphModule::GetModuleInputPort(size_t index) const
+{
+	if (index < m_moduleInpPorts.size())
+		return &m_moduleInpPorts[index];
+
+	return nullptr;
+}
+
+const IFlowGraphModule::SModulePortConfig* CFlowGraphModule::GetModuleOutputPort(size_t index) const
+{
+	if (index < m_moduleOutPorts.size())
+		return &m_moduleOutPorts[index];
+
+	return nullptr;
+}
+
+bool CFlowGraphModule::AddModulePort(const IFlowGraphModule::SModulePortConfig& port)
+{
+	if (port.input)
+	{
+		m_moduleInpPorts.push_back(port);
+	}
+	else
+	{
+		m_moduleOutPorts.push_back(port);
+	}
+	return true;
+}
+
+void CFlowGraphModule::RemoveModulePorts()
+{
+	stl::free_container(m_moduleInpPorts);
+	stl::free_container(m_moduleOutPorts);
+}
+
+/* Instance Handling */
+
+inline SModuleInstance* CFlowGraphModule::GetInstance(EntityId entityId, TModuleInstanceId instanceId)
+{
+	TEntityInstanceMap::iterator entityIte = m_runningInstances.find(entityId);
+	if (entityIte != m_runningInstances.end())
+	{
+		TInstanceMap::iterator instanceIte = entityIte->second.find(instanceId);
+		if (instanceIte != entityIte->second.end())
+		{
+			return &instanceIte->second;
+		}
+	}
+
+	return nullptr;
+}
+
+bool CFlowGraphModule::HasInstanceGraph(IFlowGraphPtr pGraph)
+{
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			if (instanceIt->second.m_pGraph == pGraph)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool CFlowGraphModule::HasRunningInstances() const
+{
+	for (TEntityInstanceMap::const_iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::const_iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			if (instanceIt->second.m_bUsed)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+size_t CFlowGraphModule::GetRunningInstancesCount() const
+{
+	size_t count = 0;
+	for (TEntityInstanceMap::const_iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::const_iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			if (instanceIt->second.m_bUsed)
+			{
+				count += 1;
+			}
+		}
+	}
+	return count;
+}
+
+void CFlowGraphModule::RegisterStartNodeForInstanceBeingCreated(CFlowModuleStartNode* pStartNode)
+{
+	assert(m_pInstanceBeingCreated);
+	if (m_pInstanceBeingCreated)
+	{
+		m_pInstanceBeingCreated->SetStartNode(pStartNode);
+	}
+}
+
+void CFlowGraphModule::CreateInstance(EntityId entityId, TModuleInstanceId runningInstanceId)
+{
+	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CFlowGraphModule::CreateInstance", m_name.c_str());
+	// marker not integrated in climb codebase
+	//CRY_PROFILE_REGION_ARG(PROFILE_ACTION, "CFlowGraphModule::CreateInstance", m_name.c_str());
 
 	if (m_pRootGraph)
 	{
-		IFlowSystem* pSystem = gEnv->pFlowSystem;
-		assert(pSystem);
+		// create instance
+		SModuleInstance instance(this, runningInstanceId);
+		instance.m_entityId = entityId;
+		instance.m_bUsed = true;
 
-		// Clone and create instance
-		IFlowGraphPtr pClone = m_pRootGraph->Clone();
-		if (pClone)
+		// insert in registry
+		TEntityInstanceMap::iterator entityIte = m_runningInstances.find(entityId);
+		if (entityIte == m_runningInstances.end())
 		{
-			// Start up
-			pClone->SetEnabled(true);
-			pClone->SetActive(true);
-			pClone->InitializeValues();
-			pClone->SetType(IFlowGraph::eFGT_Module);
+			entityIte = m_runningInstances.insert(std::make_pair(entityId, TInstanceMap())).first;
+		}
+		TInstanceMap::iterator it = entityIte->second.insert(std::make_pair(runningInstanceId, instance)).first;
 
-			// Store instance
-			SInstance instance(m_nextInstanceId++);
-			instance.pGraph = pClone;
-			instance.callerGraph = callerGraphId;
-			instance.callerNode = callerNodeId;
-			instance.returnCallback = returnCallback;
-			instance.bUsed = true;
-			m_instances.push_back(instance);
+		// Clone and instantiate the module's nodes
+		m_pInstanceBeingCreated = &it->second; // expose instance, so start and return nodes grab it when cloned.
+		IFlowGraphPtr pGraphClone = m_pRootGraph->Clone();
+		assert(pGraphClone);
 
-			result = instance.instanceId;
+		// Enable the instance's inner nodes
+		pGraphClone->SetType(IFlowGraph::eFGT_Module);
+		pGraphClone->SetEnabled(true);
+		pGraphClone->SetActive(true);
+		pGraphClone->InitializeValues();
+		m_pInstanceBeingCreated->m_pGraph = pGraphClone;
+
+		// Activate 'OnCalled' port for all call nodes
+		const TCallNodesMap* pCallNodes = &m_requestedInstanceIds[entityId][runningInstanceId];
+		for (TCallNodesMap::const_iterator it = pCallNodes->begin(), end = pCallNodes->end(); it != end; ++it)
+		{
+			it->second->OnInstanceStarted(runningInstanceId);
+		}
+
+		// Forward the instance id to the 'OnCalled' port of all global control nodes
+		for (TCallNodesMap::const_iterator it = m_globalControlNodes.begin(), end = m_globalControlNodes.end(); it != end; ++it)
+		{
+			it->second->OnInstanceStarted(runningInstanceId);
+		}
+
+		//notify manager that an instance was created so that the event can be forwarded to listeners
+		CFlowGraphModuleManager* pModuleManager = static_cast<CFlowSystem*>(gEnv->pFlowSystem)->GetModuleManager();
+		pModuleManager->BroadcastModuleInstanceStarted(this, runningInstanceId);
+	}
+}
+
+void CFlowGraphModule::CallDefaultInstanceForEntity(IEntity* pEntity)
+{
+	if (pEntity)
+	{
+		TModuleInstanceId runningInstanceId = MODULEINSTANCE_INVALID;
+		EntityId entityId = pEntity->GetId();
+
+		CreateInstance(entityId, runningInstanceId);
+		m_pInstanceBeingCreated->GetStartNode()->OnUpdateAllInputs(nullptr);
+	}
+}
+
+TModuleInstanceId CFlowGraphModule::CallModuleInstance(EntityId entityId, TModuleInstanceId instanceId, const TModuleParams& params, CFlowModuleCallNode* pCallingNode)
+{
+	TModuleInstanceId runningInstanceId = instanceId;
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+
+	// is instance already running?
+	bool bIsInstanceRunning = false;
+
+	TEntityInstanceMap::iterator entityIte = m_runningInstances.find(entityId);
+	if (entityIte != m_runningInstances.end())
+	{
+		TInstanceMap::iterator instanceIte = entityIte->second.find(instanceId);
+		if (instanceIte != entityIte->second.end())
+		{
+			// yes: update inputs
+			instanceIte->second.GetStartNode()->OnUpdateAllInputs(&params);
+			bIsInstanceRunning = true;
 		}
 	}
 
-	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::RefreshInstance(TModuleInstanceId instanceId, TModuleParams const& params)
-{
-	// Find the instance, and refresh with updated parameters
-	TInstanceList::iterator i = m_instances.begin();
-	TInstanceList::iterator end = m_instances.end();
-	for (; i != end; ++i)
+	if (!bIsInstanceRunning)
 	{
-		if (i->instanceId == instanceId)
+		// no: create instance and generate ID if needed
+		if (!pEntity && instanceId == MODULEINSTANCE_INVALID)
 		{
-			ActivateGraph(i->pGraph, instanceId, params);
-			break;
+			runningInstanceId = m_nextInstanceId++;
+			RegisterCallNodeForInstance(entityId, runningInstanceId, pCallingNode->GetId(), pCallingNode);
 		}
+
+		CreateInstance(entityId, runningInstanceId);
+
+		// Send inputs to the instance
+		m_pInstanceBeingCreated->GetStartNode()->OnUpdateAllInputs(&params);
 	}
+
+	return runningInstanceId;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::CancelInstance(TModuleInstanceId instanceId)
+void CFlowGraphModule::CallAllModuleInstances(const TModuleParams& params, CFlowModuleCallNode* pCallingNode)
 {
-	// Find the instance, and request cancel
-	TInstanceList::iterator i = m_instances.begin();
-	TInstanceList::iterator end = m_instances.end();
-	for (; i != end; ++i)
+	bool bHasRunningInstances = false;
+
+	// Send inputs to all running instances
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
 	{
-		if (i->instanceId == instanceId)
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
 		{
-			IFlowGraph* pGraph = i->pGraph;
-			if (pGraph)
+			if (instanceIt->second.m_bUsed)
 			{
-				IFlowNodeIteratorPtr pNodeIter = pGraph->CreateNodeIterator();
-				if (pNodeIter)
-				{
-					TFlowNodeId id = InvalidFlowNodeId;
-					IFlowNodeData* pData;
-					while (pData = pNodeIter->Next(id))
-					{
-						// Check if its the starting node
-						if (m_startNodeTypeId == pData->GetNodeTypeId())
-						{
-							CFlowModuleStartNode* pNode = (CFlowModuleStartNode*)pData->GetNode();
-							pNode->OnCancel();
-
-							break;
-						}
-					}
-				}
-			}
-
-			break;
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphModule::DestroyInstance(TModuleInstanceId instanceId, bool bSuccess, TModuleParams const& params)
-{
-	bool bResult = false;
-
-	// Find the instance
-	TInstanceList::iterator i = m_instances.begin();
-	TInstanceList::iterator end = m_instances.end();
-	for (; i != end; ++i)
-	{
-		if (i->instanceId == instanceId)
-		{
-			DeactivateGraph(*i, bSuccess, params);
-
-			// mark as unused. Can't delete graph at this point as it is still
-			//	in the middle of an update. Will be deleted at end of flow system update.
-			i->bUsed = false;
-			bResult = true;
-
-			break;
-		}
-	}
-
-	return bResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::ActivateGraph(IFlowGraph* pGraph, TModuleInstanceId instanceId, TModuleParams const& params) const
-{
-	if (pGraph)
-	{
-		IFlowNodeIteratorPtr pNodeIter = pGraph->CreateNodeIterator();
-		if (pNodeIter)
-		{
-			TFlowNodeId id = InvalidFlowNodeId;
-			IFlowNodeData* pData;
-			while (pData = pNodeIter->Next(id))
-			{
-				// Check if its the starting node
-				if (m_startNodeTypeId == pData->GetNodeTypeId())
-				{
-					CFlowModuleStartNode* pNode = (CFlowModuleStartNode*)pData->GetNode();
-					pNode->OnActivate(params);
-				}
-
-				// Check if its the returning node
-				if (m_returnNodeTypeId == pData->GetNodeTypeId())
-				{
-					CFlowModuleReturnNode* pNode = (CFlowModuleReturnNode*)pData->GetNode();
-					pNode->SetModuleId(m_Id, instanceId);
-				}
+				bHasRunningInstances = true;
+				instanceIt->second.GetStartNode()->OnUpdateAllInputs(&params);
 			}
 		}
 	}
+
+	// there were no running instances, create one and send inputs
+	if (!bHasRunningInstances)
+	{
+		CallModuleInstance(INVALID_ENTITYID, MODULEINSTANCE_INVALID, params, pCallingNode);
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::DeactivateGraph(SInstance& instance, bool bSuccess, TModuleParams const& params) const
+void CFlowGraphModule::UpdateInstanceInputPort(EntityId entityId, TModuleInstanceId instanceId, size_t paramIdx, const TFlowInputData& value)
 {
-	IFlowGraph* pModuleGraph = instance.pGraph;
+	SModuleInstance* pInst = GetInstance(entityId, instanceId);
+	if (pInst)
+	{
+		pInst->GetStartNode()->OnUpdateSingleInput(paramIdx, value);
+	}
+}
+
+void CFlowGraphModule::UpdateAllInstancesInputPort(size_t paramIdx, const TFlowInputData& value)
+{
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			if (instanceIt->second.m_bUsed)
+			{
+				instanceIt->second.GetStartNode()->OnUpdateSingleInput(paramIdx, value);
+			}
+		}
+	}
+}
+
+void CFlowGraphModule::UpdateInstanceOutputPort(EntityId entityId, TModuleInstanceId instanceId, size_t paramIdx, const TFlowInputData& value)
+{
+	// pass output to the call node, who will output it if in Continuous Output mode
+	const TCallNodesMap* pCallNodes = &m_requestedInstanceIds[entityId][instanceId];
+	for (TCallNodesMap::const_iterator it = pCallNodes->begin(), end = pCallNodes->end(); it != end; ++it)
+	{
+		it->second->OnInstanceOutput(paramIdx, value);
+	}
+
+	// pass output to the global control nodes, who will output it if in Continuous Output mode
+	for (TCallNodesMap::const_iterator it = m_globalControlNodes.begin(), end = m_globalControlNodes.end(); it != end; ++it)
+	{
+		it->second->OnInstanceOutput(paramIdx, value);
+	}
+}
+
+void CFlowGraphModule::OnInstanceFinished(EntityId entityId, TModuleInstanceId instanceId, bool bSuccess, const TModuleParams& params)
+{
+	DestroyInstance(entityId, instanceId);
+
+	// output result for all call nodes of this instance
+	const TCallNodesMap* pCallNodes = &m_requestedInstanceIds[entityId][instanceId];
+	for (TCallNodesMap::const_iterator it = pCallNodes->begin(), end = pCallNodes->end(); it != end; ++it)
+	{
+		it->second->OnInstanceFinished(bSuccess, params);
+	}
+
+	// output result for all global control nodes
+	for (TCallNodesMap::const_iterator it = m_globalControlNodes.begin(), end = m_globalControlNodes.end(); it != end; ++it)
+	{
+		it->second->OnInstanceFinished(bSuccess, params);
+	}
+
+	// notify manager that an instance has finished so that the event can be forwarded to listeners
+	CFlowGraphModuleManager* pModuleManager = static_cast<CFlowSystem*>(gEnv->pFlowSystem)->GetModuleManager();
+	pModuleManager->BroadcastModuleInstanceFinished(this, instanceId);
+}
+
+void CFlowGraphModule::CancelInstance(EntityId entityId, TModuleInstanceId instanceId)
+{
+	SModuleInstance* pInst = GetInstance(entityId, instanceId);
+	if (pInst)
+	{
+		pInst->GetStartNode()->OnCancel();
+	}
+}
+
+void CFlowGraphModule::CancelAllInstances()
+{
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
+	{
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
+		{
+			if (instanceIt->second.m_bUsed)
+			{
+				instanceIt->second.GetStartNode()->OnCancel();
+			}
+		}
+	}
+}
+
+void CFlowGraphModule::DeactivateInstanceGraph(SModuleInstance* pInstance) const
+{
+	IFlowGraph* pModuleGraph = pInstance->m_pGraph;
 	if (pModuleGraph)
 	{
 		pModuleGraph->SetEnabled(false);
@@ -357,132 +556,144 @@ void CFlowGraphModule::DeactivateGraph(SInstance& instance, bool bSuccess, TModu
 			}
 		}
 	}
-
-	if (instance.returnCallback)
-		instance.returnCallback(bSuccess, params);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModule::RegisterNodes()
+bool CFlowGraphModule::DestroyInstance(EntityId entityId, TModuleInstanceId instanceId)
 {
-	IFlowGraphModuleManager* pMgr = gEnv->pFlowSystem ? gEnv->pFlowSystem->GetIModuleManager() : NULL;
+	bool bResult = false;
 
-	if (pMgr)
+	// destroy and remove the instance from the running instances
+	SModuleInstance* pInstance = GetInstance(entityId, instanceId);
+	if (pInstance)
 	{
-		m_startNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetStartNodeName(m_name), new CFlowModuleStartNodeFactory(m_Id));
-		m_returnNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetReturnNodeName(m_name), new CFlowModuleReturnNodeFactory(m_Id));
-		m_callNodeTypeId = gEnv->pFlowSystem->RegisterType(pMgr->GetCallerNodeName(m_name), new CFlowModuleCallNodeFactory(m_Id));
+		DeactivateInstanceGraph(pInstance);
+
+		// mark as unused. Can't delete the graph at this point as it is still
+		//	in the middle of an update. It will be deleted at end of flow system update.
+		pInstance->m_bUsed = false;
+		bResult = true;
 	}
+
+	return bResult;
 }
 
-void CFlowGraphModule::UnregisterNodes()
-{
-	IFlowGraphModuleManager* pMgr = gEnv->pFlowSystem ? gEnv->pFlowSystem->GetIModuleManager() : NULL;
-
-	if (pMgr)
-	{
-		gEnv->pFlowSystem->UnregisterType(pMgr->GetStartNodeName(m_name));
-		gEnv->pFlowSystem->UnregisterType(pMgr->GetReturnNodeName(m_name));
-		gEnv->pFlowSystem->UnregisterType(pMgr->GetCallerNodeName(m_name));
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-void CFlowGraphModule::RemoveModulePorts()
-{
-	stl::free_container(m_modulePorts);
-}
-
-//////////////////////////////////////////////////////////////////////////
-size_t CFlowGraphModule::GetModulePortCount() const
-{
-	return m_modulePorts.size();
-}
-
-//////////////////////////////////////////////////////////////////////////
-const IFlowGraphModule::SModulePortConfig* CFlowGraphModule::GetModulePort(size_t index) const
-{
-	if (index < m_modulePorts.size())
-		return &m_modulePorts[index];
-
-	return NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphModule::AddModulePort(const IFlowGraphModule::SModulePortConfig& port)
-{
-	m_modulePorts.push_back(port);
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModule::RemoveCompletedInstances()
 {
-	for (TInstanceList::iterator it = m_instances.begin(), end = m_instances.end(); it != end; ++it)
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; )
 	{
-		if (!it->bUsed)
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; )
 		{
-			*it = SInstance(MODULEINSTANCE_INVALID);
+			if (!instanceIt->second.m_bUsed)
+			{
+				instanceIt = entityIt->second.erase(instanceIt);
+			}
+			else
+			{
+				++instanceIt;
+			}
+		}
+		if (entityIt->second.empty())
+		{
+			entityIt = m_runningInstances.erase(entityIt);
+		}
+		else
+		{
+			++entityIt;
 		}
 	}
-
-	stl::find_and_erase_all(m_instances, SInstance(MODULEINSTANCE_INVALID));
-
-	if (m_instances.size() == 0)
-		m_nextInstanceId = 0;
 }
 
 void CFlowGraphModule::RemoveAllInstances()
 {
-	for (TInstanceList::iterator it = m_instances.begin(), end = m_instances.end(); it != end; ++it)
+	for (TEntityInstanceMap::iterator entityIt = m_runningInstances.begin(), entityItE = m_runningInstances.end(); entityIt != entityItE; ++entityIt)
 	{
-		IFlowGraph* pModuleGraph = it->pGraph;
-		if (pModuleGraph)
+		for (TInstanceMap::iterator instanceIt = entityIt->second.begin(), instanceItE = entityIt->second.end(); instanceIt != instanceItE; ++instanceIt)
 		{
-			pModuleGraph->SetEnabled(false);
-			pModuleGraph->SetActive(false);
-
-			IFlowNodeIteratorPtr pNodeIter = pModuleGraph->CreateNodeIterator();
-			if (pNodeIter)
+			if (instanceIt->second.m_bUsed)
 			{
-				TFlowNodeId id = InvalidFlowNodeId;
-				while (pNodeIter->Next(id))
-				{
-					pModuleGraph->SetRegularlyUpdated(id, false);
-				}
+				DeactivateInstanceGraph(&instanceIt->second);
+				instanceIt->second.m_bUsed = false;
 			}
 		}
-		it->bUsed = false;
 	}
 }
 
-IFlowGraphPtr CFlowGraphModule::GetInstanceGraph(TModuleInstanceId instanceID)
+/* Keeping track of call nodes for instances */
+
+void CFlowGraphModule::RegisterCallNodeForInstance(EntityId entityId, TModuleInstanceId instanceId, uint callNodeId, CFlowModuleCallNode* pCallNode)
 {
-	for (TInstanceList::iterator it = m_instances.begin(), end = m_instances.end(); it != end; ++it)
+	// see notes on Instance IDs in Module.h
+
+	if (entityId != INVALID_ENTITYID)
 	{
-		if (it->instanceId == instanceID)
+		// valid entity registers any instance ID including -1. there are no generated IDs to keep track of
+		m_requestedInstanceIds[entityId][instanceId][callNodeId] = pCallNode;
+	}
+	else
+	{
+		// no entity. -1 is not a valid instance id to register. keep track of next instance id to be generated
+		if (instanceId != MODULEINSTANCE_INVALID)
 		{
-			return it->pGraph;
+			m_requestedInstanceIds[entityId][instanceId][callNodeId] = pCallNode;
+
+			if ((instanceId + 1) > m_nextInstanceId)
+			{
+				m_nextInstanceId = instanceId + 1;
+			}
 		}
 	}
-
-	return NULL;
 }
 
-bool CFlowGraphModule::HasInstanceGraph(IFlowGraphPtr pGraph)
+void CFlowGraphModule::UnregisterCallNodeForInstance(EntityId entityId, TModuleInstanceId instanceId, uint callNodeId)
 {
-	for (TInstanceList::iterator it = m_instances.begin(), end = m_instances.end(); it != end; ++it)
+	TEntityInstancesToCallNodes::iterator entityIte = m_requestedInstanceIds.find(entityId);
+	if (entityIte != m_requestedInstanceIds.end())
 	{
-		if (it->pGraph == pGraph)
+		TInstanceCallNodesMap::iterator instanceIte = entityIte->second.find(instanceId);
+		if (instanceIte != entityIte->second.end())
 		{
-			return true;
+			instanceIte->second.erase(callNodeId);
 		}
 	}
-
-	return false;
 }
+
+void CFlowGraphModule::ChangeRegisterCallNodeForInstance(
+  EntityId oldEntityId, TModuleInstanceId oldInstanceId,
+  EntityId newEntityId, TModuleInstanceId newInstanceId,
+  uint callNodeId, CFlowModuleCallNode* pCallNode)
+{
+	if (oldEntityId == newEntityId && oldInstanceId == newInstanceId)
+		return;
+
+	UnregisterCallNodeForInstance(oldEntityId, oldInstanceId, callNodeId);
+
+	RegisterCallNodeForInstance(newEntityId, newInstanceId, callNodeId, pCallNode);
+}
+
+void CFlowGraphModule::ClearCallNodesForInstances()
+{
+	m_requestedInstanceIds.clear();
+	m_nextInstanceId = 0;
+}
+
+/* Keeping track of global control nodes */
+
+void CFlowGraphModule::RegisterGlobalControlNode(uint callNodeId, CFlowModuleCallNode* pCallNode)
+{
+	m_globalControlNodes[callNodeId] = pCallNode;
+}
+
+void CFlowGraphModule::UnregisterGlobalControlNode(uint callNodeId)
+{
+	m_globalControlNodes.erase(callNodeId);
+}
+
+void CFlowGraphModule::ClearGlobalControlNodes()
+{
+	m_globalControlNodes.clear();
+}
+
+/* Iterator */
 
 IModuleInstanceIteratorPtr CFlowGraphModule::CreateInstanceIterator()
 {
