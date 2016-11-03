@@ -166,7 +166,7 @@ void CMotionBlur::RenderObjectsVelocity()
 		nBatchMask |= SRendItem::BatchFlags(EFSLIST_TRANSP);
 		if (nBatchMask & FB_MOTIONBLUR)
 		{
-			CRendElementBase* pPrevRE = gRenDev->m_RP.m_pRE;
+			CRenderElement* pPrevRE = gRenDev->m_RP.m_pRE;
 			gRenDev->m_RP.m_pRE = NULL;
 
 			if (!gcpRendD3D->FX_MotionVectorGeneration(true))

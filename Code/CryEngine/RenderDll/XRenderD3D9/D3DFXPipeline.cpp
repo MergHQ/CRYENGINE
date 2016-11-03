@@ -2328,7 +2328,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	int32 nUsedAttr = 3, nInstAttrMask = 0;
 	pVPInst->GetInstancingAttribInfo(Attributes, nUsedAttr, nInstAttrMask);
 
-	CRendElementBase* pRE    = NULL;
+	CRenderElement* pRE    = NULL;
 	CRenderMesh* pRenderMesh = NULL;
 
 	const int nLastRE = rRP.m_nLastRE;
@@ -2904,8 +2904,8 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 				FX_FogCorrection();
 
 			assert(rRP.m_pRE || !rRP.m_nLastRE);
-			CRendElementBase* pRE      = rRP.m_pRE;
-			CRendElementBase* pRESave  = pRE;
+			CRenderElement* pRE      = rRP.m_pRE;
+			CRenderElement* pRESave  = pRE;
 			CRenderObject* pSaveObj    = rRP.m_pCurObject;
 			CShaderResources* pCurRes  = rRP.m_pShaderResources;
 			CShaderResources* pSaveRes = pCurRes;
@@ -2964,7 +2964,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 							{
 								pObj = rRIs[nO]->pObj;
 
-								CRendElementBase* pElemBase = rRIs[nO]->pElem;
+								CRenderElement* pElemBase = rRIs[nO]->pElem;
 
 								if (pElemBase->mfGetType() == eDATA_Mesh)
 								{
@@ -3095,7 +3095,7 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 
 	PROFILE_LABEL_SCOPE("EFFECT_LAYER_PASS");
 
-	CRendElementBase* pRE  = m_RP.m_pRE;
+	CRenderElement* pRE  = m_RP.m_pRE;
 	uint64 nSaveRT         = m_RP.m_FlagsShader_RT;
 	uint32 nSaveMD         = m_RP.m_FlagsShader_MD;
 	uint32 nSavePersFlags  = m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags;
@@ -4488,7 +4488,7 @@ void TexBlurAnisotropicVertical(CTexture* pTex, int nAmount, float fScale, float
 	SAFE_DELETE(tpBlurTemp);
 }
 
-bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pRT, int nPreprType, CRendElementBase* pRE)
+bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pRT, int nPreprType, CRenderElement* pRE)
 {
 	if (!pRT)
 		return false;

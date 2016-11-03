@@ -9,7 +9,7 @@ namespace water
 struct SCompiledWaterOcean;
 }
 
-class CREWaterOcean : public CRendElementBase
+class CREWaterOcean : public CRenderElement
 {
 public:
 	struct SWaterOceanParam

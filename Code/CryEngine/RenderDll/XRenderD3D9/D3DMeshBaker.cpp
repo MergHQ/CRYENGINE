@@ -10,10 +10,10 @@
 
 //#define CREATE_RENDERDOC_CAPTURE
 
-class CREBaker : public CRendElementBase
+class CREBaker : public CRenderElement
 {
 private:
-	CRendElementBase*                m_pSrc;
+	CRenderElement*                    m_pSrc;
 	std::vector<IIndexedMesh*>       m_pDst;
 	CMesh*                           m_pSrcMesh;
 	int                              m_nPhase;
@@ -22,7 +22,7 @@ private:
 	int                              m_numParams;
 
 public:
-	CREBaker(CRendElementBase* pSrc, CMesh* pSrcMesh, std::vector<IIndexedMesh*> pDst, int nPhase, const SMeshBakingMaterialParams* params, int numParams, bool bSmoothNormals)
+	CREBaker(CRenderElement* pSrc, CMesh* pSrcMesh, std::vector<IIndexedMesh*> pDst, int nPhase, const SMeshBakingMaterialParams* params, int numParams, bool bSmoothNormals)
 		: m_pSrc(pSrc)
 		, m_pDst(pDst)
 		, m_pSrcMesh(pSrcMesh)
@@ -44,7 +44,7 @@ public:
 	virtual int                mfGetMatId()                                                                            { return m_pSrc->mfGetMatId(); }
 	virtual void               mfReset()                                                                               { m_pSrc->mfReset(); }
 	virtual bool               mfIsHWSkinned()                                                                         { return m_pSrc->mfIsHWSkinned(); }
-	virtual CRendElementBase*  mfCopyConstruct(void)                                                                   { return m_pSrc->mfCopyConstruct(); }
+	virtual CRenderElement*      mfCopyConstruct(void)                                                                   { return m_pSrc->mfCopyConstruct(); }
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj)                                              { m_pSrc->mfCenter(centr, pObj); }
 	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs)                                                     { m_pSrc->mfGetBBox(vMins, vMaxs); }
 	virtual void               mfGetPlane(Plane& pl)                                                                   { m_pSrc->mfGetPlane(pl); }

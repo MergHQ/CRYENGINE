@@ -2072,7 +2072,7 @@ struct SPreprocess
 	int m_nTech;
 	CShader* m_Shader;
 	CShaderResources* m_pRes;
-	CRendElementBase* m_RE;
+	CRenderElement* m_RE;
 };
 
 struct Compare2
@@ -2266,7 +2266,7 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 
 //========================================================================================================
 
-bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRendElementBase* pRE, bool bResIdentical)
+bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRenderElement* pRE, bool bResIdentical)
 {
 #if !defined(_RELEASE)
 	if (!CV_r_Batching)
@@ -2436,7 +2436,7 @@ void CD3D9Renderer::FX_PostRender()
 }
 
 // Object changing handling (skinning, shadow maps updating, initial states setting, ...)
-bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRenderObject* obj, CRendElementBase* pRE)
+bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRenderObject* obj, CRenderElement* pRE)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
@@ -2602,7 +2602,7 @@ void CD3D9Renderer::UpdatePrevMatrix(bool bEnable)
 
 //=================================================================================
 // Check buffer overflow during geometry batching
-void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, int* nNewVerts, int* nNewInds)
+void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRenderElement* re, int* nNewVerts, int* nNewInds)
 {
 	if (nNewVerts)
 		*nNewVerts = nVerts;
@@ -2630,7 +2630,7 @@ void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, in
 }
 
 // Start of the new shader pipeline (3D pipeline version)
-void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendElementBase* re)
+void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRenderElement* re)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 	  assert(ef);
@@ -2787,7 +2787,7 @@ void CD3D9Renderer::OldPipeline_ProcessBatchesList(CRenderView::RenderItems& ren
 			continue;
 
 		CRenderObject* pObject = ri.pObj;
-		CRendElementBase* pRE  = ri.pElem;
+		CRenderElement* pRE  = ri.pElem;
 		bool bChangedShader    = false;
 		bool bResIdentical     = true;
 		if (prevSortVal != ri.SortVal)

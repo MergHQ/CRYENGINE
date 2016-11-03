@@ -549,7 +549,7 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ReleaseOptics(IOpticsElementBase* pOpticsElement);
 	void RC_RelinkTexture(CTexture * pTex);
 	void RC_UnlinkTexture(CTexture * pTex);
-	void RC_CreateREPostProcess(CRendElementBase * *re);
+	void RC_CreateREPostProcess(CRenderElement * *re);
 	bool RC_CheckUpdate2(CRenderMesh * pMesh, CRenderMesh * pVContainer, EVertexFormat eVF, uint32 nStreamMask);
 	void RC_ReleaseCB(void* pCB);
 	void RC_ReleaseRS(std::shared_ptr<CDeviceResourceSet> &pRS);
@@ -621,7 +621,7 @@ struct CRY_ALIGN(128) SRenderThread
 	bool RC_OC_ReadResult_Try(uint32 nDefaultNumSamples, CREOcclusionQuery * pRE);
 
 	void RC_PreprGenerateFarTrees(CREFarTreeSprites * pRE, const SRenderingPassInfo &passInfo);
-	void RC_PreprGenerateCloud(CRendElementBase * pRE, CShader * pShader, CShaderResources * pRes, CRenderObject * pObject);
+	void RC_PreprGenerateCloud(CRenderElement * pRE, CShader * pShader, CShaderResources * pRes, CRenderObject * pObject);
 	void RC_SetViewport(int x, int y, int width, int height, int id = 0);
 
 	void RC_ReleaseVBStream(void* pVB, int nStream);

@@ -1046,7 +1046,7 @@ NO_INLINE void sZeroLine(UFloat4* sData)
 	sData[0].f[3] = 0.0f;
 }
 
-NO_INLINE CRendElementBase* sGetContainerRE0(CRendElementBase* pRE)
+NO_INLINE CRenderElement* sGetContainerRE0(CRenderElement* pRE)
 {
 	assert(pRE);      // someone assigned wrong shader - function should not be called then
 
@@ -1081,7 +1081,7 @@ NO_INLINE float* sGetTerrainLayerGen(UFloat4* sData, CD3D9Renderer* r)
 	if (!r->m_RP.m_pRE)
 		return NULL;          // it seems the wrong material was assigned
 
-	CRendElementBase* pRE = r->m_RP.m_pRE;
+	CRenderElement* pRE = r->m_RP.m_pRE;
 
 	float* pData = (float*)pRE->m_CustomData;
 	if (pData)
@@ -2199,7 +2199,7 @@ NO_INLINE void sTexelDensityParam(UFloat4* sData)
 		int texHeight = 512;
 		int mipLevel = 0;
 
-		CRendElementBase* pRE = gRenDev->m_RP.m_pRE;
+		CRenderElement* pRE = gRenDev->m_RP.m_pRE;
 
 		if (pRE)
 		{
@@ -2262,7 +2262,7 @@ NO_INLINE void sTexelDensityColor(UFloat4* sData)
 			int texHeight = 512;
 			int mipLevel = 0;
 
-			CRendElementBase* pRE = gRenDev->m_RP.m_pRE;
+			CRenderElement* pRE = gRenDev->m_RP.m_pRE;
 
 			if (pRE)
 			{
@@ -3308,7 +3308,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 {
 	DETAILED_PROFILE_MARKER("mfSetParameters");
 	PROFILE_FRAME(Shader_SetParams);
-	CRendElementBase* pRE;
+	CRenderElement* pRE;
 	float* pSrc, * pData;
 	Vec3 v;
 	Vec4 v4;
@@ -4020,7 +4020,7 @@ void CHWShader_D3D::GetReflectedShaderParameters(CRenderObject* pForRenderObject
 	CRenderObject* pPrevObj = rendPipeline.m_pCurObject;
 	CShader* pPrevShader = rendPipeline.m_pShader;
 	CShaderResources* pPrevRes = rendPipeline.m_pShaderResources;
-	CRendElementBase* pPrevRE = rendPipeline.m_pRE;
+	CRenderElement* pPrevRE = rendPipeline.m_pRE;
 
 	rendPipeline.m_pCurObject = pForRenderObject;
 	rendPipeline.m_pShader = (CShader*)shaderItem.m_pShader;
@@ -4872,7 +4872,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 				case TO_FROMRE1_FROM_CONTAINER:
 					{
 						// take render element from vertex container render mesh if available
-						CRendElementBase* pRE = sGetContainerRE0(rd->m_RP.m_pRE);
+						CRenderElement* pRE = sGetContainerRE0(rd->m_RP.m_pRE);
 						if (pRE)
 							nCustomID = pRE->m_CustomTexBind[nCustomID - TO_FROMRE0_FROM_CONTAINER];
 						else
@@ -5196,7 +5196,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 				case TO_VOLOBJ_SHADOW:
 					{
 						bool texBound(false);
-						CRendElementBase* pRE(rd->m_RP.m_pRE);
+						CRenderElement* pRE(rd->m_RP.m_pRE);
 						if (pRE && pRE->mfGetType() == eDATA_VolumeObject)
 						{
 							CREVolumeObject* pVolObj((CREVolumeObject*)pRE);
@@ -5251,7 +5251,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 				case TO_SKYDOME_MIE:
 				case TO_SKYDOME_RAYLEIGH:
 					{
-						CRendElementBase* pRE = rd->m_RP.m_pRE;
+						CRenderElement* pRE = rd->m_RP.m_pRE;
 						if (pRE && pRE->mfGetType() == eDATA_HDRSky)
 						{
 							CTexture* pTex = nCustomID == TO_SKYDOME_MIE ? ((CREHDRSky*) pRE)->m_pSkyDomeTextureMie : ((CREHDRSky*) pRE)->m_pSkyDomeTextureRayleigh;
@@ -5267,7 +5267,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 
 				case TO_SKYDOME_MOON:
 					{
-						CRendElementBase* pRE = rd->m_RP.m_pRE;
+						CRenderElement* pRE = rd->m_RP.m_pRE;
 						if (pRE && pRE->mfGetType() == eDATA_HDRSky)
 						{
 							CREHDRSky* pHDRSky = (CREHDRSky*) pRE;

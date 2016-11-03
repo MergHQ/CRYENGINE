@@ -67,7 +67,7 @@ void CRenderPolygonDataPool::UpdateAPIBuffers()
 
 //===============================================================
 
-CRendElementBase* CREClientPoly::mfCopyConstruct(void)
+CRenderElement* CREClientPoly::mfCopyConstruct(void)
 {
 	CREClientPoly* cp = new CREClientPoly;
 	*cp = *this;

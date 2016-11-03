@@ -104,7 +104,7 @@ struct SCompiledWaterVolume : NoCopy
 //////////////////////////////////////////////////////////////////////////
 
 CREWaterVolume::CREWaterVolume()
-	: CRendElementBase()
+	: CRenderElement()
 	, m_pParams(nullptr)
 	, m_pOceanParams(nullptr)
 	, m_drawWaterSurface(false)
@@ -551,7 +551,7 @@ void CREWaterVolume::UpdatePerInstanceCB(
 
 void CREWaterVolume::UpdateVertex(watervolume::SCompiledWaterVolume& compiledObj, bool bFullscreen)
 {
-	CRendElementBase::SGeometryInfo geomInfo;
+	CRenderElement::SGeometryInfo geomInfo;
 	ZeroStruct(geomInfo);
 
 	const bool bDrawSurface = (m_drawWaterSurface || !m_pParams->m_viewerInsideVolume);

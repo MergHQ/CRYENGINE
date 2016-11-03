@@ -8,7 +8,7 @@ namespace watervolume
 struct SCompiledWaterVolume;
 }
 
-class CREWaterVolume : public CRendElementBase
+class CREWaterVolume : public CRenderElement
 {
 public:
 	CREWaterVolume();

@@ -256,7 +256,7 @@ public:
 
 	IRenderNode* m_pRenderNode;         //!< Will define instance id.
 	IMaterial* m_pCurrMaterial;         //!< Parent material used for render object.
-	CRendElementBase* m_pRE;            //!< RenderElement used by this CRenderObject
+	CRenderElement* m_pRE;            //!< RenderElement used by this CRenderObject
 
 	// Linked list of compiled objects, one per mesh subset (Chunk).
 	CCompiledRenderObject* m_pCompiledObject;
@@ -351,7 +351,7 @@ public:
 
 	ILINE SRenderObjData*   GetObjData()        { return &m_data;  }
 
-	ILINE CRendElementBase* GetRE() const       { return m_pRE; }
+	ILINE CRenderElement*     GetRE() const       { return m_pRE; }
 
 protected:
 	// Disallow copy (potential bugs with PERMANENT objects)

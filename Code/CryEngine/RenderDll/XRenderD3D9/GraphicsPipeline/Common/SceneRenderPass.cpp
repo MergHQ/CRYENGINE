@@ -162,7 +162,7 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 			continue;
 
 		CRenderObject* pObject = ri.pObj;
-		CRendElementBase* pRE = ri.pElem;
+		CRenderElement* pRE = ri.pElem;
 
 		SRendItem::mfGet(ri.SortVal, nTech, pShader, pRes);
 

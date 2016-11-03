@@ -18,7 +18,7 @@
 struct SDynTexture2;
 struct SDynTexture;
 
-class CREImposter : public CRendElementBase
+class CREImposter : public CRenderElement
 {
 	friend class CRECloud;
 
@@ -69,7 +69,7 @@ public:
 	static int m_PrevMemUpdated;
 	static int m_PrevMemPostponed;
 
-	CREImposter() : CRendElementBase(),
+	CREImposter() : CRenderElement(),
 		m_pTexture(NULL),
 		m_pFrontTexture(NULL),
 		m_pTextureDepth(NULL),

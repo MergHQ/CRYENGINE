@@ -848,7 +848,7 @@ void CNanoGlass::Reset(bool bOnSpecChange)
 	// constructor. This post effect is recreated at the start of each session, so the constructor gets called then
 }
 
-void CNanoGlass::AddRE(const CRendElementBase* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+void CNanoGlass::AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	// Main thread
 	const uint32 nThreadID = passInfo.ThreadID();

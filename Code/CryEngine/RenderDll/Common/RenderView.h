@@ -95,7 +95,7 @@ public:
 	RenderItems&         GetRenderItems(int nRenderList);
 	uint32               GetBatchFlags(int nRenderList) const;
 
-	void                 AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
+	void                 AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
 	                                   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward);
 
 	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
@@ -233,8 +233,8 @@ private:
 	template<bool bConcurrent>
 	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem);
 
-	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
-	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
+	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
+	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 private:
 	EUsageMode m_usageMode;
 	EViewType  m_viewType;

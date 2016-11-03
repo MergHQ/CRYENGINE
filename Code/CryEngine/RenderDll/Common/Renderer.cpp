@@ -926,7 +926,7 @@ void CRenderer::FreeResources(int nFlags)
 		ForceFlushRTCommands();
 		CTexture::ResetTMUs();
 
-		CRendElement::Cleanup();
+		CRenderElement::Cleanup();
 		ForceFlushRTCommands();
 
 		// sync dev buffer only once per frame, to prevent syncing to the currently rendered frame
@@ -948,11 +948,11 @@ void CRenderer::FreeResources(int nFlags)
 	if (nFlags == FRR_ALL)
 	{
 		ForceFlushRTCommands();
-		CRendElementBase::ShutDown();
+		CRenderElement::ShutDown();
 	}
 	else if (nFlags & FRR_RENDERELEMENTS)
 	{
-		CRendElement::Cleanup();
+		CRenderElement::Cleanup();
 	}
 
 	if ((nFlags & FRR_RESTORE) && !(nFlags & FRR_SYSTEM))
@@ -1470,14 +1470,14 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 	m_pRT->RC_SubmitWind(pWind);
 }
 
-void CRenderer::RT_CreateREPostProcess(CRendElementBase** re)
+void CRenderer::RT_CreateREPostProcess(CRenderElement** re)
 {
 	*re = new CREPostProcess;
 }
 
-CRendElementBase* CRenderer::EF_CreateRE(EDataType edt)
+CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 {
-	CRendElementBase* re = NULL;
+	CRenderElement* re = NULL;
 	switch (edt)
 	{
 	case eDATA_Mesh:
@@ -1763,7 +1763,7 @@ void CRenderer::EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, co
 	{
 		// Add render element if light has mtl bound
 		IShader* pShader = pLight->m_Shader.m_pShader;
-		TArray<CRendElementBase*>* pRendElemBase = pShader ? pLight->m_Shader.m_pShader->GetREs(pLight->m_Shader.m_nTechnique) : 0;
+		TArray<CRenderElement*>* pRendElemBase = pShader ? pLight->m_Shader.m_pShader->GetREs(pLight->m_Shader.m_nTechnique) : 0;
 		if (pRendElemBase && !pRendElemBase->empty())
 		{
 			CRenderObject* pRO = EF_GetObject_Temp(passInfo.ThreadID());
@@ -1781,7 +1781,7 @@ void CRenderer::EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, co
 			pRO->m_II.m_Matrix   = pLight->m_ObjMatrix;
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
-			CRendElementBase* pRE = pRendElemBase->Get(0);
+			CRenderElement* pRE = pRendElemBase->Get(0);
 			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP : EFSLIST_LENSOPTICS;
 
 			if (pRE->mfGetType() == eDATA_Beam)

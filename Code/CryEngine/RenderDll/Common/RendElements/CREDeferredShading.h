@@ -3,7 +3,7 @@
 #ifndef __CREDEFERREDSHADING_H__
 #define __CREDEFERREDSHADING_H__
 
-class CREDeferredShading : public CRendElementBase
+class CREDeferredShading : public CRenderElement
 {
 	friend class CD3D9Renderer;
 	friend class CGLRenderer;

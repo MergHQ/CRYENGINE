@@ -244,7 +244,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 									continue;
 								}
 
-								CRendElementBase* RESTRICT_POINTER pREMesh = chunk.pRE;
+								CRenderElement* RESTRICT_POINTER pREMesh = chunk.pRE;
 								IRenderShaderResources* pR = shaderItem.m_pShaderResources;
 								IShader* RESTRICT_POINTER pS = shaderItem.m_pShader;
 

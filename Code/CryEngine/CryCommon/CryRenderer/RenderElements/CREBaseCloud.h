@@ -128,12 +128,12 @@ inline const ColorF SCloudParticle::GetLitColor(unsigned int index) const
 
 //===========================================================================
 
-class CREBaseCloud : public CRendElementBase
+class CREBaseCloud : public CRenderElement
 {
 	friend class CRECloud;
 
 public:
-	CREBaseCloud() : CRendElementBase()
+	CREBaseCloud() : CRenderElement()
 	{
 		mfSetType(eDATA_Cloud);
 		mfUpdateFlags(FCEF_TRANSFORM);

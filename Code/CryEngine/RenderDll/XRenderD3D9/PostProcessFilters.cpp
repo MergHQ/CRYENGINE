@@ -783,7 +783,7 @@ void CSoftAlphaTest::Render()
 {
 	PROFILE_LABEL_SCOPE("SOFT ALPHA TEST");
 
-	CRendElementBase* pPrevRE = gRenDev->m_RP.m_pRE;
+	CRenderElement* pPrevRE = gRenDev->m_RP.m_pRE;
 	gRenDev->m_RP.m_pRE = NULL;
 
 	PostProcessUtils().CopyScreenToTexture(CTexture::s_ptexSceneNormalsMap);

@@ -12,7 +12,7 @@
 #ifndef __CREPOSTPROCESS_H__
 #define __CREPOSTPROCESS_H__
 
-class CREPostProcess : public CRendElementBase
+class CREPostProcess : public CRenderElement
 {
 	friend class CD3D9Renderer;
 

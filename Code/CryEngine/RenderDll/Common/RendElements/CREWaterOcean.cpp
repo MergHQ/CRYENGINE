@@ -131,7 +131,7 @@ bool CreatePipelineStates(
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CREWaterOcean::CREWaterOcean()
-	: CRendElementBase()
+	: CRenderElement()
 	, m_pCompiledObject(new water::SCompiledWaterOcean())
 	, m_pRenderTarget(new SHRenderTarget())
 	, m_vertexBufferHandle(water::invalidBufferHandle)
@@ -184,7 +184,7 @@ void CREWaterOcean::Release(bool bForce /*= false*/)
 		m_pCompiledObject->ReleaseDeviceResources();
 	}
 
-	CRendElementBase::Release(bForce);
+	CRenderElement::Release(bForce);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -670,7 +670,7 @@ void CREWaterOcean::UpdatePerInstanceCB(water::SCompiledWaterOcean& RESTRICT_REF
 
 void CREWaterOcean::UpdateVertex(water::SCompiledWaterOcean& compiledObj, int32 primType)
 {
-	CRendElementBase::SGeometryInfo geomInfo;
+	CRenderElement::SGeometryInfo geomInfo;
 	ZeroStruct(geomInfo);
 
 	{

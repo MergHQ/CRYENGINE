@@ -59,7 +59,7 @@
 
 struct SShaderPass;
 class CShader;
-class CRendElementBase;
+class CRenderElement;
 class CResFile;
 struct SEnvTexture;
 struct SParserFrame;
@@ -1040,7 +1040,7 @@ struct SShaderTechnique
 	int                       m_Flags;     // Different flags (FHF_)
 	uint32                    m_nPreprocessFlags;
 	int8                      m_nTechnique[TTYPE_MAX]; // Next technique in sequence
-	TArray<CRendElementBase*> m_REs;                   // List of all render elements registered in the shader
+	TArray<CRenderElement*> m_REs;                   // List of all render elements registered in the shader
 	TArray<SHRenderTarget*>   m_RTargets;
 	float                     m_fProfileTime;
 
@@ -1117,7 +1117,7 @@ struct SShaderTechnique
 		}
 		for (uint32 i = 0; i < m_REs.Num(); i++)
 		{
-			CRendElementBase* pRE = m_REs[i];
+			CRenderElement* pRE = m_REs[i];
 			pRE->Release(false);
 		}
 		m_REs.Free();
@@ -1271,7 +1271,7 @@ public:
 		SShaderTechnique* pTech = m_HWTechniques[nTechnique];
 		return pTech->m_nTechnique[nRegisteredTechnique];
 	}
-	virtual TArray<CRendElementBase*>* GetREs(int nTech)
+	virtual TArray<CRenderElement*>* GetREs(int nTech)
 	{
 		if (nTech < 0)
 			nTech = 0;

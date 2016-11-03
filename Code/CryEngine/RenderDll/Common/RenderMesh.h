@@ -477,7 +477,7 @@ public:
 	void BindStreamsToRenderPipeline();
 
 	bool GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo);
-	bool FillGeometryInfo(CRendElementBase::SGeometryInfo& geomInfo);
+	bool FillGeometryInfo(CRenderElement::SGeometryInfo& geomInfo);
 
 private:
 	void AddHUDRenderElement(CRenderObject* pObj, IMaterial* pMaterial, const SRenderingPassInfo& passInfo);

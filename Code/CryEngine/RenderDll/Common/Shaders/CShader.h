@@ -10,7 +10,7 @@
 #include "../ResFileLookupDataMan.h"
 
 struct SRenderBuf;
-class CRendElementBase;
+class CRenderElement;
 struct SEmitter;
 struct SParticleInfo;
 struct SPartMoveStage;

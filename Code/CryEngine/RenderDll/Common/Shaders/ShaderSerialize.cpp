@@ -405,7 +405,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 		ST.m_nREsOffs = (ST.m_nREs > 0) ? SC.Data.Num() : -1;
 		for (j = 0; j < ST.m_nREs; j++)
 		{
-			CRendElementBase* pRE = pT->m_REs[j];
+			CRenderElement* pRE = pT->m_REs[j];
 			uint32 type = pRE->m_Type;
 			sAddData(SC.Data, type);
 			pRE->mfExport(SC);

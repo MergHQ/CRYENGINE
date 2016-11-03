@@ -96,7 +96,7 @@ int CVolumeTexture::GetTexID() const
 //
 
 CREVolumeObject::CREVolumeObject()
-	: CRendElementBase()
+	: CRenderElement()
 	, m_center(0, 0, 0)
 	, m_matInv()
 	, m_eyePosInWS(0, 0, 0)

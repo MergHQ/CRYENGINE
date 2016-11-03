@@ -23,15 +23,15 @@
 #include <CryCore/BitMask.h>
 
 struct IMaterial;
-class CRendElementBase;
+class CRenderElement;
 class CRenderObject;
 class CREMesh;
 struct IRenderMesh;
 struct IShader;
 struct IVisArea;
 class CShader;
-class CRendElement;
-class CRendElementBase;
+class CRenderElement;
+class CRenderElement;
 struct STexAnim;
 struct SShaderPass;
 struct SShaderItem;
@@ -2085,7 +2085,7 @@ public:
 	virtual void                       SetFlags2(int Flags) = 0;
 	virtual void                       ClearFlags2(int Flags) = 0;
 	virtual bool                       Reload(int nFlags, const char* szShaderName) = 0;
-	virtual TArray<CRendElementBase*>* GetREs(int nTech) = 0;
+	virtual TArray<CRenderElement*>*     GetREs(int nTech) = 0;
 	virtual DynArrayRef<SShaderParam>& GetPublicParams() = 0;
 	virtual void                       CopyPublicParamsTo(SInputShaderResources& copyToResource) = 0;
 	virtual int                        GetTexId() = 0;

@@ -2,7 +2,7 @@
 
 #pragma once
 
-class CRELensOptics : public CRendElementBase
+class CRELensOptics : public CRenderElement
 {
 public:
 	CRELensOptics(void);

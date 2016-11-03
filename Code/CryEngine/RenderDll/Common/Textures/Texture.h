@@ -2128,7 +2128,7 @@ public:
 	static D3DFormat    ConvertToSignedFmt(D3DFormat fmt);
 	static D3DFormat    ConvertToTypelessFmt(D3DFormat fmt);
 
-	static SEnvTexture* FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRendElementBase* pRE, bool* bMustUpdate);
+	static SEnvTexture* FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate);
 	static void         DrawSceneToCubeSide(Vec3& Pos, int tex_size, int side);
 	static bool         RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData);
 

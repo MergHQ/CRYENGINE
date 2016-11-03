@@ -94,7 +94,7 @@ void CRenderView::Clear()
 }
 
 // Helper function to allocate new compiled object from pool
-CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem)
+CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem)
 {
 	CCompiledRenderObject* pCompiledObject = CCompiledRenderObject::AllocateFromPool();
 	pCompiledObject->Init(shaderItem, pElem);
@@ -106,7 +106,7 @@ CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRe
 }
 
 // Helper function
-CCompiledRenderObject* CRenderView::AllocCompiledObjectTemporary(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem)
+CCompiledRenderObject* CRenderView::AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem)
 {
 	CCompiledRenderObject* pCompiledObject = CCompiledRenderObject::AllocateFromPool();
 	pCompiledObject->Init(shaderItem, pElem);
@@ -610,7 +610,7 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
+void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
                                 SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward)
 {
 	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || (nList == EFSLIST_PREPROCESS || nList == EFSLIST_HDRPOSTPROCESS || nList == EFSLIST_POSTPROCESS));  // Adding items only in writing mode

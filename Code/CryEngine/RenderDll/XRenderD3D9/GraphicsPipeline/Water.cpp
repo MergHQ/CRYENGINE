@@ -344,7 +344,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 
 		while (curRI < endRI)
 		{
-			CRendElementBase* pRE = RI[curRI++].pElem;
+			CRenderElement* pRE = RI[curRI++].pElem;
 			if (pRE->m_Type == eDATA_WaterVolume
 			    && ((CREWaterVolume*)pRE)->m_pParams
 			    && ((CREWaterVolume*)pRE)->m_pParams->m_caustics == true)

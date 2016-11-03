@@ -2381,7 +2381,7 @@ Ang3 sDeltAngles(Ang3& Ang0, Ang3& Ang1)
 	return out;
 }
 
-SEnvTexture* CTexture::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRendElementBase* pRE, bool* bMustUpdate)
+SEnvTexture* CTexture::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate)
 {
 	SEnvTexture* cm = NULL;
 	float time0 = iTimer->GetAsyncCurTime();

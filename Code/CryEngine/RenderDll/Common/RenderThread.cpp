@@ -1112,7 +1112,7 @@ void SRenderThread::RC_UnlinkTexture(CTexture* pTex)
 	EndCommand(p);
 }
 
-void SRenderThread::RC_CreateREPostProcess(CRendElementBase** re)
+void SRenderThread::RC_CreateREPostProcess(CRenderElement** re)
 {
 	if (IsRenderThread() || IsLevelLoadingThread())
 	{
@@ -2117,7 +2117,7 @@ void SRenderThread::RC_PreprGenerateFarTrees(CREFarTreeSprites* pRE, const SRend
 	AddRenderingPassInfo(p, const_cast<SRenderingPassInfo*>(&passInfo));
 	EndCommand(p);
 }
-void SRenderThread::RC_PreprGenerateCloud(CRendElementBase* pRE, CShader* pShader, CShaderResources* pRes, CRenderObject* pObject)
+void SRenderThread::RC_PreprGenerateCloud(CRenderElement* pRE, CShader* pShader, CShaderResources* pRes, CRenderObject* pObject)
 {
 	if (IsRenderThread())
 	{
@@ -2752,7 +2752,7 @@ void SRenderThread::ProcessCommands()
 			break;
 		case eRC_CreateREPostProcess:
 			{
-				CRendElementBase** pRE = ReadCommand<CRendElementBase**>(n);
+				CRenderElement** pRE = ReadCommand<CRenderElement**>(n);
 				gRenDev->RT_CreateREPostProcess(pRE);
 			}
 			break;

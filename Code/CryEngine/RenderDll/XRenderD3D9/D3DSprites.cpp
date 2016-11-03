@@ -187,7 +187,7 @@ void sFlushSprites(SSpriteGenInfo* pSGI, int nCurX, int nCurY, CTexture* pSrcTex
 static void sRT_StartEf()
 {
 }
-static void sRT_AddEf(CRendElementBase* pRE, SShaderItem& SH, CRenderObject* pObj, int nList, int nAW, const SRenderingPassInfo& passInfo)
+static void sRT_AddEf(CRenderElement* pRE, SShaderItem& SH, CRenderObject* pObj, int nList, int nAW, const SRenderingPassInfo& passInfo)
 {
 	CShader* pSH = (CShader*)SH.m_pShader;
 	if (pSH->m_Flags & EF_NODRAW)
@@ -243,7 +243,7 @@ static void sRT_RenderObject(IStatObj* pEngObj, SRendParams& RP, const SRenderin
 	for (uint32 i = 0; i < ni; i++)
 	{
 		CRenderChunk* pChunk = &pChunks->at(i);
-		CRendElementBase* pREMesh = pChunk->pRE;
+		CRenderElement* pREMesh = pChunk->pRE;
 
 		SShaderItem& ShaderItem = pMaterial->GetShaderItem(pChunk->m_nMatID);
 		if (pREMesh && ShaderItem.m_pShader && ShaderItem.m_pShaderResources)
@@ -347,7 +347,7 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	CRenderObject* pObj = m_RP.m_pCurObject;
 	SShaderTechnique* pTech = m_RP.m_pCurTechnique;
 	SShaderTechnique* pRootTech = m_RP.m_pRootTechnique;
-	CRendElementBase* pRE = m_RP.m_pRE;
+	CRenderElement* pRE = m_RP.m_pRE;
 
 	//int nPrevStr = CV_r_texturesstreamingsync;
 	int nPrevAsync = CV_r_shadersasynccompiling;

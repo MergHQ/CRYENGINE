@@ -4,7 +4,7 @@
 #define __CREHDRPROCESS_H__
 
 // screen processing render element
-class CREHDRProcess : public CRendElementBase
+class CREHDRProcess : public CRenderElement
 {
 	friend class CD3D9Renderer;
 	friend class CGLRenderer;

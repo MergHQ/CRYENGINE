@@ -54,13 +54,13 @@ struct SBreakableGlassREParams
 };
 
 //! Breakable glass sim render element.
-class CREBreakableGlass : public CRendElementBase
+class CREBreakableGlass : public CRenderElement
 {
 public:
 	CREBreakableGlass();
 	virtual ~CREBreakableGlass();
 
-	// CRendElementBase interface
+	// CRenderElement interface
 	virtual void mfPrepare(bool bCheckOverflow);
 	virtual bool mfDraw(CShader* ef, SShaderPass* sfm);
 

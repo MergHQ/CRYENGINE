@@ -1898,8 +1898,8 @@ void CRenderMesh::CreateChunksSkinned()
     if (re)
     {
       rNewMat.pRE = (CREMeshImpl*) gRenDev->EF_CreateRE(eDATA_Mesh);
-      CRendElement *pNext = rNewMat.pRE->m_NextGlobal;
-      CRendElement *pPrev = rNewMat.pRE->m_PrevGlobal;
+      CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
+      CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
       *(CREMeshImpl*)rNewMat.pRE = *re;
       if (rNewMat.pRE->m_pChunk) // affects the source mesh!! will only work correctly if the source is deleted after copying
         rNewMat.pRE->m_pChunk = &rNewMat;
@@ -1921,7 +1921,7 @@ int CRenderMesh::GetRenderChunksCount(IMaterial * pMaterial, int & nRenderTrisCo
   for (uint32 i=0; i<ni; i++)
   {
     CRenderChunk *pChunk = &m_Chunks[i];
-    CRendElementBase * pREMesh = pChunk->pRE;
+    CRenderElement * pREMesh = pChunk->pRE;
 
     SShaderItem *pShaderItem = &pMaterial->GetShaderItem(pChunk->m_nMatID);
 
@@ -1968,8 +1968,8 @@ void CRenderMesh::CopyTo(IRenderMesh *_pDst, int nAppendVtx, bool bDynamic, bool
     if (re)
     {
       rNewMat.pRE = (CREMeshImpl*) gRenDev->EF_CreateRE(eDATA_Mesh);
-      CRendElement *pNext = rNewMat.pRE->m_NextGlobal;
-      CRendElement *pPrev = rNewMat.pRE->m_PrevGlobal;
+      CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
+      CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
       *(CREMeshImpl*)rNewMat.pRE = *re;
 			if (rNewMat.pRE->m_pChunk) // affects the source mesh!! will only work correctly if the source is deleted after copying
       {
@@ -3192,7 +3192,7 @@ void CRenderMesh::AddRenderElements(IMaterial *pIMatInfo, CRenderObject *pObj, c
 
 		if (shaderItem.m_pShader && pOrigRE)// && pMat->nNumIndices)
     {
-      TArray<CRendElementBase *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
+      TArray<CRenderElement *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
 
       assert(pOrigRE->m_pChunk->nFirstIndexId<60000);
 
@@ -3223,7 +3223,7 @@ void CRenderMesh::AddRE(IMaterial* pMaterial, CRenderObject* obj, IShader* ef, c
     {
       assert(m_Chunks[i].pRE->m_pChunk->nFirstIndexId<60000);
 
-      TArray<CRendElementBase *> *pRE = SH.m_pShader->GetREs(SH.m_nTechnique);
+      TArray<CRenderElement *> *pRE = SH.m_pShader->GetREs(SH.m_nTechnique);
       if (!pRE || !pRE->Num())
 				gRenDev->EF_AddEf_NotVirtual(m_Chunks[i].pRE, SH, obj, passInfo, nList, nAW);
       else
@@ -4805,7 +4805,7 @@ bool CRenderMesh::GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo)
 	return false;
 }
 
-bool CRenderMesh::FillGeometryInfo(CRendElementBase::SGeometryInfo& geom)
+bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 {
 	CRenderMesh* pRenderMeshForVertices = _GetVertexContainer();
 
@@ -4951,7 +4951,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 	for (uint32 i = 0; i < ni; i++)
 	{
 		CRenderChunk* pChunk = &pChunks->at(i);
-		CRendElementBase* RESTRICT_POINTER pREMesh = pChunk->pRE;
+		CRenderElement* RESTRICT_POINTER pREMesh = pChunk->pRE;
 
 		SShaderItem& ShaderItem      = pMaterial->GetShaderItem(pChunk->m_nMatID);
 		CShaderResources* pR         = (CShaderResources*)ShaderItem.m_pShaderResources;
@@ -5012,7 +5012,7 @@ void CRenderMesh::AddHUDRenderElement(CRenderObject* pObj, IMaterial* pMaterial,
 	for (uint32 i = 0; i < ni; i++)
 	{
 		CRenderChunk* pChunk      = &pChunks->at(i);
-		CRendElementBase* pREMesh = pChunk->pRE;
+		CRenderElement* pREMesh = pChunk->pRE;
 		SShaderItem* pShaderItem  = &pMaterial->GetShaderItem(pChunk->m_nMatID);
 
 		pPostEffect->AddRE(pREMesh, pShaderItem, pObj, passInfo);
@@ -5181,7 +5181,7 @@ void CRenderMesh::ClearJobResources()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void C3DHud::AddRE(const CRendElementBase* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+void C3DHud::AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	// Main thread
 	const uint32 nThreadID = passInfo.ThreadID();

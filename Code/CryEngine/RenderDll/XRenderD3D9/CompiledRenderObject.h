@@ -74,7 +74,7 @@ public:
 	~CPermanentRenderObject();
 
 	//
-	void PrepareForUse(CRendElementBase* pRenderElement, ERenderPassType passType)
+	void PrepareForUse(CRenderElement* pRenderElement, ERenderPassType passType)
 	{
 		if (pRenderElement && pRenderElement->mfGetType() == eDATA_Mesh)
 		{
@@ -104,7 +104,7 @@ public:
 	struct SPermanentRendItem
 	{
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
-		CRendElementBase*      m_pRenderElement;  //!< Mesh subset, or a special rendering object
+		CRenderElement*          m_pRenderElement;  //!< Mesh subset, or a special rendering object
 		uint32                 m_objSort;         //!< Custom object sorting value.
 		uint32                 m_sortValue;       //!< Encoded sort value, keeping info about material.
 		uint32                 m_nBatchFlags;     //!< see EBatchFlags, batch flags describe on what passes this object will be used (transparent,z-prepass,etc...)
@@ -256,7 +256,7 @@ public:
 
 private:
 	// These 2 members must be initialized prior to calling Compile
-	CRendElementBase* m_pRenderElement;
+	CRenderElement*     m_pRenderElement;
 	SShaderItem       m_shaderItem;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -287,7 +287,7 @@ public:
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
 
-	void Init(const SShaderItem& shaderItem, CRendElementBase* pRE);
+	void Init(const SShaderItem& shaderItem, CRenderElement* pRE);
 
 	// Check if on the fly instancing can be used between this and next object
 	// If instancing is possible writes current object instance data to the outputInstanceData parameter.

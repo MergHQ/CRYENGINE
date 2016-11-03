@@ -5,7 +5,7 @@
 #include "XRenderD3D9/DriverD3D.h"
 
 CREFogVolume::CREFogVolume()
-	: CRendElementBase()
+	: CRenderElement()
 	, m_center(0.0f, 0.0f, 0.0f)
 	, m_viewerInsideVolume(0)
 	, m_stencilRef(0)

@@ -1378,7 +1378,7 @@ void CD3D9Renderer::BeginFrame()
 
 	m_cEF.mfBeginFrame();
 
-	CRendElement::Tick();
+	CRenderElement::Tick();
 	CFlashTextureSourceSharedRT::Tick();
 
 	CREImposter::m_PrevMemPostponed = CREImposter::m_MemPostponed;
@@ -1555,10 +1555,10 @@ void CD3D9Renderer::RT_BeginFrame()
 	if (CV_r_usehwskinning != (int)m_bUseHWSkinning)
 	{
 		m_bUseHWSkinning = CV_r_usehwskinning != 0;
-		CRendElement* pRE = CRendElement::m_RootGlobal.m_NextGlobal;
-		for (pRE = CRendElement::m_RootGlobal.m_NextGlobal; pRE != &CRendElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
+		CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
+		for (pRE = CRenderElement::m_RootGlobal.m_NextGlobal; pRE != &CRenderElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
 		{
-			CRendElementBase* pR = (CRendElementBase*)pRE;
+			CRenderElement* pR = (CRenderElement*)pRE;
 			if (pR->mfIsHWSkinned())
 				pR->mfReset();
 		}
@@ -2197,8 +2197,8 @@ void CD3D9Renderer::PrintResourcesLeaks()
 	}
 	iLog->Log("\n \n");
 
-	CRendElement* pRE;
-	for (pRE = CRendElement::m_RootGlobal.m_NextGlobal; pRE != &CRendElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
+	CRenderElement* pRE;
+	for (pRE = CRenderElement::m_RootGlobal.m_NextGlobal; pRE != &CRenderElement::m_RootGlobal; pRE = pRE->m_NextGlobal)
 	{
 		Warning("--- CRenderElement %s leak after level unload", pRE->mfTypeString());
 	}
@@ -2507,8 +2507,8 @@ void CD3D9Renderer::DebugDrawStats1()
 
 	nSize = 0;
 	n = 0;
-	CRendElement* pRE = CRendElement::m_RootGlobal.m_NextGlobal;
-	while (pRE != &CRendElement::m_RootGlobal)
+	CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
+	while (pRE != &CRenderElement::m_RootGlobal)
 	{
 		n++;
 		nSize += pRE->Size();
@@ -7264,8 +7264,8 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 		SIZER_COMPONENT_NAME(Sizer, "Render elements");
 
 		AUTO_LOCK(m_sREResLock);
-		CRendElement* pRE = CRendElement::m_RootGlobal.m_NextGlobal;
-		while (pRE != &CRendElement::m_RootGlobal)
+		CRenderElement* pRE = CRenderElement::m_RootGlobal.m_NextGlobal;
+		while (pRE != &CRenderElement::m_RootGlobal)
 		{
 			Sizer->AddObject(pRE);
 			pRE = pRE->m_NextGlobal;

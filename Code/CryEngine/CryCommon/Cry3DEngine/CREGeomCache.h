@@ -15,7 +15,7 @@
 
 #if defined(USE_GEOM_CACHES)
 
-class CREGeomCache : public CRendElementBase
+class CREGeomCache : public CRenderElement
 {
 public:
 	struct SMeshInstance
@@ -38,7 +38,7 @@ public:
 	bool        Update(const int flags, const bool bTesselation);
 	static void UpdateModified();
 
-	// CRendElementBase interface
+	// CRenderElement interface
 	virtual bool mfUpdate(EVertexFormat eVertFormat, int Flags, bool bTessellation) override;
 	virtual void mfPrepare(bool bCheckOverflow) override;
 	virtual bool mfDraw(CShader* ef, SShaderPass* sfm) override;

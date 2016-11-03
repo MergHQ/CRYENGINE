@@ -6,7 +6,7 @@
 #include <CryRenderer/VertexFormats.h>
 #include <CryMath/Cry_Color.h>
 
-class CRendElementBase;
+class CRenderElement;
 struct CRenderChunk;
 struct PrimitiveGroup;
 class CShader;
@@ -57,54 +57,6 @@ enum ERenderElementFlags
 	FCEF_PRE_DRAW_DONE         = BIT(12),
 };
 
-class CRendElement
-{
-public:
-	static CRendElement m_RootGlobal;
-	static CRendElement m_RootRelease[];
-	CRendElement*       m_NextGlobal;
-	CRendElement*       m_PrevGlobal;
-
-	EDataType           m_Type;
-protected:
-
-	inline void UnlinkGlobal()
-	{
-		if (!m_NextGlobal || !m_PrevGlobal)
-			return;
-		m_NextGlobal->m_PrevGlobal = m_PrevGlobal;
-		m_PrevGlobal->m_NextGlobal = m_NextGlobal;
-		m_NextGlobal = m_PrevGlobal = NULL;
-	}
-	inline void LinkGlobal(CRendElement* Before)
-	{
-		if (m_NextGlobal || m_PrevGlobal)
-			return;
-		m_NextGlobal = Before->m_NextGlobal;
-		Before->m_NextGlobal->m_PrevGlobal = this;
-		Before->m_NextGlobal = this;
-		m_PrevGlobal = Before;
-	}
-
-public:
-	CRendElement();
-	virtual ~CRendElement();
-	virtual void     Release(bool bForce = false);
-	virtual void     GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
-
-	const char*      mfTypeString();
-	inline EDataType mfGetType()            { return m_Type; }
-	void             mfSetType(EDataType t) { m_Type = t; }
-
-	virtual int      Size()                 { return 0; }
-	virtual void     mfReset()              {}
-
-	static void      ShutDown();
-	static void      Tick();
-
-	static void      Cleanup();
-};
-
 typedef uintptr_t stream_handle_t;
 
 struct SStreamInfo
@@ -114,10 +66,64 @@ struct SStreamInfo
 	uint32          nSlot;
 };
 
-class CRendElementBase : public CRendElement
+
+class IRenderElement
+{
+public:
+	IRenderElement() {}
+	~IRenderElement() {};
+
+	virtual void               mfPrepare(bool bCheckOverflow) = 0;
+	virtual CRenderChunk*      mfGetMatInfo() = 0;
+	virtual TRenderChunkArray* mfGetMatInfoList() = 0;
+	virtual int                mfGetMatId() = 0;
+	virtual void               mfReset() = 0;
+	virtual bool               mfIsHWSkinned() = 0;
+	virtual CRenderElement*      mfCopyConstruct(void) = 0;
+	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj) = 0;
+	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) = 0;
+	virtual bool  mfPreDraw(SShaderPass* sl) = 0;
+	virtual bool  mfUpdate(EVertexFormat eVertFormat, int Flags, bool bTessellation = false) = 0;
+	virtual void  mfPrecache(const SShaderItem& SH) = 0;
+	virtual void  mfExport(struct SShaderSerializeContext& SC) = 0;
+	virtual void  mfImport(struct SShaderSerializeContext& SC, uint32& offset) = 0;
+
+
+	//////////////////////////////////////////////////////////////////////////
+	// ~Pipeline 2.0 methods.
+	//////////////////////////////////////////////////////////////////////////
+
+	virtual EVertexFormat GetVertexFormat() const = 0;
+
+	//! Compile is called on a non mesh render elements, must be called only in rendering thread
+	//! Returns false if compile failed, and render element must not be rendered
+	virtual bool          Compile(CRenderObject* pObj) = 0;
+
+	//! Custom Drawing for the non mesh render elements.
+	//! Must be thread safe for the parallel recording
+	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// ~Pipeline 2.0 methods.
+	//////////////////////////////////////////////////////////////////////////
+
+	virtual int           Size() = 0;
+
+	virtual void         Release(bool bForce = false) = 0;
+	virtual void         GetMemoryUsage(ICrySizer* pSizer) const = 0;
+};
+
+class CRenderElement : public IRenderElement
 {
 	static int s_nCounter;
 public:
+	static CRenderElement m_RootGlobal;
+	static CRenderElement *m_pRootRelease[];
+	CRenderElement*       m_NextGlobal;
+	CRenderElement*       m_PrevGlobal;
+
+	EDataType           m_Type;
+
 	uint32     m_nID;
 	uint16     m_Flags;
 	uint16     m_nFrameUpdated;
@@ -168,8 +174,31 @@ public:
 	};
 
 public:
-	CRendElementBase();
-	virtual ~CRendElementBase();
+	CRenderElement(bool bGlobal);
+	CRenderElement();
+	virtual ~CRenderElement();
+
+	inline void UnlinkGlobal()
+	{
+		if (!m_NextGlobal || !m_PrevGlobal)
+			return;
+		m_NextGlobal->m_PrevGlobal = m_PrevGlobal;
+		m_PrevGlobal->m_NextGlobal = m_NextGlobal;
+		m_NextGlobal = m_PrevGlobal = NULL;
+	}
+	inline void LinkGlobal(CRenderElement* Before)
+	{
+		if (m_NextGlobal || m_PrevGlobal)
+			return;
+		m_NextGlobal = Before->m_NextGlobal;
+		Before->m_NextGlobal->m_PrevGlobal = this;
+		Before->m_NextGlobal = this;
+		m_PrevGlobal = Before;
+	}
+
+	const char*      mfTypeString();
+	inline EDataType mfGetType() { return m_Type; }
+	void             mfSetType(EDataType t) { m_Type = t; }
 
 	inline uint32 mfGetFlags(void)         { return m_Flags; }
 	inline void   mfSetFlags(uint32 fl)    { m_Flags = fl; }
@@ -189,9 +218,9 @@ public:
 	virtual CRenderChunk*      mfGetMatInfo();
 	virtual TRenderChunkArray* mfGetMatInfoList();
 	virtual int                mfGetMatId();
-	virtual void               mfReset() override;
+	virtual void               mfReset();
 	virtual bool               mfIsHWSkinned() { return false; }
-	virtual CRendElementBase*  mfCopyConstruct(void);
+	virtual CRenderElement*      mfCopyConstruct(void);
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj);
 	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs)
 	{
@@ -228,8 +257,16 @@ public:
 	// ~Pipeline 2.0 methods.
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual int           Size() override                                                            { return 0; }
-	virtual void          GetMemoryUsage(ICrySizer* pSizer) const override                           {}
+	virtual int           Size()                                                            { return 0; }
+
+	virtual void         Release(bool bForce = false);
+	virtual void         GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
+
+
+	static void          ShutDown();
+	static void          Tick();
+
+	static void          Cleanup();
 };
 
 #include "CREMesh.h"

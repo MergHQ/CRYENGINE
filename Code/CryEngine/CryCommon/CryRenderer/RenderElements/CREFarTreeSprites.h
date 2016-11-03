@@ -3,7 +3,7 @@
 #ifndef __CREFarTreeSprites_H__
 #define __CREFarTreeSprites_H__
 
-class CREFarTreeSprites : public CRendElementBase
+class CREFarTreeSprites : public CRenderElement
 {
 public:
 	PodArray<struct SVegetationSpriteInfo>* m_arrVegetationSprites[2][2];

@@ -887,7 +887,7 @@ public:
   void FX_DrawShader_General(CShader *ef, SShaderTechnique *pTech);
 	void FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations = false);
 	void FX_SetupShadowsForTransp();
-	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRendElementBase* pRE);
+	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRenderElement* pRE);
 
   // hdr src texture is optional, if not specified uses default hdr destination target
 #if !CRY_PLATFORM_ORBIS
@@ -1112,7 +1112,7 @@ public:
 
   void EF_SetCameraInfo();
 	void FX_SetObjectTransform(CRenderObject* obj, CShader* pSH, uint64 nObjFlags);
-	bool FX_ObjectChange(CShader* Shader, CShaderResources* pRes, CRenderObject* pObject, CRendElementBase* pRE);
+	bool FX_ObjectChange(CShader* Shader, CShaderResources* pRes, CRenderObject* pObject, CRenderElement* pRE);
 
 private:
 	friend class CStandardGraphicsPipeline;

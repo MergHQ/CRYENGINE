@@ -42,7 +42,7 @@ public:
 	void UpdateAPIBuffers();
 };
 
-class CREClientPoly : public CRendElementBase
+class CREClientPoly : public CRenderElement
 {
 public:
 	enum EFlags
@@ -72,7 +72,7 @@ public:
 	virtual ~CREClientPoly() {};
 
 	virtual void              mfPrepare(bool bCheckOverflow) final;
-	virtual CRendElementBase* mfCopyConstruct(void) final;
+	virtual CRenderElement*     mfCopyConstruct(void) final;
 
 	virtual bool              GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false) final;
 

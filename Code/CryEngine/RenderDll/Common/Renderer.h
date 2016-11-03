@@ -598,7 +598,7 @@ public:
 	virtual void RT_CreateRenderResources() = 0;
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual void RT_ReadFrameBuffer(unsigned char* pRGB, int nImageX, int nSizeX, int nSizeY, ERB_Type eRBType, bool bRGBA, int nScaledX, int nScaledY) = 0;
-	virtual void RT_CreateREPostProcess(CRendElementBase** re);
+	virtual void RT_CreateREPostProcess(CRenderElement** re);
 	virtual void RT_FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) override;
 	virtual void RT_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) override;
 	virtual void RT_FlashRemoveTexture(ITexture* pTexture) override;
@@ -910,7 +910,7 @@ public:
 
 	void                        EF_AddClientPolys(const SRenderingPassInfo& passInfo);
 
-	bool                        FX_TryToMerge(CRenderObject* pNewObject, CRenderObject* pOldObject, CRendElementBase* pRE, bool bResIdentical);
+	bool                        FX_TryToMerge(CRenderObject* pNewObject, CRenderObject* pOldObject, CRenderElement* pRE, bool bResIdentical);
 	virtual void*               FX_AllocateCharInstCB(SSkinningData*, uint32) { return NULL; }
 	virtual void                FX_ClearCharInstCB(uint32)                    {}
 
@@ -921,7 +921,7 @@ public:
 	void                        RT_SubmitWind(const SWindGrid* pWind);
 
 	void                        RefreshSystemShaders();
-	uint32                      EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRendElementBase* re, const SRenderingPassInfo& passInfo, int nAboveWater);
+	uint32                      EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater);
 
 	virtual float               EF_GetWaterZElevation(float fX, float fY) override;
 	virtual void                FX_PipelineShutdown(bool bFastShutdown = false) = 0;
@@ -935,8 +935,8 @@ public:
 	virtual bool                EF_PrecacheResource(IRenderMesh* pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) override;
 	virtual bool                EF_PrecacheResource(CDLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) override;
 
-	void                        FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, int* nNewVerts = NULL, int* nNewInds = NULL);
-	void                        FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendElementBase* re);
+	void                        FX_CheckOverflow(int nVerts, int nInds, CRenderElement* re, int* nNewVerts = NULL, int* nNewInds = NULL);
+	void                        FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRenderElement* re);
 
 	// functions for handling particle jobs which cull particles and generate their vertices/indices
 	virtual void EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) override;
@@ -972,7 +972,7 @@ public:
 	virtual _smart_ptr<IImageFile> EF_LoadImage(const char* szFileName, uint32 nFlags) override;
 
 	// Create new RE of type (edt)
-	virtual CRendElementBase* EF_CreateRE(EDataType edt) override;
+	virtual CRenderElement*          EF_CreateRE(EDataType edt) override;
 
 	// Begin using shaders
 	virtual void EF_StartEf(const SRenderingPassInfo& passInfo) override;
@@ -984,7 +984,7 @@ public:
 	virtual void           EF_FreeObject(CRenderObject* pObj) final;
 
 	// Add shader to the list (virtual)
-	virtual void EF_AddEf(CRendElementBase* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) override;
+	virtual void EF_AddEf(CRenderElement* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) override;
 
 	// Draw all shaded REs in the list
 	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override = 0;
@@ -1189,7 +1189,7 @@ public:
 	void RT_SetLightVolumeShaderFlags();
 
 	// Add shader to the list
-	void              EF_AddEf_NotVirtual(CRendElementBase* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW);
+	void              EF_AddEf_NotVirtual(CRenderElement* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW);
 
 	void              EF_TransformDLights();
 	void              EF_IdentityDLights();

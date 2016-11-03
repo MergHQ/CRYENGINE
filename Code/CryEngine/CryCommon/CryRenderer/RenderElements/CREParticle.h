@@ -58,7 +58,7 @@ struct IParticleVertexCreator
 	virtual ~IParticleVertexCreator() {}
 };
 
-class CREParticle : public CRendElementBase
+class CREParticle : public CRenderElement
 {
 public:
 	static const uint numBuffers = 3;
@@ -86,8 +86,8 @@ public:
 	{
 	}
 
-	//! CRendElement implementation.
-	virtual CRendElementBase* mfCopyConstruct()
+	//! CRenderElement implementation.
+	virtual CRenderElement* mfCopyConstruct()
 	{
 		return new CREParticle(*this);
 	}

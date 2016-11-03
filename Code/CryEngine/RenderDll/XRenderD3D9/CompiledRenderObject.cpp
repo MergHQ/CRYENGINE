@@ -76,7 +76,7 @@ CCompiledRenderObject::~CCompiledRenderObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRendElementBase* pRE)
+void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRenderElement* pRE)
 {
 	SAFE_RELEASE(m_shaderItem.m_pShader);
 	SAFE_RELEASE(m_shaderItem.m_pShaderResources);
@@ -424,7 +424,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 		return true;
 	}
 
-	CRendElementBase::SGeometryInfo geomInfo;
+	CRenderElement::SGeometryInfo geomInfo;
 	ZeroStruct(geomInfo);
 
 	if (!bInstanceDataUpdateOnly) // first update only: needed for per instance buffers
@@ -466,7 +466,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 		return true;
 	}
 
-	CRendElementBase* pRenderElement = m_pRenderElement;
+	CRenderElement* pRenderElement = m_pRenderElement;
 
 	CShaderResources* RESTRICT_POINTER pResources = static_cast<CShaderResources*>(m_shaderItem.m_pShaderResources);
 	assert(pResources);

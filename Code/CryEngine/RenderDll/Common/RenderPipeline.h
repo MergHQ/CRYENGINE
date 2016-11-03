@@ -92,7 +92,7 @@ struct SRendItem
 	SRendItemSorter        rendItemSorter;
 	CRenderObject*         pObj;
 	CCompiledRenderObject* pCompiledObject;
-	CRendElementBase*      pElem;
+	CRenderElement*      pElem;
 	//uint32 nStencRef  : 8;
 
 	//==================================================
@@ -639,8 +639,8 @@ struct SRenderPipeline
 	CShader*                             m_pReplacementShader;
 	CRenderObject*                       m_pCurObject;
 	CRenderObject*                       m_pIdendityRenderObject;
-	CRendElementBase*                    m_pRE;
-	CRendElementBase*                    m_pEventRE;
+	CRenderElement*                        m_pRE;
+	CRenderElement*                        m_pEventRE;
 	int                                  m_RendNumVerts;
 	uint32                               m_nBatchFilter; // Batch flags ( FB_ )
 	SShaderTechnique*                    m_pRootTechnique;

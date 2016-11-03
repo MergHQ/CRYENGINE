@@ -64,7 +64,7 @@ struct  IStatObj;
 class CObjManager;
 struct  SPrimitiveGroup;
 struct  ICharacterInstance;
-class CRendElementBase;
+class CRenderElement;
 class CRenderObject;
 class CTexMan;
 //class   ColorF;
@@ -1937,7 +1937,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) = 0;
 
 	//! Create new RE (RenderElement) of type (edt).
-	virtual CRendElementBase* EF_CreateRE(EDataType edt) = 0;
+	virtual CRenderElement*  EF_CreateRE(EDataType edt) = 0;
 
 	//! Start using of the shaders (return first index for allow recursions).
 	virtual void EF_StartEf(const SRenderingPassInfo& passInfo) = 0;
@@ -1956,7 +1956,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual CRenderObject* EF_DuplicateRO(CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Add shader to the list.
-	virtual void EF_AddEf(CRendElementBase* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) = 0;
+	virtual void EF_AddEf(CRenderElement* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) = 0;
 
 	//! Draw all shaded REs in the list
 	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) = 0;
