@@ -158,6 +158,8 @@ struct SSystemCVars
 	int sys_log_asserts;
 	int sys_error_debugbreak;
 
+	int sys_enable_crash_handler;
+
 	int sys_intromoviesduringinit;
 	int sys_rendersplashscreen;
 

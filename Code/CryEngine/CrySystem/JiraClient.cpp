@@ -15,10 +15,10 @@
 #include "StdAfx.h"
 #include "JiraClient.h"
 
+#if CRY_PLATFORM_WINDOWS && !defined(_RELEASE)
+
 #include <CrySystem/ISystem.h>
 #include <CryCore/Platform/CryWindows.h>
-
-#if CRY_PLATFORM_WINDOWS && !defined(_RELEASE) && defined(ENABLE_CRASH_HANDLER)
 
 namespace {
 bool FileExists(const char* szFileName)
@@ -38,6 +38,12 @@ bool FileExists(const char* szFileName)
 
 bool CJiraClient::ReportBug()
 {
+	const ICVar* pCVarCrashHandler = gEnv->pConsole->GetCVar("sys_enable_crash_handler");
+	if (pCVarCrashHandler && pCVarCrashHandler->GetIVal() == 0)
+	{
+		return true;
+	}
+
 	string crashHandlerPath = PathUtil::Make(PathUtil::GetEnginePath(), "Tools/CrashHandler/CrashHandler.exe");
 
 	if (!FileExists(crashHandlerPath.c_str()))
@@ -86,11 +92,11 @@ bool CJiraClient::ReportBug()
 
 }
 
-#else  // CRY_PLATFORM_WINDOWS && !defined(_RELEASE) && defined(ENABLE_CRASH_HANDLER)
+#else  // CRY_PLATFORM_WINDOWS && !defined(_RELEASE)
 
 bool CJiraClient::ReportBug()
 {
 	return true;
 }
 
-#endif // CRY_PLATFORM_WINDOWS && !defined(_RELEASE) && defined(ENABLE_CRASH_HANDLER)
+#endif // CRY_PLATFORM_WINDOWS && !defined(_RELEASE)

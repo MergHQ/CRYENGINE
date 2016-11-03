@@ -136,10 +136,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 #define OLD_VOICE_SYSTEM_DEPRECATED
 
-//! This feature allows automatic crash submission to Jira, but does not work outside of Crytek.
-//! \note This #define will be commented out during code export.
-//#define ENABLE_CRASH_HANDLER
-
 #if !defined(PHYSICS_STACK_SIZE)
 	#define PHYSICS_STACK_SIZE (128U << 10)
 #endif
