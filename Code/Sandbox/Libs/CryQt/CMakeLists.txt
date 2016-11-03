@@ -53,4 +53,6 @@ end_sources()
 #END-FILE-LIST
 
 CreateDynamicModule(CryQt PCH "stdafx.cpp" SOLUTION_FOLDER "Sandbox")
+target_compile_definitions(${THIS_PROJECT} PRIVATE -DCryQT_EXPORTS -DWIN32)
+target_link_libraries(${THIS_PROJECT} PRIVATE dwmapi gdi32 Ole32 qtmain$<$<CONFIG:Debug>:d>)
 use_qt()
