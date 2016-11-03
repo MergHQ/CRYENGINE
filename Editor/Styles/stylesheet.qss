@@ -176,16 +176,15 @@ QMainFrameMenuBar > CTrayArea > QSearchBox {
 
 QPopupWidget
 {
-	background-color: rgb(97,172,236);
+	border: 1px solid rgb(97,172,236);
 }
 
 QPopupWidget > QWidget#InsetBorder {
 	background-color: rgb(35,35,35);
-	margin: 1 1 1 1;
 }
 
 QPopupWidget > QWidget#InsetBorder > QWidget{
-	margin: 1 5 7 7;
+	margin: 4px;
 }
 
 QPopupWidget > QWidget#InsetBorder QTreeView QScrollBar:vertical {
