@@ -235,7 +235,7 @@ CItemUniquePtr::CItemUniquePtr(uqs::client::IItemFactory* pItemFactory)
 	: m_pItem(nullptr)
 	, m_pItemFactory(pItemFactory)
 {
-	if (pItemFactory->CanBePersistantlySerialized())
+	if (pItemFactory && pItemFactory->CanBePersistantlySerialized())
 	{
 		m_pItem = pItemFactory->CreateItems(1, uqs::client::IItemFactory::EItemInitMode::UseUserProvidedFunction);
 	}

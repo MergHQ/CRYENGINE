@@ -34,6 +34,7 @@ namespace uqs
 			: m_consistencyChecksDoneAlready(false)
 			, m_queryHistoryInGameGUI(m_queryHistoryManager)
 			, m_queryManager(m_queryHistoryManager)
+			, m_pEditorLibraryProvider(nullptr)
 		{
 			assert(!g_hubImpl);
 			g_hubImpl = this;
