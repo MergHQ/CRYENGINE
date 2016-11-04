@@ -166,12 +166,17 @@ bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW)
 			}
 			else
 			{
-				char name[256];
-				cry_sprintf(name, "%sCryFX/%s.cfx", m_ShadersPath, pS->GetName());
-				FILE* fp = gEnv->pCryPak->FOpen(name, "rb");
+				stack_string name;
+				name.Format("%sCryFX/%s.cfx", m_ShadersGamePath.c_str(), pS->GetName());
+				FILE* fp = gEnv->pCryPak->FOpen(name.c_str(), "rb");
+				if (!fp)
+				{
+					name.Format("%sCryFX/%s.cfx", m_ShadersPath, pS->GetName());
+					fp = gEnv->pCryPak->FOpen(name.c_str(), "rb");
+				}
 				if (fp)
 				{
-					uint32 nSourceCRC32 = gEnv->pCryPak->ComputeCRC(name);
+					uint32 nSourceCRC32 = gEnv->pCryPak->ComputeCRC(name.c_str());
 					gEnv->pCryPak->FClose(fp);
 					if ((nFlags & FRO_FORCERELOAD) || nSourceCRC32 != pS->m_SourceCRC32)
 					{

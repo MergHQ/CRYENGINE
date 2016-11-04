@@ -996,19 +996,34 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 		return pSHB;
 	SShaderBinHeader Header[2];
 	memset(&Header, 0, 2 * sizeof(SShaderBinHeader));
-	char nameFile[256], nameBin[256];
+	stack_string nameFile;
+	string nameBin;
 	FILE* fpSrc = NULL;
 	uint32 nSourceCRC32 = 0;
-	cry_sprintf(nameFile, "%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersPath, szName, bInclude ? "cfi" : "cfx");
+
+	const char *szExt = bInclude ? "cfi" : "cfx";
+	// First look for source in Game folder
+	nameFile.Format("%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersGamePath.c_str(), szName, szExt);
 #if !defined(_RELEASE) && !defined(IS_EAAS)
 	{
-		fpSrc = gEnv->pCryPak->FOpen(nameFile, "rb");
+		fpSrc = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb");
 		nSourceCRC32 = fpSrc ? gEnv->pCryPak->ComputeCRC(nameFile) : 0;
 	}
 #endif
+	if (!fpSrc)
+	{
+		// Second look in Engine folder
+		nameFile.Format("%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersPath, szName, szExt);
+#if !defined(_RELEASE) && !defined(IS_EAAS)
+		{
+			fpSrc = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb");
+			nSourceCRC32 = fpSrc ? gEnv->pCryPak->ComputeCRC(nameFile) : 0;
+		}
+#endif
+	}
 	//char szPath[1024];
 	//getcwd(szPath, 1024);
-	cry_sprintf(nameBin, "%s%s.%s", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
+	nameBin.Format("%s%s.%s", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
 	FILE* fpDst = NULL;
 	int i = 0, n = 2;
 
@@ -1038,7 +1053,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 					continue;
 				}
 			}
-			fpDst = gEnv->pCryPak->FOpen(nameBin, "rb");
+			fpDst = gEnv->pCryPak->FOpen(nameBin.c_str(), "rb");
 		}
 		else
 			fpDst = gEnv->pCryPak->FOpen(szDst.c_str(), "rb", ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryPak::FOPEN_ONDISK);
@@ -1077,28 +1092,28 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 			char acTemp[512];
 			if (bValid & 1)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' source crc mismatch", nameBin);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' source crc mismatch", nameBin.c_str());
 			}
 			if (bValid & 4)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", nameBin, Header[0].m_VersionHigh, Header[0].m_VersionLow, fVersion);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", nameBin.c_str(), Header[0].m_VersionHigh, Header[0].m_VersionLow, fVersion);
 			}
 			if (bValid & 0x10)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' CRC mismatch", nameBin);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader '%s' CRC mismatch", nameBin.c_str());
 			}
 
 			if (bValid & 2)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' source crc mismatch", nameBin);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' source crc mismatch", nameBin.c_str());
 			}
 			if (bValid & 8)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", nameBin, Header[1].m_VersionHigh, Header[1].m_VersionLow, fVersion);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", nameBin.c_str(), Header[1].m_VersionHigh, Header[1].m_VersionLow, fVersion);
 			}
 			if (bValid & 0x20)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' CRC mismatch", nameBin);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' CRC mismatch", nameBin.c_str());
 			}
 
 			if (bValid)
@@ -1192,8 +1207,8 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	}
 	if (pSHB == 0 && fpDst)
 	{
-		cry_sprintf(nameFile, "%s.%s", szName, bInclude ? "cfi" : "cfx");
-		pSHB = LoadBinShader(fpDst, nameFile, i == 0 ? nameBin : szDst.c_str(), !bInclude);
+		nameFile.Format("%s.%s", szName, szExt);
+		pSHB = LoadBinShader(fpDst, nameFile.c_str(), i == 0 ? nameBin.c_str() : szDst.c_str(), !bInclude);
 		gEnv->pCryPak->FClose(fpDst);
 		assert(pSHB);
 	}
@@ -1222,14 +1237,14 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	else
 	{
 		if (fpDst)
-			Warning("Error: Failed to get binary shader '%s'", nameFile);
+			Warning("Error: Failed to get binary shader '%s'", nameFile.c_str());
 		else
 		{
-			cry_sprintf(nameFile, "%s.%s", szName, bInclude ? "cfi" : "cfx");
+			nameFile.Format("%s.%s", szName, szExt);
 			const char* matName = 0;
 			if (m_pCEF && m_pCEF->m_pCurInputResources)
 				matName = m_pCEF->m_pCurInputResources->m_szMaterialName;
-			LogWarningEngineOnly("Error: Shader \"%s\" doesn't exist (used in material \"%s\")", nameFile, matName != 0 ? matName : "$unknown$");
+			LogWarningEngineOnly("Error: Shader \"%s\" doesn't exist (used in material \"%s\")", nameFile.c_str(), matName != 0 ? matName : "$unknown$");
 		}
 	}
 

@@ -1080,6 +1080,7 @@ void CShaderMan::mfInit(void)
 		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 
 		m_ShadersPath = "Shaders/HWScripts/";
+		m_ShadersGamePath = gEnv->pCryPak->GetGameFolder() + string("/GameShaders/HWScripts/");
 		m_ShadersMergeCachePath = "Shaders/MergeCache/";
 #if (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
 		m_ShadersCache = "Shaders/Cache/LINUX32/";
@@ -1628,7 +1629,8 @@ void CShaderMan::mfGatherFilesList(const char* szPath, std::vector<CCryNameR>& N
 int CShaderMan::mfInitShadersList(std::vector<string>* Names)
 {
 	// Detect include changes
-	bool bChanged = mfGatherShadersList(m_ShadersPath, true, false, Names);
+	bool bChanged = mfGatherShadersList(m_ShadersGamePath, true, false, Names);
+	bChanged |= mfGatherShadersList(m_ShadersPath, true, false, Names);
 
 	if (gRenDev->m_bShaderCacheGen)
 	{
@@ -1652,9 +1654,9 @@ int CShaderMan::mfInitShadersList(std::vector<string>* Names)
 		}
 	}
 
+	mfGatherShadersList(m_ShadersGamePath, false, bChanged, Names);
 	mfGatherShadersList(m_ShadersPath, false, bChanged, Names);
 	return m_ShaderNames.size();
-
 }
 
 void CShaderMan::mfPreloadShaderExts(void)
