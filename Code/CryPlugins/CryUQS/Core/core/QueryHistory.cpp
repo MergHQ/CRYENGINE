@@ -351,7 +351,7 @@ namespace uqs
 			return sizeOfAllItems + sizeOfDebugRenderWorld;
 		}
 
-		void CHistoricQuery::AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning)
+		void CHistoricQuery::AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, float bestScoreAmongAllItems, float worstScoreAmongAllItems, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning)
 		{
 			outItemColor = Col_Black;
 			outShouldDrawItemScore = false;
@@ -432,7 +432,7 @@ namespace uqs
 
 			if (bHasEncounteredSomeException)
 			{
-				outItemColor = Col_Red;
+				outItemColor = Col_Black;
 			}
 			else if (itemToAnalyze.bDisqualifiedDueToBadScore)
 			{
@@ -451,7 +451,7 @@ namespace uqs
 			else if (discardedByAtLeastOneInstantEvaluator || discardedByAtLeastOneDeferredEvaluator)
 			{
 				// item got discarded
-				outItemColor = Col_Red;
+				outItemColor = Col_Black;
 			}
 			else if (!allInstantEvaluatorsFinished || !allDeferredEvaluatorsFinished)
 			{
@@ -460,8 +460,13 @@ namespace uqs
 			}
 			else
 			{
-				// it's one of the items in the result set
-				outItemColor = Col_White;
+				// it's one of the items in the result set => gradate its color from red to green, depending on its score
+
+				const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
+				const float itemRelativeScore = itemToAnalyze.accumulatedAndWeightedScoreSoFar - worstScoreAmongAllItems;
+				const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
+
+				outItemColor = Lerp(Col_Red, Col_Green, fraction);
 				outShouldDrawItemScore = true;
 			}
 		}
@@ -514,6 +519,75 @@ namespace uqs
 		{
 			m_debugRenderWorld.DrawAllAddedPrimitives(indexOfItemCurrentlyBeingFocused);
 
+			//
+			// - figure out the best and worst score of items that made it into the final result set
+			// - we need these to get a "relative fitness" for each item do draw it with gradating color
+			//
+
+			float bestScoreAmongAllItems = std::numeric_limits<float>::min();
+			float worstScoreAmongAllItems = std::numeric_limits<float>::max();
+
+			for (const SHistoricItem& itemToAnalyze : m_items)
+			{
+				//
+				// check if the item was prematurely disqualified due to a too bad score
+				//
+
+				if (itemToAnalyze.bDisqualifiedDueToBadScore)
+					continue;
+
+				//
+				// check if the item survived all instant-evaluators
+				//
+
+				{
+					bool bItemHasSurvivedAllInstantEvaluators = true;
+
+					for (const SHistoricInstantEvaluatorResult& ieResult : itemToAnalyze.resultOfAllInstantEvaluators)
+					{
+						if (ieResult.status != SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem)
+						{
+							bItemHasSurvivedAllInstantEvaluators = false;
+							break;
+						}
+					}
+
+					if (!bItemHasSurvivedAllInstantEvaluators)
+						continue;
+				}
+
+				//
+				// check if the item survived all deferred-evaluators
+				//
+
+				{
+					bool bItemHasSurvivedAllDeferredEvaluators = true;
+
+					for (const SHistoricDeferredEvaluatorResult& deResult : itemToAnalyze.resultOfAllDeferredEvaluators)
+					{
+						if (deResult.status != SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem)
+						{
+							bItemHasSurvivedAllDeferredEvaluators = false;
+							break;
+						}
+					}
+
+					if (!bItemHasSurvivedAllDeferredEvaluators)
+						continue;
+				}
+
+				//
+				// the item survived all evaluators => update the range of best/worst score
+				//
+
+				bestScoreAmongAllItems = std::max(bestScoreAmongAllItems, itemToAnalyze.accumulatedAndWeightedScoreSoFar);
+				worstScoreAmongAllItems = std::min(worstScoreAmongAllItems, itemToAnalyze.accumulatedAndWeightedScoreSoFar);
+			}
+
+			//
+			// draw all items in the debug-renderworld
+			//
+
 			for (size_t i = 0, n = m_items.size(); i < n; ++i)
 			{
 				const SHistoricItem& item = m_items[i];
@@ -525,7 +599,7 @@ namespace uqs
 					bool bDrawScore = false;
 					bool bShouldDrawAnExclamationMarkAsWarning = false;
 
-					AnalyzeItemStatus(item, color, bDrawScore, bShouldDrawAnExclamationMarkAsWarning);
+					AnalyzeItemStatus(item, bestScoreAmongAllItems, worstScoreAmongAllItems, color, bDrawScore, bShouldDrawAnExclamationMarkAsWarning);
 
 					item.pDebugProxy->Draw(color, bShowDetails);
 

@@ -251,16 +251,6 @@ namespace uqs
 						functionName.append(name);
 						static const CFunctionFactory<CFunc_ShuttledItems<TItem>> gs_functionFactory_shuttledItems(functionName.c_str());
 					}
-
-					//
-					// create a generator-factory whose generator simply propagates the resulting items from one query to another
-					//
-
-					{
-						stack_string generatorName("PropagateShuttledItems_");
-						generatorName.append(name);
-						static const CGeneratorFactory<CGenerator_PropagateShuttledItems<TItem>> gs_generatorFactory_propagateShuttledItems(generatorName.c_str());
-					}
 				}
 			}
 

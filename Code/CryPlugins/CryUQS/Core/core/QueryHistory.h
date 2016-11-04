@@ -157,7 +157,7 @@ namespace uqs
 
 			                                                    UQS_NON_COPYABLE(CHistoricQuery);
 
-			static void                                         AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning);
+			static void                                         AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, float bestScoreAmongAllItems, float worstScoreAmongAllItems, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning);
 			CTimeValue                                          ComputeElapsedTimeFromQueryCreationToDestruction() const;
 
 		private:
