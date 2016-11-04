@@ -255,9 +255,8 @@ struct app2vertCommon
 
 #if %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
   IN_SKIN_STREAM
-  uint VertexID : SV_VertexID;
 #endif
-#if %_RT_COMPUTE_SKINNING
+#if %_RT_COMPUTE_SKINNING || %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
   uint VertexID : SV_VertexID;
 #endif  
 #if %_RT_VERTEX_VELOCITY
