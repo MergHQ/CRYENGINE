@@ -4,7 +4,7 @@ def build(bld):
 
 	bld.CryEngineModule(
 		target     = 'CryLobby',
-		vs_filter  = 'CryExtensions',
+		vs_filter  = 'CryPlugins',
 		file_list  = 'crylobby_core.waf_files',
 
 		pch        = 'StdAfx.cpp',

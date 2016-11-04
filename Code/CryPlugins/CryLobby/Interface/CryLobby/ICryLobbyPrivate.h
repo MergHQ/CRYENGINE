@@ -3,7 +3,7 @@
 
 #include <CryLobby/ICryLobby.h>
 #if NETWORK_HOST_MIGRATION
-	#include "../../../CryExtensions/CryLobby/Module/LobbyCVars.h"
+	#include "../../../CryPlugins/CryLobby/Module/LobbyCVars.h"
 #endif
 
 struct ICryLobbyPrivate : public ICryLobby

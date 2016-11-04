@@ -135,7 +135,6 @@ add_sources("CryLobby_uber_0.cpp"
 		"CryVoice.h"
 		"LobbyCVars.h"
 		"resource.h"
-		"StdAfx.h"
 )
 
 add_sources("NoUberFile"
@@ -147,10 +146,16 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryExtensions")
-target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryExtensions/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>)
+CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryPlugins/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>)
 target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon/CryLobby> $<INSTALL_INTERFACE:include/CryCommon/CryLobby>)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork ${SDK_DIR}/speex-1.0.5/include )
+target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork ${SDK_DIR}/speex-1.0.5/include)
+
+target_include_directories(${THIS_PROJECT} PRIVATE 
+	${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork 
+	${SDK_DIR}/speex-1.0.5/include
+)
+
 if(WIN64)
 	find_library(SPEEX libspeex-1.0.5 PATHS ${SDK_DIR}/speex-1.0.5/lib/x64 )
 elseif(WIN32)

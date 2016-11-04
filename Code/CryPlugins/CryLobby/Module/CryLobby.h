@@ -72,6 +72,7 @@
 #endif
 #define MATCHMAKING_USES_DEDICATED_SERVER_ARBITRATOR 1
 
+#include <NetLog.h>
 #include <Config.h>
 #include <CryLobby/ICryLobbyPrivate.h>
 #include <CryLobby/CryLobbyPacket.h>
