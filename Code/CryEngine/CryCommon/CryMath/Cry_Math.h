@@ -326,24 +326,27 @@ int solve_quadratic(T a, T b, T c, T x[2])
 
 } // namespace crymath
 
-ILINE int32                  int_round(f32 f)         { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
-ILINE int64                  int_round(f64 f)         { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
+ILINE int32                  int_round(f32 f)             { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
+ILINE int64                  int_round(f64 f)             { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
 
-ILINE uint32                 pos_round(f32 f)         { CRY_MATH_ASSERT(f >= 0.0f); return uint32(f + 0.5f); }
-ILINE uint64                 pos_round(f64 f)         { CRY_MATH_ASSERT(f >= 0.0); return uint64(f + 0.5); }
+ILINE uint32                 pos_round(f32 f)             { CRY_MATH_ASSERT(f >= 0.0f); return uint32(f + 0.5f); }
+ILINE uint64                 pos_round(f64 f)             { CRY_MATH_ASSERT(f >= 0.0); return uint64(f + 0.5); }
 
-ILINE int32                  int_ceil(f32 f)          { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
-ILINE int64                  int_ceil(f64 f)          { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
+ILINE int32                  pos_directed_rounding(f32 f) { return int32(f + 0.5f); }
+ILINE uint64                 pos_directed_rounding(f64 f) { return uint64(f + 0.5f); }
 
-ILINE float                  ufrac8_to_float(float u) { return u * (1.f / 255.f); }
-ILINE float                  ifrac8_to_float(float i) { return i * (1.f / 127.f); }
-ILINE uint8                  float_to_ufrac8(float f) { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
-ILINE int8                   float_to_ifrac8(float f) { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
+ILINE int32                  int_ceil(f32 f)              { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
+ILINE int64                  int_ceil(f64 f)              { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
 
-template<typename F> ILINE F sqr(const F& op)         { return op * op; }
-template<typename F> ILINE F square(const F& op)      { return op * op; }  //!< Deprecated
-template<typename F> ILINE F sqr_signed(const F& op)  { return op * crymath::abs(op); }
-template<typename F> ILINE F cube(const F& op)        { return op * op * op; }
+ILINE float                  ufrac8_to_float(float u)     { return u * (1.f / 255.f); }
+ILINE float                  ifrac8_to_float(float i)     { return i * (1.f / 127.f); }
+ILINE uint8                  float_to_ufrac8(float f)     { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
+ILINE int8                   float_to_ifrac8(float f)     { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
+
+template<typename F> ILINE F sqr(const F& op)             { return op * op; }
+template<typename F> ILINE F square(const F& op)          { return op * op; } //!< Deprecated
+template<typename F> ILINE F sqr_signed(const F& op)      { return op * crymath::abs(op); }
+template<typename F> ILINE F cube(const F& op)            { return op * op * op; }
 
 //! Safely divides 2 numbers, with a specified maximum positive result
 ILINE float div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }
