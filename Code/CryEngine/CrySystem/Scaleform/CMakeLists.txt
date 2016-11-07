@@ -41,7 +41,7 @@ end_sources()
 #END-FILE-LIST
 
 if(NOT (ORBIS OR ANDROID)) # Some platforms can never build to shared libraries, so we need to skip the helper library for those.
-	CryEngineModule(CryScaleformHelper SOLUTION_FOLDER "CryExtensions")
+	CryEngineModule(CryScaleformHelper SOLUTION_FOLDER "CryExtensions" FORCE_SHARED)
 
 	target_include_directories( ${THIS_PROJECT} PRIVATE .. )
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE -DCRY_IS_SCALEFORM_HELPER)
