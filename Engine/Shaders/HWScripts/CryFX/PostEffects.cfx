@@ -2052,7 +2052,7 @@ pixout SelectionSilhouettePS(vtxOutSilhouette IN)
                     // if any of the two sides is visible, we need to draw an opaque outline
                     OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
                 }
-                else
+                else if (!bIsHidden)
                 {
                     OUT.Color = highlightColor;
                 }
@@ -2077,7 +2077,7 @@ pixout SelectionSilhouettePS(vtxOutSilhouette IN)
                     // if any of the two sides is visible, we need to draw an opaque outline
                     OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
                 }
-                else
+                else if (!bIsHidden)
                 {
                     OUT.Color = selectionColor;
                 }
