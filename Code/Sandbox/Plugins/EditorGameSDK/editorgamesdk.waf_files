@@ -1,0 +1,25 @@
+{
+	"NoUberFile": 
+	{
+		"Root":
+		[
+			"StdAfx.h",
+      "StdAfx.cpp",
+      "main.cpp"
+		]
+	},
+
+  "EditorGameSDK.cpp": 
+  {
+    "EquipPack": 
+    [
+      "EquipPack/EquipPackDialog.cpp",
+      "EquipPack/EquipPackDialog.h",
+      "EquipPack/EquipPack.cpp",
+      "EquipPack/EquipPackLib.cpp",
+      "EquipPack/EquipPack.h",
+      "EquipPack/EquipPackLib.h"
+    ]
+  }
+}
+
