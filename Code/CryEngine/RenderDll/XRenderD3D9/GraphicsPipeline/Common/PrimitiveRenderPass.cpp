@@ -209,7 +209,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(uint32 renderTargetCount
 			return m_dirtyMask;
 	}
 
-	if (m_dirtyMask & (eDirty_Technique | eDirty_RenderState | eDirty_ResourceLayout))
+	if (m_dirtyMask & (eDirty_Technique | eDirty_RenderState | eDirty_ResourceLayout | eDirty_Topology))
 	{
 		CDeviceGraphicsPSODesc psoDesc(renderTargetCount, pRenderTargets, pDepthTarget, pRenderTargetViews);
 		psoDesc.m_pResourceLayout = m_pResourceLayout.get();

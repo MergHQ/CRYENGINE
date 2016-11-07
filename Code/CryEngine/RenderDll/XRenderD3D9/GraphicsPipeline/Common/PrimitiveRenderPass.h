@@ -62,9 +62,10 @@ public:
 		eDirty_Geometry       = BIT(3),
 		eDirty_ResourceLayout = BIT(4),
 		eDirty_InstanceData   = BIT(5),
+		eDirty_Topology       = BIT(6),
 
 		eDirty_None        = 0,
-		eDirty_All         = eDirty_Technique | eDirty_RenderState | eDirty_Resources | eDirty_Geometry | eDirty_ResourceLayout | eDirty_InstanceData
+		eDirty_All         = eDirty_Technique | eDirty_RenderState | eDirty_Resources | eDirty_Geometry | eDirty_ResourceLayout | eDirty_InstanceData | eDirty_Topology
 	};
 
 	enum EPrimitiveFlags
@@ -98,6 +99,7 @@ public:
 	void          SetCustomVertexStream(buffer_handle_t vertexBuffer, EVertexFormat vertexFormat, uint32 vertexStride);
 	void          SetCustomIndexStream(buffer_handle_t indexBuffer, RenderIndexType indexType);
 	void          SetDrawInfo(ERenderPrimitiveType primType, uint32 vertexBaseOffset, uint32 vertexOrIndexOffset, uint32 vertexOrIndexCount);
+	void          SetDrawTopology(ERenderPrimitiveType primType);
 
 	bool          IsDirty() const;
 
@@ -302,10 +304,15 @@ inline void CRenderPrimitive::SetCustomIndexStream(buffer_handle_t indexBuffer, 
 
 inline void CRenderPrimitive::SetDrawInfo(ERenderPrimitiveType primType, uint32 vertexBaseOffset, uint32 vertexOrIndexOffset, uint32 vertexOrIndexCount)
 {
-	ASSIGN_VALUE(m_primitiveGeometry.primType, primType, eDirty_InstanceData);
+	ASSIGN_VALUE(m_primitiveGeometry.primType, primType, eDirty_Topology);
 	ASSIGN_VALUE(m_primitiveGeometry.vertexBaseOffset, vertexBaseOffset, eDirty_InstanceData);
 	ASSIGN_VALUE(m_primitiveGeometry.vertexOrIndexOffset, vertexOrIndexOffset, eDirty_InstanceData);
 	ASSIGN_VALUE(m_primitiveGeometry.vertexOrIndexCount, vertexOrIndexCount, eDirty_InstanceData);
+}
+
+inline void CRenderPrimitive::SetDrawTopology(ERenderPrimitiveType primType)
+{
+	ASSIGN_VALUE(m_primitiveGeometry.primType, primType, eDirty_Topology);
 }
 
 #undef ASSIGN_VALUE
