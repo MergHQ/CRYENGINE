@@ -76,7 +76,7 @@ const char* CProjectManager::GetCurrentAssetDirectoryAbsolute()
 { 
 	if (!m_bEnabled && m_currentAssetDirectory.size() == 0)
 	{
-		m_currentAssetDirectory = PathUtil::Make(m_currentProjectDirectory, GetCurrentAssetDirectoryRelative());
+		m_currentAssetDirectory = PathUtil::ToUnixPath(PathUtil::Make(m_currentProjectDirectory, GetCurrentAssetDirectoryRelative()));
 
 	}
 
@@ -101,10 +101,10 @@ void CProjectManager::LoadConfiguration()
 		char buffer[MAX_PATH];
 		CryGetCurrentDirectory(MAX_PATH, buffer);
 
-		m_currentProjectDirectory = buffer;
+		m_currentProjectDirectory = PathUtil::ToUnixPath(buffer);
 
 		CryGetExecutableFolder(MAX_PATH, buffer);
-		m_currentBinaryDirectory = buffer;
+		m_currentBinaryDirectory = PathUtil::ToUnixPath(buffer);
 
 		return;
 	}
@@ -116,7 +116,7 @@ void CProjectManager::LoadConfiguration()
 	string js = file_get_contents(sProjectFile);
 
 	// Set the current directory
-	m_currentProjectDirectory = PathUtil::GetPathWithoutFilename(sProjectFile);
+	m_currentProjectDirectory = PathUtil::ToUnixPath(PathUtil::GetPathWithoutFilename(sProjectFile));
 
 #ifdef CRY_PLATFORM_WINDOWS
 	SetDllDirectoryW(CryStringUtils::UTF8ToWStr(m_currentProjectDirectory));
@@ -132,7 +132,7 @@ void CProjectManager::LoadConfiguration()
 	if (assets != nullptr && assets->type == JSMN_STRING)
 	{
 		string sSysGameFolder(js.data() + assets->start, assets->end - assets->start);
-		m_currentAssetDirectory = PathUtil::Make(m_currentProjectDirectory, sSysGameFolder);
+		m_currentAssetDirectory = PathUtil::ToUnixPath(PathUtil::Make(m_currentProjectDirectory, sSysGameFolder));
 
 		gEnv->pConsole->LoadConfigVar("sys_game_folder", sSysGameFolder.c_str());
 	}
@@ -154,8 +154,7 @@ void CProjectManager::LoadConfiguration()
 		string sSysDllGame(js.data() + shared->start, shared->end - shared->start);
 		
 		gEnv->pConsole->LoadConfigVar("sys_dll_game", sSysDllGame);
-
-		m_currentBinaryDirectory = PathUtil::Make(m_currentProjectDirectory, PathUtil::GetPathWithoutFilename(sSysDllGame));
+		m_currentBinaryDirectory = PathUtil::ToUnixPath(PathUtil::Make(m_currentProjectDirectory, PathUtil::GetPathWithoutFilename(sSysDllGame)));
 	}
 	else
 	{
