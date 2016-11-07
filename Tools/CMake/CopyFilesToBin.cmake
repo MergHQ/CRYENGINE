@@ -14,13 +14,13 @@ set (BinaryFileList_Win64
 	${SDK_DIR}/OSVR/dll/*.dll
 
 	${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll
+	${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
 
 	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
 	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
 
 	${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe
 	${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini
-
 	)
 
 set (BinaryFileList_Win32
@@ -72,6 +72,43 @@ macro(deploy_runtime_dir dir output_dir)
 	install(DIRECTORY ${dir} DESTINATION bin/${output_dir})
 endmacro()
 
+macro(deploy_pyside)
+	set(PYSIDE_SDK_SOURCE ${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/)
+	set(PYSIDE_SOURCE ${PYSIDE_SDK_SOURCE}PySide2/)
+
+	set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll" "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
+	foreach(FILE_NAME ${PYSIDE_DLLS})
+		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
+		set(PDB_NAME ${name_without_extension}.pdb)
+		set(FILE_PATH ${PYSIDE_SOURCE}${FILE_NAME})
+		set(PDB_PATH ${PYSIDE_SOURCE}${PDB_NAME})
+		deploy_runtime_file(${FILE_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FILE_NAME})
+		install(FILES ${FILE_PATH} DESTINATION bin)
+		if(EXISTS ${PDB_PATH})
+			deploy_runtime_file(${PDB_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PDB_NAME})
+			install(FILES ${PDB_PATH} DESTINATION bin)
+		endif()
+	endforeach()
+	
+	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*.pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
+	foreach(FILE_NAME ${FILES_TO_COPY})
+		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
+		get_filename_component (dirname ${FILE_NAME} DIRECTORY)
+		set(PDB_NAME ${dirname}${name_without_extension}.pdb)
+		set(FILE_PATH ${PYSIDE_SOURCE}${FILE_NAME})
+		set(PDB_PATH ${PYSIDE_SOURCE}${PDB_NAME})	
+		deploy_runtime_file(${FILE_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/PySide2/${FILE_NAME})
+		install(FILES ${FILE_PATH} DESTINATION bin/PySide2)
+		if(EXISTS ${PDB_PATH})
+			deploy_runtime_file(${PDB_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/PySide2/${PDB_NAME})
+			install(FILES ${PDB_PATH} DESTINATION bin/PySide2)
+		endif()
+	endforeach()
+	
+	deploy_runtime_dir(${PYSIDE_SDK_SOURCE}pyside2uic pyside2uic)
+	
+endmacro()
+
 macro(copy_binary_files_to_target)
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
@@ -86,6 +123,10 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
 
 		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+		if (OPTION_SANDBOX)
+			deploy_runtime_files(${SDK_DIR}/Python27/*.zip)
+			deploy_pyside()
+		endif()
 	elseif(WIN32)
 		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
 	endif ()

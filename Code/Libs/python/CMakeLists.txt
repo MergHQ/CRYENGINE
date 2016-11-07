@@ -134,7 +134,6 @@ add_sources("NoUberFile"
 		"../../SDKs/Python27/Modules/future_builtins.c"
 		"../../SDKs/Python27/Modules/gcmodule.c"
 		"../../SDKs/Python27/Modules/getbuildinfo.c"
-		"../../SDKs/Python27/Modules/getpath.c"
 		"../../SDKs/Python27/Modules/imageop.c"
 		"../../SDKs/Python27/Modules/itertoolsmodule.c"
 		"../../SDKs/Python27/Modules/main.c"
@@ -212,6 +211,8 @@ add_sources("NoUberFile"
 		"../../SDKs/Python27/PC/dl_nt.c"
 		"../../SDKs/Python27/PC/import_nt.c"
 		"../../SDKs/Python27/PC/msvcrtmodule.c"
+		"../../SDKs/Python27/PC/errmap.h"
+		"../../SDKs/Python27/PC/getpathp.c"
 		"../../SDKs/Python27/PC/config.c"
 	SOURCE_GROUP "Parser"
 		"../../SDKs/Python27/Parser/acceler.c"
@@ -315,11 +316,12 @@ end_sources()
 
 if(WIN64)
 	CreateDynamicModule(python27 SOLUTION_FOLDER "Libs")
+	set_target_properties(python27 PROPERTIES DEBUG_POSTFIX "_d")
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0 /FI${CRY_LIBS_DIR}/python/pyconfig.h)
 	target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/Python27/Include)
 	target_include_directories(${THIS_PROJECT} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/Python27/PC ${SDK_DIR}/Python27/Python)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPy_BUILD_CORE)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPy_BUILD_CORE -DWIN32 $<$<CONFIG:Debug>:_DEBUG>)
 	target_compile_definitions(${THIS_PROJECT} INTERFACE -DHAVE_ROUND)
 	target_link_libraries(${THIS_PROJECT} PRIVATE expat zlib shell32)
 else()

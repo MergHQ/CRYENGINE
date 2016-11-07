@@ -127,7 +127,6 @@
 			"../../SDKs/Python27/Modules/future_builtins.c",
 			"../../SDKs/Python27/Modules/gcmodule.c",
 			"../../SDKs/Python27/Modules/getbuildinfo.c",
-			"../../SDKs/Python27/Modules/getpath.c",
 			"../../SDKs/Python27/Modules/imageop.c",
 			"../../SDKs/Python27/Modules/itertoolsmodule.c",
 			"../../SDKs/Python27/Modules/main.c",
@@ -326,6 +325,8 @@
 			"../../SDKs/Python27/PC/dl_nt.c",
 			"../../SDKs/Python27/PC/import_nt.c",
 			"../../SDKs/Python27/PC/msvcrtmodule.c",
+			"../../SDKs/Python27/PC/errmap.h",
+			"../../SDKs/Python27/PC/getpathp.c",
 			"../../SDKs/Python27/PC/config.c"
 		]
 	}

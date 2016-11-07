@@ -28,10 +28,13 @@ QT_MAJOR_VERSION = "5"
 QT_MINOR_VERSION = "6"
 
 qt_modules = [
-	'Core', 
+	'Core',
 	'Gui',
+	'Network',
 	'OpenGL',
-	'Widgets'
+	'Svg',
+	'Widgets',
+	'Qml',
 ]
 
 qt_core_binaries = [
@@ -42,14 +45,11 @@ qt_core_binaries = [
 ]
 
 qt_plugins = {
-	'imageformats': ['qico'],
-	'platforms': [
-	'qminimal',
-	'qwindows',
-	]
+	'imageformats': ['qico', 'qsvg'],
+	'platforms': ['qminimal', 'qwindows']
 }
 
-def get_qt_root_path(self):
+def get_qt_root_path(self, *subpaths):
 	# Uses the current MSVC version to find the correct path to binaries/libraries/plugins of QT
 	msvc_version = self.env['MSVC_VERSION']
 	if isinstance(msvc_version, basestring):
@@ -62,22 +62,31 @@ def get_qt_root_path(self):
 	elif msvc_version == 12:
 		qt_base = 'msvc2013_64'
 	elif msvc_version == 14:
-		qt_base = 'msvc2015_64/Qt'
+		qt_base = 'msvc2015_64'
 	else:
 		self.fatal('[ERROR] Unable to find QT build to use for MSVC %d' % msvc_version)
 
 	qt_version = QT_MAJOR_VERSION + '.' + QT_MINOR_VERSION
-	qt_root = os.path.join(QT_ROOT, qt_version, qt_base)
+	qt_root = os.path.join(QT_ROOT, qt_version, qt_base, *subpaths)
 	
 	try:	
 		return self.CreateRootRelativePath(qt_root)
 	except:
 		return self.bld.CreateRootRelativePath(qt_root)
 
+def get_debug_postfix(configuration):
+	return 'd' if configuration == 'debug' else ''
+
+def get_qt_path(self):
+	return get_qt_root_path(self, 'Qt')
+
+def get_pyside_path(self):
+	return get_qt_root_path(self, 'PySide')
+
 def collect_qt_properties(self):
 
 	# QT specific settings, should be better to move to configure step
-	qt_root = get_qt_root_path(self)
+	qt_root = get_qt_path(self)
 	qt_includes_folder = os.path.join(qt_root, 'include')
 	qt_libs_folder = os.path.join(qt_root, 'lib')
 	qt_bin_folder = os.path.join(qt_root, 'bin')
@@ -93,7 +102,7 @@ def collect_qt_properties(self):
 		
 	# Collect module libs	
 	libs = []
-	debug_postfix = 'd' if configuration == 'debug' else ''	
+	debug_postfix = get_debug_postfix(configuration)
 	qt_modules_include_path_base = qt_includes_folder + '/Qt'
 	qt_lib_prefix = 'Qt' + QT_MAJOR_VERSION	
 	for module in qt_modules:	
@@ -115,7 +124,7 @@ def collect_qt_properties(self):
 @conf
 def configure_qt(conf):
 	v = conf.env
-	v['MOC'] = os.path.join(get_qt_root_path(conf), 'bin', 'moc.exe')
+	v['MOC'] = os.path.join(get_qt_path(conf), 'bin', 'moc.exe')
 	v['MOC_PCH'] = ''
 	v['MOC_ST'] = '-o'
 	v['MOC_CPPPATH_ST'] = '-I"%s"'
@@ -303,7 +312,7 @@ def create_rcc_task(self, node):
 	rcnode = node.change_ext('_rc.cpp')
 	rcctask = self.create_task('rcc', node, rcnode)
 	rcctask.disable_pch = True
-	rcctask.env.append_value( 'QT_RCC', os.path.join(get_qt_root_path(self), 'bin', 'rcc.exe') )
+	rcctask.env.append_value( 'QT_RCC', os.path.join(get_qt_path(self), 'bin', 'rcc.exe') )
 	cpptask = self.create_task('cxx', rcnode, rcnode.change_ext('.o'))
 	cpptask.disable_pch = True
 	try:
@@ -364,11 +373,11 @@ def copy_qt_binaries(self):
 	bld	= self.bld
 	platform	= bld.env['PLATFORM']
 	output_folder = bld.get_output_folders(platform, configuration)[0]
-	qt_root_path = get_qt_root_path(self)
+	qt_root_path = get_qt_path(self)
 	qt_root_node = bld.root.make_node(qt_root_path)
 	
 	# Copy qt plugins	
-	debug_postfix = 'd' if configuration == 'debug' else ''
+	debug_postfix = get_debug_postfix(configuration)
 	for qt_plugin in qt_plugins.keys():
 		qt_plugin_node = qt_root_node.make_node('/plugins/' + qt_plugin)		
 		output_folder_plugin = output_folder.make_node(qt_plugin)
@@ -382,7 +391,7 @@ def copy_qt_binaries(self):
 	# Copy QT core binaries	
 	(defines, includes, libpath, libs, binaries) = collect_qt_properties(self)
 	qt_binaries = libs + binaries
-	
+
 	qt_bin_node = qt_root_node.make_node('bin')
 	for file_name in os.listdir(qt_bin_node.abspath()):
 		file_base, file_exension = os.path.splitext(file_name)
@@ -402,7 +411,77 @@ def copy_qt_binaries(self):
 			if os.path.isfile(pdb_path):
 				self.create_task('copy_outputs', qt_bin_node.make_node(pdb_name), output_folder.make_node(pdb_name))
 
-				
+@feature('copy_pyside')
+@run_once
+def copy_pyside(self):
+	bld = self.bld
+	platform = bld.env['PLATFORM']
+	configuration = bld.env['CONFIGURATION']
+
+	if platform == 'project_generator':
+		return
+	pyside_src_path_str = os.path.join(get_pyside_path(bld), 'PySide2')
+	pyside_folder = bld.root.make_node(pyside_src_path_str)
+	pyside_uic_foler = bld.root.make_node(os.path.join(get_pyside_path(bld), 'pyside2uic'))
+	bin_output_folder = bld.get_output_folders(platform, configuration)[0]
+	
+
+	if not os.path.exists(pyside_folder.abspath()):
+		Logs.warn('[WARNING] Pyside folder not found: ' + pyside_folder.abspath())
+		return
+	dll_postfilx = '-dbg' if configuration == 'debug' else ''
+	dlls_to_copy = ["shiboken2-python2.7%s" % dll_postfilx, "pyside2-python2.7%s" % dll_postfilx]
+
+	qt_dlls = []
+
+	for module in qt_modules:
+		qt_dlls.append(module.lower())
+
+	pyside_output_folder = bin_output_folder.make_node('PySide2')
+	for file_name in os.listdir(pyside_folder.abspath()):
+		file_base, file_extension = os.path.splitext(file_name)
+
+		# Copy scripts folder
+		if file_base == 'scripts':
+			for script_name in os.listdir(os.path.join(pyside_folder.abspath(), file_base)):
+				self.create_task('copy_outputs', pyside_folder.make_node(file_base + '/' + script_name), pyside_output_folder.make_node(file_base + '/' + script_name))
+
+		# Ignore folders
+		if not file_extension:
+			continue
+
+		if file_extension == ".pyd" or file_extension == ".py":
+			# Ignore Pyside modules for Qt libraries we're not using.
+			last_index = len(file_base)
+			if file_base.endswith("_d"):
+				last_index -= 2
+			if file_name.startswith('Qt') and not file_base[2:last_index].lower() in qt_dlls:
+				continue
+			# Copy to PySide2 folder in bin
+			self.create_task('copy_outputs', pyside_folder.make_node(file_name), pyside_output_folder.make_node(file_name))
+			pdb_name = file_base + '.pdb'
+			pdb_path = os.path.join(pyside_src_path_str, pdb_name)
+			if os.path.isfile(pdb_path):
+				self.create_task('copy_outputs', pyside_folder.make_node(pdb_name), pyside_output_folder.make_node(pdb_name))
+		elif (file_extension == ".dll" or file_extension == ".pdb") and file_base in dlls_to_copy:
+			# Copy DLLs directly to bin
+			self.create_task('copy_outputs', pyside_folder.make_node(file_name), bin_output_folder.make_node(file_name))
+
+	pyside_uic_output_folder = bin_output_folder.make_node('pyside2uic')
+	for file_name in os.listdir(pyside_uic_foler.abspath()):
+		file_base, file_extension = os.path.splitext(file_name)
+
+		# Copy subfolders
+		if file_base in ('Compiler', 'port_v2', 'widget-plugins'):
+			for script_name in os.listdir(os.path.join(pyside_uic_foler.abspath(), file_base)):
+				self.create_task('copy_outputs', pyside_uic_foler.make_node(file_base + '/' + script_name), pyside_uic_output_folder.make_node(file_base + '/' + script_name))
+
+		# Ignore folders
+		if not file_extension:
+			continue
+
+		self.create_task('copy_outputs', pyside_uic_foler.make_node(file_name), pyside_uic_output_folder.make_node(file_name))
+			
 ############ DEPRECATED ############
 @extension('.ui')
 def create_uic_task(self, node):
@@ -411,7 +490,7 @@ def create_uic_task(self, node):
 		
 	uictask = self.create_task('ui4', node)
 	uictask.outputs = [self.path.find_or_declare('ui_%s.h' % node.name[:-3])]
-	uictask.env.append_value( 'QT_UIC', os.path.join(get_qt_root_path(self), 'bin', 'uic.exe') )
+	uictask.env.append_value( 'QT_UIC', os.path.join(get_qt_path(self), 'bin', 'uic.exe') )
 	
 	
 class ui4(Task.Task):

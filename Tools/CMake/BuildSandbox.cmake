@@ -43,6 +43,7 @@ add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/EditorGameSDK" "${CMAKE_
 add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/FbxPlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/FbxPlugin")
 add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/MeshImporter" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/MeshImporter")
 add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/PerforcePlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/PerforcePlugin")
+add_subdirectory("${CryEngine_DIR}/Code/Sandbox/Plugins/SandboxPythonBridge" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/SandboxPythonBridge")
 
 #libs
 add_subdirectory ("${CryEngine_DIR}/Code/Libs/prt" "${CMAKE_BINARY_DIR}/Libs/prt")
