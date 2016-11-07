@@ -468,6 +468,11 @@ private:
 template<>
 inline bool DefaultInitializedForTag::Initialize<stl::variant_size<TFlowInputDataVariant>::value>(EFlowDataTypes type, TFlowInputDataVariant& var) const
 {
+	if (type == EFlowDataTypes::eFDT_Any)
+	{
+		return true;
+	}
+
 	CRY_ASSERT_MESSAGE(var.index() == stl::variant_npos, "Invalid variant index.");
 	return false;
 }
