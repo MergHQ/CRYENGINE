@@ -42,18 +42,25 @@ namespace uqs
 
 		void CDrawUtil2d::DoDrawLabel(float xPos, float yPos, const ColorF& color, const char* fmt, va_list args)
 		{
-			SDrawTextInfo ti;
-			ti.scale.set(s_fontSize, s_fontSize);
-			ti.flags = eDrawText_IgnoreOverscan | eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
-			ti.color[0] = color.r;
-			ti.color[1] = color.g;
-			ti.color[2] = color.b;
-			ti.color[3] = color.a;
+			IRenderer* pRenderer = gEnv->pRenderer;
+			if (!pRenderer)
+				return;
 
-			stack_string text;
-			text.FormatV(fmt, args);
+			if (IRenderAuxGeom* pRenderAuxGeom = pRenderer->GetIRenderAuxGeom())
+			{
+				SDrawTextInfo ti;
+				ti.scale.set(s_fontSize, s_fontSize);
+				ti.flags = eDrawText_IgnoreOverscan | eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
+				ti.color[0] = color.r;
+				ti.color[1] = color.g;
+				ti.color[2] = color.b;
+				ti.color[3] = color.a;
 
-			gEnv->pRenderer->GetIRenderAuxGeom()->RenderTextQueued(Vec3(xPos, yPos, 0.5f), ti, text.c_str());
+				stack_string text;
+				text.FormatV(fmt, args);
+
+				pRenderAuxGeom->RenderTextQueued(Vec3(xPos, yPos, 0.5f), ti, text.c_str());
+			}
 		}
 
 	}

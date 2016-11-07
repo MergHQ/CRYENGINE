@@ -13,6 +13,11 @@ namespace uqs
 	namespace core
 	{
 
+		static IRenderAuxGeom* GetRenderAuxGeom()
+		{
+			return gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : nullptr;
+		}
+
 		//===================================================================================
 		//
 		// CDebugRenderPrimitiveBase
@@ -47,8 +52,8 @@ namespace uqs
 		void CDebugRenderPrimitiveBase::HelpDrawAABB(const AABB& localAABB, const Vec3& pos, const Matrix33* pOrientation, const ColorF& color, bool bHighlight)
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
-
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
 				Vec3 frontPoints[4] =
 				{
@@ -108,7 +113,6 @@ namespace uqs
 					rightPoints[i] += pos;
 				}
 
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawPolyline(frontPoints, 4, true, colorArray, SCvars::debugDrawLineThickness);
 				pAux->DrawPolyline(backPoints, 4, true, colorArray, SCvars::debugDrawLineThickness);
@@ -156,9 +160,12 @@ namespace uqs
 		{
 			const float radiusMultiplier = bHighlight ? Pulsate() : 1.0f;
 
-			IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-			pAux->SetRenderFlags(GetFlags3D());
-			pAux->DrawSphere(pos, radiusMultiplier * radius, color);
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (pAux)
+			{
+				pAux->SetRenderFlags(GetFlags3D());
+				pAux->DrawSphere(pos, radiusMultiplier * radius, color);
+			}
 		}
 
 		//===================================================================================
@@ -203,9 +210,9 @@ namespace uqs
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawLine(pos - dir * radius, color, pos + dir * radius, color, SCvars::debugDrawLineThickness);
 				pAux->DrawCone(pos + dir * radius, dir, 0.1f * radius, 0.3f * radius, color);
@@ -251,9 +258,9 @@ namespace uqs
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawLine(pos1, color, pos2, color, SCvars::debugDrawLineThickness);
 			}
@@ -304,9 +311,9 @@ namespace uqs
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawCone(pos, dir, baseRadius, height, color);
 			}
@@ -356,10 +363,10 @@ namespace uqs
 		void CDebugRenderPrimitive_Cylinder::Draw(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color, bool bHighlight)
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
-
-			if (bVisible)
+			
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawCylinder(pos, dir, radius, height, color);
 			}
@@ -408,7 +415,8 @@ namespace uqs
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
 				SDrawTextInfo ti;
 				ti.scale.set(size, size);
@@ -421,7 +429,7 @@ namespace uqs
 				ti.color[1] = color.g;
 				ti.color[2] = color.b;
 				ti.color[3] = color.a;
-				gEnv->pRenderer->GetIRenderAuxGeom()->RenderTextQueued(pos, ti, text);
+				pAux->RenderTextQueued(pos, ti, text);
 			}
 		}
 
@@ -467,14 +475,14 @@ namespace uqs
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
 
-			if (bVisible)
+			IRenderAuxGeom* pAux = GetRenderAuxGeom();
+			if (bVisible && pAux)
 			{
 				const Vec3 xAxis = r * q.GetColumn0();
 				const Vec3 yAxis = r * q.GetColumn1();
 				const Vec3 zAxis = r * q.GetColumn2();
 				const OBB obb = OBB::CreateOBB(Matrix33::CreateFromVectors(xAxis, yAxis, zAxis), Vec3(0.05f, 0.05f, 0.05f), ZERO);
 
-				IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 				pAux->SetRenderFlags(GetFlags3D());
 				pAux->DrawOBB(obb, pos, false, color, eBBD_Extremes_Color_Encoded);
 				pAux->DrawLine(pos, ColorF(1, 0, 0, color.a), pos + xAxis, ColorF(1, 0, 0, color.a), SCvars::debugDrawLineThickness);

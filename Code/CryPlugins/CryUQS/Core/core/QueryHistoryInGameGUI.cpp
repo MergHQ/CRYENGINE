@@ -55,13 +55,19 @@ namespace uqs
 			, m_scrollIndexInHistoricQueries(s_noScrollIndex)
 		{
 			m_queryHistoryManager.RegisterQueryHistoryListener(this);
-			GetISystem()->GetIInput()->AddEventListener(this);
+			if (IInput* pInput = GetISystem()->GetIInput())
+			{
+				pInput->AddEventListener(this);
+			}
 		}
 
 		CQueryHistoryInGameGUI::~CQueryHistoryInGameGUI()
 		{
 			m_queryHistoryManager.UnregisterQueryHistoryListener(this);
-			GetISystem()->GetIInput()->RemoveEventListener(this);
+			if (IInput* pInput = GetISystem()->GetIInput())
+			{
+				pInput->RemoveEventListener(this);
+			}
 		}
 
 		void CQueryHistoryInGameGUI::OnQueryHistoryEvent(EEvent ev)
@@ -245,6 +251,9 @@ namespace uqs
 
 		void CQueryHistoryInGameGUI::Draw() const
 		{
+			if (!gEnv->pRenderer)
+				return;
+
 			const float xPos = (float)(gEnv->pRenderer->GetWidth() / 2 + 50);        // position found out by trial and error
 			int row = 1;
 
