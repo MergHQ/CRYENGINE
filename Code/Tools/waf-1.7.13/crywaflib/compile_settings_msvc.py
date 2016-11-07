@@ -81,7 +81,8 @@ def load_msvc_common_settings(conf):
 		'/GR-',			# Disable RTTI		
 		'/Gd',			# Use _cdecl calling convention for all functions
 		'/utf-8',		# Set source and execution character sets to UTF-8.
-		'/Wv:18'		# Disable warnings until SDK depedencies switch to UTF-8/ASCII.
+		'/Wv:18',		# Disable warnings until SDK depedencies switch to UTF-8/ASCII.
+		'/bigobj'       # Enable big object files
 		]
 		
 	# Copy common flags to prevent modifing references
