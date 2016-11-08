@@ -40,6 +40,19 @@ if (DURANGO OR ORBIS OR ANDROID OR LINUX)
 	unset(WIN64)
 endif ()
 
+if (ANDROID AND ${CMAKE_GENERATOR} MATCHES "Visual Studio")
+	# Write out a profile for Incredibuild so it won't try to link remotely
+	file(WRITE ${CMAKE_BINARY_DIR}/${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM}
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>"
+		"<Profile FormatVersion=\"1\">"
+		"  <Tools>"
+		"    <Tool Filename=\"clang\" AllowRemoteIf=\"-c,/c\" AllowIntercept=\"false\" DeriveCaptionFrom=\"lastparam\" AllowRestartOnLocal=\"false\"/>"
+		"	<Tool Filename=\"clang++\" AllowRemoteIf=\"-c,/c\" AllowIntercept=\"false\" DeriveCaptionFrom=\"lastparam\" AllowRestartOnLocal=\"false\"/>"
+		"  </Tools>"
+		"</Profile>"
+	)
+endif()
+
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
 
 if(LINUX32 OR LINUX64)
