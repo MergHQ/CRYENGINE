@@ -949,6 +949,12 @@ private:
     manager.GetNodeFactory().RegisterNodeCreator(&nodetype ## NodeCreator); \
   }
 
+#define REGISTER_BEHAVIOR_TREE_NODE_WITH_NAME(manager, nodetype, nodename) \
+  { \
+    static NodeCreator<nodetype> nodetype##NodeCreator(nodename); \
+    manager.GetNodeFactory().RegisterNodeCreator(&nodetype##NodeCreator); \
+  }
+
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	#define REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, nodetype, label, color)                                 \
 	  {                                                                                                                     \
