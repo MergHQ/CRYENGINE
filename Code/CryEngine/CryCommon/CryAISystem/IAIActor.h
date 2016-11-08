@@ -77,7 +77,8 @@ struct IAIActor : public IAIPathAgent
 	virtual void            BehaviorEvent(EBehaviorEvent event) = 0;
 	virtual void            BehaviorChanged(const char* current, const char* previous) = 0;
 	virtual void            SetBehaviorVariable(const char* variableName, bool value) = 0;
-
+	virtual void            SetModularBehaviorTree(const char* szTreeName) {}
+	
 	virtual IBlackBoard*    GetBehaviorBlackBoard() { return NULL; }
 
 	virtual IAIObject*      GetAttentionTarget() const = 0;

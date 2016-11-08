@@ -34,30 +34,30 @@ static const float UNINITIALIZED_COS_CACHE = 2.0f;
 #define _ser_value_(val) ser.Value( # val, val)
 
 #pragma warning (disable : 4355)
-CAIActor::CAIActor() :
-	m_bCheckedBody(true),
+CAIActor::CAIActor()
+	: m_bCheckedBody(true)
 #ifdef CRYAISYSTEM_DEBUG
-	m_healthHistory(0),
+	,m_healthHistory(0)
 #endif
-	m_lightLevel(AILL_LIGHT),
-	m_usingCombatLight(false),
-	m_perceptionDisabled(0),
-	m_cachedWaterOcclusionValue(0.0f),
-	m_vLastFullUpdatePos(ZERO),
-	m_lastFullUpdateStance(STANCE_NULL),
-	m_observer(false),
-	m_bCloseContact(false),
-	m_FOVPrimaryCos(UNINITIALIZED_COS_CACHE),
-	m_FOVSecondaryCos(UNINITIALIZED_COS_CACHE),
-	m_territoryShape(0),
-	m_lastBodyDir(ZERO),
-	m_bodyTurningSpeed(0),
-	m_stimulusStartTime(-100.f),
-	m_activeCoordinationCount(0),
-	m_navigationTypeID(0),
-	m_behaviorTreeEvaluationMode(EvaluateWhenVariablesChange),
-	m_currentCollisionAvoidanceRadiusIncrement(0.0f),
-	m_runningBehaviorTree(false)
+	, m_lightLevel(AILL_LIGHT)
+	, m_usingCombatLight(false)
+	, m_perceptionDisabled(0)
+	, m_cachedWaterOcclusionValue(0.0f)
+	, m_vLastFullUpdatePos(ZERO)
+	, m_lastFullUpdateStance(STANCE_NULL)
+	, m_observer(false)
+	, m_bCloseContact(false)
+	, m_FOVPrimaryCos(UNINITIALIZED_COS_CACHE)
+	, m_FOVSecondaryCos(UNINITIALIZED_COS_CACHE)
+	, m_territoryShape(0)
+	, m_lastBodyDir(ZERO)
+	, m_bodyTurningSpeed(0)
+	, m_stimulusStartTime(-100.f)
+	, m_activeCoordinationCount(0)
+	, m_navigationTypeID(0)
+	, m_behaviorTreeEvaluationMode(EvaluateWhenVariablesChange)
+	, m_currentCollisionAvoidanceRadiusIncrement(0.0f)
+	, m_runningBehaviorTree(false)
 {
 	_fastcast_CAIActor = true;
 
@@ -170,19 +170,26 @@ void CAIActor::ResetModularBehaviorTree(EObjectResetType type)
 	}
 	else
 	{
-		// Try to load a Modular Behavior Tree
-		if (IScriptTable* table = GetEntity()->GetScriptTable())
+		if (!m_modularBehaviorTreeName.empty())
 		{
-			SmartScriptTable properties;
-			if (table->GetValue("Properties", properties) && properties)
+			StartBehaviorTree(m_modularBehaviorTreeName.c_str());
+		}
+		else
+		{
+			// Try to load a Modular Behavior Tree
+			if (IScriptTable* table = GetEntity()->GetScriptTable())
 			{
-				const char* behaviorTreeName = NULL;
-
-				if (properties->GetValue("esModularBehaviorTree", behaviorTreeName) && behaviorTreeName && behaviorTreeName[0])
+				SmartScriptTable properties;
+				if (table->GetValue("Properties", properties) && properties)
 				{
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Modular Behavior Tree Runtime");
+					const char* behaviorTreeName = NULL;
 
-					StartBehaviorTree(behaviorTreeName);
+					if (properties->GetValue("esModularBehaviorTree", behaviorTreeName) && behaviorTreeName && behaviorTreeName[0])
+					{
+						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Modular Behavior Tree Runtime");
+
+						StartBehaviorTree(behaviorTreeName);
+					}
 				}
 			}
 		}
