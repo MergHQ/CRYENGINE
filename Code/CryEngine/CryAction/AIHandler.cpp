@@ -209,16 +209,19 @@ const char* CAIHandler::GetInitialBehaviorName()
 	if (isModularBehaviorTreeEnabled)
 	{
 		SmartScriptTable pEntityProperties;
-		m_pScriptObject->GetValue("Properties", pEntityProperties);
-		if (pEntityProperties)
+		if (m_pScriptObject)
 		{
-			const char* behaviorTreeName = 0;
-			if (pEntityProperties->GetValue("esModularBehaviorTree", behaviorTreeName))
+			m_pScriptObject->GetValue("Properties", pEntityProperties);
+			if (pEntityProperties)
 			{
-				const bool hasValidModularBehaviorTreeName = (behaviorTreeName && behaviorTreeName[0] != 0);
-				if (hasValidModularBehaviorTreeName)
+				const char* behaviorTreeName = 0;
+				if (pEntityProperties->GetValue("esModularBehaviorTree", behaviorTreeName))
 				{
-					return 0;
+					const bool hasValidModularBehaviorTreeName = (behaviorTreeName && behaviorTreeName[0] != 0);
+					if (hasValidModularBehaviorTreeName)
+					{
+						return 0;
+					}
 				}
 			}
 		}
@@ -226,7 +229,7 @@ const char* CAIHandler::GetInitialBehaviorName()
 
 	SmartScriptTable pEntityPropertiesInstance;
 
-	if (!m_pScriptObject->GetValue("PropertiesInstance", pEntityPropertiesInstance))
+	if (!m_pScriptObject || !m_pScriptObject->GetValue("PropertiesInstance", pEntityPropertiesInstance))
 	{
 		AIWarningID("<CAIHandler> ", "can't find PropertiesInstance. Entity %s", m_pEntity->GetName());
 		return 0;
@@ -1039,7 +1042,10 @@ void CAIHandler::SetBehavior(const char* szNextBehaviorName, const IAISignalExtr
 	m_sBehaviorName = szNextBehaviorName;
 	m_pBehavior = pNextBehavior;
 
-	m_pScriptObject->SetValue("Behavior", m_pBehavior);
+	if (m_pScriptObject)
+	{
+		m_pScriptObject->SetValue("Behavior", m_pBehavior);
+	}
 
 	gEnv->pAISystem->Record(aiObject, IAIRecordable::E_BEHAVIORSELECTED, m_sBehaviorName);
 
