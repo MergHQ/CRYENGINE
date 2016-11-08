@@ -1,11 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __movie_h__
-#define __movie_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryMovie/IMovieSystem.h>
 #include <CryMemory/CrySizer.h>
@@ -26,8 +21,35 @@ struct PlayingSequence
 	bool bSingleFrame;
 };
 
-struct IConsoleCmdArgs;
+class CLightAnimWrapper : public ILightAnimWrapper
+{
+public:
+	// ILightAnimWrapper interface
+	virtual bool Resolve() override;
 
+public:
+	static CLightAnimWrapper* Create(const char* name);
+	static void ReconstructCache();
+	static IAnimSequence* GetLightAnimSet();
+	static void SetLightAnimSet(IAnimSequence* pLightAnimSet);
+	static void InvalidateAllNodes();
+
+private:
+	typedef std::map<string, CLightAnimWrapper*> LightAnimWrapperCache;
+	static LightAnimWrapperCache ms_lightAnimWrapperCache;
+	static _smart_ptr<IAnimSequence> ms_pLightAnimSet;
+
+private:
+	static CLightAnimWrapper* FindLightAnim(const char* name);
+	static void CacheLightAnim(const char* name, CLightAnimWrapper* p);
+	static void RemoveCachedLightAnim(const char* name);
+
+private:
+	CLightAnimWrapper(const char* name);
+	virtual ~CLightAnimWrapper();
+};
+
+struct IConsoleCmdArgs;
 struct ISkeletonAnim;
 
 class CMovieSystem : public IMovieSystem
@@ -142,6 +164,8 @@ public:
 
 	void                                        OnCameraCut();
 
+	ILightAnimWrapper*                          CreateLightAnimWrapper(const char* szName) const override;
+
 private:
 	void NotifyListeners(IAnimSequence* pSequence, IMovieListener::EMovieEvent event);
 
@@ -227,5 +251,3 @@ public:
 	static int   m_mov_debugSequences;
 #endif
 };
-
-#endif // __movie_h__

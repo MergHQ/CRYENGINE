@@ -7683,7 +7683,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 	{
 		if (pLightAnimationNodeName && strlen(pLightAnimationNodeName) > 0)
 		{
-			//light.m_pLightAnim = gEnv->pMovieSystem->CreateLightAnimWrapper(pLightAnimationNodeName);
+			light.m_pLightAnim = gEnv->pMovieSystem->CreateLightAnimWrapper(pLightAnimationNodeName);
 		}
 	}
 

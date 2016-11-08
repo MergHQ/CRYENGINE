@@ -17,6 +17,7 @@ struct IMovieSystem;
 struct STrackKey;
 class XmlNodeRef;
 struct ISplineInterpolator;
+struct ILightAnimWrapper;
 
 typedef IMovieSystem* (* PFNCREATEMOVIESYSTEM)(struct ISystem*);
 
@@ -147,7 +148,6 @@ enum EAnimParamType
 	eAnimParamType_CommentText     = 70,
 	eAnimParamType_ScreenFader     = 71,
 
-	// Light params are unused, values needed for backward compatibility
 	eAnimParamType_LightDiffuse        = 81,
 	eAnimParamType_LightRadius         = 85,
 	eAnimParamType_LightDiffuseMult    = 86,
@@ -799,6 +799,7 @@ struct IAnimSequence : public _i_reference_target_t
 		eSeqFlags_NoSpeed            = BIT(13), //!< Cannot modify sequence speed - TODO: add interface control if required
 		eSeqFlags_CanWarpInFixedTime = BIT(14), //!< Timewarping will work with a fixed time step.
 		eSeqFlags_EarlyMovieUpdate   = BIT(15), //!< Turn the 'sys_earlyMovieUpdate' on during the sequence.
+		eSeqFlags_LightAnimationSet  = BIT(16), //!< A special unique sequence for light animations
 		eSeqFlags_NoMPSyncingNeeded  = BIT(17), //!< this sequence doesn't require MP net syncing
 		eSeqFlags_Capture            = BIT(18), //!< this sequence is currently in capture mode
 	};
@@ -915,7 +916,7 @@ struct IAnimSequence : public _i_reference_target_t
 	virtual bool IsPaused() const = 0;
 
 	//! Serialize this sequence to XML.
-	virtual void Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0) = 0;
+	virtual void Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0, bool bResetLightAnimSet = false) = 0;
 
 	//! Adds/removes track events in sequence.
 	virtual bool AddTrackEvent(const char* szEvent) = 0;
@@ -1155,6 +1156,8 @@ struct IMovieSystem
 
 	virtual void EnableBatchRenderMode(bool bOn) = 0;
 	virtual bool IsInBatchRenderMode() const = 0;
+
+	virtual ILightAnimWrapper* CreateLightAnimWrapper(const char* szName) const = 0;
 
 	//! Should only be called from CAnimParamType
 	virtual void        SerializeParamType(CAnimParamType& animParamType, XmlNodeRef& xmlNode, bool bLoading, const uint version) = 0;

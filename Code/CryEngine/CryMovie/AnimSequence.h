@@ -77,7 +77,7 @@ public:
 	virtual void       Animate(const SAnimContext& animContext) override;
 	virtual void       Render() override;
 
-	virtual void       Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0) override;
+	virtual void       Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0, bool bResetLightAnimSet = false) override;
 
 	//! Add/remove track events in sequence
 	virtual bool AddTrackEvent(const char* szEvent) override;

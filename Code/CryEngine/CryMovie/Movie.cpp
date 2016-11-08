@@ -105,6 +105,7 @@ void RegisterNodeTypes()
 	REGISTER_NODE_TYPE(ColorCorrection, "Color Correction")
 	REGISTER_NODE_TYPE(DepthOfField, "Depth of Field")
 	REGISTER_NODE_TYPE(ScreenFader, "Screen Fader")
+	REGISTER_NODE_TYPE(Light, "Light Animation")
 	REGISTER_NODE_TYPE(HDRSetup, "HDR Setup")
 	REGISTER_NODE_TYPE(ShadowSetup, "Shadow Setup")
 	REGISTER_NODE_TYPE(Alembic, "Alembic")
@@ -1519,7 +1520,7 @@ void CMovieSystem::SerializeNodeType(EAnimNodeType& animNodeType, XmlNodeRef& xm
 
 		// Convert light nodes that are not part of a light
 		// animation set to common entity nodes
-		if (version <= 1 && animNodeType == eAnimNodeType_Light)
+		if (version <= 1 && animNodeType == eAnimNodeType_Light && !(flags & IAnimSequence::eSeqFlags_LightAnimationSet))
 		{
 			animNodeType = eAnimNodeType_Entity;
 			return;
@@ -1672,6 +1673,116 @@ const char* CMovieSystem::GetParamTypeName(const CAnimParamType& animParamType)
 
 void CMovieSystem::OnCameraCut()
 {
+}
+
+ILightAnimWrapper* CMovieSystem::CreateLightAnimWrapper(const char* szName) const
+{
+	return CLightAnimWrapper::Create(szName);
+}
+
+CLightAnimWrapper::LightAnimWrapperCache CLightAnimWrapper::ms_lightAnimWrapperCache;
+_smart_ptr<IAnimSequence> CLightAnimWrapper::ms_pLightAnimSet = 0;
+
+CLightAnimWrapper::CLightAnimWrapper(const char* szName)
+	: ILightAnimWrapper(szName)
+{
+	m_nRefCounter = 1;
+}
+
+CLightAnimWrapper::~CLightAnimWrapper()
+{
+	RemoveCachedLightAnim(m_name.c_str());
+}
+
+bool CLightAnimWrapper::Resolve()
+{
+	if (m_pNode == nullptr)
+	{
+		IAnimSequence* pSeq = GetLightAnimSet();
+		m_pNode = pSeq ? pSeq->FindNodeByName(m_name.c_str(), 0) : 0;
+	}
+
+	return m_pNode != nullptr;
+}
+
+CLightAnimWrapper* CLightAnimWrapper::Create(const char* szName)
+{
+	CLightAnimWrapper* pWrapper = FindLightAnim(szName);
+
+	if (pWrapper != nullptr)
+	{
+		pWrapper->AddRef();
+	}
+	else
+	{
+		pWrapper = new CLightAnimWrapper(szName);
+		CacheLightAnim(szName, pWrapper);
+	}
+
+	return pWrapper;
+}
+
+void CLightAnimWrapper::ReconstructCache()
+{
+#if !defined(_RELEASE)
+
+	if (!ms_lightAnimWrapperCache.empty())
+	{
+		__debugbreak();
+	}
+
+#endif
+
+	stl::reconstruct(ms_lightAnimWrapperCache);
+	SetLightAnimSet(0);
+}
+
+IAnimSequence* CLightAnimWrapper::GetLightAnimSet()
+{
+	return ms_pLightAnimSet;
+}
+
+void CLightAnimWrapper::SetLightAnimSet(IAnimSequence* pLightAnimSet)
+{
+	ms_pLightAnimSet = pLightAnimSet;
+}
+
+void CLightAnimWrapper::InvalidateAllNodes()
+{
+#if !defined(_RELEASE)
+
+	if (!gEnv->IsEditor())
+	{
+		__debugbreak();
+	}
+
+#endif
+	// !!! Will only work in Editor as the renderer runs in single threaded mode !!!
+	// Invalidate all node pointers before the light anim set can get destroyed via SetLightAnimSet(0).
+	// They'll get re-resolved in the next frame via Resolve(). Needed for Editor undo, import, etc.
+	LightAnimWrapperCache::iterator it = ms_lightAnimWrapperCache.begin();
+	LightAnimWrapperCache::iterator itEnd = ms_lightAnimWrapperCache.end();
+
+	for (; it != itEnd; ++it)
+	{
+		(*it).second->m_pNode = 0;
+	}
+}
+
+CLightAnimWrapper* CLightAnimWrapper::FindLightAnim(const char* name)
+{
+	LightAnimWrapperCache::const_iterator it = ms_lightAnimWrapperCache.find(CONST_TEMP_STRING(name));
+	return it != ms_lightAnimWrapperCache.end() ? (*it).second : 0;
+}
+
+void CLightAnimWrapper::CacheLightAnim(const char* name, CLightAnimWrapper* p)
+{
+	ms_lightAnimWrapperCache.insert(LightAnimWrapperCache::value_type(string(name), p));
+}
+
+void CLightAnimWrapper::RemoveCachedLightAnim(const char* name)
+{
+	ms_lightAnimWrapperCache.erase(CONST_TEMP_STRING(name));
 }
 
 #ifdef MOVIESYSTEM_SUPPORT_EDITING

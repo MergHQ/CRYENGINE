@@ -55,7 +55,7 @@ static const char* s_VariablePrefixes[] =
 	"aianchor",                                                 "soclass",         "soclasses",   "sostate",      "sostates"
 	                                                                                                              "sopattern", "soaction",        "sohelper",    "sonavhelper",
 	"soanimhelper",                                             "soevent",         "sotemplate",  "customaction",
-	"gametoken",                                                "seq_",            "mission_",    "seqid_"
+	"gametoken",                                                "seq_",            "mission_",    "seqid_", "lightanimation_"
 };
 
 namespace
