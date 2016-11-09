@@ -3405,6 +3405,7 @@ L_done:;
 		//////////////////////////////////////////////////////////////////////////
 		// We need script materials for now
 
+		if (!m_startupParams.bShaderCacheGen)
 		{
 			CryLogAlways("Script System Initialization");
 			INDENT_LOG_DURING_SCOPE();
@@ -3473,6 +3474,7 @@ L_done:;
 
 		//////////////////////////////////////////////////////////////////////////
 		// DYNAMIC RESPONSE SYSTEM
+		if (!m_startupParams.bShaderCacheGen)
 		{
 			CryLogAlways("Dynamic Response System initialization");
 			INDENT_LOG_DURING_SCOPE();
