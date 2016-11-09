@@ -311,13 +311,13 @@ namespace CryEngine.FlowSystem
 		/// <typeparam name="T">Type of the value.</typeparam>
 		public object GetPortValue(Type t, int portIndex)
 		{
-			if (t == typeof(string))
-				return ((object)Info.pGraph.GetPortString(Info, portIndex).c_str());
-			else if (t == typeof(int))
-				return (object)Info.pGraph.GetPortInt(Info, portIndex);
-			else if (t == typeof(bool))
-				return (object)Info.pGraph.GetPortBool(Info, portIndex);
-			return null;
+            if (t == typeof(string))
+                return ((object)Global.GetPortString(Info, portIndex).c_str());
+            else if (t == typeof(int))
+                return (object)Global.GetPortInt(Info, portIndex);
+            else if (t == typeof(bool))
+                return (object)Global.GetPortBool(Info, portIndex);
+            return null;
 		}
 
 		/// <summary>
