@@ -34,5 +34,13 @@ namespace uqs
 				"Pick the one to draw via PGDOWN/PGUP.");
 		}
 
+		void SCvars::Unregister()
+		{
+			gEnv->pConsole->UnregisterVariable("uqs_timeBudgetInSeconds");
+			gEnv->pConsole->UnregisterVariable("uqs_debugDraw");
+			gEnv->pConsole->UnregisterVariable("uqs_debugDrawZTestOn");
+			gEnv->pConsole->UnregisterVariable("uqs_debugDrawLineThickness");
+			gEnv->pConsole->UnregisterVariable("uqs_logQueryHistory");
+		}
 	}
 }

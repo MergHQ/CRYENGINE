@@ -12,6 +12,7 @@ namespace uqs
 		struct SCvars
 		{
 			static void          Register();
+			static void          Unregister();
 
 			static float         timeBudgetInSeconds;              // granted time in seconds to update all running queries in a time-sliced fashion
 			static int           debugDraw;                        // 2d on-screen text drawing and also 3d in-world via debug geometry

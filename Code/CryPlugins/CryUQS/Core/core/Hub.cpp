@@ -58,6 +58,7 @@ namespace uqs
 			g_hubImpl = nullptr;
 			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 			m_utils.UnsubscribeFromStuffInHub(*this);
+			SCvars::Unregister();
 		}
 
 		void CHub::RegisterHubEventListener(IHubEventListener* listener)
