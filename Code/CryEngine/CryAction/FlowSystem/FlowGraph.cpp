@@ -1346,7 +1346,17 @@ bool CFlowGraphBase::SetInputValue(TFlowNodeId node, TFlowPortId port, const TFl
 	CFlowData& data = m_flowData[node];
 	if (!data.ValidatePort(port, false))
 		return false;
-	return data.SetInputPort(port, value);
+	const bool bOk = data.SetInputPort(port, value);
+	if(bOk)
+	{
+		int entityOffset = (data.HasEntity() ? 1 : 0);
+		IFlowNode::SActivationInfo info(this, node);
+		info.connectPort = port - entityOffset;
+		info.pInputPorts = data.GetInputPort(entityOffset);
+
+		data.GetNode()->ProcessEvent(IFlowNode::eFE_EditorInputPortDataSet, &info);
+	}
+	return bOk;
 }
 
 //////////////////////////////////////////////////////////////////////////

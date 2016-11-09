@@ -144,6 +144,8 @@ public:
 	}
 	bool DoForwardingIfNeed(IFlowNode::SActivationInfo*);
 
+	ILINE bool HasEntity() const { return m_hasEntity; }
+
 private:
 	// REMEMBER: When adding members update CFlowData::Swap(CFlowData&)
 	// should be well packed

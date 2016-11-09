@@ -53,7 +53,7 @@ public:
 			OutputPortConfig<float>("out"),
 			{ 0 }
 		};
-		config.sDescription = _HELP("[out] = especified operation with [A] and [B]");
+		config.sDescription = _HELP("[out] = result of the specified operation with [A] and [B]");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
@@ -332,7 +332,9 @@ class CFlowNode_CalculateVec3 : public CFlowBaseNode<eNCT_Singleton>
 	{
 		EOP_ADD = 0,
 		EOP_SUB,
-		EOP_MUL
+		EOP_MUL,
+		EOP_CROSS,
+		EOP_DOT
 	};
 
 public:
@@ -342,16 +344,16 @@ public:
 	{
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig_Void("DoCalc", _HELP("Do the calc and send the result to the output when receiving event on this port")),
-			InputPortConfig<int>("Op",     EOP_ADD,                                                                                  _HELP("Operation"),_HELP("Operation"), _UICONFIG("enum_int:Add=0,Sub=1,Mul=2")),
-			InputPortConfig<Vec3>("A",     _HELP(" ")),
-			InputPortConfig<Vec3>("B",     _HELP(" ")),
+			InputPortConfig<int>("Op",     EOP_ADD,                                                                                  _HELP("Operation"),_HELP("Operation"), _UICONFIG("enum_int:Add=0,Sub=1,Mul=2,Cross=3,Dot=4")),
+			InputPortConfig<Vec3>("A",     _HELP("Vector A")),
+			InputPortConfig<Vec3>("B",     _HELP("Vector B")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("out"),
+			OutputPortConfig_AnyType("out", _HELP("A Vec3 with the result of the operation or a float for a Dot product")),
 			{ 0 }
 		};
-		config.sDescription = _HELP("[out] = especified operation with [A] and [B]");
+		config.sDescription = _HELP("[out] = result of the specified operation with [A] and [B]");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
@@ -367,25 +369,38 @@ public:
 					Vec3 a = GetPortVec3(pActInfo, INP_A);
 					Vec3 b = GetPortVec3(pActInfo, INP_B);
 					int op = GetPortInt(pActInfo, INP_Operation);
-					Vec3 out(0, 0, 0);
-					switch (op)
+
+					if (op == EOP_DOT)
 					{
-					case EOP_ADD:
-						out = a + b;
-						break;
+						float out = a.Dot(b);
+						ActivateOutput(pActInfo, 0, out);
+					}
+					else
+					{
+						Vec3 out(0, 0, 0);
+						switch (op)
+						{
+						case EOP_ADD:
+							out = a + b;
+							break;
 
-					case EOP_SUB:
-						out = a - b;
-						break;
+						case EOP_SUB:
+							out = a - b;
+							break;
 
-					case EOP_MUL:
-						out.x = a.x * b.x;
-						out.y = a.y * b.y;
-						out.z = a.z * b.z;
-						break;
+						case EOP_MUL:
+							out.x = a.x * b.x;
+							out.y = a.y * b.y;
+							out.z = a.z * b.z;
+							break;
+
+						case EOP_CROSS:
+							out = a.Cross(b);
+							break;
+						}
+						ActivateOutput(pActInfo, 0, out);
 					}
 
-					ActivateOutput(pActInfo, 0, out);
 				}
 				break;
 			}
@@ -2082,7 +2097,7 @@ public:
 			OutputPortConfig<float>("out"),
 			{ 0 }
 		};
-		config.sDescription = _HELP("Send input value to the output when event on set port is received");
+		config.sDescription = _HELP("Send a float input value to the output when event on set port is received");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED); // POLICY-CHANGE: don't send to output on initialize
@@ -2095,6 +2110,48 @@ public:
 			if (IsPortActive(pActInfo, 0))
 			{
 				ActivateOutput(pActInfo, 0, GetPortFloat(pActInfo, 1));
+			}
+			break;
+		}
+	};
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+class CFlowNode_SetInteger : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_SetInteger(SActivationInfo* pActInfo) {}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("set", _HELP("Send value to output when receiving event on this port")),
+			InputPortConfig<int>("in",  _HELP("Value to be set on output")),
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("out"),
+			{ 0 }
+		};
+		config.sDescription = _HELP("Send an integer input value to the output when event on set port is received");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.nFlags |= EFLN_AISEQUENCE_SUPPORTED;
+		config.SetCategory(EFLN_APPROVED); // POLICY-CHANGE: don't send to output on initialize
+	}
+	virtual void ProcessEvent(EFlowEvent evt, SActivationInfo* pActInfo)
+	{
+		switch (evt)
+		{
+		case eFE_Activate:
+			if (IsPortActive(pActInfo, 0))
+			{
+				ActivateOutput(pActInfo, 0, GetPortInt(pActInfo, 1));
 			}
 			break;
 		}
@@ -2789,6 +2846,7 @@ REGISTER_FLOW_NODE("Math:SinCos", CFlowNode_SinCos);
 REGISTER_FLOW_NODE("Math:AnglesToDir", CFlowNode_AnglesToDir);
 REGISTER_FLOW_NODE("Math:DirToAngles", CFlowNode_DirToAngles);
 REGISTER_FLOW_NODE("Math:SetNumber", CFlowNode_SetNumber);
+REGISTER_FLOW_NODE("Math:SetInteger", CFlowNode_SetInteger);
 REGISTER_FLOW_NODE("Math:BooleanTo", CFlowNode_ToBoolean);
 REGISTER_FLOW_NODE("Math:BooleanFrom", CFlowNode_FromBoolean);
 REGISTER_FLOW_NODE("Math:UpDownCounter", CFlowNode_UpDownCounter);
