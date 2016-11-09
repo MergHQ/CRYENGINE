@@ -154,7 +154,9 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 
 	Cry3DEngineBase::m_nMainThreadId = CryGetCurrentThreadId();
 	Cry3DEngineBase::m_pSystem = pSystem;
+#if !defined(DEDICATED_SERVER)
 	Cry3DEngineBase::m_pRenderer = gEnv->pRenderer;
+#endif
 	Cry3DEngineBase::m_pTimer = gEnv->pTimer;
 	Cry3DEngineBase::m_pLog = gEnv->pLog;
 	Cry3DEngineBase::m_pPhysicalWorld = gEnv->pPhysicalWorld;
