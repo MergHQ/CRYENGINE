@@ -329,9 +329,7 @@ void CFlowGraphModule::RegisterStartNodeForInstanceBeingCreated(CFlowModuleStart
 
 void CFlowGraphModule::CreateInstance(EntityId entityId, TModuleInstanceId runningInstanceId)
 {
-	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CFlowGraphModule::CreateInstance", m_name.c_str());
-	// marker not integrated in climb codebase
-	//CRY_PROFILE_REGION_ARG(PROFILE_ACTION, "CFlowGraphModule::CreateInstance", m_name.c_str());
+	CRY_PROFILE_REGION_ARG(PROFILE_ACTION, "CFlowGraphModule::CreateInstance", m_name.c_str());
 
 	if (m_pRootGraph)
 	{
