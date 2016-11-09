@@ -4,13 +4,14 @@
 #include "EquipPackDialog.h"
 #include "EquipPackLib.h"
 #include "EquipPack.h"
-#include "StringDlg.h"
+#include "Dialogs/QStringDialog.h"
 #include "GameEngine.h"
 #include <CrySandbox/IEditorGame.h>
 #include "UserMessageDefines.h"
 #include "Controls/QuestionDialog.h"
 #include "FileDialogs/SystemFileDialog.h"
 #include "Dialogs/BaseFrameWnd.h"
+#include "Dialogs/QStringDialog.h"
 
 class CEquipPackEditor : public CBaseFrameWnd
 {
@@ -470,8 +471,8 @@ void CEquipPackDialog::OnCbnSelchangeEquippack()
 
 void CEquipPackDialog::OnBnClickedAdd()
 {
-	CStringDlg Dlg("Enter name for new Equipment-Pack", this);
-	if (Dlg.DoModal() != IDOK)
+	QStringDialog Dlg("Enter name for new Equipment-Pack");
+	if (Dlg.exec() != QDialog::Accepted)
 		return;
 	if (Dlg.GetString().IsEmpty())
 		return;
@@ -510,8 +511,8 @@ void CEquipPackDialog::OnBnClickedRename()
 {
 	CString sName;
 	m_EquipPacksList.GetLBText(m_EquipPacksList.GetCurSel(), sName);
-	CStringDlg Dlg("Enter new name for Equipment-Pack", this);
-	if (Dlg.DoModal() != IDOK)
+	QStringDialog Dlg("Enter new name for Equipment-Pack");
+	if (Dlg.exec() != QDialog::Accepted)
 		return;
 	if (Dlg.GetString().IsEmpty())
 		return;
