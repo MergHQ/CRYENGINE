@@ -52,7 +52,7 @@ public:
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("Linking the Player to an Entity (with FreeLook)");
-		config.SetCategory(EFLN_APPROVED);
+		config.SetCategory(EFLN_OBSOLETE);
 	}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
