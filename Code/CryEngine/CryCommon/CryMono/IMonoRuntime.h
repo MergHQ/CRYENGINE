@@ -6,6 +6,7 @@
 
 struct IMonoDomain;
 struct IMonoAssembly;
+namespace BehaviorTree { class Node; }
 
 struct IMonoListener
 {
@@ -15,6 +16,13 @@ struct IMonoListener
 	//! \param flags One or more flags from ESystemUpdateFlags structure.
 	//! \param nPauseMode 0=normal(no pause), 1=menu/pause, 2=cutscene.
 	virtual void OnUpdate(int updateFlags, int nPauseMode) = 0;
+};
+
+struct IManagedNodeCreator
+{
+	IManagedNodeCreator() {}
+
+	virtual BehaviorTree::Node* Create() = 0;
 };
 
 struct IMonoRuntime
@@ -37,4 +45,6 @@ struct IMonoRuntime
 	virtual IMonoAssembly*              GetCryCoreLibrary() const = 0;
 
 	virtual void                        RegisterManagedActor(const char* className) = 0;
+
+	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) = 0;
 };

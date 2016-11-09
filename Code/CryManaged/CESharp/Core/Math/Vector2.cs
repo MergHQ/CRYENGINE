@@ -133,6 +133,11 @@ namespace CryEngine
 		{
 			return X * v.X + Y * v.Y;
 		}
+
+		public bool IsZero(float epsilon = 0)
+		{
+			return (Math.Abs(x) <= epsilon) && (Math.Abs(y) <= epsilon);
+		}
 		#endregion
 
 		#region Properties

@@ -311,6 +311,14 @@ void CMonoRuntime::RegisterManagedActor(const char* actorClassName)
 	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &actorCreator, &clsDesc);
 }
 
+void CMonoRuntime::RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator)
+{
+	BehaviorTree::IBehaviorTreeManager& manager = *gEnv->pAISystem->GetIBehaviorTreeManager();
+	CManagedNodeCreatorProxy* pProxy = new CManagedNodeCreatorProxy(szClassName, pCreator);
+	manager.GetNodeFactory().RegisterNodeCreator(pProxy);
+	m_nodeCreators.push_back(pProxy);
+}
+
 CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoDomain* pDomain)
 {
 	auto domainIt = m_domainLookupMap.find(pDomain);

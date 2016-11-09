@@ -28,13 +28,16 @@ namespace CryEngine
 		public float X { get { return _x; } set { _x = value; } }
 		public float Y { get { return _y; } set { _y = value; } }
 		public float Z { get { return _z; } set { _z = value; } }
-
+		
 		public Vector3(float xCoord, float yCoord, float zCoord)
 		{
 			_x = xCoord;
 			_y = yCoord;
 			_z = zCoord;
 		}
+
+		public Vector3(Vector2 v) : this(v.x, v.y, 0.0f) { }
+		public Vector3(Vector4 v) : this(v.x, v.y, v.z) { }
 
 		#region Overrides
 		public override int GetHashCode()
@@ -146,6 +149,11 @@ namespace CryEngine
 		public Vector3 Cross(Vector3 v)
 		{
 			return new Vector3(Y * v.Z - Z * v.Y, Z * v.X - X * v.Z, X * v.Y - Y * v.X);
+		}
+
+		public bool IsZero(float epsilon = 0)
+		{
+			return (Math.Abs(x) <= epsilon) && (Math.Abs(y) <= epsilon) && (Math.Abs(z) <= epsilon);
 		}
 		#endregion
 

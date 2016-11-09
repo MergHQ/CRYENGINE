@@ -6,6 +6,8 @@
 #include <CrySystem/IConsole.h>
 #include <CryMono/IMonoRuntime.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
+#include <CryAISystem/BehaviorTree/Node.h>
 
 #include "Wrappers/MonoObject.h"
 
@@ -28,6 +30,42 @@ enum EMonoLogLevel
 	eMLL_Message,
 	eMLL_Info,
 	eMLL_Debug
+};
+
+class CManagedNodeCreatorProxy : public BehaviorTree::INodeCreator
+{
+public:
+	CManagedNodeCreatorProxy(const char* szTypeName, IManagedNodeCreator* pCreator)
+		: m_pCreator(pCreator)
+		, m_pNodeFactory(nullptr) 
+	{ 
+		cry_strcpy(m_szTypeName, szTypeName);
+	}
+
+	// INodeCreator
+	virtual ~CManagedNodeCreatorProxy()
+	{
+		delete m_pCreator;
+	}
+	virtual BehaviorTree::INodePtr    Create() override
+	{
+		return BehaviorTree::INodePtr(m_pCreator->Create());
+	}
+	virtual void        Trim() override {}
+	virtual const char* GetTypeName() const override { return m_szTypeName; }
+	virtual size_t      GetNodeClassSize() const override { return 4; }
+	virtual size_t      GetSizeOfImmutableDataForAllAllocatedNodes() const override { return 4; }
+	virtual size_t      GetSizeOfRuntimeDataForAllAllocatedNodes() const override { return 4; }
+	virtual void*       AllocateRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) override { return nullptr; }
+	virtual void*       GetRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) const override { return nullptr; }
+	virtual void        FreeRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) override { }
+	virtual void        SetNodeFactory(BehaviorTree::INodeFactory* nodeFactory) override { m_pNodeFactory = nodeFactory; }
+	// ~INodeCreator
+
+private:
+	IManagedNodeCreator* m_pCreator;
+	char m_szTypeName[64];
+	BehaviorTree::INodeFactory* m_pNodeFactory;
 };
 
 class CMonoRuntime
@@ -54,6 +92,8 @@ public:
 	virtual IMonoAssembly*              GetCryCoreLibrary() const override;
 
 	virtual void                        RegisterManagedActor(const char* className) override;
+
+	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) override;
 	// ~IMonoRuntime
 
 	CMonoDomain* FindDomainByHandle(MonoDomain* pDomain);
@@ -74,7 +114,9 @@ private:
 
 private:
 	typedef std::unordered_map<MonoDomain*, CMonoDomain*> TDomainLookupMap;
+	typedef std::vector<CManagedNodeCreatorProxy*> TNodeCreators;
 	TDomainLookupMap         m_domainLookupMap;
+	TNodeCreators            m_nodeCreators;
 
 	CRootMonoDomain*         m_pRootDomain;
 	CAppDomain*              m_pPluginDomain;

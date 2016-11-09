@@ -65,7 +65,6 @@
 %include <std_shared_ptr.i>
 %include "../../../CryEngine/CryAction/IGameObject.h"
 
-// bugging out on that - no idea why - *cry* . . . worked with 3.7
 %template(IGameObjectExtensionPtr) std::shared_ptr<IGameObjectExtension>;
 %template(IGameObjectExtensionConstPtr) std::shared_ptr<const IGameObjectExtension>;
 %feature("director") GameObjectExtensionCreatorHelper;

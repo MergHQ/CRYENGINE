@@ -81,6 +81,7 @@ namespace CryEngine
 			foreach (Type t in assembly.GetTypes())
 			{
 				Entity.ClassRegistry.TryRegister(t);
+				BehaviorTreeNodeFactory.TryRegister(t);
 			}
 		}
 	}

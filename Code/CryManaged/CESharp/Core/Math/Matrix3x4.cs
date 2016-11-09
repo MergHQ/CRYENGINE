@@ -169,6 +169,26 @@ namespace CryEngine
 		{
 			return new Vector3(m00 * point.x + m01 * point.y + m02 * point.z + m03, m10 * point.x + m11 * point.y + m12 * point.z + m13, m20 * point.x + m21 * point.y + m22 * point.z + m23);
 		}
+
+		public void SetTranslation(Vector3 t)
+		{
+			m03 = t.x; m13 = t.y; m23 = t.z;
+		}
+
+		public Vector3 GetTranslation()
+		{
+			return new Vector3(m03, m13, m23);
+		}
+
+		public void ScaleTranslation(float s)
+		{
+			m03 *= s; m13 *= s; m23 *= s;
+		}
+
+		public void AddTranslation(Vector3 t)
+		{
+			m03 += t.x; m13 += t.y; m23 += t.z;
+		}
 		#endregion
 
 		#region Properties

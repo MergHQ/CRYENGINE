@@ -99,7 +99,14 @@ namespace CryEngine
 			return !(left == right);
 		}
 		#endregion
-		
+
+		#region Functions
+		public bool IsZero(float epsilon = 0)
+		{
+			return (Math.Abs(x) <= epsilon) && (Math.Abs(y) <= epsilon) && (Math.Abs(z) <= epsilon) && (Math.Abs(w) <= epsilon);
+		}
+		#endregion
+
 		#region Properties
 		/// <summary>
 		/// Gets individual axes by index

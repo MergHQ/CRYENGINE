@@ -72,6 +72,12 @@
 //TODO: %import "../../../CryEngine/CryCommon/CryArray.h"
 %include <std_shared_ptr.i>
 //%include "../../../CryEngine/CryCommon/IComponent.h"
+%include <typemaps.i>
+%apply int *OUTPUT { int& value };
+%apply unsigned int *OUTPUT { unsigned int& value };
+%apply float *OUTPUT { float& value };
+%apply double *OUTPUT { double& value };
+%apply bool *OUTPUT { bool& value };
 %include "../../../../CryEngine/CryCommon/CrySystem/XML/IXml.h"
 %ignore CCryNameCRC::CCryNameCRC;
 %include "../../../../CryEngine/CryCommon/CryString/CryName.h"

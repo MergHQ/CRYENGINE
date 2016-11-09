@@ -95,6 +95,11 @@
     <Compile Include="Environment.cs" />
     <Compile Include="ICryEnginePlugin.cs" />
     <Compile Include="Input\Mouse.cs" />
+	<Compile Include="Input\ActionHandler.cs" />
+	<Compile Include="AI\Attributes.cs" />
+	<Compile Include="AI\BehaviorTreeNode.cs" />
+	<Compile Include="AI\BehaviorTreeNodeFactory.cs" />
+	<Compile Include="AI\LastingMovementRequest.cs" />
     <Compile Include="Math\Angles3.cs" />
     <Compile Include="Math\Color.cs" />
     <Compile Include="GameFramework.cs" />

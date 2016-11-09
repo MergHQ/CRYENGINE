@@ -7,6 +7,9 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 
 	set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x64)
 
+	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
+	source_group("AI" FILES ${AI_FILES})
+
 	set(Audio_FILES Audio/AudioManager.cs)
 	source_group("Audio" FILES ${Audio_FILES})
 
@@ -27,7 +30,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("FlowSystem" FILES ${FlowSystem_FILES})
 
 
-	set(Input_FILES Input/Input.cs Input/Mouse.cs)
+	set(Input_FILES Input/Input.cs Input/Mouse.cs Input/ActionHandler.cs)
 	source_group("Input" FILES ${Input_FILES})
 
 
@@ -54,7 +57,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(Core_FILES Attributes.cs Camera.cs Environment.cs Extensions.cs GameFramework.cs ICryEnginePlugin.cs LevelSystem.cs Random.cs SystemEventHandler.cs Timer.cs)
 	source_group("Core" FILES ${Core_FILES})
 
-	set(SOURCE ${Audio_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_FILES} ${FlowSystem_FILES} ${Input_FILES} ${Math_FILES} ${TempPE_FILES} ${Debug_FILES} ${x64_FILES} ${TempPE_FILES} ${Debug_FILES} ${x86_FILES} ${obj_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
+	set(SOURCE ${AI_FILES} ${Audio_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_FILES} ${FlowSystem_FILES} ${Input_FILES} ${Math_FILES} ${TempPE_FILES} ${Debug_FILES} ${x64_FILES} ${TempPE_FILES} ${Debug_FILES} ${x86_FILES} ${obj_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core
 		COMMAND ${MCS_PATH} -target:library -langversion:6 -platform:anycpu -optimize -debug -define:WIN64 -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll
