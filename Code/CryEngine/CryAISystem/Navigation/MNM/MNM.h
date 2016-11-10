@@ -497,7 +497,7 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 		return b;
 
 	const real_t vc = d1 * d4 - d3 * d2;
-	if ((vc <= 0) && (d1 >= 0) && (d3 <= 0))
+	if ((vc <= 0) && (d1 >= 0) && (d3 < 0))
 	{
 		const real_t v = d1 / (d1 - d3);
 		return a + (ab * v);
@@ -511,14 +511,14 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 		return c;
 
 	const real_t vb = d5 * d2 - d1 * d6;
-	if ((vb <= 0) && (d2 >= 0) && (d6 <= 0))
+	if ((vb <= 0) && (d2 >= 0) && (d6 < 0))
 	{
 		const real_t w = d2 / (d2 - d6);
 		return a + (ac * w);
 	}
 
 	const real_t va = d3 * d6 - d5 * d4;
-	if ((va <= 0) && ((d4 - d3) >= 0) && ((d5 - d6) >= 0))
+	if ((va <= 0) && ((d4 - d3) >= 0) && ((d5 - d6) > 0))
 	{
 		const real_t w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
 		return b + ((c - b) * w);
