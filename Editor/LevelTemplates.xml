@@ -93,7 +93,7 @@
 			<Latitude type="Float" value="240.0"/>
 			<Longitude type="Float" value="45.0"/>
 			<Size type="Float" value="0.5"/>
-			<Texture type="Texture" value="Textures/Skys/Night/half_moon.dds"/>
+			<Texture type="Texture" value="EngineAssets/Textures/Skys/Night/half_moon.dds"/>
 		</Moon>
 
 		<DynTexSource>
