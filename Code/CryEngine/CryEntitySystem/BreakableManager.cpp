@@ -1688,7 +1688,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		IRopeRenderNode* pRope = (IRopeRenderNode*)pForeignData;
 		pSrcEntity = g_pIEntitySystem->GetEntityFromID(pRope->GetEntityOwner());
 		SEntitySpawnParams params;
-		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("Rope");
+		params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED;
 		params.sName = "rope_piece";
 		pNewEntity = (CEntity*)gEnv->pEntitySystem->SpawnEntity(params, false);
@@ -1704,7 +1704,8 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		pe_params_rope pr;
 		pCreateEvent->pEntNew->GetParams(&pr);
 		rparams.nNumSegments = FtoI(rparams.nNumSegments * pr.nSegments / (float)rparams.nPhysSegments);
-		rparams.fTextureTileV = rparams.fTextureTileV * pr.nSegments / rparams.fTextureTileV;
+		rparams.fTextureTileV = rparams.fTextureTileV * pr.nSegments / rparams.nPhysSegments;
+		rparams.nPhysSegments = pr.nSegments;
 		pRopeNew->SetParams(rparams);
 
 		pRopeNew->SetMatrix(pSrcEntity->GetWorldTM());
@@ -2357,7 +2358,8 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		CRopeProxy* pRopeProxy = (CRopeProxy*)pSrcEntity->GetProxy(ENTITY_PROXY_ROPE);
 		pRopeProxy->PreserveParams();
 		params.nNumSegments = FtoI(pr.nSegments * params.nNumSegments / (float)params.nPhysSegments);
-		params.fTextureTileV = params.fTextureTileV * pr.nSegments / params.fTextureTileV;
+		params.fTextureTileV = params.fTextureTileV * pr.nSegments / params.nPhysSegments;
+		params.nPhysSegments = pr.nSegments;
 		pRope->SetParams(params);
 		return 1;
 	}
