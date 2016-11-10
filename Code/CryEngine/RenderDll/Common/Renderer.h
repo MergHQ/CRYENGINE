@@ -1035,6 +1035,7 @@ public:
 
 	virtual void  RT_ResetGlass() {}
 
+
 	// create/delete RenderMesh object
 	virtual _smart_ptr<IRenderMesh> CreateRenderMesh(
 	  const char* szType
@@ -1300,6 +1301,8 @@ public:
 	virtual void                EnableLevelUnloading(bool enable) override;
 	virtual void                EnableBatchMode(bool enable) override;
 	virtual bool                IsStereoModeChangePending() override { return false; }
+		
+	virtual void QueryActiveGpuInfo(SGpuInfo& info) const override;
 
 	virtual compute_skinning::IComputeSkinningStorage* GetComputeSkinningStorage() = 0;
 public:
@@ -1456,6 +1459,7 @@ public:
 	int    m_nFlushAllPendingTextureStreamingJobs;
 	float  m_fTexturesStreamingGlobalMipFactor;
 
+	SGpuInfo m_adapterInfo = {};
 public:
 	// these ids can be used for tripple (or more) buffered structures
 	// they are incremented in RenderWorld on the mainthread

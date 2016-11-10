@@ -4650,3 +4650,8 @@ void CRenderer::ResumeRendererFromFrameEnd()
 	m_mtxStopAtRenderFrameEnd.Unlock();
 	m_condStopAtRenderFrameEnd.Notify();
 }
+
+void CRenderer::QueryActiveGpuInfo(SGpuInfo& info) const
+{
+	info = m_adapterInfo;
+}

@@ -2187,7 +2187,7 @@ bool CD3D9Renderer::SetRes()
 		width = m_deskwidth;
 		height = m_deskheight;
 	}
-
+	
 	// DirectX9 and DirectX10 device creating
 	#if defined(SUPPORT_DEVICE_INFO)
 	if (m_devInfo.CreateDevice(!m_bFullScreen, width, height, m_backbufferWidth, m_backbufferHeight, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
@@ -2198,6 +2198,14 @@ bool CD3D9Renderer::SetRes()
 	{
 		return false;
 	}
+
+	//query adapter name
+	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
+	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description);
+	m_adapterInfo.VendorId = desc.VendorId;
+	m_adapterInfo.DeviceId = desc.DeviceId;
+	m_adapterInfo.SubSysId = desc.SubSysId;
+	m_adapterInfo.Revision = desc.Revision;
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 	#endif
@@ -2489,8 +2497,9 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	}
 
 	rd->m_nGPUs = min(rd->m_nGPUs, (uint32)MAX_GPU_NUM);
+	
 #endif
-
+	rd->m_adapterInfo.nNodeCount = max(rd->m_nGPUs, rd->m_adapterInfo.nNodeCount);
 	CryLogAlways("Active GPUs: %i", rd->m_nGPUs);
 
 #if CRY_PLATFORM_ORBIS

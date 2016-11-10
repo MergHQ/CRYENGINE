@@ -2268,6 +2268,18 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void RT_InsertGpuCallback(uint32 context, GpuCallbackFunc callback) = 0;
 	virtual void EnablePipelineProfiler(bool bEnable) = 0;
 
+	struct SGpuInfo
+	{
+		const char* name;
+		unsigned int nNodeCount;
+		UINT VendorId;
+		UINT DeviceId;
+		UINT SubSysId;
+		UINT Revision;
+	};
+
+	virtual void QueryActiveGpuInfo(SGpuInfo& info) const = 0;
+
 	struct SRenderTimes
 	{
 		float fWaitForMain;
