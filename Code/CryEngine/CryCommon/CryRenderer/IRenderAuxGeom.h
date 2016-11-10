@@ -393,19 +393,19 @@ public:
 
 	static void Draw2dText(float posX, float posY, const AColor& color, const char* pStr)
 	{
-		DrawText(Vec3(posX, posX, 1.f), 1, AColor::white(), eDrawText_Default, pStr);
+		DrawText(Vec3(posX, posY, 1.f), 1, color, eDrawText_LegacyBehavior, pStr);
 	}
 
 	static void PrintToScreen(float x, float y, float size, const char* buf)
 	{
-		DrawText(Vec3(x, y, 1.f), ASize(size * 0.5f / 8, size * 1.f / 8), AColor::white(), eDrawText_800x600 | eDrawText_2D, buf);
+		DrawText(Vec3(x, y, 1.f), ASize(size * 0.5f / 8, size * 1.f / 8), AColor::white(), eDrawText_800x600 | eDrawText_2D | eDrawText_LegacyBehavior, buf);
 	}
 
 	static void WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		DrawText(Vec3(float(x), float(y), 1.f), ASize(xscale, yscale), AColor(r, g, b, a), eDrawText_800x600 | eDrawText_2D, format, args);
+		DrawText(Vec3(float(x), float(y), 1.f), ASize(xscale, yscale), AColor(r, g, b, a), eDrawText_800x600 | eDrawText_2D | eDrawText_LegacyBehavior, format, args);
 		va_end(args);
 	}
 
