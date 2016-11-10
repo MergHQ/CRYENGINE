@@ -4,6 +4,7 @@
 #include <CryCore/Platform/platform_impl.inl>
 #include "IPlugin.h"
 #include "EquipPack/EquipPackDialog.h"
+#include "EquipPack/EquipPackLib.h"
 
 // Force MFC to use this DllMain
 #ifdef _USRDLL
@@ -36,6 +37,8 @@ public:
 			}
 			return false;
 		}));
+
+		CEquipPackLib::GetRootEquipPack().LoadLibs(true);
 	}
 
 	void Release() override

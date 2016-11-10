@@ -83,8 +83,7 @@ IMPLEMENT_DYNAMIC(CEquipPackDialog, CXTResizeDialog)
 CEquipPackDialog::CEquipPackDialog(CWnd* pParent /*=NULL*/)
 	: CXTResizeDialog(CEquipPackDialog::IDD, pParent), m_pEquipPacks(nullptr)
 {
-	static CEquipPackLib equips;
-	m_pEquipPacks = &equips;
+	m_pEquipPacks = &CEquipPackLib::GetRootEquipPack();
 	m_sCurrEquipPack = "";
 }
 

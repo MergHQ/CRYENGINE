@@ -12,9 +12,10 @@
 
 #define EQUIPMENTPACKS_PATH "/Libs/EquipmentPacks/"
 
+CEquipPackLib CEquipPackLib::s_rootEquips;
+
 CEquipPackLib::CEquipPackLib()
 {
-	LoadLibs(true);
 }
 
 CEquipPackLib::~CEquipPackLib()

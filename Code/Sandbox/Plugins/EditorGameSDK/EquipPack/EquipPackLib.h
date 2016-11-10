@@ -26,9 +26,10 @@ public:
 	void                 Reset();
 	int                  Count() const             { return m_equipmentPacks.size(); }
 	const TEquipPackMap& GetEquipmentPacks() const { return m_equipmentPacks; }
+	static CEquipPackLib& GetRootEquipPack() { return s_rootEquips; }
 private:
 	void                 UpdateEnumDatabase();
 
-
+	static CEquipPackLib s_rootEquips;
 	TEquipPackMap        m_equipmentPacks;
 };
