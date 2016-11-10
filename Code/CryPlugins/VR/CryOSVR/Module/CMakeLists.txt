@@ -31,9 +31,13 @@ end_sources()
 if (WIN64)
 	CryEngineModule(CryOSVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-	target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/SDKs/OSVR/include )
-
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
+	target_include_directories( ${THIS_PROJECT}
+	PRIVATE
+		${CRYENGINE_DIR}/Code/SDKs/OSVR/include
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	PUBLIC
+		../Interface
+	)
 
 	find_library(osvrClientKit osvrClientKit PATHS "${SDK_DIR}/OSVR/lib")
 	find_library(osvrRenderManager osvrRenderManager PATHS "${SDK_DIR}/OSVR/lib")

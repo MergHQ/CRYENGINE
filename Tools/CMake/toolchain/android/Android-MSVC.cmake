@@ -259,7 +259,7 @@ macro(configure_android_launcher)
 	endif()
 
 	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD
-		COMMAND copy ${NATIVE_OUTDIR}\\lib${THIS_PROJECT}.so ${apk_folder_native}\\lib\\armeabi-v7a
+		COMMAND copy /Y ${NATIVE_OUTDIR}\\lib${THIS_PROJECT}.so ${apk_folder_native}\\lib\\armeabi-v7a\\libAndroidLauncher.so
 		${shared_copy}
 		COMMAND call $ENV{ANT_HOME}/bin/ant clean
 		COMMAND call $ENV{ANT_HOME}/bin/ant debug

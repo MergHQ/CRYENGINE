@@ -178,7 +178,7 @@ macro(configure_android_build)
 		"		-->\n"
 		"\n"
 		"		<!-- version-tag: 1 -->\n"
-		"		<import file=\"\\\${sdk.dir}/tools/ant/build.xml\" />\n"
+		"		<import file=\"\${sdk.dir}/tools/ant/build.xml\" />\n"
 		"	</project>\n"		
 	)
 
@@ -218,14 +218,16 @@ macro(configure_android_launcher name)
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
 	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
 
-	set(so_paths)
+	set(shared_copy)
 	if(NOT OPTION_STATIC_LINKING)
 		foreach(mod ${SHARED_MODULES})
-			set(so_paths "${so_paths} ${NATIVE_OUTDIR}\\lib${mod}.so")
+			set(shared_copy ${shared_copy} COMMAND copy ${NATIVE_OUTDIR}\\lib${mod}.so ${apk_folder_native}\\lib\\armeabi-v7a )
 		endforeach()
 	endif()
 
 	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD
+		COMMAND copy /Y ${NATIVE_OUTDIR}\\lib${THIS_PROJECT}.so ${apk_folder_native}\\lib\\armeabi-v7a\\libAndroidLauncher.so
+		${shared_copy}
 		COMMAND copy ${NATIVE_OUTDIR}\\lib${name}.so ${so_paths} ${apk_folder_native}\\lib\\armeabi-v7a\\
 		COMMAND call $ENV{ANT_HOME}/bin/ant clean
 		COMMAND call $ENV{ANT_HOME}/bin/ant debug

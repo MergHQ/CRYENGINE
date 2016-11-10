@@ -66,7 +66,12 @@ end_sources()
 if(WIN64)
 	CryEngineModule(CryDefaultEntities PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CryEngine_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
-	# Remove when we've switched to entity components
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CryEngine_DIR}/Code/CryEngine/CryAction PUBLIC ../Interface)
+	target_include_directories(${THIS_PROJECT}
+	PRIVATE 
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+		# Remove when we've switched to entity components
+		${CRYENGINE_DIR}/Code/CryEngine/CryAction
+	PUBLIC
+		../Interface
+	)
 endif()

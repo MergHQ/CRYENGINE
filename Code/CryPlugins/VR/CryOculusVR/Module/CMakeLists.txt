@@ -34,9 +34,13 @@ end_sources()
 if (WIN32 OR WIN64)
 	CryEngineModule(CryOculusVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-	target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/SDKs/OculusSDK/LibOVR/Include )
+	target_include_directories( ${THIS_PROJECT}
+	PRIVATE
+		${CRYENGINE_DIR}/Code/SDKs/OculusSDK/LibOVR/Include
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	PUBLIC
+		../Interface
+	)
 	
 	target_link_libraries( ${THIS_PROJECT} PRIVATE oculus )
-
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
 endif()

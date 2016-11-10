@@ -133,7 +133,7 @@ macro(copy_binary_files_to_target)
 
 	if(WIN32 AND OPTION_CRYMONO)
 		# Deploy mono runtime
-		# This does not work as intended if CryEngine_DIR is not equal to CMAKE_SOURCE_DIR and should be rethought
+		# This does not work as intended if CRYENGINE_DIR is not equal to CMAKE_SOURCE_DIR and should be rethought
 		deploy_runtime_dir(Code/SDKs/Mono ../../Engine/Mono)
 	endif()
 
@@ -149,7 +149,7 @@ macro(copy_binary_files_to_target)
 			list(GET DEPLOY_FILES ${idxIncr} destination)
 
 			add_custom_command(OUTPUT ${destination} 
-				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CryEngine_DIR}/Tools/CMake/deploy_runtime_files.cmake
+				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CRYENGINE_DIR}/Tools/CMake/deploy_runtime_files.cmake
 				COMMENT "Deploying ${source}"
 				DEPENDS ${source})
 

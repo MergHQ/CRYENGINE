@@ -37,10 +37,15 @@ end_sources()
 
 CryEngineModule(CrySensorSystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryExtensions/CrySchematyc/STDEnv/Interface)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryExtensions/CryLink/Interface)
+target_include_directories(${THIS_PROJECT}
+PRIVATE 
+	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface
+	${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc/STDEnv/Interface
+	${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
+PUBLIC
+	../Interface
+)
 
 if(LINUX)
         target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)

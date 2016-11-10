@@ -46,7 +46,7 @@ end_sources()
 
 CryGameModule(CryGameZero PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameZero")
 
-target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
+target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
 
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )

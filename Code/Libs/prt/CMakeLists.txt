@@ -93,7 +93,13 @@ end_sources()
 if(WIN64)
 	CryEngineStaticModule(prt SOLUTION_FOLDER "Libs")
 
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CryEngine_DIR}/Code/Tools ${CryEngine_DIR}/Code/Tools/SphericalHarmonics PUBLIC ${CryEngine_DIR}/Code/Tools/PRT)
+	target_include_directories(${THIS_PROJECT}
+	PRIVATE 
+		${CRYENGINE_DIR}/Code/Tools
+		${CRYENGINE_DIR}/Code/Tools/SphericalHarmonics
+	PUBLIC
+		${CRYENGINE_DIR}/Code/Tools/PRT
+	)
 
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPRT_COMPILE -DOFFLINE_COMPUTATION )
 	target_link_libraries( ${THIS_PROJECT} PRIVATE tiff )

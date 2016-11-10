@@ -1363,11 +1363,11 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/Code/CryPlugins/CryLobby "${CMAKE_CURRENT_BINARY_DIR}/CryLobby")
+add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryLobby "${CMAKE_CURRENT_BINARY_DIR}/CryLobby")
 
 CryGameModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
 
-target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
+target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 

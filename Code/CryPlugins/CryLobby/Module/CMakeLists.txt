@@ -147,12 +147,12 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
-target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryPlugins/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>)
-target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon/CryLobby> $<INSTALL_INTERFACE:include/CryCommon/CryLobby>)
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork ${SDK_DIR}/speex-1.0.5/include)
-
-target_include_directories(${THIS_PROJECT} PRIVATE 
-	${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork 
+target_include_directories(${THIS_PROJECT}
+PUBLIC
+	$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryPlugins/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>
+	$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryLobby> $<INSTALL_INTERFACE:include/CryCommon/CryLobby>
+PRIVATE
+	${CRYENGINE_DIR}/Code/CryEngine/CryNetwork
 	${SDK_DIR}/speex-1.0.5/include
 )
 

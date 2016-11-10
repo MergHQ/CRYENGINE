@@ -129,5 +129,13 @@ end_sources()
 
 CryPlugin(EditorSchematyc PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DSCHEMATYC_PLUGIN_EXPORTS)
-target_include_directories(${THIS_PROJECT} PRIVATE GeneratedFiles ${CryEngine_DIR}/Code/CryEngine/CryAction ${CryEngine_DIR}/Code/CryExtensions/CryLink/Interface ${CryEngine_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface ${CryEngine_DIR}/Code/Sandbox/EditorQt/Include ${CryEngine_DIR}/Code/Sandbox/EditorQt)
+target_include_directories(${THIS_PROJECT}
+PRIVATE
+	GeneratedFiles
+	${CRYENGINE_DIR}/Code/CryEngine/CryAction
+	${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
+	${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface
+	${CRYENGINE_DIR}/Code/Sandbox/EditorQt/Include
+	${CRYENGINE_DIR}/Code/Sandbox/EditorQt
+)
 use_xt()

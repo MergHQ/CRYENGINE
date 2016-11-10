@@ -33,9 +33,13 @@ end_sources()
 if(WIN32 OR WIN64 OR APPLE OR LINUX)
 	CryEngineModule(CryOpenVR PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-	target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/SDKs/OpenVR/headers )
-
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon PUBLIC ../Interface)
+	target_include_directories( ${THIS_PROJECT}
+	PRIVATE
+		${CRYENGINE_DIR}/Code/SDKs/OpenVR/headers
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	PUBLIC
+		../Interface
+	)
 
 	if(WIN64)
 		find_library(openvr_api openvr_api PATHS "${SDK_DIR}/OpenVR/lib/win64")
