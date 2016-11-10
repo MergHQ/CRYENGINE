@@ -2481,7 +2481,7 @@ bool CSystem::Init()
 #endif
 
 #if !defined(DEDICATED_SERVER)
-	if (m_env.pRenderer)
+	if (!m_startupParams.bSkipRenderer)
 	{
 		m_pHmdManager = new CHmdManager();
 	}
@@ -2801,7 +2801,7 @@ L_done:;
 
 		m_FrameProfileSystem.Init(m_sys_profile_allThreads->GetIVal());
 
-		if (!m_env.pRenderer)
+		if (!m_startupParams.bSkipRenderer)
 		{			
 			CreateRendererVars();
 		}
@@ -2896,7 +2896,7 @@ L_done:;
 		}
 
 #if CRY_PLATFORM_WINDOWS
-		if (!m_env.pRenderer)
+		if (!m_startupParams.bSkipRenderer)
 		{
 			if (stricmp(m_rDriver->GetString(), "Auto") == 0)
 			{
@@ -4752,12 +4752,13 @@ void CSystem::CreateSystemVars()
 		m_pCVarQuit = REGISTER_INT("ExitOnQuit", 1, VF_NULL, "");
 	}
 	else
+	{
 		m_pCVarQuit = REGISTER_INT("ExitOnQuit", 0, VF_NULL, "");
+		REGISTER_COMMAND("quit", "System.Quit()", VF_RESTRICTEDMODE, "Quit/Shutdown the engine");
+	}
 #else
 	m_pCVarQuit = REGISTER_INT("ExitOnQuit", 1, VF_NULL, "");
 #endif
-
-	REGISTER_COMMAND("quit", "System.Quit()", VF_RESTRICTEDMODE, "Quit/Shutdown the engine");
 
 #ifndef _RELEASE
 	REGISTER_STRING_CB("sys_version", "", VF_CHEAT, "Override system file/product version", SystemVersionChanged);
