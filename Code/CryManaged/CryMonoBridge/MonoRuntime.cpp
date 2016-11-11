@@ -15,6 +15,7 @@
 #include "NativeComponents/GameRules.h"
 
 #include <CrySystem/ILog.h>
+#include <CryAISystem/IAISystem.h>
 
 #include <mono/metadata/mono-gc.h>
 #include <mono/utils/mono-logger.h>
