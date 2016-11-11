@@ -27,7 +27,6 @@ float GetQuatAbsAngle(const Quat& q)
 {
 	//float fwd = q.GetColumn1().y;
 	float fwd = q.GetFwdY();
-	fwd = clamp_tpl(fwd, -1.0f, 1.0f);
 	return acos_tpl(fwd);
 }
 

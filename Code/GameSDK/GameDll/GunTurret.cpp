@@ -825,7 +825,7 @@ bool CGunTurret::IsAiming(const Vec3 &pos, float treshold) const
 	Vec3 weaponDir = GetWeaponDir().normalized();
 	float dot = weaponDir.Dot(tdir);
 
-	float angle=RAD2DEG(acos_tpl(CLAMP(dot,-1.f,1.f)));
+	float angle=RAD2DEG(acos_tpl(dot));
 	if (fabs_tpl(angle)>treshold)
 		return false;
 	return true;
@@ -989,7 +989,7 @@ bool CGunTurret::GetTargetAngles(const Vec3& targetPos, float& z, float& x) cons
 	else
 	{
 		targetDirZ.Normalize();    
-		float cosZ = max(-1.f, min(1.f, FORWARD_DIRECTION * targetDirZ));   
+		float cosZ = FORWARD_DIRECTION * targetDirZ;   
 		z = acos_tpl(cosZ) * -sgnnz(targetDirZ.x);
 		if (z<0.0f)
 			z+=gf_PI2;
@@ -1006,8 +1006,8 @@ bool CGunTurret::GetTargetAngles(const Vec3& targetPos, float& z, float& x) cons
 		targetDirX.Normalize();
 		targetDirBase.Normalize();
 
-		float cosX = max(-1.f, min(1.f, targetDirBase * targetDirX));    
-		x = acos_tpl(cosX) * sgnnz(targetDirX.z);    
+		float cosX = targetDirBase * targetDirX;
+		x = acos_tpl(cosX) * sgnnz(targetDirX.z);
 	}
 
 	return true;

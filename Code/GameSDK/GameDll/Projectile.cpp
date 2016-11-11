@@ -1576,8 +1576,6 @@ void CProjectile::Ricochet(EventPhysCollision* pCollision)
 		return;
 
 	f32 cosine = dir.Dot(-pCollision->n);
-	if (cosine > 1.0f) cosine = 1.0f;
-	if (cosine < -1.0f) cosine = -1.0f;
 	float angle = RAD2DEG(fabs_tpl(acos_tpl(cosine)));
 	if (angle < 10.0f)
 		return;

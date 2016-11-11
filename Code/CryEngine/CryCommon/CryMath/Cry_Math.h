@@ -137,6 +137,10 @@ template<> ILINE uint32 max(uint32 v0, uint32 v1)
 namespace crymath
 {
 
+//
+// Limiting and rounding functions
+//
+
 using std::abs;
 using std::floor;
 using std::ceil;
@@ -148,11 +152,20 @@ ILINE f32 trunc(f32 op) { return ::truncf(op); }
 ILINE f64 trunc(f64 op) { return ::trunc(op); }
 #endif
 
+template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
+template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
+
+//
+// Mathematical functions
+//
+
 using std::sin;
 using std::cos;
 using std::tan;
-using std::asin;
-using std::acos;
+
+template<typename T> ILINE T asin(T op) { return std::asin(clamp(op, T(-1), T(1))); }
+template<typename T> ILINE T acos(T op) { return std::acos(clamp(op, T(-1), T(1))); }
+
 using std::atan;
 using std::atan2;
 
@@ -164,7 +177,9 @@ using std::log;
 using std::pow;
 using std::sqrt;
 
-// Define rcp, rsqrt, etc for different platforms. Using std::sqrt (already optimal for x64)
+//
+// Define rcp, rsqrt, etc for different platforms.
+//
 
 #if CRY_PLATFORM_SSE2
 
@@ -262,13 +277,15 @@ ILINE f64 sign(f64 op) { return if_else_zero(op, signnz(op)); }
 
 } // namespace crymath
 
+template<typename F> ILINE F sqr(const F& op)         { return op * op; }
+template<typename F> ILINE F square(const F& op)      { return op * op; }  //!< Deprecated
+template<typename F> ILINE F sqr_signed(const F& op)  { return op * crymath::abs(op); }
+template<typename F> ILINE F cube(const F& op)        { return op * op * op; }
+
 #include "Cry_Math_SSE.h"
 
 namespace crymath
 {
-
-template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
-template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
 
 // std::fmod is extremely slow
 template<typename T> ILINE T mod(T a, T b)
@@ -290,20 +307,20 @@ template<typename T> ILINE T wrap(T f, T lo, T hi)
 template<typename T>
 int solve_quadratic(T a, T b, T c, T x[2])
 {
-	if (a == T(0))
+	if (!a)
 	{
-		if (b != T(0))
+		if (b)
 		{
 			x[0] = -c / b;
 			return 1;
 		}
-		if (c != T(0))
+		if (c)
 			return 0;
 		return -1;
 	}
 	else
 	{
-		b /= T(-2);
+		b *= T(-0.5);
 		T d = b * b - a * c;
 
 		if (d > T(0))
@@ -315,7 +332,7 @@ int solve_quadratic(T a, T b, T c, T x[2])
 			x[1] = (b - s) * ia;
 			return 2;
 		}
-		if (d == T(0))
+		if (!d)
 		{
 			x[0] = b / a;
 			return 1;
@@ -342,11 +359,6 @@ ILINE float                  ufrac8_to_float(float u)     { return u * (1.f / 25
 ILINE float                  ifrac8_to_float(float i)     { return i * (1.f / 127.f); }
 ILINE uint8                  float_to_ufrac8(float f)     { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
 ILINE int8                   float_to_ifrac8(float f)     { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
-
-template<typename F> ILINE F sqr(const F& op)             { return op * op; }
-template<typename F> ILINE F square(const F& op)          { return op * op; } //!< Deprecated
-template<typename F> ILINE F sqr_signed(const F& op)      { return op * crymath::abs(op); }
-template<typename F> ILINE F cube(const F& op)            { return op * op * op; }
 
 //! Safely divides 2 numbers, with a specified maximum positive result
 ILINE float div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }

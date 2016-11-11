@@ -1251,7 +1251,7 @@ void CPlayerMovementController::Update( float frameTime, SActorFrameMovementPara
 		{
 			Vec3 localVDir(m_pPlayer->GetViewQuat().GetInverted() * viewDir);
 			PMC_CHECKQNAN_VEC(localVDir);
-			params.deltaAngles.x += asin_tpl(clamp_tpl(localVDir.z,-1.0f,1.0f));
+			params.deltaAngles.x += asin_tpl(localVDir.z);
 			params.deltaAngles.z += atan2_tpl(-localVDir.x,localVDir.y);
 		}
 	}
@@ -1269,7 +1269,7 @@ void CPlayerMovementController::Update( float frameTime, SActorFrameMovementPara
 		{
 			Vec3 localVDir(m_pPlayer->GetViewQuat().GetInverted() * viewDir);
 			PMC_CHECKQNAN_VEC(localVDir);
-			params.deltaAngles.x += asin_tpl(clamp_tpl(localVDir.z,-1.0f,1.0f));
+			params.deltaAngles.x += asin_tpl(localVDir.z);
 			params.deltaAngles.z += atan2_tpl(-localVDir.x,localVDir.y);
 		}
 
@@ -1296,7 +1296,7 @@ void CPlayerMovementController::Update( float frameTime, SActorFrameMovementPara
 				m_cornerSmoother.SmoothLocalVDir(&localVDir, frameTime);
 			}
 
-			params.deltaAngles.x += asin_tpl(clamp_tpl(localVDir.z,-1.0f,1.0f));
+			params.deltaAngles.x += asin_tpl(localVDir.z);
 			params.deltaAngles.z += atan2_tpl(-localVDir.x,localVDir.y);
 
 			if (actorParams.smoothedZTurning && !isMoving)

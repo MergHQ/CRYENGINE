@@ -330,7 +330,7 @@ void CAnimatedCharacter::ComputeGroundSlope()
 
 	m_pSkeletonAnim->SetDesiredMotionParam(eMotionParamID_TravelSlope, m_fGroundSlopeMoveDirSmooth, time);
 
-	float fGroundAngle = RAD2DEG(acos_tpl(clamp_tpl(rootNormal.z, -1.0f, 1.0f)));
+	float fGroundAngle = RAD2DEG(acos_tpl(rootNormal.z));
 	if (fGroundAngle > 35.0f)
 		fGroundAngle = 35.0f;
 	SmoothCD(m_fGroundSlopeSmooth, m_fGroundSlopeRate, time, fGroundAngle, 0.20f);

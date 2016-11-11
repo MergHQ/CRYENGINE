@@ -926,7 +926,6 @@ void CCooperativeAnimation::DetermineReferencePositionAndCalculateTargets()
 
 			// get the rotation between those vectors (z axis rotation, from worldDir to animDir)
 			float fDot = secondPos * firstToSecW;
-			fDot = clamp_tpl(fDot, -1.0f, 1.0f);
 			float angle = acos_tpl(fDot);
 
 			// cross product to determine if the angle needs to be flipped - but only z component is relevant

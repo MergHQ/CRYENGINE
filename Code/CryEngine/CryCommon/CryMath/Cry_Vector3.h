@@ -787,7 +787,7 @@ template<typename F> struct Ang3_tpl : Vec3_tpl<F>
 	template<class F1> explicit Ang3_tpl(const Quat_tpl<F1>& q)
 	{
 		CRY_MATH_ASSERT(q.IsValid());
-		y = F(asin_tpl(max((F)-1.0, min((F)1.0, -(q.v.x * q.v.z - q.w * q.v.y) * 2))));
+		y = asin_tpl(-(q.v.x * q.v.z - q.w * q.v.y) * 2);
 		if (fabs_tpl(fabs_tpl(y) - (F)((F)g_PI * (F)0.5)) < (F)0.01)
 		{
 			x = F(0);
@@ -804,7 +804,7 @@ template<typename F> struct Ang3_tpl : Vec3_tpl<F>
 	template<class F1> explicit Ang3_tpl(const Matrix33_tpl<F1>& m)
 	{
 		CRY_MATH_ASSERT(m.IsOrthonormalRH(0.001f));
-		y = (F)asin_tpl(max((F)-1.0, min((F)1.0, -m.m20)));
+		y = asin_tpl(-m.m20);
 		if (fabs_tpl(fabs_tpl(y) - (F)((F)g_PI * (F)0.5)) < (F)0.01)
 		{
 			x = F(0);
@@ -821,7 +821,7 @@ template<typename F> struct Ang3_tpl : Vec3_tpl<F>
 	template<class F1> explicit Ang3_tpl(const Matrix34_tpl<F1>& m)
 	{
 		CRY_MATH_ASSERT(m.IsOrthonormalRH(0.001f));
-		y = F(asin_tpl(max((F)-1.0, min((F)1.0, -m.m20))));
+		y = asin_tpl(-m.m20);
 		if (fabs_tpl(fabs_tpl(y) - (F)((F)g_PI * (F)0.5)) < (F)0.01)
 		{
 			x = F(0);
@@ -838,7 +838,7 @@ template<typename F> struct Ang3_tpl : Vec3_tpl<F>
 	template<class F1> explicit Ang3_tpl(const Matrix44_tpl<F1>& m)
 	{
 		CRY_MATH_ASSERT(Matrix33(m).IsOrthonormalRH(0.001f));
-		y = F(asin_tpl(max((F)-1.0, min((F)1.0, -m.m20))));
+		y = asin_tpl(-m.m20);
 		if (fabs_tpl(fabs_tpl(y) - (F)((F)g_PI * (F)0.5)) < (F)0.01)
 		{
 			x = F(0);

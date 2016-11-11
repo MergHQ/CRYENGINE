@@ -458,7 +458,7 @@ void CLocalPlayerComponent::AdjustTorsoAimDir(float fFrameTime, Vec3 &aimDir)
 		if (xy > 0.001f)
 		{
 			yaw = atan2_tpl(aimDir.y,aimDir.x);
-			elev = asin_tpl(clamp_tpl(aimDir.z, -1.f, +1.f));
+			elev = asin_tpl(aimDir.z);
 		}
 		else
 		{

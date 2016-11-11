@@ -70,7 +70,7 @@ void CMountedGunController::Update(EntityId mountedGunID, float frameTime)
 		if(!m_pControlledPlayer->IsPlayer())
 		{
 			const Vec3 currentDir = lastMountedGunWorldTM.GetColumn1();
-			const float dot = clamp_tpl(currentDir.Dot(desiredAimDirection), -1.0f, 1.0f);
+			const float dot = currentDir.Dot(desiredAimDirection);
 			const float reqAngle = acos_tpl(dot);
 			const float maxRotSpeed = 2.0f;
 			const float maxAngle = frameTime * maxRotSpeed;

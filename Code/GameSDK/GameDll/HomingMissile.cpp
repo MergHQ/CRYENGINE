@@ -351,7 +351,6 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 			}
 
 			float cosine = currentVel.Dot(goalDir);
-			cosine = CLAMP(cosine,-1.0f,1.0f);
 			float totalAngle = RAD2DEG(acos_tpl(cosine));
 
 			assert(totalAngle>=0);

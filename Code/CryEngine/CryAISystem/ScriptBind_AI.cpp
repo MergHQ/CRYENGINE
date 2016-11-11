@@ -10238,7 +10238,7 @@ int CScriptBind_AI::CheckMeleeDamage(IFunctionHandler* pH)
 		Vec3 targetdirN(targetdir.GetNormalizedSafe());
 
 		float dot = mydirN.Dot(targetdirN);
-		float myangle = acos_tpl(clamp_tpl(dot, -1.0f, 1.0f));
+		float myangle = acos_tpl(dot);
 		if (myangle > angle / 2)
 			return pH->EndFunction();
 
