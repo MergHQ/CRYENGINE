@@ -49,6 +49,16 @@
 		"jsmn",
 		"png16",
 		"jpeg",
+		"libogg_dynamic",
+		"libogg_static",
+		"libvorbis_dynamic",
+		"libvorbis_static",
+		"libvorbisfile",
+		"native_midi",
+		"sdl_mixer_static",
+		"sdl_mixer_dynamic",
+		"smpeg",
+		"timidity",
 
 		"CryGameSDK"
 	],

@@ -1,0 +1,12 @@
+{
+	"NoUberFile": 
+	{
+		"Root":
+		[
+			"../../SDKs/SDL_mixer/native_midi/native_midi.h",
+			"../../SDKs/SDL_mixer/native_midi/native_midi_common.c",
+			"../../SDKs/SDL_mixer/native_midi/native_midi_common.h",
+			"../../SDKs/SDL_mixer/native_midi/native_midi_win32.c"
+		]
+	}
+}

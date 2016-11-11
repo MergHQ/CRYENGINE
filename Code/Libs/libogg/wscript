@@ -1,0 +1,48 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'libogg_static', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'libogg.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "libogg",
+		
+		includes = [ Path('Code/SDKs/libogg/include')],	
+		
+		defines = ['_USRDLL', 'LIBOGG_EXPORTS'],
+		
+		win_cflags    = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+			
+		win_linkflags = ['/DEF:' + Path('Code/SDKs/libogg/win32/ogg.def')],
+			
+		module_provides = dict(
+			includes = [ 	Path('Code/SDKs/libogg/include')	]
+			)
+	)
+	
+	bld.CreateDynamicModule( 
+		target    = 'libogg_dynamic', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'libogg.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "libogg",
+		
+		includes = [ Path('Code/SDKs/libogg/include')],	
+		
+		win_linkflags = ['/DEF:' + Path('Code/SDKs/libogg/win32/ogg.def')],
+		
+		win_cflags    = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+			
+		module_provides = dict(
+			includes = [ 	Path('Code/SDKs/libogg/include')	]
+			)
+	)
+	

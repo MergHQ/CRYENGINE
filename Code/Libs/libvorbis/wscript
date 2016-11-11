@@ -1,0 +1,65 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule(
+		target    = 'libvorbis_static',
+		vs_filter = 'Libs/Audio',
+		file_list = 'libvorbis.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "libvorbis",
+				
+		includes = [ Path('Code/SDKs/libvorbis/include')],
+		
+		defines = ['_USRDLL', 'LIBVORBIS_EXPORTS'],
+		
+		win_linkflags = ['/DEF:' + Path('Code/SDKs/libvorbis/win32/vorbis.def')],
+		
+		use_module = ['libogg_static'],
+
+		win_cflags    = [
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+	)
+	
+	bld.CreateDynamicModule(
+		target    = 'libvorbis_dynamic', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'libvorbis.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "libvorbis",
+				
+		includes = [ Path('Code/SDKs/libvorbis/include')],
+		
+		defines = ['_USRDLL', 'LIBVORBIS_EXPORTS'],
+		
+		win_linkflags = ['/DEF:' + Path('Code/SDKs/libvorbis/win32/vorbis.def')],
+		
+		use_module = ['libogg_static'],
+
+		win_cflags    = [
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+	)
+	
+	bld.CreateDynamicModule( 
+		target    = 'libvorbisfile', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'libvorbisfile.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		includes = [ Path('Code/SDKs/libvorbis/include') ],
+		
+		use_module = ['libogg_static', 'libvorbis_static'],
+		
+		defines = ['_USRDLL', 'LIBVORBISFILE_EXPORTS'],
+		
+		win_linkflags = ['/DEF:' + Path('Code/SDKs/libvorbis/win32/vorbisfile.def')],
+		  
+		win_cflags    = [
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+	)
+	

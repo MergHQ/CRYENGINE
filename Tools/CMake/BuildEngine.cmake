@@ -104,6 +104,10 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/md5" "${CMAKE_BINARY_DIR}/Libs/md5
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/tomcrypt" "${CMAKE_BINARY_DIR}/Libs/tomcrypt")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/yasli" "${CMAKE_BINARY_DIR}/Libs/yasli")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/zlib" "${CMAKE_BINARY_DIR}/Libs/zlib")
+add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libogg" "${CMAKE_BINARY_DIR}/Libs/libogg")
+add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libvorbis" "${CMAKE_BINARY_DIR}/Libs/libvorbis")
+add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/SDL_mixer" "${CMAKE_BINARY_DIR}/Libs/SDL_mixer")
+add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/smpeg" "${CMAKE_BINARY_DIR}/Libs/smpeg")
 
 #extensions
 #add_subdirectory ("${CRYENGINE_DIR}/Code/CryExtensions/CryLink" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink")

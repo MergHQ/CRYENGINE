@@ -1,0 +1,121 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'sdl_mixer_static', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'SDL_mixer.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "SDL2_mixer",
+		
+		includes = [Path('Code/SDKs/SDL_mixer')],
+		win_includes = [Path('Code/SDKs/SDL_mixer/VisualC/external/include')],
+		
+		use_module = ['timidity', 'native_midi'],		
+		module_extensions = ['sdl2'],
+		
+		win_lib = ['Winmm'],
+		
+		win_cflags    = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+
+		defines = [
+			'WAV_MUSIC',
+			'MODPLUG_MUSIC',
+			'MODPLUG_DYNAMIC="libmodplug-1.dll"',
+			'OGG_MUSIC',
+			'OGG_DYNAMIC="libvorbisfile.dll"',
+			'FLAC_MUSIC',
+			'FLAC_DYNAMIC="libFLAC-8.dll"',
+			'MP3_MUSIC',
+			'MP3_DYNAMIC="smpeg2.dll"',
+			'MID_MUSIC',
+			'USE_TIMIDITY_MIDI',
+			'USE_NATIVE_MIDI'
+		],
+		
+		module_provides = dict(
+			includes = [Path('Code/SDKs/SDL_mixer')],			
+			win_lib = ['Winmm']
+		)
+	)
+	
+	bld.CreateDynamicModule(
+		target    = 'sdl_mixer_dynamic', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'SDL_mixer.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		output_file_name = "SDL2_mixer",
+		
+		includes = [Path('Code/SDKs/SDL_mixer')],
+		win_includes = [Path('Code/SDKs/SDL_mixer/VisualC/external/include')],
+		
+		use_module = ['timidity', 'native_midi'],		
+		module_extensions = ['sdl2'],
+		
+		win_lib = ['Winmm'],
+			
+		win_cflags    = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+
+		defines = [
+			'WAV_MUSIC',
+			'MODPLUG_MUSIC',
+			'MODPLUG_DYNAMIC="libmodplug-1.dll"',
+			'OGG_MUSIC',
+			'OGG_DYNAMIC="libvorbisfile.dll"',
+			'FLAC_MUSIC',
+			'FLAC_DYNAMIC="libFLAC-8.dll"',
+			'MP3_MUSIC',
+			'MP3_DYNAMIC="smpeg2.dll"',
+			'MID_MUSIC',
+			'USE_TIMIDITY_MIDI',
+			'USE_NATIVE_MIDI'
+		],
+		
+		module_provides = dict(
+			includes = [Path('Code/SDKs/SDL_mixer')],			
+			win_lib = ['Winmm']
+		)
+	)
+	
+	bld.CryEngineStaticModule( 
+		target    = 'timidity', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'timidity.waf_files',
+		exclude_from_static_code_analyzer = True,		
+		includes = [Path('Code/SDKs/SDL_mixer/timidity')],
+		
+		module_extensions = ['sdl2'],			
+		
+		win_cflags = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],
+
+		module_provides = dict(
+			includes = [Path('Code/SDKs/SDL_mixer/timidity')],
+		)
+	)
+	
+	bld.CryEngineStaticModule( 
+		target    = 'native_midi', 
+		vs_filter = 'Libs/Audio',
+		file_list = 'native_midi.waf_files',
+		exclude_from_static_code_analyzer = True,		
+		includes = [Path('Code/SDKs/SDL_mixer/native_midi')],
+		
+		module_extensions = ['sdl2'],	
+
+		win_cflags    = [		
+			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+			],		
+
+		module_provides = dict(
+			includes = [Path('Code/SDKs/SDL_mixer/native_midi')],
+		)	
+	)
