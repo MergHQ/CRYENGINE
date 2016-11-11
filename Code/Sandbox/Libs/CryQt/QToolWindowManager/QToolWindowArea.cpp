@@ -21,14 +21,14 @@ QToolWindowArea::QToolWindowArea(QToolWindowManager* manager, QWidget *parent /*
 	m_tabDragCanStart(false), 
 	m_areaDragCanStart(false)
 {
+	setTabBar(new QToolWindowTabBar(this));
 	setMovable(true);
 	setTabShape(QTabWidget::Rounded);
 	setDocumentMode(m_manager->config().value(QTWM_AREA_DOCUMENT_MODE, true).toBool());
 	m_useCustomTabCloseButton = m_manager->config().value(QTWM_AREA_TABS_CLOSABLE, false).toBool() && m_manager->config().contains(QTWM_TAB_CLOSE_ICON);
 	setTabsClosable(m_manager->config().value(QTWM_AREA_TABS_CLOSABLE, false).toBool() && !m_useCustomTabCloseButton);
 	setTabPosition((QTabWidget::TabPosition)m_manager->config().value(QTWM_AREA_TAB_POSITION, QTabWidget::North).toInt());
-	
-	setTabBar(new QToolWindowTabBar(this));
+
 	tabBar()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	bool areaUseImageHandle = m_manager->config().value(QTWM_AREA_IMAGE_HANDLE, false).toBool();
 	m_tabFrame = new QToolWindowSingleTabAreaFrame(manager, this);

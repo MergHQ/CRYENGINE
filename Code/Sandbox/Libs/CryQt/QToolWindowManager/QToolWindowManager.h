@@ -15,8 +15,9 @@
 class IToolWindowDragHandler;
 class QToolWindowManager;
 
-class QTOOLWINDOWMANAGER_EXPORT QToolWindowManagerClassFactory
+class QTOOLWINDOWMANAGER_EXPORT QToolWindowManagerClassFactory : public QObject
 {
+	Q_OBJECT
 public:
 	virtual IToolWindowArea* createArea(QToolWindowManager* manager, QWidget *parent = 0);
 	virtual IToolWindowWrapper* createWrapper(QToolWindowManager* manager);
@@ -155,9 +156,9 @@ public:
 	void finishWrapperDrag();
 
 	QVariantMap saveWrapperState(IToolWindowWrapper* wrapper);
-	IToolWindowWrapper* restoreWrapperState(const QVariantMap &data, int stateFormat, IToolWindowWrapper* wrapper = nullptr);
-	QVariantMap saveSplitterState(QSplitter *splitter);
-	QSplitter *restoreSplitterState(const QVariantMap &data, int stateFormat);
+	IToolWindowWrapper* restoreWrapperState(const QVariantMap& data, int stateFormat, IToolWindowWrapper* wrapper = nullptr);
+	QVariantMap saveSplitterState(QSplitter* splitter);
+	QSplitter* restoreSplitterState(const QVariantMap& data, int stateFormat);
 
 	IToolWindowArea* createArea();
 	IToolWindowWrapper* createWrapper();
@@ -165,9 +166,13 @@ public:
 	class QTOOLWINDOWMANAGER_EXPORT QTWMNotifyLock
 	{
 	public:
-		QTWMNotifyLock(QToolWindowManager* parent, bool allowNotify=true);
+		QTWMNotifyLock(QToolWindowManager* parent, bool allowNotify = true);
+		QTWMNotifyLock(const QTWMNotifyLock& other);
+		QTWMNotifyLock(QTWMNotifyLock&& other);
+		
+
+
 		~QTWMNotifyLock();
-		QTWMNotifyLock(QTWMNotifyLock&&) = default;
 	private:
 		QToolWindowManager* m_parent;
 		bool m_notify;
@@ -176,6 +181,8 @@ public:
 	QTWMNotifyLock getNotifyLock(bool allowNotify = true) { return QTWMNotifyLock(this, allowNotify); }
 	
 	void hide() { m_mainWrapper->getWidget()->hide(); }
+	void show() { m_mainWrapper->getWidget()->show(); }
+	void clear();
 
 	void bringAllToFront();
 	void bringToFront(QWidget* toolWindow);

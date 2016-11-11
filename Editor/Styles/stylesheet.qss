@@ -1150,7 +1150,7 @@ QToolWindowSingleTabAreaFrame > QLabel {
 	border-top-right-radius:2px;
 }
 
-QToolWindowSingleTabAreaFrame #closeButton {
+QToolWindowSingleTabAreaFrame > #closeButton {
 	border:0;
 	/*background-color: rgb(66,66,66);*/
 	background: qlineargradient(y1:1,

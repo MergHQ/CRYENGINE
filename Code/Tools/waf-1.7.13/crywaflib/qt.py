@@ -169,10 +169,10 @@ class qt_moc(Task.Task):
 	def run (self):
 		env = self.env
 		
-		cmd = '"%s" %s %s %s %s %s' % (
+		cmd = '"%s" %s %s %s %s %s %s' % (
 			env['MOC'],
 			' '.join(env['MOC_FLAGS']),
-			#' '.join([env.MOC_CPPPATH_ST % x for x in env.INCPATHS]), # currently incompatible with some WinSDK 10 libraries
+			' '.join([env['MOC_CPPPATH_ST'] % x for x in env['INCPATHS'] if os.path.abspath(x).startswith(self.generator.bld.CreateRootRelativePath('Code')) and not os.path.abspath(x).startswith(self.generator.bld.CreateRootRelativePath('Code/SDKs'))]),
 			' '.join([env['MOC_DEFINES_ST'] % x for x in env['DEFINES']]),
 			env['MOC_PCH_ST'] % env['MOC_PCH'] if env['MOC_PCH'] else '',
 			'%s"%s"' % (env['MOC_ST'], self.inputs[0].abspath()),

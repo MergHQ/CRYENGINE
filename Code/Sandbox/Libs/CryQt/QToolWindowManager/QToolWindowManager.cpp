@@ -32,6 +32,10 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 #ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
 	QToolWindowTaskbarHandler::Create(this);
 #endif
+	if (!m_factory->parent())
+	{
+		m_factory->setParent(this);
+	}
 	m_mainWrapper = new QToolWindowWrapper(this);
 	setLayout(new QVBoxLayout(this));
 	layout()->setMargin(0);
@@ -47,6 +51,8 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 
 	m_raiseTimer = new QTimer(this);
 	connect(m_raiseTimer, SIGNAL(timeout()), this, SLOT(raiseCurrentArea()));
+
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	if (parent && parent->styleSheet() != styleSheet())
 	{
@@ -67,7 +73,6 @@ QToolWindowManager::~QToolWindowManager()
 	{
 		delete m_wrappers.first();
 	}
-	delete m_factory;
 	delete m_dragHandler;
 }
 
@@ -159,7 +164,7 @@ void QToolWindowManager::startDrag(const QList<QWidget*> &toolWindows, IToolWind
 
 	QRect floatingGeometry = QRect(QCursor::pos(), area->size());
 	moveToolWindows(toolWindows, nullptr, AreaReference::Drag, -1, floatingGeometry);
-
+	m_lastArea = nullptr;
 	updateDragPosition();
 }
 
@@ -167,7 +172,7 @@ void QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
 {
 	m_dragHandler->startDrag();
 	m_draggedWrapper = wrapper;
-
+	m_lastArea = nullptr;
 	updateDragPosition();
 }
 
@@ -206,7 +211,19 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 	}
 	if (!area)
 	{
-		area = m_lastArea ? m_lastArea : m_areas.first();
+		if (m_lastArea)
+		{
+			area = m_lastArea;
+		}
+		else if (!m_areas.isEmpty())
+		{
+			area = m_areas.first();
+		}
+		else
+		{
+			area = m_lastArea = createArea();
+			m_mainWrapper->setContents(m_lastArea->getWidget());
+		}
 	}
 	switch (reference)
 	{
@@ -283,12 +300,13 @@ bool QToolWindowManager::eventFilter(QObject* o, QEvent* e)
 
 	switch (e->type())
 	{
-	case QEvent::Close:
+	case QEvent::Destroy:
 		if (!m_closingWindow && ownsToolWindow(w) && w->isVisible())
 		{
 			releaseToolWindow(w, true);
 			return false;
 		}
+		break;
 	default:
 		break;
 	}
@@ -305,6 +323,18 @@ bool QToolWindowManager::event(QEvent* e)
 			setStyleSheet(parentWidget()->styleSheet());
 		}
 	}
+#if defined(WIN32) || defined(WIN64)
+	if (e->type() == QEvent::ParentChange && m_config.value(QTWM_WRAPPERS_ARE_CHILDREN, false).toBool())
+	{
+		foreach(IToolWindowWrapper* wrapper, m_wrappers)
+		{
+			if (wrapper->getWidget()->isWindow() && wrapper->getContents())
+			{
+				SetWindowLongPtr((HWND)wrapper->getWidget()->winId(), GWLP_HWNDPARENT, (LONG_PTR)(this->winId()));
+			}
+		}
+	}
+#endif
 	return QWidget::event(e);
 }
 
@@ -647,6 +677,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 {
 	suspendLayoutNotifications();
 	bool madeChanges = false;
+	QList<IToolWindowArea*> areasToRemove;
 	foreach(IToolWindowArea* area, m_areas)
 	{
 		if (area->parentWidget() == nullptr)
@@ -657,6 +688,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 				{
 					m_lastArea = nullptr;
 				}
+				areasToRemove.append(area);
 				area->deleteLater();
 			}
 			continue;
@@ -729,7 +761,10 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 			madeChanges = true;
 		}
 	}
-
+	foreach(IToolWindowArea* area, areasToRemove)
+	{
+		m_areas.removeOne(area);
+	}
 	foreach(IToolWindowWrapper* wrapper, m_wrappers)
 	{
 		if (wrapper->getWidget()->isWindow() && !wrapper->getContents())
@@ -1040,6 +1075,22 @@ void QToolWindowManager::raiseCurrentArea()
 	m_raiseTimer->stop();
 }
 
+void QToolWindowManager::clear()
+{
+	releaseToolWindows(toolWindows(), true);
+	// make sure pending deletions are processed, so two unique tools don't co-exist
+	qApp->processEvents();
+	QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+	if (!m_areas.isEmpty())
+	{
+		m_lastArea = m_areas.first();
+	}
+	else
+	{
+		m_lastArea = nullptr;
+	}
+}
+
 void QToolWindowManager::bringAllToFront()
 {
 #if defined(WIN32) || defined(WIN64)
@@ -1144,6 +1195,15 @@ QSplitter* QToolWindowManagerClassFactory::createSplitter(QToolWindowManager* ma
 QToolWindowManager::QTWMNotifyLock::QTWMNotifyLock(QToolWindowManager* parent, bool allowNotify) : m_parent(parent), m_notify(allowNotify)
 {
 	m_parent->suspendLayoutNotifications();
+}
+
+QToolWindowManager::QTWMNotifyLock::QTWMNotifyLock(const QTWMNotifyLock& other) : m_parent(other.m_parent), m_notify(other.m_notify)
+{
+	m_parent->suspendLayoutNotifications();
+}
+
+QToolWindowManager::QTWMNotifyLock::QTWMNotifyLock(QTWMNotifyLock&& other) : m_parent(other.m_parent), m_notify(other.m_notify)
+{
 }
 
 QToolWindowManager::QTWMNotifyLock::~QTWMNotifyLock()

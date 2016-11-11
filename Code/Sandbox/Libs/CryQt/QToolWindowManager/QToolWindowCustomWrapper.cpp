@@ -56,6 +56,7 @@ QToolWindowCustomWrapper::QToolWindowCustomWrapper(QToolWindowManager* manager, 
 	if (manager->config().value(QTWM_WRAPPERS_ARE_CHILDREN, false).toBool())
 	{
 		setParent(manager);
+		SetWindowLongPtr((HWND)winId(), GWLP_HWNDPARENT, (LONG_PTR)(manager->winId()));
 	}
 
 	setContents(wrappedWidget);
@@ -77,6 +78,11 @@ bool QToolWindowCustomWrapper::event(QEvent* e)
 	else if (e->type() == QEvent::Polish)
 	{
 		ensureTitleBar();
+	}
+	else if (e->type() == QEvent::ParentChange)
+	{
+		setWindowFlags(windowFlags()); // Ensure window stays as window even when reparented
+		return true;
 	}
 	return QCustomWindowFrame::event(e);
 }
