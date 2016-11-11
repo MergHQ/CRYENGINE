@@ -452,7 +452,7 @@ Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quater
 		scale = 1.0f;
 	else
 		s /= scale;
-	if (s.len2()>3.0001f && ppgeom && pGeoman)
+	if (s.len2()>3.03f && ppgeom && pGeoman)
 		if (!BakeScaleIntoGeometry(*ppgeom,pGeoman,s))
 			scale *= (s.x+s.y+s.z)*(1.0f/3);
 	return s;

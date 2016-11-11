@@ -313,7 +313,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		bPosChanged = bForcePosChange;
 #endif
 		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.0001f) {
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
 			WriteLock lock(m_lockUpdate);
 			for(i=0;i<m_nParts;i++) {
 				phys_geometry *pgeom;
@@ -467,7 +467,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (i>=m_nParts)
 			return 0;
 		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.0001f) {
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
 			if (is_unused(params->pPhysGeom))
 				m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeom=m_parts[i].pPhysGeom);
 			if (is_unused(params->pPhysGeomProxy))
