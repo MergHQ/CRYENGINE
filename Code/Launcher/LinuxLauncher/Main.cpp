@@ -289,7 +289,7 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 	HMODULE frameworkDll = 0;
 
 #ifndef _LIB
-	frameworkDll = CryLoadLibrary("libCryAction");
+	frameworkDll = CryLoadLibrary("libCryAction" CrySharedLibraryExtension);
 	if( !frameworkDll)
 	{
 		fprintf(stderr, "ERROR: failed to load CryAction DLL (%s)\n", dlerror());
