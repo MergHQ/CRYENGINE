@@ -9,10 +9,10 @@ set(GCC_COMMON_FLAGS
 	-ffast-math
 	-flax-vector-conversions
 	
-	-fvisibility=hidden			
+	-fvisibility=hidden
 	-fPIC
 
-	-Wno-char-subscripts				
+	-Wno-char-subscripts
 	-Wno-unknown-pragmas
 	-Wno-unused-variable
 	-Wno-unused-value
@@ -23,12 +23,12 @@ set(GCC_COMMON_FLAGS
 	-Wno-multichar
 	-Wno-format-security
 	-Wno-empty-body
-	-Wno-comment		
+	-Wno-comment
 	-Wno-char-subscripts
-	-Wno-sign-compare	
+	-Wno-sign-compare
 	-Wno-narrowing
 	-Wno-write-strings
-	-Wno-format		
+	-Wno-format
 
 	-Wno-return-type
 
@@ -43,6 +43,8 @@ set(GCC_COMMON_FLAGS
 	-Wno-unused-result
 	-Wno-sizeof-pointer-memaccess
 	-Wno-array-bounds
+
+	-Wno-address
 )
 
 string(REPLACE ";" " " GCC_COMMON_FLAGS "${GCC_COMMON_FLAGS}")
