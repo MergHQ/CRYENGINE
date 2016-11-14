@@ -25,6 +25,7 @@ public:
 	{
 		eInputPort_OnHide = 0,
 		eInputPort_OnUnHide,
+		eInputPort_LoadGeometry
 	};
 
 	enum EOutputPorts
@@ -32,7 +33,8 @@ public:
 		eOutputPort_OnHide = 0,
 		eOutputPort_OnUnHide,
 		eOutputPort_OnCollision,
-		eOutputPort_CollisionSurfaceName
+		eOutputPort_CollisionSurfaceName,
+		eOutputPort_OnGeometryChanged
 	};
 
 	enum EPhysicalizationType
@@ -63,4 +65,5 @@ protected:
 	IPhysicalEntity* m_pPhysEnt;
 
 	bool m_bHide;
+	string m_geometryName;
 };

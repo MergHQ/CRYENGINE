@@ -41,12 +41,14 @@ class CGeomEntityRegistrator
 
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Hide", ""));
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("UnHide", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<string>("LoadGeometry", ""));
 		pFlowNodeFactory->m_activateCallback = CGeomEntity::OnFlowgraphActivation;
 
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnHide"));
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnUnHide"));
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<EntityId>("OnCollision"));
 		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<string>("CollisionSurfaceName"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<string>("OnGeometryChanged"));
 
 		pFlowNodeFactory->Close();
 	}
@@ -56,6 +58,7 @@ CGeomEntityRegistrator g_geomEntityRegistrator;
 
 CGeomEntity::CGeomEntity()
 	: m_bHide(false)
+	, m_geometryName("")
 {
 }
 
@@ -115,13 +118,14 @@ void CGeomEntity::OnResetState()
 		}
 	}
 
-	const char* szModelPath = GetPropertyValue(eProperty_Model);
+	const char* szModelPath = m_geometryName.empty() ? GetPropertyValue(eProperty_Model) : m_geometryName;
 	if (strlen(szModelPath) > 0)
 	{
 		auto& gameObject = *GetGameObject();
 
 		const int geometrySlot = 0;
 		LoadMesh(geometrySlot, szModelPath);
+		ActivateFlowNodeOutput(eOutputPort_OnGeometryChanged, TFlowInputData(string(szModelPath)));
 
 		SEntityPhysicalizeParams physicalizationParams;
 
@@ -186,6 +190,11 @@ void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivatio
 		if (IsPortActive(pActInfo, eInputPort_OnHide) || IsPortActive(pActInfo, eInputPort_OnUnHide))
 		{
 			pGeomEntity->m_bHide = IsPortActive(pActInfo, eInputPort_OnHide);
+			pGeomEntity->OnResetState();
+		}
+		else if (IsPortActive(pActInfo, eInputPort_LoadGeometry))
+		{
+			pGeomEntity->m_geometryName = GetPortString(pActInfo, eInputPort_LoadGeometry);
 			pGeomEntity->OnResetState();
 		}
 	}
