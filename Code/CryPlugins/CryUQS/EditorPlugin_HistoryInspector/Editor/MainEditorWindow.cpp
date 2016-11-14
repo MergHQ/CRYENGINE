@@ -436,13 +436,16 @@ void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 	case eNotify_OnIdleUpdate:
 		if (m_pQueryHistoryManager)
 		{
-			const Matrix34& viewTM = GetIEditor()->GetActiveDisplayViewport()->GetViewTM();
-			Matrix33 orientation;
-			viewTM.GetRotation33(orientation);
-			uqs::core::SDebugCameraView uqsCameraView;
-			uqsCameraView.pos = viewTM.GetTranslation();
-			uqsCameraView.dir = orientation * Vec3(0, 1, 0);
-			m_pQueryHistoryManager->UpdateDebugRendering3D(uqsCameraView);
+			if (IDisplayViewport* pActiveDisplayViewport = GetIEditor()->GetActiveDisplayViewport())
+			{
+				const Matrix34& viewTM = pActiveDisplayViewport->GetViewTM();
+				Matrix33 orientation;
+				viewTM.GetRotation33(orientation);
+				uqs::core::SDebugCameraView uqsCameraView;
+				uqsCameraView.pos = viewTM.GetTranslation();
+				uqsCameraView.dir = orientation * Vec3(0, 1, 0);
+				m_pQueryHistoryManager->UpdateDebugRendering3D(uqsCameraView);
+			}
 		}
 		break;
 	}
