@@ -102,10 +102,19 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 	{
 		case ENTITY_EVENT_RESET:
 		{
-			if (event.nParam[0] == 1)
+			switch (event.nParam[0])
 			{
+			case 0: // Game ends
+				m_pCurrentWeapon = nullptr;
+				break;
+			case 1: // Game starts
 				// Make sure to revive player when respawning in Editor
 				SetHealth(GetMaxHealth());
+				// Create rifle
+				if (!m_pCurrentWeapon) CreateWeapon("Rifle");
+				break;
+			default:
+				break;
 			}
 		}
 		break;

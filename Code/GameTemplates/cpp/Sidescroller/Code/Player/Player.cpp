@@ -27,7 +27,7 @@ class CPlayerRegistrator
 		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
 		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
 		CGamePlugin::RegisterEntityComponent<CPlayerAnimations>("PlayerAnimations");
-		
+
 		RegisterCVars();
 	}
 
@@ -43,7 +43,7 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_viewDistanceFromPlayer", &m_viewDistanceFromPlayer, 5.f, VF_CHEAT, "Distance from view (camera) to player");
 
 		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/Characters/SampleCharacter/thirdperson.cdf", VF_CHEAT, "Sets the third person geometry to load");
-		
+
 		m_pThirdPersonMannequinContext = REGISTER_STRING("pl_thirdPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the third person context used in Mannequin");
 		m_pThirdPersonAnimationDatabase = REGISTER_STRING("pl_thirdPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
 		m_pThirdPersonControllerDefinition = REGISTER_STRING("pl_thirdPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
@@ -96,10 +96,19 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 	{
 		case ENTITY_EVENT_RESET:
 		{
-			if (event.nParam[0] == 1)
+			switch (event.nParam[0])
 			{
+			case 0: // Game ends
+				m_pCurrentWeapon = nullptr;
+				break;
+			case 1: // Game starts
 				// Make sure to revive player when respawning in Editor
 				SetHealth(GetMaxHealth());
+				// Create rifle
+				if (!m_pCurrentWeapon) CreateWeapon("Rifle");
+				break;
+			default:
+				break;
 			}
 		}
 		break;
@@ -184,7 +193,7 @@ void CPlayer::SetPlayerModel()
 {
 	// Load the third person model
 	GetEntity()->LoadCharacter(eGeometry_ThirdPerson, GetCVars().m_pThirdPersonGeometry->GetString());
-	
+
 	// Do the same for animations so that Mannequin data can be initialized
 	m_pAnimations->OnPlayerModelChanged();
 
@@ -203,7 +212,7 @@ void CPlayer::CreateWeapon(const char *name)
 	// Note that the game object extension (CRifle in this example) will be acquired automatically.
 	IEntity *pWeaponEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
 	CRY_ASSERT(pWeaponEntity != nullptr);
-	
+
 	// Now acquire the game object for this entity
 	if (auto *pGameObject = gEnv->pGameFramework->GetGameObject(pWeaponEntity->GetId()))
 	{

@@ -97,33 +97,42 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
-		case ENTITY_EVENT_RESET:
+	case ENTITY_EVENT_RESET:
+	{
+		switch (event.nParam[0])
 		{
-			if (event.nParam[0] == 1)
-			{
+		case 0: // Game ends
+			m_pCurrentWeapon = nullptr;
+			break;
+		case 1: // Game starts
 				// Make sure to revive player when respawning in Editor
-				SetHealth(GetMaxHealth());
-			}
+			SetHealth(GetMaxHealth());
+			// Create rifle
+			if (!m_pCurrentWeapon) CreateWeapon("Rifle");
+			break;
+		default:
+			break;
 		}
-		break;
-		case ENTITY_EVENT_HIDE:
+	}
+	break;
+	case ENTITY_EVENT_HIDE:
+	{
+		// Hide the weapon too
+		if (m_pCurrentWeapon != nullptr)
 		{
-			// Hide the weapon too
-			if (m_pCurrentWeapon != nullptr)
-			{
-				m_pCurrentWeapon->GetEntity()->Hide(true);
-			}
+			m_pCurrentWeapon->GetEntity()->Hide(true);
 		}
-		break;
-		case ENTITY_EVENT_UNHIDE:
+	}
+	break;
+	case ENTITY_EVENT_UNHIDE:
+	{
+		// Unhide the weapon too
+		if (m_pCurrentWeapon != nullptr)
 		{
-			// Unhide the weapon too
-			if (m_pCurrentWeapon != nullptr)
-			{
-				m_pCurrentWeapon->GetEntity()->Hide(false);
-			}
+			m_pCurrentWeapon->GetEntity()->Hide(false);
 		}
-		break;
+	}
+	break;
 	}
 }
 
