@@ -273,23 +273,23 @@ void CD3DOpenVRRenderer::RenderSocialScreen()
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType();
 			switch (socialScreen)
 			{
-			case EHmdSocialScreen::eHmdSocialScreen_Off:
+			case EHmdSocialScreen::Off:
 				{
 					GetUtils().ClearScreen(0.1f, 0.1f, 0.1f, 1.0f); // we don't want true black, to distinguish between rendering error and no-social-screen. NOTE: THE CONSOLE WILL NOT BE DISPLAYED!!!
 				}
 				break;
 			// intentional fall through
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
+			case EHmdSocialScreen::UndistortedLeftEye:
+			case EHmdSocialScreen::UndistortedRightEye:
 				{
-					CTexture* pTex = socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye ? m_mirrorTextures[LEFT_EYE] : m_mirrorTextures[RIGHT_EYE];
+					CTexture* pTex = socialScreen == EHmdSocialScreen::UndistortedLeftEye ? m_mirrorTextures[LEFT_EYE] : m_mirrorTextures[RIGHT_EYE];
 					if (CShaderMan::s_shPostEffects)
 						GetUtils().StretchRect(pTex, pBackbufferTexture);
 				}
 				break;
 
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage: // intentional fall through - default to undistorted dual image
-			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:   // intentional fall through - OpenVR does not return distorted eye targets, therefore the only display the undistorted eye targets
+			case EHmdSocialScreen::UndistortedDualImage: // intentional fall through - default to undistorted dual image
+			case EHmdSocialScreen::DistortedDualImage:   // intentional fall through - OpenVR does not return distorted eye targets, therefore the only display the undistorted eye targets
 			default:
 				if (CShaderMan::s_shPostEffects)
 				{

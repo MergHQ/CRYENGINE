@@ -156,6 +156,7 @@ private:
 	ICVar*                  m_pHmdInfoCVar;
 	ICVar*                  m_pHmdSocialScreenKeepAspectCVar;
 	ICVar*                  m_pHmdSocialScreenCVar;
+	ICVar*                  m_pTrackingOriginCVar;
 };
 } // namespace OpenVR
 } // namespace CryVR

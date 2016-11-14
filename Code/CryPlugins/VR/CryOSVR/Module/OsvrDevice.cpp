@@ -387,7 +387,7 @@ const IHmdController* Device::GetController() const
 
 const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 {
-	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::eHmdSocialScreen_FirstInvalidIndex);
+	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::FirstInvalidIndex);
 
 	if (pKeepAspect)
 	{
@@ -400,7 +400,7 @@ const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 		return socialScreenType;
 	}
 
-	return EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage;
+	return EHmdSocialScreen::DistortedDualImage;
 }
 
 Device* Device::CreateAndInitializeDevice()

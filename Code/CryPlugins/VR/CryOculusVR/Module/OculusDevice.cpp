@@ -122,6 +122,11 @@ Device::Device()
 	memset(&m_eyeRenderHmdToEyeOffset, 0, sizeof(m_eyeRenderHmdToEyeOffset));
 	memset(&m_frameRenderParams, 0, sizeof(m_frameRenderParams));
 
+	m_pHmdInfoCVar = gEnv->pConsole->GetCVar("hmd_info");
+	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
+	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
+	m_pTrackingOriginCVar = gEnv->pConsole->GetCVar("hmd_tracking_origin");
+
 	CreateDevice();
 	UpdateCurrentIPD();
 
@@ -129,10 +134,6 @@ Device::Device()
 		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 
 	gEnv->pSystem->GetHmdManager()->AddEventListener(this);
-
-	m_pHmdInfoCVar = gEnv->pConsole->GetCVar("hmd_info");
-	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
-	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
 }
 
 // -------------------------------------------------------------------------
@@ -224,6 +225,8 @@ void Device::CreateDevice()
 
 		m_preferredSize.w = max(leftEyeSize.w, rightEyeSize.w);
 		m_preferredSize.h = max(leftEyeSize.h, rightEyeSize.h);
+
+		ovr_SetTrackingOriginType(m_pSession, (m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel);
 	}
 	else
 	{
@@ -422,6 +425,13 @@ void Device::UpdateTrackingState(EVRComponent type)
 			hmdToEyeOffset[1].z = 0.f;
 		}
 
+		// See if user changed the tracking origin, and update in Oculus Runtime if necessary
+		auto desiredTrackingOrigin = (m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel;
+		if(ovr_GetTrackingOriginType(m_pSession) != desiredTrackingOrigin)
+		{
+			ovr_SetTrackingOriginType(m_pSession, desiredTrackingOrigin);
+		}
+
 		// get the current tracking state
 		const bool kbLatencyMarker = false;
 		double frameTime = ovr_GetPredictedDisplayTime(m_pSession, frameId);
@@ -498,7 +508,7 @@ void Device::UpdateTrackingState(EVRComponent type)
 // -------------------------------------------------------------------------
 const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 {
-	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::eHmdSocialScreen_FirstInvalidIndex);
+	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::FirstInvalidIndex);
 
 	if (pKeepAspect)
 	{
@@ -510,7 +520,7 @@ const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 		const EHmdSocialScreen socialScreenType = static_cast<EHmdSocialScreen>(m_pHmdSocialScreenCVar->GetIVal());
 		return socialScreenType;
 	}
-	return EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage;
+	return EHmdSocialScreen::DistortedDualImage;
 
 }
 

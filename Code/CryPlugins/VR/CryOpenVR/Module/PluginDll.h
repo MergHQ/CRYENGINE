@@ -35,7 +35,6 @@ public:
 
 	// Start CVars
 public:
-	static int   s_hmd_reference_point;
 	static float s_hmd_quad_distance;
 	static float s_hmd_quad_width;
 	static int s_hmd_quad_absolute;

@@ -17,6 +17,7 @@ public:
 	static int hmd_info;
 	static int hmd_social_screen;
 	static int hmd_social_screen_keep_aspect;
+	static int hmd_tracking_origin;
 	static float hmd_resolution_scale;
 	static ICVar* pSelectedHmdNameVar;
 
@@ -46,6 +47,11 @@ public:
 		                        "1 - On\n"
 		               );
 
+		REGISTER_CVAR2("hmd_tracking_origin", &hmd_tracking_origin, hmd_tracking_origin,
+			VF_NULL, "Determine HMD tracking origin point.\n"
+			"0 - Camera (/Actor's head)\n"
+			"1 - Actor's feet\n");
+
 		REGISTER_CVAR2("hmd_resolution_scale", &hmd_resolution_scale, hmd_resolution_scale,
 			VF_NULL, "Scales rendered resolution");
 
@@ -54,20 +60,20 @@ public:
 
 		REGISTER_COMMAND("hmd_recenter_pose", &OnHmdRecenter,
 		                 VF_NULL, "Recenters sensor orientation of the HMD.");
-
-		REGISTER_COMMAND("hmd_recenter_pose", &OnHmdRecenter,
-		                 VF_NULL, "Recenters sensor orientation of the HMD.");
 	}
+
 	static void Unregister()
 	{
 		if (IConsole* const pConsole = gEnv->pConsole)
 		{
 			pConsole->UnregisterVariable("hmd_info");
 			pConsole->UnregisterVariable("hmd_social_screen");
-			pConsole->UnregisterVariable("hmd_device");
-			pConsole->UnregisterVariable("hmd_recenter_pose");
-
+			pConsole->UnregisterVariable("hmd_social_screen_keep_aspect");
+			pConsole->UnregisterVariable("hmd_tracking_origin");
 			pConsole->UnregisterVariable("hmd_resolution_scale");
+			pConsole->UnregisterVariable("hmd_device");
+
+			pConsole->RemoveCommand("hmd_recenter_pose");
 		}
 
 	}

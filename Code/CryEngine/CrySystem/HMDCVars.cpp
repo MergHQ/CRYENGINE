@@ -7,8 +7,9 @@
 namespace CryVR
 {
 int CVars::hmd_info = 0;
-int CVars::hmd_social_screen = static_cast<int>(EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage);
+int CVars::hmd_social_screen = static_cast<int>(EHmdSocialScreen::DistortedDualImage);
 int CVars::hmd_social_screen_keep_aspect = 0;
+int CVars::hmd_tracking_origin = static_cast<int>(EHmdTrackingOrigin::Floor);
 float CVars::hmd_resolution_scale = 1.f;
 ICVar* CVars::pSelectedHmdNameVar = nullptr;
 }

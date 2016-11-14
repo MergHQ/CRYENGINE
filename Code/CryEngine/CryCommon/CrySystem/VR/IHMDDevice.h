@@ -58,14 +58,26 @@ struct HmdDeviceInfo
 
 enum class EHmdSocialScreen
 {
-	eHmdSocialScreen_Off                = -1,
-	eHmdSocialScreen_DistortedDualImage = 0,
-	eHmdSocialScreen_UndistortedDualImage,
-	eHmdSocialScreen_UndistortedLeftEye,
-	eHmdSocialScreen_UndistortedRightEye,
+	Off = -1,
+	DistortedDualImage = 0,
+	UndistortedDualImage,
+	UndistortedLeftEye,
+	UndistortedRightEye,
 
 	// helpers
-	eHmdSocialScreen_FirstInvalidIndex
+	FirstInvalidIndex
+};
+
+// Specifies the type of coordinates that will be returned from HMD devices
+// See the hmd_tracking_origin CVar for changing this at runtime
+enum class EHmdTrackingOrigin
+{
+	// Origin at pre-set player eye height
+	// Requires recentering on application start, or when switching users
+	EyeLevel = 0,
+	// Origin at floor height, meaning that the player in-game become as tall as they expect from real life.
+	// Recentering tracking origin will not affect the height when this is set.
+	Floor
 };
 
 struct HmdPoseState

@@ -26,7 +26,7 @@
 namespace
 {
 static ICVar* pCamShakeMult = 0;
-static ICVar* pHmdReferencePoint = 0;
+static ICVar* pHmdTrackingOrigin = 0;
 }
 //------------------------------------------------------------------------
 CView::CView(ISystem* const pSystem)
@@ -41,9 +41,9 @@ CView::CView(ISystem* const pSystem)
 	{
 		pCamShakeMult = gEnv->pConsole->GetCVar("c_shakeMult");
 	}
-	if (!pHmdReferencePoint)
+	if (!pHmdTrackingOrigin)
 	{
-		pHmdReferencePoint = gEnv->pConsole->GetCVar("hmd_reference_point");
+		pHmdTrackingOrigin = gEnv->pConsole->GetCVar("hmd_tracking_origin");
 	}
 
 	CreateAudioListener();
@@ -228,7 +228,7 @@ void CView::Update(float frameTime, bool isActive)
 		else if (bHmdTrackingEnabled)
 		{
 			pHmdDevice->SetAsynCameraCallback(this);
-			if (pHmdReferencePoint && pHmdReferencePoint->GetIVal() == 1) // actor-centered HMD offset
+			if (pHmdTrackingOrigin && pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
 			{
 				const IEntity* pEnt = GetLinkedEntity();
 				if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
@@ -279,7 +279,7 @@ bool CView::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevic
 	Vec3 pos = m_viewParams.position;
 	Vec3 p = Vec3(ZERO);
 
-	if (pHmdReferencePoint && pHmdReferencePoint->GetIVal() == 1) // actor-centered HMD offset
+	if (pHmdTrackingOrigin && pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
 	{
 		const IEntity* pEnt = GetLinkedEntity();
 		if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())

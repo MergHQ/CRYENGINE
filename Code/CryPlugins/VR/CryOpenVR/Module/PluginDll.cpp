@@ -13,7 +13,6 @@ namespace CryVR
 {
 namespace OpenVR {
 
-	int CPlugin_OpenVR::s_hmd_reference_point = 0;
 	float CPlugin_OpenVR::s_hmd_quad_distance = 0.25f;
 	float CPlugin_OpenVR::s_hmd_quad_width = 1.0f;
 	int CPlugin_OpenVR::s_hmd_quad_absolute = 1;
@@ -28,7 +27,6 @@ CPlugin_OpenVR::~CPlugin_OpenVR()
 
 	if (IConsole* const pConsole = gEnv->pConsole)
 	{
-		pConsole->UnregisterVariable("hmd_reference_point");
 		pConsole->UnregisterVariable("hmd_quad_distance");
 		pConsole->UnregisterVariable("hmd_quad_width");
 		pConsole->UnregisterVariable("hmd_quad_absolute");
@@ -40,11 +38,6 @@ CPlugin_OpenVR::~CPlugin_OpenVR()
 bool CPlugin_OpenVR::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
-
-	REGISTER_CVAR2("hmd_reference_point", &s_hmd_reference_point, s_hmd_reference_point,
-		VF_NULL, "HMD center reference point.\n"
-		"0 - Camera (/Actor's head)\n"
-		"1 - Actor's feet\n");
 
 	REGISTER_CVAR2("hmd_quad_distance", &s_hmd_quad_distance, s_hmd_quad_distance, VF_NULL, "Distance between eyes and UI quad");
 

@@ -221,6 +221,7 @@ Device::Device(vr::IVRSystem* pSystem)
 	m_pHmdInfoCVar = gEnv->pConsole->GetCVar("hmd_info");
 	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
 	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
+	m_pTrackingOriginCVar = gEnv->pConsole->GetCVar("hmd_tracking_origin");
 }
 
 // -------------------------------------------------------------------------
@@ -483,7 +484,7 @@ void Device::UpdateTrackingState(EVRComponent type)
 		rFreq = 90.0f;
 	float fFrameDuration = 1.0f / rFreq;
 	float fSecondsUntilPhotons = 3.0f * fFrameDuration - fSecondsSinceLastVsync + m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_SecondsFromVsyncToPhotons_Float);
-	m_system->GetDeviceToAbsoluteTrackingPose(CPlugin_OpenVR::s_hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, fSecondsUntilPhotons, m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount);
+	m_system->GetDeviceToAbsoluteTrackingPose(m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, fSecondsUntilPhotons, m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount);
 
 	IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 	const SViewParams* params = pView ? pView->GetCurrentParams() : nullptr;
@@ -621,7 +622,7 @@ void Device::UpdateInternal(EInternalUpdate type)
 		{
 			m_overlays[id].pos = vr::RawConvert(Matrix34::CreateTranslationMat(Vec3(0, 0, -m_hmdQuadDistance)));
 			if (m_hmdQuadAbsolute)
-				m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, CPlugin_OpenVR::s_hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
+				m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
 			else
 				m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
 		}
@@ -802,7 +803,7 @@ const HmdTrackingState& Device::GetNativeTrackingState() const
 // -------------------------------------------------------------------------
 const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 {
-	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::eHmdSocialScreen_FirstInvalidIndex);
+	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::FirstInvalidIndex);
 
 	if (pKeepAspect)
 	{
@@ -815,7 +816,7 @@ const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
 		return socialScreenType;
 	}
 
-	return EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage; // default to dual distorted image
+	return EHmdSocialScreen::UndistortedDualImage; // default to dual distorted image
 }
 
 // -------------------------------------------------------------------------
@@ -979,7 +980,7 @@ void Device::OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace
 	m_overlay->SetOverlayTextureBounds(m_overlays[id].handle, &overlayTextureBounds);
 	m_overlay->SetOverlayTexture(m_overlays[id].handle, m_overlays[id].vrTexture);
 	if (m_hmdQuadAbsolute)
-		m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, CPlugin_OpenVR::s_hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
+		m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
 	else
 		m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
 	m_overlay->SetOverlayWidthInMeters(m_overlays[id].handle, m_hmdQuadWidth);

@@ -447,22 +447,22 @@ void CD3DOculusRenderer::RenderSocialScreen()
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType(&bKeepAspect);
 			switch (socialScreen)
 			{
-			case EHmdSocialScreen::eHmdSocialScreen_Off:
+			case EHmdSocialScreen::Off:
 				// TODO: Clear backbuffer texture? Show a selected wallpaper?
 				GetUtils().ClearScreen(1.0f, 1.0f, 1.0f, 1.f);
 				break;
 			// intentional fall through
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage:
+			case EHmdSocialScreen::UndistortedLeftEye:
+			case EHmdSocialScreen::UndistortedRightEye:
+			case EHmdSocialScreen::UndistortedDualImage:
 				{
 					static CCryNameTSCRC pTechTexToTex("TextureToTexture");
 					const auto frameData = m_layerManager.ConstructFrameData();
-					const bool bRenderBothEyes = socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage;
+					const bool bRenderBothEyes = socialScreen == EHmdSocialScreen::UndistortedDualImage;
 
 					int eyesToRender[2] = { LEFT_EYE, -1 };
-					if (socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye)  eyesToRender[0] = RIGHT_EYE;
-					else if (socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage)
+					if (socialScreen == EHmdSocialScreen::UndistortedRightEye)  eyesToRender[0] = RIGHT_EYE;
+					else if (socialScreen == EHmdSocialScreen::UndistortedDualImage)
 						eyesToRender[1] = RIGHT_EYE;
 
 					uint64 nSaveFlagsShader_RT = gRenDev->m_RP.m_FlagsShader_RT;
@@ -575,7 +575,7 @@ void CD3DOculusRenderer::RenderSocialScreen()
 				}
 				break;
 
-			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:
+			case EHmdSocialScreen::DistortedDualImage:
 			default:
 				{
 					if (pBackbufferTexture->GetDevTexture()->Get2DTexture() != nullptr)
