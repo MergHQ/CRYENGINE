@@ -1493,8 +1493,9 @@ bool CParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 					continue;
 				if (!nodePos->getAttr("fThreshold", IKLimb.m_fThreshold))
 					continue;
-				if (!nodePos->getAttr("nMaxInteration", IKLimb.m_nInterations))
-					continue;
+				if (!nodePos->getAttr("nMaxInteration", IKLimb.m_nInterations)) // keep this for downward-compatibility reasons, even if 'Iteration' is misspelled
+					if (!nodePos->getAttr("nMaxIteration", IKLimb.m_nInterations))
+						continue;
 
 				int32 arrCCDChainIdx[MAX_JOINT_AMOUNT];
 				const char* arrCCDChainStr[MAX_JOINT_AMOUNT];
