@@ -136,8 +136,8 @@ public:
 	void   RenderScreenSpaceSSS(CTexture* pIrradianceTex);
 	void   RenderPostAA();
 
-	void   SwitchToLegacyPipeline();
-	void   SwitchFromLegacyPipeline();
+	static void   SwitchToLegacyPipeline();
+	static void   SwitchFromLegacyPipeline();
 
 	uint32 IncrementNumInvalidDrawcalls(int count) { return CryInterlockedAdd((volatile int*)&m_numInvalidDrawcalls, count); }
 	uint32 GetNumInvalidDrawcalls() const          { return m_numInvalidDrawcalls;   }
