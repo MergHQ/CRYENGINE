@@ -6425,16 +6425,14 @@ void CRecordingSystem::OnCreateEmitter(IParticleEmitter* pEmitter)
 			IParticleEffect* pEffectNonConst = const_cast<IParticleEffect*>(pEmitter->GetEffect());
 			if (!m_excludedParticleEffects.count(pEffectNonConst))
 			{
-				auto sp = pEmitter->GetSpawnParams(); sp.bNowhere = true;
-				pEmitter->SetSpawnParams(sp);
 				if (!pEffectNonConst->IsTemporary())
 				{
 					SRecording_ParticleCreated particle;
 					particle.pParticleEmitter = pEmitter;
 					particle.pParticleEffect = pEffectNonConst;
 					particle.location = pEmitter->GetLocation();
-					particle.entityId = 0;//pEmitter->GetAttachedEntityId(); This won't have been set yet
-					particle.entitySlot = 0;//pEmitter->GetAttachedEntitySlot();
+					particle.entityId = 0; //pEmitter->GetAttachedEntityId(); This won't have been set yet
+					particle.entitySlot = 0; //pEmitter->GetAttachedEntitySlot();
 					pEmitter->AddRef();
 					m_newParticles.push_back(particle);
 				}
