@@ -12,7 +12,7 @@ CRenderPrimitive::SPrimitiveGeometry CRenderPrimitive::s_primitiveGeometryCache[
 int CRenderPrimitive::s_nPrimitiveGeometryCacheUsers = 0;
 
 
-SCompiledRenderPrimitive::SCompiledRenderPrimitive() 
+SCompiledRenderPrimitive::SCompiledRenderPrimitive()
 	: m_stencilRef(0)
 	, m_pVertexInputSet(nullptr)
 	, m_pIndexInputSet(nullptr)
@@ -142,7 +142,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(uint32 renderTargetCount
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	auto& instance = m_instances.front();
-	
+
 	if (m_dirtyMask & eDirty_Geometry)
 	{
 		m_dirtyMask |= eDirty_InstanceData;
@@ -250,7 +250,7 @@ void CRenderPrimitive::AddPrimitiveGeometryCacheUser()
 
 			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 3, fullscreenTriVertices, CDeviceBufferManager::AlignBufferSizeForStreaming);
-			
+
 			SPostEffectsUtils::GetFullScreenTri(fullscreenTriVertices, 0, 0, 1.0f);
 			primitiveGeometry.vertexStream.hStream = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, 3 * sizeof(SVF_P3F_C4B_T2F));
 			primitiveGeometry.vertexStream.nStride = sizeof(SVF_P3F_C4B_T2F);
@@ -313,7 +313,7 @@ void CRenderPrimitive::AddPrimitiveGeometryCacheUser()
 		// fullscreen quad
 		{
 			MeshUtil::GenScreenTile(-1, -1, 1, 1, ColorF(1, 1, 1, 1), 1, 1, vertices, indices);
-			initPrimitiveGeometryStreams(s_primitiveGeometryCache[ePrim_FullscreenQuad], vertices, indices);	
+			initPrimitiveGeometryStreams(s_primitiveGeometryCache[ePrim_FullscreenQuad], vertices, indices);
 		}
 
 		// tessellated fullscreen quad
@@ -343,7 +343,7 @@ void CRenderPrimitive::RemovePrimitiveGeometryCacheUser()
 	}
 }
 
-CPrimitiveRenderPass::CPrimitiveRenderPass()
+CPrimitiveRenderPass::CPrimitiveRenderPass(bool createGeometryCache)
 	: m_numRenderTargets(0)
 	, m_pDepthTarget(nullptr)
 	, m_scissorEnabled(false)
@@ -354,7 +354,10 @@ CPrimitiveRenderPass::CPrimitiveRenderPass()
 	ZeroStruct(m_viewport);
 	ZeroStruct(m_scissor);
 
-	CRenderPrimitive::AddPrimitiveGeometryCacheUser();
+	if( createGeometryCache )
+	{
+		CRenderPrimitive::AddPrimitiveGeometryCacheUser();
+	}
 }
 
 CPrimitiveRenderPass::~CPrimitiveRenderPass()
@@ -451,7 +454,7 @@ void CPrimitiveRenderPass::SetScissor(bool bEnable, const D3DRectangle& scissor)
 
 bool CPrimitiveRenderPass::AddPrimitive(CRenderPrimitive* pPrimitive)
 {
-	if (!pPrimitive->IsDirty() || 
+	if (!pPrimitive->IsDirty() ||
 	     pPrimitive->Compile(m_pRenderTargets.size(), &m_pRenderTargets[0], m_pDepthTarget, nullptr, m_pOutputResources) == CRenderPrimitive::eDirty_None)
 	{
 		m_compiledPrimitives.push_back(pPrimitive);
@@ -546,14 +549,14 @@ void CPrimitiveRenderPass::Execute()
 	pCommandInterface->SetRenderTargets(m_numRenderTargets, &m_pRenderTargets[0], m_pDepthTarget, &m_renderTargetViews[0]);
 	pCommandInterface->SetViewports(1, &m_viewport);
 	pCommandInterface->SetScissorRects(1, &m_scissor);
-	
+
 	for (auto pPrimitive : m_compiledPrimitives)
 	{
 		uint32 bindSlot = 0;
 		pCommandInterface->SetResourceLayout(pPrimitive->m_pResourceLayout.get());
 		pCommandInterface->SetPipelineState(pPrimitive->m_pPipelineState.get());
 		pCommandInterface->SetStencilRef(pPrimitive->m_stencilRef);
-	
+
 		if (pPrimitive->m_pVertexInputSet)
 		{
 			pCommandInterface->SetVertexBuffers(1, 0, pPrimitive->m_pVertexInputSet);
