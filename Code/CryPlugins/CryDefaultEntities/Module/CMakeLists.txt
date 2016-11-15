@@ -63,15 +63,13 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(WIN64)
-	CryEngineModule(CryDefaultEntities PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+CryEngineModule(CryDefaultEntities PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-	target_include_directories(${THIS_PROJECT}
-	PRIVATE 
-		${CRYENGINE_DIR}/Code/CryEngine/CryCommon
-		# Remove when we've switched to entity components
-		${CRYENGINE_DIR}/Code/CryEngine/CryAction
-	PUBLIC
-		../Interface
-	)
-endif()
+target_include_directories(${THIS_PROJECT}
+PRIVATE 
+	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	# Remove when we've switched to entity components
+	${CRYENGINE_DIR}/Code/CryEngine/CryAction
+PUBLIC
+	../Interface
+)

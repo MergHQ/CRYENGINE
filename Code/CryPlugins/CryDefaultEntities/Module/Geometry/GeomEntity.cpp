@@ -118,7 +118,7 @@ void CGeomEntity::OnResetState()
 		}
 	}
 
-	const char* szModelPath = m_geometryName.empty() ? GetPropertyValue(eProperty_Model) : m_geometryName;
+	const char* szModelPath = m_geometryName.empty() ? GetPropertyValue(eProperty_Model) : m_geometryName.c_str();
 	if (strlen(szModelPath) > 0)
 	{
 		auto& gameObject = *GetGameObject();
