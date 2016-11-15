@@ -240,12 +240,12 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 	CDeviceResourceSet_DX11(const CDeviceResourceSet& other)
 		: CDeviceResourceSet(other)
 	{
-		Clear();
+		ClearCompiledData();
 	}
 
 	virtual bool BuildImpl(EFlags updatedFlags) final;
 
-	void         Clear();
+	void         ClearCompiledData();
 
 	// set via reflection from shader
 	std::array<std::array<ID3D11ShaderResourceView*, MAX_TMU>, eHWSC_Num>                  compiledTextureSRVs;
@@ -270,7 +270,7 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 
 const void* const CDeviceResourceSet_DX11::InvalidPointer = (const void* const)0xBADA55;
 
-void CDeviceResourceSet_DX11::Clear()
+void CDeviceResourceSet_DX11::ClearCompiledData()
 {
 	// Releasing resources is allowed to be done by any thread, just not concurrently
 	m_SRVInUse.clear();
@@ -299,7 +299,7 @@ bool CDeviceResourceSet_DX11::BuildImpl(EFlags updatedFlags)
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 	CRY_ASSERT(m_Buffers.size() <= ResourceSetBufferCount);
 
-	Clear();
+	ClearCompiledData();
 
 	bool bBuildSuccess = true;
 

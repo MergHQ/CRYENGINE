@@ -4072,7 +4072,7 @@ CConstantBuffer::~CConstantBuffer()
 //////////////////////////////////////////////////////////////////////////////////////
 void CConstantBuffer::ReturnToPool()
 {
-	assert(gRenDev->m_pRT->IsRenderThread());
+	assert(m_lock || gRenDev->m_pRT->IsRenderThread());
 
 	CConditonalDevManLock lock(&gcpRendD3D->m_DevBufMan, m_lock);
 #if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS

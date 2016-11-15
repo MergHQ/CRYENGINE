@@ -738,11 +738,6 @@ CDeviceResourceSet::CDeviceResourceSet(const CDeviceResourceSet& other)
 	m_Flags        = other.m_Flags;
 }
 
-CDeviceResourceSet::~CDeviceResourceSet()
-{
-	Clear();
-}
-
 void CDeviceResourceSet::SetDirty(bool bDirty)
 {
 	m_bDirty = m_bDirty | bDirty;

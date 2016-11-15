@@ -240,7 +240,7 @@ public:
 
 	CDeviceResourceSet(EFlags flags);
 	CDeviceResourceSet(const CDeviceResourceSet& other);
-	virtual ~CDeviceResourceSet();
+	virtual ~CDeviceResourceSet() {};
 
 	bool         IsValid() const { return m_bValid; }
 	bool         IsEmpty() const { return m_bEmpty; }
