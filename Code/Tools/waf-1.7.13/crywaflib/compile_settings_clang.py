@@ -86,7 +86,8 @@ def load_clang_common_settings(v):
 		'-Wno-null-character',
 		'-Wno-reorder',
 		'-Wno-conversion-null',
-		'-Wno-overloaded-virtual'		
+		'-Wno-overloaded-virtual',
+		'-Wno-shift-sign-overflow'
 		]
 		
 	# Copy common flags to prevent modifing references

@@ -44,7 +44,6 @@ set(CLANG_COMMON_FLAGS
 	-Wno-overloaded-virtual
 	-Wno-shift-sign-overflow
 	-Wno-shift-negative-value
-	-Wno-unknown-warning-option
 
 	-fdata-sections
 	-ffunction-sections
