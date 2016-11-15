@@ -562,7 +562,6 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 	}
 
 	prim.SetRenderState(gsFunc);
-	prim.SetDrawTopology(topology);
 
 	prim.SetCullMode(eCULL_None);
 
@@ -579,8 +578,6 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 	constantManager.BeginNamedConstantUpdate();
 	constantManager.SetNamedConstantArray(matViewProjName, (Vec4*)&mViewProj, 4, eHWSC_Vertex);
 	constantManager.EndNamedConstantUpdate();
-
-	prim.ResetDrawInfo();
 
 	return prim;
 }
@@ -604,13 +601,10 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 
 	CRenderPrimitive& prim = PreparePrimitive(flags, topology, m_bufman.GetVB(), ~0u, mViewProj);
 
-	auto& instance = prim.m_instances.front();
-
-	instance.vertexBaseOffset = 0;
-	instance.vertexOrIndexOffset = (*itBegin)->m_vertexOffs;
-	instance.vertexOrIndexCount = (*itBegin)->m_numVertices;
+	prim.SetDrawInfo(topology, 0, (*itBegin)->m_vertexOffs, (*itBegin)->m_numVertices);
 
 	prim.m_instances.resize(1);
+
 
 	for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); ++it != itEnd; )
 	{
@@ -648,11 +642,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 
 	CRenderPrimitive& prim = PreparePrimitive(flags, topology, m_bufman.GetVB(), m_bufman.GetIB(), mViewProj);
 
-	auto& instance = prim.m_instances.front();
-
-	instance.vertexBaseOffset = (*itBegin)->m_vertexOffs;
-	instance.vertexOrIndexOffset = (*itBegin)->m_indexOffs;
-	instance.vertexOrIndexCount = (*itBegin)->m_numIndices;
+	prim.SetDrawInfo(topology, (*itBegin)->m_vertexOffs, (*itBegin)->m_indexOffs, (*itBegin)->m_numIndices);
 
 	prim.m_instances.resize(1);
 

@@ -99,7 +99,6 @@ public:
 	void          SetCustomVertexStream(buffer_handle_t vertexBuffer, EVertexFormat vertexFormat, uint32 vertexStride);
 	void          SetCustomIndexStream(buffer_handle_t indexBuffer, RenderIndexType indexType);
 	void          SetDrawInfo(ERenderPrimitiveType primType, uint32 vertexBaseOffset, uint32 vertexOrIndexOffset, uint32 vertexOrIndexCount);
-	void          ResetDrawInfo();
 	void          SetDrawTopology(ERenderPrimitiveType primType);
 
 	bool          IsDirty() const;
@@ -309,11 +308,6 @@ inline void CRenderPrimitive::SetDrawInfo(ERenderPrimitiveType primType, uint32 
 	ASSIGN_VALUE(m_primitiveGeometry.vertexBaseOffset, vertexBaseOffset, eDirty_InstanceData);
 	ASSIGN_VALUE(m_primitiveGeometry.vertexOrIndexOffset, vertexOrIndexOffset, eDirty_InstanceData);
 	ASSIGN_VALUE(m_primitiveGeometry.vertexOrIndexCount, vertexOrIndexCount, eDirty_InstanceData);
-}
-
-inline void CRenderPrimitive::ResetDrawInfo()
-{
-	m_dirtyMask |= eDirty_InstanceData;
 }
 
 inline void CRenderPrimitive::SetDrawTopology(ERenderPrimitiveType primType)
