@@ -196,7 +196,7 @@ public:
 		info.dwFlags |= CR_INST_AUTO_THREAD_HANDLERS;
 
 		// Define the Privacy Policy URL
-		if (g_crashrpt_cvars.sys_crashrpt_server)
+		if (g_crashrpt_cvars.sys_crashrpt_privacypolicy)
 		{
 			info.pszPrivacyPolicyURL = g_crashrpt_cvars.sys_crashrpt_privacypolicy->GetString();
 		}
@@ -217,10 +217,10 @@ public:
 		//crAddScreenshot2(CR_AS_MAIN_WINDOW | CR_AS_USE_JPEG_FORMAT, 95);
 
 		// Add our log file to the error report
-		crAddFile2("game.log", NULL, "Game Log File", CR_AF_MAKE_FILE_COPY | CR_AF_MISSING_FILE_OK);
-		crAddFile2("editor.log", NULL, "Editor Log File", CR_AF_MAKE_FILE_COPY | CR_AF_MISSING_FILE_OK);
-		crAddFile2("error.log", NULL, "Error log", CR_AF_MAKE_FILE_COPY | CR_AF_MISSING_FILE_OK);
-		crAddFile2("error.jpg", NULL, "Screenshot", CR_AF_MAKE_FILE_COPY | CR_AF_MISSING_FILE_OK);
+		crAddFile2("game.log", NULL, "Game Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
+		crAddFile2("editor.log", NULL, "Editor Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
+		crAddFile2("error.log", NULL, "Error log", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
+		crAddFile2("error.jpg", NULL, "Screenshot", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
 
 		// Set crash callback function
 		crSetCrashCallback(&CrashCallback, NULL);
@@ -239,20 +239,30 @@ public:
 
 	static int CALLBACK CrashCallback(CR_CRASH_CALLBACK_INFO* pInfo)
 	{
-		//MessageBox(NULL, szMessage, szCaption, MB_OK|MB_ICONERROR);    
+		static volatile bool s_bHandleExceptionInProgressLock = false;
+		if (s_bHandleExceptionInProgressLock)
+		{
+			return CR_CB_CANCEL;
+		}
 
 		switch (pInfo->nStage)
 		{
 		case CR_CB_STAGE_PREPARE:
 			{
-				if (gEnv && gEnv->pLog)
+				if (gEnv)
 				{
-					gEnv->pLog->FlushAndClose();
+					gEnv->bIgnoreAllAsserts = true;
+					if (gEnv->pLog)
+					{
+						s_bHandleExceptionInProgressLock = true;
+						gEnv->pLog->FlushAndClose();
+						s_bHandleExceptionInProgressLock = false;
+					}
 				}
-				
 			}
 			break;
 		case CR_CB_STAGE_FINISH:
+			s_bHandleExceptionInProgressLock = true;
 			CrySpinLock(&s_exception_handler_lock, 0, 1);
 			g_cvars.sys_no_crash_dialog = 1;
 			int result = DebugCallStack::instance()->handleException(pInfo->pExceptionInfo->pexcptrs);
@@ -261,6 +271,7 @@ public:
 				// We want to continue program execution after crash report generation
 				pInfo->bContinueExecution = TRUE;
 			}
+			s_bHandleExceptionInProgressLock = false;
 			break;
 		}
 
@@ -806,6 +817,7 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 		return EXCEPTION_EXECUTE_HANDLER;
 	}
 
+	gEnv->bIgnoreAllAsserts = true;
 	gEnv->pLog->FlushAndClose();
 
 	ResetFPU(exception_pointer);
