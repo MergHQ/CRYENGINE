@@ -131,6 +131,7 @@ class CAnimationBoneInfo_Node
 	enum EInputPorts
 	{
 		eInputPort_BoneName = 0,
+		eInputPort_BoneId,
 		eInputPort_Enabled,
 		eInputPort_Get
 	};
@@ -163,8 +164,9 @@ public:
 	{
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig<string>("bone_BoneName", _HELP("Name of Bone to get info for")),
-			InputPortConfig<bool>("Enabled",         true,                                      _HELP("Enable / Disable automatic per frame updates")),
-			InputPortConfig_Void("Get",              _HELP("Retrieve the bone info just once")),
+			InputPortConfig<int>("BoneId", INVALID_JOINT_ID, _HELP("Id of the bone to get info for (used only if BoneName is left empty)")),
+			InputPortConfig<bool>("Enabled", true, _HELP("Enable / Disable automatic per frame updates")),
+			InputPortConfig_Void("Get", _HELP("Retrieve the bone info just once")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -181,6 +183,33 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
+	static int32 GetDesiredJointId(SActivationInfo* pActInfo, ICharacterInstance* pCharacter)
+	{
+		int32 result = INVALID_JOINT_ID;
+
+		const IDefaultSkeleton& defaultSkeleton = pCharacter->GetIDefaultSkeleton();
+		const string& boneName = GetPortString(pActInfo, eInputPort_BoneName);
+
+		if (!boneName.empty())
+		{
+			result = defaultSkeleton.GetJointIDByName(boneName.c_str());
+			if (result == INVALID_JOINT_ID)
+			{
+				CryLogAlways("[flow] Animations:BoneInfo: Cannot find bone '%s' in character 0 of entity '%s'", boneName.c_str(), pActInfo->pEntity->GetName());
+			}
+		}
+		else
+		{
+			result = GetPortInt(pActInfo, eInputPort_BoneId);
+			if (result >= static_cast<int32>(defaultSkeleton.GetJointCount()))
+			{
+				result = INVALID_JOINT_ID;
+			}
+		}
+
+		return result;
+	}
+
 	void OnChange(SActivationInfo* pActInfo)
 	{
 		struct UpdateChanger
@@ -195,20 +224,11 @@ public:
 
 		if (IEntity* pEntity = pActInfo->pEntity)
 		{
-			const string& boneName = GetPortString(pActInfo, eInputPort_BoneName);
-			if (boneName.empty())
-				return;
-
 			if (ICharacterInstance* pCharacter = pEntity->GetCharacter(0))
 			{
-				const IDefaultSkeleton& defaultSkeleton = pCharacter->GetIDefaultSkeleton();
-				const int32 jointID = defaultSkeleton.GetJointIDByName(boneName.c_str());
-				if (jointID < 0)
-				{
-					CryLogAlways("[flow] Animations:BoneInfo: Cannot find bone '%s' in character 0 of entity '%s'", boneName.c_str(), pEntity->GetName());
-				}
+				int32 jointId = GetDesiredJointId(pActInfo, pCharacter);
 				const bool bEnabled = GetPortBool(pActInfo, eInputPort_Enabled);
-				updateChanger.bUpdate = jointID >= 0 && bEnabled;
+				updateChanger.bUpdate = (jointId != INVALID_JOINT_ID) && bEnabled;
 			}
 		}
 	}
@@ -283,7 +303,12 @@ class CPlayAnimation_Node : public CFlowBaseNode<eNCT_Instanced>
 
 	bool   m_firedAlmostDone;
 	bool   m_bForcedActivate;
+	bool   m_bForcedUpdateActivate;
 	bool   m_manualAnimationControlledMovement;
+	bool   m_bLooping;
+
+	float  m_almostDonePercentage;
+	float  m_playbackSpeedMultiplier;
 
 public:
 
@@ -298,7 +323,9 @@ public:
 		IN_REPEAT_LAST_FRAME,
 		IN_FORCE_UPDATE,
 		IN_PAUSE_ANIM_GRAPH,
-		IN_CONTROL_MOVEMENT
+		IN_CONTROL_MOVEMENT,
+		IN_ALMOST_DONE_PERCENTAGE,
+		IN_PLAYBACK_SPEED_MULTIPLIER,
 	};
 
 	enum EOutputs
@@ -311,9 +338,13 @@ public:
 	{
 		m_firedAlmostDone = false;
 		m_bForcedActivate = false;
+		m_bForcedUpdateActivate = false;
+		m_bLooping = false;
 		m_manualAnimationControlledMovement = false;
 		m_token = 0;
 		m_layer = 0;
+		m_almostDonePercentage = 0.85f;
+		m_playbackSpeedMultiplier = 1.0f;
 	};
 
 	~CPlayAnimation_Node()
@@ -334,35 +365,41 @@ public:
 	{
 		ser.Value("m_token", m_token);
 		ser.Value("m_firedAlmostDone", m_firedAlmostDone);
+		ser.Value("m_bLooping", m_bLooping);
 		ser.Value("m_bForcedActivate", m_bForcedActivate);
+		ser.Value("m_bForcedUpdateActivate", m_bForcedUpdateActivate);
 		ser.Value("m_manualAnimationControlledMovement", m_manualAnimationControlledMovement);
 		ser.Value("m_layer", m_layer);
+		ser.Value("m_almostDonePercentage", m_almostDonePercentage);
+		ser.Value("m_playbackSpeedMultiplier", m_playbackSpeedMultiplier);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Start",             _HELP("Starts the animation")),
-			InputPortConfig_Void("Stop",              _HELP("Stops the animation")),
-			InputPortConfig<string>("anim_Animation", _HELP("Animation name"),                                                                                        0,                                                                      _UICONFIG("ref_entity=entityId")),
-			InputPortConfig<float>("BlendInTime",     0.2f,                                                                                                           _HELP("Blend in time")),
-			InputPortConfig<int>("Layer",             _HELP("Layer in which to play the animation (0-15).\nFullbody Animations should be played in layer 0.")),
-			InputPortConfig<bool>("Loop",             _HELP("When True animation will loop and will never stop")),
-			InputPortConfig<bool>("StayOnLastFrame",  _HELP("When True animation will not reset to the first frame after it finished. Ignored when 'Loop' is true.")),
-			InputPortConfig<bool>("ForceUpdate",      false,                                                                                                          _HELP("When True animation will play even if not visible")),
-			InputPortConfig<bool>("PauseAnimGraph",   false,                                                                                                          _HELP("Deprecated, this input has no effect")),
-			InputPortConfig<bool>("ControlMovement",  false,                                                                                                          _HELP("When True this animation will control the entities movement")),
+			InputPortConfig_Void("Start", _HELP("Starts the animation")),
+			InputPortConfig_Void("Stop", _HELP("Stops the animation")),
+			InputPortConfig<string>("anim_Animation", _HELP("Animation name"), 0, _UICONFIG("ref_entity=entityId")),
+			InputPortConfig<float>("BlendInTime", 0.2f, _HELP("Blend in time")),
+			InputPortConfig<int>("Layer", _HELP("Layer in which to play the animation (0-15).\nFullbody Animations should be played in layer 0.")),
+			InputPortConfig<bool>("Loop", _HELP("When True animation will loop and will never stop")),
+			InputPortConfig<bool>("StayOnLastFrame", _HELP("When True animation will not reset to the first frame after it finished. Ignored when 'Loop' is true.")),
+			InputPortConfig<bool>("ForceUpdate", false, _HELP("When True animation will play even if not visible")),
+			InputPortConfig<bool>("PauseAnimGraph", false, _HELP("Deprecated, this input has no effect")),
+			InputPortConfig<bool>("ControlMovement", false, _HELP("When True this animation will control the entities movement")),
+			InputPortConfig<float>("AlmostDonePercentage", m_almostDonePercentage, _HELP("Normalised percentage of animation progress at which Almost Done output will trigger, values between 0.05 & 0.95")),
+			InputPortConfig<float>("PlaybackSpeedMultiplier", m_playbackSpeedMultiplier, _HELP("Speed multiplier at which to play the animation")),
 			{ 0 }
 		};
 
 		static const SOutputPortConfig out_config[] = {
 			OutputPortConfig_Void("Done",       _HELP("Send an event when animation is finished")),
-			OutputPortConfig_Void("AlmostDone", _HELP("Send an event when animation is almost finished (85%) - can be used to enhance blending to a different PlayAnimation node.")),
+			OutputPortConfig_Void("AlmostDone", _HELP("Send an event when animation is almost finished - can be used to enhance blending to a different PlayAnimation node.")),
 			{ 0 }
 		};
 
 		config.sDescription = _HELP("Plays an Animation on this character's skeleton.");
-		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.nFlags |= EFLN_TARGET_ENTITY | EFLN_AISEQUENCE_SUPPORTED;
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
@@ -417,16 +454,20 @@ private:
 			CryCharAnimationParams aparams;
 			aparams.m_fTransTime = GetPortFloat(pActInfo, IN_BLEND_TIME);
 
-			if (GetPortBool(pActInfo, IN_LOOP))
-			{
+			m_almostDonePercentage = clamp_tpl(GetPortFloat(pActInfo, IN_ALMOST_DONE_PERCENTAGE), 0.05f, 0.95f);
+
+			m_bLooping = GetPortBool(pActInfo, IN_LOOP);
+			if (m_bLooping)
 				aparams.m_nFlags |= CA_LOOP_ANIMATION;
-			}
-			else if (GetPortBool(pActInfo, IN_REPEAT_LAST_FRAME))
-			{
-				aparams.m_nFlags |= CA_REPEAT_LAST_KEY;
-			}
+
+			m_playbackSpeedMultiplier = GetPortFloat(pActInfo, IN_PLAYBACK_SPEED_MULTIPLIER);
+			aparams.m_fPlaybackSpeed = m_playbackSpeedMultiplier;
+
+			m_playbackSpeedMultiplier = GetPortFloat(pActInfo, IN_PLAYBACK_SPEED_MULTIPLIER);
+			aparams.m_fPlaybackSpeed = m_playbackSpeedMultiplier;
 
 			m_bForcedActivate = false;
+			m_bForcedUpdateActivate = false;
 			if (GetPortBool(pActInfo, IN_FORCE_UPDATE))
 			{
 				aparams.m_nFlags |= CA_FORCE_SKELETON_UPDATE;
@@ -435,6 +476,9 @@ private:
 					m_bForcedActivate = true;
 					pActInfo->pEntity->Activate(true); // maybe unforce update as well
 				}
+
+				m_bForcedUpdateActivate = true;
+				SetForceUpdate(pActInfo->pEntity->GetId(), true);
 			}
 
 			const bool animationMovementControl = GetPortBool(pActInfo, IN_CONTROL_MOVEMENT);
@@ -499,6 +543,12 @@ private:
 				m_bForcedActivate = false;
 			}
 
+			if (m_bForcedUpdateActivate)
+			{
+				m_bForcedUpdateActivate = false;
+				SetForceUpdate(pActInfo->pEntity->GetId(), false);
+			}
+
 			ICharacterInstance* pCharacterInstance = pActInfo->pEntity->GetCharacter(0);
 			if (pCharacterInstance != NULL)
 			{
@@ -526,6 +576,7 @@ private:
 	{
 		bool tokenFound = false;
 		bool almostDone = false;
+		bool isAlmostDoneConnected = false;
 
 		QuatT relativeAnimationMovement(IDENTITY, ZERO);
 		ICharacterInstance* pCharacterInstance = m_token && pActInfo->pEntity ? pActInfo->pEntity->GetCharacter(0) : NULL;
@@ -540,7 +591,11 @@ private:
 				{
 					tokenFound = true;
 					const float animationTime = pSkeletonAnimation->GetAnimationNormalizedTime(&animation);
-					almostDone = animationTime > 0.85f;
+					almostDone = animationTime > m_almostDonePercentage;
+					if (m_bLooping && !almostDone)
+					{
+						m_firedAlmostDone = false;
+					}
 				}
 			}
 			relativeAnimationMovement = pSkeletonAnimation->GetRelMovement();
@@ -549,6 +604,8 @@ private:
 		if (almostDone && !m_firedAlmostDone)
 		{
 			ActivateOutput(pActInfo, OUT_ALMOST_DONE, SFlowSystemVoid());
+			isAlmostDoneConnected = IsOutputConnected(pActInfo, OUT_ALMOST_DONE);
+			m_firedAlmostDone = true;
 		}
 		else if (!tokenFound)
 		{
@@ -566,6 +623,12 @@ private:
 					m_bForcedActivate = false;
 				}
 
+				if (m_bForcedUpdateActivate)
+				{
+					m_bForcedUpdateActivate = false;
+					SetForceUpdate(pActInfo->pEntity->GetId(), false);
+				}
+
 				if (m_manualAnimationControlledMovement)
 				{
 					if (pSkeletonAnimation != NULL)
@@ -581,19 +644,32 @@ private:
 					Script::CallMethod(pEntityScript, pFuncName);
 			}
 		}
-		else
-		{
-			const bool updateMovementManually = m_manualAnimationControlledMovement && (pActInfo->pEntity != NULL);
-			if (updateMovementManually)
-			{
-				QuatT newWorldLocation = QuatT(pActInfo->pEntity->GetWorldTM()) * relativeAnimationMovement;
-				newWorldLocation.q.Normalize();
 
-				pActInfo->pEntity->SetWorldTM(Matrix34(newWorldLocation));
-			}
+		// Update entity position if animation is running and controlled movement active.
+		// If AlmostDone was triggered and AlmostDone output is connected, we assume that
+		// a new animation was triggered.
+		// There are situations when this assumption might fail and movement is not updated
+		// properly, to get this fixed the controlled movement needs to happen outside of this
+		// FG Node
+		if (tokenFound && !isAlmostDoneConnected && m_manualAnimationControlledMovement && pActInfo->pEntity)
+		{
+			QuatT newWorldLocation = QuatT(pActInfo->pEntity->GetWorldTM()) * relativeAnimationMovement;
+			newWorldLocation.q.Normalize();
+			pActInfo->pEntity->SetWorldTM(Matrix34(newWorldLocation));
+		}
+	}
+
+	void SetForceUpdate(EntityId entityId, bool bEnable)
+	{
+		IGameFramework* const pGameFramework = gEnv->pGameFramework;
+		IGameObject* const pGameObject = pGameFramework ? pGameFramework->GetGameObject(entityId) : nullptr;
+		if (pGameObject)
+		{
+			pGameObject->ForceUpdate(bEnable);
 		}
 	}
 };
+
 
 //////////////////////////////////////////////////////////////////////////
 class CIsAnimPlaying_Node : public CFlowBaseNode<eNCT_Singleton>

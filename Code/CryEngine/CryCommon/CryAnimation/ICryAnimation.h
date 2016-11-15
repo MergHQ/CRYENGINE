@@ -23,7 +23,12 @@
 
 #include "CryCharAnimationParams.h"
 
-// maximum number of LODs per one geometric model (CryGeometry)
+typedef int32 TJointId;
+
+//! default return for invalid joint when searching through the skeleton
+enum : TJointId { INVALID_JOINT_ID = -1 };
+
+//! maximum number of LODs per one geometric model (CryGeometry)
 enum {g_nMaxGeomLodLevels = 6};
 
 //! Flags used by ICharacterInstance::SetFlags and GetFlags.
