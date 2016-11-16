@@ -1332,12 +1332,13 @@ EditorStyleHelper {
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
+	qproperty-timelineOutsideTrackColor: rgba(60, 60, 60,120);
 	qproperty-timelineDescriptionTrackColor: rgb(91, 91, 91);
-	qproperty-timelineCompositeTrackColor: rgb(75, 75, 75);
+	qproperty-timelineCompositeTrackColor: rgb(81, 81, 81);
 	qproperty-timelineSelectionColor: rgb(97, 172, 236);
 	qproperty-timelineDescriptionTextColor: rgb(149, 149, 149);
 	qproperty-timelineInnerTickLines: rgb(50, 50, 50);
-	qproperty-timelineOuterTickLines: rgb(97, 97, 97);
+	qproperty-timelineOuterTickLines: rgb(55, 55, 55);
 	qproperty-timelineBottomLines: rgb(50, 50, 50);
 	qproperty-timelineToggleColor: rgb(152, 152, 152);
 	qproperty-timelineClipPen: rgb(200, 200, 200);
