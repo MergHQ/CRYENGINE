@@ -48,7 +48,7 @@ add_sources("NoUberFile"
 # -- SDL_mixer.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
-	PROJECTS SDL_mixer
+	PROJECTS sdl_mixer_dynamic sdl_mixer_static
 	SOURCE_GROUP "Root"
 		"../../SDKs/SDL_mixer/SDL_mixer.h"
 		"../../SDKs/SDL_mixer/dynamic_flac.c"
