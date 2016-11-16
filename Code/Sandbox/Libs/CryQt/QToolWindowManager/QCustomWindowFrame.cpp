@@ -41,7 +41,10 @@ QCustomTitleBar::QCustomTitleBar(QWidget* parent)
 	, m_maximizeButton(nullptr)
 	, m_closeButton(nullptr)
 {
-	connect(parent, SIGNAL(contentsChanged(QWidget*)), this, SLOT(onFrameContentsChanged(QWidget*)));
+	if (parent->metaObject()->indexOfSignal(QMetaObject::normalizedSignature(SIGNAL("contentsChanged(QWidget*)"))) != -1)
+	{
+		connect(parent, SIGNAL(contentsChanged(QWidget*)), this, SLOT(onFrameContentsChanged(QWidget*)));
+	}
 
 	QHBoxLayout* myLayout = new QHBoxLayout(this);
 	myLayout->setContentsMargins(4, 4, 4, 0);
@@ -138,6 +141,13 @@ void QCustomTitleBar::toggleMaximizedParent()
 void QCustomTitleBar::showSystemMenu(QPoint p)
 {
 #if defined(WIN32) || defined(WIN64)
+
+	QWidget* screen = qApp->desktop()->screen(qApp->desktop()->screenNumber(p));
+	p = screen->mapFromGlobal(p);
+	p.setX(p.x() * screen->devicePixelRatioF());
+	p.setY(p.y() * screen->devicePixelRatioF());
+	p = screen->mapToGlobal(p);
+
 	HWND hWnd = (HWND)parentWidget()->winId();
 	HMENU hMenu = GetSystemMenu(hWnd, FALSE);
 
@@ -413,7 +423,7 @@ QCustomWindowFrame::QCustomWindowFrame()
 
 #if defined(WIN32) || defined(WIN64)
 	SetWindowLong((HWND)winId(), GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_SYSMENU);
-	m_dwm = LoadLibrary(_T("dwmapi.dll"));
+	m_dwm = LoadLibraryEx(_T("dwmapi.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 	if (m_dwm)
 	{
 		dwmExtendFrameIntoClientArea = (dwmExtendFrameIntoClientArea_t)GetProcAddress(m_dwm, "DwmExtendFrameIntoClientArea");
@@ -435,12 +445,11 @@ QCustomWindowFrame::QCustomWindowFrame()
 QCustomWindowFrame::~QCustomWindowFrame()
 {
 #if (defined(_WIN32) || defined(_WIN64))
+	dwmExtendFrameIntoClientArea = nullptr;
 	if (m_dwm)
 	{
 		FreeLibrary(m_dwm);
 	}
-
-	dwmExtendFrameIntoClientArea = nullptr;
 #endif
 }
 
@@ -615,17 +624,36 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 	case WM_GETMINMAXINFO:
 	{
 		PMINMAXINFO mmi = reinterpret_cast<PMINMAXINFO>(msg->lParam);
-		QRect scrGeometry = qApp->desktop()->availableGeometry(this);
-
-		mmi->ptMaxPosition.x = 0;
-		mmi->ptMaxPosition.y = 0;
-		mmi->ptMaxSize.x = scrGeometry.width();
-		mmi->ptMaxSize.y = scrGeometry.height();
-		mmi->ptMaxTrackSize.x = min(this->maximumWidth(), GetSystemMetrics(SM_CXVIRTUALSCREEN));
-		mmi->ptMaxTrackSize.y = min(this->maximumHeight(), GetSystemMetrics(SM_CYVIRTUALSCREEN));
-		mmi->ptMinTrackSize.x = this->minimumWidth();
-		mmi->ptMinTrackSize.y = this->minimumHeight();
-
+		const POINT ptZero = { 0, 0 };
+		HMONITOR hmon = MonitorFromPoint(ptZero, MONITOR_DEFAULTTOPRIMARY);
+		HMONITOR hwndmon = MonitorFromWindow((HWND)winId(), MONITOR_DEFAULTTONEAREST);
+		MONITORINFO mi, mi2;
+		mi.cbSize = sizeof(mi);
+		mi2.cbSize = sizeof(mi2);
+		GetMonitorInfo(hmon, &mi);
+		GetMonitorInfo(hwndmon, &mi2);
+		int miWidth = mi.rcWork.right - mi.rcWork.left;
+		int miHeight = mi.rcWork.bottom - mi.rcWork.top;
+		int mi2Width = mi2.rcWork.right - mi2.rcWork.left;
+		int mi2Height = mi2.rcWork.bottom - mi2.rcWork.top;
+		
+		mmi->ptMaxPosition.x = mi2.rcWork.left - mi2.rcMonitor.left;
+		mmi->ptMaxPosition.y = mi2.rcWork.top - mi2.rcMonitor.top;
+		if (mi2Width > miWidth || mi2Height > miHeight)
+		{
+			mmi->ptMaxSize.x = mi.rcMonitor.right;
+			mmi->ptMaxSize.y = mi.rcMonitor.bottom;
+		}
+		else
+		{
+			mmi->ptMaxSize.x = mi2Width;
+			mmi->ptMaxSize.y = mi2Height;
+		}
+		setMaximumSize(mi2Width / devicePixelRatioF(), mi2Height / devicePixelRatioF()); //Ensure window will not overlap taskbar
+		mmi->ptMaxTrackSize.x = min(this->maximumWidth() * devicePixelRatioF(), GetSystemMetrics(SM_CXMAXTRACK));
+		mmi->ptMaxTrackSize.y = min(this->maximumHeight() * devicePixelRatioF(), GetSystemMetrics(SM_CYMAXTRACK));
+		mmi->ptMinTrackSize.x = this->minimumWidth() * devicePixelRatioF();
+		mmi->ptMinTrackSize.y = this->minimumHeight() * devicePixelRatioF();
 		*result = 0;
 		return true;
 	}
@@ -666,7 +694,6 @@ bool QCustomWindowFrame::event(QEvent* e)
 			m_contents->hide();
 		break;
 	}
-
 	return QFrame::event(e);
 }
 

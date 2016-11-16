@@ -40,7 +40,7 @@ QWidget* windowBelow(QWidget* w)
 		{
 			foreach(QWidget* w, qApp->topLevelWidgets())
 			{
-				if (w->isWindow() && w->isVisible() && (HWND)w->winId() == h)
+				if (w->isWindow() && w->isVisible() && (HWND)w->winId() == h && !w->windowState().testFlag(Qt::WindowMinimized))
 					if (w->geometry().contains(QCursor::pos()))
 						return w;
 			}
