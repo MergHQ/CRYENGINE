@@ -14,7 +14,9 @@
 #include <Controls/EditorDialog.h>
 
 #include <CryUQS/Interfaces/InterfacesIncludes.h>
+#include "QPropertyTree/QPropertyTree.h"
 
+struct SQuery;
 class CHistoricQueryTreeModel;
 class CHistoricQueryTreeView;
 
@@ -44,6 +46,8 @@ public:
 	virtual void AddHistoricQuery(const SHistoricQueryOverview& overview) override;
 	virtual void AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...) override;
 	virtual void AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) override;
+	virtual void AddInstantEvaluatorName(const char* szInstantEvaluatorName) override;
+	virtual void AddDeferredEvaluatorName(const char* szDeferredEvaluatorName) override;
 	// ~IQueryHistoryConsumer
 
 private:
@@ -51,13 +55,16 @@ private:
 	void OnClearHistoryButtonClicked(bool checked);
 	void OnSaveLiveHistoryToFile();
 	void OnLoadHistoryFromFile();
+	void OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 private:
 	uqs::core::IQueryHistoryManager* m_pQueryHistoryManager;
+	SQuery*                          m_pFreshlyAddedQuery;
 	CHistoricQueryTreeView*          m_pTreeView;
 	CHistoricQueryTreeModel*         m_pTreeModel;
 	QTextEdit*                       m_pTextQueryDetails;
 	QTextEdit*                       m_pTextItemDetails;
 	QComboBox*                       m_pComboBoxHistoryOrigin;
 	QPushButton*                     m_pButtonClearCurrentHistory;
+	QPropertyTree*                   m_pPropertyTree;
 };

@@ -593,11 +593,12 @@ namespace uqs
 					{
 						// update the item's score so far
 						const float weight = m_queryBlueprint->GetInstantEvaluatorBlueprints()[instantEvaluatorIndex]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
-						workingDataToWriteResultTo.accumulatedAndWeightedScoreSoFar += evaluationResult.score * weight;
+						const float weightedScore = evaluationResult.score * weight;
+						workingDataToWriteResultTo.accumulatedAndWeightedScoreSoFar += weightedScore;
 
 						if (m_pHistory)
 						{
-							m_pHistory->OnInstantEvaluatorScoredItem(instantEvaluatorIndex, workingDataToWriteResultTo.indexInGeneratedItems, evaluationResult.score, workingDataToWriteResultTo.accumulatedAndWeightedScoreSoFar);
+							m_pHistory->OnInstantEvaluatorScoredItem(instantEvaluatorIndex, workingDataToWriteResultTo.indexInGeneratedItems, evaluationResult.score, weightedScore, workingDataToWriteResultTo.accumulatedAndWeightedScoreSoFar);
 						}
 					}
 				}
@@ -793,11 +794,12 @@ namespace uqs
 						else
 						{
 							const float weight = m_queryBlueprint->GetDeferredEvaluatorBlueprints()[de.originalIndexInQueryBlueprint]->GetWeight();	// FIXME: could cache the weights of all evaluators and spare the pointer access
-							taskToUpdate.pWorkingData->accumulatedAndWeightedScoreSoFar += evaluationResult.score * weight;
+							const float weightedScore = evaluationResult.score * weight;
+							taskToUpdate.pWorkingData->accumulatedAndWeightedScoreSoFar += weightedScore;
 
 							if (m_pHistory)
 							{
-								m_pHistory->OnDeferredEvaluatorScoredItem(de.originalIndexInQueryBlueprint, taskToUpdate.pWorkingData->indexInGeneratedItems, evaluationResult.score, taskToUpdate.pWorkingData->accumulatedAndWeightedScoreSoFar);
+								m_pHistory->OnDeferredEvaluatorScoredItem(de.originalIndexInQueryBlueprint, taskToUpdate.pWorkingData->indexInGeneratedItems, evaluationResult.score, weightedScore, taskToUpdate.pWorkingData->accumulatedAndWeightedScoreSoFar);
 							}
 						}
 

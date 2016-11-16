@@ -26,10 +26,13 @@ namespace uqs
 		public:
 			explicit                                              CQueryBlueprintLibrary();
 
+			// IQueryBlueprintLibrary
 			virtual ELoadAndStoreResult                           LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, datasource::IQueryBlueprintLoader& loader, shared::IUqsString& error) override;
 			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, shared::IUqsString& error) override;
+			const IQueryBlueprint*                                FindQueryBlueprintByName(const char* szQueryBlueprintName) const override;
+			// ~IQueryBlueprintLibrary
 
-			std::shared_ptr<const CQueryBlueprint>                FindQueryBlueprintByName(const char* queryBlueprintName) const;
+			std::shared_ptr<const CQueryBlueprint>                FindQueryBlueprintByNameInternal(const char* szQueryBlueprintName) const;
 			void                                                  PrintToConsole(CLogger& logger) const;
 
 		private:

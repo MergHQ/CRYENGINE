@@ -161,6 +161,16 @@ namespace uqs
 			m_textLinesOfFocusedItem.emplace_back(color, std::move(textLine));
 		}
 
+		void CQueryHistoryInGameGUI::AddInstantEvaluatorName(const char* szInstantEvaluatorName)
+		{
+			// nothing (we don't request the names of all instant-evaluators by calling IQueryHistoryManager::EnumerateInstantEvaluatorNames())
+		}
+
+		void CQueryHistoryInGameGUI::AddDeferredEvaluatorName(const char* szDeferredEvaluatorName)
+		{
+			// nothing (we don't request the names of all deferred-evaluators by calling IQueryHistoryManager::EnumerateDeferredEvaluatorNames())
+		}
+
 		bool CQueryHistoryInGameGUI::OnInputEvent(const SInputEvent& event)
 		{
 			// don't scroll through the history if it's not being drawn at all

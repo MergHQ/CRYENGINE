@@ -49,6 +49,7 @@ namespace uqs
 
 				EStatus                                         status;
 				float                                           nonWeightedScore;               // only relevant if status == HasFinishedAndScoredTheItem
+				float                                           weightedScore;
 				string                                          furtherInformationAboutStatus;  // some detailed message about why the status is now what it is (only used by EStatus::ExceptionOccurredInFunctionCall and EStatus::ExceptionOccurredInHimself)
 			};
 
@@ -76,6 +77,7 @@ namespace uqs
 
 				EStatus                                         status;
 				float                                           nonWeightedScore;               // only relevant if status == HasFinishedAndScoredTheItem
+				float                                           weightedScore;
 				string                                          furtherInformationAboutStatus;  // some detailed message about why the status is now what it is (only used by EStatus::GotAborted, EStatus::ExceptionOccurredInFunctionCall and EStatus::ExceptionOccurredInHimself)
 			};
 
@@ -125,12 +127,12 @@ namespace uqs
 			void                                                OnQueryDestroyed();
 			void                                                OnExceptionOccurred(const char* exceptionMessage, const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnGenerationPhaseFinished(size_t numGeneratedItems, const CQueryBlueprint& queryBlueprint);
-			void                                                OnInstantEvaluatorScoredItem(size_t instantEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float accumulatedAndWeightedScoreSoFar);
+			void                                                OnInstantEvaluatorScoredItem(size_t instantEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float weightedSingleScore, float accumulatedAndWeightedScoreSoFar);
 			void                                                OnInstantEvaluatorDiscardedItem(size_t instantEvaluatorIndex, size_t itemIndex);
 			void                                                OnFunctionCallExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* exceptionMessage);
 			void                                                OnExceptionOccurredInInstantEvaluator(size_t instantEvaluatorIndex, size_t itemIndex, const char* exceptionMessage);
 			void                                                OnDeferredEvaluatorStartedRunningOnItem(size_t deferredEvaluatorIndex, size_t itemIndex);
-			void                                                OnDeferredEvaluatorScoredItem(size_t deferredEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float accumulatedAndWeightedScoreSoFar);
+			void                                                OnDeferredEvaluatorScoredItem(size_t deferredEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float weightedSingleScore, float accumulatedAndWeightedScoreSoFar);
 			void                                                OnDeferredEvaluatorDiscardedItem(size_t deferredEvaluatorIndex, size_t itemIndex);
 			void                                                OnDeferredEvaluatorGotAborted(size_t deferredEvaluatorIndex, size_t itemIndex, const char* reasonForAbort);
 			void                                                OnFunctionCallExceptionOccurredInDeferredEvaluator(size_t deferredEvaluatorIndex, size_t itemIndex, const char* exceptionMessage);
@@ -140,11 +142,13 @@ namespace uqs
 
 			size_t                                              GetRoughMemoryUsage() const;
 			bool                                                FindClosestItemInView(const SDebugCameraView& cameraView, size_t& outItemIndex) const;     // returns true and outputs the index of the closest item to outItemIndex or just returns false if there are no good candidates nearby
-			void                                                DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused) const;
+			void                                                DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const;
 
 			void                                                FillQueryHistoryConsumerWithShortInfoAboutQuery(IQueryHistoryConsumer& consumer, bool bHighlight) const;
 			void                                                FillQueryHistoryConsumerWithDetailedInfoAboutQuery(IQueryHistoryConsumer& consumer) const;
 			void                                                FillQueryHistoryConsumerWithDetailedInfoAboutItem(IQueryHistoryConsumer& consumer, size_t itemIndex) const;
+			void                                                FillQueryHistoryConsumerWithInstantEvaluatorNames(IQueryHistoryConsumer& consumer) const;
+			void                                                FillQueryHistoryConsumerWithDeferredEvaluatorNames(IQueryHistoryConsumer& consumer) const;
 
 			const CQueryID&                                     GetQueryID() const;
 			const CQueryID&                                     GetParentQueryID() const;
@@ -157,7 +161,17 @@ namespace uqs
 
 			                                                    UQS_NON_COPYABLE(CHistoricQuery);
 
-			static void                                         AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, float bestScoreAmongAllItems, float worstScoreAmongAllItems, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning);
+			enum EItemAnalyzeStatus
+			{
+				ExceptionOccurred,
+				DiscardedByAtLeastOneEvaluator,
+				DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun,
+				DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun,
+				StillBeingEvaluated,
+				SurvivedAllEvaluators,
+			};
+
+			static EItemAnalyzeStatus                           AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks, float& outAccumulatedAndWeightedScoreOfMaskedEvaluators, bool& outFoundScoreOutsideValidRange);
 			CTimeValue                                          ComputeElapsedTimeFromQueryCreationToDestruction() const;
 
 		private:

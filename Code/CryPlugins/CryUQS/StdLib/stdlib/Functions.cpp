@@ -12,7 +12,25 @@ namespace uqs
 
 		void CStdLibRegistration::InstantiateFunctionFactoriesForRegistration()
 		{
+			static const client::CFunctionFactory<CFunction_Vec3Add> functionFactory_Vec3Add("std::Vec3Add");
 			static const client::CFunctionFactory<CFunction_PosFromEntity> functionFactory_PosFromEntity("std::PosFromEntity");
+		}
+
+		//===================================================================================
+		//
+		// CFunction_Vec3Add
+		//
+		//===================================================================================
+
+		CFunction_Vec3Add::CFunction_Vec3Add(const SCtorContext& ctorContext)
+			: CFunctionBase(ctorContext)
+		{
+			// nothing
+		}
+
+		Vec3 CFunction_Vec3Add::DoExecute(const SExecuteContext& executeContext, const SParams& params) const
+		{
+			return params.v1 + params.v2;
 		}
 
 		//===================================================================================

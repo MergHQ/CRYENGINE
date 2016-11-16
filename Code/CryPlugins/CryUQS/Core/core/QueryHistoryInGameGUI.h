@@ -35,6 +35,8 @@ namespace uqs
 			virtual void                                 AddHistoricQuery(const SHistoricQueryOverview& overview) override;
 			virtual void                                 AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...) override;
 			virtual void                                 AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) override;
+			virtual void                                 AddInstantEvaluatorName(const char* szInstantEvaluatorName) override;
+			virtual void                                 AddDeferredEvaluatorName(const char* szDeferredEvaluatorName) override;
 			// ~IQueryHistoryConsumer
 
 			// IInputEventListener

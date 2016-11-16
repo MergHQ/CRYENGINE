@@ -28,7 +28,7 @@ namespace uqs
 			stl::find_and_erase(m_listeners, pListener);
 		}
 
-		void CQueryHistoryManager::UpdateDebugRendering3D(const SDebugCameraView& view)
+		void CQueryHistoryManager::UpdateDebugRendering3D(const SDebugCameraView& view, const SEvaluatorDrawMasks& evaluatorDrawMasks)
 		{
 			const CQueryHistory& history = m_queryHistories[m_historyToManage];
 			const CQueryID& queryIdOfSelectedHistoricQuery = m_queryIDOfCurrentHistoricQuery[m_historyToManage];
@@ -50,7 +50,7 @@ namespace uqs
 				if (query.IsQueryDestroyed() && (now - query.GetQueryDestroyedTimestamp() > 2.0f))
 					continue;
 
-				query.DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation);
+				query.DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation, SEvaluatorDrawMasks::CreateAllBitsSet());
 			}
 
 			//
@@ -67,12 +67,12 @@ namespace uqs
 
 					if (bCurrentlyFocusingAnItem)
 					{
-						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(m_indexOfFocusedItem);
+						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(m_indexOfFocusedItem, evaluatorDrawMasks);
 					}
 					else
 					{
 						m_indexOfFocusedItem = s_noItemFocusedIndex;
-						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation);
+						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation, evaluatorDrawMasks);
 					}
 
 					if (m_indexOfFocusedItem != indexOfPreviouslyFocusedItem)
@@ -205,6 +205,22 @@ namespace uqs
 				m_queryIDOfCurrentHistoricQuery[whichHistory] = queryIDToMakeCurrent;
 				m_indexOfFocusedItem = s_noItemFocusedIndex;
 				NotifyListeners(IQueryHistoryListener::EEvent::DifferentHistoricQuerySelected);
+			}
+		}
+
+		void CQueryHistoryManager::EnumerateInstantEvaluatorNames(EHistoryOrigin fromWhichHistory, const CQueryID& idOfQueryUsingTheseEvaluators, IQueryHistoryConsumer& receiver)
+		{
+			if (const CHistoricQuery* pHistoricQuery = m_queryHistories[fromWhichHistory].FindHistoryEntryByQueryID(idOfQueryUsingTheseEvaluators))
+			{
+				pHistoricQuery->FillQueryHistoryConsumerWithInstantEvaluatorNames(receiver);
+			}
+		}
+
+		void CQueryHistoryManager::EnumerateDeferredEvaluatorNames(EHistoryOrigin fromWhichHistory, const CQueryID& idOfQueryUsingTheseEvaluators, IQueryHistoryConsumer& receiver)
+		{
+			if (const CHistoricQuery* pHistoricQuery = m_queryHistories[fromWhichHistory].FindHistoryEntryByQueryID(idOfQueryUsingTheseEvaluators))
+			{
+				pHistoricQuery->FillQueryHistoryConsumerWithDeferredEvaluatorNames(receiver);
 			}
 		}
 

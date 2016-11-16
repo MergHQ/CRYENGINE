@@ -53,6 +53,7 @@ namespace uqs
 		CHistoricQuery::SHistoricInstantEvaluatorResult::SHistoricInstantEvaluatorResult()
 			: status(EStatus::HasNotRunYet)
 			, nonWeightedScore(0.0f)
+			, weightedScore(0.0f)
 			, furtherInformationAboutStatus()
 		{}
 
@@ -60,6 +61,7 @@ namespace uqs
 		{
 			ar(status, "status");
 			ar(nonWeightedScore, "nonWeightedScore");
+			ar(weightedScore, "weightedScore");
 		}
 
 		//===================================================================================
@@ -71,6 +73,7 @@ namespace uqs
 		CHistoricQuery::SHistoricDeferredEvaluatorResult::SHistoricDeferredEvaluatorResult()
 			: status(EStatus::HasNotRunYet)
 			, nonWeightedScore(0.0f)
+			, weightedScore(0.0f)
 			, furtherInformationAboutStatus()
 		{}
 
@@ -78,6 +81,7 @@ namespace uqs
 		{
 			ar(status, "status");
 			ar(nonWeightedScore, "nonWeightedScore");
+			ar(weightedScore, "weightedScore");
 		}
 
 		//===================================================================================
@@ -234,12 +238,13 @@ namespace uqs
 			}
 		}
 
-		void CHistoricQuery::OnInstantEvaluatorScoredItem(size_t instantEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float accumulatedAndWeightedScoreSoFar)
+		void CHistoricQuery::OnInstantEvaluatorScoredItem(size_t instantEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float weightedSingleScore, float accumulatedAndWeightedScoreSoFar)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
 			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.nonWeightedScore = nonWeightedSingleScore;
+			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
 			item.accumulatedAndWeightedScoreSoFar = accumulatedAndWeightedScoreSoFar;
 		}
@@ -278,12 +283,13 @@ namespace uqs
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow;
 		}
 
-		void CHistoricQuery::OnDeferredEvaluatorScoredItem(size_t deferredEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float accumulatedAndWeightedScoreSoFar)
+		void CHistoricQuery::OnDeferredEvaluatorScoredItem(size_t deferredEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float weightedSingleScore, float accumulatedAndWeightedScoreSoFar)
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
 			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.nonWeightedScore = nonWeightedSingleScore;
+			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
 			item.accumulatedAndWeightedScoreSoFar = accumulatedAndWeightedScoreSoFar;
 		}
@@ -351,44 +357,50 @@ namespace uqs
 			return sizeOfAllItems + sizeOfDebugRenderWorld;
 		}
 
-		void CHistoricQuery::AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, float bestScoreAmongAllItems, float worstScoreAmongAllItems, ColorF& outItemColor, bool& outShouldDrawItemScore, bool& outShouldDrawAnExclamationMarkAsWarning)
+		CHistoricQuery::EItemAnalyzeStatus CHistoricQuery::AnalyzeItemStatus(const SHistoricItem& itemToAnalyze, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks, float& outAccumulatedAndWeightedScoreOfMaskedEvaluators, bool& outFoundScoreOutsideValidRange)
 		{
-			outItemColor = Col_Black;
-			outShouldDrawItemScore = false;
-			outShouldDrawAnExclamationMarkAsWarning = false;
+			outAccumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
+			outFoundScoreOutsideValidRange = false;
 
 			bool bHasEncounteredSomeException = false;
+			bool bAllEvaluatorsHaveRun = true;
+			bool bDiscardedByAtLeastOneEvaluator = false;
 
-			bool allInstantEvaluatorsFinished = true;
-			bool allDeferredEvaluatorsFinished = true;
+			//
+			// instant-evaluators
+			//
 
-			bool discardedByAtLeastOneInstantEvaluator = false;
-			bool discardedByAtLeastOneDeferredEvaluator = false;
-
-			for (const SHistoricInstantEvaluatorResult& ieResult : itemToAnalyze.resultOfAllInstantEvaluators)
+			for (size_t i = 0, n = itemToAnalyze.resultOfAllInstantEvaluators.size(); i < n; ++i)
 			{
+				// skip this evaluator if the caller is not interested in having it contribute to the item's drawing color
+				const evaluatorsBitfield_t bit = (evaluatorsBitfield_t)1 << i;
+				if (!(evaluatorDrawMasks.maskInstantEvaluators & bit))
+					continue;
+
+				const SHistoricInstantEvaluatorResult& ieResult = itemToAnalyze.resultOfAllInstantEvaluators[i];
+
 				switch (ieResult.status)
 				{
 				case SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					// check for illegal score (one that is outside [0.0 .. 1.0] which can happen if an evaluator is implemented wrongly)
 					if (ieResult.nonWeightedScore < 0.0f || ieResult.nonWeightedScore > 1.0f)
 					{
-						outShouldDrawAnExclamationMarkAsWarning = true;
+						outFoundScoreOutsideValidRange = true;
 					}
+					outAccumulatedAndWeightedScoreOfMaskedEvaluators += ieResult.weightedScore;
 					break;
 
 				case SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem:
-					discardedByAtLeastOneInstantEvaluator = true;
+					bDiscardedByAtLeastOneEvaluator = true;
 					break;
 
 				case SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet:
-					allInstantEvaluatorsFinished = false;
+					bAllEvaluatorsHaveRun = false;
 					break;
 
 				case SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall:
 				case SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInHimself:
 					bHasEncounteredSomeException = true;
-					outShouldDrawAnExclamationMarkAsWarning = true;
 					break;
 
 				default:
@@ -397,31 +409,42 @@ namespace uqs
 				}
 			}
 
-			for (const SHistoricDeferredEvaluatorResult & deResult : itemToAnalyze.resultOfAllDeferredEvaluators)
+			//
+			// deferred-evaluators
+			//
+
+			for (size_t i = 0, n = itemToAnalyze.resultOfAllDeferredEvaluators.size(); i < n; ++i)
 			{
+				// skip this evaluator if the caller is not interested in having it contribute to the item's drawing color
+				const evaluatorsBitfield_t bit = (evaluatorsBitfield_t)1 << i;
+				if (!(evaluatorDrawMasks.maskDeferredEvaluators & bit))
+					continue;
+
+				const SHistoricDeferredEvaluatorResult& deResult = itemToAnalyze.resultOfAllDeferredEvaluators[i];
+
 				switch (deResult.status)
 				{
 				case SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					// check for illegal score (one that is outside [0.0 .. 1.0] which can happen if an evaluator is implemented wrongly)
 					if (deResult.nonWeightedScore < 0.0f || deResult.nonWeightedScore > 1.0f)
 					{
-						outShouldDrawAnExclamationMarkAsWarning = true;
+						outFoundScoreOutsideValidRange = true;
 					}
+					outAccumulatedAndWeightedScoreOfMaskedEvaluators += deResult.weightedScore;
 					break;
 
 				case SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem:
-					discardedByAtLeastOneDeferredEvaluator = true;
+					bDiscardedByAtLeastOneEvaluator = true;
 					break;
 
 				case SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet:
 				case SHistoricDeferredEvaluatorResult::EStatus::GotAborted:
-					allDeferredEvaluatorsFinished = false;
+					bAllEvaluatorsHaveRun = false;
 					break;
 
 				case SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall:
 				case SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInHimself:
 					bHasEncounteredSomeException = true;
-					outShouldDrawAnExclamationMarkAsWarning = true;
 					break;
 
 				default:
@@ -430,45 +453,38 @@ namespace uqs
 				}
 			}
 
+			// exception?
 			if (bHasEncounteredSomeException)
 			{
-				outItemColor = Col_Black;
+				return EItemAnalyzeStatus::ExceptionOccurred;
 			}
-			else if (itemToAnalyze.bDisqualifiedDueToBadScore)
+
+			// item got discarded?
+			if (bDiscardedByAtLeastOneEvaluator)
 			{
-				if (allInstantEvaluatorsFinished && allDeferredEvaluatorsFinished)
+				return EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator;
+			}
+
+			// disqualified due to bad score?
+			if (itemToAnalyze.bDisqualifiedDueToBadScore)
+			{
+				if (bAllEvaluatorsHaveRun)
 				{
-					// all evaluators were running + finished
-					outItemColor = Col_DarkGray;
-					outShouldDrawItemScore = true;
+					return EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun;
 				}
 				else
 				{
-					// not all were running
-					outItemColor = Col_Plum;
+					return EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun;
 				}
 			}
-			else if (discardedByAtLeastOneInstantEvaluator || discardedByAtLeastOneDeferredEvaluator)
-			{
-				// item got discarded
-				outItemColor = Col_Black;
-			}
-			else if (!allInstantEvaluatorsFinished || !allDeferredEvaluatorsFinished)
-			{
-				// item is still being evaluated
-				outItemColor = Col_Yellow;
-			}
-			else
-			{
-				// it's one of the items in the result set => gradate its color from red to green, depending on its score
 
-				const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
-				const float itemRelativeScore = itemToAnalyze.accumulatedAndWeightedScoreSoFar - worstScoreAmongAllItems;
-				const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
-
-				outItemColor = Lerp(Col_Red, Col_Green, fraction);
-				outShouldDrawItemScore = true;
+			// item still being evaluated?
+			if (!bAllEvaluatorsHaveRun)
+			{
+				return EItemAnalyzeStatus::StillBeingEvaluated;
 			}
+
+			return EItemAnalyzeStatus::SurvivedAllEvaluators;
 		}
 
 		CTimeValue CHistoricQuery::ComputeElapsedTimeFromQueryCreationToDestruction() const
@@ -515,7 +531,7 @@ namespace uqs
 			return foundACloseEnoughItem;
 		}
 
-		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused) const
+		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const
 		{
 			m_debugRenderWorld.DrawAllAddedPrimitives(indexOfItemCurrentlyBeingFocused);
 
@@ -529,59 +545,30 @@ namespace uqs
 
 			for (const SHistoricItem& itemToAnalyze : m_items)
 			{
-				//
-				// check if the item was prematurely disqualified due to a too bad score
-				//
+				float accumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
+				bool foundScoreOutsideValidRange = false;
 
-				if (itemToAnalyze.bDisqualifiedDueToBadScore)
+				const EItemAnalyzeStatus status = AnalyzeItemStatus(itemToAnalyze, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, foundScoreOutsideValidRange);
+
+				if (status == EItemAnalyzeStatus::ExceptionOccurred)
 					continue;
 
-				//
-				// check if the item survived all instant-evaluators
-				//
+				if (status == EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator)
+					continue;
 
-				{
-					bool bItemHasSurvivedAllInstantEvaluators = true;
+				if (status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun)
+					continue;
 
-					for (const SHistoricInstantEvaluatorResult& ieResult : itemToAnalyze.resultOfAllInstantEvaluators)
-					{
-						if (ieResult.status != SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem)
-						{
-							bItemHasSurvivedAllInstantEvaluators = false;
-							break;
-						}
-					}
+				// accept all remaining item stati
 
-					if (!bItemHasSurvivedAllInstantEvaluators)
-						continue;
-				}
+				assert(status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun || status == EItemAnalyzeStatus::StillBeingEvaluated || status == EItemAnalyzeStatus::SurvivedAllEvaluators);
 
 				//
-				// check if the item survived all deferred-evaluators
+				// update the range of best/worst score
 				//
 
-				{
-					bool bItemHasSurvivedAllDeferredEvaluators = true;
-
-					for (const SHistoricDeferredEvaluatorResult& deResult : itemToAnalyze.resultOfAllDeferredEvaluators)
-					{
-						if (deResult.status != SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem)
-						{
-							bItemHasSurvivedAllDeferredEvaluators = false;
-							break;
-						}
-					}
-
-					if (!bItemHasSurvivedAllDeferredEvaluators)
-						continue;
-				}
-
-				//
-				// the item survived all evaluators => update the range of best/worst score
-				//
-
-				bestScoreAmongAllItems = std::max(bestScoreAmongAllItems, itemToAnalyze.accumulatedAndWeightedScoreSoFar);
-				worstScoreAmongAllItems = std::min(worstScoreAmongAllItems, itemToAnalyze.accumulatedAndWeightedScoreSoFar);
+				bestScoreAmongAllItems = std::max(bestScoreAmongAllItems, accumulatedAndWeightedScoreOfMaskedEvaluators);
+				worstScoreAmongAllItems = std::min(worstScoreAmongAllItems, accumulatedAndWeightedScoreOfMaskedEvaluators);
 			}
 
 			//
@@ -599,13 +586,67 @@ namespace uqs
 					bool bDrawScore = false;
 					bool bShouldDrawAnExclamationMarkAsWarning = false;
 
-					AnalyzeItemStatus(item, bestScoreAmongAllItems, worstScoreAmongAllItems, color, bDrawScore, bShouldDrawAnExclamationMarkAsWarning);
+					float accumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
+					bool bFoundItemScoreOutsideValidRange = false;
+
+					const EItemAnalyzeStatus status = AnalyzeItemStatus(item, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, bFoundItemScoreOutsideValidRange);
+
+					if (bFoundItemScoreOutsideValidRange)
+					{
+						bShouldDrawAnExclamationMarkAsWarning = true;
+					}
+
+					switch (status)
+					{
+					case EItemAnalyzeStatus::ExceptionOccurred:
+						bShouldDrawAnExclamationMarkAsWarning = true;
+						color = Col_Black;
+						break;
+
+					case EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator:
+						color = Col_Black;
+						break;
+
+					case EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun:
+						color = Col_Plum;
+						break;
+
+					case EItemAnalyzeStatus::StillBeingEvaluated:
+						color = Col_Yellow;
+						break;
+
+					case EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun:
+						if (0)  // TODO: currently, we don't draw items that were fully run but then disqualified due to bad score with a specific color (we just apply that nice color gradation), 
+						        // but in the future, we might wanna allow the user to tick a checkbox in the History Inspector for getting even more insight into an item)
+						{
+							bDrawScore = true;
+							color = Col_DarkGray;
+							break;
+						}
+						// fall through
+
+					case EItemAnalyzeStatus::SurvivedAllEvaluators:
+						{
+							// it's one of the items in the result set (or at least one that survived all masked evaluators) => gradate its color from red to green, depending on its score
+
+							const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
+							const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
+							const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
+
+							color = Lerp(Col_Red, Col_Green, fraction);
+							bDrawScore = true;
+						}
+						break;
+
+					default:
+						assert(0);
+					}
 
 					item.pDebugProxy->Draw(color, bShowDetails);
 
 					if (bDrawScore)
 					{
-						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot(), 1.5f, color, "%f", item.accumulatedAndWeightedScoreSoFar);
+						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot(), 1.5f, color, "%f", accumulatedAndWeightedScoreOfMaskedEvaluators);
 					}
 
 					if (bShowDetails)
@@ -911,6 +952,22 @@ namespace uqs
 					const SHistoricDeferredEvaluatorResult& deResult = item.resultOfAllDeferredEvaluators[index];
 					consumer.AddTextLineToFocusedItem(Col_Red, "DE #%i [%-*s]: %f", (int)index, (int)m_longestEvaluatorName, deName, deResult.nonWeightedScore);
 				}
+			}
+		}
+
+		void CHistoricQuery::FillQueryHistoryConsumerWithInstantEvaluatorNames(IQueryHistoryConsumer& consumer) const
+		{
+			for (const string& ieName : m_instantEvaluatorNames)
+			{
+				consumer.AddInstantEvaluatorName(ieName.c_str());
+			}
+		}
+
+		void CHistoricQuery::FillQueryHistoryConsumerWithDeferredEvaluatorNames(IQueryHistoryConsumer& consumer) const
+		{
+			for (const string& deName : m_deferredEvaluatorNames)
+			{
+				consumer.AddDeferredEvaluatorName(deName.c_str());
 			}
 		}
 

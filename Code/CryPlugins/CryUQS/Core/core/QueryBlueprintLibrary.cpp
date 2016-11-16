@@ -25,7 +25,7 @@ namespace uqs
 			}
 
 			const char* queryBPName = textualQueryBP.GetName();
-			const bool queryBPExistsAlready = (FindQueryBlueprintByName(queryBPName) != nullptr);
+			const bool queryBPExistsAlready = (FindQueryBlueprintByNameInternal(queryBPName) != nullptr);
 
 			if (queryBPExistsAlready && overwriteBehavior == ELoadAndStoreOverwriteBehavior::KeepExisting)
 			{
@@ -59,9 +59,15 @@ namespace uqs
 			return true;
 		}
 
-		std::shared_ptr<const CQueryBlueprint> CQueryBlueprintLibrary::FindQueryBlueprintByName(const char* queryBlueprintName) const
+		const IQueryBlueprint* CQueryBlueprintLibrary::FindQueryBlueprintByName(const char* szQueryBlueprintName) const
 		{
-			auto it = m_library.find(queryBlueprintName);
+			std::shared_ptr<const CQueryBlueprint> pQueryBlueprint = FindQueryBlueprintByNameInternal(szQueryBlueprintName);
+			return pQueryBlueprint.get();  // might be nullptr
+		}
+
+		std::shared_ptr<const CQueryBlueprint> CQueryBlueprintLibrary::FindQueryBlueprintByNameInternal(const char* szQueryBlueprintName) const
+		{
+			auto it = m_library.find(szQueryBlueprintName);
 			return (it == m_library.cend()) ? nullptr : it->second;
 		}
 

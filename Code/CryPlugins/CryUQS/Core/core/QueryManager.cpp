@@ -70,7 +70,7 @@ namespace uqs
 		{
 			// find the desired query-blueprint by its name
 			// FIXME: something like a QueryBlueprintID would be preferable, but hot-reloading blueprints must not affect existing IDs (and then also: we need extra code for a client to retrieve the ID from a qbp name)
-			std::shared_ptr<const CQueryBlueprint> qbp = g_hubImpl->GetQueryBlueprintLibrary().FindQueryBlueprintByName(request.queryBlueprintName);
+			std::shared_ptr<const CQueryBlueprint> qbp = g_hubImpl->GetQueryBlueprintLibrary().FindQueryBlueprintByNameInternal(request.queryBlueprintName);
 			if (!qbp)
 			{
 				errorMessage.Format("CQueryManager::StartQuery: unknown query blueprint: '%s'", request.queryBlueprintName);

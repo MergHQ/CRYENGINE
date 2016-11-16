@@ -51,6 +51,11 @@ namespace uqs
 			// - called when requesting details about the potentially focused item in the 3D world
 			// - this function may or may not get called multiple times in a row, depending on the amount of details and whether an item is focused at all
 			virtual void                  AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) = 0;
+
+			// - called when requesting the names of all evaluators involved in a specific historic query
+			// - see IQueryHistoryManager::EnumerateInstantEvaluatorNames() and EnumerateDeferredEvaluatorNames()
+			virtual void                  AddInstantEvaluatorName(const char* szInstantEvaluatorName) = 0;
+			virtual void                  AddDeferredEvaluatorName(const char* szDeferredEvaluatorName) = 0;
 		};
 
 		inline IQueryHistoryConsumer::SHistoricQueryOverview::SHistoricQueryOverview(const ColorF& _color, const char *_querierName, const CQueryID& _queryID, const CQueryID& _parentQueryID, const char* _queryBlueprintName, size_t _numGeneratedItems, size_t _numResultingItems, CTimeValue _timeElapsedUntilResult)

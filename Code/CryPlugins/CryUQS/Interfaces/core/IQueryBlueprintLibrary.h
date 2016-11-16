@@ -34,6 +34,7 @@ namespace uqs
 			virtual                             ~IQueryBlueprintLibrary() {}
 			virtual ELoadAndStoreResult         LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, datasource::IQueryBlueprintLoader& loader, shared::IUqsString& error) = 0;
 			virtual bool                        RemoveStoredQueryBlueprint(const char* szQueryBlueprintName, shared::IUqsString& error) = 0;
+			virtual const IQueryBlueprint*      FindQueryBlueprintByName(const char* szQueryBlueprintName) const = 0;  // careful: the returned pointer might start to dangle once the library's content changes in any way
 		};
 
 	}

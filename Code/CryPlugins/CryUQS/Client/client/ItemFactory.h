@@ -8,6 +8,50 @@ namespace uqs
 {
 	namespace client
 	{
+
+		//===================================================================================
+		//
+		// SItemFactoryCallbacks<>
+		//
+		//===================================================================================
+
+		template <class TItem>
+		struct SItemFactoryCallbacks
+		{
+			typedef bool                      (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
+			typedef TItem                     (*createDefaultObjectFunc_t)();
+			typedef void                      (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorld& debugRW);
+			typedef void                      (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
+
+			// - a serialization function is used to convert the item to and from its string representation
+			// - it's used by the query editor to save literals to a query blueprint
+			// - typically, there should be such a function for int, bool, float, Vec3, etc., but usually not for pointers and the like
+			serializeFunc_t                   pSerialize;
+
+			// - user-defined function that creates an item with meaningful "default" values
+			// - this function usually gets provided for items whose constructor is bypassing initialization (e. g. Vec3's values are undefined by default)
+			createDefaultObjectFunc_t         pCreateDefaultObject;
+
+			// - an optional function that will add some debug-primitives to a given IDebugRenderWorld to represent the item in its visual form
+			// - this is typically *not* used for built-in types, such as int, bool, float, etc. because they can have different meanings in different contexts
+			// - but if, for example, the item is an area, then this function would add debug-primitives to draw such an area
+			addItemToDebugRenderWorldFunc_t   pAddItemToDebugRenderWorld;
+
+			// - optional function to create a debug-proxy of the item
+			// - it's used by the query history to figure out what the closest item to the camera is, in order to show details about that particular item
+			createItemDebugProxyFunc_t        pCreateItemDebugProxy;
+
+			explicit                          SItemFactoryCallbacks();
+		};
+
+		template <class TItem>
+		SItemFactoryCallbacks<TItem>::SItemFactoryCallbacks()
+			: pSerialize(nullptr)
+			, pCreateDefaultObject(nullptr)
+			, pAddItemToDebugRenderWorld(nullptr)
+			, pCreateItemDebugProxy(nullptr)
+		{}
+
 		namespace internal
 		{
 
@@ -35,7 +79,6 @@ namespace uqs
 				virtual const void*                  GetItemAtIndex(const void* pItems, size_t index) const override = 0;
 				virtual void                         AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorld& debugRW) const override = 0;
 				virtual void                         CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
-
 				virtual bool                         CanBePersistantlySerialized() const override = 0;
 				virtual bool                         TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
 				virtual bool                         TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
@@ -57,21 +100,6 @@ namespace uqs
 
 			//===================================================================================
 			//
-			// SItemFactoryCallbackTypes<>
-			//
-			//===================================================================================
-
-			template <class TItem>
-			struct SItemFactoryCallbackTypes
-			{
-				typedef bool (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
-				typedef TItem (*createDefaultObjectFunc_t)();
-				typedef void (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorld& debugRW);
-				typedef void (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
-			};
-
-			//===================================================================================
-			//
 			// CItemFactoryInternal<>
 			//
 			// - passing a nullptr tSerializeFunc is OK and means that the item can NOT be persistent serialized in textual form
@@ -80,12 +108,7 @@ namespace uqs
 			//
 			//===================================================================================
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
+			template <class TItem>
 			class CItemFactoryInternal final : public CItemFactoryBase
 			{
 			private:
@@ -118,7 +141,7 @@ namespace uqs
 
 			public:
 
-				explicit                            CItemFactoryInternal(const char* name, typename SItemFactoryCallbackTypes<TItem>::createDefaultObjectFunc_t pCreateDefaultItemFunc, bool bAutoRegisterBuiltinFunctions);
+				explicit                            CItemFactoryInternal(const char* name, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions);
 													~CItemFactoryInternal();
 
 				// IItemFactory
@@ -132,8 +155,6 @@ namespace uqs
 				virtual const void*                 GetItemAtIndex(const void* pItems, size_t index) const override;
 				virtual void                        AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorld& debugRW) const override;
 				virtual void                        CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
-
-
 				virtual bool                        CanBePersistantlySerialized() const override;
 				virtual bool                        TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
 				virtual bool                        TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
@@ -148,56 +169,19 @@ namespace uqs
 
 			private:
 
-				const typename SItemFactoryCallbackTypes<TItem>::createDefaultObjectFunc_t m_pCreateDefaultItemFunc;
+				const SItemFactoryCallbacks<TItem>  m_callbacks;
 
 				static const ptrdiff_t              s_itemsOffsetInHeader = offsetof(SHeader, items);
 				static SHeader*                     s_pFreeListHoldingSingleItems;
 			};
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::GetItemAtIndex(void* pItems, size_t index) const
-			{
-				assert(pItems);
-				return static_cast<TItem*>(pItems) + index;
-			}
+			template <class TItem>
+			typename CItemFactoryInternal<TItem>::SHeader* CItemFactoryInternal<TItem>::s_pFreeListHoldingSingleItems;
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			const void* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::GetItemAtIndex(const void* pItems, size_t index) const
-			{
-				assert(pItems);
-				return static_cast<const TItem*>(pItems) + index;
-			}
-
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			typename CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::SHeader* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::s_pFreeListHoldingSingleItems;
-
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CItemFactoryInternal(
-				const char* name, 
-				typename SItemFactoryCallbackTypes<TItem>::createDefaultObjectFunc_t pCreateDefaultItemFunc, 
-				bool bAutoRegisterBuiltinFunctions)
+			template <class TItem>
+			CItemFactoryInternal<TItem>::CItemFactoryInternal(const char* name, const SItemFactoryCallbacks<TItem>& callbacks, bool bAutoRegisterBuiltinFunctions)
 				: CItemFactoryBase(name)
-				, m_pCreateDefaultItemFunc(pCreateDefaultItemFunc)
+				, m_callbacks(callbacks)
 			{
 				if (bAutoRegisterBuiltinFunctions)
 				{
@@ -235,7 +219,7 @@ namespace uqs
 					// literal (only if the item type can be serialized)
 					//
 
-					if (tSerializeFunc != nullptr)
+					if (callbacks.pSerialize != nullptr)
 					{ 
 						stack_string functionName("_builtin_Func_Literal_");
 						functionName.append(name);
@@ -254,13 +238,8 @@ namespace uqs
 				}
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::~CItemFactoryInternal()
+			template <class TItem>
+			CItemFactoryInternal<TItem>::~CItemFactoryInternal()
 			{
 				while (s_pFreeListHoldingSingleItems)
 				{
@@ -270,37 +249,22 @@ namespace uqs
 				}
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			size_t CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::ComputeMemoryRequiredForSingleItem()
+			template <class TItem>
+			size_t CItemFactoryInternal<TItem>::ComputeMemoryRequiredForSingleItem()
 			{
 				return sizeof(SHeader);    // the header comes with space for one item already
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			size_t CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::ComputeMemoryRequired(size_t itemCount)
+			template <class TItem>
+			size_t CItemFactoryInternal<TItem>::ComputeMemoryRequired(size_t itemCount)
 			{
 				if (itemCount > 0)
 					--itemCount;	// there's already space for the first item in SHeader
 				return sizeof(SHeader) + itemCount * sizeof(TItem);
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			TItem* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::AllocateUninitializedMemoryForItems(size_t numItems)
+			template <class TItem>
+			TItem* CItemFactoryInternal<TItem>::AllocateUninitializedMemoryForItems(size_t numItems)
 			{
 				if (numItems == 1)
 				{
@@ -329,22 +293,16 @@ namespace uqs
 				}
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CreateItems(size_t numItems, EItemInitMode itemInitMode)
+			template <class TItem>
+			void* CItemFactoryInternal<TItem>::CreateItems(size_t numItems, EItemInitMode itemInitMode)
 			{
 				// - creating 0 items is also supported, but we need to be super-careful to not pass that pointer to CloneItem() then
 				// - if it still happens, then CloneItem() would use the uninitialized memory from the header's first item to copy-construct the clone, and this is when undefined behavior enters the scene (!)
 
-				if (itemInitMode == IItemFactory::EItemInitMode::UseUserProvidedFunction && (m_pCreateDefaultItemFunc == nullptr))
+				if (itemInitMode == IItemFactory::EItemInitMode::UseUserProvidedFunction && m_callbacks.pCreateDefaultObject == nullptr)
 				{
 					itemInitMode = IItemFactory::EItemInitMode::UseDefaultConstructor;
 				}
-
 
 				TItem* pFirstItem = AllocateUninitializedMemoryForItems(numItems);
 				TItem* pItemWalker = pFirstItem;
@@ -361,9 +319,9 @@ namespace uqs
 
 				case IItemFactory::EItemInitMode::UseUserProvidedFunction:
 					{
-						CRY_ASSERT(m_pCreateDefaultItemFunc != nullptr);
+						CRY_ASSERT(m_callbacks.pCreateDefaultObject != nullptr);
 
-						TItem temp = (*m_pCreateDefaultItemFunc)();
+						TItem temp = (*m_callbacks.pCreateDefaultObject)();
 						for (size_t i = 0; i < numItems; ++i, ++pItemWalker)
 						{
 							new (pItemWalker) TItem(temp);
@@ -379,13 +337,8 @@ namespace uqs
 				return pFirstItem;
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void* CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CloneItem(const void* pOriginalItem)
+			template <class TItem>
+			void* CItemFactoryInternal<TItem>::CloneItem(const void* pOriginalItem)
 			{
 				const TItem* pOriginal = static_cast<const TItem*>(pOriginalItem);
 				TItem* pClone = AllocateUninitializedMemoryForItems(1);
@@ -393,13 +346,8 @@ namespace uqs
 				return pClone;
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::DestroyItems(void* pItems)
+			template <class TItem>
+			void CItemFactoryInternal<TItem>::DestroyItems(void* pItems)
 			{
 				if (pItems)
 				{
@@ -426,62 +374,51 @@ namespace uqs
 				}
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			const shared::CTypeInfo& CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::GetItemType() const
+			template <class TItem>
+			const shared::CTypeInfo& CItemFactoryInternal<TItem>::GetItemType() const
 			{
 				return shared::SDataTypeHelper<TItem>::GetTypeInfo();
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			size_t CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::GetItemSize() const
+			template <class TItem>
+			size_t CItemFactoryInternal<TItem>::GetItemSize() const
 			{
 				return sizeof(TItem);
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CopyItem(void* pTargetItem, const void* pSourceItem) const
+			template <class TItem>
+			void CItemFactoryInternal<TItem>::CopyItem(void* pTargetItem, const void* pSourceItem) const
 			{
 				TItem& targetItem = *static_cast<TItem*>(pTargetItem);
 				const TItem& sourceItem = *static_cast<const TItem*>(pSourceItem);
 				targetItem = sourceItem;
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-				bool CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CanBePersistantlySerialized() const
+			template <class TItem>
+			void* CItemFactoryInternal<TItem>::GetItemAtIndex(void* pItems, size_t index) const
 			{
-				return (tSerializeFunc != nullptr);
+				assert(pItems);
+				return static_cast<TItem*>(pItems) + index;
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			bool CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel)
+			template <class TItem>
+			const void* CItemFactoryInternal<TItem>::GetItemAtIndex(const void* pItems, size_t index) const
 			{
-				assert(tSerializeFunc != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
-				if (tSerializeFunc == nullptr)
+				assert(pItems);
+				return static_cast<const TItem*>(pItems) + index;
+			}
+
+			template <class TItem>
+			bool CItemFactoryInternal<TItem>::CanBePersistantlySerialized() const
+			{
+				return (m_callbacks.pSerialize != nullptr);
+			}
+
+			template <class TItem>
+			bool CItemFactoryInternal<TItem>::TryDeserializeItemIntoDict(shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel)
+			{
+				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
 				}
@@ -499,17 +436,11 @@ namespace uqs
 				}
 			}
 
-
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-				bool CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
+			template <class TItem>
+			bool CItemFactoryInternal<TItem>::TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
 			{
-				assert(tSerializeFunc != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
-				if (tSerializeFunc == nullptr)
+				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
 				}
@@ -523,19 +454,14 @@ namespace uqs
 				// TODO: yasli always wants non-const items - maybe clone the item to be extra safe? Not efficient, though.
 				TItem* pItemToSerialize = static_cast<TItem*>(const_cast<void*>(pItem));
 
-				return (*tSerializeFunc)(archive, *pItemToSerialize, szName, szLabel);
+				return (*m_callbacks.pSerialize)(archive, *pItemToSerialize, szName, szLabel);
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-				bool CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
+			template <class TItem>
+			bool CItemFactoryInternal<TItem>::TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
 			{
-				assert(tSerializeFunc != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
-				if (tSerializeFunc == nullptr)
+				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
 				}
@@ -546,34 +472,24 @@ namespace uqs
 					return false;
 				}
 
-				return (*tSerializeFunc)(archive, *static_cast<TItem*>(pOutItem), szName, szLabel);
+				return (*m_callbacks.pSerialize)(archive, *static_cast<TItem*>(pOutItem), szName, szLabel);
 			}
 			
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorld& debugRW) const
+			template <class TItem>
+			void CItemFactoryInternal<TItem>::AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorld& debugRW) const
 			{
-				if (tAddItemToDebugRenderWorldFunc != nullptr)
+				if (m_callbacks.pAddItemToDebugRenderWorld != nullptr)
 				{
-					(*tAddItemToDebugRenderWorldFunc)(*static_cast<const TItem*>(pItem), debugRW);
+					(*m_callbacks.pAddItemToDebugRenderWorld)(*static_cast<const TItem*>(pItem), debugRW);
 				}
 			}
 
-			template <
-				class TItem,
-				typename SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-				typename SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-				typename SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-			>
-			void CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc>::CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const
+			template <class TItem>
+			void CItemFactoryInternal<TItem>::CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const
 			{
-				if (tCreateItemDebugProxyFunc != nullptr)
+				if (m_callbacks.pCreateItemDebugProxy != nullptr)
 				{
-					(*tCreateItemDebugProxyFunc)(*static_cast<const TItem*>(pItem), itemDebugProxyFactory);
+					(*m_callbacks.pCreateItemDebugProxy)(*static_cast<const TItem*>(pItem), itemDebugProxyFactory);
 				}
 			}
 
@@ -585,22 +501,17 @@ namespace uqs
 		//
 		//===================================================================================
 
-		template <
-			class TItem,
-			typename internal::SItemFactoryCallbackTypes<TItem>::serializeFunc_t tSerializeFunc,
-			typename internal::SItemFactoryCallbackTypes<TItem>::addItemToDebugRenderWorldFunc_t tAddItemToDebugRenderWorldFunc,
-			typename internal::SItemFactoryCallbackTypes<TItem>::createItemDebugProxyFunc_t tCreateItemDebugProxyFunc
-		>
+		template <class TItem>
 		class CItemFactory
 		{
 		public:
-			explicit CItemFactory(const char* name, typename internal::SItemFactoryCallbackTypes<TItem>::createDefaultObjectFunc_t pCreateDefaultItemFunc)
+			explicit CItemFactory(const char* name, const SItemFactoryCallbacks<TItem>& callbacks)
 			{
 				//
 				// register the actual item type the caller intends to register
 				//
 
-				static const internal::CItemFactoryInternal<TItem, tSerializeFunc, tAddItemToDebugRenderWorldFunc, tCreateItemDebugProxyFunc> gs_itemFactory(name, pCreateDefaultItemFunc, true);
+				static const internal::CItemFactoryInternal<TItem> gs_itemFactory(name, callbacks, true);
 
 				//
 				// - register a very specific container-type that holds items (plural!) of what the caller just registered
@@ -610,7 +521,8 @@ namespace uqs
 
 				stack_string itemNameForShuttledItemsContainer("_builtin_ItemFactoryForShuttledItemsContainer_");
 				itemNameForShuttledItemsContainer.append(name);
-				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>, nullptr, nullptr, nullptr> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), nullptr, false);
+				SItemFactoryCallbacks<CItemListProxy_Readable<TItem>> callbacksForShuttledItemsContainer;  // no callbacks actually
+				static const internal::CItemFactoryInternal<CItemListProxy_Readable<TItem>> gs_itemFactoryForContainer(itemNameForShuttledItemsContainer.c_str(), callbacksForShuttledItemsContainer, false);
 			}
 		};
 
