@@ -738,6 +738,15 @@ CDeviceResourceSet::CDeviceResourceSet(const CDeviceResourceSet& other)
 	m_Flags        = other.m_Flags;
 }
 
+CDeviceResourceSet::~CDeviceResourceSet()
+{
+	for(auto& rsTexBind : m_Textures)
+	{
+		if(CTexture* pTex = rsTexBind.second.resource)
+			pTex->RemoveInvalidateCallbacks(this);
+	}
+}
+
 void CDeviceResourceSet::SetDirty(bool bDirty)
 {
 	m_bDirty = m_bDirty | bDirty;
