@@ -84,12 +84,14 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-# For now we only compile these on Windows
-if(WIN32 OR WIN64)
-
 ################# libvorbis_static ##################
 CryEngineStaticModule(libvorbis_static SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/libvorbis/include)
+target_include_directories(${THIS_PROJECT}
+PUBLIC 
+	"${SDK_DIR}/libvorbis/include"
+PRIVATE
+	"${SDK_DIR}/libvorbis/lib"
+)
 target_link_libraries(${THIS_PROJECT} PRIVATE libogg_static)
 
 if(WIN32 OR WIN64)
@@ -100,9 +102,18 @@ endif()
 
 ################# libvorbis_dynamic #################
 CreateDynamicModule(libvorbis_dynamic SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/libvorbis/include)
+target_include_directories(${THIS_PROJECT}
+PUBLIC 
+	"${SDK_DIR}/libvorbis/include"
+PRIVATE
+	"${SDK_DIR}/libvorbis/lib"
+)
 target_link_libraries(${THIS_PROJECT} PRIVATE libogg_static)
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "libvorbis")
+
+if (ANDROID)
+	target_link_libraries(${THIS_PROJECT} PRIVATE m)
+endif (ANDROID)
 
 if(WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_USRDLL -DLIBVORBIS_EXPORTS)
@@ -111,14 +122,13 @@ if(WIN32 OR WIN64)
 endif()
 
 ################### libvorbisfile ###################
-CreateDynamicModule(libvorbisfile SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/libvorbis/include)
-target_link_libraries(${THIS_PROJECT} PRIVATE libogg_static libvorbis_static)
+CryEngineStaticModule(libvorbisfile SOLUTION_FOLDER "Libs/Audio")
+target_link_libraries(${THIS_PROJECT} PUBLIC libogg_static libvorbis_static)
+
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "libvorbisfile")
 
 if(WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_USRDLL -DLIBVORBISFILE_EXPORTS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /DEF:${SDK_DIR}/libvorbis/win32/vorbisfile.def")
-endif()
 endif()

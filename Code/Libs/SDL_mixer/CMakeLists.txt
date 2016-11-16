@@ -100,41 +100,45 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-# For now we only compile these on Windows
-if(WIN32 OR WIN64)
-
 ################# sdl_mixer_static ##################
 CryEngineStaticModule(sdl_mixer_static SOLUTION_FOLDER "Libs/Audio")
 target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer)
+target_link_libraries(${THIS_PROJECT} PRIVATE SDL2 timidity native_midi smpeg libvorbisfile)
 
-if(WIN32 OR WIN64)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE
+target_compile_definitions(${THIS_PROJECT} PRIVATE
+	-DMID_MUSIC
 	-DWAV_MUSIC
+	-DOGG_MUSIC
+	-DMP3_MUSIC
+	-DUSE_TIMIDITY_MIDI
+)
+
+if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE -Wno-unused-label)
+endif ()
+
+if(WIN32)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DMODPLUG_MUSIC
 	-DMODPLUG_DYNAMIC="libmodplug-1.dll"
-	-DOGG_MUSIC
 	-DOGG_DYNAMIC="libvorbisfile.dll"
 	-DFLAC_MUSIC
 	-DFLAC_DYNAMIC="libFLAC-8.dll"
-	-DMP3_MUSIC
 	-DMP3_DYNAMIC="smpeg2.dll"
-	-DMID_MUSIC
-	-DUSE_TIMIDITY_MIDI
 	-DUSE_NATIVE_MIDI
 	)
 	
-	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2 timidity native_midi)
 	target_link_libraries(${THIS_PROJECT} PUBLIC Winmm)
 	target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer/VisualC/external/include)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
-endif()
+endif(WIN32)
 
 ################# sdl_mixer_dynamic #################
-CreateDynamicModule(sdl_mixer_dynamic SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer)
-set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "SDL2_mixer")
+if(WIN32)
+	CreateDynamicModule(sdl_mixer_dynamic SOLUTION_FOLDER "Libs/Audio")
+	target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "SDL2_mixer")
 
-if(WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DWAV_MUSIC
 	-DMODPLUG_MUSIC
@@ -154,7 +158,7 @@ if(WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PUBLIC Winmm)
 	target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer/VisualC/external/include)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
-endif()
+endif(WIN32)
 
 ##################### timidity ######################
 CryEngineStaticModule(timidity SOLUTION_FOLDER "Libs/Audio")
@@ -172,5 +176,4 @@ target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 
 if(WIN32 OR WIN64)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
-endif()
 endif()

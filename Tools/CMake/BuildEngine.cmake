@@ -24,6 +24,30 @@ if(ORBIS AND NOT RENDERER_GNM)
 	SET(RENDERER_DX11 ON)
 endif()
 
+#Audio modules
+if (ANDROID)
+	# SDL_mixer is only supported audio on these platforms
+	set(AUDIO_SDL_MIXER ON)
+elseif (NOT (WIN32 OR WIN64 OR LINUX))
+	# Wwise is only supported audio on these platforms
+	set(AUDIO_WWISE ON)
+else()
+	if (EXISTS ${SDK_DIR}/Audio/fmod)
+		include(${CRYENGINE_DIR}/Tools/CMake/modules/fmod.cmake)
+		option(AUDIO_FMOD "FMod sound system support" ON)
+	endif()
+	if (EXISTS ${SDK_DIR}/Audio/portaudio AND EXISTS ${SDK_DIR}/Audio/libsndfile AND (WIN32 OR WIN64))
+		include(${CRYENGINE_DIR}/Tools/CMake/modules/PortAudio.cmake)
+		option(AUDIO_PORTAUDIO "PortAudio sound system support" ON)
+	endif()
+	if(WIN32)
+		option(AUDIO_SDL_MIXER "SDL_mixer sound system support" ON)
+	endif()
+	if (EXISTS ${SDK_DIR}/Audio/wwise)
+		option(AUDIO_WWISE "Wwise Sound System support" ON)
+	endif()
+endif()
+
 #rc
 if(WIN32)
 	if (NOT METADATA_COMPANY)
@@ -72,10 +96,6 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAction" "${CMAKE_BINARY_DI
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAISystem" "${CMAKE_BINARY_DIR}/CryEngine/CryAISystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAnimation" "${CMAKE_BINARY_DIR}/CryEngine/CryAnimation")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/Common")
-add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod")
-add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio")
-add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer")
-add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryCommon" "${CMAKE_BINARY_DIR}/CryEngine/CryCommon")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryDynamicResponseSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryDynamicResponseSystem")
@@ -88,6 +108,24 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryPhysics" "${CMAKE_BINARY_D
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryScriptSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryScriptSystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CrySystem" "${CMAKE_BINARY_DIR}/CryEngine/CrySystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9" "${CMAKE_BINARY_DIR}/CryEngine/RenderDll/XRenderD3D9")
+
+#audio
+if (AUDIO_FMOD)
+	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod")
+endif (AUDIO_FMOD)
+if (AUDIO_PORTAUDIO)
+	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio")
+endif (AUDIO_PORTAUDIO)
+if (AUDIO_SDL_MIXER)
+	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer")
+	add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libogg" "${CMAKE_BINARY_DIR}/Libs/libogg")
+	add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libvorbis" "${CMAKE_BINARY_DIR}/Libs/libvorbis")
+	add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/SDL_mixer" "${CMAKE_BINARY_DIR}/Libs/SDL_mixer")
+	add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/smpeg" "${CMAKE_BINARY_DIR}/Libs/smpeg")
+endif (AUDIO_SDL_MIXER)
+if (AUDIO_WWISE)
+	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise" "${CMAKE_BINARY_DIR}/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise")
+endif (AUDIO_WWISE)
 
 #libs
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/bigdigits" "${CMAKE_BINARY_DIR}/Libs/bigdigits")
@@ -104,10 +142,6 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/md5" "${CMAKE_BINARY_DIR}/Libs/md5
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/tomcrypt" "${CMAKE_BINARY_DIR}/Libs/tomcrypt")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/yasli" "${CMAKE_BINARY_DIR}/Libs/yasli")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/zlib" "${CMAKE_BINARY_DIR}/Libs/zlib")
-add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libogg" "${CMAKE_BINARY_DIR}/Libs/libogg")
-add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/libvorbis" "${CMAKE_BINARY_DIR}/Libs/libvorbis")
-add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/SDL_mixer" "${CMAKE_BINARY_DIR}/Libs/SDL_mixer")
-add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/smpeg" "${CMAKE_BINARY_DIR}/Libs/smpeg")
 
 #extensions
 #add_subdirectory ("${CRYENGINE_DIR}/Code/CryExtensions/CryLink" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink")

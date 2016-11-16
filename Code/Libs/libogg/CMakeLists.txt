@@ -14,12 +14,13 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-# For now we only compile these on Windows
-if(WIN32 OR WIN64)
-
 ################### libogg_static ###################
 CryEngineStaticModule(libogg_static SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/libogg/include)
+target_include_directories(${THIS_PROJECT}
+PUBLIC 
+	"${SDK_DIR}/libogg/include"
+	"include"
+)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D_USRDLL -DLIBOGG_EXPORTS)
 if(WIN32 OR WIN64)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
@@ -28,10 +29,17 @@ endif()
 
 ################### libogg_dynamic ##################
 CreateDynamicModule(libogg_dynamic SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/libogg/include)
+target_include_directories(${THIS_PROJECT}
+PUBLIC 
+	"${SDK_DIR}/libogg/include"
+	"include"
+)
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "libogg")
 if(WIN32 OR WIN64)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /DEF:${SDK_DIR}/libogg/win32/ogg.def")	
 endif()
-endif()
+
+if (ANDROID)
+	target_link_libraries(${THIS_PROJECT} PRIVATE m)
+endif (ANDROID)
