@@ -19,12 +19,12 @@
 #include "AudioSystemModel.h"
 #include "QAudioControlTreeWidget.h"
 #include "Undo/IUndoObject.h"
+#include "Controls/QuestionDialog.h"
 
 #include <QWidgetAction>
 #include <QPushButton>
 #include <QPaintEvent>
 #include <QPainter>
-#include <QMessageBox>
 #include <QMimeData>
 #include <QStandardItemModel>
 #include <QStandardItem>
@@ -623,28 +623,27 @@ void CATLControlsPanel::ShowControlsContextMenu(const QPoint& pos)
 
 void CATLControlsPanel::DeleteSelectedControl()
 {
-	QMessageBox messageBox;
+	CQuestionDialog messageBox;
 	QModelIndexList indexList = m_pATLControlsTree->selectionModel()->selectedIndexes();
 	const int size = indexList.length();
 	if (size > 0)
 	{
+		QString text;
 		if (size == 1)
 		{
 			QModelIndex index = m_pProxyModel->mapToSource(indexList[0]);
 			QStandardItem* pItem = m_pTreeModel->itemFromIndex(index);
 			if (pItem)
 			{
-				messageBox.setText("Are you sure you want to delete \"" + pItem->text() + "\"?.");
+				text = "Are you sure you want to delete \"" + pItem->text() + "\"?.";
 			}
 		}
 		else
 		{
-			messageBox.setText("Are you sure you want to delete the selected controls and folders?.");
+			text = "Are you sure you want to delete the selected controls and folders?.";
 		}
-		messageBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		messageBox.setDefaultButton(QMessageBox::Yes);
-		messageBox.setWindowTitle("Audio Controls Editor");
-		if (messageBox.exec() == QMessageBox::Yes)
+		messageBox.SetupQuestion("Audio Controls Editor", text);
+		if (messageBox.Execute() == QDialogButtonBox::Yes)
 		{
 			CUndo undo("Audio Control Removed");
 

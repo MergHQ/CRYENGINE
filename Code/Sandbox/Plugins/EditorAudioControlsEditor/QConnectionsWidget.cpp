@@ -13,6 +13,7 @@
 #include "AudioSystemModel.h"
 #include "QConnectionsModel.h"
 #include "Undo/IUndoObject.h"
+#include "Controls/QuestionDialog.h"
 #include <QDropEvent>
 #include <QEvent>
 #include <QMimeData>
@@ -25,7 +26,6 @@
 #include <CrySerialization/STL.h>
 #include <QPropertyTree/QPropertyTree.h>
 #include <QAdvancedTreeView.h>
-#include <QMessageBox>
 
 namespace ACE
 {
@@ -129,24 +129,23 @@ void QConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl)
 	{
-		QMessageBox messageBox;
-		messageBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		messageBox.setDefaultButton(QMessageBox::Yes);
-		messageBox.setWindowTitle("Audio Controls Editor");
+		CQuestionDialog messageBox;
 		QModelIndexList selectedIndices = m_pConnectionsView->selectionModel()->selectedRows();
 
 		if (!selectedIndices.empty())
 		{
 			const int size = selectedIndices.length();
+			QString text;
 			if (size == 1)
 			{
-				messageBox.setText("Are you sure you want to delete the connection between \"" + QtUtil::ToQString(m_pControl->GetName()) + "\" and \"" + selectedIndices[0].data(Qt::DisplayRole).toString() + "\"?");
+				text = "Are you sure you want to delete the connection between \"" + QtUtil::ToQString(m_pControl->GetName()) + "\" and \"" + selectedIndices[0].data(Qt::DisplayRole).toString() + "\"?";
 			}
 			else
 			{
-				messageBox.setText("Are you sure you want to delete the " + QString::number(size) + " selected connections?");
+				text = "Are you sure you want to delete the " + QString::number(size) + " selected connections?";
 			}
-			if (messageBox.exec() == QMessageBox::Yes)
+			messageBox.SetupQuestion("Audio Controls Editor", text);
+			if (messageBox.Execute() == QDialogButtonBox::Yes)
 			{
 				CUndo undo("Disconnected Audio Control from Audio System");
 				IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();

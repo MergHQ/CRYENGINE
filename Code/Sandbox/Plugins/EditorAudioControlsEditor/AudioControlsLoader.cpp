@@ -17,7 +17,6 @@
 #include "QATLControlsTreeModel.h"
 #include "IEditor.h"
 #include <ConfigurationManager.h>
-#include <QMessageBox>
 #include "AudioControlsEditorPlugin.h"
 
 using namespace PathUtil;
