@@ -107,14 +107,14 @@ void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const Trian
 			if (tileLinks.triangleLinks[idx].startTriangleID != currentTriangleID)
 			{
 				currentTriangleID = tileLinks.triangleLinks[idx].startTriangleID;
-				navigationMesh.grid.UpdateOffMeshLinkForTile(tileID, currentTriangleID, idx);
+				navigationMesh.navMesh.UpdateOffMeshLinkForTile(tileID, currentTriangleID, idx);
 			}
 		}
 	}
 	else
 	{
 		// Add the new link to the off-mesh link to the tile itself
-		navigationMesh.grid.AddOffMeshLinkToTile(tileID, startTriangleID, triangleIdx);
+		navigationMesh.navMesh.AddOffMeshLinkToTile(tileID, startTriangleID, triangleIdx);
 	}
 }
 
@@ -157,14 +157,14 @@ void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const Tr
 			if (currentTriangleID != triangleLink.startTriangleID)
 			{
 				currentTriangleID = triangleLink.startTriangleID;
-				navigationMesh.grid.UpdateOffMeshLinkForTile(tileID, currentTriangleID, triIdx);
+				navigationMesh.navMesh.UpdateOffMeshLinkForTile(tileID, currentTriangleID, triIdx);
 			}
 			boundTriangleLeftLinks += (currentTriangleID == boundTriangleID) ? 1 : 0;
 		}
 
 		if (!boundTriangleLeftLinks)
 		{
-			navigationMesh.grid.RemoveOffMeshLinkFromTile(tileID, boundTriangleID);
+			navigationMesh.navMesh.RemoveOffMeshLinkFromTile(tileID, boundTriangleID);
 		}
 	}
 }

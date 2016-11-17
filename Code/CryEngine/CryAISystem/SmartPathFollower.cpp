@@ -612,9 +612,9 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			const Vec3 raisedTestPos = testPos + raiseUp;
 
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-			const MNM::MeshGrid& grid = mesh.grid;
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-			const MNM::MeshGrid::Params& gridParams = grid.GetParams();
+			const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
 
 			const MNM::real_t horizontalRange(5.0f);
 			const MNM::real_t verticalRange(2.0f);
@@ -622,31 +622,31 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			MNM::vector3_t startLocationInMeshCoordinates(raisedStartPos - gridParams.origin);
 			MNM::vector3_t endLocationInMeshCoordinates(raisedTestPos - gridParams.origin);
 
-			MNM::TriangleID triangleStartID = grid.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange);
+			MNM::TriangleID triangleStartID = navMesh.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange);
 			if (!triangleStartID)
 			{
 				MNM::vector3_t closestStartLocation, triangleCenter;
-				triangleStartID = grid.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestStartLocation);
-				grid.PushPointInsideTriangle(triangleStartID, closestStartLocation, MNM::real_t(.05f));
+				triangleStartID = navMesh.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestStartLocation);
+				navMesh.PushPointInsideTriangle(triangleStartID, closestStartLocation, MNM::real_t(.05f));
 				startLocationInMeshCoordinates = closestStartLocation;
 			}
 
-			MNM::TriangleID triangleEndID = grid.GetTriangleAt(endLocationInMeshCoordinates, verticalRange, verticalRange);
+			MNM::TriangleID triangleEndID = navMesh.GetTriangleAt(endLocationInMeshCoordinates, verticalRange, verticalRange);
 			if (!triangleEndID)
 			{
 				// Couldn't find a triangle for the end position. Pick the closest one.
 				MNM::vector3_t closestEndLocation;
-				triangleEndID = grid.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestEndLocation);
-				grid.PushPointInsideTriangle(triangleEndID, closestEndLocation, MNM::real_t(.05f));
+				triangleEndID = navMesh.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestEndLocation);
+				navMesh.PushPointInsideTriangle(triangleEndID, closestEndLocation, MNM::real_t(.05f));
 				endLocationInMeshCoordinates = closestEndLocation;
 			}
 
 			if (!triangleStartID || !triangleEndID)
 				return false;
 
-			MNM::MeshGrid::RayCastRequest<512> wayRequest;
+			MNM::CNavMesh::RayCastRequest<512> wayRequest;
 
-			if (grid.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest))
+			if (navMesh.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest))
 				return false;
 
 			//Check against obstacles...
@@ -1482,7 +1482,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 		if (NavigationMeshID meshID = m_pNavPath->GetMeshID())
 		{
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-			const MNM::MeshGrid& grid = mesh.grid;
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 			const Vec3 raiseUp(0.0f, 0.0f, 0.2f);
 			const MNM::real_t verticalRange(2.0f);
@@ -1490,7 +1490,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 			Vec3 startLoc = m_curPos + raiseUp;
 
 			MNM::vector3_t mnmStartLoc = MNM::vector3_t(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
-			MNM::TriangleID triStart = grid.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
+			MNM::TriangleID triStart = navMesh.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
 			IF_UNLIKELY (!triStart)
 				return false;
 
@@ -1502,21 +1502,21 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 
 				const MNM::vector3_t mnmEndLoc = MNM::vector3_t(MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z));
 
-				const MNM::TriangleID triEnd = grid.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
+				const MNM::TriangleID triEnd = navMesh.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
 
 				if (!triEnd)
 					return false;
 
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
 
-				if (grid.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest) != MNM::MeshGrid::eRayCastResult_NoHit)
+				if (navMesh.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest) != MNM::CNavMesh::eRayCastResult_NoHit)
 					return false;
 
 				if (m_pathObstacles.IsPathIntersectingObstacles(m_pNavPath->GetMeshID(), startLoc, endLoc, m_params.passRadius))
 					return false;
 
 				MNM::vector3_t v0, v1, v2;
-				const bool success = mesh.grid.GetVertices(triEnd, v0, v1, v2);
+				const bool success = mesh.navMesh.GetVertices(triEnd, v0, v1, v2);
 				CRY_ASSERT(success);
 				const MNM::vector3_t closest = MNM::ClosestPtPointTriangle(mnmEndLoc, v0, v1, v2);
 				currentZ = closest.GetVec3().z;
@@ -1587,7 +1587,7 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 	if (const NavigationMeshID meshIDUsedByPath = m_pNavPath->GetMeshID())
 	{
-		const MNM::MeshGrid& gridUsedByPath = gAIEnv.pNavigationSystem->GetMesh(meshIDUsedByPath).grid;
+		const MNM::CNavMesh& navMeshUsedByPath = gAIEnv.pNavigationSystem->GetMesh(meshIDUsedByPath).navMesh;
 
 		float index1 = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX, m_params.use2D);
 		float index2 = m_path.FindNextSegmentIndex(static_cast<size_t>(index1));
@@ -1603,8 +1603,8 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 			const MNM::vector3_t mnmStartLoc = MNM::vector3_t(segmentPos1);
 			const MNM::vector3_t mnmEndLoc = MNM::vector3_t(segmentPos2);
-			const MNM::TriangleID triStart = gridUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
-			const MNM::TriangleID triEnd = gridUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
+			const MNM::TriangleID triStart = navMeshUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
+			const MNM::TriangleID triEnd = navMeshUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
 
 			if (!triStart || !triEnd)
 			{
@@ -1613,10 +1613,10 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 			if (triStart)
 			{
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
-				MNM::MeshGrid::ERayCastResult raycastResult = gridUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest);
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest);
 
-				if (raycastResult != MNM::MeshGrid::eRayCastResult_NoHit)
+				if (raycastResult != MNM::CNavMesh::eRayCastResult_NoHit)
 				{
 					return false;
 				}

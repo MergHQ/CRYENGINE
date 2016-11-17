@@ -32,7 +32,7 @@ struct INavigationSystemUser
 
 namespace MNM
 {
-struct IMeshGrid;
+struct INavMesh;
 
 namespace TileGenerator
 {
@@ -233,8 +233,8 @@ struct INavigationSystem
 
 	virtual MNM::TriangleID    GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) = 0;
 
-	//! Get a MNM NavMesh's IMeshGrid, which provides an access to the NavMesh data
-	virtual const MNM::IMeshGrid*            GetMNMMeshGrid(NavigationMeshID meshID) const = 0;
+	//! Get a MNM::INavMesh, which provides an access to the NavMesh data
+	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const = 0;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const = 0;
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() = 0;

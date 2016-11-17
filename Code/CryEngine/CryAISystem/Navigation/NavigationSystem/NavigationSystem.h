@@ -9,7 +9,7 @@
 
 #include "../MNM/MNM.h"
 #include "../MNM/Tile.h"
-#include "../MNM/MeshGrid.h"
+#include "../MNM/NavMesh.h"
 #include "../MNM/TileGenerator.h"
 
 #include "WorldMonitor.h"
@@ -253,14 +253,14 @@ struct NavigationMesh
 #if DEBUG_MNM_ENABLED
 	struct ProfileMemoryStats
 	{
-		ProfileMemoryStats(const MNM::MeshGrid::ProfilerType& _gridProfiler)
-			: gridProfiler(_gridProfiler)
+		ProfileMemoryStats(const MNM::CNavMesh::ProfilerType& _navMeshProfiler)
+			: navMeshProfiler(_navMeshProfiler)
 			, totalNavigationMeshMemory(0)
 		{
 
 		}
 
-		const MNM::MeshGrid::ProfilerType& gridProfiler;
+		const MNM::CNavMesh::ProfilerType& navMeshProfiler;
 		size_t                             totalNavigationMeshMemory;
 	};
 
@@ -270,7 +270,7 @@ struct NavigationMesh
 	NavigationAgentTypeID agentTypeID;
 	size_t                version;
 
-	MNM::MeshGrid         grid;
+	MNM::CNavMesh         navMesh;
 	NavigationVolumeID    boundary;
 #ifdef SW_NAVMESH_USE_GUID
 	NavigationVolumeGUID  boundaryGUID;
@@ -534,7 +534,7 @@ public:
 	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
-	virtual const MNM::IMeshGrid*            GetMNMMeshGrid(NavigationMeshID meshID) const override;
+	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const override;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }
@@ -649,11 +649,11 @@ private:
 
 #if NAVIGATION_SYSTEM_PC_ONLY
 	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
-	void SetupGenerator(NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
+	void SetupGenerator(NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params,
 	                    const MNM::BoundingVolume* boundary, const MNM::BoundingVolume* exclusions,
 	                    size_t exclusionCount);
-	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
+	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	              uint16 x, uint16 y, uint16 z, bool mt);
 	void CommitTile(TileTaskResult& result);
 #endif

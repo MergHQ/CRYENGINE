@@ -9,9 +9,6 @@
 
 #include <CryMath/Cry_Geo.h>
 
-// #MNM_TODO pavloi 2016.07.19: rename debug triangle flags to just triangle flags and use them unconditionally
-#define DEBUG_MNM_TILE_TRIANGLE_FLAGS 1
-
 namespace MNM
 {
 typedef fixed_t<int, 16>   real_t;
@@ -50,9 +47,8 @@ struct STriangle
 
 struct SLink
 {
-	uint16 side : 4;     //!< Side of the tile (cube) this link is associated with [0..13] or enumerated link type
-	// (See NeighbourOffset_MeshGrid and the enumeration below)
-	// #MNM_TODO pavloi 2016.07.26: expose NeighbourOffset_MeshGrid
+	uint16 side     : 4; //!< Side of the tile (cube) this link is associated with [0..13] or enumerated link type
+	// See MNM::NavMesh::GetNeighbourTileOffset()
 	uint16 edge     : 2; //!< Local edge index of the triangle this link is on [0..2]
 	// (NOTE: 'edge' is not used for off-mesh links)
 	uint16 triangle : 10;   //!< Index into Tile::triangles
@@ -63,7 +59,7 @@ struct SLink
 
 	// This enumeration can be assigned to the 'side' variable
 	// which generally would index the 14 element array
-	// NeighbourOffset_MeshGrid, found in MeshGrid.cpp.
+	// NeighbourOffset_MeshGrid, found in MNM::NavMesh::GetNeighbourTileOffset().
 	// If 'side' is found to be one of the values below,
 	// it will not be used as a lookup into the table but instead
 	// as a flag so we need to be sure these start after the final
@@ -99,11 +95,11 @@ struct STileData
 
 	uint32                 hashValue;
 
-	// #MNM_TODO pavloi 2016.08.15: there is code, which delivers tile coord as vector3_t (see MeshGrid::GetTileContainerCoordinates)
+	// #MNM_TODO pavloi 2016.08.15: there is code, which delivers tile coord as vector3_t (see NavMesh::GetTileContainerCoordinates)
 	// but it's a bit wasteful - forces user to get values using as_int(), do bit shifting, hard to read without visualizers, etc.
 	// Just introduce new structure, which holds uint32 x,y,z and pass it everywhere. Or use Vec3i.
-	vector3_t tileGridCoord;                     //!< tile coordinates in the mesh grid (integer values)
-	vector3_t tileOriginWorld;
+	vector3_t tileGridCoord;                     //!< Tile coordinates in the mesh grid (integer values).
+	vector3_t tileOriginWorld;                   //!< Origin position of the tile in the world coordinate space.
 };
 
 //! Contains utility functions to read and manipulate tile data.

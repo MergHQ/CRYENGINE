@@ -13,8 +13,8 @@ namespace MNM
 {
 struct STile
 {
-	// #MNM_TODO pavloi 2016.07.22: MeshGrid is friend for time being, so I don't have to fix data access in lot's of places right now.
-	friend struct MeshGrid;
+	// #MNM_TODO pavloi 2016.07.22: CNavMesh is friend for time being, so I don't have to fix data access in lot's of places right now.
+	friend class CNavMesh;
 
 	STile();
 

@@ -92,7 +92,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	const MNM::real_t range = MNM::real_t(1.0f);
 
 	// Get entry triangle
-	startTriangleID = mesh.grid.GetTriangleAt(fixedStartPoint, range, range);
+	startTriangleID = mesh.navMesh.GetTriangleAt(fixedStartPoint, range, range);
 
 	if (!startTriangleID)
 	{
@@ -101,7 +101,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	}
 
 	// Get entry triangle
-	endTriangleID = mesh.grid.GetTriangleAt(fixedEndPoint, range, range);
+	endTriangleID = mesh.navMesh.GetTriangleAt(fixedEndPoint, range, range);
 
 	if (!endTriangleID)
 	{
@@ -120,7 +120,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	MNM::OffMeshNavigation& offMeshNavigation = m_offMeshMap[meshID];
 
 	// Important: if we already added this particular link before, we need to remove it prior to re-adding it, as the startTriangleID might be
-	//            a different one now and then the MeshGrid would suddenly have 2 different triangle-links referring to the same offmesh-link.
+	//            a different one now and then the NavMesh would suddenly have 2 different triangle-links referring to the same offmesh-link.
 	//            This can happen if there are multiple add-link requests in m_operations dealing with the same linkID but with *different* start/end positions (!)
 	TLinkInfoMap::const_iterator it = m_links.find(linkID);
 	if (it != m_links.end())
@@ -623,8 +623,8 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			// is the link incoming from a different tile?
 			// -> need to remove it before it can potentially become a dangling link (i. e. the triangleID where it ends would no longer exist or would have morphed into a different one)
 			//    (in fact, it *is* already a dangling link because given tile has just been regenerated and all its triangleIDs most likely have changed!)
-			//    Notice that InvalidateLinks(tileID) only cares about outgoing links and also doesn't remove the link-information from the MeshGrid, so we need
-			//    to call RemoveLink() to get the MeshGrid patched as well.
+			//    Notice that InvalidateLinks(tileID) only cares about outgoing links and also doesn't remove the link-information from the NavMesh, so we need
+			//    to call RemoveLink() to get the NavMesh patched as well.
 			if (isLinkIncomingToThisTile && !isLinkOutgoingFromThisTile)
 			{
 				const MNM::OffMeshLinkID& linkID = iter->first;
@@ -665,8 +665,8 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			// Carefully read this:
 			//
 			//    If we didn't do this, then remove-link requests and add-link requests in the m_operations queue could use that "dead" triangle reference
-			//    to try to remove offmesh-links in the MeshGrid where there was none, OR try to add offmesh-links in the MeshGrid where there was one already, OR
-			//    (even worse, as no assert will catch this scenario) it would manipulate *foreign* offmesh-links in the MeshGrid.
+			//    to try to remove offmesh-links in the NavMesh where there was none, OR try to add offmesh-links in the NavMesh where there was one already, OR
+			//    (even worse, as no assert will catch this scenario) it would manipulate *foreign* offmesh-links in the NavMesh.
 			//
 			m_links.erase(iter++);
 		}

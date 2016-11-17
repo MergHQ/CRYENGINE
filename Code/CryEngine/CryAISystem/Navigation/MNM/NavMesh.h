@@ -12,7 +12,7 @@
 #include <CryMath/SimpleHashLookUp.h>
 #include <CryCore/Containers/VectorMap.h>
 
-#include <CryAISystem/NavigationSystem/MNMMeshGrid.h>
+#include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 
 class OffMeshNavigationManager;
 
@@ -128,9 +128,9 @@ typedef CryFixedArray<MNM::DangerAreaConstPtr, max_danger_amount> DangerousAreas
 
 ///////////////////////////////////////////////////////////////////////
 
-// #MNM_TODO pavloi 2016.08.15: rename to SMeshGrid
-struct MeshGrid : public MNM::IMeshGrid
+class CNavMesh : public MNM::INavMesh
 {
+public:
 	enum { x_bits = 11, };   // must add up to a 32 bit - the "tileName"
 	enum { y_bits = 11, };
 	enum { z_bits = 10, };
@@ -139,9 +139,9 @@ struct MeshGrid : public MNM::IMeshGrid
 	enum { max_y = (1 << y_bits) - 1, };
 	enum { max_z = (1 << z_bits) - 1, };
 
-	struct Params
+	struct SGridParams
 	{
-		Params()
+		SGridParams()
 			: origin(ZERO)
 			, tileSize(16)
 			, tileCount(1024)
@@ -261,10 +261,10 @@ struct MeshGrid : public MNM::IMeshGrid
 		eWQR_Done,
 	};
 
-	MeshGrid();
-	~MeshGrid();
+	CNavMesh();
+	~CNavMesh();
 
-	void                 Init(const Params& params);
+	void                 Init(const SGridParams& params);
 
 	static inline size_t ComputeTileName(size_t x, size_t y, size_t z)
 	{
@@ -310,7 +310,7 @@ struct MeshGrid : public MNM::IMeshGrid
 	void                      UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex);
 	void                      RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID);
 
-	MeshGrid::EWayQueryResult FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const;
+	CNavMesh::EWayQueryResult FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const;
 	real_t                    CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const;
 	void                      PullString(const vector3_t& from, const TriangleID fromTriID, const vector3_t& to, const TriangleID toTriID, vector3_t& middlePoint) const;
 
@@ -402,9 +402,9 @@ struct MeshGrid : public MNM::IMeshGrid
 	STile&          GetTile(TileID);
 	const vector3_t GetTileContainerCoordinates(TileID) const;
 
-	void                 Swap(MeshGrid& other);
+	void                      Swap(CNavMesh& other);
 
-	inline const Params& GetParams() const
+	inline const SGridParams& GetGridParams() const
 	{
 		return m_params;
 	}
@@ -470,13 +470,13 @@ struct MeshGrid : public MNM::IMeshGrid
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
 
-	// MNM::Tile::IMeshGrid
-	virtual void       GetMeshParams(NMeshGrid::SParams& outParams) const override;
+	// MNM::INavMesh
+	virtual void       GetMeshParams(NavMesh::SParams& outParams) const override;
 	virtual TileID     FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const override;
-	virtual size_t     QueryTriangles(const aabb_t& queryAabbWorld, MNM::NMeshGrid::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
+	virtual size_t     QueryTriangles(const aabb_t& queryAabbWorld, MNM::NavMesh::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
 	virtual TriangleID FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const override;
 	virtual bool       GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
-	// ~MNM::Tile::IMeshGrid
+	// ~MNM::INavMesh
 
 private:
 
@@ -505,7 +505,7 @@ private:
 	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
 	struct SAcceptAllQueryTrianglesFilter
 	{
-		NMeshGrid::IQueryTrianglesFilter::EResult Check(TriangleID) { return NMeshGrid::IQueryTrianglesFilter::EResult::Accepted; }
+		NavMesh::IQueryTrianglesFilter::EResult Check(TriangleID) { return NavMesh::IQueryTrianglesFilter::EResult::Accepted; }
 	};
 
 	struct SMinIslandAreaQueryTrianglesFilter;
@@ -559,13 +559,13 @@ protected:
 		TileContainerArray();
 
 		// Custom copy-construction that bypasses the m_tiles[] pointer and its data from the rhs argument.
-		// Objects of this class are currently only copy-constructed in MeshGrid's copy-ctor.
+		// Objects of this class are currently only copy-constructed in CNavMesh's copy-ctor.
 		// When the assert() in our ctor's body fails, a copy-construction obviously occured in a different situation, and we will have to rethink about the use-cases.
 		TileContainerArray(const TileContainerArray& rhs);
 
 		~TileContainerArray();
 
-		// called only once (by MeshGrid::Init())
+		// called only once (by CNavMesh::Init())
 		void Init(size_t initialTileContainerCount);
 
 		// - allocates a new TileContainer (or re-uses an unused one)
@@ -634,7 +634,7 @@ protected:
 	};
 	std::vector<IslandConnectionRequest> m_islandConnectionRequests;
 
-	Params                               m_params;
+	SGridParams                          m_params;
 	ProfilerType                         m_profiler;
 
 	static const real_t                  kMinPullingThreshold;

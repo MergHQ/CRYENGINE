@@ -766,7 +766,7 @@ Vec2 CollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const NavigationAgen
 		if (NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(agentTypeID, from))
 		{
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-			const MNM::MeshGrid& grid = mesh.grid;
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 			MNM::vector3_t startLoc = MNM::vector3_t(MNM::real_t(from.x), MNM::real_t(from.y), MNM::real_t(from.z));
 			MNM::vector3_t endLoc = MNM::vector3_t(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
@@ -774,29 +774,29 @@ Vec2 CollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const NavigationAgen
 			const MNM::real_t horizontalRange(5.0f);
 			const MNM::real_t verticalRange(1.0f);
 
-			MNM::TriangleID triStart = grid.GetTriangleAt(startLoc, verticalRange, verticalRange);
+			MNM::TriangleID triStart = navMesh.GetTriangleAt(startLoc, verticalRange, verticalRange);
 
-			MNM::TriangleID triEnd = grid.GetTriangleAt(endLoc, verticalRange, verticalRange);
+			MNM::TriangleID triEnd = navMesh.GetTriangleAt(endLoc, verticalRange, verticalRange);
 			if (!triEnd)
 			{
 				MNM::vector3_t closestEndLocation;
-				triEnd = grid.GetClosestTriangle(endLoc, verticalRange, horizontalRange, nullptr, &closestEndLocation);
-				grid.PushPointInsideTriangle(triEnd, closestEndLocation, MNM::real_t(.05f));
+				triEnd = navMesh.GetClosestTriangle(endLoc, verticalRange, horizontalRange, nullptr, &closestEndLocation);
+				navMesh.PushPointInsideTriangle(triEnd, closestEndLocation, MNM::real_t(.05f));
 				endLoc = closestEndLocation;
 			}
 
 			if (triStart && triEnd)
 			{
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
-				MNM::MeshGrid::ERayCastResult result = grid.RayCast(startLoc, triStart, endLoc, triEnd, raycastRequest);
-				if (result == MNM::MeshGrid::eRayCastResult_Hit)
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(startLoc, triStart, endLoc, triEnd, raycastRequest);
+				if (result == MNM::CNavMesh::eRayCastResult_Hit)
 				{
 					const float velocityMagnitude = min(TimeStep, raycastRequest.hit.distance.as_float());
 					const Vec3 newEndLoc = agentPosition + ((endLoc.GetVec3() - agentPosition) * velocityMagnitude);
 					const Vec3 newVelocity = newEndLoc - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y) * invTimeHorizon;
 				}
-				else if (result == MNM::MeshGrid::eRayCastResult_NoHit)
+				else if (result == MNM::CNavMesh::eRayCastResult_NoHit)
 				{
 					const Vec3 newVelocity = endLoc.GetVec3() - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y);

@@ -49,14 +49,14 @@ public:
 	const PathHolderPath&                     GetPath() const { return m_path; }
 	inline typename PathHolderPath::size_type Size() const    { return m_path.size(); }
 
-	void                                      PullPathOnNavigationMesh(const MNM::MeshGrid& grid, uint16 iteration)
+	void                                      PullPathOnNavigationMesh(const MNM::CNavMesh& navMesh, uint16 iteration)
 	{
 		FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
 
 		if (m_path.size() < 3)
 			return;
 
-		const Vec3 gridOrigin = grid.GetParams().origin;
+		const Vec3 gridOrigin = navMesh.GetGridParams().origin;
 
 		for (uint16 i = 0; i < iteration; ++i)
 		{
@@ -83,7 +83,7 @@ public:
 					MNM::vector3_t middleLocation(middle - gridOrigin);
 					MNM::vector3_t endLocation(to - gridOrigin);
 
-					grid.PullString(startLocation, startPoint.iTriId, endLocation, middlePoint.iTriId, middleLocation);
+					navMesh.PullString(startLocation, startPoint.iTriId, endLocation, middlePoint.iTriId, middleLocation);
 					middle = middleLocation.GetVec3() + gridOrigin;
 				}
 			}

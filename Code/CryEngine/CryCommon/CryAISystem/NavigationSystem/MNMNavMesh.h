@@ -5,8 +5,7 @@
 namespace MNM
 {
 
-// #MNM_TODO pavloi 2016.08.15: rename to MeshGrid when struct MeshGrid is renamed to SMeshGrid
-namespace NMeshGrid
+namespace NavMesh
 {
 
 //! Mesh parameters.
@@ -15,7 +14,7 @@ struct SParams
 	Vec3 originWorld;   //! Origin position of the NavMesh in the world coordinate space.
 };
 
-//! Filter functor for IMeshGrid::QueryTriangles.
+//! Filter functor for INavMesh::QueryTriangles.
 struct IQueryTrianglesFilter
 {
 	virtual ~IQueryTrianglesFilter() {}
@@ -83,15 +82,15 @@ inline vector3_t GetNeighbourTileCoord(const vector3_t& tileCoord, const size_t 
 	return tileCoord + offset;
 }
 
-} // namespace MeshGrid
+} // namespace NavMesh
 
 //! Provides an access to the NavMesh data
-struct IMeshGrid
+struct INavMesh
 {
-	virtual ~IMeshGrid() {}
+	virtual ~INavMesh() {}
 
-	//! Fills a MeshGrid::SParams structure with a mesh parameters.
-	virtual void GetMeshParams(NMeshGrid::SParams& outParams) const = 0;
+	//! Fills a NavMesh::SParams structure with a mesh parameters.
+	virtual void GetMeshParams(NavMesh::SParams& outParams) const = 0;
 
 	//! Finds a TileID by the tile's grid coordinate.
 	//! \return Valid TileID, if such tile exists. Otherwise, return MNM::Constants::InvalidTileID.
@@ -103,7 +102,7 @@ struct IMeshGrid
 	//! \param maxTrianglesCount Size of output buffer for result triangleId's.
 	//! \param pOutTriangles Array buffer for result triangleId's.
 	//! \return Count of found triangleId's.
-	virtual size_t QueryTriangles(const aabb_t& queryAabbWorld, NMeshGrid::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
+	virtual size_t QueryTriangles(const aabb_t& queryAabbWorld, NavMesh::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
 
 	//! Finds a single triangle closest to the point. /see QueryTriangles() for a way to get candidate triangles.
 	//! \param queryPosWorld Query point in a world coordinate space.

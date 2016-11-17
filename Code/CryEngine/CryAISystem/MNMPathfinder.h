@@ -16,7 +16,7 @@
 #define _MNMPATHFINDER_H_
 
 #include "Navigation/MNM/MNM.h"
-#include "Navigation/MNM/MeshGrid.h"
+#include "Navigation/MNM/NavMesh.h"
 #include "NavPath.h"
 #include "Navigation/PathHolder.h"
 #include <CryPhysics/AgePriorityQueue.h>
@@ -144,9 +144,9 @@ struct ProcessingContext
 	}
 
 	ProcessingRequest            processingRequest;
-	MeshGrid::WayQueryRequest*   pWayQuery;
-	MeshGrid::WayQueryResult     queryResult;
-	MeshGrid::WayQueryWorkingSet workingSet;
+	CNavMesh::WayQueryRequest*   pWayQuery;
+	CNavMesh::WayQueryResult     queryResult;
+	CNavMesh::WayQueryWorkingSet workingSet;
 
 	volatile EProcessingStatus   status;
 	JobManager::SJobState        jobState;
@@ -357,10 +357,10 @@ public:
 
 	void                      OnNavigationMeshChanged(NavigationMeshID meshId, MNM::TileID tileId);
 
-	// Utility function, which takes a triangles way found by MNM::MeshGrid::FindWay() and converts it into a way-point path.
+	// Utility function, which takes a triangles way found by MNM::CNavMesh::FindWay() and converts it into a way-point path.
 	static bool ConstructPathFromFoundWay(
-	  const MNM::MeshGrid::WayQueryResult& way,
-	  const MNM::MeshGrid& grid,
+	  const MNM::CNavMesh::WayQueryResult& way,
+	  const MNM::CNavMesh& navMesh,
 	  const OffMeshNavigationManager* pOffMeshNavigationManager,
 	  const Vec3& startLocation,
 	  const Vec3& endLocation,

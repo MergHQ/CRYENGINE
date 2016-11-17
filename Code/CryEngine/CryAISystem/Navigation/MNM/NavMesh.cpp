@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "MeshGrid.h"
+#include "NavMesh.h"
 #include "OffGridLinks.h"
 #include "Tile.h"
 #include "IslandConnections.h"
@@ -14,7 +14,7 @@
 	#undef max
 #endif
 
-// - if this is #defined, then some public methods of MeshGrid::TileContainerArray will receive additional asserts() to debug access to freed TileContainer instances; this might
+// - if this is #defined, then some public methods of CNavMesh::TileContainerArray will receive additional asserts() to debug access to freed TileContainer instances; this might
 //   generate false positives while we're in the process of tracing down bugs though
 // - if not #defined, then the code will effectively behave the same as before 2015-08-13 (i. e. it will *not* do these extra checks, thus not generating false positives)
 //#define TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
@@ -24,7 +24,7 @@
 
 namespace MNM
 {
-bool MeshGrid::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
+bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
 {
 	if (m_pRequester)
 	{
@@ -40,7 +40,7 @@ bool MeshGrid::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, fl
 	return true;    // Always allow by default
 }
 
-bool MeshGrid::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 flags) const
+bool CNavMesh::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 flags) const
 {
 	if (m_pRequester)
 	{
@@ -50,14 +50,14 @@ bool MeshGrid::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 fla
 	return true;    // Always allow by default
 }
 
-MeshGrid::TileContainerArray::TileContainerArray()
+CNavMesh::TileContainerArray::TileContainerArray()
 	: m_tiles(NULL)
 	, m_tileCount(0)
 	, m_tileCapacity(0)
 {
 }
 
-MeshGrid::TileContainerArray::TileContainerArray(const TileContainerArray& rhs)
+CNavMesh::TileContainerArray::TileContainerArray(const TileContainerArray& rhs)
 	: m_tiles(NULL)
 	, m_tileCount(0)
 	, m_tileCapacity(0)
@@ -66,7 +66,7 @@ MeshGrid::TileContainerArray::TileContainerArray(const TileContainerArray& rhs)
 	assert(rhs.m_tiles == NULL);
 }
 
-MeshGrid::TileContainerArray::~TileContainerArray()
+CNavMesh::TileContainerArray::~TileContainerArray()
 {
 	for (size_t i = 0; i < m_tileCapacity; ++i)
 		m_tiles[i].tile.Destroy();
@@ -74,7 +74,7 @@ MeshGrid::TileContainerArray::~TileContainerArray()
 	delete[] m_tiles;
 }
 
-void MeshGrid::TileContainerArray::Grow(size_t amount)
+void CNavMesh::TileContainerArray::Grow(size_t amount)
 {
 	const size_t oldCapacity = m_tileCapacity;
 
@@ -96,14 +96,14 @@ void MeshGrid::TileContainerArray::Grow(size_t amount)
 	// careful #3: we won't fill up m_frees as all elements starting at [m_frees.size() + m_tileCount] are implicitly marked as free.
 }
 
-void MeshGrid::TileContainerArray::Init(size_t initialTileContainerCount)
+void CNavMesh::TileContainerArray::Init(size_t initialTileContainerCount)
 {
 	assert(m_tileCapacity == 0);
 	assert(m_tiles == NULL);
 	Grow(initialTileContainerCount);
 }
 
-const TileID MeshGrid::TileContainerArray::AllocateTileContainer()
+const TileID CNavMesh::TileContainerArray::AllocateTileContainer()
 {
 	assert(m_tileCount <= m_tileCapacity);
 
@@ -127,7 +127,7 @@ const TileID MeshGrid::TileContainerArray::AllocateTileContainer()
 	return static_cast<TileID>(tileID);
 }
 
-void MeshGrid::TileContainerArray::FreeTileContainer(const TileID tileID)
+void CNavMesh::TileContainerArray::FreeTileContainer(const TileID tileID)
 {
 	const size_t index = tileID - 1;
 
@@ -142,12 +142,12 @@ void MeshGrid::TileContainerArray::FreeTileContainer(const TileID tileID)
 	m_freeIndexes.push_back(index);
 }
 
-const size_t MeshGrid::TileContainerArray::GetTileCount() const
+const size_t CNavMesh::TileContainerArray::GetTileCount() const
 {
 	return m_tileCount;
 }
 
-MeshGrid::TileContainer& MeshGrid::TileContainerArray::operator[](size_t index)
+CNavMesh::TileContainer& CNavMesh::TileContainerArray::operator[](size_t index)
 {
 	assert(index < m_tileCapacity);
 #ifdef TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
@@ -157,7 +157,7 @@ MeshGrid::TileContainer& MeshGrid::TileContainerArray::operator[](size_t index)
 	return m_tiles[index];
 }
 
-const MeshGrid::TileContainer& MeshGrid::TileContainerArray::operator[](size_t index) const
+const CNavMesh::TileContainer& CNavMesh::TileContainerArray::operator[](size_t index) const
 {
 	assert(index < m_tileCapacity);
 #ifdef TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
@@ -167,7 +167,7 @@ const MeshGrid::TileContainer& MeshGrid::TileContainerArray::operator[](size_t i
 	return m_tiles[index];
 }
 
-void MeshGrid::TileContainerArray::Swap(TileContainerArray& other)
+void CNavMesh::TileContainerArray::Swap(TileContainerArray& other)
 {
 	std::swap(m_tiles, other.m_tiles);
 	std::swap(m_tileCount, other.m_tileCount);
@@ -175,14 +175,14 @@ void MeshGrid::TileContainerArray::Swap(TileContainerArray& other)
 	m_freeIndexes.swap(other.m_freeIndexes);
 }
 
-void MeshGrid::TileContainerArray::UpdateProfiler(ProfilerType& profiler) const
+void CNavMesh::TileContainerArray::UpdateProfiler(ProfilerType& profiler) const
 {
 	profiler.AddMemory(GridMemory, m_tileCapacity * sizeof(TileContainer));
 	profiler.AddMemory(GridMemory, m_freeIndexes.capacity() * sizeof(FreeIndexes::value_type));
 }
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-void MeshGrid::TileContainerArray::BreakOnInvalidTriangle(const TriangleID triangleID) const
+void CNavMesh::TileContainerArray::BreakOnInvalidTriangle(const TriangleID triangleID) const
 {
 	const TileID checkTileID = ComputeTileID(triangleID);
 	const size_t index = checkTileID - 1;
@@ -208,21 +208,21 @@ void MeshGrid::TileContainerArray::BreakOnInvalidTriangle(const TriangleID trian
 }
 #endif
 
-const real_t MeshGrid::kMinPullingThreshold = real_t(0.05f);
-const real_t MeshGrid::kMaxPullingThreshold = real_t(0.95f);
-const real_t MeshGrid::kAdjecencyCalculationToleranceSq = square(real_t(0.02f));
+const real_t CNavMesh::kMinPullingThreshold = real_t(0.05f);
+const real_t CNavMesh::kMaxPullingThreshold = real_t(0.95f);
+const real_t CNavMesh::kAdjecencyCalculationToleranceSq = square(real_t(0.02f));
 
-MeshGrid::MeshGrid()
+CNavMesh::CNavMesh()
 	: m_triangleCount(0)
 {
 	m_islands.reserve(32);
 }
 
-MeshGrid::~MeshGrid()
+CNavMesh::~CNavMesh()
 {
 }
 
-void MeshGrid::Init(const Params& params)
+void CNavMesh::Init(const SGridParams& params)
 {
 	m_params = params;
 
@@ -230,29 +230,29 @@ void MeshGrid::Init(const Params& params)
 }
 
 //! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea
-struct MeshGrid::SMinIslandAreaQueryTrianglesFilter
+struct CNavMesh::SMinIslandAreaQueryTrianglesFilter
 {
-	SMinIslandAreaQueryTrianglesFilter(const MeshGrid& meshGrid_, float minIslandArea_)
-		: meshGrid(meshGrid_)
+	SMinIslandAreaQueryTrianglesFilter(const CNavMesh& navMesh_, float minIslandArea_)
+		: navMesh(navMesh_)
 		, minIslandArea(minIslandArea_)
 	{}
 
-	bool                                      IsAcceptAll() const { return minIslandArea <= 0.f; }
+	bool                                    IsAcceptAll() const { return minIslandArea <= 0.f; }
 
-	NMeshGrid::IQueryTrianglesFilter::EResult Check(const TriangleID triangleId) const
+	NavMesh::IQueryTrianglesFilter::EResult Check(const TriangleID triangleId) const
 	{
 		return
-		  (meshGrid.GetIslandAreaForTriangle(triangleId) >= minIslandArea)
-		  ? NMeshGrid::IQueryTrianglesFilter::EResult::Accepted
-		  : NMeshGrid::IQueryTrianglesFilter::EResult::Rejected;
+		  (navMesh.GetIslandAreaForTriangle(triangleId) >= minIslandArea)
+		  ? NavMesh::IQueryTrianglesFilter::EResult::Accepted
+		  : NavMesh::IQueryTrianglesFilter::EResult::Rejected;
 	}
 
-	const MeshGrid& meshGrid;
+	const CNavMesh& navMesh;
 	float           minIslandArea;
 };
 
 template<typename TFilter>
-size_t MeshGrid::QueryTileTrianglesLinear(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTileTrianglesLinear(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	CRY_ASSERT(maxTrianglesCount > 0);
 	if (maxTrianglesCount == 0)
@@ -273,7 +273,7 @@ size_t MeshGrid::QueryTileTrianglesLinear(const TileID tileID, const STile& tile
 		{
 			const TriangleID triangleID = ComputeTriangleID(tileID, static_cast<uint16>(i));
 
-			if (filter.Check(triangleID) == NMeshGrid::IQueryTrianglesFilter::EResult::Accepted)
+			if (filter.Check(triangleID) == NavMesh::IQueryTrianglesFilter::EResult::Accepted)
 			{
 				pOutTriangles[triCount++] = triangleID;
 
@@ -286,7 +286,7 @@ size_t MeshGrid::QueryTileTrianglesLinear(const TileID tileID, const STile& tile
 }
 
 template<typename TFilter>
-size_t MeshGrid::QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	CRY_ASSERT(maxTrianglesCount > 0);
 	if (maxTrianglesCount == 0)
@@ -311,7 +311,7 @@ size_t MeshGrid::QueryTileTrianglesBV(const TileID tileID, const STile& tile, co
 				const uint16 triangleIdx = node.offset;
 				const TriangleID triangleID = ComputeTriangleID(tileID, triangleIdx);
 
-				if (filter.Check(triangleID) == NMeshGrid::IQueryTrianglesFilter::EResult::Accepted)
+				if (filter.Check(triangleID) == NavMesh::IQueryTrianglesFilter::EResult::Accepted)
 				{
 					pOutTriangles[triCount++] = triangleID;
 
@@ -325,7 +325,7 @@ size_t MeshGrid::QueryTileTrianglesBV(const TileID tileID, const STile& tile, co
 }
 
 template<typename TFilter>
-size_t MeshGrid::QueryTileTriangles(const TileID tileID, const vector3_t& tileOrigin, const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTileTriangles(const TileID tileID, const vector3_t& tileOrigin, const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	const STile& tile = GetTile(tileID);
 
@@ -347,7 +347,7 @@ size_t MeshGrid::QueryTileTriangles(const TileID tileID, const vector3_t& tileOr
 }
 
 template<typename TFilter>
-size_t MeshGrid::QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	CRY_ASSERT(pOutTriangles);
 	CRY_ASSERT(maxTrianglesCount > 0);
@@ -401,13 +401,13 @@ size_t MeshGrid::QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, 
 	return triCount;
 }
 
-size_t MeshGrid::QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	SAcceptAllQueryTrianglesFilter filter;
 	return QueryTrianglesWithFilterInternal(queryAabbWorld, filter, maxTrianglesCount, pOutTriangles);
 }
 
-TriangleID MeshGrid::FindClosestTriangleInternal(
+TriangleID CNavMesh::FindClosestTriangleInternal(
   const vector3_t& queryPosWorld,
   const TriangleID* pCandidateTriangles,
   const size_t candidateTrianglesCount,
@@ -459,7 +459,7 @@ TriangleID MeshGrid::FindClosestTriangleInternal(
 
 #pragma warning(push)
 #pragma warning(disable:28285)
-size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea) const
+size_t CNavMesh::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea) const
 {
 	SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
 	if (filter.IsAcceptAll())
@@ -473,7 +473,7 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 }
 #pragma warning(pop)
 
-TriangleID MeshGrid::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, float minIslandArea) const
+TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, float minIslandArea) const
 {
 	const MNM::aabb_t aabb(
 	  MNM::vector3_t(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z - verticalDownwardRange)),
@@ -512,7 +512,7 @@ TriangleID MeshGrid::GetTriangleAt(const vector3_t& location, const real_t verti
 	return closestID;
 }
 
-TriangleID MeshGrid::GetTriangleEdgeAlongLine(const vector3_t& startLocation, const vector3_t& endLocation,
+TriangleID CNavMesh::GetTriangleEdgeAlongLine(const vector3_t& startLocation, const vector3_t& endLocation,
                                               const real_t verticalDownwardRange, const real_t verticalUpwardRange, vector3_t& hit, float minIslandArea) const
 {
 	// Determine bounding box
@@ -560,7 +560,7 @@ TriangleID MeshGrid::GetTriangleEdgeAlongLine(const vector3_t& startLocation, co
 	return triangleID;
 }
 
-bool MeshGrid::IsTriangleAcceptableForLocation(const vector3_t& location, TriangleID triangleID) const
+bool CNavMesh::IsTriangleAcceptableForLocation(const vector3_t& location, TriangleID triangleID) const
 {
 	const MNM::real_t range = MNM::real_t(1.0f);
 	if (triangleID)
@@ -595,7 +595,7 @@ bool MeshGrid::IsTriangleAcceptableForLocation(const vector3_t& location, Triang
 	return false;
 }
 
-TriangleID MeshGrid::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance,
+TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance,
                                         vector3_t* closest, float minIslandArea) const
 {
 	const MNM::aabb_t aabb(
@@ -617,7 +617,7 @@ TriangleID MeshGrid::GetClosestTriangle(const vector3_t& location, real_t vrange
 	return resultClosestTriangleId;
 }
 
-bool MeshGrid::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const
+bool CNavMesh::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const
 {
 	if (const TileID tileID = ComputeTileID(triangleID))
 	{
@@ -639,12 +639,12 @@ bool MeshGrid::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, 
 	return false;
 }
 
-bool MeshGrid::GetVertices(TriangleID triangleID, vector3_t* verts) const
+bool CNavMesh::GetVertices(TriangleID triangleID, vector3_t* verts) const
 {
 	return GetVertices(triangleID, verts[0], verts[1], verts[2]);
 }
 
-bool MeshGrid::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
+bool CNavMesh::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 {
 	if (const TileID tileID = ComputeTileID(triangleID))
 	{
@@ -666,7 +666,7 @@ bool MeshGrid::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 	return false;
 }
 
-bool MeshGrid::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const
+bool CNavMesh::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const
 {
 	if (const TileID tileID = ComputeTileID(triangleID))
 	{
@@ -679,7 +679,7 @@ bool MeshGrid::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) con
 	return false;
 }
 
-bool MeshGrid::PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const
+bool CNavMesh::PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const
 {
 	if (amount <= 0)
 		return false;
@@ -720,7 +720,7 @@ bool MeshGrid::PushPointInsideTriangle(const TriangleID triangleID, vector3_t& l
 	return false;
 }
 
-void MeshGrid::ResetConnectedIslandsIDs()
+void CNavMesh::ResetConnectedIslandsIDs()
 {
 	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
 	{
@@ -736,7 +736,7 @@ void MeshGrid::ResetConnectedIslandsIDs()
 	m_islands.clear();
 }
 
-void MeshGrid::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
+void CNavMesh::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -745,7 +745,7 @@ void MeshGrid::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID,
 	ResolvePendingIslandConnectionRequests(meshID, offMeshNavigationManager, islandConnections);
 }
 
-void MeshGrid::ComputeStaticIslands()
+void CNavMesh::ComputeStaticIslands()
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -831,7 +831,7 @@ void MeshGrid::ComputeStaticIslands()
 	}
 }
 
-MeshGrid::Island& MeshGrid::GetNewIsland()
+CNavMesh::Island& CNavMesh::GetNewIsland()
 {
 	assert(m_islands.size() != std::numeric_limits<StaticIslandID>::max());
 
@@ -842,12 +842,12 @@ MeshGrid::Island& MeshGrid::GetNewIsland()
 	return m_islands.back();
 }
 
-void MeshGrid::QueueIslandConnectionSetup(const StaticIslandID islandID, const TriangleID startingTriangleID, const uint16 offMeshLinkIndex)
+void CNavMesh::QueueIslandConnectionSetup(const StaticIslandID islandID, const TriangleID startingTriangleID, const uint16 offMeshLinkIndex)
 {
 	m_islandConnectionRequests.push_back(IslandConnectionRequest(islandID, startingTriangleID, offMeshLinkIndex));
 }
 
-void MeshGrid::ResolvePendingIslandConnectionRequests(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager,
+void CNavMesh::ResolvePendingIslandConnectionRequests(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager,
                                                       MNM::IslandConnections& islandConnections)
 {
 	const OffMeshNavigation& offMeshNavigation = offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
@@ -871,7 +871,7 @@ void MeshGrid::ResolvePendingIslandConnectionRequests(const NavigationMeshID mes
 	}
 }
 
-void MeshGrid::SearchForIslandConnectionsToRefresh(const TileID tileID)
+void CNavMesh::SearchForIslandConnectionsToRefresh(const TileID tileID)
 {
 	STile& tile = m_tiles[tileID - 1].tile;
 	for (uint16 triangleIndex = 0; triangleIndex < tile.triangleCount; ++triangleIndex)
@@ -888,13 +888,13 @@ void MeshGrid::SearchForIslandConnectionsToRefresh(const TileID tileID)
 	}
 }
 
-float MeshGrid::GetIslandArea(StaticIslandID islandID) const
+float CNavMesh::GetIslandArea(StaticIslandID islandID) const
 {
 	bool isValid = (islandID >= MNM::Constants::eStaticIsland_FirstValidIslandID && islandID <= m_islands.size());
 	return (isValid) ? m_islands[islandID - 1].area : -1.f;
 }
 
-float MeshGrid::GetIslandAreaForTriangle(TriangleID triangleID) const
+float CNavMesh::GetIslandAreaForTriangle(TriangleID triangleID) const
 {
 	Tile::STriangle triangle;
 	if (GetTriangle(triangleID, triangle))
@@ -905,7 +905,7 @@ float MeshGrid::GetIslandAreaForTriangle(TriangleID triangleID) const
 	return -1.f;
 }
 
-void MeshGrid::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID,
+void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID,
                                                 const vector3_t& bestNodePosition, const TriangleID nextTriangleID, const unsigned int edgeIndex
                                                 , const vector3_t& finalLocation, vector3_t& outPosition) const
 {
@@ -973,7 +973,7 @@ void MeshGrid::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 	}
 }
 
-MeshGrid::EWayQueryResult MeshGrid::FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const
+CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const
 {
 	result.SetWaySize(0);
 	if (result.GetWayMaxSize() < 2)
@@ -1079,7 +1079,7 @@ MeshGrid::EWayQueryResult MeshGrid::FindWay(WayQueryRequest& inputRequest, WayQu
 				}
 				else
 				{
-					AIError("MeshGrid::FindWay - Bad Navmesh data Tile: %d, Triangle: %d, skipping ", tileID, ComputeTriangleIndex(bestNodeID.triangleID));
+					AIError("CNavMesh::FindWay - Bad Navmesh data Tile: %d, Triangle: %d, skipping ", tileID, ComputeTriangleIndex(bestNodeID.triangleID));
 					m_tiles.BreakOnInvalidTriangle(bestNodeID.triangleID);
 				}
 
@@ -1205,7 +1205,7 @@ private:
 	const Vec3& m_startingLocation;
 };
 
-real_t MeshGrid::CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const
+real_t CNavMesh::CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const
 {
 	real_t totalCost(0.0f);
 	const Vec3 startingLocationInWorldSpace = startingLocation.GetVec3() + meshOrigin;
@@ -1214,7 +1214,7 @@ real_t MeshGrid::CalculateHeuristicCostForDangers(const vector3_t& locationToEva
 	return totalCost;
 }
 
-void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, const vector3_t& to, const TriangleID toTriID, vector3_t& middlePoint) const
+void CNavMesh::PullString(const vector3_t& from, const TriangleID fromTriID, const vector3_t& to, const TriangleID toTriID, vector3_t& middlePoint) const
 {
 	if (const TileID fromTileID = ComputeTileID(fromTriID))
 	{
@@ -1267,20 +1267,20 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 
 			real_t s, t;
 			if (!IntersectSegmentSegment(vector2_t(fromVertices[vi0]),
-				vector2_t(fromVertices[vi1]), vector2_t(from), vector2_t(to), s, t))
+			                             vector2_t(fromVertices[vi1]), vector2_t(from), vector2_t(to), s, t))
 			{
 				s = 0;
 			}
-			
+
 			// Even if segments don't intersect, s = 0 and is clamped to the pulling threshold range
 			s = clamp(s, kMinPullingThreshold, kMaxPullingThreshold);
-			
+
 			middlePoint = Lerp(fromVertices[vi0], fromVertices[vi1], s);
 		}
 	}
 }
 
-void MeshGrid::AddOffMeshLinkToTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
+void CNavMesh::AddOffMeshLinkToTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
 {
 	STile& tile = GetTile(tileID);
 
@@ -1293,14 +1293,14 @@ void MeshGrid::AddOffMeshLinkToTile(const TileID tileID, const TriangleID triang
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 }
 
-void MeshGrid::UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
+void CNavMesh::UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
 {
 	STile& tile = GetTile(tileID);
 
 	tile.UpdateOffMeshLink(triangleID, offMeshIndex);
 }
 
-void MeshGrid::RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID)
+void CNavMesh::RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID)
 {
 	STile& tile = GetTile(tileID);
 
@@ -1318,7 +1318,7 @@ inline size_t OppositeSide(size_t side)
 	return (side + 7) % 14;
 }
 
-MeshGrid::ERayCastResult MeshGrid::RayCast(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri,
+CNavMesh::ERayCastResult CNavMesh::RayCast(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri,
                                            RaycastRequestBase& raycastRequest) const
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
@@ -1379,7 +1379,7 @@ struct IsNodeCloserToEndPredicate
 typedef OpenList<RaycastNode, IsNodeCloserToEndPredicate> RaycastOpenList;
 typedef VectorSet<TriangleID>                             RaycastClosedList;
 
-MeshGrid::ERayCastResult MeshGrid::RayCast_new(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, TriangleID toTriangleID,
+CNavMesh::ERayCastResult CNavMesh::RayCast_new(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, TriangleID toTriangleID,
                                                RaycastRequestBase& raycastRequest) const
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
@@ -1581,7 +1581,7 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_new(const vector3_t& from, TriangleID
 	return eRayCastResult_Hit;
 }
 
-MeshGrid::ERayCastResult MeshGrid::ReconstructRaycastResult(const TriangleID fromTriangleID, const TriangleID toTriangleID, const RaycastCameFromMap& cameFrom, RaycastRequestBase& raycastRequest) const
+CNavMesh::ERayCastResult CNavMesh::ReconstructRaycastResult(const TriangleID fromTriangleID, const TriangleID toTriangleID, const RaycastCameFromMap& cameFrom, RaycastRequestBase& raycastRequest) const
 {
 	TriangleID currentTriangleID = toTriangleID;
 	size_t elementIndex = 0;
@@ -1604,7 +1604,7 @@ MeshGrid::ERayCastResult MeshGrid::ReconstructRaycastResult(const TriangleID fro
 	return elementIndex < raycastRequest.maxWayTriCount ? eRayCastResult_NoHit : eRayCastResult_RayTooLong;
 }
 
-bool MeshGrid::IsLocationInTriangle(const vector3_t& location, const TriangleID triangleID) const
+bool CNavMesh::IsLocationInTriangle(const vector3_t& location, const TriangleID triangleID) const
 {
 	if (triangleID == MNM::Constants::InvalidTriangleID)
 		return false;
@@ -1635,7 +1635,7 @@ bool MeshGrid::IsLocationInTriangle(const vector3_t& location, const TriangleID 
 	return false;
 }
 
-MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri, RaycastRequestBase& raycastRequest) const
+CNavMesh::ERayCastResult CNavMesh::RayCast_old(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri, RaycastRequestBase& raycastRequest) const
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -1921,8 +1921,8 @@ bool TestEdgeOverlap2D(const real_t& toleranceSq, const vector2_t& a0, const vec
 bool TestEdgeOverlap(size_t side, const real_t& toleranceSq, const vector3_t& a0, const vector3_t& a1,
                      const vector3_t& b0, const vector3_t& b1)
 {
-	const int ox = NMeshGrid::GetNeighbourTileOffset(side)[0];
-	const int oy = NMeshGrid::GetNeighbourTileOffset(side)[1];
+	const int ox = NavMesh::GetNeighbourTileOffset(side)[0];
+	const int oy = NavMesh::GetNeighbourTileOffset(side)[1];
 	const real_t dx = real_t::fraction(1, 1000);
 
 	if (ox || oy)
@@ -1946,7 +1946,7 @@ bool TestEdgeOverlap(size_t side, const real_t& toleranceSq, const vector3_t& a0
 	}
 }
 
-TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, STile& tile)
+TileID CNavMesh::SetTile(size_t x, size_t y, size_t z, STile& tile)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -2012,7 +2012,7 @@ TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, STile& tile)
 	return tileID;
 }
 
-void MeshGrid::ClearTile(TileID tileID, bool clearNetwork)
+void CNavMesh::ClearTile(TileID tileID, bool clearNetwork)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -2045,9 +2045,9 @@ void MeshGrid::ClearTile(TileID tileID, bool clearNetwork)
 		{
 			for (size_t side = 0; side < SideCount; ++side)
 			{
-				size_t nx = container.x + NMeshGrid::GetNeighbourTileOffset(side)[0];
-				size_t ny = container.y + NMeshGrid::GetNeighbourTileOffset(side)[1];
-				size_t nz = container.z + NMeshGrid::GetNeighbourTileOffset(side)[2];
+				size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
+				size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
+				size_t nz = container.z + NavMesh::GetNeighbourTileOffset(side)[2];
 
 				if (TileID neighbourID = GetTileID(nx, ny, nz))
 				{
@@ -2065,7 +2065,7 @@ void MeshGrid::ClearTile(TileID tileID, bool clearNetwork)
 	}
 }
 
-void MeshGrid::CreateNetwork()
+void CNavMesh::CreateNetwork()
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -2084,7 +2084,7 @@ void MeshGrid::CreateNetwork()
 	}
 }
 
-void MeshGrid::ConnectToNetwork(TileID tileID)
+void CNavMesh::ConnectToNetwork(TileID tileID)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -2095,9 +2095,9 @@ void MeshGrid::ConnectToNetwork(TileID tileID)
 
 		for (size_t side = 0; side < SideCount; ++side)
 		{
-			size_t nx = container.x + NMeshGrid::GetNeighbourTileOffset(side)[0];
-			size_t ny = container.y + NMeshGrid::GetNeighbourTileOffset(side)[1];
-			size_t nz = container.z + NMeshGrid::GetNeighbourTileOffset(side)[2];
+			size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
+			size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
+			size_t nz = container.z + NavMesh::GetNeighbourTileOffset(side)[2];
 
 			if (TileID neighbourID = GetTileID(nx, ny, nz))
 			{
@@ -2110,7 +2110,7 @@ void MeshGrid::ConnectToNetwork(TileID tileID)
 	}
 }
 
-TileID MeshGrid::GetTileID(size_t x, size_t y, size_t z) const
+TileID CNavMesh::GetTileID(size_t x, size_t y, size_t z) const
 {
 	const size_t tileName = ComputeTileName(x, y, z);
 
@@ -2120,26 +2120,26 @@ TileID MeshGrid::GetTileID(size_t x, size_t y, size_t z) const
 	return 0;
 }
 
-const STile& MeshGrid::GetTile(TileID tileID) const
+const STile& CNavMesh::GetTile(TileID tileID) const
 {
 	assert(tileID > 0);
 	return m_tiles[tileID - 1].tile;
 }
 
-STile& MeshGrid::GetTile(TileID tileID)
+STile& CNavMesh::GetTile(TileID tileID)
 {
 	assert(tileID > 0);
 	return m_tiles[tileID - 1].tile;
 }
 
-const vector3_t MeshGrid::GetTileContainerCoordinates(TileID tileID) const
+const vector3_t CNavMesh::GetTileContainerCoordinates(TileID tileID) const
 {
 	assert(tileID > 0);
 	const TileContainer& container = m_tiles[tileID - 1];
 	return vector3_t(MNM::real_t(container.x), MNM::real_t(container.y), MNM::real_t(container.z));
 }
 
-void MeshGrid::Swap(MeshGrid& other)
+void CNavMesh::Swap(CNavMesh& other)
 {
 	m_tiles.Swap(other.m_tiles);
 	std::swap(m_triangleCount, other.m_triangleCount);
@@ -2150,7 +2150,7 @@ void MeshGrid::Swap(MeshGrid& other)
 	std::swap(m_profiler, other.m_profiler);
 }
 
-void MeshGrid::Draw(size_t drawFlags, TileID excludeID) const
+void CNavMesh::Draw(size_t drawFlags, TileID excludeID) const
 {
 	TileMap::const_iterator it = m_tileMap.begin();
 	TileMap::const_iterator end = m_tileMap.end();
@@ -2184,7 +2184,7 @@ void MeshGrid::Draw(size_t drawFlags, TileID excludeID) const
 	}
 }
 
-const MeshGrid::ProfilerType& MeshGrid::GetProfiler() const
+const CNavMesh::ProfilerType& CNavMesh::GetProfiler() const
 {
 	return m_profiler;
 }
@@ -2279,22 +2279,22 @@ void ComputeTileTriangleAdjacency(const Tile::STriangle* triangles, const size_t
 	}
 }
 
-TileID MeshGrid::GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const
+TileID CNavMesh::GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const
 {
-	size_t nx = x + NMeshGrid::GetNeighbourTileOffset(side)[0];
-	size_t ny = y + NMeshGrid::GetNeighbourTileOffset(side)[1];
-	size_t nz = z + NMeshGrid::GetNeighbourTileOffset(side)[2];
+	size_t nx = x + NavMesh::GetNeighbourTileOffset(side)[0];
+	size_t ny = y + NavMesh::GetNeighbourTileOffset(side)[1];
+	size_t nz = z + NavMesh::GetNeighbourTileOffset(side)[2];
 
 	return GetTileID(nx, ny, nz);
 }
 
-void MeshGrid::GetMeshParams(NMeshGrid::SParams& outParams) const
+void CNavMesh::GetMeshParams(NavMesh::SParams& outParams) const
 {
-	const Params& params = GetParams();
+	const SGridParams& params = GetGridParams();
 	outParams.originWorld = params.origin;
 }
 
-TileID MeshGrid::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
+TileID CNavMesh::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
 {
 	const int nx = tileGridCoord.x.as_int();
 	const int ny = tileGridCoord.y.as_int();
@@ -2308,7 +2308,7 @@ TileID MeshGrid::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
 	return GetTileID(nx, ny, nz);
 }
 
-size_t MeshGrid::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NMeshGrid::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+size_t CNavMesh::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NavMesh::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
 {
 	CRY_ASSERT(pOutTriangles);
 	CRY_ASSERT(maxTrianglesCount > 0);
@@ -2328,7 +2328,7 @@ size_t MeshGrid::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NMeshGrid::IQ
 	}
 }
 
-TriangleID MeshGrid::FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const
+TriangleID CNavMesh::FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const
 {
 	CRY_ASSERT(pCandidateTriangles);
 	CRY_ASSERT(candidateTrianglesCount > 0);
@@ -2352,7 +2352,7 @@ TriangleID MeshGrid::FindClosestTriangle(const vector3_t& queryPosWorld, const T
 	return resultTriangleId;
 }
 
-bool MeshGrid::GetTileData(const TileID tileId, Tile::STileData& outTileData) const
+bool CNavMesh::GetTileData(const TileID tileId, Tile::STileData& outTileData) const
 {
 	if (tileId)
 	{
@@ -2390,7 +2390,7 @@ struct SideTileInfo
 
 #pragma warning (push)
 #pragma warning (disable: 6262)
-void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile)
+void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
@@ -2419,13 +2419,13 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 	{
 		SideTileInfo& side = sides[s];
 
-		if (TileID id = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(s)[0], y + NMeshGrid::GetNeighbourTileOffset(s)[1], z + NMeshGrid::GetNeighbourTileOffset(s)[2]))
+		if (TileID id = GetTileID(x + NavMesh::GetNeighbourTileOffset(s)[0], y + NavMesh::GetNeighbourTileOffset(s)[1], z + NavMesh::GetNeighbourTileOffset(s)[2]))
 		{
 			side.tile = &GetTile(id);
 			side.offset = vector3_t(
-			  NMeshGrid::GetNeighbourTileOffset(s)[0] * m_params.tileSize.x,
-			  NMeshGrid::GetNeighbourTileOffset(s)[1] * m_params.tileSize.y,
-			  NMeshGrid::GetNeighbourTileOffset(s)[2] * m_params.tileSize.z);
+			  NavMesh::GetNeighbourTileOffset(s)[0] * m_params.tileSize.x,
+			  NavMesh::GetNeighbourTileOffset(s)[1] * m_params.tileSize.y,
+			  NavMesh::GetNeighbourTileOffset(s)[2] * m_params.tileSize.z);
 		}
 	}
 
@@ -2500,7 +2500,7 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 								link.triangle = k;
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-								const TileID checkId = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(s)[0], y + NMeshGrid::GetNeighbourTileOffset(s)[1], z + NMeshGrid::GetNeighbourTileOffset(s)[2]);
+								const TileID checkId = GetTileID(x + NavMesh::GetNeighbourTileOffset(s)[0], y + NavMesh::GetNeighbourTileOffset(s)[1], z + NavMesh::GetNeighbourTileOffset(s)[2]);
 								m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, k));
 #endif
 
@@ -2529,7 +2529,7 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 }
 #pragma warning (pop)
 
-void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
+void CNavMesh::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
                                   size_t side, size_t tx, size_t ty, size_t tz, TileID targetID)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
@@ -2547,9 +2547,9 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 	else
 	{
 		const vector3_t noffset = vector3_t(
-		  NMeshGrid::GetNeighbourTileOffset(side)[0] * m_params.tileSize.x,
-		  NMeshGrid::GetNeighbourTileOffset(side)[1] * m_params.tileSize.y,
-		  NMeshGrid::GetNeighbourTileOffset(side)[2] * m_params.tileSize.z);
+		  NavMesh::GetNeighbourTileOffset(side)[0] * m_params.tileSize.x,
+		  NavMesh::GetNeighbourTileOffset(side)[1] * m_params.tileSize.y,
+		  NavMesh::GetNeighbourTileOffset(side)[2] * m_params.tileSize.z);
 
 		assert(originTriangleCount <= MaxTriangleCount);
 
@@ -2615,7 +2615,7 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 							link.triangle = k;
 							++triLinkCount;
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-							const TileID checkId = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(side)[0], y + NMeshGrid::GetNeighbourTileOffset(side)[1], z + NMeshGrid::GetNeighbourTileOffset(side)[2]);
+							const TileID checkId = GetTileID(x + NavMesh::GetNeighbourTileOffset(side)[0], y + NavMesh::GetNeighbourTileOffset(side)[1], z + NavMesh::GetNeighbourTileOffset(side)[2]);
 							m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, k));
 							/*
 							   Tile::Link testLink;
@@ -2647,7 +2647,7 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 	m_profiler.StopTimer(NetworkConstruction);
 }
 
-bool MeshGrid::CalculateMidEdge(const TriangleID triangleID1, const TriangleID triangleID2, Vec3& result) const
+bool CNavMesh::CalculateMidEdge(const TriangleID triangleID1, const TriangleID triangleID2, Vec3& result) const
 {
 	if (triangleID1 == triangleID2)
 		return false;
@@ -2711,7 +2711,7 @@ bool MeshGrid::CalculateMidEdge(const TriangleID triangleID1, const TriangleID t
 
 #if MNM_USE_EXPORT_INFORMATION
 
-void MeshGrid::ResetAccessibility(uint8 accessible)
+void CNavMesh::ResetAccessibility(uint8 accessible)
 {
 	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
 	{
@@ -2721,7 +2721,7 @@ void MeshGrid::ResetAccessibility(uint8 accessible)
 	}
 }
 
-void MeshGrid::ComputeAccessibility(const AccessibilityRequest& inputRequest)
+void CNavMesh::ComputeAccessibility(const AccessibilityRequest& inputRequest)
 {
 	struct Node
 	{
