@@ -1,9 +1,9 @@
 # Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-def build(bld):	
+def build(bld):
 
-	bld.CryEngineStaticModule( 
-		target    = 'sdl_mixer_static', 
+	bld.CryEngineStaticModule(
+		target    = 'sdl_mixer_static',
 		vs_filter = 'Libs/Audio',
 		file_list = 'SDL_mixer.waf_files',
 		exclude_from_static_code_analyzer = True,
@@ -13,13 +13,13 @@ def build(bld):
 		includes = [Path('Code/SDKs/SDL_mixer')],
 		win_includes = [Path('Code/SDKs/SDL_mixer/VisualC/external/include')],
 		
-		use_module = ['timidity', 'native_midi'],		
+		use_module = ['timidity', 'native_midi'],
 		module_extensions = ['sdl2'],
 		
 		win_lib = ['Winmm'],
 		
-		win_cflags    = [		
-			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+		win_cflags    = [
+			'/W0', # No warnings in 3rdParty code, we can't fix them anyway
 			],
 
 		defines = [
@@ -38,7 +38,7 @@ def build(bld):
 		],
 		
 		module_provides = dict(
-			includes = [Path('Code/SDKs/SDL_mixer')],			
+			includes = [Path('Code/SDKs/SDL_mixer')],
 			win_lib = ['Winmm']
 		)
 	)
@@ -54,13 +54,13 @@ def build(bld):
 		includes = [Path('Code/SDKs/SDL_mixer')],
 		win_includes = [Path('Code/SDKs/SDL_mixer/VisualC/external/include')],
 		
-		use_module = ['timidity', 'native_midi'],		
+		use_module = ['timidity', 'native_midi'],
 		module_extensions = ['sdl2'],
 		
 		win_lib = ['Winmm'],
 			
-		win_cflags    = [		
-			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+		win_cflags    = [
+			'/W0', # No warnings in 3rdParty code, we can't fix them anyway
 			],
 
 		defines = [
@@ -79,22 +79,22 @@ def build(bld):
 		],
 		
 		module_provides = dict(
-			includes = [Path('Code/SDKs/SDL_mixer')],			
+			includes = [Path('Code/SDKs/SDL_mixer')],
 			win_lib = ['Winmm']
 		)
 	)
 	
-	bld.CryEngineStaticModule( 
-		target    = 'timidity', 
+	bld.CryEngineStaticModule(
+		target    = 'timidity',
 		vs_filter = 'Libs/Audio',
 		file_list = 'timidity.waf_files',
-		exclude_from_static_code_analyzer = True,		
+		exclude_from_static_code_analyzer = True,
 		includes = [Path('Code/SDKs/SDL_mixer/timidity')],
 		
-		module_extensions = ['sdl2'],			
+		module_extensions = ['sdl2'],
 		
-		win_cflags = [		
-			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
+		win_cflags = [
+			'/W0', # No warnings in 3rdParty code, we can't fix them anyway
 			],
 
 		module_provides = dict(
@@ -106,16 +106,16 @@ def build(bld):
 		target    = 'native_midi', 
 		vs_filter = 'Libs/Audio',
 		file_list = 'native_midi.waf_files',
-		exclude_from_static_code_analyzer = True,		
+		exclude_from_static_code_analyzer = True,
 		includes = [Path('Code/SDKs/SDL_mixer/native_midi')],
 		
-		module_extensions = ['sdl2'],	
+		module_extensions = ['sdl2'],
 
-		win_cflags    = [		
-			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
-			],		
+		win_cflags    = [
+			'/W0', # No warnings in 3rdParty code, we can't fix them anyway
+			],
 
 		module_provides = dict(
 			includes = [Path('Code/SDKs/SDL_mixer/native_midi')],
-		)	
+		)
 	)

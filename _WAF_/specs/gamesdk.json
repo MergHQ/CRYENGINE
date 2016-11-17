@@ -49,16 +49,6 @@
 		"jsmn",
 		"png16",
 		"jpeg",
-		"libogg_dynamic",
-		"libogg_static",
-		"libvorbis_dynamic",
-		"libvorbis_static",
-		"libvorbisfile",
-		"native_midi",
-		"sdl_mixer_static",
-		"sdl_mixer_dynamic",
-		"smpeg",
-		"timidity",
 
 		"CryGameSDK"
 	],
@@ -81,21 +71,31 @@
 		"CryScaleformHelper"
 	],
 
-	"win_modules"                           : 
-	[
-		"WindowsLauncher",  
-		"CryRenderD3D11", 
-		"CryRenderD3D12", 
-		"CryRenderOpenGL", 
-		"CryAudioImplSDLMixer", 
-		"CryAudioImplFmod", 
-		"CryAudioImplPortAudio", 
-		
-		"oculus", 
+	"win_modules": [
+		"WindowsLauncher",
+		"CryRenderD3D11",
+		"CryRenderD3D12",
+		"CryRenderOpenGL",
+		"CryAudioImplSDLMixer",
+		"CryAudioImplFmod",
+		"CryAudioImplPortAudio",
+
+		"oculus",
 		"CryOculusVR",
 		"CryOpenVR",
-		
-		"CryMonoBridge"
+
+		"CryMonoBridge",
+
+		"libogg_dynamic",
+		"libogg_static",
+		"libvorbis_dynamic",
+		"libvorbis_static",
+		"libvorbisfile",
+		"native_midi",
+		"sdl_mixer_static",
+		"sdl_mixer_dynamic",
+		"smpeg",
+		"timidity"
 	],
 		
 	"win_debug_modules"                     : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
