@@ -1,0 +1,29 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#pragma once
+
+#include <Schematyc/Services/ISettingsManager.h>
+
+namespace Schematyc
+{
+	class CSettingsManager : public ISettingsManager
+	{
+	private:
+
+		typedef std::map<string, ISettingsPtr> Settings;
+
+	public:
+
+		// ISettingsManager
+		virtual bool RegisterSettings(const char* szName, const ISettingsPtr& pSettings) override;
+		virtual ISettings* GetSettings(const char* szName) const override;
+		virtual void VisitSettings(const SettingsVisitor& visitor) const override;
+		virtual void LoadAllSettings() override;
+		virtual void SaveAllSettings() override;
+		// ~ISettingsManager
+
+	private:
+
+		Settings m_settings;
+	};
+}

@@ -11,14 +11,15 @@
 #include "OctreePlotter.inl"
 
 CSensorMap::SVolume::SVolume()
-	: pCell(nullptr)
-	, pPrev(nullptr)
-	, pNext(nullptr)
+	: id(SensorVolumeId::Invalid)
+	, prevId(SensorVolumeId::Invalid)
+	, nextId(SensorVolumeId::Invalid)
+	, pCell(nullptr)
 {}
 
 CSensorMap::SCell::SCell()
-	: pFirstVolume(nullptr)
-	, pLastVolume(nullptr)
+	: firstVolumeId(SensorVolumeId::Invalid)
+	, lastVolumeId(SensorVolumeId::Invalid)
 {}
 
 CSensorMap::SUpdateStats::SUpdateStats()
@@ -172,7 +173,7 @@ void CSensorMap::Query(SensorVolumeIdSet& results, const CSensorBounds& bounds, 
 	auto visitOctreeCell = [this, &results, &bounds, tags, exclusionId](const SOctreeCell& octreeCell)
 	{
 		const SCell& cell = m_cells[octreeCell.idx];
-		for (const SVolume* pVolume = cell.pFirstVolume; pVolume; pVolume = pVolume->pNext)
+		for (const SVolume* pVolume = GetVolume(cell.firstVolumeId); pVolume; pVolume = GetVolume(pVolume->nextId))
 		{
 			if (tags.IsEmpty() || tags.CheckAny(pVolume->params.tags))
 			{
@@ -196,7 +197,7 @@ void CSensorMap::Update()
 	for (DirtyCells::value_type dirtyCell : m_dirtyCells)
 	{
 		const SCell& cell = m_cells[dirtyCell.first];
-		for (const SVolume* pVolume = cell.pFirstVolume; pVolume; pVolume = pVolume->pNext)
+		for (const SVolume* pVolume = GetVolume(cell.firstVolumeId); pVolume; pVolume = GetVolume(pVolume->nextId))
 		{
 			if (pVolume->params.monitorTags.CheckAny(dirtyCell.second))
 			{
@@ -358,18 +359,18 @@ void CSensorMap::MapVolumeToCell(SVolume& volume)
 			}
 
 			volume.pCell = pCell;
-			volume.pPrev = pCell->pLastVolume;
+			volume.prevId = pCell->lastVolumeId;
 
-			if (pCell->pFirstVolume)
+			if (pCell->firstVolumeId != SensorVolumeId::Invalid)
 			{
-				pCell->pLastVolume->pNext = &volume;
+				GetVolume(pCell->lastVolumeId)->nextId = volume.id;
 			}
 			else
 			{
-				pCell->pFirstVolume = &volume;
+				pCell->firstVolumeId = volume.id;
 			}
 
-			pCell->pLastVolume = &volume;
+			pCell->lastVolumeId = volume.id;
 		}
 	}
 
@@ -383,27 +384,27 @@ void CSensorMap::RemoveVolumeFromCurrentCell(SVolume& volume)
 {
 	if (volume.pCell)
 	{
-		if (volume.pPrev)
+		if (volume.prevId != SensorVolumeId::Invalid)
 		{
-			volume.pPrev->pNext = volume.pNext;
+			GetVolume(volume.prevId)->nextId = volume.nextId;
 		}
 		else
 		{
-			volume.pCell->pFirstVolume = volume.pNext;
+			volume.pCell->firstVolumeId = volume.nextId;
 		}
 
-		if (volume.pNext)
+		if (volume.nextId != SensorVolumeId::Invalid)
 		{
-			volume.pNext->pPrev = volume.pPrev;
+			GetVolume(volume.nextId)->prevId = volume.prevId;
 		}
 		else
 		{
-			volume.pCell->pLastVolume = volume.pPrev;
+			volume.pCell->lastVolumeId = volume.prevId;
 		}
 
+		volume.prevId = SensorVolumeId::Invalid;
+		volume.nextId = SensorVolumeId::Invalid;
 		volume.pCell = nullptr;
-		volume.pPrev = nullptr;
-		volume.pNext = nullptr;
 	}
 }
 
@@ -457,9 +458,9 @@ void CSensorMap::Remap()
 		SVolume* pVolume = GetVolume(volumeId);
 		if (pVolume)
 		{
+			pVolume->prevId = SensorVolumeId::Invalid;
+			pVolume->nextId = SensorVolumeId::Invalid;
 			pVolume->pCell = nullptr;
-			pVolume->pPrev = nullptr;
-			pVolume->pNext = nullptr;
 
 			MapVolumeToCell(*pVolume);
 

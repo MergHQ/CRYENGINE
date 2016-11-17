@@ -105,6 +105,7 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryInput" "${CMAKE_BINARY_DIR
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryMovie" "${CMAKE_BINARY_DIR}/CryEngine/CryMovie")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryNetwork" "${CMAKE_BINARY_DIR}/CryEngine/CryNetwork")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryPhysics" "${CMAKE_BINARY_DIR}/CryEngine/CryPhysics")
+add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc" "${CMAKE_BINARY_DIR}/CryEngine/CrySchematyc")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryScriptSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryScriptSystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CrySystem" "${CMAKE_BINARY_DIR}/CryEngine/CrySystem")
 add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9" "${CMAKE_BINARY_DIR}/CryEngine/RenderDll/XRenderD3D9")

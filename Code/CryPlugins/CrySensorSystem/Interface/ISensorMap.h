@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryCore/Containers/VectorSet.h>
+#include <CrySerialization/Forward.h>
 
 #include "ISensorTagLibrary.h"
 #include "SensorBounds.h"
@@ -25,6 +26,15 @@ enum class SensorVolumeId : uint32
 	Invalid = 0xffffffff
 };
 
+inline bool Serialize(Serialization::IArchive& archive, SensorVolumeId& value, const char* szName, const char* szLabel)
+{
+	if (!archive.isEdit())
+	{
+		return archive(static_cast<uint32>(value), szName, szLabel);
+	}
+	return true;
+}
+
 typedef VectorSet<SensorVolumeId> SensorVolumeIdSet;
 
 enum class ESensorEventType
@@ -46,7 +56,7 @@ struct SSensorEvent
 	SensorVolumeId   eventVolumeId;   // Id of entering/leaving volume.
 };
 
-typedef Schematyc::CDelegate<void, const SSensorEvent&> SensorEventCallback;
+typedef Schematyc::CDelegate<void (const SSensorEvent&)> SensorEventCallback;
 
 struct SSensorVolumeParams
 {

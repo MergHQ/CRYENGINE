@@ -1924,8 +1924,8 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 #if defined(USE_SCHEMATYC_CORE)
-	// Create Schematyc framework
-	if (Schematyc::CreateFramework(static_cast<IGameFramework*>(this)))
+	// Create Schematyc core
+	if (Schematyc::CreateCore(static_cast<IGameFramework*>(this)))
 	{
 	#if defined(USE_SCHEMATYC_STD_ENV)
 		// Create Schematyc standard environment
@@ -2737,7 +2737,7 @@ void CCryAction::PrePhysicsUpdate()
 	}
 
 #if defined(USE_SCHEMATYC_CORE)
-	GetSchematycFramework().PrePhysicsUpdate();
+	GetSchematycCore().PrePhysicsUpdate();
 #endif
 }
 
@@ -2902,7 +2902,7 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 	}
 
 #if defined(USE_SCHEMATYC_CORE)
-	GetSchematycFramework().Update();
+	GetSchematycCore().Update();
 #endif
 
 	CRConServerListener::GetSingleton().Update();
@@ -3541,25 +3541,25 @@ void CCryAction::LoadSchematycFiles()
 	static bool bLoadSchematycFiles = true;
 	if (bLoadSchematycFiles)
 	{
-		Schematyc::IFramework& schematycFramework = GetSchematycFramework();
+		Schematyc::ICore& schematycCore = GetSchematycCore();
 		if (gEnv->IsEditor())
 		{
-			schematycFramework.GetLogRecorder().Begin();
+			schematycCore.GetLogRecorder().Begin();
 		}
 
 		CryLogAlways("[Schematyc]: Loading...");
 		CryLogAlways("[Schematyc]: Loading settings");
-		schematycFramework.GetSettingsManager().LoadAllSettings();
+		schematycCore.GetSettingsManager().LoadAllSettings();
 		CryLogAlways("[Schematyc]: Loading scripts");
-		schematycFramework.GetScriptRegistry().Load();
+		schematycCore.GetScriptRegistry().Load();
 		CryLogAlways("[Schematyc]: Compiling scripts");
-		schematycFramework.GetCompiler().CompileAll();
+		schematycCore.GetCompiler().CompileAll();
 		CryLogAlways("[Schematyc]: Loading complete");
 
-		schematycFramework.RefreshLogFileSettings();
+		schematycCore.RefreshLogFileSettings();
 		if (gEnv->IsEditor())
 		{
-			schematycFramework.GetLogRecorder().End();
+			schematycCore.GetLogRecorder().End();
 		}
 
 		bLoadSchematycFiles = false;

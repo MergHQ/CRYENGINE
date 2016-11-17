@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "AbstractVariableTypesModel.h"
 
-#include <Schematyc/Reflection/Schematyc_Reflection.h>
-#include <Schematyc/Utils/Schematyc_SharedString.h>
+#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Utils/SharedString.h>
 
 const CDataTypeItem& CDataTypeItem::Empty()
 {
@@ -71,11 +71,13 @@ void CDataTypesModel::GenerateTypeInfo()
     m_typesByGuid.emplace(typeInfo.GetGUID(), pTypeItem);                                                    \
   }
 
-	CREATE_TYPE_ITEM(bool, QColor(0, 108, 217));
-	CREATE_TYPE_ITEM(int32, QColor(215, 55, 55));
-	CREATE_TYPE_ITEM(uint32, QColor(215, 55, 55));
-	CREATE_TYPE_ITEM(float, QColor(185, 185, 185));
-	CREATE_TYPE_ITEM(Vec3, QColor(250, 232, 12));
+	CREATE_TYPE_ITEM(bool, QColor(17, 100, 100));
+	CREATE_TYPE_ITEM(int32, QColor(125, 19, 19));
+	CREATE_TYPE_ITEM(uint32, QColor(125, 40, 19));
+	CREATE_TYPE_ITEM(float, QColor(196, 137, 0));
+	CREATE_TYPE_ITEM(Vec3, QColor(140, 133, 38));
 	CREATE_TYPE_ITEM(Schematyc::SGUID, QColor(38, 184, 33));
 	CREATE_TYPE_ITEM(Schematyc::CSharedString, QColor(128, 100, 162));
+	CREATE_TYPE_ITEM(Schematyc::ObjectId, QColor(70, 60, 120));
+	//CREATE_TYPE_ITEM(Schematyc::ExplicitEntityId, QColor(110, 180, 160));
 }

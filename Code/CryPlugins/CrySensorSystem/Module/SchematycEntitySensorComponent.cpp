@@ -5,6 +5,7 @@
 
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySerialization/DynArray.h>
 
 #include "SensorMap.h"
 #include "SensorSystem.h"
@@ -59,9 +60,6 @@ CSchematycEntitySensorComponent::SProperties::SProperties()
 
 void CSchematycEntitySensorComponent::SProperties::Serialize(Serialization::IArchive& archive)
 {
-	archive(transform, "transform", "Transform");
-	archive.doc("Transform");
-
 	archive(volume, "volume", "Volume");
 	archive.doc("Volume");
 }
@@ -100,7 +98,7 @@ void CSchematycEntitySensorComponent::CPreviewer::Render(const Schematyc::IObjec
 CSchematycEntitySensorComponent::SEnterSignal::SEnterSignal() {}
 
 CSchematycEntitySensorComponent::SEnterSignal::SEnterSignal(EntityId _entityId)
-	: entityId(_entityId)
+	: entityId(static_cast<Schematyc::ExplicitEntityId>(_entityId))
 {}
 
 Schematyc::SGUID CSchematycEntitySensorComponent::SEnterSignal::ReflectSchematycType(Schematyc::CTypeInfo<SEnterSignal>& typeInfo)
@@ -112,7 +110,7 @@ Schematyc::SGUID CSchematycEntitySensorComponent::SEnterSignal::ReflectSchematyc
 CSchematycEntitySensorComponent::SLeaveSignal::SLeaveSignal() {}
 
 CSchematycEntitySensorComponent::SLeaveSignal::SLeaveSignal(EntityId _entityId)
-	: entityId(_entityId)
+	: entityId(static_cast<Schematyc::ExplicitEntityId>(_entityId))
 {}
 
 Schematyc::SGUID CSchematycEntitySensorComponent::SLeaveSignal::ReflectSchematycType(Schematyc::CTypeInfo<SLeaveSignal>& typeInfo)
@@ -128,7 +126,7 @@ bool CSchematycEntitySensorComponent::Init()
 
 	SSensorVolumeParams volumeParams;
 	volumeParams.entityId = entity.GetId();
-	volumeParams.bounds = CreateBounds(entity.GetWorldTM(), pProperties->transform, pProperties->volume);
+	volumeParams.bounds = CreateBounds(entity.GetWorldTM(), Schematyc::CComponent::GetTransform(), pProperties->volume);
 	volumeParams.tags = GetTags(pProperties->volume.tags);
 	volumeParams.monitorTags = GetTags(pProperties->volume.monitorTags);
 	volumeParams.eventCallback = Schematyc::Delegate::Make(*this, &CSchematycEntitySensorComponent::OnSensorEvent);
@@ -184,7 +182,7 @@ void CSchematycEntitySensorComponent::SetVolumeSize(const Vec3& size)
 
 	pProperties->volume.size = size;
 
-	CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), pProperties->transform, pProperties->volume));
+	CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), Schematyc::CComponent::GetTransform(), pProperties->volume));
 }
 
 Vec3 CSchematycEntitySensorComponent::GetVolumeSize() const
@@ -201,7 +199,7 @@ void CSchematycEntitySensorComponent::SetVolumeRadius(float radius)
 
 	pProperties->volume.radius = radius;
 
-	CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), pProperties->transform, pProperties->volume));
+	CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), Schematyc::CComponent::GetTransform(), pProperties->volume));
 }
 
 float CSchematycEntitySensorComponent::GetVolumeRadius() const
@@ -224,7 +222,7 @@ void CSchematycEntitySensorComponent::Register(Schematyc::IEnvRegistrar& registr
 		pComponent->SetAuthor("Paul Slinger");
 		pComponent->SetDescription("Entity sensor volume component");
 		pComponent->SetIcon("editor/icons/cryschematyc/entity_sensor_component.png");
-		pComponent->SetFlags(Schematyc::EEnvComponentFlags::Attach);
+		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::Transform, Schematyc::EEnvComponentFlags::Attach });
 		pComponent->SetProperties(SProperties());
 		pComponent->SetPreviewer(CPreviewer());
 		scope.Register(pComponent);
@@ -235,6 +233,7 @@ void CSchematycEntitySensorComponent::Register(Schematyc::IEnvRegistrar& registr
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntitySensorComponent::SetVolumeSize, "C926DA55-97A2-4C97-A7E6-C1416DD6284A"_schematyc_guid, "SetVolumeSize");
 			pFunction->SetAuthor("Paul Slinger");
 			pFunction->SetDescription("Set size of box volume.");
+			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'size', "Size", nullptr, Vec3(1.0f));
 			componentScope.Register(pFunction);
 		}
@@ -242,6 +241,7 @@ void CSchematycEntitySensorComponent::Register(Schematyc::IEnvRegistrar& registr
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntitySensorComponent::GetVolumeSize, "E8E87E86-C96B-4948-A298-0FE010E04F2E"_schematyc_guid, "GetVolumeSize");
 			pFunction->SetAuthor("Paul Slinger");
 			pFunction->SetDescription("Get size of box volume.");
+			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 			pFunction->BindOutput(0, 'size', "Size");
 			componentScope.Register(pFunction);
 		}
@@ -249,6 +249,7 @@ void CSchematycEntitySensorComponent::Register(Schematyc::IEnvRegistrar& registr
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntitySensorComponent::SetVolumeRadius, "17FB678F-2256-4F7B-AB46-E8EAACD2497C"_schematyc_guid, "SetVolumeRadius");
 			pFunction->SetAuthor("Paul Slinger");
 			pFunction->SetDescription("Set radius of sphere volume.");
+			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'rad', "Radius", nullptr, 0.0f);
 			componentScope.Register(pFunction);
 		}
@@ -256,6 +257,7 @@ void CSchematycEntitySensorComponent::Register(Schematyc::IEnvRegistrar& registr
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntitySensorComponent::GetVolumeRadius, "3950621F-8D47-4BE7-836C-35F211B41FBB"_schematyc_guid, "GetVolumeRadius");
 			pFunction->SetAuthor("Paul Slinger");
 			pFunction->SetDescription("Get radius of sphere volume.");
+			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 			pFunction->BindOutput(0, 'rad', "Radius");
 			componentScope.Register(pFunction);
 		}
@@ -284,7 +286,7 @@ void CSchematycEntitySensorComponent::OnEntityEvent(const SEntityEvent& event)
 			IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
 			const SProperties* pProperties = static_cast<const SProperties*>(Schematyc::CComponent::GetProperties());
 
-			CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), pProperties->transform, pProperties->volume));
+			CSensorSystem::GetInstance().GetMap().UpdateVolumeBounds(m_volumeId, CreateBounds(entity.GetWorldTM(), Schematyc::CComponent::GetTransform(), pProperties->volume));
 		}
 		break;
 	}

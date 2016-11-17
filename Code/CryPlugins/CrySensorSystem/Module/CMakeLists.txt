@@ -40,8 +40,8 @@ CryEngineModule(CrySensorSystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 target_include_directories(${THIS_PROJECT}
 PRIVATE 
 	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
-	${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc/Core/Interface
-	${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc/STDEnv/Interface
+	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
 	${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
 PUBLIC
 	../Interface

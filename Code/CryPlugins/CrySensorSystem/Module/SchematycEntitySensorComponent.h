@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CrySerialization/Forward.h>
+
 #include "SensorMap.h"
 #include "SensorTagLibrary.h"
 
@@ -45,9 +47,8 @@ private:
 
 		void Serialize(Serialization::IArchive& archive);
 
-		Schematyc::CTransform transform;
-		SVolumeProperties     volume;
-		bool                  bEnabled;
+		SVolumeProperties volume;
+		bool              bEnabled;
 	};
 
 	struct SPreviewProperties

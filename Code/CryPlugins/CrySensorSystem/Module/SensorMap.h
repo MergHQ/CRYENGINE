@@ -22,9 +22,9 @@ private:
 		SVolume();
 
 		SensorVolumeId      id;
+		SensorVolumeId      prevId;
+		SensorVolumeId      nextId;
 		SCell*              pCell;
-		SVolume*            pPrev;
-		SVolume*            pNext;
 		SSensorVolumeParams params;
 		SensorVolumeIdSet   cache;
 	};
@@ -36,8 +36,8 @@ private:
 	{
 		SCell();
 
-		SVolume* pFirstVolume;
-		SVolume* pLastVolume;
+		SensorVolumeId firstVolumeId;
+		SensorVolumeId lastVolumeId;
 	};
 
 	typedef std::vector<SCell>            Cells;
@@ -103,17 +103,17 @@ private:
 
 	ISensorTagLibrary& m_tagLibrary;
 
-	Volumes           m_volumes;
-	FreeVolumes       m_freeVolumes;
-	SensorVolumeIdSet m_activeVolumes;
-	SensorVolumeIdSet m_strayVolumes;
+	Volumes            m_volumes;
+	FreeVolumes        m_freeVolumes;
+	SensorVolumeIdSet  m_activeVolumes;
+	SensorVolumeIdSet  m_strayVolumes;
 
-	COctreePlotter    m_octreePlotter;
-	Cells             m_cells;
-	DirtyCells        m_dirtyCells;
+	COctreePlotter     m_octreePlotter;
+	Cells              m_cells;
+	DirtyCells         m_dirtyCells;
 
-	SUpdateStats      m_updateStats;
+	SUpdateStats       m_updateStats;
 
-	SensorVolumeIdSet m_pendingQueries;
-	SensorVolumeIdSet m_queryResults;
+	SensorVolumeIdSet  m_pendingQueries;
+	SensorVolumeIdSet  m_queryResults;
 };

@@ -11,7 +11,7 @@ def build(bld) :
 			'.', 
 			Path('Code/CryEngine/CryCommon'),
 			Path('Code/CryExtensions/CryLink/Interface'),
-			Path('Code/CryExtensions/CrySchematyc/Core/Interface'),
-			Path('Code/CryExtensions/CrySchematyc/STDEnv/Interface')
+			Path('Code/CryEngine/CrySchematyc/Core/Interface'),
+			Path('Code/CryEngine/CrySchematyc/STDEnv/Interface')
 		]
 	  )

@@ -6,11 +6,11 @@
 #include <QtViewPane.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <IEditorClassFactory.h>
-#include <Schematyc/Schematyc_IFramework.h>
+#include <Schematyc/ICore.h>
 
-#include "Schematyc_CryLinkCommands.h"
-#include "Schematyc_MainWindow.h"
-#include "Schematyc_Plugin.h"
+#include "CryLinkCommands.h"
+#include "MainWindow.h"
+#include "Plugin.h"
 
 IEditor* g_pEditor = nullptr;
 HINSTANCE g_hInstance = 0;
@@ -26,7 +26,7 @@ SCHEMATYC_PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam
 	g_pEditor = pInitParam->pIEditor;
 	ModuleInitISystem(g_pEditor->GetSystem(), "Schematyc_Plugin");
 
-	if (!GetSchematycFrameworkPtr())
+	if (!GetSchematycCorePtr())
 	{
 		pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;
 		return NULL;
