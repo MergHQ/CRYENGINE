@@ -937,7 +937,7 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 #endif
 
 	CTexture* pVolumetricFogTex = CTexture::s_ptexBlack;
-	if (pRenderer->m_bVolumetricFogEnabled)
+	if (pRenderer->m_bVolumetricFogEnabled && CTexture::IsTextureExist(CTexture::s_ptexVolumetricFog))
 	{
 		pVolumetricFogTex = CTexture::s_ptexVolumetricFog;
 	}

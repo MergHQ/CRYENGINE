@@ -933,7 +933,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	inputFlag |= bCloudVolTex ? BIT(0) : 0;
 	inputFlag |= bCloudBlocker ? BIT(1) : 0;
 
-	if (pass.InputChanged(inputFlag))
+	if (pass.InputChanged(inputFlag, cloudVolumeTex->GetID()))
 	{
 		uint64 rtMask = 0;
 		rtMask |= bCloudVolTex ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;
@@ -1088,9 +1088,21 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 
 		const uint64 rtMask = GetRTMask(context);
 
+		// set cloud base texture.
+		CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
+		if (context.bCloudVolTex)
+		{
+			CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
+			if (pTex)
+			{
+				cloudVolumeTex = pTex;
+			}
+		}
+
 		if (pass.InputChanged((rtMask & 0xFFFFFFFF),
 		                      ((rtMask >> 32) & 0xFFFFFFFF),
-		                      CRenderer::CV_r_VolumetricClouds))
+		                      CRenderer::CV_r_VolumetricClouds,
+		                      cloudVolumeTex->GetID()))
 		{
 			static CCryNameTSCRC shaderName = "InjectCloudDensityAndShadow";
 			pass.SetTechnique(pShader, shaderName, rtMask);
@@ -1110,16 +1122,6 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.SetSampler(1, m_samplerTrilinearWrap);
 			pass.SetSampler(2, m_samplerTrilinearClamp);
 
-			// set cloud base texture.
-			CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
-			if (context.bCloudVolTex)
-			{
-				CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
-				if (pTex)
-				{
-					cloudVolumeTex = pTex;
-				}
-			}
 			pass.SetTexture(15, cloudVolumeTex);
 		}
 
@@ -1167,10 +1169,25 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 
 	const uint64 rtMask = GetRTMask(context);
 
+	int32 inputFlag = 0;
+	inputFlag |= CRenderer::CV_r_VolumetricClouds & 0xF;
+	inputFlag |= (CRenderer::CV_r_VolumetricCloudsPipeline & 0xF) << 4;
+
+	// set cloud base texture.
+	CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
+	if (context.bCloudVolTex)
+	{
+		CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
+		if (pTex)
+		{
+			cloudVolumeTex = pTex;
+		}
+	}
+
 	if (pass.InputChanged((rtMask & 0xFFFFFFFF),
 	                      ((rtMask >> 32) & 0xFFFFFFFF),
-	                      CRenderer::CV_r_VolumetricClouds,
-	                      CRenderer::CV_r_VolumetricCloudsPipeline))
+	                      inputFlag,
+	                      cloudVolumeTex->GetID()))
 	{
 		const bool bMono = (CRenderer::CV_r_VolumetricCloudsPipeline == 0);
 		static CCryNameTSCRC shaderName0 = "RenderCloud_Monolithic";
@@ -1211,16 +1228,6 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		}
 #endif
 
-		// set cloud base texture.
-		CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
-		if (context.bCloudVolTex)
-		{
-			CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
-			if (pTex)
-			{
-				cloudVolumeTex = pTex;
-			}
-		}
 		pass.SetTexture(15, cloudVolumeTex);
 	}
 
