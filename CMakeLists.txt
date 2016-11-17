@@ -88,6 +88,7 @@ option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 option(PLUGIN_SCHEMATYC "Enable Schematyc" ON)
 
 if(WIN32 OR WIN64)
+	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
 	option(PLUGIN_VR_OCULUS "Oculus support" ON)
 	option(PLUGIN_VR_OSVR "OSVR support" ON)
 	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
@@ -256,8 +257,11 @@ if (PLUGIN_SCHEMATYC)
 endif()
 
 # Example plugin
-if (PLUGIN_FPS)
+if (PLUGIN_FPSPLUGIN)
 	add_subdirectory(Code/CryPlugins/CryFramesPerSecond/Module)
+endif()
+if (PLUGIN_USERANALYTICS)
+	add_subdirectory(Code/CryPlugins/CryUserAnalytics/Module)
 endif()
 # VR plugins
 if (PLUGIN_VR_OCULUS)

@@ -51,6 +51,7 @@
 		"jsmn",
 		"png16",
 		"jpeg",
+		"curl",
 		
 		"CryGameZero"
 	],
@@ -79,6 +80,7 @@
 		"CryAudioImplPortAudio",
 		"oculus",
 		"CryMonoBridge",
+		"CryUserAnalytics",
 		"libogg_dynamic",
 		"libogg_static",
 		"libvorbis_dynamic",

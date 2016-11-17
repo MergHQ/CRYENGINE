@@ -1,4 +1,4 @@
-project (CURL C)
+project (curl C)
 
 #---
 
@@ -146,8 +146,8 @@ source_group ("lib\\vtls" FILES ${SOURCE_VTLS})
 add_library (${PROJECT_NAME} STATIC ${SOURCE_ROOT} ${SOURCE_VAUTH} ${SOURCE_VTLS})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Libs")
 target_include_directories (${PROJECT_NAME} 
-	PUBLIC "../../SDKs/curl/include"
-	PRIVATE "../../SDKs/curl/lib"
+	PUBLIC ${SDK_DIR}/curl/include
+	PRIVATE ${SDK_DIR}/curl/lib
 )
 
 target_compile_definitions(${PROJECT_NAME} 

@@ -293,6 +293,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="UserAnalytics"/>
 		
 		<!-- [SYSTEM] - Streaming -->
 		<Thread name ="Streaming File IO HDD" Priority="Above_Normal"/>

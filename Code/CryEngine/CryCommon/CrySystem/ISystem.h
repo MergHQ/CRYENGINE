@@ -100,6 +100,7 @@ struct IOverloadSceneManager;
 struct IFlashUI;
 struct IThreadManager;
 struct IServiceNetwork;
+struct IUserAnalyticsSystem;
 struct IRemoteCommandManager;
 struct IWindowMessageHandler;
 struct SFunctor;
@@ -609,7 +610,7 @@ struct SSystemInitParams
 	char                 szBinariesDir[256];
 
 	bool                 bEditor;             //!< When running in Editor mode.
-	bool                 bManualEngineLoop; //!< Whether or not the engine should manage the engine loop by itself
+	bool                 bManualEngineLoop;   //!< Whether or not the engine should manage the engine loop by itself
 	bool                 bPreview;            //!< When running in Preview mode (Minimal initialization).
 	bool                 bTestMode;           //!< When running in Automated testing mode.
 	bool                 bDedicatedServer;    //!< When running a dedicated server.
@@ -632,8 +633,8 @@ struct SSystemInitParams
 	const EPLM_Event* pLastPLMEvent;
 #endif
 
-	ISystem*      pSystem;                //!< Pointer to existing ISystem interface, it will be reused if not NULL.
-	IGameStartup* pGameStartup;           //!< Pointer to the calling GameStartup instance, to allow use of some game specific data during engine init.
+	ISystem*        pSystem;              //!< Pointer to existing ISystem interface, it will be reused if not NULL.
+	IGameStartup*   pGameStartup;         //!< Pointer to the calling GameStartup instance, to allow use of some game specific data during engine init.
 	IGameFramework* pGameFramework;       //!< Pointer to the framework that started the engine
 	//! Char szLocalIP[256];              //! local IP address (needed if we have several servers on one machine).
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
@@ -964,7 +965,7 @@ struct SSystemGlobalEnvironment
 	ILINE const bool IsEditing() const
 	{
 #if CRY_PLATFORM_DESKTOP
-			return bEditor && !bEditorGameMode;
+		return bEditor && !bEditorGameMode;
 #else
 		return false;
 #endif
@@ -1202,7 +1203,7 @@ struct ISystem
 	virtual bool IsUIFrameworkMode() { return false; }
 
 	//! Fills the output array by random numbers using CMTRand_int32 generator
-	virtual void FillRandomMT(uint32* pOutWords, uint32 numWords) = 0;
+	virtual void     FillRandomMT(uint32* pOutWords, uint32 numWords) = 0;
 
 	virtual CRndGen& GetRandomGenerator() = 0;
 
@@ -1240,6 +1241,7 @@ struct ISystem
 	virtual IScriptSystem*         GetIScriptSystem() = 0;
 	virtual IConsole*              GetIConsole() = 0;
 	virtual IRemoteConsole*        GetIRemoteConsole() = 0;
+	virtual IUserAnalyticsSystem*  GetIUserAnalyticsSystem() = 0;
 	virtual ICryPluginManager*     GetIPluginManager() = 0;
 	virtual IProjectManager*       GetIProjectManager() = 0;
 
@@ -1263,14 +1265,14 @@ struct ISystem
 	virtual void                               SetLoadingProgressListener(ILoadingProgressListener* pListener) = 0;
 	virtual ISystem::ILoadingProgressListener* GetLoadingProgressListener() const = 0;
 
-	virtual void SetIFlowSystem(IFlowSystem* pFlowSystem) = 0;
-	virtual void SetIDialogSystem(IDialogSystem* pDialogSystem) = 0;
-	virtual void SetIMaterialEffects(IMaterialEffects* pMaterialEffects) = 0;
-	virtual void SetIParticleManager(IParticleManager* pParticleManager) = 0;
-	virtual void SetIOpticsManager(IOpticsManager* pOpticsManager) = 0;
-	virtual void SetIFileChangeMonitor(IFileChangeMonitor* pFileChangeMonitor) = 0;
-	virtual void SetIFlashUI(IFlashUI* pFlashUI) = 0;
-	virtual void SetIUIFramework(UIFramework::IUIFramework* pUIFramework) = 0;
+	virtual void                               SetIFlowSystem(IFlowSystem* pFlowSystem) = 0;
+	virtual void                               SetIDialogSystem(IDialogSystem* pDialogSystem) = 0;
+	virtual void                               SetIMaterialEffects(IMaterialEffects* pMaterialEffects) = 0;
+	virtual void                               SetIParticleManager(IParticleManager* pParticleManager) = 0;
+	virtual void                               SetIOpticsManager(IOpticsManager* pOpticsManager) = 0;
+	virtual void                               SetIFileChangeMonitor(IFileChangeMonitor* pFileChangeMonitor) = 0;
+	virtual void                               SetIFlashUI(IFlashUI* pFlashUI) = 0;
+	virtual void                               SetIUIFramework(UIFramework::IUIFramework* pUIFramework) = 0;
 
 	//! Changes current user sub path, the path is always relative to the user documents folder.
 	//! Example: "My Games\Crysis"
@@ -1855,7 +1857,7 @@ struct SDummyCVar : ICVar
 	uint64          GetNumberOfOnChangeFunctors() const override                   { return 0; }
 	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override        { InvalidAccess(); return *(const SFunctor*)NULL; }
 	bool            RemoveOnChangeFunctor(const uint64 nElement) override          { return true; }
-	bool RemoveOnChangeFunctor(const SFunctor& changeFunctor) override             { return true; }
+	bool            RemoveOnChangeFunctor(const SFunctor& changeFunctor) override  { return true; }
 	ConsoleVarFunc  GetOnChangeCallback() const override                           { InvalidAccess(); return NULL; }
 	void            GetMemoryUsage(class ICrySizer* pSizer) const override         {}
 	int             GetRealIVal() const override                                   { return GetIVal(); }

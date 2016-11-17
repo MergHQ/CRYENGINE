@@ -442,6 +442,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	RegisterWindowMessageHandler(this);
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
+
+	m_pUserAnalyticsSystem = new CUserAnalyticsSystem();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -652,6 +654,8 @@ void CSystem::ShutDown()
 	}
 
 	SAFE_DELETE(m_pPluginManager);
+
+	SAFE_DELETE(m_pUserAnalyticsSystem);
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (m_env.pRenderer)
@@ -1401,7 +1405,6 @@ extern DWORD g_idDebugThreads[];
 extern int g_nDebugThreads;
 int prev_sys_float_exceptions = -1;
 
-
 //////////////////////////////////////////////////////////////////////
 void CSystem::PrePhysicsUpdate()
 {
@@ -1750,14 +1753,14 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 			gEnv->pGameFramework->GetIViewSystem()->UpdateSoundListeners();
 
 			/*if (IView* const pActiveView = pIGameFramework->GetIViewSystem()->GetActiveView())
-			{
+			   {
 			   EntityId const nListenerID = pActiveView->GetSoundListenerID();
 
 			   if (nListenerID != INVALID_ENTITYID)
 			   {
 			    pIGameFramework->GetIViewSystem()->UpdateSoundListeners();
 			   }
-			}*/
+			   }*/
 		}
 	}
 

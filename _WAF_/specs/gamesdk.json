@@ -49,6 +49,7 @@
 		"jsmn",
 		"png16",
 		"jpeg",
+		"curl",
 
 		"CryGameSDK"
 	],
@@ -83,8 +84,8 @@
 		"oculus",
 		"CryOculusVR",
 		"CryOpenVR",
-
 		"CryMonoBridge",
+		"CryUserAnalytics",
 
 		"libogg_dynamic",
 		"libogg_static",

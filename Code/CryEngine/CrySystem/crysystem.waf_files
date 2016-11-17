@@ -236,6 +236,10 @@
       "UnitTestExcelReporter.h",
       "UnitTestSystem.h",
       "VisRegTest.h"
+    ],
+    "UserAnalytics":[
+      "UserAnalytics/UserAnalyticsSystem.cpp",
+      "UserAnalytics/UserAnalyticsSystem.h"
     ]
   },
   "CrySystem_uber_6.cpp":{

@@ -46,13 +46,14 @@
 		"bigdigits",
 		"yasli",
 		"tomcrypt",
+		"curl",
 
 		"CryGameSDK"
 	],
 
 	"defines"                               : ["DEDICATED_SERVER"],
 
-	"win_modules"                           : [ "DedicatedLauncher", "CryMonoBridge" ],
+	"win_modules"                           : [ "DedicatedLauncher", "CryMonoBridge", "CryUserAnalytics" ],
 	"win_debug_modules"                     : ["CryLiveCreate", "GameStream"],
 	"win_profile_modules"                   : ["CryLiveCreate", "GameStream"],
 	"win_performance_defines"               : "PURE_CLIENT(deprecated, those defines will be moved to another place and dont have any effect right now)",

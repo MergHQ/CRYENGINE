@@ -208,6 +208,12 @@
         ]
       },
       {
+        "UserAnalytics":[
+          "CrySystem/UserAnalytics/IUserAnalytics.h",
+          "CrySystem/UserAnalytics/ICryUserAnalyticsPlugin.h"
+        ]
+      },
+      {
         "VR":[
           "CrySystem/VR/IHMDManager.h",
           "CrySystem/VR/IHMDDevice.h"

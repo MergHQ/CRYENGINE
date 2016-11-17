@@ -19,6 +19,7 @@
 #include "MemoryFragmentationProfiler.h"  // CMemoryFragmentationProfiler
 
 #include "ExtensionSystem/CryPluginManager.h"
+#include "UserAnalytics/UserAnalyticsSystem.h"
 
 struct IConsoleCmdArgs;
 class CServerThrottle;
@@ -318,7 +319,7 @@ public:
 	virtual const sUpdateTimes*  GetUpdateTimeStats(uint32&, uint32&) override;
 	virtual void                 FillRandomMT(uint32* pOutWords, uint32 numWords) override;
 
-	virtual CRndGen& GetRandomGenerator() override { return m_randomGenerator; }
+	virtual CRndGen&             GetRandomGenerator() override  { return m_randomGenerator; }
 
 	INetwork*                    GetINetwork() override         { return m_env.pNetwork; }
 	IRenderer*                   GetIRenderer() override        { return m_env.pRenderer; }
@@ -358,6 +359,7 @@ public:
 	IHardwareMouse*              GetIHardwareMouse() override         { return m_env.pHardwareMouse; }
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
 	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem; }
+	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
 	ICryPluginManager*           GetIPluginManager() override         { return m_pPluginManager; }
 	IProjectManager*             GetIProjectManager() override;
 
@@ -418,13 +420,13 @@ public:
 	virtual uint32                       GetCPUFlags() override                  { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
 	virtual int                          GetLogicalCPUCount() override           { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }
 
-	void      IgnoreUpdates(bool bIgnore) override { m_bIgnoreUpdates = bIgnore; }
-	void      SetGCFrequency(const float fRate);
+	void                                 IgnoreUpdates(bool bIgnore) override    { m_bIgnoreUpdates = bIgnore; }
+	void                                 SetGCFrequency(const float fRate);
 
-	void      SetIProcess(IProcess* process) override;
-	IProcess* GetIProcess() override      { return m_pProcess; }
+	void                                 SetIProcess(IProcess* process) override;
+	IProcess*                            GetIProcess() override      { return m_pProcess; }
 
-	bool      IsTestMode() const override { return m_bTestMode; }
+	bool                                 IsTestMode() const override { return m_bTestMode; }
 	//@}
 
 	void                    SleepIfNeeded();
@@ -867,7 +869,7 @@ private: // ------------------------------------------------------
 	ILoadConfigurationEntrySink* m_pCVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 
-	WIN_HWND      m_hWnd;
+	WIN_HWND m_hWnd;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered
@@ -919,7 +921,7 @@ private: // ------------------------------------------------------
 	CMTRand_int32*     m_pMtState;
 
 	// The random generator used by the engine and all its modules
-	CRndGen            m_randomGenerator;
+	CRndGen m_randomGenerator;
 
 public:
 	//! Pointer to the download manager
@@ -1022,6 +1024,7 @@ protected: // -------------------------------------------------------------
 	ITextModeConsole*                         m_pTextModeConsole;
 	INotificationNetwork*                     m_pNotificationNetwork;
 	CCryPluginManager*                        m_pPluginManager;
+	CUserAnalyticsSystem*                     m_pUserAnalyticsSystem;
 	class CProjectManager*                    m_pProjectManager;
 
 	string                                    m_binariesDir;

@@ -1421,9 +1421,9 @@ bool CSystem::InitPhysics()
 	               "bits 16-31 - level of bounding volume trees to display (if 0, it just shows geometry)\n"
 	               "Examples: show static objects - 258, show active rigid bodies - 1026, show players - 2050");
 	REGISTER_CVAR2("p_draw_helpers_opacity", &pVars->drawHelpersOpacity, pVars->drawHelpersOpacity, VF_CHEAT,
-					"Opacity of physical helpers (see p_draw_helpers).\n"
-					"Usage: p_draw_helpers_opacity [0..1]\n"
-					"0.0 indicates full transparency, 1.0 full opacity (default) - e.g., 0.5 indicates half transparency.");
+	               "Opacity of physical helpers (see p_draw_helpers).\n"
+	               "Usage: p_draw_helpers_opacity [0..1]\n"
+	               "0.0 indicates full transparency, 1.0 full opacity (default) - e.g., 0.5 indicates half transparency.");
 	REGISTER_CVAR2("p_check_out_of_bounds", &pVars->iOutOfBounds, pVars->iOutOfBounds, 0,
 	               "Check for physics entities outside world (terrain) grid:\n"
 	               "1 - Enable raycasts; 2 - Enable proximity checks; 3 - Both");
@@ -2562,7 +2562,7 @@ bool CSystem::Init()
 	if (!m_startupParams.bSkipConsole)
 	{
 		m_env.pConsole = new CXConsole;
-		
+
 		if (m_startupParams.pPrintSync)
 			m_env.pConsole->AddOutputPrintSink(m_startupParams.pPrintSync);
 	}
@@ -2802,7 +2802,7 @@ L_done:;
 		m_FrameProfileSystem.Init(m_sys_profile_allThreads->GetIVal());
 
 		if (!m_startupParams.bSkipRenderer)
-		{			
+		{
 			CreateRendererVars();
 		}
 
@@ -3150,7 +3150,7 @@ L_done:;
 
 			m_env.pRenderer->InitSystemResources(FRR_SYSTEM_RESOURCES);
 			m_env.pRenderer->StartRenderIntroMovies();
-			
+
 		}
 		else if (g_cvars.sys_rendersplashscreen && bStartScreensAllowed)
 		{
@@ -4811,7 +4811,7 @@ void CSystem::CreateSystemVars()
 	attachVariable("sys_UncachedStreamReads", &g_cvars.pakVars.nUncachedStreamReads, "Enable stream reads via an uncached file handle");
 	attachVariable("sys_PakDisableNonLevelRelatedPaks", &g_cvars.pakVars.nDisableNonLevelRelatedPaks, "Disables all paks that are not required by specific level; This is used with per level splitted assets.");
 
-	REGISTER_CVAR2("sys_intromoviesduringinit", &g_cvars.sys_intromoviesduringinit, 0, VF_NULL,	"Render the intro movies during game initialization");
+	REGISTER_CVAR2("sys_intromoviesduringinit", &g_cvars.sys_intromoviesduringinit, 0, VF_NULL, "Render the intro movies during game initialization");
 
 	{
 		int nDefaultRenderSplashScreen = 1;
@@ -5312,6 +5312,8 @@ void CSystem::CreateSystemVars()
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
 #endif
+
+	m_pUserAnalyticsSystem->RegisterCVars();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -130,7 +130,9 @@ endif (AUDIO_WWISE)
 
 #libs
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/bigdigits" "${CMAKE_BINARY_DIR}/Libs/bigdigits")
-#add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/curl" "${CMAKE_BINARY_DIR}/Libs/curl")
+if (WIN32)
+add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/curl" "${CMAKE_BINARY_DIR}/Libs/curl")
+endif ()
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/expat" "${CMAKE_BINARY_DIR}/Libs/expat")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/freetype" "${CMAKE_BINARY_DIR}/Libs/freetype")
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/jsmn" "${CMAKE_BINARY_DIR}/Libs/jsmn")

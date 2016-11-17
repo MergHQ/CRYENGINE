@@ -330,6 +330,9 @@ add_sources("CrySystem_uber_5.cpp"
 		"UnitTestExcelReporter.h"
 		"UnitTestSystem.h"
 		"VisRegTest.h"
+	SOURCE_GROUP "UserAnalytics"
+		"UserAnalytics/UserAnalyticsSystem.cpp"
+		"UserAnalytics/UserAnalyticsSystem.h"
 )
 
 add_sources("CrySystem_uber_6.cpp"
@@ -514,9 +517,9 @@ CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 yasli tomcrypt jsmn )
 use_scaleform()
-if (WIN32 OR WIN64)
+if (WIN32)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
-	target_link_libraries( ${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
+	target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
 elseif(LINUX)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
 elseif(APPLE)
