@@ -6,6 +6,10 @@ start_sources()
 sources_platform(ALL)
 add_sources("CryDefaultEntities_uber_0.cpp"
 	SOURCE_GROUP "Audio"
+		"Audio/AudioAreaEntity.cpp"
+		"Audio/AudioAreaEntity.h"
+		"Audio/AudioAreaRandom.cpp"
+		"Audio/AudioAreaRandom.h"
 		"Audio/AudioAreaAmbienceEntity.cpp"
 		"Audio/AudioAreaAmbienceEntity.h"
 		"Audio/AudioTriggerSpotEntity.cpp"

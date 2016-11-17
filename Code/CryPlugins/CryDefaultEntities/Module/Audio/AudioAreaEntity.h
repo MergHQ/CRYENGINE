@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Helpers/NativeEntityBase.h"
+#include "AudioEntitiesUtils.h"
 
 class CAudioAreaEntity final : public CNativeEntityBase
 {

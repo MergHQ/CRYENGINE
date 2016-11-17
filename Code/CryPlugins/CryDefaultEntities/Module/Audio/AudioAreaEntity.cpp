@@ -7,6 +7,13 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 {
 	virtual void Register() override
 	{
+		if (gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaEntity") != nullptr)
+		{
+			// Skip registration of default engine class if the game has overridden it
+			CryLog("Skipping registration of default engine entity class AudioAreaEntity, overridden by game");
+			return;
+		}
+
 		RegisterEntityWithDefaultComponent<CAudioAreaEntity>("AudioAreaEntity", "Audio", "AudioAreaEntity.bmp");
 		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaEntity");
 
@@ -104,7 +111,7 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 		{
 			m_areaState = EAreaState::Inside;
 			const float fade = event.fParam[0];
-			if ((std::fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon) || ((fade == 0.0) && (m_fadeValue != fade)))
+			if ((fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon) || ((fade == 0.0) && (m_fadeValue != fade)))
 			{
 				m_fadeValue = fade;
 				// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
@@ -228,7 +235,7 @@ void CAudioAreaEntity::UpdateFadeValue(const float distance)
 		float fade = (m_fadeDistance - distance) / m_fadeDistance;
 		fade = (fade > 0.0) ? fade : 0.0f;
 
-		if (std::fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon)
+		if (fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon)
 		{
 			m_fadeValue = fade;
 			// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)

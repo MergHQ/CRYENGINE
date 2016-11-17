@@ -10,6 +10,13 @@ class CAudioAreaRandomRegistrator : public IEntityRegistrator
 {
 	virtual void Register() override
 	{
+		if (gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaRandom") != nullptr)
+		{
+			// Skip registration of default engine class if the game has overridden it
+			CryLog("Skipping registration of default engine entity class AudioAreaRandom, overridden by game");
+			return;
+		}
+
 		RegisterEntityWithDefaultComponent<CAudioAreaRandom>("AudioAreaRandom", "Audio", "AudioAreaRandom.bmp");
 		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaRandom");
 

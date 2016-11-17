@@ -38,6 +38,10 @@
 		],
 		"Audio" :
 		[
+			"Audio/AudioAreaEntity.cpp",
+			"Audio/AudioAreaEntity.h",
+			"Audio/AudioAreaRandom.cpp",
+			"Audio/AudioAreaRandom.h",
 			"Audio/AudioAreaAmbienceEntity.cpp",
 			"Audio/AudioAreaAmbienceEntity.h",
 			"Audio/AudioTriggerSpotEntity.cpp",
