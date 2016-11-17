@@ -17,8 +17,9 @@ def build(bld):
 			win_cxxflags = [ '/EHsc', '/W0', '/Wv:18' ],
 			win_cflags = [ '/W0', '/Wv:18' ],
 			win_includes    = [
-				Path('Code/SDKs/OculusSDK/LibOVR/Include'),
 				Path('Code/SDKs/OculusSDK/LibOVRKernel/Src'),
+				Path('Code/SDKs/OculusSDK/LibOVR/Include'),
+				Path('Code/SDKs/OculusSDK/Logging/Include'),
 				],
 			win_lib = ['oleaut32'],
 

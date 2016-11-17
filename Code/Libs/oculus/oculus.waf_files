@@ -10,14 +10,14 @@
 			"../../SDKs/OculusSDK/LibOVR/Include/OVR_CAPI_Keys.h",
 			"../../SDKs/OculusSDK/LibOVR/Include/OVR_ErrorCode.h",
 			"../../SDKs/OculusSDK/LibOVR/Include/OVR_Version.h",
-			
+			"../../SDKs/OculusSDK/LibOVR/Include/Extras/OVR_Math.h",
 			"../../SDKs/OculusSDK/LibOVR/Include/Extras/OVR_CAPI_Util.h",
-			"../../SDKs/OculusSDK/LibOVR/Include/Extras/OVR_Math.h",			
 			"../../SDKs/OculusSDK/LibOVR/Include/Extras/OVR_StereoProjection.h",
 
 			"../../SDKs/OculusSDK/LibOVR/Src/OVR_CAPIShim.c",
 			"../../SDKs/OculusSDK/LibOVR/Src/OVR_CAPI_Util.cpp",
 			"../../SDKs/OculusSDK/LibOVR/Src/OVR_StereoProjection.cpp",
+			"../../SDKs/OculusSDK/LibOVR/Src/OVR_CAPI_Prototypes.h",      
 
 			"../../SDKs/OculusSDK/LibOVR/Src/Resources/Windows/LibOVR.rc",
 			"../../SDKs/OculusSDK/LibOVR/Src/Resources/Windows/Oculus.ico",
@@ -45,6 +45,8 @@
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_DebugHelp.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Delegates.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Deque.h",
+			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Error.h",
+			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Error.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_File.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_File.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_FileFILE.cpp",
@@ -54,7 +56,6 @@
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_KeyCodes.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_List.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Lockless.h",
-			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Lockless.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Log.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Log.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_mach_exc_OSX.c",
@@ -78,8 +79,6 @@
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_SysFile.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_System.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_System.h",
-			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_ThreadCommandQueue.cpp",
-			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_ThreadCommandQueue.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Threads.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_ThreadsPthread.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_ThreadsWinAPI.cpp",
@@ -88,7 +87,7 @@
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Types.h",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_UTF8Util.cpp",
 			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_UTF8Util.h",
-			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/OVR_Win32_IncludeWindows.h"
+			"../../SDKs/OculusSDK/LibOVRKernel/Src/Kernel/WindowsAFunctions.h"
 		],
 		"Util":
 		[
