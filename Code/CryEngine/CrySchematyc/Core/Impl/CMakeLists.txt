@@ -335,6 +335,9 @@ if(PLUGIN_SCHEMATYC)
 		PRIVATE -DSCHEMATYC_EXPORTS
 		INTERFACE -DUSE_SCHEMATYC_CORE
 	)
+	target_link_libraries (${THIS_PROJECT} PRIVATE
+	yasli
+    )
 	target_include_directories(${THIS_PROJECT} PUBLIC
 		${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
 		../Interface
