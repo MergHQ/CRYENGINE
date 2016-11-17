@@ -559,7 +559,7 @@ void CScaleformPlayback::ApplyColor(const ColorF& src)
 	SSF_GlobalDrawParams& __restrict params = m_drawParams;
 	SSF_GlobalDrawParams::SScaleformRenderParameters* __restrict rparams = params.m_pScaleformRenderParameters;
 
-	ColorF premultiplied(rparams->cBitmapColorTransform[0] * (1.0f / 255.0f));
+	ColorF premultiplied(src * (1.0f / 255.0f));
 
 	if (m_curBlendMode == Blend_Multiply || m_curBlendMode == Blend_Darken)
 	{
