@@ -37,6 +37,4 @@ protected:
 private:
 	QToolWindowManager* m_manager;
 	QWidget* m_contents;
-	void AddToTaskbar();
-	void RemoveFromTaskbar();
 };

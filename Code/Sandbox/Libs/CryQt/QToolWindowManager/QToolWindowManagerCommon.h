@@ -14,10 +14,6 @@
 #define QTWM_AREA_TAB_POSITION "areaTabPosition"
 // If true, complete frames may be dragged from the empty space between the drag handle and the actual tabs, otherwise only the drag handle will work.
 #define QTWM_AREA_EMPTY_SPACE_DRAG "areaAllowFrameDragFromEmptySpace"
-// If true, wrappers are registered as separate buttons in the Taskbar, enabling Aero Preview. Only works with Windows.
-// Your main window must be an actual QMainWindow in order for this to work.
-// If it is not, you can get this behavior by setting QTWM_WRAPPERS_ARE_CHILDREN to false, and not setting the Qt::Tool flag on the wrappers. See QToolWindowCustomWrapper for an example.
-#define QTWM_WRAPPER_REGISTER_IN_TASKBAR "wrapperRegisterAsTaskbarButton"
 // Number of milliseconds between requesting a refresh of thumbnails.
 #define QTWM_THUMBNAIL_TIMER_INTERVAL "thumbnailTimerInterval"
 // QPoint specifying an offset relative to the mouse cursor for tooltips.

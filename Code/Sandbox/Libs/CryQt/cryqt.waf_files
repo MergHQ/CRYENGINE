@@ -40,8 +40,6 @@
 			"QToolWindowManager/QToolWindowDragHandlerDropTargets.h",
 			"QToolWindowManager/QToolWindowDragHandlerNinePatch.cpp",
 			"QToolWindowManager/QToolWindowDragHandlerNinePatch.h",
-			"QToolWindowManager/QToolWindowTaskbarHandler.cpp",
-			"QToolWindowManager/QToolWindowTaskbarHandler.h",
 			"QToolWindowManager/QToolWindowTabBar.cpp",
 			"QToolWindowManager/QToolWindowTabBar.h"
 		]

@@ -49,9 +49,6 @@ public:
 	QRect getWrapperFrameSize();
 
 private:
-	void AddToTaskbar();
-	void RemoveFromTaskbar();
-
 	virtual bool event(QEvent *)Q_DECL_OVERRIDE;
 	virtual void closeEvent(QCloseEvent *) Q_DECL_OVERRIDE;
 	virtual bool eventFilter(QObject *, QEvent *) Q_DECL_OVERRIDE;

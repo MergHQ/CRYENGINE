@@ -5,7 +5,6 @@
 #include "QToolWindowCustomWrapper.h"
 #include "QToolWindowManager.h"
 #include "IToolWindowArea.h"
-#include "QToolWindowTaskbarHandler.h"
 
 #include <QGridLayout>
 #include <QSpacerItem>
@@ -60,13 +59,11 @@ QToolWindowCustomWrapper::QToolWindowCustomWrapper(QToolWindowManager* manager, 
 	}
 
 	setContents(wrappedWidget);
-	AddToTaskbar();
 }
 
 QToolWindowCustomWrapper::~QToolWindowCustomWrapper()
 {
 	m_manager->removeWrapper(this);
-	RemoveFromTaskbar();
 }
 
 bool QToolWindowCustomWrapper::event(QEvent* e)
@@ -130,26 +127,6 @@ bool QToolWindowCustomWrapper::eventFilter(QObject* o, QEvent* e)
 	}
 
 	return QCustomWindowFrame::eventFilter(o, e);
-}
-
-void QToolWindowCustomWrapper::AddToTaskbar()
-{
-#ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
-	if (m_manager->config().value(QTWM_WRAPPER_REGISTER_IN_TASKBAR, true).toBool())
-	{
-		QToolWindowTaskbarHandler::Register(this);
-	}
-#endif
-}
-
-void QToolWindowCustomWrapper::RemoveFromTaskbar()
-{
-#ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
-	if (m_manager->config().value(QTWM_WRAPPER_REGISTER_IN_TASKBAR, true).toBool())
-	{
-		QToolWindowTaskbarHandler::Unregister(this);
-	}
-#endif
 }
 
 Qt::WindowFlags QToolWindowCustomWrapper::calcFrameWindowFlags()

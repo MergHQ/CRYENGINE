@@ -15,7 +15,6 @@
 
 #include "QToolWindowDragHandlerDropTargets.h"
 #include "IToolWindowDragHandler.h"
-#include "QToolWindowTaskbarHandler.h"
 
 #if defined(WIN32) || defined(WIN64)
 #include <windows.h>
@@ -29,9 +28,6 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 	m_layoutChangeNotifyLocks(0),
 	m_closingWindow(0)
 {
-#ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
-	QToolWindowTaskbarHandler::Create(this);
-#endif
 	if (!m_factory->parent())
 	{
 		m_factory->setParent(this);

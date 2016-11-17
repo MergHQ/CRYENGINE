@@ -5,7 +5,6 @@
 #include "QToolWindowWrapper.h"
 #include "QToolWindowManager.h"
 #include "QToolWindowArea.h"
-#include "QToolWindowTaskbarHandler.h"
 
 #include <QBoxLayout>
 #include <QCloseEvent>
@@ -46,12 +45,10 @@ QToolWindowWrapper::QToolWindowWrapper(QToolWindowManager* manager, Qt::WindowFl
 	
 	QVBoxLayout* mainLayout = new QVBoxLayout(this);
 	mainLayout->setContentsMargins(0, 0, 0, 0);
-	AddToTaskbar();
 }
 
 QToolWindowWrapper::~QToolWindowWrapper()
 {
-	RemoveFromTaskbar();
 	m_manager->removeWrapper(this);
 }
 
@@ -157,26 +154,6 @@ bool QToolWindowWrapper::winEvent(MSG *msg, long *result)
 #endif
 }
 #endif
-
-void QToolWindowWrapper::AddToTaskbar()
-{
-#ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
-	if (m_manager->config().value(QTWM_WRAPPER_REGISTER_IN_TASKBAR, true).toBool())
-	{
-		QToolWindowTaskbarHandler::Register(this);
-	}
-#endif
-}
-
-void QToolWindowWrapper::RemoveFromTaskbar()
-{
-#ifdef QTWM_CREATE_TASKBAR_THUMBNAILS
-	if (m_manager->config().value(QTWM_WRAPPER_REGISTER_IN_TASKBAR, true).toBool())
-	{
-		QToolWindowTaskbarHandler::Unregister(this);
-	}
-#endif
-}
 
 QWidget* QToolWindowWrapper::getContents()
 {
