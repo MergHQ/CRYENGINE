@@ -436,7 +436,7 @@ void CD3D9Renderer::EF_Init()
 			pRendObj->Init();
 		}
 
-		CRenderObject** arrPrefill = (CRenderObject**)(alloca(m_RP.m_nNumObjectsInPool * sizeof(CRenderObject*)));
+		CRenderObject* arrPrefill[TEMP_REND_OBJECTS_POOL] = {};
 		for (int j = 0; j < RT_COMMAND_BUF_COUNT; j++)
 		{
 			for (int k = 0; k < m_RP.m_nNumObjectsInPool; ++k)

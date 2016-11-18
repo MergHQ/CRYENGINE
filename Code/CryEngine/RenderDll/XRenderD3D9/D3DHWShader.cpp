@@ -6231,10 +6231,18 @@ void CHWShader_D3D::mfSetPV(const D3DViewPort* pCustomViewport)
 	CConstantBuffer* pBuffer = pPerViewCB ? pPerViewCB.get() : NULL;
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer, 13);
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_PS, pBuffer, 13);
+#if !defined(OPENGL) || DXGL_ENABLE_GEOMETRY_SHADERS
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_GS, pBuffer, 13);
+#endif
+
+#if !defined(OPENGL) || DXGL_ENABLE_TESSELLATION_SHADERS
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_HS, pBuffer, 13);
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_DS, pBuffer, 13);
+#endif
+
+#if !defined(OPENGL) || DXGL_ENABLE_COMPUTE_SHADERS
 	rd->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_CS, pBuffer, 13);
+#endif
 }
 
 void CHWShader_D3D::mfSetGlobalParams()

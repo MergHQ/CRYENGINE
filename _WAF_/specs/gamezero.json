@@ -114,6 +114,5 @@
 
 	"darwin_modules"                        : [ "MacLauncher", "CryRenderOpenGL" ],
 
-	"android_modules"                       : [ "AndroidLauncher", "CryRenderOpenGL" ],
-	"android_monolithic_build"              : "True"
+	"android_modules"                       : [ "AndroidLauncher", "CryRenderOpenGL" ]
 }

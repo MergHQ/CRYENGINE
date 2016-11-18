@@ -375,7 +375,7 @@ JobManager::CJobManager::CJobManager()
 #else
 	CCpuFeatures* pCPU = new CCpuFeatures;
 	pCPU->Detect();
-	int numWorkers = (int)pCPU->GetPhysCPUCount() - 1;
+	int numWorkers = (int)pCPU->GetLogicalCPUCount() - 1;
 	if (numWorkers < 0)
 		numWorkers = 0;
 	//m_nRegularWorkerThreads = pCPU->GetLogicalCPUCount();

@@ -1154,7 +1154,7 @@ void CSystem::CreatePhysicsThread()
 	if (g_cvars.sys_limit_phys_thread_count)
 	{
 		PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
-		pVars->numThreads = max(1, min(pVars->numThreads, (int)m_pCpu->GetPhysCPUCount() - 1));
+		pVars->numThreads = max(1, min(pVars->numThreads, (int)m_pCpu->GetLogicalCPUCount() - 1));
 	}
 }
 

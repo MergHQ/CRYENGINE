@@ -90,18 +90,25 @@ static void SetModulePath(const char* pModulePath)
 
 static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInModulePath = true)
 {
-	//[K01]: linux version
-	if (bInModulePath)
-	{
-		char path[_MAX_PATH];
-		const char* modulePath = GetModulePath();
-		cry_sprintf(path, "%s/%s", modulePath ? modulePath : ".", libName);
-		libName = path;
-	}
+	char finalPath[_MAX_PATH] = {};
+	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryPrefix));
+	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryExtension));
+	
+#if CRY_PLATFORM_ANDROID
+	const char* libPath = bInModulePath ? (CryGetSharedLibraryStoragePath() ? CryGetSharedLibraryStoragePath() : ".") : "";
+#else
+	const char* libPath = bInModulePath ? (GetModulePath() ? GetModulePath() : ".") : "";
+#endif	
+
+	const char* filePre = strncmp(libName, CrySharedLibraryPrefix, CRY_ARRAY_COUNT(CrySharedLibraryPrefix) - 1) != 0 ? CrySharedLibraryPrefix : "";
+	const char* fileExt = strcmp(libName + strlen(libName) - (CRY_ARRAY_COUNT(CrySharedLibraryExtension) - 1), CrySharedLibraryExtension) != 0 ? CrySharedLibraryExtension : "";
+
+	cry_sprintf(finalPath, "%s%s%s%s%s", libPath, libPath ? "/" : "", filePre, libName, fileExt);
+
 	#if CRY_PLATFORM_LINUX
-	return ::dlopen(libName, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
+	return ::dlopen(finalPath, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
 	#else
-	return ::dlopen(libName, bLazy ? RTLD_LAZY : RTLD_NOW);
+	return ::dlopen(finalPath, bLazy ? RTLD_LAZY : RTLD_NOW);
 	#endif
 }
 #else

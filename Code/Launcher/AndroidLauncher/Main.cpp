@@ -235,7 +235,7 @@ int RunGame(const char *commandLine)
 	{
 		char path[1024];
 		cry_strcpy(path, paths[i]);
-		cry_strcat(path, "/GameSDK/GameData.pak");
+		cry_strcat(path, "/gamezero/gamedata.pak");
 		LOGI( "Searching for %s", path);
 		FILE* f = fopen( path, "r" );
 		if (f != NULL)
@@ -292,7 +292,7 @@ int RunGame(const char *commandLine)
 	HMODULE frameworkDll = 0;
 
 #ifndef _LIB
-	frameworkDll = CryLoadLibrary("libCryAction");
+	frameworkDll = CryLoadLibraryDefName("CryAction");
 	if (!frameworkDll)
 	{
 		LOGE("ERROR: failed to load CryAction! (%s)\n", dlerror());
