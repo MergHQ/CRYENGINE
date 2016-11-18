@@ -31,7 +31,7 @@ public:
 	const char*                                        GetName(IGameObjectSystem::ExtensionID id) override;
 	uint32                                             GetExtensionSerializationPriority(IGameObjectSystem::ExtensionID id) override;
 	IGameObjectExtensionPtr                            Instantiate(IGameObjectSystem::ExtensionID id, IGameObject* pObject) override;
-	virtual void                                       RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc) override;
+	virtual void                                       RegisterExtension(const char* szName, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc) override;
 	virtual void                                       RegisterSchedulingProfile(const char* szEntityClassName, const char* szNormalPolicy, const char* szOwnedPolicy) override;
 	virtual void                                       DefineProtocol(bool server, IProtocolBuilder* pBuilder) override;
 	virtual void                                       BroadcastEvent(const SGameObjectEvent& evt) override;

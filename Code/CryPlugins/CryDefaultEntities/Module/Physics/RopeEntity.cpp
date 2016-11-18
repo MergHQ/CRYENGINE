@@ -4,16 +4,21 @@
 class CRopeEntityRegistrator
 	: public IEntityRegistrator
 {
-	virtual void Register() override
+	static void RegisterIfNecessary(const char* szName, const char* szEditorPath)
 	{
-		if (gEnv->pEntitySystem->GetClassRegistry()->FindClass("Rope") != nullptr)
+		if (gEnv->pEntitySystem->GetClassRegistry()->FindClass(szName) != nullptr)
 		{
 			// Skip registration of default engine class if the game has overridden it
-			CryLog("Skipping registration of default engine entity class Rope, overridden by game");
+			CryLog("Skipping registration of default engine entity class %s, overridden by game", szName);
 			return;
 		}
+		RegisterEntityWithDefaultComponent<CNativeEntityBase>(szName, szEditorPath);
+	}
 
-		RegisterEntityWithDefaultComponent<CNativeEntityBase>("Rope", "Physics");
+	virtual void Register() override
+	{
+		RegisterIfNecessary("Rope", "Physics");
+		RegisterIfNecessary("RopeEntity", "Physics");
 	}
 };
 

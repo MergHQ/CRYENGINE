@@ -67,17 +67,17 @@ struct CObjectCreator : public IGameObjectExtensionCreatorBase
 };
 
 template<class T>
-static void RegisterEntityWithDefaultComponent(const char* name, const char* editorPath = "", const char* editorIcon = "")
+static void RegisterEntityWithDefaultComponent(const char* szName, const char* editorPath = "", const char* editorIcon = "")
 {
 	IEntityClassRegistry::SEntityClassDesc clsDesc;
-	clsDesc.sName = name;
+	clsDesc.sName = szName;
 
 	clsDesc.editorClassInfo.sCategory = editorPath;
 	clsDesc.editorClassInfo.sIcon = editorIcon;
 
 	static CObjectCreator<T> _creator;
 
-	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(name, &_creator, &clsDesc);
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(szName, &_creator, &clsDesc);
 }
 
 struct IEntityRegistrator

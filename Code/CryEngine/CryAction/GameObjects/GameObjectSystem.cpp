@@ -182,18 +182,18 @@ IEntity* CGameObjectSystem::CreatePlayerProximityTrigger()
 	return pEntity;
 }
 
-void CGameObjectSystem::RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc)
+void CGameObjectSystem::RegisterExtension(const char* szName, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc)
 {
-	string sName = name;
+	string sName = szName;
 
 	if (m_nameToID.find(sName) != m_nameToID.end())
-		CryFatalError("Duplicate game object extension %s found", name);
+		CryFatalError("Duplicate game object extension %s found", szName);
 
 	SExtensionInfo info;
 	info.name = sName;
 	info.pFactory = pCreator;
 
-	string nameLower(name);
+	string nameLower(szName);
 	nameLower.MakeLower();
 	std::vector<string>::const_iterator result = std::find(m_serializationOrderList.begin(), m_serializationOrderList.end(), nameLower);
 	std::vector<string>::const_iterator firstElem = m_serializationOrderList.begin();
@@ -217,7 +217,7 @@ void CGameObjectSystem::RegisterExtension(const char* name, IGameObjectExtension
 		//		pClsDesc->pUserProxyData = new SSpawnUserData(sName);
 		if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(*pClsDesc))
 		{
-			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", name));
+			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", szName));
 			return;
 		}
 	}
