@@ -3359,7 +3359,6 @@ void CFlashTextureSourceBase::AutoUpdateRT(const int frameID)
 {
 	if (m_autoUpdate)
 	{
-		m_pFlashPlayer->UpdatePlayer(this);
 		if (m_perFrameRendering && (frameID != m_lastVisibleFrameID))
 		{
 			Update();
