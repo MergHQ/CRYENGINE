@@ -1636,8 +1636,10 @@ IEntity *CActor::LinkToVehicle(EntityId vehicleId)
 		}
 
 		// if the player is hidden when entering a vehicle, the collider mode
-		//	change will be ignored (caused problems in Convoy due to cutscene)
-		assert(!IsPlayer() || !GetEntity()->IsHidden());
+		//	change will be ignored (caused problems in Convoy due to cutscene).
+		// (CE-10939) Disconnecting one player while both are sitting in a vehicle
+		// causes his entity to be hidden on a second client.
+		assert(!IsPlayer());
 
 		m_pAnimatedCharacter->ForceRefreshPhysicalColliderMode();
 		m_pAnimatedCharacter->RequestPhysicalColliderMode(enabled ? eColliderMode_Disabled : eColliderMode_Undefined, eColliderModeLayer_Game, "Actor::LinkToVehicle");
@@ -5144,11 +5146,6 @@ IMPLEMENT_RMI(CActor, ClStartUse)
 	CItem *pItem=GetItem(params.itemId);
 	if (pItem)
 		pItem->StartUse(GetEntityId()); 
-
-	if(IsClient())
-	{
-		SetStillWaitingOnServerUseResponse(false);
-	}
 
 	return true;
 }
