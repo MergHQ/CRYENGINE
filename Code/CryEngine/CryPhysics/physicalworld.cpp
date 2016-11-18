@@ -3042,7 +3042,8 @@ DEBUG_BREAK;
 
 	if (bBBoxUpdated | bSimClassUpdated) {
 		CPhysicalEntity *pent = (CPhysicalEntity*)pobj;
-		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes)) {
+		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes) &&
+			(1 - bSimClassUpdated)*(1 - bBBoxUpdated + max(0.0f, pent->GetMassInv())) == 0) { // only send BBox updates for kinematic (0-mass) entities
 			event.pEntity=pent; event.pForeignData=pent->m_pForeignData; event.iForeignData=pent->m_iForeignData;
 			event.BBoxOld[0] = pent->m_BBox[0];
 			event.BBoxOld[1] = pent->m_BBox[1];

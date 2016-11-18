@@ -276,11 +276,15 @@ if (PLUGIN_VR_OSVR)
 endif()
 
 
+set(MY_TARGET_LIST "CrySystem CryAction CryRenderD3D11 CryFont CryNetwork CryMovie CryInput CryAISystem CryAnimation Cry3DEngine CryScriptSystem CryEntitySystem CryAudioSystem CryAudioImplSDLMixer CryDynamicResponseSystem")
+if (PHYSICS_CRYPHYSICS)
+	list(APPEND MY_TARGET_LIST "CryPhysics")
+endif()
+if (PHYSICS_PHYSX)
+	list(APPEND MY_TARGET_LIST "CryPhysX")
+endif()
+add_custom_target(CE DEPENDS MY_TARGET_LIST)
 
-add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
-		CryFont CryNetwork CryMovie CryInput CryAISystem CryAnimation Cry3DEngine
-		CryScriptSystem CryEntitySystem CryAudioSystem CryAudioImplSDLMixer
-		CryDynamicResponseSystem)
 
 if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged/CryMonoBridge)

@@ -48,6 +48,15 @@ else()
 	endif()
 endif()
 
+#Physics modules
+option(PHYSICS_CRYPHYSICS "Enable" ON)
+if (WIN64)
+	option(PHYSICS_PHYSX "Enable" OFF)
+endif()
+if (PHYSICS_PHYSX)
+	include(${CRYENGINE_DIR}/Tools/CMake/modules/PhysX.cmake)
+endif()
+
 #rc
 if(WIN32)
 	if (NOT METADATA_COMPANY)
