@@ -48,7 +48,8 @@
 			"core/IQueryFactory.h",
 			"core/IQueryHistoryManager.h",
 			"core/IQueryHistoryListener.h",
-			"core/IQueryHistoryConsumer.h"
+			"core/IQueryHistoryConsumer.h",
+			"core/QueryBlueprintID.h"
 		],
 		"client":
 		[

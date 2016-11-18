@@ -61,6 +61,7 @@
 #include "datasource/IQueryBlueprintLoader.h"
 #include "datasource/IQueryBlueprintSaver.h"
 
+#include "core/QueryBlueprintID.h"
 #include "core/IQueryBlueprintLibrary.h"
 #include "core/IQueryFactory.h"
 #include "core/IQueryResultSet.h"

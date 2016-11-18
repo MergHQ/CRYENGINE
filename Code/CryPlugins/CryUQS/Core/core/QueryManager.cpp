@@ -68,12 +68,17 @@ namespace uqs
 
 		CQueryID CQueryManager::StartQuery(const client::SQueryRequest& request, shared::IUqsString& errorMessage)
 		{
-			// find the desired query-blueprint by its name
-			// FIXME: something like a QueryBlueprintID would be preferable, but hot-reloading blueprints must not affect existing IDs (and then also: we need extra code for a client to retrieve the ID from a qbp name)
-			std::shared_ptr<const CQueryBlueprint> qbp = g_hubImpl->GetQueryBlueprintLibrary().FindQueryBlueprintByNameInternal(request.queryBlueprintName);
+			if (!request.queryBlueprintID.IsOrHasBeenValid())
+			{
+				// note: the caller should have already become suspicious when he searched for a specific blueprint (by name) but received a CQueryBlueprintID that is not and never has been valid
+				errorMessage.Format("CQueryManager::StartQuery: unknown query blueprint: '%s'", request.queryBlueprintID.GetQueryBlueprintName());
+				return CQueryID::CreateInvalid();
+			}
+
+			std::shared_ptr<const CQueryBlueprint> qbp = g_hubImpl->GetQueryBlueprintLibrary().GetQueryBlueprintByIDInternal(request.queryBlueprintID);
 			if (!qbp)
 			{
-				errorMessage.Format("CQueryManager::StartQuery: unknown query blueprint: '%s'", request.queryBlueprintName);
+				errorMessage.Format("CQueryManager::StartQuery: the blueprint '%s' was once in the library, but has been removed and not been (successfully) reloaded since then", request.queryBlueprintID.GetQueryBlueprintName());
 				return CQueryID::CreateInvalid();
 			}
 

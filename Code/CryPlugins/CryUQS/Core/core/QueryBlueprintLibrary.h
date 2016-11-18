@@ -29,17 +29,19 @@ namespace uqs
 			// IQueryBlueprintLibrary
 			virtual ELoadAndStoreResult                           LoadAndStoreQueryBlueprint(ELoadAndStoreOverwriteBehavior overwriteBehavior, datasource::IQueryBlueprintLoader& loader, shared::IUqsString& error) override;
 			virtual bool                                          RemoveStoredQueryBlueprint(const char*szQueryBlueprintName, shared::IUqsString& error) override;
-			const IQueryBlueprint*                                FindQueryBlueprintByName(const char* szQueryBlueprintName) const override;
+			virtual CQueryBlueprintID                             FindQueryBlueprintIDByName(const char* szQueryBlueprintName) const override;
+			virtual const IQueryBlueprint*                        GetQueryBlueprintByID(const CQueryBlueprintID& blueprintID) const override;
 			// ~IQueryBlueprintLibrary
 
-			std::shared_ptr<const CQueryBlueprint>                FindQueryBlueprintByNameInternal(const char* szQueryBlueprintName) const;
+			std::shared_ptr<const CQueryBlueprint>                GetQueryBlueprintByIDInternal(const CQueryBlueprintID& blueprintID) const;
 			void                                                  PrintToConsole(CLogger& logger) const;
 
 		private:
 			                                                      UQS_NON_COPYABLE(CQueryBlueprintLibrary);
 
 		private:
-			std::map<string, std::shared_ptr<CQueryBlueprint>, SCaseInsensitiveStringLess>    m_library;
+			std::vector<std::shared_ptr<CQueryBlueprint>>                    m_queryBlueprintsVector;  // "master" list of blueprints; whenever a blueprints gets removed, its shared_ptr will simply get reset to nullptr
+			std::map<string, CQueryBlueprintID, SCaseInsensitiveStringLess>  m_queryBlueprintsMap;     // key = blueprint name, value = index into m_queryBlueprints
 		};
 
 	}

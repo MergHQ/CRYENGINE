@@ -25,63 +25,97 @@ namespace uqs
 			}
 
 			const char* queryBPName = textualQueryBP.GetName();
-			const bool queryBPExistsAlready = (FindQueryBlueprintByNameInternal(queryBPName) != nullptr);
+			const CQueryBlueprintID blueprintID = FindQueryBlueprintIDByName(queryBPName);
+			const bool bQueryBPExistsAlready = blueprintID.IsOrHasBeenValid() && (m_queryBlueprintsVector[blueprintID.m_index] != nullptr);
 
-			if (queryBPExistsAlready && overwriteBehavior == ELoadAndStoreOverwriteBehavior::KeepExisting)
+			if (bQueryBPExistsAlready && overwriteBehavior == ELoadAndStoreOverwriteBehavior::KeepExisting)
 			{
 				return ELoadAndStoreResult::PreservedExistingOne;
 			}
 
-			std::shared_ptr<CQueryBlueprint> newBP(new CQueryBlueprint);
-			if (!newBP->Resolve(textualQueryBP))
+			std::shared_ptr<CQueryBlueprint> pNewBP(new CQueryBlueprint);
+			if (!pNewBP->Resolve(textualQueryBP))
 			{
 				error.Format("Could not resolve the textual query-blueprint '%s'", queryBPName);
 				return ELoadAndStoreResult::ExceptionOccurred;
 			}
 
-			assert(strcmp(queryBPName, newBP->GetName()) == 0);
+			assert(strcmp(queryBPName, pNewBP->GetName()) == 0);
 
-			m_library[queryBPName] = newBP;
+			if (blueprintID.IsOrHasBeenValid())
+			{
+				// replace the existing blueprint (or re-fill its empty slot)
+				m_queryBlueprintsVector[blueprintID.m_index] = pNewBP;
+			}
+			else
+			{
+				// this is a completely new blueprint that has never been in the library so far
+				const CQueryBlueprintID newBlueprintID((int32)m_queryBlueprintsVector.size(), queryBPName);
+				m_queryBlueprintsVector.push_back(pNewBP);
+				m_queryBlueprintsMap[queryBPName] = newBlueprintID;
+			}
 
-			return queryBPExistsAlready ? ELoadAndStoreResult::OverwrittenExistingOne : ELoadAndStoreResult::StoredFromScratch;
+			return bQueryBPExistsAlready ? ELoadAndStoreResult::OverwrittenExistingOne : ELoadAndStoreResult::StoredFromScratch;
 		}
 
 		bool CQueryBlueprintLibrary::RemoveStoredQueryBlueprint(const char* szQueryBlueprintName, shared::IUqsString& error)
 		{
-			auto it = m_library.find(szQueryBlueprintName);
-			if (it == m_library.cend())
+			auto it = m_queryBlueprintsMap.find(szQueryBlueprintName);
+			if (it == m_queryBlueprintsMap.cend())
 			{
 				error.Format("Could not remove query-blueprint '%s': not found", szQueryBlueprintName);
 				return false;
 			}
 
-			m_library.erase(it);
+			const CQueryBlueprintID& blueprintID = it->second;
+			m_queryBlueprintsVector[blueprintID.m_index].reset();   // clear the slot (but keep it around so that any CQueryBlueprintID referencing it will effectively become a "weak pointer", which is what we intend)
 			return true;
 		}
 
-		const IQueryBlueprint* CQueryBlueprintLibrary::FindQueryBlueprintByName(const char* szQueryBlueprintName) const
+		CQueryBlueprintID CQueryBlueprintLibrary::FindQueryBlueprintIDByName(const char* szQueryBlueprintName) const
 		{
-			std::shared_ptr<const CQueryBlueprint> pQueryBlueprint = FindQueryBlueprintByNameInternal(szQueryBlueprintName);
-			return pQueryBlueprint.get();  // might be nullptr
+			auto it = m_queryBlueprintsMap.find(szQueryBlueprintName);
+			return (it == m_queryBlueprintsMap.cend()) ? CQueryBlueprintID(CQueryBlueprintID::s_invalidIndex, szQueryBlueprintName) : it->second;
 		}
 
-		std::shared_ptr<const CQueryBlueprint> CQueryBlueprintLibrary::FindQueryBlueprintByNameInternal(const char* szQueryBlueprintName) const
+		const IQueryBlueprint* CQueryBlueprintLibrary::GetQueryBlueprintByID(const CQueryBlueprintID& blueprintID) const
 		{
-			auto it = m_library.find(szQueryBlueprintName);
-			return (it == m_library.cend()) ? nullptr : it->second;
+			return GetQueryBlueprintByIDInternal(blueprintID).get();
+		}
+
+		std::shared_ptr<const CQueryBlueprint> CQueryBlueprintLibrary::GetQueryBlueprintByIDInternal(const CQueryBlueprintID& blueprintID) const
+		{
+			if (blueprintID.IsOrHasBeenValid())
+			{
+				return m_queryBlueprintsVector[blueprintID.m_index];  // might still be a nullptr (when the blueprint got removed from the library and hasn't been re-loaded again)
+			}
+			else
+			{
+				return nullptr;
+			}
 		}
 
 		void CQueryBlueprintLibrary::PrintToConsole(CLogger& logger) const
 		{
 			logger.Printf("");
-			logger.Printf("=== %i UQS query blueprints in the library ===", (int)m_library.size());
+			logger.Printf("=== %i UQS query blueprints in the library ===", (int)m_queryBlueprintsMap.size());
 			logger.Printf("");
 			CLoggerIndentation _indent;
 
-			for (const auto& entry : m_library)
+			for (const auto& entry : m_queryBlueprintsMap)
 			{
-				const CQueryBlueprint* queryBlueprint = entry.second.get();
-				queryBlueprint->PrintToConsole(logger);
+				const CQueryBlueprintID& blueprintID = entry.second;
+				const CQueryBlueprint* pBlueprint = m_queryBlueprintsVector[blueprintID.m_index].get();
+
+				if (pBlueprint)
+				{
+					pBlueprint->PrintToConsole(logger);
+				}
+				else
+				{
+					logger.Printf("\"%s\" (was removed and hasn't been (successfully) loaded again)", entry.first.c_str());
+				}
+
 				logger.Printf("");
 			}
 		}
