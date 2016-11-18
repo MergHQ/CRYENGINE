@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "AudioAreaEntity.h"
+#include "Helpers/EntityFlowNode.h"
 
 class CAudioAreaEntityRegistrator : public IEntityRegistrator
 {
@@ -26,6 +27,24 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 		RegisterEntityPropertyEnum(pPropertyHandler, "Sound Obstruction Type", "eiSoundObstructionType", "1", "", 0, 1);
 		RegisterEntityProperty<float>(pPropertyHandler, "Fade Distance", "fFadeDistance", "5.0", "", 0.f, 100000.f);
 		RegisterEntityProperty<float>(pPropertyHandler, "Environment Distance", "fEnvironmentDistance", "5.0", "", 0.f, 100000.f);
+
+		// Register flow node
+		// Factory will be destroyed by flowsystem during shutdown
+		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AudioAreaEntity");
+
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
+		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Disable", ""));
+
+		pFlowNodeFactory->m_activateCallback = CAudioAreaEntity::OnFlowgraphActivation;
+
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<float>("FadeValue"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnFarToNear"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnNearToInside"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnInsideToNear"));
+		pFlowNodeFactory->m_outputs.push_back(OutputPortConfig<bool>("OnNearToFar"));
+
+		pFlowNodeFactory->Close();
+
 	}
 };
 
@@ -36,17 +55,10 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 	if (gEnv->IsDedicated())
 		return;
 
+	CNativeEntityBase::ProcessEvent(event);
+
 	switch (event.event)
 	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
-
 	case ENTITY_EVENT_ENTERNEARAREA:
 		if (m_areaState == EAreaState::Outside)
 		{
@@ -55,15 +67,14 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 			{
 				m_bIsActive = true;
 				m_fadeValue = 0.0f;
-				// ACTIVATE_OUTPUT("OnFarToNear", true)
-				// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+				ActivateFlowNodeOutput(eOutputPorts_OnFarToNear, TFlowInputData(true));
+				ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 			}
 		}
 		else if (m_areaState == EAreaState::Inside)
 		{
-			//m_fadeValue = fade;
-			// ACTIVATE_OUTPUT("OnInsideToNear", true)
-			// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+			ActivateFlowNodeOutput(eOutputPorts_OnInsideToNear, TFlowInputData(true));
+			UpdateFadeValue(event.fParam[0]);
 		}
 		m_areaState = EAreaState::Near;
 		break;
@@ -75,19 +86,16 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 			if (!m_bIsActive && distance < m_fadeDistance)
 			{
 				m_bIsActive = true;
-				// ACTIVATE_OUTPUT("OnFarToNear", true)
-				UpdateFadeValue(distance);
+				ActivateFlowNodeOutput(eOutputPorts_OnFarToNear, TFlowInputData(true));
 			}
 			else if (m_bIsActive && distance > m_fadeDistance)
 			{
-				// ACTIVATE_OUTPUT("OnNearToFar", true)
-				UpdateFadeValue(distance);
 				m_bIsActive = false;
+				ActivateFlowNodeOutput(eOutputPorts_OnNearToFar, TFlowInputData(true));
 			}
-			else if (distance < m_fadeDistance)
-			{
-				UpdateFadeValue(distance);
-			}
+
+			UpdateFadeValue(distance);
+
 		}
 		break;
 
@@ -97,13 +105,13 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 			// possible if the player is teleported or gets spawned inside the area
 			// technically, the listener enters the Near Area and the Inside Area at the same time
 			m_bIsActive = true;
-			// ACTIVATE_OUTPUT("OnFarToNear", true)
+			ActivateFlowNodeOutput(eOutputPorts_OnFarToNear, TFlowInputData(true));
 		}
 
 		m_areaState = EAreaState::Inside;
 		m_fadeValue = 1.0f;
-		// ACTIVATE_OUTPUT("OnNearToInside", true)
-		// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+		ActivateFlowNodeOutput(eOutputPorts_OnNearToInside, TFlowInputData(true));
+		ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 		UpdateObstruction();
 		break;
 
@@ -114,19 +122,18 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 			if ((fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon) || ((fade == 0.0) && (m_fadeValue != fade)))
 			{
 				m_fadeValue = fade;
-				// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+				ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 
 				if (!m_bIsActive && (fade > 0.0))
 				{
 					m_bIsActive = true;
-					// ACTIVATE_OUTPUT("OnFarToNear", true)
-					// ACTIVATE_OUTPUT("OnNearToInside", true)
-
+					ActivateFlowNodeOutput(eOutputPorts_OnFarToNear, TFlowInputData(true));
+					ActivateFlowNodeOutput(eOutputPorts_OnNearToInside, TFlowInputData(true));
 				}
 				else if (m_bIsActive && fade == 0.0)
 				{
-					// ACTIVATE_OUTPUT("OnInsideToNear", true)
-					// ACTIVATE_OUTPUT("OnNearToFar", true)
+					ActivateFlowNodeOutput(eOutputPorts_OnInsideToNear, TFlowInputData(true));
+					ActivateFlowNodeOutput(eOutputPorts_OnNearToFar, TFlowInputData(true));
 					m_bIsActive = false;
 				}
 			}
@@ -135,7 +142,7 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 
 	case ENTITY_EVENT_LEAVEAREA:
 		m_areaState = EAreaState::Near;
-		// ACTIVATE_OUTPUT("OnInsideToNear", true)
+		ActivateFlowNodeOutput(eOutputPorts_OnInsideToNear, TFlowInputData(true));
 		UpdateObstruction();
 		break;
 
@@ -144,8 +151,8 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 		m_fadeValue = 0.0f;
 		if (m_bIsActive)
 		{
-			// ACTIVATE_OUTPUT("OnNearToFar", true)
-			// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+			ActivateFlowNodeOutput(eOutputPorts_OnNearToFar, TFlowInputData(true));
+			ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 			m_bIsActive = false;
 		}
 		break;
@@ -153,7 +160,7 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CAudioAreaEntity::Reset()
+void CAudioAreaEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
@@ -227,8 +234,7 @@ void CAudioAreaEntity::UpdateFadeValue(const float distance)
 	if (!m_bEnabled)
 	{
 		m_fadeValue = 0.0f;
-		// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
-
+		ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 	}
 	else if (m_fadeDistance > 0.0f)
 	{
@@ -238,7 +244,25 @@ void CAudioAreaEntity::UpdateFadeValue(const float distance)
 		if (fabsf(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon)
 		{
 			m_fadeValue = fade;
-			// ACTIVATE_OUTPUT("FadeValue", m_fadeValue)
+			ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
 		}
 	}
+}
+
+void CAudioAreaEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode)
+{
+	auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId);
+	auto* pAudioAreaEntity = static_cast<CAudioAreaEntity*>(pGameObject->QueryExtension("AudioAreaEntity"));
+
+	if (IsPortActive(pActInfo, eInputPorts_Enable))
+	{
+		pAudioAreaEntity->m_bEnabled = true;
+	}
+	else if (IsPortActive(pActInfo, eInputPorts_Disable))
+	{
+		pAudioAreaEntity->m_bEnabled = false;
+	}
+
+	pAudioAreaEntity->OnResetState();
+
 }

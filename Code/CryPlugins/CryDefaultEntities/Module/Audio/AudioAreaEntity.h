@@ -4,6 +4,9 @@
 
 #include "Helpers/NativeEntityBase.h"
 #include "AudioEntitiesUtils.h"
+#include <CryFlowGraph/IFlowSystem.h>
+
+class CEntityFlowNode;
 
 class CAudioAreaEntity final : public CNativeEntityBase
 {
@@ -21,16 +24,34 @@ public:
 		eNumProperties
 	};
 
+	enum EFlowgraphInputPorts
+	{
+		eInputPorts_Enable = 0,
+		eInputPorts_Disable,
+	};
+
+	enum EFlowgraphOutputPorts
+	{
+		eOutputPorts_FadeValue,
+		eOutputPorts_OnFarToNear,
+		eOutputPorts_OnNearToInside,
+		eOutputPorts_OnInsideToNear,
+		eOutputPorts_OnNearToFar,
+	};
+
 public:
 	CAudioAreaEntity() = default;
 	virtual ~CAudioAreaEntity() {}
 
 	// CNativeEntityBase
 	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
 
+public:
+	static void OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
+
 private:
-	void Reset();
 	void SetEnvironmentId(const AudioControlId environmentId);
 	void UpdateObstruction();
 	void UpdateFadeValue(const float distance);
