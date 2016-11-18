@@ -32,11 +32,6 @@ CScriptState::CScriptState(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName)
 {}
 
-EScriptElementAccessor CScriptState::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptState::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptState::RemapDependencies(IGUIDRemapper& guidRemapper)
@@ -52,7 +47,7 @@ void CScriptState::ProcessEvent(const SScriptEvent& event)
 		{
 			// #SchematycTODO : Should we be doing this in editor code?
 			IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
-			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("Signals", EScriptSignalReceiverType::Universal, SGUID(), this);
+			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, SGUID(), this);
 			IScriptGraph* pGraph = static_cast<IScriptGraph*>(pSignalReceiver->GetExtensions().QueryExtension(EScriptExtensionType::Graph));
 			if (pGraph)
 			{

@@ -13,7 +13,5 @@ bool     WriteToClipboard(const char* szText, const char* szPrefix = nullptr);
 bool     ReadFromClipboard(string& text, const char* szPrefix = nullptr);
 bool     ValidateClipboardContents(const char* szPrefix);
 
-EntityId GetSelectedEntityId();
-
 }
 }

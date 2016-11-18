@@ -49,12 +49,10 @@ public:
 	virtual bool                               IsValidName(const char* szName, IScriptElement* pScope, const char*& szErrorMessage) const override;
 
 	virtual IScriptModule*                     AddModule(const char* szName, IScriptElement* pScope) override;
-	virtual IScriptImport*                     AddImport(const SGUID& moduleGUID, IScriptElement* pScope) override;
 	virtual IScriptEnum*                       AddEnum(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptStruct*                     AddStruct(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptSignal*                     AddSignal(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptConstructor*                AddConstructor(const char* szName, IScriptElement* pScope) override;
-	virtual IScriptDestructor*                 AddDestructor(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptFunction*                   AddFunction(const char* szNddfuncme, IScriptElement* pScope) override;
 	virtual IScriptInterface*                  AddInterface(const char* szName, IScriptElement* pScope) override;
 	virtual IScriptInterfaceFunction*          AddInterfaceFunction(const char* szName, IScriptElement* pScope) override;

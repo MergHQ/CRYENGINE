@@ -19,19 +19,19 @@ void RegisterCoreEnvSignals(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_coreModuleGUID);
 	{
 		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(g_startSignalGUID, "Start");
-		pSignal->SetAuthor("Paul Slinger");
+		pSignal->SetAuthor(g_szCrytek);
 		pSignal->SetDescription("Sent when object starts running.");
 		scope.Register(pSignal);
 	}
 	{
 		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(g_stopSignalGUID, "Stop");
-		pSignal->SetAuthor("Paul Slinger");
+		pSignal->SetAuthor(g_szCrytek);
 		pSignal->SetDescription("Sent when object stops running.");
 		scope.Register(pSignal);
 	}
 	{
 		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(g_updateSignalGUID, "Update");
-		pSignal->SetAuthor("Paul Slinger");
+		pSignal->SetAuthor(g_szCrytek);
 		pSignal->SetDescription("Sent when object updates.");
 		pSignal->AddInput('time', "FrameTime", "Time(s) since last update", 0.0f);
 		scope.Register(pSignal);

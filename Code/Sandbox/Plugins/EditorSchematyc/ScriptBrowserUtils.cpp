@@ -50,7 +50,6 @@ namespace ScriptBrowserUtils
 
 static const char* g_szScriptElementIcon = "icons:schematyc/script_element.png";
 static const char* g_szScriptModuleIcon = "icons:schematyc/script_module.png";
-static const char* g_szScriptImportIcon = "icons:schematyc/script_import.png";
 static const char* g_szScriptEnumIcon = "icons:schematyc/script_enum.png";
 static const char* g_szScriptStructIcon = "icons:schematyc/script_struct.png";
 static const char* g_szScriptSignalIcon = "icons:schematyc/script_signal.png";
@@ -67,92 +66,6 @@ static const char* g_szScriptTimerIcon = "icons:schematyc/script_timer.png";
 static const char* g_szScriptSignalReceiverIcon = "icons:schematyc/script_signal_receiver.png";
 static const char* g_szScriptComponentIcon = "icons:schematyc/script_component.png";
 static const char* g_szScriptActionIcon = "icons:schematyc/script_action.png";
-
-struct SImport
-{
-	inline SImport(const char* _szName, const SGUID& _moduleGUID)
-		: name(_szName)
-		, moduleGUID(_moduleGUID)
-	{}
-
-	string name;
-	SGUID  moduleGUID;
-};
-
-class CImportQuickSearchOptions : public IQuickSearchOptions
-{
-private:
-
-	typedef std::vector<SGUID>   Exclusions;
-	typedef std::vector<SImport> Imports;
-
-public:
-
-	inline CImportQuickSearchOptions(const IScriptElement* pScriptScope)
-	{
-		if (pScriptScope)
-		{
-			Exclusions exclusions;
-			exclusions.reserve(50);
-
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
-
-			// #SchematycTODO : Collect exclusions.
-
-			auto visitScriptModule = [this, &pScriptView](const IScriptModule& scriptModule) -> EVisitStatus
-			{
-				CStackString name;
-				pScriptView->QualifyName(scriptModule, EDomainQualifier::Global, name);
-				m_imports.push_back(SImport(name.c_str(), scriptModule.GetGUID()));
-				return EVisitStatus::Continue;
-			};
-			pScriptView->VisitScriptModules(ScriptModuleConstVisitor::FromLambda(visitScriptModule));
-		}
-	}
-
-	// IQuickSearchOptions
-
-	virtual uint32 GetCount() const override
-	{
-		return m_imports.size();
-	}
-
-	virtual const char* GetLabel(uint32 optionIdx) const override
-	{
-		return optionIdx < m_imports.size() ? m_imports[optionIdx].name.c_str() : "";
-	}
-
-	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return nullptr;
-	}
-
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
-	{
-		return nullptr;
-	}
-
-	virtual const char* GetHeader() const override
-	{
-		return "Folder";
-	}
-
-	virtual const char* GetDelimiter() const override
-	{
-		return "::";
-	}
-
-	// ~IQuickSearchOptions
-
-	inline const SImport* GetImport(uint32 importIdx) const
-	{
-		return importIdx < m_imports.size() ? &m_imports[importIdx] : nullptr;
-	}
-
-private:
-
-	Imports m_imports;
-};
 
 struct SBase
 {
@@ -816,10 +729,6 @@ const char* GetScriptElementTypeName(EScriptElementType scriptElementType)
 {
 	switch (scriptElementType)
 	{
-	case EScriptElementType::Import:
-		{
-			return "Import";
-		}
 	case EScriptElementType::Enum:
 		{
 			return "Enumeration";
@@ -880,10 +789,6 @@ const char* GetScriptElementFilterName(EScriptElementType scriptElementType)
 {
 	switch (scriptElementType)
 	{
-	case EScriptElementType::Import:
-		{
-			return "Imports";
-		}
 	case EScriptElementType::Enum:
 		{
 			return "Enumerations";
@@ -898,7 +803,6 @@ const char* GetScriptElementFilterName(EScriptElementType scriptElementType)
 		}
 	case EScriptElementType::Function:
 	case EScriptElementType::Constructor:
-	case EScriptElementType::Destructor:
 	case EScriptElementType::SignalReceiver:
 		{
 			return "Graphs";
@@ -947,10 +851,6 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 		{
 			return g_szScriptModuleIcon;
 		}
-	case EScriptElementType::Import:
-		{
-			return g_szScriptImportIcon;
-		}
 	case EScriptElementType::Enum:
 		{
 			return g_szScriptEnumIcon;
@@ -966,10 +866,6 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 	case EScriptElementType::Constructor:
 		{
 			return g_szScriptConstructorIcon;
-		}
-	case EScriptElementType::Destructor:
-		{
-			return g_szScriptDestructorIcon;
 		}
 	case EScriptElementType::Function:
 		{
@@ -1128,22 +1024,6 @@ IScriptModule* AddScriptModule(IScriptElement* pScope)
 	CStackString name = "NewFolder";
 	MakeScriptElementNameUnique(name, pScope);
 	return GetSchematycCore().GetScriptRegistry().AddModule(name.c_str(), pScope);
-}
-
-IScriptImport* AddScriptImport(IScriptElement* pScope)
-{
-	/*CImportQuickSearchOptions quickSearchOptions(pScope);
-	   CQuickSearchDlg quickSearchDlg(nullptr, GetDlgPos(), quickSearchOptions);
-	   if (quickSearchDlg.DoModal() == IDOK)
-	   {
-	   const SImport* pImport = quickSearchOptions.GetImport(quickSearchDlg.GetResult());
-	   SCHEMATYC_EDITOR_ASSERT(pImport);
-	   if (pImport)
-	   {
-	    return GetSchematycCore().GetScriptRegistry().AddImport(pImport->moduleGUID, pScope);
-	   }
-	   }*/
-	return nullptr;
 }
 
 IScriptEnum* AddScriptEnum(IScriptElement* pScope)

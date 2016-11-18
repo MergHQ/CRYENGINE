@@ -30,11 +30,6 @@ CScriptBase::CScriptBase(const SGUID& guid, const SElementId& classId)
 	, m_classId(classId)
 {}
 
-EScriptElementAccessor CScriptBase::GetAccessor() const
-{
-	return EScriptElementAccessor::Protected;
-}
-
 void CScriptBase::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	SCHEMATYC_CORE_ASSERT(!enumerator.IsEmpty());
@@ -227,10 +222,6 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 	{
 		switch (scriptElement.GetElementType())
 		{
-		case EScriptElementType::Filter:
-			{
-				return EVisitStatus::Recurse;
-			}
 		case EScriptElementType::Variable: // #SchematycTODO : Make sure variable is public/protected?
 			{
 				const IScriptVariable& baseVariable = DynamicCast<IScriptVariable>(scriptElement);
@@ -252,10 +243,6 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 	{
 		switch (scriptElement.GetElementType())
 		{
-		case EScriptElementType::Filter:
-			{
-				return EVisitStatus::Recurse;
-			}
 		case EScriptElementType::Variable: // #SchematycTODO : Make sure variable is public/protected?
 			{
 				IScriptVariable& derivedVariable = DynamicCast<IScriptVariable>(scriptElement);

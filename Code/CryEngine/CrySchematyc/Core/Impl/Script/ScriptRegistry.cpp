@@ -22,10 +22,8 @@
 #include "Script/Elements/ScriptClass.h"
 #include "Script/Elements/ScriptComponentInstance.h"
 #include "Script/Elements/ScriptConstructor.h"
-#include "Script/Elements/ScriptDestructor.h"
 #include "Script/Elements/ScriptEnum.h"
 #include "Script/Elements/ScriptFunction.h"
-#include "Script/Elements/ScriptImport.h"
 #include "Script/Elements/ScriptInterface.h"
 #include "Script/Elements/ScriptInterfaceFunction.h"
 #include "Script/Elements/ScriptInterfaceImpl.h"
@@ -50,10 +48,8 @@ DECLARE_SHARED_POINTERS(CScriptBase)
 DECLARE_SHARED_POINTERS(CScriptClass)
 DECLARE_SHARED_POINTERS(CScriptComponentInstance)
 DECLARE_SHARED_POINTERS(CScriptConstructor)
-DECLARE_SHARED_POINTERS(CScriptDestructor)
 DECLARE_SHARED_POINTERS(CScriptEnum)
 DECLARE_SHARED_POINTERS(CScriptFunction)
-DECLARE_SHARED_POINTERS(CScriptImport)
 DECLARE_SHARED_POINTERS(CScriptInterface)
 DECLARE_SHARED_POINTERS(CScriptInterfaceFunction)
 DECLARE_SHARED_POINTERS(CScriptInterfaceImpl)
@@ -190,10 +186,6 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 		{
 			return scopeElementType == EScriptElementType::Root || scopeElementType == EScriptElementType::Module;
 		}
-	case EScriptElementType::Import:
-		{
-			return scopeElementType == EScriptElementType::Module || scopeElementType == EScriptElementType::Class;
-		}
 	case EScriptElementType::Enum:
 		{
 			return scopeElementType == EScriptElementType::Root || scopeElementType == EScriptElementType::Module || scopeElementType == EScriptElementType::Class;
@@ -207,10 +199,6 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 			return scopeElementType == EScriptElementType::Root || scopeElementType == EScriptElementType::Module || scopeElementType == EScriptElementType::Class || scopeElementType == EScriptElementType::State;
 		}
 	case EScriptElementType::Constructor:
-		{
-			return scopeElementType == EScriptElementType::Class;
-		}
-	case EScriptElementType::Destructor:
 		{
 			return scopeElementType == EScriptElementType::Class;
 		}
@@ -341,27 +329,6 @@ IScriptModule* CScriptRegistry::AddModule(const char* szName, IScriptElement* pS
 	return nullptr;
 }
 
-IScriptImport* CScriptRegistry::AddImport(const SGUID& moduleGUID, IScriptElement* pScope)
-{
-	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor());
-	if (gEnv->IsEditor())
-	{
-		const bool bIsValidScope = IsValidScope(EScriptElementType::Import, pScope);
-		SCHEMATYC_CORE_ASSERT(bIsValidScope);
-		if (bIsValidScope)
-		{
-			if (!pScope)
-			{
-				pScope = m_pRoot.get();
-			}
-			CScriptImportPtr pImport = std::make_shared<CScriptImport>(GetSchematycCore().CreateGUID(), moduleGUID);
-			AddElement(pImport, *pScope);
-			return pImport.get();
-		}
-	}
-	return nullptr;
-}
-
 IScriptEnum* CScriptRegistry::AddEnum(const char* szName, IScriptElement* pScope)
 {
 	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
@@ -452,30 +419,6 @@ IScriptConstructor* CScriptRegistry::AddConstructor(const char* szName, IScriptE
 				CScriptConstructorPtr pConstructor = std::make_shared<CScriptConstructor>(GetSchematycCore().CreateGUID(), szName);
 				AddElement(pConstructor, *pScope);
 				return pConstructor.get();
-			}
-		}
-	}
-	return nullptr;
-}
-
-IScriptDestructor* CScriptRegistry::AddDestructor(const char* szName, IScriptElement* pScope)
-{
-	SCHEMATYC_CORE_ASSERT(gEnv->IsEditor() && szName);
-	if (gEnv->IsEditor() && szName)
-	{
-		const bool bIsValidScope = IsValidScope(EScriptElementType::Destructor, pScope);
-		SCHEMATYC_CORE_ASSERT(bIsValidScope);
-		if (bIsValidScope)
-		{
-			if (!pScope)
-			{
-				pScope = m_pRoot.get();
-			}
-			if (IsElementNameUnique(szName, pScope))
-			{
-				CScriptDestructorPtr pDestructor = std::make_shared<CScriptDestructor>(GetSchematycCore().CreateGUID(), szName);
-				AddElement(pDestructor, *pScope);
-				return pDestructor.get();
 			}
 		}
 	}

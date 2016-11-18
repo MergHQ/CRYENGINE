@@ -136,7 +136,7 @@ public:
 		return m_value != rhs.m_value;
 	}
 
-	inline CEnumFlags operator|(const CEnumFlags& rhs)
+	inline CEnumFlags operator|(const CEnumFlags& rhs) const
 	{
 		return CEnumFlags(UnderlyingValue() | rhs.UnderlyingValue());
 	}
@@ -147,7 +147,7 @@ public:
 		return *this;
 	}
 
-	inline CEnumFlags operator&(const CEnumFlags& rhs)
+	inline CEnumFlags operator&(const CEnumFlags& rhs) const
 	{
 		return CEnumFlags(UnderlyingValue() & rhs.UnderlyingValue());
 	}
@@ -158,7 +158,7 @@ public:
 		return *this;
 	}
 
-	inline CEnumFlags operator^(const CEnumFlags& rhs)
+	inline CEnumFlags operator^(const CEnumFlags& rhs) const
 	{
 		return CEnumFlags(UnderlyingValue() ^ rhs.UnderlyingValue());
 	}

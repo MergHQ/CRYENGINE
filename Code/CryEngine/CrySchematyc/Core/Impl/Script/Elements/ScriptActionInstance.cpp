@@ -27,11 +27,6 @@ CScriptActionInstance::CScriptActionInstance(const SGUID& guid, const char* szNa
 	RefreshProperties();
 }
 
-EScriptElementAccessor CScriptActionInstance::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptActionInstance::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptActionInstance::RemapDependencies(IGUIDRemapper& guidRemapper)

@@ -14,7 +14,6 @@ namespace Schematyc {
 struct IScriptElement;
 struct IScriptFunction;
 struct IScriptConstructor;
-struct IScriptDestructor;
 struct IScriptSignalReceiver;
 
 }
@@ -38,7 +37,6 @@ public:
 public:
 	CGraphItem(Schematyc::IScriptFunction& scriptFunction, CAbstractObjectStructureModel& model);
 	CGraphItem(Schematyc::IScriptConstructor& scriptConstructor, CAbstractObjectStructureModel& model);
-	CGraphItem(Schematyc::IScriptDestructor& scriptDestructor, CAbstractObjectStructureModel& model);
 	CGraphItem(Schematyc::IScriptSignalReceiver& scriptSignalReceiver, CAbstractObjectStructureModel& model);
 	virtual ~CGraphItem();
 
@@ -77,7 +75,6 @@ private:
 		Schematyc::IScriptElement*        m_pScriptElement;
 		Schematyc::IScriptFunction*       m_pScriptFunction;
 		Schematyc::IScriptConstructor*    m_pScriptConstructor;
-		Schematyc::IScriptDestructor*     m_pScriptDestructor;
 		Schematyc::IScriptSignalReceiver* m_pScriptSignalReceiver;
 	};
 

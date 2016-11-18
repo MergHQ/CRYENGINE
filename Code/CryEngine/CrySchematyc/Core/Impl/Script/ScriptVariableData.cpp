@@ -156,7 +156,7 @@ void CScopedSerializationConfig::DeclareScriptEnums(const SGUID& scopeGUID, cons
 {
 	CScriptView scriptView(scopeGUID);
 
-	auto visitScriptEnum = [this, &scriptView, &filter](const IScriptEnum& scriptEnum) -> EVisitStatus
+	auto visitScriptEnum = [this, &scriptView, &filter](const IScriptEnum& scriptEnum)
 	{
 		if (filter.IsEmpty() || filter(scriptEnum))
 		{
@@ -165,16 +165,15 @@ void CScopedSerializationConfig::DeclareScriptEnums(const SGUID& scopeGUID, cons
 
 			m_typeIdQuickSearchConfig.AddOption(scriptEnum.GetName(), SElementId(EDomain::Script, scriptEnum.GetGUID()), fullName.c_str());
 		}
-		return EVisitStatus::Continue;
 	};
-	scriptView.VisitScriptEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum), EDomainScope::Derived);
+	scriptView.VisitAccesibleEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum));
 }
 
 void CScopedSerializationConfig::DeclareScriptStructs(const SGUID& scopeGUID, const ScriptStructFilter& filter)
 {
 	CScriptView scriptView(scopeGUID);
 
-	auto visitScriptStruct = [this, &scriptView, &filter](const IScriptStruct& scriptStruct) -> EVisitStatus
+	auto visitScriptStruct = [this, &scriptView, &filter](const IScriptStruct& scriptStruct)
 	{
 		if (filter.IsEmpty() || filter(scriptStruct))
 		{
@@ -183,9 +182,8 @@ void CScopedSerializationConfig::DeclareScriptStructs(const SGUID& scopeGUID, co
 
 			m_typeIdQuickSearchConfig.AddOption(scriptStruct.GetName(), SElementId(EDomain::Script, scriptStruct.GetGUID()), fullName.c_str());
 		}
-		return EVisitStatus::Continue;
 	};
-	scriptView.VisitScriptStructs(ScriptStructConstVisitor::FromLambda(visitScriptStruct), EDomainScope::Derived);
+	scriptView.VisitAccesibleStructs(ScriptStructConstVisitor::FromLambda(visitScriptStruct));
 }
 
 CAnyValuePtr CreateData(const SElementId& typeId)

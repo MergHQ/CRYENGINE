@@ -19,11 +19,10 @@ public:
 	CScriptSignalReceiver(const SGUID& guid, const char* szName, EScriptSignalReceiverType type, const SGUID& signalGUID);
 
 	// IScriptElement
-	virtual EScriptElementAccessor GetAccessor() const override;
-	virtual void                   EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const override;
-	virtual void                   RemapDependencies(IGUIDRemapper& guidRemapper) override;
-	virtual void                   ProcessEvent(const SScriptEvent& event) override;
-	virtual void                   Serialize(Serialization::IArchive& archive) override;
+	virtual void EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const override;
+	virtual void RemapDependencies(IGUIDRemapper& guidRemapper) override;
+	virtual void ProcessEvent(const SScriptEvent& event) override;
+	virtual void Serialize(Serialization::IArchive& archive) override;
 	// ~IScriptElement
 
 	// IScriptSignalReceiver

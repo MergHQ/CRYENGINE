@@ -202,8 +202,6 @@ public:
 	virtual void                          SetEditorLevel(const char* levelName, const char* levelFolder);
 	virtual void                          GetEditorLevel(char** levelName, char** levelFolder);
 
-	virtual void                          LoadSchematycFiles() /*override*/;
-
 	virtual void                          BeginLanQuery();
 	virtual void                          EndCurrentQuery();
 

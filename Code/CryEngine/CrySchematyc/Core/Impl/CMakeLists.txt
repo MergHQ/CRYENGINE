@@ -75,10 +75,8 @@ add_sources("Schematyc_Uber_Core_0.cpp"
 		"../Interface/Schematyc/Script/Elements/IScriptClass.h"
 		"../Interface/Schematyc/Script/Elements/IScriptComponentInstance.h"
 		"../Interface/Schematyc/Script/Elements/IScriptConstructor.h"
-		"../Interface/Schematyc/Script/Elements/IScriptDestructor.h"
 		"../Interface/Schematyc/Script/Elements/IScriptEnum.h"
 		"../Interface/Schematyc/Script/Elements/IScriptFunction.h"
-		"../Interface/Schematyc/Script/Elements/IScriptImport.h"
 		"../Interface/Schematyc/Script/Elements/IScriptInterface.h"
 		"../Interface/Schematyc/Script/Elements/IScriptInterfaceImpl.h"
 		"../Interface/Schematyc/Script/Elements/IScriptInterfaceFunction.h"
@@ -152,6 +150,7 @@ add_sources("Schematyc_Uber_Core_1.cpp"
 		"ObjectPool.h"
 		"ObjectProperties.cpp"
 		"ObjectProperties.h"
+		"resource.h"
 	SOURCE_GROUP "Impl\\\\Compiler"
 		"Compiler/Compiler.cpp"
 		"Compiler/Compiler.h"
@@ -213,14 +212,10 @@ add_sources("Schematyc_Uber_Core_3.cpp"
 		"Script/Elements/ScriptComponentInstance.h"
 		"Script/Elements/ScriptConstructor.cpp"
 		"Script/Elements/ScriptConstructor.h"
-		"Script/Elements/ScriptDestructor.cpp"
-		"Script/Elements/ScriptDestructor.h"
 		"Script/Elements/ScriptEnum.cpp"
 		"Script/Elements/ScriptEnum.h"
 		"Script/Elements/ScriptFunction.cpp"
 		"Script/Elements/ScriptFunction.h"
-		"Script/Elements/ScriptImport.cpp"
-		"Script/Elements/ScriptImport.h"
 		"Script/Elements/ScriptInterface.cpp"
 		"Script/Elements/ScriptInterface.h"
 		"Script/Elements/ScriptInterfaceFunction.cpp"
@@ -330,7 +325,10 @@ end_sources()
 #END-FILE-LIST
 
 if(PLUGIN_SCHEMATYC)
-	CryEngineStaticModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	
+	target_link_libraries (${THIS_PROJECT} PRIVATE yasli)
+	
 	target_compile_definitions(${THIS_PROJECT}
 		PRIVATE -DSCHEMATYC_EXPORTS
 		INTERFACE -DUSE_SCHEMATYC_CORE

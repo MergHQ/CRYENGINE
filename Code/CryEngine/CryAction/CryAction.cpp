@@ -1923,17 +1923,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 		m_pGameObjectSystem->RegisterEvent(eGFE_DisableBlendRagdoll, "DisableBlendToRagdoll");
 	}
 
-#if defined(USE_SCHEMATYC_CORE)
-	// Create Schematyc core
-	if (Schematyc::CreateCore(static_cast<IGameFramework*>(this)))
-	{
-	#if defined(USE_SCHEMATYC_STD_ENV)
-		// Create Schematyc standard environment
-		Schematyc::CreateSTDEnv(static_cast<IGameFramework*>(this));
-	#endif
-	}
-#endif
-
 	m_pAnimationGraphCvars = new CAnimationGraphCVars();
 	m_pMannequin = new CMannequinInterface();
 	if (gEnv->IsEditor())
@@ -2074,9 +2063,11 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	// game got initialized, time to finalize framework initialization
 	if (CompleteInit())
 	{
-		// run main game loop
 		InlineInitializationProcessing("CCryAction::Init End");
 
+		gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE, 0, 0);
+
+		// run main game loop
 		if (startupParams.bManualEngineLoop)
 		{
 			return true;
@@ -2452,8 +2443,6 @@ bool CCryAction::CompleteInit()
 		m_pRuntimeAreaManager = new CRuntimeAreaManager();
 	}
 
-	LoadSchematycFiles();
-
 #if defined(CRY_UNIT_TESTING)
 	if (CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager())
 	{
@@ -2735,10 +2724,6 @@ void CCryAction::PrePhysicsUpdate()
 	{
 		pGame->PrePhysicsUpdate();  // required if PrePhysicsUpdate() is overriden in game
 	}
-
-#if defined(USE_SCHEMATYC_CORE)
-	GetSchematycCore().PrePhysicsUpdate();
-#endif
 }
 
 bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
@@ -2900,10 +2885,6 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 	{
 		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
-
-#if defined(USE_SCHEMATYC_CORE)
-	GetSchematycCore().Update();
-#endif
 
 	CRConServerListener::GetSingleton().Update();
 	CSimpleHttpServerListener::GetSingleton().Update();
@@ -3222,7 +3203,7 @@ bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 		m_pGame = new CActionGame(m_pScriptRMI);
 	}
 
-	// Unlock shared parameters manager. This must happen after the level heap is initialised and before level load.
+	// Unlock shared parameters manager. This must happen after the level heap is initialized and before level load.
 
 	if (m_pSharedParamsManager)
 	{
@@ -3528,43 +3509,6 @@ void CCryAction::GetEditorLevel(char** levelName, char** levelFolder)
 {
 	if (levelName) *levelName = &m_editorLevelName[0];
 	if (levelFolder) *levelFolder = &m_editorLevelFolder[0];
-}
-
-void CCryAction::LoadSchematycFiles()
-{
-#if defined(USE_SCHEMATYC_CORE)
-	// Schematyc environments must be initialize before loading files.
-	// Usually this function is called in CryAction::CompleteInit() after
-	// the game has been initialized, however if the game needs to use
-	// Schematyc during game initialization it can be called earlier.
-
-	static bool bLoadSchematycFiles = true;
-	if (bLoadSchematycFiles)
-	{
-		Schematyc::ICore& schematycCore = GetSchematycCore();
-		if (gEnv->IsEditor())
-		{
-			schematycCore.GetLogRecorder().Begin();
-		}
-
-		CryLogAlways("[Schematyc]: Loading...");
-		CryLogAlways("[Schematyc]: Loading settings");
-		schematycCore.GetSettingsManager().LoadAllSettings();
-		CryLogAlways("[Schematyc]: Loading scripts");
-		schematycCore.GetScriptRegistry().Load();
-		CryLogAlways("[Schematyc]: Compiling scripts");
-		schematycCore.GetCompiler().CompileAll();
-		CryLogAlways("[Schematyc]: Loading complete");
-
-		schematycCore.RefreshLogFileSettings();
-		if (gEnv->IsEditor())
-		{
-			schematycCore.GetLogRecorder().End();
-		}
-
-		bLoadSchematycFiles = false;
-	}
-#endif
 }
 
 //------------------------------------------------------------------------

@@ -727,9 +727,6 @@ struct IGameFramework
 	//! Parameters are pointers to receive the level infos.
 	virtual void GetEditorLevel(char** levelName, char** levelFolder) = 0;
 
-	//! Load all Schematyc files.
-	virtual void LoadSchematycFiles() = 0;
-
 	//! Begin a query on the LAN for games
 	virtual void BeginLanQuery() = 0;
 

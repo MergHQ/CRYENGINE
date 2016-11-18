@@ -14,7 +14,7 @@
 
 namespace Schematyc
 {
-CEntityParticleEmitterComponent::SParticleEmitterProperties::SParticleEmitterProperties()
+CEntityParticleEmitterComponent::SProperties::SProperties()
 	: scale(1.0f)
 	, bVisible(true)
 	, bPrime(false)
@@ -25,7 +25,7 @@ CEntityParticleEmitterComponent::SParticleEmitterProperties::SParticleEmitterPro
 	, strength(-1.0f)
 {}
 
-void CEntityParticleEmitterComponent::SParticleEmitterProperties::Serialize(Serialization::IArchive& archive)
+void CEntityParticleEmitterComponent::SProperties::Serialize(Serialization::IArchive& archive)
 {
 	archive(effectName, "effectName", "Effect");
 	archive.doc("Effect");
@@ -52,36 +52,6 @@ void CEntityParticleEmitterComponent::SParticleEmitterProperties::Serialize(Seri
 	}
 }
 
-void CEntityParticleEmitterComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	Serialization::SContext propertiesContext(archive, static_cast<const CEntityParticleEmitterComponent::SProperties*>(this));
-	archive(particleEmitter, "particleEmitter", "Particle Emitter");
-}
-
-CEntityParticleEmitterComponent::SPreviewProperties::SPreviewProperties()
-	: bShowGizmos(false)
-	, gizmoLength(1.0f)
-{}
-
-void CEntityParticleEmitterComponent::SPreviewProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(bShowGizmos, "bShowGizmos", "Show Gizmos");
-	archive(gizmoLength, "gizmoLength", "Gizmo Length");
-}
-
-void CEntityParticleEmitterComponent::CPreviewer::SerializeProperties(Serialization::IArchive& archive)
-{
-	archive(m_properties, "properties", "Particle Emitter Component");
-}
-
-void CEntityParticleEmitterComponent::CPreviewer::Render(const IObject& object, const CComponent& component, const SRendParams& params, const SRenderingPassInfo& passInfo) const
-{
-	if (m_properties.bShowGizmos)
-	{
-		static_cast<const CEntityParticleEmitterComponent&>(component).RenderGizmo(m_properties.gizmoLength);
-	}
-}
-
 CEntityParticleEmitterComponent::CEntityParticleEmitterComponent()
 	: m_slot(EmptySlot)
 {}
@@ -94,13 +64,13 @@ bool CEntityParticleEmitterComponent::Init()
 void CEntityParticleEmitterComponent::Run(ESimulationMode simulationMode)
 {
 	SProperties* pProperties = static_cast<SProperties*>(CComponent::GetProperties());
-	if (!pProperties->particleEmitter.effectName.value.empty())
+	if (!pProperties->effectName.value.empty())
 	{
 		if (m_slot == EmptySlot)
 		{
 			LoadParticleEmitter();
 		}
-		SetVisible(pProperties->particleEmitter.bVisible);
+		SetVisible(pProperties->bVisible);
 	}
 }
 
@@ -133,7 +103,7 @@ void CEntityParticleEmitterComponent::SetTransform(const CTransform& transform)
 void CEntityParticleEmitterComponent::SetVisible(bool bVisible)
 {
 	SProperties* pProperties = static_cast<SProperties*>(CComponent::GetProperties());
-	if (bVisible != pProperties->particleEmitter.bVisible)
+	if (bVisible != pProperties->bVisible)
 	{
 		if (CComponent::GetObject().GetSimulationMode() != ESimulationMode::Idle)
 		{
@@ -149,14 +119,14 @@ void CEntityParticleEmitterComponent::SetVisible(bool bVisible)
 			}
 		}
 
-		pProperties->particleEmitter.bVisible = bVisible;
+		pProperties->bVisible = bVisible;
 	}
 }
 
 bool CEntityParticleEmitterComponent::IsVisible() const
 {
 	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	return pProperties->particleEmitter.bVisible;
+	return pProperties->bVisible;
 }
 
 SGUID CEntityParticleEmitterComponent::ReflectSchematycType(CTypeInfo<CEntityParticleEmitterComponent>& typeInfo)
@@ -174,14 +144,13 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		pComponent->SetIcon("icons:schematyc/entity_particle_emitter_component.png");
 		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
 		pComponent->SetProperties(SProperties());
-		pComponent->SetPreviewer(CPreviewer());
 		scope.Register(pComponent);
 
 		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::SetTransform, "97af940e-6a2c-4374-a43d-74d90ec385e2"_schematyc_guid, "SetTransform");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set particle emitter transform");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'trn', "Transform");
@@ -189,7 +158,7 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::SetVisible, "c9ac7f56-e6d2-4461-8871-54fb58d30e62"_schematyc_guid, "SetVisible");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Show/hide particle emitter");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'vis', "Visible");
@@ -197,7 +166,7 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::IsVisible, "ba91ef70-02fc-4171-b8a0-637f16e3321d"_schematyc_guid, "IsVisible");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Is particle emitter visible?");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindOutput(0, 'vis', "Visible");
@@ -209,17 +178,17 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 void CEntityParticleEmitterComponent::LoadParticleEmitter()
 {
 	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	IParticleEffect* pParticleEffect = gEnv->pParticleManager->FindEffect(pProperties->particleEmitter.effectName.value.c_str(), "Schematyc::GameEntity::CEntityParticleEmitterComponent::LoadParticleEmitter");
+	IParticleEffect* pParticleEffect = gEnv->pParticleManager->FindEffect(pProperties->effectName.value.c_str(), "Schematyc::GameEntity::CEntityParticleEmitterComponent::LoadParticleEmitter");
 	if (pParticleEffect)
 	{
 		SpawnParams spawnParams;
 
-		spawnParams.fCountScale = pProperties->particleEmitter.bVisible ? pProperties->particleEmitter.countScale : 0.0f;
-		spawnParams.fSpeedScale = pProperties->particleEmitter.speedScale;
-		spawnParams.fTimeScale = pProperties->particleEmitter.timeScale;
-		spawnParams.fPulsePeriod = pProperties->particleEmitter.pulsePeriod;
-		spawnParams.fStrength = pProperties->particleEmitter.strength;
-		spawnParams.bPrime = pProperties->particleEmitter.bPrime;
+		spawnParams.fCountScale = pProperties->bVisible ? pProperties->countScale : 0.0f;
+		spawnParams.fSpeedScale = pProperties->speedScale;
+		spawnParams.fTimeScale = pProperties->timeScale;
+		spawnParams.fPulsePeriod = pProperties->pulsePeriod;
+		spawnParams.fStrength = pProperties->strength;
+		spawnParams.bPrime = pProperties->bPrime;
 
 		IEntity& entity = EntityUtils::GetEntity(*this);
 		m_slot = entity.LoadParticleEmitter(m_slot, pParticleEffect, &spawnParams);
@@ -230,20 +199,6 @@ void CEntityParticleEmitterComponent::LoadParticleEmitter()
 			entity.SetParentSlot(pParent->GetSlot(), m_slot);
 		}
 		entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
-	}
-}
-
-void CEntityParticleEmitterComponent::RenderGizmo(float gizmoLength) const
-{
-	if (m_slot != EmptySlot)
-	{
-		IRenderAuxGeom& renderAuxGeom = *gEnv->pRenderer->GetIRenderAuxGeom();
-		const Matrix34 worldTM = EntityUtils::GetEntity(*this).GetSlotWorldTM(m_slot);
-		const float lineThickness = 4.0f;
-
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(255, 0, 0, 255), worldTM.GetTranslation() + (worldTM.GetColumn0().GetNormalized() * gizmoLength), ColorB(255, 0, 0, 255), lineThickness);
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(0, 255, 0, 255), worldTM.GetTranslation() + (worldTM.GetColumn1().GetNormalized() * gizmoLength), ColorB(0, 255, 0, 255), lineThickness);
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(0, 0, 255, 255), worldTM.GetTranslation() + (worldTM.GetColumn2().GetNormalized() * gizmoLength), ColorB(0, 0, 255, 255), lineThickness);
 	}
 }
 } // Schematyc

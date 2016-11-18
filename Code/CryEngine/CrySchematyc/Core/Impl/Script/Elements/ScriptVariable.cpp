@@ -16,17 +16,13 @@
 namespace Schematyc
 {
 CScriptVariable::CScriptVariable()
-	: m_accessor(EScriptElementAccessor::Private)
-	, m_data(SElementId(), true)
-	, m_overridePolicy(EOverridePolicy::Default)
+	: m_data(SElementId(), true)
 {}
 
 CScriptVariable::CScriptVariable(const SGUID& guid, const char* szName, const SElementId& typeId, const SGUID& baseGUID)
 	: CScriptElementBase(guid, szName)
-	, m_accessor(EScriptElementAccessor::Private)
 	, m_data(typeId, true)
 	, m_baseGUID(baseGUID)
-	, m_overridePolicy(EOverridePolicy::Default)
 {}
 
 EScriptElementAccessor CScriptVariable::GetAccessor() const

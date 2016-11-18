@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <CryExtension/ClassWeaver.h>
-#include <Schematyc/ICore.h>
+#include "Schematyc/ICore.h"
+#include "Schematyc/Utils/Assert.h"
+#include "CrySystem/ISystem.h"
 
 namespace Schematyc
 {
@@ -23,18 +24,32 @@ class CUpdateScheduler;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(ILogOutput)
 
-class CCore : public ICore
+class CCore : public ICrySchematycCore, public ISystemEventListener
 {
-	CRYINTERFACE_SIMPLE(ICore)
-
-	CRYGENERATE_CLASS(CCore, ms_szClassName, 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(CCore)
+		CRYINTERFACE_ADD(ICryPlugin)
+	CRYINTERFACE_END()
+		
+	CRYGENERATE_SINGLETONCLASS(CCore, "Plugin_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
 
 public:
 
-	void Init();
+	// ICryPlugin
+	virtual const char* GetName() const override { return "SchematycCore"; }
+	virtual const char* GetCategory() const override { return "Plugin"; }
+	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
+	// ~ICryPlugin
+
+	// ISystemEventListener
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+	// ~ISystemEventListener
+
+	// IPluginUpdateListener
+	virtual void OnPluginUpdate(EPluginUpdateType updateType) override;
+	// ~IPluginUpdateListener
 
 	// ICore
-
 	virtual void                     SetGUIDGenerator(const GUIDGenerator& guidGenerator) override;
 	virtual SGUID                    CreateGUID() const override;
 
@@ -64,12 +79,8 @@ public:
 	virtual void                     SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params) override;
 	virtual void                     BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params) override;
 
-	virtual void                     PrePhysicsUpdate() override;
-	virtual void                     Update() override;
-
 	virtual void                     RefreshLogFileSettings() override;
-	virtual void                     RefreshEnv() override;
-
+	virtual void                     RefreshEnv() override;	
 	// ~ICore
 
 	void       RefreshLogFileStreams();
@@ -78,11 +89,13 @@ public:
 	CRuntimeRegistry& GetRuntimeRegistryImpl();
 	CCompiler& GetCompilerImpl();
 
-public:
-
-	static const char* ms_szClassName;
+	static CCore* GetInstance() { return s_pInstance; }
 
 private:
+	void                     PrePhysicsUpdate();
+	void                     Update();
+	
+	void                     LoadProjectFiles();
 
 	GUIDGenerator                     m_guidGenerator;
 	mutable string                    m_scriptsFolder;    // #SchematycTODO : How can we avoid making this mutable?
@@ -98,18 +111,19 @@ private:
 	std::unique_ptr<CLogRecorder>     m_pLogRecorder;
 	std::unique_ptr<CSettingsManager> m_pSettingsManager;
 	std::unique_ptr<CUpdateScheduler> m_pUpdateScheduler;
+
+	static CCore* s_pInstance;
 };
+
+//////////////////////////////////////////////////////////////////////////
+inline CCore* GetSchematycCoreImplPtr()
+{
+	return CCore::GetInstance();
+}
+//////////////////////////////////////////////////////////////////////////
+inline CCore& GetSchematycCoreImpl()
+{
+	SCHEMATYC_CORE_ASSERT(CCore::GetInstance());
+	return *CCore::GetInstance();
+}
 } // Schematyc
-
-//////////////////////////////////////////////////////////////////////////
-inline Schematyc::CCore* GetSchematycCoreImplPtr()
-{
-	return static_cast<Schematyc::CCore*>(GetSchematycCorePtr());
-}
-
-// Get Schematyc core.
-//////////////////////////////////////////////////////////////////////////
-inline Schematyc::CCore& GetSchematycCoreImpl()
-{
-	return static_cast<Schematyc::CCore&>(GetSchematycCore());
-}

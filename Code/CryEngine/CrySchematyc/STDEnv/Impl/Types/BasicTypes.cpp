@@ -14,14 +14,14 @@ void RegisterBasicTypes(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_stdModuleGUID);
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(bool, "Bool");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("Boolean");
 		pDataType->SetDefaultValue(false);
 		scope.Register(pDataType);
 	}
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(int32, "Int32");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("Signed 32bit integer");
 		pDataType->SetFlags(EEnvDataTypeFlags::Switchable);
 		pDataType->SetDefaultValue(0);
@@ -29,7 +29,7 @@ void RegisterBasicTypes(IEnvRegistrar& registrar)
 	}
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(uint32, "UInt32");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("Unsigned 32bit integer");
 		pDataType->SetFlags(EEnvDataTypeFlags::Switchable);
 		pDataType->SetDefaultValue(0);
@@ -37,20 +37,20 @@ void RegisterBasicTypes(IEnvRegistrar& registrar)
 	}
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(CSharedString, "String");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("String");
 		pDataType->SetFlags(EEnvDataTypeFlags::Switchable);
 		scope.Register(pDataType);
 	}
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(ObjectId, "ObjectId");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("Object id");
 		scope.Register(pDataType);
 	}
 	{
 		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(ExplicitEntityId, "EntityId");
-		pDataType->SetAuthor("Paul Slinger");
+		pDataType->SetAuthor(g_szCrytek);
 		pDataType->SetDescription("Entity id");
 		scope.Register(pDataType);
 	}

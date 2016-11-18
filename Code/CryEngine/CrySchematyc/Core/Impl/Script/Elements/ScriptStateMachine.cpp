@@ -37,11 +37,6 @@ CScriptStateMachine::CScriptStateMachine(const SGUID& guid, const char* szName, 
 	CreateTransitionGraph();
 }
 
-EScriptElementAccessor CScriptStateMachine::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptStateMachine::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptStateMachine::RemapDependencies(IGUIDRemapper& guidRemapper)
@@ -108,6 +103,7 @@ void CScriptStateMachine::Save(Serialization::IArchive& archive, const ISerializ
 
 void CScriptStateMachine::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
+	/*
 	typedef std::vector<SGUID> GUIDs;
 
 	GUIDs partnerGUIDs;
@@ -142,6 +138,7 @@ void CScriptStateMachine::Edit(Serialization::IArchive& archive, const ISerializ
 	{
 		m_partnerGUID = partnerGUIDs[partnerName.index()];
 	}
+	*/
 }
 
 void CScriptStateMachine::CreateTransitionGraph()

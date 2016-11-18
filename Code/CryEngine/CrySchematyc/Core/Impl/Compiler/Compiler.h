@@ -11,7 +11,6 @@ namespace Schematyc
 struct IEnvClass;
 struct IScriptClass;
 struct IScriptConstructor;
-struct IScriptDestructor;
 struct IScriptElement;
 struct IScriptGraph;
 struct IScriptSignalReceiver;
@@ -53,7 +52,6 @@ private:
 	bool CompileComponentInstancesRecursive(SCompilerContext& context, CRuntimeClass& runtimeClass, uint32 parentIdx, const IScriptElement& scriptScope) const;
 	bool CompileElementsRecursive(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptElement& scriptScope) const;
 	bool CompileConstructor(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptConstructor& scriptConstructor) const;
-	bool CompileDestructor(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptDestructor& scriptDestructor) const;
 	bool CompileStateMachine(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptStateMachine& scriptStateMachine) const;
 	bool CompileState(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptState& scriptState) const;
 	bool CompileVariable(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptVariable& scriptVariable) const;

@@ -195,12 +195,12 @@ const SLogSettings& CLogSettingsWidget::GetSettings() const
 	return m_settings;
 }
 
-void CLogSettingsWidget::OnAttachToSelectedEntityButtonClicked()
-{
-	const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(CrySchematycEditor::Utils::GetSelectedEntityId());
-	m_settings.entity = pEntity ? pEntity->GetName() : "";
-	m_pPropertyTree->revert();
-}
+//void CLogSettingsWidget::OnAttachToSelectedEntityButtonClicked()
+//{
+//	const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(CrySchematycEditor::Utils::GetSelectedEntityId());
+//	m_settings.entity = pEntity ? pEntity->GetName() : "";
+//	m_pPropertyTree->revert();
+//}
 
 CLogWidget::CLogWidget(const SLogSettings& settings)
 	: m_settings(settings)

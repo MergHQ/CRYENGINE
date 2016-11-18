@@ -1,5 +1,7 @@
 #pragma once
 
+#define eCryModule eCryM_EnginePlugin
+
 // CryEngine headers.
 
 #include <CryCore/Project/CryModuleDefs.h>

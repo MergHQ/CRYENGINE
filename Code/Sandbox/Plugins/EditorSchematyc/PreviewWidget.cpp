@@ -259,7 +259,7 @@ XmlNodeRef CPreviewWidget::SaveSettings(const char* szName)
 
 void CPreviewWidget::Serialize(Serialization::IArchive& archive)
 {
-	archive(m_viewportSettings, "viewportSettings", "Viewport Settings");
+	archive(m_viewportSettings, "viewportSettings", "Viewport");
 	if (archive.isInput())
 	{
 		m_pViewport->SetSettings(m_viewportSettings);

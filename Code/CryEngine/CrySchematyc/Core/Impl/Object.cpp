@@ -353,7 +353,6 @@ void CObject::Stop()
 		}
 	}
 
-	ExecuteDestructors(); // #SchematycTODO : Only execute destructors when destroying object?
 	ShutdownComponents();
 
 	m_simulationMode = ESimulationMode::Idle;
@@ -388,11 +387,30 @@ bool CObject::ReadProperties()
 {
 	if (m_pProperties)
 	{
+		const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();
+		for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
+		{
+			const SRuntimeClassComponentInstance& classComponentInstance = classComponentInstances[componentIdx];
+			if (classComponentInstance.bPublic)
+			{
+				const IProperties* pComponentProperties = m_pProperties->GetComponentProperties(classComponentInstance.guid);
+				if (pComponentProperties)
+				{
+					m_components[componentIdx].pProperties = pComponentProperties->Clone();
+				}
+				else
+				{
+					SCHEMATYC_CORE_ERROR("Failed to initialize component properties: class = %s, component = %s", m_pClass->GetName(), classComponentInstance.name.c_str());
+					return false;
+				}
+			}
+		}
+
 		for (const SRuntimeClassVariable& variable : m_pClass->GetVariables())
 		{
 			if (variable.bPublic)
 			{
-				if (!m_pProperties->Read(*m_scratchPad.Get(variable.pos), variable.guid))
+				if (!m_pProperties->ReadVariable(*m_scratchPad.Get(variable.pos), variable.guid))
 				{
 					SCHEMATYC_CORE_ERROR("Failed to initialize variable: class = %s, variable = %s", m_pClass->GetName(), variable.name.c_str());
 					return false;
@@ -400,6 +418,7 @@ bool CObject::ReadProperties()
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -409,15 +428,6 @@ void CObject::ExecuteConstructors(ESimulationMode simulationMode)
 	for (const SRuntimeClassConstructor& classConstructor : m_pClass->GetConstructors())
 	{
 		ExecuteFunction(classConstructor.graphIdx, params, classConstructor.activationParams);
-	}
-}
-
-void CObject::ExecuteDestructors()
-{
-	StackRuntimeParams params;
-	for (const SRuntimeClassDestructor& classDestructor : m_pClass->GetDestructors())
-	{
-		ExecuteFunction(classDestructor.graphIdx, params, classDestructor.activationParams);
 	}
 }
 

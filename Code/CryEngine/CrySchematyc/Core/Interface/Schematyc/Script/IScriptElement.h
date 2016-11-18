@@ -49,14 +49,11 @@ enum class EScriptElementType
 {
 	None,
 	Root,
-	Module, // #SchematycTODO : Remove?
-	Import, // #SchematycTODO : Remove?
-	Filter, // #SchematycTODO : Remove!
+	Module,
 	Enum,
 	Struct,
 	Signal,
 	Constructor,
-	Destructor, // #SchematycTODO : Remove?
 	Function,
 	Interface,
 	InterfaceFunction,
@@ -73,10 +70,10 @@ enum class EScriptElementType
 	ActionInstance
 };
 
-enum class EScriptElementAccessor
+enum class EScriptElementAccessor // N.B. It is important that the order of this enumeration does not change since we often use comparison operators to filter accessibility.
 {
 	Public,
-	Protected, // #SchematycTODO : Remove?
+	Protected,
 	Private
 };
 

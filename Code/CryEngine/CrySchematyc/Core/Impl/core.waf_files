@@ -84,10 +84,8 @@
 			"../Interface/Schematyc/Script/Elements/IScriptClass.h",
 			"../Interface/Schematyc/Script/Elements/IScriptComponentInstance.h",
 			"../Interface/Schematyc/Script/Elements/IScriptConstructor.h",
-			"../Interface/Schematyc/Script/Elements/IScriptDestructor.h",
 			"../Interface/Schematyc/Script/Elements/IScriptEnum.h",
 			"../Interface/Schematyc/Script/Elements/IScriptFunction.h",
-			"../Interface/Schematyc/Script/Elements/IScriptImport.h",
 			"../Interface/Schematyc/Script/Elements/IScriptInterface.h",
 			"../Interface/Schematyc/Script/Elements/IScriptInterfaceImpl.h",
 			"../Interface/Schematyc/Script/Elements/IScriptInterfaceFunction.h",
@@ -168,7 +166,8 @@
 			"ObjectPool.cpp",
 			"ObjectPool.h",
 			"ObjectProperties.cpp",
-			"ObjectProperties.h"
+			"ObjectProperties.h",
+			"resource.h"
 		],
 		"Impl/Compiler":
 		[
@@ -242,14 +241,10 @@
 			"Script/Elements/ScriptComponentInstance.h",
 			"Script/Elements/ScriptConstructor.cpp",
 			"Script/Elements/ScriptConstructor.h",
-			"Script/Elements/ScriptDestructor.cpp",
-			"Script/Elements/ScriptDestructor.h",
 			"Script/Elements/ScriptEnum.cpp",
 			"Script/Elements/ScriptEnum.h",
 			"Script/Elements/ScriptFunction.cpp",
 			"Script/Elements/ScriptFunction.h",
-			"Script/Elements/ScriptImport.cpp",
-			"Script/Elements/ScriptImport.h",
 			"Script/Elements/ScriptInterface.cpp",
 			"Script/Elements/ScriptInterface.h",
 			"Script/Elements/ScriptInterfaceFunction.cpp",

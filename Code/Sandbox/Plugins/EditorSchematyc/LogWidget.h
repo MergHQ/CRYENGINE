@@ -50,8 +50,8 @@ public:
 
 	const SLogSettings& GetSettings() const;
 
-protected Q_SLOTS:
-	void OnAttachToSelectedEntityButtonClicked();
+//protected Q_SLOTS:
+//	void OnAttachToSelectedEntityButtonClicked();
 
 protected:
 	void showEvent(QShowEvent* pEvent);

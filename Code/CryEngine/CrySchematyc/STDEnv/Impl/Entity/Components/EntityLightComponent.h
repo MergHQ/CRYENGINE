@@ -30,30 +30,6 @@ private:
 		float  attenuationBulbSize;
 	};
 
-	struct SPreviewProperties
-	{
-		SPreviewProperties();
-
-		void Serialize(Serialization::IArchive& archive);
-
-		bool  bShowGizmos;
-		float gizmoLength;
-	};
-
-	class CPreviewer : public IComponentPreviewer
-	{
-	public:
-
-		// IComponentPreviewer
-		virtual void SerializeProperties(Serialization::IArchive& archive) override;
-		virtual void Render(const IObject& object, const CComponent& component, const SRendParams& params, const SRenderingPassInfo& passInfo) const override;
-		// ~IComponentPreviewer
-
-	private:
-
-		SPreviewProperties m_properties;
-	};
-
 public:
 
 	CEntityLightComponent();
@@ -77,8 +53,6 @@ private:
 	void SwitchOff();
 
 	void FreeSlot();
-
-	void RenderGizmo(float gizmoLength) const;
 
 private:
 

@@ -3,7 +3,10 @@
 #include "StdAfx.h"
 #include "Core.h"
 
-#include <CryExtension/CryCreateClassInstance.h>
+#include <CryCore/Platform/platform_impl.inl>
+#include <CryExtension/ICryPluginManager.h>
+#include <CryGame/IGameFramework.h>
+
 #include <Schematyc/Env/EnvPackage.h>
 #include <Schematyc/Env/Elements/EnvDataType.h>
 #include <Schematyc/SerializationUtils/SerializationEnums.inl>
@@ -26,8 +29,6 @@
 #include "Services/TimerSystem.h"
 #include "Services/UpdateScheduler.h"
 #include "UnitTests/UnitTestRegistrar.h"
-
-#include <CryExtension/ICryPluginManager.h>
 
 namespace Schematyc
 {
@@ -56,57 +57,7 @@ inline bool WantUpdate()
 
 static const char* g_szScriptsFolder = "scripts";
 static const char* g_szSettingsFolder = "settings";
-
-class CSchematycCoreCreator : public IGameFrameworkExtensionCreator
-{
-	CRYINTERFACE_SIMPLE(IGameFrameworkExtensionCreator)
-
-	CRYGENERATE_SINGLETONCLASS(CSchematycCoreCreator, ms_szClassName, 0x0f296b01ff3f4f55, 0xaa10a724a89c73cd)
-
-public:
-
-	virtual ICryUnknown* Create(IGameFramework* pIGameFramework, void* pData) override
-	{
-		// Create Schematyc core.
-		std::shared_ptr<CCore> pSchematycCore;
-		if (CryCreateClassInstance(CCore::ms_szClassName, pSchematycCore))
-		{
-			// Register Schematyc core with game framework
-			pIGameFramework->RegisterExtension(pSchematycCore);
-			// Ensure registration was successful and cache local pointer.
-			GetSchematycCore();
-			// Initialize Schematyc core.
-			pSchematycCore->Init();
-			CryLogAlways("Schematyc core initialized");
-			return pSchematycCore.get();
-		}
-		return nullptr;
-	}
-
-public:
-
-	static const char* ms_szClassName;
-};
-
-CRYREGISTER_SINGLETON_CLASS(CSchematycCoreCreator)
-
-CSchematycCoreCreator::CSchematycCoreCreator() {}
-
-CSchematycCoreCreator::~CSchematycCoreCreator() {}
-
-const char* CSchematycCoreCreator::ms_szClassName = "GameExtension::SchematycCoreCreator";
-
-ICore* CreateCore(IGameFramework* pIGameFramework)
-{
-	IGameFrameworkExtensionCreatorPtr pCreator;
-	if (CryCreateClassInstance(CSchematycCoreCreator::ms_szClassName, pCreator))
-	{
-		return cryinterface_cast<ICore>(pCreator->Create(pIGameFramework, nullptr));
-	}
-	return nullptr;
-}
-
-CRYREGISTER_CLASS(CCore)
+CCore* CCore::s_pInstance = nullptr;
 
 CCore::CCore()
 	: m_pEnvRegistry(new CEnvRegistry())
@@ -123,13 +74,17 @@ CCore::CCore()
 
 CCore::~CCore()
 {
+	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	m_pLog->Shutdown();
 	Schematyc::CVars::Unregister();
 }
 
-void CCore::Init()
+bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
-	gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CrySensorSystem", "Plugin_CrySensorSystem");
+	SCHEMATYC_CORE_ASSERT(!s_pInstance);
+	s_pInstance = this;
+
+	ICryPlugin::SetUpdateFlags(EUpdateType_PrePhysicsUpdate | EUpdateType_Update);
 
 	Schematyc::CVars::Register();
 
@@ -159,7 +114,17 @@ void CCore::Init()
 		CUnitTestRegistrar::RunUnitTests();
 	}
 
-	m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", Delegate::Make(&RegisterCoreEnvPackage)));
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+
+	env.pSchematyc = this;
+
+	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", Delegate::Make(&RegisterCoreEnvPackage))))
+	{
+		env.pSchematyc = nullptr;
+		return false;
+	}
+
+	return true;
 }
 
 void CCore::RefreshEnv()
@@ -300,6 +265,18 @@ void CCore::BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params)
 	m_pObjectPool->BroadcastSignal(signalGUID, params);
 }
 
+void CCore::OnPluginUpdate(EPluginUpdateType updateType)
+{
+	if (updateType == IPluginUpdateListener::EUpdateType_PrePhysicsUpdate)
+	{
+		PrePhysicsUpdate();
+	}
+	else if (updateType == IPluginUpdateListener::EUpdateType_Update)
+	{
+		Update();
+	}
+}
+
 void CCore::PrePhysicsUpdate()
 {
 	if (WantPrePhysicsUpdate())
@@ -332,6 +309,26 @@ void CCore::Update()
 		}
 
 		m_pLog->Update();
+	}
+}
+
+void CCore::LoadProjectFiles()
+{
+	GetLogRecorder().Begin();
+
+	CryLogAlways("[Schematyc]: Loading...");
+	CryLogAlways("[Schematyc]: Loading settings");
+	GetSettingsManager().LoadAllSettings();
+	CryLogAlways("[Schematyc]: Loading scripts");
+	GetScriptRegistry().Load();
+	CryLogAlways("[Schematyc]: Compiling scripts");
+	GetCompiler().CompileAll();
+	CryLogAlways("[Schematyc]: Loading complete");
+
+	RefreshLogFileSettings();
+	if (gEnv->IsEditor())
+	{
+		GetLogRecorder().End();
 	}
 }
 
@@ -395,5 +392,13 @@ CCompiler& CCore::GetCompilerImpl()
 	return *m_pCompiler;
 }
 
-const char* CCore::ms_szClassName = "GameExtension::SchematycCore";
+void CCore::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	if (event == ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE)
+	{
+		LoadProjectFiles();
+	}
+}
+
+CRYREGISTER_SINGLETON_CLASS(CCore)
 } // Schematyc

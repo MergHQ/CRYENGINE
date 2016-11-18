@@ -64,10 +64,6 @@ SRuntimeClassConstructor::SRuntimeClassConstructor(uint32 _graphIdx, const SRunt
 	: SRuntimeFunction(_graphIdx, _activationParams)
 {}
 
-SRuntimeClassDestructor::SRuntimeClassDestructor(uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
-	: SRuntimeFunction(_graphIdx, _activationParams)
-{}
-
 SRuntimeClassStateMachine::SRuntimeClassStateMachine(const SGUID& _guid, const char* _szName)
 	: guid(_guid)
 	, name(_szName)
@@ -107,9 +103,10 @@ SRuntimeClassTimer::SRuntimeClassTimer(const SGUID& _guid, const char* _szName, 
 	, params(_params)
 {}
 
-SRuntimeClassComponentInstance::SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx)
+SRuntimeClassComponentInstance::SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx)
 	: guid(_guid)
 	, name(_szName)
+	, bPublic(_bPublic)
 	, componentTypeGUID(_componentTypeGUID)
 	, transform(_transform)
 	, pProperties(_pProperties ? _pProperties->Clone() : IPropertiesPtr())
@@ -246,17 +243,6 @@ const RuntimeClassConstructors& CRuntimeClass::GetConstructors() const
 	return m_constructors;
 }
 
-void CRuntimeClass::AddDestructor(uint32 graphIdx, const SRuntimeActivationParams& activationParams)
-{
-	m_destructors.reserve(5);
-	m_destructors.push_back(SRuntimeClassDestructor(graphIdx, activationParams));
-}
-
-const RuntimeClassDestructors& CRuntimeClass::GetDestructors() const
-{
-	return m_destructors;
-}
-
 uint32 CRuntimeClass::AddStateMachine(const SGUID& guid, const char* szName)
 {
 	m_stateMachines.reserve(10);
@@ -347,21 +333,16 @@ const RuntimeClassStates& CRuntimeClass::GetStates() const
 	return m_states;
 }
 
-uint32 CRuntimeClass::AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value)
+uint32 CRuntimeClass::AddVariable(const SGUID& guid, const char* szName, bool bPublic, const CAnyConstRef& value)
 {
-	const uint32 pos = m_scratchPad.Add(value);
-	m_variables.reserve(20);
-	m_variables.push_back(SRuntimeClassVariable(guid, szName, false, pos));
-	return m_variables.size() - 1;
-}
-
-uint32 CRuntimeClass::AddPublicVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value)
-{
-	m_pDefaultProperties->Add(guid, szName, value);
+	if (bPublic)
+	{
+		m_pDefaultProperties->AddVariable(guid, szName, value);
+	}
 
 	const uint32 pos = m_scratchPad.Add(value);
 	m_variables.reserve(20);
-	m_variables.push_back(SRuntimeClassVariable(guid, szName, true, pos));
+	m_variables.push_back(SRuntimeClassVariable(guid, szName, bPublic, pos));
 	return m_variables.size() - 1;
 }
 
@@ -394,10 +375,15 @@ const RuntimeClassTimers& CRuntimeClass::GetTimers() const
 	return m_timers;
 }
 
-uint32 CRuntimeClass::AddComponentInstance(const SGUID& guid, const char* szName, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx)
+uint32 CRuntimeClass::AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx)
 {
+	if (bPublic && pProperties)
+	{
+		m_pDefaultProperties->AddComponent(guid, szName, *pProperties);
+	}
+
 	m_componentInstances.reserve(10);
-	m_componentInstances.push_back(SRuntimeClassComponentInstance(guid, szName, componentTypeGUID, transform, pProperties, parentIdx));
+	m_componentInstances.push_back(SRuntimeClassComponentInstance(guid, szName, bPublic, componentTypeGUID, transform, pProperties, parentIdx));
 	return m_componentInstances.size() - 1;
 }
 
@@ -533,7 +519,6 @@ void CRuntimeClass::Finalize()
 	m_graphs.shrink_to_fit();
 	m_functions.shrink_to_fit();
 	m_constructors.shrink_to_fit();
-	m_destructors.shrink_to_fit();
 	m_stateMachines.shrink_to_fit();
 	m_states.shrink_to_fit();
 	m_variables.shrink_to_fit();

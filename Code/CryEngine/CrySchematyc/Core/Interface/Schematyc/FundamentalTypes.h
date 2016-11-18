@@ -134,4 +134,6 @@ inline bool Serialize(Serialization::IArchive& archive, ObjectId& value, const c
 	}
 	return true;
 }
+
+constexpr const char* g_szCrytek = "Crytek GmbH";
 } // Schematyc

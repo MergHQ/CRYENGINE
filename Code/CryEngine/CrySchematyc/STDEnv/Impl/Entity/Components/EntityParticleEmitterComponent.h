@@ -15,9 +15,9 @@ class CEntityParticleEmitterComponent final : public CComponent
 {
 private:
 
-	struct SParticleEmitterProperties
+	struct SProperties
 	{
-		SParticleEmitterProperties();
+		SProperties();
 
 		void Serialize(Serialization::IArchive& archive);
 
@@ -30,38 +30,6 @@ private:
 		float              timeScale;
 		float              pulsePeriod;
 		float              strength;
-	};
-
-	struct SProperties
-	{
-		void Serialize(Serialization::IArchive& archive);
-
-		CTransform                 transform;
-		SParticleEmitterProperties particleEmitter;
-	};
-
-	struct SPreviewProperties
-	{
-		SPreviewProperties();
-
-		void Serialize(Serialization::IArchive& archive);
-
-		bool  bShowGizmos;
-		float gizmoLength;
-	};
-
-	class CPreviewer : public IComponentPreviewer
-	{
-	public:
-
-		// IComponentPreviewer
-		virtual void SerializeProperties(Serialization::IArchive& archive) override;
-		virtual void Render(const IObject& object, const CComponent& component, const SRendParams& params, const SRenderingPassInfo& passInfo) const override;
-		// ~IComponentPreviewer
-
-	private:
-
-		SPreviewProperties m_properties;
 	};
 
 public:
@@ -85,8 +53,6 @@ public:
 private:
 
 	void LoadParticleEmitter();
-
-	void RenderGizmo(float gizmoLength) const;
 
 private:
 

@@ -27,11 +27,6 @@ CScriptInterfaceImpl::CScriptInterfaceImpl(const SGUID& guid, EDomain domain, co
 	, m_refGUID(refGUID)
 {}
 
-EScriptElementAccessor CScriptInterfaceImpl::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptInterfaceImpl::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	SCHEMATYC_CORE_ASSERT(!enumerator.IsEmpty());

@@ -52,30 +52,6 @@ void CEntityLightComponent::SProperties::Serialize(Serialization::IArchive& arch
 	archive.doc("Attenuation Bulb Size");
 }
 
-CEntityLightComponent::SPreviewProperties::SPreviewProperties()
-	: bShowGizmos(false)
-	, gizmoLength(1.0f)
-{}
-
-void CEntityLightComponent::SPreviewProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(bShowGizmos, "bShowGizmos", "Show Gizmos");
-	archive(gizmoLength, "gizmoLength", "Gizmo Length");
-}
-
-void CEntityLightComponent::CPreviewer::SerializeProperties(Serialization::IArchive& archive)
-{
-	archive(m_properties, "properties", "Light Component");
-}
-
-void CEntityLightComponent::CPreviewer::Render(const IObject& object, const CComponent& component, const SRendParams& params, const SRenderingPassInfo& passInfo) const
-{
-	if (m_properties.bShowGizmos)
-	{
-		static_cast<const CEntityLightComponent&>(component).RenderGizmo(m_properties.gizmoLength);
-	}
-}
-
 CEntityLightComponent::CEntityLightComponent()
 	: m_slot(EmptySlot)
 	, m_bOn(false)
@@ -141,19 +117,18 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityLightComponent, "Light");
-		pComponent->SetAuthor("Paul Slinger");
+		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity light component");
 		pComponent->SetIcon("icons:schematyc/entity_light_component.png");
 		pComponent->SetFlags(EEnvComponentFlags::Transform);
 		pComponent->SetProperties(SProperties());
-		pComponent->SetPreviewer(CPreviewer());
 		scope.Register(pComponent);
 
 		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityLightComponent::SetTransform, "729721c4-a09e-4903-a8a6-fa69388acfc6"_schematyc_guid, "SetTransform");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set transform");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'trn', "Transform");
@@ -161,7 +136,7 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityLightComponent::Switch, "f3d21e93-054d-4df6-ba31-2b44f0d2e1eb"_schematyc_guid, "Switch");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Switch light on/off");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'on', "On");
@@ -217,20 +192,6 @@ void CEntityLightComponent::FreeSlot()
 	{
 		EntityUtils::GetEntity(*this).FreeSlot(m_slot);
 		m_slot = EmptySlot;
-	}
-}
-
-void CEntityLightComponent::RenderGizmo(float gizmoLength) const
-{
-	if (m_slot != EmptySlot)
-	{
-		IRenderAuxGeom& renderAuxGeom = *gEnv->pRenderer->GetIRenderAuxGeom();
-		const Matrix34 worldTM = EntityUtils::GetEntity(*this).GetSlotWorldTM(m_slot);
-		const float lineThickness = 4.0f;
-
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(255, 0, 0, 255), worldTM.GetTranslation() + (worldTM.GetColumn0().GetNormalized() * gizmoLength), ColorB(255, 0, 0, 255), lineThickness);
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(0, 255, 0, 255), worldTM.GetTranslation() + (worldTM.GetColumn1().GetNormalized() * gizmoLength), ColorB(0, 255, 0, 255), lineThickness);
-		renderAuxGeom.DrawLine(worldTM.GetTranslation(), ColorB(0, 0, 255, 255), worldTM.GetTranslation() + (worldTM.GetColumn2().GetNormalized() * gizmoLength), ColorB(0, 0, 255, 255), lineThickness);
 	}
 }
 } // Schematyc

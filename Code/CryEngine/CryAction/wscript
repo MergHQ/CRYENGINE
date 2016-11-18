@@ -19,8 +19,6 @@ def build(bld):
 		use_module = [
 			'md5',
 			'CryLink', 
-			'CrySchematycCore', 
-			'CrySchematycSTDEnv', 
 			'yasli'
 		],
 		durango_use_module= [

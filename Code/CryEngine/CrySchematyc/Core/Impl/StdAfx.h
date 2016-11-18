@@ -1,5 +1,7 @@
 #pragma once
 
+#define eCryModule eCryM_EnginePlugin
+
 #include <CryCore/Project/CryModuleDefs.h>
 #include <CryCore/Platform/platform.h>
 #include <CryString/CryString.h>

@@ -13,7 +13,6 @@
 
 #include <Schematyc/Script/Elements/IScriptFunction.h>
 #include <Schematyc/Script/Elements/IScriptConstructor.h>
-#include <Schematyc/Script/Elements/IScriptDestructor.h>
 
 #include <Schematyc/Script/IScriptGraph.h>
 #include <Schematyc/Script/IScriptExtension.h>
@@ -45,16 +44,6 @@ CGraphItem::CGraphItem(Schematyc::IScriptConstructor& scriptConstructor, CAbstra
 	, m_pGraphModel(nullptr)
 {
 	m_graphType = eGraphType_Construction;
-	LoadFromScriptElement();
-}
-
-CGraphItem::CGraphItem(Schematyc::IScriptDestructor& scriptDestructor, CAbstractObjectStructureModel& model)
-	: CAbstractObjectStructureModelItem(model)
-	, m_pScriptDestructor(&scriptDestructor)
-	, m_pParentItem(nullptr)
-	, m_pGraphModel(nullptr)
-{
-	m_graphType = eGraphType_Destruction;
 	LoadFromScriptElement();
 }
 

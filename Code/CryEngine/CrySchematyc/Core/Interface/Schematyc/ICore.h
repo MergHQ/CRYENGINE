@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <CryExtension/ClassWeaver.h>
-#include <CryGame/IGameFramework.h>
 #include <CrySerialization/Forward.h>
+#include <CrySystem/ICryPlugin.h>
 
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Utils/Delegate.h"
@@ -39,72 +38,56 @@ DECLARE_SHARED_POINTERS(ISerializationContext)
 DECLARE_SHARED_POINTERS(IValidatorArchive)
 
 typedef CDelegate<SGUID ()> GUIDGenerator;
-
-struct ICore : public ICryUnknown
-{
-	CRYINTERFACE_DECLARE(ICore, 0x041b8bda35d74341, 0xbde7f0ca69be2595)
-
-	virtual void                     SetGUIDGenerator(const GUIDGenerator& guidGenerator) = 0;
-	virtual SGUID                    CreateGUID() const = 0;
-
-	virtual const char*              GetFileFormat() const = 0;
-	virtual const char*              GetRootFolder() const = 0;
-	virtual const char*              GetScriptsFolder() const = 0;     // #SchematycTODO : Do we really need access to this outside script registry?
-	virtual const char*              GetSettingsFolder() const = 0;    // #SchematycTODO : Do we really need access to this outside env registry?
-	virtual bool                     IsExperimentalFeatureEnabled(const char* szFeatureName) const = 0;
-
-	virtual IEnvRegistry&            GetEnvRegistry() = 0;
-	virtual IScriptRegistry&         GetScriptRegistry() = 0;
-	virtual IRuntimeRegistry&        GetRuntimeRegistry() = 0;
-	virtual ICompiler&               GetCompiler() = 0;
-	virtual ILog&                    GetLog() = 0;
-	virtual ILogRecorder&            GetLogRecorder() = 0;
-	virtual ISettingsManager&        GetSettingsManager() = 0;
-	virtual IUpdateScheduler&        GetUpdateScheduler() = 0;
-	virtual ITimerSystem&            GetTimerSystem() = 0;
-
-	virtual IValidatorArchivePtr     CreateValidatorArchive(const SValidatorArchiveParams& params) const = 0;
-	virtual ISerializationContextPtr CreateSerializationContext(const SSerializationContextParams& params) const = 0;
-	virtual IScriptViewPtr           CreateScriptView(const SGUID& scopeGUID) const = 0;
-
-	virtual IObject*                 CreateObject(const SObjectParams& params) = 0;
-	virtual IObject*                 GetObject(ObjectId objectId) = 0;
-	virtual void                     DestroyObject(ObjectId objectId) = 0;
-	virtual void                     SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params) = 0;
-	virtual void                     BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params) = 0;
-
-	virtual void                     PrePhysicsUpdate() = 0;
-	virtual void                     Update() = 0;
-
-	virtual void                     RefreshLogFileSettings() = 0;
-	virtual void                     RefreshEnv() = 0;
-};
-
-// Create core.
-//////////////////////////////////////////////////////////////////////////
-ICore* CreateCore(IGameFramework* pGameFramework);
 } // Schematyc
+
+struct ICrySchematycCore : public ICryPlugin
+{
+	CRYINTERFACE_DECLARE(ICrySchematycCore, 0x041b8bda35d74341, 0xbde7f0ca69be2595)
+
+	virtual void                                SetGUIDGenerator(const Schematyc::GUIDGenerator& guidGenerator) = 0;
+	virtual Schematyc::SGUID                    CreateGUID() const = 0;
+
+	virtual const char*                         GetFileFormat() const = 0;
+	virtual const char*                         GetRootFolder() const = 0;
+	virtual const char*                         GetScriptsFolder() const = 0;     // #SchematycTODO : Do we really need access to this outside script registry?
+	virtual const char*                         GetSettingsFolder() const = 0;    // #SchematycTODO : Do we really need access to this outside env registry?
+	virtual bool                                IsExperimentalFeatureEnabled(const char* szFeatureName) const = 0;
+
+	virtual Schematyc::IEnvRegistry&            GetEnvRegistry() = 0;
+	virtual Schematyc::IScriptRegistry&         GetScriptRegistry() = 0;
+	virtual Schematyc::IRuntimeRegistry&        GetRuntimeRegistry() = 0;
+	virtual Schematyc::ICompiler&               GetCompiler() = 0;
+	virtual Schematyc::ILog&                    GetLog() = 0;
+	virtual Schematyc::ILogRecorder&            GetLogRecorder() = 0;
+	virtual Schematyc::ISettingsManager&        GetSettingsManager() = 0;
+	virtual Schematyc::IUpdateScheduler&        GetUpdateScheduler() = 0;
+	virtual Schematyc::ITimerSystem&            GetTimerSystem() = 0;
+
+	virtual Schematyc::IValidatorArchivePtr     CreateValidatorArchive(const Schematyc::SValidatorArchiveParams& params) const = 0;
+	virtual Schematyc::ISerializationContextPtr CreateSerializationContext(const Schematyc::SSerializationContextParams& params) const = 0;
+	virtual Schematyc::IScriptViewPtr           CreateScriptView(const Schematyc::SGUID& scopeGUID) const = 0;
+
+	virtual Schematyc::IObject*                 CreateObject(const Schematyc::SObjectParams& params) = 0;
+	virtual Schematyc::IObject*                 GetObject(Schematyc::ObjectId objectId) = 0;
+	virtual void                                DestroyObject(Schematyc::ObjectId objectId) = 0;
+	virtual void                                SendSignal(Schematyc::ObjectId objectId, const Schematyc::SGUID& signalGUID, Schematyc::CRuntimeParams& params) = 0;
+	virtual void                                BroadcastSignal(const Schematyc::SGUID& signalGUID, Schematyc::CRuntimeParams& params) = 0;
+
+	virtual void                                RefreshLogFileSettings() = 0;
+	virtual void                                RefreshEnv() = 0;
+};
 
 // Get Schematyc core pointer.
 //////////////////////////////////////////////////////////////////////////
-inline Schematyc::ICore* GetSchematycCorePtr()
+inline ICrySchematycCore* GetSchematycCorePtr()
 {
-	static Schematyc::ICore* pCore = nullptr;
-	if (!pCore)
-	{
-		pCore = gEnv->pGameFramework->QueryExtension<Schematyc::ICore>();
-	}
-	return pCore;
+	CRY_ASSERT(gEnv->pSchematyc);
+	return gEnv->pSchematyc;
 }
 
 // Get Schematyc core.
 //////////////////////////////////////////////////////////////////////////
-inline Schematyc::ICore& GetSchematycCore()
+inline ICrySchematycCore& GetSchematycCore()
 {
-	Schematyc::ICore* pCore = GetSchematycCorePtr();
-	if (!pCore)
-	{
-		CryFatalError("Schematyc core uninitialized!");
-	}
-	return *pCore;
+	return *GetSchematycCorePtr();
 }

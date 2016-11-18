@@ -16,11 +16,6 @@ CScriptModule::CScriptModule(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::MustOwnScript)
 {}
 
-EScriptElementAccessor CScriptModule::GetAccessor() const
-{
-	return EScriptElementAccessor::Public;
-}
-
 void CScriptModule::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptModule::RemapDependencies(IGUIDRemapper& guidRemapper)                                                        {}

@@ -90,12 +90,13 @@ end_sources()
 #END-FILE-LIST
 
 if(PLUGIN_SCHEMATYC)
-	CryEngineStaticModule(CrySchematycSTDEnv PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	CryEngineModule(CrySchematycSTDEnv PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
 	target_compile_definitions(${THIS_PROJECT}
 	PRIVATE
 		-DSCHEMATYC_EXPORTS INTERFACE
 		-DUSE_SCHEMATYC_STD_ENV
 	)
+	target_link_libraries (${THIS_PROJECT} PRIVATE yasli)
 	target_include_directories(${THIS_PROJECT}
 	PRIVATE
 		${CRYENGINE_DIR}/Code/CryEngine/CryAction

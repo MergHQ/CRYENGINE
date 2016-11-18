@@ -8,6 +8,7 @@ namespace Schematyc
 {
 // Forward declare interfaces.
 struct IObjectProperties;
+struct IProperties;
 // Forward declare structures.
 struct SGUID;
 // Forward declare classes.
@@ -21,6 +22,7 @@ struct IObjectProperties // #SchematycTODO : Derive from IProperties?
 
 	virtual IObjectPropertiesPtr Clone() const = 0;
 	virtual void                 Serialize(Serialization::IArchive& archive) = 0;
-	virtual bool                 Read(const CAnyRef& value, const SGUID& guid) const = 0;
+	virtual const IProperties*   GetComponentProperties(const SGUID& guid) const = 0;
+	virtual bool                 ReadVariable(const CAnyRef& value, const SGUID& guid) const = 0;
 };
 } // Schematyc

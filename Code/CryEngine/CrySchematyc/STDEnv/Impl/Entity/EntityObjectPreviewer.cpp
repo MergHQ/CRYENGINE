@@ -36,7 +36,7 @@ ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 			IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(entitySpawnParams, true);
 			if (pEntity)
 			{
-				return GetSchematycSTDEnvImpl().GetEntityObjectMap().GetEntityObjectId(pEntity->GetId());
+				return CSTDEnv::GetInstance()->GetEntityObjectMap().GetEntityObjectId(pEntity->GetId());
 			}
 		}
 	}

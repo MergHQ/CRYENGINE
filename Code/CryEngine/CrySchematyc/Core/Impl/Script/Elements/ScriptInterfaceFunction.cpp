@@ -24,11 +24,6 @@ CScriptInterfaceFunction::CScriptInterfaceFunction(const SGUID& guid, const char
 	: CScriptElementBase(guid, szName)
 {}
 
-EScriptElementAccessor CScriptInterfaceFunction::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptInterfaceFunction::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	ScriptParam::EnumerateDependencies(m_inputs, enumerator, type);

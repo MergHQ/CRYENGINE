@@ -27,18 +27,23 @@ public:
 	virtual void                            VisitEnvActions(const EnvActionConstVisitor& visitor) const override;
 
 	virtual void                            VisitScriptModules(const ScriptModuleConstVisitor& visitor) const override;
-	virtual void                            VisitScriptEnums(const ScriptEnumConstVisitor& visitor, EDomainScope scope) const override;
-	virtual void                            VisitScriptStructs(const ScriptStructConstVisitor& visitor, EDomainScope scope) const override;
-	virtual void                            VisitScriptSignals(const ScriptSignalConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptFunctions(const ScriptFunctionConstVisitor& visitor) const override;
 	virtual void                            VisitScriptClasses(const ScriptClassConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptStates(const ScriptStateConstVisitor& visitor, EDomainScope scope) const override;
-	virtual void                            VisitScriptStateMachines(const ScriptStateMachineConstVisitor& visitor, EDomainScope scope) const override;
+	//virtual void                            VisitScriptStateMachines(const ScriptStateMachineConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptVariables(const ScriptVariableConstVisitor& visitor, EDomainScope scope) const override;
-	virtual void                            VisitScriptTimers(const ScriptTimerConstVisitor& visitor, EDomainScope scope) const override;
 	//virtual void                            VisitInterfaceImpls(const ScriptTimerConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptComponentInstances(const ScriptComponentInstanceConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptActionInstances(const ScriptActionInstanceConstVisitor& visitor, EDomainScope scope) const override;
+
+	virtual void                            VisitEnclosedEnums(const ScriptEnumConstVisitor& visitor) const override;
+	virtual void                            VisitAccesibleEnums(const ScriptEnumConstVisitor& visitor) const override;
+	virtual void                            VisitEnclosedStructs(const ScriptStructConstVisitor& visitor) const override;
+	virtual void                            VisitAccesibleStructs(const ScriptStructConstVisitor& visitor) const override;
+	virtual void                            VisitEnclosedSignals(const ScriptSignalConstVisitor& visitor) const override;
+	virtual void                            VisitAccesibleSignals(const ScriptSignalConstVisitor& visitor) const override;
+	virtual void                            VisitEnclosedTimers(const ScriptTimerConstVisitor& visitor) const override;
+	virtual void                            VisitAccesibleTimers(const ScriptTimerConstVisitor& visitor) const override;
 
 	virtual const IScriptStateMachine*      GetScriptStateMachine(const SGUID& guid) const override;
 	virtual const IScriptComponentInstance* GetScriptComponentInstance(const SGUID& guid) const override;
@@ -52,6 +57,8 @@ public:
 	virtual bool                            QualifyName(const IEnvComponent& envComponent, IString& output) const override;
 	virtual void                            QualifyName(const IEnvElement& envElement, IString& output) const override;
 	virtual bool                            QualifyName(const IScriptElement& scriptElement, EDomainQualifier qualifier, IString& output) const override;
+
+	//virtual bool                            QualifyName(const IScriptElement& scriptElement, EScriptElementAccessor accessor, IString& output) const override;
 
 	// ~IScriptView
 

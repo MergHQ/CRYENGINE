@@ -41,11 +41,6 @@ CScriptSignalReceiver::CScriptSignalReceiver(const SGUID& guid, const char* szNa
 	CreateGraph();
 }
 
-EScriptElementAccessor CScriptSignalReceiver::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptSignalReceiver::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	SCHEMATYC_CORE_ASSERT(!enumerator.IsEmpty());

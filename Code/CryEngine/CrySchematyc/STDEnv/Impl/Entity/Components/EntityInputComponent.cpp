@@ -319,7 +319,7 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityInputComponent, "Input");
-			pComponent->SetAuthor("Crytek");
+			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity input component");
 			pComponent->SetIcon("icons:Game/Game_Play.ico");
 			pComponent->SetFlags(EEnvComponentFlags::None);
@@ -330,14 +330,14 @@ namespace Schematyc
 			//Types
 			{
 				auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(EInputDeviceType, "InputDeviceType");
-				pDataType->SetAuthor("Crytek");
+				pDataType->SetAuthor(g_szCrytek);
 				pDataType->SetDescription("Input device type");
 				pDataType->SetDefaultValue(EInputDeviceType::eIDT_Gamepad);
 				componentScope.Register(pDataType);
 			}
 			{
 				auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(EKeyId, "InputKeyId");
-				pDataType->SetAuthor("Crytek");
+				pDataType->SetAuthor(g_szCrytek);
 				pDataType->SetDescription("Input KeyId");
 				pDataType->SetDefaultValue(EKeyId::eKI_XI_A);
 				componentScope.Register(pDataType);
@@ -346,13 +346,13 @@ namespace Schematyc
 			// Signals
 			{
 				auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SActionPressedSignal, "ActionPressed");
-				pSignal->SetAuthor("Crytek");
+				pSignal->SetAuthor(g_szCrytek);
 				pSignal->SetDescription("Sent when input action is pressed.");
 				componentScope.Register(pSignal);
 			}
 			{
 				auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SActionReleasedSignal, "ActionReleased");
-				pSignal->SetAuthor("Crytek");
+				pSignal->SetAuthor(g_szCrytek);
 				pSignal->SetDescription("Sent when input action is released.");
 				componentScope.Register(pSignal);
 			}
@@ -360,7 +360,7 @@ namespace Schematyc
 			// Function
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityInputComponent::GetKeyValue, "9108B96B-AEC2-4E6E-8211-FA65B31CBB82"_schematyc_guid, "GetKeyValue");
-				pFunction->SetAuthor("Crytek");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Returns the current value of the button");
 				pFunction->BindInput(1, 'dis', "Key");
 				pFunction->BindOutput(0, 'val', "Value");

@@ -4,6 +4,7 @@
 #include "Script/Script.h"
 
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ITimer.h>
 #include <Schematyc/ICore.h>
 #include <Schematyc/Script/IScriptElement.h>
 #include <Schematyc/Utils/Assert.h>
@@ -41,7 +42,7 @@ namespace Schematyc
 
 		StringUtils::ToSnakeCase(name);
 
-		ICore& core = GetSchematycCore();
+		ICrySchematycCore& core = GetSchematycCore();
 
 		string path = gEnv->pCryPak->GetGameFolder();
 		path.append("/");

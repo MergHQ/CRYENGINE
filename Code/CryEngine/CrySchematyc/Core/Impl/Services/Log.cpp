@@ -13,6 +13,7 @@
 #include <Schematyc/Utils/ScopedConnection.h>
 
 #include "CVars.h"
+#include "Core.h"
 
 SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, ELogMessageType, "Schematyc Log Message Type")
 SERIALIZATION_ENUM(Schematyc::ELogMessageType::Comment, "Comment", "Comment")
@@ -289,7 +290,8 @@ void CLog::Init()
 	CreateStream("Compiler", LogStreamId::Compiler);
 	CreateStream("Editor", LogStreamId::Editor);
 	CreateStream("Environment", LogStreamId::Env);
-	GetSchematycCore().GetSettingsManager().RegisterSettings("log_settings", m_pSettings);
+
+	GetSchematycCoreImpl().GetSettingsManager().RegisterSettings("log_settings", m_pSettings);
 	REGISTER_COMMAND("sc_CriticalError", LogUtils::CriticalErrorCommand, VF_NULL, "Trigger Schematyc critical error");
 	REGISTER_COMMAND("sc_FatalError", LogUtils::FatalErrorCommand, VF_NULL, "Trigger Schematyc fatal error");
 }

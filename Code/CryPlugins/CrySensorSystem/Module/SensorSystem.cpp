@@ -81,7 +81,7 @@ void CSensorSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_GAME_POST_INIT:
+	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
 		{
 			const Schematyc::SGUID guid = "e5f633a6-472d-470c-a78d-86bd2383092d"_schematyc_guid;
 			const char* szName = "SensorSystem";

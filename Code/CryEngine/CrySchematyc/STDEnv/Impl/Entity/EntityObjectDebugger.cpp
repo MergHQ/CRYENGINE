@@ -166,6 +166,6 @@ void CEntityObjectDebugger::Update(const SUpdateContext&)
 		}
 		return EVisitStatus::Continue;
 	};
-	GetSchematycSTDEnvImpl().GetEntityObjectMap().VisitEntityObjects(EntityObjectVisitor::FromLambda(visitEntityObject));
+	CSTDEnv::GetInstance()->GetEntityObjectMap().VisitEntityObjects(EntityObjectVisitor::FromLambda(visitEntityObject));
 }
 } // Schematyc

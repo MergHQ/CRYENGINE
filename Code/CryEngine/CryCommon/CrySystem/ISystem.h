@@ -146,6 +146,8 @@ namespace JobManager {
 struct IJobManager;
 }
 
+struct ICrySchematycCore;
+
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
 
@@ -462,6 +464,9 @@ enum ESystemEvent
 
 	// Sent when flow nodes should be registered
 	ESYSTEM_EVENT_REGISTER_FLOWNODES,
+
+	//! Sent if the CryAction module initialized successfully. (Remark: Sent after ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE and after (potential) game init was called)
+	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE
 };
 
 //! User defined callback, which can be passed to ISystem.
@@ -834,6 +839,7 @@ struct SSystemGlobalEnvironment
 	DRS::IDynamicResponseSystem* pDynamicResponseSystem;
 	IThreadManager*              pThreadManager;
 	IScaleformHelper*            pScaleformHelper; // nullptr when Scaleform support is not enabled
+	ICrySchematycCore*           pSchematyc;
 
 #if CRY_PLATFORM_DURANGO
 	void*      pWindow;

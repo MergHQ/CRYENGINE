@@ -68,7 +68,7 @@ void CEntityMovementComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityMovementComponent, "Movement");
-		pComponent->SetAuthor("Paul Slinger");
+		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity movement component");
 		pComponent->SetIcon("icons:Navigation/Move_Classic.ico");
 		pComponent->SetFlags(EEnvComponentFlags::Singleton);
@@ -78,21 +78,21 @@ void CEntityMovementComponent::Register(IEnvRegistrar& registrar)
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Move, "07209f7e-db47-4e2b-86a8-d6ea01ccf22c"_schematyc_guid, "Move");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Move entity");
 			pFunction->BindInput(1, 'vel', "Velocity", "Velocity in meters per second", Vec3(ZERO));
 			componentScope.Register(pFunction);
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::SetRotation, "804855a4-a998-4fb0-9787-d2edd0b844dd"_schematyc_guid, "SetRotation");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set entity's rotation");
 			pFunction->BindInput(1, 'rot', "Rotation", "Target rotation");
 			componentScope.Register(pFunction);
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Teleport, "56fcb8c0-1f1b-48b6-9ee6-1f202f969d84"_schematyc_guid, "Teleport");
-			pFunction->SetAuthor("Paul Slinger");
+			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Teleport entity");
 			pFunction->BindInput(1, 'trns', "Transform", "Target transform");
 			componentScope.Register(pFunction);

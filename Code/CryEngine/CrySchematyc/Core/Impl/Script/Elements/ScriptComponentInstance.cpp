@@ -41,7 +41,7 @@ CScriptComponentInstance::CScriptComponentInstance(const SGUID& guid, const char
 
 EScriptElementAccessor CScriptComponentInstance::GetAccessor() const
 {
-	return EScriptElementAccessor::Private;
+	return m_accessor;
 }
 
 void CScriptComponentInstance::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
@@ -96,16 +96,13 @@ const IProperties* CScriptComponentInstance::GetProperties() const
 
 void CScriptComponentInstance::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	if (!archive(m_typeGUID, "typeGUID"))
-	{
-		archive(m_typeGUID, "componentTypeGUID"); // #SchematycTODO : Remove!
-	}
+	archive(m_typeGUID, "typeGUID");
 }
 
 void CScriptComponentInstance::Load(Serialization::IArchive& archive, const ISerializationContext& context)
 {
 	ApplyComponent();
-
+	archive(m_accessor, "accessor");
 	archive(m_transform, "transform");
 	if (m_pProperties)
 	{
@@ -115,6 +112,7 @@ void CScriptComponentInstance::Load(Serialization::IArchive& archive, const ISer
 
 void CScriptComponentInstance::Save(Serialization::IArchive& archive, const ISerializationContext& context)
 {
+	archive(m_accessor, "accessor");
 	archive(m_typeGUID, "typeGUID");
 	archive(m_transform, "transform");
 	if (m_pProperties)
@@ -125,6 +123,15 @@ void CScriptComponentInstance::Save(Serialization::IArchive& archive, const ISer
 
 void CScriptComponentInstance::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
+	if (m_pProperties)
+	{
+		bool bPublic = m_accessor == EScriptElementAccessor::Public;
+		archive(bPublic, "bPublic", "Public");
+		if (archive.isInput())
+		{
+			m_accessor = bPublic ? EScriptElementAccessor::Public : EScriptElementAccessor::Private;
+		}
+	}
 	if (m_bHasTransform)
 	{
 		archive(m_transform, "transform", "Transform");

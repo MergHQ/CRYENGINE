@@ -16,7 +16,6 @@
 #include <Schematyc/Script/Elements/IScriptClass.h>
 #include <Schematyc/Script/Elements/IScriptComponentInstance.h>
 #include <Schematyc/Script/Elements/IScriptConstructor.h>
-#include <Schematyc/Script/Elements/IScriptDestructor.h>
 #include <Schematyc/Script/Elements/IScriptEnum.h>
 #include <Schematyc/Script/Elements/IScriptSignalReceiver.h>
 #include <Schematyc/Script/Elements/IScriptState.h>
@@ -35,7 +34,6 @@
 #include "Runtime/RuntimeRegistry.h"
 #include "Script/ScriptEnumValue.h"
 #include "Script/ScriptStructValue.h"
-#include "Script/ScriptView.h"
 #include "Utils/InterfaceMap.h"
 
 namespace Schematyc
@@ -126,7 +124,27 @@ private:
 	uint32      m_graphNodeIdx;
 	SGraphNode& m_output;
 };
+
+inline void QualifyScriptElementName(CStackString& output, const IScriptElement& element, EScriptElementType scopeType)
+{
+	output.clear();
+	for (const IScriptElement* pScope = &element; pScope; pScope = pScope->GetParent())
+	{
+		if (pScope->GetElementType() == scopeType)
+		{
+			break;
+		}
+		else
+		{
+			if (!output.empty())
+			{
+				output.insert(0, "::");
+			}
+			output.insert(0, pScope->GetName());
+		}
+	}
 }
+} // Anonymous
 
 void CCompiler::CompileAll()
 {
@@ -273,12 +291,10 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 		CLogMetaData logMetaData;
 		SLogScope logScope(logMetaData);
 
-		// Format class name.
-
-		CScriptView scriptView(classGUID);
+		// Qualify class name.
 
 		CStackString className;
-		scriptView.QualifyName(scriptClass, EDomainQualifier::Global, className);
+		QualifyScriptElementName(className, scriptClass, EScriptElementType::Root);
 
 		// Create new class.
 
@@ -360,16 +376,11 @@ bool CCompiler::CompileComponentInstancesRecursive(SCompilerContext& context, CR
 			}
 		case EScriptElementType::ComponentInstance:
 			{
+				CStackString componentName;
+				QualifyScriptElementName(componentName, *pScriptElement, EScriptElementType::Class);
+				
 				const IScriptComponentInstance& scriptComponentInstance = DynamicCast<const IScriptComponentInstance>(*pScriptElement);
-				const SGUID componentInstanceGUID = scriptComponentInstance.GetGUID();
-
-				const IScriptGraph* pScriptGraph = static_cast<const IScriptGraph*>(scriptComponentInstance.GetExtensions().QueryExtension(EScriptExtensionType::Graph));
-				if (pScriptGraph)
-				{
-					context.tasks.CompileGraph(*pScriptGraph);
-				}
-
-				const uint32 componentInstanceIdx = runtimeClass.AddComponentInstance(componentInstanceGUID, scriptComponentInstance.GetName(), scriptComponentInstance.GetTypeGUID(), scriptComponentInstance.GetTransform(), scriptComponentInstance.GetProperties(), parentIdx);
+				const uint32 componentInstanceIdx = runtimeClass.AddComponentInstance(scriptComponentInstance.GetGUID(), componentName.c_str(), scriptComponentInstance.GetAccessor() == EScriptElementAccessor::Public, scriptComponentInstance.GetTypeGUID(), scriptComponentInstance.GetTransform(), scriptComponentInstance.GetProperties(), parentIdx);
 				CompileComponentInstancesRecursive(context, runtimeClass, componentInstanceIdx, *pScriptElement);
 				break;
 			}
@@ -387,11 +398,6 @@ bool CCompiler::CompileElementsRecursive(SCompilerContext& context, CRuntimeClas
 		case EScriptElementType::Constructor:
 			{
 				CompileConstructor(context, runtimeClass, DynamicCast<const IScriptConstructor>(*pScriptElement));
-				break;
-			}
-		case EScriptElementType::Destructor:
-			{
-				CompileDestructor(context, runtimeClass, DynamicCast<const IScriptDestructor>(*pScriptElement));
 				break;
 			}
 		case EScriptElementType::StateMachine:
@@ -435,16 +441,6 @@ bool CCompiler::CompileConstructor(SCompilerContext& context, CRuntimeClass& run
 	return true;
 }
 
-bool CCompiler::CompileDestructor(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptDestructor& scriptDestructor) const
-{
-	const IScriptGraph* pScriptGraph = scriptDestructor.GetExtensions().QueryExtension<const IScriptGraph>();
-	if (pScriptGraph)
-	{
-		context.tasks.CompileGraph(*pScriptGraph);
-	}
-	return true;
-}
-
 bool CCompiler::CompileStateMachine(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptStateMachine& scriptStateMachine) const
 {
 	const IScriptGraph* pScriptGraph = scriptStateMachine.GetExtensions().QueryExtension<const IScriptGraph>();
@@ -468,14 +464,7 @@ bool CCompiler::CompileVariable(SCompilerContext& context, CRuntimeClass& runtim
 	CAnyConstPtr pData = scriptVariable.GetData();
 	if (pData)
 	{
-		if (scriptVariable.GetAccessor() == EScriptElementAccessor::Public)
-		{
-			runtimeClass.AddPublicVariable(scriptVariable.GetGUID(), scriptVariable.GetName(), *pData);
-		}
-		else
-		{
-			runtimeClass.AddVariable(scriptVariable.GetGUID(), scriptVariable.GetName(), *pData);
-		}
+		runtimeClass.AddVariable(scriptVariable.GetGUID(), scriptVariable.GetName(), scriptVariable.GetAccessor() == EScriptElementAccessor::Public, *pData);
 		return true;
 	}
 	return false;

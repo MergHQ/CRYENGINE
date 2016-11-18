@@ -22,11 +22,6 @@ CScriptEnum::CScriptEnum(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::CanOwnScript)
 {}
 
-EScriptElementAccessor CScriptEnum::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptEnum::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptEnum::RemapDependencies(IGUIDRemapper& guidRemapper) {}

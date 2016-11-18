@@ -130,7 +130,6 @@ private:
 	bool ReadProperties();
 
 	void ExecuteConstructors(ESimulationMode simulationMode);
-	void ExecuteDestructors();
 
 	bool CreateStateMachines();
 	void StartStateMachines(ESimulationMode simulationMode);

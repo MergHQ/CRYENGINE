@@ -16,7 +16,6 @@
 #include <Schematyc/Script/Elements/IScriptComponentInstance.h>
 #include <Schematyc/Script/Elements/IScriptFunction.h>
 #include <Schematyc/Script/Elements/IScriptConstructor.h>
-#include <Schematyc/Script/Elements/IScriptDestructor.h>
 #include <Schematyc/Script/Elements/IScriptStateMachine.h>
 #include <Schematyc/Script/Elements/IScriptInterface.h>
 #include <Schematyc/Script/Elements/IScriptVariable.h>
@@ -247,13 +246,6 @@ void CObjectModel::LoadFromScriptElement()
 		case Schematyc::EScriptElementType::Constructor:
 			{
 				Schematyc::IScriptConstructor& scriptElement = static_cast<Schematyc::IScriptConstructor&>(*pElement);
-				CGraphItem* pFunctionItem = new CGraphItem(scriptElement, *this);
-				m_graphs.push_back(pFunctionItem);
-			}
-			break;
-		case Schematyc::EScriptElementType::Destructor:
-			{
-				Schematyc::IScriptDestructor& scriptElement = static_cast<Schematyc::IScriptDestructor&>(*pElement);
 				CGraphItem* pFunctionItem = new CGraphItem(scriptElement, *this);
 				m_graphs.push_back(pFunctionItem);
 			}

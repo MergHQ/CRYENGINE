@@ -117,13 +117,6 @@ void CScriptGraphReceiveSignalNode::Compile(SCompilerContext& context, IGraphNod
 	if (pClass)
 	{
 		const IScriptElement* pOwner = CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetParent();
-		for (; pOwner; pOwner = pOwner->GetParent())
-		{
-			if (pOwner->GetElementType() != EScriptElementType::Filter)
-			{
-				break;
-			}
-		}
 		switch (pOwner->GetElementType())
 		{
 		case EScriptElementType::Class:
@@ -261,25 +254,23 @@ void CScriptGraphReceiveSignalNode::Register(CScriptGraphNodeFactory& factory)
 					};
 					scriptView.VisitEnvSignals(EnvSignalConstVisitor::FromLambda(visitEnvSignal));
 
-					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal) -> EVisitStatus
+					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal)
 					{
 						CStackString label;
 						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, label);
 						label.append("::ReceiveSignal");
 						nodeCreationMenu.AddOption(label.c_str(), scriptSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptSignal.GetGUID())));
-						return EVisitStatus::Continue;
 					};
-					scriptView.VisitScriptSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal), EDomainScope::Local);
+					scriptView.VisitAccesibleSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
 
-					auto visitScriptTimer = [&nodeCreationMenu, &scriptView](const IScriptTimer& scriptTimer) -> EVisitStatus
+					auto visitScriptTimer = [&nodeCreationMenu, &scriptView](const IScriptTimer& scriptTimer)
 					{
 						CStackString label;
 						scriptView.QualifyName(scriptTimer, EDomainQualifier::Global, label);
 						label.append("::ReceiveSignal");
 						nodeCreationMenu.AddOption(label.c_str(), scriptTimer.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptTimer.GetGUID())));
-						return EVisitStatus::Continue;
 					};
-					scriptView.VisitScriptTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer), EDomainScope::Local);
+					scriptView.VisitAccesibleTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer));
 
 					break;
 				}

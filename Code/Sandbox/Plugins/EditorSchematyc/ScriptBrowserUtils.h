@@ -16,7 +16,6 @@ struct IScriptClass;
 struct IScriptComponentInstance;
 struct IScriptEnum;
 struct IScriptFunction;
-struct IScriptImport;
 struct IScriptInterface;
 struct IScriptInterfaceFunction;
 struct IScriptInterfaceImpl;
@@ -42,7 +41,6 @@ void                      MakeScriptElementNameUnique(CStackString& name, IScrip
 void                      FindReferences(const IScriptElement& element);
 
 IScriptModule*            AddScriptModule(IScriptElement* pScope);
-IScriptImport*            AddScriptImport(IScriptElement* pScope);
 IScriptEnum*              AddScriptEnum(IScriptElement* pScope);
 IScriptStruct*            AddScriptStruct(IScriptElement* pScope);
 IScriptSignal*            AddScriptSignal(IScriptElement* pScope);

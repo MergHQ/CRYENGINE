@@ -103,10 +103,8 @@ void CTypesDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 			entry.m_name = name.c_str();
 			entry.m_elementId = Schematyc::SElementId(Schematyc::EDomain::Script, scriptEnum.GetGUID());
 			m_types.push_back(entry);
-
-			return Schematyc::EVisitStatus::Continue;
 		};
-		pScriptView->VisitScriptEnums(Schematyc::ScriptEnumConstVisitor::FromLambda(visitScriptEnum), Schematyc::EDomainScope::Local);
+		pScriptView->VisitAccesibleEnums(Schematyc::ScriptEnumConstVisitor::FromLambda(visitScriptEnum));
 
 		auto visitScriptStruct = [this, &pScriptView](const Schematyc::IScriptStruct& scriptStruct)
 		{

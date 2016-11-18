@@ -36,7 +36,7 @@ void CEntityObjectAttribute::Serialize(Serialization::IArchive& archive)
 
 	if (m_pProperties)
 	{
-		archive(*m_pProperties, "properties", "Properties");
+		m_pProperties->Serialize(archive);
 
 		if (archive.isInput())
 		{

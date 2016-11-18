@@ -26,7 +26,7 @@ CSharedString GetEntityName(ExplicitEntityId entityId)
 
 ObjectId GetEntityObjectId(ExplicitEntityId entityId)
 {
-	return GetSchematycSTDEnvImpl().GetEntityObjectMap().GetEntityObjectId(static_cast<EntityId>(entityId));
+	return CSTDEnv::GetInstance()->GetEntityObjectMap().GetEntityObjectId(static_cast<EntityId>(entityId));
 }
 
 static void RegisterUtilFunctions(IEnvRegistrar& registrar)
@@ -34,7 +34,7 @@ static void RegisterUtilFunctions(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&GetEntityName, "955ca6c4-5b0a-4150-aaba-79e2939e85f7"_schematyc_guid, "GetEntityName");
-		pFunction->SetAuthor("Paul Slinger");
+		pFunction->SetAuthor(g_szCrytek);
 		pFunction->SetDescription("Get name of entity");
 		pFunction->BindInput(1, 'ent', "EntityId");
 		pFunction->BindOutput(0, 'name', "Name");
@@ -42,7 +42,7 @@ static void RegisterUtilFunctions(IEnvRegistrar& registrar)
 	}
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&GetEntityObjectId, "cdd011ac-14a1-403b-af21-28d9e77e562d"_schematyc_guid, "GetEntityObjectId");
-		pFunction->SetAuthor("Paul Slinger");
+		pFunction->SetAuthor(g_szCrytek);
 		pFunction->SetDescription("Get object id from entity");
 		pFunction->BindInput(1, 'ent', "EntityId");
 		pFunction->BindOutput(0, 'obj', "ObjectId");

@@ -53,6 +53,7 @@ private:
 
 private:
 
+	EScriptElementAccessor       m_accessor = EScriptElementAccessor::Private;
 	SGUID                        m_typeGUID;
 	ScriptComponentInstanceFlags m_flags;
 	bool                         m_bHasTransform = false;

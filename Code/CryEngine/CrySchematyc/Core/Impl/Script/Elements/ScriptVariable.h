@@ -47,9 +47,9 @@ protected:
 
 private:
 
-	EScriptElementAccessor m_accessor;
+	EScriptElementAccessor m_accessor = EScriptElementAccessor::Private;
 	CScriptVariableData    m_data;
 	SGUID                  m_baseGUID;
-	EOverridePolicy        m_overridePolicy;
+	EOverridePolicy        m_overridePolicy = EOverridePolicy::Default;
 };
 } // Schematyc

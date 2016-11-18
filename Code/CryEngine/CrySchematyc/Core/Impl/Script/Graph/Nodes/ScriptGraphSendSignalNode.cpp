@@ -213,15 +213,14 @@ void CScriptGraphSendSignalNode::Register(CScriptGraphNodeFactory& factory)
 			case EScriptGraphType::Signal:
 			case EScriptGraphType::Function:
 				{
-					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal) -> EVisitStatus
+					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal)
 					{
 						CStackString label;
 						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, label);
 						label.append("::SendSignal");
 						nodeCreationMenu.AddOption(label.c_str(), scriptSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(scriptSignal.GetGUID()));
-						return EVisitStatus::Continue;
 					};
-					scriptView.VisitScriptSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal), EDomainScope::Local);
+					scriptView.VisitAccesibleSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
 
 					break;
 				}

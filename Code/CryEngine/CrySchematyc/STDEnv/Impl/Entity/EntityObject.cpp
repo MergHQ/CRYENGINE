@@ -35,7 +35,8 @@ bool CEntityObject::Init(IEntity* pEntity, bool bIsPreview)
 
 void CEntityObject::PostInit()
 {
-	const bool bEditing = gEnv->IsEditing() && !GetSchematycSTDEnvImpl().GetSystemStateMonitor().LoadingLevel();
+	
+	const bool bEditing = gEnv->IsEditing() && !CSTDEnv::GetInstance()->GetSystemStateMonitor().LoadingLevel();
 	CreateObject(m_bIsPreview ? ESimulationMode::Preview : bEditing ? ESimulationMode::Editor : ESimulationMode::Idle);
 }
 
@@ -57,7 +58,7 @@ void CEntityObject::CreateObject(ESimulationMode simulationMode)
 			if (m_pObject)
 			{
 				pEntityObjectAttribute->GetChangeSignalSlots().Connect(Delegate::Make(*this, &CEntityObject::OnPropertiesChange), m_connectionScope);
-				GetSchematycSTDEnvImpl().GetEntityObjectMap().AddEntity(m_pEntity->GetId(), m_pObject->GetId());
+				CSTDEnv::GetInstance()->GetEntityObjectMap().AddEntity(m_pEntity->GetId(), m_pObject->GetId());
 			}
 			else
 			{
@@ -71,7 +72,7 @@ void CEntityObject::DestroyObject()
 {
 	if (m_pObject)
 	{
-		GetSchematycSTDEnvImpl().GetEntityObjectMap().RemoveEntity(m_pEntity->GetId());
+		CSTDEnv::GetInstance()->GetEntityObjectMap().RemoveEntity(m_pEntity->GetId());
 		GetSchematycCore().DestroyObject(m_pObject->GetId());
 
 		m_pObject = nullptr;

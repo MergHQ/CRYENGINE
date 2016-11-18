@@ -18,11 +18,9 @@
       <file alias="schematyc/script_action.png">icons/script_action.png</file>
       <file alias="schematyc/script_component.png">icons/script_component.png</file>
       <file alias="schematyc/script_constructor.png">icons/script_constructor.png</file>
-      <file alias="schematyc/script_destructor.png">icons/script_destructor.png</file>
       <file alias="schematyc/script_element.png">icons/script_element.png</file>
       <file alias="schematyc/script_enum.png">icons/script_enum.png</file>
       <file alias="schematyc/script_function.png">icons/script_function.png</file>
-      <file alias="schematyc/script_import.png">icons/script_import.png</file>
       <file alias="schematyc/script_interface.png">icons/script_interface.png</file>
       <file alias="schematyc/script_interface_function.png">icons/script_interface_function.png</file>
       <file alias="schematyc/script_interface_task.png">icons/script_interface_task.png</file>

@@ -9,11 +9,6 @@ CScriptRoot::CScriptRoot()
 	: CScriptElementBase(SGUID(), "Root", EScriptElementFlags::FixedName)
 {}
 
-EScriptElementAccessor CScriptRoot::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptRoot::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptRoot::RemapDependencies(IGUIDRemapper& guidRemapper)                                                        {}

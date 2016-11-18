@@ -24,11 +24,6 @@ CScriptTimer::CScriptTimer(const SGUID& guid, const char* szName)
 	, m_params(STimerDuration(1.0f), ETimerFlags::AutoStart)
 {}
 
-EScriptElementAccessor CScriptTimer::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptTimer::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptTimer::RemapDependencies(IGUIDRemapper& guidRemapper) {}

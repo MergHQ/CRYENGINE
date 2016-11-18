@@ -17,10 +17,8 @@ struct IScriptBase;
 struct IScriptClass;
 struct IScriptComponentInstance;
 struct IScriptConstructor;
-struct IScriptDestructor;
 struct IScriptEnum;
 struct IScriptFunction;
-struct IScriptImport;
 struct IScriptInterface;
 struct IScriptInterfaceFunction;
 struct IScriptInterfaceImpl;
@@ -80,12 +78,10 @@ struct IScriptRegistry
 	virtual bool                               IsValidName(const char* szName, IScriptElement* pScope, const char*& szErrorMessage) const = 0;
 
 	virtual IScriptModule*                     AddModule(const char* szName, IScriptElement* pScope) = 0;
-	virtual IScriptImport*                     AddImport(const SGUID& moduleGUID, IScriptElement* pScope) = 0;
 	virtual IScriptEnum*                       AddEnum(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptStruct*                     AddStruct(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptSignal*                     AddSignal(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptConstructor*                AddConstructor(const char* szName, IScriptElement* pScope) = 0;
-	virtual IScriptDestructor*                 AddDestructor(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptFunction*                   AddFunction(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptInterface*                  AddInterface(const char* szName, IScriptElement* pScope) = 0;
 	virtual IScriptInterfaceFunction*          AddInterfaceFunction(const char* szName, IScriptElement* pScope) = 0;

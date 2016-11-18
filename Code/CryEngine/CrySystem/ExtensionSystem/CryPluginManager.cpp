@@ -188,6 +188,9 @@ bool CCryPluginManager::Initialize()
 
 	// Start with loading the default engine plug-ins
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CryDefaultEntities", "Plugin_CryDefaultEntities");
+	//Schematyc + Schematyc Standard Enviroment
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycCore", "Plugin_SchematycCore");
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycSTDEnv", "Plugin_SchematycSTDEnv");
 
 	return LoadExtensionFile("cryplugin.csv");
 }

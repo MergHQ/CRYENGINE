@@ -20,11 +20,6 @@ CScriptInterfaceTask::CScriptInterfaceTask(const SGUID& guid, const char* szName
 	: CScriptElementBase(guid, szName)
 {}
 
-EScriptElementAccessor CScriptInterfaceTask::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptInterfaceTask::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptInterfaceTask::RemapDependencies(IGUIDRemapper& guidRemapper)                                                        {}

@@ -25,7 +25,6 @@
 #include <Schematyc/Script/Elements/IScriptComponentInstance.h>
 #include <Schematyc/Script/Elements/IScriptEnum.h>
 #include <Schematyc/Script/Elements/IScriptFunction.h>
-#include <Schematyc/Script/Elements/IScriptImport.h>
 #include <Schematyc/Script/Elements/IScriptInterface.h>
 #include <Schematyc/Script/Elements/IScriptInterfaceFunction.h>
 #include <Schematyc/Script/Elements/IScriptInterfaceImpl.h>
@@ -178,7 +177,6 @@ private:
 			EScriptElementType::Base,
 			EScriptElementType::SignalReceiver,
 			EScriptElementType::Constructor,
-			EScriptElementType::Destructor,
 			EScriptElementType::ComponentInstance,
 			EScriptElementType::ActionInstance,
 			EScriptElementType::Variable
@@ -1465,12 +1463,6 @@ void CScriptBrowserWidget::OnAddItem()
 						{
 							pScriptElement = ScriptBrowserUtils::AddScriptModule(pScriptScope);
 							bRenameElement = true;
-							break;
-						}
-					case EScriptElementType::Import:
-						{
-							pScriptElement = ScriptBrowserUtils::AddScriptImport(pScriptScope);
-							bRenameElement = false;
 							break;
 						}
 					case EScriptElementType::Enum:

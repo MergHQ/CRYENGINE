@@ -21,11 +21,6 @@ CScriptInterface::CScriptInterface(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::CanOwnScript)
 {}
 
-EScriptElementAccessor CScriptInterface::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptInterface::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const {}
 
 void CScriptInterface::RemapDependencies(IGUIDRemapper& guidRemapper) {}

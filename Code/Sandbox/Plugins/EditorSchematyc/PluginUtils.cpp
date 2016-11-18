@@ -20,6 +20,7 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QApplication>
+#include <CryGame/IGameFramework.h>
 
 namespace CrySchematycEditor {
 
@@ -293,24 +294,6 @@ bool ValidateClipboardContents(const char* szPrefix)
 		}
 	}
 	return false;
-}
-
-EntityId GetSelectedEntityId()
-{
-	SCHEMATYC_EDITOR_ASSERT("Broken since integration from main, please fix me!!!");
-	/*CBaseObject* pSelectedObject = ::GetIEditor()->GetSelectedObject();
-	   if(pSelectedObject != NULL)
-	   {
-	   if(pSelectedObject->IsKindOf(RUNTIME_CLASS(CEntityObject)) == TRUE)
-	   {
-	   IEntity*	pSelectedEntity = static_cast<CEntityObject*>(pSelectedObject)->GetIEntity();
-	   if(pSelectedEntity != NULL)
-	   {
-	   return pSelectedEntity->GetId();
-	   }
-	   }
-	   }*/
-	return 0;
 }
 
 }

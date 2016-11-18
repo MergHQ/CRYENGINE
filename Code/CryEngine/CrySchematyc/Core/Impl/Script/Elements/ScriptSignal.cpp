@@ -22,11 +22,6 @@ CScriptSignal::CScriptSignal(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::CanOwnScript)
 {}
 
-EScriptElementAccessor CScriptSignal::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptSignal::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	ScriptParam::EnumerateDependencies(m_inputs, enumerator, type);

@@ -87,7 +87,7 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityOrbitCameraControllerComponent, "OrbitCameraController");
-			pComponent->SetAuthor("Holger Durach");
+			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Orbit camera controller component");
 			pComponent->SetIcon("icons:schematyc/camera.ico");
 			pComponent->SetFlags(EEnvComponentFlags::Singleton);
@@ -98,7 +98,7 @@ namespace Schematyc
 			// Functions
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetDistance, "8D75BD31-8BD6-4468-A531-630B11790FB4"_schematyc_guid, "SetDistance");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("positions the camera in the specified distance to the target object");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'dis', "Distance");
@@ -107,7 +107,7 @@ namespace Schematyc
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetYaw, "567810FF-C2BF-4B9F-8EA2-6106320BA083"_schematyc_guid, "SetYaw");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("positions the camera in the specified (horizontal) angle to the target object");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ang', "Angle", "Angle in degree");
@@ -116,7 +116,7 @@ namespace Schematyc
 			} 
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetPitch, "8C5D5DBA-944F-4E30-AB38-8C283F0C5FD1"_schematyc_guid, "SetPitch");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("positions the camera in the specified (vertical) angle to the target object");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ang', "Angle", "Angle in degree");
@@ -125,7 +125,7 @@ namespace Schematyc
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetFov, "EAA6506E-41D0-4BD0-9C95-BD94CD34462E"_schematyc_guid, "SetFov");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Sets the FOV of the camera");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'fov', "FOV", "FOV in degree");
@@ -134,7 +134,7 @@ namespace Schematyc
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetRoll, "2812ED72-9AA2-4057-9955-0E6A19D756B7"_schematyc_guid, "SetRoll");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Sets the Roll angle of the camera");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'rol', "Roll", "Roll in degree");
@@ -143,7 +143,7 @@ namespace Schematyc
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetActive, "B1385617-98F6-48F2-BCA0-D72110553614"_schematyc_guid, "SetActive");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Activates/Deactivates the camera");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ena', "value", "active this camera");

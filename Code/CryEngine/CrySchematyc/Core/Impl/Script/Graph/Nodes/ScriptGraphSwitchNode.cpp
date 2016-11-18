@@ -237,16 +237,15 @@ void CScriptGraphSwitchNode::Register(CScriptGraphNodeFactory& factory)
 			};
 			scriptView.VisitEnvDataTypes(EnvDataTypeConstVisitor::FromLambda(visitEnvDataType));
 
-			auto visitScriptEnum = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IScriptEnum& scriptEnum) -> EVisitStatus
+			auto visitScriptEnum = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IScriptEnum& scriptEnum)
 			{
 				CStackString label;
 				scriptView.QualifyName(scriptEnum, EDomainQualifier::Global, label);
 				label.append("::");
 				label.append(szLabel);
 				nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptEnum.GetGUID())));
-				return EVisitStatus::Continue;
 			};
-			scriptView.VisitScriptEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum), EDomainScope::Local);
+			scriptView.VisitAccesibleEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum));
 		}
 
 		// ~IScriptGraphNodeCreator

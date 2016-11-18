@@ -90,6 +90,20 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 	layout.AddInput("Select", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 
+	CScriptView scriptView(m_stateGUID);
+
+	auto visitScriptSignal = [&layout, &scriptView](const IScriptSignal& scriptSignal)
+	{
+		layout.AddOutput(CGraphPortId::FromGUID(scriptSignal.GetGUID()), scriptSignal.GetName(), scriptSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+	};
+	scriptView.VisitEnclosedSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
+
+	auto visitScriptTimer = [&layout, &scriptView](const IScriptTimer& scriptTimer)
+	{
+		layout.AddOutput(CGraphPortId::FromGUID(scriptTimer.GetGUID()), scriptTimer.GetName(), scriptTimer.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+	};
+	scriptView.VisitEnclosedTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer));
+
 	for (const Output& output : m_outputs)
 	{
 		switch (output.value.type)
@@ -99,7 +113,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(output.value.guid);
 				if (pEnvSignal)
 				{
-					layout.AddOutput(pEnvSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pEnvSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 				break;
 			}
@@ -108,7 +122,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptSignal)
 				{
-					layout.AddOutput(pScriptSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 			}
 		case EOutputType::ScriptTimer:
@@ -116,7 +130,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(GetSchematycCore().GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptTimer)
 				{
-					layout.AddOutput(pScriptTimer->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptTimer->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 				break;
 			}
@@ -165,7 +179,7 @@ void CScriptGraphStateNode::Edit(Serialization::IArchive& archive, const ISerial
 {
 	SerializationUtils::CScopedQuickSearchConfig<SOutputParams> quickSearchConfig(archive, "Output", "::");
 	{
-		CScriptView scriptView(m_stateGUID);
+		CScriptView scriptView(CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID()); // #SchematycTODO : Add GetScriptView function to CScriptGraphNodeModel?
 
 		auto visitEnvSignal = [&quickSearchConfig, &scriptView](const IEnvSignal& envSignal) -> EVisitStatus
 		{
@@ -179,7 +193,7 @@ void CScriptGraphStateNode::Edit(Serialization::IArchive& archive, const ISerial
 		};
 		scriptView.VisitEnvSignals(EnvSignalConstVisitor::FromLambda(visitEnvSignal));
 
-		auto visitScriptSignal = [&quickSearchConfig, &scriptView](const IScriptSignal& scriptSignal) -> EVisitStatus
+		auto visitScriptSignal = [&quickSearchConfig, &scriptView](const IScriptSignal& scriptSignal)
 		{
 			const SOutputParams outputParams(EOutputType::ScriptSignal, scriptSignal.GetGUID());
 
@@ -187,11 +201,10 @@ void CScriptGraphStateNode::Edit(Serialization::IArchive& archive, const ISerial
 			scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, fullName);
 
 			quickSearchConfig.AddOption(scriptSignal.GetName(), outputParams, fullName.c_str(), scriptSignal.GetDescription());
-			return EVisitStatus::Continue;
 		};
-		scriptView.VisitScriptSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal), EDomainScope::Local);
+		scriptView.VisitAccesibleSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
 
-		auto visitScriptTimer = [&quickSearchConfig, &scriptView](const IScriptTimer& scriptTimer) -> EVisitStatus
+		auto visitScriptTimer = [&quickSearchConfig, &scriptView](const IScriptTimer& scriptTimer)
 		{
 			const SOutputParams outputParams(EOutputType::ScriptTimer, scriptTimer.GetGUID());
 
@@ -199,9 +212,8 @@ void CScriptGraphStateNode::Edit(Serialization::IArchive& archive, const ISerial
 			scriptView.QualifyName(scriptTimer, EDomainQualifier::Global, fullName);
 
 			quickSearchConfig.AddOption(scriptTimer.GetName(), outputParams, fullName.c_str(), scriptTimer.GetDescription());
-			return EVisitStatus::Continue;
 		};
-		scriptView.VisitScriptTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer), EDomainScope::Local);
+		scriptView.VisitAccesibleTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer));
 	}
 	archive(m_outputs, "outputs", "Outputs");
 

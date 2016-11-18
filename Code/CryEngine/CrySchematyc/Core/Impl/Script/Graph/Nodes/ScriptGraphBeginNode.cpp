@@ -110,12 +110,6 @@ void CScriptGraphBeginNode::Compile(SCompilerContext& context, IGraphNodeCompile
 				compiler.BindCallback(&Execute);
 				break;
 			}
-		case EScriptElementType::Destructor:
-			{
-				pClass->AddDestructor(compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), EOutputIdx::Out, EActivationMode::Output));
-				compiler.BindCallback(&Execute);
-				break;
-			}
 		case EScriptElementType::Function:
 			{
 				pClass->AddFunction(scriptElement.GetGUID(), compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), EOutputIdx::Out, EActivationMode::Output));

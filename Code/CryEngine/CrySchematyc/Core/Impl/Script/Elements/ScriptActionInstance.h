@@ -20,11 +20,10 @@ public:
 	CScriptActionInstance(const SGUID& guid, const char* szName, const SGUID& actionTypeGUID, const SGUID& componentInstanceGUID);
 
 	// IScriptElement
-	virtual EScriptElementAccessor GetAccessor() const override;
-	virtual void                   EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const override;
-	virtual void                   RemapDependencies(IGUIDRemapper& guidRemapper) override;
-	virtual void                   ProcessEvent(const SScriptEvent& event) override;
-	virtual void                   Serialize(Serialization::IArchive& archive) override;
+	virtual void EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const override;
+	virtual void RemapDependencies(IGUIDRemapper& guidRemapper) override;
+	virtual void ProcessEvent(const SScriptEvent& event) override;
+	virtual void Serialize(Serialization::IArchive& archive) override;
 	// ~IScriptElement
 
 	// IScriptActionInstance

@@ -50,7 +50,7 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent, "Physic");
-			pComponent->SetAuthor("Holger Durach");
+			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity physics component");
 			pComponent->SetIcon("icons:schematyc/entity_physics_component.ico");
 			pComponent->SetFlags(EEnvComponentFlags::None);
@@ -61,7 +61,7 @@ namespace Schematyc
 			// Functions
 			{				
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::SetEnabled, "4DC3B15A-D143-4161-8C1F-F6FEE627A85A"_schematyc_guid, "SetPhysicsEnabled");
-				pFunction->SetAuthor("Holger Durach");
+				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Enable/disable the physic (without destroying/recreating it)");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ena', "Enabled");
@@ -71,7 +71,7 @@ namespace Schematyc
 			//// Signals  #TODO
 			//{
 			//	auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SPhysicCollisionSignal, "PhysicCollisionSignal");
-			//	pSignal->SetAuthor("Holger Durach");
+			//	pSignal->SetAuthor(g_szCrytek);
 			//	pSignal->SetDescription("Sent when two physical objects collided");
 			//	componentScope.Register(pSignal);
 			//}

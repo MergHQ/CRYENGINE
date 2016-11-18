@@ -23,11 +23,6 @@ CScriptStruct::CScriptStruct(const SGUID& guid, const char* szName)
 	: CScriptElementBase(guid, szName, EScriptElementFlags::CanOwnScript)
 {}
 
-EScriptElementAccessor CScriptStruct::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptStruct::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	ScriptParam::EnumerateDependencies(m_fields, enumerator, type);

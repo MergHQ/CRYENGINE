@@ -77,6 +77,22 @@ public:
 		return m_name.c_str();
 	}
 
+	virtual EScriptElementAccessor GetAccessor() const override
+	{
+		for (const IScriptElement* pParent = m_pParent; pParent; pParent = pParent->GetParent())
+		{
+			switch (pParent->GetElementType())
+			{
+			case EScriptElementType::Class:
+			case EScriptElementType::State:
+				{
+					return EScriptElementAccessor::Private;
+				}
+			}
+		}
+		return EScriptElementAccessor::Public;
+	}
+
 	virtual void SetElementFlags(const ScriptElementFlags& flags) override
 	{
 		m_flags = flags;

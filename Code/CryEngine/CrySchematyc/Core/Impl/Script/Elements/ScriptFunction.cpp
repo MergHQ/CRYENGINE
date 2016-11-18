@@ -24,11 +24,6 @@ CScriptFunction::CScriptFunction(const SGUID& guid, const char* szName)
 	CreateGraph();
 }
 
-EScriptElementAccessor CScriptFunction::GetAccessor() const
-{
-	return EScriptElementAccessor::Private;
-}
-
 void CScriptFunction::EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const
 {
 	ScriptParam::EnumerateDependencies(m_inputs, enumerator, type);

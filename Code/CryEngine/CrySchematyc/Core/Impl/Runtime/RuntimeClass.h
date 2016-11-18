@@ -52,13 +52,6 @@ struct SRuntimeClassConstructor : public SRuntimeFunction
 
 typedef std::vector<SRuntimeClassConstructor> RuntimeClassConstructors;
 
-struct SRuntimeClassDestructor : public SRuntimeFunction
-{
-	SRuntimeClassDestructor(uint32 _graphIdx, const SRuntimeActivationParams& _activationParams);
-};
-
-typedef std::vector<SRuntimeClassDestructor> RuntimeClassDestructors;
-
 struct SRuntimeClassStateMachine
 {
 	SRuntimeClassStateMachine(const SGUID& _guid, const char* _szName);
@@ -137,10 +130,11 @@ typedef std::vector<SRuntimeClassTimer> RuntimeClassTimers;
 
 struct SRuntimeClassComponentInstance
 {
-	SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx);
+	SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx);
 
 	SGUID          guid;
 	string         name;
+	bool           bPublic;
 	SGUID          componentTypeGUID; // #SchematycTODO : Can we store a raw pointer to the env component rather than referencing by GUID?
 	CTransform     transform;
 	IPropertiesPtr pProperties;
@@ -196,9 +190,6 @@ public:
 	void                                  AddConstructor(uint32 graphIdx, const SRuntimeActivationParams& activationParams);
 	const RuntimeClassConstructors&       GetConstructors() const;
 
-	void                                  AddDestructor(uint32 graphIdx, const SRuntimeActivationParams& activationParams);
-	const RuntimeClassDestructors&        GetDestructors() const;
-
 	uint32                                AddStateMachine(const SGUID& guid, const char* szName);
 	uint32                                FindStateMachine(const SGUID& guid) const;
 	void                                  SetStateMachineBeginFunction(uint32 stateMachineIdx, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
@@ -211,15 +202,14 @@ public:
 	void                                  AddStateTransition(uint32 stateIdx, const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
 	const RuntimeClassStates&             GetStates() const;
 
-	uint32                                AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value);
-	uint32                                AddPublicVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value);
+	uint32                                AddVariable(const SGUID& guid, const char* szName, bool bPublic, const CAnyConstRef& value);
 	const RuntimeClassVariables&          GetVariables() const;
 	uint32                                GetVariablePos(const SGUID& guid) const;
 
 	uint32                                AddTimer(const SGUID& guid, const char* szName, const STimerParams& params);
 	const RuntimeClassTimers&             GetTimers() const;
 
-	uint32                                AddComponentInstance(const SGUID& guid, const char* szName, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx);
+	uint32                                AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx);
 	uint32                                FindComponentInstance(const SGUID& guid) const;
 	const RuntimeClassComponentInstances& GetComponentInstances() const;
 
@@ -245,7 +235,6 @@ private:
 
 	RuntimeClassFunctions          m_functions;
 	RuntimeClassConstructors       m_constructors;
-	RuntimeClassDestructors        m_destructors;
 	RuntimeClassStateMachines      m_stateMachines;
 	RuntimeClassStates             m_states;
 	RuntimeClassVariables          m_variables;

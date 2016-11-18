@@ -8,10 +8,8 @@
 #include "Script/Elements/ScriptClass.h"
 #include "Script/Elements/ScriptComponentInstance.h"
 #include "Script/Elements/ScriptConstructor.h"
-#include "Script/Elements/ScriptDestructor.h"
 #include "Script/Elements/ScriptEnum.h"
 #include "Script/Elements/ScriptFunction.h"
-#include "Script/Elements/ScriptImport.h"
 #include "Script/Elements/ScriptInterface.h"
 #include "Script/Elements/ScriptInterfaceFunction.h"
 #include "Script/Elements/ScriptInterfaceImpl.h"
@@ -35,10 +33,6 @@ IScriptElementPtr CScriptElementFactory::CreateElement(EScriptElementType elemen
 		{
 			return std::make_shared<CScriptModule>();
 		}
-	case EScriptElementType::Import:
-		{
-			return std::make_shared<CScriptImport>();
-		}
 	case EScriptElementType::Enum:
 		{
 			return std::make_shared<CScriptEnum>();
@@ -54,10 +48,6 @@ IScriptElementPtr CScriptElementFactory::CreateElement(EScriptElementType elemen
 	case EScriptElementType::Constructor:
 		{
 			return std::make_shared<CScriptConstructor>();
-		}
-	case EScriptElementType::Destructor:
-		{
-			return std::make_shared<CScriptDestructor>();
 		}
 	case EScriptElementType::Function:
 		{

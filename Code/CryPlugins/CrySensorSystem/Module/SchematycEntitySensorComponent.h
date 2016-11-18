@@ -28,9 +28,9 @@ public:
 
 private:
 
-	struct SVolumeProperties
+	struct SProperties
 	{
-		SVolumeProperties();
+		SProperties();
 
 		void Serialize(Serialization::IArchive& archive);
 
@@ -41,25 +41,11 @@ private:
 		float          radius;
 	};
 
-	struct SProperties
-	{
-		SProperties();
-
-		void Serialize(Serialization::IArchive& archive);
-
-		SVolumeProperties volume;
-		bool              bEnabled;
-	};
-
 	struct SPreviewProperties
 	{
-		SPreviewProperties();
-
 		void Serialize(Serialization::IArchive& archive);
 
-		float gizmoLength;
-		bool  bShowGizmos;
-		bool  bShowVolumes;
+		bool  bShowVolumes = false;
 	};
 
 	class CPreviewer : public Schematyc::IComponentPreviewer
@@ -123,13 +109,12 @@ private:
 	void          OnEntityEvent(const SEntityEvent& event);
 	void          OnSensorEvent(const SSensorEvent& event);
 
-	CSensorBounds CreateBounds(const Matrix34& worldTM, const Schematyc::CTransform& transform, const SVolumeProperties& properties) const;
+	CSensorBounds CreateBounds(const Matrix34& worldTM, const Schematyc::CTransform& transform, const SProperties& properties) const;
 	CSensorBounds CreateOBBBounds(const Matrix34& worldTM, const Vec3& pos, const Vec3& size, const Matrix33& rot) const;
 	CSensorBounds CreateSphereBounds(const Matrix34& worldTM, const Vec3& pos, float radius) const;
 
 	SensorTags    GetTags(const SensorTagNames& tagNames) const;
 
-	void          RenderGizmo(float gizmoLength) const;
 	void          RenderVolume() const;
 
 private:

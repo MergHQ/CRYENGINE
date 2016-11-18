@@ -8,11 +8,12 @@
 #############################################################################
 
 def build(bld):
-	bld.CryEngineStaticModule(
+	bld.CryEngineModule(
 		target = 'CrySchematycSTDEnv',
 		vs_filter = 'CryEngine/CrySchematyc',
 		file_list = 'stdenv.waf_files',
 		pch = 'StdAfx.cpp',
+		use_module = ['yasli'],
 		includes   = [
 			'.',
 			Path('Code/CryEngine/CryAction'),

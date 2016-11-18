@@ -7,6 +7,7 @@
 #include <Schematyc/Runtime/IRuntimeClass.h>
 #include <Schematyc/Services/ITimerSystem.h>
 #include <Schematyc/Utils/GUID.h>
+#include <Schematyc/Utils/IProperties.h>
 #include <Schematyc/Utils/Scratchpad.h>
 
 namespace Schematyc
@@ -22,11 +23,30 @@ class CObjectProperties : public IObjectProperties
 {
 private:
 
-	struct SProperty
+	struct SComponent
 	{
-		SProperty();
-		SProperty(const char* _szName, const CAnyValuePtr& _pValue, EOverridePolicy _overridePolicy);
-		SProperty(const SProperty& rhs);
+		SComponent();
+		SComponent(const char* _szName, const IPropertiesPtr& _pProperties, EOverridePolicy _overridePolicy);
+		SComponent(const SComponent& rhs);
+
+		void Serialize(Serialization::IArchive& archive);
+
+		void Edit();
+		void Revert();
+
+		string          name;
+		IPropertiesPtr  pProperties;
+		EOverridePolicy overridePolicy = EOverridePolicy::Default;
+	};
+
+	typedef std::map<SGUID, SComponent>                                        Components;
+	typedef std::map<const char*, SComponent&, stl::less_stricmp<const char*>> ComponentsByName;
+
+	struct SVariable
+	{
+		SVariable();
+		SVariable(const char* _szName, const CAnyValuePtr& _pValue, EOverridePolicy _overridePolicy);
+		SVariable(const SVariable& rhs);
 
 		void Serialize(Serialization::IArchive& archive);
 
@@ -35,11 +55,11 @@ private:
 
 		string          name;
 		CAnyValuePtr    pValue;
-		EOverridePolicy overridePolicy;
+		EOverridePolicy overridePolicy = EOverridePolicy::Default;
 	};
 
-	typedef std::map<SGUID, SProperty>                                        Properties;   // #SchematycTODO : Replace with unordered map once YASLI support is provided.
-	typedef std::map<const char*, SProperty&, stl::less_stricmp<const char*>> PropertiesByName;
+	typedef std::map<SGUID, SVariable>                                        Variables;
+	typedef std::map<const char*, SVariable&, stl::less_stricmp<const char*>> VariablesByName;
 
 public:
 
@@ -49,13 +69,16 @@ public:
 	// IObjectProperties
 	virtual IObjectPropertiesPtr Clone() const override;
 	virtual void                 Serialize(Serialization::IArchive& archive) override;
-	virtual bool                 Read(const CAnyRef& value, const SGUID& guid) const override;
+	virtual const IProperties*   GetComponentProperties(const SGUID& guid) const override;
+	virtual bool                 ReadVariable(const CAnyRef& value, const SGUID& guid) const override;
 	// ~IObjectProperties
 
-	void Add(const SGUID& guid, const char* szName, const CAnyConstRef& value);
+	void AddComponent(const SGUID& guid, const char* szName, const IProperties& properties);
+	void AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value);
 
 private:
 
-	Properties m_properties;
+	Components m_components;
+	Variables  m_variables;
 };
 } // Schematyc
