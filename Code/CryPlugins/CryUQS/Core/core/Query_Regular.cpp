@@ -1114,17 +1114,19 @@ namespace uqs
 
 				if (!bDiscardedItem)
 				{
-					if (m_candidates.size() < m_maxCandidates || CanItemStillBeatTheWorstCandidate(*pWorkingDataToInspectNext))
+					//
+					// - extra check to see if the query-blueprint actually comes with some deferred-evaluators
+					// - if it doesn't then there's no need to set up a costly deferred task that will ultimately be a NOP
+					//
+
+					const size_t numDeferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints().size();
+
+					if (numDeferredEvaluatorBlueprints > 0)
 					{
-						//
-						// - extra check to see if the query-blueprint actually comes with some deferred-evaluators
-						// - if it doesn't then there's no need to set up a costly deferred task that will ultimately be a NOP
-						//
-
-						const size_t numDeferredEvaluatorBlueprints = m_queryBlueprint->GetDeferredEvaluatorBlueprints().size();
-
-						if (numDeferredEvaluatorBlueprints > 0)
+						// can the item still make it into the final result set?
+						if (remainingCapacityInResultSet > 0 || CanItemStillBeatTheWorstCandidate(*pWorkingDataToInspectNext))
 						{
+							// yep => schedule a deferred task on it
 							if (SDeferredTask* pNewTask = StartDeferredTask(pWorkingDataToInspectNext))
 							{
 								assert(&m_deferredTasks.back() == pNewTask);
@@ -1148,9 +1150,19 @@ namespace uqs
 						}
 						else
 						{
-							// the query-blueprint has no deferred-evaluators in it, so finalize the item here already
-							AddItemToResultSetOrDisqualifyIt(*pWorkingDataToInspectNext);
+							// the potential result set is already full and the item can never ever beat the worst candidate anymore
+							// => disqualify the item due to a bad score
+							pWorkingDataToInspectNext->bDisqualifiedDueToBadScore = true;
+							if (m_pHistory)
+							{
+								m_pHistory->OnItemGotDisqualifiedDueToBadScore(pWorkingDataToInspectNext->indexInGeneratedItems);
+							}
 						}
+					}
+					else
+					{
+						// the query-blueprint has no deferred-evaluators in it, so finalize the item here already
+						AddItemToResultSetOrDisqualifyIt(*pWorkingDataToInspectNext);
 					}
 				}
 
@@ -1188,10 +1200,11 @@ namespace uqs
 				const CFunctionCallHierarchy* pFunctionCalls = m_functionCallHierarchyPerDeferredEvalBP[deferredEvaluatorBlueprintIndex].get();
 				pFunctionCalls->ExecuteAll(executeContext, pParams, deferredEvaluatorFactory.GetInputParameterRegistry());
 
-				// prematurely abort and delete the task of any of its functions caused an exception
+				// prematurely abort and delete the task if any of its functions caused an exception
 				if (bExceptionOccurredInFunctionCalls)
 				{
 					AbortDeferredTask(freshlyCreatedTask, exceptionMessageFromFunctionCalls.c_str());
+					pWorkingDataToInspectNext->bitsExceptionByDeferredEvaluatorFunctionCalls |= (evaluatorsBitfield_t)1 << deferredEvaluatorBlueprintIndex;
 					m_deferredTasks.pop_back();
 					return nullptr;
 				}
