@@ -2286,6 +2286,14 @@ bool CD3D9Renderer::SetRes()
 
 	m_DevBufMan.Init();
 
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	if( m_pRenderAuxGeomD3D )
+	{
+		m_pRenderAuxGeomD3D->RestoreDeviceObjects();
+	}
+#endif
+
 	m_pStereoRenderer->InitDeviceAfterD3D();
 
 	return true;
@@ -2756,11 +2764,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 
 	rd->m_bDeviceLost = 0;
 	rd->m_pLastVDeclaration = NULL;
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	if (rd->m_pRenderAuxGeomD3D && FAILED(hr = rd->m_pRenderAuxGeomD3D->RestoreDeviceObjects()))
-		return hr;
-#endif
 
 	CHWShader_D3D::mfSetGlobalParams();
 	//rd->ResetToDefault();
