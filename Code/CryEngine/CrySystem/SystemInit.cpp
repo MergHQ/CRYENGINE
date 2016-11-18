@@ -1372,8 +1372,13 @@ bool CSystem::InitPhysics()
 #if defined(_LIB) && CRY_PLATFORM_DURANGO
 	m_env.pPhysicalWorld = CreatePhysicalWorld(this);
 #else
-	if (!InitializeEngineModule(DLL_PHYSICS, "EngineModule_CryPhysics", true))
+	// Check m_pPhysicsLibrary - if not specified, load CryPhysics, if specified, load that one
+	const char* physDLL = m_pPhysicsLibrary ? m_pPhysicsLibrary->GetString() : DLL_PHYSICS;
+	if (!InitializeEngineModule(physDLL, "EngineModule_CryPhysics", true))
+	{
+		CryFatalError("Error loading physics dll: %s",physDLL);
 		return false;
+	}
 #endif
 
 	if (!m_env.pPhysicalWorld)
@@ -3150,7 +3155,6 @@ L_done:;
 
 			m_env.pRenderer->InitSystemResources(FRR_SYSTEM_RESOURCES);
 			m_env.pRenderer->StartRenderIntroMovies();
-
 		}
 		else if (g_cvars.sys_rendersplashscreen && bStartScreensAllowed)
 		{
@@ -5291,6 +5295,11 @@ void CSystem::CreateSystemVars()
 	}
 
 	REGISTER_STRING("dlc_directory", "", 0, "Holds the path to the directory where DLC should be installed to and read from");
+
+	static const char* p_physics_library_default = "CryPhysics";
+	m_pPhysicsLibrary = REGISTER_STRING("p_physics_library", p_physics_library_default, VF_DUMPTODISK,
+		"Sets the physics library to be used. Default is 'CryPhysics'"
+		"Specify in system.cfg like this: p_physics_library = \"CryPhysics\"");
 
 #ifdef SEG_WORLD
 	REGISTER_INT("sys_max_stdio", 2048, 0, "Sets a maximum for the number of simultaneously open files at the stdio level");

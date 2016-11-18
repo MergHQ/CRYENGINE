@@ -523,7 +523,9 @@ public:
 
 	virtual void SavePhysicalEntityPtr(TSerialize ser, IPhysicalEntity* pIEnt);
 	virtual IPhysicalEntity* LoadPhysicalEntityPtr(TSerialize ser);
-  virtual void GetEntityMassAndCom(IPhysicalEntity* pIEnt, float& mass, Vec3& com);
+    virtual void GetEntityMassAndCom(IPhysicalEntity* pIEnt, float& mass, Vec3& com);
+	virtual void* GetInternalImplementation(int type, void* object = nullptr) { return nullptr; }
+
 	
 	IPhysicalWorld *GetIWorld() { return this; }
 

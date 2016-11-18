@@ -674,6 +674,7 @@ void WorldVoxelizer::VoxelizeGeometry(const Vec3* vertices, const uint32* indice
 AABB WorldVoxelizer::ComputeTerrainAABB(IGeometry* geometry)
 {
 	primitives::heightfield* phf = (primitives::heightfield*)geometry->GetData();
+	if (!phf) return AABB::RESET;
 
 	const int minX = max(0, (int)((m_volumeAABB.min.x - phf->origin.x) * phf->stepr.x));
 	const int minY = max(0, (int)((m_volumeAABB.min.y - phf->origin.y) * phf->stepr.y));

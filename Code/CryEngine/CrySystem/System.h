@@ -801,6 +801,7 @@ private: // ------------------------------------------------------
 	ICVar* m_rFullsceenNativeRes;
 	ICVar* m_rFullscreenWindow;
 	ICVar* m_rDriver;
+	ICVar *m_pPhysicsLibrary;
 	ICVar* m_cvGameName;
 	ICVar* m_rDisplayInfo;
 	ICVar* m_rDisplayInfoTargetFPS;

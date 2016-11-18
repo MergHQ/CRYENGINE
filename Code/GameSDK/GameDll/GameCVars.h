@@ -1233,6 +1233,7 @@ struct SCVars
 #if !defined(_RELEASE)
 	int			g_DisableScoring;
 	int			g_DisableCollisionDamage;
+	int			g_MaxSimpleCollisions;
 	int         g_LogDamage;
 	int         g_ProjectilePathDebugGfx;
 #endif

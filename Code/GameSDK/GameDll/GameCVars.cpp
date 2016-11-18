@@ -1580,6 +1580,7 @@ void SCVars::InitCVars(IConsole *pConsole)
 #if !defined(_RELEASE)
 	REGISTER_CVAR(g_DisableScoring, 0, VF_CHEAT, "Disable players being awarded points");
 	REGISTER_CVAR(g_DisableCollisionDamage, 0, VF_CHEAT, "Disable entities being damaged by collisions");
+	REGISTER_CVAR(g_MaxSimpleCollisions, 999, VF_CHEAT, "Imposes a cap on the amount of rigid body collision events per frame (only active when g_DisableCollisionDamage is on)");
 	REGISTER_CVAR(g_LogDamage, 0, VF_NULL, "Log all damage being taken");
 	REGISTER_CVAR(g_ProjectilePathDebugGfx, 0, VF_NULL, "Draw paths of projectiles through the air");
 #endif
@@ -2975,6 +2976,7 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_playerUsesDedicatedInput", true);
 	pConsole->UnregisterVariable("g_DisableScoring", true);
 	pConsole->UnregisterVariable("g_DisableCollisionDamage", true);
+	pConsole->UnregisterVariable("g_MaxSimpleCollisions", true);
 	pConsole->UnregisterVariable("g_LogDamage", true);
 	pConsole->UnregisterVariable("g_ProjectilePathDebugGfx", true);
 	pConsole->UnregisterVariable("net_onlyListGameServersContainingText", true);

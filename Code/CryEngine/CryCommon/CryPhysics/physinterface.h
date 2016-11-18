@@ -3456,6 +3456,8 @@ struct IPhysicalWorld
 	virtual void             GetEntityMassAndCom(IPhysicalEntity* pIEnt, float& mass, Vec3& com) = 0;
 
 	virtual EventPhys*       AddDeferredEvent(int type, EventPhys* event) = 0;
+
+	virtual void*			 GetInternalImplementation(int type, void* object = nullptr) = 0; // get native data from actual physics implementation
 	// </interfuscator:shuffle>
 
 	inline int RayWorldIntersection(const Vec3& org, const Vec3& dir, int objtypes, unsigned int flags, ray_hit* hits, int nMaxHits,

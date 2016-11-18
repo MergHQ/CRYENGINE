@@ -291,6 +291,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_rStencilBits = NULL;
 	m_rFullscreen = NULL;
 	m_rDriver = NULL;
+	m_pPhysicsLibrary = NULL;
 	m_sysNoUpdate = NULL;
 	m_pMemoryManager = NULL;
 	m_pProcess = NULL;
@@ -717,6 +718,7 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_rStencilBits);
 	SAFE_RELEASE(m_rFullscreen);
 	SAFE_RELEASE(m_rDriver);
+	SAFE_RELEASE(m_pPhysicsLibrary);
 
 	SAFE_RELEASE(m_sysWarnings);
 	SAFE_RELEASE(m_sysKeyboard);
