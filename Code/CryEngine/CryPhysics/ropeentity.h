@@ -105,9 +105,6 @@ class CRopeEntity : public CPhysicalEntity {
 	virtual float CalcEnergy(float time_interval) { return time_interval>0 ? m_energy:0.0f; }
 	virtual float GetLastTimeStep(float time_interval) { return m_lastTimeStep; }
 	virtual void ApplyVolumetricPressure(const Vec3 &epicenter, float kr, float rmin);
-	virtual bool IgnoreCollisionsWith(const CPhysicalEntity *pent, int bCheckConstraints=0) const {
-		return !(m_collTypes & 1<<pent->m_iSimClass || m_flags & rope_collides_with_attachment && (m_pTiedTo[0]==pent || m_pTiedTo[1]==pent));
-	}
 	void RecalcBBox();
 
 	void CheckCollisions(int iDir, SRopeCheckPart *checkParts,int nCheckParts, float seglen,float rseglen, const Vec3 &hingeAxis);
