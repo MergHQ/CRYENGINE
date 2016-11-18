@@ -4711,8 +4711,9 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 
 		for(i=0;i<nsurf-1;i++) for(j=nsurf-1;j>i;j--) if (voxsurf[j].sbox.size.GetVolume()>voxsurf[j-1].sbox.size.GetVolume())
 			swap(voxsurf[j],voxsurf[j-1]); // sort surfaces by decreasing box volumes
+		for(; nsurf && voxsurf[nsurf-1].sbox.size.GetVolume()>0; nsurf--);
 
-		for(i=0; i<nsurf && voxsurf[i].sbox.size.GetVolume()>0 && nGeoms<params.maxGeoms; i++) {
+		for(i=0; i<nsurf && nGeoms<params.maxGeoms; i++) if (!(params.skipPrimMask & 1ull<<i)) {
 			float Vbox[2],Vcyl[2];
 			Vec2i ncellBox[2],ncellCyl[2];
 			ncellBox[1] = CheckPrim(vox, box::type, &voxsurf[i].sbox, Vbox[0], vox.celldim);
@@ -4723,11 +4724,13 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 			bool okCyl = Vcyl[1] > Vcyl[0]*params.primVfillSurf && ncellCyl[1].x-ncellCyl[0].x < (ncellCyl[1].y-ncellCyl[0].y)*params.primSurfOutside;
 			if (!okCyl && okBox || okCyl && okBox && quotientf(Vbox[1],Vbox[0])>quotientf(Vcyl[1],Vcyl[0])) {
 				voxsurf[i].sbox.size += Vec3(params.inflatePrims);
-				pGeoms[nGeoms++] = (new CBoxGeom)->CreateBox(&voxsurf[i].sbox); 
+				pGeoms[nGeoms++] = (new CBoxGeom)->CreateBox(&voxsurf[i].sbox);
+				pGeoms[nGeoms-1]->SetForeignData(0,i);
 				CheckPrim(vox, box::type,&voxsurf[i].sbox, Vbox[0], vox.celldim*params.primVoxInflate, params.primRefillThresh);
 			} else if (okCyl) {
 				voxsurf[i].cyl.r+=params.inflatePrims; voxsurf[i].cyl.hh+=params.inflatePrims;
 				pGeoms[nGeoms++] = (new CCylinderGeom)->CreateCylinder(&voxsurf[i].cyl);
+				pGeoms[nGeoms-1]->SetForeignData(0,i);
 				CheckPrim(vox, cylinder::type,&voxsurf[i].cyl, Vcyl[0], vox.celldim*params.primVoxInflate, params.primRefillThresh);
 			}
 		}
@@ -4735,7 +4738,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		for(i=0;i<nline-1;i++) for(j=nline-1;j>i;j--) if ((voxline[j].ends[1]-voxline[j].ends[0]).len2()>(voxline[j-1].ends[1]-voxline[j-1].ends[0]).len2())
 			swap(voxline[j],voxline[j-1]); // sor line by decreasing line lengths
 
-		for(int iline=0; iline<nline && nGeoms<params.maxGeoms; iline++) {	// line (capsule or cylinder) condidates
+		for(int iline=0; iline<nline && nGeoms<params.maxGeoms; iline++) if (!(params.skipPrimMask & 1ull<<iline+nsurf)) { // line (capsule or cylinder) condidates
 			Vec3 end[2]; for(i=0;i<2;i++) end[i]=vox.center+vox.q*(Vec3(voxline[iline].ends[i])+Vec3(0.5f))*vox.celldim;
 			Vec3 c0=(end[0]+end[1])*0.5f, c,n=(end[1]-end[0]).normalized();
 			// shoot a fan of rays around center
@@ -4792,6 +4795,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 			if (Vcyl[0] > Vcyl[1]*params.primVfillLine)	{ // output cylinder or capsyle
 				cyl.hh+=params.inflatePrims; cyl.r+=params.inflatePrims;
 				pGeoms[nGeoms++] = type==capsule::type ?  (new CCapsuleGeom)->CreateCapsule((capsule*)&cyl) : (new CCylinderGeom)->CreateCylinder(&cyl);
+				pGeoms[nGeoms-1]->SetForeignData(0,iline+nsurf);
 				CheckPrim(vox, type,&cyl, Vcyl[1], vox.celldim*params.primVoxInflate, params.primRefillThresh);
 			}
 		}
