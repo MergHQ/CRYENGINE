@@ -135,6 +135,7 @@ add_sources("CryLobby_uber_0.cpp"
 		"CryVoice.h"
 		"LobbyCVars.h"
 		"resource.h"
+		"StdAfx.h"
 )
 
 add_sources("NoUberFile"

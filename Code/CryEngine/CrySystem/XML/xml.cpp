@@ -1342,7 +1342,7 @@ protected:
 	}
 	static void characterData(void* userData, const char* s, int len) PREFAST_SUPPRESS_WARNING(6262)
 	{
-		static char str[32768];
+		char str[32768];
 
 		if (len > sizeof(str) - 1)
 		{

@@ -623,9 +623,39 @@ def cmd_require (args):
 		plugin_file.write  (line + os.linesep)
 		
 	plugin_file.close()
+	
+#--- METAGEN ---
+
+def cmd_metagen(argv):
+	if not os.path.isfile (args.project_file):
+		error_project_not_found (args.project_file)
+	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
+	tool_path= os.path.join (get_engine_path(), 'Tools/rc/rc.exe')
+	if not os.path.isfile (tool_path):
+		error_engine_tool_not_found (tool_path)
+		
+	job_path= os.path.join (get_engine_path(), 'Tools/cryassets/rcjob_cryassets.xml')
+	if not os.path.isfile (job_path):
+		error_engine_tool_not_found (job_path)
+		
+	project_path= os.path.dirname (os.path.abspath (args.project_file))
+	asset_dir = cryproject.asset_dir(project)
+	asset_path = os.path.normpath (os.path.join (project_path, asset_dir))
+
+	subcmd= (
+		tool_path,
+		('/job=' + job_path),
+		('/src=' + asset_path)
+	)
+
+	print_subprocess (subcmd)
+	subprocess.Popen(subcmd)	
 
 #--- MAIN ---
-
 
 if __name__ == '__main__':
 	parser= argparse.ArgumentParser()
@@ -664,6 +694,10 @@ if __name__ == '__main__':
 	parser_mono.add_argument ('project_file')
 	parser_mono.set_defaults(func=cmd_monodev)
 
+	parser_edit= subparsers.add_parser ('metagen')
+	parser_edit.add_argument ('project_file')
+	parser_edit.set_defaults(func=cmd_metagen)
+	
 	args= parser.parse_args()
 	args.func (args)
 

@@ -23,7 +23,8 @@ def command_title (args):
 	'edit': 'Launch editor',
 	'open': 'Launch game',
 	'monodev': 'Edit C# code',
-	'switch': 'Switch engine version'
+	'switch': 'Switch engine version',
+	'metagen': 'Generate/repair metadata'
 	}.get (args.command, '')
 
 #---
@@ -121,13 +122,17 @@ def cmd_install (args):
 			('add', 'Register engine', '"%s" add "%%1"' % ScriptPath),
 		)
 
+		# --- extended, action, title, command
+		# The first collumn difines extended action. The associated commands will be displayed only when the user right-clicks an object while also pressing the SHIFT key.
+		# https://msdn.microsoft.com/en-us/library/cc144171(VS.85).aspx
 		project_commands= (
-			('edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
-			('open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
-			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
-			('_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
-			('_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
-			('_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
+			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
+			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
+			(False, 'monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
+			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
+			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
+			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
+			(True, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
 	else:
 		ScriptPath= os.path.abspath (__file__)
@@ -137,12 +142,13 @@ def cmd_install (args):
 		)
 		
 		project_commands= (
-			('edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
-			('open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
-			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
-			('_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
-			('_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
-			('_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
+			(False, 'monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
+			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
+			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
+			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
+			(True, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
 
 	#---
@@ -205,11 +211,14 @@ def cmd_install (args):
 	hShell= win32api.RegCreateKey (hProgID, 'shell')
 	win32api.RegCloseKey (hProgID)
 		
-	for action, title, command in project_commands:
+	for extended, action, title, command in project_commands:
 		hAction= win32api.RegCreateKey (hShell, action)
 		win32api.RegSetValueEx (hAction, None, None, win32con.REG_SZ, title)
 		win32api.RegSetValueEx (hAction, 'Icon', None, win32con.REG_SZ, DefaultIcon)
 		win32api.RegSetValue (hAction, 'command', win32con.REG_SZ, command)
+		if extended:
+			win32api.RegSetValueEx (hAction, 'extended', None, win32con.REG_SZ, '')
+			
 		win32api.RegCloseKey (hAction)
 	
 	action= 'edit'
@@ -574,6 +583,11 @@ if __name__ == '__main__':
 	parser_monodev.add_argument ('project_file')
 	parser_monodev.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_monodev.set_defaults(func=cmd_run)
+	
+	parser_projgen= subparsers.add_parser ('metagen')
+	parser_projgen.add_argument ('project_file')
+	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_projgen.set_defaults(func=cmd_run)
 
 	#---
 		

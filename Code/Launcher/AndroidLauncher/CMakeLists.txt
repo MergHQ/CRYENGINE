@@ -12,6 +12,8 @@ add_sources("NoUberFile"
 		"AndroidManifest.xml"
 		"Main.cpp"
 		"../../SDKs/SDL2/src/src/main/android/SDL_android_main.c"
+		"../../Tools/SDLExtension/src/jni/SDLExt_android.c"
+		"../../Tools/SDLExtension/src/jni/SDLExt_android_init.c"
 )
 
 end_sources()
