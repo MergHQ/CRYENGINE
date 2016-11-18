@@ -1167,7 +1167,7 @@ bool CTimeDemoRecorder::Load(const char* filename)
 
 	case TIMEDEMO_FILE_VERSION_4:
 		{
-			float recFixedTimeStep = float(*hdr.reserved);
+			float recFixedTimeStep = *(float*)(hdr.reserved);
 			if (recFixedTimeStep > 0 && recFixedTimeStep < 1000)
 				m_demo_fixed_timestep = (uint16)recFixedTimeStep;
 
@@ -1263,7 +1263,7 @@ bool CTimeDemoRecorder::Load(const char* filename)
 
 	case TIMEDEMO_FILE_VERSION_7:
 		{
-			float recFixedTimeStep = float(*hdr.reserved);
+			float recFixedTimeStep = *(float*)(hdr.reserved);
 
 			if (recFixedTimeStep > fixedTimeStepMin && recFixedTimeStep < fixedTimeStepMax)
 			{
