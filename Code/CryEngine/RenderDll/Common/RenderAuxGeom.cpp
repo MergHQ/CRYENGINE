@@ -1936,22 +1936,23 @@ void CAuxGeomCB::DrawBone(const Vec3& p, const Vec3& c, ColorB col)
 	DrawLine(VBuffer[5], CBuffer[5], VBuffer[4], CBuffer[4]);
 }
 
-	#include "CommonRender.h"
+#include "CommonRender.h"
 
-void CAuxGeomCB::RenderText(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args)
+void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 {
-	if (format && !gEnv->IsDedicated())
+	if(!gEnv->IsDedicated())
 	{
-		char str[512];
-
-		cry_vsprintf(str, format, args);
-
-		// ti.yscale is currently ignored, input struct can be refactored
-
 		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
 
-		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.xscale, ti.flags, str);
+		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.scale, ti.flags, text);
 	}
+}
+
+#include "D3DStereo.h"
+
+void CAuxGeomCB::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
+{
+	m_pRenderAuxGeom->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 }
 
 int32 CAuxGeomCB::PushMatrix(const Matrix34& mat)
@@ -1989,6 +1990,8 @@ void CAuxGeomCB::Flush(bool reset)
 		SAuxGeomCBRawDataPackaged data = SAuxGeomCBRawDataPackaged(AccessData());
 		m_pRenderAuxGeom->Flush(data, lastFlushPos, curFlushPos, reset);
 	}
+
+	m_pRenderAuxGeom->FlushTextMessages(m_cbCurrent->m_TextMessages, reset);
 }
 
 void CAuxGeomCB::Commit(uint frames)
@@ -2001,38 +2004,6 @@ void CAuxGeomCB::Process()
 	m_pRenderAuxGeom->FlushTextMessages(m_cbCurrent->m_TextMessages, true);
 	m_lastFlushPos = 0;
 	m_cbCurrent->Reset();
-}
-
-void CAuxGeomCBMainThread::Commit(uint frames)
-{
-	m_cbCurrent->SetUsed(true);
-	m_cbCurrent->SetCount(frames);
-
-	Flush(true);
-
-	assert(m_cbCurrent->m_curTransMatIdx == -1);
-	m_cbCurrent->m_curTransMatIdx = -1;
-	m_cbCurrent->m_curWorldMatIdx = -1;
-
-	for (CBList::iterator it = m_cbData.begin(); it != m_cbData.end(); ++it)
-	{
-		if (!(*it)->IsUsed()) m_cbCurrent = *it;
-	}
-
-	if (m_cbCurrent->IsUsed())
-	{
-		m_cbCurrent = AddCBuffer();
-	}
-
-	m_lastFlushPos = 0;
-
-	m_cbCurrent->Reset();
-}
-
-void CAuxGeomCBMainThread::Process()
-{
-	//m_pRenderAuxGeom->FlushTextMessages(m_CBReady->m_TextMessages, true);
-	//m_CBReady->SetUsed(false);
 }
 
 void CAuxGeomCBWorkerThread::Flush()

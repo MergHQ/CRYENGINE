@@ -335,7 +335,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetLocalTM(bool relativeToParentPart,
 		else
 		{
 			const Matrix34& vehicleTM = LocalToVehicleTM(m_localTM);
-			CRY_ASSERT(vehicleTM.IsValid() && vehicleTM.IsOrthonormalRH());
+			CRY_ASSERT(vehicleTM.IsValid());
 
 			return VALIDATE_MAT(vehicleTM);
 		}
@@ -351,7 +351,7 @@ void CVehiclePartAnimatedJoint::SetLocalTM(const Matrix34& localTM)
 	if (!m_pCharInstance || m_jointId < 0)
 		return;
 
-	CRY_ASSERT(localTM.IsValid() && localTM.IsOrthonormalRH());
+	CRY_ASSERT(localTM.IsValid());
 
 	if (Matrix34::IsEquivalent(m_localTM, VALIDATE_MAT(localTM), 0.0001f))
 		return;
@@ -427,7 +427,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetWorldTM()
 	else
 		m_worldTM = GetEntity()->GetSlotWorldTM(m_slot);
 
-	CRY_ASSERT(m_worldTM.IsValid() && m_worldTM.IsOrthonormalRH(0.01f));
+	CRY_ASSERT(m_worldTM.IsValid());
 
 	return VALIDATE_MAT(m_worldTM);
 }

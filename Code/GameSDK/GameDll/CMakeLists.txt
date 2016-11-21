@@ -957,8 +957,6 @@ add_sources("CryGameSDKDLL_uber_22.cpp"
 	SOURCE_GROUP "Utility"
 		"StatsAgentPipe.cpp"
 		"StatsAgentPipe.h"
-		"Utility/ManualFrameStep.h"
-		"Utility/ManualFrameStep.cpp"
 )
 
 add_sources("CryGameSDKDLL_uber_23.cpp"
@@ -1365,14 +1363,18 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
+add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryLobby "${CMAKE_CURRENT_BINARY_DIR}/CryLobby")
 
-target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
+CryGameModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
+
+target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )
+elseif(ORBIS)
+	deploy_runtime_dir(../Resources/orbis/sce_sys app/sce_sys)
 elseif(DURANGO)
 	target_compile_options( ${THIS_PROJECT} PRIVATE /EHsc /ZW )
 	target_link_libraries( ${THIS_PROJECT} PRIVATE etwplus ixmlhttprequest2 Ws2_32 uuid )

@@ -106,7 +106,7 @@ void Draw2dLabel(float x, float y, float font_size, const float* pfColor, bool b
 	char buf[1024];
 	cry_vsprintf(buf, label_text, args);
 
-	gEnv->pRenderer->Draw2dLabel(x, y, font_size, pfColor, bCenter, "%s", buf);
+	IRenderAuxText::Draw2dLabel(x, y, font_size, pfColor, bCenter, "%s", buf);
 
 	if (CDiskProfiler::profile_disk == 3)
 	{

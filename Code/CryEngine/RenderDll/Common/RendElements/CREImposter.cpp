@@ -123,6 +123,14 @@ Vec3 CREImposter::GetPosition()
 	return vNearest;
 }
 
+void CREImposter::Release(bool bForce /*= false*/)
+{
+	// NOTE: ReleaseResources() must be called here because the pointers to IDynTexture have to be released before SDynTexture2::ShutDown() is called.
+	ReleaseResources();
+
+	CRenderElement::Release(bForce);
+}
+
 void CREImposter::mfPrepare(bool bCheckOverflow)
 {
 	CRenderer* rd = gRenDev;

@@ -16,127 +16,187 @@
 	#define PTHREAD_MUTEX_FAST_NP PTHREAD_MUTEX_NORMAL
 #endif
 
-#if !defined _CRYTHREAD_HAVE_LOCK
-template<class LockClass> class _PthreadCond;
-template<int PthreadMutexType> class _PthreadLockBase;
+namespace CryMT {
+namespace detail {
 
-template<int PthreadMutexType> class _PthreadLockAttr
+enum eLOCK_TYPE
 {
-	friend class _PthreadLockBase<PthreadMutexType>;
+	eLockType_NORMAL     = PTHREAD_MUTEX_FAST_NP,
+	eLockType_RECURSIVE  = PTHREAD_MUTEX_RECURSIVE,
+	eLockType_ERRORCHECK = PTHREAD_MUTEX_ERRORCHECK
+};
 
-protected:
-	_PthreadLockAttr()
+//////////////////////////////////////////////////////////////////////////
+// Forward declarations (in same namespace)
+template<eLOCK_TYPE pthreadMutexType> class CryLock_Mutex;
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+// PThreadLockAttr wrapper
+struct CryPThreadLockAttr
+{
+public:
+	CryPThreadLockAttr(eLOCK_TYPE lockType)
 	{
 		pthread_mutexattr_init(&m_Attr);
-		pthread_mutexattr_settype(&m_Attr, PthreadMutexType);
+		pthread_mutexattr_settype(&m_Attr, lockType);
 	}
-	~_PthreadLockAttr()
+	~CryPThreadLockAttr()
 	{
 		pthread_mutexattr_destroy(&m_Attr);
 	}
+
 	pthread_mutexattr_t m_Attr;
 };
 
-template<int PthreadMutexType> class _PthreadLockBase
-{
-protected:
-	static pthread_mutexattr_t& GetAttr()
-	{
-		static _PthreadLockAttr<PthreadMutexType> m_Attr;
-		return m_Attr.m_Attr;
-	}
-};
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+// PThread mutex can be of type:
+// eLockType_NORMAL: No recursive lock functionality
+// eLockType_RECURSIVE: Recursive lock functionality
+// eLockType_ERRORCHECK: No recursive lock functionality. Added functionality of returning error on invalid lock procedures.
+//
 
-template<class LockClass, int PthreadMutexType> class _PthreadLock
-	: public _PthreadLockBase<PthreadMutexType>
+template<eLOCK_TYPE pthreadMutexType>
+class CryLock_Mutex
 {
-	friend class _PthreadCond<LockClass>;
+public:
+	static const eLOCK_TYPE s_value = pthreadMutexType;
+	friend class::CryConditionVariable;
 
 public:
-	_PthreadLock() : m_LockCount(0)
+	CryLock_Mutex()
 	{
-		pthread_mutex_init(
-		  &m_Lock,
-		  &_PthreadLockBase<PthreadMutexType>::GetAttr());
+		const CryPThreadLockAttr attr(pthreadMutexType);
+		pthread_mutex_init(&m_posix_mutex, &attr.m_Attr);
 	}
-	~_PthreadLock() { pthread_mutex_destroy(&m_Lock); }
+	~CryLock_Mutex() 
+	{
+		pthread_mutex_destroy(&m_posix_mutex);
+	}
 
-	void Lock() { pthread_mutex_lock(&m_Lock); ++m_LockCount; }
+	void Lock()
+	{
+		const int errorCode = pthread_mutex_lock(&m_posix_mutex);
+		if (pthreadMutexType == eLockType_ERRORCHECK && errorCode != 0)
+		{
+			// An invalid lock operation was performed.
+			// Please refer to PThread documentation about the error code returned.
+			__debugbreak();
+		}
+
+#ifndef _RELEASE
+		++m_LockCount;
+#endif
+	}
+
+	void Unlock()
+	{
+#ifndef _RELEASE
+		--m_LockCount;
+#endif
+		const int errorCode = pthread_mutex_unlock(&m_posix_mutex);
+
+		if (pthreadMutexType == eLockType_ERRORCHECK && errorCode != 0)
+		{
+			// An invalid lock operation was performed.
+			// Please refer to PThread documentation about the error code returned.
+			__debugbreak();
+		}
+	}
 
 	bool TryLock()
 	{
-		const int rc = pthread_mutex_trylock(&m_Lock);
-		if (0 == rc)
+		const int errorCode = pthread_mutex_trylock(&m_posix_mutex);
+		if (errorCode == 0)
 		{
+#ifndef _RELEASE
 			++m_LockCount;
+#endif
 			return true;
+		}
+
+		if (pthreadMutexType == eLockType_ERRORCHECK && errorCode != EBUSY)
+		{
+			// An invalid lock operation was performed.
+			// Please refer to PThread documentation about the error code returned.
+			__debugbreak();
 		}
 		return false;
 	}
 
-	void Unlock() { --m_LockCount; pthread_mutex_unlock(&m_Lock); }
-
-	//! Deprecated: do not use this function - its return value might already be wrong the moment it is returned.
+	// Deprecated. Value might already be wrong on return
+#ifndef _RELEASE
 	bool IsLocked()
 	{
 		return m_LockCount > 0;
 	}
+#endif
+
+protected:
+	pthread_mutex_t m_posix_mutex;
+#ifndef _RELEASE
+	volatile uint   m_LockCount;
+#endif
+};
+
+} // detail
+} // CryMT
+
+//////////////////////////////////////////////////////////////////////////
+/////////////////////////    DEFINE LOCKS    /////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+template<> class CryLockT<CRYLOCK_RECURSIVE> : public CryMT::detail::CryLock_Mutex<CryMT::detail::eLockType_RECURSIVE>
+{
+};
+template<> class CryLockT<CRYLOCK_FAST> : public CryMT::detail::CryLock_Mutex<CryMT::detail::eLockType_NORMAL>
+{
+};
+
+typedef CryMT::detail::CryLock_Mutex<CryMT::detail::eLockType_RECURSIVE> CryMutex;
+typedef CryMT::detail::CryLock_Mutex<CryMT::detail::eLockType_NORMAL>    CryMutexFast;        // Not recursive
+
+//////////////////////////////////////////////////////////////////////////
+class CryConditionVariable
+{
+public:
+	CryConditionVariable()
+	{
+		pthread_cond_init(&m_condVar, NULL);
+	};
+
+	~CryConditionVariable()
+	{
+		pthread_cond_destroy(&m_condVar);
+	}
+
+	void Wait(CryMutex& lock)
+	{
+		pthread_cond_wait(&m_condVar, &lock.m_posix_mutex);
+	}
+
+	void Wait(CryMutexFast& lock)
+	{
+		pthread_cond_wait(&m_condVar, &lock.m_posix_mutex);
+	}
+
+	bool TimedWait(CryMutex& lock, uint32 millis)
+	{
+		return TimedWait_Internal(lock, millis);
+	}
+
+	bool TimedWait(CryMutexFast& lock, uint32 millis)
+	{
+		return TimedWait_Internal(lock, millis);
+	}
+
+	void NotifySingle() { pthread_cond_signal(&m_condVar); }
+	void Notify()       { pthread_cond_broadcast(&m_condVar); }
 
 private:
-	pthread_mutex_t m_Lock;
-	volatile int    m_LockCount;
-};
-
-	#if defined CRYLOCK_HAVE_FASTLOCK
-		#if defined(_DEBUG) && defined(PTHREAD_MUTEX_ERRORCHECK_NP)
-template<> class CryLockT<CRYLOCK_FAST>
-	: public _PthreadLock<CryLockT<CRYLOCK_FAST>, PTHREAD_MUTEX_ERRORCHECK_NP>
-		#else
-template<> class CryLockT<CRYLOCK_FAST>
-	: public _PthreadLock<CryLockT<CRYLOCK_FAST>, PTHREAD_MUTEX_FAST_NP>
-		#endif
-{
-	CryLockT(const CryLockT<CRYLOCK_FAST>&);
-	void operator=(const CryLockT<CRYLOCK_FAST>&);
-
-public:
-	CryLockT() {}
-};
-	#endif // CRYLOCK_HAVE_FASTLOCK
-
-template<> class CryLockT<CRYLOCK_RECURSIVE>
-	: public _PthreadLock<CryLockT<CRYLOCK_RECURSIVE>, PTHREAD_MUTEX_RECURSIVE>
-{
-	CryLockT(const CryLockT<CRYLOCK_RECURSIVE>&);
-	void operator=(const CryLockT<CRYLOCK_RECURSIVE>&);
-
-public:
-	CryLockT() {}
-};
-
-	#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE && !CRY_PLATFORM_ORBIS
-		#if defined CRYLOCK_HAVE_FASTLOCK
-class CryMutex : public CryLockT<CRYLOCK_FAST>
-{
-};
-		#else
-class CryMutex : public CryLockT<CRYLOCK_RECURSIVE>
-{
-};
-		#endif
-	#endif
-
-template<class LockClass> class _PthreadCond
-{
-	pthread_cond_t m_Cond;
-
-public:
-	_PthreadCond() { pthread_cond_init(&m_Cond, NULL); }
-	~_PthreadCond() { pthread_cond_destroy(&m_Cond); }
-	void Notify()              { pthread_cond_broadcast(&m_Cond); }
-	void NotifySingle()        { pthread_cond_signal(&m_Cond); }
-	void Wait(LockClass& Lock) { pthread_cond_wait(&m_Cond, &Lock.m_Lock); }
-	bool TimedWait(LockClass& Lock, uint32 milliseconds)
+	template<typename T>
+	bool TimedWait_Internal(T& lock, uint32 millis)
 	{
 		struct timeval now;
 		struct timespec timeout;
@@ -145,24 +205,15 @@ public:
 		gettimeofday(&now, NULL);
 		while (true)
 		{
-			timeout.tv_sec = now.tv_sec + milliseconds / 1000;
-			uint64 nsec = (uint64)now.tv_usec * 1000 + (uint64)milliseconds * 1000000;
+			timeout.tv_sec = now.tv_sec + millis / 1000;
+			uint64 nsec = (uint64)now.tv_usec * 1000 + (uint64)millis * 1000000;
 			if (nsec >= 1000000000)
 			{
 				timeout.tv_sec += (long)(nsec / 1000000000);
 				nsec %= 1000000000;
 			}
 			timeout.tv_nsec = (long)nsec;
-	#ifdef ORIS_SCE_THREADS
-			SceKernelUseconds to;
-			to = milliseconds * 1000;
-			err = pthread_cond_timedwait(&m_Cond, &Lock.m_Lock, to);
-			if (err == SCE_KERNEL_ERROR_EINTR)
-				continue;
-			else if (err == SCE_KERNEL_ERROR_ETIMEDOUT)
-				return false;
-	#else
-			err = pthread_cond_timedwait(&m_Cond, &Lock.m_Lock, &timeout);
+			err = pthread_cond_timedwait(&m_condVar, &lock.m_posix_mutex, &timeout);
 			if (err == EINTR)
 			{
 				// Interrupted by a signal.
@@ -172,7 +223,6 @@ public:
 			{
 				return false;
 			}
-	#endif
 			else
 				assert(err == 0);
 			break;
@@ -180,78 +230,13 @@ public:
 		return true;
 	}
 
-	//! Get the POSIX pthread_cont_t.
-	//! \note This method will not be available in the Win32 port of CryThread.
-	pthread_cond_t& Get_pthread_cond_t() { return m_Cond; }
-};
-
-	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
-template<class LockClass> class CryConditionVariableT : public _PthreadCond<LockClass>
-{
-};
-
-		#if defined CRYLOCK_HAVE_FASTTLOCK
-template<>
-class CryConditionVariableT<CryLockT<CRYLOCK_FAST>> : public _PthreadCond<CryLockT<CRYLOCK_FAST>>
-{
-	typedef CryLockT<CRYLOCK_FAST> LockClass;
-	CryConditionVariableT(const CryConditionVariableT<LockClass>&);
-	CryConditionVariableT<LockClass>& operator=(const CryConditionVariableT<LockClass>&);
-
-public:
-	CryConditionVariableT() {}
-};
-		#endif // CRYLOCK_HAVE_FASTLOCK
-
-template<>
-class CryConditionVariableT<CryLockT<CRYLOCK_RECURSIVE>> : public _PthreadCond<CryLockT<CRYLOCK_RECURSIVE>>
-{
-	typedef CryLockT<CRYLOCK_RECURSIVE> LockClass;
-	CryConditionVariableT(const CryConditionVariableT<LockClass>&);
-	CryConditionVariableT<LockClass>& operator=(const CryConditionVariableT<LockClass>&);
-
-public:
-	CryConditionVariableT() {}
-};
-
-		#if !defined(_CRYTHREAD_CONDLOCK_GLITCH)
-typedef CryConditionVariableT<CryLockT<CRYLOCK_RECURSIVE>> CryConditionVariable;
-		#else
-typedef CryConditionVariableT<CryLockT<CRYLOCK_FAST>>      CryConditionVariable;
-		#endif
-
-		#define _CRYTHREAD_HAVE_LOCK 1
-
-	#else
-
-		#if defined CRYLOCK_HAVE_FASTLOCK
-template<>
-class CryConditionVariable : public _PthreadCond<CryLockT<CRYLOCK_FAST>>
-{
-	typedef CryLockT<CRYLOCK_FAST> LockClass;
+private:
 	CryConditionVariable(const CryConditionVariable&);
 	CryConditionVariable& operator=(const CryConditionVariable&);
 
-public:
-	CryConditionVariable() {}
+private:
+	pthread_cond_t m_condVar;
 };
-		#endif // CRYLOCK_HAVE_FASTLOCK
-
-template<>
-class CryConditionVariable : public _PthreadCond<CryLockT<CRYLOCK_RECURSIVE>>
-{
-	typedef CryLockT<CRYLOCK_RECURSIVE> LockClass;
-	CryConditionVariable(const CryConditionVariable&);
-	CryConditionVariable& operator=(const CryConditionVariable&);
-
-public:
-	CryConditionVariable() {}
-};
-
-		#define _CRYTHREAD_HAVE_LOCK 1
-
-	#endif
-#endif // !defined _CRYTHREAD_HAVE_LOCK
 
 //////////////////////////////////////////////////////////////////////////
 //! Platform independent wrapper for a counting semaphore.
@@ -271,41 +256,25 @@ private:
 //////////////////////////////////////////////////////////////////////////
 inline CrySemaphore::CrySemaphore(int nMaximumCount, int nInitialCount)
 {
-#if defined(ORIS_SCE_THREADS)
-	ORBIS_TO_IMPLEMENT;
-#else
 	sem_init(&m_Semaphore, 0, nInitialCount);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 inline CrySemaphore::~CrySemaphore()
 {
-#if defined(ORIS_SCE_THREADS)
-	ORBIS_TO_IMPLEMENT;
-#else
 	sem_destroy(&m_Semaphore);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 inline void CrySemaphore::Acquire()
 {
-#if defined(ORIS_SCE_THREADS)
-	ORBIS_TO_IMPLEMENT;
-#else
 	sem_wait(&m_Semaphore);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 inline void CrySemaphore::Release()
 {
-#if defined(ORIS_SCE_THREADS)
-	ORBIS_TO_IMPLEMENT;
-#else
 	sem_post(&m_Semaphore);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -369,7 +338,6 @@ inline void CryFastSemaphore::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-#if !defined _CRYTHREAD_HAVE_RWLOCK
 class CryRWLock
 {
 	pthread_rwlock_t m_Lock;
@@ -383,31 +351,19 @@ public:
 	void RLock() { pthread_rwlock_rdlock(&m_Lock); }
 	bool TryRLock()
 	{
-	#ifdef ORIS_SCE_THREADS
-		return pthread_rwlock_tryrdlock(&m_Lock) != SCE_KERNEL_ERROR_EBUSY;
-	#else
 		return pthread_rwlock_tryrdlock(&m_Lock) != EBUSY;
-	#endif
 	}
 	void RUnlock() { Unlock(); }
 	void WLock()   { pthread_rwlock_wrlock(&m_Lock); }
 	bool TryWLock()
 	{
-	#ifdef ORIS_SCE_THREADS
-		return pthread_rwlock_trywrlock(&m_Lock) != SCE_KERNEL_ERROR_EBUSY;
-	#else
 		return pthread_rwlock_trywrlock(&m_Lock) != EBUSY;
-	#endif
 	}
 	void WUnlock() { Unlock(); }
 	void Lock()    { WLock(); }
 	bool TryLock() { return TryWLock(); }
 	void Unlock()  { pthread_rwlock_unlock(&m_Lock); }
 };
-
-//! Indicate that this implementation header provides an implementation for CryRWLock.
-	#define _CRYTHREAD_HAVE_RWLOCK 1
-#endif // !defined _CRYTHREAD_HAVE_RWLOCK
 
 //! Provide TLS implementation using pthreads for those platforms without thread.
 struct SCryPthreadTLSBase
@@ -499,13 +455,13 @@ struct SCryPthreadTLS : SCryPthreadTLSImpl<T, sizeof(T) <= sizeof(void*)>
 class CryEventTimed
 {
 public:
-	ILINE CryEventTimed(){ m_flag = false; }
-	ILINE ~CryEventTimed(){}
+	CryEventTimed() { m_flag = false; }
+	~CryEventTimed() {}
 
-	//! Reset the event to the unsignalled state.
+	//! Reset the event to the unsignaled state.
 	void Reset();
 
-	//! Set the event to the signalled state.
+	//! Set the event to the signaled state.
 	void Set();
 
 	//! Access a HANDLE to wait on.
@@ -519,20 +475,15 @@ public:
 
 private:
 	//! Lock for synchronization of notifications.
-	CryCriticalSection m_lockNotify;
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	CryConditionVariableT<CryLockT<CRYLOCK_RECURSIVE>> m_cond;
-#else
-	CryConditionVariable                               m_cond;
-#endif
-	volatile bool m_flag;
+	CryCriticalSection   m_lockNotify;
+	CryConditionVariable m_cond;
+	volatile bool        m_flag;
 };
 
 typedef CryEventTimed CryEvent;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace CryMT {
-namespace detail {
 
 //////////////////////////////////////////////////////////////////////////
 inline void CryMemoryBarrier()
@@ -540,5 +491,10 @@ inline void CryMemoryBarrier()
 	MemoryBarrier();
 }
 
-} // namespace detail
-} // namespace CryMT
+//////////////////////////////////////////////////////////////////////////
+inline void CryYieldThread()
+{
+	sched_yield();
+}
+
+} //CryMT

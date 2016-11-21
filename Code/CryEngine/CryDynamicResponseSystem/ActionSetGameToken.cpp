@@ -8,7 +8,6 @@
 #include <CryGame/IGameTokens.h>
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CrySystem/ISystem.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 using namespace CryDRS;
@@ -19,12 +18,26 @@ void CActionSetGameToken::Serialize(Serialization::IArchive& ar)
 	ar(m_tokenName, "tokenname", "^TokenName");
 	ar(m_valueToSet, "stringValue", "^ Value");
 	ar(m_bCreateTokenIfNotExisting, "create", "^ Create");
+
+#if !defined(_RELEASE)
+	if (ar.isEdit() && ar.isOutput())
+	{
+		if (!m_tokenName.empty() && (m_tokenName.front() == ' ' || m_tokenName.back() == ' '))
+		{
+			ar.warning(m_tokenName, "GameToken name starts or ends with a space. Check if this is really wanted.");
+		}
+		if (!m_valueToSet.empty() && (m_valueToSet.front() == ' ' || m_valueToSet.back() == ' '))
+		{
+			ar.warning(m_valueToSet, "Value starts or ends with a space. Check if this is really wanted.");
+		}
+	}
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IResponseInstance* pResponseInstance)
 {
-	IGameTokenSystem* pTokenSystem = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+	IGameTokenSystem* pTokenSystem = gEnv->pGameFramework->GetIGameTokenSystem();
 	if (m_bCreateTokenIfNotExisting)
 	{
 		pTokenSystem->SetOrCreateToken(m_tokenName.c_str(), TFlowInputData(m_valueToSet, true));
@@ -38,7 +51,7 @@ DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IRespons
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Could not find game token with name '%s'", m_tokenName.c_str());
+			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "Could not find game token with name '%s'", m_tokenName.c_str());
 		}
 
 	}

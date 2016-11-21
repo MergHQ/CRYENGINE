@@ -12,7 +12,7 @@ namespace
 {
 	CItem* GetLocalPlayerItem()
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 
 		if (!pPlayer)
 		{

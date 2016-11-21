@@ -1,0 +1,19 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2013, Crytek Studios
+##
+## Creator: Christian Werle
+## Date: Jan 06, 2016
+## Description: WAF  based build system
+#############################################################################
+
+def build(bld):
+
+	bld.CryFileContainer( 
+		target     = 'CryUQS_Interfaces', 
+		vs_filter  = 'CryPlugins/CryUQS',
+		file_list  = 'uqs_interfaces.waf_files',
+		module_provides = dict(
+			includes = [ Path('Code/CryPlugins')],
+		),
+	)	

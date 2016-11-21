@@ -1,14 +1,14 @@
 #include "StdAfx.h"
 #include "Bullet.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 class CBulletRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CBullet>("Bullet");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CBullet>("Bullet");
 
 		RegisterCVars();
 	}

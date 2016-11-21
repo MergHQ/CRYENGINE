@@ -4,42 +4,45 @@
 
 #include <CryAudio/IAudioSystem.h>
 
-class CAudioCVars
+class CAudioCVars final
 {
 public:
 
-	CAudioCVars();
-	~CAudioCVars();
+	CAudioCVars() = default;
+	CAudioCVars(CAudioCVars const&) = delete;
+	CAudioCVars(CAudioCVars&&) = delete;
+	CAudioCVars& operator=(CAudioCVars const&) = delete;
+	CAudioCVars& operator=(CAudioCVars&&) = delete;
 
-	void RegisterVariables();
-	void UnregisterVariables();
+	void         RegisterVariables();
+	void         UnregisterVariables();
 
-	int   m_audioPrimaryPoolSize;
-	int   m_fileCacheManagerSize;
-	int   m_audioObjectPoolSize;
-	int   m_audioEventPoolSize;
-	int   m_audioStandaloneFilePoolSize;
-	int   m_audioProxiesInitType;
-	int   m_tickWithMainThread;
+	int   m_audioPrimaryPoolSize = 0;
+	int   m_fileCacheManagerSize = 0;
+	int   m_audioObjectPoolSize = 0;
+	int   m_audioEventPoolSize = 0;
+	int   m_audioStandaloneFilePoolSize = 0;
+	int   m_audioProxiesInitType = 0;
+	int   m_tickWithMainThread = 0;
 
-	float m_occlusionMaxDistance;
-	float m_occlusionMaxSyncDistance;
-	float m_occlusionHighDistance;
-	float m_occlusionMediumDistance;
-	float m_fullObstructionMaxDistance;
-	float m_positionUpdateThreshold;
-	float m_velocityTrackingThreshold;
-	float m_occlusionRayLengthOffset;
+	float m_occlusionMaxDistance = 0.0f;
+	float m_occlusionMaxSyncDistance = 0.0f;
+	float m_occlusionHighDistance = 0.0f;
+	float m_occlusionMediumDistance = 0.0f;
+	float m_fullObstructionMaxDistance = 0.0f;
+	float m_positionUpdateThreshold = 0.0f;
+	float m_velocityTrackingThreshold = 0.0f;
+	float m_occlusionRayLengthOffset = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	int    m_ignoreWindowFocus;
-	int    m_drawAudioDebug;
-	int    m_fileCacheManagerDebugFilter;
-	int    m_audioLoggingOptions;
-	int    m_showActiveAudioObjectsOnly;
-	int    m_audioObjectsRayType;
-	ICVar* m_pAudioTriggersDebugFilter;
-	ICVar* m_pAudioObjectsDebugFilter;
+	int    m_ignoreWindowFocus = 0;
+	int    m_drawAudioDebug = 0;
+	int    m_fileCacheManagerDebugFilter = 0;
+	int    m_audioLoggingOptions = 0;
+	int    m_showActiveAudioObjectsOnly = 0;
+	int    m_audioObjectsRayType = 0;
+	ICVar* m_pAudioTriggersDebugFilter = nullptr;
+	ICVar* m_pAudioObjectsDebugFilter = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
@@ -48,8 +51,6 @@ private:
 	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetRtpc(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
-
-	PREVENT_OBJECT_COPY(CAudioCVars);
 };
 
 extern CAudioCVars g_audioCVars;

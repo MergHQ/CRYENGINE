@@ -55,7 +55,28 @@ float4 irreg_kernel_2d[HALF_MAX_SHADOW_SAMPLES_NUM]	: PB_IrregKernel;
 
 float4 CloudShadowAnimParams	: PB_CloudShadowAnimParams;
 float4 CloudShadowParams			: PB_CloudShadowParams;
-	
+
+// forward shadow map sampling parameters.
+struct SShadowSamplingParams
+{
+	float4x4 TexGen0; //PB_TempMatr0[0]
+	float4x4 TexGen1; //PB_TempMatr1[0]
+	float4x4 TexGen2; //PB_TempMatr2[0]
+	float4x4 TexGen3; //PB_TempMatr3[0]
+
+	float4 vInvShadowMapSize; //PB_TempData[9]
+	float4 fDepthTestBias; //PB_TempData[1], defines how hard depth test is (default is 100 - hard test)
+	float4 fOneDivFarDist; //PB_TempData[2]
+	float4 fKernelRadius; //PB_TempData[4]
+
+	float4 CloudShadowParams; //PB_CloudShadowParams
+	float4 CloudShadowAnimParams; //PB_CloudShadowAnimParams
+
+	float4 irreg_kernel_2d[HALF_MAX_SHADOW_SAMPLES_NUM]; //PB_IrregKernel
+};
+
+//--------------------------------------------------------------------------------------------------
+
 SamplerState SAMPLER_STATE_depthMapSamplerLinear : SS_Shadow0
 {
     // sampler state
@@ -117,6 +138,7 @@ SamplerState gCloudShadowSS : SS_MaterialBilinearWrap;
 Texture3D gVolCloudShadowTex : TS_VolCloudShadow;
 SamplerState gVolCloudShadowSS : SS_MaterialTrilinearBorder;
 
+//--------------------------------------------------------------------------------------------------
 
 void ShadowTexSpace(float4 vPos, float4x4 TexGen, float4x4 InstMatrix, float fInvFarDist, out float4 p)
 {
@@ -185,7 +207,7 @@ int GetShadowQuality()
 }
 
 //should match to the kernel table
-float2 GetKernelSize()
+float2 GetKernelSize(float2 kernelRadius)
 {
   float2 KernelSize;
   if (GetShadowQuality() == QUALITY_LOW)
@@ -194,7 +216,7 @@ float2 GetKernelSize()
   }
 	else
   {
-    KernelSize = fKernelRadius.xy;
+    KernelSize = kernelRadius.xy;
   }
 
 #if %_RT_POINT_LIGHT && !%_RT_SAMPLE4
@@ -273,7 +295,7 @@ void irregular_filter_impl(Texture2D depthMap, ShadowSamplingContext samplingCon
 	half kernelOffset = 0;
 	half kernelSize = GetShadowSamplesNum()/2;
 
-	#define KERNEL_STEP_SIZE 2
+	const int kernelStepSize = 2;
 
 	/////////////////////////////
 	//depth range estimation
@@ -283,7 +305,7 @@ void irregular_filter_impl(Texture2D depthMap, ShadowSamplingContext samplingCon
 		float accumCoverage = 0.01f;
 		float2 kernelScale = kernelRadius * 2.7;
 
-		for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
+		for(int i=kernelOffset; i<kernelSize; i+=kernelStepSize) // Loop over taps
 		{
 			float4 sampleDepth;
 			sampleDepth.x = depthMap.SampleLevel(samplingContext.pointSamplerClamp, p.xy + filterKernel.taps[i+0].xy * kernelScale, 0);
@@ -317,7 +339,7 @@ void irregular_filter_impl(Texture2D depthMap, ShadowSamplingContext samplingCon
 	shadowTest = 0;
 		
   [unroll]
-	for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
+	for(int i=kernelOffset; i<kernelSize; i+=kernelStepSize) // Loop over taps
 	{
 		half4 inShadow;
 		DoubleSampleRotated(depthMap, samplingContext.comparisonSampler, p.xyz, rotMatr, filterKernel.taps[i+0], inShadow.xy);
@@ -383,9 +405,19 @@ float GetCloudShadowCommon(float3 worldPos, Texture2D cloudShadowTex, SamplerSta
 	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
 }
 
+float GetCloudShadow(float3 worldPos, SShadowSamplingParams params, ShadowCascades shadowCascades, ShadowSamplingContext samplingContext)
+{
+	return GetCloudShadowCommon(worldPos, shadowCascades.cloudShadowTex, samplingContext.bilinearSamplerWrap, params.CloudShadowAnimParams, params.CloudShadowParams);
+}
+
 float GetCloudShadow(float3 worldPos, ShadowCascades shadowCascades, ShadowSamplingContext samplingContext)
 {
 	return GetCloudShadowCommon(worldPos, shadowCascades.cloudShadowTex, samplingContext.bilinearSamplerWrap, CloudShadowAnimParams, CloudShadowParams);
+}
+
+uint GetForwardShadowsCascadeMask(SShadowSamplingParams params)
+{
+	return asuint(params.fKernelRadius.z);
 }
 
 uint GetForwardShadowsCascadeMask()
@@ -393,12 +425,12 @@ uint GetForwardShadowsCascadeMask()
 	return asuint(fKernelRadius.z);
 }
 
-bool ShadowCascadeSample(Texture2D depthMap, ShadowSamplingContext samplingContext, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
+bool ShadowCascadeSample(Texture2D depthMap, ShadowSamplingContext samplingContext, SShadowSamplingParams params, float4 p, float2 randDirTC, float depthTestBias, out float fShadow, bool bSingleTap = false)
 {	
 	fShadow = 1;
 	
 	p.xy /= p.w;
-	p.z -= fDepthTestBias;
+	p.z -= depthTestBias;
 		
 	if(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 && p.z <= 1)
 	{
@@ -409,11 +441,11 @@ bool ShadowCascadeSample(Texture2D depthMap, ShadowSamplingContext samplingConte
 		else
 		{
 			IrregularFilterKernel filterKernel;
-			filterKernel.taps = irreg_kernel_2d;
-			filterKernel.scale = GetKernelSize();
+			filterKernel.taps = params.irreg_kernel_2d;
+			filterKernel.scale = GetKernelSize(params.fKernelRadius.xy);
 			filterKernel.noiseLookupPos = randDirTC * (filterKernel.scale.y * 15.h);
 
-			irregular_filter(depthMap, vInvShadowMapSize.xx, samplingContext, filterKernel, p, fShadow);
+			irregular_filter(depthMap, params.vInvShadowMapSize.xx, samplingContext, filterKernel, p, fShadow);
 			
 			fShadow = pow(fShadow,2);
 		}
@@ -423,9 +455,15 @@ bool ShadowCascadeSample(Texture2D depthMap, ShadowSamplingContext samplingConte
 	return false;
 }
 
-float ShadowDepthTest(ShadowCascades shadowCascades, ShadowSamplingContext samplingContext, float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
+float ShadowDepthTest(
+	SShadowSamplingParams params,
+	ShadowCascades shadowCascades,
+	ShadowSamplingContext samplingContext,
+	float3 worldPos,
+	bool bSampleCloudShadows = true,
+	bool bForceSingleTap = false)
 {
-	const uint nCascadeMask = GetForwardShadowsCascadeMask();
+	const uint nCascadeMask = GetForwardShadowsCascadeMask(params);
 	const bool bSingleTapFirstCascade = bForceSingleTap || (nCascadeMask & FORWARD_SHADOWS_CASCADE0_SINGLE_TAP);
 	
 	float fShadow = 1;
@@ -433,28 +471,28 @@ float ShadowDepthTest(ShadowCascades shadowCascades, ShadowSamplingContext sampl
 	if(nCascadeMask != 0) 
 	{	
 		float4 p;
-		ShadowTexSpace(float4(worldPos, 1), TexGen0, fOneDivFarDist.x, p);
+		ShadowTexSpace(float4(worldPos, 1), params.TexGen0, params.fOneDivFarDist.x, p);
 		const float2 randDirTC = p.xy / p.w * 1000.0;
 		
-		bool bDone = ShadowCascadeSample(shadowCascades.shadowMap0, samplingContext, p, randDirTC, fDepthTestBias.x, fShadow, bSingleTapFirstCascade);
+		bool bDone = ShadowCascadeSample(shadowCascades.shadowMap0, samplingContext, params, p, randDirTC, params.fDepthTestBias.x, fShadow, bSingleTapFirstCascade);
 
 		[branch]
 		if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_1))
 		{
-			ShadowTexSpace(float4(worldPos, 1), TexGen1, fOneDivFarDist.y, p);
-			bDone = ShadowCascadeSample(shadowCascades.shadowMap1, samplingContext, p, randDirTC, fDepthTestBias.y, fShadow, true);
+			ShadowTexSpace(float4(worldPos, 1), params.TexGen1, params.fOneDivFarDist.y, p);
+			bDone = ShadowCascadeSample(shadowCascades.shadowMap1, samplingContext, params, p, randDirTC, params.fDepthTestBias.y, fShadow, true);
 		
 			[branch]
 			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
 			{
-				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
-				bDone = ShadowCascadeSample(shadowCascades.shadowMap2, samplingContext, p, randDirTC, fDepthTestBias.z, fShadow, true);
+				ShadowTexSpace(float4(worldPos, 1), params.TexGen2, params.fOneDivFarDist.z, p);
+				bDone = ShadowCascadeSample(shadowCascades.shadowMap2, samplingContext, params, p, randDirTC, params.fDepthTestBias.z, fShadow, true);
 				
 				[branch]
 				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
 				{
-					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
-					ShadowCascadeSample(shadowCascades.shadowMap3, samplingContext, p, randDirTC, fDepthTestBias.w, fShadow, true);
+					ShadowTexSpace(float4(worldPos, 1), params.TexGen3, params.fOneDivFarDist.w, p);
+					ShadowCascadeSample(shadowCascades.shadowMap3, samplingContext, params, p, randDirTC, params.fDepthTestBias.w, fShadow, true);
 				}
 			}
 		}
@@ -462,11 +500,30 @@ float ShadowDepthTest(ShadowCascades shadowCascades, ShadowSamplingContext sampl
 
 	if(bSampleCloudShadows && (nCascadeMask & FORWARD_SHADOWS_CLOUD_SHADOWS))
 	{
-		float fCloudShadow = GetCloudShadow(worldPos, shadowCascades, samplingContext);
+		float fCloudShadow = GetCloudShadow(worldPos, params, shadowCascades, samplingContext);
 		fShadow *= fCloudShadow;
 	}
 	
 	return fShadow;
+}
+
+float ShadowDepthTest(ShadowCascades shadowCascades, ShadowSamplingContext samplingContext, float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
+{
+	SShadowSamplingParams params;
+
+	params.TexGen0 = TexGen0;
+	params.TexGen1 = TexGen1;
+	params.TexGen2 = TexGen2;
+	params.TexGen3 = TexGen3;
+	params.vInvShadowMapSize = vInvShadowMapSize;
+	params.fDepthTestBias = fDepthTestBias;
+	params.fOneDivFarDist = fOneDivFarDist;
+	params.fKernelRadius = fKernelRadius;
+	params.CloudShadowAnimParams = CloudShadowAnimParams;
+	params.CloudShadowParams = CloudShadowParams;
+	params.irreg_kernel_2d = irreg_kernel_2d;
+
+	return ShadowDepthTest(params, shadowCascades, samplingContext, worldPos, bSampleCloudShadows, bForceSingleTap);
 }
 
 // TODO: remove this once everything has been ported to new render backend

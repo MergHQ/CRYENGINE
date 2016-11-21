@@ -97,6 +97,12 @@ CPlayerInput::CPlayerInput( CPlayer * pPlayer ) :
 {
 	m_pPlayer->GetGameObject()->CaptureActions(this);
 
+	IActionMapManager* pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
+
+	pActionMapManager->EnableActionMap("default", true);
+	pActionMapManager->EnableActionMap("debug", true);
+	pActionMapManager->EnableActionMap("player", true);
+
 #if FREE_CAM_SPLINE_ENABLED
 	m_freeCamPlaying = false;
 	m_freeCamCurrentIndex = 0;
@@ -521,7 +527,7 @@ void CPlayerInput::DrawDebugInfo()
 	// process the input as in PreProcess, but without scaling
 	Ang3 processedDeltaRot(UpdateXIInputs(m_xi_deltaRotationRaw, false));
 
-	IUIDraw* pUIDraw = gEnv->pGame->GetIGameFramework()->GetIUIDraw();
+	IUIDraw* pUIDraw = gEnv->pGameFramework->GetIUIDraw();
 	pUIDraw->PreRender();
 
 	// Draw enclosing circle
@@ -541,7 +547,7 @@ void CPlayerInput::DrawDebugInfo()
 	pUIDraw->PostRender();
 
 	// to improve following the movement
-	IPersistantDebug* pPersistantDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+	IPersistantDebug* pPersistantDebug = gEnv->pGameFramework->GetIPersistantDebug();
 	pPersistantDebug->Begin("CPlayerInput::DrawDebugInfo", false);
 
 	float fTraceRawXStart = fX + (m_debugDrawStats.lastRaw.z * fRadius);
@@ -692,9 +698,9 @@ void CPlayerInput::PreUpdate()
 			if(g_pGameCVars->ctrlr_OUTPUTDEBUGINFO > 0)
 			{
 				const float dbg_my_white[4] = {1,1,1,1};
-				gEnv->pRenderer->Draw2dLabel( 20, 400, 1.3f, dbg_my_white, false, "PRE-DT MULTIPLY:\n  xRot: %.9f\n  zRot: %.9f\n", xiDeltaRot.x, xiDeltaRot.z);
+				IRenderAuxText::Draw2dLabel( 20, 400, 1.3f, dbg_my_white, false, "PRE-DT MULTIPLY:\n  xRot: %.9f\n  zRot: %.9f\n", xiDeltaRot.x, xiDeltaRot.z);
 			}
-			
+
 			deltaRotation += (xiDeltaRot * dt * generalSensitivity);
 		}
 
@@ -734,7 +740,7 @@ void CPlayerInput::PreUpdate()
 	bool animControlled(m_pPlayer->m_stats.animationControlledID!=0);
 
 	// If there was a recent serialization, ignore the delta rotation, since it's accumulated over several frames.
-	if ((m_lastSerializeFrameID + 2) > gEnv->pRenderer->GetFrameID())
+	if (gEnv->pRenderer && ((m_lastSerializeFrameID + 2) > gEnv->pRenderer->GetFrameID()))
 		deltaRotation.Set(0,0,0);
 
 	// Aim & look forward along the 'BaseQuat' direction
@@ -1079,7 +1085,7 @@ void CPlayerInput::GetState( SSerializedPlayerInput& input )
 		IPhysicalEntity* pEnt = m_pPlayer->GetEntity()->GetPhysics();
 		pe_status_dynamics dynStat;
 		pEnt->GetStatus(&dynStat);
-		gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "FilteredDelta (%f, %f, %f) Vel (%f, %f, %f)", m_filteredDeltaMovement.x, m_filteredDeltaMovement.y, m_filteredDeltaMovement.z, dynStat.v.x, dynStat.v.y, dynStat.v.z);
+		IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "FilteredDelta (%f, %f, %f) Vel (%f, %f, %f)", m_filteredDeltaMovement.x, m_filteredDeltaMovement.y, m_filteredDeltaMovement.z, dynStat.v.x, dynStat.v.y, dynStat.v.z);
 	}
 #endif //0
 	
@@ -1736,7 +1742,7 @@ bool CPlayerInput::OnActionMannequinDebugPlayer(EntityId entityId, const ActionI
 
 	if(ICVar* pCVar = gEnv->pConsole->GetCVar("mn_debug"))
 	{
-		EntityId actorEntityId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId actorEntityId = gEnv->pGameFramework->GetClientActorId();
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(actorEntityId);
 
 		if(pEntity)

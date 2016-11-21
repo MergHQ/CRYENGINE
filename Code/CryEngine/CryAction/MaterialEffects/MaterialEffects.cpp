@@ -1,15 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   MaterialEffects.cpp
-//  Version:     v1.00
-//  Created:     28/11/2006 by JohnN/AlexL
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
 #include "StdAfx.h"
 #include <limits.h>
 #include <CryString/CryPath.h>
@@ -74,6 +63,8 @@ int FindSurfaceIdByName(const char* surfaceTypeName)
 
 CMaterialEffects::CMaterialEffects()
 	: m_bDataInitialized(false)
+	, m_listeners(4)
+	, m_pAnimFXEvents(nullptr)
 {
 	m_bUpdateMode = false;
 	m_defaultSurfaceId = MaterialEffectsUtils::FindSurfaceIdByName(MATERIAL_EFFECTS_SURFACE_TYPE_DEFAULT);
@@ -127,6 +118,12 @@ void CMaterialEffects::LoadFXLibraries()
 	}
 
 	m_canopySurfaceId = MaterialEffectsUtils::FindSurfaceIdByName(MATERIAL_EFFECTS_SURFACE_TYPE_CANOPY);
+
+	// Notify external systems
+	for (TEffectsListeners::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
+	{
+		notifier->OnPostLoadFXLibraries();
+	}
 }
 
 void CMaterialEffects::LoadFXLibrary(const char* name)
@@ -945,5 +942,51 @@ void CMaterialEffects::EnumerateLibraryNames(EnumerateMaterialEffectsDataCallbac
 	for (const auto& entry : m_mfxLibraries)
 	{
 		callback(entry.first.c_str());
+	}
+}
+void CMaterialEffects::UnloadFXLibrariesWithPrefix(const char* szName)
+{
+	for (TFXLibrariesMap::iterator library = m_mfxLibraries.begin(); library != m_mfxLibraries.end(); )
+	{
+		if (library->first.find(szName) != string::npos)
+		{
+			library = m_mfxLibraries.erase(library);
+		}
+		else
+		{
+			++library;
+		}
+	}
+}
+
+void CMaterialEffects::LoadFXLibraryFromXMLInMemory(const char* szName, XmlNodeRef root)
+{
+	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FX Library XML (%s)", szName);
+
+	const string libName = szName;
+
+	XmlNodeRef libraryRootNode = root;
+	if (libraryRootNode != 0)
+	{
+		TFXLibrariesMap::iterator libIter = m_mfxLibraries.find(libName);
+		if (libIter != m_mfxLibraries.end())
+		{
+			m_mfxLibraries.erase(libIter);
+		}
+
+		std::pair<TFXLibrariesMap::iterator, bool> iterPair = m_mfxLibraries.insert(TFXLibrariesMap::value_type(libName, CMFXLibrary()));
+		assert(iterPair.second == true);
+		libIter = iterPair.first;
+		assert(libIter != m_mfxLibraries.end());
+
+		const TMFXNameId& libraryNameId = libIter->first; // uses CryString's ref-count feature
+		CMFXLibrary& mfxLibrary = libIter->second;
+
+		CMFXLibrary::SLoadingEnvironment libraryLoadingEnvironment(libraryNameId, libraryRootNode, m_effectContainers);
+		mfxLibrary.LoadFromXml(libraryLoadingEnvironment);
+	}
+	else
+	{
+		GameWarning("[MatFX]: Failed to load library %s", libName.c_str());
 	}
 }

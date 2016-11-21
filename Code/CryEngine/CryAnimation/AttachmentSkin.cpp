@@ -503,6 +503,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
 	pObj->m_fSort	= RendParams.fCustomSortOffset;
+	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
 	uint64 uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player

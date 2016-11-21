@@ -9,38 +9,38 @@
 class Glow : public COpticsElement, public AbstractMeshElement
 {
 private:
-	static float compositionBufRatio;
+	struct SShaderParams : COpticsElement::SShaderParamsBase
+	{
+		Vec4 meshCenterAndBrt;
+		Vec4 lumaParams;
+	};
+
+	static float     compositionBufRatio;
+	CRenderPrimitive m_primitive;
 
 protected:
-	float m_fFocusFactor;
-	float m_fPolyonFactor;
-	float m_fGamma;
+	float            m_fFocusFactor;
+	float            m_fPolyonFactor;
+	float            m_fGamma;
 
 protected:
-	void         ApplyDistributionParamsPS(CShader* shader);
-	virtual void GenMesh();
-	void         DrawMesh();
-	void         Invalidate()
+	void         GenMesh() override;
+	void         Invalidate() override
 	{
 		m_meshDirty = true;
 	}
 
 public:
-	Glow(const char* name) :
-		COpticsElement(name),
-		m_fFocusFactor(0.3f),
-		m_fPolyonFactor(32.f),
-		m_fGamma(1)
-	{
-	}
+	Glow(const char* name);
 
 #if defined(FLARES_SUPPORT_EDITING)
 	void InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);
 #endif
 
-	EFlareType GetType() { return eFT_Glow; }
+	EFlareType GetType() override { return eFT_Glow; }
 	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       Load(IXmlNode* pNode);
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	void       SetColor(ColorF t)
 	{
@@ -71,7 +71,7 @@ public:
 		m_fGamma = (float)gamma;
 	}
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this) + GetMeshDataSize());
 	}

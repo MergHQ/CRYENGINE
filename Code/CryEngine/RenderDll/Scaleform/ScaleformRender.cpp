@@ -1,9 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 #include "DriverD3D.h"
+#include "ScaleformPlayback.h"
+
+#if RENDERER_SUPPORT_SCALEFORM
 #include "ScaleformRender.h"
 #include "DeviceManager/TempDynBuffer.h"
 
@@ -87,10 +88,6 @@ void SSF_ResourcesD3D::STransientConstantBufferHeap::FreeUsedConstantBuffers()
 SSF_ResourcesD3D::STransientConstantBufferHeap::~STransientConstantBufferHeap()
 {
 	CRY_ASSERT(m_useList.empty());
-	for (auto pCB : m_freeList)
-	{
-		pCB->Release();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -551,7 +548,7 @@ uint32 CD3D9Renderer::SF_AdjustBlendStateForMeasureOverdraw(uint32 blendModeStat
 //////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params)
 {
-	const SSF_GlobalDrawParams::OutputParams& __restrict rCurOutput = *params.pRenderOutput;
+	SSF_GlobalDrawParams::OutputParams& __restrict rCurOutput = *params.pRenderOutput;
 
 	if (rCurOutput.bRenderTargetClear || rCurOutput.bStencilTargetClear)
 	{
@@ -563,11 +560,19 @@ void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params
 			LONG(params.viewport.TopLeftY + params.viewport.Height)
 		};
 
+		// Graphics pipeline >= 1
+		if (CRenderer::CV_r_GraphicsPipeline > 0)
+		{
+			if (rCurOutput.renderPass.GetPrimitiveCount() >= 1)
+			{
+				rCurOutput.renderPass.Execute();
+				rCurOutput.renderPass.ClearPrimitives();
+			}
+		}
+
 		if (rCurOutput.bRenderTargetClear)
-//			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(rCurOutput.pRenderTarget->GetSurface(0, 0), (float*)&Clr_Transparent, 1, &rect);
 			FX_ClearTarget(rCurOutput.pRenderTarget, Clr_Transparent, 1, &rect, true);
 		if (rCurOutput.bStencilTargetClear)
-//			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(rCurOutput.pStencilTarget->pSurface, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect);
 			FX_ClearTarget(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect, true);
 	}
 
@@ -793,7 +798,7 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(params.vtxData->DeviceDataHandle, params.vtxData->eVertexFormat, params.vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptLineStrip, 0, baseVertexIndex, params.vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);
@@ -949,7 +954,7 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(vtxData->DeviceDataHandle, vtxData->eVertexFormat, vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptTriangleStrip, 0, baseVertexIndex, vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);
@@ -1106,7 +1111,7 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 
 		primInit->SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		primInit->SetCustomVertexStream(vtxData->DeviceDataHandle, vtxData->eVertexFormat, vtxData->StrideSize);
-		primInit->SetCustomIndexStream(~0u, 0);
+		primInit->SetCustomIndexStream(~0u, RenderIndexType(0));
 		primInit->SetDrawInfo(eptTriangleStrip, 0, 0, vtxData->NumElements);
 
 		primPass.AddPrimitive(primInit);
@@ -1296,4 +1301,11 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 	return true;
 }
 
-#endif //INCLUDE_SCALEFORM_SDK
+#else // RENDERER_SUPPORT_SCALEFORM
+
+IScaleformPlayback* CRenderer::SF_CreatePlayback() const
+{
+	return new CScaleformSink();
+}
+
+#endif // RENDERER_SUPPORT_SCALEFORM

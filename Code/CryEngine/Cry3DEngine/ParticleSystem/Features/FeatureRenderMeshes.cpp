@@ -69,7 +69,7 @@ public:
 		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
 		if (m_pStaticObject)
 		{
-			pComponent->AddToUpdateList(EUL_Render, this);
+			pComponent->AddToUpdateList(EUL_RenderDeferred, this);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
 
@@ -165,8 +165,6 @@ public:
 		CParticleComponentRuntime* pComponentRuntime = pCommonComponentRuntime->GetCpuRuntime();
 		if (!pComponentRuntime)
 			return;
-		pComponentRuntime->WaitUntilUpdateEnded();
-		pComponentRuntime->SetStateUpdateStarted();
 		auto context = SUpdateContext(pComponentRuntime);
 		auto& passInfo = renderContext.m_passInfo;
 		SRendParams renderParams = renderContext.m_renderParams;
@@ -221,8 +219,6 @@ public:
 			pMeshObj->Render(renderParams, passInfo);
 		}
 		CRY_PFX2_FOR_END;
-
-		pComponentRuntime->SetStateUpdateEnded();
 	}
 
 private:

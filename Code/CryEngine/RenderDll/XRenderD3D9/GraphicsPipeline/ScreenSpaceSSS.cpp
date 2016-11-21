@@ -46,8 +46,8 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 		m_passH.BeginConstantUpdate();
 
-		m_passH.SetConstant(eHWSC_Pixel, viewSpaceParamsName, viewSpaceParams);
-		m_passH.SetConstant(eHWSC_Pixel, blurDirName, Vec4(fProjScaleX, 0, 0, 0));
+		m_passH.SetConstant(viewSpaceParamsName, viewSpaceParams, eHWSC_Pixel);
+		m_passH.SetConstant(blurDirName, Vec4(fProjScaleX, 0, 0, 0), eHWSC_Pixel);
 
 		m_passH.Execute();
 	}
@@ -70,8 +70,8 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 		m_passV.BeginConstantUpdate();
 
-		m_passV.SetConstant(eHWSC_Pixel, viewSpaceParamsName, viewSpaceParams);	
-		m_passV.SetConstant(eHWSC_Pixel, blurDirName, Vec4(0, fProjScaleY, 0, 0));
+		m_passV.SetConstant(viewSpaceParamsName, viewSpaceParams, eHWSC_Pixel);
+		m_passV.SetConstant(blurDirName, Vec4(0, fProjScaleY, 0, 0), eHWSC_Pixel);
 
 		m_passV.Execute();
 	}

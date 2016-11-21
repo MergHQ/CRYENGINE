@@ -37,7 +37,7 @@ static const uint32 OPTION_IDX_INVALID = 0xffffffff;
 
 static const uint32 TAG_SET_IDX_INVALID = ~uint32(0);
 
-typedef uint32 ActionScopes;
+typedef uint64 ActionScopes;
 static const ActionScopes ACTION_SCOPES_ALL = ~ActionScopes(0);
 static const ActionScopes ACTION_SCOPES_NONE = ActionScopes(0);
 

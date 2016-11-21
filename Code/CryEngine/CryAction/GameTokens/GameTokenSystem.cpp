@@ -757,7 +757,7 @@ void CGameTokenSystem::DebugDraw()
 		if (numHistoryLines > 0)
 		{
 			string buf;
-			pRenderer->Draw2dLabel(20.0f + m_CVarPosX, 20.0f + m_CVarPosY + 12.0f * (float)linesDrawn, 1.2f, color, false, "---------------HISTORY----------------");
+			IRenderAuxText::Draw2dLabel(20.0f + m_CVarPosX, 20.0f + m_CVarPosY + 12.0f * (float)linesDrawn, 1.2f, color, false, "---------------HISTORY----------------");
 			linesDrawn++;
 			for (int i = 0; i < numHistoryLines; i++)
 			{
@@ -822,7 +822,7 @@ void CGameTokenSystem::DrawToken(const char* pTokenName, const char* pTokenValue
 			color[i] = min(1.f, (timeNorm * notChanged[i] + (1.f - timeNorm) * changed[i]));
 	}
 
-	pRenderer->Draw2dLabel(20.0f + m_CVarPosX, 20.0f + m_CVarPosY + 12.0f * (float)line, 1.2f, color, false, "%s", buf.c_str());
+	IRenderAuxText::Draw2dLabel(20.0f + m_CVarPosX, 20.0f + m_CVarPosY + 12.0f * (float)line, 1.2f, color, false, "%s", buf.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////

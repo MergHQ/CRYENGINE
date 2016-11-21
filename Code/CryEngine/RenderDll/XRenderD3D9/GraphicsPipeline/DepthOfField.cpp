@@ -121,9 +121,9 @@ void CDepthOfFieldStage::Execute()
 			m_passLayerDownscale.BeginConstantUpdate();
 			Vec4 vParams = Vec4((float)CTexture::s_ptexHDRDofLayers[0]->GetWidth(), (float)CTexture::s_ptexHDRDofLayers[0]->GetHeight(),
 			                    1.0f / (float)CTexture::s_ptexHDRDofLayers[0]->GetWidth(), 1.0f / (float)CTexture::s_ptexHDRDofLayers[0]->GetHeight());
-			m_passLayerDownscale.SetConstant(eHWSC_Pixel, dofFocusParam0Name, vDofParams0);
-			m_passLayerDownscale.SetConstant(eHWSC_Vertex, dofFocusParam1Name, vParams);
-			m_passLayerDownscale.SetConstant(eHWSC_Pixel, dofFocusParam1Name, vDofParams1);
+			m_passLayerDownscale.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
+			m_passLayerDownscale.SetConstant(dofFocusParam1Name, vParams, eHWSC_Vertex);
+			m_passLayerDownscale.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
 			m_passLayerDownscale.Execute();
 		}
 
@@ -144,8 +144,8 @@ void CDepthOfFieldStage::Execute()
 				m_passTileMinCoC[i].BeginConstantUpdate();
 				const Vec4 vParams = Vec4((float)CTexture::s_ptexSceneCoC[i - 1]->GetWidth(), (float)CTexture::s_ptexSceneCoC[i - 1]->GetHeight(),
 				                          1.0f / (float)CTexture::s_ptexSceneCoC[i - 1]->GetWidth(), 1.0f / (float)CTexture::s_ptexSceneCoC[i - 1]->GetHeight());
-				m_passTileMinCoC[i].SetConstant(eHWSC_Vertex, dofFocusParam1Name, vParams);
-				m_passTileMinCoC[i].SetConstant(eHWSC_Pixel, dofFocusParam1Name, vDofParams1);
+				m_passTileMinCoC[i].SetConstant(dofFocusParam1Name, vParams, eHWSC_Vertex);
+				m_passTileMinCoC[i].SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
 				m_passTileMinCoC[i].Execute();
 			}
 		}
@@ -187,9 +187,9 @@ void CDepthOfFieldStage::Execute()
 
 			m_passGather0.BeginConstantUpdate();
 			vDofParams1.z = nSquareTapsSide * nSquareTapsSide;
-			m_passGather0.SetConstant(eHWSC_Pixel, dofFocusParam0Name, vDofParams0);
-			m_passGather0.SetConstant(eHWSC_Pixel, dofFocusParam1Name, vDofParams1);
-			m_passGather0.SetConstantArray(eHWSC_Pixel, dofTapsName, vTaps, nSquareTapsSide * nSquareTapsSide);
+			m_passGather0.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
+			m_passGather0.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
+			m_passGather0.SetConstantArray(dofTapsName, vTaps, nSquareTapsSide * nSquareTapsSide, eHWSC_Pixel);
 			m_passGather0.Execute();
 		}
 
@@ -228,9 +228,9 @@ void CDepthOfFieldStage::Execute()
 
 			m_passGather1.BeginConstantUpdate();
 			vDofParams1.z = nSquareTapsSide * nSquareTapsSide;
-			m_passGather1.SetConstant(eHWSC_Pixel, dofFocusParam0Name, vDofParams0);
-			m_passGather1.SetConstant(eHWSC_Pixel, dofFocusParam1Name, vDofParams1);
-			m_passGather1.SetConstantArray(eHWSC_Pixel, dofTapsName, vTaps, nSquareTapsSide * nSquareTapsSide);
+			m_passGather1.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
+			m_passGather1.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
+			m_passGather1.SetConstantArray(dofTapsName, vTaps, nSquareTapsSide * nSquareTapsSide, eHWSC_Pixel);
 			m_passGather1.Execute();
 		}
 
@@ -253,8 +253,8 @@ void CDepthOfFieldStage::Execute()
 			}
 
 			m_passComposition.BeginConstantUpdate();
-			m_passComposition.SetConstant(eHWSC_Pixel, dofFocusParam0Name, vDofParams0);
-			m_passComposition.SetConstant(eHWSC_Pixel, dofFocusParam1Name, vDofParams1);
+			m_passComposition.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
+			m_passComposition.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
 			m_passComposition.Execute();
 		}
 	}

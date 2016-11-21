@@ -22,41 +22,59 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteResponse::Execute(DRS::IResp
 void CActionExecuteResponse::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseID, "response", "^ Response");
+
+#if defined(HASHEDSTRING_STORES_SOURCE_STRING)
+	if (ar.isEdit())
+	{
+		if (!m_responseID.IsValid())
+		{
+			ar.warning(m_responseID.m_textCopy, "No response to execute specified.");
+		}
+		else if (!CResponseSystem::GetInstance()->GetResponseManager()->HasMappingForSignal(m_responseID))
+		{
+			ar.warning(m_responseID.m_textCopy, "Response to execute not found.");
+		}
+	}
+#endif
+}
+
+//--------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+CActionExecuteResponseInstance::~CActionExecuteResponseInstance()
+{
+	CResponseSystem::GetInstance()->GetResponseManager()->RemoveListener(this);
 }
 
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstance::eCurrentState CActionExecuteResponseInstance::Update()
 {
-	if (m_state == CActionExecuteResponseInstance::eCurrentState_WaitingForResponseToFinish)
-	{
-		return IResponseActionInstance::CS_RUNNING;
-	}
-	return IResponseActionInstance::CS_FINISHED;
+	return m_state;
 }
 
 //--------------------------------------------------------------------------------------------------
 void CActionExecuteResponseInstance::Cancel()
 {
-	if (m_state == eCurrentState_WaitingForResponseToFinish)
+	if (m_state == CS_RUNNING)
 	{
-		CResponseSystem::GetInstance()->GetResponseManager()->RemoveListener(this);
-		m_state = eCurrentState_Canceled;
+		if (m_pStartedResponse)
+		{
+			m_pStartedResponse->Cancel();
+		}
+		m_state = CS_CANCELED;
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
-void CActionExecuteResponseInstance::OnSignalProcessingFinished(DRS::IResponseManager::IListener::SSignalInfos& signal, DRS::IResponseInstance* pFinishedResponse, DRS::IResponseManager::IListener::eProcessingResult outcome)
+void CActionExecuteResponseInstance::OnSignalProcessingFinished(SSignalInfos& signal, DRS::IResponseInstance* pFinishedResponse, eProcessingResult outcome)
 {
-	m_state = eCurrentState_Done;
+	m_state = CS_FINISHED;
 }
 
 //--------------------------------------------------------------------------------------------------
-CActionExecuteResponseInstance::~CActionExecuteResponseInstance()
+void CryDRS::CActionExecuteResponseInstance::OnSignalProcessingStarted(SSignalInfos& signal, DRS::IResponseInstance* pStartedResponse)
 {
-	if (m_state == eCurrentState_WaitingForResponseToFinish)
-	{
-		CResponseSystem::GetInstance()->GetResponseManager()->RemoveListener(this);
-	}
+	m_pStartedResponse = static_cast<CResponseInstance*>(pStartedResponse);
 }
 
 REGISTER_DRS_ACTION(CActionExecuteResponse, "ExecuteResponse", DEFAULT_DRS_ACTION_COLOR);

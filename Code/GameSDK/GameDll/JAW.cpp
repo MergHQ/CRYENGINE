@@ -366,8 +366,8 @@ void CJaw::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory, 
 		currentBonusAmmo.count = 0;
 	}
 
-	IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
-	IActor* pPicketActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pickerId);
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
+	IActor* pPicketActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pickerId);
 	IInventory* pInventory = pPicketActor->GetInventory();
 	bool giveExtraTube = GiveExtraTubeToInventory(pPicketActor, pItemSystem);
 
@@ -657,7 +657,7 @@ bool CJaw::OutOfAmmo(bool allFireModes) const
 		return true;
 
 	IEntityClass* pJawClass = GetEntity()->GetClass();
-	IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 	int jawUniqueId = pItemSystem->GetItemUniqueId(pJawClass->GetName());
 	int currentNumJaws = pOwnerInventory->GetCountOfUniqueId(jawUniqueId);
 
@@ -1106,7 +1106,7 @@ void CJaw::NetSetCurrentAmmoCount( int count )
 	//end up sending wrong information regarding their ammo, yet the rocket will remain fired
 	if(!gEnv->bServer && m_firedRockets)
 	{
-		if (m_owner.GetId() == g_pGame->GetClientActorId())
+		if (m_owner.GetId() == gEnv->pGameFramework->GetClientActorId())
 		{
 			const int currentCount = GetAmmoCount(m_fm->GetAmmoType());
 			if(count == currentCount + m_firedRockets)

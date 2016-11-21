@@ -21,8 +21,11 @@ public:
 	bool               RegisterArea(const char* volumeName, NavigationVolumeID& outVolumeId);
 	void               UnRegisterArea(const char* volumeName);
 
+	void               Clear();
+
 	void               RegisterAreaFromLoadedData(const char* szVolumeName, NavigationVolumeID id);
 	void               ClearLoadedAreas();
+	void               ValidateAndSanitizeLoadedAreas(const INavigationSystem& navigationSystem);
 
 	bool               SetAreaID(const char* volumeName, NavigationVolumeID id);
 	void               InvalidateID(NavigationVolumeID id);

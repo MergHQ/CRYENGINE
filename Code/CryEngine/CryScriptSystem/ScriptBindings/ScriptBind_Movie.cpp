@@ -46,13 +46,6 @@ CScriptBind_Movie::~CScriptBind_Movie()
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Movie::PlaySequence(IFunctionHandler* pH, const char* sSequenceName)
 {
-	IGame* pGame = gEnv->pGame;
-	if (!pGame)
-	{
-		// can this happen?
-		return pH->EndFunction();
-	}
-
 	bool bResetFx = true;
 	if (pH->GetParamCount() == 2)
 		pH->GetParam(2, bResetFx);
@@ -104,13 +97,6 @@ int CScriptBind_Movie::StopAllSequences(IFunctionHandler* pH)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Movie::StopAllCutScenes(IFunctionHandler* pH)
 {
-	IGame* pGame = gEnv->pGame;
-	if (!pGame)
-	{
-		// can this happen?
-		return pH->EndFunction();
-	}
-
 	//pGame->StopCurrentCutscene();
 	//if (m_pMovieSystem != NULL)
 	//  m_pMovieSystem->StopAllCutScenes();

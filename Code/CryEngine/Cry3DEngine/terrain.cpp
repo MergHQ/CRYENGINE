@@ -383,24 +383,7 @@ void CTerrain::ApplyForceToEnvironment(Vec3 vPos, float fRadius, float fAmountOf
 	    vPos.z < (GetZApr(vPos.x, vPos.y, GetDefSID()) - 1.f))                                            // under ground
 		return;
 
-	PodArray<SRNInfo> lstObjects;
-	Get3DEngine()->MoveObjectsIntoListGlobal(&lstObjects, NULL);
-
-	// TODO: support in octree
-
-	// affect objects around
-	for (int i = 0; i < lstObjects.Count(); i++)
-		if (lstObjects[i].pNode->GetRenderNodeType() == eERType_Vegetation)
-		{
-			CVegetation* pVegetation = (CVegetation*)lstObjects[i].pNode;
-			Vec3 vDist = pVegetation->GetPos() - vPos;
-			float fDist = vDist.GetLength();
-			if (fDist < fRadius && fDist > 0.f)
-			{
-				float fMag = (1.f - fDist / fRadius) * fAmountOfForce;
-				pVegetation->AddBending(vDist * (fMag / fDist));
-			}
-		}
+	//#TODO Add temporary physical wind force to an environment, that will fade out slowly
 }
 
 Vec3 CTerrain::GetTerrainSurfaceNormal_Int(int x, int y, int nSID)
@@ -525,9 +508,9 @@ void CTerrain::IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, 
 		{
 			// move near plane closer to the light source, this will include all casters located between player and sun, shadow-gen shader is also modified to render casters outside of near plane
 			ShadowMapFrustum tmpFrustum = *pFrustum;
-			CCamera & cam0 = tmpFrustum.FrustumPlanes[0];
+			CCamera& cam0 = tmpFrustum.FrustumPlanes[0];
 			cam0.SetFrustum(cam0.GetViewSurfaceX(), cam0.GetViewSurfaceZ(), cam0.GetFov(), 1.f, cam0.GetFarPlane());
-			CCamera & cam1 = tmpFrustum.FrustumPlanes[1];
+			CCamera& cam1 = tmpFrustum.FrustumPlanes[1];
 			cam1.SetFrustum(cam1.GetViewSurfaceX(), cam1.GetViewSurfaceZ(), cam1.GetFov(), 1.f, cam1.GetFarPlane());
 			GetParentNode(nSID)->IntersectWithShadowFrustum(false, plstResult, &tmpFrustum, fHalfGSMBoxSize, passInfo);
 		}

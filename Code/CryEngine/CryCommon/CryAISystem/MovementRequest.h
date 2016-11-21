@@ -91,7 +91,7 @@ struct MovementRequest
 	#ifdef COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG
 	static const char* GetTypeAsDebugName(Type type)
 	{
-		COMPILE_TIME_ASSERT(CountTypes == 2); // If this fails, then most likely a new value in the Type enum got introduced.
+		static_assert(CountTypes == 2, "Constant value is not as expected!"); // If this fails, then most likely a new value in the Type enum got introduced.
 
 		if (type == MoveTo)
 			return "MoveTo";
@@ -116,17 +116,7 @@ struct MovementRequest
 //! You'll see if it's in a queue, path finding, or what block of a plan it's currently executing.
 struct MovementRequestStatus
 {
-	MovementRequestStatus() : currentBlockIndex(0), id(NotQueued) {}
-
-	struct BlockInfo
-	{
-		BlockInfo() : name(0) {}
-		BlockInfo(const char* _name) : name(_name) {}
-
-		const char* name;
-	};
-
-	typedef StaticDynArray<BlockInfo, 32> BlockInfos;
+	MovementRequestStatus() : id(NotQueued) {}
 
 	enum ID
 	{
@@ -135,68 +125,96 @@ struct MovementRequestStatus
 		FindingPath,
 		ExecutingPlan
 	};
-
 	operator ID() const { return id; }
+	
+	struct PlanStatus
+	{
+		enum Status
+		{
+			None,
+			Running,
+			Finished,
+			CantFinish,
+		};
 
-	BlockInfos blockInfos;
-	uint32     currentBlockIndex;
+		struct BlockInfo
+		{
+			BlockInfo() : name(nullptr) {}
+			BlockInfo(const char* _name) : name(_name) {}
+
+			const char* name;
+		};
+		typedef StaticDynArray<BlockInfo, 32> BlockInfos;
+		
+		PlanStatus() 
+			: currentBlockIndex(0)
+			, status(None)
+			, abandoned(false)
+		{}
+
+		BlockInfos blockInfos;
+		uint32     currentBlockIndex;
+		Status     status;
+		bool       abandoned;
+	};
+
+	PlanStatus planStatus;
 	ID         id;
 };
 
-	#if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
+#if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
 inline void ConstructHumanReadableText(IN const MovementRequestStatus& status, OUT stack_string& statusText)
 {
 	switch (status)
 	{
 	case MovementRequestStatus::Queued:
-		{
-			statusText = "Request In Queue";
-			break;
-		}
-
+		statusText = "Request In Queue";
+		break;
 	case MovementRequestStatus::FindingPath:
-		{
-			statusText.Format("Finding Path");
-			break;
-		}
-
+		statusText = "Finding Path";
+		break;
 	case MovementRequestStatus::ExecutingPlan:
-		{
-			statusText = "Executing Plan: ";
-
-			const size_t totalBlockInfos = status.blockInfos.size();
-			for (size_t index = 0; index < totalBlockInfos; ++index)
-			{
-				if (index != 0)
-					statusText += " ";
-
-				const bool active = (index == status.currentBlockIndex);
-
-				if (active)
-					statusText += "[";
-
-				statusText += status.blockInfos[index].name;
-
-				if (active)
-					statusText += "]";
-			}
-
-			break;
-		}
-
+		statusText = "Executing";
+		break;
 	case MovementRequestStatus::NotQueued:
-		{
-			statusText = "Request Not Queued";
-			break;
-		}
-
+		statusText = "Request Not Queued";
+		break;
 	default:
+		statusText = "Unknown Status";
+		break;
+	}
+
+	const size_t totalBlockInfos = status.planStatus.blockInfos.size();
+	if (totalBlockInfos)
+	{
+		const bool cantFinish = status.planStatus.status == MovementRequestStatus::PlanStatus::CantFinish;
+		const bool isAbandoned = status.planStatus.abandoned;
+
+		statusText += " | Plan";
+		if (isAbandoned)
 		{
-			statusText = "Unknown Status";
-			break;
+			statusText += "(Abandoned)";
+		}
+		statusText += ":";
+
+		for (size_t index = 0; index < totalBlockInfos; ++index)
+		{
+			statusText += " ";
+
+			const bool active = (index == status.planStatus.currentBlockIndex);
+
+			if (active)
+				statusText += cantFinish ? "x!" : "[";
+
+			statusText += status.planStatus.blockInfos[index].name;
+
+			if (active)
+			{
+				statusText += cantFinish ? "!x" : "]";
+			}
 		}
 	}
 }
-	#endif // COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG
+#endif // COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG
 
 #endif // MovementRequest_h

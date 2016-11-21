@@ -338,10 +338,10 @@ private:
 #ifndef CRY_PFX2_USE_SSE
 		return noiseGen.Noise1D(x) * 2.5f;
 #else
-		const float x0 = detail::ExtractF32<0>(x);
-		const float x1 = detail::ExtractF32<1>(x);
-		const float x2 = detail::ExtractF32<2>(x);
-		const float x3 = detail::ExtractF32<3>(x);
+		const float x0 = get_element<0>(x);
+		const float x1 = get_element<1>(x);
+		const float x2 = get_element<2>(x);
+		const float x3 = get_element<3>(x);
 		const float v0 = noiseGen.Noise1D(x0);
 		const float v1 = noiseGen.Noise1D(x1);
 		const float v2 = noiseGen.Noise1D(x2);
@@ -508,7 +508,7 @@ private:
 		const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
 
 		const floatv x1 = MAdd(frac(Mul(x, ipi)), pi, negHalfPi);
-		const floatv m = sign(frac(Mul(x, ipi2)) - half);
+		const floatv m = signnz(frac(Mul(x, ipi2)) - half);
 
 		const floatv p0 = ToFloatv(-0.4964738f);
 		const floatv p1 = ToFloatv(0.036957536f);
@@ -547,7 +547,7 @@ private:
 	ILINE static floatv Pulse(floatv time)
 	{
 		const floatv half = ToFloatv(0.5f);
-		return sign(half - frac(time));
+		return signnz(half - frac(time));
 	}
 
 	EWaveType m_waveType;
@@ -680,5 +680,117 @@ public:
 };
 
 SERIALIZATION_CLASS_NAME(IModifier, CModLinear, "Linear", "Linear");
+
+//////////////////////////////////////////////////////////////////////////
+// CModConfigSpec
+
+struct SSpecData
+{
+	char* m_pName;
+	char* m_pLabel;
+	uint  m_index;
+};
+
+const SSpecData gConfigSpecs[] =
+{
+	{ "Low",      "Low",            CONFIG_LOW_SPEC },
+	{ "Medium",   "Medium",         CONFIG_MEDIUM_SPEC },
+	{ "High",     "High",           CONFIG_HIGH_SPEC },
+	{ "VeryHigh", "Very High",      CONFIG_VERYHIGH_SPEC },
+	{ "XBO",      "XBox One",       CONFIG_DURANGO },
+	{ "PS4",      "Playstation 4",  CONFIG_ORBIS },
+};
+
+const uint gNumConfigSpecs = sizeof(gConfigSpecs) / sizeof(gConfigSpecs[0]);
+
+class CModConfigSpec : public IModifier
+{
+public:
+	CModConfigSpec()
+		: m_range(1.0f, 1.0f)
+		, m_spawnOnly(true)
+	{
+		for (uint i = 0; i < gNumConfigSpecs; ++i)
+			m_specMultipliers[i] = 1.0f;
+	}
+
+	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam) override
+	{
+		if (m_spawnOnly)
+			pParam->AddToInitParticles(this);
+		else
+			pParam->AddToUpdate(this);
+	}
+
+	virtual EModDomain GetDomain() const override
+	{
+		return EMD_PerParticle;
+	}
+
+	virtual Range GetMinMax() const override
+	{
+		return m_range;
+	}
+
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		IModifier::Serialize(ar);
+
+		for (uint i = 0; i < gNumConfigSpecs; ++i)
+			ar(m_specMultipliers[i], gConfigSpecs[i].m_pName, gConfigSpecs[i].m_pLabel);
+		m_range = Range(m_specMultipliers[0], m_specMultipliers[0]);
+		for (uint i = 1; i < gNumConfigSpecs; ++i)
+			m_range = Range(min(m_range.start, m_specMultipliers[1]), max(m_range.end, m_specMultipliers[0]));
+
+		const auto& context = GetContext(ar);
+		if (context.GetDomain() == EMD_PerInstance)
+			m_spawnOnly = false;
+		else if (!context.HasUpdate())
+			m_spawnOnly = true;
+		else
+			ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
+	}
+
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
+		const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
+		const uint particleSpec = pCVars->e_ParticlesQuality != 0 ? pCVars->e_ParticlesQuality : configSpec;
+
+		floatv multiplier = ToFloatv(1.0f);
+		for (uint i = 0; i < gNumConfigSpecs; ++i)
+		{
+			if (gConfigSpecs[i].m_index == particleSpec)
+			{
+				multiplier = ToFloatv(m_specMultipliers[i]);
+				break;
+			}
+		}
+
+		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
+		{
+			const floatv inValue = stream.Load(particleGroupId);
+			const floatv outvalue = inValue * multiplier;
+			stream.Store(particleGroupId, outvalue);
+		}
+		CRY_PFX2_FOR_END;
+	}
+
+private:
+	ILINE IParamModContext& GetContext(Serialization::IArchive& ar) const
+	{
+		IParamModContext* pContext = ar.context<IParamModContext>();
+		CRY_PFX2_ASSERT(pContext != nullptr);
+		return *pContext;
+	}
+
+	float m_specMultipliers[gNumConfigSpecs];
+	Range m_range;
+	bool  m_spawnOnly;
+};
+
+SERIALIZATION_CLASS_NAME(IModifier, CModConfigSpec, "ConfigSpec", "Config Spec");
 
 }

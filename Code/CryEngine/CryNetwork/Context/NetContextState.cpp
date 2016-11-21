@@ -1877,7 +1877,7 @@ bool CNetContextState::AllocateObject(EntityId userID, SNetObjectID netID, Netwo
 	NET_ASSERT(obj.salt == netID.salt);
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(userID);
-	if (CVARS.LogLevel)
+	if (CVARS.LogLevel > 1)
 	{
 		NetLog("AllocateObject: userID:%.8x (%s) netID:%s aspectBits:%.2x [%s %s] controller:%p",
 		       userID,
@@ -2675,7 +2675,7 @@ void CNetContextState::GC_Lazy_TickEstablishers()
 {
 	_smart_ptr<CNetContextState> pThis = this;
 
-	if (!gEnv->pGame->GetIGameFramework()->GetNetContext())
+	if (!gEnv->pGameFramework->GetNetContext())
 	{
 		// Can get in here if the host leaves while we're in the middle of loading, need to abort the tick to avoid
 		// several tasks crashing
@@ -3150,7 +3150,6 @@ void CNetContextState::DrawDebugScreens()
 		static const float colWidth = 150.f;
 		static const float rowHeight = 10.f;
 
-		IRenderer* pRend = gEnv->pRenderer;
 		float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		float yellow[] = { 1.0f, 1.0f, 0.0f, 1.0f };
 		float orange[] = { 1.0f, 0.4f, 0.0f, 1.0f };
@@ -3160,12 +3159,12 @@ void CNetContextState::DrawDebugScreens()
 		x = nameWidth;
 		y = 100.f;
 
-		pRend->Draw2dLabel(x, y, 1, orange, false, "TOTAL");
+		IRenderAuxText::Draw2dLabel(x, y, 1, orange, false, "TOTAL");
 		x += colWidth + colWidth;
 
 		for (TSubscriptions::const_iterator iter = m_subscriptions.begin(); iter != m_subscriptions.end(); ++iter)
 		{
-			pRend->Draw2dLabel(x, y, 1, orange, false, "%s", iter->pListener->GetName().c_str());
+			IRenderAuxText::Draw2dLabel(x, y, 1, orange, false, "%s", iter->pListener->GetName().c_str());
 			x += colWidth;
 		}
 		y += rowHeight;
@@ -3180,7 +3179,7 @@ void CNetContextState::DrawDebugScreens()
 
 		for (ClassMap::const_iterator cmiter = cm.begin(); cmiter != cm.end(); ++cmiter)
 		{
-			pRend->Draw2dLabel(0.f, y, 1, white, false, "%s", cmiter->first->GetName());
+			IRenderAuxText::Draw2dLabel(0.f, y, 1, white, false, "%s", cmiter->first->GetName());
 
 			x = nameWidth + colWidth + colWidth;
 
@@ -3218,7 +3217,7 @@ void CNetContextState::DrawDebugScreens()
 					muClassObjectsInView += iter->pListener->GetObjectMemUsage(*noiter);
 				}
 
-				pRend->Draw2dLabel(x, y, 1, white, false, "%" PRISIZE_T " [%" PRISIZE_T "]", muClassObjectsInView.required, muClassObjectsInView.instances);
+				IRenderAuxText::Draw2dLabel(x, y, 1, white, false, "%" PRISIZE_T " [%" PRISIZE_T "]", muClassObjectsInView.required, muClassObjectsInView.instances);
 				x += colWidth;
 
 				muClassObjectsTotal += muClassObjectsInView;
@@ -3227,11 +3226,11 @@ void CNetContextState::DrawDebugScreens()
 			muClassObjectsTotal += muClassObjectsBase;
 			muClassObjectsTotal += muClassObjectsAspectData;
 
-			pRend->Draw2dLabel(nameWidth, y, 1, white, false, "%" PRISIZE_T, muClassObjectsTotal.required);
-			pRend->Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, white, false, "%" PRISIZE_T " / %" PRISIZE_T " / %" PRISIZE_T,
-			                   muClassObjectsBase.required,
-			                   muClassObjectsAspectData.required,
-			                   muClassObjectsTotal.used);
+			IRenderAuxText::Draw2dLabel(nameWidth, y, 1, white, false, "%" PRISIZE_T, muClassObjectsTotal.required);
+			IRenderAuxText::Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, white, false, "%" PRISIZE_T " / %" PRISIZE_T " / %" PRISIZE_T,
+			                            muClassObjectsBase.required,
+			                            muClassObjectsAspectData.required,
+			                            muClassObjectsTotal.used);
 			y += rowHeight;
 
 			muAll += muClassObjectsTotal;
@@ -3246,14 +3245,14 @@ void CNetContextState::DrawDebugScreens()
 			muMax.used = muAll.used;
 		}
 
-		pRend->Draw2dLabel(0.f, y, 1, orange, false, "TOTAL");
-		pRend->Draw2dLabel(nameWidth, y, 1, orange, false, "%" PRISIZE_T, muAll.required);
-		pRend->Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, orange, false, "%" PRISIZE_T " / %" PRISIZE_T, muAll.required - muAll.used, muAll.used);
-		pRend->Draw2dLabel(nameWidth + colWidth + colWidth, y, 1, orange, false, "%" PRISIZE_T " [%" PRISIZE_T "]", muAll.used / m_subscriptions.size(), muAll.instances / m_subscriptions.size());
+		IRenderAuxText::Draw2dLabel(0.f, y, 1, orange, false, "TOTAL");
+		IRenderAuxText::Draw2dLabel(nameWidth, y, 1, orange, false, "%" PRISIZE_T, muAll.required);
+		IRenderAuxText::Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, orange, false, "%" PRISIZE_T " / %" PRISIZE_T, muAll.required - muAll.used, muAll.used);
+		IRenderAuxText::Draw2dLabel(nameWidth + colWidth + colWidth, y, 1, orange, false, "%" PRISIZE_T " [%" PRISIZE_T "]", muAll.used / m_subscriptions.size(), muAll.instances / m_subscriptions.size());
 		y += rowHeight;
-		pRend->Draw2dLabel(0.f, y, 1, yellow, false, "MAX");
-		pRend->Draw2dLabel(nameWidth, y, 1, yellow, false, "%" PRISIZE_T, muMax.required);
-		pRend->Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, yellow, false, "%" PRISIZE_T " / %" PRISIZE_T, muMax.required - muMax.used, muMax.used);
+		IRenderAuxText::Draw2dLabel(0.f, y, 1, yellow, false, "MAX");
+		IRenderAuxText::Draw2dLabel(nameWidth, y, 1, yellow, false, "%" PRISIZE_T, muMax.required);
+		IRenderAuxText::Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, yellow, false, "%" PRISIZE_T " / %" PRISIZE_T, muMax.required - muMax.used, muMax.used);
 	}
 #endif
 
@@ -3296,26 +3295,8 @@ void CNetContextState::DrawDebugScreens()
 
 						if ((pClassName[0] == 0) || CryStringUtils::stristr(pEntity->GetClass()->GetName(), pClassName))
 						{
-							SDrawTextInfo ti;
-							ColorB color;
+							ColorB color = !netID ? ColorB(128, 128, 128, 255) : ColorB(255, 255, 255, 255);
 							AABB aabb;
-
-							if (!netID)
-							{
-								ti.color[0] = 0.5f;
-								ti.color[1] = 0.5f;
-								ti.color[2] = 0.5f;
-								ti.color[3] = 1.0f;
-							}
-							else
-							{
-								ti.color[0] = 1.0f;
-								ti.color[1] = 1.0f;
-								ti.color[2] = 1.0f;
-								ti.color[3] = 1.0f;
-							}
-
-							color.set(uint8(ti.color[0] * 255.0f), uint8(ti.color[1] * 255.0f), uint8(ti.color[2] * 255.0f), uint8(ti.color[3] * 255.0f));
 
 							pEntity->GetLocalBounds(aabb);
 							pRenderAuxGeom->DrawAABB(aabb, pEntity->GetWorldTM(), false, color, eBBD_Faceted);
@@ -3327,15 +3308,11 @@ void CNetContextState::DrawDebugScreens()
 
 							textPos = aabbCenterPos + aabb.GetRadius() * dir;
 
-							ti.xscale = textSize;
-							ti.yscale = textSize;
-							ti.flags = eDrawText_DepthTest | eDrawText_FixedSize | eDrawText_Center | eDrawText_CenterV | eDrawText_800x600;
-
 							char buff[160];
 							cry_sprintf(buff, "%s\n%s\nAct %d Hid %d Inv %d\nID %u\nNetID %s\nGUID %016" PRIx64,
 							            pEntity->GetName(), pEntity->GetClass()->GetName(), pEntity->IsActive(), pEntity->IsHidden(), pEntity->IsInvisible(), pEntity->GetId(), netID.GetText(), pEntity->GetGuid());
 
-							gEnv->pRenderer->DrawTextQueued(textPos, ti, buff);
+							IRenderAuxText::DrawText(textPos, textSize, color, eDrawText_DepthTest | eDrawText_FixedSize | eDrawText_Center | eDrawText_CenterV | eDrawText_800x600, buff);
 						}
 					}
 				}

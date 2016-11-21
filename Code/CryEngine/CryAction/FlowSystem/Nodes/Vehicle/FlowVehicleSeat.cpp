@@ -150,7 +150,7 @@ public:
 						CVehicle* pVehicle = static_cast<CVehicle*>(CCryAction::GetCryAction()->GetIVehicleSystem()->GetVehicle(vehicleId));
 						if (actorEntityId && pVehicle)
 						{
-							IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorEntityId);
+							IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(actorEntityId);
 							if (pActor && pActor->GetLinkedVehicle() == pVehicle)
 							{
 								const string seatName = GetPortString(pActInfo, eINP_Seat);

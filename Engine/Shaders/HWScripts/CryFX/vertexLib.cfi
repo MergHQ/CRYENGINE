@@ -55,7 +55,7 @@ struct v2f_sh
 
 struct vert2FragGeneral
 {  
-#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+#if %_GS || %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
   OUT_HPOS_IN_WPOS
 #endif  
   float4 baseTC     : TEXCOORDN;
@@ -109,7 +109,7 @@ struct geom2FragGeneral
 
 struct vert2fragZ
 {
-#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+#if %_DS || %_PS || %_GS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
 	OUT_HPOS_IN_WPOS
 #endif
  

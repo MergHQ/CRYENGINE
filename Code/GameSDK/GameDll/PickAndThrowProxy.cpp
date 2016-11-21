@@ -155,7 +155,7 @@ void CPickAndThrowProxy::Unphysicalize()
 void CPickAndThrowProxy::OnReloadExtension()
 {
 	// Entity class could have changed, cache if we need reloading data
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 
 	// Query if params have changed
@@ -169,7 +169,7 @@ void CPickAndThrowProxy::OnReloadExtension()
 //////////////////////////////////////////////////////////////////////////
 void CPickAndThrowProxy::ReadXmlData(const IItemParamsNode* pRootNode)
 {
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 
 	// If we change the SharedParamsManager to accept CRCs on its interface we could compute this once and store

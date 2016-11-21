@@ -76,7 +76,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pParams->m_baseParticleLifeTime = 0.0f;
+		pParams->m_baseParticleLifeTime = gInfinity;
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		pComponent->AddToUpdateList(EUL_Update, this);
 	}

@@ -72,14 +72,14 @@ public:
 	bool Init(SIPv4Addr addr, uint32 flags);
 
 	// IDatagramSocket
-	virtual void         GetSocketAddresses(TNetAddressVec& addrs);
-	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to);
-	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to);
-	virtual void         Die();
-	virtual bool         IsDead();
-	virtual CRYSOCKET    GetSysSocket();
-	virtual void         RegisterBackoffAddress(TNetAddress addr);
-	virtual void         UnregisterBackoffAddress(TNetAddress addr);
+	virtual void         GetSocketAddresses(TNetAddressVec& addrs) override;
+	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override;
+	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override;
+	virtual void         Die() override;
+	virtual bool         IsDead() override;
+	virtual CRYSOCKET    GetSysSocket() override;
+	virtual void         RegisterBackoffAddress(const TNetAddress& addr) override;
+	virtual void         UnregisterBackoffAddress(const TNetAddress& addr) override;
 	// ~IDatagramSocket
 
 private:
@@ -112,12 +112,12 @@ private:
 	void CloseSocket();
 
 	// IRecvFromTarget
-	virtual void OnRecvFromComplete(const TNetAddress& from, const uint8* pData, uint32 len);
-	virtual void OnRecvFromException(const TNetAddress& from, ESocketError err);
+	virtual void OnRecvFromComplete(const TNetAddress& from, const uint8* pData, uint32 len) override;
+	virtual void OnRecvFromException(const TNetAddress& from, ESocketError err) override;
 	// ~IRecvFromTarget
 
 	// ISendToTarget
-	virtual void OnSendToException(const TNetAddress& from, ESocketError err);
+	virtual void OnSendToException(const TNetAddress& from, ESocketError err) override;
 	// ~ISendToTarget
 
 	void         SocketSend(const uint8* pBuffer, size_t nLength, const TNetAddress& to);

@@ -15,7 +15,7 @@ void CAnimSplineTrack::SetValue(SAnimTime time, const TMovieSystemValue& value)
 {
 	S2DBezierKey key;
 	key.m_time = time;
-	key.m_controlPoint.m_value = boost::get<float>(value);
+	key.m_controlPoint.m_value = stl::get<float>(value);
 	SetKeyAtTime(time, &key);
 }
 
@@ -38,7 +38,7 @@ TMovieSystemValue CAnimSplineTrack::GetDefaultValue() const
 
 void CAnimSplineTrack::SetDefaultValue(const TMovieSystemValue& value)
 {
-	float floatValue = boost::get<float>(value);
+	float floatValue = stl::get<float>(value);
 	m_defaultValue.y = floatValue;
 }
 

@@ -258,7 +258,7 @@ ILINE bool InitializePoseAlignerPinger(PoseAligner::CPose& pose, IEntity& entity
 
 	const bool bIsMP = gEnv->bMultiplayer;
 
-	IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(entity.GetId());
+	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(entity.GetId());
 	if (bIsMP && !pVehicle)
 		return false;
 

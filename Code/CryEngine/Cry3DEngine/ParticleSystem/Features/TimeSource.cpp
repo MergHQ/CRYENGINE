@@ -99,7 +99,7 @@ void CTimeSource::SerializeInplace(Serialization::IArchive& ar)
 
 	if (!context.HasUpdate() || m_timeSource == ETimeSource::Random)
 		m_spawnOnly = true;
-	else if (context.GetDomain() == EMD_PerParticle && m_timeSource == ETimeSource::Age && m_sourceOwner == ETimeSourceOwner::Self)
+	else if (context.GetDomain() == EMD_PerParticle && m_timeSource == ETimeSource::Age && m_sourceOwner == ETimeSourceOwner::Self || m_timeSource == ETimeSource::ViewAngle)
 		m_spawnOnly = false;
 	else
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");

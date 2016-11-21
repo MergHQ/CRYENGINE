@@ -393,7 +393,7 @@ int CScriptBind_Game::IsPlayer(IFunctionHandler *pH, ScriptHandle entityId)
 	if(eId == LOCAL_PLAYER_ENTITY_ID)
 		return pH->EndFunction(true);
 
-	IActor *pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(eId);
+	IActor *pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(eId);
 	return pH->EndFunction(pActor && pActor->IsPlayer());
 }
 
@@ -526,7 +526,7 @@ int CScriptBind_Game::IsMountedWeaponUsableWithTarget(IFunctionHandler *pH)
 		return pH->EndFunction();
 	}
 	
-	IGameFramework *pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework *pGameFramework = gEnv->pGameFramework;
 	IItem* pItem = pGameFramework->GetIItemSystem()->GetItem(itemEntityId);
 	if (!pItem)
 	{
@@ -783,7 +783,7 @@ int CScriptBind_Game::DebugDrawPersistanceDirection(
 		int r, int g, int b,
 		float duration)
 {
-	IPersistantDebug* debugRenderer = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+	IPersistantDebug* debugRenderer = gEnv->pGameFramework->GetIPersistantDebug();
 	assert(debugRenderer != NULL);
 
 	debugRenderer->Begin("CScriptBind_Game::DebugDrawPersistanceDirection", false);

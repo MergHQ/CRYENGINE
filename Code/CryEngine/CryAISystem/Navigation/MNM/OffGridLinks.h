@@ -99,7 +99,7 @@ public:
 	};
 #endif
 
-	OffMeshLinkPtr   AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLink& linkData, OffMeshLinkID& linkID);
+	void             AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID);
 	void             RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID);
 	void             InvalidateLinks(const TileID tileID);
 

@@ -180,6 +180,11 @@ float4 GetVolumetricFogColor(in float3 worldPos)
 	return GetVolumetricFogColorInternal(worldPos, fogParams);
 }
 
+float4 GetVolumetricFogColor(in SFogParams fogParams, in float3 worldPos)
+{
+	return GetVolumetricFogColorInternal(worldPos, fogParams);
+}
+
 float GetVolumetricFogDensity(in float3 worldPos)
 {
 	const SFogParams fogParams = GetFogParamsInternal();
@@ -239,7 +244,7 @@ struct SVolumetricFogParams
 {
 	// PB_VolumetricFogSunDir
 	float3 sunDir;
-	float  densityClamp;
+	float  padding0;
 
 	// PB_VolumetricFogSamplingParams
 	float  nearDist;
@@ -254,21 +259,22 @@ struct SVolumetricFogParams
 	float3 viewPos; // PB_CameraPos
 	float  framwCountJitter; // PB_VolumetricFogDistributionParams.w
 
-	float  scatterCoefficient; // PB_VolumetricFogScatteringParams.xy
-	float  extinctionCoefficient;
-	float  blendFactor; // PB_VolumetricFogScatteringBlendParams.xy
-	float  blendMode;
+	float  scatterCoefficient; // PB_VolumetricFogScatteringParams.x
+	float  extinctionCoefficient; // PB_VolumetricFogScatteringParams.y
+	float  blendFactor; // PB_VolumetricFogScatteringBlendParams.x
+	float  blendMode; // PB_VolumetricFogScatteringBlendParams.y
 
-	// PB_VolumetricFogScatteringColor
-	float3 cDiffuse1; // SunColor * FogAlbedoColor1
-	float  padding0;
-
-	// PB_VolumetricFogScatteringSecondaryColor
-	float3 cDiffuse2; // SunColor * FogAlbedoColor2
+	// SunColor * FogAlbedoColor1
+	float3 cDiffuse1; // PB_VolumetricFogScatteringColor
 	float  padding1;
 
-	float2 anisotropy1; // x: anisotoropy factor k1, y: 1.0 - k1 * k1
-	float2 anisotropy2; // x: anisotoropy factor k2, y: 1.0 - k2 * k2
+	// SunColor * FogAlbedoColor2
+	float3 cDiffuse2; // PB_VolumetricFogScatteringSecondaryColor
+	float  padding2;
+
+	// x: anisotoropy factor k1, y: 1.0 - k1 * k1
+	float2 anisotropy1; //PB_VolumetricFogScatteringParams.zw
+	float2 anisotropy2; //PB_VolumetricFogScatteringColor.w, PB_VolumetricFogScatteringSecondaryColor.w
 
 	// PB_VolumetricFogHeightDensityParams
 	float  heightDensityScale;
@@ -347,7 +353,7 @@ SVolumetricFogParams vfGetVolumetricFogParamsInternal()
 	SVolumetricFogParams params;
 
 	params.sunDir = vfSunDir.xyz;
-	params.densityClamp = vfSunDir.w;
+	params.padding0 = 0.0f;
 
 	params.nearDist = vfSamplingParams.x;
 	params.invFarMinusNearDist = vfSamplingParams.y;
@@ -367,10 +373,10 @@ SVolumetricFogParams vfGetVolumetricFogParamsInternal()
 	params.blendMode = vfScatteringBlendParams.y;
 
 	params.cDiffuse1 = vfScatteringColor.xyz;
-	params.padding0 = 0.0f;
+	params.padding1 = 0.0f;
 
 	params.cDiffuse2 = vfScatteringSecondaryColor.xyz;
-	params.padding1 = 0.0f;
+	params.padding2 = 0.0f;
 
 	params.anisotropy1.x = vfScatteringParams.z;
 	params.anisotropy1.y = vfScatteringParams.w;

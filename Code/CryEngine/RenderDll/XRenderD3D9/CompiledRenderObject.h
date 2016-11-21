@@ -74,7 +74,7 @@ public:
 	~CPermanentRenderObject();
 
 	//
-	void PrepareForUse(CRendElementBase* pRenderElement, ERenderPassType passType)
+	void PrepareForUse(CRenderElement* pRenderElement, ERenderPassType passType)
 	{
 		if (pRenderElement && pRenderElement->mfGetType() == eDATA_Mesh)
 		{
@@ -104,7 +104,7 @@ public:
 	struct SPermanentRendItem
 	{
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
-		CRendElementBase*      m_pRenderElement;  //!< Mesh subset, or a special rendering object
+		CRenderElement*          m_pRenderElement;  //!< Mesh subset, or a special rendering object
 		uint32                 m_objSort;         //!< Custom object sorting value.
 		uint32                 m_sortValue;       //!< Encoded sort value, keeping info about material.
 		uint32                 m_nBatchFlags;     //!< see EBatchFlags, batch flags describe on what passes this object will be used (transparent,z-prepass,etc...)
@@ -139,7 +139,7 @@ public:
 	CRenderObjectsPools();
 	~CRenderObjectsPools();
 	CConstantBufferPtr AllocatePerInstanceConstantBuffer();
-	void               FreePerInstanceConstantBuffer(const CConstantBufferPtr& buffer);
+	void               FreePerInstanceConstantBuffer(CConstantBufferPtr&& buffer);
 
 public:
 
@@ -165,15 +165,20 @@ private:
 class CCompiledRenderObject
 {
 public:
-	struct SInstancingData
+	//////////////////////////////////////////////////////////////////////////
+	// Instance data is mapped directly to shader per instance constant buffer
+	struct SPerInstanceShaderData
 	{
-		CConstantBufferPtr m_pConstBuffer;
-		int                m_nInstances;
+		Matrix34 matrix;
+
+		// 4 values making Vec4 (CustomData)
+		float vegetationBendingScale;
+		float vegetationBendingRadius;
+		float dissolve;
+		float tesselationPatchId;
 	};
 	struct SRootConstants
 	{
-		float dissolve;
-		float dissolveOut;
 	};
 	struct SDrawParams
 	{
@@ -186,6 +191,12 @@ public:
 			, m_nStartIndex(0)
 			, m_nNumIndices(0)
 		{}
+	};
+	enum EDrawParams
+	{
+		eDrawParam_General,
+		eDrawParam_Shadow,
+		eDrawParam_Count,
 	};
 
 public:
@@ -204,6 +215,8 @@ public:
 	uint32 m_bIncomplete          : 1; //!< True if compilation failed
 	uint32 m_bHasTessellation     : 1; //!< True if tessellation is enabled
 	uint32 m_bSharedWithShadow    : 1; //!< True if objects is shared between shadow and general pass
+	uint32 m_bDynamicInstancingPossible : 1; //!< True if this render object can be dynamically instanced with other compiled render object
+	uint32 m_bCustomRenderElement       : 1; //!< When dealing with not known render element, will cause Draw be redirected to the RenderElement itself
 	/////////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -226,22 +239,24 @@ public:
 	CGpuBuffer*           m_pExtraSkinWeights; // eight weight skinning
 
 	// Streams data.
-	CDeviceInputStream*   m_vertexStreamSet;
-	CDeviceInputStream*   m_indexStreamSet;
+	const CDeviceInputStream*   m_vertexStreamSet;
+	const CDeviceInputStream*   m_indexStreamSet;
 
-	std::vector<SInstancingData> m_InstancingCBs;
+	CConstantBufferPtr  m_pInstancingConstBuffer;    //!< Constant Buffer with all instances
+	uint32              m_nInstances;                //!< Number of instances.
+
+	// Used for dynamic instancing.
+	SPerInstanceShaderData m_instanceShaderData;
 
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
-	SDrawParams m_drawParams[2];
+	SDrawParams m_drawParams[eDrawParam_Count];
 
 	// Skinning constant buffers, primary and previous
 	CConstantBufferPtr m_skinningCB[2];
 
-	uint32             m_nInstances; //!< Number of instances.
-
 private:
 	// These 2 members must be initialized prior to calling Compile
-	CRendElementBase* m_pRenderElement;
+	CRenderElement*     m_pRenderElement;
 	SShaderItem       m_shaderItem;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -254,6 +269,7 @@ public:
 		, m_bIncomplete(true)
 		, m_bHasTessellation(false)
 		, m_bSharedWithShadow(false)
+		, m_bDynamicInstancingPossible(false)
 		, m_nInstances(0)
 		, m_TessellationPatchIDOffset(-1)
 	{
@@ -266,13 +282,19 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(CRenderObject* pRenderObject, float realTime);
+	bool Compile(CRenderObject* pRenderObject);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
-	bool DrawVerification(const SGraphicsPipelinePassContext& passContext) const;
-	void DrawToCommandList(CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandList, const CDeviceGraphicsPSOPtr& pPso, uint32 drawParamsIndex) const;
+	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
 
-	void Init(const SShaderItem& shaderItem, CRendElementBase* pRE);
+	void Init(const SShaderItem& shaderItem, CRenderElement* pRE);
+
+	// Check if on the fly instancing can be used between this and next object
+	// If instancing is possible writes current object instance data to the outputInstanceData parameter.
+	bool CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,CCompiledRenderObject* pNextObject) const;
+
+	// Returns cached data used to fill dynamic instancing buffer
+	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceShaderData; };
 
 public:
 	static CCompiledRenderObject* AllocateFromPool()
@@ -286,7 +308,7 @@ public:
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, float realTime);
+	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject);
 	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
 	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
 	void UpdatePerInstanceCB(void* pData, size_t size);

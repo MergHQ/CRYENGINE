@@ -1,0 +1,16 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ]
+    },
+    "info": {
+        "name": "Isometric Pathfinding Game Template"
+    },
+    "require": {
+        "engine": "engine-5.3"
+    }
+}

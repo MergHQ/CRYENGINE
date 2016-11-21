@@ -23,6 +23,8 @@ History:
 #include "Battlechatter.h"
 #include "GameRules.h"
 #include "Utility/CryWatch.h"
+#include "VehicleSystem/Vehicle.h"
+#include "VehicleWeapon.h"
 
 CRY_IMPLEMENT_GTI(CRapid, CSingle);
 
@@ -74,6 +76,16 @@ void CRapid::Update(float frameTime, uint32 frameId)
 	if (m_speed <= 0.0f && m_acceleration < 0.0001f)
 	{
 		FinishDeceleration();
+		if (m_pWeapon->IsVehicleWeapon())
+		{
+			CVehicleWeapon* const pVehicleWeapon = static_cast<CVehicleWeapon*>(m_pWeapon);
+			IVehicle* const pVehicle = pVehicleWeapon->GetVehicle();
+			CPlayer* const pPlayer = pVehicleWeapon->GetOwnerPlayer();
+			if (pVehicle && pPlayer)
+			{
+				pVehicle->OnAction(eVAI_Attack2, eAAM_OnRelease, 0.0f, pPlayer->GetEntityId());
+			}
+		}
 		return;
 	}
 

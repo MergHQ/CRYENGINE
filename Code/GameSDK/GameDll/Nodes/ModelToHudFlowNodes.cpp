@@ -195,11 +195,11 @@ void CFlowAddModelToPostRender::ProcessEvent( EFlowEvent event, SActivationInfo 
 			{
 				//Add model with animation if needed
 				const float playSpeed = GetPortFloat(pActInfo, IN_ANIM_SPEED);
-				const char * usePlayerModelName = GetPortString(pActInfo, IN_MODEL);
-				const char * useAnimation = GetPortString(pActInfo, IN_ANIM);
+				const string usePlayerModelName = GetPortString(pActInfo, IN_MODEL);
+				const string useAnimation = GetPortString(pActInfo, IN_ANIM);
 
 				CMenuRender3DModelMgr::SModelParams params;
-				params.pFilename = usePlayerModelName;
+				params.pFilename = usePlayerModelName.c_str();
 				params.posOffset = GetPortVec3(pActInfo, IN_ENTITYPOS);
 				params.rot = Ang3(GetPortVec3(pActInfo, IN_ENTITYROT));
 				params.continuousRot = Ang3(GetPortVec3(pActInfo, IN_ENTITYCONTROT));
@@ -210,10 +210,10 @@ void CFlowAddModelToPostRender::ProcessEvent( EFlowEvent event, SActivationInfo 
 				params.screenRect[2] = GetPortVec3(pActInfo, IN_SCREENU2V2).x;
 				params.screenRect[3] = GetPortVec3(pActInfo, IN_SCREENU2V2).y;
 
-				if(strcmp(usePlayerModelName, "") != 0)
+				if(!usePlayerModelName.empty())
 					characterModelIndex = renderModels->AddModel(params);
 
-				if(strcmp(useAnimation, "") != 0)
+				if(!useAnimation.empty())
 					renderModels->UpdateAnim(characterModelIndex, useAnimation, playSpeed);
 			}
 		}

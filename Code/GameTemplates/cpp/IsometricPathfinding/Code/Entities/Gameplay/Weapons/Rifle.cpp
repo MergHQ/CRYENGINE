@@ -1,14 +1,14 @@
 #include "StdAfx.h"
 #include "Rifle.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 class CRifleRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CRifle>("Rifle");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CRifle>("Rifle");
 
 		RegisterCVars();
 	}

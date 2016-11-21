@@ -11,36 +11,36 @@ public:
 	COpticsProxy(const char* name);
 	~COpticsProxy(){}
 
-	EFlareType          GetType()                    { return eFT_Proxy; }
-	bool                IsGroup() const              { return false; }
+	EFlareType          GetType() override                     { return eFT_Proxy; }
+	bool                IsGroup() const override               { return false; }
 
-	string              GetName() const              { return m_name;  }
-	void                SetName(const char* ch_name) { m_name = ch_name; }
-	void                Load(IXmlNode* pNode);
+	string              GetName() const override               { return m_name;  }
+	void                SetName(const char* ch_name) override  { m_name = ch_name; }
+	void                Load(IXmlNode* pNode) override;
 
-	IOpticsElementBase* GetParent() const                                     { return NULL;  }
+	IOpticsElementBase* GetParent() const override                            { return NULL;  }
 
-	bool                IsEnabled() const                                     { return m_bEnable; }
-	void                SetEnabled(bool b)                                    { m_bEnable = b;    }
+	bool                IsEnabled() const override                            { return m_bEnable; }
+	void                SetEnabled(bool b) override                           { m_bEnable = b;    }
 
-	void                AddElement(IOpticsElementBase* pElement)              {}
-	void                InsertElement(int nPos, IOpticsElementBase* pElement) {}
-	void                Remove(int i)                                         {}
-	void                RemoveAll()                                           {}
-	int                 GetElementCount() const                               { return 0; }
-	IOpticsElementBase* GetElementAt(int i) const                             { return NULL;  }
+	void                AddElement(IOpticsElementBase* pElement) override               {}
+	void                InsertElement(int nPos, IOpticsElementBase* pElement) override  {}
+	void                Remove(int i) override                                          {}
+	void                RemoveAll() override                                            {}
+	int                 GetElementCount() const override                                { return 0; }
+	IOpticsElementBase* GetElementAt(int i) const override                              { return NULL;  }
 
-	void                GetMemoryUsage(ICrySizer* pSizer) const;
-	void                Invalidate();
+	void                GetMemoryUsage(ICrySizer* pSizer) const override;
+	void                Invalidate() override;
 
-	void                Render(SLensFlareRenderParam* pParam, const Vec3& vPos);
+	void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) override;
 
-	void                SetOpticsReference(IOpticsElementBase* pReference)
+	void                SetOpticsReference(IOpticsElementBase* pReference) override
 	{
 		if (pReference->GetType() == eFT_Reference)
 			m_pOpticsReference = (COpticsReference*)pReference;
 	}
-	IOpticsElementBase* GetOpticsReference() const
+	IOpticsElementBase* GetOpticsReference() const override
 	{
 		return m_pOpticsReference;
 	}

@@ -93,11 +93,11 @@ void CDevMode::OnGameplayCommand(const char* cmd)
 		if (tagpoint >= 0 && tagpoint <= 11)
 			GotoTagPoint(tagpoint);
 	}
-	else if (action == "SetViewMode" && gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	else if (action == "SetViewMode" && gEnv->pGameFramework)
 	{
 		int mode;
 		args.GetArg(1, mode);
-		IActor* pPlayer = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pPlayer = gEnv->pGameFramework->GetClientActor();
 		static ICVar* pCamVar = gEnv->pConsole->GetCVar("cl_cam_orbit");
 		if (pPlayer && pCamVar)
 		{
@@ -119,11 +119,11 @@ void CDevMode::OnGameplayCommand(const char* cmd)
 			}
 		}
 	}
-	else if (action == "SetFlyMode" && gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	else if (action == "SetFlyMode" && gEnv->pGameFramework)
 	{
 		int mode;
 		args.GetArg(1, mode);
-		IActor* pPlayer = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pPlayer = gEnv->pGameFramework->GetClientActor();
 		if (pPlayer && mode >= 0 && mode < 3)
 			pPlayer->SetFlyMode(mode);
 	}

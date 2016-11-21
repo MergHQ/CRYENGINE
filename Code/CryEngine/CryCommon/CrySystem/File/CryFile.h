@@ -123,6 +123,13 @@ public:
 		return nRead;
 	}
 
+	//! Template version, for automatic size support.
+	template<typename T>
+	inline size_t WriteType(const T* pData, const size_t nCount = 1)
+	{
+		return Write(pData, sizeof(T) * nCount);
+	}
+
 	//! Retrieves the length of the file.
 	size_t GetLength();
 

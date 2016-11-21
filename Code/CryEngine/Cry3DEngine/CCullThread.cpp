@@ -419,7 +419,7 @@ void CCullThread::RasterizeZBuffer(uint32 PolyLimit)
 	if (m_OCMInstCount == 0)
 	{
 		float fRed[4] = { 1, 0, 0, 1 };
-		gEnv->pRenderer->Draw2dLabel(1.0f, 5.0f, 1.6f, fRed, false, "OCM file failed to load -> no occlusion checking possible!");
+		IRenderAuxText::Draw2dLabel(1.0f, 5.0f, 1.6f, fRed, false, "OCM file failed to load -> no occlusion checking possible!");
 		return;
 	}
 

@@ -62,7 +62,7 @@ public:
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		const float baseAngle = m_angle.GetBaseValue();
-		const float invBaseAngle = rcp_fast(min(-FLT_EPSILON, baseAngle));
+		const float invBaseAngle = rcp_fast(max(FLT_EPSILON, baseAngle));
 
 		STempModBuffer angles(context, m_angle);
 		STempModBuffer velocityMults(context, m_velocity);
@@ -306,128 +306,71 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity"
 
 //////////////////////////////////////////////////////////////////////////
 
-class CFeatureMoveRelativeToEmitter : public CParticleFeature
+class CFeatureVelocityCompass : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureMoveRelativeToEmitter()
-		: m_positionInherit(1.0f)
-		, m_velocityInheritAfterDeath(0.0f) {}
+	CFeatureVelocityCompass()
+		: m_azimuth(0.0f)
+		, m_angle(0.0f)
+		, m_velocity(0.0f) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_Update, this);
-		pComponent->AddParticleData(EPVF_Position);
+		pComponent->AddToUpdateList(EUL_InitUpdate, this);
+		m_azimuth.AddToComponent(pComponent, this);
+		m_angle.AddToComponent(pComponent, this);
+		m_velocity.AddToComponent(pComponent, this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_positionInherit, "PositionInherit", "Position Inherit");
-		ar(m_velocityInheritAfterDeath, "VelocityInheritAfterDeath", "Velocity Inherit After Death");
+		ar(m_azimuth, "Azimuth", "Azimuth");
+		ar(m_angle, "Angle", "Angle");
+		ar(m_velocity, "Velocity", "Velocity");
 	}
 
-	virtual void Update(const SUpdateContext& context) override
+	virtual void InitParticles(const SUpdateContext& context) override
 	{
-		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		CRY_PFX2_PROFILE_DETAIL;
 
-		if (abs(m_positionInherit) > FLT_EPSILON)
+		const float halfPi = gf_PI * 0.5f;
+		CParticleContainer& parentContainer = context.m_parentContainer;
+		CParticleContainer& container = context.m_container;
+		const Quat defaultQuat = context.m_runtime.GetEmitter()->GetLocation().q;
+		IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
+		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
+		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
+		STempModBuffer azimuths(context, m_azimuth);
+		STempModBuffer angles(context, m_angle);
+		STempModBuffer velocityValues(context, m_velocity);
+		azimuths.ModifyInit(context, m_azimuth, container.GetSpawnedRange());
+		angles.ModifyInit(context, m_angle, container.GetSpawnedRange());
+		velocityValues.ModifyInit(context, m_velocity, container.GetSpawnedRange());
+
+		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
-			const bool parentsHaveAngles3D = context.m_parentContainer.HasData(EPQF_Orientation);
-			const bool childrenHaveAngles3D = context.m_container.HasData(EPQF_Orientation);
-			if (parentsHaveAngles3D && childrenHaveAngles3D)
-				MoveRelativeToEmitter<true>(context);
-			else
-				MoveRelativeToEmitter<false>(context);
+			const TParticleId parentId = parentIds.Load(particleId);
+			const Quat wQuat = parentQuats.SafeLoad(parentId);
+			const float azimuth = azimuths.m_stream.SafeLoad(particleId) + halfPi;
+			const float altitude = angles.m_stream.SafeLoad(particleId) + halfPi;
+			const float velocity = velocityValues.m_stream.SafeLoad(particleId);
+			const Vec3 oVelocity = PolarCoordToVec3(azimuth, altitude) * velocity;
+			const Vec3 wVelocity0 = velocities.Load(particleId);
+			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;
+			velocities.Store(particleId, wVelocity1);
 		}
-
-		if (abs(m_velocityInheritAfterDeath) > FLT_EPSILON)
-			InheritParentVelocity(context);
+		CRY_PFX2_FOR_END;
 	}
 
 private:
-	template<const bool UpdateAngles>
-	void MoveRelativeToEmitter(const SUpdateContext& context)
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-
-		CParticleContainer& container = context.m_container;
-		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
-		const CParticleContainer& parentContainer = context.m_parentContainer;
-		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
-		const IVec3Stream parentAngularVelocities = parentContainer.GetIVec3Stream(EPVF_AngularVelocity);
-		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
-		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
-		const float deltaTime = context.m_deltaTime;
-		const float positionInherit = m_positionInherit;
-
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
-		{
-			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Expired;
-			if (parentState == ES_Expired)
-				continue;
-
-			const Vec3 parentPosition = parentPositions.SafeLoad(parentId);
-			const Vec3 parentVelocity = parentVelocities.SafeLoad(parentId);
-			const Vec3 parentAngularVelocity = parentAngularVelocities.SafeLoad(parentId);
-			const Quat parentOrientation = parentOrientations.SafeLoad(parentId);
-
-			const QuatT worldToParent = QuatT(-parentPosition, parentOrientation.GetInverted());
-			const QuatT parentToWorld = QuatT(parentPosition, parentOrientation);
-
-			const Quat deltaQuat = Quat::CreateRotationXYZ(Ang3(parentAngularVelocity * deltaTime));
-			const Vec3 wPosition0 = positions.Load(particleId);
-			const Vec3 pos = deltaQuat * ((wPosition0 - parentPosition) + parentVelocity * deltaTime);
-			const Vec3 wPosition1 = pos + parentPosition;
-
-			if (UpdateAngles)
-			{
-				const Quat wOrientation0 = orientations.Load(particleId);
-				const Quat wOrientation1 = deltaQuat * wOrientation0;
-				orientations.Store(particleId, wOrientation1);
-			}
-
-			positions.Store(particleId, wPosition1);
-		}
-		CRY_PFX2_FOR_END;
-	}
-
-	void InheritParentVelocity(const SUpdateContext& context)
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-
-		CParticleContainer& container = context.m_container;
-		const CParticleContainer& parentContainer = context.m_parentContainer;
-		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
-		auto states = container.GetTIOStream<uint8>(EPDT_State);
-		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
-
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
-		{
-			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : 0;
-			if (parentState == ES_Expired)
-			{
-				const Vec3 parentVelocity = parentVelocities.Load(parentId);
-				const Vec3 velocity0 = velocities.Load(particleId);
-				const Vec3 velocity1 = parentVelocity * m_velocityInheritAfterDeath + velocity0;
-				velocities.Store(particleId, velocity1);
-			}
-		}
-		CRY_PFX2_FOR_END;
-	}
-
-	SFloat m_positionInherit;
-	SFloat m_velocityInheritAfterDeath;
+	CParamMod<SModParticleSpawnInit, SAngle360> m_azimuth;
+	CParamMod<SModParticleSpawnInit, UAngle180> m_angle;
+	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter", colorVelocity);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCompass, "Velocity", "Compass", colorVelocity);
 
 }

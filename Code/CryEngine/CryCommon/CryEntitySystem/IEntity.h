@@ -276,6 +276,7 @@ enum EEntityEvent
 
 	//! Sent when triggering entity is near to the area proximity, this event sent to all target entities of the area.
 	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
+	//! fParam[0] = distance
 	ENTITY_EVENT_ENTERNEARAREA,
 
 	//! Sent when triggering entity leaves the near area within proximity region of the outside area border.
@@ -503,7 +504,13 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(2),
 	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(3),
 	ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS       = BIT(4),
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(5), // Bit0 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(6), // Bit1 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(7), // Bit2 of entity GI mode, see IRenderNode::EGIMode
 };
+
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5               // Bit offset of entity GI mode in EEntityFlagsExtended.
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
 enum EEntitySerializeFlags
@@ -581,6 +588,7 @@ struct IEntity
 #endif //SEG_WORLD
 
 	// <interfuscator:shuffle>
+	IEntity() : m_objectID(0) {}
 	virtual ~IEntity(){}
 
 	//! Retrieves the runtime unique identifier of this entity assigned to it by the Entity System.
@@ -1005,6 +1013,9 @@ struct IEntity
 	//! \return Slot id where the light source was loaded, or -1 if loading failed.
 	virtual int LoadLight(int nSlot, CDLight* pLight) = 0;
 
+	virtual int LoadCloud(int nSlot, const char* sFilename) = 0;
+	virtual int SetCloudMovementProperties(int nSlot, const struct SCloudMovementProperties& properties) = 0;
+
 	//! Invalidates the entity's and all its children's transformation matrices!
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) = 0;
 
@@ -1057,6 +1068,13 @@ struct IEntity
 	virtual void         SetSwObjDebugFlag(unsigned int uiVal) = 0;
 #endif //SEG_WORLD
 
+	//! ObjectID that corresponds to editor base objects. This is used for selection and highlighting
+	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
+	//! runtime ID and does not need to be serialized
+	uint32 GetObjectID() { return m_objectID; }
+	void   SetObjectID(uint32 ID) { m_objectID = ID; }
+
+	uint32 m_objectID;
 	// </interfuscator:shuffle>
 };
 

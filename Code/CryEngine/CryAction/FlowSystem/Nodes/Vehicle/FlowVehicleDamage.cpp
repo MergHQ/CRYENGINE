@@ -222,7 +222,7 @@ public:
 				return;
 
 			IVehicle* pVehicle;
-			pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (pVehicle && !pVehicle->IsDestroyed())
 			{
 				pVehicle->Destroy();

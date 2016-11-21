@@ -274,9 +274,9 @@ struct SDynTexture : public IDynTexture
 	ETEX_Format GetFormat() { return m_eTF; }
 	bool        FreeTextures(bool bOldOnly, int nNeedSpace);
 
-	typedef std::multimap<unsigned int, CTexture*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<unsigned int, CTexture*>, stl::PoolAllocatorSynchronizationSinglethreaded>>           TextureSubset;
+	typedef std::multimap<unsigned int, CTexture*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<const unsigned int, CTexture*>, stl::PoolAllocatorSynchronizationSinglethreaded>>           TextureSubset;
 	typedef TextureSubset::iterator                                                                                                                                                               TextureSubsetItor;
-	typedef std::multimap<unsigned int, TextureSubset*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<unsigned int, TextureSubset*>, stl::PoolAllocatorSynchronizationSinglethreaded>> TextureSet;
+	typedef std::multimap<unsigned int, TextureSubset*, std::less<unsigned int>, stl::STLPoolAllocator<std::pair<const  unsigned int, TextureSubset*>, stl::PoolAllocatorSynchronizationSinglethreaded>> TextureSet;
 	typedef TextureSet::iterator                                                                                                                                                                  TextureSetItor;
 
 	static TextureSet    s_availableTexturePool2D_BC1;
@@ -1261,7 +1261,7 @@ struct SResourceView
 
 	SResourceView(uint64 nKey = DefaultView)
 	{
-		COMPILE_TIME_ASSERT(sizeof(m_Desc) <= sizeof(KeyType));
+		static_assert(sizeof(m_Desc) <= sizeof(KeyType), "Invalid type size!");
 
 		m_Desc.Key = nKey;
 		m_pDeviceResourceView = NULL;
@@ -1475,8 +1475,8 @@ private:
 	D3DShaderResource* m_pDeviceShaderResource;
 	D3DShaderResource* m_pDeviceShaderResourceSRGB;
 
-	typedef std::function<void (uint32)> InvalidateCallbackType;
-	std::vector<std::pair<void*, InvalidateCallbackType>> m_invalidateCallbacks;
+	typedef std::function<void (void*, uint32)> InvalidateCallbackType;
+	std::unordered_map<void*, InvalidateCallbackType> m_invalidateCallbacks;
 
 public:
 	int m_nUpdateFrameID;         // last write access, compare with GetFrameID(false)
@@ -1788,8 +1788,16 @@ public:
 	// Will notify resource's user that some data of the the resource was invalidated.
 	// dirtyFlags - one or more of the EDeviceDirtyFlags enum bits
 	void InvalidateDeviceResource(uint32 dirtyFlags);
-	void AddInvalidateCallback(void* listener, InvalidateCallbackType callback);
-	void RemoveInvalidateCallbacks(void* listener);
+
+	inline void AddInvalidateCallback(void* listener, InvalidateCallbackType callback)
+	{
+		m_invalidateCallbacks.emplace(listener, callback);
+	}
+
+	inline void RemoveInvalidateCallbacks(void* listener)
+	{
+		m_invalidateCallbacks.erase(listener);
+	}
 	//////////////////////////////////////////////////////////////////////////
 
 public:
@@ -2120,7 +2128,7 @@ public:
 	static D3DFormat    ConvertToSignedFmt(D3DFormat fmt);
 	static D3DFormat    ConvertToTypelessFmt(D3DFormat fmt);
 
-	static SEnvTexture* FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRendElementBase* pRE, bool* bMustUpdate);
+	static SEnvTexture* FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate);
 	static void         DrawSceneToCubeSide(Vec3& Pos, int tex_size, int side);
 	static bool         RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData);
 
@@ -2221,6 +2229,10 @@ public:
 	static CTexture* s_ptexSceneDiffuse;
 	static CTexture* s_ptexSceneSpecular;
 	static CTexture* s_ptexWindGrid;
+
+	static CTexture* s_ptexSceneSelectionIDs;         // Selection ID buffer used for selection and highlight passes
+	static CTexture* s_ptexSceneHalfDepthStencil;     // half resolution depth-stencil, used for selection and highlight passes.
+
 #if defined(DURANGO_USE_ESRAM)
 	static CTexture* s_ptexSceneSpecularESRAM;        // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
 #endif
@@ -2440,7 +2452,7 @@ public:
 public:
 	CFlashTextureSourceBase(const char* pFlashFileName, const IRenderer::SLoadShaderItemArgs* pArgs);
 
-	void AutoUpdate(const float delta, const bool isEditing, const bool isPaused);
+	void AutoUpdate(const CTimeValue& curTime, const float delta, const bool isEditing, const bool isPaused);
 	void AutoUpdateRT(const int frameID);
 
 	struct IFlashPlayerInstanceWrapper
@@ -2680,6 +2692,8 @@ protected:
 	static int                   Align8(int dim)                       { return (dim + 7) & ~7; }
 
 private:
+	void Advance(const float delta, bool isPaused);
+
 	struct CachedTexStateID
 	{
 		int orig;

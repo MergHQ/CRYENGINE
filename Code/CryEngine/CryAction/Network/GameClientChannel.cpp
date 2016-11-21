@@ -23,6 +23,7 @@
 #include "ActionGame.h"
 #include <CryNetwork/INetworkService.h>
 #include <CryNetwork/INetwork.h>
+#include "CryActionCVars.h"
 
 #define LOCAL_ACTOR_VARIABLE     "g_localActor"
 #define LOCAL_CHANNELID_VARIABLE "g_localChannelId"
@@ -270,7 +271,7 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 		GetGameContext()->SetLevelName(levelName.c_str());
 		GetGameContext()->SetGameRules(rulesClass.c_str());
 		//
-		IActor* pDemoPlayPlayer = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetOriginalDemoSpectator();
+		IActor* pDemoPlayPlayer = gEnv->pGameFramework->GetIActorSystem()->GetOriginalDemoSpectator();
 		// clear all entities slot - because render data will be released in LoadLevel and these releases are not clears entities slots data (FogVolume for example)
 		CScopedRemoveObjectUnlock unlockRemovals(CCryAction::GetCryAction()->GetGameContext());
 		IEntityItPtr i = gEnv->pEntitySystem->GetEntityIterator();
@@ -299,7 +300,6 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 		}
 		if (pDemoPlayPlayer)
 		{
-			gEnv->pGame->PlayerIdSet(pDemoPlayPlayer->GetEntityId());
 			CCryAction::GetCryAction()->OnActionEvent(eAE_inGame);
 		}
 	}
@@ -355,10 +355,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		const EntityId entityId = pEntity->GetId();
 
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
-		if (param.bClientActor)
-		{
-			gEnv->pGame->PlayerIdSet(entityId);
-		}
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
 			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
@@ -369,14 +365,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		CRY_ASSERT(pGameObject);
 		if (param.bClientActor)
 		{
-			IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
-			if (!pActor)
-			{
-				pEntitySystem->RemoveEntity(entityId);
-				CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
-				pNetChannel->Disconnect(eDC_ContextCorruption, "Client actor spawned entity was not an actor");
-				return false;
-			}
 			SetPlayerId(entityId);
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
@@ -423,8 +411,6 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 {
 	CGameChannel::SetPlayerId(id);
 
-	CCryAction::GetCryAction()->GetGameContext()->PlayerIdSet(id);
-
 	IScriptSystem* pSS = gEnv->pScriptSystem;
 
 	if (id)
@@ -453,9 +439,6 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 		gEnv->pScriptSystem->SetGlobalToNull(LOCAL_ACTOR_VARIABLE);
 		gEnv->pScriptSystem->SetGlobalToNull(LOCAL_CHANNELID_VARIABLE);
 	}
-
-	if (gEnv->pGame)
-		gEnv->pGame->PlayerIdSet(id);
 }
 
 void CGameClientChannel::CallOnSetPlayerId()
@@ -465,21 +448,28 @@ void CGameClientChannel::CallOnSetPlayerId()
 		return;
 
 	IScriptTable* pScriptTable = pPlayer->GetScriptTable();
-	if (!pScriptTable)
-		return;
-
-	SmartScriptTable client;
-	if (pScriptTable->GetValue("Client", client))
+	if (pScriptTable)
 	{
-		if (pScriptTable->GetScriptSystem()->BeginCall(client, "OnSetPlayerId"))
+		SmartScriptTable client;
+		if (pScriptTable->GetValue("Client", client))
 		{
-			pScriptTable->GetScriptSystem()->PushFuncParam(pScriptTable);
-			pScriptTable->GetScriptSystem()->EndCall();
+			if (pScriptTable->GetScriptSystem()->BeginCall(client, "OnSetPlayerId"))
+			{
+				pScriptTable->GetScriptSystem()->PushFuncParam(pScriptTable);
+				pScriptTable->GetScriptSystem()->EndCall();
+			}
 		}
 	}
 
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(GetPlayerId()))
 		pActor->InitLocalPlayer();
+
+#ifndef OLD_VOICE_SYSTEM_DEPRECATED
+	if (m_pVoiceController)
+		m_pVoiceController->PlayerIdSet(id);
+#endif
+
+	pPlayer->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
 }
 
 bool CGameClientChannel::HookCreateActor(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)

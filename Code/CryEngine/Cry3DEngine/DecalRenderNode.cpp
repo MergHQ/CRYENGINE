@@ -18,6 +18,7 @@ CDecalRenderNode::CDecalRenderNode()
 	, m_decals()
 	, m_nLastRenderedFrameId(0)
 	, m_nLayerId(0)
+	, m_physEnt(0)
 {
 	GetInstCount(GetRenderNodeType())++;
 
@@ -30,6 +31,8 @@ CDecalRenderNode::~CDecalRenderNode()
 
 	DeleteDecals();
 	Get3DEngine()->FreeRenderNodeState(this);
+	if (m_physEnt)
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_physEnt);
 }
 
 const SDecalProperties* CDecalRenderNode::GetDecalProperties() const
@@ -359,6 +362,171 @@ void CDecalRenderNode::SetDecalProperties(const SDecalProperties& properties)
 
 	m_Matrix = m_Matrix * matScale;
 	m_Matrix.SetTranslation(properties.m_pos);
+
+	bool hasPhys = false;
+	if (m_pMaterial && m_pMaterial->GetSurfaceTypeId() &&
+	    (properties.m_projectionType == SDecalProperties::eProjectOnTerrainAndStaticObjects || properties.m_projectionType == SDecalProperties::eProjectOnTerrain))
+	{
+		IGeometry* pGeom = 0;
+		IGeomManager* pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
+		const float thickness = 0.01f;
+		geom_world_data gwd[2];
+		gwd[0].offset = m_Matrix.GetTranslation();
+		gwd[0].v = m_Matrix.TransformVector(Vec3(0, 0, 1));
+		primitives::cylinder cyl;
+
+		Vec2_tpl<uint16> sz;
+		int* idAtlas;
+		if (m_pMaterial->GetFlags() & MTL_FLAG_TRACEABLE_TEXTURE && m_pMaterial->GetShaderItem().m_pShaderResources)
+			if (SEfResTexture* pTex = m_pMaterial->GetShaderItem().m_pShaderResources->GetTexture(EFTT_DIFFUSE))
+				if (ITexture* pITex = pTex->m_Sampler.m_pITex)
+					if (ColorB* data = (ColorB*)pITex->GetLowResSystemCopy(sz.x, sz.y, &idAtlas))
+					{
+						const int lp = 5;
+						Vec2i szKrn((int)sz.x / lp, (int)sz.y / lp), rszKrn((1 << 23) / szKrn.x, (1 << 23) / szKrn.y);
+						Vec2 rsz(1.0f / sz.x, 1.0f / sz.y);
+
+						auto RunningSum = [](uint8* psrc, uint8* pdst, int stride, int w, int wk, int rwk, int rwkShift)
+						{
+							int i, sum;
+							uint8* p0 = psrc, * p1 = psrc;
+							for (i = 0, sum = 0; i*2 < wk + 1; sum += *p1, p1 += stride, ++i)
+								;
+							for (; i < wk; sum += *p1, p1 += stride, pdst += stride, ++i)
+								*pdst = sum * rwk >> rwkShift;
+							for (; i < w; (sum += *p1) -= *p0, p0 += stride, p1 += stride, pdst += stride, ++i)
+								*pdst = sum * rwk >> rwkShift;
+							for (; i*2 < w * 2 + wk; sum -= *p0, p0 += stride, pdst += stride, ++i)
+								*pdst = sum * rwk >> rwkShift;
+						};
+
+						uint8* buf0 = new uint8[sz.x * sz.y], * buf1 = new uint8[sz.x * sz.y], * buf2 = new uint8[sz.x * sz.y];
+						for (int i = sz.x * sz.y - 1; i >= 0; i--)
+							buf0[i] = data[i].a;
+						for (int iy = 0; iy < sz.y; iy++)	// low-pass along x
+							RunningSum(buf0 + iy * sz.x, buf1 + iy * sz.x, 1, sz.x, szKrn.x, rszKrn.x, 23);
+						for (int ix = 0; ix < sz.x; ix++)	// low-pass along y, set to 1 if resulting alpha>0.5
+							RunningSum(buf1 + ix, buf0 + ix, sz.x, sz.y, szKrn.y, rszKrn.y, 23 + 7);
+						for (int iy = 0; iy < sz.y; iy++)	// count neighbors (+self) along x
+							RunningSum(buf0 + iy * sz.x, buf1 + iy * sz.x, 1, sz.x, 3, 1, 0);
+						for (int ix = 0; ix < sz.x; ix++)	// ..repeat along y
+							RunningSum(buf1 + ix, buf2 + ix, sz.x, sz.y, 3, 1, 0);
+						int nVtx = 0;
+						for (int i = sz.x * sz.y - 1; i >= 0; nVtx += buf0[i] & isneg((int)buf2[i] - 6), i--)
+							;	// count filled points with less than 5 filled neighbors
+						ptitem2d* pts = new ptitem2d[nVtx];
+						for (int iy = 0, i = 0, j = 0; iy < sz.y; iy++)
+							for (int ix = 0; ix < sz.x; ix++, i++)
+								if (buf0[i] && buf2[i] < 6)
+									pts[j++].pt.set((ix + 0.5f) * 2 * rsz.x - 1, 1 - (iy + 0.5f) * 2 * rsz.y);
+
+						edgeitem* edges = new edgeitem[nVtx * 2], * pedge;
+						int nEdges = gEnv->pPhysicalWorld->GetPhysUtils()->qhull2d(pts, nVtx, edges, 16);
+						for (pedge = edges; nEdges && !pedge->next; pedge++)
+							;
+						Vec3* vtx = new Vec3[nEdges * 2];
+						Vec3_tpl<uint16>* tri = new Vec3_tpl<uint16>[(nEdges - 1) * 4];
+						for (int i = 0; i < nEdges; i++, pedge = pedge->next)
+						{
+							Vec3 pt = m_Matrix.TransformVector(Vec3(pedge->pvtx->pt));
+							vtx[i] = pt - gwd[0].v * thickness;
+							vtx[i + nEdges] = pt + gwd[0].v * thickness;
+						}
+						for (int i = 0; i < nEdges - 2; i++)
+						{
+							tri[i].Set(0, i + 2, i + 1);
+							tri[i + nEdges - 2].Set(nEdges, nEdges + i + 1, nEdges + i + 2);
+						}
+						for (int i = 0; i < nEdges; i++)
+						{
+							int i1 = i + 1 & (i + 1 - nEdges) >> 31;
+							tri[(nEdges - 2) * 2 + i * 2].Set(i, i1, i + nEdges);
+							tri[(nEdges - 2) * 2 + i * 2 + 1].Set(nEdges + i1, nEdges + i, i1);
+						}
+						pGeom = pGeoman->CreateMesh(vtx, &tri[0].x, 0, 0, (nEdges - 1) * 4, mesh_SingleBB | mesh_no_filter | mesh_no_vtx_merge, 0);
+
+						delete[] tri, delete[] vtx, delete[] edges, delete[] pts;
+						delete[] buf2, delete[] buf1, delete[] buf0;
+					}
+
+		if (!pGeom)
+		{
+			cyl.center.zero();
+			cyl.axis = gwd[0].v;
+			cyl.hh = thickness;
+			cyl.r = m_Matrix.TransformVector(Vec3(1, 0, 0)).len();
+			pGeom = pGeoman->CreatePrimitive(primitives::cylinder::type, &cyl);
+		}
+		phys_geometry* pgeom = pGeoman->RegisterGeometry(pGeom, m_pMaterial->GetSurfaceType()->GetId());
+		pGeom->Release();
+		--pgeom->nRefCount;
+
+		primitives::box bbox;
+		pGeom->GetBBox(&bbox);
+		Matrix33 Rabs;
+		Vec3 center = gwd[0].offset + bbox.center, size = (Rabs = bbox.Basis.T()).Fabs() * bbox.size;
+		IPhysicalEntity* pentBuf[16], ** pents = pentBuf;
+		int useStatics = properties.m_projectionType == SDecalProperties::eProjectOnTerrainAndStaticObjects;
+		int nEnts = gEnv->pPhysicalWorld->GetEntitiesInBox(center - size, center + size, pents, ent_terrain | ent_static & - useStatics, 16);
+		float t[2] = { 0, 0 }, tmax = m_Matrix.TransformVector(Vec3(0, 0, 1)).len();
+
+		pe_status_pos sp;
+		for (int i = 0; i < nEnts; i++)
+			for (sp.ipart = 0; pents[i]->GetStatus(&sp); sp.ipart++)
+				if (sp.flagsOR & geom_colltype0)
+				{
+					gwd[1].R = Matrix33(sp.q);
+					gwd[1].offset = sp.pos;
+					gwd[1].scale = sp.scale;
+					for (int j = 0; j < 2; j++)
+					{
+						geom_contact* pcont;
+						if (pGeom->Intersect(sp.pGeom, gwd, gwd + 1, 0, pcont))
+							t[j] = min(tmax, max(t[j], (float)pcont->t));
+						gwd[0].v.Flip();
+					}
+				}
+		if (pGeom->GetType() == GEOM_TRIMESH)
+		{
+			mesh_data* md = (mesh_data*)pGeom->GetData();
+			for (int i = 0; i*2 < md->nVertices; i++)
+			{
+				md->pVertices[i] -= gwd[0].v * t[0];
+				md->pVertices[i + (md->nVertices >> 1)] += gwd[0].v * t[1];
+			}
+			pGeom->SetData(md);
+		}
+		else
+		{
+			cyl.hh += (t[0] + t[1]) * 0.5f;
+			cyl.center += gwd[0].v * ((t[1] - t[0]) * 0.5f);
+			pGeom->SetData(&cyl);
+		}
+
+		pe_params_pos pp;
+		pp.pos = gwd[0].offset;
+		pe_params_flags pf;
+		pf.flagsOR = pef_disabled; // disabled ents are moved to the end of the cell list - needed to check mat updates the last
+		if (!m_physEnt)
+			m_physEnt = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pf);
+		pe_action_remove_all_parts arap;
+		m_physEnt->Action(&arap);
+		m_physEnt->SetParams(&pp);
+		pe_geomparams gp;
+		gp.flags = geom_mat_substitutor;
+		gp.flagsCollider = 1 + useStatics * 2;
+		m_physEnt->AddGeometry(pgeom, &gp);
+		pf.flagsAND = ~pef_traceable;
+		m_physEnt->SetParams(&pf);
+		pf.flagsOR = pef_traceable;
+		m_physEnt->SetParams(&pf); // triggers list update according to pef_disabled
+		hasPhys = true;
+	}
+	if (m_physEnt && !hasPhys)
+	{
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_physEnt);
+		m_physEnt = 0;
+	}
 }
 
 IRenderNode* CDecalRenderNode::Clone() const

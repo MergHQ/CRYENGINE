@@ -46,7 +46,7 @@ CCryDX12Device::CCryDX12Device(NCryDX12::CDevice* device)
 	, m_pDevice(device)
 {
 	DX12_FUNC_LOG
-
+		
 #ifdef CRY_USE_DX12_MULTIADAPTER
 	// TODO: CVar ...
 	if (CRenderer::CV_r_StereoEnableMgpu)
@@ -74,6 +74,8 @@ CCryDX12Device::CCryDX12Device(NCryDX12::CDevice* device)
 
 		m_pMainContext = CCryDX12DeviceContext::Create(this, 0, false);
 	}
+	//report the node count used
+	gRenDev->m_adapterInfo.nNodeCount = m_numNodes;
 }
 
 CCryDX12Device::~CCryDX12Device()

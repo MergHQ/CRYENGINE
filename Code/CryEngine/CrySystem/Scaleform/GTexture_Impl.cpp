@@ -141,14 +141,11 @@ bool GTextureXRender::InitTextureFromFile(const char* pFilename)
 {
 	assert(m_texID == -1);
 
-	string sFile = pFilename;
-	PathUtil::ToUnixPath(sFile);
-	while (sFile.find("//") != stack_string::npos)
-		sFile.replace("//", "/");
-	pFilename = sFile.c_str();
+	string sFile = PathUtil::ToUnixPath(pFilename);
+	sFile.replace("//", "/");
 
 	IRenderer* pRenderer(gEnv->pRenderer);
-	ITexture* pTexture(pRenderer->EF_LoadTexture(pFilename, FT_DONT_STREAM | FT_NOMIPS));
+	ITexture* pTexture(pRenderer->EF_LoadTexture(sFile.c_str(), FT_DONT_STREAM | FT_NOMIPS));
 	if (pTexture)
 	{
 	#ifndef RELEASE

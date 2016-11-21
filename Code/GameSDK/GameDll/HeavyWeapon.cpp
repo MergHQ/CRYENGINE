@@ -180,7 +180,7 @@ void CHeavyWeapon::StartUse(EntityId userId)
 	m_stats.used = true;
 	m_stats.detached = false;
 
-	if(IsClient() && gEnv->pGame->GetIGameFramework()->GetClientActorId()==userId)
+	if(IsClient() && gEnv->pGameFramework->GetClientActorId()==userId)
 	{
 		if(IEntity* pEntity = GetEntity())
 		{

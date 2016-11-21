@@ -382,6 +382,7 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 	if (hashValue)
 		*hashValue = hash.GetValue();
 
+	// NOTE pavloi 2016.07.13: if external meshes present, this branch will almost always be executes
 	if (hashTest != hash.GetValue())
 	{
 		terrainAABBCount = 0;
@@ -673,6 +674,7 @@ void WorldVoxelizer::VoxelizeGeometry(const Vec3* vertices, const uint32* indice
 AABB WorldVoxelizer::ComputeTerrainAABB(IGeometry* geometry)
 {
 	primitives::heightfield* phf = (primitives::heightfield*)geometry->GetData();
+	if (!phf) return AABB::RESET;
 
 	const int minX = max(0, (int)((m_volumeAABB.min.x - phf->origin.x) * phf->stepr.x));
 	const int minY = max(0, (int)((m_volumeAABB.min.y - phf->origin.y) * phf->stepr.y));

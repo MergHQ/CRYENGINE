@@ -1,14 +1,14 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Climb-able Ledge system 
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description: Climb-able Ledge system
 
--------------------------------------------------------------------------
-History:
-- 20:04:2009: Created by Michelle Martin
+   -------------------------------------------------------------------------
+   History:
+   - 20:04:2009: Created by Michelle Martin
 
 *************************************************************************/
 
@@ -18,146 +18,149 @@ History:
 
 #include <CryCore/TypeInfo_impl.h>
 
-#define LEDGE_DATA_FILE_VERSION	3
+#define LEDGE_DATA_FILE_VERSION 3
 
 STRUCT_INFO_BEGIN(SLedgeObject)
-	STRUCT_VAR_INFO(m_entityId, TYPE_INFO(EntityId))
-	STRUCT_VAR_INFO(m_markersStartIdx, TYPE_INFO(uint16))
-	STRUCT_VAR_INFO(m_markersCount, TYPE_INFO(uint16))
-	STRUCT_VAR_INFO(m_ledgeFlags, TYPE_ARRAY(LedgeSide_Count, TYPE_INFO(ELedgeFlagBitfield)))
-	STRUCT_VAR_INFO(m_ledgeCornerEndAdjustAmount, TYPE_INFO(float))
+STRUCT_VAR_INFO(m_entityId, TYPE_INFO(EntityId))
+STRUCT_VAR_INFO(m_markersStartIdx, TYPE_INFO(uint16))
+STRUCT_VAR_INFO(m_markersCount, TYPE_INFO(uint16))
+STRUCT_VAR_INFO(m_ledgeFlags, TYPE_ARRAY(LedgeSide_Count, TYPE_INFO(ELedgeFlagBitfield)))
+STRUCT_VAR_INFO(m_ledgeCornerEndAdjustAmount, TYPE_INFO(float))
 STRUCT_INFO_END(SLedgeObject)
 
 STRUCT_INFO_BEGIN(SLedgeMarker)
-	STRUCT_VAR_INFO(m_worldPosition, TYPE_INFO(Vec3))
-	STRUCT_VAR_INFO(m_facingDirection, TYPE_INFO(Vec3))
-	STRUCT_VAR_INFO(m_endOrCorner, Type_info(bool))
+STRUCT_VAR_INFO(m_worldPosition, TYPE_INFO(Vec3))
+STRUCT_VAR_INFO(m_facingDirection, TYPE_INFO(Vec3))
+STRUCT_VAR_INFO(m_endOrCorner, Type_info(bool))
 STRUCT_INFO_END(SLedgeMarker)
 
 namespace
 {
-	ILINE Vec3 _FindVectorToClosestPointOnLedge( const Vec3 &referencePoint, const SLedgeInfo &ledgeInfo )
+ILINE Vec3 _FindVectorToClosestPointOnLedge(const Vec3& referencePoint, const SLedgeInfo& ledgeInfo)
+{
+	const Vec3 ledgePosition = ledgeInfo.GetPosition();
+
+	Vec3 vXDir = ledgeInfo.GetSegment();
+	const float halfWidth = (vXDir.NormalizeSafe() * 0.5f); // this is normalizing so projection below is valid
+	const float quarterWidth = halfWidth * 0.5f;            // we use this to ensure when adjusting ends of a ledge a ledge will always be at least half its size. If the desired adjust amount is greater than the ledge size
+
+	float distToP0 = halfWidth;
+	float distToP1 = halfWidth;
+
+	float endAdjustment = ledgeInfo.GetCornerEndAdjustAmount();
+
+	// must keep this clamping in sync with editor and game DebugDraw() below
+	if (ledgeInfo.AreFlagsSet(kledgeRunTimeOnlyFlag_p0IsEndOrCorner))
 	{
-		const Vec3 ledgePosition = ledgeInfo.GetPosition();
-
-		Vec3 vXDir = ledgeInfo.GetSegment();
-		const float halfWidth = (vXDir.NormalizeSafe() * 0.5f); // this is normalizing so projection below is valid
-		const float quarterWidth = halfWidth * 0.5f; // we use this to ensure when adjusting ends of a ledge a ledge will always be at least half its size. If the desired adjust amount is greater than the ledge size
-
-		float distToP0 = halfWidth;
-		float distToP1 = halfWidth;
-
-		float endAdjustment = ledgeInfo.GetCornerEndAdjustAmount(); 
-
-		// must keep this clamping in sync with editor and game DebugDraw() below
-		if (ledgeInfo.AreFlagsSet(kledgeRunTimeOnlyFlag_p0IsEndOrCorner))
-		{
-			const float adjustAmount = min(endAdjustment, quarterWidth);
-			distToP0 -= adjustAmount;
-		}
-		if (ledgeInfo.AreFlagsSet(kledgeRunTimeOnlyFlag_p1IsEndOrCorner))
-		{
-			const float adjustAmount = min(endAdjustment, quarterWidth);
-			distToP1 -= adjustAmount;
-		}
-
-		const float fD = clamp_tpl( (referencePoint - ledgePosition) * vXDir, -distToP0, distToP1 );
-
-		return ((ledgePosition + fD * vXDir) - referencePoint);
+		const float adjustAmount = min(endAdjustment, quarterWidth);
+		distToP0 -= adjustAmount;
+	}
+	if (ledgeInfo.AreFlagsSet(kledgeRunTimeOnlyFlag_p1IsEndOrCorner))
+	{
+		const float adjustAmount = min(endAdjustment, quarterWidth);
+		distToP1 -= adjustAmount;
 	}
 
-	ILINE bool IsBestLedge( const Vec3& positionToLedge, const Vec3& testDirection, const SLedgeInfo& ledgeInfo, const float bestDistanceSq, const float cosMaxAngle, const bool enabled, float& newBestDistanceSq )
+	const float fD = clamp_tpl((referencePoint - ledgePosition) * vXDir, -distToP0, distToP1);
+
+	return ((ledgePosition + fD * vXDir) - referencePoint);
+}
+
+ILINE bool IsBestLedge(const Vec3& positionToLedge, const Vec3& testDirection, const SLedgeInfo& ledgeInfo, const float bestDistanceSq, const float cosMaxAngle, const bool enabled, float& newBestDistanceSq)
+{
+	const float distanceSq = positionToLedge.GetLengthSquared();
+	if (distanceSq > bestDistanceSq)
 	{
-		const float distanceSq = positionToLedge.GetLengthSquared();
-		if (distanceSq > bestDistanceSq)
-		{
-			return false;
-		}
-
-		newBestDistanceSq = distanceSq;
-
-		const float fCosAngle = -(testDirection * ledgeInfo.GetFacingDirection());
-		
-		// Note: We do the enable check at the end, because,
-		// 99% of the time we don't reach this point, we save the extra branching while looping through those ledges
-
-		return ((fCosAngle > cosMaxAngle) && enabled);
+		return false;
 	}
 
-	ILINE bool PointInShere( const Vec3& point, const Sphere& sphere )
-	{
-		return ( (sphere.center - point).GetLengthSquared() < (sphere.radius * sphere.radius) );
-	}
+	newBestDistanceSq = distanceSq;
 
-	void DrawLedge( IRenderAuxGeom* pRenderAuxGeometry, const Vec3 startPoint, const Vec3& endPoint, const Vec3& facingDirection, const ELedgeFlagBitfield flags[LedgeSide_Count] )
-	{
-		const float side[2] = { 1.0f, -1.0f };
-		const float drawOffset[2] = { 0.01f, 0.01f };
+	const float fCosAngle = -(testDirection * ledgeInfo.GetFacingDirection());
 
-		uint32 currentSide = 0;
-		const uint32 sideCount = 1 + ((flags[0] & kLedgeFlag_isDoubleSided) != 0);
-		CRY_ASSERT(sideCount <= 2);
+	// Note: We do the enable check at the end, because,
+	// 99% of the time we don't reach this point, we save the extra branching while looping through those ledges
 
-		const ColorB colorTable[3][2] = { { Col_Grey, Col_Grey }, { Col_SlateBlue, Col_SlateBlue }, { Col_Red, Col_Orange } };
+	return ((fCosAngle > cosMaxAngle) && enabled);
+}
 
-		do 
-		{
-			const Vec3 direction = facingDirection * side[currentSide];
-			const Vec3 start = startPoint + (direction * drawOffset[currentSide]);
-			const Vec3 end   = endPoint + (direction * drawOffset[currentSide]);
-			const Vec3 middle = (start + end) * 0.5f;
-			const Vec3 ledgeDirection = (end - start).GetNormalized();
+ILINE bool PointInShere(const Vec3& point, const Sphere& sphere)
+{
+	return ((sphere.center - point).GetLengthSquared() < (sphere.radius * sphere.radius));
+}
 
-			const uint32 colorIdx = ((flags[currentSide] & kLedgeFlag_enabled) == 0) ? 0 : 1 + ((flags[currentSide] & (kLedgeFlag_useVault|kLedgeFlag_useHighVault)) == 0); // TODO - add a different colour for highVault vs normal vault
-			CRY_ASSERT(colorIdx <= 2);
+void DrawLedge(IRenderAuxGeom* pRenderAuxGeometry, const Vec3 startPoint, const Vec3& endPoint, const Vec3& facingDirection, const ELedgeFlagBitfield flags[LedgeSide_Count])
+{
+	const float side[2] = { 1.0f, -1.0f };
+	const float drawOffset[2] = { 0.01f, 0.01f };
 
-			pRenderAuxGeometry->DrawLine( start, colorTable[colorIdx][0], end, colorTable[colorIdx][0], 8.0f );
-			pRenderAuxGeometry->DrawLine( middle, colorTable[colorIdx][0], middle + (direction * 0.3f), colorTable[colorIdx][1], 4.0f); 
-			pRenderAuxGeometry->DrawTriangle( middle - (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (direction * 0.15f), colorTable[colorIdx][1]);
-			pRenderAuxGeometry->DrawTriangle( middle + (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle - (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (direction * 0.15f), colorTable[colorIdx][1]);
+	uint32 currentSide = 0;
+	const uint32 sideCount = 1 + ((flags[0] & kLedgeFlag_isDoubleSided) != 0);
+	CRY_ASSERT(sideCount <= 2);
 
-			++currentSide;
-
-		} while ( currentSide < sideCount );	
-	}
-
-	struct SLedgeMarkerBuffer
-	{
-		SLedgeMarkerBuffer( const uint32 _bufferSize )
-			: bufferSize(_bufferSize)
-			, pMarkers(NULL)
-		{
-			if (bufferSize)
-			{
-				pMarkers = new SLedgeMarker[bufferSize];
-			}
-		}
-
-		~SLedgeMarkerBuffer()
-		{
-			SAFE_DELETE_ARRAY(pMarkers);
-		}
-
-		ILINE void InsertAt( const SLedgeMarker& marker, const uint32 index )
-		{
-			CRY_ASSERT( index < bufferSize );
-			pMarkers[index] = marker;
-		}
-
-		SLedgeMarker* pMarkers;
-		const uint32				bufferSize;
+	const ColorB colorTable[3][2] = {
+		{ Col_Grey, Col_Grey }, { Col_SlateBlue, Col_SlateBlue }, { Col_Red, Col_Orange }
 	};
+
+	do
+	{
+		const Vec3 direction = facingDirection * side[currentSide];
+		const Vec3 start = startPoint + (direction * drawOffset[currentSide]);
+		const Vec3 end = endPoint + (direction * drawOffset[currentSide]);
+		const Vec3 middle = (start + end) * 0.5f;
+		const Vec3 ledgeDirection = (end - start).GetNormalized();
+
+		const uint32 colorIdx = ((flags[currentSide] & kLedgeFlag_enabled) == 0) ? 0 : 1 + ((flags[currentSide] & (kLedgeFlag_useVault | kLedgeFlag_useHighVault)) == 0); // TODO - add a different colour for highVault vs normal vault
+		CRY_ASSERT(colorIdx <= 2);
+
+		pRenderAuxGeometry->DrawLine(start, colorTable[colorIdx][0], end, colorTable[colorIdx][0], 8.0f);
+		pRenderAuxGeometry->DrawLine(middle, colorTable[colorIdx][0], middle + (direction * 0.3f), colorTable[colorIdx][1], 4.0f);
+		pRenderAuxGeometry->DrawTriangle(middle - (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (direction * 0.15f), colorTable[colorIdx][1]);
+		pRenderAuxGeometry->DrawTriangle(middle + (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle - (ledgeDirection * 0.05f), colorTable[colorIdx][0], middle + (direction * 0.15f), colorTable[colorIdx][1]);
+
+		++currentSide;
+
+	}
+	while (currentSide < sideCount);
+}
+
+struct SLedgeMarkerBuffer
+{
+	SLedgeMarkerBuffer(const uint32 _bufferSize)
+		: bufferSize(_bufferSize)
+		, pMarkers(NULL)
+	{
+		if (bufferSize)
+		{
+			pMarkers = new SLedgeMarker[bufferSize];
+		}
+	}
+
+	~SLedgeMarkerBuffer()
+	{
+		SAFE_DELETE_ARRAY(pMarkers);
+	}
+
+	ILINE void InsertAt(const SLedgeMarker& marker, const uint32 index)
+	{
+		CRY_ASSERT(index < bufferSize);
+		pMarkers[index] = marker;
+	}
+
+	SLedgeMarker* pMarkers;
+	const uint32  bufferSize;
+};
 }
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 #if LEDGE_MANAGER_EDITING_ENABLED
 
-#include "Utility/DesignerWarning.h"
+	#include "Utility/DesignerWarning.h"
 
-void SLedgeObjectEditor::DebugDraw( IRenderAuxGeom* pRenderAux, const Sphere& visibleArea ) const
+void SLedgeObjectEditor::DebugDraw(IRenderAuxGeom* pRenderAux, const Sphere& visibleArea) const
 {
-	if ( PointInShere( m_markers[0].m_worldPosition, visibleArea) == false )
+	if (PointInShere(m_markers[0].m_worldPosition, visibleArea) == false)
 		return;
 
 	for (size_t markerIdx = 0; markerIdx < (m_markers.size() - 1); ++markerIdx)
@@ -167,13 +170,13 @@ void SLedgeObjectEditor::DebugDraw( IRenderAuxGeom* pRenderAux, const Sphere& vi
 		ledgeFlags[LedgeSide_Out] = m_ledgeFlags[LedgeSide_Out];
 
 		Vec3 startPos = m_markers[markerIdx].m_worldPosition;
-		Vec3 endPos = m_markers[markerIdx+1].m_worldPosition;
+		Vec3 endPos = m_markers[markerIdx + 1].m_worldPosition;
 		Vec3 startToEnd = endPos - startPos;
 		const float startToEndLen = startToEnd.NormalizeSafe();
-		const float quarterWidth = startToEndLen * 0.25f;	// we use 1/4 width to ensure that a ledge will get no smaller than half its size if the edge adjust amount is larger than the ledge size
+		const float quarterWidth = startToEndLen * 0.25f; // we use 1/4 width to ensure that a ledge will get no smaller than half its size if the edge adjust amount is larger than the ledge size
 
 		// Must keep this clamping in sync with _FindVectorToClosestPointOnLedge() above
-		float endAdjustment = m_ledgeCornerEndAdjustAmount; 
+		float endAdjustment = m_ledgeCornerEndAdjustAmount;
 		const float adjustAmount = min(endAdjustment, quarterWidth);
 
 		if (m_markers[markerIdx].m_endOrCorner)
@@ -183,7 +186,7 @@ void SLedgeObjectEditor::DebugDraw( IRenderAuxGeom* pRenderAux, const Sphere& vi
 			ledgeFlags[LedgeSide_In] |= kledgeRunTimeOnlyFlag_p0IsEndOrCorner;
 			ledgeFlags[LedgeSide_Out] |= kledgeRunTimeOnlyFlag_p0IsEndOrCorner;
 		}
-		if (m_markers[markerIdx+1].m_endOrCorner)
+		if (m_markers[markerIdx + 1].m_endOrCorner)
 		{
 			endPos -= startToEnd * adjustAmount;
 
@@ -191,11 +194,11 @@ void SLedgeObjectEditor::DebugDraw( IRenderAuxGeom* pRenderAux, const Sphere& vi
 			ledgeFlags[LedgeSide_Out] |= kledgeRunTimeOnlyFlag_p1IsEndOrCorner;
 		}
 
-		DrawLedge( pRenderAux, startPos, endPos, m_markers[markerIdx].m_facingDirection, ledgeFlags);
+		DrawLedge(pRenderAux, startPos, endPos, m_markers[markerIdx].m_facingDirection, ledgeFlags);
 	}
 }
 
-void CLedgeManagerEdit::RegisterLedge( EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount, ELedgeFlagBitfield ledgeInFlags, ELedgeFlagBitfield ledgeOutFlags, float ledgeCornerMaxAngle, float ledgeCornerEndAdjustAmount )
+void CLedgeManagerEdit::RegisterLedge(EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount, ELedgeFlagBitfield ledgeInFlags, ELedgeFlagBitfield ledgeOutFlags, float ledgeCornerMaxAngle, float ledgeCornerEndAdjustAmount)
 {
 	if (markerCount == 0)
 		return;
@@ -205,16 +208,16 @@ void CLedgeManagerEdit::RegisterLedge( EntityId entityId, const SLedgeMarker* pM
 
 	if (notRegistered)
 	{
-		if ( m_ledgeObjects.size() == m_ledgeObjects.max_size() )
+		if (m_ledgeObjects.size() == m_ledgeObjects.max_size())
 		{
-			DesignerWarning( true, "Exceeding maximum ledge count, %d! Not possible to register this ledge in the manager", MAX_LEDGE_ENTITIES);
+			DesignerWarning(true, "Exceeding maximum ledge count, %d! Not possible to register this ledge in the manager", MAX_LEDGE_ENTITIES);
 			return;
 		}
-		m_ledgeObjects.push_back( SLedgeObjectEditor() );
+		m_ledgeObjects.push_back(SLedgeObjectEditor());
 	}
 
 	SLedgeObjectEditor& ledgeObject = notRegistered ? m_ledgeObjects.back() : *ledgeIt;
-	
+
 	ledgeObject.m_entityId = entityId;
 	ledgeObject.m_ledgeFlags[LedgeSide_In] = ledgeInFlags;
 	ledgeObject.m_ledgeFlags[LedgeSide_Out] = ledgeOutFlags;
@@ -225,19 +228,19 @@ void CLedgeManagerEdit::RegisterLedge( EntityId entityId, const SLedgeMarker* pM
 	{
 		ledgeObject.m_markers.resize(markerCount);
 	}
-	
+
 	for (uint32 markerIdx = 0; markerIdx < markerCount; ++markerIdx)
 	{
 		ledgeObject.m_markers[markerIdx] = pMarkersArray[markerIdx];
 	}
 }
 
-void CLedgeManagerEdit::UnregisterLedge( EntityId entityId )
+void CLedgeManagerEdit::UnregisterLedge(EntityId entityId)
 {
 	const size_t objectCount = m_ledgeObjects.size();
 
 	size_t removeIdx = 0;
-	
+
 	while ((removeIdx < objectCount) && (m_ledgeObjects[removeIdx] != entityId))
 	{
 		removeIdx++;
@@ -245,11 +248,11 @@ void CLedgeManagerEdit::UnregisterLedge( EntityId entityId )
 
 	if (removeIdx < objectCount)
 	{
-		m_ledgeObjects.removeAt( (uint32)removeIdx );
+		m_ledgeObjects.removeAt((uint32)removeIdx);
 	}
 }
 
-void CLedgeManagerEdit::UpdateLedgeMarkers( const EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount )
+void CLedgeManagerEdit::UpdateLedgeMarkers(const EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount)
 {
 	TLedgeObjectsEditorContainer::iterator ledgeIt = std::find(m_ledgeObjects.begin(), m_ledgeObjects.end(), entityId);
 
@@ -262,14 +265,14 @@ void CLedgeManagerEdit::UpdateLedgeMarkers( const EntityId entityId, const SLedg
 	}
 }
 
-void CLedgeManagerEdit::EnableLedge( const EntityId entityId, bool enable )
+void CLedgeManagerEdit::EnableLedge(const EntityId entityId, bool enable)
 {
 	TLedgeObjectsEditorContainer::iterator ledgeIt = std::find(m_ledgeObjects.begin(), m_ledgeObjects.end(), entityId);
 
 	if (ledgeIt != m_ledgeObjects.end())
 	{
 		SLedgeObjectEditor& ledgeObject = *ledgeIt;
-		CRY_ASSERT( (ledgeObject.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_static) == 0 );
+		CRY_ASSERT((ledgeObject.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_static) == 0);
 
 		if (enable)
 		{
@@ -284,20 +287,20 @@ void CLedgeManagerEdit::EnableLedge( const EntityId entityId, bool enable )
 	}
 }
 
-SLedgeInfo CLedgeManagerEdit::GetLedgeById( const LedgeId& ledgeId ) const
+SLedgeInfo CLedgeManagerEdit::GetLedgeById(const LedgeId& ledgeId) const
 {
 	const uint16 objectIdx = ledgeId.GetLedgeObjectIdx();
-	if ( objectIdx < m_ledgeObjects.size() )
+	if (objectIdx < m_ledgeObjects.size())
 	{
 		const SLedgeObjectEditor& ledgeObject = m_ledgeObjects[objectIdx];
 
-		const uint16 subSegmentIdx = ledgeId.GetSubSegmentIdx(); 
-		if ( subSegmentIdx < (ledgeObject.m_markers.size() - 1) )
+		const uint16 subSegmentIdx = ledgeId.GetSubSegmentIdx();
+		if (subSegmentIdx < (ledgeObject.m_markers.size() - 1))
 		{
 			const uint16 side = ledgeId.GetSide();
-			CRY_ASSERT( side < 2 );
+			CRY_ASSERT(side < 2);
 			const float sideValue[2] = { 1.0f, -1.0f };
-			const Vec3 facingDirection   = ledgeObject.m_markers[subSegmentIdx].m_facingDirection * sideValue[side];
+			const Vec3 facingDirection = ledgeObject.m_markers[subSegmentIdx].m_facingDirection * sideValue[side];
 			const EntityId entityId = (ledgeObject.m_ledgeFlags[side] & kLedgeFlag_static) ? 0 : ledgeObject.m_entityId;
 
 			ELedgeFlagBitfield flags = ledgeObject.m_ledgeFlags[side];
@@ -305,30 +308,30 @@ SLedgeInfo CLedgeManagerEdit::GetLedgeById( const LedgeId& ledgeId ) const
 			{
 				flags |= kledgeRunTimeOnlyFlag_p0IsEndOrCorner;
 			}
-			if (ledgeObject.m_markers[subSegmentIdx+1].m_endOrCorner)
+			if (ledgeObject.m_markers[subSegmentIdx + 1].m_endOrCorner)
 			{
 				flags |= kledgeRunTimeOnlyFlag_p1IsEndOrCorner;
 			}
 
-			return SLedgeInfo( entityId, ledgeObject.m_markers[subSegmentIdx].m_worldPosition, ledgeObject.m_markers[subSegmentIdx + 1].m_worldPosition, facingDirection, flags, ledgeObject.m_ledgeCornerEndAdjustAmount );
+			return SLedgeInfo(entityId, ledgeObject.m_markers[subSegmentIdx].m_worldPosition, ledgeObject.m_markers[subSegmentIdx + 1].m_worldPosition, facingDirection, flags, ledgeObject.m_ledgeCornerEndAdjustAmount);
 		}
 	}
 
 	return SLedgeInfo();
 }
 
-LedgeId CLedgeManagerEdit::FindNearestLedge( const Vec3 &referencePosition, const Vec3 &testDirection, const float maxDistance, const float angleRange, const float extendedAngleRange ) const
+LedgeId CLedgeManagerEdit::FindNearestLedge(const Vec3& referencePosition, const Vec3& testDirection, const float maxDistance, const float angleRange, const float extendedAngleRange) const
 {
 	LedgeId bestLedgeId;
 
-	float closestDistanceSq = maxDistance* maxDistance;
+	float closestDistanceSq = maxDistance * maxDistance;
 	const float fCosMaxAngleTable[2] = { cosf(angleRange), cosf(extendedAngleRange) };
 	const float side[2] = { 1.0f, -1.0f };
 
 	SLedgeInfo ledgeInfo;
 
 	const uint32 ledgeObjectCount = (uint32)m_ledgeObjects.size();
-	for(uint32 objectIdx = 0; objectIdx < ledgeObjectCount; ++objectIdx)
+	for (uint32 objectIdx = 0; objectIdx < ledgeObjectCount; ++objectIdx)
 	{
 		const SLedgeObjectEditor& ledgeObject = m_ledgeObjects[objectIdx];
 		const uint32 markersCount = (uint32)ledgeObject.m_markers.size();
@@ -338,7 +341,7 @@ LedgeId CLedgeManagerEdit::FindNearestLedge( const Vec3 &referencePosition, cons
 		CRY_ASSERT(sideCount <= 2);
 
 		uint32 currentSide = 0;
-		do 
+		do
 		{
 			for (uint32 markerIdx = 0; markerIdx < (markersCount - 1); ++markerIdx)
 			{
@@ -348,49 +351,50 @@ LedgeId CLedgeManagerEdit::FindNearestLedge( const Vec3 &referencePosition, cons
 				{
 					flags |= kledgeRunTimeOnlyFlag_p0IsEndOrCorner;
 				}
-				if (ledgeObject.m_markers[markerIdx+1].m_endOrCorner)
+				if (ledgeObject.m_markers[markerIdx + 1].m_endOrCorner)
 				{
 					flags |= kledgeRunTimeOnlyFlag_p1IsEndOrCorner;
 				}
 
-				ledgeInfo = SLedgeInfo( ledgeObject.m_entityId, ledgeObject.m_markers[markerIdx].m_worldPosition, ledgeObject.m_markers[markerIdx+1].m_worldPosition,
-					                      ledgeObject.m_markers[markerIdx].m_facingDirection * side[currentSide], flags, ledgeObject.m_ledgeCornerEndAdjustAmount );
+				ledgeInfo = SLedgeInfo(ledgeObject.m_entityId, ledgeObject.m_markers[markerIdx].m_worldPosition, ledgeObject.m_markers[markerIdx + 1].m_worldPosition,
+				                       ledgeObject.m_markers[markerIdx].m_facingDirection * side[currentSide], flags, ledgeObject.m_ledgeCornerEndAdjustAmount);
 
 				// Explanation: (Please do not delete this comment)
 				//	The item can be skipped if the angle is too big.
 				//	Since only the cosine of angles are compared,
 				//	bigger angles result in smaller values (hence the less_than comparison)
-				const uint32 thresholdIdx = ((ledgeObject.m_ledgeFlags[currentSide] & (kLedgeFlag_useVault|kLedgeFlag_useHighVault)) != 0);
-				CRY_ASSERT( thresholdIdx < 2 );
+				const uint32 thresholdIdx = ((ledgeObject.m_ledgeFlags[currentSide] & (kLedgeFlag_useVault | kLedgeFlag_useHighVault)) != 0);
+				CRY_ASSERT(thresholdIdx < 2);
 
 				const float fCosMaxAngle = fCosMaxAngleTable[thresholdIdx];
 
-				const Vec3 vPosToLedge = _FindVectorToClosestPointOnLedge( referencePosition, ledgeInfo );
+				const Vec3 vPosToLedge = _FindVectorToClosestPointOnLedge(referencePosition, ledgeInfo);
 
 				float distanceSq;
-				if( IsBestLedge( vPosToLedge, testDirection, ledgeInfo, closestDistanceSq, fCosMaxAngle, enabled, distanceSq ) == false )
+				if (IsBestLedge(vPosToLedge, testDirection, ledgeInfo, closestDistanceSq, fCosMaxAngle, enabled, distanceSq) == false)
 					continue;
 
-				bestLedgeId = LedgeId( objectIdx, markerIdx, currentSide );
+				bestLedgeId = LedgeId(objectIdx, markerIdx, currentSide);
 				closestDistanceSq = distanceSq;
 			}
 
 			currentSide++;
 
-		} while ( currentSide < sideCount );
+		}
+		while (currentSide < sideCount);
 	}
 
 	return bestLedgeId;
 }
 
-void CLedgeManagerEdit::Export( const char* fileName ) const
+void CLedgeManagerEdit::Export(const char* fileName) const
 {
 	const uint32 totalLedgeObjectsCount = m_ledgeObjects.size();
 
 	if (totalLedgeObjectsCount > 0)
 	{
 		CCryFile file;
-		if( false != file.Open( fileName, "wb" ) )
+		if (false != file.Open(fileName, "wb"))
 		{
 			// Count number of markers ...
 			uint32 totalLedgeMarkersCount = 0;
@@ -410,17 +414,17 @@ void CLedgeManagerEdit::Export( const char* fileName ) const
 				const SLedgeObjectEditor& ledgeObjectEdit = m_ledgeObjects[objectIdx];
 
 				ledgeObject.m_entityId = ((ledgeObjectEdit.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_static) == 0) ? ledgeObjectEdit.m_entityId : 0;
-				ledgeObject.m_ledgeFlags[LedgeSide_In]  = ledgeObjectEdit.m_ledgeFlags[LedgeSide_In];
+				ledgeObject.m_ledgeFlags[LedgeSide_In] = ledgeObjectEdit.m_ledgeFlags[LedgeSide_In];
 				ledgeObject.m_ledgeFlags[LedgeSide_Out] = ledgeObjectEdit.m_ledgeFlags[LedgeSide_Out];
 				ledgeObject.m_ledgeCornerEndAdjustAmount = ledgeObjectEdit.m_ledgeCornerEndAdjustAmount;
 				ledgeObject.m_markersStartIdx = currentMarkerIdx;
-				ledgeObject.m_markersCount = static_cast<uint16> (ledgeObjectEdit.m_markers.size());
+				ledgeObject.m_markersCount = static_cast<uint16>(ledgeObjectEdit.m_markers.size());
 
 				CRY_ASSERT((ledgeObject.m_markersStartIdx + ledgeObject.m_markersCount) <= totalLedgeMarkersCount);
 
-				for(size_t markerIdx = 0; markerIdx < ledgeObjectEdit.m_markers.size(); ++markerIdx)
+				for (size_t markerIdx = 0; markerIdx < ledgeObjectEdit.m_markers.size(); ++markerIdx)
 				{
-					ledgeMarkersBuffer.InsertAt( ledgeObjectEdit.m_markers[markerIdx], currentMarkerIdx + markerIdx );
+					ledgeMarkersBuffer.InsertAt(ledgeObjectEdit.m_markers[markerIdx], currentMarkerIdx + markerIdx);
 				}
 				currentMarkerIdx += ledgeObject.m_markersCount;
 			}
@@ -429,14 +433,14 @@ void CLedgeManagerEdit::Export( const char* fileName ) const
 
 			// File version
 			uint32 nFileVersion = LEDGE_DATA_FILE_VERSION;
-			file.Write( &nFileVersion,sizeof(nFileVersion) );
+			file.Write(&nFileVersion, sizeof(nFileVersion));
 
 			// Ledges and markers info
-			file.Write( &totalLedgeObjectsCount, sizeof(totalLedgeObjectsCount) );
-			file.Write( &totalLedgeMarkersCount, sizeof(totalLedgeMarkersCount) );
+			file.Write(&totalLedgeObjectsCount, sizeof(totalLedgeObjectsCount));
+			file.Write(&totalLedgeMarkersCount, sizeof(totalLedgeMarkersCount));
 
-			file.Write( &ledgeObjectBuffer[0], sizeof(ledgeObjectBuffer[0]) * totalLedgeObjectsCount );
-			file.Write( &ledgeMarkersBuffer.pMarkers[0], sizeof(ledgeMarkersBuffer.pMarkers[0]) * ledgeMarkersBuffer.bufferSize );
+			file.Write(&ledgeObjectBuffer[0], sizeof(ledgeObjectBuffer[0]) * totalLedgeObjectsCount);
+			file.Write(&ledgeMarkersBuffer.pMarkers[0], sizeof(ledgeMarkersBuffer.pMarkers[0]) * ledgeMarkersBuffer.bufferSize);
 
 			file.Close();
 		}
@@ -451,16 +455,16 @@ void CLedgeManagerEdit::DebugDraw() const
 	{
 		IRenderAuxGeom* pRenderAuxGeometry = gEnv->pRenderer->GetIRenderAuxGeom();
 		const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
-		const Sphere visibleArea( viewCamera.GetPosition(), g_LedgeGrabManager_DebugDrawInEditor_Distance );
+		const Sphere visibleArea(viewCamera.GetPosition(), g_LedgeGrabManager_DebugDrawInEditor_Distance);
 
 		for (uint32 objectIdx = 0; objectIdx < m_ledgeObjects.size(); ++objectIdx)
 		{
-			m_ledgeObjects[objectIdx].DebugDraw( pRenderAuxGeometry, visibleArea );
+			m_ledgeObjects[objectIdx].DebugDraw(pRenderAuxGeometry, visibleArea);
 		}
 	}
 }
 
-void CLedgeManagerEdit::OnDisplayHelpersChanged( bool displayHelpers )
+void CLedgeManagerEdit::OnDisplayHelpersChanged(bool displayHelpers)
 {
 	if (displayHelpers)
 	{
@@ -487,7 +491,7 @@ void CLedgeManagerEdit::RegisterCVars()
 //////////////////////////////////////////////////////////////////////////
 
 CLedgeManager::CLedgeManager()
-	: m_editorManager( gEnv->IsEditor() )
+	: m_editorManager(gEnv->IsEditor())
 {
 	RegisterCVars();
 	Reset();
@@ -495,12 +499,15 @@ CLedgeManager::CLedgeManager()
 
 CLedgeManager::~CLedgeManager()
 {
-
+	gEnv->pConsole->UnregisterVariable("g_LedgeGrabManager_DebugDraw");
+	gEnv->pConsole->UnregisterVariable("g_LedgeGrabManager_DebugDraw_Distance");
+	gEnv->pConsole->UnregisterVariable("g_LedgeGrabManager_DebugDrawInEditor");
+	gEnv->pConsole->UnregisterVariable("g_LedgeGrabManager_DebugDrawInEditor_Distance");
 }
 
 void CLedgeManager::Reset()
 {
-	if(m_editorManager.IsInEditorMode())
+	if (m_editorManager.IsInEditorMode())
 	{
 		m_editorManager.Reset();
 	}
@@ -510,7 +517,7 @@ void CLedgeManager::Reset()
 	}
 }
 
-void CLedgeManager::Load( const char* fileName )
+void CLedgeManager::Load(const char* fileName)
 {
 	// Clear in case there is anything left
 	Reset();
@@ -520,11 +527,11 @@ void CLedgeManager::Load( const char* fileName )
 		return;
 
 	CCryFile file;
-	if( false != file.Open( fileName, "rb" ) )
+	if (false != file.Open(fileName, "rb"))
 	{
 		// File version
 		uint32 nFileVersion;
-		file.ReadType( &nFileVersion );
+		file.ReadType(&nFileVersion);
 
 		if (nFileVersion != LEDGE_DATA_FILE_VERSION)
 		{
@@ -534,32 +541,32 @@ void CLedgeManager::Load( const char* fileName )
 
 		// Ledges and markers info
 		uint32 totalLedgeObjectsCount, totalLedgeMarkersCount;
-		file.ReadType( &totalLedgeObjectsCount );
-		file.ReadType( &totalLedgeMarkersCount );
+		file.ReadType(&totalLedgeObjectsCount);
+		file.ReadType(&totalLedgeMarkersCount);
 
-		m_levelLedges.Allocate( totalLedgeObjectsCount, totalLedgeMarkersCount );
+		m_levelLedges.Allocate(totalLedgeObjectsCount, totalLedgeMarkersCount);
 
-		file.ReadType( &m_levelLedges.m_pLedgeObjects[0], totalLedgeObjectsCount );
-		file.ReadType( &m_levelLedges.m_pMarkers[0], totalLedgeMarkersCount );
-	
+		file.ReadType(&m_levelLedges.m_pLedgeObjects[0], totalLedgeObjectsCount);
+		file.ReadType(&m_levelLedges.m_pMarkers[0], totalLedgeMarkersCount);
+
 		file.Close();
 	}
 }
 
-void CLedgeManager::UpdateLedgeMarkers( const EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount )
+void CLedgeManager::UpdateLedgeMarkers(const EntityId entityId, const SLedgeMarker* pMarkersArray, const uint32 markerCount)
 {
 	if (m_editorManager.IsInEditorMode())
 	{
-		m_editorManager.UpdateLedgeMarkers( entityId, pMarkersArray, markerCount );
+		m_editorManager.UpdateLedgeMarkers(entityId, pMarkersArray, markerCount);
 	}
 	else
 	{
-		SLedgeObject* pLedgeObject = m_levelLedges.FindLedgeForEntity( entityId );
+		SLedgeObject* pLedgeObject = m_levelLedges.FindLedgeForEntity(entityId);
 
 		if ((pLedgeObject != NULL) && (pLedgeObject->m_markersCount == markerCount))
 		{
 			const uint32 endMarkerIdx = pLedgeObject->m_markersStartIdx + pLedgeObject->m_markersCount;
-			CRY_ASSERT( endMarkerIdx <= m_levelLedges.m_markerCount );
+			CRY_ASSERT(endMarkerIdx <= m_levelLedges.m_markerCount);
 
 			for (uint32 markerIdx = pLedgeObject->m_markersStartIdx, idx = 0; markerIdx < endMarkerIdx; ++markerIdx, ++idx)
 			{
@@ -569,19 +576,19 @@ void CLedgeManager::UpdateLedgeMarkers( const EntityId entityId, const SLedgeMar
 	}
 }
 
-void CLedgeManager::EnableLedge( const EntityId entityId, bool enable )
+void CLedgeManager::EnableLedge(const EntityId entityId, bool enable)
 {
 	if (m_editorManager.IsInEditorMode())
 	{
-		m_editorManager.EnableLedge( entityId, enable );
+		m_editorManager.EnableLedge(entityId, enable);
 	}
 	else
 	{
-		SLedgeObject* pLedgeObject = m_levelLedges.FindLedgeForEntity( entityId );
+		SLedgeObject* pLedgeObject = m_levelLedges.FindLedgeForEntity(entityId);
 
 		if (pLedgeObject != NULL)
 		{
-			CRY_ASSERT( (pLedgeObject->m_ledgeFlags[LedgeSide_In] & kLedgeFlag_static) == 0 );
+			CRY_ASSERT((pLedgeObject->m_ledgeFlags[LedgeSide_In] & kLedgeFlag_static) == 0);
 
 			if (enable)
 			{
@@ -597,37 +604,37 @@ void CLedgeManager::EnableLedge( const EntityId entityId, bool enable )
 	}
 }
 
-LedgeId CLedgeManager::FindNearestLedge( const Vec3 &referencePosition, const Vec3 &testDirection, float maxDistance /*= 2.0f*/, float angleRange /*= DEG2RAD(35.0f)*/, float extendedAngleRange /*= DEG2RAD(50.0f)*/ ) const
+LedgeId CLedgeManager::FindNearestLedge(const Vec3& referencePosition, const Vec3& testDirection, float maxDistance /*= 2.0f*/, float angleRange /*= DEG2RAD(35.0f)*/, float extendedAngleRange /*= DEG2RAD(50.0f)*/) const
 {
 	if (m_editorManager.IsInEditorMode())
 	{
-		return m_editorManager.FindNearestLedge( referencePosition, testDirection, maxDistance, angleRange, extendedAngleRange );
+		return m_editorManager.FindNearestLedge(referencePosition, testDirection, maxDistance, angleRange, extendedAngleRange);
 	}
 	else
 	{
 		LedgeId bestLedgeId;
 
-		float closestDistanceSq = maxDistance* maxDistance;
+		float closestDistanceSq = maxDistance * maxDistance;
 		const float fCosMaxAngleTable[2] = { cosf(angleRange), cosf(extendedAngleRange) };
 		const float side[2] = { 1.0f, -1.0f };
 
 		SLedgeInfo ledgeInfo;
 
 		const uint32 ledgeObjectCount = m_levelLedges.m_ledgeCount;
-		for(uint32 objectIdx = 0; objectIdx < ledgeObjectCount; ++objectIdx)
+		for (uint32 objectIdx = 0; objectIdx < ledgeObjectCount; ++objectIdx)
 		{
 			const SLedgeObject& ledgeObject = m_levelLedges.m_pLedgeObjects[objectIdx];
 			const uint32 startMarkerIdx = ledgeObject.m_markersStartIdx;
 			const uint32 endMarkerIdx = ledgeObject.m_markersStartIdx + ledgeObject.m_markersCount;
-			CRY_ASSERT ( endMarkerIdx <= m_levelLedges.m_markerCount );
-			
+			CRY_ASSERT(endMarkerIdx <= m_levelLedges.m_markerCount);
+
 			const uint32 sideCount = 1 + ((ledgeObject.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_isDoubleSided) != 0);
 			const bool enabled = (ledgeObject.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_enabled) != 0;
 
 			CRY_ASSERT(sideCount <= 2);
 
 			uint32 currentSide = 0;
-			do 
+			do
 			{
 				for (uint32 markerIdx = startMarkerIdx; markerIdx < (endMarkerIdx - 1); ++markerIdx)
 				{
@@ -637,36 +644,37 @@ LedgeId CLedgeManager::FindNearestLedge( const Vec3 &referencePosition, const Ve
 					{
 						flags |= kledgeRunTimeOnlyFlag_p0IsEndOrCorner;
 					}
-					if (m_levelLedges.m_pMarkers[markerIdx+1].m_endOrCorner)
+					if (m_levelLedges.m_pMarkers[markerIdx + 1].m_endOrCorner)
 					{
 						flags |= kledgeRunTimeOnlyFlag_p1IsEndOrCorner;
 					}
 
-					ledgeInfo = SLedgeInfo( ledgeObject.m_entityId, m_levelLedges.m_pMarkers[markerIdx].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx+1].m_worldPosition,
-						m_levelLedges.m_pMarkers[markerIdx].m_facingDirection * side[currentSide], flags, ledgeObject.m_ledgeCornerEndAdjustAmount );
+					ledgeInfo = SLedgeInfo(ledgeObject.m_entityId, m_levelLedges.m_pMarkers[markerIdx].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx + 1].m_worldPosition,
+					                       m_levelLedges.m_pMarkers[markerIdx].m_facingDirection * side[currentSide], flags, ledgeObject.m_ledgeCornerEndAdjustAmount);
 
 					// Explanation: (Please do not delete this comment)
 					//	The item can be skipped if the angle is too big.
 					//	Since only the cosine of angles are compared,
 					//	bigger angles result in smaller values (hence the less_than comparison)
-					const uint32 thresholdIdx = ((ledgeObject.m_ledgeFlags[currentSide] & (kLedgeFlag_useVault|kLedgeFlag_useHighVault)) != 0);
-					CRY_ASSERT( thresholdIdx < 2 );
+					const uint32 thresholdIdx = ((ledgeObject.m_ledgeFlags[currentSide] & (kLedgeFlag_useVault | kLedgeFlag_useHighVault)) != 0);
+					CRY_ASSERT(thresholdIdx < 2);
 
 					const float fCosMaxAngle = fCosMaxAngleTable[thresholdIdx];
 
-					const Vec3 vPosToLedge = _FindVectorToClosestPointOnLedge( referencePosition, ledgeInfo );
+					const Vec3 vPosToLedge = _FindVectorToClosestPointOnLedge(referencePosition, ledgeInfo);
 
 					float distanceSq;
-					if( IsBestLedge( vPosToLedge, testDirection, ledgeInfo, closestDistanceSq, fCosMaxAngle, enabled, distanceSq ) == false )
+					if (IsBestLedge(vPosToLedge, testDirection, ledgeInfo, closestDistanceSq, fCosMaxAngle, enabled, distanceSq) == false)
 						continue;
-					
-					bestLedgeId = LedgeId( objectIdx, (markerIdx - startMarkerIdx), currentSide );
+
+					bestLedgeId = LedgeId(objectIdx, (markerIdx - startMarkerIdx), currentSide);
 					closestDistanceSq = distanceSq;
 				}
 
 				currentSide++;
 
-			} while ( currentSide < sideCount );
+			}
+			while (currentSide < sideCount);
 		}
 
 		return bestLedgeId;
@@ -675,27 +683,27 @@ LedgeId CLedgeManager::FindNearestLedge( const Vec3 &referencePosition, const Ve
 
 // ---------------------------------------------------
 
-SLedgeInfo CLedgeManager::GetLedgeById( const LedgeId& ledgeId ) const
+SLedgeInfo CLedgeManager::GetLedgeById(const LedgeId& ledgeId) const
 {
-	if ( m_editorManager.IsInEditorMode() )
+	if (m_editorManager.IsInEditorMode())
 	{
-		return m_editorManager.GetLedgeById( ledgeId );
+		return m_editorManager.GetLedgeById(ledgeId);
 	}
 	else
 	{
 		const uint16 objectIdx = ledgeId.GetLedgeObjectIdx();
-		if ( objectIdx < m_levelLedges.m_ledgeCount )
+		if (objectIdx < m_levelLedges.m_ledgeCount)
 		{
 			const SLedgeObject& ledgeObject = m_levelLedges.m_pLedgeObjects[objectIdx];
 
-			CRY_ASSERT( ledgeId.GetSubSegmentIdx() < ledgeObject.m_markersCount );
-			const uint16 segmentIdx = ledgeObject.m_markersStartIdx + ledgeId.GetSubSegmentIdx(); 
-			if ( segmentIdx < (m_levelLedges.m_markerCount - 1) )
+			CRY_ASSERT(ledgeId.GetSubSegmentIdx() < ledgeObject.m_markersCount);
+			const uint16 segmentIdx = ledgeObject.m_markersStartIdx + ledgeId.GetSubSegmentIdx();
+			if (segmentIdx < (m_levelLedges.m_markerCount - 1))
 			{
 				const uint16 side = ledgeId.GetSide();
-				CRY_ASSERT( side < 2 );
+				CRY_ASSERT(side < 2);
 				const float sideValue[2] = { 1.0f, -1.0f };
-				const Vec3 facingDirection   = m_levelLedges.m_pMarkers[segmentIdx].m_facingDirection * sideValue[side];
+				const Vec3 facingDirection = m_levelLedges.m_pMarkers[segmentIdx].m_facingDirection * sideValue[side];
 				const EntityId entityId = (ledgeObject.m_ledgeFlags[side] & kLedgeFlag_static) ? 0 : ledgeObject.m_entityId;
 
 				ELedgeFlagBitfield flags = ledgeObject.m_ledgeFlags[side];
@@ -708,7 +716,7 @@ SLedgeInfo CLedgeManager::GetLedgeById( const LedgeId& ledgeId ) const
 					flags |= kledgeRunTimeOnlyFlag_p1IsEndOrCorner;
 				}
 
-				return SLedgeInfo( entityId, m_levelLedges.m_pMarkers[segmentIdx].m_worldPosition, m_levelLedges.m_pMarkers[segmentIdx + 1].m_worldPosition, facingDirection, flags, ledgeObject.m_ledgeCornerEndAdjustAmount );
+				return SLedgeInfo(entityId, m_levelLedges.m_pMarkers[segmentIdx].m_worldPosition, m_levelLedges.m_pMarkers[segmentIdx + 1].m_worldPosition, facingDirection, flags, ledgeObject.m_ledgeCornerEndAdjustAmount);
 			}
 		}
 
@@ -716,49 +724,49 @@ SLedgeInfo CLedgeManager::GetLedgeById( const LedgeId& ledgeId ) const
 	}
 }
 
-Vec3 CLedgeManager::FindVectorToClosestPointOnLedge( const Vec3 &vPoint, const SLedgeInfo &ledgeInfo ) const
+Vec3 CLedgeManager::FindVectorToClosestPointOnLedge(const Vec3& vPoint, const SLedgeInfo& ledgeInfo) const
 {
-	return _FindVectorToClosestPointOnLedge( vPoint, ledgeInfo );
+	return _FindVectorToClosestPointOnLedge(vPoint, ledgeInfo);
 }
 
-void CLedgeManager::Serialize( TSerialize ser )
+void CLedgeManager::Serialize(TSerialize ser)
 {
 	if (ser.IsReading())
 	{
-		ser.BeginGroup( "LevelLedges" );
+		ser.BeginGroup("LevelLedges");
 		{
 			uint32 objectsToSerialize = 0;
-			ser.Value( "serializedLedgeCount", objectsToSerialize );
+			ser.Value("serializedLedgeCount", objectsToSerialize);
 
 			for (uint32 idx = 0; idx < objectsToSerialize; ++idx)
 			{
-				ser.BeginGroup( "Ledge" );
+				ser.BeginGroup("Ledge");
 				{
 					uint32 objectIdx = 0;
-					ser.Value( "ledgeIndex", objectIdx );
+					ser.Value("ledgeIndex", objectIdx);
 
-					if( objectIdx < m_levelLedges.m_ledgeCount ) 
+					if (objectIdx < m_levelLedges.m_ledgeCount)
 					{
 						SLedgeObject& ledgeObject = m_levelLedges.m_pLedgeObjects[objectIdx];
 
-						ser.Value( "flagsIn", ledgeObject.m_ledgeFlags[LedgeSide_In] );
-						ser.Value( "flagsOut", ledgeObject.m_ledgeFlags[LedgeSide_Out] );
+						ser.Value("flagsIn", ledgeObject.m_ledgeFlags[LedgeSide_In]);
+						ser.Value("flagsOut", ledgeObject.m_ledgeFlags[LedgeSide_Out]);
 
 						uint32 markerCount = 0;
-						ser.Value( "markersCount", markerCount );
+						ser.Value("markersCount", markerCount);
 
-						if( markerCount == ledgeObject.m_markersCount ) 
+						if (markerCount == ledgeObject.m_markersCount)
 						{
 							const uint32 markerEnd = ledgeObject.m_markersStartIdx + ledgeObject.m_markersCount;
-							CRY_ASSERT( markerEnd <= m_levelLedges.m_markerCount );
-							for( uint32 markerIdx = ledgeObject.m_markersStartIdx; markerIdx < markerEnd; ++markerIdx )
+							CRY_ASSERT(markerEnd <= m_levelLedges.m_markerCount);
+							for (uint32 markerIdx = ledgeObject.m_markersStartIdx; markerIdx < markerEnd; ++markerIdx)
 							{
 								SLedgeMarker& marker = m_levelLedges.m_pMarkers[markerIdx];
 
-								ser.BeginGroup( "Marker" );
+								ser.BeginGroup("Marker");
 								{
-									ser.Value( "pos", marker.m_worldPosition );
-									ser.Value( "dir", marker.m_facingDirection );
+									ser.Value("pos", marker.m_worldPosition);
+									ser.Value("dir", marker.m_facingDirection);
 								}
 								ser.EndGroup();  // "Marker"
 							}
@@ -766,13 +774,13 @@ void CLedgeManager::Serialize( TSerialize ser )
 						else
 						{
 							//Save game not in synch with level data
-							GameWarning( "LedgeManager - Trying to update markers for ledge %d, but there is a mismatch in the markers count. %d-%d", objectIdx, markerCount, ledgeObject.m_markersCount );
+							GameWarning("LedgeManager - Trying to update markers for ledge %d, but there is a mismatch in the markers count. %d-%d", objectIdx, markerCount, ledgeObject.m_markersCount);
 						}
 					}
 					else
 					{
 						//Save game not in synch with level data
-						GameWarning( "LedgeManager - Trying to load saved data for ledge %d, when there is only %d registered", objectIdx, m_levelLedges.m_ledgeCount );
+						GameWarning("LedgeManager - Trying to load saved data for ledge %d, when there is only %d registered", objectIdx, m_levelLedges.m_ledgeCount);
 					}
 				}
 				ser.EndGroup(); // "Ledge"
@@ -782,38 +790,38 @@ void CLedgeManager::Serialize( TSerialize ser )
 	}
 	else
 	{
-		ser.BeginGroup( "LevelLedges" );
+		ser.BeginGroup("LevelLedges");
 		{
 			uint32 objectsToSerialize = 0;
 			for (uint32 objectIdx = 0; objectIdx < m_levelLedges.m_ledgeCount; ++objectIdx)
 			{
 				objectsToSerialize += (m_levelLedges.m_pLedgeObjects[objectIdx].NeedsToBeSerialized());
 			}
-			ser.Value( "serializedLedgeCount", objectsToSerialize );
-			
+			ser.Value("serializedLedgeCount", objectsToSerialize);
+
 			for (uint32 objectIdx = 0; objectIdx < m_levelLedges.m_ledgeCount; ++objectIdx)
 			{
 				SLedgeObject& ledgeObject = m_levelLedges.m_pLedgeObjects[objectIdx];
-				if ( ledgeObject.NeedsToBeSerialized() == false )
+				if (ledgeObject.NeedsToBeSerialized() == false)
 					continue;
 
-				ser.BeginGroup( "Ledge" );
+				ser.BeginGroup("Ledge");
 				{
-					ser.Value( "ledgeIndex", objectIdx );
-					ser.Value( "flagsIn", ledgeObject.m_ledgeFlags[LedgeSide_In] );
-					ser.Value( "flagsOut", ledgeObject.m_ledgeFlags[LedgeSide_Out] );
-					ser.Value( "markersCount", ledgeObject.m_markersCount );
-					
+					ser.Value("ledgeIndex", objectIdx);
+					ser.Value("flagsIn", ledgeObject.m_ledgeFlags[LedgeSide_In]);
+					ser.Value("flagsOut", ledgeObject.m_ledgeFlags[LedgeSide_Out]);
+					ser.Value("markersCount", ledgeObject.m_markersCount);
+
 					const uint32 markerEnd = ledgeObject.m_markersStartIdx + ledgeObject.m_markersCount;
-					CRY_ASSERT( markerEnd <= m_levelLedges.m_markerCount );
-					for( uint32 markerIdx = ledgeObject.m_markersStartIdx; markerIdx < markerEnd; ++markerIdx )
+					CRY_ASSERT(markerEnd <= m_levelLedges.m_markerCount);
+					for (uint32 markerIdx = ledgeObject.m_markersStartIdx; markerIdx < markerEnd; ++markerIdx)
 					{
 						SLedgeMarker& marker = m_levelLedges.m_pMarkers[markerIdx];
 
-						ser.BeginGroup( "Marker" );
+						ser.BeginGroup("Marker");
 						{
-							ser.Value( "pos", marker.m_worldPosition );
-							ser.Value( "dir", marker.m_facingDirection );
+							ser.Value("pos", marker.m_worldPosition);
+							ser.Value("dir", marker.m_facingDirection);
 						}
 						ser.EndGroup();  // "Marker"
 					}
@@ -839,8 +847,8 @@ void CLedgeManager::DebugDraw() const
 		{
 			IRenderAuxGeom* pRenderAuxGeometry = gEnv->pRenderer->GetIRenderAuxGeom();
 			const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
-			const Sphere visibleArea( viewCamera.GetPosition(), g_LedgeGrabManager_DebugDraw_Distance );
-			
+			const Sphere visibleArea(viewCamera.GetPosition(), g_LedgeGrabManager_DebugDraw_Distance);
+
 			const int sideCountMultiplier[2] = { 1, 2 };
 			int totalLedgeCount = 0;
 			int nonStaticLedges = 0;
@@ -850,26 +858,26 @@ void CLedgeManager::DebugDraw() const
 				const SLedgeObject& ledgeObject = m_levelLedges.m_pLedgeObjects[objectIdx];
 				const uint32 startMarkerIdx = ledgeObject.m_markersStartIdx;
 				const uint32 endMarkerIdx = ledgeObject.m_markersStartIdx + ledgeObject.m_markersCount;
-				CRY_ASSERT( endMarkerIdx <= m_levelLedges.m_markerCount );
+				CRY_ASSERT(endMarkerIdx <= m_levelLedges.m_markerCount);
 
 				const uint32 sideIdx = ((ledgeObject.m_ledgeFlags[LedgeSide_In] & kLedgeFlag_isDoubleSided) != 0);
-				CRY_ASSERT( sideIdx < 2 );
+				CRY_ASSERT(sideIdx < 2);
 
 				nonStaticLedges += (ledgeObject.m_entityId != 0);
 				totalLedgeCount += ((ledgeObject.m_markersCount - 1) * sideCountMultiplier[sideIdx]);
 
-				if ( PointInShere( m_levelLedges.m_pMarkers[startMarkerIdx].m_worldPosition, visibleArea) == false )
+				if (PointInShere(m_levelLedges.m_pMarkers[startMarkerIdx].m_worldPosition, visibleArea) == false)
 					continue;
 
 				for (size_t markerIdx = startMarkerIdx; markerIdx < (endMarkerIdx - 1); ++markerIdx)
 				{
-					DrawLedge( pRenderAuxGeometry, m_levelLedges.m_pMarkers[markerIdx].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx + 1].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx].m_facingDirection, ledgeObject.m_ledgeFlags );
+					DrawLedge(pRenderAuxGeometry, m_levelLedges.m_pMarkers[markerIdx].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx + 1].m_worldPosition, m_levelLedges.m_pMarkers[markerIdx].m_facingDirection, ledgeObject.m_ledgeFlags);
 				}
 			}
 
 			if (g_LedgeGrabManager_DebugDraw > 1)
 			{
-				gEnv->pRenderer->Draw2dLabel( 50.0f, 50.f, 1.5f, Col_White, false, "Total Number of ledges %d - Non static %d", totalLedgeCount, nonStaticLedges );
+				IRenderAuxText::Draw2dLabel( 50.0f, 50.f, 1.5f, Col_White, false, "Total Number of ledges %d - Non static %d", totalLedgeCount, nonStaticLedges );
 			}
 		}
 	}
@@ -883,4 +891,3 @@ void CLedgeManager::RegisterCVars()
 		REGISTER_CVAR(g_LedgeGrabManager_DebugDraw_Distance, 35.0f, VF_CHEAT, "Max distance from camera at which ledges are rendered");
 	}
 }
-

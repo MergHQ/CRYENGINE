@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12View.hpp"
 
-class CCryDX12ShaderResourceView : public CCryDX12View<ID3D11ShaderResourceView>
+class CCryDX12ShaderResourceView : public CCryDX12View<ID3D11ShaderResourceViewToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12ShaderResourceView, CCryDX12View<ID3D11ShaderResourceView> );
+	DX12_OBJECT(CCryDX12ShaderResourceView, CCryDX12View<ID3D11ShaderResourceViewToImplement> );
 
 	static CCryDX12ShaderResourceView* Create(CCryDX12Device* pDevice, ID3D11Resource* pResource, const D3D11_SHADER_RESOURCE_VIEW_DESC* pDesc);
 

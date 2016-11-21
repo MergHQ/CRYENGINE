@@ -39,6 +39,22 @@
 			return (EventPhysCollision*)$self->nParam[0];
 		return nullptr;
 	}
+
+	INT_PTR GetIntPtrParameter(uint8 index)
+	{
+		if(index >= 4)
+			return 0;
+
+		return $self->nParam[index];
+	}
+
+	float GetFloatParameter(uint8 index)
+	{
+		if(index >= 3)
+			return 0;
+
+		return $self->fParam[index];
+	}
 }
 %extend IEntity {
 	SEntitySlotInfo* GetSlotInfo(int slot)

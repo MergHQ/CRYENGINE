@@ -5,24 +5,24 @@
 #include <CryCore/TypeInfo_impl.h>
 #include "DebugDrawContext.h"
 
-STRUCT_INFO_BEGIN(MNM::Tile::Triangle)
+STRUCT_INFO_BEGIN(MNM::Tile::STriangle)
 STRUCT_VAR_INFO(vertex, TYPE_ARRAY(3, TYPE_INFO(Index)))
 STRUCT_BITFIELD_INFO(linkCount, TYPE_INFO(uint16), 4)
 STRUCT_BITFIELD_INFO(firstLink, TYPE_INFO(uint16), 12)
 STRUCT_VAR_INFO(islandID, TYPE_INFO(StaticIslandID))
-STRUCT_INFO_END(MNM::Tile::Triangle)
+STRUCT_INFO_END(MNM::Tile::STriangle)
 
-STRUCT_INFO_BEGIN(MNM::Tile::BVNode)
+STRUCT_INFO_BEGIN(MNM::Tile::SBVNode)
 STRUCT_BITFIELD_INFO(leaf, TYPE_INFO(uint16), 1)
 STRUCT_BITFIELD_INFO(offset, TYPE_INFO(uint16), 15)
 STRUCT_VAR_INFO(aabb, TYPE_INFO(AABB))
-STRUCT_INFO_END(MNM::Tile::BVNode)
+STRUCT_INFO_END(MNM::Tile::SBVNode)
 
-STRUCT_INFO_BEGIN(MNM::Tile::Link)
+STRUCT_INFO_BEGIN(MNM::Tile::SLink)
 STRUCT_BITFIELD_INFO(side, TYPE_INFO(uint32), 4)
 STRUCT_BITFIELD_INFO(edge, TYPE_INFO(uint32), 2)
 STRUCT_BITFIELD_INFO(triangle, TYPE_INFO(uint32), 10)
-STRUCT_INFO_END(MNM::Tile::Link)
+STRUCT_INFO_END(MNM::Tile::SLink)
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 	#define TILE_VALIDATE() ValidateTriangleLinks()
@@ -32,96 +32,118 @@ STRUCT_INFO_END(MNM::Tile::Link)
 
 namespace MNM
 {
-Tile::Tile()
-	: triangles(0)
-	, vertices(0)
-	, nodes(0)
-	, links(0)
+STile::STile()
+	: triangles(nullptr)
+	, vertices(nullptr)
+	, nodes(nullptr)
+	, links(nullptr)
 	, triangleCount(0)
 	, vertexCount(0)
 	, nodeCount(0)
 	, linkCount(0)
 	, hashValue(0)
+#if MNM_USE_EXPORT_INFORMATION
+	, connectivity()
+#endif
 {
-
 }
 
-void Tile::CopyTriangles(Triangle* _triangles, uint16 count)
+void STile::GetTileData(Tile::STileData& outTileData) const
 {
+	outTileData.pTriangles = GetTriangles();
+	outTileData.pVertices = GetVertices();
+	outTileData.pLinks = GetLinks();
+	outTileData.pNodes = GetBVNodes();
 
+	outTileData.trianglesCount = triangleCount;
+	outTileData.verticesCount = vertexCount;
+	outTileData.linksCount = linkCount;
+	outTileData.bvNodesCount = nodeCount;
+
+	outTileData.hashValue = hashValue;
+}
+
+void STile::SetTriangles(std::unique_ptr<Tile::STriangle[]>&& pTriangles_, uint16 count)
+{
+	triangles = pTriangles_.release();
+	triangleCount = count;
+}
+
+void STile::SetVertices(std::unique_ptr<Tile::Vertex[]>&& pVertices_, uint16 count)
+{
+	vertices = pVertices_.release();
+	vertexCount = count;
+}
+
+void STile::SetNodes(std::unique_ptr<Tile::SBVNode[]>&& pNodes_, uint16 count)
+{
+	nodes = pNodes_.release();
+	nodeCount = count;
+}
+
+void STile::SetLinks(std::unique_ptr<Tile::SLink[]>&& pLinks_, uint16 count)
+{
+	links = pLinks_.release();
+	linkCount = count;
+}
+
+void STile::SetHashValue(uint32 value)
+{
+	hashValue = value;
+}
+
+template<typename TData, typename TCount>
+void CopyTileData(const TData* pNewData, const TCount newCount, TData*& pOutData, TCount& outCount)
+{
+	if (outCount != newCount)
+	{
+		delete[] pOutData;
+		pOutData = nullptr;
+
+		outCount = newCount;
+
+		if (newCount)
+		{
+			pOutData = new TData[newCount];
+		}
+	}
+
+	if (newCount)
+	{
+		// #MNM_TODO pavloi 2016.07.26: assert fails for Tile::Vertex and Tile::SBVNode
+		// #MNM_TODO pavloi 2016.07.26: can't use std::is_trivially_copyable - unexpectedly it's not implemented for clang/gcc in our build configurations
+		//COMPILE_TIME_ASSERT(std::is_trivially_copyable<TData>::value);
+		memcpy(pOutData, pNewData, sizeof(TData) * newCount);
+	}
+}
+
+void STile::CopyTriangles(const Tile::STriangle* _triangles, uint16 count)
+{
 #if MNM_USE_EXPORT_INFORMATION
 	InitConnectivity(triangleCount, count);
 #endif
 
-	if (triangleCount != count)
-	{
-		delete[] triangles;
-		triangles = 0;
-
-		triangleCount = count;
-
-		if (count)
-			triangles = new Triangle[count];
-	}
-
-	if (count)
-		memcpy(triangles, _triangles, sizeof(Triangle) * count);
+	CopyTileData(_triangles, count, triangles, triangleCount);
 }
 
-void Tile::CopyVertices(Vertex* _vertices, uint16 count)
+void STile::CopyVertices(const Tile::Vertex* _vertices, uint16 count)
 {
-	if (vertexCount != count)
-	{
-		delete[] vertices;
-		vertices = 0;
-
-		vertexCount = count;
-
-		if (count)
-			vertices = new Vertex[count];
-	}
-
-	if (count)
-		memcpy(vertices, _vertices, sizeof(Vertex) * count);
+	CopyTileData(_vertices, count, vertices, vertexCount);
 
 	TILE_VALIDATE();
 }
 
-void Tile::CopyNodes(BVNode* _nodes, uint16 count)
+void STile::CopyNodes(const Tile::SBVNode* _nodes, uint16 count)
 {
-	if (nodeCount != count)
-	{
-		delete[] nodes;
-		nodes = 0;
-
-		nodeCount = count;
-
-		if (count)
-			nodes = new BVNode[count];
-	}
-
-	if (count)
-		memcpy(nodes, _nodes, sizeof(BVNode) * count);
+	CopyTileData(_nodes, count, nodes, nodeCount);
 }
 
-void Tile::CopyLinks(Link* _links, uint16 count)
+void STile::CopyLinks(const Tile::SLink* _links, uint16 count)
 {
-	if (linkCount != count)
-	{
-		delete[] links;
-		links = 0;
-
-		linkCount = count;
-
-		if (count)
-			links = new Link[count];
-	}
-
-	if (count)
-		memcpy(links, _links, sizeof(Link) * count);
+	CopyTileData(_links, count, links, linkCount);
 }
 
-void Tile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex)
+void STile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex)
 {
 	TILE_VALIDATE();
 
@@ -131,12 +153,12 @@ void Tile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex
 	{
 		//Figure out if this triangle has already off-mesh connections
 		//Off-mesh link is always the first if exists
-		Triangle& triangle = triangles[triangleIdx];
+		Tile::STriangle& triangle = triangles[triangleIdx];
 
 		const size_t MaxLinkCount = 1024 * 6;
-		Tile::Link tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MaxLinkCount];
 
-		bool hasOffMeshLink = links && (triangle.linkCount > 0) && (triangle.firstLink < linkCount) && (links[triangle.firstLink].side == Link::OffMesh);
+		bool hasOffMeshLink = links && (triangle.linkCount > 0) && (triangle.firstLink < linkCount) && (links[triangle.firstLink].side == Tile::SLink::OffMesh);
 
 		// Try enabling DEBUG_MNM_DATA_CONSISTENCY_ENABLED if you get this
 		CRY_ASSERT_MESSAGE(!hasOffMeshLink, "Not adding offmesh link, already exists");
@@ -149,10 +171,10 @@ void Tile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex
 				{
 					assert(links);
 					PREFAST_ASSUME(links);
-					memcpy(tempLinks, links, sizeof(Link) * triangle.firstLink);
+					memcpy(tempLinks, links, sizeof(Tile::SLink) * triangle.firstLink);
 				}
 
-				tempLinks[triangle.firstLink].side = Link::OffMesh;
+				tempLinks[triangle.firstLink].side = Tile::SLink::OffMesh;
 				tempLinks[triangle.firstLink].triangle = offMeshIndex;
 
 				//Note this is not used
@@ -162,7 +184,7 @@ void Tile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex
 				if (countDiff > 0)
 				{
 					assert(links);
-					memcpy(&tempLinks[triangle.firstLink + 1], &links[triangle.firstLink], sizeof(Link) * countDiff);
+					memcpy(&tempLinks[triangle.firstLink + 1], &links[triangle.firstLink], sizeof(Tile::SLink) * countDiff);
 				}
 			}
 
@@ -181,7 +203,7 @@ void Tile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex
 	TILE_VALIDATE();
 }
 
-void Tile::UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex)
+void STile::UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex)
 {
 	TILE_VALIDATE();
 
@@ -194,9 +216,9 @@ void Tile::UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIn
 		assert(linkIdx < linkCount);
 		if (linkIdx < linkCount)
 		{
-			Link& link = links[linkIdx];
-			assert(link.side == Link::OffMesh);
-			if (link.side == Link::OffMesh)
+			Tile::SLink& link = links[linkIdx];
+			assert(link.side == Tile::SLink::OffMesh);
+			if (link.side == Tile::SLink::OffMesh)
 			{
 				link.triangle = offMeshIndex;
 			}
@@ -206,7 +228,7 @@ void Tile::UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIn
 	TILE_VALIDATE();
 }
 
-void Tile::RemoveOffMeshLink(const TriangleID triangleID)
+void STile::RemoveOffMeshLink(const TriangleID triangleID)
 {
 	TILE_VALIDATE();
 
@@ -216,7 +238,7 @@ void Tile::RemoveOffMeshLink(const TriangleID triangleID)
 	if (boundTriangleIdx < triangleCount)
 	{
 		const uint16 firstLink = triangles[boundTriangleIdx].firstLink;
-		if ((triangles[boundTriangleIdx].linkCount > 0) && (firstLink < linkCount) && (links[firstLink].side == Link::OffMesh))
+		if ((triangles[boundTriangleIdx].linkCount > 0) && (firstLink < linkCount) && (links[firstLink].side == Tile::SLink::OffMesh))
 			linkToRemoveIdx = firstLink;
 	}
 
@@ -228,15 +250,15 @@ void Tile::RemoveOffMeshLink(const TriangleID triangleID)
 		assert(linkCount > 1);
 
 		const size_t MaxLinkCount = 1024 * 6;
-		Tile::Link tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MaxLinkCount];
 
 		if (linkToRemoveIdx)
-			memcpy(tempLinks, links, sizeof(Link) * linkToRemoveIdx);
+			memcpy(tempLinks, links, sizeof(Tile::SLink) * linkToRemoveIdx);
 
 		const int diffCount = linkCount - (linkToRemoveIdx + 1);
 		if (diffCount > 0)
 		{
-			memcpy(&tempLinks[linkToRemoveIdx], &links[linkToRemoveIdx + 1], sizeof(Link) * diffCount);
+			memcpy(&tempLinks[linkToRemoveIdx], &links[linkToRemoveIdx + 1], sizeof(Tile::SLink) * diffCount);
 		}
 
 		CopyLinks(tempLinks, linkCount - 1);
@@ -253,7 +275,7 @@ void Tile::RemoveOffMeshLink(const TriangleID triangleID)
 	TILE_VALIDATE();
 }
 
-void Tile::Swap(Tile& other)
+void STile::Swap(STile& other)
 {
 	std::swap(triangles, other.triangles);
 	std::swap(vertices, other.vertices);
@@ -273,7 +295,7 @@ void Tile::Swap(Tile& other)
 	TILE_VALIDATE();
 }
 
-void Tile::Destroy()
+void STile::Destroy()
 {
 	delete[] triangles;
 	triangles = 0;
@@ -312,11 +334,13 @@ ColorF CalculateColorForIsland(StaticIslandID islandID, uint16 totalIslands)
 	return color;
 }
 
-void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::vector<float>& islandAreas) const
+void STile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::vector<float>& islandAreas) const
 {
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 
 	const ColorB triangleColorConnected(Col_Azure, 0.65f);
+	const ColorB triangleColorExternalMesh(Col_LimeGreen, 0.5f);
+	const ColorB triangleColorBackface(Col_Gray, 0.65f);
 	const ColorB triangleColorDisconnected(Col_Red, 0.65f);
 	const ColorB boundaryColor(Col_Black);
 
@@ -324,10 +348,14 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 	const Vec3 loffset(offset + Vec3(0.0f, 0.0f, 0.0005f));
 
 	SAuxGeomRenderFlags oldFlags = renderAuxGeom->GetRenderFlags();
-	SAuxGeomRenderFlags renderFlags(oldFlags);
 
+	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
 	renderFlags.SetAlphaBlendMode(e_AlphaBlended);
-	renderFlags.SetDepthWriteFlag(e_DepthWriteOff);
+
+	if (!(drawFlags & DrawTriangleBackfaces))
+	{
+		renderFlags.SetDepthWriteFlag(e_DepthWriteOff);
+	}
 
 	renderAuxGeom->SetRenderFlags(renderFlags);
 
@@ -335,7 +363,7 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 	{
 		for (size_t i = 0; i < triangleCount; ++i)
 		{
-			const Triangle& triangle = triangles[i];
+			const Tile::STriangle& triangle = triangles[i];
 
 			const Vec3 v0 = vertices[triangle.vertex[0]].GetVec3() + offset;
 			const Vec3 v1 = vertices[triangle.vertex[1]].GetVec3() + offset;
@@ -347,6 +375,15 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 			ColorB triangleColor = triangleColorConnected;
 #endif
 
+			if (!(drawFlags & DrawAccessibility))
+			{
+				// #MNM_TODO pavloi 2016.07.21: implement flag to color table lookup, which can be set from outside of the system.
+				if (triangle.triangleFlags & Tile::STriangle::eFlags_ExternalMesh)
+				{
+					triangleColor = triangleColorExternalMesh;
+				}
+			}
+
 			// Islands
 			bool drawIslandData = ((drawFlags & DrawIslandsId) && triangle.islandID > MNM::Constants::eStaticIsland_InvalidIslandID && triangle.islandID < islandAreas.size());
 			if (drawFlags & DrawIslandsId)
@@ -354,6 +391,11 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 				triangleColor = CalculateColorForIsland(triangle.islandID, static_cast<uint16>(islandAreas.size()));
 			}
 			renderAuxGeom->DrawTriangle(v0, triangleColor, v1, triangleColor, v2, triangleColor);
+
+			if (drawFlags & DrawTriangleBackfaces)
+			{
+				renderAuxGeom->DrawTriangle(v1, triangleColorBackface, v0, triangleColorBackface, v2, triangleColorBackface);
+			}
 
 			if ((drawFlags & DrawTrianglesId) || drawIslandData)
 			{
@@ -383,12 +425,12 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 
 	for (size_t i = 0; i < triangleCount; ++i)
 	{
-		const Triangle& triangle = triangles[i];
+		const Tile::STriangle& triangle = triangles[i];
 		size_t linkedEdges = 0;
 
 		for (size_t l = 0; l < triangle.linkCount; ++l)
 		{
-			const Link& link = links[triangle.firstLink + l];
+			const Tile::SLink& link = links[triangle.firstLink + l];
 			const size_t edge = link.edge;
 			linkedEdges |= static_cast<size_t>((size_t)1 << edge);
 
@@ -401,7 +443,7 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 			const Vec3 v0 = vertices[triangle.vertex[vi0]].GetVec3() + loffset;
 			const Vec3 v1 = vertices[triangle.vertex[vi1]].GetVec3() + loffset;
 
-			if (link.side == Link::OffMesh)
+			if (link.side == Tile::SLink::OffMesh)
 			{
 				if (drawFlags & DrawOffMeshLinks)
 				{
@@ -414,12 +456,12 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 					renderAuxGeom->DrawLine(c, Col_Red, a, Col_Red, 8.0f);
 				}
 			}
-			else if (link.side != Link::Internal)
+			else if (link.side != Tile::SLink::Internal)
 			{
 				if (drawFlags & DrawExternalLinks)
 				{
 					// TODO: compute clipped edge
-					renderAuxGeom->DrawLine(v0, Col_Green, v1, Col_ForestGreen);
+					renderAuxGeom->DrawLine(v0, Col_White, v1, Col_White, 4.0f);
 				}
 			}
 			else
@@ -446,13 +488,13 @@ void Tile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::ve
 }
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-void Tile::ValidateTriangleLinks()
+void STile::ValidateTriangleLinks()
 {
 	uint16 nextLink = 0;
 
 	for (uint16 i = 0; i < triangleCount; ++i)
 	{
-		const Triangle& triangle = triangles[i];
+		const Tile::STriangle& triangle = triangles[i];
 
 		CRY_ASSERT_MESSAGE(triangle.firstLink <= linkCount || linkCount == 0, "Out of range link");
 
@@ -464,17 +506,34 @@ void Tile::ValidateTriangleLinks()
 		{
 			uint16 linkIdx = triangle.firstLink + l;
 
-			CRY_ASSERT_MESSAGE(links[linkIdx].side != Link::OffMesh || l == 0, "Off mesh links should always be first");
+			CRY_ASSERT_MESSAGE(links[linkIdx].side != Tile::SLink::OffMesh || l == 0, "Off mesh links should always be first");
 		}
 	}
 
 	CRY_ASSERT(nextLink == linkCount);
 }
+
+void STile::ValidateTriangles() const
+{
+	const Tile::VertexIndex verticesMaxIndex = vertexCount;
+	for (size_t triangleIdx = 0; triangleIdx < triangleCount; ++triangleIdx)
+	{
+		const Tile::STriangle& tri = triangles[triangleIdx];
+		for (int i = 0; i < 3; ++i)
+		{
+			if (tri.vertex[i] >= verticesMaxIndex)
+			{
+				CRY_ASSERT_MESSAGE(tri.vertex[i] < verticesMaxIndex, "MNM traingle invalid vertex index");
+			}
+		}
+	}
+}
+
 #endif
 
-vector3_t::value_type Tile::GetTriangleArea(const TriangleID triangleID) const
+vector3_t::value_type STile::GetTriangleArea(const TriangleID triangleID) const
 {
-	const Tile::Triangle& triangle = triangles[ComputeTriangleIndex(triangleID)];
+	const Tile::STriangle& triangle = triangles[ComputeTriangleIndex(triangleID)];
 
 	const vector3_t v0 = vector3_t(vertices[triangle.vertex[0]]);
 	const vector3_t v1 = vector3_t(vertices[triangle.vertex[1]]);
@@ -493,13 +552,13 @@ vector3_t::value_type Tile::GetTriangleArea(const TriangleID triangleID) const
 
 #if MNM_USE_EXPORT_INFORMATION
 
-bool Tile::ConsiderExportInformation() const
+bool STile::ConsiderExportInformation() const
 {
 	// TODO FrancescoR: Remove if it's not necessary anymore or refactor it.
 	return true;
 }
 
-void Tile::InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount)
+void STile::InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount)
 {
 	if (ConsiderExportInformation())
 	{
@@ -523,7 +582,7 @@ void Tile::InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount)
 	}
 }
 
-void Tile::ResetConnectivity(uint8 accessible)
+void STile::ResetConnectivity(uint8 accessible)
 {
 	if (ConsiderExportInformation())
 	{

@@ -433,7 +433,7 @@ void CAreaGrid::Draw()
 	float const yPos = 300.0f;
 	float const fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	gEnv->pRenderer->Draw2dLabel(30, yPos, 1.35f, fColor, false, "Area Grid Mem Use: num cells: %d, memAlloced: %.2fk",
+	IRenderAuxText::Draw2dLabel(30, yPos, 1.35f, fColor, false, "Area Grid Mem Use: num cells: %d, memAlloced: %.2fk",
 	                             m_numCells, (4 * m_bitFieldSizeU32 * m_numCells * 2) / 1024.f);
 #endif // _RELEASE
 }

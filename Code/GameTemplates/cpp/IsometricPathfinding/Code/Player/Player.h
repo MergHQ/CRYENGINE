@@ -61,7 +61,6 @@ public:
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
 
-	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 
 	virtual void SetHealth(float health) override;
@@ -73,8 +72,6 @@ public:
 	CPlayerPathFinding *GetPathFinding() const { return m_pPathFinding; }
 
 	ISimpleWeapon *GetCurrentWeapon() const { return m_pCurrentWeapon; }
-
-	const bool IsLocalClient() const { return m_bIsLocalClient; }
 
 	const SExternalCVars &GetCVars() const;
 
@@ -92,7 +89,6 @@ protected:
 
 	CPlayerPathFinding *m_pPathFinding;
 
-	bool m_bIsLocalClient;
 	bool m_bAlive;
 
 	// Pointer to the weapon the player is currently using

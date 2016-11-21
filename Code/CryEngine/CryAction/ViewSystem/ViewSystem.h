@@ -114,6 +114,8 @@ public:
 
 	void ClearAllViews();
 
+	bool ShouldApplyHmdOffset() const { return m_bApplyHmdOffset != 0; }
+
 private:
 
 	void RemoveViewById(unsigned int viewId);
@@ -148,6 +150,8 @@ private:
 	float                             m_fBlendInRotSpeed;
 	bool                              m_bPerformBlendOut;
 	int                               m_nViewSystemDebug;
+
+	int                               m_bApplyHmdOffset;
 
 	bool                              m_useDeferredViewSystemUpdate;
 	bool                              m_bControlsAudioListeners;

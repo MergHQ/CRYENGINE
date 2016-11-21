@@ -44,11 +44,8 @@ struct SParticleParameters
 
 struct SSpawnData
 {
-	SSpawnData() : amount(0.f), spawned(0.f), delay(0.0f), duration(0.0f), timer(0.f) {}
-	float amount;
+	SSpawnData() : spawned(0.f), timer(0.f) {}
 	float spawned;
-	float delay;
-	float duration;
 	float timer;
 };
 
@@ -85,6 +82,7 @@ enum EFeatureInitializationFlags
 	eFeatureInitializationFlags_LocationBox             = 0x08,
 	eFeatureInitializationFlags_LocationSphere          = 0x10,
 	eFeatureInitializationFlags_LocationCircle          = 0x20,
+	eFeatureInitializationFlags_LocationNoise           = 0x200,
 	eFeatureInitializationFlags_VelocityCone            = 0x40,
 	eFeatureInitializationFlags_VelocityDirectional     = 0x80,
 	eFeatureInitializationFlags_VelocityOmniDirectional = 0x100,
@@ -129,6 +127,10 @@ struct SParticleInitializationParameters
 	float angle;
 	float directionScale;
 	float omniVelocity;
+	float amplitude;
+	float noiseSize;
+	float rate;
+	int octaves;
 };
 
 struct SVertexShaderParameters

@@ -14,8 +14,10 @@
 class CSceneRenderPass;
 class CPermanentRenderObject;
 struct SGraphicsPipelinePassContext;
+class CRenderPolygonDataPool;
+class CREClientPoly;
 
-// This class encapsulate all renderbale information to render a camera view.
+// This class encapsulate all information required to render a camera view.
 // It stores list of render items added by 3D engine
 class CRenderView : public IRenderView
 {
@@ -81,19 +83,19 @@ public:
 	CRenderView(const char* name, EViewType type, CRenderView* pParentView = nullptr, ShadowMapFrustum* pShadowFrustumOwner = nullptr);
 	~CRenderView();
 
-	EViewType            GetType() const                                                 { return m_viewType;  }
+	EViewType            GetType() const                            { return m_viewType;  }
 
-	void                 SetParentView(CRenderView* pParentView)                         { m_pParentView = pParentView; };
-	CRenderView*         GetParentView() const                                           { return m_pParentView;  };
+	void                 SetParentView(CRenderView* pParentView)    { m_pParentView = pParentView; };
+	CRenderView*         GetParentView() const                      { return m_pParentView;  };
 
-	const CCamera&       GetCamera(CCamera::EEye eye = CCamera::eEye_Left)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
-	const CCamera&       GetPreviousCamera(CCamera::EEye eye = CCamera::eEye_Left) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
-	const CRenderCamera& GetRenderCamera(CCamera::EEye eye = CCamera::eEye_Left)   const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_renderCamera[eye]; }
+	const CCamera&       GetCamera(CCamera::EEye eye)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
+	const CCamera&       GetPreviousCamera(CCamera::EEye eye) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
+	const CRenderCamera& GetRenderCamera(CCamera::EEye eye)   const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_renderCamera[eye]; }
 
 	RenderItems&         GetRenderItems(int nRenderList);
 	uint32               GetBatchFlags(int nRenderList) const;
 
-	void                 AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
+	void                 AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
 	                                   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward);
 
 	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
@@ -102,6 +104,32 @@ public:
 
 	// Find render item index in the sorted list, after when object flag changes.
 	int        FindRenderListSplit(ERenderListID list, uint32 objFlag);
+
+	// Find render item index in the sorted list according to arbitrary criteria.
+	template <typename T>
+	int        FindRenderListSplit(T predicate, ERenderListID list, int first, int last)
+	{
+		FUNCTION_PROFILER_RENDERER
+
+		// Binary search, assumes that the sub-region of the list is sorted by the predicate already
+		RenderItems& renderItems = GetRenderItems(list);
+
+		assert(first >= 0 && (first < renderItems.size()));
+		assert(last >= 0 && (last <= renderItems.size()));
+
+		--last;
+		while (first <= last)
+		{
+			int middle = (first + last) / 2;
+
+			if (predicate(renderItems[middle]))
+				first = middle + 1;
+			else
+				last = middle - 1;
+		}
+
+		return last + 1;
+	}
 
 	void       PrepareForRendering();
 
@@ -176,9 +204,8 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Polygons.
-	CREClientPoly* AddClientPoly();
-	int            GetClientPolyCount() const     { return m_numUsedClientPolygons; }
-	CREClientPoly* GetClientPoly(int index) const { assert(index < m_numUsedClientPolygons); return m_polygonsPool[index]; }
+	virtual void            AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo) final;
+	CRenderPolygonDataPool* GetPolygonDataPool() { return m_polygonDataPool.get(); };
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -202,13 +229,12 @@ private:
 	void                   UpdateModifiedShaderItems();
 	void                   ClearTemporaryCompiledObjects();
 	void                   PrepareNearestShadows();
-	void                   AddRenderItemsFromClientPolys();
 	void                   CheckAndScheduleForUpdate(const SShaderItem& shaderItem);
 	template<bool bConcurrent>
 	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem);
 
-	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
-	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
+	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
+	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 private:
 	EUsageMode m_usageMode;
 	EViewType  m_viewType;
@@ -255,8 +281,9 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Simple polygons storage
-	std::vector<CREClientPoly*> m_polygonsPool;
-	int                         m_numUsedClientPolygons;
+	std::vector<CREClientPoly*>             m_polygonsPool;
+	int                                     m_numUsedClientPolygons;
+	std::shared_ptr<CRenderPolygonDataPool> m_polygonDataPool;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -306,7 +333,7 @@ private:
 	struct SShadows
 	{
 		// Shadow frustums needed for a view.
-		ShadowMapFrustum* m_pShadowFrustumOwner;
+		ShadowMapFrustum*                                             m_pShadowFrustumOwner;
 		std::vector<SShadowFrustumToRender>                           m_renderFrustums;
 
 		std::map<int, ShadowFrustumsPtr>                              m_frustumsByLight;

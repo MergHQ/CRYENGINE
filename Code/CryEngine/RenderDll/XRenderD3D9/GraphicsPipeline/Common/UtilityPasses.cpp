@@ -67,8 +67,8 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	}
 
 	m_pass.BeginConstantUpdate();
-	m_pass.SetConstant(eHWSC_Pixel, param0Name, params0);
-	m_pass.SetConstant(eHWSC_Pixel, param1Name, params1);
+	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
+	m_pass.SetConstant(param1Name, params1, eHWSC_Pixel);
 	m_pass.Execute();
 }
 
@@ -132,13 +132,8 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 
 	m_pass.BeginConstantUpdate();
 
-	// Handle uneven source size by dropping last row/column
-	Vec4 params(0, 0, 0, 0);
-	int scaledWidth = (pSrcRT->GetWidth() + 1) / 2;
-	int scaledHeight = (pSrcRT->GetHeight() + 1) / 2;
-	params.x = (float)pDestRT->GetWidth() / (float)scaledWidth;
-	params.y = (float)pDestRT->GetHeight() / (float)scaledHeight;
-	m_pass.SetConstant(eHWSC_Pixel, paramName, params);
+	Vec4 params(1.0f / (float)pSrcRT->GetWidth(), 1.0f / (float)pSrcRT->GetHeight(), 0, 0);
+	m_pass.SetConstant(paramName, params, eHWSC_Pixel);
 	m_pass.Execute();
 }
 
@@ -200,7 +195,7 @@ void CGaussianBlurPass::ComputeParams(int texWidth, int texHeight, int numSample
 	}
 }
 
-void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution)
+void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -222,6 +217,7 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	int texFilter = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
 
 	static CCryNameTSCRC techDefault("GaussBlurBilinear");
+	static CCryNameTSCRC techAlphaBlur("GaussAlphaBlur");
 	static CCryNameR clampTCName("clampTC");
 	static CCryNameR param0Name("psWeights");
 	static CCryNameR param1Name("PI_psOffsets");
@@ -241,28 +237,30 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 		m_distribution = distribution;
 	}
 
+	auto& techName = bAlphaOnly ? techAlphaBlur : techDefault;
+
 	// Horizontal
 	m_passH.SetRenderTarget(0, pTempRT);
-	m_passH.SetTechnique(pShader, techDefault, 0);
+	m_passH.SetTechnique(pShader, techName, 0);
 	m_passH.SetState(GS_NODEPTHTEST);
 	m_passH.SetTextureSamplerPair(0, pScrDestRT, texFilter);
 
 	m_passH.BeginConstantUpdate();
-	m_passH.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsH, numSamples / 2);
-	m_passH.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
-	m_passH.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
+	m_passH.SetConstantArray(param1Name, m_paramsH, numSamples / 2, eHWSC_Vertex);
+	m_passH.SetConstantArray(param0Name, m_weights, numSamples / 2, eHWSC_Pixel);
+	m_passH.SetConstant(clampTCName, clampTC, eHWSC_Pixel);
 	m_passH.Execute();
 
 	// Vertical
 	m_passV.SetRenderTarget(0, pScrDestRT);
-	m_passV.SetTechnique(pShader, techDefault, 0);
+	m_passV.SetTechnique(pShader, techName, 0);
 	m_passV.SetState(GS_NODEPTHTEST);
 	m_passV.SetTextureSamplerPair(0, pTempRT, texFilter);
 
 	m_passV.BeginConstantUpdate();
-	m_passV.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsV, numSamples / 2);
-	m_passV.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
-	m_passV.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
+	m_passV.SetConstantArray(param1Name, m_paramsV, numSamples / 2, eHWSC_Vertex);
+	m_passV.SetConstantArray(param0Name, m_weights, numSamples / 2, eHWSC_Pixel);
+	m_passV.SetConstant(clampTCName, clampTC, eHWSC_Pixel);
 	m_passV.Execute();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,10 +294,141 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 #if CRY_USE_DX12
 	// Revert state of resource to one coherent resource-state after mip-mapping
 	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
-	CCryDX12Resource<ID3D11Resource>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
+	CCryDX12Resource<ID3D11ResourceToImplement>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
 	NCryDX12::CResource& DX12res = DX11res->GetDX12Resource();
 	NCryDX12::CCommandList* DX12cmd = pCommandList->GetDX12CommandList();
 
 	DX12cmd->SetResourceState(DX12res, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 #endif
+}
+
+CClearRegionPass::CClearRegionPass()
+{
+	CryStackAllocWithSizeVector(SVF_P3F, 6, quadVertices, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	quadVertices[0].xyz = Vec3(-1,  1, 0);
+	quadVertices[1].xyz = Vec3(-1, -1, 0);
+	quadVertices[2].xyz = Vec3( 1,  1, 0);
+
+	quadVertices[3].xyz = Vec3(-1, -1, 0);
+	quadVertices[4].xyz = Vec3( 1, -1, 0);
+	quadVertices[5].xyz = Vec3( 1,  1, 0);
+
+	m_quadVertices = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, 6 * sizeof(SVF_P3F));
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(m_quadVertices, quadVertices, 6 * sizeof(SVF_P3F));
+}
+
+CClearRegionPass::~CClearRegionPass()
+{
+	gcpRendD3D->m_DevBufMan.Destroy(m_quadVertices);
+}
+
+void CClearRegionPass::Execute(SDepthTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects)
+{
+#if defined(CRY_USE_DX12)
+	CDeviceCommandListRef commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	commandList.GetGraphicsInterface()->ClearSurface(pDepthTex->pSurface, nFlags, cDepth, cStencil, numRects, pRects);
+#else
+	D3DViewPort viewport;
+	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+	viewport.Width  = (float)pDepthTex->nWidth;
+	viewport.Height = (float)pDepthTex->nHeight;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	int renderState = GS_NODEPTHTEST;
+	renderState |= (nFlags & CLEAR_ZBUFFER) ? GS_DEPTHWRITE : 0;
+	renderState |= (nFlags & CLEAR_STENCIL) ? GS_STENCIL    : 0;
+
+	int stencilState = STENC_FUNC(FSS_STENCFUNC_ALWAYS) | STENCOP_FAIL(FSS_STENCOP_KEEP) | STENCOP_ZFAIL(FSS_STENCOP_KEEP);
+	stencilState |= (nFlags & CLEAR_STENCIL) ? STENCOP_PASS(FSS_STENCOP_REPLACE) : STENCOP_PASS(FSS_STENCOP_KEEP);
+
+	m_clearPass.ClearPrimitives();
+	m_clearPass.SetDepthTarget(pDepthTex);
+	m_clearPass.SetViewport(viewport);
+
+	for (int i = 0; i < numRects; ++i)
+	{
+		if (i >= m_clearPrimitives.size())
+			m_clearPrimitives.push_back(CRenderPrimitive());
+
+		auto& prim = m_clearPrimitives[i];
+		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport);
+
+		m_clearPass.AddPrimitive(&prim);
+	}
+	
+	m_clearPass.Execute();
+#endif
+}
+
+void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects)
+{
+#if defined(CRY_USE_DX12)
+	CDeviceCommandListRef commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	commandList.GetGraphicsInterface()->ClearSurface(pTex->GetSurface(0, 0), cClear, numRects, pRects);
+#else
+	D3DViewPort viewport;
+	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+	viewport.Width  = (float)pTex->GetWidth();
+	viewport.Height = (float)pTex->GetHeight();
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	int renderState = GS_NODEPTHTEST;
+	int stencilState = STENC_FUNC(FSS_STENCFUNC_ALWAYS) | STENCOP_FAIL(FSS_STENCOP_KEEP) | STENCOP_ZFAIL(FSS_STENCOP_KEEP);
+
+	m_clearPass.ClearPrimitives();
+	m_clearPass.SetRenderTarget(0, pTex);
+	m_clearPass.SetViewport(viewport);
+
+	for (int i = 0; i < numRects; ++i)
+	{
+		if (i >= m_clearPrimitives.size())
+			m_clearPrimitives.push_back(CRenderPrimitive());
+
+		auto& prim = m_clearPrimitives[i];
+		PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport);
+
+		m_clearPass.AddPrimitive(&prim);
+	}
+
+	m_clearPass.Execute();
+#endif
+}
+
+void CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport)
+{
+	static CCryNameTSCRC techClear("Clear");
+
+	prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+	prim.SetTechnique(CShaderMan::s_ShaderCommon, techClear, 0);
+	prim.SetRenderState(renderState);
+	prim.SetStencilState(stencilState, stencilRef);
+	prim.SetCustomVertexStream(m_quadVertices, eVF_P3F, sizeof(SVF_P3F));
+	prim.SetDrawInfo(eptTriangleList, 0, 0, 6);
+
+	auto& constantManager = prim.GetConstantManager();
+	constantManager.BeginNamedConstantUpdate();
+
+	float clipSpaceL = rect.left   / targetViewport.Width  *  2.0f - 1.0f;
+	float clipSpaceT = rect.top    / targetViewport.Height * -2.0f + 1.0f;
+	float clipSpaceR = rect.right  / targetViewport.Width  *  2.0f - 1.0f;
+	float clipSpaceB = rect.bottom / targetViewport.Height * -2.0f + 1.0f;
+
+	Vec4 vClearRect;
+	vClearRect.x = (clipSpaceR - clipSpaceL) * 0.5f;
+	vClearRect.y = (clipSpaceT - clipSpaceB) * 0.5f;
+	vClearRect.z = (clipSpaceR + clipSpaceL) * 0.5f;
+	vClearRect.w = (clipSpaceT + clipSpaceB) * 0.5f;
+
+	static CCryNameR paramClearRect("vClearRect");
+	constantManager.SetNamedConstant(paramClearRect, vClearRect, eHWSC_Vertex);
+
+	static CCryNameR paramClearDepth("vClearDepth");
+	constantManager.SetNamedConstant(paramClearDepth, Vec4(cDepth, 0, 0, 0), eHWSC_Vertex);
+
+	static CCryNameR paramClearColor("vClearColor");
+	constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
+
+	constantManager.EndNamedConstantUpdate();
 }

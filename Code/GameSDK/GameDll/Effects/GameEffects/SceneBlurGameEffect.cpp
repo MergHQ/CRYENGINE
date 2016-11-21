@@ -389,6 +389,9 @@ void CSceneBlurGameEffect::DebugOnInputEvent(int keyId)
 	}
 }
 
+
+#include <CryRenderer/IRenderAuxGeom.h>
+
 //--------------------------------------------------------------------------------------------------
 // Name: DebugDisplay
 // Desc: Display when this effect is selected to debug through the game effects system
@@ -400,18 +403,18 @@ void CSceneBlurGameEffect::DebugDisplay(const Vec2& textStartPos,float textSize,
 
 	if(s_sceneBlurGEData.isInitialised)
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Create: NumPad 1");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Create: NumPad 1");
 		currentTextPos.y += textYStep;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Destroy: NumPad 2");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Destroy: NumPad 2");
 		currentTextPos.y += textYStep;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn on: NumPad 4");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn on: NumPad 4");
 		currentTextPos.y += textYStep;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn off: NumPad 5");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn off: NumPad 5");
 		currentTextPos.y += textYStep;
 	}
 	else
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Effect failed to load data");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Effect failed to load data");
 	}
 }
 

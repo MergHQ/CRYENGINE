@@ -58,7 +58,7 @@ SInt GFileCryPak::Tell()
 
 SInt64 GFileCryPak::LTell()
 {
-	COMPILE_TIME_ASSERT(sizeof(SInt64) >= sizeof(long));
+	static_assert(sizeof(SInt64) >= sizeof(long), "Invalid type size!");
 	return TellInternal();
 }
 
@@ -188,7 +188,7 @@ SInt64 GFileCryPak::LSeek(SInt64 offset, SInt origin)
 {
 	assert(offset <= (long)(((unsigned long)-1) >> 1));
 
-	COMPILE_TIME_ASSERT(sizeof(SInt64) >= sizeof(long));
+	static_assert(sizeof(SInt64) >= sizeof(long), "Invalid type size!");
 	return SeekInternal((long) offset, origin);
 }
 
@@ -283,7 +283,7 @@ SInt GFileCryStream::Tell()
 
 SInt64 GFileCryStream::LTell()
 {
-	COMPILE_TIME_ASSERT(sizeof(SInt64) >= sizeof(long));
+	static_assert(sizeof(SInt64) >= sizeof(long), "Invalid type size!");
 	return TellInternal();
 }
 
@@ -428,7 +428,7 @@ SInt64 GFileCryStream::LSeek(SInt64 offset, SInt origin)
 {
 	assert(offset <= (long)(((unsigned long)-1) >> 1));
 
-	COMPILE_TIME_ASSERT(sizeof(SInt64) >= sizeof(long));
+	static_assert(sizeof(SInt64) >= sizeof(long), "Invalid type size!");
 	return SeekInternal((long) offset, origin);
 }
 

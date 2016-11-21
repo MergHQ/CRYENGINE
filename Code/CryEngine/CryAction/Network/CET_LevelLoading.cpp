@@ -6,6 +6,8 @@
 #include "GameClientChannel.h"
 #include <CryNetwork/NetHelpers.h>
 #include "GameContext.h"
+#include "GameContext.h"
+#include <CryThreading/IThreadManager.h>
 
 /*
  * Prepare level
@@ -66,7 +68,9 @@ public:
 		CCryAction* pAction = CCryAction::GetCryAction();
 
 		pAction->StartNetworkStallTicker(true);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, (UINT_PTR)(levelName.c_str()), 0);
 		pILevel = pAction->GetILevelSystem()->LoadLevel(levelName);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
 		pAction->StopNetworkStallTicker();
 
 		if (pILevel == NULL)
@@ -81,11 +85,125 @@ public:
 	bool m_bStarted;
 };
 
-void AddLoadLevel(IContextEstablisher* pEst, EContextViewState state, bool** ppStarted)
+class CLevelLoadingThread : public IThread
 {
-	CCET_LoadLevel* pLL = new CCET_LoadLevel;
-	pEst->AddTask(state, pLL);
-	*ppStarted = &pLL->m_bStarted;
+public:
+	enum EState
+	{
+		eState_Working,
+		eState_Failed,
+		eState_Succeeded,
+	};
+
+	CLevelLoadingThread(ILevelSystem* pLevelSystem, const char* szLevelName) 
+		: m_pLevelSystem(pLevelSystem), m_state(eState_Working), m_levelName(szLevelName) 
+	{
+	}
+
+	virtual void ThreadEntry() override
+	{
+		const threadID levelLoadingThreadId = CryGetCurrentThreadId();
+		gEnv->pRenderer->SetLevelLoadingThreadId(levelLoadingThreadId);
+		gEnv->pAudioSystem->SetAllowedThreadId(levelLoadingThreadId);
+
+		const ILevelInfo* pLoadedLevelInfo = m_pLevelSystem->LoadLevel(m_levelName.c_str());
+		const bool bResult = (pLoadedLevelInfo != NULL);
+		gEnv->pRenderer->SetLevelLoadingThreadId(0);
+		gEnv->pAudioSystem->SetAllowedThreadId(gEnv->mMainThreadId);
+
+		m_state = bResult ? eState_Succeeded : eState_Failed;
+	}
+
+	EState GetState() const
+	{
+		return m_state;
+	}
+
+private:
+	ILevelSystem* m_pLevelSystem;
+	volatile EState m_state;
+	const string m_levelName;
+};
+
+class CCET_LoadLevelAsync : public CCET_Base
+{
+public:
+	CCET_LoadLevelAsync() : m_bStarted(false), m_pLevelLoadingThread(nullptr) {}
+
+	virtual const char* GetName() override 
+	{ 
+		return "LoadLevelAsync"; 
+	}
+
+	virtual EContextEstablishTaskResult OnStep( SContextEstablishState& state ) override
+	{
+		CCryAction* pAction = CCryAction::GetCryAction();
+		const string levelName = pAction->GetGameContext()->GetLevelName();
+		if (!m_bStarted)
+		{
+			if (levelName.empty())
+			{
+				GameWarning("No level name set");
+				return eCETR_Failed;
+			} 
+
+			pAction->StartNetworkStallTicker(true);
+			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, (UINT_PTR)(levelName.c_str()), 0);
+
+			ILevelSystem* pLevelSystem = pAction->GetILevelSystem();
+			m_pLevelLoadingThread = new CLevelLoadingThread(pLevelSystem, levelName.c_str());
+			if (!gEnv->pThreadManager->SpawnThread(m_pLevelLoadingThread, "LevelLoadingThread"))
+			{
+				CryFatalError("Error spawning LevelLoadingThread thread.");
+			}
+
+			m_bStarted = true;
+		}
+
+		const CLevelLoadingThread::EState threadState = m_pLevelLoadingThread->GetState();
+		if(threadState == CLevelLoadingThread::eState_Working)
+			return eCETR_Wait;
+
+		gEnv->pThreadManager->JoinThread(m_pLevelLoadingThread, eJM_Join);
+		delete m_pLevelLoadingThread;
+		m_pLevelLoadingThread = nullptr;
+
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
+		pAction->StopNetworkStallTicker();
+		if(threadState == CLevelLoadingThread::eState_Succeeded)
+		{
+			return eCETR_Ok;
+		}
+		else
+		{
+			GameWarning("Failed to load level: %s", levelName.c_str());
+			return eCETR_Failed;
+		}
+	}
+
+	bool m_bStarted;
+	CLevelLoadingThread* m_pLevelLoadingThread;
+};
+
+void AddLoadLevel( IContextEstablisher * pEst, EContextViewState state, bool ** ppStarted )
+{
+	const bool bIsEditor = gEnv->IsEditor();
+	const bool bIsDedicated = gEnv->IsDedicated();
+	const ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+
+	if(!bIsEditor && !bIsDedicated && bAsyncLoad)
+	{
+		CCET_LoadLevelAsync* pLL = new CCET_LoadLevelAsync;
+		pEst->AddTask( state, pLL );
+		*ppStarted = &pLL->m_bStarted;
+	}
+	else
+	{
+		CCET_LoadLevel* pLL = new CCET_LoadLevel;
+		pEst->AddTask( state, pLL );
+		*ppStarted = &pLL->m_bStarted;
+	}
 }
 
 /*

@@ -119,7 +119,6 @@ public:
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
-		gEnv->pGame->OnClearPlayerIds();
 		if (CGameServerNub* pNub = CCryAction::GetCryAction()->GetGameServerNub())
 		{
 			TServerChannelMap* pMap = pNub->GetServerChannelMap();

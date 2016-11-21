@@ -11,7 +11,7 @@ public:
 		, m_pgrid(nullptr)
 		, m_nTris(0)
 	{
-		COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_iBBox) == 2);
+		static_assert(CRY_ARRAY_COUNT(m_iBBox) == 2, "Invalid array size!");
 		m_iBBox[0].zero();
 		m_iBBox[1].zero();
 	}

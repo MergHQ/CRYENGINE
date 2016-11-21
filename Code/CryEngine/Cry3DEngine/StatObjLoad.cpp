@@ -1349,7 +1349,7 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 	_smart_ptr<IRenderMesh> pOutRenderMesh;
 
 	// Create renderable mesh.
-	if (!gEnv->IsDedicated())
+	if (gEnv->pRenderer)
 	{
 		if (!pMesh)
 			return 0;

@@ -11,6 +11,7 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
+#include "XRenderD3D9/DriverD3D.h"
 
 DECLARE_JOB("ComputeVertices", TComputeVerticesJob, CREParticle::ComputeVertices);
 
@@ -436,6 +437,139 @@ bool CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 		nList = EFSLIST_TRANSP;
 	else
 		nList = EFSLIST_GENERAL;
+
+	return true;
+}
+
+bool CREParticle::mfDraw(CShader* ef, SShaderPass* shaderPass)
+{
+	CD3D9Renderer* rd(gcpRendD3D);
+	SRenderPipeline& rp(rd->m_RP);
+	CRenderObject* pRenderObject = rp.m_pCurObject;
+	const bool isPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
+	const bool hasIndices = (rp.m_RendNumIndices != 0);
+	const bool isPointSprites = (rp.m_ObjFlags & FOB_POINT_SPRITE) != 0;
+	const bool isOctogonal = (rp.m_ObjFlags & FOB_OCTAGONAL) != 0;
+
+	rd->FX_Commit();
+	rp.m_lightVolumeBuffer.BindSRVs();
+
+	if (!isPulledVertices)
+	{
+		if (!CHWShader_D3D::s_pCurInstVS && !CHWShader_D3D::s_pCurInstPS || CHWShader_D3D::s_pCurInstPS->m_bFallback || CHWShader_D3D::s_pCurInstVS->m_bFallback)
+			return false;
+
+		rp.m_particleBuffer.BindVB();
+		rp.m_particleBuffer.BindIB();
+
+		// rendered to volume texture
+		if (rd->m_RP.m_nPassGroupID == EFSLIST_FOG_VOLUME)
+		{
+			if (rd->m_bVolumetricFogEnabled
+				&& (rp.m_pCurTechnique && !(rp.m_pCurTechnique->m_Flags & FHF_USE_HULL_SHADER) && (rp.m_pCurTechnique->m_Flags & FHF_USE_GEOMETRY_SHADER)))
+			{
+				// TODO: calculate depth bounds of all patticles.
+				// don't render when all particles are out of fog density texture.
+
+				if (rp.m_RendNumIndices == 0)
+				{
+					// Draw a quad or octagon, with instanced sprite data
+					int nInstanceVerts = (rp.m_ObjFlags & FOB_OCTAGONAL) ? 8 : 4;
+					rd->FX_DrawPrimitive(eptTriangleStrip, rp.m_FirstVertex, rp.m_RendNumVerts, nInstanceVerts);
+				}
+				else
+				{
+					// Draw non-instanced tri list
+					rd->FX_DrawIndexedPrimitive(eptTriangleList, rp.m_FirstVertex, 0, rp.m_RendNumVerts, rp.m_FirstIndex, rp.m_RendNumIndices);
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		if (rp.m_pCurTechnique && (rp.m_pCurTechnique->m_Flags & FHF_USE_HULL_SHADER))
+		{
+			// Tessellated shader
+			if (!CHWShader_D3D::s_pCurInstHS && !CHWShader_D3D::s_pCurInstDS || CHWShader_D3D::s_pCurInstHS->m_bFallback || CHWShader_D3D::s_pCurInstDS->m_bFallback)
+				return false;
+
+			// Set vertex-buffer to empty eVF_Unknown
+			//	gcpRendD3D->FX_SetVStream(0, nullptr, 0, 3 * sizeof(float));
+
+			if (rp.m_RendNumIndices == 0)
+				// Draw separated point sprites
+				rd->FX_DrawPrimitive(ept1ControlPointPatchList, rp.m_FirstVertex, rp.m_RendNumVerts);
+			else
+				// Draw connected quads
+				rd->FX_DrawIndexedPrimitive(ept4ControlPointPatchList, rp.m_FirstVertex, 0, rp.m_RendNumVerts, rp.m_FirstIndex, rp.m_RendNumIndices);
+		}
+		else
+		{
+			if (!hasIndices && !isPointSprites)
+			{
+				// ribbons with degenerate tris between strips
+				rd->FX_DrawPrimitive(eptTriangleStrip, rp.m_FirstVertex, rp.m_RendNumVerts);
+			}
+			else if (hasIndices && !isPointSprites)
+			{
+				// non instanced point sprites. allow index buffer to roll over itself
+				// only PS4 using this since it does not support DrawInstanced atm
+				const int maxVertices = 1 << 16;
+				int numVertices = rp.m_RendNumVerts;
+				int firstVertex = rp.m_FirstVertex;
+				int firstIndex = rp.m_FirstIndex;
+				while (numVertices > 0)
+				{
+					int thisNumVertices = min(numVertices, maxVertices);
+					int thisNumIndices = min(rp.m_RendNumIndices, (thisNumVertices >> 2) * 6);
+					rd->FX_DrawIndexedPrimitive(
+						eptTriangleList, firstVertex, 0,
+						thisNumVertices, firstIndex,
+						thisNumIndices);
+					numVertices -= thisNumVertices;
+					firstVertex += thisNumVertices;
+					firstIndex += thisNumIndices;
+				}
+			}
+			else if (!hasIndices && isPointSprites)
+			{
+				// instanced geometry
+				const int nInstanceVerts = isOctogonal ? 8 : 4;
+				rd->FX_DrawPrimitive(eptTriangleStrip, rp.m_FirstVertex, rp.m_RendNumVerts, nInstanceVerts);
+			}
+		}
+	}
+	else
+	{
+		// Set vertex-buffer to empty eVF_Unknown
+		gcpRendD3D->FX_SetVStream(0, nullptr, 0, 3 * sizeof(float));
+
+		const uint maxNumSprites = rp.m_particleBuffer.GetMaxNumSprites();
+		rp.m_particleBuffer.BindSRVs();
+		if (isPointSprites)
+		{
+			rp.m_particleBuffer.BindSpriteIB();
+
+			for (;; )
+			{
+				const uint numSprites = min(uint(rp.m_RendNumVerts), maxNumSprites);
+				rd->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, 0, 0, numSprites * 6);
+				rp.m_RendNumVerts -= numSprites;
+				rp.m_FirstVertex += numSprites;
+				if (rp.m_RendNumVerts <= 0)
+					break;
+				CHWShader_D3D* pVertexShader = (CHWShader_D3D*)shaderPass->m_VShader;
+				pVertexShader->mfSetParametersPB();
+				rd->FX_Commit();
+			}
+		}
+		else
+		{
+			rd->FX_DrawPrimitive(eptTriangleStrip, 0, rp.m_RendNumVerts * 2);
+		}
+	}
 
 	return true;
 }

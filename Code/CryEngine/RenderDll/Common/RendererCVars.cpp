@@ -97,7 +97,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingnoupload);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingonlyvideo);
 int CRendererCVars::CV_r_texturesstreamingsync;
-AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingResidencyEnabled);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingUpdateType);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPrecacheRounds);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingSuppress);
@@ -114,18 +113,12 @@ int CRendererCVars::CV_r_texturesstreamingDeferred;
 #if defined(SUPPORTS_INPLACE_TEXTURE_STREAMING)
 int CRendererCVars::CV_r_texturesstreamingInPlace;
 #endif
-float CRendererCVars::CV_r_texturesstreamingResidencyTimeTestLimit;
 float CRendererCVars::CV_r_rain_maxviewdist;
 float CRendererCVars::CV_r_rain_maxviewdist_deferred;
 float CRendererCVars::CV_r_measureoverdrawscale;
-float CRendererCVars::CV_r_texturesstreamingResidencyTime;
-float CRendererCVars::CV_r_texturesstreamingResidencyThrottle;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingmipfading);
 int CRendererCVars::CV_r_TexturesStreamPoolSize;
 int CRendererCVars::CV_r_TexturesStreamPoolSecondarySize;
-int CRendererCVars::CV_r_texturesstreampooldefragmentation;
-int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
-int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxamount;
 int CRendererCVars::CV_r_texturesskiplowermips;
 int CRendererCVars::CV_r_rendertargetpoolsize;
 float CRendererCVars::CV_r_TexturesStreamingMaxRequestedMB;
@@ -249,7 +242,6 @@ float CRendererCVars::CV_r_ShadowsParticleNormalEffect;
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenMode);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsUseClipVolume);
-int CRendererCVars::CV_r_shadowblur;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadowtexformat);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskResolution);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskDownScale);
@@ -284,6 +276,8 @@ float CRendererCVars::CV_r_imposterratio;
 int CRendererCVars::CV_r_impostersupdateperframe;
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
+AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
+AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
 #if CRY_PLATFORM_DESKTOP
 int CRendererCVars::CV_r_shadersorbis;
 int CRendererCVars::CV_r_shadersdurango;
@@ -374,6 +368,9 @@ float CRendererCVars::CV_r_maxSuitPulseSpeedMultiplier;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_customvisions);
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugLayerEffect);
+AllocateConstIntCVar(CRendererCVars, CV_r_VrProjectionType);
+AllocateConstIntCVar(CRendererCVars, CV_r_VrProjectionPreset);
+AllocateConstIntCVar(CRendererCVars, CV_r_stereoMirrorProjection);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_snow);
 AllocateConstIntCVar(CRendererCVars, CV_r_snow_halfres);
@@ -768,10 +765,10 @@ void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 {
 	if (gEnv->p3DEngine)  // 3DEngine not initialized during ShaderCacheGen
 	{
-	CTexture::GenerateCachedShadowMaps();
-	gEnv->p3DEngine->SetShadowsGSMCache(true);
-	gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
-}
+		CTexture::GenerateCachedShadowMaps();
+		gEnv->p3DEngine->SetShadowsGSMCache(true);
+		gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
+	}
 }
 
 void CRendererCVars::OnChange_GeomInstancingThreshold(ICVar* pVar)
@@ -1130,9 +1127,9 @@ void CRendererCVars::InitCVars()
 	               "  1: Use new graphics pipeline with objects compiled on the fly\n"
 	               "  2: Use new graphics pipeline with permanent render objects");
 
-	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 0, VF_DUMPTODISK,
+	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
 	               "Toggles tile based shading.\n"
-								 "0 - Off"
+	               "0 - Off"
 	               "1 - Tiled forward shading for transparent objects\n"
 	               "2 - Tiled deferred and forward shading\n"
 	               "3 - Tiled deferred and forward shading using volume rasterization for light list generation\n");
@@ -1549,9 +1546,9 @@ void CRendererCVars::InitCVars()
 	               "Bigger value increases temporal stability but also overall image blurriness\n"
 	               "Smaller value decreases temporal stability but gives overall sharper image");
 
-	DefineConstIntCVar3("CV_r_AntialiasingModeEditor", CV_r_AntialiasingModeEditor, 1, VF_NULL,
+	DefineConstIntCVar3("r_AntialiasingModeEditor", CV_r_AntialiasingModeEditor, 1, VF_NULL,
 	                    "Sets antialiasing modes to editing mode (disables jitter on modes using camera jitter which can cause flickering of helper objects)\n"
-	                    "Usage: CV_r_AntialiasingModeEditor [0/1]");
+	                    "Usage: r_AntialiasingModeEditor [0/1]");
 
 	DefineConstIntCVar3("r_MotionVectors", CV_r_MotionVectors, 1, VF_NULL,
 	                    "Enables generation of motion vectors for dynamic objects\n");
@@ -1609,6 +1606,26 @@ void CRendererCVars::InitCVars()
 	                    "Enables debug mode (independent from game code) for layer effects\n"
 	                    "Usage: r_DebugLayerEffect [0/1/2/3/etc]\n"
 	                    "Default is 0 (disabled). 1: 1st layer mode, etc");
+
+	DefineConstIntCVar3("r_VrProjectionType", CV_r_VrProjectionType, 0, VF_REQUIRE_APP_RESTART,
+	                    "Selects which modified projection to use for rendering\n"
+	                    "Usage: r_VrProjectionType [0/1/2]\n"
+	                    "0: none/planar (default)\n"
+	                    "1: Nvidia Multi-Res Shading\n"
+	                    "2: NVidia Lens-Matched Shading");
+	
+	DefineConstIntCVar3("r_VrProjectionPreset", CV_r_VrProjectionPreset, 0, VF_NULL,
+	                    "Selects the quality preset for the modified projection\n"
+	                    "Usage: r_VrProjectionPreset [0..8]\n"
+	                    "0: full-resolution preset, can be used for quality testing\n"
+	                    "1,2: desktop high and low quality presets\n"
+	                    "3..5: Oculus Rift high..low quality presets\n"
+	                    "6..8: HTC Vive high..low quality presets");
+
+	DefineConstIntCVar3("r_stereoMirrorProjection", CV_r_stereoMirrorProjection, 1, VF_NULL,
+	                    "Enables mirroring of MRS or LMS projection for the right eye\n"
+	                    "Usage: r_LensMatchedRendering [0/1]\n"
+	                    "Default is 1 (enabled).");
 
 	DefineConstIntCVar3("r_Snow", CV_r_snow, 2, VF_NULL,
 	                    "Enables snow rendering\n"
@@ -1764,10 +1781,6 @@ void CRendererCVars::InitCVars()
 	                    ".\n"
 	                    "Usage: r_ShadowsUseClipVolume [0=Disable/1=Enable");
 
-	REGISTER_CVAR3("r_ShadowBlur", CV_r_shadowblur, SHADOWS_BLUR_DEFAULT_VAL, VF_DUMPTODISK,
-	               "Selected shadow map screenspace blurring technique.\n"
-	               "Usage: r_ShadowBlur [0=no blurring(fastest)/1=blur/2=blur/3=blur without leaking(slower)]");
-
 	DefineConstIntCVar3("r_ShadowTexFormat", CV_r_shadowtexformat, 0, VF_NULL,
 	                    "0=use D32 texture format for depth map\n"
 	                    "1=use D16 texture format for depth map\n"
@@ -1792,7 +1805,7 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_ShadowsStencilPrePass [0/1]");
 	DefineConstIntCVar3("r_ShadowMaskStencilPrepass", CV_r_ShadowMaskStencilPrepass, 0, VF_NULL,
 	                    "1=Run explicit stencil prepass for shadow mask generation (as opposed to merged stencil/sampling passes)");
-	
+
 	REGISTER_CVAR3("r_ShadowsDepthBoundNV", CV_r_ShadowsDepthBoundNV, 0, VF_NULL,
 	               "1=use NV Depth Bound extension\n"
 	               "Usage: r_ShadowsDepthBoundNV [0/1]");
@@ -1861,9 +1874,9 @@ void CRendererCVars::InitCVars()
 	                                             "Usage: r_ShowDynTexturesFilter start*\n"
 	                                             "Default is *. Set to 'pattern' to show only specific textures (activate r_ShowDynTextures)");
 
-	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "8core5", VF_NULL,
+	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "0.0.0.0", VF_NULL,
 	                                            "Usage: r_ShaderCompilerServer localhost \n"
-	                                            "Default is 8core5 ");
+	                                            "Default is 0.0.0.0 ");
 																							
 	CV_r_ShaderCompilerFolderName = REGISTER_STRING("r_ShaderCompilerFolderName", "", VF_NULL,
 	                                             "Usage: r_ShaderCompilerFolderName foldername \n"
@@ -2153,13 +2166,6 @@ void CRendererCVars::InitCVars()
 
 	int nDefaultDefragState = 0;
 
-	REGISTER_CVAR3("r_texturesstreampooldefragmentation", CV_r_texturesstreampooldefragmentation, nDefaultDefragState, VF_NULL,
-	               "Enabled CPU (1), GPU(2) and disable (0) textures stream pool defragmentation.\n");
-	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxmoves", CV_r_texturesstreampooldefragmentationmaxmoves, 8, VF_NULL,
-	               "Specify the maximum number of blocks to move per defragmentation update");
-	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxamount", CV_r_texturesstreampooldefragmentationmaxamount, 512 * 1024, VF_NULL,
-	               "Specify the limit (in bytes) that defrag update will stop");
-
 	REGISTER_CVAR3("r_texturesskiplowermips", CV_r_texturesskiplowermips, 0, VF_NULL,
 	               "Enabled skipping lower mips for X360.\n");
 
@@ -2176,23 +2182,7 @@ void CRendererCVars::InitCVars()
 	               "All textures will be streamed in the main thread. Useful for debug purposes.\n"
 	               "Usage: r_TexturesStreamingSync [0/1]\n"
 	               "Default is 0 (off).");
-	DefineConstIntCVar3("r_TexturesStreamingResidencyEnabled", CV_r_texturesstreamingResidencyEnabled, 1, VF_NULL,
-	                    "Toggle for resident textures streaming support.\n"
-	                    "Usage: r_TexturesStreamingResidencyEnabled [toggle]"
-	                    "Default is 0, 1 for enabled");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyTimeTestLimit", CV_r_texturesstreamingResidencyTimeTestLimit, 5.0f, VF_NULL,
-	               "Time limit to use for mip thrashing calculation in seconds.\n"
-	               "Usage: r_TexturesStreamingResidencyTimeTestLimit [time]"
-	               "Default is 5 seconds");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyTime", CV_r_texturesstreamingResidencyTime, 10.0f, VF_NULL,
-	               "Time to keep textures resident for before allowing them to be removed from memory.\n"
-	               "Usage: r_TexturesStreamingResidencyTime [Time]\n"
-	               "Default is 10 seconds");
-	REGISTER_CVAR3("r_TexturesStreamingResidencyThrottle", CV_r_texturesstreamingResidencyThrottle, 0.5f, VF_NULL,
-	               "Ratio for textures to become resident.\n"
-	               "Usage: r_TexturesStreamingResidencyThrottle [ratio]"
-	               "Default is 0.5"
-	               "Max is 1.0 means textures will become resident sooner, Min 0.0 means textures will not become resident");
+
 	REGISTER_CVAR3("r_TexturesStreamingMaxRequestedMB", CV_r_TexturesStreamingMaxRequestedMB, 2.f, VF_NULL,
 	               "Maximum amount of texture data requested from streaming system in MB.\n"
 	               "Usage: r_TexturesStreamingMaxRequestedMB [size]\n"
@@ -2409,18 +2399,20 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShadersLazyUnload", CV_r_shaderslazyunload, 0, VF_NULL, "");
+	DefineConstIntCVar3("r_ShadersCompileStrict", CV_r_shadersCompileStrict, 0, VF_NULL, "");
+	DefineConstIntCVar3("r_ShadersCompileCompatible", CV_r_shadersCompileCompatible, 1, VF_NULL, "");
 
 	REGISTER_CVAR3_CB("r_ShadersAllowCompilation", CV_r_shadersAllowCompilation, SHADERS_ALLOW_COMPILATION_DEFAULT_VAL, VF_NULL, "", OnChange_CV_r_ShadersAllowCompiliation);
 
 	REGISTER_CVAR3("r_ShadersRemoteCompiler", CV_r_shadersremotecompiler, 0, VF_DUMPTODISK, "Enables remote shader compilation on dedicated machine");
-	REGISTER_CVAR3("r_ShadersAsyncCompiling", CV_r_shadersasynccompiling, 1, VF_NULL,
+	REGISTER_CVAR3("r_ShadersAsyncCompiling", CV_r_shadersasynccompiling, 3, VF_NULL,
 	               "Enable asynchronous shader compiling\n"
 	               "Usage: r_ShadersAsyncCompiling [0/1/2/3]\n"
 	               " 0 = off, (stalling) shaders compiling\n"
 	               " 1 = on, shaders are compiled in parallel, missing shaders are rendered in yellow\n"
 	               " 2 = on, shaders are compiled in parallel, missing shaders are not rendered\n"
 	               " 3 = on, shaders are compiled in parallel in precache mode");
-	REGISTER_CVAR3("r_ShadersAsyncActivation", CV_r_shadersasyncactivation, 1, VF_NULL,
+	REGISTER_CVAR3("r_ShadersAsyncActivation", CV_r_shadersasyncactivation, 0, VF_NULL,
 	               "Enable asynchronous shader activation\n"
 	               "Usage: r_ShadersAsyncActivation [0/1]\n"
 	               " 0 = off, (stalling) synchronous shaders activation\n"
@@ -2936,12 +2928,6 @@ void CRendererCVars::InitCVars()
 	               " 1: Enable multi-GPU for dual rendering\n"
 	               "-1: Enable multi-GPU for dual rendering, but run on only one GPU (simulation)\n");
 
-#if defined(INCLUDE_OCULUS_SDK) || defined(INCLUDE_OPENVR_SDK) || defined(INCLUDE_OSVR_SDK)
-	#define VRDEVICE_STEREO_OUTPUT_INFO "7: VR Device (Oculus/Vive/HDK/Playstation VR)\n"
-#else
-	#define VRDEVICE_STEREO_OUTPUT_INFO
-#endif
-
 	REGISTER_CVAR3("r_StereoOutput", CV_r_StereoOutput, 0, VF_DUMPTODISK,
 	               "Sets stereo output. Output depends on the stereo monitor\n"
 	               "Usage: r_StereoOutput [0=off/1/2/3/4/5/6/...]\n"
@@ -2952,7 +2938,7 @@ void CRendererCVars::InitCVars()
 	               "4: Side by Side\n"
 	               "5: Line by Line (Interlaced)\n"
 	               "6: Anaglyph\n"
-	               VRDEVICE_STEREO_OUTPUT_INFO
+		           "7: VR Device\n"
 	               );
 
 #undef VRDEVICE_STEREO_OUTPUT_INFO

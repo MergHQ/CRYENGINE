@@ -4,8 +4,8 @@
 
 #include <CryCore/Platform/platform_impl.inl>
 
-#include <Include/IPlugin.h>
-#include <Include/IEditorClassFactory.h>
+#include <IPlugin.h>
+#include <IEditorClassFactory.h>
 
 #include <CryNetwork/ISimpleHttpServer.h>
 #include <IEditor.h>
@@ -95,14 +95,13 @@ PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
 		return NULL;
 	}
 
-	g_pEditor = pInitParam->pIEditorInterface;
-	if(ISystem *pSystem = pInitParam->pIEditorInterface->GetSystem())
+	g_pEditor = pInitParam->pIEditor;
+	if(ISystem *pSystem = pInitParam->pIEditor->GetSystem())
 	{
 		ModuleInitISystem(pSystem, "CryLink");
 
-		if(CryLinkService::IFramework* pFramework = pSystem->GetIGame()->GetIGameFramework()->QueryExtension<CryLinkService::IFramework>())
+		if(CryLinkService::IFramework* pFramework = gEnv->pGameFramework->QueryExtension<CryLinkService::IFramework>())
 		{
-			pFramework = gEnv->pGame->GetIGameFramework()->QueryExtension<CryLinkService::IFramework>();
 			CCryLinkEditorPlugin* pPlugin = new CCryLinkEditorPlugin(pFramework->GetService());
 			if(pPlugin->Init())
 			{

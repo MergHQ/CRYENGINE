@@ -18,9 +18,9 @@ def load_linux_x64_linux_x86_gcc_common_settings(conf):
 	
 	# Setup Tools for GCC Toolchain (simply used system installed version)
 	v['AR'] = 'ar'
-	v['CC'] = 'gcc'
-	v['CXX'] = 'g++'
-	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = 'g++'
+	v['CC'] = 'gcc-4.9'
+	v['CXX'] = 'g++-4.9'
+	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = 'g++-4.9'
 	
 	# Introduce the compiler to generate 32 bit code
 	v['CFLAGS'] += [ '-m32' ]

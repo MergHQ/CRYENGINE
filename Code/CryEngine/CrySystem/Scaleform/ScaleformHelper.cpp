@@ -24,10 +24,14 @@ class CEngineModule_ScaleformHelper : public IEngineModule
 
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		ISystem* pSystem = env.pSystem;
+		if (env.pRenderer)
+		{
+			ISystem* pSystem = env.pSystem;
 
-		ModuleInitISystem(pSystem, "ScaleformHelper");
-		env.pScaleformHelper = new CScaleformHelper();
+			ModuleInitISystem(pSystem, "ScaleformHelper");
+			env.pScaleformHelper = new CScaleformHelper();	
+		}
+
 		return true;
 	}
 };

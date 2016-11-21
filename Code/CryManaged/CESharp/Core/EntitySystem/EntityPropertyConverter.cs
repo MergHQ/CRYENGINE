@@ -1,9 +1,9 @@
 ﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+using CryEngine.Common;
 using System;
 using System.Globalization;
 using System.Text;
-using CryEngine.Common;
 
 namespace CryEngine.EntitySystem
 {
@@ -54,12 +54,12 @@ namespace CryEngine.EntitySystem
 		#region Methods
 		public object SetValue(string strValue)
 		{
-			return (object)Set (strValue);
+			return (object)Set(strValue);
 		}
 
 		public string GetValue(object objValue)
 		{
-			return Get ((T)objValue);
+			return Get((T)objValue);
 		}
 
 		protected abstract T Set(string strValue);
@@ -75,12 +75,12 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (string objValue)
+		protected override string Get(string objValue)
 		{
 			return objValue;
 		}
 
-		protected override string Set (string strValue)
+		protected override string Set(string strValue)
 		{
 			return strValue;
 		}
@@ -95,14 +95,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (Int32 objValue)
+		protected override string Get(Int32 objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override Int32 Set (string strValue)
+		protected override Int32 Set(string strValue)
 		{
-			return Convert.ToInt32 (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToInt32(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -115,14 +115,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (UInt32 objValue)
+		protected override string Get(UInt32 objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override UInt32 Set (string strValue)
+		protected override UInt32 Set(string strValue)
 		{
-			return Convert.ToUInt32 (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToUInt32(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -135,14 +135,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (Int64 objValue)
+		protected override string Get(Int64 objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override Int64 Set (string strValue)
+		protected override Int64 Set(string strValue)
 		{
-			return Convert.ToInt64 (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToInt64(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -155,14 +155,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (UInt64 objValue)
+		protected override string Get(UInt64 objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override UInt64 Set (string strValue)
+		protected override UInt64 Set(string strValue)
 		{
-			return Convert.ToUInt64 (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToUInt64(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -175,14 +175,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (float objValue)
+		protected override string Get(float objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override float Set (string strValue)
+		protected override float Set(string strValue)
 		{
-			return Convert.ToSingle (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToSingle(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -195,14 +195,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (double objValue)
+		protected override string Get(double objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override double Set (string strValue)
+		protected override double Set(string strValue)
 		{
-			return Convert.ToDouble (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToDouble(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -215,14 +215,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (decimal objValue)
+		protected override string Get(decimal objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override decimal Set (string strValue)
+		protected override decimal Set(string strValue)
 		{
-			return Convert.ToDecimal (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToDecimal(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -235,14 +235,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (char objValue)
+		protected override string Get(char objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override char Set (string strValue)
+		protected override char Set(string strValue)
 		{
-			return Convert.ToChar (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToChar(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -255,14 +255,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (byte objValue)
+		protected override string Get(byte objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override byte Set (string strValue)
+		protected override byte Set(string strValue)
 		{
-			return Convert.ToByte (strValue, CultureInfo.InvariantCulture);
+			return Convert.ToByte(strValue, CultureInfo.InvariantCulture);
 		}
 		#endregion
 	}
@@ -275,14 +275,14 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (bool objValue)
+		protected override string Get(bool objValue)
 		{
-			return Convert.ToString (objValue, CultureInfo.InvariantCulture);
+			return Convert.ToString(objValue, CultureInfo.InvariantCulture);
 		}
 
-		protected override bool Set (string strValue)
+		protected override bool Set(string strValue)
 		{
-            return strValue == "1";
+			return strValue == "1";
 		}
 		#endregion
 	}
@@ -295,38 +295,38 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Methods
-		protected override string Get (Vec3 objValue)
+		protected override string Get(Vec3 objValue)
 		{
 			if (objValue == null)
 				return String.Empty;
-			
-			StringBuilder sb = new StringBuilder ();
-			sb.Append (objValue.x.ToString (CultureInfo.InvariantCulture));
-			sb.Append (',');
-			sb.Append (objValue.x.ToString (CultureInfo.InvariantCulture));
-			sb.Append (',');
-			sb.Append (objValue.x.ToString (CultureInfo.InvariantCulture));
-			return sb.ToString ();
+
+			StringBuilder sb = new StringBuilder();
+			sb.Append(objValue.x.ToString(CultureInfo.InvariantCulture));
+			sb.Append(',');
+			sb.Append(objValue.x.ToString(CultureInfo.InvariantCulture));
+			sb.Append(',');
+			sb.Append(objValue.x.ToString(CultureInfo.InvariantCulture));
+			return sb.ToString();
 		}
 
-		protected override Vec3 Set (string strValue)
+		protected override Vec3 Set(string strValue)
 		{
-			if (String.IsNullOrEmpty (strValue))
-				return new Vec3 ();
+			if (String.IsNullOrEmpty(strValue))
+				return new Vec3();
 
-			string[] parts = strValue.Split (',');
+			string[] parts = strValue.Split(',');
 			if (parts == null || parts.Length < 3)
-				return new Vec3 ();
+				return new Vec3();
 
 			float x = 0.0f;
 			float y = 0.0f;
 			float z = 0.0f;
-			if (!float.TryParse (parts [0], NumberStyles.Any, CultureInfo.InvariantCulture, out x) || 
-				!float.TryParse (parts [1], NumberStyles.Any, CultureInfo.InvariantCulture, out y) ||
-				!float.TryParse (parts [2], NumberStyles.Any, CultureInfo.InvariantCulture, out z))
-				return new Vec3 ();
+			if (!float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out x) ||
+				!float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out y) ||
+				!float.TryParse(parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out z))
+				return new Vec3();
 
-			return new Vec3 (x, y, z);
+			return new Vec3(x, y, z);
 		}
 		#endregion
 	}

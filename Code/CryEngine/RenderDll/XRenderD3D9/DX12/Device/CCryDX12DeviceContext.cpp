@@ -1,8 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "CCryDX12DeviceContext.hpp"
 #include "CCryDX12Device.hpp"
+#include "CCryDX12DeviceContext.hpp"
 
 #include "DX12/Resource/CCryDX12Resource.hpp"
 
@@ -245,37 +245,9 @@ bool CCryDX12DeviceContext::PrepareGraphicsPSO()
 
 	if (stateFlags & EPSPB_PipelineState)
 	{
-		NCryDX12::EShaderStage eStagePF = m_pCurrentRootSignature->GetResourceMappings().m_ConstantViews[CB_PER_FRAME];
-		NCryDX12::EShaderStage eStageSG = m_pCurrentRootSignature->GetResourceMappings().m_ConstantViews[CB_PER_SHADOWGEN];
-
-		if (eStagePF != NCryDX12::ESS_None)
-		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(m_GraphicsState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12Resource(), CMDTYPE_WRITE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->EndResourceStateTransition(m_GraphicsState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12Resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(m_GraphicsState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12Resource(), CMDTYPE_READ);
-		}
-
-		if (eStageSG != NCryDX12::ESS_None)
-		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(m_GraphicsState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12Resource(), CMDTYPE_WRITE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->EndResourceStateTransition(m_GraphicsState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12Resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(m_GraphicsState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12Resource(), CMDTYPE_READ);
-		}
-
 		// assume the constant buffer is set on the vertex shader always (don't need to search for the first occurrence)
-		D3D12_GPU_VIRTUAL_ADDRESS vConstViews[CB_NUM] =
-		{
-			0, //CB_PER_BATCH
-			0, //CB_PER_INSTANCE
-			eStagePF != NCryDX12::ESS_None ? m_GraphicsState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12View().GetCBVDesc().BufferLocation +
-			m_GraphicsState.Stages[eStagePF].ConstBufferBindRange.Get(CB_PER_FRAME).start : 0, //CB_PER_FRAME
-			0,                                                                                 //CB_PER_MATERIAL
-			0,                                                                                 //CB_PER_LIGHT
-			eStageSG != NCryDX12::ESS_None ? m_GraphicsState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12View().GetCBVDesc().BufferLocation +
-			m_GraphicsState.Stages[eStageSG].ConstBufferBindRange.Get(CB_PER_SHADOWGEN).start : 0, //CB_PER_SHADOWGEN
-			0,                                                                                     //CB_SKIN_DATA
-			0,                                                                                     //CB_INSTANCE_DATA
-		};
+		D3D12_GPU_VIRTUAL_ADDRESS vConstViews[CB_NUM] = { 0 };
+
 
 		// Assign new PSO and root signature and set resource binding dirty flags
 		m_bCmdListBegins[CMDQUEUE_GRAPHICS] = false;
@@ -363,33 +335,8 @@ bool CCryDX12DeviceContext::PrepareComputePSO()
 
 	if (stateFlags & EPSPB_PipelineState)
 	{
-		NCryDX12::EShaderStage eStagePF = m_pCurrentRootSignature->GetResourceMappings().m_ConstantViews[CB_PER_FRAME];
-		NCryDX12::EShaderStage eStageSG = m_pCurrentRootSignature->GetResourceMappings().m_ConstantViews[CB_PER_SHADOWGEN];
-
-		if (eStagePF != NCryDX12::ESS_None)
-		{
-			m_pCmdLists[CMDQUEUE_COMPUTE]->TrackResourceCBVUsage(m_ComputeState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12Resource());
-		}
-
-		if (eStageSG != NCryDX12::ESS_None)
-		{
-			m_pCmdLists[CMDQUEUE_COMPUTE]->TrackResourceCBVUsage(m_ComputeState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12Resource());
-		}
-
 		// assume the constant buffer is set on the compute shader always (don't need to search for the first occurrence)
-		D3D12_GPU_VIRTUAL_ADDRESS vConstViews[CB_NUM] =
-		{
-			0, //CB_PER_BATCH
-			0, //CB_PER_INSTANCE
-			eStagePF != NCryDX12::ESS_None ? m_ComputeState.Stages[eStagePF].ConstantBufferViews.Get(CB_PER_FRAME)->GetDX12View().GetCBVDesc().BufferLocation +
-			m_ComputeState.Stages[eStagePF].ConstBufferBindRange.Get(CB_PER_FRAME).start : 0, //CB_PER_FRAME
-			0,                                                                                //CB_PER_MATERIAL
-			0,                                                                                //CB_PER_LIGHT
-			eStageSG != NCryDX12::ESS_None ? m_ComputeState.Stages[eStageSG].ConstantBufferViews.Get(CB_PER_SHADOWGEN)->GetDX12View().GetCBVDesc().BufferLocation +
-			m_ComputeState.Stages[eStageSG].ConstBufferBindRange.Get(CB_PER_SHADOWGEN).start : 0, //CB_PER_SHADOWGEN
-			0,                                                                                    //CB_SKIN_DATA
-			0,                                                                                    //CB_INSTANCE_DATA
-		};
+		D3D12_GPU_VIRTUAL_ADDRESS vConstViews[CB_NUM] = { 0 };
 
 		// Assign new PSO and root signature and set resource binding dirty flags
 		m_bCmdListBegins[CMDQUEUE_COMPUTE] = false;

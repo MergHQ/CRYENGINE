@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "ShadowMask.h"
 #include "DriverD3D.h"
-#include "D3DVolumetricClouds.h"
 
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include "../Common/Include_HLSL_CPP_Shared.h"
@@ -173,8 +172,6 @@ CShadowMaskStage::CShadowMaskStage()
 	, m_localLightPrimitives(0)
 	, m_viewInfoCount(0)
 {
-	ZeroArray(m_filterKernel);
-
 	m_pSunShadows = CryMakeUnique<ShadowMaskInternal::CSunShadows>(*this);
 	m_pLocalLightShadows = CryMakeUnique<ShadowMaskInternal::CLocalLightShadows>(*this);
 }
@@ -192,7 +189,7 @@ void CShadowMaskStage::Init()
 	m_samplerTrilinearBorder = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
 
 	// per view constant buffer
-	m_pPerViewConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer)));
+	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 }
 
 void CShadowMaskStage::Prepare(CRenderView* pRenderView)
@@ -222,12 +219,14 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 			auto& sliceGenPass = m_maskGenPasses[shadowMaskSlice];
 			auto currentSliceRTV = SResourceView::RenderTargetView(m_pShadowMaskRT->GetDstFormat(), shadowMaskSlice, 1);
 
+			sliceGenPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			sliceGenPass.SetRenderTarget(0, m_pShadowMaskRT, currentSliceRTV.m_Desc.Key);
 			sliceGenPass.SetDepthTarget(&rd->m_DepthBufferOrig);
 			sliceGenPass.SetViewport(viewport);
 			sliceGenPass.ClearPrimitives();
 		}
 
+		m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		m_debugCascadesPass.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);
 		m_debugCascadesPass.SetDepthTarget(&rd->m_DepthBufferOrig);
 		m_debugCascadesPass.SetViewport(viewport);
@@ -235,24 +234,19 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 	}
 
 	// *INDENT-OFF*
-	struct { int sampleCount; uint64 rtFlags; }
-	shaderSettingsByQuality[] =
+	EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
+	uint64 rtFlagsByQuality[] =
 	{
-		{  4, 0                                                                                            }, // eSQ_Low
-		{  8, g_HWSR_MaskBit[HWSR_QUALITY]                                                                 }, // eSQ_Medium
-		{ 16, g_HWSR_MaskBit[HWSR_QUALITY1]                                                                }, // eSQ_High
-		{ 16, g_HWSR_MaskBit[HWSR_QUALITY ] | g_HWSR_MaskBit[HWSR_QUALITY1] | g_HWSR_MaskBit[HWSR_SAMPLE1] }  // eSQ_VeryHigh
+		0,                                                                                             // eSQ_Low
+		g_HWSR_MaskBit[HWSR_QUALITY],                                                                  // eSQ_Medium
+		g_HWSR_MaskBit[HWSR_QUALITY1],                                                                 // eSQ_High
+		g_HWSR_MaskBit[HWSR_QUALITY ] | g_HWSR_MaskBit[HWSR_QUALITY1] | g_HWSR_MaskBit[HWSR_SAMPLE1],  // eSQ_VeryHigh
 	};
 	// *INDENT-ON*
 
 	// update shared constant buffer data
-	EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
 	m_viewInfoCount = rd->GetGraphicsPipeline().GetViewInfo(m_viewInfo);
-	{
-		rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer(m_viewInfo, m_viewInfoCount, m_pPerViewConstantBuffer);
-
-		CShadowUtils::GetIrregKernel(m_filterKernel, shaderSettingsByQuality[shaderQuality].sampleCount);
-	}
+	rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer(m_viewInfo, m_viewInfoCount, m_pPerViewConstantBuffer);
 
 	// prepare primitives
 	int firstUnusedStencilValue = 1; // cannot use stencil ref 0 here
@@ -266,7 +260,7 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 		  bScreenSpaceShadows,
 		  bDebugCascades ? &m_debugCascadesPass : nullptr,
 		  pRenderView,
-		  shaderSettingsByQuality[shaderQuality].rtFlags);
+		  rtFlagsByQuality[shaderQuality]);
 	}
 
 	// local lights
@@ -277,7 +271,7 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 		  firstUnusedStencilValue,
 		  bScreenSpaceShadows,
 		  pRenderView,
-		  shaderSettingsByQuality[shaderQuality].rtFlags);
+		  rtFlagsByQuality[shaderQuality]);
 	}
 
 	// clear first rendertarget slice and stencil buffer
@@ -723,7 +717,7 @@ void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMap
 	primitive.SetRenderState(gsDepthFunc | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	primitive.SetCullMode(eCULL_Back);
 	primitive.SetCustomVertexStream(m_nearestFullscreenTri, eVF_P3F, sizeof(SVF_P3F));
-	primitive.SetCustomIndexStream(~0u, 0);
+	primitive.SetCustomIndexStream(~0u, RenderIndexType(0));
 	primitive.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CTexture::s_ptexFarPlane);
 	primitive.SetTexture(1, CTexture::s_ptexShadowJitterMap);
 	primitive.SetTexture(2, CTexture::s_ptexZTarget);
@@ -831,6 +825,7 @@ void CSunShadows::PrepareStencilPassConstants(CRenderPrimitive& primitive, Shado
 void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, ShadowMapFrustum* pVolumeProvider, bool bScaledVolume) const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	SCGParamsPF& PF = rd->m_cEF.m_PF[rd->m_RP.m_nProcessThreadID];
 	auto& constantManager = primitive.GetConstantManager();
 
 	// assign per view constant buffer
@@ -842,16 +837,17 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 	for (int i = 0; i < shadowMaskStage.m_viewInfoCount; ++i)
 	{
 		const CStandardGraphicsPipeline::SViewInfo& viewInfo = shadowMaskStage.m_viewInfo[i];
-		auto shadowSamplingInfo = CShadowUtils::GetShadowSamplingInfo(pFrustum, 0, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
+		auto shadowSamplingInfo = CShadowUtils::GetDeferredShadowSamplingInfo(pFrustum, 0, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
 
 		constants->unitMeshTransform.SetIdentity();
 		constants->camPos = shadowSamplingInfo.camPosShadowSpace;
 		constants->screenToShadowBasis = shadowSamplingInfo.screenToShadowBasis;
 		constants->noiseProjection = shadowSamplingInfo.noiseProjection;
 		constants->blendTcNormalize = Vec4(ZERO);
-		constants->oneDivFarDist = Vec4(shadowSamplingInfo.oneDivFarDist);
+		constants->oneDivFarDist = Vec4(shadowSamplingInfo.oneDivFarDist, shadowSamplingInfo.oneDivFarDistBlend, 0, 0);
 		constants->depthTestBias = Vec4(shadowSamplingInfo.depthTestBias);
-		memcpy(constants->irreg_kernel_2d, shadowMaskStage.m_filterKernel, sizeof(shadowMaskStage.m_filterKernel));
+		memcpy(constants->irreg_kernel_2d, PF.irregularFilterKernel, sizeof(PF.irregularFilterKernel));
+		static_assert(sizeof(constants->irreg_kernel_2d) == sizeof(PF.irregularFilterKernel), "Both sizes must be same.");
 		constants->kernelRadius = Vec4(shadowSamplingInfo.kernelRadius);
 		constants->adaption = Vec4(rd->CV_r_ShadowsAdaptionRangeClamp, rd->CV_r_ShadowsAdaptionSize * 250.f, rd->CV_r_ShadowsAdaptionMin, 0);
 		constants->invShadowMapSize = Vec4(shadowSamplingInfo.invShadowMapSize);
@@ -962,7 +958,7 @@ bool CSunShadows::PrepareDebugPrimitive(CRenderPrimitive& primitive, const Shado
 	if (constantManager.IsShaderReflectionValid())
 	{
 		constantManager.BeginNamedConstantUpdate();
-		constantManager.SetNamedConstant(eHWSC_Pixel, CascadeColorParam, cascadeColors[pFrustum->nShadowMapLod % cascadeColorCount]);
+		constantManager.SetNamedConstant(CascadeColorParam, cascadeColors[pFrustum->nShadowMapLod % cascadeColorCount], eHWSC_Pixel);
 		constantManager.EndNamedConstantUpdate();
 
 		return true;
@@ -982,13 +978,13 @@ void CLocalLightShadows::InitPrimitives()
 {
 	for (auto& prim : volumePrimitives)
 	{
-		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
 		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 
 	for (auto& prim : quadPrimitives)
 	{
-		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
 		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 }
@@ -1174,13 +1170,11 @@ int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGen
 void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitives& primitives, SShadowFrustumToRender* pFrustumToRender, int side, bool bVolumePrimitive) const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	SCGParamsPF& PF = rd->m_cEF.m_PF[rd->m_RP.m_nProcessThreadID];
 	const bool bAreaLight = false;   // TheoM TODO
 
-	const CStandardGraphicsPipeline::SViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const auto pLight = pFrustumToRender->pLight;
 	const auto pFrustum = pFrustumToRender->pFrustum;
-
-	auto shadowSamplingInfo = CShadowUtils::GetShadowSamplingInfo(pFrustum, side, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
 
 	// shadow clip space to world space transform
 	Matrix44A mUnitVolumeToWorld(IDENTITY);
@@ -1207,19 +1201,26 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	float kernelSize = pFrustum->bOmniDirectionalShadow ? 2.5f : 1.5f;
 	const Vec4 vShadowParams(kernelSize * (float(pFrustum->nTexSize) / nShadowAtlasRes), float(pFrustum->nTexSize), 0.0f, pFrustum->fDepthConstBias);
 
-	Matrix44A shadowMat = shadowSamplingInfo.shadowTexGen;
-	const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-	Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
-	shadowMat.m03 += vecTranslation.x;
-	shadowMat.m13 += vecTranslation.y;
-	shadowMat.m23 += vecTranslation.z;
-	shadowMat.m33 += vecTranslation.w;
+	Matrix44A shadowMat[2];
+	for (int i = 0; i < shadowMaskStage.m_viewInfoCount; ++i)
+	{
+		const CStandardGraphicsPipeline::SViewInfo& viewInfo = shadowMaskStage.m_viewInfo[i];
+		auto shadowSamplingInfo = CShadowUtils::GetDeferredShadowSamplingInfo(pFrustum, side, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
 
-	// pre-multiply by 1/frustrum_far_plane
-	(Vec4&)shadowMat.m20 *= shadowSamplingInfo.oneDivFarDist;
+		shadowMat[i] = shadowSamplingInfo.shadowTexGen;
+		const Vec4 vEye(viewInfo.pRenderCamera->vOrigin, 0.f);
+		Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat[i].m00), vEye.Dot((Vec4&)shadowMat[i].m10), vEye.Dot((Vec4&)shadowMat[i].m20), vEye.Dot((Vec4&)shadowMat[i].m30));
+		shadowMat[i].m03 += vecTranslation.x;
+		shadowMat[i].m13 += vecTranslation.y;
+		shadowMat[i].m23 += vecTranslation.z;
+		shadowMat[i].m33 += vecTranslation.w;
+
+		// pre-multiply by 1/frustrum_far_plane
+		(Vec4&)shadowMat[i].m20 *= shadowSamplingInfo.oneDivFarDist;
+	}
 
 	// apply per view buffer to all primitives
-	primitives.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
+	primitives.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex | EShaderStage_Pixel);
 	primitives.stencilBackfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
 	primitives.stencilFrontfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
 
@@ -1229,10 +1230,17 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 	constants->unitMeshTransform = mUnitVolumeToWorld;
 	constants->lightVolumeSphereAdjust = vSphereAdjust;
-	constants->lightShadowProj = shadowMat;
+	constants->lightShadowProj = shadowMat[0];
 	constants->params = vShadowParams;
-	memcpy(constants->irreg_kernel_2d, shadowMaskStage.m_filterKernel, sizeof(shadowMaskStage.m_filterKernel));
+	memcpy(constants->irreg_kernel_2d, PF.irregularFilterKernel, sizeof(PF.irregularFilterKernel));
+	static_assert(sizeof(constants->irreg_kernel_2d) == sizeof(PF.irregularFilterKernel), "Both sizes must be same.");
 	constants->vLightPos = Vec4(pLight->m_Origin, 0.0f);
+
+	if (shadowMaskStage.m_viewInfoCount > 1)
+	{
+		constants.BeginStereoOverride();
+		constants->lightShadowProj = shadowMat[1];
+	}
 
 	constantManager.EndTypedConstantUpdate(constants);
 }

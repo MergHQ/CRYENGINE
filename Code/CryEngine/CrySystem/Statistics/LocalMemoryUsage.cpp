@@ -771,9 +771,9 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 						{
 							camera->Project(pos, projectedPos);
 
-							pRenderer->Draw2dLabel(projectedPos.x, projectedPos.y, 1.2f, pColor, true, "Text: %.2fMb Geom: %.2fMb", sector->m_memoryUsage_Textures / (1024.f * 1024.f), sector->m_memoryUsage_Geometry / (1024.f * 1024.f));
+							IRenderAuxText::Draw2dLabel(projectedPos.x, projectedPos.y, 1.2f, pColor, true, "Text: %.2fMb Geom: %.2fMb", sector->m_memoryUsage_Textures / (1024.f * 1024.f), sector->m_memoryUsage_Geometry / (1024.f * 1024.f));
 							/* For sector debugging
-							              pRenderer->Draw2dLabel(projectedPos.x, projectedPos.y, 1.2f, pColor, true, "Text: %.1fMb Geom: %.1fMb - %d : %d", sector->m_memoryUsage_Textures/(1024.f*1024.f), sector->m_memoryUsage_Geometry/(1024.f*1024.f), x, y);
+							              IRenderAuxText::Draw2dLabel(projectedPos.x, projectedPos.y, 1.2f, pColor, true, "Text: %.1fMb Geom: %.1fMb - %d : %d", sector->m_memoryUsage_Textures/(1024.f*1024.f), sector->m_memoryUsage_Geometry/(1024.f*1024.f), x, y);
 
 							              if( xDebug == x && yDebug == y )
 							              {
@@ -792,8 +792,8 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 							                    memoryUsage = statObjInfo->m_streamableContentMemoryUsage;
 							                  }
 							                  sy+=15.f;
-							                  pRenderer->Draw2dLabel(sx, sy, 1.2f, pColor, false, "Geom: %.2fMb %.4f Act:%s Orig:%s %s", memoryUsage/(1024.f*1024.f), mipFactor, pStatObj->GetFilePath(), statObjInfo->m_filePath, statObjInfo->m_bSubObject ? " SUBOBJECT" : "");
-							                  //pRenderer->Draw2dLabel(sx, sy, 1.2f, pColor, false, "Geom: %.2fMb %.4f", memoryUsage/(1024.f*1024.f), mipFactor);
+							                  IRenderAuxText::Draw2dLabel(sx, sy, 1.2f, pColor, false, "Geom: %.2fMb %.4f Act:%s Orig:%s %s", memoryUsage/(1024.f*1024.f), mipFactor, pStatObj->GetFilePath(), statObjInfo->m_filePath, statObjInfo->m_bSubObject ? " SUBOBJECT" : "");
+							                  //IRenderAuxText::Draw2dLabel(sx, sy, 1.2f, pColor, false, "Geom: %.2fMb %.4f", memoryUsage/(1024.f*1024.f), mipFactor);
 							                }
 							              }
 							   //*/

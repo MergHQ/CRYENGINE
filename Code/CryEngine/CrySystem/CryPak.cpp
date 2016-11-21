@@ -115,11 +115,6 @@ inline bool IsModPath(const char* originalPath)
 }
 #endif
 
-#if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
-extern const char* androidGetMainExpName();
-extern const char* androidGetPatchExpName();
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 // IResourceList implementation class.
 //////////////////////////////////////////////////////////////////////////
@@ -1315,20 +1310,16 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		}
 	}
 
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS	
+	// Only lower case after the root path
+	uint rootAdj = strncmp(m_szEngineRootDir, szNewSrc, m_szEngineRootDirStrLen) == 0 ? m_szEngineRootDirStrLen : 0;
+	ConvertFilenameNoCase(szNewSrc + rootAdj);
+#endif
+
 	strcpy(dst, szNewSrc);
 	const int dstLen = strlen(dst);
 
 	char* pEnd = dst + dstLen;
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS
-	//we got to adjust the filename and fetch the case sensitive one
-	char sourceName[MAX_PATH];
-	cry_strcpy(sourceName, dst);
-	// Note: we'll copy the adjustedFilename even if the filename can not be
-	// matched against an existing file. This is because getFilenameNoCase() will
-	// adjust leading path components (e.g. ".../game/..." => ".../Game/...").
-	GetFilenameNoCase(sourceName, dst, false);
-#endif
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && pEnd > dst && (pEnd[-1] != g_cNativeSlash && pEnd[-1] != g_cNonNativeSlash))
@@ -2607,7 +2598,7 @@ bool CCryPak::ClosePack(const char* pName, unsigned nFlags)
 			//
 			// the pZip (cache) can be referenced from stream engine and pseudo-files.
 			// the archive can be referenced from outside
-			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->NumRefs() == 1;
+			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->Unique();
 			if (bResult)
 			{
 				m_arrZips.erase(it);
@@ -2824,6 +2815,9 @@ bool CCryPak::InitPack(const char* szBasePath, unsigned nFlags)
 		SetAlias("%USER%", buffer, true);
 	}
 #endif
+	CryFindEngineRootFolder(CRY_ARRAY_COUNT(m_szEngineRootDir), m_szEngineRootDir);
+	m_szEngineRootDirStrLen = strlen(m_szEngineRootDir);
+
 	return true;
 }
 
@@ -3685,76 +3679,14 @@ ICryArchive* CCryPak::OpenArchive(
 	ZipDir::CachePtr pZip = NULL;
 #endif
 
-	// if valid data is given and read only, then don't check if file excists
+	// if valid data is given and read only, then don't check if file exists
 	if (pData && nFlags & ICryArchive::FLAGS_OPTIMIZED_READ_ONLY)
 	{
 		bFileExists = true;
 	}
 	else
 	{
-#if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
-		/// There are four type of pak files:
-		/// 1. Physical pak file:  pak file exists in file system
-		///    bContainedInPakFile = false;
-		///    bContainedInApkPackage = false;
-		/// 2. Uncompressed Asset file contained in Apk package (assets.ogg):
-		///    bContainedInPakFile = false;
-		///    bContainedInApkPackage = true;
-		/// 3. Pak file contained in physical pak file:
-		///    bContainedInPakFile = true;
-		///    bContainedInApkPackage = false;
-		/// 4. Pak file contained in asset:
-		///    bContainedInPakFile = true;
-		///    bContainedInApkPackage = true;
-		/// Directory cache will be created using different functions in
-		/// ZipDirCacheFactory according to the file type.
-
-		if (access(szFullPath, R_OK) == 0)
-		{
-			/// Found the requested file on file system
-			bFileExists = true;
-			bContainedInPakFile = false;
-			bContainedInApkPackage = false;
-
-			const char* filename = PathUtil::GetFile(szFullPath);
-
-			if (strcmp(filename, androidGetMainExpName()) == 0)
-			{
-				bIsMainObbExpFile = true;
-			}
-			else if (strcmp(filename, androidGetPatchExpName()) == 0)
-			{
-				bIsPatchObbExpFile = true;
-			}
-		}
-		else
-		{
-			unsigned int nDumbFlags;
-			pFileEntry = FindPakFileEntry(szFullPath, nDumbFlags, &pZip);
-			if (pFileEntry != NULL)
-			{
-				/// Found requested pak file inside opened pak file,
-				bFileExists = true;
-				bContainedInPakFile = true;
-
-				/// It is contained in APK package if its containing
-				/// pak file have a positive offset relative to the
-				/// beginning of apk package.
-				bContainedInApkPackage = (pZip->GetAssetOffset() > 0);
-			}
-			else
-			{
-				AAsset* pAsset = AAssetManager_open(m_pAssetManager, szFullPath, AASSET_MODE_RANDOM);
-				if (pAsset)
-				{
-					bFileExists = true;
-					bContainedInPakFile = false;
-					bContainedInApkPackage = true;
-					AAsset_close(pAsset);
-				}
-			}
-		}
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		if (access(szFullPath, R_OK) == 0)
 			bFileExists = true;
 #else

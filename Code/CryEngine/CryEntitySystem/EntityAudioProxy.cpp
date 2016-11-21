@@ -374,7 +374,7 @@ bool CEntityAudioProxy::ExecuteTrigger(
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 				else
 				{
-					gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to ExecuteTrigger '%s'", audioProxyId, m_pEntity->GetEntityTextDescription().c_str(), gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, audioTriggerId));
+					gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to ExecuteTrigger '%u'", audioProxyId, m_pEntity->GetEntityTextDescription().c_str(), audioTriggerId);
 				}
 #endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 			}

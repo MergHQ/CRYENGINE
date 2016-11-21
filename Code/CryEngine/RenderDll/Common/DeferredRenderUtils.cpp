@@ -179,7 +179,7 @@ void CDeferredRenderUtils::CreateUnitFrustumMeshTransformed(SRenderLight* pLight
 			a.y = i * deltay;
 
 			// A
-			mathVec3UnProject(&tri_vert, &a, pViewport, &mProjection, &mView, &gRenDev->m_IdentityMatrix, g_CpuFlags);
+			mathVec3UnProject(&tri_vert, &a, pViewport, &mProjection, &mView, &gRenDev->m_IdentityMatrix);
 
 			//calc vertex expansion in world space coords
 			Vec3 vLightDir = tri_vert - vLightPos;
@@ -297,7 +297,7 @@ void CreateSimpleLightFrustumMeshTransformed(ShadowMapFrustum* pFrustum, int nFr
 		            );
 		//TD: convert math functions to column ordered matrices
 		Vec3 pvObj(vert.xyz);
-		mathVec3UnProject(&pvObj, &vNDC, pViewport, pmProjection, pmView, &gRenDev->m_IdentityMatrix, g_CpuFlags);
+		mathVec3UnProject(&pvObj, &vNDC, pViewport, pmProjection, pmView, &gRenDev->m_IdentityMatrix);
 		vert.st = Vec2(0.0f, 0.0f);
 		vertBuff.push_back(vert);
 	}

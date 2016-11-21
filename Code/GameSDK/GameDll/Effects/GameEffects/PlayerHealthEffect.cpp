@@ -185,7 +185,7 @@ void CPlayerHealthGameEffect::Update(float frameTime)
 
 			if (!m_useNewEffect)
 			{
-				IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+				IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 				SMFXCustomParamValue intensity;
 				intensity.fValue = clamp_tpl(1.0f - effectIntensity, 0.0f, 1.0f);
@@ -250,7 +250,7 @@ void CPlayerHealthGameEffect::Start()
 		}
 		else if (m_playerHealthEffectId != InvalidEffectId)
 		{
-			IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+			IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 			assert(pMaterialEffects);
 
 			SMFXRunTimeEffectParams effectParams;
@@ -281,7 +281,7 @@ void CPlayerHealthGameEffect::Stop()
 {
 	if (!m_useNewEffect)
 	{
-		IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+		IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 		assert(pMaterialEffects);
 
 		if (m_playerHealthEffectId != InvalidEffectId)
@@ -314,7 +314,7 @@ void CPlayerHealthGameEffect::ReStart()
 
 void CPlayerHealthGameEffect::InitialSetup(CActor* pClientActor)
 {
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	SPlayerHealthGameEffectParams healthEffectParams;
 	healthEffectParams.playerHealthEffectId = pMaterialEffects->GetEffectIdByName("player_fx", "player_damage");
@@ -346,7 +346,7 @@ void CPlayerHealthGameEffect::OnKill()
 	{
 		if (m_playerDeathEffectId != InvalidEffectId && !gEnv->bMultiplayer)
 		{
-			IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+			IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 			SMFXRunTimeEffectParams effectParams;
 			effectParams.pos = gEnv->pRenderer->GetCamera().GetPosition();

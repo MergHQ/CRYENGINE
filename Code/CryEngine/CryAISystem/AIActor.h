@@ -93,6 +93,7 @@ public:
 	bool                      UpdateBehaviorSelectionTree();
 
 	void                      ResetModularBehaviorTree(EObjectResetType type);
+	virtual void              SetModularBehaviorTree(const char* szTreeName) override { m_modularBehaviorTreeName = szTreeName; ResetModularBehaviorTree(AIOBJRESET_INIT); }
 
 #if defined(CRYAISYSTEM_DEBUG)
 
@@ -420,6 +421,8 @@ protected:
 	unsigned int        m_activeCoordinationCount;
 
 	bool                m_observer;
+
+	string              m_modularBehaviorTreeName;
 
 private:
 	float m_FOVPrimaryCos;

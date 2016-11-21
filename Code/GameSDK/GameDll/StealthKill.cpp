@@ -556,7 +556,7 @@ void CStealthKill::Enter(int targetEntityId, int animIndex)
 	if (m_isBusy)
 		return;
 
-	CActor *pTargetActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetEntityId));
+	CActor *pTargetActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(targetEntityId));
 	CRY_ASSERT_MESSAGE(pTargetActor != NULL, "Stealth kill should act upon an actor");
 	if (pTargetActor == NULL)
 		return;

@@ -75,7 +75,7 @@ void CPlayerEnslavementForButtonMashing::EnslavePlayer(IActionController* pMaste
 	IF_UNLIKELY((pClientActionController == NULL) || (pMasterActionController == NULL))
 		return;
 
-	IMannequin &mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
 	CMannequinUserParamsManager& mannequinUserParams = mannequinInterface.GetMannequinUserParamsManager();
 
 	const IAnimationDatabase *pSlaveAnimationDB = mannequinInterface.GetAnimationDatabaseManager().Load( m_ADBFileName.c_str() );

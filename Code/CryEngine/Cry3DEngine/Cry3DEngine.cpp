@@ -43,13 +43,6 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_LEVEL_PRECACHE_START:
-			if (Cry3DEngineBase::Get3DEngine())
-				Cry3DEngineBase::Get3DEngine()->ClearPrecacheInfo();
-			break;
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
 		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
 			{
 				if (Cry3DEngineBase::Get3DEngine())
@@ -92,6 +85,10 @@ public:
 					SAFE_DELETE(Cry3DEngineBase::Get3DEngine()->m_pObjectsTree[nSID]);
 				}
 				Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.Free();
+
+				// We have to unload physics data *before* shutting down the geom manager
+				// Otherwise physical entities that are destroyed later will reference dangling geom pointers
+				Cry3DEngineBase::Get3DEngine()->UnloadPhysicsData();
 
 				if (CObjManager* pObjManager = Cry3DEngineBase::GetObjManager())
 				{
@@ -281,7 +278,7 @@ void Cry3DEngineBase::DrawBBoxLabeled(const AABB& aabb, const Matrix34& m34, con
 	va_end(args);
 	float fColor[4] = { col[0] / 255.f, col[1] / 255.f, col[2] / 255.f, col[3] / 255.f };
 	GetRenderer()->GetIRenderAuxGeom()->SetRenderFlags(SAuxGeomRenderFlags());
-	GetRenderer()->DrawLabelEx(m34.TransformPoint(aabb.GetCenter()), 1.3f, fColor, true, true, szText);
+	IRenderAuxText::DrawLabelEx(m34.TransformPoint(aabb.GetCenter()), 1.3f, fColor, true, true, szText);
 	GetRenderer()->GetIRenderAuxGeom()->DrawAABB(aabb, m34, false, col, eBBD_Faceted);
 }
 

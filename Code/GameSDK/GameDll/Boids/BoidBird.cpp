@@ -226,14 +226,6 @@ void CBoidBird::Update( float dt,SBoidContext &bc )
 				Land();
 		}
 	}
-
-#if 0
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_800x600;
-	char text[100];
-	cry_sprintf(text, "%f - %i", m_speed, m_onGroundStatus);
-	gEnv->pRenderer->DrawTextQueued(m_pos, ti, text);
-#endif
 }
 
 

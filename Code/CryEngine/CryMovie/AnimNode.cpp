@@ -451,7 +451,7 @@ void CAnimNode::SerializeAnims(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmp
 				}
 			}
 
-			if (paramTypeVersion <= 5)
+			if (paramTypeVersion <= 5 && !(GetSequence()->GetFlags() & IAnimSequence::eSeqFlags_LightAnimationSet))
 			{
 				// In old versions there was special code for lights that is now handled
 				// by generic entity node code if this is not a light animation set sequence

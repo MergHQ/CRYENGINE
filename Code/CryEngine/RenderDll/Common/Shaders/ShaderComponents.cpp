@@ -167,10 +167,7 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(SI_BendInfo,                              ECGP_SI_BendInfo),                              0),
 
 	SParamDB(PARAM(PI_ViewProjection,                        ECGP_Matr_PI_ViewProj),                         0),
-	SParamDB(PARAM(PF_ViewProjMatrix,                        ECGP_Matr_PF_ViewProjMatrix),                   0),
-	SParamDB(PARAM(PF_ViewProjMatrixPrev,                    ECGP_Matr_PF_ViewProjMatrixPrev),               0),
-	SParamDB(PARAM(PB_ViewProjMatrixPrev,                    ECGP_Matr_PF_ViewProjMatrixPrev),               0),
-	SParamDB(PARAM(PF_ViewProjZeroMatrix,                    ECGP_Matr_PF_ViewProjZeroMatrix),               0),
+	SParamDB(PARAM(PB_ViewProjMatrixPrev,                    ECGP_Matr_PB_ViewProjMatrixPrev),               0),
 	SParamDB(PARAM(PB_ViewProjMatrix_IT,                     ECGP_Matr_PB_ViewProjMatrix_IT),                0),
 	SParamDB(PARAM(PB_ViewProjMatrix_I,                      ECGP_Matr_PB_ViewProjMatrix_I),                 0),
 
@@ -278,34 +275,15 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_HDRDynamicMultiplier,                  ECGP_PB_HDRDynamicMultiplier),                  0),
 	SParamDB(PARAM(PB_CausticsParams,                        ECGP_PB_CausticsParams),                        0),
 	SParamDB(PARAM(PB_CausticsSmoothSunDirection,            ECGP_PB_CausticsSmoothSunDirection),            0),
-	SParamDB(PARAM(PF_SunDirection,                          ECGP_PF_SunDirection),                          0),
-	SParamDB(PARAM(PF_FogColor,                              ECGP_PF_FogColor),                              0),
-	SParamDB(PARAM(PF_SunColor,                              ECGP_PF_SunColor),                              0),
-	SParamDB(PARAM(PB_SunColor,                              ECGP_PF_SunColor),                              0),
-	SParamDB(PARAM(PF_SkyColor,                              ECGP_PF_SkyColor),                              0),
-	SParamDB(PARAM(PF_Time,                                  ECGP_PF_Time),                                  0,              sParseTimeExpr),
-	SParamDB(PARAM(PB_Time,                                  ECGP_PF_Time),                                  0,              sParseTimeExpr),
-	SParamDB(PARAM(PF_FrameTime,                             ECGP_PF_FrameTime),                             0,              sParseTimeExpr),
-	SParamDB(PARAM(PB_FrameTime,                             ECGP_PF_FrameTime),                             0,              sParseTimeExpr),
-	SParamDB(PARAM(PF_HPosScale,                             ECGP_PF_HPosScale),                             0),
-	SParamDB(PARAM(PB_HPosScale,                             ECGP_PF_HPosScale),                             0),
-	SParamDB(PARAM(PF_ScreenSize,                            ECGP_PF_ScreenSize),                            0),
-	SParamDB(PARAM(PB_ScreenSize,                            ECGP_PF_ScreenSize),                            0),
-	SParamDB(PARAM(PF_CameraPos,                             ECGP_PF_CameraPos),                             0),
-	SParamDB(PARAM(PB_CameraPos,                             ECGP_PF_CameraPos),                             0),
-	SParamDB(PARAM(PF_NearFarDist,                           ECGP_PF_NearFarDist),                           0),
-	SParamDB(PARAM(PB_NearFarDist,                           ECGP_PF_NearFarDist),                           0),
+	SParamDB(PARAM(PB_SunColor,                              ECGP_PB_SunColor),                              0),
+	SParamDB(PARAM(PB_Time,                                  ECGP_PB_Time),                                  0,              sParseTimeExpr),
+	SParamDB(PARAM(PB_FrameTime,                             ECGP_PB_FrameTime),                             0,              sParseTimeExpr),
+	SParamDB(PARAM(PB_HPosScale,                             ECGP_PB_HPosScale),                             0),
+	SParamDB(PARAM(PB_ScreenSize,                            ECGP_PB_ScreenSize),                            0),
+	SParamDB(PARAM(PB_CameraPos,                             ECGP_PB_CameraPos),                             0),
+	SParamDB(PARAM(PB_NearFarDist,                           ECGP_PB_NearFarDist),                           0),
 
-	SParamDB(PARAM(PF_FrustumPlaneEquation,                  ECGP_PF_FrustumPlaneEquation),                  0),
-	SParamDB(PARAM(PF_ShadowLightPos,                        ECGP_PF_ShadowLightPos),                        0),
-	SParamDB(PARAM(PF_ShadowViewPos,                         ECGP_PF_ShadowViewPos),                         0),
 	SParamDB(PARAM(PB_PullVerticesInfo,                      ECGP_PB_PullVerticesInfo),                      0),
-
-	SParamDB(PARAM(PF_ProjRatio,                             ECGP_PF_ProjRatio),                             0),
-	SParamDB(PARAM(PF_NearestScaled,                         ECGP_PF_NearestScaled),                         0),
-	SParamDB(PARAM(PF_DepthFactor,                           ECGP_PF_DepthFactor),                           0),
-
-	SParamDB(PARAM(PI_OceanMat,                              ECGP_Matr_PI_OceanMat),                         0),
 
 	SParamDB(PARAM(PI_WrinklesMask0,                         ECGP_PI_WrinklesMask0),                         0),
 	SParamDB(PARAM(PI_WrinklesMask1,                         ECGP_PI_WrinklesMask1),                         0),
@@ -363,6 +341,8 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_SvoParams5,                            ECGP_PB_SvoParams5),                            0),
 	SParamDB(PARAM(PB_SvoParams6,                            ECGP_PB_SvoParams6),                            0),
 	SParamDB(PARAM(PB_SvoParams7,                            ECGP_PB_SvoParams7),                            0),
+	SParamDB(PARAM(PB_SvoParams8,                            ECGP_PB_SvoParams8),                            0),
+	SParamDB(PARAM(PB_SvoParams9,                            ECGP_PB_SvoParams9),                            0),
 #endif
 
 	SParamDB()
@@ -450,14 +430,8 @@ bool CShaderMan::mfParseParamComp(int comp, SCGParam* pCurParam, const char* szS
 				pCurParam->m_Flags |= PF_INSTANCE;
 			else if (!strnicmp(szName, "SI_", 3))
 				pCurParam->m_Flags |= PF_INSTANCE;
-			else if (!strnicmp(szName, "PF_", 3))
-				pCurParam->m_Flags |= PF_GLOBAL;
 			else if (!strnicmp(szName, "PM_", 3))
 				pCurParam->m_Flags |= PF_MATERIAL;
-			else if (!strnicmp(szName, "PL_", 3))
-				pCurParam->m_Flags |= PF_LIGHT;
-			else if (!strnicmp(szName, "SG_", 3))
-				pCurParam->m_Flags |= PF_SHADOWGEN;
 			static_assert(ECGP_COUNT <= 256, "ECGParam does not fit into 1 byte.");
 			if (comp > 0)
 				pCurParam->m_eCGParamType = (ECGParam)((int)pCurParam->m_eCGParamType | (int)(sParams[n].eParamType << (comp * 8)));

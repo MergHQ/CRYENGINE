@@ -101,7 +101,7 @@ public:
 	virtual void            OnBeginFrame(const SRenderingPassInfo& passInfo);
 
 	static void             SetupObject(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	static void             GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res);
+	static bool             GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res);
 	static void             InsertNewElements();
 	static void             FreeData();
 	static const Matrix44A& GetPrevView() { return gRenDev->GetPreviousFrameCameraMatrix(); }
@@ -704,118 +704,6 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//! deprecated. this class will be removed in future.
-class CWaterRipples : public CPostEffect
-{
-	struct SWaterHit
-	{
-		SWaterHit()
-			: worldPos(0.0f, 0.0f)
-			, scale(1.0f)
-			, strength(1.0f)
-		{
-
-		}
-
-		SWaterHit(const Vec3& hitWorldPos, const float hitScale, const float hitStrength)
-			: worldPos(hitWorldPos.x, hitWorldPos.y)
-			, scale(hitScale)
-			, strength(hitStrength)
-		{
-
-		}
-
-		Vec2  worldPos;
-		float scale;
-		float strength;
-	};
-
-public:
-	CWaterRipples() : m_bSnapToCenter(false), m_bInitializeSim(true)
-	{
-		m_nRenderFlags = 0;
-		m_nID = ePFX_WaterRipples;
-
-		AddParamFloatNoTransition("WaterRipples_Amount", m_pAmount, 0.0f);
-
-		m_pRipplesGenTechName = "WaterRipplesGen";
-		m_pRipplesHitTechName = "WaterRipplesHit";
-		m_pRipplesParamName = "WaterRipplesParams";
-
-		m_fLastSpawnTime = 0.0f;
-		m_fLastUpdateTime = 0.0f;
-		m_fSimGridSize = 25.0f;
-		m_fSimGridSnapRange = 5.0f;
-
-		s_nUpdateMask = 0;
-
-		m_frameID = -1;
-	}
-
-	virtual bool Preprocess();
-
-	// Enabled/Disabled if no hits on list to process - call from render thread
-	bool RT_SimulationStatus();
-
-	virtual void Release()
-	{
-		Reset();
-	}
-
-	void                RenderHits();
-	virtual void        Render();
-	virtual void        Reset(bool bOnSpecChange = false);
-
-	virtual const char* GetName() const
-	{
-		return "WaterRipples";
-	}
-
-	Vec4 GetLookupParams() { return s_vLookupParams; }
-
-private:
-
-	enum { MAX_HITS = 128 };
-
-	struct SWaterHitRecord
-	{
-		SWaterHit mHit;
-		float     fHeight;
-		int       nCounter;
-	};
-
-	CCryNameTSCRC m_pRipplesGenTechName;
-	CCryNameTSCRC m_pRipplesHitTechName;
-	CCryNameR     m_pRipplesParamName;
-
-	// float
-	CEffectParam*                       m_pAmount;
-	float                               m_fLastSpawnTime;
-	float                               m_fLastUpdateTime;
-
-	float                               m_fSimGridSize;
-	float                               m_fSimGridSnapRange;
-
-	std::vector<SWaterRippleInfo>       m_waterRipples;
-	static std::vector<SWaterHit>       s_pWaterHitsMGPU;
-	static Vec3                         s_CameraPos;
-	static Vec2                         s_SimOrigin;
-
-	static int                          s_nUpdateMask;
-	static Vec4                         s_vParams;
-	static Vec4                         s_vLookupParams;
-
-	static bool                         s_bInitializeSim;
-	bool                                m_bSnapToCenter;
-	bool                                m_bInitializeSim;
-
-	int32                               m_frameID;
-
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class CWaterVolume : public CPostEffect
 {
 public:
@@ -825,16 +713,11 @@ public:
 		m_nID = ePFX_WaterVolume;
 
 		AddParamFloatNoTransition("WaterVolume_Amount", m_pAmount, 0.0f);
-		m_nCurrSimID = 0;
 	}
 
 	virtual bool Preprocess();
 	virtual void Render();
 	virtual void Reset(bool bOnSpecChange = false);
-	int          GetCurrentPuddle()
-	{
-		return m_nCurrSimID;
-	}
 
 	virtual const char* GetName() const
 	{
@@ -845,7 +728,6 @@ private:
 
 	// float
 	CEffectParam* m_pAmount;
-	int           m_nCurrSimID;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1571,7 +1453,7 @@ public:
 	{
 	}
 
-	SHudData(const CRendElementBase* pInRE, const SShaderItem* pInShaderItem, const CShaderResources* pInShaderResources, CRenderObject* pInRO) :
+	SHudData(const CRenderElement* pInRE, const SShaderItem* pInShaderItem, const CShaderResources* pInShaderResources, CRenderObject* pInRO) :
 		pRE(pInRE),
 		pShaderItem(pInShaderItem),
 		pShaderResources(pInShaderResources),
@@ -1585,7 +1467,7 @@ public:
 	}
 
 public:
-	const CRendElementBase* pRE;
+	const CRenderElement* pRE;
 	CRenderObject*          pRO;
 	const SShaderItem*      pShaderItem; // to be removed after Alpha MS
 	const CShaderResources* pShaderResources;
@@ -1694,14 +1576,14 @@ public:
 	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo);
 
 	virtual void Reset(bool bOnSpecChange = false);
-	virtual void AddRE(const CRendElementBase* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
+	virtual void AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
 	virtual void Render();
 
 	// Shared shader params/textures setup
 	void                CalculateProjMatrix();
 	void                SetShaderParams(SHudData& pData);
 	void                SetTextures(SHudData& pData);
-	void                RenderMesh(const CRendElementBase* pRE, SShaderPass* pPass);
+	void                RenderMesh(const CRenderElement* pRE, SShaderPass* pPass);
 
 	void                FlashUpdateRT();
 	void                DownsampleHud4x4(CTexture* pDstRT);
@@ -1834,7 +1716,7 @@ public:
 			pRenderObject = NULL;
 		}
 
-		const CRendElementBase* pRenderElement;
+		const CRenderElement* pRenderElement;
 		const CRenderObject*    pRenderObject;
 	};
 
@@ -1891,7 +1773,7 @@ public:
 			m_pRenderData[nThreadID].pRenderElement = NULL;
 	}
 
-	virtual void AddRE(const CRendElementBase* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
+	virtual void AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
 
 private:
 

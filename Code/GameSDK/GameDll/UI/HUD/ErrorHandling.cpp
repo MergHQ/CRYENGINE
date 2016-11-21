@@ -302,7 +302,7 @@ void CErrorHandling::HandleError(bool &bRecursiveUpdate)
 //-----------------------------------------------------------------------------
 void CErrorHandling::ShowErrorDialog( const char *pErrorName, const char *pParam )
 {
-	IActionMapManager *pActionMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	if (pActionMapManager)
 	{
 		pActionMapManager->Enable(true);

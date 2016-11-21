@@ -488,7 +488,7 @@ void CExplosionGameEffect::SpawnMaterialEffect(const SExplosionContainer &explos
 		query = query + "_underwater";
 
 	// Get material effect id
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 	TMFXEffectId effectId = pMaterialEffects->GetEffectId(query.c_str(), params.trgSurfaceId);
 
 	if(effectId == InvalidEffectId)
@@ -549,12 +549,10 @@ void CExplosionGameEffect::DebugOnInputEvent(int keyId)
 	// Get player pos
 	Vec3 playerDir(0.0f,0.0f,0.0f);
 	Vec3 playerPos(0.0f,0.0f,0.0f);
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
-	if(localClientId != 0)
+	if(auto* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
-		IEntity* playerEntity = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(localClientId)->GetEntity();
-		playerDir = playerEntity->GetForwardDir();
-		playerPos = playerEntity->GetPos();
+		playerDir = pPlayerEntity->GetForwardDir();
+		playerPos = pPlayerEntity->GetPos();
 	}
 
 	// Distance from player controlled by keyboard
@@ -651,17 +649,17 @@ void CExplosionGameEffect::DebugDisplay(const Vec2& textStartPos,float textSize,
 {
 	ColorF textCol(1.0f,1.0f,0.0f,1.0f);
 	Vec2 currentTextPos = textStartPos;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Reset distance: NumPad 0");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Reset distance: NumPad 0");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Add distance: NumPad *");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Add distance: NumPad *");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Subtract distance: NumPad /");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Subtract distance: NumPad /");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Frag: NumPad 1");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Frag: NumPad 1");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Flashbang: NumPad 2");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Flashbang: NumPad 2");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"L-tag: NumPad 3");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"L-tag: NumPad 3");
 }//-------------------------------------------------------------------------------------------------
 #endif
 

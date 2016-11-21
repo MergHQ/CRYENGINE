@@ -98,8 +98,8 @@ private:
 
 typedef _smart_ptr<CNameRequest>                                                                                                               CNameRequestPtr;
 
-typedef std::multimap<TAddressString, TNetAddress, std::less<TAddressString>, stl::STLGlobalAllocator<std::pair<TAddressString, TNetAddress>>> TNameToAddressCache;
-typedef std::map<TNetAddress, TAddressString, std::less<TNetAddress>, stl::STLGlobalAllocator<std::pair<TNetAddress, TAddressString>>>         TAddressToNameCache;
+typedef std::multimap<TAddressString, TNetAddress, std::less<TAddressString>, stl::STLGlobalAllocator<std::pair<const TAddressString, TNetAddress>>> TNameToAddressCache;
+typedef std::map<TNetAddress, TAddressString, std::less<TNetAddress>, stl::STLGlobalAllocator<std::pair<const  TNetAddress, TAddressString>>>         TAddressToNameCache;
 
 class CNetAddressResolver : public IThread
 {

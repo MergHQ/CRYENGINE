@@ -429,8 +429,8 @@ void HazardModule::SendSignalToAgent(
 	extraData->point2 = hazardNormal;
 	
 	// Debug visualization.
-	//gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("HazardDebugGraphics", false);
-	//gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->AddSphere(estimatedHazardPos, 0.3f, Col_DarkGray, 10.0f);
+	//gEnv->pGameFramework->GetIPersistantDebug()->Begin("HazardDebugGraphics", false);
+	//gEnv->pGameFramework->GetIPersistantDebug()->AddSphere(estimatedHazardPos, 0.3f, Col_DarkGray, 10.0f);
 
 	agent.SetSignal(AISIGNAL_DEFAULT, warningName, extraData);
 }
@@ -719,7 +719,7 @@ void HazardModule::StartRequestedRayCastsProcessContainer(CONTAINER& container)
 //
 void HazardModule::RenderDebug() const
 {
-	IPersistantDebug *debugRenderer = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+	IPersistantDebug *debugRenderer = gEnv->pGameFramework->GetIPersistantDebug();
 	if (debugRenderer == NULL)
 	{
 		return;

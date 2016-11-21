@@ -753,9 +753,10 @@ struct IGameRulesSystem
 	// Parameters
 	//   pRulesName - The name of the GameRules, which should also be the name of the GameRules script
 	//   pExtensionName - The name of the IGameRules implementation which should be used by the GameRules
+	//   bUseScript - Whether or not to load and use a Lua script
 	// Returns
 	//   The value true will be returned if the GameRules could have been registered.
-	virtual bool RegisterGameRules(const char* pRulesName, const char* pExtensionName) = 0;
+	virtual bool RegisterGameRules(const char* pRulesName, const char* pExtensionName, bool bUseScript = true) = 0;
 
 	// Summary
 	//   Creates a new instance for a GameRules

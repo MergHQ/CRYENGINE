@@ -435,14 +435,7 @@ void CDebugHistory::Render()
 			CryFixedStringT<32> label;
 			label.Format(gridNumberPrecision, y);
 
-			SDrawTextInfo ti;
-			ti.xscale = ti.yscale = 1.4f;
-			ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_IgnoreOverscan;
-			ti.color[0] = m_colorGridNumber[0];
-			ti.color[1] = m_colorGridNumber[1];
-			ti.color[2] = m_colorGridNumber[2];
-			ti.color[3] = m_colorGridNumber[3];
-			gEnv->pRenderer->DrawTextQueued(Vec3(x, screeny + offsety, 0.5f), ti, label.c_str());
+			IRenderAuxText::DrawText(Vec3(x, screeny + offsety, 0.5f), 1.4f, m_colorGridNumber, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_IgnoreOverscan, label.c_str());
 		}
 	}
 
@@ -477,25 +470,9 @@ void CDebugHistory::Render()
 
 	if (m_colorName.a > 0.0f)
 	{
-		static int offsety = -12;
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = 1.2f;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center | eDrawText_IgnoreOverscan;
-		ti.color[0] = m_colorName[0];
-		ti.color[1] = m_colorName[1];
-		ti.color[2] = m_colorName[2];
-		ti.color[3] = m_colorName[3];
-		gEnv->pRenderer->DrawTextQueued(Vec3(m_layoutTopLeft.x + 0.5f * m_layoutExtent.x, m_layoutTopLeft.y + offsety, 0.5f), ti, m_szName);
-		/*
-		    SDrawTextInfo info;
-		    info.xscale = 1.0f;
-		    info.yscale = 1.0f;
-		    info.color[0] = m_colorName.r;
-		    info.color[1] = m_colorName.g;
-		    info.color[2] = m_colorName.b;
-		    info.color[3] = m_colorName.a;
-		    gEnv->pRenderer->Draw2dText(m_layoutTopLeft.x, m_layoutTopLeft.y, m_NameSZ, info);
-		 */
+		const int offsety = -12;
+
+		IRenderAuxText::DrawText(Vec3(m_layoutTopLeft.x + 0.5f * m_layoutExtent.x, m_layoutTopLeft.y + offsety, 0.5f), 1.2f, m_colorName, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center | eDrawText_IgnoreOverscan, m_szName);
 	}
 }
 

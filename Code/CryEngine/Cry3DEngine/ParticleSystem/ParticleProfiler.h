@@ -12,16 +12,14 @@ class CParticleComponentRuntime;
 
 enum EProfileStat
 {
-	EPST_Int,    // integer entries
 	EPS_Jobs,
 	EPS_AllocatedParticles,
 	EPS_ActiveParticles,
 	EPS_RendereredParticles,
-
-	EPST_Float,  // float entries
 	EPS_NewBornTime,
 	EPS_UpdateTime,
 	EPS_ComputeVerticesTime,
+	EPS_TotalTiming,
 
 	EPST_Count,
 };
@@ -39,35 +37,23 @@ private:
 	EProfileStat               m_stat;
 };
 
-struct IStatOutput;
+struct SStatistics
+{
+	SStatistics();
+	uint m_values[EPST_Count];
+};
 
 class CParticleProfiler
 {
 public:
-	union SValue
-	{
-		float m_float;
-		uint  m_int;
-	};
-
-	struct SStatDisplay
-	{
-		float        m_offsetX;
-		EProfileStat m_stat;
-		const char*  m_statName;
-	};
-
-	struct SStatistics
-	{
-		SStatistics();
-		SValue m_values[EPST_Count];
-	};
+	class CCSVFileOutput;
+	class CStatisticsDisplay;
 
 	struct SEntry
 	{
 		CParticleComponentRuntime* m_pRuntime;
 		EProfileStat               m_type;
-		SValue                     m_value;
+		uint                       m_value;
 	};
 	typedef std::vector<SEntry> TEntries;
 
@@ -76,16 +62,17 @@ public:
 
 	void Reset();
 	void Display();
-	void SaveToFile(cstr fileName = nullptr);
+	void SaveToFile();
 
 	void AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value = 1);
-	void AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, float value);
 
 private:
 	void SortEntries();
-	void WriteEntries(IStatOutput& output) const;
-	void WriteStats(IStatOutput& output, cstr emitterName, cstr componentName, const SStatistics& stats) const;
-	void WriteStat(IStatOutput& output, SStatDisplay stat, SValue value) const;
+	void WriteEntries(CCSVFileOutput& output) const;
+
+	void DrawStats();
+	void DrawStatsCounts(CStatisticsDisplay& output, Vec2 pos, uint budget);
+	void DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfileStat stat, uint budget, cstr statName);
 
 	std::vector<TEntries> m_entries;
 };

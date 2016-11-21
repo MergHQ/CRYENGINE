@@ -20,16 +20,9 @@ AudioSwitchStateId CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Coun
 };
 
 //////////////////////////////////////////////////////////////////////////
-CAudioProxy::CAudioProxy()
-	: m_audioObjectId(INVALID_AUDIO_OBJECT_ID)
-	, m_flags(eAudioProxyFlags_None)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CAudioProxy::~CAudioProxy()
 {
-	CRY_ASSERT(m_audioObjectId == INVALID_AUDIO_OBJECT_ID);
+	CRY_ASSERT(m_pAudioObject == nullptr);
 
 	if (!m_queuedAudioCommands.empty())
 	{
@@ -52,7 +45,7 @@ void CAudioProxy::Initialize(char const* const szAudioObjectName, bool const bIn
 			m_flags |= eAudioProxyFlags_WaitingForId;
 
 			SAudioRequest request;
-			SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> requestData(&m_audioObjectId, szAudioObjectName);
+			SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> requestData(&m_pAudioObject, szAudioObjectName);
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_SyncCallback;
 			request.pOwner = this;
 			request.pData = &requestData;
@@ -68,14 +61,14 @@ void CAudioProxy::Initialize(char const* const szAudioObjectName, bool const bIn
 	else
 	{
 		SAudioRequest request;
-		SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> requestData(&m_audioObjectId, szAudioObjectName);
+		SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> requestData(&m_pAudioObject, szAudioObjectName);
 		request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
 		request.pData = &requestData;
 
 		gEnv->pAudioSystem->PushRequest(request);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		if (m_audioObjectId == INVALID_AUDIO_OBJECT_ID)
+		if (m_pAudioObject == nullptr)
 		{
 			CryFatalError("<Audio> Failed to reserve audio object ID on AudioProxy (%s)!", szAudioObjectName);
 		}
@@ -90,10 +83,10 @@ void CAudioProxy::ExecuteTrigger(
 {
 	if ((m_flags & eAudioProxyFlags_WaitingForId) == 0)
 	{
-		CRY_ASSERT(m_audioObjectId != INVALID_AUDIO_OBJECT_ID);
+		CRY_ASSERT(m_pAudioObject != nullptr);
 
 		SAudioRequest request;
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = callBackInfo.requestFlags;
 
 		SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> requestData(audioTriggerId, 0.0f);
@@ -123,7 +116,7 @@ void CAudioProxy::StopTrigger(AudioControlId const audioTriggerId)
 	{
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> requestData(audioTriggerId);
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -144,7 +137,7 @@ void CAudioProxy::SetSwitchState(AudioControlId const audioSwitchId, AudioSwitch
 	{
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> requestData(audioSwitchId, audioSwitchStateId);
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -165,7 +158,7 @@ void CAudioProxy::SetRtpcValue(AudioControlId const audioRtpcId, float const val
 	{
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData(audioRtpcId, value);
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -223,7 +216,7 @@ void CAudioProxy::SetTransformationInternal(Matrix34 const& transformation)
 
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> requestData(transformation);
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -244,7 +237,7 @@ void CAudioProxy::SetEnvironmentAmount(AudioEnvironmentId const audioEnvironment
 	{
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> requestData(audioEnvironmentId, amount);
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -296,7 +289,7 @@ void CAudioProxy::ClearEnvironments()
 	{
 		SAudioRequest request;
 		SAudioObjectRequestData<eAudioObjectRequestType_ResetEnvironments> requestData;
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 		request.pData = &requestData;
 		request.pOwner = this;
@@ -315,17 +308,17 @@ void CAudioProxy::Reset()
 {
 	if ((m_flags & eAudioProxyFlags_WaitingForId) == 0)
 	{
-		if (m_audioObjectId != INVALID_AUDIO_OBJECT_ID)
+		if (m_pAudioObject != nullptr)
 		{
 			// Request must be asynchronous and lowest priority!
 			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_ReleaseObject> requestData;
-			request.audioObjectId = m_audioObjectId;
+			request.pAudioObject = m_pAudioObject;
 			request.pData = &requestData;
 
 			gEnv->pAudioSystem->PushRequest(request);
 
-			m_audioObjectId = INVALID_AUDIO_OBJECT_ID;
+			m_pAudioObject = nullptr;
 		}
 
 		m_transformation = CAudioObjectTransformation();
@@ -357,10 +350,10 @@ void CAudioProxy::PlayFile(SAudioPlayFileInfo const& playFileInfo, SAudioCallBac
 {
 	if ((m_flags & eAudioProxyFlags_WaitingForId) == 0)
 	{
-		CRY_ASSERT(m_audioObjectId != INVALID_AUDIO_OBJECT_ID);
+		CRY_ASSERT(m_pAudioObject != nullptr);
 
 		SAudioRequest request;
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = callBackInfo.requestFlags;
 		SAudioObjectRequestData<eAudioObjectRequestType_PlayFile> requestData(playFileInfo.szFile, playFileInfo.bLocalized, playFileInfo.usedTriggerForPlayback);
 		request.pOwner = (callBackInfo.pObjectToNotify != nullptr) ? callBackInfo.pObjectToNotify : this;
@@ -389,10 +382,10 @@ void CAudioProxy::StopFile(char const* const _szFile)
 {
 	if ((m_flags & eAudioProxyFlags_WaitingForId) == 0)
 	{
-		CRY_ASSERT(m_audioObjectId != INVALID_AUDIO_OBJECT_ID);
+		CRY_ASSERT(m_pAudioObject != nullptr);
 
 		SAudioRequest request;
-		request.audioObjectId = m_audioObjectId;
+		request.pAudioObject = m_pAudioObject;
 		request.flags = eAudioRequestFlags_PriorityNormal;
 
 		SAudioObjectRequestData<eAudioObjectRequestType_StopFile> requestData(_szFile);
@@ -558,14 +551,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetSwitchState)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioSwitchId == pNewCommand->audioSwitchId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioSwitchId == pNewCommand->audioSwitchId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;
@@ -581,14 +574,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetRtpcValue)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioRtpcId == pNewCommand->audioRtpcId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioRtpcId == pNewCommand->audioRtpcId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;
@@ -603,9 +596,9 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetTransformation)
 				{
-					POOL_FREE_CONST(pExistingCommandBase);
-					bAdd = false;
-					return true;
+				  POOL_FREE_CONST(pExistingCommandBase);
+				  bAdd = false;
+				  return true;
 				}
 
 				return false;
@@ -620,14 +613,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetEnvironmentAmount)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioEnvironmentId == pNewCommand->audioEnvironmentId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioEnvironmentId == pNewCommand->audioEnvironmentId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;

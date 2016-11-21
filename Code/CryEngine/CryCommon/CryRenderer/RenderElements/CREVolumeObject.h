@@ -9,7 +9,7 @@
 
 struct IVolumeObjectRenderNode;
 
-class CREVolumeObject : public CRendElementBase
+class CREVolumeObject : public CRenderElement
 {
 public:
 	struct IVolumeTexture

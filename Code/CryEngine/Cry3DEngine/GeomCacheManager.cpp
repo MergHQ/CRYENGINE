@@ -1743,9 +1743,9 @@ void CGeomCacheManager::DrawDebugInfo()
 				pCompressionMethod = "LZ4 HC";
 			}
 
-			gEnv->pRenderer->Draw2dLabel(sideOffset + streamInfoSpacing, currentTop - 5.0f, 1.5f, Col_White, false, "%s - %.3gs %s- %.3g MiB/s - %s - %d frames missed",
+			IRenderAuxText::Draw2dLabel(sideOffset + streamInfoSpacing, currentTop - 5.0f, 1.5f, Col_White, false, "%s - %.3gs %s- %.3g MiB/s - %s - %d frames missed",
 			                             streamInfo.m_pRenderNode->GetName(), pGeomCache->GetDuration(), streamInfo.m_bLooping ? "looping " : "", stats.m_averageAnimationDataRate, pCompressionMethod, streamInfo.m_numFramesMissed);
-			gEnv->pRenderer->Draw2dLabel(sideOffset + streamInfoSpacing, streamInfoSpacing + currentTop - 5.0f, 1.5f, Col_White, false,
+			IRenderAuxText::Draw2dLabel(sideOffset + streamInfoSpacing, streamInfoSpacing + currentTop - 5.0f, 1.5f, Col_White, false,
 			                             "Frame: [%04u, %04u], Disk Frames: [%04u, %04u], Decompress Frames: [%04u, %04u], Playback time: %g", wantedFloorFrame, wantedCeilFrame,
 			                             oldestDiskFrame, newestDiskFrame, oldestDecompressFrame, newestDecompressFrame, wantedPlaybackTime);
 
@@ -1755,14 +1755,14 @@ void CGeomCacheManager::DrawDebugInfo()
 	}
 
 	const uint numAbortedStreams = m_streamInfosAbortList.size();
-	gEnv->pRenderer->Draw2dLabel(sideOffset, topOffset, 1.5f, Col_Yellow, false, "%u Geometry Cache(s) active", numActiveStreams);
-	gEnv->pRenderer->Draw2dLabel(sideOffset, 3.5f * topOffset, 1.5f, (m_numMissedFrames > 0) ? Col_Red : Col_Green, false, "%u Frames missed", m_numMissedFrames);
-	gEnv->pRenderer->Draw2dLabel(sideOffset + 160.0f, 3.5f * topOffset, 1.5f, (m_numStreamAborts > 0) ? Col_Red : Col_Green, false, "%u Stream aborts (err: %u, decomp: %u, read: %u)",
+	IRenderAuxText::Draw2dLabel(sideOffset, topOffset, 1.5f, Col_Yellow, false, "%u Geometry Cache(s) active", numActiveStreams);
+	IRenderAuxText::Draw2dLabel(sideOffset, 3.5f * topOffset, 1.5f, (m_numMissedFrames > 0) ? Col_Red : Col_Green, false, "%u Frames missed", m_numMissedFrames);
+	IRenderAuxText::Draw2dLabel(sideOffset + 160.0f, 3.5f * topOffset, 1.5f, (m_numStreamAborts > 0) ? Col_Red : Col_Green, false, "%u Stream aborts (err: %u, decomp: %u, read: %u)",
 	                             m_numStreamAborts, m_numErrorAborts, m_numDecompressStreamAborts, m_numReadStreamAborts);
-	gEnv->pRenderer->Draw2dLabel(sideOffset + 520.0f, 3.5f * topOffset, 1.5f, (m_numFailedAllocs > 0) ? Col_Yellow : Col_Green, false, "%u Failed alloc(s)", m_numFailedAllocs);
-	gEnv->pRenderer->Draw2dLabel(sideOffset + 670.0f, 3.5f * topOffset, 1.5f, (numAbortedStreams > 0) ? Col_Yellow : Col_Green, false, "%u Aborted stream(s)", numAbortedStreams);
+	IRenderAuxText::Draw2dLabel(sideOffset + 520.0f, 3.5f * topOffset, 1.5f, (m_numFailedAllocs > 0) ? Col_Yellow : Col_Green, false, "%u Failed alloc(s)", m_numFailedAllocs);
+	IRenderAuxText::Draw2dLabel(sideOffset + 670.0f, 3.5f * topOffset, 1.5f, (numAbortedStreams > 0) ? Col_Yellow : Col_Green, false, "%u Aborted stream(s)", numAbortedStreams);
 
-	gEnv->pRenderer->Draw2dLabel(sideOffset, 6.0f * topOffset, 1.25f, Col_White, false, "Geom Cache Buffer:");
+	IRenderAuxText::Draw2dLabel(sideOffset, 6.0f * topOffset, 1.25f, Col_White, false, "Geom Cache Buffer:");
 	Draw2DBoxOutLine(bufferBoxLeft, bufferBoxTop, bufferBoxWidth, bufferBoxHeight, Col_White, screenHeight, screenWidth, pRenderAuxGeom);
 
 	pRenderAuxGeom->SetRenderFlags(oldFlags);

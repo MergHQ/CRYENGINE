@@ -18,6 +18,7 @@
 #include <CrySystem/ILocalizationManager.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Containers/VectorMap.h>
+#include <CryCore/Containers/CryListenerSet.h>
 
 #include "Huffman.h"
 
@@ -48,6 +49,9 @@ public:
 	virtual bool                                        RequestLoadLocalizationDataByTag(const char* sTag);
 	virtual bool                                        LoadLocalizationDataByTag(const char* sTag, bool bReload = false);
 	virtual bool                                        ReleaseLocalizationDataByTag(const char* sTag);
+
+	virtual void                                        RegisterPostProcessor(ILocalizationPostProcessor* pPostProcessor);
+	virtual void                                        UnregisterPostProcessor(ILocalizationPostProcessor* pPostProcessor);
 
 	virtual bool                                        LoadExcelXmlSpreadsheet(const char* sFileName, bool bReload = false);
 	virtual void                                        ReloadData();
@@ -257,6 +261,9 @@ private:
 	ISystem*   m_pSystem;
 	// Pointer to the current language.
 	SLanguage* m_pLanguage;
+
+	typedef CListenerSet<ILocalizationPostProcessor*> PostProcessors;
+	PostProcessors m_postProcessors;
 
 	// all loaded Localization Files
 	typedef std::pair<string, SFileInfo> pairFileName;

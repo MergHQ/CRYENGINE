@@ -175,6 +175,7 @@ CFlowSystem::CFlowSystem()
 	, m_pModuleManager(NULL)
 	, m_blacklistNode(NULL)
 	, m_nextNodeTypeID(InvalidFlowNodeTypeId)
+	, m_bRegisteredDefaultNodes(false)
 {
 	LoadBlacklistedFlownodeXML();
 }
@@ -239,10 +240,7 @@ void CFlowSystem::RegisterAllNodeTypes()
 
 	LoadExtensions("Libs/FlowNodes");
 
-#ifndef _LIB
-	// register game specific flownodes
-	gEnv->pGame->RegisterGameFlowNodes();
-#endif
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_REGISTER_FLOWNODES, 0, 0);
 
 	// register entity type flownodes after the game
 	RegisterEntityTypes();
@@ -250,6 +248,8 @@ void CFlowSystem::RegisterAllNodeTypes()
 	// this has to come after all other nodes are reloaded
 	// as it will trigger the editor to reload the fg classes!
 	GetModuleManager()->ScanForModules(); // reload all modules (since they need to register the start and end node types)
+
+	m_bRegisteredDefaultNodes = true;
 }
 
 void CFlowSystem::LoadExtensions(string path)
@@ -517,8 +517,8 @@ void CFlowSystem::Update()
 #ifdef SHOW_FG_CRITICAL_LOADING_ERROR_ON_SCREEN
 	if (m_criticalLoadingErrorHappened && !gEnv->IsEditor() && gEnv->pRenderer)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 30, 2, Col_Red, false, "CRITICAL ERROR. SOME FLOWGRAPHS HAVE BEEN DISCARDED");
-		gEnv->pRenderer->Draw2dLabel(10, 50, 2, Col_Red, false, "LEVEL LOGIC COULD BE DAMAGED. check log for more info.");
+		IRenderAuxText::Draw2dLabel(10, 30, 2, Col_Red, false, "CRITICAL ERROR. SOME FLOWGRAPHS HAVE BEEN DISCARDED");
+		IRenderAuxText::Draw2dLabel(10, 50, 2, Col_Red, false, "LEVEL LOGIC COULD BE DAMAGED. check log for more info.");
 	}
 #endif
 
@@ -616,11 +616,10 @@ void CFlowSystem::UpdateGraphs()
 #ifndef _RELEASE
 	if (m_cVars.m_profile != 0)
 	{
-		IRenderer* pRend = gEnv->pRenderer;
 		float white[4] = { 1, 1, 1, 1 };
-		pRend->Draw2dLabel(10, 100, 2, white, false, "Number of Flow Graphs Updated: %d", FGProfile.graphsUpdated);
-		pRend->Draw2dLabel(10, 120, 2, white, false, "Number of Flow Graph Nodes Updated: %d", FGProfile.nodeUpdates);
-		pRend->Draw2dLabel(10, 140, 2, white, false, "Number of Flow Graph Nodes Activated: %d", FGProfile.nodeActivations);
+		IRenderAuxText::Draw2dLabel(10, 100, 2, white, false, "Number of Flow Graphs Updated: %d", FGProfile.graphsUpdated);
+		IRenderAuxText::Draw2dLabel(10, 120, 2, white, false, "Number of Flow Graph Nodes Updated: %d", FGProfile.nodeUpdates);
+		IRenderAuxText::Draw2dLabel(10, 140, 2, white, false, "Number of Flow Graph Nodes Activated: %d", FGProfile.nodeActivations);
 	}
 	FGProfile.Reset();
 #endif //_RELEASE
@@ -702,7 +701,10 @@ void CFlowSystem::LoadBlacklistedFlownodeXML()
 	if (!m_blacklistNode)
 	{
 		const string filename = BLACKLIST_FILE_PATH;
-		m_blacklistNode = gEnv->pSystem->LoadXmlFromFile(filename);
+		if (gEnv->pCryPak->IsFileExist(BLACKLIST_FILE_PATH))
+		{
+			m_blacklistNode = gEnv->pSystem->LoadXmlFromFile(filename);
+		}
 	}
 }
 

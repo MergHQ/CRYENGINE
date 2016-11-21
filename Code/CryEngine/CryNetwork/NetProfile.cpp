@@ -346,7 +346,7 @@ void netProfileEndProfile()
 {
 	netProfileSumBits(s_netProfileRoot);
 
-	IGameFramework* pFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pFramework = gEnv->pGameFramework;
 	INetNub* pNub = NULL;
 	int numChannels = 0;
 
@@ -699,21 +699,23 @@ bool netProfileSocketMeasurementTick()
 	return shouldDumpLogs;
 }
 
+#include <CryRenderer/IRenderAuxGeom.h>
+
 void netProfileRenderStats(float x, float y)
 {
 	const float lineHeight = 22.f;
-	IRenderer* pRenderer = gEnv->pRenderer;
+
 	float col2[] = { 1.f, 1.f, 1.f, 1.f };
 
 	x += 10.f;
 	y += 15.f;
 
-	pRenderer->Draw2dLabel(x, y, 2, col2, false, "Num Packets Sent %d  %.2fk  Avg(10s) %.2fk",
+	IRenderAuxText::Draw2dLabel(x, y, 2, col2, false, "Num Packets Sent %d  %.2fk  Avg(10s) %.2fk",
 	                       g_socketBandwidth.bandwidthStats.m_1secAvg.m_totalPacketsSent,
 	                       g_socketBandwidth.bandwidthStats.m_1secAvg.m_totalBandwidthSent / float(ONE_K_BITS),
 	                       g_socketBandwidth.bandwidthStats.m_10secAvg.m_totalBandwidthSent / float(ONE_K_BITS));
 	y += lineHeight;
-	pRenderer->Draw2dLabel(x, y, 2, col2, false, "Received %.2fk  Avg(10s) %.2fk", g_socketBandwidth.sizeDisplayRx / float(ONE_K_BITS), g_socketBandwidth.avgValueRx / float(ONE_K_BITS));
+	IRenderAuxText::Draw2dLabel(x, y, 2, col2, false, "Received %.2fk  Avg(10s) %.2fk", g_socketBandwidth.sizeDisplayRx / float(ONE_K_BITS), g_socketBandwidth.avgValueRx / float(ONE_K_BITS));
 }
 
 void netProfileTick()
@@ -737,18 +739,17 @@ void netProfileTick()
 	}
 
 	s_netProfileNumRemoteClients = 0;
-	IGameFramework* pFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
-	if (pFramework)
+	if (gEnv->pGameFramework)
 	{
 		{
 			INetNub* pNub = NULL;
 			if (gEnv->bServer)
 			{
-				pNub = pFramework->GetServerNetNub();
+				pNub = gEnv->pGameFramework->GetServerNetNub();
 			}
 			else
 			{
-				pNub = pFramework->GetClientNetNub();
+				pNub = gEnv->pGameFramework->GetClientNetNub();
 			}
 
 			if (pNub)

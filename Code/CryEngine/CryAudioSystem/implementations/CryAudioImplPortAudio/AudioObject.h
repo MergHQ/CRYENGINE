@@ -16,20 +16,22 @@ class CAudioObject final : public IAudioObject
 {
 public:
 
-	CAudioObject();
-	virtual ~CAudioObject();
+	CAudioObject() = default;
+	virtual ~CAudioObject() override = default;
 
-	void Update();
-	void StopAudioEvent(uint32 const pathId);
-	void RegisterAudioEvent(CAudioEvent* const pPAAudioEvent);
-	void UnregisterAudioEvent(CAudioEvent* const pPAAudioEvent);
+	CAudioObject(CAudioObject const&) = delete;
+	CAudioObject(CAudioObject&&) = delete;
+	CAudioObject& operator=(CAudioObject const&) = delete;
+	CAudioObject& operator=(CAudioObject&&) = delete;
+
+	void          Update();
+	void          StopAudioEvent(uint32 const pathId);
+	void          RegisterAudioEvent(CAudioEvent* const pPAAudioEvent);
+	void          UnregisterAudioEvent(CAudioEvent* const pPAAudioEvent);
 
 private:
 
 	std::unordered_map<AudioEventId, CAudioEvent*> m_activeEvents;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioObject);
-	PREVENT_OBJECT_COPY(CAudioObject);
 };
 }
 }

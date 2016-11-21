@@ -11,6 +11,7 @@
 #include "D3DTiledShading.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/ShadowMask.h"
+#include "GraphicsPipeline/Water.h"
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
 #endif
@@ -361,7 +362,6 @@ void CDeferredShading::ResetLights()
 void CDeferredShading::ReleaseData()
 {
 	gcpRendD3D->GetTiledShading().Clear();
-	gcpRendD3D->GetVolumetricFog().ClearAll();
 
 	for (uint32 iThread = 0; iThread < 2; ++iThread)
 	{
@@ -788,7 +788,7 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 		nStates &= ~GS_NODEPTHTEST;
 		//newState |= GS_NODEPTHTEST;
 		nStates |= GS_DEPTHWRITE;
-		nStates |= ((~(0xF)) << GS_COLMASK_SHIFT) & GS_COLMASK_MASK;
+		nStates |= (~(0xF << GS_COLMASK_SHIFT)) & GS_COLMASK_MASK;
 		nStates |= GS_WIREFRAME;
 	}
 	else if (CRenderer::CV_r_deferredDecalsDebug == 1)
@@ -1130,7 +1130,7 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 	Vec4 pLightDiffuse = Vec4(pDL->m_Color.r, pDL->m_Color.g, pDL->m_Color.b, pDL->m_SpecMult);
 
 	float fInvRadius = (pDL->m_fRadius <= 0) ? 1.0f : 1.0f / pDL->m_fRadius;
-	Vec4 pLightPosCS = Vec4(pDL->m_Origin - m_pCamPos, fInvRadius);
+	Vec4 pLightPos = Vec4(pDL->m_Origin, fInvRadius);
 	Vec4 pDepthBounds = GetLightDepthBounds(pDL, (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0);
 
 	Vec4 scaledLightRect = Vec4(
@@ -1305,12 +1305,6 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 
 		// translate into camera space
 		ProjMatrixT.Transpose();
-		const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-		Vec4 vecTranslation(vEye.Dot((Vec4&)ProjMatrixT.m00), vEye.Dot((Vec4&)ProjMatrixT.m10), vEye.Dot((Vec4&)ProjMatrixT.m20), vEye.Dot((Vec4&)ProjMatrixT.m30));
-		ProjMatrixT.m03 += vecTranslation.x;
-		ProjMatrixT.m13 += vecTranslation.y;
-		ProjMatrixT.m23 += vecTranslation.z;
-		ProjMatrixT.m33 += vecTranslation.w;
 		m_pShader->FXSetPSFloat(m_pParamLightProjMatrix, (Vec4*) ProjMatrixT.GetData(), 4);
 	}
 
@@ -1332,7 +1326,7 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 		m_pShader->FXSetPSFloat(arealightMatrixName, alias_cast<Vec4*>(&mAreaLightMatrix), 4);
 	}
 
-	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPosCS, 1);
+	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPos, 1);
 	m_pShader->FXSetPSFloat(m_pParamLightDiffuse, &pLightDiffuse, 1);
 
 	uint32 stencilID = (pDL->m_nStencilRef[1] + 1) << 16 | pDL->m_nStencilRef[0] + 1;
@@ -1359,12 +1353,6 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 		// set up shadow matrix
 		static CCryNameR paramName("g_mLightShadowProj");
 		Matrix44A shadowMat = gRenDev->m_TempMatrices[0][0];
-		const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-		Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
-		shadowMat.m03 += vecTranslation.x;
-		shadowMat.m13 += vecTranslation.y;
-		shadowMat.m23 += vecTranslation.z;
-		shadowMat.m33 += vecTranslation.w;
 
 		// pre-multiply by 1/frustrum_far_plane
 		(Vec4&)shadowMat.m20 *= gRenDev->m_cEF.m_TempVecs[2].x;
@@ -1438,133 +1426,6 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 		rd->EF_Scissor(false, 0, 0, 0, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeferredShading::RenderClipVolumesToStencil(int nClipAreaReservedStencilBit)
-{
-	const auto& clipVolumes = RenderView()->GetClipVolumes();
-
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const bool bRenderVisAreas = CRenderer::CV_r_VisAreaClipLightsPerPixel > 0;
-
-	for (int nCurrVolume = clipVolumes.size() - 1; nCurrVolume >= 0; --nCurrVolume)
-	{
-		const SDeferredClipVolume& pVolumeData = clipVolumes[nCurrVolume];
-		if (pVolumeData.m_pRenderMesh && pVolumeData.nStencilRef < CClipVolumesStage::MaxDeferredClipVolumes)
-		{
-			if ((pVolumeData.nFlags & IClipVolume::eClipVolumeIsVisArea) != 0 && !bRenderVisAreas)
-				continue;
-
-			assert(((pVolumeData.nStencilRef + 1) & (BIT_STENCIL_RESERVED | nClipAreaReservedStencilBit)) == 0);
-			const int nStencilRef = ~(pVolumeData.nStencilRef + 1) & ~(BIT_STENCIL_RESERVED | nClipAreaReservedStencilBit);
-
-			rd->FX_StencilCullNonConvex(nStencilRef, pVolumeData.m_pRenderMesh.get(), pVolumeData.mWorldTM);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeferredShading::RenderPortalBlendValues(int nClipAreaReservedStencilBit)
-{
-	const auto& clipVolumes = RenderView()->GetClipVolumes();
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	uint nPrevState = rd->m_RP.m_CurState;
-	ECull ePrevCullMode = rd->m_RP.m_eCull;
-
-	uint nNewState = nPrevState;
-	nNewState &= ~(GS_COLMASK_NONE | GS_DEPTHWRITE);
-	nNewState |= GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_B | GS_NOCOLMASK_A;
-	rd->FX_SetState(nNewState);
-
-	static CCryNameTSCRC TechName0 = "PortalBlendVal";
-	SD3DPostEffectsUtils::ShBeginPass(m_pShader, TechName0, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-	SD3DPostEffectsUtils::SetTexture(CTexture::s_ptexZTarget, 3, FILTER_POINT);
-
-	for (int nCurrVolume = clipVolumes.size() - 1; nCurrVolume >= 0; --nCurrVolume)
-	{
-		const SDeferredClipVolume& pClipVolumeData = clipVolumes[nCurrVolume];
-		if (pClipVolumeData.nStencilRef < CClipVolumesStage::MaxDeferredClipVolumes && pClipVolumeData.nFlags & IClipVolume::eClipVolumeBlend)
-		{
-			const bool bRenderMesh = pClipVolumeData.m_pRenderMesh && CRenderer::CV_r_VisAreaClipLightsPerPixel > 0;
-
-			static CCryNameR blendPlane0Param("BlendPlane0");
-			Vec4 plane0ClipSpace = rd->m_InvCameraProjMatrix * pClipVolumeData.blendInfo[0].blendPlane;
-			m_pShader->FXSetPSFloat(blendPlane0Param, &plane0ClipSpace, 1);
-
-			static CCryNameR blendPlane1Param("BlendPlane1");
-			Vec4 plane1ClipSpace = rd->m_InvCameraProjMatrix * pClipVolumeData.blendInfo[1].blendPlane;
-			m_pShader->FXSetPSFloat(blendPlane1Param, &plane1ClipSpace, 1);
-
-			static CCryNameR screenScaleParam("g_ScreenScale");
-			Vec4 screenScale = Vec4(1.0f / m_pLBufferDiffuseRT->GetWidth(), 1.0f / m_pLBufferDiffuseRT->GetHeight(), 0, 0);
-			m_pShader->FXSetPSFloat(screenScaleParam, &screenScale, 1);
-
-			rd->m_nStencilMaskRef = nClipAreaReservedStencilBit + pClipVolumeData.nStencilRef + 1;
-			rd->FX_StencilTestCurRef(true);
-
-			static CCryNameR paramNameVolumeToWorld("g_mUnitLightVolumeToWorld");
-			Matrix44 matIdentity(IDENTITY);
-			m_pShader->FXSetVSFloat(paramNameVolumeToWorld, (Vec4*) matIdentity.GetData(), 4);
-
-			static CCryNameR paramNameSphereAdjust("g_vLightVolumeSphereAdjust");
-			Vec4 vZero(ZERO);
-			m_pShader->FXSetVSFloat(paramNameSphereAdjust, &vZero, 1);
-
-			if (bRenderMesh)
-			{
-				CRenderMesh* pRenderMesh = static_cast<CRenderMesh*>(pClipVolumeData.m_pRenderMesh.get());
-				pRenderMesh->CheckUpdate(pRenderMesh->_GetVertexFormat(), 0);
-
-				const buffer_handle_t hVertexStream = pRenderMesh->_GetVBStream(VSF_GENERAL);
-				const buffer_handle_t hIndexStream = pRenderMesh->_GetIBStream();
-
-				if (hVertexStream != ~0u && hIndexStream != ~0u)
-				{
-					size_t nOffsI = 0;
-					size_t nOffsV = 0;
-
-					D3DVertexBuffer* pVB = gRenDev->m_DevBufMan.GetD3DVB(hVertexStream, &nOffsV);
-					D3DIndexBuffer* pIB = gRenDev->m_DevBufMan.GetD3DIB(hIndexStream, &nOffsI);
-
-					rd->FX_SetVStream(0, pVB, nOffsV, pRenderMesh->GetStreamStride(VSF_GENERAL));
-					rd->FX_SetIStream(pIB, nOffsI, (sizeof(vtx_idx) == 2 ? Index16 : Index32));
-
-					if (!FAILED(rd->FX_SetVertexDeclaration(0, pRenderMesh->_GetVertexFormat())))
-					{
-						static CCryNameR viewProjParam("g_mViewProj");
-						m_pShader->FXSetVSFloat(viewProjParam, (Vec4*) rd->m_CameraProjMatrix.GetData(), 4);
-
-						rd->D3DSetCull(eCULL_Front);
-						rd->FX_Commit();
-						rd->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, pRenderMesh->_GetNumVerts(), 0, pRenderMesh->_GetNumInds());
-					}
-				}
-			}
-			else
-			{
-				Matrix44 matQuadToClip(IDENTITY);
-				matQuadToClip.m00 = 2;
-				matQuadToClip.m30 = -1;
-				matQuadToClip.m11 = -2;
-				matQuadToClip.m31 = 1;
-
-				static CCryNameR viewProjParam("g_mViewProj");
-				m_pShader->FXSetVSFloat(viewProjParam, (Vec4*) matQuadToClip.GetData(), 4);
-
-				rd->D3DSetCull(eCULL_Back);
-				rd->FX_Commit();
-				SD3DPostEffectsUtils::DrawFullScreenTri(m_pLBufferDiffuseRT->GetWidth(), m_pLBufferDiffuseRT->GetHeight());
-			}
-		}
-	}
-
-	SD3DPostEffectsUtils::ShEndPass();
-
-	rd->D3DSetCull(ePrevCullMode);
-	rd->FX_SetState(nPrevState);
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1574,108 +1435,14 @@ void CDeferredShading::PrepareClipVolumeData(bool& bOutdoorVisible)
 	const bool bMSAA = rd->m_RP.m_MSAAData.Type ? true : false;
 	const int nClipVolumeReservedStencilBit = BIT_STENCIL_INSIDE_CLIPVOLUME;
 
-	if (rd->m_bVolumetricFogEnabled && rd->m_nGraphicsPipeline == 0)
-		rd->GetVolumetricFog().ClearVolumeStencil();
+	// fetch clip volume shader data from clip volume stage
+	const Vec4* pVolumeParams; uint32 numVolumes;
+	rd->GetGraphicsPipeline().GetClipVolumesStage()->GetClipVolumeShaderParams(pVolumeParams, numVolumes);
+	memcpy(m_vClipVolumeParams, pVolumeParams, numVolumes * sizeof(Vec4));
 
-	// Reserved outdoor fragments
-	const auto& clipVolumes = RenderView()->GetClipVolumes();
+	bOutdoorVisible = rd->GetGraphicsPipeline().GetClipVolumesStage()->IsOutdoorVisible();
 
-	if (rd->m_nGraphicsPipeline == 0)
-	{
-		for (uint i = 0; i < CClipVolumesStage::VisAreasOutdoorStencilOffset; ++i)
-		{
-			uint32 nFlags = IClipVolume::eClipVolumeConnectedToOutdoor | IClipVolume::eClipVolumeAffectedBySun;
-			m_vClipVolumeParams[i] = Vec4(gEnv->p3DEngine->GetSkyColor() * rd->m_fAdaptedSceneScaleLBuffer, *alias_cast<float*>(&nFlags));
-		}
-
-		for (const auto& pClipVolumeData : clipVolumes)
-		{
-			if (pClipVolumeData.nStencilRef + 1 < CClipVolumesStage::MaxDeferredClipVolumes)
-			{
-				uint32 nData = (pClipVolumeData.blendInfo[1].blendID + 1) << 24 | (pClipVolumeData.blendInfo[0].blendID + 1) << 16 | pClipVolumeData.nFlags;
-				m_vClipVolumeParams[pClipVolumeData.nStencilRef + 1] = Vec4(0, 0, 0, *alias_cast<float*>(&nData));
-
-				bOutdoorVisible |= pClipVolumeData.nFlags & IClipVolume::eClipVolumeConnectedToOutdoor ? true : false;
-			}
-		}
-
-		// Render Clip volumes to stencil
-		if (!clipVolumes.empty())
-		{
-			rd->FX_ResetPipe();
-
-			const uint32 nPersFlags2 = rd->m_RP.m_PersFlags2;
-			rd->m_RP.m_PersFlags2 |= RBPF2_WRITEMASK_RESERVED_STENCIL_BIT;
-
-			//ClipVolumes
-			{
-				PROFILE_LABEL_SCOPE("CLIPVOLUMES TO STENCIL");
-				rd->FX_PushRenderTarget(0, (CTexture*)NULL, &rd->m_DepthBufferOrigMSAA);
-				rd->RT_SetViewport(0, 0, m_pLBufferDiffuseRT->GetWidth(), m_pLBufferDiffuseRT->GetHeight());
-				RenderClipVolumesToStencil(nClipVolumeReservedStencilBit);
-				rd->FX_PopRenderTarget(0);
-			}
-
-			// Portal blend factors
-			static ICVar* pPortalsBlendCVar = iConsole->GetCVar("e_PortalsBlend");
-			if (pPortalsBlendCVar->GetIVal() > 0)
-			{
-				rd->FX_PushRenderTarget(0, m_pResolvedStencilRT, &rd->m_DepthBufferOrigMSAA);
-				rd->RT_SetViewport(0, 0, m_pLBufferDiffuseRT->GetWidth(), m_pLBufferDiffuseRT->GetHeight());
-				RenderPortalBlendValues(nClipVolumeReservedStencilBit);
-				rd->FX_PopRenderTarget(0);
-			}
-			
-
-			if (rd->m_bVolumetricFogEnabled && rd->m_nGraphicsPipeline == 0)
-				rd->GetVolumetricFog().RenderClipVolumeToVolumeStencil(nClipVolumeReservedStencilBit);
-
-			rd->m_RP.m_PersFlags2 = nPersFlags2;
-		}
-
-		//  Need to resolve stencil because light volumes and shadow mask overwrite stencil
-		{
-			// Patch z-target to allow stencil access
-			CTexture* pDepthBufferRT = m_pDepthRT;
-			D3DShaderResource* pZTargetOrigSRV;
-			SDepthTexture sBackup = rd->FX_ReplaceMSAADepthBuffer(pDepthBufferRT, bMSAA, pZTargetOrigSRV);
-
-#ifdef SUPPORTS_MSAA
-			if (rd->FX_GetMSAAMode())
-				rd->FX_MSAASampleFreqStencilSetup(MSAA_SAMPLEFREQ_PASS);
-#endif
-
-			PROFILE_LABEL_SCOPE("RESOLVE STENCIL");
-			rd->FX_PushRenderTarget(0, m_pResolvedStencilRT, NULL, -1, false, 1);
-
-			// color mask
-			static CCryNameTSCRC pszResolveStencil("ResolveStencilLegacy");
-			PostProcessUtils().ShBeginPass(CShaderMan::s_shDeferredShading, pszResolveStencil, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-			rd->FX_SetState(GS_NODEPTHTEST | GS_NOCOLMASK_G | GS_NOCOLMASK_B | GS_NOCOLMASK_A);
-			pDepthBufferRT->SetShaderResourceView(gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->GetDeviceStencilReadOnlySRV(0, -1, bMSAA), bMSAA);
-			pDepthBufferRT->Apply(4, m_nTexStatePoint, EFTT_UNKNOWN, -1, m_nBindResourceMsaa);
-			GetUtils().DrawQuadFS(CShaderMan::s_shDeferredShading, false, m_pLBufferDiffuseRT->GetWidth(), m_pLBufferDiffuseRT->GetHeight());
-			GetUtils().ShEndPass();
-			rd->FX_PopRenderTarget(0);
-
-			// Restore DSV/SRV
-			rd->FX_RestoreMSAADepthBuffer(sBackup, pDepthBufferRT, bMSAA, pZTargetOrigSRV);
-
-#ifdef SUPPORTS_MSAA
-			rd->FX_MSAASampleFreqStencilSetup();
-#endif
-		}
-	}
-	else
-	{
-		const Vec4* pVolumeParams; uint32 numVolumes;
-		rd->GetGraphicsPipeline().GetClipVolumesStage()->GetClipVolumeShaderParams(pVolumeParams, numVolumes);
-		memcpy(m_vClipVolumeParams, pVolumeParams, numVolumes * sizeof(Vec4));
-
-		bOutdoorVisible = rd->GetGraphicsPipeline().GetClipVolumesStage()->IsOutdoorVisible();
-	}
-
-	rd->m_nStencilMaskRef = nClipVolumeReservedStencilBit + clipVolumes.size() + 1;
+	rd->m_nStencilMaskRef = nClipVolumeReservedStencilBit + RenderView()->GetClipVolumes().size() + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1913,7 +1680,7 @@ void CDeferredShading::DeferredCubemapPass(const SRenderLight* const __restrict 
 	Vec4 pLightDiffuse = Vec4(pDL->m_Color.r, pDL->m_Color.g, pDL->m_Color.b, pDL->m_SpecMult);
 
 	const float fInvRadius = (pDL->m_fRadius <= 0) ? 1.0f : 1.0f / pDL->m_fRadius;
-	const Vec4 pLightPosCS = Vec4(pDL->m_Origin - m_pCamPos, fInvRadius);
+	const Vec4 pLightPos = Vec4(pDL->m_Origin, fInvRadius);
 	const float fAttenFalloffMax = max(pDL->GetFalloffMax(), 1e-3f);
 
 	const bool bReverseDepth = (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
@@ -2053,7 +1820,7 @@ void CDeferredShading::DeferredCubemapPass(const SRenderLight* const __restrict 
 	if (bStencilMask)
 		rd->FX_StencilTestCurRef(true, false);
 
-	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPosCS, 1);
+	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPos, 1);
 	m_pShader->FXSetPSFloat(m_pParamLightDiffuse, &pLightDiffuse, 1);
 
 	m_pDepthRT->Apply(0, m_nTexStatePoint, EFTT_UNKNOWN, -1, (rRP.m_PersFlags2 & RBPF2_MSAA_SAMPLEFREQ_PASS) ? m_nBindResourceMsaa : SResourceView::DefaultView);
@@ -2691,18 +2458,10 @@ void CDeferredShading::DeferredShadingPass()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	if (rd->IsShadowPassEnabled() && rd->m_nGraphicsPipeline==0)
-	{
-		PROFILE_LABEL_SCOPE("SHADOWMASK");
-		rd->FX_DeferredShadowMaskGen(m_pCurrentRenderView, TArray<uint32>());
-	}
-	else
-	{
-		rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
-		rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(m_pCurrentRenderView);
-		rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
-		rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
-	}
+	rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(m_pCurrentRenderView);
+	rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
+	rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
 
 	rd->D3DSetCull(eCULL_Back, true); //fs quads should not revert test..
 
@@ -2801,6 +2560,10 @@ void CDeferredShading::DeferredShadingPass()
 	const Vec4 paramSunColor(sunColor, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
 	m_pShader->FXSetPSFloat(paramNameSunColor, &paramSunColor, 1);
 
+	static CCryNameR paramNameSunLightDir("SunLightDir");
+	const Vec4 paramSunLightDir(rd->m_cEF.m_PF[rd->m_RP.m_nProcessThreadID].pSunDirection, 1.0f);
+	m_pShader->FXSetPSFloat(paramNameSunLightDir, &paramSunLightDir, 1);
+
 	const Vec4 vParamsHDRRange(0.0f, 0.0f, 0.0f, rd->m_fAdaptedSceneScale / (rd->m_fAdaptedSceneScaleLBuffer + FLT_MIN));  // packed rescale
 	m_pShader->FXSetPSFloat(m_pGeneralParams, &vParamsHDRRange, 1);
 	if (nNumClipVolumes)
@@ -2883,7 +2646,7 @@ void CDeferredShading::DeferredLights(RenderLightsArray& rLights, bool bCastShad
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMaps)
+bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -2973,10 +2736,6 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMa
 		rd->SetDepthBoundTest(0.0f, 1.0f, false);
 
 		{
-			if (bRenderShadowMaps)
-			{
-				PROFILE_LABEL_PUSH("SHADOWMAP_POOL");
-			}
 
 			if (!bPreLoop)
 				ResolveCurrentBuffers();
@@ -2988,7 +2747,7 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMa
 				if (!(rLight.m_Flags & (DLF_DIRECTIONAL | DLF_FAKE)) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
 				{
 
-					bool bPacked = PackToPool(&m_blockPack, rLight, m_nCurrentShadowPoolLight, m_nFirstCandidateShadowPoolLight, m_bClearPool, bRenderShadowMaps);
+					bool bPacked = PackToPool(&m_blockPack, rLight, m_nCurrentShadowPoolLight, m_nFirstCandidateShadowPoolLight, m_bClearPool);
 					m_bClearPool = !bPacked;
 					if (!bPacked)
 					{
@@ -3011,11 +2770,6 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMa
 				}
 			}
 #endif
-
-			if (bRenderShadowMaps)
-			{
-				PROFILE_LABEL_POP("SHADOWMAP_POOL");
-			}
 		}
 
 		if (!bPreLoop && bShadowRendered)
@@ -3042,7 +2796,7 @@ bool CDeferredShading::PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMa
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CDeferredShading::PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight& light, const int nLightID, const int nFirstCandidateLight, bool bClearPool, bool bRenderShadowMaps)
+bool CDeferredShading::PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight& light, const int nLightID, const int nFirstCandidateLight, bool bClearPool)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -3256,11 +3010,6 @@ bool CDeferredShading::PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight
 
 	//////////////////////////////////////////////////////////////////////////
 
-	if (bRenderShadowMaps && firstFrustum.bUseShadowsPool && nUpdateMask > 0)
-	{
-		rd->FX_PrepareDepthMapsForLight(RenderView(), light, nFrustumIdx, bClearPool);
-	}
-
 	return true;
 }
 
@@ -3454,7 +3203,8 @@ void CDeferredShading::CreateDeferredMaps()
 	if (!CTexture::s_ptexSceneNormalsMap || CTexture::s_ptexSceneNormalsMap->IsMSAAChanged()
 	    || CTexture::s_ptexSceneNormalsMap->GetWidth() != gcpRendD3D->m_MainViewport.nWidth
 	    || CTexture::s_ptexSceneNormalsMap->GetHeight() != gcpRendD3D->m_MainViewport.nHeight
-	    || nPrevLBuffersFmt != CRenderer::CV_r_DeferredShadingLBuffersFmt)
+	    || nPrevLBuffersFmt != CRenderer::CV_r_DeferredShadingLBuffersFmt
+	    || (gRenDev->IsStereoEnabled() && !CTexture::s_ptexVelocityObjects[1]->GetDevTexture()))
 	{
 		nPrevLBuffersFmt = CRenderer::CV_r_DeferredShadingLBuffersFmt;
 
@@ -3466,7 +3216,7 @@ void CDeferredShading::CreateDeferredMaps()
 		SD3DPostEffectsUtils::CreateRenderTarget("$SceneNormalsBent", CTexture::s_ptexSceneNormalsBent, width, height, Clr_Median, true, false, eTF_R8G8B8A8);
 		SD3DPostEffectsUtils::CreateRenderTarget("$AOColorBleed", CTexture::s_ptexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
 
-		ETEX_Format fmtZScaled = eTF_R16G16F;
+		ETEX_Format fmtZScaled = eTF_R16G16B16A16F;
 		ETEX_Format nTexFormat = eTF_R16G16B16A16F;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 		if (CRenderer::CV_r_DeferredShadingLBuffersFmt == 1)
@@ -3486,7 +3236,7 @@ void CDeferredShading::CreateDeferredMaps()
 #endif
 
 		SD3DPostEffectsUtils::CreateRenderTarget("$VelocityObjects", CTexture::s_ptexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, nFTFlags);
-		if (gRenDev->m_bDualStereoSupport)
+		if (gRenDev->IsStereoEnabled())
 		{
 			SD3DPostEffectsUtils::CreateRenderTarget("$VelocityObject_R", CTexture::s_ptexVelocityObjects[1], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, nFTFlags);
 		}
@@ -3517,9 +3267,6 @@ void CDeferredShading::CreateDeferredMaps()
 
 	gcpRendD3D->GetTiledShading().CreateResources();
 
-	if ((CRenderer::CV_r_GraphicsPipeline == 0) && (gcpRendD3D->m_nGraphicsPipeline == 0))
-		gcpRendD3D->GetVolumetricFog().CreateResources();
-
 	// shadow mask
 	{
 		if (CTexture::s_ptexShadowMask)
@@ -3535,9 +3282,15 @@ void CDeferredShading::CreateDeferredMaps()
 	// height map AO mask
 	if (CRenderer::CV_r_HeightMapAO > 0)
 	{
-		const int nShift = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
-		const int hmaoWidth = gcpRendD3D->GetWidth() >> nShift;
-		const int hmaoHeight = gcpRendD3D->GetHeight() >> nShift;
+		const int shift = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
+		
+		int hmaoWidth = gcpRendD3D->GetWidth();
+		int hmaoHeight = gcpRendD3D->GetHeight();
+		for (int i = 0; i < shift; i++)
+		{
+			hmaoWidth = (hmaoWidth + 1) / 2;
+			hmaoHeight = (hmaoHeight + 1) / 2;
+		}
 
 		for (int i = 0; i < 2; ++i)
 		{
@@ -3621,39 +3374,6 @@ struct DeffDecalSort
 		  (decal0.nSortOrder < decal1.nSortOrder);
 	}
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CDeferredShading::DebugShadowMaskClear()
-{
-#ifndef _RELEASE
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	static const ICVar* pCVarShadows = iConsole->GetCVar("e_Shadows");
-	if ((pCVarShadows && pCVarShadows->GetIVal() == 0) || CRenderer::CV_r_ShadowPass == 0)
-	{
-		if (rd->FX_GetMSAAMode())
-		{
-			rd->FX_PushRenderTarget(0, CTexture::s_ptexBackBuffer, &gcpRendD3D->m_DepthBufferOrig);
-			rd->RT_SetViewport(0, 0, CTexture::s_ptexBackBuffer->GetWidth(), CTexture::s_ptexBackBuffer->GetHeight());
-
-			// MSAA stencil mask is shared on this target, only clear alpha channel
-			rd->FX_SetActiveRenderTargets();
-			rd->m_pNewTarget[0]->m_ReqColor = Clr_Transparent;
-			rd->m_pNewTarget[0]->m_ClearFlags = CLEAR_RTARGET;
-			rd->FX_ClearTargetRegion(GS_COLMASK_A);
-			rd->m_pNewTarget[0]->m_ClearFlags = 0;
-
-			rd->FX_PopRenderTarget(0);
-		}
-		else
-		{
-			rd->FX_ClearTarget(CTexture::s_ptexBackBuffer, Clr_Transparent);
-		}
-	}
-#endif
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3819,7 +3539,15 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	}
 #endif
 
-	rd->FX_WaterVolumesCaustics(pRenderView);
+	if (rd->m_nGraphicsPipeline > 0)
+	{
+		auto* pWaterStage = rd->GetGraphicsPipeline().GetWaterStage();
+		if (pWaterStage && !bTiledDeferredShading)
+		{
+			// NOTE: when tiled deferred shading is enabled, this function is called in CWaterStage::ExecuteWaterVolumeCaustics().
+			pWaterStage->ExecuteDeferredWaterVolumeCaustics(bTiledDeferredShading);
+		}
+	}
 
 	if (bTiledDeferredShading)
 	{
@@ -3848,8 +3576,6 @@ void CDeferredShading::Render(CRenderView* pRenderView)
 	if (CRenderer::CV_r_DeferredShadingDebugGBuffer)
 		DebugGBuffer();
 #endif
-
-	DebugShadowMaskClear();
 
 	// Commit any potential render target changes - required for when shadows disabled
 	rd->FX_SetActiveRenderTargets();

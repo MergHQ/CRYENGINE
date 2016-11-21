@@ -181,7 +181,7 @@ template<typename T>
 void* CheckCompositeMatch(const char* name, const std::shared_ptr<T>& composite, const char* compositeName)
 {
 	typedef TC::SuperSubClass<ICryUnknown, T> Rel;
-	COMPILE_TIME_ASSERT(Rel::exists);
+	static_assert(Rel::exists, "Unexpected enum value!");
 	return NameMatch(name, compositeName) ? const_cast<void*>(static_cast<const void*>(&composite)) : 0;
 }
 
@@ -224,9 +224,9 @@ void* CheckCompositeMatch(const char* name, const std::shared_ptr<T>& composite,
       (void)(name);                                  \
       void* res = 0; (void)(res);                    \
 
-#define CRYCOMPOSITE_ADD(member, membername)                          \
-  COMPILE_TIME_ASSERT((CRY_ARRAY_COUNT(membername)) > 1);             \
-  if ((res = CW::CheckCompositeMatch(name, member, membername)) != 0) \
+#define CRYCOMPOSITE_ADD(member, membername)                                   \
+  static_assert(CRY_ARRAY_COUNT(membername) > 1, "'membername' is too short"); \
+  if ((res = CW::CheckCompositeMatch(name, member, membername)) != 0)          \
     return res;
 
 #define _CRYCOMPOSITE_END(implclassname)                                  \

@@ -464,6 +464,7 @@ public:
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
 	void                         OffsetPosition(const Vec3& delta);
 	_smart_ptr<IRenderMesh>			 GetSharedRenderMesh();
+	uint32											 GetMaterialsModificationId();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Member variables

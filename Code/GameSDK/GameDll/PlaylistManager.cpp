@@ -564,7 +564,7 @@ SGameModeOption *CPlaylistManager::GetGameModeOptionStruct( const char *pOptionN
 {
 	CRY_ASSERT(gEnv);
 	CGameLobby *pGameLobby = g_pGame->GetGameLobby();
-	IGameRulesSystem *pGameRulesSystem = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem();
+	IGameRulesSystem *pGameRulesSystem = gEnv->pGameFramework->GetIGameRulesSystem();
 	const char * sv_gamerules = gEnv->pConsole->GetCVar("sv_gamerules")->GetString();
 
 	const char * fullGameRulesName = (pGameLobby && pGameLobby->IsCurrentlyInSession()) ? pGameLobby->GetCurrentGameModeName() : pGameRulesSystem->GetGameRulesName(sv_gamerules);
@@ -681,7 +681,7 @@ void CPlaylistManager::SaveCurrentSettingsToProfile()
 	{
 		CGameLobby *pGameLobby = g_pGame->GetGameLobby();
 		CRY_ASSERT(gEnv);
-		IGameRulesSystem *pGameRulesSystem = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem();
+		IGameRulesSystem *pGameRulesSystem = gEnv->pGameFramework->GetIGameRulesSystem();
 		const char * sv_gamerules = gEnv->pConsole->GetCVar("sv_gamerules")->GetString();
 
 		const char * fullGameRulesName = (pGameLobby && pGameLobby->IsCurrentlyInSession()) ? pGameLobby->GetCurrentGameModeName() : pGameRulesSystem->GetGameRulesName(sv_gamerules);
@@ -1234,7 +1234,7 @@ void CPlaylistManager::SetModeOptions()
 			// Use default settings if we're on an actual variant, use profile settings for custom variant
 			bool useDefaults = (m_activeVariantIndex != m_customVariantIndex);
 
-			IGameRulesSystem *pGameRulesSystem = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem();
+			IGameRulesSystem *pGameRulesSystem = gEnv->pGameFramework->GetIGameRulesSystem();
 			const char * sv_gamerules = gEnv->pConsole->GetCVar("sv_gamerules")->GetString();
 
 			const char * fullGameRulesName = (pLobby && pLobby->IsCurrentlyInSession()) ? pLobby->GetCurrentGameModeName(sv_gamerules) : pGameRulesSystem->GetGameRulesName(sv_gamerules);

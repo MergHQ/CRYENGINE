@@ -325,7 +325,7 @@ private:
 			const char* const pSubTagsFilename = pXmlNode->getAttr("subTagDef");
 			if (pSubTagsFilename && pSubTagsFilename[0])
 			{
-				IAnimationDatabaseManager& animationDatabaseManager = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+				IAnimationDatabaseManager& animationDatabaseManager = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager();
 				const CTagDefinition* pTagDef = animationDatabaseManager.LoadTagDefs(pSubTagsFilename, true);
 				if (pTagDef)
 				{

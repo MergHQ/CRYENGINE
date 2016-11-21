@@ -93,7 +93,7 @@ size_t CMaterialLayer::GetResourceMemoryUsage(ICrySizer* pSizer)
 CMatInfo::CMatInfo()
 	: m_bDeleted(false)
 {
-	m_nRefCount = 0;
+	m_nRefCount = 1; // having a pointer to CMatInfo with ref count zero, results in CMatInfo being deleted from render thread
 	m_Flags = 0;
 	m_nModificationId = 0;
 
@@ -592,12 +592,12 @@ void CMatInfo::Copy(IMaterial* pMtlDest, EMaterialCopyFlags flags)
 
 	if (GetShaderItem().m_pShaderResources)
 	{
-		//
-		SShaderItem& siSrc(GetShaderItem());
+		const SShaderItem& siSrc(GetShaderItem());
 		SInputShaderResourcesPtr pIsr = GetRenderer()->EF_CreateInputShaderResource(siSrc.m_pShaderResources);
-		//
-		SShaderItem& siDstTex(pMatInfo->GetShaderItem());
+		
+		const SShaderItem& siDstTex(pMatInfo->GetShaderItem());
 		SInputShaderResourcesPtr idsTex = GetRenderer()->EF_CreateInputShaderResource(siDstTex.m_pShaderResources);
+
 		if (!(flags & MTL_COPY_TEXTURES))
 		{
 			for (int n = 0; n < EFTT_MAX; n++)
@@ -605,9 +605,10 @@ void CMatInfo::Copy(IMaterial* pMtlDest, EMaterialCopyFlags flags)
 				pIsr->m_Textures[n] = idsTex->m_Textures[n];
 			}
 		}
+
 		SShaderItem siDst(GetRenderer()->EF_LoadShaderItem(siSrc.m_pShader->GetName(), false, 0, pIsr, siSrc.m_pShader->GetGenerationMask()));
+		siDst.m_pShaderResources->CloneConstants(siSrc.m_pShaderResources); // Lazy "Copy", stays a reference until changed, after which it becomes unlinked
 		pMatInfo->AssignShaderItem(siDst);
-		siDst.m_pShaderResources->CloneConstants(siSrc.m_pShaderResources);
 	}
 }
 
@@ -627,11 +628,12 @@ CMatInfo* CMatInfo::Clone(CMatInfo* pParentOfClonedMtl)
 	pMatInfo->m_pConsoleMtl = m_pConsoleMtl;
 #endif
 
-	if (m_shaderItem.m_pShaderResources)
+	if (GetShaderItem().m_pShaderResources)
 	{
 		const SShaderItem& siSrc(GetShaderItem());
+
 		SShaderItem siDst(siSrc.Clone());
-		pMatInfo->m_shaderItem = siDst;
+		pMatInfo->AssignShaderItem(siDst);
 	}
 
 	return pMatInfo;

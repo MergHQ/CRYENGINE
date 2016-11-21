@@ -7,18 +7,11 @@ import os
 from waflib import Logs
 
 def build(bld):
-	gnm_compiler_version = '"ORBIS/V029"' # Must be quoted
+	gnm_compiler_version = '"ORBIS/V031"' # Must be quoted
 	additional_defines = [ 'CRY_GNM_SHADER_COMPILER_VERSION=' + gnm_compiler_version ]
 
-	# Oculus can only be built using VS 2015.
-	# This is a limitation of the Oculus code.
-	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
-	oculus_dependency = []
-	if has_oculus:
-		oculus_dependency = [ 'oculus' ]
-
-	if not os.path.isdir(Path('Code/SDKs/NVAPI')):
-		Logs.warn('[WARNING] NVAPI SDK not found, excluding from the build.')
+	if not os.path.isdir(Path('Code/SDKs/NVIDIA/NVAPI_r386')):
+		Logs.warn('[WARNING] NVAPI SDK v.386 not found, excluding from the build.')
 		additional_defines += ['EXCLUDE_NV_API']
 
 	if not os.path.isdir(Path('Code/SDKs/AMD')):
@@ -40,7 +33,6 @@ def build(bld):
 		win_file_list   = 'mesh_baker.waf_files',
 		win_lib         = [ 'dxguid', 'd3d11', 'd3d10', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],			
 		win_linkflags   = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
-		win_use_module  = oculus_dependency,
 
 		durango_file_list  = [ 'durango_renderer.waf_files', 'mesh_baker.waf_files' ],
 		durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
@@ -59,6 +51,12 @@ def build(bld):
 		orbis_release_lib = [ 'SceGnm_lto', 'SceGnmx_lto' ],
 	)
 
+	#androidDefines = [ 'GLEW_MX', 'DXGL_ANDROID_GL' ]
+	#androidFilelist = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_egl.waf_files']
+	
+	androidFilelist = ['mesh_baker.waf_files', 'opengl_loader_gles2.waf_files', 'opengl_loader_egl.waf_files']
+	androidDefines = [ 'GLEW_MX', 'OPENGL_ES' ]
+
 	bld.CryEngineModule(
 		target      = 'CryRenderOpenGL',
 		vs_filter   = 'CryEngine',
@@ -68,34 +66,30 @@ def build(bld):
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
+		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
 		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
 		win_lib          = [ 'opengl32', 'winmm', 'Ole32', 'Gdi32', 'wininet', 'Shell32', 'libHLSLcc'  ],
 		win_libpath      = [ Path('Code/Tools/HLSLCrossCompiler/lib/win64') ],
 		win_linkflags    = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
-		win_use_module   = oculus_dependency,
-
+		
 		darwin_file_list = 'mesh_baker.waf_files',
 		darwin_includes  = [ Path('Code/SDKs/SDL2/include/SDL'), Path('Code/SDKs/SDL2/include/mac'), Path('Code/Tools/HLSLCrossCompiler/include') ],
-		darwin_lib       = [ 'SDL2', 'HLSLcc' ],
-		darwin_libpath   = [ Path('Code/SDKs/SDL2/lib/mac'), Path('Code/Tools/HLSLCrossCompiler/lib/mac') ],
+		darwin_lib       = [ 'HLSLcc' ],
+		darwin_libpath   = [ Path('Code/Tools/HLSLCrossCompiler/lib/mac') ],
 		darwin_framework = [ 'OpenGL', 'ApplicationServices', 'IOKit' ],
 
 		linux_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_glx.waf_files'],
 		linux_lib          = [ 'HLSLcc' ],
 		linux_includes     = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
 		linux_x64_libpath  = [ Path('Code/Tools/HLSLCrossCompiler/lib/linux')],
-		linux_module_extensions = [ 'sdl2' ],
-
-		android_file_list  = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_egl.waf_files'],
-		android_includes   = [ Path('Code/CryEngine/CrySystem'),
-		                       Path('Code/SDKs/SDL2/include/linux'),
-		                       Path('Code/SDKs/SDL2/include/SDL'),
-		                       Path('Code/Tools/SDLExtension/src/include'),
-		                       Path('Code/Tools/HLSLCrossCompiler/include')
-		                     ],
-		android_defines    = [ 'GLEW_MX', 'DXGL_ANDROID_GL' ]
+				
+		android_file_list  = androidFilelist,
+		android_includes   = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
+		android_defines    = androidDefines,
+		android_lib        = ['EGL', 'GLESv1_CM', 'GLESv2', 'GLESv3'],
 	)
 
 	# CryRenderD3D12 can only be built using VS 2015.
@@ -123,7 +117,6 @@ def build(bld):
 			win_includes     = [ Path('Code/Tools/LibTIFF'), Path('Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes') ],
 			win_lib          = [ 'dxguid', 'd3d12', 'dxgi', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],
 			win_linkflags    = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
-			win_use_module   = oculus_dependency,
 			
 			# additional_settings = Settings( files = '../Common/lzss.cpp', disable_pch = True )
 		)
@@ -159,15 +152,15 @@ def build(bld):
 
 		# GNM shader compiler
 		bld.CryConsoleApplication(
-			target     = 'GnmShaderCompiler',
-			vs_filter  = 'Tools',
-			file_list  = 'GNM/GnmShaderCompiler.waf_files',
-			defines    = [ '_CRT_SECURE_NO_WARNINGS' ],
-			cxxflags   = [ '/EHsc', '/GR' ],
-			includes   = Path('Code/SDKs/Orbis/target/include_common'),
-			libpath    = Path('Code/SDKs/Orbis/host_tools/lib'),
-			lib        = 'libSceShaderWavePsslc',
-			features   = 'copy_psslc',
+			target            = 'GnmShaderCompiler',
+			vs_filter         = 'Tools',
+			file_list         = 'GNM/GnmShaderCompiler.waf_files',
+			defines           = [ '_CRT_SECURE_NO_WARNINGS' ],
+			cxxflags          = [ '/EHsc', '/GR' ],
+			includes          = Path('Code/SDKs/Orbis/target/include_common'),
+			libpath           = Path('Code/SDKs/Orbis/host_tools/lib'),
+			lib               = 'libSceShaderWavePsslc',
+			features          = 'copy_psslc',
 
 			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', gnm_compiler_version[1:-1])),
 			force_static_crt  = True,

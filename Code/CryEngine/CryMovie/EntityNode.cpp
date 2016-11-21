@@ -55,7 +55,7 @@ static const char* s_VariablePrefixes[] =
 	"aianchor",                                                 "soclass",         "soclasses",   "sostate",      "sostates"
 	                                                                                                              "sopattern", "soaction",        "sohelper",    "sonavhelper",
 	"soanimhelper",                                             "soevent",         "sotemplate",  "customaction",
-	"gametoken",                                                "seq_",            "mission_",    "seqid_"
+	"gametoken",                                                "seq_",            "mission_",    "seqid_", "lightanimation_"
 };
 
 namespace
@@ -90,7 +90,7 @@ bool CompareRotation(const Quat& q1, const Quat& q2, float epsilon)
 {
 	return (fabs_tpl(q1.v.x - q2.v.x) <= epsilon)
 	       && (fabs_tpl(q1.v.y - q2.v.y) <= epsilon)
-	       && (fabs_tpl(q2.v.z - q2.v.z) <= epsilon)
+	       && (fabs_tpl(q1.v.z - q2.v.z) <= epsilon)
 	       && (fabs_tpl(q1.w - q2.w) <= epsilon);
 }
 
@@ -782,7 +782,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 			if (!IsSkipInterpolatedCameraNodeEnabled())
 			{
-				pos = boost::get<Vec3>(pPosTrack->GetValue(animContext.time));
+				pos = stl::get<Vec3>(pPosTrack->GetValue(animContext.time));
 
 				if (!Vec3::IsEquivalent(pos, GetPos(), 0.0001f))
 				{
@@ -805,7 +805,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 			if (!IsSkipInterpolatedCameraNodeEnabled())
 			{
-				rotate = boost::get<Quat>(pRotTrack->GetValue(animContext.time));
+				rotate = stl::get<Quat>(pRotTrack->GetValue(animContext.time));
 
 				if (!CompareRotation(rotate, GetRotate(), DEG2RAD(0.0001f)))
 				{
@@ -825,7 +825,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 		case eAnimParamType_TransformNoise:
 			{
-				noiseParam = boost::get<Vec4>(pTrack->GetValue(animContext.time));
+				noiseParam = stl::get<Vec4>(pTrack->GetValue(animContext.time));
 				m_posNoise.m_amp = noiseParam.x;
 				m_posNoise.m_freq = noiseParam.y;
 				m_rotNoise.m_amp = noiseParam.z;
@@ -837,7 +837,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_Scale:
 			{
 				pScaleTrack = pTrack;
-				scale = boost::get<Vec3>(pScaleTrack->GetValue(animContext.time));
+				scale = stl::get<Vec3>(pScaleTrack->GetValue(animContext.time));
 
 				// Check whether the scale value is valid.
 				if (scale.x < 0.01 || scale.y < 0.01 || scale.z < 0.01)
@@ -897,7 +897,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			if (!animContext.bResetting)
 			{
 				IAnimTrack* pVisibilityTrack = pTrack;
-				bool bVisible = boost::get<bool>(pVisibilityTrack->GetValue(animContext.time));
+				bool bVisible = stl::get<bool>(pVisibilityTrack->GetValue(animContext.time));
 
 				if (pEntity->IsHidden() == bVisible)
 				{
@@ -909,7 +909,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 						if (pPhysicalizeTrack)
 						{
-							const bool bUsePhysics = boost::get<bool>(pPhysicalizeTrack->GetValue(m_time));
+							const bool bUsePhysics = stl::get<bool>(pPhysicalizeTrack->GetValue(m_time));
 							EnableEntityPhysics(bUsePhysics);
 						}
 					}
@@ -930,7 +930,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 				if (!animContext.bResetting)
 				{
 					IAnimTrack* procEyeTrack = pTrack;
-					const bool bUseProcEyes = boost::get<bool>(procEyeTrack->GetValue(animContext.time));
+					const bool bUseProcEyes = stl::get<bool>(procEyeTrack->GetValue(animContext.time));
 					EnableProceduralFacialAnimation(bUseProcEyes);
 				}
 
@@ -1054,7 +1054,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 				AudioControlId audioParameterId = static_cast<CAudioParameterTrack*>(pTrack)->m_audioParameterId;
 				if (audioParameterId != INVALID_AUDIO_CONTROL_ID)
 				{
-					const float newAudioParameterValue = boost::get<float>(pTrack->GetValue(animContext.time));
+					const float newAudioParameterValue = stl::get<float>(pTrack->GetValue(animContext.time));
 					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks - 1];
 					if (fabs(prevAudioParameterValue - newAudioParameterValue) > FLT_EPSILON)
 					{
@@ -1161,7 +1161,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						m_iCurMannequinKey = key;
 
 						const uint32 valueName = CCrc32::ComputeLowercase(manKey.m_fragmentName);
-						IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+						IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
 
 						if (pGameObject)
 						{
@@ -1361,7 +1361,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 	if (pPhysicalizeTrack)
 	{
-		const bool bUsePhysics = boost::get<bool>(pPhysicalizeTrack->GetValue(m_time));
+		const bool bUsePhysics = stl::get<bool>(pPhysicalizeTrack->GetValue(m_time));
 		EnableEntityPhysics(bUsePhysics);
 	}
 
@@ -1709,7 +1709,7 @@ void CAnimEntityNode::UpdateEntityPosRotVel(const Vec3& targetPos, const Quat& t
 
 	if (pPhysicsDrivenTrack)
 	{
-		bPhysicsDriven = boost::get<bool>(pPhysicsDrivenTrack->GetValue(m_time));
+		bPhysicsDriven = stl::get<bool>(pPhysicsDrivenTrack->GetValue(m_time));
 	}
 
 	IPhysicalEntity* pPhysEnt = (initialState || pEntity->GetParent()) ? NULL : pEntity->GetPhysics();
@@ -2374,10 +2374,10 @@ void CAnimEntityNode::AnimateLookAt(CLookAtTrack* pTrack, SAnimContext& animCont
 				m_lookAtLocalPlayer = false;
 				pTargetEntity = gEnv->pEntitySystem->FindEntityByName(key.m_selection);
 			}
-			else if (gEnv->pGame)
+			else if (gEnv->pGameFramework)
 			{
 				m_lookAtLocalPlayer = true;
-				IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+				IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 
 				if (pLocalActor)
 				{
@@ -2533,7 +2533,7 @@ bool CAnimEntityNode::AnimateScriptTableProperty(IAnimTrack* pTrack, SAnimContex
 		switch (pTrack->GetValueType())
 		{
 		case eAnimValue_Float:
-			fValue = boost::get<float>(value);
+			fValue = stl::get<float>(value);
 			param.scriptTable->GetValue(param.variableName, currfValue);
 
 			// this check actually fails much more often than it should. There is some kind of lack of precision in the trackview interpolation calculations, and often a value that should
@@ -2550,7 +2550,7 @@ bool CAnimEntityNode::AnimateScriptTableProperty(IAnimTrack* pTrack, SAnimContex
 		case eAnimValue_Vector:
 		// fall through
 		case eAnimValue_RGB:
-			vecValue = boost::get<Vec3>(value);
+			vecValue = stl::get<Vec3>(value);
 
 			if (pTrack->GetValueType() == eAnimValue_RGB)
 			{
@@ -2587,7 +2587,7 @@ bool CAnimEntityNode::AnimateScriptTableProperty(IAnimTrack* pTrack, SAnimContex
 			break;
 
 		case eAnimValue_Bool:
-			boolValue = boost::get<bool>(value);
+			boolValue = stl::get<bool>(value);
 
 			if (param.scriptTable->GetValueType(param.variableName) == svtNumber)
 			{

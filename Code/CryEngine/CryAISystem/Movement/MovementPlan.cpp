@@ -11,39 +11,40 @@ Plan::Status Plan::Execute(const MovementUpdateContext& context)
 	if (m_current == NoBlockIndex)
 		ChangeToIndex(0, context.actor);
 
+	m_lastStatus = Plan::Status::Running;
+
 	while (true)
 	{
 		assert(m_current != NoBlockIndex);
 		assert(m_current < m_blocks.size());
 
-		const Block::Status status = m_blocks[m_current]->Update(context);
-
-		if (status == Block::Finished)
+		const Block::Status blockStatus = m_blocks[m_current]->Update(context);
+		switch (blockStatus)
+		{
+		case Block::Finished:
 		{
 			if (m_current + 1 < m_blocks.size())
 			{
 				ChangeToIndex(m_current + 1, context.actor);
 				continue;
-			}
-			else
-			{
-				ChangeToIndex(NoBlockIndex, context.actor);
-				return Finished;
-			}
+			}			
+			ChangeToIndex(NoBlockIndex, context.actor);
+			m_lastStatus = Plan::Status::Finished;
+			break;
 		}
-		else if (status == Block::CantBeFinished)
-		{
-			return CantBeFinished;
+		case Block::CantBeFinished:
+			m_lastStatus = Plan::Status::CantBeFinished;
+			break;
+		case Block::Running:
+			m_lastStatus = Plan::Status::Running;
+			break;
+		default:
+			assert(0);
+			break;
 		}
-		else
-		{
-			assert(status == Block::Running);
-		}
-
 		break;
 	}
-
-	return Running;
+	return m_lastStatus;
 }
 
 void Plan::ChangeToIndex(const uint newIndex, IMovementActor& actor)
@@ -64,6 +65,7 @@ void Plan::Clear(IMovementActor& actor)
 	ChangeToIndex(NoBlockIndex, actor);
 	m_blocks.clear();
 	m_requestId = MovementRequestID();
+	m_lastStatus = Plan::Status::None;
 }
 
 void Plan::CutOffAfterCurrentBlock()

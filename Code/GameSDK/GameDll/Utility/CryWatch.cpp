@@ -66,6 +66,9 @@ static float GetWatchTextYPos()
 	return s_watchTextYPos;
 }
 
+
+#include <CryRenderer/IRenderAuxGeom.h>
+
 int CryWatchFunc (const char * message)
 {
 	// Fran: we need these guards for the testing framework to work
@@ -80,7 +83,7 @@ int CryWatchFunc (const char * message)
 		if( width>s_max_width_this_col )
 			s_max_width_this_col = width;
 		float yPos = GetWatchTextYPos(); // also updates s_watchTextXPos
-		gEnv->pRenderer->Draw2dLabel(g_pGameCVars->watch_text_render_start_pos_x+s_watchTextXPos, yPos, g_pGameCVars->watch_text_render_size, color, false, "%s", message);
+		IRenderAuxText::Draw2dLabel(g_pGameCVars->watch_text_render_start_pos_x+s_watchTextXPos, yPos, g_pGameCVars->watch_text_render_size, color, false, "%s", message);
 		return 1;
 	}
 
@@ -139,7 +142,7 @@ void CryWatch3DTick(float dt)
 		{
 			float fadeaway = min(1.f, s_lingeringWatch3D[i].m_timeLeft);
 			const float col[] = {1.f, 1.f, 1.f, fadeaway};
-			gEnv->pRenderer->DrawLabelEx(s_lingeringWatch3D[i].m_pos, 3.f, col, false, true, "%s", s_lingeringWatch3D[i].m_text);
+			IRenderAuxText::DrawLabelEx(s_lingeringWatch3D[i].m_pos, 3.f, col, false, true, s_lingeringWatch3D[i].m_text);
 
 			if (s_lingeringWatch3D[i].m_timeLeft > dt)
 			{

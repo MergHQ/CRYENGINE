@@ -136,7 +136,7 @@ static void OnPLRenderInNearestChanged(ICVar* pCVar = NULL)
 	if(pCVar)
 	{
 		// Toggle draw nearest flag on player
-		IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 		if(pLocalActor)
 		{
 			IEntity* pEntity = pLocalActor->GetEntity();
@@ -163,7 +163,7 @@ static void OnPLRenderInNearestChanged(ICVar* pCVar = NULL)
 static void OnDetachCameraChanged(ICVar* pCVar = NULL)
 {
 	// Turn off camera space rendering when the camera is detached
-	IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 	if(pLocalActor)
 	{
 		IEntity* pEntity = pLocalActor->GetEntity();
@@ -200,7 +200,7 @@ static void OnNetGraphChanged(ICVar* pCVar)
 //------------------------------------------------------------------------
 static void OnDedicatedInputChanged(ICVar* pCVar)
 {
-	if (IActor* localActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+	if (IActor* localActor = gEnv->pGameFramework->GetClientActor())
 	{
 		if (localActor->IsPlayer())
 		{
@@ -276,7 +276,7 @@ void ReloadPickAndThrowProxiesOnChange(ICVar* useProxies)
 	CRY_ASSERT(g_pGame);
 
 	g_pGame->GetIGameFramework()->GetIActorSystem()->Reload();
-	gEnv->pGame->GetIGameFramework()->GetISharedParamsManager()->RemoveByType(CPickAndThrowProxy::SPnTProxyParams::s_typeInfo);
+	gEnv->pGameFramework->GetISharedParamsManager()->RemoveByType(CPickAndThrowProxy::SPnTProxyParams::s_typeInfo);
 
 	IActorIteratorPtr pIt = g_pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
 	while (IActor* pIActor = pIt->Next())
@@ -396,7 +396,7 @@ void WeaponOffsetInput(IConsoleCmdArgs* pArgs)
 
 void WeaponOffsetToMannequin(IConsoleCmdArgs* pArgs)
 {
-	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 	if (!pPlayer)
 		return;
 
@@ -425,7 +425,7 @@ void WeaponOffsetToMannequin(IConsoleCmdArgs* pArgs)
 
 CWeapon* GetLocalPlayerWeapon()
 {
-	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 	if (!pPlayer)
 		return 0;
 
@@ -1220,6 +1220,7 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(pl_movement.nonCombat_heavy_weapon_strafe_speed_scale, 0.9f, 0, "Strafe speed multiplier in non combat mode while carrying a heavy (ripped-off) weapon");
 	REGISTER_CVAR(pl_movement.nonCombat_heavy_weapon_crouch_speed_scale, 1.0f, 0, "Crouch speed multiplier in non combat mode while carrying a heavy (ripped-off) weapon");
 	REGISTER_CVAR(pl_movement.power_sprint_targetFov, 55.0f, 0, "Fov while sprinting in power mode");
+
 	REGISTER_CVAR(pl_movement.ground_timeInAirToFall, 0.3f, VF_CHEAT, "Amount of time (in seconds) the player/ai can be in the air and still be considered on ground");
 	REGISTER_CVAR(pl_movement.speedScale, 1.2f, 0, "General speed scale");
 	REGISTER_CVAR(pl_movement.strafe_SpeedScale, 0.9f, 0, "Strafe speed scale");
@@ -1260,7 +1261,6 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(pl_legs_colliders_scale, 1.0f, 0, "Scales leg colliders relative to skeleton bones");
 
 	REGISTER_CVAR(g_assertWhenVisTableNotUpdatedForNumFrames, 255, 0, "");
-
 	REGISTER_CVAR(gl_waitForBalancedGameTime, 180.f, 0, "Time to wait for enough players to make a balanced game before splitting squads and starting");
 
 	// ui2 cvars
@@ -1283,12 +1283,9 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(menu3D_enabled, 1, 0, "Enable rendering of 3D objects over certain front end and in-game menus");
 
 	REGISTER_CVAR(hud_faderDebug, 0, 0, "Show Debug Information for FullScreen Faders. 2 = Disable screen fading");
-
 	REGISTER_CVAR(hud_objectiveIcons_flashTime, 1.6f, 0, "Time between icon changes for flashing objective icons");
 
-	{
-		REGISTER_CVAR(g_flashrenderingduringloading, 1,0,"Enable active flash rendering during level loading"); 
-	}
+	REGISTER_CVAR(g_flashrenderingduringloading, 1,0,"Enable active flash rendering during level loading"); 
 	REGISTER_CVAR(g_levelfadein_levelload, 4, 0, "Fade in time after a level load (seconds)"); 
 	REGISTER_CVAR(g_levelfadein_quickload, 2, 0, "Fade in time after a quick load (seconds)"); 
 
@@ -1485,13 +1482,12 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(g_spectate_follow_orbitMinPitchRadians, -1.05f, 0, "How low the pitch can be rotated by the user");
 	REGISTER_CVAR(g_spectate_follow_orbitMaxPitchRadians, 1.05f, 0, "How high the pitch can be rotated by the user");
 
-	REGISTER_CVAR(g_deathCam, 1, 0, "Enables / disables the MP death camera (shows the killer's location)");
-
 	REGISTER_CVAR(g_spectatorOnly, 0, 0, "Enable spectate mode on this client");
 	REGISTER_CVAR(g_spectatorOnlySwitchCooldown, 120, 0, "Cooldown in seconds between spectator switching");
 	REGISTER_CVAR(g_forceIntroSequence, 0, 0, "Forces any intro sequence present (flownode) to play regardless of objectives etc");
 	REGISTER_CVAR(g_IntroSequencesEnabled, 1, 0, "Enables any intro sequence setup for a level to play");
 	
+	REGISTER_CVAR(g_deathCam, 1, 0, "Enables / disables the MP death camera (shows the killer's location)");
 	REGISTER_CVAR(g_deathCamSP.enable, 1, 0, "Enables / disables the SP death camera");
 	REGISTER_CVAR(g_deathCamSP.dof_enable, 1, 0, "Enables / disables the Depth of field effect in single player death camera");
 	REGISTER_CVAR(g_deathCamSP.updateFrequency, 0.1f, 0, "Update frequency for death camera dof effect values");
@@ -1584,6 +1580,7 @@ void SCVars::InitCVars(IConsole *pConsole)
 #if !defined(_RELEASE)
 	REGISTER_CVAR(g_DisableScoring, 0, VF_CHEAT, "Disable players being awarded points");
 	REGISTER_CVAR(g_DisableCollisionDamage, 0, VF_CHEAT, "Disable entities being damaged by collisions");
+	REGISTER_CVAR(g_MaxSimpleCollisions, 999, VF_CHEAT, "Imposes a cap on the amount of rigid body collision events per frame (only active when g_DisableCollisionDamage is on)");
 	REGISTER_CVAR(g_LogDamage, 0, VF_NULL, "Log all damage being taken");
 	REGISTER_CVAR(g_ProjectilePathDebugGfx, 0, VF_NULL, "Draw paths of projectiles through the air");
 #endif
@@ -1936,8 +1933,6 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(g_minPlayersForRankedGame, 4, VF_NET_SYNCED, "Amount of players required before a game actually starts");
 	REGISTER_CVAR(g_gameStartingMessageTime, 10.f, 0, "Time between messages telling the player that the game hasn't started yet");
 
-	REGISTER_CVAR(g_manualFrameStepFrequency, 0.0f, VF_NULL, "manually step through frames with a fixed time step");
-
 	g_presaleURL=REGISTER_STRING("g_presaleURL","http://www.mycrysis.com/redeemcode/",VF_CHEAT|VF_READONLY, "url to redirect presale users to");
 
 	g_messageOfTheDay=REGISTER_STRING("g_messageOfTheDay","",VF_INVISIBLE, " message of the day");
@@ -1984,12 +1979,14 @@ void SCVars::InitCVars(IConsole *pConsole)
 //------------------------------------------------------------------------
 void SCVars::ReleaseAIPerceptionCVars(IConsole* pConsole)
 {
-	pConsole->UnregisterVariable("ai_perception.movement_useSurfaceType");
-	pConsole->UnregisterVariable("ai_perception.movement_movingSurfaceDefault");
-	pConsole->UnregisterVariable("ai_perception.movement_standingRadiusDefault");
-	pConsole->UnregisterVariable("ai_perception.movement_crouchRadiusDefault");
-	pConsole->UnregisterVariable("ai_perception.movement_standingMovingMultiplier");
-	pConsole->UnregisterVariable("ai_perception.movement_crouchMovingMultiplier");
+	pConsole->UnregisterVariable("ai_perception.movement_useSurfaceType", true);
+	pConsole->UnregisterVariable("ai_perception.movement_movingSurfaceDefault", true);
+	pConsole->UnregisterVariable("ai_perception.movement_standingRadiusDefault", true);
+	pConsole->UnregisterVariable("ai_perception.movement_crouchRadiusDefault", true);
+	pConsole->UnregisterVariable("ai_perception.movement_standingMovingMultiplier", true);
+	pConsole->UnregisterVariable("ai_perception.movement_crouchMovingMultiplier", true);
+	pConsole->UnregisterVariable("ai_perception.landed_baseRadius", true);
+	pConsole->UnregisterVariable("ai_perception.landed_speedMultiplier", true);
 }
 
 //------------------------------------------------------------------------
@@ -2002,17 +1999,34 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_enableLanguageSelectionMenu", true);
 	pConsole->UnregisterVariable("g_multiplayerDefault", true);
 	pConsole->UnregisterVariable("g_multiplayerModeOnly", true);
+
+	pConsole->UnregisterVariable("g_frontEndUnicodeInput", true);
+	pConsole->UnregisterVariable("g_EnableDevMenuOptions", true);
+	pConsole->UnregisterVariable("g_EnablePersistantStatsDebugScreen", true);
+
 	pConsole->UnregisterVariable("g_EPD", true);
 	pConsole->UnregisterVariable("g_frontEndRequiredEPD", true);
 	pConsole->UnregisterVariable("g_MatchmakingVersion", true);
 	pConsole->UnregisterVariable("g_MatchmakingBlock", true);
+
+	pConsole->UnregisterVariable("g_craigNetworkDebugLevel", true);
+	pConsole->UnregisterVariable("g_presaleUnlock", true);
+	pConsole->UnregisterVariable("g_dlcPurchaseOverwrite", true);
+
 	pConsole->UnregisterVariable("g_enableInitialLoadoutScreen", true);
 	pConsole->UnregisterVariable("g_post3DRendererDebug", true);
 	pConsole->UnregisterVariable("g_post3DRendererDebugGridSegmentCount", true);
 
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_debugTestProtectedScripts", true);
+#endif
+
 	pConsole->UnregisterVariable("cl_fov", true);
+	pConsole->UnregisterVariable("cl_mp_fov_scalar", true);
 	pConsole->UnregisterVariable("cl_tpvCameraCollision", true);
 	pConsole->UnregisterVariable("cl_tpvCameraCollisionOffset", true);
+	pConsole->UnregisterVariable("cl_tpvDebugAim", true);
+
 	pConsole->UnregisterVariable("cl_tpvDist", true);
 	pConsole->UnregisterVariable("cl_tpvDistHorizontal", true);
 	pConsole->UnregisterVariable("cl_tpvDistVertical", true);
@@ -2030,16 +2044,27 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("cl_zoomToggle", true);
 	pConsole->UnregisterVariable("cl_crouchToggle", true);
 	pConsole->UnregisterVariable("cl_sprintToggle", true);
+	pConsole->UnregisterVariable("cl_logAsserts", true);
 	pConsole->UnregisterVariable("cl_idleBreaksDelayTime", true);
+	pConsole->UnregisterVariable("cl_postUpdateCamera", true);
 	pConsole->UnregisterVariable("hud_canvas_width_adjustment", true);
+
+	pConsole->UnregisterVariable("g_infiniteAmmoTutorialMode", true);
 
 	pConsole->UnregisterVariable("i_lighteffects", true);
 	pConsole->UnregisterVariable("i_particleeffects", true);
+	pConsole->UnregisterVariable("i_rejecteffects", true);
+
 	pConsole->UnregisterVariable("i_offset_front", true);
 	pConsole->UnregisterVariable("i_offset_up", true);
 	pConsole->UnregisterVariable("i_offset_right", true);
 
 	pConsole->UnregisterVariable("i_grenade_showTrajectory", true);
+	pConsole->UnregisterVariable("i_grenade_trajectory_resolution", true);
+	pConsole->UnregisterVariable("i_grenade_trajectory_dashes", true);
+	pConsole->UnregisterVariable("i_grenade_trajectory_gaps", true);
+	pConsole->UnregisterVariable("i_grenade_trajectory_useGeometry", true);
+
 	pConsole->UnregisterVariable("i_laser_hitPosOffset", true);
 
 	pConsole->UnregisterVariable("i_failedDetonation_speedMultiplier", true);
@@ -2049,25 +2074,39 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("i_hmg_impulseLocalDirection_x", true);
 	pConsole->UnregisterVariable("i_hmg_impulseLocalDirection_y", true);
 	pConsole->UnregisterVariable("i_hmg_impulseLocalDirection_z", true);
-	
+
+	pConsole->UnregisterVariable("cl_motionBlurVectorScale", true);
+	pConsole->UnregisterVariable("cl_motionBlurVectorScaleSprint", true);
+
 	pConsole->UnregisterVariable("i_ironsight_while_jumping_mp", true);
 	pConsole->UnregisterVariable("i_ironsight_while_falling_mp", false);
 	pConsole->UnregisterVariable("i_ironsight_falling_unzoom_minAirTime", false);
 	pConsole->UnregisterVariable("i_weapon_customisation_transition_time", false);
+	pConsole->UnregisterVariable("i_highlight_dropped_weapons", true);
 	
 	pConsole->UnregisterVariable("cl_slidingBlurRadius", true);
 	pConsole->UnregisterVariable("cl_slidingBlurAmount", true);
 	pConsole->UnregisterVariable("cl_slidingBlurBlendSpeed", true);
 
+	pConsole->UnregisterVariable("cl_debugSwimming", true);
+	pConsole->UnregisterVariable("cl_angleLimitTransitionTime", true);
+
+	pConsole->UnregisterVariable("cl_shallowWaterSpeedMulPlayer", true);
+	pConsole->UnregisterVariable("cl_shallowWaterSpeedMulAI", true);
+	pConsole->UnregisterVariable("cl_shallowWaterDepthLo", true);
+	pConsole->UnregisterVariable("cl_shallowWaterDepthHi", true);
+
 	pConsole->UnregisterVariable("p_collclassdebug", true);
 
 	pConsole->UnregisterVariable("pl_cameraTransitionTime", true);
-	pConsole->UnregisterVariable("pl_cameraTransitionTimeLedgeGrabIn"); 
-	pConsole->UnregisterVariable("pl_cameraTransitionTimeLedgeGrabOut"); 
+	pConsole->UnregisterVariable("pl_cameraTransitionTimeLedgeGrabIn", true); 
+	pConsole->UnregisterVariable("pl_cameraTransitionTimeLedgeGrabOut", true); 
 
 	pConsole->UnregisterVariable("pl_inputAccel", true);
+	pConsole->UnregisterVariable("pl_debug_energyConsumption", true);
 	pConsole->UnregisterVariable("pl_debug_pickable_items", true);
 	pConsole->UnregisterVariable("pl_debug_projectileAimHelper", true); 
+	pConsole->UnregisterVariable("pl_useItemHoldTime", true);
 
 	pConsole->UnregisterVariable("pl_nanovision_timeToRecharge", true);
 	pConsole->UnregisterVariable("pl_nanovision_timeToDrain", true);
@@ -2075,6 +2114,7 @@ void SCVars::ReleaseCVars()
 
 	pConsole->UnregisterVariable("pl_autoPickupItemsWhenUseHeld", true);
 	pConsole->UnregisterVariable("pl_autoPickupMinTimeBetweenPickups", true);
+	pConsole->UnregisterVariable("pl_refillAmmoDelay", true);
 
 	pConsole->UnregisterVariable("pl_spawnCorpseOnDeath", true);
 	pConsole->UnregisterVariable("pl_doLocalHitImpulsesMP", true);
@@ -2083,22 +2123,31 @@ void SCVars::ReleaseCVars()
 
 #if !defined(_RELEASE)
 	pConsole->UnregisterVariable("pl_watch_projectileAimHelper", true);
+	pConsole->UnregisterVariable("g_preloadUIAssets", true);
 	pConsole->UnregisterVariable("g_gameRules_skipStartTimer");
 	pConsole->UnregisterVariable("pl_debug_vistableIgnoreEntities", true);
 	pConsole->UnregisterVariable("pl_debug_vistableAddEntityId", true);
 	pConsole->UnregisterVariable("pl_debug_vistableRemoveEntityId", true);
 #endif
-	pConsole->UnregisterVariable("g_gameRules_startTimerLength");
 
-	pConsole->UnregisterVariable("g_gameRules_postGame_HUDMessageTime");
-	pConsole->UnregisterVariable("g_gameRules_postGame_Top3Time");
-	pConsole->UnregisterVariable("g_gameRules_postGame_ScoreboardTime");
+	pConsole->UnregisterVariable("pl_debug_hit_recoil", true);
+	pConsole->UnregisterVariable("pl_debug_look_poses", true);
 
-	pConsole->UnregisterVariable("g_gameRules_startTimerMinPlayers");
-	pConsole->UnregisterVariable("g_gameRules_startTimerMinPlayersPerTeam");
-	pConsole->UnregisterVariable("g_gameRules_startTimerPlayersRatio");
-	pConsole->UnregisterVariable("g_gameRules_startTimerOverrideWait");
-	pConsole->UnregisterVariable("g_gameRules_preGame_StartSpawnedFrozen");
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+	pConsole->UnregisterVariable("g_gameRules_StartCmd", true);
+#endif
+
+	pConsole->UnregisterVariable("g_gameRules_startTimerLength", true);
+
+	pConsole->UnregisterVariable("g_gameRules_postGame_HUDMessageTime", true);
+	pConsole->UnregisterVariable("g_gameRules_postGame_Top3Time", true);
+	pConsole->UnregisterVariable("g_gameRules_postGame_ScoreboardTime", true);
+
+	pConsole->UnregisterVariable("g_gameRules_startTimerMinPlayers", true);
+	pConsole->UnregisterVariable("g_gameRules_startTimerMinPlayersPerTeam", true);
+	pConsole->UnregisterVariable("g_gameRules_startTimerPlayersRatio", true);
+	pConsole->UnregisterVariable("g_gameRules_startTimerOverrideWait", true);
+	pConsole->UnregisterVariable("g_gameRules_preGame_StartSpawnedFrozen", true);
 	
 		
 	pConsole->UnregisterVariable("g_flashBangMinSpeedMultiplier", true);
@@ -2109,8 +2158,16 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_flashBangFriends", true);
 	pConsole->UnregisterVariable("g_flashBangSelf", true);
 #endif
+	pConsole->UnregisterVariable("g_friendlyLowerItemMaxDistance", true);
 
 	pConsole->UnregisterVariable("g_holdObjectiveDebug", true);
+	pConsole->UnregisterVariable("g_difficultyLevel", true);
+	pConsole->UnregisterVariable("g_difficultyLevelLowestPlayed", true);
+	pConsole->UnregisterVariable("g_enableFriendlyFallAndPlay", true);
+	pConsole->UnregisterVariable("g_enableFriendlyAIHits", true);
+	pConsole->UnregisterVariable("g_enableFriendlyPlayerHits", true);
+	pConsole->UnregisterVariable("g_gameRayCastQuota", true);
+	pConsole->UnregisterVariable("g_gameIntersectionTestQuota", true);
 	
 	pConsole->UnregisterVariable("g_STAPCameraAnimation", true);
 	
@@ -2118,9 +2175,19 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_mpAllSeeingRadarSv", true);
 	pConsole->UnregisterVariable("g_mpDisableRadar", true);
 	pConsole->UnregisterVariable("g_mpNoEnemiesOnRadar", true);
-	pConsole->UnregisterVariable("g_mpHatsBootsOnRadar", true); 
+	pConsole->UnregisterVariable("g_mpHatsBootsOnRadar", true);
+
+	pConsole->UnregisterVariable("g_playerLowHealthThreshold", true);
+	pConsole->UnregisterVariable("g_playerMidHealthThreshold", true);
 
 	pConsole->UnregisterVariable("g_radialBlur", true);
+
+	pConsole->UnregisterVariable("g_aiCorpses_DebugDraw", true);
+	pConsole->UnregisterVariable("g_aiCorpses_DelayTimeToSwap", true);
+	pConsole->UnregisterVariable("g_aiCorpses_Enable", true);
+	pConsole->UnregisterVariable("g_aiCorpses_MaxCorpses", true);
+	pConsole->UnregisterVariable("g_aiCorpses_CullPhysicsDistance", true);
+	pConsole->UnregisterVariable("g_aiCorpses_ForceDeleteDistance", true);
 
 	pConsole->UnregisterVariable("g_SurvivorOneVictoryConditions_watchLvl", true);
 	pConsole->UnregisterVariable("g_SimpleEntityBasedObjective_watchLvl", true);
@@ -2151,9 +2218,19 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_predator_showBeingTargetedDirection", true);
 	pConsole->UnregisterVariable("g_predator_marineRedCrosshairDelay", true);
 
+	pConsole->UnregisterVariable("cl_speedToBobFactor", true);
 	pConsole->UnregisterVariable("cl_bobWidth", true);
 	pConsole->UnregisterVariable("cl_bobHeight", true);
 	pConsole->UnregisterVariable("cl_bobSprintMultiplier", true);
+	pConsole->UnregisterVariable("cl_bobVerticalMultiplier", true);
+	pConsole->UnregisterVariable("cl_bobMaxHeight", true);
+	pConsole->UnregisterVariable("cl_strafeHorzScale", true);
+
+	pConsole->UnregisterVariable("cl_controllerYawSnapEnable", true);
+	pConsole->UnregisterVariable("cl_controllerYawSnapAngle", true);
+	pConsole->UnregisterVariable("cl_controllerYawSnapTime", true);
+	pConsole->UnregisterVariable("cl_controllerYawSnapMax", true);
+	pConsole->UnregisterVariable("cl_controllerYawSnapMin", true);
 
 	pConsole->UnregisterVariable("g_hmdFadeoutNearWallThreshold", true);
 
@@ -2162,6 +2239,9 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_roundScoreboardTime", true);
 	pConsole->UnregisterVariable("g_roundStartTime", true);
 	pConsole->UnregisterVariable("g_roundlimit", true);
+	pConsole->UnregisterVariable("g_friendlyfireratio", true);
+	pConsole->UnregisterVariable("g_revivetime", true);
+	pConsole->UnregisterVariable("g_minplayerlimit", true);
 	pConsole->UnregisterVariable("g_debugNetPlayerInput", true);
 	pConsole->UnregisterVariable("g_debug_fscommand", true);
 	pConsole->UnregisterVariable("g_skipIntro", true);
@@ -2170,7 +2250,10 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("kc_enable", true);
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("g_skipStartupSignIn", true);
+	pConsole->UnregisterVariable("g_debugOffsetCamera", true);
+	pConsole->UnregisterVariable("g_debugLongTermAwardDays", true);
 	pConsole->UnregisterVariable("kc_debug", true);
+	pConsole->UnregisterVariable("kc_debugStressTest", true);
 	pConsole->UnregisterVariable("kc_debugVictimPos", true);
 	pConsole->UnregisterVariable("kc_debugWinningKill", true);
 	pConsole->UnregisterVariable("kc_debugSkillKill", true);
@@ -2213,6 +2296,10 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("kc_chunkStreamTime", true);
 
 #if !defined(_RELEASE)
+	pConsole->UnregisterVariable("kc_copyKillCamIntoHighlightsBuffer", true);
+#endif
+
+#if !defined(_RELEASE)
 	pConsole->UnregisterVariable("kc_saveKillCams", true);
 #endif
 
@@ -2228,6 +2315,11 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_blinding_flashbangRecoveryDelayFrac", true);
 	pConsole->UnregisterVariable("g_neverFlagging_maxMatchTimeRemaining", true);
 	pConsole->UnregisterVariable("g_combinedFire_maxTimeBetweenWeapons", true);
+	pConsole->UnregisterVariable("g_fovToRotationSpeedInfluence", true);
+	pConsole->UnregisterVariable("dd_maxRMIsPerFrame", true);
+	pConsole->UnregisterVariable("dd_waitPeriodBetweenRMIBatches", true);
+	pConsole->UnregisterVariable("g_debugSpawnPointsRegistration", true);
+	pConsole->UnregisterVariable("g_debugSpawnPointValidity", true);
 
 	pConsole->UnregisterVariable("g_scoreLimit", true);
 	pConsole->UnregisterVariable("g_scoreLimitOverride", true);
@@ -2243,6 +2335,9 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_allowFatalityBonus", true);
 	pConsole->UnregisterVariable("g_autoReviveTime", true);
 	pConsole->UnregisterVariable("g_spawnPrecacheTimeBeforeRevive", true);
+	pConsole->UnregisterVariable("g_spawn_timeToRetrySpawnRequest", true);
+	pConsole->UnregisterVariable("g_spawn_recentSpawnTimer", true);
+	pConsole->UnregisterVariable("g_forcedReviveTime", true);
 	pConsole->UnregisterVariable("g_numLives", true);
 	pConsole->UnregisterVariable("g_autoAssignTeams", true);
 	pConsole->UnregisterVariable("g_maxHealthMultiplier", true);
@@ -2252,23 +2347,41 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_forceWeapon", true);
 	pConsole->UnregisterVariable("g_spawn_explosiveSafeDist", true);
 	pConsole->UnregisterVariable("g_allowSpectators", true);
+	pConsole->UnregisterVariable("g_infiniteCloak", true);
+	pConsole->UnregisterVariable("g_allowWeaponCustomisation", true);
 
 	pConsole->UnregisterVariable("g_switchTeamAllowed", true);
 	pConsole->UnregisterVariable("g_switchTeamRequiredPlayerDifference", true);
 	pConsole->UnregisterVariable("g_switchTeamUnbalancedWarningDifference", true);
 	pConsole->UnregisterVariable("g_switchTeamUnbalancedWarningTimer", true);
 
+	pConsole->UnregisterVariable("g_forceHeavyWeapon", true);
+	pConsole->UnregisterVariable("g_forceLoadoutPackage", true);
+
 	pConsole->UnregisterVariable("g_spectatorOnly", true);
 	pConsole->UnregisterVariable("g_spectatorOnlySwitchCooldown", true);
 	pConsole->UnregisterVariable("g_forceIntroSequence", true);
 	pConsole->UnregisterVariable("g_IntroSequencesEnabled", true);
+
+	pConsole->UnregisterVariable("g_deathCam", true);
+	pConsole->UnregisterVariable("g_deathCamSP.enable", true);
+	pConsole->UnregisterVariable("g_deathCamSP.dof_enable", true);
+	pConsole->UnregisterVariable("g_deathCamSP.updateFrequency", true);
+	pConsole->UnregisterVariable("g_deathCamSP.dofRange", true);
+	pConsole->UnregisterVariable("g_deathCamSP.dofRangeNoKiller", true);
+	pConsole->UnregisterVariable("g_deathCamSP.dofRangeSpeed", true);
+	pConsole->UnregisterVariable("g_deathCamSP.dofDistanceSpeed", true);
 
 	pConsole->UnregisterVariable("g_logPrimaryRound", true);
 
 #if USE_REGION_FILTER
 	pConsole->UnregisterVariable("g_server_region", true);
 #endif
-	
+
+#if TALOS
+	pConsole->UnregisterVariable("pl_talos", true);
+#endif
+
 	pConsole->UnregisterVariable("pl_sliding_control.min_speed_threshold", true);
 	pConsole->UnregisterVariable("pl_sliding_control.min_speed", true);
 	pConsole->UnregisterVariable("pl_sliding_control.deceleration_speed", true);
@@ -2282,6 +2395,28 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_sliding_control_mp.min_downhill_threshold", true);
 	pConsole->UnregisterVariable("pl_sliding_control_mp.max_downhill_threshold", true);
 	pConsole->UnregisterVariable("pl_sliding_control_mp.max_downhill_acceleration", true);
+
+	pConsole->UnregisterVariable("pl_slideCameraFactor", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.player_to_player", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.ragdoll_to_player", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.fall_damage_threashold", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.safe_falling_speed", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.fatal_falling_speed", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.max_falling_damage", true);
+	pConsole->UnregisterVariable("pl_enemy_ramming.min_momentum_to_fall", true);
+
+	pConsole->UnregisterVariable("AICollisions.minSpeedForFallAndPlay", true);
+	pConsole->UnregisterVariable("AICollisions.minMassForFallAndPlay", true);
+	pConsole->UnregisterVariable("AICollisions.dmgFactorWhenCollidedByObject", true);
+	pConsole->UnregisterVariable("AICollisions.showInLog", true);
+
+	pConsole->UnregisterVariable("pl_melee.melee_snap_angle_limit", true);
+	pConsole->UnregisterVariable("pl_melee.melee_snap_blend_speed", true);
+	pConsole->UnregisterVariable("pl_melee.melee_snap_move_speed_multiplier", true);
+	pConsole->UnregisterVariable("pl_melee.melee_snap_target_select_range", true);
+	pConsole->UnregisterVariable("pl_melee.melee_snap_end_position_range", true);
+	pConsole->UnregisterVariable("pl_melee.debug_gfx", true);
+	pConsole->UnregisterVariable("pl_melee.damage_multiplier_from_behind", true);
 
 	pConsole->UnregisterVariable("pl_pickAndThrow.debugDraw", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.useProxies", true);
@@ -2308,6 +2443,7 @@ void SCVars::ReleaseCVars()
 	// Combos
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponComboDebugEnabled", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponRenderStatsEnabled", true);
+	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponDebugSwing", true);
 #endif // #ifndef _RELEASE
 
 	pConsole->UnregisterVariable("pl_pickAndThrow.comboInputWindowSize", true);
@@ -2321,10 +2457,11 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponThrowAnimationSpeed", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponLivingToArticulatedImpulseRatio", true);
 
-	pConsole->UnregisterVariable("(pl_pickAndThrow.enviromentalWeaponUseThrowInitialFacingOveride", true);
-
-	pConsole->UnregisterVariable("(pl_pickAndThrow.environmentalWeaponSweepTestsEnabled", true); 
-	pConsole->UnregisterVariable("(pl_pickAndThrow.objectImpulseLowMassThreshold", true);
+	pConsole->UnregisterVariable("pl_pickAndThrow.enviromentalWeaponUseThrowInitialFacingOveride", true);
+	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponDebugSwing", true);
+	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponSweepTestsEnabled", true); 
+	pConsole->UnregisterVariable("pl_pickAndThrow.intersectionAssistPenetrationThreshold", true);
+	pConsole->UnregisterVariable("pl_pickAndThrow.objectImpulseLowMassThreshold", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.objectImpulseLowerScaleLimit", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponViewLerpZOffset", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponViewLerpSmoothTime", true);
@@ -2360,10 +2497,29 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponMinViewClamp", true);
 
 	pConsole->UnregisterVariable("pl_melee.damage_multiplier_mp", true);
+	pConsole->UnregisterVariable("pl_melee.angle_limit_from_behind", true);
+	pConsole->UnregisterVariable("pl_melee.mp_victim_screenfx_intensity", true);
+	pConsole->UnregisterVariable("pl_melee.mp_victim_screenfx_duration", true);
+	pConsole->UnregisterVariable("pl_melee.mp_victim_screenfx_blendout_duration", true);
+	pConsole->UnregisterVariable("pl_melee.mp_victim_screenfx_dbg_force_test_duration", true);
+	pConsole->UnregisterVariable("pl_melee.impulses_enable", true);
 	pConsole->UnregisterVariable("pl_melee.mp_melee_system", true);
 	pConsole->UnregisterVariable("pl_melee.mp_melee_system_camera_lock_and_turn", true);
 	pConsole->UnregisterVariable("pl_melee.mp_melee_system_camera_lock_time", true);
 	pConsole->UnregisterVariable("pl_melee.mp_melee_system_camera_lock_crouch_height_offset", true);
+
+	pConsole->UnregisterVariable("pl_melee.mp_knockback_enabled", true);
+	pConsole->UnregisterVariable("pl_melee.mp_knockback_strength_vert", true);
+	pConsole->UnregisterVariable("pl_melee.mp_knockback_strength_hor", true);
+	pConsole->UnregisterVariable("pl_melee.mp_sliding_auto_melee_enabled", true);
+
+	pConsole->UnregisterVariable("pl_health.normal_regeneration_rateSP", true);
+	pConsole->UnregisterVariable("pl_health.critical_health_thresholdSP", true);
+	pConsole->UnregisterVariable("pl_health.critical_health_updateTimeSP", true);
+	pConsole->UnregisterVariable("pl_health.normal_threshold_time_to_regenerateSP", true);
+
+	pConsole->UnregisterVariable("pl_health.normal_regeneration_rateMP", true);
+	pConsole->UnregisterVariable("pl_health.critical_health_thresholdMP", true);
 
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponFlipImpulseThreshold", true);
 	pConsole->UnregisterVariable("pl_pickAndThrow.environmentalWeaponFlippedImpulseOverrideMult", true);
@@ -2375,6 +2531,16 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_inventoryWeaponCapacity", true);
 	pConsole->UnregisterVariable("g_inventoryExplosivesCapacity", true);
 	pConsole->UnregisterVariable("g_inventoryGrenadesCapacity", true);
+
+	pConsole->UnregisterVariable("g_inventorySpecialCapacity", true);
+
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_keepMPAudioSignalsPermanently", true);
+#endif
+
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_debugShowGainedAchievementsOnHUD", true);
+#endif
 
 	pConsole->UnregisterVariable("g_tk_punish", true);
 	pConsole->UnregisterVariable("g_tk_punish_limit", true);
@@ -2390,20 +2556,38 @@ void SCVars::ReleaseCVars()
 	
 	pConsole->UnregisterVariable("g_debugCollisionDamage", true);
 	pConsole->UnregisterVariable("g_debugHits", true);
+	pConsole->UnregisterVariable("g_suppressHitSanityCheckWarnings", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("g_debugFakeHits", true);
+#endif
 
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("g_FEMenuCacheSaveList", true);
 #endif // #ifndef _RELEASE
 
+	pConsole->UnregisterVariable("g_useHitSoundFeedback", true);
+
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("g_bulletPenetrationEnable", true);
 #endif
 	pConsole->UnregisterVariable("g_bulletPenetrationDebug", true);
+	pConsole->UnregisterVariable("g_bulletPenetrationDebugTimeout", true);
+
+	pConsole->UnregisterVariable("g_fpDbaManagementEnable", true);
+	pConsole->UnregisterVariable("g_fpDbaManagementDebug", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("g_charactersDbaManagementEnable", true);
+	pConsole->UnregisterVariable("g_charactersDbaManagementDebug", true);
+#endif
+
 	pConsole->UnregisterVariable("g_bulletPenetrationTimeout", true);
 
 	pConsole->UnregisterVariable("g_thermalVisionDebug", true);
 
 	pConsole->UnregisterVariable("g_droppedItemVanishTimer", true);
+	pConsole->UnregisterVariable("g_droppedHeavyWeaponVanishTimer", true);
 	
 	pConsole->UnregisterVariable("g_corpseManager_maxNum", true);
 	pConsole->UnregisterVariable("g_corpseManager_thermalHeatFadeDuration", true);
@@ -2412,7 +2596,14 @@ void SCVars::ReleaseCVars()
 
 	pConsole->UnregisterVariable("g_explosion_materialFX_raycastLength", true);
 
-	pConsole->UnregisterVariable("v_profileMovement", true);    
+	pConsole->UnregisterVariable("g_ec_enable", true);
+	pConsole->UnregisterVariable("g_ec_radiusScale", true);
+	pConsole->UnregisterVariable("g_ec_volume", true);
+	pConsole->UnregisterVariable("g_ec_extent", true);
+	pConsole->UnregisterVariable("g_ec_removeThreshold", true);
+
+	pConsole->UnregisterVariable("v_profileMovement", true);
+	pConsole->UnregisterVariable("v_profile_graph", true);
 	pConsole->UnregisterVariable("v_pa_surface", true);
 	pConsole->UnregisterVariable("v_wind_minspeed", true);
 	pConsole->UnregisterVariable("v_draw_suspension", true);
@@ -2422,6 +2613,7 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("v_rockBoats", true);  
 	pConsole->UnregisterVariable("v_debugSounds", true);
 	pConsole->UnregisterVariable("v_altitudeLimit", true);
+	pConsole->UnregisterVariable("v_stabilizeVTOL", true);
 	pConsole->UnregisterVariable("v_altitudeLimitLowerOffset", true);
 	pConsole->UnregisterVariable("v_mouseRotScaleSP", true);
 	pConsole->UnregisterVariable("v_mouseRotLimitSP", true);
@@ -2432,6 +2624,17 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("v_MPVTOLNetworkSnapThreshold", true);
 	pConsole->UnregisterVariable("v_MPVTOLNetworkCatchupSpeedLimit", true);
 
+	pConsole->UnregisterVariable("pl_swimBackSpeedMul", true);
+	pConsole->UnregisterVariable("pl_swimSideSpeedMul", true);
+	pConsole->UnregisterVariable("pl_swimVertSpeedMul", true);
+	pConsole->UnregisterVariable("pl_swimNormalSprintSpeedMul", true);
+	pConsole->UnregisterVariable("pl_swimAlignArmsToSurface", true);
+
+	pConsole->UnregisterVariable("pl_drownTime", true);
+	pConsole->UnregisterVariable("pl_drownDamage", true);
+	pConsole->UnregisterVariable("pl_drownDamageInterval", true);
+	pConsole->UnregisterVariable("pl_drownRecoveryTime", true);
+
 	// animation triggered footsteps
 	pConsole->UnregisterVariable("g_FootstepSoundsFollowEntity", true);
 	pConsole->UnregisterVariable("g_FootstepSoundsDebug", true);
@@ -2441,6 +2644,8 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("player_DrawIK", true);
 	pConsole->UnregisterVariable("player_NoIK", true);
 	pConsole->UnregisterVariable("pl_debug_movement", true);
+	pConsole->UnregisterVariable("pl_debug_jumping", true);
+	pConsole->UnregisterVariable("pl_debug_aiming", true);
 	pConsole->UnregisterVariable("pl_debug_filter", true);
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("pl_debug_view", true);	
@@ -2449,15 +2654,36 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_stealthKill_allowInMP", true);
 	pConsole->UnregisterVariable("pl_stealthKill_uncloakInMP", true);
 	pConsole->UnregisterVariable("pl_stealthKill_usePhysicsCheck", true);
+	pConsole->UnregisterVariable("pl_stealthKill_useExtendedRange", true);
 	pConsole->UnregisterVariable("pl_stealthKill_debug", true);
 	pConsole->UnregisterVariable("pl_stealthKill_aimVsSpineLerp", true);
 	pConsole->UnregisterVariable("pl_stealthKill_maxVelocitySquared", true);
+
+	pConsole->UnregisterVariable("pl_slealth_cloakinterference_onactionMP", true);
+	pConsole->UnregisterVariable("i_fastSelectMultiplier", true);
 
 	pConsole->UnregisterVariable("pl_stealth_shotgunDamageCap", true);
 	pConsole->UnregisterVariable("pl_shotgunDamageCap", true);
 
 	pConsole->UnregisterVariable("pl_freeFallDeath_cameraAngle", true);
 	pConsole->UnregisterVariable("pl_freeFallDeath_fadeTimer", true);
+
+	pConsole->UnregisterVariable("pl_fall_intensity_multiplier", true);
+	pConsole->UnregisterVariable("pl_fall_intensity_hit_multiplier", true);
+	pConsole->UnregisterVariable("pl_fall_intensity_max", true);
+	pConsole->UnregisterVariable("pl_fall_time_multiplier", true);
+	pConsole->UnregisterVariable("pl_fall_time_max", true);
+
+	pConsole->UnregisterVariable("pl_power_sprint.foward_angle", true);
+	pConsole->UnregisterVariable("pl_jump_control.air_control_scale", true);
+	pConsole->UnregisterVariable("pl_jump_control.air_resistance_scale", true);
+	pConsole->UnregisterVariable("pl_jump_control.air_inertia_scale", true);
+	pConsole->UnregisterVariable("pl_stampTimeout", true);
+
+	pConsole->UnregisterVariable("pl_jump_maxTimerValue", true);
+	pConsole->UnregisterVariable("pl_jump_baseTimeAddedPerJump", true);
+	pConsole->UnregisterVariable("pl_jump_currentTimeMultiplierOnJump", true);
+
 	pConsole->UnregisterVariable("pl_boostedMelee_allowInMP", true);
 
 	pConsole->UnregisterVariable("pl_velocityInterpAirControlScale", true);
@@ -2470,9 +2696,28 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_serialisePhysVel", true);
 	pConsole->UnregisterVariable("pl_clientInertia", true);
 	pConsole->UnregisterVariable("pl_fallHeight", true);
+	pConsole->UnregisterVariable("pl_netAimLerpFactor", true);
+	pConsole->UnregisterVariable("pl_netSerialiseMaxSpeed", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("pl_watchPlayerState", true);
+#endif
+
+	pConsole->UnregisterVariable("pl_ledgeClamber.debugDraw", true);
+	pConsole->UnregisterVariable("pl_ledgeClamber.cameraBlendWeight", true);
+	pConsole->UnregisterVariable("pl_ledgeClamber.enableVaultFromStanding", true);
+
+	pConsole->UnregisterVariable("pl_ladderControl.ladder_renderPlayerLast", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("pl_ladderControl.ladder_logVerbosity", true);
+#endif
 
 	pConsole->UnregisterVariable("pl_legs_colliders_dist", true);
 	pConsole->UnregisterVariable("pl_legs_colliders_scale", true);
+
+	pConsole->UnregisterVariable("g_assertWhenVisTableNotUpdatedForNumFrames", true);
+	pConsole->UnregisterVariable("gl_waitForBalancedGameTime", true);
 
 	pConsole->UnregisterVariable("g_useSkillKillSoundEffects", true);
 
@@ -2482,6 +2727,19 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("pl_debug_log_player_plugins", true);
 	pConsole->UnregisterVariable("pl_shotDebug", true);
 #endif
+
+	pConsole->UnregisterVariable("pl_renderInNearest", true);
+	pConsole->UnregisterVariable("pl_aim_cloaked_multiplier", true);
+	pConsole->UnregisterVariable("pl_aim_near_lookat_target_distance", true);
+	pConsole->UnregisterVariable("pl_aim_assistance_enabled", true);
+	pConsole->UnregisterVariable("pl_aim_assistance_disabled_atDifficultyLevel", true);
+	pConsole->UnregisterVariable("pl_aim_acceleration_enabled", true);
+
+	pConsole->UnregisterVariable("pl_targeting_debug", true);
+	pConsole->UnregisterVariable("pl_TacticalScanDuration", true);
+	pConsole->UnregisterVariable("pl_TacticalScanDurationMP", true);
+	pConsole->UnregisterVariable("pl_TacticalTaggingDuration", true);
+	pConsole->UnregisterVariable("pl_TacticalTaggingDurationMP", true);
 
 	// variables from CPlayerMovementController
 	pConsole->UnregisterVariable("g_showIdleStats", true);
@@ -2499,18 +2757,60 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("hud_panoramic", true);
 	pConsole->UnregisterVariable("hud_attachBoughEquipment", true);
 	pConsole->UnregisterVariable("hud_subtitles", true);
+	pConsole->UnregisterVariable("hud_psychoPsycho", true);
 	pConsole->UnregisterVariable("hud_startPaused", true);
 	pConsole->UnregisterVariable("hud_allowMouseInput", true);
 	pConsole->UnregisterVariable("menu3D_enabled", true);
 
+	pConsole->UnregisterVariable("hud_faderDebug", true);
+	pConsole->UnregisterVariable("hud_objectiveIcons_flashTime", true);
+	pConsole->UnregisterVariable("g_flashrenderingduringloading", true);
+	pConsole->UnregisterVariable("g_levelfadein_levelload", true);
+	pConsole->UnregisterVariable("g_levelfadein_quickload", true);
+
+	pConsole->UnregisterVariable("aim_assistMinDistance", true);
+	pConsole->UnregisterVariable("aim_assistMaxDistance", true);
+	pConsole->UnregisterVariable("aim_assistFalloffDistance", true);
+	pConsole->UnregisterVariable("aim_assistInputForFullFollow_Ironsight", true);
+	pConsole->UnregisterVariable("aim_assistMaxDistanceTagged", true);
+	pConsole->UnregisterVariable("aim_assistMinTurnScale", true);
+	pConsole->UnregisterVariable("aim_assistSlowFalloffStartDistance", true);
+	pConsole->UnregisterVariable("aim_assistSlowDisableDistance", true);
+	pConsole->UnregisterVariable("aim_assistSlowStartFadeinDistance", true);
+	pConsole->UnregisterVariable("aim_assistSlowStopFadeinDistance", true);
+	pConsole->UnregisterVariable("aim_assistSlowDistanceModifier", true);
+	pConsole->UnregisterVariable("aim_assistSlowThresholdOuter", true);
+	pConsole->UnregisterVariable("aim_assistStrength", true);
+	pConsole->UnregisterVariable("aim_assistSnapRadiusScale", true);
+	pConsole->UnregisterVariable("aim_assistSnapRadiusTaggedScale", true);
+
+	pConsole->UnregisterVariable("aim_assistStrength_IronSight", true);
+	pConsole->UnregisterVariable("aim_assistMaxDistance_IronSight", true);
+	pConsole->UnregisterVariable("aim_assistMinTurnScale_IronSight", true);
+
+	pConsole->UnregisterVariable("aim_assistStrength_SniperScope", true);
+	pConsole->UnregisterVariable("aim_assistMaxDistance_SniperScope", true);
+	pConsole->UnregisterVariable("aim_assistMinTurnScale_SniperScope", true);
+
 	pConsole->UnregisterVariable("hud_ContextualHealthIndicator", true);
 
 	pConsole->UnregisterVariable("hud_aspectCorrection", true);
-	pConsole->UnregisterVariable("controller_power_curve_z", true);
-	pConsole->UnregisterVariable("controller_power_curve_z", true);
+	pConsole->UnregisterVariable("controller_power_curve", true);
+	pConsole->UnregisterVariable("controller_multiplier_z", true);
+	pConsole->UnregisterVariable("controller_multiplier_x", true);
 	pConsole->UnregisterVariable("controller_full_turn_multiplier_z", true);
 	pConsole->UnregisterVariable("controller_full_turn_multiplier_x", true);
 	pConsole->UnregisterVariable("hud_ctrlZoomMode", true);
+
+	pConsole->UnregisterVariable("ctrlr_OUTPUTDEBUGINFO", true);
+	pConsole->UnregisterVariable("ctrlr_corner_smoother", true);
+	pConsole->UnregisterVariable("ctrlr_corner_smoother_debug", true);
+	pConsole->UnregisterVariable("vehicle_steering_curve", true);
+	pConsole->UnregisterVariable("vehicle_steering_curve_scale", true);
+	pConsole->UnregisterVariable("vehicle_acceleration_curve", true);
+	pConsole->UnregisterVariable("vehicle_acceleration_curve_scale", true);
+	pConsole->UnregisterVariable("vehicle_deceleration_curve", true);
+	pConsole->UnregisterVariable("vehicle_deceleration_curve_scale", true);
 
 	// weapon system
 	pConsole->UnregisterVariable("i_debuggun_1", true);
@@ -2529,21 +2829,29 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("i_debug_itemparams_memusage", true);
 	pConsole->UnregisterVariable("i_debug_weaponparams_memusage", true);
 	pConsole->UnregisterVariable("i_debug_zoom_mods", true);
+	pConsole->UnregisterVariable("i_debug_sounds", true);
+	pConsole->UnregisterVariable("i_debug_turrets", true);
 	pConsole->UnregisterVariable("i_debug_mp_flowgraph", true);
+	pConsole->UnregisterVariable("i_flashlight_has_shadows", true);
+	pConsole->UnregisterVariable("i_flashlight_has_fog_volume", true);
 
 	pConsole->UnregisterVariable("g_displayIgnoreList",true);
 	pConsole->UnregisterVariable("g_buddyMessagesIngame",true);
+	pConsole->UnregisterVariable("g_persistantStats_gamesCompletedFractionNeeded", true);
 
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("g_PS_debug", true);
 #endif
 
-	pConsole->UnregisterVariable("sv_voting_timeout",true);
-	pConsole->UnregisterVariable("sv_voting_cooldown",true);
-	pConsole->UnregisterVariable("sv_voting_ratio",true);
-	pConsole->UnregisterVariable("sv_voting_team_ratio",true);
-
+	pConsole->UnregisterVariable("sv_votingTimeout", true);
+	pConsole->UnregisterVariable("sv_votingCooldown", true);
+	pConsole->UnregisterVariable("sv_votingRatio", true);
+	pConsole->UnregisterVariable("sv_votingEnable", true);
+	pConsole->UnregisterVariable("sv_votingBanTime", true);
+	pConsole->UnregisterVariable("sv_votingMinVotes", true);
 	pConsole->UnregisterVariable("sv_input_timeout", true);
+
+	pConsole->UnregisterVariable("g_MicrowaveBeamStaticObjectMaxChunkThreshold", true);
 
 	pConsole->UnregisterVariable("sv_aiTeamName", true);
 	pConsole->UnregisterVariable("performance_profile_logname", true);
@@ -2593,14 +2901,31 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_postkill_minTimeForDeathCamAndKillerCam", true );
 	pConsole->UnregisterVariable("g_postkill_splitScaleDeathCam", true );
 
+	pConsole->UnregisterVariable("sv_pacifist", true);
+	pConsole->UnregisterVariable("g_devDemo", true);
+
 	// Alternative player input normalization code
-	pConsole->UnregisterVariable("aim_altNormalization.enable");
-	pConsole->UnregisterVariable("aim_altNormalization.hud_ctrl_Curve_Unified");
-	pConsole->UnregisterVariable("aim_altNormalization.hud_ctrl_Coeff_Unified"); 
+	pConsole->UnregisterVariable("aim_altNormalization.enable", true);
+	pConsole->UnregisterVariable("aim_altNormalization.hud_ctrl_Curve_Unified", true);
+	pConsole->UnregisterVariable("aim_altNormalization.hud_ctrl_Coeff_Unified", true);
 	// Alternative player input normalization code
-#ifndef _RELEASE
-	pConsole->UnregisterVariable("pl_debug_aiming_input");
+
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("v_debugMovement", true);
+	pConsole->UnregisterVariable("v_debugMovementMoveVertically", true);
+	pConsole->UnregisterVariable("v_debugMovementX", true);
+	pConsole->UnregisterVariable("v_debugMovementY", true);
+	pConsole->UnregisterVariable("v_debugMovementZ", true);
+	pConsole->UnregisterVariable("v_debugMovementSensitivity", true);
 #endif
+
+	pConsole->UnregisterVariable("v_tankReverseInvertYaw", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("pl_debug_aiming_input", true);
+#endif
+
+	pConsole->UnregisterVariable("pl_debug_vistable", true);
 
 	pConsole->UnregisterVariable("g_teamDifferentiation", true);
 
@@ -2621,6 +2946,9 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_postEffect.HUD3D_FOV",true);
 
 	pConsole->UnregisterVariable("g_gameFXSystemDebug",true);
+	pConsole->UnregisterVariable("g_gameFXLightningProfile", true);
+	pConsole->UnregisterVariable("g_DebugDrawPhysicsAccess", true);
+	pConsole->UnregisterVariable("g_hasWindowFocus", true);
 
 	pConsole->UnregisterVariable("g_displayPlayerDamageTaken", true);
 	pConsole->UnregisterVariable("g_displayDbgText_hud", true);
@@ -2632,49 +2960,114 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_spawn_vistable_numLineTestsPerFrame", true);
 	pConsole->UnregisterVariable("g_spawn_vistable_numAreaTestsPerFrame", true);
 
-	pConsole->UnregisterVariable("g_showShadowChar");
-	pConsole->UnregisterVariable("g_infiniteAmmo");
+	pConsole->UnregisterVariable("g_showShadowChar", true);
+	pConsole->UnregisterVariable("g_infiniteAmmo", true);
 
-	pConsole->UnregisterVariable("g_animatorDebug");
-	pConsole->UnregisterVariable("g_hideArms");
+	pConsole->UnregisterVariable("g_animatorDebug", true);
+	pConsole->UnregisterVariable("g_hideArms", true);
+	pConsole->UnregisterVariable("g_debugSmokeGrenades", true);
+	pConsole->UnregisterVariable("g_smokeGrenadeRadius", true);
+	pConsole->UnregisterVariable("g_empOverTimeGrenadeLife", true);
+	pConsole->UnregisterVariable("g_kickCarDetachesEntities", true);
+	pConsole->UnregisterVariable("g_kickCarDetachStartTime", true);
+	pConsole->UnregisterVariable("g_kickCarDetachEndTime", true);
 
 #if !defined(_RELEASE)
-	pConsole->UnregisterVariable("g_playerUsesDedicatedInput");
-	pConsole->UnregisterVariable("g_DisableScoring");
-	pConsole->UnregisterVariable("g_DisableCollisionDamage");
-	pConsole->UnregisterVariable("g_LogDamage");
-	pConsole->UnregisterVariable("g_ProjectilePathDebugGfx");
-	pConsole->UnregisterVariable("net_onlyListGameServersContainingText");
-	pConsole->UnregisterVariable("net_nat_type");
-	pConsole->UnregisterVariable("net_initLobbyServiceToLan");
+	pConsole->UnregisterVariable("g_playerUsesDedicatedInput", true);
+	pConsole->UnregisterVariable("g_DisableScoring", true);
+	pConsole->UnregisterVariable("g_DisableCollisionDamage", true);
+	pConsole->UnregisterVariable("g_MaxSimpleCollisions", true);
+	pConsole->UnregisterVariable("g_LogDamage", true);
+	pConsole->UnregisterVariable("g_ProjectilePathDebugGfx", true);
+	pConsole->UnregisterVariable("net_onlyListGameServersContainingText", true);
+	pConsole->UnregisterVariable("net_nat_type", true);
+	pConsole->UnregisterVariable("net_initLobbyServiceToLan", true);
 #endif
 
-	pConsole->UnregisterVariable("autotest_enabled");
-	pConsole->UnregisterVariable("autotest_state_setup");
-	pConsole->UnregisterVariable("autotest_quit_when_done");
-	pConsole->UnregisterVariable("designer_warning_enabled");
+	pConsole->UnregisterVariable("watch_enabled", true);
+	pConsole->UnregisterVariable("watch_text_render_start_pos_x", true);
+	pConsole->UnregisterVariable("watch_text_render_start_pos_y", true);
+	pConsole->UnregisterVariable("watch_text_render_size", true);
+	pConsole->UnregisterVariable("watch_text_render_lineSpacing", true);
+	pConsole->UnregisterVariable("watch_text_render_fxscale", true);
 
-	pConsole->UnregisterVariable("ai_EnablePressureSystem");
-	pConsole->UnregisterVariable("ai_DebugPressureSystem");
-	pConsole->UnregisterVariable("ai_DebugAggressionSystem");
-	pConsole->UnregisterVariable("ai_DebugBattleFront");
+	pConsole->UnregisterVariable("autotest_verbose", true);
 
-	pConsole->UnregisterVariable("g_actorViewDistRatio");
-	pConsole->UnregisterVariable("g_playerLodRatio");
+	pConsole->UnregisterVariable("autotest_enabled", true);
+	pConsole->UnregisterVariable("autotest_state_setup", true);
+	pConsole->UnregisterVariable("autotest_quit_when_done", true);
+	pConsole->UnregisterVariable("designer_warning_enabled", true);
+	pConsole->UnregisterVariable("designer_warning_level_resources", true);
+
+	pConsole->UnregisterVariable("ai_DebugVisualScriptErrors", true);
+	pConsole->UnregisterVariable("ai_EnablePressureSystem", true);
+	pConsole->UnregisterVariable("ai_DebugPressureSystem", true);
+	pConsole->UnregisterVariable("ai_DebugAggressionSystem", true);
+	pConsole->UnregisterVariable("ai_DebugBattleFront", true);
+	pConsole->UnregisterVariable("ai_DebugSearch", true);
+	pConsole->UnregisterVariable("ai_DebugDeferredDeath", true);
+	pConsole->UnregisterVariable("ai_SquadManager_DebugDraw", true);
+
+	pConsole->UnregisterVariable("ai_SquadManager_MaxDistanceFromSquadCenter", true);
+	pConsole->UnregisterVariable("ai_SquadManager_UpdateTick", true);
+
+	pConsole->UnregisterVariable("ai_SOMDebugName", true);
+	pConsole->UnregisterVariable("ai_SOMIgnoreVisualRatio", true);
+	pConsole->UnregisterVariable("ai_SOMDecayTime", true);
+	pConsole->UnregisterVariable("ai_SOMMinimumRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMMinimumCombat", true);
+
+	pConsole->UnregisterVariable("ai_SOMCrouchModifierRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMCrouchModifierCombat", true);
+	pConsole->UnregisterVariable("ai_SOMMovementModifierRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMMovementModifierCombat", true);
+	pConsole->UnregisterVariable("ai_SOMWeaponFireModifierRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMWeaponFireModifierCombat", true);
+	pConsole->UnregisterVariable("ai_SOMCloakMaxTimeRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMCloakMaxTimeCombat", true);
+	pConsole->UnregisterVariable("ai_SOMUncloakMinTimeRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMUncloakMinTimeCombat", true);
+	pConsole->UnregisterVariable("ai_SOMUncloakMaxTimeRelaxed", true);
+	pConsole->UnregisterVariable("ai_SOMUncloakMaxTimeCombat", true);
+	pConsole->UnregisterVariable("ai_CloakingDelay", true);
+	pConsole->UnregisterVariable("ai_UnCloakingTime", true);
+	pConsole->UnregisterVariable("ai_CompleteCloakDelay", true);
+	pConsole->UnregisterVariable("ai_HazardsDebug", true);
+	pConsole->UnregisterVariable("ai_ProximityToHostileAlertnessIncrementThresholdDistance", true);
+
+	pConsole->UnregisterVariable("g_actorViewDistRatio", true);
+	pConsole->UnregisterVariable("g_playerLodRatio", true);
+	pConsole->UnregisterVariable("g_itemsLodRatioScale", true);
+	pConsole->UnregisterVariable("g_itemsViewDistanceRatioScale", true);
+
 	CGodMode::GetInstance().UnregisterConsoleVars(pConsole);
+
+	NetInputChainUnregisterCVars();
 
 	pConsole->UnregisterVariable("g_hitDeathReactions_enable", true);
 	pConsole->UnregisterVariable("g_hitDeathReactions_useLuaDefaultFunctions", true);
 	pConsole->UnregisterVariable("g_hitDeathReactions_disable_ai", true);
 	pConsole->UnregisterVariable("g_hitDeathReactions_debug", true);
 	pConsole->UnregisterVariable("g_hitDeathReactions_disableRagdoll", true);
+	pConsole->UnregisterVariable("g_hitDeathReactions_logReactionAnimsOnLoading", true);
+	pConsole->UnregisterVariable("g_hitDeathReactions_streaming", true);
+	pConsole->UnregisterVariable("g_hitDeathReactions_usePrecaching", true);
 	pConsole->UnregisterVariable("g_hitDeathReactions_disableHitAnimatedCollisions", true);
+
+	pConsole->UnregisterVariable("g_spectacularKill.maxDistanceError", true);
+	pConsole->UnregisterVariable("g_spectacularKill.minTimeBetweenKills", true);
+	pConsole->UnregisterVariable("g_spectacularKill.minTimeBetweenSameKills", true);
+	pConsole->UnregisterVariable("g_spectacularKill.minKillerToTargetDotProduct", true);
+	pConsole->UnregisterVariable("g_spectacularKill.maxHeightBetweenActors", true);
+	pConsole->UnregisterVariable("g_spectacularKill.sqMaxDistanceFromPlayer", true);
+	pConsole->UnregisterVariable("g_spectacularKill.debug", true);
 
 	pConsole->UnregisterVariable("g_movementTransitions_enable", true);
 	pConsole->UnregisterVariable("g_movementTransitions_log", true);
 	pConsole->UnregisterVariable("g_movementTransitions_debug", true);
 
 	pConsole->UnregisterVariable("g_maximumDamage", true);
+	pConsole->UnregisterVariable("g_instantKillDamageThreshold", true);
 
 	pConsole->UnregisterVariable("g_muzzleFlashCull", true);
 	pConsole->UnregisterVariable("g_muzzleFlashCullDistance", true);
@@ -2686,6 +3079,12 @@ void SCVars::ReleaseCVars()
 
 	pConsole->UnregisterVariable("g_cloakRefractionScale", true);
 	pConsole->UnregisterVariable("g_cloakBlendSpeedScale", true);
+
+	pConsole->UnregisterVariable("g_telemetry_onlyInGame", true);
+	pConsole->UnregisterVariable("g_telemetry_drawcall_budget", true);
+	pConsole->UnregisterVariable("g_telemetry_memory_display", true);
+	pConsole->UnregisterVariable("g_telemetry_memory_size_sp", true);
+	pConsole->UnregisterVariable("g_telemetry_memory_size_mp", true);
 
 #ifndef _RELEASE
 	pConsole->UnregisterVariable("g_disableSwitchVariantOnSettingChanges", true); 
@@ -2710,29 +3109,119 @@ void SCVars::ReleaseCVars()
 	CBodyManagerCVars::UnregisterVariables(pConsole);
 
 	pConsole->UnregisterVariable("g_telemetry_gameplay_enabled", true);
+	pConsole->UnregisterVariable("g_telemetry_serialize_method", true);
+	pConsole->UnregisterVariable("g_telemetryDisplaySessionId", true);
+	pConsole->UnregisterVariable("g_telemetry_gameplay_gzip", true);
+	pConsole->UnregisterVariable("g_telemetry_gameplay_save_to_disk", true);
+	pConsole->UnregisterVariable("g_telemetry_gameplay_copy_to_global_heap", true);
+	pConsole->UnregisterVariable("g_telemetryEnabledSP", true);
+	pConsole->UnregisterVariable("g_telemetrySampleRatePerformance", true);
+	pConsole->UnregisterVariable("g_telemetrySampleRateBandwidth", true);
+	pConsole->UnregisterVariable("g_telemetrySampleRateMemory", true);
+	pConsole->UnregisterVariable("g_telemetrySampleRateSound", true);
+	pConsole->UnregisterVariable("g_telemetry_xp_event_send_interval", true);
+	pConsole->UnregisterVariable("g_telemetry_mp_upload_delay", true);
+	pConsole->UnregisterVariable("g_dataRefreshFrequency", true);
+
+#if defined(DEDICATED_SERVER)
+	pConsole->UnregisterVariable("g_quitOnNewDataFound", true);
+	pConsole->UnregisterVariable("g_quitNumRoundsWarning", true);
+	pConsole->UnregisterVariable("g_allowedDataPatchFailCount", true);
+	pConsole->UnregisterVariable("g_shutdownMessageRepeatTime", true);
+	pConsole->UnregisterVariable("g_shutdownMessage", true);
+#endif
+
+	pConsole->UnregisterVariable("g_modevarivar_proHud", true);
+	pConsole->UnregisterVariable("g_modevarivar_disableKillCam", true);
+	pConsole->UnregisterVariable("g_modevarivar_disableSpectatorCam", true);
+
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_data_centre_config", true);
+	pConsole->UnregisterVariable("g_download_mgr_data_centre_config", true);
+#endif
 
 	pConsole->UnregisterVariable("pl_health.fast_regeneration_rateMP", true);
 	pConsole->UnregisterVariable("pl_health.slow_regeneration_rateMP", true);
-	
+	pConsole->UnregisterVariable("pl_health.normal_threshold_time_to_regenerateMP", true);
+	pConsole->UnregisterVariable("pl_health.enable_FallandPlay", true);
+	pConsole->UnregisterVariable("pl_health.collision_health_threshold", true);
+
+	pConsole->UnregisterVariable("pl_health.fallDamage_SpeedSafe", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_SpeedFatal", true);
+	pConsole->UnregisterVariable("pl_health.fallSpeed_HeavyLand", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_SpeedFatalArmor", true);
+	pConsole->UnregisterVariable("pl_health.fallSpeed_HeavyLandArmor", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_SpeedSafeArmorMP", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_SpeedFatalArmorMP", true);
+	pConsole->UnregisterVariable("pl_health.fallSpeed_HeavyLandArmorMP", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_CurveAttack", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_CurveAttackMP", true);
+	pConsole->UnregisterVariable("pl_health.fallDamage_health_threshold", true);
+	pConsole->UnregisterVariable("pl_health.debug_FallDamage", true);
+	pConsole->UnregisterVariable("pl_health.enableNewHUDEffect", true);
+	pConsole->UnregisterVariable("pl_health.minimalHudEffect", true);
+	//pConsole->UnregisterVariable("pl_health.mercy_time", true);
+
+	pConsole->UnregisterVariable("pl_movement.nonCombat_heavy_weapon_speed_scale", true);
+	pConsole->UnregisterVariable("pl_movement.nonCombat_heavy_weapon_sprint_scale", true);
+	pConsole->UnregisterVariable("pl_movement.nonCombat_heavy_weapon_strafe_speed_scale", true);
+	pConsole->UnregisterVariable("pl_movement.nonCombat_heavy_weapon_crouch_speed_scale", true);
+	pConsole->UnregisterVariable("pl_movement.power_sprint_targetFov", true);
+
 	pConsole->UnregisterVariable("g_ignoreDLCRequirements", true);
 
 	pConsole->UnregisterVariable("sv_netLimboTimeout", true);
 	pConsole->UnregisterVariable("g_idleKickTime", true);
+
+	pConsole->UnregisterVariable("g_stereoIronsightWeaponDistance", true);
+	pConsole->UnregisterVariable("g_stereoFrameworkEnable", true);
+
+	pConsole->UnregisterVariable("g_useOnlineServiceForDedicated", true);
+
+#if USE_LAGOMETER
+	pConsole->UnregisterVariable("net_graph", true);
+#endif
+
+	pConsole->UnregisterVariable("g_enablePoolCache", true);
+	pConsole->UnregisterVariable("g_setActorModelFromLua", true);
+	pConsole->UnregisterVariable("g_loadPlayerModelOnLoad", true);
+	pConsole->UnregisterVariable("g_enableActorLuaCache", true);
+	pConsole->UnregisterVariable("g_enableSlimCheckpoints", true);
+	pConsole->UnregisterVariable("g_mpLoaderScreenMaxTimeSoftLimit", true);
+	pConsole->UnregisterVariable("g_mpLoaderScreenMaxTime", true);
+	pConsole->UnregisterVariable("g_telemetryTags", true);
+	pConsole->UnregisterVariable("g_telemetryConfig", true);
+	pConsole->UnregisterVariable("g_telemetryEntityClassesToExport", true);
 
 	pConsole->UnregisterVariable("pl_movement.ground_timeInAirToFall", true);
 	pConsole->UnregisterVariable("pl_movement.speedScale", true);
 	pConsole->UnregisterVariable("pl_movement.sprint_SpeedScale", true);
 	pConsole->UnregisterVariable("pl_movement.strafe_SpeedScale", true);
 	pConsole->UnregisterVariable("pl_movement.crouch_SpeedScale", true);
+	pConsole->UnregisterVariable("pl_movement.sprintStamina_debug", true);
+	pConsole->UnregisterVariable("pl_movement.mp_slope_speed_multiplier_uphill", true);
+	pConsole->UnregisterVariable("pl_movement.mp_slope_speed_multiplier_downhill", true);
+	pConsole->UnregisterVariable("pl_movement.mp_slope_speed_multiplier_minHill", true);
 
 #ifndef _RELEASE
 	pConsole->UnregisterVariable( "pl_state_debug", true );
 #endif
-	
+
+#ifndef _RELEASE
 	pConsole->UnregisterVariable("pl_viewFollow", true);
 	pConsole->UnregisterVariable("pl_viewFollowOffset", true);
 	pConsole->UnregisterVariable("pl_viewFollowMinRadius", true);
 	pConsole->UnregisterVariable("pl_viewFollowMaxRadius", true);
+	pConsole->UnregisterVariable("menu_forceShowPii", true);
+#endif
+
+	pConsole->UnregisterVariable("g_mpKickableCars", true);
+
+#if PAIRFILE_GEN_ENABLED
+	pConsole->RemoveCommand("g_generateAnimPairFile");
+#endif
+
+	pConsole->RemoveCommand("g_setcontrollerlayout");
 
 	pConsole->UnregisterVariable("mp_ctfParams.carryingFlag_SpeedScale", true);
 	pConsole->UnregisterVariable("mp_extractionParams.carryingTick_SpeedScale", true);
@@ -2741,10 +3230,28 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("mp_predatorParams.hudTimerAlertWhenTimeRemaining", true);
 	pConsole->UnregisterVariable("mp_predatorParams.hintMessagePauseTime", true);
 
+	pConsole->UnregisterVariable("pl_mike_debug", true);
+	pConsole->UnregisterVariable("pl_mike_maxBurnPoints", true);
+	pConsole->UnregisterVariable("pl_impulseEnabled", true);
+	pConsole->UnregisterVariable("pl_impulseDuration", true);
+	pConsole->UnregisterVariable("pl_impulseLayer", true);
+	pConsole->UnregisterVariable("pl_impulseFullRecoilFactor", true);
+	pConsole->UnregisterVariable("pl_impulseMaxPitch", true);
+	pConsole->UnregisterVariable("pl_impulseMaxTwist", true);
+	pConsole->UnregisterVariable("pl_impulseCounterFactor", true);
+
+#ifndef _RELEASE
+	pConsole->UnregisterVariable("pl_impulseDebug", true);
+#endif
+
 	pConsole->UnregisterVariable("g_forceItemRespawnTimer", true);
 	pConsole->UnregisterVariable("g_defaultItemRespawnTimer", true);
-
+	pConsole->UnregisterVariable("g_updateRichPresenceInterval", true);
 	pConsole->UnregisterVariable("g_useNetSyncToSpeedUpRMIs", true);
+
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+	pConsole->UnregisterVariable("g_testStatus", true);
+#endif
 
 	// VTOL Vehicle variables
 	pConsole->UnregisterVariable("g_VTOLVehicleManagerEnabled", true); 
@@ -2772,13 +3279,22 @@ void SCVars::ReleaseCVars()
 #ifndef _RELEASE
 		pConsole->UnregisterVariable("g_mptrackview_debug", true);
 		pConsole->UnregisterVariable("g_hud_postgame_debug", true);
+		pConsole->UnregisterVariable("g_interactiveObjectDebugRender", true);
 #endif
 
+	pConsole->UnregisterVariable("g_highlightingMaxDistanceToHighlightSquared", true);
+	pConsole->UnregisterVariable("g_highlightingMovementDistanceToUpdateSquared", true);
+	pConsole->UnregisterVariable("g_highlightingTimeBetweenForcedRefresh", true);
+
 	pConsole->UnregisterVariable("g_ledgeGrabClearHeight", true);
+	pConsole->UnregisterVariable("g_ledgeGrabMovingledgeExitVelocityMult", true);
+
 	pConsole->UnregisterVariable("g_vaultMinHeightDiff", true);
+	pConsole->UnregisterVariable("g_vaultMinAnimationSpeed", true);
 
 	// Lower weapon during stealth
 	pConsole->UnregisterVariable("g_useQuickGrenadeThrow", true);
+	pConsole->UnregisterVariable("g_enableMPDoubleTapGrenadeSwitch", true);
 	pConsole->UnregisterVariable("g_cloakFlickerOnRun", true);
 
 	pConsole->UnregisterVariable("kc_useAimAdjustment", true);
@@ -2797,16 +3313,33 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_gameStartingMessageTime", true);
 
 #if ENABLE_RMI_BENCHMARK
-	pConsole->UnregisterVariable( "g_RMIBenchmarkInterval", true );
+	pConsole->UnregisterVariable("g_RMIBenchmarkInterval", true);
+	pConsole->UnregisterVariable("g_RMIBenchmarkTwoTrips", true);
 #endif
 
-	pConsole->UnregisterVariable( "g_manualFrameStepFrequency", true );
+	pConsole->UnregisterVariable("g_hud3d_cameraDistance", true);
+	pConsole->UnregisterVariable("g_hud3d_cameraOffsetZ", true);
+	pConsole->UnregisterVariable("g_hud3D_cameraOverride", true);
+
+	pConsole->UnregisterVariable("g_presaleURL", true);
+	pConsole->UnregisterVariable("g_messageOfTheDay", true);
+	pConsole->UnregisterVariable("g_serverImageUrl", true);
 
 	ReleaseAIPerceptionCVars(pConsole);
 
 #ifdef INCLUDE_GAME_AI_RECORDER
 	CGameAIRecorderCVars::UnregisterVariables(pConsole);
 #endif //INCLUDE_GAME_AI_RECORDER
+
+	pConsole->UnregisterVariable("g_debugWeaponOffset", true);
+	pConsole->RemoveCommand("g_weaponOffsetReset");
+	pConsole->RemoveCommand("g_weaponOffsetOutput");
+	pConsole->RemoveCommand("g_weaponOffsetInput");
+	pConsole->RemoveCommand("g_weaponOffsetToMannequin");
+	pConsole->RemoveCommand("g_weaponZoomIn");
+	pConsole->RemoveCommand("g_weaponZoomOut");
+
+	SAFE_DELETE(m_pGameLobbyCVars);
 }
 
 //------------------------------------------------------------------------
@@ -2880,7 +3413,7 @@ void CmdPlayerGoto(IConsoleCmdArgs *pArgs)
 	int iArgCount = pArgs->GetArgCount();
 	if (iArgCount == 4 || iArgCount == 7)
 	{
-		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 
 		if (pPlayer)
 		{
@@ -2963,8 +3496,7 @@ void CmdGoto(IConsoleCmdArgs *pArgs)
 	}
 
 	// complicated but maybe the best Entity we can move to the given spot
-	IGame *pGame = gEnv->pGame;																								if(!pGame)return;
-	IGameFramework *pGameFramework=pGame->GetIGameFramework();								if(!pGameFramework)return;
+	IGameFramework *pGameFramework=gEnv->pGameFramework;											if(!pGameFramework)return;
 	IViewSystem *pViewSystem=pGameFramework->GetIViewSystem();								if(!pViewSystem)return;
 	IView *pView=pViewSystem->GetActiveView();																if(!pView)return;
 	IEntity *pEntity = gEnv->pEntitySystem->GetEntity(pView->GetLinkedId());	if(!pEntity)return;
@@ -3180,6 +3712,12 @@ void CGame::UnregisterConsoleCommands()
 	m_pConsole->RemoveCommand("v_kill");
 	m_pConsole->RemoveCommand("sv_restart");
 	m_pConsole->RemoveCommand("sv_say");
+
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+	m_pConsole->RemoveCommand("sv_sendConsoleCommand");
+	m_pConsole->RemoveCommand("net_setOnlineMode");
+#endif
+
 	m_pConsole->RemoveCommand("echo");
 	m_pConsole->RemoveCommand("i_reload");
 
@@ -3187,12 +3725,20 @@ void CGame::UnregisterConsoleCommands()
 	m_pConsole->RemoveCommand("dumpnt");
 
 	m_pConsole->RemoveCommand("g_reloadGameRules");
+	m_pConsole->RemoveCommand("g_hitDeathReactions_reload");
+	m_pConsole->RemoveCommand("g_hitDeathReactions_dumpAssetUsage");
+	m_pConsole->RemoveCommand("g_spectacularKill_reload");
+	m_pConsole->RemoveCommand("pl_pickAndThrow.reloadProxies");
+	m_pConsole->RemoveCommand("g_impulseHandler_reload");
+	m_pConsole->RemoveCommand("g_movementTransitions_reload");
 
 	m_pConsole->RemoveCommand("g_reloadHitDeathReactions");
 
 	m_pConsole->RemoveCommand("g_reloadMovementTransitions");
 
 	m_pConsole->RemoveCommand("g_nextlevel");
+	m_pConsole->RemoveCommand("vote");
+	m_pConsole->RemoveCommand("votekick");
 
 	m_pConsole->RemoveCommand("preloadforstats");
 
@@ -3203,16 +3749,38 @@ void CGame::UnregisterConsoleCommands()
 	m_pConsole->RemoveCommand("FreeCamLockCamera");
 	m_pConsole->RemoveCommand("FreeCamUnlockCamera");
 	m_pConsole->RemoveCommand("FlyCamSetPoint");
+	m_pConsole->RemoveCommand("FlyCamPlay");
 
 	m_pConsole->RemoveCommand("IgnoreAllAsserts");
 
 	m_pConsole->RemoveCommand("pl_reload");
 	m_pConsole->RemoveCommand("pl_health");
+
+	m_pConsole->RemoveCommand("switch_game_multiplayer");
+	m_pConsole->RemoveCommand("spawnActor");
+#if ENABLE_CONSOLE_GAME_DEBUG_COMMANDS
+	m_pConsole->RemoveCommand("g_giveAchievement");
+#endif
+
 	m_pConsole->RemoveCommand("spawnActorAtPos");
+
+#if (USE_DEDICATED_INPUT)
 	m_pConsole->RemoveCommand("spawnDummyPlayers");
 	m_pConsole->RemoveCommand("removeDummyPlayers");
 	m_pConsole->RemoveCommand("setDummyPlayerState");
+	m_pConsole->RemoveCommand("hideAllDummyPlayers");
+#endif
 
+	m_pConsole->RemoveCommand("g_loadSave");
+#ifndef _RELEASE
+	m_pConsole->RemoveCommand("g_saveSave");
+#endif
+
+#if CRY_PLATFORM_DURANGO
+	m_pConsole->RemoveCommand("g_inspectConnectedStorage");
+#endif
+
+	m_pConsole->RemoveCommand("g_reloadGameFx");
 	m_pConsole->RemoveCommand("bulletTimeMode");
 	m_pConsole->RemoveCommand("GOCMode");
 
@@ -3366,7 +3934,7 @@ void CGame::CmdFreeCamUnlockCamera(IConsoleCmdArgs *pArgs)
 
 void CGame::CmdFlyCamSetPoint(IConsoleCmdArgs *pArgs)
 {
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	if(pPlayer)
 	{
 		CPlayerInput* pPlayerInput = (CPlayerInput*)pPlayer->GetPlayerInput();
@@ -3396,7 +3964,7 @@ void CGame::CmdFlyCamSetPoint(IConsoleCmdArgs *pArgs)
 
 void CGame::CmdFlyCamPlay(IConsoleCmdArgs *pArgs)
 {
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	if(pPlayer)
 	{
 		CPlayerInput* pPlayerInput = (CPlayerInput*)pPlayer->GetPlayerInput();
@@ -3814,7 +4382,7 @@ void CGame::CmdDumpHitDeathReactionsAssetUsage(IConsoleCmdArgs* pArgs)
 void CGame::CmdReloadSpectacularKill(IConsoleCmdArgs* pArgs)
 {
 	g_pGame->GetIGameFramework()->GetIActorSystem()->Reload();
-	gEnv->pGame->GetIGameFramework()->GetISharedParamsManager()->RemoveByType(CSpectacularKill::SSharedSpectacularParams::s_typeInfo);
+	gEnv->pGameFramework->GetISharedParamsManager()->RemoveByType(CSpectacularKill::SSharedSpectacularParams::s_typeInfo);
 
 	IActorIteratorPtr pIt = g_pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
 	while (IActor* pIActor = pIt->Next())
@@ -3836,7 +4404,7 @@ void CGame::CmdReloadSpectacularKill(IConsoleCmdArgs* pArgs)
 void CGame::CmdReloadImpulseHandler(IConsoleCmdArgs* pArgs)
 {
 	g_pGame->GetIGameFramework()->GetIActorSystem()->Reload();
-	gEnv->pGame->GetIGameFramework()->GetISharedParamsManager()->RemoveByType(CActorImpulseHandler::SSharedImpulseHandlerParams::s_typeInfo);
+	gEnv->pGameFramework->GetISharedParamsManager()->RemoveByType(CActorImpulseHandler::SSharedImpulseHandlerParams::s_typeInfo);
 
 	IActorIteratorPtr pIt = g_pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
 	while (IActor* pIActor = pIt->Next())
@@ -3922,9 +4490,9 @@ void CGame::CmdVote(IConsoleCmdArgs* pArgs)
 
 void CGame::CmdReloadPlayer(IConsoleCmdArgs* pArgs)
 {
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->Reload();
+	gEnv->pGameFramework->GetIActorSystem()->Reload();
 
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	if(pPlayer)
 	{
 		pPlayer->ReloadClientXmlData();
@@ -3953,7 +4521,7 @@ void CGame::CmdGiveGameAchievement(IConsoleCmdArgs* pArgs)
 
 void CGame::CmdSetPlayerHealth(IConsoleCmdArgs* pArgs)
 {
-	IActor *pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor *pActor = gEnv->pGameFramework->GetClientActor();
 	if(pActor)
 	{
 		if( pArgs->GetArgCount() != 2 )
@@ -3990,7 +4558,7 @@ void CalculatePointInFrontOfCamera(float distanceInFront, Vec3* position)
 {
 	assert(position);
 
-	if (IActor* localActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+	if (IActor* localActor = gEnv->pGameFramework->GetClientActor())
 	{
 		if (localActor->IsPlayer())
 		{
@@ -4034,7 +4602,7 @@ void CGame::CmdSpawnActor(IConsoleCmdArgs *pArgs)
 		}
 
 		CryLogAlways("CmdSpawnActorAtPos() spawning actorClass=%s; with name=%s; at pos=(%f, %f, %f)", actorClass, actorName.c_str(), spawnPosition.x, spawnPosition.y, spawnPosition.z);
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActor(0, actorName.c_str(), actorClass, spawnPosition, Quat(IDENTITY), Vec3Constants<float>::fVec3_One);
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->CreateActor(0, actorName.c_str(), actorClass, spawnPosition, Quat(IDENTITY), Vec3Constants<float>::fVec3_One);
 		if (pActor)
 		{
 			CryLogAlways("CmdSpawnActorAtPos() successfully created actor");
@@ -4067,7 +4635,7 @@ void CGame::CmdSpawnDummyPlayer(IConsoleCmdArgs* pArgs)
 	Vec3 pos = rCam.GetPosition();
 	Vec3 forward = rCam.GetViewdir();
 #else
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	Vec3 pos = pPlayer ? pPlayer->GetEntity()->GetPos() : Vec3(1,1,1);
 	Vec3 forward = pPlayer ? pPlayer->GetEntity()->GetWorldRotation().GetColumn1() : Vec3(0,0,1);
 #endif
@@ -4113,7 +4681,7 @@ void CGame::CmdSpawnDummyPlayer(IConsoleCmdArgs* pArgs)
 			pos += forward * 2;
 			CryFixedStringT<16> name("DummyPlayer");
 			name.Format("%s%d", name.c_str(), numDummiesSoFar+i);
-			CDummyPlayer* pDummy = (CDummyPlayer*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActor(0, name.c_str(), "DummyPlayer", pos, Quat(IDENTITY), scale);
+			CDummyPlayer* pDummy = (CDummyPlayer*)gEnv->pGameFramework->GetIActorSystem()->CreateActor(0, name.c_str(), "DummyPlayer", pos, Quat(IDENTITY), scale);
 			if (chooseTeams)
 			{
 				IGameRulesTeamsModule *teamModule = pGameRules->GetTeamsModule();

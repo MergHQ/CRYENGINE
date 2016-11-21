@@ -6,10 +6,7 @@
 #pragma once
 
 #include <CryAISystem/IMNM.h>
-#include <CryCore/FixedPoint.h>
-#include "FixedVec2.h"
-#include "FixedVec3.h"
-#include "FixedAABB.h"
+#include <CryAISystem/NavigationSystem/MNMTile.h>
 #include "MNM_Type_info.h"
 #include "OpenList.h"
 
@@ -33,10 +30,6 @@
 
 namespace MNM
 {
-typedef fixed_t<int, 16>   real_t;
-typedef FixedVec2<int, 16> vector2_t;
-typedef FixedVec3<int, 16> vector3_t;
-typedef FixedAABB<int, 16> aabb_t;
 
 struct WayTriangleData
 {
@@ -78,21 +71,6 @@ struct WayTriangleData
 	float         costMultiplier;
 	unsigned int  incidentEdge;
 };
-
-inline TriangleID ComputeTriangleID(TileID tileID, uint16 triangleIdx)
-{
-	return (tileID << 10) | (triangleIdx & ((1 << 10) - 1));
-}
-
-inline TileID ComputeTileID(TriangleID triangleID)
-{
-	return triangleID >> 10;
-}
-
-inline uint16 ComputeTriangleIndex(TriangleID triangleID)
-{
-	return triangleID & ((1 << 10) - 1);
-}
 
 inline bool IsTriangleAlreadyInWay(const TriangleID triangleID, const TriangleID* const way, const size_t wayTriCount)
 {
@@ -519,7 +497,7 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 		return b;
 
 	const real_t vc = d1 * d4 - d3 * d2;
-	if ((vc <= 0) && (d1 >= 0) && (d3 <= 0))
+	if ((vc <= 0) && (d1 >= 0) && (d3 < 0))
 	{
 		const real_t v = d1 / (d1 - d3);
 		return a + (ab * v);
@@ -533,14 +511,14 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 		return c;
 
 	const real_t vb = d5 * d2 - d1 * d6;
-	if ((vb <= 0) && (d2 >= 0) && (d6 <= 0))
+	if ((vb <= 0) && (d2 >= 0) && (d6 < 0))
 	{
 		const real_t w = d2 / (d2 - d6);
 		return a + (ac * w);
 	}
 
 	const real_t va = d3 * d6 - d5 * d4;
-	if ((va <= 0) && ((d4 - d3) >= 0) && ((d5 - d6) >= 0))
+	if ((va <= 0) && ((d4 - d3) >= 0) && ((d5 - d6) > 0))
 	{
 		const real_t w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
 		return b + ((c - b) * w);

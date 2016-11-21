@@ -177,12 +177,14 @@ struct SD3DShader
 	int   m_nRef;
 	void* m_pHandle;
 	bool  m_bBound;
+	bool  m_bDisabled;
 
 	SD3DShader()
 	{
 		m_nRef = 1;
 		m_pHandle = NULL;
 		m_bBound = false;
+		m_bDisabled = false;
 	}
 	int AddRef()
 	{
@@ -264,10 +266,9 @@ struct SShaderAsyncInfo
 	}
 	static void FlushPendingShaders();
 
-#if CRY_PLATFORM_DURANGO || defined(OPENGL)
+#if CRY_PLATFORM_DURANGO //|| defined(OPENGL)
 	#define LPD3DXBUFFER    D3DBlob *
 	#define ID3DXBuffer     D3DBlob
-	#define D3D10CreateBlob D3DCreateBlob
 #endif
 
 	int                  m_nHashInstance;
@@ -1043,7 +1044,7 @@ public:
 					desc.StructureByteStride = sizeof(Vec4);
 					gcpRendD3D->GetDevice().CreateBuffer(&desc, NULL, &s_pCB[eSH][nCBufSlot][nMaxVecs]);
 #else
-					s_pCB[eSH][nCBufSlot][nMaxVecs] = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nMaxVecs * sizeof(Vec4));
+					s_pCB[eSH][nCBufSlot][nMaxVecs] = gcpRendD3D->m_DevBufMan.CreateConstantBufferRaw(nMaxVecs * sizeof(Vec4));
 #endif
 					if (s_pCB[eSH][nCBufSlot][nMaxVecs] == NULL)
 					{
@@ -1137,25 +1138,6 @@ public:
 #endif
 		{
 			memcpy(&s_pDataCB[eSH][nCBufSlot][nReg], vData, (size_t)nVecs << 4);
-		}
-
-		if (nCBufSlot == CB_PER_FRAME && eSH == eHWSC_Vertex && vData != &s_CurVSParams[0])
-		{
-#if CRY_PLATFORM_SSE2
-			if ((((uintptr_t)vData) & 0xf) == 0u)
-			{
-				__m128* const __restrict vDst = (__m128*)&s_CurVSParams[nReg];
-				const __m128* const __restrict vSrc = (const __m128*)vData;
-				for (int i = 0; i < nVecs; i++) _mm_stream_ps((float*)&vDst[i], vSrc[i]);
-#if !CRY_PLATFORM_ORBIS // SFENCE implied on command-buffer submit
-				_mm_sfence();
-#endif
-			}
-			else
-#endif
-			{
-				memcpy(&s_CurVSParams[nReg], vData, (size_t)nVecs << 4);
-			}
 		}
 	}
 	static inline void mfSetGSConst(int nReg, int nCBufSlot, const float* vData, int nParams, int nMaxVecs = 32)
@@ -1396,10 +1378,11 @@ public:
 	bool          mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, const char* szName);
 	void          mfGetTokenMap(CResFile* pRes, SDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData);
 	void          mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask);
+	bool          AutoGenMultiresGS(TArray<char>& sNewScr, CShader *pSH);
 
 public:
 	bool        mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, uint64 nMaskGen);
-	bool        mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr);
+	bool        mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr);
 	bool        mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table = NULL, TArray<uint32>* pSHData = NULL);
 
 	void        SetTokenFlags(uint32 nToken);
@@ -1468,11 +1451,8 @@ public:
 
 	static void           mfSetGlobalParams();
 	static void           mfSetCameraParams();
-	static void           mfSetSG();
-	static void           mfSetPF();
 	static void           mfSetCM();
-	static void           mfSetPV(const RECT* pCustomViewport = nullptr);
-	static bool           mfAddGlobalParameter(SCGParam& Param, EHWShaderClass eSH, bool bSG, bool bCam);
+	static void           mfSetPV(const D3DViewPort* pCustomViewport = nullptr);
 	static bool           mfAddGlobalTexture(SCGTexture& Texture);
 	static bool           mfAddGlobalSampler(STexSamplerRT& Sampler);
 
@@ -1542,8 +1522,6 @@ public:
 	static int                          s_nDeviceVSDataSize;
 
 	static std::vector<SCGParam>        s_CM_Params[eHWSC_Num]; // Per-frame parameters
-	static std::vector<SCGParam>        s_PF_Params[eHWSC_Num]; // Per-frame parameters
-	static std::vector<SCGParam>        s_SG_Params[eHWSC_Num]; // Shadow-gen parameters
 
 	static std::vector<SCGTexture>      s_PF_Textures;   // Per-frame textures
 	static std::vector<STexSamplerRT>   s_PF_Samplers;   // Per-frame samplers

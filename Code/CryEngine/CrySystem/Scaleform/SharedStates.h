@@ -11,6 +11,7 @@
 	#pragma warning(disable : 6326)// Potential comparison of a constant with another constant
 	#pragma warning(disable : 6011)// Dereferencing NULL pointer
 	#include <CryCore/Platform/CryWindows.h>
+	#include <CrySystem/IWindowMessageHandler.h>
 	#include <GFxLoader.h>
 	#include <GFxPlayer.h> // includes <windows.h>
 	#include <GFxLog.h>
@@ -62,6 +63,25 @@ public:
 
 private:
 	CryGFxURLBuilder();
+};
+
+//////////////////////////////////////////////////////////////////////////
+// CryGFxTextClipboard
+
+class CryGFxTextClipboard : public GFxTextClipboard, IWindowMessageHandler, ISystemEventListener
+{
+public:
+	void OnTextStore(const wchar_t* szText, UPInt length) override;
+	static CryGFxTextClipboard& GetAccess();
+	~CryGFxTextClipboard();
+
+#if CRY_PLATFORM_WINDOWS
+	bool HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
+#endif // CRY_PLATFORM_WINDOWS
+	void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+
+private:
+	CryGFxTextClipboard();
 };
 
 //////////////////////////////////////////////////////////////////////////

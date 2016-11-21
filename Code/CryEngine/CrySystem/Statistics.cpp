@@ -24,7 +24,6 @@
 #include <CrySystem/IStreamEngine.h>
 
 // Access to some game info.
-#include <CryGame/IGame.h>           // IGame
 #include <CryGame/IGameFramework.h>  // IGameFramework
 #include <../CryAction/ILevelSystem.h>   // ILevelSystemListener
 

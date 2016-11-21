@@ -89,7 +89,7 @@ struct IGameObjectSystem
 	virtual IGameObject*    CreateGameObjectForEntity(EntityId entityId) = 0;
 	virtual IEntityProxyPtr CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject = NULL) = 0;
 
-	virtual void            RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pEntityCls) = 0;
+	virtual void            RegisterExtension(const char* szName, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pEntityCls) = 0;
 	virtual void            RegisterSchedulingProfile(const char* szEntityClassName, const char* szNormalPolicy, const char* szOwnedPolicy) = 0;
 	virtual void            DefineProtocol(bool server, IProtocolBuilder* pBuilder) = 0;
 

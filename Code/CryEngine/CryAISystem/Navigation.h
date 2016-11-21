@@ -213,9 +213,6 @@ public:
 	void Update(CTimeValue currentTime, float frameTime);
 	void UpdateNavRegions();
 
-	enum ENavDataState {NDS_UNSET, NDS_OK, NDS_BAD};
-	ENavDataState GetNavDataState() const { return m_navDataState; }
-
 	void          FlushAllAreas();
 	void          FlushSpecialAreas();
 
@@ -288,10 +285,6 @@ public:
 #endif //CRYAISYSTEM_DEBUG
 
 private:
-	/// Indicates if the navigation data is sufficiently valid after loading that
-	/// we should continue
-	ENavDataState m_navDataState;
-
 	// <NAV REGION STUFF>
 	/// used during 3D nav generation - the pass radii of the entities that will use the navigation
 	std::vector<float> m_3DPassRadii;

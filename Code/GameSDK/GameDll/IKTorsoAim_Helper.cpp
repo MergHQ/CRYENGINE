@@ -59,7 +59,7 @@ void CIKTorsoAim_Helper::Update( CIKTorsoAim_Helper::SIKTorsoParams& ikTorsoPara
 	//const float YPOS = 110.0f;
 	//const float FONT_SIZE = 4.0f;
 	//const float FONT_COLOUR[4] = {1,1,1,1};
-	//gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "CIKTorsoAim_Helper::Update: %s", m_blendTime > 0.0f ? "update" : "dont update");
+	//IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "CIKTorsoAim_Helper::Update: %s", m_blendTime > 0.0f ? "update" : "dont update");
 
 	if (m_blendFactor <= 0.0f)
 		return;

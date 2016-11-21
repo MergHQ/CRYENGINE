@@ -201,7 +201,7 @@ void CTacticalManager::PostSerialize()
 	// Radar needs player client entity to be set otherwise edge entity items won't show
 	// ENTITY_EVENT_UNHIDE isn't called when loading, since state is already unhided, that usually triggers CActor::ProcessEvent with event type ENTITY_EVENT_UNHIDE
 	// Call the hud event here instead
-	const EntityId playerEntityID = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId playerEntityID = gEnv->pGameFramework->GetClientActorId();
 	AddEntity(playerEntityID, CTacticalManager::eTacticalEntity_Unit);
 	SHUDEvent hudevent(eHUDEvent_AddEntity);
 	hudevent.AddData(SHUDEventData((int)playerEntityID));

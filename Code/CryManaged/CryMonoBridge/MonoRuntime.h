@@ -6,79 +6,125 @@
 #include <CrySystem/IConsole.h>
 #include <CryMono/IMonoRuntime.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
+#include <CryAISystem/BehaviorTree/Node.h>
 
-struct SMonoDomainHandlerLibrary;
-struct SExplicitPluginContainer
+#include "Wrappers/MonoObject.h"
+
+class CMonoDomain;
+class CRootMonoDomain;
+class CAppDomain;
+
+class CMonoLibrary;
+
+class CManagedPlugin;
+
+typedef CListenerSet<IMonoListener*>            MonoListeners;
+
+enum EMonoLogLevel
 {
-	SExplicitPluginContainer(ICryEngineBasePlugin* pBasePlugin, IMonoLibrary* pLibrary, bool bIsExcluded, string binaryPath)
-		: m_pPlugin(pBasePlugin)
-		, m_pLibrary(pLibrary)
-		, m_bIsExcluded(bIsExcluded)
-		, m_binaryPath(binaryPath)
-	{}
-
-	ICryEngineBasePlugin* m_pPlugin;
-	IMonoLibrary*         m_pLibrary;
-	bool                  m_bIsExcluded;
-	string                m_binaryPath;
+	eMLL_NULL = 0,
+	eMLL_Error,
+	eMLL_Critical,
+	eMLL_Warning,
+	eMLL_Message,
+	eMLL_Info,
+	eMLL_Debug
 };
 
-typedef std::vector<IMonoLibrary*>            Libraries;
-typedef CListenerSet<IMonoListener*>          MonoListeners;
-typedef std::vector<SExplicitPluginContainer> ExplicitLibraries;
-
-class CMonoRuntime : public IMonoRuntime
+class CManagedNodeCreatorProxy : public BehaviorTree::INodeCreator
 {
 public:
-	CMonoRuntime(const char* szProjectDllDir);
+	CManagedNodeCreatorProxy(const char* szTypeName, IManagedNodeCreator* pCreator)
+		: m_pCreator(pCreator)
+		, m_pNodeFactory(nullptr) 
+	{ 
+		cry_strcpy(m_szTypeName, szTypeName);
+	}
+
+	// INodeCreator
+	virtual ~CManagedNodeCreatorProxy()
+	{
+		delete m_pCreator;
+	}
+	virtual BehaviorTree::INodePtr    Create() override
+	{
+		return BehaviorTree::INodePtr(m_pCreator->Create());
+	}
+	virtual void        Trim() override {}
+	virtual const char* GetTypeName() const override { return m_szTypeName; }
+	virtual size_t      GetNodeClassSize() const override { return 4; }
+	virtual size_t      GetSizeOfImmutableDataForAllAllocatedNodes() const override { return 4; }
+	virtual size_t      GetSizeOfRuntimeDataForAllAllocatedNodes() const override { return 4; }
+	virtual void*       AllocateRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) override { return nullptr; }
+	virtual void*       GetRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) const override { return nullptr; }
+	virtual void        FreeRuntimeData(const BehaviorTree::RuntimeDataID runtimeDataID) override { }
+	virtual void        SetNodeFactory(BehaviorTree::INodeFactory* nodeFactory) override { m_pNodeFactory = nodeFactory; }
+	// ~INodeCreator
+
+private:
+	IManagedNodeCreator* m_pCreator;
+	char m_szTypeName[64];
+	BehaviorTree::INodeFactory* m_pNodeFactory;
+};
+
+class CMonoRuntime
+	: public IMonoRuntime
+{
+public:
+	CMonoRuntime();
 	virtual ~CMonoRuntime() override;
 
-	virtual void                  Initialize(EMonoLogLevel logLevel);
-	virtual bool                  LoadBinary(const char* szBinaryPath);
-	virtual bool                  UnloadBinary(const char* szBinaryPath);
+	// IMonoRuntime
+	virtual bool                        Initialize();
+	virtual std::shared_ptr<ICryPlugin> LoadBinary(const char* szBinaryPath);
 
-	virtual void                  Update(int updateFlags, int nPauseMode);
-	virtual ICryEngineBasePlugin* GetPlugin(const char* szBinaryPath) const;
-	virtual bool                  RunMethod(const ICryEngineBasePlugin* pPlugin, const char* szMethodName) const;
+	virtual void                        Update(int updateFlags, int nPauseMode);
 
-	virtual void                  RegisterListener(IMonoListener* pListener)   { m_listeners.Add(pListener); }
-	virtual void                  UnregisterListener(IMonoListener* pListener) { m_listeners.Remove(pListener); }
-	virtual EMonoLogLevel         GetLogLevel()                                { return m_logLevel; }
+	virtual void                        RegisterListener(IMonoListener* pListener)   { m_listeners.Add(pListener); }
+	virtual void                        UnregisterListener(IMonoListener* pListener) { m_listeners.Remove(pListener); }
 
-public:
-	IMonoLibrary* GetCommon() { return m_pLibCommon; }
-	IMonoLibrary* GetCore()   { return m_pLibCore; }
+	virtual IMonoDomain*                GetRootDomain() override;
+	virtual IMonoDomain*                GetActiveDomain() override;
+	virtual IMonoDomain*                CreateDomain(char* name, bool bActivate = false) override;
 
-private:
-	template<class T> static int ReadAll(string fileName, T** data);
-	static void                  MonoLogCallback(const char* szLogDomain, const char* szLogLevel, const char* szMessage, mono_bool is_fatal, void* pUserData);
-	static void                  MonoPrintCallback(const char* szMessage, mono_bool is_stdout);
-	static void                  MonoPrintErrorCallback(const char* szMessage, mono_bool is_stdout);
-	static void                  MonoLoadHook(MonoAssembly* pAssembly, void* pUserData);
-	static MonoAssembly*         MonoSearchHook(MonoAssemblyName* pAssemblyName, void* pUserData);
+	virtual IMonoAssembly*              GetCryCommonLibrary() const override;
+	virtual IMonoAssembly*              GetCryCoreLibrary() const override;
 
-	SMonoDomainHandlerLibrary*   LoadDomainHandlerLibrary(const char* szLibraryName);
-	IMonoLibrary*                LoadLibrary(const char* szLibraryName);
-	IMonoLibrary*                GetLibrary(MonoAssembly* pAssembly);
+	virtual void                        RegisterManagedActor(const char* className) override;
 
-	bool                         LaunchPluginDomain();
-	bool                         ReloadPluginDomain();
-	bool                         StopPluginDomain();
+	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) override;
+	// ~IMonoRuntime
 
-	bool                         ExcludePlugin(const char* szPluginName);
-	const char*                  TryGetPlugin(MonoDomain* pDomain, const char* szAssembly);
+	CMonoDomain* FindDomainByHandle(MonoDomain* pDomain);
+
+	CAppDomain*  LaunchPluginDomain();
+	CAppDomain*  GetPluginDomain() const { return m_pPluginDomain; }
+
+	void         HandleException(MonoObject* pException);
+
+	void ReloadPluginDomain();
 
 private:
-	EMonoLogLevel              m_logLevel;
-	IMonoLibrary*              m_pLibCommon;
-	IMonoLibrary*              m_pLibCore;
-	SMonoDomainHandlerLibrary* m_pDomainHandler;
-	MonoDomain*                m_pDomainGlobal;
-	MonoDomain*                m_pDomainPlugins;
-	MonoListeners              m_listeners;
-	bool                       m_bSearchOpen;
-	char                       m_sBaseDirectory[_MAX_PATH];
-	char                       m_sProjectDllDir[_MAX_PATH];
-	ExplicitLibraries          m_explicitLibraries;
-	Libraries                  m_loadedLibraries;
+	static void MonoLogCallback(const char* szLogDomain, const char* szLogLevel, const char* szMessage, mono_bool is_fatal, void* pUserData);
+	static void MonoPrintCallback(const char* szMessage, mono_bool is_stdout);
+	static void MonoPrintErrorCallback(const char* szMessage, mono_bool is_stdout);
+
+	static MonoAssembly* MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData);
+
+private:
+	typedef std::unordered_map<MonoDomain*, CMonoDomain*> TDomainLookupMap;
+	typedef std::vector<CManagedNodeCreatorProxy*> TNodeCreators;
+	TDomainLookupMap         m_domainLookupMap;
+	TNodeCreators            m_nodeCreators;
+
+	CRootMonoDomain*         m_pRootDomain;
+	CAppDomain*              m_pPluginDomain;
+
+	CMonoLibrary*            m_pLibCommon;
+	CMonoLibrary*            m_pLibCore;
+
+	MonoListeners            m_listeners;
+
+	bool                     m_bInitializedManagedEnvironment;
 };

@@ -341,10 +341,12 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 	}
 
 	//! Retrieves current SpawnParams.
-	virtual const SpawnParams& GetSpawnParams() const = 0;
-	void                       GetSpawnParams(SpawnParams& sp) const
+	virtual void GetSpawnParams(SpawnParams& sp) const = 0;
+	SpawnParams  GetSpawnParams() const
 	{
-		sp = GetSpawnParams();
+		SpawnParams sp;
+		GetSpawnParams(sp);
+		return sp;
 	}
 
 	//! Associates emitter with entity, for dynamic updating of positions etc.

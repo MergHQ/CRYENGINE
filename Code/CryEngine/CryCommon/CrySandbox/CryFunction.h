@@ -4,6 +4,78 @@
 
 #include <functional>
 
+//Function traits
+
+template<typename T>
+struct IsCallable
+{
+	template<typename U> static char Test(decltype(&U::operator())*);
+	template<typename U> static int Test(...);
+	static constexpr bool value = sizeof(Test<T>(0)) == sizeof(char);
+};
+
+template<typename T, typename... Args>
+struct IsCallable<T(Args...)>
+{
+	static constexpr bool value = true;
+};
+
+template<typename T, typename... Args>
+struct IsCallable<T(*)(Args...)>
+{
+	static constexpr bool value = true;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename MemberFunction> struct CryMemFunTraits
+{
+	static constexpr bool isMemberFunction = false;
+};
+
+template<typename Ret, typename Class, typename... Args>
+struct CryMemFunTraits<Ret(Class::*)(Args...)>
+{
+	typedef Ret(Signature)(Args...);
+	static constexpr bool isMemberFunction = true;
+};
+
+template<typename Ret, typename Class, typename... Args>
+struct CryMemFunTraits<Ret(Class::*)(Args...) const>
+{
+	typedef Ret(Signature)(Args...);
+	static constexpr bool isMemberFunction = true;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename Function> 
+struct CryFunctionTraits
+{
+	typedef decltype(&Function::operator()) OperatorCallType;
+	typedef typename CryMemFunTraits<OperatorCallType>::Signature Signature;
+};
+
+template<typename Ret, typename... Args>
+struct CryFunctionTraits<Ret(Args...)>
+{
+	typedef Ret(Signature)(Args...);
+};
+
+template<typename Ret, typename... Args>
+struct CryFunctionTraits<Ret(*)(Args...)>
+{
+	typedef Ret(Signature)(Args...);
+};
+
+template<typename Ret, typename... Args>
+struct CryFunctionTraits<Ret(&)(Args...)>
+{
+	typedef Ret(Signature)(Args...);
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 namespace CryFunctionPrivate
 {
 template<typename Signature> struct FunctionWrapper
@@ -257,6 +329,13 @@ template<typename Sig1, typename Sig2>
 inline std::function<Sig1> function_cast(const std::function<Sig2>& f)
 {
 	return CryFunctionPrivate::FunctionWrapper<Sig1>::Cast(f);
+}
+
+template<typename Sig1, typename Function, typename std::enable_if<IsCallable<Function>::value, int>::type* = 0>
+inline std::function<Sig1> function_cast(const Function& f)
+{
+	typedef typename CryFunctionTraits<Function>::Signature Sig2;
+	return CryFunctionPrivate::FunctionWrapper<Sig1>::Cast(std::function<Sig2>(f));
 }
 
 //////////////////////////////////////////////////////////////////////////

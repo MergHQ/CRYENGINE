@@ -84,7 +84,7 @@ public:
 	void              ProcessScene(int sceneFlags, const SRenderingPassInfo& passInfo);
 	void              ReleaseBuffers();
 	void              OnResolutionChanged();
-	void              CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight);
+	void              CalculateBackbufferResolution(int nativeWidth, int nativeHeight, int* pRenderWidth, int *pRenderHeight);
 
 	void              SubmitFrameToHMD();
 	void              DisplayStereo();
@@ -109,6 +109,8 @@ public:
 	// If HMD device present, will read latest tracking data and update current rendering camera.
 	// This is called from the render thread
 	void TryInjectHmdCameraAsync(CRenderView* pRenderView);
+
+	CTexture* WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView);
 
 public:
 	// IStereoRenderer Interface
@@ -159,8 +161,6 @@ private:
 	StereoEye     m_curEye;
 	CCryNameR     m_SourceSizeParamName;
 
-	uint32        m_frontBufWidth, m_frontBufHeight;
-
 	float         m_stereoStrength;
 	float         m_zeroParallaxPlaneDist;
 	float         m_maxSeparationScene;
@@ -190,7 +190,6 @@ private:
 	void          DisableStereo();
 	void          ChangeOutputFormat();
 	void          HandleNVControl();
-	bool          InitializeHmdRenderer();
 	void          ShutdownHmdRenderer();
 
 	void          RenderScene(int sceneFlags, const SRenderingPassInfo& passInfo);
@@ -206,7 +205,7 @@ private:
 
 	bool          IsDriver(DriverType driver) { return m_device == STEREO_DEVICE_DRIVER && m_driver == driver; }
 
-	IHmdRenderer* CreateHmdRenderer(EStereoOutput stereoOutput, struct IHmdDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer);
+	IHmdRenderer* CreateHmdRenderer(struct IHmdDevice& device, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer);
 };
 
 #endif

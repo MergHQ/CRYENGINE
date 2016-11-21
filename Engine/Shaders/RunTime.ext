@@ -110,7 +110,6 @@ Property
   Precache = GeneralDS
   Precache = GeneralHS
   Precache = ShadowGenVS  
-  Precache = CausticsVS
   Precache = GeneralPS
   Precache = CustomRenderHS
   Precache = CustomRenderDS
@@ -191,7 +190,6 @@ Property
   Precache = DetailVS
   Precache = GlowVS
   Precache = FurVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = MethaGenVS
@@ -213,7 +211,7 @@ Property
   Precache = VegetationHS
   Precache = VegetationDS
   Precache = VegetationPS
-	Precache = GeneralPS
+  Precache = GeneralPS
   Precache = GlassPS
   Precache = GlassVS
   Precache = GlowVS
@@ -221,6 +219,7 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS      
   Precache = MeshBakerPS
+  Precache = DebugPassPS
 }
 
 Property
@@ -313,6 +312,9 @@ Property
 	Precache = ResolvePS
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
+
+	Precache = DebugPassVS
+	Precache = DebugPassPS
 }
 
 Property
@@ -476,7 +478,6 @@ Property
   Precache = FurPS
   Precache = SpritePS
   Precache = DetailVS  
-  Precache = CausticsVS
   Precache = ParticlePS
   Precache = MethaGenVS
   Precache = MethaGenPS
@@ -540,7 +541,6 @@ Property
   Precache = FurPS
   Precache = SpritePS
   Precache = DetailVS  
-  Precache = CausticsVS
   Precache = ParticlePS
   Precache = MethaGenVS
   Precache = MethaGenPS  
@@ -588,9 +588,9 @@ Property
   Precache = DetailVS
   Precache = GlowVS
   Precache = MotionBlurVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = DebugPassVS
+  Precache = DebugPassPS
   Precache = GeneralHS
   Precache = GeneralDS
 }
@@ -614,7 +614,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = MethaGenVS
 	Precache = DebugPassVS
@@ -641,7 +640,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = MethaGenVS
   Precache = DebugPassVS
@@ -821,7 +819,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -833,7 +830,7 @@ Property
 Property
 {
   Name = %_RT_SKELETON_SSD_LINEAR
-  Mask = 0x2000000000000
+  Mask = 0x200000000
   Precache = GeneralVS
   Precache = ClothVS
 	Precache = SkinVS 
@@ -849,7 +846,6 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS
   Precache = SoftAlphaTestPassVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = EffectLayerVS
   Precache = CloakVS
@@ -894,7 +890,6 @@ Property
   Precache = VoxTerrainVS
   Precache = ZVS
   Precache = ShadowGenVS
-  Precache = CausticsVS
   Precache = CustomRenderVS
 }
 
@@ -912,6 +907,107 @@ Property
   Precache = RenderDownscaledShadowMapPS
   Precache = ConeTraceDiffusePS
   Precache = DemosaicPS
+}
+
+Property
+{
+// Any shader that depends on MultiRes being enabled or disabled,
+// or uses NvGetProjectionData() / NvGetGeometryShaderData(), should appear in this list.
+
+  Name = %_RT_PROJECTION_MULTI_RES
+  Mask = 0x200000000
+  Precache = ZGS
+  Precache = ZPS
+  Precache = DeferredDecalPassGS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassGS
+  Precache = DeferredLightPassPS
+  Precache = ClipVolumeGS
+  Precache = DeferredPassGS
+  Precache = DeferredPassPS
+  Precache = DistanceCloudsGS
+  Precache = WaterSurfaceGS
+  Precache = WaterSurfacePS
+  Precache = GlassGS
+  Precache = GeneralGS
+  Precache = ParticleGS
+  Precache = FogPostProcessGS
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = FogPassVolShadowsGatherPass
+  Precache = ShadowMaskGenGS
+  Precache = ShadowMaskGenPS
+  Precache = TiledShadingCS
+  Precache = PostAA_PS
+  Precache = PostEffectsGS
+  Precache = PostEffectsPS
+  Precache = UpscaleMultiResPS
+  Precache = OcclusionTestGS
+  Precache = WaterFogVolume_GS
+  Precache = WaterFogVolume_PS
+  Precache = StarsGS
+  Precache = HDRPostProcessPS
+  Precache = PostSunShaftsGS
+  Precache = PostSunShaftsPS
+  Precache = VolumetricCloudsGS
+  Precache = VolumetricCloudsPS
+  Precache = CloudsBlendPS
+  Precache = PostMotionBlurGS
+  Precache = PostMotionBlurPS
+  Precache = ParticleImposterGS
+  Precache = ParticleImposterPS
+}
+
+Property
+{
+// Any shader that depends on LMS being enabled or disabled,
+// or uses NvGetProjectionData() / NvGetGeometryShaderData(), should appear in this list.
+
+  Name = %_RT_PROJECTION_LENS_MATCHED
+  Mask = 0x1000000000
+  Precache = ZGS
+  Precache = ZPS
+  Precache = DeferredDecalPassGS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassGS
+  Precache = DeferredLightPassPS
+  Precache = ClipVolumeGS
+  Precache = DeferredPassGS
+  Precache = DeferredPassPS
+  Precache = DistanceCloudsGS
+  Precache = WaterSurfaceGS
+  Precache = WaterSurfacePS
+  Precache = GlassGS
+  Precache = GeneralGS
+  Precache = ParticleGS
+  Precache = FogPostProcessGS
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = FogPassVolShadowsGatherPass
+  Precache = ShadowMaskGenGS
+  Precache = ShadowMaskGenPS
+  Precache = TiledShadingCS
+  Precache = PostAA_PS
+  Precache = PostEffectsGS
+  Precache = PostEffectsPS
+  Precache = UpscaleMultiResPS
+  Precache = OcclusionTestGS
+  Precache = WaterFogVolume_GS
+  Precache = WaterFogVolume_PS
+  Precache = StarsGS
+  Precache = HDRPostProcessPS
+  Precache = PostSunShaftsGS
+  Precache = PostSunShaftsPS
+  Precache = VolumetricCloudsGS
+  Precache = VolumetricCloudsPS
+  Precache = CloudsBlendPS
+  Precache = PostMotionBlurGS
+  Precache = PostMotionBlurPS
+  Precache = ParticleImposterGS
+  Precache = ParticleImposterPS
+
+  // Unique to _RT_PROJECTION_LENS_MATCHED
+  Precache = LinearizeDepthPS
 }
 
 Property
@@ -1073,9 +1169,6 @@ Property
   Precache = VolumeLightInjectionCS
   Precache = VolumetricCloudsPS
   Precache = ReprojectCloudsPS
-	
-  Precache = ShadowMaskGenVS
-  Precache = ShadowMaskGenPS 
 }
 
 // Reserved for post processes/deferred - do not use for light/common shaders
@@ -1124,7 +1217,6 @@ Property
   Mask = 0x800000000000
   Precache = ShadowVS
   Precache = ShadowPS
-  Precache = FogPassVolShadowsInterleavePassPS
   Precache = ShadowGenVS
   Precache = ShadowGenPS
   
@@ -1132,7 +1224,6 @@ Property
   Precache = ShadowMaskGenVS
   Precache = ShadowMaskGenPS
 
-  Precache = WaterFogVolume_PS
   Precache = DemosaicDiffusePS
   Precache = ConeTraceDiffusePS
 }
@@ -1140,7 +1231,7 @@ Property
 Property
 {
 	Name = %_RT_COMPUTE_SKINNING
-		Mask = 0x20000000000000
+		Mask = 0x2000000000000
 		Precache = GeneralVS
 		Precache = ClothVS
 		Precache = SkinVS 
@@ -1156,7 +1247,6 @@ Property
 		Precache = MotionBlurVS
 		Precache = FurVS
 		Precache = SoftAlphaTestPassVS
-		Precache = CausticsVS
 		Precache = CustomRenderVS
 		Precache = EffectLayerVS
 		Precache = CloakVS
@@ -1164,6 +1254,13 @@ Property
 		Precache = DebugPassVS
 		Precache = CloakVS
 		Precache = DynamicOverlay
+
+		Precache = WaterSurfaceVS
+		Precache = WaterSurfacePS
+		Precache = WaterSurfaceHS
+		Precache = WaterSurfaceDS
+		Precache = WaterFogVolume_VS
+		Precache = WaterFogVolume_PS
 }
 
 Property

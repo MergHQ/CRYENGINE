@@ -298,7 +298,7 @@ CGoalPipe::CGoalPipe(const char* sName, bool bDynamic)
 	m_nCurrentBlockCounter(0),
 	m_lastResult(eGOR_NONE)
 {
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(g_GoalOpNames) == eGO_LAST + 1);
+	PREFAST_SUPPRESS_WARNING(6326) static_assert(CRY_ARRAY_COUNT(g_GoalOpNames) == eGO_LAST + 1, "Invalid array size!");
 }
 
 CGoalPipe::~CGoalPipe()

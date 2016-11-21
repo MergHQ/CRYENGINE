@@ -43,20 +43,20 @@ def module_extensions_scaleform(ctx, kw, entry_prefix, platform, configuration):
 		has_shipping_lib = False
 		scaleform_lib_subfolder +=  'linux'		
 		kw[entry_prefix + 'libpath'] += [scaleform_lib_subfolder]  # add platform lib folder for this platform
-		kw[entry_prefix + 'lib']  += ['gfx', 'jpeg', 'png16']
+		kw[entry_prefix + 'lib']  += ['gfx']
 	elif platform == 'orbis':
 		has_shipping_lib = True
 		scaleform_lib_subfolder +=  'ORBIS'
 		kw[entry_prefix + 'lib']  += ['gfx', 'gfx_video']
-	elif platform == 'android_arm_gcc':
-		has_shipping_lib = False
+	elif platform == 'android_arm':
+		has_shipping_lib = True
 		scaleform_lib_subfolder +=  'android-armeabi-v7a'
 		kw[entry_prefix + 'lib']  += ['gfx']
 	elif platform == 'darwin':
 		has_shipping_lib = False
 		scaleform_lib_subfolder +=  'mac'
 		kw[entry_prefix + 'libpath'] += [scaleform_lib_subfolder]  # add platform lib folder for this platform
-		kw[entry_prefix + 'lib']  += ['gfx','jpeg', 'png16']
+		kw[entry_prefix + 'lib']  += ['gfx']
 
 	if configuration == "":	
 		configuration = ctx.env['CONFIGURATION']		

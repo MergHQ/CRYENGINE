@@ -15,10 +15,10 @@
 
 	#include "DX12/Device/CCryDX12DeviceChild.hpp"
 
-class CCryDX12RasterizerState : public CCryDX12DeviceChild<ID3D11RasterizerState>
+class CCryDX12RasterizerState : public CCryDX12DeviceChild<ID3D11RasterizerStateToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12RasterizerState, CCryDX12DeviceChild<ID3D11RasterizerState> );
+	DX12_OBJECT(CCryDX12RasterizerState, CCryDX12DeviceChild<ID3D11RasterizerStateToImplement> );
 
 	static CCryDX12RasterizerState* Create(const D3D11_RASTERIZER_DESC* pRasterizerDesc);
 

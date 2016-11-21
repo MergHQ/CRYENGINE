@@ -7,9 +7,9 @@
 
 const char* mannequin::FindProcClipTypeName(const IProceduralClipFactory::THash& typeNameHash)
 {
-	if (gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv && gEnv->pGameFramework)
 	{
-		const IProceduralClipFactory& proceduralClipFactory = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetProceduralClipFactory();
+		const IProceduralClipFactory& proceduralClipFactory = gEnv->pGameFramework->GetMannequinInterface().GetProceduralClipFactory();
 		const char* const typeName = proceduralClipFactory.FindTypeName(typeNameHash);
 		return typeName;
 	}

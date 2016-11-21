@@ -678,6 +678,16 @@ void CVolumetricFogStage::BindVolumetricFogResources(CFullscreenPass& pass, int3
 template
 void CVolumetricFogStage::BindVolumetricFogResources(CComputeRenderPass& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
 
+CTexture* CVolumetricFogStage::GetGlobalEnvProbeTex0() const
+{
+	return (m_globalEnvProveTex0 ? m_globalEnvProveTex0 : CTexture::s_ptexBlackCM);
+}
+
+CTexture* CVolumetricFogStage::GetGlobalEnvProbeTex1() const
+{
+	return (m_globalEnvProveTex1 ? m_globalEnvProveTex1 : CTexture::s_ptexBlackCM);
+}
+
 void CVolumetricFogStage::InjectParticipatingMedia(CRenderView* pRenderView, const SScopedComputeCommandList& commandList)
 {
 	CRY_ASSERT(pRenderView);
@@ -894,9 +904,8 @@ void CVolumetricFogStage::RenderDownscaledShadowmap(CRenderView* pRenderView)
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
-	uint64 rtMaskSunShadow = 0;
 	CShadowUtils::SShadowCascades cascades;
-	const bool bSunShadow = CShadowUtils::SetupShadowsForFog(rtMaskSunShadow, cascades, pRenderView);
+	const bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, pRenderView);
 
 	const int32 cascadeNum = vfGetShadowCascadeNum();
 
@@ -925,7 +934,7 @@ void CVolumetricFogStage::RenderDownscaledShadowmap(CRenderView* pRenderView)
 			                      target->GetDstFormat(),
 			                      m_resourceFrameID))
 			{
-				uint64 rtMask = rtMaskSunShadow;
+				uint64 rtMask = 0;
 				const uint64 lv0 = g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
 				const uint64 lv1 = g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
 				switch (i)
@@ -1910,7 +1919,7 @@ void CVolumetricFogStage::InjectInscatteringLight(CRenderView* pRenderView, cons
 
 	// setup shadow maps.
 	CShadowUtils::SShadowCascades cascades;
-	const bool bSunShadow = CShadowUtils::SetupShadowsForFog(rtMask, cascades, pRenderView);
+	const bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, pRenderView);
 
 	// explicitly replace the shadow map with the static shadow map if static shadow map replace above 5th cascade.
 	bool bStaticShadowMap = bSunShadow && (CRenderer::CV_r_ShadowsCache > 0);

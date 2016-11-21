@@ -124,11 +124,11 @@ target_include_directories(${THIS_PROJECT} INTERFACE ${SDK_DIR}/ilmbase/Half ${S
 
 # Tool to create toFloat.h
 CryConsoleApplication(toFloat SOLUTION_FOLDER "Tools/ilm")
-target_compile_options(${THIS_PROJECT} PRIVATE /MT /W0)
+target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D_HAS_EXCEPTIONS=0)
 
 # Tool to create eLut.h
 CryConsoleApplication(eLut SOLUTION_FOLDER "Tools/ilm")
-target_compile_options(${THIS_PROJECT} PRIVATE /MT /W0)
+target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D_HAS_EXCEPTIONS=0)
 

@@ -6,26 +6,43 @@
 #include "LCGRandom.h"
 #include "MTPseudoRandom.h"
 
-namespace CryRandom_Internal
+#include <CrySystem/ISystem.h>
+
+struct SScopedRandomSeedChange
 {
-//! Private access point to the global random number generator.
-extern CRndGen g_random_generator;
-}
+	SScopedRandomSeedChange()
+	{
+		m_prevSeed = gEnv->pSystem->GetRandomGenerator().GetState();
+	}
+
+	SScopedRandomSeedChange(uint32 seed)
+	{
+		m_prevSeed = gEnv->pSystem->GetRandomGenerator().GetState();
+
+		gEnv->pSystem->GetRandomGenerator().Seed(seed);
+	}
+
+	~SScopedRandomSeedChange()
+	{
+		gEnv->pSystem->GetRandomGenerator().SetState(m_prevSeed);
+	}
+
+	void Seed(uint32 seed)
+	{
+		gEnv->pSystem->GetRandomGenerator().Seed(seed);
+	}
+
+	uint64 m_prevSeed;
+};
 
 inline CRndGen cry_random_next()
 {
-	return CryRandom_Internal::g_random_generator.Next();
-}
-
-//! Seed the global random number generator.
-inline void cry_random_seed(const uint32 nSeed)
-{
-	CryRandom_Internal::g_random_generator.Seed(nSeed);
+	return gEnv->pSystem->GetRandomGenerator().Next();
 }
 
 inline uint32 cry_random_uint32()
 {
-	return CryRandom_Internal::g_random_generator.GenerateUint32();
+	return gEnv->pSystem->GetRandomGenerator().GenerateUint32();
 }
 
 //! Scalar ranged random function.
@@ -34,7 +51,7 @@ inline uint32 cry_random_uint32()
 template<class T>
 inline T cry_random(const T minValue, const T maxValue)
 {
-	return CryRandom_Internal::g_random_generator.GetRandom(minValue, maxValue);
+	return gEnv->pSystem->GetRandomGenerator().GetRandom(minValue, maxValue);
 }
 
 //! Vector (Vec2, Vec3, Vec4) ranged random function.
@@ -44,12 +61,12 @@ inline T cry_random(const T minValue, const T maxValue)
 template<class T>
 inline T cry_random_componentwise(const T& minValue, const T& maxValue)
 {
-	return CryRandom_Internal::g_random_generator.GetRandomComponentwise(minValue, maxValue);
+	return gEnv->pSystem->GetRandomGenerator().GetRandomComponentwise(minValue, maxValue);
 }
 
 //! \return A random unit vector (Vec2, Vec3, Vec4).
 template<class T>
 inline T cry_random_unit_vector()
 {
-	return CryRandom_Internal::g_random_generator.GetRandomUnitVector<T>();
+	return gEnv->pSystem->GetRandomGenerator().GetRandomUnitVector<T>();
 }

@@ -18,7 +18,7 @@
 
 #include <AudioLogger.h>
 
-extern CSoundAllocator g_audioImplMemoryPool;
+extern CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 extern CAudioLogger g_audioImplLogger;
 
 #define AUDIO_ALLOCATOR_MEMORY_POOL g_audioImplMemoryPool

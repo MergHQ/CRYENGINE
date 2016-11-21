@@ -272,7 +272,7 @@ CWeapon *HazardDataProjectile::GetIgnoredWeapon() const
 	{
 		return NULL;
 	}
-	IItem* item = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(
+	IItem* item = gEnv->pGameFramework->GetIItemSystem()->GetItem(
 		m_IgnoredWeaponEntityID);
 	if (item == NULL)
 	{

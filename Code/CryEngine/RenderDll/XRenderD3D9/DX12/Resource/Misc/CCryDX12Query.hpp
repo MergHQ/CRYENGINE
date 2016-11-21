@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12Asynchronous.hpp"
 
-class CCryDX12Query : public CCryDX12Asynchronous<ID3D11Query>
+class CCryDX12Query : public CCryDX12Asynchronous<ID3D11QueryToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12Query, CCryDX12Asynchronous<ID3D11Query> );
+	DX12_OBJECT(CCryDX12Query, CCryDX12Asynchronous<ID3D11QueryToImplement> );
 
 	static CCryDX12Query* Create(ID3D12Device* pDevice, const D3D11_QUERY_DESC* pDesc);
 

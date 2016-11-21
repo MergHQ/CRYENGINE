@@ -5,7 +5,6 @@
 #if ENABLE_NET_DEBUG_INFO
 
 	#include "NetDebugChannelViewer.h"
-	#include <CryGame/IGame.h>
 	#include <CryGame/IGameFramework.h>
 	#include <CrySystem/ISystem.h>
 

@@ -48,7 +48,7 @@ void CActorSystem::DemoSpectatorSystem::SwitchSpectator(TActorMap* pActors, Enti
 		return;
 
 	m_currentActor = nextActor->GetEntityId();
-	if (IView* view = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView())
+	if (IView* view = gEnv->pGameFramework->GetIViewSystem()->GetActiveView())
 		view->LinkTo(nextActor->GetEntity());
 
 	nextActor->SwitchDemoModeSpectator(true);
@@ -199,10 +199,6 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 	}
 
 	const EntityId entityId = pEntity->GetId();
-	if (bIsClient)
-	{
-		gEnv->pGame->PlayerIdSet(entityId);
-	}
 	if (m_pEntitySystem->InitEntity(pEntity, params))
 	{
 		return GetActor(entityId);
@@ -264,6 +260,9 @@ void CActorSystem::RegisterActorClass(const char* name, IGameFramework::IActorCr
 	classDesc.pCreator = pCreator;
 
 	m_classes.insert(TActorClassMap::value_type(name, classDesc));
+
+	// Automatically register scheduling profile
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterSchedulingProfile(actorClass.sName, "dude", "own");
 }
 
 //------------------------------------------------------------------------
@@ -518,7 +517,7 @@ void CActorSystem::ActorSystemErrorMessage(const char* fileName, const char* err
 
 	if (displayErrorDialog)
 	{
-		gEnv->pSystem->ShowMessage(messageBuffer.c_str(), "Error", 0);
+		gEnv->pSystem->ShowMessage(messageBuffer.c_str(), "Error", eMB_Error);
 	}
 }
 

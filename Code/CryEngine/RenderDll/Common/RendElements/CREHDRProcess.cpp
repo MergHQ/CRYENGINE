@@ -1,6 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "XRenderD3D9/DriverD3D.h"
 
 // constructor/destructor
 CREHDRProcess::CREHDRProcess()
@@ -31,4 +32,15 @@ void CREHDRProcess::mfReset()
 
 void CREHDRProcess::mfActivate(int iProcess)
 {
+}
+
+bool CREHDRProcess::mfDraw(CShader* ef, SShaderPass* sfm)
+{
+	CD3D9Renderer* rd = gcpRendD3D;
+	assert(rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_HDR || rd->m_RP.m_CurState & GS_WIREFRAME);
+	if (!(rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_HDR))
+		return false;
+
+	rd->FX_HDRPostProcessing();
+	return true;
 }

@@ -13,6 +13,7 @@ struct ObscuranceConstants
 	Vec4 nearFarClipDist;
 	Vec4 viewSpaceParams;
 	Vec4 ssdoParams;
+	Vec4 hmaoParams;
 };
 
 void CScreenSpaceObscuranceStage::Init()
@@ -67,6 +68,7 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passObscurance.SetRenderTarget(0, pDestRT);
 		m_passObscurance.SetState(GS_NODEPTHTEST);
 		m_passObscurance.SetRequirePerViewConstantBuffer(true);
+		m_passObscurance.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 		m_passObscurance.SetTextureSamplerPair(0, CTexture::s_ptexSceneNormalsMap, m_samplerPoint);
 		m_passObscurance.SetTextureSamplerPair(1, CTexture::s_ptexZTarget, m_samplerPoint);
@@ -76,21 +78,49 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passObscurance.SetTexture(12, pHeightMapAOTex ? pHeightMapAOTex : CTexture::s_ptexWhite);
 
 		{
+			CStandardGraphicsPipeline::SViewInfo viewInfo[CCamera::eEye_eCount];
+			int viewInfoCount = pRenderer->GetGraphicsPipeline().GetViewInfo(viewInfo);
+
+			Vec4 viewSpaceParams[CCamera::eEye_eCount];
+			for (uint32 i = 0; i < viewInfoCount; i++)
+			{
+				Matrix44 projMat = viewInfo[i].projMatrix;
+				float stereoShift = projMat.m20 * 2.0f;
+				viewSpaceParams[i] = Vec4(2.0f / projMat.m00, 2.0f / projMat.m11, (-1.0f + stereoShift) / projMat.m00, -1.0f / projMat.m11);
+			}
+			
 			auto constants = m_passObscurance.BeginTypedConstantUpdate<ObscuranceConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
 
-			constants->screenSize = Vec4((float)pRenderer->GetWidth(), (float)pRenderer->GetHeight(), 1.0f / (float)pRenderer->GetWidth(), 1.0f / (float)pRenderer->GetHeight());
-			constants->nearFarClipDist = Vec4(pRenderer->GetRCamera().fNear, pRenderer->GetRCamera().fFar, 0, 0);
+			constants->screenSize = Vec4((float)pDestRT->GetWidth(), (float)pDestRT->GetHeight(), 1.0f / (float)pDestRT->GetWidth(), 1.0f / (float)pDestRT->GetHeight());
+			constants->nearFarClipDist = Vec4(viewInfo[0].pRenderCamera->fNear, viewInfo[0].pRenderCamera->fFar, 0, 0);
 		
-			float radius = CRenderer::CV_r_ssdoRadius / pRenderer->GetRCamera().fFar;
+			float radius = CRenderer::CV_r_ssdoRadius / viewInfo[0].pRenderCamera->fFar;
 	#if defined(FEATURE_SVO_GI)
 			if (CSvoRenderer::GetInstance()->IsActive())
 				radius *= CSvoRenderer::GetInstance()->GetSsaoAmount();
 	#endif
-			constants->ssdoParams = Vec4(radius * 0.5f * pRenderer->m_ProjMatrix.m00, radius * 0.5f * pRenderer->m_ProjMatrix.m11,
+			constants->ssdoParams = Vec4(radius * 0.5f * viewInfo[0].projMatrix.m00, radius * 0.5f * viewInfo[0].projMatrix.m11,
 																	 CRenderer::CV_r_ssdoRadiusMin, CRenderer::CV_r_ssdoRadiusMax);
 
-			constants->viewSpaceParams = Vec4( 2.0f / pRenderer->m_ProjMatrix.m00,  2.0f / pRenderer->m_ProjMatrix.m11,
-																				-1.0f / pRenderer->m_ProjMatrix.m00, -1.0f / pRenderer->m_ProjMatrix.m11);
+			constants->viewSpaceParams = viewSpaceParams[0];
+
+			if (pHeightMapFrustum)
+			{
+				assert(pHeightMapAOTex && pHeightMapAOScreenDepthTex);
+				assert(pHeightMapAOTex->GetWidth() == pHeightMapAOScreenDepthTex->GetWidth() && pHeightMapAOTex->GetHeight() == pHeightMapAOScreenDepthTex->GetHeight());
+				const float resolutionFactor = (float)pHeightMapAOTex->GetWidth() / (float)pDestRT->GetWidth();
+				constants->hmaoParams = Vec4(1.0f / (float)pHeightMapAOTex->GetWidth(), 1.0f / (float)pHeightMapAOTex->GetHeight(), resolutionFactor, 0);
+			}
+			else
+			{
+				constants->hmaoParams = Vec4(0, 0, 0, 0);
+			}
+
+			if (viewInfoCount > 1)
+			{
+				constants.BeginStereoOverride(true);
+				constants->viewSpaceParams = viewSpaceParams[1];
+			}
 		
 			m_passObscurance.EndTypedConstantUpdate(constants);
 		}
@@ -124,11 +154,11 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passFilter.BeginConstantUpdate();
 
 		Vec4 v(0, 0, (float)srcSizeX, (float)srcSizeY);
-		m_passFilter.SetConstant(eHWSC_Vertex, pixelOffsetName, v);
+		m_passFilter.SetConstant(pixelOffsetName, v, eHWSC_Vertex);
 		v = Vec4(0.5f / (float)sizeX, 0.5f / (float)sizeY, 1.0f / (float)srcSizeX, 1.0f / (float)srcSizeY);
-		m_passFilter.SetConstant(eHWSC_Pixel, blurOffsetName, v);
+		m_passFilter.SetConstant(blurOffsetName, v, eHWSC_Pixel);
 		v = Vec4(2.0f / srcSizeX, 0, 2.0f / srcSizeY, 10.0f); // w: weight coef
-		m_passFilter.SetConstant(eHWSC_Pixel, blurKernelName, v);
+		m_passFilter.SetConstant(blurKernelName, v, eHWSC_Pixel);
 
 		m_passFilter.Execute();
 	}

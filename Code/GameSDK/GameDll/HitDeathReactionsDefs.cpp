@@ -198,7 +198,7 @@ void SReactionParams::SReactionAnim::OnAnimLoaded() const
 	// Remove timer if any
 	if (m_iTimerHandle)
 	{
-		gEnv->pGame->GetIGameFramework()->RemoveTimer(m_iTimerHandle);
+		gEnv->pGameFramework->RemoveTimer(m_iTimerHandle);
 		m_iTimerHandle = 0;
 	}
 }
@@ -247,7 +247,7 @@ void SReactionParams::SReactionAnim::RequestNextAnim(const IAnimationSet* pAnimS
 				gEnv->pCharacterManager->CAF_AddRef(m_requestedAnimCRC);
 
 				// Create a timer to poll when the asset ends streaming
-				m_iTimerHandle = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(0.5f), false, functor(*this, &SReactionAnim::OnTimer), NULL);
+				m_iTimerHandle = gEnv->pGameFramework->AddTimer(CTimeValue(0.5f), false, functor(*this, &SReactionAnim::OnTimer), NULL);
 			}
 			else if (requestedAnimCRC != 0)
 			{
@@ -277,7 +277,7 @@ void SReactionParams::SReactionAnim::ReleaseRequestedAnims()
 	// Remove the timer, since there's no need to poll for the end of the requested assets streaming
 	if (m_iTimerHandle)
 	{
-		gEnv->pGame->GetIGameFramework()->RemoveTimer(m_iTimerHandle);
+		gEnv->pGameFramework->RemoveTimer(m_iTimerHandle);
 		m_iTimerHandle = 0;
 	}
 
@@ -298,7 +298,7 @@ void SReactionParams::SReactionAnim::OnTimer(void* pUserData, IGameFramework::Ti
 	// If still is not loaded, wait 0.5 seconds for the next
 	if (m_requestedAnimCRC != 0)
 	{
-		m_iTimerHandle = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(0.5f), false, functor(*this, &SReactionAnim::OnTimer), NULL);	
+		m_iTimerHandle = gEnv->pGameFramework->AddTimer(CTimeValue(0.5f), false, functor(*this, &SReactionAnim::OnTimer), NULL);	
 	}
 }
 
@@ -460,7 +460,7 @@ void SReactionParams::SMannequinData::OnAnimLoaded() const
 	// Remove timer if any
 	if (m_iTimerHandle)
 	{
-		gEnv->pGame->GetIGameFramework()->RemoveTimer(m_iTimerHandle);
+		gEnv->pGameFramework->RemoveTimer(m_iTimerHandle);
 		m_iTimerHandle = 0;
 	}
 }
@@ -492,7 +492,7 @@ void SReactionParams::SMannequinData::RequestNextAnim( const IActionController* 
 			m_pRequestedFragment.reset( new CFragmentCache( *m_pCurrentFragment, piActionController, m_iNextOptionIndex ) );
 
 			// Create a timer to poll when the asset ends streaming
-			m_iTimerHandle = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(0.5f), false, functor(*this, &SMannequinData::OnTimer), NULL);
+			m_iTimerHandle = gEnv->pGameFramework->AddTimer(CTimeValue(0.5f), false, functor(*this, &SMannequinData::OnTimer), NULL);
 		}
 	}
 }
@@ -507,7 +507,7 @@ void SReactionParams::SMannequinData::ReleaseRequestedAnims()
 	// Remove the timer, since there's no need to poll for the end of the requested assets streaming
 	if (m_iTimerHandle)
 	{
-		gEnv->pGame->GetIGameFramework()->RemoveTimer(m_iTimerHandle);
+		gEnv->pGameFramework->RemoveTimer(m_iTimerHandle);
 		m_iTimerHandle = 0;
 	}
 }
@@ -526,7 +526,7 @@ void SReactionParams::SMannequinData::OnTimer(void* pUserData, IGameFramework::T
 	// If still is not loaded, wait 0.5 seconds for the next
 	if (m_pRequestedFragment != NULL)
 	{
-		m_iTimerHandle = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(0.5f), false, functor(*this, &SMannequinData::OnTimer), NULL);	
+		m_iTimerHandle = gEnv->pGameFramework->AddTimer(CTimeValue(0.5f), false, functor(*this, &SMannequinData::OnTimer), NULL);	
 	}
 }
 

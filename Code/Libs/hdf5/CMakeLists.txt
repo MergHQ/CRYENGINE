@@ -457,7 +457,7 @@ target_compile_options(${THIS_PROJECT} PRIVATE /W0 ) # Disable warnings for 3rdP
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D__STDC_VERSION__=199901L )
 target_link_libraries( ${THIS_PROJECT} PRIVATE zlib szip )
 target_include_directories(${THIS_PROJECT} INTERFACE 
-	${CMAKE_SOURCE_DIR}/Code/Libs/hdf5 # For the configuration files.
+	${CMAKE_CURRENT_SOURCE_DIR} # For the configuration files.
 	${SDK_DIR}/hdf5/src 
 	${SDK_DIR}/hdf5/hl/src 
 )
@@ -465,9 +465,9 @@ target_include_directories(${THIS_PROJECT} INTERFACE
 # Tool used by h5build.bat to generate H5Tinit.c
 CryConsoleApplication(H5Detect SOLUTION_FOLDER "Tools/HDF5")
 target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/hdf5/src )
-target_compile_options(${THIS_PROJECT} PRIVATE /MT /W0)
+target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 
 # Tool used by h5build.bat to generate H5lib_settings.c
 CryConsoleApplication(H5LibSettings SOLUTION_FOLDER "Tools/HDF5")
 target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/hdf5/src )
-target_compile_options(${THIS_PROJECT} PRIVATE /MT /W0)
+target_compile_options(${THIS_PROJECT} PRIVATE /W0)

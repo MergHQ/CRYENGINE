@@ -590,4 +590,292 @@ ILINE void portable_makepath(char* path, const char* drive, const char* dir, con
 	}
 }
 
+namespace Wildcards
+{
+enum class EConstraintType : int32
+{
+	Invalid = -1,
+	Literal,
+	WildCardStar,
+	WildCardQuestionMark,
+};
+
+struct SConstraintDesc
+{
+	inline SConstraintDesc(EConstraintType constraintType = EConstraintType::Invalid)
+		: constraintType(constraintType)
+		, literalLength(0)
+		, szLiteral(nullptr)
+	{
+	}
+	inline SConstraintDesc(const char* szLiteralStart, const char* szLiteralEnd)
+		: constraintType(EConstraintType::Literal)
+		, literalLength(static_cast<uint32>(szLiteralEnd - szLiteralStart))
+		, szLiteral(szLiteralStart)
+	{
+	}
+	EConstraintType constraintType;
+	uint32          literalLength;
+	const char*     szLiteral;
+};
+
+typedef std::vector<SConstraintDesc> TConstraintDescs;
+
+struct SDescriptor
+{
+	inline SDescriptor() {}
+	inline SDescriptor(const char* szPattern) { Build(szPattern); }
+	inline void   Build(const char* szPattern);
+	inline size_t GetWildCardCount() const;
+
+private:
+	inline void ProcessPendingLiteral(const char* pCurrentPos, const char* pLastPos);
+
+public:
+	TConstraintDescs constraintDescs;
+};
+
+struct SConstraintMatch
+{
+	inline SConstraintMatch()
+		: szStart(nullptr)
+		, size(0)
+	{
+	}
+	const char* szStart;
+	uint32      size;
+};
+
+typedef std::vector<SConstraintMatch> TConstraintMatches;
+
+class CEvaluationResult
+{
+public:
+	inline bool                      Process(const SDescriptor& desc, const char* const szString, const bool bCaseSensitive);
+	inline bool                      Process(const SDescriptor& desc, const char* const szString, const size_t stringSize, const bool bCaseSensitive);
+
+	inline void                      Clear()            { m_matches.clear(); }
+	inline const TConstraintMatches& GetMatches() const { return m_matches; }
+
+private:
+	inline bool MatchWithFollowers(const SDescriptor& desc, const char* const szString, const int index, const size_t stringSize, const bool bCaseSensitive);
+	inline bool CheckLiteral(const char* const szLiteral, const uint32 literalLength, const char* const szString, const bool bCaseSensitive);
+
+	TConstraintMatches m_matches;
+};
+
+template<typename TPatternStringStorage>
+class CProcessor
+{
+public:
+	inline void Reset(const char* szPattern)
+	{
+		if (m_pattern != szPattern)
+		{
+			m_pattern = szPattern;
+			m_descriptor.Build(m_pattern.c_str());
+		}
+	}
+
+	inline bool Process(CEvaluationResult& outResult, const char* szStr, const bool bCaseSensitive) const
+	{
+		outResult.Clear();
+		return outResult.Process(m_descriptor, szStr, bCaseSensitive);
+	}
+
+	inline bool Process(CEvaluationResult& outResult, const char* szStr, const size_t stringSize, const bool bCaseSensitive) const
+	{
+		outResult.Clear();
+		return outResult.Process(m_descriptor, szStr, stringSize, bCaseSensitive);
+	}
+
+	inline const SDescriptor& GetDescriptor() const { return m_descriptor; }
+
+	template<typename TFunc>
+	inline void ForEachWildCardResult(const CEvaluationResult& result, const TFunc& func);
+
+private:
+	TPatternStringStorage m_pattern;
+	SDescriptor           m_descriptor;
+};
+
+// SDescriptor implementation
+void SDescriptor::Build(const char* szPattern)
+{
+	constraintDescs.clear();
+	const char* pCurrentPos = szPattern;
+	const char* pLastPos = pCurrentPos;
+	while (*pCurrentPos)
+	{
+		switch (*pCurrentPos)
+		{
+		case '?':
+			ProcessPendingLiteral(pCurrentPos, pLastPos);
+			constraintDescs.emplace_back(EConstraintType::WildCardQuestionMark);
+			pLastPos = ++pCurrentPos;
+			break;
+		case '*':
+			ProcessPendingLiteral(pCurrentPos, pLastPos);
+			constraintDescs.emplace_back(EConstraintType::WildCardStar);
+			pLastPos = ++pCurrentPos;
+			break;
+		default:
+			++pCurrentPos;
+			break;
+		}
+	}
+	ProcessPendingLiteral(pCurrentPos, pLastPos);
+}
+
+size_t SDescriptor::GetWildCardCount() const
+{
+	size_t result = 0;
+	for (const SConstraintDesc& desc : constraintDescs)
+	{
+		if ((desc.constraintType == EConstraintType::WildCardStar) || (desc.constraintType == EConstraintType::WildCardQuestionMark))
+		{
+			++result;
+		}
+	}
+	return result;
+}
+
+void SDescriptor::ProcessPendingLiteral(const char* pCurrentPos, const char* pLastPos)
+{
+	if (pCurrentPos != pLastPos)
+	{
+		constraintDescs.emplace_back(pLastPos, pCurrentPos);
+	}
+}
+
+// CEvaluationResult implementation
+bool CEvaluationResult::Process(const SDescriptor& desc, const char* const szString, const bool bCaseSensitive)
+{
+	size_t stringSize = strlen(szString);
+	return Process(desc, szString, stringSize, bCaseSensitive);
+}
+
+bool CEvaluationResult::Process(const SDescriptor& desc, const char* const szString, const size_t stringSize, const bool bCaseSensitive)
+{
+	m_matches.clear();
+	m_matches.resize(desc.constraintDescs.size());
+
+	const bool bSuccess = MatchWithFollowers(desc, szString, 0, stringSize, bCaseSensitive);
+	if (!bSuccess)
+	{
+		m_matches.clear();
+	}
+	return bSuccess;
+}
+
+bool CEvaluationResult::MatchWithFollowers(const SDescriptor& desc, const char* const szString, const int index, const size_t stringSize, const bool bCaseSensitive)
+{
+	bool bSuccess = false;
+	if (index >= static_cast<int>(m_matches.size()))
+	{
+		bSuccess = (stringSize == 0);   // only succeed if the constraint matched perfectly with the end of the string
+	}
+	else
+	{
+		const SConstraintDesc& currentDesc = desc.constraintDescs[index];
+		SConstraintMatch& currentMatchResult = m_matches[index];
+		currentMatchResult.szStart = szString;
+
+		const int nextIndex = index + 1;
+		switch (currentDesc.constraintType)
+		{
+		case EConstraintType::Literal:
+			if ((currentDesc.literalLength <= stringSize)
+			    && CheckLiteral(currentDesc.szLiteral, currentDesc.literalLength, szString, bCaseSensitive))
+			{
+				const size_t remainingSize = stringSize - currentDesc.literalLength;
+				currentMatchResult.size = currentDesc.literalLength;
+				bSuccess = MatchWithFollowers(desc, szString + currentDesc.literalLength, nextIndex, remainingSize, bCaseSensitive);
+			}
+			break;
+		case EConstraintType::WildCardStar:
+			currentMatchResult.size = 0;
+			if (index >= static_cast<int>(desc.constraintDescs.size()))
+			{
+				currentMatchResult.size = strlen(szString);
+			}
+			else
+			{
+				size_t remainingSize = stringSize;
+				while ((!(bSuccess = MatchWithFollowers(desc, &szString[currentMatchResult.size], nextIndex, remainingSize, bCaseSensitive)))
+				       && (szString[currentMatchResult.size]))
+				{
+					++currentMatchResult.size;
+					--remainingSize;
+				}
+			}
+			break;
+		case EConstraintType::WildCardQuestionMark:
+			if (*szString)
+			{
+				currentMatchResult.size = 1;
+				bSuccess = MatchWithFollowers(desc, szString + 1, nextIndex, stringSize - 1, bCaseSensitive);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	return bSuccess;
+}
+
+bool CEvaluationResult::CheckLiteral(const char* const szLiteral, const uint32 literalLength, const char* const szString, const bool bCaseSensitive)
+{
+	bool bResult = true;
+	if (bCaseSensitive)
+	{
+		for (uint32 i = 0; i < literalLength; ++i)
+		{
+			if (szLiteral[i] != szString[i])
+			{
+				bResult = false;
+				break;
+			}
+		}
+	}
+	else
+	{
+		for (uint32 i = 0; i < literalLength; ++i)
+		{
+			if (CryStringUtils::toLowerAscii(szLiteral[i]) != CryStringUtils::toLowerAscii(szString[i]))
+			{
+				bResult = false;
+				break;
+			}
+		}
+	}
+	return bResult;
+}
+
+// CProcessor implementation
+template<typename TPatternStringStorage>
+template<typename TFunc>
+void CProcessor<TPatternStringStorage >::ForEachWildCardResult(const CEvaluationResult& result, const TFunc& func)
+{
+	const TConstraintMatches& matches = result.GetMatches();
+	const size_t count = matches.size();
+	CRY_ASSERT_MESSAGE(count == m_descriptor.constraintDescs.size(), "Descriptor and result are out of sync. Either the last Process call failed or the result structure has already been reused after it.");
+	if (count == m_descriptor.constraintDescs.size())
+	{
+		for (size_t i = 0; i < count; ++i)
+		{
+			switch (m_descriptor.constraintDescs[i].constraintType)
+			{
+			case EConstraintType::WildCardStar:
+			case EConstraintType::WildCardQuestionMark:
+				func(matches[i]);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+}
+
 } // namespace CryStringUtils

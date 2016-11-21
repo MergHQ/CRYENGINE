@@ -12,17 +12,12 @@ struct SRenderNodeTempData
 		int                             lastSeenShadowFrame;                 // When was last rendered to shadow
 		CRenderObject*                  arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
 		float														arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
-		SLodDistDissolveTransitionState lodDistDissolveTransitionState;
 		Matrix34                        objMat;
 		OcclusionTestClient             m_OcclState;
 		struct IFoliage*                m_pFoliage;
 		struct IClipVolume*             m_pClipVolume;
-		SVegetationBending              m_Bending;
+
 		Vec4                            vEnvironmentProbeMults;
-		Vec3                            vCurrentWind;
-		uint32                          nBendingLastFrame           : 29;
-		uint32                          windUpdateCounter           : 3;
-		uint32                          bBendingSet                 : 1;
 		uint32                          nCubeMapId                  : 16;
 		uint32                          nCubeMapIdCacheClearCounter : 16;
 		uint32                          nWantedLod                  : 8;

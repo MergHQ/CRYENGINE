@@ -180,7 +180,7 @@ void CMiscAnnouncer::OnShoot(IWeapon *pWeapon, EntityId shooterId, EntityId ammo
 		DbgLog("CMiscAnnouncer::OnShoot() has found the firing weaponClass in our weaponFiredMap. With announcement=%s", onWeaponFired.m_announcementName.c_str());
 
 		// we only want to play the announcement once each game/round
-		IActor *pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor *pClientActor = gEnv->pGameFramework->GetClientActor();
 		CGameRules *pGameRules = g_pGame->GetGameRules();
 		int clientTeam = pGameRules->GetTeam(pClientActor->GetEntityId());
 		int shooterTeam = pGameRules->GetTeam(shooterId);
@@ -291,7 +291,7 @@ void CMiscAnnouncer::RemoveWeaponListener(EntityId weaponId)
 {
 	DbgLog("CMiscAnnouncer::RemoveWeaponListener() weapon=%s", g_pGame->GetGameRules()->GetEntityName(weaponId));
 
-	IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId);
+	IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId);
 	if(pItem)
 	{
 		IWeapon *pWeapon = pItem->GetIWeapon();

@@ -46,7 +46,7 @@ void CMFXForceFeedbackEffect::Execute(const SMFXRunTimeEffectParams& params)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 
 	float distanceToPlayerSqr = FLT_MAX;
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		distanceToPlayerSqr = (pClientActor->GetEntity()->GetWorldPos() - params.pos).GetLengthSquared();

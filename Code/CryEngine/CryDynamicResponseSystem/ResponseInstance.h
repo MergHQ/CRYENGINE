@@ -41,6 +41,7 @@ public:
 	void                        SetCurrentActor(CResponseActor* pNewResponder) { m_pActiveActor = pNewResponder; }
 	CResponse*                  GetResponse()                                  { return m_pResponse; }
 	VariableCollectionSharedPtr GetContextVariablesImpl() const                { return m_pSignalContext; }
+	CResponseSegment*           GetCurrentSegment()                            { return m_pCurrentlyExecutedSegment; }
 
 private:
 	void ExecuteSegment(CResponseSegment* pSegment);

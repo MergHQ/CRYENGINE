@@ -119,7 +119,7 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 	Vec3 dof = Vec3(ZERO);
 	if (pDOFTrack)
 	{
-		dof = boost::get<Vec3>(pDOFTrack->GetValue(animContext.time));
+		dof = stl::get<Vec3>(pDOFTrack->GetValue(animContext.time));
 	}
 
 	IAnimTrack* pFOVTrack = GetTrackForParameter(eAnimParamType_FOV);
@@ -133,7 +133,7 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 
 	if (bFOVTrackEnabled && !IsSkipInterpolatedCameraNodeEnabled())
 	{
-		fov = boost::get<float>(pFOVTrack->GetValue(animContext.time));
+		fov = stl::get<float>(pFOVTrack->GetValue(animContext.time));
 	}
 
 	IAnimTrack* pNearZTrack = GetTrackForParameter(eAnimParamType_NearZ);
@@ -148,7 +148,7 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 
 	if (bNearZTrackEnabled)
 	{
-		nearZ = boost::get<float>(pNearZTrack->GetValue(animContext.time));
+		nearZ = stl::get<float>(pNearZTrack->GetValue(animContext.time));
 	}
 
 	// is this camera active ?
@@ -207,7 +207,7 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 		IAnimTrack* pShutterSpeedTrack = GetTrackForParameter(eAnimParamType_ShutterSpeed);
 		if (pShutterSpeedTrack)
 		{
-			const float shutterSpeed = boost::get<float>(pShutterSpeedTrack->GetValue(animContext.time));
+			const float shutterSpeed = stl::get<float>(pShutterSpeedTrack->GetValue(animContext.time));
 			gEnv->p3DEngine->SetPostEffectParam("MotionBlur_ShutterSpeed", shutterSpeed);
 		}
 
@@ -289,7 +289,7 @@ bool CAnimCameraNode::GetShakeRotation(SAnimTime time, Quat& rotation)
 
 	if (bShakeMultTrackEnabled)
 	{
-		shakeMult = boost::get<Vec4>(pShakeMultTrack->GetValue(time));
+		shakeMult = stl::get<Vec4>(pShakeMultTrack->GetValue(time));
 		pFreqTrack[0] = static_cast<CAnimSplineTrack*>(pShakeMultTrack->GetSubTrack(2)); // Frequency A is in z component.
 		pFreqTrack[1] = static_cast<CAnimSplineTrack*>(pShakeMultTrack->GetSubTrack(3)); // Frequency B is in w component.
 	}
@@ -314,7 +314,7 @@ bool CAnimCameraNode::GetShakeRotation(SAnimTime time, Quat& rotation)
 		if (GetTrackForParameter(eAnimParamType_Rotation))
 		{
 			IAnimTrack* pRotTrack = GetTrackForParameter(eAnimParamType_Rotation);
-			rotation = boost::get<Quat>(pRotTrack->GetValue(time));
+			rotation = stl::get<Quat>(pRotTrack->GetValue(time));
 		}
 
 		Ang3 angles = Ang3::GetAnglesXYZ(Matrix33(rotation)) * 180.0f / gf_PI;
@@ -356,26 +356,26 @@ void CAnimCameraNode::SetParameter(SAnimTime time, const EAnimParamType& paramTy
 	switch (paramType)
 	{
 	case eAnimParamType_FOV:
-		m_fFOV = boost::get<float>(value);
+		m_fFOV = stl::get<float>(value);
 		break;
 	case eAnimParamType_NearZ:
-		m_fNearZ = boost::get<float>(value);
+		m_fNearZ = stl::get<float>(value);
 		break;
 	case eAnimParamType_ShakeAmplitudeA:
-		m_shakeParam[0].amplitude = boost::get<Vec3>(value);
+		m_shakeParam[0].amplitude = stl::get<Vec3>(value);
 		break;
 	case eAnimParamType_ShakeAmplitudeB:
-		m_shakeParam[1].amplitude = boost::get<Vec3>(value);
+		m_shakeParam[1].amplitude = stl::get<Vec3>(value);
 		break;
 	case eAnimParamType_ShakeFrequencyA:
-		m_shakeParam[0].frequency = boost::get<Vec3>(value);
+		m_shakeParam[0].frequency = stl::get<Vec3>(value);
 		break;
 	case eAnimParamType_ShakeFrequencyB:
-		m_shakeParam[1].frequency = boost::get<Vec3>(value);
+		m_shakeParam[1].frequency = stl::get<Vec3>(value);
 		break;
 	case eAnimParamType_ShakeMultiplier:
 		{
-			const Vec4 values = boost::get<Vec4>(value);
+			const Vec4 values = stl::get<Vec4>(value);
 			m_shakeParam[0].amplitudeMult = values.x;
 			m_shakeParam[1].amplitudeMult = values.y;
 			m_shakeParam[0].frequencyMult = values.z;
@@ -384,7 +384,7 @@ void CAnimCameraNode::SetParameter(SAnimTime time, const EAnimParamType& paramTy
 		break;
 	case eAnimParamType_ShakeNoise:
 		{
-			const Vec4 values = boost::get<Vec4>(value);
+			const Vec4 values = stl::get<Vec4>(value);
 			m_shakeParam[0].noiseAmpMult = values.x;
 			m_shakeParam[1].noiseAmpMult = values.y;
 			m_shakeParam[0].noiseFreqMult = values.z;
@@ -393,7 +393,7 @@ void CAnimCameraNode::SetParameter(SAnimTime time, const EAnimParamType& paramTy
 		break;
 	case eAnimParamType_ShakeWorking:
 		{
-			const Vec4 values = boost::get<Vec4>(value);
+			const Vec4 values = stl::get<Vec4>(value);
 			m_shakeParam[0].timeOffset = values.x;
 			m_shakeParam[1].timeOffset = values.y;
 		}
@@ -527,7 +527,7 @@ Ang3 CAnimCameraNode::ShakeParam::ApplyCameraShake(CPNoise3& noiseGen, SAnimTime
 	                        (t + 10.0f) * this->frequency.y * this->noiseFreqMult,
 	                        (t + 30.5f) * this->frequency.z * this->noiseFreqMult);
 
-	const float phaseDelta = boost::get<float>(pFreqTrack->GetValue(time));
+	const float phaseDelta = stl::get<float>(pFreqTrack->GetValue(time));
 
 	this->phase += this->frequency * phaseDelta;
 	this->phaseNoise += this->frequency * this->noiseFreqMult * phaseDelta;

@@ -44,7 +44,7 @@ const void* NImage::CCommonImageReader::ReadImage
 	mywnd.hbrBackground = 0;
 	mywnd.hCursor = 0;
 	mywnd.hIcon = 0;
-	mywnd.hInstance = (HINSTANCE)::GetModuleHandle(0);
+	mywnd.hInstance = (HINSTANCE)CryGetCurrentModule();
 	mywnd.lpfnWndProc = DefWindowProc;
 	mywnd.lpszClassName = "Test";
 	mywnd.lpszMenuName = 0;

@@ -160,6 +160,7 @@ public:
 		, m_emissive(0.0f)
 		, m_curvature(0.0f)
 		, m_receiveShadows(false)
+		, m_affectedByFog(true)
 		, CParticleFeature(gpu_pfx2::eGpuFeatureType_Dummy) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
@@ -176,8 +177,12 @@ public:
 		pParams->m_shaderData.m_backLighting = m_backLight;
 		pParams->m_shaderData.m_emissiveLighting = m_emissive * toLightUnitScale;
 		pParams->m_shaderData.m_curvature = m_curvature;
+		if (m_albedo >= FLT_EPSILON)
+			pParams->m_renderObjectFlags |= FOB_LIGHTVOLUME;
 		if (m_receiveShadows)
 			pParams->m_renderObjectFlags |= FOB_INSHADOW;
+		if (!m_affectedByFog)
+			pParams->m_renderObjectFlags |= FOB_NO_FOG;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -188,6 +193,7 @@ public:
 		ar(m_emissive, "Emissive", "Emissive (kcd/m2)");
 		ar(m_curvature, "Curvature", "Curvature");
 		ar(m_receiveShadows, "ReceiveShadows", "Receive Shadows");
+		ar(m_affectedByFog, "AffectedByFog", "Affected by Fog");
 		if (ar.isInput())
 			VersionFix(ar);
 	}
@@ -213,6 +219,7 @@ private:
 	UFloat10   m_emissive;
 	UUnitFloat m_curvature;
 	bool       m_receiveShadows;
+	bool       m_affectedByFog;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceLighting, "Appearance", "Lighting", colorAppearance);
@@ -306,6 +313,8 @@ public:
 		SERIALIZE_VAR(ar, m_minCameraDistance);
 		SERIALIZE_VAR(ar, m_maxCameraDistance);
 		SERIALIZE_VAR(ar, m_viewDistanceMultiple);
+		SERIALIZE_VAR(ar, m_indoorVisibility);
+		SERIALIZE_VAR(ar, m_waterVisibility);
 		SERIALIZE_VAR(ar, m_drawNear);
 		SERIALIZE_VAR(ar, m_drawOnTop);
 	}

@@ -169,7 +169,7 @@ void CVehicleSeatActionRotateBone::StartUsing(EntityId passengerId)
 {
 	m_pVehicle->RegisterVehicleEventListener(this, "CVehicleSeatActionRotateBone");
 	m_hasDriver = 1;
-	m_driverIsLocal = (gEnv->pGame->GetIGameFramework()->GetClientActorId() == passengerId);
+	m_driverIsLocal = (gEnv->pGameFramework->GetClientActorId() == passengerId);
 	m_rotationMultiplier = 1.f;
 	m_rotationLockCount = 0;
 	m_stopCurrentSound = 1;

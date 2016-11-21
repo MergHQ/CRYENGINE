@@ -2361,7 +2361,7 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 				vCharCol.x = 0.0f, vCharCol.y = 1.0f, vCharCol.z = 0.0f, col[p] = RGBA8(0x00, 0xff, 0x00, 0x00); //time-scaled asset
 
 			g_pAuxGeom->DrawOBB(_obb, pos, 1, col[p], eBBD_Extremes_Color_Encoded);
-			g_pIRenderer->DrawLabel(pos, 1.5f, "%d", p);
+			IRenderAuxText::DrawLabelF(pos, 1.5f, "%d", p);
 
 			const char* pAnimName = rLMG.m_arrParameter[p].m_animName.GetName_DEBUG();
 			pSkeletonAnim->StartAnimation(pAnimName, AParams);
@@ -2389,7 +2389,7 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 			vCharCol.z = 0.0f;
 			col[p] = RGBA8(0xff, 0x00, 0x00, 0x00);
 			g_pAuxGeom->DrawOBB(_obb, pos, 1, col[p], eBBD_Extremes_Color_Encoded);
-			g_pIRenderer->DrawLabel(pos, 1.5f, "%d", p);
+			IRenderAuxText::DrawLabelF(pos, 1.5f, "%d", p);
 
 			int32 i0 = rLMG.m_arrParameter[p].i0;
 			f32 w0 = rLMG.m_arrParameter[p].w0;

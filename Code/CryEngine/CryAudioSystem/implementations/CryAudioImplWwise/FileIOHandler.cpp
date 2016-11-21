@@ -35,11 +35,6 @@ CFileIOHandler::CFileIOHandler()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileIOHandler::~CFileIOHandler()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 AKRESULT CFileIOHandler::Init(AkDeviceSettings const& rDeviceSettings, bool const bAsyncOpen /* = false */)
 {
 	AKRESULT eResult = AK_Fail;

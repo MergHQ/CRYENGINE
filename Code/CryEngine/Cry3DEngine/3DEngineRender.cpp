@@ -678,6 +678,11 @@ static std::vector<SDebugFrustrum> g_DebugFrustrums;
 void C3DEngine::DebugDraw_Draw()
 {
 #ifndef _RELEASE
+	if (!gEnv->pRenderer)
+	{
+		return;
+	}
+
 	if (m_DebugDrawListMgr.IsEnabled())
 		m_DebugDrawListMgr.Update();
 
@@ -913,7 +918,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		float fYLine = 8.0f, fYStep = 20.0f;
 
-		GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "e_DebugDraw = %d", GetCVars()->e_DebugDraw);
+		IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "e_DebugDraw = %d", GetCVars()->e_DebugDraw);
 
 		char* szMode = "";
 
@@ -999,16 +1004,16 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 			assert(0);
 		}
 
-		GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   %s", szMode);
+		IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   %s", szMode);
 
 		if (GetCVars()->e_DebugDraw == 17)
 		{
-			GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   StatObj geometry used: %.2fMb / %dMb", CObjManager::s_nLastStreamingMemoryUsage / (1024.f * 1024.f), GetCVars()->e_StreamCgfPoolSize);
+			IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   StatObj geometry used: %.2fMb / %dMb", CObjManager::s_nLastStreamingMemoryUsage / (1024.f * 1024.f), GetCVars()->e_StreamCgfPoolSize);
 
 			ICVar* cVar = GetConsole()->GetCVar("r_TexturesStreaming");
 			if (!cVar || !cVar->GetIVal())
 			{
-				GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   You have to set r_TexturesStreaming = 1 to see texture information!");
+				IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   You have to set r_TexturesStreaming = 1 to see texture information!");
 			}
 		}
 	}
@@ -1020,13 +1025,19 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 void C3DEngine::PreWorldStreamUpdate(const CCamera& cam)
 {
-	if (m_szLevelFolder[0] != 0)
+	const int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
+	if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
+	{
+		ClearPrecacheInfo();
+	}
+
+	if (m_szLevelFolder[0] != 0 && (nGlobalSystemState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END))
 	{
 		m_nStreamingFramesSinceLevelStart++;
 	}
 
 	// force preload terrain data if camera was teleported more than 32 meters
-	if (!IsAreaActivationInUse() || m_bLayersActivated)
+	if (GetRenderer() && (!IsAreaActivationInUse() || m_bLayersActivated))
 	{
 		float fDistance = m_vPrevMainFrameCamPos.GetDistance(cam.GetPosition());
 
@@ -1123,9 +1134,18 @@ void C3DEngine::WorldStreamUpdate()
 				break;
 			}
 
-			int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
+			const int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
 
-			if ((nGlobalSystemState != ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE && (!bStarted || fTime >= 10.0f)) && m_nStreamingFramesSinceLevelStart > 16)
+			if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
+			{
+				gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_PRECACHE_START, 0, 0);
+
+				m_pSystem->SetThreadState(ESubsys_Physics, true);
+
+				gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING);
+			}
+
+			if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING && (!bStarted || fTime >= 10.0f) && m_nStreamingFramesSinceLevelStart > 16)
 			{
 				gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE);
 
@@ -1462,8 +1482,6 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 			m_vVolCloudTilingOffset.y -= wind.y * elapsedTime;
 		}
 	}
-
-	m_fInvDissolveDistBand = 1.0f / GetFloatCVar(e_DissolveDistband);
 
 	if (m_pObjManager)
 	{
@@ -1809,20 +1827,19 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (m_pTerrain)
 		m_pTerrain->DrawVisibleSectors(passInfo);
 
-	if (m_pParticleSystem)
-	{
-		pfx2::CParticleSystem* pCSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
-		pCSystem->SyncronizeUpdateKernels();
-	}
+	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
+	if (pParticleSystem)
+		pParticleSystem->SyncronizeUpdateKernels();
 	if (m_pPartManager)
 		m_pPartManager->FinishParticleRenderTasks(passInfo);
-
+	if (pParticleSystem)
+		pParticleSystem->DeferredRender();
 
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);
 
-	if (gEnv->pGame)
-		gEnv->pGame->OnRenderScene(passInfo);
+	if (auto* pGame = gEnv->pGameFramework->GetIGame())
+		pGame->OnRenderScene(passInfo);
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Start asynchronous cull queue processing if enabled
@@ -1884,7 +1901,7 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (GetOceanRenderFlags() & OCR_NO_DRAW || !GetVisAreaManager() || GetCVars()->e_DefaultMaterial)
+	if (GetOceanRenderFlags() & OCR_NO_DRAW || !GetVisAreaManager() || GetCVars()->e_DefaultMaterial || !GetTerrain())
 		return;
 
 	bool bOceanIsForcedByVisAreaFlags = GetVisAreaManager()->IsOceanVisible();
@@ -2033,12 +2050,7 @@ void C3DEngine::DrawTextRightAligned(const float x, const float y, const char* f
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace;
-	ti.xscale = ti.yscale = DISPLAY_INFO_SCALE;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), DISPLAY_INFO_SCALE, NULL, eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 
@@ -2046,15 +2058,7 @@ void C3DEngine::DrawTextAligned(int flags, const float x, const float y, const f
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = flags;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, flags, format, args);
 
 	va_end(args);
 }
@@ -2063,16 +2067,7 @@ void C3DEngine::DrawTextLeftAligned(const float x, const float y, const float sc
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 
 }
@@ -2081,16 +2076,7 @@ void C3DEngine::DrawTextRightAligned(const float x, const float y, const float s
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 
@@ -2384,10 +2370,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	m_pRenderer->EF_Query(EFQ_AAMode, sAAMode);
 	AppendString(szFlagsEnd, sAAMode);
 
-#if defined(FEATURE_SVO_GI)
+	#if defined(FEATURE_SVO_GI)
 	if (GetCVars()->e_svoTI_Apply)
 		AppendString(szFlagsEnd, "SVOGI");
-#endif
+	#endif
 
 	if (IsAreaActivationInUse())
 		AppendString(szFlagsEnd, "LA");
@@ -3035,14 +3021,14 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			                     DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms        AI", fTimeMS);
 		}
 
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+		if (gEnv->pGameFramework)
 		{
 	#if CRY_PLATFORM_MOBILE
 			const float maxVal = 4.f;
 	#else
 			const float maxVal = 50.f;
 	#endif
-			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(gEnv->pGame->GetIGameFramework()->GetPreUpdateTicks());
+			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(gEnv->pGameFramework->GetPreUpdateTicks());
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
 			                     DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms    Action", fTimeMS);
 		}
@@ -3347,7 +3333,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_DistanceCloud);
 		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
-		DRAW_OBJ_STATS(eERType_PrismObject);
 		DRAW_OBJ_STATS(eERType_RenderProxy);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);

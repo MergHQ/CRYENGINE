@@ -7,10 +7,17 @@
 
 namespace Serialization
 {
+struct ICustomResourceParams
+{
+	virtual ~ICustomResourceParams() {}
+};
+
+DECLARE_SHARED_POINTERS(ICustomResourceParams)
 
 struct IResourceSelector
 {
-	const char* resourceType;
+	const char*              resourceType;
+	ICustomResourceParamsPtr pCustomParams;
 
 	virtual ~IResourceSelector() {}
 	virtual const char*           GetValue() const = 0;
@@ -35,10 +42,11 @@ struct ResourceSelector : IResourceSelector
 	const void*           GetHandle() const       { return &value; }
 	Serialization::TypeID GetType() const         { return Serialization::TypeID::get<TString>(); }
 
-	ResourceSelector(TString& value, const char* resourceType)
+	ResourceSelector(TString& value, const char* resourceType, const ICustomResourceParamsPtr& pCustomParams = ICustomResourceParamsPtr())
 		: value(value)
 	{
 		this->resourceType = resourceType;
+		this->pCustomParams = pCustomParams;
 	}
 };
 

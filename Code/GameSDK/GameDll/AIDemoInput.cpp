@@ -239,7 +239,7 @@ void CDedicatedInput::GiveItems()
 		nameIdx = cry_random(0, numberItems - 1);
 	}
 
-	IGameFramework *pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework *pGameFramework = gEnv->pGameFramework;
 	IItemSystem		*pItemSystem = pGameFramework->GetIItemSystem();
 
 	//Check item name before giving (it will resolve case sensitive 'issues')

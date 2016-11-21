@@ -105,6 +105,12 @@ public:
 		m_dirtyMask |= m_pResources->IsDirty() ? eDirty_Resources : eDirty_None;
 	}
 
+	void SetTextureSamplerPair(uint32 slot, CTexture* pTex, int32 sampler, SResourceView::KeyType resourceViewID = SResourceView::DefaultView)
+	{
+		m_pResources->SetTexture(slot, pTex, resourceViewID, EShaderStage_Compute);
+		m_pResources->SetSampler(slot, sampler, EShaderStage_Compute);
+	}
+
 	void SetBuffer(uint32 slot, CGpuBuffer* pBuffer)
 	{
 		m_pResources->SetBuffer(slot, *pBuffer, false, EShaderStage_Compute);
@@ -125,12 +131,12 @@ public:
 
 	void SetConstant(const CCryNameR& paramName, const Vec4 param)
 	{
-		m_constantManager.SetNamedConstant(eHWSC_Compute, paramName, param);
+		m_constantManager.SetNamedConstant(paramName, param, eHWSC_Compute);
 	}
 
 	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams)
 	{
-		m_constantManager.SetNamedConstantArray(eHWSC_Compute, paramName, params, numParams);
+		m_constantManager.SetNamedConstantArray(paramName, params, numParams, eHWSC_Compute);
 	}
 
 	void PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, ::EShaderStage srvUsage = EShaderStage_Compute);

@@ -54,7 +54,7 @@ bool CVehicleDamagesGroup::ParseDamagesGroup(const CVehicleParams& table)
 {
 	if (table.haveAttr("useTemplate"))
 	{
-		IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+		IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 		CRY_ASSERT(pVehicleSystem);
 
 		if (IVehicleDamagesTemplateRegistry* pDamageTemplReg = pVehicleSystem->GetDamagesTemplateRegistry())

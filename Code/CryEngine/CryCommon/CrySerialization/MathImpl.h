@@ -11,6 +11,7 @@
 #include <CryMath/Cry_Matrix34.h>
 #include <CryMath/Cry_Geo.h>
 #include <CrySerialization/Gap.h>
+#include <CrySerialization/Decorators/Range.h>
 
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec2_tpl<T>& value, const char* name, const char* label)
@@ -113,9 +114,9 @@ inline bool Serialize(Serialization::IArchive& ar, SRotation& value, const char*
 		if (ar.openBlock(name, label))
 		{
 			Vec3 v = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(value.quat))));
-			ar(v.x, "x", "^");
-			ar(v.y, "y", "^");
-			ar(v.z, "z", "^");
+			ar(Serialization::Range(v.x, -FLT_MAX, FLT_MAX, 1.0f), "x", "^");
+			ar(Serialization::Range(v.y, -FLT_MAX, FLT_MAX, 1.0f), "y", "^");
+			ar(Serialization::Range(v.z, -FLT_MAX, FLT_MAX, 1.0f), "z", "^");
 			if (ar.isInput())
 				value.quat = Quat(Ang3(DEG2RAD(v)));
 

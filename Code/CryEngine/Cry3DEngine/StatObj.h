@@ -207,7 +207,7 @@ struct SPhysGeomArray
 		else if (i < (int)m_array.size())
 			m_array.erase(m_array.begin() + i);
 	}
-	int  GetGeomCount()       { return m_array.size(); }
+	int  GetGeomCount() const { return m_array.size(); }
 	int  GetGeomType(int idx) { return idx >= PHYS_GEOM_TYPE_DEFAULT ? idx : m_array[idx].type; }
 	std::vector<SPhysGeomThunk> m_array;
 	void GetMemoryUsage(ICrySizer* pSizer) const
@@ -502,8 +502,8 @@ public:
 	virtual Vec3 GetHelperPos(const char* szHelperName) override;
 	virtual const Matrix34& GetHelperTM(const char* szHelperName) override;
 
-	virtual float&          GetRadiusVert() override { return m_fRadiusVert; }
-	virtual float&          GetRadiusHors() override { return m_fRadiusHors; }
+	virtual float           GetRadiusVert() const override { return m_fRadiusVert; }
+	virtual float           GetRadiusHors() const override { return m_fRadiusHors; }
 
 	virtual int AddRef() override;
 	virtual int Release() override;
@@ -553,7 +553,7 @@ public:
 
 	void MakeCompiledFileName(char* szCompiledFileName, int nMaxLen);
 
-	virtual bool IsPhysicsExist() override;
+	virtual bool IsPhysicsExist() const override;
 	bool IsSphereOverlap(const Sphere &sSphere);
 	virtual void Invalidate(bool bPhysics = false, float tolerance = 0.05f) override;
 

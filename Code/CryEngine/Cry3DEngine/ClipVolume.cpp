@@ -20,10 +20,12 @@ CClipVolume::~CClipVolume()
 {
 	m_pRenderMesh = NULL;
 
+	AUTO_LOCK(m_lstRenderNodesCritSection);
 	for (size_t i = 0; i < m_lstRenderNodes.size(); ++i)
 	{
-		if (m_lstRenderNodes[i]->m_pTempData)
-			m_lstRenderNodes[i]->m_pTempData->userData.m_pClipVolume = NULL;
+		IRenderNode* pNode = m_lstRenderNodes[i];
+		if (pNode->m_pTempData)
+			pNode->m_pTempData->userData.m_pClipVolume = NULL;
 	}
 }
 
@@ -75,6 +77,7 @@ bool CClipVolume::IsPointInsideClipVolume(const Vec3& point) const
 
 void CClipVolume::RegisterRenderNode(IRenderNode* pRenderNode)
 {
+	AUTO_LOCK(m_lstRenderNodesCritSection);
 	if (m_lstRenderNodes.Find(pRenderNode) < 0)
 	{
 		m_lstRenderNodes.Add(pRenderNode);
@@ -85,6 +88,7 @@ void CClipVolume::RegisterRenderNode(IRenderNode* pRenderNode)
 }
 void CClipVolume::UnregisterRenderNode(IRenderNode* pRenderNode)
 {
+	AUTO_LOCK(m_lstRenderNodesCritSection);
 	if (m_lstRenderNodes.Delete(pRenderNode) && pRenderNode->m_pTempData)
 		pRenderNode->m_pTempData->userData.m_pClipVolume = NULL;
 }

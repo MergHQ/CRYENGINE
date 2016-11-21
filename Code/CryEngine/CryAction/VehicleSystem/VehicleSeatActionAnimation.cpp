@@ -174,7 +174,7 @@ void CVehicleSeatActionAnimation::Update(float frameTime)
 		}
 
 		//float color[] = {1,1,1,1};
-		//gEnv->pRenderer->Draw2dLabel(200,250,1.5,color,false,"action: %.2f, time: %.2f, new: %.2f", m_action, currTime, newTime);
+		//IRenderAuxText::Draw2dLabel(200,250,1.5,color,false,"action: %.2f, time: %.2f, new: %.2f", m_action, currTime, newTime);
 	}
 	else
 	{

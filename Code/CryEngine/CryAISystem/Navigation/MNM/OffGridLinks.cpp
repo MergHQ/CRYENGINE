@@ -26,7 +26,7 @@ void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 li
 		memcpy(triangleLinks, links, sizeof(TriangleLink) * linkCount);
 }
 
-MNM::OffMeshLinkPtr MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLink& linkData, OffMeshLinkID& linkID)
+void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID)
 {
 	// We only support 1024 links per tile
 	const int kMaxTileLinks = 1024;
@@ -107,25 +107,15 @@ MNM::OffMeshLinkPtr MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMe
 			if (tileLinks.triangleLinks[idx].startTriangleID != currentTriangleID)
 			{
 				currentTriangleID = tileLinks.triangleLinks[idx].startTriangleID;
-				navigationMesh.grid.UpdateOffMeshLinkForTile(tileID, currentTriangleID, idx);
+				navigationMesh.navMesh.UpdateOffMeshLinkForTile(tileID, currentTriangleID, idx);
 			}
 		}
 	}
 	else
 	{
 		// Add the new link to the off-mesh link to the tile itself
-		navigationMesh.grid.AddOffMeshLinkToTile(tileID, startTriangleID, triangleIdx);
+		navigationMesh.navMesh.AddOffMeshLinkToTile(tileID, startTriangleID, triangleIdx);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Resolve and store the link data
-	OffMeshLinkPtr pOffMeshLink;
-	// Clone data
-	pOffMeshLink.reset(linkData.Clone());
-	pOffMeshLink->SetLinkID(linkID);
-
-	// Return the potentially cloned data.
-	return pOffMeshLink;
 }
 
 void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID)
@@ -167,14 +157,14 @@ void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const Tr
 			if (currentTriangleID != triangleLink.startTriangleID)
 			{
 				currentTriangleID = triangleLink.startTriangleID;
-				navigationMesh.grid.UpdateOffMeshLinkForTile(tileID, currentTriangleID, triIdx);
+				navigationMesh.navMesh.UpdateOffMeshLinkForTile(tileID, currentTriangleID, triIdx);
 			}
 			boundTriangleLeftLinks += (currentTriangleID == boundTriangleID) ? 1 : 0;
 		}
 
 		if (!boundTriangleLeftLinks)
 		{
-			navigationMesh.grid.RemoveOffMeshLinkFromTile(tileID, boundTriangleID);
+			navigationMesh.navMesh.RemoveOffMeshLinkFromTile(tileID, boundTriangleID);
 		}
 	}
 }

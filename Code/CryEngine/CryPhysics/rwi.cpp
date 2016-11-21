@@ -292,10 +292,15 @@ gotcontacts:
 							bRecheckOtherParts = (j-1 & 1-nParts)>>31 & ipartMask;
 
 							check_cell_contact(j,pcontacts,phits,flags,pentFlags,nThroughHits,nThroughHitsAux, imat,ilastcell,aray,iSolidNode,pentLog,i,ihit);
-						}	else 
-							if (pent->m_parts[i].flags & geom_mat_substitutor && phits[0].pCollider && ((CPhysicalPlaceholder*)phits[0].pCollider)->m_id==-1 &&
-									pent->m_parts[i].pPhysGeom->pGeom->PointInsideStatus(((phits[0].pt-pent->m_pos)*pent->m_qrot-pent->m_parts[i].pos)*pent->m_parts[i].q)) 
-								phits[0].surface_idx = pent->GetMatId(pent->m_parts[i].pPhysGeom->surface_idx, i);
+						}	else if (pent->m_parts[i].flags & geom_mat_substitutor) {
+							for(int ihit=!phits[0].pCollider; ihit<=nThroughHits+nThroughHitsAux; ihit++) 
+								if (pent->m_parts[i].flagsCollider & (2<<((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_iSimClass) - (((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_id>>31) &&
+									pent->m_parts[i].pPhysGeom->pGeom->PointInsideStatus(((phits[ihit].pt-pent->m_pos)*pent->m_qrot-pent->m_parts[i].pos)*pent->m_parts[i].q)) 
+								{	phits[ihit].surface_idx = pent->GetMatId(pent->m_parts[i].pPhysGeom->surface_idx, i);
+									phits[ihit].idmatOrg = -1;
+								}
+							bRecheckOtherParts = -1;
+						}
 					}
 
 					pTmpEntList[nEnts] = pentList; nEnts += 1+bRecheckOtherParts;

@@ -302,7 +302,7 @@ CBudgetingSystem::DrawText(float& x, float& y, float* pColor, const char* format
 	cry_vsprintf(buffer, format, args);
 	va_end(args);
 
-	m_pRenderer->Draw2dLabel(x, y, c_fontScale, pColor, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel(x, y, c_fontScale, pColor, false, "%s", buffer);
 	y += c_yStepSizeText;
 }
 

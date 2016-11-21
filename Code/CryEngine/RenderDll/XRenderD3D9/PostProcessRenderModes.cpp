@@ -456,7 +456,7 @@ void CThermalVision::HeatSourcesPasses()
 	if (nBatchMask & FB_CUSTOM_RENDER)
 	{
 		gRenDev->m_RP.m_PersFlags2 |= RBPF2_THERMAL_RENDERMODE_PASS;
-		CRendElementBase* pPrevRE = gRenDev->m_RP.m_pRE;
+		CRenderElement* pPrevRE = gRenDev->m_RP.m_pRE;
 		gRenDev->m_RP.m_pRE = NULL;
 
 		gcpRendD3D->FX_ProcessRenderList(EFSLIST_GENERAL, FB_CUSTOM_RENDER);

@@ -650,15 +650,15 @@ string CStructInfo::ToString(const void* data, FToString flags, const void* def_
 		if (!var.IsInline())
 		{
 			// Named sub var or struct.
-			if (!flags.NamedFields && i > 0)
+			if (!flags.NamedFields() && i > 0)
 				str += ",";
 
-			string substr = var.ToString(data, FToString(flags).Sub(0), def_data);
+			string substr = var.ToString(data, flags().Sub(0), def_data);
 
-			if (flags.SkipDefault && substr.empty())
+			if (flags.SkipDefault() && substr.empty())
 				continue;
 
-			if (flags.NamedFields)
+			if (flags.NamedFields())
 			{
 				if (*str)
 					str += ",";
@@ -681,11 +681,11 @@ string CStructInfo::ToString(const void* data, FToString flags, const void* def_
 		else
 		{
 			// Nameless base struct. Treat children as inline.
-			str += var.ToString(data, FToString(flags).Sub(1), def_data);
+			str += var.ToString(data, flags().Sub(1), def_data);
 		}
 	}
 
-	if (flags.SkipDefault && !flags.Sub)
+	if (flags.SkipDefault() && !flags.Sub())
 		StripCommas(str);
 	return str;
 }
@@ -773,7 +773,7 @@ void ParseElement(cstr& src, cstr& varname, cstr& val, CTempStr& tempstr)
 
 bool CStructInfo::FromString(void* data, cstr str, FFromString flags) const
 {
-	if (!flags.SkipEmpty)
+	if (!flags.SkipEmpty())
 	{
 		// Initialise all to default
 		for (int i = 0; i < Vars.size(); i++)
@@ -799,7 +799,7 @@ bool CStructInfo::FromString(void* data, cstr str, FFromString flags) const
 		}
 		if (pVar)
 		{
-			if (*val || !flags.SkipEmpty)
+			if (*val || !flags.SkipEmpty())
 				nErrors += !pVar->FromString(data, val, flags);
 		}
 		else

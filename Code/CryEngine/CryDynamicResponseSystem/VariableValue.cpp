@@ -165,12 +165,9 @@ string CVariableValue::GetValueAsString() const //should be used for debug outpu
 		return m_hashedText;
 	case eDRVT_Boolean:
 		return (m_value != 0) ? "TRUE" : "FALSE";
-	default:
-		return GetTypeAsString();
 	}
-#else
-	return CryStringUtils::toString(m_value);
 #endif
+	return CryStringUtils::toString(m_value);
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -25,7 +25,7 @@ CFOVEffect::CFOVEffect(float goalFOV)
 void CFOVEffect::Init()
 {
 	//TODO: Do not modify actor params this way...
-	IActor *pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor *pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		CPlayer *pPlayer = (CPlayer *)pClientActor;
@@ -38,7 +38,7 @@ void CFOVEffect::Init()
 void CFOVEffect::Update(float point)
 {
 	m_currentFOV = (point * (m_goalFOV - m_startFOV)) + m_startFOV;
-	IActor *pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor *pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		CPlayer *pPlayer = (CPlayer *)pClientActor;
@@ -49,7 +49,7 @@ void CFOVEffect::Update(float point)
 //---------------------------------
 void CFOVEffect::Reset()
 {
-	IActor *pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor *pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		CPlayer *pPlayer = (CPlayer *)pClientActor;
@@ -81,7 +81,7 @@ void CPostProcessEffect::Update(float point)
 	gEnv->p3DEngine->SetPostEffectParam(m_paramName, m_currentVal);
 	
 	//const float white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-	//gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, "Post Effect: %s Value = %.3f", m_paramName.c_str(), m_currentVal);
+	//IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, "Post Effect: %s Value = %.3f", m_paramName.c_str(), m_currentVal);
 }
 
 //---------------------------------

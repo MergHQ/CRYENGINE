@@ -17,10 +17,10 @@
 
 class CCryDX12SwapChain;
 
-class CCryDX12Texture2D : public CCryDX12Resource<ID3D11Texture2D>
+class CCryDX12Texture2D : public CCryDX12Resource<ID3D11Texture2DToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12Texture2D, CCryDX12Resource<ID3D11Texture2D> );
+	DX12_OBJECT(CCryDX12Texture2D, CCryDX12Resource<ID3D11Texture2DToImplement> );
 
 	static CCryDX12Texture2D* Create(CCryDX12Device* pDevice);
 	static CCryDX12Texture2D* Create(CCryDX12Device* pDevice, CCryDX12SwapChain* pSwapChain, ID3D12Resource* pResource);

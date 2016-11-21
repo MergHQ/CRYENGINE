@@ -512,7 +512,7 @@ CNULLRenderAuxGeom::CNULLRenderAuxGeom()
 	wc.lpfnWndProc = WndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = GetModuleHandle(NULL);
+	wc.hInstance = CryGetCurrentModule();
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);

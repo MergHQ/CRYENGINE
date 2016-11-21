@@ -670,10 +670,6 @@ void CInteractiveObjectEx::CalculateHelperLocation( const char* helperName, Quat
 			GameWarning("Helper '%s' for object '%s' not found, default to object location", GetEntity()->GetName(), helperName);
 		}
 	}
-	else
-	{
-		GameWarning("No character, default to object location");
-	}
 }
 
 // returns -1 if not interaction constraints satsified i.e. none can be peformed, else returns index of first interaction the user can perform. 

@@ -21,7 +21,7 @@ public:
 
 	void UpdateLevelInfo()
 	{
-		ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+		ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 		if (pLevel)
 			m_minimapInfo = pLevel->GetMinimapInfo();
 	}
@@ -299,7 +299,7 @@ public:
 protected:
 	virtual EntityId GetEntityId(SActivationInfo* pActInfo)
 	{
-		return gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		return gEnv->pGameFramework->GetClientActorId();
 	}
 
 	virtual void SetFlagsAndDescriton(SFlowNodeConfig& config)

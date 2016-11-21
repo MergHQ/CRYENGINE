@@ -88,7 +88,6 @@ struct Cry3DEngineBase
 	static CGeomCacheManager*                     m_pGeomCacheManager;
 #endif
 
-	static float             m_fInvDissolveDistBand;
 	static bool              m_bProfilerEnabled;
 	static threadID          m_nMainThreadId;
 	static bool              m_bLevelLoadingInProgress;
@@ -97,7 +96,6 @@ struct Cry3DEngineBase
 	static bool              m_bRenderTypeEnabled[eERType_TypesNum];
 	static int               m_mergedMeshesPoolSize;
 
-	static int               m_CpuFlags;
 	static ESystemConfigSpec m_LightConfigSpec;
 #if CRY_PLATFORM_DESKTOP
 	static bool              m_bEditor;

@@ -209,7 +209,7 @@ void CGameRulesMPSpawningWithLives::PerformRevive(EntityId playerId, int teamId,
 		return;
 	}
 
-	CPlayer*  pPlayer = (CPlayer*) gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId);
+	CPlayer*  pPlayer = (CPlayer*) gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId);
 	IEntity*  pEntity = gEnv->pEntitySystem->GetEntity( playerId );
 	CryLog("[tlh] @ CGameRulesMPSpawningWithLives::PerformRevive(playerId=%d, teamId=%d), player='%s'", playerId, teamId, (pEntity?pEntity->GetName():"!"));
 
@@ -548,7 +548,7 @@ void CGameRulesMPSpawningWithLives::CreateElimMarker(EntityId playerId)
 		{
 			SEntitySpawnParams  params;
 			params.sName = string().Format(" %s%s ", e->GetName(), m_tmpPlayerEliminatedMarkerTxt.c_str());
-			CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(gEnv->pEntitySystem->FindEntityByName(e->GetName())->GetId())->IsPlayer());
+			CRY_ASSERT(gEnv->pGameFramework->GetIActorSystem()->GetActor(gEnv->pEntitySystem->FindEntityByName(e->GetName())->GetId())->IsPlayer());
 			params.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 			params.nFlags = (ENTITY_FLAG_SPAWNED | ENTITY_FLAG_CLIENT_ONLY);
 			params.vPosition = e->GetWorldPos();

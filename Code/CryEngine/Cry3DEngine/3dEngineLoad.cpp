@@ -350,11 +350,20 @@ void C3DEngine::UnloadLevel()
 	{
 		GetRenderer()->FlushRTCommands(true, true, true);
 	}
+	
 	// release CGF and materials table
 	for (uint32 i = 0; m_pLevelStatObjTable && i < m_pLevelStatObjTable->size(); i++)
+	{
 		SAFE_RELEASE((*m_pLevelStatObjTable)[i]);
+	}
 	SAFE_DELETE(m_pLevelStatObjTable);
+
+	for (uint32 i = 0; m_pLevelMaterialsTable && i < m_pLevelMaterialsTable->size(); i++)
+	{
+		SAFE_RELEASE((*m_pLevelMaterialsTable)[i]);
+	}
 	SAFE_DELETE(m_pLevelMaterialsTable);
+
 	m_arrObjectLayersActivity.Reset();
 	COctreeNode::m_nNodesCounterStreamable = 0;
 
@@ -645,7 +654,7 @@ void C3DEngine::UnloadLevel()
 
 	for (auto& pFr : m_lstCustomShadowFrustums)
 	{
-		CRY_ASSERT(pFr->GetRefCount() == 1);
+		CRY_ASSERT(pFr->Unique());
 		SAFE_RELEASE(pFr);
 	}
 	stl::free_container(m_lstCustomShadowFrustums);
@@ -993,12 +1002,6 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 void C3DEngine::LoadPhysicsData()
 {
 	CPhysCallbacks::Init();
-
-	if (gEnv->pScriptSystem)
-	{
-		// Load explosion shapes.
-		gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
-	}
 }
 
 static void OnReleaseGeom(IGeometry* pGeom)
@@ -1523,7 +1526,7 @@ void C3DEngine::LoadParticleEffects(const char* szFolderName)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	if (m_pPartManager && GetSystem()->GetIGame())
+	if (m_pPartManager)
 	{
 		PrintMessage("===== Loading Particle Effects =====");
 

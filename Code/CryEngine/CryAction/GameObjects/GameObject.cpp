@@ -116,6 +116,7 @@ static int g_visibilityTimeout = 0;
 static float g_visibilityTimeoutTime = 0.0f;
 
 static std::set<CGameObject*> g_updateSchedulingProfile;
+static CryCriticalSection g_updateSchedulingProfileCritSec;
 
 void CGameObject::CreateCVars()
 {
@@ -129,6 +130,7 @@ void CGameObject::CreateCVars()
 CGameObject::CGameObject() :
 	m_pActionDelegate(0),
 	m_pViewDelegate(0),
+	m_pView(0),
 	m_pProfileManager(0),
 #if GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA
 	m_pUserData(0),
@@ -154,7 +156,7 @@ CGameObject::CGameObject() :
 	m_bNeedsNetworkRebind(false),
 	m_cachedParentId(0)
 {
-	COMPILE_TIME_ASSERT(eGFE_Last <= 64);
+	static_assert(eGFE_Last <= 64, "Unexpected enum value!");
 
 	if (!m_pGOS)
 		m_pGOS = (CGameObjectSystem*) CCryAction::GetCryAction()->GetIGameObjectSystem();
@@ -577,7 +579,10 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 	}
 
 	m_isBoundToNetwork = true;
-	g_updateSchedulingProfile.insert(this);
+	{
+		AUTO_LOCK(g_updateSchedulingProfileCritSec);
+		g_updateSchedulingProfile.insert(this);
+	}
 	EvaluateUpdateActivation();
 
 	return true;
@@ -635,7 +640,7 @@ void CGameObject::DebugUpdateState()
 		pOut += sprintf(pOut, " force:%d", m_forceUpdate);
 	if (m_physDisableMode != eADPM_Never)
 		pOut += sprintf(pOut, " physDisable:%d", m_physDisableMode);
-	gEnv->pRenderer->Draw2dLabel(10, g_y += 10, 1, white, false, "%s", buf);
+	IRenderAuxText::Draw2dLabel(10, g_y += 10, 1, white, false, "%s", buf);
 	if (pTMC)
 		pTMC->PutText(0, g_TextModeY++, buf);
 
@@ -681,7 +686,7 @@ void CGameObject::DebugUpdateState()
 				}
 				if (ShouldUpdateSlot(&*iter, slot, slotbit, checkAIDisable))
 				{
-					gEnv->pRenderer->Draw2dLabel(20, g_y += 10, 1, white, false, "%s", buf);
+					IRenderAuxText::Draw2dLabel(20, g_y += 10, 1, white, false, "%s", buf);
 					if (pTMC)
 						pTMC->PutText(1, g_TextModeY++, buf);
 				}
@@ -817,6 +822,7 @@ void CGameObject::UpdateSchedulingProfile()
 
 void CGameObject::UpdateSchedulingProfiles()
 {
+	AUTO_LOCK(g_updateSchedulingProfileCritSec);
 	for (std::set<CGameObject*>::iterator it = g_updateSchedulingProfile.begin(); it != g_updateSchedulingProfile.end(); )
 	{
 		std::set<CGameObject*>::iterator next = it;
@@ -968,6 +974,15 @@ bool CGameObject::CaptureView(IGameObjectView* pGOV)
 	if (m_pViewDelegate || !pGOV)
 		return false;
 	m_pViewDelegate = pGOV;
+
+	if (m_pView == nullptr)
+	{
+		m_pView = gEnv->pGameFramework->GetIViewSystem()->CreateView();
+		m_pView->LinkTo(this);
+	}
+
+	gEnv->pGameFramework->GetIViewSystem()->SetActiveView(m_pView);
+
 	return true;
 }
 
@@ -1316,7 +1331,11 @@ void CGameObject::PostSerialize()
 //------------------------------------------------------------------------
 void CGameObject::SetAuthority(bool auth)
 {
-	g_updateSchedulingProfile.insert(this);
+	{
+		AUTO_LOCK(g_updateSchedulingProfileCritSec);
+		g_updateSchedulingProfile.insert(this);
+	}
+	
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		iter->pExtension->SetAuthority(auth);
 }

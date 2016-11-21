@@ -56,7 +56,7 @@ public:
 		, m_distribution(-FLT_MIN)
 	{
 	}
-	void Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution);
+	void Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly = false);
 
 protected:
 	float GaussianDistribution1D(float x, float rho);
@@ -82,4 +82,21 @@ public:
 
 protected:
 	std::array<CFullscreenPass, 13> m_downsamplePasses;
+};
+
+class CClearRegionPass : public IUtilityRenderPass
+{
+public:
+	CClearRegionPass();
+	virtual ~CClearRegionPass();
+
+	void Execute(SDepthTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects);
+	void Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects);
+
+protected:
+	void PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport);
+
+	CPrimitiveRenderPass          m_clearPass;
+	std::vector<CRenderPrimitive> m_clearPrimitives;
+	buffer_handle_t               m_quadVertices;
 };

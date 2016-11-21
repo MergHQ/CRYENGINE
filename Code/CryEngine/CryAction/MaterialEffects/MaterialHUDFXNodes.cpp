@@ -127,7 +127,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, EIP_Trigger))
 			{
-				CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(gEnv->pGame->GetIGameFramework()->GetIMaterialEffects());
+				CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(gEnv->pGameFramework->GetIMaterialEffects());
 				if (pMatFX)
 				{
 					//const string& name = GetPortString(pActInfo, EIP_Name);

@@ -28,6 +28,9 @@ public:
 	/// Used by code checkpoints to register themselves with the manager.
 	virtual void RegisterCheckpoint(CCodeCheckpoint* pCheckpoint);
 
+	//! Manually unregister checkpoints when their module gets invalidated
+	virtual void UnRegisterCheckpoint(const char* szName);
+
 	/// Looks up a checkpoint by name. If not found it bookmarks that record and returns an index to it.
 	virtual size_t GetCheckpointIndex(const char* name);
 

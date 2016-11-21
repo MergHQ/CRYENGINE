@@ -97,7 +97,7 @@ void CVehicleSeatActionOrientatePartToView::Update(const float deltaTime)
 
 Vec3 CVehicleSeatActionOrientatePartToView::GetViewDirection() const
 {
-	IActor* pPassenger = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_pSeat->GetPassenger());
+	IActor* pPassenger = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_pSeat->GetPassenger());
 	IMovementController* pPassengerMC = pPassenger ? pPassenger->GetMovementController() : NULL;
 
 	if (pPassengerMC)

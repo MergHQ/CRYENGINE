@@ -30,6 +30,8 @@
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
+/*static*/ const float InterpolatedPath::k_defaultClosestFindSegmentToleranceZ = 0.5f;
+
 float InterpolatedPath::FindNextSegmentIndex(size_t startIndex) const
 {
 	float addition = .0f;
@@ -115,7 +117,7 @@ float InterpolatedPath::FindSegmentIndexAtDistance(float requestedDistance, size
 
 // Returns the segment index of the closest point on the path (fractional part provides exact position if required)
 float InterpolatedPath::FindClosestSegmentIndex(const Vec3& testPoint, const float startDistance,
-                                                const float endDistance, const float toleranceZ /* = 0.5f */) const
+                                                const float endDistance, const float toleranceZ /* = 0.5f */, const bool bUse2D /* = true */) const
 {
 	AIAssert(startDistance <= endDistance);
 
@@ -169,7 +171,10 @@ float InterpolatedPath::FindClosestSegmentIndex(const Vec3& testPoint, const flo
 			     (testZ <= max(segment.start.z, segment.end.z) + toleranceZ)))
 			{
 				float segmentDelta;
-				const float distToSegmentSq = Distance::Point_Lineseg2DSq(testPoint, segment, segmentDelta);
+				const float distToSegmentSq =
+				  bUse2D
+				  ? Distance::Point_Lineseg2DSq(testPoint, segment, segmentDelta)
+				  : Distance::Point_LinesegSq(testPoint, segment, segmentDelta);
 
 				// If this is a new best
 				if (distToSegmentSq < bestDistSq)
@@ -292,7 +297,7 @@ size_t InterpolatedPath::FindNextNavTypeSectionIndexAfter(size_t index) const
 }
 
 // Returns the next index on the path that deviates from a straight line by the deviation specified.
-float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDeviation) const
+float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDeviation /*= 0.1f*/, const bool bUse2D /*= true*/) const
 {
 	// Start at start pos and generate ray based on next segment start point
 	Lineseg testLine;
@@ -321,7 +326,10 @@ float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDevia
 		for (size_t subIndex = static_cast<size_t>(searchStartIndex) + 1; subIndex < subIndexEnd; ++subIndex)
 		{
 			float delta;
-			float deviationSq = Distance::Point_Lineseg2DSq(m_points[subIndex].pos, testLine, delta);
+			float deviationSq =
+			  bUse2D
+			  ? Distance::Point_Lineseg2DSq(m_points[subIndex].pos, testLine, delta)
+			  : Distance::Point_LinesegSq(m_points[subIndex].pos, testLine, delta);
 			if (deviationSq > maxDeviationSq)
 			{
 				// This point is no longer safe, use the last safe index
@@ -604,9 +612,9 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			const Vec3 raisedTestPos = testPos + raiseUp;
 
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-			const MNM::MeshGrid& grid = mesh.grid;
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-			const MNM::MeshGrid::Params& gridParams = grid.GetParams();
+			const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
 
 			const MNM::real_t horizontalRange(5.0f);
 			const MNM::real_t verticalRange(2.0f);
@@ -614,33 +622,31 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			MNM::vector3_t startLocationInMeshCoordinates(raisedStartPos - gridParams.origin);
 			MNM::vector3_t endLocationInMeshCoordinates(raisedTestPos - gridParams.origin);
 
-			MNM::TriangleID triangleStartID = grid.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange);
+			MNM::TriangleID triangleStartID = navMesh.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange);
 			if (!triangleStartID)
 			{
-				MNM::real_t startDistSq;
 				MNM::vector3_t closestStartLocation, triangleCenter;
-				triangleStartID = grid.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, &startDistSq, &closestStartLocation);
-				grid.PushPointInsideTriangle(triangleStartID, closestStartLocation, MNM::real_t(.05f));
+				triangleStartID = navMesh.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestStartLocation);
+				navMesh.PushPointInsideTriangle(triangleStartID, closestStartLocation, MNM::real_t(.05f));
 				startLocationInMeshCoordinates = closestStartLocation;
 			}
 
-			MNM::TriangleID triangleEndID = grid.GetTriangleAt(endLocationInMeshCoordinates, verticalRange, verticalRange);
+			MNM::TriangleID triangleEndID = navMesh.GetTriangleAt(endLocationInMeshCoordinates, verticalRange, verticalRange);
 			if (!triangleEndID)
 			{
 				// Couldn't find a triangle for the end position. Pick the closest one.
-				MNM::real_t endDistSq;
 				MNM::vector3_t closestEndLocation;
-				triangleEndID = grid.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, &endDistSq, &closestEndLocation);
-				grid.PushPointInsideTriangle(triangleEndID, closestEndLocation, MNM::real_t(.05f));
+				triangleEndID = navMesh.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestEndLocation);
+				navMesh.PushPointInsideTriangle(triangleEndID, closestEndLocation, MNM::real_t(.05f));
 				endLocationInMeshCoordinates = closestEndLocation;
 			}
 
 			if (!triangleStartID || !triangleEndID)
 				return false;
 
-			MNM::MeshGrid::RayCastRequest<512> wayRequest;
+			MNM::CNavMesh::RayCastRequest<512> wayRequest;
 
-			if (grid.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest))
+			if (navMesh.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest))
 				return false;
 
 			//Check against obstacles...
@@ -748,7 +754,7 @@ void CSmartPathFollower::ProcessPath()
 		//    else
 		//    {
 		//      // Can't find the floor!!
-		//      IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		//      IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		//      pDebug->AddSphere(endPoint.pos, 0.6f, ColorF(1.0f, 0, 0), 5.0f);
 		//      //AIAssert(false);
 		//    }
@@ -841,7 +847,10 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		Lineseg safeLine(m_validatedStartPos, followTargetPos);
 
 		float delta;
-		const float distToSafeLineSq = Distance::Point_Lineseg2DSq(curPos, safeLine, delta);
+		const float distToSafeLineSq =
+		  m_params.use2D
+		  ? Distance::Point_Lineseg2DSq(curPos, safeLine, delta)
+		  : Distance::Point_LinesegSq(curPos, safeLine, delta);
 
 		onSafeLine = distToSafeLineSq < sqr(0.15f);   // TODO: Parameterize & perhaps scale by proximity to target?
 
@@ -896,7 +905,10 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 			else
 			{
 				// we're at the start of the path
-				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX); // 5m tolerance; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+				const float startDist = 0.0f;
+				const float endDist = 5.0f;       // 5m tolerance
+				const float toleranceZ = FLT_MAX; // using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, startDist, endDist, toleranceZ, m_params.use2D);
 			}
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(indexAtCurrentPos);
@@ -919,8 +931,8 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 #ifndef _RELEASE
 					if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 					{
-						gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
-						gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(1.0f, 0.0f, 0.0f), 1.0f);
+						gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
+						gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(1.0f, 0.0f, 0.0f), 1.0f);
 					}
 #endif
 					isAllowedToShortcut = false;
@@ -930,8 +942,8 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 #ifndef _RELEASE
 				if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 				{
-					gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
-					gEnv->pGame->GetIGameFramework()->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(0.0f, 1.0f, 0.0f), 1.0f);
+					gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
+					gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(0.0f, 1.0f, 0.0f), 1.0f);
 				}
 #endif
 			}
@@ -955,8 +967,11 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		}
 		else
 		{
-			currentIndex = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX);  // We're at the start of the path,
-			// so we should be within 5m; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+			const float startDist = 0.0f;
+			const float endDist = 5.0f;       // We're at the start of the path, so we should be within 5m
+			const float toleranceZ = FLT_MAX; // using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+
+			currentIndex = m_path.FindClosestSegmentIndex(curPos, startDist, endDist, toleranceZ, m_params.use2D);
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(currentIndex);
 			lookAheadIndex = m_path.FindSegmentIndexAtDistance(currentDistance + LookAheadDistance);
@@ -1017,7 +1032,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 				followTargetPos = m_path.GetPositionAtSegmentIndex(newTargetIndex);
 
 				// Update inflection point
-				m_inflectionIndex = m_path.FindNextInflectionIndex(newTargetIndex, m_params.pathRadius * 0.5f);   // TODO: Parameterize max deviation
+				m_inflectionIndex = m_path.FindNextInflectionIndex(newTargetIndex, m_params.pathRadius * 0.5f, m_params.use2D);   // TODO: Parameterize max deviation
 				inflectionPoint = m_path.GetPositionAtSegmentIndex(m_inflectionIndex);
 
 				// Update the cached follow target navigation-type
@@ -1034,7 +1049,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		const float predictionTime = GetPredictionTimeForMovingAlongPath(isInsideObstacles, curVel.GetLengthSquared2D());
 		const float kIncreasedZToleranceForFindingClosestSegment = FLT_MAX; // We basically don't care about the z tolerance
 
-		float currentIndex = m_path.FindClosestSegmentIndex(m_curPos, .0f, m_path.TotalDistance(), kIncreasedZToleranceForFindingClosestSegment);
+		float currentIndex = m_path.FindClosestSegmentIndex(m_curPos, .0f, m_path.TotalDistance(), kIncreasedZToleranceForFindingClosestSegment, m_params.use2D);
 		if (currentIndex < 0.0f)
 		{
 			assert(currentIndex >= 0.0f);
@@ -1315,8 +1330,13 @@ float CSmartPathFollower::GetDistToNavType(IAISystem::ENavigationType navType) c
 		}
 
 		// FIXME: Stupid and expensive (but the original behavior)
-		const float closestIndex = m_path.FindClosestSegmentIndex(m_curPos, 0.0f,
-		                                                          m_path.GetDistanceAtSegmentIndex(m_followTargetIndex));
+		const float closestIndex = m_path.FindClosestSegmentIndex(
+		  m_curPos,
+		  0.0f,
+		  m_path.GetDistanceAtSegmentIndex(m_followTargetIndex),
+		  InterpolatedPath::k_defaultClosestFindSegmentToleranceZ,
+		  m_params.use2D);
+
 		if (closestIndex < 0.0f)
 			return std::numeric_limits<float>::max();
 
@@ -1462,7 +1482,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 		if (NavigationMeshID meshID = m_pNavPath->GetMeshID())
 		{
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-			const MNM::MeshGrid& grid = mesh.grid;
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 			const Vec3 raiseUp(0.0f, 0.0f, 0.2f);
 			const MNM::real_t verticalRange(2.0f);
@@ -1470,7 +1490,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 			Vec3 startLoc = m_curPos + raiseUp;
 
 			MNM::vector3_t mnmStartLoc = MNM::vector3_t(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
-			MNM::TriangleID triStart = grid.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
+			MNM::TriangleID triStart = navMesh.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
 			IF_UNLIKELY (!triStart)
 				return false;
 
@@ -1482,21 +1502,21 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 
 				const MNM::vector3_t mnmEndLoc = MNM::vector3_t(MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z));
 
-				const MNM::TriangleID triEnd = grid.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
+				const MNM::TriangleID triEnd = navMesh.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
 
 				if (!triEnd)
 					return false;
 
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
 
-				if (grid.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest) != MNM::MeshGrid::eRayCastResult_NoHit)
+				if (navMesh.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest) != MNM::CNavMesh::eRayCastResult_NoHit)
 					return false;
 
 				if (m_pathObstacles.IsPathIntersectingObstacles(m_pNavPath->GetMeshID(), startLoc, endLoc, m_params.passRadius))
 					return false;
 
 				MNM::vector3_t v0, v1, v2;
-				const bool success = mesh.grid.GetVertices(triEnd, v0, v1, v2);
+				const bool success = mesh.navMesh.GetVertices(triEnd, v0, v1, v2);
 				CRY_ASSERT(success);
 				const MNM::vector3_t closest = MNM::ClosestPtPointTriangle(mnmEndLoc, v0, v1, v2);
 				currentZ = closest.GetVec3().z;
@@ -1540,7 +1560,7 @@ bool CSmartPathFollower::IsRemainingPathOverlappingWithNavMeshTileBounds(const N
 	AABB remainingPathAABB;
 
 	// add our current position to the path's AABB (our position is very likely somewhere between 2 path points)
-	const float indexOfCurrentPos = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX);
+	const float indexOfCurrentPos = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX, m_params.use2D);
 	remainingPathAABB.min = remainingPathAABB.max = m_path.GetPositionAtSegmentIndex(indexOfCurrentPos);
 
 	// add all succeeding points to the path's AABB
@@ -1567,9 +1587,9 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 	if (const NavigationMeshID meshIDUsedByPath = m_pNavPath->GetMeshID())
 	{
-		const MNM::MeshGrid& gridUsedByPath = gAIEnv.pNavigationSystem->GetMesh(meshIDUsedByPath).grid;
+		const MNM::CNavMesh& navMeshUsedByPath = gAIEnv.pNavigationSystem->GetMesh(meshIDUsedByPath).navMesh;
 
-		float index1 = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX);
+		float index1 = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX, m_params.use2D);
 		float index2 = m_path.FindNextSegmentIndex(static_cast<size_t>(index1));
 
 		// - perform raycasts along all segments of the remaining path
@@ -1583,8 +1603,8 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 			const MNM::vector3_t mnmStartLoc = MNM::vector3_t(segmentPos1);
 			const MNM::vector3_t mnmEndLoc = MNM::vector3_t(segmentPos2);
-			const MNM::TriangleID triStart = gridUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
-			const MNM::TriangleID triEnd = gridUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
+			const MNM::TriangleID triStart = navMeshUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
+			const MNM::TriangleID triEnd = navMeshUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange);
 
 			if (!triStart || !triEnd)
 			{
@@ -1593,10 +1613,10 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 			if (triStart)
 			{
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
-				MNM::MeshGrid::ERayCastResult raycastResult = gridUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest);
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest);
 
-				if (raycastResult != MNM::MeshGrid::eRayCastResult_NoHit)
+				if (raycastResult != MNM::CNavMesh::eRayCastResult_NoHit)
 				{
 					return false;
 				}

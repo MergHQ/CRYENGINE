@@ -543,7 +543,7 @@ void CGameRulesStandardVictoryConditionsTeam::SvOpponentsCheckFailed()
 	int  winnerTeam = 1;
 	if (gEnv->IsClient())
 	{
-		winnerTeam = m_pGameRules->GetTeam(gEnv->pGame->GetIGameFramework()->GetClientActorId());
+		winnerTeam = m_pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId());
 	}
 	else
 	{
@@ -678,7 +678,7 @@ void CGameRulesStandardVictoryConditionsTeam::ClUpdatedTimeLimit()
 	// depending on the length of game these soundTime thresholds can sometimes get whacked out of chronological order
 	// e.g in a 2 minute game the "1min" threshold will come before the "halfway" threshold (Should be only valid case)
 	// In this case we will entirely skip the halfway signal
-	COMPILE_TIME_ASSERT(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime));
+	static_assert(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime), "Unexpected array size!");
 	for(int i = 0; i < (eSVC_size - 1); i++)
 	{
 		if(m_currentSoundTime[i] <= m_currentSoundTime[i + 1])
@@ -749,7 +749,7 @@ void CGameRulesStandardVictoryConditionsTeam::UpdateTimeLimitSounds()
 		int csi = m_currentSound;
 
 		// Skip ones that should have already happened (for mid-game joins)
-		COMPILE_TIME_ASSERT(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime));
+		static_assert(eSVC_size == CRY_ARRAY_COUNT(m_currentSoundTime), "Unexpected array size!");
 		while ((csi < eSVC_size) && (timeRemaining <= m_currentSoundTime[csi] - 1.0f))
 		{
 			CryLog("skipping over csi=%d (%s) as timeRemaining is less than m_currentSoundTime=%f minus 1.0f", csi, s_ESVC_SoundsListStrs[csi], m_currentSoundTime[csi]);
@@ -765,7 +765,7 @@ void CGameRulesStandardVictoryConditionsTeam::UpdateTimeLimitSounds()
 
 			if(m_pGameRules->GetGameMode() == eGM_Assault)
 			{
-				const EntityId  localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+				const EntityId  localClientId = gEnv->pGameFramework->GetClientActorId();
 				if (const int localTeam=m_pGameRules->GetTeam(localClientId))
 				{
 					//in assault the attackers have commander 2 and defenders have commander 1 (Recorded voice lines are specific to attackers and defenders)
@@ -796,7 +796,7 @@ void CGameRulesStandardVictoryConditionsTeam::UpdateTimeLimitSounds()
 
 						if (pRoundsModule && !isInSuddenDeath)
 						{
-							const EntityId  localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+							const EntityId  localClientId = gEnv->pGameFramework->GetClientActorId();
 							if (const int localTeam=m_pGameRules->GetTeam(localClientId))
 							{
 								const char*  announcement;
@@ -1101,7 +1101,7 @@ void CGameRulesStandardVictoryConditionsTeam::OnEndGame(int teamId, EGameOverRea
 			}
 		}
     
-    EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+    EntityId localClient = gEnv->pGameFramework->GetClientActorId();
     if ( shooterEntity == localClient )
     {
       g_pGame->GetPersistantStats()->IncrementClientStats(EIPS_WinningKill);
@@ -1134,7 +1134,7 @@ void CGameRulesStandardVictoryConditionsTeam::OnEndGame(int teamId, EGameOverRea
 
 	if (gEnv->IsClient())
 	{
-		EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localClient = gEnv->pGameFramework->GetClientActorId();
 		int clientTeam = m_pGameRules->GetTeam(localClient);
 		if (teamId)
 		{
@@ -1316,7 +1316,7 @@ const int CGameRulesStandardVictoryConditionsTeam::GetClientTeam(const EntityId 
 
 const EGameOverType CGameRulesStandardVictoryConditionsTeam::IsClientWinning(int& highScore) const
 {
-	const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	const int clientTeam = GetClientTeam(clientId);
 	if(clientTeam)
 	{

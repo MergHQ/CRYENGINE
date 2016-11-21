@@ -1,0 +1,36 @@
+<RCJobs>
+
+<!-- DefaultProperties can be override from command line -->
+<DefaultProperties src="." />
+
+<AssetsJob>
+ <DefaultProperties overwriteextension="cryasset" />
+ <DefaultProperties sourceroot="${src}" />
+ <DefaultProperties exclude="levels/*.*;engineassets/*.*"/>
+
+ <Job input="*.cgf" assettypes="cgf,Mesh" />
+ <Job input="*.chr" assettypes="chr,Skeleton" />
+ <Job input="*.skin" assettypes="skin,SkinnedMesh" />
+ <Job input="*.dds" assettypes="dds,Texture" />
+ <Job input="*.mtl" assettypes="mtl,Material" />
+ <Job input="*.cga" assettypes="cga,AnimatedMesh" />
+ <Job input="*.anm" assettypes="anm,MeshAnimation" />
+ <Job input="*.cdf" assettypes="cdf,Character" />
+ <Job input="*.caf" assettypes="caf,Animation" />
+ <Job input="*.wav" assettypes="wav,Sound" />
+ <Job input="*.ogg" assettypes="ogg,Sound" />
+ <Job input="*.cax" assettypes="cax,GeometryCache" />
+ <Job input="*.lua" assettypes="lua,Script" />
+ <Job input="*.pfx" assettypes="pfx,Particles" />
+ <Job input="*.xml" assettypes="xml,Xml" />
+</AssetsJob>
+
+ <!-- Levels -->
+<LevelsJob>
+ <Job overwriteextension="cryasset" sourceroot="${src}/levels" input="*.cry" assettypes="cry,Level" />
+</LevelsJob>
+
+<Run Job="AssetsJob"/>
+<Run Job="LevelsJob"/>
+
+</RCJobs>

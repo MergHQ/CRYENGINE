@@ -206,12 +206,7 @@ pixout Fxaa3(vtxOutAA IN, float4 screenSize)
   float gradient = max(abs(gradientN), abs(gradientS));
   if(pairN) lengthSign = -lengthSign;
 
-#if ORBIS
-	// shader compiler workaround
-  float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0f, 0.999999f);
-#else
-	float subpixC = saturate(abs(subpixB) * subpixRcpRange);
-#endif
+  float subpixC = saturate(abs(subpixB) * subpixRcpRange);
 
   float2 posB;
   posB.x = posM.x;
@@ -554,12 +549,32 @@ pixout PostAA_PS(vtxOutAA IN)
 	const float2 texel = cbPostAA.screenSize.zw;
 	
 	// Compute velocity vector for static geometry
-	float depth = PostAA_DepthTex.Load(int3(IN.WPos.xy, 0));
+	#if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
+		float2 sourcePos = MapViewportToUnnormalizedRaster(NvGetProjectionData(), tc);
+		float depth = PostAA_DepthTex.Load(int3(sourcePos, 0));
+		#if %_RT_PROJECTION_LENS_MATCHED
+			// Correct for LMS warping
+			depth = MapUnnormalizedRasterToClip(sourcePos, depth).z;
+		#endif
+	#else
+		float depth = PostAA_DepthTex.Load(int3(IN.WPos.xy, 0));
+	#endif
+
 	float4 vPosHPrev = mul(float4(IN.baseTC.x, IN.baseTC.y, depth, 1.0), cbPostAA.matReprojection);
 	vPosHPrev.xy /= vPosHPrev.w;
 	
-	float2 vObj = tex2D(_tex3, tc);
-	float2 v = (vObj.x==0) ? vPosHPrev.xy - tc : DecodeMotionVector(vObj);
+	float2 v = vPosHPrev.xy - tc;
+	
+	float2 multiresTC = MapViewportToRaster(tc);
+
+	float2 vObj = tex2D(_tex3, multiresTC);
+	if (vObj.x != 0)
+	{
+		v = DecodeMotionVector(vObj);
+		multiresTC += v;
+		float2 prevTC = MapRasterToViewport(multiresTC);
+		v = prevTC - tc;
+	}
 
 #if %_RT_SAMPLE2
 	// SMAA 1TX Mode

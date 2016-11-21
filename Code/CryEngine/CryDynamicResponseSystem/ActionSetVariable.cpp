@@ -56,6 +56,11 @@ string CActionSetVariable::GetVerboseInfo() const
 DRS::IResponseActionInstanceUniquePtr CActionSetVariable::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CVariableCollection* pCollectionToUse = GetCurrentCollection(static_cast<CResponseInstance*>(pResponseInstance));
+	if (!pCollectionToUse)
+	{
+		CVariableCollectionManager* pVcManager = CResponseSystem::GetInstance()->GetVariableCollectionManager();
+		pCollectionToUse = pVcManager->CreateVariableCollection(m_collectionName);
+	}
 
 	if (pCollectionToUse)
 	{
@@ -107,36 +112,14 @@ void CActionSetVariable::Serialize(Serialization::IArchive& ar)
 	if (ar.openBlock("SetVariableValues1", " "))
 	{
 		_Serialize(ar, "^^ Variable", "^^>140>Collection");
-
-		if (ar.isInput())
-		{
-			CVariableCollectionManager* pVcManager = CResponseSystem::GetInstance()->GetVariableCollectionManager();
-			if (!pVcManager->GetCollection(m_collectionName))
-			{
-				pVcManager->CreateVariableCollection(m_collectionName);
-			}
-		}
 		ar.closeBlock();
 	}
 
 	if (ar.openBlock("SetVariableValues2", " "))
 	{
 		ar(m_changeOperation, "Operation", "^^>Operation");
-		ar(m_valueToSet, "Value", "^^ ValueToSet ");
+		ar(m_valueToSet, "Value", "^^ Value ");
 		ar(Serialization::Decorators::Range<float>(m_cooldown, 0.0f, 120.0f), "Cooldown", "^^> Cooldown");
-
-		if (ar.isEdit())
-		{
-			if (m_cooldown < 0.0f)
-			{
-				ar.warning(m_cooldown, "Cooldown cannot be negative");
-			}
-			if (strcmp(m_valueToSet.GetTypeAsString(), "Undefined") == 0)
-			{
-				ar.warning(m_cooldown, "No variable name specified");
-			}
-		}
-
 		ar.closeBlock();
 	}
 
@@ -145,13 +128,25 @@ void CActionSetVariable::Serialize(Serialization::IArchive& ar)
 	{
 		ar(GetVerboseInfo(), "ConditionDesc", "!^<");
 
-	}
-	CVariableCollection* pCollection = CResponseSystem::GetInstance()->GetCollection(m_collectionName);
-	if (pCollection)
-	{
-		if (!pCollection->GetVariableValue(m_variableName).DoTypesMatch(m_valueToSet))
+		if (m_cooldown < 0.0f)
 		{
-			ar.warning(m_cooldown, "The type of the value to set and the type of the variable don't match!");
+			ar.warning(m_cooldown, "Cooldown cannot be negative");
+		}
+		if (m_valueToSet.GetType() == eDRVT_Undefined)
+		{
+			ar.warning(m_cooldown, "No value to set specified");
+		}
+		if (m_changeOperation != CActionSetVariable::eChangeOperation_Set && m_valueToSet.GetType() != eDRVT_Float && m_valueToSet.GetType() != eDRVT_Int)
+		{
+			ar.warning(m_cooldown, "Increment/Decrement is only supported for FLOAT and INTEGER variables");
+		}
+		CVariableCollection* pCollection = CResponseSystem::GetInstance()->GetCollection(m_collectionName);
+		if (pCollection)
+		{
+			if (!pCollection->GetVariableValue(m_variableName).DoTypesMatch(m_valueToSet))
+			{
+				ar.warning(m_cooldown, "The type of the value to set and the type of the variable don't match!");
+			}
 		}
 	}
 #endif

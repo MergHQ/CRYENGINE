@@ -125,11 +125,11 @@ namespace TurretBehaviorStateNames
 
 	ETurretBehaviorState FindId( const char* const name )
 	{
-		STATIC_ASSERT( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
 
 		for ( size_t i = 0; i < eTurretBehaviorState_Count; ++i )
 		{
@@ -974,7 +974,7 @@ void CTurret::InitActionController()
 
 	InitMannequinUserParams();
 
-	const ActionScopes scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
+	const TagID scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
 	ICharacterInstance* const pCharacterInstance = pEntity->GetCharacter( DEFAULT_TURRET_MODEL_SLOT );
 	if ( pCharacterInstance == NULL )
 	{

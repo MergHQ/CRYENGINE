@@ -426,7 +426,7 @@ public:
 		char msg[256];
 		msg[0] = 0;
 
-		if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(m_id))
+		if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(m_id))
 		{
 			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
 
@@ -437,8 +437,10 @@ public:
 			}
 			else
 			{
-				cry_sprintf(msg, "Game object extension with base %.8x for entity %s for RMI %s not found", (uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(), m_pRMI->pMsgDef->description);
-				GameWarning("%s", msg);
+				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
+					"Game object extension with base %.8x for entity %s for RMI %s not found",
+					(uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(),
+					m_pRMI->pMsgDef->description);
 			}
 		}
 		else
@@ -448,7 +450,8 @@ public:
 
 		if (!ok)
 		{
-			GameWarning("Error handling RMI %s", m_pRMI->pMsgDef->description);
+			CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR, 
+				"Error handling RMI %s", m_pRMI->pMsgDef->description);
 
 			if (!foundObject && !gEnv->bServer && !m_pChannel->IsInTransition())
 			{
@@ -527,7 +530,7 @@ protected:
 
 	static T_Derived* QueryExtension(EntityId id)
 	{
-		IGameObject* pGO = gEnv->pGame->GetIGameFramework()->GetGameObject(id);
+		IGameObject* pGO = gEnv->pGameFramework->GetGameObject(id);
 		if (pGO)
 		{
 			return static_cast<T_Derived*>(pGO->QueryExtension(T_Derived::ms_statics.m_extensionId));

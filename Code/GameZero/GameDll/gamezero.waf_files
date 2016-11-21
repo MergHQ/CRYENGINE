@@ -8,14 +8,6 @@
 		  "StdAfx.h"
 		]
 	},
-	"CryGameZero_uber_Editor.cpp" :
-	{
-		"Editor" :
-		[
-		  "editor/EditorGame.cpp",
-		  "editor/EditorGame.h"
-		]
-	},
 	"CryGameZero_uber_Game.cpp" :
 	{
 		"Game" :
@@ -36,11 +28,6 @@
 		[
 		  "startup/GameStartup.cpp",
 		  "startup/GameStartup.h"
-		],
-		"Entities" :
-		[
-		  "entities/GeomEntity.cpp",
-		  "entities/GeomEntity.h"
 		]
 	},
 	"CryGameZero_uber_Player.cpp" :

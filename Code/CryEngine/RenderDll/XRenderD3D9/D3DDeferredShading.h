@@ -61,14 +61,11 @@ public:
 	//shadows
 	void        ResolveCurrentBuffers();
 	void        RestoreCurrentBuffers();
-	bool        PackAllShadowFrustums(bool bPreLoop, bool bRenderShadowMaps = true);
-	void        DebugShadowMaskClear();
-	bool        PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight& light, const int nLightID, const int nFirstCandidateLight, bool bClearPool, bool bRenderShadowMaps = true);
+	bool        PackAllShadowFrustums(bool bPreLoop);
+	bool        PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight& light, const int nLightID, const int nFirstCandidateLight, bool bClearPool);
 
 	void        FilterGBuffer();
 	void        PrepareClipVolumeData(bool& bOutdoorVisible);
-	void        RenderClipVolumesToStencil(int nStencilInsideBit);
-	void        RenderPortalBlendValues(int nStencilInsideBit);
 	bool        AmbientPass(SRenderLight* pGlobalCubemap, bool& bOutdoorVisible);
 
 	bool        DeferredDecalPass(const SDeferredDecal& rDecal, uint32 indDecal);

@@ -13,7 +13,7 @@ void SAttachmentBase::AddBinding(IAttachmentObject* pModel, ISkin* pISkin /*= 0*
 		// - Certain modification commands (such as CAddAttachmentObject) contain specialized control paths for CA_CharEditModel
 		//   that may end up in a recursive CModificationCommandBuffer flush. This can cause a whole range of various mean things,
 		//   including but not limited to stack overflows and calling methods on dangling pointers.
-		// - CModificationCommandBuffer is currently not flushed when user interacts continously with the CT model
+		// - CModificationCommandBuffer is currently not flushed when user interacts continuously with the CT model
 		//   (e.g. dragging attachments around), which ends up with buffer overflows.
 		//
 		// There's no point in buffering modification commands in the character edit mode anyway, so we simply reverted to the old synchronous behavior as an ad-hoc fix.

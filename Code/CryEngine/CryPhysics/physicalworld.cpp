@@ -173,6 +173,7 @@ CPhysicalWorld::CPhysicalWorld(ILog *pLog) : m_nWorkerThreads(0)
 	m_vars.timeGranularity = 0.0001f;
 	m_vars.maxWorldStep = 0.2f;
 	m_vars.iDrawHelpers = 0;
+	m_vars.drawHelpersOpacity = 1.0f;
 	m_vars.iOutOfBounds = raycast_out_of_bounds|get_entities_out_of_bounds;
 #if CRY_PLATFORM_MOBILE
 	m_vars.nMaxSubsteps = 2;
@@ -2469,7 +2470,6 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 									ptail->m_next_coll = pentlist[j]; ptail = pentlist[j]; ptail->m_next_coll = 0;
 									ptail->m_bMoved = 0;
 								}
-								time_interval = min(time_interval, pentlist[j]->GetMaxTimeStep(time_interval));
 							}
 					}
 
@@ -2838,6 +2838,8 @@ int CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity *pent, int bGridLocked)
 			for(; pent0->m_prev && pent0->m_prev->m_pOuterEntity==pent->m_pOuterEntity; bPermanent|=(pent0=pent0->m_prev)->m_bPermanent);
 			for(; pent1->m_next && pent1->m_next->m_pOuterEntity==pent->m_pOuterEntity; bPermanent|=(pent1=pent1->m_next)->m_bPermanent);
 		}
+		if (pent->m_iPrevSimClass==iSimClass && pent->m_bPrevPermanent==bPermanent)
+			return 0;
 
 		if (iPrevSimClass<8u) {
 			if (pent1->m_next) pent1->m_next->m_prev = pent0->m_prev;
@@ -2910,6 +2912,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 		if (pobj->m_ig[0].x!=NO_GRID_REG) // if m_igx[0] is NO_GRID_REG, the entity should not be registered in grid at all
 			if (igx[0]-pobj->m_ig[0].x | igy[0]-pobj->m_ig[0].y | igx[1]-pobj->m_ig[1].x | igy[1]-pobj->m_ig[1].y | flags&4 | flags>>2&1 ^ pobj->m_bOBBThunks) {
 				CPhysicalPlaceholder *pcurobj = pobj;
+				int moveToEnd = -iszero(pobj->m_ig[0].x-GRID_REG_LAST);
 				if (IsPlaceholder(pobj->m_pEntBuddy))
 					goto skiprepos; //pcurobj = pobj->m_pEntBuddy;
 				SpinLock(&m_lockGrid,0,bGridLocked = WRITE_LOCK_VAL);
@@ -2930,7 +2933,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 				} else if (n>(unsigned int)m_vars.nMaxAreaCells)
 					return -1;
 				for(ix=igx[0];ix<=igx[1];ix++) for(iy=igy[0];iy<=igy[1];iy++) {
-					if ((flags&4) && (ix|iy)>=0) {
+					if ((flags&4) && (ix|iy|m_entgrid.size.x-1-ix|m_entgrid.size.y-1-iy)>=0) {
 						float xMin = (ix*m_entgrid.step.x)+m_entgrid.origin[m_iEntAxisx];
 						float yMin = (iy*m_entgrid.step.y)+m_entgrid.origin[m_iEntAxisy];
 						float zMin = igz[0]*m_zGran+m_entgrid.origin[m_iEntAxisz];
@@ -2966,7 +2969,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 
 					int ithunkGrid = m_pEntGrid[j];
 
-					if (!ithunkGrid || m_gthunks[ithunkGrid].iSimClass!=5) {
+					if (!ithunkGrid || m_gthunks[ithunkGrid].iSimClass-5 & ~moveToEnd) {
 						int& entGridEntry = m_pEntGrid[(unsigned int)j];
 						pNewGThunk->bFirstInCell = 1;
 						pNewGThunk->iprev = ((iy & m_entgrid.size.y-1)<<10|ix & m_entgrid.size.x-1);
@@ -2975,7 +2978,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 						m_gthunks[ithunkGrid].bFirstInCell = 0;
 						entGridEntry = ithunk;
 					}	else {
-						for(ithunk0=ithunkGrid; m_gthunks[m_gthunks[ithunk0].inext].iSimClass==5; ithunk0=m_gthunks[ithunk0].inext);
+						for(ithunk0=ithunkGrid; iszero((int)m_gthunks[m_gthunks[ithunk0].inext].iSimClass-5) | moveToEnd & m_gthunks[ithunk0].inext; ithunk0=m_gthunks[ithunk0].inext);
 						pNewGThunk->bFirstInCell = 0;
 						pNewGThunk->inext = m_gthunks[ithunk0].inext;
 						pNewGThunk->iprev = ithunk0;
@@ -3039,7 +3042,8 @@ DEBUG_BREAK;
 
 	if (bBBoxUpdated | bSimClassUpdated) {
 		CPhysicalEntity *pent = (CPhysicalEntity*)pobj;
-		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes)) {
+		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes) &&
+			(1 - bSimClassUpdated)*(1 - bBBoxUpdated + max(0.0f, pent->GetMassInv())) == 0) { // only send BBox updates for kinematic (0-mass) entities
 			event.pEntity=pent; event.pForeignData=pent->m_pForeignData; event.iForeignData=pent->m_iForeignData;
 			event.BBoxOld[0] = pent->m_BBox[0];
 			event.BBoxOld[1] = pent->m_BBox[1];
@@ -3075,8 +3079,9 @@ float CPhysicalWorld::IsAffectedByExplosion(IPhysicalEntity *pobj, Vec3 *impulse
 int CPhysicalWorld::DeformPhysicalEntity(IPhysicalEntity *pient, const Vec3 &ptHit,const Vec3 &dirHit,float r, int flags)
 {
 	// craig - experimental fix: i think the random number in GetExplosionShape() is upsetting things in MP
+	SScopedRandomSeedChange randomSeedChange;
 	if (m_vars.bMultiplayer)
-		cry_random_seed(1234567);
+		randomSeedChange.Seed(1234567);
 
 	int i,bEntChanged,bPartChanged;
 	CPhysicalEntity *pent = (CPhysicalEntity*)pient;

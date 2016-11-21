@@ -42,7 +42,7 @@ struct OutputScreenVS
 	half2 uv : TEXCOORD0;
 };
 
-struct  OutputGhostVS
+struct OutputGhostVS
 {
 	half4 hpos : POSITION;
 	half2 uv : TEXCOORD0;
@@ -57,7 +57,7 @@ struct OutputCameraOrbsVS
 	half4 color : COLOR0;
 };
 
-struct OutputShafeOcclusionVS
+struct OutputShaftOcclusionVS
 {
 	half4 hpos:POSITION;
 	half3 uvz:TEXCOORD0;
@@ -65,7 +65,7 @@ struct OutputShafeOcclusionVS
 	half4 color:COLOR0;
 };
 
-struct OutputShafeVS
+struct OutputShaftVS
 {
 	half4 hpos:POSITION;
 	half2 uv:TEXCOORD0;
@@ -73,117 +73,51 @@ struct OutputShafeVS
 	half4 color:COLOR0;
 };
 
-OutputScreenVS screenQuadVS( InputScreenVS IN )
-{
-	OutputScreenVS OUT;
-	OUT.hpos.xy = IN.uv * 2-1;
-	OUT.hpos.zw = float2(0, 1);
-	
-#if %_RT_REVERSE_DEPTH
-	OUT.hPos.z = OUT.hPos.w - OUT.hPos.z;
-#endif
-	
-	OUT.uv = float2( IN.uv.x, 1-IN.uv.y );
-	return OUT;
-}
-
-half4 externTint;
-half4 wposAndSize;
-#define srcWorldPos wposAndSize.xyz
-#define size wposAndSize.w
-half2 baseTexSize;
-float3x4 xform;
-sampler2D occPattern : register(s5);   // general occlusion
-half4 dynamics;
-half4 occPatternInfo;
-half4 ScreenWidthHeight;
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-half4 HDRParams : PB_HDRParams;
-
-half4 ToneMappedPreMulAlpha( half4 OUT )
+half4 ToneMappedPreMulAlpha( float4 OUT, float4 hdrParams )
 {
 	// Use-pre multiplied alpha for LDR version (consoles)
 	OUT.rgb *= OUT.a;
 	// Apply tone mapping on the fly
-	half3 compressedCol = ( saturate((OUT * (HDRParams.x * OUT + HDRParams.y)) / (OUT * (HDRParams.x * OUT + 1.7h) + HDRParams.z) ) );
+	half3 compressedCol = ( saturate((OUT * (hdrParams.x * OUT + hdrParams.y)) / (OUT * (hdrParams.x * OUT + 1.7h) + hdrParams.z) ) );
 	return half4( compressedCol, OUT.a  );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-half2 computeUnitLocalQuad( half2 uv ) 
+struct SMeshTransformContext
 {
-	return uv*2-1;
-}
+	float2   outputDimensions;
+	float2   size;
+	float3x4 transform;
+	float4   meshCenterAndBrt;
+	float4   externTint;
+	float4   dynamics;
+};
 
-void ComputeBasicVertexOutputs( 
-	half2 unitLocalQuad,
-	half3 projPos,
-	half2 uv,
-	half4 color,
-	out half4 hpos,
-	out half2 uvOut,
-	out half4 colorOut )
-{
-	half3 localQuad;
-	localQuad.xy = unitLocalQuad * size;
-
-#if %_RT_SAMPLE0
-	half2 rotSinCos = normalize( half2(projPos.x, 1-projPos.y)*2-1 );
-	half2 tmp = localQuad.xy;
-	localQuad.x = tmp.x * rotSinCos.x - tmp.y * rotSinCos.y;
-	localQuad.y = tmp.y * rotSinCos.x + tmp.x * rotSinCos.y;
-#endif
-
-	localQuad = mul(  half3(localQuad.xy,1), (float3x3)xform );
-	localQuad.z = 0.5;
-
-#if %_RT_SAMPLE5
- 	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
- 	localQuad.xy *= aspectCorrectionRatio;
-#endif
-
-	half2 rectTexScalingRatio = half2(baseTexSize.xy) / max(baseTexSize.x, baseTexSize.y);
-	localQuad.xy *= rectTexScalingRatio;
-	
-	half brightness = projPos.z;
-	projPos.y = 1-projPos.y;
-	hpos.xy = projPos*2-1 + localQuad.xy;
-	hpos.zw = half2(localQuad.z,1);
-
-	uvOut = uv;
-	colorOut = half4(color.rgb*brightness,color.a);
-}
-
-half4 meshCenterAndBrt;
-#define meshCenter meshCenterAndBrt.xyz
-#define brightness meshCenterAndBrt.w
-
-OutputVS commonMeshVS( InpuptVS IN )
+OutputVS commonMeshTransform(InpuptVS IN, SMeshTransformContext context)
 {
 	OutputVS OUT;
 
-	IN.pos.xy *= size;
+	IN.pos.xy *= context.size;
 
 #if %_RT_SAMPLE0
-	half2 dir = meshCenter.xy * 2 - 1;
+	half2 dir = context.meshCenterAndBrt.xy * 2 - 1;
 	half2 rotSinCos = normalize( dir );
 	half2 tmp = IN.pos.xy;
 	IN.pos.x = tmp.x * rotSinCos.x - tmp.y * rotSinCos.y;
 	IN.pos.y = tmp.y * rotSinCos.x + tmp.x * rotSinCos.y;
 #endif
 
-	IN.pos = mul( float3(IN.pos.xy,1), (float3x3)xform );
+	IN.pos = mul( float3(IN.pos.xy,1), (float3x3)context.transform );
 	IN.pos.z = 0.5;
 
 #if %_RT_SAMPLE1
- 	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
+ 	half2 aspectCorrectionRatio = ( half2(context.outputDimensions.xy) / max(context.outputDimensions.x, context.outputDimensions.y) ).yx;
  	IN.pos.xy *= aspectCorrectionRatio;
 #endif
 
-	OUT.hpos.xyz = half3(IN.pos.xyz  * 0.5) + meshCenter;
+	OUT.hpos.xyz = half3(IN.pos.xyz  * 0.5) + context.meshCenterAndBrt.xyz;
 	OUT.hpos.y = 1 - OUT.hpos.y;
 	OUT.hpos.xy = OUT.hpos.xy * 2 - 1;
 	OUT.hpos.z = 0;
@@ -191,55 +125,145 @@ OutputVS commonMeshVS( InpuptVS IN )
 
 	OUT.uv.xy = IN.uv;
 	OUT.uv.zw = OUT.hpos.xy;
-	OUT.color = GetInputColor(IN.color) * brightness * externTint * dynamics.x;
-	OUT.center = half3( meshCenter.x, 1-meshCenter.y, meshCenter.z );
+	OUT.color = GetInputColor(IN.color) * context.meshCenterAndBrt.w * context.externTint * context.dynamics.x;
+	OUT.center = half3( context.meshCenterAndBrt.x, 1-context.meshCenterAndBrt.y, context.meshCenterAndBrt.z );
 	OUT.center.xy = OUT.center.xy * 2 -1;
-
+	
 	return OUT;
+}
+
+struct SComputeBasicVertexContext
+{
+	float4   meshCenterAndBrt;
+	float2   outputDimensions;
+	float2   size;
+	float3x4 transform;
+	float2   baseTexSize;
+	float4   color;
+};
+
+void ComputeBasicVertexOutputs(InpuptVS IN, SComputeBasicVertexContext context, out half4 hpos, out half2 uvOut, out half4 colorOut)
+{
+	half3 localQuad;
+	localQuad.xy = IN.pos.xy * context.size;
+	float2 projPos = context.meshCenterAndBrt.xy;
+	
+#if %_RT_SAMPLE0
+	half2 rotSinCos = normalize( half2(projPos.x, 1-projPos.y)*2-1 );
+	half2 tmp = localQuad.xy;
+	localQuad.x = tmp.x * rotSinCos.x - tmp.y * rotSinCos.y;
+	localQuad.y = tmp.y * rotSinCos.x + tmp.x * rotSinCos.y;
+#endif
+
+	localQuad = mul(  half3(localQuad.xy,1), (float3x3)context.transform );
+	localQuad.z = 0.5;
+
+#if %_RT_SAMPLE5
+ 	half2 aspectCorrectionRatio = ( half2(context.outputDimensions.xy) / max(context.outputDimensions.x, context.outputDimensions.y) ).yx;
+ 	localQuad.xy *= aspectCorrectionRatio;
+#endif
+
+	half2 rectTexScalingRatio = half2(context.baseTexSize.xy) / max(context.baseTexSize.x, context.baseTexSize.y);
+	localQuad.xy *= rectTexScalingRatio;
+	
+	projPos.y = 1-projPos.y;
+	hpos.xy = projPos*2-1 + localQuad.xy;
+	hpos.zw = half2(localQuad.z,1);
+
+	uvOut = IN.uv;
+	colorOut = context.color;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ghost
 
-half4 ghostTileInfo;
-#define ghostTileDim ghostTileInfo.xy
-#define ghostTileIndex ghostTileInfo.w
+cbuffer CBGhost : register(b0)
+{
+	struct 
+	{
+		float4   outputDimAndSize;
+		float4   occPatternInfo;
+		float4   externTint;
+		float3x4 xform;
+		float4   dynamics;
+		float4   lightProjPos;
+		float4   hdrParams;
+		float4   meshCenterAndBrt;
+		float4   baseTexSize;
+		float4   ghostTileInfo;
+		float4   color;
+	} cbGhost;
+};
 
- OutputGhostVS lensGhostVS( InpuptVS IN )
+OutputGhostVS lensGhostVS( InpuptVS IN )
 {
 	OutputGhostVS OUT;
-	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
-	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, OUT.uv, OUT.color );
+	
+	SComputeBasicVertexContext context;
+	context.meshCenterAndBrt     = cbGhost.meshCenterAndBrt;
+	context.outputDimensions     = cbGhost.outputDimAndSize.xy;
+	context.size                 = cbGhost.outputDimAndSize.zw;
+	context.transform            = cbGhost.xform;
+	context.baseTexSize          = cbGhost.baseTexSize;
+	context.color                = cbGhost.color;
+
+	ComputeBasicVertexOutputs(IN, context, OUT.hpos, OUT.uv, OUT.color);
 
 	half2 spriteIdx2d;
-	spriteIdx2d.y = floor(ghostTileIndex/(ghostTileDim.x));
-	spriteIdx2d.x = ghostTileIndex - spriteIdx2d.y * ghostTileDim.x;
+	spriteIdx2d.y = floor(cbGhost.ghostTileInfo.w/(cbGhost.ghostTileInfo.x));
+	spriteIdx2d.x = cbGhost.ghostTileInfo.w - spriteIdx2d.y * cbGhost.ghostTileInfo.x;
 
 	OUT.uv = IN.uv;
-	OUT.color *= dynamics.x;
+	OUT.color *= cbGhost.dynamics.x;
 
 	return OUT;
 }
 
-sampler2D ghostSpriteTiles : register(s0);
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Texture2D    ghostTex              : register(t0);
+Texture2D    ghostOcclusionTex     : register(t5);
+SamplerState ssGhost               : register(s0); 
 
 half4 lensGhostPS(  OutputGhostVS IN ) : COLOR
 {
-	half4 color = DecodeRGBK( tex2D( ghostSpriteTiles, IN.uv ), 32, false );
+	half4 color = DecodeRGBK( GetTexture2D( ghostTex, ssGhost, IN.uv ), 32, false );
 #if %_RT_SAMPLE3
-	color *= tex2D( occPattern, occPatternInfo.xy+half2(occPatternInfo.z*IN.uv.x,occPatternInfo.w*(1-IN.uv.y)) ).r;
+	float2 uv = cbGhost.occPatternInfo.xy + half2(cbGhost.occPatternInfo.z * IN.uv.x, cbGhost.occPatternInfo.w*(1-IN.uv.y));
+	color *= GetTexture2D( ghostOcclusionTex, ssGhost, uv ).r;
 #endif
-	return ToneMappedPreMulAlpha(color * IN.color);
+	return ToneMappedPreMulAlpha(color * IN.color, cbGhost.hdrParams);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Glow
 
-half4 lumaParams;
-#define focusFactor lumaParams.x
-#define gamma lumaParams.y
+cbuffer CBGlow : register(b0)
+{
+	struct 
+	{
+		float4   outputDimAndSize;
+		float4   occPatternInfo;
+		float4   externTint;
+		float3x4 xform;
+		float4   dynamics;
+		float4   lightProjPos;
+		float4   hdrParams;
+		float4   meshCenterAndBrt;
+		float4   lumaParams;
+	} cbGlow;
+};
+
+OutputVS GlowVS( InpuptVS IN )
+{
+	SMeshTransformContext context;
+	context.outputDimensions     = cbGlow.outputDimAndSize.xy;
+	context.size                 = cbGlow.outputDimAndSize.zw;
+	context.transform            = cbGlow.xform;
+	context.meshCenterAndBrt     = cbGlow.meshCenterAndBrt;
+	context.externTint           = cbGlow.externTint;
+	context.dynamics             = cbGlow.dynamics;
+
+	return commonMeshTransform(IN, context);
+}
 
 half4 GlowPS( OutputVS IN ) : COLOR
 {
@@ -247,99 +271,155 @@ half4 GlowPS( OutputVS IN ) : COLOR
 	#define theta IN.uv.y
 	
 	half constArea = 1;
-	half fadingArea = pow( lerp( constArea, 0, saturate((thou-focusFactor)/(1-focusFactor)) ), gamma);
+	half fadingArea = pow( lerp( constArea, 0, saturate((thou-cbGlow.lumaParams.x)/(1-cbGlow.lumaParams.x)) ), cbGlow.lumaParams.y);
 
 	const half fadingSpan = 0.001;
-	half transition = saturate( lerp( 1,  0, (focusFactor-thou)/fadingSpan )  );
+	half transition = saturate( lerp( 1,  0, (cbGlow.lumaParams.x-thou)/fadingSpan )  );
 	half finalGrad = lerp( constArea, fadingArea, transition );
-
-	return ToneMappedPreMulAlpha(IN.color * finalGrad);
+	return ToneMappedPreMulAlpha(IN.color * finalGrad, cbGlow.hdrParams);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Chromatic ring
 
-half useSpectrumTex;
-sampler2D spectrumMap : register(s0);
+cbuffer CBChromaticRing : register(b0)
+{
+	struct 
+	{
+		float4   outputDimAndSize;
+		float4   occPatternInfo;
+		float4   externTint;
+		float3x4 xform;
+		float4   dynamics;
+		float4   lightProjPos;
+		float4   hdrParams;
+		float4   meshCenterAndBrt;
+	} cbChromaticRing;
+};
+
+OutputVS ChromaticRingVS( InpuptVS IN )
+{
+	SMeshTransformContext context;
+	context.outputDimensions     = cbGlow.outputDimAndSize.xy;
+	context.size                 = cbGlow.outputDimAndSize.zw;
+	context.transform            = cbGlow.xform;
+	context.meshCenterAndBrt     = cbGlow.meshCenterAndBrt;
+	context.externTint           = cbGlow.externTint;
+	context.dynamics             = cbGlow.dynamics;
+
+	return commonMeshTransform(IN, context);
+}
+
+Texture2D    spectrumTex : register(t0);
+SamplerState ssSpectrum  : register(s0);
 
 half4 ChromaticRingPS( OutputVS IN ) : COLOR
 {
 	#define thou IN.uv.x
 	half dist = (thou*2-1);
 	half alpha = exp( -4*dist*dist ) - exp(-4);
-	half3 clr = tex2D( spectrumMap, half2( 0.5, 1-IN.uv.x ) ).rgb;
+	half3 clr = GetTexture2D( spectrumTex, ssSpectrum, half2( 0.5, 1-IN.uv.x ) ).rgb;
 
-	return ToneMappedPreMulAlpha(half4( clr*IN.color.rgb,  alpha*IN.color.a ));
+	return ToneMappedPreMulAlpha(half4( clr*IN.color.rgb,  alpha*IN.color.a), cbChromaticRing.hdrParams );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Iris shafts
 
-sampler2D irisBaseMap : register(s1);
+Texture2D    irisSpectrumTex    : register(t0);
+Texture2D    irisTex            : register(t1);
+SamplerState ssIrisShafts       : register(s0);
 
 half4 IrisShaftsGlowPS( OutputVS IN ) : COLOR
 {
-	half3 color = tex2D( irisBaseMap, half2( IN.uv.x, 1-IN.uv.y ) ).rgb;
-#if %_RT_SAMPLE2
-	color *= tex2D( spectrumMap, IN.uv ).rgb;
-#endif
-	return ToneMappedPreMulAlpha(half4(color*IN.color.rgb, IN.color.a));
-}
+	half3 color = GetTexture2D( irisTex, ssIrisShafts, half2( IN.uv.x, 1-IN.uv.y ) ).rgb;
 
+#if %_RT_SAMPLE2
+	color *= GetTexture2D( irisSpectrumTex, ssIrisShafts, IN.uv ).rgb;
+#endif
+	return ToneMappedPreMulAlpha(half4(color*IN.color.rgb, IN.color.a), cbGlow.hdrParams);
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Streaks
+
+Texture2D     streaksTex    : register(t0);
+SamplerState  ssStreaks     : register(s0);
 
 half4 StreaksPS( OutputVS IN ) : COLOR
 {
 	half3 color = saturate( exp( -8*IN.uv.x*IN.uv.x ) );
 #if %_RT_SAMPLE2
-	color *= tex2D( spectrumMap, half2( 0.5, 1-IN.uv.x ) ).rgb;
+	color *= GetTexture2D( streaksTex, ssStreaks, half2( 0.5, 1-IN.uv.x ) ).rgb;
 #endif
-	return ToneMappedPreMulAlpha(half4( color*IN.color.rgb, IN.color.a ));
+	return ToneMappedPreMulAlpha(half4( color*IN.color.rgb, IN.color.a ), cbGlow.hdrParams);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Camera Orbs
 
-half3 lightProjPos;
-half4 lightColorInfo;
-#define lightColor lightColorInfo.xyz
-#define illumRange lightColorInfo.w
+cbuffer CBCameraOrbs : register(b0)
+{
+	struct 
+	{
+		float4   outputDimAndSize;
+		float4   occPatternInfo;
+		float4   externTint;
+		float3x4 xform;
+		float4   dynamics;
+		float4   lightProjPos;
+		float4   hdrParams;
+		float4   lightColorInfo;
+		float4   lensDetailParams;
+		float4   lensDetailParams2;
+		float4   ambientDiffuseRGBK;
+		float4   advShadingParams;
+		
+	} cbCameraOrbs;
+};
 
 OutputCameraOrbsVS CameraOrbsVS( InpuptVS IN )
 {
 	OutputCameraOrbsVS OUT;
-	OUT.hpos.xyz = mul( (float3x3)xform, float3(IN.pos.xy,1) );
+	OUT.hpos.xyz = mul( (float3x3)cbCameraOrbs.xform, float3(IN.pos.xy,1) );
 	OUT.hpos.zw = half2(0,1);
 
 	half3 surfPos;
 	surfPos.xy = OUT.hpos.xy;
 	surfPos.z = 0;
 
-	half3 lPos = half3(lightProjPos.x, 1-lightProjPos.y, lightProjPos.z) *2 -1;
+	half3 lPos = half3(cbCameraOrbs.lightProjPos.x, 1-cbCameraOrbs.lightProjPos.y, cbCameraOrbs.lightProjPos.z) *2 -1;
 	half3 distDiff = lPos-surfPos.xyz;
 
 #if %_RT_SAMPLE5
-	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
+	half2 aspectCorrectionRatio = ( half2(cbCameraOrbs.outputDimAndSize.xy) / max(cbCameraOrbs.outputDimAndSize.x, cbCameraOrbs.outputDimAndSize.y) ).yx;
 	distDiff.xy /= aspectCorrectionRatio;
 #endif
 
-	half distSq = dot( distDiff.xy, distDiff.xy )/illumRange;
+	half distSq = dot( distDiff.xy, distDiff.xy )/cbCameraOrbs.lightColorInfo.w;
 	half illum = exp2( -10 * (distSq) );
 
 	OUT.uv = IN.uv;
-	OUT.color = GetInputColor(IN.color) * half4(lightColor*illum, 1) * dynamics.x;
+	OUT.color = GetInputColor(IN.color) * half4(cbCameraOrbs.lightColorInfo.xyz*illum, 1) * cbCameraOrbs.dynamics.x;
 	OUT.litVec = normalize( half3( lPos.xy - surfPos.xy, 1 ) );
 
 	return OUT;
 }
 
-half detailIllum( sampler2D tex, half2 uv, half3 dxy, half3 litVec, half bumpiness )
+Texture2D orbTex              : register(t0)
+Texture2D ambientTex          : register(t1)
+Texture2D lensTex             : register(t2)
+Texture2D orbOcclusionTex     : register(t5)
+
+SamplerState ssOrb            : register(s0)
+SamplerState ssAmbient        : register(s1)
+SamplerState ssOcclusion      : register(s5)
+
+half detailIllum( Texture2D tex, half2 uv, half3 dxy, half3 litVec, half bumpiness )
 {
 	#define bumpCh r
-	half center = tex2D( tex, uv );
-	half orbClrRight = tex2D( tex, uv + dxy.xz ).bumpCh;
-	half orbClrTop = tex2D( tex, uv + dxy.zy ).bumpCh;
+	half center = GetTexture2D( tex, ssOrb, uv );
+	half orbClrRight = GetTexture2D( tex, ssOrb, uv + dxy.xz ).bumpCh;
+	half orbClrTop = GetTexture2D( tex, ssOrb, uv + dxy.zy ).bumpCh;
 	half3 xVec = normalize( half3( dxy.x,0, (orbClrRight-center.bumpCh)*bumpiness ) );
 	half3 yVec = normalize( half3( 0,dxy.y, (orbClrTop-center.bumpCh)*bumpiness ) );
 	half3 bumpNormal = cross( yVec, xVec );
@@ -352,133 +432,172 @@ half detailIllum( sampler2D tex, half2 uv, half3 dxy, half3 litVec, half bumpine
 	return orbSpec;
 }
 
-sampler2D orbMap :register(s0);
-sampler2D lensMap :register(s2);
-
-half4 lensDetailParams;
-#define lensTexStrength (lensDetailParams.x)
-#define lensDetailShadingStrength (lensDetailParams.y)
-#define lensDetailBumpiness (lensDetailParams.z)
-
-sampler2D ambientMap : register(s1);
-half4 ambientDiffuseRGBK;
-half4 advShadingParams;
-#define absorptance advShadingParams.x
-#define transparency advShadingParams.y
-
-half4 ComputeCameraOrbsColor( OutputCameraOrbsVS IN, half4 orbClr )
+half4 ComputeCameraOrbsColor( OutputCameraOrbsVS IN, half4 orbClr, float4 lensDetailParams )
 {
 	half4 detailClr = 0;
 
 #if %_RT_SAMPLE4
 	// this is screen space, just use neighboor pixels
 	half3 dxy = half3( ddx(IN.uv.x), ddy(IN.uv.y), 0 )*3;
-	half detailLum = detailIllum( orbMap, IN.uv, dxy, IN.litVec, lensDetailBumpiness );
+	half detailLum = detailIllum( orbTex, IN.uv, dxy, IN.litVec, lensDetailParams.z );
 	detailClr = detailLum;
 	detailClr.a = 1;
 #endif
 
 #if %_RT_SAMPLE3
-	IN.color *= tex2D( occPattern, occPatternInfo.xy+half2(occPatternInfo.z*IN.uv.x,occPatternInfo.w*(1-IN.uv.y)) ).r;
+	float2 uv = cbCameraOrbs.occPatternInfo.xy + float2(cbCameraOrbs.occPatternInfo.z * IN.uv.x, cbCameraOrbs.occPatternInfo.w*(1-IN.uv.y));
+	IN.color *= GetTexture2D( orbOcclusionTex, ssOcclusion, uv).r;
 #endif
 
 #if %_RT_SAMPLE2
 	half shadow = (1-orbClr);
-	shadow = saturate(pow( shadow, absorptance ));
-	half4 ambientDirect = tex2D( ambientMap, IN.uv );
-	half4 ambientDiffuse = DecodeRGBK( ambientDiffuseRGBK, 10, false );
-	half4 dirtClr = IN.color * orbClr*(1-shadow) + (ambientDiffuse + ambientDirect) * saturate(shadow+transparency);
-	return ToneMappedPreMulAlpha(half4(dirtClr.rgb, shadow*transparency ));
+	shadow = saturate(pow( shadow, cbCameraOrbs.advShadingParams.x ));
+	half4 ambientDirect = GetTexture2D( ambientTex, ssAmbient, IN.uv );
+	half4 ambientDiffuse = DecodeRGBK( cbCameraOrbs.ambientDiffuseRGBK, 10, false );
+	half4 dirtClr = IN.color * orbClr*(1-shadow) + (ambientDiffuse + ambientDirect) * saturate(shadow+cbCameraOrbs.advShadingParams.y);
+	return ToneMappedPreMulAlpha(half4(dirtClr.rgb, shadow*cbCameraOrbs.advShadingParams.y ), cbCameraOrbs.hdrParams);
 #else
-	return ToneMappedPreMulAlpha(IN.color * (orbClr * lensTexStrength +  detailClr * lensDetailShadingStrength));
+	float4 color = IN.color * (orbClr * lensDetailParams.x +  detailClr * lensDetailParams.y);
+	return ToneMappedPreMulAlpha(color, cbCameraOrbs.hdrParams);
 #endif
 }
 
 half4 CameraOrbsPS( OutputCameraOrbsVS IN ) : COLOR
 {
-	return ComputeCameraOrbsColor( IN,tex2D( orbMap, IN.uv ) );
+	return ComputeCameraOrbsColor( IN, GetTexture2D( orbTex, ssOrb, IN.uv ), cbCameraOrbs.lensDetailParams );
 }
 
 half4 CameraLensPS( OutputCameraOrbsVS IN ) : COLOR
 {
-	return ComputeCameraOrbsColor( IN,tex2D( lensMap, IN.uv ) );
+	return ComputeCameraOrbsColor( IN, GetTexture2D( lensTex, ssOrb, IN.uv ), cbCameraOrbs.lensDetailParams2 );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Shafts
+// Shafts occlusion
 
-OutputShafeOcclusionVS shaftsOccVS( InpuptVS IN )
+cbuffer CBImageSpaceShafts : register(b0)
 {
-	OutputShafeOcclusionVS OUT;
+	struct 
+	{
+		float4   outputDimAndSize;
+		float4   occPatternInfo;
+		float4   externTint;
+		float3x4 xform;
+		float4   dynamics;
+		float4   lightProjPos;
+		float4   hdrParams;
+		float4   meshCenterAndBrt;
+		float4   color;
+		float4   sceneDepth;
+	} cbImageSpaceShafts;
+};
 
-	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
-	half2 uv;
-	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, uv, OUT.color );
+OutputShaftOcclusionVS shaftsOccVS( InpuptVS IN )
+{
+	OutputShaftOcclusionVS OUT;
 
-	OUT.uvz = half3( uv, IN.pos.z );
+	SComputeBasicVertexContext context;
+	context.meshCenterAndBrt     = cbImageSpaceShafts.meshCenterAndBrt;
+	context.outputDimensions     = cbImageSpaceShafts.outputDimAndSize.xy;
+	context.size                 = cbImageSpaceShafts.outputDimAndSize.zw;
+	context.transform            = cbImageSpaceShafts.xform;
+	context.baseTexSize          = float4(1, 1, 0, 0);
+	context.color                = cbImageSpaceShafts.color;
+
+	float2 uv;
+	ComputeBasicVertexOutputs(IN, context, OUT.hpos, uv, OUT.color);
+
+	OUT.uvz = half3( uv, cbImageSpaceShafts.sceneDepth.x );
 	OUT.fsuv = OUT.hpos.xy*0.5+0.5;
 	OUT.fsuv.y = 1-OUT.fsuv.y;
 
 	return OUT;
 }
 
-sampler2D depthMap : register(s1);
-sampler2D baseMap : register(s0);
+Texture2D    shaftTex   : register(t0);
+Texture2D    depthTex   : register(t1);
+SamplerState ssShafts   : register(s0);
 
-half4 shaftsOccPS( OutputShafeOcclusionVS IN ) : COLOR
+half4 shaftsOccPS( OutputShaftOcclusionVS IN ) : COLOR
 {
-	float depth = GetUnnormalizedLinearDownscaledDepth(depthMap, IN.fsuv);
-	half4 baseClr = tex2D( baseMap, IN.uvz.xy );
+	float depth = GetTexture2D(depthTex, ssShafts, IN.fsuv);
+	half4 baseClr = GetTexture2D(shaftTex, ssShafts, IN.uvz.xy );
 	half occ = saturate( sign(depth-IN.uvz.z) ); 
 
 	half2 ndcUV = IN.uvz.xy*2-1;
 	half vig = 1-length(ndcUV);
 
-	return ToneMappedPreMulAlpha(occ*vig*baseClr);
+	return ToneMappedPreMulAlpha(occ*vig*baseClr, cbImageSpaceShafts.hdrParams);
 }
 
-OutputShafeVS shaftsVS( InpuptVS IN )
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shafts gen
+
+OutputShaftVS shaftsVS( InpuptVS IN )
 {
-	OutputShafeVS OUT;
-	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
-	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, OUT.uv, OUT.color );
+	OutputShaftVS OUT;
+	
+	SComputeBasicVertexContext context;
+	context.meshCenterAndBrt     = cbImageSpaceShafts.meshCenterAndBrt;
+	context.outputDimensions     = cbImageSpaceShafts.outputDimAndSize.xy;
+	context.size                 = cbImageSpaceShafts.outputDimAndSize.zw;
+	context.transform            = cbImageSpaceShafts.xform;
+	context.baseTexSize          = float4(1, 1, 0, 0);
+	context.color                = cbImageSpaceShafts.color;
+
+	ComputeBasicVertexOutputs(IN, context, OUT.hpos, OUT.uv, OUT.color);
+	
 	OUT.uv.y = 1-OUT.uv.y;
-	OUT.center.xy = IN.pos.xy;
+	OUT.center.xy = cbImageSpaceShafts.meshCenterAndBrt.xy;
 	OUT.center.zw = OUT.hpos.xy*0.5+0.5;
 	OUT.center.w = 1-OUT.center.w;
+	
 	return OUT;
 }
 
-sampler2D occMap : register(s1);
+Texture2D shaftOcclusionTex : register(t0)
 
-half4 shaftsPS( OutputShafeVS IN ) : COLOR
+half4 shaftsPS( OutputShaftVS IN ) : COLOR
 {
 	const int N_SAMPLE = 30;
 	half2 duv = (IN.center.zw - IN.center.xy) / N_SAMPLE;
 	half decayFactor = pow( 0.98,30.0/N_SAMPLE );
-	half4 color = half4( tex2D(occMap, IN.center.zw).rgb, 1 ) * decayFactor;
+	half4 color = half4( GetTexture2D(shaftOcclusionTex, ssShafts, IN.center.zw).rgb, 1 ) * decayFactor;
 	#define decay (color.w)
 	half2 cuv = IN.center.zw;
 	for( int i=0; i<N_SAMPLE; i++ )
 	{
 		cuv -= duv;
-		color.rgb += tex2D( occMap, cuv ).rgb * decay;
+		color.rgb += GetTexture2D(shaftOcclusionTex, ssShafts, cuv ).rgb * decay;
 		decay *= decayFactor;
 	}
 	const half ssFalloff = decayFactor * 0.01;  // falloff curve base factor
 	half2 ndcUV = IN.uv.xy*2-1;
 	half vig = saturate( 1-pow( dot(ndcUV,ndcUV), 0.25) );
-	return ToneMappedPreMulAlpha(half4(color.rgb*IN.color.rgb*vig/N_SAMPLE, IN.color.a));
+	return ToneMappedPreMulAlpha(half4(color.rgb*IN.color.rgb*vig/N_SAMPLE, IN.color.a), cbImageSpaceShafts.hdrParams);
 }
 
-sampler2D shaftMap:register(s1);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shafts blend
+
+OutputScreenVS shaftBlendVS( InputScreenVS IN )
+{
+	OutputScreenVS OUT;
+	OUT.hpos.xy = IN.uv * 2 - 1;
+	OUT.hpos.zw = float2(0, 1);
+		
+	OUT.uv = float2( IN.uv.x, 1-IN.uv.y );
+	return OUT;
+}
 
 half4 shaftBlendPS( OutputScreenVS IN ) : COLOR
 {
-	half4 shaftColor = tex2D( shaftMap, IN.uv );
+	half4 shaftColor = GetTexture2D(shaftTex, ssShafts, IN.uv );
 	half4 finalBlendColor = half4( shaftColor.rgb*shaftColor.a, 1 );
-	return ToneMappedPreMulAlpha(finalBlendColor);
+	return ToneMappedPreMulAlpha(finalBlendColor, cbImageSpaceShafts.hdrParams);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 technique Enable
@@ -490,17 +609,7 @@ technique Enable
 	pass GhostTest
 	{
 		VertexShader = lensGhostVS() LensOpticsVS;
-		PixelShader = lensGhostPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		// Pre-multiplied alpha + screen blending mode to minimize color clipping in LDR mode
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		PixelShader  = lensGhostPS() LensOpticsPS;
 	}
 }
 
@@ -510,15 +619,6 @@ technique Ghost
 	{
 		VertexShader = lensGhostVS() LensOpticsVS;
 		PixelShader = lensGhostPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
 	}
 }
 
@@ -526,17 +626,8 @@ technique Glow
 {
 	pass p0 
 	{
-		VertexShader = commonMeshVS() LensOpticsVS;
-		PixelShader = GlowPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		VertexShader = GlowVS() LensOpticsVS;
+		PixelShader  = GlowPS() LensOpticsPS;
 	}
 }
 
@@ -544,17 +635,8 @@ technique ChromaticRing
 {
 	pass p0 
 	{
-		VertexShader = commonMeshVS() LensOpticsVS;
-		PixelShader = ChromaticRingPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		VertexShader = ChromaticRingVS() LensOpticsVS;
+		PixelShader  = ChromaticRingPS() LensOpticsPS;
 	}
 }
 
@@ -562,17 +644,8 @@ technique IrisShafts
 {
 	pass p0
 	{
-		VertexShader = commonMeshVS() LensOpticsVS;
-		PixelShader = IrisShaftsGlowPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		VertexShader = GlowVS()           LensOpticsVS;
+		PixelShader  = IrisShaftsGlowPS() LensOpticsPS;
 	}
 }
 
@@ -580,17 +653,8 @@ technique Streaks
 {
 	pass p0
 	{
-		VertexShader = commonMeshVS() LensOpticsVS;
-		PixelShader = StreaksPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		VertexShader = GlowVS() LensOpticsVS;
+		PixelShader  = StreaksPS() LensOpticsPS;
 	}
 }
 
@@ -600,77 +664,42 @@ technique CameraOrbs
 	{
 		VertexShader = CameraOrbsVS() LensOpticsVS;
 		PixelShader = CameraOrbsPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
-	}
-
-	pass p1
-	{
-		VertexShader = CameraOrbsVS() LensOpticsVS;
-		PixelShader = CameraLensPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
 	}
 }
 
-technique ImageSpaceShafts
+technique CameraLens
+{
+	pass p0
+	{
+		VertexShader = CameraOrbsVS() LensOpticsVS;
+		PixelShader = CameraLensPS() LensOpticsPS;
+	}
+}
+
+technique ImageSpaceShaftsOcclusion
 {
 	pass p0
 	{
 		VertexShader = shaftsOccVS() LensOpticsVS;
-		PixelShader = shaftsOccPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
-	}
-
-	pass p1
-	{
-		VertexShader = shaftsVS() LensOpticsVS;
-		PixelShader = shaftsPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = false;
-	}
-
-	pass p2
-	{
-		VertexShader = screenQuadVS() LensOpticsVS;
-		PixelShader = shaftBlendPS() LensOpticsPS;
-
-		ZEnable = false;
-		ZWriteEnable = false;
-		ZFunc = LEqual;
-		CullMode = None;
-
-		SrcBlend = ONE;
-		DestBlend = ONE_MINUS_SRC_COLOR;
-		AlphaBlendEnable = true;
+		PixelShader  = shaftsOccPS() LensOpticsPS;
 	}
 }
+
+technique ImageSpaceShaftsGen
+{
+	pass p0
+	{
+		VertexShader = shaftsVS() LensOpticsVS;
+		PixelShader  = shaftsPS() LensOpticsPS;
+	}
+}
+
+technique ImageSpaceShaftsBlend
+{
+	pass p0
+	{
+		VertexShader = shaftBlendVS() LensOpticsVS;
+		PixelShader  = shaftBlendPS() LensOpticsPS;
+	}
+}
+

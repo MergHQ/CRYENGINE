@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Entities/Helpers/NativeEntityBase.h"
+#include "Entities/Helpers/ISimpleExtension.h"
 
 ////////////////////////////////////////////////////////
 // Entity responsible for spawning other entities
 ////////////////////////////////////////////////////////
-class CSpawnPoint : public CGameObjectExtensionHelper<CSpawnPoint, CNativeEntityBase>
+class CSpawnPoint : public ISimpleExtension
 {
 public:
 	virtual ~CSpawnPoint() {}

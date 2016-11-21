@@ -58,7 +58,9 @@ def build(bld):
 		'iZTrashFiltersFX',
 		'AkMotionGenerator',
 		'AkRumble',
-		'IOSONOProximityMixer'
+		'IOSONOProximityMixer',
+		'AuroHeadphoneFX',
+		'AuroPannerMixer'
 	]
 
 	# CommunicationCentral must be the linked before other wwise libraries on gcc-based linkers
@@ -67,17 +69,15 @@ def build(bld):
 	common_wwise_libs           = wwise_core_libs + wwise_plugins_libs
 
 	win_libs                    = [ 'Ole32', 'dxguid', 'ws2_32', 'Dsound', 'XINPUT9_1_0', 'Msacm32' ]
-	win_wwise_libs              = wwise_extra_plugins_libs + [ 'AuroHeadphoneFX', 'AuroPannerMixer' ]
-	win_release_libs            = common_wwise_libs + win_wwise_libs + win_libs
+	win_release_libs            = common_wwise_libs + wwise_extra_plugins_libs + win_libs
 	win_non_release_libs        = comm_central_libs + win_release_libs + [ 'SFlib' ]
 	
 	durango_libs                = [ 'MMDevApi', 'Ws2_32', 'combase', 'kernelx', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'xaudio2', 'acphal' ]
-	durango_wwise_libs          = wwise_extra_plugins_libs + [ 'AuroHeadphoneFX', 'AuroPannerMixer' ]
-	durango_release_libs        = common_wwise_libs + durango_wwise_libs + durango_libs
+	durango_release_libs        = common_wwise_libs + wwise_extra_plugins_libs + durango_libs
 	durango_non_release_libs    = comm_central_libs + durango_release_libs
 
-	orbis_libs                  = [ 'SceAudioOut_stub_weak', 'SceAjm_stub_weak', 'SceAudio3d_stub_weak' ]
-	orbis_wwise_libs            = wwise_extra_plugins_libs + [ 'SceAudio3dEngine', 'AuroHeadphoneFX', 'AuroPannerMixer' ]
+	orbis_libs                  = [ 'SceAudioOut_stub_weak', 'SceAjm_stub_weak', 'SceAudio3d_stub_weak', 'SceMove_stub_weak']
+	orbis_wwise_libs            = wwise_extra_plugins_libs + [ 'SceAudio3dEngine' ]
 	orbis_release_libs          = common_wwise_libs + orbis_wwise_libs + orbis_libs
 	orbis_non_release_libs      = comm_central_libs + orbis_release_libs
 
@@ -90,7 +90,7 @@ def build(bld):
 	darwin_release_libs         = common_wwise_libs + darwin_wwise_libs
 	darwin_non_release_libs     = comm_central_libs + darwin_release_libs
 
-	android_release_libs        = common_wwise_libs
+	android_release_libs        = common_wwise_libs + [ 'CrankcaseAudioREVModelPlayerFX', 'AuroHeadphoneFX', 'AuroPannerMixer' ]
 	android_non_release_libs    = comm_central_libs + android_release_libs
 
 	wwise_lib_subfolder = 'vc110'

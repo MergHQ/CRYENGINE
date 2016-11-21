@@ -2,9 +2,7 @@
 
 #pragma once
 #ifndef __ForsythFaceReorderer_h__
-	#define __ForsythFaceReorderer_h__
-
-	#include <CryCore/Assert/CompileTimeAssert.h>
+#define __ForsythFaceReorderer_h__
 
 //
 // Note: This implementation, in contrast to many other implementations
@@ -18,9 +16,9 @@ public:
 	static const size_t sk_minVerticesPerFace = 3;
 	static const size_t sk_maxVerticesPerFace = 4;
 
-	COMPILE_TIME_ASSERT(sk_minVerticesPerFace >= 3);                     // Bad min # of vertices per face
-	COMPILE_TIME_ASSERT(sk_minVerticesPerFace <= sk_maxVerticesPerFace); // Bad # of vertices per face
-	COMPILE_TIME_ASSERT(sk_maxVerticesPerFace <= sk_maxCacheSize);       // Bad max cache size
+	static_assert(sk_minVerticesPerFace >= 3, "Bad min # of vertices per face");
+	static_assert(sk_minVerticesPerFace <= sk_maxVerticesPerFace, "Bad # of vertices per face");
+	static_assert(sk_maxVerticesPerFace <= sk_maxCacheSize, "Bad max cache size");
 
 private:
 	typedef uint16 valency_type;
@@ -38,9 +36,9 @@ private:
 	};
 
 	static const size_t sk_valencyTableSize = 32;                  // note: size_t is used instead of valency_type because valency_type overflows if sk_valencyTableSize == 1 + sk_maxValency
-	COMPILE_TIME_ASSERT(sk_valencyTableSize - 1 <= sk_maxValency); // Bad valency table size
+	static_assert(sk_valencyTableSize - 1 <= sk_maxValency, "Bad valency table size");
 
-	COMPILE_TIME_ASSERT(sk_maxCacheSize <= 1 + (size_t)sk_maxCachePos); // Max cache size is too big
+	static_assert(sk_maxCacheSize <= 1 + (size_t)sk_maxCachePos, "Max cache size is too big");
 
 	std::vector<Vertex> m_vertices;
 	std::vector<uint8>  m_deadFacesBitArray;

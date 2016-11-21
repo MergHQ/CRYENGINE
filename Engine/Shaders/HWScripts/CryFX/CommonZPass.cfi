@@ -78,40 +78,25 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
       OUT.baseTC.xy *= CM_SilPomDetailParams.xy;
     #endif
 
-		float4 fAlphaTest = 0.0f;
+		float fAlphaTest = 0.0f;
+		float fDissolve = 0.0f;
     #if %_RT_ALPHATEST || %_RT_DISSOLVE
       #if %_RT_DISSOLVE
-        // For dissolve and instancing, we use PI_AlphaTest
-		  int nInstance = 0;
-		#if %_RT_ENVIRONMENT_CUBEMAP
-		  nInstance = vertPassPos.nInstance;
-		#endif
-        fAlphaTest = Get_SPI_AlphaTest(nInstance);
-        #if %_RT_INSTANCING_ATTR
-          {
-            float4 baseTC;
-            #fetchinst (baseTC = IN.InstAlphaTest, vertPassPos.nInstance);
-            fAlphaTest = baseTC;
-          }
-        #endif
+        fAlphaTest = Get_MaterialAlphaTest();
+		fDissolve = Get_SPI_Dissolve();
       #else
-        // For regular materials using alpha test, we use PB_AlphaTest
-		  int nInstance = 0;
-		#if %_RT_ENVIRONMENT_CUBEMAP
-		  nInstance = vertPassPos.nInstance;
-		#endif
-        fAlphaTest = Get_SPI_AlphaTest(nInstance);
+		fAlphaTest = Get_MaterialAlphaTest();
       #endif
-      OUT.baseTC.wz = fAlphaTest.wx;
+      OUT.baseTC.wz = float2(fAlphaTest,fDissolve);
       #if %LEAVES
-				OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest.w);
+				OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
       #endif
     #endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Output tangents
 
-		OUT.vNormalWS = float4(worldTangentN.xyz, fAlphaTest.y); // w= dissolve out sign
+		OUT.vNormalWS = float4(worldTangentN.xyz, 0); // w= dissolve out sign
 
 	  #if !%GRASS
 		  OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
@@ -184,8 +169,8 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
       float3 Binormal = normalize(terrainLayerInfo[1].xyz);
 
       // project tangent and binormal to plane perpendicular to the normal
-      Tangent-=dot(Tangent,vertPassPos.Normal)*vertPassPos.Normal;
-      Binormal-=dot(Binormal,vertPassPos.Normal)*vertPassPos.Normal;
+      Tangent-=dot(Tangent,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
+      Binormal-=dot(Binormal,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
       Tangent=normalize(Tangent);
       Binormal=normalize(Binormal);
 
@@ -436,7 +421,7 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 		#endif
 		
 		#if !%_RT_DISSOLVE
-			const float fDepthLinear = dot(cbcRes.wsPos, -CV_CameraFrontVector) * CV_NearFarClipDist.w;
+			const float fDepthLinear = dot(cbcRes.wsPos, -CV_CameraFrontVector.xyz) * CV_NearFarClipDist.w;
 			const float fDevDepth = (fDepthLinear * g_PS_ProjRatio.x + g_PS_ProjRatio.y) / fDepthLinear;
 		
 			OUT.fDepth = fDevDepth;
@@ -667,7 +652,9 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 	// Velocity
 	
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
-	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), IN.HPosPrev.xy / IN.HPosPrev.z);
+	float2 ScreenTCPrev = IN.HPosPrev.xy / IN.HPosPrev.z;
+	ScreenTCPrev = MapViewportToRaster(ScreenTCPrev);
+	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), ScreenTCPrev);
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -725,9 +712,14 @@ technique ZPass
 		HullShader   = Common_ZPassHS() GeneralHS;
 		DomainShader = Common_ZPassDS() GeneralDS;
 #endif
+
+// TODO: Make SilPOM work with NVidia multires
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 		GeometryShader = Common_ZPassGS() ZGS;
+#else
+		GeometryShader = $AutoGS_MultiRes();
 #endif
+
 		PixelShader = Common_ZPassPS() ZPS;
 
 		ZEnable = true;

@@ -6,57 +6,28 @@
 
 #include <CryRenderer/IStereoRenderer.h>
 
-#if defined(INCLUDE_OCULUS_SDK)
-	#include "Oculus/OculusResources.h"
-	#include "Oculus/OculusDevice.h"
-#endif
-
-#if defined(INCLUDE_OSVR_SDK)
-	#include "Osvr/OsvrDevice.h"
-#endif
-#if defined(INCLUDE_OPENVR_SDK)
-	#include "OpenVR/OpenVRResources.h"
-	#include "OpenVR/OpenVRDevice.h"
-#endif
-#include "Osvr/OsvrResources.h"
+#include <CryExtension/ICryPluginManager.h>
 
 // Note:
-//  We support a single HMD device at a time, with Oculus, OpenVR/Vive, PSVR/Morpheus as options.
+//  We support a single HMD device at a time.
 // This manager will be updated accordingly as other HMDs come, based on their system's init/shutdown, etc requirements.
 // That may imply changes in the interface.
 
-#define VR_INIT(devNS)     if (!m_pHmdDevice)                      \
-  {                                                                \
-    CryVR::devNS::Resources::Init();                               \
-    m_pHmdDevice = CryVR::devNS::Resources::GetAssociatedDevice(); \
-    if (m_pHmdDevice)                                              \
-      m_pHmdDevice->AddRef();                                      \
-  }
-#define VR_SHUTDOWN(devNS) if (m_pHmdDevice && m_pHmdDevice->GetClass() == eHmdClass_ ## devNS) \
-  {                                                                                             \
-    SAFE_RELEASE(m_pHmdDevice);                                                                 \
-    CryVR::devNS::Resources::Shutdown();                                                        \
-  }
-
 CHmdManager::~CHmdManager()
 {
-	ShutDown();
 }
 
 // ------------------------------------------------------------------------
-void CHmdManager::ShutDown()
+void CHmdManager::RegisterDevice(const char* name, IHmdDevice& device)
 {
+	// Reference counting will be handled inside the vector
+	m_availableDeviceMap.insert(TDeviceMap::value_type(name, &device));
+}
 
-#if defined(INCLUDE_OCULUS_SDK)
-	VR_SHUTDOWN(Oculus)
-#endif
-#if defined(INCLUDE_OPENVR_SDK)
-	VR_SHUTDOWN(OpenVR)
-#endif
-#ifdef INCLUDE_OSVR_SDK
-	VR_SHUTDOWN(Osvr)
-#endif
-
+// ------------------------------------------------------------------------
+void CHmdManager::OnVirtualRealityDeviceChanged(ICVar *pCVar)
+{
+	gEnv->pSystem->GetHmdManager()->SetupAction(EHmdSetupAction::eHmdSetupAction_Init);
 }
 
 // ------------------------------------------------------------------------
@@ -74,28 +45,62 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 	// ------------------------------------------------------------------------
 	case EHmdSetupAction::eHmdSetupAction_Init:
 		{
-			if (gEnv->pConsole && gEnv->pConsole->GetCVar("sys_vr_support")->GetIVal() > 0)
+			if (gEnv->pConsole)
 			{
-				m_pHmdDevice = nullptr;
-#if defined(INCLUDE_OCULUS_SDK)
-				if ((CryVR::CVars::hmd_driver == 0 || CryVR::CVars::hmd_driver == 1) && !m_pHmdDevice)
+				ICVar* pVrSupportVar = gEnv->pConsole->GetCVar("sys_vr_support");
+
+				if (pVrSupportVar->GetIVal() > 0)
 				{
-					VR_INIT(Oculus)
+					m_pHmdDevice = nullptr;
+
+					const char *selectedHmdName = CryVR::CVars::pSelectedHmdNameVar->GetString();
+					TDeviceMap::iterator hmdIt;
+
+					if (strlen(selectedHmdName) > 0)
+					{
+						hmdIt = m_availableDeviceMap.find(selectedHmdName);
+						if (hmdIt == m_availableDeviceMap.end())
+						{
+							pVrSupportVar->Set(0);
+
+							if (gEnv->pRenderer != nullptr)
+							{
+								gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+							}
+
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to select unavailable VR device %s!", selectedHmdName);
+							return;
+						}
+					}
+					else // No HMD explicitly selected, opt for first available (since sys_vr_support was 1)
+					{
+						hmdIt = m_availableDeviceMap.begin();
+						if (hmdIt == m_availableDeviceMap.end())
+						{
+							pVrSupportVar->Set(0);
+
+							if (gEnv->pRenderer != nullptr)
+							{
+								gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+							}
+
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "VR support was enabled, but no VR device was detected!");
+							return;
+						}
+					}
+
+					m_pHmdDevice = hmdIt->second;
+
+					gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+
+					gEnv->pSystem->LoadConfiguration("vr.cfg", 0, eLoadConfigGame);
 				}
-#endif
-#if defined(INCLUDE_OPENVR_SDK)
-				if ((CryVR::CVars::hmd_driver == 0 || CryVR::CVars::hmd_driver == 2) && !m_pHmdDevice)
+				else if(m_pHmdDevice != nullptr)
 				{
-					VR_INIT(OpenVR)
+					m_pHmdDevice = nullptr;
+
+					gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
 				}
-#endif
-#if defined(INCLUDE_OSVR_SDK)
-				if ((CryVR::CVars::hmd_driver == 0 || CryVR::CVars::hmd_driver == 3) && !m_pHmdDevice)
-				{
-					VR_INIT(Osvr)
-				}
-#endif
-				gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
 			}
 		}
 		break;
@@ -144,12 +149,10 @@ bool CHmdManager::IsStereoSetupOk() const
 
 			pStereoRenderer->GetInfo(&device, &mode, &output, 0);
 
-			const bool stereo_output_hmd_selected = (output == STEREO_OUTPUT_HMD && (m_pHmdDevice->GetClass() == eHmdClass_Oculus || m_pHmdDevice->GetClass() == eHmdClass_OpenVR || m_pHmdDevice->GetClass() == eHmdClass_Osvr));
-
 			return (
 			  device == STEREO_DEVICE_FRAMECOMP &&
 			  (mode == STEREO_MODE_POST_STEREO || mode == STEREO_MODE_DUAL_RENDERING) &&
-			  (output == STEREO_OUTPUT_SIDE_BY_SIDE || stereo_output_hmd_selected)
+			  (output == STEREO_OUTPUT_SIDE_BY_SIDE || output == STEREO_OUTPUT_HMD)
 			  );
 		}
 	}
@@ -159,14 +162,21 @@ bool CHmdManager::IsStereoSetupOk() const
 // ------------------------------------------------------------------------
 bool CHmdManager::GetAsymmetricCameraSetupInfo(int nEye, SAsymmetricCameraSetupInfo& o_info) const
 {
-
-#if defined(INCLUDE_OCULUS_SDK) || defined(INCLUDE_OPENVR_SDK) || defined(INCLUDE_OSVR_SDK)
-	if (m_pHmdDevice && (m_pHmdDevice->GetClass() == eHmdClass_Oculus || m_pHmdDevice->GetClass() == eHmdClass_OpenVR || m_pHmdDevice->GetClass() == eHmdClass_Osvr))
+	if (m_pHmdDevice)
 	{
 		m_pHmdDevice->GetAsymmetricCameraSetupInfo(nEye, o_info.fov, o_info.aspectRatio, o_info.asymH, o_info.asymV, o_info.eyeDist);
 		return true;
 	}
-#endif
 
 	return false;
+}
+
+// ------------------------------------------------------------------------
+void CHmdManager::RecenterPose()
+{
+	// All HMDs subscribe to our events, so simply notify listeners and reaction will occur
+	for (auto it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	{
+		(*it)->OnRecentered();
+	}
 }

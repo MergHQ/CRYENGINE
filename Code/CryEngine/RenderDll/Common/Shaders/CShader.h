@@ -10,7 +10,7 @@
 #include "../ResFileLookupDataMan.h"
 
 struct SRenderBuf;
-class CRendElementBase;
+class CRenderElement;
 struct SEmitter;
 struct SParticleInfo;
 struct SPartMoveStage;
@@ -291,6 +291,7 @@ public:
 	bool                       m_bInitialized;
 	bool                       m_bLoadedSystem;
 
+	string                     m_ShadersGamePath;
 	const char*                m_ShadersPath;
 	const char*                m_ShadersCache;
 	const char*                m_ShadersFilter;

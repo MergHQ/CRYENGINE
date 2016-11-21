@@ -36,7 +36,6 @@ static const int maxForbiddenNameLen = 1024;
 bool useForbiddenQuadTree = true;//false;
 
 CNavigation::CNavigation(ISystem* pSystem) :
-	m_navDataState(NDS_UNSET),
 	m_nNumBuildings(0),
 	m_pTriangulator(0),
 	m_dynamicLinkUpdateTimeBump(1.0f),
@@ -95,17 +94,12 @@ void CNavigation::LoadNavigationData(const char* szLevel, const char* szMission)
 	char fileNameAreas[1024];
 
 	cry_sprintf(fileNameAreas, "%s/areas%s.bai", szLevel, szMission);
-	// NOTE Aug 22, 2008: <pvl> we consider nav data OK if 1) graph loaded OK and
-	// 2) at least one of vertex list and LNM loaded OK
-	m_navDataState = NDS_OK;
+
 #if defined(SEG_WORLD)
 	pAISystem->ReadAreasFromFile(fileNameAreas, Vec3(0));
 #else
 	pAISystem->ReadAreasFromFile(fileNameAreas);
 #endif
-	// When using MNM we don't care about the status of the old navigation
-	// system, so it's always OK for us
-	m_navDataState = NDS_OK;
 
 	CTimeValue endTime = gEnv->pTimer->GetAsyncCurTime();
 	AILogLoading("Navigation Data Loaded in %5.2f sec", (endTime - startTime).GetSeconds());

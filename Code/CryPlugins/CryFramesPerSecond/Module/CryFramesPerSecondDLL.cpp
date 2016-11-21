@@ -24,10 +24,12 @@ bool CPlugin_CryFramesPerSecond::Initialize(SSystemGlobalEnvironment& env, const
 {
 	m_pFramesPerSecond = new CFramesPerSecond();
 
+	SetUpdateFlags(EUpdateType_Update);
+	
 	return (m_pFramesPerSecond != nullptr);
 }
 
-void CPlugin_CryFramesPerSecond::Update(int updateFlags, int nPauseMode)
+void CPlugin_CryFramesPerSecond::OnPluginUpdate(EPluginUpdateType updateType)
 {
 	if (m_pFramesPerSecond)
 	{

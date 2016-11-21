@@ -37,14 +37,6 @@
 #define MC_GPU_TO_CPU 0x20
 #define MC_CPU_TO_CPU 0x40
 
-extern int g_CpuFlags;
-
-#define CPUF_SSE   0x01
-#define CPUF_SSE2  0x02
-#define CPUF_3DNOW 0x04
-#define CPUF_MMX   0x08
-#define CPUF_SSE3  0x10
-
 #if CRY_PLATFORM_SSE2
 	#if CRY_PLATFORM_X86 || CRY_PLATFORM_X64
 		#include <xmmintrin.h>
@@ -158,7 +150,7 @@ ILINE void cryPrefetchT0SSE(const void* src)
 //! Inline assembly syntax for use with Visual C++.
 inline void cryMemcpy( void* Dst, const void* Src, int Count )
 {
-  if (g_CpuFlags & CPUF_SSE)
+#if CRY_PLATFORM_SSE2
   {
 	  __asm
 	  {
@@ -361,10 +353,11 @@ inline void cryMemcpy( void* Dst, const void* Src, int Count )
 	  //	mov		eax, [dest]	; ret value = destination pointer
 	  }
   }
-  else
+#else
   {
     memcpy(Dst, Src, Count);
   }
+#endif
 }
 
 inline void cryPrefetch(const void* Src, int nCount)

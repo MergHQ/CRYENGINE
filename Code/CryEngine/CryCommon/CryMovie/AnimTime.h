@@ -5,6 +5,7 @@
 
 #include <CrySystem/XML/IXml.h>
 #include <CrySerialization/IArchive.h>
+#include <CryMath/Cry_Math.h>
 
 struct STimeCode
 {
@@ -195,7 +196,7 @@ struct SAnimTime
 	 */
 	SAnimTime SnapToNearest(const EFrameRate frameRate) const
 	{
-		const int sign = sgn(m_ticks);
+		const int sign = crymath::sign(m_ticks);
 		const int32 absTicks = abs(m_ticks);
 
 		const int framesMod = numTicksPerSecond / GetFrameRateValue(frameRate);

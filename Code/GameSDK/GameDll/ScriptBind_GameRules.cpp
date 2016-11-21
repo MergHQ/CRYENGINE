@@ -636,7 +636,7 @@ int CScriptBind_GameRules::ClientSelfHarmByEntity(IFunctionHandler *pH, ScriptHa
 	if (!gEnv->IsClient())
 		return pH->EndFunction();
 
-	EntityId ownId = g_pGame->GetClientActorId();
+	EntityId ownId = gEnv->pGameFramework->GetClientActorId();
 	HitInfo info((EntityId)sourceEntity.n, ownId, ownId, dmg, 0.0f, materialId, partId, typeId);
 	info.dir = dir;
 

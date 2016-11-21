@@ -326,7 +326,7 @@ pixout BeamPS(v2f IN)
 	// load the base
 	half4 baseTex = GetDiffuseTex(diffuseTex, IN.baseTC.xy * baseUVScale); 
 	OUT.Color = baseTex;
-	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+	float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
 	half fNoise = 1;
 	half3 dust = 1;
 	half3 dustFinal = 1;

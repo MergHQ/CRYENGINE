@@ -348,6 +348,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 		m_passDepthLinearization.SetRenderTarget(0, CTexture::s_ptexZTarget);
 		m_passDepthLinearization.SetState(GS_NODEPTHTEST);
 		m_passDepthLinearization.SetRequirePerViewConstantBuffer(true);
+		m_passDepthLinearization.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 		m_passDepthLinearization.SetTexture(16, gcpRendD3D->m_DepthBufferOrigMSAA.pTexture);  // TODO: Change slot
 	}
@@ -367,8 +368,8 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 	nearProjParams.x = bReverseDepth ? 1.0f - zf / (zf - zn) * nearZRange : zf / (zf - zn) * nearZRange;
 	nearProjParams.y = bReverseDepth ? zn / (zf - zn) * nearZRange * camScale : zn / (zn - zf) * nearZRange * camScale;
 	nearProjParams.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
-	nearProjParams.w = 1.0f;
-	m_passDepthLinearization.SetConstant(eHWSC_Pixel, paramName, nearProjParams);
+	nearProjParams.w = 1.0f - nearZRange;
+	m_passDepthLinearization.SetConstant(paramName, nearProjParams, eHWSC_Pixel);
 
 	m_passDepthLinearization.Execute();
 }
@@ -385,26 +386,43 @@ void CSceneGBufferStage::Execute()
 	D3DViewPort viewport = { 0.f, 0.f, float(rd->m_MainViewport.nWidth), float(rd->m_MainViewport.nHeight), 0.0f, 1.0f };
 	rd->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
 
+	auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+
 	// Clear depth (stencil initialized to 1 - 0 is reserved for MSAAed samples)
 	const bool bReverseDepth = (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-	rd->FX_ClearTarget(&rd->m_DepthBufferOrigMSAA, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+
+	if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
+	{ 
+		// use inverse depth here
+		rd->FX_ClearTarget(&rd->m_DepthBufferOrigMSAA, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 1.0f : 0.0f, 1);
+		CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(&rd->m_DepthBufferOrigMSAA);
+	}
+	else
+	{
+		commandList.GetGraphicsInterface()->ClearSurface(rd->m_DepthBufferOrigMSAA.pSurface, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	}
 
 	// Clear velocity target
-	rd->FX_ClearTarget(GetUtils().GetVelocityObjectRT(), Clr_Transparent);
+	commandList.GetGraphicsInterface()->ClearSurface(GetUtils().GetVelocityObjectRT()->GetSurface(0, 0), Clr_Transparent);
 
-	if (CRenderer::CV_r_wireframe != 0)
+	bool bClearAll = CRenderer::CV_r_wireframe != 0;
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		bClearAll = true;
+
+	if (bClearAll)
 	{
 		RECT rect = { 0, 0, int(viewport.Width), int(viewport.Height) };
-		rd->FX_ClearTarget(CTexture::s_ptexSceneNormalsMap, Clr_Transparent, 1, &rect, true);
-		rd->FX_ClearTarget(CTexture::s_ptexSceneDiffuse, Clr_Empty, 1, &rect, true);
-		rd->FX_ClearTarget(CTexture::s_ptexSceneSpecular, Clr_Empty, 1, &rect, true);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneNormalsMap->GetSurface(0, 0), Clr_Transparent);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneDiffuse->GetSurface(0, 0), Clr_Empty);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneSpecular->GetSurface(0, 0), Clr_Empty);
 	}
 
 	// Stereo has separate velocity targets for left and right eye
 	m_opaqueVelocityPass.ExchangeRenderTarget(3, GetUtils().GetVelocityObjectRT());
 
 	// Update pass viewport and flags
-	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
+	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_VrProjectionPass;
 
 	if (pThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH)
 		passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;

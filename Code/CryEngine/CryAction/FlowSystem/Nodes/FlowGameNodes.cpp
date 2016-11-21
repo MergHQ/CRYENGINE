@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "CryAction.h"
+#include "CryActionCVars.h"
 #include "IActorSystem.h"
 #include "GameObjects/GameObject.h"
 #include "IGameRulesSystem.h"
@@ -18,6 +19,17 @@ inline IActor* GetAIActor(IFlowNode::SActivationInfo* pActInfo)
 
 class CFlowPlayer : public CFlowBaseNode<eNCT_Singleton>
 {
+private:
+	enum EInputPort
+	{
+		eInputPort_Update = 0,
+	};
+
+	enum EOuputPort
+	{
+		eOutputPort_LocalPlayerId = 0,
+	};
+
 public:
 	CFlowPlayer(SActivationInfo* pActInfo)
 	{
@@ -64,14 +76,17 @@ public:
 
 	bool UpdateEntityIdOutput(SActivationInfo* pActInfo)
 	{
-		IActor* pActor = CCryAction::GetCryAction()->GetClientActor();
-		if (pActor)
+		EntityId playerId = CCryAction::GetCryAction()->GetClientEntityId();
+
+		if (playerId != 0)
 		{
-			ActivateOutput(pActInfo, 0, pActor->GetEntityId());
+			ActivateOutput(pActInfo, eOutputPort_LocalPlayerId, playerId);
 			return true;
 		}
 		else
+		{
 			return false;
+		}
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -540,7 +555,7 @@ public:
 	}
 };
 
-class CFlowGetSupportedGameRulesForMap : public CFlowBaseNode<eNCT_Instanced>
+class CFlowGetSupportedGameRulesForMap : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -611,7 +626,7 @@ public:
 	}
 };
 
-class CFlowGetStateOfEntity : public CFlowBaseNode<eNCT_Instanced>
+class CFlowGetStateOfEntity : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -674,7 +689,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFlowIsLevelOfType : public CFlowBaseNode<eNCT_Instanced>
+class CFlowIsLevelOfType : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -694,8 +709,8 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("Check",   _HELP("Check if level is of given type")),
-			InputPortConfig<string>("Type", "",                                       _HELP("type you want to check against"),0, _UICONFIG("enum_global:level_types")),
+			InputPortConfig_Void("Check", _HELP("Check if level is of given type")),
+			InputPortConfig<string>("Type", "", _HELP("Type you want to check against"),0, _UICONFIG("enum_global:level_types")),
 			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
@@ -716,7 +731,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, 0))
 			{
-				const char* levelType = GetPortString(pActInfo, IN_TYPE);
+				const string levelType = GetPortString(pActInfo, IN_TYPE);
 				bool bResult = CCryAction::GetCryAction()->GetILevelSystem()->GetCurrentLevel()->IsOfType(levelType);
 
 				ActivateOutput(pActInfo, OUT_RESULT, bResult);

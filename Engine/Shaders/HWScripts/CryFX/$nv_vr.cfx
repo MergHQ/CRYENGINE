@@ -1,0 +1,5 @@
+// This file is used to automatically generate geometry shaders for nvidia multires shading
+
+#include "nv_vr.cfi"
+#include "nv_vr_geometry_shader.cfi"
+

@@ -1067,7 +1067,7 @@ void CGameStats::OnLoadingStart(ILevelInfo* pLevel)
 		{
 			if (m_serverReport && !m_reportStarted)
 			{
-				m_serverReport->StartReporting(gEnv->pGame->GetIGameFramework()->GetServerNetNub(), m_pListener);
+				m_serverReport->StartReporting(gEnv->pGameFramework->GetServerNetNub(), m_pListener);
 				m_reportStarted = true;
 			}
 			m_startReportNeeded = false;
@@ -1138,7 +1138,7 @@ void CGameStats::StartGame(bool server)
 	if (!server && gEnv->bServer)//we simply ignore client events on server
 		return;
 
-	if (IGameRulesSystem* pGR = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem())
+	if (IGameRulesSystem* pGR = gEnv->pGameFramework->GetIGameRulesSystem())
 	{
 		IGameRules* pR = pGR->GetCurrentGameRules();
 		if (pR)
@@ -1167,7 +1167,7 @@ void CGameStats::StartGame(bool server)
 
 	if (m_playing)
 	{
-		if (ILevelInfo* pLevelInfo = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel())
+		if (ILevelInfo* pLevelInfo = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel())
 		{
 			m_mapName = pLevelInfo->GetName();//we only need pure level name here
 			const char* p = strrchr(m_mapName.c_str(), '/');
@@ -1496,7 +1496,7 @@ void CGameStats::Connected()
 	//should not be called
 	if (gEnv->IsClient() && !gEnv->bServer)//pure clients
 	{
-		if (IGameRulesSystem* pGR = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem())
+		if (IGameRulesSystem* pGR = gEnv->pGameFramework->GetIGameRulesSystem())
 		{
 			IGameRules* pR = pGR->GetCurrentGameRules();
 			if (pR)
@@ -1628,7 +1628,7 @@ void CGameStats::ReportSession()
 	{
 		if (m_serverReport && !m_reportStarted)//report now
 		{
-			m_serverReport->StartReporting(gEnv->pGame->GetIGameFramework()->GetServerNetNub(), m_pListener);
+			m_serverReport->StartReporting(gEnv->pGameFramework->GetServerNetNub(), m_pListener);
 			m_reportStarted = true;
 		}
 		m_startReportNeeded = false;
@@ -1640,7 +1640,7 @@ void CGameStats::ReportSession()
 void CGameStats::ReportGame()
 {
 	string mode;
-	if (IEntity* pGRE = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
+	if (IEntity* pGRE = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
 	{
 		mode = pGRE->GetClass()->GetName();
 	}
@@ -1683,7 +1683,7 @@ void CGameStats::Report()
 	m_serverReport->SetServerValue("gamemode", m_playing ? "game" : "pre-game");
 
 	CryFixedStringT<32> timeleft("-");
-	if (IGameRulesSystem* pGR = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem())
+	if (IGameRulesSystem* pGR = gEnv->pGameFramework->GetIGameRulesSystem())
 	{
 		IGameRules* pR = pGR->GetCurrentGameRules();
 		if (pR && pR->IsTimeLimited() && m_playing)
@@ -1882,11 +1882,11 @@ void CGameStats::ProcessPlayerStat(IEntity* pEntity, const GameplayEvent& event)
 bool CGameStats::GetLevelName(string& mapname)
 {
 	string levelname;
-	if (ILevelInfo* pLevelInfo = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel())
+	if (ILevelInfo* pLevelInfo = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel())
 	{
 		levelname = pLevelInfo->GetDisplayName();
 		if (levelname.empty())
-			levelname = gEnv->pGame->GetIGameFramework()->GetLevelName();
+			levelname = gEnv->pGameFramework->GetLevelName();
 	}
 	if (levelname.empty())
 		return false;
@@ -1976,7 +1976,7 @@ void CGameStats::SubmitServerStats()
 	SStatsTrackHelper hlp(this);
 
 	string mode;
-	if (IEntity* pGRE = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
+	if (IEntity* pGRE = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
 	{
 		mode = pGRE->GetClass()->GetName();
 	}

@@ -15,7 +15,6 @@
 #include "GameServerChannel.h"
 #include "GameClientChannel.h"
 #include "IActorSystem.h"
-#include <CryGame/IGame.h>
 #include "IGameSessionHandler.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
@@ -40,18 +39,17 @@
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>
-#include "CET_ActionMap.h"
 #include "CET_ClassRegistry.h"
 #include "CET_CVars.h"
 #include "CET_EntitySystem.h"
 #include "CET_GameRules.h"
 #include "CET_LevelLoading.h"
 #include "CET_NetConfig.h"
-#include "CET_View.h"
 
 #include "NetDebug.h"
 
 #include "NetMsgDispatcher.h"
+#include "ManualFrameStep.h"
 
 #define VERBOSE_TRACE_CONTEXT_SPAWNS 0
 
@@ -495,10 +493,6 @@ bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int e
 	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
-	if (gEnv->IsClient())
-	{
-		AddDisableActionMap(pEst, eCVS_Begin);
-	}
 	if (gEnv->IsEditor())
 	{
 		AddEstablishedContext(pEst, eCVS_EstablishContext, establishedToken);
@@ -634,18 +628,6 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	if (isClient && !HasContextFlag(eGSF_Server))
 	{
 		AddLoadLevelTasks(pEst, false, flags, &pLoadingStarted, establishedSerial, bIsChannelMigrating);
-	}
-
-	if (isClient && HasContextFlag(eGSF_InitClientActor))
-	{
-		AddInitActionMap_ClientActor(pEst, eCVS_InGame);
-		if (bIsChannelMigrating)
-		{
-			AddClearViews(pEst, eCVS_InGame);
-		}
-		AddInitView_ClientActor(pEst, eCVS_InGame);
-
-		AddDisableKeyboardMouse(pEst, eCVS_InGame);
 	}
 
 	if (isClient)
@@ -1711,7 +1693,7 @@ bool CGameContext::Update()
 	float white[] = { 1, 1, 1, 1 };
 	if (!m_bHasSpawnPoint)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
+		IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
 	}
 
 	// TODO: This block should be moved into GameSDK code, since sv_pacifist is a GameSDK-only CVar
@@ -1725,7 +1707,7 @@ bool CGameContext::Update()
 		}
 		if (gEnv->IsClient() && !gEnv->bServer && pPacifist && pPacifist->GetIVal() == 1)
 		{
-			gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
+			IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
 		}
 	}
 
@@ -1804,11 +1786,11 @@ IHostMigrationEventListener::EHostMigrationReturn CGameContext::OnInitiate(SHost
 	// (such as health and ammo counts) that aren't normally transmitted
 	// to other clients). This info could be sent as part of the
 	// migrating player connection string, or a discrete message.
-	IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 	if (pGameRules)
 	{
 		pGameRules->ClearAllMigratingPlayers();
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 		IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 		IActor* pActor = pActorIterator->Next();
 
@@ -2023,23 +2005,6 @@ void CGameContext::EndUpdateObjects()
 	{
 		m_pPhysicsSync->OnPacketFooter();
 		m_pPhysicsSync = nullptr;
-	}
-}
-
-void CGameContext::PlayerIdSet(EntityId id)
-{
-#ifndef OLD_VOICE_SYSTEM_DEPRECATED
-	if (m_pVoiceController)
-		m_pVoiceController->PlayerIdSet(id);
-#endif
-	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
-	{
-		pEnt->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
-		if (CGameObject* pGO = (CGameObject*) pEnt->GetProxy(ENTITY_PROXY_USER))
-		{
-			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);
-			pGO->SendEvent(goe);
-		}
 	}
 }
 
@@ -2307,6 +2272,8 @@ void CGameContext::DefineContextProtocols(IProtocolBuilder* pBuilder, bool serve
 	CCryAction* cca = CCryAction::GetCryAction();
 	if (cca->GetNetMessageDispatcher())
 		cca->GetNetMessageDispatcher()->DefineProtocol(pBuilder);
+	if (cca->GetManualFrameStepController())
+		cca->GetManualFrameStepController()->DefineProtocol(pBuilder);
 }
 
 void CGameContext::PlaybackBreakage(int breakId, INetBreakagePlaybackPtr pBreakage)

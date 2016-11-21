@@ -130,7 +130,9 @@
 			"EntityClass.cpp",
 			"EntityClassRegistry.cpp",
 			"EntityClass.h",
-			"EntityClassRegistry.h"
+			"EntityClassRegistry.h",
+			"EntityPropertyHandler.cpp",
+			"EntityPropertyHandler.h"
 		]
 	},
 	"CryEntitySystem_uber_1.cpp":

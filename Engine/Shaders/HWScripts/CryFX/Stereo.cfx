@@ -12,10 +12,10 @@ float Script : STANDARDSGLOBAL
 float4x4 CompMatrix : PI_Composite < vsregister = c0; >;
 float2 ScreenSize : PB_ScreenSize;
 
-sampler2D StereoL : register(s0);
-sampler2D StereoR : register(s1);
+Texture2D StereoL : register(t0);
+Texture2D StereoR : register(t1);
 
-sampler2D Eye : register(s0);
+SamplerState StereoClampSamplerState : register(s0) = SS_TrilinearClamp;
 
 struct a2v
 {
@@ -32,7 +32,7 @@ struct v2f
 
 struct psout
 {
-	float4 Primary   : COLOR0; // Primary panel
+	float4 Primary   : SV_Target; // Primary panel
 };
 
 ///////////////// vertex shader //////////////////
@@ -43,8 +43,7 @@ v2f StereoVS(a2v IN)
 
 	OUT.Position = Get2dHPos(IN.Position);
 	OUT.baseTC.xy = IN.baseTC.xy;
-	
-	OUT.baseTC.zw = 2*g_VS_ScreenSize.zw;
+	OUT.baseTC.zw = 2 * g_VS_ScreenSize.zw;
 	
 	return OUT;
 }
@@ -55,35 +54,23 @@ psout SideBySidePS(v2f IN)
 {
 	psout OUT = (psout ) 0;
 	
-	half2 left_texcoord = saturate(IN.baseTC * float2(2.0, 1.0));
-	half2 right_texcoord = saturate((IN.baseTC - float2(0.5, 0.0)) * float2(2.0, 1.0));
+	half2 left_texcoord = saturate(IN.baseTC.xy * float2(2.0, 1.0));
+	half2 right_texcoord = saturate((IN.baseTC.xy - float2(0.5, 0.0)) * float2(2.0, 1.0));
 	
-	half4 cL = tex2D( StereoL, left_texcoord );
-	half4 cR = tex2D( StereoR, right_texcoord );	
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, left_texcoord);
+	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, right_texcoord);	
  
 	OUT.Primary = IN.baseTC.x < 0.5 ? cL : cR;
 	
 	return OUT;
 }
 
-
-float4 texVerticalTriFilter3(sampler2D tex, float2 texcoord)
-{
-	float4 sample0 = tex2D(tex, texcoord + float2(0.0,  0.0 / SourceSize.y));
-	float4 sample1 = tex2D(tex, texcoord + float2(0.0, -1.0 / SourceSize.y));	
-	float4 sample2 = tex2D(tex, texcoord + float2(0.0,  1.0 / SourceSize.y));
-	
-	return 0.7 * sample0 + 0.15 * sample1 + 0.15 * sample2;
-}
-
 psout LineByLinePS(v2f IN)
 {
 	psout OUT = (psout ) 0;
 
-	half4 cL = tex2D( StereoL, IN.baseTC );
-	half4 cR = tex2D( StereoR, IN.baseTC );
-	//half4 cL = texVerticalTriFilter3( StereoL, IN.baseTC );
-	//half4 cR = texVerticalTriFilter3( StereoR, IN.baseTC );
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
+	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
  
 	int pixLine = IN.baseTC.y * ScreenSize.y;
  
@@ -95,9 +82,9 @@ psout LineByLinePS(v2f IN)
 psout CheckerboardPS(v2f IN)
 {
 	psout OUT = (psout ) 0;
-
-	half4 cL = tex2D( StereoL, IN.baseTC );
-	half4 cR = tex2D( StereoR, IN.baseTC );
+	
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
+	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
  
 	int pixLine = IN.baseTC.y * ScreenSize.y;
 	int pixColumn = IN.baseTC.x * ScreenSize.x;
@@ -111,14 +98,11 @@ psout AnaglyphPS(v2f IN)
 {	
 	psout OUT = (psout ) 0;
   
-	half4 cL = tex2D( StereoL, IN.baseTC );
-	half4 cR = tex2D( StereoR, IN.baseTC );
-	
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
+	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
+ 
 	OUT.Primary.r = cL.r;
 	OUT.Primary.gb = cR.gb;
-	//OUT.Primary.rg = cL.rg;
-	//OUT.Primary.b = cR.b;
-	
 	OUT.Primary.a = 0.0;
 	
 	return OUT;
@@ -128,9 +112,9 @@ psout NV3DVisionPS(v2f IN)
 {	
 	psout OUT = (psout ) 0;
   
-	half4 col = tex2D( StereoL, IN.baseTC );
-	
-	OUT.Primary = col;
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
+
+	OUT.Primary = cL;
 	
 	return OUT;
 }
@@ -139,7 +123,9 @@ psout EmulationPS(v2f IN)
 {	
 	psout OUT = (psout ) 0;
   
-	OUT.Primary = tex2D( StereoL, IN.baseTC );
+	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
+
+	OUT.Primary = cL;
 	
 	return OUT;
 }

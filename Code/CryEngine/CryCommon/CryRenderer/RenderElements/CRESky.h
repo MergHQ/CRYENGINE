@@ -7,7 +7,7 @@
 
 struct SSkyLightRenderParams;
 
-class CRESky : public CRendElementBase
+class CRESky : public CRenderElement
 {
 	friend class CRender3D;
 
@@ -42,7 +42,7 @@ public:
 	}
 };
 
-class CREHDRSky : public CRendElementBase
+class CREHDRSky : public CRenderElement
 {
 public:
 	CREHDRSky()

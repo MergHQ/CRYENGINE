@@ -234,7 +234,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 
 				if (pVegetation && pBody && bUseBending)
 				{
-					Get3DEngine()->SetupBending(pObj, pVegetation, pBody->m_fRadiusVert, passInfo);
+					pVegetation->FillBendingData(pObj);
 				}
 				IMaterial* pMat = m_ownerInfo.pRenderNode->GetMaterial();
 				pMat = pMat->GetSubMtl(m_ownerInfo.nMatID);
@@ -341,9 +341,9 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 			uCol.dcolor = 0xffffffff;
 			uCol.bcolor[3] = fastround_positive(fAlpha * 255);
 
-			GetObjManager()->AddDecalToRenderer(fDistance, m_pMaterial, m_sortPrio, vRight * fSizeK, vUp * fSizeK, uCol,
-			                                    OS_ALPHA_BLEND, m_vAmbient, vPos, nAfterWater, passInfo,
-			                                    m_ownerInfo.pRenderNode->GetRenderNodeType() == eERType_Vegetation ? (CVegetation*) m_ownerInfo.pRenderNode : 0);
+			AddDecalToRenderView(fDistance, m_pMaterial, m_sortPrio, vRight * fSizeK, vUp * fSizeK, uCol,
+			                     OS_ALPHA_BLEND, m_vAmbient, vPos, nAfterWater,
+			                     m_ownerInfo.pRenderNode->GetRenderNodeType() == eERType_Vegetation ? (CVegetation*) m_ownerInfo.pRenderNode : nullptr, passInfo);
 		}
 		break;
 
@@ -353,10 +353,8 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 			UCol uCol;
 			uCol.dcolor = 0;
 			uCol.bcolor[3] = fastround_positive(fAlpha * 255);
-
-			GetObjManager()->AddDecalToRenderer(fDistance, m_pMaterial, m_sortPrio, m_vRight * m_fSize * fSizeK,
-			                                    m_vUp * m_fSize * fSizeK, uCol, OS_ALPHA_BLEND, m_vAmbient, m_vPos, nAfterWater, passInfo,
-			                                    NULL);
+			AddDecalToRenderView(fDistance, m_pMaterial, m_sortPrio, m_vRight * m_fSize * fSizeK,
+			                     m_vUp * m_fSize * fSizeK, uCol, OS_ALPHA_BLEND, m_vAmbient, m_vPos, nAfterWater, nullptr, passInfo);
 		}
 		break;
 
@@ -450,4 +448,99 @@ void CDecal::RenderBigDecalOnTerrain(float fAlpha, float fScale, const SRenderin
 	// m_pRenderMesh might get updated by the following function
 	GetTerrain()->RenderArea(m_vPos, fRadius, m_pRenderMesh,
 	                         pObj, m_pMaterial, "BigDecalOnTerrain", m_arrBigDecalRMCustomData, GetCVars()->e_DecalsClip ? planes : NULL, passInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CDecal::AddDecalToRenderView(float fDistance,
+                                  IMaterial* pMaterial,
+                                  const uint8 sortPrio,
+                                  Vec3 right,
+                                  Vec3 up,
+                                  const UCol& ucResCol,
+                                  const uint8 uBlendType,
+                                  const Vec3& vAmbientColor,
+                                  Vec3 vPos,
+                                  const int nAfterWater,
+                                  CVegetation* pVegetation,
+                                  const SRenderingPassInfo& passInfo)
+{
+	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AddDecalToRenderer");
+
+	CRenderObject* pRenderObject(GetIdentityCRenderObject(passInfo.ThreadID()));
+	if (!pRenderObject)
+		return;
+
+	// prepare render object
+	pRenderObject->m_fDistance = fDistance;
+	pRenderObject->m_fAlpha = (float)ucResCol.bcolor[3] / 255.f;
+	pRenderObject->m_II.m_AmbColor = vAmbientColor;
+	pRenderObject->m_fSort = 0;
+	pRenderObject->m_ObjFlags |= FOB_DECAL | FOB_INSHADOW;
+	pRenderObject->m_nSort = sortPrio;
+
+	bool bBending = pVegetation && pVegetation->IsBending();
+
+	if (bBending)
+	{
+		// transfer decal into object space
+		Matrix34A objMat;
+		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, 0, &objMat);
+		pRenderObject->m_II.m_Matrix = objMat;
+		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
+		pVegetation->FillBendingData(pRenderObject);
+		assert(pEntObject);
+		if (pEntObject)
+		{
+			objMat.Invert();
+			vPos = objMat.TransformPoint(vPos);
+			right = objMat.TransformVector(right);
+			up = objMat.TransformVector(up);
+		}
+	}
+
+	SVF_P3F_C4B_T2F pVerts[4];
+	uint16 pIndices[6];
+
+	// TODO: determine whether this is a decal on opaque or transparent geometry
+	// (put it in the respective renderlist for correct shadowing)
+	// fill general vertex data
+	pVerts[0].xyz = (-right - up) + vPos;
+	pVerts[0].st = Vec2(0, 1);
+	pVerts[0].color.dcolor = ~0;
+
+	pVerts[1].xyz = (right - up) + vPos;
+	pVerts[1].st = Vec2(1, 1);
+	pVerts[1].color.dcolor = ~0;
+
+	pVerts[2].xyz = (right + up) + vPos;
+	pVerts[2].st = Vec2(1, 0);
+	pVerts[2].color.dcolor = ~0;
+
+	pVerts[3].xyz = (-right + up) + vPos;
+	pVerts[3].st = Vec2(0, 0);
+	pVerts[3].color.dcolor = ~0;
+
+	// prepare tangent space (tangent, bitangent) and fill it in
+	Vec3 rightUnit(right.GetNormalized());
+	Vec3 upUnit(up.GetNormalized());
+
+	SPipTangents pTangents[4];
+
+	pTangents[0] = SPipTangents(rightUnit, -upUnit, -1);
+	pTangents[1] = pTangents[0];
+	pTangents[2] = pTangents[0];
+	pTangents[3] = pTangents[0];
+
+	// fill decals topology (two triangles)
+	pIndices[0] = 0;
+	pIndices[1] = 1;
+	pIndices[2] = 2;
+
+	pIndices[3] = 0;
+	pIndices[4] = 2;
+	pIndices[5] = 3;
+
+	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_DECAL, nAfterWater);
+	passInfo.GetIRenderView()->AddPolygon(poly, passInfo);
 }

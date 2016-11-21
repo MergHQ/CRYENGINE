@@ -92,7 +92,7 @@ struct SRendItem
 	SRendItemSorter        rendItemSorter;
 	CRenderObject*         pObj;
 	CCompiledRenderObject* pCompiledObject;
-	CRendElementBase*      pElem;
+	CRenderElement*      pElem;
 	//uint32 nStencRef  : 8;
 
 	//==================================================
@@ -127,6 +127,16 @@ struct SRendItem
 		int nRes = (nVal >> 6) & (MAX_REND_SHADER_RES - 1);
 		sh.m_pShaderResources = (IRenderShaderResources*)((nRes) ? CShader::s_ShaderResources_known[nRes] : nullptr);
 	}
+	static inline uint32 PackShaderItem(SShaderItem& shaderItem)
+	{
+		uint32 nResID = shaderItem.m_pShaderResources ? ((CShaderResources*)(shaderItem.m_pShaderResources))->m_Id : 0;
+		uint32 nShaderId = ((CShader*)shaderItem.m_pShader)->mfGetID();
+		assert(nResID < CShader::s_ShaderResources_known.size());
+		assert(nShaderId != 0);
+		uint32 value = (nResID << 6) | (nShaderId << 20) | (shaderItem.m_nTechnique & 0x3f);
+		return value;
+	}
+
 	static bool   IsListEmpty(int nList);
 	static uint32 BatchFlags(int nList);
 
@@ -379,6 +389,10 @@ struct CRY_ALIGN(128) SPipeStat
 	int m_nNumBoundUniformBuffers[2];  // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 	int m_nNumBoundUniformTextures[2]; // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 #endif
+
+	static SPipeStat* Out() { return s_pCurrentOutput; }
+
+	static SPipeStat* s_pCurrentOutput;
 };
 
 //Batch flags.
@@ -402,6 +416,7 @@ enum EBatchFlags
 	FB_WATER_REFL      = 0x4000,
 	FB_WATER_CAUSTIC   = 0x8000,
 	FB_DEBUG           = 0x10000,
+	FB_TILED_FORWARD   = 0x20000,
 	FB_EYE_OVERLAY     = 0x80000,
 
 	FB_MASK            = 0xfffff //! FB flags cannot exceed 0xfffff
@@ -424,7 +439,7 @@ enum EBatchFlags
 #define RBPF_MIRRORCULL               (1 << 18) // 0x40000
 
 #define RBPF_ZPASS                    (1 << 19) // 0x80000
-#define RBPF_SHADOWGEN                (1 << 20) // 0x100000
+// UNUSED                             (1 << 20) // 0x100000
 
 #define RBPF_FP_DIRTY                 (1 << 21) // 0x200000
 #define RBPF_FP_MATRIXDIRTY           (1 << 22) // 0x400000
@@ -447,14 +462,14 @@ enum EBatchFlags
 
 // m_RP.m_PersFlags2
 #define RBPF2_NOSHADERFOG                         (1 << 0)
-#define RBPF2_RAINRIPPLES                         (1 << 1)
+// unused                                         (1 << 1)
 #define RBPF2_NOALPHABLEND                        (1 << 2)
 #define RBPF2_SINGLE_FORWARD_LIGHT_PASS           (1 << 3)
 #define RBPF2_MSAA_RESTORE_SAMPLE_MASK            (1 << 4)
 #define RBPF2_READMASK_RESERVED_STENCIL_BIT       (1 << 5)
 #define RBPF2_POST_3D_RENDERER_PASS               (1 << 6)
-#define RBPF2_LENS_OPTICS_COMPOSITE               (1 << 7)
-#define RBPF2_COMMIT_SG                           (1 << 8)
+// unused                                         (1 << 7)
+// unused                                         (1 << 8)
 #define RBPF2_HDR_FP16                            (1 << 9)
 #define RBPF2_CUSTOM_SHADOW_PASS                  (1 << 10)
 #define RBPF2_CUSTOM_RENDER_PASS                  (1 << 11)
@@ -469,7 +484,7 @@ enum EBatchFlags
 
 #define RBPF2_THERMAL_RENDERMODE_TRANSPARENT_PASS (1 << 17)
 #define RBPF2_NOALPHATEST                         (1 << 18)
-#define RBPF2_WATERRIPPLES                        (1 << 19)
+// unused                                         (1 << 19)
 #define RBPF2_ALLOW_DEFERREDSHADING               (1 << 20)
 
 #define RBPF2_COMMIT_PF                           (1 << 21)
@@ -624,8 +639,8 @@ struct SRenderPipeline
 	CShader*                             m_pReplacementShader;
 	CRenderObject*                       m_pCurObject;
 	CRenderObject*                       m_pIdendityRenderObject;
-	CRendElementBase*                    m_pRE;
-	CRendElementBase*                    m_pEventRE;
+	CRenderElement*                        m_pRE;
+	CRenderElement*                        m_pEventRE;
 	int                                  m_RendNumVerts;
 	uint32                               m_nBatchFilter; // Batch flags ( FB_ )
 	SShaderTechnique*                    m_pRootTechnique;
@@ -743,13 +758,6 @@ struct SRenderPipeline
 	SLightPass m_LPasses[MAX_REND_LIGHTS];
 	float      m_fProfileTime;
 
-	struct ShadowInfo
-	{
-		ShadowMapFrustum* m_pCurShadowFrustum;
-		Vec3              vViewerPos;
-		int               m_nOmniLightSide;
-	}              m_ShadowInfo;
-
 	UVertStreamPtr m_StreamPtrTang;
 	UVertStreamPtr m_NextStreamPtrTang;
 
@@ -777,46 +785,43 @@ struct SRenderPipeline
 	// particle data for writing directly to VMEM
 	CParticleBufferSet                  m_particleBuffer;
 
-	int                                m_nStreamOffset[3]; // deprecated!
+	int                                 m_nStreamOffset[3]; // deprecated!
 
 	SOnDemandD3DVertexDeclarations      m_D3DVertexDeclaration;
 	SOnDemandD3DVertexDeclarationCaches m_D3DVertexDeclarationCache[1 << VSF_NUM][2]; // [StreamMask][Morph][VertexFmt]
 	SOnDemandD3DStreamProperties        m_D3DStreamProperties[VSF_NUM];
 
-	TArray<SVertexDeclaration*>        m_CustomVD;
+	TArray<SVertexDeclaration*>         m_CustomVD;
 
-	uint16*                            m_RendIndices;
-	uint16*                            m_SysRendIndices;
-	byte*                              m_SysArray;
-	int                                m_SizeSysArray;
+	uint16*                             m_RendIndices;
+	uint16*                             m_SysRendIndices;
+	byte*                               m_SysArray;
+	int                                 m_SizeSysArray;
 
-	TArray<byte>                       m_SysVertexPool[RT_COMMAND_BUF_COUNT];
-	TArray<uint16>                     m_SysIndexPool[RT_COMMAND_BUF_COUNT];
+	int                                 m_RendNumGroup;
+	int                                 m_RendNumIndices;
+	int                                 m_FirstIndex;
+	int                                 m_FirstVertex;
 
-	int                                m_RendNumGroup;
-	int                                m_RendNumIndices;
-	int                                m_FirstIndex;
-	int                                m_FirstVertex;
+	SEfResTexture*                      m_ShaderTexResources[MAX_TMU];
 
-	SEfResTexture*                     m_ShaderTexResources[MAX_TMU];
+	int                                 m_Frame;
+	int                                 m_FrameMerge;
 
-	int                                m_Frame;
-	int                                m_FrameMerge;
+	float                               m_fCurOpacity;
 
-	float                              m_fCurOpacity;
+	SPipeStat                           m_PS[RT_COMMAND_BUF_COUNT];
+	DynArray<SRTargetStat>              m_RTStats;
 
-	SPipeStat                          m_PS[RT_COMMAND_BUF_COUNT];
-	DynArray<SRTargetStat>             m_RTStats;
+	int                                 m_MaxVerts;
+	int                                 m_MaxTris;
 
-	int                                m_MaxVerts;
-	int                                m_MaxTris;
+	int                                 m_RECustomTexBind[8];
+	int                                 m_ShadowCustomTexBind[8];
+	bool                                m_ShadowCustomComparisonSampling[8];
 
-	int                                m_RECustomTexBind[8];
-	int                                m_ShadowCustomTexBind[8];
-	bool                               m_ShadowCustomComparisonSampling[8];
-
-	CRenderView*                       RenderView() const { return m_pCurrentRenderView; }
-	CRenderView*                       m_pCurrentRenderView;
+	CRenderView*                        RenderView() const { return m_pCurrentRenderView; }
+	CRenderView*                        m_pCurrentRenderView;
 
 	// Separate render views per recursion
 	_smart_ptr<CRenderView> m_pRenderViews[RT_COMMAND_BUF_COUNT][MAX_REND_RECURSION_LEVELS];
@@ -872,8 +877,8 @@ public:
 
 	// Arguments
 	//   vertexformat - 0..VERTEX_FORMAT_NUMS-1
-	void OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
-	void InitD3DVertexDeclarations();
+	void          OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
+	void          InitD3DVertexDeclarations();
 	EVertexFormat AddD3DVertexDeclaration(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
 	EVertexFormat MaxD3DVertexDeclaration() { return EVertexFormat(m_D3DVertexDeclaration.size()); }
 };
@@ -952,6 +957,21 @@ struct SCompareRendItemZPass
 			return a.pElem < b.pElem;
 
 		return (a.ObjSort & 0xFFFF) < (b.ObjSort & 0xFFFF);    // Sort by distance
+	}
+};
+
+////////////////////////////////////////
+struct SCompareRendItemSelectionPass
+{
+	bool operator()(const SRendItem& a, const SRendItem& b) const
+	{
+		// Selection and highlight are the first two bits of the selectionID
+		uint8 bAHighlightSelect = (a.pObj->m_editorSelectionID & 0x3);
+		uint8 bBHighlightSelect = (b.pObj->m_editorSelectionID & 0x3);
+
+		// Highlight is the higher bit, so highlighted objects win in the comparison. 
+		// Also, selected objects win over non-selected objects, which is exactly what we want
+		return bAHighlightSelect < bBHighlightSelect;
 	}
 };
 

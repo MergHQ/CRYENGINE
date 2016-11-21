@@ -486,7 +486,7 @@ void CRemoteControlClientInternal::Connect(string serverAddr, uint16 serverPort,
 	for (size_t i = 0; i < naddrs; ++i)
 	{
 		TNetAddress addr = nav[i];
-		pIpv4Addr = boost::get<SIPv4Addr>(&addr);
+		pIpv4Addr = stl::get_if<SIPv4Addr>(&addr);
 		if (pIpv4Addr)
 		{
 			pIpv4Addr->port = serverPort;

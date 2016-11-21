@@ -196,7 +196,7 @@ IAudioSystemItem* CAudioWwiseLoader::CreateItem(const string& name, ItemType typ
 		pControl = new IAudioSystemControl_wwise(name, id, type);
 		if (type == eWwiseItemTypes_Event)
 		{
-			pControl->SetRadius(m_eventsInfoMap[id].maxRadius);
+			pControl->SetRadius(m_eventsInfoMap[CCrc32::ComputeLowercase(name.c_str())].maxRadius);
 		}
 		parent.AddChild(pControl);
 		pControl->SetParent(&parent);

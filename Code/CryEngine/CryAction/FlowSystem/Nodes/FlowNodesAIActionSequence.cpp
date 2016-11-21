@@ -254,8 +254,8 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 
 			m_vehicleSeatEnterPosition = pEnterHelper->GetWorldSpaceTranslation();
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActorSystem());
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
+			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// if it's the player, have him enter quickly (we assume that the user moved him close enough to the vehicle)
 			if (pActor && pActor->IsPlayer())
@@ -322,8 +322,8 @@ IVehicle* CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetVehicle(bool al
 	if (!m_vehicleId)
 		return NULL;
 
-	assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIVehicleSystem());
-	IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+	assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIVehicleSystem());
+	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!pVehicle)
 		return NULL;
 
@@ -572,8 +572,8 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 				return;
 			}
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActorSystem());
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
+			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// ensure the FG entity is an IActor
 			if (!pActor)

@@ -133,7 +133,7 @@ void CActorManager::Update(float dt)
 #endif
 
 	//iterate over all actors
-	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	const int kMaxNumActors = pActorSystem->GetActorCount();
 
 	const int kTeamCount = g_pGame->GetGameRules()->GetTeamCount();

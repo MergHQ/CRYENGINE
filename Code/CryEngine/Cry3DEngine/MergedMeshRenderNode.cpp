@@ -997,16 +997,9 @@ static inline void ExtractSphereSet(
 					continue;
 				switch (statusPos.pGeom->GetType())
 				{
-					if (false)
-					{
-					case GEOM_CAPSULE:
-						statusPos.pGeom->GetPrimitive(0, &cylinder);
-					}
-					if (false)
-					{
-					case GEOM_CYLINDER:
-						statusPos.pGeom->GetPrimitive(0, &cylinder);
-					}
+				case GEOM_CAPSULE:
+				case GEOM_CYLINDER:
+					statusPos.pGeom->GetPrimitive(0, &cylinder);
 					for (int i = 0; i < 2 && nColliders < MMRM_MAX_COLLIDERS; ++i)
 					{
 						pColliders[nColliders].center = statusPos.pos + statusPos.q * (cylinder.center + ((float)(i - 1) * cylinder.axis * cylinder.hh * 2.75f));
@@ -3424,7 +3417,7 @@ void CMergedMeshRenderNode::DebugRender(int nLod)
 					nVerts += m_renderMeshes[t][i].vertices;
 					nChunks += m_renderMeshes[t][i].chunks;
 				}
-			gEnv->pRenderer->DrawLabel(m_pos, 1.2f, "vb %d ib %d\nsize %3.1f kb\nlod %d ch %d"
+			IRenderAuxText::DrawLabelF(m_pos, 1.2f, "vb %d ib %d\nsize %3.1f kb\nlod %d ch %d"
 			                           , nVerts
 			                           , nInds
 			                           , (m_SizeInVRam) / 1024.f
@@ -3946,10 +3939,9 @@ bool CMergedMeshesManager::CompileSectors(std::vector<struct IStatInstGroup*>* p
 				for (NodeListT::iterator it = list.begin(); it != list.end(); ++it)
 				{
 					nSize = 0;
-					m_InstanceSectors.push_back(SInstanceSector());
-					SInstanceSector* pSector = &m_InstanceSectors.back();
+					SInstanceSector* pSector = m_InstanceSectors.push_back();
 					(*it)->Compile(NULL, nSize, NULL, NULL);
-					pSector->data.grow(nSize);
+					pSector->data.resize(nSize);
 
 					if ((*it)->Compile(&pSector->data[0], nSize, &pSector->id, pVegGroupTable) == false)
 						return false;

@@ -9,7 +9,7 @@
 
 #include "../MNM/MNM.h"
 #include "../MNM/Tile.h"
-#include "../MNM/MeshGrid.h"
+#include "../MNM/NavMesh.h"
 #include "../MNM/TileGenerator.h"
 
 #include "WorldMonitor.h"
@@ -253,14 +253,14 @@ struct NavigationMesh
 #if DEBUG_MNM_ENABLED
 	struct ProfileMemoryStats
 	{
-		ProfileMemoryStats(const MNM::MeshGrid::ProfilerType& _gridProfiler)
-			: gridProfiler(_gridProfiler)
+		ProfileMemoryStats(const MNM::CNavMesh::ProfilerType& _navMeshProfiler)
+			: navMeshProfiler(_navMeshProfiler)
 			, totalNavigationMeshMemory(0)
 		{
 
 		}
 
-		const MNM::MeshGrid::ProfilerType& gridProfiler;
+		const MNM::CNavMesh::ProfilerType& navMeshProfiler;
 		size_t                             totalNavigationMeshMemory;
 	};
 
@@ -270,7 +270,7 @@ struct NavigationMesh
 	NavigationAgentTypeID agentTypeID;
 	size_t                version;
 
-	MNM::MeshGrid         grid;
+	MNM::CNavMesh         navMesh;
 	NavigationVolumeID    boundary;
 #ifdef SW_NAVMESH_USE_GUID
 	NavigationVolumeGUID  boundaryGUID;
@@ -429,8 +429,8 @@ public:
 	virtual NavigationVolumeID CreateVolume(Vec3* vertices, size_t vertexCount, float height, NavigationVolumeID requestedID) override;
 	virtual void               DestroyVolume(NavigationVolumeID volumeID) override;
 	virtual void               SetVolume(NavigationVolumeID volumeID, Vec3* vertices, size_t vertexCount, float height) override;
-	virtual bool               ValidateVolume(NavigationVolumeID volumeID) override;
-	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) override;
+	virtual bool               ValidateVolume(NavigationVolumeID volumeID) const override;
+	virtual NavigationVolumeID GetVolumeID(NavigationMeshID meshID) const override;
 
 #ifdef SW_NAVMESH_USE_GUID
 	virtual void SetMeshBoundaryVolume(NavigationMeshID meshID, NavigationVolumeID volumeID, NavigationVolumeGUID volumeGUID) override;
@@ -475,7 +475,7 @@ public:
 	NavigationMeshID      GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const override;
 	bool                  IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const;
 	MNM::TriangleID       GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange, float hrange,
-	                                             Vec3* meshLocation, float* distSq) const;
+	                                             Vec3* meshLocation, float* distance) const;
 	bool                  GetGroundLocationInMesh(NavigationMeshID meshID, const Vec3& location,
 	                                              float vDownwardRange, float hRange, Vec3* meshLocation) const;
 
@@ -534,12 +534,17 @@ public:
 	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
+	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const override;
+
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }
 
 	bool                                     AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const;
 	uint16                                   GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
 	uint16                                   GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
+
+	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
+	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
 
 	inline const WorldMonitor*               GetWorldMonitor() const
 	{
@@ -626,7 +631,7 @@ public:
 		};
 
 		JobManager::SJobState jobState;
-		MNM::Tile             tile;
+		MNM::STile            tile;
 		uint32                hashValue;
 
 		NavigationMeshID      meshID;
@@ -644,11 +649,11 @@ private:
 
 #if NAVIGATION_SYSTEM_PC_ONLY
 	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
-	void SetupGenerator(NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
-	                    uint16 x, uint16 y, uint16 z, MNM::TileGenerator::Params& params,
+	void SetupGenerator(NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
+	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params,
 	                    const MNM::BoundingVolume* boundary, const MNM::BoundingVolume* exclusions,
 	                    size_t exclusionCount);
-	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
+	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	              uint16 x, uint16 y, uint16 z, bool mt);
 	void CommitTile(TileTaskResult& result);
 #endif
@@ -671,6 +676,8 @@ private:
 	void ClearAllAccessibility(uint8 resetValue);
 	void ComputeAccessibility(IAIObject* pIAIObject, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
 #endif
+
+	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
 	typedef std::deque<TileTask> TileTaskQueue;
 	TileTaskQueue m_tileQueue;
@@ -743,10 +750,12 @@ private:
 	NavigationListeners m_listenersList;
 
 	typedef CListenerSet<INavigationSystemUser*> NavigationSystemUsers;
-	NavigationSystemUsers m_users;
+	NavigationSystemUsers                  m_users;
 
-	CVolumesManager       m_volumesManager;
-	bool                  m_isNavigationUpdatePaused;
+	CVolumesManager                        m_volumesManager;
+	bool                                   m_isNavigationUpdatePaused;
+
+	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
 };
 
 namespace NavigationSystemUtils

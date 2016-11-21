@@ -209,7 +209,8 @@ void CLocalizedStringsManager::LocalizationDumpLoadedInfo(IConsoleCmdArgs* pArgs
 
 //////////////////////////////////////////////////////////////////////
 CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
-	: m_cvarLocalizationDebug(0)
+	: m_postProcessors(1)
+	, m_cvarLocalizationDebug(0)
 	, m_cvarLocalizationEncode(1)
 	, m_availableLocalizations(0)
 {
@@ -314,8 +315,8 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 //////////////////////////////////////////////////////////////////////
 CLocalizedStringsManager::~CLocalizedStringsManager()
 {
-	FreeData();
 	m_pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	FreeData();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -616,6 +617,20 @@ void CLocalizedStringsManager::OnSystemEvent(
 			break;
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CLocalizedStringsManager::RegisterPostProcessor(ILocalizationPostProcessor* pPostProcessor)
+{
+	assert(pPostProcessor);
+	m_postProcessors.Add(pPostProcessor);
+}
+
+void CLocalizedStringsManager::UnregisterPostProcessor(ILocalizationPostProcessor* pPostProcessor)
+{
+	assert(pPostProcessor);
+	m_postProcessors.Remove(pPostProcessor);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1622,6 +1637,12 @@ bool CLocalizedStringsManager::LocalizeStringInternal(const char* pStr, size_t l
 		{
 			LocalizeLabel(token.c_str(), sLocalizedToken);
 		}
+
+		for (PostProcessors::Notifier notifier(m_postProcessors); notifier.IsValid(); notifier.Next())
+		{
+			notifier->PostProcessString(sLocalizedToken);
+		}
+
 		out.append(sLocalizedToken);
 		pPos = pLabelEnd;
 	}

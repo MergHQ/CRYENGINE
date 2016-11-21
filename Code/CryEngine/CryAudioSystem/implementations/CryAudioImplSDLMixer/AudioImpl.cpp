@@ -8,6 +8,7 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 #include <CryAudio/IAudioSystem.h>
+#include <CrySystem/IProjectManager.h>
 
 // SDL Mixer
 #include <SDL_mixer.h>
@@ -50,16 +51,15 @@ void OnStandaloneFileFinished(AudioStandaloneFileId const filesInstanceId, const
 CAudioImpl::CAudioImpl()
 	: m_pCVarFileExtension(nullptr)
 {
-	m_gameFolder = PathUtil::GetGameFolder();
-
-	if (m_gameFolder.empty())
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio - SDLMixer>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - SDLMixer>: Needs a valid asset folder to proceed!");
 	}
 
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	m_fullImplString = "SDL Mixer 2.0.1 (";
-	m_fullImplString += m_gameFolder + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
+	m_fullImplString += szAssetDirectory + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
 #endif      // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #if CRY_PLATFORM_WINDOWS
@@ -76,9 +76,6 @@ CAudioImpl::CAudioImpl()
 	#error "Undefined platform."
 #endif
 }
-
-CAudioImpl::~CAudioImpl()
-{}
 
 void CAudioImpl::Update(float const deltaTime)
 {
@@ -448,7 +445,7 @@ void CAudioImpl::DeleteAudioFileEntry(IAudioFileEntry* const pOldAudioFileEntry)
 char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pFileEntryInfo)
 {
 	static CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> s_path;
-	s_path = m_gameFolder.c_str();
+	s_path = PathUtil::GetGameFolder().c_str();
 	s_path += s_szSDLSoundLibraryPath;
 
 	return s_path.c_str();
@@ -553,16 +550,17 @@ void CAudioImpl::DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudio
 	POOL_FREE_CONST(pOldAudioEnvironment);
 }
 
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(audioObjectID, true);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioObject, pObject)(0, true);
+	return pObject;
 }
 
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(audioObjectID, false);
-	return pNewObject;
+	static uint32 objectIDCounter = 1;
+	POOL_NEW_CREATE(SAudioObject, pObject)(objectIDCounter++, false);
+	return pObject;
 }
 
 void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
@@ -570,16 +568,17 @@ void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
 	POOL_FREE_CONST(pOldObjectData);
 }
 
-CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(0);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(0);
+	return pListener;
 }
 
-CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener()
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(audioObjectId);
-	return pNewObject;
+	static ListenerId listenerIDCounter = 1;
+	POOL_NEW_CREATE(SAudioListener, pListener)(listenerIDCounter++);
+	return pListener;
 }
 
 void CAudioImpl::DeleteAudioListener(CryAudio::Impl::IAudioListener* const pOldAudioListener)

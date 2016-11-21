@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <CrySystem/File/ICryPak.h>
 #include "XMLBinaryReader.h"
+#include "CryExtension/CryGUIDHelper.h"
 
 #define FLOAT_FMT  "%.8g"
 #define DOUBLE_FMT "%.17g"
@@ -365,6 +366,31 @@ void CXmlNode::setAttr(const char* key, const Quat& value)
 	cry_sprintf(str, FLOAT_FMT "," FLOAT_FMT "," FLOAT_FMT "," FLOAT_FMT, value.w, value.v.x, value.v.y, value.v.z);
 	setAttr(key, str);
 }
+
+void CXmlNode::setAttr(const char* key, const CryGUID& value)
+{
+	setAttr(key, CryGUIDHelper::Print(value));
+}
+
+bool CXmlNode::getAttr(const char* key, CryGUID& value) const
+{
+	const char* svalue = GetValue(key);
+	if (svalue)
+	{
+		const char* guidStr = getAttr(key);
+		value = CryGUIDHelper::FromString(svalue);
+		if ((value.hipart >> 32) == 0)
+		{
+			memset(&value, 0, sizeof(value));
+			// If bad GUID, use old guid system.
+			// Not sure if this will apply well in CryGUID!
+			value.hipart = (uint64)atoi(svalue) << 32;
+		}
+		return true;
+	}
+	return false;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 bool CXmlNode::getAttr(const char* key, int& value) const
@@ -1031,7 +1057,7 @@ void CXmlNode::AddToXmlString(XmlString& xml, int level, FILE* pFile, IPlatformO
 	xml += ">\n";
 }
 
-#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !HAS_STPCPY
 ILINE static char* stpcpy(char* dst, const char* src)
 {
 	while (src[0])
@@ -1316,15 +1342,16 @@ protected:
 	}
 	static void characterData(void* userData, const char* s, int len) PREFAST_SUPPRESS_WARNING(6262)
 	{
-		char str[32700];
+		char str[32768];
+
 		if (len > sizeof(str) - 1)
 		{
-			assert(0);
-			len = sizeof(str) - 1;
+			CryFatalError("XML Parser buffer too small in \'characterData\' function. (%s)", s);
 		}
+
 		// Note that XML buffer userData has no terminating '\0'.
 		memcpy(str, s, len);
-		str[len] = 0;
+		str[len] = '\0';
 		((XmlParserImp*)userData)->onRawData(str);
 	}
 

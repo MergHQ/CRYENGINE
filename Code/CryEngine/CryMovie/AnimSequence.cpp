@@ -13,14 +13,15 @@
 #include "EventNode.h"
 #include "LayerNode.h"
 #include "CommentNode.h"
+#include "AnimLightNode.h"
 #include "AnimPostFXNode.h"
 #include "AnimScreenFaderNode.h"
-#include <Cry3DEngine/I3DEngine.h>
 #include "AnimGeomCacheNode.h"
 #include "ShadowsSetupNode.h"
 #include "AnimEnvironmentNode.h"
 #include "AudioNode.h"
 
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryScriptSystem/IScriptSystem.h>
 
 CAnimSequence::CAnimSequence(IMovieSystem* pMovieSystem, uint32 id)
@@ -216,11 +217,17 @@ IAnimNode* CAnimSequence::CreateNodeInternal(EAnimNodeType nodeType, uint32 nNod
 	case eAnimNodeType_ScreenFader:
 		pAnimNode = new CAnimScreenFaderNode(nNodeId);
 		break;
+
+	case eAnimNodeType_Light:
+		pAnimNode = new CAnimLightNode(nNodeId);
+		break;
+
 #if defined(USE_GEOM_CACHES)
 	case eAnimNodeType_GeomCache:
 		pAnimNode = new CAnimGeomCacheNode(nNodeId);
 		break;
 #endif
+
 	case eAnimNodeType_Environment:
 		pAnimNode = new CAnimEnvironmentNode(nNodeId);
 		break;
@@ -327,6 +334,11 @@ void CAnimSequence::RemoveAll()
 
 void CAnimSequence::Reset(bool bSeekToStart)
 {
+	if (GetFlags() & eSeqFlags_LightAnimationSet)
+	{
+		return;
+	}
+
 	m_precached = false;
 	m_bResetting = true;
 
@@ -374,7 +386,7 @@ void CAnimSequence::Reset(bool bSeekToStart)
 
 void CAnimSequence::Pause()
 {
-	if (m_bPaused)
+	if (GetFlags() & eSeqFlags_LightAnimationSet || m_bPaused)
 	{
 		return;
 	}
@@ -393,6 +405,11 @@ void CAnimSequence::Pause()
 
 void CAnimSequence::Resume()
 {
+	if (GetFlags() & eSeqFlags_LightAnimationSet)
+	{
+		return;
+	}
+
 	if (m_bPaused)
 	{
 		m_bPaused = false;
@@ -602,7 +619,7 @@ void CAnimSequence::PrecacheEntity(IEntity* pEntity)
 	}
 }
 
-void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks, uint32 overrideId)
+void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks, uint32 overrideId, bool bResetLightAnimSet)
 {
 	if (bLoading)
 	{
@@ -631,6 +648,12 @@ void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmpt
 		if (overrideId != 0)
 		{
 			m_id = overrideId;
+		}
+
+		if (bResetLightAnimSet && (GetFlags() & IAnimSequence::eSeqFlags_LightAnimationSet))
+		{
+			CLightAnimWrapper::InvalidateAllNodes();
+			CLightAnimWrapper::SetLightAnimSet(0);
 		}
 
 		INDENT_LOG_DURING_SCOPE(true, "Loading sequence '%s' (start time = %.2f, end time = %.2f) %s ID #%u",
@@ -709,6 +732,19 @@ void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmpt
 		if (GetOwner())
 		{
 			GetOwner()->OnModified();
+		}
+
+		if (GetFlags() & IAnimSequence::eSeqFlags_LightAnimationSet)
+		{
+#if !defined(_RELEASE)
+
+			if (CLightAnimWrapper::GetLightAnimSet())
+			{
+				__debugbreak();
+			}
+
+#endif
+			CLightAnimWrapper::SetLightAnimSet(this);
 		}
 	}
 	else

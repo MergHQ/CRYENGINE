@@ -1,5 +1,7 @@
 # Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+clang_flags = ['-Wno-constant-conversion', '-Wno-null-dereference', '-Wno-array-bounds', '-Wno-shift-negative-value' ]
+
 def build(bld):
 
 	bld.CryEngineModule(
@@ -10,7 +12,9 @@ def build(bld):
 		pch_debug         = '../StdAfx.cpp',
 		pch_profile       = '../StdAfx.cpp',
 		
-		orbis_cxxflags  = ['-Wno-constant-conversion', '-Wno-null-dereference', '-Wno-array-bounds' ],
+		orbis_cxxflags  = clang_flags,
+		linux_cxxflags  = clang_flags,
+		android_cxxflags  = clang_flags,
 	)
 
 	bld.CryResourceCompilerModule(

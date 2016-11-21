@@ -385,7 +385,7 @@ public:
 	{ return ::CoverPolygonWithCircles(pt,npt,bConsecutive, center, centers,radii, minCircleRadius); }
 	virtual void DeletePointer(void *pdata) { if (pdata) delete[] (char*)pdata; }
 	virtual int qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris, qhullmalloc qmalloc = 0) { return ::qhull(pts,npts,pTris, qmalloc); }
-	virtual int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges) { return ::qhull2d(pts,nVtx,edges); }
+	virtual int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges, int nMaxEdges=0) { return ::qhull2d(pts,nVtx,edges,nMaxEdges); }
 	virtual int TriangulatePoly(Vec2 *pVtx, int nVtx, int *pTris,int szTriBuf)
 	{ return ::TriangulatePoly(pVtx, nVtx, pTris, szTriBuf); }
 	virtual void SetPhysicsStreamer(IPhysicsStreamer *pStreamer) { m_pPhysicsStreamer=pStreamer; }
@@ -523,7 +523,9 @@ public:
 
 	virtual void SavePhysicalEntityPtr(TSerialize ser, IPhysicalEntity* pIEnt);
 	virtual IPhysicalEntity* LoadPhysicalEntityPtr(TSerialize ser);
-  virtual void GetEntityMassAndCom(IPhysicalEntity* pIEnt, float& mass, Vec3& com);
+    virtual void GetEntityMassAndCom(IPhysicalEntity* pIEnt, float& mass, Vec3& com);
+	virtual void* GetInternalImplementation(int type, void* object = nullptr) { return nullptr; }
+
 	
 	IPhysicalWorld *GetIWorld() { return this; }
 

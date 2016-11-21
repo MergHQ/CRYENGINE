@@ -56,10 +56,35 @@ public:
 
 	static const int32 MaxCascadesNum = 4;
 
+	// Bit flags for forward shadows.
+	enum eForwardShadowFlags
+	{
+		eForwardShadowFlags_Cascade0           = BIT(0),
+		eForwardShadowFlags_Cascade1           = BIT(1),
+		eForwardShadowFlags_Cascade2           = BIT(2),
+		eForwardShadowFlags_Cascade3           = BIT(3),
+		eForwardShadowFlags_Cascade0_SingleTap = BIT(4),
+		eForwardShadowFlags_CloudsShadows      = BIT(5),
+	};
+
+	// forward shadow textures.
 	struct SShadowCascades
 	{
 		CTexture* pShadowMap[MaxCascadesNum];
 		CTexture* pCloudShadowMap;
+	};
+
+	// forward shadow sampling parameters.
+	struct SShadowCascadesSamplingInfo
+	{
+		Matrix44 shadowTexGen[MaxCascadesNum];
+		Vec4     invShadowMapSize;
+		Vec4     depthTestBias;
+		Vec4     oneDivFarDist;
+		Vec4     kernelRadius;
+		Vec4     cloudShadowParams;
+		Vec4     cloudShadowAnimParams;
+		Vec4     irregKernel2d[8];
 	};
 
 	struct SShadowSamplingInfo
@@ -72,6 +97,7 @@ public:
 		Vec4     blendInfo;
 		Vec4     blendTcNormalize;
 		float    oneDivFarDist;
+		float    oneDivFarDistBlend;
 		float    depthTestBias;
 		float    kernelRadius;
 		float    invShadowMapSize;
@@ -114,12 +140,12 @@ public:
 		bShadowFrustumCacheValid = false;
 	}
 
-	static bool GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum* pFullFrustum, const ShadowMapFrustum* pSubFrustum);
+	static bool     GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum* pFullFrustum, const ShadowMapFrustum* pSubFrustum);
 
 	static Matrix44 GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide);
 
 	// setup shader constants, return the validity of the textures for forward sun shadow, and return the textures and the shader runtime flags.
-	static bool SetupShadowsForFog(uint64& rtMask, SShadowCascades& shadowCascades, CRenderView* pRenderView);
+	static bool SetupShadowsForFog(SShadowCascades& shadowCascades, CRenderView* pRenderView);
 
 	// set the sampler-states and textures for forward sun shadow to RenderPass.
 	template<class RenderPassType>
@@ -139,10 +165,19 @@ public:
 	  int32 cloudShadowTexSlot,
 	  const SShadowCascades& shadowCascades);
 
-	static SShadowSamplingInfo GetShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset);
+	// return the validity of all cascade textures for forward sun shadow, and return the textures.
+	static bool GetShadowCascades(SShadowCascades& shadowCascades, CRenderView* pRenderView);
+
+	// return the validity of all sun shadow cascades, and shadow sampling info for forward rendering.
+	static bool                GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, CRenderView* pRenderView);
+
+	static SShadowSamplingInfo GetDeferredShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset);
 
 	CShadowUtils();
 	~CShadowUtils();
+
+private:
+	static void GetForwardShadowSamplingInfo(SShadowSamplingInfo& samplingInfo, Matrix44& lightViewProj, const ShadowMapFrustum* pFr, int nSide);
 
 private:
 	static bool      bShadowFrustumCacheValid;

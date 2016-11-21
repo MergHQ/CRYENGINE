@@ -7,8 +7,6 @@
 #include <CryCore/Assert/CryAssert.h>
 #include <type_traits>
 
-#include "MetaUtils.h"
-
 namespace NTypelist
 {
 namespace impl {
@@ -228,14 +226,14 @@ struct get
 	struct init
 	{
 		static const size_t item_index = Index + 1;
-		typedef void type;      //!< A dummy type for the metautils::select.
+		typedef void type;      //!< A dummy type for the std::conditional.
 	};
 
 	template<class TAcc, class Tx>
 	struct evaluator
 	{
 		static const size_t item_index = TAcc::item_index - 1;
-		typedef typename metautils::select<item_index == 0, Tx, typename TAcc::type>::type type;
+		typedef typename std::conditional<item_index == 0, Tx, typename TAcc::type>::type type;
 	};
 
 	typedef typename foldl<TList, init, evaluator>::type type;

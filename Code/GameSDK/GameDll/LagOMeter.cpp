@@ -57,7 +57,7 @@ CLagOMeter::~CLagOMeter()
 
 void CLagOMeter::OnClientRequestHit(HitInfo &hitInfo)
 {
-	CRY_ASSERT(hitInfo.shooterId == g_pGame->GetClientActorId());
+	CRY_ASSERT(hitInfo.shooterId == gEnv->pGameFramework->GetClientActorId());
 	hitInfo.lagOMeterHitId = m_rollingHitId;
 	m_hitHistory[m_rollingHitId].requestTime = gEnv->pTimer->GetAsyncTime();
 	++m_rollingHitId;
@@ -71,7 +71,7 @@ void CLagOMeter::OnClientRequestHit(HitInfo &hitInfo)
 void CLagOMeter::OnClientReceivedKill(const CActor::KillParams &killParams)
 {
 	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
-	if (killParams.shooterId == g_pGame->GetClientActorId())
+	if (killParams.shooterId == gEnv->pGameFramework->GetClientActorId())
 	{
 		// Try to find the corresponding request hit info to see how far lagged behind we are
 		int index = killParams.lagOMeterHitId;
@@ -224,7 +224,7 @@ void CLagOMeter::Update() PREFAST_SUPPRESS_WARNING (6262)
 		float alpha = m_timeSinceLastPerceivedLagEvent < 1.0f ? m_timeSinceLastPerceivedLagEvent: 1.0f;
 
 		ColorF textCol(1.0f,1.0f,1.0f,alpha);
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 2.0f, textCol, false, "PERCEIVED LAG EVENT RECORDED");
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 2.0f, textCol, false, "PERCEIVED LAG EVENT RECORDED");
 
 		m_timeSinceLastPerceivedLagEvent -= dt;
 	}

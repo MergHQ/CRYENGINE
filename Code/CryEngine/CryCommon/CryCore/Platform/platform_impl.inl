@@ -121,12 +121,6 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 int g_iTraceAllocations = 0;
 
 //////////////////////////////////////////////////////////////////////////
-// global random number generator used by cry_random functions
-namespace CryRandom_Internal
-{
-CRndGen g_random_generator;
-}
-//////////////////////////////////////////////////////////////////////////
 
 // If we use cry memory manager this should be also included in every module.
 	#if defined(USING_CRY_MEMORY_MANAGER)
@@ -199,23 +193,23 @@ void CryDebugBreak()
 	#if CRY_PLATFORM_WINAPI
 
 //////////////////////////////////////////////////////////////////////////
-int CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType)
+EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType)
 {
-		#if CRY_PLATFORM_WINDOWS
-			#if !defined(RESOURCE_COMPILER)
+#if CRY_PLATFORM_WINDOWS
+	#if !defined(RESOURCE_COMPILER)
 	ICVar* const pCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_no_crash_dialog") : NULL;
 	if ((pCVar && pCVar->GetIVal() != 0) || gEnv->bNoAssertDialog)
 	{
-		return 0;
+		return eQR_None;
 	}
-			#endif
-	wstring wideText, wideCaption;
-	Unicode::Convert(wideText, lpText);
-	Unicode::Convert(wideCaption, lpCaption);
-	return MessageBoxW(NULL, wideText.c_str(), wideCaption.c_str(), uType);
-		#else
-	return 0;
-		#endif
+	#endif
+
+	if (gEnv && gEnv->pSystem)
+	{
+		return gEnv->pSystem->ShowMessage(lpText, lpCaption, uType);
+	}
+#endif
+	return eQR_None;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,7 +274,7 @@ void CrySetCurrentWorkingDirectory(const char* szWorkingDirectory)
 void CryGetExecutableFolder(unsigned int pathSize, char* szPath)
 {
 	WCHAR filePath[512];
-	size_t nLen = GetModuleFileNameW(GetModuleHandle(NULL), filePath, CRY_ARRAY_COUNT(filePath));
+	size_t nLen = GetModuleFileNameW(CryGetCurrentModule(), filePath, CRY_ARRAY_COUNT(filePath));
 
 	if (nLen >= CRY_ARRAY_COUNT(filePath))
 	{
@@ -395,7 +389,18 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 
 	#endif // CRY_PLATFORM_WINAPI
 
-	#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
+//////////////////////////////////////////////////////////////////////////
+void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
+{
+	char szEngineRootDir[_MAX_PATH];
+	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
+
+#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
+	CrySetCurrentWorkingDirectory(szEngineRootDir);
+#endif
+}
+
+#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
 //////////////////////////////////////////////////////////////////////////
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
@@ -450,17 +455,29 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
+#elif CRY_PLATFORM_ORBIS
+void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
-	char szEngineRootDir[_MAX_PATH];
-	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
-	CrySetCurrentWorkingDirectory(szEngineRootDir);
+	cry_strcpy(szEngineRootPath, engineRootPathSize, ".");
 }
 
-	#endif // CRY_PLATFORM_WINAPI || CRY_PLATFORM_POSIX && !CRY_PLATFORM_ORBIS
+void CryGetExecutableFolder(unsigned int nBufferLength, char* lpBuffer)
+{
+	CryFindEngineRootFolder(nBufferLength, lpBuffer);
+}
 
-	#if CRY_PLATFORM_DURANGO
+#elif CRY_PLATFORM_ANDROID
+
+void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
+{
+	// Hack! Android currently does not support a directory layout, there is an explicit search in main for GameSDK/GameData.pak
+	// and the executable folder is not related to the engine or game folder. - 18/03/2016
+	cry_strcpy(szEngineRootPath, engineRootPathSize, CryGetProjectStoragePath());
+}
+
+#endif 
+
+#if CRY_PLATFORM_DURANGO
 HMODULE DurangoLoadLibrary(const char* libName)
 {
 	HMODULE h = ::LoadLibraryExA(libName, 0, 0);

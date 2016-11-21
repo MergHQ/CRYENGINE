@@ -286,7 +286,7 @@ void CNodeLiveWriter::Compact()
 	assert(m_IDTag <= MAX_TAGID);
 	uint16 nodeHeader = m_IDTag;
 
-	COMPILE_TIME_ASSERT(BITS_TAGID + HIGHPART_ATTRID_NUM_BITS + CHILDREN_HEADER_BITS <= LOWEST_BIT_USED_AS_FLAG_IN_NODE_HEADER);
+	static_assert(BITS_TAGID + HIGHPART_ATTRID_NUM_BITS + CHILDREN_HEADER_BITS <= LOWEST_BIT_USED_AS_FLAG_IN_NODE_HEADER, "Unexpected values!");
 
 	uint32 numAttrs = m_attrs.size();
 	assert(numAttrs <= MAX_NUM_ATTRS);

@@ -419,7 +419,7 @@ void CLargeObjectInteraction::ThrowObject()
 	objectDir2D.z = 0.0f;
 	objectDir2D.Normalize();
 	
-	IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle( m_lastObjectId );
+	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle( m_lastObjectId );
 
 	CRY_ASSERT(m_boostLevel < 3);
 

@@ -69,10 +69,6 @@
 	#include "SVO/SceneTreeManager.h"
 #endif
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	#include "PrismRenderNode.h"
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 threadID Cry3DEngineBase::m_nMainThreadId = 0;
@@ -110,13 +106,11 @@ IStreamedObjectListener* Cry3DEngineBase::m_pStreamListener = 0;
 CGeomCacheManager* Cry3DEngineBase::m_pGeomCacheManager = 0;
 #endif
 
-float Cry3DEngineBase::m_fInvDissolveDistBand = 1.f;
 bool Cry3DEngineBase::m_bProfilerEnabled = false;
 bool Cry3DEngineBase::m_bLevelLoadingInProgress = false;
 bool Cry3DEngineBase::m_bIsInRenderScene = false;
 int Cry3DEngineBase::m_mergedMeshesPoolSize = 0;
 
-int Cry3DEngineBase::m_CpuFlags = 0;
 #if CRY_PLATFORM_DESKTOP
 bool Cry3DEngineBase::m_bEditor = false;
 #endif
@@ -175,7 +169,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	Cry3DEngineBase::m_pMatMan = new CMatMan;
 	Cry3DEngineBase::m_pBreezeGenerator = new CBreezeGenerator;
 	Cry3DEngineBase::m_pStreamListener = NULL;
-	Cry3DEngineBase::m_CpuFlags = pSystem->GetCPUFlags();
 
 	memset(Cry3DEngineBase::m_arrInstancesCounter, 0, sizeof(Cry3DEngineBase::m_arrInstancesCounter));
 
@@ -608,7 +601,7 @@ void C3DEngine::OnFrameStart()
 	m_pDeferredPhysicsEventManager->Update();
 
 #if defined(USE_GEOM_CACHES)
-	if (m_pGeomCacheManager)
+	if (m_pGeomCacheManager && !m_bLevelLoadingInProgress)
 	{
 		m_pGeomCacheManager->StreamingUpdate();
 	}
@@ -770,12 +763,8 @@ void C3DEngine::ProcessCVarsChange()
 
 	float fNewCVarsSumm =
 	  GetCVars()->e_ShadowsCastViewDistRatio +
-	  GetCVars()->e_Dissolve +
-	  GetFloatCVar(e_DissolveDistMin) +
-	  GetFloatCVar(e_DissolveDistMax) +
-	  GetFloatCVar(e_DissolveDistband) +
-	  GetCVars()->e_DissolveSpriteDistRatio +
-	  GetCVars()->e_DissolveSpriteMinDist +
+	  GetCVars()->e_LodTransitionSpriteDistRatio +
+	  GetCVars()->e_LodTransitionSpriteMinDist +
 	  GetCVars()->e_VegetationUseTerrainColor +
 	  GetCVars()->e_TerrainDetailMaterials +
 	  GetCVars()->e_ViewDistRatio +
@@ -1309,8 +1298,12 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
 {
-	if (!gEnv->IsEditor() && GetCVars()->e_StatObjBufferRenderTasks && !gEnv->IsFMVPlaying() && (!IsEquivalent(rCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON)
-	                                                                                             || (GetRenderer() && GetRenderer()->IsPost3DRendererEnabled())))
+	const bool bInEditor = gEnv->IsEditor();
+	const bool bStatObjBufferRenderTasks = GetCVars()->e_StatObjBufferRenderTasks != 0;
+	const bool bIsFMVPlaying = gEnv->IsFMVPlaying();
+	const bool bCameraAtZero = IsEquivalent(rCamera.GetPosition(),Vec3(0,0,0),VEC_EPSILON);
+	const bool bPost3dEnabled = GetRenderer() && GetRenderer()->IsPost3DRendererEnabled();
+	if(!bInEditor && bStatObjBufferRenderTasks && !bIsFMVPlaying && (!bCameraAtZero || bPost3dEnabled))
 		GetObjManager()->PrepareCullbufferAsync(rCamera);
 }
 
@@ -1351,11 +1344,6 @@ IStatObj* C3DEngine::FindStatObjectByFilename(const char* filename)
 void C3DEngine::RegisterEntity(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-	{
-		CryFatalError("C3DEngine::RegisterEntity should only be called on main thread.");
-	}
-
 	uint32 nFrameID = gEnv->nMainFrameID;
 	AsyncOctreeUpdate(pEnt, nSID, nSIDConsideredSafe, nFrameID, false);
 }
@@ -2005,7 +1993,7 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 	m_pObjManager->RemoveFromRenderAllObjectDebugInfo(pEnt);
 
 #if !defined(_RELEASE)
-	if (!gEnv->IsDedicated())
+	if (gEnv->pRenderer)
 	{
 		//As render nodes can be deleted in many places, it's possible that the map of render nodes used by stats gathering (r_stats 6, perfHUD, debug gun, Statoscope) could get aliased.
 		//Ensure that this node is removed from the map to prevent a dereference after deletion.
@@ -2098,10 +2086,8 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, in
 	rGroup.bPickable = siGroup.bPickable;
 	rGroup.fBending = siGroup.fBending;
 	rGroup.nCastShadowMinSpec = siGroup.nCastShadowMinSpec;
-	rGroup.bRecvShadow = siGroup.bRecvShadow;
 	rGroup.bDynamicDistanceShadows = siGroup.bDynamicDistanceShadows;
-
-	rGroup.bUseAlphaBlending = siGroup.bUseAlphaBlending;
+	rGroup.bGIMode = siGroup.bGIMode;
 	rGroup.fSpriteDistRatio = siGroup.fSpriteDistRatio;
 	rGroup.fLodDistRatio = siGroup.fLodDistRatio;
 	rGroup.fShadowDistRatio = siGroup.fShadowDistRatio;
@@ -2172,10 +2158,8 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup, int nSID
 	siGroup.bPickable = rGroup.bPickable;
 	siGroup.fBending = rGroup.fBending;
 	siGroup.nCastShadowMinSpec = rGroup.nCastShadowMinSpec;
-	siGroup.bRecvShadow = rGroup.bRecvShadow;
 	siGroup.bDynamicDistanceShadows = rGroup.bDynamicDistanceShadows;
-
-	siGroup.bUseAlphaBlending = rGroup.bUseAlphaBlending;
+	siGroup.bGIMode = rGroup.bGIMode;
 	siGroup.fSpriteDistRatio = rGroup.fSpriteDistRatio;
 	siGroup.fLodDistRatio = rGroup.fLodDistRatio;
 	siGroup.fShadowDistRatio = rGroup.fShadowDistRatio;
@@ -2953,14 +2937,6 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			IVolumeObjectRenderNode* pRenderNode = new CVolumeObjectRenderNode();
 			return pRenderNode;
 		}
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	case eERType_PrismObject:
-		{
-			IPrismRenderNode* pRenderNode = new CPrismRenderNode();
-			return pRenderNode;
-		}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	case eERType_BreakableGlass:
 		{
 			IBreakableGlassRenderNode* pRenderNode = new CBreakableGlassRenderNode();
@@ -3120,6 +3096,97 @@ bool C3DEngine::SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, boo
 }
 
 //==============================================================================================================================================
+// From "MergedMeshGeometry.cpp"
+#if CRY_PLATFORM_SSE2 && !CRY_PLATFORM_F16C
+static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
+{
+	#define DECL_CONST4(name, val) static const CRY_ALIGN(16) uint name[4] = { (val), (val), (val), (val) }
+	#define GET_CONSTI(name)       *(const __m128i*)&name
+	#define GET_CONSTF(name)       *(const __m128*)&name
+
+	DECL_CONST4(mask_sign, 0x80000000u);
+	DECL_CONST4(mask_round, ~0xfffu);
+	DECL_CONST4(c_f32infty, 255 << 23);
+	DECL_CONST4(c_magic, 15 << 23);
+	DECL_CONST4(c_nanbit, 0x200);
+	DECL_CONST4(c_infty_as_fp16, 0x7c00);
+	DECL_CONST4(c_clamp, (31 << 23) - 0x1000);
+
+	__m128 msign = GET_CONSTF(mask_sign);
+	__m128 justsign = _mm_and_ps(msign, f);
+	__m128i f32infty = GET_CONSTI(c_f32infty);
+	__m128 absf = _mm_xor_ps(f, justsign);
+	__m128 mround = GET_CONSTF(mask_round);
+	__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
+	__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
+	__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
+	__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
+	__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
+
+	__m128 fnosticky = _mm_and_ps(absf, mround);
+	__m128 scaled = _mm_mul_ps(fnosticky, GET_CONSTF(c_magic));
+	__m128 clamped = _mm_min_ps(scaled, GET_CONSTF(c_clamp)); // logically, we want PMINSD on "biased", but this should gen better code
+	__m128i biased = _mm_sub_epi32(_mm_castps_si128(clamped), _mm_castps_si128(mround));
+	__m128i shifted = _mm_srli_epi32(biased, 13);
+	__m128i normal = _mm_and_si128(shifted, b_isnormal);
+	__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
+	__m128i joined = _mm_or_si128(normal, not_normal);
+
+//	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+//	__m128i final = _mm_or_si128(joined, sign_shift);
+	s = _mm_castps_si128(justsign);
+
+	// ~20 SSE2 ops
+	return shifted;
+
+	#undef DECL_CONST4
+	#undef GET_CONSTI
+	#undef GET_CONSTF
+}
+
+static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
+{
+	#if defined(__GNUC__)
+	#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
+	#else
+	#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
+	#endif
+	#define GET_CONSTF(name)         *(const __m128*)&name
+
+	DECL_CONST4(mask_fabs, 0x7fffffffu);
+	DECL_CONST4(c_f32infty, (255 << 23));
+	DECL_CONST4(c_expinf, (255 ^ 31) << 23);
+	DECL_CONST4(c_f16max, (127 + 16) << 23);
+	DECL_CONST4(c_magic, 15 << 23);
+
+	__m128 mabs = GET_CONSTF(mask_fabs);
+	__m128 fabs = _mm_and_ps(mabs, f);
+	__m128 justsign = _mm_xor_ps(f, fabs);
+
+	__m128 f16max = GET_CONSTF(c_f16max);
+	__m128 expinf = GET_CONSTF(c_expinf);
+	__m128 infnancase = _mm_xor_ps(expinf, fabs);
+	__m128 clamped = _mm_min_ps(f16max, fabs);
+	__m128 b_notnormal = _mm_cmpnlt_ps(fabs, GET_CONSTF(c_f32infty));
+	__m128 scaled = _mm_mul_ps(clamped, GET_CONSTF(c_magic));
+
+	__m128 merge1 = _mm_and_ps(infnancase, b_notnormal);
+	__m128 merge2 = _mm_andnot_ps(b_notnormal, scaled);
+	__m128 merged = _mm_or_ps(merge1, merge2);
+
+	__m128i shifted = _mm_srli_epi32(_mm_castps_si128(merged), 13);
+
+//	__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+//	__m128i final = _mm_or_si128(shifted, signshifted);
+	s = _mm_castps_si128(justsign);
+
+	// ~15 SSE2 ops
+	return shifted;
+
+	#undef DECL_CONST4
+	#undef GET_CONSTF
+}
+#endif
 
 void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 {
@@ -3145,6 +3212,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 
 	Vec3 vGlobalWind = GetGlobalWind(bIndoors);
 
+	// Don't update anything if there are no areas with wind
 	if (pWindAreas->size() == 0 && vGlobalWind.IsZero())
 		return;
 
@@ -3188,12 +3256,85 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	const int nSize = rWindGrid.m_nWidth * rWindGrid.m_nHeight;
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
 
+#if CRY_PLATFORM_SSE2
+	__m128i  nFrames = _mm_set1_epi32(nFrame);
+	__m128i* pData   = (__m128i*)&rWindGrid.m_pData[0];
+	__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[0];
+	__m128*  pField  = (__m128 *)&m_pWindField[0];
+	__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+	__m128   fInterps = _mm_set1_ps(fInterp);
+	__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+	__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+
+	for (x = 0; x < ((nSize + 3) / 4); ++x)
+	{
+		// Test and update or skip
+		__m128i cFrame = _mm_loadu_si128(pFrames + x);
+		__m128i bMask = _mm_cmpgt_epi32(nFrames, cFrame);
+		if (_mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
+			continue;
+
+		cFrame = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+		_mm_storeu_si128(pFrames + x, cFrame);
+
+		// Interpolate
+		{
+			__m128 loField = _mm_loadu_ps((float*)(pField + x * 2 + 0));
+			__m128 hiField = _mm_loadu_ps((float*)(pField + x * 2 + 1));
+			__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
+
+			__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
+			__m128 hiFieldInterps = _mm_unpackhi_ps(ipField, ipField);
+
+			loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
+			hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
+
+			_mm_storeu_ps((float*)(pField + x * 2 + 0), loField);
+			_mm_storeu_ps((float*)(pField + x * 2 + 1), hiField);
+
+			loField = _mm_mul_ps(loField, fBendRps);
+			hiField = _mm_mul_ps(hiField, fBendRps);
+
+			__m128 loFieldLength = _mm_mul_ps(loField, loField);
+			__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
+
+#if CRY_PLATFORM_SSE4
+			loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
+
+			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
+			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
+#else
+			loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+			hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+
+			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
+			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
+#endif
+
+#if CRY_PLATFORM_F16C
+			__m128i loData = _mm_cvtps_ph(loField, 0);
+			__m128i hiData = _mm_cvtps_ph(hiField, 0);
+
+			_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
+#else
+			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
+			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
+
+			loSign = _mm_packs_epi32(loSign, hiSign);
+			loData = _mm_packs_epi32(loData, hiData);
+
+			_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
+#endif
+		}
+	}
+#else
 	CryHalf2* pData = &rWindGrid.m_pData[0];
 	int* pFrames = &m_pWindAreaFrames[0];
 	Vec2* pField = &m_pWindField[0];
 
 	for (x = 0; x < nSize; x++)
 	{
+		// Test and update or skip
 		if (pFrames[x] == nFrame)
 			continue;
 		pFrames[x] = nFrame;
@@ -3209,6 +3350,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			pData[x] = CryHalf2(vBend.x, vBend.y);
 		}
 	}
+#endif
 }
 
 //static int g_nWindError;
@@ -3270,33 +3412,121 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		windStart.SetLerp(windTopX1, windBottomX1, fLerpY);
 		windEnd.SetLerp(windTopX2, windBottomX2, fLerpY);
 		Vec3 windDelta = (windEnd - windStart) * fInvX;
-		CryHalf2* pData = &rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth];
-		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth];
-		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth];
-		int nX = nXGrid;
 
 		windStart *= fAreaStrength;
 		windDelta *= fAreaStrength;
 
+		const int nSize = nX2 - nX1;
 		Vec2 vWindCur = Vec2(windStart.x, windStart.y) + Vec2(vGlobalWind.x, vGlobalWind.y);
-		for (x = nX1; x < nX2; x++)
+
+#if CRY_PLATFORM_SSE2
+		__m128i  xs;
+		__m128i  nFrames = _mm_set1_epi32(nFrame);
+		__m128i  nSizes = _mm_set_epi32(nSize - 3, nSize - 2, nSize - 1, nSize - 0);
+		__m128i* pData = (__m128i*)&rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128*  pField = (__m128 *)&m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+		__m128   vWindDeltas = _mm_set_ps(windDelta.y, windDelta.x, windDelta.y, windDelta.x);
+		__m128   fInterps = _mm_set1_ps(fInterp);
+		__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+		__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+
+		// Alignment doesn't matter currently, no memory loads requiring alignment are used below
 		{
+			x = 0;
+			xs = _mm_set1_epi32(x * 4);
+		}
+
+		for (; x < ((nSize + 3) / 4); ++x, xs = _mm_set1_epi32(x * 4))
+		{
+			// manage end alignment
+			__m128i cFrame = _mm_loadu_si128(pFrames + x);
+			__m128i bMask = _mm_cmpgt_epi32(nSizes, xs);
+
+			// Loop range ensures we either have a somewhat filled head, fully filled nodes, or somewhat filled tail, but never a empty iteration 
+			if (false && _mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
+				continue;
+
+			cFrame = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+			_mm_storeu_si128(pFrames + x, cFrame);
+
 			// Interpolate
 			{
-				Vec2 vWindInt = pField[nX];
+				__m128 loField = _mm_loadu_ps((float*)(pField + x * 2 + 0));
+				__m128 hiField = _mm_loadu_ps((float*)(pField + x * 2 + 1));
+				__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
+
+				__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
+				__m128 hiFieldInterps = _mm_unpackhi_ps(ipField, ipField);
+
+				loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
+				hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
+
+				_mm_storeu_ps((float*)(pField + x * 2 + 0), loField);
+				_mm_storeu_ps((float*)(pField + x * 2 + 1), hiField);
+
+				loField = _mm_mul_ps(loField, fBendRps);
+				hiField = _mm_mul_ps(hiField, fBendRps);
+
+				__m128 loFieldLength = _mm_mul_ps(loField, loField);
+				__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
+
+#if CRY_PLATFORM_SSE4
+				loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
+
+				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
+				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
+#else
+				loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+				hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+
+				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
+				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
+#endif
+
+#if CRY_PLATFORM_F16C
+				__m128i loData = _mm_cvtps_ph(loField, 0);
+				__m128i hiData = _mm_cvtps_ph(hiField, 0);
+
+				_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
+#else
+				__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
+				__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
+
+				loSign = _mm_packs_epi32(loSign, hiSign);
+				loData = _mm_packs_epi32(loData, hiData);
+
+				_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
+#endif
+			}
+
+			vWindCurs = _mm_add_ps(vWindCurs, vWindDeltas);
+		}
+#else
+		CryHalf2* pData = &rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
+
+		for (x = 0; x < nSize; x++)
+		{
+			pFrames[x] = nFrame;
+
+			// Interpolate
+			{
+				Vec2 vWindInt = pField[x];
 				vWindInt += (vWindCur - vWindInt) * fInterp;
-				pField[nX] = vWindInt;
+				pField[x] = vWindInt;
 
 				Vec2 vBend = vWindInt * fBEND_RESPONSE;
 				vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-				pData[nX] = CryHalf2(vBend.x, vBend.y);
+				pData[x] = CryHalf2(vBend.x, vBend.y);
 			}
 
 			vWindCur += Vec2(windDelta.x, windDelta.y);
-
-			pFrames[nX] = nFrame;
-			nX++;
 		}
+#endif
+
 		nYGrid++;
 	}
 }
@@ -3388,92 +3618,6 @@ void C3DEngine::FinishWindGridJob()
 
 		m_bWindJobRun = false;
 	}
-}
-
-//==========================================================================================================================
-
-void C3DEngine::SetupBending(CRenderObject*& pObj, const IRenderNode* pNode, const float fRadiusVert, const SRenderingPassInfo& passInfo, bool alreadyDuplicated)
-{
-	FUNCTION_PROFILER_3DENGINE;
-	if (!GetCVars()->e_VegetationBending)
-		return;
-
-	if (!pNode->m_pTempData)
-		return;
-
-	SRenderNodeTempData::SUserData& userData = pNode->m_pTempData->userData;
-	uint32 nCurrentBendingFrame = passInfo.GetMainFrameID();
-	const bool needsUpdate = ((int)nCurrentBendingFrame - (int)userData.nBendingLastFrame) > 10;
-
-	//const Vec3 &vObjPos = pObj->GetTranslation();
-	const float fMaxViewDist = const_cast<IRenderNode*>(pNode)->GetMaxViewDist();
-	const float fBendingAttenuation = 1.f - (pObj->m_fDistance / (fMaxViewDist * GetFloatCVar(e_WindBendingDistRatio)));
-	uint64 bendingMaskOr = 0u;
-	uint64 bendingMaskAnd = ~FOB_BENDED;
-
-	if (fBendingAttenuation > 0.f && userData.m_Bending.m_fMainBendingScale > 0.f)
-	{
-		bendingMaskOr = FOB_BENDED;
-		bendingMaskAnd = ~0u;
-
-		if (needsUpdate)
-		{
-			userData.nBendingLastFrame = nCurrentBendingFrame;
-
-			static const float fBEND_RESPONSE = 0.25f;
-			static const float fMAX_BENDING = 2.f;
-			static const float fWAVE_PARALLEL = 0.008f;
-			static const float fWAVE_TRANSVERSE = 0.002f;
-
-			//if (userData.windUpdateCounter == 0)
-			{
-				userData.vCurrentWind = m_p3DEngine->GetWind(pNode->GetBBox(), !!pNode->GetEntityVisArea());
-			}
-			//userData.windUpdateCounter++;
-			//if (userData.windUpdateCounter > 5)
-			//userData.windUpdateCounter = 5; // Query wind not more often then every 5th call
-
-			// Soft clamp bending from wind amplitude.
-			Vec2 vBending = Vec2(userData.vCurrentWind) * fBEND_RESPONSE;
-			vBending *= fMAX_BENDING / (fMAX_BENDING + vBending.GetLength());
-			vBending *= fBendingAttenuation;
-
-			SVegetationBending* pBending = &userData.m_Bending;
-
-			float fWaveFreq = 0.4f / (fRadiusVert + 1.f) + 0.2f;
-
-			if (!userData.bBendingSet)
-			{
-				// First time shown, set full bending.
-				pBending->m_vBending = vBending;
-				userData.bBendingSet = true;
-			}
-			else
-			{
-				// Already visible, fade toward current value.
-				float fInterp = min(gEnv->pTimer->GetFrameTime() * fWaveFreq * 0.5f, 1.f);
-				pBending->m_vBending += (vBending - pBending->m_vBending) * fInterp;
-			}
-
-			pBending->m_Waves[0].m_Freq = fWaveFreq;
-			//pBending->m_Waves[0].m_Phase  = vObjPos.x * 0.125f;
-			pBending->m_Waves[0].m_Amp = pBending->m_vBending.x * fWAVE_PARALLEL + pBending->m_vBending.y * fWAVE_TRANSVERSE;
-
-			pBending->m_Waves[1].m_Freq = fWaveFreq * 1.125f;
-			//pBending->m_Waves[1].m_Phase  = vObjPos.y * 0.125f;
-			pBending->m_Waves[1].m_Amp = pBending->m_vBending.y * fWAVE_PARALLEL - pBending->m_vBending.x * fWAVE_TRANSVERSE;
-
-			pBending->m_fRadiusVert = fRadiusVert;
-		}
-	}
-
-	SRenderObjData* pOD = pObj->GetObjData();
-	if (!pOD)
-		return;
-
-	pObj->m_ObjFlags |= bendingMaskOr | FOB_DYNAMIC_OBJECT;
-	pObj->m_ObjFlags &= bendingMaskAnd;
-	pOD->m_bending = userData.m_Bending;
 }
 
 IVisArea* C3DEngine::GetVisAreaFromPos(const Vec3& vPos)
@@ -3637,7 +3781,8 @@ void C3DEngine::UpdateWindAreas()
 			area.pb.waterFlow.zero();
 			for (int i = 4; i >= 0; idir = idir.rot90cw() + Vec2i(-(i >> 2), i >> 2), --i)
 			{
-				area.ctr = c + Vec3(sz.x * idir.x, sz.y * idir.y, 0);
+				windArea.point[i].set(sz.x * idir.x, sz.y * idir.y);
+				area.ctr = c + Vec3(windArea.point[i]);
 				pArea->GetStatus(&area);
 				windArea.windSpeed[i] = area.pb.waterFlow;
 			}
@@ -3772,24 +3917,6 @@ void CLightEntity::ShadowMapInfo::Release(struct IRenderer* pRenderer)
 Vec3 C3DEngine::GetTerrainSurfaceNormal(Vec3 vPos)
 {
 	return m_pTerrain ? m_pTerrain->GetTerrainSurfaceNormal(vPos, 0.5f * GetHeightMapUnitSize()) : Vec3(0.f, 0.f, 1.f);
-}
-
-IMemoryBlock* C3DEngine::Voxel_GetObjects(Vec3 vPos, float fRadius, int nSurfaceTypeId, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget)
-{
-	return 0;
-}
-
-void C3DEngine::Voxel_Paint(Vec3 vPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fVoxelSize)
-{
-}
-
-IVoxTerrain* C3DEngine::GetIVoxTerrain()
-{
-	return 0;
-}
-
-void C3DEngine::Voxel_SetFlags(bool bPhysics, bool bSimplify, bool bShadows, bool bMaterials)
-{
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4581,7 +4708,7 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 		if (pRNode)
 		{
-			pRNode->m_nInternalFlags &= ~IRenderNode::PERMANENT_RO_INVALID;
+			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
 		}
 
 		if (*ppInputTempData)
@@ -5800,16 +5927,7 @@ void CDebugDrawListMgr::PrintText(float x, float y, const ColorF& fColor, const 
 {
 	va_list args;
 	va_start(args, label_text);
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = 1.2f;
-	ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
-	{
-		ti.color[0] = fColor[0];
-		ti.color[1] = fColor[1];
-		ti.color[2] = fColor[2];
-		ti.color[3] = fColor[3];
-	}
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 0.5f), 1.2f, fColor, eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace, label_text, args);
 	va_end(args);
 }
 

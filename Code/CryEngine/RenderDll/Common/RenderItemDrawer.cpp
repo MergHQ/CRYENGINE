@@ -16,50 +16,111 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 void DrawCompiledRenderItemsToCommandList(
-	const SGraphicsPipelinePassContext* passContext,
-	CRenderView::RenderItems* renderItems,
-	CDeviceCommandList* commandList,
-	int startRenderItem,
-	int endRenderItem
-)
+  const SGraphicsPipelinePassContext* pInputPassContext,
+  CRenderView::RenderItems* renderItems,
+  CDeviceCommandList* commandList,
+  int startRenderItem,
+  int endRenderItem
+  )
 {
 	FUNCTION_PROFILER_RENDERER
 
-	passContext->pSceneRenderPass->BeginRenderPass(*commandList, passContext->renderNearest);
+	SGraphicsPipelinePassContext passContext = *pInputPassContext;
+	passContext.pCommandList = commandList;
+
+	passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest);
+
+	static const int cDynamicInstancingMaxCount = 128;
+	int dynamicInstancingCount = 0;
+	CryStackAllocWithSizeVector(CCompiledRenderObject::SPerInstanceShaderData, cDynamicInstancingMaxCount + 1, dynamicInstancingBuffer, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CCompiledRenderObject* pDynamicInstancedObject = nullptr;
+
+	const bool cvarInstancing = CRendererCVars::CV_r_geominstancing != 0;
+
+	CConstantBufferPtr tempInstancingCB;
+	if (cvarInstancing)
+	{
+		// Constant buffer return with reference count of 1
+		tempInstancingCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(cDynamicInstancingMaxCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData), false, true);
+	}
 
 	// NOTE: doesn't load-balance well when the conditions for the draw mask lots of draws
-	CDeviceGraphicsCommandInterface* pCommandInterface = commandList->GetGraphicsInterface();
 	for (int32 i = startRenderItem; i < endRenderItem; ++i)
 	{
 		SRendItem& ri = (*renderItems)[i];
-		if (!(ri.nBatchFlags & passContext->batchFilter))
+		if (!(ri.nBatchFlags & passContext.batchFilter))
 			continue;
 
-		if (ri.pCompiledObject)
-		{
-			if (!ri.pCompiledObject->DrawVerification(*passContext))
-				continue;
+		if (ri.nBatchFlags & passContext.batchExcludeFilter)
+			continue;
 
-			ri.pCompiledObject->DrawToCommandList(*pCommandInterface, ri.pCompiledObject->m_pso[passContext->stageID][passContext->passID], (passContext->stageID == eStage_ShadowMap) ? 1 : 0);
-			ri.nBatchFlags |= FB_COMPILED_OBJECT;
+		if (!ri.pCompiledObject)
+			continue;
+
+		if (cvarInstancing && (i < endRenderItem - 1 && dynamicInstancingCount < cDynamicInstancingMaxCount))
+		{
+			// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
+			SRendItem& nextri = (*renderItems)[i + 1];
+			if ((nextri.nBatchFlags & passContext.batchFilter)
+			   && !(nextri.nBatchFlags & passContext.batchExcludeFilter)
+			   && nextri.pCompiledObject)
+			{
+				if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
+				{
+					dynamicInstancingBuffer[dynamicInstancingCount] = ri.pCompiledObject->GetInstancingData();
+					dynamicInstancingCount++;
+
+					if (!pDynamicInstancedObject)
+						pDynamicInstancedObject = ri.pCompiledObject;
+
+					ri.nBatchFlags |= FB_COMPILED_OBJECT;
+					continue;
+				}
+			}
 		}
+
+		if (dynamicInstancingCount == 0)
+		{
+			// Draw single instance
+			ri.pCompiledObject->DrawToCommandList(passContext);
+		}
+		else
+		{
+			// Add current object to the dynamic array.
+			dynamicInstancingBuffer[dynamicInstancingCount] = ri.pCompiledObject->GetInstancingData();
+			dynamicInstancingCount++;
+
+#if defined(ENABLE_PROFILING_CODE)
+			CryInterlockedAdd(&SPipeStat::Out()->m_nInsts, dynamicInstancingCount);
+			CryInterlockedIncrement(&SPipeStat::Out()->m_nInstCalls);
+#endif //ENABLE_PROFILING_CODE
+
+			tempInstancingCB->UpdateBuffer(&dynamicInstancingBuffer[0], dynamicInstancingCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData));
+
+			// Draw object with dynamic instancing
+			pDynamicInstancedObject->DrawToCommandList(passContext, tempInstancingCB.get(), dynamicInstancingCount);
+			pDynamicInstancedObject = nullptr;
+			dynamicInstancingCount = 0;
+		}
+
+		ri.nBatchFlags |= FB_COMPILED_OBJECT;
 	}
 
-	passContext->pSceneRenderPass->EndRenderPass(*commandList, passContext->renderNearest);
+	passContext.pSceneRenderPass->EndRenderPass(*commandList, passContext.renderNearest);
 }
 
 // NOTE: Job-System can't handle references (copies) and can't use static member functions or __restrict (doesn't execute)
 // NOTE: Job-System can't handle unique-ptr, we have to pass a pointer to get the std::move
 void ListDrawCommandRecorderJob(
-	SGraphicsPipelinePassContext* passContext,
-	CDeviceCommandListUPtr* commandList,
-	int startRenderItem,
-	int endRenderItem
-)
+  SGraphicsPipelinePassContext* passContext,
+  CDeviceCommandListUPtr* commandList,
+  int startRenderItem,
+  int endRenderItem
+  )
 {
 	FUNCTION_PROFILER_RENDERER
 
-	(*commandList)->LockToThread();
+	  (*commandList)->LockToThread();
 
 	int cursor = 0;
 	do
@@ -75,12 +136,12 @@ void ListDrawCommandRecorderJob(
 			auto& RESTRICT_REFERENCE renderItems = passContext->pRenderView->GetRenderItems(passContext->renderListId);
 
 			DrawCompiledRenderItemsToCommandList(
-				passContext,
-				&renderItems,
-				(*commandList).get(),
-				passContext->rendItems.start + offset,
-				passContext->rendItems.start + offset + count
-			);
+			  passContext,
+			  &renderItems,
+			  (*commandList).get(),
+			  passContext->rendItems.start + offset,
+			  passContext->rendItems.start + offset + count
+			  );
 		}
 
 		cursor += length;
@@ -149,7 +210,7 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	if (numItems <= 0)
 		return;
 
-#ifdef CRY_USE_DX12
+#if defined(CRY_USE_DX12) || defined(CRY_USE_GNM_RENDERER)
 	if (!CRenderer::CV_r_multithreadedDrawing)
 		bForceImmediateExecution = true;
 
@@ -212,12 +273,12 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 			auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
 
 			DrawCompiledRenderItemsToCommandList(
-				&passContext,
-				&renderItems,
-				&commandList,
-				passContext.rendItems.start,
-				passContext.rendItems.end
-			);
+			  &passContext,
+			  &renderItems,
+			  &commandList,
+			  passContext.rendItems.start,
+			  passContext.rendItems.end
+			  );
 
 			pCursor += 1;
 		}
@@ -229,7 +290,7 @@ void CRenderItemDrawer::WaitForDrawSubmission()
 	if (gcpRendD3D->m_nGraphicsPipeline < 2)
 		return;
 
-#ifdef CRY_USE_DX12
+#if defined(CRY_USE_DX12) || defined(CRY_USE_GNM_RENDERER)
 	if (CRenderer::CV_r_multithreadedDrawing == 0)
 		return;
 

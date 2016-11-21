@@ -267,7 +267,7 @@ struct STagState
 	template<typename T>
 	void SetFromInteger(const T& value)
 	{
-		COMPILE_TIME_ASSERT(sizeof(T) == NUM_BYTES);
+		static_assert(sizeof(T) == NUM_BYTES, "Invalid type size!");
 
 #ifdef NEED_ENDIAN_SWAP
 		const uint8* pIn = ((const uint8*)&value) + NUM_BYTES;
@@ -283,7 +283,7 @@ struct STagState
 	template<typename T>
 	void GetToInteger(T& value) const
 	{
-		COMPILE_TIME_ASSERT(sizeof(T) == NUM_BYTES);
+		static_assert(sizeof(T) == NUM_BYTES, "Invalid type size!");
 		GetToInteger(value, sizeof(T) * 8);
 	}
 

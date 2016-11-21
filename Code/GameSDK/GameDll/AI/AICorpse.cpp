@@ -346,7 +346,7 @@ void CAICorpse::SetupFromSource( IEntity& sourceEntity, ICharacterInstance& char
 	// Moving everything from one slot into another will also clear the render proxies in the source.
 	// Thus, we need to invalidate the model so that it will be properly reloaded when a non-pooled
 	// entity is restored from a save-game.
-	CActor* sourceActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(sourceEntity.GetId()));
+	CActor* sourceActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(sourceEntity.GetId()));
 	if (sourceActor != NULL)
 	{
 		sourceActor->InvalidateCurrentModelName();
@@ -780,7 +780,7 @@ void CAICorpseManager::DebugDraw()
 
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
-	gEnv->pRenderer->Draw2dLabel( 50.0f, 50.0f, 1.5f, Col_White, false, "Corpse count %" PRISIZE_T " - Max %d", m_corpsesArray.size(), m_maxCorpses );
+	IRenderAuxText::Draw2dLabel( 50.0f, 50.0f, 1.5f, Col_White, false, "Corpse count %" PRISIZE_T " - Max %d", m_corpsesArray.size(), m_maxCorpses );
 
 	for(size_t i = 0; i < m_corpsesArray.size(); ++i)
 	{
@@ -793,7 +793,7 @@ void CAICorpseManager::DebugDraw()
 			pCorpse->GetEntity()->GetWorldBounds(corpseBbox);
 			const Vec3 refPosition = corpseBbox.IsEmpty() ? pCorpse->GetEntity()->GetWorldPos() : corpseBbox.GetCenter();
 
-			gEnv->pRenderer->DrawLabel( refPosition, 1.5f, "%s\nPriority %d\n%s\n%s", 
+			IRenderAuxText::DrawLabelF( refPosition, 1.5f, "%s\nPriority %d\n%s\n%s",
 				pCorpse->GetEntity()->GetName(), pCorpse->GetPriority(),
 				corpse.flags.AreAnyFlagsActive( CorpseInfo::eFlag_FarAway ) ? "Far away, remove when not visible" : "Not far away",
 				corpse.flags.AreAllFlagsActive( CorpseInfo::eFlag_PhysicsDisabled) ? "Physics disabled" : "Physics enabled" );

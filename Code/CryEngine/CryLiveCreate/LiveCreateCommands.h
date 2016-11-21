@@ -159,14 +159,9 @@ public:
 
 	ILINE static IViewSystem* GetViewSystem()
 	{
-		IGame* pGame = gEnv->pGame;
-		if (NULL != pGame)
+		if (gEnv->pGameFramework)
 		{
-			IGameFramework* pGameFramework = pGame->GetIGameFramework();
-			if (NULL != pGameFramework)
-			{
-				return pGameFramework->GetIViewSystem();
-			}
+			return gEnv->pGameFramework->GetIViewSystem();
 		}
 
 		return NULL;
@@ -185,17 +180,12 @@ public:
 
 	ILINE static IEntity* GetPlayerEntity()
 	{
-		IGame* pGame = gEnv->pGame;
-		if (NULL != pGame)
+		if (gEnv->pGameFramework)
 		{
-			IGameFramework* pGameFramework = pGame->GetIGameFramework();
-			if (NULL != pGameFramework)
+			IActor* pPlayer = gEnv->pGameFramework->GetClientActor();
+			if (NULL != pPlayer)
 			{
-				IActor* pPlayer = pGameFramework->GetClientActor();
-				if (NULL != pPlayer)
-				{
-					return pPlayer->GetEntity();
-				}
+				return pPlayer->GetEntity();
 			}
 		}
 

@@ -48,14 +48,16 @@ struct OffMeshOperationRequestBase
 		, linkId(MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
 		, callback(NULL)
 		, operationType(eOffMeshOperationType_Undefined)
+		, bCloneLinkData(false)
 	{}
 
 	OffMeshOperationRequestBase(const EOffMeshOperationType _operationType, const EntityId _requestOwnerId, const NavigationMeshID& _meshID, MNM::OffMeshLinkPtr _pLinkData,
-	                            const MNM::OffMeshLinkID& _linkID)
+	                            const MNM::OffMeshLinkID& _linkID, bool _bCloneLinkData)
 		: requestOwner(_requestOwnerId)
 		, meshId(_meshID)
 		, linkId(_linkID)
 		, operationType(_operationType)
+		, bCloneLinkData(_bCloneLinkData)
 	{
 		assert(operationType == eOffMeshOperationType_Add);
 		pLinkData = _pLinkData;
@@ -67,6 +69,7 @@ struct OffMeshOperationRequestBase
 		, linkId(_linkID)
 		, callback(NULL)
 		, operationType(_operationType)
+		, bCloneLinkData(false)
 	{
 		assert(operationType == eOffMeshOperationType_Remove);
 	}
@@ -77,6 +80,7 @@ struct OffMeshOperationRequestBase
 	MNM::OffMeshLinkID       linkId;
 	OffMeshOperationCallback callback;
 	EOffMeshOperationType    operationType;
+	bool                     bCloneLinkData;
 };
 
 struct IsOffMeshAdditionOperationRequestRelatedToEntity
@@ -95,12 +99,12 @@ struct IsOffMeshAdditionOperationRequestRelatedToEntity
 struct LinkAdditionRequest : public OffMeshOperationRequestBase
 {
 	LinkAdditionRequest(const EntityId _requestOwnerId, const NavigationMeshID& _meshID, MNM::OffMeshLinkPtr _pLinkData, const MNM::OffMeshLinkID& _linkID)
-		: OffMeshOperationRequestBase(eOffMeshOperationType_Add, _requestOwnerId, _meshID, _pLinkData, _linkID)
+		: OffMeshOperationRequestBase(eOffMeshOperationType_Add, _requestOwnerId, _meshID, _pLinkData, _linkID, true)
 	{
 	}
 
 	LinkAdditionRequest(const LinkAdditionRequest& other)
-		: OffMeshOperationRequestBase(other.operationType, other.requestOwner, other.meshId, other.pLinkData, other.linkId)
+		: OffMeshOperationRequestBase(other.operationType, other.requestOwner, other.meshId, other.pLinkData, other.linkId, other.bCloneLinkData)
 	{
 		callback = other.callback;
 	}
@@ -112,6 +116,7 @@ struct LinkAdditionRequest : public OffMeshOperationRequestBase
 		linkId = other.linkId;
 		callback = other.callback;
 		operationType = other.operationType;
+		bCloneLinkData = other.bCloneLinkData;
 		return *this;
 	}
 

@@ -608,7 +608,7 @@ void CVehicleMovementHelicopterArcade::Serialize(TSerialize ser, EEntityAspects 
 SVehicleNetState CVehicleMovementHelicopterArcade::GetVehicleNetState()
 {
 	SVehicleNetState state;
-	COMPILE_TIME_ASSERT(sizeof(m_pArcade->m_chassis) <= sizeof(SVehicleNetState));
+	static_assert(sizeof(m_pArcade->m_chassis) <= sizeof(SVehicleNetState), "Invalid type size!");
 	memcpy(&state, &m_pArcade->m_chassis, sizeof(m_pArcade->m_chassis));
 	return state;
 }

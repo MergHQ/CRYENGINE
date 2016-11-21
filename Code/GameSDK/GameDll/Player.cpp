@@ -257,7 +257,6 @@ namespace
 			eGFE_DisableBlendRagdoll,
 			eCGE_EnablePhysicalCollider,
 			eCGE_DisablePhysicalCollider,
-			eGFE_BecomeLocalPlayer,
 
 			// HitDeath.
 			eCGE_ReactionEnd,
@@ -481,7 +480,7 @@ void CPlayer::PostProcessAnimation(ICharacterInstance *pCharacter)
 		s_StateMachineDebugEntityID = 0;
 		if (0 == strcmp(pName, "1"))
 		{
-			if (IActor * pActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+			if (IActor * pActor = gEnv->pGameFramework->GetClientActor())
 				s_StateMachineDebugEntityID = pActor->GetEntityId();
 		}
 		else if (IEntity * pEntity = gEnv->pEntitySystem->FindEntityByName(pName))
@@ -674,7 +673,7 @@ CPlayer::~CPlayer()
 {
 	if(!gEnv->bMultiplayer && IsPlayer())
 	{
-		if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+		if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 		{
 			pProfileMan->RemoveListener(this);
 		}
@@ -787,20 +786,14 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	m_modifiableValues.DbgInit(pEntity);
 #endif
 
-	if (IsClient())
-	{
-		InitLocalPlayer();
-	}
+	m_stealthKill.Init(this);
+	m_spectacularKill.Init(this);
+	m_largeObjectInteraction.Init(this);
 
 	// This must come after CActor::Init as it's that function that determines whether we're a player or an AI.
 	SelectMovementHierarchy();
 
 	m_heatController.InitWithEntity(pEntity, GetBaseHeat());
-
-	m_spectacularKill.Init(this);
-
-	m_stealthKill.Init(this);
-	m_largeObjectInteraction.Init(this);
 
 	if (m_pAnimatedCharacter)
 	{
@@ -809,16 +802,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	}
 
 	m_pickingUpCarryObject = false;
-
-	// IsClient should be trustworthy on player init these days, don't think AI
-	// needs a vehicle client, and remote representations of players shouldn't either
-	if(IsClient())
-	{
-		IVehicleSystem* pVehicleSystem = g_pGame->GetIGameFramework()->GetIVehicleSystem();
-		IVehicleClient *pVehicleClient = pVehicleSystem->GetVehicleClient();
-		m_pVehicleClient = static_cast<CVehicleClient*>(pVehicleClient);
-		assert(m_pVehicleClient);
-	}
 
 	if (IsPlayer())
 	{
@@ -973,7 +956,7 @@ void CPlayer::PostInit( IGameObject * pGameObject )
 
 void CPlayer::RegisterOnHUD( void )
 {
-	if( IsPlayer() && !m_registeredOnHUD )
+	if( IsPlayer() && !m_registeredOnHUD && gEnv->pRenderer )
 	{
 		// For all remote players
 		CGameRules* pGameRules = g_pGame->GetGameRules(); 
@@ -1090,12 +1073,12 @@ void CPlayer::ReadDataFromXML(bool isClientReloading /*= false*/)
 
 void CPlayer::InitLocalPlayer()
 {
-	CRY_ASSERT(IsClient());
+	CRY_ASSERT(!m_pPlayerTypeComponent);
 
-	if (m_pPlayerTypeComponent )
-	{
+	if (m_pPlayerTypeComponent)
 		return;
-	}
+
+	CActor::InitLocalPlayer();
 
 	CGameLobby* pGameLobby = g_pGame->GetGameLobby();
 	if(pGameLobby && pGameLobby->GetSpectatorStatusFromChannelId(GetGameObject()->GetChannelId()))
@@ -1104,6 +1087,8 @@ void CPlayer::InitLocalPlayer()
 	}
 
 	m_pPlayerTypeComponent = new CLocalPlayerComponent(*this);
+
+	ReloadClientXmlData();
 
 	GetGameObject()->SetUpdateSlotEnableCondition( this, 0, eUEC_WithoutAI );
 
@@ -1115,7 +1100,7 @@ void CPlayer::InitLocalPlayer()
 	
 	if(!gEnv->bMultiplayer)
 	{
-		if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+		if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 		{
 			pProfileMan->AddListener(this, true);
 		}
@@ -1172,10 +1157,7 @@ void CPlayer::InitLocalPlayer()
 			}
 		}
 
-		if (IsClient())
-		{
-			m_netPlayerProgression.OwnClientConnected();
-		}
+		m_netPlayerProgression.OwnClientConnected();
 
 		if(pGameRules)
 		{
@@ -1221,6 +1203,64 @@ void CPlayer::InitLocalPlayer()
 	IEntity *pEntity = GetEntity();
 	// These flags are needed for the correct handling of the merged mesh collision sounds
 	pEntity->SetFlagsExtended(pEntity->GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE | ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES);
+
+	GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
+	CGodMode::GetInstance().ClearCheckpointData();
+	if (gEnv->bMultiplayer)
+	{
+		CryLog("Local player name = %s", GetEntity()->GetName());
+	}
+
+	if (!(g_pGame->IsGameSessionHostMigrating() && gEnv->bServer))
+	{
+		FullyUpdateActorModel();
+
+		if (gEnv->bMultiplayer)
+		{
+			CryFixedStringT<64> signalName;
+			signalName.Format("Player_Footstep_Gear_MP_Team%d%s", CLAMP(pGameRules->GetTeam(GetEntityId()), 1, 2), IsClient() ? "_FP" : "");
+			m_sounds[ESound_Gear_Run].audioSignalPlayer.SetSignal(signalName.c_str());
+		}
+
+		ResetScreenFX();
+		ResetFPView();
+		UnRegisterInAutoAimManager();
+
+		if (gEnv->bMultiplayer)
+		{
+			const SHUDEvent hudevent_rescanActors(eHUDEvent_RescanActors);
+			CHUDEventDispatcher::CallEvent(hudevent_rescanActors);
+
+			OnLocalPlayerChangeTeam();
+
+			CreateInputClass(true);
+		}
+
+		PhysicalizeLocalPlayerAdditionalParts();
+
+		StateMachineHandleEventMovement(SStateEvent(PLAYER_EVENT_BECOME_LOCALPLAYER));
+	}
+
+	pGameRules->OwnClientConnected_NotifyListeners();
+
+	if (IGameRulesStateModule* pStateModule = pGameRules->GetStateModule())
+	{
+		pStateModule->OwnClientEnteredGame(*this);
+	}
+
+	// Now we *finally* have correct info for client actor id + team id, we need to force a refresh of all players
+	CTeamVisualizationManager* pTeamVisManager = g_pGame->GetGameRules()->GetTeamVisualizationManager();
+	if (pTeamVisManager)
+	{
+		pTeamVisManager->OnPlayerTeamChange(GetEntityId());
+	}
+
+	// Just create for local player instance, don't think AI needs a 
+	// vehicle client, and remote representations of players shouldn't either
+	IVehicleSystem* pVehicleSystem = g_pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleClient *pVehicleClient = pVehicleSystem->GetVehicleClient();
+	m_pVehicleClient = static_cast<CVehicleClient*>(pVehicleClient);
+	assert(m_pVehicleClient);
 }
 
 bool CPlayer::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
@@ -1393,7 +1433,7 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 				{
 					if (IsClient())
 					{
-						assert( GetEntityId() == gEnv->pGame->GetIGameFramework()->GetClientActor()->GetEntityId() );
+						assert( GetEntityId() == gEnv->pGameFramework->GetClientActor()->GetEntityId() );
 						SHUDEvent hudEvent_initLocalPlayerEditor(eHUDEvent_OnInitLocalPlayer);
 						hudEvent_initLocalPlayerEditor.AddData(static_cast<int>(GetEntityId()));
 						CHUDEventDispatcher::CallEvent(hudEvent_initLocalPlayerEditor);
@@ -1822,7 +1862,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 				float offColor[4] = { 0.2f, 0.2f, 0.2f, 1 };
 				float onColor[4]  = { 0.0f, 1.0f, 0.0f, 1 };
 
-				gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, 2.5f, (blendFactor > 0.0001f) ? onColor : offColor, false, "LHand IK Blend %.2f", blendFactor);
+				IRenderAuxText::Draw2dLabel(XPOS, YPOS, 2.5f, (blendFactor > 0.0001f) ? onColor : offColor, false, "LHand IK Blend %.2f", blendFactor);
 			}
 
 			currRenderFlags.SetDepthTestFlag(depthTest);
@@ -1885,7 +1925,7 @@ void CPlayer::CreateInputClass(bool client)
 	CCCPOINT (PlayerState_CreateInputClassDuringUpdate);
 
 	// init input systems if required
-	if (client) //|| ((demoMode == 2) && this == gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetOriginalDemoSpectator()))
+	if (client) //|| ((demoMode == 2) && this == gEnv->pGameFramework->GetIActorSystem()->GetOriginalDemoSpectator()))
 	{
 #if (USE_DEDICATED_INPUT)
 		if ( gEnv->IsDedicated() )
@@ -1965,7 +2005,7 @@ void CPlayer::UpdateAnimationState(const SActorFrameMovementParams &frameMovemen
 	CWeapon *pWeapon = GetWeapon(GetCurrentItemId());
 	ICharacterInstance *pICharInst = pWeapon ? pWeapon->GetEntity()->GetCharacter(0) : NULL;
 	IActionController *pActionController = GetAnimatedCharacter()->GetActionController();
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
 	if (IsAIControlled())
 	{
@@ -2202,7 +2242,7 @@ void CPlayer::UpdateEyeOffsets(CWeapon* pCurrentWeapon, float frameTime)
 	//const float YPOS = 40.0f;
 	//const float FONT_SIZE = 2.0f;
 	//const float FONT_COLOUR[4] = {1,1,1,1};
-	//gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateEyeoffset: (%f %f %f)", m_eyeOffset.x, m_eyeOffset.y, m_eyeOffset.z);
+	//IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateEyeoffset: (%f %f %f)", m_eyeOffset.x, m_eyeOffset.y, m_eyeOffset.z);
 
 	CHECKQNAN_VEC(m_eyeOffset);
 
@@ -2533,7 +2573,7 @@ IEntity *CPlayer::LinkToVehicle(EntityId vehicleId)
 	EntityId playerId = GetEntityId();
 	if (pLinkedEntity)
 	{
-		IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(vehicleId);
+		IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(vehicleId);
 		
 		if (IVehicleSeat *pSeat = pVehicle->GetSeatForPassenger(playerId))
 		{
@@ -2618,7 +2658,7 @@ void CPlayer::StartInteractiveAction(EntityId entityId, int interactionIndex)
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( false );
+		gEnv->pGameFramework->AllowSave( false );
 	}
 
 	if(entityId)
@@ -2656,14 +2696,18 @@ void CPlayer::SwitchPlayerInput(IPlayerInput* pNewPlayerInput)
 	m_pPlayerInput.reset(pNewPlayerInput);
 }
 
-
-
+bool CPlayer::IsInteracting() const
+{
+	return CActor::IsInteracting()
+		|| IsOnLadder()
+		|| IsOnLedge();
+}
 
 void CPlayer::StartInteractiveActionByName( const char* interaction, bool bUpdateVisibility, float actionSpeed /*= 1.0f*/ )
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( false );
+		gEnv->pGameFramework->AllowSave( false );
 	}
 
 	SStateEventInteractiveAction actionEvent( interaction, bUpdateVisibility, actionSpeed );
@@ -2674,7 +2718,7 @@ void CPlayer::EndInteractiveAction(EntityId entityId)
 {
 	if(IsPlayer())
 	{
-		gEnv->pGame->GetIGameFramework()->AllowSave( true );
+		gEnv->pGameFramework->AllowSave( true );
 	}
 }
 
@@ -2743,7 +2787,7 @@ void CPlayer::ClearForcedLookObjectId()
 bool CPlayer::CanMove() const
 {
 	return (!m_pHitDeathReactions || m_pHitDeathReactions->CanActorMove()) &&
-		!gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager()->IsActorBusy(GetEntityId());
+		!gEnv->pGameFramework->GetICooperativeAnimationManager()->IsActorBusy(GetEntityId());
 }
 
 void CPlayer::SufferingHighLatency(bool highLatency)
@@ -3435,7 +3479,7 @@ void CPlayer::SpawnCorpse()
 				if(pTeamVisManager)
 				{
 					CGameRules* pGameRules = g_pGame->GetGameRules();
-					pTeamVisManager->RefreshTeamMaterial(pCloneEntity, false, pGameRules ? pGameRules->GetThreatRating(g_pGame->GetClientActorId(), GetEntityId())==CGameRules::eFriendly : true );
+					pTeamVisManager->RefreshTeamMaterial(pCloneEntity, false, pGameRules ? pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), GetEntityId())==CGameRules::eFriendly : true );
 				}
 
 				CRecordingSystem *pRecordingSystem = g_pGame->GetRecordingSystem();
@@ -3675,7 +3719,7 @@ void CPlayer::Revive( EReasonForRevive reasonForRevive )
 		pCharacter->GetISkeletonPose()->SetDefaultPose();
 	}
 
-	if (isClient)
+	if (isClient && m_pPlayerTypeComponent)
 	{
 		//--- Ensure the close combat target is cleared to avoid being pulled towards him on respawn
 		g_pGame->GetAutoAimManager().SetCloseCombatSnapTarget(0, 0.f, 0.f);
@@ -4531,7 +4575,7 @@ void CPlayer::SetHealth(float health )
 // 				}
 			}
 		}
-		else if(isClient)
+		else if(isClient && m_pPlayerTypeComponent)
 		{
 			m_pPlayerTypeComponent->UpdatePlayerLowHealthStatus(oldHealth);
 		}
@@ -6038,61 +6082,6 @@ void CPlayer::HandleEvent( const SGameObjectEvent& event )
 			if (!bHandled)
 			{
 				CActor::HandleEvent(event);
-
-				if (event.event == eGFE_BecomeLocalPlayer)
-				{
-					GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
-					CGodMode::GetInstance().ClearCheckpointData();
-					if (gEnv->bMultiplayer)
-					{
-						CryLog("Local player name = %s", GetEntity()->GetName());
-					}
-					
-					CGameRules *pGameRules = g_pGame->GetGameRules();
-					if (!(g_pGame->IsGameSessionHostMigrating() && gEnv->bServer))
-					{
-						FullyUpdateActorModel();
-
-						if (gEnv->bMultiplayer)
-						{
-							CryFixedStringT<64> signalName;
-							signalName.Format("Player_Footstep_Gear_MP_Team%d%s", CLAMP(pGameRules->GetTeam(GetEntityId()), 1, 2), IsClient() ? "_FP" : "");
-							m_sounds[ESound_Gear_Run].audioSignalPlayer.SetSignal(signalName.c_str());
-						}
-
-						ResetScreenFX();
-						ResetFPView();
-						UnRegisterInAutoAimManager();
-						
-						if (gEnv->bMultiplayer)
-						{
-							const SHUDEvent hudevent_rescanActors(eHUDEvent_RescanActors);
-							CHUDEventDispatcher::CallEvent(hudevent_rescanActors);
-
-							OnLocalPlayerChangeTeam();
-
-							CreateInputClass(true);
-						}
-
-						PhysicalizeLocalPlayerAdditionalParts();
-
-						StateMachineHandleEventMovement( SStateEvent(PLAYER_EVENT_BECOME_LOCALPLAYER) );
-					}
-
-					pGameRules->OwnClientConnected_NotifyListeners();
-
-					if(IGameRulesStateModule * pStateModule = pGameRules->GetStateModule())
-					{
-						pStateModule->OwnClientEnteredGame(*this);
-					}
-
-					// Now we *finally* have correct info for client actor id + team id, we need to force a refresh of all players
-					CTeamVisualizationManager* pTeamVisManager = g_pGame->GetGameRules()->GetTeamVisualizationManager();
-					if(pTeamVisManager)
-					{
-						pTeamVisManager->OnPlayerTeamChange(GetEntityId()); 
-					}
-				}
 			}
 			break;
 		}
@@ -6167,7 +6156,7 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 				usingWaterEffectId = true;
 				
 				// Plug water hits directly into water sim
-				// todo: move out of foot-step for more continous ripple gen (currently skips during sprint, looks weird).
+				// todo: move out of foot-step for more continuous ripple gen (currently skips during sprint, looks weird).
 				if (gEnv->p3DEngine)
 				{
 					gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);
@@ -6656,7 +6645,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 	if(gEnv->IsClient() && (mode || spinf->mode) && m_pPlayerInput.get())
 		m_pPlayerInput->Reset();
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	bool isLocalPlayer = localClientId != 0 && GetEntityId() == localClientId ? true : false;
 
 	if (!othEntId && mode)
@@ -6749,7 +6738,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 
 		StateMachineHandleEventMovement( PLAYER_EVENT_SPECTATE );
 
-		if( gEnv->IsClient() && isLocalPlayer )
+		if( gEnv->IsClient() && isLocalPlayer && m_pPlayerTypeComponent)
 		{
 			g_pGame->GetUI()->ActivateDefaultState(); // should pick "mp_spectator" unless killcam or endgame etc.
 			SetClientSoundmood(ESoundmood_Spectating);
@@ -6998,7 +6987,7 @@ void CPlayer::NetKill(const KillParams &killParams)
 			ToggleThirdPerson();
 		}
 
-		if(killParams.shooterId == gEnv->pGame->GetIGameFramework()->GetClientActorId() && killParams.shooterId != killParams.targetId)
+		if(killParams.shooterId == gEnv->pGameFramework->GetClientActorId() && killParams.shooterId != killParams.targetId)
 		{
 			CAudioSignalPlayer::JustPlay("Human_Feedback_KilledByPlayerHit_MP", killParams.shooterId);
 		}
@@ -7342,7 +7331,7 @@ CPlayer::StagePlayer(bool bStage, SStagingParams* pStagingParams /* = 0 */)
 
 void CPlayer::ResetScreenFX()
 {
-	if (IsClient())
+	if (IsClient() && m_pPlayerTypeComponent)
 	{	
 		m_pPlayerTypeComponent->ResetScreenFX();
 	}
@@ -8562,7 +8551,7 @@ void CPlayer::UpdateFPAiming()
 	const bool disableSnapAimTorsoIK = inVehicle;
 
 	//const float XPOS = 200.0f, YPOS = 60.0f, FONT_SIZE = 2.0f, FONT_COLOUR[4] = {1,1,1,1};
-	//gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateFPAiming: %s w:%s", enableWeaponAim ? "update" : "dont update", pWeapon ? "Armed" : "UnArmed");
+	//IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateFPAiming: %s w:%s", enableWeaponAim ? "update" : "dont update", pWeapon ? "Armed" : "UnArmed");
 
 	if (enableWeaponAim)
 	{
@@ -9022,7 +9011,7 @@ void CPlayer::NetSetInStealthKill(bool inKill, EntityId targetId, uint8 animInde
 void CPlayer::StopStealthKillTargetMovement(EntityId playerId)
 {
 	//Stop moving the target player on their local machine
-	IActor* pTargetActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId);
+	IActor* pTargetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId);
 	if(pTargetActor)
 	{
 		CRY_ASSERT_MESSAGE(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "CPlayer::NetSetInStealthKill - Expected player; got something else");

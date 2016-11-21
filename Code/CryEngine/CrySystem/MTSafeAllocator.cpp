@@ -348,7 +348,7 @@ void* CMTSafeHeap::TempVirtualAlloc(size_t nSize)
 
 	char* ptr = NULL;
 
-	COMPILE_TIME_ASSERT(sizeof(bool) <= MTSAFE_DEFAULT_ALIGNMENT);
+	static_assert(sizeof(bool) <= MTSAFE_DEFAULT_ALIGNMENT, "Invalid type size!");
 
 	if ((nSize + MTSAFE_DEFAULT_ALIGNMENT) >= 4096)
 	{

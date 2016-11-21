@@ -84,7 +84,7 @@ public:
 			break;
 		case eFE_Activate:
 			{
-				IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
+				IGameFramework* const pGameFramework = gEnv->pGameFramework;
 				const EntityId entityId = pActInfo->pEntity ? pActInfo->pEntity->GetId() : 0;
 				IGameObject* const pGameObject = pGameFramework ? pGameFramework->GetGameObject(entityId) : NULL;
 				IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
@@ -245,7 +245,7 @@ public:
 		case eFE_Initialize:
 			break;
 		case eFE_Activate:
-			IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
+			IGameFramework* const pGameFramework = gEnv->pGameFramework;
 			IGameObject* const pGameObject = pGameFramework->GetGameObject(pActInfo->pEntity->GetId());
 
 			if (IsPortActive(pActInfo, EIP_Enslave) || IsPortActive(pActInfo, EIP_UnEnslave))
@@ -259,7 +259,7 @@ public:
 
 					if (pSlaveAnimChar && pSlaveAnimChar->GetActionController())
 					{
-						IAnimationDatabaseManager& dbManager = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+						IAnimationDatabaseManager& dbManager = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager();
 						uint32 db_crc32 = CCrc32::ComputeLowercase(GetPortString(pActInfo, EIP_DB));
 						const IAnimationDatabase* db = dbManager.FindDatabase(db_crc32);
 
@@ -461,7 +461,7 @@ public:
 private:
 	void RegisterListener(const EntityId entityId, const bool enable)
 	{
-		IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* const pGameFramework = gEnv->pGameFramework;
 		IGameObject* const pGameObject = pGameFramework ? pGameFramework->GetGameObject(entityId) : NULL;
 		IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
 		IActionController* const pActionController = pAnimChar ? pAnimChar->GetActionController() : NULL;

@@ -259,8 +259,6 @@ public:
 	ILINE bool             IsMultithreaded() const { return (m_multithreadedMode != NETWORK_MT_OFF); }
 	void                   SetMultithreadingMode(ENetwork_Multithreading_Mode threadingMode);
 
-	void                   ReloadScheduler();
-
 	CNetChannel*           FindFirstClientChannel();
 	CNetChannel*           FindFirstRemoteChannel();
 

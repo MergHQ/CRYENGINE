@@ -48,7 +48,7 @@ void CPlayerPlugin_CurrentlyTargetting::Leave()
 		CHUDEventDispatcher::CallEvent(event);
 
 		REINST("needs verification!");
-		/*EntityId clientId = g_pGame->GetClientActorId();
+		/*EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		if(clientId && m_targetedSignal.IsPlaying(clientId))
 		{
 			m_targetedSignal.Stop(clientId);
@@ -132,7 +132,7 @@ void CPlayerPlugin_CurrentlyTargetting::NetSerialize(TSerialize ser, EEntityAspe
 
 				CGameRules *pGameRules = g_pGame->GetGameRules();
 
-				const EntityId clientActorId = g_pGame->GetClientActorId();
+				const EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
 				if (m_bTargetingLocalPlayer)
 				{
 					SHUDEvent event (eHUDEvent_LocalPlayerTargeted);

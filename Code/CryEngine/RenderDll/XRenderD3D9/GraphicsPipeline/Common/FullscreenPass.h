@@ -48,6 +48,11 @@ public:
 		m_primitive.SetSampler(slot, sampler);
 	}
 
+	ILINE void SetBuffer(uint32 shaderSlot, const CGpuBuffer& buffer, bool bUnorderedAccess = false, EShaderStage shaderStages = EShaderStage_Pixel)
+	{
+		m_primitive.SetBuffer(shaderSlot, buffer, bUnorderedAccess, shaderStages);
+	}
+
 	ILINE void SetState(int state)
 	{
 		m_primitive.SetRenderState(state);
@@ -56,6 +61,11 @@ public:
 	ILINE void SetStencilState(int state, uint8 stencilRef, uint8 stencilReadMask = 0xFF, uint8 stencilWriteMask = 0xFF)
 	{
 		m_primitive.SetStencilState(state, stencilRef, stencilReadMask, stencilWriteMask);
+	}
+
+	ILINE void SetBuffer(uint32 shaderSlot, CGpuBuffer* pBuffer, bool bUnorderedAccess = false, EShaderStage shaderStages  = EShaderStage_Pixel)
+	{
+		m_primitive.SetBuffer(shaderSlot, *pBuffer, bUnorderedAccess, shaderStages);
 	}
 
 	void SetRequirePerViewConstantBuffer(bool bRequirePerViewCB)
@@ -69,14 +79,14 @@ public:
 		m_clipZ = clipSpaceZ;
 	}
 
-	void SetConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param)
+	void SetConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass = eHWSC_Pixel)
 	{
-		m_primitive.GetConstantManager().SetNamedConstant(shaderClass, paramName, param);
+		m_primitive.GetConstantManager().SetNamedConstant(paramName, param, shaderClass);
 	}
 
-	void SetConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams)
+	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass = eHWSC_Pixel)
 	{
-		m_primitive.GetConstantManager().SetNamedConstantArray(shaderClass, paramName, params, numParams);
+		m_primitive.GetConstantManager().SetNamedConstantArray(paramName, params, numParams, shaderClass);
 	}
 
 	void SetInlineConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages = EShaderStage_Pixel)
@@ -117,5 +127,5 @@ private:
 	buffer_handle_t          m_vertexBuffer; // only required for WPos
 	uint64                   m_prevRTMask;
 
-	CRenderPrimitive m_primitive;
+	CRenderPrimitive         m_primitive;
 };

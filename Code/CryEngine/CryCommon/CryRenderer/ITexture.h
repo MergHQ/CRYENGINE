@@ -246,8 +246,8 @@ public:
 
 	void         GetMemoryUsage(ICrySizer* pSizer) const
 	{
-		COMPILE_TIME_ASSERT(eTT_MaxTexType <= 255);
-		COMPILE_TIME_ASSERT(eTF_MaxFormat <= 255);
+		static_assert(eTT_MaxTexType <= 255, "Constant value is too high!");
+		static_assert(eTF_MaxFormat <= 255, "Constant value is too high!");
 		/*LATER*/
 	}
 

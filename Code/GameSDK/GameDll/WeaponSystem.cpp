@@ -872,7 +872,7 @@ bool CWeaponSystem::ScanXML(XmlNodeRef &root, const char *xmlFile)
 //------------------------------------------------------------------------
 void CWeaponSystem::DebugGun(IConsoleCmdArgs *args)
 {
-  IGameFramework* pGF = gEnv->pGame->GetIGameFramework();  
+  IGameFramework* pGF = gEnv->pGameFramework;  
   IItemSystem* pItemSystem = pGF->GetIItemSystem();
  
   IActor* pActor = pGF->GetClientActor();
@@ -905,7 +905,7 @@ void CWeaponSystem::DebugGun(IConsoleCmdArgs *args)
 //------------------------------------------------------------------------
 void CWeaponSystem::RefGun(IConsoleCmdArgs *args)
 {
-	IGameFramework* pGF = gEnv->pGame->GetIGameFramework();  
+	IGameFramework* pGF = gEnv->pGameFramework;  
 	IItemSystem* pItemSystem = pGF->GetIItemSystem();
 
 	IActor* pActor = pGF->GetClientActor();

@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12View.hpp"
 
-class CCryDX12DepthStencilView : public CCryDX12View<ID3D11DepthStencilView>
+class CCryDX12DepthStencilView : public CCryDX12View<ID3D11DepthStencilViewToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12DepthStencilView, CCryDX12View<ID3D11DepthStencilView> );
+	DX12_OBJECT(CCryDX12DepthStencilView, CCryDX12View<ID3D11DepthStencilViewToImplement> );
 
 	static CCryDX12DepthStencilView* Create(CCryDX12Device* pDevice, ID3D11Resource* pResource, const D3D11_DEPTH_STENCIL_VIEW_DESC* pDesc);
 

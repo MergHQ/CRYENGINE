@@ -716,7 +716,7 @@ bool CTerrain::CanPaintSurfaceType(int x, int y, int r, uint16 usGlobalSurfaceTy
 
 			if (ri.GetLocalSurfaceTypeID(usGlobalSurfaceType) == SRangeInfo::e_index_hole)
 			{
-				GetISystem()->GetIRenderer()->DrawLabel(Vec3((float)y, (float)x, GetZfromUnits(y, x, -1) + 1.0f), 2.0f, "SECTOR PALETTE FULL!");
+				IRenderAuxText::DrawLabel(Vec3((float)y, (float)x, GetZfromUnits(y, x, -1) + 1.0f), 2.0f, "SECTOR PALETTE FULL!");
 				HighlightTerrain(
 				  rangeX << m_nUnitsToSectorBitShift, rangeY << m_nUnitsToSectorBitShift,
 				  (rangeX + 1) << m_nUnitsToSectorBitShift, (rangeY + 1) << m_nUnitsToSectorBitShift);

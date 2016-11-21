@@ -73,7 +73,7 @@ bool CActionMapManager::OnInputEvent(const SInputEvent& event)
 	if (gEnv->pConsole->IsOpened())
 		return false;
 
-	if (gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->IsEditing())
+	if (gEnv->IsEditor() && gEnv->pGameFramework->IsEditing())
 		return false;
 
 	if (event.keyName.c_str() && event.keyName.c_str()[0] == 0)
@@ -161,7 +161,7 @@ void CActionMapManager::Update()
 					const float width = defaultFont->GetTextSize(message, true, ctx).x + 5.f;
 					secondColumnOffset = max(width, secondColumnOffset);
 
-					gEnv->pRenderer->Draw2dLabel(xMargin, yPos, 1.5f, color, false, "%s", message.c_str());
+					IRenderAuxText::Draw2dLabel(xMargin, yPos, 1.5f, color, false, "%s", message.c_str());
 					yPos -= 15.f;
 				}
 
@@ -177,7 +177,7 @@ void CActionMapManager::Update()
 			const bool isEnabled = pAm->Enabled();
 			if (renderAll || !isEnabled)
 			{
-				gEnv->pRenderer->Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "%sAction map '%s' %s", isEnabled ? "$3" : "$4", pAm->GetName(), isEnabled ? "enabled" : "disabled");
+				IRenderAuxText::Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "%sAction map '%s' %s", isEnabled ? "$3" : "$4", pAm->GetName(), isEnabled ? "enabled" : "disabled");
 				yPos -= 15.f;
 			}
 		}
@@ -498,6 +498,52 @@ bool CActionMapManager::RemoveExtraActionListener(IActionListener* pExtraActionL
 const TActionListeners& CActionMapManager::GetExtraActionListeners() const
 {
 	return m_ExtraActionListeners;
+}
+
+//------------------------------------------------------------------------
+bool CActionMapManager::AddFlowgraphNodeActionListener(IActionListener* pFlowgraphNodeActionListener, const char* actionMap)
+{
+	if ((actionMap != NULL) && (actionMap[0] != '\0'))
+	{
+		TActionMapMap::iterator	iActionMap = m_actionMaps.find(CONST_TEMP_STRING(actionMap));
+		if(iActionMap != m_actionMaps.end())
+		{
+			iActionMap->second->AddFlowNodeActionListener(pFlowgraphNodeActionListener);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		stl::push_back_unique(m_ExtraActionListeners, pFlowgraphNodeActionListener);
+		return true;
+	}
+}
+
+//------------------------------------------------------------------------
+bool CActionMapManager::RemoveFlowgraphNodeActionListener(IActionListener* pFlowgraphNodeActionListener, const char* actionMap)
+{
+	if ((actionMap != NULL) && (actionMap[0] != '\0'))
+	{
+		TActionMapMap::iterator	iActionMap = m_actionMaps.find(CONST_TEMP_STRING(actionMap));
+		if(iActionMap != m_actionMaps.end())
+		{
+			iActionMap->second->RemoveFlowNodeActionListener(pFlowgraphNodeActionListener);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		stl::find_and_erase(m_ExtraActionListeners, pFlowgraphNodeActionListener);
+		return true;
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1554,7 +1600,7 @@ void CActionMapManager::GetMemoryStatistics(ICrySizer* pSizer)
 bool CActionMapManager::HandleAcceptedEvents(const SInputEvent& event, TBindPriorityList& priorityList)
 {
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -1601,6 +1647,8 @@ bool CActionMapManager::HandleAcceptedEvents(const SInputEvent& event, TBindPrio
 
 			return true;
 		}
+
+		pActionMap->NotifyFlowNodeActionListeners(actionID, currentState, event.value);
 
 		// TODO: Remove always action listeners and integrate into 1 prioritized type
 		// Process the always events first, then process normal if not handled
@@ -1718,7 +1766,7 @@ bool CActionMapManager::CreateRefiredEventPriorityList(SRefireData* pRefireData,
 	TRefireBindData::const_iterator itEnd = refireBindData.end();
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -1802,7 +1850,7 @@ void CActionMapManager::UpdateRefiringInputs()
 	if (gEnv->pConsole->IsOpened())
 		return;
 
-	if (gEnv->IsEditor() && gEnv->pGame->GetIGameFramework()->IsEditing())
+	if (gEnv->IsEditor() && gEnv->pGameFramework->IsEditing())
 		return;
 
 	SetCurrentlyRefiringInput(true);

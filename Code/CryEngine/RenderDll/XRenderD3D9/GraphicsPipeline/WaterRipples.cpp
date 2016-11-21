@@ -73,7 +73,7 @@ void CWaterRipplesStage::Init()
 		prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
 		prim.SetCullMode(eCULL_None);
 		prim.SetCustomVertexStream(m_vertexBuffer, sVertexFormat, sVertexStride);
-		prim.SetCustomIndexStream(~0u, 0);
+		prim.SetCustomIndexStream(~0u, RenderIndexType(0));
 		prim.SetDrawInfo(eptTriangleStrip, 0, vertexOffset, sVertexCount);
 
 		// only update blue channel: current frame
@@ -281,7 +281,7 @@ void CWaterRipplesStage::Execute(CRenderView* pRenderView)
 
 			pass.BeginConstantUpdate();
 
-			pass.SetConstant(eHWSC_Pixel, m_ripplesParamName, m_shaderParam);
+			pass.SetConstant(m_ripplesParamName, m_shaderParam, eHWSC_Pixel);
 
 			pass.Execute();
 
@@ -307,7 +307,7 @@ void CWaterRipplesStage::Execute(CRenderView* pRenderView)
 
 			pass.BeginConstantUpdate();
 
-			pass.SetConstant(eHWSC_Pixel, m_ripplesParamName, m_shaderParam);
+			pass.SetConstant(m_ripplesParamName, m_shaderParam, eHWSC_Pixel);
 
 			pass.Execute();
 		}
@@ -430,7 +430,7 @@ void CWaterRipplesStage::ExecuteWaterRipples(CRenderView* pRenderView, CTexture*
 
 				// Pass height scale to shader
 				param.w = ripple.strength;
-				primitive.GetConstantManager().SetNamedConstant(eHWSC_Pixel, m_ripplesParamName, param);
+				primitive.GetConstantManager().SetNamedConstant(m_ripplesParamName, param, eHWSC_Pixel);
 
 				// Engine viewport needs to be set so that data is available when filling reflected PB constants
 				gcpRendD3D->RT_SetViewport((int32)viewport.TopLeftX, (int32)viewport.TopLeftY, (int32)viewport.Width, (int32)viewport.Height);
@@ -474,6 +474,7 @@ void CWaterRipplesStage::UpdateAndDrawDebugInfo(CRenderView* pRenderView)
 	{
 		return (record.lifetime > 0.0f);
 	});
+	const auto deadRippleDebugCount = m_debugRippleInfos.size() - remainingRippleDebugCount;
 	const auto maxRippleDebugCount = 2 * SWaterRippleInfo::MaxWaterRipplesInScene; // assign enough size to hold debug infos.
 
 	// remove old ripple debug infos to make empty spaces for newly added ripples.
@@ -487,7 +488,8 @@ void CWaterRipplesStage::UpdateAndDrawDebugInfo(CRenderView* pRenderView)
 		});
 
 		const auto removedCount = rippleDebugCount - maxRippleDebugCount;
-		for_each(m_debugRippleInfos.begin(), std::next(m_debugRippleInfos.begin(), removedCount),
+		auto removeBegin = std::next(m_debugRippleInfos.begin(), deadRippleDebugCount); // old infos exist after dead infos.
+		for_each(removeBegin, std::next(removeBegin, removedCount),
 		         [](SWaterRippleRecord& record)
 		{
 			record.lifetime = 0.0f;

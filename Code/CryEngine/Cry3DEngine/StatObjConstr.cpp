@@ -650,7 +650,7 @@ IStatObj* CStatObj::GetLodObject(int nLodLevel, bool bReturnNearest)
 	return pLod;
 }
 
-bool CStatObj::IsPhysicsExist()
+bool CStatObj::IsPhysicsExist() const
 {
 	return m_arrPhysGeomInfo.GetGeomCount() > 0;
 }

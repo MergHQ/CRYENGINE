@@ -30,8 +30,8 @@
 
 #define MAX_MASS_TO_RESTORE_VELOCITY 500
 
-#define PHYS_ENTITY_DISABLE          1
-#define PHYS_ENTITY_ENABLE           2
+const int PHYS_ENTITY_SUSPEND = 1;
+const int PHYS_ENTITY_RESTORE = 2;
 
 #define PHYS_DEFAULT_DENSITY         1000.0f
 
@@ -703,11 +703,11 @@ void CPhysicalProxy::EnablePhysics(bool bEnable)
 
 	if (bEnable)
 	{
-		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_ENABLE);
+		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_RESTORE);
 	}
 	else
 	{
-		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_DISABLE);
+		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_SUSPEND);
 	}
 
 	// Enable/Disable character physics characters.
@@ -718,7 +718,7 @@ void CPhysicalProxy::EnablePhysics(bool bEnable)
 		IPhysicalEntity* pCharPhys;
 		if (pCharacter)
 		{
-			pCharacter->GetISkeletonPose()->DestroyCharacterPhysics((bEnable) ? PHYS_ENTITY_ENABLE : PHYS_ENTITY_DISABLE);
+			pCharacter->GetISkeletonPose()->DestroyCharacterPhysics((bEnable) ? PHYS_ENTITY_RESTORE : PHYS_ENTITY_SUSPEND);
 			if (bEnable && (pCharPhys = pCharacter->GetISkeletonPose()->GetCharacterPhysics()) && pCharPhys != m_pPhysicalEntity)
 			{
 				pe_params_articulated_body pab;
@@ -766,8 +766,16 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 	pe_type previousPhysType = PE_NONE;
 	Vec3 v(ZERO);
 
+	pe_status_pos psp;
+	pe_status_pos* prevStatus = nullptr;
+
 	if (m_pPhysicalEntity)
 	{
+		if(m_pPhysicalEntity->GetStatus(&psp))
+		{
+			prevStatus = &psp;
+		}
+		
 		previousPhysType = m_pPhysicalEntity->GetType();
 		if (params.type == PE_ARTICULATED && previousPhysType == PE_LIVING)
 		{
@@ -849,9 +857,7 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 		break;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// Set physical entity Buoyancy.
-	//////////////////////////////////////////////////////////////////////////
+	// Set parameters if we have physical entity created
 	if (m_pPhysicalEntity)
 	{
 		pe_params_flags pf;
@@ -861,12 +867,11 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 #endif
 		m_pPhysicalEntity->SetParams(&pf);
 
+		// Set physical entity Buoyancy.
 		if (params.pBuoyancy)
 			m_pPhysicalEntity->SetParams(params.pBuoyancy);
 
-		//////////////////////////////////////////////////////////////////////////
 		// Assign physical materials mapping table for this material.
-		//////////////////////////////////////////////////////////////////////////
 		CRenderProxy* pRenderProxy = m_pEntity->GetRenderProxy();
 		if (pRenderProxy)
 		{
@@ -887,10 +892,7 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 				m_pPhysicalEntity->SetParams(&ppart);
 			}
 		}
-	}
 
-	if (m_pPhysicalEntity)
-	{
 		pe_params_foreign_data pfd;
 		pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
 		pfd.pForeignData = m_pEntity;
@@ -900,16 +902,17 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 		if (CheckFlags(FLAG_PHYSICS_DISABLED))
 		{
 			// If Physics was disabled disable physics on new physical object now.
-			PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, 1);
+			PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_SUSPEND);
 		}
 	}
+
 	// Check if character physics disabled.
 	if (CheckFlags(FLAG_PHYSICS_DISABLED | FLAG_PHYS_CHARACTER))
 	{
 		int nSlot = (m_nFlags & CHARACTER_SLOT_MASK);
 		ICharacterInstance* pCharacter = m_pEntity->GetCharacter(nSlot);
 		if (pCharacter && pCharacter->GetISkeletonPose()->GetCharacterPhysics())
-			pCharacter->GetISkeletonPose()->DestroyCharacterPhysics(PHYS_ENTITY_DISABLE);
+			pCharacter->GetISkeletonPose()->DestroyCharacterPhysics(PHYS_ENTITY_SUSPEND);
 	}
 
 	SEntityEvent eea(ENTITY_EVENT_ATTACH);
@@ -932,6 +935,50 @@ void CPhysicalProxy::Physicalize(SEntityPhysicalizeParams& params)
 			EnablePhysics(false);
 		}
 	}
+
+	if (m_pPhysicalEntity)
+	{
+		TriggerEventIfStateChanged(m_pPhysicalEntity, prevStatus);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CPhysicalProxy::TriggerEventIfStateChanged(IPhysicalEntity* pPhysEntity, const pe_status_pos* pPrevStatus) const
+{
+	pe_status_pos psp;
+	if (!pPhysEntity->GetStatus(&psp))
+		return false;
+
+	const AABB currBBox(psp.BBox[0] + psp.pos, psp.BBox[1] + psp.pos);
+	const int currSimClass = psp.iSimClass;
+
+	AABB prevBBox(0.0f);
+	int prevSimClass = -1;
+	if (pPrevStatus)
+	{
+		prevBBox.min = pPrevStatus->BBox[0] + pPrevStatus->pos;
+		prevBBox.max = pPrevStatus->BBox[1] + pPrevStatus->pos;
+		prevSimClass = pPrevStatus->iSimClass;
+	}
+
+	//send event if bounding box or simulation class is updated
+	if (!IsEquivalent(prevBBox, currBBox) || prevSimClass != currSimClass)
+	{
+		EventPhysStateChange event;
+		event.pEntity = pPhysEntity;
+		event.iForeignData = pPhysEntity->GetiForeignData();
+		event.pForeignData = pPhysEntity->GetForeignData(event.iForeignData);
+		event.timeIdle = 0.0f;
+		event.iSimClass[0] = prevSimClass;
+		event.iSimClass[1] = currSimClass;
+		event.BBoxOld[0] = prevBBox.min;
+		event.BBoxOld[1] = prevBBox.max;
+		event.BBoxNew[0] = currBBox.min;
+		event.BBoxNew[1] = currBBox.max;
+		PhysicalWorld()->AddDeferredEvent(EventPhysStateChange::id, &event);
+		return true;
+	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

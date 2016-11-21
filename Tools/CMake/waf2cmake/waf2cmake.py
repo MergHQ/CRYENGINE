@@ -89,12 +89,16 @@ def test_file_list(path):
 	f.write(output)
 	f.close()
 
+def _is_read_only(path):
+	return not (os.stat(path)[0] & stat.S_IWRITE)
+
 def update_file_list(path, dry_run):
 	fname = os.path.join(path, 'CMakeLists.txt')
 	f = open(fname, 'rb')
 	old = f.read()
 	f.close()
 	output = read_file_lists(path)
+	result = True
 	# create regular expression pattern
 	chop = re.compile('#START-FILE-LIST.*?#END-FILE-LIST', re.DOTALL)
 
@@ -106,20 +110,26 @@ def update_file_list(path, dry_run):
     # chop text between #chop-begin and #chop-end
 	new = chop.sub(output, old)
 	if not dry_run:
-		if not _args.checkout:
-			os.chmod(fname, stat.S_IWRITE)
-		else:
-			try:
-				FNULL = open(os.devnull, 'w')
-				subprocess.call(['p4', 'edit', fname], stdout=FNULL)
-				FNULL.close()
-			except:
+		if _is_read_only(fname):
+			if _args.no_checkout:
+				result = False
 				os.chmod(fname, stat.S_IWRITE)
+			else:
+				try:
+					FNULL = open(os.devnull, 'w')
+					subprocess.call(['p4', 'edit', fname], stdout=FNULL)
+					FNULL.close()
+				except:
+					pass
+				if _is_read_only(fname):
+					result = False
+					os.chmod(fname, stat.S_IWRITE)
 		f = open(fname, 'wb')
 		f.write(new)
 		f.close()
 	elif _args.interactive:
 		print(new)
+	return result
 
 def read_file_list(path):
 	res = json.load(open(path))
@@ -248,7 +258,8 @@ bld = BuildCollector()
 def main():
 	global _args
 	parser = argparse.ArgumentParser(description="Converts WAF file lists to CMake.")
-	parser.add_argument('-c', '--checkout', action='store_true', help='Attempt to check out files to default p4 changelist (otherwise just clear read-only flag')
+	parser.add_argument('-c', '--checkout', action='store_true', help=argparse.SUPPRESS) # Not used; is on by default now
+	parser.add_argument('-n', '--no-checkout', action='store_true', help='Do not attempt to check out files to default p4 changelist (just clear read-only flag)')
 	parser.add_argument('-q', '--quiet', action='store_true', help='Disable output')
 	parser.add_argument('-m', '--missing', action='store_true', help='Show paths with wscript modules but no CMakeLists.txt')
 	parser.add_argument('-p', '--paths', nargs='*', help='Extra directories to parse (default: Code/GameMono, Code/GameSDK, Code/GameZero)', metavar='PATH', default=['Code/GameMono', 'Code/GameSDK', 'Code/GameZero'])
@@ -318,12 +329,17 @@ def main():
 			continue
 		if cmd == 'A':
 			lastPath = ''
+			flagsChanged = False
 			for c in sorted(bld.collected, key=lambda x: x[0]):
 				if lastPath != c[0] and os.path.isfile(os.path.join(c[0],'CMakeLists.txt')):
 					if not _args.quiet:
 						print("Updating "+c[0])
-					update_file_list(c[0], _args.dry_run)
+					t = not update_file_list(c[0], _args.dry_run)
+					flagsChanged = flagsChanged or t 
 				lastPath = c[0]
+			if flagsChanged:
+				print("Note: One or more files had their read-only flag cleared. You may need to reconcile changes in your version control system.")
+
 		if cmd == 'm':
 			lastPath = ''
 			for c in sorted(bld.collected, key=lambda x: x[0]):

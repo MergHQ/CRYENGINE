@@ -81,7 +81,9 @@ struct _CryMemoryManagerPoolHelper
 #ifndef _LIB
 		HMODULE hMod;
 		int iter;
-	#if CRY_PLATFORM_POSIX
+	#if CRY_PLATFORM_ANDROID
+		for (iter = 0, hMod = CryGetLauncherModuleHandle(); hMod; iter++)
+	#elif CRY_PLATFORM_POSIX
 		for (iter = 0, hMod = ::dlopen(NULL, RTLD_LAZY); hMod; iter++)
 	#elif CRY_PLATFORM_DURANGO
 		// HMODULE set to NULL should take the main executable where allocator functions should be defined,

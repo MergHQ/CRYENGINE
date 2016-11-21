@@ -45,7 +45,7 @@ public:
 
 	// Buffer state
 	static const uint32 NoBuffer = 0;
-	static const uint32 InvalidStreamHdl = ~0u;
+	static const buffer_handle_t InvalidStreamHdl = ~0u;
 	static const uint32 NumBufferSlots = GLASSCFG_MAX_NUM_ACTIVE_GLASS;
 
 private:
@@ -60,16 +60,16 @@ private:
 	struct SBuffer
 	{
 		SBuffer()
-			: pVertices(NULL)
-			, pIndices(NULL)
+			: verticesHdl(InvalidStreamHdl)
+			, indicesHdl(InvalidStreamHdl)
 			, tangentStreamHdl(InvalidStreamHdl)
 			, lastIndCount(0)
 		{
 		}
 
 		// Geometry buffers
-		CVertexBuffer*  pVertices;
-		CIndexBuffer*   pIndices;
+		buffer_handle_t verticesHdl;
+		buffer_handle_t indicesHdl;
 		buffer_handle_t tangentStreamHdl;
 
 		// State
@@ -79,7 +79,7 @@ private:
 	// Buffer data
 	ILINE bool IsVBufferValid(const SBuffer& buffer) const
 	{
-		return buffer.pVertices && buffer.pIndices && buffer.tangentStreamHdl != InvalidStreamHdl;
+		return buffer.verticesHdl != InvalidStreamHdl && buffer.indicesHdl != InvalidStreamHdl && buffer.tangentStreamHdl != InvalidStreamHdl;
 	}
 
 	SBuffer m_buffer[EBufferType_Num][NumBufferSlots];

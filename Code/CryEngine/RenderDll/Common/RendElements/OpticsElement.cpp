@@ -59,6 +59,50 @@ void COpticsElement::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 	#undef MFPtr
 #endif
 
+COpticsElement::COpticsElement(const char* name, float size, const float brightness, const ColorF& color)
+	: xform_scale(1.0f, 1.0f)
+	, xform_translate(ZERO)
+	, xform_rotation(0.0f)
+	, m_pParent(0)
+	, m_globalMovement(LensOpConst::_LO_DEF_VEC2_I)
+	, m_globalTransform(IDENTITY)
+	, m_globalColor(1.0f, 1.0f, 1.0f, 1.0f)
+	, m_globalFlareBrightness(1.0f)
+	, m_globalShaftBrightness(1.0f)
+	, m_globalSize(1.0f)
+	, m_globalPerspectiveFactor(1.0f)
+	, m_globalDistanceFadingFactor(0.0f)
+	, m_globalOrbitAngle(0.0f)
+	, m_globalSensorSizeFactor(0.0f)
+	, m_globalSensorBrightnessFactor(0.0f)
+	, m_globalAutoRotation(false)
+	, m_globalCorrectAspectRatio(false)
+	, m_globalOcclusionBokeh(false)
+	, m_bEnabled(true)
+	, m_name(name)
+	, m_mxTransform(LensOpConst::_LO_DEF_MX33)
+	, m_fSize(size)
+	, m_fPerspectiveFactor(1.0f)
+	, m_fDistanceFadingFactor(1.0f)
+	, m_Color(color)
+	, m_fBrightness(brightness)
+	, m_vMovement(1.0f, 1.0f)
+	, m_fOrbitAngle(0.0f)
+	, m_fSensorSizeFactor(0.0f)
+	, m_fSensorBrightnessFactor(0.0f)
+	, m_vDynamicsOffset(ZERO)
+	, m_fDynamicsRange(1.0f)
+	, m_fDynamicsFalloff(1.0f)
+	, m_bAutoRotation(false)
+	, m_bCorrectAspectRatio(true)
+	, m_bOcclusionBokeh(false)
+	, m_bDynamics(false)
+	, m_bDynamicsInvert(false)
+{
+	m_samplerBilinearClamp       = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
+	m_samplerBilinearBorderBlack = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0));
+}
+
 void COpticsElement::Load(IXmlNode* pNode)
 {
 	XmlNodeRef pCommonNode = pNode->findChild("Common");
@@ -172,7 +216,7 @@ RootOpticsElement* COpticsElement::GetRoot()
 	return (RootOpticsElement*)parent;
 }
 
-void COpticsElement::validateGlobalVars(SAuxParams& aux)
+void COpticsElement::validateGlobalVars(const SAuxParams& aux)
 {
 	if (m_pParent)
 	{
@@ -242,14 +286,7 @@ const Vec3 COpticsElement::computeOrbitPos(const Vec3& vSrcProjPos, float orbitA
 	return Vec3(resultVec.x + 0.5f, resultVec.y + 0.5f, vSrcProjPos.z);
 }
 
-void COpticsElement::ApplyVSParam_WPosAndSize(CShader* shader, const Vec3& wpos)
-{
-	static CCryNameR wPosAndSizeName("wposAndSize");
-	Vec4 wPosAndSizeParam(wpos, m_globalSize);
-	shader->FXSetVSFloat(wPosAndSizeName, &wPosAndSizeParam, 1);
-}
-
-void COpticsElement::ApplyOcclusionPattern(CShader* shader)
+void COpticsElement::ApplyOcclusionPattern(SShaderParamsBase& shaderParams, CRenderPrimitive& primitive)
 {
 	if (GetRoot() == NULL)
 		return;
@@ -260,63 +297,50 @@ void COpticsElement::ApplyOcclusionPattern(CShader* shader)
 	if (pSoftOcclusionQuery && pSoftOcclusionQuery->GetGatherTexture())
 	{
 		CTexture* pGatherTex = pSoftOcclusionQuery->GetGatherTexture();
-		pGatherTex->Apply(5, CTexture::GetTexState(bilinearTS));
 
 		float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
 		pSoftOcclusionQuery->GetDomainInTexture(x0, y0, x1, y1);
 		float width, height;
 		pSoftOcclusionQuery->GetSectorSize(width, height);
 
-		static CCryNameR occPatternInfoName("occPatternInfo");
-		const Vec4 occPatternInfo((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, width, height);
-		shader->FXSetPSFloat(occPatternInfoName, &occPatternInfo, 1);
+		shaderParams.occPatternInfo = Vec4((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, width, height);
+		primitive.SetTexture(5, pGatherTex);
+		primitive.SetSampler(5, m_samplerBilinearClamp);
 	}
 	else
 	{
-		CTexture::s_ptexBlack->Apply(5, CTexture::GetTexState(bilinearTS));
+		shaderParams.occPatternInfo = Vec4(ZERO);
+		primitive.SetTexture(5, CTexture::s_ptexBlack);
+		primitive.SetSampler(5, m_samplerBilinearClamp);
 	}
 }
 
-void COpticsElement::ApplyVSParam_ScreenWidthHeight(CShader* shader)
-{
-	static CCryNameR ScreenWidthHeightName("ScreenWidthHeight");
-	int x(0), y(0), width(0), height(0);
-	gcpRendD3D->GetViewport(&x, &y, &width, &height);
-	Vec4 vScreenWidthHeight((float)width, (float)height, 0, 0);
-	shader->FXSetVSFloat(ScreenWidthHeightName, &vScreenWidthHeight, 1);
-}
-
-void COpticsElement::ApplyOcclusionBokehFlag(CShader* shader)
+void COpticsElement::ApplyOcclusionBokehFlag(uint64& rtFlags)
 {
 	if (m_globalOcclusionBokeh)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 }
 
-void COpticsElement::ApplySpectrumTexFlag(CShader* shader, bool enabled)
+void COpticsElement::ApplySpectrumTexFlag(uint64& rtFlags, bool enabled)
 {
 	if (enabled)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 }
 
-void COpticsElement::ApplyExternTintAndBrightnessVS(CShader* shader, ColorF& cExTint, float fExBrt)
+void COpticsElement::ApplyGeneralFlags(uint64& rtFlags)
 {
-	static CCryNameR exTintName("externTint");
-	Vec4 exTintParam(cExTint.r * fExBrt, cExTint.g * fExBrt, cExTint.b * fExBrt, cExTint.a);
-	shader->FXSetVSFloat(exTintName, &exTintParam, 1);
+	if (m_globalAutoRotation)
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE0];
+	if (m_globalCorrectAspectRatio)
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 }
 
-void COpticsElement::ApplyVSParam_Xform(CShader* shader, Matrix33& mx33)
+void COpticsElement::ApplyCommonParams(SShaderParamsBase& shaderParams, const SViewport& viewport, const Vec3& lightProjPos, const Vec2& size)
 {
-	static CCryNameR xformName("xform");
-	Matrix44 mx44(mx33);
-	mx44.Transpose();
-	shader->FXSetVSFloat(xformName, reinterpret_cast<Vec4*>(mx44.GetData()), 3);
-}
+	shaderParams.outputDimAndSize = Vec4(float(viewport.nWidth), float(viewport.nHeight), size.x, size.y);
+	shaderParams.xform = Matrix34(m_globalTransform.GetTransposed());
 
-void COpticsElement::ApplyVSParam_Dynamics(CShader* shader, const Vec3& lightProjPos)
-{
-	static CCryNameR dynamicsName("dynamics");
-
+	// dynamics
 	float fTriggerArea = 1.0f;
 	if (m_bDynamics)
 	{
@@ -332,31 +356,22 @@ void COpticsElement::ApplyVSParam_Dynamics(CShader* shader, const Vec3& lightPro
 		fTriggerArea = powf(clamp_tpl(1.f - fTriggerArea * fRange, 0.f, 1.f), fFalloff);
 	}
 
-	Vec4 dynamicsParam(fTriggerArea, 1, 1, 1);
-	shader->FXSetVSFloat(dynamicsName, &dynamicsParam, 1);
+	shaderParams.dynamics = Vec4(fTriggerArea, 1, 1, 1);
+
+	
+	Vec4 vHDRSetupParams[5];
+	gEnv->p3DEngine->GetHDRSetupParams(vHDRSetupParams);
+
+	shaderParams.hdrParams[0] = vHDRSetupParams[0].x * 6.2f;
+	shaderParams.hdrParams[1] = vHDRSetupParams[0].y * 0.5f;
+	shaderParams.hdrParams[2] = vHDRSetupParams[0].z * 0.06f;
+	shaderParams.hdrParams[3] = 1.0f;
+
+	ColorF c = m_globalColor;
+	c.ScaleCol(m_globalFlareBrightness);
+	shaderParams.externTint = c.toVec4();
 }
 
-void COpticsElement::ApplyGeneralFlags(CShader* shader)
-{
-	if (m_globalAutoRotation)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-	if (m_globalCorrectAspectRatio)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
-}
-
-void COpticsElement::ApplyVSParam_LightProjPos(CShader* shader, const Vec3& lightProjPos)
-{
-	static CCryNameR ccrName("lightProjPos");
-	Vec4 lpposParam(lightProjPos.x, lightProjPos.y, lightProjPos.z, 0);
-	shader->FXSetVSFloat(ccrName, &lpposParam, 1);
-}
-
-void COpticsElement::ApplyPSParam_LightProjPos(CShader* shader, const Vec3& lightProjPos)
-{
-	static CCryNameR ccrName("lightProjPos");
-	Vec4 lpposParam(lightProjPos.x, lightProjPos.y, lightProjPos.z, 0);
-	shader->FXSetPSFloat(ccrName, &lpposParam, 1);
-}
 
 void COpticsElement::GetMemoryUsage(ICrySizer* pSizer) const
 {

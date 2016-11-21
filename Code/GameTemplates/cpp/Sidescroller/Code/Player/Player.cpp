@@ -6,10 +6,8 @@
 #include "View/PlayerView.h"
 #include "Animations/PlayerAnimations.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 #include "Game/GameRules.h"
-
-#include "FlowNodes/Helpers/FlowGameEntityNode.h"
 
 #include "Entities/Gameplay/SpawnPoint.h"
 
@@ -23,13 +21,13 @@ class CPlayerRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CPlayer>("Player");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CPlayer>("Player");
 
-		CGameFactory::RegisterGameObjectExtension<CPlayerMovement>("PlayerMovement");
-		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");
-		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
-		CGameFactory::RegisterGameObjectExtension<CPlayerAnimations>("PlayerAnimations");
-		
+		CGamePlugin::RegisterEntityComponent<CPlayerMovement>("PlayerMovement");
+		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
+		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
+		CGamePlugin::RegisterEntityComponent<CPlayerAnimations>("PlayerAnimations");
+
 		RegisterCVars();
 	}
 
@@ -45,7 +43,7 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_viewDistanceFromPlayer", &m_viewDistanceFromPlayer, 5.f, VF_CHEAT, "Distance from view (camera) to player");
 
 		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/Characters/SampleCharacter/thirdperson.cdf", VF_CHEAT, "Sets the third person geometry to load");
-		
+
 		m_pThirdPersonMannequinContext = REGISTER_STRING("pl_thirdPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the third person context used in Mannequin");
 		m_pThirdPersonAnimationDatabase = REGISTER_STRING("pl_thirdPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
 		m_pThirdPersonControllerDefinition = REGISTER_STRING("pl_thirdPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
@@ -59,14 +57,13 @@ CPlayer::CPlayer()
 	, m_pMovement(nullptr)
 	, m_pView(nullptr)
 	, m_bAlive(false)
-	, m_bIsLocalClient(false)
 	, m_pCurrentWeapon(nullptr)
 {
 }
 
 CPlayer::~CPlayer()
 {
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->RemoveActor(GetEntityId());
+	gEnv->pGameFramework->GetIActorSystem()->RemoveActor(GetEntityId());
 }
 
 const CPlayer::SExternalCVars &CPlayer::GetCVars() const
@@ -83,9 +80,6 @@ bool CPlayer::Init(IGameObject *pGameObject)
 
 void CPlayer::PostInit(IGameObject *pGameObject)
 {
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
-
 	m_pMovement = static_cast<CPlayerMovement *>(GetGameObject()->AcquireExtension("PlayerMovement"));
 	m_pAnimations = static_cast<CPlayerAnimations *>(GetGameObject()->AcquireExtension("PlayerAnimations"));
 	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
@@ -93,15 +87,7 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
 
 	// Register with the actor system
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
-}
-
-void CPlayer::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		m_bIsLocalClient = true;
-	}
+	gEnv->pGameFramework->GetIActorSystem()->AddActor(GetEntityId(), this);
 }
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
@@ -110,10 +96,19 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 	{
 		case ENTITY_EVENT_RESET:
 		{
-			if (event.nParam[0] == 1)
+			switch (event.nParam[0])
 			{
+			case 0: // Game ends
+				m_pCurrentWeapon = nullptr;
+				break;
+			case 1: // Game starts
 				// Make sure to revive player when respawning in Editor
 				SetHealth(GetMaxHealth());
+				// Create rifle
+				if (!m_pCurrentWeapon) CreateWeapon("Rifle");
+				break;
+			default:
+				break;
 			}
 		}
 		break;
@@ -172,7 +167,7 @@ void CPlayer::SelectSpawnPoint()
 	pEntityIterator->MoveFirst();
 
 	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
+	auto extensionId = gEnv->pGameFramework->GetIGameObjectSystem()->GetID("SpawnPoint");
 
 	while (!pEntityIterator->IsEnd())
 	{
@@ -180,7 +175,7 @@ void CPlayer::SelectSpawnPoint()
 		if (pEntity->GetClass() != pSpawnerClass)
 			continue;
 
-		auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+		auto *pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
 		if (pGameObject == nullptr)
 			continue;
 
@@ -198,7 +193,7 @@ void CPlayer::SetPlayerModel()
 {
 	// Load the third person model
 	GetEntity()->LoadCharacter(eGeometry_ThirdPerson, GetCVars().m_pThirdPersonGeometry->GetString());
-	
+
 	// Do the same for animations so that Mannequin data can be initialized
 	m_pAnimations->OnPlayerModelChanged();
 
@@ -217,9 +212,9 @@ void CPlayer::CreateWeapon(const char *name)
 	// Note that the game object extension (CRifle in this example) will be acquired automatically.
 	IEntity *pWeaponEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
 	CRY_ASSERT(pWeaponEntity != nullptr);
-	
+
 	// Now acquire the game object for this entity
-	if (auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pWeaponEntity->GetId()))
+	if (auto *pGameObject = gEnv->pGameFramework->GetGameObject(pWeaponEntity->GetId()))
 	{
 		// Obtain our ISimpleWeapon implementation, based on IGameObjectExtension
 		if (auto *pWeapon = pGameObject->QueryExtension(name))

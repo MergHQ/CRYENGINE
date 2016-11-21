@@ -56,7 +56,7 @@ public:
 				if (IsPortActive(pActInfo, eIP_Get))
 				{
 					IPlayerProfile* pProfile = NULL;
-					if (IPlayerProfileManager* pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+					if (IPlayerProfileManager* pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 					{
 						const char* user = pProfileMan->GetCurrentUser();
 						pProfile = pProfileMan->GetCurrentProfile(user);
@@ -75,7 +75,7 @@ public:
 				if (IsPortActive(pActInfo, eIP_Set))
 				{
 					IPlayerProfile* pProfile = NULL;
-					if (IPlayerProfileManager* pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+					if (IPlayerProfileManager* pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 					{
 						const char* user = pProfileMan->GetCurrentUser();
 						pProfile = pProfileMan->GetCurrentProfile(user);
@@ -142,7 +142,7 @@ public:
 				if (IsPortActive(pActInfo, eIP_Load) || IsPortActive(pActInfo, eIP_Save))
 				{
 					IPlayerProfile* pProfile = NULL;
-					if (IPlayerProfileManager* pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+					if (IPlayerProfileManager* pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 					{
 						const char* user = pProfileMan->GetCurrentUser();
 						pProfile = pProfileMan->GetCurrentProfile(user);

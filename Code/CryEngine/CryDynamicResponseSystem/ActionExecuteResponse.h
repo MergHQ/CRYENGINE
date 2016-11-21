@@ -8,6 +8,8 @@
 
 namespace CryDRS
 {
+	class CResponseInstance;
+
 class CActionExecuteResponse final : public DRS::IResponseAction
 {
 public:
@@ -28,28 +30,23 @@ private:
 class CActionExecuteResponseInstance final : public DRS::IResponseActionInstance, public DRS::IResponseManager::IListener
 {
 public:
-	enum eCurrentState
-	{
-		eCurrentState_WaitingForResponseToFinish,
-		eCurrentState_Canceled,
-		eCurrentState_Done
-	};
-
-	CActionExecuteResponseInstance() : m_state(eCurrentState_WaitingForResponseToFinish) {}
+	CActionExecuteResponseInstance() : m_state(CS_RUNNING), m_pStartedResponse(nullptr) {}
 	virtual ~CActionExecuteResponseInstance();
 
 	//////////////////////////////////////////////////////////
 	// IResponseActionInstance implementation
-	virtual DRS::IResponseActionInstance::eCurrentState Update() override;
+	virtual eCurrentState Update() override;
 	virtual void                                        Cancel() override;
 	//////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////
 	// DRS::IResponseManager::IListener implementation
-	virtual void OnSignalProcessingFinished(DRS::IResponseManager::IListener::SSignalInfos& signal, DRS::IResponseInstance* pFinishedResponse, DRS::IResponseManager::IListener::eProcessingResult outcome) override;
+	virtual void OnSignalProcessingStarted(SSignalInfos& signal, DRS::IResponseInstance* pStartedResponse) override;
+	virtual void OnSignalProcessingFinished(SSignalInfos& signal, DRS::IResponseInstance* pFinishedResponse, eProcessingResult outcome) override;
 	//////////////////////////////////////////////////////////
 
 private:
+	CResponseInstance* m_pStartedResponse;
 	eCurrentState m_state;
 };
 }  //namespace CryDRS

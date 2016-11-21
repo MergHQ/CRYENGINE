@@ -260,7 +260,7 @@ technique General
     ZEnable = true;
     ZWriteEnable = false;
     CullMode = None;
-    
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = SkyHDRPS();
   }
 }
@@ -275,6 +275,7 @@ technique ZPass
     ZWriteEnable = false;
     CullMode = None;
     
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = SkyZPS() ZPS;
   }
 }

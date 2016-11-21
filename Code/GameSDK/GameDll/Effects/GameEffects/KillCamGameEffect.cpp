@@ -19,7 +19,7 @@ REGISTER_DATA_CALLBACKS(CKillCamGameEffect::LoadStaticData,CKillCamGameEffect::R
 // Desc: Static data
 //--------------------------------------------------------------------------------------------------
 const char* KILL_CAM_GAME_EFFECT_NAME = "Kill Cam";
-const char* KILL_CAM_GAME_EFFECT_MODE_NAMES[] = 
+const char* KILL_CAM_GAME_EFFECT_MODE_NAMES[] =
 {
 	"KillCam",
 	"KillerCam",
@@ -40,7 +40,7 @@ CKillCamGameEffect::CKillCamGameEffect()
 	, m_activeTime(0.0f)
 	, m_originalBrightness(1.0f)
 {
-	
+
 }//-------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ CKillCamGameEffect::CKillCamGameEffect()
 //--------------------------------------------------------------------------------------------------
 CKillCamGameEffect::~CKillCamGameEffect()
 {
-	
+
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -136,9 +136,9 @@ void CKillCamGameEffect::Update( float frameTime )
 // Name: GetName
 // Desc: Gets effect's name
 //--------------------------------------------------------------------------------------------------
-const char* CKillCamGameEffect::GetName() const 
-{ 
-	return KILL_CAM_GAME_EFFECT_NAME; 
+const char* CKillCamGameEffect::GetName() const
+{
+	return KILL_CAM_GAME_EFFECT_NAME;
 }//-------------------------------------------------------------------------------------------------
 
 void CKillCamGameEffect::ResetRenderParameters()
@@ -403,6 +403,9 @@ void CKillCamGameEffect::DebugOnInputEvent(int keyId)
 // Name: DebugDisplay
 // Desc: Display when this effect is selected to debug through the game effects system
 //--------------------------------------------------------------------------------------------------
+
+#include <CryRenderer/IRenderAuxGeom.h>
+
 void CKillCamGameEffect::DebugDisplay(const Vec2& textStartPos,float textSize,float textYStep)
 {
 	ColorF textCol(1.0f,1.0f,0.0f,1.0f);
@@ -410,13 +413,13 @@ void CKillCamGameEffect::DebugDisplay(const Vec2& textStartPos,float textSize,fl
 
 	if(s_data[debugMode].isInitialised)
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn on: NumPad 1");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn on: NumPad 1");
 		currentTextPos.y += textYStep;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn off: NumPad 2");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Turn off: NumPad 2");
 	}
 	else
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Effect failed to load data");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Effect failed to load data");
 	}
 }//-------------------------------------------------------------------------------------------------
 

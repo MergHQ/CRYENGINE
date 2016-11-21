@@ -375,7 +375,7 @@ JobManager::CJobManager::CJobManager()
 #else
 	CCpuFeatures* pCPU = new CCpuFeatures;
 	pCPU->Detect();
-	int numWorkers = (int)pCPU->GetPhysCPUCount() - 1;
+	int numWorkers = (int)pCPU->GetLogicalCPUCount() - 1;
 	if (numWorkers < 0)
 		numWorkers = 0;
 	//m_nRegularWorkerThreads = pCPU->GetLogicalCPUCount();
@@ -678,11 +678,7 @@ void MyDraw2dLabel(float x, float y, float font_size, const float* pfColor, bool
 {
 	va_list args;
 	va_start(args, label_text);
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = font_size;
-	ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan | eDrawText_Monospace;
-	if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 1.0f), ti, label_text, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), font_size, pfColor, eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan | eDrawText_Monospace, label_text, args);
 	va_end(args);
 }
 
@@ -883,7 +879,7 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	float fColorRed[4] = { 1, 0, 0, 1 };
 	uint32 nJobsRunCounter = m_nJobsRunCounter;
 	uint32 nFallbackJobsRunCounter = m_nFallbackJobsRunCounter;
-	gEnv->pRenderer->Draw2dLabel(1, 5.0f, 1.3f, nFallbackJobsRunCounter ? fColorRed : fColorGreen, false, "Jobs Submitted %d, FallbackJobs %d", nJobsRunCounter, nFallbackJobsRunCounter);
+	IRenderAuxText::Draw2dLabel(1, 5.0f, 1.3f, nFallbackJobsRunCounter ? fColorRed : fColorGreen, false, "Jobs Submitted %d, FallbackJobs %d", nJobsRunCounter, nFallbackJobsRunCounter);
 #endif
 	m_nJobsRunCounter = 0;
 	m_nFallbackJobsRunCounter = 0;

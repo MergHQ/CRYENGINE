@@ -18,7 +18,7 @@
 class CRenderObject;
 namespace JobManager {
 namespace Detail {
-class SGenericJobTKernelPostUpdateParticlesJob;
+class SGenericJobTPostUpdateParticlesJob;
 }
 }
 
@@ -48,16 +48,35 @@ public:
 
 		CParticleComponentRuntime* m_pComponentRuntime;
 		JobManager::SJobState      m_subUpdateState;
-		JobManager::Detail::SGenericJobTKernelPostUpdateParticlesJob* m_pPostSubUpdates;
+		JobManager::Detail::SGenericJobTPostUpdateParticlesJob* m_pPostSubUpdates;
 		size_t                     m_firstChild;
 		size_t                     m_numChildren;
 	};
 
+	struct SDeferredRender
+	{
+		SDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+			: m_pRuntime(pRuntime)
+			, m_rParam(renderContext.m_renderParams)
+			, m_passInfo(renderContext.m_passInfo)
+			, m_distance(renderContext.m_distance)
+			, m_lightVolumeId(renderContext.m_lightVolumeId)
+			, m_fogVolumeId(renderContext.m_fogVolumeId) {}
+		CParticleComponentRuntime* m_pRuntime;
+		SRendParams                m_rParam;
+		SRenderingPassInfo         m_passInfo;
+		float                      m_distance;
+		uint16                     m_lightVolumeId;
+		uint16                     m_fogVolumeId;
+	};
+
 public:
 	void AddEmitter(CParticleEmitter* pEmitter);
+	void AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	void ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
 	void KernelUpdateAll();
 	void SynchronizeUpdate();
+	void DeferredRender();
 
 	// job entry points
 	void Job_AddRemoveParticles(uint componentRefIdx);
@@ -78,9 +97,10 @@ private:
 
 	void ClearAll();
 
-	std::vector<SComponentRef> m_componentRefs;
-	std::vector<size_t>        m_firstGenComponentsRef;
-	JobManager::SJobState      m_updateState;
+	std::vector<SComponentRef>   m_componentRefs;
+	std::vector<size_t>          m_firstGenComponentsRef;
+	std::vector<SDeferredRender> m_deferredRenders;
+	JobManager::SJobState        m_updateState;
 };
 
 }

@@ -37,6 +37,7 @@ protected:
 		RequestDelayed_ContinuePathFollowing,
 		RequestDelayed_SkipPathFollowing,
 		RequestFailed_FinishImmediately,
+		RequestFailed_CancelImmediately,
 	};
 
 	// Called while preparing & when actortarget phase is None.

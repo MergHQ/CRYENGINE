@@ -219,7 +219,7 @@ bool CSlideController::UpdateMovementRequest( CPlayer& player, float frameTime, 
 		const Vec3  normalXY(groundNormal.x, groundNormal.y, 0.0f);
 		const float cosine	= slideDirection.Dot(normalXY);
 
-		groundSlopeDeg = RAD2DEG(acos_tpl( clamp_tpl(cosine, -1.0f, 1.0f ))) - 90.0f;
+		groundSlopeDeg = RAD2DEG(acos_tpl(cosine)) - 90.0f;
 
 		// groundSlopeDeg tells us if going down hill (negative value) or up hill (positive value)
 		if(groundSlopeDeg < -slideCvars.min_downhill_threshold)

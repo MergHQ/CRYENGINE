@@ -1026,6 +1026,16 @@ void CSkeletonAnim::SetLayerPlaybackScale(int32 nLayer, f32 fSpeed)
 	m_layers[nLayer].m_transitionQueue.m_fLayerPlaybackScale = max(0.0f, fSpeed);
 }
 
+f32 CSkeletonAnim::GetLayerBlendWeight(int32 nLayer)
+{
+	if (nLayer>=numVIRTUALLAYERS || nLayer<0)
+	{
+		g_pILog->LogError ("invalid layer id: %d", nLayer);
+		return -1.0f;
+	}
+	return m_layers[nLayer].m_transitionQueue.m_fLayerBlendWeight;
+}
+
 void CSkeletonAnim::SetLayerBlendWeight(int32 nLayer, f32 fMult)
 {
 	if (nLayer >= numVIRTUALLAYERS || nLayer < 0)
@@ -1288,14 +1298,15 @@ uint32 CSkeletonAnim::BlendManagerDebug(DynArray<CAnimation>& arrAFIFO, uint32 n
 	{
 		const CAnimation& animation = arrAFIFO[i];
 		const SParametricSamplerInternal* pParametric = (SParametricSamplerInternal*)animation.GetParametricSampler();
+		const f32 transitionWeight = animation.GetTransitionWeight();
 		if (animation.IsActivated())
-		{
-			fColor[0] = animation.GetTransitionWeight();
+		{	
+			fColor[0] = transitionWeight;
 			fColor[1] = (nVLayer > 0);// % 2 ? arrAFIFO[i].m_fTransitionWeight * 0.3f : 0.0f;
 			fColor[2] = 0.0f;
-			fColor[3] = animation.GetTransitionWeight();
+			fColor[3] = transitionWeight;
 			if (nVLayer)
-				fColor[3] = m_layers[nVLayer].m_transitionQueue.m_fLayerTransitionWeight * m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight * animation.GetTransitionWeight();
+				fColor[3 ]= m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight*transitionWeight;
 		}
 		else
 		{
@@ -1308,7 +1319,7 @@ uint32 CSkeletonAnim::BlendManagerDebug(DynArray<CAnimation>& arrAFIFO, uint32 n
 		fColor[3] = (fColor[3] + 1) * 0.5f;
 		const char* pAnimName = pAnimationSet->GetModelAnimationHeaderRef(animation.GetAnimationId()).GetAnimName();
 
-		g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.2f, fColor, false, "AnimInAFIFO %02d:  t: %d  %s  ATime: %.3f (%.3fs/%.3fs)  ASpd: %.3f Flag: %08x (%s)  TTime: %.3f  TWght: %.3f  PWght: %.3f  seg: %02d  inmem: %i", nVLayer, animation.m_nUserToken, pAnimName, animation.m_fAnimTime[0], animation.m_fAnimTime[0] * animation.GetCurrentSegmentExpectedDurationSeconds(), animation.GetCurrentSegmentExpectedDurationSeconds(), animation.m_fPlaybackScale, animation.m_nStaticFlags, AnimFlags(animation.m_nStaticFlags), animation.m_fTransitionTime, animation.GetTransitionWeight(), animation.GetPlaybackWeight(), animation.m_currentSegmentIndex[0], IsAnimationInMemory(pAnimationSet, &arrAFIFO[i]));
+		g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.2f, fColor, false,"AnimInAFIFO %02d:  t: %d  %s  ATime: %.3f (%.3fs/%.3fs)  ASpd: %.3f Flag: %08x (%s)  TTime: %.3f  TWght: %.3f  PWght: %.3f  seg: %02d  inmem: %i", nVLayer, animation.m_nUserToken, pAnimName, animation.m_fAnimTime[0], animation.m_fAnimTime[0] * animation.GetCurrentSegmentExpectedDurationSeconds(), animation.GetCurrentSegmentExpectedDurationSeconds(), animation.m_fPlaybackScale, animation.m_nStaticFlags, AnimFlags(animation.m_nStaticFlags), animation.m_fTransitionTime, transitionWeight, animation.GetPlaybackWeight(), animation.m_currentSegmentIndex[0], IsAnimationInMemory(pAnimationSet, &arrAFIFO[i]) ); 
 		g_YLine += 0x0e;
 		if (nVLayer == 0)
 		{
@@ -1339,7 +1350,7 @@ uint32 CSkeletonAnim::BlendManagerDebug(DynArray<CAnimation>& arrAFIFO, uint32 n
 		}
 		else
 		{
-			g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.2f, fColor, false, "LayerBlendWeight: %.3f", m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight);
+			g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.2f, fColor, false,"LayerBlendWeight: %.3f  LayerTransitionWeight: %.3f", m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight, m_layers[nVLayer].m_transitionQueue.m_fLayerTransitionWeight);
 			g_YLine += 0x0e;
 		}
 
@@ -1597,6 +1608,12 @@ void CSkeletonAnim::LayerBlendManager(f32 fDeltaTime, uint32 nLayer)
 	}
 
 	transitionQueue.m_fLayerTransitionWeight = fCurLayerBlending;
+	
+	for (auto& anim: transitionQueue.m_animations)
+	{
+		anim.SetTransitionWeight(anim.GetTransitionWeight() * fCurLayerBlending);
+	}
+
 	return;
 }
 

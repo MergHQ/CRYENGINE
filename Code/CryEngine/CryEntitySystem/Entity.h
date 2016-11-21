@@ -73,7 +73,7 @@ class CEntity : public IEntity
 	CEntity(SEntitySpawnParams& params);
 
 public:
-	typedef std::pair<int, IEntityProxyPtr> TProxyPair;
+	typedef std::pair<const int, IEntityProxyPtr> TProxyPair;
 
 	// Entity destructor.
 	// Should only be called from Entity System.
@@ -107,7 +107,7 @@ public:
 	virtual void   ClearFlags(uint32 flagsToClear) override                  { SetFlags(m_flags & (~flagsToClear)); }
 	virtual bool   CheckFlags(uint32 flagsToCheck) const override            { return (m_flags & flagsToCheck) == flagsToCheck; }
 
-	virtual void   SetFlagsExtended(uint32 flags) override                   { m_flagsExtended = flags; }
+	virtual void   SetFlagsExtended(uint32 flags) override;
 	virtual uint32 GetFlagsExtended() const override                         { return m_flagsExtended; }
 
 	virtual bool   IsGarbage() const override                                { return m_bGarbage; }
@@ -267,18 +267,14 @@ public:
 	int                           LoadLightImpl(int nSlot, CDLight* pLight);
 
 	virtual bool                  UpdateLightClipBounds(CDLight& light);
-	int                           LoadCloud(int nSlot, const char* sFilename);
-	int                           SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties);
+	virtual int                   LoadCloud(int nSlot, const char* sFilename) override;
+	virtual int                   SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties) override;
 	int                           LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
 	int                           LoadFogVolume(int nSlot, const SFogVolumeProperties& properties);
 
 	int                           FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);
 	int                           LoadVolumeObject(int nSlot, const char* sFilename);
 	int                           SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
-
-	#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	virtual int LoadPrismObject(int nSlot);
-	#endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) override;
 

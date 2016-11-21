@@ -102,12 +102,12 @@ void MeshUtil::GenDisk(float radius, int polySides, int ringCount, bool capInner
 
 			int baseIdx = (i * (ringCount - 1) + r) * 6 + holeCapperIdxCount;
 			idxOut[baseIdx] = b;
-			idxOut[baseIdx + 1] = c;
-			idxOut[baseIdx + 2] = a;
+			idxOut[baseIdx + 1] = a;
+			idxOut[baseIdx + 2] = c;
 
 			idxOut[baseIdx + 3] = a;
-			idxOut[baseIdx + 4] = c;
-			idxOut[baseIdx + 5] = d;
+			idxOut[baseIdx + 4] = d;
+			idxOut[baseIdx + 5] = c;
 		}
 	}
 
@@ -121,8 +121,8 @@ void MeshUtil::GenDisk(float radius, int polySides, int ringCount, bool capInner
 		{
 			int baseIdx = i * 3;
 			idxOut[baseIdx] = 0;
-			idxOut[baseIdx + 1] = 1 + i * ringCount;
-			idxOut[baseIdx + 2] = (i != (polySides - 1)) ? (2 + i * ringCount) : 1;
+			idxOut[baseIdx + 1] = (i != (polySides - 1)) ? (2 + i * ringCount) : 1;
+			idxOut[baseIdx + 2] = 1 + i * ringCount;
 		}
 	}
 
@@ -224,12 +224,12 @@ void MeshUtil::GenHoop(float radius, int polySides, float thickness, int ringCou
 
 			int baseIdx = (i * (ringCount - 1) + r) * 6;
 			idxOut[baseIdx] = b;
-			idxOut[baseIdx + 1] = c;
-			idxOut[baseIdx + 2] = a;
+			idxOut[baseIdx + 2] = c;
+			idxOut[baseIdx + 1] = a;
 
 			idxOut[baseIdx + 3] = a;
-			idxOut[baseIdx + 4] = c;
-			idxOut[baseIdx + 5] = d;
+			idxOut[baseIdx + 5] = c;
+			idxOut[baseIdx + 4] = d;
 		}
 	}
 }
@@ -417,8 +417,8 @@ void MeshUtil::GenStreak(float dir, float radius, float thickness, const ColorF&
 	{
 		int baseIdx = i * 3;
 		idxOut[baseIdx] = 0;
-		idxOut[baseIdx + 1] = 1 + i;
-		idxOut[baseIdx + 2] = (i != (polySides - 1)) ? (2 + i) : 1;
+		idxOut[baseIdx + 1] = (i != (polySides - 1)) ? (2 + i) : 1;
+		idxOut[baseIdx + 2] = 1 + i;
 	}
 }
 
@@ -491,12 +491,12 @@ void MeshUtil::TrianglizeQuadIndices(int quadCount, std::vector<uint16>& idxOut)
 		idxOut[baseIdx + 2] = a;
 
 		idxOut[baseIdx + 3] = c;
-		idxOut[baseIdx + 4] = a;
-		idxOut[baseIdx + 5] = d;
+		idxOut[baseIdx + 4] = d;
+		idxOut[baseIdx + 5] = a;
 	}
 }
 
-void MeshUtil::GenScreenTile(float x0, float y0, float x1, float y1, ColorF clr, int rowCount, int columnCount, std::vector<SVF_P3F_C4B_T2F>& vertOut, std::vector<uint16>& idxOut)
+void MeshUtil::GenScreenTile(float x0, float y0, float x1, float y1, ColorF clr, int rowCount, int columnCount, stl::aligned_vector<SVF_P3F_C4B_T2F, CRY_PLATFORM_ALIGNMENT>& vertOut, stl::aligned_vector<uint16, CRY_PLATFORM_ALIGNMENT>& idxOut)
 {
 	int yCount = rowCount + 1;
 	int xCount = columnCount + 1;

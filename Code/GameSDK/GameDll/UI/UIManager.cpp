@@ -64,8 +64,12 @@ void CUIManager::Init()
 
 	m_pWarningManager = new CWarningsManager();
 	m_pOptions = new CProfileOptions();
-	m_pScreenLayoutMan = new ScreenLayoutManager();
-	m_p2DRendUtils = new C2DRenderUtils(m_pScreenLayoutMan);
+
+	if (gEnv->pRenderer)
+	{
+		m_pScreenLayoutMan = new ScreenLayoutManager();
+		m_p2DRendUtils = new C2DRenderUtils(m_pScreenLayoutMan);
+	}
 	m_pHudSilhouettes = new CHUDSilhouettes();
 	m_pCVars = new CUICVars();
 	m_pMOSystem = new CHUDMissionObjectiveSystem();
@@ -128,9 +132,11 @@ void CUIManager::Shutdown()
 	SAFE_DELETE(m_p2DRendUtils);
 	SAFE_DELETE(m_pScreenLayoutMan);
 	SAFE_DELETE(m_pHudSilhouettes);
-	SAFE_DELETE(m_pCVars);
 	SAFE_DELETE(m_pMOSystem);
 	
+	m_pCVars->UnregisterConsoleCommandsAndVars();
+	SAFE_DELETE(m_pCVars);
+
 	m_bRegistered = false;	
 
 	CUIInput::Shutdown();
@@ -281,7 +287,7 @@ void CUIManager::OnSystemEvent( ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 		{
 			if (event == ESYSTEM_EVENT_LEVEL_GAMEPLAY_START || wparam == 1)
 			{
-				ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+				ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 				if(pLevel)
 				{
 					m_pMOSystem->LoadLevelObjectives(pLevel->GetPath(), true);
@@ -291,7 +297,7 @@ void CUIManager::OnSystemEvent( ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 			{
 				// Make sure the menu is ready to be called
 				CUIMenuEvents* pMenuEvents = UIEvents::Get<CUIMenuEvents>();
-				if (gEnv && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->IsGameStarted() && pMenuEvents && pMenuEvents->IsIngameMenuStarted())
+				if (gEnv && gEnv->pGameFramework && gEnv->pGameFramework->IsGameStarted() && pMenuEvents && pMenuEvents->IsIngameMenuStarted())
 					pMenuEvents->DisplayIngameMenu(false);
 			}
 		}

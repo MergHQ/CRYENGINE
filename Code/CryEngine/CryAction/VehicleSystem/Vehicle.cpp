@@ -395,16 +395,20 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	    || s_normalHitTypeId == 0 || s_fireHitTypeId == 0 || s_punishHitTypeId == 0)
 	{
 		IGameRules* pGR = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-		s_repairHitTypeId = pGR->GetHitTypeId("repair");
-		s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
-		s_collisionHitTypeId = pGR->GetHitTypeId("collision");
-		s_normalHitTypeId = pGR->GetHitTypeId("normal");
-		s_fireHitTypeId = pGR->GetHitTypeId("fire");
-		s_punishHitTypeId = pGR->GetHitTypeId("punish");
-		s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
+		if (pGR)
+		{
+			s_repairHitTypeId = pGR->GetHitTypeId("repair");
+			s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
+			s_collisionHitTypeId = pGR->GetHitTypeId("collision");
+			s_normalHitTypeId = pGR->GetHitTypeId("normal");
+			s_fireHitTypeId = pGR->GetHitTypeId("fire");
+			s_punishHitTypeId = pGR->GetHitTypeId("punish");
+			s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
 
-		assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
-		       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
+				&& s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+		}
+		CRY_ASSERT_MESSAGE(pGR, "No valid game rules set!");
 	}
 
 	if (gEnv->bMultiplayer && (CCryActionCVars::Get().g_multiplayerEnableVehicles == 0))
@@ -1119,13 +1123,13 @@ void CVehicle::SetAmmoCount(IEntityClass* pAmmoType, int amount)
 		// then trigger a reload
 		if (oldAmount == 0 && amount != 0 && gEnv->IsClient())
 		{
-			if (IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem())
+			if (IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem())
 			{
 				int weaponCount = GetWeaponCount();
 				for (int i = 0; i < weaponCount; ++i)
 				{
 					IItem* pItem = pItemSystem->GetItem(GetWeaponId(i));
-					if (pItem && pItem->GetOwnerId() == gEnv->pGame->GetIGameFramework()->GetClientActorId())
+					if (pItem && pItem->GetOwnerId() == gEnv->pGameFramework->GetClientActorId())
 					{
 						if (IWeapon* pWeapon = pItem->GetIWeapon())
 						{
@@ -1582,7 +1586,7 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 
 			if (m_hasAuthority && !gEnv->bServer && VehicleCVars().v_serverControlled && VehicleCVars().v_clientPredict)
 			{
-				const INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetClientChannel();
+				const INetChannel* pNetChannel = gEnv->pGameFramework->GetClientChannel();
 				if (pNetChannel)
 				{
 					m_smoothedPing = pNetChannel->GetPing(true);
@@ -1808,7 +1812,7 @@ void CVehicle::DebugDraw(const float frameTime)
 
 		for (TVehiclePartVector::iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
 		{
-			gEnv->pRenderer->DrawLabelEx(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 
 			/*IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 			   AABB bounds = AABB::CreateTransformedAABB(ite->second->GetWorldTM(), ite->second->GetLocalBounds());
@@ -1827,7 +1831,7 @@ void CVehicle::DebugDraw(const float frameTime)
 				{
 					const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-					gEnv->pRenderer->DrawLabelEx(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
+					IRenderAuxText::DrawLabelExF(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
 				}
 
 				if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
@@ -1849,7 +1853,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		float damageRatio = GetDamageRatio();
 		string damageStr;
 		damageStr.Format("Health: %.2f/%.2f Damage Ratio: %.2f", m_damageMax * (1.f - damageRatio), m_damageMax, damageRatio);
-		gEnv->pRenderer->DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, "%s", damageStr.c_str());
+		IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, damageStr.c_str());
 	}
 	else if (cvars.v_debugdraw == eVDB_ClientPredict)
 	{
@@ -1868,7 +1872,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		{
 			Matrix34 tm;
 			ite->second->GetWorldTM(tm);
-			gEnv->pRenderer->DrawLabelEx(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 			pDB->AddDirection(tm.GetTranslation(), 0.25f, tm.GetColumn(1), ColorF(1, 1, 0, 1), 0.05f);
 		}
 	}
@@ -1883,10 +1887,10 @@ void CVehicle::DebugDraw(const float frameTime)
 			if (IVehicleHelper* pHelper = it->second->GetSitHelper())
 				pos = pHelper->GetVehicleSpaceTranslation();
 
-			gEnv->pRenderer->DrawLabelEx(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
+			IRenderAuxText::DrawLabelExF(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
 
 			if (IVehicleHelper* pHelper = it->second->GetEnterHelper())
-				gEnv->pRenderer->DrawLabelEx(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
+				IRenderAuxText::DrawLabelExF(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
 		}
 	}
 
@@ -1904,7 +1908,7 @@ void CVehicle::DebugDraw(const float frameTime)
 				   float speed = 0.f;
 				   if (pSound->GetParam("speed", &speed, false))
 				   {
-				    gEnv->pRenderer->Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
+				    IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
 				   }
 				   }*/
 			}
@@ -4902,7 +4906,7 @@ void CVehicle::CheckFlippedStatus(const float deltaTime)
 			IVehicleSeat* pSeat = it->second;
 			if (pSeat && pSeat->GetPassenger())
 			{
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 				if (pActor && !pActor->IsPlayer())
 				{
 					ai = true;
@@ -4981,7 +4985,7 @@ void CVehicle::ProcessFlipped()
 		IVehicleSeat* pSeat = it->second;
 		if (pSeat && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && !pActor->IsPlayer())
 			{
 				ai = true;
@@ -4995,11 +4999,11 @@ void CVehicle::ProcessFlipped()
 		// if AI guys inside, we blow up in any case
 		// if not, we only blow up if no players are around
 		const float r = VehicleCVars().v_FlippedExplosionPlayerMinDistance;
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 		if (!gEnv->bMultiplayer)
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			IActor* pActor = gEnv->pGameFramework->GetClientActor();
 			if (pActor)
 			{
 				float distSq = pActor->GetEntity()->GetWorldPos().GetSquaredDistance(worldTM.GetTranslation());
@@ -5714,7 +5718,7 @@ void CVehicle::KillPassengersInExposedSeats(bool includePlayers)
 		IVehicleSeat* pSeat = seatIter->second;
 		if (pSeat && pSeat->IsPassengerExposed() && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && (!pActor->IsPlayer() || includePlayers))
 			{
 				if (!pActor->IsDead())

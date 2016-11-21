@@ -3,6 +3,7 @@
 #ifndef __CRECLIENTPOLY_H__
 #define __CRECLIENTPOLY_H__
 
+#include "DeviceManager/TempDynBuffer.h"
 //=============================================================
 
 struct SClientPolyStat
@@ -13,37 +14,56 @@ struct SClientPolyStat
 	int NumIndices;
 };
 
-class CREClientPoly : public CRendElementBase
+// Pool of vertex/index data used by client polygons rendering.
+class CRenderPolygonDataPool
 {
 public:
-	enum eFlags
+	typedef SVF_P3F_C4B_T2F VertexFormat;
+	typedef SPipTangents    TangentFormat;
+
+	//////////////////////////////////////////////////////////////////////////
+	// CPU only temporary buffers
+	std::vector<uint8>        m_vertices;
+	std::vector<uint16>       m_indices;
+	std::vector<SPipTangents> m_tangents;
+	
+	uint32 m_vertexCount = 0;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// GPU buffers
+	buffer_handle_t m_vertexBuffer = 0;
+	buffer_handle_t m_tangentsBuffer = 0;
+	buffer_handle_t m_indexBuffer = 0;
+	//////////////////////////////////////////////////////////////////////////
+
+public:
+	void Clear();
+	void UpdateAPIBuffers();
+};
+
+class CREClientPoly : public CRenderElement
+{
+public:
+	enum EFlags
 	{
 		efAfterWater = 1 << 0,
 		efShadowGen  = 1 << 1,
 	};
-	SShaderItem            m_Shader;
-	CRenderObject*         m_pObject;
-	short                  m_sNumVerts;
-	short                  m_sNumIndices;
-	byte                   m_nCPFlags;
-	int                    m_nOffsVert;
-	int                    m_nOffsTang;
-	int                    m_nOffsInd;
+	SShaderItem m_Shader;
 
-	SRendItemSorter        rendItemSorter;
-	static SClientPolyStat mRS;
-	static void mfPrintStat();
+	uint32      m_nCPFlags = 0;
+	uint16      m_vertexCount = 0;
+	uint16      m_indexCount = 0;
+	uint32      m_vertexOffset = 0;
+	uint32      m_tangentOffset = 0;
+	uint32      m_indexOffset = 0;
+
+	// Shared vertex/index buffers pool for all polygons.
+	CRenderPolygonDataPool* m_pPolygonDataPool = nullptr;
 
 public:
 	CREClientPoly()
-		: m_Shader()
-		, m_pObject(nullptr)
-		, m_sNumVerts(0)
-		, m_sNumIndices(0)
-		, m_nCPFlags(0)
-		, m_nOffsVert(0)
-		, m_nOffsTang(0)
-		, m_nOffsInd(0)
 	{
 		mfSetType(eDATA_ClientPoly);
 		mfUpdateFlags(FCEF_TRANSFORM);
@@ -51,13 +71,17 @@ public:
 
 	virtual ~CREClientPoly() {};
 
-	virtual void              mfPrepare(bool bCheckOverflow);
-	virtual CRendElementBase* mfCopyConstruct(void);
+	virtual void              mfPrepare(bool bCheckOverflow) final;
+	virtual CRenderElement*     mfCopyConstruct(void) final;
 
-	virtual void              GetMemoryUsage(ICrySizer* pSizer) const
+	virtual bool              GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false) final;
+
+	virtual void              GetMemoryUsage(ICrySizer* pSizer) const final
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
+
+	void AssignPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo, CRenderPolygonDataPool* pPolygonDataPool);
 };
 
 #endif  // __CRECLIENTPOLY2D_H__

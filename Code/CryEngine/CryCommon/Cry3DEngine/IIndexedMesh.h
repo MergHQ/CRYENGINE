@@ -19,6 +19,7 @@
 #include <CryCore/CryEndian.h>
 #include <CryMemory/CrySizer.h>
 #include <CryRenderer/VertexFormats.h>
+#include <CryMath/Cry_Geo.h>
 
 //! 2D Texture coordinates used by CMesh.
 struct SMeshTexCoord

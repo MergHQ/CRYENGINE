@@ -149,10 +149,6 @@ protected:
 	//!		<param name="newGlobalDensity">.</param>
 	int FadeGlobalDensity(IFunctionHandler* pH, int nSlot, float fadeTime, float newGlobalDensity);
 
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	int LoadPrismObject(IFunctionHandler* pH, int nSlot);
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
-
 	//! <code>Entity.LoadVolumeObject( nSlot, sFilename )</code>
 	//!		<param name="nSlot">Slot identifier.</param>
 	//!		<param name="sFilename">File name of the volume object.</param>

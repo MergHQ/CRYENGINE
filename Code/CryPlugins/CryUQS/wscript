@@ -1,0 +1,23 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2013, Crytek Studios
+##
+## Creator: Christian Werle
+## Date: June 10, 2016
+## Description: WAF  based build system
+#############################################################################
+
+SUBFOLDERS =	[
+	'Interfaces',
+	'Shared',
+	'Core',
+	'Client',
+	'DataSource_XML',
+	'EditorPlugin',
+	'EditorPlugin_HistoryInspector',
+	'StdLib'
+	]
+	
+def build(bld):	
+	# Recursive into all sub projects
+	bld.recurse(SUBFOLDERS)	

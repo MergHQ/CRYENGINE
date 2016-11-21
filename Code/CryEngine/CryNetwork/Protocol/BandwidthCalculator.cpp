@@ -14,7 +14,6 @@
 #include "PacketRateCalculator.h"
 #include "Network.h"
 #include <CrySystem/IConsole.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #if NEW_BANDWIDTH_MANAGEMENT
@@ -420,7 +419,7 @@ void CPacketRateCalculator::SetPerformanceMetrics(const INetChannel::SPerformanc
 float CPacketRateCalculator::GetAvailableBandwidth() const
 {
 	float availableBandwidth = 0;
-	CNetNub* pNetNub = (CNetNub*)gEnv->pGame->GetIGameFramework()->GetServerNetNub();
+	CNetNub* pNetNub = (CNetNub*)gEnv->pGameFramework->GetServerNetNub();
 
 	if (pNetNub != NULL)
 	{

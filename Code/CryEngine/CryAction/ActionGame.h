@@ -460,7 +460,6 @@ private:
 	INetContext*        m_pNetContext;
 	IGameTokenSystem*   m_pGameTokenSystem;
 	IPhysicalWorld*     m_pPhysicalWorld;
-	IMaterialEffects*   m_pMaterialEffects;
 
 	typedef std::pair<void (*)(const EventPhys*, void*), void*> TGlobalPhysicsCallback;
 	typedef std::set<TGlobalPhysicsCallback>                    TGlobalPhysicsCallbackSet;
@@ -577,8 +576,6 @@ private:
 	string             m_connectionString;
 
 	uint32             m_lastDynPoolSize;
-
-	uint8*             m_clientReserveForMigrate;
 
 	struct SBreakageThrottling
 	{

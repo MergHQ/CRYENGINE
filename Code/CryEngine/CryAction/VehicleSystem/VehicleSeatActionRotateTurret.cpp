@@ -394,7 +394,7 @@ void CVehicleSeatActionRotateTurret::MaintainPartRotationWorldSpace(EVehicleTurr
 		{
 			float color[] = { 1, 1, 1, 1 };
 			Ang3 a(localTM), aBase(baseTM);
-			gEnv->pRenderer->Draw2dLabel(200, 200, 1.4f, color, false, "localAng: %.1f (real: %.1f)", RAD2DEG(a.z), RAD2DEG(aBase.z));
+			IRenderAuxText::Draw2dLabel(200, 200, 1.4f, color, false, "localAng: %.1f (real: %.1f)", RAD2DEG(a.z), RAD2DEG(aBase.z));
 		}
 #endif
 	}

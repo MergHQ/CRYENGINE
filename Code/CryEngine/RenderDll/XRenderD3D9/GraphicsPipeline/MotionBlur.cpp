@@ -85,11 +85,11 @@ void CMotionBlurStage::Execute()
 		m_passPacking.BeginConstantUpdate();
 
 		mViewProjPrev.Transpose();
-		m_passPacking.SetConstantArray(eHWSC_Pixel, viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4);
-		m_passPacking.SetConstant(eHWSC_Pixel, dirBlurName, dirBlurParam);
-		m_passPacking.SetConstant(eHWSC_Pixel, radBlurName, radBlurParam);
-		m_passPacking.SetConstant(eHWSC_Pixel, motionBlurParamName, 
-			Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0));
+		m_passPacking.SetConstantArray(viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
+		m_passPacking.SetConstant(dirBlurName, dirBlurParam, eHWSC_Pixel);
+		m_passPacking.SetConstant(radBlurName, radBlurParam, eHWSC_Pixel);
+		m_passPacking.SetConstant(motionBlurParamName,
+			Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0), eHWSC_Pixel);
 
 		m_passPacking.Execute();
 
@@ -120,7 +120,7 @@ void CMotionBlurStage::Execute()
 			m_passTileGen1.BeginConstantUpdate();
 
 			Vec4 params = Vec4((float)CTexture::s_ptexVelocity->GetWidth(), (float)CTexture::s_ptexVelocity->GetHeight(), ceilf((float)gcpRendD3D->GetWidth() / tileCountX), 0);
-			m_passTileGen1.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
+			m_passTileGen1.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 			m_passTileGen1.Execute();
 		}
@@ -138,7 +138,7 @@ void CMotionBlurStage::Execute()
 			m_passTileGen2.BeginConstantUpdate();
 
 			Vec4 params = Vec4((float)CTexture::s_ptexVelocityTiles[0]->GetWidth(), (float)CTexture::s_ptexVelocityTiles[0]->GetHeight(), ceilf((float)gcpRendD3D->GetHeight() / tileCountY), 1);
-			m_passTileGen2.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
+			m_passTileGen2.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 			m_passTileGen2.Execute();
 		}
@@ -156,7 +156,7 @@ void CMotionBlurStage::Execute()
 			m_passNeighborMax.BeginConstantUpdate();
 
 			Vec4 params = Vec4(1.0f / tileCountX, 1.0f / tileCountY, 0, 0);
-			m_passNeighborMax.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
+			m_passNeighborMax.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 			m_passNeighborMax.Execute();
 		}
@@ -178,6 +178,7 @@ void CMotionBlurStage::Execute()
 
 			static CCryNameTSCRC techMotionBlur("MotionBlur");
 			m_passMotionBlur.SetTechnique(pShader, techMotionBlur, rtMask);
+			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
 			m_passMotionBlur.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
 			m_passMotionBlur.SetTextureSamplerPair(0, bGatherDofEnabled ? CTexture::s_ptexSceneTargetR11G11B10F[0] : CTexture::s_ptexHDRTargetPrev, m_samplerLinear);
@@ -188,7 +189,7 @@ void CMotionBlurStage::Execute()
 		m_passMotionBlur.BeginConstantUpdate();
 
 		Vec4 params = Vec4(1.0f / tileCountX, 1.0f / tileCountY, 0, 0);
-		m_passMotionBlur.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
+		m_passMotionBlur.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 		m_passMotionBlur.Execute();
 	}

@@ -289,7 +289,7 @@ void CVehicleMovementMPVTOL::OnVehicleEvent( EVehicleEvent event, const SVehicle
 	{
 		//track stat of damage done to vehicle by local player
 
-		if( params.entityId == g_pGame->GetClientActorId() )
+		if( params.entityId == gEnv->pGameFramework->GetClientActorId() )
 		{
 			CPersistantStats* pStats = CPersistantStats::GetInstance();
 

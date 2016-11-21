@@ -197,7 +197,7 @@ bool InitializeChannelBlendState(
 bool InitializeBlendState(const D3D11_BLEND_DESC& kDesc, SBlendState& kState, CContext*)
 {
 #if DXGL_SUPPORT_INDEPENDENT_BLEND_STATES
-	COMPILE_TIME_ASSERT(DXGL_ARRAY_SIZE(kDesc.RenderTarget) == DXGL_ARRAY_SIZE(kState.m_kTargets));
+	static_assert(DXGL_ARRAY_SIZE(kDesc.RenderTarget) == DXGL_ARRAY_SIZE(kState.m_kTargets), "Invalid array size!");
 	kState.m_bIndependentBlendEnable = kDesc.IndependentBlendEnable == TRUE;
 #else
 	if (kDesc.IndependentBlendEnable)

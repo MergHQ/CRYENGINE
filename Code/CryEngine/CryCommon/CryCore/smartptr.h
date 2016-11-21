@@ -5,7 +5,7 @@
 
 void CryFatalError(const char*, ...) PRINTF_PARAMS(1, 2);
 #if CRY_PLATFORM_APPLE
-	#include <cstddef>
+#include <cstddef>
 #endif
 
 //! Smart Pointer.
@@ -50,9 +50,9 @@ public:
 	}
 	operator _I*() const { return p; }
 
-	_I&         operator*() const      { return *p; }
+	_I&         operator*() const { return *p; }
 	_I*         operator->(void) const { return p; }
-	_I*         get() const            { return p; }
+	_I*         get() const { return p; }
 	_smart_ptr& operator=(_I* newp)
 	{
 		if (newp)
@@ -70,7 +70,10 @@ public:
 
 	void reset(_I* p)
 	{
-		_smart_ptr<_I>(p).swap(*this);
+		if (p != this->p)
+		{
+			_smart_ptr<_I>(p).swap(*this);
+		}
 	}
 
 	_smart_ptr& operator=(const _smart_ptr& newp)
@@ -85,11 +88,13 @@ public:
 
 	_smart_ptr& operator=(_smart_ptr&& p_)
 	{
-		CRY_ASSERT_MESSAGE(this != &p_, "Error: Assigning _smart_ptr into itself.");
-		if (p)
-			p->Release();
-		p = p_.p;
-		p_.p = nullptr;
+		if (this != &p_)
+		{
+			if (p)
+				p->Release();
+			p = p_.p;
+			p_.p = nullptr;
+		}
 		return *this;
 	}
 
@@ -113,6 +118,7 @@ public:
 	//! Assigns a pointer without increasing ref count.
 	void Assign_NoAddRef(_I* ptr)
 	{
+		CRY_ASSERT_MESSAGE(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
 		p = ptr;
 	}
 
@@ -169,10 +175,15 @@ public:
 			CryFatalError("Deleting Reference Counted Object Twice");
 		}
 	}
-	//! Use for debugging/statistics purposes only!
-	Counter NumRefs()
+
+	Counter UseCount() const
 	{
 		return m_nRefCounter;
+	}
+
+	bool Unique() const
+	{
+		return m_nRefCounter == 1 ? true : false;
 	}
 protected:
 	Counter m_nRefCounter;
@@ -212,10 +223,15 @@ public:
 			CryFatalError("Deleting Reference Counted Object Twice");
 		}
 	}
-	//! Use for debugging/statistics purposes only!
-	Counter NumRefs()
+
+	Counter UseCount() const
 	{
 		return m_nRefCounter;
+	}
+
+	bool Unique() const
+	{
+		return m_nRefCounter == 1 ? true : false;
 	}
 protected:
 	Counter m_nRefCounter;
@@ -230,7 +246,7 @@ template<typename T, typename Counter = int> class _cfg_reference_target
 {
 public:
 
-	typedef void (* DeleteFncPtr)(void*);
+	typedef void(*DeleteFncPtr)(void*);
 
 	_cfg_reference_target() :
 		m_nRefCounter(0),
@@ -273,11 +289,16 @@ public:
 	//! Sets the delete function with which this object is supposed to be deleted.
 	void SetDeleteFnc(DeleteFncPtr pDeleteFnc) { m_pDeleteFnc = pDeleteFnc; }
 
-	//! Use for debugging/statistics purposes only!
-	Counter NumRefs()
+	Counter UseCount() const
 	{
 		return m_nRefCounter;
 	}
+
+	bool Unique() const
+	{
+		return m_nRefCounter == 1 ? true : false;
+	}
+
 protected:
 	Counter      m_nRefCounter;
 	DeleteFncPtr m_pDeleteFnc;
@@ -316,11 +337,16 @@ public:
 		}
 	}
 
-	//! Use for debugging/statistics purposes only!
-	Counter NumRefs() const
+	virtual Counter UseCount() const
 	{
 		return m_nRefCounter;
 	}
+
+	virtual bool Unique() const
+	{
+		return m_nRefCounter == 1 ? true : false;
+	}
+
 protected:
 	Counter m_nRefCounter;
 };
@@ -331,11 +357,11 @@ public:
 	CMultiThreadRefCount() : m_cnt(0) {}
 	virtual ~CMultiThreadRefCount() {}
 
-	inline int AddRef()
+	void AddRef()
 	{
-		return CryInterlockedIncrement(&m_cnt);
+		CryInterlockedIncrement(&m_cnt);
 	}
-	inline int Release()
+	void Release()
 	{
 		const int nCount = CryInterlockedDecrement(&m_cnt);
 		assert(nCount >= 0);
@@ -348,17 +374,24 @@ public:
 			assert(0);
 			CryFatalError("Deleting Reference Counted Object Twice");
 		}
-		return nCount;
 	}
 
-	inline int GetRefCount()  const { return m_cnt; }
+	int UseCount() const
+	{
+		CryFatalError("Do not use this function as it is not thread-safe.The return value of UseCount() may be wrong on return already.");
+		return -1;
+	}
 
+	bool Unique() const
+	{
+		return m_cnt == 1 ? true : false;
+	}
 protected:
 	// Allows the memory for the object to be deallocated in the dynamic module where it was originally constructed, as it may use different memory manager (Debug/Release configurations)
 	virtual void DeleteThis() { delete this; }
 
 private:
-	volatile int m_cnt;
+	volatile int m_cnt; // Private: Discourage inheriting classes to observe m_nRefCounter and act on its value which is not thread safe.
 };
 
 //! Base class for interfaces implementing reference counting that needs to be thread-safe.
@@ -397,10 +430,18 @@ public:
 		}
 	}
 
-	Counter NumRefs() const { return m_nRefCounter; }
+	Counter UseCount() const
+	{
+		CryFatalError("Do not use this function as it is not thread-safe.The return value of UseCount() may be wrong on return already.");
+		return Counter(-1);
+	}
+
+	virtual bool Unique() const
+	{
+		return m_nRefCounter == 1 ? true : false;
+	}
 
 protected:
-
 	volatile Counter m_nRefCounter;
 };
 
@@ -411,9 +452,9 @@ typedef _i_multithread_reference_target<int> _i_multithread_reference_target_t;
 // and Class_AutoArray, which is the array(STL vector) of autopointers
 #ifdef ENABLE_NAIIVE_AUTOPTR
 // naiive autopointer makes it easier for Visual Assist to parse the declaration and sometimes is easier for debug
-	#define TYPEDEF_AUTOPTR(T) typedef T* T ##                                                              _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
+#define TYPEDEF_AUTOPTR(T) typedef T* T ##                                                              _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
 #else
-	#define TYPEDEF_AUTOPTR(T) typedef _smart_ptr<T> T ##                                                   _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
+#define TYPEDEF_AUTOPTR(T) typedef _smart_ptr<T> T ##                                                   _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
 #endif
 
 #endif //_SMART_PTR_H_

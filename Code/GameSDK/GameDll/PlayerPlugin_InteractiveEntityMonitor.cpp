@@ -287,7 +287,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::PrecacheLevel()
 	XmlNodeRef rootNode = gEnv->pSystem->LoadXmlFromFile(INTERACTIVE_ENTITY__MONITOR_DATA_FILE);
 	if(rootNode)
 	{
-		const char* pLevelName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+		const char* pLevelName = gEnv->pGameFramework->GetLevelName();
 		if(!pLevelName)
 		{
 			pLevelName = "default";

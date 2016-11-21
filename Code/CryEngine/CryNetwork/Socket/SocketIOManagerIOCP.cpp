@@ -22,7 +22,7 @@ CSocketIOManagerIOCP::TIORequestAllocator* CSocketIOManagerIOCP::m_pAllocator = 
 
 CSocketIOManagerIOCP::CSocketIOManagerIOCP() : CSocketIOManager(eSIOMC_SupportsBackoff | eSIOMC_NoBuffering)
 	, m_recursionDepth(0)
-	, m_cio({0})
+	, m_cio({ 0 })
 	#if LOCK_NETWORK_FREQUENCY
 	, m_userMessageFrameID(0)
 	#endif // LOCK_NETWORK_FREQUENCY
@@ -175,6 +175,7 @@ void CSocketIOManagerIOCP::CheckBackoff()
 			SRegisteredSocket* pSock = GetRegisteredSocket(SSocketID::FromInt(m_completedIO.back().sockid - 1));
 			if (pSock && !(m_rand.GenerateUint32() % 10))
 			{
+				NetLog("[CSocketIOManagerIOCP::CheckBackoff] %s: Requesting Backoff. Backlog: %i", gEnv->IsDedicated() ? "Server" : "Client", (int)m_completedIO.size());
 				BackoffDueToRequest(pSock, pReq);
 			}
 		}
@@ -510,7 +511,7 @@ void CSocketIOManagerIOCP::UnregisterSocket(SSocketID sockid)
 	*pSock = SRegisteredSocket(pSock->salt + 1);
 }
 
-void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	SCOPED_COMM_LOCK;
 
@@ -526,7 +527,7 @@ void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(TNetAddress addr, SSo
 	}
 }
 
-void CSocketIOManagerIOCP::UnregisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerIOCP::UnregisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	SCOPED_COMM_LOCK;
 

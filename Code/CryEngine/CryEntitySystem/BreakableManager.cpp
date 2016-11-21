@@ -19,7 +19,6 @@
 #include "EntitySystem.h"
 #include "EntityObject.h"
 #include <CryMath/GeomQuery.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #include <Cry3DEngine/I3DEngine.h>
@@ -987,7 +986,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 		if ((createParams.nEntitySlotFlagsAdd & ENTITY_SLOT_BREAK_AS_ENTITY_MP) == 0)
 		{
 			// Inform that a new holding entity was created
-			gEnv->pGame->GetIGameFramework()->OnBreakageSpawnedEntity(pEntity, pPhysEnt, pSrcPhysEnt);
+			gEnv->pGameFramework->OnBreakageSpawnedEntity(pEntity, pPhysEnt, pSrcPhysEnt);
 		}
 
 		BreakLogAlways("BREAK: Creating entity, ptr: 0x%p   ID: 0x%08X", pEntity, pEntity->GetId());
@@ -1705,7 +1704,8 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		pe_params_rope pr;
 		pCreateEvent->pEntNew->GetParams(&pr);
 		rparams.nNumSegments = FtoI(rparams.nNumSegments * pr.nSegments / (float)rparams.nPhysSegments);
-		rparams.fTextureTileV = rparams.fTextureTileV * pr.nSegments / rparams.fTextureTileV;
+		rparams.fTextureTileV = rparams.fTextureTileV * pr.nSegments / rparams.nPhysSegments;
+		rparams.nPhysSegments = pr.nSegments;
 		pRopeNew->SetParams(rparams);
 
 		pRopeNew->SetMatrix(pSrcEntity->GetWorldTM());
@@ -2358,7 +2358,8 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		CRopeProxy* pRopeProxy = (CRopeProxy*)pSrcEntity->GetProxy(ENTITY_PROXY_ROPE);
 		pRopeProxy->PreserveParams();
 		params.nNumSegments = FtoI(pr.nSegments * params.nNumSegments / (float)params.nPhysSegments);
-		params.fTextureTileV = params.fTextureTileV * pr.nSegments / params.fTextureTileV;
+		params.fTextureTileV = params.fTextureTileV * pr.nSegments / params.nPhysSegments;
+		params.nPhysSegments = pr.nSegments;
 		pRope->SetParams(params);
 		return 1;
 	}

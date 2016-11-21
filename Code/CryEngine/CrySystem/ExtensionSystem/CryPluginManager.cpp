@@ -2,210 +2,157 @@
 
 #include "StdAfx.h"
 #include "CryPluginManager.h"
+
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryFactoryRegistry.h>
+#include <CryExtension/CryCreateClassInstance.h>
 
 #include <CryMono/IMonoRuntime.h>
 
-CCryPluginManager* CCryPluginManager::m_pThis = 0;
+CCryPluginManager* CCryPluginManager::s_pThis = 0;
 
-struct SPluginDescriptor
+// Descriptor for the binary file of a plugin.
+// This is separate since a plugin does not necessarily have to come from a binary, for example if static linking is used.
+struct SPluginModule
 {
-	string                         m_pluginName;
-	string                         m_pluginClassName;
-	string                         m_pluginBinaryPath;
-	string                         m_pluginAssetDirectory;
+	SPluginModule() {}
 
-	ICryPluginManager::EPluginType m_pluginType;
+	SPluginModule(const char* path, const char* className)
+		: m_engineModulePath(path)
+		, m_className(className)
+	{
+		GetISystem()->InitializeEngineModule(path, className, false);
+	}
+
+	SPluginModule(SPluginModule& other)
+	{
+		m_engineModulePath = other.m_engineModulePath;
+		m_className = other.m_className;
+
+		other.Clear();
+	}
+
+	SPluginModule(SPluginModule&& other)
+	{
+		m_engineModulePath = other.m_engineModulePath;
+		m_className = other.m_className;
+
+		other.Clear();
+	}
+
+	SPluginModule& operator=(const SPluginModule&& other)
+	{
+		m_engineModulePath = other.m_engineModulePath;
+		m_className = other.m_className;
+
+		return *this;
+	}
+
+	~SPluginModule()
+	{
+		Shutdown();
+	}
+
+	void Shutdown()
+	{
+		if (m_engineModulePath.size() > 0)
+		{
+			GetISystem()->UnloadEngineModule(m_engineModulePath, m_className);
+
+			// Prevent Shutdown twice
+			m_engineModulePath.clear();
+		}
+	}
+
+	void Clear()
+	{
+		m_engineModulePath.clear();
+	}
+
+	string m_engineModulePath;
+	string m_className;
 };
 
 struct SPluginContainer
 {
-	SPluginContainer(const SPluginDescriptor& descriptor, const ICryPluginPtr& plugin)
-		: m_pluginDescriptor(descriptor)
-		, m_pPlugin_CPP(plugin)
-		, m_pPlugin_CS(nullptr)
-	{}
+	// Constructor for native plug-ins
+	SPluginContainer(const std::shared_ptr<ICryPlugin>& plugin, SPluginModule&& module)
+		: m_pPlugin(plugin)
+		, m_module(module)
+		, m_pluginClassId(plugin->GetFactory()->GetClassID())
+	{
+	}
 
-	SPluginContainer(const SPluginDescriptor& descriptor)
-		: m_pluginDescriptor(descriptor)
-		, m_pPlugin_CPP(nullptr)
-		, m_pPlugin_CS(nullptr)
-	{}
+	// Constructor for managed (Mono) plug-ins, or statically linked ones
+	SPluginContainer(const std::shared_ptr<ICryPlugin>& plugin)
+		: m_pPlugin(plugin) {}
 
 	bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 	{
 		bool bSuccess = false;
-		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
+
+		if (m_pPlugin)
 		{
-			ICryPlugin* pPlugin_CPP = GetPluginPtr_CPP();
-			if (pPlugin_CPP)
-			{
-				pPlugin_CPP->SetBinaryDirectory(PathUtil::GetPathWithoutFilename(m_pluginDescriptor.m_pluginBinaryPath));
-				pPlugin_CPP->SetAssetDirectory(m_pluginDescriptor.m_pluginAssetDirectory);
-
-				bSuccess = pPlugin_CPP->Initialize(env, initParams);
-				if (bSuccess)
-				{
-					// TODO: #CryPlugins: Maybe we should return true by default (only chance to fail is a corrupted flownode register method then)
-					pPlugin_CPP->RegisterFlowNodes();
-				}
-			}
-		}
-		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-		{
-			m_pPlugin_CS = gEnv->pMonoRuntime->GetPlugin(m_pluginDescriptor.m_pluginBinaryPath);
-
-			if (m_pPlugin_CS)
-			{
-				m_pPlugin_CS->SetBinaryDirectory(PathUtil::GetPathWithoutFilename(m_pluginDescriptor.m_pluginBinaryPath));
-				m_pPlugin_CS->SetAssetDirectory(m_pluginDescriptor.m_pluginAssetDirectory);
-
-				// TODO: #CryPlugins: implement flownode support for mono plugins
-				bSuccess = true;
-			}
+			m_pPlugin->SetUpdateFlags(IPluginUpdateListener::EUpdateType_NoUpdate);
+			bSuccess = m_pPlugin->Initialize(env, initParams);
 		}
 
 		return bSuccess;
 	}
 
-	void OnGameStart() const
-	{
-		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
-		{
-			if (m_pPlugin_CPP)
-			{
-				m_pPlugin_CPP->OnGameStart();
-			}
-		}
-		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-		{
-			if (m_pPlugin_CS)
-			{
-				m_pPlugin_CS->Call_OnGameStart();
-			}
-		}
-	}
-
-	void OnGameStop() const
-	{
-		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
-		{
-			if (m_pPlugin_CPP)
-			{
-				m_pPlugin_CPP->OnGameStop();
-			}
-		}
-		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-		{
-			if (m_pPlugin_CS)
-			{
-				m_pPlugin_CS->Call_OnGameStop();
-			}
-		}
-	}
-
 	bool Shutdown()
 	{
-		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
-		{
-			GetPluginPtr_CPP()->UnregisterFlowNodes();
-			m_pPlugin_CPP.reset();
+		m_pPlugin->UnregisterFlowNodes();
+		m_pPlugin.reset();
 
-			return GetISystem()->UnloadEngineModule(m_pluginDescriptor.m_pluginBinaryPath.c_str(), m_pluginDescriptor.m_pluginClassName.c_str());
-		}
-		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-		{
-			//GetPluginPtr()->UnregisterFlowNodes();
-			m_pPlugin_CS = nullptr;
-
-			return gEnv->pMonoRuntime->UnloadBinary(m_pluginDescriptor.m_pluginBinaryPath.c_str());
-		}
+		m_module.Shutdown();
 
 		return false;
 	}
 
-	ICryFactory* GetFactoryPtr() const
+	ICryPlugin* GetPluginPtr() const
 	{
-		if (m_pPlugin_CPP.get() != nullptr)
+		if (m_pPlugin)
 		{
-			return m_pPlugin_CPP->GetFactory();
+			return m_pPlugin.get();
 		}
 
 		return nullptr;
-	}
-
-	ICryPlugin* GetPluginPtr_CPP() const
-	{
-		if (m_pPlugin_CPP)
-		{
-			return m_pPlugin_CPP.get();
-		}
-
-		return nullptr;
-	}
-
-	ICryEngineBasePlugin* GetPluginPtr_CS() const
-	{
-		return m_pPlugin_CS;
-	}
-
-	const SPluginDescriptor& GetPluginDescriptor() const
-	{
-		return m_pluginDescriptor;
-	}
-
-	void Update(int updateFlags, int nPauseMode)
-	{
-		// TODO: #CryPlugins: discuss update call source for c++ plugins
-		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
-		{
-			if (GetPluginPtr_CPP())
-			{
-				GetPluginPtr_CPP()->Update(updateFlags, nPauseMode);
-			}
-		}
 	}
 
 	friend bool operator==(const SPluginContainer& left, const SPluginContainer& right)
 	{
-		if (left.m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
-		{
-			return (left.GetPluginPtr_CPP() == right.GetPluginPtr_CPP());
-		}
-		else if (left.m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-		{
-			return (left.m_pPlugin_CS == right.m_pPlugin_CS);
-		}
-
-		return false;
+		return (left.GetPluginPtr() == right.GetPluginPtr());
 	}
 
-	SPluginDescriptor     m_pluginDescriptor;
-	ICryPluginPtr         m_pPlugin_CPP;
-	ICryEngineBasePlugin* m_pPlugin_CS;
+	CryClassID                     m_pluginClassId;
+	string                         m_pluginAssetDirectory;
+
+	ICryPluginManager::EPluginType m_pluginType;
+
+	std::shared_ptr<ICryPlugin>    m_pPlugin;
+
+	SPluginModule                  m_module;
 };
 
 void CCryPluginManager::ReloadPluginCmd(IConsoleCmdArgs* pArgs)
 {
-	m_pThis->UnloadAllPlugins();
-	m_pThis->LoadExtensionFile("cryplugin.csv");
-	m_pThis->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
+	s_pThis->UnloadAllPlugins();
+	s_pThis->LoadExtensionFile("cryplugin.csv");
+	s_pThis->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
 }
 
 CCryPluginManager::CCryPluginManager(const SSystemInitParams& initParams)
 	: m_systemInitParams(initParams)
-	, m_pluginListeners(1)
 {
-	m_pThis = this;
+	s_pThis = this;
+
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 }
 
 CCryPluginManager::~CCryPluginManager()
 {
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
-
-	m_pluginListeners.Clear();
 
 	UnloadAllPlugins();
 
@@ -222,23 +169,12 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_GAME_POST_INIT:
-		Initialize();
-		break;
-
-	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
-	case ESYSTEM_EVENT_GAME_MODE_SWITCH_START:
-		for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+	case ESYSTEM_EVENT_REGISTER_FLOWNODES:
 		{
-			it->OnGameStart();
-		}
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_UNLOAD:
-	case ESYSTEM_EVENT_GAME_MODE_SWITCH_END:
-		for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
-		{
-			it->OnGameStop();
+			for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
+			{
+				it->GetPluginPtr()->RegisterFlowNodes();
+			}
 		}
 		break;
 	}
@@ -248,8 +184,13 @@ bool CCryPluginManager::Initialize()
 {
 #ifndef _RELEASE
 	REGISTER_COMMAND("sys_reload_plugin", ReloadPluginCmd, 0, "Reload a plugin - not implemented yet");
-	REGISTER_INT("sys_debug_plugins", 0, VF_DEV_ONLY | VF_DUMPTODISK, "Show PluginManager debug info");
 #endif
+
+	// Start with loading the default engine plug-ins
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CryDefaultEntities", "Plugin_CryDefaultEntities");
+	//Schematyc + Schematyc Standard Enviroment
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycCore", "Plugin_SchematycCore");
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycSTDEnv", "Plugin_SchematycSTDEnv");
 
 	return LoadExtensionFile("cryplugin.csv");
 }
@@ -289,6 +230,8 @@ static bool Parser_StrEquals(const char* pStart, const char* pEnd, const char* s
 
 bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
 {
+	CryLogAlways("Loading extension file %s", szFilename);
+
 	CRY_ASSERT(szFilename != nullptr);
 	bool bResult = true;
 
@@ -304,228 +247,213 @@ bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
 
 	const char* pTokenStart = pBuffer;
 	const char* pBufferEnd = pBuffer + iFileSize;
-	while (bResult && pTokenStart != pBufferEnd)
+	while (pTokenStart != pBufferEnd)
 	{
 		const char* pNewline = Parser_StrChr(pTokenStart, pBufferEnd, '\n');
 		const char* pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
 
-		SPluginDescriptor desc;
-		desc.m_pluginType = ICryPluginManager::EPluginType::EPluginType_CPP;
+		auto pluginType = ICryPluginManager::EPluginType::EPluginType_CPP;
 		if (Parser_StrEquals(pTokenStart, pSemicolon, "C#"))
-			desc.m_pluginType = ICryPluginManager::EPluginType::EPluginType_CS;
+			pluginType = ICryPluginManager::EPluginType::EPluginType_CS;
+
+		// Parsing of plugin name
+		// Not actually used anymore, but no need to break existing setup seeing as we're going to move away from csv soon anyway - Filip
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
+		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
 
 		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
 		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-		desc.m_pluginName.assign(pTokenStart, pSemicolon - pTokenStart);
-		desc.m_pluginName.Trim();
+
+		string pluginClassName;
+		pluginClassName.assign(pTokenStart, pSemicolon - pTokenStart);
+		pluginClassName.Trim();
 
 		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
 		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-		desc.m_pluginClassName.assign(pTokenStart, pSemicolon - pTokenStart);
-		desc.m_pluginClassName.Trim();
+
+		string pluginBinaryPath;
+		pluginBinaryPath.assign(pTokenStart, pSemicolon - pTokenStart);
+		pluginBinaryPath.Trim();
 
 		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
 		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-		desc.m_pluginBinaryPath.assign(pTokenStart, pSemicolon - pTokenStart);
-		desc.m_pluginBinaryPath.Trim();
 
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
-		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
-		desc.m_pluginAssetDirectory.assign(pTokenStart, pSemicolon - pTokenStart);
-		desc.m_pluginAssetDirectory.Trim();
+		string pluginAssetDirectory;
+		pluginAssetDirectory.assign(pTokenStart, pSemicolon - pTokenStart);
+		pluginAssetDirectory.Trim();
+	#pragma message("TODO: Use plugin asset directory")
 
 		pTokenStart = Parser_NextChar(pNewline, pBufferEnd);
-		bResult = LoadPlugin(desc);
+		if (!LoadPluginFromDisk(pluginType, pluginBinaryPath, pluginClassName))
+		{
+			bResult = false;
+		}
 	}
 
 	delete[](pBuffer);
 	return bResult;
 }
 
-bool CCryPluginManager::LoadPlugin(const SPluginDescriptor& pluginDescriptor)
+bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path, const char* className)
 {
-	if (FindPluginContainer(pluginDescriptor.m_pluginName))
-	{
-		// Plugin is already loaded, nothing else to do
-		CryLogAlways("Plugin %s has already been loaded - skipping", pluginDescriptor.m_pluginName.c_str());
-		return true;
-	}
+	CryLogAlways("Loading plugin %s", path);
 
-	bool bSuccess = false;
-	switch (pluginDescriptor.m_pluginType)
+	std::shared_ptr<ICryPlugin> pPlugin;
+
+	switch (type)
 	{
 	case EPluginType::EPluginType_CPP:
 		{
-			GetISystem()->InitializeEngineModule(pluginDescriptor.m_pluginBinaryPath, pluginDescriptor.m_pluginClassName, false);
+			// Load the module, note that this calls ISystem::InitializeEngineModule
+			// Automatically unloads in destructor
+			SPluginModule module(path, className);
 
-			ICryFactoryRegistry* pFactoryRegistry = GetISystem()->GetCryFactoryRegistry();
-			ICryFactory* pFactory = pFactoryRegistry->GetFactory(pluginDescriptor.m_pluginClassName);
-			if (pFactory)
+			ICryFactoryRegistry* pFactoryReg = gEnv->pSystem->GetCryFactoryRegistry();
+			CRY_ASSERT(pFactoryReg);
+
+			ICryFactory* pFactory = pFactoryReg->GetFactory(className);
+			if (pFactory == nullptr)
 			{
-				ICryPluginPtr pNewClassInstance = cryinterface_cast<ICryPlugin>(pFactory->CreateClassInstance());
-				if (pNewClassInstance)
-				{
-					SPluginContainer newPlugin(pluginDescriptor, pNewClassInstance);
-					bSuccess = newPlugin.Initialize(*gEnv, m_systemInitParams);
-					m_pluginContainer.push_back(newPlugin);
-				}
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Factory %s was not found in plugin %s!", className, path);
+				return false;
 			}
+			
+			if (!pFactory->ClassSupports(cryiidof<ICryPlugin>()))
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Factory %s did not implement ICryPlugin in plugin %s!", className, path);
+				return false;
+			}
+
+			ICryUnknownPtr pUnk = pFactory->CreateClassInstance();
+			pPlugin = cryinterface_cast<ICryPlugin>(pUnk);
+			if (!pPlugin)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Could not create an instance of %s in plugin %s!", className, path);
+				return false;
+			}
+
+			m_pluginContainer.emplace_back(pPlugin, std::move(module));
+			module.Clear();
+
 			break;
 		}
 
 	case EPluginType::EPluginType_CS:
 		{
-			if (gEnv->pMonoRuntime)
+			if (gEnv->pMonoRuntime == nullptr)
 			{
-				if (gEnv->pMonoRuntime->LoadBinary(pluginDescriptor.m_pluginBinaryPath.c_str()))
-				{
-					SPluginContainer newPlugin(pluginDescriptor);
-					bSuccess = newPlugin.Initialize(*gEnv, m_systemInitParams);
-					m_pluginContainer.push_back(newPlugin);
-				}
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to load Mono plugin %s without having loaded the CryMono module!", path);
+
+				return false;
 			}
+
+			pPlugin = gEnv->pMonoRuntime->LoadBinary(path);
+			if (!pPlugin)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Could not load Mono binary %s", path);
+
+				return false;
+			}
+
+			m_pluginContainer.emplace_back(pPlugin);
 			break;
 		}
 	}
 
-	if (bSuccess)
+	auto &containedPlugin = m_pluginContainer.back();
+
+	if (!containedPlugin.Initialize(*gEnv, m_systemInitParams))
 	{
-		// Notification to listeners, that plugin got initialized
-		NotifyListeners(pluginDescriptor.m_pluginName.c_str(), IPluginEventListener::EPluginEvent::EPlugin_Initialized);
-	}
-	else
-	{
-		UnloadPlugin(pluginDescriptor);
-	}
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugin load failed - Failed to initialize %s in plugin %s!", className, path);
 
-	return bSuccess;
-}
+		containedPlugin.Shutdown();
+		m_pluginContainer.pop_back();
 
-bool CCryPluginManager::UnloadPlugin(const SPluginDescriptor& pluginDescriptor, bool bReloadOther)
-{
-	bool bSuccess = false;
-	const SPluginContainer* pPluginContainer = FindPluginContainer(pluginDescriptor.m_pluginName);
-	if (pPluginContainer)
-	{
-		TPluginList::iterator pluginIt = std::find(m_pluginContainer.begin(), m_pluginContainer.end(), *pPluginContainer);
-		if (pluginIt != m_pluginContainer.end())
-		{
-			bSuccess = pluginIt->Shutdown();
-			m_pluginContainer.erase(pluginIt);
-
-			// TODO: #CryPlugins: work-around, this must be improved
-			if (bReloadOther)
-			{
-				if (pluginIt->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-				{
-					for (TPluginList::iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
-					{
-						if (it->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
-						{
-							it->Initialize(*gEnv, m_systemInitParams);
-						}
-					}
-				}
-			}
-
-			// notification to listeners, that plugin got un-initialized
-			NotifyListeners(pluginDescriptor.m_pluginClassName.c_str(), IPluginEventListener::EPluginEvent::EPlugin_Unloaded);
-		}
+		return false;
 	}
 
-	return bSuccess;
+	// Notification to listeners, that plugin got initialized
+	NotifyEventListeners(containedPlugin.m_pluginClassId, IPluginEventListener::EPluginEvent::Initialized);
+	return true;
 }
 
 bool CCryPluginManager::UnloadAllPlugins()
 {
 	bool bError = false;
-	TPluginList::const_iterator itEnd = m_pluginContainer.end();
-	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != itEnd; ++it)
+	for (auto it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
 	{
-		if (!UnloadPlugin(it->GetPluginDescriptor()))
+		if (!it->Shutdown())
 		{
 			bError = true;
 		}
+
+		// notification to listeners, that plugin got un-initialized
+		NotifyEventListeners(it->m_pluginClassId, IPluginEventListener::EPluginEvent::Unloaded);
 	}
+
+	m_pluginContainer.clear();
 
 	return !bError;
 }
 
-void CCryPluginManager::NotifyListeners(const char* szPluginName, IPluginEventListener::EPluginEvent event)
+void CCryPluginManager::NotifyEventListeners(const CryClassID& classID, IPluginEventListener::EPluginEvent event)
 {
-	for (TPluginEventListeners::Notifier notifier(m_pluginListeners); notifier.IsValid(); notifier.Next())
+	for (auto it = m_pluginListenerMap.cbegin(); it != m_pluginListenerMap.cend(); ++it)
 	{
-		if (!strcmp(notifier.Name(), szPluginName))
+		if (std::find(it->second.begin(), it->second.end(), classID) != it->second.end())
 		{
-			notifier->OnPluginEvent(szPluginName, event);
+			it->first->OnPluginEvent(classID, event);
 		}
 	}
 }
 
-void CCryPluginManager::Update(int updateFlags, int nPauseMode)
+void CCryPluginManager::Update(IPluginUpdateListener::EPluginUpdateType updateFlags)
 {
-	// TODO: #CryPlugins: update call should be removed at some point
-	for (TPluginList::iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+	for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
 	{
-		it->Update(updateFlags, nPauseMode);
-	}
-
-#ifndef _RELEASE
-	ICVar* pCVarPlugins = gEnv->pConsole->GetCVar("sys_debug_plugins");
-	if (pCVarPlugins && pCVarPlugins->GetIVal() > 0)
-	{
-		const float color[4] = { 1, 1, 1, 1 };
-		const float textSize = 1.5f;
-		const float xMargin = 40.f;
-
-		float yPos = gEnv->pRenderer->GetHeight() / 2.0f;
-		float secondColumnOffset = 0.f;
-
-		STextDrawContext ctx;
-		ctx.SetSizeIn800x600(false);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * textSize, UIDRAW_TEXTSIZEFACTOR * textSize));
-
-		// TODO: #CryPlugins: print out proper plugin statistics
-		IFFont* defaultFont = gEnv->pCryFont->GetFont("default");
-		if (defaultFont)
+		if (it->GetPluginPtr()->GetUpdateFlags() & updateFlags)
 		{
-			for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
-			{
-				gEnv->pRenderer->Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "$3%s '%s'", it->GetPluginDescriptor().m_pluginClassName.c_str(), it->GetPluginDescriptor().m_pluginBinaryPath.c_str());
-				yPos -= 15.f;
-			}
+			it->GetPluginPtr()->OnPluginUpdate(updateFlags);
 		}
 	}
-#endif
 }
 
-const SPluginContainer* CCryPluginManager::FindPluginContainer(const string& pluginName) const
+std::shared_ptr<ICryPlugin> CCryPluginManager::QueryPluginById(const CryClassID& classID) const
 {
-	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+	for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
 	{
-		if (it->GetPluginDescriptor().m_pluginName.find(pluginName) != string::npos)
-		{
-			return &(*it);
-		}
-	}
-
-	return nullptr;
-}
-
-// TODO: #CryPlugins: only works for c++ plugins right now (is it needed for mono?)
-ICryPluginPtr CCryPluginManager::QueryPluginById(const CryClassID& classID) const
-{
-	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
-	{
-		ICryFactory* pFactory = it->GetFactoryPtr();
+		ICryFactory* pFactory = it->GetPluginPtr()->GetFactory();
 		if (pFactory)
 		{
 			if (pFactory->GetClassID() == classID || pFactory->ClassSupports(classID))
 			{
-				return it->m_pPlugin_CPP;
+				return it->m_pPlugin;
 			}
 		}
 	}
 
 	return nullptr;
+}
+
+
+std::shared_ptr<ICryPlugin> CCryPluginManager::AcquirePluginById(const CryClassID& classID)
+{
+	std::shared_ptr<ICryPlugin> pPlugin;
+	CryCreateClassInstance(classID, pPlugin);
+
+	if (pPlugin == nullptr)
+	{
+		return nullptr;
+	}
+
+	m_pluginContainer.emplace_back(pPlugin);
+	if (!m_pluginContainer.back().Initialize(*gEnv, m_systemInitParams))
+	{
+		m_pluginContainer.back().Shutdown();
+		m_pluginContainer.pop_back();
+
+		return nullptr;
+	}
+
+	return pPlugin;
 }

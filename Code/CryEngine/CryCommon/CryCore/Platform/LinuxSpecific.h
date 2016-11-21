@@ -128,6 +128,10 @@ typedef unsigned long int threadID;
 
 #define _PTRDIFF_T_DEFINED 1
 
+#define _A_RDONLY (0x01)
+#define _A_HIDDEN (0x02)
+#define _A_SUBDIR (0x10)
+
 typedef struct in_addr_windows
 {
 	union

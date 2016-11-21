@@ -154,7 +154,7 @@ struct FEntityProxy_SerializeXML_ExceptScriptProxy
 
 	void operator()(const CEntity::TProxyPair& it) const
 	{
-		if (it.first != ENTITY_PROXY_SCRIPT)
+		if (it.first != ENTITY_PROXY_SCRIPT && it.first != ENTITY_PROXY_ATTRIBUTES)
 			it.second->SerializeXML(m_node, m_bLoading);
 	}
 
@@ -472,6 +472,20 @@ void CEntity::SetFlags(uint32 flags)
 		}
 		if (m_pGridLocation)
 			m_pGridLocation->nEntityFlags = flags;
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::SetFlagsExtended(uint32 flagsExtended)
+{
+	if (flagsExtended != m_flagsExtended)
+	{
+		m_flagsExtended = flagsExtended;
+		CRenderProxy* pRenderProxy = GetRenderProxy();
+		if (pRenderProxy)
+		{
+			pRenderProxy->UpdateEntityFlags();
+		}
 	}
 };
 
@@ -2358,6 +2372,7 @@ int CEntity::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomNam
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS(sFilename);
 	if (!GetRenderProxy())
 		CreateProxy(ENTITY_PROXY_RENDER);
 	ICharacterInstance* pChar;
@@ -2529,15 +2544,6 @@ int CEntity::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMov
 		CreateProxy(ENTITY_PROXY_RENDER);
 	return GetRenderProxy()->SetVolumeObjectMovementProperties(nSlot, properties);
 }
-
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-int CEntity::LoadPrismObject(int nSlot)
-{
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadPrismObject(nSlot);
-}
-#endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::RegisterInAISystem(const AIObjectParams& params)

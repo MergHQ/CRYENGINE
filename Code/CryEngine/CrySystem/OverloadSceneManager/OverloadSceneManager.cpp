@@ -4,9 +4,9 @@
 #include "StdAfx.h"
 #include "OverloadSceneManager.h"
 #include <CryAction/IDebugHistory.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Profilers/IStatoscope.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #if ENABLE_STATOSCOPE
 class COverloadDG : public IStatoscopeDataGroup
@@ -366,7 +366,7 @@ void COverloadSceneManager::DebugDrawDisplay()
 		static ColorF textCol(0.0f, 1.0f, 0.0f, 1.0f);
 		static Vec2 textPos(10.0f, 10.0f);
 		static float textSize = 1.4f;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, textSize, &textCol.r, false, "Overload Scene Manager debug view");
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, textSize, &textCol.r, false, "Overload Scene Manager debug view");
 
 		DebugDrawGraphs();
 	}
@@ -381,7 +381,7 @@ void COverloadSceneManager::DebugDrawGraphs()
 	if (m_pDebugHistoryManager == NULL)
 	{
 		static float leftX = 0.6f, topY = 0.1f, width = 0.4f, height = 0.4f, margin = 0.f;
-		m_pDebugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+		m_pDebugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 		m_pDebugHistory = m_pDebugHistoryManager->CreateHistory("vehicle-graph", "");
 		m_pDebugHistory->SetupLayoutRel(leftX, topY, width, height, margin);

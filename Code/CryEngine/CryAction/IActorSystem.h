@@ -214,6 +214,8 @@ struct IActor : public IGameObjectExtension
 	virtual int  GetPhysicalSkipEntities(IPhysicalEntity** pSkipList, const int maxSkipSize) const { return 0; }
 
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params) = 0;
+
+	virtual bool IsInteracting() const = 0;
 };
 
 struct IActorIterator

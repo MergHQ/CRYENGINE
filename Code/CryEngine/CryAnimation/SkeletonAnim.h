@@ -77,6 +77,7 @@ public:
 		return 1.0f;
 	}
 
+	f32 GetLayerBlendWeight(int32 nLayer);
 	void SetLayerBlendWeight(int32 nLayer, f32 fMult);
 
 	ILINE uint8 GetActiveLayer(uint8 layer)            { return m_layers[layer].m_transitionQueue.m_bActive; }
@@ -139,8 +140,8 @@ public:
 
 	IAnimationPoseModifierPtr m_transformPinningPoseModifier;
 
-	IAnimationSerializablePtr      GetPoseModifierSetup()       { return m_pPoseModifierSetup; }
-	IAnimationSerializableConstPtr GetPoseModifierSetup() const { return m_pPoseModifierSetup; }
+	IAnimationPoseModifierSetupPtr      GetPoseModifierSetup()       { return m_pPoseModifierSetup; }
+	IAnimationPoseModifierSetupConstPtr GetPoseModifierSetup() const { return m_pPoseModifierSetup; }
 
 	bool PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name);
 

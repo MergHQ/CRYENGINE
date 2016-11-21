@@ -190,7 +190,7 @@ private:
 			return false;
 		}
 	};
-	typedef std::map<BreakSegmentID, SSendableHandle, CompareBreakSegmentIDs, STLMementoAllocator<std::pair<BreakSegmentID, SSendableHandle>>> TBreakSegmentStreams;
+	typedef std::map<BreakSegmentID, SSendableHandle, CompareBreakSegmentIDs, STLMementoAllocator<std::pair<const BreakSegmentID, SSendableHandle>>> TBreakSegmentStreams;
 	std::auto_ptr<TBreakSegmentStreams> m_pBreakSegmentStreams;
 
 	TAuthPtr                            m_pAuth;
@@ -199,13 +199,13 @@ private:
 	CChangeStateLock m_lockRemoteMapLoaded;
 	CChangeStateLock m_lockLocalMapLoaded;
 
-	typedef std::map<EntityId, EntityId, std::less<EntityId>, STLMementoAllocator<std::pair<EntityId, EntityId>>> TValidatedPredictionMap;
+	typedef std::map<EntityId, EntityId, std::less<EntityId>, STLMementoAllocator<std::pair<const EntityId, EntityId>>> TValidatedPredictionMap;
 	std::auto_ptr<TValidatedPredictionMap> m_pValidatedPredictions;
 
 #if USE_SYSTEM_ALLOCATOR
 	typedef std::map<SNetObjectID, CNetObjectBindLock, std::less<SNetObjectID>>                                                                   TPendingUnbinds;
 #else
-	typedef std::map<SNetObjectID, CNetObjectBindLock, std::less<SNetObjectID>, STLMementoAllocator<std::pair<SNetObjectID, CNetObjectBindLock>>> TPendingUnbinds;
+	typedef std::map<SNetObjectID, CNetObjectBindLock, std::less<SNetObjectID>, STLMementoAllocator<std::pair<const SNetObjectID, CNetObjectBindLock>>> TPendingUnbinds;
 #endif
 	std::auto_ptr<TPendingUnbinds> m_pPendingUnbinds;
 

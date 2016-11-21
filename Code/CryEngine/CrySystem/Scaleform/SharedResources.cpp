@@ -337,6 +337,7 @@ GFxLoader2::GFxLoader2()
 	SetImageCreator(&CryGFxImageCreator::GetAccess());
 	SetImageLoader(&CryGFxImageLoader::GetAccess());
 	SetTranslator(&CryGFxTranslator::GetAccess());
+	SetTextClipboard(&CryGFxTextClipboard::GetAccess());
 
 	// enable dynamic font cache
 	SetupDynamicFontCache();

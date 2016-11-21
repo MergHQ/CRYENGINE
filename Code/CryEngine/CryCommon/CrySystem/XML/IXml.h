@@ -18,6 +18,7 @@
 #include <CryMath/Cry_Color.h>
 
 class ICrySizer;
+struct CryGUID;
 
 #if defined(_AFX) && !defined(RESOURCE_COMPILER)
 #include <CryCore/ToolsHelpers/GuidUtil.h>
@@ -332,9 +333,19 @@ public:
 	bool getAttr(const char* key, char& value) const           { int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	//! @}.
 
-#if defined(_AFX) && !defined(RESOURCE_COMPILER)
+#ifndef RESOURCE_COMPILER
+#ifdef _AFX
 	//! Gets CString attribute.
 	bool getAttr(const char* key, CString& value) const
+	{
+		if (!haveAttr(key))
+			return false;
+		value = getAttr(key);
+		return true;
+	}
+
+	//! Gets string attribute.
+	bool getAttr(const char* key, string& value) const
 	{
 		if (!haveAttr(key))
 			return false;
@@ -365,6 +376,11 @@ public:
 		return true;
 	}
 #endif //_AFX
+	// Those are defined as abstract here because CryGUID header has access to gEnv, which breaks compilation
+	virtual void setAttr(const char* key, const CryGUID& value) = 0;
+
+	virtual bool getAttr(const char* key, CryGUID& value) const = 0;
+#endif //RESOURCE_COMPILER
 
 	// Lets be friendly to him.
 	friend class XmlNodeRef;

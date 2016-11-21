@@ -229,7 +229,7 @@ void CGameEffect::SpawnParticlesOnSkeleton(IEntity* pEntity, IParticleEmitter* p
 				Vec3 animPos;
 				Quat animRot;
 
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId());
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pEntity->GetId());
 				if(pActor) // First try to get animation data
 				{
 					QuatT animLoc = pActor->GetAnimatedCharacter()->GetAnimLocation();
@@ -486,17 +486,13 @@ bool CGameEffect::IsEntity3rdPerson(EntityId entityId)
 {
 	bool bIs3rdPerson = true;
 
-	IGame* pGame = gEnv->pGame;
-	if(pGame)
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
+	if(pGameFramework)
 	{
-		IGameFramework* pGameFramework = pGame->GetIGameFramework();
-		if(pGameFramework)
+		EntityId clientEntityId = pGameFramework->GetClientActorId();
+		if(clientEntityId == entityId)
 		{
-			EntityId clientEntityId = pGameFramework->GetClientActorId();
-			if(clientEntityId == entityId)
-			{
-				bIs3rdPerson = pGameFramework->GetClientActor()->IsThirdPerson();
-			}
+			bIs3rdPerson = pGameFramework->GetClientActor()->IsThirdPerson();
 		}
 	}
 

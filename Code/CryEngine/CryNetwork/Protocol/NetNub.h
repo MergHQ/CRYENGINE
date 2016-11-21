@@ -91,11 +91,11 @@ public:
 	virtual void         DisconnectChannel(EDisconnectionCause cause, CrySessionHandle session, const char* reason);
 	virtual INetChannel* GetChannelFromSessionHandle(CrySessionHandle session);
 
-	void                 RegisterBackoffAddress(TNetAddress addr)
+	void                 RegisterBackoffAddress(const TNetAddress& addr)
 	{
 		m_pSocketMain->RegisterBackoffAddress(addr);
 	}
-	void UnregisterBackoffAddress(TNetAddress addr)
+	void UnregisterBackoffAddress(const TNetAddress& addr)
 	{
 		m_pSocketMain->UnregisterBackoffAddress(addr);
 	}

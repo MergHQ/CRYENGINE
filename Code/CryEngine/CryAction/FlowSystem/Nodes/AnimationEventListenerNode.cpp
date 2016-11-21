@@ -179,7 +179,7 @@ private:
 		}
 	}
 
-	const string& GetEventName()
+	string GetEventName()
 	{
 		return GetPortString(&m_actInfo, EIP_EventName);
 	}

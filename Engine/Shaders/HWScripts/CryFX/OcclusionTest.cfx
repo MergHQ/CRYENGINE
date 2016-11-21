@@ -48,6 +48,7 @@ technique General
   pass p0
   {
     VertexShader = OcclusionTestVS();
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = OcclusionTestPS();
     
     ZEnable = true;

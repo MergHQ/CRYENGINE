@@ -56,11 +56,11 @@ namespace Stereo3D
 
 #ifndef _RELEASE
     if ( g_pGameCVars->g_stereoFrameworkEnable == 2 ) {
-      gEnv->pRenderer->Draw2dLabel(5.0f,  45.f, 1.5f, NULL, false, "cvar      : %f", s_cvScreenDist->GetFVal() );
-      gEnv->pRenderer->Draw2dLabel(5.0f,  60.f, 1.5f, NULL, false, "zoomdist  : %f", zoomDist);
-      gEnv->pRenderer->Draw2dLabel(5.0f,  75.f, 1.5f, NULL, false, "weaponDist: %f", s_weaponCheck.GetCurrentPlaneDist() );
-      gEnv->pRenderer->Draw2dLabel(5.0f,  90.f, 1.5f, NULL, false, "PlaneDist : %f", min(zoomDist, s_weaponCheck.GetCurrentPlaneDist()));
-      gEnv->pRenderer->Draw2dLabel(5.0f,  105.f, 1.5f, NULL, false, "enable   : %i", g_pGameCVars->g_stereoFrameworkEnable );
+      IRenderAuxText::Draw2dLabel(5.0f,  45.f, 1.5f, NULL, false, "cvar      : %f", s_cvScreenDist->GetFVal() );
+      IRenderAuxText::Draw2dLabel(5.0f,  60.f, 1.5f, NULL, false, "zoomdist  : %f", zoomDist);
+      IRenderAuxText::Draw2dLabel(5.0f,  75.f, 1.5f, NULL, false, "weaponDist: %f", s_weaponCheck.GetCurrentPlaneDist() );
+      IRenderAuxText::Draw2dLabel(5.0f,  90.f, 1.5f, NULL, false, "PlaneDist : %f", min(zoomDist, s_weaponCheck.GetCurrentPlaneDist()));
+      IRenderAuxText::Draw2dLabel(5.0f,  105.f, 1.5f, NULL, false, "enable   : %i", g_pGameCVars->g_stereoFrameworkEnable );
     }
 #endif
 
@@ -128,7 +128,7 @@ namespace Stereo3D
     //////////////////////////////////////////////////////////////////////////
     void CWeaponCheck::CastRays()
     {
-      IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+      IActor* pActor = gEnv->pGameFramework->GetClientActor();
       CPlayer* pPlayer = pActor ? static_cast<CPlayer*>(pActor) : NULL;
       if( !pPlayer ) {
         m_closestDist = 10000.f;

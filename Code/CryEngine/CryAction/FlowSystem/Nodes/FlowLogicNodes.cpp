@@ -1051,7 +1051,7 @@ public:
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		COMPILE_TIME_ASSERT(PORT_NONE + 1 == 0);    // or else the automatic boundary checks when incrememting the port number would not work
+		static_assert(PORT_NONE + 1 == 0, "Unexpected enum value!"); // or else the automatic boundary checks when incrememting the port number would not work
 
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig_AnyType("In",    _HELP("Input")),

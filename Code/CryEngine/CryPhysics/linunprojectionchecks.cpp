@@ -934,7 +934,7 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 		pt0[idir0] += t0.x*t0.y;
 		bContact = inrange(t0.x*t0.y,(real)0,size[0][idir0]*2) & isneg(fabs_tpl(axes[idir1]*(pt0+dir[0]*pcontact->t-center[0]))-size[1][idir1]);
 		pcontact->pt = pbox1->center + pt0*pbox1->Basis + pmode->dir*pcontact->t;
-		pcontact->n = (n*pbox1->Basis)*sgnnz(n*center[0]);
+		pcontact->n = (n*pbox1->Basis)*sgnnz(n*(center[0]-dir[0]*pcontact->t));
 		pcontact->iFeature[0] = 0x20 | idir0<<2|isg0.y+1|isg0.x+1>>1;
 		pcontact->iFeature[1] = 0x20 | idir1<<2|isg1.y+1|isg1.x+1>>1;
 	} else { // face-vertex
@@ -1461,14 +1461,33 @@ int box_cylinder_lin_unprojection(unprojection_mode *pmode, const box *pbox,int 
 
 	if (bContact) {
 		// make sure contact point lies on primitives (there might be false hits if they were initially separated)
-		e = min(min(min(size.x,size.y),size.z),r)*0.05f;
+		e = 1.1f;
 		pt = (pbox->Basis*(pcontact->pt-pbox->center-pmode->dir*pcontact->t)).abs();
-		bContact = inrange(max(-e,pt.x-size.x) + max(-e,pt.y-size.y) + max(-e,pt.z-size.z), e*-2.99f, e*3.0f);
+		bContact = isneg(max(max(pt.x-size.x*e,pt.y-size.y*e),pt.z-size.z*e));
 		c = pcontact->pt-pcyl->center; nlen = c*pcyl->axis;
-		bContact &= inrange(max(-e*pcyl->r,(fabs_tpl(nlen)-pcyl->hh)*pcyl->r) + max(-e*pcyl->r,(c-pcyl->axis*nlen).len2()-sqr(pcyl->r)), 
-												e*-1.99f*pcyl->r, e*2.0f*pcyl->r);
+		bContact &= isneg(max(fabs_tpl(nlen)-pcyl->hh*e, (c-pcyl->axis*nlen).len2() - sqr(pcyl->r*e)));
 		if (!bContact)
 			return 0;
+	}
+
+	if (bContact & bFindMinUnproj && parea && parea->npt<2) {
+		Vec3 rdown = pcontact->pt-pcyl->center;	rdown -= pcyl->axis*(pcyl->axis*rdown);
+		Vec3r org = center+pbox->Basis*rdown;
+		quotient tray[2] = { quotient(-pcyl->hh), quotient(pcyl->hh) };
+		for(i=0; i<3; i++) {
+			j = sgnnz(axis[i]);
+			tray[0] = max(tray[0], quotient(-size[i]-org[i]*j,axis[i]*j));
+			tray[1] = min(tray[1], quotient( size[i]-org[i]*j,axis[i]*j));
+		}
+		if (tray[1]-tray[0] > pcyl->hh) {
+			parea->type = geom_contact_area::polyline;
+			for(i=0;i<2;i++) 
+				parea->pt[i] = pcyl->center + rdown + pcyl->axis*tray[i].val() + pmode->dir*pcontact->t;
+			parea->n1 = rdown.normalized();
+			parea->piFeature[1][0]=parea->piFeature[1][1] = 0x20; 
+			parea->piFeature[0][0]=parea->piFeature[0][1] = pcontact->iFeature[0];
+			parea->npt = 2;
+		}
 	}
 
 	return bContact|(pmode->bCheckContact^1);

@@ -452,8 +452,10 @@ bool CDecalManager::Spawn(CryEngineDecalInfo DecalInfo, CDecal* pCallerManagedDe
 
 	float fWrapMinSize = GetFloatCVar(e_DecalsDeferredDynamicMinSize);
 
+	EERType ownerRenderNodeType = (DecalInfo.ownerInfo.pRenderNode) ? DecalInfo.ownerInfo.pRenderNode->GetRenderNodeType() : eERType_NotRenderNode;
+
 	bool bSpawnOnVegetationWithBending = false;
-	if (DecalInfo.ownerInfo.pRenderNode && DecalInfo.ownerInfo.pRenderNode->GetRenderNodeType() == eERType_Vegetation && DecalInfo.fSize > fWrapMinSize && !DecalInfo.bDeferred)
+	if (ownerRenderNodeType == eERType_Vegetation && DecalInfo.fSize > fWrapMinSize && !DecalInfo.bDeferred)
 	{
 		//    CVegetation * pVeg = (CVegetation*)DecalInfo.ownerInfo.pRenderNode;
 		//    StatInstGroup & rGroup = GetObjManager()->m_lstStaticTypes[pVeg->m_nObjectTypeID];
@@ -623,9 +625,7 @@ bool CDecalManager::Spawn(CryEngineDecalInfo DecalInfo, CDecal* pCallerManagedDe
 
 		assert(newDecal.m_pRenderMesh->GetChunks().size() == 1);
 	}
-	else if (DecalInfo.ownerInfo.pRenderNode &&
-	         DecalInfo.ownerInfo.pRenderNode->GetRenderNodeType() == eERType_RenderProxy &&
-	         DecalInfo.ownerInfo.nRenderNodeSlotId >= 0)
+	else if (ownerRenderNodeType == eERType_RenderProxy || ownerRenderNodeType == eERType_Vegetation)
 	{
 		newDecal.m_eDecalType = eDecalType_OS_SimpleQuad;
 

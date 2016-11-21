@@ -8,12 +8,45 @@
 #include "Movement/MoveOp.h"
 #include "GoalOps/TeleportOp.h"
 #include <CryAISystem/IAgent.h>
+#include <CryGame/IGameFramework.h>
+
+#ifndef _LIB
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
+
+void AIFlowBaseNode::RegisterFlowNodes()
+{
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	if (pFlowSystem)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
+			pFactory = pFactory->m_pNext;
+		}
+	}
+}
+
+void AIFlowBaseNode::UnregisterFlowNodes()
+{
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	if (pFlowSystem)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			pFlowSystem->UnregisterType(pFactory->m_sClassName);
+			pFactory = pFactory->m_pNext;
+		}
+	}
+}
+#endif
 
 namespace AIActionSequence
 {
 
 //////////////////////////////////////////////////////////////////////////
-
 void GoalPipeListenerHelper::RegisterGoalPipeListener(IGoalPipeListener* listener, EntityId entityId, int goalPipeId)
 {
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
@@ -219,7 +252,7 @@ void CFlowNode_AISequenceEnd::ProcessEvent(EFlowEvent event, SActivationInfo* pA
 			if (IsPortActive(pActInfo, InputPort_End))
 			{
 				const SequenceId assignedSequenceId = GetAssignedSequenceId();
-				assert(assignedSequenceId);
+				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "AISequence:End node doesn't have any sequence assigned.");
 				if (!assignedSequenceId)
 					return;
 

@@ -24,7 +24,7 @@ public:
 	IPhysicalEntity*                            m_pPhysEnt;
 	SVegetationSpriteInfo*                      m_pSpriteInfo;
 	CDeformableNode*                            m_pDeformable;
-	PodArrayAABB<CRenderObject::SInstanceData>* m_pInstancingInfo;
+	PodArrayAABB<CRenderObject::SInstanceInfo>* m_pInstancingInfo;
 
 #if defined(SEG_WORLD)
 	uint16 m_nStaticTypeSlot;
@@ -71,7 +71,7 @@ public:
 	IFoliage*            GetFoliage(int nSlot = 0) final;
 	float                GetSpriteSwitchDist() const;
 	bool                 IsBreakable() { pe_params_part pp; pp.ipart = 0; return m_pPhysEnt && m_pPhysEnt->GetParams(&pp) && pp.idmatBreakable >= 0; }
-	void                 AddBending(Vec3 const& v);
+	bool                 IsBending() const;
 	virtual float        GetMaxViewDist() final;
 	IStatObj*            GetEntityStatObj(unsigned int nPartId = 0, unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final;
 	virtual EERType      GetRenderNodeType() final;
@@ -169,6 +169,9 @@ public:
 	{
 		FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
 	}
+
+	// Apply bending parameters to the CRenderObject
+	void FillBendingData(CRenderObject* pObj) const;
 };
 
 #endif // _CVegetation_H_

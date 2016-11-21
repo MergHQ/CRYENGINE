@@ -20,7 +20,7 @@ void DrawDebugPath(const Path& path, const ColorB& color)
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(segment.start, color, segment.end, color);
 
 		cry_sprintf(buffer, "%" PRISIZE_T, i);
-		gEnv->pRenderer->DrawLabel(segment.start, 1.0f, "%s", buffer);
+		IRenderAuxText::DrawLabel(segment.start, 1.0f, buffer);
 	}
 }
 }

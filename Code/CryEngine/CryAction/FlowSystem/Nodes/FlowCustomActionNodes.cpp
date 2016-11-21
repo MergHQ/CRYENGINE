@@ -277,7 +277,7 @@ public:
 				return;
 			}
 
-			ICustomActionManager* pCustomActionManager = gEnv->pGame->GetIGameFramework()->GetICustomActionManager();
+			ICustomActionManager* pCustomActionManager = gEnv->pGameFramework->GetICustomActionManager();
 			if (pCustomActionManager)
 			{
 				pCustomAction = pCustomActionManager->GetActiveCustomAction(pEntity);
@@ -390,7 +390,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 CFlowNode_CustomActionControl::~CFlowNode_CustomActionControl()
 {
-	ICustomActionManager* pCustomActionManager = gEnv->pGame->GetIGameFramework()->GetICustomActionManager();
+	ICustomActionManager* pCustomActionManager = gEnv->pGameFramework->GetICustomActionManager();
 	if (pCustomActionManager)
 	{
 		pCustomActionManager->UnregisterListener(this);
@@ -438,7 +438,7 @@ void CFlowNode_CustomActionControl::ProcessEvent(EFlowEvent event, SActivationIn
 		if (!pEntity)
 			return;
 
-		ICustomActionManager* pCustomActionManager = gEnv->pGame->GetIGameFramework()->GetICustomActionManager();
+		ICustomActionManager* pCustomActionManager = gEnv->pGameFramework->GetICustomActionManager();
 		CRY_ASSERT(pCustomActionManager != NULL);
 		if (!pCustomActionManager)
 			return;

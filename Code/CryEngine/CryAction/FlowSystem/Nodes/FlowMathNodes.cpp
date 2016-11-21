@@ -53,7 +53,7 @@ public:
 			OutputPortConfig<float>("out"),
 			{ 0 }
 		};
-		config.sDescription = _HELP("[out] = especified operation with [A] and [B]");
+		config.sDescription = _HELP("[out] = result of the specified operation with [A] and [B]");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
@@ -107,7 +107,7 @@ public:
 class CFlowNode_Round : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Round(SActivationInfo* pActInfo) {};
+	CFlowNode_Round(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -153,7 +153,7 @@ class CFlowNode_FloatToString : public CFlowBaseNode<eNCT_Singleton>
 	};
 
 public:
-	CFlowNode_FloatToString(SActivationInfo* pActInfo) {};
+	CFlowNode_FloatToString(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -198,7 +198,7 @@ public:
 class CFlowNode_Add : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Add(SActivationInfo* pActInfo) {};
+	CFlowNode_Add(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -239,7 +239,7 @@ public:
 class CFlowNode_Sub : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Sub(SActivationInfo* pActInfo) {};
+	CFlowNode_Sub(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -280,7 +280,7 @@ public:
 class CFlowNode_Mul : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Mul(SActivationInfo* pActInfo) {};
+	CFlowNode_Mul(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -332,26 +332,28 @@ class CFlowNode_CalculateVec3 : public CFlowBaseNode<eNCT_Singleton>
 	{
 		EOP_ADD = 0,
 		EOP_SUB,
-		EOP_MUL
+		EOP_MUL,
+		EOP_CROSS,
+		EOP_DOT
 	};
 
 public:
-	CFlowNode_CalculateVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_CalculateVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig_Void("DoCalc", _HELP("Do the calc and send the result to the output when receiving event on this port")),
-			InputPortConfig<int>("Op",     EOP_ADD,                                                                                  _HELP("Operation"),_HELP("Operation"), _UICONFIG("enum_int:Add=0,Sub=1,Mul=2")),
-			InputPortConfig<Vec3>("A",     _HELP(" ")),
-			InputPortConfig<Vec3>("B",     _HELP(" ")),
+			InputPortConfig<int>("Op",     EOP_ADD,                                                                                  _HELP("Operation"),_HELP("Operation"), _UICONFIG("enum_int:Add=0,Sub=1,Mul=2,Cross=3,Dot=4")),
+			InputPortConfig<Vec3>("A",     _HELP("Vector A")),
+			InputPortConfig<Vec3>("B",     _HELP("Vector B")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("out"),
+			OutputPortConfig_AnyType("out", _HELP("A Vec3 with the result of the operation or a float for a Dot product")),
 			{ 0 }
 		};
-		config.sDescription = _HELP("[out] = especified operation with [A] and [B]");
+		config.sDescription = _HELP("[out] = result of the specified operation with [A] and [B]");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
@@ -367,25 +369,38 @@ public:
 					Vec3 a = GetPortVec3(pActInfo, INP_A);
 					Vec3 b = GetPortVec3(pActInfo, INP_B);
 					int op = GetPortInt(pActInfo, INP_Operation);
-					Vec3 out(0, 0, 0);
-					switch (op)
+
+					if (op == EOP_DOT)
 					{
-					case EOP_ADD:
-						out = a + b;
-						break;
+						float out = a.Dot(b);
+						ActivateOutput(pActInfo, 0, out);
+					}
+					else
+					{
+						Vec3 out(0, 0, 0);
+						switch (op)
+						{
+						case EOP_ADD:
+							out = a + b;
+							break;
 
-					case EOP_SUB:
-						out = a - b;
-						break;
+						case EOP_SUB:
+							out = a - b;
+							break;
 
-					case EOP_MUL:
-						out.x = a.x * b.x;
-						out.y = a.y * b.y;
-						out.z = a.z * b.z;
-						break;
+						case EOP_MUL:
+							out.x = a.x * b.x;
+							out.y = a.y * b.y;
+							out.z = a.z * b.z;
+							break;
+
+						case EOP_CROSS:
+							out = a.Cross(b);
+							break;
+						}
+						ActivateOutput(pActInfo, 0, out);
 					}
 
-					ActivateOutput(pActInfo, 0, out);
 				}
 				break;
 			}
@@ -402,7 +417,7 @@ public:
 class CFlowNode_AddVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_AddVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_AddVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -442,7 +457,7 @@ public:
 class CFlowNode_SubVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SubVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_SubVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -482,7 +497,7 @@ public:
 class CFlowNode_MulVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_MulVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_MulVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -523,7 +538,7 @@ public:
 class CFlowNode_CrossVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_CrossVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_CrossVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -564,7 +579,7 @@ public:
 class CFlowNode_DotVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_DotVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_DotVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -605,7 +620,7 @@ public:
 class CFlowNode_MagnitudeVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_MagnitudeVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_MagnitudeVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -642,7 +657,7 @@ public:
 class CFlowNode_ReciprocalVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_ReciprocalVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_ReciprocalVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -683,7 +698,7 @@ public:
 class CFlowNode_ScaleVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_ScaleVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_ScaleVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -725,7 +740,7 @@ public:
 class CFlowNode_NormalizeVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_NormalizeVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_NormalizeVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -768,7 +783,7 @@ public:
 class CFlowNode_EqualVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_EqualVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_EqualVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -811,7 +826,7 @@ public:
 class CFlowNode_Reciprocal : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Reciprocal(SActivationInfo* pActInfo) {};
+	CFlowNode_Reciprocal(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -850,7 +865,7 @@ public:
 class CFlowNode_Power : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Power(SActivationInfo* pActInfo) {};
+	CFlowNode_Power(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -891,7 +906,7 @@ public:
 class CFlowNode_Sqrt : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Sqrt(SActivationInfo* pActInfo) {};
+	CFlowNode_Sqrt(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -930,7 +945,7 @@ public:
 class CFlowNode_Abs : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Abs(SActivationInfo* pActInfo) {};
+	CFlowNode_Abs(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -969,7 +984,7 @@ public:
 class CFlowNode_Div : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Div(SActivationInfo* pActInfo) {};
+	CFlowNode_Div(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1012,7 +1027,7 @@ public:
 class CFlowNode_Remainder : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Remainder(SActivationInfo* pActInfo) {};
+	CFlowNode_Remainder(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1060,7 +1075,7 @@ public:
 class CFlowNode_InRange : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_InRange(SActivationInfo* pActInfo) {};
+	CFlowNode_InRange(SActivationInfo* pActInfo) {}
 
 	enum
 	{
@@ -1126,7 +1141,7 @@ public:
 class CFlowNode_Equal : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Equal(SActivationInfo* pActInfo) {};
+	CFlowNode_Equal(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1185,7 +1200,7 @@ class CFlowNode_EqualCheck : public CFlowBaseNode<eNCT_Singleton>
 	};
 
 public:
-	CFlowNode_EqualCheck(SActivationInfo* pActInfo) {};
+	CFlowNode_EqualCheck(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1241,7 +1256,7 @@ public:
 class CFlowNode_Less : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Less(SActivationInfo* pActInfo) {};
+	CFlowNode_Less(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1300,7 +1315,7 @@ class CFlowNode_LessCheck : public CFlowBaseNode<eNCT_Singleton>
 	};
 
 public:
-	CFlowNode_LessCheck(SActivationInfo* pActInfo) {};
+	CFlowNode_LessCheck(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1354,7 +1369,7 @@ public:
 class CFlowNode_Counter : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowNode_Counter(SActivationInfo* pActInfo) { m_nCounter = 0; };
+	CFlowNode_Counter(SActivationInfo* pActInfo) { m_nCounter = 0; }
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_Counter(pActInfo); }
 
 	virtual void         Serialize(SActivationInfo* pActInfo, TSerialize ser)
@@ -1422,7 +1437,7 @@ class CFlowNode_PortCounter : public CFlowBaseNode<eNCT_Instanced>
 	static const int PORT_COUNT = 16;
 
 public:
-	CFlowNode_PortCounter(SActivationInfo* pActInfo) { Reset(); };
+	CFlowNode_PortCounter(SActivationInfo* pActInfo) { Reset(); }
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_PortCounter(pActInfo); }
 
 	virtual void         GetConfiguration(SFlowNodeConfig& config)
@@ -1564,9 +1579,7 @@ private:
 class CFlowNode_Random : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Random(SActivationInfo* pActInfo)
-	{
-	};
+	CFlowNode_Random(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1613,7 +1626,7 @@ public:
 class CFlowNode_Clamp : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Clamp(SActivationInfo* pActInfo) {};
+	CFlowNode_Clamp(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1657,7 +1670,7 @@ public:
 class CFlowNode_ClampVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_ClampVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_ClampVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1701,7 +1714,7 @@ public:
 class CFlowNode_SetVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SetVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_SetVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1742,7 +1755,7 @@ public:
 class CFlowNode_SetColor : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SetColor(SActivationInfo* pActInfo) {};
+	CFlowNode_SetColor(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1784,7 +1797,7 @@ public:
 class CFlowNode_ToVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_ToVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_ToVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1826,7 +1839,7 @@ public:
 class CFlowNode_ToBoolean : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_ToBoolean(SActivationInfo* pActInfo) {};
+	CFlowNode_ToBoolean(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1867,7 +1880,7 @@ public:
 class CFlowNode_FromBoolean : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_FromBoolean(SActivationInfo* pActInfo) {};
+	CFlowNode_FromBoolean(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1906,7 +1919,7 @@ public:
 class CFlowNode_FromVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_FromVec3(SActivationInfo* pActInfo) {};
+	CFlowNode_FromVec3(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1947,7 +1960,7 @@ public:
 class CFlowNode_SinCos : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SinCos(SActivationInfo* pActInfo) {};
+	CFlowNode_SinCos(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -1987,7 +2000,7 @@ public:
 class CFlowNode_AnglesToDir : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_AnglesToDir(SActivationInfo* pActInfo) {};
+	CFlowNode_AnglesToDir(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -2029,7 +2042,7 @@ public:
 class CFlowNode_DirToAngles : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_DirToAngles(SActivationInfo* pActInfo) {};
+	CFlowNode_DirToAngles(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -2071,7 +2084,7 @@ public:
 class CFlowNode_SetNumber : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SetNumber(SActivationInfo* pActInfo) {};
+	CFlowNode_SetNumber(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -2084,7 +2097,7 @@ public:
 			OutputPortConfig<float>("out"),
 			{ 0 }
 		};
-		config.sDescription = _HELP("Send input value to the output when event on set port is received");
+		config.sDescription = _HELP("Send a float input value to the output when event on set port is received");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED); // POLICY-CHANGE: don't send to output on initialize
@@ -2109,10 +2122,52 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
+class CFlowNode_SetInteger : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_SetInteger(SActivationInfo* pActInfo) {}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("set", _HELP("Send value to output when receiving event on this port")),
+			InputPortConfig<int>("in",  _HELP("Value to be set on output")),
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("out"),
+			{ 0 }
+		};
+		config.sDescription = _HELP("Send an integer input value to the output when event on set port is received");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.nFlags |= EFLN_AISEQUENCE_SUPPORTED;
+		config.SetCategory(EFLN_APPROVED); // POLICY-CHANGE: don't send to output on initialize
+	}
+	virtual void ProcessEvent(EFlowEvent evt, SActivationInfo* pActInfo)
+	{
+		switch (evt)
+		{
+		case eFE_Activate:
+			if (IsPortActive(pActInfo, 0))
+			{
+				ActivateOutput(pActInfo, 0, GetPortInt(pActInfo, 1));
+			}
+			break;
+		}
+	};
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
 class CFlowNode_Sin : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Sin(SActivationInfo* pActInfo) {};
+	CFlowNode_Sin(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -2152,7 +2207,7 @@ public:
 class CFlowNode_Cos : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Cos(SActivationInfo* pActInfo) {};
+	CFlowNode_Cos(SActivationInfo* pActInfo) {}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
@@ -2191,7 +2246,7 @@ public:
 class CFlowNode_Tan : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_Tan(SActivationInfo* pActInfo) {};
+	CFlowNode_Tan(SActivationInfo* pActInfo) {}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
@@ -2231,7 +2286,7 @@ public:
 class CFlowNode_SinInverse : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SinInverse(SActivationInfo* pActInfo) {};
+	CFlowNode_SinInverse(SActivationInfo* pActInfo) {}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
@@ -2271,7 +2326,7 @@ public:
 class CFlowNode_CosInverse : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_CosInverse(SActivationInfo* pActInfo) {};
+	CFlowNode_CosInverse(SActivationInfo* pActInfo) {}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
@@ -2310,7 +2365,7 @@ public:
 class CFlowNode_TanInverse : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_TanInverse(SActivationInfo* pActInfo) {};
+	CFlowNode_TanInverse(SActivationInfo* pActInfo) {}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
@@ -2359,7 +2414,7 @@ public:
 		m_counter = 0;
 		m_highLimit = 10;
 		m_lowLimit = 0;
-	};
+	}
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_UpDownCounter(pActInfo); }
 
@@ -2438,7 +2493,7 @@ public:
 	}
 };
 
-class CFlowNode_TrigArcSin : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_TrigArcSin : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputPorts
 	{
@@ -2451,37 +2506,16 @@ class CFlowNode_TrigArcSin : public CFlowBaseNode<eNCT_Instanced>
 	};
 
 public:
-	////////////////////////////////////////////////////
-	CFlowNode_TrigArcSin(SActivationInfo* pActInfo)
-	{
+	CFlowNode_TrigArcSin(SActivationInfo* pActInfo) {}
 
-	}
-
-	////////////////////////////////////////////////////
-	virtual ~CFlowNode_TrigArcSin(void)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		// Define input ports here, in same order as EInputPorts
-		static const SInputPortConfig inputs[] =
-		{
+		static const SInputPortConfig inputs[] = {
 			InputPortConfig<float>("in", 0.0f, _HELP("out = arcsinus(in) in degrees")),
 			{ 0 }
 		};
 
-		// Define output ports here, in same oreder as EOutputPorts
-		static const SOutputPortConfig outputs[] =
-		{
+		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<float>("out", _HELP("out = arcsinus(in) in degrees")),
 			{ 0 }
 		};
@@ -2493,7 +2527,6 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	////////////////////////////////////////////////////
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
@@ -2512,21 +2545,14 @@ public:
 		}
 	}
 
-	////////////////////////////////////////////////////
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
-
-	////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_TrigArcSin(pActInfo);
-	}
 };
 
 ////////////////////////////////////////////////////
-class CFlowNode_TrigArcCos : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_TrigArcCos : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputPorts
 	{
@@ -2539,37 +2565,16 @@ class CFlowNode_TrigArcCos : public CFlowBaseNode<eNCT_Instanced>
 	};
 
 public:
-	////////////////////////////////////////////////////
-	CFlowNode_TrigArcCos(SActivationInfo* pActInfo)
-	{
+	CFlowNode_TrigArcCos(SActivationInfo* pActInfo) {}
 
-	}
-
-	////////////////////////////////////////////////////
-	virtual ~CFlowNode_TrigArcCos(void)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		// Define input ports here, in same order as EInputPorts
-		static const SInputPortConfig inputs[] =
-		{
+		static const SInputPortConfig inputs[] = {
 			InputPortConfig<float>("in", 0.0f, _HELP("out = arccosinus(in) in degrees")),
 			{ 0 }
 		};
 
-		// Define output ports here, in same oreder as EOutputPorts
-		static const SOutputPortConfig outputs[] =
-		{
+		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<float>("out", _HELP("out = arccosinus(in) in degrees")),
 			{ 0 }
 		};
@@ -2581,7 +2586,6 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	////////////////////////////////////////////////////
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
@@ -2600,21 +2604,14 @@ public:
 		}
 	}
 
-	////////////////////////////////////////////////////
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
-
-	////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_TrigArcCos(pActInfo);
-	}
 };
 
 ////////////////////////////////////////////////////
-class CFlowNode_TrigArcTan : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_TrigArcTan : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputPorts
 	{
@@ -2627,49 +2624,26 @@ class CFlowNode_TrigArcTan : public CFlowBaseNode<eNCT_Instanced>
 	};
 
 public:
-	////////////////////////////////////////////////////
-	CFlowNode_TrigArcTan(SActivationInfo* pActInfo)
-	{
+	CFlowNode_TrigArcTan(SActivationInfo* pActInfo) {}
 
-	}
-
-	////////////////////////////////////////////////////
-	virtual ~CFlowNode_TrigArcTan(void)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		// Define input ports here, in same order as EInputPorts
-		static const SInputPortConfig inputs[] =
-		{
+		static const SInputPortConfig inputs[] = {
 			InputPortConfig<float>("in", 0.0f, _HELP("out = arctangens(in) in degrees")),
 			{ 0 }
 		};
 
-		// Define output ports here, in same oreder as EOutputPorts
-		static const SOutputPortConfig outputs[] =
-		{
+		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<float>("out", _HELP("out = arctangens(in) in degrees")),
 			{ 0 }
 		};
 
-		// Fill in configuration
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("Outputs arctangens of the input in degrees");
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	////////////////////////////////////////////////////
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
@@ -2688,21 +2662,14 @@ public:
 		}
 	}
 
-	////////////////////////////////////////////////////
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
-
-	////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_TrigArcTan(pActInfo);
-	}
 };
 
 ////////////////////////////////////////////////////
-class CFlowNode_Ceil : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_Ceil : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputPorts
 	{
@@ -2715,49 +2682,26 @@ class CFlowNode_Ceil : public CFlowBaseNode<eNCT_Instanced>
 	};
 
 public:
-	////////////////////////////////////////////////////
-	CFlowNode_Ceil(SActivationInfo* pActInfo)
-	{
+	CFlowNode_Ceil(SActivationInfo* pActInfo) {}
 
-	}
-
-	////////////////////////////////////////////////////
-	virtual ~CFlowNode_Ceil(void)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		// Define input ports here, in same order as EInputPorts
-		static const SInputPortConfig inputs[] =
-		{
+		static const SInputPortConfig inputs[] = {
 			InputPortConfig<float>("A", 0.0f, _HELP("out = ceil(A)")),
 			{ 0 }
 		};
 
-		// Define output ports here, in same oreder as EOutputPorts
-		static const SOutputPortConfig outputs[] =
-		{
+		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<float>("out", _HELP("out = ceil(A)")),
 			{ 0 }
 		};
 
-		// Fill in configuration
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("Outputs ceiling of A");
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	////////////////////////////////////////////////////
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
@@ -2775,21 +2719,14 @@ public:
 		}
 	}
 
-	////////////////////////////////////////////////////
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
-
-	////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_Ceil(pActInfo);
-	}
 };
 
 ////////////////////////////////////////////////////
-class CFlowNode_Floor : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_Floor : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputPorts
 	{
@@ -2802,49 +2739,26 @@ class CFlowNode_Floor : public CFlowBaseNode<eNCT_Instanced>
 	};
 
 public:
-	////////////////////////////////////////////////////
-	CFlowNode_Floor(SActivationInfo* pActInfo)
-	{
+	CFlowNode_Floor(SActivationInfo* pActInfo) {}
 
-	}
-
-	////////////////////////////////////////////////////
-	virtual ~CFlowNode_Floor(void)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-
-	}
-
-	////////////////////////////////////////////////////
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		// Define input ports here, in same order as EInputPorts
-		static const SInputPortConfig inputs[] =
-		{
+		static const SInputPortConfig inputs[] = {
 			InputPortConfig<float>("A", 0.0f, _HELP("out = floor(A)")),
 			{ 0 }
 		};
 
-		// Define output ports here, in same oreder as EOutputPorts
-		static const SOutputPortConfig outputs[] =
-		{
+		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<float>("out", _HELP("out = floor(A)")),
 			{ 0 }
 		};
 
-		// Fill in configuration
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("Outputs floor of A");
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	////////////////////////////////////////////////////
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
@@ -2862,20 +2776,13 @@ public:
 		}
 	}
 
-	////////////////////////////////////////////////////
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
-
-	////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_Floor(pActInfo);
-	}
 };
 
-class CFlowNode_Modulo : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_Modulo : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_Modulo(SActivationInfo* pActInfo) {};
@@ -2939,6 +2846,7 @@ REGISTER_FLOW_NODE("Math:SinCos", CFlowNode_SinCos);
 REGISTER_FLOW_NODE("Math:AnglesToDir", CFlowNode_AnglesToDir);
 REGISTER_FLOW_NODE("Math:DirToAngles", CFlowNode_DirToAngles);
 REGISTER_FLOW_NODE("Math:SetNumber", CFlowNode_SetNumber);
+REGISTER_FLOW_NODE("Math:SetInteger", CFlowNode_SetInteger);
 REGISTER_FLOW_NODE("Math:BooleanTo", CFlowNode_ToBoolean);
 REGISTER_FLOW_NODE("Math:BooleanFrom", CFlowNode_FromBoolean);
 REGISTER_FLOW_NODE("Math:UpDownCounter", CFlowNode_UpDownCounter);

@@ -187,7 +187,7 @@ private:
 	void DrawBubbleMessage(const char* const szMessage, const Vec3& drawingPosition, const bool bFramed, const bool bDepthTest)
 	{
 		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = m_currentTextSize;
+		ti.scale = Vec2(m_currentTextSize);
 		ti.flags = eDrawText_IgnoreOverscan | eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center
 		           | (bDepthTest ? eDrawText_DepthTest : 0)
 		           | (bFramed ? eDrawText_Framed : 0);
@@ -309,7 +309,7 @@ void CAIBubblesSystem::PopupBlockingAlert(const char* const message, const TBubb
 
 	if (flags & eBNS_BlockingPopup && gAIEnv.CVars.BubblesSystemAlertnessFilter & eBNS_BlockingPopup)
 	{
-		CryMessageBox(message, "AIBubbleSystemMessageBox", 0);
+		CryMessageBox(message, "AIBubbleSystemMessageBox");
 	}
 }
 

@@ -15,8 +15,8 @@ protected:
 
 		if (pActInfo->pEntity)
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId());
-			if (pActor != gEnv->pGame->GetIGameFramework()->GetClientActor())
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId());
+			if (pActor != gEnv->pGameFramework->GetClientActor())
 			{
 				bRet = false;
 			}
@@ -33,10 +33,10 @@ protected:
 	// returns the actor associated with the input entity. In single player, it returns the local player if that actor does not exists.
 	IActor* GetInputActor(const IFlowNode::SActivationInfo* const pActInfo) const
 	{
-		IActor* pActor = pActInfo->pEntity ? gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId()) : nullptr;
+		IActor* pActor = pActInfo->pEntity ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId()) : nullptr;
 		if (!pActor && !gEnv->bMultiplayer)
 		{
-			pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			pActor = gEnv->pGameFramework->GetClientActor();
 		}
 
 		return pActor;

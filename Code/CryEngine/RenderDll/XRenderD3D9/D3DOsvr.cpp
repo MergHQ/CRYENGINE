@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_OSVR_SDK
+#ifdef INCLUDE_VR_RENDERING
 
 	#include "D3DOsvr.h"
 	#include <DriverD3D.h>
@@ -127,11 +127,7 @@ void CD3DOsvrRenderer::Shutdown()
 	m_pDevice->ShutdownRenderer();
 
 }
-void CD3DOsvrRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
-}
+
 void CD3DOsvrRenderer::OnResolutionChanged()
 {
 	if (m_eyeWidth != m_pRenderer->GetWidth() ||
@@ -141,10 +137,12 @@ void CD3DOsvrRenderer::OnResolutionChanged()
 		Initialize();
 	}
 }
+
 void CD3DOsvrRenderer::ReleaseBuffers()
 {
 
 }
+
 void CD3DOsvrRenderer::PrepareFrame()
 {
 	m_pStereoRenderer->SetEyeTextures(m_eyeTextures[0].textures[m_currentFrame], m_eyeTextures[1].textures[m_currentFrame]);
@@ -202,8 +200,8 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType();
 			switch (socialScreen)
 			{
-			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage:
+			case EHmdSocialScreen::DistortedDualImage:
+			case EHmdSocialScreen::UndistortedDualImage:
 			{
 				if (!CShaderMan::s_shPostEffects) return;
 
@@ -223,7 +221,7 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 
 			}
 			break;
-			case EHmdSocialScreen::eHmdSocialScreen_Off:
+			case EHmdSocialScreen::Off:
 				if (CShaderMan::s_shPostEffects)
 				{
 					PostProcessUtils().ClearScreen(0.1f, 0.1f, 0.1f, 1.f);
@@ -231,12 +229,12 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 
 				break;
 
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
+			case EHmdSocialScreen::UndistortedLeftEye:
 			{
 				PostProcessUtils().CopyTextureToScreen(left);
 				break;
 			}
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
+			case EHmdSocialScreen::UndistortedRightEye:
 			{
 				PostProcessUtils().CopyTextureToScreen(right);
 				break;

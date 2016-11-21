@@ -146,14 +146,14 @@ public:
 
 		// Stiffness and Elasticity
 		, stretchStiffness(1)
-		, shearStiffness(0.3)
-		, bendStiffness(0.3)
+		, shearStiffness(0.3f)
+		, bendStiffness(0.3f)
 		, bendStiffnessByTrianglesAngle(0)
 		, pullStiffness(0)
 
 		// Friction and Damping
-		, friction(0.01)
-		, rigidDamping(0.01)
+		, friction(0.01f)
+		, rigidDamping(0.01f)
 		, springDamping(0)
 		, springDampingPerSubstep(true)
 		, collisionDampingTangential(0)

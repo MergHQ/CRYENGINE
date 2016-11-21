@@ -112,27 +112,30 @@ void CResponseInstance::ExecuteSegment(CResponseSegment* pSegment)
 #endif
 		for (CResponseSegment::ActionsInfo& actionInfo : pSegment->GetActions())
 		{
-			CRY_ASSERT(actionInfo.m_pAction);
-			DRS::IResponseActionInstanceUniquePtr pAction = nullptr;
-			if (actionInfo.m_delay > FLT_EPSILON)
+			if (m_pCurrentlyExecutedSegment)
 			{
-				pAction = DRS::IResponseActionInstanceUniquePtr(new DelayActionActionInstance(actionInfo.m_delay, actionInfo.m_pAction, this));
-				DRS_DEBUG_DATA_ACTION(AddActionStarted(actionInfo.m_pAction->GetVerboseInfoWithType() + ", delay: " + CryStringUtils::toString(actionInfo.m_delay) + "s ", pAction.get(), GetCurrentActor(), pSegment));
-			}
-			else
-			{
-				SET_DRS_USER_SCOPED(currentName);
-				pAction = actionInfo.m_pAction->Execute(this);
-				DRS_DEBUG_DATA_ACTION(AddActionStarted(actionInfo.m_pAction->GetVerboseInfoWithType(), (pAction) ? pAction.get() : nullptr, GetCurrentActor(), pSegment));
-			}
+				CRY_ASSERT(actionInfo.m_pAction);
+				DRS::IResponseActionInstanceUniquePtr pAction = nullptr;
+				if (actionInfo.m_delay > FLT_EPSILON)
+				{
+					pAction = DRS::IResponseActionInstanceUniquePtr(new DelayActionActionInstance(actionInfo.m_delay, actionInfo.m_pAction, this));
+					DRS_DEBUG_DATA_ACTION(AddActionStarted(actionInfo.m_pAction->GetVerboseInfoWithType() + ", delay: " + CryStringUtils::toString(actionInfo.m_delay) + "s ", pAction.get(), GetCurrentActor(), pSegment));
+				}
+				else
+				{
+					SET_DRS_USER_SCOPED(currentName);
+					pAction = actionInfo.m_pAction->Execute(this);
+					DRS_DEBUG_DATA_ACTION(AddActionStarted(actionInfo.m_pAction->GetVerboseInfoWithType(), (pAction) ? pAction.get() : nullptr, GetCurrentActor(), pSegment));
+				}
 
-			if (pAction)
-			{
-				m_activeActions.push_back(std::move(pAction));
-			}
-			else
-			{
-				DRS_DEBUG_DATA_ACTION(AddActionFinished(nullptr));
+				if (pAction)
+				{
+					m_activeActions.push_back(std::move(pAction));
+				}
+				else
+				{
+					DRS_DEBUG_DATA_ACTION(AddActionFinished(nullptr));
+				}
 			}
 		}
 	}

@@ -108,7 +108,7 @@ extern HINSTANCE g_hResourceInstance;
 
 inline HINSTANCE _Tiny_GetInstance()
 {
-	return (HINSTANCE) GetModuleHandle(NULL);
+	return (HINSTANCE) CryGetCurrentModule();
 }
 
 inline HINSTANCE _Tiny_GetResourceInstance()

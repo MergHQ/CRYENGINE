@@ -8,13 +8,10 @@
 	#include "SharedResources.h"
 	#include "SharedStates.h"
 
-// This is a small hack to get the IME manager given ISystem
-// Since we know CrySystem is implementing ISystem (since we exist within CrySystem), this is safe
-// We could expose GetImeManager in ISystem, but it would involve adding IImeManager with 1 method, which seems overkill.
-inline CImeManager* GetSystemImeManager(ISystem* pSystem)
+inline IImeManager* GetSystemImeManager(ISystem* pSystem)
 {
 	CRY_ASSERT(pSystem);
-	return static_cast<CSystem*>(pSystem)->GetImeManager();
+	return pSystem->GetImeManager();
 }
 
 	#if CRY_PLATFORM_WINDOWS
@@ -36,7 +33,7 @@ GImeHelper::~GImeHelper()
 {
 	if (gEnv && gEnv->pSystem)
 	{
-		CImeManager* pImeManager = GetSystemImeManager(gEnv->pSystem);
+		IImeManager* pImeManager = GetSystemImeManager(gEnv->pSystem);
 		if (pImeManager)
 		{
 			pImeManager->SetScaleformHandler(NULL);

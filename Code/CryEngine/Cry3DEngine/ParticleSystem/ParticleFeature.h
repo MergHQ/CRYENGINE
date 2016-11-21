@@ -52,9 +52,10 @@ public:
 	// ~IParticleFeature
 
 	// Initialization
-	virtual void         ResolveDependency(CParticleComponent* pComponent)                         {}
-	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
-	virtual EFeatureType GetFeatureType()                                                          { return EFT_Generic; }
+	virtual void              ResolveDependency(CParticleComponent* pComponent)                         {}
+	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
+	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
+	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
 
 	// EUL_MainPreUpdate
 	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) {}
@@ -74,11 +75,11 @@ public:
 	// EUL_KillUpdate
 	virtual void KillParticles(const SUpdateContext& context, TParticleId* pParticles, size_t count) {}
 
+	// EUL_PreUpdate
+	virtual void PreUpdate(const SUpdateContext& context) {}
+
 	// EUL_Update
 	virtual void Update(const SUpdateContext& context) {}
-
-	// EUL_PostUpdate
-	virtual void PostUpdate(const SUpdateContext& context) {}
 
 	// EUL_Render
 	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
@@ -117,6 +118,9 @@ static const ColorB colorLight      = HexToColor(0xfffdd0);
 static const ColorB colorAudio      = HexToColor(0xd671f7);
 static const ColorB colorGeneral    = HexToColor(0xececec);
 static const ColorB colorSecondGen  = HexToColor(0xc0c0c0);
+static const ColorB colorProject    = HexToColor(0xc0c0c0);
+static const ColorB colorGPU        = HexToColor(0x00e87e);
+static const ColorB colorComponent  = HexToColor(0x000000);
 
 #define CRY_PFX2_DECLARE_FEATURE                                 \
   static const SParticleFeatureParams &GetStaticFeatureParams(); \
@@ -141,6 +145,9 @@ static const ColorB colorSecondGen  = HexToColor(0xc0c0c0);
 
 #define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, Color) \
   CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, true)
+
+#define CRY_PFX2_LEGACY_FEATURE(BaseType, NewType, LegacyName)           \
+	SERIALIZATION_CLASS_NAME(BaseType, NewType, LegacyName, LegacyName);
 
 }
 

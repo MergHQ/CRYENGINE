@@ -476,7 +476,7 @@ private:
 
 	CTimeValue               m_localPhysicsTime;
 
-	typedef VectorMap<INetContextListenerPtr, SContextEstablisher, std::less<INetContextListenerPtr>, stl::STLGlobalAllocator<std::pair<INetContextListenerPtr, SContextEstablisher>>> EstablishersMap;
+	typedef VectorMap<INetContextListenerPtr, SContextEstablisher, std::less<INetContextListenerPtr>, stl::STLGlobalAllocator<std::pair<const INetContextListenerPtr, SContextEstablisher>>> EstablishersMap;
 	EstablishersMap m_allEstablishers;
 	EstablishersMap m_currentEstablishers;
 

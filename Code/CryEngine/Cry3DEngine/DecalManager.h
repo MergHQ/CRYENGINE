@@ -110,6 +110,20 @@ public:
 	}
 
 private:
+	void AddDecalToRenderView(float fDistance,
+	                          IMaterial* pMat,
+	                          const uint8 sortPrio,
+	                          Vec3 right,
+	                          Vec3 up,
+	                          const UCol& ucResCol,
+	                          const uint8 uBlendType,
+	                          const Vec3& vAmbientColor,
+	                          Vec3 vPos,
+	                          const int nAfterWater,
+	                          CVegetation* pVegetation,
+	                          const SRenderingPassInfo& passInfo);
+
+private:
 	static IGeometry* s_pSphere;
 };
 

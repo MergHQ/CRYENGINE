@@ -2,6 +2,7 @@
 
 #ifndef FINDZERORANGES_H
 #define FINDZERORANGES_H
+#include "BitFiddling.h"
 
 template<typename Func>
 inline void FindZeroRanges(const uint32* str, size_t strLen, Func& yield)
@@ -21,7 +22,7 @@ inline void FindZeroRanges(const uint32* str, size_t strLen, Func& yield)
 
 		do
 		{
-			size_t wordZeroRunLen = countTrailingZeroes(word);
+			size_t wordZeroRunLen = size_t(countTrailingZeros64(word));
 
 			wordBitIdx += wordZeroRunLen;
 			carry += wordZeroRunLen;
@@ -34,7 +35,7 @@ inline void FindZeroRanges(const uint32* str, size_t strLen, Func& yield)
 			bitIdx += carry;
 			carry = 0;
 
-			size_t wordOneRunLen = countTrailingZeroes(~word);
+			size_t wordOneRunLen = size_t(countTrailingZeros64(~word));
 			bitIdx += wordOneRunLen;
 			wordBitIdx += wordOneRunLen;
 

@@ -284,7 +284,7 @@ void CRecordingSystemDebug::PrintThirdPersonPacketData( const SRecording_Packet&
 			const SRecording_MannEvent& rMannEvent = (const SRecording_MannEvent&)packet;
 
 			stack_string tagnames;
-			const SControllerDef* pControllerDef = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager().LoadControllerDef("Animations/Mannequin/ADB/PlayerControllerDefs.xml");
+			const SControllerDef* pControllerDef = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager().LoadControllerDef("Animations/Mannequin/ADB/PlayerControllerDefs.xml");
 			pControllerDef->m_tags.FlagsToTagList(rMannEvent.historyItem.tagState, tagnames);
 
 			if(rMannEvent.historyItem.type==SMannHistoryItem::Fragment)

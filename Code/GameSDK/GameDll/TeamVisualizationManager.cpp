@@ -118,7 +118,7 @@ void CTeamVisualizationManager::RefreshPlayerTeamMaterial( const EntityId player
 	if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(playerId))
 	{
 		CGameRules* pGameRules = g_pGame->GetGameRules();
-		CGameRules::eThreatRating threatRating = pGameRules->GetThreatRating(g_pGame->GetClientActorId(), playerId);
+		CGameRules::eThreatRating threatRating = pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), playerId);
 		RefreshTeamMaterial( pEntity, true, threatRating==CGameRules::eFriendly );
 	}
 }
@@ -145,7 +145,7 @@ void CTeamVisualizationManager::ProcessTeamChangeVisualization(EntityId entityId
 {
 	if(!m_teamVisualizationPartsMap.empty())
 	{
-		if(entityId == g_pGame->GetClientActorId())
+		if(entityId == gEnv->pGameFramework->GetClientActorId())
 		{
 			// If local player has changed team, refresh team materials for *all* players in game
 			CGameRules* pGameRules = g_pGame->GetGameRules();

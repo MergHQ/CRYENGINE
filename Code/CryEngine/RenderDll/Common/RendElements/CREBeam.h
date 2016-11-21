@@ -6,7 +6,7 @@
 #define BEAM_RE_CONE_SIDES 32
 //=============================================================
 
-class CREBeam : public CRendElementBase
+class CREBeam : public CRenderElement
 {
 private:
 

@@ -1,16 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   IMaterialEffects.h
-//  Version:     v1.00
-//  Created:     26/7/2006 by JohnN/AlexL.
-//  Compilers:   Visual Studio.NET 2003
-//  Description: Interface to the Material Effects System
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
 #pragma once
 
 #if !defined(_RELEASE)
@@ -519,6 +507,48 @@ struct SMFXCustomParamValue
 	float fValue;
 };
 
+struct SAnimFXEventInfo
+{
+	SAnimFXEventInfo()
+		: szName(nullptr)
+		, uniqueId(0u)
+	{}
+
+	SAnimFXEventInfo(const char* szName, uint32 uniqueId)
+		: szName(szName)
+		, uniqueId(uniqueId)
+	{}
+
+	const char* szName;
+	uint32      uniqueId;
+};
+
+struct IAnimFXEvents
+{
+	// Library count
+	virtual uint32      GetLibrariesCount() const = 0;
+	virtual const char* GetLibraryName(uint32 index) const = 0;
+	// Events
+	virtual int         GetAnimFXEventsCount() const = 0;
+	virtual void        GetAnimFXEventInfo(int eventIndex, SAnimFXEventInfo& typeInfo) const = 0;
+	virtual void        GetAnimFXEventInfoById(uint32 uniqueId, SAnimFXEventInfo& typeInfo) const = 0;
+	// Events parameters
+	virtual int         GetAnimFXEventParamCount(int eventIndex) const = 0;
+	virtual void        GetAnimFXEventParam(int eventIndex, int paramIndex, SAnimFXEventInfo& extraParam) const = 0;
+	virtual const char* GetAnimFXEventParamName(uint32 eventTypeUid, uint32 eventParamUid) const = 0;
+
+protected:
+	virtual ~IAnimFXEvents() {}
+};
+
+struct IMaterialEffectsListener
+{
+	virtual void OnPostLoadFXLibraries() = 0;
+
+protected:
+	virtual ~IMaterialEffectsListener() {}
+};
+
 //////////////////////////////////////////////////////////////////////////
 struct IMaterialEffects
 {
@@ -551,5 +581,11 @@ struct IMaterialEffects
 
 	virtual void                EnumerateEffectNames(EnumerateMaterialEffectsDataCallback& callback, const char* szLibraryName) const = 0;
 	virtual void                EnumerateLibraryNames(EnumerateMaterialEffectsDataCallback& callback) const = 0;
+	virtual void                AddListener(IMaterialEffectsListener* pListener, const char* name) = 0;
+	virtual void                RemoveListener(IMaterialEffectsListener* pListener) = 0;
+	virtual void                LoadFXLibraryFromXMLInMemory(const char* szName, XmlNodeRef root) = 0;
+	virtual void                UnloadFXLibrariesWithPrefix(const char* szName) = 0;
+	virtual void                SetAnimFXEvents(IAnimFXEvents* pAnimEvents) = 0;
+	virtual IAnimFXEvents*      GetAnimFXEvents() = 0;
 	// </interfuscator:shuffle>
 };

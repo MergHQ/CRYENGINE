@@ -235,8 +235,9 @@ private:
 			numAreas(_numAreas)
 		{}
 
-		bool operator()(VectorMap<EntityId, SAreasCache>::value_type& cacheEntry) const;
-
+		template<typename K, typename V>
+		bool operator()(std::pair<K, V>& cacheEntry) const;
+			
 		CArea const* const         pArea;
 		std::vector<CArea*> const& areas;
 		size_t const               numAreas;

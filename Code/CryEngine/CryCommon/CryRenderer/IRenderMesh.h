@@ -246,15 +246,4 @@ struct IRenderMesh
 	// </interfuscator:shuffle>
 };
 
-struct SBufferStream
-{
-	void*     m_pLocalData;                                                                                                        //!< Pointer to buffer data.
-	uintptr_t m_BufferHdl;
-	SBufferStream()
-	{
-		m_pLocalData = NULL;
-		m_BufferHdl = ~0u;
-	}
-};
-
 #endif                                                                                                                          // _RenderMesh_H_

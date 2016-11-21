@@ -62,7 +62,6 @@ private:
 
 	// Ocean data
 	IMaterial*                m_pMaterial;
-	_smart_ptr<IRenderMesh>   m_pRenderMesh;
 
 	PodArray<SVF_P3F_C4B_T2F> m_pMeshVerts;
 	PodArray<vtx_idx>         m_pMeshIndices;

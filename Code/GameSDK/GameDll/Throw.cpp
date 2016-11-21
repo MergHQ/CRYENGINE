@@ -231,16 +231,16 @@ void CThrow::Update(float frameTime, uint32 frameId)
 				m_pWeapon->PlayAction(GetFragmentIds().Select);
 			}
 		}
-		
+
 		if(g_pGameCVars->i_debug_projectiles > 0)
 		{
 			const Vec3 helperPos = m_pWeapon->GetSlotHelperPos(m_pWeapon->GetStats().fp ? eIGS_FirstPerson : eIGS_ThirdPerson, "grenade_term"/*m_fireParams->fireparams.helper->c_str()*/, true);
-			gEnv->pRenderer->DrawLabel(helperPos, 3.0f, "%.2f", (m_projectileLifeTime - primedTime));
+			IRenderAuxText::DrawLabelF(helperPos, 3.0f, "%.2f", (m_projectileLifeTime - primedTime));
 		}
 
 		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
-	
+
 	m_predicted = false;
 
 	if(g_pGameCVars->i_grenade_showTrajectory && m_fireParams->throwparams.display_trajectory && pActor && pActor->IsClient() && m_pWeapon->IsSelected())

@@ -304,13 +304,13 @@ void CVisArea::UpdatePortalCameraPlanes(CCamera& cam, Vec3* pVerts, bool NotForc
 		float farrColor[4] = { 1, 1, 1, 1 };
 		//		GetRenderer()->SetMaterialColor(1,1,1,1);
 		DrawLine(pVerts[0], pVerts[1]);
-		GetRenderer()->DrawLabelEx(pVerts[0], 1, farrColor, false, true, "0");
+		IRenderAuxText::DrawLabelEx(pVerts[0], 1, farrColor, false, true, "0");
 		DrawLine(pVerts[1], pVerts[2]);
-		GetRenderer()->DrawLabelEx(pVerts[1], 1, farrColor, false, true, "1");
+		IRenderAuxText::DrawLabelEx(pVerts[1], 1, farrColor, false, true, "1");
 		DrawLine(pVerts[2], pVerts[3]);
-		GetRenderer()->DrawLabelEx(pVerts[2], 1, farrColor, false, true, "2");
+		IRenderAuxText::DrawLabelEx(pVerts[2], 1, farrColor, false, true, "2");
 		DrawLine(pVerts[3], pVerts[0]);
-		GetRenderer()->DrawLabelEx(pVerts[3], 1, farrColor, false, true, "3");
+		IRenderAuxText::DrawLabelEx(pVerts[3], 1, farrColor, false, true, "3");
 	}
 }
 
@@ -584,7 +584,7 @@ void        CVisArea::PreRender(int nReqursionLevel,
 					float farrColor[4] = { float((nReqursionLevel & 1) > 0), float((nReqursionLevel & 2) > 0), float((nReqursionLevel & 4) > 0), 1 };
 					ColorF c(farrColor[0], farrColor[1], farrColor[2], farrColor[3]);
 					DrawSphere(lstPortVertsSS[i], 0.002f, c);
-					GetRenderer()->DrawLabelEx(lstPortVertsSS[i], 0.1f, farrColor, false, true, "%d", i);
+					IRenderAuxText::DrawLabelExF(lstPortVertsSS[i], 0.1f, farrColor, false, true, "%d", i);
 				}
 
 			UpdatePortalCameraPlanes(CurCamera, lstPortVertsSS.GetElements(), Upright, passInfo);
@@ -1115,7 +1115,7 @@ void CVisAreaManager::GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady)
+void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint32 dwFlags)
 {
 	{
 		uint32 dwSize = m_lstVisAreas.Count();
@@ -1123,7 +1123,7 @@ void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERTy
 		for (uint32 dwI = 0; dwI < dwSize; ++dwI)
 			if (m_lstVisAreas[dwI]->m_pObjectsTree)
 				if (!pBBox || Overlap::AABB_AABB(*m_lstVisAreas[dwI]->GetAABBox(), *pBBox))
-					m_lstVisAreas[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady);
+					m_lstVisAreas[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 	}
 
 	{
@@ -1132,7 +1132,7 @@ void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERTy
 		for (uint32 dwI = 0; dwI < dwSize; ++dwI)
 			if (m_lstPortals[dwI]->m_pObjectsTree)
 				if (!pBBox || Overlap::AABB_AABB(*m_lstPortals[dwI]->GetAABBox(), *pBBox))
-					m_lstPortals[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady);
+					m_lstPortals[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 	}
 }
 

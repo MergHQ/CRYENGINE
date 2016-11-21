@@ -143,6 +143,9 @@ void CHUDMissionObjectiveSystem::LoadLevelObjectivesInternal(const char* levelpa
 			filename = "Libs/UI/MP_Objectives.xml";
 	}*/
 
+	if (!gEnv->pCryPak->IsFileExist(filename))
+		return;
+
 	XmlNodeRef missionObjectives = GetISystem()->LoadXmlFromFile(filename.c_str());
 	if (missionObjectives == 0)
 		return;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <IEditor.h>
-#include <Include/IPlugin.h>
+#include <IPlugin.h>
 #include "ATLControlsModel.h"
 #include "QATLControlsTreeModel.h"
 #include <IAudioSystemEditor.h>

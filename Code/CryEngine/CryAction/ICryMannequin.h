@@ -1131,7 +1131,7 @@ public:
 	template<typename PODTYPE>
 	bool GetParam(uint32 paramNameCRC, PODTYPE& value) const
 	{
-		COMPILE_TIME_ASSERT(sizeof(PODTYPE) <= sizeof(QuatT));
+		static_assert(sizeof(PODTYPE) <= sizeof(QuatT), "Invalid type size!");
 		const SMannParameter* pParam = FindParam(paramNameCRC);
 		if (pParam)
 		{
@@ -1173,7 +1173,7 @@ public:
 	template<typename PODTYPE>
 	void SetParam(uint32 paramNameCRC, const PODTYPE& value)
 	{
-		COMPILE_TIME_ASSERT(sizeof(PODTYPE) <= sizeof(QuatT));
+		static_assert(sizeof(PODTYPE) <= sizeof(QuatT), "Invalid type size!");
 		const uint32 numParams = m_paramList.size();
 		for (uint32 i = 0; i < numParams; i++)
 		{

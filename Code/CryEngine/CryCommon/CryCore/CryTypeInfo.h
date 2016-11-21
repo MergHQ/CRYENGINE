@@ -77,11 +77,11 @@ struct CTypeInfo
 	//
 
 	//! Convert value to string.
-	virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+	virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 	{ return ""; }
 
 	//! Write value from string, return success.
-	virtual bool FromString(void* data, cstr str, FFromString flags = 0) const
+	virtual bool FromString(void* data, cstr str, FFromString flags = {}) const
 	{ return false; }
 
 	//! Write values of a specified type.
@@ -158,12 +158,12 @@ struct CTypeInfo
 		{
 			return (const char*)base + Offset;
 		}
-		bool FromString(void* base, cstr str, FFromString flags = 0) const
+		bool FromString(void* base, cstr str, FFromString flags = {}) const
 		{
 			assert(!bBitfield);
 			return Type.FromString((char*)base + Offset, str, flags);
 		}
-		string ToString(const void* base, FToString flags = 0, const void* def_base = 0) const
+		string ToString(const void* base, FToString flags = {}, const void* def_base = 0) const
 		{
 			assert(!bBitfield);
 			return Type.ToString((const char*)base + Offset, flags, def_base ? (const char*)def_base + Offset : 0);

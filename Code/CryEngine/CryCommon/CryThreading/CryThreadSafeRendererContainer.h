@@ -16,10 +16,10 @@
 //! This container is specialized for data which is generated in the 3DEngine and consumed by the renderer
 //! in the following frame due to multithreaded rendering. To be useable by Jobs as well as other Threads
 //! some very specific desing choices were taken:
-//! First of the underlying continous memory block is only resized during a call to 'CoalesceMemory'
+//! First of the underlying continuous memory block is only resized during a call to 'CoalesceMemory'
 //! to prevent freeing a memory block which could be used by another thread.
 //! If new memory is requiered, a page of 4 KB is allocated and used as a temp storage till the next
-//! call to 'CoalesceMemory' which then copies all page memory into one continous block.
+//! call to 'CoalesceMemory' which then copies all page memory into one continuous block.
 //! Also all threading relevant functions are implemented LockLess to prevent lock contention and make
 //! this container useable from Jobs.
 //!
@@ -57,7 +57,7 @@ public:
 	void push_back(T &&);
 	void push_back(T &&, size_t & nIndex);
 
-	// NOTE: These functions are changing the size of the continous memory block and thus are *not* thread-safe
+	// NOTE: These functions are changing the size of the continuous memory block and thus are *not* thread-safe
 	void clear();
 	void resize(size_t n);
 	void reserve(size_t n);
@@ -107,7 +107,7 @@ private:
 	/////////////////////////////////////
 	//! Private functions which do the lock-less updating
 	void* push_back_impl(size_t& nIndex);
-	bool try_append_to_continous_memory(size_t & nIndex, void* & pObj);
+	bool try_append_to_continuous_memory(size_t & nIndex, void* & pObj);
 
 	T&          GetMemoryPageElement(size_t n);
 
@@ -138,12 +138,12 @@ private:
 
 	/////////////////////////////////////
 	// Private Member Variables.
-	T* m_arrData;                         //!< Storage for the continous memory part, during coalescing resized to hold all page memory.
-	LONG m_nCapacity;                     //!< Avaible Memory in continous memory part, if exhausted during 'Fill' phase, pages as temp memory chunks are allocated.
+	T* m_arrData;                         //!< Storage for the continuous memory part, during coalescing resized to hold all page memory.
+	LONG m_nCapacity;                     //!< Avaible Memory in continuous memory part, if exhausted during 'Fill' phase, pages as temp memory chunks are allocated.
 
-	CMemoryPage* m_pMemoryPages;          //!< Single linked list of memory chunks, used for fallback allocations during 'Fill' phase (to prevent changing the continous memory block during 'Fill'.
+	CMemoryPage* m_pMemoryPages;          //!< Single linked list of memory chunks, used for fallback allocations during 'Fill' phase (to prevent changing the continuous memory block during 'Fill'.
 
-	LONG m_nSize;                         //!< Number of elements currently in the container, can be larger than m_nCapacity due the nonContinousPages.
+	LONG m_nSize;                         //!< Number of elements currently in the container, can be larger than m_nCapacity due the nonContinuousPages.
 
 	bool m_bElementAccessSafe;            //!< Boolean to indicate if we are currently doing a 'CoalasceMemory' step, during which some operations are now allowed.
 
@@ -185,7 +185,7 @@ inline size_t CThreadSafeRendererContainer<T >::empty() const
 template<typename T>
 inline size_t CThreadSafeRendererContainer<T >::capacity() const
 {
-	// capacity of continous memory block
+	// capacity of continuous memory block
 	LONG nCapacity = m_nCapacity;
 
 	// add capacity of all memory pages
@@ -288,7 +288,7 @@ inline void CThreadSafeRendererContainer<T >::clear()
 	assert(m_bElementAccessSafe);
 	size_t remainingSize = m_nSize;
 
-	// free non-continous pages if we have some
+	// free non-continuous pages if we have some
 	CMemoryPage* pCurrentMemoryPage = m_pMemoryPages;
 	while (pCurrentMemoryPage)
 	{
@@ -300,7 +300,7 @@ inline void CThreadSafeRendererContainer<T >::clear()
 	}
 	m_pMemoryPages = NULL;
 
-	// free continous part
+	// free continuous part
 	DestroyElements(m_arrData, remainingSize);
 	CryModuleMemalignFree(m_arrData);
 	m_arrData = NULL;
@@ -350,7 +350,7 @@ inline void CThreadSafeRendererContainer<T >::reserve(size_t n)
 
 ///////////////////////////////////////////////////////////////////////////////
 template<typename T>
-inline bool CThreadSafeRendererContainer<T >::try_append_to_continous_memory(size_t& nIndex, void*& pObj)
+inline bool CThreadSafeRendererContainer<T >::try_append_to_continuous_memory(size_t& nIndex, void*& pObj)
 {
 	assert(m_bElementAccessSafe);
 	LONG nSize = ~0;
@@ -378,11 +378,11 @@ inline void* CThreadSafeRendererContainer<T >::push_back_impl(size_t& nIndex)
 	assert(m_bElementAccessSafe);
 	void* pObj = NULL;
 
-	// non atomic check to see if there is space in the continous array
-	if (try_append_to_continous_memory(nIndex, pObj))
+	// non atomic check to see if there is space in the continuous array
+	if (try_append_to_continuous_memory(nIndex, pObj))
 		return pObj;
 
-	// exhausted continous memory, falling back to page allocation
+	// exhausted continuous memory, falling back to page allocation
 	for (;; )
 	{
 		assert(m_bElementAccessSafe);
@@ -449,7 +449,7 @@ inline T& CThreadSafeRendererContainer<T >::GetMemoryPageElement(size_t n)
 	{
 		// this is threadsafe because we assume that if we want to get element 'n'
 		// the clientcode did already fill the container up to element 'n'
-		// thus up to 'n', m_pNonContinousList will have valid pages
+		// thus up to 'n', m_pNonContinuousList will have valid pages
 		// NOTE: This is not safe when trying to read a element behind the valid
 		// range (same as std::vector)
 		nFirstListIndex += nPageCapacity;
@@ -462,7 +462,7 @@ inline T& CThreadSafeRendererContainer<T >::GetMemoryPageElement(size_t n)
 	return pCurrentMemoryPage->GetElement(n - nFirstListIndex);
 }
 
-//! When not not in the 'Fill' phase, it is safe to colace all page entries into one continous memory block.
+//! When not not in the 'Fill' phase, it is safe to colace all page entries into one continuous memory block.
 template<typename T>
 inline void CThreadSafeRendererContainer<T >::CoalesceMemory()
 {
@@ -492,7 +492,7 @@ inline void CThreadSafeRendererContainer<T >::CoalesceMemory()
 	MoveElements(m_arrData, arrOldData, nContinuousElements);
 	CryModuleMemalignFree(arrOldData);
 
-	// copy page data into continous memory block
+	// copy page data into continuous memory block
 	size_t nBeginToFillIndex = nContinuousElements;
 	CMemoryPage* pCurrentMemoryPage = m_pMemoryPages;
 	while (pCurrentMemoryPage)

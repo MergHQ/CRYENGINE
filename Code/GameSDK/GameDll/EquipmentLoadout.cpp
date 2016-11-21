@@ -264,7 +264,7 @@ CEquipmentLoadout::CEquipmentLoadout()
 	m_slotCategories[7] = eELC_ATTACHMENT;
 	m_slotCategories[8] = eELC_EXPLOSIVE;
 	m_slotCategories[9] = eELC_EXPLOSIVE; // Unused
-	COMPILE_TIME_ASSERT(10 == EQUIPMENT_LOADOUT_NUM_SLOTS);
+	static_assert(10 == EQUIPMENT_LOADOUT_NUM_SLOTS, "Invalid amount of loadout slots!");
 
 	int currentWeapon = -1;
 	for (int i=0; i<EQUIPMENT_LOADOUT_NUM_SLOTS; ++i)
@@ -283,7 +283,7 @@ CEquipmentLoadout::CEquipmentLoadout()
 	LoadItemDefinitions();					// Load item definitions from xml.
 	LoadDefaultEquipmentPackages(); // Load default from xml.
 
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->AddListener(this, true);
 	}
@@ -325,7 +325,7 @@ bool CEquipmentLoadout::CompareWeapons(const SLoadoutWeapon &elem1, const SLoado
 //------------------------------------------------------------------------
 CEquipmentLoadout::~CEquipmentLoadout()
 {
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->RemoveListener(this);
 	}

@@ -11,11 +11,11 @@ namespace Detail
 template<typename BaseIterator, typename BoundsChecker, EEncoding Encoding>
 inline void MoveNext(BaseIterator& it, const BoundsChecker& checker, const integral_constant<EEncoding, Encoding> )
 {
-	COMPILE_TIME_ASSERT(
+	static_assert(
 	  Encoding == eEncoding_ASCII ||
 	  Encoding == eEncoding_UTF32 ||
 	  Encoding == eEncoding_Latin1 ||
-	  Encoding == eEncoding_Win1252);
+	  Encoding == eEncoding_Win1252, "Invalid encoding!");
 	assert(!checker.IsEnd(it) && "Attempt to iterate past the end of the sequence");
 
 	// All of these encodings use a single code-unit for each code-point.
@@ -69,11 +69,11 @@ inline void MoveNext(BaseIterator& it, const BoundsChecker& checker, integral_co
 template<typename BaseIterator, typename BoundsChecker, EEncoding Encoding>
 inline void MovePrev(BaseIterator& it, const BoundsChecker& checker, const integral_constant<EEncoding, Encoding> )
 {
-	COMPILE_TIME_ASSERT(
+	static_assert(
 	  Encoding == eEncoding_ASCII ||
 	  Encoding == eEncoding_UTF32 ||
 	  Encoding == eEncoding_Latin1 ||
-	  Encoding == eEncoding_Win1252);
+	  Encoding == eEncoding_Win1252, "Invalid encoding!");
 	assert(!checker.IsBegin(it) && "Attempt to iterate past the beginning of the sequence");
 
 	// All of these encodings use a single code-unit for each code-point.

@@ -9,7 +9,7 @@ namespace gpu_pfx2
 
 class CParticleComponentRuntime;
 
-class CREGpuParticle : public CRendElementBase
+class CREGpuParticle : public CRenderElement
 {
 public:
 	CREGpuParticle();

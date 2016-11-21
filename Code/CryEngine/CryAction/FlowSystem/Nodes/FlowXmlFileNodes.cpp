@@ -179,7 +179,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->root)
 		{
-			const char* file = GetPortString(pActInfo, EIP_File);
+			const string file = GetPortString(pActInfo, EIP_File);
 			const int loc = GetPortInt(pActInfo, EIP_Location);
 			const bool bOverwrite = GetPortBool(pActInfo, EIP_Overwrite);
 
@@ -195,12 +195,12 @@ public:
 					{
 						char* levelName;
 						char* levelPath;
-						gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+						gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 						szSavePath = levelPath;
 					}
 					else
 					{
-						ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+						ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 						if (pLevel)
 						{
 							szSavePath = pLevel->GetPath();
@@ -306,7 +306,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc))
 		{
-			const char* file = GetPortString(pActInfo, EIP_File);
+			const string file = GetPortString(pActInfo, EIP_File);
 			const int loc = GetPortInt(pActInfo, EIP_Location);
 
 			ICryPak* pPak = gEnv->pCryPak;
@@ -321,12 +321,12 @@ public:
 					{
 						char* levelName;
 						char* levelPath;
-						gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+						gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 						szLoadPath = levelPath;
 					}
 					else
 					{
-						ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+						ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 						if (pLevel)
 						{
 							szLoadPath = pLevel->GetPath();

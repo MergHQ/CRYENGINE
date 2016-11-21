@@ -1540,16 +1540,13 @@ void CBodyDestructibilityProfile::DebugInstance( IEntity& characterEntity, CBody
 	if (!pAttachmentManager)
 		return;
 
-	IRenderer* pRenderer = gEnv->pRenderer;
-	CRY_ASSERT(pRenderer);
-	
 	//////////////////////////////////////////////////////////////////////////
 	/// Display destructible parts and attachments status
 
-	pRenderer->Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "===== Destructibility status of '%s' =====", characterEntity.GetName());
+	IRenderAuxText::Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "===== Destructibility status of '%s' =====", characterEntity.GetName());
 	lineOffset += 20.0f;
 
-	pRenderer->Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "Attachments");
+	IRenderAuxText::Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "Attachments");
 	lineOffset += 20.0f;
 
 	for (size_t attachmentIdx = 0; attachmentIdx < m_attachments.size(); ++attachmentIdx)
@@ -1560,12 +1557,12 @@ void CBodyDestructibilityProfile::DebugInstance( IEntity& characterEntity, CBody
 		{
 			const bool isDestroyable = attachmentIdx < m_destructibleAttachmentCount;
 			if (isDestroyable)
-			{			
+			{
 				const bool isDestroyed = (isDestroyable) && pPartStatus->IsDestroyed();
-				pRenderer->Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isDestroyed ? colorRed : colorGreen, false, "Destroyable Attachment [%" PRISIZE_T "] : %s", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
+				IRenderAuxText::Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isDestroyed ? colorRed : colorGreen, false, "Destroyable Attachment [%" PRISIZE_T "] : %s", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
 				lineOffset += 15.0f;
 
-				pRenderer->Draw2dLabel(horizontalOffsetLv2, lineOffset, 1.3f, isDestroyed ? colorRed : colorGreen, false, "Health: Initial %.2f, Current %.2f, onDeathThreshold %.2f",
+				IRenderAuxText::Draw2dLabel(horizontalOffsetLv2, lineOffset, 1.3f, isDestroyed ? colorRed : colorGreen, false, "Health: Initial %.2f, Current %.2f, onDeathThreshold %.2f",
 										pPartStatus->GetInitialHealth(), pPartStatus->GetHealth(), pPartStatus->GetOnDeathHealthThreshold());
 				lineOffset += 15.0f;
 			}
@@ -1574,18 +1571,18 @@ void CBodyDestructibilityProfile::DebugInstance( IEntity& characterEntity, CBody
 				IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(m_attachments[attachmentIdx].name.c_str());
 				const bool isVisible = pAttachment ? (pAttachment->IsAttachmentHidden() == 0) : false;
 
-				pRenderer->Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isVisible ? colorGreen : colorRed, false, "Attachment [%" PRISIZE_T "] : %s", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
+				IRenderAuxText::Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isVisible ? colorGreen : colorRed, false, "Attachment [%" PRISIZE_T "] : %s", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
 				lineOffset += 15.0f;
 			}
 		}
 		else
 		{
-			pRenderer->Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, colorRed, false, "Attachment [%" PRISIZE_T "] : %s Status not found!", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
+			IRenderAuxText::Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, colorRed, false, "Attachment [%" PRISIZE_T "] : %s Status not found!", attachmentIdx, m_attachments[attachmentIdx].name.c_str());
 			lineOffset += 15.0f;
 		}
 	}
 
-	pRenderer->Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "Bones");
+	IRenderAuxText::Draw2dLabel(headerHorizontalOffset, lineOffset, 1.5f, colorWhite, false, "Bones");
 	lineOffset += 20.0f;
 
 	for (size_t boneIdx = 0; boneIdx < m_bones.size(); ++boneIdx)
@@ -1595,16 +1592,16 @@ void CBodyDestructibilityProfile::DebugInstance( IEntity& characterEntity, CBody
 		if (pPartStatus)
 		{
 			const bool isDestroyed = pPartStatus->IsDestroyed();
-			pRenderer->Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isDestroyed ? colorRed : colorGreen, false, "Destroyable Bone [%" PRISIZE_T "] : %s", boneIdx, m_bones[boneIdx].name.c_str());
+			IRenderAuxText::Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, isDestroyed ? colorRed : colorGreen, false, "Destroyable Bone [%" PRISIZE_T "] : %s", boneIdx, m_bones[boneIdx].name.c_str());
 			lineOffset += 15.0f;
 
-			pRenderer->Draw2dLabel(horizontalOffsetLv2, lineOffset, 1.3f, isDestroyed ? colorRed : colorGreen, false, "Health: Initial %.2f, Current %.2f, onDeathThreshold %.2f",
+			IRenderAuxText::Draw2dLabel(horizontalOffsetLv2, lineOffset, 1.3f, isDestroyed ? colorRed : colorGreen, false, "Health: Initial %.2f, Current %.2f, onDeathThreshold %.2f",
 				pPartStatus->GetInitialHealth(), pPartStatus->GetHealth(), pPartStatus->GetOnDeathHealthThreshold());
 			lineOffset += 15.0f;
 		}
 		else
 		{
-			pRenderer->Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, colorRed, false, "Destroyable Bone [%" PRISIZE_T "] : %s Status not found!", boneIdx, m_bones[boneIdx].name.c_str());
+			IRenderAuxText::Draw2dLabel(horizontalOffsetLv1, lineOffset, 1.4f, colorRed, false, "Destroyable Bone [%" PRISIZE_T "] : %s Status not found!", boneIdx, m_bones[boneIdx].name.c_str());
 			lineOffset += 15.0f;
 		}
 	}
@@ -1614,24 +1611,24 @@ void CBodyDestructibilityProfile::DebugInstance( IEntity& characterEntity, CBody
 
 	lineOffset = 70.0f;
 
-	pRenderer->Draw2dLabel(headerHorizontalOffset + 600.0f, lineOffset, 1.5f, colorWhite, false, "Events");
+	IRenderAuxText::Draw2dLabel(headerHorizontalOffset + 600.0f, lineOffset, 1.5f, colorWhite, false, "Events");
 	lineOffset += 20.0f;
 
 	for (size_t eventIdx = 0; eventIdx < m_destructionEvents.size(); ++eventIdx)
 	{
 		const bool isEventEabled = instance.CanTriggerEvent(eventIdx);
 
-		pRenderer->Draw2dLabel(horizontalOffsetLv1 + 600.0f, lineOffset, 1.4f, isEventEabled ? colorGreen : colorRed, false, "Event [%" PRISIZE_T "] : %s", eventIdx, m_destructionEvents[eventIdx].name.c_str());
+		IRenderAuxText::Draw2dLabel(horizontalOffsetLv1 + 600.0f, lineOffset, 1.4f, isEventEabled ? colorGreen : colorRed, false, "Event [%" PRISIZE_T "] : %s", eventIdx, m_destructionEvents[eventIdx].name.c_str());
 		lineOffset += 15.0f;
 	}
 
 
-	pRenderer->Draw2dLabel(headerHorizontalOffset + 600.0f, lineOffset, 1.5f, colorWhite, false, "Health ratio events");
+	IRenderAuxText::Draw2dLabel(headerHorizontalOffset + 600.0f, lineOffset, 1.5f, colorWhite, false, "Health ratio events");
 	lineOffset += 20.0f;
 
 	for (size_t eventIdx = 0; eventIdx < m_healthRatioEvents.size(); ++eventIdx)
 	{
-		pRenderer->Draw2dLabel(horizontalOffsetLv1 + 600.0f, lineOffset, 1.4f, (static_cast<size_t>(instance.GetCurrentHealthRatioIndex()) > eventIdx) ? colorRed : colorGreen, false, "Event [%" PRISIZE_T "] : %.2f", eventIdx, m_healthRatioEvents[eventIdx].healthRatio * 100.0f);
+		IRenderAuxText::Draw2dLabel(horizontalOffsetLv1 + 600.0f, lineOffset, 1.4f, (static_cast<size_t>(instance.GetCurrentHealthRatioIndex()) > eventIdx) ? colorRed : colorGreen, false, "Event [%" PRISIZE_T "] : %.2f", eventIdx, m_healthRatioEvents[eventIdx].healthRatio * 100.0f);
 		lineOffset += 15.0f;
 	}
 }

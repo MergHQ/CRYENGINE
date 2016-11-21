@@ -12,6 +12,8 @@
 	#include "NetDebugChannelViewer.h"
 	#include "NetCVars.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
+
 const float CNetDebugInfoSection::s_white[4] = { 1.0F, 1.0F, 1.0F, 1.0F };
 const float CNetDebugInfoSection::s_lgrey[4] = { 0.7f, 0.7f, 0.7f, 1.0f };
 const float CNetDebugInfoSection::s_yellow[4] = { 1.0F, 0.8F, 0.0F, 1.0F };
@@ -50,25 +52,9 @@ void CNetDebugInfoSection::DrawLine(uint32 line, const float* pColor, const char
 
 void CNetDebugInfoSection::VDrawLine(uint32 line, const float* pColor, const char* pFormat, va_list args)
 {
-	SDrawTextInfo drawTextInfo;
-
-	drawTextInfo.xscale = m_fontSize;
-	drawTextInfo.yscale = m_fontSize;
-	drawTextInfo.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
-
-	if (pColor)
-	{
-		drawTextInfo.color[0] = pColor[0];
-		drawTextInfo.color[1] = pColor[1];
-		drawTextInfo.color[2] = pColor[2];
-		drawTextInfo.color[3] = pColor[3];
-	}
-
 	float currentHeight = m_lineHeight * line;
-	if (gEnv->pRenderer)
-	{
-		gEnv->pRenderer->DrawTextQueued(Vec3(m_xpos, m_ypos + currentHeight, 0.5f), drawTextInfo, pFormat, args);
-	}
+
+	IRenderAuxText::DrawText(Vec3(m_xpos, m_ypos + currentHeight, 0.5f), m_fontSize, pColor, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace, pFormat, args);
 
 	m_sectionHeight = max(m_lineHeight * (line + 1), currentHeight);
 }
@@ -80,23 +66,7 @@ void CNetDebugInfoSection::Draw3dLine(const Vec3 pos, uint32 nLine, const float*
 
 	const Vec3 textLineOffset(0.0f, 0.0f, 0.14f);
 
-	SDrawTextInfo drawTextInfo;
-	drawTextInfo.xscale = 1.25f;
-	drawTextInfo.yscale = 1.25f;
-	drawTextInfo.flags = eDrawText_800x600 | eDrawText_FixedSize;
-
-	if (pColor)
-	{
-		drawTextInfo.color[0] = pColor[0];
-		drawTextInfo.color[1] = pColor[1];
-		drawTextInfo.color[2] = pColor[2];
-		drawTextInfo.color[3] = pColor[3];
-	}
-
-	if (gEnv->pRenderer)
-	{
-		gEnv->pRenderer->DrawTextQueued(pos - (textLineOffset * (float)nLine), drawTextInfo, pFormat, args);
-	}
+	IRenderAuxText::DrawText(pos - (textLineOffset * (float)nLine), 1.25f, pColor, eDrawText_800x600 | eDrawText_FixedSize, pFormat, args);
 
 	va_end(args);
 }

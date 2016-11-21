@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProjectGuid>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>CryEngine</RootNamespace>
+    <AssemblyName>CryEngine.Core.UI</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseMSBuildEngine>False</UseMSBuildEngine>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WIN64</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
+    <DefineConstants>TRACE;WIN64</DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
+    <DefineConstants>TRACE;WIN86</DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="CryEngine.Common">
+      <HintPath>..\..\..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="SceneManager.cs" />
+    <Compile Include="SceneObject.cs" />
+    <Compile Include="Canvas.cs" />
+    <Compile Include="Panel.cs" />
+    <Compile Include="UIElement.cs" />
+    <Compile Include="Components\RectTransform.cs" />
+    <Compile Include="Transform.cs" />
+    <Compile Include="Components\Image.cs" />
+    <Compile Include="Components\Text.cs" />
+    <Compile Include="CheckBox.cs" />
+    <Compile Include="Components\UIComponent.cs" />
+    <Compile Include="Splitter.cs" />
+    <Compile Include="Window.cs" />
+    <Compile Include="Components\CollapseCtrl.cs" />
+    <Compile Include="Components\TextCtrl.cs" />
+    <Compile Include="ScrollPanel.cs" />
+    <Compile Include="TextInput.cs" />
+    <Compile Include="Button.cs" />
+    <Compile Include="ComboBox.cs" />
+    <Compile Include="Components\ButtonCtrl.cs" />
+    <Compile Include="Components\ComboBoxCtrl.cs" />
+    <Compile Include="Components\CheckBoxCtrl.cs" />
+    <Compile Include="Components\ScrollBarCtrl.cs" />
+    <Compile Include="Components\SplitBarCtrl.cs" />
+    <Compile Include="HorizontalLayoutGroup.cs" />
+    <Compile Include="LayoutGroup.cs" />
+    <Compile Include="VerticalLayoutGroup.cs" />
+    <Compile Include="TextElement.cs" />
+    <Compile Include="Resources\ImageSource.cs" />
+    <Compile Include="Resources\Resource.cs" />
+    <Compile Include="Resources\Texture.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{7b3f4428-1cfe-4ccf-b1cb-defa5f86d6fb}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -29,8 +29,8 @@ public:
 	void        BindVolumetricFogResources(RenderPassType& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
 	const Vec4& GetGlobalEnvProbeShaderParam0() const { return m_globalEnvProbeParam0; }
 	const Vec4& GetGlobalEnvProbeShaderParam1() const { return m_globalEnvProbeParam1; }
-	CTexture*   GetGlobalEnvProbeTex0() const         { return m_globalEnvProveTex0; }
-	CTexture*   GetGlobalEnvProbeTex1() const         { return m_globalEnvProveTex1; }
+	CTexture*   GetGlobalEnvProbeTex0() const;
+	CTexture*   GetGlobalEnvProbeTex1() const;
 
 private:
 	static const int32 MaxFrameNum = 4;

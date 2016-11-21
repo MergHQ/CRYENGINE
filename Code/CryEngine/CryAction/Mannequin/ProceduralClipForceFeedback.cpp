@@ -47,7 +47,7 @@ public:
 
 	virtual void OnEnter(float blendTime, float duration, const SForceFeedbackClipParams& params)
 	{
-		IGameFramework* pGameFrameWork = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFrameWork = gEnv->pGameFramework;
 
 		if ((gEnv->IsEditor() && pGameFrameWork->GetMannequinInterface().IsSilentPlaybackMode())
 		    || (params.onlyLocal && pGameFrameWork->GetClientActorId() != m_entity->GetId()))

@@ -171,7 +171,7 @@ namespace CornerSmoothing
 				s_currentY = START_Y;
 			}
 
-			gEnv->pRenderer->Draw2dLabel( (float)START_X, (float)s_currentY, FONT_SIZE, RECENT_LOG_ENTRY_COLOR, false, 
+			IRenderAuxText::Draw2dLabel( (float)START_X, (float)s_currentY, FONT_SIZE, RECENT_LOG_ENTRY_COLOR, false,
 				"Cornersmoother '%s':",
 				name.c_str()
 				);
@@ -205,7 +205,7 @@ namespace CornerSmoothing
 
 				float f = FONT_SIZE;
 				float* color = (age == 0) ? RECENT_LOG_ENTRY_COLOR : OLD_LOG_ENTRY_COLOR;
-				gEnv->pRenderer->Draw2dLabel( (float)START_X, (float)s_currentY, FONT_SIZE, color, false, 
+				IRenderAuxText::Draw2dLabel( (float)START_X, (float)s_currentY, FONT_SIZE, color, false,
 					"age:%5d  %s",
 					age,
 					entry.text.c_str()

@@ -88,7 +88,7 @@ EEntityType GetEntityType(EntityId id)
 				}
 
 				// Check actor
-				IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+				IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 				if (pActorSystem)
 				{
 					IActor* pActor = pActorSystem->GetActor(id);
@@ -99,7 +99,7 @@ EEntityType GetEntityType(EntityId id)
 				}
 
 				// Check vehicle
-				IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+				IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 				if (pVehicleSystem)
 				{
 					if (pVehicleSystem->IsVehicleClass(className))
@@ -109,7 +109,7 @@ EEntityType GetEntityType(EntityId id)
 				}
 
 				// Check item
-				IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+				IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 				if (pItemSystem)
 				{
 					if (pItemSystem->IsItemClass(className))
@@ -606,7 +606,7 @@ public:
 
 	virtual void CalculateMinMax()
 	{
-		const char* area = GetPortString(m_pActInfo, EIP_Area);
+		const string area = GetPortString(m_pActInfo, EIP_Area);
 
 		IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 		if (pEntitySystem)

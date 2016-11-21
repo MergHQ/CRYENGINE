@@ -350,8 +350,8 @@ vert2fragLayer TerrainLayerVS(app2vertGeneral IN_common)
   float3 Binormal = normalize(LayerTexGen[1].xyz);
   
   // project tangent and binormal to plane perpendicular to the normal
-  Tangent-=dot(Tangent,vertPassPos.Normal)*vertPassPos.Normal;
-  Binormal-=dot(Binormal,vertPassPos.Normal)*vertPassPos.Normal;
+  Tangent-=dot(Tangent,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
+  Binormal-=dot(Binormal,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
   Tangent=normalize(Tangent);
   Binormal=normalize(Binormal);
 

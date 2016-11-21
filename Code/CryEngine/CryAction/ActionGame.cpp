@@ -12,6 +12,7 @@
 #include "Network/ServerTimer.h"
 #include "Network/DeformingBreak.h" // for debug function
 #include "CryAction.h"
+#include "CryActionCVars.h"
 #include "IActorSystem.h"
 #include "MaterialEffects/MaterialEffectsCVars.h"
 #include <CryParticleSystem/ParticleParams.h>
@@ -94,8 +95,7 @@ int g_waterHitOnly = 0;
 float CActionGame::g_hostMigrationServerDelay = 0.f;
 #endif
 
-#define RESERVE_SPACE_FOR_MIGRATION (10 * 1024 * 1024)
-#define MAX_ADDRESS_SIZE            (256)
+#define MAX_ADDRESS_SIZE (256)
 
 void CActionGame::RegisterCVars()
 {
@@ -233,10 +233,7 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 
 	m_pGameContext = new CGameContext(CCryAction::GetCryAction(), pScriptRMI, this);
 	m_pGameTokenSystem = CCryAction::GetCryAction()->GetIGameTokenSystem();
-	m_pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
 	m_inDeleteEntityCallback = 0;
-
-	m_clientReserveForMigrate = NULL;
 }
 
 CActionGame::~CActionGame()
@@ -251,8 +248,10 @@ CActionGame::~CActionGame()
 	if (m_pGameStats)
 		m_pGameStats->EndSession();
 
-	IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
-	pGameSessionHandler->OnGameShutdown();
+	{
+		IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
+		pGameSessionHandler->OnGameShutdown();
+	}
 
 	if (m_pNetwork)
 	{
@@ -291,8 +290,6 @@ CActionGame::~CActionGame()
 	SAFE_DELETE(m_pGameClientNub);
 	SAFE_DELETE(m_pGameServerNub);
 
-	SAFE_DELETE_ARRAY(m_clientReserveForMigrate);
-
 	if (m_pNetwork)
 	{
 		m_pNetwork->SyncWithGame(eNGS_Shutdown_Clear);
@@ -328,7 +325,10 @@ CActionGame::~CActionGame()
 	UnloadLevel();
 
 	gEnv->bServer = false;
-	gEnv->bMultiplayer = pGameSessionHandler->IsMultiplayer();
+	{
+		const IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
+		gEnv->bMultiplayer = pGameSessionHandler ? pGameSessionHandler->IsMultiplayer() : false;
+	}
 #if CRY_PLATFORM_DESKTOP
 	if (!gEnv->IsDedicated()) // Dedi client should remain client
 	{
@@ -517,12 +517,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 	}
 	else
 	{
-
-		if (gEnv->bMultiplayer)
-		{
-			m_clientReserveForMigrate = new uint8[RESERVE_SPACE_FOR_MIGRATION];
-		}
-
 		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby && gEnv->bMultiplayer)
 		{
@@ -542,17 +536,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 	// we need to fake demo playback as not LocalOnly, otherwise things not breakable in demo recording will become breakable
 	if (flags & eGSF_DemoPlayback)
 		flags &= ~eGSF_LocalOnly;
-
-	if (pGameStartParams->flags & eGSF_Client)
-	{
-		if (ICVar* pInitClient = gEnv->pConsole->GetCVar("cl_initClientActor"))
-		{
-			if (pInitClient->GetIVal() != 0)
-				flags |= eGSF_InitClientActor;
-			else
-				flags &= ~eGSF_InitClientActor;
-		}
-	}
 
 	m_pGameContext->SetContextInfo(flags, pGameStartParams->port, connectionString.c_str());
 
@@ -768,7 +751,11 @@ void CActionGame::ClientInit(const SGameStartParams* pGameStartParams, bool* io_
 
 void CActionGame::PostInit(const SGameStartParams* pGameStartParams, bool* io_ok, bool* io_requireBlockingConnection)
 {
-	if ((!gEnv->IsEditor()) && (!gEnv->IsDedicated()) && (pGameStartParams->flags & eGSF_NonBlockingConnect))
+	const bool bIsEditor = gEnv->IsEditor();
+	const bool bIsDedicated = gEnv->IsDedicated();
+	const bool bNonBlocking = (pGameStartParams->flags & eGSF_NonBlockingConnect) != 0;
+
+	if (!bIsEditor && !bIsDedicated && bNonBlocking)
 	{
 		m_initState = eIS_WaitForConnection;
 	}
@@ -998,6 +985,7 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
+	LOADING_TIME_PROFILE_SECTION
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "BlockingConnect");
 
 	bool ok = false;
@@ -1080,7 +1068,7 @@ IActor* CActionGame::GetClientActor()
 	if (!playerId)
 		return NULL;
 	if (m_pGameContext->GetNetContext()->IsDemoPlayback())
-		return gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetCurrentDemoSpectator();
+		return gEnv->pGameFramework->GetIActorSystem()->GetCurrentDemoSpectator();
 
 	//ID caching causes problems in the editor
 	if (m_clientActorID != playerId || gEnv->IsEditor())
@@ -1178,29 +1166,32 @@ bool CActionGame::Update()
 			}
 
 		case eIS_WaitForPlayer:
-			if (m_pGameContext->HasContextFlag(eGSF_BlockingClientConnect) && !m_pGameContext->HasContextFlag(eGSF_NoSpawnPlayer) && m_pGameContext->HasContextFlag(eGSF_Client))
 			{
-				eInitTaskState done = NonBlockingConnect(&CActionGame::ConditionHavePlayer, true, "have player");
+				const bool bNoSpawnPlayer = m_pGameContext->HasContextFlag(eGSF_NoSpawnPlayer);
+				const bool bClient = m_pGameContext->HasContextFlag(eGSF_Client);
 
-				if (done == eITS_Error)
+				if (!bNoSpawnPlayer && bClient)
 				{
-					m_initState = eIS_InitError;
-					break;
+					eInitTaskState done = NonBlockingConnect(&CActionGame::ConditionHavePlayer, true, "have player");
+
+					if (done == eITS_Error)
+					{
+						m_initState = eIS_InitError;
+						break;
+					}
+					else if (done == eITS_Done)
+					{
+						m_initState = eIS_WaitForInGame;
+					}
 				}
-				else if (done == eITS_Done)
+				else
 				{
 					m_initState = eIS_WaitForInGame;
 				}
 			}
-			else
-			{
-				m_initState = eIS_WaitForInGame;
-			}
-
 			break;
 
 		case eIS_WaitForInGame:
-			if (m_pGameContext->HasContextFlag(eGSF_BlockingMapLoad))
 			{
 				eInitTaskState done = NonBlockingConnect(&CActionGame::ConditionInGame, false, "in game");
 
@@ -1214,11 +1205,6 @@ bool CActionGame::Update()
 					m_initState = eIS_InitDone;
 				}
 			}
-			else
-			{
-				m_initState = eIS_InitDone;
-			}
-
 			break;
 
 		default:
@@ -1335,14 +1321,14 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnInitiate(SHostM
 		//disable rumble
 		gEnv->pInput->ForceFeedbackEvent(SFFOutputEvent(eIDT_Gamepad, eFF_Rumble_Basic, SFFTriggerOutputData::Initial::ZeroIt, 0.0f, 0.0f, 0.0f));
 	}
-	IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+	IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 	if (pForceFeedbackSystem)
 	{
 		pForceFeedbackSystem->StopAllEffects();
 	}
 
 	// Save any state information that needs preserving across the migration
-	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 	if (s_this->m_pGameClientNub == NULL)
 	{
@@ -1473,8 +1459,6 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnPromoteToServer
 
 	CryLogAlways("[Host Migration]: CActionGame::OnPromoteToServer() started");
 
-	SAFE_DELETE_ARRAY(m_clientReserveForMigrate);
-
 	// Create a server on this machine
 	gEnv->bServer = true;
 
@@ -1503,7 +1487,7 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnPromoteToServer
 	int maxPlayers = pCVar->GetIVal();
 
 	// Set the server name
-	IPlayerProfileManager* pPlayerProfileManager = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager();
+	IPlayerProfileManager* pPlayerProfileManager = gEnv->pGameFramework->GetIPlayerProfileManager();
 	CryFixedStringT<128> serverName(s_this->m_pNetwork->GetHostName());
 	serverName.append(" ");
 	serverName.append(pPlayerProfileManager->GetCurrentProfile(pPlayerProfileManager->GetCurrentUser())->GetName());
@@ -1791,7 +1775,8 @@ int CActionGame::OnBBoxOverlap(const EventPhys* pEvent)
 				}
 				if (play_sound)
 				{
-					TMFXEffectId effectId = s_this->m_pMaterialEffects->GetEffectIdByName("vegetation", PathUtil::GetFileName(rn->GetName()));
+					IMaterialEffects* pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
+					TMFXEffectId effectId = pMaterialEffects ? pMaterialEffects->GetEffectIdByName("vegetation", PathUtil::GetFileName(rn->GetName())) : InvalidEffectId;
 					if (effectId != InvalidEffectId)
 					{
 						SMFXRunTimeEffectParams params;
@@ -1806,7 +1791,7 @@ int CActionGame::OnBBoxOverlap(const EventPhys* pEvent)
 							const float speed = min(1.0f, dyn.v.GetLengthSquared() / (10.0f * 10.0f));
 							params.AddAudioRtpc("speed", speed);
 						}
-						s_this->m_pMaterialEffects->ExecuteEffect(effectId, params);
+						pMaterialEffects->ExecuteEffect(effectId, params);
 					}
 				}
 			}
@@ -2165,7 +2150,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 			if (epc.pEntity[0] && epc.pEntity[0]->GetType() == PE_LIVING)
 			{
 				IEntity* pEntitySrc = (IEntity*)epc.pEntity[0]->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-				IActor* pActor = pEntitySrc ? gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntitySrc->GetId()) : NULL;
+				IActor* pActor = pEntitySrc ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pEntitySrc->GetId()) : NULL;
 				if (!pActor || !pActor->CanBreakGlass())
 				{
 					return;
@@ -2542,7 +2527,7 @@ ForceObjUpdate:
 
 			if (pEntityTrg && pStatObjNew)
 			{
-				if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntityTrg->GetId()))
+				if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pEntityTrg->GetId()))
 				{
 					SGameObjectEvent evt(eGFE_OnBreakable2d, eGOEF_ToExtensions);
 					evt.ptr = (void*)&epc;
@@ -2788,8 +2773,8 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
 	const EventPhysCollision* pCEvent = (const EventPhysCollision*) pEvent;
-
-	if ((s_this->m_pMaterialEffects == NULL) || (pCEvent->idmat[1] == s_waterMaterialId) &&
+	IMaterialEffects* pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
+	if ((pMaterialEffects == nullptr) || (pCEvent->idmat[1] == s_waterMaterialId) &&
 	    (pCEvent->pEntity[1] == gEnv->pPhysicalWorld->AddGlobalArea() && gEnv->p3DEngine->GetVisAreaFromPos(pCEvent->pt)))
 		return;
 
@@ -2888,7 +2873,6 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 		IEntity* pEntitySrc = GetEntity(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
 		IEntity* pEntityTrg = GetEntity(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
 
-		IMaterialEffects* pMaterialEffects = s_this->m_pMaterialEffects;
 		TMFXEffectId effectId = InvalidEffectId;
 		const int defaultSurfaceIndex = pMaterialEffects->GetDefaultSurfaceIndex();
 
@@ -3010,7 +2994,7 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 
 			if (isBullet)
 			{
-				IGameFramework* pGameFrameWork = gEnv->pGame->GetIGameFramework();
+				IGameFramework* pGameFrameWork = gEnv->pGameFramework;
 				CRY_ASSERT(pGameFrameWork);
 
 				IActor* pCollidedActor = pGameFrameWork->GetIActorSystem()->GetActor(params.trg);
@@ -3434,14 +3418,15 @@ int CActionGame::OnCreatePhysicalEntityLogged(const EventPhys* pEvent)
 				gEnv->pAISystem->RegisterStimulus(stimSound);
 			}
 
-			TMFXEffectId effectId = s_this->m_pMaterialEffects->GetEffectIdByName("vegetation", "tree_break");
+			IMaterialEffects* pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
+			TMFXEffectId effectId = pMaterialEffects ? pMaterialEffects->GetEffectIdByName("vegetation", "tree_break") : InvalidEffectId;
 			if (effectId != InvalidEffectId)
 			{
 				SMFXRunTimeEffectParams params;
 				params.pos = rn->GetPos();
 				params.dir[0] = params.dir[1] = Vec3(0, 0, 1);
 				//params.soundSemantic = eSoundSemantic_Physics_General;
-				s_this->m_pMaterialEffects->ExecuteEffect(effectId, params);
+				pMaterialEffects->ExecuteEffect(effectId, params);
 			}
 		}
 	}
@@ -3985,7 +3970,7 @@ void CActionGame::RegisterBrokenMesh(IPhysicalEntity* pPhysEnt, IGeometry* pPhys
 					m_totBreakageSize -= iter->second.size;
 					m_mapBrokenMeshes.erase(iter);
 				}
-			uint32 eraseTo = min((size_t)(id + 1), m_brokenMeshRemovals.size());
+			size_t eraseTo = min((size_t)(id + 1), m_brokenMeshRemovals.size());
 			m_brokenMeshRemovals.erase(m_brokenMeshRemovals.begin(), m_brokenMeshRemovals.begin() + eraseTo);
 			return;
 		}
@@ -4048,7 +4033,6 @@ void CActionGame::RegisterBrokenMesh(IPhysicalEntity* pPhysEnt, IGeometry* pPhys
 
 void CActionGame::DrawBrokenMeshes()
 {
-	IRenderer* pRnd = gEnv->pRenderer;
 	std::map<int, SBrokenMeshSize>::iterator iter;
 	int sizes[16] = { 0 }, keys[16] = { 0 }, nTop = 0, i;
 	pe_status_pos sp;
@@ -4060,7 +4044,7 @@ void CActionGame::DrawBrokenMeshes()
 		if (!iter->second.pent->GetStatus(&sp))
 			continue;
 		Vec3 pos = (sp.BBox[0] + sp.BBox[1]) * 0.5f + sp.pos;
-		pRnd->DrawLabelEx(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
+		IRenderAuxText::DrawLabelExF(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
 		for (i = 0; i<nTop&& sizes[i]> iter->second.size; i++)
 			;
 		if (i < 16)
@@ -4073,9 +4057,9 @@ void CActionGame::DrawBrokenMeshes()
 			nTop++;
 		}
 	}
-	pRnd->Draw2dLabel(10.0f, 60.0f, 1.3f, clr, false, "Top procedurally broken objects (total size - %d Kb):", m_totBreakageSize);
+	IRenderAuxText::Draw2dLabel(10.0f, 60.0f, 1.3f, clr, false, "Top procedurally broken objects (total size - %d Kb):", m_totBreakageSize);
 	for (i = 0; i < nTop; i++)
-		pRnd->Draw2dLabel(10.0f, 72.0f + i * 12.0f, 1.3f, clr, false, "%d Kb %s", sizes[i], GetGeomName(m_mapBrokenMeshes.find(keys[i])->second));
+		IRenderAuxText::Draw2dLabel(10.0f, 72.0f + i * 12.0f, 1.3f, clr, false, "%d Kb %s", sizes[i], GetGeomName(m_mapBrokenMeshes.find(keys[i])->second));
 }
 
 void CActionGame::AddBroken2DChunkId(int id)
@@ -4771,6 +4755,7 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 
 void CActionGame::OnEditorSetGameMode(bool bGameMode)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	FixBrokenObjects(true);
 	ClearBreakHistory();
 

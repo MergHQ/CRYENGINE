@@ -95,7 +95,7 @@ void CConstraintPoint::Draw(const Vec3& point, const Vec3& target) const
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(point, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(point, 1.0f, "Point");
+	IRenderAuxText::DrawLabel(point, 1.0f, "Point");
 
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
 }
@@ -234,10 +234,10 @@ void CConstraintLine::Draw(const Vec3& startPoint, const Vec3& endPoint, const V
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(startPoint, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(startPoint, 1.0f, "Start");
+	IRenderAuxText::DrawLabel(startPoint, 1.0f, "Start");
 
 	pAuxGeom->DrawSphere(endPoint, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(endPoint, 1.0f, "End");
+	IRenderAuxText::DrawLabel(endPoint, 1.0f, "End");
 
 	pAuxGeom->DrawLine(
 	  startPoint, ColorB(0xff, 0x80, 0x80, 0xff),
@@ -389,10 +389,10 @@ void CConstraintAim::Draw(const Vec3& origin, const Vec3& target, const Vec3& up
 	pAuxGeom->DrawSphere(origin, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
 
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target, 1.0f, "Target");
+	IRenderAuxText::DrawLabel(target, 1.0f, "Target");
 
 	pAuxGeom->DrawSphere(up, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(up, 1.0f, "Up");
+	IRenderAuxText::DrawLabel(up, 1.0f, "Up");
 
 	pAuxGeom->DrawLine(
 	  origin, ColorB(0xff, 0x00, 0x00, 0xff),
@@ -674,13 +674,13 @@ void CIk2Segments::Draw(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Ve
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(p0, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p0, 1.0f, "p0");
+	IRenderAuxText::DrawLabel(p0, 1.0f, "p0");
 
 	pAuxGeom->DrawSphere(p1, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p1, 1.0f, "p1");
+	IRenderAuxText::DrawLabel(p1, 1.0f, "p1");
 
 	pAuxGeom->DrawSphere(p2, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p2, 1.0f, "p2");
+	IRenderAuxText::DrawLabel(p2, 1.0f, "p2");
 
 	pAuxGeom->DrawLine(
 	  p0, ColorB(0xff, 0xff, 0xff, 0xff),
@@ -706,13 +706,13 @@ void CIk2Segments::Draw(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Ve
 	  target1, ColorB(0xff, 0x80, 0x80, 0xff));
 
 	pAuxGeom->DrawSphere(target0, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target0, 1.0f, "target0");
+	IRenderAuxText::DrawLabel(target0, 1.0f, "target0");
 	pAuxGeom->DrawSphere(target1, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target1, 1.0f, "target1");
+	IRenderAuxText::DrawLabel(target1, 1.0f, "target1");
 
 	Vec3 target = Vec3::CreateLerp(target0, target1, targetWeight);
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target, 1.0f, "target");
+	IRenderAuxText::DrawLabel(target, 1.0f, "target");
 }
 
 // IAnimationPoseModifier
@@ -828,6 +828,9 @@ public:
 
 	CRYGENERATE_CLASS(CIkCCD, "AnimationPoseModifier_IkCcd", 0x6a078d00c19441e2, 0xb8919c52d094076d);
 
+private:
+	void Draw(const QuatT& location, const QuatT& startAbsolute, const QuatT& targetAbsolute, const float weight);
+
 	// IAnimationPoseModifier
 public:
 	virtual bool Prepare(const SAnimationPoseModifierParams& params) override;
@@ -853,6 +856,7 @@ private:
 	DynArray<uint32> m_arrJointChain;
 
 	bool             m_bInitialized;
+	bool             m_bDraw;
 };
 
 CRYREGISTER_CLASS(CIkCCD)
@@ -864,12 +868,35 @@ CIkCCD::CIkCCD() :
 	m_endNodeIndex(-1),
 	m_targetNodeIndex(-1),
 	m_weightNodeIndex(-1),
-	m_bInitialized(false)
+	m_bInitialized(false),
+	m_bDraw(false)
 {
 }
 
 CIkCCD::~CIkCCD()
 {
+}
+
+void CIkCCD::Draw(const QuatT& location, const QuatT& startAbsolute, const QuatT& targetAbsolute, const float weight)
+{
+	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (!pAuxGeom)
+		return;
+
+	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags | e_DepthTestOff | e_DrawInFrontOn);
+	pAuxGeom->SetRenderFlags(renderFlags);
+
+	OBB obb;
+	obb.m33 = Matrix33(IDENTITY);
+	obb.c = Vec3(0);
+	obb.h = Vec3(0.01f);
+
+	pAuxGeom->DrawOBB(obb, Matrix34(location * startAbsolute), false, ColorB(0x80, 0x80, 0xff, 0x85), eBBD_Faceted);
+	pAuxGeom->DrawOBB(obb, Matrix34(location * targetAbsolute), false, ColorB(0xff, 0x80, 0x80, 0x85), eBBD_Faceted);
+	ColorF pCol(0, 0.7f, 0);
+	Ang3 angles = Ang3(targetAbsolute.q);
+	pAuxGeom->Draw2dLabel(10, g_YLine+=12, 1.2f, pCol, false, "IkCCD %s -> %s:\t%d   Pos: %f  %f  %f   Rot: %f  %f  %f", m_desc.rootNode.name.c_str(), m_desc.endNode.name.c_str(), (uint8)(weight*100.0f), targetAbsolute.t.x, targetAbsolute.t.y, targetAbsolute.t.z, RAD2DEG(angles.x), RAD2DEG(angles.y), RAD2DEG(angles.z));
+	pAuxGeom->Flush();
 }
 
 // IAnimationPoseModifier
@@ -1053,6 +1080,9 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 		}
 	}
 
+	if (m_bDraw)
+		Draw((QuatT)params.location, pAbsPose[m_rootNodeIndex], pAbsPose[m_endNodeIndex], weight);
+
 	return true;
 }
 
@@ -1060,6 +1090,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 
 void CIkCCD::Serialize(Serialization::IArchive& ar)
 {
+	ar(m_bDraw, "draw", "^Draw");
 	PoseModifier::Serialize(ar, m_desc);
 
 	if (ar.isInput())
@@ -2061,3 +2092,17 @@ void CPoseModifierSetup::Serialize(Serialization::IArchive& ar)
 	ar.doc("List of modifiers (IK chains, constraints, ...) that can modify the pose after animations & physics are applied.");
 	CreateStack();
 }
+IAnimationPoseModifier* CPoseModifierSetup::GetEntry(int index)
+{
+	if (index >= 0 && index < m_modifiers.size())
+	{
+		return m_modifiers[index].instance.get();
+	}
+	return nullptr;
+}
+
+int CPoseModifierSetup::GetEntryCount()
+{
+	return m_modifiers.size();
+}
+

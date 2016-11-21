@@ -279,6 +279,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 	DrawParams.fDistance = fEntDistance;
 	DrawParams.AmbientColor = vAmbColor;
 	DrawParams.pRenderNode = pEnt;
+	DrawParams.nEditorSelectionID = pEnt->m_nEditorSelectionID;
 	//DrawParams.pInstance = pEnt;
 
 	if (eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
@@ -296,16 +297,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 		}
 
 		DrawParams.nTextureID = nCubemapTexId;
-	}
-
-	if (pCVars->e_Dissolve && eERType != eERType_Light && passInfo.IsGeneralPass())
-	{
-		if (DrawParams.nDissolveRef = GetDissolveRef(fEntDistance, pEnt->m_fWSMaxViewDist))
-		{
-			DrawParams.dwFObjFlags |= FOB_DISSOLVE | FOB_DISSOLVE_OUT;
-			if (DrawParams.nDissolveRef == 255)
-				return;
-		}
 	}
 
 	DrawParams.nAfterWater = IsAfterWater(objBox.GetCenter(), vCamPos, passInfo) ? 1 : 0;
@@ -396,7 +387,7 @@ void CObjManager::RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistan
 			{
 				sLabel.Format("%s/%s", pEnt->GetName(), pEnt->GetEntityClassName());
 			}
-			GetRenderer()->DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, "%s", sLabel.c_str());
+			IRenderAuxText::DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, sLabel.c_str());
 		}
 
 		IRenderAuxGeom* pRenAux = GetRenderer()->GetIRenderAuxGeom();

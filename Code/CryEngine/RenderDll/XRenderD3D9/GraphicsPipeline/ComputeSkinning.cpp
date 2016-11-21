@@ -161,9 +161,9 @@ void CStorage::DebugDraw()
 		totalPerMesh += iter->second->GetSizeBytes();
 	}
 
-	gRenDev->Draw2dLabel(1, 20.0f, 2.0f, c1, false, "[Compute Skinning]");
-	gRenDev->Draw2dLabel(1, 40.0f, 1.5f, c1, false, " Instances: %i, Total GPU memory for Instance Buffers: (%iKB)", m_perInstanceResources.size(), totalPerInstance / 1024);
-	gRenDev->Draw2dLabel(1, 60.0f, 1.5f, c1, false, " Meshes: %i, Total GPU memory for Mesh Buffers: (%iKB)", m_perMeshResources.size(), totalPerMesh / 1024);
+	IRenderAuxText::Draw2dLabel(1, 20.0f, 2.0f, c1, false, "[Compute Skinning]");
+	IRenderAuxText::Draw2dLabel(1, 40.0f, 1.5f, c1, false, " Instances: %i, Total GPU memory for Instance Buffers: (%iKB)", m_perInstanceResources.size(), totalPerInstance / 1024);
+	IRenderAuxText::Draw2dLabel(1, 60.0f, 1.5f, c1, false, " Meshes: %i, Total GPU memory for Mesh Buffers: (%iKB)", m_perMeshResources.size(), totalPerMesh / 1024);
 }
 
 CGpuBuffer* CStorage::GetOutputVertices(const void* pCustomTag)

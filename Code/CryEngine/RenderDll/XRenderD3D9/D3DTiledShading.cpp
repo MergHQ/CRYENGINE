@@ -11,7 +11,6 @@
 #include "D3DTiledShading.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
-#include "D3DVolumetricFog.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
@@ -65,8 +64,8 @@ STiledLightShadeInfo* tileLightsShade;
 CTiledShading::CTiledShading()
 {
 	// 16 byte alignment is important for performance on nVidia cards
-	STATIC_ASSERT(sizeof(STiledLightCullInfo) % 16 == 0, "STiledLightCullInfo should be 16 byte aligned for GPU performance");
-	STATIC_ASSERT(sizeof(STiledLightShadeInfo) % 16 == 0, "STiledLightShadeInfo should be 16 byte aligned for GPU performance");
+	static_assert(sizeof(STiledLightCullInfo) % 16 == 0, "STiledLightCullInfo should be 16 byte aligned for GPU performance");
+	static_assert(sizeof(STiledLightShadeInfo) % 16 == 0, "STiledLightShadeInfo should be 16 byte aligned for GPU performance");
 
 	tileLightsCull = reinterpret_cast<STiledLightCullInfo*>(CryModuleMemalign(sizeof(STiledLightCullInfo) * MaxNumTileLights, CDeviceBufferManager::GetBufferAlignmentForStreaming()));
 	tileLightsShade = reinterpret_cast<STiledLightShadeInfo*>(CryModuleMemalign(sizeof(STiledLightShadeInfo) * MaxNumTileLights, CDeviceBufferManager::GetBufferAlignmentForStreaming()));
@@ -128,10 +127,17 @@ void CTiledShading::CreateResources()
 	{
 		m_clipVolumeInfoBuf.Create(MaxNumClipVolumes, sizeof(STiledClipVolumeInfo), DXGI_FORMAT_UNKNOWN, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
 	}
+#if defined(OPENGL_ES)
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_R16G16B16A16F;
+	ETEX_Format textureAtlasFormatSpot = eTF_EAC_R11;
+#else
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_BC6UH;
+	ETEX_Format textureAtlasFormatSpot = eTF_BC4U;
+#endif
 
 	if (!m_specularProbeAtlas.texArray)
 	{
-		m_specularProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledSpecProbeTexArr", eTT_Cube, SpecProbeSize, SpecProbeSize, AtlasArrayDim, IntegerLog2(SpecProbeSize) - 1, 0, eTF_BC6UH);
+		m_specularProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledSpecProbeTexArr", eTT_Cube, SpecProbeSize, SpecProbeSize, AtlasArrayDim, IntegerLog2(SpecProbeSize) - 1, 0, textureAtlasFormatSpecDiff);
 		m_specularProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_specularProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -145,7 +151,7 @@ void CTiledShading::CreateResources()
 
 	if (!m_diffuseProbeAtlas.texArray)
 	{
-		m_diffuseProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledDiffuseProbeTexArr", eTT_Cube, DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim, 1, 0, eTF_BC6UH);
+		m_diffuseProbeAtlas.texArray = CTexture::CreateTextureArray("$TiledDiffuseProbeTexArr", eTT_Cube, DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim, 1, 0, textureAtlasFormatSpecDiff);
 		m_diffuseProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_diffuseProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -160,7 +166,7 @@ void CTiledShading::CreateResources()
 	if (!m_spotTexAtlas.texArray)
 	{
 		// Note: BC4 has 4x4 as lowest mipmap
-		m_spotTexAtlas.texArray = CTexture::CreateTextureArray("$TiledSpotTexArr", eTT_2D, SpotTexSize, SpotTexSize, AtlasArrayDim, IntegerLog2(SpotTexSize) - 1, 0, eTF_BC4U);
+		m_spotTexAtlas.texArray = CTexture::CreateTextureArray("$TiledSpotTexArr", eTT_2D, SpotTexSize, SpotTexSize, AtlasArrayDim, IntegerLog2(SpotTexSize) - 1, 0, textureAtlasFormatSpot);
 		m_spotTexAtlas.items.resize(AtlasArrayDim);
 
 		if (m_spotTexAtlas.texArray->GetFlags() & FT_FAILED)
@@ -409,7 +415,7 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 		for (uint32 lightIdx = 0, lightListSize = lightLists[lightListIdx]->size(); lightIdx < lightListSize; ++lightIdx)
 		{
 			const SRenderLight& renderLight = (*lightLists[lightListIdx])[lightIdx];
-			STiledLightCullInfo& lightCullInfo = tileLightsCull[numTileLights];
+			STiledLightInfo& lightInfo = m_tileLights[numTileLights];
 			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
 
 			if (renderLight.m_Flags & (DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY))
@@ -428,12 +434,11 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
-			Vec3 worldViewPos = rd->GetRCamera().vOrigin;
-			lightShadeInfo.posRad = Vec4(pos.x - worldViewPos.x, pos.y - worldViewPos.y, pos.z - worldViewPos.z, volumeSize);
+			lightInfo.posRad = Vec4(pos, volumeSize);
 			Vec4 posVS = Vec4(pos, 1) * matView;
-			lightCullInfo.posRad = Vec4(posVS.x, posVS.y, posVS.z, volumeSize);
+			lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
+			lightShadeInfo.posRad = Vec4(pos.x, pos.y, pos.z, volumeSize);
 			lightShadeInfo.attenuationParams = Vec2(areaLightRect ? (renderLight.m_fAreaWidth + renderLight.m_fAreaHeight) * 0.25f : renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
-			lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 			float itensityScale = rd->m_fAdaptedSceneScaleLBuffer;
 			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale, renderLight.m_Color.g * itensityScale,
 			                            renderLight.m_Color.b * itensityScale, renderLight.m_SpecMult);
@@ -445,21 +450,18 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 			// Environment probes
 			if (lightListIdx == 0)
 			{
-				lightCullInfo.volumeType = tlVolumeOBB;
+				lightInfo.volumeType = tlVolumeOBB;
 				lightShadeInfo.lightType = tlTypeProbe;
 				lightShadeInfo.resIndex = 0xFFFFFFFF;
 				lightShadeInfo.attenuationParams = Vec2(renderLight.m_Color.a, max(renderLight.GetFalloffMax(), 0.001f));
 
 				AABB aabb = RotateAABB(AABB(-renderLight.m_ProbeExtents, renderLight.m_ProbeExtents), Matrix33(renderLight.m_ObjMatrix));
 				aabb = RotateAABB(aabb, Matrix33(matView));
-				lightCullInfo.depthBounds = Vec2(posVS.z + aabb.min.z, posVS.z + aabb.max.z) * invCameraFar;
+				lightInfo.depthBoundsVS = Vec2(posVS.z + aabb.min.z, posVS.z + aabb.max.z) * invCameraFar;
 
-				Vec4 u0 = Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), 0) * matView;
-				Vec4 u1 = Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), 0) * matView;
-				Vec4 u2 = Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), 0) * matView;
-				lightCullInfo.volumeParams0 = Vec4(u0.x, u0.y, u0.z, renderLight.m_ProbeExtents.x);
-				lightCullInfo.volumeParams1 = Vec4(u1.x, u1.y, u1.z, renderLight.m_ProbeExtents.y);
-				lightCullInfo.volumeParams2 = Vec4(u2.x, u2.y, u2.z, renderLight.m_ProbeExtents.z);
+				lightInfo.volumeParams0 = Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), renderLight.m_ProbeExtents.x);
+				lightInfo.volumeParams1 = Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), renderLight.m_ProbeExtents.y);
+				lightInfo.volumeParams2 = Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), renderLight.m_ProbeExtents.z);
 
 				lightShadeInfo.projectorMatrix.SetRow4(0, Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized() / renderLight.m_ProbeExtents.x, 0));
 				lightShadeInfo.projectorMatrix.SetRow4(1, Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized() / renderLight.m_ProbeExtents.y, 0));
@@ -495,7 +497,7 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 
 				const bool ambientLight = (lightListIdx == 1);
 
-				lightCullInfo.volumeType = tlVolumeSphere;
+				lightInfo.volumeType = tlVolumeSphere;
 				lightShadeInfo.lightType = ambientLight ? tlTypeAmbientPoint : tlTypeRegularPoint;
 
 				if (!ambientLight)
@@ -514,7 +516,7 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 				// Handle projectors
 				if (renderLight.m_Flags & DLF_PROJECT)
 				{
-					lightCullInfo.volumeType = tlVolumeCone;
+					lightInfo.volumeType = tlVolumeCone;
 					lightShadeInfo.lightType = ambientLight ? tlTypeAmbientProjector : tlTypeRegularProjector;
 					lightShadeInfo.resIndex = 0xFFFFFFFF;
 
@@ -530,26 +532,19 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 					Matrix34 objMat = renderLight.m_ObjMatrix;
 					objMat.m03 = objMat.m13 = objMat.m23 = 0;  // Remove translation
 					Vec3 lightDir = objMat * Vec3(-1, 0, 0);
-					lightCullInfo.volumeParams0 = Vec4(lightDir.x, lightDir.y, lightDir.z, 0) * matView;
-					lightCullInfo.volumeParams0.w = renderLight.m_fRadius * tanf(DEG2RAD(min(renderLight.m_fLightFrustumAngle + frustumAngleDelta, 89.9f))) * sqrt_2;
-					lightCullInfo.volumeParams1.w = DEG2RAD(renderLight.m_fLightFrustumAngle);
+					lightInfo.volumeParams0 = Vec4(lightDir, 0);
+					lightInfo.volumeParams0.w = renderLight.m_fRadius * tanf(DEG2RAD(min(renderLight.m_fLightFrustumAngle + frustumAngleDelta, 89.9f))) * sqrt_2;
+					lightInfo.volumeParams1.w = DEG2RAD(renderLight.m_fLightFrustumAngle);
 
-					Vec3 coneTip = Vec3(lightCullInfo.posRad.x, lightCullInfo.posRad.y, lightCullInfo.posRad.z);
-					Vec3 coneDir = Vec3(-lightCullInfo.volumeParams0.x, -lightCullInfo.volumeParams0.y, -lightCullInfo.volumeParams0.z);
-					AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, lightCullInfo.volumeParams0.w));
-					lightCullInfo.depthBounds = Vec2(coneBounds.min.z, coneBounds.max.z) * invCameraFar;
+					Vec3 coneTipVS = Vec3(posVS);
+					Vec3 coneDirVS = Vec3(Vec4(-lightDir.x, -lightDir.y, -lightDir.z, 0) * matView);
+					AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, lightInfo.volumeParams0.w));
+					lightInfo.depthBoundsVS.x = std::min(lightInfo.depthBoundsVS.x, coneBounds.min.z * invCameraFar);
+					lightInfo.depthBoundsVS.y = std::min(lightInfo.depthBoundsVS.y, coneBounds.max.z * invCameraFar);
 
 					Matrix44A projMatT;
 					CShadowUtils::GetProjectiveTexGen(&renderLight, 0, &projMatT);
-
-					// Translate into camera space
 					projMatT.Transpose();
-					const Vec4 vEye(rd->GetRCamera().vOrigin, 0.0f);
-					Vec4 vecTranslation(vEye.Dot((Vec4&)projMatT.m00), vEye.Dot((Vec4&)projMatT.m10), vEye.Dot((Vec4&)projMatT.m20), vEye.Dot((Vec4&)projMatT.m30));
-					projMatT.m03 += vecTranslation.x;
-					projMatT.m13 += vecTranslation.y;
-					projMatT.m23 += vecTranslation.z;
-					projMatT.m33 += vecTranslation.w;
 
 					lightShadeInfo.projectorMatrix = projMatT;
 				}
@@ -557,22 +552,19 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 				// Handle rectangular area lights
 				if (areaLightRect)
 				{
-					lightCullInfo.volumeType = tlVolumeOBB;
+					lightInfo.volumeType = tlVolumeOBB;
 					lightShadeInfo.lightType = ambientLight ? tlTypeAmbientArea : tlTypeRegularArea;
 
 					float expensionRadius = renderLight.m_fRadius * 1.08f;
 					Vec3 scale(expensionRadius, expensionRadius, expensionRadius);
 					Matrix34 areaLightMat = CShadowUtils::GetAreaLightMatrix(&renderLight, scale);
 
-					Vec4 u0 = Vec4(areaLightMat.GetColumn0().GetNormalized(), 0) * matView;
-					Vec4 u1 = Vec4(areaLightMat.GetColumn1().GetNormalized(), 0) * matView;
-					Vec4 u2 = Vec4(areaLightMat.GetColumn2().GetNormalized(), 0) * matView;
-					lightCullInfo.volumeParams0 = Vec4(u0.x, u0.y, u0.z, areaLightMat.GetColumn0().GetLength() * 0.5f);
-					lightCullInfo.volumeParams1 = Vec4(u1.x, u1.y, u1.z, areaLightMat.GetColumn1().GetLength() * 0.5f);
-					lightCullInfo.volumeParams2 = Vec4(u2.x, u2.y, u2.z, areaLightMat.GetColumn2().GetLength() * 0.5f);
+					lightInfo.volumeParams0 = Vec4(areaLightMat.GetColumn0().GetNormalized(), areaLightMat.GetColumn0().GetLength() * 0.5f);
+					lightInfo.volumeParams1 = Vec4(areaLightMat.GetColumn1().GetNormalized(), areaLightMat.GetColumn1().GetLength() * 0.5f);
+					lightInfo.volumeParams2 = Vec4(areaLightMat.GetColumn2().GetNormalized(), areaLightMat.GetColumn2().GetLength() * 0.5f);
 
 					float volumeSize = renderLight.m_fRadius + max(renderLight.m_fAreaWidth, renderLight.m_fAreaHeight);
-					lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
+					lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 
 					float areaFov = renderLight.m_fLightFrustumAngle * 2.0f;
 					if (renderLight.m_Flags & DLF_CASTSHADOW_MAPS)
@@ -617,26 +609,16 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 							rd->ConfigShadowTexgen(0, &firstFrustum, side);
 							Matrix44A shadowMat = rd->m_TempMatrices[0][0];
 
-							// Translate into camera space
-							const Vec4 vEye(rd->GetRCamera().vOrigin, 0.0f);
-							Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
-							shadowMat.m03 += vecTranslation.x;
-							shadowMat.m13 += vecTranslation.y;
-							shadowMat.m23 += vecTranslation.z;
-							shadowMat.m33 += vecTranslation.w;
-
 							// Pre-multiply by inverse frustum far plane distance
 							(Vec4&)shadowMat.m20 *= rd->m_cEF.m_TempVecs[2].x;
 
-							Vec3 cubeDir = cubeDirs[side];
-							Vec4 spotParamsVS = Vec4(cubeDir.x, cubeDir.y, cubeDir.z, 0) * matView;
-
+							Vec4 spotParams = Vec4(cubeDirs[side].x, cubeDirs[side].y, cubeDirs[side].z, 0);
 							// slightly enlarge the frustum to prevent culling errors
-							spotParamsVS.w = renderLight.m_fRadius * tanf(DEG2RAD(45.0f + 14.5f)) * sqrt_2;
+							spotParams.w = renderLight.m_fRadius * tanf(DEG2RAD(45.0f + 14.5f)) * sqrt_2;
 
-							Vec3 coneTip = Vec3(lightCullInfo.posRad.x, lightCullInfo.posRad.y, lightCullInfo.posRad.z);
-							Vec3 coneDir = Vec3(-spotParamsVS.x, -spotParamsVS.y, -spotParamsVS.z);
-							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, spotParamsVS.w));
+							Vec3 coneTipVS = Vec3(posVS);
+							Vec3 coneDirVS = Vec3(Vec4(-spotParams.x, -spotParams.y, -spotParams.z, 0) * matView);
+							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, spotParams.w));
 							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z) * invCameraFar;
 							Vec2 sideShadowParams = (firstFrustum.nShadowGenMask & (1 << side)) ? shadowParams : Vec2(ZERO);
 
@@ -648,26 +630,26 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 
 								if (numSides > 1)
 								{
-									lightCullInfo.volumeType = tlVolumeCone;
+									lightInfo.volumeType = tlVolumeCone;
+									lightInfo.volumeParams0 = spotParams;
+									lightInfo.volumeParams1.w = DEG2RAD(45.0f);
+									lightInfo.depthBoundsVS = depthBoundsVS;
 									lightShadeInfo.lightType = tlTypeRegularPointFace;
 									lightShadeInfo.resIndex = side;
-									lightCullInfo.volumeParams0 = spotParamsVS;
-									lightCullInfo.volumeParams1.w = DEG2RAD(45.0f);
-									lightCullInfo.depthBounds = depthBoundsVS;
 								}
 							}
 							else
 							{
 								// Split point light
 								++numTileLights;
-								tileLightsCull[numTileLights] = lightCullInfo;
+								m_tileLights[numTileLights] = lightInfo;
+								m_tileLights[numTileLights].volumeParams0 = spotParams;
+								m_tileLights[numTileLights].volumeParams1.w = DEG2RAD(45.0f);
+								m_tileLights[numTileLights].depthBoundsVS = depthBoundsVS;
 								tileLightsShade[numTileLights] = lightShadeInfo;
 								tileLightsShade[numTileLights].shadowParams = sideShadowParams;
 								tileLightsShade[numTileLights].shadowMatrix = shadowMat;
 								tileLightsShade[numTileLights].resIndex = side;
-								tileLightsCull[numTileLights].volumeParams0 = spotParamsVS;
-								tileLightsCull[numTileLights].volumeParams1.w = DEG2RAD(45.0f);
-								tileLightsCull[numTileLights].depthBounds = depthBoundsVS;
 							}
 						}
 					}
@@ -694,12 +676,12 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 	{
 		if (numTileLights < MaxNumTileLights)
 		{
-			STiledLightCullInfo& lightCullInfo = tileLightsCull[numTileLights];
+			STiledLightInfo& lightInfo = m_tileLights[numTileLights];
 			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
 
-			lightCullInfo.volumeType = tlVolumeSun;
-			lightCullInfo.depthBounds = Vec2(-100000, 100000);
-			lightCullInfo.posRad = Vec4(0, 0, 0, 100000);
+			lightInfo.volumeType = tlVolumeSun;
+			lightInfo.posRad = Vec4(0, 0, 0, 100000);
+			lightInfo.depthBoundsVS = Vec2(-100000, 100000);
 
 			lightShadeInfo.lightType = tlTypeSun;
 			lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
@@ -725,17 +707,39 @@ void CTiledShading::PrepareLightList(CRenderView* pRenderView)
 	rd->m_RP.m_PS[rd->m_RP.m_nProcessThreadID].m_NumTiledShadingSkippedLights = m_numSkippedLights;
 #endif
 
+	// Prepare cull info
+	for (uint32 i = 0; i < numTileLights; i++)
+	{
+		STiledLightInfo& lightInfo = m_tileLights[i];
+		STiledLightCullInfo& lightCullInfo = tileLightsCull[i];
+
+		lightCullInfo.volumeType = lightInfo.volumeType;
+		lightCullInfo.posRad = Vec4(Vec3(Vec4(Vec3(lightInfo.posRad), 1) * matView), lightInfo.posRad.w);
+		lightCullInfo.depthBounds = lightInfo.depthBoundsVS;
+		
+		if (lightInfo.volumeType == tlVolumeSun)
+		{
+			lightCullInfo.posRad = lightInfo.posRad;
+		}
+		else if (lightInfo.volumeType == tlVolumeOBB)
+		{
+			lightCullInfo.volumeParams0 = Vec4(Vec3(Vec4(Vec3(lightInfo.volumeParams0), 0) * matView), lightInfo.volumeParams0.w);
+			lightCullInfo.volumeParams1 = Vec4(Vec3(Vec4(Vec3(lightInfo.volumeParams1), 0) * matView), lightInfo.volumeParams1.w);
+			lightCullInfo.volumeParams2 = Vec4(Vec3(Vec4(Vec3(lightInfo.volumeParams2), 0) * matView), lightInfo.volumeParams2.w);
+		}
+		else if (lightInfo.volumeType == tlVolumeCone)
+		{
+			lightCullInfo.volumeParams0 = Vec4(Vec3(Vec4(Vec3(lightInfo.volumeParams0), 0) * matView), lightInfo.volumeParams0.w);
+			lightCullInfo.volumeParams1.w = lightInfo.volumeParams1.w;
+		}
+	}
+
 	// NOTE: Update full light buffer, because there are "num-threads" checks for Zero-struct size needs to be aligned to that (0,64,128,192,255 are the only possible ones for 64 threat-group size)
 	const size_t tileLightsCullUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(STiledLightCullInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 	const size_t tileLightsShadeUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(STiledLightShadeInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 
 	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, tileLightsCullUploadSize);
 	m_LightShadeInfoBuf.UpdateBufferContent(tileLightsShade, tileLightsShadeUploadSize);
-
-	if (rd->m_nGraphicsPipeline == 0)
-	{
-		rd->GetVolumetricFog().PrepareLightList(pRenderView, lightLists[0], lightLists[1], lightLists[2], firstShadowLight, curShadowPoolLight);
-	}
 }
 
 void CTiledShading::PrepareShadowCastersList(CRenderView* pRenderView)
@@ -782,24 +786,12 @@ void CTiledShading::Render(CRenderView* pRenderView, Vec4* clipVolumeParams)
 	// Generate shadow mask. Note that in tiled forward only mode the shadow mask is generated in CDeferredShading::DeferredShadingPass()
 	if (CRenderer::CV_r_DeferredShadingTiled > 1)
 	{
-		if (rd->m_nGraphicsPipeline == 0)
-		{
-			PROFILE_LABEL_SCOPE("SHADOWMASK");
+		PrepareShadowCastersList(pRenderView);
 
-			PrepareShadowCastersList(pRenderView);
-			rd->FX_DeferredShadowMaskGen(pRenderView, m_arrShadowCastingLights);
-
-			rd->FX_SetActiveRenderTargets();
-		}
-		else
-		{
-			PrepareShadowCastersList(pRenderView);
-
-			rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
-			rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(pRenderView);
-			rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
-			rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
-		}
+		rd->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		rd->GetGraphicsPipeline().GetShadowMaskStage()->Prepare(pRenderView);
+		rd->GetGraphicsPipeline().GetShadowMaskStage()->Execute();
+		rd->GetGraphicsPipeline().SwitchToLegacyPipeline();
 	}
 
 	PROFILE_LABEL_SCOPE("TILED_SHADING");
@@ -927,22 +919,6 @@ void CTiledShading::Render(CRenderView* pRenderView, Vec4* clipVolumeParams)
 		Vec4 vParamScreenSize(fScreenWidth, fScreenHeight, 1.0f / fScreenWidth, 1.0f / fScreenHeight);
 		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramScreenSize, &vParamScreenSize, 1);
 
-		Vec3 worldViewPos = rd->GetRCamera().vOrigin;
-		static CCryNameR paramWorldViewPos("WorldViewPos");
-		Vec4 vParamWorldViewPos(worldViewPos.x, worldViewPos.y, worldViewPos.z, 0);
-		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramWorldViewPos, &vParamWorldViewPos, 1);
-
-		SD3DPostEffectsUtils::UpdateFrustumCorners();
-		static CCryNameR paramFrustumTL("FrustumTL");
-		Vec4 vParamFrustumTL(SD3DPostEffectsUtils::m_vLT.x, SD3DPostEffectsUtils::m_vLT.y, SD3DPostEffectsUtils::m_vLT.z, 0);
-		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramFrustumTL, &vParamFrustumTL, 1);
-		static CCryNameR paramFrustumTR("FrustumTR");
-		Vec4 vParamFrustumTR(SD3DPostEffectsUtils::m_vRT.x, SD3DPostEffectsUtils::m_vRT.y, SD3DPostEffectsUtils::m_vRT.z, 0);
-		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramFrustumTR, &vParamFrustumTR, 1);
-		static CCryNameR paramFrustumBL("FrustumBL");
-		Vec4 vParamFrustumBL(SD3DPostEffectsUtils::m_vLB.x, SD3DPostEffectsUtils::m_vLB.y, SD3DPostEffectsUtils::m_vLB.z, 0);
-		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramFrustumBL, &vParamFrustumBL, 1);
-
 		Vec3 sunDir = gEnv->p3DEngine->GetSunDirNormalized();
 		static CCryNameR paramSunDir("SunDir");
 		Vec4 vParamSunDir(sunDir.x, sunDir.y, sunDir.z, TiledShading_SunDistance);
@@ -996,9 +972,9 @@ void CTiledShading::Render(CRenderView* pRenderView, Vec4* clipVolumeParams)
 	// Output debug information
 	if (CRenderer::CV_r_DeferredShadingTiledDebug == 1)
 	{
-		rd->Draw2dLabel(20, 60, 2.0f, Col_Blue, false, "Tiled Shading Debug");
-		rd->Draw2dLabel(20, 95, 1.7f, m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", m_numSkippedLights);
-		rd->Draw2dLabel(20, 120, 1.7f, Col_Blue, false, "Atlas Updates: %i", m_numAtlasUpdates);
+		IRenderAuxText::Draw2dLabel(20, 60, 2.0f, Col_Blue, false, "Tiled Shading Debug");
+		IRenderAuxText::Draw2dLabel(20, 95, 1.7f, m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", m_numSkippedLights);
+		IRenderAuxText::Draw2dLabel(20, 120, 1.7f, Col_Blue, false, "Atlas Updates: %i", m_numAtlasUpdates);
 	}
 
 	m_bApplyCaustics = false;  // Reset flag
@@ -1148,6 +1124,8 @@ void CTiledShading::BindForwardShadingResources(RenderPassType& pass)
 // explicit instantiation
 template
 void CTiledShading::BindForwardShadingResources(CComputeRenderPass& pass);
+template
+void CTiledShading::BindForwardShadingResources(CFullscreenPass& pass);
 
 struct STiledLightCullInfo* CTiledShading::GetTiledLightCullInfo()
 {

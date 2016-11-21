@@ -8,7 +8,7 @@
 
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
   CRenderObject* pObj,
-  CRendElementBase* pRE,
+  CRenderElement* pRE,
   const SShaderItem& _shaderItem,
   EShaderTechniqueID _technique,
   EVertexFormat _vertexFormat,

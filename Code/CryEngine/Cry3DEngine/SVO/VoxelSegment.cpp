@@ -58,10 +58,10 @@ PodArrayRT<IMaterial*> CVoxelSegment::m_arrLockedMaterials;
 PodArray<CVoxelSegment*> CVoxelSegment::m_arrLoadedSegments;
 SRenderingPassInfo* CVoxelSegment::m_pCurrPassInfo = 0;
 
-	#if CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_ORBIS
 int   _fseeki64(FILE* pFile, int64 nOffset, int nOrigin) { return fseek(pFile, (int32)nOffset, nOrigin); }
 int64 _ftelli64(FILE* pFile)                             { return ftell(pFile); }
-	#endif
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Streaming engine
@@ -102,11 +102,20 @@ public:
 
 	void        ThreadEntry();
 
+  #if CRY_PLATFORM_ORBIS
+	static void* FileReadThreadFunc(void* pUD)
+	{
+		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
+		pEng->ThreadEntry();
+		return NULL;
+	}
+  #else
 	static void FileReadThreadFunc(void* pUD)
 	{
 		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
 		pEng->ThreadEntry();
 	}
+  #endif
 
 	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForFileRead;
 	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForSyncCallBack;
@@ -148,6 +157,14 @@ public:
 			m_threadId = 0;
 			m_thread = (void*)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FileReadThreadFunc, (void*)this, 0, (LPDWORD)&m_threadId);
 			SetThreadPriority(m_thread, THREAD_PRIORITY_BELOW_NORMAL);
+	#elif CRY_PLATFORM_ORBIS
+			ScePthread m_thread0;
+			::scePthreadCreate(&m_thread0, nullptr, FileReadThreadFunc, (void*)this, "VoxelThread_0");
+			::scePthreadSetprio(m_thread0, THREAD_PRIORITY_BELOW_NORMAL);
+
+			ScePthread m_thread1;
+			::scePthreadCreate(&m_thread1, nullptr, FileReadThreadFunc, (void*)this, "VoxelThread_1");
+			::scePthreadSetprio(m_thread1, THREAD_PRIORITY_BELOW_NORMAL);
 	#else
 			_beginthread(FileReadThreadFunc, 0, (void*)this);
 			_beginthread(FileReadThreadFunc, 0, (void*)this);
@@ -1118,7 +1135,7 @@ void CVoxelSegment::CheckAllocateTexturePool()
 		if (!gSvoEnv->m_nTexNormPoolId)
 		{
 			gSvoEnv->m_nTexNormPoolId = gEnv->pRenderer->DownLoadToVideoMemory3D(NULL,
-			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadWrite);
+			                                                                     nVoxTexPoolDimXY, nVoxTexPoolDimXY, nVoxTexPoolDimZ, gSvoEnv->m_nVoxTexFormat, gSvoEnv->m_nVoxTexFormat, 1, false, FILTER_LINEAR, 0, 0, nFlagsReadOnly);
 			m_nSvoDataPoolsCounter++;
 		}
 
@@ -1830,9 +1847,9 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
-				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0);
+				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 				if (Get3DEngine()->GetVisAreaManager())
-					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0);
+					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 
 				if (!arrRenderNodes.Count())
 					continue;
@@ -1853,7 +1870,10 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 						if (!(pNode->GetRndFlags() & ERF_CASTSHADOWMAPS))
 							continue;
 
-					float fMaxViewDist = pNode->GetMaxViewDist();
+					if (pNode->GetGIMode() != IRenderNode::eGM_StaticVoxelization)
+						continue;
+
+					float fMaxViewDist = pNode->GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio;
 
 					float fMinAllowedViewDist = (pNode->GetRenderNodeType() == eERType_Vegetation) ? (GetCVars()->e_svoTI_ObjectsMaxViewDistance * 2) : GetCVars()->e_svoTI_ObjectsMaxViewDistance;
 
@@ -1875,12 +1895,9 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					int nMaxSubSlots = 1;
 					if (pNode->GetRenderNodeType() == eERType_RenderProxy)
 					{
-						if (!strstr(pNode->GetName(), "_TI_VOX"))
-							continue;
 						nMaxSlots = 32;
 						nMaxSubSlots = 32;
 					}
-
 
 					for (int nSlotId = 0; nSlotId < nMaxSlots; nSlotId++)
 					{
@@ -1893,7 +1910,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 							if (!pMaterial && pStatObj)
 								pMaterial = pStatObj->GetMaterial();
 
-							if(pMaterial)
+							if (pMaterial)
 							{
 								SObjInfo info;
 								info.matObjInv = nodeTM.GetInverted();
@@ -1946,7 +1963,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 								info.pStatObj = (CStatObj*)info.pStatObj->GetLodObject(nLod, true);
 
-								CStatObj * pParent = info.pStatObj->GetParentObject() ? ((CStatObj*)info.pStatObj->GetParentObject()) : (CStatObj*)info.pStatObj;
+								CStatObj* pParent = info.pStatObj->GetParentObject() ? ((CStatObj*)info.pStatObj->GetParentObject()) : (CStatObj*)info.pStatObj;
 								EFileStreamingStatus eStreamingStatusParent = pParent->m_eStreamingStatus;
 								bool bUnloadable = pParent->IsUnloadable();
 
@@ -1986,7 +2003,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 									if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
 									{
 										Cry3DEngineBase::Get3DEngine()->DrawBBox(pNode->GetBBox(), Col_Red);
-										GetRenderer()->DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, "%s", info.pStatObj->GetFilePath());
+										IRenderAuxText::DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, info.pStatObj->GetFilePath());
 									}
 									bSuccess = false;
 								}
@@ -2949,12 +2966,12 @@ void CVoxelSegment::ErrorTerminate(const char* format, ...)
 	va_end(args);
 
 	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	if (!gEnv->pGame)
+	if (!gEnv->pGameFramework)
 	{
 		// quick terminate if in developer mode
 		char szTextFull[512];
 		cry_sprintf(szTextFull, "%s\nTerminate process?", szText);
-		if (CryMessageBox(szTextFull, "3DEngine fatal error", 0x00000004L) == IDYES)
+		if (CryMessageBox(szTextFull, "3DEngine fatal error", eMB_YesCancel) == eQR_Yes)
 			TerminateProcess(GetCurrentProcess(), 0);
 		else
 			return;

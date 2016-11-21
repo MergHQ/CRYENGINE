@@ -101,7 +101,7 @@
         "Perspective": {
             "class": "ViewportClass_Perspective",
             "state": {
-                "cameraSpeed": 1,
+                "cameraSpeed": 0.1,
                 "fitToWindow": true,
                 "xViewportRes": 1260,
                 "yViewportRes": 896

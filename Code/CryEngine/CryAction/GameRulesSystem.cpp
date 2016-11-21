@@ -40,27 +40,29 @@ CGameRulesSystem::~CGameRulesSystem()
 }
 
 //------------------------------------------------------------------------
-bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* extensionName)
+bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* extensionName, bool bUseScript)
 {
 	IEntityClassRegistry::SEntityClassDesc ruleClass;
 
 	char scriptName[1024];
-	cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+	if (bUseScript)
+	{
+		cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+		ruleClass.sScriptFile = scriptName;
+	}
 
 	ruleClass.sName = rulesName;
-	ruleClass.sScriptFile = scriptName;
 	ruleClass.pUserProxyCreateFunc = CreateGameObject;
 	ruleClass.pUserProxyData = this;
 	ruleClass.flags |= ECLF_INVISIBLE;
 
-	if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(ruleClass))
-	{
-		CRY_ASSERT(0);
-		return false;
-	}
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(ruleClass);
 
 	std::pair<TGameRulesMap::iterator, bool> rit = m_GameRules.insert(TGameRulesMap::value_type(rulesName, SGameRulesDef()));
 	rit.first->second.extension = extensionName;
+
+	// Automatically register scheduling profile
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterSchedulingProfile(ruleClass.sName, "rule", nullptr);
 
 	return true;
 }

@@ -114,7 +114,7 @@ DXGL_EXTERN DXGL_API HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
   D3D_FEATURE_LEVEL* pFeatureLevel,
   ID3D11DeviceContext** ppImmediateContext);
 
-DXGL_EXTERN DXGL_API HRESULT WINAPI D3D10CreateBlob(SIZE_T NumBytes, LPD3D10BLOB* ppBuffer);
+DXGL_EXTERN DXGL_API HRESULT WINAPI D3DCreateBlob(SIZE_T NumBytes, LPD3D10BLOB* ppBuffer);
 
 ////////////////////////////////////////////////////////////////////////////
 //  Required global functions declared in D3DCompiler.h and included headers

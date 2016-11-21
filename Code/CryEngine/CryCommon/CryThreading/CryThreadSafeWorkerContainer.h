@@ -73,7 +73,7 @@ public:
 	void     push_back(const T& rObj);
 	void     push_back(const T& rObj, size_t& nIndex);
 
-	//! \note These functions are changing the size of the continous memory block and thus are *not* thread-safe.
+	//! \note These functions are changing the size of the continuous memory block and thus are *not* thread-safe.
 	void                                        clear();
 	template<class OnElementDeleteFunctor> void clear(const OnElementDeleteFunctor& rFunctor = CThreadSafeWorkerContainer<T>::SDefaultNoOpFunctor());
 	void                                        erase(const T& rObj);

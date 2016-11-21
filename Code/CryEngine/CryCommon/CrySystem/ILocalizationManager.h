@@ -88,6 +88,12 @@ struct SLocalizedInfoEditor : public SLocalizedInfoGame
 	unsigned int nRow;
 };
 
+struct ILocalizationPostProcessor
+{
+	virtual ~ILocalizationPostProcessor() {}
+	virtual void PostProcessString(string& inout) const = 0;
+};
+
 //! Interface to the Localization Manager.
 struct ILocalizationManager
 {
@@ -137,6 +143,9 @@ struct ILocalizationManager
 	//! Direct load of loca data by tag.
 	virtual bool LoadLocalizationDataByTag(const char* sTag, bool bReload = false) = 0;
 	virtual bool ReleaseLocalizationDataByTag(const char* sTag) = 0;
+
+	virtual void RegisterPostProcessor(ILocalizationPostProcessor* pPostProcessor) = 0;
+	virtual void UnregisterPostProcessor(ILocalizationPostProcessor* pPostProcessor) = 0;
 
 	virtual bool LoadExcelXmlSpreadsheet(const char* sFileName, bool bReload = false) = 0;
 	virtual void ReloadData() = 0;

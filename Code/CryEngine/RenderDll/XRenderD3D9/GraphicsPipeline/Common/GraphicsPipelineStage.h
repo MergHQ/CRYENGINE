@@ -16,16 +16,18 @@ struct SGraphicsPipelinePassContext
 	{
 	}
 
-	SGraphicsPipelinePassContext(CRenderView* renderView, CSceneRenderPass* pSceneRenderPass, EShaderTechniqueID technique, uint32 filter)
+	SGraphicsPipelinePassContext(CRenderView* renderView, CSceneRenderPass* pSceneRenderPass, EShaderTechniqueID technique, uint32 filter, uint32 excludeFilter)
 		: pSceneRenderPass(pSceneRenderPass)
 		, techniqueID(technique)
 		, batchFilter(filter)
+		, batchExcludeFilter(excludeFilter)
 		, nFrameID(0)
 		, renderListId(EFSLIST_INVALID)
 		, stageID(0)
 		, passID(0)
 		, pRenderView(renderView)
 		, renderNearest(false)
+		, pCommandList(nullptr)
 	{
 	}
 
@@ -38,6 +40,7 @@ struct SGraphicsPipelinePassContext
 	CSceneRenderPass*  pSceneRenderPass;
 	EShaderTechniqueID techniqueID;
 	uint32             batchFilter;
+	uint32             batchExcludeFilter;
 
 	ERenderListID      renderListId;
 	threadID           nProcessThreadID;
@@ -54,6 +57,9 @@ struct SGraphicsPipelinePassContext
 	TRange<int>  rendItems;
 
 	bool         renderNearest;
+
+	// Output command list.
+	CDeviceCommandList* pCommandList;
 };
 
 class CGraphicsPipelineStage

@@ -119,7 +119,7 @@ public:
 		{
 			if (!m_Targets[i] && (pHeapProperties->VisibleNodeMask & (1 << i)))
 			{
-				const UINT src = countTrailingZeroes(pHeapProperties->CreationNodeMask);
+				const UINT src = countTrailingZeros32(pHeapProperties->CreationNodeMask);
 				Share(i, m_Targets[src]);
 #if CRY_USE_DX12_MULTIADAPTER_SIMULATION
 				deltaGPUAddresses[i] = deltaGPUAddresses[src];
@@ -181,7 +181,7 @@ public:
 		{
 			if (!m_Targets[i] && (Properties.VisibleNodeMask & (1 << i)))
 			{
-				const UINT src = countTrailingZeroes(Properties.CreationNodeMask);
+				const UINT src = countTrailingZeros32(Properties.CreationNodeMask);
 				Share(i, m_Targets[src]);
 #if CRY_USE_DX12_MULTIADAPTER_SIMULATION
 				deltaGPUAddresses[i] = deltaGPUAddresses[src];

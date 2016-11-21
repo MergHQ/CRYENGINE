@@ -13,6 +13,11 @@ using namespace CryDRS;
 DRS::IResponseActionInstanceUniquePtr CActionResetTimerVariable::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CVariableCollection* pCollectionToUse = GetCurrentCollection(static_cast<CResponseInstance*>(pResponseInstance));
+	if (!pCollectionToUse)
+	{
+		CVariableCollectionManager* pVcManager = CResponseSystem::GetInstance()->GetVariableCollectionManager();
+		pCollectionToUse = pVcManager->CreateVariableCollection(m_collectionName);
+	}
 	if (pCollectionToUse)
 	{
 		pCollectionToUse->SetVariableValue(m_variableName, CResponseSystem::GetInstance()->GetCurrentDrsTime());
@@ -39,10 +44,6 @@ void CActionResetTimerVariable::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_collectionName.m_textCopy, "Variable to set needs to hold a time value as float");
 		}
-	}
-	else
-	{
-		CResponseSystem::GetInstance()->CreateVariableCollection(m_collectionName);
 	}
 #endif
 }

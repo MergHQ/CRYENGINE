@@ -26,7 +26,6 @@ uint32 COcean::m_nVisiblePixelsCount = ~0;
 
 COcean::COcean(IMaterial* pMat)
 {
-	m_pRenderMesh = 0;
 	m_pBottomCapRenderMesh = 0;
 
 	memset(m_fRECustomData, 0, sizeof(m_fRECustomData));
@@ -83,7 +82,6 @@ COcean::~COcean()
 			m_pREOcclusionQueries[x]->Release(true);
 	}
 
-	m_pRenderMesh = NULL;
 	m_pBottomCapRenderMesh = NULL;
 
 	SAFE_RELEASE(m_pOceanRE);
@@ -122,7 +120,9 @@ void COcean::Update(const SRenderingPassInfo& passInfo)
 	// No hardware FFT support
 	m_bOceanFFT = false;
 	if (GetCVars()->e_WaterOceanFFT && pRenderer->EF_GetShaderQuality(eST_Water) >= eSQ_High)
+	{
 		m_bOceanFFT = true;
+	}
 
 	if (vCamPos.z < fWaterLevel)
 	{
@@ -413,20 +413,7 @@ void COcean::Create()
 		m_nVertsCount = m_pMeshVerts.Count();
 		m_nIndicesCount = m_pMeshIndices.Count();
 
-		m_pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-		  m_pMeshVerts.GetElements(),
-		  m_pMeshVerts.Count(),
-		  eVF_P3F_C4B_T2F,
-		  m_pMeshIndices.GetElements(),
-		  m_pMeshIndices.Count(),
-		  bUseTessHW ? prtTriangleList : prtTriangleStrip,
-		  "OutdoorWaterGrid", "OutdoorWaterGrid",
-		  eRMT_Static);
-
-		m_pRenderMesh->SetChunk(m_pMaterial, 0, m_pMeshVerts.Count(), 0, m_pMeshIndices.Count(), 1.0f);
-
-		if (m_bOceanFFT)
-			m_pOceanRE->Create(m_pMeshVerts.Count(), m_pMeshVerts.GetElements(), m_pMeshIndices.Count(), m_pMeshIndices.GetElements(), sizeof(m_pMeshIndices[0]));
+		m_pOceanRE->Create(m_pMeshVerts.Count(), m_pMeshVerts.GetElements(), m_pMeshIndices.Count(), m_pMeshIndices.GetElements(), sizeof(m_pMeshIndices[0]));
 
 		m_pMeshVerts.Free();
 		m_pMeshIndices.Free();
@@ -446,16 +433,15 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 	Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	float fWaterLevel = p3DEngine->GetWaterLevel();
 
-	CRenderObject* pObject = GetRenderer()->EF_GetObject_Temp(passInfo.ThreadID());
+	const int fillThreadID = passInfo.ThreadID();
+
+	CRenderObject* pObject = GetRenderer()->EF_GetObject_Temp(fillThreadID);
 	if (!pObject)
 		return;
 	pObject->m_II.m_Matrix.SetIdentity();
 	pObject->m_pRenderNode = this;
 
 	m_fLastFov = passInfo.GetCamera().GetFov();
-
-	// make distance to water level near to zero
-	m_pRenderMesh->SetBBox(vCamPos, vCamPos);
 
 	// test for multiple lights and shadows support
 
@@ -503,15 +489,17 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 
 	if (!GetCVars()->e_WaterOceanFFT || !m_bOceanFFT)
 	{
-		m_pRenderMesh->SetREUserData(&m_fRECustomData[0]);
-		m_pRenderMesh->AddRenderElements(m_pMaterial, pObject, passInfo, EFSLIST_WATER, 0);
+		m_pOceanRE->m_oceanParam[fillThreadID].bWaterOceanFFT = false;
 	}
 	else
 	{
-		SShaderItem& shaderItem(m_pMaterial->GetShaderItem(0));
-		m_pOceanRE->m_CustomData = &m_fRECustomData[0];
-		pRenderer->EF_AddEf(m_pOceanRE, shaderItem, pObject, passInfo, EFSLIST_WATER, 0);
+		m_pOceanRE->m_oceanParam[fillThreadID].bWaterOceanFFT = m_bOceanFFT;
 	}
+
+	pObject->m_pCurrMaterial = m_pMaterial;
+	SShaderItem& shaderItem(m_pMaterial->GetShaderItem(0));
+	m_pOceanRE->m_CustomData = &m_fRECustomData[0];
+	pRenderer->EF_AddEf(m_pOceanRE, shaderItem, pObject, passInfo, EFSLIST_WATER, 0);
 
 	if (GetCVars()->e_WaterOceanBottom)
 		RenderBottomCap(passInfo);
@@ -716,10 +704,15 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 			pROVol->m_II.m_Matrix.SetIdentity();
 			pROVol->m_fSort = 0;
 
+			auto pMaterial =
+				m_wvParams[fillThreadID].m_viewerInsideVolume
+				? (isLowSpec ? m_pFogOutofMatLowSpec.get() : m_pFogOutofMat.get())
+				: (isLowSpec ? m_pFogIntoMatLowSpec.get() : m_pFogIntoMat.get());
+
+			pROVol->m_pCurrMaterial = pMaterial;
+
 			// get shader item
-			SShaderItem& shaderItem(m_wvParams[fillThreadID].m_viewerInsideVolume ?
-			                        (isLowSpec ? m_pFogOutofMatLowSpec->GetShaderItem(0) : m_pFogOutofMat->GetShaderItem(0)) :
-			                        (isLowSpec ? m_pFogIntoMatLowSpec->GetShaderItem(0) : m_pFogIntoMat->GetShaderItem(0)));
+			SShaderItem& shaderItem(pMaterial->GetShaderItem(0));
 
 			// add to renderer
 			pRenderer->EF_AddEf(m_pWVRE[fillThreadID], shaderItem, pROVol, passInfo, EFSLIST_WATER_VOLUMES, distCamToFogPlane < -0.1f);

@@ -384,7 +384,7 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 		CCursorShowerWithStack cursorShowerWithStack;
 		cursorShowerWithStack.StoreCurrentAndShow();
 
-		DialogBoxIndirectParam(GetModuleHandle(NULL), (DLGTEMPLATE*)&g_dialogRC, GetDesktopWindow(), DlgProc, (LPARAM)&assertInfo);
+		DialogBoxIndirectParam(CryGetCurrentModule(), (DLGTEMPLATE*)&g_dialogRC, GetDesktopWindow(), DlgProc, (LPARAM)&assertInfo);
 
 		cursorShowerWithStack.RevertToPrevious();
 

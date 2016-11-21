@@ -18,14 +18,14 @@ public:
 	bool Init(TLocalNetAddress addr);
 
 	// IDatagramSocket
-	virtual void         GetSocketAddresses(TNetAddressVec& addrs);
-	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to);
-	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to);
-	virtual void         Die()                                      { m_isDead = true; }
-	virtual bool         IsDead()                                   { return m_isDead; }
-	virtual void         RegisterBackoffAddress(TNetAddress addr)   {}
-	virtual void         UnregisterBackoffAddress(TNetAddress addr) {}
-	virtual void         GetMemoryStatistics(ICrySizer* pSizer)
+	virtual void         GetSocketAddresses(TNetAddressVec& addrs) override;
+	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override;
+	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override;
+	virtual void         Die() override                                      { m_isDead = true; }
+	virtual bool         IsDead() override                                   { return m_isDead; }
+	virtual void         RegisterBackoffAddress(const TNetAddress& addr) override   {}
+	virtual void         UnregisterBackoffAddress(const TNetAddress& addr) override {}
+	virtual void         GetMemoryStatistics(ICrySizer* pSizer) override
 	{
 		SIZER_COMPONENT_NAME(pSizer, "CLocalDatagramSocket");
 

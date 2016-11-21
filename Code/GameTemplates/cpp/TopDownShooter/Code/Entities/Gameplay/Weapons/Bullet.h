@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Entities/Helpers/NativeEntityBase.h"
+#include "Entities/Helpers/ISimpleExtension.h"
 
 ////////////////////////////////////////////////////////
 // Physicalized bullet shot from weaponry, expires on collision with another object
 ////////////////////////////////////////////////////////
 class CBullet 
-	: public CGameObjectExtensionHelper<CBullet, CNativeEntityBase>
+	: public ISimpleExtension
 {
 public:
 	virtual ~CBullet() {}

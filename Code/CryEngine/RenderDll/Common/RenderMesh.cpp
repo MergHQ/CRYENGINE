@@ -27,6 +27,7 @@ DECLARE_JOB("CreateSubsetRenderMesh", TCreateSubsetRenderMesh, SMeshSubSetIndice
 #define RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS 0
 #endif
 
+//////////////////////////////////////////////////////////////////////////////////////
 namespace 
 { 
 	inline uint32 GetCurrentRenderFrameID(const SRenderingPassInfo& passInfo)
@@ -1284,8 +1285,6 @@ size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 fla
     // Cross link render chunk with render element.
     pRenderChunk->pRE = pRenderElement;
     AssignChunk(pRenderChunk, pRenderElement);
-    if (subset.nNumVerts <= 500 && !mesh.m_pBoneMapping && !(flags & FSM_NO_TANGENTS))
-      pRenderElement->mfUpdateFlags(FCEF_MERGABLE);
 
 		if (mesh.m_pBoneMapping)
 			pRenderElement->mfUpdateFlags(FCEF_SKINNED);
@@ -1899,8 +1898,8 @@ void CRenderMesh::CreateChunksSkinned()
     if (re)
     {
       rNewMat.pRE = (CREMeshImpl*) gRenDev->EF_CreateRE(eDATA_Mesh);
-      CRendElement *pNext = rNewMat.pRE->m_NextGlobal;
-      CRendElement *pPrev = rNewMat.pRE->m_PrevGlobal;
+      CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
+      CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
       *(CREMeshImpl*)rNewMat.pRE = *re;
       if (rNewMat.pRE->m_pChunk) // affects the source mesh!! will only work correctly if the source is deleted after copying
         rNewMat.pRE->m_pChunk = &rNewMat;
@@ -1922,7 +1921,7 @@ int CRenderMesh::GetRenderChunksCount(IMaterial * pMaterial, int & nRenderTrisCo
   for (uint32 i=0; i<ni; i++)
   {
     CRenderChunk *pChunk = &m_Chunks[i];
-    CRendElementBase * pREMesh = pChunk->pRE;
+    CRenderElement * pREMesh = pChunk->pRE;
 
     SShaderItem *pShaderItem = &pMaterial->GetShaderItem(pChunk->m_nMatID);
 
@@ -1969,8 +1968,8 @@ void CRenderMesh::CopyTo(IRenderMesh *_pDst, int nAppendVtx, bool bDynamic, bool
     if (re)
     {
       rNewMat.pRE = (CREMeshImpl*) gRenDev->EF_CreateRE(eDATA_Mesh);
-      CRendElement *pNext = rNewMat.pRE->m_NextGlobal;
-      CRendElement *pPrev = rNewMat.pRE->m_PrevGlobal;
+      CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
+      CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
       *(CREMeshImpl*)rNewMat.pRE = *re;
 			if (rNewMat.pRE->m_pChunk) // affects the source mesh!! will only work correctly if the source is deleted after copying
       {
@@ -3193,7 +3192,7 @@ void CRenderMesh::AddRenderElements(IMaterial *pIMatInfo, CRenderObject *pObj, c
 
 		if (shaderItem.m_pShader && pOrigRE)// && pMat->nNumIndices)
     {
-      TArray<CRendElementBase *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
+      TArray<CRenderElement *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
 
       assert(pOrigRE->m_pChunk->nFirstIndexId<60000);
 
@@ -3224,7 +3223,7 @@ void CRenderMesh::AddRE(IMaterial* pMaterial, CRenderObject* obj, IShader* ef, c
     {
       assert(m_Chunks[i].pRE->m_pChunk->nFirstIndexId<60000);
 
-      TArray<CRendElementBase *> *pRE = SH.m_pShader->GetREs(SH.m_nTechnique);
+      TArray<CRenderElement *> *pRE = SH.m_pShader->GetREs(SH.m_nTechnique);
       if (!pRE || !pRE->Num())
 				gRenDev->EF_AddEf_NotVirtual(m_Chunks[i].pRE, SH, obj, passInfo, nList, nAW);
       else
@@ -3639,7 +3638,6 @@ static void BlendWeights(DualQuat& dq, Array<const DualQuat> aBoneLocs, const Jo
 struct PosNormData
 {
 	strided_pointer<Vec3> aPos;
-	strided_pointer<Vec3> aNorm;
 	strided_pointer<SVF_P3S_N4B_C4B_T2S> aVert;
 	strided_pointer<SPipQTangents> aQTan;
 	strided_pointer<SPipTangents> aTan2;
@@ -3650,14 +3648,12 @@ struct PosNormData
 		ran.vPos = aPos[nV];
 
 		// Normal
-		if (aNorm.data)
-			ran.vNorm = aNorm[nV];
-		else if (aVert.data)
-			ran.vNorm = aVert[nV].normal.GetN();
+		if (aQTan.data)
+			ran.vNorm = aQTan[nV].GetN();
 		else if (aTan2.data)
 			ran.vNorm = aTan2[nV].GetN();
-		else if (aQTan.data)
-			ran.vNorm = aQTan[nV].GetN();
+		else if (aVert.data)
+			ran.vNorm = aVert[nV].normal.GetN();
 	}
 };
 
@@ -3769,12 +3765,9 @@ void CRenderMesh::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, SSk
 	if (vdata.aPos.data = (Vec3*)GetPosPtr(vdata.aPos.iStride, FSL_READ))
 	{
 		// Check possible sources for normals.
-#if ENABLE_NORMALSTREAM_SUPPORT
-		if (!GetStridedArray(vdata.aNorm, VSF_NORMALS))
-#endif
-			if (_GetVertexFormat() != eVF_P3S_N4B_C4B_T2S || !GetStridedArray(vdata.aVert, VSF_GENERAL))
-				if (!GetStridedArray(vdata.aTan2, VSF_TANGENTS))
-					GetStridedArray(vdata.aQTan, VSF_QTANGENTS);
+		if (_GetVertexFormat() != eVF_P3S_N4B_C4B_T2S || !GetStridedArray(vdata.aVert, VSF_GENERAL))
+			if (!GetStridedArray(vdata.aQTan, VSF_QTANGENTS))
+				GetStridedArray(vdata.aTan2, VSF_TANGENTS);
 
 		vtx_idx* pInds = GetIndexPtr(FSL_READ);
 
@@ -4812,7 +4805,7 @@ bool CRenderMesh::GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo)
 	return false;
 }
 
-bool CRenderMesh::FillGeometryInfo(CRendElementBase::SGeometryInfo& geom)
+bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 {
 	CRenderMesh* pRenderMeshForVertices = _GetVertexContainer();
 
@@ -4958,7 +4951,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 	for (uint32 i = 0; i < ni; i++)
 	{
 		CRenderChunk* pChunk = &pChunks->at(i);
-		CRendElementBase* RESTRICT_POINTER pREMesh = pChunk->pRE;
+		CRenderElement* RESTRICT_POINTER pREMesh = pChunk->pRE;
 
 		SShaderItem& ShaderItem      = pMaterial->GetShaderItem(pChunk->m_nMatID);
 		CShaderResources* pR         = (CShaderResources*)ShaderItem.m_pShaderResources;
@@ -5019,7 +5012,7 @@ void CRenderMesh::AddHUDRenderElement(CRenderObject* pObj, IMaterial* pMaterial,
 	for (uint32 i = 0; i < ni; i++)
 	{
 		CRenderChunk* pChunk      = &pChunks->at(i);
-		CRendElementBase* pREMesh = pChunk->pRE;
+		CRenderElement* pREMesh = pChunk->pRE;
 		SShaderItem* pShaderItem  = &pMaterial->GetShaderItem(pChunk->m_nMatID);
 
 		pPostEffect->AddRE(pREMesh, pShaderItem, pObj, passInfo);
@@ -5188,7 +5181,7 @@ void CRenderMesh::ClearJobResources()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void C3DHud::AddRE(const CRendElementBase* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+void C3DHud::AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	// Main thread
 	const uint32 nThreadID = passInfo.ThreadID();
@@ -5260,4 +5253,41 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 		}
 		m_pIndexRM = pIndexMesh;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+//#TODO: Must be refactored to new pipeline!!!
+void CRenderMesh::DrawImmediately()
+{
+	CD3D9Renderer* rd = gcpRendD3D;
+
+	HRESULT hr = rd->FX_SetVertexDeclaration(0, _GetVertexFormat());
+
+	if (FAILED(hr))
+	{
+		// can fail due to asynchronous shader compilation.
+		return;
+	}
+
+	// set vertex and index buffer
+	CheckUpdate(_GetVertexFormat(), 0);
+
+	size_t vbOffset(0);
+	size_t ibOffset(0);
+	D3DVertexBuffer* pVB = rd->m_DevBufMan.GetD3DVB(_GetVBStream(VSF_GENERAL), &vbOffset);
+	D3DIndexBuffer* pIB = rd->m_DevBufMan.GetD3DIB(_GetIBStream(), &ibOffset);
+	assert(pVB);
+	assert(pIB);
+
+	if (!pVB || !pIB)
+	{
+		assert(!"CRenderMesh::DrawImmediately failed");
+		return;
+	}
+
+	rd->FX_SetVStream(0, pVB, vbOffset, GetStreamStride(VSF_GENERAL));
+	rd->FX_SetIStream(pIB, ibOffset, (sizeof(vtx_idx) == 2 ? Index16 : Index32));
+
+	// draw indexed mesh
+	rd->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, _GetNumVerts(), 0, _GetNumInds());
 }

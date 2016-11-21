@@ -294,7 +294,7 @@ def wrap_class_orbis(class_name):
 	derived_class = type(class_name, (cls,), {})
 
 	def exec_command(self, *k, **kw):
-		if self.env['CC_NAME'] == 'orbis-clang' or self.env['CC_NAME'] == 'gcc':
+		if self.env['CC_NAME'] == 'orbis-clang' or self.env['CC_NAME'] == 'gcc'  or self.env['CC_NAME'] == 'clang':
 			return self.exec_command_orbis_clang(*k, **kw)
 		else:
 			return super(derived_class, self).exec_command(*k, **kw)
@@ -482,7 +482,7 @@ def verify_options_common(env):
 		frozenset(['/Z7', '/Zi', '/ZI']),
 		frozenset(['/Za', '/Ze']),
 		frozenset(['/MD', '/MT', '/LD', '/MDd', '/MTd', '/LDd']),
-		frozenset(['/W0', '/W1', '/W2', '/W3', '/W4']),
+		frozenset(['/W0', '/W1', '/W2', '/W3', '/W4', '/w']),
 		frozenset(['/Zp1', '/Zp2', '/Zp4', '/Zp8', '/Zp16'])]	
 		
 	# Mutatable options 

@@ -251,7 +251,7 @@ void CPlayerVisTable::Update(float dt)
 		}
 
 
-		gEnv->pRenderer->Draw2dLabel(20.f, 500.f, 1.5f, white, false, "VistableInfo:\n  Num Linetests this frame: %d\n  Num queries this frame: %d\n  Worst latency: %d", m_numLinetestsThisFrame, m_numQueriesThisFrame, worstLatency);
+		IRenderAuxText::Draw2dLabel(20.f, 500.f, 1.5f, white, false, "VistableInfo:\n  Num Linetests this frame: %d\n  Num queries this frame: %d\n  Worst latency: %d", m_numLinetestsThisFrame, m_numQueriesThisFrame, worstLatency);
 	
 		if (g_pGameCVars->pl_debug_vistable == 2)
 		{
@@ -854,7 +854,7 @@ void CPlayerVisTableDebugDraw::Update()
 
 				const Vec3 offset(0.0f, 0.0f, 0.4f);
 				pRenderAux->DrawCone(worldRefPosition + offset, -Vec3Constants<float>::fVec3_OneZ, 0.125f, offset.z, color);
-				gEnv->pRenderer->DrawLabelEx(worldRefPosition, 1.5f, white, true, false, "%.2f", lastUpdateAge);
+				IRenderAuxText::DrawLabelExF(worldRefPosition, 1.5f, white, true, false, "%.2f", lastUpdateAge);
 			}
 			++targetIt;
 		}

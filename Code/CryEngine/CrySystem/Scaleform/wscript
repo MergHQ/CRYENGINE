@@ -19,4 +19,7 @@ def build(bld):
 			defines           = ['CRY_IS_SCALEFORM_HELPER'],
 			includes          = ['..'],
 			module_extensions = ['scaleform'],
+			
+			linux_use_module = [ 'png16', 'jpeg'],
+			mac_use_module = [ 'png16', 'jpeg'],
 		)

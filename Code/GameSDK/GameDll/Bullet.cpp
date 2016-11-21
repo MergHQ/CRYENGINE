@@ -782,10 +782,10 @@ void SDebugBulletPenetration::Update(float frameTime)
 		const Vec3 textLineOffset(0.0f, 0.0f, 0.14f);
 		const float textColor[4] = {1.0f, 1.0f, 1.0f, alpha};
 
-		gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * 2.0f), 1.25f, textColor, true, false, "Damage: %.1f", currentHit.damage);
-		gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * 3.0f), 1.25f, textColor, true, false, "Pierceability: %d", currentHit.surfacePierceability);
-		gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * 4.0f), 1.25f, textColor, true, false, "%s", GetPenetrationLevelByPierceability(currentHit.surfacePierceability));
-		gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * 5.0f), 1.25f, textColor, true, false, currentHit.tooThick ? "Too thick!" : "------");
+		IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * 2.0f), 1.25f, textColor, true, false, "Damage: %.1f", currentHit.damage);
+		IRenderAuxText::DrawLabelExF(baseText - (textLineOffset * 3.0f), 1.25f, textColor, true, false, "Pierceability: %d", currentHit.surfacePierceability);
+		IRenderAuxText::DrawLabelEx (baseText - (textLineOffset * 4.0f), 1.25f, textColor, true, false, GetPenetrationLevelByPierceability(currentHit.surfacePierceability));
+		IRenderAuxText::DrawLabelEx (baseText - (textLineOffset * 5.0f), 1.25f, textColor, true, false, currentHit.tooThick ? "Too thick!" : "------");
 
 	}
 

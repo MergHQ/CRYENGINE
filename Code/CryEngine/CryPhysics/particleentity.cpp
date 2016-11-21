@@ -718,6 +718,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 			event.partid[0] = m_iPierceability;
 			event.idmat[0] = m_surface_idx;
 			event.idmat[1] = hits[j].surface_idx;
+			event.penetration = -0.01f*isneg(hits[j].idmatOrg);	// penetration<0 and idmatOrg<0 tell that surfacetype was modified via geom_mat_substitutor
 			m_pWorld->OnEvent(m_flags,&event);
 			if (hits[j].surface_idx==m_pWorld->m_matWater) {
 				if (hits[j].pCollider && hits[j].pCollider->GetType()==PE_AREA && ((CPhysArea*)hits[j].pCollider)->m_pWaterMan)

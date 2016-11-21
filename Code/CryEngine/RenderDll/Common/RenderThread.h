@@ -50,7 +50,6 @@ enum ERenderCommand
 	eRC_BeginFrame,
 	eRC_EndFrame,
 	eRC_ClearBuffersImmediately,
-	eRC_FlushTextMessages,
 	eRC_FlushTextureStreaming,
 	eRC_ReleaseSystemTextures,
 	eRC_PreloadTextures,
@@ -59,7 +58,6 @@ enum ERenderCommand
 	eRC_SwitchToNativeResolutionBackbuffer,
 
 	eRC_DrawLines,
-	eRC_DrawStringU,
 	eRC_UpdateTexture,
 	eRC_UpdateMesh2,
 	eRC_ReleaseShaderResource,
@@ -72,6 +70,7 @@ enum ERenderCommand
 	eRC_ReleaseVBStream,
 	eRC_CreateResource,
 	eRC_ReleaseResource,
+	eRC_ReleaseOptics,
 	eRC_ReleaseRenderResources,
 	eRC_PrecacheDefaultShaders,
 	eRC_SubmitWind,
@@ -215,6 +214,7 @@ struct CRY_ALIGN(128) SRenderThread
 #endif
 	threadID m_nRenderThread;
 	threadID m_nRenderThreadLoading;
+	threadID m_nLevelLoadingThread;
 	threadID m_nMainThread;
 #if CRY_PLATFORM_DURANGO
 	volatile uint32 m_suspendWhileLoadingFlag;
@@ -234,8 +234,7 @@ struct CRY_ALIGN(128) SRenderThread
 	// The below loading queue contains all commands that were submitted and require full device access during loading.
 	// Will be blit into the first render frame's command queue after loading and subsequently resized to 0.
 	TArray<byte> m_CommandsLoading;
-
-	static CryCriticalSection s_rcLock;
+	CryCriticalSectionNonRecursive m_CommandsLoadingLock;
 
 	enum EVideoThreadMode
 	{
@@ -345,7 +344,6 @@ struct CRY_ALIGN(128) SRenderThread
 	}
 
 	bool IsFailed();
-	void ValidateThreadAccess(ERenderCommand eRC);
 
 	inline size_t Align4(size_t value)
 	{
@@ -518,6 +516,7 @@ struct CRY_ALIGN(128) SRenderThread
 	int GetThreadList() const;
 	bool IsRenderThread(bool bAlwaysCheck = false) const;
 	bool IsRenderLoadingThread(bool bAlwaysCheck = false);
+	bool IsLevelLoadingThread(bool bAlwaysCheck=false) const;
 	bool IsMainThread(bool bAlwaysCheck = false) const;
 	bool IsMultithreaded();
 	int CurThreadFill() const;
@@ -547,9 +546,10 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ReleaseBaseResource(CBaseResource * pRes);
 	void RC_ReleaseSurfaceResource(SDepthTexture * pRes);
 	void RC_ReleaseResource(SResourceAsync * pRes);
+	void RC_ReleaseOptics(IOpticsElementBase* pOpticsElement);
 	void RC_RelinkTexture(CTexture * pTex);
 	void RC_UnlinkTexture(CTexture * pTex);
-	void RC_CreateREPostProcess(CRendElementBase * *re);
+	void RC_CreateREPostProcess(CRenderElement * *re);
 	bool RC_CheckUpdate2(CRenderMesh * pMesh, CRenderMesh * pVContainer, EVertexFormat eVF, uint32 nStreamMask);
 	void RC_ReleaseCB(void* pCB);
 	void RC_ReleaseRS(std::shared_ptr<CDeviceResourceSet> &pRS);
@@ -574,11 +574,9 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_PushProfileMarker(char* label);
 	void RC_PopProfileMarker(char* label);
 	void RC_DrawLines(Vec3 v[], int nump, ColorF & col, int flags, float fGround);
-	void RC_DrawStringU(IFFont_RenderProxy * pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext &ctx);
 	void RC_ReleaseDeviceTexture(CTexture * pTex);
 	void RC_PrecacheResource(ITexture * pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1);
 	void RC_ClearTargetsImmediately(int8 nType, uint32 nFlags, const ColorF &vColor, float depth);
-	void RC_FlushTextMessages();
 	void RC_FlushTextureStreaming(bool bAbort);
 	void RC_ReleaseSystemTextures();
 	void RC_AuxFlush(IRenderAuxGeomImpl * pAux, SAuxGeomCBRawDataPackaged & data, size_t begin, size_t end, bool reset);
@@ -623,7 +621,7 @@ struct CRY_ALIGN(128) SRenderThread
 	bool RC_OC_ReadResult_Try(uint32 nDefaultNumSamples, CREOcclusionQuery * pRE);
 
 	void RC_PreprGenerateFarTrees(CREFarTreeSprites * pRE, const SRenderingPassInfo &passInfo);
-	void RC_PreprGenerateCloud(CRendElementBase * pRE, CShader * pShader, CShaderResources * pRes, CRenderObject * pObject);
+	void RC_PreprGenerateCloud(CRenderElement * pRE, CShader * pShader, CShaderResources * pRes, CRenderObject * pObject);
 	void RC_SetViewport(int x, int y, int width, int height, int id = 0);
 
 	void RC_ReleaseVBStream(void* pVB, int nStream);
@@ -685,6 +683,18 @@ inline bool SRenderThread::IsRenderLoadingThread(bool bAlwaysCheck)
 #else
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
 	if (d == m_nRenderThreadLoading)
+		return true;
+	return false;
+#endif
+}
+
+inline bool SRenderThread::IsLevelLoadingThread(bool bAlwaysCheck) const
+{
+#ifdef STRIP_RENDER_THREAD
+	return false;
+#else
+	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
+	if (d == m_nLevelLoadingThread)
 		return true;
 	return false;
 #endif

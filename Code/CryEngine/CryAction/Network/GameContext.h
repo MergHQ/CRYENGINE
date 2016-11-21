@@ -224,8 +224,6 @@ public:
 
 	void        AllowCallOnClientConnect();
 
-	void        PlayerIdSet(EntityId id);
-
 	void        GetMemoryUsage(ICrySizer* pSizer) const;
 	void        GetMemoryStatistics(ICrySizer* pSizer) { GetMemoryUsage(pSizer); /*dummy till network module is updated*/ }
 	void        LockResources();

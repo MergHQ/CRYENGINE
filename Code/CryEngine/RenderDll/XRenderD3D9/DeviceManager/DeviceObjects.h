@@ -35,16 +35,14 @@ enum EConstantBufferShaderSlot
 	// Z/G-Buffer
 	eConstantBufferShaderSlot_PerBatch          = 0,
 	eConstantBufferShaderSlot_PerInstanceLegacy = 1,
-	eConstantBufferShaderSlot_PerFrame          = 2,
 	eConstantBufferShaderSlot_PerMaterial       = 3,
-	eConstantBufferShaderSlot_PerLight          = 4,
 	eConstantBufferShaderSlot_PerPass           = 5,
 	eConstantBufferShaderSlot_SkinData          = 6,
 	eConstantBufferShaderSlot_InstanceData      = 7,
 	eConstantBufferShaderSlot_SPI               = 8,
 	eConstantBufferShaderSlot_SkinQuat          = 9,
 	eConstantBufferShaderSlot_SkinQuatPrev      = 10,
-	eConstantBufferShaderSlot_SPIIndex          = 11,
+	eConstantBufferShaderSlot_VrProjection      = 11,
 	eConstantBufferShaderSlot_PerInstance       = 12,
 	eConstantBufferShaderSlot_PerView           = 13,
 
@@ -57,6 +55,7 @@ enum EResourceLayoutSlot
 	EResourceLayoutSlot_PerMaterialRS      = 1,
 	EResourceLayoutSlot_PerInstanceExtraRS = 2,
 	EResourceLayoutSlot_PerPassRS          = 3,
+	EResourceLayoutSlot_VrProjectionCB     = 4,
 
 	EResourceLayoutSlot_Max                = 7
 };
@@ -168,6 +167,9 @@ private:
 	}
 };
 
+// Note: Create[Vertex|Index]StreamSet rely on this property to perform de-duplication.
+static_assert(sizeof(CDeviceInputStream) == sizeof(buffer_handle_t) + 2 * sizeof(uint32), "CDeviceInputStream must be tightly packed");
+
 ////////////////////////////////////////////////////////////////////////////
 namespace DeviceResourceBinding
 {
@@ -269,7 +271,6 @@ public:
 
 protected:
 	virtual bool BuildImpl(EFlags updatedFlags) = 0;
-	void OnTextureChanged(uint32 dirtyFlags);
 
 	VectorMap<DeviceResourceBinding::SShaderSlot, STextureData>        m_Textures;
 	VectorMap<DeviceResourceBinding::SShaderSlot, SSamplerData>        m_Samplers;
@@ -375,11 +376,9 @@ public:
 	std::array<ETEX_Format, 4> m_RenderTargetFormats;
 	ETEX_Format                m_DepthStencilFormat;
 	ECull                      m_CullMode;
-	int32                      m_DepthBias;
-	f32                        m_DepthBiasClamp;
-	f32                        m_SlopeScaledDepthBias;
 	ERenderPrimitiveType       m_PrimitiveType;
 	CDeviceResourceLayout*     m_pResourceLayout;
+	bool                       m_bDepthClip;
 };
 
 class CDeviceComputePSODesc
@@ -638,14 +637,17 @@ public:
 	void SetIndexBuffer(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
 	void SetStencilRef(uint8 stencilRefValue);
+	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
+	void SetModifiedWMode(bool enabled, uint32_t numViewports, const float* pA, const float* pB);
 
 	void Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
-	void ClearSurface(D3DSurface* pView, const float color[4], uint32 numRects, const D3D11_RECT* pRects);
+	void ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 };
 
-STATIC_ASSERT(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceGraphicsCommandInterface cannot contain data members");
+static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceGraphicsCommandInterface cannot contain data members");
 
 class CDeviceComputeCommandInterface : public CDeviceComputeCommandInterfaceImpl
 {
@@ -666,7 +668,15 @@ public:
 	void ClearUAV(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 };
 
-STATIC_ASSERT(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
+static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
+
+class CDeviceNvidiaCommandInterface : public CDeviceNvidiaCommandInterfaceImpl
+{
+public:
+	void SetModifiedWMode(bool enabled, uint32 numViewports, const float* pA, const float* pB);
+};
+
+static_assert(sizeof(CDeviceNvidiaCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceNvidiaCommandInterface cannot contain data members");
 
 class CDeviceCommandList : public CDeviceCommandListImpl
 {
@@ -677,6 +687,7 @@ public:
 
 	CDeviceGraphicsCommandInterface* GetGraphicsInterface();
 	CDeviceComputeCommandInterface*  GetComputeInterface();
+	CDeviceNvidiaCommandInterface*   GetNvidiaCommandInterface();
 
 	void                             Reset();
 	void                             LockToThread();
@@ -688,7 +699,7 @@ public:
 #endif
 };
 
-STATIC_ASSERT(sizeof(CDeviceCommandList) == sizeof(CDeviceCommandListImpl), "CDeviceCommandList cannot contain data members");
+static_assert(sizeof(CDeviceCommandList) == sizeof(CDeviceCommandListImpl), "CDeviceCommandList cannot contain data members");
 
 typedef std::shared_ptr<CDeviceCommandList> CDeviceCommandListPtr;
 typedef CDeviceCommandList&                 CDeviceCommandListRef;
@@ -710,15 +721,15 @@ public:
 		eQueue_Bundle = 3,
 	};
 
-	CDeviceResourceSetPtr    CreateResourceSet(CDeviceResourceSet::EFlags flags = CDeviceResourceSet::EFlags_None) const;
-	CDeviceResourceSetPtr    CloneResourceSet(const CDeviceResourceSetPtr pSrcResourceSet) const; // NOTE: does not copy device dependent resources. be sure to call Build() before usage
+	CDeviceResourceSetPtr     CreateResourceSet(CDeviceResourceSet::EFlags flags = CDeviceResourceSet::EFlags_None) const;
+	CDeviceResourceSetPtr     CloneResourceSet(const CDeviceResourceSetPtr pSrcResourceSet) const; // NOTE: does not copy device dependent resources. be sure to call Build() before usage
 
-	CDeviceResourceLayoutPtr CreateResourceLayout(const SDeviceResourceLayoutDesc& resourceLayoutDesc);
-	CDeviceInputStream*      CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams);
-	CDeviceInputStream*      CreateIndexStreamSet(const SStreamInfo* stream);
+	CDeviceResourceLayoutPtr  CreateResourceLayout(const SDeviceResourceLayoutDesc& resourceLayoutDesc);
+	const CDeviceInputStream* CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams);
+	const CDeviceInputStream* CreateIndexStreamSet(const SStreamInfo* stream);
 
-	CDeviceGraphicsPSOPtr    CreateGraphicsPSO(const CDeviceGraphicsPSODesc& psoDesc);
-	CDeviceComputePSOPtr     CreateComputePSO(const CDeviceComputePSODesc& psoDesc);
+	CDeviceGraphicsPSOPtr     CreateGraphicsPSO(const CDeviceGraphicsPSODesc& psoDesc);
+	CDeviceComputePSOPtr      CreateComputePSO(const CDeviceComputePSODesc& psoDesc);
 
 	// Get a pointer to the core graphics command-list, which runs on the command-queue assigned to Present().
 	// Only the allocating thread is allowed to call functions on this command-list (DX12 restriction).
@@ -762,24 +773,30 @@ private:
 
 	VectorMap<SDeviceResourceLayoutDesc, CDeviceResourceLayoutPtr>     m_ResourceLayoutCache;
 
-	template<class T, const size_t N> struct SDeviceStreamInfoHash
+	struct SDeviceStreamInfoHash
 	{
-		size_t operator()(const T& x) const
+		template<size_t U>
+		size_t operator()(const std::array<CDeviceInputStream, U>& x) const
 		{
-			return size_t(XXH64(x, sizeof(CDeviceInputStream) * N, 61));
+			// Note: Relies on CDeviceInputStream being tightly packed
+			return size_t(XXH64(x.data(), sizeof(CDeviceInputStream) * U, 61));
 		}
 	};
 
-	template<class T, const size_t N> struct SDeviceStreamInfoEquality
+	struct SDeviceStreamInfoEquality
 	{
-		bool operator()(const T& x, const T& y) const
+		template<size_t U>
+		bool operator()(const std::array<CDeviceInputStream, U>& x, const std::array<CDeviceInputStream, U>& y) const
 		{
-			return !memcmp(x, y, sizeof(CDeviceInputStream) * N);
+			// Note: Relies on CDeviceInputStream being tightly packed
+			return !memcmp(x.data(), y.data(), sizeof(CDeviceInputStream) * U);
 		}
 	};
 
-	std::unordered_set<CDeviceInputStream*, SDeviceStreamInfoHash<CDeviceInputStream*, 1>, SDeviceStreamInfoEquality<CDeviceInputStream*, 1>>             m_UniqueIndexStreams;
-	std::unordered_set<CDeviceInputStream*, SDeviceStreamInfoHash<CDeviceInputStream*, VSF_NUM>, SDeviceStreamInfoEquality<CDeviceInputStream*, VSF_NUM>> m_UniqueVertexStreams;
+	typedef std::array<CDeviceInputStream, 1>       TIndexStreams;
+	typedef std::array<CDeviceInputStream, VSF_NUM> TVertexStreams;
+	std::unordered_set<TIndexStreams, SDeviceStreamInfoHash, SDeviceStreamInfoEquality>  m_uniqueIndexStreams;
+	std::unordered_set<TVertexStreams, SDeviceStreamInfoHash, SDeviceStreamInfoEquality> m_uniqueVertexStreams;
 };
 
 struct SDeviceObjectHelpers
@@ -833,7 +850,7 @@ struct SDeviceObjectHelpers
 		{
 			if (m_pBuffer)
 			{
-				m_pBuffer->UpdateBuffer(m_pCachedData, Align(sizeof(T), Alignment), m_CurrentBufferIndex + 1);
+				m_pBuffer->UpdateBuffer(m_pCachedData, Align(sizeof(T), Alignment), 0, m_CurrentBufferIndex + 1);
 			}
 		}
 
@@ -849,7 +866,8 @@ struct SDeviceObjectHelpers
 			++m_CurrentBufferIndex;
 		}
 
-		T*   operator->() { return &m_pCachedData[m_CurrentBufferIndex]; }
+		T*   operator->  () { return &m_pCachedData[m_CurrentBufferIndex]; }
+		     operator T& () { return  m_pCachedData[m_CurrentBufferIndex]; }
 
 	private:
 		// NOTE: enough memory to hold an aligned struct size + the adjustment of a possible unaligned start
@@ -879,8 +897,8 @@ struct SDeviceObjectHelpers
 		void BeginNamedConstantUpdate();
 		void EndNamedConstantUpdate();
 
-		bool SetNamedConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param);
-		bool SetNamedConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams);
+		bool SetNamedConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass = eHWSC_Pixel);
+		bool SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass = eHWSC_Pixel);
 
 		////////// Manual constant update via typed buffers //////////
 		bool SetTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages = EShaderStage_Pixel);
@@ -930,6 +948,7 @@ struct SDeviceObjectHelpers
 
 	// Check if shader has tessellation support
 	static bool CheckTessellationSupport(SShaderItem& shaderItem);
+	static bool CheckTessellationSupport(SShaderItem& shaderItem, EShaderTechniqueID techniqueId);
 };
 
 template<typename T>

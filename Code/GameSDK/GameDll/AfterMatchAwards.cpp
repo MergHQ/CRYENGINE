@@ -651,13 +651,20 @@ EntityId CAfterMatchAwards::GetMinimumFloatFromWorking(EAfterMatchAwards inAward
 {
 	EntityId winner=0;
 	float minFloat=999999999.f;
-
+	const EntityId localActorId = gEnv->pGameFramework->GetClientActorId();
+	const bool bIsLocalAward = GetFlagsForAward(inAward) & eAF_LocalClients;
+	
 	DbgLog("CAfterMatchAwards::GetMinimumFloatFromWorking() inAward=%s", GetNameForAward(inAward));
 
 	ActorAwardsMap::const_iterator it = m_actorAwards.begin();
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)
 	{
+		if (bIsLocalAward && localActorId != it->first)
+		{
+			continue;
+		}
+
 		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetMinimumFloatFromWorking() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
@@ -683,12 +690,20 @@ EntityId CAfterMatchAwards::GetMinimumFloatFromWorking(EAfterMatchAwards inAward
 // being used for floats whilst ints aren't networkable but makes more sense for ints
 void CAfterMatchAwards::GetAllFromWorkingWithFloat(EAfterMatchAwards inAward, float inVal, ActorsVector &results)
 {
+	const EntityId localActorId = gEnv->pGameFramework->GetClientActorId();
+	const bool bIsLocalAward = GetFlagsForAward(inAward) & eAF_LocalClients;
+	
 	DbgLog("CAfterMatchAwards::GetAllFromWorkingWithFloat() inAward=%s", GetNameForAward(inAward));
 
 	ActorAwardsMap::const_iterator it = m_actorAwards.begin();
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)
 	{
+		if (bIsLocalAward && localActorId != it->first)
+		{
+			continue;
+		}
+
 		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingWithFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
@@ -710,12 +725,20 @@ void CAfterMatchAwards::GetAllFromWorkingWithFloat(EAfterMatchAwards inAward, fl
 
 void CAfterMatchAwards::GetAllFromWorkingGreaterThanFloat(EAfterMatchAwards inAward, float inVal, ActorsVector &results)
 {
+	const EntityId localActorId = gEnv->pGameFramework->GetClientActorId();
+	const bool bIsLocalAward = GetFlagsForAward(inAward) & eAF_LocalClients;
+	
 	DbgLog("CAfterMatchAwards::GetAllFromWorkingGreaterThanFloat() inAward=%s", GetNameForAward(inAward));
 	
 	ActorAwardsMap::const_iterator it = m_actorAwards.begin();
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)
 	{
+		if (bIsLocalAward && localActorId != it->first)
+		{
+			continue;
+		}
+
 		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingGreaterThanFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
@@ -746,7 +769,7 @@ void CAfterMatchAwards::ClCalculateAward(EAfterMatchAwards inAward)
 	{
 		DbgLog("CAfterMatchAwards::ClCalculateAward() inAward=%s - is an award to be calculated by local clients", GetNameForAward(inAward));
 
-		EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 
 		CalculateAwardForActor(inAward, localClientId);
 	}
@@ -928,7 +951,7 @@ int CAfterMatchAwards::CalculateAward(EAfterMatchAwards inAward)
 			DbgLog("CAfterMatchAwards::CalculateAward() SERVER - inAward=%s is an award that needs calculating fully on the server", GetNameForAward(inAward));
 
 			// Gather all the award workings for every actor
-			IActorSystem *pActorSystem=gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+			IActorSystem *pActorSystem=gEnv->pGameFramework->GetIActorSystem();
 			IActorIteratorPtr pActorIterator=pActorSystem->CreateActorIterator();
 			while (CActor* pActor = (CActor*)pActorIterator->Next())
 			{
@@ -1090,7 +1113,7 @@ void CAfterMatchAwards::CalculateAwards()
 	}
 
 	// cache the local client so we can look at its awards later
-	m_localClientEntityIdWas=gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	m_localClientEntityIdWas=gEnv->pGameFramework->GetClientActorId();
 }
 
 void CAfterMatchAwards::EnteredGame()
@@ -1111,7 +1134,7 @@ void CAfterMatchAwards::StartCalculatingAwards()
 		m_timeOutLeftWaitingForClients = k_timeOutWaitingForClients;
 
 		// ensure that we have all the actors in our map
-		IActorSystem *pActorSystem=gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem *pActorSystem=gEnv->pGameFramework->GetIActorSystem();
 		IActorIteratorPtr pActorIterator=pActorSystem->CreateActorIterator();
 		while (CActor* pActor = (CActor*)pActorIterator->Next())
 		{
@@ -1134,7 +1157,7 @@ void CAfterMatchAwards::ClSendAwardsToServer()
 {
 	DbgLog("CAfterMatchAwards::ClSendAwardsToServer() - sending calculated awards for local client to server");
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	SAwardsForPlayer *awards = GetAwardsForActor(localClientId);
 
 	CRY_ASSERT_MESSAGE(awards, "ClSendAwardsToServer() has failed to find the awards for local client");
@@ -1170,7 +1193,7 @@ void CAfterMatchAwards::SvSendAwardsToClients()
 {
 	DbgLog("CAfterMatchAwards::SendAwardsToClients()");
 
-	EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	ActorAwardsMap::const_iterator it = m_actorAwards.begin();
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)
@@ -1202,14 +1225,12 @@ void CAfterMatchAwards::SvSendAwardsToClients()
 		}
 
 		IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(it->first);
-
 		if (pActor)
 		{
 			g_pGame->GetGameRules()->GetGameObject()->InvokeRMI(CGameRules::ClAfterMatchAwards(), rmiParams, eRMI_ToClientChannel, pActor->GetChannelId());
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, "SvSendAwardsToClients() has failed to resolve an actor, assuming client has disconnected. Can't send awards when we don't know their channelId");
 			DbgLog("CAfterMatchAwards::SvSendAwardsToClients() has failed to resolve an actor, assuming client has disconnected. Can't send awards when we don't know their channelId");
 		}
 	}

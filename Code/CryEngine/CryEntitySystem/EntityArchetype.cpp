@@ -117,7 +117,7 @@ void CEntityArchetype::SaveEntityAttributesToXML(XmlNodeRef& entityAttributes)
 IEntityArchetype* CEntityArchetypeManager::CreateArchetype(IEntityClass* pClass, const char* sArchetype)
 {
 	CEntityArchetype* pArchetype = stl::find_in_map(m_nameToArchetypeMap, sArchetype, NULL);
-	if (pArchetype && stricmp(pClass->GetName(), pArchetype->GetName()) == 0)
+	if (pArchetype)
 		return pArchetype;
 	pArchetype = new CEntityArchetype((CEntityClass*)pClass);
 	pArchetype->SetName(sArchetype);

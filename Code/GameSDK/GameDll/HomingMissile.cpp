@@ -163,8 +163,7 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 	bool isOwnerActor = pOwnerActor && pOwnerActor->IsClient();
 	bool shouldFollowHomingGuide = isOwnerActor;
 	
-	IRenderer* pRenderer = gEnv->pRenderer;
-	IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
+
 	float color[4] = {1,1,1,1};
 	const static float step = 15.f;  
 	float y = 20.f;    
@@ -199,7 +198,7 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 #if DEBUG_HOMINGMISSILE
 					if (bDebug)
 					{
-						pRenderer->Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "Target Entity: %s", pTarget->GetName());
+						IRenderAuxText::Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "Target Entity: %s", pTarget->GetName());
 					}
 #endif
 				}
@@ -242,9 +241,9 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 #if DEBUG_HOMINGMISSILE
 				if (bDebug)
 				{
-					pRenderer->Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "PlayerView eye direction: %.3f %.3f %.3f", m_homingGuideDirection.x, m_homingGuideDirection.y, m_homingGuideDirection.z);
-					pRenderer->Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "PlayerView Target: %.3f %.3f %.3f", m_destination.x, m_destination.y, m_destination.z);
-					pRenderer->GetIRenderAuxGeom()->DrawCone(m_destination, Vec3(0,0,-1), 2.5f, 7.f, ColorB(255,0,0,255));
+					IRenderAuxText::Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "PlayerView eye direction: %.3f %.3f %.3f", m_homingGuideDirection.x, m_homingGuideDirection.y, m_homingGuideDirection.z);
+					IRenderAuxText::Draw2dLabel(5.0f, y+=step, 1.5f, color, false, "PlayerView Target: %.3f %.3f %.3f", m_destination.x, m_destination.y, m_destination.z);
+					gEnv->pRenderer->GetIRenderAuxGeom()->DrawCone(m_destination, Vec3(0,0,-1), 2.5f, 7.f, ColorB(255,0,0,255));
 				}
 #endif
 			}
@@ -320,9 +319,9 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 #if DEBUG_HOMINGMISSILE
 			if(bDebug)
 			{
-				pRenderer->Draw2dLabel(50,55,2.0f,color,false, "  Destination: %.3f, %.3f, %.3f",m_destination.x,m_destination.y,m_destination.z);
-				pRenderer->Draw2dLabel(50,80,2.0f,color,false, "  Current Dir: %.3f, %.3f, %.3f",currentVel.x,currentVel.y,currentVel.z);
-				pRenderer->Draw2dLabel(50,105,2.0f,color,false,"  Goal    Dir: %.3f, %.3f, %.3f",goalDir.x,goalDir.y,goalDir.z);
+				IRenderAuxText::Draw2dLabel(50,55,2.0f,color,false, "  Destination: %.3f, %.3f, %.3f",m_destination.x,m_destination.y,m_destination.z);
+				IRenderAuxText::Draw2dLabel(50,80,2.0f,color,false, "  Current Dir: %.3f, %.3f, %.3f",currentVel.x,currentVel.y,currentVel.z);
+				IRenderAuxText::Draw2dLabel(50,105,2.0f,color,false,"  Goal    Dir: %.3f, %.3f, %.3f",goalDir.x,goalDir.y,goalDir.z);
 			}
 #endif
 
@@ -352,7 +351,6 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 			}
 
 			float cosine = currentVel.Dot(goalDir);
-			cosine = CLAMP(cosine,-1.0f,1.0f);
 			float totalAngle = RAD2DEG(acos_tpl(cosine));
 
 			assert(totalAngle>=0);
@@ -374,7 +372,7 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 
 #if DEBUG_HOMINGMISSILE
 			if(bDebug)
-				pRenderer->Draw2dLabel(50,180,2.0f,color,false,"Corrected Dir: %.3f, %.3f, %.3f",goalDir.x,goalDir.y,goalDir.z);
+				IRenderAuxText::Draw2dLabel(50,180,2.0f,color,false,"Corrected Dir: %.3f, %.3f, %.3f",goalDir.x,goalDir.y,goalDir.z);
 #endif
 
 			pe_action_set_velocity action;
@@ -452,7 +450,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 #if DEBUG_HOMINGMISSILE
 			// if heading towards align altitude (but not yet reached) accelerate to max speed    
 			if (bDebug)
-				pRenderer->Draw2dLabel(5.0f,  y+=step,   1.5f, color, false, "[HomingMissile] accelerating (%.1f / %.1f)", currentSpeed, homingParams.m_maxSpeed);    
+				IRenderAuxText::Draw2dLabel(5.0f,  y+=step,   1.5f, color, false, "[HomingMissile] accelerating (%.1f / %.1f)", currentSpeed, homingParams.m_maxSpeed);
 #endif
 		}
 		else if (!m_isCruising && heightDiff * sgnnz(status.v.z) < 0.f && (status.v.z<0 || status.v.z>0.25f))
@@ -467,14 +465,14 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 
 #if DEBUG_HOMINGMISSILE
 			if (bDebug)
-				pRenderer->Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] aligning"); 
+				IRenderAuxText::Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] aligning");
 #endif
 		}
 		else
 		{
 #if DEBUG_HOMINGMISSILE
 			if (bDebug)
-				pRenderer->Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] cruising..."); 
+				IRenderAuxText::Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] cruising...");
 #endif
 
 			// cruise
@@ -490,7 +488,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 				{
 #if DEBUG_HOMINGMISSILE
 					if (bDebug)
-						pRenderer->Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] descending!"); 
+						IRenderAuxText::Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] descending!");
 #endif
 
 					if ((distSq != 0) && (m_controlLostTimer <= 0.0001f))
@@ -531,7 +529,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 		if (bDebug)
 		{ 
 			pGeom->DrawCone( currentPos, goalDir, 0.4f, 12.f, ColorB(255,0,0,255) );
-			pRenderer->Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] goalAngle: %.2f", goalAngle); 
+			IRenderAuxText::Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] goalAngle: %.2f", goalAngle);
 		}
 #endif
 
@@ -549,7 +547,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 	if (bDebug)
 	{
 		pGeom->DrawCone( currentPos, dir, 0.4f, 12.f, ColorB(128,128,0,255) );  
-		pRenderer->Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] currentSpeed: %.1f (max: %.1f)", currentSpeed, homingParams.m_maxSpeed); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step, 1.5f, color, false, "[HomingMissile] currentSpeed: %.1f (max: %.1f)", currentSpeed, homingParams.m_maxSpeed);
 	}
 #endif
 }

@@ -8,35 +8,35 @@ namespace Impl
 {
 namespace Wwise
 {
-class CAudioImplCVars
+class CAudioImplCVars final
 {
 public:
 
-	CAudioImplCVars();
-	~CAudioImplCVars();
+	CAudioImplCVars() = default;
+	CAudioImplCVars(CAudioImplCVars const&) = delete;
+	CAudioImplCVars(CAudioImplCVars&&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars const&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars&&) = delete;
 
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	int m_primaryMemoryPoolSize;
-	int m_secondaryMemoryPoolSize;
-	int m_prepareEventMemoryPoolSize;
-	int m_streamManagerMemoryPoolSize;
-	int m_streamDeviceMemoryPoolSize;
-	int m_soundEngineDefaultMemoryPoolSize;
-	int m_commandQueueMemoryPoolSize;
-	int m_lowerEngineDefaultPoolSize;
-	int m_enableEventManagerThread;
-	int m_enableSoundBankManagerThread;
+	int m_secondaryMemoryPoolSize = 0;
+	int m_prepareEventMemoryPoolSize = 0;
+	int m_streamManagerMemoryPoolSize = 0;
+	int m_streamDeviceMemoryPoolSize = 0;
+	int m_soundEngineDefaultMemoryPoolSize = 0;
+	int m_commandQueueMemoryPoolSize = 0;
+	int m_lowerEngineDefaultPoolSize = 0;
+	int m_enableEventManagerThread = 0;
+	int m_enableSoundBankManagerThread = 0;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	int m_enableCommSystem;
-	int m_enableOutputCapture;
-	int m_monitorMemoryPoolSize;
-	int m_monitorQueueMemoryPoolSize;
+	int m_enableCommSystem = 0;
+	int m_enableOutputCapture = 0;
+	int m_monitorMemoryPoolSize = 0;
+	int m_monitorQueueMemoryPoolSize = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioImplCVars);
 };
 
 extern CAudioImplCVars g_audioImplCVars;

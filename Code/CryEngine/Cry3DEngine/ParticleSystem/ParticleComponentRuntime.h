@@ -18,7 +18,7 @@
 namespace pfx2
 {
 
-class CParticleComponentRuntime : public ICommonParticleComponentRuntime, public IParticleVertexCreator, public _i_reference_target_t
+class CParticleComponentRuntime : public ICommonParticleComponentRuntime, public IParticleVertexCreator
 {
 public:
 	typedef std::vector<SInstance, stl::aligned_alloc<SInstance, CRY_PFX2_PARTICLES_ALIGNMENT>> TInstances;
@@ -54,13 +54,9 @@ public:
 	void                      AddRemoveNewBornsParticles(const SUpdateContext& context);
 	void                      UpdateParticles(const SUpdateContext& context);
 	void                      CalculateBounds();
-	void                      WaitUntilUpdateEnded();
-	ILINE void                SetStateUpdateStarted() { m_updateState.SetRunning(); }
-	ILINE void                SetStateUpdateEnded()   { m_updateState.SetStopped(); }
 
 	virtual void              ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 	virtual void              AddSubInstances(SInstance* pInstances, size_t count) override;
-	void                      RemoveSubInstance(size_t instanceId);
 	void                      RemoveAllSubInstances();
 	size_t                    GetNumInstances() const       { return m_subInstances.size(); }
 	const SInstance& GetInstance(size_t idx) const { return m_subInstances[idx]; }
@@ -74,9 +70,9 @@ private:
 	void AddRemoveParticles(const SUpdateContext& context);
 	void UpdateNewBorns(const SUpdateContext& context);
 	void UpdateFeatures(const SUpdateContext& context);
-	void PostUpdateFeatures(const SUpdateContext& context);
 
 	void AgeUpdate(const SUpdateContext& context);
+	void UpdateLocalSpace(SUpdateRange range);
 
 	void AlignInstances();
 
@@ -89,7 +85,6 @@ private:
 	CParticleEffect*                             m_pEffect;
 	CParticleEmitter*                            m_pEmitter;
 	CParticleComponent*                          m_pComponent;
-	JobManager::SJobState                        m_updateState;
 	AABB m_bounds;
 	bool m_active;
 };

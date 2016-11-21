@@ -54,7 +54,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")
 target_include_directories(${THIS_PROJECT} PRIVATE Common)
 if(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE acphal)

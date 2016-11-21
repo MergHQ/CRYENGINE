@@ -13,8 +13,8 @@
 
 #pragma once
 
+#include <CryCore/CryVariant.h>
 #include <CrySystem/XML/IXml.h>
-#include <CryCore/BoostHelpers.h>
 
 struct IReadXMLSink;
 struct IWriteXMLSource;
@@ -35,8 +35,7 @@ struct IReadWriteXMLSink
 
 struct SReadWriteXMLCommon
 {
-	typedef boost::mpl::vector<Vec3, int, float, const char*, bool> TValueTypes;
-	typedef boost::make_variant_over<TValueTypes>::type             TValue;
+	typedef CryVariant<Vec3, int, float, const char*, bool> TValue;
 };
 
 TYPEDEF_AUTOPTR(IReadXMLSink);

@@ -308,7 +308,7 @@ void CGameRulesObjective_Predator::Client_AnnounceTimeRemaining( EPredatorFlags 
 	{
 		Common_SetFlag(flag);
 
-		bool bSoldier = (m_pGameRules->GetTeam(g_pGame->GetClientActorId()) == TEAM_SOLDIER);
+		bool bSoldier = (m_pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId()) == TEAM_SOLDIER);
 		if (bSoldier && pMarineEvent)
 		{
 			CAnnouncer::GetInstance()->Announce(pMarineEvent, CAnnouncer::eAC_inGame);
@@ -751,7 +751,7 @@ void CGameRulesObjective_Predator::OnSingleEntityRMI( CGameRules::SModuleRMIEnti
 //-------------------------------------------------------------------------
 void CGameRulesObjective_Predator::OnChangedTeam( EntityId entityId, int oldTeamId, int newTeamId )
 {
-	if (entityId == g_pGame->GetClientActorId())
+	if (entityId == gEnv->pGameFramework->GetClientActorId())
 	{
 		m_clientTeam = newTeamId;
 		CEquipmentLoadout *pEquipmentLoadout = g_pGame->GetEquipmentLoadout();
@@ -817,7 +817,7 @@ void CGameRulesObjective_Predator::OnChangedTeam( EntityId entityId, int oldTeam
 //-------------------------------------------------------------------------
 void CGameRulesObjective_Predator::EntityRevived( EntityId entityId )
 {
-	EntityId clientId = g_pGame->GetClientActorId();
+	EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if (entityId == clientId)
 	{
 		Common_ClearFlag(ePF_ClientSuicide);
@@ -1520,7 +1520,7 @@ void CGameRulesObjective_Predator::Common_SetAmmoCacheGroupActive( uint32 groupI
 		SAmmoCacheGroup &group = m_ammoCacheGroups[i];
 		if (group.m_groupId == groupId)
 		{
-			const bool bIsSoldier = m_pGameRules->GetTeam(g_pGame->GetClientActorId()) == TEAM_SOLDIER;
+			const bool bIsSoldier = m_pGameRules->GetTeam(gEnv->pGameFramework->GetClientActorId()) == TEAM_SOLDIER;
 			int numEntities = group.m_entityIds.size();
 			for (int j = 0; j < numEntities; ++ j)
 			{

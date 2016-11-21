@@ -363,8 +363,8 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	{
 		using namespace pfx2::detail;
 		CRY_ALIGN(16) float stream[] = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f };
-		__m128i index;
-		__m128 expected, got;
+		uint32v index;
+		floatv expected, got;
 
 		index = _mm_set1_epi32(2);
 		expected = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
@@ -406,6 +406,14 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 
 #if defined(CRY_PFX2_USE_SSE)
 
+	using namespace pfx2;
+
+	template<typename Real>
+	NO_INLINE Real SNoiseNoInline(Vec4_tpl<Real> v)
+	{
+		return SNoise(v);
+	}
+
 	template<typename Real>
 	void SnoiseTest()
 	{
@@ -415,11 +423,11 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 		const Vec4_tpl<Real> s2 = Vec4_tpl<Real>(convert<Real>(-104.2f), convert<Real>(504.85f), convert<Real>(-32.0f), convert<Real>(1.25f));
 		const Vec4_tpl<Real> s3 = Vec4_tpl<Real>(convert<Real>(-257.07f), convert<Real>(-25.85f), convert<Real>(-0.5f), convert<Real>(105.5f));
 		const Vec4_tpl<Real> s4 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(1504.85f), convert<Real>(78.57f), convert<Real>(-0.75f));
-		Real p0 = SNoise(s0);
-		Real p1 = SNoise(s1);
-		Real p2 = SNoise(s2);
-		Real p3 = SNoise(s3);
-		Real p4 = SNoise(s4);
+		Real p0 = SNoiseNoInline(s0);
+		Real p1 = SNoiseNoInline(s1);
+		Real p2 = SNoiseNoInline(s2);
+		Real p3 = SNoiseNoInline(s3);
+		Real p4 = SNoiseNoInline(s4);
 		CRY_PFX2_UNIT_TEST_ASSERT(All(p0 == convert<Real>(0.0f)));
 		CRY_PFX2_UNIT_TEST_ASSERT(All(p1 == convert<Real>(-0.291425288f)));
 		CRY_PFX2_UNIT_TEST_ASSERT(All(p2 == convert<Real>(-0.295406163f)));
@@ -430,12 +438,30 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 	CRY_UNIT_TEST(SNoiseTest)
 	{
 		SnoiseTest<float>();
-		SnoiseTest<__m128>();
+		SnoiseTest<floatv>();
+	}
+
+	CRY_UNIT_TEST(ChaosKeyTest)
+	{
+		for (int rep = 0; rep < 8; ++rep)
+		{
+			uint32 key = cry_random(0U, 99999U);
+			SChaosKey ch(key);
+			SChaosKeyV chv(ToUint32v(key));
+
+			uint32 r = ch.Rand();
+			uint32v rv = chv.Rand();
+			CRY_PFX2_UNIT_TEST_ASSERT(All(ToUint32v(r) == rv));
+
+			float ss = ch.RandSNorm();
+			floatv ssv = chv.RandSNorm();
+			CRY_PFX2_UNIT_TEST_ASSERT(All(ToFloatv(ss) == ssv));
+		}
 	}
 
 	CRY_UNIT_TEST(RadixSortTest)
 	{
-		pfx2::TParticleHeap heap;
+		TParticleHeap heap;
 
 		const uint64 data[] = { 15923216, 450445401561561, 5061954, 5491494, 56494109840, 500120, 520025710, 58974, 45842669, 3226, 995422665 };
 		const uint sz = sizeof(data) / sizeof(data[0]);
@@ -445,6 +471,36 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 		RadixSort(indices, indices + sz, data, data + sz, heap);
 
 		CRY_PFX2_UNIT_TEST_ASSERT(memcmp(expectedIndices, indices, sz * 4) == 0);
+	}
+
+	template<typename T>
+	void SpecialTest(T z = 0)
+	{
+		typedef std::numeric_limits<T> lim;
+
+		auto has_denorm = lim::has_denorm;
+		auto denorm_loss = lim::has_denorm_loss;
+		T infinity = lim::infinity();
+		T max = lim::max();
+		T epsilon = lim::epsilon();
+		T pmin = lim::min();
+		T dmin = lim::denorm_min();
+		T lmin = lim::lowest();
+
+		T dz2 = infinity + infinity;
+		T dzsq = infinity * infinity;
+		T dzm = infinity - T(1000);
+		T zz = T(1) / infinity;
+
+		T dd = dmin + dmin;
+		T dnz = dmin - dmin;
+		T dp = dmin * T(1000000);
+	}
+
+	CRY_UNIT_TEST(SpecialTests)
+	{
+		SpecialTest<float>();
+		SpecialTest<double>();
 	}
 
 #endif

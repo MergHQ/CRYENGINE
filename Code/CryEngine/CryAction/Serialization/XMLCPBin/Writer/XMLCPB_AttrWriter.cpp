@@ -396,8 +396,8 @@ uint16 CAttrWriter::CalcHeader() const
 
 void CAttrWriter::Compact()
 {
-	COMPILE_TIME_ASSERT(uint32(DT_NUMTYPES) <= uint32(MAX_NUM_TYPES));
-	COMPILE_TIME_ASSERT(BITS_TYPEID + BITS_NAMEID <= 16);
+	static_assert(uint32(DT_NUMTYPES) <= uint32(MAX_NUM_TYPES), "Too many types!");
+	static_assert(BITS_TYPEID + BITS_NAMEID <= 16, "Wrong bit positions!");
 
 #ifdef XMLCPB_COLLECT_STATS
 	if (m_Writer.IsSavingIntoFile())

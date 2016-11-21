@@ -342,19 +342,6 @@ public:
 	                        EOcclusionObjectType eOcclusionObjectType,
 	                        const SRenderingPassInfo& passInfo);
 
-	void AddDecalToRenderer(float fDistance,
-	                        IMaterial* pMat,
-	                        const uint8 sortPrio,
-	                        Vec3 right,
-	                        Vec3 up,
-	                        const UCol& ucResCol,
-	                        const uint8 uBlendType,
-	                        const Vec3& vAmbientColor,
-	                        Vec3 vPos,
-	                        const int nAfterWater,
-	                        const SRenderingPassInfo& passInfo,
-	                        CVegetation* pVegetation);
-
 	// tmp containers (replacement for local static vars)
 
 	//  void DrawObjSpritesSorted(PodArray<CVegetation*> *pList, float fMaxViewDist, int useBending);
@@ -461,9 +448,6 @@ public:
 	static void FillTerrainTexInfo(IOctreeNode* pOcNode, float fEntDistance, struct SSectorTextureSet*& pTerrainTexInfo, const AABB& objBox);
 	PodArray<CVisArea*> m_tmpAreas0, m_tmpAreas1;
 
-	uint8        GetDissolveRef(float fDist, float fMaxViewDist);
-	float        GetLodDistDissolveRef(SLodDistDissolveTransitionState* pState, float curDist, int nNewLod, const SRenderingPassInfo& passInfo);
-
 	void         CleanStreamingData();
 	IRenderMesh* GetRenderMeshBox();
 
@@ -471,7 +455,7 @@ public:
 	void         BeginOcclusionCulling(const SRenderingPassInfo& passInfo);
 	void         EndOcclusionCulling();
 	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
-	uint32			 GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const;
+	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
 
 private:

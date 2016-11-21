@@ -46,8 +46,8 @@
 
 //------------------------------------------------------------------------
 CScriptBind_Actor::CScriptBind_Actor(ISystem *pSystem)
-: m_pSystem(pSystem),
-	m_pGameFW(pSystem->GetIGame()->GetIGameFramework())
+	: m_pSystem(pSystem)
+	, m_pGameFW(gEnv->pGameFramework)
 {
 	Init(pSystem->GetIScriptSystem(), pSystem, 1);
 

@@ -231,7 +231,7 @@ public:
 	{
 		SInputParams inputParams;
 		ReadCurrentInputParams(pActInfo, inputParams);
-		IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGF = gEnv->pGameFramework;
 		IView* pView = 0;
 		IView* pActiveView = pGF->GetIViewSystem()->GetActiveView();
 		eViewType viewType = inputParams.view;
@@ -327,6 +327,11 @@ public:
 		{
 			m_pViewSystem->RemoveView(m_pView);
 		}
+	}
+
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_CameraView(pActInfo);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -428,11 +433,7 @@ public:
 
 	void CreateView()
 	{
-		if (gEnv->pGame == NULL)
-			return;
-
-		IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
-
+		IGameFramework* pGF = gEnv->pGameFramework;
 		if (pGF == NULL)
 			return;
 
@@ -455,7 +456,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFlowNode_CameraTransform : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_CameraTransform : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_CameraTransform(SActivationInfo* pActInfo){}

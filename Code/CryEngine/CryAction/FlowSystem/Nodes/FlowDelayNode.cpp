@@ -273,6 +273,11 @@ class CFlowFrameDelayNode : public CFlowBaseNode<eNCT_Instanced>
 public:
 	CFlowFrameDelayNode(SActivationInfo* pActInfo) : m_frameStamp(0) {}
 
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowFrameDelayNode(pActInfo);
+	}
+
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {

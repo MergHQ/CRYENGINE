@@ -16,7 +16,7 @@
 #endif
 
 #if defined(USE_NV_API)
-	#include <NVAPI/nvapi.h>
+	#include NV_API_HEADER
 #endif
 
 #include <CrySystem/VR/IHMDManager.h>
@@ -61,8 +61,6 @@ CD3DStereoRenderer::CD3DStereoRenderer(CD3D9Renderer& renderer, EStereoDevice de
 	, m_nvStereoStrength(0.0f)
 	, m_nvStereoActivated(0)
 	, m_curEye(LEFT_EYE)
-	, m_frontBufWidth(0)
-	, m_frontBufHeight(0)
 	, m_stereoStrength(0.0f)
 	, m_zeroParallaxPlaneDist(0.25f)
 	, m_maxSeparationScene(0.0f)
@@ -121,17 +119,7 @@ CD3DStereoRenderer::~CD3DStereoRenderer()
 
 void CD3DStereoRenderer::SelectDefaultDevice()
 {
-	EStereoDevice device = STEREO_DEVICE_NONE;
-
-#if CRY_PLATFORM_WINDOWS
-	device = STEREO_DEVICE_FRAMECOMP;
-#elif CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	device = STEREO_DEVICE_FRAMECOMP;
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	device = STEREO_DEVICE_FRAMECOMP;
-#endif
-
-	m_device = device;
+	m_device = STEREO_DEVICE_FRAMECOMP;
 }
 
 void CD3DStereoRenderer::InitDeviceBeforeD3D()
@@ -377,9 +365,6 @@ bool CD3DStereoRenderer::EnableStereo()
 	}
 #endif
 
-	if (!InitializeHmdRenderer())
-		return false;
-
 	return true;
 }
 
@@ -401,34 +386,7 @@ void CD3DStereoRenderer::DisableStereo()
 
 void CD3DStereoRenderer::ChangeOutputFormat()
 {
-	m_frontBufWidth = 0;
-	m_frontBufHeight = 0;
-
 	ShutdownHmdRenderer();
-	InitializeHmdRenderer();
-}
-
-bool CD3DStereoRenderer::InitializeHmdRenderer()
-{
-	assert(m_pHmdRenderer == nullptr);
-	m_pHmdRenderer = CreateHmdRenderer(m_output, m_pHmdDevice, &m_renderer, this);
-
-	if (m_pHmdRenderer != nullptr)
-	{
-		if (!m_pHmdRenderer->Initialize())
-		{
-			SAFE_DELETE(m_pHmdRenderer);
-			return false;
-		}
-
-		gEnv->pLog->Log("[HMD] HMD Renderer initialized");
-	}
-	else
-	{
-		gEnv->pLog->Log("[HMD] HMD Renderer not initialized - stereoOuput [%d] hmdDevice [%s null]", m_output, m_pHmdDevice ? "NOT" : "");
-	}
-
-	return m_pHmdRenderer != nullptr;
 }
 
 void CD3DStereoRenderer::ShutdownHmdRenderer()
@@ -461,7 +419,7 @@ void CD3DStereoRenderer::PrepareStereo(EStereoMode mode, EStereoOutput output)
 	if (m_mode != mode || m_output != output)
 	{
 		m_renderer.ForceFlushRTCommands();
-
+		
 		if (m_mode != mode)
 		{
 			m_mode = mode;
@@ -510,6 +468,17 @@ void CD3DStereoRenderer::PrepareStereo(EStereoMode mode, EStereoOutput output)
 
 		// Apply stereo strength
 		m_maxSeparationScene *= m_stereoStrength;
+
+		if (m_output == STEREO_OUTPUT_HMD && m_pHmdRenderer == nullptr && m_pHmdDevice != nullptr)
+		{
+			// Create the HMD renderer
+			m_pHmdRenderer = CreateHmdRenderer(*m_pHmdDevice, &m_renderer, this);
+
+			if (m_pHmdRenderer != nullptr)
+			{
+				m_pHmdRenderer->Initialize();
+			}
+		}
 
 		if (m_pHmdRenderer != nullptr)
 			m_pHmdRenderer->PrepareFrame();
@@ -627,12 +596,9 @@ CCamera CD3DStereoRenderer::PrepareCamera(int nEye, const CCamera& currentCamera
 void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& passInfo)
 {
 	// for recursive rendering (e.g. rendering to ocean reflection texture), stereo is not needed
-	if (passInfo.IsRecursivePass())
+	if (passInfo.IsRecursivePass() || (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING))
 	{
-		if (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING)
-		{
-			m_renderer.m_pRT->RC_SetStereoEye(0);
-		}
+		m_renderer.m_pRT->RC_SetStereoEye(0);
 
 		RenderScene(sceneFlags, passInfo);
 
@@ -655,7 +621,9 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 		m_bPreviousCameraValid = true;
 	}
 
-	if (!RequiresSequentialSubmission() && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
+
+
+	if (!RequiresSequentialSubmission())
 	{
 		int sceneFlagsDual = SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE;
 
@@ -683,10 +651,10 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer->SelectGPU(GPUMASK_BOTH);
 		}
 	}
-	else if (CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
+	else 
 	{
 		int sceneFlagsLeft = SHDF_STEREO_LEFT_EYE;
-		int sceneFlagsRight = SHDF_NO_SHADOWGEN | SHDF_STEREO_RIGHT_EYE;
+		int sceneFlagsRight = SHDF_STEREO_RIGHT_EYE | SHDF_NO_SHADOWGEN;
 
 		if (g_pMgpu && CRenderer::CV_r_StereoEnableMgpu)
 		{
@@ -1176,87 +1144,72 @@ void CD3DStereoRenderer::OnResolutionChanged()
 	}
 }
 
-void CD3DStereoRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
+void CD3DStereoRenderer::CalculateBackbufferResolution(int nativeWidth, int nativeHeight, int* pRenderWidth, int *pRenderHeight)
 {
-	if (m_pHmdRenderer != nullptr)
-		m_pHmdRenderer->CalculateBackbufferResolution(eyeWidth, eyeHeight, pBackbufferWidth, pBackbufferHeight);
-	else
+	switch (m_output)
 	{
-		switch (m_output)
-		{
 		case STEREO_OUTPUT_SIDE_BY_SIDE:
-			*pBackbufferWidth = eyeWidth * 2;
-			*pBackbufferHeight = eyeHeight;
+			*pRenderWidth = nativeWidth * 2;
+			*pRenderHeight = nativeHeight;
 			break;
 		case STEREO_OUTPUT_ABOVE_AND_BELOW:
-			*pBackbufferWidth = eyeWidth;
-			*pBackbufferHeight = eyeHeight * 2;
+			*pRenderWidth = nativeWidth;
+			*pRenderHeight = nativeHeight * 2;
+			break;
+		case STEREO_OUTPUT_HMD:
+			{
+				// Update renderer resolution
+				HmdDeviceInfo deviceInfo;
+				m_pHmdDevice->GetDeviceInfo(deviceInfo);
+
+				float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
+				int screenWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
+				int screenHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
+
+				*pRenderWidth = screenWidth / 2;
+				*pRenderHeight = screenHeight;
+			}
 			break;
 		default:
-			*pBackbufferWidth = eyeWidth;
-			*pBackbufferHeight = eyeHeight;
+			*pRenderWidth = nativeWidth;
+			*pRenderHeight = nativeHeight;
 			break;
-		}
 	}
 }
 
 void CD3DStereoRenderer::OnHmdDeviceChanged(IHmdDevice* pHmdDevice)
 {
-	static bool firstInitialization = true;
-
-	ShutdownHmdRenderer();
-
 	m_pHmdDevice = pHmdDevice;
 
-	InitializeHmdRenderer();
-
-	//Do an initial initialization for the hmd renderer when not activated as output so it can setup it's state if needed (at least osvr needs to initialize the renderer before it can be queried for the preferred resolution)
-	if (m_pHmdDevice && !m_pHmdRenderer && m_output != STEREO_OUTPUT_HMD && firstInitialization)
+	if (m_pHmdDevice == nullptr)
 	{
-		m_pHmdRenderer = CreateHmdRenderer(STEREO_OUTPUT_HMD, m_pHmdDevice, &m_renderer, this);
-
-		if (m_pHmdRenderer != nullptr)
-		{
-			m_pHmdRenderer->Initialize();
-		}
-		ShutdownHmdRenderer();
+		m_device = STEREO_DEVICE_NONE;
+		return;
 	}
 
-	firstInitialization = false;
-
+	// Make sure PrepareStereo is called in Update by specifying a device
+	SelectDefaultDevice();
 }
 
-IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(EStereoOutput stereoOutput, IHmdDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)
+IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)
 {
-	if (pDevice)
+#if defined(INCLUDE_VR_RENDERING)
+	switch (device.GetClass())
 	{
-		const EHmdClass deviceClass = pDevice->GetClass();
-		switch (deviceClass)
-		{
-#if defined(INCLUDE_OCULUS_SDK)
-		case eHmdClass_Oculus:
-			{
-				if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != nullptr && pDevice->GetClass() == eHmdClass_Oculus)
-					return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(pDevice), pRenderer, pStereoRenderer);
-			}
-			break;
-#endif
-#if defined(INCLUDE_OPENVR_SDK)
-		case eHmdClass_OpenVR:
-			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_OpenVR)
-				return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(pDevice), pRenderer, pStereoRenderer);
-			break;
-#endif
-#if defined(INCLUDE_OSVR_SDK)
-		case eHmdClass_Osvr:
-			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_Osvr)
-				return new CryVR::Osvr::CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(pDevice), pRenderer, pStereoRenderer);
-#endif
-		case eHmdClass_Null:
-		default:
-			break;
-		}
+	case eHmdClass_Oculus:
+		return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(&device), pRenderer, pStereoRenderer);
+	case eHmdClass_OpenVR:
+		return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(&device), pRenderer, pStereoRenderer);
+	case eHmdClass_Osvr:
+		return new CryVR::Osvr::CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(&device), pRenderer, pStereoRenderer);
+	default:
+		iLog->LogError("Tried to create HMD renderer for unknown headset!");
+		break;
 	}
+#else
+	iLog->LogError("Tried to create HMD renderer with VR rendering support disabled for renderer at compile-time!");
+#endif
+
 	return nullptr;
 }
 
@@ -1295,4 +1248,41 @@ void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 	currentCamera.SetMatrix(m_asyncCameraMatrix);
 	CCamera newCamera = PrepareCamera(m_renderer.m_CurRenderEye, currentCamera);
 	m_renderer.SetCamera(newCamera);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CTexture* CD3DStereoRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView)
+{
+	CTexture* texture = CTexture::CreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
+	if (texture == nullptr)
+	{
+		gEnv->pLog->Log("[HMD][Oculus] Unable to create texture object!");
+		return nullptr;
+	}
+
+	// CTexture::CreateTextureObject does not set width and height if the texture already existed
+	assert(texture->GetWidth() == width);
+	assert(texture->GetHeight() == height);
+	assert(texture->GetDepth() == 1);
+
+	d3dTexture->AddRef();
+	CDeviceTexture* pDeviceTexture = new CDeviceTexture(d3dTexture);
+	pDeviceTexture->SetNoDelete(true);
+
+	texture->SetDevTexture(pDeviceTexture);
+	texture->ClosestFormatSupported(format);
+
+	if (shaderResourceView)
+	{
+		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
+		if (default_srv == nullptr)
+		{
+			gEnv->pLog->Log("[HMD][Oculus] Unable to create default shader resource view!");
+			texture->Release();
+			return nullptr;
+		}
+		texture->SetShaderResourceView((D3DShaderResource*)default_srv, false);
+	}
+
+	return texture;
 }

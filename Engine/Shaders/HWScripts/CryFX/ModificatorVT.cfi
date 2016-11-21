@@ -14,10 +14,9 @@ cbuffer CBStaticPerInst : register(b12)
 {
 	struct
 	{
-		float3x4	SPIObjWorldMat;
-		float4		SPIBendInfo;
-		float4		SPIAlphaTest;
-	} SPIData[800];
+		float3x4	PerInstanceWorldMatrix;
+		float4		PerInstanceCustomData;   // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
+    } SInstancingData[800];
 };
 
 // TODO: replace by CB definition shared between c++ and hlsl. 
@@ -26,9 +25,10 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 {
 	float3x4  PerInstanceWorldMatrix;
 	float3x4  PerInstancePrevWorldMatrix;
-	float4    PerInstanceBendInfo; //[VertRadius, 0, 0, BendScale]
-	float4    PerInstanceAlphaTest;   // z=tessellation patch id offset, w unused
-	
+	float4    PerInstanceCustomData;       // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
+    // TODO: Should be moved after all the data below
+    float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass,
+
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;
 	float4x4  PerInstanceTerrainLayerInfo;
@@ -58,7 +58,9 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 #if %TEMP_TERRAIN
 	float4x4 Get_SPI_TerrainLayerInfo()
 	{
-	#if %_RT_PER_INSTANCE_CB_TEMP
+	#if %_RT_ENVIRONMENT_CUBEMAP
+		return float4x4(0);
+	#elif %_RT_PER_INSTANCE_CB_TEMP
 		return PerInstanceTerrainLayerInfo;
 	#else
 		return LayerTexGen;
@@ -82,7 +84,7 @@ float4 Get_SPI_SkinningInfo()
 float3x4 Get_SPI_ObjWorldMat(int nIndex)
 {
  #if %_RT_ENVIRONMENT_CUBEMAP
-	return SPIData[nIndex].SPIObjWorldMat;
+	return SInstancingData[nIndex].PerInstanceWorldMatrix;
  #else
   #if %_RT_PER_INSTANCE_CB_TEMP
 	return PerInstanceWorldMatrix;
@@ -91,12 +93,12 @@ float3x4 Get_SPI_ObjWorldMat(int nIndex)
  #endif
 }
 
-float4 DecodeBending(float3 vPos, float4 BendInfo)
+float4 DecodeBending(float3 vPos, float bendingRadius,float bendingScale)
 {
 	const half fTime = g_VS_AnimGenParams.z;
 	half2 vPhase = vPos.xy * 0.125h;
 
-	float fRadiusVert = BendInfo.x;
+	float fRadiusVert = bendingRadius;
 	float fWaveFreq = 0.4f / (fRadiusVert + 1.f) + 0.2f;
 
 	float2 vFreq = float2(fWaveFreq, fWaveFreq*1.125);
@@ -114,7 +116,7 @@ float4 DecodeBending(float3 vPos, float4 BendInfo)
 	result.xy = vAddBending.xy * 50.f + vWindVec.xy;
 	result.z = length(vWindVec.xy) * 2.f;
 	result.w = length(vAddBending + vWindVec.xy) * 0.3f;
-	result.xyz *= BendInfo.w;
+	result.xyz *= bendingScale;
 
 	return result;
 }
@@ -122,9 +124,9 @@ float4 DecodeBending(float3 vPos, float4 BendInfo)
 float4 Get_SPI_BendInfo(int nIndex, float3 worldPos)
 {
 #if %_RT_ENVIRONMENT_CUBEMAP
-	return DecodeBending(worldPos, SPIData[nIndex].SPIBendInfo);
+	return DecodeBending(worldPos, SInstancingData[nIndex].PerInstanceCustomData.x,SInstancingData[nIndex].PerInstanceCustomData.y);
 #elif %_RT_PER_INSTANCE_CB_TEMP
-	return DecodeBending(worldPos, PerInstanceBendInfo);
+	return DecodeBending(worldPos, PerInstanceCustomData.x,PerInstanceCustomData.y);
  #else
 	return BendInfo;
  #endif
@@ -141,20 +143,43 @@ float4 Get_SPI_VertexAO(int nIndex)
 }
 #include "ComputeSkinningUtils.cfi"
 
-float4 Get_SPI_AlphaTest(int nIndex)
+float Get_MaterialAlphaTest()
+{
+#if %_RT_PER_INSTANCE_CB_TEMP
+	return CM_DetailTilingAndAlphaRef.z; // alpha ref value is stored in material CB
+#else
+	return AlphaTest.w;
+#endif
+}
+
+float Get_SPI_Dissolve()
 {
 #if %_RT_ENVIRONMENT_CUBEMAP
-	return float4(SPIData[nIndex].SPIAlphaTest.xyz,  CM_DetailTilingAndAlphaRef.z);
+	// Instancing support
+	// dissolved objects are not instanced, so we always use value from the first object
+	return SInstancingData[0].PerInstanceCustomData.w;
 #else 
 	#if %_RT_PER_INSTANCE_CB_TEMP
-		return float4(PerInstanceAlphaTest.xy, 0, CM_DetailTilingAndAlphaRef.z); // alpha ref value is stored in material CB
+		return PerInstanceCustomData.w;
 	#else
-		return AlphaTest;
+		return 0;
 	#endif
 #endif
 }
 
-
+int Get_PerInstanceTessellationPatchId()
+{
+#if %_RT_ENVIRONMENT_CUBEMAP
+	// Instancing support
+	return asint(SInstancingData[0].PerInstanceCustomData.z);
+#else 
+	#if %_RT_PER_INSTANCE_CB_TEMP
+		return asint(PerInstanceCustomData.z);
+	#else
+		return 0;
+	#endif
+#endif
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -230,9 +255,8 @@ struct app2vertCommon
 
 #if %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
   IN_SKIN_STREAM
-  uint VertexID : SV_VertexID;
 #endif
-#if %_RT_COMPUTE_SKINNING
+#if %_RT_COMPUTE_SKINNING || %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
   uint VertexID : SV_VertexID;
 #endif  
 #if %_RT_VERTEX_VELOCITY

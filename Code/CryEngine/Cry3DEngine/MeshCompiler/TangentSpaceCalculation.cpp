@@ -128,11 +128,6 @@ float CTangentSpaceCalculation::CalcAngleBetween(const Vec3& invA, const Vec3& i
 
 	double f = invA.Dot(invB) / LengthQ;
 
-	// acos_tpl need input in the range [-1..1]
-	if (f > 1.0f) f = 1.0f;
-	else if (f < -1.0f)
-		f = -1.0f;
-
 	// cosf is not available on every platform
 	float fRet = (float)acos_tpl(f);
 

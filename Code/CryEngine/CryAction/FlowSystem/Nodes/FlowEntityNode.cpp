@@ -1205,7 +1205,7 @@ public:
 							bEntityInRange = true;
 
 #ifndef _RELEASE
-							if (bDebug) pRenderer->DrawLabel(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
+							if (bDebug) IRenderAuxText::DrawLabelF(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
 #endif
 						}
 
@@ -1901,7 +1901,7 @@ public:
 			if (IScriptTable* pScriptTable = pEntity->GetScriptTable())
 			{
 				const string inputPropertyName = GetPortString(pActInfo, IN_SMARTNAME);
-				const char* inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
+				const string inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
 				const bool bPerArchetype = GetPortBool(pActInfo, IN_PERARCHETYPE);
 
 				const size_t pos = inputPropertyName.find_first_of(":");
@@ -2416,28 +2416,28 @@ public:
 
 			bool bUseZeroRot = GetPortBool(pActInfo, EIP_UseZeroRot);
 
-			const char* memo = GetPortString(pActInfo, EIP_Memo).c_str();
-			const char* entityName = pActInfo->pEntity->GetName();
+			string memo = GetPortString(pActInfo, EIP_Memo);
+			const char* szEntityName = pActInfo->pEntity->GetName();
 
-			bool isPlayer = GetISystem()->GetIGame()->GetIGameFramework()->GetClientActorId() == pActInfo->pEntity->GetId();
+			const bool bIsPlayer = CCryAction::GetCryAction()->GetClientActorId() == pActInfo->pEntity->GetId();
 
-			if ((memo == NULL || memo[0] == 0) && isPlayer == 0)
+			if (memo.empty() && bIsPlayer == 0)
 			{
 				memo = "<no memo>";
 			}
 
 			if (vPos.IsZero())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", entityName, (memo != NULL && memo[0] != 0) ? memo : "<no memo>");
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", szEntityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
 			}
-			else if (memo != NULL && memo[0] != 0)
+			else if (!memo.empty())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", entityName, memo);
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", szEntityName, memo.c_str());
 			}
 
 			Matrix34 tm;
-			bool applyRot = vRot != NULL && (!vRot->IsZero() || bUseZeroRot);
-			if (!applyRot)
+			bool bApplyRot = vRot != nullptr && (!vRot->IsZero() || bUseZeroRot);
+			if (!bApplyRot)
 			{
 				tm = pActInfo->pEntity->GetWorldTM();
 			}
@@ -3194,7 +3194,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Call a LUA function on an entity
-class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -3312,7 +3312,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Returns the entity ID of the gamerules
-class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs

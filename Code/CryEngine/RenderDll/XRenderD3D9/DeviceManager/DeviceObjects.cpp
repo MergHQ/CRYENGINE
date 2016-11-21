@@ -43,6 +43,20 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 			result[shaderStage].pHwShader = pHWShaderD3D;
 			result[shaderStage].technique = technique;
 
+			// Special case for nvidia multires shading: auto geometry shader requires vertex shader instance
+			if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+			{
+				if (shaderStage == eHWSC_Geometry && pHWShaderD3D)
+				{
+					// TODO: do this without global variables!!
+					CHWShader_D3D::s_pCurInstVS = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(result[eHWSC_Vertex].pHwShaderInstance);
+					CHWShader_D3D::s_pCurHWVS = result[eHWSC_Vertex].pHwShader;
+
+					if (!CHWShader_D3D::s_pCurInstVS || !CHWShader_D3D::s_pCurHWVS)
+						continue;
+				}
+			}
+
 			if (pHWShaderD3D)
 			{
 				SShaderCombIdent Ident;
@@ -57,8 +71,15 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 				{
 					if (pHWShaderD3D->mfCheckActivation(pShader, pInstance, 0))
 					{
-						result[shaderStage].pHwShaderInstance = pInstance;
-						result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+						if(pInstance->m_Handle.m_pShader->m_bDisabled)
+						{ 
+							result[shaderStage].pHwShader = nullptr;
+						}
+						else
+						{
+							result[shaderStage].pHwShaderInstance = pInstance;
+							result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+						}
 					}
 				}
 			}
@@ -71,19 +92,30 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 bool SDeviceObjectHelpers::CheckTessellationSupport(SShaderItem& shaderItem)
 {
 	// TTYPE_ZPREPASS doesn't support tessellation
-	EShaderTechniqueID techniquesInUse[] = { TTYPE_Z, TTYPE_SHADOWGEN };
-	::CShader* pShader = reinterpret_cast<::CShader*>(shaderItem.m_pShader);
-
-	bool bResult = false;
-	for (int i = 0; i < CRY_ARRAY_COUNT(techniquesInUse); ++i)
+	EShaderTechniqueID techniquesInUse[] = { TTYPE_GENERAL, TTYPE_Z, TTYPE_SHADOWGEN };
+	for (auto techType : techniquesInUse)
 	{
-		if (auto pShaderTechnique = pShader->GetTechnique(shaderItem.m_nTechnique, techniquesInUse[i], true))
+		if (CheckTessellationSupport(shaderItem, techType))
 		{
-			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
-			bResult |= (shaderPass.m_DShader && shaderPass.m_HShader);
+			return true;
 		}
 	}
+	return false;
+}
 
+bool SDeviceObjectHelpers::CheckTessellationSupport(SShaderItem& shaderItem, EShaderTechniqueID techniqueId)
+{
+	bool bResult = false;
+	::CShader* pShader = reinterpret_cast<::CShader*>(shaderItem.m_pShader);
+	if (pShader)
+	{
+		auto pShaderTechnique = pShader->GetTechnique(shaderItem.m_nTechnique, techniqueId, true);
+		if (pShaderTechnique)
+		{
+			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
+			bResult = (shaderPass.m_DShader && shaderPass.m_HShader);
+		}
+	}
 	return bResult;
 }
 
@@ -142,7 +174,8 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 			int maxVectorCount = 0;
 			for (const auto& bind : pInstance->m_pBindVars)
 			{
-				if ((bind.m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)) == 0)
+				if ((bind.m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)) == 0
+				    && bind.m_dwCBufSlot <= eConstantBufferShaderSlot_PerInstanceLegacy)
 				{
 					usedBuffersSlots.insert(EConstantBufferShaderSlot(bind.m_dwCBufSlot));
 					maxVectorCount = std::max(maxVectorCount, vectorCount[bind.m_dwCBufSlot]);
@@ -152,12 +185,9 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 			CryStackAllocWithSizeVectorCleared(Vec4, maxVectorCount, zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-			if (!pHwShader->s_PF_Params[shaderClass].empty())
-				usedBuffersSlots.insert(eConstantBufferShaderSlot_PerFrame);
-
 			for (auto bufferSlot : usedBuffersSlots)
 			{
-				CRY_ASSERT(bufferSlot >= eConstantBufferShaderSlot_PerBatch && bufferSlot <= eConstantBufferShaderSlot_PerFrame);
+				CRY_ASSERT(bufferSlot >= eConstantBufferShaderSlot_PerBatch && bufferSlot <= eConstantBufferShaderSlot_PerInstanceLegacy);
 				const size_t bufferSize = sizeof(Vec4) * vectorCount[bufferSlot];
 				const size_t updateSize = CDeviceBufferManager::AlignBufferSizeForStreaming(bufferSize);
 
@@ -173,9 +203,9 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 				SConstantBufferBindInfo bindInfo;
 				bindInfo.shaderSlot = bufferSlot;
 				bindInfo.shaderStages = EShaderStage(BIT(shaderClass));
-				bindInfo.pBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize));
+				bindInfo.pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);
 				bindInfo.pBuffer->UpdateBuffer(zeroMem, updateSize);
-				bufferBindInfo.push_back(bindInfo);
+				bufferBindInfo.push_back(std::move(bindInfo));
 			}
 		}
 	}
@@ -307,7 +337,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate()
 			const SReflectedBufferUpdateContext& uc = it.second;
 			const SConstantBufferBindInfo& cb = m_constantBuffers[bufferIndex];
 
-			if (cb.pBuffer->m_buffer)
+			if (cb.pBuffer->m_buffer && CHWShader_D3D::s_pDataCB[uc.shaderClass][cb.shaderSlot])
 			{
 				CRY_ASSERT(CHWShader_D3D::s_pCB[uc.shaderClass][cb.shaderSlot][uc.vectorCount] == cb.pBuffer);
 				cb.pBuffer->EndWrite();
@@ -352,12 +382,12 @@ bool SDeviceObjectHelpers::CShaderConstantManager::SetTypedConstantBuffer(EConst
 	return true;
 }
 
-bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param)
+bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass)
 {
-	return SetNamedConstantArray(shaderClass, paramName, &param, 1);
+	return SetNamedConstantArray(paramName, &param, 1, shaderClass);
 }
 
-bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams)
+bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass)
 {
 	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Flag eFlags_ReflectConstantBuffersFromShader might be required for pass");
 	if (!m_pShaderReflection->bValid)
@@ -431,6 +461,7 @@ void CDeviceGraphicsPSODesc::InitWithDefaults()
 	m_PrimitiveType = eptTriangleList;
 	m_DepthStencilFormat = eTF_Unknown;
 	m_RenderTargetFormats.fill(eTF_Unknown);
+	m_bDepthClip = true;
 }
 
 CDeviceGraphicsPSODesc& CDeviceGraphicsPSODesc::operator=(const CDeviceGraphicsPSODesc& other)
@@ -481,13 +512,18 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
 
 	// Fill mode
-	rasterizerDesc.DepthClipEnable = 1;
+	rasterizerDesc.DepthClipEnable = m_bDepthClip ? 1 : 0;
 	rasterizerDesc.FrontCounterClockwise = 1;
 	rasterizerDesc.FillMode = (renderState & GS_WIREFRAME) ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode =
 	  (m_CullMode == eCULL_Back)
 	  ? D3D11_CULL_BACK
 	  : ((m_CullMode == eCULL_None) ? D3D11_CULL_NONE : D3D11_CULL_FRONT);
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	{
+		rasterizerDesc.ScissorEnable = TRUE;
+	}
 
 	// *INDENT-OFF*
 	// Blend state
@@ -574,10 +610,10 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 
 	// Depth-Stencil
 	{
-		depthStencilDesc.DepthWriteMask = (renderState & GS_DEPTHWRITE) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-		depthStencilDesc.DepthEnable = (renderState & GS_NODEPTHTEST) ? 0 : 1;
+		depthStencilDesc.DepthWriteMask =  (renderState & GS_DEPTHWRITE) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthStencilDesc.DepthEnable    = ((renderState & GS_NODEPTHTEST) && !(renderState & GS_DEPTHWRITE)) ? 0 : 1;
 
-		D3D11_COMPARISON_FUNC DepthFunc[GS_DEPTHFUNC_MASK >> GS_DEPTHFUNC_SHIFT] =
+		static D3D11_COMPARISON_FUNC DepthFunc[GS_DEPTHFUNC_MASK >> GS_DEPTHFUNC_SHIFT] =
 		{
 			D3D11_COMPARISON_LESS_EQUAL,     // GS_DEPTHFUNC_LEQUAL
 			D3D11_COMPARISON_EQUAL,          // GS_DEPTHFUNC_EQUAL
@@ -587,7 +623,10 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 			D3D11_COMPARISON_NOT_EQUAL,      // GS_DEPTHFUNC_NOTEQUAL
 		};
 
-		depthStencilDesc.DepthFunc = DepthFunc[(m_RenderState & GS_DEPTHFUNC_MASK) >> GS_DEPTHFUNC_SHIFT];
+		depthStencilDesc.DepthFunc =
+			(renderState & (GS_NODEPTHTEST|GS_DEPTHWRITE)) == (GS_NODEPTHTEST|GS_DEPTHWRITE)
+			? D3D11_COMPARISON_ALWAYS
+			: DepthFunc[(m_RenderState & GS_DEPTHFUNC_MASK) >> GS_DEPTHFUNC_SHIFT];
 
 		depthStencilDesc.StencilEnable    = (renderState & GS_STENCIL) ? 1 : 0;
 		depthStencilDesc.StencilReadMask  = m_StencilReadMask;
@@ -689,6 +728,11 @@ uint64 CDeviceComputePSODesc::GetHash() const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static auto lambdaTextureCallback = [](void* set, uint32 dirtyFlags)
+{
+	reinterpret_cast<CDeviceResourceSet*>(set)->SetDirty(true);
+};
+
 CDeviceResourceSet::CDeviceResourceSet(EFlags flags)
 	: m_bValid(false)
 	, m_bDirty(true)
@@ -702,26 +746,36 @@ CDeviceResourceSet::CDeviceResourceSet(const CDeviceResourceSet& other)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	m_Textures = other.m_Textures;
-	m_Samplers = other.m_Samplers;
-	m_Buffers = other.m_Buffers;
+	m_Textures        = other.m_Textures;
+	m_Samplers        = other.m_Samplers;
+	m_Buffers         = other.m_Buffers;
 	m_ConstantBuffers = other.m_ConstantBuffers;
 
-	m_bValid = false;
-	m_bDirty = true;
-	m_bEmpty = other.m_bEmpty;
+	for (auto& rsTexBind : m_Textures)
+	{
+		if (CTexture* pTex = rsTexBind.second.resource)
+			pTex->AddInvalidateCallback(this, lambdaTextureCallback);
+	}
+
+	m_bValid       = false;
+	m_bDirty       = true;
+	m_bEmpty       = other.m_bEmpty;
 	m_bDirtyLayout = other.m_bDirtyLayout;
-	m_Flags = other.m_Flags;
+	m_Flags        = other.m_Flags;
 }
 
 CDeviceResourceSet::~CDeviceResourceSet()
 {
-	Clear();
+	for(auto& rsTexBind : m_Textures)
+	{
+		if(CTexture* pTex = rsTexBind.second.resource)
+			pTex->RemoveInvalidateCallbacks(this);
+	}
 }
 
 void CDeviceResourceSet::SetDirty(bool bDirty)
 {
-	m_bDirty = true;
+	m_bDirty = m_bDirty | bDirty;
 }
 
 void CDeviceResourceSet::Clear(bool bTextures, bool bConstantBuffers)
@@ -781,10 +835,7 @@ void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourc
 		texData.view = resourceViewID;
 
 		if (texData.resource != nullptr)
-		{
-			auto lambdaTextureCallback = [this](uint32 dirtyFlags) { this->OnTextureChanged(dirtyFlags); };
 			texData.resource->AddInvalidateCallback(this, lambdaTextureCallback);
-		}
 
 		m_bDirty = true;
 		m_bEmpty = false;
@@ -951,11 +1002,6 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 	return true;
 }
 
-void CDeviceResourceSet::OnTextureChanged(uint32 dirtyFlags)
-{
-	SetDirty(true);
-}
-
 void CDeviceResourceSet::Build()
 {
 	m_bValid = false;
@@ -981,7 +1027,6 @@ void CDeviceResourceSet::Build()
 			}
 		}
 	}
-
 
 	if (BuildImpl(flags))
 	{
@@ -1169,13 +1214,6 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 		}
 	};
 
-
-	// Need to have at least one resource set or constant buffer/inline constants
-	if (m_ResourceSets.empty() && m_ConstantBuffers.empty() && m_InlineConstantCount == 0)
-	{
-		CRY_ASSERT_MESSAGE(false, "Invalid Resource Layout: no data");
-		return false;
-	}
 
 	// Check for overlapping resource set and constant buffer bind slots
 	std::set<uint32> usedLayoutSlots;
@@ -1381,42 +1419,34 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayout(const SDevic
 		for(auto& rs : layoutDesc.m_ResourceSets)
 			rs.second = CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(rs.second);
 
-		if (pResult = CreateResourceLayoutImpl(resourceLayoutDesc))
+		if (pResult = CreateResourceLayoutImpl(layoutDesc))
 		{
-			m_ResourceLayoutCache[resourceLayoutDesc] = pResult;
+			m_ResourceLayoutCache[layoutDesc] = pResult;
 		}
 	}
 
 	return pResult;
 }
 
-CDeviceInputStream* CDeviceObjectFactory::CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams)
+const CDeviceInputStream* CDeviceObjectFactory::CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams)
 {
-	CDeviceInputStream* vertexStreams = new CDeviceInputStream[VSF_NUM];
-	CDeviceInputStream* vertexStreamSet = nullptr;
+	TVertexStreams vertexStreams = {};
 	bool vertexFilled = false;
 
 	for (int i = 0; i < numStreams; ++i)
 		vertexFilled |= !!(vertexStreams[i] = streams[i]);
 
-	if ((vertexStreamSet = (vertexFilled ? *m_UniqueVertexStreams.insert(vertexStreams).first : nullptr)) != vertexStreams)
-		delete[] vertexStreams;
-
-	return vertexStreamSet;
+	return (vertexFilled ? m_uniqueVertexStreams.insert(vertexStreams).first->data() : nullptr);
 }
 
-CDeviceInputStream* CDeviceObjectFactory::CreateIndexStreamSet(const SStreamInfo* stream)
+const CDeviceInputStream* CDeviceObjectFactory::CreateIndexStreamSet(const SStreamInfo* stream)
 {
-	CDeviceInputStream* indexStream = new CDeviceInputStream();
-	CDeviceInputStream* indexStreamSet = nullptr;
+	TIndexStreams indexStream = {};
 	bool indexFilled = false;
 
-	indexFilled |= !!(*indexStream = *stream);
+	indexFilled |= !!(indexStream[0] = stream[0]);
 
-	if ((indexStreamSet = (indexFilled ? *m_UniqueIndexStreams.insert(indexStream).first : nullptr)) != indexStream)
-		delete indexStream;
-
-	return indexStreamSet;
+	return (indexFilled ? m_uniqueIndexStreams.insert(indexStream).first->data() : nullptr);
 }
 
 void CDeviceObjectFactory::ReleaseResources()

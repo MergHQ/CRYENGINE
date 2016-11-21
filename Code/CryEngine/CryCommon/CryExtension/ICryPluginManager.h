@@ -9,12 +9,12 @@ struct IPluginEventListener
 {
 	enum class EPluginEvent
 	{
-		EPlugin_Initialized,
-		EPlugin_Unloaded
+		Initialized,
+		Unloaded,
 	};
 
 	virtual ~IPluginEventListener() {}
-	virtual void OnPluginEvent(const char* szPluginName, EPluginEvent event) = 0;
+	virtual void OnPluginEvent(const CryClassID& pluginClassId, EPluginEvent event) = 0;
 };
 
 struct ICryPluginManager
@@ -28,17 +28,27 @@ struct ICryPluginManager
 	ICryPluginManager() {}
 	virtual ~ICryPluginManager() {}
 
-	virtual void RegisterListener(const char* szPluginName, IPluginEventListener* pListener) = 0;
-	virtual void RemoveListener(IPluginEventListener* pListener) = 0;
+	virtual void RegisterEventListener(const CryClassID& pluginClassId, IPluginEventListener* pListener) = 0;
+	virtual void RemoveEventListener(const CryClassID& pluginClassId, IPluginEventListener* pListener) = 0;
 
-	virtual void Update(int updateFlags, int nPauseMode) = 0;
+	virtual bool LoadPluginFromDisk(EPluginType type, const char* path, const char* className) = 0;
 
 	template<typename T>
 	T* QueryPlugin() const
 	{
-		ICryUnknownPtr pExtension = QueryPluginById(cryiidof<T>());
+		if (ICryUnknownPtr pExtension = QueryPluginById(cryiidof<T>()))
+		{
+			return cryinterface_cast<T>(pExtension.get());
+		}
 
-		if (pExtension)
+		return nullptr;
+	}
+
+	// Queries whether a plugin exists, and if not tries to create a new instance
+	template<typename T>
+	T* AcquirePlugin()
+	{
+		if (ICryUnknownPtr pExtension = AcquirePluginById(cryiidof<T>()))
 		{
 			return cryinterface_cast<T>(pExtension.get());
 		}
@@ -47,5 +57,6 @@ struct ICryPluginManager
 	}
 
 protected:
-	virtual ICryPluginPtr QueryPluginById(const CryClassID& classID) const = 0;
+	virtual std::shared_ptr<ICryPlugin> QueryPluginById(const CryClassID& classID) const = 0;
+	virtual std::shared_ptr<ICryPlugin> AcquirePluginById(const CryClassID& classID) = 0;
 };

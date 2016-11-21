@@ -22,7 +22,7 @@ enum ERenderObjectFlags : uint64
 	FOB_MESH_SUBSET_INDICES         = BIT64(5),
 	FOB_SELECTED                    = BIT64(6),
 	FOB_RENDERER_IDENDITY_OBJECT    = BIT64(7),
-	FOB_IN_DOORS							      = BIT64(8),
+	FOB_IN_DOORS                    = BIT64(8),
 	FOB_NO_FOG                      = BIT64(9),
 	FOB_DECAL                       = BIT64(10),
 	FOB_OCTAGONAL                   = BIT64(11),
@@ -109,23 +109,6 @@ struct SSkinningData
 	IRenderMesh*                     pRenderMesh;
 };
 
-struct SVegetationBending
-{
-	struct SBendWave
-	{
-		float m_Amp;
-		float m_Freq;
-		SBendWave() : m_Amp(0), m_Freq(0) {}
-	};
-
-	Vec2      m_vBending;
-	float     m_fMainBendingScale;
-	SBendWave m_Waves[2];
-	float     m_fRadiusVert;
-
-	SVegetationBending() : m_vBending(0, 0), m_fMainBendingScale(0) {}
-};
-
 //////////////////////////////////////////////////////////////////////////
 /// Additional custom data that can be attached to the CRenderObject
 //////////////////////////////////////////////////////////////////////////
@@ -137,8 +120,6 @@ struct SRenderObjData
 
 	float                         m_fTempVars[10];           // Different useful vars (ObjVal component in shaders)
 
-	SVegetationBending            m_bending;                 // Bending data, can be union with m_fTempVars
-	                                                         // using a pointer, the client code has to ensure that the data stays valid
 	const DynArray<SShaderParam>* m_pShaderParams;
 
 	// Optional Terrain Sector Information
@@ -200,6 +181,7 @@ struct SRenderObjData
 		m_pTerrainSectorTextureInfo = 0;
 		m_fMaxViewDistance = 100000.f;
 		m_pParticleShaderData = nullptr;
+		m_FogVolumeContribIdx = (uint16) - 1;
 	}
 
 	void SetShaderParams(const DynArray<SShaderParam>* pShaderParams)
@@ -222,17 +204,22 @@ struct SRenderObjData
 class CRY_ALIGN(16) CRenderObject
 {
 public:
-	//////////////////////////////////////////////////////////////////////////
-	struct SInstanceData
+	enum
 	{
-		Matrix34 m_MatInst;
-		Vec4     m_vBendInfo;
-		Vec4     m_vDissolveInfo;
+		MAX_INSTANCING_ELEMENTS = 800  //!< 4096 Vec4 entries max in DX11 (65536 bytes)
 	};
+
 	struct SInstanceInfo
 	{
 		Matrix34 m_Matrix;
 		ColorF   m_AmbColor;
+	};
+
+	// Structure used to pass information about vegetation bending to the shaders.
+	struct SVegetationBendingData
+	{
+		float scale = 0.0f;
+		float verticalRadius = 0.0f;
 	};
 
 public:
@@ -269,7 +256,7 @@ public:
 
 	IRenderNode* m_pRenderNode;         //!< Will define instance id.
 	IMaterial* m_pCurrMaterial;         //!< Parent material used for render object.
-	CRendElementBase* m_pRE;            //!< RenderElement used by this CRenderObject
+	CRenderElement* m_pRE;            //!< RenderElement used by this CRenderObject
 
 	// Linked list of compiled objects, one per mesh subset (Chunk).
 	CCompiledRenderObject* m_pCompiledObject;
@@ -285,8 +272,12 @@ public:
 	//! Embedded SRenderObjData, optional data carried by CRenderObject
 	SRenderObjData m_data;
 
-	// Array of instances
-	stl::aligned_vector<SInstanceData, CRY_PLATFORM_ALIGNMENT> m_Instances;
+	// Array of instances, cannot be bigger then MAX_INSTANCING_ELEMENTS
+	std::vector<SInstanceInfo> m_Instances;
+
+	SVegetationBendingData m_vegetationBendingData;        //!< Vegetation Bending parameters
+
+	uint32 m_editorSelectionID;                            //!< SelectionID for the editor
 
 public:
 	//////////////////////////////////////////////////////////////////////////
@@ -349,6 +340,9 @@ public:
 		m_data.Init();
 
 		m_II.m_Matrix.SetIdentity();
+		m_vegetationBendingData = SVegetationBendingData();
+
+		m_editorSelectionID = 0;
 	}
 
 	void                    AssignId(uint32 id) { m_Id = id; }
@@ -357,7 +351,7 @@ public:
 
 	ILINE SRenderObjData*   GetObjData()        { return &m_data;  }
 
-	ILINE CRendElementBase* GetRE() const       { return m_pRE; }
+	ILINE CRenderElement*     GetRE() const       { return m_pRE; }
 
 protected:
 	// Disallow copy (potential bugs with PERMANENT objects)

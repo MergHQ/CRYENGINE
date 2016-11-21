@@ -70,8 +70,6 @@ void CharacterManager::PostInit()
 
 	PREFAST_ASSUME(g_pISystem);
 	g_pIRenderer = g_pISystem->GetIRenderer();
-	if (g_pIRenderer == 0 && !gEnv->IsDedicated())
-		CryFatalError("CryAnimation: failed to initialize pIRenderer");
 
 	g_pIPhysicalWorld = g_pISystem->GetIPhysicalWorld();
 	if (g_pIPhysicalWorld == 0)
@@ -165,7 +163,6 @@ void CharacterManager::PreloadModelsCHR()
 			}
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
-			assert(nFileOnDisk);
 			if (nFileOnDisk)
 			{
 				CDefaultSkeleton* pSkel = FetchModelSKEL(filename.c_str(), 0);

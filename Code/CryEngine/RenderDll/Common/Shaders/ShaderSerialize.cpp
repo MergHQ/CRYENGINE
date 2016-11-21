@@ -291,7 +291,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	bool bRes = true;
 
 	//Use user folder on export?
-	SSShaderRes* pSR = InitSResource(pSH, false /*((gRenDev->m_cEF.m_nCombinations > 0) || !CRenderer::CV_r_shadersuserfolder)*/, false);
+	SSShaderRes* pSR = InitSResource(pSH, false /*((gRenDev->m_cEF.m_nCombinations > 0)*/, false);
 
 	uint32 i;
 	int j;
@@ -405,7 +405,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 		ST.m_nREsOffs = (ST.m_nREs > 0) ? SC.Data.Num() : -1;
 		for (j = 0; j < ST.m_nREs; j++)
 		{
-			CRendElementBase* pRE = pT->m_REs[j];
+			CRenderElement* pRE = pT->m_REs[j];
 			uint32 type = pRE->m_Type;
 			sAddData(SC.Data, type);
 			pRE->mfExport(SC);

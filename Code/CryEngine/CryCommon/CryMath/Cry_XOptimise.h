@@ -326,7 +326,7 @@ inline f32 mathVec3Project(Vec3* pvWin, const Vec3* pvObj, const int32 pViewport
 	return out.w;
 }
 
-inline Vec3* mathVec3UnProject(Vec3* pvObj, const Vec3* pvWin, const int32 pViewport[4], const Matrix44A* pProjection, const Matrix44A* pView, const Matrix44A* pWorld, int32 OptFlags)
+inline Vec3* mathVec3UnProject(Vec3* pvObj, const Vec3* pvWin, const int32 pViewport[4], const Matrix44A* pProjection, const Matrix44A* pView, const Matrix44A* pWorld)
 {
 	Matrix44A m, mA;
 	Vec4 in, out;
@@ -354,7 +354,7 @@ inline Vec3* mathVec3UnProject(Vec3* pvObj, const Vec3* pvWin, const int32 pView
 	return pvObj;
 }
 
-inline Vec3* mathVec3ProjectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV, uint32 VStride, const int32 pViewport[4], const Matrix44A* pProjection, const Matrix44A* pView, const Matrix44A* pWorld, uint32 n, int32)
+inline Vec3* mathVec3ProjectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV, uint32 VStride, const int32 pViewport[4], const Matrix44A* pProjection, const Matrix44A* pView, const Matrix44A* pWorld, uint32 n)
 {
 	Matrix44A m;
 	Vec4 in, out;
@@ -404,7 +404,7 @@ inline Vec3* mathVec3ProjectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV, 
 	return pOut;
 }
 
-inline Vec3* mathVec3UnprojectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV, uint32 VStride, const int32 pViewport[4], const Matrix44* pProjection, const Matrix44* pView, const Matrix44* pWorld, uint32 n, int32 OptFlags)
+inline Vec3* mathVec3UnprojectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV, uint32 VStride, const int32 pViewport[4], const Matrix44* pProjection, const Matrix44* pView, const Matrix44* pWorld, uint32 n)
 {
 	Vec4 in, out;
 	Matrix44 m, mA;

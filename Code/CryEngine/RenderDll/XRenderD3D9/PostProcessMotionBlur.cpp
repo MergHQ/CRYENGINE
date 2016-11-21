@@ -21,7 +21,7 @@ CThreadSafeRendererContainer<CMotionBlur::OMBParamsMap::value_type> CMotionBlur:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
+bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
 {
 	assert(pObj);
 
@@ -38,11 +38,12 @@ void CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
 		if (it != m_pOMBData[nObjFrameReadID].end())
 		{
 			res = it->second.mObjToWorld;
-			return;
+			return true;
 		}
 	}
 
 	res = pObj->m_II.m_Matrix;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,7 +166,7 @@ void CMotionBlur::RenderObjectsVelocity()
 		nBatchMask |= SRendItem::BatchFlags(EFSLIST_TRANSP);
 		if (nBatchMask & FB_MOTIONBLUR)
 		{
-			CRendElementBase* pPrevRE = gRenDev->m_RP.m_pRE;
+			CRenderElement* pPrevRE = gRenDev->m_RP.m_pRE;
 			gRenDev->m_RP.m_pRE = NULL;
 
 			if (!gcpRendD3D->FX_MotionVectorGeneration(true))

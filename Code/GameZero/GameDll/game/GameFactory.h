@@ -25,6 +25,7 @@ class CGameFactory
 public:
 	static void Init();
 	static void RegisterEntityFlowNodes();
+	static void UnregisterEntityFlowNodes();
 
 private:
 	enum eGameObjectRegistrationFlags

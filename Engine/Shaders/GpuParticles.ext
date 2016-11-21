@@ -152,6 +152,14 @@ Property
 
 Property
 {
+  Name = %PFX_INIT_LOCATION_NOISE
+  Mask = 0x200
+  Property    (Location Noise)
+  Description (Location Noise)
+}
+
+Property
+{
   Name = %PFX_INIT_VELOCITY_CONE
   Mask = 0x40
   Property    (Velocity Cone)

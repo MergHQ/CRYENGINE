@@ -95,7 +95,7 @@ bool CVariableCollection::SetVariableValue(const CHashedString& name, const CVar
 #endif
 			if (resetTime <= 0.0f)
 			{
-				//check if there is already an cooldown for this variable, and if yes, remove it
+				//check if there is already a cooldown for this variable, and if yes, remove it
 				for (CoolingDownVariableList::iterator itCooling = m_coolingDownVariables.begin(); itCooling != m_coolingDownVariables.end(); ++itCooling)
 				{
 					if (itCooling->variable == variable)
@@ -408,50 +408,64 @@ void CVariableCollectionManager::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CVariableCollectionManager::GetAllVariableCollections(DRS::VariableValuesList* pOutCollectionsList)
+void CVariableCollectionManager::GetAllVariableCollections(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues)
 {
 	CRY_ASSERT(pOutCollectionsList);
 
 	pOutCollectionsList->reserve(m_variableCollections.size());
 
-	std::pair<string, string> temp;
+	std::pair<DRS::ValuesString, DRS::ValuesString> temp;
 	for (CVariableCollection* const pCollection : m_variableCollections)
 	{
 		const string collectionName = pCollection->GetName().GetText() + ".";
 		CVariableCollection::VariableList& variables = pCollection->GetAllVariables();
+		const CVariableCollection::CoolingDownVariableList& coolingDownVariables = pCollection->GetAllCooldownVariables();
+
 		for (CryDRS::CVariable* const pVariable : variables)
 		{
 			temp.first = collectionName + pVariable->GetName().GetText();
-			temp.second = pVariable->m_value.GetValueAsString();
-			pOutCollectionsList->push_back(temp);
+			CVariableValue variableValue = pVariable->m_value;
+
+			//check if there is already a cooldown for this variable, and if yes, we store the old-value instead
+			for (CVariableCollection::CoolingDownVariableList::const_iterator itCooling = coolingDownVariables.begin(); itCooling != coolingDownVariables.end(); ++itCooling)
+			{
+				if (itCooling->variable == pVariable)
+				{
+					variableValue.SetValue(itCooling->oldValue);
+				}
+			}
+
+			if (!bSkipDefaultValues || variableValue.GetValue() != CVariableCollection::s_newVariableValue.GetValue())
+			{
+				temp.second = variableValue.GetValueAsString();
+				pOutCollectionsList->push_back(temp);
+			}
 		}
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
-void CVariableCollectionManager::SetAllVariableCollections(const DRS::VariableValuesList& collectionsList)
+void CVariableCollectionManager::SetAllVariableCollections(DRS::ValuesListIterator start, DRS::ValuesListIterator end)
 {
 	string collectionAndVariable;
 	string variableName;
 	string collectionName;
 	m_variableCollections.clear();
-	m_variableCollections.reserve(collectionsList.size());
-	for (std::pair<string, string> variableValuePair : collectionsList)
+	m_variableCollections.reserve(std::distance(start, end));
+
+	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
-		collectionAndVariable = variableValuePair.first;
+		collectionAndVariable = it->first.c_str();
 		const int pos = collectionAndVariable.find('.');
 		variableName = collectionAndVariable.substr(pos + 1);
 		collectionName = collectionAndVariable.substr(0, pos);
-		
+
 		CVariableCollection* pCollection = GetCollection(collectionName);
 		if (!pCollection)
 		{
 			pCollection = CreateVariableCollection(collectionName);
 		}
 		CryDRS::CVariable* pVariable = pCollection->CreateOrGetVariable(variableName);
-		pVariable->SetValueFromString(variableValuePair.second);
+		pVariable->SetValueFromString(it->second);
 	}
-
-	//Todo: Special case, Response Execution Infos (counter, timer...)
-	//Todo: DRS Time variable
 }

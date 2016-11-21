@@ -6,7 +6,6 @@
 #include <CryDynamicResponseSystem/IDynamicResponseCondition.h>
 #include <CryMath/Random.h>
 #include <CryString/StringUtils.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMemory/CrySizer.h>
 #include <CrySerialization/Decorators/Range.h>
@@ -29,7 +28,7 @@ bool CRandomCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 //--------------------------------------------------------------------------------------------------
 void CRandomCondition::Serialize(Serialization::IArchive& ar)
 {
-	ar(Serialization::Range(m_randomFactor, 1, 99), "RandomFactor", "^ Probability");
+	ar(Serialization::Range(m_randomFactor, 0, 100), "RandomFactor", "^ Probability");
 
 #if !defined(_RELEASE)
 	if (ar.isEdit())
@@ -54,7 +53,7 @@ CGameTokenCondition::~CGameTokenCondition()
 {
 	if (m_pCachedToken)
 	{
-		IGameTokenSystem* pGTSys = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+		IGameTokenSystem* pGTSys = gEnv->pGameFramework->GetIGameTokenSystem();
 		if (pGTSys)
 		{
 			pGTSys->UnregisterListener(m_pCachedToken->GetName(), this);
@@ -82,39 +81,104 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_tokenName, "Token", "Token");
 
-	m_pCachedToken = (gEnv->pGame) ? gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem()->FindToken(m_tokenName.c_str()) : nullptr;
+	if (gEnv->pGameFramework)
+	{
+		if (auto* pGameTokenSystem = gEnv->pGameFramework->GetIGameTokenSystem())
+		{
+			m_pCachedToken = pGameTokenSystem->FindToken(m_tokenName.c_str());
+		}
+		else
+			m_pCachedToken = nullptr;
+	}
+	else
+		m_pCachedToken = nullptr;
 
-	if (ar.isEdit() && m_pCachedToken && (m_pCachedToken->GetType() == eFDT_Bool)) //for booleans only EQUAL tests do make sense, therefore we only need one comparison value. (actually also strings, but gametokes keep changing their type to string all the time, so we dont handle that here...)
+	if (ar.isEdit() &&
+	    ((m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool) || (ar.isOutput() && (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String)))) //for booleans/strings range-tests would not make much sense
 	{
 		ar(m_minValue, "MinVal", " EQUALS ");
 		m_maxValue = m_minValue;
-		ar(m_maxValue, "MaxVal", "");
 	}
 	else
 	{
 		ar(m_minValue, "MinVal", "GREATER than or equal to");
-		ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+		if (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String || (m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool))
+		{
+			m_maxValue = m_minValue;
+			if (ar.isOutput())
+			{
+				ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+			}
+		}
+		else
+		{
+			ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+		}
 	}
 
-	if (ar.isEdit())
+#if !defined(_RELEASE)
+	if (ar.isEdit() && ar.isOutput())
 	{
+		ar(GetVerboseInfo(), "ConditionDesc", "!^<");
+
 		if (m_tokenName.empty())
 		{
 			ar.warning(m_tokenName, "You need to specify a GameToken Name");
 		}
-		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
+		else if (!m_tokenName.empty() && (m_tokenName.front() == ' ' || m_tokenName.back() == ' '))
 		{
-			ar.warning(m_tokenName, "This Condition will always be true!");
+			ar.warning(m_tokenName, "GameToken name starts or ends with a space. Check if this is really wanted.");
 		}
 		else if (!m_minValue.DoTypesMatch(m_maxValue))
 		{
 			ar.warning(m_tokenName, "The type of min and max value do not match!");
 		}
-	}
-#if !defined(_RELEASE)
-	if (ar.isEdit() && ar.isOutput())
-	{
-		ar(GetVerboseInfo(), "ConditionDesc", "!^<");
+		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
+		{
+			ar.warning(m_tokenName, "This Condition will always be true!");
+		}
+		if (m_pCachedToken) //check if the type of the compare-to-values and the game-token type match
+		{
+			switch (m_pCachedToken->GetType())
+			{
+			case eFDT_Int:
+				{
+					if (m_minValue.GetType() != eDRVT_Int && m_minValue.GetType() != eDRVT_NegInfinite)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Int and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_Float:
+				{
+					if (m_minValue.GetType() != eDRVT_Float && m_minValue.GetType() != eDRVT_NegInfinite)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Float and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_String:
+				{
+					if (m_minValue.GetType() != eDRVT_String)
+					{
+						ar.warning(m_tokenName, "Gametoken has type String and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_Bool:
+				{
+					if (m_minValue.GetType() != eDRVT_Boolean)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Bool and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			default:
+				{
+					ar.warning(m_tokenName, "Only Int/Float/String and Bool GameTokens can be used in DRS-Conditions");
+				}
+			}
+		}
 	}
 #endif
 }
@@ -124,7 +188,7 @@ bool CGameTokenCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
 	if (!m_pCachedToken)
 	{
-		IGameTokenSystem* pGTSys = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
+		IGameTokenSystem* pGTSys = gEnv->pGameFramework->GetIGameTokenSystem();
 
 		m_pCachedToken = pGTSys->FindToken(m_tokenName.c_str());
 		if (!m_pCachedToken)
@@ -187,13 +251,19 @@ bool CGameTokenCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 //////////////////////////////////////////////////////////////////////////
 string CGameTokenCondition::GetVerboseInfo() const
 {
+	string tokenInfo;
+	if (m_pCachedToken)
+		tokenInfo.Format("found, value: '%s'", m_pCachedToken->GetValueAsString());
+	else
+		tokenInfo = "not found in current level";
+
 	if (m_minValue == m_maxValue)
 	{
-		return string("Token: '") + m_tokenName + "' EQUALS '" + m_minValue.GetValueAsString() + "'";
+		return string().Format("Token '%s' EQUALS '%s' (token %s)", m_tokenName.c_str(), m_minValue.GetValueAsString().c_str(), tokenInfo.c_str());
 	}
 	else
 	{
-		return string("Token: '") + m_tokenName + "' is BETWEEN '" + m_minValue.GetValueAsString() + "' AND '" + m_maxValue.GetValueAsString() + "'";
+		return string().Format("Token '%s' is BETWEEN '%s' AND '%s' (token %s)", m_tokenName.c_str(), m_minValue.GetValueAsString().c_str(), m_maxValue.GetValueAsString().c_str(), tokenInfo.c_str());
 	}
 }
 
@@ -244,16 +314,16 @@ bool CInheritConditionsCondition::IsMet(DRS::IResponseInstance* pResponseInstanc
 void CInheritConditionsCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseToReuse, "ResponseToCopyConditionsFrom", "^ Response to inherit from");
-	m_pCachedResponse = CResponseSystem::GetInstance()->GetResponseManager()->GetResponse(m_responseToReuse);
+	m_pCachedResponse = nullptr; // we cannot cache the response in most cases here, because the response to cache needs to be serialized before hand, and we cannot guarantee that.
 
 #if defined(HASHEDSTRING_STORES_SOURCE_STRING)
 	if (ar.isEdit())
 	{
-		if (m_responseToReuse.IsValid())
+		if (!m_responseToReuse.IsValid())
 		{
-			ar.warning(m_responseToReuse.m_textCopy, "No response with the specified name found");
+			ar.warning(m_responseToReuse.m_textCopy, "No Response to inherit conditions from specified");
 		}
-		else if (!m_pCachedResponse)
+		else if (!CResponseSystem::GetInstance()->GetResponseManager()->HasMappingForSignal(m_responseToReuse))
 		{
 			ar.warning(m_responseToReuse.m_textCopy, "No response specified from which the conditions should be inherited");
 		}
@@ -283,8 +353,8 @@ bool CTimeSinceCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 void CTimeSinceCondition::Serialize(Serialization::IArchive& ar)
 {
 	IVariableUsingBase::_Serialize(ar, "^TimerVariable");
-	ar(m_minTime, "minTime", "^MinElpasedTime");
-	ar(m_maxTime, "maxTime", "^MaxElpasedTime");
+	ar(m_minTime, "minTime", "^MinElapsedTime");
+	ar(m_maxTime, "maxTime", "^MaxElapsedTime");
 
 #if defined (ENABLE_VARIABLE_VALUE_TYPE_CHECKINGS)
 	CVariableCollection* pCollection = CResponseSystem::GetInstance()->GetCollection(m_collectionName);
@@ -362,13 +432,13 @@ void CExecutionLimitCondition::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-string CryDRS::CExecutionLimitCondition::GetVerboseInfo() const
+string CExecutionLimitCondition::GetVerboseInfo() const
 {
 	return string("min: ") + CryStringUtils::toString(m_minExecutions) + string(" max: ") + CryStringUtils::toString(m_maxExecutions);
 }
 
 //--------------------------------------------------------------------------------------------------
-bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
+bool CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
 	CResponse* pResponse = nullptr;
 	if (!m_responseId.IsValid())
@@ -395,7 +465,7 @@ bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pRespons
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
+void CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseId, "response", "^ Response");
 	ar(m_minTime, "minTime", "^MinElpasedTime");
@@ -403,7 +473,7 @@ void CryDRS::CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-string CryDRS::CTimeSinceResponseCondition::GetVerboseInfo() const
+string CTimeSinceResponseCondition::GetVerboseInfo() const
 {
 	string responseName = (m_responseId.IsValid()) ? m_responseId.GetText() : "CurrentResponse";
 	return "Execution of '" + responseName + string("' more than ") + CryStringUtils::toString(m_minTime) + " seconds and less then " + CryStringUtils::toString(m_maxTime);

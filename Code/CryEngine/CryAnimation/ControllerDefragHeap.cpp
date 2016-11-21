@@ -69,9 +69,12 @@ void CControllerDefragHeap::Update()
 
 	UpdateInflight(m_tickId);
 
-	m_pAllocator->DefragmentTick(
-	  (size_t)min((int)MaxScheduledCopiesPerUpdate, (int)m_numAvailableCopiesInFlight),
-	  (size_t)min((int)max(0, (int)MinFixedAllocSize - (int)m_bytesInFlight), (int)MaxScheduledBytesPerUpdate));
+	if (m_pAllocator != nullptr)
+	{
+		m_pAllocator->DefragmentTick(
+			(size_t)min((int)MaxScheduledCopiesPerUpdate, (int)m_numAvailableCopiesInFlight),
+			(size_t)min((int)max(0, (int)MinFixedAllocSize - (int)m_bytesInFlight), (int)MaxScheduledBytesPerUpdate));
+	}
 
 	++m_tickId;
 }

@@ -21,7 +21,7 @@ CFlashUIActionEvents::CFlashUIActionEvents()
 	, m_pUIEvents(NULL)
 	, m_pUIFunctions(NULL)
 {
-	m_pGameFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
+	m_pGameFramework = gEnv->pGameFramework;
 	CRY_ASSERT_MESSAGE(m_pGameFramework, "IGameFramework is not initialized, crash can follow!");
 
 	m_pLevelSystem = m_pGameFramework ? m_pGameFramework->GetILevelSystem() : NULL;

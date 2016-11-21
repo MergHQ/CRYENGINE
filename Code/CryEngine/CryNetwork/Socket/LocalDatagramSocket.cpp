@@ -36,7 +36,7 @@ ESocketError CLocalDatagramSocket::Send(const uint8* pBuffer, size_t nLength, co
 	if (m_isDead)
 		return eSE_MiscFatalError;
 
-	const TLocalNetAddress* addr = boost::get<const TLocalNetAddress>(&to);
+	const TLocalNetAddress* addr = stl::get_if<TLocalNetAddress>(&to);
 	if (!addr)
 		return eSE_Ok; // unreachable address will clobber udp sending
 

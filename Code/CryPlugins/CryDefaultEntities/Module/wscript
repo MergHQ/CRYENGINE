@@ -1,0 +1,13 @@
+#Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld) :
+
+	bld.CryEngineModule(
+	  target = 'CryDefaultEntities',
+	  vs_filter = 'CryPlugins',
+	  file_list = 'plugin.waf_files',
+
+	  pch = 'StdAfx.cpp',
+	  
+	  includes      = [ '.',  Path('Code/CryEngine/CryAction'), ]
+	  )

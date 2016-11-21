@@ -2,10 +2,10 @@
 
 #pragma once
 
-#if defined(INCLUDE_OPENVR_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 
 	#include <CrySystem/VR/IHMDDevice.h>
-	#include <CrySystem/VR/IHmdOpenVRDevice.h>
+	#include <../CryPlugins/VR/CryOpenVR/Interface/IHmdOpenVRDevice.h>
 	#include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;
@@ -19,7 +19,6 @@ public:
 	// IHDMRenderer
 	virtual bool                      Initialize() override;
 	virtual void                      Shutdown() override;
-	virtual void                      CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight) override;
 	virtual void                      OnResolutionChanged() override;
 	virtual void                      ReleaseBuffers() override;
 	virtual void                      PrepareFrame() override;
@@ -38,8 +37,6 @@ protected:
 	};
 
 protected:
-	static CTexture* WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView);
-
 	bool             InitializeEyeTarget(D3DDevice* d3dDevice, EEyeType eye, TextureDesc desc, const char* name);
 	bool             InitializeQuadLayer(D3DDevice* d3dDevice, int quadLayer, TextureDesc desc, const char* name);
 	bool             InitializeMirrorTexture(D3DDevice* d3dDevice, EEyeType eye, TextureDesc desc, const char* name);
@@ -73,4 +70,4 @@ protected:
 	CCryNameTSCRC                 m_textureToTexture;
 };
 
-#endif //defined(INCLUDE_OPENVR_SDK)
+#endif //defined(INCLUDE_VR_RENDERING)

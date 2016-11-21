@@ -11,7 +11,7 @@
 using namespace CryAudio::Impl::PortAudio;
 
 // Define global objects.
-CSoundAllocator g_audioImplMemoryPool;
+CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::PortAudio::g_audioImplCVars;
 

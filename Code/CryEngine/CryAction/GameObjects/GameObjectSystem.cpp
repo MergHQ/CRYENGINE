@@ -36,45 +36,49 @@ bool CGameObjectSystem::Init()
 
 	memset(&m_defaultProfiles, 0, sizeof(m_defaultProfiles));
 
-	if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFromFile("Scripts/Network/EntityScheduler.xml"))
+	const char* schedulerFile = "Scripts/Network/EntityScheduler.xml";
+	if (gEnv->pCryPak->IsFileExist(schedulerFile))
 	{
-		uint32 defaultPolicy = 0;
-
-		if (XmlNodeRef defpol = schedParams->findChild("Default"))
+		if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFromFile(schedulerFile))
 		{
-			if (!StringToKey(defpol->getAttr("policy"), defaultPolicy))
+			uint32 defaultPolicy = 0;
+
+			if (XmlNodeRef defpol = schedParams->findChild("Default"))
 			{
-				GameWarning("Unable to read Default from EntityScheduler.xml");
+				if (!StringToKey(defpol->getAttr("policy"), defaultPolicy))
+				{
+					GameWarning("Unable to read Default from EntityScheduler.xml");
+				}
 			}
-		}
 
-		m_defaultProfiles.normal = m_defaultProfiles.owned = defaultPolicy;
+			m_defaultProfiles.normal = m_defaultProfiles.owned = defaultPolicy;
 
-		for (int i = 0; i < schedParams->getChildCount(); i++)
-		{
-			XmlNodeRef node = schedParams->getChild(i);
-			if (0 != strcmp(node->getTag(), "Class"))
-				continue;
+			for (int i = 0; i < schedParams->getChildCount(); i++)
+			{
+				XmlNodeRef node = schedParams->getChild(i);
+				if (0 != strcmp(node->getTag(), "Class"))
+					continue;
 
-			string name = node->getAttr("name");
+				string name = node->getAttr("name");
 
-			SEntitySchedulingProfiles p;
-			p.normal = defaultPolicy;
-			if (node->haveAttr("policy"))
-				StringToKey(node->getAttr("policy"), p.normal);
-			p.owned = p.normal;
-			if (node->haveAttr("own"))
-				StringToKey(node->getAttr("own"), p.owned);
+				SEntitySchedulingProfiles p;
+				p.normal = defaultPolicy;
+				if (node->haveAttr("policy"))
+					StringToKey(node->getAttr("policy"), p.normal);
+				p.owned = p.normal;
+				if (node->haveAttr("own"))
+					StringToKey(node->getAttr("own"), p.owned);
 
 #if !defined(_RELEASE)
-			TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(name));
-			if (iter != m_schedulingParams.end())
-			{
-				GameWarning("Class '%s' has been defined multiple times in EntityScheduler.xml", name.c_str());
-			}
+				TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(name));
+				if (iter != m_schedulingParams.end())
+				{
+					GameWarning("Class '%s' has been defined multiple times in EntityScheduler.xml", name.c_str());
+				}
 #endif //#if !defined(_RELEASE)
 
-			m_schedulingParams[name] = p;
+				m_schedulingParams[name] = p;
+			}
 		}
 	}
 
@@ -116,6 +120,11 @@ void CGameObjectSystem::Reset()
 void CGameObjectSystem::LoadSerializationOrderFile()
 {
 	static const char* SERIALIZATIONORDER_FILE = "Scripts/GameObjectSerializationOrder.xml";
+	if (!gEnv->pCryPak->IsFileExist(SERIALIZATIONORDER_FILE))
+	{
+		// Fail silently, we do not require the file
+		return;
+	}
 
 	XmlNodeRef xmlNodeRoot = GetISystem()->LoadXmlFromFile(SERIALIZATIONORDER_FILE);
 
@@ -173,18 +182,18 @@ IEntity* CGameObjectSystem::CreatePlayerProximityTrigger()
 	return pEntity;
 }
 
-void CGameObjectSystem::RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc)
+void CGameObjectSystem::RegisterExtension(const char* szName, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pClsDesc)
 {
-	string sName = name;
+	string sName = szName;
 
 	if (m_nameToID.find(sName) != m_nameToID.end())
-		CryFatalError("Duplicate game object extension %s found", name);
+		CryFatalError("Duplicate game object extension %s found", szName);
 
 	SExtensionInfo info;
 	info.name = sName;
 	info.pFactory = pCreator;
 
-	string nameLower(name);
+	string nameLower(szName);
 	nameLower.MakeLower();
 	std::vector<string>::const_iterator result = std::find(m_serializationOrderList.begin(), m_serializationOrderList.end(), nameLower);
 	std::vector<string>::const_iterator firstElem = m_serializationOrderList.begin();
@@ -208,7 +217,7 @@ void CGameObjectSystem::RegisterExtension(const char* name, IGameObjectExtension
 		//		pClsDesc->pUserProxyData = new SSpawnUserData(sName);
 		if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(*pClsDesc))
 		{
-			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", name));
+			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", szName));
 			return;
 		}
 	}

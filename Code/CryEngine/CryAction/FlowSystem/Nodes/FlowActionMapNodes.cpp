@@ -6,6 +6,7 @@
 #include "StdAfx.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryCore/Containers/VectorMap.h>
 
 //////////////////////////////////////////////////////////////////////
 class CFlowNode_SetDefaultActionEntity : public CFlowBaseNode<eNCT_Singleton>
@@ -30,8 +31,8 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig_AnyType("Set",          _HELP("Set assigned Entity as default action entity")),
-			InputPortConfig<bool>("UpdateExisting", true,                                                  _HELP("If set to true, Set will update all existing action map assignments")),
+			InputPortConfig_AnyType("Set", _HELP("Set assigned Entity as default action entity")),
+			InputPortConfig<bool>("UpdateExisting", true, _HELP("If set to true, Set will update all existing action map assignments")),
 			{ 0 }
 		};
 
@@ -107,8 +108,8 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig_AnyType("Get",      _HELP("Get current default action entity")),
-			InputPortConfig<bool>("AutoUpdate", true,                                       _HELP("outputs the new default entity whenever it changes")),
+			InputPortConfig_AnyType("Get", _HELP("Get current default action entity")),
+			InputPortConfig<bool>("AutoUpdate", true, _HELP("outputs the new default entity whenever it changes")),
 			{ 0 }
 		};
 
@@ -211,8 +212,10 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-class CFlowNode_InputActionListener : public CFlowBaseNode<eNCT_Instanced>, public IInputEventListener
+class CFlowNode_InputActionListener : public CFlowBaseNode<eNCT_Instanced>, public IInputEventListener, public IActionListener
 {
+	typedef VectorMap<uint32, bool> TAnalogInputsPressed;
+
 	enum EInputs
 	{
 		EIP_ENABLE = 0,
@@ -226,19 +229,21 @@ class CFlowNode_InputActionListener : public CFlowBaseNode<eNCT_Instanced>, publ
 		EOP_DISABLED,
 		EOP_PRESSED,
 		EOP_RELEASED,
+		EOP_HOLD
 	};
 
 public:
 	CFlowNode_InputActionListener(SActivationInfo* pActInfo)
-		: m_pActInfo(*pActInfo)
+		: m_bEnabled(false)
+		, m_pAction(nullptr)
+		, m_pActionMap(nullptr)
 		, m_filterEntityId(INVALID_ENTITYID)
-		, m_bActive(false)
 	{
 	}
 
 	~CFlowNode_InputActionListener()
 	{
-		Register(false, 0);
+		Unregister();
 	}
 
 	void GetConfiguration(SFlowNodeConfig& config)
@@ -257,13 +262,14 @@ public:
 			OutputPortConfig_Void("Disabled",    _HELP("Action Listener removed")),
 			OutputPortConfig<string>("Pressed",  _HELP("Action trigger pressed.")),
 			OutputPortConfig<string>("Released", _HELP("Action trigger released.")),
+			OutputPortConfig<string>("Hold",     _HELP("Action trigger hold. Make sure the action map is enabled, since this port goes properly through the action manager.")),
 			{ 0 }
 		};
 
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("FlowNode to catch input events via their action name. It is enabled by default. Entity Input will listen for specified entity only");
+		config.sDescription = _HELP("FlowNode to catch input events via their action name. Entity Input will listen for specified entity only");
 		config.SetCategory(EFLN_APPROVED);
 	}
 
@@ -274,24 +280,64 @@ public:
 
 	void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
-		ser.Value("m_bActive", m_bActive);
+		ser.Value("m_bActive", m_bEnabled);
+		ser.Value("m_actionInputStr", m_actionInputStr);
 		if (ser.IsReading())
 		{
-			Register(m_bActive, pActInfo);
+			Register();
 		}
 	}
 
-	void Register(bool bRegister, SActivationInfo* pActInfo)
+	void Register()
 	{
 		IInput* pInput = gEnv->pInput;
-		if (pInput)
+		if (!pInput)
+			return;
+
+		if (m_bEnabled)
+			return;
+
+		pInput->AddEventListener(this);
+
+		const size_t colonIndex = m_actionInputStr.find_first_of(":");
+		const string& actionMapName = m_actionInputStr.substr(0, colonIndex);
+		IActionMapManager* pActionMapMgr = CCryAction::GetCryAction()->GetIActionMapManager();
+		if (pActionMapMgr)
 		{
-			if (bRegister)
-				pInput->AddEventListener(this);
-			else
-				pInput->RemoveEventListener(this);
+			pActionMapMgr->AddFlowgraphNodeActionListener(this, actionMapName.c_str());
+
+			const string& actionName = &m_actionInputStr.c_str()[colonIndex + 1];
+			m_pActionMap = pActionMapMgr->GetActionMap(actionMapName);
+			if (m_pActionMap)
+			{
+				m_pAction = m_pActionMap->GetAction(ActionId(actionName));
+			}
 		}
-		m_bActive = bRegister;
+
+		m_bEnabled = true;
+	}
+
+	void Unregister()
+	{
+		IInput* pInput = gEnv->pInput;
+		if (!pInput)
+			return;
+
+		if (!m_bEnabled)
+			return;
+
+		pInput->RemoveEventListener(this);
+
+		const string& actionMapName = m_actionInputStr.substr(0, m_actionInputStr.find_first_of(":"));
+		IActionMapManager* pActionMapMgr = CCryAction::GetCryAction()->GetIActionMapManager();
+		if (pActionMapMgr)
+		{
+			pActionMapMgr->RemoveFlowgraphNodeActionListener(this, actionMapName);
+		}
+		m_pActionMap = nullptr;
+		m_pAction = nullptr;
+
+		m_bEnabled = false;
 	}
 
 	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
@@ -301,7 +347,8 @@ public:
 		case eFE_Initialize:
 			{
 				m_pActInfo = *pActInfo;
-				Register(false, pActInfo);
+				m_actionInputStr = GetPortString(pActInfo, EIP_ACTION);
+				Unregister();
 				break;
 			}
 
@@ -315,14 +362,28 @@ public:
 			{
 				m_pActInfo = *pActInfo;
 
+				if (IsPortActive(pActInfo, EIP_ACTION))
+				{
+					if (m_bEnabled)
+					{
+						Unregister();
+						m_actionInputStr = GetPortString(pActInfo, EIP_ACTION);
+						Register();
+					}
+					else
+					{
+						m_actionInputStr = GetPortString(pActInfo, EIP_ACTION);
+					}
+				}
+
 				if (IsPortActive(pActInfo, EIP_DISABLE))
 				{
-					Register(false, pActInfo);
+					Unregister();
 				}
 
 				if (IsPortActive(pActInfo, EIP_ENABLE))
 				{
-					Register(true, pActInfo);
+					Register();
 				}
 
 				break;
@@ -335,51 +396,51 @@ public:
 		if (gEnv->pConsole->IsOpened() || CCryAction::GetCryAction()->IsGamePaused())
 			return false;
 
-		bool bActionFound = false;
-		const string& eventKeyName = event.keyName.c_str();
-		const string& actionInput = GetPortString(&m_pActInfo, EIP_ACTION);
-		const string& actionMapName = actionInput.substr(0, actionInput.find_first_of(":"));
-		const string& actionName = actionInput.substr(actionInput.find_first_of(":") + 1, (actionInput.length() - actionInput.find_first_of(":")));
-
-		if (!actionMapName.empty() && !actionName.empty())
+		if (m_pActionMap && m_pActionMap->Enabled() && (m_filterEntityId == INVALID_ENTITYID || m_filterEntityId == m_pActionMap->GetActionListener()))
 		{
-			IActionMapManager* pActionMapMgr = CCryAction::GetCryAction()->GetIActionMapManager();
-			if (pActionMapMgr)
+			if (m_pAction)
 			{
-				const IActionMap* pActionMap = pActionMapMgr->GetActionMap(actionMapName);
-				if (pActionMap && (m_filterEntityId == INVALID_ENTITYID || m_filterEntityId == pActionMap->GetActionListener()))
+				const char* eventKeyNameCStr = event.keyName.c_str();
+
+				const int iNumInputData = m_pAction->GetNumActionInputs();
+				for (int i = 0; i < iNumInputData; ++i)
 				{
-					const IActionMapAction* pAction = pActionMap->GetAction(ActionId(actionName));
-					if (pAction)
+					const SActionInput* pActionInput = m_pAction->GetActionInput(i);
+
+					if (!stricmp(pActionInput->input, eventKeyNameCStr))
 					{
-						const int iNumInputData = pAction->GetNumActionInputs();
-
-						for (int i = 0; i < iNumInputData; ++i)
+						// Handle analog inputs
+						if (pActionInput->analogCompareOp != eAACO_None)
 						{
-							const SActionInput* pActionInput = pAction->GetActionInput(i);
-
-							if (!stricmp(pActionInput->input, eventKeyName.c_str()))
+							if (pActionInput->bAnalogConditionFulfilled && !GetAnalogInputPressed(pActionInput->inputCRC))
 							{
-								bActionFound = true;
-								break;
+								ActivateOutput(&m_pActInfo, EOP_PRESSED, string(m_pAction->GetActionId().c_str()));
+								SetAnalogInputPressed(pActionInput->inputCRC, true);
 							}
+							else if (!pActionInput->bAnalogConditionFulfilled && GetAnalogInputPressed(pActionInput->inputCRC))
+							{
+								ActivateOutput(&m_pActInfo, EOP_RELEASED, string(m_pAction->GetActionId().c_str()));
+								SetAnalogInputPressed(pActionInput->inputCRC, false);
+							}
+							break;
 						}
+
+						const bool nullInputValue = (fabs_tpl(event.value) < 0.02f);
+						if ((event.state == eIS_Pressed) || ((event.state == eIS_Changed) && !nullInputValue))
+						{
+							const string eventKeyName(eventKeyNameCStr);
+							ActivateOutput(&m_pActInfo, EOP_PRESSED, eventKeyName);
+						}
+						else if ((event.state == eIS_Released) || ((event.state == eIS_Changed) && nullInputValue))
+						{
+							const string eventKeyName(eventKeyNameCStr);
+							ActivateOutput(&m_pActInfo, EOP_RELEASED, eventKeyName);
+						}
+
+						break;
+
 					}
 				}
-			}
-		}
-
-		if (bActionFound)
-		{
-			const bool nullInputValue = (fabs_tpl(event.value) < 0.02f);
-
-			if ((event.state == eIS_Pressed) || ((event.state == eIS_Changed) && !nullInputValue))
-			{
-				ActivateOutput(&m_pActInfo, EOP_PRESSED, eventKeyName);
-			}
-			else if ((event.state == eIS_Released) || ((event.state == eIS_Changed) && nullInputValue))
-			{
-				ActivateOutput(&m_pActInfo, EOP_RELEASED, eventKeyName);
 			}
 		}
 
@@ -392,9 +453,56 @@ public:
 		s->Add(*this);
 	}
 
-	SActivationInfo m_pActInfo;
-	EntityId        m_filterEntityId;
-	bool            m_bActive;
+	virtual void OnAction(const ActionId& action, int activationMode, float value)
+	{
+		const string& actionInput = GetPortString(&m_pActInfo, EIP_ACTION);
+		const size_t colonIndex = actionInput.find_first_of(":");
+		const string& actionMapName = actionInput.substr(0, colonIndex);
+		const string& actionName = actionInput.substr(colonIndex + 1, (actionInput.length() - colonIndex));
+
+		const EntityId filterEntityId = m_pActInfo.pEntity ? m_pActInfo.pEntity->GetId() : INVALID_ENTITYID;
+
+		if (!actionMapName.empty() && !actionName.empty())
+		{
+			IActionMapManager* pActionMapMgr = CCryAction::GetCryAction()->GetIActionMapManager();
+			if (pActionMapMgr)
+			{
+				const IActionMap* pActionMap = pActionMapMgr->GetActionMap(actionMapName);
+				if (pActionMap && (filterEntityId == INVALID_ENTITYID || filterEntityId == pActionMap->GetActionListener()))
+				{
+					const IActionMapAction* pAction = pActionMap->GetAction(ActionId(actionName));
+					if (pAction && pAction->GetActionId() == action && (activationMode & (eAAM_Always | eAAM_OnHold)))
+					{
+						ActivateOutput(&m_pActInfo, EOP_HOLD, actionName);
+					}
+				}
+			}
+		}
+	}
+
+	bool GetAnalogInputPressed(uint32 actionCrc) const
+	{
+		TAnalogInputsPressed::const_iterator it = m_analogInputPressed.find(actionCrc);
+		if (it == m_analogInputPressed.end())
+		{
+			return false;
+		}
+
+		return it->second;
+	}
+
+	void SetAnalogInputPressed(uint32 actionCrc, bool state)
+	{
+		m_analogInputPressed[actionCrc] = state;
+	}
+
+	TAnalogInputsPressed m_analogInputPressed;
+	SActivationInfo      m_pActInfo;
+	bool                 m_bEnabled;
+	string               m_actionInputStr;
+	IActionMap*          m_pActionMap;
+	IActionMapAction*    m_pAction;
+	EntityId             m_filterEntityId;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -548,7 +656,7 @@ public:
 		if (ser.IsWriting())
 		{
 			bool bWroteIt = false;
-			IActionMapManager* pAMMgr = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+			IActionMapManager* pAMMgr = gEnv->pGameFramework->GetIActionMapManager();
 			if (pAMMgr && m_filterName.empty() == false)
 			{
 				IActionFilter* pFilter = pAMMgr->GetActionFilter(m_filterName.c_str());
@@ -606,8 +714,7 @@ public:
 
 		m_bEnabled = bEnable;
 
-		IGameFramework* pGameFramework = gEnv->pGame ? gEnv->pGame->GetIGameFramework() : NULL;
-		IActionMapManager* pAMMgr = pGameFramework ? pGameFramework->GetIActionMapManager() : NULL;
+		IActionMapManager* pAMMgr = gEnv->pGameFramework->GetIActionMapManager();
 		if (pAMMgr)
 		{
 			pAMMgr->EnableFilter(m_filterName, bEnable);

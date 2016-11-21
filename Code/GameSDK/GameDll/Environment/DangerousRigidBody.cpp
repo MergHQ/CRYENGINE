@@ -68,7 +68,7 @@ void CDangerousRigidBody::ProcessEvent( SEntityEvent& event )
 					IPhysicalEntity* pOtherEntityPhysics = GetEntity()->GetPhysics() != pCollision->pEntity[0] ? pCollision->pEntity[0] : pCollision->pEntity[1];
 					if( IEntity* pOtherEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pOtherEntityPhysics) )
 					{
-						EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+						EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 						if(pOtherEntity->GetId() == localClientId) //Handle collision locally 
 						{
 							float currentTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();

@@ -356,6 +356,7 @@ CActionMap::CActionMap(CActionMapManager* pActionMapManager, const char* name)
 	m_enabled(!stricmp(name, "default")),
 	m_listenerId(0),
 	m_actionMapListeners(2),
+	m_flownodesListeners(2),
 	m_name(name),
 	m_iNumRebindedInputs(0)
 {
@@ -796,7 +797,7 @@ bool CActionMap::CanProcessInput(const SInputEvent& inputEvent, CActionMap* pAct
 	bool bRes = false;
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -861,6 +862,11 @@ bool CActionMap::CanProcessInput(const SInputEvent& inputEvent, CActionMap* pAct
 					pActionInput->bHoldTriggerFired = false;
 					pActionInput->fCurrentHoldValue = 0.f;
 					pActionInput->bAnalogConditionFulfilled = true;
+					pActionInput->currentState = eIS_Pressed;
+				}
+				else if (pActionInput->bHoldTriggerFired)
+				{
+					pActionInput->currentState = eIS_Changed;
 				}
 
 				// Although condition is true, result value can be set false again if hold timer conditions aren't true
@@ -875,6 +881,7 @@ bool CActionMap::CanProcessInput(const SInputEvent& inputEvent, CActionMap* pAct
 					m_pActionMapManager->RemoveRefireData(pActionMap, pAction, pActionInput);
 				}
 				pActionInput->fCurrentHoldValue = 0.f;
+				pActionInput->currentState = eIS_Released;
 			}
 		}
 		else if (inputEvent.state == eIS_Pressed)
@@ -915,7 +922,7 @@ bool CActionMap::CanProcessInput(const SInputEvent& inputEvent, CActionMap* pAct
 			else
 				pActionInput->currentState = eIS_Unknown;
 		}
-		else if (inputEvent.state == eIS_Changed)
+		else if (inputEvent.state == eIS_Changed && !(pActionInput->activationMode & eAAM_AnalogCompare))
 		{
 			pActionInput->currentState = eIS_Changed;
 		}
@@ -945,7 +952,7 @@ bool CActionMap::IsActionInputTriggered(const SInputEvent& inputEvent, CActionMa
 	}
 
 	float fCurrTime = gEnv->pTimer->GetCurrTime();
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	if (pGameFramework && pGameFramework->IsGamePaused())
 	{
 		fCurrTime = gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI);
@@ -997,6 +1004,11 @@ bool CActionMap::IsActionInputTriggered(const SInputEvent& inputEvent, CActionMa
 		{
 			if (pActionInput->bHoldTriggerFired) // Initial hold trigger already fired
 			{
+				if (fCurrTime < pActionInput->fLastRepeatTime)
+				{
+					pActionInput->fLastRepeatTime = fCurrTime;
+				}
+
 				if (pActionInput->fHoldRepeatDelay != -1.0f && fCurrTime - pActionInput->fLastRepeatTime >= pActionInput->fHoldRepeatDelay) // fHoldRepeatDelay of -1.0f means no repeat
 				{
 					pActionInput->fLastRepeatTime = fCurrTime;
@@ -1177,6 +1189,27 @@ void CActionMap::AddExtraActionListener(IActionListener* pExtraActionListener)
 void CActionMap::RemoveExtraActionListener(IActionListener* pExtraActionListener)
 {
 	m_actionMapListeners.Remove(pExtraActionListener);
+}
+
+//------------------------------------------------------------------------
+void CActionMap::NotifyFlowNodeActionListeners(const ActionId& action, int currentState, float value)
+{
+	for (TActionMapListeners::Notifier notify(m_flownodesListeners); notify.IsValid(); notify.Next())
+	{
+		notify->OnAction(action, currentState, value);
+	}
+}
+
+//------------------------------------------------------------------------
+void CActionMap::AddFlowNodeActionListener(IActionListener* pFlowgraphNodeActionListener)
+{
+	m_flownodesListeners.Add(pFlowgraphNodeActionListener);
+}
+
+//------------------------------------------------------------------------
+void CActionMap::RemoveFlowNodeActionListener(IActionListener* pFlowgraphNodeActionListener)
+{
+	m_flownodesListeners.Remove(pFlowgraphNodeActionListener);
 }
 
 //------------------------------------------------------------------------

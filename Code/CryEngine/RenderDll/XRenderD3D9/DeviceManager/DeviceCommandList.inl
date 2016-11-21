@@ -16,6 +16,11 @@ inline CDeviceComputeCommandInterface* CDeviceCommandList::GetComputeInterface()
 	return reinterpret_cast<CDeviceComputeCommandInterface*>(GetComputeInterfaceImpl());
 }
 
+inline CDeviceNvidiaCommandInterface* CDeviceCommandList::GetNvidiaCommandInterface()
+{
+	return reinterpret_cast<CDeviceNvidiaCommandInterface*>(GetNvidiaCommandInterfaceImpl());
+}
+
 inline void CDeviceCommandList::Reset()
 {
 	ZeroStruct(m_graphicsState.pPipelineState);
@@ -229,6 +234,11 @@ inline void CDeviceGraphicsCommandInterface::SetStencilRef(uint8 stencilRefValue
 	}
 }
 
+inline void CDeviceGraphicsCommandInterface::SetDepthBias(float constBias, float slopeBias, float biasClamp)
+{
+	SetDepthBiasImpl(constBias, slopeBias, biasClamp);
+}
+
 inline void CDeviceGraphicsCommandInterface::Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	if (m_graphicsState.validResourceBindings == m_graphicsState.requiredResourceBindings)
@@ -328,9 +338,14 @@ inline void CDeviceGraphicsCommandInterface::DrawIndexed(uint32 IndexCountPerIns
 	}
 }
 
-inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DSurface* pView, const float color[4], uint32 numRects, const D3D11_RECT* pRect)
+inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects, const D3D11_RECT* pRects)
 {
-	ClearSurfaceImpl(pView, color, numRects, pRect);
+	ClearSurfaceImpl(pView, (float*)&color, numRects, pRects);
+}
+
+inline void CDeviceGraphicsCommandInterface::ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects)
+{
+	ClearSurfaceImpl(pView, clearFlags, depth, stencil, numRects, pRects);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -421,6 +436,15 @@ inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const FLOAT 
 inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
 	ClearUAVImpl(pView, Values, NumRects, pRects);
+}
+
+inline void CDeviceNvidiaCommandInterface::SetModifiedWMode(bool enabled, uint32 numViewports, const float* pA, const float* pB)
+{
+#if defined(CRY_PLATFORM_CONSOLE) || defined(CRY_USE_DX12)
+	CRY_ASSERT_MESSAGE(false, "Only supported on DirectX11, PC");
+#else
+	SetModifiedWModeImpl(enabled, numViewports, pA, pB);
+#endif
 }
 
 #endif

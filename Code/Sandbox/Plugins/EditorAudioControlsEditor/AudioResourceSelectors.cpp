@@ -5,7 +5,6 @@
 #include "QParentWndWidget.h"
 #include "ListSelectionDialog.h"
 #include "QAudioControlEditorIcons.h"
-#include "GameEngine.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ATLControlsResourceDialog.h"
 #include <CryGame/IGameFramework.h>
@@ -27,7 +26,7 @@ dll_string ShowSelectDialog(const SResourceSelectorContext& context, const char*
 	ATLControlsDialog dialog(&parent, controlType);
 
 	char* szLevelName;
-	GetIEditor()->GetGame()->GetIGameFramework()->GetEditorLevel(&szLevelName, nullptr);
+	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
 	dialog.SetScope(pModel->GetScope(szLevelName));
 	return dialog.ChooseItem(szPreviousValue);
 }

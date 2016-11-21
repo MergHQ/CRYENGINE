@@ -86,6 +86,8 @@ void CGameBrowser::Init( void )
 //--------------------------------------------------------------------------
 CGameBrowser::~CGameBrowser()
 {
+	gEnv->pCodeCheckpointMgr->UnRegisterCheckpoint("GameLobby_StartSearchingForServers");
+
 #if defined(USE_SESSION_SEARCH_SIMULATOR)
 	SAFE_DELETE( m_pSessionSearchSimulator );
 #endif //defined(USE_SESSION_SEARCH_SIMULATOR)

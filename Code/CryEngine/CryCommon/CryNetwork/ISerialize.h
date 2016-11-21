@@ -243,6 +243,9 @@ template<class TISerialize>
 class CSerializeWrapper
 {
 public:
+	// Required for SWIG to properly expose serialize functions!
+	CSerializeWrapper() : m_pSerialize(nullptr) {}
+
 	CSerializeWrapper(TISerialize* pSerialize) :
 		m_pSerialize(pSerialize)
 	{

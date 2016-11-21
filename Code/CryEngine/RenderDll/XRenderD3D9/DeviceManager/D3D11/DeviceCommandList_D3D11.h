@@ -5,7 +5,9 @@
 #if !defined(CRY_USE_DX12) && !defined(CRY_USE_GNM_RENDERER)
 
 class CDeviceGraphicsCommandInterfaceImpl;
-struct CDeviceComputeCommandInterfaceImpl;
+class CDeviceComputeCommandInterfaceImpl;
+class CDeviceNvidiaCommandInterfaceImpl;
+
 
 struct SSharedState
 {
@@ -21,17 +23,22 @@ struct SSharedState
 	std::array<uint8, eHWSC_Num>                      numSamplers;
 
 	EShaderStage validShaderStages;
-	bool         bDepthStencilStateDirty;
 };
 
 struct SCustomGraphicsState
 {
 	SCachedValue<ID3D11DepthStencilState*> depthStencilState;
-	SCachedValue<ID3D11RasterizerState*>   rasterState;
+	SCachedValue<ID3D11RasterizerState*>   rasterizerState;
+	uint32                                 rasterizerStateIndex;
 	SCachedValue<ID3D11BlendState*>        blendState;
 	SCachedValue<ID3D11InputLayout*>       inputLayout;
 	SCachedValue<D3D11_PRIMITIVE_TOPOLOGY> topology;
 
+	float depthConstBias;
+	float depthSlopeBias;
+	float depthBiasClamp;
+
+	bool bRasterizerStateDirty;
 	bool bDepthStencilStateDirty;
 };
 
@@ -52,6 +59,8 @@ public:
 	{
 		return reinterpret_cast<CDeviceComputeCommandInterfaceImpl*>(this);
 	}
+
+	CDeviceNvidiaCommandInterfaceImpl* GetNvidiaCommandInterfaceImpl();
 
 	void SetProfilerMarker(const char* label);
 	void BeginProfilerEvent(const char* label);
@@ -89,22 +98,25 @@ protected:
 	void SetIndexBufferImpl(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants) {}
 	void SetStencilRefImpl(uint8 stencilRefValue);
+	void SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp);
 
 	void DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexedImpl(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
 	void ClearSurfaceImpl(D3DSurface* pView, const FLOAT Color[4], UINT NumRects, const D3D11_RECT* pRects);
+	void ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects);
 
 protected:
 	void SetResources_RequestedByShaderOnly(const CDeviceResourceSet* pResources);
 	void SetResources_All(const CDeviceResourceSet* pResources);
 
 	void ApplyDepthStencilState();
+	void ApplyRasterizerState();
 };
 
 ////////////////////////////////////////////////////////////////////////////
 
-struct CDeviceComputeCommandInterfaceImpl : CDeviceCommandListImpl
+class CDeviceComputeCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
 	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const {}
@@ -121,6 +133,14 @@ protected:
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+};
+
+////////////////////////////////////////////////////////////////////////////
+
+class CDeviceNvidiaCommandInterfaceImpl : public CDeviceCommandListImpl
+{
+protected:
+	void SetModifiedWModeImpl(bool enabled, uint32_t numViewports, const float* pA, const float* pB);
 };
 
 #endif

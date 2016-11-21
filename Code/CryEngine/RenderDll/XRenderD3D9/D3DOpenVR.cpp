@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#if defined(INCLUDE_OPENVR_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 
 	#include "D3DOpenVR.h"
 	#include "DriverD3D.h"
@@ -122,7 +122,7 @@ bool CD3DOpenVRRenderer::InitializeEyeTarget(D3DDevice* d3d11Device, EEyeType ey
 	d3d11Device->CreateTexture2D(&textureDesc, nullptr, &texture);
 
 	ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-	m_eyes[eye].texture = WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, name, true);
+	m_eyes[eye].texture = m_stereoRenderer->WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, name, true);
 
 	return true;
 }
@@ -148,7 +148,7 @@ bool CD3DOpenVRRenderer::InitializeQuadLayer(D3DDevice* d3d11Device, int quadLay
 	cry_sprintf(textureName, name, quadLayer);
 
 	ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-	m_quads[quadLayer].texture = WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, textureName, true);
+	m_quads[quadLayer].texture = m_stereoRenderer->WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, textureName, true);
 
 	return true;
 }
@@ -172,7 +172,7 @@ bool CD3DOpenVRRenderer::InitializeMirrorTexture(D3DDevice* d3d11Device, EEyeTyp
 	d3d11Device->CreateTexture2D(&textureDesc, nullptr, &texture);
 
 	ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-	CTexture* tex = WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, name, false);
+	CTexture* tex = m_stereoRenderer->WrapD3DRenderTarget(static_cast<D3DTexture*>(texture), desc.width, desc.height, format, name, false);
 
 	if (tex == nullptr)
 		return false;
@@ -221,12 +221,6 @@ void CD3DOpenVRRenderer::Shutdown()
 	
 
 	ReleaseBuffers();
-}
-
-void CD3DOpenVRRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
 }
 
 void CD3DOpenVRRenderer::OnResolutionChanged()
@@ -279,23 +273,23 @@ void CD3DOpenVRRenderer::RenderSocialScreen()
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType();
 			switch (socialScreen)
 			{
-			case EHmdSocialScreen::eHmdSocialScreen_Off:
+			case EHmdSocialScreen::Off:
 				{
 					GetUtils().ClearScreen(0.1f, 0.1f, 0.1f, 1.0f); // we don't want true black, to distinguish between rendering error and no-social-screen. NOTE: THE CONSOLE WILL NOT BE DISPLAYED!!!
 				}
 				break;
 			// intentional fall through
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
+			case EHmdSocialScreen::UndistortedLeftEye:
+			case EHmdSocialScreen::UndistortedRightEye:
 				{
-					CTexture* pTex = socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye ? m_mirrorTextures[LEFT_EYE] : m_mirrorTextures[RIGHT_EYE];
+					CTexture* pTex = socialScreen == EHmdSocialScreen::UndistortedLeftEye ? m_mirrorTextures[LEFT_EYE] : m_mirrorTextures[RIGHT_EYE];
 					if (CShaderMan::s_shPostEffects)
 						GetUtils().StretchRect(pTex, pBackbufferTexture);
 				}
 				break;
 
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage: // intentional fall through - default to undistorted dual image
-			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:   // intentional fall through - OpenVR does not return distorted eye targets, therefore the only display the undistorted eye targets
+			case EHmdSocialScreen::UndistortedDualImage: // intentional fall through - default to undistorted dual image
+			case EHmdSocialScreen::DistortedDualImage:   // intentional fall through - OpenVR does not return distorted eye targets, therefore the only display the undistorted eye targets
 			default:
 				if (CShaderMan::s_shPostEffects)
 				{
@@ -355,42 +349,6 @@ void CD3DOpenVRRenderer::RenderSocialScreen()
 	}
 }
 
-CTexture* CD3DOpenVRRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView)
-{
-	CTexture* texture = CTexture::CreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
-	if (texture == nullptr)
-	{
-		gEnv->pLog->Log("[HMD][OpenVR] Unable to create texture object!");
-		return nullptr;
-	}
-
-	// CTexture::CreateTextureObject does not set width and height if the texture already existed
-	assert(texture->GetWidth() == width);
-	assert(texture->GetHeight() == height);
-	assert(texture->GetDepth() == 1);
-
-	d3dTexture->AddRef();
-	CDeviceTexture* deviceTexture = new CDeviceTexture(d3dTexture);
-	deviceTexture->SetNoDelete(true);
-
-	texture->SetDevTexture(deviceTexture);
-	texture->ClosestFormatSupported(format);
-
-	if (shaderResourceView)
-	{
-		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
-		if (default_srv == nullptr)
-		{
-			gEnv->pLog->Log("[HMD][OpenVR] Unable to create default shader resource view!");
-			texture->Release();
-			return nullptr;
-		}
-		texture->SetShaderResourceView((D3DShaderResource*)default_srv, false);
-	}
-
-	return texture;
-}
-
 RenderLayer::CProperties* CD3DOpenVRRenderer::GetQuadLayerProperties(RenderLayer::EQuadLayers id)
 {
 	if (id < RenderLayer::eQuadLayers_Total)
@@ -399,4 +357,4 @@ RenderLayer::CProperties* CD3DOpenVRRenderer::GetQuadLayerProperties(RenderLayer
 	return nullptr;
 }
 
-#endif //defined(INCLUDE_OPENVR_SDK)
+#endif //defined(INCLUDE_VR_RENDERING)

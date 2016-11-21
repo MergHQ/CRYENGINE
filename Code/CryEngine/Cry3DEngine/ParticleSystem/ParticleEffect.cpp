@@ -11,6 +11,7 @@
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
+#include <CryParticleSystem/ParticleParams.h>
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
 #include "ParticleFeature.h"
@@ -32,7 +33,7 @@ CParticleEffect::CParticleEffect()
 
 cstr CParticleEffect::GetName() const
 {
-	return m_name.c_str();
+	return m_name.empty() ? nullptr : m_name.c_str();
 }
 
 void CParticleEffect::Compile()
@@ -148,6 +149,9 @@ IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnPara
 
 	PParticleEmitter pEmitter = GetPSystem()->CreateEmitter(this);
 	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter.get());
+	if (pSpawnParams)
+		pCEmitter->SetSpawnParams(*pSpawnParams);
+	pEmitter->Activate(true);
 	pCEmitter->SetLocation(loc);
 	return pEmitter;
 }
@@ -179,6 +183,12 @@ void CParticleEffect::SetChanged()
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
 {
 	return Serialization::SStruct(m_attributes);
+}
+
+const ParticleParams& CParticleEffect::GetDefaultParams() const
+{
+	static ParticleParams paramsStandard;
+	return paramsStandard;
 }
 
 }

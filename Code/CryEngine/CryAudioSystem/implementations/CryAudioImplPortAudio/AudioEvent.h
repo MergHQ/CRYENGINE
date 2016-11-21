@@ -23,9 +23,14 @@ class CAudioEvent final : public IAudioEvent
 public:
 
 	explicit CAudioEvent(AudioEventId const _audioEventId);
-	virtual ~CAudioEvent();
+	virtual ~CAudioEvent() override;
 
-	bool Execute(
+	CAudioEvent(CAudioEvent const&) = delete;
+	CAudioEvent(CAudioEvent&&) = delete;
+	CAudioEvent& operator=(CAudioEvent const&) = delete;
+	CAudioEvent& operator=(CAudioEvent&&) = delete;
+
+	bool         Execute(
 	  int const numLoops,
 	  double const sampleRate,
 	  CryFixedStringT<512> const& filePath,
@@ -44,9 +49,6 @@ public:
 	uint32             pathId;
 	PaSampleFormat     sampleFormat;
 	std::atomic<bool>  bDone;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioEvent);
-	PREVENT_OBJECT_COPY(CAudioEvent);
 };
 }
 }

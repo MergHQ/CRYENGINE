@@ -11,7 +11,6 @@
 #include "Streams/CompressingStream.h"
 #include "DemoDefinitions.h"
 #include "Context/ServerContextView.h"
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #ifdef _MSC_VER
@@ -51,7 +50,7 @@ CDemoRecordListener::CDemoRecorderChannel::CDemoRecorderChannel(CDemoRecordListe
 	string connectionString = pParent->m_pContext->GetGameContext()->GetConnectionString(NULL, true);
 
 	// is there a more direct way to get the server nub???
-	m_pGameChannel = static_cast<CNetNub*>(gEnv->pGame->GetIGameFramework()->GetServerNetNub())->GetGameNub()->CreateChannel(this, connectionString.c_str()).pChannel;
+	m_pGameChannel = static_cast<CNetNub*>(gEnv->pGameFramework->GetServerNetNub())->GetGameNub()->CreateChannel(this, connectionString.c_str()).pChannel;
 }
 
 CDemoRecordListener::CDemoRecorderChannel::~CDemoRecorderChannel()

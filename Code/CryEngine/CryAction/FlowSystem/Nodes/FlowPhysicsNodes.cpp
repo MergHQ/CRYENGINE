@@ -92,6 +92,11 @@ class CFlowNode_PhysicsSleepQuery : public CFlowBaseNode<eNCT_Instanced>
 public:
 	CFlowNode_PhysicsSleepQuery(SActivationInfo* pActInfo) : m_Activated(false) {}
 
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_PhysicsSleepQuery(pActInfo);
+	}
+
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
@@ -698,6 +703,7 @@ public:
 		IN_TYPE,
 		IN_POINT,
 		IN_POINTB,
+		IN_LOCAL_FRAMES,
 		IN_IGNORE_COLLISIONS,
 		IN_BREAKABLE,
 		IN_FORCE_AWAKE,
@@ -718,6 +724,11 @@ public:
 	};
 	CFlowNode_Constraint(SActivationInfo* pActInfo) : m_id(1000) {};
 	~CFlowNode_Constraint() {}
+
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_Constraint(pActInfo);
+	}
 
 	struct SConstraintRec
 	{
@@ -775,6 +786,7 @@ public:
 			InputPortConfig<int>("Type",               _HELP("Constraint type"), _HELP("Type"),                                                                                         _UICONFIG("enum_int:Point=0,RotOnly=1,Line=2,Plane=3")),
 			InputPortConfig<Vec3>("Point",             Vec3(ZERO),               _HELP("Connection point in world space")),
 			InputPortConfig<Vec3>("PointB",            Vec3(ZERO),               _HELP("Connection point on entity B in world space (if not set, assumed same as Point)")),
+			InputPortConfig<bool>("LocalFrames",       false,                    _HELP("Means Point and PointB are specified in Entity and EntityB's local frames, respectively (instead of the world)")),
 			InputPortConfig<bool>("IgnoreCollisions",  true,                     _HELP("Disables collisions between constrained entities")),
 			InputPortConfig<bool>("Breakable",         false,                    _HELP("Break if force limit is reached")),
 			InputPortConfig<bool>("ForceAwake",        false,                    _HELP("Make EntityB always awake; restore previous sleep params on Break")),
@@ -848,7 +860,8 @@ public:
 				Vec3 ptB = GetPortVec3(pActInfo, IN_POINTB);
 				if (ptB.len2())
 					aac.pt[1] = ptB;
-				aac.flags = world_frames | (GetPortBool(pActInfo, IN_IGNORE_COLLISIONS) ? constraint_ignore_buddy : 0) | (GetPortBool(pActInfo, IN_BREAKABLE) ? 0 : constraint_no_tears);
+				aac.flags = GetPortBool(pActInfo, IN_LOCAL_FRAMES) ? local_frames : world_frames;
+				aac.flags |= (GetPortBool(pActInfo, IN_IGNORE_COLLISIONS) ? constraint_ignore_buddy : 0) | (GetPortBool(pActInfo, IN_BREAKABLE) ? 0 : constraint_no_tears);
 				aac.flags |= GetPortBool(pActInfo, IN_FORCE_MOVE) ? 0 : constraint_no_enforcement;
 				const int cflags[] = { 0, constraint_free_position, constraint_line, constraint_plane };
 				aac.flags |= cflags[i = GetPortInt(pActInfo, IN_TYPE)];
@@ -929,6 +942,7 @@ public:
 							auc.bRemove = 1;
 						if (IsPortActive(pActInfo, IN_POINT))
 							auc.pt[1] = GetPortVec3(pActInfo, IN_POINT);
+						auc.flags = GetPortBool(pActInfo, IN_LOCAL_FRAMES) ? local_frames : world_frames;
 						pentPhys->Action(&auc);
 						if (auc.bRemove)
 						{
@@ -998,6 +1012,11 @@ public:
 				g_listeners.erase(iter++);
 			}
 			else iter++;
+	}
+
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	{
+		return new CFlowNode_Collision(pActInfo);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
@@ -1279,6 +1298,114 @@ Flags=12,CarWheel=13,SoftBody=14,Velocity=15,PartFlags=16,AutoDetachment=20,Coll
 	}
 };
 
+class CFlowNode_CharSkel : public CFlowBaseNode<eNCT_Singleton>, public IEntitySystemSink
+{
+public:
+	CFlowNode_CharSkel(SActivationInfo* pActInfo) {}
+	~CFlowNode_CharSkel()
+	{
+		g_mapSkels.clear();
+		if (gEnv->pEntitySystem)
+			gEnv->pEntitySystem->RemoveSink(this);	
+	}
+
+	enum EInPorts
+	{
+		IN_GET,
+		IN_ENT_SLOT,
+		IN_CHAR_SLOT,
+	};
+	enum EOutPorts
+	{
+		OUT_SKEL_ENT,
+	};
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("Get", _HELP("Trigger the output")),
+			InputPortConfig<int>("EntitySlot", 0, _HELP("Entity slot that contains the character")),
+			InputPortConfig<int>("PhysIndex", -1, _HELP("Index of the character physics (-1 - the main skeleton, >= 0 - auxiliary, such as ropes or cloth)")),
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<EntityId>("SkeletonEntId", _HELP("Entity id of the skeleton")),
+			{ 0 }
+		};
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.sDescription = _HELP("Returns a temporary entity id that can be used to access character skeleton physics");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		if (event == eFE_Activate && pActInfo->pEntity)
+			if (ICharacterInstance *pChar = pActInfo->pEntity->GetCharacter(GetPortInt(pActInfo, IN_ENT_SLOT)))
+				if (IPhysicalEntity *pent = pChar->GetISkeletonPose()->GetCharacterPhysics(GetPortInt(pActInfo, IN_CHAR_SLOT)))
+				{
+					int id = gEnv->pPhysicalWorld->GetPhysicalEntityId(pent);
+					IEntity *pSkel;
+					auto iter = g_mapSkels.find(id);
+					if (iter != g_mapSkels.end())
+						pSkel = iter->second;
+					else 
+					{
+						pe_status_pos sp;
+						pent->GetStatus(&sp);
+						pe_params_flags pf;
+						pent->GetParams(&pf);
+						SEntitySpawnParams esp;
+						esp.sName = "SkeletonTmp";
+						esp.nFlags = ENTITY_FLAG_NO_SAVE | ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_PROCEDURAL | ENTITY_FLAG_SPAWNED;
+						esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+						esp.vPosition = sp.pos;
+						esp.qRotation = sp.q;
+						pSkel = gEnv->pEntitySystem->SpawnEntity(esp);
+						((IEntityPhysicalProxy*)pSkel->CreateProxy(ENTITY_PROXY_PHYSICS).get())->AssignPhysicalEntity(pent);
+						pe_params_foreign_data pfd;
+						pfd.pForeignData = pActInfo->pEntity;
+						pent->SetParams(&pfd); // revert the changes done in AssignPhysicalEntity
+						pent->SetParams(&pf);
+						if (g_mapSkels.empty())
+							gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnRemove, 0);
+						g_mapSkels.emplace(id, pSkel);
+					}
+					ActivateOutput(pActInfo, OUT_SKEL_ENT, pSkel->GetId());
+				}
+	}
+
+	virtual bool OnBeforeSpawn(SEntitySpawnParams& params) { return true; }
+	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams& params) {}
+	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params) {}
+	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event) {}
+	virtual bool OnRemove(IEntity* pEntity) 
+	{
+		if (pEntity->GetFlags() & ENTITY_FLAG_PROCEDURAL)
+			if (IPhysicalEntity *pent = pEntity->GetPhysics())
+			{
+				auto iter = g_mapSkels.find(gEnv->pPhysicalWorld->GetPhysicalEntityId(pent));
+				if (iter!=g_mapSkels.end())
+				{
+					// during entity deletion, make sure the physics is reset to 0 to save it from deletion
+					((IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))->AssignPhysicalEntity(0);
+					g_mapSkels.erase(iter);
+					if (g_mapSkels.empty())
+						gEnv->pEntitySystem->RemoveSink(this);
+				}
+			}
+		return true;
+	}
+
+	std::map<int,IEntity*> g_mapSkels;
+};
+
 REGISTER_FLOW_NODE("Physics:Dynamics", CFlowNode_Dynamics);
 REGISTER_FLOW_NODE("Physics:ActionImpulse", CFlowNode_ActionImpulse);
 REGISTER_FLOW_NODE("Physics:RayCast", CFlowNode_Raycast);
@@ -1291,3 +1418,4 @@ REGISTER_FLOW_NODE("Physics:CollisionListener", CFlowNode_Collision);
 REGISTER_FLOW_NODE("Physics:GetPhysId", CFlowNode_PhysId);
 REGISTER_FLOW_NODE("Physics:Awake", CFlowNode_Awake);
 REGISTER_FLOW_NODE("Physics:SetParams", CFlowNode_PhysParams);
+REGISTER_FLOW_NODE("Physics:GetSkeleton", CFlowNode_CharSkel);

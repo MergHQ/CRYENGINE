@@ -4,11 +4,12 @@
 #include "NetResolver.h"
 #include "Network.h"
 
+#include <CryNetwork/NetAddress.h>
 #include <CryNetwork/CrySocks.h>
 
 static const TAddressString local_connection = LOCAL_CONNECTION_STRING;
 
-class CResolverToNumericStringVisitor : public boost::static_visitor<void>
+class CResolverToNumericStringVisitor
 {
 public:
 	CResolverToNumericStringVisitor(TAddressString& result) : m_result(result) {}
@@ -16,9 +17,14 @@ public:
 	bool Ok() const { return true; }
 
 	template<class T>
-	void operator()(T& type)
+	void operator()(const T& type)
 	{
 		Visit(type);
+	}
+
+	void Visit(const TNetAddress& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(TLocalNetAddress addr)
@@ -73,8 +79,26 @@ public:
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TNetAddress& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	TAddressString& m_result;
 };
+template<>
+void CResolverToNumericStringVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 class CResolverToNumericStringVisitor_LocalBuffer
 {
@@ -142,7 +166,7 @@ private:
 //TODO: IMPLEMENT M CORRECTLY
 	#define CResolverToStringVisitor CResolverToNumericStringVisitor
 #else
-class CResolverToStringVisitor : public boost::static_visitor<void>
+class CResolverToStringVisitor
 {
 public:
 	CResolverToStringVisitor(TAddressString& result) : m_result(result), m_ok(false) {}
@@ -150,9 +174,14 @@ public:
 	bool Ok() const { return m_ok; }
 
 	template<class T>
-	void operator()(T& type)
+	void operator()(const T& type)
 	{
 		Visit(type);
+	}
+
+	void Visit(const TNetAddress& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(TLocalNetAddress addr)
@@ -234,7 +263,25 @@ private:
 		}
 	#endif
 	}
+
+	template<size_t I = 0>
+	void VisitVariant(const TNetAddress& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
 };
+template<>
+void CResolverToStringVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 #endif
 
 TAddressString CNetAddressResolver::ToString(const TNetAddress& addr, float timeout)
@@ -260,7 +307,7 @@ TAddressString CNetAddressResolver::ToString(const TNetAddress& addr, float time
 	}
 	TAddressString fallback;
 	CResolverToNumericStringVisitor visitor(fallback);
-	boost::apply_visitor(visitor, addr);
+	stl::visit(visitor, addr);
 	return fallback;
 }
 
@@ -268,7 +315,7 @@ TAddressString CNetAddressResolver::ToNumericString(const TNetAddress& addr)
 {
 	TAddressString output;
 	CResolverToNumericStringVisitor visitor(output);
-	boost::apply_visitor(visitor, addr);
+	stl::visit(visitor, addr);
 	return output;
 }
 
@@ -470,7 +517,7 @@ bool CNetAddressResolver::SlowLookupName(TAddressString str, TNetAddressVec& add
 
 namespace
 {
-class CIsPrivateAddrVisitor : public boost::static_visitor<void>
+class CIsPrivateAddrVisitor
 {
 public:
 	CIsPrivateAddrVisitor() : m_private(false) {}
@@ -478,9 +525,14 @@ public:
 	bool IsPrivateAddr() { return m_private; }
 
 	template<class T>
-	void operator()(T& type)
+	void operator()(const T& type)
 	{
 		Visit(type);
+	}
+
+	void Visit(const TNetAddress& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(TLocalNetAddress addr) { m_private = true; }
@@ -504,15 +556,33 @@ public:
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TNetAddress& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	bool m_private;
 };
+template<>
+void CIsPrivateAddrVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 }
 
 bool CNetAddressResolver::IsPrivateAddr(const TNetAddress& addr)
 {
 	CIsPrivateAddrVisitor visitor;
-	boost::apply_visitor(visitor, addr);
+	stl::visit(visitor, addr);
 	return visitor.IsPrivateAddr();
 }
 
@@ -538,11 +608,11 @@ bool CNetAddressResolver::PopulateCacheFor(const TNetAddress& addr, TAddressStri
 	bool cache = true;
 	m_lock.Unlock();
 	CResolverToStringVisitor visitor(str);
-	boost::apply_visitor(visitor, addr);
+	stl::visit(visitor, addr);
 	if (!visitor.Ok())
 	{
 		CResolverToNumericStringVisitor visitor2(str);
-		boost::apply_visitor(visitor2, addr);
+		stl::visit(visitor2, addr);
 		cache = false;
 	}
 	m_lock.Lock();
@@ -559,7 +629,7 @@ bool ConvertAddr(const TNetAddress& in, CRYSOCKADDR_IN* pOut)
 {
 	NET_ASSERT(pOut);
 
-	const SIPv4Addr* pAddr = boost::get<const SIPv4Addr>(&in);
+	const SIPv4Addr* pAddr = stl::get_if<SIPv4Addr>(&in);
 	if (!pAddr)
 		return false;
 
@@ -600,7 +670,7 @@ TNetAddress ConvertAddr(const CRYSOCKADDR* pSockAddr, int addrLength)
 	return TNetAddress(SNullAddr());
 }
 
-class CConvertAddrVisitor : public boost::static_visitor<void>
+class CConvertAddrVisitor
 {
 public:
 	CConvertAddrVisitor(CRYSOCKADDR* pOut, int* pOutLen) : m_pOut(pOut), m_pOutLen(pOutLen), m_result(false) {}
@@ -608,9 +678,14 @@ public:
 	bool Ok() const { return m_result; }
 
 	template<class T>
-	void operator()(T& type)
+	void operator()(const T& type)
 	{
 		Visit(type);
+	}
+
+	void Visit(const TNetAddress& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(TLocalNetAddress addr)
@@ -651,15 +726,33 @@ public:
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TNetAddress& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	CRYSOCKADDR* m_pOut;
 	int*         m_pOutLen;
 	bool         m_result;
 };
+template<>
+void CConvertAddrVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 bool ConvertAddr(const TNetAddress& addrIn, CRYSOCKADDR* pSockAddr, int* addrLen)
 {
 	CConvertAddrVisitor v(pSockAddr, addrLen);
-	boost::apply_visitor(v, addrIn);
+	stl::visit(v, addrIn);
 	return v.Ok();
 }
 

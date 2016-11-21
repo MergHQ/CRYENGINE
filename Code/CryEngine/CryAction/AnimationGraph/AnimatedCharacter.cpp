@@ -101,7 +101,6 @@ void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
 	const int eventToRegister[] =
 	{
 		eGFE_QueueRagdollCreation,
-		eGFE_BecomeLocalPlayer,
 		eGFE_OnCollision,
 		eGFE_ResetAnimationGraphs,
 		eGFE_QueueBlendFromRagdoll,
@@ -117,7 +116,7 @@ CAnimatedCharacter::CAnimatedCharacter() : m_listeners(1)
 {
 	InitVars();
 
-	m_debugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+	m_debugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 	CryCreateClassInstance("AnimationPoseAlignerC3", m_pPoseAligner);
 }
@@ -159,7 +158,6 @@ void CAnimatedCharacter::InitVars()
 	m_bSimpleMovementSetOnce = false;
 	m_curWeaponRaisedPose = eWeaponRaisedPose_None;
 	m_isPlayer = false;
-	m_isClient = false;
 	m_curFrameTime = 0.0f;
 	m_prevFrameTime = 0.0f;
 	m_curFrameTimeOriginal = 0.0f;
@@ -375,7 +373,7 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 
 		if (m_pActionController)
 		{
-			IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+			IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 			const char* szAnimDatabase = 0;
 			const char* szSoundDatabase = 0;
 			if ((pSourceTable->GetValue("AnimDatabase3P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase3P", szAnimDatabase)) && szAnimDatabase)
@@ -619,11 +617,6 @@ void CAnimatedCharacter::HandleEvent(const SGameObjectEvent& event)
 	case eGFE_QueueRagdollCreation:
 		SetRagdollizeParams(event);
 		break;
-	case eGFE_BecomeLocalPlayer:
-		{
-			m_isClient = true;
-			break;
-		}
 	case eGFE_OnCollision:
 		{
 			const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(event.ptr);
@@ -768,7 +761,6 @@ void CAnimatedCharacter::ResetVars()
 	m_groundAlignmentParams.ikDisableDistanceSqr = (float)__fsel(-ikDisableDistance, m_groundAlignmentParams.ikDisableDistanceSqr, sqr(ikDisableDistance));
 
 	m_isPlayer = false;
-	m_isClient = false;
 	if (pEntity)
 	{
 		IActorSystem* pActorSystem = CCryAction::GetCryAction()->GetIActorSystem();
@@ -779,7 +771,6 @@ void CAnimatedCharacter::ResetVars()
 		if (pActor != NULL)
 		{
 			m_isPlayer = pActor->IsPlayer();
-			m_isClient = pActor->IsClient();
 
 			// Turn on by default for 3rd person in singleplayer.
 			m_groundAlignmentParams.SetFlag(eGA_PoseAlignerUseRootOffset, pActor->IsThirdPerson() && !gEnv->bMultiplayer);
@@ -1423,7 +1414,7 @@ void CAnimatedCharacter::DeleteActionController()
 
 void CAnimatedCharacter::SetActionController(const char* filename)
 {
-	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef* contDef = mannequinSys.GetAnimationDatabaseManager().LoadControllerDef(filename);
 
 	DeleteActionController();
@@ -1807,9 +1798,9 @@ void CAnimatedCharacter::GenerateMovementRequest()
 
 	UpdateCharacterPtrs();
 
-	UpdateSimpleMovementConditions();
-
 	RefreshAnimTarget();
+
+	UpdateSimpleMovementConditions();
 
 	PreAnimationUpdate();
 
@@ -1850,7 +1841,7 @@ void Preload(struct IScriptTable* pEntityScript)
 	// Cache Mannequin related files
 	bool hasActionController = false;
 	{
-		IMannequin& mannequinSystem = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSystem = gEnv->pGameFramework->GetMannequinInterface();
 		IAnimationDatabaseManager& animationDatabaseManager = mannequinSystem.GetAnimationDatabaseManager();
 
 		const char* szAnimationDatabase1p = 0;

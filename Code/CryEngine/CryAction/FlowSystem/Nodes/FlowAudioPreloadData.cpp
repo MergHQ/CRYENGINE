@@ -4,7 +4,7 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-class CFlowNode_AudioPreloadData : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_AudioPreloadData final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
@@ -12,9 +12,14 @@ public:
 		: m_bEnable(false)
 	{}
 
-	~CFlowNode_AudioPreloadData() {}
+	virtual ~CFlowNode_AudioPreloadData() override = default;
 
-	IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	CFlowNode_AudioPreloadData(CFlowNode_AudioPreloadData const&) = delete;
+	CFlowNode_AudioPreloadData(CFlowNode_AudioPreloadData&&) = delete;
+	CFlowNode_AudioPreloadData& operator=(CFlowNode_AudioPreloadData const&) = delete;
+	CFlowNode_AudioPreloadData& operator=(CFlowNode_AudioPreloadData&&) = delete;
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_AudioPreloadData(pActInfo);
 	}
@@ -37,7 +42,7 @@ public:
 	{
 	};
 
-	virtual void GetConfiguration(SFlowNodeConfig& config)
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] =
 		{
@@ -100,7 +105,7 @@ public:
 		}
 	}
 
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
 		bool bEnable = m_bEnable;
 		ser.BeginGroup("FlowAudioPreloadData");
@@ -113,7 +118,7 @@ public:
 		}
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
 	{
 		switch (event)
 		{
@@ -142,7 +147,7 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer* s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);
 	}

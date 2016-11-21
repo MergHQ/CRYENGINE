@@ -206,7 +206,7 @@ void CSvoEnv::ReconstructTree(bool bMultiPoint)
 		PrintMessage("Voxel texture format: %s", GetRenderer()->GetTextureFormatName(m_nVoxTexFormat));
 
 		SAFE_DELETE(m_pSvoRoot);
-		m_pSvoRoot = new CSvoNode(m_worldBox, NULL);
+		m_pSvoRoot = new CSvoNode(AABB(Vec3(0, 0, 0), Vec3((float)GetCVars()->e_svoRootSize)), NULL);
 		m_pSvoRoot->AllocateSegment(CVoxelSegment::m_nNextCloudId++, 0, ecss_NotLoaded, ecss_NotLoaded, true);
 		nNodesCreated++;
 
@@ -334,6 +334,10 @@ bool CSvoEnv::Render()
 		}
 	}
 
+	// Teleport SVO root when camera comes close to the border of current SVO bounds
+	if (m_pSvoRoot && CVoxelSegment::m_nStreamingTasksInProgress == 0)
+		ProcessSvoRootTeleport();
+
 	static int nPrev_UpdateLighting = GetCVars()->e_svoTI_UpdateLighting;
 	if ((!nPrev_UpdateLighting || gEnv->IsEditing()) && GetCVars()->e_svoTI_UpdateLighting && GetCVars()->e_svoTI_IntegrationMode && m_bReady && m_pSvoRoot)
 		DetectMovement_StatLights();
@@ -341,7 +345,10 @@ bool CSvoEnv::Render()
 
 	static int nPrev_UpdateGeometry = GetCVars()->e_svoTI_UpdateGeometry;
 	if (!nPrev_UpdateGeometry && GetCVars()->e_svoTI_UpdateGeometry && m_bReady && m_pSvoRoot)
+	{
 		DetectMovement_StaticGeom();
+		CVoxelSegment::m_nVoxTrisCounter = 0;
+	}
 	nPrev_UpdateGeometry = GetCVars()->e_svoTI_UpdateGeometry;
 
 	bool bMultiUserMode = false;
@@ -599,8 +606,14 @@ bool CSvoEnv::Render()
 		static _smart_ptr<IMaterial> pMat = Cry3DEngineBase::MakeSystemMaterialFromShader("Total_Illumination.SvoDebugDraw", &res);
 		pObjVox->m_pCurrMaterial = pMat;
 
-		Cry3DEngineBase::GetRenderer()->EF_AddPolygonToScene(pMat->GetShaderItem(),
-		                                                     4, &arrVerts[0], NULL, pObjVox, (*CVoxelSegment::m_pCurrPassInfo), &arrIndices[0], 6, false);
+		SRenderPolygonDescription poly(
+		  pObjVox,
+		  pMat->GetShaderItem(),
+		  4, &arrVerts[0], nullptr,
+		  &arrIndices[0], 6,
+		  EFSLIST_DECAL, false);
+
+		CVoxelSegment::m_pCurrPassInfo->GetIRenderView()->AddPolygon(poly, (*CVoxelSegment::m_pCurrPassInfo));
 
 		if (ICVar* pV = gEnv->pConsole->GetCVar("r_UseAlphaBlend"))
 			pV->Set(1);
@@ -664,6 +677,78 @@ bool CSvoEnv::Render()
 	}
 
 	return true;
+}
+
+void CSvoEnv::ProcessSvoRootTeleport()
+{
+	if (GetCVars()->e_svoDebug == 3 || GetCVars()->e_svoDebug == 6)
+		Cry3DEngineBase::Get3DEngine()->DrawBBox(m_pSvoRoot->m_nodeBox, Col_Yellow);
+
+	AABB rootBox = m_pSvoRoot->m_nodeBox;
+	Vec3 rootCenter = rootBox.GetCenter();
+	float fRootSize = rootBox.GetSize().x;
+	Vec3 vCamPos = gEnv->pSystem->GetViewCamera().GetPosition();
+
+	for (int nA = 0; nA < 3; nA++)
+	{
+		float fScrollDir = 0;
+		float fThreshold = 2.f;
+
+		if (vCamPos[nA] > (rootBox.max[nA] - fRootSize / 4.f + fThreshold))
+			fScrollDir = 1.f;
+		else if (vCamPos[nA] < (rootBox.min[nA] + fRootSize / 4.f - fThreshold))
+			fScrollDir = -1.f;
+
+		if (fScrollDir)
+		{
+			// scroll root node bounding box
+			m_pSvoRoot->m_nodeBox.min[nA] += fRootSize / 2 * fScrollDir;
+			m_pSvoRoot->m_nodeBox.max[nA] += fRootSize / 2 * fScrollDir;
+
+			if (m_pSvoRoot->m_pSeg)
+			{
+				m_pSvoRoot->m_pSeg->m_nChildOffsetsDirty = 2;
+				m_pSvoRoot->m_pSeg->m_vSegOrigin[nA] = (m_pSvoRoot->m_nodeBox.max[nA] + m_pSvoRoot->m_nodeBox.min[nA]) / 2;
+			}
+
+			// scroll pointers to childs, delete unnecessary childs
+			if (m_pSvoRoot->m_ppChilds)
+			{
+				for (int i = 0; i < 2; i++)
+				{
+					for (int j = 0; j < 2; j++)
+					{
+						int nChildIdOld, nChildIdNew;
+
+						bool o = vCamPos[nA] > rootCenter[nA];
+						bool n = !o;
+
+						if (nA == 0) // X
+						{
+							nChildIdOld = (o ? 4 : 0) | (i ? 2 : 0) | (j ? 1 : 0);
+							nChildIdNew = (n ? 4 : 0) | (i ? 2 : 0) | (j ? 1 : 0);
+						}
+						else if (nA == 1) // Y
+						{
+							nChildIdOld = (i ? 4 : 0) | (o ? 2 : 0) | (j ? 1 : 0);
+							nChildIdNew = (i ? 4 : 0) | (n ? 2 : 0) | (j ? 1 : 0);
+						}
+						else if (nA == 2) // Z
+						{
+							nChildIdOld = (j ? 4 : 0) | (i ? 2 : 0) | (o ? 1 : 0);
+							nChildIdNew = (j ? 4 : 0) | (i ? 2 : 0) | (n ? 1 : 0);
+						}
+
+						SAFE_DELETE(m_pSvoRoot->m_ppChilds[nChildIdNew]);
+						m_pSvoRoot->m_ppChilds[nChildIdNew] = m_pSvoRoot->m_ppChilds[nChildIdOld];
+						m_pSvoRoot->m_ppChilds[nChildIdOld] = NULL;
+					}
+				}
+			}
+		}
+	}
+
+	gSvoEnv->m_vSvoOriginAndSize = Vec4(m_pSvoRoot->m_nodeBox.min, m_pSvoRoot->m_nodeBox.max.x - m_pSvoRoot->m_nodeBox.min.x);
 }
 
 CSvoNode* CSvoNode::FindNodeByPosition(const Vec3& vPosWS, int nTreeLevelToFind, int nTreeLevelCur)
@@ -826,19 +911,15 @@ Vec3i ComputeDataCoord(int nAtlasOffset)
 
 void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nNodeKey, CRenderObject* pObj, int nTreeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut, PodArray<CVoxelSegment*> arrForStreaming[nVoxStreamQueueMaxSize][nVoxStreamQueueMaxSize])
 {
-	//	if(!CVoxelSegment::voxCamera.IsAABBVisible_E(m_nodeBox))
-	//	return;
-
 	float fBoxSize = m_nodeBox.GetSize().x;
+
 	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
+	const float fNodeToCamDist = m_nodeBox.GetDistance(vCamPos);
+
+	const float fBoxSizeRated = fBoxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionLODRatio;
+
 	bool bDrawThisNode = false;
-
-	//	const Plane * pNearPlane = CVoxelSegment::voxCamera.GetFrustumPlane(FR_PLANE_NEAR);
-	//float fDistToPlane = max(0,-pNearPlane->DistFromPlane(m_nodeBox.GetCenter()) - m_nodeBox.GetSize().x/2);
-	const float fDistToPlane = m_nodeBox.GetCenter().GetDistance(CVoxelSegment::m_voxCam.GetPosition()) / 1.50f * 1.25f;
-
-	const float fBoxSizeRated = fBoxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionLODRatio / 1.50f * 1.25f;
 
 	if (m_ppChilds)
 	{
@@ -857,14 +938,14 @@ void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nNodeKey, CR
 	if (Cry3DEngineBase::GetCVars()->e_svoTI_Active && m_pSeg && m_pSeg->m_eStreamingStatus == ecss_Ready && m_pSeg->m_pBlockInfo)
 		if (m_pSeg->m_dwChildTrisTest || (m_pSeg->GetBoxSize() > Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize) || (Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide))
 		{
-			if (fDistToPlane < fBoxSizeRated && !bDrawThisNode)
+			if (fNodeToCamDist < fBoxSizeRated && !bDrawThisNode)
 			{
 				CheckAllocateChilds();
 			}
 		}
 
-	if ((!m_ppChilds || (fDistToPlane > fBoxSizeRated) || (fBoxSize <= Cry3DEngineBase::GetCVars()->e_svoMinNodeSize))
-	    || (!CVoxelSegment::m_voxCam.IsAABBVisible_E(m_nodeBox) && (fDistToPlane * 1.5 > fBoxSizeRated)))
+	if ((!m_ppChilds || (fNodeToCamDist > fBoxSizeRated) || (fBoxSize <= Cry3DEngineBase::GetCVars()->e_svoMinNodeSize))
+	    || (!CVoxelSegment::m_voxCam.IsAABBVisible_E(m_nodeBox) && (fNodeToCamDist * 1.5 > fBoxSizeRated)))
 	{
 		bDrawThisNode = true;
 	}
@@ -1075,6 +1156,7 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 {
 	gSvoEnv = this;
 
+	m_vSvoOriginAndSize = Vec4(worldBox.min, worldBox.max.x - worldBox.min.x);
 	m_nDebugDrawVoxelsCounter = 0;
 	m_nVoxTexFormat = eTF_R8G8B8A8; // eTF_BC3
 
@@ -1095,7 +1177,6 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 	m_nTexNodePoolId = 0;
 
 	m_prevCheckVal = -1000000;
-	m_worldBox.Reset();
 	m_matDvrTm = Matrix44(Matrix34::CreateIdentity());
 	m_fStreamingStartTime = 0;
 	m_nNodeCounter = 0;
@@ -1110,7 +1191,7 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 
 	m_worldBox = worldBox;
 	m_bReady = false;
-	m_pSvoRoot = new CSvoNode(m_worldBox, NULL);
+	m_pSvoRoot = new CSvoNode(AABB(Vec3(0, 0, 0), Vec3((float)GetCVars()->e_svoRootSize)), NULL);
 	m_pGlobalSpecCM = (ITexture*)0;
 	m_fGlobalSpecCM_Mult = 1;
 	m_fSvoFreezeTime = -1;
@@ -1186,6 +1267,9 @@ CSvoNode::CSvoNode(const AABB& box, CSvoNode* pParent)
 
 	m_pParent = pParent;
 	m_nodeBox = box;
+
+	if (!pParent)
+		gSvoEnv->m_vSvoOriginAndSize = Vec4(box.min, box.max.x- box.min.x);
 
 	gSvoEnv->m_nNodeCounter++;
 }
@@ -1714,6 +1798,8 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 		if (m_AnalyticalOccluders[nStage].Count())
 			memcpy(&svoInfo.arrAnalyticalOccluders[nStage][0], m_AnalyticalOccluders[nStage].GetElements(), m_AnalyticalOccluders[nStage].GetDataSize());
 
+	svoInfo.vSvoOriginAndSize = m_vSvoOriginAndSize;
+
 	if (GetCVars()->e_svoTI_UseTODSkyColor)
 	{
 		ITimeOfDay::SVariableInfo varCol, varMul;
@@ -2035,7 +2121,7 @@ void CSvoEnv::DetectMovement_StatLights()
 			{
 				IRenderNode* pNode = lstObjects[i];
 
-				if (pNode->GetVoxMode() == IRenderNode::VM_Static)
+				if (pNode->GetGIMode() == IRenderNode::eGM_StaticVoxelization)
 				{
 					if (pNode->GetRenderNodeType() == eERType_Light)
 					{
@@ -2250,18 +2336,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	// Total illumination
 	if (GetCVars()->e_svoTI_Active >= 0)
-	{
 		GetCVars()->e_svoTI_Apply = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Active", "0"));
-
-		//    if(GetCVars()->e_svoTI_Apply)
-		//    {
-		//      GetCVars()->e_svoTI_Active = 1;
-		//      GetCVars()->e_GI = 0;
-		//      GetCVars()->e_Clouds = 0;
-		//      if(ICVar * pV = gEnv->pConsole->GetCVar("r_UseAlphaBlend"))
-		//        pV->Set(0);
-		//    }
-	}
 
 	GetCVars()->e_svoVoxelPoolResolution = 64;
 	int nVoxelPoolResolution = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelPoolResolution", "0"));
@@ -2328,6 +2403,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	GetCVars()->e_svoTI_AnalyticalOccluders = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalOccluders", "0"));
 	GetCVars()->e_svoTI_AnalyticalGI = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalGI", "0"));
+	GetCVars()->e_svoTI_TraceVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TraceVoxels", "1"));
 
 	int nLowSpecMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "LowSpecMode", "0"));
 	if (nLowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
@@ -2338,6 +2414,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	GetCVars()->e_svoTI_UseTODSkyColor = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseTODSkyColor", "0"));
 
 	GetCVars()->e_svoTI_HighGlossOcclusion = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HighGlossOcclusion", "0"));
+	GetCVars()->e_svoTI_TranslucentBrightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TranslucentBrightness", "2.5"));
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	GetCVars()->e_svoTI_IntegrationMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "IntegrationMode", "0"));
@@ -2420,7 +2497,7 @@ void CSvoEnv::CollectLights()
 			I3DEngine::SLightTI lightTI;
 			ZeroStruct(lightTI);
 
-			IRenderNode::EVoxMode eVoxMode = pRN->GetVoxMode();
+			IRenderNode::EGIMode eVoxMode = pRN->GetGIMode();
 
 			if (eVoxMode)
 			{
@@ -2431,7 +2508,7 @@ void CSvoEnv::CollectLights()
 				else
 					lightTI.vDirF = Vec4(0, 0, 0, 0);
 
-				if (eVoxMode == IRenderNode::VM_Dynamic)
+				if (eVoxMode == IRenderNode::eGM_DynamicVoxelization)
 					lightTI.vCol = rLight.m_Color.toVec4();
 				else
 					lightTI.vCol = rLight.m_BaseColor.toVec4();
@@ -2443,7 +2520,7 @@ void CSvoEnv::CollectLights()
 				else
 					lightTI.fSortVal = vCamPos.GetDistance(rLight.m_Origin) / max(24.f, rLight.m_fRadius);
 
-				if (eVoxMode == IRenderNode::VM_Dynamic)
+				if (eVoxMode == IRenderNode::eGM_DynamicVoxelization)
 				{
 					if ((pRN->GetDrawFrame(0) > 10) && (pRN->GetDrawFrame(0) >= (int)GetCurrPassMainFrameID()))
 					{
@@ -2521,11 +2598,11 @@ void CSvoEnv::CollectAnalyticalOccluders()
 			// make a sphere, box or capsule from geom entity
 			if (CStatObj* pStatObj = (CStatObj*)pRN->GetEntityStatObj(0, 0, &matParent, true))
 			{
-				bool bPO = (strstr(pRN->GetName(), "_TI_PO") != NULL) && GetCVars()->e_svoTI_AnalyticalOccluders;				
-				bool bAO = (strstr(pRN->GetName(), "_TI_AO") != NULL) && GetCVars()->e_svoTI_AnalyticalGI;
-				bool bAOHard = (strstr(pRN->GetName(), "_TI_AOH") != NULL) && GetCVars()->e_svoTI_AnalyticalGI;
+				bool bPO     = (pRN->GetGIMode() == IRenderNode::eGM_AnalytPostOccluder) && GetCVars()->e_svoTI_AnalyticalOccluders;				
+				bool bAO     = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Soft) && GetCVars()->e_svoTI_AnalyticalGI;
+				bool bAOHard = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Hard) && GetCVars()->e_svoTI_AnalyticalGI;
 
-				if (bPO || bAO)
+				if (bPO || bAO || bAOHard)
 				{
 					bool bSphere = strstr(pStatObj->GetFilePath(), "sphere") != NULL;
 					bool bCube = strstr(pStatObj->GetFilePath(), "cube") != NULL;
@@ -2582,8 +2659,8 @@ void CSvoEnv::CollectAnalyticalOccluders()
 
 						m_AnalyticalOccluders[bPO].Add(capsule);
 					}
-					}
 				}
+			}
 
 			if (ICharacterInstance* pCharacter = (ICharacterInstance*)pRN->GetEntityCharacter(0, &matParent))
 				if (GetCVars()->e_svoTI_AnalyticalOccluders)

@@ -328,19 +328,22 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	if (doCullWater)
 	{
 		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
+		const bool isAfterWater = (pSpritesContext->m_renderFlags & FOB_AFTER_WATER) != 0;
+		const bool isCameraUnderWater = pSpritesContext->m_camInfo.bCameraUnderwater;
+
 		Plane waterPlane;
-		bool isAfterWater = (pSpritesContext->m_renderFlags & FOB_AFTER_WATER) != 0;
-		float clipWaterSign = isAfterWater ? 1.0f : -1.0f;
+		const float clipWaterSign = (isCameraUnderWater == isAfterWater) ? -1.0f : 1.0f;
+		const float offsetMult = isAfterWater ? 2.0f : 0.0f;
 		const uint count = pSpritesContext->m_numSprites;
+
 		for (uint i = 0, j = 0; i < count; ++i)
 		{
 			TParticleId particleId = particleIds[i];
 
 			const float radius = sizes.Load(particleId) * 0.5f;
 			const Vec3 position = positions.Load(particleId);
-			float waterDist = pSpritesContext->m_physEnviron.GetWaterPlane(
-			  waterPlane, position, radius) * clipWaterSign;
-			waterDist += isAfterWater ? radius * 2.0f : 0.0f;
+			const float distToWaterPlane = pSpritesContext->m_physEnviron.GetWaterPlane(waterPlane, position, radius);
+			const float waterDist = MAdd(radius, offsetMult, distToWaterPlane) * clipWaterSign;
 			const float waterAlpha = saturate(waterDist * rcp_fast(radius));
 			spriteAlphas[particleId] *= waterAlpha;
 

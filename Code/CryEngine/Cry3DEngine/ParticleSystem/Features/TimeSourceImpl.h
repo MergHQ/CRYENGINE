@@ -73,7 +73,7 @@ public:
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const floatv selfAge = selfAges.Load(particleId);
-		return AntiAliasParentAge(deltaTime, selfAge, ToFloatv(1.0f), levelTime);
+		return levelTime - DeltaTime(selfAge, deltaTime);
 	}
 private:
 	IFStream selfAges;
@@ -146,6 +146,45 @@ private:
 	SChaosKeyV& m_chaos;
 };
 
+class CViewAngleSampler
+{
+public:
+	CViewAngleSampler(const SUpdateContext& context)
+		: m_positions(context.m_container.GetIVec3Stream(EPVF_Position))
+		, m_orientations(context.m_container.GetIQuatStream(EPQF_Orientation))
+		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
+	ILINE floatv Sample(TParticleGroupId particleId) const
+	{
+		const Vec3v position = m_positions.Load(particleId);
+		const Quatv orientation = m_orientations.Load(particleId);
+		const Vec3v normal = GetColumn2(orientation);
+		const Vec3v toCamera = GetNormalized(m_cameraPosition - position);
+		const floatv cosAngle = fabs_tpl(toCamera.Dot(normal));
+		return cosAngle;
+	}
+private:
+	Vec3v GetColumn2(Quatv q) const 
+	{
+		const floatv two = ToFloatv(2.0f);
+		const floatv one = ToFloatv(1.0f);
+		return Vec3v(
+			two * (q.v.x * q.v.z + q.v.y * q.w),
+			two * (q.v.y * q.v.z - q.v.x * q.w),
+			two * (q.v.z * q.v.z + q.w * q.w) - one);
+	}
+	Vec3v GetNormalized(Vec3v v) const
+	{
+		#ifdef CRY_PFX2_USE_SSE
+		return v * _mm_rsqrt_ps(v.Dot(v));
+		#else
+		return v.GetNormalized();
+		#endif
+	}
+	IVec3Stream m_positions;
+	IQuatStream m_orientations;
+	Vec3v       m_cameraPosition;
+};
+
 }
 
 ILINE CTimeSource::CTimeSource()
@@ -175,6 +214,8 @@ ILINE void CTimeSource::AddToParam(CParticleComponent* pComponent, TParam* pPara
 			pSourceComponent->AddParticleData(EPVF_Velocity);
 		else if (m_timeSource == ETimeSource::Field)
 			pSourceComponent->AddParticleData((EParticleDataType)m_fieldSource);
+		else if (m_timeSource == ETimeSource::ViewAngle)
+			pSourceComponent->AddParticleData(EPQF_Orientation);
 	}
 }
 
@@ -224,6 +265,11 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 		((TBase*)this)->DoModify(
 		  context, range, stream,
 		  detail::CChaosSampler(context));
+		break;
+	case ETimeSource::ViewAngle:
+		((TBase*)this)->DoModify(
+			context, range, stream,
+			detail::CViewAngleSampler(context));
 		break;
 
 	case ETimeSource::Speed:

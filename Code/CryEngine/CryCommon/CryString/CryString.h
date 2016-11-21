@@ -30,16 +30,18 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Types compatible with STL string.
 	//////////////////////////////////////////////////////////////////////////
-	typedef CryStringT<T>     _Self;
-	typedef size_t            size_type;
-	typedef T                 value_type;
-	typedef const value_type* const_str;
-	typedef value_type*       pointer;
-	typedef const value_type* const_pointer;
-	typedef value_type&       reference;
-	typedef const value_type& const_reference;
-	typedef pointer           iterator;
-	typedef const_pointer     const_iterator;
+	typedef CryStringT<T>                         _Self;
+	typedef size_t                                size_type;
+	typedef T                                     value_type;
+	typedef const value_type*                     const_str;
+	typedef value_type*                           pointer;
+	typedef const value_type*                     const_pointer;
+	typedef value_type&                           reference;
+	typedef const value_type&                     const_reference;
+	typedef pointer                               iterator;
+	typedef const_pointer                         const_iterator;
+	typedef std::reverse_iterator<iterator>       reverse_iterator;
+	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
 	enum _npos_type
 	{
@@ -96,27 +98,38 @@ public:
 	size_type capacity() const;
 
 	//! Sets the capacity of the string to a number at least as great as a specified number.
-	//! nCount = 0 is shrinking string to fit number of characters in it.
-	void           reserve(size_type nCount = 0);
+	//! nCount = 0 is shrinking string to fit number of characters in it (equivalent to shrink_to_fit()).
+	void                   reserve(size_type nCount = 0);
+	void                   shrink_to_fit();
 
-	_Self&         append(const value_type* _Ptr);
-	_Self&         append(const value_type* _Ptr, size_type nCount);
-	_Self&         append(const _Self& _Str, size_type nOff, size_type nCount);
-	_Self&         append(const _Self& _Str);
-	_Self&         append(size_type nCount, value_type _Ch);
-	_Self&         append(const_iterator _First, const_iterator _Last);
+	_Self&                 append(const value_type* _Ptr);
+	_Self&                 append(const value_type* _Ptr, size_type nCount);
+	_Self&                 append(const _Self& _Str, size_type nOff, size_type nCount);
+	_Self&                 append(const _Self& _Str);
+	_Self&                 append(size_type nCount, value_type _Ch);
+	_Self&                 append(const_iterator _First, const_iterator _Last);
 
-	_Self&         assign(const_str _Ptr);
-	_Self&         assign(const_str _Ptr, size_type nCount);
-	_Self&         assign(const _Self& _Str, size_type off, size_type nCount);
-	_Self&         assign(const _Self& _Str);
-	_Self&         assign(size_type nCount, value_type _Ch);
-	_Self&         assign(const_iterator _First, const_iterator _Last);
+	_Self&                 assign(const_str _Ptr);
+	_Self&                 assign(const_str _Ptr, size_type nCount);
+	_Self&                 assign(const _Self& _Str, size_type off, size_type nCount);
+	_Self&                 assign(const _Self& _Str);
+	_Self&                 assign(size_type nCount, value_type _Ch);
+	_Self&                 assign(const_iterator _First, const_iterator _Last);
 
-	value_type     at(size_type index) const;
+	value_type             at(size_type index) const;
 
-	const_iterator begin() const { return m_str; };
-	const_iterator end() const   { return m_str + length(); };
+	const_reference        front() const   { return *begin(); }
+	const_reference        back() const    { return *(end() - 1); }
+
+	const_iterator         begin() const   { return m_str; }
+	const_iterator         cbegin() const  { return begin(); }
+	const_iterator         end() const     { return m_str + length(); }
+	const_iterator         cend() const    { return end(); }
+
+	const_reverse_iterator rbegin() const  { return const_reverse_iterator(end()); }
+	const_reverse_iterator crbegin() const { return rbegin(); }
+	const_reverse_iterator rend() const    { return const_reverse_iterator(begin()); }
+	const_reverse_iterator crend() const   { return rend(); }
 
 	// Following functions are commented out because they provide direct write access to
 	// the string and such access doesn't work properly with our current reference-count
@@ -127,16 +140,20 @@ public:
 	// Note: If you need *linear memory read* access to your string's elements, use data()
 	// or c_str(). If you need *linear memory write* access to your string's elements,
 	// use a non-string class (std::vector<>, DynArray<>, etc.) instead of CryString<>.
-	//value_type& at( size_type index );
-	//iterator begin() { return m_str; };
-	//iterator end() { return m_str+length(); };
+	//value_type& at(size_type index);
+	//reference front() { return *begin(); }
+	//reference back() { return *(end() - 1); }
+	//iterator begin() { return m_str; }
+	//iterator end() { return m_str + length(); }
+	//reverse_iterator rbegin() { return reverse_iterator(end()); }
+	//reverse_iterator rend() { return reverse_iterator(begin()); }
 
 	//! cast to C string operator.
 	operator const_str() const { return m_str; }
 
 	//! cast to C string.
 	const value_type* c_str() const { return m_str; }
-	const value_type* data() const  { return m_str; };
+	const value_type* data() const  { return m_str; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// string comparison.
@@ -159,6 +176,7 @@ public:
 	size_type copy(value_type* _Ptr, size_type nCount, size_type nOff = 0) const;
 
 	void      push_back(value_type _Ch) { _ConcatenateInPlace(&_Ch, 1); }
+	void      pop_back()                { erase(size() - 1, 1); }
 	void      resize(size_type nCount, value_type _Ch = ' ');
 
 	//! Simple sub-string extraction.
@@ -215,8 +233,12 @@ public:
 	// overloaded operators.
 	//////////////////////////////////////////////////////////////////////////
 	// overloaded indexing.
-	//value_type operator[]( size_type index ) const; // same as at()
-	//	value_type&	operator[]( size_type index ); // same as at()
+	//	const_reference operator[](size_type pos) const { CRY_ASSERT(pos < length()); return m_str[pos]; }
+
+	// Following functions are commented out because they provide direct write access to
+	// the string and such access doesn't work properly with our current reference-count
+	// implementation.
+	//reference operator[](size_type pos) { CRY_ASSERT(pos < length()); return m_str[pos]; }
 
 	// overloaded assignment
 	_Self& operator=(const _Self& str);
@@ -284,20 +306,79 @@ public:
 
 	_Self& Trim();
 	_Self& Trim(value_type ch);
-	_Self& Trim(const value_type* sCharSet);
+	_Self& Trim(const_str sCharSet);
 
 	_Self& TrimLeft();
 	_Self& TrimLeft(value_type ch);
-	_Self& TrimLeft(const value_type* sCharSet);
+	_Self& TrimLeft(const_str sCharSet);
 
 	_Self& TrimRight();
 	_Self& TrimRight(value_type ch);
-	_Self& TrimRight(const value_type* sCharSet);
+	_Self& TrimRight(const_str sCharSet);
+	void Truncate(size_type nNewLength) { resize(nNewLength); }
 
 	_Self  SpanIncluding(const_str charSet) const;
 	_Self  SpanExcluding(const_str charSet) const;
 	_Self  Tokenize(const_str charSet, int& nStart) const;
-	_Self  Mid(size_type nFirst, size_type nCount = npos) const { return substr(nFirst, nCount); };
+	_Self  Mid(size_type nFirst, size_type nCount = npos) const { return substr(nFirst, nCount); }
+
+	const_str GetString() const { return c_str(); }
+	const_str GetBuffer() const { return c_str(); }
+	int GetLength() const { return (int)length(); }
+	bool IsEmpty() const { return empty(); }
+	void Empty() { clear(); }
+
+	_Self& Insert(size_type nIndex, value_type ch) { return insert(nIndex, ch); }
+	_Self& Insert(size_type nIndex, const_str charSet) { return insert(nIndex, charSet); }
+	_Self& Insert(size_type nIndex, const _Self& charSet) { return insert(nIndex, charSet); }
+
+	int Find(value_type ch, size_type pos = 0) const { return (int)find(ch, pos); }
+	int Find(const_str subs, size_type pos = 0) const { return (int)find(subs, pos); }
+	int ReverseFind(value_type ch, size_type pos = npos) const { return (int)rfind(ch, pos); }
+	int ReverseFind(const _Self& subs, size_type pos = 0) const { return (int)rfind(subs, pos); }
+
+	int FindOneOf(const_str chars) const
+	{
+		int pos = -1;
+		while (*chars)
+		{
+			pos = Find(*chars);
+			if (pos != -1)
+				break;
+
+			++chars;
+		}
+		return pos;
+	}
+
+	_Self& Replace(value_type chOld, value_type chNew) { return replace(chOld, chNew); }
+	_Self& Replace(const_str strOld, const_str strNew) { return replace(strOld, strNew); }
+
+	int CompareNoCase(const _Self& _Str) const { return compareNoCase(_Str); }
+	int CompareNoCase(const value_type* _Ptr) const { return compareNoCase(_Ptr); }
+	int Compare(const _Self& _Str) const { return compare(_Str); }
+	int Compare(const char* _Ptr) const { return compare(_Ptr); }
+
+	_Self& Append(const value_type* _Ptr) { return append(_Ptr); }
+	_Self& Append(const _Self& _Str) { return append(_Str); }
+	_Self& Append(const value_type* _Ptr, size_type nCount) { return append(_Ptr, nCount); }
+
+	_Self& AppendFormat(const value_type* pszFormat, ...)
+	{
+		_Self formated = *this;
+		va_list argList;
+		va_start(argList, pszFormat);
+		FormatV(pszFormat, argList);
+		va_end(argList);
+		formated.append(*this);
+		return *this = formated;
+	}
+
+	void Preallocate(size_type nLength) { reserve(nLength); }
+	_Self Delete(size_type nIndex, size_type nCount = 1) { return erase(nIndex, nCount); }
+
+	value_type GetAt(size_type pos) const { return at(pos); }
+	void SetAt(size_type pos, value_type ch) { replace(pos, 1, 1, ch); }
 
 	_Self  Left(size_type count) const;
 	_Self  Right(size_type count) const;
@@ -334,8 +415,8 @@ protected:
 		int             nAllocSize; //!< Size of memory allocated at the end of this class.
 
 		value_type*     GetChars() { return (value_type*)(this + 1); }
-		void            AddRef()   { nRefCount++; /*InterlockedIncrement(&_header()->nRefCount);*/ };
-		int             Release()  { return --nRefCount; };
+		void            AddRef()   { nRefCount++; /*InterlockedIncrement(&_header()->nRefCount);*/ }
+		int             Release()  { return --nRefCount; }
 	};
 	static StrHeader* _emptyHeader()
 	{
@@ -367,11 +448,12 @@ template<class T>
 class CryStringLocalT : public CryStringT<T>
 {
 public:
-	typedef CryStringT<T>                 BaseType;
-	typedef typename BaseType::const_str  const_str;
-	typedef typename BaseType::value_type value_type;
-	typedef typename BaseType::size_type  size_type;
-	typedef typename BaseType::iterator   iterator;
+	typedef CryStringT<T>                       BaseType;
+	typedef typename BaseType::const_str        const_str;
+	typedef typename BaseType::value_type       value_type;
+	typedef typename BaseType::size_type        size_type;
+	typedef typename BaseType::iterator         iterator;
+	typedef typename BaseType::reverse_iterator reverse_iterator;
 
 	CryStringLocalT()
 	{}
@@ -412,10 +494,14 @@ public:
 		BaseType::operator=(str);
 		return *this;
 	}
-	iterator begin() { return BaseType::m_str; }
+	iterator         begin()  { return BaseType::m_str; }
 	using BaseType::begin; // const version
-	iterator end()   { return BaseType::m_str + BaseType::length(); }
+	iterator         end()    { return BaseType::m_str + BaseType::length(); }
 	using BaseType::end; // const version
+	reverse_iterator rbegin() { return reverse_iterator(end()); }
+	using BaseType::rbegin; // const version
+	reverse_iterator rend()   { return reverse_iterator(begin()); }
+	using BaseType::rend; // const version
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -613,8 +699,8 @@ inline void CryStringT<T >::_move(value_type* dest, const value_type* src, size_
 template<class T>
 inline void CryStringT<T >::_set(value_type* dest, value_type ch, size_type count)
 {
-	COMPILE_TIME_ASSERT(sizeof(value_type) == sizeof(T));
-	COMPILE_TIME_ASSERT(sizeof(value_type) == 1);
+	static_assert(sizeof(value_type) == sizeof(T), "Invalid type size!");
+	static_assert(sizeof(value_type) == 1, "Invalid type size!");
 	memset(dest, ch, count);
 }
 
@@ -622,7 +708,7 @@ inline void CryStringT<T >::_set(value_type* dest, value_type ch, size_type coun
 template<>
 inline void CryStringT<wchar_t >::_set(value_type* dest, value_type ch, size_type count)
 {
-	COMPILE_TIME_ASSERT(sizeof(value_type) == sizeof(wchar_t));
+	static_assert(sizeof(value_type) == sizeof(wchar_t), "Invalid type size!");
 	wmemset(dest, ch, count);
 }
 
@@ -952,15 +1038,21 @@ inline void CryStringT<T >::reserve(size_type nCount)
 	}
 	else if (nCount == 0)
 	{
-		if (length() != capacity())
-		{
-			StrHeader* pOldData = _header();
-			_AllocData(length());
-			_copy(m_str, pOldData->GetChars(), pOldData->nLength);
-			_FreeData(pOldData);
-		}
+		shrink_to_fit();
 	}
 	CRY_STRING_DEBUG(m_str)
+}
+
+template<class T>
+inline void CryStringT<T >::shrink_to_fit()
+{
+	if (length() < capacity())
+	{
+		StrHeader* const pOldData = _header();
+		_AllocData(length());
+		_copy(m_str, pOldData->GetChars(), pOldData->nLength);
+		_FreeData(pOldData);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2379,3 +2471,4 @@ typedef std::string  string;
 typedef std::wstring wstring;
 
 #endif // !defined(NOT_USE_CRY_STRING)
+

@@ -480,8 +480,8 @@ void CSerializationChunk::DecodeFromStream(CNetInputSerializeImpl& input, CByteO
 	if (recCrc != m_crc)
 		input.Failed();
 
-	COMPILE_TIME_ASSERT((NUM_BITS_FOR_OPS_SIZE % 8) == 0); // has to be a multiple of 8 bits
-	COMPILE_TIME_ASSERT((NUM_BITS_FOR_OPS_SIZE / 8) <= sizeof(uint16));
+	static_assert((NUM_BITS_FOR_OPS_SIZE % 8) == 0, "Invalid bit count, has to be a multiple of 8!");
+	static_assert((NUM_BITS_FOR_OPS_SIZE / 8) <= sizeof(uint16), "Invalid type size!");
 	uint16 recLen = input.GetInput().ReadBits(NUM_BITS_FOR_OPS_SIZE);
 	NET_ASSERT(recLen == m_ops.size());
 	if (recLen != m_ops.size())

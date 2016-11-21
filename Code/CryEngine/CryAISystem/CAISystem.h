@@ -233,7 +233,6 @@ public:
 
 	virtual void LayerEnabled(const char* layerName, bool enabled, bool serialized);
 
-	virtual void LoadNavigationData(const char* szLevel, const char* szMission, const bool bRequiredQuickLoading = false, bool bAfterExporting = false);
 	// reads areas from file. clears the existing areas
 #if defined(SEG_WORLD)
 	// SEG_WORLD: adds offset to the areas read, and doesn't clear existing areas.
@@ -242,9 +241,8 @@ public:
 	virtual void ReadAreasFromFile(const char* fileNameAreas);
 #endif
 
-	virtual void LoadCover(const char* szLevel, const char* szMission);
-
-	virtual void LoadLevelData(const char* szLevel, const char* szMission, const bool bRequiredQuickLoading = false);
+	virtual void LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems);
+	virtual void LoadNavigationData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems);
 
 	virtual void OnMissionLoaded();
 
@@ -1081,6 +1079,9 @@ private:
 
 	void        UpdateCollisionAvoidanceRadiusIncrement(CAIActor* actor, float updateTime);
 	inline bool IsParticipatingInCollisionAvoidance(CAIActor* actor) const;
+
+	void        LoadCover(const char* szLevel, const char* szMission);
+	void        LoadMNM(const char* szLevel, const char* szMission, bool afterExporting);
 
 	//Debugging / Logging subsystems
 	////////////////////////////////////////////////////////////////////

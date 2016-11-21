@@ -274,7 +274,7 @@ float3 Curl(float4 s)
 		gradX.y - gradY.x);
 }
 
-float3 FractalPotential(float4 s, uint octaves)
+float3 FractalPotential(float4 sample, uint octaves)
 {
 	float3 total = float3(0,0,0);
 	float mult = 1.0;
@@ -284,16 +284,18 @@ float3 FractalPotential(float4 s, uint octaves)
 		totalMult = mult + totalMult;
 		mult = 0.5 * mult;
 	}
+	float size = 1.0;
 	mult = 1.0 / totalMult;
 	for (uint i = 0; i < octaves; ++i)
 	{
-		total = Potential(s) * mult + total;
-		mult = mult * 0.5;
+		total = Potential(sample * size) * mult + total;
+		mult *= 0.5;
+		size *= 2.0;
 	}
 	return total;
 }
 
-float3 FractalCurl(float4 s, uint octaves)
+float3 FractalCurl(float4 sample, uint octaves)
 {
 	float3 total = float3(0,0,0);
 	float mult = 1.0;
@@ -303,11 +305,13 @@ float3 FractalCurl(float4 s, uint octaves)
 		totalMult = mult + totalMult;
 		mult = 0.5 * mult;
 	}
+	float size = 1.0;
 	mult = 1.0 / totalMult;
 	for (uint i = 0; i < octaves; ++i)
 	{
-		total = Curl(s) * mult + total;
+		total = Curl(sample * size) * mult + total;
 		mult = mult * 0.5;
+		size *= 2.0;
 	}
 	return total;
 }
@@ -544,6 +548,10 @@ cbuffer g_initializationParameters : register(b5)
 	float c_init_angle;
 	float c_init_directionScale;
 	float c_init_omniVelocity;
+	float c_init_amplitude;
+	float c_init_noiseSize;
+	float c_init_rate;
+	int c_init_octaves;
 };
 
 StructuredBuffer<uint> newBornIndices : register(t0);
@@ -559,12 +567,14 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 		float3 position = parentData[newBornIndices[i]].position;
 		float3 velocity = parentData[newBornIndices[i]].velocity * c_init_velocityScale;
 		float fraction = (float)(i) / c_numNewBorns;
+		float currentTime = c_currentTime + fraction * c_deltaTime;
 		uint auxData = PackAuxData(fraction - 1.0, c_init_size, 0);
 		float4 color = float4(c_init_color, c_init_opacity);
 		position += parentData[newBornIndices[i]].velocity * c_deltaTime * fraction;
 		
 		// seed the random number generator for the location features etc.
 		SetKeyFloat(position.x + (i + c_currentTime) * 0.01);
+
 #if %PFX_INIT_LOCATION_OFFSET
 		position += c_init_offset * c_init_scale.x;
 #endif
@@ -610,8 +620,18 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 			}
 			if (c_init_velocity > EPSILON)
 			{
-				velocity += disc * c_init_velocity;
+				velocity += quatMult(c_emitterOrientation, disc * c_init_velocity);
 			}
+		}
+#endif
+
+#if %PFX_INIT_LOCATION_NOISE
+		{
+			float4 noiseSample = 0;
+			noiseSample.xyz = position * rcp(c_init_noiseSize);
+			noiseSample.w = currentTime * c_init_rate;
+			float3 wOffset = FractalPotential(noiseSample, c_init_octaves);
+			position += wOffset * c_init_amplitude;
 		}
 #endif
 

@@ -73,12 +73,6 @@ struct app2vertToneMap
   float3 CamVec       : TEXCOORD1;
 };
 
-struct app2vertFogLegacy
-{
-  IN_P
-  float3 CamVec    : TEXCOORD0;
-};
-
 struct app2vertFog
 {
   IN_P
@@ -128,18 +122,6 @@ vert2frag TransformedVS(app2vertToneMap IN)
 	OUT.CamVec.xyz = IN.CamVec;
   
   return OUT;
-}
-
-vert2fragFog PreTransformedFogLegacyVS(app2vertFogLegacy IN)
-{
-	vert2fragFog OUT = (vert2fragFog)0;
-
-  OUT.baseTC.xy = GetScaledScreenTC(IN.Position.xy * float2(0.5, -0.5) + 0.5);
-	OUT.CamVec.xyz = IN.CamVec.xyz;
-
-	OUT.HPosition = IN.Position;
-
-	return OUT;
 }
 
 vert2fragFog PreTransformedFogVS(app2vertFog IN)
@@ -202,18 +184,21 @@ pixout HDRSampleLumInitialPS(vtxOut IN)
 	
 	[unroll] for (int i = 0; i < 4; ++i)
 	{
+		float2 SampleTC = IN.baseTC.xy + sampleOffsets[i];
+		SampleTC = MapViewportToRaster(SampleTC);
+		 
 		// Use base color to get a coarse approximation of the (incoming) illuminance
 		MaterialAttribsCommon attribs = DecodeGBuffer(
-			tex2D(_tex1, IN.baseTC.xy + sampleOffsets[i]),
-			tex2D(_tex2, IN.baseTC.xy + sampleOffsets[i]),
-			tex2D(_tex3, IN.baseTC.xy + sampleOffsets[i]));
+			tex2D(_tex1, SampleTC),
+			tex2D(_tex2, SampleTC),
+			tex2D(_tex3, SampleTC));
 		half baseColorLum = max(max(GetLuminance(attribs.Albedo), GetLuminance(attribs.Reflectance)), 0.01);
 		
 		// Assume emissive surfaces (especially sky) have the typical scene reflectance to keep auto exposure more stable
 		if (GetLuminance(attribs.Albedo) == 0)
 			baseColorLum = 0.2;
 		
-		half3 cTex = tex2D(baseMap, IN.baseTC.xy + sampleOffsets[i]).rgb;
+		half3 cTex = tex2D(baseMap, SampleTC).rgb;
 		half fLum = GetLuminance(cTex.rgb);
 		vLumInfo.x += log(fLum + 1e-6);                      // Luminance
 		vLumInfo.y += log(fLum / baseColorLum * PI + 1e-6);  // Illuminance
@@ -376,9 +361,11 @@ pixout HDRFinalScenePS(vert2frag IN)
 {
   pixout OUT = (pixout)0;
 
-	half fVignetting = tex2D(vignettingMap, IN.baseTC.xy); 
-	half4 cBloom = tex2D(bloomMap0, IN.baseTC.xy);
-  half3 vAdaptedLum = tex2D(lumMap, IN.baseTC.xy);
+  float2 ScreenTC = MapViewportToRaster(IN.baseTCScaled.xy);
+
+	half fVignetting = tex2D(vignettingMap, ScreenTC); 
+	half4 cBloom = tex2D(bloomMap0, ScreenTC);
+  half3 vAdaptedLum = tex2D(lumMap, ScreenTC);
 
 	int nSampleCountMS = GetMSAASampleNum();
 	if( nSampleCountMS )
@@ -386,19 +373,19 @@ pixout HDRFinalScenePS(vert2frag IN)
 		half4 cSampleAcc = 0;
 		for(int s= 0; s < nSampleCountMS; s++)
 		{
-			half4 vSample = GetHDRTargetMS(IN.baseTCScaled.xy, nSampleCountMS, s);
+			half4 vSample = GetHDRTargetMS(ScreenTC, nSampleCountMS, s);
 			cSampleAcc += HDRToneMapSample(IN, vSample, cBloom, vAdaptedLum, fVignetting);
 		}		
 		OUT.Color.rgb = cSampleAcc / (float) nSampleCountMS;		
 	}		
 	else
 	{
-		half4 vSample = tex2D(baseMap, IN.baseTCScaled.xy);
+		half4 vSample = tex2D(baseMap, ScreenTC);
 		OUT.Color.rgb = HDRToneMapSample( IN, vSample, cBloom, vAdaptedLum, fVignetting);
 	}
 
 	// Apply merged post processes
-	OUT.Color.rgb += tex2D(sunshaftsMap, IN.baseTCScaled.xy) * SunShafts_SunCol * (1 - OUT.Color.rgb); // Blend in ldr sunshafts	
+	OUT.Color.rgb += tex2D(sunshaftsMap, ScreenTC) * SunShafts_SunCol * (1 - OUT.Color.rgb); // Blend in ldr sunshafts	
 	#if %_RT_SAMPLE1
 		TexColorChart2D(colorChartMap, OUT.Color.xyz);
 	#endif
@@ -721,11 +708,13 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //===================================================================================
 
-pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
+pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 {
 	pixout OUT = (pixout) 0;
 
-	const float sceneDepth = min(fogShadowDepthTex.SampleLevel(fogShadowPointWrapSS, IN.baseTC.xy, 0.0f), volFogShadowRange.x);
+	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
+
+	const float sceneDepth = min(fogShadowDepthTex.SampleLevel(fogShadowPointWrapSS, sampleUV, 0.0f), volFogShadowRange.x);
 
 	const float2 oj = fogShadowInterleaveTex.Sample(fogShadowPointWrapSS, IN.WPos.xy / 64.0f).xw;
 	const float offset = oj.x;
@@ -756,10 +745,13 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 	shadowContext.bilinearSamplerWrap = fogShadowBilinearWrapSS;
 	shadowContext.noiseTex = fogShadowRotTex;
 	
+	const float3 cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
+
 	half shadowOccl = 0;
 	for (int i=0; i<numShadowSamples; i++)
 	{
-		const float4 worldPos = float4(sceneDepth * (((float)i + offset) / (float)numShadowSamples + jitter / (float)numTotalShadowSamples) * IN.CamVec.xyz + vfViewPos.xyz, 1);
+		const float ratio = (((float)i + offset) / (float)numShadowSamples + jitter / (float)numTotalShadowSamples);
+		const float4 worldPos = float4(ratio * cameraToWorldPos.xyz + vfViewPos.xyz, 1);
 		float shadowSample = ShadowDepthTest(cascades, shadowContext, worldPos, bSampleCloudShadows, true).r;
 
 #if %_RT_SAMPLE4
@@ -805,9 +797,12 @@ SamplerState volFogShadowGatherSState : register(s0);
 pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
 {
 	pixout OUT = (pixout) 0;
+	
+	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
 
-	const float refDepth = volFogShadowGatherTex.Sample(volFogShadowGatherSState, IN.baseTC.xy + volFogShadowBufSampleOffsets[4].xy).x;
-	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogShadowGatherSState, 8, IN.baseTC.xy, refDepth, 50.0);
+	const float refDepth = volFogShadowGatherTex.Sample(volFogShadowGatherSState, sampleUV + volFogShadowBufSampleOffsets[4].xy).x;
+	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogShadowGatherSState, 8, sampleUV, refDepth, 50.0);
+
 	OUT.Color = float4(refDepth, 1, 1, value);
 
 	return OUT;
@@ -819,24 +814,32 @@ SamplerState volFogShadowSState : register(s1);
 float4 volFogShadowDarkening;
 float4 volFogShadowDarkeningSunAmb;
 
-void FogPassCommon(in vert2fragFog IN, out float sceneDepth, out float4 localFogColor, out float3 worldPos, out float3 cameraToWorldPos)
+void FogPassCommon(
+	in vert2fragFog IN,
+	in float4 WPos,
+	out float sceneDepth,
+	out float4 localFogColor,
+	out float3 worldPos,
+	out float3 cameraToWorldPos)
 {
+	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
+
 	#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
 			uint uSample = 0;
 		#if %_RT_MSAA_SAMPLEFREQ_PASS
 			uSample = IN.uSample;
 		#endif
-		sceneDepth = GetLinearDepth(GetZTargetMS(IN.baseTC.xy, GetMSAASampleNum(), uSample).x);
+		sceneDepth = GetLinearDepth(GetZTargetMS(sampleUV, GetMSAASampleNum(), uSample).x);
 	#else
-		sceneDepth = GetLinearDepth(zMap, IN.baseTC.xy);
+		sceneDepth = GetLinearDepth(zMap, sampleUV);
 	#endif
 
-  cameraToWorldPos = sceneDepth * IN.CamVec.xyz;
-  worldPos = cameraToWorldPos + vfViewPos.xyz;
+	cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
+	worldPos = cameraToWorldPos + vfViewPos.xyz;
 
 #if %_RT_SAMPLE0
 	const float refDepth = min(sceneDepth, volFogShadowRange.x) * volFogShadowRange.y;
-	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowTex, volFogShadowSState, 5, IN.baseTC.xy, refDepth, 100.0);
+	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowTex, volFogShadowSState, 5, sampleUV, refDepth, 100.0);
 
 	const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
 	localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
@@ -900,7 +903,7 @@ TextureCube<float4> volFogGlobalEnvProbeTex0 : register(t2) = TS_VolumetricFogGl
 TextureCube<float4> volFogGlobalEnvProbeTex1 : register(t3) = TS_VolumetricFogGlobalEnvProbe1;
 SamplerState volFogTrilinearClampSState : register(s0) = SS_TrilinearClamp;
 
-float4 GetVolumetricFog(in vert2fragFog IN)
+float4 GetVolumetricFog(in vert2fragFog IN, in float4 WPos)
 {
 	float sceneDepth;
 
@@ -915,7 +918,7 @@ float4 GetVolumetricFog(in vert2fragFog IN)
 	#endif
 
 	float linearDepth = sceneDepth * PS_NearFarClipDist.y;
-	float3 cameraToWorldPos = sceneDepth * IN.CamVec.xyz;
+	float3 cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
 
 	VolumetricFogSampling vfs;
 	vfs.volumetricFogTex = volFogSamplingTex;
@@ -934,7 +937,7 @@ float4 GetVolumetricFog(in vert2fragFog IN)
 	return localFogColor;
 }
 
-pixout FogPassPS(vert2fragFog IN)
+pixout FogPassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 {
 	pixout OUT;
 
@@ -952,14 +955,14 @@ pixout FogPassPS(vert2fragFog IN)
 	float4 localFogColor;
 
 #if %_RT_VOLUMETRIC_FOG
-	localFogColor = GetVolumetricFog(IN);
+	localFogColor = GetVolumetricFog(IN, WPos);
 
 	localFogColor.a = saturate(localFogColor.a);
 #else
 	float sceneDepth;
 	float3 worldPos, cameraToWorldPos;
 
-	FogPassCommon(IN, sceneDepth, localFogColor, worldPos, cameraToWorldPos);
+	FogPassCommon(IN, WPos, sceneDepth, localFogColor, worldPos, cameraToWorldPos);
 
 	localFogColor.a = saturate(1.0 - localFogColor.a);
 
@@ -977,7 +980,7 @@ pixout FogPassPS(vert2fragFog IN)
 float4 LightningPos;
 float4 LightningColSize;
 
-pixout FogPassWithLightningPS(vert2fragFog IN)
+pixout FogPassWithLightningPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 {
   pixout OUT;
 
@@ -987,12 +990,11 @@ pixout FogPassWithLightningPS(vert2fragFog IN)
 #endif
 
 	half sceneDepth;
-	half3 worldPos, cameraToWorldPos;
+	half3 cameraToWorldPos;
 
 	sceneDepth = GetLinearDepth(zMap, IN.baseTC.xy);
 
-  cameraToWorldPos = sceneDepth * IN.CamVec.xyz;
-  worldPos = cameraToWorldPos + vfViewPos.xyz;
+	cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
 
 
 	/////////////////////////////////////////////////////////////
@@ -1077,78 +1079,12 @@ technique HDRFinalDebugPass
 
 //======================================================================
 
-technique MultiGSMShadowedFogLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = MultiGSMShadowedFogPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassWithLightningLegacy
-{
-  pass p0
-  {    
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassWithLightningPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassVolShadowsInterleavePassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassVolShadowsInterleavePassPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-technique FogPassVolShadowsGatherPassLegacy
-{
-  pass p0
-  {
-    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
-    PixelShader = FogPassVolShadowsGatherPassPS() FogPassVolShadowsGatherPass;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
-  }
-}
-
-//======================================================================
-
 technique MultiGSMShadowedFog
 {
   pass p0
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = MultiGSMShadowedFogPS() FogPassVolShadowsInterleavePassPS;
   }
 }
@@ -1158,6 +1094,7 @@ technique FogPass
   pass p0
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = FogPassPS() FogPostProcessPS;
   }
 }
@@ -1167,6 +1104,7 @@ technique FogPassWithLightning
   pass p0
   {    
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = FogPassWithLightningPS() FogPostProcessPS;
   }
 }
@@ -1176,6 +1114,7 @@ technique FogPassVolShadowsInterleavePass
   pass p0
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = FogPassVolShadowsInterleavePassPS() FogPassVolShadowsInterleavePassPS;
   }
 }
@@ -1185,6 +1124,7 @@ technique FogPassVolShadowsGatherPass
   pass p0
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = FogPassVolShadowsGatherPassPS() FogPassVolShadowsGatherPass;
   }
 }

@@ -854,8 +854,8 @@ void CActionScope::InstallProceduralClip(const SProceduralEntry& proc, int layer
 	const bool isNone = proc.IsNoneType();
 	if (!isNone)
 	{
-		CRY_ASSERT(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework());
-		static IProceduralClipFactory& s_proceduralClipFactory = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetProceduralClipFactory();
+		CRY_ASSERT(gEnv && gEnv->pGameFramework);
+		static IProceduralClipFactory& s_proceduralClipFactory = gEnv->pGameFramework->GetMannequinInterface().GetProceduralClipFactory();
 
 		procSeq.proceduralClip = s_proceduralClipFactory.CreateProceduralClip(proc.typeNameHash);
 

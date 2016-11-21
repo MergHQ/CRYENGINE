@@ -81,7 +81,7 @@ float4x4 g_mViewProjPrev1; // View-projection matrix for the previous frame
 float4x4 g_mViewProjPrev2; // View-projection matrix for the frame before the previous
 float4x4 g_mViewProjPrev3; // View-projection matrix for the -3 frame
 
-float4 g_PS_SunLightDir : PF_SunDirection;
+float4 SunLightDir;
 float4 SunColor;
 
 half4 g_DecalDiffuse;
@@ -180,12 +180,16 @@ float3 GetWorldPos( float fDepth, float3 vCamVec )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+float4 CalcHomogeneousPos(float SceneDepth, float2 WPos, float4 worldBasisX, float4 worldBasisY, float4 worldBasisZ)
+{
+  float4 HPos = worldBasisZ.xyzw + (worldBasisX.xyzw * WPos.x) + (worldBasisY.xyzw * WPos.y);
+  HPos.xyzw *= SceneDepth.xxxx;
+  return HPos;
+}
 
 float4 CalcHomogeneousPos(float SceneDepth, float2 WPos)
 {
-  float4 HPos = vWBasisZ.xyzw + (vWBasisX.xyzw*WPos.x)+(vWBasisY.xyzw*WPos.y);
-  HPos.xyzw *= SceneDepth.xxxx;
-  return HPos;
+  return CalcHomogeneousPos(SceneDepth, WPos, vWBasisX, vWBasisY, vWBasisZ);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,7 +245,7 @@ vtxOutWPOSOnly LightVolumeVS(vtxInLightPrePass IN)
 	}
 	
 	//final ViewProj transformation
-	OUT.HPosition = mul(vPos, g_mViewProj);
+	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
 
   return OUT;
 }
@@ -255,7 +259,7 @@ vtxOutWPOSOnly DecalVolumeVS(vtxInLightPrePass IN)
   vPos = mul(g_mInvLightProj, vPos);
   vPos /= vPos.w;
 	
-  OUT.HPosition = mul(g_mViewProj, vPos);
+  OUT.HPosition = mul(CV_ViewProjMatr, vPos);
 
   return OUT;
 }
@@ -273,9 +277,9 @@ poDecalsMRT DecalPassPS(fragInWPOS IN)
 #endif
 
   float fDepth = GetLinearDepthPrecise( _tex0, ScreenTC.xy );
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 
-  float4 vProjTC = mul(g_mLightProj, float4(vPosition.xyz + g_WorldViewPos.xyz ,1.0));
+  float4 vProjTC = mul(g_mLightProj, float4(vPosition.xyz + GetWorldViewPos() ,1.0));
   vProjTC.xyz/=vProjTC.w;
 
   float4 clipFrustum;
@@ -416,7 +420,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 #if %_RT_CUBEMAP0
   ScreenTC = IN.WPos.xy * g_ScreenScale.xy +  g_ScreenScale.zw;
 #else
-  ScreenTC = IN.baseTC.xy;
+  ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 #endif
 
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
@@ -430,7 +434,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
   #endif
 
 	#if %_RT_MSAA_SAMPLEFREQ_PASS
-		float fDepth = GetLinearDepth( GetTargetIndexMS( 0, ScreenTC.xy, GetMSAASampleNum(), uSample ).x, true, false);
+		float fDepth = GetLinearDepth( GetTargetIndexMS( 0, ScreenTC.xy, GetMSAASampleNum(), uSample ).x);
 	#else
 		float fDepth = GetLinearDepth( _tex0, ScreenTC.xy );
 	#endif
@@ -444,7 +448,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
   return OUT;
 #endif
 
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 
   half fAttenuation = 1.h;
   half cFilter = 1;
@@ -452,11 +456,11 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 // for compatibility with tiled shading, only use when area lights are on or if this is an ambient light.
 #if %_RT_SAMPLE1 && (%_RT_SAMPLE5 || %_RT_SAMPLE3)
 	// Area projected light position.
-	float3 vLightPoint = g_LightPos.xyz - vPosition.xyz;
+	float3 vLightPoint = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;
 	float3 vLightWS = ComputeNearestLightOnRectangle(vPosition.xyz, vLightPoint, g_AreaLightMatrix);
 #else
 	// Only compute attenuation for local lights (point/projectors) - not for sun
-	float3 vLightWS = g_LightPos.xyz - vPosition.xyz;  
+	float3 vLightWS = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;  
 #endif
   float3 vLight = normalize(vLightWS.xyz);
 
@@ -482,7 +486,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 	{
 #if %_RT_SAMPLE0 && !%_RT_SAMPLE1
     // Projective light source
-    float4 vProjTC = mul(g_mLightProj, float4(vPosition, 1.f));    
+    float4 vProjTC = mul(g_mLightProj, float4(vPosition, 1)) + mul(g_mLightProj, float4(GetWorldViewPos(), 0.f));    
     #if %_RT_LIGHT_TEX_PROJ
         // optimization todo: implement per-light/distance LOD picking
         cFilter = tex2Dlod( _tex5, float4(vProjTC.xy/vProjTC.w, 0, 0) ).r;
@@ -494,7 +498,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 
     half fInShadow = 1.0f;
 #if %_RT_SAMPLE4
-	float4 P0 = mul(g_mLightShadowProj, float4(vPosition, 1.f));
+	float4 P0 = mul(g_mLightShadowProj, float4(vPosition, 1)) + mul(g_mLightShadowProj, float4(GetWorldViewPos(), 0));
 	//P0 = CalcShadowSpace(P0);
 	P0.xy /= P0.w;
 	P0.z -= g_GeneralParams.w;//0.003f;
@@ -574,6 +578,7 @@ technique DeferredDecalVolume
   pass p0
   {
     VertexShader = DecalVolumeVS() DeferredDecalPassVS;            
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = DecalPassPS() DeferredDecalPassPS;
 
     CullMode = None;        
@@ -585,6 +590,7 @@ technique DeferredLightVolume
   pass p0
   {
     VertexShader = LightVolumeVS() DeferredLightPassVS;            
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = LightPassPS() DeferredLightPassPS;
 
     CullMode = None;        
@@ -596,6 +602,7 @@ technique DeferredLightPass
   pass p0
   {
     VertexShader = LightPassVS() DeferredLightPassVS;            
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = LightPassPS() DeferredLightPassPS;
 
     CullMode = None;        
@@ -634,7 +641,7 @@ void GetDeferredCubemap( inout half4 Diffuse, inout half4 Specular, in samplerCU
   half3 vReflVec = reflect(vCamVec, attribs.NormalWorld);
   #if %_RT_SAMPLE3
 	// Box projected cube map
-	CubemapBoxParallaxCorrection(vReflVec, vPosition, g_LightPos, g_vBoxProjectionMin.xyz, g_vBoxProjectionMax.xyz, attribs.Smoothness);
+	CubemapBoxParallaxCorrection(vReflVec, vPosition, g_LightPos - GetWorldViewPos(), g_vBoxProjectionMin.xyz, g_vBoxProjectionMax.xyz, attribs.Smoothness);
   #endif
 
   half3 cSpecular = _GetEnvironmentCMap( samSpecular, vReflVec.xyz, fNdotE, attribs.Smoothness );
@@ -671,7 +678,7 @@ pixoutMRTCubemap CubemapPassPS( fragInWPOS IN )
 #if %_RT_CUBEMAP0
   ScreenTC = IN.WPos.xy * g_ScreenScale.xy +  g_ScreenScale.zw;
 #else
-  ScreenTC = IN.baseTC.xy;
+  ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 #endif
 
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
@@ -690,7 +697,7 @@ pixoutMRTCubemap CubemapPassPS( fragInWPOS IN )
 #endif
 
   #if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_MSAA_SAMPLEFREQ_PASS
-    float fDepth = GetLinearDepth( GetTargetIndexMS( 0, ScreenTC, GetMSAASampleNum(), uSample ).x, true, false);
+    float fDepth = GetLinearDepth( GetTargetIndexMS( 0, ScreenTC, GetMSAASampleNum(), uSample ).x);
   #else
     float fDepth = GetLinearDepth( _tex0, ScreenTC );
   #endif
@@ -699,7 +706,7 @@ pixoutMRTCubemap CubemapPassPS( fragInWPOS IN )
 	float3 vPosition = HPos * fDepth;
 	float3 vCamVec = normalize(HPos);
 
-	float3 vLightWS = g_LightPos.xyz - vPosition.xyz;
+	float3 vLightWS = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;
 	
 	// Compute attenuation for box
 	float3 lightVecBoxSpace;
@@ -751,6 +758,7 @@ technique DeferredCubemapVolumePass
   pass p0
   {
     VertexShader = LightVolumeVS() DeferredPassVS;            
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = CubemapPassPS() DeferredPassPS;
 
     CullMode = None;        
@@ -762,6 +770,7 @@ technique DeferredCubemapPass
   pass p0
   {
     VertexShader = LightPassVS() DeferredPassVS;            
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = CubemapPassPS() DeferredPassPS;
 
     CullMode = None;        
@@ -806,32 +815,34 @@ pixoutMRT AmbientPS( vtxOutWPOS IN )
 	#endif
 
 	//half3 vNormal = DecodeGBufferNormal( GetTargetIndexMS( 0, IN.baseTC.xy, GetMSAASampleNum(), uSample ) );
-	//float fDepth = GetLinearDepth( GetTargetIndexMS( 3, IN.baseTC.xy, GetMSAASampleNum(), uSample ).x, true, false);
+	//float fDepth = GetLinearDepth( GetTargetIndexMS( 3, IN.baseTC.xy, GetMSAASampleNum(), uSample ).x);
 
-	int3 vPixCoord = int3( IN.baseTC.xy * PS_ScreenSize.xy, 0);
+	int3 vPixCoord = int3( IN.WPos.xy, 0);
 	float2 ProjRatio = g_PS_ProjRatio.xy;
 	float fDevDepth = DepthTexMS.Load(vPixCoord, uSample);
 	float fDepth = ProjRatio.y/(fDevDepth-ProjRatio.x);
 	const int nStencilID = (StencilTexMS.Load(vPixCoord, uSample).g & BIT_STENCIL_STATIC);
 #else
-	//half3 vNormal = DecodeGBufferNormal( tex2D( _tex0, IN.baseTC.xy ) );
+	//half3 vNormal = DecodeGBufferNormal( tex2D( _tex0, IN.WPos.xy ) );
 	float fDepth = 1.0h;;
 	//	custom depth read - depth + stencil
 	//fDepth = GetLinearDepth( _tex8, IN.baseTC.xy );
-	int3 vPixCoord = int3( IN.baseTC.xy / PS_HPosScale.xy * PS_ScreenSize.xy, 0);
+	int3 vPixCoord = int3( IN.WPos.xy, 0);
 	float2 ProjRatio = g_PS_ProjRatio.xy;
 	float fDevDepth = DepthTex.Load(vPixCoord);
 	fDepth = ProjRatio.y/(fDevDepth-ProjRatio.x);
 	const int nStencilID = ( StencilTex.Load(vPixCoord).g & BIT_STENCIL_STATIC);
 #endif
 
-  half3 cAmbient = g_cDeferredAmbient.rgb;
+	half3 cAmbient = g_cDeferredAmbient.rgb;
 	half3 cAmbientGround = g_cAmbGround.rgb;
 	half3 cAmbientVisArea = 0;
 	half3 cAmbientSpecVisArea = 0;
 
 	// Constant ambient is disabled with PBR since it has just diffuse and no specular contribution
 	//OUT.Diffuse.rgb = cAmbient;
+
+	IN.baseTC.xy = MapViewportToRaster(IN.baseTC.xy);
 
 	MaterialAttribsCommon attribs;
 #if (%RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_MSAA_SAMPLEFREQ_PASS
@@ -882,6 +893,7 @@ technique AmbientPass
   pass p0
   {
     VertexShader = AmbientVS() DeferredPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = AmbientPS() DeferredPassPS;
     CullMode = None;
   }
@@ -908,18 +920,10 @@ pixout FilterGBufferPS( vtxOut IN )
 		float4 depthQuad1 = FilterGBuffer_Depth.GatherRed( FilterGBuffer_SampStatePoint, IN.baseTC.xy, int2(-1, -1) );
 		float depthCenter = depthQuad0.w;
 
-#if ORBIS
-		// shader compiler workaround
-		float weightB = (1 - clamp(abs(depthQuad0.x - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Bottom
-		float weightT = (1 - clamp(abs(depthQuad1.z - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Top
-		float weightR = (1 - clamp(abs(depthQuad0.z - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Right
-		float weightL = (1 - clamp(abs(depthQuad1.x - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Left
-#else
 		float weightB = (1 - saturate(abs(depthQuad0.x - depthCenter) * PS_NearFarClipDist.y * 4));  // Bottom
 		float weightT = (1 - saturate(abs(depthQuad1.z - depthCenter) * PS_NearFarClipDist.y * 4));  // Top
 		float weightR = (1 - saturate(abs(depthQuad0.z - depthCenter) * PS_NearFarClipDist.y * 4));  // Right
 		float weightL = (1 - saturate(abs(depthQuad1.x - depthCenter) * PS_NearFarClipDist.y * 4));  // Left
-#endif
 
 		float3 avgNormal = DecodeGBufferNormal( tex2Dlod( _tex0, float4(IN.baseTC.xy, 0, 0) ) ).xyz;
 		avgNormal += DecodeGBufferNormal( tex2Dlod( _tex0, float4(IN.baseTC.xy + float2( 0.0,  1.0) / PS_ScreenSize.xy, 0, 0) ) ).xyz * weightB;
@@ -979,7 +983,7 @@ vtxOutWPOS SSRRaytraceVS(vtxInWPOS IN)
 
   vPos.y = 1 - vPos.y;
   OUT.HPosition = float4(vPos.xy * 2 - 1, vPos.z, 1.0);
-  OUT.baseTC = HPosToScreenTC(OUT.HPosition);
+  OUT.baseTC.xy = IN.baseTC.xy; //HPosToScreenTC(OUT.HPosition);
 	OUT.baseTC.zw = OUT.baseTC.xy * g_ScreenSize.xy * 0.25;
   OUT.CamVec.xyz = IN.CamVec;
 
@@ -1000,10 +1004,12 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 
 	const float borderSize = 0.07 * PS_HPosScale.x;  // Fade out at borders
 	const float2 halfTexel = g_ScreenSize.zw;
+
+	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( tex2D( _tex1, IN.baseTC.xy + halfTexel ), 0, tex2D( _tex2, IN.baseTC.xy + halfTexel ) );
+	MaterialAttribsCommon attribs = DecodeGBuffer( tex2D( _tex1, ScreenTC + halfTexel ), 0, tex2D( _tex2, ScreenTC + halfTexel ) );
 	
-	const float fDepth = GetLinearDepth( _tex0, IN.baseTC.xy );
+	const float fDepth = GetLinearDepth( _tex0, ScreenTC );
 	float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec );
 	float3 viewVec = normalize( vPositionWS );
 	vPositionWS += g_WorldViewPos.xyz;
@@ -1042,7 +1048,17 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 		float4 projPos = rayStart + ray * len;
 		projPos.xy /= projPos.w;
 
-		float fLinearDepthTap = tex2Dlod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
+		float2 uvMultiRes = MapViewportToRaster(projPos.xy);
+		
+		// check if the ray went outside of the projection
+		if(any(projPos.xy != saturate(projPos.xy)))
+		{
+			return OUT;
+		}
+
+		//float fLinearDepthTap = tex2Dlod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
+		float fLinearDepthTap = tex2Dlod( _tex3, float4( uvMultiRes.xy, 0, 0 ) ).x;
+
 		if (abs(fLinearDepthTap - projPos.z) < intervalSize)
 		{
 			bestLen = len;
@@ -1066,8 +1082,10 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 		float edgeWeight = borderDist > borderSize ? 1 : sqrt(borderDist / borderSize);
 
 		reprojPos.xy *= PS_HPosScale.zw;
+		
+		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
 
-		const float curAvgLum = tex2Dlod( _tex5, float4( IN.baseTC.xy, 0, 0 ) ).x;
+		const float curAvgLum = tex2Dlod( _tex5, float4( ScreenTC, 0, 0 ) ).x;
 		const float maxLum = curAvgLum * 100;  // Limit brightness to reduce aliasing of specular highlights
 		color.rgb = min( tex2Dlod( _tex4, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
 
@@ -1087,6 +1105,7 @@ technique SSR_Raytrace
   pass p0
   {
     VertexShader = SSRRaytraceVS() DeferredPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = SSRRaytracePS() DeferredPassPS;
     CullMode = None;
   }
@@ -1096,16 +1115,18 @@ pixout SSRCompositionPS( vtxOut IN )
 {
 	pixout OUT = (pixout) 0;
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( 0, 0, tex2D( _tex0, IN.baseTC.xy ) );
+	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
+	
+	MaterialAttribsCommon attribs = DecodeGBuffer( 0, 0, tex2D( _tex0, ScreenTC ) );
 	half gloss = attribs.Smoothness;
 	gloss *= gloss;
 	
 	float weight = frac( min( gloss, 0.9999 ) * 3 );
 	
-	half4 refl0 = tex2D( _tex1, IN.baseTC.xy );
-	half4 refl1 = tex2D( _tex2, IN.baseTC.xy );
-	half4 refl2 = tex2D( _tex3, IN.baseTC.xy );
-	half4 refl3 = tex2D( _tex4, IN.baseTC.xy );
+	half4 refl0 = tex2D( _tex1, ScreenTC );
+	half4 refl1 = tex2D( _tex2, ScreenTC );
+	half4 refl2 = tex2D( _tex3, ScreenTC );
+	half4 refl3 = tex2D( _tex4, ScreenTC );
 	
 	[branch] if (gloss > 2.0/3.0)
 		OUT.Color = lerp( refl1, refl0, weight * weight );
@@ -1122,6 +1143,7 @@ technique SSReflection_Comp
   pass p0
   {
     VertexShader = BaseVS() DeferredPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = SSRCompositionPS() DeferredPassPS;
     CullMode = None;
   }
@@ -1173,25 +1195,26 @@ cbuffer CBSSDO : register(b0)
 		float4 nearFarClipDist;
 		float4 viewSpaceParams;
 		float4 ssdoParams;
+		float4 hmaoParams;
 	} cbSSDO;
 };
 
-vtxOut DirOccPassVS(uint VertexID : SV_VertexID)
+vtxOut DirOccPassVS(vtxIn IN)
 {
   vtxOut OUT = (vtxOut)0; 
 
-	OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
-  OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
 
   return OUT;
 }
 
-half4 SSDOFetchDepths( sampler2D smp, half4 tc[2] )
+half4 SSDOFetchDepths( sampler2D smp, half4 tc[2], uint component )
 {
-	return half4( tex2Dlod( smp, half4( tc[0].xy, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[0].zw, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[1].xy, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[1].zw, 0, 0 ) ).x );
+	return half4( tex2Dlod( smp, half4( tc[0].xy, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[0].zw, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[1].xy, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[1].zw, 0, 0 ) )[component] );
 }
 
 Texture2D<float4> HeightmapAODepth : register(t11);
@@ -1215,15 +1238,19 @@ pixout DirOccPassPS(vtxOut IN)
 		half2( 0.84, -0.32 )
 	};
 	
-	const float4 screenTC = float4(IN.baseTC.xy, IN.baseTC.xy * cbSSDO.screenSize.xy * 0.25);	
+	float4 screenTC;
+	screenTC.xy = IN.WPos.xy * cbSSDO.screenSize.zw;	
+	screenTC.zw = IN.WPos.xy * 0.25;
 	
 	float fCenterDepth = GetLinearDepth( _tex1, screenTC.xy );
-	float3 vReceiverPos = float3( screenTC.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
+	float2 linearUV = IN.baseTC.xy;
+
+	float3 vReceiverPos = float3( linearUV.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
 	
 	// Vary maximum radius to get a good compromise between small and larger scale occlusion
 	float maxRadius = cbSSDO.ssdoParams.w;
-	if (int(IN.baseTC.x * cbSSDO.screenSize.x) & 1) maxRadius *= 0.5;
-	if (int(IN.baseTC.y * cbSSDO.screenSize.y) & 1) maxRadius *= 0.5;
+	if (int(IN.WPos.x) & 1) maxRadius *= 0.5;
+	if (int(IN.WPos.y) & 1) maxRadius *= 0.5;
 	
 	// Use 2 bands so that occlusion works better for small-scale geometry
 	const half2 radius0 = clamp( cbSSDO.ssdoParams.xy * 0.15 / fCenterDepth, cbSSDO.ssdoParams.z, maxRadius );
@@ -1257,26 +1284,36 @@ pixout DirOccPassPS(vtxOut IN)
 		const bool narrowBand = i < 4;
 		const half2 radius = narrowBand ? radius0 : radius1;
 		
+		half4 vSampleUV[2];
+		vSampleUV[0].xy = linearUV.xy + rotatedKernel[i+0].xy * radius;
+		vSampleUV[0].zw = linearUV.xy + rotatedKernel[i+1].xy * radius;
+		vSampleUV[1].xy = linearUV.xy + rotatedKernel[i+2].xy * radius;
+		vSampleUV[1].zw = linearUV.xy + rotatedKernel[i+3].xy * radius;
+		
 		half4 vSampleTC[2];
-		vSampleTC[0].xy = screenTC.xy + rotatedKernel[i+0].xy * radius;
-		vSampleTC[0].zw = screenTC.xy + rotatedKernel[i+1].xy * radius;
-		vSampleTC[1].xy = screenTC.xy + rotatedKernel[i+2].xy * radius;
-		vSampleTC[1].zw = screenTC.xy + rotatedKernel[i+3].xy * radius;
+	#if 1
+		vSampleTC[0].xy = MapViewportToRaster(vSampleUV[0].xy);
+		vSampleTC[0].zw = MapViewportToRaster(vSampleUV[0].zw);
+		vSampleTC[1].xy = MapViewportToRaster(vSampleUV[1].xy);
+		vSampleTC[1].zw = MapViewportToRaster(vSampleUV[1].zw);
+	#else
+		vSampleTC = vSampleUV;
+	#endif
 		
 	#if %_RT_SAMPLE0
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex5, vSampleTC );
+		half4 fLinearDepthTap = SSDOFetchDepths( _tex5, vSampleTC, 3 ) + 0.0000001;
 	#else
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC );
+		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC, 0 );
 	#endif
 	
 		fLinearDepthTap *= cbSSDO.nearFarClipDist.y;
 
 		// Compute view space position of emitter pixels
 		float3 vEmitterPos[4];
-		vEmitterPos[0] = float3( vSampleTC[0].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.x;
-		vEmitterPos[1] = float3( vSampleTC[0].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.y;
-		vEmitterPos[2] = float3( vSampleTC[1].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.z;
-		vEmitterPos[3] = float3( vSampleTC[1].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.w;
+		vEmitterPos[0] = float3( vSampleUV[0].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.x;
+		vEmitterPos[1] = float3( vSampleUV[0].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.y;
+		vEmitterPos[2] = float3( vSampleUV[1].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.z;
+		vEmitterPos[3] = float3( vSampleUV[1].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.w;
 
 		// Compute the vectors from the receiver to the emitters
 		half3 vSample[4];
@@ -1313,11 +1350,13 @@ pixout DirOccPassPS(vtxOut IN)
 		
 	// Heightmap AO
 #if %_RT_SAMPLE1
-	float4 depths0 = HeightmapAODepth.GatherRed(HeightmapAOSampler, IN.baseTC);
-	float4 depths1 = HeightmapAODepth.GatherGreen(HeightmapAOSampler, IN.baseTC);
+	float2 scaledTC = (IN.WPos.xy * cbSSDO.hmaoParams.z) * cbSSDO.hmaoParams.xy;
 	
-	float4 occl0 = HeightmapAO.GatherRed(HeightmapAOSampler, IN.baseTC);
-	float4 occl1 = HeightmapAO.GatherGreen(HeightmapAOSampler, IN.baseTC);
+	float4 depths0 = HeightmapAODepth.GatherRed(HeightmapAOSampler, scaledTC);
+	float4 depths1 = HeightmapAODepth.GatherGreen(HeightmapAOSampler, scaledTC);
+	
+	float4 occl0 = HeightmapAO.GatherRed(HeightmapAOSampler, scaledTC);
+	float4 occl1 = HeightmapAO.GatherGreen(HeightmapAOSampler, scaledTC);
 
 	float4 w0 =  1.0 / (abs(depths0 - fCenterDepth) + 1e-5);
 	float4 w1 =  1.0 / (abs(depths1 - fCenterDepth) + 1e-5);
@@ -1327,10 +1366,9 @@ pixout DirOccPassPS(vtxOut IN)
 	hmao = 0.7 + 0.3 * hmao * hmao;
 	sh2.w = 1 - (saturate(1 - sh2.w) * hmao);
 #endif
-	
 	// Encode
 	OUT.Color.rgb = sh2.xyz * 0.5 + 0.5;
-	OUT.Color.a = sh2.w ;
+	OUT.Color.a = sh2.w;
 
 	return OUT;
 }
@@ -1340,6 +1378,7 @@ technique DirOccPass
   pass p0
   {
     VertexShader = DirOccPassVS() DeferredPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = DirOccPassPS() DeferredPassPS;
     CullMode = None;
   }
@@ -1641,6 +1680,8 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 	pixoutSSS OUT = (pixoutSSS) 0;
 
 	half selfShadow = 1;
+	
+	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
 	uint uSample = 0;
@@ -1648,40 +1689,40 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
     uSample = IN.uSample;
   #endif
 
-	half3 diffuseAcc = GetTargetIndexMS( 0, IN.baseTC.xy, GetMSAASampleNum(), uSample );
-	half3 specularAcc = GetTargetIndexMS( 1, IN.baseTC.xy, GetMSAASampleNum(), uSample );
-	float fDepth = GetLinearDepth( GetTargetIndexMS( 5, IN.baseTC.xy, GetMSAASampleNum(), uSample ).x, true, false);
+	half3 diffuseAcc = GetTargetIndexMS( 0, ScreenTC, GetMSAASampleNum(), uSample );
+	half3 specularAcc = GetTargetIndexMS( 1, ScreenTC, GetMSAASampleNum(), uSample );
+	float fDepth = GetLinearDepth( GetTargetIndexMS( 5, ScreenTC, GetMSAASampleNum(), uSample ).x);
 #else
-	half3 diffuseAcc = DecodeLightBuffer( tex2D( _tex0, IN.baseTC.xy ) );
-	half3 specularAcc = DecodeLightBuffer( tex2D( _tex1, IN.baseTC.xy ) );  
-	float fDepth = GetLinearDepth( _tex5, IN.baseTC.xy );
+	half3 diffuseAcc = DecodeLightBuffer( tex2D( _tex0, ScreenTC ) );
+	half3 specularAcc = DecodeLightBuffer( tex2D( _tex1, ScreenTC ) );  
+	float fDepth = GetLinearDepth( _tex5, ScreenTC );
 #endif
 	
 	MaterialAttribsCommon attribs;
 #if (%RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_MSAA_SAMPLEFREQ_PASS
-	attribs = DecodeGBuffer( GetTargetIndexMS( 4, IN.baseTC.xy, GetMSAASampleNum(), uSample ),
-	                         GetTargetIndexMS( 2, IN.baseTC.xy, GetMSAASampleNum(), uSample ),
-	                         GetTargetIndexMS( 3, IN.baseTC.xy, GetMSAASampleNum(), uSample ) );
+	attribs = DecodeGBuffer( GetTargetIndexMS( 4, ScreenTC, GetMSAASampleNum(), uSample ),
+	                         GetTargetIndexMS( 2, ScreenTC, GetMSAASampleNum(), uSample ),
+	                         GetTargetIndexMS( 3, ScreenTC, GetMSAASampleNum(), uSample ) );
 #else
-	attribs = DecodeGBuffer( tex2D( _tex4, IN.baseTC.xy ), tex2D( _tex2, IN.baseTC.xy ), tex2D( _tex3, IN.baseTC.xy ) );
+	attribs = DecodeGBuffer( tex2D( _tex4, ScreenTC ), tex2D( _tex2, ScreenTC ), tex2D( _tex3, ScreenTC ) );
 #endif
 
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 	
 	half3 albedo = attribs.Albedo;
 	// Simple energy conservation between specular and diffuse
 	albedo *= saturate( 1 - GetLuminance( attribs.Reflectance ) );  // Sat required to handle precision issues
 
-	half NdotL = saturate( dot( g_PS_SunLightDir.xyz, attribs.NormalWorld ) );
+	half NdotL = saturate( dot( SunLightDir.xyz, attribs.NormalWorld ) );
 	half3 vView = -normalize( vPosition );
 
 #if %_RT_SAMPLE2
 	// Spherical area light for sun.
-	half3 sunSpec = AreaLightGGX( attribs.NormalWorld, vView.xyz, g_PS_SunLightDir.xyz * 10000.0f, attribs.Smoothness, attribs.Reflectance, g_AreaLightMatrix, AREA_LIGHT_SPHERE ) * SunColor.w;
+	half3 sunSpec = AreaLightGGX( attribs.NormalWorld, vView.xyz, SunLightDir.xyz * 10000.0f, attribs.Smoothness, attribs.Reflectance, g_AreaLightMatrix, AREA_LIGHT_SPHERE ) * SunColor.w;
 #else
-	half3 sunSpec = SpecularBRDF( attribs.NormalWorld, vView, g_PS_SunLightDir.xyz, attribs.Smoothness, attribs.Reflectance ) * SunColor.w;
+	half3 sunSpec = SpecularBRDF( attribs.NormalWorld, vView, SunLightDir.xyz, attribs.Smoothness, attribs.Reflectance ) * SunColor.w;
 #endif
-	half shadowOccl = ShadowOcclusionLookup(IN.baseTC.xy);
+	half shadowOccl = ShadowOcclusionLookup(ScreenTC);
 
 	#if %_RT_MSAA_SAMPLEFREQ_PASS					
 		const int nTaps = 9;
@@ -1704,9 +1745,9 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 					
 		for(int t=0; t < nTaps; t++)
 		{
-			const float fDepthTap = GetLinearDepth( _tex9, IN.baseTC.xy + vTaps[t]*g_ScreenSize.zw*2);
+			const float fDepthTap = GetLinearDepthUnclamped( _tex9, ScreenTC + vTaps[t]*g_ScreenSize.zw*2);
 			const float fBilateralWeight = saturate(exp(-abs(fDepth-fDepthTap)*PS_NearFarClipDist.y));
-			shadowOcclAcc += half2( ShadowOcclusionLookup( IN.baseTC.xy + vTaps[t]*g_ScreenSize.zw*2 ), 1)*saturate(fBilateralWeight);
+			shadowOcclAcc += half2( ShadowOcclusionLookup( ScreenTC + vTaps[t]*g_ScreenSize.zw*2 ), 1)*saturate(fBilateralWeight);
 		}
 	
 		shadowOccl = saturate(shadowOcclAcc.x/(shadowOcclAcc.y+1e-6f));
@@ -1714,14 +1755,14 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 
 	half fLightOccl = shadowOccl;
 #if %_RT_LIGHTVOLUME0
-	const int nStencilID = tex2D(_tex6, IN.baseTC.xy ).x * 255.0f;
+	const int nStencilID = tex2D(_tex6, ScreenTC ).x * 255.0f;
 	const uint nClipVolumeData = asuint(g_vVisAreasParams[nStencilID & (MAX_CLIPVOLUMES-1)].a);
 	fLightOccl = (nClipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN)? fLightOccl : 0.0f;
 #endif
 			
 	// Directional occlusion
-	half3 occlusionDir = tex2D(_tex7, IN.baseTC.xy).xyz * 2.h - 1.h;
-	half dirOccl = 1.h - saturate(dot(g_PS_SunLightDir.xyz, occlusionDir) * SSDOParams.x);
+	half3 occlusionDir = tex2D(_tex7, ScreenTC).xyz * 2.h - 1.h;
+	half dirOccl = 1.h - saturate(dot(SunLightDir.xyz, occlusionDir) * SSDOParams.x);
 	fLightOccl *= dirOccl * dirOccl;
 
 	bool bSunLight = false;
@@ -1735,8 +1776,8 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 
 	if( bSunLight )
 	{
-		half diffuseTerm = DiffuseBRDF(attribs.NormalWorld, vView, g_PS_SunLightDir.xyz, attribs.Smoothness, NdotL);
-		half3 diffuseTranslucency = ThinTranslucencyBRDF(attribs.NormalWorld, g_PS_SunLightDir.xyz, attribs.Transmittance);
+		half diffuseTerm = DiffuseBRDF(attribs.NormalWorld, vView, SunLightDir.xyz, attribs.Smoothness, NdotL);
+		half3 diffuseTranslucency = ThinTranslucencyBRDF(attribs.NormalWorld, SunLightDir.xyz, attribs.Transmittance);
 		cDiffuse = diffuseAcc + SunColor.xyz * fLightOccl * ((attribs.LightingModel == LIGHTINGMODEL_TRANSMITTANCE) ? diffuseTranslucency : diffuseTerm.xxx);
 	}
 	else
@@ -1768,6 +1809,7 @@ technique DeferredShadingPass
   pass p0
   {
     VertexShader = DeferredShadingPassVS() DeferredPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = DeferredShadingPassPS() DeferredPassPS;
     CullMode = None;
   }
@@ -2066,16 +2108,14 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : COLOR0
 	const float fMaxStencilRefRcp = 1.0f / 255.0f;
 	
 	int2 nStencilVal;
+	int3 vPixCoord = int3( IN.HPosition.xy, 0);
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
 	uint uSample = 0;
 	#if %_RT_MSAA_SAMPLEFREQ_PASS
 		uSample = IN.uSample;
 	#endif
-
-	int3 vPixCoord = int3( IN.baseTC.xy * PS_ScreenSize.xy, 0);
 	nStencilVal = StencilTexMS.Load(vPixCoord, uSample);
 #else
-	int3 vPixCoord = int3( IN.baseTC.xy / PS_HPosScale.xy * PS_ScreenSize.xy, 0);
 	nStencilVal = StencilTex.Load(vPixCoord);
 #endif
 
@@ -2094,6 +2134,7 @@ technique ResolveStencilLegacy
   pass p0
   {
     VertexShader = FsQuadVS() DeferredLightPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = ResolveStencilPS() DeferredLightPassPS;
     CullMode = None;        
   }
@@ -2104,6 +2145,7 @@ technique ResolveStencil
   pass p0
   {
     VertexShader = FullscreenTriVS() DeferredLightPassVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = ResolveStencilPS() DeferredLightPassPS;
   }
 }
@@ -2116,10 +2158,13 @@ struct pixOutClipVolume {};
 
 cbuffer CBClipVolume : register(b0)
 {
-	float4x4 cv_mClipVolume;
-	float4   cv_projRatioScreenScale;
-	float4   cv_BlendPlane0;
-	float4   cv_BlendPlane1;
+	struct ClipVolumeConstants
+	{
+		float4x4 transformMatrix;
+		float4   projRatioScreenScale;
+		float4   blendPlane0;
+		float4   blendPlane1;
+	} cbClipVolume;
 };
 
 vtxOutClipVolume ClipVolumeVS(vtxInLightPrePass IN)
@@ -2127,7 +2172,7 @@ vtxOutClipVolume ClipVolumeVS(vtxInLightPrePass IN)
 	vtxOutClipVolume OUT = (vtxOutClipVolume)0; 
 
 	float4 vPos = IN.Position;
-	OUT.HPosition = mul(vPos, cv_mClipVolume);
+	OUT.HPosition = mul(vPos, cbClipVolume.transformMatrix);
 
 	return OUT;
 }
@@ -2143,13 +2188,13 @@ pixout ClipVolumeBlendValuePS(float4 WPos : SV_POSITION)
 	pixout OUT = (pixout) 1;
 
 	float fDepthPixel = DepthTex.Load(int3(WPos.xy, 0)).x;
-	float fDevDepth = cv_projRatioScreenScale.y / fDepthPixel + cv_projRatioScreenScale.x;
+	float fDevDepth = cbClipVolume.projRatioScreenScale.y / fDepthPixel + cbClipVolume.projRatioScreenScale.x;
 	
-	float2 vTC = WPos * cv_projRatioScreenScale.zw;
+	float2 vTC = WPos * cbClipVolume.projRatioScreenScale.zw;
 	float4 vClipPos = float4(vTC.x * 2 - 1, 1 - vTC.y * 2, fDevDepth, 1.0f);
 
-	float planeDist0 = max(dot(cv_BlendPlane0, vClipPos), 0);
-	float planeDist1 = max(dot(cv_BlendPlane1, vClipPos), 0);
+	float planeDist0 = max(dot(cbClipVolume.blendPlane0, vClipPos), 0);
+	float planeDist1 = max(dot(cbClipVolume.blendPlane1, vClipPos), 0);
 	
 	OUT.Color = planeDist0 / max(planeDist0 + planeDist1, 1e-5);
 
@@ -2161,6 +2206,7 @@ technique ClipVolumeStencil
   pass p0
   {
     VertexShader = ClipVolumeVS();
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader  = ClipVolumePS();
     CullMode = None;        
   }
@@ -2177,47 +2223,15 @@ technique ClipVolumeBlendValue
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: remove once legacy deferred lighting pipeline has been completely refactored
-
-float4 BlendPlane0;
-float4 BlendPlane1;
-
-pixout PortalBlendValPS(fragInWPOS IN)
-{
-	pixout OUT = (pixout) 1;
-
-	float fDepthPixel = DepthTex.Load(int3(IN.WPos.xy, 0)).x;
-	float fDevDepth = g_PS_ProjRatio.y / fDepthPixel + g_PS_ProjRatio.x;
-	
-	float2 vTC = IN.WPos * g_ScreenScale.xy;
-	float4 vClipPos = float4(vTC.x * 2 - 1, 1 - vTC.y * 2, fDevDepth, 1.0f);
-
-	float planeDist0 = max(dot(BlendPlane0, vClipPos), 0);
-	float planeDist1 = max(dot(BlendPlane1, vClipPos), 0);
-	
-	OUT.Color = planeDist0 / max(planeDist0 + planeDist1, 1e-5);
-
-	return OUT;
-}
-
-technique PortalBlendVal
-{
-  pass p0
-  {
-    VertexShader = LightVolumeVS() DeferredLightPassVS;
-    PixelShader = PortalBlendValPS() DeferredLightPassPS;
-    CullMode = None;        
-  }
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
+struct vtxOutShadowMaskVolume { float4 HPosition : POSITION; };
 
 Texture2D         sceneDepthTex : register(t0);
 Texture2D<float4> ShadowMap     : register(t1);
 
 cbuffer CBShadowMask : register(b0)
 {
-	struct 
+	struct ShadowMaskConstants
 	{
 		float4x4 unitMeshTransform;
 		float4   lightVolumeSphereAdjust;
@@ -2228,31 +2242,33 @@ cbuffer CBShadowMask : register(b0)
 		float4   irreg_kernel_2d[8];
 		float4   vLightPos;
 
-	} c_ShadowMaskConstants;
+	} cbShadowMaskConstants;
 };
 
-float4 ShadowMaskVolumeVS(vtxInLightPrePass IN) : SV_Position
+vtxOutShadowMaskVolume ShadowMaskVolumeVS(vtxInLightPrePass IN)
 {
+	vtxOutShadowMaskVolume OUT = (vtxOutShadowMaskVolume)0;
+
 	float4 vPos = IN.Position;
-	vPos = mul(vPos, c_ShadowMaskConstants.unitMeshTransform);
+	vPos = mul(vPos, cbShadowMaskConstants.unitMeshTransform);
 
 	//normalization
 	vPos /= vPos.w;
 	vPos.w = 1.0f;
 	
 	//sphere adjusting
-	if (c_ShadowMaskConstants.lightVolumeSphereAdjust.w > 0)
+	if (cbShadowMaskConstants.lightVolumeSphereAdjust.w > 0)
 	{
-		float3 vLightDir = normalize(vPos.xyz - c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz);
-		vLightDir *= c_ShadowMaskConstants.lightVolumeSphereAdjust.w; //radius multiplication;
+		float3 vLightDir = normalize(vPos.xyz - cbShadowMaskConstants.lightVolumeSphereAdjust.xyz);
+		vLightDir *= cbShadowMaskConstants.lightVolumeSphereAdjust.w; //radius multiplication;
 
 		// select proper vector: baseTC.x is 0 for the pyramid tip only, 1 otherwise
-		vPos.xyz = IN.baseTC.x > 0 ? (c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz + vLightDir) : c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz; 
+		vPos.xyz = IN.baseTC.x > 0 ? (cbShadowMaskConstants.lightVolumeSphereAdjust.xyz + vLightDir) : cbShadowMaskConstants.lightVolumeSphereAdjust.xyz; 
 	}
 	
 	//final ViewProj transformation
-	return mul(CV_ViewProjMatr, vPos);
-
+	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
+	return OUT;
 }
 
 [earlydepthstencil]
@@ -2261,11 +2277,11 @@ pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
   pixout OUT = (pixout) 0;
 
 	float fDepth = sceneDepthTex.Load(int3(WPos.xy, 0)).x;
-	float3 vPosition = ReconstructViewPos(WPos.xy, fDepth);
+	float3 vPosition = ReconstructWorldPos(WPos.xy, fDepth, true);
 	
-	float4 P0 = mul(c_ShadowMaskConstants.lightShadowProj, float4(vPosition, 1.f));
+	float4 P0 = mul(cbShadowMaskConstants.lightShadowProj, float4(vPosition, 1.f));
 	P0.xy /= P0.w;
-	P0.z -= c_ShadowMaskConstants.params.w;
+	P0.z -= cbShadowMaskConstants.params.w;
 	
 	ShadowSamplingContext samplingContext;
 	samplingContext.comparisonSampler = ssShadowComparison;
@@ -2273,8 +2289,8 @@ pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
 	samplingContext.noiseTex          = shadowNoiseTex;
 	
 	IrregularFilterKernel filterKernel;
-	filterKernel.taps           = c_ShadowMaskConstants.irreg_kernel_2d;
-	filterKernel.scale          = c_ShadowMaskConstants.params.x;
+	filterKernel.taps           = cbShadowMaskConstants.irreg_kernel_2d;
+	filterKernel.scale          = cbShadowMaskConstants.params.x;
 	filterKernel.noiseLookupPos = P0.xy * filterKernel.scale * 1000.0f;
 	
 	float fInShadow;
@@ -2283,7 +2299,7 @@ pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
 
 #if %_RT_SAMPLE2
 	// Apply point light SS shadows
-	CalculateDetailSSShadow(sceneDepthTex, fDepth, vPosition + GetWorldViewPos(), c_ShadowMaskConstants.vLightPos.xyz, CV_ViewProjMatr, fInShadow);
+	CalculateDetailSSShadow(sceneDepthTex, fDepth, vPosition + GetWorldViewPos(), cbShadowMaskConstants.vLightPos.xyz, CV_ViewProjMatr, fInShadow);
 #endif
 
 	OUT.Color = 1-fInShadow;
@@ -2295,7 +2311,7 @@ technique ShadowMaskGen
 {
   pass p0
   {
-    VertexShader = LightPassVS()     DeferredLightPassVS;            
+    VertexShader = FullscreenTriVS() DeferredLightPassVS;            
     PixelShader  = ShadowMaskGenPS() DeferredLightPassPS;
 
     CullMode = None;        

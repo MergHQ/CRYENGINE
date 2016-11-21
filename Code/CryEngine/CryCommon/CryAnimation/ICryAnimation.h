@@ -23,7 +23,12 @@
 
 #include "CryCharAnimationParams.h"
 
-// maximum number of LODs per one geometric model (CryGeometry)
+typedef int32 TJointId;
+
+//! default return for invalid joint when searching through the skeleton
+enum : TJointId { INVALID_JOINT_ID = -1 };
+
+//! maximum number of LODs per one geometric model (CryGeometry)
 enum {g_nMaxGeomLodLevels = 6};
 
 //! Flags used by ICharacterInstance::SetFlags and GetFlags.
@@ -601,7 +606,7 @@ struct ICharacterInstance : IMeshObj
 #include <CryAnimation/IAnimationPoseModifier.h>                                                    // <> required for Interfuscator
 
 #ifndef SKELETON_ANIMATION_LAYER_COUNT
-#define SKELETON_ANIMATION_LAYER_COUNT 16
+#define SKELETON_ANIMATION_LAYER_COUNT 32
 #endif
 
 struct ISkeletonAnim
@@ -692,8 +697,8 @@ struct ISkeletonAnim
 
 	virtual bool                           PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name = NULL) = 0;
 
-	virtual IAnimationSerializablePtr      GetPoseModifierSetup() = 0;
-	virtual IAnimationSerializableConstPtr GetPoseModifierSetup() const = 0;
+	virtual IAnimationPoseModifierSetupPtr      GetPoseModifierSetup() = 0;
+	virtual IAnimationPoseModifierSetupConstPtr GetPoseModifierSetup() const = 0;
 
 	//! This function will move outside of this interface. Use at your own risk.
 	virtual QuatT CalculateRelativeMovement(const float deltaTime, const bool CurrNext = 0) const = 0;

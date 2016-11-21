@@ -5,65 +5,155 @@
 //////////////////////////////////////////////////////////////////////////
 // SSE shift-immediate operators for all compilers
 // Integer type alias to allow operator overloads.
-// Example: i32v4 a; i32v4 b = a << Scalar(4);
-struct Scalar
-{
-	explicit Scalar(int _v) : v(_v) {}
-	operator int() const { return v; }
-	const int v;
-};
+// Example: i32v4 a; i32v4 b = a << Scalar<4>();
+enum Scalar {};
 
 #if CRY_PLATFORM_SSE2
 
 // Support for SSE 32x4 types
 
 	#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
-// __m128i is defined as __v2di instead of __v4si, so we define the correct vector types here to avoid compile errors.
-typedef __v4sf  f32v4;
-typedef __v4si  i32v4;
-	#else
+
+// __m128i is defined as __v2di instead of __v4si, so we define the correct vector types for correct arithmetic operations.
+typedef f32    f32v4 __attribute__((__vector_size__(16)));
+typedef int32  i32v4 __attribute__((__vector_size__(16)));
+typedef uint32 u32v4 __attribute__((__vector_size__(16)));
+
+//! Define results of built-in comparison operators.
+typedef decltype (f32v4() == f32v4()) mask32v4;
+
+	#elif CRY_COMPILER_MSVC
+
+// Declare a new intrinsic type for unsigned ints
+union __declspec(intrin_type) __declspec(align(16)) __m128u
+{
+	__m128i m128i;
+	uint32 m128i_u32[4];
+
+	ILINE __m128u() {}
+	ILINE __m128u(__m128i in) : m128i(in)	{}
+	ILINE operator __m128i() const { return m128i; }
+};
+
 typedef __m128  f32v4;
 typedef __m128i i32v4;
-	#endif
+typedef __m128u u32v4;
 
 //! Define results of comparison operators
-	#if CRY_COMPILER_MSVC
-typedef __m128  f32mask4;
-typedef __m128i i32mask4;
+typedef __m128i mask32v4;
+
 	#else
-//! Define results of built-in comparison operators.
-//! These must be cast to __m128 or __m128i when calling intrinsic functions.
-typedef decltype (f32v4() == f32v4()) f32mask4;
-typedef decltype (i32v4() == i32v4()) i32mask4;
+		#error Unsupported compiler for SSE
 	#endif
 
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+template<class T, class V> ILINE void check_range(V v, T lo, T hi);
+
 //! Override convert<> for vector intrinsic types
-template<> ILINE f32v4 convert<f32v4>()         { return _mm_setzero_ps(); }
-template<> ILINE f32v4 convert<f32v4>(float v)  { return _mm_set1_ps(v); }
-template<> ILINE f32v4 convert<f32v4>(double v) { return _mm_set1_ps(float(v)); }
-template<> ILINE f32v4 convert<f32v4>(int v)    { return _mm_set1_ps(float(v)); }
-template<> ILINE f32v4 convert<f32v4>(i32v4 v)  { return _mm_cvtepi32_ps(v); }
+template<> ILINE f32v4  convert<f32v4>()         { return _mm_setzero_ps(); }
+template<> ILINE f32v4  convert<f32v4>(float v)  { return _mm_set1_ps(v); }
+template<> ILINE f32v4  convert<f32v4>(double v) { return _mm_set1_ps(float(v)); }
+template<> ILINE f32v4  convert<f32v4>(int v)    { return _mm_set1_ps(float(v)); }
+template<> ILINE f32v4  convert<f32v4>(i32v4 v)  { return _mm_cvtepi32_ps(v); }
+template<> ILINE f32v4  convert<f32v4>(u32v4 v)  { check_range(v, 0, INT_MAX); return _mm_cvtepi32_ps(v); }
 
-template<> ILINE float convert<float>(f32v4 v)  { return _mm_cvtss_f32(v); }
+template<> ILINE float  convert<float>(f32v4 v)  { return _mm_cvtss_f32(v); }
 
-template<> ILINE i32v4 convert<i32v4>()         { return _mm_setzero_si128(); }
-template<> ILINE i32v4 convert<i32v4>(int v)    { return _mm_set1_epi32(v); }
-template<> ILINE i32v4 convert<i32v4>(uint v)   { return _mm_set1_epi32(v); }
-template<> ILINE i32v4 convert<i32v4>(f32v4 v)  { return _mm_cvttps_epi32(v); }
+template<> ILINE i32v4  convert<i32v4>()         { return _mm_setzero_si128(); }
+template<> ILINE i32v4  convert<i32v4>(int v)    { return _mm_set1_epi32(v); }
+template<> ILINE i32v4  convert<i32v4>(f32v4 v)  { check_range(v, INT_MIN, INT_MAX); return _mm_cvttps_epi32(v); }
 
-template<> ILINE int   convert<int>(i32v4 v)    { return _mm_cvtsi128_si32(v); }
+template<> ILINE int32  convert<int32>(i32v4 v)  { return _mm_cvtsi128_si32(v); }
+
+template<> ILINE u32v4  convert<u32v4>()         { return _mm_setzero_si128(); }
+template<> ILINE u32v4  convert<u32v4>(uint v)   { return _mm_set1_epi32(v); }
+template<> ILINE u32v4  convert<u32v4>(int v)    { CRY_MATH_ASSERT(v >= 0); return _mm_set1_epi32(v); }
+template<> ILINE u32v4  convert<u32v4>(f32v4 v)  { check_range(v, 0, INT_MAX); return _mm_cvttps_epi32(v); }
+
+template<> ILINE uint32 convert<uint32>(u32v4 v) { return _mm_cvtsi128_si32(v); }
+
+//! convert<V>(s, 0): Load scalar into vector[0] and zero remaining elements
+template<typename V, typename S> V convert(S v, void*);
+
+template<> ILINE f32v4             convert<f32v4>(float v, void*) { return _mm_set_ss(v); }
+template<> ILINE i32v4             convert<i32v4>(int v, void*)   { return _mm_cvtsi32_si128(v); }
+template<> ILINE u32v4             convert<u32v4>(uint v, void*)  { return _mm_cvtsi32_si128(v); }
 
 //! Multiple scalar/vector conversion
-template<typename V, typename S> V       convert(S s0, S s1, S s2, S s3);
+template<typename V, typename S> V convert(S s0, S s1, S s2, S s3);
 
-template<> ILINE f32v4                   convert<f32v4>(float s0, float s1, float s2, float s3) { return _mm_setr_ps(s0, s1, s2, s3); }
-template<> ILINE f32v4                   convert<f32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_ps(float(s0), float(s1), float(s2), float(s3)); }
-template<> ILINE i32v4                   convert<i32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_epi32(s0, s1, s2, s3); }
+template<> ILINE f32v4             convert<f32v4>(float s0, float s1, float s2, float s3) { return _mm_setr_ps(s0, s1, s2, s3); }
+template<> ILINE f32v4             convert<f32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_ps(float(s0), float(s1), float(s2), float(s3)); }
+template<> ILINE i32v4             convert<i32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_epi32(s0, s1, s2, s3); }
+template<> ILINE u32v4             convert<u32v4>(uint s0, uint s1, uint s2, uint s3)     { return _mm_setr_epi32(s0, s1, s2, s3); }
+template<> ILINE u32v4             convert<u32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_epi32(s0, s1, s2, s3); }
 
-template<typename D, typename S> ILINE D vcast(S val)                                           { return D(val); }
-template<> ILINE f32v4                   vcast<f32v4>(i32v4 v)                                  { return _mm_castsi128_ps(v); }
-template<> ILINE i32v4                   vcast<i32v4>(f32v4 v)                                  { return _mm_castps_si128(v); }
+ILINE f32v4                        to_v4(float f)                                         { return convert<f32v4>(f); }
+ILINE i32v4                        to_v4(int i)                                           { return convert<i32v4>(i); }
+ILINE u32v4                        to_v4(uint i)                                          { return convert<u32v4>(i); }
 
+template<typename V> ILINE V       one_mask(V any)                                        { return _mm_cmpeq_epi32(any, any); }
+
+// Shuffle components
+template<int x, int y, int z, int w> ILINE f32v4 shuffle(f32v4 in)
+{
+	return _mm_shuffle_ps(in, in, _MM_SHUFFLE(w, z, y, x));
+}
+template<int x, int y, int z, int w> ILINE i32v4 shuffle(i32v4 in)
+{
+	return _mm_shuffle_epi32(in, _MM_SHUFFLE(w, z, y, x));
+}
+template<int x, int y, int z, int w> ILINE u32v4 shuffle(u32v4 in)
+{
+	return _mm_shuffle_epi32(in, _MM_SHUFFLE(w, z, y, x));
+}
+
+// Extract scalar component
+template<int i = 0> ILINE float get_element(f32v4 v)
+{
+	if (i == 0)
+		return _mm_cvtss_f32(v);
+	else
+	{
+	#if CRY_PLATFORM_SSE4
+		float r;
+		_MM_EXTRACT_FLOAT(r, v, i);
+		return r;
+	#else
+		return _mm_cvtss_f32(shuffle<i, i, i, i>(v));
+	#endif
+	}
+}
+
+template<int i = 0> ILINE int32 get_element(i32v4 v)
+{
+	if (i == 0)
+		return _mm_cvtsi128_si32(v);
+	else
+	{
+	#if CRY_PLATFORM_SSE4
+		return _mm_extract_epi32(v, i);
+	#else
+		return _mm_cvtsi128_si32(shuffle<i, i, i, i>(v));
+	#endif
+	}
+}
+
+template<int i = 0> ILINE uint32 get_element(u32v4 v)
+{
+	return get_element<i>((i32v4)v);
+}
+
+// Passive casting
+template<typename D, typename S> ILINE D vcast(S val)          { return D(val); }
+template<> ILINE f32v4                   vcast<f32v4>(i32v4 v) { return _mm_castsi128_ps(v); }
+template<> ILINE f32v4                   vcast<f32v4>(u32v4 v) { return _mm_castsi128_ps(v); }
+template<> ILINE i32v4                   vcast<i32v4>(f32v4 v) { return _mm_castps_si128(v); }
+template<> ILINE u32v4                   vcast<u32v4>(f32v4 v) { return _mm_castps_si128(v); }
+
+///////////////////////////////////////////////////////////////////////////
 // Helpers vor defining regular and compound operators together
 	#define COMMPOUND_OPERATOR(A, op, B) \
 	  ILINE A & operator op ## = (A & a, B b) { return a = a op b; }
@@ -80,189 +170,166 @@ template<> ILINE i32v4                   vcast<i32v4>(f32v4 v)                  
 // Define operators for intrinsics, for compilers which don't already have them
 
 ///////////////////////////////////////////////////////////////////////////
-// Integer
+// Integer, signed and unsigned
 
-		#define INT32V_COMPARE_OPS(op, opneg, func)                                                                         \
-		  ILINE i32mask4 operator op(i32v4 a, i32v4 b) { return func(a, b); }                                               \
-		  ILINE i32mask4 operator opneg(i32v4 a, i32v4 b) { return _mm_xor_si128(func(a, b), _mm_set1_epi32(0xFFFFFFFF)); } \
+		#define INTV4_COMPARE_OPS(V, C, op, opneg, func)                                      \
+		  ILINE C operator op(V a, V b) { return func(a, b); }                                \
+		  ILINE C operator opneg(V a, V b) { return _mm_xor_si128(func(a, b), one_mask(a)); } \
 
-INT32V_COMPARE_OPS(==, !=, _mm_cmpeq_epi32)
-INT32V_COMPARE_OPS(>, <=, _mm_cmpgt_epi32)
-INT32V_COMPARE_OPS(<, >=, _mm_cmplt_epi32)
+INTV4_COMPARE_OPS(i32v4, mask32v4, ==, !=, _mm_cmpeq_epi32)
+INTV4_COMPARE_OPS(i32v4, mask32v4, >, <=, _mm_cmpgt_epi32)
+INTV4_COMPARE_OPS(i32v4, mask32v4, <, >=, _mm_cmplt_epi32)
 
-		#define INT32V_OPERATORS(op) \
-		  COMMPOUND_OPERATORS(i32v4, op, i32v4)
+INTV4_COMPARE_OPS(u32v4, mask32v4, ==, !=, _mm_cmpeq_epi32)
 
-INT32V_OPERATORS(+)
+// Synthesize unsigned inequality comparisons
+ILINE mask32v4 operator<(u32v4 a, u32v4 b)
 {
-	return _mm_add_epi32(a, b);
+	mask32v4 mask = _mm_cmplt_epi32(a, b);                     // Result valid if both pos or both neg
+	u32v4 sign_diff = _mm_srai_epi32(_mm_xor_si128(a, b), 31); // All 1s if signs differ
+	return _mm_xor_si128(mask, sign_diff);                     // Result negated if signs differ
 }
-INT32V_OPERATORS(-)
+ILINE mask32v4 operator>(u32v4 a, u32v4 b)
 {
-	return _mm_sub_epi32(a, b);
+	mask32v4 mask = _mm_cmpgt_epi32(a, b);
+	u32v4 sign_diff = _mm_srai_epi32(_mm_xor_si128(a, b), 31);
+	return _mm_xor_si128(mask, sign_diff);
 }
-INT32V_OPERATORS(&)
+ILINE mask32v4 operator<=(u32v4 a, u32v4 b)
 {
-	return _mm_and_si128(a, b);
+	return _mm_xor_si128(a > b, one_mask(a));
 }
-INT32V_OPERATORS(|)
+ILINE mask32v4 operator>=(u32v4 a, u32v4 b)
 {
-	return _mm_or_si128(a, b);
-}
-INT32V_OPERATORS(^)
-{
-	return _mm_xor_si128(a, b);
-}
-INT32V_OPERATORS(<<)
-{
-	return _mm_sll_epi32(a, b);
-}
-INT32V_OPERATORS(>>)
-{
-	return _mm_srl_epi32(a, b);
+	return _mm_xor_si128(a < b, one_mask(a));
 }
 
-INT32V_OPERATORS(*)
+		#define INTV4_BINARY_OPS(V, op, func) \
+		  COMMPOUND_OPERATORS(V, op, V) { return func(a, b); }
+
+		#define SUINTV4_BINARY_OPS(op, func) \
+		  INTV4_BINARY_OPS(i32v4, op, func)  \
+		  INTV4_BINARY_OPS(u32v4, op, func)  \
+
+
+SUINTV4_BINARY_OPS(&, _mm_and_si128)
+SUINTV4_BINARY_OPS(|, _mm_or_si128)
+SUINTV4_BINARY_OPS(^, _mm_xor_si128)
+
+SUINTV4_BINARY_OPS(+, _mm_add_epi32)
+SUINTV4_BINARY_OPS(-, _mm_sub_epi32)
+
+//! Signed mul, low 32 bits only
+COMMPOUND_OPERATORS(i32v4, *, i32v4)
 {
-	const i32v4 m = _mm_set_epi32(~0, 0, ~0, 0);
-	const i32v4 v0 = _mm_mul_epu32(a, b);
-	const i32v4 v1 = _mm_shuffle_epi32(_mm_mul_epu32(_mm_shuffle_epi32(a, 0xf5), _mm_shuffle_epi32(b, 0xf5)), 0xa0);
-	return _mm_or_si128(_mm_and_si128(m, v1), _mm_andnot_si128(m, v0));
+		#if CRY_PLATFORM_SSE4
+	return _mm_mullo_epi32(a, b);
+		#else
+	const i32v4 m02 = _mm_mul_epu32(a, b);
+	const i32v4 m13 = _mm_mul_epu32(shuffle<1, 1, 3, 3>(a), shuffle<1, 1, 3, 3>(b));
+	return _mm_unpacklo_epi32(shuffle<0, 2, 0, 0>(m02), shuffle<0, 2, 0, 0>(m13));
+		#endif
 }
 
-// Slow implementations
-INT32V_OPERATORS(/)
+//< Unsigned mul is identical, as only low 32 bits are returned
+COMMPOUND_OPERATORS(u32v4, *, u32v4)
 {
-	i32v4 v = a;
-	v.m128i_i32[0] /= b.m128i_i32[0];
-	v.m128i_i32[1] /= b.m128i_i32[1];
-	v.m128i_i32[2] /= b.m128i_i32[2];
-	v.m128i_i32[3] /= b.m128i_i32[3];
-	return v;
+	return (u32v4)((i32v4)a * (i32v4)b);
 }
 
-INT32V_OPERATORS(%)
-{
-	i32v4 v = a;
-	v.m128i_i32[0] %= b.m128i_i32[0];
-	v.m128i_i32[1] %= b.m128i_i32[1];
-	v.m128i_i32[2] %= b.m128i_i32[2];
-	v.m128i_i32[3] %= b.m128i_i32[3];
-	return v;
-}
+		#define INTV4_SLOW_BINARY_OPS(V, op)             \
+		  COMMPOUND_OPERATORS(V, op, V) {                \
+		    return convert<V>(                           \
+		      get_element<0>(a) op get_element<0>(b),    \
+		      get_element<1>(a) op get_element<1>(b),    \
+		      get_element<2>(a) op get_element<2>(b),    \
+		      get_element<3>(a) op get_element<3>(b)); } \
 
-ILINE i32v4 operator-(i32v4 a)
-{
-	return _mm_setzero_si128() - a;
-}
+INTV4_SLOW_BINARY_OPS(i32v4, /)
+INTV4_SLOW_BINARY_OPS(u32v4, /)
 
-ILINE i32v4 operator~(i32v4 a)
-{
-	return a ^ _mm_set1_epi32(0xFFFFFFFF);
-}
+INTV4_SLOW_BINARY_OPS(i32v4, %)
+INTV4_SLOW_BINARY_OPS(u32v4, %)
+
+ILINE i32v4 operator-(i32v4 a) { return convert<i32v4>() - a; }
+
+ILINE u32v4 operator~(u32v4 a) { return a ^ one_mask(a); }
+ILINE i32v4 operator~(i32v4 a) { return a ^ one_mask(a); }
 
 ///////////////////////////////////////////////////////////////////////////
 // Float
 
-		#define FLOAT32V_COMPARE_OP(op, func)                                 \
-		  ILINE f32mask4 operator op(f32v4 a, f32v4 b) { return func(a, b); } \
+		#define FV4_COMPARE_OP(op, func)                                                       \
+		  ILINE mask32v4 operator op(f32v4 a, f32v4 b) { return vcast<mask32v4>(func(a, b)); } \
 
-FLOAT32V_COMPARE_OP(==, _mm_cmpeq_ps)
-FLOAT32V_COMPARE_OP(!=, _mm_cmpneq_ps)
-FLOAT32V_COMPARE_OP(<, _mm_cmplt_ps)
-FLOAT32V_COMPARE_OP(<=, _mm_cmple_ps)
-FLOAT32V_COMPARE_OP(>, _mm_cmpgt_ps)
-FLOAT32V_COMPARE_OP(>=, _mm_cmpge_ps)
+FV4_COMPARE_OP(==, _mm_cmpeq_ps)
+FV4_COMPARE_OP(!=, _mm_cmpneq_ps)
+FV4_COMPARE_OP(<, _mm_cmplt_ps)
+FV4_COMPARE_OP(<=, _mm_cmple_ps)
+FV4_COMPARE_OP(>, _mm_cmpgt_ps)
+FV4_COMPARE_OP(>=, _mm_cmpge_ps)
 
-		#define FLOAT32V_OPERATORS(op) \
-		  COMMPOUND_OPERATORS(f32v4, op, f32v4)
+		#define FV4_BINARY_OPS(op, func) \
+		  COMMPOUND_OPERATORS(f32v4, op, f32v4) { return func(a, b); }
 
-FLOAT32V_OPERATORS(+)
-{
-	return _mm_add_ps(a, b);
-}
+FV4_BINARY_OPS(+, _mm_add_ps)
+FV4_BINARY_OPS(-, _mm_sub_ps)
+FV4_BINARY_OPS(*, _mm_mul_ps)
+FV4_BINARY_OPS(/, _mm_div_ps)
 
-FLOAT32V_OPERATORS(-)
-{
-	return _mm_sub_ps(a, b);
-}
-
-FLOAT32V_OPERATORS(*)
-{
-	return _mm_mul_ps(a, b);
-}
-
-FLOAT32V_OPERATORS(/)
-{
-	return _mm_div_ps(a, b);
-}
-
-ILINE f32v4 operator-(f32v4 a)
-{
-	return _mm_setzero_ps() - a;
-}
+ILINE f32v4 operator-(f32v4 a) { return convert<f32v4>() - a; }
 
 	#endif // CRY_COMPILER_MSVC
 
 ///////////////////////////////////////////////////////////////////////////
-// Additional operators and functions for SSE intrinsics
-
-//! Convert comparison results to boolean value
-ILINE bool All(f32mask4 v)
-{
-	return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF;
-}
-ILINE bool Any(f32mask4 v)
-{
-	return _mm_movemask_ps(vcast<f32v4>(v)) != 0;
-}
-
-template<> ILINE i32v4 if_else(i32mask4 mask, i32v4 a, i32v4 b)
-{
-	#ifdef CRY_PFX2_USE_SEE4
-	return vcast<i32v4>(_mm_blendv_ps(vcast<f32v4>(b), vcast<f32v4>(a), vcast<f32v4>(mask)));
-	#else
-	return (i32v4)_mm_or_si128(_mm_and_si128((__m128i)mask, a), _mm_andnot_si128((__m128i)mask, b));
-	#endif
-}
-
-template<> ILINE i32v4 if_else_zero(i32mask4 mask, i32v4 a)
-{
-	return (i32v4)_mm_and_si128(vcast<i32v4>(mask), a);
-}
-
-template<> ILINE f32v4 if_else(f32mask4 mask, f32v4 a, f32v4 b)
-{
-	#ifdef CRY_PFX2_USE_SEE4
-	return (f32v4)_mm_blendv_ps(b, a, (__m128)mask);
-	#else
-	return (f32v4)_mm_or_ps(_mm_and_ps((__m128)mask, a), _mm_andnot_ps((__m128)mask, b));
-	#endif
-}
-
-template<> ILINE f32v4 if_else_zero(f32mask4 mask, f32v4 a)
-{
-	return _mm_and_ps((__m128)mask, a);
-}
-
-	#if CRY_COMPILER_MSVC
-// On clang and gcc, f32mask4 == i32mask4. For other compilers, define overloads.
-ILINE bool             All(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF; }
-ILINE bool             Any(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) != 0; }
-template<> ILINE f32v4 if_else_zero(i32mask4 mask, f32v4 a)     { return if_else_zero(vcast<f32mask4>(mask), a); }
-template<> ILINE f32v4 if_else(i32mask4 mask, f32v4 a, f32v4 b) { return if_else(vcast<f32mask4>(mask), a, b); }
-template<> ILINE i32v4 if_else_zero(f32mask4 mask, i32v4 a)     { return if_else_zero(vcast<i32mask4>(mask), a); }
-template<> ILINE i32v4 if_else(f32mask4 mask, i32v4 a, i32v4 b) { return if_else(vcast<i32mask4>(mask), a, b); }
-	#endif
-
 // SSE shift-immediate operators for all compilers
 COMMPOUND_OPERATORS(i32v4, <<, Scalar)
 {
 	return _mm_slli_epi32(a, b);
 }
+COMMPOUND_OPERATORS(u32v4, <<, Scalar)
+{
+	return _mm_slli_epi32(a, b);
+}
 COMMPOUND_OPERATORS(i32v4, >>, Scalar)
 {
+	return _mm_srai_epi32(a, b);
+}
+COMMPOUND_OPERATORS(u32v4, >>, Scalar)
+{
 	return _mm_srli_epi32(a, b);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Additional operators and functions for SSE intrinsics
+
+//! Convert comparison results to boolean value
+ILINE bool All(mask32v4 v)
+{
+	return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF;
+}
+ILINE bool Any(mask32v4 v)
+{
+	return _mm_movemask_ps(vcast<f32v4>(v)) != 0;
+}
+
+template<typename T> ILINE T if_else(mask32v4 mask, T a, T b)
+{
+	#if CRY_PLATFORM_SSE4
+	return vcast<T>(_mm_blendv_ps(vcast<f32v4>(b), vcast<f32v4>(a), vcast<f32v4>(mask)));
+	#else
+	return vcast<T>(_mm_or_si128(_mm_and_si128(mask, vcast<i32v4>(a)), _mm_andnot_si128(mask, vcast<i32v4>(b))));
+	#endif
+}
+template<typename T> ILINE T if_else_zero(mask32v4 mask, T a)
+{
+	return vcast<T>(_mm_and_si128(mask, vcast<i32v4>(a)));
+}
+
+template<class T, class V> ILINE void check_range(V v, T lo, T hi)
+{
+	CRY_MATH_ASSERT(All(v >= convert<V>(lo)));
+	CRY_MATH_ASSERT(All(v <= convert<V>(hi)));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -276,29 +343,113 @@ template<> ILINE f32v4 max(f32v4 v0, f32v4 v1)
 	return _mm_max_ps(v0, v1);
 }
 
+template<> ILINE i32v4 min(i32v4 v0, i32v4 v1)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_min_epi32(v0, v1);
+	#else
+	return if_else(v0 < v1, v0, v1);
+	#endif
+}
+template<> ILINE i32v4 max(i32v4 v0, i32v4 v1)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_max_epi32(v0, v1);
+	#else
+	return if_else(v1 < v0, v0, v1);
+	#endif
+}
+
+template<> ILINE u32v4 min(u32v4 v0, u32v4 v1)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_min_epu32(v0, v1);
+	#else
+	return if_else(v0 < v1, v0, v1);
+	#endif
+}
+template<> ILINE u32v4 max(u32v4 v0, u32v4 v1)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_max_epu32(v0, v1);
+	#else
+	return if_else(v1 < v0, v0, v1);
+	#endif
+}
+
 namespace crymath
 {
 
-ILINE f32v4 abs(f32v4 v)  { return _mm_andnot_ps(convert<f32v4>(-0.0f), v); }
+ILINE f32v4 abs(f32v4 v)
+{
+	return _mm_andnot_ps(to_v4(-0.0f), v);
+}
+ILINE i32v4 abs(i32v4 v)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_abs_epi32(v);
+	#else
+	return if_else(v < convert<i32v4>(), -v, v);
+	#endif
+}
+ILINE u32v4 abs(u32v4 v)
+{
+	return v;
+}
 
-ILINE f32v4 sign(f32v4 v) { return _mm_or_ps(_mm_and_ps(v, convert<f32v4>(-0.0f)), convert<f32v4>(1.0f)); }
+ILINE f32v4 signnz(f32v4 v)
+{
+	f32v4 sign_bits = _mm_and_ps(v, to_v4(-0.0f));
+	return _mm_or_ps(sign_bits, to_v4(1.0f));
+}
+ILINE i32v4 signnz(i32v4 v)
+{
+	return (v >> Scalar(31) << Scalar(1)) + to_v4(1);
+}
 
-// Note: trunc, floor, and ceil currently only work for float values in the int32 range
+ILINE f32v4 sign(f32v4 v)
+{
+	f32v4 s2 = signnz(v);
+	return _mm_and_ps(s2, vcast<f32v4>(v != convert<f32v4>()));
+}
+ILINE i32v4 sign(i32v4 v)
+{
+	#if CRY_PLATFORM_SSE4
+	return _mm_sign_epi32(to_v4(1), v);
+	#else
+	i32v4 zero = convert<i32v4>();
+	return _mm_cmplt_epi32(v, zero) - _mm_cmpgt_epi32(v, zero);
+	#endif
+}
+
+// Note: for SSE2, trunc, floor, and ceil currently only work for float values in the int32 range
 ILINE f32v4 trunc(f32v4 v)
 {
+	#if CRY_PLATFORM_SSE4
+	return _mm_round_ps(v, _MM_FROUND_TO_ZERO);
+	#else
 	return convert<f32v4>(convert<i32v4>(v));
+	#endif
 }
 
 ILINE f32v4 floor(f32v4 v)
 {
+	#if CRY_PLATFORM_SSE4
+	return _mm_floor_ps(v);
+	#else
 	f32v4 trunct = trunc(v);
-	return trunct + if_else_zero(trunct > v, convert<f32v4>(-1.0f));
+	return trunct + if_else_zero(trunct > v, to_v4(-1.0f));
+	#endif
 }
 
 ILINE f32v4 ceil(f32v4 v)
 {
+	#if CRY_PLATFORM_SSE4
+	return _mm_ceil_ps(v);
+	#else
 	f32v4 trunct = trunc(v);
-	return trunct + if_else_zero(trunct < v, convert<f32v4>(1.0f));
+	return trunct + if_else_zero(trunct < v, to_v4(1.0f));
+	#endif
 }
 
 ILINE f32v4 rcp_fast(f32v4 op)   { return _mm_rcp_ps(op); }
@@ -307,15 +458,23 @@ ILINE f32v4 rcp(f32v4 op)        { f32v4 r = _mm_rcp_ps(op); return r + r - op *
 
 ILINE f32v4 rsqrt_fast(f32v4 op) { return _mm_rsqrt_ps(op); }
 
-ILINE f32v4 rsqrt(f32v4 op)      { f32v4 r = _mm_rsqrt_ps(op); return r * (convert<f32v4>(1.5f) - op * r * r * convert<f32v4>(0.5f)); }
+ILINE f32v4 rsqrt(f32v4 op)      { f32v4 r = _mm_rsqrt_ps(op); return r * (to_v4(1.5f) - op * r * r * to_v4(0.5f)); }
 
-ILINE f32v4 sqrt_fast(f32v4 op)  { return _mm_rsqrt_ps(_mm_max_ps(op, convert<f32v4>(FLT_MIN))) * op; }
+ILINE f32v4 sqrt_fast(f32v4 op)  { return _mm_rsqrt_ps(_mm_max_ps(op, to_v4(FLT_MIN))) * op; }
 
 ILINE f32v4 sqrt(f32v4 op)       { return _mm_sqrt_ps(op); }
 
 }
 
-#endif // CRY_PLATFORM_SSE2
+///////////////////////////////////////////////////////////////////////////
+// Overrides for NumberValid
+ILINE bool NumberValid(f32v4 v)
+{
+	const u32v4 expMask = convert<u32v4>(FloatU32ExpMask);
+	return All((vcast<u32v4>(v) & expMask) != expMask);
+}
 
-ILINE bool All(bool b) { return b; }
-ILINE bool Any(bool b) { return b; }
+ILINE bool NumberValid(i32v4 v) { return true; }
+ILINE bool NumberValid(u32v4 v) { return true; }
+
+#endif // CRY_PLATFORM_SSE2

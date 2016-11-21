@@ -48,9 +48,9 @@ class CMaskedVarT
 #if MASKEDVAR_DEBUG_VAL_ENABLED
 			m_dbgVal = 0;
 #endif
-			COMPILE_TIME_ASSERT(sizeof(TVarType) <= sizeof(TMaskType));  // assert that the size of the Mask type is the same or bigger than the Var size so the XOR masking can work correctly
-			COMPILE_TIME_ASSERT(std::numeric_limits<TMaskType>::is_integer==true && std::numeric_limits<TMaskType>::is_signed==false);  // assert that the Mask type is not a float and is unsigned so that the XOR masking can work correctly
-			COMPILE_TIME_ASSERT(((TMaskType)TMaxMaskValue) == TMaxMaskValue);  // assert that the Mask type is large enough to hold the MaxMask value. (in practise this isn't actually needed, as the use of TMaskType as TMaxMaskValue's template paramater type means that on 360 and PC the compiler will error when trying to pass in a paramater too big for the type)
+			static_assert(sizeof(TVarType) <= sizeof(TMaskType), "Invalid type size!");  // assert that the size of the Mask type is the same or bigger than the Var size so the XOR masking can work correctly
+			static_assert(std::numeric_limits<TMaskType>::is_integer==true && std::numeric_limits<TMaskType>::is_signed==false, "'TMaskType' must be an unsigned integer type!");  // assert that the Mask type is not a float and is unsigned so that the XOR masking can work correctly
+			static_assert(((TMaskType)TMaxMaskValue) == TMaxMaskValue, "Unexpected array size!");  // assert that the Mask type is large enough to hold the MaxMask value. (in practise this isn't actually needed, as the use of TMaskType as TMaxMaskValue's template paramater type means that on 360 and PC the compiler will error when trying to pass in a paramater too big for the type)
 		}
 
 		CMaskedVarT(const TVarType v)

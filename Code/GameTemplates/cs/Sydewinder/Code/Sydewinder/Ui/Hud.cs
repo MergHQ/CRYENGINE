@@ -1,9 +1,9 @@
 ﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using CryEngine.Components;
-using CryEngine.UI.Components;
+using CryEngine.Rendering;
 using CryEngine.UI;
+using CryEngine.UI.Components;
+using System;
 using System.Globalization;
 
 namespace CryEngine.Sydewinder
@@ -13,7 +13,7 @@ namespace CryEngine.Sydewinder
 	/// <summary>
 	/// The Head Up Display class shows in game stats while playing
 	/// </summary>
-	public class Hud : Component
+	public class Hud : UIComponent
 	{
 		public event EventHandler ResumeGameClicked;
 		public event ExitGameEventHandler GameExited;
@@ -28,8 +28,8 @@ namespace CryEngine.Sydewinder
 		public WeaponBase Weapon { get; private set; }
 
 		private Canvas _canvas = null;
-		private Color _backgroundColor = null;
-		private Color _foregroundColor = null;
+		private Color ?_backgroundColor = null;
+		private Color ?_foregroundColor = null;
 
 		public static Hud CurrentHud { get; private set; }
 
@@ -58,9 +58,9 @@ namespace CryEngine.Sydewinder
 
 			// Init Top Panel
 			Panel panelTop = SceneObject.Instantiate<Panel>(_canvas);
-			panelTop.Background.Color = _backgroundColor; 
+			panelTop.Background.Color = _backgroundColor.Value; 
 			panelTop.RectTransform.Alignment = Alignment.TopHStretch;
-			panelTop.RectTransform.Size = new Point(Screen.Width, 120);	
+			panelTop.RectTransform.Size = new Point(Renderer.ScreenWidth, 120);	
 
 			_scoreText = panelTop.AddComponent<Text>();
 			_scoreText.Alignment = Alignment.BottomLeft;
@@ -74,9 +74,9 @@ namespace CryEngine.Sydewinder
 
 			// Init Bottom Panel
 			Panel panelBottom = SceneObject.Instantiate<Panel>(_canvas);
-			panelBottom.Background.Color = _backgroundColor;
+			panelBottom.Background.Color = _backgroundColor.Value;
 			panelBottom.RectTransform.Alignment = Alignment.BottomHStretch;
-			panelBottom.RectTransform.Size = new Point(Screen.Width, 120);
+			panelBottom.RectTransform.Size = new Point(Renderer.ScreenWidth, 120);
 
 			_eneryText = panelBottom.AddComponent<Text>();
 			_eneryText.Alignment = Alignment.TopLeft;
@@ -94,19 +94,19 @@ namespace CryEngine.Sydewinder
 			Text gameOverText = _gameOverDialogPanel.AddComponent<Text>();
 			gameOverText.FontName = FontName;
 			gameOverText.Alignment = Alignment.Center;
-			gameOverText.Offset = new Point(0, -Screen.Height*0.15f);
+			gameOverText.Offset = new Point(0, -Renderer.ScreenHeight*0.15f);
 			gameOverText.Content = "Game Over";
 
 			Text nameText = _gameOverDialogPanel.AddComponent<Text>();
 			nameText.FontName = FontName;
 			nameText.Alignment = Alignment.Left;
-			nameText.Offset = new Point(30, Screen.Height*0.15f);
+			nameText.Offset = new Point(30, Renderer.ScreenHeight*0.15f);
 			nameText.Content = "Your name:";
 
 			_nameTextInput = SceneObject.Instantiate<TextInput>(_gameOverDialogPanel);
-			_nameTextInput.RectTransform.Size = new Point(Screen.Width * 0.35f, 50);
+			_nameTextInput.RectTransform.Size = new Point(Renderer.ScreenWidth * 0.35f, 50);
 			_nameTextInput.RectTransform.Alignment = Alignment.Center;
-			_nameTextInput.RectTransform.Padding = new Padding(0, Screen.Height*0.15f);
+			_nameTextInput.RectTransform.Padding = new Padding(0, Renderer.ScreenHeight*0.15f);
 			_nameTextInput.Text.Content = Environment.UserName;
 			_nameTextInput.Ctrl.OnSubmit += (s, e) => 
 			{ 
@@ -116,18 +116,18 @@ namespace CryEngine.Sydewinder
 			};
 
 			Button confirmNameButton = SceneObject.Instantiate<Button>(_gameOverDialogPanel);
-			confirmNameButton.RectTransform.Padding = new Padding(-90, Screen.Height*0.15f);
+			confirmNameButton.RectTransform.Padding = new Padding(-90, Renderer.ScreenHeight*0.15f);
 			confirmNameButton.Ctrl.Text.Content = "OK";
 			confirmNameButton.Ctrl.OnPressed += () => { ConfirmNameEntry(); };
 
 			Text gamePausedText = _gamePausedDialogPanel.AddComponent<Text>();
 			gamePausedText.FontName = FontName;
 			gamePausedText.Alignment = Alignment.Center;
-			gamePausedText.Offset = new Point(0, -Screen.Height*0.15f);
+			gamePausedText.Offset = new Point(0, -Renderer.ScreenHeight*0.15f);
 			gamePausedText.Content = "Game Paused";
 
 			Button resumeGameButton = SceneObject.Instantiate<Button>(_gamePausedDialogPanel);
-			resumeGameButton.RectTransform.Padding = new Padding(-Screen.Width*0.25f, Screen.Height*0.15f);
+			resumeGameButton.RectTransform.Padding = new Padding(-Renderer.ScreenWidth*0.25f, Renderer.ScreenHeight*0.15f);
 			resumeGameButton.Ctrl.Text.Content = "Resume Game";
 			resumeGameButton.Ctrl.OnPressed += () => 
 			{ 
@@ -135,7 +135,7 @@ namespace CryEngine.Sydewinder
 			};
 
 			Button exitGameButton = SceneObject.Instantiate<Button>(_gamePausedDialogPanel);
-			exitGameButton.RectTransform.Padding = new Padding(Screen.Width*0.25f, Screen.Height*0.15f);
+			exitGameButton.RectTransform.Padding = new Padding(Renderer.ScreenWidth*0.25f, Renderer.ScreenHeight*0.15f);
 			exitGameButton.Ctrl.Text.Content = "Exit Game";
 			exitGameButton.Ctrl.OnPressed += () => 
 			{ 
@@ -145,7 +145,7 @@ namespace CryEngine.Sydewinder
 
 			_canvas.ForEachComponent<Text>(c =>
 			{
-				c.Color = _foregroundColor;
+				c.Color = _foregroundColor ?? new Color();
 				c.FontName = FontName;
 				c.Height = HudFontHeight;
 			});
@@ -158,7 +158,7 @@ namespace CryEngine.Sydewinder
 			// Apply shared style between the 'Resume Game' and 'Exit Game' buttons
 			_canvas.ForEach<Button>(x => 
 			{
-				x.RectTransform.Size = new Point(Screen.Width * 0.26f, Screen.Width * 0.13f);
+				x.RectTransform.Size = new Point(Renderer.ScreenWidth * 0.26f, Renderer.ScreenWidth * 0.13f);
 				x.Background.Color = Color.FromRGB(0,0,0.5f).WithAlpha(0.5f);
 				x.RectTransform.Alignment = Alignment.Center;
 				x.Ctrl.Text.Height = 32;
@@ -243,9 +243,9 @@ namespace CryEngine.Sydewinder
 		private Panel CreateDialogPanel()
 		{
 			Panel dialog = SceneObject.Instantiate<Panel>(_canvas);
-			dialog.Background.Color = _backgroundColor;
+			dialog.Background.Color = _backgroundColor ?? new Color();
 			dialog.RectTransform.Alignment = Alignment.Center;
-			dialog.RectTransform.Size = new Point((Screen.Width * 0.9f), (Screen.Height * 0.66f));
+			dialog.RectTransform.Size = new Point((Renderer.ScreenWidth * 0.9f), (Renderer.ScreenHeight * 0.66f));
 
 			return dialog;
 		}

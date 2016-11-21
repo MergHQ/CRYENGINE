@@ -842,7 +842,7 @@ int CMelee::Hit(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysicalEn
 	//Play Material FX
 	const char* meleeFXType = bBoostedMelee ? "melee_combat" : "melee";  //Benito: Check with fx guys to update names
 
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	TMFXEffectId effectId = pMaterialEffects->GetEffectId(meleeFXType, surfaceIdx);
 	if (effectId != InvalidEffectId)

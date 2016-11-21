@@ -312,7 +312,7 @@ void CStatsCollector::DrawLine(int line, const char* fmt, ...)
 	va_end(args);
 
 	float white[] = { 1, 1, 1, 1 };
-	gEnv->pRenderer->Draw2dLabel(10, line * 10 + 10, 1, white, false, "%s", buf);
+	IRenderAuxText::Draw2dLabel(10, line * 10 + 10, 1, white, false, "%s", buf);
 	if (ITextModeConsole* pTC = gEnv->pSystem->GetITextModeConsole())
 		pTC->PutText(0, line, buf);
 }

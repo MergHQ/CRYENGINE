@@ -469,18 +469,6 @@ void CShaderMan::mfCheckObjectDependParams(std::vector<SCGParam>& PNoObj, std::v
 			PNoObj.erase(PNoObj.begin() + i);
 			i--;
 		}
-		else if (prNoObj->m_Flags & PF_LIGHT)
-		{
-			PNoObj.erase(PNoObj.begin() + i);
-			i--;
-		}
-		else if (prNoObj->m_Flags & (PF_GLOBAL | PF_SHADOWGEN))
-		{
-			bool bCam = (prNoObj->m_eCGParamType == ECGP_Matr_PF_ViewProjMatrix || prNoObj->m_eCGParamType == ECGP_Matr_PF_ViewProjZeroMatrix || prNoObj->m_eCGParamType == ECGP_PF_NearFarDist);
-			CHWShader_D3D::mfAddGlobalParameter(PNoObj[i], eSH, (prNoObj->m_Flags & PF_SHADOWGEN) != 0, bCam);
-			PNoObj.erase(PNoObj.begin() + i);
-			i--;
-		}
 	}
 	if (PObj.size())
 	{

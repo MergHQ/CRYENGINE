@@ -7,7 +7,6 @@
 #include <zlib.h>
 #include "ZipFileFormat.h"
 #include "ZipDirStructures.h"
-#include <CryGame/IGame.h>
 
 //////////////////////////////////////////////////////////////////////////
 #ifdef INCLUDE_LIBTOMCRYPT

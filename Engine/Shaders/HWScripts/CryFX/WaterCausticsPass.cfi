@@ -1,8 +1,6 @@
 // CRYENGINE Source Code File
 // Copyright 2001-2015 Crytek GmbH. All rights reserved.
 
-float4 vCausticParams < psregister = c25; >; 
-
 struct v2fCaustic
 {
 	float4 Position		: POSITION;
@@ -19,26 +17,29 @@ struct v2fCaustic
 
 v2fCaustic WaterCausticVS(a2v IN)
 {
-	v2fCaustic OUT = (v2fCaustic)1; 
-  
-	float4 vPos = IN.Position;          
+	v2fCaustic OUT = (v2fCaustic)1;
+
+	SWaterVolumeParams params = GetWaterVolumeParams();
+	SPerPassWaterParams perPass = GetPerPassWaterParams();
+
+	float4 vPos = IN.Position;
 	vPos.w = 1;
 
-	float4x4 InstMatrix = GetInstanceMatrix();
+	float4x4 InstMatrix = cbWaterVolume.PerInstanceWorldMatrix;
 	vPos.xyz = mul( InstMatrix, float4(vPos.xyz, 1) );
 	
 	float4 vPosOrig = vPos; 
 
-	float4 baseTC = IN.baseTC.xyxy * float4(1, 1, 2, 2)*Tilling;
+	float4 baseTC = IN.baseTC.xyxy * float4(1, 1, 2, 2) * Tilling;
 #if %FLOW
-	baseTC += WaterFlowSpeed * g_VS_AnimGenParams.zzzz * float4(0.25, 0, 1, 0);// moves along uvs
+	baseTC += WaterFlowSpeed * CV_AnimGenParams.zzzz * float4(0.25, 0, 1, 0);// moves along uvs
 #endif
    
 #if %_RT_SAMPLE4
-	OUT.ripplesTC = GetWaterRipplesUvs( vPos );
+	OUT.ripplesTC = GetWaterRipplesUvs( vPos, perPass );
 #endif	
 
-	OUT.Position = mul(g_VS_ViewProjMatr, float4(vPos.xyz, 1)); 
+	OUT.Position = mul(perPass.causticViewProjMatr, float4(vPos.xyz, 1));
 	OUT.screenProj = HPosToScreenTC( OUT.Position );
 
 	// Output bump layers texture coordinates
@@ -54,30 +55,32 @@ v2fCaustic WaterCausticVS(a2v IN)
 pixout WaterCausticPS(v2fCaustic IN)
 {
 	pixout OUT = (pixout) 1;
- 
-	const half fNormalsScale = clamp(NormalsScale * vCausticParams.y, 0.001f, 1.0f);
 
-	float4 vWorldPos = float4(-IN.vView.xyz + PS_WorldViewPos.xyz, 1);
+	SWaterVolumeParams params = GetWaterVolumeParams();
+
+	const half fNormalsScale = clamp(NormalsScale * params.vCausticParams.y, 0.001f, 1.0f);
+
+	float4 vWorldPos = float4(-IN.vView.xyz + g_VS_WorldViewPos.xyz, 1);
 
 	half2 vFlowOffsets = 0;
 	float4 vFlow = 0;
 
 #if %FLOW_MAP
-	float2 vLenghts = abs(vBBoxMax.xy-vBBoxMin.xy);
-	vFlow = GetDetailTex(flowTex, float2(vBBoxMin.x-vWorldPos.x, vWorldPos.y-vBBoxMin.y)/vLenghts).xyxy;
-	vFlowOffsets = frac(AnimGenParams.xx * WaterFlowSpeed + float2(0.0, 0.5));
+	float2 vLenghts = abs(params.vBBoxMax.xy - params.vBBoxMin.xy);
+	vFlow = GetDetailTex(flowTex, float2(params.vBBoxMin.x - vWorldPos.x, vWorldPos.y - params.vBBoxMin.y) / vLenghts).xyxy;
+	vFlowOffsets = frac(CV_AnimGenParams.zz * WaterFlowSpeed + float2(0.0, 0.5));
 	vFlow = vFlow * vFlowOffsets.xxyy * WaterFlowMapScale;
 #endif
 
 	// low frequency
-	float4 tcBase0 = (IN.baseTC.xyxy/Tilling) + vFlow.xyzw;
-	tcBase0 *= 2.0 * Tilling * vCausticParams.z;
-	half fWaterHeight = GetTexture2DLod(WaterNormalsSampler, half4(tcBase0.xy, 0, 0)).a;
+	float4 tcBase0 = (IN.baseTC.xyxy / Tilling) + vFlow.xyzw;
+	tcBase0 *= 2.0 * Tilling * params.vCausticParams.z;
+	half fWaterHeight = WaterNormalTex.SampleLevel(aniso16xWrapSState, tcBase0.xy, 0.0f).a;
 
 #if %FLOW_MAP
-	half fWaterHeight2 = GetTexture2DLod(WaterNormalsSampler, half4(tcBase0.zw, 0, 0)).a;
+	half fWaterHeight2 = WaterNormalTex.SampleLevel(aniso16xWrapSState, tcBase0.zw, 0.0f).a;
 	half fLerpFlow = abs( 0.5h - vFlowOffsets.x) / (0.5h);
-	fWaterHeight = lerp( fWaterHeight, fWaterHeight2, fLerpFlow);	
+	fWaterHeight = lerp( fWaterHeight, fWaterHeight2, fLerpFlow);
 #endif
 
 	fWaterHeight *= fNormalsScale;
@@ -85,20 +88,20 @@ pixout WaterCausticPS(v2fCaustic IN)
 
 #if %_RT_SAMPLE4
 	// dynamic ripples
- 	half4 cWaterRipples = GetTexture2DLod(WaterDynRipplesSampler, ssMaterialTrilinearClamp, float4(IN.ripplesTC.xy, 0, 0));
+ 	half4 cWaterRipples = GetTexture2DLod(WaterDynRipplesTex, ssMaterialTrilinearClamp, float4(IN.ripplesTC.xy, 0, 0));
  	fWaterHeight += cWaterRipples.z;
 #endif
 
 	// Todo:
 	// - packing works but limiting, can only go down to 1 meter height and nothing lower.
 	float fIntPart;
-	float fFracPart = modf((1.0/vWorldPos.z) * 256.0f, fIntPart);  
+	float fFracPart = modf((1.0 / vWorldPos.z) * 256.0f, fIntPart);
 	OUT.Color.xy = float2(fIntPart.x / 256.0f, fFracPart.x);
 
 	OUT.Color.z = sqrt(fWaterHeight * 0.25);
 
 	// Output intensity, fade with distance. <todo> Attenuation mode has to be refactored post c3, unintuitive to setup (+ changes height?)
-	OUT.Color.w = (vCausticParams.w * 0.1f);
+	OUT.Color.w = (params.vCausticParams.w * 0.1f);
 
 	return OUT;
 }

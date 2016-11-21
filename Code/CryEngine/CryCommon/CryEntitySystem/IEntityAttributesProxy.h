@@ -20,10 +20,18 @@ struct SEntityAttributesSerializer
 {
 	SEntityAttributesSerializer(TEntityAttributeArray& _attributes)
 		: attributes(_attributes)
+		, entityId(INVALID_ENTITYID)
+	{}
+
+	SEntityAttributesSerializer(TEntityAttributeArray& _attributes, const EntityId _entityId)
+		: attributes(_attributes)
+		, entityId(_entityId)
 	{}
 
 	void Serialize(Serialization::IArchive& archive)
 	{
+		Serialization::SContext context(archive, this);
+
 		for (size_t iAttribute = 0, attributeCount = attributes.size(); iAttribute < attributeCount; ++iAttribute)
 		{
 			IEntityAttribute* pAttribute = attributes[iAttribute].get();
@@ -35,6 +43,7 @@ struct SEntityAttributesSerializer
 	}
 
 	TEntityAttributeArray& attributes;
+	EntityId               entityId;
 };
 
 //////////////////////////////////////////////////////////////////////////

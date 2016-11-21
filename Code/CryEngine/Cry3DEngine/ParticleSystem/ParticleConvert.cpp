@@ -271,7 +271,7 @@ bool ConvertParamBase(XmlNodeRef node, cstr name, P& param, float defValue = 0.f
 ///////////////////////////////////////////////////////////////////////
 // Feature creation
 
-void AddFeature(IParticleComponent& component, XmlNodeRef params);
+void AddFeature(IParticleComponent& component, XmlNodeRef params, bool force = false);
 
 void LogError(const string& error, IParticleComponent* component = 0)
 {
@@ -315,9 +315,9 @@ IParticleFeature* AddFeature(IParticleComponent& component, cstr featureName)
 	return nullptr;
 }
 
-void AddFeature(IParticleComponent& component, XmlNodeRef params)
+void AddFeature(IParticleComponent& component, XmlNodeRef params, bool force)
 {
-	if (params->getChildCount())
+	if (force || params->getChildCount())
 	{
 		if (IParticleFeature* feature = AddFeature(component, params->getTag()))
 		{
@@ -357,32 +357,14 @@ void ConvertSpawn(IParticleComponent& component, ParticleParams& params)
 {
 	XmlNodeRef spawn;
 
-	auto amount = ResetValue(params.fCount);
-	if (ResetValue(params.bContinuous) && params.fParticleLifeTime)
-	{
-		// Set rate = amount / lifetime
-		float life = params.fParticleLifeTime(VMAX);
-		if (params.fEmitterLifeTime)
-			life = min(life, params.fEmitterLifeTime(VMAX));
-		amount.Set(amount(VMAX) / life);
-		spawn = MakeFeature("SpawnRate");
-	}
-	else
-	{
-		spawn = MakeFeature("SpawnCount");
-	}
+	spawn = MakeFeature("SpawnCount");
 
-	ConvertParam(spawn, "Amount", amount);
-	if (params.fSpawnDelay)
-	{
-		XmlNodeRef delay = spawn->newChild("Delay");
-		delay->newChild("State")->setAttr("value", "true");
-		ConvertParam(delay, "Value", params.fSpawnDelay);
-	}
-	if (params.fEmitterLifeTime)
+	ConvertParam(spawn, "Amount", params.fCount);
+	ConvertParam(spawn, "Delay", params.fSpawnDelay);
+	if (params.bContinuous)
 	{
 		XmlNodeRef delay = spawn->newChild("Duration");
-		delay->newChild("State")->setAttr("value", "true");
+		delay->newChild("State")->setAttr("value", params.fEmitterLifeTime ? "true" : "false");
 		ConvertParam(delay, "Value", params.fEmitterLifeTime);
 	}
 
@@ -444,9 +426,11 @@ void ConvertAppearance(IParticleComponent& component, ParticleParams& params)
 	if (params.fDiffuseLighting && params.fCurvature)
 		AddValue(lighting, "Curvature", params.fCurvature);
 	params.fCurvature = 1.f;
+	bool affecteByFog = !params.bNotAffectedByFog;
 	ConvertValue(lighting, "BackLight", params.fDiffuseBacklighting);
 	ConvertValue(lighting, "Emissive", params.fEmissiveLighting);
 	ConvertValue(lighting, "ReceiveShadows", params.bReceiveShadows);
+	ConvertValue(lighting, "AffectedByFog", affecteByFog);
 
 	AddFeature(component, lighting);
 
@@ -623,10 +607,12 @@ void ConvertLocation(IParticleComponent& component, ParticleParams& params)
 	}
 }
 
-void ConvertVelocity(IParticleComponent& component, ParticleParams& params)
+void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 {
+	bool hasMotion = false;
 	if (params.fSpeed)
 	{
+		hasMotion = true;
 		if (!params.fEmitAngle)
 		{
 			XmlNodeRef vel = MakeFeature("VelocityDirectional");
@@ -634,7 +620,7 @@ void ConvertVelocity(IParticleComponent& component, ParticleParams& params)
 			AddValue(vel, "Velocity", Vec3(0, 0, 1));
 			AddFeature(component, vel);
 		}
-		else if (params.fEmitAngle(VMIN) == 180.f)
+		else if (params.fEmitAngle(VMAX) == 180.f && params.fEmitAngle(VMIN) == 0.0f)
 		{
 			XmlNodeRef vel = MakeFeature("VelocityOmniDirectional");
 			ConvertParam(vel, "Velocity", params.fSpeed);
@@ -647,6 +633,14 @@ void ConvertVelocity(IParticleComponent& component, ParticleParams& params)
 			ConvertParam(vel, "Angle", params.fEmitAngle);
 			AddFeature(component, vel);
 		}
+		if (params.fFocusAngle || params.fFocusAzimuth)
+		{
+			XmlNodeRef vel = MakeFeature("VelocityCompass");
+			ConvertParam(vel, "Azimuth", params.fFocusAzimuth);
+			ConvertParam(vel, "Angle", params.fFocusAngle);
+			ConvertParam(vel, "Velocity", params.fSpeed);
+			AddFeature(component, vel);
+		}
 	}
 	else
 	{
@@ -655,6 +649,7 @@ void ConvertVelocity(IParticleComponent& component, ParticleParams& params)
 	}
 	if (params.fInheritVelocity)
 	{
+		hasMotion = true;
 		XmlNodeRef vel = MakeFeature("VelocityInherit");
 		TVarParam<SFloat> scale(ResetValue(params.fInheritVelocity));
 		ConvertParam(vel, "Scale", scale);
@@ -662,10 +657,31 @@ void ConvertVelocity(IParticleComponent& component, ParticleParams& params)
 	}
 	if (ResetValue(params.bMoveRelativeEmitter))
 	{
+		hasMotion = true;
 		XmlNodeRef vel = MakeFeature("VelocityMoveRelativeToEmitter");
 		AddValue(vel, "PositionInherit", 1.f);
 		AddFeature(component, vel);
 	}
+
+	// General motion physics
+	XmlNodeRef phys = MakeFeature("MotionPhysics");
+	ConvertParam(phys, "gravity", params.fGravityScale);
+	if (params.fAirResistance(VMAX) == 0.f)
+		ResetValue(params.fAirResistance);
+	ConvertParam(phys, "drag", static_cast<TVarEPParam<::UFloat>&>(params.fAirResistance));
+	ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
+	ConvertValue(phys, "WindMultiplier", params.fAirResistance.fWindScale, 1.f);
+	ConvertValue(phys, "AngularDragMultiplier", params.fAirResistance.fRotationalDragScale, 1.f);
+
+	if (params.fTurbulence3DSpeed)
+	{
+		XmlNodeRef effectors = phys->newChild("localEffectors");
+		XmlNodeRef data = AddPtrElement(effectors, "Turbulence");
+		AddValue(data, "mode", "Brownian");
+		ConvertParamBase(data, "speed", params.fTurbulence3DSpeed);
+	}
+
+	AddFeature(component, phys, hasMotion);
 }
 
 void ConvertAngles2D(IParticleComponent& component, ParticleParams& params)
@@ -688,26 +704,6 @@ void ConvertAngles3D(IParticleComponent& component, ParticleParams& params)
 	AddFeature(component, ang);
 }
 
-void ConvertMotion(IParticleComponent& component, ParticleParams& params)
-{
-	XmlNodeRef phys = MakeFeature("MotionPhysics");
-	ConvertParam(phys, "gravity", params.fGravityScale);
-	if (params.fAirResistance(VMAX) == 0.f)
-		ResetValue(params.fAirResistance);
-	ConvertParam(phys, "drag", static_cast<TVarEPParam<::UFloat>&>(params.fAirResistance));
-	ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
-	ConvertValue(phys, "WindMultiplier", params.fAirResistance.fWindScale, 1.f);
-
-	if (params.fTurbulence3DSpeed)
-	{
-		XmlNodeRef effectors = phys->newChild("localEffectors");
-		XmlNodeRef data = AddPtrElement(effectors, "Turbulence");
-		AddValue(data, "mode", "Brownian");
-		ConvertParamBase(data, "speed", params.fTurbulence3DSpeed);
-	}
-	AddFeature(component, phys);
-}
-
 void ConvertVisibility(IParticleComponent& component, ParticleParams& params)
 {
 	XmlNodeRef vis = MakeFeature("AppearanceVisibility");
@@ -719,6 +715,35 @@ void ConvertVisibility(IParticleComponent& component, ParticleParams& params)
 	AddFeature(component, vis);
 }
 
+void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
+{
+	if (params.eConfigMin == ParticleParams::EConfigSpecBrief::Low &&
+		params.eConfigMax == ParticleParams::EConfigSpecBrief::VeryHigh &&
+		params.Platforms.PCDX11 && params.Platforms.XBoxOne && params.Platforms.PS4)
+		return;
+
+	auto toString = [](ParticleParams::EConfigSpecBrief config)
+	{
+		switch (config)
+		{
+		case ParticleParams::EConfigSpecBrief::Medium: return "Medium";
+		case ParticleParams::EConfigSpecBrief::High: return "High";
+		case ParticleParams::EConfigSpecBrief::VeryHigh: return "VeryHigh";
+		default: return "Low";
+		}
+	};
+	const char* minName = toString(params.eConfigMin);
+	const char* maxName = toString(params.eConfigMax);
+
+	XmlNodeRef spec = MakeFeature("ComponentEnableByConfig");
+	ConvertValue(spec, "Minimum", minName);
+	ConvertValue(spec, "Maximum", maxName);
+	ConvertValue(spec, "PC", params.Platforms.PCDX11);
+	ConvertValue(spec, "XBoxOne", params.Platforms.XBoxOne);
+	ConvertValue(spec, "PS4", params.Platforms.PS4);
+	AddFeature(component, spec);
+}
+ 
 // Convert all features
 void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams& origParams, IParticleComponent* pParent = nullptr)
 {
@@ -733,13 +758,13 @@ void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams
 	ConvertGeometry(component, params);
 	ConvertFields(component, params);
 	ConvertLocation(component, params);
-	ConvertVelocity(component, params);
+	ConvertMotion(component, params);
 	if (origParams.eFacing == ParticleParams::EFacing::Free || !origParams.sGeometry.empty())
 		ConvertAngles3D(component, params);
 	else
 		ConvertAngles2D(component, params);
-	ConvertMotion(component, params);
 	ConvertVisibility(component, params);
+	ConvertConfigSpec(component, params);
 
 	static ParticleParams defaultParams;
 	string unconverted = TypeInfo(&params).ToString(&params, FToString().NamedFields(1).SkipDefault(1), &defaultParams);

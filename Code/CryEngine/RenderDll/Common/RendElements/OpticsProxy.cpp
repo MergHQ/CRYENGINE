@@ -47,8 +47,8 @@ void COpticsProxy::Invalidate()
 {
 }
 
-void COpticsProxy::Render(SLensFlareRenderParam* pParam, const Vec3& vPos)
+void COpticsProxy::RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos)
 {
 	if (m_pOpticsReference)
-		m_pOpticsReference->Render(pParam, vPos);
+		m_pOpticsReference->RenderPreview(pParam, vPos);
 }

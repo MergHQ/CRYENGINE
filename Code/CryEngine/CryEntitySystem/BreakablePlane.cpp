@@ -860,7 +860,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 		out.eventSeed = in.eventSeed;
 	}
 
-	cry_random_seed(gEnv->bNoRandomSeed ? 0 : out.eventSeed);
+	SScopedRandomSeedChange seedChange(gEnv->bNoRandomSeed ? 0 : out.eventSeed);
 
 	static ICVar* particle_limit = gEnv->pConsole->GetCVar("g_breakage_particles_limit");
 	int nMaxParticles, nCurParticles = gEnv->pPhysicalWorld->GetEntityCount(PE_PARTICLE), icount = 0, mask;
@@ -1067,7 +1067,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 				if (pNewStatObj = pPlane->CreateFlatStatObj(pIdx, ptout, bounds, in.mtx, pEffect, !bRigidBody, bUseEdgeAlpha))
 				{
 					pNewStatObj->SetFilePath(pStatObj->GetFilePath());
-					if (*pIdx == -1)
+					if (*pIdx == -1 && lifetime > 0)
 					{
 						// create a new entity for this stat obj
 						if (!pClass)
@@ -1099,7 +1099,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 							bUseImpulse = in.hitmass < 0.2f;
 						asv.w = (rhit / rhit.len2()) ^ in.hitvel;
 
-						if (!bRigidBody && lifetime > 0)
+						if (!bRigidBody)
 						{
 							if (nCurParticles * 7 > nMaxParticles)
 								mask = 7;

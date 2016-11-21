@@ -17,7 +17,7 @@ PlatformHandler_GamePC::PlatformHandler_GamePC(IPlatformHandlerFactory* pFactory
 {
 	// get path to the executable file
 	char szExeName[MAX_PATH];
-	GetModuleFileNameA(GetModuleHandle(NULL), szExeName, MAX_PATH);
+	GetModuleFileNameA(CryGetCurrentModule(), szExeName, MAX_PATH);
 	char* szName = strrchr(szExeName, '\\');
 	if (szName) szName[1] = 0;
 

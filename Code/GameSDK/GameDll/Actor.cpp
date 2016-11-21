@@ -421,12 +421,10 @@ bool CActor::Init( IGameObject * pGameObject )
 {
 	SetGameObject(pGameObject);
 
-	if (!GetGameObject()->CaptureView(this))
-		return false;
 	if (!GetGameObject()->CaptureProfileManager(this))
 		return false;
 
-	m_isClient = (g_pGame->GetClientActorId() == GetEntityId());
+	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
 
 	IEntity *pEntity = GetEntity();
 	IEntityClass *pEntityClass = pEntity->GetClass();
@@ -437,8 +435,6 @@ bool CActor::Init( IGameObject * pGameObject )
 
 	m_pMovementController = CreateMovementController();
 	GetGameObject()->SetMovementController(m_pMovementController);
-
-	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor( GetEntityId(), this );
 
 	g_pGame->GetActorScriptBind()->AttachTo(this);
 	m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
@@ -690,7 +686,7 @@ void CActor::Revive( EReasonForRevive reasonForRevive )
 	if(IsClient())
 	{
 		// Stop force feedback
-		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 		if(pForceFeedbackSystem)
 		{
 			pForceFeedbackSystem->StopAllEffects();
@@ -1030,11 +1026,11 @@ void CActor::Physicalize(EStance stance)
 	{
 		CCCPOINT(Actor_PhysicalizeNPC);
 	}
-	else if (gEnv->pGame->GetIGameFramework()->GetClientActor() == NULL)
+	else if (gEnv->pGameFramework->GetClientActor() == NULL)
 	{
 		CCCPOINT(Actor_PhysicalizePlayerWhileNoClient);
 	}
-	else if (gEnv->pGame->GetIGameFramework()->GetClientActor() == this)
+	else if (gEnv->pGameFramework->GetClientActor() == this)
 	{
 		CCCPOINT(Actor_PhysicalizeLocalPlayer);
 	}
@@ -1640,8 +1636,10 @@ IEntity *CActor::LinkToVehicle(EntityId vehicleId)
 		}
 
 		// if the player is hidden when entering a vehicle, the collider mode
-		//	change will be ignored (caused problems in Convoy due to cutscene)
-		assert(!IsPlayer() || !GetEntity()->IsHidden());
+		//	change will be ignored (caused problems in Convoy due to cutscene).
+		// (CE-10939) Disconnecting one player while both are sitting in a vehicle
+		// causes his entity to be hidden on a second client.
+		assert(!IsPlayer());
 
 		m_pAnimatedCharacter->ForceRefreshPhysicalColliderMode();
 		m_pAnimatedCharacter->RequestPhysicalColliderMode(enabled ? eColliderMode_Disabled : eColliderMode_Undefined, eColliderModeLayer_Game, "Actor::LinkToVehicle");
@@ -1777,7 +1775,7 @@ void CActor::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
 			PrefetchLine(m_boneTrans, 0);	PrefetchLine(m_boneTrans, 128);	PrefetchLine(m_boneTrans, 256);	PrefetchLine(m_boneTrans, 384);
-			COMPILE_TIME_ASSERT(sizeof(m_boneTrans) > 384);
+			static_assert(sizeof(m_boneTrans) > 384, "Invalid type size!");
 
 			ICharacterInstance *pCharacter = GetEntity()->GetCharacter(0);
 			ISkeletonPose *pSkelPose = pCharacter ? pCharacter->GetISkeletonPose() : NULL;
@@ -1918,7 +1916,17 @@ void CActor::ReadDataFromXML(bool isReloading/* = false*/)
 	{
 		m_pImpulseHandler->ReadXmlData(pEntityClassParamsNode);
 	}
-};
+}
+
+void CActor::InitLocalPlayer()
+{
+	CryLog("%s '%s' is becoming local actor", GetEntity()->GetClass()->GetName(), GetEntity()->GetName());
+	INDENT_LOG_DURING_SCOPE();
+
+	m_isClient = true;
+
+	SetupLocalPlayer();
+}
 
 bool CActor::UpdateStance()
 {
@@ -2140,7 +2148,7 @@ void CActor::CloakSyncAttachment(IAttachment* pAttachment, bool bFade)
 		if(pAO->GetAttachmentType()==IAttachmentObject::eAttachment_Entity)
 		{
 			CEntityAttachment* pEA = static_cast<CEntityAttachment*>(pAO);
-			if (CItem* pItem = static_cast<CItem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pEA->GetEntityId())))
+			if (CItem* pItem = static_cast<CItem*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(pEA->GetEntityId())))
 			{
 				//Ensure that the entity has the right flags set, though hidden, so that if we unhide it the flags are correct.
 				//	Only do the fade if the object is visible.
@@ -2370,7 +2378,7 @@ void CActor::Kill()
 	if(IsClient())
 	{
 		// Clear force feedback
-		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGame->GetIGameFramework()->GetIForceFeedbackSystem();
+		IForceFeedbackSystem* pForceFeedbackSystem = gEnv->pGameFramework->GetIForceFeedbackSystem();
 		if(pForceFeedbackSystem)
 		{
 			pForceFeedbackSystem->StopAllEffects();
@@ -2852,7 +2860,7 @@ void CActor::SetParamsFromLua(SmartScriptTable &rTable)
 
 bool CActor::IsClient() const
 {
-	return m_isClient;
+	return m_isClient || (GetEntityId() == gEnv->pGameFramework->GetClientActorId());
 }
 
 bool CActor::IsPlayer() const
@@ -3129,17 +3137,6 @@ void CActor::HandleEvent( const SGameObjectEvent& event )
 		{
 			assert(m_pAnimatedCharacter);
 			m_pAnimatedCharacter->RequestPhysicalColliderMode(eColliderMode_Disabled, eColliderModeLayer_Game, "Actor::HandleEvent");
-		}
-		break;
-	case eGFE_BecomeLocalPlayer:
-		{
-			CryLog ("%s '%s' is becoming local actor", GetEntity()->GetClass()->GetName(), GetEntity()->GetName());
-			INDENT_LOG_DURING_SCOPE();
-
-
-			m_isClient = true;
-
-			SetupLocalPlayer();
 		}
 		break;
 	case eGFE_RagdollPhysicalized:
@@ -4066,7 +4063,7 @@ void CActor::ServerExchangeItem(CItem* pCurrentItem, CItem* pNewItem)
 			return;
 		}
 
-		IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 		CWeapon* pCurrentWeapon = static_cast<CWeapon*>(pCurrentItem->GetIWeapon());
 		CWeapon* pNewWeapon = static_cast<CWeapon*>(pNewItem->GetIWeapon());
 		IInventory* pInventory = GetInventory();
@@ -4838,7 +4835,7 @@ void CActor::NetKill(const KillParams &killParams)
 
 	// Once killed, if override impulse specified and if we werent the killer(who has already applied an impulse), force ragdoll and apply.
 	// killParams.ragdoll will only be true if no hit death reaction is currently active. 
-	if(killParams.ragdoll && killParams.impulseScale > 0.0f && (hitInfo.shooterId != gEnv->pGame->GetIGameFramework()->GetClientActorId()))
+	if(killParams.ragdoll && killParams.impulseScale > 0.0f && (hitInfo.shooterId != gEnv->pGameFramework->GetClientActorId()))
 	{
 		ForceRagdollizeAndApplyImpulse(hitInfo); 
 	}
@@ -5149,11 +5146,6 @@ IMPLEMENT_RMI(CActor, ClStartUse)
 	CItem *pItem=GetItem(params.itemId);
 	if (pItem)
 		pItem->StartUse(GetEntityId()); 
-
-	if(IsClient())
-	{
-		SetStillWaitingOnServerUseResponse(false);
-	}
 
 	return true;
 }
@@ -5553,6 +5545,12 @@ void CActor::OnReused(IEntity *pEntity, SEntitySpawnParams &params)
 	SetActorModelInternal();
 }
 
+bool CActor::IsInteracting() const
+{
+	return GetActorStats()->mountedWeaponID != INVALID_ENTITYID
+		|| this->GetLinkedVehicle() != nullptr;
+}
+
 void CActor::StartInteractiveAction( EntityId entityId, int interactionIndex )
 {
 	
@@ -5661,7 +5659,7 @@ void CActor::ReloadBodyDestruction()
 
 void CActor::GenerateBlendRagdollTags()
 {
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const CTagDefinition* pTagDefinition = mannequinSys.GetAnimationDatabaseManager().FindTagDef( "Animations/Mannequin/ADB/blendRagdollTags.xml" );
 
 	if( pTagDefinition )
@@ -5908,6 +5906,8 @@ void CActor::OnSpectateModeStatusChanged( bool spectate )
 void CActor::SetupLocalPlayer()
 {
 	IEntity *pEntity = GetEntity();
+
+	GetGameObject()->CaptureView(this);
 
 	if(GetSpectatorState() != eASS_SpectatorMode)
 	{

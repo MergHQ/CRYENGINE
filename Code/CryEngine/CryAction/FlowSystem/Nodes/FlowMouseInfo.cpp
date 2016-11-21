@@ -419,8 +419,8 @@ public:
 		if (gEnv->pHardwareMouse)
 			gEnv->pHardwareMouse->RemoveListener(this);
 
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		if (gEnv->pGameFramework)
+			gEnv->pGameFramework->UnregisterListener(this);
 	}
 
 	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
@@ -433,8 +433,8 @@ public:
 			if (gEnv->pHardwareMouse)
 				gEnv->pHardwareMouse->AddListener(this);
 
-			if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
-				gEnv->pGame->GetIGameFramework()->RegisterListener(this, "MouseRayInfoNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+			if (gEnv->pGameFramework)
+				gEnv->pGameFramework->RegisterListener(this, "MouseRayInfoNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 		}
 	}
 
@@ -530,8 +530,8 @@ public:
 					if (gEnv->pHardwareMouse)
 						gEnv->pHardwareMouse->AddListener(this);
 
-					if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
-						gEnv->pGame->GetIGameFramework()->RegisterListener(this, "MouseRayInfoNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+					if (gEnv->pGameFramework)
+						gEnv->pGameFramework->RegisterListener(this, "MouseRayInfoNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
 					StoreRayType();
 					m_enabled = true;
@@ -542,8 +542,8 @@ public:
 					if (gEnv->pHardwareMouse)
 						gEnv->pHardwareMouse->RemoveListener(this);
 
-					if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
-						gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+					if (gEnv->pGameFramework)
+						gEnv->pGameFramework->UnregisterListener(this);
 
 					m_enabled = false;
 				}
@@ -768,8 +768,8 @@ public:
 
 	~CFlowMouseEntitiesInBox()
 	{
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		if (gEnv->pGameFramework)
+			gEnv->pGameFramework->UnregisterListener(this);
 	}
 
 	enum EInputPorts
@@ -834,7 +834,7 @@ public:
 			{
 				if (IsPortActive(pActInfo, EIP_Get))
 				{
-					gEnv->pGame->GetIGameFramework()->RegisterListener(this, "FlowMouseEntitiesInBox", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+					gEnv->pGameFramework->RegisterListener(this, "FlowMouseEntitiesInBox", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
 					m_get = true;
 					m_actInfo = *pActInfo;
@@ -858,7 +858,7 @@ public:
 		// Get it once, then unregister to prevent unnescessary updates
 		if (!m_get)
 		{
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+			gEnv->pGameFramework->UnregisterListener(this);
 			return;
 		}
 		m_get = false;
@@ -878,7 +878,7 @@ public:
 				//skip Local player
 				if (IPhysicalEntity* physEnt = pEntity->GetPhysics())
 				{
-					IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+					IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 
 					if (!pClientActor)
 						return;

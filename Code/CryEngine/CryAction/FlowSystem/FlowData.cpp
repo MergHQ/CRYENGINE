@@ -17,14 +17,14 @@
 #define DYNAMIC_OUTPUT_MAX (64)
 
 CFlowData::CFlowData()
-	: m_nInputs(0),
-	m_nOutputs(0),
-	m_pInputData(0),
-	m_pOutputFirstEdge(0),
-	m_hasEntity(false),
-	m_failedGettingFlowgraphForwardingEntity(false),
+	: m_pInputData(nullptr),
+	m_pOutputFirstEdge(nullptr),
+	m_getFlowgraphForwardingEntity(0),
 	m_forwardingEntityID(0),
-	m_getFlowgraphForwardingEntity(0)
+	m_nInputs(0),
+	m_nOutputs(0),
+	m_hasEntity(false),
+	m_failedGettingFlowgraphForwardingEntity(false)
 {
 }
 

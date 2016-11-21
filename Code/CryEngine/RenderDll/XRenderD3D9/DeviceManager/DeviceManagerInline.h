@@ -103,7 +103,10 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, const CConstant
 #if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS == 1
 	_offset = (_offset + offset) >> 4;
 	_size = size ? (size >> 4) : (_size >> 4);
-	_size = max(_size, (size_t)16);
+	_size = std::max(_size, (size_t)16);
+#elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
+	_offset = offset / sizeof(Vec4);
+	_size = size / sizeof(Vec4);
 #else
 	_offset = offset;
 	_size = size;
@@ -114,8 +117,8 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, const CConstant
 	BindConstantBuffer(type, pBuffer, slot);
 #elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 	CCryDeviceContextWrapper& rDeviceContext = gcpRendD3D->GetDeviceContext_Unsynchronized();
-	uint32 offsetArray[1] = { offset / sizeof(Vec4) };
-	uint32 sizeArray[1] = { size / sizeof(Vec4) };
+	uint32 offsetArray[1] = { static_cast<uint32>(_offset) };
+	uint32 sizeArray[1] = { static_cast<uint32>(_size) };
 	switch (type)
 	{
 	case TYPE_VS:
@@ -183,12 +186,15 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, D3DBuffer* pBuf
 }
 inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, D3DBuffer* pBuffer, uint32 slot, uint32 offset, uint32 size)
 {
-	size_t _offset = 0, _size = 0;
+	uint32 _offset = 0, _size = 0;
 
 #if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS == 1
 	_offset = (_offset + offset) >> 4;
 	_size = size ? (size >> 4) : (_size >> 4);
-	_size = max(_size, (size_t)16);
+	_size = std::max(_size, 16U);
+#elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
+	_offset = offset / sizeof(Vec4);
+	_size = size / sizeof(Vec4);
 #else
 	_offset = offset;
 	_size = size;
@@ -198,8 +204,8 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, D3DBuffer* pBuf
 	assert(offset == 0);
 	BindConstantBuffer(type, pBuffer, slot);
 #elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
-	offset /= sizeof(Vec4);
-	size /= sizeof(Vec4);
+	offset = _offset;
+	size = _size;
 	CCryDeviceContextWrapper& rDeviceContext = gcpRendD3D->GetDeviceContext_Unsynchronized();
 	switch (type)
 	{

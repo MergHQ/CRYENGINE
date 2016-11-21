@@ -18,24 +18,25 @@ public:
 	virtual ~COpticsGroup(){}
 
 	COpticsGroup&       Add(IOpticsElementBase* pElement);
-	void                Remove(int i);
-	void                RemoveAll();
-	virtual int         GetElementCount() const;
-	IOpticsElementBase* GetElementAt(int i) const;
+	void                Remove(int i) override;
+	void                RemoveAll() override;
+	virtual int         GetElementCount() const override;
+	IOpticsElementBase* GetElementAt(int i) const override;
 
-	void                AddElement(IOpticsElementBase* pElement) { Add(pElement);    }
-	void                InsertElement(int nPos, IOpticsElementBase* pElement);
+	void                AddElement(IOpticsElementBase* pElement) override { Add(pElement);    }
+	void                InsertElement(int nPos, IOpticsElementBase* pElement) override;
 	void                SetElementAt(int i, IOpticsElementBase* elem);
-	void                Invalidate();
+	void                Invalidate() override;
 
-	bool                IsGroup() const { return true; }
-	void                validateChildrenGlobalVars(SAuxParams& aux);
+	bool                IsGroup() const override { return true; }
+	void                validateChildrenGlobalVars(const SAuxParams& aux);
 
-	virtual void        GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual EFlareType  GetType() { return eFT_Group; }
-	virtual void        validateGlobalVars(SAuxParams& aux);
+	virtual void        GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual EFlareType  GetType() override { return eFT_Group; }
+	virtual void        validateGlobalVars(const SAuxParams& aux) override;
 
-	void                Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
+	bool                PreparePrimitives(const COpticsElement::SPreparePrimitivesContext& context) override;
+
 
 #if defined(FLARES_SUPPORT_EDITING)
 	virtual void InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);

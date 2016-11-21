@@ -560,7 +560,7 @@ int CResource::SelectQueueForTransitionBarrier(int altQueue, int desiredQueue, D
 	while (mergedState)
 	{
 		// Move the cursor after the set bit
-		uint32 z = countTrailingZeroes(uint32(mergedState)) + 1;
+		uint32 z = countTrailingZeros32(uint32(mergedState)) + 1;
 		
 		mergedState = D3D12_RESOURCE_STATES(mergedState >> z);
 		stateOffset = stateOffset + z;

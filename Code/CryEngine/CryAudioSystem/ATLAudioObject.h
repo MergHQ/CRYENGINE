@@ -22,20 +22,12 @@ enum EAudioTriggerStatus : AudioEnumFlagsType
 
 struct SAudioTriggerImplState
 {
-	SAudioTriggerImplState()
-		: flags(eAudioTriggerStatus_None)
-	{}
-
-	AudioEnumFlagsType flags;
+	AudioEnumFlagsType flags = eAudioTriggerStatus_None;
 };
 
 struct SUserDataBase
 {
-	SUserDataBase()
-		: pOwnerOverride(nullptr)
-		, pUserData(nullptr)
-		, pUserDataOwner(nullptr)
-	{}
+	SUserDataBase() = default;
 
 	explicit SUserDataBase(
 	  void* const _pOwnerOverride,
@@ -46,110 +38,94 @@ struct SUserDataBase
 		, pUserDataOwner(_pUserDataOwner)
 	{}
 
-	void* pOwnerOverride;
-	void* pUserData;
-	void* pUserDataOwner;
+	void* pOwnerOverride = nullptr;
+	void* pUserData = nullptr;
+	void* pUserDataOwner = nullptr;
 };
 
 struct SAudioTriggerInstanceState : public SUserDataBase
 {
-	SAudioTriggerInstanceState()
-		: flags(eAudioTriggerStatus_None)
-		, audioTriggerId(INVALID_AUDIO_CONTROL_ID)
-		, numPlayingEvents(0)
-		, numLoadingEvents(0)
-		, expirationTimeMS(0.0f)
-		, remainingTimeMS(0.0f)
-	{}
-
-	AudioEnumFlagsType flags;
-	AudioControlId     audioTriggerId;
-	size_t             numPlayingEvents;
-	size_t             numLoadingEvents;
-	float              expirationTimeMS;
-	float              remainingTimeMS;
+	AudioEnumFlagsType flags = eAudioTriggerStatus_None;
+	AudioControlId     audioTriggerId = INVALID_AUDIO_CONTROL_ID;
+	size_t             numPlayingEvents = 0;
+	size_t             numLoadingEvents = 0;
+	float              expirationTimeMS = 0.0f;
+	float              remainingTimeMS = 0.0f;
 };
 
 struct SAudioStandaloneFileData : public SUserDataBase
 {
-	SAudioStandaloneFileData()
-		: SUserDataBase(nullptr, nullptr, nullptr)
-		, fileId(INVALID_AUDIO_STANDALONE_FILE_ID)
-	{}
+	SAudioStandaloneFileData() = default;
 
 	explicit SAudioStandaloneFileData(
-	  void* const _pOwner,
-	  void* const _pUserData,
-	  void* const _pUserDataOwner,
-	  AudioStandaloneFileId const _fileId)
-		: SUserDataBase(_pOwner, _pUserData, _pUserDataOwner)
-		, fileId(_fileId)
+	  void* const pOwner,
+	  void* const pUserData,
+	  void* const pUserDataOwner,
+	  AudioStandaloneFileId const fileId)
+		: SUserDataBase(pOwner, pUserData, pUserDataOwner)
+		, m_fileId(fileId)
 	{}
 
-	AudioStandaloneFileId const fileId;
+	AudioStandaloneFileId const m_fileId = INVALID_AUDIO_STANDALONE_FILE_ID;
 };
 
 // CATLAudioObject-related typedefs
 typedef std::map<AudioStandaloneFileId, SAudioStandaloneFileData, std::less<AudioStandaloneFileId>,
-                 STLSoundAllocator<std::pair<AudioStandaloneFileId, SAudioStandaloneFileData>>> ObjectStandaloneFileMap;
+                 STLSoundAllocator<std::pair<AudioStandaloneFileId const, SAudioStandaloneFileData>>> ObjectStandaloneFileMap;
 
 typedef std::set<CATLEvent*, std::less<CATLEvent*>, STLSoundAllocator<CATLEvent*>> ObjectEventSet;
 
 typedef std::map<AudioTriggerImplId, SAudioTriggerImplState, std::less<AudioTriggerImplId>,
-                 STLSoundAllocator<std::pair<AudioTriggerImplId, SAudioTriggerImplState>>> ObjectTriggerImplStates;
+                 STLSoundAllocator<std::pair<AudioTriggerImplId const, SAudioTriggerImplState>>> ObjectTriggerImplStates;
 
 typedef std::map<AudioTriggerInstanceId, SAudioTriggerInstanceState, std::less<AudioTriggerInstanceId>,
-                 STLSoundAllocator<std::pair<AudioTriggerInstanceId, SAudioTriggerInstanceState>>> ObjectTriggerStates;
+                 STLSoundAllocator<std::pair<AudioTriggerInstanceId const, SAudioTriggerInstanceState>>> ObjectTriggerStates;
 
 typedef std::map<AudioControlId, AudioSwitchStateId, std::less<AudioControlId>,
-                 STLSoundAllocator<std::pair<AudioControlId, AudioSwitchStateId>>> ObjectStateMap;
+                 STLSoundAllocator<std::pair<AudioControlId const, AudioSwitchStateId>>> ObjectStateMap;
 
 typedef std::map<AudioControlId, float, std::less<AudioControlId>,
-                 STLSoundAllocator<std::pair<AudioControlId, float>>> ObjectRtpcMap;
+                 STLSoundAllocator<std::pair<AudioControlId const, float>>> ObjectRtpcMap;
 
 typedef std::map<AudioEnvironmentId, float, std::less<AudioEnvironmentId>,
-                 STLSoundAllocator<std::pair<AudioEnvironmentId, float>>> ObjectEnvironmentMap;
+                 STLSoundAllocator<std::pair<AudioEnvironmentId const, float>>> ObjectEnvironmentMap;
 
-class CATLAudioObject final : public TATLObject
+class CATLAudioObject final
 {
 public:
 
-	explicit CATLAudioObject(AudioObjectId const audioObjectId, CryAudio::Impl::IAudioObject* const pImplData = nullptr, EAudioDataScope const dataScope = eAudioDataScope_None)
-		: TATLObject(audioObjectId, dataScope)
-		, m_pImplData(pImplData)
-		, m_flags(eAudioObjectFlags_None)
-		, m_maxRadius(0.0f)
-		, m_previousVelocity(0.0f)
-		, m_propagationProcessor(audioObjectId, m_attributes.transformation)
-		, m_occlusionFadeOutDistance(0.0f) {}
+	explicit CATLAudioObject(CryAudio::Impl::IAudioObject* const pImplData = nullptr);
 
-	~CATLAudioObject() {}
+	CATLAudioObject(CATLAudioObject const&) = delete;
+	CATLAudioObject(CATLAudioObject&&) = delete;
+	CATLAudioObject& operator=(CATLAudioObject const&) = delete;
+	CATLAudioObject& operator=(CATLAudioObject&&) = delete;
 
-	void Release();
+	void             Release();
 
-	void ReportStartingTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, AudioControlId const audioTriggerId);
-	void ReportStartedTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, AudioEnumFlagsType const flags);
+	void             ReportStartingTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, AudioControlId const audioTriggerId);
+	void             ReportStartedTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, AudioEnumFlagsType const flags);
 
-	void ReportStartedEvent(CATLEvent* const _pEvent);
-	void ReportFinishedEvent(CATLEvent* const _pEvent, bool const _bSuccess);
+	void             ReportStartedEvent(CATLEvent* const _pEvent);
+	void             ReportFinishedEvent(CATLEvent* const _pEvent, bool const _bSuccess);
 
-	void GetStartedStandaloneFileRequestData(CATLStandaloneFile const* const _pStandaloneFile, CAudioRequestInternal& _request);
-	void ReportStartedStandaloneFile(
-	  CATLStandaloneFile const* const _pStandaloneFile,
-	  void* const _pOwner,
-	  void* const _pUserData,
-	  void* const _pUserDataOwner);
+	void             GetStartedStandaloneFileRequestData(CATLStandaloneFile const* const pStandaloneFile, CAudioRequestInternal& request);
+	void             ReportStartedStandaloneFile(
+	  CATLStandaloneFile const* const pStandaloneFile,
+	  void* const pOwner,
+	  void* const pUserData,
+	  void* const pUserDataOwner);
 
-	void                                            ReportFinishedStandaloneFile(CATLStandaloneFile const* const _pStandaloneFile);
+	void                                            ReportFinishedStandaloneFile(CATLStandaloneFile const* const pStandaloneFile);
 
 	void                                            ReportPrepUnprepTriggerImpl(AudioTriggerImplId const audioTriggerImplId, bool const bPrepared);
 
 	void                                            SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId);
-	void                                            SetRtpc(AudioControlId const audioRtpcId, float const value);
+	void                                            SetParameter(AudioControlId const audioParameterId, float const value);
 	void                                            SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount);
 
 	ObjectTriggerImplStates const&                  GetTriggerImpls() const;
-	ObjectRtpcMap const&                            GetRtpcs() const        { return m_rtpcs; }
+	ObjectRtpcMap const&                            GetParameter() const    { return m_parameters; }
 	ObjectEnvironmentMap const&                     GetEnvironments() const;
 	ObjectStateMap const&                           GetSwitchStates() const { return m_switchStates; }
 	void                                            ClearEnvironments();
@@ -190,7 +166,7 @@ private:
 	ObjectEventSet                           m_activeEvents;
 	ObjectTriggerStates                      m_triggerStates;
 	ObjectTriggerImplStates                  m_triggerImplStates;
-	ObjectRtpcMap                            m_rtpcs;
+	ObjectRtpcMap                            m_parameters;
 	ObjectEnvironmentMap                     m_environments;
 	ObjectStateMap                           m_switchStates;
 	CryAudio::Impl::IAudioObject*            m_pImplData;
@@ -207,20 +183,33 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void CheckBeforeRemoval(CATLDebugNameStore const* const pDebugNameStore) const;
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, CATLDebugNameStore const* const pDebugNameStore) const;
+	void DrawDebugInfo(
+	  IRenderAuxGeom& auxGeom,
+	  Vec3 const& listenerPosition,
+	  AudioTriggerLookup const& triggers,
+	  AudioRtpcLookup const& parameters,
+	  AudioSwitchLookup const& switches,
+	  AudioPreloadRequestLookup const& preloadRequests,
+	  AudioEnvironmentLookup const& environments,
+	  AudioStandaloneFileLookup const& audioStandaloneFiles) const;
 	void ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+
+	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> m_name;
 
 private:
 
-	class CStateDebugDrawData
+	class CStateDebugDrawData final
 	{
 	public:
 
-		explicit CStateDebugDrawData(AudioSwitchStateId const audioSwitchState = INVALID_AUDIO_SWITCH_STATE_ID);
-		~CStateDebugDrawData();
+		CStateDebugDrawData(AudioSwitchStateId const audioSwitchState);
 
-		void Update(AudioSwitchStateId const newState);
+		CStateDebugDrawData(CStateDebugDrawData const&) = delete;
+		CStateDebugDrawData(CStateDebugDrawData&&) = delete;
+		CStateDebugDrawData& operator=(CStateDebugDrawData const&) = delete;
+		CStateDebugDrawData& operator=(CStateDebugDrawData&&) = delete;
+
+		void                 Update(AudioSwitchStateId const audioSwitchState);
 
 		AudioSwitchStateId m_currentState;
 		float              m_currentAlpha;
@@ -233,15 +222,8 @@ private:
 	};
 
 	typedef std::map<AudioControlId, CStateDebugDrawData, std::less<AudioControlId>,
-	                 STLSoundAllocator<std::pair<AudioControlId, CStateDebugDrawData>>> StateDrawInfoMap;
-
-	CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> GetTriggerNames(char const* const _szSeparator, CATLDebugNameStore const* const _pDebugNameStore) const;
-	CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH>  GetEventIDs(char const* const _szSeparator) const;
-	CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH>  GetStandaloneFileIDs(char const* const _szSeparator, CATLDebugNameStore const* const _pDebugNameStore) const;
+	                 STLSoundAllocator<std::pair<AudioControlId const, CStateDebugDrawData>>> StateDrawInfoMap;
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLAudioObject);
-	PREVENT_OBJECT_COPY(CATLAudioObject);
 };

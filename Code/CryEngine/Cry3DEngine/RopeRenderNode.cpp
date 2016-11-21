@@ -828,7 +828,7 @@ void CRopeRenderNode::SetMatrix(const Matrix34& mat)
 //////////////////////////////////////////////////////////////////////////
 const char* CRopeRenderNode::GetEntityClassName() const
 {
-	return "Rope";
+	return "RopeEntity";
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -911,8 +911,6 @@ bool CRopeRenderNode::RenderDebugInfo(const SRendParams& rParams, const SRenderi
 	if (passInfo.IsShadowPass())
 		return false;
 
-	IRenderer* pRend = GetRenderer();
-
 	//	bool bVerbose = GetCVars()->e_DebugDraw > 1;
 	bool bOnlyBoxes = GetCVars()->e_DebugDraw < 0;
 
@@ -926,9 +924,9 @@ bool CRopeRenderNode::RenderDebugInfo(const SRendParams& rParams, const SRenderi
 	float color[4] = { 0, 1, 1, 1 };
 
 	if (GetCVars()->e_DebugDraw == 2)          // color coded polygon count
-		pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTris);
+		IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nTris);
 	else if (GetCVars()->e_DebugDraw == 5)  // number of render materials (color coded)
-		pRend->DrawLabelEx(pos, 1.3f, color, true, true, "1");
+		IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "1");
 
 	return true;
 }
@@ -947,7 +945,7 @@ void CRopeRenderNode::SetPhysics(IPhysicalEntity* pPhysicalEntity)
 	pe_params_foreign_data pfd;
 	pfd.pForeignData = (IRenderNode*)this;
 	pfd.iForeignData = PHYS_FOREIGN_ID_ROPE;
-	pPhysicalEntity->SetParams(&pfd);
+	pPhysicalEntity->SetParams(&pfd, 1);
 
 	pe_params_rope pr;
 	pPhysicalEntity->GetParams(&pr);
@@ -1600,6 +1598,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 		m_spline.value(pnt) = m_physicsPoints[pnt];
 	}
 	m_spline.SetRange(0, m_physicsPoints.size() - 1);
+	m_spline.SetModified(true);
 
 	int nLengthSamples = m_params.nNumSegments + 1;
 	if (!(m_params.nFlags & IRopeRenderNode::eRope_Smooth))
@@ -1614,7 +1613,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 	tubeSurf.m_worldTM = m_worldTM;
 	//tubeSurf.m_worldTM.SetIdentity();
 
-	tubeSurf.GenerateSurface(&m_spline, m_params.fThickness, false, Vec3(0, 0, 1),
+	tubeSurf.GenerateSurface(&m_spline, m_params.fThickness, false, (m_physicsPoints[numSplinePoints - 1] - m_physicsPoints[0]).GetOrthogonal().GetNormalized(),
 	                         nLengthSamples, m_params.nNumSides, true, false, false, false, &vTexMin, &vTexMax);
 
 	int nNewVertexCount = tubeSurf.iVQuantity;

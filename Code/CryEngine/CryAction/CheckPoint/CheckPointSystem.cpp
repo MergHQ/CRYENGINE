@@ -20,7 +20,6 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CryAISystem/IAISystem.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameTokens.h>
 #include <CryGame/IGameFramework.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -784,7 +783,7 @@ XmlNodeRef CCheckpointSystem::ReadXML(const char* fileName)
 void CCheckpointSystem::RestartGameplay()
 {
 	//if paused - start game
-	gEnv->pGame->GetIGameFramework()->PauseGame(false, true);
+	gEnv->pGameFramework->PauseGame(false, true);
 
 	//let game restart
 	if (m_pGameHandler)

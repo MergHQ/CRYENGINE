@@ -367,7 +367,7 @@ XmlNodeRef CXPIncEvent::GetXML(IGameStatistics* pGS)
 
 	node->setAttr("delta", m_delta);
 
-	COMPILE_TIME_ASSERT(k_XPRsn_Num==CRY_ARRAY_COUNT(k_XPIncRsnsStrs));
+	static_assert(k_XPRsn_Num==CRY_ARRAY_COUNT(k_XPIncRsnsStrs), "Unexpected array size!");
 
 	EXPReason		reason=m_reason;
 
@@ -421,7 +421,7 @@ XmlNodeRef CScoreIncEvent::GetXML(IGameStatistics* pGS)
 
 	node->setAttr("score", m_score);
 
-	COMPILE_TIME_ASSERT(EGRST_Num==CRY_ARRAY_COUNT(k_ScoreIncTypeStrs));
+	static_assert(EGRST_Num==CRY_ARRAY_COUNT(k_ScoreIncTypeStrs), "Unexpected array size!");
 
 	EGameRulesScoreType type=m_type;
 
@@ -508,7 +508,7 @@ static const char* k_RadarTagReasonStrs[] =
 
 XmlNodeRef CTaggedEvent::GetXML(IGameStatistics* pGS)
 {
-	COMPILE_TIME_ASSERT(CGameRules::eRTR_Last==CRY_ARRAY_COUNT(k_RadarTagReasonStrs));
+	static_assert(CGameRules::eRTR_Last==CRY_ARRAY_COUNT(k_RadarTagReasonStrs), "Unexpected array size!");
 
 	const char *sReason = "Unknown";
 	if (m_reason>=0 && m_reason<CGameRules::eRTR_Last)

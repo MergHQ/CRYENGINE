@@ -107,6 +107,7 @@ struct ITimeDemoRecorder;
 class CSegmentedWorld;
 
 class CNetMessageDistpatcher;
+class CManualFrameStepController;
 
 class CCryAction :
 	public IGameFramework
@@ -114,7 +115,6 @@ class CCryAction :
 
 public:
 	CCryAction();
-	virtual ~CCryAction();
 
 	// IGameFramework
 	void                                  ClearTimers();
@@ -130,12 +130,13 @@ public:
 	virtual void                          RegisterFactory(const char* name, ISaveGame*(*func)(), bool);
 	virtual void                          RegisterFactory(const char* name, ILoadGame*(*func)(), bool);
 
-	virtual bool                          Init(SSystemInitParams& startupParams);
+	virtual bool                          StartEngine(SSystemInitParams& startupParams);
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
-	virtual void                          Shutdown();
-	virtual bool                          PreUpdate(bool haveFocus, unsigned int updateFlags);
-	virtual void                          PostUpdate(bool haveFocus, unsigned int updateFlags);
+	virtual void                          ShutdownEngine();
+	virtual void                          ShutdownEngineFast();
+	virtual void                          PrePhysicsUpdate() /*override*/;
+	virtual int                           ManualFrameUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
 	virtual void                          GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -148,9 +149,6 @@ public:
 	virtual void                          GetAbsLevelPath(char* pPathBuffer, uint32 pathBufferSize);
 	virtual bool                          IsInTimeDemo();        // Check if time demo is in progress (either playing or recording);
 	virtual bool                          IsTimeDemoRecording(); // Check if time demo is recording;
-
-	virtual bool                          IsLevelPrecachingDone() const;
-	virtual void                          SetLevelPrecachingDone(bool bValue);
 
 	virtual ISystem*                      GetISystem()           { return m_pSystem; };
 	virtual ILanQueryListener*            GetILanQueryListener() { return m_pLanQueryListener; }
@@ -227,6 +225,8 @@ public:
 
 	virtual bool                          SaveGame(const char* path, bool bQuick = false, bool bForceImmediate = false, ESaveGameReason reason = eSGR_QuickSave, bool ignoreDelay = false, const char* checkpointName = NULL);
 	virtual ELoadGameResult               LoadGame(const char* path, bool quick = false, bool ignoreDelay = false);
+	virtual TSaveGameName                 CreateSaveGameName();
+
 	virtual void                          ScheduleEndLevel(const char* nextLevel = "");
 	virtual void                          ScheduleEndLevelNow(const char* nextLevel);
 
@@ -266,6 +266,9 @@ public:
 	virtual bool                  ShouldMigrateNub(CrySessionHandle sessionHandle);
 
 	virtual ISharedParamsManager* GetISharedParamsManager();
+
+	virtual IGame*                GetIGame();
+
 	virtual float                 GetLoadSaveDelay() const { return m_lastSaveLoad; }
 
 	virtual IGameVolumes*         GetIGameVolumesManager() const;
@@ -281,42 +284,43 @@ protected:
 
 public:
 
-	static CCryAction*        GetCryAction() { return m_pThis; }
+	static CCryAction*          GetCryAction() { return m_pThis; }
 
-	bool                      ControlsEntity(EntityId id) const;
+	bool                        ControlsEntity(EntityId id) const;
 
-	virtual CGameServerNub*   GetGameServerNub();
-	CGameClientNub*           GetGameClientNub();
-	CGameContext*             GetGameContext();
-	CScriptBind_Vehicle*      GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
-	CScriptBind_VehicleSeat*  GetVehicleSeatScriptBind() { return m_pScriptBindVehicleSeat; }
-	CScriptBind_Inventory*    GetInventoryScriptBind()   { return m_pScriptInventory; }
-	CPersistantDebug*         GetPersistantDebug()       { return m_pPersistantDebug; }
-	CSignalTimer*             GetSignalTimer();
-	CRangeSignaling*          GetRangeSignaling();
-	virtual IPersistantDebug* GetIPersistantDebug();
-	virtual IGameStatsConfig* GetIGameStatsConfig();
-	CColorGradientManager*    GetColorGradientManager() const { return m_pColorGradientManager; }
+	virtual CGameServerNub*     GetGameServerNub();
+	CGameClientNub*             GetGameClientNub();
+	CGameContext*               GetGameContext();
+	CScriptBind_Vehicle*        GetVehicleScriptBind()     { return m_pScriptBindVehicle; }
+	CScriptBind_VehicleSeat*    GetVehicleSeatScriptBind() { return m_pScriptBindVehicleSeat; }
+	CScriptBind_Inventory*      GetInventoryScriptBind()   { return m_pScriptInventory; }
+	CPersistantDebug*           GetPersistantDebug()       { return m_pPersistantDebug; }
+	CSignalTimer*               GetSignalTimer();
+	CRangeSignaling*            GetRangeSignaling();
+	virtual IPersistantDebug*   GetIPersistantDebug();
+	virtual IGameStatsConfig*   GetIGameStatsConfig();
+	CColorGradientManager*      GetColorGradientManager() const { return m_pColorGradientManager; }
 
-	virtual void              AddBreakEventListener(IBreakEventListener* pListener);
-	virtual void              RemoveBreakEventListener(IBreakEventListener* pListener);
+	virtual void                AddBreakEventListener(IBreakEventListener* pListener);
+	virtual void                RemoveBreakEventListener(IBreakEventListener* pListener);
 
-	void                      OnBreakEvent(uint16 uBreakEventIndex);
-	void                      OnPartRemoveEvent(int32 iPartRemoveEventIndex);
+	void                        OnBreakEvent(uint16 uBreakEventIndex);
+	void                        OnPartRemoveEvent(int32 iPartRemoveEventIndex);
 
-	virtual void              RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
-	virtual void              UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
+	virtual void                RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
+	virtual void                UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
 
-	CDialogSystem*            GetDialogSystem()             { return m_pDialogSystem; }
-	CTimeOfDayScheduler*      GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
+	CDialogSystem*              GetDialogSystem()             { return m_pDialogSystem; }
+	CTimeOfDayScheduler*        GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
 
-	CGameStatsConfig*         GetGameStatsConfig();
-	IGameStatistics*          GetIGameStatistics();
+	CGameStatsConfig*           GetGameStatsConfig();
+	IGameStatistics*            GetIGameStatistics();
 
-	IGameSessionHandler*      GetIGameSessionHandler();
-	void                      SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
+	IGameSessionHandler*        GetIGameSessionHandler();
+	void                        SetGameSessionHandler(IGameSessionHandler* pSessionHandler);
 
-	CNetMessageDistpatcher*   GetNetMessageDispatcher() { return m_pNetMsgDispatcher; }
+	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
+	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
 
 	//	INetQueryListener* GetLanQueryListener() {return m_pLanQueryListener;}
 	bool                          LoadingScreenEnabled() const;
@@ -361,9 +365,19 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
+	bool                    PreUpdate(bool haveFocus, unsigned int updateFlags);
+	int                     Update(bool haveFocus, unsigned int updateFlags);
+	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
+
 private:
 	void InitScriptBinds();
 	void ReleaseScriptBinds();
+
+	bool InitGame(SSystemInitParams& startupParams);
+	bool ShutdownGame();
+
+	int  Run(const char* szAutoStartLevelName);
+
 	void InitForceFeedbackSystem();
 	void InitGameVolumesManager();
 
@@ -465,8 +479,6 @@ private:
 
 	bool                          m_paused;
 	bool                          m_forcedpause;
-
-	bool                          m_levelPrecachingDone;
 
 	static CCryAction*            m_pThis;
 
@@ -584,6 +596,7 @@ private:
 	ICVar* m_pShowLanBrowserCVAR;
 	ICVar* m_pDebugSignalTimers;
 	ICVar* m_pDebugRangeSignaling;
+	ICVar* m_pAsyncLevelLoad;
 
 	bool   m_bShowLanBrowser;
 	//
@@ -600,6 +613,18 @@ private:
 	ESaveGameMethod m_delayedSaveGameMethod;     // 0 -> no save, 1=quick save, 2=save, not quick
 	ESaveGameReason m_delayedSaveGameReason;
 	int             m_delayedSaveCountDown;
+
+	struct SExternalGameLibrary
+	{
+		string        dllName;
+		HMODULE       dllHandle;
+		IGameStartup* pGameStartup;
+		IGame*        pGame;
+
+		SExternalGameLibrary() : dllName(""), dllHandle(0), pGameStartup(nullptr), pGame(nullptr) {}
+		bool IsValid() const { return (pGameStartup != nullptr && pGame != nullptr); }
+		void Reset()         { dllName = ""; dllHandle = 0; pGameStartup = nullptr; pGame = nullptr; }
+	};
 
 	struct SLocalAllocs
 	{
@@ -641,14 +666,18 @@ private:
 	} m_connectRepeatedly;
 #endif
 
-	float                   m_lastSaveLoad;
-	float                   m_lastFrameTimeUI;
+	float                       m_lastSaveLoad;
+	float                       m_lastFrameTimeUI;
 
-	bool                    m_pbSvEnabled;
-	bool                    m_pbClEnabled;
-	uint32                  m_PreUpdateTicks;
+	bool                        m_pbSvEnabled;
+	bool                        m_pbClEnabled;
+	uint32                      m_PreUpdateTicks;
 
-	CNetMessageDistpatcher* m_pNetMsgDispatcher;
+	CNetMessageDistpatcher*     m_pNetMsgDispatcher;
+	CManualFrameStepController* m_pManualFrameStepController;
+	SExternalGameLibrary        m_externalGameLibrary;
+
+	CTimeValue                  m_levelStartTime;
 };
 
 #endif //__CRYACTION_H__

@@ -87,7 +87,7 @@ void CryGetExecutableFolder(char *szOutPath, int pathSize)
 %include "../../../../CryEngine/CryCommon/CryCore/Common_TypeInfo.h"
 %include "../../../../CryEngine/CryCommon/CryMemory/CrySizer.h"
 
-// calling convetion stuff from windows.i ; we also want to use that for non-windows platforms . . .
+// calling convention stuff from windows.i ; we also want to use that for non-windows platforms . . .
 #define __cdecl
 #define __fastcall
 #define __far

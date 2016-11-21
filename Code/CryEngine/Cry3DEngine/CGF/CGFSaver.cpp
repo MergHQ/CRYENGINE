@@ -762,7 +762,7 @@ int CSaverCGF::SaveNodeMesh(
 
 		if (mesh.m_pPositions && !bInterleaved)
 		{
-			COMPILE_TIME_ASSERT(sizeof(mesh.m_pPositions[0]) == sizeof(Vec3));
+			static_assert(sizeof(mesh.m_pPositions[0]) == sizeof(Vec3), "Invalid type size!");
 			if (bStorePositionsAsF16)
 			{
 				const Vec3* pRealData = mesh.m_pPositions;
@@ -821,8 +821,8 @@ int CSaverCGF::SaveNodeMesh(
 		{
 			const int indexCount = mesh.GetIndexCount();
 
-			COMPILE_TIME_ASSERT(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx));
-			COMPILE_TIME_ASSERT(sizeof(vtx_idx) == 2 || sizeof(vtx_idx) == 4);
+			static_assert(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx), "Invalid type size!");
+			static_assert(sizeof(vtx_idx) == 2 || sizeof(vtx_idx) == 4, "Invalid type size!");
 
 			if (sizeof(mesh.m_pIndices[0]) == (bStoreIndicesAsU16 ? 2 : 4))
 			{
@@ -886,7 +886,7 @@ int CSaverCGF::SaveNodeMesh(
 				chunk.nFlags |= MESH_CHUNK_DESC_0801::HAS_EXTRA_WEIGHTS;
 
 				std::vector<SMeshBoneMapping_uint16> tempBoneMapping;
-				COMPILE_TIME_ASSERT(sizeof(tempBoneMapping[0]) == sizeof(mesh.m_pBoneMapping[0]));
+				static_assert(sizeof(tempBoneMapping[0]) == sizeof(mesh.m_pBoneMapping[0]), "Invalid type size!");
 				tempBoneMapping.resize(vertexCount * 2);
 				memcpy(&tempBoneMapping[0], mesh.m_pBoneMapping, sizeof(tempBoneMapping[0]) * vertexCount);
 				memcpy(&tempBoneMapping[vertexCount], mesh.m_pExtraBoneMapping, sizeof(tempBoneMapping[0]) * vertexCount);
@@ -1403,7 +1403,7 @@ int CSaverCGF::SaveExportFlags(bool bSwapEndian)
 
 	chunk.authorToolVersion = pExpInfo->authorToolVersion;
 
-	COMPILE_TIME_ASSERT(sizeof(chunk.rc_version) == sizeof(pExpInfo->rc_version));
+	static_assert(sizeof(chunk.rc_version) == sizeof(pExpInfo->rc_version), "Invalid type size!");
 	memcpy(&chunk.rc_version[0], &pExpInfo->rc_version[0], sizeof(pExpInfo->rc_version));
 
 	cry_strcpy(chunk.rc_version_string, pExpInfo->rc_version_string);

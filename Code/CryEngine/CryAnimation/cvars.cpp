@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "cvars.h"
-
+#include <CrySerialization/Enum.h>
 //need global var as the singleton approach is too expensive
 Console g_Consoleself;
 namespace
@@ -17,6 +17,16 @@ Console::Console()
 	if (g_ConsoleInstanceCount++)
 		abort();
 }
+
+SERIALIZATION_ENUM_BEGIN(CA_Interpolation_Type, "Interpolation Type")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::Linear, "linear", "Linear")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::QuadraticIn, "quadraticIn", "QuadraticIn")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::QuadraticOut, "quadraticOut", "QuadraticOut")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::QuadraticInOut, "quadraticInOut", "QuadraticInOut")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::SineIn, "sineIn", "SineIn")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::SineOut, "sineOut", "SineOut")
+	SERIALIZATION_ENUM(CA_Interpolation_Type::SineInOut, "sineInOut", "SineInOut")
+SERIALIZATION_ENUM_END()
 
 static void CADebugText(IConsoleCmdArgs* pArgs)
 {
@@ -54,6 +64,51 @@ static void CADebugText(IConsoleCmdArgs* pArgs)
 #endif
 }
 
+static void CADefaultTransitionInterpolationType(IConsoleCmdArgs *pArgs)
+{
+#ifndef CONSOLE_CONST_CVAR_MODE
+	const Serialization::EnumDescription& enumDescription = Serialization::getEnumDescription<CA_Interpolation_Type>(); 
+	if(pArgs->GetArgCount() == 1)
+	{
+		CryLogAlways("%s", enumDescription.labelByIndex(g_DefaultTransitionInterpolationType));
+	}
+	else if(pArgs->GetArgCount() > 1)
+	{
+		stack_string arg = pArgs->GetArg(1);
+
+		for (int i = 0; i < enumDescription.count(); i++)
+		{
+			if (arg.compareNoCase(enumDescription.labelByIndex(i)) == 0)
+			{
+				g_DefaultTransitionInterpolationType = i;
+			}
+		}
+	}
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////////
+struct SDefaultTransitionInterpolationTypeAutoComplete : public IConsoleArgumentAutoComplete
+{
+	virtual int GetCount() const override
+	{
+		const Serialization::EnumDescription& enumDescription = Serialization::getEnumDescription<CA_Interpolation_Type>();
+		return enumDescription.count();
+	}
+
+	virtual const char* GetValue(int nIndex) const override
+	{
+		const Serialization::EnumDescription& enumDescription = Serialization::getEnumDescription<CA_Interpolation_Type>();
+		if (nIndex >= 0 && nIndex < enumDescription.count())
+			return enumDescription.labelByIndex(nIndex);
+
+		return "";
+	}
+};
+
+static SDefaultTransitionInterpolationTypeAutoComplete s_defaultTransitionInterpolationTypeAutoComplete;
+
+//////////////////////////////////////////////////////////////////////////
 void Console::Init()
 {
 #ifndef _RELEASE
@@ -146,6 +201,10 @@ void Console::Init()
 	DefineConstIntCVar(ca_AllowMultipleEffectsOfSameName, 1, VF_CHEAT, "Allow a skeleton animation to spawn more than one instance of an effect with the same name on the same instance.");
 	DefineConstIntCVar(ca_UseAssetDefinedLod, 0, VF_CHEAT, "Lowers render LODs for characters with respect to \"consoles_lod0\" UDP. Requires characters to be reloaded.");
 	DefineConstIntCVar(ca_Validate, 0, VF_CHEAT, "if set to 1, will run validation on animation data");
+	// animation transition interpolation mode
+	REGISTER_COMMAND("ca_DefaultTransitionInterpolationType", (ConsoleCommandFunc)CADefaultTransitionInterpolationType, VF_CHEAT, "changes transition interpolation method.");
+	gEnv->pConsole->RegisterAutoComplete("ca_DefaultTransitionInterpolationType", &s_defaultTransitionInterpolationTypeAutoComplete);
+
 #if USE_FACIAL_ANIMATION_FRAMERATE_LIMITING
 	DefineConstIntCVar(ca_FacialAnimationFramerate, 20, VF_CHEAT, "Update facial system at a maximum framerate of n. This framerate falls off linearly to zero with the distance.");
 #endif

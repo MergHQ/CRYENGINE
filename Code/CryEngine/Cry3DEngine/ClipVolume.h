@@ -43,6 +43,7 @@ private:
 
 	PodArray<IRenderNode*>  m_lstRenderNodes;
 	char                    m_sName[64];
+	CryCriticalSection      m_lstRenderNodesCritSection;
 };
 
 #endif //__INCLUDE_CRY3DENGINE_CLIPVOLUME_H

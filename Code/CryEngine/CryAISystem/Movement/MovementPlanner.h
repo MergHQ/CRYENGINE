@@ -159,7 +159,7 @@ private:
 	Plan                         m_plan;
 	MovementRequestID            m_requestId;
 	MovementRequest              m_request;
-	uint8                        m_amountOfFailedReplanning;
+	uint8                        m_replanningAfterFailCount;
 	bool                         m_pathfinderRequestQueued;
 	const static uint8           s_maxAllowedReplanning = 3;
 };

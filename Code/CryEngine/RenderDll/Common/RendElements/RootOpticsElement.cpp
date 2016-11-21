@@ -141,7 +141,7 @@ CTexture* RootOpticsElement::GetOcclusionPattern()
 	return m_pOccQuery->GetGatherTexture();
 }
 
-void RootOpticsElement::validateGlobalVars(SAuxParams& aux)
+void RootOpticsElement::validateGlobalVars(const SAuxParams& aux)
 {
 	m_globalPerspectiveFactor = m_fPerspectiveFactor;
 	m_globalDistanceFadingFactor = m_flareLight.m_bAttachToSun ? 0.0f : m_fDistanceFadingFactor;
@@ -207,7 +207,7 @@ void RootOpticsElement::validateGlobalVars(SAuxParams& aux)
 	COpticsGroup::validateChildrenGlobalVars(aux);
 }
 
-void RootOpticsElement::Render(SLensFlareRenderParam* pParam, const Vec3& vPos)
+void RootOpticsElement::RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos)
 {
 	if (pParam == NULL)
 		return;
@@ -224,12 +224,38 @@ void RootOpticsElement::Render(SLensFlareRenderParam* pParam, const Vec3& vPos)
 	light.m_fViewAngleFalloff = 1;
 
 	const bool bIgnoreOcclusionQueries = pParam->passInfo.IsAuxWindow();
-	ProcessAll((CShader*)pParam->pShader, light, true, pParam->pCamera, bIgnoreOcclusionQueries);
+
+	if (CTexture* pDstRT = gcpRendD3D->GetBackBufferTexture())
+	{
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+
+		D3DViewPort viewport;
+		viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+		viewport.Width = float(pDstRT->GetWidth());
+		viewport.Height = float(pDstRT->GetHeight());
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+
+		CStandardGraphicsPipeline::SViewInfo viewInfo[CCamera::eEye_eCount];
+		int viewInfoCount = gcpRendD3D->GetGraphicsPipeline().GetViewInfo(viewInfo);
+
+		std::vector<CPrimitiveRenderPass*> prePasses;
+
+		CPrimitiveRenderPass previewPass;
+		previewPass.SetRenderTarget(0, pDstRT);
+		previewPass.SetViewport(viewport);
+		previewPass.ClearPrimitives();
+
+		if (ProcessAll(previewPass, prePasses, light, viewInfo, viewInfoCount, true, false))
+			previewPass.Execute();
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+	}
 }
 
-bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender, CCamera* pCamera, bool bIgnoreOcclusionQueries)
+bool RootOpticsElement::ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const CStandardGraphicsPipeline::SViewInfo* pViewInfo, int viewInfoCount, bool bForceRender, bool bUpdateOcclusion)
 {
-	CD3D9Renderer* pRD = gcpRendD3D;
+	CRY_ASSERT(viewInfoCount > 0);
 
 	Vec3 vSrcWorldPos = light.m_vPos;
 	Vec3 vSrcProjPos;
@@ -238,29 +264,18 @@ bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bFo
 	float linearDepth = 0;
 	float distance = 0;
 
-	if (pCamera)
-	{
-		Matrix44A mProj, mView;
-		mathMatrixPerspectiveFov(&mProj, pCamera->GetFov(), pCamera->GetProjRatio(), pCamera->GetNearPlane(), pCamera->GetFarPlane());
-		mathMatrixLookAt(&mView, pCamera->GetPosition(), pCamera->GetPosition() + pCamera->GetViewdir(), Vec3(0, 0, 1));
-		if (!CFlareSoftOcclusionQuery::ComputeProjPos(vSrcWorldPos, mView, mProj, vSrcProjPos))
-			return false;
-		Matrix44A mCamera = mView.GetInverted();
-		linearDepth = clamp_tpl(CFlareSoftOcclusionQuery::ComputeLinearDepth(vSrcWorldPos, mCamera, pCamera->GetNearPlane(), pCamera->GetFarPlane()), -1.0f, 0.99f);
-		distance = mCamera.GetTranslation().GetDistance(vSrcWorldPos);
-	}
-	else
-	{
-		if (!CFlareSoftOcclusionQuery::ComputeProjPos(vSrcWorldPos, pRD->m_ViewMatrix, pRD->m_ProjMatrix, vSrcProjPos))
-			return false;
+	// Ideally we'd use the center camera here
+	const CStandardGraphicsPipeline::SViewInfo& viewInfo = pViewInfo[0];
 
-		if (pRD->m_RP.m_TI[pRD->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
-			vSrcProjPos.z = 1.0f - vSrcProjPos.z;
+	if (!CFlareSoftOcclusionQuery::ComputeProjPos(vSrcWorldPos, viewInfo.viewMatrix, viewInfo.projMatrix, vSrcProjPos))
+		return false;
 
-		const CRenderCamera& rc = gRenDev->GetRCamera();
-		linearDepth = clamp_tpl(CFlareSoftOcclusionQuery::ComputeLinearDepth(vSrcWorldPos, pRD->m_CameraMatrix, rc.fNear, rc.fFar), -1.0f, 0.99f);
-		distance = pRD->GetRCamera().vOrigin.GetDistance(vSrcWorldPos);
-	}
+	if (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth)
+		vSrcProjPos.z = 1.0f - vSrcProjPos.z;
+
+	const CRenderCamera& rc = *viewInfo.pRenderCamera;
+	linearDepth = clamp_tpl(CFlareSoftOcclusionQuery::ComputeLinearDepth(vSrcWorldPos, viewInfo.viewMatrix, rc.fNear, rc.fFar), -1.0f, 0.99f);
+	distance = rc.vOrigin.GetDistance(vSrcWorldPos);
 
 	if (GetElementCount() <= 0 || !IsEnabled())
 		return false;
@@ -272,9 +287,7 @@ bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bFo
 	if (!light.m_bAttachToSun && fFade <= 0.001f)
 		return false;
 
-	bool bVisible(!IsOcclusionEnabled());
-
-	if (!bVisible && !bForceRender)
+	if (!bForceRender && IsOcclusionEnabled())
 	{
 		float curTargetVisibility = 0.0f;
 		m_fFlareVisibilityFactor = m_fShaftVisibilityFactor = 0.0f;
@@ -284,35 +297,50 @@ bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bFo
 			curTargetVisibility = m_pOccQuery->GetVisibility();
 
 			if (CSoftOcclusionVisiblityFader* pFader = m_pOccQuery->GetVisibilityFader(VISFADER_FLARE))
-				m_fFlareVisibilityFactor = pFader->UpdateVisibility(curTargetVisibility, m_fFlareTimelineDuration);
+				m_fFlareVisibilityFactor = bUpdateOcclusion ? pFader->UpdateVisibility(curTargetVisibility, m_fFlareTimelineDuration) : pFader->m_fVisibilityFactor;
 
 			if (CSoftOcclusionVisiblityFader* pFader = m_pOccQuery->GetVisibilityFader(VISFADER_SHAFT))
-				m_fShaftVisibilityFactor = pFader->UpdateVisibility(curTargetVisibility, m_fShaftTimelineDuration);
+				m_fShaftVisibilityFactor = bUpdateOcclusion ? pFader->UpdateVisibility(curTargetVisibility, m_fShaftTimelineDuration) : pFader->m_fVisibilityFactor;
 		}
 
-		bVisible = IsVisible();
+		if (!IsVisible())
+			return true;
 	}
 
-	if (bVisible || bForceRender)
+	SPreparePrimitivesContext context(targetPass, prePasses);
+	context.pViewInfo = pViewInfo;
+	context.viewInfoCount = viewInfoCount;
+	context.lightWorldPos = vSrcWorldPos;
+	context.lightScreenPos[0] = vSrcProjPos;
+
+	for (int i=1; i<viewInfoCount; ++i)
 	{
-		SAuxParams aux;
-		aux.linearDepth = linearDepth;
-		aux.distance = distance;
-		float x = vSrcProjPos.x * 2 - 1;
-		float y = vSrcProjPos.y * 2 - 1;
-		float unitLenSq = (x * x + y * y);
-		aux.sensorVariationValue = clamp_tpl((1 - powf(unitLenSq, 0.25f)) * 2 - 1, -1.0f, 1.0f);
-		aux.perspectiveShortening = clamp_tpl(10.f * (1.f - vSrcProjPos.z), 0.0f, 2.0f);
-		aux.viewAngleFalloff = light.m_fViewAngleFalloff;
-		aux.attachToSun = light.m_bAttachToSun;
-		aux.bMultiplyColor = IsMultiplyColor();
-		aux.bForceRender = bForceRender;
-		aux.bIgnoreOcclusionQueries = bIgnoreOcclusionQueries;
+		Vec3 projPos;
+		if (CFlareSoftOcclusionQuery::ComputeProjPos(vSrcWorldPos, pViewInfo[i].viewMatrix, pViewInfo[i].projMatrix, projPos))
+		{
+			if (pViewInfo[i].flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth)
+				projPos.z = 1.0f - projPos.z;
 
-		validateGlobalVars(aux);
-		if (bForceRender || m_globalFlareBrightness > 0.001f || m_globalShaftBrightness > 0.001f)
-			COpticsGroup::Render(shader, vSrcWorldPos, vSrcProjPos, aux);
+			context.lightScreenPos[i] = projPos;
+		}
 	}
+
+	context.auxParams.linearDepth = linearDepth;
+	context.auxParams.distance = distance;
+	float x = vSrcProjPos.x * 2 - 1;
+	float y = vSrcProjPos.y * 2 - 1;
+	float unitLenSq = (x * x + y * y);
+	context.auxParams.sensorVariationValue = clamp_tpl((1 - powf(unitLenSq, 0.25f)) * 2 - 1, -1.0f, 1.0f);
+	context.auxParams.perspectiveShortening = clamp_tpl(10.f * (1.f - vSrcProjPos.z), 0.0f, 2.0f);
+	context.auxParams.viewAngleFalloff = light.m_fViewAngleFalloff;
+	context.auxParams.attachToSun = light.m_bAttachToSun;
+	context.auxParams.bMultiplyColor = IsMultiplyColor();
+	context.auxParams.bForceRender = bForceRender;
+
+	validateGlobalVars(context.auxParams);
+	if (bForceRender || m_globalFlareBrightness > 0.001f || m_globalShaftBrightness > 0.001f)
+		COpticsGroup::PreparePrimitives(context);
 
 	return true;
 }
+

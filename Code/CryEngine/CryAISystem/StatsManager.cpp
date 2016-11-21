@@ -32,7 +32,7 @@ void CStatsManager::InitDescriptions()
 
 	// Make sure that the number of descriptions never varies from the size of the enum
 	// That should be enough to avoid descriptions and enums from getting out of step
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(sizeof(sMetadata) / sizeof(SStatMetadata) == eStat_Last);
+	PREFAST_SUPPRESS_WARNING(6326) static_assert(CRY_ARRAY_COUNT(sMetadata) == eStat_Last, "Unexpected array size!");
 
 	m_sMetadata = sMetadata;
 }

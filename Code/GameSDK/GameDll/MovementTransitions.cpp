@@ -951,7 +951,7 @@ EMovementTransitionState CMovementTransitions::Update(
 				dist = sqrtf(pRequest->GetMoveTarget().GetSquaredDistance2D(playerPos));
 			}
 
-			gEnv->pRenderer->Draw2dLabel( 8.f, (float)MovementTransitionsDebug::s_debug_y, 1.5f, bSignaled ? MovementTransitionsDebug::s_dbg_color_signaled : MovementTransitionsDebug::s_dbg_color_unsignaled, false, 
+			IRenderAuxText::Draw2dLabel( 8.f, (float)MovementTransitionsDebug::s_debug_y, 1.5f, bSignaled ? MovementTransitionsDebug::s_dbg_color_signaled : MovementTransitionsDebug::s_dbg_color_unsignaled, false,
 				"entity=%s\ttype=%s\tspeed=%s\tdist=%3.2f\tTAngle=%3.2f\tarrivalAngle=%3.2f\ttargTAngle=%3.2f\tjukeAngle=%3.2f\tflags=%d",
 					pPlayer->GetEntity()->GetName(),
 					MovementTransitionsDebug::GetTransitionTypeName(transParams.m_transitionType),
@@ -967,7 +967,7 @@ EMovementTransitionState CMovementTransitions::Update(
 
 			if (pTransition)
 			{
-				gEnv->pRenderer->Draw2dLabel( 8.f, (float)MovementTransitionsDebug::s_debug_y, 1.5f, bSignaled ? MovementTransitionsDebug::s_dbg_color_signaled : MovementTransitionsDebug::s_dbg_color_unsignaled, false, 
+				IRenderAuxText::Draw2dLabel( 8.f, (float)MovementTransitionsDebug::s_debug_y, 1.5f, bSignaled ? MovementTransitionsDebug::s_dbg_color_signaled : MovementTransitionsDebug::s_dbg_color_unsignaled, false,
 					"Transition\tindex=%i\t%s\tangleDiff=%3.2f", index, pTransition->GetDescription().c_str(), RAD2DEG(bestMatch.angleDifference) );
 			}
 			MovementTransitionsDebug::s_debug_y += 14;

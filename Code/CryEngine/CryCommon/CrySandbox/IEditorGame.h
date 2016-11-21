@@ -84,6 +84,13 @@ struct IEquipmentSystemInterface
 	// </interfuscator:shuffle>
 };
 
+struct IGamePhysicsSettings
+{
+	virtual ~IGamePhysicsSettings() {}
+
+	virtual const char* GetCollisionClassName(unsigned int bitIndex) = 0;
+};
+
 //! Interface used by the Editor to interact with the GameDLL.
 struct IEditorGame
 {
@@ -101,28 +108,20 @@ struct IEditorGame
 	// <interfuscator:shuffle>
 	virtual ~IEditorGame(){}
 	virtual bool                       Init(ISystem* pSystem, IGameToEditorInterface* pEditorInterface) = 0;
-	virtual int                        Update(bool haveFocus, unsigned int updateFlags) = 0;
+	virtual void                       Update(bool haveFocus, unsigned int updateFlags) = 0;
 	virtual void                       Shutdown() = 0;
-	virtual bool                       SetGameMode(bool bGameMode) = 0;
-	virtual IEntity*                   GetPlayer() = 0;
-	virtual void                       SetPlayerPosAng(Vec3 pos, Vec3 viewDir) = 0;
-	virtual void                       HidePlayer(bool bHide) = 0;
+	virtual void                       SetGameMode(bool bGameMode) = 0;
+	virtual bool                       SetPlayerPosAng(Vec3 pos, Vec3 viewDir) = 0;
 	virtual void                       OnBeforeLevelLoad() = 0;
 	virtual void                       OnAfterLevelInit(const char* levelName, const char* levelFolder) = 0;
 	virtual void                       OnAfterLevelLoad(const char* levelName, const char* levelFolder) = 0;
 	virtual void                       OnCloseLevel() = 0;
 	virtual void                       OnSaveLevel() = 0;
-	;
+	
 	virtual bool                       BuildEntitySerializationList(XmlNodeRef output) = 0;
 	virtual bool                       GetAdditionalMinimapData(XmlNodeRef output) = 0;
 
-	virtual IFlowSystem*               GetIFlowSystem() = 0;
-	virtual IGameTokenSystem*          GetIGameTokenSystem() = 0;
 	virtual IEquipmentSystemInterface* GetIEquipmentSystemInterface() = 0;
-
-	virtual bool                       IsMultiplayerGameRules()       { return false; }
-	virtual bool                       SupportsMultiplayerGameRules() { return false; }
-	virtual void                       ToggleMultiplayerGameRules()   {}
 
 	// telemetry functions: possibly should find a better place for these
 	virtual void RegisterTelemetryTimelineRenderers(Telemetry::ITelemetryRepository* pRepository) = 0;
@@ -134,5 +133,7 @@ struct IEditorGame
 	virtual void OnDisplayRenderUpdated(bool displayHelpers) = 0;
 	virtual void OnEntitySelectionChanged(EntityId entityId, bool isSelected) = 0;
 	virtual void OnReloadScripts(EReloadScriptsType scriptsType) = 0;
+
+	virtual IGamePhysicsSettings* GetIGamePhysicsSettings() = 0;
 	// </interfuscator:shuffle>
 };

@@ -257,7 +257,7 @@ void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 
 	float fYLine = 8.0f, fYStep = 20.0f;
-	GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, (float*)&cWhite.r, false, "Light Volumes Info (count %d)", nLightVols);
+	IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, (float*)&cWhite.r, false, "Light Volumes Info (count %d)", nLightVols);
 
 	for (uint32 v = 0; v < nLightVols; ++v)  // draw each light volume
 	{
@@ -269,7 +269,7 @@ void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 		const float fCamDistSq = (vPos - vCamPos).len2();
 		cCol.a = max(0.25f, min(1.0f, 1024.0f / (fCamDistSq + 1e-6f)));
 
-		pRenderer->DrawLabelEx(vPos, 1.3f, (float*)&cCol.r, true, true, "Id: %d\nPos: %.2f %.2f %.2f\nRadius: %.2f\nLights: %d\nOutLights: %d",
+		IRenderAuxText::DrawLabelExF(vPos, 1.3f, (float*)&cCol.r, true, true, "Id: %d\nPos: %.2f %.2f %.2f\nRadius: %.2f\nLights: %d\nOutLights: %d",
 		                       v, vPos.x, vPos.y, vPos.z, lvInfo.vVolume.w, lv.pData.size(), (*(int32*)&lvInfo.vVolume.w) & (1 << 31) ? 1 : 0);
 
 		if (GetCVars()->e_LightVolumesDebug == 2)

@@ -2,11 +2,16 @@
 
 #pragma once
 
-#ifndef SequenceFlowNodes_h
-	#define SequenceFlowNodes_h
+#include "SequenceManager.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
-	#include "../FlowNodes/AIFlowBaseNode.h"
-	#include "SequenceManager.h"
+#ifndef _LIB
+struct AIFlowBaseNode
+{
+	static void RegisterFlowNodes();
+	static void UnregisterFlowNodes();
+};
+#endif
 
 namespace AIActionSequence
 {
@@ -473,5 +478,3 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 } // namespace AIActionSequence
-
-#endif //SequenceFlowNodes_h

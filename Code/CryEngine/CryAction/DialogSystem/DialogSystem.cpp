@@ -595,13 +595,8 @@ void CDialogSystem::Dump(int verbosity)
 			for (int nLine = 0; nLine < pScript->GetNumLines(); ++nLine)
 			{
 				const CDialogScript::SScriptLine* pLine = pScript->GetLine(nLine);
-				const char* pTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, pLine->m_audioID);
-				if (pTriggerName == NULL)
-				{
-					pTriggerName = "unknown trigger";
-				}
-				CryLogAlways("Line%3d: %s | Sound=%s StopAnim=%u | Facial=%s Reset=%u W=%.2f T=%.2f| Anim=%s [%s] EP=%u | LookAt=%s Sticky=%u Reset=%u | Delay=%.2f",
-				             nLine + 1, ToActor(pLine->m_actor), pTriggerName, pLine->m_flagSoundStopsAnim, pLine->m_facial.c_str(), pLine->m_flagResetFacial, pLine->m_facialWeight, pLine->m_facialFadeTime,
+				CryLogAlways("Line%3d: %s | AudioTrigger=%u StopAnim=%u | Facial=%s Reset=%u W=%.2f T=%.2f| Anim=%s [%s] EP=%u | LookAt=%s Sticky=%u Reset=%u | Delay=%.2f",
+				             nLine + 1, ToActor(pLine->m_actor), pLine->m_audioID, pLine->m_flagSoundStopsAnim, pLine->m_facial.c_str(), pLine->m_flagResetFacial, pLine->m_facialWeight, pLine->m_facialFadeTime,
 				             pLine->m_anim.c_str(), pLine->m_flagAGSignal ? "SIG" : "ACT", pLine->m_flagAGEP, ToActor(pLine->m_lookatActor), pLine->m_flagLookAtSticky, pLine->m_flagResetLookAt, pLine->m_delay);
 			}
 		}

@@ -177,8 +177,7 @@ enum EGameStartFlags
 	eGSF_RequireKeyboardMouse  = 0x4000,
 
 	eGSF_HostMigrated          = 0x8000,
-	eGSF_NonBlockingConnect    = 0x10000,
-	eGSF_InitClientActor       = 0x20000,
+	eGSF_NonBlockingConnect    = 0x10000
 };
 
 enum ESaveGameReason
@@ -413,7 +412,6 @@ enum EGameFrameworkEvent
 	eGFE_OnBreakable2d,
 	eGFE_OnBecomeVisible,
 	eGFE_PreShatter,
-	eGFE_BecomeLocalPlayer,
 	eGFE_DisablePhysics,
 	eGFE_EnablePhysics,
 	eGFE_ScriptEvent,
@@ -520,6 +518,9 @@ struct IGameFramework
 	typedef uint32                   TimerID;
 	typedef Functor2<void*, TimerID> TimerCallback;
 
+	//! Type to represent saved game names, keeping the string on the stack if possible.
+	typedef CryStackStringT<char, 256> TSaveGameName;
+
 	// <interfuscator:shuffle>
 	virtual ~IGameFramework(){}
 
@@ -528,31 +529,28 @@ struct IGameFramework
 	//! \return New instance of the game framework.
 	typedef IGameFramework*(* TEntryFunction)();
 
-	//! Initialize CRYENGINE with every system needed for a general action game.
-	//! Independently of the success of this method, Shutdown must be called.
+	//! Initializes the engine and starts the main engine loop
+	//! Only returns after the engine loop has been terminated!
+	//! The game framework is automatically shut down before returning
 	//! \param startupParams Pointer to SSystemInitParams structure containing system initialization setup!
 	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual bool Init(SSystemInitParams& startupParams) = 0;
+	virtual bool StartEngine(SSystemInitParams& startupParams) = 0;
+
+	virtual void ShutdownEngine() = 0;
+
+	//! Manually starts update of the engine, aka starts a new frame
+	//! This is automatically handled in the game loop inside StartEngine
+	//! Currently this is used by the Editor since it manages its own update loop.
+	//! \param[in] haveFocus true if the game has the input focus.
+	//! \param[in] updateFlags - Flags specifying how to update.
+	//! \return 0 if something went wrong with initialization, non-zero otherwise.
+	virtual int ManualFrameUpdate(bool bHaveFocus, unsigned int updateFlags) = 0;
 
 	//! Used to notify the framework that we're switching between single and multi player.
 	virtual void InitGameType(bool multiplayer, bool fromInit) = 0;
 
-	//! Complete initialization of game framework with things that can only be done after all entities have been registered.
-	virtual bool CompleteInit() = 0;
-
-	//! Shuts down CryENGINE and any other subsystem created during initialization.
-	virtual void Shutdown() = 0;
-
-	//! Updates CRYENGINE before starting a game frame.
-	//! \param[in] haveFocus true if the game has the input focus.
-	//! \param[in] updateFlags - Flags specifying how to update.
-	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual bool PreUpdate(bool haveFocus, unsigned int updateFlags) = 0;
-
-	//! Updates CRYENGINE after a game frame.
-	//! \param[in] haveFocus true if the game has the input focus.
-	//! \param[in] updateFlags Flags specifying how to update.
-	virtual void PostUpdate(bool haveFocus, unsigned int updateFlags) = 0;
+	//! Calls Physics update before starting a game frame
+	virtual void PrePhysicsUpdate() = 0;
 
 	//! Resets the current game
 	virtual void Reset(bool clients) = 0;
@@ -568,12 +566,6 @@ struct IGameFramework
 
 	//! Are we completely into game mode?
 	virtual bool IsGameStarted() = 0;
-
-	//! Check if the game is allowed to start the actual gameplay.
-	virtual bool IsLevelPrecachingDone() const = 0;
-
-	//! Inform game that it is allowed to start the gameplay.
-	virtual void SetLevelPrecachingDone(bool bValue) = 0;
 
 	//! \return Pointer to the ISystem interface.
 	virtual ISystem* GetISystem() = 0;
@@ -679,6 +671,9 @@ struct IGameFramework
 
 	//! Get pointer to Shared Parameters manager interface class.
 	virtual ISharedParamsManager* GetISharedParamsManager() = 0;
+
+	// Get game implementation, if any
+	virtual IGame* GetIGame() = 0;
 
 	//! Initialises a game context.
 	//! \param pGameStartParams Parameters for configuring the game.
@@ -795,6 +790,8 @@ struct IGameFramework
 
 	//! Load a game from disk (calls StartGameContext...)
 	virtual ELoadGameResult LoadGame(const char* path, bool quick = false, bool ignoreDelay = false) = 0;
+
+	virtual TSaveGameName CreateSaveGameName() = 0;
 
 	//! Schedules the level load for the next level
 	virtual void ScheduleEndLevelNow(const char* nextLevel) = 0;
@@ -949,8 +946,6 @@ protected:
 ILINE bool IsDemoPlayback()
 {
 	ISystem* pSystem = GetISystem();
-	IGame* pGame = gEnv->pGame;
-	IGameFramework* pFramework = pGame->GetIGameFramework();
-	INetContext* pNetContext = pFramework->GetNetContext();
+	INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 	return pNetContext ? pNetContext->IsDemoPlayback() : false;
 }

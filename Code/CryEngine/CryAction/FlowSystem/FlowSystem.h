@@ -47,6 +47,7 @@ public:
 	virtual IFlowGraphPtr            CreateFlowGraph();
 	virtual TFlowNodeTypeId          RegisterType(const char* type, IFlowNodeFactoryPtr factory);
 	virtual bool                     UnregisterType(const char* typeName);
+	virtual bool                     HasRegisteredDefaultFlowNodes() { return m_bRegisteredDefaultNodes; }
 	virtual const char*              GetTypeName(TFlowNodeTypeId typeId);
 	virtual TFlowNodeTypeId          GetTypeId(const char* typeName);
 	virtual IFlowNodeTypeIteratorPtr CreateNodeTypeIterator();
@@ -147,6 +148,7 @@ private:
 	bool m_bInspectingEnabled;
 	bool m_needToUpdateForwardings;
 	bool m_criticalLoadingErrorHappened;
+	bool m_bRegisteredDefaultNodes;
 
 	class CNodeTypeIterator;
 	typedef std::map<string, TFlowNodeTypeId> TTypeNameToIdMap;

@@ -422,6 +422,9 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 
 	bool bResult = true;
 
+	static ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+
 	const int iChildCount = entitiesNode->getChildCount();
 
 	CryLog("Parsing %d entities...", iChildCount);
@@ -484,7 +487,7 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 			}
 		}
 
-		if (0 == (i & 7))
+		if ((!bAsyncLoad) && (0 == (i & 7)))
 		{
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameStart);
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameEnd);
@@ -559,8 +562,10 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		bool bNoDecals = false;
 		bool bDynamicDistanceShadows = false;
 		int castShadowMinSpec = CONFIG_LOW_SPEC;
+		int giMode = 0;
 
 		entityNode->getAttr("CastShadowMinSpec", castShadowMinSpec);
+		entityNode->getAttr("GIMode", giMode);
 		entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows);
 		entityNode->getAttr("GoodOccluder", bGoodOccluder);
 		entityNode->getAttr("OutdoorOnly", bOutdoorOnly);
@@ -588,6 +593,8 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_NO_DECALNODE_DECALS;
 		}
+
+		spawnParams.nFlagsExtended = (spawnParams.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((giMode << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 
 		const char* szArchetypeName = entityNode->getAttr("Archetype");
 		if (szArchetypeName && szArchetypeName[0])
@@ -739,6 +746,10 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			{
 				pSpawnedEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
 			}
+			if (entityNode->findChild("Attributes"))
+			{
+				pSpawnedEntity->CreateProxy(ENTITY_PROXY_ATTRIBUTES);
+			}
 
 			if (spawnParams.pClass)
 			{
@@ -776,6 +787,11 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
 					pScriptProxy->SerializeXML(entityNode, true);
+
+				if (IEntityProxy* pAttributeProxy = static_cast<IEntityProxy*>(pCSpawnedEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES)))
+				{
+					pAttributeProxy->SerializeXML(entityNode, true);
+				}
 			}
 		}
 

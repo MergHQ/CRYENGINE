@@ -98,7 +98,7 @@ const int nThreadsNum = 3;
 template<class T>
 void AddToPtr(byte*& pPtr, T& rObj, EEndian eEndian)
 {
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(((sizeof(T) % 4) == 0));
+	PREFAST_SUPPRESS_WARNING(6326) static_assert((sizeof(T) % 4) == 0, "Invalid type size!");
 	assert(!((INT_PTR)pPtr & 3));
 	memcpy(pPtr, &rObj, sizeof(rObj));
 	SwapEndian(*(T*)pPtr, eEndian);
@@ -109,7 +109,7 @@ void AddToPtr(byte*& pPtr, T& rObj, EEndian eEndian)
 template<class T>
 void AddToPtr(byte*& pPtr, int& nDataSize, T& rObj, EEndian eEndian)
 {
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(((sizeof(T) % 4) == 0));
+	PREFAST_SUPPRESS_WARNING(6326) static_assert((sizeof(T) % 4) == 0, "Invalid type size!");
 	assert(!((INT_PTR)pPtr & 3));
 	memcpy(pPtr, &rObj, sizeof(rObj));
 	SwapEndian(*(T*)pPtr, eEndian);

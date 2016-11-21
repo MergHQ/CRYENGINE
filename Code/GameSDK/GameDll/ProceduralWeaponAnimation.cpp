@@ -199,7 +199,7 @@ void CProceduralWeaponAnimation::UpdateDebugState()
 {
 	if ((g_pGameCVars->g_debugWeaponOffset==2) != m_debugInput)
 	{
-		IActionMapManager* pAMMgr = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+		IActionMapManager* pAMMgr = gEnv->pGameFramework->GetIActionMapManager();
 
 		if (g_pGameCVars->g_debugWeaponOffset == 2)
 		{

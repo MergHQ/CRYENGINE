@@ -108,6 +108,10 @@ Movement::Block::Status UseExactPositioningBase::UpdatePrepare(const MovementUpd
 			return Running;
 		case RequestFailed_FinishImmediately:
 			return Finished;
+		case RequestFailed_CancelImmediately:
+			// Reset movement to prevent actor moving on spot
+			context.actor.GetAdapter().ClearMovementState();
+			return CantBeFinished;
 		}
 	}
 

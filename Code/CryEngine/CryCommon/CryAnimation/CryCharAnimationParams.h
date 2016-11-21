@@ -145,6 +145,18 @@ enum CA_Dimension_Flags
 #define NUM_ANIMATION_USER_DATA_SLOTS 8
 
 //--------------------------------------------------------------------------------
+enum class CA_Interpolation_Type
+{
+	Linear = 0,
+	QuadraticIn,
+	QuadraticOut,
+	QuadraticInOut,
+	SineIn,
+	SineOut,
+	SineInOut
+};
+
+//--------------------------------------------------------------------------------
 struct SMotionParameterDetails
 {
 	enum EFlags
@@ -372,6 +384,7 @@ struct CRY_ALIGN(8) CryCharAnimationParams
 		  , m_fAllowMultilayerAnim(1.0f)
 		  , m_nLayerID(_nLayerID)
 		  , m_nFlags(_nFlags)
+		  , m_nInterpolationType(CA_Interpolation_Type::Linear)
 		  , m_nUserToken(0)
 		  , m_fPlaybackWeight(1.0f)
 #if defined(USE_PROTOTYPE_ABS_BLENDING)
@@ -401,6 +414,9 @@ struct CRY_ALIGN(8) CryCharAnimationParams
 
 	//! Combination of flags defined above.
 	uint32 m_nFlags;
+
+	// Transition Interpolation method.
+	CA_Interpolation_Type m_nInterpolationType;
 
 	//! Token specified by the animation calling code for it's own benefit.
 	uint32 m_nUserToken;
@@ -462,6 +478,7 @@ public:
 		  , m_expectedTotalDurationSeconds(-1.f)
 		  , m_fCurrentDeltaTime(-1.f)
 		  , m_fStartTime(0.0f)
+		  , m_nInterpolationType(CA_Interpolation_Type::Linear)
 		  , m_fTransitionTime(1.0f)
 		  , m_fTransitionPriority(0.f)
 		  , m_fTransitionWeight(-1.f)
@@ -544,6 +561,44 @@ public:
 		return m_currentSegmentIndex[0];
 	}
 
+	f32 Interpolate(f32 value, CA_Interpolation_Type interpolationType)
+	{
+		switch (interpolationType)
+		{
+		case CA_Interpolation_Type::QuadraticIn:
+		{
+			return clamp_tpl(value * value, 0.f, 1.f);
+		}
+		case CA_Interpolation_Type::QuadraticOut:
+		{
+			return clamp_tpl(-value * (value - 2.0f), 0.f, 1.f);
+		}
+		case CA_Interpolation_Type::QuadraticInOut:
+		{
+			value = clamp_tpl(value, 0.f, 1.f) - 0.5f;
+			return value / (0.5f + 2.0f * value * value) + 0.5f;
+		}
+		case CA_Interpolation_Type::SineIn:
+		{
+			return clamp_tpl(-cosf(value * gf_PI * 0.5f) + 1.0f, 0.f, 1.f);
+		}
+		case CA_Interpolation_Type::SineOut:
+		{
+			return clamp_tpl(sinf(value * gf_PI * 0.5f), 0.f, 1.f);
+		}
+		case CA_Interpolation_Type::SineInOut:
+		{
+			return clamp_tpl(-0.5f * (cosf(value * gf_PI) - 1.0f), 0.f, 1.f);
+		}
+		default:
+		{
+			return clamp_tpl(value, 0.0f, 1.0f);
+		}
+		}
+
+		return value;
+	}
+
 	bool HasStaticFlag(uint32 animationFlag) const { return ((m_nStaticFlags & animationFlag) == animationFlag); }
 	void SetStaticFlag(uint32 nStaticFlags)        { m_nStaticFlags |= nStaticFlags; }  // TODO: check with game-team if really needed.
 	void ClearStaticFlag(uint32 nStaticFlags)      { m_nStaticFlags &= ~nStaticFlags; } // TODO: check with game-team if really needed.
@@ -555,11 +610,15 @@ public:
 	void SetCurrentSegmentNormalizedTime(f32 normalizedSegmentTime)         { m_fAnimTime[0] = clamp_tpl(normalizedSegmentTime, 0.f, 1.f); }
 	f32  GetCurrentSegmentNormalizedTimeDelta() const                       { return m_fCurrentDeltaTime; }
 
+	CA_Interpolation_Type GetTransitionInterpolationType() const            { return m_nInterpolationType; }
+	void SetTransitionInterpolationType(CA_Interpolation_Type nInterpolationType) { m_nInterpolationType = nInterpolationType; }
+
 	f32  GetTransitionPriority() const                                      { return m_fTransitionPriority; }
 	void SetTransitionPriority(f32 transitionPriority)                      { m_fTransitionPriority = clamp_tpl(transitionPriority, 0.f, 1.f); }
 
 	f32  GetTransitionWeight() const                                        { return m_fTransitionWeight; }
 	void SetTransitionWeight(f32 transitionWeight)                          { m_fTransitionWeight = transitionWeight; }
+	void SetTransitionWeightRequested(f32 transitionWeight)                 { m_fTransitionWeight = Interpolate(transitionWeight, m_nInterpolationType); }
 
 	f32  GetTransitionTime() const                                          { return m_fTransitionTime; }
 	void SetTransitionTime(f32 transitionTime)                              { m_fTransitionTime = transitionTime; }
@@ -622,6 +681,7 @@ protected:
 	f32 m_fAnimTime[2];             //!< This is a percentage value between 0-1 for the current segment.
 	uint32 m_nStaticFlags;          //!< Static animation-flags (needs to be a 32-bit register).
 	uint16 m_DynFlags[2];
+	CA_Interpolation_Type m_nInterpolationType;                           // defines the interpolation curve
 
 	uint32 m_nUserToken;                              //!< Token specified by the animation calling code for it's own benefit.
 	f32 m_fUserData[NUM_ANIMATION_USER_DATA_SLOTS];   //!< A set of weights that are blended together just like the animation is, for calling code's benefit.

@@ -1197,11 +1197,10 @@ Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testLocation,
 	const MNM::real_t vRange(verticalRange);
 	const MNM::real_t hRange(horizontalRange);
 
-	if (!mesh.grid.GetTriangleAt(testLocationFixedPoint, vRange, vRange))
+	if (!mesh.navMesh.GetTriangleAt(testLocationFixedPoint, vRange, vRange))
 	{
-		MNM::real_t distanceSqr;
 		MNM::vector3_t closestLocation;
-		if (mesh.grid.GetClosestTriangle(testLocationFixedPoint, vRange, hRange, &distanceSqr, &closestLocation))
+		if (mesh.navMesh.GetClosestTriangle(testLocationFixedPoint, vRange, hRange, nullptr, &closestLocation))
 		{
 			safePosition = closestLocation.GetVec3();
 		}
@@ -1237,7 +1236,7 @@ void CNavPath::MovePathEndsOutOfObstacles(const CPathObstacles& obstacles)
 		const IAISystem::ENavigationType navTypeFilter = (IAISystem::ENavigationType)(IAISystem::NAV_TRIANGULAR | IAISystem::NAV_ROAD | IAISystem::NAV_UNSET);
 
 		const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(GetMeshID());
-		const MNM::MeshGrid::Params& gridParams = mesh.grid.GetParams();
+		const MNM::CNavMesh::SGridParams& gridParams = mesh.navMesh.GetGridParams();
 
 		// Danny todo actually walk/back/forward moving all points out?
 		if (ppdStart.navType & navTypeFilter)
@@ -1299,7 +1298,7 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius) const
 		MNM::TriangleID way[MaxWayTriangleCount] = { 0 };
 
 		const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(GetMeshID());
-		const MNM::MeshGrid::Params& gridParams = mesh.grid.GetParams();
+		const MNM::CNavMesh::SGridParams& gridParams = mesh.navMesh.GetGridParams();
 		const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(gridParams.origin.x), MNM::real_t(gridParams.origin.y), MNM::real_t(gridParams.origin.z));
 
 		const MNM::real_t verticalRange(3.0f);
@@ -1324,23 +1323,23 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius) const
 					endLocation.Set(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
 
 					triangleStartID = triangleEndID;
-					triangleEndID = mesh.grid.GetTriangleAt(endLocation - origin, verticalRange, verticalRange);
+					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation - origin, verticalRange, verticalRange);
 				}
 				else
 				{
 					startLocation.Set(MNM::real_t(from.x), MNM::real_t(from.y), MNM::real_t(from.z));
 					endLocation.Set(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
 
-					triangleStartID = mesh.grid.GetTriangleAt(startLocation - origin, verticalRange, verticalRange);
-					triangleEndID = mesh.grid.GetTriangleAt(endLocation - origin, verticalRange, verticalRange);
+					triangleStartID = mesh.navMesh.GetTriangleAt(startLocation - origin, verticalRange, verticalRange);
+					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation - origin, verticalRange, verticalRange);
 				}
 
 				if (!triangleStartID || !triangleEndID)
 					return false;
 
-				MNM::MeshGrid::RayCastRequest<512> raycastRequest;
+				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
 
-				if (mesh.grid.RayCast(startLocation, triangleStartID, endLocation, triangleEndID, raycastRequest) != MNM::MeshGrid::eRayCastResult_NoHit)
+				if (mesh.navMesh.RayCast(startLocation, triangleStartID, endLocation, triangleEndID, raycastRequest) != MNM::CNavMesh::eRayCastResult_NoHit)
 					return false;
 			}
 		}

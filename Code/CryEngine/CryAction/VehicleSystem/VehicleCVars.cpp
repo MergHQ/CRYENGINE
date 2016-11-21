@@ -163,7 +163,7 @@ void OnDebugDrawVarChanged(ICVar* pVar)
 {
 	if (pVar->GetIVal())
 	{
-		IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+		IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 
 		IVehicleIteratorPtr pIter = pVehicleSystem->CreateVehicleIterator();
 		while (IVehicle* pVehicle = pIter->Next())

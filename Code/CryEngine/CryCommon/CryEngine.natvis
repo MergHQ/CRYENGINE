@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="__m128i">
+    <DisplayString>~ i32v4: {m128i_i32}</DisplayString>
+    <Expand>
+      <Item Name="0">m128i_i32[0]</Item>
+      <Item Name="1">m128i_i32[1]</Item>
+      <Item Name="2">m128i_i32[2]</Item>
+      <Item Name="3">m128i_i32[3]</Item>
+    </Expand>
+  </Type>
   <!-- CryEngine math types -->
   <Type Name="Vec2_tpl&lt;*&gt;">
     <AlternativeType Name="Vec2"/>
@@ -141,11 +150,21 @@
     </Expand>
   </Type>
 
-  <!-- NArray::ArrayStorage> -->
-  <Type Name="NArray::ArrayStorage::Store&lt;*,*&gt;&gt;">
+  <!-- NArray::Storage> -->
+  <Type Name="NArray::Storage::Store&lt;*,*&gt;&gt;">
     <DisplayString>~ Array: size={m_nCount}</DisplayString>
     <Expand>
-      <Item Name="[size]">m_nCount</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Array<Storage> -->
+  <Type Name="Array&lt;*,*,NArray::Storage&lt;*&gt;&gt;">
+    <DisplayString>~ Array: size={m_nCount}</DisplayString>
+    <Expand>
       <ArrayItems>
         <Size>m_nCount</Size>
         <ValuePointer>m_aElems</ValuePointer>
@@ -157,10 +176,21 @@
   <Type Name="DynArray&lt;*,*,NArray::FastDynStorage&lt;*&gt;&gt;">
     <DisplayString>~ FastDynArray: size={m_nCount}</DisplayString>
     <Expand>
-      <Item Name="[size]">m_nCount</Item>
-      <Item Name="[capacity]">m_nCapacity</Item>
+      <Item Name="capacity">m_nCapacity</Item>
       <ArrayItems>
         <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- DynArray<SmallDynStorage> -->
+  <Type Name="DynArray&lt;*,*,NArray::SmallDynStorage&lt;*&gt;&gt;">
+    <DisplayString>~ DynArray: size={(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCount}</DisplayString>
+    <Expand>
+      <Item Name="capacity">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCapacity</Item>
+      <ArrayItems>
+        <Size>(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCount</Size>
         <ValuePointer>m_aElems</ValuePointer>
       </ArrayItems>
     </Expand>
@@ -198,20 +228,6 @@
           <Exec>pValue = ++pValue</Exec>
         </Loop>
       </CustomListItems>
-    </Expand>
-  </Type>
-
-  <!-- DynArray<SmallDynStorage> (modified copy from Tools/CryTypes.natvis) -->
-  <Type Name="DynArray&lt;*,*,NArray::SmallDynStorage&lt;*&gt;&gt;">
-    <DisplayString>~ DynArray: size={(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1)),d}</DisplayString>
-    <Expand>
-      <Item Name="Size" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
-      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">*($T2*)(m_aElems + ((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))))</Item>
-      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) == 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
-      <ArrayItems Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">
-        <Size>(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Size>
-        <ValuePointer>m_aElems</ValuePointer>
-      </ArrayItems>
     </Expand>
   </Type>
 
@@ -277,5 +293,146 @@
   <Type Name="CTexture">
     <DisplayString>~ CTexture: Dim={m_nWidth,d}x{m_nHeight,d}, Fmt={m_eTFDst}: Name={m_SrcName}</DisplayString>
   </Type>
+  
+  <!-- CryEngine fixed point number types -->
+  <Type Name="fixed_t&lt;*&gt;">
+    <!-- See fixed_t::as_double() -->
+    <DisplayString>{{ as_double = {v / (double)integer_scale,f} }}</DisplayString>
+  </Type>
 
+  <!-- CryVariant -->
+  <Type Name="CryVariant&lt;*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 8">*($T9*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 8">*($T9*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 9">*($T10*)m_data.c</Item>
+    </Expand>
+  </Type>
 </AutoVisualizer>
