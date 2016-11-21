@@ -35,6 +35,7 @@ SGUID CScriptGraphForNode::GetTypeGUID() const
 void CScriptGraphForNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("For");
+	layout.SetStyleId("Core::FlowControl");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -59,18 +60,38 @@ void CScriptGraphForNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphForNode>(), pos);
+				return "For";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "For loop";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphForNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -89,7 +110,7 @@ void CScriptGraphForNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			nodeCreationMenu.AddOption("For", "For loop", "", std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 		}
 
 		// ~IScriptGraphNodeCreator

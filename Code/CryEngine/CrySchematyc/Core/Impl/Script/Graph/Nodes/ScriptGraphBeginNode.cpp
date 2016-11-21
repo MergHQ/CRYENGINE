@@ -34,6 +34,7 @@ SGUID CScriptGraphBeginNode::GetTypeGUID() const
 void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Begin");
+	layout.SetStyleId("Core::FlowControl::Begin");
 	layout.SetColor(EScriptGraphColor::Green);
 	layout.AddOutput("Out", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::Begin });
 
@@ -60,7 +61,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			{
 			case EScriptSignalReceiverType::EnvSignal:
 				{
-					const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(scriptSignalReceiver.GetSignalGUID());
+					const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(scriptSignalReceiver.GetSignalGUID());
 					if (pEnvSignal)
 					{
 						/*for (uint32 signalInputIdx = 0, signalInputCount = pEnvSignal->GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)
@@ -76,7 +77,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				}
 			case EScriptSignalReceiverType::ScriptSignal:
 				{
-					const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(scriptSignalReceiver.GetSignalGUID()));
+					const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(scriptSignalReceiver.GetSignalGUID()));
 					if (pScriptSignal)
 					{
 						for (uint32 signalInputIdx = 0, signalInputCount = pScriptSignal->GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)

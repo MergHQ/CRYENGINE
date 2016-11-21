@@ -34,11 +34,12 @@
       <file alias="schematyc/script_timer.png">icons/script_timer.png</file>
       <file alias="schematyc/script_variable.png">icons/script_variable.png</file>
       <file alias="schematyc/camera.ico">icons/Camera.ico</file>
-	    <file alias="schematyc/debug.ico">icons/Debug.ico</file>
+	  <file alias="schematyc/debug.ico">icons/Debug.ico</file>
       <file alias="schematyc/toolbar_toggle_scope.ico">icons/toolbar_toggle_scope.ico</file>
       <file alias="schematyc/toolbar_clear_log.ico">icons/Placeholder.ico</file>
       <file alias="schematyc/toolbar_clear_compiler_log.ico">icons/Placeholder.ico</file>
       <file alias="schematyc/toolbar_log_settings.ico">icons/Placeholder.ico</file>
       <file alias="schematyc/toolbar_preview_settings.ico">icons/Placeholder.ico</file>
+	  <file alias="schematyc/node_default.ico">icons/node_default.ico</file>
     </qresource>
 </RCC>

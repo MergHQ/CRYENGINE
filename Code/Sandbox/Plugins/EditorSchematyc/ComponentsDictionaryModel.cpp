@@ -89,7 +89,7 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 		const Schematyc::IScriptComponentInstance* pScriptComponentInstance = Schematyc::DynamicCast<Schematyc::IScriptComponentInstance>(pScriptScope);
 		if (pScriptComponentInstance)
 		{
-			Schematyc::IEnvRegistry& registry = GetSchematycCore().GetEnvRegistry();
+			Schematyc::IEnvRegistry& registry = gEnv->pSchematyc->GetEnvRegistry();
 			const Schematyc::IEnvComponent* pEnvComponent = registry.GetComponent(pScriptComponentInstance->GetTypeGUID());
 			if (pEnvComponent)
 			{
@@ -104,7 +104,7 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 			}
 		}
 
-		Schematyc::IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+		Schematyc::IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 
 		VectorSet<Schematyc::SGUID> singletonExclusions;
 		auto visitScriptComponentInstance = [this, &singletonExclusions](const Schematyc::IScriptComponentInstance& scriptComponentInstance) -> Schematyc::EVisitStatus

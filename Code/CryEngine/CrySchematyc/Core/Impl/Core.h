@@ -27,17 +27,17 @@ DECLARE_SHARED_POINTERS(ILogOutput)
 class CCore : public ICrySchematycCore, public ISystemEventListener
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(CCore)
-		CRYINTERFACE_ADD(ICryPlugin)
+	CRYINTERFACE_ADD(CCore)
+	CRYINTERFACE_ADD(ICryPlugin)
 	CRYINTERFACE_END()
-		
+
 	CRYGENERATE_SINGLETONCLASS(CCore, "Plugin_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
 
 public:
 
 	// ICryPlugin
-	virtual const char* GetName() const override { return "SchematycCore"; }
-	virtual const char* GetCategory() const override { return "Plugin"; }
+	virtual const char* GetName() const override;
+	virtual const char* GetCategory() const override;
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 	// ~ICryPlugin
 
@@ -80,22 +80,27 @@ public:
 	virtual void                     BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params) override;
 
 	virtual void                     RefreshLogFileSettings() override;
-	virtual void                     RefreshEnv() override;	
+	virtual void                     RefreshEnv() override;
 	// ~ICore
 
-	void       RefreshLogFileStreams();
-	void       RefreshLogFileMessageTypes();
+	void              RefreshLogFileStreams();
+	void              RefreshLogFileMessageTypes();
 
 	CRuntimeRegistry& GetRuntimeRegistryImpl();
-	CCompiler& GetCompilerImpl();
+	CCompiler&        GetCompilerImpl();
 
-	static CCore* GetInstance() { return s_pInstance; }
+	static CCore&     GetInstance();
 
 private:
-	void                     PrePhysicsUpdate();
-	void                     Update();
-	
-	void                     LoadProjectFiles();
+
+	void PrePhysicsUpdate();
+	void Update();
+
+	void LoadProjectFiles();
+
+private:
+
+	static CCore*                     s_pInstance;
 
 	GUIDGenerator                     m_guidGenerator;
 	mutable string                    m_scriptsFolder;    // #SchematycTODO : How can we avoid making this mutable?
@@ -111,19 +116,5 @@ private:
 	std::unique_ptr<CLogRecorder>     m_pLogRecorder;
 	std::unique_ptr<CSettingsManager> m_pSettingsManager;
 	std::unique_ptr<CUpdateScheduler> m_pUpdateScheduler;
-
-	static CCore* s_pInstance;
 };
-
-//////////////////////////////////////////////////////////////////////////
-inline CCore* GetSchematycCoreImplPtr()
-{
-	return CCore::GetInstance();
-}
-//////////////////////////////////////////////////////////////////////////
-inline CCore& GetSchematycCoreImpl()
-{
-	SCHEMATYC_CORE_ASSERT(CCore::GetInstance());
-	return *CCore::GetInstance();
-}
 } // Schematyc

@@ -46,8 +46,10 @@ SGUID CScriptGraphGetNode::GetTypeGUID() const
 
 void CScriptGraphGetNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
+	layout.SetStyleId("Core::Data");
 	layout.SetColor(EScriptGraphColor::Blue);
 
+	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_referenceGUID))
 	{
 		CScriptView scriptView(CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID());
@@ -62,9 +64,7 @@ void CScriptGraphGetNode::CreateLayout(CScriptGraphNodeLayout& layout)
 					CAnyConstPtr pData = variable.GetData();
 					if (pData)
 					{
-						CStackString name = "Get ";
-						name.append(variable.GetName());
-						layout.SetName(name.c_str());
+						szSubject = variable.GetName();
 
 						if (!variable.IsArray())
 						{
@@ -80,6 +80,7 @@ void CScriptGraphGetNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
+	layout.SetName("Get", szSubject);
 }
 
 void CScriptGraphGetNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -153,26 +154,48 @@ void CScriptGraphGetNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SGUID& referenceGUID)
-				: m_referenceGUID(referenceGUID)
+			CCreationCommand(const char* szSubject, const SGUID& referenceGUID)
+				: m_subject(szSubject)
+				, m_referenceGUID(referenceGUID)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphGetNode>(m_referenceGUID), pos);
+				return "Get";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Get value of variable";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Data";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphGetNode>(m_referenceGUID), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
-			SGUID m_referenceGUID;
+			string m_subject;
+			SGUID  m_referenceGUID;
 		};
 
 	public:
@@ -193,10 +216,9 @@ void CScriptGraphGetNode::Register(CScriptGraphNodeFactory& factory)
 		{
 			auto visitScriptVariable = [&nodeCreationMenu, &scriptView](const IScriptVariable& variable) -> EVisitStatus
 			{
-				CStackString label;
-				scriptView.QualifyName(variable, EDomainQualifier::Global, label);
-				label.append("::Get");
-				nodeCreationMenu.AddOption(label.c_str(), "Get value of variable", "", std::make_shared<CNodeCreationMenuCommand>(variable.GetGUID()));
+				CStackString subject;
+				scriptView.QualifyName(variable, EDomainQualifier::Global, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), variable.GetGUID()));
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitScriptVariables(ScriptVariableConstVisitor::FromLambda(visitScriptVariable), EDomainScope::Derived);

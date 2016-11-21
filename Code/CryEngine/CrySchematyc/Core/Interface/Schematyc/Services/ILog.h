@@ -23,30 +23,30 @@
 #if SCHEMATYC_LOGGING_ENABLED
 
 	#define SCHEMATYC_LOG_SCOPE(metaData)        const Schematyc::SLogScope schematycLogScope(metaData)
-	#define SCHEMATYC_COMMENT(streamId, ...)     GetSchematycCore().GetLog().Comment(streamId, __VA_ARGS__)
-	#define SCHEMATYC_WARNING(streamId, ...)     GetSchematycCore().GetLog().Warning(streamId, __VA_ARGS__)
-	#define SCHEMATYC_ERROR(streamId, ...)       GetSchematycCore().GetLog().Error(streamId, __VA_ARGS__)
-	#define SCHEMATYC_FATAL_ERROR(streamId, ...) GetSchematycCore().GetLog().FatalError(streamId, __VA_ARGS__); CryFatalError(__VA_ARGS__)
+	#define SCHEMATYC_COMMENT(streamId, ...)     gEnv->pSchematyc->GetLog().Comment(streamId, __VA_ARGS__)
+	#define SCHEMATYC_WARNING(streamId, ...)     gEnv->pSchematyc->GetLog().Warning(streamId, __VA_ARGS__)
+	#define SCHEMATYC_ERROR(streamId, ...)       gEnv->pSchematyc->GetLog().Error(streamId, __VA_ARGS__)
+	#define SCHEMATYC_FATAL_ERROR(streamId, ...) gEnv->pSchematyc->GetLog().FatalError(streamId, __VA_ARGS__); CryFatalError(__VA_ARGS__)
 
-	#define SCHEMATYC_CRITICAL_ERROR(streamId, ...)                                 \
-	  {                                                                             \
-	    static bool bIgnore = false;                                                \
-	    if (!bIgnore)                                                               \
-	    {                                                                           \
-	      switch (GetSchematycCore().GetLog().CriticalError(streamId, __VA_ARGS__)) \
-	      {                                                                         \
-	      case Schematyc::ECriticalErrorStatus::Break:                              \
-	        {                                                                       \
-	          SCHEMATYC_DEBUG_BREAK;                                                \
-	          break;                                                                \
-	        }                                                                       \
-	      case Schematyc::ECriticalErrorStatus::Ignore:                             \
-	        {                                                                       \
-	          bIgnore = true;                                                       \
-	          break;                                                                \
-	        }                                                                       \
-	      }                                                                         \
-	    }                                                                           \
+	#define SCHEMATYC_CRITICAL_ERROR(streamId, ...)                                \
+	  {                                                                            \
+	    static bool bIgnore = false;                                               \
+	    if (!bIgnore)                                                              \
+	    {                                                                          \
+	      switch (gEnv->pSchematyc->GetLog().CriticalError(streamId, __VA_ARGS__)) \
+	      {                                                                        \
+	      case Schematyc::ECriticalErrorStatus::Break:                             \
+	        {                                                                      \
+	          SCHEMATYC_DEBUG_BREAK;                                               \
+	          break;                                                               \
+	        }                                                                      \
+	      case Schematyc::ECriticalErrorStatus::Ignore:                            \
+	        {                                                                      \
+	          bIgnore = true;                                                      \
+	          break;                                                               \
+	        }                                                                      \
+	      }                                                                        \
+	    }                                                                          \
 	  }
 
 	#define SCHEMATYC_CORE_COMMENT(...)            SCHEMATYC_COMMENT(Schematyc::LogStreamId::Core, __VA_ARGS__)
@@ -261,12 +261,12 @@ public:
 		, warningCount(0)
 		, errorCount(0)
 	{
-		GetSchematycCore().GetLog().PushScope(this);
+		gEnv->pSchematyc->GetLog().PushScope(this);
 	}
 
 	inline ~SLogScope()
 	{
-		GetSchematycCore().GetLog().PopScope(this);
+		gEnv->pSchematyc->GetLog().PopScope(this);
 	}
 
 	const CLogMetaData& metaData;

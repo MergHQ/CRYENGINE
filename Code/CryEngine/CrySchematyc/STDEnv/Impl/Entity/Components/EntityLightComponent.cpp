@@ -120,7 +120,7 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity light component");
 		pComponent->SetIcon("icons:schematyc/entity_light_component.png");
-		pComponent->SetFlags(EEnvComponentFlags::Transform);
+		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
 		pComponent->SetProperties(SProperties());
 		scope.Register(pComponent);
 

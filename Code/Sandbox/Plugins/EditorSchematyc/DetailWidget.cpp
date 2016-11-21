@@ -72,12 +72,12 @@ void CScriptElementDetailItem::Serialize(Serialization::IArchive& archive)
 	if (m_pScriptElement)
 	{
 		Schematyc::SSerializationContextParams serParams(archive, Schematyc::ESerializationPass::Edit);
-		Schematyc::ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(serParams);
+		Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serParams);
 
 		m_pScriptElement->Serialize(archive);
 		if (archive.isInput())
 		{
-			GetSchematycCore().GetScriptRegistry().ElementModified(*m_pScriptElement); // #SchematycTODO : Call from script element? YES!
+			gEnv->pSchematyc->GetScriptRegistry().ElementModified(*m_pScriptElement); // #SchematycTODO : Call from script element? YES!
 		}
 	}
 }

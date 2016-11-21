@@ -674,7 +674,12 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 
 namespace Rotation
 {
-CRotation FromVector3(const Vec3& forward, const Vec3& up)
+CRotation Create(float x, float y, float z)
+{
+	return CRotation(Ang3(DEG2RAD(x), DEG2RAD(y), DEG2RAD(z)));
+}
+
+CRotation Look(const Vec3& forward, const Vec3& up)
 {
 	return CRotation(Quat(MathUtils::CreateOrthonormalTM33(forward.normalized(), up.normalized())));
 }
@@ -701,9 +706,28 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(GetTypeInfo<CRotation>().GetGUID());
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&FromVector3, "0261e9ac-0b2e-4e71-b04d-9027a9cbd3c8"_schematyc_guid, "FromVector3");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Multiply, "837695ad-ed6e-4003-b0db-f6f0127c4909"_schematyc_guid, "Multiply");
 		pFunction->SetAuthor(g_szCrytek);
-		pFunction->SetDescription("Create Rotation from two direction vectors");
+		pFunction->SetDescription("Multiply A by B");
+		pFunction->BindInput(1, 'a', "A");
+		pFunction->BindInput(2, 'b', "B");
+		pFunction->BindOutput(0, 'res', "Result");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Create, "38ef172c-89cb-4310-812b-c358bccd396a"_schematyc_guid, "Create");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Create rotation");
+		pFunction->BindInput(1, 'x', "X", nullptr, 0.0f);
+		pFunction->BindInput(2, 'y', "Y", nullptr, 0.0f);
+		pFunction->BindInput(3, 'z', "Z", nullptr, 0.0f);
+		pFunction->BindOutput(0, 'res', "Result");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Look, "0261e9ac-0b2e-4e71-b04d-9027a9cbd3c8"_schematyc_guid, "Look");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Create rotation from two direction vectors");
 		pFunction->BindInput(1, 'fwd', "Forward", nullptr, Vec3Constants<float>::fVec3_OneY);
 		pFunction->BindInput(2, 'up', "Up", nullptr, Vec3Constants<float>::fVec3_OneZ);
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
@@ -712,7 +736,7 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&ToVector3, "e53f4ebd-db4a-4218-8f97-6480e6308965"_schematyc_guid, "ToVector3");
 		pFunction->SetAuthor(g_szCrytek);
-		pFunction->SetDescription("Convert Rotation to three direction vectors");
+		pFunction->SetDescription("Convert rotation to three direction vectors");
 		pFunction->BindInput(1, 'val', "Input"); // #SchematycTODO : Rename 'Value'!
 		pFunction->BindOutput(2, 'rt', "Right");
 		pFunction->BindOutput(3, 'fwd', "Forward");
@@ -722,7 +746,7 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&TransformVector3, "1abea881-67ed-43b5-8e18-2ff79623e692"_schematyc_guid, "TransformVector3");
 		pFunction->SetAuthor(g_szCrytek);
-		pFunction->SetDescription("Use Rotation to transform vector");
+		pFunction->SetDescription("Use rotation to transform vector");
 		pFunction->BindInput(1, 'rot', "Rotation");
 		pFunction->BindInput(2, 'vec', "Vector");
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
@@ -731,7 +755,7 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&ToString, "F2CAE291-9373-482C-9554-36D9FF49BE08"_schematyc_guid, "ToString");
 		pFunction->SetAuthor(g_szCrytek);
-		pFunction->SetDescription("Convert Rotation to String");
+		pFunction->SetDescription("Convert rotation to string");
 		pFunction->BindInput(1, 'val', "Input"); // #SchematycTODO : Rename 'Value'!
 		pFunction->BindOutput(2, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
 		scope.Register(pFunction);

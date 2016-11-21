@@ -29,8 +29,8 @@ SGUID CScriptGraphArrayForEachNode::SRuntimeData::ReflectSchematycType(CTypeInfo
 	return "3270fe0e-fd07-46cb-9ac5-99ee7d03f55a"_schematyc_guid;
 }
 
-CScriptGraphArrayForEachNode::CScriptGraphArrayForEachNode(const SElementId& reference)
-	: m_defaultValue(reference)
+CScriptGraphArrayForEachNode::CScriptGraphArrayForEachNode(const SElementId& typeId)
+	: m_defaultValue(typeId)
 {}
 
 SGUID CScriptGraphArrayForEachNode::GetTypeGUID() const
@@ -40,19 +40,23 @@ SGUID CScriptGraphArrayForEachNode::GetTypeGUID() const
 
 void CScriptGraphArrayForEachNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	layout.SetName("Array::ForEach");
+	layout.SetStyleId("Core::FlowControl");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);
 	layout.AddOutput("Loop", SGUID(), EScriptGraphPortFlags::Flow);
 
+	const char* szSubject = g_szNoType;
 	if (!m_defaultValue.IsEmpty())
 	{
+		szSubject = m_defaultValue.GetTypeName();
+
 		const SGUID typeGUID = m_defaultValue.GetTypeId().guid;
 		layout.AddInput("Array", typeGUID, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Array });
 		layout.AddOutputWithData(m_defaultValue.GetTypeName(), typeGUID, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *m_defaultValue.GetValue());
 	}
+	layout.SetName("Array - For Each", szSubject);
 }
 
 void CScriptGraphArrayForEachNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -96,26 +100,48 @@ void CScriptGraphArrayForEachNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			inline CNodeCreationMenuCommand(const SElementId& reference = SElementId())
-				: m_reference(reference)
+			inline CCreationCommand(const char* szSubject = g_szNoType, const SElementId& typeId = SElementId())
+				: m_subject(szSubject)
+				, m_typeId(typeId)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphArrayForEachNode>(m_reference), pos);
+				return "Array::For Each";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Iterate through all elements in array";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphArrayForEachNode>(m_typeId), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
-			SElementId m_reference;
+			string     m_subject;
+			SElementId m_typeId;
 		};
 
 	public:
@@ -134,22 +160,15 @@ void CScriptGraphArrayForEachNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			nodeCreationMenu.AddOption("Array::ForEach", "Iterate through elements in array", "", std::make_shared<CNodeCreationMenuCommand>());
-
-			const char* szLabel = "Array::ForEach";
-			const char* szDescription = "Iterate through all elements in array";
-
-			nodeCreationMenu.AddOption(szLabel, szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 
 			// #SchematycTODO : This code is duplicated in all array nodes, find a way to reduce the duplication.
 
-			auto visitEnvDataType = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IEnvDataType& envDataType) -> EVisitStatus
+			auto visitEnvDataType = [&nodeCreationMenu, &scriptView](const IEnvDataType& envDataType) -> EVisitStatus
 			{
-				CStackString label;
-				scriptView.QualifyName(envDataType, label);
-				label.append("::");
-				label.append(szLabel);
-				nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envDataType.GetGUID())));
+				CStackString subject;
+				scriptView.QualifyName(envDataType, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Env, envDataType.GetGUID())));
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitEnvDataTypes(EnvDataTypeConstVisitor::FromLambda(visitEnvDataType));

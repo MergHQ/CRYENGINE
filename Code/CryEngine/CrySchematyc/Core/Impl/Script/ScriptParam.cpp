@@ -36,7 +36,7 @@ void SScriptParam::Edit(Serialization::IArchive& archive, const ISerializationCo
 
 	if (archive.isInput() && GUID::IsEmpty(guid))
 	{
-		guid = GetSchematycCore().CreateGUID();
+		guid = gEnv->pSchematyc->CreateGUID();
 	}
 }
 

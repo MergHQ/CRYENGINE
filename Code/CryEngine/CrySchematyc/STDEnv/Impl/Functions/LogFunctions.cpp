@@ -11,17 +11,17 @@ namespace Log
 {
 void Comment(const CSharedString& message, const SLogStreamName& streamName)
 {
-	SCHEMATYC_COMMENT(GetSchematycCore().GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
+	SCHEMATYC_COMMENT(gEnv->pSchematyc->GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
 }
 
 void Warning(const CSharedString& message, const SLogStreamName& streamName)
 {
-	SCHEMATYC_WARNING(GetSchematycCore().GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
+	SCHEMATYC_WARNING(gEnv->pSchematyc->GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
 }
 
 void Error(const CSharedString& message, const SLogStreamName& streamName)
 {
-	SCHEMATYC_ERROR(GetSchematycCore().GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
+	SCHEMATYC_ERROR(gEnv->pSchematyc->GetLog().GetStreamId(streamName.value.c_str()), message.c_str());
 }
 
 static void RegisterFunctions(IEnvRegistrar& registrar)

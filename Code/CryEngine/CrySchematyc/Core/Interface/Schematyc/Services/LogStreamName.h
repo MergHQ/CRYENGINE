@@ -10,7 +10,7 @@ namespace Schematyc
 struct SLogStreamName
 {
 	inline SLogStreamName()
-		: value(GetSchematycCore().GetLog().GetStreamName(LogStreamId::Default))
+		: value(gEnv->pSchematyc->GetLog().GetStreamName(LogStreamId::Default))
 	{}
 
 	inline SLogStreamName(const char* _szValue)
@@ -42,7 +42,7 @@ inline bool Serialize(Serialization::IArchive& archive, SLogStreamName& value, c
 			logStreamNames.push_back(szStreamName);
 			return EVisitStatus::Continue;
 		};
-		GetSchematycCore().GetLog().VisitStreams(LogStreamVisitor::FromLambda(visitLogStream));
+		gEnv->pSchematyc->GetLog().VisitStreams(LogStreamVisitor::FromLambda(visitLogStream));
 
 		if (archive.isInput())
 		{

@@ -86,7 +86,7 @@ void CStateMachineItem::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: This will only work for serialization to properties in inspector!
 	Schematyc::SSerializationContextParams serParams(archive, Schematyc::ESerializationPass::Edit);
-	Schematyc::ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(serParams);
+	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serParams);
 	// ~TODO
 
 	m_scriptStateMachine.Serialize(archive);
@@ -112,7 +112,7 @@ CStateItem* CStateMachineItem::CreateState()
 	Schematyc::CStackString name = "State";
 	Schematyc::ScriptBrowserUtils::MakeScriptElementNameUnique(name, m_model.GetScriptElement());
 
-	Schematyc::IScriptState* pStateElement = GetSchematycCore().GetScriptRegistry().AddState(name, m_model.GetScriptElement());
+	Schematyc::IScriptState* pStateElement = gEnv->pSchematyc->GetScriptRegistry().AddState(name, m_model.GetScriptElement());
 	if (pStateElement)
 	{
 		CStateItem* pStateItem = new CStateItem(*pStateElement, m_model);

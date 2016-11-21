@@ -98,14 +98,17 @@ SGUID CScriptGraphSwitchNode::GetTypeGUID() const
 
 void CScriptGraphSwitchNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	layout.SetName("Switch");
+	layout.SetStyleId("Core::FlowControl");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Default", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::SpacerBelow });
 
+	const char* szSubject = g_szNoType;
 	if (!m_defaultValue.IsEmpty())
 	{
+		szSubject = m_defaultValue.GetTypeName();
+
 		layout.AddInputWithData(m_defaultValue.GetTypeName(), m_defaultValue.GetTypeId().guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *m_defaultValue.GetValue());
 
 		for (const SCase& _case : * m_pValidCases)
@@ -115,6 +118,7 @@ void CScriptGraphSwitchNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			layout.AddOutput(caseString.c_str(), SGUID(), EScriptGraphPortFlags::Flow);
 		}
 	}
+	layout.SetName("Switch", szSubject);
 }
 
 void CScriptGraphSwitchNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -180,25 +184,47 @@ void CScriptGraphSwitchNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			inline CNodeCreationMenuCommand(const SElementId& typeId = SElementId())
-				: m_typeId(typeId)
+			inline CCreationCommand(const char* szSubject = g_szNoType, const SElementId& typeId = SElementId())
+				: m_subject(szSubject)
+				, m_typeId(typeId)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphSwitchNode>(m_typeId), pos);
+				return "Switch";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Branch execution based on input value";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphSwitchNode>(m_typeId), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
+			string     m_subject;
 			SElementId m_typeId;
 		};
 
@@ -218,32 +244,25 @@ void CScriptGraphSwitchNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			const char* szLabel = "Switch";
-			const char* szDescription = "Branch execution based on input value";
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 
-			nodeCreationMenu.AddOption(szLabel, szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>());
-
-			auto visitEnvDataType = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IEnvDataType& envDataType) -> EVisitStatus
+			auto visitEnvDataType = [&nodeCreationMenu, &scriptView](const IEnvDataType& envDataType) -> EVisitStatus
 			{
 				if (FilterEnvDataType(envDataType))
 				{
-					CStackString label;
-					scriptView.QualifyName(envDataType, label);
-					label.append("::");
-					label.append(szLabel);
-					nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envDataType.GetGUID())));
+					CStackString specialization;
+					scriptView.QualifyName(envDataType, specialization);
+					nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(specialization.c_str(), SElementId(EDomain::Env, envDataType.GetGUID())));
 				}
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitEnvDataTypes(EnvDataTypeConstVisitor::FromLambda(visitEnvDataType));
 
-			auto visitScriptEnum = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IScriptEnum& scriptEnum)
+			auto visitScriptEnum = [&nodeCreationMenu, &scriptView](const IScriptEnum& scriptEnum)
 			{
-				CStackString label;
-				scriptView.QualifyName(scriptEnum, EDomainQualifier::Global, label);
-				label.append("::");
-				label.append(szLabel);
-				nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptEnum.GetGUID())));
+				CStackString specialization;
+				scriptView.QualifyName(scriptEnum, EDomainQualifier::Global, specialization);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(specialization.c_str(), SElementId(EDomain::Script, scriptEnum.GetGUID())));
 			};
 			scriptView.VisitAccesibleEnums(ScriptEnumConstVisitor::FromLambda(visitScriptEnum));
 		}

@@ -6,8 +6,6 @@
 #include <Schematyc/Env/IEnvRegistrar.h>
 #include <Schematyc/Env/Elements/EnvSignal.h>
 
-#include "CoreEnvModules.h"
-
 namespace Schematyc
 {
 const SGUID g_startSignalGUID = "a9279137-7c66-491d-b9a0-8752c24c8979"_schematyc_guid;
@@ -16,7 +14,7 @@ const SGUID g_updateSignalGUID = "b2561caa-0753-458b-a91f-e8e38b0f0cdf"_schematy
 
 void RegisterCoreEnvSignals(IEnvRegistrar& registrar)
 {
-	CEnvRegistrationScope scope = registrar.Scope(g_coreModuleGUID);
+	CEnvRegistrationScope scope = registrar.RootScope();
 	{
 		auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL(g_startSignalGUID, "Start");
 		pSignal->SetAuthor(g_szCrytek);

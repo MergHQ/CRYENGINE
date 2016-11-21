@@ -3,9 +3,15 @@
 #pragma once
 
 #include <NodeGraph/AbstractNodeItem.h>
+#include <NodeGraph/NodeWidget.h>
 
 #include "GraphPinItem.h"
 #include "NodeGraphRuntimeContext.h"
+
+#include <unordered_map>
+
+class QPixmap;
+class QIcon;
 
 namespace Schematyc {
 
@@ -14,6 +20,35 @@ struct IScriptGraphNode;
 }
 
 namespace CrySchematycEditor {
+
+typedef CryGraphEditor::CIconMap<uint32 /* name hash */> IconMap;
+
+class CNodeIconMap : public IconMap
+{
+public:
+	static QPixmap* GetNodeWidgetIcon(const char* szStyleId);
+	static QIcon*   GetMenuIcon(const char* szStyleId);
+
+protected:
+	CNodeIconMap();
+	~CNodeIconMap();
+
+	void LoadIcons();
+	void AddIcon(const char* szStyleId, const char* szIcon, QColor color);
+
+private:
+	static CNodeIconMap s_Instance;
+	QPixmap*            m_pDefaultWidgetIcon;
+	std::unordered_map<uint32 /* name hash */, QIcon*> m_menuIcons;
+	QIcon*              m_pDefaultMenuIcon;
+};
+
+class CNodeTypeIcon : public CryGraphEditor::CNodeHeaderIcon
+{
+public:
+	CNodeTypeIcon(CryGraphEditor::CNodeWidget& nodeWidget);
+	virtual ~CNodeTypeIcon();
+};
 
 class CNodeItem : public CryGraphEditor::CAbstractNodeItem
 {
@@ -46,10 +81,12 @@ public:
 	Schematyc::IScriptGraphNode& GetScriptElement() const { return m_scriptNode; }
 	Schematyc::SGUID             GetGUID() const;
 
-	void                         Refresh(bool bForceRefresh);
+	const char*                  GetStyleId();
+	void                         Refresh(bool forceRefresh = false);
 
 protected:
 	void LoadFromScriptElement();
+	void RefreshName();
 	void Validate();
 
 private:

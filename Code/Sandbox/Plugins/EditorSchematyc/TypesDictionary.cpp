@@ -78,7 +78,7 @@ void CTypesDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 	{
 		m_types.reserve(50);
 
-		Schematyc::IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+		Schematyc::IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 
 		auto visitEnvType = [this, &pScriptView](const Schematyc::IEnvDataType& envType) -> Schematyc::EVisitStatus
 		{

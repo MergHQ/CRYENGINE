@@ -77,17 +77,3 @@ struct ICrySchematycCore : public ICryPlugin
 	virtual void                                RefreshEnv() = 0;
 };
 
-// Get Schematyc core pointer.
-//////////////////////////////////////////////////////////////////////////
-inline ICrySchematycCore* GetSchematycCorePtr()
-{
-	CRY_ASSERT(gEnv->pSchematyc);
-	return gEnv->pSchematyc;
-}
-
-// Get Schematyc core.
-//////////////////////////////////////////////////////////////////////////
-inline ICrySchematycCore& GetSchematycCore()
-{
-	return *GetSchematycCorePtr();
-}

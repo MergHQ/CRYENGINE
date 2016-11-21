@@ -52,7 +52,7 @@ private:
 
 public:
 
-	CScriptGraphArrayForEachNode(const SElementId& reference = SElementId());
+	CScriptGraphArrayForEachNode(const SElementId& typeId = SElementId());
 
 	// CScriptGraphNodeModel
 	virtual SGUID GetTypeGUID() const override;

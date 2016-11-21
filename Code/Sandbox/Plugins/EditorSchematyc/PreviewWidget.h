@@ -116,7 +116,7 @@ private:
 	SGUID                              m_componentInstanceGUID;
 
 	IObjectPreviewer*                  m_pObjectPreviewer = nullptr;
-	ObjectId                           m_objectId;
+	ObjectId                           m_objectId = ObjectId::Invalid;
 
 	ITransformManipulator*             m_pGizmo = nullptr;
 	std::unique_ptr<IGizmoTransformOp> m_pGizmoTransformOp;

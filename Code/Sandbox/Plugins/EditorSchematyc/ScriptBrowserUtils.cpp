@@ -94,7 +94,7 @@ public:
 		{
 			m_bases.reserve(32);
 
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 
 			auto visitEnvClass = [this, &pScriptView](const IEnvClass& envClass) -> EVisitStatus
 			{
@@ -192,7 +192,7 @@ private:
     {
       m_types.reserve(50);
 
-      IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+      IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 
       auto visitEnvDataType = [this, &pScriptView](const IEnvDataType& envDataType) -> EVisitStatus
       {
@@ -319,7 +319,7 @@ public:
 		{
 			m_interfaces.reserve(100);
 
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 			auto visitEnvInterface = [this, &pScriptView](const IEnvInterface& envInterface) -> EVisitStatus
 			{
 				CStackString fullName;
@@ -413,7 +413,7 @@ public:
 			const IScriptComponentInstance* pScriptComponentInstance = DynamicCast<IScriptComponentInstance>(pScriptScope);
 			if (pScriptComponentInstance)
 			{
-				const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(pScriptComponentInstance->GetTypeGUID());
+				const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(pScriptComponentInstance->GetTypeGUID());
 				if (pEnvComponent)
 				{
 					if (pEnvComponent->GetFlags().Check(EEnvComponentFlags::Socket))
@@ -427,7 +427,7 @@ public:
 				}
 			}
 
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 			auto visitEnvComponent = [this, bAttach, &pScriptView](const IEnvComponent& envComponent) -> EVisitStatus
 			{
 				if (!bAttach || envComponent.GetFlags().Check(EEnvComponentFlags::Attach))
@@ -528,7 +528,7 @@ public:
 		{
 			m_actions.reserve(100);
 
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptScope->GetGUID());
+			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 
 			ScriptComponentInstances scriptComponentInstances;
 			CollectScriptComponentInstances(scriptComponentInstances, *pScriptView);
@@ -691,7 +691,7 @@ inline void MoveRenameScriptsRecursive(IScriptElement& element)
 // #SchematycTODO : Move logic to Schematyc core (add IsValidScope() function to IStriptElement).
 bool CanAddScriptElement(EScriptElementType elementType, IScriptElement* pScope)
 {
-	return GetSchematycCore().GetScriptRegistry().IsValidScope(elementType, pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().IsValidScope(elementType, pScope);
 }
 
 bool CanRemoveScriptElement(const IScriptElement& element)
@@ -918,7 +918,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 	case EScriptElementType::ComponentInstance:
 		{
 			const SGUID guid = DynamicCast<IScriptComponentInstance>(scriptElement).GetTypeGUID();
-			const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(guid);
+			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(guid);
 			if (pEnvComponent)
 			{
 				const char* szIcon = pEnvComponent->GetIcon();
@@ -932,7 +932,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 	case EScriptElementType::ActionInstance:
 		{
 			const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
-			const IEnvAction* pEnvAction = GetSchematycCore().GetEnvRegistry().GetAction(guid);
+			const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
 			if (pEnvAction)
 			{
 				const char* szIcon = pEnvAction->GetIcon();
@@ -952,7 +952,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 
 void MakeScriptElementNameUnique(CStackString& name, IScriptElement* pScope)
 {
-	IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+	IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 	if (!scriptRegistry.IsElementNameUnique(name.c_str(), pScope))
 	{
 		CStackString::size_type counterPos = name.find(".");
@@ -997,9 +997,9 @@ void FindReferences(const IScriptElement& element)
 		return EVisitStatus::Recurse;
 	};
 
-	GetSchematycCore().GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementConstVisitor::FromLambda(visitScriptElement));
+	gEnv->pSchematyc->GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementConstVisitor::FromLambda(visitScriptElement));
 
-	IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(element.GetGUID());
+	IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(element.GetGUID());
 
 	CReportWidget* pReportWidget = new CReportWidget(nullptr);
 	pReportWidget->setAttribute(Qt::WA_DeleteOnClose);
@@ -1023,56 +1023,56 @@ IScriptModule* AddScriptModule(IScriptElement* pScope)
 {
 	CStackString name = "NewFolder";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddModule(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddModule(name.c_str(), pScope);
 }
 
 IScriptEnum* AddScriptEnum(IScriptElement* pScope)
 {
 	CStackString name = "NewEnumeration";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddEnum(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddEnum(name.c_str(), pScope);
 }
 
 IScriptStruct* AddScriptStruct(IScriptElement* pScope)
 {
 	CStackString name = "NewStructure";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddStruct(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddStruct(name.c_str(), pScope);
 }
 
 IScriptSignal* AddScriptSignal(IScriptElement* pScope)
 {
 	CStackString name = "NewSignal";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddSignal(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddSignal(name.c_str(), pScope);
 }
 
 IScriptFunction* AddScriptFunction(IScriptElement* pScope)
 {
 	CStackString name = "NewFunction";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddFunction(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddFunction(name.c_str(), pScope);
 }
 
 IScriptInterface* AddScriptInterface(IScriptElement* pScope)
 {
 	CStackString name = "NewInterface";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddInterface(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddInterface(name.c_str(), pScope);
 }
 
 IScriptInterfaceFunction* AddScriptInterfaceFunction(IScriptElement* pScope)
 {
 	CStackString name = "NewFunction";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddInterfaceFunction(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceFunction(name.c_str(), pScope);
 }
 
 IScriptInterfaceTask* AddScriptInterfaceTask(IScriptElement* pScope)
 {
 	CStackString name = "NewTask";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddInterfaceTask(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceTask(name.c_str(), pScope);
 }
 
 IScriptClass* AddScriptClass(IScriptElement* pScope)
@@ -1097,7 +1097,7 @@ IScriptClass* AddScriptClass(IScriptElement* pScope)
 	{
 		CStackString name = "NewClass";
 		MakeScriptElementNameUnique(name, pScope);
-		return GetSchematycCore().GetScriptRegistry().AddClass(name.c_str(), pBase->id, pScope);
+		return gEnv->pSchematyc->GetScriptRegistry().AddClass(name.c_str(), pBase->id, pScope);
 	}
 
 	return nullptr;
@@ -1107,35 +1107,35 @@ IScriptStateMachine* AddScriptStateMachine(IScriptElement* pScope)
 {
 	CStackString name = "NewStateMachine";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddStateMachine(name.c_str(), EScriptStateMachineLifetime::Persistent, SGUID(), SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddStateMachine(name.c_str(), EScriptStateMachineLifetime::Persistent, SGUID(), SGUID(), pScope);
 }
 
 IScriptState* AddScriptState(IScriptElement* pScope)
 {
 	CStackString name = "NewState";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddState(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddState(name.c_str(), pScope);
 }
 
 IScriptVariable* AddScriptVariable(IScriptElement* pScope)
 {
 	CStackString name = "NewVariable";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddVariable(name.c_str(), SElementId(), SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddVariable(name.c_str(), SElementId(), SGUID(), pScope);
 }
 
 IScriptTimer* AddScriptTimer(IScriptElement* pScope)
 {
 	CStackString name = "NewTimer";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddTimer(name.c_str(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddTimer(name.c_str(), pScope);
 }
 
 IScriptSignalReceiver* AddScriptSignalReceiver(IScriptElement* pScope)
 {
 	CStackString name = "NewSignalReceiver";
 	MakeScriptElementNameUnique(name, pScope);
-	return GetSchematycCore().GetScriptRegistry().AddSignalReceiver(name.c_str(), EScriptSignalReceiverType::Universal, SGUID(), pScope);
+	return gEnv->pSchematyc->GetScriptRegistry().AddSignalReceiver(name.c_str(), EScriptSignalReceiverType::Universal, SGUID(), pScope);
 }
 
 IScriptInterfaceImpl* AddScriptInterfaceImpl(IScriptElement* pScope)
@@ -1148,7 +1148,7 @@ IScriptInterfaceImpl* AddScriptInterfaceImpl(IScriptElement* pScope)
 	   SCHEMATYC_EDITOR_ASSERT(pInterface);
 	   if (pInterface)
 	   {
-	    return GetSchematycCore().GetScriptRegistry().AddInterfaceImpl(pInterface->domain, pInterface->guid, pScope);
+	    return gEnv->pSchematyc->GetScriptRegistry().AddInterfaceImpl(pInterface->domain, pInterface->guid, pScope);
 	   }
 	   }*/
 	return nullptr;
@@ -1176,7 +1176,7 @@ IScriptComponentInstance* AddScriptComponentInstance(IScriptElement* pScope, con
 	{
 		CStackString name = QtUtil::ToString(pEntry->GetName()).c_str();
 		MakeScriptElementNameUnique(name, pScope);
-		return GetSchematycCore().GetScriptRegistry().AddComponentInstance(name.c_str(), pEntry->GetTypeGUID(), pScope);
+		return gEnv->pSchematyc->GetScriptRegistry().AddComponentInstance(name.c_str(), pEntry->GetTypeGUID(), pScope);
 	}
 
 	return nullptr;
@@ -1194,7 +1194,7 @@ IScriptActionInstance* AddScriptActionInstance(IScriptElement* pScope)
 	   {
 	    CStackString name = pAction->name.c_str();
 	    MakeScriptElementNameUnique(name, pScope);
-	    return GetSchematycCore().GetScriptRegistry().AddActionInstance(name.c_str(), pAction->guid, pAction->componentInstanceGUID, pScope);
+	    return gEnv->pSchematyc->GetScriptRegistry().AddActionInstance(name.c_str(), pAction->guid, pAction->componentInstanceGUID, pScope);
 	   }
 	   }*/
 	return nullptr;
@@ -1211,7 +1211,7 @@ bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 			if (strcmp(szName, szPrevName) != 0)
 			{
 				const char* szErrorMessage = nullptr;
-				if (!GetSchematycCore().GetScriptRegistry().IsValidName(szName, scriptElement.GetParent(), szErrorMessage))
+				if (!gEnv->pSchematyc->GetScriptRegistry().IsValidName(szName, scriptElement.GetParent(), szErrorMessage))
 				{
 					stack_string message;
 					message.Format("Invalid name '%s'. %s", szName, szErrorMessage);
@@ -1253,7 +1253,7 @@ bool RenameScriptElement(IScriptElement& scriptElement, const char* szName)
 				if (bRenameScriptElement)
 				{
 					scriptElement.SetName(szName);
-					GetSchematycCore().GetScriptRegistry().ElementModified(scriptElement); // #SchematycTODO : Call from script element?
+					gEnv->pSchematyc->GetScriptRegistry().ElementModified(scriptElement); // #SchematycTODO : Call from script element?
 					if (bMoveRenameScriptFiles)
 					{
 						MoveRenameScriptsRecursive(scriptElement);
@@ -1282,7 +1282,7 @@ void RemoveScriptElement(const IScriptElement& element)
 
 		if (result == QDialogButtonBox::Yes)
 		{
-			GetSchematycCore().GetScriptRegistry().RemoveElement(element.GetGUID());
+			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(element.GetGUID());
 		}
 	}
 }

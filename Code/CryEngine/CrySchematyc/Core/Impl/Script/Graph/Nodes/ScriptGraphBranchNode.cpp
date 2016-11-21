@@ -20,6 +20,7 @@ SGUID CScriptGraphBranchNode::GetTypeGUID() const
 void CScriptGraphBranchNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Branch");
+	layout.SetStyleId("Core::FlowControl");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -40,18 +41,38 @@ void CScriptGraphBranchNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphBranchNode>(), pos);
+				return "Branch";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Branch flow";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBranchNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -70,7 +91,7 @@ void CScriptGraphBranchNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			nodeCreationMenu.AddOption("Branch", "Branch", "", std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 		}
 
 		// ~IScriptGraphNodeCreator

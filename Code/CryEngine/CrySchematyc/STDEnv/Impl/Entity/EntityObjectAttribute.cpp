@@ -69,7 +69,7 @@ void CEntityObjectAttribute::DisplayDetails(Serialization::IArchive& archive)
 {
 	if (archive.openBlock("overview", "Overview"))
 	{
-		const IScriptClass* pScriptClass = DynamicCast<IScriptClass>(GetSchematycCore().GetScriptRegistry().GetElement(m_guid));
+		const IScriptClass* pScriptClass = DynamicCast<IScriptClass>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_guid));
 		if (pScriptClass)
 		{
 			{

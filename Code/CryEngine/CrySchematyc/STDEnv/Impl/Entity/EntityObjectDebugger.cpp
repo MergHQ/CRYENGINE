@@ -83,7 +83,7 @@ CEntityObjectDebugger::CEntityObjectDebugger()
 	sc_EntityDebugTextPos = REGISTER_STRING("sc_EntityDebugTextPos", "20, 10", VF_NULL, "Schematyc - Entity debug text position");
 
 	SUpdateParams updateParams(Delegate::Make(*this, &CEntityObjectDebugger::Update), m_connectionScope);
-	GetSchematycCore().GetUpdateScheduler().Connect(updateParams);
+	gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
 }
 
 CEntityObjectDebugger::~CEntityObjectDebugger()
@@ -122,50 +122,53 @@ void CEntityObjectDebugger::Update(const SUpdateContext&)
 
 	auto visitEntityObject = [objectDumpFlags, szFilter, &textPos](EntityId entityId, ObjectId objectId) -> EVisitStatus
 	{
-		IObject* pObject = GetSchematycCore().GetObject(objectId);
+		IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 		if (pObject)
 		{
-			const IEntity& entity = EntityUtils::GetEntity(*pObject);
-			const char* szName = entity.GetName();
-			if ((szFilter[0] == '\0') || CryStringUtils::stristr(szName, szFilter))
+			if (pObject->GetSimulationMode() == ESimulationMode::Game)
 			{
-				const IRuntimeClass& objectClass = pObject->GetClass();
-
-				CStackString debugText = szName;
-				debugText.append(" : class=\"");
-				debugText.append(objectClass.GetName());
-				debugText.append("\", id=");
+				const IEntity& entity = EntityUtils::GetEntity(*pObject);
+				const char* szName = entity.GetName();
+				if ((szFilter[0] == '\0') || CryStringUtils::stristr(szName, szFilter))
 				{
-					CStackString temp;
-					ToString(temp, pObject->GetId());
-					debugText.append(temp.c_str());
-				}
-				debugText.append("\n");
+					const IRuntimeClass& objectClass = pObject->GetClass();
 
-				CObjectDump objectDump(debugText);
-				pObject->Dump(objectDump, objectDumpFlags);
-
-				if (!debugText.empty())
-				{
-					const EDrawTextFlags drawTextFlags = static_cast<EDrawTextFlags>(eDrawText_2D | eDrawText_FixedSize | eDrawText_800x600 | eDrawText_Monospace);
-					IRenderAuxText::Draw2dLabelEx(textPos.x, textPos.y, 1.8f, Col_White, drawTextFlags, "%s", debugText.c_str());
-
-					uint32 lineCount = 1;
-					for (const char* pPos = debugText.c_str(), * pEnd = pPos + debugText.length(); pPos < pEnd; ++pPos)
+					CStackString debugText = szName;
+					debugText.append(" : class=\"");
+					debugText.append(objectClass.GetName());
+					debugText.append("\", id=");
 					{
-						if (*pPos == '\n')
-						{
-							++lineCount;
-						}
+						CStackString temp;
+						ToString(temp, pObject->GetId());
+						debugText.append(temp.c_str());
 					}
+					debugText.append("\n");
 
-					const float approxLineHeight = 15.0f;
-					textPos.y += approxLineHeight * (lineCount + 1);
+					CObjectDump objectDump(debugText);
+					pObject->Dump(objectDump, objectDumpFlags);
+
+					if (!debugText.empty())
+					{
+						const EDrawTextFlags drawTextFlags = static_cast<EDrawTextFlags>(eDrawText_2D | eDrawText_FixedSize | eDrawText_800x600 | eDrawText_Monospace);
+						IRenderAuxText::Draw2dLabelEx(textPos.x, textPos.y, 1.8f, Col_White, drawTextFlags, "%s", debugText.c_str());
+
+						uint32 lineCount = 1;
+						for (const char* pPos = debugText.c_str(), *pEnd = pPos + debugText.length(); pPos < pEnd; ++pPos)
+						{
+							if (*pPos == '\n')
+							{
+								++lineCount;
+							}
+						}
+
+						const float approxLineHeight = 15.0f;
+						textPos.y += approxLineHeight * (lineCount + 1);
+					}
 				}
 			}
 		}
 		return EVisitStatus::Continue;
 	};
-	CSTDEnv::GetInstance()->GetEntityObjectMap().VisitEntityObjects(EntityObjectVisitor::FromLambda(visitEntityObject));
+	CSTDEnv::GetInstance().GetEntityObjectMap().VisitEntityObjects(EntityObjectVisitor::FromLambda(visitEntityObject));
 }
 } // Schematyc

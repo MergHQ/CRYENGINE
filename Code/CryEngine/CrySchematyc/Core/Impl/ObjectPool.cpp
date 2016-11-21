@@ -13,7 +13,7 @@ namespace Schematyc
 {
 IObject* CObjectPool::CreateObject(const SObjectParams& params)
 {
-	CRuntimeClassConstPtr pClass = GetSchematycCoreImpl().GetRuntimeRegistryImpl().GetClassImpl(params.classGUID);
+	CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(params.classGUID);
 	if (pClass)
 	{
 		if (m_freeSlots.empty() && !AllocateSlots(m_slots.size() + 1))

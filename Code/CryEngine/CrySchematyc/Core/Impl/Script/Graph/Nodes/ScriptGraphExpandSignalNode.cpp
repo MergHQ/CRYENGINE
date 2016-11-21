@@ -35,24 +35,20 @@ SGUID CScriptGraphExpandSignalNode::GetTypeGUID() const
 
 void CScriptGraphExpandSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
+	layout.SetStyleId("Core::Data");
 	layout.SetColor(EScriptGraphColor::Blue);
 
+	const char* szSubject = g_szNoType;
 	if (!GUID::IsEmpty(m_typeId.guid))
 	{
 		switch (m_typeId.domain)
 		{
 		case EDomain::Env:
 			{
-				const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_typeId.guid);
+				const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_typeId.guid);
 				if (pEnvSignal)
 				{
-					const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-					CScriptView scriptView(element.GetGUID());
-
-					CStackString name;
-					scriptView.QualifyName(*pEnvSignal, name);
-					name.insert(0, "Expand ");
-					layout.SetName(name.c_str());
+					szSubject = pEnvSignal->GetName();
 
 					layout.AddInput("In", m_typeId.guid, EScriptGraphPortFlags::Signal);
 					layout.AddOutput("Out", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::Begin });
@@ -71,6 +67,7 @@ void CScriptGraphExpandSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
+	layout.SetName("Expand", szSubject);
 }
 
 void CScriptGraphExpandSignalNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -79,7 +76,7 @@ void CScriptGraphExpandSignalNode::Compile(SCompilerContext& context, IGraphNode
 	{
 	case EDomain::Env:
 		{
-			const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_typeId.guid);
+			const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_typeId.guid);
 			if (pEnvSignal)
 			{
 				compiler.BindCallback(&Execute);
@@ -114,7 +111,7 @@ void CScriptGraphExpandSignalNode::Validate(Serialization::IArchive& archive, co
 		{
 		case EDomain::Env:
 			{
-				const IEnvElement* pEnvElement = GetSchematycCore().GetEnvRegistry().GetElement(m_typeId.guid);
+				const IEnvElement* pEnvElement = gEnv->pSchematyc->GetEnvRegistry().GetElement(m_typeId.guid);
 				if (!pEnvElement)
 				{
 					archive.error(*this, "Unable to retrieve environment type!");
@@ -139,25 +136,47 @@ void CScriptGraphExpandSignalNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SElementId& typeId)
-				: m_typeId(typeId)
+			CCreationCommand(const char* szSubject, const SElementId& typeId)
+				: m_subject(szSubject)
+				, m_typeId(typeId)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphExpandSignalNode>(m_typeId), pos);
+				return "Expand";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Expand structure/signal";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Data";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphExpandSignalNode>(m_typeId), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
+			string     m_subject;
 			SElementId m_typeId;
 		};
 
@@ -183,14 +202,12 @@ void CScriptGraphExpandSignalNode::Register(CScriptGraphNodeFactory& factory)
 				{
 					auto visitEnvSignal = [&nodeCreationMenu, &scriptView](const IEnvSignal& envSignal) -> EVisitStatus
 					{
-						CStackString label;
-						scriptView.QualifyName(envSignal, label);
-						label.append("::ExpandSignal");
-						nodeCreationMenu.AddOption(label.c_str(), envSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envSignal.GetGUID())));
+						CStackString subject;
+						scriptView.QualifyName(envSignal, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Env, envSignal.GetGUID())));
 						return EVisitStatus::Continue;
 					};
 					scriptView.VisitEnvSignals(EnvSignalConstVisitor::FromLambda(visitEnvSignal));
-
 					break;
 				}
 			}

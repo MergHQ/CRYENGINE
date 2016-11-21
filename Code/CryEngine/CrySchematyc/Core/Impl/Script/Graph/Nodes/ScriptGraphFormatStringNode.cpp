@@ -123,7 +123,8 @@ SGUID CScriptGraphFormatStringNode::GetTypeGUID() const
 
 void CScriptGraphFormatStringNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	layout.SetName("FormatString");
+	layout.SetName("Format String");
+	layout.SetStyleId("Core::Utility");
 	layout.SetColor(EScriptGraphColor::Orange);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -204,18 +205,38 @@ void CScriptGraphFormatStringNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphFormatStringNode>(), pos);
+				return "Format String";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Convert and concatenate multiple inputs to string";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Utility";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphFormatStringNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -234,7 +255,7 @@ void CScriptGraphFormatStringNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			nodeCreationMenu.AddOption("FormatString", "Format string", "", std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 		}
 
 		// ~IScriptGraphNodeCreator

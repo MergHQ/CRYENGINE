@@ -144,7 +144,7 @@ void CScriptComponentInstance::Edit(Serialization::IArchive& archive, const ISer
 
 void CScriptComponentInstance::Validate(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(m_typeGUID);
+	const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(m_typeGUID);
 	if (!pEnvComponent)
 	{
 		CStackString guid;
@@ -159,7 +159,7 @@ void CScriptComponentInstance::Validate(Serialization::IArchive& archive, const 
 
 void CScriptComponentInstance::ApplyComponent()
 {
-	const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(m_typeGUID);
+	const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(m_typeGUID);
 	if (pEnvComponent)
 	{
 		m_bHasTransform = pEnvComponent->GetFlags().Check(EEnvComponentFlags::Transform);

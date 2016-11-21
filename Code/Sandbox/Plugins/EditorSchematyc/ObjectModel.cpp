@@ -27,8 +27,8 @@ namespace CrySchematycEditor {
 
 CObjectModel::CObjectModel(Schematyc::IScriptView& scriptView)
 	: m_scriptView(scriptView)
-	, m_scriptRegistry(GetSchematycCore().GetScriptRegistry())
-	, m_scriptElement(*GetSchematycCore().GetScriptRegistry().GetElement(scriptView.GetScopeGUID()))
+	, m_scriptRegistry(gEnv->pSchematyc->GetScriptRegistry())
+	, m_scriptElement(*gEnv->pSchematyc->GetScriptRegistry().GetElement(scriptView.GetScopeGUID()))
 {
 	LoadFromScriptElement();
 

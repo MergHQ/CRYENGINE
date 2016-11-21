@@ -116,7 +116,7 @@ void CGraphItem::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: This will only work for serialization to properties in inspector!
 	Schematyc::SSerializationContextParams serParams(archive, Schematyc::ESerializationPass::Edit);
-	Schematyc::ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(serParams);
+	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serParams);
 	// ~TODO
 
 	m_pScriptElement->Serialize(archive);

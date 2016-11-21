@@ -138,7 +138,7 @@ void CScriptBase::Validate(Serialization::IArchive& archive, const ISerializatio
 	{
 	case EDomain::Env:
 		{
-			if (!GetSchematycCore().GetEnvRegistry().GetClass(m_classId.guid))
+			if (!gEnv->pSchematyc->GetEnvRegistry().GetClass(m_classId.guid))
 			{
 				archive.error(*this, "Unable to retrieve base class!");
 			}
@@ -146,7 +146,7 @@ void CScriptBase::Validate(Serialization::IArchive& archive, const ISerializatio
 		}
 	case EDomain::Script:
 		{
-			if (!DynamicCast<IScriptClass>(GetSchematycCore().GetScriptRegistry().GetElement(m_classId.guid)))
+			if (!DynamicCast<IScriptClass>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_classId.guid)))
 			{
 				archive.error(*this, "Unable to retrieve base class!");
 			}
@@ -161,12 +161,12 @@ void CScriptBase::Refresh(const RefreshFlags& flags)
 	{
 	case EDomain::Env:
 		{
-			const IEnvClass* pEnvClass = GetSchematycCore().GetEnvRegistry().GetClass(m_classId.guid);
+			const IEnvClass* pEnvClass = gEnv->pSchematyc->GetEnvRegistry().GetClass(m_classId.guid);
 			if (pEnvClass)
 			{
 				if (flags.Check(ERefreshFlags::Name))
 				{
-					CStackString name = "Base[";
+					CStackString name = "Base [";
 					name.append(pEnvClass->GetName());
 					name.append("]");
 					CScriptElementBase::SetName(name.c_str());
@@ -190,7 +190,7 @@ void CScriptBase::Refresh(const RefreshFlags& flags)
 		}
 	case EDomain::Script:
 		{
-			const IScriptClass* pScriptClass = DynamicCast<const IScriptClass>(GetSchematycCore().GetScriptRegistry().GetElement(m_classId.guid));
+			const IScriptClass* pScriptClass = DynamicCast<const IScriptClass>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_classId.guid));
 			if (pScriptClass)
 			{
 				if (flags.Check(ERefreshFlags::Name))
@@ -257,7 +257,7 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 	};
 	CScriptElementBase::VisitChildren(ScriptElementVisitor::FromLambda(collectDerivedVariables));
 
-	IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+	IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 
 	// Remove all derived variables that are either finalized of no longer part of base class.
 	for (DerivedVariables::value_type& derivedVariable : derivedVariables)
@@ -292,7 +292,7 @@ void CScriptBase::RefreshComponentInstances(const IEnvClass& envClass)
 	typedef std::unordered_map<SGUID, const IEnvComponent*>      BaseComponentInstances;
 	typedef std::unordered_map<SGUID, IScriptComponentInstance*> DerivedComponentInstances;
 
-	IEnvRegistry& envRegistry = GetSchematycCore().GetEnvRegistry();
+	IEnvRegistry& envRegistry = gEnv->pSchematyc->GetEnvRegistry();
 
 	// Collect base component instances.
 	const uint32 baseComponentCount = envClass.GetComponentCount();
@@ -329,7 +329,7 @@ void CScriptBase::RefreshComponentInstances(const IEnvClass& envClass)
 	};
 	CScriptElementBase::VisitChildren(ScriptElementVisitor::FromLambda(collectDerivedComponentInstances));
 
-	IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+	IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 
 	// Remove all derived component instances that are either finalized of no longer part of base class.
 	for (DerivedComponentInstances::value_type& derivedComponent : derivedComponentInstances)

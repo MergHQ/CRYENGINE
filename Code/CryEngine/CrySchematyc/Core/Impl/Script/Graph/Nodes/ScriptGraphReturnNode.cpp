@@ -23,6 +23,7 @@ SGUID CScriptGraphReturnNode::GetTypeGUID() const
 void CScriptGraphReturnNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Return");
+	layout.SetStyleId("Core::FlowControl::End");
 	layout.SetColor(EScriptGraphColor::Purple);
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 
@@ -56,18 +57,38 @@ void CScriptGraphReturnNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphReturnNode>(), pos);
+				return "Return";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Return from function";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl::End";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReturnNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -90,7 +111,7 @@ void CScriptGraphReturnNode::Register(CScriptGraphNodeFactory& factory)
 			{
 			case EScriptGraphType::Function:
 				{
-					nodeCreationMenu.AddOption("Return", "Return from function", "", std::make_shared<CNodeCreationMenuCommand>());
+					nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 					break;
 				}
 			}

@@ -157,12 +157,12 @@ void CCompiler::CompileAll()
 		}
 		return EVisitStatus::Recurse;
 	};
-	GetSchematycCore().GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
+	gEnv->pSchematyc->GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
 }
 
 void CCompiler::CompileDependencies(const SGUID& guid)
 {
-	IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+	IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 	const IScriptElement* pScriptElement = scriptRegistry.GetElement(guid);
 	if (pScriptElement)
 	{
@@ -233,7 +233,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 	// Release existing class.
 
 	const SGUID classGUID = scriptClass.GetGUID();
-	GetSchematycCoreImpl().GetRuntimeRegistryImpl().ReleaseClass(classGUID);
+	CCore::GetInstance().GetRuntimeRegistryImpl().ReleaseClass(classGUID);
 
 	// Build inheritance chain and find environment class.
 
@@ -243,7 +243,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 	const IEnvClass* pEnvClass = nullptr;
 	CAnyConstPtr pEnvClassProperties;
 
-	IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+	IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 	for (const IScriptClass* pScriptClass = &scriptClass; pScriptClass; )
 	{
 		inheritanceChain.push_back(pScriptClass);
@@ -266,7 +266,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 			{
 			case EDomain::Env:
 				{
-					pEnvClass = GetSchematycCore().GetEnvRegistry().GetClass(baseClassId.guid);
+					pEnvClass = gEnv->pSchematyc->GetEnvRegistry().GetClass(baseClassId.guid);
 					pEnvClassProperties = pScriptBase->GetEnvClassProperties();
 					break;
 				}
@@ -341,7 +341,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 
 		pClass->Finalize();
 
-		GetSchematycCoreImpl().GetRuntimeRegistryImpl().RegisterClass(pClass);
+		CCore::GetInstance().GetRuntimeRegistryImpl().RegisterClass(pClass);
 
 		// Send results to log.
 

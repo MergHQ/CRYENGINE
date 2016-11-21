@@ -42,16 +42,14 @@ namespace Schematyc
 
 		StringUtils::ToSnakeCase(name);
 
-		ICrySchematycCore& core = GetSchematycCore();
-
 		string path = gEnv->pCryPak->GetGameFolder();
 		path.append("/");
-		path.append(core.GetScriptsFolder());
+		path.append(gEnv->pSchematyc->GetScriptsFolder());
 		path.append("/");
 
 		name.insert(0, path);
 		name.append(".schematyc_script.");
-		name.append(core.GetFileFormat());
+		name.append(gEnv->pSchematyc->GetFileFormat());
 		name.MakeLower();
 
 		m_name = name.c_str();

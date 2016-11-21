@@ -21,7 +21,7 @@ CSensorSystem::CSensorSystem()
 
 	m_pTagLibrary.reset(new CSensorTagLibrary());
 
-	// #TODO : Remore/replace hard-coded tags!!!
+	// #TODO : Remove/replace hard-coded tags!!!
 	m_pTagLibrary->CreateTag("Default");
 	m_pTagLibrary->CreateTag("Player");
 	m_pTagLibrary->CreateTag("Trigger");
@@ -81,12 +81,12 @@ void CSensorSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
+	case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
 		{
 			const Schematyc::SGUID guid = "e5f633a6-472d-470c-a78d-86bd2383092d"_schematyc_guid;
 			const char* szName = "SensorSystem";
 			Schematyc::EnvPackageCallback callback = Schematyc::Delegate::Make(*this, &CSensorSystem::RegisterSchematycEnvPackage);
-			GetSchematycCore().GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, callback));
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, callback));
 			break;
 		}
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:

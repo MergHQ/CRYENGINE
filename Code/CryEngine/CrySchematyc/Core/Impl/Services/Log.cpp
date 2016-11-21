@@ -291,7 +291,8 @@ void CLog::Init()
 	CreateStream("Editor", LogStreamId::Editor);
 	CreateStream("Environment", LogStreamId::Env);
 
-	GetSchematycCoreImpl().GetSettingsManager().RegisterSettings("log_settings", m_pSettings);
+	CCore::GetInstance().GetSettingsManager().RegisterSettings("log_settings", m_pSettings);
+
 	REGISTER_COMMAND("sc_CriticalError", LogUtils::CriticalErrorCommand, VF_NULL, "Trigger Schematyc critical error");
 	REGISTER_COMMAND("sc_FatalError", LogUtils::FatalErrorCommand, VF_NULL, "Trigger Schematyc fatal error");
 }

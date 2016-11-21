@@ -159,8 +159,6 @@ add_sources("Schematyc_Uber_Core_1.cpp"
 	SOURCE_GROUP "Impl\\\\CoreEnv"
 		"CoreEnv/CoreEnv.cpp"
 		"CoreEnv/CoreEnv.h"
-		"CoreEnv/CoreEnvModules.cpp"
-		"CoreEnv/CoreEnvModules.h"
 		"CoreEnv/CoreEnvSignals.cpp"
 		"CoreEnv/CoreEnvSignals.h"
 )

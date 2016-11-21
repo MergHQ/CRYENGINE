@@ -65,7 +65,7 @@ inline bool FilterMessage(const SLogSettings& settings, LogStreamId streamId, co
 		}
 	}
 
-	const SLogStreamName streamName(GetSchematycCore().GetLog().GetStreamName(streamId));
+	const SLogStreamName streamName(gEnv->pSchematyc->GetLog().GetStreamName(streamId));
 	auto compareStreamName = [&streamName](const SLogStreamName& rhs)
 	{
 		return streamName.value == rhs.value;
@@ -214,8 +214,8 @@ CLogWidget::CLogWidget(const SLogSettings& settings)
 
 	QObject::connect(m_pOutput, SIGNAL(anchorClicked(const QUrl &)), this, SLOT(OnLinkClicked(const QUrl &)));
 
-	GetSchematycCore().GetLogRecorder().VisitMessages(Schematyc::Delegate::Make(*this, &CLogWidget::VisitRecordedLogMessage));
-	GetSchematycCore().GetLog().GetMessageSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CLogWidget::OnLogMessage), m_connectionScope);
+	gEnv->pSchematyc->GetLogRecorder().VisitMessages(Schematyc::Delegate::Make(*this, &CLogWidget::VisitRecordedLogMessage));
+	gEnv->pSchematyc->GetLog().GetMessageSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CLogWidget::OnLogMessage), m_connectionScope);
 
 	QWidget::startTimer(80);
 }

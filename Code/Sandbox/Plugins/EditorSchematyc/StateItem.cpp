@@ -84,7 +84,7 @@ void CStateItem::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: This will only work for serialization to properties in inspector!
 	Schematyc::SSerializationContextParams serParams(archive, Schematyc::ESerializationPass::Edit);
-	Schematyc::ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(serParams);
+	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serParams);
 	// ~TODO
 
 	m_scriptState.Serialize(archive);
@@ -216,7 +216,7 @@ CGraphItem* CStateItem::CreateGraph(CGraphItem::EGraphType type)
 bool CStateItem::RemoveGraph(CGraphItem& functionItem)
 {
 	GetModel().SignalObjectStructureItemRemoved(functionItem);
-	GetSchematycCore().GetScriptRegistry().RemoveElement(functionItem.GetGUID());
+	gEnv->pSchematyc->GetScriptRegistry().RemoveElement(functionItem.GetGUID());
 
 	const auto result = std::find(m_graphs.begin(), m_graphs.end(), &functionItem);
 	if (result != m_graphs.end())
@@ -247,7 +247,7 @@ CStateItem* CStateItem::CreateState()
 bool CStateItem::RemoveState(CStateItem& stateItem)
 {
 	GetModel().SignalObjectStructureItemRemoved(stateItem);
-	GetSchematycCore().GetScriptRegistry().RemoveElement(stateItem.GetGUID());
+	gEnv->pSchematyc->GetScriptRegistry().RemoveElement(stateItem.GetGUID());
 
 	const auto result = std::find(m_states.begin(), m_states.end(), &stateItem);
 	if (result != m_states.end())

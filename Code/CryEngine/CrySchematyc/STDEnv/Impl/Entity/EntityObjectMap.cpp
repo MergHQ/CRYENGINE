@@ -23,7 +23,7 @@ ObjectId CEntityObjectMap::GetEntityObjectId(EntityId entityId) const
 
 IObject* CEntityObjectMap::GetEntityObject(EntityId entityId) const
 {
-	return GetSchematycCore().GetObject(GetEntityObjectId(entityId));
+	return gEnv->pSchematyc->GetObject(GetEntityObjectId(entityId));
 }
 
 EVisitResult CEntityObjectMap::VisitEntityObjects(const EntityObjectVisitor& visitor) const

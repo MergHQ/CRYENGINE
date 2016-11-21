@@ -45,8 +45,8 @@ namespace Schematyc
 	{
 		LOADING_TIME_PROFILE_SECTION;
 
-		const char* szFileFormat = GetSchematycCore().GetFileFormat();
-		const char* szSettingsFolder = GetSchematycCore().GetSettingsFolder();
+		const char* szFileFormat = gEnv->pSchematyc->GetFileFormat();
+		const char* szSettingsFolder = gEnv->pSchematyc->GetSettingsFolder();
 		for(const Settings::value_type& settings : m_settings)
 		{
 			const char*  szName = settings.first.c_str();
@@ -75,8 +75,8 @@ namespace Schematyc
 	{
 		LOADING_TIME_PROFILE_SECTION;
 
-		const char* szFileFormat = GetSchematycCore().GetFileFormat();
-		const char* szSettingsFolder = GetSchematycCore().GetSettingsFolder();
+		const char* szFileFormat = gEnv->pSchematyc->GetFileFormat();
+		const char* szSettingsFolder = gEnv->pSchematyc->GetSettingsFolder();
 		for(Settings::value_type& settings : m_settings)
 		{
 			const char*  szName = settings.first.c_str();

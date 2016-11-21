@@ -373,7 +373,7 @@ void CEnvBrowserModel::Populate()
 		m_itemsByGUID.insert(ItemsByGUID::value_type(guid, pItem.get()));
 		return EVisitStatus::Recurse;
 	};
-	GetSchematycCore().GetEnvRegistry().GetRoot().VisitChildren(EnvElementConstVisitor::FromLambda(visitEnvElement));
+	gEnv->pSchematyc->GetEnvRegistry().GetRoot().VisitChildren(EnvElementConstVisitor::FromLambda(visitEnvElement));
 }
 
 CEnvBrowserWidget::CEnvBrowserWidget(QWidget* pParent)

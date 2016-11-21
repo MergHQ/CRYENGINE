@@ -9,6 +9,8 @@
 
 #include <ProxyModels/ItemModelAttribute.h>
 
+class QIcon;
+
 namespace Schematyc {
 
 struct IScriptGraph;
@@ -24,31 +26,34 @@ class CNodesDictionaryNodeEntry : public CAbstractDictionaryEntry
 	friend class CNodesDictionaryCreator;
 
 public:
-	CNodesDictionaryNodeEntry(QString name, QString fullName, const Schematyc::IScriptGraphNodeCreationMenuCommandPtr pCommand, CNodesDictionaryCategoryEntry* pParent = nullptr)
+	CNodesDictionaryNodeEntry(QString name, QString fullName, const Schematyc::IScriptGraphNodeCreationCommandPtr pCommand, CNodesDictionaryCategoryEntry* pParent = nullptr, QIcon* pIcon = nullptr)
 		: CAbstractDictionaryEntry()
 		, m_name(name)
 		, m_fullName(fullName)
 		, m_pCommand(pCommand)
 		, m_pParent(pParent)
+		, m_pIcon(pIcon)
 	{}
 	virtual ~CNodesDictionaryNodeEntry() {}
 
 	// CAbstractDictionaryEntry
 	virtual uint32                          GetType() const override { return Type_Entry; }
 	virtual QVariant                        GetColumnValue(int32 columnIndex) const override;
+	virtual QIcon*                          GetColumnIcon(int32 columnIndex) const override;
 
 	virtual const CAbstractDictionaryEntry* GetParentEntry() const override;
 	virtual QVariant                        GetIdentifier() const;
 	// ~CAbstractDictionaryEntry
 
-	const QString&                                          GetName() const    { return m_name; }
-	const Schematyc::IScriptGraphNodeCreationMenuCommandPtr GetCommand() const { return m_pCommand; }
+	const QString&                                      GetName() const    { return m_name; }
+	const Schematyc::IScriptGraphNodeCreationCommandPtr GetCommand() const { return m_pCommand; }
 
 private:
-	CNodesDictionaryCategoryEntry*                          m_pParent;
-	QString                                                 m_name;
-	QString                                                 m_fullName;
-	const Schematyc::IScriptGraphNodeCreationMenuCommandPtr m_pCommand;
+	CNodesDictionaryCategoryEntry*                      m_pParent;
+	QString                                             m_name;
+	QString                                             m_fullName;
+	QIcon*                                              m_pIcon;
+	const Schematyc::IScriptGraphNodeCreationCommandPtr m_pCommand;
 };
 
 class CNodesDictionaryCategoryEntry : public CAbstractDictionaryEntry

@@ -39,22 +39,22 @@ void CScriptClass::ProcessEvent(const SScriptEvent& event)
 		{
 			// #SchematycTODO : Should we be doing this in editor code?
 
-			IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+			IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 			scriptRegistry.AddConstructor("ConstructionGraph", this);
 
 			IScriptSignalReceiver* pSignalReceiver = scriptRegistry.AddSignalReceiver("SignalGraph", EScriptSignalReceiverType::Universal, SGUID(), this);
 			IScriptGraph* pGraph = static_cast<IScriptGraph*>(pSignalReceiver->GetExtensions().QueryExtension(EScriptExtensionType::Graph));
 			if(pGraph)
 			{
-				IScriptGraphNodePtr pStartNode = std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_startSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+				IScriptGraphNodePtr pStartNode = std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_startSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 				pStartNode->SetPos(Vec2(0.0f, 0.0f));
 				pGraph->AddNode(pStartNode);
 
-				IScriptGraphNodePtr pStopNode = std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_stopSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+				IScriptGraphNodePtr pStopNode = std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_stopSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 				pStopNode->SetPos(Vec2(0.0f, 100.0f));
 				pGraph->AddNode(pStopNode);
 
-				IScriptGraphNodePtr pUpdateNode = std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_updateSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+				IScriptGraphNodePtr pUpdateNode = std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(SElementId(EDomain::Env, g_updateSignalGUID))); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 				pUpdateNode->SetPos(Vec2(0.0f, 200.0f));
 				pGraph->AddNode(pUpdateNode);
 			}

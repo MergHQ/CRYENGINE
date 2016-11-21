@@ -17,16 +17,10 @@
 #include "Script/Graph/ScriptGraphNodeFactory.h"
 #include "SerializationUtils/SerializationContext.h"
 
-SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc, CScriptGraphArrayAddNode, EReferenceMode, "Schematyc Script Graph Array Add Node Reference Mode")
-SERIALIZATION_ENUM(Schematyc::CScriptGraphArrayAddNode::EReferenceMode::Input, "Input", "Input")
-SERIALIZATION_ENUM(Schematyc::CScriptGraphArrayAddNode::EReferenceMode::Inline, "Inline", "Inline")
-SERIALIZATION_ENUM_END()
-
 namespace Schematyc
 {
-CScriptGraphArrayAddNode::CScriptGraphArrayAddNode(EReferenceMode referenceMode, const SElementId& reference)
-	: m_referenceMode(referenceMode)
-	, m_defaultValue(referenceMode == EReferenceMode::Input ? reference : SElementId())
+CScriptGraphArrayAddNode::CScriptGraphArrayAddNode(const SElementId& typeId)
+	: m_defaultValue(typeId)
 {}
 
 SGUID CScriptGraphArrayAddNode::GetTypeGUID() const
@@ -36,21 +30,22 @@ SGUID CScriptGraphArrayAddNode::GetTypeGUID() const
 
 void CScriptGraphArrayAddNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	layout.SetName("Array::Add");
+	layout.SetStyleId("Core::Data");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Default", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::SpacerBelow });
 
+	const char* szSubject = g_szNoType;
 	if (!m_defaultValue.IsEmpty())
 	{
+		szSubject = m_defaultValue.GetTypeName();
+
 		const SGUID typeGUID = m_defaultValue.GetTypeId().guid;
-		if (m_referenceMode == EReferenceMode::Input)
-		{
-			layout.AddInput("Array", typeGUID, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Array });
-		}
+		layout.AddInput("Array", typeGUID, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Array });
 		layout.AddInputWithData(m_defaultValue.GetTypeName(), typeGUID, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *m_defaultValue.GetValue());
 	}
+	layout.SetName("Array - Add", szSubject);
 }
 
 void CScriptGraphArrayAddNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -76,39 +71,15 @@ void CScriptGraphArrayAddNode::Save(Serialization::IArchive& archive, const ISer
 
 void CScriptGraphArrayAddNode::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	//archive(m_referenceMode, "referenceMode", "Reference Mode");
-	switch (m_referenceMode)
-	{
-	case EReferenceMode::Input:
-		{
-			ScriptVariableData::CScopedSerializationConfig serializationConfig(archive);
+	ScriptVariableData::CScopedSerializationConfig serializationConfig(archive);
 
-			const SGUID guid = CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID();
-			serializationConfig.DeclareEnvDataTypes(guid);
-			serializationConfig.DeclareScriptEnums(guid);
-			serializationConfig.DeclareScriptStructs(guid);
+	const SGUID guid = CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID();
+	serializationConfig.DeclareEnvDataTypes(guid);
+	serializationConfig.DeclareScriptEnums(guid);
+	serializationConfig.DeclareScriptStructs(guid);
 
-			m_defaultValue.SerializeTypeId(archive);
-			break;
-		}
-		/*case EReferenceMode::Inline:
-		   {
-		   SerializationUtils::CScopedQuickSearchConfig<SElementId> quickSearchConfig(archive, "Variable");
+	m_defaultValue.SerializeTypeId(archive);
 
-		   CScriptView scriptView(CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID());
-
-		   auto visitScriptVariable = [&quickSearchConfig](const IScriptVariable& scriptVariable) -> EVisitStatus
-		   {
-		   quickSearchConfig.AddOption(scriptVariable.GetName(), SElementId(EDomain::Script, scriptVariable.GetGUID()), scriptVariable.GetName(), nullptr);
-		   return EVisitStatus::Continue;
-		   };
-		   scriptView.VisitScriptVariables(ScriptVariableConstVisitor::FromLambda(visitScriptVariable), EDomainScope::Local);
-
-		   SElementId variableId;
-		   archive(SerializationUtils::QuickSearch(variableId), "variableId", "Variable");
-		   break;
-		   }*/
-	}
 }
 
 void CScriptGraphArrayAddNode::RemapDependencies(IGUIDRemapper& guidRemapper)
@@ -122,28 +93,48 @@ void CScriptGraphArrayAddNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			inline CNodeCreationMenuCommand(EReferenceMode referenceMode = EReferenceMode::Input, const SElementId& reference = SElementId())
-				: m_referenceMode(referenceMode)
-				, m_reference(reference)
+			inline CCreationCommand(const char* szSubject = g_szNoType, const SElementId& typeId = SElementId())
+				: m_subject(szSubject)
+				, m_typeId(typeId)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphArrayAddNode>(m_referenceMode, m_reference), pos);
+				return "Array::Add";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Add element to end of array";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Data";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphArrayAddNode>(m_typeId), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
-			EReferenceMode m_referenceMode;
-			SElementId     m_reference;
+			string     m_subject;
+			SElementId m_typeId;
 		};
 
 	public:
@@ -162,37 +153,18 @@ void CScriptGraphArrayAddNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			const char* szLabel = "Array::Add";
-			const char* szDescription = "Add element to end of array";
-
-			nodeCreationMenu.AddOption(szLabel, szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 
 			// #SchematycTODO : This code is duplicated in all array nodes, find a way to reduce the duplication.
 
-			auto visitEnvDataType = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IEnvDataType& envDataType) -> EVisitStatus
+			auto visitEnvDataType = [&nodeCreationMenu, &scriptView](const IEnvDataType& envDataType) -> EVisitStatus
 			{
-				CStackString label;
-				scriptView.QualifyName(envDataType, label);
-				label.append("::");
-				label.append(szLabel);
-				nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(EReferenceMode::Input, SElementId(EDomain::Env, envDataType.GetGUID())));
+				CStackString subject;
+				scriptView.QualifyName(envDataType, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Env, envDataType.GetGUID())));
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitEnvDataTypes(EnvDataTypeConstVisitor::FromLambda(visitEnvDataType));
-
-			/*auto visitScriptVariable = [&nodeCreationMenu, &scriptView, szLabel, szDescription](const IScriptVariable& scriptVariable) -> EVisitStatus
-			   {
-			   if (scriptVariable.IsArray())
-			   {
-			    CStackString label;
-			    scriptView.QualifyName(scriptVariable, EDomainQualifier::Global, label);
-			    label.append("::");
-			    label.append(szLabel);
-			    nodeCreationMenu.AddOption(label.c_str(), szDescription, nullptr, std::make_shared<CNodeCreationMenuCommand>(?));
-			   }
-			   return EVisitStatus::Continue;
-			   };
-			   scriptView.VisitScriptVariables(ScriptVariableConstVisitor::FromLambda(visitScriptVariable), EDomainScope::Local);*/
 		}
 
 		// ~IScriptGraphNodeCreator

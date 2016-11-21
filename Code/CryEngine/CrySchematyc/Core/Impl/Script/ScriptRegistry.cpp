@@ -67,7 +67,7 @@ namespace ScriptRegistryUtils
 {
 void SaveAllScriptFilesCommand(IConsoleCmdArgs* pArgs)
 {
-	GetSchematycCore().GetScriptRegistry().Save(true);
+	gEnv->pSchematyc->GetScriptRegistry().Save(true);
 }
 
 void ProcessEventRecursive(IScriptElement& element, const SScriptEvent& event)
@@ -114,7 +114,7 @@ bool CScriptRegistry::Load()
 	// Enumerate files and construct new elements.
 	// #SchematycTODO : How can we minimize some of the duplication between loadJsonFile and loadXmlFile?
 	ScriptInputBlocks inputBlocks;
-	const char* szScriptFolder = GetSchematycCore().GetScriptsFolder();
+	const char* szScriptFolder = gEnv->pSchematyc->GetScriptsFolder();
 
 	auto loadJsonFile = [this, &inputBlocks](const char* szFileName, unsigned attributes)
 	{
@@ -262,7 +262,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 			case EScriptElementType::ComponentInstance:
 				{
 					const IScriptComponentInstance& componentInstance = DynamicCast<IScriptComponentInstance>(*pScope);
-					const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
+					const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
 					if (pEnvComponent)
 					{
 						if (pEnvComponent->GetFlags().Check(EEnvComponentFlags::Socket))
@@ -320,7 +320,7 @@ IScriptModule* CScriptRegistry::AddModule(const char* szName, IScriptElement* pS
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptModulePtr pModule = std::make_shared<CScriptModule>(GetSchematycCore().CreateGUID(), szName);
+				CScriptModulePtr pModule = std::make_shared<CScriptModule>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pModule, *pScope);
 				return pModule.get();
 			}
@@ -344,7 +344,7 @@ IScriptEnum* CScriptRegistry::AddEnum(const char* szName, IScriptElement* pScope
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptEnumPtr pEnum = std::make_shared<CScriptEnum>(GetSchematycCore().CreateGUID(), szName);
+				CScriptEnumPtr pEnum = std::make_shared<CScriptEnum>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pEnum, *pScope);
 				return pEnum.get();
 			}
@@ -368,7 +368,7 @@ IScriptStruct* CScriptRegistry::AddStruct(const char* szName, IScriptElement* pS
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptStructPtr pStruct = std::make_shared<CScriptStruct>(GetSchematycCore().CreateGUID(), szName);
+				CScriptStructPtr pStruct = std::make_shared<CScriptStruct>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pStruct, *pScope);
 				return pStruct.get();
 			}
@@ -392,7 +392,7 @@ IScriptSignal* CScriptRegistry::AddSignal(const char* szName, IScriptElement* pS
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptSignalPtr pSignal = std::make_shared<CScriptSignal>(GetSchematycCore().CreateGUID(), szName);
+				CScriptSignalPtr pSignal = std::make_shared<CScriptSignal>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pSignal, *pScope);
 				return pSignal.get();
 			}
@@ -416,7 +416,7 @@ IScriptConstructor* CScriptRegistry::AddConstructor(const char* szName, IScriptE
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptConstructorPtr pConstructor = std::make_shared<CScriptConstructor>(GetSchematycCore().CreateGUID(), szName);
+				CScriptConstructorPtr pConstructor = std::make_shared<CScriptConstructor>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pConstructor, *pScope);
 				return pConstructor.get();
 			}
@@ -440,7 +440,7 @@ IScriptFunction* CScriptRegistry::AddFunction(const char* szName, IScriptElement
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptFunctionPtr pFunction = std::make_shared<CScriptFunction>(GetSchematycCore().CreateGUID(), szName);
+				CScriptFunctionPtr pFunction = std::make_shared<CScriptFunction>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pFunction, *pScope);
 				return pFunction.get();
 			}
@@ -464,7 +464,7 @@ IScriptInterface* CScriptRegistry::AddInterface(const char* szName, IScriptEleme
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptInterfacePtr pInterface = std::make_shared<CScriptInterface>(GetSchematycCore().CreateGUID(), szName);
+				CScriptInterfacePtr pInterface = std::make_shared<CScriptInterface>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pInterface, *pScope);
 				return pInterface.get();
 			}
@@ -488,7 +488,7 @@ IScriptInterfaceFunction* CScriptRegistry::AddInterfaceFunction(const char* szNa
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptInterfaceFunctionPtr pInterfaceFunction = std::make_shared<CScriptInterfaceFunction>(GetSchematycCore().CreateGUID(), szName);
+				CScriptInterfaceFunctionPtr pInterfaceFunction = std::make_shared<CScriptInterfaceFunction>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pInterfaceFunction, *pScope);
 				return pInterfaceFunction.get();
 			}
@@ -512,7 +512,7 @@ IScriptInterfaceTask* CScriptRegistry::AddInterfaceTask(const char* szName, IScr
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptInterfaceTaskPtr pInterfaceTask = std::make_shared<CScriptInterfaceTask>(GetSchematycCore().CreateGUID(), szName);
+				CScriptInterfaceTaskPtr pInterfaceTask = std::make_shared<CScriptInterfaceTask>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pInterfaceTask, *pScope);
 				return pInterfaceTask.get();
 			}
@@ -536,7 +536,7 @@ IScriptClass* CScriptRegistry::AddClass(const char* szName, const SElementId& ba
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptClassPtr pClass = std::make_shared<CScriptClass>(GetSchematycCore().CreateGUID(), szName);
+				CScriptClassPtr pClass = std::make_shared<CScriptClass>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pClass, *pScope);
 				AddBase(baseId, pClass.get());
 				return pClass.get();
@@ -559,7 +559,7 @@ IScriptBase* CScriptRegistry::AddBase(const SElementId& baseId, IScriptElement* 
 			{
 				pScope = m_pRoot.get();
 			}
-			CScriptBasePtr pBase = std::make_shared<CScriptBase>(GetSchematycCore().CreateGUID(), baseId);
+			CScriptBasePtr pBase = std::make_shared<CScriptBase>(gEnv->pSchematyc->CreateGUID(), baseId);
 			AddElement(pBase, *pScope);
 			return pBase.get();
 		}
@@ -582,7 +582,7 @@ IScriptStateMachine* CScriptRegistry::AddStateMachine(const char* szName, EScrip
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptStateMachinePtr pStateMachine = std::make_shared<CScriptStateMachine>(GetSchematycCore().CreateGUID(), szName, lifetime, contextGUID, partnerGUID);
+				CScriptStateMachinePtr pStateMachine = std::make_shared<CScriptStateMachine>(gEnv->pSchematyc->CreateGUID(), szName, lifetime, contextGUID, partnerGUID);
 				AddElement(pStateMachine, *pScope);
 				return pStateMachine.get();
 			}
@@ -606,7 +606,7 @@ IScriptState* CScriptRegistry::AddState(const char* szName, IScriptElement* pSco
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptStatePtr pState = std::make_shared<CScriptState>(GetSchematycCore().CreateGUID(), szName);
+				CScriptStatePtr pState = std::make_shared<CScriptState>(gEnv->pSchematyc->CreateGUID(), szName);
 				AddElement(pState, *pScope);
 				return pState.get();
 			}
@@ -630,7 +630,7 @@ IScriptVariable* CScriptRegistry::AddVariable(const char* szName, const SElement
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptVariablePtr pVariable = std::make_shared<CScriptVariable>(GetSchematycCore().CreateGUID(), szName, typeId, baseGUID);
+				CScriptVariablePtr pVariable = std::make_shared<CScriptVariable>(gEnv->pSchematyc->CreateGUID(), szName, typeId, baseGUID);
 				AddElement(pVariable, *pScope);
 				return pVariable.get();
 			}
@@ -652,7 +652,7 @@ IScriptTimer* CScriptRegistry::AddTimer(const char* szName, IScriptElement* pSco
 			{
 				pScope = m_pRoot.get();
 			}
-			CScriptTimerPtr pTimer = std::make_shared<CScriptTimer>(GetSchematycCore().CreateGUID(), szName);
+			CScriptTimerPtr pTimer = std::make_shared<CScriptTimer>(gEnv->pSchematyc->CreateGUID(), szName);
 			AddElement(pTimer, *pScope);
 			return pTimer.get();
 		}
@@ -673,7 +673,7 @@ IScriptSignalReceiver* CScriptRegistry::AddSignalReceiver(const char* szName, ES
 			{
 				pScope = m_pRoot.get();
 			}
-			CScriptSignalReceiverPtr pSignalReceiver = std::make_shared<CScriptSignalReceiver>(GetSchematycCore().CreateGUID(), szName, type, signalGUID);
+			CScriptSignalReceiverPtr pSignalReceiver = std::make_shared<CScriptSignalReceiver>(gEnv->pSchematyc->CreateGUID(), szName, type, signalGUID);
 			AddElement(pSignalReceiver, *pScope);
 			return pSignalReceiver.get();
 		}
@@ -694,7 +694,7 @@ IScriptInterfaceImpl* CScriptRegistry::AddInterfaceImpl(EDomain domain, const SG
 			{
 				pScope = m_pRoot.get();
 			}
-			CScriptInterfaceImplPtr pInterfaceImpl = std::make_shared<CScriptInterfaceImpl>(GetSchematycCore().CreateGUID(), domain, refGUID);
+			CScriptInterfaceImplPtr pInterfaceImpl = std::make_shared<CScriptInterfaceImpl>(gEnv->pSchematyc->CreateGUID(), domain, refGUID);
 			AddElement(pInterfaceImpl, *pScope);
 			return pInterfaceImpl.get();
 		}
@@ -717,7 +717,7 @@ IScriptComponentInstance* CScriptRegistry::AddComponentInstance(const char* szNa
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptComponentInstancePtr pComponentInstance = std::make_shared<CScriptComponentInstance>(GetSchematycCore().CreateGUID(), szName, typeGUID);
+				CScriptComponentInstancePtr pComponentInstance = std::make_shared<CScriptComponentInstance>(gEnv->pSchematyc->CreateGUID(), szName, typeGUID);
 				AddElement(pComponentInstance, *pScope);
 				return pComponentInstance.get();
 			}
@@ -741,7 +741,7 @@ IScriptActionInstance* CScriptRegistry::AddActionInstance(const char* szName, co
 			}
 			if (IsElementNameUnique(szName, pScope))
 			{
-				CScriptActionInstancePtr pActionInstance = std::make_shared<CScriptActionInstance>(GetSchematycCore().CreateGUID(), szName, actionGUID, contextGUID);
+				CScriptActionInstancePtr pActionInstance = std::make_shared<CScriptActionInstance>(gEnv->pSchematyc->CreateGUID(), szName, actionGUID, contextGUID);
 				AddElement(pActionInstance, *pScope);
 				return pActionInstance.get();
 			}
@@ -880,7 +880,7 @@ CScript* CScriptRegistry::CreateScript(const char* szFileName, const SGUID& guid
 
 CScript* CScriptRegistry::CreateScript()
 {
-	const SGUID guid = GetSchematycCore().CreateGUID();
+	const SGUID guid = gEnv->pSchematyc->CreateGUID();
 	SCHEMATYC_CORE_ASSERT(!GUID::IsEmpty(guid));
 	if (!GUID::IsEmpty(guid))
 	{
@@ -923,7 +923,7 @@ void CScriptRegistry::ProcessInputBlocks(ScriptInputBlocks& inputBlocks, IScript
 		CGUIDRemapper guidRemapper;
 		for (SScriptInputElement* pElement : elements)
 		{
-			guidRemapper.Bind(pElement->ptr->GetGUID(), GetSchematycCore().CreateGUID());
+			guidRemapper.Bind(pElement->ptr->GetGUID(), gEnv->pSchematyc->CreateGUID());
 		}
 		for (SScriptInputElement* pElement : elements)
 		{

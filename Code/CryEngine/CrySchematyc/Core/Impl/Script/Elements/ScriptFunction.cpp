@@ -158,7 +158,7 @@ void CScriptFunction::Edit(Serialization::IArchive& archive, const ISerializatio
 void CScriptFunction::CreateGraph()
 {
 	CScriptGraphPtr pScriptGraph = std::make_shared<CScriptGraph>(*this, EScriptGraphType::Function);
-	pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+	pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 	CScriptElementBase::AddExtension(pScriptGraph);
 }
 } // Schematyc

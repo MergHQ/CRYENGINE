@@ -445,8 +445,8 @@ void CScriptBrowserItem::Validate()
 	{
 		m_tooltip.clear();
 
-		IValidatorArchivePtr pArchive = GetSchematycCore().CreateValidatorArchive(SValidatorArchiveParams());
-		ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(SSerializationContextParams(*pArchive, ESerializationPass::Validate));
+		IValidatorArchivePtr pArchive = gEnv->pSchematyc->CreateValidatorArchive(SValidatorArchiveParams());
+		ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(SSerializationContextParams(*pArchive, ESerializationPass::Validate));
 		m_pScriptElement->Serialize(*pArchive);
 
 		ScriptBrowserItemFlags flags = m_flags;
@@ -517,7 +517,7 @@ void CScriptBrowserItem::RefreshChildFlags()
 CScriptBrowserModel::CScriptBrowserModel(QObject* pParent)
 	: QAbstractItemModel(pParent)
 {
-	GetSchematycCore().GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CScriptBrowserModel::OnScriptRegistryChange), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CScriptBrowserModel::OnScriptRegistryChange), m_connectionScope);
 
 	Populate();
 }
@@ -820,7 +820,7 @@ void CScriptBrowserModel::Populate()
 		}
 		return EVisitStatus::Recurse;
 	};
-	GetSchematycCore().GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
+	gEnv->pSchematyc->GetScriptRegistry().GetRootElement().VisitChildren(ScriptElementVisitor::FromLambda(visitScriptElement));
 }
 
 void CScriptBrowserModel::OnScriptRegistryChange(const SScriptRegistryChange& change)
@@ -858,7 +858,7 @@ void CScriptBrowserModel::OnScriptRegistryChange(const SScriptRegistryChange& ch
 
 	if (bRecompile)
 	{
-		GetSchematycCore().GetCompiler().CompileDependencies(change.element.GetGUID());
+		gEnv->pSchematyc->GetCompiler().CompileDependencies(change.element.GetGUID());
 	}
 
 	if (bValidate)
@@ -1447,7 +1447,7 @@ void CScriptBrowserWidget::OnAddItem()
 			case EScriptBrowserItemType::Root:
 			case EScriptBrowserItemType::ScriptElement:
 				{
-					IScriptRegistry& scriptRegistry = GetSchematycCore().GetScriptRegistry();
+					IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
 					IScriptElement* pScriptScope = pItem->GetScriptElement();
 					if (!pScriptScope)
 					{
@@ -1604,7 +1604,7 @@ void CScriptBrowserWidget::OnCopyItem()
 		if (pScriptElement)
 		{
 			CStackString clipboardText;
-			if (GetSchematycCore().GetScriptRegistry().CopyElementsToJson(clipboardText, *pScriptElement))
+			if (gEnv->pSchematyc->GetScriptRegistry().CopyElementsToJson(clipboardText, *pScriptElement))
 			{
 				CrySchematycEditor::Utils::WriteToClipboard(clipboardText.c_str(), g_szClipboardPrefix);
 			}
@@ -1623,7 +1623,7 @@ void CScriptBrowserWidget::OnPasteItem()
 			string clipboardText;
 			if (CrySchematycEditor::Utils::ReadFromClipboard(clipboardText, g_szClipboardPrefix))
 			{
-				GetSchematycCore().GetScriptRegistry().PasteElementsFromJson(clipboardText.c_str(), pScriptElement);
+				gEnv->pSchematyc->GetScriptRegistry().PasteElementsFromJson(clipboardText.c_str(), pScriptElement);
 			}
 		}
 	}

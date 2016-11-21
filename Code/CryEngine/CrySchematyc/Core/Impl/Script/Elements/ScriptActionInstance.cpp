@@ -82,7 +82,7 @@ void CScriptActionInstance::Edit(Serialization::IArchive& archive, const ISerial
 {
 	if (archive.isOutput())
 	{
-		const IEnvAction* pEnvAction = GetSchematycCore().GetEnvRegistry().GetAction(m_actionTypeGUID);
+		const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(m_actionTypeGUID);
 		if (pEnvAction)
 		{
 			string action = pEnvAction->GetName();
@@ -94,7 +94,7 @@ void CScriptActionInstance::Edit(Serialization::IArchive& archive, const ISerial
 
 void CScriptActionInstance::RefreshProperties()
 {
-	const IEnvAction* pEnvAction = GetSchematycCore().GetEnvRegistry().GetAction(m_actionTypeGUID);
+	const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(m_actionTypeGUID);
 	if (pEnvAction)
 	{
 		const IProperties* pEnvActionProperties = pEnvAction ? pEnvAction->GetProperties() : nullptr;

@@ -23,7 +23,7 @@ void CEntityMovementComponent::Run(ESimulationMode simulationMode)
 	{
 	case ESimulationMode::Game:
 		{
-			GetSchematycCore().GetUpdateScheduler().Connect(SUpdateParams(Delegate::Make(*this, &CEntityMovementComponent::Update), m_connectionScope));
+			gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(Delegate::Make(*this, &CEntityMovementComponent::Update), m_connectionScope));
 			break;
 		}
 	}

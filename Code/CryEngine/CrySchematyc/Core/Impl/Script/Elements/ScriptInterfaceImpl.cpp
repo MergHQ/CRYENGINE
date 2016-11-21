@@ -52,7 +52,7 @@ void CScriptInterfaceImpl::ProcessEvent(const SScriptEvent& event)
 		{
 		case EDomain::Env:
 			{
-				const IEnvInterface* pEnvInterface = GetSchematycCore().GetEnvRegistry().GetInterface(m_refGUID);
+				const IEnvInterface* pEnvInterface = gEnv->pSchematyc->GetEnvRegistry().GetInterface(m_refGUID);
 				if (pEnvInterface)
 				{
 					CScriptElementBase::SetName(pEnvInterface->GetName());
@@ -113,7 +113,7 @@ void CScriptInterfaceImpl::Validate(Serialization::IArchive& archive, const ISer
 		{
 		case EDomain::Env:
 			{
-				const IEnvInterface* pEnvInterface = GetSchematycCore().GetEnvRegistry().GetInterface(m_refGUID);
+				const IEnvInterface* pEnvInterface = gEnv->pSchematyc->GetEnvRegistry().GetInterface(m_refGUID);
 				if (!pEnvInterface)
 				{
 					archive.error(*this, "Unable to retrieve interface!");

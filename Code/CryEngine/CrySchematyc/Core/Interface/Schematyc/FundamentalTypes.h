@@ -136,4 +136,7 @@ inline bool Serialize(Serialization::IArchive& archive, ObjectId& value, const c
 }
 
 constexpr const char* g_szCrytek = "Crytek GmbH";
+constexpr const char* g_szNoType = "No Type";
 } // Schematyc
+
+enum { ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV = ESYSTEM_EVENT_GAME_POST_INIT_DONE };

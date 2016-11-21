@@ -39,17 +39,9 @@ private:
 		};
 	};
 
-public: // #SchematycTODO :  Workaround for serialization of EReferenceMode, this should be private!
-
-	enum EReferenceMode // #SchematycTODO : Move to separate header so this can be shared by all array nodes?
-	{
-		Input,
-		Inline
-	};
-
 public:
 
-	CScriptGraphArrayAddNode(EReferenceMode referenceMode = EReferenceMode::Input, const SElementId& reference = SElementId());
+	CScriptGraphArrayAddNode(const SElementId& typeId = SElementId());
 
 	// CScriptGraphNodeModel
 	virtual SGUID GetTypeGUID() const override;
@@ -74,7 +66,6 @@ public:
 
 private:
 
-	EReferenceMode      m_referenceMode;
 	CScriptVariableData m_defaultValue;
 };
 } // Schematyc

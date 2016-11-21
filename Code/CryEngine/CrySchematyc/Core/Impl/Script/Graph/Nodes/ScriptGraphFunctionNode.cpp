@@ -81,17 +81,16 @@ SGUID CScriptGraphFunctionNode::GetTypeGUID() const
 
 void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
+	layout.SetStyleId("Core::Function");
 	layout.SetColor(EScriptGraphColor::Red);
 
+	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_functionId.guid))
 	{
 		layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 		layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);
 
-		IEnvRegistry& envRegistry = GetSchematycCore().GetEnvRegistry();
-		const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-		CScriptView scriptView(element.GetGUID());
-
+		IEnvRegistry& envRegistry = gEnv->pSchematyc->GetEnvRegistry();
 		switch (m_functionId.domain)
 		{
 		case EDomain::Env:
@@ -99,9 +98,7 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IEnvFunction* pEnvFunction = envRegistry.GetFunction(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
 				if (pEnvFunction)
 				{
-					CStackString name;
-					scriptView.QualifyName(*pEnvFunction, name);
-					layout.SetName(name.c_str());
+					szSubject = pEnvFunction->GetName();
 
 					CreateInputsAndOutputs(layout, *pEnvFunction);
 				}
@@ -109,12 +106,10 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		case EDomain::Script:
 			{
-				const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
+				const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
 				if (pScriptElement && (pScriptElement->GetElementType() == EScriptElementType::Function))
 				{
-					CStackString name;
-					scriptView.QualifyName(*pScriptElement, EDomainQualifier::Local, name);
-					layout.SetName(name.c_str());
+					szSubject = pScriptElement->GetName();
 
 					CreateInputsAndOutputs(layout, DynamicCast<IScriptFunction>(*pScriptElement));
 				}
@@ -122,6 +117,7 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
+	layout.SetName("Function", szSubject);
 }
 
 void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -135,7 +131,7 @@ void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeComp
 			{
 			case EDomain::Env:
 				{
-					const IEnvFunction* pEnvFunction = GetSchematycCore().GetEnvRegistry().GetFunction(m_functionId.guid);
+					const IEnvFunction* pEnvFunction = gEnv->pSchematyc->GetEnvRegistry().GetFunction(m_functionId.guid);
 					if (pEnvFunction)
 					{
 						if (GUID::IsEmpty(m_objectGUID))
@@ -152,7 +148,7 @@ void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeComp
 						}
 						else
 						{
-							const IScriptElement* pScriptObject = GetSchematycCore().GetScriptRegistry().GetElement(m_objectGUID);
+							const IScriptElement* pScriptObject = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_objectGUID);
 							if (pScriptObject)
 							{
 								switch (pScriptObject->GetElementType())
@@ -189,7 +185,7 @@ void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeComp
 				}
 			case EDomain::Script:
 				{
-					const IScriptFunction* pScriptFunction = DynamicCast<IScriptFunction>(GetSchematycCore().GetScriptRegistry().GetElement(m_functionId.guid));
+					const IScriptFunction* pScriptFunction = DynamicCast<IScriptFunction>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_functionId.guid));
 					if (pScriptFunction)
 					{
 						const IScriptGraph* pScriptGraph = pScriptFunction->GetExtensions().QueryExtension<const IScriptGraph>();
@@ -247,7 +243,7 @@ void CScriptGraphFunctionNode::Validate(Serialization::IArchive& archive, const 
 		{
 		case EDomain::Env:
 			{
-				const IEnvFunction* pEnvFunction = GetSchematycCore().GetEnvRegistry().GetFunction(m_functionId.guid);
+				const IEnvFunction* pEnvFunction = gEnv->pSchematyc->GetEnvRegistry().GetFunction(m_functionId.guid);
 				if (pEnvFunction)
 				{
 					if (pEnvFunction->GetElementFlags().Check(EEnvElementFlags::Deprecated))
@@ -280,26 +276,50 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SElementId& functionId, const SGUID& objectGUID = SGUID())
-				: m_functionId(functionId)
+			CCreationCommand(const char* szSubject, const char* szDescription, const SElementId& functionId, const SGUID& objectGUID = SGUID())
+				: m_subject(szSubject)
+				, m_description(szDescription)
+				, m_functionId(functionId)
 				, m_objectGUID(objectGUID)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphFunctionNode>(m_functionId, m_objectGUID), pos);
+				return "Function";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return m_description.c_str();
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Function";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphFunctionNode>(m_functionId, m_objectGUID), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
+			string     m_subject;
+			string     m_description;
 			SElementId m_functionId;
 			SGUID      m_objectGUID;
 		};
@@ -372,22 +392,22 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 					{
 						if (object.typeGUID == objectTypeGUID)
 						{
-							CStackString label = object.name.c_str();
-							label.append("::");
-							label.append(envFunction.GetName());
-							nodeCreationMenu.AddOption(label.c_str(), envFunction.GetDescription(), envFunction.GetWikiLink(), std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envFunction.GetGUID()), object.guid));
+							CStackString subject = object.name.c_str();
+							subject.append("::");
+							subject.append(envFunction.GetName());
+							nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), envFunction.GetDescription(), SElementId(EDomain::Env, envFunction.GetGUID()), object.guid));
 						}
 					}
 				}
 				else
 				{
-					CStackString label;
-					scriptView.QualifyName(envFunction, label);
-					nodeCreationMenu.AddOption(label.c_str(), envFunction.GetDescription(), envFunction.GetWikiLink(), std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envFunction.GetGUID())));
+					CStackString subject;
+					scriptView.QualifyName(envFunction, subject);
+					nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), envFunction.GetDescription(), SElementId(EDomain::Env, envFunction.GetGUID())));
 				}
 				return EVisitStatus::Continue;
 			};
-			GetSchematycCore().GetEnvRegistry().VisitFunctions(EnvFunctionConstVisitor::FromLambda(visitEnvFunction));
+			gEnv->pSchematyc->GetEnvRegistry().VisitFunctions(EnvFunctionConstVisitor::FromLambda(visitEnvFunction));
 
 			if (graphType == EScriptGraphType::Construction)
 			{
@@ -396,9 +416,9 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 
 			auto visitScriptFunction = [&nodeCreationMenu, &scriptView](const IScriptFunction& scriptFunction) -> EVisitStatus
 			{
-				CStackString label;
-				scriptView.QualifyName(scriptFunction, EDomainQualifier::Global, label);
-				nodeCreationMenu.AddOption(label.c_str(), scriptFunction.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptFunction.GetGUID())));
+				CStackString subject;
+				scriptView.QualifyName(scriptFunction, EDomainQualifier::Global, subject);
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptFunction.GetDescription(), SElementId(EDomain::Script, scriptFunction.GetGUID())));
 				return EVisitStatus::Continue;
 			};
 			scriptView.VisitScriptFunctions(ScriptFunctionConstVisitor::FromLambda(visitScriptFunction));

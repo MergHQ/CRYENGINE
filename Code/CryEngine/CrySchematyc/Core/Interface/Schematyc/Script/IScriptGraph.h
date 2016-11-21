@@ -76,13 +76,17 @@ struct IScriptGraphNode // #SchematycTODO : Move to separate header?
 {
 	virtual ~IScriptGraphNode() {}
 
-	virtual void                 Attach(IScriptGraph& graph) = 0;
-	virtual IScriptGraph&        GetGraph() = 0;
-	virtual const IScriptGraph&  GetGraph() const = 0;
-	virtual SGUID                GetTypeGUID() const = 0;
-	virtual SGUID                GetGUID() const = 0;
-	virtual const char*          GetName() const = 0;
-	virtual ColorB               GetColor() const = 0;
+	virtual void                Attach(IScriptGraph& graph) = 0;
+	virtual IScriptGraph&       GetGraph() = 0;
+	virtual const IScriptGraph& GetGraph() const = 0;
+	virtual SGUID               GetTypeGUID() const = 0;
+	virtual SGUID               GetGUID() const = 0;
+	virtual const char*         GetName() const = 0;
+	//virtual const char*          GetBehavior() const = 0;
+	//virtual const char*          GetSubject() const = 0;
+	//virtual const char*          GetDescription() const = 0;
+	virtual const char*          GetStyleId() const = 0;
+	virtual ColorB               GetColor() const = 0; // #SchematycTODO : Remove!!!
 	virtual ScriptGraphNodeFlags GetFlags() const = 0;
 	virtual void                 SetPos(Vec2 pos) = 0;
 	virtual Vec2                 GetPos() const = 0;
@@ -105,8 +109,8 @@ struct IScriptGraphNode // #SchematycTODO : Move to separate header?
 	virtual void                 EnumerateDependencies(const ScriptDependencyEnumerator& enumerator, EScriptDependencyType type) const = 0;
 	virtual void                 ProcessEvent(const SScriptEvent& event) = 0;
 	virtual void                 Serialize(Serialization::IArchive& archive) = 0;
-	virtual void                 Copy(Serialization::IArchive& archive) = 0; // #SchematycTODO : Rather than having an explicit copy function consider using standard save pass with a copy flag set in the context.
-	virtual void                 Paste(Serialization::IArchive& archive) = 0;  // #SchematycTODO : Rather than having an explicit paste function consider using standard load passes with a paste flag set in the context.
+	virtual void                 Copy(Serialization::IArchive& archive) = 0;  // #SchematycTODO : Rather than having an explicit copy function consider using standard save pass with a copy flag set in the context.
+	virtual void                 Paste(Serialization::IArchive& archive) = 0; // #SchematycTODO : Rather than having an explicit paste function consider using standard load passes with a paste flag set in the context.
 	virtual void                 Validate(const Validator& validator) const = 0;
 	virtual void                 RemapDependencies(IGUIDRemapper& guidRemapper) = 0;
 	virtual void                 Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const {}
@@ -160,20 +164,24 @@ struct SScriptGraphParams
 
 typedef CSignal<void (const IScriptGraphLink&)> ScriptGraphLinkRemovedSignal;
 
-struct IScriptGraphNodeCreationMenuCommand
+struct IScriptGraphNodeCreationCommand
 {
-	virtual ~IScriptGraphNodeCreationMenuCommand() {}
+	virtual ~IScriptGraphNodeCreationCommand() {}
 
-	virtual IScriptGraphNodePtr Execute(const Vec2& pos) = 0;
+	virtual const char*         GetBehavior() const = 0;      // What is the node's responsibility?
+	virtual const char*         GetSubject() const = 0;       // What does the node operate on?
+	virtual const char*         GetDescription() const = 0;   // Get detailed node description.
+	virtual const char*         GetStyleId() const = 0;       // Get unique id of node's style.
+	virtual IScriptGraphNodePtr Execute(const Vec2& pos) = 0; // Create node.
 };
 
-DECLARE_SHARED_POINTERS(IScriptGraphNodeCreationMenuCommand)
+DECLARE_SHARED_POINTERS(IScriptGraphNodeCreationCommand) // #SchematycTODO : Shouldn't these be unique pointers?
 
 struct IScriptGraphNodeCreationMenu
 {
 	virtual ~IScriptGraphNodeCreationMenu() {}
 
-	virtual bool AddOption(const char* szLabel, const char* szDescription, const char* szWikiLink, const IScriptGraphNodeCreationMenuCommandPtr& pCommand) = 0;
+	virtual bool AddCommand(const IScriptGraphNodeCreationCommandPtr& pCommand) = 0;
 };
 
 struct IScriptGraph : public IScriptExtensionBase<EScriptExtensionType::Graph>

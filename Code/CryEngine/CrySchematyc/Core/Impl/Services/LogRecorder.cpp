@@ -15,7 +15,7 @@ namespace Schematyc
 	void CLogRecorder::Begin()
 	{
 		m_recordedMessages.reserve(1024);
-		GetSchematycCore().GetLog().GetMessageSignalSlots().Connect(Delegate::Make(*this, &CLogRecorder::OnLogMessage), m_connectionScope);
+		gEnv->pSchematyc->GetLog().GetMessageSignalSlots().Connect(Delegate::Make(*this, &CLogRecorder::OnLogMessage), m_connectionScope);
 	}
 
 	void CLogRecorder::End()

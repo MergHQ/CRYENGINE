@@ -57,7 +57,7 @@ void CGizmoTranslateOp::OnMove(const Vec3& offset)
 	transform.SetTranslation(m_initTransform.GetTranslation() + offset);
 	m_componentInstance.SetTransform(transform);
 
-	GetSchematycCore().GetScriptRegistry().ElementModified(m_componentInstance);
+	gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_componentInstance);
 }
 
 void CGizmoTranslateOp::OnRelease()
@@ -79,7 +79,7 @@ CPreviewWidget::CPreviewWidget(QWidget* pParent)
 
 	connect(m_pViewport, SIGNAL(SignalRender(const SRenderContext &)), SLOT(OnRender(const SRenderContext &)));
 
-	GetSchematycCore().GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CPreviewWidget::OnScriptRegistryChange), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CPreviewWidget::OnScriptRegistryChange), m_connectionScope);
 }
 
 CPreviewWidget::~CPreviewWidget()
@@ -131,7 +131,7 @@ void CPreviewWidget::SetClass(const IScriptClass* pScriptClass)
 		{
 			releaseClass();
 
-			IScriptViewPtr pScriptView = GetSchematycCore().CreateScriptView(pScriptClass->GetGUID());
+			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptClass->GetGUID());
 			const IEnvClass* pEnvClass = pScriptView->GetEnvClass();
 			CRY_ASSERT(pEnvClass);
 			if (pEnvClass)
@@ -191,7 +191,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 			{
 				if (GetIEditor()->GetEditMode() == eEditModeMove)
 				{
-					IScriptComponentInstance* pComponentInstance = DynamicCast<IScriptComponentInstance>(GetSchematycCore().GetScriptRegistry().GetElement(m_componentInstanceGUID));
+					IScriptComponentInstance* pComponentInstance = DynamicCast<IScriptComponentInstance>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_componentInstanceGUID));
 					if (pComponentInstance)
 					{
 						m_pGizmoTransformOp.reset(new CGizmoTranslateOp(*m_pGizmo, *pComponentInstance));
@@ -259,13 +259,7 @@ XmlNodeRef CPreviewWidget::SaveSettings(const char* szName)
 
 void CPreviewWidget::Serialize(Serialization::IArchive& archive)
 {
-	archive(m_viewportSettings, "viewportSettings", "Viewport");
-	if (archive.isInput())
-	{
-		m_pViewport->SetSettings(m_viewportSettings);
-	}
-
-	IObject* pObject = GetSchematycCore().GetObject(m_objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(m_objectId);
 	if (pObject)
 	{
 		m_pObjectPreviewer->SerializeProperties(archive);
@@ -288,6 +282,12 @@ void CPreviewWidget::Serialize(Serialization::IArchive& archive)
 			pComponentPreviewer->SerializeProperties(archive); // #SchematycTODO : How do we avoid name collisions? Do we need to fully qualify component names?
 		}
 	}
+
+	archive(m_viewportSettings, "viewportSettings", "Viewport");
+	if (archive.isInput())
+	{
+		m_pViewport->SetSettings(m_viewportSettings);
+	}
 }
 
 bool CPreviewWidget::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
@@ -299,7 +299,7 @@ void CPreviewWidget::GetManipulatorPosition(Vec3& position)
 {
 	if (!GUID::IsEmpty(m_componentInstanceGUID))
 	{
-		const IScriptComponentInstance* pComponentInstance = DynamicCast<const IScriptComponentInstance>(GetSchematycCore().GetScriptRegistry().GetElement(m_componentInstanceGUID));
+		const IScriptComponentInstance* pComponentInstance = DynamicCast<const IScriptComponentInstance>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_componentInstanceGUID));
 		if (pComponentInstance)
 		{
 			position = pComponentInstance->GetTransform().GetTranslation();
@@ -313,7 +313,7 @@ void CPreviewWidget::GetManipulatorPosition(Vec3& position)
 
 void CPreviewWidget::OnRender(const SRenderContext& context)
 {
-	IObject* pObject = GetSchematycCore().GetObject(m_objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(m_objectId);
 	if (pObject)
 	{
 		m_pObjectPreviewer->RenderObject(*pObject, *context.renderParams, *context.passInfo);

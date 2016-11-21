@@ -5,14 +5,12 @@
 
 #include <Schematyc/Env/IEnvRegistrar.h>
 
-#include "CoreEnvModules.h"
 #include "CoreEnvSignals.h"
 
 namespace Schematyc
 {
 void RegisterCoreEnvPackage(IEnvRegistrar& registrar)
 {
-	RegisterCoreEnvModules(registrar);
 	RegisterCoreEnvSignals(registrar);
 }
 } // Schematyc

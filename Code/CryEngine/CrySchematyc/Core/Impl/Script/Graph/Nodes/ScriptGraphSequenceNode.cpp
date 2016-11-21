@@ -45,6 +45,7 @@ SGUID CScriptGraphSequenceNode::GetTypeGUID() const
 void CScriptGraphSequenceNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Sequence");
+	layout.SetStyleId("Core::FlowControl");
 	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -91,18 +92,38 @@ void CScriptGraphSequenceNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphSequenceNode>(), pos);
+				return "Sequence";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Split flow into multiple sequences";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::FlowControl";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphSequenceNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -121,7 +142,7 @@ void CScriptGraphSequenceNode::Register(CScriptGraphNodeFactory& factory)
 
 		virtual void PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph) override
 		{
-			nodeCreationMenu.AddOption("Sequence", "Split flow into multiple sequences", nullptr, std::make_shared<CNodeCreationMenuCommand>());
+			nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 		}
 
 		// ~IScriptGraphNodeCreator

@@ -17,8 +17,8 @@ class CSystemStateMonitor;
 class CSTDEnv : public ISTDEnv, public ISystemEventListener
 {
 	CRYINTERFACE_BEGIN()
-		CRYINTERFACE_ADD(CSTDEnv)
-		CRYINTERFACE_ADD(ICryPlugin)
+	CRYINTERFACE_ADD(CSTDEnv)
+	CRYINTERFACE_ADD(ICryPlugin)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_SINGLETONCLASS(CSTDEnv, "Plugin_SchematycSTDEnv", 0x034c1d02501547ab, 0xb216c87cc5258a61)
@@ -26,8 +26,8 @@ class CSTDEnv : public ISTDEnv, public ISystemEventListener
 public:
 
 	// ICryPlugin
-	virtual const char* GetName() const override { return "SchematycSTDEnv"; }
-	virtual const char* GetCategory() const override { return "Plugin"; }
+	virtual const char* GetName() const override;
+	virtual const char* GetCategory() const override;
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 	// ~ICryPlugin
 
@@ -44,18 +44,20 @@ public:
 	CEntityObjectMap&           GetEntityObjectMap();
 	CEntityObjectDebugger&      GetEntityObjectDebugger();
 
-	static CSTDEnv* GetInstance() { return s_pInstance; }
+	static CSTDEnv&             GetInstance();
 
 private:
 
 	void RegisterPackage(IEnvRegistrar& registrar);
+
+private:
+
+	static CSTDEnv*                             s_pInstance;
 
 	std::unique_ptr<CSystemStateMonitor>        m_pSystemStateMonitor;
 	std::unique_ptr<CEntityObjectClassRegistry> m_pEntityObjectClassRegistry;
 	std::unique_ptr<CEntityObjectMap>           m_pEntityObjectMap;
 	std::unique_ptr<CEntityObjectDebugger>      m_pEntityObjectDebugger;
 	CConnectionScope                            m_connectionScope;
-
-	static CSTDEnv* s_pInstance;
 };
 } // Schematyc

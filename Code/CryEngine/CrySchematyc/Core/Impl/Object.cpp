@@ -113,7 +113,7 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 
 		if (simulationMode != ESimulationMode::Idle)
 		{
-			CRuntimeClassConstPtr pClass = GetSchematycCoreImpl().GetRuntimeRegistryImpl().GetClassImpl(m_pClass->GetGUID());
+			CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(m_pClass->GetGUID());
 			if (pClass->GetTimeStamp() > m_pClass->GetTimeStamp())
 			{
 				SetClass(pClass);
@@ -219,7 +219,7 @@ void CObject::Dump(IObjectDump& dump, const ObjectDumpFlags& flags) const
 
 	if (flags.Check(EObjectDumpFlags::Timers))
 	{
-		ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+		ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 		const RuntimeClassTimers& classTimers = m_pClass->GetTimers();
 		for (uint32 timerIdx = 0, timerCount = m_timers.size(); timerIdx < timerCount; ++timerIdx)
 		{
@@ -440,7 +440,7 @@ bool CObject::CreateStateMachines()
 	const uint32 stateCount = classStates.size();
 	m_states.resize(stateCount);
 
-	ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+	ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 	for (uint32 stateIdx = 0; stateIdx < stateCount; ++stateIdx)
 	{
 		const SRuntimeClassState& classState = classStates[stateIdx];
@@ -492,7 +492,7 @@ void CObject::StopStateMachines()
 void CObject::DestroyStateMachines()
 {
 	// #SchematycTODO : Move to separate DestroyStates function?
-	ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+	ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 	for (SState& state : m_states)
 	{
 		for (STimer& timer : state.timers)
@@ -512,7 +512,7 @@ bool CObject::CreateComponents()
 
 	for (const SRuntimeClassComponentInstance& classComponentInstance : classComponentInstances)
 	{
-		const IEnvComponent* pEnvComponent = GetSchematycCore().GetEnvRegistry().GetComponent(classComponentInstance.componentTypeGUID);
+		const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(classComponentInstance.componentTypeGUID);
 		if (!pEnvComponent)
 		{
 			return false;
@@ -576,7 +576,7 @@ bool CObject::CreateTimers()
 	const RuntimeClassTimers& classTimers = m_pClass->GetTimers();
 	m_timers.reserve(classTimers.size());
 
-	ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+	ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 	for (const SRuntimeClassTimer& classTimer : classTimers)
 	{
 		m_timers.emplace_back(this, classTimer.guid, classTimer.params.flags);
@@ -594,7 +594,7 @@ void CObject::StartTimers(ESimulationMode simulationMode)
 {
 	if (simulationMode == ESimulationMode::Game)
 	{
-		ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+		ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 		for (const STimer& timer : m_timers)
 		{
 			if (timer.flags.Check(ETimerFlags::AutoStart))
@@ -607,7 +607,7 @@ void CObject::StartTimers(ESimulationMode simulationMode)
 
 void CObject::StopTimers()
 {
-	ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+	ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 	for (const STimer& timer : m_timers)
 	{
 		timerSystem.StopTimer(timer.id);
@@ -616,7 +616,7 @@ void CObject::StopTimers()
 
 void CObject::DestroyTimers()
 {
-	ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+	ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 	for (STimer& timer : m_timers)
 	{
 		timerSystem.DestroyTimer(timer.id);
@@ -631,7 +631,7 @@ void CObject::RegisterForUpdate()
 		SUpdateParams updateParams(Delegate::Make(*this, &CObject::Update), m_connectionScope);
 		updateParams.frequency = EUpdateFrequency::EveryFrame;
 		// #SchematycTODO : Create an update filter?
-		GetSchematycCore().GetUpdateScheduler().Connect(updateParams);
+		gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
 	}
 }
 
@@ -652,7 +652,7 @@ void CObject::StartStateTimers(uint32 stateMachineIdx)
 	const uint32 stateIdx = m_stateMachines[stateMachineIdx].stateIdx;
 	if (stateIdx != InvalidIdx)
 	{
-		ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+		ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 		for (const STimer& timer : m_states[stateIdx].timers)
 		{
 			if (timer.flags.Check(ETimerFlags::AutoStart))
@@ -668,7 +668,7 @@ void CObject::StopStateTimers(uint32 stateMachineIdx)
 	const uint32 stateIdx = m_stateMachines[stateMachineIdx].stateIdx;
 	if (stateIdx != InvalidIdx)
 	{
-		ITimerSystem& timerSystem = GetSchematycCore().GetTimerSystem();
+		ITimerSystem& timerSystem = gEnv->pSchematyc->GetTimerSystem();
 		for (const STimer& timer : m_states[stateIdx].timers)
 		{
 			timerSystem.StopTimer(timer.id);

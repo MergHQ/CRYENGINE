@@ -180,8 +180,6 @@
 		[
 			"CoreEnv/CoreEnv.cpp",
 			"CoreEnv/CoreEnv.h",
-			"CoreEnv/CoreEnvModules.cpp",
-			"CoreEnv/CoreEnvModules.h",
 			"CoreEnv/CoreEnvSignals.cpp",
 			"CoreEnv/CoreEnvSignals.h"
 		]

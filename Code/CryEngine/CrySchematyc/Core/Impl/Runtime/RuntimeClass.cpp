@@ -443,7 +443,7 @@ void CRuntimeClass::FinalizeComponentInstances()
 {
 	// #SchematycTODO : Make sure parent->child relationshipes are taken into account!!!
 
-	IEnvRegistry& envRegistry = GetSchematycCore().GetEnvRegistry();
+	IEnvRegistry& envRegistry = gEnv->pSchematyc->GetEnvRegistry();
 
 	const uint32 componentInstanceCount = m_componentInstances.size();
 	ComponentInstanceSortRefs componentInstanceSortRefs;

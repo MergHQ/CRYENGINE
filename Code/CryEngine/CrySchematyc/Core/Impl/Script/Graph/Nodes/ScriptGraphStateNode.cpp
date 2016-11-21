@@ -75,17 +75,18 @@ SGUID CScriptGraphStateNode::GetTypeGUID() const
 
 void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	CStackString name = "State";
+	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_stateGUID))
 	{
-		const IScriptState* pScriptState = DynamicCast<IScriptState>(GetSchematycCore().GetScriptRegistry().GetElement(m_stateGUID));
+		const IScriptState* pScriptState = DynamicCast<IScriptState>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_stateGUID));
 		if (pScriptState)
 		{
-			name = pScriptState->GetName();
+			szSubject = pScriptState->GetName();
 		}
 	}
+	layout.SetName("State", szSubject);
 
-	layout.SetName(name.c_str());
+	layout.SetStyleId("Core::State");
 	layout.SetColor(EScriptGraphColor::Blue);
 
 	layout.AddInput("Select", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
@@ -110,7 +111,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 		{
 		case EOutputType::EnvSignal:
 			{
-				const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(output.value.guid);
+				const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(output.value.guid);
 				if (pEnvSignal)
 				{
 					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pEnvSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
@@ -119,7 +120,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		case EOutputType::ScriptSignal:
 			{
-				const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(output.value.guid));
+				const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptSignal)
 				{
 					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
@@ -127,7 +128,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		case EOutputType::ScriptTimer:
 			{
-				const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(GetSchematycCore().GetScriptRegistry().GetElement(output.value.guid));
+				const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(gEnv->pSchematyc->GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptTimer)
 				{
 					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptTimer->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
@@ -151,9 +152,12 @@ void CScriptGraphStateNode::Compile(SCompilerContext& context, IGraphNodeCompile
 			const uint32 stateIdx = pClass->FindState(m_stateGUID);
 			compiler.BindData(SRuntimeData(stateIdx));
 
-			for (uint32 outputIdx = 0, outputCount = m_outputs.size(); outputIdx < outputCount; ++outputIdx)
+
+
+			const CScriptGraphNode& node = CScriptGraphNodeModel::GetNode();
+			for (uint32 outputIdx = 0, outputCount = node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
 			{
-				pClass->AddStateTransition(stateIdx, m_outputs[outputIdx].value.guid, compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), outputIdx, EActivationMode::Output)); // #SchematycTODO : Pass output/transition type as well as guid?
+				pClass->AddStateTransition(stateIdx, node.GetOutputTypeGUID(outputIdx), compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), outputIdx, EActivationMode::Output)); // #SchematycTODO : Pass output/transition type as well as guid?
 			}
 		}
 		else
@@ -224,7 +228,7 @@ void CScriptGraphStateNode::Validate(Serialization::IArchive& archive, const ISe
 {
 	if (!GUID::IsEmpty(m_stateGUID))
 	{
-		const IScriptState* pScriptState = DynamicCast<IScriptState>(GetSchematycCore().GetScriptRegistry().GetElement(m_stateGUID));
+		const IScriptState* pScriptState = DynamicCast<IScriptState>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_stateGUID));
 		if (!pScriptState)
 		{
 			archive.error(*this, "Failed to retrieve state!");
@@ -256,26 +260,48 @@ void CScriptGraphStateNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SGUID& stateGUID)
-				: m_stateGUID(stateGUID)
+			CCreationCommand(const char* szSubject, const SGUID& stateGUID)
+				: m_subject(szSubject)
+				, m_stateGUID(stateGUID)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphStateNode>(m_stateGUID), pos);
+				return "State";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::State";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphStateNode>(m_stateGUID), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
-			SGUID m_stateGUID;
+			string m_subject;
+			SGUID  m_stateGUID;
 		};
 
 	public:
@@ -298,15 +324,13 @@ void CScriptGraphStateNode::Register(CScriptGraphNodeFactory& factory)
 			{
 			case EScriptGraphType::Transition:
 				{
-					auto visitScriptState = [&nodeCreationMenu, &scriptView](const IScriptState& scriptState) -> EVisitStatus
+					auto visitScriptState = [&nodeCreationMenu, &scriptView](const IScriptState& scriptState)
 					{
-						CStackString label;
-						scriptView.QualifyName(scriptState, EDomainQualifier::Local, label);
-						nodeCreationMenu.AddOption(label.c_str(), "State", "", std::make_shared<CNodeCreationMenuCommand>(scriptState.GetGUID()));
-						return EVisitStatus::Continue;
+						CStackString subject;
+						scriptView.QualifyName(scriptState, EDomainQualifier::Local, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptState.GetGUID()));
 					};
-					scriptView.VisitScriptStates(ScriptStateConstVisitor::FromLambda(visitScriptState), EDomainScope::Local);
-
+					scriptView.VisitAccesibleStates(ScriptStateConstVisitor::FromLambda(visitScriptState));
 					break;
 				}
 			}

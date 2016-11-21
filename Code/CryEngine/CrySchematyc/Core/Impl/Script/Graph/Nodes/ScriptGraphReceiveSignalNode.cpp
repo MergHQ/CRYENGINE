@@ -36,23 +36,20 @@ SGUID CScriptGraphReceiveSignalNode::GetTypeGUID() const
 
 void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
+	layout.SetStyleId("Core::ReceiveSignal");
 	layout.SetColor(EScriptGraphColor::Green);
 
+	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_signalId.guid))
 	{
 		switch (m_signalId.domain)
 		{
 		case EDomain::Env:
 			{
-				const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_signalId.guid);
+				const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_signalId.guid);
 				if (pEnvSignal)
 				{
-					const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-					CScriptView scriptView(element.GetGUID());
-
-					CStackString name;
-					scriptView.QualifyName(*pEnvSignal, name);
-					layout.SetName(name.c_str());
+					szSubject = pEnvSignal->GetName();
 
 					layout.AddOutput("Out", m_signalId.guid, EScriptGraphPortFlags::Signal);
 
@@ -70,35 +67,21 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		case EDomain::Script:
 			{
-				const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(m_signalId.guid);
+				const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalId.guid);
 				if (pScriptElement)
 				{
 					switch (pScriptElement->GetElementType())
 					{
 					case EScriptElementType::Signal:
 						{
-							const IScriptSignal& scriptSignal = DynamicCast<IScriptSignal>(*pScriptElement);
-
-							const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-							CScriptView scriptView(element.GetGUID());
-
-							CStackString name;
-							scriptView.QualifyName(scriptSignal, EDomainQualifier::Local, name);
-							layout.SetName(name.c_str());
+							szSubject = pScriptElement->GetName();
 
 							layout.AddOutput("Out", m_signalId.guid, EScriptGraphPortFlags::Signal);
 							break;
 						}
 					case EScriptElementType::Timer:
 						{
-							const IScriptTimer& scriptTimer = DynamicCast<IScriptTimer>(*pScriptElement);
-
-							const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-							CScriptView scriptView(element.GetGUID());
-
-							CStackString name;
-							scriptView.QualifyName(scriptTimer, EDomainQualifier::Local, name);
-							layout.SetName(name.c_str());
+							szSubject = pScriptElement->GetName();
 
 							layout.AddOutput("Out", m_signalId.guid, EScriptGraphPortFlags::Signal);
 							break;
@@ -109,6 +92,7 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
+	layout.SetName("Receive Signal", szSubject);
 }
 
 void CScriptGraphReceiveSignalNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -168,7 +152,7 @@ void CScriptGraphReceiveSignalNode::Validate(Serialization::IArchive& archive, c
 		{
 		case EDomain::Env:
 			{
-				const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_signalId.guid);
+				const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_signalId.guid);
 				if (!pEnvSignal)
 				{
 					archive.error(*this, "Unable to retrieve environment signal!");
@@ -177,7 +161,7 @@ void CScriptGraphReceiveSignalNode::Validate(Serialization::IArchive& archive, c
 			}
 		case EDomain::Script:
 			{
-				const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(m_signalId.guid);
+				const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalId.guid);
 				if (!pScriptElement)
 				{
 					archive.error(*this, "Unable to retrieve script signal!");
@@ -202,25 +186,47 @@ void CScriptGraphReceiveSignalNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SElementId& signalId)
-				: m_signalId(signalId)
+			CCreationCommand(const char* szSubject, const SElementId& signalId)
+				: m_subject(szSubject)
+				, m_signalId(signalId)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(m_signalId), pos);
+				return "Signal::Receive";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Receive signal";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::ReceiveSignal";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphReceiveSignalNode>(m_signalId), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
+			string     m_subject;
 			SElementId m_signalId;
 		};
 
@@ -246,29 +252,26 @@ void CScriptGraphReceiveSignalNode::Register(CScriptGraphNodeFactory& factory)
 				{
 					auto visitEnvSignal = [&nodeCreationMenu, &scriptView](const IEnvSignal& envSignal) -> EVisitStatus
 					{
-						CStackString label;
-						scriptView.QualifyName(envSignal, label);
-						label.append("::ReceiveSignal");
-						nodeCreationMenu.AddOption(label.c_str(), envSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Env, envSignal.GetGUID())));
+						CStackString subject;
+						scriptView.QualifyName(envSignal, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Env, envSignal.GetGUID())));
 						return EVisitStatus::Continue;
 					};
 					scriptView.VisitEnvSignals(EnvSignalConstVisitor::FromLambda(visitEnvSignal));
 
 					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal)
 					{
-						CStackString label;
-						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, label);
-						label.append("::ReceiveSignal");
-						nodeCreationMenu.AddOption(label.c_str(), scriptSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptSignal.GetGUID())));
+						CStackString subject;
+						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Script, scriptSignal.GetGUID())));
 					};
 					scriptView.VisitAccesibleSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
 
 					auto visitScriptTimer = [&nodeCreationMenu, &scriptView](const IScriptTimer& scriptTimer)
 					{
-						CStackString label;
-						scriptView.QualifyName(scriptTimer, EDomainQualifier::Global, label);
-						label.append("::ReceiveSignal");
-						nodeCreationMenu.AddOption(label.c_str(), scriptTimer.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(SElementId(EDomain::Script, scriptTimer.GetGUID())));
+						CStackString subject;
+						scriptView.QualifyName(scriptTimer, EDomainQualifier::Global, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), SElementId(EDomain::Script, scriptTimer.GetGUID())));
 					};
 					scriptView.VisitAccesibleTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer));
 

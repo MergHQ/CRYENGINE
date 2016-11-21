@@ -292,7 +292,7 @@ bool CScriptGraph::AddNode(const IScriptGraphNodePtr& pNode)
 
 IScriptGraphNodePtr CScriptGraph::AddNode(const SGUID& typeGUID)
 {
-	IScriptGraphNodePtr pNode = g_scriptGraphNodeFactory.CreateNode(typeGUID, GetSchematycCore().CreateGUID());
+	IScriptGraphNodePtr pNode = g_scriptGraphNodeFactory.CreateNode(typeGUID, gEnv->pSchematyc->CreateGUID());
 	if (AddNode(pNode))
 	{
 		return pNode;

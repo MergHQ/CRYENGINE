@@ -20,7 +20,7 @@ void CEntityObjectPreviewer::SerializeProperties(Serialization::IArchive& archiv
 
 ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 {
-	IRuntimeClassConstPtr pRuntimeClass = GetSchematycCore().GetRuntimeRegistry().GetClass(classGUID);
+	IRuntimeClassConstPtr pRuntimeClass = gEnv->pSchematyc->GetRuntimeRegistry().GetClass(classGUID);
 	if (pRuntimeClass)
 	{
 		IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(pRuntimeClass->GetName()); // #SchematycTODO : Query directly from CEntityObjectClassRegistry?
@@ -36,7 +36,7 @@ ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 			IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(entitySpawnParams, true);
 			if (pEntity)
 			{
-				return CSTDEnv::GetInstance()->GetEntityObjectMap().GetEntityObjectId(pEntity->GetId());
+				return CSTDEnv::GetInstance().GetEntityObjectMap().GetEntityObjectId(pEntity->GetId());
 			}
 		}
 	}
@@ -46,7 +46,7 @@ ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 ObjectId CEntityObjectPreviewer::ResetObject(ObjectId objectId) const
 {
 	// #SchematycTODO : Instead of re-creating the preview entity we should send a reset event, but that doesn't seem too update the entity's transform heirarchy / visual state reliably.
-	IObject* pObject = GetSchematycCore().GetObject(objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 	if (pObject)
 	{
 		const SGUID classGUID = pObject->GetClass().GetGUID();
@@ -54,7 +54,7 @@ ObjectId CEntityObjectPreviewer::ResetObject(ObjectId objectId) const
 		return CreateObject(classGUID);
 	}
 	/*
-	IObject* pObject = GetSchematycCore().GetObject(objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 	if (pObject)
 	{
 		IEntity& entity = EntityUtils::GetEntity(*pObject);
@@ -74,7 +74,7 @@ ObjectId CEntityObjectPreviewer::ResetObject(ObjectId objectId) const
 
 void CEntityObjectPreviewer::DestroyObject(ObjectId objectId) const
 {
-	IObject* pObject = GetSchematycCore().GetObject(objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 	if (pObject)
 	{
 		IEntity& entity = EntityUtils::GetEntity(*pObject);
@@ -84,7 +84,7 @@ void CEntityObjectPreviewer::DestroyObject(ObjectId objectId) const
 
 Sphere CEntityObjectPreviewer::GetObjectBounds(ObjectId objectId) const
 {
-	IObject* pObject = GetSchematycCore().GetObject(objectId);
+	IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 	if (pObject)
 	{
 		IEntity& entity = EntityUtils::GetEntity(*pObject);

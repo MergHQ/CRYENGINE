@@ -65,7 +65,7 @@ void CScriptSignalReceiver::ProcessEvent(const SScriptEvent& event)
 	{
 	case EScriptSignalReceiverType::EnvSignal:
 		{
-			const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_signalGUID);
+			const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_signalGUID);
 			if (pEnvSignal)
 			{
 				CStackString name;
@@ -77,7 +77,7 @@ void CScriptSignalReceiver::ProcessEvent(const SScriptEvent& event)
 		}
 	case EScriptSignalReceiverType::ScriptSignal:
 		{
-			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 			if (pScriptSignal)
 			{
 				CStackString name;
@@ -89,7 +89,7 @@ void CScriptSignalReceiver::ProcessEvent(const SScriptEvent& event)
 		}
 	case EScriptSignalReceiverType::ScriptTimer:
 		{
-			const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+			const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 			if (pScriptTimer)
 			{
 				CStackString name;
@@ -183,7 +183,7 @@ void CScriptSignalReceiver::Validate(Serialization::IArchive& archive, const ISe
 	{
 	case EScriptSignalReceiverType::EnvSignal:
 		{
-			const IEnvSignal* pEnvSignal = GetSchematycCore().GetEnvRegistry().GetSignal(m_signalGUID);
+			const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(m_signalGUID);
 			if (!pEnvSignal)
 			{
 				archive.error(*this, "Failed to retrieve environment signal!");
@@ -192,7 +192,7 @@ void CScriptSignalReceiver::Validate(Serialization::IArchive& archive, const ISe
 		}
 	case EScriptSignalReceiverType::ScriptSignal:
 		{
-			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 			if (!pScriptSignal)
 			{
 				archive.error(*this, "Failed to retrieve script signal!");
@@ -201,7 +201,7 @@ void CScriptSignalReceiver::Validate(Serialization::IArchive& archive, const ISe
 		}
 	case EScriptSignalReceiverType::ScriptTimer:
 		{
-			const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+			const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 			if (!pScriptTimer)
 			{
 				archive.error(*this, "Failed to retrieve script timer!");
@@ -217,7 +217,7 @@ void CScriptSignalReceiver::CreateGraph()
 
 	if (m_type != EScriptSignalReceiverType::Universal)
 	{
-		pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+		pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
 	}
 
 	CScriptElementBase::AddExtension(pScriptGraph);

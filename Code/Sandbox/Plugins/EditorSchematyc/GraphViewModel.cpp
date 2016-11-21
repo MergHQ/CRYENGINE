@@ -89,7 +89,7 @@ CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::GetNodeItemById(QVariant
 
 CryGraphEditor::CAbstractNodeItem* CNodeGraphViewModel::CreateNode(QVariant typeId, const QPointF& position)
 {
-	Schematyc::IScriptGraphNodeCreationMenuCommand* pCommand = reinterpret_cast<Schematyc::IScriptGraphNodeCreationMenuCommand*>(typeId.value<quintptr>());
+	Schematyc::IScriptGraphNodeCreationCommand* pCommand = reinterpret_cast<Schematyc::IScriptGraphNodeCreationCommand*>(typeId.value<quintptr>());
 	if (pCommand)
 	{
 		Schematyc::IScriptGraphNodePtr pScriptNode = pCommand->Execute(Vec2(position.x(), position.y()));
@@ -172,7 +172,7 @@ CryGraphEditor::CAbstractConnectionItem* CNodeGraphViewModel::CreateConnection(C
 			CConnectionItem* pConnectionItem = new CConnectionItem(*pScriptLink, sourcePinItem, targetPinItem, *this);
 			m_connectionsByIndex.push_back(pConnectionItem);
 
-			GetSchematycCore().GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
+			gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_scriptGraph.GetElement());
 
 			SignalCreateConnection(*pConnectionItem);
 
@@ -241,7 +241,7 @@ void CNodeGraphViewModel::Refresh()
 {
 	for (CNodeItem* pNode : m_nodesByIndex)
 	{
-		pNode->Refresh(false);
+		pNode->Refresh();
 	}
 }
 

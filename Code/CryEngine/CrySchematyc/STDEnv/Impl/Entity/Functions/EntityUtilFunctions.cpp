@@ -26,7 +26,7 @@ CSharedString GetEntityName(ExplicitEntityId entityId)
 
 ObjectId GetEntityObjectId(ExplicitEntityId entityId)
 {
-	return CSTDEnv::GetInstance()->GetEntityObjectMap().GetEntityObjectId(static_cast<EntityId>(entityId));
+	return CSTDEnv::GetInstance().GetEntityObjectMap().GetEntityObjectId(static_cast<EntityId>(entityId));
 }
 
 static void RegisterUtilFunctions(IEnvRegistrar& registrar)

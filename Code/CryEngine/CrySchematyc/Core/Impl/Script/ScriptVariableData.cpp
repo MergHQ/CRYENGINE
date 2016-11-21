@@ -43,7 +43,7 @@ const char* CScriptVariableData::GetTypeName() const
 	{
 	case EDomain::Env:
 		{
-			const IEnvDataType* pEnvDataType = GetSchematycCore().GetEnvRegistry().GetDataType(m_typeId.guid);
+			const IEnvDataType* pEnvDataType = gEnv->pSchematyc->GetEnvRegistry().GetDataType(m_typeId.guid);
 			if (pEnvDataType)
 			{
 				return pEnvDataType->GetName();
@@ -52,7 +52,7 @@ const char* CScriptVariableData::GetTypeName() const
 		}
 	case EDomain::Script:
 		{
-			const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(m_typeId.guid);
+			const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_typeId.guid);
 			if (pScriptElement)
 			{
 				return pScriptElement->GetName();
@@ -192,7 +192,7 @@ CAnyValuePtr CreateData(const SElementId& typeId)
 	{
 	case EDomain::Env:
 		{
-			const IEnvDataType* pEnvDataType = GetSchematycCore().GetEnvRegistry().GetDataType(typeId.guid);
+			const IEnvDataType* pEnvDataType = gEnv->pSchematyc->GetEnvRegistry().GetDataType(typeId.guid);
 			if (pEnvDataType)
 			{
 				return pEnvDataType->Create();
@@ -201,7 +201,7 @@ CAnyValuePtr CreateData(const SElementId& typeId)
 		}
 	case EDomain::Script:
 		{
-			const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(typeId.guid);
+			const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(typeId.guid);
 			if (pScriptElement)
 			{
 				switch (pScriptElement->GetElementType())
@@ -228,7 +228,7 @@ CAnyValuePtr CreateArrayData(const SElementId& typeId)
 	{
 	case EDomain::Env:
 		{
-			const IEnvDataType* pEnvDataType = GetSchematycCore().GetEnvRegistry().GetDataType(typeId.guid);
+			const IEnvDataType* pEnvDataType = gEnv->pSchematyc->GetEnvRegistry().GetDataType(typeId.guid);
 			if (pEnvDataType)
 			{
 				return CAnyValue::MakeShared(CAnyArray(pEnvDataType->GetTypeInfo()));
@@ -237,7 +237,7 @@ CAnyValuePtr CreateArrayData(const SElementId& typeId)
 		}
 	case EDomain::Script:
 		{
-			const IScriptElement* pScriptElement = GetSchematycCore().GetScriptRegistry().GetElement(typeId.guid);
+			const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(typeId.guid);
 			if (pScriptElement)
 			{
 				/*switch (pScriptElement->GetElementType())

@@ -27,11 +27,12 @@ public:
 
 	virtual ~CScriptGraphNodeModel() {}
 
+	virtual void            Init();
+
 	virtual SGUID           GetTypeGUID() const = 0;
 	virtual void            CreateLayout(CScriptGraphNodeLayout& layout) = 0;
 	virtual void            Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const = 0;
 
-	virtual void            Init();
 	virtual void            LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context);
 	virtual void            Load(Serialization::IArchive& archive, const ISerializationContext& context); // #SchematycTODO : Load is not currently implemented. Should it be?
 	virtual void            PostLoad(Serialization::IArchive& archive, const ISerializationContext& context);

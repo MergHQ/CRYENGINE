@@ -114,14 +114,30 @@ CScriptGraphNodeLayout::CScriptGraphNodeLayout()
 	: m_color(EScriptGraphColor::NotSet)
 {}
 
-void CScriptGraphNodeLayout::SetName(const char* szName)
+void CScriptGraphNodeLayout::SetName(const char* szBehavior, const char* szSubject)
 {
-	m_name = szName;
+	m_name = szBehavior;
+	if (szSubject && (szSubject[0] != '\0'))
+	{
+		m_name.append(" [");
+		m_name.append(szSubject);
+		m_name.append("]");
+	}
 }
 
 const char* CScriptGraphNodeLayout::GetName() const
 {
 	return m_name.c_str();
+}
+
+void CScriptGraphNodeLayout::SetStyleId(const char* szStyleId)
+{
+	m_styleId = szStyleId;
+}
+
+const char* CScriptGraphNodeLayout::GetStyleId() const
+{
+	return m_styleId.c_str();
 }
 
 void CScriptGraphNodeLayout::SetColor(EScriptGraphColor color)
@@ -170,6 +186,7 @@ void CScriptGraphNodeLayout::Exchange(CScriptGraphNodeLayout& rhs)
 	}
 
 	std::swap(m_name, rhs.m_name);
+	std::swap(m_styleId, rhs.m_styleId);
 	std::swap(m_color, rhs.m_color);
 	std::swap(m_inputs, rhs.m_inputs);
 	std::swap(m_outputs, rhs.m_outputs);
@@ -244,6 +261,11 @@ SGUID CScriptGraphNode::GetGUID() const
 const char* CScriptGraphNode::GetName() const
 {
 	return m_layout.GetName();
+}
+
+const char* CScriptGraphNode::GetStyleId() const
+{
+	return m_layout.GetStyleId();
 }
 
 ColorB CScriptGraphNode::GetColor() const

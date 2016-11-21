@@ -346,9 +346,9 @@ bool CMainWindow::OnSave()
 	// TODO: This should just save the current opened object later.
 
 	// TODO: Move settings to into a preference page.
-	GetSchematycCore().GetSettingsManager().SaveAllSettings();
+	gEnv->pSchematyc->GetSettingsManager().SaveAllSettings();
 	// ~TODO
-	GetSchematycCore().GetScriptRegistry().Save();
+	gEnv->pSchematyc->GetScriptRegistry().Save();
 
 	return true;
 }
@@ -407,17 +407,17 @@ QVariantMap CMainWindow::GetLayout() const
 
 void CMainWindow::OnCompileAll()
 {
-	GetSchematycCore().GetCompiler().CompileAll();
+	gEnv->pSchematyc->GetCompiler().CompileAll();
 }
 
 void CMainWindow::OnRefreshEnv()
 {
-	GetSchematycCore().RefreshEnv();
+	gEnv->pSchematyc->RefreshEnv();
 }
 
 void CMainWindow::ConfigureLogs()
 {
-	Schematyc::ILog& log = GetSchematycCore().GetLog();
+	Schematyc::ILog& log = gEnv->pSchematyc->GetLog();
 
 	// Log
 	m_logSettings.streams.push_back(log.GetStreamName(Schematyc::LogStreamId::Default));

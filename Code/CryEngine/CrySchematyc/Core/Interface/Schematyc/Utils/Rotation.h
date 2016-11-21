@@ -175,4 +175,12 @@ inline bool Serialize(Serialization::IArchive& archive, CRotation& value, const 
 	}
 	return false;
 }
+
+namespace Rotation
+{
+inline CRotation Multiply(const CRotation& a, const CRotation& b)
+{
+	return CRotation(a.ToQuat() * b.ToQuat());
+}
+}
 } // Schematyc

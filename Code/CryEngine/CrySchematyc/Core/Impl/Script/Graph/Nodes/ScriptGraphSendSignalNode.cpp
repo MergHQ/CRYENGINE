@@ -57,8 +57,10 @@ SGUID CScriptGraphSendSignalNode::GetTypeGUID() const
 
 void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
+	layout.SetStyleId("Core::SendSignal");
 	layout.SetColor(EScriptGraphColor::Green);
 
+	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_signalGUID))
 	{
 		layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -69,15 +71,10 @@ void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			layout.AddInputWithData("ObjectId", GetTypeInfo<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, ObjectId());
 		}
 
-		const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+		const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 		if (pScriptSignal)
 		{
-			const IScriptElement& element = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-			CScriptView scriptView(element.GetGUID());
-
-			CStackString name;
-			scriptView.QualifyName(*pScriptSignal, EDomainQualifier::Local, name);
-			layout.SetName(name.c_str());
+			szSubject = pScriptSignal->GetName();
 
 			for (uint32 inputIdx = 0, inputCount = pScriptSignal->GetInputCount(); inputIdx < inputCount; ++inputIdx)
 			{
@@ -89,6 +86,7 @@ void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
+	layout.SetName("Send Signal", szSubject);
 }
 
 void CScriptGraphSendSignalNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -98,7 +96,7 @@ void CScriptGraphSendSignalNode::Compile(SCompilerContext& context, IGraphNodeCo
 	{
 		if (!GUID::IsEmpty(m_signalGUID))
 		{
-			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+			const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 			if (pScriptSignal)
 			{
 				switch (m_target)
@@ -151,7 +149,7 @@ void CScriptGraphSendSignalNode::Validate(Serialization::IArchive& archive, cons
 {
 	if (!GUID::IsEmpty(m_signalGUID))
 	{
-		const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(GetSchematycCore().GetScriptRegistry().GetElement(m_signalGUID));
+		const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
 		if (!pScriptSignal)
 		{
 			archive.error(*this, "Unable to retrieve script signal!");
@@ -170,26 +168,48 @@ void CScriptGraphSendSignalNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			CNodeCreationMenuCommand(const SGUID& signalGUID)
-				: m_signalGUID(signalGUID)
+			CCreationCommand(const char* szSubject, const SGUID& signalGUID)
+				: m_subject(szSubject)
+				, m_signalGUID(signalGUID)
 			{}
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphSendSignalNode>(m_signalGUID), pos);
+				return "Signal::Send";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return m_subject.c_str();
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Send signal";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::SendSignal";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphSendSignalNode>(m_signalGUID), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 
 		private:
 
-			SGUID m_signalGUID;
+			string m_subject;
+			SGUID  m_signalGUID;
 		};
 
 	public:
@@ -215,13 +235,11 @@ void CScriptGraphSendSignalNode::Register(CScriptGraphNodeFactory& factory)
 				{
 					auto visitScriptSignal = [&nodeCreationMenu, &scriptView](const IScriptSignal& scriptSignal)
 					{
-						CStackString label;
-						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, label);
-						label.append("::SendSignal");
-						nodeCreationMenu.AddOption(label.c_str(), scriptSignal.GetDescription(), nullptr, std::make_shared<CNodeCreationMenuCommand>(scriptSignal.GetGUID()));
+						CStackString subject;
+						scriptView.QualifyName(scriptSignal, EDomainQualifier::Global, subject);
+						nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>(subject.c_str(), scriptSignal.GetGUID()));
 					};
 					scriptView.VisitAccesibleSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
-
 					break;
 				}
 			}
@@ -289,7 +307,7 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteSendToObject(SRuntimeContext& 
 		}
 	}
 
-	GetSchematycCore().SendSignal(objectId, data.signalGUID, params);
+	gEnv->pSchematyc->SendSignal(objectId, data.signalGUID, params);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
@@ -316,7 +334,7 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteBroadcast(SRuntimeContext& con
 		}
 	}
 
-	GetSchematycCore().BroadcastSignal(data.signalGUID, params);
+	gEnv->pSchematyc->BroadcastSignal(data.signalGUID, params);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }

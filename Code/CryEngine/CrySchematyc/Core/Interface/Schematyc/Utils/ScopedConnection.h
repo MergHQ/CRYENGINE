@@ -31,7 +31,9 @@ private:
 		{}
 
 		SNode(const SNode&) = delete;
+		SNode(SNode&&) = delete;
 		SNode& operator=(const SNode&) = delete;
+		SNode& operator=(SNode&&) = delete;
 
 		ScopedConnectionCallback callback;
 		CConnectionScope*        pScope;
@@ -152,6 +154,11 @@ public:
 		{
 			pScope->Connect(m_node);
 		}
+	}
+
+	inline ~CScopedConnection()
+	{
+		Disconnect();
 	}
 
 	inline void Connect(CConnectionScope& scope, const ScopedConnectionCallback& callback = ScopedConnectionCallback())

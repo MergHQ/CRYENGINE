@@ -41,7 +41,7 @@ private:
 
 public:
 
-	CScriptGraphArrayRemoveByValueNode(const SElementId& reference = SElementId());
+	CScriptGraphArrayRemoveByValueNode(const SElementId& typeId = SElementId());
 
 	// CScriptGraphNodeModel
 	virtual SGUID GetTypeGUID() const override;

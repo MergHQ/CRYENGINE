@@ -25,8 +25,10 @@ SGUID CScriptGraphGetObjectIdNode::GetTypeGUID() const
 
 void CScriptGraphGetObjectIdNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
-	layout.SetColor(EScriptGraphColor::Blue);
 	layout.SetName("GetObjectId");
+	layout.SetStyleId("Core::Data");
+	layout.SetColor(EScriptGraphColor::Blue);
+	
 	layout.AddOutputWithData("ObjectId", GetTypeInfo<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::Pull }, ObjectId());
 }
 
@@ -41,18 +43,38 @@ void CScriptGraphGetObjectIdNode::Register(CScriptGraphNodeFactory& factory)
 	{
 	private:
 
-		class CNodeCreationMenuCommand : public IScriptGraphNodeCreationMenuCommand
+		class CCreationCommand : public IScriptGraphNodeCreationCommand
 		{
 		public:
 
-			// IMenuCommand
+			// IScriptGraphNodeCreationCommand
 
-			IScriptGraphNodePtr Execute(const Vec2& pos)
+			virtual const char* GetBehavior() const override
 			{
-				return std::make_shared<CScriptGraphNode>(GetSchematycCore().CreateGUID(), stl::make_unique<CScriptGraphGetObjectIdNode>(), pos);
+				return "GetObjectId";
 			}
 
-			// ~IMenuCommand
+			virtual const char* GetSubject() const override
+			{
+				return nullptr;
+			}
+
+			virtual const char* GetDescription() const override
+			{
+				return "Get id of this object";
+			}
+
+			virtual const char* GetStyleId() const override
+			{
+				return "Core::Data";
+			}
+
+			virtual IScriptGraphNodePtr Execute(const Vec2& pos) override
+			{
+				return std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphGetObjectIdNode>(), pos);
+			}
+
+			// ~IScriptGraphNodeCreationCommand
 		};
 
 	public:
@@ -73,7 +95,7 @@ void CScriptGraphGetObjectIdNode::Register(CScriptGraphNodeFactory& factory)
 		{
 			if (scriptView.GetScriptClass())
 			{
-				nodeCreationMenu.AddOption("GetObjectId", "Get id of this object", "", std::make_shared<CNodeCreationMenuCommand>());
+				nodeCreationMenu.AddCommand(std::make_shared<CCreationCommand>());
 			}
 		}
 

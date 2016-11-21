@@ -29,7 +29,6 @@ public:
 	virtual void                            VisitScriptModules(const ScriptModuleConstVisitor& visitor) const override;
 	virtual void                            VisitScriptFunctions(const ScriptFunctionConstVisitor& visitor) const override;
 	virtual void                            VisitScriptClasses(const ScriptClassConstVisitor& visitor, EDomainScope scope) const override;
-	virtual void                            VisitScriptStates(const ScriptStateConstVisitor& visitor, EDomainScope scope) const override;
 	//virtual void                            VisitScriptStateMachines(const ScriptStateMachineConstVisitor& visitor, EDomainScope scope) const override;
 	virtual void                            VisitScriptVariables(const ScriptVariableConstVisitor& visitor, EDomainScope scope) const override;
 	//virtual void                            VisitInterfaceImpls(const ScriptTimerConstVisitor& visitor, EDomainScope scope) const override;
@@ -42,6 +41,8 @@ public:
 	virtual void                            VisitAccesibleStructs(const ScriptStructConstVisitor& visitor) const override;
 	virtual void                            VisitEnclosedSignals(const ScriptSignalConstVisitor& visitor) const override;
 	virtual void                            VisitAccesibleSignals(const ScriptSignalConstVisitor& visitor) const override;
+	virtual void                            VisitEnclosedStates(const ScriptStateConstVisitor& visitor) const override;
+	virtual void                            VisitAccesibleStates(const ScriptStateConstVisitor& visitor) const override;
 	virtual void                            VisitEnclosedTimers(const ScriptTimerConstVisitor& visitor) const override;
 	virtual void                            VisitAccesibleTimers(const ScriptTimerConstVisitor& visitor) const override;
 

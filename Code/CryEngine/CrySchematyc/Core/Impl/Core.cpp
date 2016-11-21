@@ -36,12 +36,12 @@ namespace
 {
 static void OnLogFileStreamsChange(ICVar* pCVar)
 {
-	static_cast<CCore&>(GetSchematycCoreImpl()).RefreshLogFileStreams();
+	CCore::GetInstance().RefreshLogFileStreams();
 }
 
 static void OnLogFileMessageTypesChange(ICVar* pCVar)
 {
-	static_cast<CCore&>(GetSchematycCoreImpl()).RefreshLogFileMessageTypes();
+	CCore::GetInstance().RefreshLogFileMessageTypes();
 }
 
 inline bool WantPrePhysicsUpdate()
@@ -57,7 +57,6 @@ inline bool WantUpdate()
 
 static const char* g_szScriptsFolder = "scripts";
 static const char* g_szSettingsFolder = "settings";
-CCore* CCore::s_pInstance = nullptr;
 
 CCore::CCore()
 	: m_pEnvRegistry(new CEnvRegistry())
@@ -75,18 +74,34 @@ CCore::CCore()
 CCore::~CCore()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+
 	m_pLog->Shutdown();
+
 	Schematyc::CVars::Unregister();
+
+	s_pInstance = nullptr;
+}
+
+const char* CCore::GetName() const
+{
+	return "SchematycCore";
+}
+
+const char* CCore::GetCategory() const
+{
+	return "Plugin";
 }
 
 bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
 	SCHEMATYC_CORE_ASSERT(!s_pInstance);
-	s_pInstance = this;
 
-	ICryPlugin::SetUpdateFlags(EUpdateType_PrePhysicsUpdate | EUpdateType_Update);
+	s_pInstance = this;
+	env.pSchematyc = this;
 
 	Schematyc::CVars::Register();
+
+	ICryPlugin::SetUpdateFlags(EUpdateType_PrePhysicsUpdate | EUpdateType_Update);
 
 	m_pLog->Init();
 	if (CVars::sc_LogToFile)
@@ -349,7 +364,7 @@ void CCore::RefreshLogFileStreams()
 		do
 		{
 			CStackString token = logFileStreams.Tokenize(" ", pos);
-			const LogStreamId logStreamId = GetSchematycCoreImpl().GetLog().GetStreamId(token.c_str());
+			const LogStreamId logStreamId = gEnv->pSchematyc->GetLog().GetStreamId(token.c_str());
 			if (logStreamId != LogStreamId::Invalid)
 			{
 				m_pLogFileOutput->EnableStream(logStreamId);
@@ -370,7 +385,7 @@ void CCore::RefreshLogFileMessageTypes()
 		do
 		{
 			CStackString token = logFileMessageTypes.Tokenize(" ", pos);
-			const ELogMessageType logMessageType = GetSchematycCoreImpl().GetLog().GetMessageType(token.c_str());
+			const ELogMessageType logMessageType = gEnv->pSchematyc->GetLog().GetMessageType(token.c_str());
 			if (logMessageType != ELogMessageType::Invalid)
 			{
 				m_pLogFileOutput->EnableMessageType(logMessageType);
@@ -392,6 +407,12 @@ CCompiler& CCore::GetCompilerImpl()
 	return *m_pCompiler;
 }
 
+CCore& CCore::GetInstance()
+{
+	SCHEMATYC_CORE_ASSERT(s_pInstance);
+	return *s_pInstance;
+}
+
 void CCore::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
 	if (event == ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE)
@@ -399,6 +420,8 @@ void CCore::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 		LoadProjectFiles();
 	}
 }
+
+CCore* CCore::s_pInstance = nullptr;
 
 CRYREGISTER_SINGLETON_CLASS(CCore)
 } // Schematyc

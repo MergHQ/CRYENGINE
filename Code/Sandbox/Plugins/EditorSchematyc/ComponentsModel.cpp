@@ -49,11 +49,11 @@ CryIcon CComponentItem::GetIcon() const
 void CComponentItem::Serialize(Serialization::IArchive& archive)
 {
 	Schematyc::SSerializationContextParams serializationParams(archive, Schematyc::ESerializationPass::Edit);
-	Schematyc::ISerializationContextPtr pSerializationContext = GetSchematycCore().CreateSerializationContext(serializationParams);
+	Schematyc::ISerializationContextPtr pSerializationContext = gEnv->pSchematyc->CreateSerializationContext(serializationParams);
 	m_componentInstance.Serialize(archive);
 	if (archive.isInput())
 	{
-		GetSchematycCore().GetScriptRegistry().ElementModified(m_componentInstance);
+		gEnv->pSchematyc->GetScriptRegistry().ElementModified(m_componentInstance);
 	}
 }
 

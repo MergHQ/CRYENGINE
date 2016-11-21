@@ -29,7 +29,7 @@ void CEntityParticleEmitterComponent::SProperties::Serialize(Serialization::IArc
 {
 	archive(effectName, "effectName", "Effect");
 	archive.doc("Effect");
-	archive(bVisible, "visible", "bVisible");
+	archive(bVisible, "visible", "Visible");
 	archive.doc("Effect is initially visible");
 	archive(bPrime, "prime", "Prime");
 	archive.doc("Advance emitter age to its equilibrium state");

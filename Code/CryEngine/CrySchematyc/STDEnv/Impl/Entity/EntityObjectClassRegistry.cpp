@@ -84,7 +84,7 @@ void CEntityObjectClassRegistry::Init()
 	static CGameObjectExtensionCreator gameObjectExtensionCreator;
 	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(CGameObjectExtension::ms_szExtensionName, &gameObjectExtensionCreator, nullptr);
 
-	GetSchematycCore().GetCompiler().GetClassCompilationSignalSlots().Connect(Delegate::Make(*this, &CEntityObjectClassRegistry::OnClassCompilation), m_connectionScope);  // TODO : Can we filter by class guid?
+	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(Delegate::Make(*this, &CEntityObjectClassRegistry::OnClassCompilation), m_connectionScope);  // TODO : Can we filter by class guid?
 }
 
 CEntityObjectClassRegistry::SEntityClass::~SEntityClass()

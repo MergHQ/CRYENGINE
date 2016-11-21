@@ -20,7 +20,7 @@
 namespace CrySchematycEditor {
 
 // TODO: Move this into its own source files.
-typedef CryGraphEditor::CIconMap<CryGraphEditor::CPinWidget::Icon_Count> PinIconMap;
+typedef CryGraphEditor::CIconArray<CryGraphEditor::CPinWidget::Icon_Count> PinIconMap;
 
 class CPinIconManager
 {

@@ -26,7 +26,7 @@ SCHEMATYC_PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam
 	g_pEditor = pInitParam->pIEditor;
 	ModuleInitISystem(g_pEditor->GetSystem(), "Schematyc_Plugin");
 
-	if (!GetSchematycCorePtr())
+	if (!gEnv->pSchematyc)
 	{
 		pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;
 		return NULL;
