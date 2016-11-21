@@ -11,11 +11,13 @@ def build(bld):
 		includes = [Path('Code/SDKs/smpeg')],
 		module_extensions = ['sdl2'],
 		output_file_name = "smpeg2",
-		win_lib = ['kernel32', 'user32', 'gdi32', 'winspool', 'comdlg32', 'advapi32', 'shell32', 'ole32', 'oleaut32', 'uuid'],		
+		win_lib = ['kernel32', 'user32', 'gdi32', 'winspool', 'comdlg32', 'advapi32', 'shell32', 'ole32', 'oleaut32', 'uuid'],
 		win_defines = ['NOCONTROLS', 'THREADED_AUDIO', '_WINDOWS', 'WIN32'],
-		  
+		linux_defines = ['NOCONTROLS', 'THREADED_AUDIO'],
+
 		win_cxxflags = [
 			'/W0', 	# No warnings in 3rdParty code, we can't fix them anyway
 			'/FImemory', # Force include needed for memset() in MPEGaudio.cpp around line 43, remove this once they fixed it in their code base.
 			],
+		linux_cxxflags = ['-w'],
 	)

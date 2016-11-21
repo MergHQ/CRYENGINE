@@ -145,11 +145,11 @@ using std::abs;
 using std::floor;
 using std::ceil;
 
-#if CRY_COMPILER_MSVC || CRY_PLATFORM_ORBIS
-using std::trunc;
+#if CRY_PLATFORM_ANDROID
+	ILINE f32 trunc(f32 op) { return ::truncf(op); }
+	ILINE f64 trunc(f64 op) { return ::trunc(op); }
 #else
-ILINE f32 trunc(f32 op) { return ::truncf(op); }
-ILINE f64 trunc(f64 op) { return ::trunc(op); }
+	using std::trunc;
 #endif
 
 template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }

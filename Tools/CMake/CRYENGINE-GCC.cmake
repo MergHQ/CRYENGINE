@@ -1,14 +1,9 @@
-if(CMAKE_BUILD_TYPE MATCHES DEBUG)
-	add_definitions(-D_DEBUG=1)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-endif()
-
 set(GCC_COMMON_FLAGS 
 	-Wall
 	-Werror
 	-ffast-math
 	-flax-vector-conversions
-	
+
 	-fvisibility=hidden
 	-fPIC
 
@@ -45,37 +40,35 @@ set(GCC_COMMON_FLAGS
 	-Wno-array-bounds
 
 	-Wno-address
+
+	-fno-exceptions 
+)
+
+set(GCC_CPP_COMMON_FLAGS
+	-fno-rtti 
+	-std=gnu++11
+	-Wno-invalid-offsetof
+	-Wno-reorder
+	-Wno-conversion-null
+	-Wno-overloaded-virtual
+	-Wno-c++0x-compat
+	-Wno-non-template-friend
 )
 
 string(REPLACE ";" " " GCC_COMMON_FLAGS "${GCC_COMMON_FLAGS}")
+string(REPLACE ";" " " GCC_CPP_COMMON_FLAGS "${GCC_CPP_COMMON_FLAGS}")
 
-SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${GCC_COMMON_FLAGS}
-	-fno-rtti 
-	-fno-exceptions 
-	-Wno-invalid-offsetof 
-	-Wno-reorder 
-	-Wno-conversion-null 
-	-Wno-overloaded-virtual 
-	-Wno-c++0x-compat 
-	-Wno-non-template-friend
+set(CMAKE_CXX_FLAGS "${GCC_COMMON_FLAGS} ${GCC_CPP_COMMON_FLAGS}" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -D_DEBUG -DDEBUG" CACHE STRING "C++ Debug Flags" FORCE)
+set(CMAKE_CXX_FLAGS_PROFILE "-O2 -D_PROFILE -DNDEBUG" CACHE STRING "C++ Profile Flags" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -D_RELEASE -DNDEBUG" CACHE STRING "C++ Release Flags" FORCE)
 
-	-std=c++11 
-	-std=gnu++11
+set(CMAKE_C_FLAGS ${GCC_COMMON_FLAGS} CACHE STRING "C Flags" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "C Debug Flags" FORCE)
+set(CMAKE_C_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_PROFILE}" CACHE STRING "C++ Profile Flags" FORCE)
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}}" CACHE STRING "C Release Flags" FORCE)
 
-	CACHE STRING "C++ Flags" FORCE
-)
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
- 
- # Set MSVC option for Visual Studio properties to be displayed correctly
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -D_DEBUG" CACHE STRING "C++ Debug Flags" FORCE)
-set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_PROFILE} -O2 -D_PROFILE" CACHE STRING "C++ Profile Flags" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -D_RELEASE" CACHE STRING "C++ Release Flags" FORCE)
 set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "Libraries linked by defalut with all C++ applications." FORCE)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMMON_FLAGS}" )
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /GS /Od /Ob0 /RTC1 -D_DEBUG" CACHE STRING "C Debug Flags" FORCE)
-set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_PROFILE} -O2 -D_PROFILE" CACHE STRING "C++ Profile Flags" FORCE)
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /GS- /Ox /Ob2 /Oi /Ot -D_RELEASE" CACHE STRING "C Release Flags" FORCE)
 
 set(CMAKE_LINK_FLAGS "{$CMAKE_LINK_FLAGS} -Wl, --gc-sections")
 

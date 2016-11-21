@@ -1,11 +1,13 @@
 # Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 def build(bld):	
-
 	posix_defines = [
 		'HAVE_DLFCN_H',
 		'HAVE_INTTYPES_H',
+		'HAVE_MALLOC_H',
 		'HAVE_MEMORY_H',
+		'HAVE_SETENV',
+		'HAVE_SINF',
 		'HAVE_STDINT_H',
 		'HAVE_STDLIB_H',
 		'HAVE_STRINGS_H',
@@ -13,27 +15,32 @@ def build(bld):
 		'HAVE_SYS_STAT_H',
 		'HAVE_SYS_TYPES_H',
 		'HAVE_UNISTD_H',
-		'STDC_HEADERS',
+		'STDC_HEADERS'
 	]
 
 	bld.CryEngineStaticModule( 
-		target    = 'libogg_static', 
+		target    = 'libmodplug_static', 
 		vs_filter = 'Libs/Audio',
-		file_list = 'libogg.waf_files',
+		file_list = 'libmodplug.waf_files',
 		exclude_from_static_code_analyzer = True,
-		
-		output_file_name = "libogg",
-		
-		includes = [ Path('Code/SDKs/libogg/include')],	
 
+		output_file_name = "libmodplug",
+
+		includes = [ Path('Code/SDKs/libmodplug/src'),
+			Path('Code/SDKs/libmodplug/src/libmodplug')
+		],
+
+		defines = [ 'MODPLUG_HEADER="modplug.h"' ],
 		linux_defines = posix_defines,
 		android_defines = posix_defines,
 
 		# No warnings in 3rdParty code, we can't fix them anyway
-		win_cflags = [ '/W0' ],
-		linux_cflags = [ '-w' ],
+		linux_cxxflags = [ '-w' ],
 
 		module_provides = dict(
-			includes = [ Path('Code/SDKs/libogg/include') ]
+			defines = [ 'MODPLUG_HEADER="modplug.h"' ],
+			includes = [ Path('Code/SDKs/libmodplug/src'),
+				Path('Code/SDKs/libmodplug/src/libmodplug')
+			]
 		)
 	)

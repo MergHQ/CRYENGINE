@@ -140,11 +140,11 @@ set(global_defines "CRYENGINE_DEFINE")
 
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries
-	MESSAGE(STATUS "Use Static Linking (.lib)" )
+	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
 	set(BUILD_SHARED_LIBS FALSE)
 else()
 	# Enable dynamic libraries
-	MESSAGE(STATUS "Use Dynamic Linking (.dll)" )
+	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )
 	set(BUILD_SHARED_LIBS TRUE)
 endif()
 

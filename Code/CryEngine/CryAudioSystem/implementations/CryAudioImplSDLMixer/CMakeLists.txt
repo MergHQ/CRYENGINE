@@ -33,7 +33,21 @@ end_sources()
 
 if(AUDIO_SDL_MIXER)
 	CryEngineModule(CryAudioImplSDLMixer PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
-	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2 sdl_mixer_static)
+	target_link_libraries(${THIS_PROJECT} PRIVATE
+		SDL2
+		sdl_mixer_static
+		timidity
+		native_midi
+		flac_static
+		libmikmod_static
+		libvorbis_static
+		libvorbisfile
+	)
+
+	if(LINUX OR ANDROID)
+		target_link_libraries(${THIS_PROJECT} PRIVATE libmodplug_static)
+	endif()
+
 	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common)
 else()
 	CryFileContainer(CryAudioImplSDLMixer SOLUTION_FOLDER "CryEngine/Audio/Implementations")

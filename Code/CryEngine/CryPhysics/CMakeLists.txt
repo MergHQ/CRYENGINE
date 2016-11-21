@@ -105,8 +105,13 @@ end_sources()
 if(NOT RESOURCE_COMPILER)
 	if (PHYSICS_CRYPHYSICS)
 		CryEngineModule(CryPhysics SOLUTION_FOLDER "CryEngine")
-		if(ORBIS)
-			target_compile_options(${THIS_PROJECT} PRIVATE -Wno-constant-conversion -Wno-null-dereference -Wno-array-bounds)
+		if(ORBIS OR LINUX OR ANDROID)
+			target_compile_options(${THIS_PROJECT} PRIVATE
+				-Wno-constant-conversion
+				-Wno-null-dereference
+				-Wno-array-bounds
+				-Wno-shift-negative-value
+			)
 		endif()
 	else()
 		CryFileContainer(CryPhysics SOLUTION_FOLDER "CryEngine")

@@ -53,37 +53,40 @@ end_sources()
 #END-FILE-LIST
 
 ####################### smpeg #######################
-CryEngineStaticModule(smpeg SOLUTION_FOLDER "Libs/Audio")
-target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/smpeg)
-target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "smpeg2")
-
+CreateDynamicModule(smpeg SOLUTION_FOLDER "Libs/Audio")
+target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/smpeg)
 target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DNOCONTROLS
 	-DTHREADED_AUDIO
 )
-
-if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-	target_compile_options(${THIS_PROJECT} PRIVATE -Wno-deprecated-register)
-endif()
+target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
+set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "smpeg2")
 
 if(WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE
-	kernel32
-	user32
-	gdi32
-	winspool
-	comdlg32
-	advapi32
-	shell32
-	ole32
-	oleaut32
-	uuid
+		kernel32
+		user32
+		gdi32
+		winspool
+		comdlg32
+		advapi32
+		shell32
+		ole32
+		oleaut32
+		uuid
 	)
-	
+
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
-	-D_WINDOWS
-	-DWIN32
+		-D_WINDOWS
+		-DWIN32
 	)
-	target_compile_options(${THIS_PROJECT} PRIVATE /W0 /FImemory) # Force include needed for memset() in MPEGaudio.cpp around line 43, remove this once they fixed it in their code base.
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		/W0
+		/FImemory    # Force include needed for memset() in MPEGaudio.cpp around line 43, remove this once they fixed it in their code base.
+	)
+elseif(LINUX)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w)
+elseif(ANDROID)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w)
+	target_link_libraries(${THIS_PROJECT} PRIVATE m)
 endif()
