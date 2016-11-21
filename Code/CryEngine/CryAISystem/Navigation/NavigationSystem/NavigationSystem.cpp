@@ -517,12 +517,14 @@ void NavigationSystem::DestroyVolume(NavigationVolumeID volumeID)
 	{
 		NavigationBoundingVolume& volume = m_volumes[volumeID];
 
-		AgentTypes::const_iterator it = m_agentTypes.begin();
-		AgentTypes::const_iterator end = m_agentTypes.end();
+		AgentTypes::iterator it = m_agentTypes.begin();
+		AgentTypes::iterator end = m_agentTypes.end();
 
 		for (; it != end; ++it)
 		{
-			const AgentType& agentType = *it;
+			AgentType& agentType = *it;
+
+			stl::find_and_erase(agentType.exclusions, volumeID);
 
 			AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
 			AgentType::Meshes::const_iterator mend = agentType.meshes.end();
