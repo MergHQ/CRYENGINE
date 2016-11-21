@@ -196,6 +196,7 @@ void CGameRulesSPDamageHandling::Init( XmlNodeRef xml )
 	m_invulnerableFilter.Init();
 }
 
+#ifndef _RELEASE
 int g_collCount = 0;
 int CollisionFilter(const EventPhysCollision *pEvent)
 {
@@ -203,6 +204,7 @@ int CollisionFilter(const EventPhysCollision *pEvent)
 		return 1;
 	return ++g_collCount <= g_pGameCVars->g_MaxSimpleCollisions;
 }
+#endif
 
 void CGameRulesSPDamageHandling::Update(float frameTime)
 {
@@ -234,13 +236,13 @@ void CGameRulesSPDamageHandling::Update(float frameTime)
 		}
 	}
 
+#ifndef _RELEASE
 	g_collCount = 0;
 	if (g_pGameCVars->g_DisableCollisionDamage)
 		gEnv->pPhysicalWorld->AddEventClient(EventPhysCollision::id, (int(*)(const EventPhys*))CollisionFilter, 1, 10.0f);
 	else
 		gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, (int(*)(const EventPhys*))CollisionFilter, 1);
 
-#ifndef _RELEASE
 	if (g_pGameCVars->g_debugFakeHits)
 		DrawFakeHits(frameTime);
 #endif
