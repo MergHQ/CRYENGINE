@@ -386,6 +386,19 @@ pixout NearestDepthUpsamplePS(vtxOutTexToTex IN)
 	return OUT;
 }
 
+Texture2D MultiResOutput : register(t0);
+
+pixout UpscaleMultiResPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout)0;
+
+	float2 uvMultiRes = MapViewportToRaster(IN.baseTC.xy);
+
+	OUT.Color = MultiResOutput.Sample(SampStateLinear, uvMultiRes);
+
+	return OUT;
+}
+
 ////////////////// technique /////////////////////
 
 technique TextureToTexture
@@ -439,6 +452,30 @@ technique NearestDepthUpsample
   {
     VertexShader = TexToTexVS() PostEffectsVS;
     PixelShader = NearestDepthUpsamplePS() PostEffectsPS;
+  }
+}
+
+technique DrawLensMatchedOctagon
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    GeometryShader = $AutoGS_MultiRes();
+    
+    CullMode = None;
+  }
+}
+
+technique UpscaleMultiRes
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    
+    ZEnable = false;
+    CullMode = None;
+    
+    PixelShader = UpscaleMultiResPS() PostEffectsPS;
   }
 }
 
@@ -507,11 +544,29 @@ pixout LinearizeDepthPS(vtxOutTexToTex IN)
 	float fDevDepth = LinearizeDepth_DepthTex.Load(vPixCoord);
 #endif
 
+#if %_RT_PROJECTION_LENS_MATCHED
+	float originalDevDepth = fDevDepth;
+
+	float4 clipPos = MapUnnormalizedRasterToClip(IN.HPosition.xy, fDevDepth, false);
+	float rcpW = rcp(clipPos.w);
+	fDevDepth *= rcpW;
+#endif
+
 	const float fNearestMax = g_PS_ProjRatio.y / (NearProjection.z - g_PS_ProjRatio.x);
 	float fDepthLinear = g_PS_ProjRatio.y / (fDevDepth - g_PS_ProjRatio.x);
 
 	if (fDepthLinear < fNearestMax)
-		 fDepthLinear = NearProjection.y / (fDevDepth - NearProjection.x);
+	{
+#if %_RT_PROJECTION_LENS_MATCHED
+		// Convert from [DrawNearZRange..1] to [0..1]
+		fDevDepth = (originalDevDepth - NearProjection.w) / (1.0 - NearProjection.w);
+		// Unwarp
+		fDevDepth *= rcpW;
+		// Convert back to [DrawNearZRange..1]
+		fDevDepth = fDevDepth * (1.0 - NearProjection.w) + NearProjection.w;
+#endif
+		fDepthLinear = NearProjection.y / (fDevDepth - NearProjection.x);
+	}
 
 	OUT.Color.x = (fDevDepth == 1.0) ? 1.0 : fDepthLinear;  // Preseve exact value of 1.0 that is used for the sky
 
@@ -523,7 +578,27 @@ technique LinearizeDepth
   pass p0
   {
     VertexShader = TexToTexVS();
-    PixelShader = LinearizeDepthPS();
+    PixelShader = LinearizeDepthPS() LinearizeDepthPS;
+    CullMode = None;
+  }
+}
+
+pixout FlattenDepthPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout) 0;
+
+	float2 PixCoord = NV_VR_MapUVToWindow(NvGetProjectionData(), IN.baseTC.xy);
+	OUT.Color.x = LinearizeDepth_DepthTex.Load(int3(PixCoord, 0)).x;
+
+	return OUT;
+}
+
+technique FlattenDepth
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS();
+    PixelShader = FlattenDepthPS() LinearizeDepthPS;
     CullMode = None;
   }
 }

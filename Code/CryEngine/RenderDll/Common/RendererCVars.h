@@ -377,6 +377,9 @@ public:
 	DeclareStaticConstIntCVar(CV_r_snowFlakeClusters, 100);
 	DeclareStaticConstIntCVar(CV_r_customvisions, CUSTOMVISIONS_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_DebugLayerEffect, 0);
+	DeclareStaticConstIntCVar(CV_r_VrProjectionType, 0);
+	DeclareStaticConstIntCVar(CV_r_VrProjectionPreset, 0);
+	DeclareStaticConstIntCVar(CV_r_stereoMirrorProjection, 1);
 	static int CV_r_DofMode;
 	static int CV_r_DofBokehQuality;
 	DeclareStaticConstIntCVar(CV_r_nohwgamma, 2);

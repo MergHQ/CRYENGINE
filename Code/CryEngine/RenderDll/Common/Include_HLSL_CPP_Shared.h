@@ -122,6 +122,13 @@ hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b13), 13) //eConsta
 	hlsl_matrix44(CV_InvViewMatr);
 };
 
+hlsl_cbuffer_register(VrProjectionConstantBuffer, register (b11), 11) // eConstantBufferShaderSlot_VrProjection
+{
+	hlsl_float4(CVP_GeometryShaderParams)[2];
+	hlsl_float4(CVP_ProjectionParams)[12];
+	hlsl_float4(CVP_ProjectionParamsOtherEye)[12];
+};
+
 struct SLightVolumeInfo
 {
 	hlsl_float3(wPosition);

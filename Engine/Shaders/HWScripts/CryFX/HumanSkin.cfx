@@ -115,7 +115,7 @@ const half ScatterRadius = 2.0;
 
 struct vert2fragZ_C
 {
-#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+#if %_GS || %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
   OUT_HPOS_IN_WPOS
 #endif
 
@@ -559,7 +559,9 @@ pixout_gbuffer SkinZPassPS(vert2fragZ_C IN)
 	// Output Velocity
 	
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
-	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), IN.HPosPrev.xy/IN.HPosPrev.z);
+	float2 ScreenTCPrev = IN.HPosPrev.xy / IN.HPosPrev.z;
+	ScreenTCPrev = MapViewportToRaster(ScreenTCPrev);
+	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), ScreenTCPrev);
 #endif
 
 	return OUT;
@@ -576,6 +578,8 @@ technique ZPass
 		HullShader   = SkinZPassHS() GeneralHS;
 		DomainShader = SkinZPassDS() GeneralDS;
 #endif
+		GeometryShader = $AutoGS_MultiRes();
+
 		PixelShader = SkinZPassPS() ZPS;
 
 		ZEnable = true;

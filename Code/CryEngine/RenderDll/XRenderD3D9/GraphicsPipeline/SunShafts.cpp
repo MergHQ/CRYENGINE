@@ -19,6 +19,10 @@ void CSunShaftsStage::Init()
 	m_samplerPoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
 	m_samplerLinear = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
 
+	m_passShaftsMask.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_passShaftsGen0.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_passShaftsGen1.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	
 	m_passShaftsGen0.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
 	m_passShaftsGen1.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
 

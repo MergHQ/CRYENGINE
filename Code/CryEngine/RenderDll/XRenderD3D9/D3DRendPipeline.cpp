@@ -945,8 +945,8 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 				// Align the RECT boundaries to GPU memory layout
 				box.left   = box.left & 0xfffffff8;
 				box.top    = box.top & 0xfffffff8;
-				box.right  = min((int)((box.right + 8) & 0xfffffff8), iWidth);
-				box.bottom = min((int)((box.bottom + 8) & 0xfffffff8), iHeight);
+				box.right  = (box.right + 8) & 0xfffffff8;
+				box.bottom = (box.bottom + 8) & 0xfffffff8;
 			}
 
 			D3D11_RENDER_TARGET_VIEW_DESC backbufferDesc;
@@ -1016,7 +1016,13 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 						box.top    = min(box.top, srcTex2desc.Height);
 						box.bottom = min(box.bottom, srcTex2desc.Height);
 
-						GetDeviceContext().CopySubresourceRegion(pDstResource->Get2DTexture(), 0, box.left, box.top, 0, pSrcResource, 0, &box);
+						// guard against a TDR
+						if (box.left < box.right && box.top < box.bottom)
+							GetDeviceContext().CopySubresourceRegion(pDstResource->Get2DTexture(), 0, box.left, box.top, 0, pSrcResource, 0, &box);
+#if !defined(_RELEASE)
+						else
+							__debugbreak();
+#endif
 					}
 					else
 					{
@@ -3282,7 +3288,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		return;
 	}
 
-	const bool bUseNativeDepth = CRenderer::CV_r_CBufferUseNativeDepth && !gEnv->IsEditor();
+	const bool bUseNativeDepth = (CRenderer::CV_r_CBufferUseNativeDepth || CVrProjectionManager::Instance()->IsMultiResEnabled()) && !gEnv->IsEditor();
 	const bool bReverseDepth   = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 
 	bool bDownSampleUpdate = false;
@@ -3471,6 +3477,9 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 	CTexture* pSrc = CTexture::s_ptexZTarget;
 	CTexture* pDst = CTexture::s_ptexZTarget;
 
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		pSrc = CVrProjectionManager::Instance()->GetZTargetFlattened();
+
 	bool bUseMSAA = bMSAA;
 	const SPostEffectsUtils::EDepthDownsample downsampleMode = (bUseNativeDepth && bReverseDepth)
 	  ? SPostEffectsUtils::eDepthDownsample_Min
@@ -3505,8 +3514,8 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 
 	FX_SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 	D3DSetCull(eCULL_None);
-	float  fX  = (float)m_CurViewport.nWidth;
-	float  fY  = (float)m_CurViewport.nHeight;
+	float fX = (float)m_CurViewport.nWidth;
+	float fY = (float)m_CurViewport.nHeight;
 	ColorF col = Col_Black;
 	DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, col, 1.0f, fX, fY, fX, fY);
 
@@ -3694,6 +3703,21 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		m_MainViewport.nWidth  = m_width;
 		m_MainViewport.nHeight = m_height;
 
+	}
+
+	if (!nRecurse)
+	{
+		D3D11_VIEWPORT viewport;
+		viewport.TopLeftX = m_MainViewport.nX;
+		viewport.TopLeftY = m_MainViewport.nY;
+		viewport.Width = m_MainViewport.nWidth;
+		viewport.Height = m_MainViewport.nHeight;
+		viewport.MinDepth = 0.f; // m_MainViewport.fMinZ and fMaxZ are zeros
+		viewport.MaxDepth = 1.f;
+
+		bool bRightEye = (nFlags & SHDF_STEREO_RIGHT_EYE) != 0;
+
+		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
 	}
 
 	// invalidate object pointers

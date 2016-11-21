@@ -5,7 +5,9 @@
 #if !defined(CRY_USE_DX12) && !defined(CRY_USE_GNM_RENDERER)
 
 class CDeviceGraphicsCommandInterfaceImpl;
-struct CDeviceComputeCommandInterfaceImpl;
+class CDeviceComputeCommandInterfaceImpl;
+class CDeviceNvidiaCommandInterfaceImpl;
+
 
 struct SSharedState
 {
@@ -57,6 +59,8 @@ public:
 	{
 		return reinterpret_cast<CDeviceComputeCommandInterfaceImpl*>(this);
 	}
+
+	CDeviceNvidiaCommandInterfaceImpl* GetNvidiaCommandInterfaceImpl();
 
 	void SetProfilerMarker(const char* label);
 	void BeginProfilerEvent(const char* label);
@@ -112,7 +116,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////
 
-struct CDeviceComputeCommandInterfaceImpl : CDeviceCommandListImpl
+class CDeviceComputeCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
 	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const {}
@@ -129,6 +133,14 @@ protected:
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+};
+
+////////////////////////////////////////////////////////////////////////////
+
+class CDeviceNvidiaCommandInterfaceImpl : public CDeviceCommandListImpl
+{
+protected:
+	void SetModifiedWModeImpl(bool enabled, uint32_t numViewports, const float* pA, const float* pB);
 };
 
 #endif

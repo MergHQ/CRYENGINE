@@ -652,7 +652,9 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 	// Velocity
 	
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
-	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), IN.HPosPrev.xy / IN.HPosPrev.z);
+	float2 ScreenTCPrev = IN.HPosPrev.xy / IN.HPosPrev.z;
+	ScreenTCPrev = MapViewportToRaster(ScreenTCPrev);
+	OUT.VelocityRT = OutputVelocityRT(IN.WPos.xy * (CV_ScreenSize.zw * 2), ScreenTCPrev);
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -710,9 +712,14 @@ technique ZPass
 		HullShader   = Common_ZPassHS() GeneralHS;
 		DomainShader = Common_ZPassDS() GeneralDS;
 #endif
+
+// TODO: Make SilPOM work with NVidia multires
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 		GeometryShader = Common_ZPassGS() ZGS;
+#else
+		GeometryShader = $AutoGS_MultiRes();
 #endif
+
 		PixelShader = Common_ZPassPS() ZPS;
 
 		ZEnable = true;

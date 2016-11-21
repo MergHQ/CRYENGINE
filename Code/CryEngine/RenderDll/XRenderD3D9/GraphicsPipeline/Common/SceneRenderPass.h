@@ -2,14 +2,19 @@
 
 #pragma once
 
+struct VrProjectionInfo;
+
 class CSceneRenderPass
 {
 public:
 	enum EPassFlags
 	{
-		ePassFlags_None          = 0,
-		ePassFlags_RenderNearest = BIT(0),
-		ePassFlags_ReverseDepth  = BIT(1),
+		ePassFlags_None                         = 0,
+		ePassFlags_RenderNearest                = BIT(0),
+		ePassFlags_ReverseDepth                 = BIT(1),
+		ePassFlags_UseVrProjectionState         = BIT(2),
+		ePassFlags_RequireVrProjectionConstants = BIT(3),
+		ePassFlags_VrProjectionPass             = ePassFlags_UseVrProjectionState | ePassFlags_RequireVrProjectionConstants // for convenience
 	};
 
 	CSceneRenderPass();

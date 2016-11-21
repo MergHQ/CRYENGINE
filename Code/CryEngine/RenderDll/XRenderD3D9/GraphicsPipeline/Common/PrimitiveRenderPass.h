@@ -38,16 +38,17 @@ public:
 	enum EPrimitiveType
 	{
 		ePrim_Triangle,
-		ePrim_UnitBox,            // axis aligned box ( 0, 0, 0) - (1,1,1)
-		ePrim_CenteredBox,        // axis aligned box (-1,-1,-1) - (1,1,1)
-		ePrim_Projector,          // pyramid shape with sparsely tessellated ground plane
-		ePrim_Projector1,         // pyramid shape with semi densely tessellated ground plane
-		ePrim_Projector2,         // pyramid shape with densely tessellated ground plane
-		ePrim_ClipProjector,      // same as ePrim_Projector  but with even denser tessellation
-		ePrim_ClipProjector1,     // same as ePrim_Projector1 but with even denser tessellation
-		ePrim_ClipProjector2,     // same as ePrim_Projector2 but with even denser tessellation
-		ePrim_FullscreenQuad,     // fullscreen quad
-		ePrim_FullscreenQuadTess, // tessellated fullscreen quad
+		ePrim_UnitBox,                // axis aligned box ( 0, 0, 0) - (1,1,1)
+		ePrim_CenteredBox,            // axis aligned box (-1,-1,-1) - (1,1,1)
+		ePrim_Projector,              // pyramid shape with sparsely tessellated ground plane
+		ePrim_Projector1,             // pyramid shape with semi densely tessellated ground plane
+		ePrim_Projector2,             // pyramid shape with densely tessellated ground plane
+		ePrim_ClipProjector,          // same as ePrim_Projector  but with even denser tessellation
+		ePrim_ClipProjector1,         // same as ePrim_Projector1 but with even denser tessellation
+		ePrim_ClipProjector2,         // same as ePrim_Projector2 but with even denser tessellation
+		ePrim_FullscreenQuad,         // fullscreen quad             ( 0  0, 0) - ( 1  1, 0)
+		ePrim_FullscreenQuadCentered, // fullscreen quad             (-1,-1, 0) - ( 1, 1, 0)
+		ePrim_FullscreenQuadTess,     // tessellated fullscreen quad (-1,-1, 0) - ( 1, 1, 0)
 		ePrim_Custom,
 
 		ePrim_Count,
@@ -113,7 +114,7 @@ public:
 	static void      AddPrimitiveGeometryCacheUser();
 	static void      RemovePrimitiveGeometryCacheUser();
 
-	EDirtyFlags Compile(uint32 renderTargetCount, CTexture* const* pRenderTargets, const SDepthTexture* pDepthTarget, SResourceView::KeyType* pRenderTargetViews = nullptr, CDeviceResourceSetPtr pOutputResources = nullptr);
+	EDirtyFlags Compile(uint32 renderTargetCount, CTexture* const* pRenderTargets, const SDepthTexture* pDepthTarget, SResourceView::KeyType* pRenderTargetViews = nullptr, CDeviceResourceSetPtr pOutputResources = nullptr, uint64 extraRtMask = 0);
 
 private:
 
@@ -158,14 +159,25 @@ private:
 
 DEFINE_ENUM_FLAG_OPERATORS(CRenderPrimitive::EDirtyFlags);
 
+struct VrProjectionInfo;
+
 class CPrimitiveRenderPass : private NoCopy
 {
 public:
+	enum EPrimitivePassFlags
+	{
+		ePassFlags_None = 0,
+		ePassFlags_UseVrProjectionState = BIT(0),
+		ePassFlags_RequireVrProjectionConstants = BIT(1),
+		ePassFlags_VrProjectionPass = ePassFlags_UseVrProjectionState | ePassFlags_RequireVrProjectionConstants // for convenience
+	};
+
 	CPrimitiveRenderPass(bool createGeometryCache = true);
 	CPrimitiveRenderPass(CPrimitiveRenderPass&& other);
 	~CPrimitiveRenderPass();
 	CPrimitiveRenderPass& operator=(CPrimitiveRenderPass&& other);
 
+	void   SetFlags(EPrimitivePassFlags flags) { m_passFlags = flags; }
 	void   SetRenderTarget(uint32 slot, CTexture* pRenderTarget, SResourceView::KeyType rendertargetView = SResourceView::DefaultRendertargetView);
 	CTexture* GetRenderTarget(uint32 slot) { return m_pRenderTargets[slot]; }
 	void   SetOutputUAV(uint32 slot, CGpuBuffer* pBuffer);
@@ -183,9 +195,10 @@ public:
 	void   Execute();
 
 protected:
-	void   Prepare(CDeviceGraphicsCommandInterface* pCommandInterface);
+	void   Prepare(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 protected:
+	EPrimitivePassFlags                   m_passFlags;
 	std::array<CTexture*, 4>              m_pRenderTargets;
 	std::array<SResourceView::KeyType, 4> m_renderTargetViews;
 	CDeviceResourceSetPtr                 m_pOutputResources;

@@ -66,6 +66,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetTextureSamplerPair(5, CTexture::s_ptexHDRMeasuredLuminance[rd->RT_GetCurrGpuID()], m_samplerPoint);
 			m_passRaytracing.SetRequireWorldPos(true);
 			m_passRaytracing.SetRequirePerViewConstantBuffer(true);
+			m_passRaytracing.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		}
 
 		static CCryNameR viewProjName("g_mViewProj");
@@ -109,6 +110,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passComposition.SetTextureSamplerPair(2, CTexture::s_ptexHDRTargetScaled[1], m_samplerLinear);
 			m_passComposition.SetTextureSamplerPair(3, CTexture::s_ptexHDRTargetScaled[2], m_samplerLinear);
 			m_passComposition.SetTextureSamplerPair(4, CTexture::s_ptexHDRTargetScaled[3], m_samplerLinear);
+			m_passComposition.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		}
 
 		m_passComposition.BeginConstantUpdate();

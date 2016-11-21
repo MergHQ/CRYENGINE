@@ -89,6 +89,9 @@ SD3DShader* CHWShader::s_pCurDS;
 SD3DShader* CHWShader::s_pCurHS;
 SD3DShader* CHWShader::s_pCurCS;
 
+CHWShader* CHWShader::s_pCurHWVS;
+char *CHWShader::s_GS_MultiRes_NV;
+
 FXShaderCache CHWShader::m_ShaderCache;
 FXShaderDevCache CHWShader::m_ShaderDevCache;
 FXShaderCacheNames CHWShader::m_ShaderCacheList;
@@ -570,7 +573,8 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 			{
 				FXShaderToken* pMap = pTable;
 				TArray<uint32>* pData = &SHData;
-				pSH->mfGetCacheTokenMap(pMap, pData, pSH->m_nMaskGenShader);
+				if (pData->size())
+				  pSH->mfGetCacheTokenMap(pMap, pData, pSH->m_nMaskGenShader);
 			}
 			return pSH;
 		}
@@ -590,6 +594,27 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 	pSH->m_nMaskGenShader = nMaskGen;
 	pSH->m_nMaskGenFX = nMaskGenFX;
 	pSH->m_CRC32 = CRC32;
+	// Check for auto MultiRes-Geom shader
+	if (eClass == eHWSC_Geometry && szEntryFunc[0] == '$')
+	{
+		if (!CVrProjectionManager::Instance()->IsMultiResEnabled())
+		{
+			pSH->Release();
+			return NULL;
+		}
+		pSH->m_Flags |= HWSG_GS_MULTIRES;
+		SShaderBin *pBinGS = gRenDev->m_cEF.m_Bin.GetBinShader("$nv_vr", false, pFX->m_CRC32);
+		if (pBinGS)
+		{
+			CParserBin Parser(pBinGS, pFX);
+			CShader* efGen = pFX->m_pGenShader;
+			if (efGen && efGen->m_ShaderGenParams)
+				gRenDev->m_cEF.m_Bin.AddGenMacros(efGen->m_ShaderGenParams, Parser, pFX->m_nMaskGenFX);
+			Parser.Preprocess(0, pBinGS->m_Tokens, &pBinGS->m_TokenTable);
+			pSH->m_TokenTable = Parser.m_TokenTable;
+			pSH->m_TokenData.Copy(&Parser.m_Tokens[0], Parser.m_Tokens.size());
+		}
+	}
 
 	pSH->mfConstructFX(pTable, &SHData);
 
@@ -786,7 +811,8 @@ void CHWShader_D3D::mfConstructFX(FXShaderToken* Table, TArray<uint32>* pSHData)
 	{
 		FXShaderToken* pMap = Table;
 		TArray<uint32>* pData = pSHData;
-		mfGetCacheTokenMap(pMap, pData, m_nMaskGenShader);   // Store tokens
+		if (pData->size())
+		  mfGetCacheTokenMap(pMap, pData, m_nMaskGenShader);   // Store tokens
 	}
 }
 
@@ -5788,6 +5814,7 @@ bool CHWShader_D3D::mfSetVS(int nFlags)
 	if (!mfCheckActivation(rRP.m_pShader, pInst, nFlags))
 	{
 		s_pCurInstVS = NULL;
+		s_pCurHWVS = NULL;
 		s_nActivationFailMask |= (1 << eHWSC_Vertex);
 		return false;
 	}
@@ -5832,6 +5859,7 @@ bool CHWShader_D3D::mfSetVS(int nFlags)
 #endif
 			mfBind();
 		}
+		s_pCurHWVS = this;
 		s_pCurInstVS = pInst;
 		rRP.m_FlagsStreams_Decl = pInst->m_VStreamMask_Decl;
 		rRP.m_FlagsStreams_Stream = pInst->m_VStreamMask_Stream;
@@ -5960,6 +5988,12 @@ bool CHWShader_D3D::mfSetGS(int nFlags)
 	DETAILED_PROFILE_MARKER("mfSetGS");
 
 	CD3D9Renderer* rd = gcpRendD3D;
+	if (m_Flags & HWSG_GS_MULTIRES)
+	{
+		if (!s_pCurInstVS || !CVrProjectionManager::Instance()->IsMultiResEnabled())
+			return false;
+	}
+
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
 

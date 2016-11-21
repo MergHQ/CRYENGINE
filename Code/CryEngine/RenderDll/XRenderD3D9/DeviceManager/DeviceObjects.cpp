@@ -43,6 +43,20 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 			result[shaderStage].pHwShader = pHWShaderD3D;
 			result[shaderStage].technique = technique;
 
+			// Special case for nvidia multires shading: auto geometry shader requires vertex shader instance
+			if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+			{
+				if (shaderStage == eHWSC_Geometry && pHWShaderD3D)
+				{
+					// TODO: do this without global variables!!
+					CHWShader_D3D::s_pCurInstVS = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(result[eHWSC_Vertex].pHwShaderInstance);
+					CHWShader_D3D::s_pCurHWVS = result[eHWSC_Vertex].pHwShader;
+
+					if (!CHWShader_D3D::s_pCurInstVS || !CHWShader_D3D::s_pCurHWVS)
+						continue;
+				}
+			}
+
 			if (pHWShaderD3D)
 			{
 				SShaderCombIdent Ident;
@@ -57,8 +71,15 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 				{
 					if (pHWShaderD3D->mfCheckActivation(pShader, pInstance, 0))
 					{
-						result[shaderStage].pHwShaderInstance = pInstance;
-						result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+						if(pInstance->m_Handle.m_pShader->m_bDisabled)
+						{ 
+							result[shaderStage].pHwShader = nullptr;
+						}
+						else
+						{
+							result[shaderStage].pHwShaderInstance = pInstance;
+							result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+						}
 					}
 				}
 			}
@@ -498,6 +519,11 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	  (m_CullMode == eCULL_Back)
 	  ? D3D11_CULL_BACK
 	  : ((m_CullMode == eCULL_None) ? D3D11_CULL_NONE : D3D11_CULL_FRONT);
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	{
+		rasterizerDesc.ScissorEnable = TRUE;
+	}
 
 	// *INDENT-OFF*
 	// Blend state
@@ -1188,13 +1214,6 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 		}
 	};
 
-
-	// Need to have at least one resource set or constant buffer/inline constants
-	if (m_ResourceSets.empty() && m_ConstantBuffers.empty() && m_InlineConstantCount == 0)
-	{
-		CRY_ASSERT_MESSAGE(false, "Invalid Resource Layout: no data");
-		return false;
-	}
 
 	// Check for overlapping resource set and constant buffer bind slots
 	std::set<uint32> usedLayoutSlots;

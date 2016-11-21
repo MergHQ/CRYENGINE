@@ -745,6 +745,7 @@ add_sources("CryRenderer_uber_0.cpp"
 		"D3DREBreakableGlassBuffer.cpp"
 		"D3D_SVO.cpp"
 		"D3DRECloud.cpp"
+		"D3DMultiResRendering.cpp"
 		"D3DOsvr.cpp"
 )
 
@@ -867,6 +868,7 @@ add_sources("CryRenderer_uber_3.cpp"
 		"PipelineProfiler.h"
 		"resource.h"
 		"StatoscopeRenderStats.h"
+		"D3DMultiResRendering.h"
 		"DeviceInfo.inl"
 		"D3DOsvr.h"
 		"CompiledRenderObject.h"
@@ -1034,8 +1036,8 @@ end_sources()
 set(gnm_compiler_version "ORBIS/V031")
 
 set(extra_defines -DCRY_GNM_SHADER_COMPILER_VERSION="${gnm_compiler_version}")
-	if (NOT EXISTS ${SDK_DIR}/NVAPI)
-		message(STATUS "NVAPI SDK not found, excluding from the build.")
+	if (NOT EXISTS ${SDK_DIR}/NVIDIA/NVAPI_r386)
+		message(STATUS "NVAPI SDK v.386 not found, excluding from the build.")
 		list(APPEND extra_defines -DEXCLUDE_NV_API)
 	endif()
 	

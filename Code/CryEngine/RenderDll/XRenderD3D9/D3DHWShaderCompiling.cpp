@@ -12,6 +12,10 @@
 	#endif
 #endif
 
+#if defined(USE_NV_API)
+	#include NV_API_HEADER
+#endif
+
 #include "../Common/Shaders/RemoteCompiler.h"
 
 static CryCriticalSection g_cAILock;
@@ -1153,7 +1157,7 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 
 //==============================================================================================================================================================
 
-bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr)
+bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr)
 {
 	char* cgs = NULL;
 
@@ -1217,6 +1221,19 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	if (eT != eT_unknown)
 		CParserBin::AddDefineToken(eT, NewTokens);
 
+	uint32 nSFlags = m_Flags;
+	if (nSFlags & HWSG_GS_MULTIRES)
+	{
+		// Generate script vor VS first;
+		pInst = s_pCurInstVS;
+		assert(pInst);
+
+		CHWShader_D3D* curVS = (CHWShader_D3D *)s_pCurHWVS;
+		Table = &curVS->m_TokenTable;
+		pSHData = &curVS->m_TokenData;
+		nSFlags = curVS->m_Flags;
+	}
+
 	// Include runtime mask definitions in the script
 	SShaderGen* shg = gRenDev->m_cEF.m_pGlobalExt;
 	if (shg && pInst->m_Ident.m_RTMask)
@@ -1231,7 +1248,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	}
 
 	// Include light mask definitions in the script
-	if (m_Flags & HWSG_SUPPORTS_MULTILIGHTS)
+	if (nSFlags & HWSG_SUPPORTS_MULTILIGHTS)
 	{
 		int nLights = pInst->m_Ident.m_LightMask & 0xf;
 		if (nLights)
@@ -1249,7 +1266,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 		if (bHasProj)
 			CParserBin::AddDefineToken(eT__LT_HASPROJ, eT_1, NewTokens);
 	}
-	else if (m_Flags & HWSG_SUPPORTS_LIGHTING)
+	else if (nSFlags & HWSG_SUPPORTS_LIGHTING)
 	{
 		CParserBin::AddDefineToken(eT__LT_LIGHTS, NewTokens);
 		int nLightType = (pInst->m_Ident.m_LightMask >> SLMF_LTYPE_SHIFT) & SLMF_TYPE_MASK;
@@ -1258,7 +1275,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	}
 
 	// Include modificator mask definitions in the script
-	if ((m_Flags & HWSG_SUPPORTS_MODIF) && pInst->m_Ident.m_MDMask)
+	if ((nSFlags & HWSG_SUPPORTS_MODIF) && pInst->m_Ident.m_MDMask)
 	{
 		const uint32 tcProjMask = HWMD_TEXCOORD_PROJ;
 		const uint32 tcMatrixMask = HWMD_TEXCOORD_MATRIX;
@@ -1273,7 +1290,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	}
 
 	// Include vertex modificator mask definitions in the script
-	if ((m_Flags & HWSG_SUPPORTS_VMODIF) && pInst->m_Ident.m_MDVMask)
+	if ((nSFlags & HWSG_SUPPORTS_VMODIF) && pInst->m_Ident.m_MDVMask)
 	{
 		int nMDV = pInst->m_Ident.m_MDVMask & 0x0fffffff;
 		int nType = nMDV & 0xf;
@@ -1300,7 +1317,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 			CParserBin::AddDefineToken(eT__VT_TYPE_MODIF, eT_1, NewTokens);
 	}
 
-	if (m_Flags & HWSG_FP_EMULATION)
+	if (nSFlags & HWSG_FP_EMULATION)
 	{
 		CParserBin::AddDefineToken(eT__FT0_COP, eT_0 + (pInst->m_Ident.m_LightMask & 0xff), NewTokens);
 		CParserBin::AddDefineToken(eT__FT0_AOP, eT_0 + ((pInst->m_Ident.m_LightMask & 0xff00) >> 8), NewTokens);
@@ -1363,6 +1380,14 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	RemoveUnaffectedParameters_D3D10(Parser, pInst, InstBindVars);
 	ConvertBinScriptToASCII(Parser, pInst, InstBindVars, Table, sNewScr);
 
+	// Generate geometry shader
+	if (m_Flags & HWSG_GS_MULTIRES)
+	{
+		bool bResult = AutoGenMultiresGS(sNewScr, pSH);
+		if (!bResult)
+			return false;
+	}
+
 	if (bTempMap)
 	{
 		SAFE_DELETE(Table);
@@ -1377,6 +1402,102 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::ve
 	   }*/
 
 	return sNewScr.Num() && sNewScr[0];
+}
+
+bool CHWShader_D3D::AutoGenMultiresGS(TArray<char>& sNewScr, CShader *pSH)
+{
+	CHWShader_D3D* curVS = (CHWShader_D3D *)s_pCurHWVS;
+	char szEntryVS[128];
+	strcpy(szEntryVS, curVS->m_EntryFunc.c_str());
+	strcat(szEntryVS, "(");
+	char *szStart = strstr(&sNewScr[0], szEntryVS);
+	assert(szStart);
+	if (szStart)
+	{
+		char *szEnd = szStart - 1;
+		while (*szEnd == 0x20) --szEnd;
+		char *szS = szEnd;
+		while (*szS > 0x20) --szS;
+		char szStrName[128];
+		ptrdiff_t nSize = szEnd - szS;
+		strncpy(szStrName, &szS[1], nSize);
+		szStrName[nSize] = 0;
+
+		char szStruct[128];
+		strcpy(szStruct, "struct ");
+		strcat(szStruct, szStrName);
+		char *szStrStart = strstr(&sNewScr[0], szStruct);
+		assert(szStrStart);
+
+		char *szStrEnd = strstr(szStrStart, "};");
+		szStrEnd += 2;
+
+		char szPosName[128];
+		char *szPosA = strstr(szStrStart, ":POSITION");
+		if (!szPosA)
+			szPosA = strstr(szStrStart, ":SV_Position");
+		if (!szPosA)
+		{
+#if !defined(_RELEASE)
+			CRY_ASSERT_MESSAGE(false, "Cannot generate a GS for a VS with no SV_Position output");
+#endif
+			return false;
+		}
+		char *szPosAB = szPosA - 1;
+		while (*szPosAB == 0x20) --szPosAB;
+		char *szP = szPosAB;
+		while (*szP > 0x20) --szP;
+		nSize = szPosAB - szP;
+		strncpy(szPosName, &szP[1], nSize);
+		szPosName[nSize] = 0;
+
+		TArray<char> szNewS;
+		//szNewS.Copy(&sNewScr[0], szStrStart - &sNewScr[0]);
+		szNewS.Copy(szStrStart, uint32(szStrEnd-szStrStart)+1);
+
+		m_EntryFunc.Format("%s_GS", curVS->m_EntryFunc.c_str());
+
+		string GSDefine;
+		GSDefine.Format(
+			"#define NV_VR_FASTGS_FUNCTION_NAME %s\n"
+			"#define NV_VR_FASTGS_PASSTHROUGH_STRUCT %s\n"
+			"#define NV_VR_FASTGS_OUTPUT_STRUCT %s_gs\n"
+			"#define NV_VR_FASTGS_POSITION_ATTRIBUTE %s\n\n",
+			m_EntryFunc.c_str(), szStrName, szStrName, szPosName);
+		szNewS.Copy(GSDefine.c_str(), GSDefine.size());
+
+		ShaderTokensVec NewTokens;
+
+		uint32 eT = eT__GS;
+		CParserBin::AddDefineToken(eT, NewTokens);
+
+		// Include runtime mask definitions in the script
+		SShaderGen* shg = gRenDev->m_cEF.m_pGlobalExt;
+		if (shg && m_pCurInst->m_Ident.m_RTMask)
+		{
+			for (uint32 i = 0; i < shg->m_BitMask.Num(); i++)
+			{
+				SShaderGenBit* bit = shg->m_BitMask[i];
+				if (!(bit->m_Mask & m_pCurInst->m_Ident.m_RTMask))
+					continue;
+				CParserBin::AddDefineToken(bit->m_dwToken, NewTokens);
+			}
+		}
+		int nT = NewTokens.size();
+		NewTokens.resize(nT + m_TokenData.size());
+		memcpy(&NewTokens[nT], &m_TokenData[0], m_TokenData.size() * sizeof(uint32));
+
+		std::vector<SCGBind> InstBindVars;
+		CParserBin Parser(NULL, pSH);
+		Parser.Preprocess(1, NewTokens, &m_TokenTable);
+		ConvertBinScriptToASCII(Parser, m_pCurInst, InstBindVars, &m_TokenTable, szNewS);
+
+		sNewScr.Copy(szNewS);
+	}
+	else
+		return false;
+
+	return true;
 }
 
 /*static uint32 sFindVar(CParserBin& Parser, int& nStart)
@@ -2746,7 +2867,31 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 	else if (m_eSHClass == eHWSC_Vertex)
 		hr = gcpRendD3D->GetDevice().CreateVertexShader(alias_cast<DWORD*>(pBuf), nSize, NULL, alias_cast<ID3D11VertexShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
 	else if (m_eSHClass == eHWSC_Geometry)
-		hr = gcpRendD3D->GetDevice().CreateGeometryShader(alias_cast<DWORD*>(pBuf), nSize, NULL, alias_cast<ID3D11GeometryShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
+		{
+#if 1 // use 0 for FastGS emulation mode
+			if (m_Flags & HWSG_GS_MULTIRES)
+			{
+#if defined(USE_NV_API)
+				if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+				{
+					NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = { NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER, NV_FASTGS_USE_VIEWPORT_MASK };
+					NvAPI_Status Status = NvAPI_D3D11_CreateFastGeometryShaderExplicit(gcpRendD3D->GetDevice().GetRealDevice(), alias_cast<DWORD*>(pBuf), nSize, NULL, &FastGSArgs, alias_cast<ID3D11GeometryShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
+					hr = (Status == NVAPI_OK) ? S_OK : E_FAIL;
+				}
+				else
+#endif
+				{
+					pInst->m_Handle.m_pShader->m_bDisabled = true;
+					pInst->m_Handle.m_pShader->m_pHandle = nullptr;
+					hr = S_OK;
+				}
+			}
+			else
+#endif
+			{
+    			hr = gcpRendD3D->GetDevice().CreateGeometryShader(alias_cast<DWORD*>(pBuf), nSize, NULL, alias_cast<ID3D11GeometryShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
+			}
+		}
 	else if (m_eSHClass == eHWSC_Hull)
 		hr = gcpRendD3D->GetDevice().CreateHullShader(alias_cast<DWORD*>(pBuf), nSize, NULL, alias_cast<ID3D11HullShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
 	else if (m_eSHClass == eHWSC_Compute)
@@ -2766,13 +2911,16 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 
 	// Assign name to Shader for enhanced debugging
 #if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
-	char name[1024];
-	sprintf(name, "%s_%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx)", pSH->GetName(), m_EntryFunc.c_str(), pInst->m_Ident.m_LightMask, pInst->m_Ident.m_RTMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_GLMask, pInst->m_Ident.m_pipelineState.opaque);
-	#if CRY_PLATFORM_WINDOWS
-	((ID3D11DeviceChild*)pInst->m_Handle.m_pShader->m_pHandle)->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
-	#elif CRY_PLATFORM_ORBIS && !defined(CRY_USE_GNM_RENDERER)
-	((CCryDXOrbisShader*)pInst->m_Handle.m_pShader->m_pHandle)->DebugSetName(name);
-	#endif
+	if (pInst->m_Handle.m_pShader->m_pHandle)
+	{
+		char name[1024];
+		sprintf(name, "%s_%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx)", pSH->GetName(), m_EntryFunc.c_str(), pInst->m_Ident.m_LightMask, pInst->m_Ident.m_RTMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_GLMask, pInst->m_Ident.m_pipelineState.opaque);
+		#if CRY_PLATFORM_WINDOWS
+		((ID3D11DeviceChild*)pInst->m_Handle.m_pShader->m_pHandle)->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+		#elif CRY_PLATFORM_ORBIS && !defined(CRY_USE_GNM_RENDERER)
+		((CCryDXOrbisShader*)pInst->m_Handle.m_pShader->m_pHandle)->DebugSetName(name);
+		#endif
+	}
 #endif
 
 	return (hr == S_OK);

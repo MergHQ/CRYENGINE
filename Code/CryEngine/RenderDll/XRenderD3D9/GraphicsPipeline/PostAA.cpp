@@ -152,6 +152,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetState(GS_NODEPTHTEST);
 		m_passTemporalAA.SetRequireWorldPos(true);
 		m_passTemporalAA.SetRequirePerViewConstantBuffer(true);
+		m_passTemporalAA.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 		m_passTemporalAA.SetTextureSamplerPair(0, pCurrRT, m_samplerLinear);
 		m_passTemporalAA.SetTextureSamplerPair(1, pPrevRT, m_samplerLinear);

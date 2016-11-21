@@ -1,0 +1,303 @@
+//----------------------------------------------------------------------------------
+// File:        nv_vr_geometry_shader.hlsli
+// SDK Version: 2.0
+// Email:       vrsupport@nvidia.com
+// Site:        http://developer.nvidia.com/
+//
+// Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//----------------------------------------------------------------------------------
+
+// Include this file to create a FastGS that passes through a specified struct of vertex attributes,
+// and performs culling against the viewports.
+
+// Input Definitions:
+//	NV_VR_FASTGS_FUNCTION_NAME		- the desired name of the entry point function, defaults to "main"
+//	NV_VR_FASTGS_PASSTHROUGH_STRUCT	- the name of a struct containing all the vertex attributes
+//	NV_VR_FASTGS_POSITION_ATTRIBUTE	- the name of the SV_Position element of this struct
+//	NV_VR_FASTGS_CONSTANT_DATA		- the expression to find the NV_VR_FastGSCBData from its constant buffer
+//	NV_VR_FASTGS_EMULATION			- set this to 1 in order to create a regular GS instead of fast GS
+//	NV_VR_FASTGS_SINGLE_PASS_STEREO - set this to 1 in order to create a fast GS that broadcasts primitives to 2 views
+//	NV_VR_FASTGS_X_RIGHT_ATTRIBUTE	- the name of the element of passthrough struct that contains the right view X value
+//	NV_VR_FASTGS_VIEWPORT_MASK_COMPATIBILITY - set this to 1 in order to output the viewport mask to SV_ViewportArrayIndex
+//	NV_VR_FASTGS_OUTPUT_VIEWPORT_INDEX - set this to 1 in order to output a dummy SV_ViewportArrayIndex attribute from FastGS 
+//			in order to prevent D3D debug runtime from issuing shader linkage errors when PS reads the viewport index
+
+
+#if NV_VR_FASTGS_EMULATION
+
+#if NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+#if  %_RT_PROJECTION_MULTI_RES
+
+//#error "Single Pass Stereo is not generally compatible with Multi-Res Shading"
+
+#elif %_RT_PROJECTION_LENS_MATCHED
+
+struct NV_VR_FASTGS_OUTPUT_STRUCT
+{
+	NV_VR_FASTGS_PASSTHROUGH_STRUCT Passthrough;
+	uint Viewport : SV_ViewportArrayIndex;\
+};
+
+[maxvertexcount(3)]
+[instance(8)]
+void NV_VR_FASTGS_FUNCTION_NAME(
+	uint InstanceID : SV_GSInstanceID, 
+	triangle NV_VR_FASTGS_PASSTHROUGH_STRUCT Input[3], 
+	inout TriangleStream<NV_VR_FASTGS_OUTPUT_STRUCT> Output)
+{
+	uint ViewportMask;
+	bool IsRightEye = InstanceID >= 4;
+	if (IsRightEye)
+	{
+		ViewportMask = NV_VR_CalculateViewportMask(
+			NV_VR_FASTGS_CONSTANT_DATA,
+			float4(Input[0].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw),
+			float4(Input[1].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw),
+			float4(Input[2].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw));
+	}
+	else
+	{
+		ViewportMask = NV_VR_CalculateViewportMask(
+			NV_VR_FASTGS_CONSTANT_DATA,
+			Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE,
+			Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE,
+			Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE);
+	}
+	
+	uint quadrant = InstanceID & 3;
+	uint in_viewport = (ViewportMask >> quadrant) & 1;
+	if (in_viewport)
+	{
+		NV_VR_LMS_Configuration conf = NV_VR_LMS_GetConfiguration(NV_VR_FASTGS_CONSTANT_DATA);
+
+		if (IsRightEye)
+		{
+			float t = conf.WarpLeft;
+			conf.WarpLeft = conf.WarpRight;
+			conf.WarpRight = t;
+		}
+
+		float2 warpFactors = NV_VR_LMS_GetWarpFactors(quadrant, conf);
+
+		NV_VR_FASTGS_OUTPUT_STRUCT OutputVertex;
+		OutputVertex.Viewport = InstanceID;
+
+		for (int i = 0; i < 3; i++)
+		{
+			OutputVertex.Passthrough = Input[i];
+
+			float4 pos = IsRightEye
+				? float4(OutputVertex.Passthrough.NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw)
+				: OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE;
+
+			pos.w += warpFactors.x * pos.x + warpFactors.y * pos.y;
+			OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE = pos;
+
+			Output.Append(OutputVertex);
+		}
+	}
+}
+
+#else
+
+struct NV_VR_FASTGS_OUTPUT_STRUCT
+{
+	NV_VR_FASTGS_PASSTHROUGH_STRUCT Passthrough;
+	uint Viewport : SV_ViewportArrayIndex;\
+};
+
+[maxvertexcount(3)]
+[instance(2)]
+void NV_VR_FASTGS_FUNCTION_NAME(
+	uint InstanceID : SV_GSInstanceID, 
+	triangle NV_VR_FASTGS_PASSTHROUGH_STRUCT Input[3], 
+	inout TriangleStream<NV_VR_FASTGS_OUTPUT_STRUCT> Output)
+{
+	bool IsRightEye = InstanceID == 1;
+
+	NV_VR_FASTGS_OUTPUT_STRUCT OutputVertex;
+	OutputVertex.Viewport = InstanceID;
+
+	for (int i = 0; i < 3; i++)
+	{
+		OutputVertex.Passthrough = Input[i];
+
+		if (IsRightEye)
+		{
+			OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE = 
+				float4(OutputVertex.Passthrough.NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw);
+		}
+
+		Output.Append(OutputVertex);
+	}
+}
+
+#endif // %_RT_PROJECTION*
+
+#else // NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+struct NV_VR_FASTGS_OUTPUT_STRUCT
+{
+	NV_VR_FASTGS_PASSTHROUGH_STRUCT Passthrough;
+	uint Viewport : SV_ViewportArrayIndex;
+};
+
+//#if %_RT_PROJECTION_MULTI_RES
+[instance(9)]
+//#elif %_RT_PROJECTION_LENS_MATCHED
+//[instance(4)]
+//#endif
+[maxvertexcount(3)]
+void NV_VR_FASTGS_FUNCTION_NAME(
+	uint InstanceID : SV_GSInstanceID, 
+	triangle NV_VR_FASTGS_PASSTHROUGH_STRUCT Input[3], 
+	inout TriangleStream<NV_VR_FASTGS_OUTPUT_STRUCT> Output)
+{
+	uint ViewportMask = NV_VR_CalculateViewportMask(
+		NV_VR_FASTGS_CONSTANT_DATA, 
+		Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE, 
+		Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE, 
+		Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE);
+
+	uint in_viewport = (ViewportMask >> InstanceID) & 1;
+	if (in_viewport)
+	{
+#if %_RT_PROJECTION_LENS_MATCHED
+		NV_VR_LMS_Configuration conf = NV_VR_LMS_GetConfiguration(NV_VR_FASTGS_CONSTANT_DATA);
+		float2 warpFactors = NV_VR_LMS_GetWarpFactors(InstanceID, conf);
+#endif
+
+		NV_VR_FASTGS_OUTPUT_STRUCT OutputVertex;
+		OutputVertex.Viewport = InstanceID;
+
+		for (int i = 0; i < 3; i++)
+		{
+			OutputVertex.Passthrough = Input[i];
+
+			float4 pos = OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE;
+#if %_RT_PROJECTION_LENS_MATCHED
+			pos.w += warpFactors.x * pos.x + warpFactors.y * pos.y;
+#endif
+			OutputVertex.Passthrough.NV_VR_FASTGS_POSITION_ATTRIBUTE = pos;
+
+			Output.Append(OutputVertex);
+		}
+	}
+}
+
+#endif // NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+#else // NV_VR_FASTGS_EMULATION
+
+
+struct NV_VR_FASTGS_OUTPUT_STRUCT
+{
+	NV_VR_FASTGS_PASSTHROUGH_STRUCT Passthrough;
+
+#if NV_VR_FASTGS_VIEWPORT_MASK_COMPATIBILITY
+	uint ViewportMask : SV_ViewportArrayIndex;
+#else
+#if NV_VR_FASTGS_OUTPUT_VIEWPORT_INDEX
+	uint ViewportIndex : SV_ViewportArrayIndex;
+#endif
+	uint4 ViewportMask : NV_VIEWPORT_MASK;
+#endif
+};
+
+#if NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+[maxvertexcount(1)]
+void NV_VR_FASTGS_FUNCTION_NAME(
+	triangle NV_VR_FASTGS_PASSTHROUGH_STRUCT Input[3], 
+	inout TriangleStream<NV_VR_FASTGS_OUTPUT_STRUCT> Output)
+{
+	NV_VR_FASTGS_OUTPUT_STRUCT OutputVertex;
+	OutputVertex.Passthrough = Input[0];
+
+#if %_RT_PROJECTION_LENS_MATCHED
+
+	uint ViewportMaskLeft = NV_VR_CalculateViewportMask(
+		NV_VR_FASTGS_CONSTANT_DATA,
+		Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE,
+		Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE,
+		Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE);
+
+	uint ViewportMaskRight = NV_VR_CalculateViewportMask(
+		NV_VR_FASTGS_CONSTANT_DATA,
+		float4(Input[0].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw),
+		float4(Input[1].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw),
+		float4(Input[2].NV_VR_FASTGS_X_RIGHT_ATTRIBUTE.x, Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE.yzw));
+
+	OutputVertex.ViewportMask = ViewportMaskLeft | (ViewportMaskRight << 20); // 16 is for the right eye, 4 is for viewport indices offset
+
+#elif %_RT_PROJECTION_MULTI_RES
+
+//#error "Single Pass Stereo is not generally compatible with Multi-Res Shading"
+
+#else
+
+	// Planar projection: just output into two views
+	OutputVertex.ViewportMask = 0x00020001;
+
+#endif
+
+#if NV_VR_FASTGS_OUTPUT_VIEWPORT_INDEX && !NV_VR_FASTGS_VIEWPORT_MASK_COMPATIBILITY
+	OutputVertex.ViewportIndex = 0;
+#endif
+
+	Output.Append(OutputVertex);
+}
+
+
+#else // NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+[maxvertexcount(1)]
+void NV_VR_FASTGS_FUNCTION_NAME(
+	triangle NV_VR_FASTGS_PASSTHROUGH_STRUCT Input[3], 
+	inout TriangleStream<NV_VR_FASTGS_OUTPUT_STRUCT> Output)
+{
+	NV_VR_FASTGS_OUTPUT_STRUCT OutputVertex;
+	OutputVertex.Passthrough = Input[0];
+
+	OutputVertex.ViewportMask = NV_VR_CalculateViewportMask(
+		NV_VR_FASTGS_CONSTANT_DATA, 
+		Input[0].NV_VR_FASTGS_POSITION_ATTRIBUTE, 
+		Input[1].NV_VR_FASTGS_POSITION_ATTRIBUTE, 
+		Input[2].NV_VR_FASTGS_POSITION_ATTRIBUTE);
+
+#if NV_VR_FASTGS_OUTPUT_VIEWPORT_INDEX && !NV_VR_FASTGS_VIEWPORT_MASK_COMPATIBILITY
+	OutputVertex.ViewportIndex = 0;
+#endif
+
+	Output.Append(OutputVertex);
+}
+
+#endif // NV_VR_FASTGS_SINGLE_PASS_STEREO
+
+#endif // NV_VR_FASTGS_EMULATION

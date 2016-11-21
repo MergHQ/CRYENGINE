@@ -215,6 +215,13 @@ enum EVerifyType
 // nv API
 #if CRY_PLATFORM_WINDOWS && !defined(EXCLUDE_NV_API) && !defined(OPENGL) && !defined(CRY_USE_DX12)
 	#define USE_NV_API 1
+	#define NV_API_HEADER "NVIDIA/NVAPI_r386/nvapi.h"
+
+	#if CRY_PLATFORM_64BIT
+		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
+	#else
+		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/x86/nvapi.lib"
+	#endif
 #endif
 
 // AMD EXT

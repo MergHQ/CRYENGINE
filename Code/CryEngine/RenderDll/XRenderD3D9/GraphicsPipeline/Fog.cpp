@@ -146,6 +146,7 @@ void CFogStage::Execute()
 			m_passFog.SetTechnique(pShader, techName, rtMask);
 			m_passFog.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
 			m_passFog.SetDepthTarget(&depthBuffer);
+			m_passFog.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 			// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 			uint32 nRS = GS_BLSRC_ONE | GS_BLDST_SRCALPHA | (useFogDepthTest ? GS_DEPTHFUNC_LEQUAL : GS_NODEPTHTEST);

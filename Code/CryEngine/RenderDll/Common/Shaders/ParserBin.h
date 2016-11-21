@@ -697,6 +697,8 @@ enum EToken
 	eT_GatherBlue,
 	eT_GatherAlpha,
 
+	eT_$AutoGS_MultiRes,
+
 	eT_max,
 	eT_user_first = eT_max + 1
 };
@@ -826,6 +828,7 @@ struct SortByToken
 class CParserBin
 {
 	friend class CShaderManBin;
+	friend class CHWShader;
 	friend class CHWShader_D3D;
 	friend struct SFXParam;
 	friend struct SFXSampler;
@@ -837,7 +840,7 @@ class CParserBin
 	struct SShaderBin* m_pCurBinShader;
 	CShader* m_pCurShader;
 	TArray<uint32> m_Tokens;
-	FXMacroBin m_Macros[2];
+	FXMacroBin m_Macros[3];
 	FXShaderToken m_TokenTable;
 	TArray<uint64> m_IfAffectMask;
 	//std::vector<std::vector<int>> m_KeyOffsets;

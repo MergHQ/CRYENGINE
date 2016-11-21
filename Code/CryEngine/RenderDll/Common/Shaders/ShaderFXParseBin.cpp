@@ -928,7 +928,7 @@ bool CShaderManBin::AddToCache(SShaderBin* pSB, bool bInclude)
 {
 	if (!CRenderer::CV_r_shadersediting)
 	{
-		if (SShaderBin::s_nCache >= SShaderBin::s_nMaxFXBinCache)
+		if (SShaderBin::s_nCache > SShaderBin::s_nMaxFXBinCache)
 		{
 			SShaderBin* pS;
 			for (pS = SShaderBin::s_Root.m_Prev; pS != &SShaderBin::s_Root; pS = pS->m_Prev)
@@ -940,7 +940,7 @@ bool CShaderManBin::AddToCache(SShaderBin* pSB, bool bInclude)
 				}
 			}
 		}
-		assert(SShaderBin::s_nCache < SShaderBin::s_nMaxFXBinCache);
+		assert(SShaderBin::s_nCache <= SShaderBin::s_nMaxFXBinCache);
 	}
 
 	pSB->m_bInclude = bInclude;
@@ -1261,7 +1261,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	return pSHB;
 }
 
-void CShaderManBin::AddGenMacroses(SShaderGen* shG, CParserBin& Parser, uint64 nMaskGen)
+void CShaderManBin::AddGenMacros(SShaderGen* shG, CParserBin& Parser, uint64 nMaskGen)
 {
 	if (!nMaskGen || !shG)
 		return;
@@ -3119,6 +3119,10 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 	AffectedFragments.reserve(120);
 	AffectedFragments.SetUse(0);
 
+	// Skip any generation stuff for Auto-Shaders
+	if (dwSHName == eT_$AutoGS_MultiRes)
+		return true;
+
 	for (nNum = 0; nNum < Parser.m_CodeFragments.size(); nNum++)
 	{
 		if (dwSHName == Parser.m_CodeFragments[nNum].m_dwName)
@@ -3494,7 +3498,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXM
 	CShader* efSave = gRenDev->m_RP.m_pShader;
 	gRenDev->m_RP.m_pShader = Parser.m_pCurShader;
 	assert(gRenDev->m_RP.m_pShader != 0);
-	if (bRes && (!CParserBin::m_bParseFX || !SHData.empty()))
+	if (bRes && (!CParserBin::m_bParseFX || !SHData.empty() || szName[0] == '$'))
 	{
 		char str[1024];
 		cry_sprintf(str, "%s@%s", Parser.m_pCurShader->m_NameShader.c_str(), szName);
@@ -4204,7 +4208,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 	CShader* efGen = ef->m_pGenShader;
 
 	if (efGen && efGen->m_ShaderGenParams)
-		AddGenMacroses(efGen->m_ShaderGenParams, Parser, nMaskGen);
+		AddGenMacros(efGen->m_ShaderGenParams, Parser, nMaskGen);
 
 	pBin->Lock();
 	Parser.Preprocess(0, pBin->m_Tokens, &pBin->m_TokenTable);

@@ -665,6 +665,8 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
 	}
 
+	psoDesc.m_ShaderFlags_RT |= CVrProjectionManager::Instance()->GetRTFlags();
+
 	return true;
 }
 
@@ -923,6 +925,9 @@ void CStandardGraphicsPipeline::Execute()
 	}
 
 	m_pSceneGBufferStage->ExecuteLinearizeDepth();
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		CVrProjectionManager::Instance()->ExecuteFlattenDepth(CTexture::s_ptexZTarget, CVrProjectionManager::Instance()->GetZTargetFlattened());
 
 	// Depth downsampling
 	{

@@ -13,6 +13,7 @@
 #include <Cry3DEngine/CGF/CryHeaders.h>
 #include "../Common/Shaders/RemoteCompiler.h"
 #include <CryGame/IGameFramework.h>
+#include "../../XRenderD3D9/D3DMultiResRendering.h"
 
 #if CRY_PLATFORM_WINDOWS
 	#include <direct.h>
@@ -513,7 +514,7 @@ bool CShaderMan::mfModifyGenFlags(CShader* efGen, const CShaderResources* pRes, 
 				}
 
 				PREFAST_SUPPRESS_WARNING(6326)
-				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0;
+				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0 && !CVrProjectionManager::Instance()->IsMultiResEnabled();
 				if (pBit->m_nDependencySet & SHGD_HW_SILHOUETTE_POM)
 				{
 					nAndMaskHW &= ~pBit->m_Mask;

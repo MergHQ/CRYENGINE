@@ -911,6 +911,107 @@ Property
 
 Property
 {
+// Any shader that depends on MultiRes being enabled or disabled,
+// or uses NvGetProjectionData() / NvGetGeometryShaderData(), should appear in this list.
+
+  Name = %_RT_PROJECTION_MULTI_RES
+  Mask = 0x200000000
+  Precache = ZGS
+  Precache = ZPS
+  Precache = DeferredDecalPassGS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassGS
+  Precache = DeferredLightPassPS
+  Precache = ClipVolumeGS
+  Precache = DeferredPassGS
+  Precache = DeferredPassPS
+  Precache = DistanceCloudsGS
+  Precache = WaterSurfaceGS
+  Precache = WaterSurfacePS
+  Precache = GlassGS
+  Precache = GeneralGS
+  Precache = ParticleGS
+  Precache = FogPostProcessGS
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = FogPassVolShadowsGatherPass
+  Precache = ShadowMaskGenGS
+  Precache = ShadowMaskGenPS
+  Precache = TiledShadingCS
+  Precache = PostAA_PS
+  Precache = PostEffectsGS
+  Precache = PostEffectsPS
+  Precache = UpscaleMultiResPS
+  Precache = OcclusionTestGS
+  Precache = WaterFogVolume_GS
+  Precache = WaterFogVolume_PS
+  Precache = StarsGS
+  Precache = HDRPostProcessPS
+  Precache = PostSunShaftsGS
+  Precache = PostSunShaftsPS
+  Precache = VolumetricCloudsGS
+  Precache = VolumetricCloudsPS
+  Precache = CloudsBlendPS
+  Precache = PostMotionBlurGS
+  Precache = PostMotionBlurPS
+  Precache = ParticleImposterGS
+  Precache = ParticleImposterPS
+}
+
+Property
+{
+// Any shader that depends on LMS being enabled or disabled,
+// or uses NvGetProjectionData() / NvGetGeometryShaderData(), should appear in this list.
+
+  Name = %_RT_PROJECTION_LENS_MATCHED
+  Mask = 0x1000000000
+  Precache = ZGS
+  Precache = ZPS
+  Precache = DeferredDecalPassGS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassGS
+  Precache = DeferredLightPassPS
+  Precache = ClipVolumeGS
+  Precache = DeferredPassGS
+  Precache = DeferredPassPS
+  Precache = DistanceCloudsGS
+  Precache = WaterSurfaceGS
+  Precache = WaterSurfacePS
+  Precache = GlassGS
+  Precache = GeneralGS
+  Precache = ParticleGS
+  Precache = FogPostProcessGS
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = FogPassVolShadowsGatherPass
+  Precache = ShadowMaskGenGS
+  Precache = ShadowMaskGenPS
+  Precache = TiledShadingCS
+  Precache = PostAA_PS
+  Precache = PostEffectsGS
+  Precache = PostEffectsPS
+  Precache = UpscaleMultiResPS
+  Precache = OcclusionTestGS
+  Precache = WaterFogVolume_GS
+  Precache = WaterFogVolume_PS
+  Precache = StarsGS
+  Precache = HDRPostProcessPS
+  Precache = PostSunShaftsGS
+  Precache = PostSunShaftsPS
+  Precache = VolumetricCloudsGS
+  Precache = VolumetricCloudsPS
+  Precache = CloudsBlendPS
+  Precache = PostMotionBlurGS
+  Precache = PostMotionBlurPS
+  Precache = ParticleImposterGS
+  Precache = ParticleImposterPS
+
+  // Unique to _RT_PROJECTION_LENS_MATCHED
+  Precache = LinearizeDepthPS
+}
+
+Property
+{
   Name = %_RT_LIGHTVOLUME1
   Mask = 0x2000000000
   Precache = VolumeLightInjectionCS

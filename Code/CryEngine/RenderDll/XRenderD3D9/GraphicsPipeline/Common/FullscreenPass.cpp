@@ -85,13 +85,28 @@ void CFullscreenPass::Execute()
 			m_vertexBuffer = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, 3 * sizeof(SVF_P3F_T2F_T3F));
 		}
 
-		SVF_P3F_T2F_T3F fullscreenTriWPOSVertices[3];
-		SPostEffectsUtils::GetFullScreenTriWPOS(fullscreenTriWPOSVertices, 0, 0, m_clipZ);
-		rd->m_DevBufMan.UpdateBuffer(m_vertexBuffer, fullscreenTriWPOSVertices, 3 * sizeof(SVF_P3F_T2F_T3F));
+		bool bUseQuad = CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched;
+		
+		if (bUseQuad)
+		{
+			SVF_P3F_T2F_T3F fullscreenQuadWPOSVertices[4];
+			SPostEffectsUtils::GetFullScreenQuadWPOS(fullscreenQuadWPOSVertices, 0, 0, m_clipZ);
+			rd->m_DevBufMan.UpdateBuffer(m_vertexBuffer, fullscreenQuadWPOSVertices, 4 * sizeof(SVF_P3F_T2F_T3F));
+		}
+		else
+		{
+			SVF_P3F_T2F_T3F fullscreenTriWPOSVertices[3];
+			SPostEffectsUtils::GetFullScreenTriWPOS(fullscreenTriWPOSVertices, 0, 0, m_clipZ);
+			rd->m_DevBufMan.UpdateBuffer(m_vertexBuffer, fullscreenTriWPOSVertices, 3 * sizeof(SVF_P3F_T2F_T3F));
+		}
 
 		m_primitive.SetCustomVertexStream(m_vertexBuffer, eVF_P3F_T2F_T3F, sizeof(SVF_P3F_T2F_T3F));
 		m_primitive.SetCustomIndexStream(~0u, (RenderIndexType)0);
-		m_primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
+
+		if(bUseQuad)
+			m_primitive.SetDrawInfo(eptTriangleStrip, 0, 0, 4);
+		else
+			m_primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
 	}
 
 	ClearPrimitives();

@@ -675,9 +675,15 @@ technique General
 		HullShader   = IllumHS() GeneralHS;
 		DomainShader = IllumDS() GeneralDS;
 #endif
-#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+
+// NOTE: SilPOM is automatically turned off via IllumValidations when NVidia multires is enabled
+// TODO: Make SilPOM work with NVidia multires
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING 
 		GeometryShader = IlluminationGS() GeneralGS;
+#else
+		GeometryShader = $AutoGS_MultiRes();
 #endif
+
 		PixelShader = IlluminationPS() GeneralPS;
 
 #if %DECAL

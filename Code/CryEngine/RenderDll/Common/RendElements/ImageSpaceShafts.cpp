@@ -125,7 +125,7 @@ bool ImageSpaceShafts::PrepareOcclusion(CTexture* pDestRT, CTexture* pGoboTex, i
 
 	m_occlusionPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, occlusionTech, rtFlags);
 	m_occlusionPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
-	m_occlusionPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_occlusionPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuadCentered);
 	m_occlusionPrimitive.SetTexture(0, pGoboTex ? pGoboTex : CTexture::s_ptexBlack);
 	m_occlusionPrimitive.SetTexture(1, CTexture::s_ptexZTargetScaled);
 	m_occlusionPrimitive.SetSampler(0, samplerState);
@@ -159,7 +159,7 @@ bool ImageSpaceShafts::PrepareShaftGen(CTexture* pDestRT, CTexture* pOcclTex, in
 
 	m_shaftGenPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, occlusionTech, rtFlags);
 	m_shaftGenPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE_A_ZERO);
-	m_shaftGenPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_shaftGenPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuadCentered);
 	m_shaftGenPrimitive.SetTexture(0, pOcclTex);
 	m_shaftGenPrimitive.SetSampler(0, samplerState);
 
@@ -222,7 +222,7 @@ bool ImageSpaceShafts::PreparePrimitives(const SPreparePrimitivesContext& contex
 
 		m_blendPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, blendTech, 0);
 		m_blendPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
-		m_blendPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+		m_blendPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuadCentered);
 		m_blendPrimitive.SetTexture(0, m_pDraftBuffer);
 		m_blendPrimitive.SetSampler(0, m_samplerStateBilinearClamp);
 

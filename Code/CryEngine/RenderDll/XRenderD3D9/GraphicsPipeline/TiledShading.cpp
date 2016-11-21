@@ -270,7 +270,7 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 	CTiledShading* pTiledShading = &pRenderer->GetTiledShading();
 
 	CTexture* pDepthRT = CTexture::s_ptexDepthBufferHalfQuarter;
-	assert(pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY);
+	assert(CRendererCVars::CV_r_VrProjectionType > 0 || (pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY));
 	
 	SDepthTexture depthTarget;
 	depthTarget.nWidth = pDepthRT->GetWidth();
@@ -421,10 +421,16 @@ void CTiledShadingStage::Execute()
 	rd->FX_Commit();
 	rd->FX_PopRenderTarget(0);
 
-	uint32 screenWidth = rd->GetWidth();
-	uint32 screenHeight = rd->GetHeight();
-	uint32 dispatchSizeX = screenWidth / LightTileSizeX + (screenWidth % LightTileSizeX > 0 ? 1 : 0);
-	uint32 dispatchSizeY = screenHeight / LightTileSizeY + (screenHeight % LightTileSizeY > 0 ? 1 : 0);
+	int screenWidth = rd->GetWidth();
+	int screenHeight = rd->GetHeight();
+	int gridWidth = screenWidth;
+	int gridHeight = screenHeight;
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+	
+	uint32 dispatchSizeX = gridWidth / LightTileSizeX + (gridWidth % LightTileSizeX > 0 ? 1 : 0);
+	uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);
 
 	bool bSeparateCullingPass = ExecuteVolumeListGen(dispatchSizeX, dispatchSizeY);
 	
@@ -465,6 +471,8 @@ void CTiledShadingStage::Execute()
 		}
 	}
 #endif
+
+	rtFlags |= CVrProjectionManager::Instance()->GetRTFlags();
 
 	CTexture* texClipVolumeIndex = CTexture::s_ptexVelocity;
 	CTexture* pTexCaustics = pTiledShading->m_bApplyCaustics ? CTexture::s_ptexSceneTargetR11G11B10F[1] : CTexture::s_ptexBlack;
@@ -570,6 +578,12 @@ void CTiledShadingStage::Execute()
 #endif
 		Vec4 ssdoNullParams(0, 0, 0, 0);
 		m_passCullingShading.SetConstant(ssdoParamsName, CRenderer::CV_r_ssdo ? ssdoParams : ssdoNullParams);
+	}
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	{
+		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
+		m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
 	}
 
 	m_passCullingShading.SetDispatchSize(dispatchSizeX, dispatchSizeY, 1);

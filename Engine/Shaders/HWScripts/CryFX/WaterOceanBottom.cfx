@@ -168,6 +168,7 @@ technique General
     ColorWriteEnable = 0;
 
     VertexShader = OceanBottomVS() GeneralVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = OceanBottomPS() GeneralPS;
   }
 }
@@ -182,6 +183,7 @@ technique ZPass
     IgnoreMaterialState = true;
 
     VertexShader = OceanBottomZpassVS() ZVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = OceanBottomZpassPS() ZPS;
   }
 }

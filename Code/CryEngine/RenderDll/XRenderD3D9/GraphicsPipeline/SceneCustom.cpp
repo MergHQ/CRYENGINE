@@ -210,7 +210,7 @@ void CSceneCustomStage::Execute()
 		m_wireframePass.PrepareRenderPassForUse(commandList);
 	
 		CRenderView* pRenderView = pRenderer->GetGraphicsPipeline().GetCurrentRenderView();
-		m_wireframePass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		m_wireframePass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
 		m_wireframePass.SetViewport(viewport);
 	
 		RenderView()->GetDrawer().InitDrawSubmission();

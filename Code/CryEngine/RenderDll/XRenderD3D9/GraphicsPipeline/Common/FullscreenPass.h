@@ -127,5 +127,5 @@ private:
 	buffer_handle_t          m_vertexBuffer; // only required for WPos
 	uint64                   m_prevRTMask;
 
-	CRenderPrimitive m_primitive;
+	CRenderPrimitive         m_primitive;
 };

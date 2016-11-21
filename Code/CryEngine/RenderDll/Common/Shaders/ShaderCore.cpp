@@ -1062,6 +1062,10 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_REVERSE_DEPTH")
 				g_HWSR_MaskBit[HWSR_REVERSE_DEPTH] = gb->m_Mask;
+			else if (gb->m_ParamName == "%_RT_PROJECTION_MULTI_RES")
+				g_HWSR_MaskBit[HWSR_PROJECTION_MULTI_RES] = gb->m_Mask;
+			else if (gb->m_ParamName == "%_RT_PROJECTION_LENS_MATCHED")
+				g_HWSR_MaskBit[HWSR_PROJECTION_LENS_MATCHED] = gb->m_Mask;
 			else
 				assert(0);
 		}

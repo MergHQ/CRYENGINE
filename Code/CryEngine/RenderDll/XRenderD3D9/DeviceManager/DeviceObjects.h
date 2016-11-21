@@ -42,7 +42,7 @@ enum EConstantBufferShaderSlot
 	eConstantBufferShaderSlot_SPI               = 8,
 	eConstantBufferShaderSlot_SkinQuat          = 9,
 	eConstantBufferShaderSlot_SkinQuatPrev      = 10,
-	eConstantBufferShaderSlot_SPIIndex          = 11,
+	eConstantBufferShaderSlot_VrProjection      = 11,
 	eConstantBufferShaderSlot_PerInstance       = 12,
 	eConstantBufferShaderSlot_PerView           = 13,
 
@@ -55,6 +55,7 @@ enum EResourceLayoutSlot
 	EResourceLayoutSlot_PerMaterialRS      = 1,
 	EResourceLayoutSlot_PerInstanceExtraRS = 2,
 	EResourceLayoutSlot_PerPassRS          = 3,
+	EResourceLayoutSlot_VrProjectionCB     = 4,
 
 	EResourceLayoutSlot_Max                = 7
 };
@@ -637,6 +638,7 @@ public:
 	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
 	void SetStencilRef(uint8 stencilRefValue);
 	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
+	void SetModifiedWMode(bool enabled, uint32_t numViewports, const float* pA, const float* pB);
 
 	void Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
@@ -668,6 +670,14 @@ public:
 
 static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
 
+class CDeviceNvidiaCommandInterface : public CDeviceNvidiaCommandInterfaceImpl
+{
+public:
+	void SetModifiedWMode(bool enabled, uint32 numViewports, const float* pA, const float* pB);
+};
+
+static_assert(sizeof(CDeviceNvidiaCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceNvidiaCommandInterface cannot contain data members");
+
 class CDeviceCommandList : public CDeviceCommandListImpl
 {
 	friend class CDeviceObjectFactory;
@@ -677,6 +687,7 @@ public:
 
 	CDeviceGraphicsCommandInterface* GetGraphicsInterface();
 	CDeviceComputeCommandInterface*  GetComputeInterface();
+	CDeviceNvidiaCommandInterface*   GetNvidiaCommandInterface();
 
 	void                             Reset();
 	void                             LockToThread();

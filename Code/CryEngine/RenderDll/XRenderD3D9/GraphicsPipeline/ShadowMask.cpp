@@ -219,12 +219,14 @@ void CShadowMaskStage::Prepare(CRenderView* pRenderView)
 			auto& sliceGenPass = m_maskGenPasses[shadowMaskSlice];
 			auto currentSliceRTV = SResourceView::RenderTargetView(m_pShadowMaskRT->GetDstFormat(), shadowMaskSlice, 1);
 
+			sliceGenPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			sliceGenPass.SetRenderTarget(0, m_pShadowMaskRT, currentSliceRTV.m_Desc.Key);
 			sliceGenPass.SetDepthTarget(&rd->m_DepthBufferOrig);
 			sliceGenPass.SetViewport(viewport);
 			sliceGenPass.ClearPrimitives();
 		}
 
+		m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		m_debugCascadesPass.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);
 		m_debugCascadesPass.SetDepthTarget(&rd->m_DepthBufferOrig);
 		m_debugCascadesPass.SetViewport(viewport);

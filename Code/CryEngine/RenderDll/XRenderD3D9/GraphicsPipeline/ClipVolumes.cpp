@@ -40,6 +40,11 @@ void CClipVolumesStage::Init()
 	m_blendValuesPass.ClearPrimitives();
 	m_volumetricStencilPass.ClearPrimitives();
 
+	m_stencilPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_blendValuesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_volumetricStencilPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_stencilResolvePass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+
 	for (int i = 0; i < MaxDeferredClipVolumes; ++i)
 	{
 		// Stencil pass: two primitives per clip volume, both share the same constant buffer
@@ -227,7 +232,7 @@ void CClipVolumesStage::Prepare(CRenderView* pRenderView)
 				const int stencilTestRef = BIT_STENCIL_INSIDE_CLIPVOLUME + volume.nStencilRef + 1;
 
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
-				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, 0);
+				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, CVrProjectionManager::Instance()->GetRTFlags());
 				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_B | GS_NOCOLMASK_A);
 				primBlend.SetTexture(3, CTexture::s_ptexZTarget);
 				primBlend.SetCullMode(eCULL_Front);

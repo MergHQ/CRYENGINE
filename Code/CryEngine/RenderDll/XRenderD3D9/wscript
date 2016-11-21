@@ -10,8 +10,8 @@ def build(bld):
 	gnm_compiler_version = '"ORBIS/V031"' # Must be quoted
 	additional_defines = [ 'CRY_GNM_SHADER_COMPILER_VERSION=' + gnm_compiler_version ]
 
-	if not os.path.isdir(Path('Code/SDKs/NVAPI')):
-		Logs.warn('[WARNING] NVAPI SDK not found, excluding from the build.')
+	if not os.path.isdir(Path('Code/SDKs/NVIDIA/NVAPI_r386')):
+		Logs.warn('[WARNING] NVAPI SDK v.386 not found, excluding from the build.')
 		additional_defines += ['EXCLUDE_NV_API']
 
 	if not os.path.isdir(Path('Code/SDKs/AMD')):

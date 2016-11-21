@@ -698,7 +698,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		for (int j = 0; j < (int)pTech->m_Passes.Num(); j++)
 		{
 			SShaderPass* pPass = &pTech->m_Passes[j];
-			assert((pPass->m_VShader && pPass->m_PShader) || pPass->m_CShader);
+			//assert((pPass->m_VShader && pPass->m_PShader) || pPass->m_CShader);
 			if (pPass->m_VShader)
 			{
 				AddShaderParamToArray(FXParams, Params, eHWSC_Vertex);

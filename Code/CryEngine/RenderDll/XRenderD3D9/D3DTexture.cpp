@@ -3642,7 +3642,9 @@ void CTexture::GenerateZMaps()
 	}
 
 	if (!s_ptexZTarget)
+	{
 		s_ptexZTarget = CreateRenderTarget("$ZTarget", nWidth, nHeight, ColorF(1.0f, 1.0f, 1.0f, 1.0f), eTT_2D, nFlags, eTFZ);
+	}
 	else
 	{
 		s_ptexZTarget->m_nFlags = nFlags;

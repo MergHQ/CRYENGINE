@@ -353,7 +353,7 @@ pixout OceanIntoPS( v2f IN )
 	float3 viewDirNorm = normalize( IN.viewDir );
 	float viewDirCorrection = 1.0f / dot( viewDirNorm, -CV_CameraFrontVector.xyz );
 
-	float2 baseTC = IN.hPos.xy * CV_ScreenSize.zw * 2.0f;
+	float2 baseTC = MapViewportToRaster(IN.hPos.xy * CV_ScreenSize.zw * 2.0f);
 
 	float sceneDepth = wvGetLinearDepthScaled(baseTC.xy);
 	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -CV_CameraFrontVector.xyz ), 0.0f );
@@ -409,6 +409,7 @@ technique OceanInto
 	pass p0
 	{
 		VertexShader = OceanIntoVS() WaterFogVolume_VS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = OceanIntoPS() WaterFogVolume_PS;
 
 		ZEnable = true;
@@ -428,6 +429,7 @@ technique OceanIntoLowSpec
 	pass p0
 	{
 		VertexShader = OceanIntoVS();
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = WaterVolumeIntoPS();
 
 		ZEnable = true;
@@ -515,6 +517,7 @@ technique OceanOutof
 	pass p0
 	{
 		VertexShader = WaterVolumeOutofVS() WaterFogVolume_VS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = OceanOutofPS() WaterFogVolume_PS;
 
 		ZEnable = false;
@@ -534,6 +537,7 @@ technique OceanOutofLowSpec
 	pass p0
 	{
 		VertexShader = WaterVolumeOutofVS();
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = WaterVolumeOutofPS();
 
 		ZEnable = false;

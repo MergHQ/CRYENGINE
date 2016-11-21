@@ -637,6 +637,8 @@ enum EHWSRMaskBit
 
 	HWSR_REVERSE_DEPTH,
 
+	HWSR_PROJECTION_MULTI_RES,
+	HWSR_PROJECTION_LENS_MATCHED,
 	HWSR_MAX
 };
 
@@ -658,6 +660,7 @@ extern uint64 g_HWSR_MaskBit[HWSR_MAX];
 #define HWSG_NOISE                0x10000
 #define HWSG_PRECACHEPHASE        0x20000
 #define HWSG_FP_EMULATION         0x40000
+#define HWSG_GS_MULTIRES          0x80000
 
 // HWShader per-instance Modificator flags (SHWSInstance::m_MDMask)
 // Vertex shader specific
@@ -705,6 +708,9 @@ public:
 	static struct SD3DShader* s_pCurHS;
 	static struct SD3DShader* s_pCurCS;
 
+	static class CHWShader* s_pCurHWVS;
+	static char *s_GS_MultiRes_NV;
+
 	string                    m_Name;
 	string                    m_NameSourceFX;
 	string                    m_EntryFunc;
@@ -717,7 +723,7 @@ public:
 	uint32                    m_nPreprocessFlags;
 	int                       m_nFrame;
 	int                       m_nFrameLoad;
-	int                       m_Flags;
+	uint32                    m_Flags;
 	uint32                    m_CRC32;
 	uint32                    m_dwShaderType;
 

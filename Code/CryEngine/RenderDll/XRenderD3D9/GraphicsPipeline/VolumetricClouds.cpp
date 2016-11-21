@@ -766,6 +766,8 @@ void CVolumetricCloudsStage::Execute()
 
 				pass.SetState(GS_NODEPTHTEST);
 
+				pass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+
 				pass.SetTexture(0, context.scaledZTarget);
 				pass.SetTexture(1, context.scaledTarget);
 				pass.SetTexture(2, prevMaxTex);
@@ -807,6 +809,8 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetRenderTarget(0, currMinTex);
 
 				pass.SetState(GS_NODEPTHTEST);
+				
+				pass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 				pass.SetTexture(0, context.scaledZTarget);
 				pass.SetTexture(1, m_pDownscaledMinTempTex);
@@ -865,6 +869,8 @@ void CVolumetricCloudsStage::Execute()
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);
+				
+				pass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 				pass.SetTexture(0, CTexture::s_ptexZTarget);
 				pass.SetTexture(1, context.scaledZTarget);
@@ -1127,12 +1133,25 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 
 		pass.SetInlineConstantBuffer(3, m_pRenderCloudConstantBuffer);
 
+		int screenWidth = context.screenWidth;
+		int screenHeight = context.screenHeight;
+		int gridWidth = screenWidth;
+		int gridHeight = screenHeight;
+
+		if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		{
+			CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+
+			auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
+			pass.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
+		}
+		
 		// Tile sizes defined in [numthreads()] in shader
 		const uint32 nTileSizeX = 8;
 		const uint32 nTileSizeY = 8;
 		const uint32 nTileSizeZ = 1;
-		const uint32 dispatchSizeX = context.screenWidth / nTileSizeX + (context.screenWidth % nTileSizeX > 0 ? 1 : 0);
-		const uint32 dispatchSizeY = context.screenHeight / nTileSizeY + (context.screenHeight % nTileSizeY > 0 ? 1 : 0);
+		const uint32 dispatchSizeX = gridWidth / nTileSizeX + (gridWidth % nTileSizeX > 0 ? 1 : 0);
+		const uint32 dispatchSizeY = gridHeight / nTileSizeY + (gridHeight % nTileSizeY > 0 ? 1 : 0);
 		const uint32 dispatchSizeZ = 1;
 
 		pass.SetDispatchSize(dispatchSizeX, dispatchSizeY, dispatchSizeZ);
@@ -1233,12 +1252,25 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 
 	pass.SetInlineConstantBuffer(3, m_pRenderCloudConstantBuffer);
 
+	int screenWidth = context.screenWidth;
+	int screenHeight = context.screenHeight;
+	int gridWidth = screenWidth;
+	int gridHeight = screenHeight;
+
+	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	{
+		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+
+		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
+		pass.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
+	}
+
 	// Tile sizes defined in [numthreads()] in shader
 	const uint32 nTileSizeX = 8;
 	const uint32 nTileSizeY = 8;
 	const uint32 nTileSizeZ = 1;
-	const uint32 dispatchSizeX = context.screenWidth / nTileSizeX + (context.screenWidth % nTileSizeX > 0 ? 1 : 0);
-	const uint32 dispatchSizeY = context.screenHeight / nTileSizeY + (context.screenHeight % nTileSizeY > 0 ? 1 : 0);
+	const uint32 dispatchSizeX = gridWidth / nTileSizeX + (gridWidth % nTileSizeX > 0 ? 1 : 0);
+	const uint32 dispatchSizeY = gridHeight / nTileSizeY + (gridHeight % nTileSizeY > 0 ? 1 : 0);
 	const uint32 dispatchSizeZ = 1;
 
 	pass.SetDispatchSize(dispatchSizeX, dispatchSizeY, dispatchSizeZ);

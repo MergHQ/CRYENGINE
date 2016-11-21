@@ -47,6 +47,7 @@ struct SGraphicsPipelinePassContext;
 #include "D3DRenderAuxGeom.h"
 #include "D3DColorGradingController.h"
 #include "D3DStereo.h"
+#include "D3DMultiResRendering.h"
 #include "ShadowTextureGroupManager.h"		// CShadowTextureGroupManager
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "D3DDeferredShading.h"

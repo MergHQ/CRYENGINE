@@ -191,7 +191,7 @@ void CSceneForwardStage::Execute_Opaque()
 		auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
 		m_forwardOpaquePass.PrepareRenderPassForUse(commandList);
 	
-		m_forwardOpaquePass.SetFlags(CSceneRenderPass::ePassFlags_None);
+		m_forwardOpaquePass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
 		m_forwardOpaquePass.SetViewport(viewport);
 
 		CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();

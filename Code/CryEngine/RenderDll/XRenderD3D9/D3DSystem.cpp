@@ -62,12 +62,8 @@ LINK_THIRD_PARTY_LIBRARY("SDKs/AMD/AGS Lib/lib/Win32/static/amd_ags.lib")
 	#endif
 
 	#if defined(USE_NV_API)
-		#include <NVAPI/nvapi.h>
-		#if CRY_PLATFORM_64BIT
-LINK_THIRD_PARTY_LIBRARY("SDKs/NVAPI/amd64/nvapi64.lib")
-		#else
-LINK_THIRD_PARTY_LIBRARY("SDKs/NVAPI/x86/nvapi.lib")
-		#endif
+		#include NV_API_HEADER
+		LINK_THIRD_PARTY_LIBRARY(NV_API_LIB)
 	#endif
 
 	#if defined(USE_AMD_EXT)
@@ -964,6 +960,8 @@ void SDepthTexture::Release(bool bReleaseTexture)
 
 void CD3D9Renderer::ShutDownFast()
 {
+	CVrProjectionManager::Reset();
+
 	// Flush RT command buffer
 	ForceFlushRTCommands();
 	CHWShader::mfFlushPendedShadersWait(-1);
@@ -987,6 +985,8 @@ void CD3D9Renderer::ShutDownFast()
 
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
+	CVrProjectionManager::Reset();
+
 	SAFE_RELEASE(m_pZTexture);
 	SAFE_RELEASE(m_pZTextureMSAA);
 	SAFE_RELEASE(m_pNativeZTexture);
@@ -1629,6 +1629,8 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			assert(0);
 		iLog->Log(" Shader model usage: '%s'", str);
 
+		// Needs to happen post D3D device creation
+		CVrProjectionManager::Instance()->Init(this);
 	}
 	else
 	{

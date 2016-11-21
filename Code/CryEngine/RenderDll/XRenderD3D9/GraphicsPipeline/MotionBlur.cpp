@@ -178,6 +178,7 @@ void CMotionBlurStage::Execute()
 
 			static CCryNameTSCRC techMotionBlur("MotionBlur");
 			m_passMotionBlur.SetTechnique(pShader, techMotionBlur, rtMask);
+			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
 			m_passMotionBlur.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
 			m_passMotionBlur.SetTextureSamplerPair(0, bGatherDofEnabled ? CTexture::s_ptexSceneTargetR11G11B10F[0] : CTexture::s_ptexHDRTargetPrev, m_samplerLinear);

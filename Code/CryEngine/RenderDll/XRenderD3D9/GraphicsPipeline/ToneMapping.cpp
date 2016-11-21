@@ -60,8 +60,9 @@ void CToneMappingStage::Execute()
 
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);  // TODO
+		m_passToneMapping.SetRenderTarget(0, CTexture::s_ptexSceneDiffuse);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
+		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 		CTexture* pBloomTex = bBloomEnabled ? CTexture::s_ptexHDRFinalBloom : CTexture::s_ptexBlack;
 

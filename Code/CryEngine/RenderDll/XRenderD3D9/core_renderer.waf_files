@@ -23,6 +23,7 @@
 			"D3DREBreakableGlassBuffer.cpp",
 			"D3D_SVO.cpp",
 			"D3DRECloud.cpp",
+			"D3DMultiResRendering.cpp",
 			"D3DOsvr.cpp"
 		],
 		"Header Files":
@@ -117,6 +118,7 @@
 			"PipelineProfiler.h",
 			"resource.h",
 			"StatoscopeRenderStats.h",
+			"D3DMultiResRendering.h",
 			"DeviceInfo.inl",
 			"D3DOsvr.h",
 			"CompiledRenderObject.h"

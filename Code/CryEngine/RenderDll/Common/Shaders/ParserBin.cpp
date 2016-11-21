@@ -719,6 +719,8 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(GatherBlue);
 	FX_REGISTER_TOKEN(GatherAlpha);
 
+	FX_REGISTER_TOKEN($AutoGS_MultiRes);
+
 	FXMacroItor it;
 	for (it = sStaticMacros.begin(); it != sStaticMacros.end(); it++)
 	{
@@ -1634,7 +1636,7 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 		case eT_if_2:
 		case eT_ifdef_2:
 		case eT_ifndef_2:
-			if ((nPass == 0 && !bFirst) || (nPass == 1 && bFirst))
+			if (nPass != 2 && ((nPass == 0 && !bFirst) || (nPass == 1 && bFirst)))
 			{
 				if (nPass == 1)
 				{
@@ -2171,22 +2173,48 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 				// DX11 stuff
 				uint32 nCur = m_CurFrame.m_nCurToken + 1;
 				uint32 nCount = 0;
-				while (nFnRet == eT_br_sq_1)
+
+				while (true)
 				{
-					nCount++;
-					nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
-					if (nLastTok > 0)
+					switch (nFnRet)
 					{
+					case eT_br_sq_1: 
+						nCount++;
+						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
+						if (nLastTok < 0)
+						{
+							Warning("Unmatched [");
+							assert(0);
+							nLastTok = nCur;
+						}
 						nLastTok++;
 						nFnRet = pTokens[nLastTok];
-						if (nFnRet == eT_skip)
-						{
-							pTokens[nLastTok + 1] = eT_skip;
-							nLastTok += 2;
-							nFnRet = pTokens[nLastTok];
-						}
 						nCur = nLastTok + 1;
+						continue;
+
+					case eT_skip_1:
+						nCount++;
+						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_skip_2);
+						if (nLastTok < 0)
+						{
+							Warning("Unmatched #skip_(");
+							assert(0);
+							nLastTok = nCur;
+						}
+						nLastTok++;
+						nFnRet = pTokens[nLastTok];
+						nCur = nLastTok + 1;
+						continue;
+
+					case eT_skip:
+						pTokens[nLastTok + 1] = eT_skip;
+						nLastTok += 2;
+						nFnRet = pTokens[nLastTok];
+						nCur = nLastTok + 1;
+						continue;
 					}
+
+					break;
 				}
 				nFnName = pTokens[nLastTok + 1];
 				//const char *szFn = GetString(nFnName);

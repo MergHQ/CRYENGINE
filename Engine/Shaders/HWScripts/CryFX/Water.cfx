@@ -978,6 +978,11 @@ void SunSpecular(in v2f_hs IN, half fNdotL, half3 vNormal, half3 vView, inout ha
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+float2 MapScreenTC(float2 tc, float2 maxTC)
+{
+	return ClampScreenTC(MapViewportToRaster(tc), maxTC);
+}
+
 pixout WaterPS(v2f_hs IN)
 {
 	pixout OUT = (pixout) 0;
@@ -1005,8 +1010,10 @@ pixout WaterPS(v2f_hs IN)
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Water edge and foam softness
 
+	float2 sampleTC = MapViewportToRaster(IN.baseTC.xy);
+
 	//float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
-	float sceneDepth = wvGetLinearDepthScaled(screenTC.xy);
+	float sceneDepth = wvGetLinearDepthScaled(sampleTC);
 	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1048,12 +1055,12 @@ pixout WaterPS(v2f_hs IN)
 
 	#if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
 		float3 depthRefr = float3(
-			wvGetLinearDepthScaled(ClampScreenTC(refrNewst + refrTC.xy * 1.025, CV_HPosScale.xy)),
-			wvGetLinearDepthScaled(ClampScreenTC(refrNewst + refrTC.xy, CV_HPosScale.xy)),
-			wvGetLinearDepthScaled(ClampScreenTC(refrNewst + refrTC.xy * 0.985, CV_HPosScale.xy))
+			wvGetLinearDepthScaled(MapScreenTC(refrNewst + refrTC.xy * 1.025, CV_HPosScale.xy)),
+			wvGetLinearDepthScaled(MapScreenTC(refrNewst + refrTC.xy, CV_HPosScale.xy)),
+			wvGetLinearDepthScaled(MapScreenTC(refrNewst + refrTC.xy * 0.985, CV_HPosScale.xy))
 		);
 	#else
-		float3 depthRefr = float3(wvGetLinearDepthScaled(ClampScreenTC(refrNewst + refrTC.xy, CV_HPosScale.xy)).xxx);
+		float3 depthRefr = float3(wvGetLinearDepthScaled(MapScreenTC(refrNewst + refrTC.xy, CV_HPosScale.xy)).xxx);
 	#endif
 
 	//if( GetShaderQuality() > QUALITY_LOW )
@@ -1067,11 +1074,11 @@ pixout WaterPS(v2f_hs IN)
 
 
 	#if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
-		half3 refractColor = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, ClampScreenTC(refrNewst + refrTC * fRefractionMask.x *1.025, CV_HPosScale.xy)) ).xyz;
-		refractColor.y = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, ClampScreenTC(refrNewst + refrTC * fRefractionMask.y, CV_HPosScale.xy) ) ).y;
-		refractColor.z = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, ClampScreenTC(refrNewst + refrTC * fRefractionMask.z *0.985, CV_HPosScale.xy)) ).z;
+		half3 refractColor = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, MapScreenTC(refrNewst + refrTC * fRefractionMask.x *1.025, CV_HPosScale.xy)) ).xyz;
+		refractColor.y = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, MapScreenTC(refrNewst + refrTC * fRefractionMask.y, CV_HPosScale.xy) ) ).y;
+		refractColor.z = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, MapScreenTC(refrNewst + refrTC * fRefractionMask.z *0.985, CV_HPosScale.xy)) ).z;
 	#else
-		half3 refractColor = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, ClampScreenTC(refrNewst + refrTC * fRefractionMask.x, CV_HPosScale.xy)) ).xyz;
+		half3 refractColor = DecodeHDRBuffer( GetTexture2D(refractionTex, ssMaterialTrilinearClamp, MapScreenTC(refrNewst + refrTC * fRefractionMask.x, CV_HPosScale.xy)) ).xyz;
 	#endif
 	refractColor /= PS_HDR_RANGE_ADAPT_MAX;
 
@@ -1203,6 +1210,7 @@ technique Water
 		HullShader   = WaterHS() WaterSurfaceHS;
 		DomainShader = WaterDS() WaterSurfaceDS;
 #endif
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = WaterPS() WaterSurfacePS;
 	}
 }

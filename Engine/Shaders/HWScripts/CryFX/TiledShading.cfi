@@ -384,6 +384,7 @@ groupshared uint sTileLightIndices[TILED_SHADING_MAX_NUM_LIGHTS];
 groupshared uint sTileMinZ;
 groupshared uint sTileMaxZ;
 groupshared uint sTileDepthMask;
+groupshared uint sTileWithinProjection;
 groupshared uint sTileLightMask[8];
 groupshared uint sTileLightMaskCounts[8];
 
@@ -396,6 +397,16 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	const uint groupThreadIdx = GroupThreadID.y * TILED_SHADING_TILE_SIZE_X + GroupThreadID.x;
 	const uint2 pixelCoord = GroupID.xy * uint2(TILED_SHADING_TILE_SIZE_X, TILED_SHADING_TILE_SIZE_Y) + GroupThreadID.xy;
 	
+	// Barycentric interpolation for reconstructing position
+	float2 pixelUV = float2( (pixelCoord.x + 0.5) * ScreenSize.z, (pixelCoord.y + 0.5) * ScreenSize.w );
+	float2 linearUV = MapRasterToViewport(pixelUV);
+	bool bWithinProjection = all(linearUV.xy > 0) && all(linearUV.xy < 1);
+
+	// Find out if any threads in the tile are within the projection
+	// The shared flag is set to 1 after a barrier, merged with other barrier code below
+	if(groupThreadIdx == 0)
+		sTileWithinProjection = 0;
+
 #if !%_RT_SAMPLE1	
 	// Initialize shared memory
 	if (groupThreadIdx == 0)
@@ -420,7 +431,13 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	InterlockedMin( sTileMinZ, asuint( minZSample ) );
 	InterlockedMax( sTileMaxZ, asuint( maxZSample ) );
 
+	if(bWithinProjection)
+		sTileWithinProjection = 1;
+
 	GroupMemoryBarrierWithGroupSync();
+	
+	if(sTileWithinProjection == 0)
+		return;
 	
 	float tileMinZ = asfloat( sTileMinZ );
 	float tileMaxZ = asfloat( sTileMaxZ );
@@ -610,8 +627,15 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 			lightIndex = GetNextTileLightIndex(sTileLightMask[groupThreadIdx], lightIndex);
 		}
 	}
+	
+	if(bWithinProjection)
+		sTileWithinProjection = 1;
+
 	GroupMemoryBarrierWithGroupSync();
 	
+	if(sTileWithinProjection == 0)
+		return;
+
 	bool emptyTile = sTileLightCount == 0;
 	float linearZ = DepthRT[pixelCoord].r;
 #endif
@@ -648,8 +672,6 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	float3 surfSpecCol = attribs.Reflectance;
 	float surfGloss = attribs.Smoothness;
 
-	// Barycentric interpolation for reconstructing position
-	float2 pixelUV = float2( pixelCoord.x * ScreenSize.z, pixelCoord.y * ScreenSize.w );
 	float3 position = ReconstructWorldPos(pixelCoord, linearZ, true);
 	
 	float3 viewVec = normalize( -position );

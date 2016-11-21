@@ -552,6 +552,16 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CDeviceNvidiaCommandInterfaceImpl* CDeviceCommandListImpl::GetNvidiaCommandInterfaceImpl()
+{
+	if (gcpRendD3D->m_bVendorLibInitialized && (gRenDev->GetFeatures() & RFT_HW_NVIDIA))
+	{
+		return reinterpret_cast<CDeviceNvidiaCommandInterfaceImpl*>(this);
+	}
+
+	return nullptr;
+}
+
 void CDeviceCommandListImpl::SetProfilerMarker(const char* label)
 {
 #if defined(ENABLE_FRAME_PROFILER_LABELS)
@@ -1192,6 +1202,13 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT 
 #endif
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	rd->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CDeviceNvidiaCommandInterfaceImpl::SetModifiedWModeImpl(bool enabled, uint32 numViewports, const float* pA, const float* pB)
+{
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	rd->GetDeviceContext().SetModifiedWMode(enabled, numViewports, pA, pB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

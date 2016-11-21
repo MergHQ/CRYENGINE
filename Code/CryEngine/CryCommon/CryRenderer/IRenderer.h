@@ -99,6 +99,7 @@ struct IAsyncTextureCompileListener;
 struct IClipVolume;
 struct SClipVolumeBlendInfo;
 class IImageFile;
+class CVrProjectionManager;
 
 //////////////////////////////////////////////////////////////////////
 struct IScaleformPlayback;

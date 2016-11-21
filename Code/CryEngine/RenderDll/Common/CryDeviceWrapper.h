@@ -12,6 +12,10 @@
 #if !defined(CRY_DEVICE_WRAPPER_H_)
 	#define CRY_DEVICE_WRAPPER_H_
 
+#if defined(__d3d11_h__) && defined(USE_NV_API)
+	#include NV_API_HEADER
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // Forward Declarations
 	#if !defined(OPENGL) && !CRY_PLATFORM_ORBIS && !defined(CRY_USE_DX12_DEVIRTUALIZED)
@@ -1140,6 +1144,10 @@ public:
 	void    ExecuteCommandList(ID3D11CommandList* pCommandList, BOOL RestoreContextState);
 	HRESULT FinishCommandList(BOOL RestoreDeferredContextState, ID3D11CommandList** ppCommandList);
 	#endif
+
+	// Wrapper for NvAPI_D3D_SetModifiedWMode
+	void	SetModifiedWMode(bool enabled, uint32_t numViewports, const float* pA, const float* pB);
+	void	QueryNvidiaProjectionFeatureSupport(bool& bMultiResSupported, bool& bLensMatchedSupported);
 
 	void                      ClearState();
 	void                      Flush();
@@ -3472,6 +3480,84 @@ inline HRESULT CCryDeviceContextWrapper::FinishCommandList(BOOL RestoreDeferredC
 }
 
 	#endif
+
+///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::SetModifiedWMode(bool enabled, uint32_t numViewports, const float* pA, const float* pB)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+
+#if defined(USE_NV_API)
+
+	NV_MODIFIED_W_PARAMS modifiedWParams = { };
+	modifiedWParams.version = NV_MODIFIED_W_PARAMS_VER;
+
+	if (enabled && numViewports)
+	{
+		assert(pA != nullptr && pB != nullptr);
+
+		modifiedWParams.numEntries = numViewports;
+
+		for (uint32_t vp = 0; vp < numViewports; vp++)
+		{
+			modifiedWParams.modifiedWCoefficients[vp].fA = pA[vp];
+			modifiedWParams.modifiedWCoefficients[vp].fB = pB[vp];
+		}
+	}
+	else
+	{
+		modifiedWParams.numEntries = 0;
+	}
+
+	NvAPI_D3D_SetModifiedWMode(m_pDeviceContext, &modifiedWParams);
+
+#endif
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::QueryNvidiaProjectionFeatureSupport(bool& bMultiResSupported, bool& bLensMatchedSupported)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+
+	bMultiResSupported = false;
+	bLensMatchedSupported = false;
+
+#if defined(USE_NV_API)
+	
+	if (NvAPI_Initialize() != NVAPI_OK)
+		return;
+
+	ID3D11Device* pDevice = nullptr;
+	m_pDeviceContext->GetDevice(&pDevice);
+
+	NvAPI_D3D_RegisterDevice(pDevice);
+
+#include "NvidiaFastGeometryShaderTest.h"
+
+	NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = {};
+	FastGSArgs.version = NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER;
+	FastGSArgs.flags = NV_FASTGS_USE_VIEWPORT_MASK;
+
+	ID3D11GeometryShader* pShader = nullptr;
+	if (NvAPI_D3D11_CreateFastGeometryShaderExplicit(pDevice, g_main, sizeof(g_main), nullptr, &FastGSArgs, &pShader) == NVAPI_OK && pShader != nullptr)
+	{
+		bMultiResSupported = true;
+		pShader->Release();
+
+		NV_QUERY_MODIFIED_W_SUPPORT_PARAMS ModifiedWParams = {};
+		ModifiedWParams.version = NV_QUERY_MODIFIED_W_SUPPORT_PARAMS_VER;
+		if (NvAPI_D3D_QueryModifiedWSupport(pDevice, &ModifiedWParams) == NVAPI_OK)
+		{
+			bLensMatchedSupported = ModifiedWParams.bModifiedWSupported != 0;
+		}
+	}
+
+	pDevice->Release();
+
+#endif
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 inline void CCryDeviceContextWrapper::ClearState()

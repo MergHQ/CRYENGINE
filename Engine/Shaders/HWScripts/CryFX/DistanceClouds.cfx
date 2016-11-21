@@ -243,7 +243,6 @@ pixout DistanceCloudsPS(v2f IN)
 	float3 toSun = normalize( IN.toSun.xyz );
 	float2 sampleDir = toSun.xy * StepSize;
 	float2 uv = IN.baseTC.xy;
-
 	float opacity = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, uv ).x;
 	float density = 0;
 
@@ -341,7 +340,6 @@ pixout DistanceCloudsAdvancedPS(v2f IN)
 	return OUT;
 }
 
-
 v2f_simple DistanceCloudsSimpleVS(a2v IN)
 {
 	v2f_simple OUT = (v2f_simple)0;
@@ -401,11 +399,14 @@ technique General
 		DestBlend = InvSrcAlpha;
 #if !%SIMPLE
 		#if %ADVANCED
+			GeometryShader = $AutoGS_MultiRes();
 			PixelShader = DistanceCloudsAdvancedPS() DistanceCloudsPS;
 		#else
+			GeometryShader = $AutoGS_MultiRes();
 			PixelShader = DistanceCloudsPS() DistanceCloudsPS;
 		#endif
 #else
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = DistanceCloudsSimplePS() DistanceCloudsPS;
 #endif
 	}

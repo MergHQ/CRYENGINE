@@ -821,3 +821,67 @@ float2 ComputeCloudShadowMapUV(in float3 worldPos)
 #endif
 	return ComputeCloudShadowMapUV(worldPos, sunDir);
 }
+
+//////////////////////////// ///////////////////////////////////////////////////
+// Helper functions for remapping between coordinate spaces:
+//
+// Raster Space:   Normalized rasterizer output coordinate system, i.e. output rendertarget
+//                 top left      = ( 0,  0)    and     bottom right     = (1, 1)
+// Viewport Space: Normalized main render viewport coordinate system (full screen viewport for multires shading)
+//                  top left     = ( 0,  0)    and     bottom right     = (1, 1)
+// Clip Space:     Main render camera clip space
+//                 top left near = (-1,  1, 0) and     bottom right far = (1,-1, 1)
+//
+// Unless otherwise noted, coordinates are assumed to be normalized to (0, 1) range [(-1, 1) for clip space x and y axis]
+// Unnormalized coordinates are in assumed to be in pixels.
+
+#if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
+	#include "nv_vr.cfi"
+#endif
+
+float2 MapRasterToViewport(float2 normalizedRasterPos)
+{
+	#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+		return normalizedRasterPos;
+	#else
+		return NV_VR_MapTexCoordToUV(normalizedRasterPos);
+	#endif
+}
+
+float2 MapViewportToRaster(float2 normalizedViewportPos, bool bOtherEye = false)
+{
+	#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+		return normalizedViewportPos;
+	#else
+		return bOtherEye 
+			? NV_VR_MapUVToTexCoord_OtherEye(normalizedViewportPos) 
+			: NV_VR_MapUVToTexCoord(normalizedViewportPos);
+	#endif
+}
+
+float2 MapViewportToUnnormalizedRaster(float2 normalizedViewportPos)
+{
+	#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+		return normalizedViewportPos;
+	#else
+		return NV_VR_MapUVToWindow(NvGetProjectionData(), normalizedViewportPos);
+	#endif
+}
+
+float4 MapUnnormalizedRasterToClip(float2 unnormalizedRasterPos, float depth, bool bPerformPerspectiveDivision = true)
+{
+	#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+		return float4(unnormalizedRasterPos, depth, 1.0);
+	#else
+		return NV_VR_MapWindowToClip(NvGetProjectionData(), float3(unnormalizedRasterPos, depth), bPerformPerspectiveDivision);
+	#endif
+}
+
+float2 MapUnnormalizedRasterToViewport(float2 unnormalizedRasterPos)
+{
+	#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+		return unnormalizedRasterPos;
+	#else
+		return NV_VR_MapWindowToUV(NvGetProjectionData(), unnormalizedRasterPos);
+	#endif
+}

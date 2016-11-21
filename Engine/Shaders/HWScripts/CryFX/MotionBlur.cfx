@@ -715,12 +715,14 @@ float4 MotionBlurPS(vtxOut IN) : COLOR0
 	float rndValue = NRand3(IN.baseTC.xy).x - 0.5;
 	float2 tileOffset = tileBorderDist * rndValue;
 	
-	float3 maxVel = tex2Dlod(_tex2, float4(IN.baseTC.xy + tileOffset * vMotionBlurParams.xy, 0, 0));
+	float2 screenTC = MapViewportToRaster(IN.baseTC.xy);
+
+	float3 maxVel = tex2Dlod(_tex2, float4(screenTC.xy + tileOffset * vMotionBlurParams.xy, 0, 0));
 	maxVel.xy = DecodeMotionVector(maxVel.xy);
 	const float2 blurStep = maxVel.xy * weightStep;
  
- 	const float2 centerLenDepth = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(IN.baseTC.xy, 0, 0)).zw);
-	const float4 sampleCenter = tex2Dlod(_tex0, float4(IN.baseTC.xy, 0, 0));
+ 	const float2 centerLenDepth = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(screenTC.xy, 0, 0)).zw);
+	const float4 sampleCenter = tex2Dlod(_tex0, float4(screenTC.xy, 0, 0));
 	
 	// Early out when no motion (disabled to have more predictable costs)
 	//if (length(maxVel.xy) < 0.0001f) return float4(sampleCenter.rgb, 1.0f);
@@ -731,8 +733,11 @@ float4 MotionBlurPS(vtxOut IN) : COLOR0
 	for (int s = 0; s < numSamples/2; ++s)
 	{
 		const float curStep = (s + samplingDither);
-		const float2 tc0 = IN.baseTC.xy + blurStep * curStep;
-		const float2 tc1 = IN.baseTC.xy - blurStep * curStep;
+		float2 tc0 = IN.baseTC.xy + blurStep * curStep;
+		float2 tc1 = IN.baseTC.xy - blurStep * curStep;
+
+		tc0 = MapViewportToRaster(tc0);
+		tc1 = MapViewportToRaster(tc1);
 	
 		float2 lenDepth0 = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(tc0.xy, 0, 0)).zw);
 		float2 lenDepth1 = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(tc1.xy, 0, 0)).zw);
@@ -757,6 +762,7 @@ technique MotionBlur
   pass p0
   {
     VertexShader = FullscreenTriVS() PostMotionBlurVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = MotionBlurPS() PostMotionBlurPS;
     CullMode = None;        
   }

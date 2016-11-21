@@ -5,6 +5,8 @@
 #if defined(CRY_USE_DX12)
 class CDeviceGraphicsCommandInterfaceImpl;
 class CDeviceComputeCommandInterfaceImpl;
+class CDeviceNvidiaCommandInterfaceImpl;
+
 struct SEmpty {};
 
 struct SSharedState
@@ -20,14 +22,19 @@ struct SCustomGraphicsState
 class CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SEmpty>
 {
 public:
-	ILINE CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
+	inline CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
 	{
 		return reinterpret_cast<CDeviceGraphicsCommandInterfaceImpl*>(this);
 	}
 
-	ILINE CDeviceComputeCommandInterfaceImpl* GetComputeInterfaceImpl()
+	inline CDeviceComputeCommandInterfaceImpl* GetComputeInterfaceImpl()
 	{
 		return reinterpret_cast<CDeviceComputeCommandInterfaceImpl*>(this);
+	}
+
+	inline CDeviceNvidiaCommandInterfaceImpl* GetNvidiaCommandInterfaceImpl()
+	{
+		return nullptr;
 	}
 
 	void SetProfilerMarker(const char* label);
@@ -93,6 +100,10 @@ protected:
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+};
+
+class CDeviceNvidiaCommandInterfaceImpl : public CDeviceCommandListImpl
+{
 };
 
 #endif

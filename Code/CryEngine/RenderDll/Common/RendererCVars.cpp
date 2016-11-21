@@ -368,6 +368,9 @@ float CRendererCVars::CV_r_maxSuitPulseSpeedMultiplier;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_customvisions);
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugLayerEffect);
+AllocateConstIntCVar(CRendererCVars, CV_r_VrProjectionType);
+AllocateConstIntCVar(CRendererCVars, CV_r_VrProjectionPreset);
+AllocateConstIntCVar(CRendererCVars, CV_r_stereoMirrorProjection);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_snow);
 AllocateConstIntCVar(CRendererCVars, CV_r_snow_halfres);
@@ -1603,6 +1606,26 @@ void CRendererCVars::InitCVars()
 	                    "Enables debug mode (independent from game code) for layer effects\n"
 	                    "Usage: r_DebugLayerEffect [0/1/2/3/etc]\n"
 	                    "Default is 0 (disabled). 1: 1st layer mode, etc");
+
+	DefineConstIntCVar3("r_VrProjectionType", CV_r_VrProjectionType, 0, VF_REQUIRE_APP_RESTART,
+	                    "Selects which modified projection to use for rendering\n"
+	                    "Usage: r_VrProjectionType [0/1/2]\n"
+	                    "0: none/planar (default)\n"
+	                    "1: Nvidia Multi-Res Shading\n"
+	                    "2: NVidia Lens-Matched Shading");
+	
+	DefineConstIntCVar3("r_VrProjectionPreset", CV_r_VrProjectionPreset, 0, VF_NULL,
+	                    "Selects the quality preset for the modified projection\n"
+	                    "Usage: r_VrProjectionPreset [0..8]\n"
+	                    "0: full-resolution preset, can be used for quality testing\n"
+	                    "1,2: desktop high and low quality presets\n"
+	                    "3..5: Oculus Rift high..low quality presets\n"
+	                    "6..8: HTC Vive high..low quality presets");
+
+	DefineConstIntCVar3("r_stereoMirrorProjection", CV_r_stereoMirrorProjection, 1, VF_NULL,
+	                    "Enables mirroring of MRS or LMS projection for the right eye\n"
+	                    "Usage: r_LensMatchedRendering [0/1]\n"
+	                    "Default is 1 (enabled).");
 
 	DefineConstIntCVar3("r_Snow", CV_r_snow, 2, VF_NULL,
 	                    "Enables snow rendering\n"

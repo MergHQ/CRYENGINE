@@ -64,7 +64,6 @@ cbuffer CBCloudShadows : register(b0)
 	} c_CloudShadowConstants;
 };
 
-
 /////////////////////////////
 // structs
 
@@ -274,10 +273,13 @@ half CalcShadow(float4 vShPos, float2 vNoisePos, const bool bContactHardening)
 }
 
 ////////////////////////////////////////////////////////////
+struct vtxOutShadowMaskVolume { float4 HPosition : POSITION; };
 
-float4 ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
+vtxOutShadowMaskVolume ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
 {
-	return mul(float4(inPosition, 1.0), c_ShadowMaskConstants.unitMeshTransform);
+	vtxOutShadowMaskVolume OUT = (vtxOutShadowMaskVolume)0;
+	OUT.HPosition = mul(float4(inPosition, 1.0), c_ShadowMaskConstants.unitMeshTransform);
+	return OUT;
 }
 
 ///////////////// shadows pixel shader //////////////////
@@ -288,7 +290,14 @@ pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
   pixout_cl OUT;
 
   float SceneDepth = sceneDepthTexture.Load(int3(WPos.xy, 0)).x;
+  
+  float2 LinearPos = WPos.xy;
+#if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
+  LinearPos = MapUnnormalizedRasterToViewport(WPos.xy) * NvGetProjectionData().TextureSize;
+  float4 P0 = CalcHomogeneousPos(SceneDepth, LinearPos);
+#else
   float4 P0 = CalcHomogeneousPos(SceneDepth, WPos.xy);
+#endif
   
   float2 NoiseP = mul(c_ShadowMaskConstants.NoiseProjection, P0).xy;
   
@@ -307,7 +316,7 @@ pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 
   //gsm fading
 	half2 fDist = 2.0*abs(P0.xy-half2(0.5,0.5));
-  half fFadeF = 1.0 - (c_ShadowMaskConstants.fShadowFadingDist.x * pow(max(fDist.x,fDist.y),8));
+	half fFadeF = 1.0 - (c_ShadowMaskConstants.fShadowFadingDist.x * pow(max(fDist.x,fDist.y),8));
 
 #if %_RT_SAMPLE2
 	// Apply sun SS shadows
@@ -323,7 +332,7 @@ pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 
 	if(c_ShadowMaskConstants.BlendTexGen[3][3] != 0)// blend inwards
 	{
-		float4 pBlendVP = CalcHomogeneousBlendPos(SceneDepth, WPos.xy);
+		float4 pBlendVP = CalcHomogeneousBlendPos(SceneDepth, LinearPos);
 		OUT.Color *= BlendVP(pBlendVP.xyz, false);
 	}
 
@@ -393,6 +402,8 @@ technique DeferredShadowPass
   {
     VertexShader = StencilCullVS() ShadowMaskGenVS;
     
+    GeometryShader = $AutoGS_MultiRes();
+
     ZEnable = false;
     ZWriteEnable = false;
     CullMode = Back;
@@ -405,6 +416,7 @@ technique DeferredShadowPass
   {
     VertexShader = FrustumVolumeVS() ShadowMaskGenVS;
     
+    GeometryShader = $AutoGS_MultiRes();
     ZEnable = false;
     ZWriteEnable = false;
     CullMode = Back;
@@ -432,6 +444,7 @@ technique ShadowMask
   pass p0
   {
     VertexShader = FullscreenTriVS()  ShadowMaskGenVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader  = DeferredShadowPS() ShadowMaskGenPS;
   }
 }
@@ -441,6 +454,7 @@ technique ShadowMaskVolume
   pass p0
   {
     VertexShader = ShadowMaskVolumeVS() ShadowMaskGenVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader  = DeferredShadowPS()   ShadowMaskGenPS;
   }
 }
@@ -450,6 +464,7 @@ technique CloudShadow
   pass p0
   {
     VertexShader = FullscreenTriVS() ShadowMaskGenVS;
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader  = CloudsShadowPS()  ShadowMaskGenPS;
   }
 }

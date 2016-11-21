@@ -204,6 +204,16 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->PrepareRenderTargetsForUse(targetCount, m_pColorTargets, m_pDepthTarget);
 	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
+
+	if (m_passFlags & ePassFlags_VrProjectionPass)
+	{
+		if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		{
+			// we don't know the bNearest flag here, so just prepare for both cases
+			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, GetViewport(false));
+			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, GetViewport(true));
+		}
+	}
 }
 
 void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
@@ -221,13 +231,27 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 			break;
 	}
 
+	D3D11_VIEWPORT viewport = GetViewport(bNearest);
+	bool bViewportSet = false;
+
 	commandList.Reset();
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->BeginProfilerEvent(m_szLabel);
 	pCommandInterface->SetRenderTargets(targetCount, m_pColorTargets, m_pDepthTarget);
-	pCommandInterface->SetViewports(1, &GetViewport(bNearest));
-	pCommandInterface->SetScissorRects(1, &m_scissorRect);
+
+	if (m_passFlags & ePassFlags_VrProjectionPass)
+	{
+		bViewportSet = CVrProjectionManager::Instance()->SetRenderingState(commandList, viewport,
+			(m_passFlags & ePassFlags_UseVrProjectionState) != 0, (m_passFlags & ePassFlags_RequireVrProjectionConstants) != 0);
+	}
+	
+	if (!bViewportSet)
+	{
+		pCommandInterface->SetViewports(1, &viewport);
+		pCommandInterface->SetScissorRects(1, &m_scissorRect);
+	}
+
 	pCommandInterface->SetResourceLayout(m_pResourceLayout.get());
 	pCommandInterface->SetResources(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
 
@@ -250,6 +274,12 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 #if defined(ENABLE_PROFILING_CODE)
 	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList);
 #endif
+
+	if (m_passFlags & ePassFlags_UseVrProjectionState)
+	{
+		CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+		CVrProjectionManager::Instance()->RestoreState(commandList);
+	}
 }
 
 void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd, int profilingListID)

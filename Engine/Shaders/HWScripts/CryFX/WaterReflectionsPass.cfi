@@ -55,7 +55,9 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		float4 projPos = rayStart + ray * len;
 		projPos.xy /= projPos.w;
 
-		float fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
+		float2 projPosSampleTC = MapViewportToRaster(projPos.xy);
+
+		float fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPosSampleTC);
 		bestLen = len;
 
 		{
@@ -93,116 +95,33 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		ray = rayEnd - rayStart;
 
 		len = stepSize;
-
-		projPos = rayStart + ray * len;
-		projPos.xy /= projPos.w;
-
-		fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-		if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 0
+		
+		[unroll]
+		for(int step = 0; step < numSamples2; step++)
 		{
-			len += stepSize;
-
 			projPos = rayStart + ray * len;
 			projPos.xy /= projPos.w;
 
-			fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-			if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 1
+			projPosSampleTC = MapViewportToRaster(projPos.xy);
+
+			fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPosSampleTC.xy);
+			if( abs(fDepthTapBuf - projPos.z) < intervalSize ) 
 			{
-				len += stepSize;
-
-				projPos = rayStart + ray * len;
-				projPos.xy /= projPos.w;
-
-				fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-				if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //2 
-				{
-					len += stepSize;
-
-					projPos = rayStart + ray * len;
-					projPos.xy /= projPos.w;
-
-					fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-					if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 3
-					{
-						len += stepSize;
-
-						projPos = rayStart + ray * len;
-						projPos.xy /= projPos.w;
-
-						fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-						if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 4
-						{
-							len += stepSize;
-
-							projPos = rayStart + ray * len;
-							projPos.xy /= projPos.w;
-
-							fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-							if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //5
-							{
-								len += stepSize;
-
-								projPos = rayStart + ray * len;
-								projPos.xy /= projPos.w;
-
-								fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-								if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) //6
-								{
-									len += stepSize;
-
-									projPos = rayStart + ray * len;
-									projPos.xy /= projPos.w;
-
-									fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-									if( abs(fDepthTapBuf - projPos.z) >= intervalSize ) // 7
-									{
-										len += stepSize;
-									}
-									else
-									bestLen = len;
-								}
-								else
-								bestLen = len;
-							}
-							else
-							bestLen = len;
-						}
-						else
-						bestLen = len;
-					}
-					else
-					bestLen = len;
-				}
-				else
 				bestLen = len;
+				break;
 			}
-			else
-			bestLen = len;
+
+			len += stepSize;
 		}
-		else
-		bestLen = len;
-
-		//for( int i = 0; i < numSamples2; ++i )
-		//{
-		//	float4 projPos = rayStart + ray * len;
-		//	projPos.xy /= projPos.w;
-
-		//	float fDepthTapBuf = sceneDepthScaledTex.Sample(ssPointClamp, projPos.xy);
-		//	if( abs(fDepthTapBuf - projPos.z) < intervalSize )
-		//	{
-		//		bestLen = len;
-		//		break;
-		//	}
-
-		//	len += stepSize;
-		//}
 
 		if( bestLen > 0 )
 		{
 			projPos = rayStart + ray * bestLen;
 			projPos.xy /= projPos.w;
 
-			half3 color = refractionHalfResTex.SampleLevel(ssMaterialTrilinearClamp, projPos.xy, 0.0f);
+			projPosSampleTC = MapViewportToRaster(projPos.xy);
+
+			half3 color = refractionHalfResTex.SampleLevel(ssMaterialTrilinearClamp, projPosSampleTC.xy, 0.0f);
 			specularRefl.rgb = color;
 
 			float borderDist = projPos.y;
@@ -233,7 +152,9 @@ pixout WaterReflPS(v2f_hs IN)
 	pixout OUT = (pixout) 1;
 
 	const float fDepth = IN.screenProj.w * CV_NearFarClipDist.w;
-	float fDepthCenter = sceneDepthScaledTex.Sample(ssPointClamp, IN.screenProj.xy / IN.screenProj.w);
+	float2 linearUV = IN.screenProj.xy / IN.screenProj.w;
+	float2 screenTC = MapViewportToRaster(linearUV);
+	float fDepthCenter = sceneDepthScaledTex.Sample(ssPointClamp, screenTC);
 
 	clip( fDepthCenter - fDepth );
 
@@ -278,6 +199,8 @@ pixout WaterReflPS(v2f_hs IN)
 	prevTC.x *= CV_HPosScale.z;
 	prevTC.y = 1.0 - (1.0 - prevTC.y) * CV_HPosScale.w;
 
+	prevTC = MapViewportToRaster(prevTC);
+
 	half3 cReflPrev = reflectionPrevTex.Sample(ssMaterialTrilinearClamp, prevTC.xy).rgb / PS_HDR_RANGE_ADAPT_MAX;
 	cReflPrev = isfinite( cReflPrev ) ? cReflPrev : 0;  // Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
 
@@ -305,7 +228,7 @@ technique WaterReflPass
 		IgnoreMaterialState = true;
 
 		VertexShader = WaterVS() WaterSurfaceVS;
-
+		GeometryShader = $AutoGS_MultiRes();
 #if %WATER_TESSELLATION_DX11
 		HullShader   = WaterHS() WaterSurfaceHS;
 		DomainShader = WaterReflDS() WaterSurfaceDS;

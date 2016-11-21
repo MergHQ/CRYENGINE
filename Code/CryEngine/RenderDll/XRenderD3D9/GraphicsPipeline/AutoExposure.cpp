@@ -70,6 +70,7 @@ void CAutoExposureStage::MeasureLuminance()
 			m_passLuminanceInitial.SetTechnique(pShader, techLumInitial, 0);
 			m_passLuminanceInitial.SetRenderTarget(0, CTexture::s_ptexHDRToneMaps[curTexture]);
 			m_passLuminanceInitial.SetState(GS_NODEPTHTEST);
+			m_passLuminanceInitial.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 			m_passLuminanceInitial.SetTextureSamplerPair(0, CTexture::s_ptexHDRTargetScaled[1], m_samplerLinear);
 			m_passLuminanceInitial.SetTextureSamplerPair(1, CTexture::s_ptexSceneNormalsMap, m_samplerLinear);

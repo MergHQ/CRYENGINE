@@ -202,13 +202,15 @@ pixout ParticleImposterPS(v2f IN)
   OUT.Color.rgb *= PS_HDR_RANGE_ADAPT_MAX; // Re-scale range (consoles)
 
 #if %SOFT_PARTICLE
+	float2 screenProjected = MapViewportToRaster(IN.screenProj.xy / IN.screenProj.w);
+
 	#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
 		const int nMsaaSamples = GetMSAASampleNum();		
 		half sceneDepth = 0.0f;		
 		for (int s=0; s<nMsaaSamples; s++) // Ideally would use pre-resolved depth target (note that existing resolved versions use sample0 for proper pixel/sample passes - having a max depth target will require extra mem)
-			sceneDepth =  max(sceneDepth, GetDecodedSceneDepthMS(IN.screenProj/IN.screenProj.w, nMsaaSamples, s));
+			sceneDepth =  max(sceneDepth, GetDecodedSceneDepthMS(screenProjected.xy, nMsaaSamples, s));
 	#else
-		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
+		float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, float4(screenProjected.xy, 0, 1) );
 	#endif 	
  	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );
 	OUT.Color.a *= softIntersect;
@@ -228,6 +230,7 @@ technique General
 	pass p0
 	{
 		VertexShader = ParticleImposterVS() ParticleImposterVS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = ParticleImposterPS() ParticleImposterPS;
 
 		ZEnable = true;

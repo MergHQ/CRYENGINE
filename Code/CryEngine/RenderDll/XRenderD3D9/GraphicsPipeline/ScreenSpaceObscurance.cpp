@@ -68,6 +68,7 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passObscurance.SetRenderTarget(0, pDestRT);
 		m_passObscurance.SetState(GS_NODEPTHTEST);
 		m_passObscurance.SetRequirePerViewConstantBuffer(true);
+		m_passObscurance.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 		m_passObscurance.SetTextureSamplerPair(0, CTexture::s_ptexSceneNormalsMap, m_samplerPoint);
 		m_passObscurance.SetTextureSamplerPair(1, CTexture::s_ptexZTarget, m_samplerPoint);

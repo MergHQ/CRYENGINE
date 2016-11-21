@@ -912,6 +912,8 @@ half3 EnvCubeBoxProjected( float3 vWorldPos, half3 vRefl, half4 cGlossMap )
 
 pixout WaterPS(v2f_hs IN)
 {
+	IN.screenProj.xy = MapViewportToRaster(IN.screenProj.xy/IN.screenProj.w) * IN.screenProj.w;
+
 	pixout OUT = (pixout) 1;
 
 	SWaterVolumeParams params = GetWaterVolumeParams();
@@ -961,6 +963,9 @@ pixout WaterPS(v2f_hs IN)
 									wvGetLinearDepthScaled(refrNewst + refrTC.xy),
 									wvGetLinearDepthScaled(refrNewst + refrTC.xy*0.985) );
 	#else
+		// TODO_VR
+		//float3 depthRefr = float3( GetLinearDepthScaled( sceneDepthSampler, NVMultiRes_MapLinearToMultiRes(refrNewst + refrTC.xy) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw).xxx);
+
 		float3 depthRefr = float3( wvGetLinearDepthScaled(refrNewst + refrTC.xy).xxx);
 	#endif
 
@@ -1012,6 +1017,8 @@ pixout WaterPS(v2f_hs IN)
 		float2 reflNewst = screenTC.xy;
 		float2 reflTC = (vNormal.xy) * ReflectionBumpScale * 0.5* softIntersect * IN.screenProj.z;
 		float depthRefl = wvGetLinearDepthScaled(reflNewst + GetScaledScreenTC(reflTC.xy)).x;
+		// TODO_VR
+		//float depthRefl = GetLinearDepthScaled( sceneDepthSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + GetScaledScreenTC(reflTC.xy)) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw).x;
 
 		// TODO: maybe m_CurDownscaleFactor isn't needed any more. Can I remove this? 
 		reflTC *= float2(CV_HPosScale.x, 1);
@@ -1028,6 +1035,9 @@ pixout WaterPS(v2f_hs IN)
 		rayStart.xy = GetScaledScreenTC(normalize(rayEnd.xy - rayStart.xy));
 
 		half3 cSpecularAcc = reflectionTex.SampleGrad(aniso16xClampSState, reflNewst + reflTC * fReflMask, rayStart.xy * fGlossinessLod * CV_ScreenSize.w * 64, float2(0,0)).rgb;
+		// TODO_VR
+		//half3 cSpecularAcc = tex2Dgrad(ReflSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + reflTC * fReflMask) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw, rayStart.xy * fGlossinessLod * PS_ScreenSize.w * 64, float2(0,0)).rgb;
+
 		cSpecularAcc /= PS_HDR_RANGE_ADAPT_MAX;
 
 	#else
@@ -1146,6 +1156,7 @@ technique General
 		DomainShader = WaterDS() WaterSurfaceDS;
 #endif
 
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader = WaterPS() WaterSurfacePS;  
 	}
 }

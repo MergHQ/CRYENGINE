@@ -177,12 +177,14 @@ struct SD3DShader
 	int   m_nRef;
 	void* m_pHandle;
 	bool  m_bBound;
+	bool  m_bDisabled;
 
 	SD3DShader()
 	{
 		m_nRef = 1;
 		m_pHandle = NULL;
 		m_bBound = false;
+		m_bDisabled = false;
 	}
 	int AddRef()
 	{
@@ -1376,10 +1378,11 @@ public:
 	bool          mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, const char* szName);
 	void          mfGetTokenMap(CResFile* pRes, SDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData);
 	void          mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask);
+	bool          AutoGenMultiresGS(TArray<char>& sNewScr, CShader *pSH);
 
 public:
 	bool        mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, uint64 nMaskGen);
-	bool        mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr);
+	bool        mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr);
 	bool        mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table = NULL, TArray<uint32>* pSHData = NULL);
 
 	void        SetTokenFlags(uint32 nToken);

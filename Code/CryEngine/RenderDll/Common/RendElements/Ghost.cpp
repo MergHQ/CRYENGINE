@@ -71,7 +71,7 @@ bool CLensGhost::PreparePrimitives(const SPreparePrimitivesContext& context)
 	CTexture* pGhostTex = GetTexture() ? GetTexture() : CTexture::s_ptexBlack;
 	m_primitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techGhost, rtFlags);
 	m_primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
-	m_primitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	m_primitive.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuadCentered);
 	m_primitive.SetTexture(0, pGhostTex);
 	m_primitive.SetSampler(0, m_samplerBilinearBorderBlack);
 

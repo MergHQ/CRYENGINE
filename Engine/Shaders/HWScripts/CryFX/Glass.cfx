@@ -681,10 +681,11 @@ technique General
 >
 {  
   pass p0
-  {   
+  {
     VertexShader = GlassVS() GlassVS;
     PixelShader = GlassPS() GlassPS;
-    
+    GeometryShader = $AutoGS_MultiRes();
+
     CullMode = Back;
     ZEnable = true;
     ZWriteEnable = false;  

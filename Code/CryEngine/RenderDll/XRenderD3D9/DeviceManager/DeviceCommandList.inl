@@ -16,6 +16,11 @@ inline CDeviceComputeCommandInterface* CDeviceCommandList::GetComputeInterface()
 	return reinterpret_cast<CDeviceComputeCommandInterface*>(GetComputeInterfaceImpl());
 }
 
+inline CDeviceNvidiaCommandInterface* CDeviceCommandList::GetNvidiaCommandInterface()
+{
+	return reinterpret_cast<CDeviceNvidiaCommandInterface*>(GetNvidiaCommandInterfaceImpl());
+}
+
 inline void CDeviceCommandList::Reset()
 {
 	ZeroStruct(m_graphicsState.pPipelineState);
@@ -431,6 +436,15 @@ inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const FLOAT 
 inline void CDeviceComputeCommandInterface::ClearUAV(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
 	ClearUAVImpl(pView, Values, NumRects, pRects);
+}
+
+inline void CDeviceNvidiaCommandInterface::SetModifiedWMode(bool enabled, uint32 numViewports, const float* pA, const float* pB)
+{
+#if defined(CRY_PLATFORM_CONSOLE) || defined(CRY_USE_DX12)
+	CRY_ASSERT_MESSAGE(false, "Only supported on DirectX11, PC");
+#else
+	SetModifiedWModeImpl(enabled, numViewports, pA, pB);
+#endif
 }
 
 #endif

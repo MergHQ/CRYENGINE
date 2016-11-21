@@ -221,13 +221,45 @@ void SPostEffectsUtils::GetFullScreenTri(SVF_P3F_C4B_T2F pResult[3], int nTexWid
 	}
 }
 
+void SPostEffectsUtils::GetFullScreenQuad(SVF_P3F_C4B_T2F pResult[4], int nTexWidth, int nTexHeight, float z, const RECT* pSrcRegion)
+{
+	if (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
+		z = 1.0f - z;
+
+	pResult[0].xyz = Vec3(-0.0f, -0.0f, z);
+	pResult[0].color.dcolor = ~0U;
+	pResult[0].st = Vec2(0, 0);
+	pResult[1].xyz = Vec3(-0.0f, 1.0f, z);
+	pResult[1].color.dcolor = ~0U;
+	pResult[1].st = Vec2(0, 1);
+	pResult[2].xyz = Vec3(1.0f, -0.0f, z);
+	pResult[2].color.dcolor = ~0U;
+	pResult[2].st = Vec2(1, 0);
+	pResult[3].xyz = Vec3(1.0f, 1.0f, z);
+	pResult[3].color.dcolor = ~0U;
+	pResult[3].st = Vec2(1, 1);
+
+	if (pSrcRegion)
+	{
+		const Vec4 vTexCoordsRegion(float(pSrcRegion->left) / nTexWidth,
+			float(pSrcRegion->right) / nTexWidth,
+			float(pSrcRegion->top) / nTexHeight,
+			float(pSrcRegion->bottom) / nTexHeight);
+		pResult[0].st = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.z);
+		pResult[1].st = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.w);
+		pResult[2].st = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.z);
+		pResult[3].st = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.w);
+	}
+}
+
 void SPostEffectsUtils::DrawFullScreenTri(int nTexWidth, int nTexHeight, float z, const RECT* pSrcRegion)
 {
-	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 3, screenTri, CDeviceBufferManager::AlignBufferSizeForStreaming);
-	GetFullScreenTri(screenTri, nTexWidth, nTexHeight, z, pSrcRegion);
 
-	CVertexBuffer strip(screenTri, eVF_P3F_C4B_T2F);
-	gRenDev->DrawPrimitivesInternal(&strip, 3, eptTriangleList);
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, screenQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	GetFullScreenQuad(screenQuad, nTexWidth, nTexHeight, z, pSrcRegion);
+
+	CVertexBuffer strip(screenQuad, eVF_P3F_C4B_T2F);
+	gRenDev->DrawPrimitivesInternal(&strip, 4, eptTriangleStrip);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,13 +334,46 @@ void SPostEffectsUtils::GetFullScreenTriWPOS(SVF_P3F_T2F_T3F pResult[3], int nTe
 	}
 }
 
+void SPostEffectsUtils::GetFullScreenQuadWPOS(SVF_P3F_T2F_T3F pResult[4], int nTexWidth, int nTexHeight, float z, const RECT* pSrcRegion)
+{
+	UpdateFrustumCorners();
+
+	if (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
+		z = 1.0f - z;
+
+	pResult[0].p = Vec3(-0.0f, -0.0f, z);
+	pResult[0].st0 = Vec2(0, 0);
+	pResult[0].st1 = m_vLT;
+	pResult[1].p = Vec3(-0.0f, 1.0f, z);
+	pResult[1].st0 = Vec2(0, 1);
+	pResult[1].st1 = m_vLB;
+	pResult[2].p = Vec3(1.0f, -0.0f, z);
+	pResult[2].st0 = Vec2(1, 0);
+	pResult[2].st1 = m_vRT;
+	pResult[3].p = Vec3(1.0f, 1.0f, z);
+	pResult[3].st0 = Vec2(1, 1);
+	pResult[3].st1 = m_vRB;
+
+	if (pSrcRegion)
+	{
+		const Vec4 vTexCoordsRegion(float(pSrcRegion->left) / nTexWidth,
+			float(pSrcRegion->right) / nTexWidth,
+			float(pSrcRegion->top) / nTexHeight,
+			float(pSrcRegion->bottom) / nTexHeight);
+		pResult[0].st0 = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.z);
+		pResult[1].st0 = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.w);
+		pResult[2].st0 = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.z);
+		pResult[3].st0 = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.w);
+	}
+}
+
 void SPostEffectsUtils::DrawFullScreenTriWPOS(int nTexWidth, int nTexHeight, float z, const RECT* pSrcRegion)
 {
-	CryStackAllocWithSizeVector(SVF_P3F_T2F_T3F, 3, screenTri, CDeviceBufferManager::AlignBufferSizeForStreaming);
-	GetFullScreenTriWPOS(screenTri, nTexWidth, nTexHeight, z, pSrcRegion);
+	CryStackAllocWithSizeVector(SVF_P3F_T2F_T3F, 4, screenQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	GetFullScreenQuadWPOS(screenQuad, nTexWidth, nTexHeight, z, pSrcRegion);
 
-	CVertexBuffer strip(screenTri, eVF_P3F_T2F_T3F);
-	gRenDev->DrawPrimitivesInternal(&strip, 3, eptTriangleList);
+	CVertexBuffer strip(screenQuad, eVF_P3F_T2F_T3F);
+	gRenDev->DrawPrimitivesInternal(&strip, 4, eptTriangleStrip);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
