@@ -36,12 +36,12 @@ namespace
 {
 static void OnLogFileStreamsChange(ICVar* pCVar)
 {
-	static_cast<CCore&>(GetSchematycCore()).RefreshLogFileStreams();
+	static_cast<CCore&>(GetSchematycCoreImpl()).RefreshLogFileStreams();
 }
 
 static void OnLogFileMessageTypesChange(ICVar* pCVar)
 {
-	static_cast<CCore&>(GetSchematycCore()).RefreshLogFileMessageTypes();
+	static_cast<CCore&>(GetSchematycCoreImpl()).RefreshLogFileMessageTypes();
 }
 
 inline bool WantPrePhysicsUpdate()
@@ -115,7 +115,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
-
+	
 	env.pSchematyc = this;
 
 	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", Delegate::Make(&RegisterCoreEnvPackage))))
@@ -349,7 +349,7 @@ void CCore::RefreshLogFileStreams()
 		do
 		{
 			CStackString token = logFileStreams.Tokenize(" ", pos);
-			const LogStreamId logStreamId = GetSchematycCore().GetLog().GetStreamId(token.c_str());
+			const LogStreamId logStreamId = GetSchematycCoreImpl().GetLog().GetStreamId(token.c_str());
 			if (logStreamId != LogStreamId::Invalid)
 			{
 				m_pLogFileOutput->EnableStream(logStreamId);
@@ -370,7 +370,7 @@ void CCore::RefreshLogFileMessageTypes()
 		do
 		{
 			CStackString token = logFileMessageTypes.Tokenize(" ", pos);
-			const ELogMessageType logMessageType = GetSchematycCore().GetLog().GetMessageType(token.c_str());
+			const ELogMessageType logMessageType = GetSchematycCoreImpl().GetLog().GetMessageType(token.c_str());
 			if (logMessageType != ELogMessageType::Invalid)
 			{
 				m_pLogFileOutput->EnableMessageType(logMessageType);
