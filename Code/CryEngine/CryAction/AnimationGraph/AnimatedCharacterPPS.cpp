@@ -1268,18 +1268,6 @@ void CAnimatedCharacter::UpdatePhysicsInertia()
 			m_fPrevInertiaAccel = dynNew.kInertiaAccel;
 			m_fPrevTimeImpulseRecover = dynNew.timeImpulseRecover;
 		}
-		else
-		{
-			CRY_ASSERT_MESSAGE(pPhysEnt->GetParams(&dynNew) && (dynNew.kInertia == m_fPrevInertia) && (dynNew.kInertiaAccel == m_fPrevInertiaAccel) && (m_fPrevTimeImpulseRecover == dynNew.timeImpulseRecover), "Some other code changed the inertia on this living entity, every inertia change for living entities should go through the animated character params!");
-		}
-
-		/*
-		   if (DebugTextEnabled())
-		   {
-		   ColorF colorWhite(1,1,1,1);
-		   IRenderAuxText::Draw2dLabel(500, 35, 1.0f, (float*)&colorWhite, false, "Inertia [%.2f, %.2f]", dynNew.kInertia, dynNew.kInertiaAccel);
-		   }
-		 */
 	}
 }
 
