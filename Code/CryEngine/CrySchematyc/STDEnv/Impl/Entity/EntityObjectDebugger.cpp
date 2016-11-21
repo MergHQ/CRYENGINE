@@ -90,6 +90,7 @@ CEntityObjectDebugger::~CEntityObjectDebugger()
 {
 	gEnv->pConsole->UnregisterVariable("sc_EntityDebugConfig");
 	gEnv->pConsole->UnregisterVariable("sc_EntityDebugFilter");
+	gEnv->pConsole->UnregisterVariable("sc_EntityDebugTextPos");
 }
 
 void CEntityObjectDebugger::Update(const SUpdateContext&)
