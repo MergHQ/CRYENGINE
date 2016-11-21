@@ -10,7 +10,6 @@ def build(bld):
 			'.',
 			'GeneratedFiles',
 			Path('Code/CryEngine/CryAction'),
-			Path('Code/CryExtensions/CryLink/Interface'),
 			Path('Code/CryEngine/CrySchematyc/Core/Interface'),
 			Path('Code/Sandbox/EditorQt/Include'),
 			Path('Code/Sandbox/EditorQt')

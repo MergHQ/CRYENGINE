@@ -18,7 +18,6 @@ def build(bld):
 
 		use_module = [
 			'md5',
-			'CryLink', 
 			'yasli'
 		],
 		durango_use_module= [

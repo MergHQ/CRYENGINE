@@ -173,6 +173,7 @@
       "CrySystem/IStreamEngineDefs.h",
       "CrySystem/ICryMiniGUI.h",
       "CrySystem/IImeManager.h",
+	  "CrySystem/ICryLink.h",
       {
         "File":[
           "CrySystem/File/LineStreamBuffer.h",

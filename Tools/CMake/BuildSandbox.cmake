@@ -12,7 +12,6 @@ set(EDITOR_DIR "${CRYENGINE_DIR}/Code/Sandbox/EditorQt" )
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/EditorQt" "${CMAKE_BINARY_DIR}/Sandbox/EditorQt")
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/3DConnexionPlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/3DConnexionPlugin")
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorConsole" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/EditorConsole")
-add_subdirectory("${CRYENGINE_DIR}/Code/CryExtensions/CryLink/EditorPlugin" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink/EditorPlugin")
 	
 add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
 

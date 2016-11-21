@@ -10,7 +10,6 @@ def build(bld) :
 	  includes = [
 			'.', 
 			Path('Code/CryEngine/CryCommon'),
-			Path('Code/CryExtensions/CryLink/Interface'),
 			Path('Code/CryEngine/CrySchematyc/Core/Interface'),
 			Path('Code/CryEngine/CrySchematyc/STDEnv/Interface')
 		]

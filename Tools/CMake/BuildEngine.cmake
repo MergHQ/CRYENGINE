@@ -159,7 +159,6 @@ add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/yasli" "${CMAKE_BINARY_DIR}/Libs/y
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/zlib" "${CMAKE_BINARY_DIR}/Libs/zlib")
 
 #extensions
-#add_subdirectory ("${CRYENGINE_DIR}/Code/CryExtensions/CryLink" "${CMAKE_BINARY_DIR}/CryExtensions/CryLink")
 #add_subdirectory ("${CRYENGINE_DIR}/Code/CryExtensions/CrySchematyc" "${CMAKE_BINARY_DIR}/CryExtensions/CrySchematyc")
 
 #plugins

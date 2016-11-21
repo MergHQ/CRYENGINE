@@ -71,8 +71,6 @@
 		"3DConnexionPlugin",
 		"PerforcePlugin",
 		"SandboxPythonBridge",
-		"EditorCryLink",
-		"CryLink",
 		"EditorGameSDK",
 		
 		"zlib",

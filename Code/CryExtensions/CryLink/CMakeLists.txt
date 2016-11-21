@@ -1,3 +1,5 @@
+return() # Ignore this extension. It needs to be refactored.
+
 option(EXTENSION_CRYLINK "Enable CryLink" ON)
 if (NOT EXTENSION_CRYLINK)
 	return()
