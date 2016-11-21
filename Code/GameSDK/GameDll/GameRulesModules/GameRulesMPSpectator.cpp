@@ -273,7 +273,7 @@ int CGameRulesMPSpectator::GetBestAvailableMode(const EntityId playerId, EntityI
 		-- teamId;		// index should be 0 or 1 but teams are 1 and 2
 	}
 
-	int  mode = 0;
+	int mode = CActor::eASM_None;
 	assert(teamId>= 0 && teamId<2);
 	if (ModeIsAvailable(playerId, CActor::eASM_Follow, outOthEnt))
 	{
@@ -285,10 +285,23 @@ int CGameRulesMPSpectator::GetBestAvailableMode(const EntityId playerId, EntityI
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(ModeIsAvailable(playerId, CActor::eASM_Free, outOthEnt), "DESIGNER ASSERT: all levels need at least one of either a spectator point");
-		mode = CActor::eASM_Free;
+		for (int newMode = CActor::eASM_FirstMPMode; newMode < CActor::eASM_LastMPMode; ++newMode)
+		{
+			if (ModeIsAvailable(playerId, newMode, outOthEnt))
+			{
+				mode = newMode;
+				break;
+			}
+		}
+
+		if (mode == CActor::eASM_None)
+		{
+			string warningMessage;
+			warningMessage.Format("No suitable spectator mode found! Valid spectator locations = %i. Please check your level setup!", GetSpectatorLocationCount());
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, warningMessage.c_str());
+		}
 	}
-	assert(mode);
+
 	return mode;
 }
 
