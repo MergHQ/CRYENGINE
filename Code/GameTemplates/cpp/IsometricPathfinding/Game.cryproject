@@ -11,6 +11,6 @@
         "name": "Isometric Pathfinding Game Template"
     },
     "require": {
-        "engine": "engine-GDE"
+        "engine": "engine-5.3"
     }
 }

@@ -20,6 +20,6 @@
         "name": "Top-Down Shooter Game Template"
     },
     "require": {
-        "engine": "engine-GDE"
+        "engine": "engine-5.3"
     }
 }

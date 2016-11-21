@@ -1,5 +1,5 @@
 {
-	"content": {
+    "content": {
         "assets": [
             "Assets"
         ],
@@ -10,18 +10,17 @@
     "info": {
         "name": "CE# Framework - Sample App"
     },
-	"csharp":
-	{
-		"monodev": {
-			"solution": "Code/SampleApp.sln",
-			"user": "Code/SampleApp/SampleApp.csproj.user"
-		},
-		"msdev": {
-			"solution": "Code/SampleApp_VS.sln",
-			"user": "Code/SampleApp/SampleApp.ceproj.user"
-		}
-	},
+    "csharp": {
+        "monodev": {
+            "solution": "Code/SampleApp.sln",
+            "user": "Code/SampleApp/SampleApp.csproj.user"
+        },
+        "msdev": {
+            "solution": "Code/SampleApp_VS.sln",
+            "user": "Code/SampleApp/SampleApp.ceproj.user"
+        }
+    },
     "require": {
-        "engine": "engine-5.2"
+        "engine": "engine-5.3"
     }
 }

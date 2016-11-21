@@ -11,6 +11,6 @@
         "name": "First Person Game Template"
     },
     "require": {
-        "engine": "engine-5.2"
+        "engine": "engine-5.3"
     }
 }

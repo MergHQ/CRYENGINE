@@ -20,6 +20,6 @@
         "name": "Third Person Game Template"
     },
     "require": {
-        "engine": "engine-GDE"
+        "engine": "engine-5.3"
     }
 }

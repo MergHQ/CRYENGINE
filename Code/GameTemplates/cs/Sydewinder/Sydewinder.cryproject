@@ -18,6 +18,6 @@
         "name": "CE# Framework - Sydewinder"
     },
     "require": {
-        "engine": "engine-GDE"
+        "engine": "engine-5.3"
     }
 }
