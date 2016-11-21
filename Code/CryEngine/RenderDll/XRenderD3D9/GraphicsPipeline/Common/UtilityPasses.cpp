@@ -324,8 +324,6 @@ CClearRegionPass::~CClearRegionPass()
 
 void CClearRegionPass::Execute(SDepthTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects)
 {
-	CRY_ASSERT(numRects <= m_clearPrimitives.size());
-
 #if defined(CRY_USE_DX12)
 	CDeviceCommandListRef commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
 	commandList.GetGraphicsInterface()->ClearSurface(pDepthTex->pSurface, nFlags, cDepth, cStencil, numRects, pRects);
@@ -350,6 +348,9 @@ void CClearRegionPass::Execute(SDepthTexture* pDepthTex, const int nFlags, const
 
 	for (int i = 0; i < numRects; ++i)
 	{
+		if (i >= m_clearPrimitives.size())
+			m_clearPrimitives.push_back(CRenderPrimitive());
+
 		auto& prim = m_clearPrimitives[i];
 		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport);
 
@@ -362,8 +363,6 @@ void CClearRegionPass::Execute(SDepthTexture* pDepthTex, const int nFlags, const
 
 void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects)
 {
-	CRY_ASSERT(numRects <= m_clearPrimitives.size());
-
 #if defined(CRY_USE_DX12)
 	CDeviceCommandListRef commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
 	commandList.GetGraphicsInterface()->ClearSurface(pTex->GetSurface(0, 0), cClear, numRects, pRects);
@@ -384,6 +383,9 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 
 	for (int i = 0; i < numRects; ++i)
 	{
+		if (i >= m_clearPrimitives.size())
+			m_clearPrimitives.push_back(CRenderPrimitive());
+
 		auto& prim = m_clearPrimitives[i];
 		PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport);
 

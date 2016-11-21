@@ -847,32 +847,26 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 	// clear shadow pool regions first
 	if (shadowMapPasses[CRenderView::eShadowFrustumRenderType_LocalLight].GetCount() > 0)
 	{
-		D3DRectangle clearDepthRects[64], clearColorRects[64];
+		std::vector<D3DRectangle> clearDepthRects; clearDepthRects.reserve(64);
+		std::vector<D3DRectangle> clearColorRects; clearColorRects.reserve(64);
+
 		int numClearDepthRects = 0, numClearColorRects = 0;
 
 		for (auto& localLightPass : shadowMapPasses[CRenderView::eShadowFrustumRenderType_LocalLight])
 		{
-			CRY_ASSERT(numClearDepthRects < CRY_ARRAY_COUNT(clearDepthRects));
-			CRY_ASSERT(numClearColorRects < CRY_ARRAY_COUNT(clearColorRects));
 			CRY_ASSERT(localLightPass.m_currentDepthTarget.pTexture == CTexture::s_ptexRT_ShadowPool);
 			CRY_ASSERT(localLightPass.m_clearMode == CShadowMapPass::eClearMode_FillRect);
 
-			clearDepthRects[numClearDepthRects++] = localLightPass.GetScissorRect();
+			clearDepthRects.push_back(localLightPass.GetScissorRect());
 
 			if (localLightPass.m_currentColorTarget[0] != nullptr)
 			{
-				clearColorRects[numClearColorRects++] = localLightPass.GetScissorRect();
-			}
-
-			if (numClearDepthRects == CRY_ARRAY_COUNT(clearDepthRects)
-				|| numClearColorRects == CRY_ARRAY_COUNT(clearColorRects))
-			{
-				break;
+				clearColorRects.push_back(localLightPass.GetScissorRect());
 			}
 		}
 
 		SDepthTexture* pShadowPool = &shadowMapPasses[CRenderView::eShadowFrustumRenderType_LocalLight][0].m_currentDepthTarget;
-		m_ClearShadowPoolDepthPass.Execute(pShadowPool, CLEAR_ZBUFFER | CLEAR_STENCIL, 1.0f, 5, numClearDepthRects, clearDepthRects);
+		m_ClearShadowPoolDepthPass.Execute(pShadowPool, CLEAR_ZBUFFER | CLEAR_STENCIL, 1.0f, 5, clearDepthRects.size(), clearDepthRects.data());
 
 #if defined(FEATURE_SVO_GI)
 		CTexture* pRsmColor = CSvoRenderer::GetInstance()->GetRsmPoolCol();
@@ -880,8 +874,8 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 
 		if (pRsmColor && pRsmNormals)
 		{
-			m_ClearShadowPoolColorPass.Execute(pRsmColor, Clr_Transparent, numClearColorRects, clearColorRects);
-			m_ClearShadowPoolNormalsPass.Execute(pRsmNormals, Clr_Transparent, numClearColorRects, clearColorRects);
+			m_ClearShadowPoolColorPass.Execute(  pRsmColor,   Clr_Transparent, clearColorRects.size(), clearColorRects.data());
+			m_ClearShadowPoolNormalsPass.Execute(pRsmNormals, Clr_Transparent, clearColorRects.size(), clearColorRects.data());
 		}
 #endif
 
