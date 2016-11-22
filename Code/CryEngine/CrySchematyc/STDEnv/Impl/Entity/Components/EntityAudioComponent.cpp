@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "EntityAudioComponent.h"
 
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
 #include <Schematyc/Entity/EntityUtils.h>
 #include <Schematyc/Entity/EntityClasses.h>
@@ -21,7 +21,7 @@ bool CEntityAudioComponent::Init()
 	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_ExecuteTrigger);
 
 	IEntity& entity = EntityUtils::GetEntity(*this);
-	m_pAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(entity.CreateProxy(ENTITY_PROXY_AUDIO));
+	m_pAudioProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
 	if (!m_pAudioProxy)
 	{
 		CRY_ASSERT_MESSAGE(m_pAudioProxy, "Could not create audio proxy");

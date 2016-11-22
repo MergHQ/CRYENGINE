@@ -14,7 +14,7 @@
 #include "stdafx.h"
 #include "PhysicsEventListener.h"
 #include <CryEntitySystem/IBreakableManager.h>
-#include "EntityObject.h"
+#include "EntitySlot.h"
 #include "Entity.h"
 #include "EntitySystem.h"
 #include "EntityCVars.h"
@@ -78,10 +78,10 @@ int CPhysicsEventListener::OnPostStep(const EventPhys* pEvent)
 	IRenderNode* pRndNode = 0;
 	if (pCEntity)
 	{
-		CPhysicalProxy* pPhysProxy = pCEntity->GetPhysicalProxy();
+		CEntityPhysics* pPhysProxy = pCEntity->GetPhysicalProxy();
 		if (pPhysProxy)// && pPhysProxy->GetPhysicalEntity())
 			pPhysProxy->OnPhysicsPostStep(pPostStep);
-		pRndNode = pCEntity->GetRenderProxy();
+		pRndNode = (pCEntity->GetEntityRender()) ? pCEntity->GetEntityRender()->GetRenderNode() : nullptr;
 	}
 	else if (pPostStep->iForeignData == PHYS_FOREIGN_ID_ROPE)
 	{
@@ -165,11 +165,11 @@ int CPhysicsEventListener::OnBBoxOverlap(const EventPhys* pEvent)
 	CEntity* pCEntityTrg = GetEntity(pOverlap->pForeignData[1], pOverlap->iForeignData[1]);
 	if (pCEntity && pCEntityTrg)
 	{
-		CPhysicalProxy* pPhysProxySrc = pCEntity->GetPhysicalProxy();
+		CEntityPhysics* pPhysProxySrc = pCEntity->GetPhysicalProxy();
 		if (pPhysProxySrc)
 			pPhysProxySrc->OnContactWithEntity(pCEntityTrg);
 
-		CPhysicalProxy* pPhysProxyTrg = pCEntityTrg->GetPhysicalProxy();
+		CEntityPhysics* pPhysProxyTrg = pCEntityTrg->GetPhysicalProxy();
 		if (pPhysProxyTrg)
 			pPhysProxyTrg->OnContactWithEntity(pCEntity);
 
@@ -215,7 +215,7 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 				if (pStateChange->pEntity->GetStatus(&sd) && sd.submergedFraction > 0)
 				{
 					pCEntity->SetFlags(pCEntity->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-					pCEntity->GetPhysicalProxy()->SetFlags(pCEntity->GetPhysicalProxy()->GetFlags() | CPhysicalProxy::FLAG_PHYS_AWAKE_WHEN_VISIBLE);
+					pCEntity->GetPhysicalProxy()->SetFlags(pCEntity->GetPhysicalProxy()->GetFlags() | CEntityPhysics::FLAG_PHYS_AWAKE_WHEN_VISIBLE);
 				}
 			}
 		}
@@ -361,74 +361,6 @@ int CPhysicsEventListener::OnUpdateMesh(const EventPhys* pEvent)
 {
 	((CBreakableManager*)GetIEntitySystem()->GetBreakableManager())->HandlePhysics_UpdateMeshEvent((EventPhysUpdateMesh*)pEvent);
 	return 1;
-
-	/*EventPhysUpdateMesh *pUpdateEvent = (EventPhysUpdateMesh*)pEvent;
-	   CEntity *pCEntity;
-	   Matrix34 mtx;
-	   int iForeignData = pUpdateEvent->pEntity->GetiForeignData();
-	   void *pForeignData = pUpdateEvent->pEntity->GetForeignData(iForeignData);
-	   IFoliage *pSrcFoliage=0;
-	   uint8 nMatLayers = 0;
-
-	   bool bNewEntity = false;
-
-	   if (iForeignData==PHYS_FOREIGN_ID_ENTITY)
-	   {
-	   pCEntity = (CEntity*)pForeignData;
-	   if (!pCEntity || !pCEntity->GetPhysicalProxy())
-	    return 1;
-	   if (pCEntity->GetRenderProxy())
-	   {
-	    nMatLayers = pCEntity->GetRenderProxy()->GetMaterialLayers();
-	    pCEntity->GetRenderProxy()->ExpandCompoundSlot0();
-	   }
-	   } else if (iForeignData==PHYS_FOREIGN_ID_STATIC)
-	   {
-	   CBreakableManager::SCreateParams createParams;
-
-	   CBreakableManager* pBreakMgr = (CBreakableManager*)GetIEntitySystem()->GetBreakableManager();
-
-	   IRenderNode *pRenderNode = (IRenderNode*)pUpdateEvent->pForeignData;
-	   IStatObj *pStatObj = pRenderNode->GetEntityStatObj(0, 0, &mtx);
-
-	   createParams.fScale = mtx.GetColumn(0).len();
-	   createParams.pSrcStaticRenderNode = pRenderNode;
-	   createParams.worldTM = mtx;
-	   createParams.nMatLayers = pRenderNode->GetMaterialLayers();
-	   createParams.pCustomMtl = pRenderNode->GetMaterial();
-
-	   if (pStatObj)
-	   {
-	    pCEntity = pBreakMgr->CreateObjectAsEntity( pStatObj,pUpdateEvent->pEntity,createParams );
-	    bNewEntity = true;
-	   }
-
-	   pSrcFoliage = pRenderNode->GetFoliage();
-	   }	else
-	   {
-	   return 1;
-	   }
-
-	   //if (pUpdateEvent->iReason==EventPhysUpdateMesh::ReasonExplosion)
-	   //	pCEntity->AddFlags(ENTITY_FLAG_MODIFIED_BY_PHYSICS);
-
-	   if (pCEntity)
-	   {
-	   pCEntity->GetPhysicalProxy()->DephysicalizeFoliage(0);
-	   IStatObj *pDeformedStatObj = gEnv->p3DEngine->UpdateDeformableStatObj(pUpdateEvent->pMesh,pUpdateEvent->pLastUpdate,pSrcFoliage);
-	   pCEntity->GetRenderProxy()->SetSlotGeometry( pUpdateEvent->partid,pDeformedStatObj );
-
-	   //pCEntity->GetPhysicalProxy()->CreateRenderGeometry( 0,pUpdateEvent->pMesh, pUpdateEvent->pLastUpdate );
-	   pCEntity->GetPhysicalProxy()->PhysicalizeFoliage(0);
-
-	   if (bNewEntity)
-	   {
-	    SEntityEvent entityEvent(ENTITY_EVENT_PHYS_BREAK);
-	    pCEntity->SendEvent( entityEvent );
-	   }
-	   }
-
-	   return 1;*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -441,54 +373,6 @@ int CPhysicsEventListener::OnCreatePhysEntityPart(const EventPhys* pEvent)
 	//////////////////////////////////////////////////////////////////////////
 	CBreakableManager* pBreakMgr = (CBreakableManager*)GetIEntitySystem()->GetBreakableManager();
 	pBreakMgr->HandlePhysicsCreateEntityPartEvent(pCreateEvent);
-	return 1;
-
-	/*if (pCreateEvent->pMeshNew)
-	   pPhysProxy->CreateRenderGeometry( 0,pCreateEvent->pMeshNew, pCreateEvent->pLastUpdate );
-	   else
-	   {
-	   int i,nSrcParts,nParts,nSuccParts=0,nSubobj,*slots,slotsbuf[16];
-	   IStatObj *pSrcStatObj,*pStatObj,*pStatObjDummy;
-	   pe_params_part pp,pp1;
-
-	   nParts = pCreateEvent->pEntNew->GetStatus(&pe_status_nparts());
-	   nSubobj = pSrcEntity->GetStatObj(0)->GetSubObjectCount();
-	   slots = nSubobj<=CRY_ARRAY_COUNT(slots) ? slotsbuf : new int[nSubobj];
-	   for(pp.ipart=0; pp.ipart<nParts; pp.ipart++)
-	   {
-	    pCreateEvent->pEntNew->GetParams(&pp);
-	    slots[pp.ipart] = pp.partid;
-	    pp1.ipart = pp1.partid = pp.ipart;
-	    pCreateEvent->pEntNew->SetParams(&pp1);
-	   }
-
-	   pSrcStatObj = pSrcEntity->GetStatObj(0)->SeparateSubobjects(pStatObj, slots,nParts, false);
-
-	   if (pCreateEvent->partidSrc)
-	   { // the last removed part in the session, flush removed parts from the source statobj and update phys ids
-	    nSubobj = pSrcStatObj->GetSubObjectCount();
-	    for(i=nParts=0;i<nSubobj;i++) if (pSrcStatObj->GetSubObject(i)->nType==STATIC_SUB_OBJECT_MESH)
-	      slots[i] = nParts++;
-	    nSrcParts = pCreateEvent->pEntity->GetStatus(&pe_status_nparts());
-	    for(pp.ipart=i=0; pp.ipart<nSrcParts; pp.ipart++)
-	    {
-	      pCreateEvent->pEntity->GetParams(&pp);
-	      pp1.ipart = pp.ipart; pp1.partid = slots[pp.partid];
-	      pCreateEvent->pEntity->SetParams(&pp1);
-	    }
-	    pSrcStatObj = pSrcStatObj->SeparateSubobjects(pStatObjDummy, 0,0, true);
-	   }
-
-	   pSrcEntity->SetStatObj( pSrcStatObj,0 );
-	   pEntity->SetStatObj( pStatObj,0 );
-
-	   if (slots!=slotsbuf)
-	    delete slots;
-	   }*/
-
-	//if (bNewEnt && pEntity->GetPhysicalProxy()->PhysicalizeFoliage(0) && pSrcEntity)
-	//pSrcEntity->GetPhysicalProxy()->DephysicalizeFoliage(0);
-
 	return 1;
 }
 
@@ -567,13 +451,13 @@ int CPhysicsEventListener::OnCollision(const EventPhys* pEvent)
 			pCollision->partid[1] &= (1 << nBits) - 1;
 		}
 
-		CPhysicalProxy* pPhysProxySrc = pEntitySrc->GetPhysicalProxy();
+		CEntityPhysics* pPhysProxySrc = pEntitySrc->GetPhysicalProxy();
 		if (pPhysProxySrc)
 			pPhysProxySrc->OnCollision(pEntityTrg, pCollision->idmat[1], pCollision->pt, pCollision->n, pCollision->vloc[0], pCollision->vloc[1], pCollision->partid[1], pCollision->mass[1]);
 
 		if (pEntityTrg)
 		{
-			CPhysicalProxy* pPhysProxyTrg = pEntityTrg->GetPhysicalProxy();
+			CEntityPhysics* pPhysProxyTrg = pEntityTrg->GetPhysicalProxy();
 			if (pPhysProxyTrg)
 				pPhysProxyTrg->OnCollision(pEntitySrc, pCollision->idmat[0], pCollision->pt, -pCollision->n, pCollision->vloc[1], pCollision->vloc[0], pCollision->partid[0], pCollision->mass[0]);
 		}
@@ -623,7 +507,7 @@ int CPhysicsEventListener::OnJointBreak(const EventPhys* pEvent)
 		{
 			pRenderNode = ((IRenderNode*)pBreakEvent->pForeignData[0]);
 			pStatObj = pRenderNode->GetEntityStatObj(0, 0, &nodeTM);
-			bShatter = pRenderNode->GetMaterialLayers() & MTL_LAYER_FROZEN;
+			//bShatter = pRenderNode->GetMaterialLayers() & MTL_LAYER_FROZEN;
 		}
 	}
 	//GetEntity(pBreakEvent->pForeignData[0],pBreakEvent->iForeignData[0]);
@@ -636,9 +520,9 @@ int CPhysicsEventListener::OnJointBreak(const EventPhys* pEvent)
 		pCEntity->SendEvent(event);
 		pStatObj = pCEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
 
-		if (pCEntity->GetRenderProxy())
+		//if (pCEntity->GetEntityRender())
 		{
-			bShatter = pCEntity->GetRenderProxy()->GetMaterialLayersMask() & MTL_LAYER_FROZEN;
+			//bShatter = pCEntity->GetEntityRender()->GetMaterialLayersMask() & MTL_LAYER_FROZEN;
 		}
 	}
 

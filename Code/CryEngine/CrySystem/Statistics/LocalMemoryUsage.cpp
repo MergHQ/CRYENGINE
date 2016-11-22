@@ -1084,6 +1084,7 @@ void CLocalMemoryUsage::CollectGeometryP1()
 	dwCount += p3DEngine->GetObjectsByType(eERType_Vegetation);
 	dwCount += p3DEngine->GetObjectsByType(eERType_Decal);
 	dwCount += p3DEngine->GetObjectsByType(eERType_Road);
+	dwCount += p3DEngine->GetObjectsByType(eERType_Character);
 
 	if (dwCount > 0)
 	{
@@ -1096,6 +1097,7 @@ void CLocalMemoryUsage::CollectGeometryP1()
 		dwCount += p3DEngine->GetObjectsByType(eERType_Vegetation, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_Decal, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_Road, &renderNodes[dwCount]);
+		dwCount += p3DEngine->GetObjectsByType(eERType_Character, &renderNodes[dwCount]);
 
 		AABB objBox;
 

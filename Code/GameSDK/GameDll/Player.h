@@ -595,7 +595,6 @@ public:
 	void ReloadClientXmlData();
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
-	virtual bool GetEntityPoolSignature( TSerialize signature ) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	virtual void SetAuthority( bool auth ) override;
 	virtual void SerializeXML( XmlNodeRef& node, bool bLoading ) override;
@@ -1555,7 +1554,7 @@ protected:
 
 
 	IInteractor*         m_pInteractor;
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioComponent;
 	AudioControlId      m_waterEnter;
 	AudioControlId      m_waterExit;
 	AudioControlId      m_waterDiveIn;

@@ -166,7 +166,7 @@ void CSpawningVisTable::PerformAreaTestForSpawn(SSpawnVisibilityInfo& rSpawnVisI
 	for (IEntityLink *pLink = pEntityLink; pLink; pLink = pLink->next)
 	{
 		IEntity* pLinkedEntity = pEntitySystem->GetEntity(pLink->entityId);
-		IEntityAreaProxy *pArea = (IEntityAreaProxy*)pLinkedEntity->GetProxy(ENTITY_PROXY_AREA);
+		IEntityAreaComponent *pArea = (IEntityAreaComponent*)pLinkedEntity->GetProxy(ENTITY_PROXY_AREA);
 		if (pArea->CalcPointWithin(INVALID_ENTITYID, playerPos, false))
 		{
 			rSpawnVisInfo.visBits |= playerBit;
@@ -345,7 +345,7 @@ void CSpawningVisTable::Initialise()
 			if ( pEntityClass == pAreaBoxClass || pEntityClass == pAreaSphereClass )
 			{
 				rSpawnVisInfo.spawnTestType = eSTT_AreaTest;
-				IEntityAreaProxy *pArea = (IEntityAreaProxy*)pLinkedEntity->GetProxy(ENTITY_PROXY_AREA);
+				IEntityAreaComponent *pArea = (IEntityAreaComponent*)pLinkedEntity->GetProxy(ENTITY_PROXY_AREA);
 				if(!pArea)
 					CryFatalError("No ENTITY_PROXY_AREA for entity that is of AreaBox or AreaSphere class!");
 			}

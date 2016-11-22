@@ -1084,7 +1084,9 @@ void CShaderMan::mfInit(void)
 		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 
 		m_ShadersPath = "Shaders/HWScripts/";
+		m_ShadersExtPath = "Shaders/";
 		m_ShadersGamePath = gEnv->pCryPak->GetGameFolder() + string("/GameShaders/HWScripts/");
+		m_ShadersGameExtPath = gEnv->pCryPak->GetGameFolder() + string("/GameShaders/");
 		m_ShadersMergeCachePath = "Shaders/MergeCache/";
 #if (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
 		m_ShadersCache = "Shaders/Cache/LINUX32/";

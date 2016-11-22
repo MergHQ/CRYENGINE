@@ -1115,7 +1115,7 @@ void CVisAreaManager::GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint32 dwFlags)
+void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint64 dwFlags)
 {
 	{
 		uint32 dwSize = m_lstVisAreas.Count();

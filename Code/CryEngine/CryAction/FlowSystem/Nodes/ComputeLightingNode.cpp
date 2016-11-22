@@ -192,10 +192,10 @@ public:
 				if (pActInfo->pEntity->GetId() != INVALID_ENTITYID)
 				{
 					IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pActInfo->pEntity->GetId());
-					if (pEntity && pEntity->GetProxy(ENTITY_PROXY_RENDER))
+					if (pEntity && pEntity->GetRenderInterface())
 					{
-						IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-						if (IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
+						IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+						if (IRenderNode* pRenderNode = pIEntityRender->GetRenderNode())
 						{
 							const bool bActivate = GetPortBool(pActInfo, eI_Enable);
 							if (bActivate)

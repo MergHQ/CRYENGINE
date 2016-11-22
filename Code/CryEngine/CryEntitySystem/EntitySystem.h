@@ -30,8 +30,7 @@
 class CEntity;
 struct ICVar;
 struct IPhysicalEntity;
-class IComponent;
-class CComponentEventDistributer;
+struct IEntityComponent;
 class CEntityClassRegistry;
 class CScriptBind_Entity;
 class CPhysicsEventListener;
@@ -82,9 +81,7 @@ struct SEntityAttachment
 struct SEntityLoadParams
 {
 	SEntitySpawnParams spawnParams;
-	CEntity*           pReuseEntity;
-	bool               bCallInit;
-	int                clonedLayerId;
+	bool               bCallInit = false;
 
 	SEntityLoadParams();
 	SEntityLoadParams(CEntity* pReuseEntity, SEntitySpawnParams& resetParams);
@@ -92,7 +89,6 @@ struct SEntityLoadParams
 
 	SEntityLoadParams& operator=(const SEntityLoadParams& other);
 	SEntityLoadParams(const SEntityLoadParams& other) { *this = other; }
-	void               UseClonedEntityNode(const XmlNodeRef sourceEntityNode, XmlNodeRef parentNode);
 
 private:
 	void        AddRef();
@@ -104,6 +100,133 @@ typedef std::vector<SEntityLoadParams>              TEntityLoadParamsContainer;
 
 typedef CSaltHandle<unsigned short, unsigned short> CEntityHandle;
 
+// Mutatable set is a specialized customization of the std::set where items can be added or removed within foreach iteration.
+template <typename T>
+class  CMutatableSet
+{
+public:
+	void insert( const T &item )
+	{
+		if (m_bIterating)
+			m_added.push_back(item);
+		else
+			m_set.insert(item);
+	}
+	void erase( const T &item )
+	{
+		if (m_bIterating)
+			m_removed.push_back(item);
+		else
+			m_set.erase(item);
+	}
+	void clear()
+	{
+		m_set.clear();
+		m_added.clear();
+		m_removed.clear();
+	}
+	size_t size() const { return m_set.size(); }
+	size_t count( const T& item ) const { return m_set.count(item); }
+
+	//! Invokes the provided function f once with each component.
+	template<typename LambdaFunction>
+	void for_each(LambdaFunction f)
+	{
+		start_for_each();
+		for (auto &item : m_set)
+		{
+			f(item);
+		}
+		end_for_each();
+	}
+protected:
+	void start_for_each()
+	{
+		assert(!m_bIterating);
+		m_bIterating = true;
+	}
+	void end_for_each()
+	{
+		assert(m_bIterating);
+		m_bIterating = false;
+		for (const auto &item : m_added)
+			m_set.insert(item);
+		for (const auto &item : m_removed)
+			m_set.erase(item);
+		m_added.clear();
+		m_removed.clear();
+	}
+private:
+	std::set<T> m_set;
+	std::vector<T> m_added;
+	std::vector<T> m_removed;
+	bool m_bIterating = false;
+};
+
+// Mutatable map is a specialized customization of the std::map where items can be added or removed within foreach iteration.
+template <typename TKey,typename TValue>
+class  CMutatableMap
+{
+	typename std::pair<TKey,TValue> pair_type;
+public:
+	void insert(const TKey &key,	const TValue &value)
+	{
+		if (m_bIterating)
+			m_added.push_back(std::make_pair(key,value));
+		else
+			m_map.insert(std::make_pair(key,value));
+	}
+	void erase(const TKey &key)
+	{
+		if (m_bIterating)
+			m_removed.push_back(key);
+		else
+			m_map.erase(key);
+	}
+	void clear()
+	{
+		m_map.clear();
+		m_added.clear();
+		m_removed.clear();
+	}
+	size_t size() const { return m_map.size(); }
+	size_t count( const TKey& key ) const { return m_map.count(key); }
+
+	//! Invokes the provided function f once with each component.
+	template<typename LambdaFunction>
+	void for_each(LambdaFunction f)
+	{
+		start_for_each();
+		for (auto &item : m_map)
+		{
+			f(item.first,item.second);
+		}
+		end_for_each();
+	}
+protected:
+	void start_for_each()
+	{
+		assert(!m_bIterating);
+		m_bIterating = true;
+	}
+	void end_for_each()
+	{
+		assert(m_bIterating);
+		m_bIterating = false;
+		for (const auto &item : m_added)
+			m_map.insert(item);
+		for (const auto &item : m_removed)
+			m_map.erase(item->first);
+		m_added.clear();
+		m_removed.clear();
+	}
+private:
+	std::map<TKey,TValue> m_map;
+	std::vector<std::pair<TKey,TValue> > m_added;
+	std::vector<TKey> m_removed;
+	bool m_bIterating = false;
+};
+
 //////////////////////////////////////////////////////////////////////
 class CEntitySystem : public IEntitySystem
 {
@@ -114,92 +237,89 @@ public:
 	bool Init(ISystem* pSystem);
 
 	// interface IEntitySystem ------------------------------------------------------
-	virtual void                  RegisterCharactersForRendering() override;
-	virtual void                  Release() override;
-	virtual void                  Update() override;
-	virtual void                  DeletePendingEntities() override;
-	virtual void                  PrePhysicsUpdate() override;
-	virtual void                  Reset() override;
-	virtual void                  Unload() override;
-	virtual void                  PurgeHeaps() override;
-	virtual IEntityClassRegistry* GetClassRegistry() override;
-	virtual IEntity*              SpawnEntity(SEntitySpawnParams& params, bool bAutoInit = true) override;
-	virtual bool                  InitEntity(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual IEntity*              GetEntity(EntityId id) const override;
-	virtual EntityId              GetClonedEntityId(EntityId origId, EntityId refId) const override;
-	virtual IEntity*              FindEntityByName(const char* sEntityName) const override;
-	virtual void                  ReserveEntityId(const EntityId id) override;
-	virtual EntityId              ReserveUnknownEntityId() override;
-	virtual void                  RemoveEntity(EntityId entity, bool bForceRemoveNow = false) override;
-	virtual uint32                GetNumEntities() const override;
-	virtual IEntityIt*            GetEntityIterator() override;
-	virtual void                  SendEventViaEntityEvent(IEntity* piEntity, SEntityEvent& event) override;
-	virtual void                  SendEventToAll(SEntityEvent& event) override;
-	virtual int                   QueryProximity(SEntityProximityQuery& query) override;
-	virtual void                  ResizeProximityGrid(int nWidth, int nHeight) override;
-	virtual int                   GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IPhysicalEntity**& pList, int physFlags) const override;
-	virtual IEntity*              GetEntityFromPhysics(IPhysicalEntity* pPhysEntity) const override;
-	virtual void                  AddSink(IEntitySystemSink* pSink, uint32 subscriptions, uint64 onEventSubscriptions) override;
-	virtual void                  RemoveSink(IEntitySystemSink* pSink) override;
-	virtual void                  PauseTimers(bool bPause, bool bResume = false) override;
-	virtual bool                  IsIDUsed(EntityId nID) const override;
-	virtual void                  GetMemoryStatistics(ICrySizer* pSizer) const override;
-	virtual ISystem*              GetSystem() const override { return m_pISystem; };
-	virtual void                  SetNextSpawnId(EntityId id) override;
-	virtual void                  ResetAreas() override;
-	virtual void                  UnloadAreas() override;
+	virtual void                  Release() final;
+	virtual void                  Update() final;
+	virtual void                  DeletePendingEntities() final;
+	virtual void                  PrePhysicsUpdate() final;
+	virtual void                  Reset() final;
+	virtual void                  Unload() final;
+	virtual void                  PurgeHeaps() final;
+	virtual IEntityClassRegistry* GetClassRegistry() final;
+	virtual IEntity*              SpawnEntity(SEntitySpawnParams& params, bool bAutoInit = true) final;
+	virtual bool                  InitEntity(IEntity* pEntity, SEntitySpawnParams& params) final;
+	virtual IEntity*              GetEntity(EntityId id) const final;
+	virtual IEntity*              FindEntityByName(const char* sEntityName) const final;
+	virtual void                  ReserveEntityId(const EntityId id) final;
+	virtual EntityId              ReserveUnknownEntityId() final;
+	virtual void                  RemoveEntity(EntityId entity, bool bForceRemoveNow = false) final;
+	virtual uint32                GetNumEntities() const final;
+	virtual IEntityIt*            GetEntityIterator() final;
+	virtual void                  SendEventToAll(SEntityEvent& event) final;
+	virtual int                   QueryProximity(SEntityProximityQuery& query) final;
+	virtual void                  ResizeProximityGrid(int nWidth, int nHeight) final;
+	virtual int                   GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IPhysicalEntity**& pList, int physFlags) const final;
+	virtual IEntity*              GetEntityFromPhysics(IPhysicalEntity* pPhysEntity) const final;
+	virtual void                  AddSink(IEntitySystemSink* pSink, uint32 subscriptions, uint64 onEventSubscriptions) final;
+	virtual void                  RemoveSink(IEntitySystemSink* pSink) final;
+	virtual void                  PauseTimers(bool bPause, bool bResume = false) final;
+	virtual bool                  IsIDUsed(EntityId nID) const final;
+	virtual void                  GetMemoryStatistics(ICrySizer* pSizer) const final;
+	virtual ISystem*              GetSystem() const final { return m_pISystem; };
+	virtual void                  SetNextSpawnId(EntityId id) final;
+	virtual void                  ResetAreas() final;
+	virtual void                  UnloadAreas() final;
 
-	virtual void                  AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) override;
-	virtual void                  RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) override;
+	virtual void                  AddEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
+	virtual void                  RemoveEntityEventListener(EntityId nEntity, EEntityEvent event, IEntityEventListener* pListener) final;
 
-	virtual EntityId              FindEntityByGuid(const EntityGUID& guid) const override;
-	virtual EntityId              FindEntityByEditorGuid(const char* pGuid) const override;
+	virtual EntityId              FindEntityByGuid(const EntityGUID& guid) const final;
+	virtual EntityId              FindEntityByEditorGuid(const char* pGuid) const final;
 
-	virtual EntityId              GenerateEntityIdFromGuid(const EntityGUID& guid) override;
+	virtual EntityId              GenerateEntityIdFromGuid(const EntityGUID& guid) final;
 
-	virtual IEntityArchetype*     LoadEntityArchetype(XmlNodeRef oArchetype) override;
-	virtual IEntityArchetype*     LoadEntityArchetype(const char* sArchetype) override;
-	virtual void                  UnloadEntityArchetype(const char* sArchetype) override;
-	virtual IEntityArchetype*     CreateEntityArchetype(IEntityClass* pClass, const char* sArchetype) override;
-	virtual void                  RefreshEntityArchetypesInRegistry() override;
+	virtual IEntityArchetype*     LoadEntityArchetype(XmlNodeRef oArchetype) final;
+	virtual IEntityArchetype*     LoadEntityArchetype(const char* sArchetype) final;
+	virtual void                  UnloadEntityArchetype(const char* sArchetype) final;
+	virtual IEntityArchetype*     CreateEntityArchetype(IEntityClass* pClass, const char* sArchetype) final;
+	virtual void                  RefreshEntityArchetypesInRegistry() final;
 
-	virtual void                  Serialize(TSerialize ser) override;
+	virtual void                  Serialize(TSerialize ser) final;
 
-	virtual void                  DumpEntities() override;
+	virtual void                  DumpEntities() final;
 
-	virtual void                  ResumePhysicsForSuppressedEntities(bool bWakeUp) override;
-	virtual void                  SaveInternalState(struct IDataWriteStream& writer) const override;
-	virtual void                  LoadInternalState(struct IDataReadStream& reader) override;
+	virtual void                  ResumePhysicsForSuppressedEntities(bool bWakeUp) final;
+	virtual void                  SaveInternalState(struct IDataWriteStream& writer) const final;
+	virtual void                  LoadInternalState(struct IDataReadStream& reader) final;
 
-	virtual int                   GetLayerId(const char* szLayerName) const override;
-	virtual const char*           GetLayerName(int layerId) const override;
-	virtual int                   GetLayerChildCount(const char* szLayerName) const override;
-	virtual const char*           GetLayerChild(const char* szLayerName, int childIdx) const override;
+	virtual int                   GetLayerId(const char* szLayerName) const final;
+	virtual const char*           GetLayerName(int layerId) const final;
+	virtual int                   GetLayerChildCount(const char* szLayerName) const final;
+	virtual const char*           GetLayerChild(const char* szLayerName, int childIdx) const final;
 
-	virtual int                   GetVisibleLayerIDs(uint8* pLayerMask, const uint32 maxCount) const override;
+	virtual int                   GetVisibleLayerIDs(uint8* pLayerMask, const uint32 maxCount) const final;
 
-	virtual void                  ToggleLayerVisibility(const char* layer, bool isEnabled, bool includeParent = true) override;
+	virtual void                  ToggleLayerVisibility(const char* layer, bool isEnabled, bool includeParent = true) final;
 
-	virtual void                  ToggleLayersBySubstring(const char* pSearchSubstring, const char* pExceptionSubstring, bool isEnable) override;
+	virtual void                  ToggleLayersBySubstring(const char* pSearchSubstring, const char* pExceptionSubstring, bool isEnable) final;
 
-	virtual void                  LockSpawning(bool lock) override { m_bLocked = lock; }
+	virtual void                  LockSpawning(bool lock) final { m_bLocked = lock; }
 
-	virtual bool                  OnLoadLevel(const char* szLevelPath) override;
+	virtual bool                  OnLoadLevel(const char* szLevelPath) final;
 	void                          OnLevelLoadStart();
 
-	virtual IEntityLayer*         AddLayer(const char* szName, const char* szParent, uint16 id, bool bHasPhysics, int specs, bool bDefaultLoaded) override;
-	virtual void                  LoadLayers(const char* dataFile) override;
-	virtual void                  LinkLayerChildren() override;
-	virtual void                  AddEntityToLayer(const char* layer, EntityId id) override;
-	virtual void                  RemoveEntityFromLayers(EntityId id) override;
-	virtual void                  ClearLayers() override;
-	virtual void                  EnableDefaultLayers(bool isSerialized = true) override;
-	virtual void                  EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) override;
-	virtual IEntityLayer*         FindLayer(const char* szLayer) const override;
-	virtual bool                  IsLayerEnabled(const char* layer, bool bMustBeLoaded) const override;
-	virtual bool                  ShouldSerializedEntity(IEntity* pEntity) override;
-	virtual void                  RegisterPhysicCallbacks() override;
-	virtual void                  UnregisterPhysicCallbacks() override;
+	virtual IEntityLayer*         AddLayer(const char* szName, const char* szParent, uint16 id, bool bHasPhysics, int specs, bool bDefaultLoaded) final;
+	virtual void                  LoadLayers(const char* dataFile) final;
+	virtual void                  LinkLayerChildren() final;
+	virtual void                  AddEntityToLayer(const char* layer, EntityId id) final;
+	virtual void                  RemoveEntityFromLayers(EntityId id) final;
+	virtual void                  ClearLayers() final;
+	virtual void                  EnableDefaultLayers(bool isSerialized = true) final;
+	virtual void                  EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) final;
+	virtual IEntityLayer*         FindLayer(const char* szLayer) const final;
+	virtual bool                  IsLayerEnabled(const char* layer, bool bMustBeLoaded) const final;
+	virtual bool                  ShouldSerializedEntity(IEntity* pEntity) final;
+	virtual void                  RegisterPhysicCallbacks() final;
+	virtual void                  UnregisterPhysicCallbacks() final;
 
 	// ------------------------------------------------------------------------
 
@@ -213,20 +333,14 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Load entities from XML.
-	void                              LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) override;
-	void                              LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds) override;
+	void                              LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile) final;
+	void                              LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset, std::vector<IEntity*>* outGlobalEntityIds, std::vector<IEntity*>* outLocalEntityIds) final;
 
-	virtual void                      HoldLayerEntities(const char* pLayerName) override;
-	virtual void                      CloneHeldLayerEntities(const char* pLayerName, const Vec3& localOffset, const Matrix34& l2w, const char** pExcludeLayers = NULL, int numExcludeLayers = 0) override;
-	virtual void                      ReleaseHeldEntities() override;
-
-	ILINE CComponentEventDistributer* GetEventDistributer() { return m_pEventDistributer; }
-
-	virtual bool                      ExtractArcheTypeLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
-	virtual bool                      ExtractEntityLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
-	virtual void                      BeginCreateEntities(int nAmtToCreate) override;
-	virtual bool                      CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams& pParams, EntityId& outUsingId) override;
-	virtual void                      EndCreateEntities() override;
+	virtual bool                      ExtractArcheTypeLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const final;
+	virtual bool                      ExtractEntityLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const final;
+	virtual void                      BeginCreateEntities(int nAmtToCreate) final;
+	virtual bool                      CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams& pParams, EntityId& outUsingId) final;
+	virtual void                      EndCreateEntities() final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Called from CEntity implementation.
@@ -244,24 +358,22 @@ public:
 	CScriptBind_Entity* GetScriptBindEntity() { return m_pEntityScriptBinding; };
 
 	// Access to area manager.
-	IAreaManager* GetAreaManager() const override { return (IAreaManager*)(m_pAreaManager); }
+	IAreaManager* GetAreaManager() const final { return (IAreaManager*)(m_pAreaManager); }
 
 	// Access to breakable manager.
-	virtual IBreakableManager*       GetBreakableManager() const override      { return m_pBreakableManager; };
+	virtual IBreakableManager*       GetBreakableManager() const final      { return m_pBreakableManager; };
 
 	CEntityLoadManager*              GetEntityLoadManager() const              { return m_pEntityLoadManager; }
 
 	CGeomCacheAttachmentManager*     GetGeomCacheAttachmentManager() const     { return m_pGeomCacheAttachmentManager; }
 	CCharacterBoneAttachmentManager* GetCharacterBoneAttachmentManager() const { return m_pCharacterBoneAttachmentManager; }
 
-	CEntityTimeoutList*              GetTimeoutList()                          { return &m_entityTimeoutList; }
-
 	static ILINE uint16              IdToIndex(const EntityId id)              { return id & 0xffff; }
 	static ILINE CSaltHandle<>       IdToHandle(const EntityId id)             { return CSaltHandle<>(id >> 16, id & 0xffff); }
 	static ILINE EntityId            HandleToId(const CSaltHandle<> id)        { return (((uint32)id.GetSalt()) << 16) | ((uint32)id.GetIndex()); }
 
 	EntityId                         GenerateEntityId(bool bStaticId);
-	bool                             ResetEntityId(CEntity* pEntity, EntityId newEntityId);
+
 	void                             RegisterEntityGuid(const EntityGUID& guid, EntityId id);
 	void                             UnregisterEntityGuid(const EntityGUID& guid);
 
@@ -270,33 +382,26 @@ public:
 
 	void                             ChangeEntityName(CEntity* pEntity, const char* sNewName);
 
-	void                             RemoveEntityEventListeners(CEntity* pEntity);
-
 	CEntity*                         GetEntityFromID(EntityId id) const;
 	ILINE bool                       HasEntity(EntityId id) const { return GetEntityFromID(id) != 0; };
 
-	virtual void                     PurgeDeferredCollisionEvents(bool bForce = false) override;
+	virtual void                     PurgeDeferredCollisionEvents(bool bForce = false) final;
 
-	void                             ComponentRegister(EntityId id, IComponentPtr pComponent, const int flags);
-	virtual void                     ComponentEnableEvent(const EntityId id, const int eventID, const bool enable) override;
+	virtual void                     DebugDraw() final;
 
-	virtual void                     DebugDraw() override;
+	virtual bool                     EntitiesUseGUIDs() const final                { return m_bEntitiesUseGUIDs; }
+	virtual void                     SetEntitiesUseGUIDs(const bool bEnable) final { m_bEntitiesUseGUIDs = bEnable; }
 
-	virtual bool                     EntitiesUseGUIDs() const override                { return m_bEntitiesUseGUIDs; }
-	virtual void                     SetEntitiesUseGUIDs(const bool bEnable) override { m_bEntitiesUseGUIDs = bEnable; }
-
-	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) override;
-	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) override;
+	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) final;
+	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
 private: // -----------------------------------------------------------------
 	void DoPrePhysicsUpdate();
-	void DoPrePhysicsUpdateFast();
 	void DoUpdateLoop(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);
 	void UpdateDeletedEntities();
 	void RemoveEntityFromActiveList(CEntity* pEntity);
-	void UpdateNotSeenTimeouts();
 	void UpdateEngineCVars();
 	void UpdateTimers();
 	void DebugDraw(CEntity* pEntity, float fUpdateTime);
@@ -308,8 +413,6 @@ private: // -----------------------------------------------------------------
 	void ClearEntityArray();
 
 	void DumpEntity(IEntity* pEntity);
-
-	void UpdateTempActiveEntities();
 
 	// slow - to find specific problems
 	void CheckInternalConsistency() const;
@@ -334,8 +437,6 @@ private: // -----------------------------------------------------------------
 	typedef std::vector<CEntity*>                                                                                                                                                                 DeletedEntities;
 	typedef std::multimap<CTimeValue, SEntityTimerEvent, std::less<CTimeValue>, stl::STLPoolAllocator<std::pair<const CTimeValue, SEntityTimerEvent>, stl::PoolAllocatorSynchronizationSinglethreaded>> EntityTimersMap;
 	typedef std::multimap<const char*, EntityId, stl::less_stricmp<const char*>>                                                                                                                  EntityNamesMap;
-	typedef std::map<EntityId, CEntity*>                                                                                                                                                          EntitiesMap;
-	typedef std::set<EntityId>                                                                                                                                                                    EntitiesSet;
 	typedef std::vector<SEntityTimerEvent>                                                                                                                                                        EntityTimersVector;
 
 	EntitySystemSinks           m_sinks[SinkMaxEventSubscriptionCount];     // registered sinks get callbacks for creation and removal
@@ -345,16 +446,13 @@ private: // -----------------------------------------------------------------
 	std::vector<CEntity*>       m_EntityArray;              // [id.GetIndex()]=CEntity
 	DeletedEntities             m_deletedEntities;
 	std::vector<CEntity*>       m_deferredUsedEntities;
-	EntitiesMap                 m_mapActiveEntities;        // Map of currently active entities (All entities that need per frame update).
-	bool                        m_tempActiveEntitiesValid;  // must be set to false whenever m_mapActiveEntities is changed
-	EntitiesSet                 m_mapPrePhysicsEntities;    // map of entities requiring pre-physics activation
+
+	CMutatableSet<EntityId>     m_mapActiveEntities;        // Map of currently active entities (All entities that need per frame update).
+	CMutatableSet<EntityId>     m_mapPrePhysicsEntities;    // map of entities requiring pre-physics activation
 
 	EntityNamesMap              m_mapEntityNames;      // Map entity name to entity ID.
 
 	CSaltBufferArray<>          m_EntitySaltBuffer;         // used to create new entity ids (with uniqueid=salt)
-	std::vector<EntityId>       m_tempActiveEntities;       // Temporary array of active entities.
-
-	CComponentEventDistributer* m_pEventDistributer;
 	//////////////////////////////////////////////////////////////////////////
 
 	// Entity timers.
@@ -374,10 +472,6 @@ private: // -----------------------------------------------------------------
 
 	CEntityLoadManager*    m_pEntityLoadManager;
 
-	// There`s a map of entity id to event listeners for each event.
-	typedef std::multimap<EntityId, IEntityEventListener*> EventListenersMap;
-	EventListenersMap m_eventListeners[ENTITY_EVENT_LAST];
-
 	typedef std::map<EntityGUID, EntityId> EntityGuidMap;
 	EntityGuidMap                    m_guidMap;
 	EntityGuidMap                    m_genIdMap;
@@ -395,8 +489,6 @@ private: // -----------------------------------------------------------------
 
 	//don't spawn any entities without being forced to
 	bool               m_bLocked;
-
-	CEntityTimeoutList m_entityTimeoutList;
 
 	friend class CEntityItMap;
 	class CCompareEntityIdsByClass;

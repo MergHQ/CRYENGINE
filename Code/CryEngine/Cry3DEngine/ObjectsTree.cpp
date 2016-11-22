@@ -336,7 +336,7 @@ void COctreeNode::CompileObjects()
 	{
 		for (IRenderNode* pObj = m_arrObjects[l].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 		{
-			int nFlags = pObj->GetRndFlags();
+			auto nFlags = pObj->GetRndFlags();
 
 			IF (nFlags & nSkipShadowCastersRndFlags, 0)
 				continue;
@@ -433,7 +433,7 @@ void COctreeNode::CompileObjects()
 				}
 			}
 
-			int nFlags = pObj->GetRndFlags();
+			auto nFlags = pObj->GetRndFlags();
 
 			// fill shadow casters list
 			const bool bHasPerObjectShadow = GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj);
@@ -878,12 +878,10 @@ void COctreeNode::MoveObjectsIntoList(PodArray<SRNInfo>* plstResultEntities, con
 			{
 				EERType eRType = pObj->GetRenderNodeType();
 
-				if (eRType == eERType_RenderProxy)
-				{
-					if (pObj->IsMovableByGame())
-						continue;
-				}
-				else if (
+				if (pObj->GetRndFlags() & ERF_MOVES_EVERY_FRAME)
+					continue;
+
+				if (
 				  eRType != eERType_Brush &&
 				  eRType != eERType_Vegetation)
 					continue;
@@ -1176,7 +1174,7 @@ void COctreeNode::UpdateTerrainNodes(CTerrainNode* pParentNode)
 			m_arrChilds[i]->UpdateTerrainNodes();
 }
 
-void C3DEngine::GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint32 dwFlags)
+void C3DEngine::GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint64 dwFlags)
 {
 	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
 		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
@@ -1382,7 +1380,7 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 					if (pNode == pIgnoreNode)
 						continue;
 
-					const int nFlags = pNode->GetRndFlags();
+					auto nFlags = pNode->GetRndFlags();
 					if (nFlags & (ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags))
 						continue;
 
@@ -1490,7 +1488,7 @@ bool COctreeNode::IsObjectTypeInTheBox(EERType objType, const AABB& WSBBox)
 
 void COctreeNode::GenerateStatObjAndMatTables(std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, SHotUpdateInfo* pExportInfo)
 {
-	static_assert(eERType_TypesNum == 25, "Array size changed, code might need to be updated!");
+	static_assert(eERType_TypesNum == 26, "Array size changed, code might need to be updated!");
 	AABB* pBox = (pExportInfo && !pExportInfo->areaBox.IsReset()) ? &pExportInfo->areaBox : NULL;
 
 	if (pBox && !Overlap::AABB_AABB(GetNodeBox(), *pBox))
@@ -1539,6 +1537,12 @@ void COctreeNode::GenerateStatObjAndMatTables(std::vector<IStatObj*>* pStatObjTa
 					IStatInstGroup& pStatInstGroup = pRN->GetStatObjGroup(grpid);
 					stl::push_back_unique(*pStatInstGroupTable, &pStatInstGroup);
 				}
+			}
+			if (eType == eERType_Character)
+			{
+				ICharacterInstance* pCharacter = pObj->GetEntityCharacter(0,nullptr,false);
+				if (pCharacter)
+					pMatTable->push_back(pCharacter->GetMaterial());
 			}
 		}
 
@@ -2779,20 +2783,19 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 
 				if (nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES)
 				{
-					if (rnType != eERType_RenderProxy)
+					if (rnType == eERType_Light)
 					{
-						if (rnType == eERType_Light)
+						CLightEntity* pEnt = (CLightEntity*)pObj;
+						if (!pEnt->GetEntityVisArea() && pEnt->GetEntityTerrainNode() && !(pEnt->m_light.m_Flags & DLF_THIS_AREA_ONLY))
 						{
-							CLightEntity* pEnt = (CLightEntity*)pObj;
-							if (!pEnt->GetEntityVisArea() && pEnt->GetEntityTerrainNode() && !(pEnt->m_light.m_Flags & DLF_THIS_AREA_ONLY))
-							{
-								// not "this area only" outdoor light affects everything
-							}
-							else
-								continue;
+							// not "this area only" outdoor light affects everything
 						}
 						else
 							continue;
+					}
+					else if (!pObj->GetOwnerEntity())
+					{
+						continue;
 					}
 				}
 
@@ -3092,7 +3095,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	size_t numCasters = 0;
 	CObjManager* pObjManager = GetObjManager();
 
-	int nFlags = pObj->GetRndFlags();
+	auto nFlags = pObj->GetRndFlags();
 	EERType eRType = pObj->GetRenderNodeType();
 	float WSMaxViewDist = pObj->GetMaxViewDist();
 
@@ -3593,7 +3596,7 @@ void COctreeNode::GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObj
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady, uint32 dwFlags)
+void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady, uint64 dwFlags)
 {
 	if (objType == eERType_Light && !m_bHasLights)
 		return;

@@ -71,7 +71,7 @@ const int nThreadsNum = 3;
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryCore/Containers/StackContainer.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/File/ICryPak.h>

@@ -159,7 +159,7 @@ public:
 	IEntity*                GetActorEntity(CDialogScript::TActorID actorID) const;
 	EntityId                GetActorEntityId(CDialogScript::TActorID actorID) const;
 	CDialogScript::TActorID GetActorIdForEntity(EntityId entityId) const;
-	IEntityAudioProxy*      GetEntityAudioProxy(IEntity* pEntity) const;
+	IEntityAudioComponent*      GetEntityAudioProxy(IEntity* pEntity) const;
 	int                     ScheduleNextLine(float dt); // schedule next line to be played. returns index of line
 	float                   GetCurTime() const
 	{

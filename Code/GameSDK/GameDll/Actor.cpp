@@ -595,32 +595,6 @@ void CActor::PostReloadExtension( IGameObject *pGameObject, const SEntitySpawnPa
 }
 
 //----------------------------------------------------------------------
-void CActor::RebindScript()
-{
-	IEntity* pEntity = GetEntity();
-	IEntityScriptProxy* pScript = static_cast<IEntityScriptProxy*>( pEntity->GetProxy( ENTITY_PROXY_SCRIPT ) );
-
-	g_pGame->GetActorScriptBind()->AttachTo(this);
-
-	SEntitySpawnParams params;
-	params.prevId = GetEntityId();
-	pScript->Init( pEntity, params );
-
-	CGameCache &gameCache = g_pGame->GetGameCache();
-	gameCache.RefreshActorInstance(GetEntityId(), GetEntity()->GetScriptTable());
-
-	PrepareLuaCache();
-}
-
-//----------------------------------------------------------------------
-bool CActor::GetEntityPoolSignature( TSerialize signature )
-{
-	signature.BeginGroup("Actor");
-	signature.EndGroup();
-	return true;
-}
-
-//----------------------------------------------------------------------
 void CActor::PrepareLuaCache()
 {
 	const CGameCache &gameCache = g_pGame->GetGameCache();
@@ -1265,8 +1239,6 @@ bool CActor::SetActorModelInternal(const SActorFileModelInfo &fileModelInfo)
 
 	if (modelVariationFileName.empty())
 	{
-		// Just create a render proxy for it
-		pEntity->CreateProxy(ENTITY_PROXY_RENDER);
 	}
 	else if (strcmpi(m_currModel.c_str(), modelVariationFileName.c_str()) != 0)
 	{
@@ -1366,11 +1338,11 @@ void CActor::PostPhysicalize()
 	//set player lod always
 //	if (IsPlayer())
 	{
-		IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender *pIEntityRender = (GetEntity()->GetRenderInterface());
 
-		if (pRenderProxy)
+		
 		{
-			IRenderNode *pRenderNode = pRenderProxy->GetRenderNode();
+			IRenderNode *pRenderNode = pIEntityRender->GetRenderNode();
 
 			if (pRenderNode)
 			{
@@ -2170,16 +2142,16 @@ void CActor::CloakSyncEntity(EntityId entityId, bool bFade)
 	
 	if (!isPickAndThrowEntity)
 	{
-		IEntityRenderProxy *pOwnerRP = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRender *pOwnerRP = GetEntity()->GetRenderInterface();
 		if (pOwnerRP)
 		{
-			const uint8 ownerMask = pOwnerRP->GetMaterialLayersMask();
+			const uint8 ownerMask = 0;//pOwnerRP->GetMaterialLayersMask();
 			const bool isCloaked = (ownerMask&MTL_LAYER_CLOAK) != 0;
-			const bool bCloakFadeByDistance = pOwnerRP->DoesCloakFadeByDistance();
-			const uint8 cloakColorChannel = pOwnerRP->GetCloakColorChannel();
-			const bool bIgnoreCloakRefractionColor = pOwnerRP->DoesIgnoreCloakRefractionColor();
+			//const bool bCloakFadeByDistance = pOwnerRP->DoesCloakFadeByDistance();
+			//const uint8 cloakColorChannel = pOwnerRP->GetCloakColorChannel();
+			//const bool bIgnoreCloakRefractionColor = pOwnerRP->DoesIgnoreCloakRefractionColor();
 
-			EntityEffects::Cloak::CloakEntity(entityId, isCloaked, bFade, GetCloakBlendSpeedScale(), bCloakFadeByDistance, cloakColorChannel, bIgnoreCloakRefractionColor);
+			//EntityEffects::Cloak::CloakEntity(entityId, isCloaked, bFade, GetCloakBlendSpeedScale(), bCloakFadeByDistance, cloakColorChannel, bIgnoreCloakRefractionColor);
 
 			if(CRecordingSystem *pRecordingSystem = g_pGame->GetRecordingSystem())
 			{
@@ -2933,11 +2905,9 @@ bool CActor::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 										}
 									}
 
-									IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
-									if (pPhysicsProxy)
 									{
 										GetEntity()->SetWorldTM(delta);
-										pPhysicsProxy->AssignPhysicalEntity(pPhysicalEntity);
+										GetEntity()->AssignPhysicalEntity(pPhysicalEntity);
 									}
 								}
 							}
@@ -3050,10 +3020,9 @@ bool CActor::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile,
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
 		if (ser.IsWriting())
 		{
-			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
+			if (!GetEntity()->GetPhysicalEntity() || GetEntity()->GetPhysicalEntity()->GetType() != type)
 			{
 				if(type!=PE_LIVING)
 				{
@@ -3062,14 +3031,10 @@ bool CActor::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile,
 				return true;
 			}
 		}
-		else if (!pEPP)
-		{
-			return false;
-		}
 
 		if(type!=PE_LIVING)
 		{
-			pEPP->SerializeTyped( ser, type, pflags );
+			GetEntity()->PhysicsNetSerializeTyped( ser, type, pflags );
 		}
 	}
 
@@ -3683,12 +3648,10 @@ void CActor::AttemptToRecycleAIActor()
 		else
 		{
 			SetHealth( 0.0f );
-			IEntityPhysicalProxy *pPhysicsProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-			if (pPhysicsProxy)
 			{
 				SEntityPhysicalizeParams params;
 				params.type = PE_NONE;
-				pPhysicsProxy->Physicalize(params);
+				GetEntity()->Physicalize(params);
 			}
 			gEnv->pEntitySystem->RemoveEntity( GetEntityId() );
 		}
@@ -5997,7 +5960,7 @@ bool CActor::CanSwitchSpectatorStatus() const
 	return true;
 }
 
-IComponent::ComponentEventPriority CActor::GetEventPriority( const int eventID ) const
+IEntityComponent::ComponentEventPriority CActor::GetEventPriority( const int eventID ) const
 {
 	switch( eventID )
 	{

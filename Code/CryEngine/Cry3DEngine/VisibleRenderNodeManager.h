@@ -42,6 +42,12 @@ public:
 		userData.objMat.SetTranslation(userData.objMat.GetTranslation() + delta);
 	}
 	bool IsValid() const { return !userData.bToDelete; }
+
+	void MarkForDelete()
+	{
+		userData.bToDelete = true;
+		userData.pOwnerNode = 0;
+	}
 };
 
 // Class responsible for managing potentially visible render nodes.
@@ -66,8 +72,6 @@ public:
 	// Set last frame for this rendering pass.
 	// Return if last frame changed and rendering should be done this frame for this pass.
 	bool SetLastSeenFrame(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo);
-
-	void MarkForDelete(SRenderNodeTempData* pTempData);
 
 	// Iteratively update array of visible nodes checking if they are expired
 	void       UpdateVisibleNodes(int currentFrame, int maxNodesToCheck = MAX_NODES_CHECK_PER_FRAME);

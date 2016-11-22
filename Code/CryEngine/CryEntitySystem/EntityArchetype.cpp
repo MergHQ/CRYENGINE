@@ -30,7 +30,7 @@ CEntityArchetype::CEntityArchetype(IEntityClass* pClass)
 	m_pClass = pClass;
 
 	// Try to load the script if it is not yet valid.
-	if (CEntityScript* pScript = (CEntityScript*)m_pClass->GetIEntityScript())
+	if (CEntityScript* pScript = static_cast<CEntityScript*>(m_pClass->GetIEntityScript()))
 	{
 		pScript->LoadScript();
 

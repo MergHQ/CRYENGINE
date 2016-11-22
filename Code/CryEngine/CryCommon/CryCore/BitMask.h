@@ -199,12 +199,24 @@ template<class Data1, class Data2, int MaxSize> ILINE bitmask_t<bitmaskBuf<MaxSi
 template<class Data1, class Data2, int MaxSize> ILINE bool operator<(const bitmask_t<Data1, MaxSize>& op1, const bitmask_t<Data2, MaxSize>& op2)
 {
 	int i;
-	for (i = op2.data.getsize() - 1; i > op1.data.getsize(); i--)
+	for (i = op2.data.getsize() - 1; i >= op1.data.getsize(); i--)
 		if (op2.data[i]) return true;
 	for (; i >= 0; i--)
 		if (op1.data[i] < op2.data[i]) return true;
 		else if (op1.data[i] > op2.data[i])
 			return false;
+	return false;
+}
+
+template<class Data1, class Data2, int MaxSize> ILINE bool operator!=(const bitmask_t<Data1, MaxSize>& op1, const bitmask_t<Data2, MaxSize>& op2)
+{
+	int i;
+	for (i = op2.data.getsize() - 1; i >= op1.data.getsize(); i--)
+		if (op2.data[i]) return true;
+	for (i = op1.data.getsize() - 1; i >= op2.data.getsize(); i--)
+		if (op1.data[i]) return true;
+	for (; i >= 0; i--)
+		if (op1.data[i] != op2.data[i]) return true;
 	return false;
 }
 

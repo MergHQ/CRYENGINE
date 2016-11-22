@@ -42,7 +42,7 @@ IScriptTable* CEntityClass::GetScriptTable() const
 
 	if (m_pEntityScript)
 	{
-		CEntityScript* pScript = (CEntityScript*)m_pEntityScript;
+		CEntityScript* pScript = static_cast<CEntityScript*>(m_pEntityScript);
 		pScriptTable = (pScript ? pScript->GetScriptTable() : NULL);
 	}
 
@@ -55,7 +55,7 @@ bool CEntityClass::LoadScript(bool bForceReload)
 	bool bRes = true;
 	if (m_pEntityScript)
 	{
-		CEntityScript* pScript = (CEntityScript*)m_pEntityScript;
+		CEntityScript* pScript = static_cast<CEntityScript*>(m_pEntityScript);
 		bRes = pScript->LoadScript(bForceReload);
 
 		m_bScriptLoaded = true;

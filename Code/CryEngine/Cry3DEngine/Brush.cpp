@@ -22,6 +22,58 @@
 #include "Brush.h"
 #include "terrain.h"
 
+CBrush::CBrush()
+	: m_bVehicleOnlyPhysics(0)
+	, m_bDrawLast(0)
+	, m_bPermanentRenderObjectMatrixValid(0)
+	, m_bNoPhysicalize(0)
+{
+	m_WSBBox.min = m_WSBBox.max = Vec3(ZERO);
+	m_dwRndFlags = 0;
+	m_Matrix.SetIdentity();
+	m_pPhysEnt = 0;
+	m_pMaterial = 0;
+	m_nLayerId = 0;
+	m_pStatObj = NULL;
+	m_pMaterial = NULL;
+	m_collisionClassIdx = 0;
+	m_pDeform = NULL;
+
+	GetInstCount(GetRenderNodeType())++;
+}
+
+CBrush::~CBrush()
+{
+	INDENT_LOG_DURING_SCOPE(true, "Destroying brush \"%s\"", this->GetName());
+
+	if (m_pFoliage)
+	{
+		static IFoliage* g_pFoliage0 = nullptr;
+		((CStatObjFoliage*)m_pFoliage)->m_ppThis = &g_pFoliage0;
+		m_pFoliage->Release();
+	}
+	Dephysicalize();
+	Get3DEngine()->FreeRenderNodeState(this);
+
+	m_pStatObj = NULL;
+	if (m_pDeform)
+		delete m_pDeform;
+
+	if (m_pCameraSpacePos)
+	{
+		delete m_pCameraSpacePos;
+		m_pCameraSpacePos = nullptr;
+	}
+
+	if (m_pTempData)
+	{
+		m_pTempData->MarkForDelete();
+		m_pTempData = nullptr;
+	}
+
+	GetInstCount(GetRenderNodeType())--;
+}
+
 const char* CBrush::GetEntityClassName() const
 {
 	return "Brush";
@@ -46,11 +98,9 @@ bool CBrush::HasChanged()
 
 CLodValue CBrush::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
 {
-	CVars* pCVars = GetCVars();
-
 	int nLodA = -1;
 
-	if (CStatObj* pStatObj = (CStatObj*)CBrush::GetEntityStatObj())
+	if (CStatObj* pStatObj = m_pStatObj)
 	{
 		const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 		const float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
@@ -98,19 +148,11 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	rParms.pMaterial = m_pMaterial;
 	rParms.nEditorSelectionID = m_nEditorSelectionID;
 
-	if (!m_Matrix.m01 && !m_Matrix.m02 && !m_Matrix.m10 && !m_Matrix.m12 && !m_Matrix.m20 && !m_Matrix.m21)
-		rParms.dwFObjFlags &= ~FOB_TRANS_ROTATE;
-	else
-		rParms.dwFObjFlags |= FOB_TRANS_ROTATE;
+	rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
+	//rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_NEAREST) ? FOB_NEAREST : 0;
+	rParms.dwFObjFlags |= FOB_TRANS_MASK;
 
-	// get statobj for rendering
-	IStatObj* pStatObj = m_pStatObj;
-
-	// render
-	if (pStatObj)
-	{
-		pStatObj->Render(rParms, passInfo);
-	}
+	m_pStatObj->Render(rParms, passInfo);
 }
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
@@ -136,6 +178,8 @@ void CBrush::SetMatrix(const Matrix34& mat)
 		              + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
 		m_Matrix = mat;
 	}
+	m_bPermanentRenderObjectMatrixValid = false;
+
 	pe_params_foreign_data foreignData;
 	foreignData.iForeignFlags = 0;
 	if (!replacePhys && m_pPhysEnt)
@@ -150,7 +194,12 @@ void CBrush::SetMatrix(const Matrix34& mat)
 	if (replacePhys)
 		Dephysicalize();
 	if (!m_pPhysEnt)
-		Physicalize();
+	{
+		if (!m_bNoPhysicalize)
+		{
+			Physicalize();
+		}
+	}
 	else
 	{
 		// Just move physics.
@@ -191,6 +240,8 @@ void CBrush::SetMatrix(const Matrix34& mat)
 
 	if (m_pDeform)
 		m_pDeform->BakeDeform(m_Matrix);
+
+	m_lastMoveFrameId = gEnv->nMainFrameID;
 }
 
 void CBrush::CalcBBox()
@@ -204,50 +255,11 @@ void CBrush::CalcBBox()
 	m_WSBBox.min = m_pStatObj->GetBoxMin();
 	m_WSBBox.max = m_pStatObj->GetBoxMax();
 	m_WSBBox.SetTransformedAABB(m_Matrix, m_WSBBox);
-	m_fMatrixScale = m_Matrix.GetColumn0().GetLength();
-}
-
-CBrush::CBrush()
-{
-	m_WSBBox.min = m_WSBBox.max = Vec3(ZERO);
-	m_dwRndFlags = 0;
-	m_Matrix.SetIdentity();
-	m_pPhysEnt = 0;
-	m_Matrix.SetIdentity();
-	m_pMaterial = 0;
-	m_nLayerId = 0;
-	m_pStatObj = NULL;
-	m_pMaterial = NULL;
-	m_bVehicleOnlyPhysics = false;
-	m_bMerged = 0;
-	m_bDrawLast = false;
-	m_fMatrixScale = 1.f;
-	m_collisionClassIdx = 0;
-	m_pDeform = NULL;
-
-	GetInstCount(GetRenderNodeType())++;
-}
-
-CBrush::~CBrush()
-{
-	INDENT_LOG_DURING_SCOPE(true, "Destroying brush \"%s\"", this->GetName());
-
-	Dephysicalize();
-	Get3DEngine()->FreeRenderNodeState(this);
-
-	m_pStatObj = NULL;
-	if (m_pDeform)
-		delete m_pDeform;
-
-	if (m_pTempData)
-		Get3DEngine()->FreeRenderNodeTempData(&m_pTempData);
-	assert(!m_pTempData);
-
-	GetInstCount(GetRenderNodeType())--;
 }
 
 void CBrush::Physicalize(bool bInstant)
 {
+	m_bNoPhysicalize = false;
 	PhysicalizeOnHeap(NULL, bInstant);
 }
 
@@ -384,11 +396,23 @@ void CBrush::PhysicalizeOnHeap(IGeneralMemoryHeap* pHeap, bool bInstant)
 
 bool CBrush::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 {
-	if (nSlot < 0)
+	if (nSlot < 0 || !m_pStatObj->GetSubObjectCount())
 	{
 		bool res = false;
 		for (int i = 0; i < m_pStatObj->GetSubObjectCount(); i++)
 			res = res || PhysicalizeFoliage(bPhysicalize, iSource, i);
+		if (!res)
+		{
+			if (bPhysicalize)
+			{
+				res = m_pStatObj->PhysicalizeFoliage(m_pPhysEnt, m_Matrix, m_pFoliage) != 0;
+			}
+			else if (m_pFoliage)
+			{
+				m_pFoliage->Release();
+				m_pFoliage = nullptr;
+			}
+		}
 		return res;
 	}
 
@@ -399,7 +423,7 @@ bool CBrush::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 				return false;
 			if (!(m_pStatObj->GetFlags() & STATIC_OBJECT_CLONE))
 			{
-				m_pStatObj = m_pStatObj->Clone(false, false, false);
+				m_pStatObj = (CStatObj*)m_pStatObj->Clone(false, false, false);
 				pSubObj = m_pStatObj->GetSubObject(nSlot);
 			}
 			Matrix34 mtx = m_Matrix * pSubObj->localTM;
@@ -416,9 +440,12 @@ bool CBrush::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 
 IFoliage* CBrush::GetFoliage(int nSlot)
 {
-	if (IStatObj::SSubObject* pSubObj = m_pStatObj->GetSubObject(nSlot))
+	if (!m_pStatObj)
+		return nullptr;
+	IStatObj::SSubObject* pSubObj = m_pStatObj->GetSubObject(nSlot);
+	if (pSubObj)
 		return pSubObj->pFoliage;
-	return 0;
+	return m_pFoliage;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -512,8 +539,6 @@ void CBrush::Dematerialize()
 {
 	if (m_pMaterial)
 		m_pMaterial = 0;
-
-	UpdateExecuteAsPreProcessJobFlag();
 }
 
 IPhysicalEntity* CBrush::GetPhysics() const
@@ -567,46 +592,14 @@ void CBrush::SetMaterial(IMaterial* pMat)
 	m_pMaterial = pMat;
 
 	InvalidatePermanentRenderObject();
-	UpdateExecuteAsPreProcessJobFlag();
-}
-
-void CBrush::UpdateExecuteAsPreProcessJobFlag()
-{
-	IMaterial* pMat = GetMaterial();
-	m_bExecuteAsPreprocessJob = false;
-
-	// check if this Brush needs to be executed as a preprocess job
-	if (pMat)
-	{
-		SShaderItem& shaderItem = pMat->GetShaderItem();
-		if (shaderItem.m_pShader)
-		{
-			uint32 nFlags = shaderItem.m_pShader->GetFlags2();
-			m_bExecuteAsPreprocessJob = m_bExecuteAsPreprocessJob || ((nFlags & EF2_FORCE_WATERPASS) != 0);
-		}
-
-		// also check submaterials
-		for (int i = 0, nNum = pMat->GetSubMtlCount(); i < nNum; ++i)
-		{
-			SShaderItem& subShaderItem = pMat->GetShaderItem(i);
-			if (subShaderItem.m_pShader)
-			{
-				uint32 nFlags = subShaderItem.m_pShader->GetFlags2();
-				m_bExecuteAsPreprocessJob = m_bExecuteAsPreprocessJob || ((nFlags & EF2_FORCE_WATERPASS) != 0);
-			}
-		}
-
-#if defined(FEATURE_SVO_GI)
-		if (pMat && (GetCVars()->e_svoTI_Active >= 0) && (gEnv->IsEditor() || GetCVars()->e_svoTI_Apply))
-			pMat->SetKeepLowResSysCopyForDiffTex();
-#endif
-	}
 }
 
 void CBrush::CheckPhysicalized()
 {
-	if (!m_pPhysEnt)
+	if (!m_pPhysEnt && !m_bNoPhysicalize)
+	{
 		Physicalize();
+		}
 }
 
 void CBrush::GetMemoryUsage(ICrySizer* pSizer) const
@@ -621,52 +614,53 @@ void CBrush::SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matr
 
 	IStatObj* pPrevStatObj = m_pStatObj;
 
-	m_pStatObj = (CStatObj*)pStatObj;
+	SetStatObj(pStatObj);
 
 	if (pMatrix)
+	{
 		SetMatrix(*pMatrix);
+	}
 
 	// If object differ we must re-physicalize.
-	if (pStatObj != pPrevStatObj)
-		if (!pPrevStatObj || !pStatObj || (pStatObj->GetCloneSourceObject() != pPrevStatObj))// ||
-			//(pStatObj->GetFlags() & (STATIC_OBJECT_GENERATED|STATIC_OBJECT_CLONE))==STATIC_OBJECT_CLONE)
+	bool bRePhysicalize = (pStatObj != pPrevStatObj) && (!pPrevStatObj || !pStatObj || (pStatObj->GetCloneSourceObject() != pPrevStatObj));
+
+	if (bRePhysicalize && !m_bNoPhysicalize)
+	{
 			Physicalize();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBrush::SetStatObj(IStatObj* pStatObj)
+{
+	if (pStatObj == m_pStatObj)
+		return;
 
 	if (m_pTempData)
-		Get3DEngine()->FreeRenderNodeTempData(&m_pTempData);
-	assert(!m_pTempData);
+	{
+		m_pTempData->MarkForDelete();
+		m_pTempData = nullptr;
+	}
+
+	m_pStatObj = (CStatObj*)pStatObj;
+	if (m_pStatObj && m_pStatObj->IsDeformable())
+	{
+		if (!m_pDeform)
+			m_pDeform = new CDeformableNode(m_nSID);
+		m_pDeform->SetStatObj(static_cast<CStatObj*>(m_pStatObj.get()));
+		m_pDeform->BakeDeform(GetMatrix());
+	}
+	else
+		SAFE_DELETE(m_pDeform);
+
+	if (m_pTempData)
+	{
+		m_pTempData->MarkForDelete();
+		m_pTempData = nullptr;
+}
 
 	m_nInternalFlags |= UPDATE_DECALS;
 
-	if (m_pStatObj && m_pStatObj->IsDeformable())
-	{
-		if (!m_pDeform)
-			m_pDeform = new CDeformableNode(m_nSID);
-		m_pDeform->SetStatObj(static_cast<CStatObj*>(m_pStatObj.get()));
-		m_pDeform->BakeDeform(GetMatrix());
-	}
-	else
-	{
-		SAFE_DELETE(m_pDeform);
-	}
-
-	UpdateExecuteAsPreProcessJobFlag();
-}
-
-void CBrush::SetStatObj(IStatObj* pStatObj)
-{
-	m_pStatObj = pStatObj;
-	if (m_pStatObj && m_pStatObj->IsDeformable())
-	{
-		if (!m_pDeform)
-			m_pDeform = new CDeformableNode(m_nSID);
-		m_pDeform->SetStatObj(static_cast<CStatObj*>(m_pStatObj.get()));
-		m_pDeform->BakeDeform(GetMatrix());
-	}
-	else
-		SAFE_DELETE(m_pDeform);
-
-	UpdateExecuteAsPreProcessJobFlag();
 	InvalidatePermanentRenderObject();
 }
 
@@ -674,26 +668,35 @@ IRenderNode* CBrush::Clone() const
 {
 	CBrush* pDestBrush = new CBrush();
 
-	//CBrush member vars
-	//	potential issues with Smart Pointers
 	pDestBrush->m_Matrix = m_Matrix;
-	pDestBrush->m_fMatrixScale = m_fMatrixScale;
 	//pDestBrush->m_pPhysEnt		//Don't want to copy the phys ent pointer
 	pDestBrush->m_pMaterial = m_pMaterial;
 	pDestBrush->m_pStatObj = m_pStatObj;
 
 	pDestBrush->m_bVehicleOnlyPhysics = m_bVehicleOnlyPhysics;
-	pDestBrush->m_bMerged = m_bMerged;
 	pDestBrush->m_bDrawLast = m_bDrawLast;
 	pDestBrush->m_WSBBox = m_WSBBox;
+
+	pDestBrush->m_collisionClassIdx = m_collisionClassIdx;
+	pDestBrush->m_nLayerId = m_nLayerId;
 
 	//IRenderNode member vars
 	//	We cannot just copy over due to issues with the linked list of IRenderNode objects
 	CopyIRenderNodeData(pDestBrush);
 
-	pDestBrush->UpdateExecuteAsPreProcessJobFlag();
-
 	return pDestBrush;
+}
+
+void CBrush::SetLayerId(uint16 nLayerId)
+{
+	bool bChanged = m_nLayerId != nLayerId;
+	m_nLayerId = nLayerId; 
+
+	if (bChanged)
+	{
+		Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this);
+	}
+	InvalidatePermanentRenderObject();
 }
 
 IRenderMesh* CBrush::GetRenderMesh(int nLod)
@@ -706,6 +709,7 @@ void CBrush::OffsetPosition(const Vec3& delta)
 {
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
+	m_bPermanentRenderObjectMatrixValid = false;
 	m_WSBBox.Move(delta);
 
 	if (m_pPhysEnt)
@@ -714,6 +718,28 @@ void CBrush::OffsetPosition(const Vec3& delta)
 		par_pos.pos = m_Matrix.GetTranslation();
 		m_pPhysEnt->SetParams(&par_pos);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBrush::SetCameraSpacePos(Vec3* pCameraSpacePos)
+{
+	if (pCameraSpacePos)
+	{
+		if (!m_pCameraSpacePos)
+			m_pCameraSpacePos = new Vec3;
+		*m_pCameraSpacePos = *pCameraSpacePos;
+	}
+	else
+	{
+		delete m_pCameraSpacePos;
+		m_pCameraSpacePos = nullptr;
+	}
+}
+
+void CBrush::SetSubObjectHideMask(hidemask subObjHideMask)
+{
+	m_nSubObjHideMask = subObjHideMask;
+	InvalidatePermanentRenderObject();
 }
 
 bool CBrush::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const
@@ -744,32 +770,77 @@ bool CBrush::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances
 void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInfo, SSectorTextureSet* pTerrainTexInfo, PodArray<CDLight*>* pAffectingLights)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	CVars* pCVars = GetCVars();
 
 	// Collision proxy is visible in Editor while in editing mode.
-	if (m_dwRndFlags & ERF_COLLISION_PROXY)
+	if (m_dwRndFlags & (ERF_COLLISION_PROXY|ERF_RAYCAST_PROXY))
 	{
 		if (!gEnv->IsEditor() || !gEnv->IsEditing())
-			if (pCVars->e_DebugDraw == 0)
+			if (GetCVars()->e_DebugDraw == 0)
 				return;
 	}
 	if (m_dwRndFlags & ERF_HIDDEN)
 		return;
 
+	/*
+	if (!passInfo.IsShadowPass())
+	{
+		if (pFoliage)
+		{
+			pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(rParams.nMaterialLayers&MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
+			float maxdist = GetCVars()->e_FoliageWindActivationDist;
+			Vec3 pos = m_worldTM.GetTranslation();
+			if (pStatObj && (gEnv->pSystem->GetViewCamera().GetPosition() - pos).len2() < sqr(maxdist) && gEnv->p3DEngine->GetWind(AABB(pos), false).len2() > 101.0f)
+				pStatObj->PhysicalizeFoliage(pEntity->GetPhysics(), m_worldTM, pFoliage, 0, 4);
+		}
+	}
+	*/
+
+	Matrix34 transformMatrix = m_Matrix;
+
+	if (GetRndFlags() & ERF_FOB_NEAREST)
+	{
+		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
+			return;
+
+		// Nearest objects recalculate instance matrix every frame
+		m_bPermanentRenderObjectMatrixValid = false;
+		CalcNearestTransform(transformMatrix,passInfo);
+	}
+
+	CRenderObject* pObj = 0;
+
+	if (m_pFoliage || m_pDeform)
+	{
+		// Foliage and deform do not support permanent render objects
+		pObj = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());
+	}
+
+	if (!pObj)
+	{
+		if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, &lodValue, passInfo))
+		{
+			if (!m_bPermanentRenderObjectMatrixValid && pObj)
+			{
+				// Force to recompile only changed per instance data for this render object.
+				pObj->m_bInstanceDataDirty = true;
+				m_bPermanentRenderObjectMatrixValid = true;
+				pObj->m_II.m_Matrix = transformMatrix;
+			}
+			return;
+		}
+		m_bPermanentRenderObjectMatrixValid = true;
+	}
+
+	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
+
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
 	const Vec3 vObjPos = CBrush::GetPos();
 
-	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
-	CRenderObject* pObj = 0;
-
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, &lodValue, passInfo))
-		return;
-
 	pObj->m_fDistance = pObj->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	pObj->m_pRenderNode = this;
-	pObj->m_II.m_Matrix = userData.objMat;
+	pObj->m_II.m_Matrix = transformMatrix;
 	pObj->m_fAlpha = 1.f;
 	IF(!m_bDrawLast, 1)
 		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
@@ -779,15 +850,13 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	IMaterial* pMat = pObj->m_pCurrMaterial = CBrush::GetMaterial();
 	pObj->m_ObjFlags |= FOB_INSHADOW | FOB_TRANS_MASK;
 
-	if (!userData.objMat.m01 && !userData.objMat.m02 && !userData.objMat.m10 && !userData.objMat.m12 && !userData.objMat.m20 && !userData.objMat.m21)
-		pObj->m_ObjFlags &= ~FOB_TRANS_ROTATE;
-	else
-		pObj->m_ObjFlags |= FOB_TRANS_ROTATE;
+	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
+	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_NEAREST) ? FOB_NEAREST : 0;
 
-	if (m_dwRndFlags & ERF_NO_DECALNODE_DECALS)
+	if (m_dwRndFlags & ERF_NO_DECALNODE_DECALS && !(gEnv->nMainFrameID-m_lastMoveFrameId < 3))
+	{
 		pObj->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
-	else
-		pObj->m_ObjFlags &= ~FOB_DYNAMIC_OBJECT;
+	}
 
 	if (uint8 nMaterialLayers = IRenderNode::GetMaterialLayers())
 	{
@@ -800,7 +869,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 	if (!passInfo.IsShadowPass() && m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP)
 	{
-		if (!(pObj->m_nTextureID = GetObjManager()->CheckCachedNearestCubeProbe(this)) || !pCVars->e_CacheNearestCubePicking)
+		if (!(pObj->m_nTextureID = GetObjManager()->CheckCachedNearestCubeProbe(this)) || !GetCVars()->e_CacheNearestCubePicking)
 			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(pAffectingLights, m_pOcNode->m_pVisArea, CBrush::GetBBox());
 
 		m_pTempData->userData.nCubeMapId = pObj->m_nTextureID;
@@ -860,7 +929,17 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	else
 		pObj->m_ObjFlags &= ~FOB_AFTER_WATER;
 
-	if (CStatObj* pStatObj = (CStatObj*)CBrush::GetEntityStatObj())
+	//IFoliage* pFoliage = GetFoliage(-1);
+	if (m_pFoliage)
+	{
+		if (SRenderObjData* pOD = pObj->GetObjData())
+		{
+			pOD->m_pSkinningData = m_pFoliage->GetSkinningData(m_Matrix, passInfo);
+			pObj->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
+			//m_pFoliage->SetFlags(m_pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(pObj->m_nMaterialLayers & MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
+		}
+	}
+
 	{
 		// temporary fix for autoreload from max export, Vladimir needs to properly fix it!
 		if (pObj->m_pCurrMaterial != GetMaterial())
@@ -874,7 +953,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		else
 			pObj->m_ObjFlags &= ~FOB_ALLOW_TESSELLATION;
 
-		if (pCVars->e_BBoxes)
+		if (GetCVars()->e_BBoxes)
 			GetObjManager()->RenderObjectDebugInfo((IRenderNode*)this, pObj->m_fDistance, passInfo);
 
 		if (lodValue.LodA() <= 0 && Cry3DEngineBase::GetCVars()->e_MergedMeshes != 0 && m_pDeform && m_pDeform->HasDeformableData())
@@ -889,7 +968,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 			}
 		}
 
-		pStatObj->RenderInternal(pObj, 0, lodValue, passInfo);
+		m_pStatObj->RenderInternal(pObj, m_nSubObjHideMask, lodValue, passInfo);
 	}
 }
 
@@ -916,12 +995,50 @@ void CBrush::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
+
+	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
+	{
+		// When render node becomes visible notify our owner render node that it is now visible.
+		GetOwnerEntity()->OnRenderNodeVisibilityChange(true);
+	}
+}
+
+void CBrush::OnRenderNodeBecomeInvisible()
+{
+	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
+	{
+		// When render node becomes invisible notify our owner render node that it is now invisible.
+		GetOwnerEntity()->OnRenderNodeVisibilityChange(false);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBrush::CalcNearestTransform(Matrix34 &transformMatrix,const SRenderingPassInfo& passInfo)
+{
+	// Camera space
+	if (m_pCameraSpacePos)
+	{
+		// Use camera space relative position
+		transformMatrix.SetTranslation(*m_pCameraSpacePos);
+	}
+	else
+	{
+		// We don't have camera space relative position, so calculate it out from world space
+		// (This will not have the precision advantages of camera space rendering)
+		transformMatrix.AddTranslation(-passInfo.GetCamera().GetPosition());
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 bool CBrush::CanExecuteRenderAsJob()
 {
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBrush::DisablePhysicalization(bool bDisable)
+{
+	m_bNoPhysicalize = bDisable;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -939,6 +1056,18 @@ EERType CBrush::GetRenderNodeType()
 ///////////////////////////////////////////////////////////////////////////////
 float CBrush::GetMaxViewDist()
 {
+	if (GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
+	{
+		// Always want to render models in post 3d render (menus), whatever distance they are
+		return FLT_MAX;
+	}
+
+	if (GetRndFlags() & ERF_CUSTOM_VIEW_DIST_RATIO)
+	{
+		float s = max(max((m_WSBBox.max.x - m_WSBBox.min.x), (m_WSBBox.max.y - m_WSBBox.min.y)), (m_WSBBox.max.z - m_WSBBox.min.z));
+		return max(GetCVars()->e_ViewDistMin, s * GetCVars()->e_ViewDistRatioCustom * GetViewDistRatioNormilized());
+	}
+
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, min(GetFloatCVar(e_ViewDistCompMaxSize), CBrush::GetBBox().GetRadius()) * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
 
@@ -950,6 +1079,12 @@ Vec3 CBrush::GetPos(bool bWorldOnly) const
 {
 	assert(bWorldOnly);
 	return m_Matrix.GetTranslation();
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CBrush::GetScale() const
+{
+	return  m_Matrix.GetColumn0().GetLength();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

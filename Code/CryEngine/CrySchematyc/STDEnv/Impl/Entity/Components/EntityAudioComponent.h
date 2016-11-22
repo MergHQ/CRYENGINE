@@ -6,11 +6,12 @@
 #include <Schematyc/Types/MathTypes.h>
 #include <CrySerialization/Forward.h>
 
+struct IEntityAudioComponent;
+
 namespace Schematyc
 {
 // Forward declare interfaces.
 struct IEnvRegistrar;
-struct IEntityAudioProxy;
 
 struct SAudioTriggerSerializeHelper
 {
@@ -83,6 +84,6 @@ public:
 
 private:
 	AudioProxyId         m_audioProxyId = INVALID_AUDIO_PROXY_ID;
-	IEntityAudioProxyPtr m_pAudioProxy;
+	IEntityAudioComponent*   m_pAudioProxy;
 };
 } // Schematyc

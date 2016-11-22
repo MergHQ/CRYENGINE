@@ -240,7 +240,7 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			else
 			{
 				prop.m_bIsNoAwake = false;
-				CPhysicalProxy* pPhProxy = pEntity->GetPhysicalProxy();
+				CEntityPhysics* pPhProxy = pEntity->GetPhysicalProxy();
 				if (pPhProxy)
 				{
 					pe_status_awake isawake;

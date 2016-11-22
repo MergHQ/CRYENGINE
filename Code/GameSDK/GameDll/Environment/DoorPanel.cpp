@@ -405,10 +405,10 @@ void CDoorPanel::AssignAsFSCommandHandler()
 	IEntity* pEntity = GetEntity();
 	if (pEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		
 		{
-			_smart_ptr<IMaterial> pMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
+			_smart_ptr<IMaterial> pMaterial = pIEntityRender->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
 			IFlashPlayer* pFlashPlayer = CHUDUtils::GetFlashPlayerFromMaterialIncludingSubMaterials(pMaterial, true);
 			if (pFlashPlayer) // Valid to not have a flash player, since will update when flash setup
 			{

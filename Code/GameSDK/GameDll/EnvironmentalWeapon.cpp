@@ -531,9 +531,8 @@ void CEnvironmentalWeapon::SetOwner(EntityId ownerId)
 		}
 
 		//Update physics netserialization (Only serialize when the shields aren't being held otherwise we get fighting from 1p/3p animation differences)
-		if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
 		{
-			pPhysicsProxy->EnableNetworkSerialization(m_OwnerId == 0);
+			GetEntity()->PhysicsNetSerializeEnable(m_OwnerId == 0);
 		}
 
 		// Let lua know about this too
@@ -2410,7 +2409,7 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 #endif //#ifndef _RELEASE
 		}
 		// OBJECTS
-		else if(IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+		else
 		{
 			const Vec3 vImpulseVec  = (hitInfo.impulseScale * hitInfo.dir); 
 			
@@ -2437,7 +2436,7 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 			}
 			else
 			{
-				pPhysicsProxy->AddImpulse(hitInfo.partId, hitInfo.pos, vImpulseVec, true, 1.0f, 1.0f);
+				pEntity->AddImpulse(hitInfo.partId, hitInfo.pos, vImpulseVec, true, 1.0f, 1.0f);
 			}
 
 			// LOGGING
@@ -2626,9 +2625,9 @@ void CEnvironmentalWeapon::ProcessHitObject( const EntityHitRecord& entityHitRec
 
 void CEnvironmentalWeapon::OnStartChargedThrow()
 {
-	if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
+
 	{
-		pPhysicsProxy->EnableNetworkSerialization(true);
+		GetEntity()->PhysicsNetSerializeEnable(true);
 	}
 
 	m_initialThrowPos = GetEntity()->GetWorldPos();

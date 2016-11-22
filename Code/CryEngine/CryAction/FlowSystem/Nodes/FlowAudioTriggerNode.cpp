@@ -229,30 +229,30 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void ExecuteOnProxy(IEntity* const pIEntity, AudioControlId const audioTriggerId, EPlayMode const playMode)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pIEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioComponent* const pIEntityAudioComponent = pIEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-		if (pIEntityAudioProxy != nullptr)
+		if (pIEntityAudioComponent != nullptr)
 		{
 			switch (playMode)
 			{
 			case ePlayMode_Play:
 				{
 					SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(audioTriggerId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+					pIEntityAudioComponent->SetCurrentEnvironments();
+					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
 
 					break;
 				}
 			case ePlayMode_PlayStop:
 				{
-					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(audioTriggerId);
+					pIEntityAudioComponent->SetCurrentEnvironments();
+					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId);
 
 					break;
 				}
 			case ePlayMode_ForceStop:
 				{
-					pIEntityAudioProxy->StopTrigger(audioTriggerId);
+					pIEntityAudioComponent->StopTrigger(audioTriggerId);
 
 					break;
 				}

@@ -6,7 +6,7 @@
 
 #include "CryActionCVars.h"
 
-#include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryExtension/ClassWeaver.h>
 #include <CryExtension/CryCreateClassInstance.h>
@@ -22,9 +22,6 @@ CAnimatedCharacterComponent_Base::CAnimatedCharacterComponent_Base()
 void CAnimatedCharacterComponent_Base::Initialize(const SComponentInitializer& init)
 {
 	m_piEntity = init.m_pEntity;
-	m_pAnimCharacter = static_cast<const SComponentInitializerAnimChar&>(init).m_pAnimCharacter;
-
-	RegisterEvent(ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable);
 }
 
 void CAnimatedCharacterComponent_Base::ProcessEvent(SEntityEvent& event)
@@ -35,6 +32,11 @@ void CAnimatedCharacterComponent_Base::ProcessEvent(SEntityEvent& event)
 		OnPrePhysicsUpdate(event.fParam[0]);
 		break;
 	}
+}
+
+uint64 CAnimatedCharacterComponent_Base::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,7 +60,7 @@ void CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate::OnPrePhysics
 	m_pAnimCharacter->PrepareAnimatedCharacterForUpdate();
 }
 
-IComponent::ComponentEventPriority CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate::GetEventPriority(const int eventID) const
 {
 	CRY_ASSERT(m_pAnimCharacter);
 
@@ -89,7 +91,7 @@ void CAnimatedCharacterComponent_StartAnimProc::OnPrePhysicsUpdate(float elapsed
 	m_pAnimCharacter->PrepareAndStartAnimProc();
 }
 
-IComponent::ComponentEventPriority CAnimatedCharacterComponent_StartAnimProc::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CAnimatedCharacterComponent_StartAnimProc::GetEventPriority(const int eventID) const
 {
 	CRY_ASSERT(m_pAnimCharacter);
 
@@ -120,7 +122,7 @@ void CAnimatedCharacterComponent_GenerateMoveRequest::OnPrePhysicsUpdate(float e
 	m_pAnimCharacter->GenerateMovementRequest();
 }
 
-IComponent::ComponentEventPriority CAnimatedCharacterComponent_GenerateMoveRequest::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CAnimatedCharacterComponent_GenerateMoveRequest::GetEventPriority(const int eventID) const
 {
 	CRY_ASSERT(m_pAnimCharacter);
 

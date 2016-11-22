@@ -78,13 +78,6 @@ bool CInteractor::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 	return false;
 }
 
-bool CInteractor::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CInteractor::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 CInteractor::~CInteractor()
 {
 	if (m_pQuery)

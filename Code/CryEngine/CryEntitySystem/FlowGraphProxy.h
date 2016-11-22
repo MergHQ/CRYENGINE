@@ -21,46 +21,42 @@
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-class CFlowGraphProxy : public IEntityFlowGraphProxy
+class CEntityComponentFlowGraph : public IEntityFlowGraphComponent
 {
-public:
-	CFlowGraphProxy();
-	~CFlowGraphProxy();
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentFlowGraph,IEntityFlowGraphComponent,"CEntityComponentFlowGraph",0x2BC1F44EBD734EC5,0xBC8F7982E75BE23C);
 
+public:
 	CEntity* GetEntity() const { return m_pEntity; };
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_FLOWGRAPH; }
-	virtual void         Release() { delete this; };
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
+	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final; // Need all events except pre physics update
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityFlowGraphProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph);
-	virtual IFlowGraph* GetFlowGraph();
-	virtual void        AddEventListener(IEntityEventListener* pListener);
-	virtual void        RemoveEventListener(IEntityEventListener* pListener);
+	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_FLOWGRAPH; }
+	virtual void         Release() final { delete this; };
+	virtual void         Update(SEntityUpdateContext& ctx) final;
+	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final;
+	virtual void         GameSerialize(TSerialize ser) final;
+	virtual bool         NeedGameSerialize() final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	//////////////////////////////////////////////////////////////////////////
+	// IEntityFlowGraphComponent interface implementation.
+	//////////////////////////////////////////////////////////////////////////
+	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph) final;
+	virtual IFlowGraph* GetFlowGraph() final;
+	virtual void        AddEventListener(IEntityEventListener* pListener) final;
+	virtual void        RemoveEventListener(IEntityEventListener* pListener) final;
+	//////////////////////////////////////////////////////////////////////////
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const final
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}

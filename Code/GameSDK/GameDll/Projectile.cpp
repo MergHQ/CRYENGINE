@@ -367,21 +367,16 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 			return false;
 		}
 
-		IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
 		if (ser.IsWriting())
 		{
-			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
+			if (!GetEntity()->GetPhysicalEntity() || GetEntity()->GetPhysicalEntity()->GetType() != type)
 			{
 				gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot(ser, type, 0);
 				return true;
 			}
 		}
-		else if (!pEPP)
-		{
-			return false;
-		}
 
-		pEPP->SerializeTyped(ser, type, pflags);
+		GetEntity()->PhysicsNetSerializeTyped(ser, type, pflags);
 	}
 
 	if (aspect == ASPECT_DETONATION)
@@ -455,7 +450,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	LoadGeometry();
 	Physicalize();
 
-	IEntityRenderProxy* pProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRender* pProxy = pEntity->GetRenderInterface();
 	if (pProxy && pProxy->GetRenderNode())
 	{
 		pProxy->GetRenderNode()->SetViewDistRatio(255);
@@ -1493,16 +1488,13 @@ IParticleEffect* CProjectile::GetCachedEffect(const char* effectName) const
 }
 
 //------------------------------------------------------------------------
-IEntityAudioProxy* CProjectile::GetAudioProxy()
+IEntityAudioComponent* CProjectile::GetAudioProxy()
 {
-	IEntityAudioProxy* pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (!pIEntityAudioProxy)
-		pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO)).get();
+	assert(pIEntityAudioComponent);
 
-	assert(pIEntityAudioProxy);
-
-	return pIEntityAudioProxy;
+	return pIEntityAudioComponent;
 }
 
 void CProjectile::FlashbangEffect(const SFlashbangParams* flashbang)

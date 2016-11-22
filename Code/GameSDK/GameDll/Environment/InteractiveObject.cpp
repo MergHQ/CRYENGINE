@@ -491,9 +491,9 @@ void CInteractiveObjectEx::StartUse( EntityId entityId )
 			const Vec3 vRadius(radius,radius,radius);
 			AABB worldBox(pos-vRadius, pos+vRadius);
 
-			if (IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER))
+			if (IEntityRender *pIEntityRender = GetEntity()->GetRenderInterface())
 			{
-				gEnv->p3DEngine->DeleteDecalsInRange(&worldBox, pRenderProxy->GetRenderNode());
+				gEnv->p3DEngine->DeleteDecalsInRange(&worldBox, pIEntityRender->GetRenderNode());
 			}
 		}
 

@@ -15,41 +15,27 @@
 #include "CameraProxy.h"
 #include <CryNetwork/ISerialize.h>
 
+CRYREGISTER_CLASS(CEntityComponentCamera);
+
 //////////////////////////////////////////////////////////////////////////
-CCameraProxy::CCameraProxy()
+CEntityComponentCamera::CEntityComponentCamera()
 	: m_pEntity(NULL)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraProxy::Initialize(const SComponentInitializer& init)
+CEntityComponentCamera::~CEntityComponentCamera()
+{}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentCamera::Initialize(const SComponentInitializer& init)
 {
 	m_pEntity = (CEntity*)init.m_pEntity;
 	UpdateMaterialCamera();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraProxy::Release()
-{
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CCameraProxy::Init(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	UpdateMaterialCamera();
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCameraProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	UpdateMaterialCamera();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCameraProxy::ProcessEvent(SEntityEvent& event)
+void CEntityComponentCamera::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -63,7 +49,13 @@ void CCameraProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraProxy::UpdateMaterialCamera()
+uint64 CEntityComponentCamera::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_INIT);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentCamera::UpdateMaterialCamera()
 {
 	float fov = m_camera.GetFov();
 	m_camera = GetISystem()->GetViewCamera();
@@ -78,22 +70,14 @@ void CCameraProxy::UpdateMaterialCamera()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraProxy::SetCamera(CCamera& cam)
+void CEntityComponentCamera::SetCamera(CCamera& cam)
 {
 	m_camera = cam;
 	UpdateMaterialCamera();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CCameraProxy::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("CameraProxy");
-	signature.EndGroup();
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCameraProxy::Serialize(TSerialize ser)
+void CEntityComponentCamera::GameSerialize(TSerialize ser)
 {
 
 }

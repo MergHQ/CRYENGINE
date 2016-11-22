@@ -368,7 +368,7 @@ bool Cry3DEngineBase::IsEscapePressed()
 
 // Common types
 #include <Cry3DEngine/IIndexedMesh_info.h>
-#include <CryEntitySystem/IEntityRenderState_info.h>
+#include <Cry3DEngine/IRenderNode_info.h>
 #include <Cry3DEngine/CGF/CGFContent_info.h>
 
 // 3DEngine types

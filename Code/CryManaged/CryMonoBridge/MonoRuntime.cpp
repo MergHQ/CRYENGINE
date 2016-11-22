@@ -267,9 +267,9 @@ IMonoAssembly* CMonoRuntime::GetCryCoreLibrary() const
 template<class T>
 struct CEntityComponentCreator : public IGameObjectExtensionCreatorBase
 {
-	IGameObjectExtensionPtr Create()
+	IGameObjectExtension* Create(IEntity *pEntity)
 	{
-		return ComponentCreate_DeleteWithRelease<T>();
+		return pEntity->CreateComponentClass<T>();
 	}
 
 	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)

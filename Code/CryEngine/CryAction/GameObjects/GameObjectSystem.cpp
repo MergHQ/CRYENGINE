@@ -82,8 +82,6 @@ bool CGameObjectSystem::Init()
 		}
 	}
 
-	m_spawnSerializers.reserve(8);
-
 	LoadSerializationOrderFile();
 
 	return true;
@@ -328,77 +326,69 @@ IGameObject* CGameObjectSystem::CreateGameObjectForEntity(EntityId entityId)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
 	if (pEntity)
 	{
-		CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
-		pEntity->SetProxy(ENTITY_PROXY_USER, pGameObject);
+		auto pGameObject = pEntity->CreateComponentClass<CGameObject>();
 
-		SEntitySpawnParams spawnParams;
-		pGameObject->Init(pEntity, spawnParams);
 		// call sink
 		for (SinkList::iterator si = m_lstSinks.begin(); si != m_lstSinks.end(); ++si)
 		{
-			(*si)->OnAfterInit(pGameObject.get());
+			(*si)->OnAfterInit(pGameObject);
 		}
 		//
-		return pGameObject.get();
+		return pGameObject;
 	}
 
 	return 0;
 }
 
-IEntityProxyPtr CGameObjectSystem::CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject)
+IEntityComponent* CGameObjectSystem::CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject)
 {
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(&entity), IComponent::EComponentFlags_LazyRegistration);
+	auto pGameObject = entity.CreateComponentClass<CGameObject>();
 	if (ppGameObject)
 	{
-		*ppGameObject = pGameObject.get();
+		*ppGameObject = pGameObject;
 	}
 	return pGameObject;
 }
 
-IGameObjectExtensionPtr CGameObjectSystem::Instantiate(ExtensionID id, IGameObject* pObject)
+IGameObjectExtension* CGameObjectSystem::Instantiate(ExtensionID id, IGameObject* pObject, TSerialize* pSpawnSerializer)
 {
 	if (id > m_extensionInfo.size())
-		return IGameObjectExtensionPtr();
-	IGameObjectExtensionPtr pExt = m_extensionInfo[id].pFactory->Create();
-	if (!pExt)
-		return IGameObjectExtensionPtr();
-	IEntity* pEntity = pObject->GetEntity();
-	pEntity->RegisterComponent(crycomponent_cast<IComponentPtr>(pExt), IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-	pExt->Initialize(IComponent::SComponentInitializer(pEntity));
+		return nullptr;
 
-	TSerialize* pSpawnSerializer = GetSpawnSerializerForEntity(pEntity->GetId());
+	IEntity* pEntity = pObject->GetEntity();
+	IGameObjectExtension* pExt = m_extensionInfo[id].pFactory->Create(pEntity);
+	if (!pExt)
+		return nullptr;
+
 	if (pSpawnSerializer)
 		pExt->SerializeSpawnInfo(*pSpawnSerializer);
 
 	if (!pExt->Init(pObject))
 	{
-		pEntity->RegisterComponent(crycomponent_cast<IComponentPtr>(pExt), false);
-		pExt.reset();
-		return IGameObjectExtensionPtr();
+		pEntity->RemoveComponent(pExt);
+		return nullptr;
 	}
 	return pExt;
 }
 
 /* static */
-IEntityProxyPtr CGameObjectSystem::CreateGameObjectWithPreactivatedExtension(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+IEntityComponent* CGameObjectSystem::CreateGameObjectWithPreactivatedExtension(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 {
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
+	auto pGameObject = pEntity->CreateComponentClass<CGameObject>();
 	if (!pGameObject->ActivateExtension(params.pClass->GetName()))
 	{
-		pEntity->RegisterComponent(pGameObject, false);
-		pGameObject.reset();
-		return IEntityProxyPtr();
+		pEntity->RemoveComponent(pGameObject);
+		return nullptr;
 	}
 
 	if (params.pUserData)
 	{
 		SEntitySpawnParamsForGameObjectWithPreactivatedExtension* pParams =
-		  static_cast<SEntitySpawnParamsForGameObjectWithPreactivatedExtension*>(params.pUserData);
-		if (!pParams->hookFunction(pEntity, pGameObject.get(), pParams->pUserData))
+			static_cast<SEntitySpawnParamsForGameObjectWithPreactivatedExtension*>(params.pUserData);
+		if (!pParams->hookFunction(pEntity, pGameObject, pParams->pUserData))
 		{
-			pEntity->RegisterComponent(pGameObject, false);
-			pGameObject.reset();
-			return IEntityProxyPtr();
+			pEntity->RemoveComponent(pGameObject);
+			return nullptr;
 		}
 	}
 
@@ -442,33 +432,6 @@ const SEntitySchedulingProfiles* CGameObjectSystem::GetEntitySchedulerProfiles(I
 		return &m_defaultProfiles;
 	}
 	return &iter->second;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-void CGameObjectSystem::SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer)
-{
-	CRY_ASSERT(GetSpawnSerializerForEntity(entityId) == NULL);
-	if (GetSpawnSerializerForEntity(entityId) != NULL)
-	{
-		__debugbreak();
-	}
-
-	m_spawnSerializers.push_back(SSpawnSerializer(entityId, pSerializer));
-}
-
-void CGameObjectSystem::ClearSpawnSerializerForEntity(const EntityId entityId)
-{
-	stl::find_and_erase(m_spawnSerializers, entityId);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-TSerialize* CGameObjectSystem::GetSpawnSerializerForEntity(const EntityId entityId) const
-{
-	TSpawnSerializers::const_iterator it = std::find(m_spawnSerializers.begin(), m_spawnSerializers.end(), entityId);
-
-	return (it != m_spawnSerializers.end()) ? (*it).pSerializer : NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////

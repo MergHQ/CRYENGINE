@@ -1365,8 +1365,7 @@ void CGunTurret::UpdatePhysics()
 	if (IEntity* pParent = GetEntity()->GetParent())
 	{      
 		IPhysicalEntity* pParentPhysics = pParent->GetPhysics();
-		IEntityPhysicalProxy *pPhysicsProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-		if (pParentPhysics && pPhysicsProxy)
+		if (pParentPhysics)
 		{
       Matrix34 localTM = GetEntity()->GetLocalTM();
       localTM.OrthonormalizeFast();
@@ -1376,7 +1375,7 @@ void CGunTurret::UpdatePhysics()
       {
         pe_params_part params;    
 
-        params.partid = slots[i] + pPhysicsProxy->GetPartId0();
+        params.partid = slots[i] + GetEntity()->GetPhysicalEntityPartId0();
 
         const Matrix34& slotTM = GetEntity()->GetSlotLocalTM(slots[i], false);
         

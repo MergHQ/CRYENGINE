@@ -12,7 +12,7 @@
 
 #define GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA 1
 
-#include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryNetwork/SerializeFwd.h>
 #include "IActionMapManager.h"
@@ -192,7 +192,7 @@ template<size_t N> stl::PoolAllocator<N>* CRMIAllocator<N>::m_pAllocator = 0;
 //   Interface used to interact with a game object
 // See Also
 //   IGameObjectExtension
-struct IGameObject : public IActionListener
+struct IGameObject : public IEntityComponent, public IActionListener
 {
 protected:
 	class CRMIBody : public IRMIMessageBody
@@ -343,12 +343,6 @@ public:
 	// release a previously acquired extension
 	ILINE void                  ReleaseExtension(const char* extension)    { ChangeExtension(extension, eCE_Release); }
 
-	// retrieve the hosting entity
-	ILINE IEntity* GetEntity() const
-	{
-		return m_pEntity;
-	}
-
 	ILINE EntityId GetEntityId() const
 	{
 		return m_entityId;
@@ -391,14 +385,13 @@ protected:
 		eCE_Release
 	};
 
-	IGameObject() : m_pEntity(0), m_entityId(0), m_pMovementController(0) {}
+	IGameObject() : m_entityId(0), m_pMovementController(0) {}
 	EntityId             m_entityId;
 	IMovementController* m_pMovementController;
-	IEntity*             m_pEntity;
 
 private:
 	// change extension activation/reference somehow
-	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change) = 0;
+	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change, TSerialize* pSpawnSerializer = 0) = 0;
 	// invoke an RMI call
 	virtual void                  DoInvokeRMI(_smart_ptr<CRMIBody> pBody, unsigned where, int channel) = 0;
 };
@@ -727,16 +720,14 @@ struct IGameObjectProfileManager
 
 // Summary
 //   Interface used to implement a game object extension
-struct IGameObjectExtension : public IComponent
+struct IGameObjectExtension : public IEntityComponent
 {
-	virtual ~IGameObjectExtension(){}
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const = 0;
+	IGameObjectExtension() : m_pGameObject(0), m_entityId(0) {}
 
-	IGameObjectExtension() : m_pGameObject(0), m_entityId(0), m_pEntity(0) {}
-
-	// IComponent
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return(ENTITY_PROXY_LAST - ENTITY_PROXY_USER); }
-	// ~IComponent
+	// IEntityComponent.h
+	virtual uint64 GetEventMask() const { return ~(BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE)); } // All events except update and pre-physics update are subscribed to
+	virtual void Initialize(const SComponentInitializer& init) {};
+	// ~IEntityComponent.h
 
 	// Summary
 	//   Initialize the extension
@@ -802,24 +793,6 @@ struct IGameObjectExtension : public IComponent
 	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) = 0;
 
 	// Summary
-	//   Builds a signature to describe the dynamic hierarchy of the parent Entity container
-	// Arguments:
-	//    signature - the object to serialize with, forming the signature
-	// Returns:
-	//    true - If the signature is thus far valid
-	// Note:
-	//    It's the responsibility of the proxy to identify its internal state which may complicate the hierarchy
-	//    of the parent Entity i.e., sub-proxies and which actually exist for this instantiation.
-	virtual bool GetEntityPoolSignature(TSerialize signature) = 0;
-
-	// Summary
-	//   Releases the resources used by the object
-	// Remarks
-	//   This function should also take care of freeing the instance once the
-	//   resource are freed.
-	virtual void Release() = 0;
-
-	// Summary
 	//   Performs the serialization the extension
 	// Parameters
 	//   ser - object used to serialize values
@@ -867,11 +840,7 @@ struct IGameObjectExtension : public IComponent
 	//   SGameObjectEvent
 	virtual void HandleEvent(const SGameObjectEvent& event) = 0;
 
-	// Summary
-	//   Processes entity specific events
-	// Parameters
-	//   event - entity event, see SEntityEvent for more information
-	virtual void ProcessEvent(SEntityEvent& event) = 0;
+	virtual void GameSerialize(TSerialize ser ){ FullSerialize(ser); };                         //!< From IEntityComponent
 
 	virtual void SetChannelId(uint16 id) = 0;
 	virtual void SetAuthority(bool auth) = 0;
@@ -902,12 +871,6 @@ struct IGameObjectExtension : public IComponent
 	ILINE IGameObject* GetGameObject() const { return m_pGameObject; }
 
 	// Summary
-	//   Retrieves the pointer to the entity
-	// Returns
-	//   A pointer to the entity which hold this game object extension
-	ILINE IEntity* GetEntity() const { return m_pEntity; }
-
-	// Summary
 	//   Retrieves the EntityId
 	// Returns
 	//   An EntityId to the entity which hold this game object extension
@@ -933,10 +896,7 @@ protected:
 private:
 	IGameObject* m_pGameObject;
 	EntityId     m_entityId;
-	IEntity*     m_pEntity;
 };
-
-DECLARE_COMPONENT_POINTERS(IGameObjectExtension);
 
 #define CHANGED_NETWORK_STATE(object, aspects)     do { /* IEntity * pEntity = object->GetGameObject()->GetEntity(); CryLogAlways("%s changed aspect %x (%s %d)", pEntity ? pEntity->GetName() : "NULL", aspects, __FILE__, __LINE__); */ object->GetGameObject()->ChangedNetworkState(aspects); } while (0)
 #define CHANGED_NETWORK_STATE_GO(object, aspects)  do { /* IEntity * pEntity = object->GetEntity(); CryLogAlways("%s changed aspect %x (%s %d)", pEntity ? pEntity->GetName() : "NULL", aspects, __FILE__, __LINE__); */ object->ChangedNetworkState(aspects); } while (0)

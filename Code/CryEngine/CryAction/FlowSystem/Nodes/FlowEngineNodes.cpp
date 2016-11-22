@@ -473,7 +473,7 @@ public:
 		m_ppObjects(0),
 		m_nObjType(0)
 	{
-		STATIC_CHECK(eERType_TypesNum == 25, Sync_enum_in_GetConfiguration_ObjectType_port_with_new_entries_on_EERType);
+		//STATIC_CHECK(eERType_TypesNum == 26, Sync_enum_in_GetConfiguration_ObjectType_port_with_new_entries_on_EERType);
 	}
 
 	~CFlowNode_SetObjectMaterial()

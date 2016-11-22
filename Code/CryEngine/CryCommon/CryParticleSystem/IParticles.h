@@ -15,7 +15,6 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CryMemory/IMemory.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CrySystem/TimeValue.h>
 #include <CryAudio/IAudioSystem.h>
 #include <Cry3DEngine/GeomRef.h>
@@ -352,6 +351,8 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 	//! Associates emitter with entity, for dynamic updating of positions etc.
 	//! \note Must be done when entity created or serialized, entity association is not serialized.
 	virtual void SetEntity(IEntity* pEntity, int nSlot) = 0;
+
+	virtual void InvalidateCachedEntityData() = 0;
 
 	//! Sets location with quat-based orientation.
 	//! \note IRenderNode.SetMatrix() is equivalent, but performs conversion.

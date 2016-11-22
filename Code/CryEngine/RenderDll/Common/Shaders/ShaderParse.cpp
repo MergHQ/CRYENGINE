@@ -607,11 +607,15 @@ SShaderGen* CShaderMan::mfCreateShaderGenInfo(const char* szName, bool bRuntime)
 			return it->second;
 	}
 	SShaderGen* pShGen = NULL;
-	char szN[256];
-	cry_strcpy(szN, "Shaders/");
-	cry_strcat(szN, szName);
-	cry_strcat(szN, ".ext");
-	FILE* fp = gEnv->pCryPak->FOpen(szN, "rb", ICryPak::FOPEN_HINT_QUIET);
+
+	stack_string nameFile;
+	nameFile.Format("%s%s.ext", gRenDev->m_cEF.m_ShadersGameExtPath.c_str(), szName);
+	FILE* fp = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb", ICryPak::FOPEN_HINT_QUIET);
+	if (!fp)
+	{
+		nameFile.Format("%s%s.ext", gRenDev->m_cEF.m_ShadersExtPath, szName);
+		fp = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb", ICryPak::FOPEN_HINT_QUIET);
+	}
 	if (fp)
 	{
 		pShGen = new SShaderGen;

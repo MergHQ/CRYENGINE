@@ -323,7 +323,9 @@
 		[
 			"MergedMeshRenderNode.cpp",
 			"DeformableNode.h",
-			"MergedMeshRenderNode.h"
+			"MergedMeshRenderNode.h",
+			"RenderNodes/CharacterRenderNode.cpp",
+			"RenderNodes/CharacterRenderNode.h"
 		],
 		"Effects/Optics":
 		[

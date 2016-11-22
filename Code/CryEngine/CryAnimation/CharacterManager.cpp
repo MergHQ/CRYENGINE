@@ -1705,6 +1705,9 @@ void CharacterManager::Update(bool bPaused)
 	   #endif
 	 */
 
+
+	UpdateInstances(bPaused);
+
 	if (Console::GetInst().ca_DebugModelCache)
 	{
 		float fWhite[4] = { 1, 1, 1, 1 };
@@ -3308,8 +3311,6 @@ void CharacterManager::SyncAllAnimations()
 
 	if (Console::GetInst().ca_MemoryDefragEnabled)
 		g_controllerHeap.Update();
-
-	gEnv->pEntitySystem->RegisterCharactersForRendering();
 }
 
 void CharacterManager::ClearPoseModifiersFromSynchQueue()
@@ -3326,6 +3327,24 @@ void CharacterManager::ClearPoseModifiersFromSynchQueue()
 		}
 		pSkeletonAnim->m_poseModifierQueue.ClearAllPoseModifiers();
 		pSkeletonAnim->m_transformPinningPoseModifier.reset();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CharacterManager::UpdateInstances(bool bPause)
+{
+	if (bPause)
+		return;
+
+	// Go through all registered character instances and check if they need to be updated.
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
+
+	for (auto& modelRef : m_arrModelCacheSKEL)
+	{
+		for (CCharInstance* pCharInstance : modelRef.m_RefByInstances)
+		{
+			pCharInstance->PerFrameUpdate();
+		}
 	}
 }
 
@@ -3945,7 +3964,6 @@ void CharacterManager::RenderDebugInstances(const SRenderingPassInfo& passInfo)
 
 		SRendParams rp;
 		rp.fDistance = 3.5f;
-		rp.fRenderQuality = 1.0f;
 		rp.AmbientColor.r = m_arrCharacterBase[i].m_AmbientColor.r;
 		rp.AmbientColor.g = m_arrCharacterBase[i].m_AmbientColor.g;
 		rp.AmbientColor.b = m_arrCharacterBase[i].m_AmbientColor.b;

@@ -1143,7 +1143,7 @@ void CGameStats::StartGame(bool server)
 		IGameRules* pR = pGR->GetCurrentGameRules();
 		if (pR)
 		{
-			IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
+			IEntityScriptComponent* pScriptProxy = static_cast<IEntityScriptComponent*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
 			if (pScriptProxy)
 			{
 				string gameState = pScriptProxy->GetState();
@@ -1501,7 +1501,7 @@ void CGameStats::Connected()
 			IGameRules* pR = pGR->GetCurrentGameRules();
 			if (pR)
 			{
-				IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
+				IEntityScriptComponent* pScriptProxy = static_cast<IEntityScriptComponent*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
 				if (pScriptProxy)
 				{
 					string gameState = pScriptProxy->GetState();

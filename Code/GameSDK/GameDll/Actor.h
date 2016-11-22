@@ -520,8 +520,9 @@ public:
 	virtual ~CActor();
 
 	// IEntityEvent
+	virtual uint64 GetEventMask() const override { return (~0); } // Actors receive all entity events
 	virtual	void ProcessEvent( SEntityEvent &event ) override;
-	virtual IComponent::ComponentEventPriority GetEventPriority( const int eventID ) const override;
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority( const int eventID ) const override;
 	// ~IEntityEvent
 
 	// IActor
@@ -544,8 +545,7 @@ public:
 	virtual void PostInit( IGameObject * pGameObject ) override;
 	virtual void PostInitClient(int channelId) override {}
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
-	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
-	virtual bool GetEntityPoolSignature( TSerialize signature ) override;
+	virtual void PostReloadExtension(IGameObject * pGameObject, const SEntitySpawnParams &params) override;
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 	virtual void UpdateView(SViewParams &viewParams) override {}
 	virtual void PostUpdateView(SViewParams &viewParams) override {}
@@ -1030,7 +1030,6 @@ protected:
 	//
 
 	virtual void InitGameParams(const SActorGameParams &gameParams, const bool reloadCharacterSounds);
-	void RebindScript();
 
 	void RegisterInAutoAimManager(const SAutoaimTargetRegisterParams &autoAimParams);
 

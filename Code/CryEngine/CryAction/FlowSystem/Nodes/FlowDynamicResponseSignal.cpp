@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 class CFlowNode_SendDynamicResponseSignal final : public CFlowBaseNode<eNCT_Instanced>, public DRS::IResponseManager::IListener
@@ -91,7 +91,7 @@ public:
 					if (pActInfo->pEntity)
 					{
 						const string& signalName = GetPortString(pActInfo, eIn_SignalName);
-						IEntityDynamicResponseProxyPtr const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+						IEntityDynamicResponseComponent* const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseComponent*>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
 
 						SET_DRS_USER_SCOPED("SendDrsSignal FlowGraph");
 
@@ -225,7 +225,7 @@ public:
 					const string& signalName = GetPortString(pActInfo, eIn_SignalName);
 					if (pActInfo->pEntity)
 					{
-						IEntityDynamicResponseProxyPtr const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+						IEntityDynamicResponseComponent* const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseComponent*>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
 						gEnv->pDynamicResponseSystem->CancelSignalProcessing(signalName, pIEntityDrsProxy->GetResponseActor());
 					}
 					else

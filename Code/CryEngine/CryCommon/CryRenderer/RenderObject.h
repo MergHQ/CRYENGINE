@@ -37,7 +37,7 @@ enum ERenderObjectFlags : uint64
 	FOB_INSHADOW                    = BIT64(20),
 	FOB_DISSOLVE                    = BIT64(21),
 	FOB_MOTION_BLUR                 = BIT64(22),
-	FOB_NEAREST                     = BIT64(23), // [Rendered in Camera Space]
+	FOB_NEAREST                     = BIT64(23), //!< [Rendered in Camera Space]
 	FOB_SKINNED                     = BIT64(24),
 	FOB_DISSOLVE_OUT                = BIT64(25),
 	FOB_DYNAMIC_OBJECT              = BIT64(26),

@@ -498,14 +498,14 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderEle
 			}
 		}
 
-		if (pOD && (pOD->m_nCustomFlags & COB_POST_3D_RENDER))
+		if (pOD->m_nCustomFlags & COB_POST_3D_RENDER)
 		{
 			nFlags |= FB_POST_3D_RENDER;
 		}
 
 		if (nFlags & FB_LAYER_EFFECT)
 		{
-			if ((!pOD || !pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
+			if ((!pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
 				nFlags &= ~FB_LAYER_EFFECT;
 		}
 

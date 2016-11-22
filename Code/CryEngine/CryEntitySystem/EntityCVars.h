@@ -93,8 +93,6 @@ struct CVar
 	static int    es_SaveLoadUseLUANoSaveFlag;
 	static int    es_LayerDebugInfo;
 
-	static ICVar* pUpdateType;
-
 	static float  es_EntityUpdatePosDelta;
 
 	static int    es_debugDrawEntityIDs;

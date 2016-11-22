@@ -363,18 +363,12 @@ EntityId CDialogSession::GetActorEntityId(CDialogScript::TActorID actorID) const
 }
 
 ////////////////////////////////////////////////////////////////////////////
-IEntityAudioProxy* CDialogSession::GetEntityAudioProxy(IEntity* pEntity) const
+IEntityAudioComponent* CDialogSession::GetEntityAudioProxy(IEntity* pEntity) const
 {
 	if (!pEntity)
 		return 0;
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_AUDIO);
-	if (!pProxy)
-	{
-		if (pEntity->CreateProxy(ENTITY_PROXY_AUDIO))
-			pProxy = pEntity->GetProxy(ENTITY_PROXY_AUDIO);
-	}
-	return (IEntityAudioProxy*) pProxy;
+	return pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 }
 
 ////////////////////////////////////////////////////////////////////////////

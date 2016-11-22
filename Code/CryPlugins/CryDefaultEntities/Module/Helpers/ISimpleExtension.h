@@ -18,7 +18,6 @@ struct ISimpleExtension : public IGameObjectExtension
 	virtual void                   PostInitClient(int channelId) override                                                   {}
 	virtual bool                   ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override     { return true; }
 	virtual void                   PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
-	virtual bool                   GetEntityPoolSignature(TSerialize signature) override                                    { return false; }
 	virtual void                   Release() override                                                                       { delete this; }
 	virtual void                   FullSerialize(TSerialize ser) override                                                   {}
 	virtual bool                   NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override  { return true; }
@@ -54,9 +53,9 @@ struct ISimpleExtension : public IGameObjectExtension
 template<class T>
 struct CObjectCreator : public IGameObjectExtensionCreatorBase
 {
-	IGameObjectExtensionPtr Create()
+	IGameObjectExtension* Create( IEntity *pEntity )
 	{
-		return ComponentCreate_DeleteWithRelease<T>();
+		return pEntity->CreateComponentClass<T>();
 	}
 
 	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)

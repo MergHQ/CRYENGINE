@@ -130,9 +130,9 @@ void CMFXDecalEffect::Execute(const SMFXRunTimeEffectParams& params)
 		IRenderNode* pRenderNode = NULL;
 		if (pEnt)
 		{
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEnt->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
-				pRenderNode = pRenderProxy->GetRenderNode();
+			IEntityRender* pIEntityRender = pEnt->GetRenderInterface();
+			
+				pRenderNode = pIEntityRender->GetRenderNode();
 		}
 		else
 		{

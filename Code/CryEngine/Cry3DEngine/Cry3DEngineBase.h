@@ -16,7 +16,6 @@
 #define _Cry3DEngineBase_h_
 
 #include "3DEngineMemory.h"
-#include <CryEntitySystem/IEntityRenderState.h>
 
 struct ISystem;
 struct IRenderer;
@@ -170,7 +169,7 @@ struct Cry3DEngineBase
 
 	int&        GetInstCount(EERType eType)                            { return m_arrInstancesCounter[eType]; }
 
-	uint32      GetMinSpecFromRenderNodeFlags(uint32 dwRndFlags) const { return (dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; }
+	uint32      GetMinSpecFromRenderNodeFlags(uint64 dwRndFlags) const { return (dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; }
 	static bool CheckMinSpec(uint32 nMinSpec);
 
 	static bool IsEscapePressed();

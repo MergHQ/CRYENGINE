@@ -226,8 +226,8 @@ if (OPTION_SANDBOX AND WIN64)
 	set(Qt5_DIR ${QT_DIR})
 
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
-	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
-	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")
+	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "Sandbox/AUTOGEN")
+	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "Sandbox/AUTOMOC")
 endif()
 
 # Order currently matters for Engine, Games and Launchers

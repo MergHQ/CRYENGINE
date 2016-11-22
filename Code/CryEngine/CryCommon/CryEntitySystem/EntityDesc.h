@@ -7,7 +7,6 @@ typedef uint16 EntityClassId;
 
 #include "Stream.h"
 #include <CryEntitySystem/IBitStream.h>         // <> required for Interfuscator
-#include <CryEntitySystem/IEntityRenderState.h> // <> required for Interfuscator
 
 struct IEntityContainer;
 

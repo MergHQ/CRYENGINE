@@ -1834,6 +1834,10 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 	pBackBuffer = m_pBackBuffers[(m_pCurrentBackBufferIndex + m_pBackBuffers.size() - 1) % m_pBackBuffers.size()];
 
 	assert(pBackBuffer);
+	if (!pBackBuffer)
+	{
+		return false;
+	}
 
 	bool frameCaptureSuccessful(false);
 	D3DResource* pBackBufferRsrc(0);
@@ -5662,12 +5666,12 @@ int CD3D9Renderer::RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* p
 		if (type == PHYS_FOREIGN_ID_ENTITY)
 		{
 			IEntity* pEntity = (IEntity*)rayHit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-			IEntityRenderProxy* pRenderProxy = pEntity ? (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER) : 0;
+			IEntityRender* pIEntityRender = pEntity ? pEntity->GetRenderInterface() : 0;
 
 			// Get the renderproxy, and use it to check if the material is a DynTex, and get the UIElement if so
-			if (pRenderProxy)
+			
 			{
-				IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+				IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 				if (pRenderNode)
 				{
 					int m_dynTexGeomSlot = 0;

@@ -9,33 +9,27 @@
 // Description:
 //    Handles audio on the entity.
 //////////////////////////////////////////////////////////////////////////
-struct CEntityAudioProxy final : public IEntityAudioProxy
+struct CEntityComponentAudio : public IEntityAudioComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentAudio,IEntityAudioComponent,"CEntityComponentAudio",0x51AE5FC21B454351,0xAC889CAF0C757B5F);
+
 public:
-
-	CEntityAudioProxy();
-	virtual ~CEntityAudioProxy();
-
-	// IComponent
+	// IEntityComponent.h
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	virtual void Initialize(SComponentInitializer const& init) override;
-	// ~IComponent
+	virtual uint64 GetEventMask() const final;
+	// ~IEntityComponent.h
 
-	// IEntityProxy
-	virtual EEntityProxy GetType() override { return ENTITY_PROXY_AUDIO; }
-	virtual void         Release() override;
-	virtual void         Done() override;
-	virtual void         Update(SEntityUpdateContext& ctx) override                   {}
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override  { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
+	// IEntityComponent
+	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_AUDIO; }
+	virtual void         Release() final { delete this; };
 	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override {}
-	virtual void         Serialize(TSerialize ser) override;
-	virtual bool         NeedSerialize() override                                     { return false; }
-	virtual bool         GetSignature(TSerialize signature) override;
+	virtual void         GameSerialize(TSerialize ser) override;
+	virtual bool         NeedGameSerialize() override                                     { return false; }
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override             { pSizer->AddObject(this, sizeof(*this)); }
-	// ~IEntityProxy
+	// ~IEntityComponent
 
-	// IEntityAudioProxy
+	// IEntityAudioComponent
 	virtual void               SetFadeDistance(float const fadeDistance) override                       { m_fadeDistance = fadeDistance; }
 	virtual float              GetFadeDistance() const override                                         { return m_fadeDistance; }
 	virtual void               SetEnvironmentFadeDistance(float const environmentFadeDistance) override { m_environmentFadeDistance = environmentFadeDistance; }
@@ -59,7 +53,7 @@ public:
 	virtual void               AuxAudioProxiesMoveWithEntity(bool const bCanMoveWithEntity) override;
 	virtual void               AddAsListenerToAuxAudioProxy(AudioProxyId const audioProxyId, void (* func)(SAudioRequestInfo const* const), EAudioRequestType requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) override;
 	virtual void               RemoveAsListenerFromAuxAudioProxy(AudioProxyId const audioProxyId, void (* func)(SAudioRequestInfo const* const)) override;
-	// ~IEntityAudioProxy
+	// ~IEntityAudioComponent
 
 private:
 

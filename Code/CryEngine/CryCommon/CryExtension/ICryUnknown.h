@@ -172,7 +172,6 @@ using CompositeQuerySemantics::crycomposite_query;
   _BEFRIEND_CRYINTERFACE_CAST()                                                          \
   _BEFRIEND_CRYCOMPOSITE_QUERY()                                                         \
   _BEFRIEND_DELETER(iname)                                                               \
-  _PROTECTED_DTOR(iname)                                                                 \
                                                                                          \
 private:                                                                                 \
   static const CryInterfaceID& IID()                                                     \
@@ -189,6 +188,9 @@ struct ICryUnknown
 	virtual ICryFactory* GetFactory() const = 0;
 
 protected:
+	// Destructor is protected
+	virtual ~ICryUnknown() {};
+
 	virtual void* QueryInterface(const CryInterfaceID& iid) const = 0;
 	virtual void* QueryComposite(const char* name) const = 0;
 };

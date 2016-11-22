@@ -391,7 +391,9 @@ void CVehicleMovementStdBoat::UpdateRunSound(const float deltaTime)
     m_rpmScale = abs(m_rpmScaleSgn);
     m_rpmScale = min(1.f, max(ms_engineSoundIdleRatio, m_rpmScale + m_waveSoundPitch));
 
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+		auto pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
   }
 }
 

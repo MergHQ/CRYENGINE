@@ -1917,7 +1917,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 								info.matObj = nodeTM;
 								info.pStatObj = (CStatObj*)pNode->GetEntityStatObj(nSlotId, nSubSlotId, NULL);
 
-								if (!info.pStatObj && nObjType == eERType_RenderProxy)
+								if (!info.pStatObj && nObjType == eERType_Character)
 								{
 									if (ICharacterInstance* pChar = pNode->GetEntityCharacter(nSlotId, &nodeTM))
 									{
@@ -1968,7 +1968,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 								bool bUnloadable = pParent->IsUnloadable();
 
 								if (pNode->GetRenderNodeType() == eERType_Brush)
-									info.fObjScale = ((CBrush*)pNode)->m_fMatrixScale;
+									info.fObjScale = ((CBrush*)pNode)->GetScale();
 								else if (pNode->GetRenderNodeType() == eERType_Vegetation)
 									info.fObjScale = ((CVegetation*)pNode)->GetScale();
 								else if (pNode->GetRenderNodeType() == eERType_RenderProxy)

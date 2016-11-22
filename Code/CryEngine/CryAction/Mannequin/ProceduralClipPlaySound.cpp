@@ -42,7 +42,7 @@ public:
 	{
 		BaseClass::Initialise(entity, actionController);
 
-		m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(entity.CreateProxy(ENTITY_PROXY_AUDIO));
+		m_pIEntityAudioComponent = entity.GetOrCreateComponent<IEntityAudioComponent>();
 	}
 
 	virtual void Update(float timePassed) override
@@ -51,36 +51,36 @@ public:
 
 	void ExecuteAudioTrigger(AudioControlId const audioTriggerId, EAudioOcclusionType const occlusionType, bool playFacial)
 	{
-		if (m_pIEntityAudioProxy != NULL)
+		if (m_pIEntityAudioComponent != NULL)
 		{
-			m_pIEntityAudioProxy->SetObstructionCalcType(occlusionType);
+			m_pIEntityAudioComponent->SetObstructionCalcType(occlusionType);
 			REINST("support facial animations for CAudioContext (if needed)");
-			m_pIEntityAudioProxy->ExecuteTrigger(audioTriggerId);
+			m_pIEntityAudioComponent->ExecuteTrigger(audioTriggerId);
 		}
 	}
 
 	void StopAudioTrigger(AudioControlId const audioTriggerId)
 	{
-		if (m_pIEntityAudioProxy != NULL)
+		if (m_pIEntityAudioComponent != NULL)
 		{
-			m_pIEntityAudioProxy->StopTrigger(audioTriggerId);
+			m_pIEntityAudioComponent->StopTrigger(audioTriggerId);
 		}
 	}
 
 	void SetAudioObjectPos(QuatT const& offset)
 	{
-		if (m_pIEntityAudioProxy != NULL)
+		if (m_pIEntityAudioComponent != NULL)
 		{
-			m_pIEntityAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, offset.t));
+			m_pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(IDENTITY, offset.t));
 		}
 	}
 
 private:
 
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioComponent;
 };
 
-CAudioContext::CAudioContext() : m_pIEntityAudioProxy()
+CAudioContext::CAudioContext() : m_pIEntityAudioComponent()
 {
 }
 

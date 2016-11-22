@@ -213,7 +213,7 @@ struct SBreakableGlassPhysData
 
 	IStatObj*              pStatObj;
 	phys_geometry*         pPhysGeom;
-	uint                   renderFlags;
+	uint64                 renderFlags;
 };
 
 //! Breakable glass decal shader constants - Sizing, placement and type.

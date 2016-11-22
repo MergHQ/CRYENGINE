@@ -70,8 +70,6 @@ void CReplayActor::Release()
 //------------------------------------------------------------------------
 void CReplayActor::PostInit(IGameObject *pGameObject)
 {
-	RegisterEvent( ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable );
-
 	GetGameObject()->EnableUpdateSlot(this, 0);
 }
 
@@ -142,6 +140,13 @@ void CReplayActor::ProcessEvent(SEntityEvent &event)
 		}
 		break;
 	}
+}
+
+uint64 CReplayActor::GetEventMask() const
+{
+	return 
+		BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) |
+		BIT64(ENTITY_EVENT_DONE);
 }
 
 //------------------------------------------------------------------------
@@ -744,9 +749,9 @@ void CReplayActor::Physicalize()
 	}
 
 	// Set ViewDistRatio.
-	if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRender* pIEntityRender = entity.GetRenderInterface())
 	{
-		if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
+		if(IRenderNode* pRenderNode = pIEntityRender->GetRenderNode())
 		{
 			pRenderNode->SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
 		}

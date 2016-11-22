@@ -18,14 +18,14 @@
 
 // Do not add any headers here!
 #include "CryEngineDecalInfo.h"
-#include <Cry3DEngine/IStatObj.h> // <> required for Interfuscator
+#include <Cry3DEngine/IStatObj.h>
 #include <CryRenderer/IRenderer.h>
-#include <CrySystem/IProcess.h>                 // <> required for Interfuscator
-#include <Cry3DEngine/IMaterial.h>              // <> required for Interfuscator
-#include <Cry3DEngine/ISurfaceType.h>           // <> required for Interfuscator
-#include <CryEntitySystem/IEntityRenderState.h> // <> required for Interfuscator
+#include <CrySystem/IProcess.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryCore/Containers/CryArray.h>
-#include <CryMemory/IMemory.h> // <> required for Interfuscator
+#include <CryMemory/IMemory.h>
 //Do not add any headers here!
 
 struct ISystem;
@@ -2107,9 +2107,6 @@ struct I3DEngine : public IProcess
 
 	//! Used by editor during object alignment
 	virtual bool RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hitInfo, IMaterial* pCustomMtl = 0) = 0;
-
-	//! Frees lod transition state
-	virtual void FreeRenderNodeTempData(SRenderNodeTempData** ppInfo) = 0;
 
 	// pointer to ISegmentsManager interface
 	virtual ISegmentsManager* GetSegmentsManager() = 0;

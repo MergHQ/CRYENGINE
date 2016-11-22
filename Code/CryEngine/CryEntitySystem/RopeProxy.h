@@ -24,42 +24,39 @@ struct IPhysicalWorld;
 // Description:
 //    Implements rope proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-class CRopeProxy : public IEntityRopeProxy
+class CEntityComponentRope : public IEntityRopeComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentRope,IEntityRopeComponent,"CEntityComponentRope",0xDFAE2B7E15BB4F3D,0xBD09E0C8E560BF85);
+
 public:
-	CRopeProxy();
-	~CRopeProxy();
 	CEntity* GetEntity() const { return m_pEntity; };
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                          { return ENTITY_PROXY_ROPE; }
-	virtual void         Release();
-	virtual void         Done()                                             {};
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual bool         NeedSerialize();
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         GetSignature(TSerialize signature);
+	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	/// IEntityRopeProxy
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual IRopeRenderNode* GetRopeRenderNode() { return m_pRopeRenderNode; };
+	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ROPE; }
+	virtual void         Release() final { delete this; };
+	virtual void         Update(SEntityUpdateContext& ctx) final;
+	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final;
+	virtual bool         NeedGameSerialize() final;
+	virtual void         GameSerialize(TSerialize ser) final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	//////////////////////////////////////////////////////////////////////////
+	/// IEntityRopeComponent
+	//////////////////////////////////////////////////////////////////////////
+	virtual IRopeRenderNode* GetRopeRenderNode() final { return m_pRopeRenderNode; };
+	//////////////////////////////////////////////////////////////////////////
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const final
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}

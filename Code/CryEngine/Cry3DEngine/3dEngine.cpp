@@ -61,6 +61,7 @@
 #include "GeomCacheRenderNode.h"
 #include "GeomCacheManager.h"
 #include "ClipVolumeManager.h"
+#include "RenderNodes/CharacterRenderNode.h"
 #include <CryNetwork/IRemoteCommand.h>
 #include "CloudBlockerRenderNode.h"
 #include "WaterRippleManager.h"
@@ -1984,6 +1985,8 @@ Vec3 C3DEngine::GetAmbientColorFromPosition(const Vec3& vPos, float fRadius)
 
 void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	// make sure we don't try to update the streaming priority if an object
 	// was added and removed in the same frame
 	int nElementID = m_deferredRenderProxyStreamingPriorityUpdates.Find(pEnt);
@@ -2023,8 +2026,8 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 
 	if (pEnt->m_pTempData)
 	{
-		Get3DEngine()->FreeRenderNodeTempData(&pEnt->m_pTempData);
-		assert(!pEnt->m_pTempData);
+		pEnt->m_pTempData->MarkForDelete();
+		pEnt->m_pTempData = nullptr;
 	}
 }
 
@@ -2952,6 +2955,11 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 	case eERType_MergedMesh:
 		{
 			IRenderNode* pRenderNode = new CMergedMeshRenderNode();
+			return pRenderNode;
+		}
+	case eERType_Character:
+		{
+			IRenderNode* pRenderNode = new CCharacterRenderNode();
 			return pRenderNode;
 		}
 
@@ -4687,13 +4695,6 @@ bool C3DEngine::RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo&
 	return CRenderMeshUtils::RayIntersection(pRenderMesh, hitInfo, pCustomMtl);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void C3DEngine::FreeRenderNodeTempData(SRenderNodeTempData** ppTempData)
-{
-	m_visibleNodesManager.MarkForDelete(*ppTempData);
-	*ppTempData = 0;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, IRenderNode* pRNode, const SRenderingPassInfo& passInfo)
 {
@@ -4713,7 +4714,8 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 		if (*ppInputTempData)
 		{
-			FreeRenderNodeTempData(ppInputTempData);
+			(*ppInputTempData)->MarkForDelete();
+			*ppInputTempData = nullptr;
 		}
 
 		SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());
@@ -5128,7 +5130,7 @@ void C3DEngine::PrecacheRenderNode(IRenderNode* pObj, float fEntDistanceReal)
 
 	if (m_pObjManager)
 	{
-		int dwOldRndFlags = pObj->m_dwRndFlags;
+		auto dwOldRndFlags = pObj->m_dwRndFlags;
 		pObj->m_dwRndFlags &= ~ERF_HIDDEN;
 
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->pSystem->GetViewCamera());
@@ -6206,7 +6208,7 @@ Vec3 C3DEngine::GetSkyColor() const
 ///////////////////////////////////////////////////////////////////////////////
 bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderingPassInfo& passInfo, bool bIgnoreShadowPass) const
 {
-#ifdef MESH_TESSELLATION_ENGINE
+	#ifdef MESH_TESSELLATION_ENGINE
 	assert(pObj && GetCVars());
 	bool rendererTessellation;
 	GetRenderer()->EF_Query(EFQ_MeshTessellation, rendererTessellation);
@@ -6235,7 +6237,7 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 
 		return bAllowTessellation;
 	}
-#endif //#ifdef MESH_TESSELLATION_ENGINE
+	#endif //#ifdef MESH_TESSELLATION_ENGINE
 
 	return false;
 }
@@ -6329,23 +6331,23 @@ int C3DEngine::GetTerrainSize()
 {
 	return CTerrain::GetTerrainSize();
 }
-#include "ParticleEmitter.h"
+	#include "ParticleEmitter.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe, uint32 nFrameID, bool bUnRegisterOnly)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-#ifdef _DEBUG // crash test basically
+	#ifdef _DEBUG // crash test basically
 	const char* szClass = pEnt->GetEntityClassName();
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("I3DEngine::RegisterEntity: Entity undefined"); // do not register undefined objects
 	                                                          //  if(strstr(szName,"Dude"))
 	                                                          //  int y=0;
-#endif
+	#endif
 
-	IF(bUnRegisterOnly, 0)
+	IF (bUnRegisterOnly, 0)
 	{
 		UnRegisterEntityImpl(pEnt);
 		return;
@@ -6356,14 +6358,14 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	float fObjRadiusSqr = aabb.GetRadiusSqr();
 	EERType eERType = pEnt->GetRenderNodeType();
 
-#ifdef SUPP_HMAP_OCCL
+	#ifdef SUPP_HMAP_OCCL
 	if (pEnt->m_pTempData)
 		pEnt->m_pTempData->userData.m_OcclState.vLastVisPoint.Set(0, 0, 0);
-#endif
+	#endif
 
 	UpdateObjectsLayerAABB(pEnt);
 
-	const unsigned int dwRndFlags = pEnt->GetRndFlags();
+	auto  dwRndFlags = pEnt->GetRndFlags();
 
 	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
 		if (GetCVars()->e_ObjFastRegister && pEnt->m_pOcNode && ((COctreeNode*)pEnt->m_pOcNode)->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
@@ -6390,7 +6392,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	{
 		UnRegisterEntityImpl(pEnt);
 	}
-	else if (GetCVars()->e_StreamCgf && eERType == eERType_RenderProxy)
+	else if (GetCVars()->e_StreamCgf && pEnt->GetOwnerEntity())
 	{
 		//  Temporary solution: Force streaming priority update for objects that was not registered before
 		//  and was not visible before since usual prediction system was not able to detect them
@@ -6458,7 +6460,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	//////////////////////////////////////////////////////////////////////////
 	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
 	{
-#ifndef SEG_WORLD
+	#ifndef SEG_WORLD
 		if (nSID == -1)
 		{
 			nSID = 0;
@@ -6489,7 +6491,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 
 			m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-#else
+	#else
 		if (gEnv->IsEditor() || eERType != eERType_Vegetation)
 		{
 			// CS - opt here
@@ -6518,7 +6520,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 			if (nSID == nSIDConsideredSafe || IsSegmentSafeToUse(nSID))
 				m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-#endif
+	#endif
 	}
 
 	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
@@ -6566,12 +6568,12 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 
 	FUNCTION_PROFILER_3DENGINE;
 
-#ifdef _DEBUG // crash test basically
+	#ifdef _DEBUG // crash test basically
 	const char* szClass = pEnt->GetEntityClassName();
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("C3DEngine::RegisterEntity: Entity undefined");
-#endif
+	#endif
 
 	EERType eRenderNodeType = pEnt->GetRenderNodeType();
 

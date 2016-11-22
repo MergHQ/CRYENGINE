@@ -35,7 +35,7 @@ This action will execute the specified audio trigger.
 	class CActionExecuteAudioTriggerInstance final : public DRS::IResponseActionInstance
 	{
 	public:
-		CActionExecuteAudioTriggerInstance(IEntityAudioProxyPtr pAudioProxy, AudioControlId audioStartTriggerID);
+		CActionExecuteAudioTriggerInstance(IEntityAudioComponent* pAudioProxy, AudioControlId audioStartTriggerID);
 		virtual ~CActionExecuteAudioTriggerInstance();
 
 		//////////////////////////////////////////////////////////
@@ -48,5 +48,5 @@ This action will execute the specified audio trigger.
 		static void OnAudioTriggerFinished(const SAudioRequestInfo* const pAudioRequestInfo);
 	private:
 		AudioControlId m_audioStartTriggerID;
-		IEntityAudioProxyPtr m_pEntityAudioProxy;
+		IEntityAudioComponent* m_pEntityAudioProxy;
 	};

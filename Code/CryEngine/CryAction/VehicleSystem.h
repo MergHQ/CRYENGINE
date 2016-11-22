@@ -130,7 +130,7 @@ public:
 #endif
 
 private:
-	//	static IEntityProxy *CreateVehicle(IEntity *pEntity, SEntitySpawnParams &params, void *pUserData);
+	//	static IEntityComponent *CreateVehicle(IEntity *pEntity, SEntitySpawnParams &params, void *pUserData);
 	void RegisterCVars();
 
 	struct SSpawnUserData

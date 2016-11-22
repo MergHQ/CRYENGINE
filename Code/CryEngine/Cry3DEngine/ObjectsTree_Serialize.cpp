@@ -291,6 +291,10 @@ int COctreeNode::SaveObjects(CMemoryBlock* pMemBlock, std::vector<IStatObj*>* pS
 			if (!(nObjTypeMask & (1 << eType)))
 				continue;
 
+			// Do not serialize nodes owned by the Entity
+			if (pRenderNode->GetOwnerEntity())
+				continue;
+
 			nBlockSize += GetSingleObjectFileDataSize(pObj, pExportInfo);
 		}
 
@@ -311,6 +315,10 @@ int COctreeNode::SaveObjects(CMemoryBlock* pMemBlock, std::vector<IStatObj*>* pS
 			EERType eType = pRenderNode->GetRenderNodeType();
 
 			if (!(nObjTypeMask & (1 << eType)))
+				continue;
+
+			// Do not serialize nodes owned by the Entity
+			if (pRenderNode->GetOwnerEntity())
 				continue;
 
 			arrSortedObjects.Add(pRenderNode);
@@ -756,12 +764,12 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 	}
 }
 
-bool COctreeNode::IsObjectStreamable(EERType eType, uint32 dwRndFlags)
+bool COctreeNode::IsObjectStreamable(EERType eType, uint64 dwRndFlags)
 {
 	return (eType == eERType_Vegetation && !(dwRndFlags & ERF_PROCEDURAL)) || (eType == eERType_Decal) || (eType == eERType_Road) || (eType == eERType_MergedMesh); // || (dwRndFlags & ERF_STREAMABLE)
 }
 
-bool COctreeNode::CheckSkipLoadObject(EERType eType, uint32 dwRndFlags, ELoadObjectsMode eLoadMode)
+bool COctreeNode::CheckSkipLoadObject(EERType eType, uint64 dwRndFlags, ELoadObjectsMode eLoadMode)
 {
 	return
 	  (eLoadMode == LOM_LOAD_ONLY_NON_STREAMABLE && (IsObjectStreamable(eType, dwRndFlags))) ||

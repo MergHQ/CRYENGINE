@@ -1,6 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <CryEntitySystem/IEntityRenderState.h> // <> required for Interfuscator
+#include <Cry3DEngine/IRenderNode.h> // <> required for Interfuscator
 
 ENUM_INFO_BEGIN(EERType)
 ENUM_ELEM_INFO(, eERType_Unknown)

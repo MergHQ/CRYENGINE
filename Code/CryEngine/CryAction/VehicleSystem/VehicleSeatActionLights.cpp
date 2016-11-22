@@ -261,11 +261,11 @@ void CVehicleSeatActionLights::ToggleLights(bool enable)
 void CVehicleSeatActionLights::PlaySound(const string& name)
 {
 	REINST("send event");
-	/*IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pVehicle->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO));
+	/*IEntityAudioComponent* pIEntityAudioComponent = m_pVehicle->GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
-	   if(pIEntityAudioProxy)
+	   if(pIEntityAudioComponent)
 	   {
-	   pIEntityAudioProxy->PlaySound(name.c_str(), Vec3(0.0f, 0.0f, 0.0f), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
+	   pIEntityAudioComponent->PlaySound(name.c_str(), Vec3(0.0f, 0.0f, 0.0f), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
 	   }*/
 }
 

@@ -292,10 +292,10 @@ bool DeviceInfo::CreateDevice(bool windowed, int width, int height, int backbuff
 	  (FP_CreateDXGIFactory1) GetProcAddress(LoadLibraryA("dxgi.dll"), "CreateDXGIFactory1");
 	#endif
 
-	IDXGIAdapter1* pAdapter;
-	IDXGIOutput* pOutput;
-	ID3D11Device* pDevice;
-	ID3D11DeviceContext* pContext;
+	IDXGIAdapter1* pAdapter = nullptr;
+	IDXGIOutput* pOutput = nullptr;
+	ID3D11Device* pDevice = nullptr;
+	ID3D11DeviceContext* pContext = nullptr;
 
 	if (pCDXGIF && SUCCEEDED(pCDXGIF(__uuidof(DXGIFactory), (void**) &m_pFactory)) && m_pFactory)
 	{
@@ -410,6 +410,7 @@ bool DeviceInfo::CreateDevice(bool windowed, int width, int height, int backbuff
 
 	if (!m_pFactory || !m_pAdapter || !m_pDevice || !m_pContext || !m_pOutput)
 	{
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "DeviceInfo::CreateDevice() failed");
 		Release();
 		return false;
 	}

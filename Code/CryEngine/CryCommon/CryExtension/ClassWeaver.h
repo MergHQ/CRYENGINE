@@ -289,15 +289,24 @@ public:
 		pIIDs = m_pIIDs;
 		numIIDs = m_numIIDs;
 	}
+
 public:
-	template<class Tp>
-	struct public_creator_for_T : public Tp {};
+	struct CustomDeleter
+	{
+		void operator()(T* p)
+		{
+			// Explicit call to the destructor
+			p->~T();
+			// Memory aligned free
+			CryModuleMemalignFree(p);
+		}
+	};
 
 	virtual ICryUnknownPtr CreateClassInstance() const
 	{
-		stl::aligned_alloc<public_creator_for_T<T>, std::alignment_of<public_creator_for_T<T>>::value> allocator;
-		std::shared_ptr<T> p = std::allocate_shared<public_creator_for_T<T>>(allocator);
-		return cryinterface_cast<ICryUnknown>(p);
+		void* pAlignedMemory = CryModuleMemalign(sizeof(T), std::alignment_of<T>::value);
+		
+		return cryinterface_cast<ICryUnknown>(std::shared_ptr<T>(new(pAlignedMemory) T(), CustomDeleter()));
 	}
 
 	CFactory()
@@ -398,12 +407,19 @@ public:
   _BEFRIEND_DELETER(implclassname)
 
 #define CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow) \
+  friend struct CFactory<implclassname>::CustomDeleter; \
   _CRYFACTORY_DECLARE(implclassname)                             \
   _BEFRIEND_OPS(implclassname)                                   \
   _IMPLEMENT_ICRYUNKNOWN()                                       \
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 
+#define CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, cidHigh, cidLow) \
+	friend struct CFactory<implclassname>::CustomDeleter; \
+	CRYINTERFACE_SIMPLE(interfaceName)                                                           \
+	CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
+
 #define CRYGENERATE_SINGLETONCLASS(implclassname, cname, cidHigh, cidLow) \
+  friend struct CFactory<implclassname>::CustomDeleter;                    \
   _CRYFACTORY_DECLARE_SINGLETON(implclassname)                            \
   _BEFRIEND_OPS(implclassname)                                            \
   _IMPLEMENT_ICRYUNKNOWN()                                                \

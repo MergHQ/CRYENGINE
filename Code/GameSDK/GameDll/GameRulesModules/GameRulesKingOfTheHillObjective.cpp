@@ -690,7 +690,7 @@ void CGameRulesKingOfTheHillObjective::InitEntityAudio( SHoldEntityDetails *pDet
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pDetails->m_id);
 	if(pEntity)
 	{
-		pEntity->CreateProxy(ENTITY_PROXY_AUDIO);
+		pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 		UpdateEntityAudio(pDetails);
 	}
 }
@@ -722,10 +722,10 @@ void CGameRulesKingOfTheHillObjective::ClearEntityAudio( SHoldEntityDetails *pDe
 	/*IEntity *pEntity = gEnv->pEntitySystem->GetEntity(pDetails->m_id);
 	if(pEntity)
 	{
-		IEntityAudioProxy *pIEntityAudioProxy = (IEntityAudioProxy*) pEntity->GetProxy(ENTITY_PROXY_AUDIO);
-		if(pIEntityAudioProxy)
+		IEntityAudioComponent *pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>();
+		if(pIEntityAudioComponent)
 		{
-			pIEntityAudioProxy->StopAllSounds();
+			pIEntityAudioComponent->StopAllSounds();
 		}
 	}*/
 }

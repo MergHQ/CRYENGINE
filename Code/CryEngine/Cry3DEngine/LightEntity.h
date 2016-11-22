@@ -13,8 +13,10 @@ public:
 	virtual EERType                  GetRenderNodeType();
 	virtual const char*              GetEntityClassName(void) const { return "LightEntityClass"; }
 	virtual const char*              GetName(void) const;
+	virtual void                     GetLocalBounds(AABB& bbox);
 	virtual Vec3                     GetPos(bool) const;
 	virtual void                     Render(const SRendParams&, const SRenderingPassInfo& passInfo);
+	virtual void                     Hide(bool bHide);
 	virtual IPhysicalEntity*         GetPhysics(void) const                  { return 0; }
 	virtual void                     SetPhysics(IPhysicalEntity*)            {}
 	virtual void                     SetMaterial(IMaterial* pMat)            { m_pMaterial = pMat; }
@@ -41,7 +43,7 @@ public:
 #if defined(FEATURE_SVO_GI)
 	virtual EGIMode          GetGIMode() const;
 #endif
-	virtual void             SetSrcEntity(IEntity* pEnt);
+	virtual void             SetOwnerEntity( IEntity *pEntity );
 	void                     InitEntityShadowMapInfoStructure();
 	void                     UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& passInfo);
 	int                      UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount, int nDistanceLodCount, float& fDistanceFromViewLastDynamicLod, float& fGSMBoxSizeLastDynamicLod, bool bFadeLastCascade, const SRenderingPassInfo& passInfo);
@@ -90,7 +92,7 @@ public:
 
 	AABB m_WSBBox;
 
-	void   SetLayerId(uint16 nLayerId) { m_layerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
+	void   SetLayerId(uint16 nLayerId);
 	uint16 GetLayerId()                { return m_layerId; }
 
 private:
@@ -100,6 +102,5 @@ private:
 	IStatObj* m_pStatObj;
 
 	uint16    m_layerId;
-	IEntity*  m_pSrcEnt;
 };
 #endif

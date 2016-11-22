@@ -110,6 +110,8 @@ macro(deploy_pyside)
 endmacro()
 
 macro(copy_binary_files_to_target)
+  message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
+  
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
@@ -147,7 +149,7 @@ macro(copy_binary_files_to_target)
 			math(EXPR idxIncr "${idx} + 1")
 			list(GET DEPLOY_FILES ${idx} source)
 			list(GET DEPLOY_FILES ${idxIncr} destination)
-
+      
 			add_custom_command(OUTPUT ${destination} 
 				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CRYENGINE_DIR}/Tools/CMake/deploy_runtime_files.cmake
 				COMMENT "Deploying ${source}"
@@ -158,6 +160,6 @@ macro(copy_binary_files_to_target)
 
 		add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
 	endif()
+  message( STATUS "copy_binary_files_to_target end" )
 endmacro()
-
 

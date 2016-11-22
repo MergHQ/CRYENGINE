@@ -51,7 +51,7 @@ protected:
 	EntityId           m_userId;
 	TVehicleActionId   m_control[2];
 
-	IEntityAudioProxy* m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioComponent;
 
 	float              m_action;
 	float              m_prevAction;

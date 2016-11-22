@@ -16,8 +16,7 @@
 #include "EntitySystem.h"
 #include "AreaManager.h"
 #include <CryAnimation/ICryAnimation.h>
-#include <CryEntitySystem/IComponent.h>
-#include "ComponentEventDistributer.h"
+#include <CryEntitySystem/IEntityComponent.h>
 
 ICVar* CVar::pDebug = NULL;
 ICVar* CVar::pCharacterIK = NULL;
@@ -78,7 +77,6 @@ const char* CVar::es_DebugEntityUsageFilter = "";
 int CVar::es_LayerSaveLoadSerialization = 0;
 int CVar::es_LayerDebugInfo = 0;
 int CVar::es_SaveLoadUseLUANoSaveFlag = 1;
-ICVar* CVar::pUpdateType = NULL;
 float CVar::es_EntityUpdatePosDelta = 0.0f;
 int CVar::es_debugDrawEntityIDs = 0;
 int CVar::es_MaxJointFx = 8;
@@ -97,13 +95,6 @@ static void OnSysSpecLightChange(ICVar* pVar)
 			Script::CallMethod(pScriptTable, "OnSysSpecLightChanged");
 		}
 	}
-}
-
-static void OnUpdateTypeChange(ICVar* pVar)
-{
-	CEntitySystem* pES = static_cast<CEntitySystem*>(GetIEntitySystem());
-	CComponentEventDistributer* pEntityEventDist = pES->GetEventDistributer();
-	pEntityEventDist->SetFlags(pVar->GetIVal());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -298,8 +289,6 @@ void CVar::Init(struct IConsole* pConsole)
 	              "2 - all layer info \n"
 	              "3 - all layer and all layer pak info");
 	REGISTER_CVAR(es_SaveLoadUseLUANoSaveFlag, 0, VF_CHEAT, "Save&Load optimization : use lua flag to not serialize entities, for example rigid bodies.");
-
-	pUpdateType = REGISTER_INT_CB("es_updateType", CComponentEventDistributer::EEventUpdatePolicy_UseDistributer, VF_CHEAT, "Defines how we update type for the entities", OnUpdateTypeChange);
 
 	pDrawAreas = REGISTER_INT("es_DrawAreas", 0, VF_CHEAT, "Enables drawing of Areas");
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");

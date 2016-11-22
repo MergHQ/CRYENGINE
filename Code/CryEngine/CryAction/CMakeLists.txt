@@ -1003,7 +1003,6 @@ CryEngineModule(CryAction PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE md5 yasli)
 if (WIN32 OR WIN64)
-	target_compile_options(${THIS_PROJECT} PRIVATE /Zm200)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)
 endif()
 if(DURANGO)

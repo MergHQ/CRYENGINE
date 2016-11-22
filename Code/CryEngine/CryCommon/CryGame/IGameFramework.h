@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryGame/IGameStartup.h> // <> required for Interfuscator
 #include <CryGame/IGameFrameworkExtension.h>
 #include <CryMath/Cry_Color.h>
@@ -70,13 +70,13 @@ struct IGameVolumes;
 
 //! Game object extensions need more information than the generic interface can provide.
 struct IGameObjectExtension;
-DECLARE_COMPONENT_POINTERS(IGameObjectExtension);
+
 
 struct IGameObjectExtensionCreatorBase
 {
 	// <interfuscator:shuffle>
 	virtual ~IGameObjectExtensionCreatorBase(){}
-	virtual IGameObjectExtensionPtr Create() = 0;
+	virtual IGameObjectExtension* Create(IEntity *pEntity) = 0;
 	virtual void                    GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount) = 0;
 	// </interfuscator:shuffle>
 
@@ -90,11 +90,11 @@ struct IGameObjectExtensionCreatorBase
   template<class T>                                                                     \
   struct C ## name ## Creator : public I ## name ## Creator                             \
   {                                                                                     \
-    IGameObjectExtensionPtr Create()                                                    \
+    IGameObjectExtension* Create(IEntity *pEntity) override                           \
     {                                                                                   \
-      return ComponentCreate_DeleteWithRelease<T>();                                    \
+      return pEntity->CreateComponentClass<T>();                                        \
     }                                                                                   \
-    void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                   \
+    void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount) override          \
     {                                                                                   \
       T::GetGameObjectExtensionRMIData(ppRMI, nCount);                                  \
     }                                                                                   \

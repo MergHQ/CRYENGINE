@@ -697,7 +697,6 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 
 	if (!efGen)
 	{
-		cry_sprintf(nameNew, "Shaders/%s.ext", nameEf);
 		SShaderGen* pShGen = mfCreateShaderGenInfo(nameEf, false);
 
 		if (pShGen)

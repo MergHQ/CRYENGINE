@@ -1141,14 +1141,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 				bed.isActive = pEntity->IsActive();
 				bed.isInvisible = pEntity->IsInvisible();
 
-				if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
-				{
-					bed.isPhysicsEnabled = pPhysicalProxy->IsPhysicsEnabled();
-				}
-				else
-				{
-					bed.isPhysicsEnabled = false;
-				}
+				bed.isPhysicsEnabled = pEntity->IsPhysicsEnabled();
 
 				bed.parentEntity = pParentEntity ? pParentEntity->GetId() : 0;
 				bed.iPhysType = pEntity->GetPhysics() ? pEntity->GetPhysics()->GetType() : PE_NONE;
@@ -1778,9 +1771,8 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 		// unhide and activate so that physicalization works (will be corrected after extra entity data is loaded)
 		pEntity->SetUpdatePolicy((EEntityUpdatePolicy) iter->updatePolicy);
 
-		if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 		{
-			pPhysicalProxy->EnablePhysics(true);
+			pEntity->EnablePhysics(true);
 		}
 
 		pEntity->Hide(false);
@@ -1858,16 +1850,8 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 				pEntity->Invisible(iter->isInvisible);
 				pEntity->Activate(iter->isActive);
 
-				if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 				{
-					pPhysicalProxy->EnablePhysics(iter->isPhysicsEnabled);
-				}
-
-				static SEntitySpawnParams dummySpawnParams;
-
-				if (IEntityAudioProxy* pAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
-				{
-					pAudioProxy->Reload(pEntity, dummySpawnParams);
+					pEntity->EnablePhysics(iter->isPhysicsEnabled);
 				}
 			}
 		}

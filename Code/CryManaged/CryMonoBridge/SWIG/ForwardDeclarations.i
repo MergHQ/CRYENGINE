@@ -70,7 +70,6 @@ void CryGetExecutableFolder(char *szOutPath, int pathSize)
 %include "../../../../CryEngine/CryCommon/CryCore/smartptr.h"
 
 %include "../../../CryEngine/CryCommon/CryExtension/CryTypeID.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryUnknown.h"
 %include "../../../../CryEngine/CryCommon/CryThreading/CryThreadSafeRendererContainer.h"
 
 #define COMPILE_TIME_ASSERT(...)

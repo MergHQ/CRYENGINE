@@ -2507,17 +2507,8 @@ void CRecordingSystem::HideEntityKeepingPhysics(IEntity *pEntity, bool hide)
 	RecSysLogDebug(eRSD_Visibility, "%s [%d: %s]", hide ? "HideKeepPhys" : "ShowKeepPhys", pEntity->GetId(), pEntity->GetName() );
 
 	SEntityEvent event(hide ? ENTITY_EVENT_INVISIBLE : ENTITY_EVENT_VISIBLE);
-	for (int i = 0; i < ENTITY_PROXY_LAST; i++)
-	{
-		EEntityProxy proxyType = (EEntityProxy)i;
-		// Everybody hide, but don't tell the physics.
-		if (proxyType != ENTITY_PROXY_PHYSICS)
-		{
-			IEntityProxy *pProxy = pEntity->GetProxy(proxyType);
-			if (pProxy)
-				pProxy->ProcessEvent(event);
-		}
-	}
+	event.nParam[0] = 1; // 1 tels physics to ignore it.
+	pEntity->SendEvent(event);
 
 	// Propagate invisible flag to the child entities
 	const int childCount = pEntity->GetChildCount();
@@ -3647,13 +3638,6 @@ void CRecordingSystem::RecordTPCharPacket(IEntity *pEntity, CActor *pActor)
 		{
 			chr.playerFlags |= eTPF_OnGround;
 		}
-	}
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if (pRenderProxy)
-	{
-		chr.layerEffectParams = pRenderProxy->GetEffectLayerParams();
-		if (pRenderProxy->GetMaterialLayersMask() & MTL_LAYER_CLOAK)
-			chr.playerFlags |= eTPF_Cloaked;
 	}
 
 	if (pEntity->IsInvisible()||pEntity->IsHidden())
@@ -5252,12 +5236,12 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 		bool isCloaked = ((tpchar->playerFlags & eTPF_Cloaked) != 0);
 		bool fade = true;
 
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pReplayEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
+		
 		{
-			pRenderProxy->SetEffectLayerParams( tpchar->layerEffectParams );
+			//pIEntityRender->SetEffectLayerParams( tpchar->layerEffectParams );
 			
-			bool wasCloaked = ((pRenderProxy->GetMaterialLayersMask() & MTL_LAYER_CLOAK) != 0);
+			bool wasCloaked = false; //((pIEntityRender->GetMaterialLayersMask() & MTL_LAYER_CLOAK) != 0);
 			if (pReplayActor && (isCloaked != wasCloaked))
 			{
 				// Calc cloak settings
@@ -5404,27 +5388,8 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 	}
 }
 
-void CRecordingSystem::CloakEnable(IEntityRenderProxy* pRenderProxy, bool enable, bool fade)
+void CRecordingSystem::CloakEnable(IEntityRender* pIEntityRender, bool enable, bool fade)
 {
-	// Code taken from CItem::CloakEnable
-	uint8 mask = pRenderProxy->GetMaterialLayersMask();
-	uint32 blend = pRenderProxy->GetMaterialLayersBlend();
-	if (!fade)
-	{
-		blend = (blend & ~MTL_LAYER_BLEND_CLOAK) | (enable ? MTL_LAYER_BLEND_CLOAK : 0);
-	}
-	else
-	{
-		blend = (blend & ~MTL_LAYER_BLEND_CLOAK) | (enable ? 0 : MTL_LAYER_BLEND_CLOAK);
-	}
-
-	if (enable)
-		mask = mask|MTL_LAYER_CLOAK;
-	else
-		mask = mask&~MTL_LAYER_CLOAK;
-	
-	pRenderProxy->SetMaterialLayersMask(mask);
-	pRenderProxy->SetMaterialLayersBlend(blend);
 }
 
 void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpawn, float time)
@@ -5601,11 +5566,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 
 		if (entitySpawn->subObjHideMask != 0)
 		{
-			IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
-			{
-				pRenderProxy->SetSubObjHideMask(0, entitySpawn->subObjHideMask);
-			}
+			pEntity->SetSubObjHideMask(0, entitySpawn->subObjHideMask);
 		}
 	}
 }
@@ -7351,11 +7312,11 @@ void CRecordingSystem::ApplyPlaySound(const SRecording_PlaySound* pPlaySound, fl
 	//		pSound->SetSemantic(eSoundSemantic_Replay);
 	//		if (pEntity)
 	//		{
-	//			IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	//			CRY_ASSERT_MESSAGE(pIEntityAudioProxy.get(), "Failed to create sound proxy");
-	//			if(pIEntityAudioProxy)
+	//			IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+	//			CRY_ASSERT_MESSAGE(pIEntityAudioComponent.get(), "Failed to create sound proxy");
+	//			if(pIEntityAudioComponent)
 	//			{
-	//				pIEntityAudioProxy->PlaySound(pSound);
+	//				pIEntityAudioComponent->PlaySound(pSound);
 	//			}
 	//		}
 	//		else
@@ -7699,10 +7660,7 @@ void CRecordingSystem::ApplySubObjHideMask(const SRecording_SubObjHideMask* pHid
 {
 	if(IEntity* pEntity = GetReplayEntity(pHideMask->entityId))
 	{
-		if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-		{
-			pRenderProxy->SetSubObjHideMask(pHideMask->slot, pHideMask->subObjHideMask);
-		}
+		pEntity->SetSubObjHideMask(pHideMask->slot, pHideMask->subObjHideMask);
 	}
 }
 
@@ -7783,14 +7741,14 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
 
 		// Grab render proxies
-		IEntityRenderProxy* pCloakSlaveRP	 = static_cast<IEntityRenderProxy*>(pCloakSlave->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pCloakSlaveRP	 = (pCloakSlave->GetRenderInterface());
 		if (!pCloakSlaveRP)
 		{
 			GameWarning("CRecordingSystem::ApplyObjectCloakSync() - cloak Master/Slave Render proxy ID invalid, aborting cloak sync");
 			return;
 		}
 	
-		bool bSlaveIsCloaked	  = (pCloakSlaveRP->GetMaterialLayersMask()&MTL_LAYER_CLOAK) != 0;
+		bool bSlaveIsCloaked	  = false; //(pCloakSlaveRP->GetMaterialLayersMask()&MTL_LAYER_CLOAK) != 0;
 		
 		if(bSlaveIsCloaked == pObjectCloakSync->cloakSlave)
 		{
@@ -7798,12 +7756,12 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		}
 		else
 		{
-			IEntityRenderProxy* pCloakMasterRP = static_cast<IEntityRenderProxy*>(pCloakMaster->GetProxy(ENTITY_PROXY_RENDER));
-			const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
-			const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
-			const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
-			const bool  bIgnoreCloakRefractionColor = pCloakMasterRP->DoesIgnoreCloakRefractionColor();
-			EntityEffects::Cloak::CloakEntity(pCloakSlave->GetId(), pObjectCloakSync->cloakSlave, pObjectCloakSync->fadeToDesiredCloakTarget, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor);
+			IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
+			//const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
+			//const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
+			//const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
+			//const bool  bIgnoreCloakRefractionColor = pCloakMasterRP->DoesIgnoreCloakRefractionColor();
+			//EntityEffects::Cloak::CloakEntity(pCloakSlave->GetId(), pObjectCloakSync->cloakSlave, pObjectCloakSync->fadeToDesiredCloakTarget, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor);
 		}
 	}
 }
@@ -8744,13 +8702,7 @@ void CRecordingSystem::NotifyOnPlaybackEnd( const SPlaybackInfo& info )
 	entity.Physicalize(params);
 
 	// Set ViewDistRatio.
-	if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
-	{
-		if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
-		{
-			pRenderNode->SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
-		}
-	}
+	entity.SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
 }
 
 /*static*/ EntityId CRecordingSystem::FindWeaponAtTime( const SRecordedData& initialData, CRecordingBuffer& tpData, const EntityId playerId, const float atTime )

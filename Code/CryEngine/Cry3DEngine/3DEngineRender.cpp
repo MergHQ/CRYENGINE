@@ -802,11 +802,11 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 
 			if (pEntity)
 			{
-				IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
+				IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 
-				if (pRenderProxy)
+				
 				{
-					IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+					IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 
 					if (pRenderNode)
 					{
@@ -1766,7 +1766,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		const AABB& objBox = pObj->GetBBox();
 		// don't frustum cull the HUD. When e.g. zooming the FOV for this camera is very different to the
 		// fixed HUD FOV, and this can cull incorrectly.
-		const unsigned int dwRndFlags = pObj->GetRndFlags();
+		auto dwRndFlags = pObj->GetRndFlags();
 		if (dwRndFlags & ERF_HUD || passInfo.GetCamera().IsAABBVisible_E(objBox))
 		{
 			FRAME_PROFILER("C3DEngine::RenderScene_DrawAlwaysVisible", GetSystem(), PROFILE_3DENGINE);
@@ -3339,6 +3339,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_CloudBlocker);
 		DRAW_OBJ_STATS(eERType_MergedMesh);
 		DRAW_OBJ_STATS(eERType_GeomCache);
+		DRAW_OBJ_STATS(eERType_Character);
 
 		CVisibleRenderNodesManager::Statistics visNodesStats = m_visibleNodesManager.GetStatistics();
 		{

@@ -43,7 +43,7 @@ void CRenderObjectsPools::FreePerInstanceConstantBuffer(CConstantBufferPtr&& buf
 {
 	if (buffer && !buffer->m_intentionallyNull)
 	{
-		CRY_ASSERT(buffer->m_nRefCount == 1 && "Attempt to free a buffer that is still used elsewhere");
+		// Constant buffer can still be temporary used CRY_ASSERT(buffer->m_nRefCount == 1 && "Attempt to free a buffer that is still used elsewhere");
 		m_freeConstantBuffers.emplace_back(std::move(buffer));
 	}
 }
@@ -61,7 +61,10 @@ CCompiledRenderObject::~CCompiledRenderObject()
 	if (m_bOwnPerInstanceCB)
 	{
 		CRY_ASSERT(m_perInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
-		s_pPools->FreePerInstanceConstantBuffer(std::move(m_perInstanceCB));
+		if (m_perInstanceCB)
+		{
+			s_pPools->FreePerInstanceConstantBuffer(std::move(m_perInstanceCB));
+		}
 	}
 	m_perInstanceCB.reset();
 
@@ -141,7 +144,7 @@ void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject)
 {
 	CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
-	if (pRootCompiled && pRootCompiled->m_perInstanceCB && gcpRendD3D->m_nGraphicsPipeline >= 2)
+	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perInstanceCB && gcpRendD3D->m_nGraphicsPipeline >= 2)
 	{
 		// If root object have per instance constant buffer, share ours with root compiled object.
 		m_bOwnPerInstanceCB = false;

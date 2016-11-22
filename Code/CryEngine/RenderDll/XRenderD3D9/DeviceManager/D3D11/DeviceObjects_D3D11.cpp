@@ -615,6 +615,7 @@ void CDeviceCommandListImpl::ResetImpl()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CDeviceGraphicsCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources, ::EShaderStage srvUsage) const
 {
+	assert( pResources );
 	if (pResources->GetFlags() & CDeviceResourceSet::EFlags_Multibuffered)
 	{
 		pResources->Build();

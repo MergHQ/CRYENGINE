@@ -170,15 +170,7 @@ void CUIEntityDynTexTag::OnAddTaggedEntity( EntityId entityId, const char* uiEle
 				IMaterial* pMat = gEnv->p3DEngine->GetMaterialManager()->CloneMaterial(pMatTemplate);
 				pTagEntity->SetMaterial(pMat);
 			}
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*) pTagEntity->GetProxy( ENTITY_PROXY_RENDER );
-			if (pRenderProxy)
-			{
-				IRenderNode *pRenderNode = pRenderProxy->GetRenderNode();
-				if (pRenderNode)
-				{
-					pRenderNode->SetViewDistRatio(256);
-				}
-			}
+			pTagEntity->SetViewDistRatio(256);
 			IUIElement* pElementInst = pElement->GetInstance((uint)entityId);
 			pElementInst->RemoveEventListener(this); // first remove to avoid assert if already registered!
 			pElementInst->AddEventListener(this, "CUIEntityDynTexTag");

@@ -392,7 +392,7 @@ void CTornado::UpdateTornadoSpline()
 	areaDef.pPoints = m_points;
 	areaDef.pGravityParams = &gravityParams;
 	gravityParams.gravity.Set(0,0,-9.81f);
-	gravityParams.falloff0 = -1.0f;	// ?: was NAN. CPhysicalProxy::PhysicalizeArea sets to 'unused' if less than zero...
+	gravityParams.falloff0 = -1.0f;	// ?: was NAN. CEntityPhysics::PhysicalizeArea sets to 'unused' if less than zero...
 	//gravityParams.gravity.Set(0,0,0);
 	
 	gravityParams.bUniform = 1;

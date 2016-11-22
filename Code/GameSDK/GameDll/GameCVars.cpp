@@ -4925,10 +4925,10 @@ void CGame::CmdHideAllDummyPlayers(IConsoleCmdArgs* pCmdArgs)
 							if(pEntity && (pEntity->GetClass() == pDummyClass))
 							{
 								// Hide character
-								IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-								if(pRenderProxy)
+								IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+								if(pIEntityRender)
 								{
-									IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+									IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 									if(pRenderNode)
 									{
 										pRenderNode->Hide(bHidePlayers);

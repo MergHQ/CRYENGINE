@@ -62,8 +62,8 @@ public:
 	void                GetMemoryStatistics(ICrySizer* s);
 
 private:
-	SGameRulesDef*         GetGameRulesDef(const char* name);
-	static IEntityProxyPtr CreateGameObject(
+	SGameRulesDef*           GetGameRulesDef(const char* name);
+	static IEntityComponent* CreateGameObject(
 	  IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
 
 	IGameFramework* m_pGameFW;

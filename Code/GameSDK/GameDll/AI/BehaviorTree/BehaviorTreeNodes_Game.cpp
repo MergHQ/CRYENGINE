@@ -471,9 +471,9 @@ namespace BehaviorTree
 							{
 								pActor->AddLocalHitImpulse(SHitImpulse(partId, -1, pos, impulse, 1.0f));
 							}
-							else if (IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS)))
+
 							{
-								pPhysicsProxy->AddImpulse(partId, pos, impulse, true, 1.0f, 1.0f);
+								pEntity->AddImpulse(partId, pos, impulse, true, 1.0f, 1.0f);
 							}
 						}
 						else
@@ -918,7 +918,7 @@ namespace BehaviorTree
 			static bool debug = false;
 #endif
 
-			if (IEntityPhysicalProxy* physicsProxy = (IEntityPhysicalProxy*)targetEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+
 			{
 				const Vec3 agentPos = agent.GetEntityPos();
 
@@ -927,7 +927,7 @@ namespace BehaviorTree
 				agentToTargetDirXY.z = 0.0f;
 				agentToTargetDirXY.Normalize();
 
-				IPhysicalEntity* physicalEntity = physicsProxy->GetPhysicalEntity();
+				IPhysicalEntity* physicalEntity = targetEntity->GetPhysicalEntity();
 				IF_UNLIKELY (!physicalEntity)
 					return Running;
 
@@ -961,7 +961,7 @@ namespace BehaviorTree
 
 					const float mass = dynamicsStatus.mass;
 					const Vec3 impulse = impulseDir * mass * m_impulsePower;
-					physicsProxy->AddImpulse(-1, targetPos - agentToTargetDirXY, impulse, true, 1.0f);
+					targetEntity->AddImpulse(-1, targetPos - agentToTargetDirXY, impulse, true, 1.0f);
 				}
 #ifdef INCLUDE_KEEP_TARGET_AT_A_DISTANCE_DEBUG_CODE
 				else if (debug)

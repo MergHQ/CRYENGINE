@@ -13,22 +13,23 @@
 
 #pragma once
 
+#include <CryAction/ILipSyncProvider.h>
+
 class CLipSyncProvider_FacialInstance : public ILipSyncProvider
 {
 public:
 	explicit CLipSyncProvider_FacialInstance(EntityId entityId);
 
 	// ILipSyncProvider
-	virtual void RequestLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	virtual void StartLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	virtual void PauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	virtual void UnpauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	virtual void StopLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	virtual void UpdateLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void StartLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void PauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void UnpauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void StopLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	virtual void UpdateLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
 	// ~ILipSyncProvider
 
 	void FullSerialize(TSerialize ser);
-	void GetEntityPoolSignature(TSerialize signature);
 
 private:
 	void LipSyncWithSound(const AudioControlId audioTriggerId, bool bStop = false);
@@ -40,6 +41,7 @@ class CLipSync_FacialInstance : public CGameObjectExtensionHelper<CLipSync_Facia
 {
 public:
 	// IGameObjectExtension
+	virtual void                 Initialize(const SComponentInitializer& init) override {};
 	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual bool                 Init(IGameObject* pGameObject) override;
 	virtual void                 PostInit(IGameObject* pGameObject) override;
@@ -47,7 +49,6 @@ public:
 	virtual void                 PostInitClient(int channelId) override;
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
-	virtual bool                 GetEntityPoolSignature(TSerialize signature) override;
 	virtual void                 Release() override;
 	virtual void                 FullSerialize(TSerialize ser) override;
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override;
@@ -57,6 +58,7 @@ public:
 	virtual void                 Update(SEntityUpdateContext& ctx, int updateSlot) override;
 	virtual void                 HandleEvent(const SGameObjectEvent& event) override;
 	virtual void                 ProcessEvent(SEntityEvent& event) override;
+	virtual uint64               GetEventMask() const override;
 	virtual void                 SetChannelId(uint16 id) override;
 	virtual void                 SetAuthority(bool auth) override;
 	virtual void                 PostUpdate(float frameTime) override;

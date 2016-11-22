@@ -43,9 +43,9 @@ protected:
 	IDefaultSkeleton* GetCharacterModelSkeleton() const;
 	void              UpdateSound(const float dt);
 
-	//static tSoundID PlaySound(IEntityAudioProxy& rIEntityAudioProxy, const char* soundName);
-	//static void SetSoundParam(IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID, const char* param, float value);
-	//static void StopSound(IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID);
+	//static tSoundID PlaySound(IEntityAudioComponent& rIEntityAudioComponent, const char* soundName);
+	//static void SetSoundParam(IEntityAudioComponent& rIEntityAudioComponent, tSoundID soundID, const char* param, float value);
+	//static void StopSound(IEntityAudioComponent& rIEntityAudioComponent, tSoundID soundID);
 	IVehicle*                  m_pVehicle;
 	IVehicleSeat*              m_pSeat;
 

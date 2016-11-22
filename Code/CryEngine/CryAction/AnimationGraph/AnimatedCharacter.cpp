@@ -308,9 +308,14 @@ void CAnimatedCharacter::PostInit(IGameObject* pGameObject)
 {
 	AC::RegisterEvents(*this, *pGameObject);
 
-	m_pComponentPrepareCharForUpdate = ComponentCreateAndRegister<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_GenerateMoveRequest>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_StartAnimProc>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
+	m_pComponentPrepareCharForUpdate = GetEntity()->CreateComponentClass<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
+	m_pComponentPrepareCharForUpdate->SetAnimatedCharacter(this);
+	
+	auto componentMoveRequest = GetEntity()->CreateComponentClass<CAnimatedCharacterComponent_GenerateMoveRequest>();
+	componentMoveRequest->SetAnimatedCharacter(this);
+
+	auto componentStartAnimProc = GetEntity()->CreateComponentClass<CAnimatedCharacterComponent_StartAnimProc>();
+	componentStartAnimProc->SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
 
@@ -407,13 +412,6 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 	// Reset all internal variables to prepare for this new graph
 	ResetVars();
 
-	return true;
-}
-
-bool CAnimatedCharacter::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("AnimatedCharacter");
-	signature.EndGroup();
 	return true;
 }
 
@@ -1206,6 +1204,7 @@ void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
 		}
 		break;
 	case ENTITY_EVENT_INIT:
+	case ENTITY_EVENT_RESET:
 		{
 			if (!m_pActionController)
 			{
@@ -1573,12 +1572,10 @@ void CAnimatedCharacter::KickOffRagdoll()
 
 		      if (pPhysicalEntity)
 		      {
-		        IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
-		        if (pPhysicsProxy)
 		        {
 		          GetEntity()->SetWorldTM(delta);
 		          m_entLocation = QuatT(delta);
-		          pPhysicsProxy->AssignPhysicalEntity(pPhysicalEntity);
+		          GetEntity()->AssignPhysicalEntity(pPhysicalEntity);
 
 		          GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
 		        }

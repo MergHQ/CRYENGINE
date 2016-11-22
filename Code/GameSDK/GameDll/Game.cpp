@@ -5026,11 +5026,11 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 				if (pLocalPlayerEntity != NULL)
 				{
-					IEntityAudioProxy* const pIEntityAudioProxy = (IEntityAudioProxy*)pLocalPlayerEntity->GetProxy(ENTITY_PROXY_AUDIO);
+					auto pIEntityAudioComponent = pLocalPlayerEntity->GetComponent<IEntityAudioComponent>();
 
-					if (pIEntityAudioProxy != NULL)
+					if (pIEntityAudioComponent != NULL)
 					{
-						pIEntityAudioProxy->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+						pIEntityAudioComponent->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
 					}
 				}
 			}

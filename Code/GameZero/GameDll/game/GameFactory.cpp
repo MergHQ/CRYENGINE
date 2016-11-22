@@ -66,12 +66,12 @@ void CGameFactory::CreateScriptTables(SEntityScriptProperties& out, uint32 flags
 template<class T>
 struct CObjectCreator : public IGameObjectExtensionCreatorBase
 {
-	IGameObjectExtensionPtr Create()
+	IGameObjectExtension* Create(IEntity *pEntity) override
 	{
-		return ComponentCreate_DeleteWithRelease<T>();
+		return pEntity->CreateComponentClass<T>();
 	}
 
-	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
+	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount) override
 	{
 		T::GetGameObjectExtensionRMIData(ppRMI, nCount);
 	}

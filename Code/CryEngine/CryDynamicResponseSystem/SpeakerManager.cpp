@@ -5,7 +5,7 @@
 #include "ResponseSystem.h"
 
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryAnimation/IAttachment.h>
 #include <CrySystem/IConsole.h>
 #include <CryRenderer/IRenderer.h>
@@ -357,7 +357,7 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 			    || priority > activateSpeaker.priority
 			    || (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID)) //if the new line is not less important, stop the old one
 			{
-				const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+				IEntityAudioComponent* pEntityAudioProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
 				if (activateSpeaker.stopTriggerID != INVALID_AUDIO_CONTROL_ID && m_playAudioCVar != 0)
 				{
@@ -448,7 +448,7 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 void CSpeakerManager::UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInfo& speakerInfo)
 {
 	//todo: check if we can use a 'head' proxy created and defined in schematyc
-	IEntityAudioProxy* const pEntityAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* const pEntityAudioProxy = pEntity->GetComponent<IEntityAudioComponent>();
 	if (pEntityAudioProxy)
 	{
 		const ICharacterInstance* pCharacter = pEntity->GetCharacter(s_characterSlot);
@@ -545,7 +545,7 @@ void CSpeakerManager::ReleaseSpeakerAudioProxy(SSpeakInfo& speakerInfo, bool sto
 		IEntity* pEntity = speakerInfo.pActor->GetLinkedEntity();
 		if (pEntity)
 		{
-			IEntityAudioProxy* const pEntityAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO));
+			IEntityAudioComponent* const pEntityAudioProxy = pEntity->GetComponent<IEntityAudioComponent>();
 			if (pEntityAudioProxy)
 			{
 				if (stopTrigger)
@@ -758,7 +758,7 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 
 	if (bHasAudioAsset)
 	{
-		const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pSpeakerInfoToUse->pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioComponent* pEntityAudioProxy = pSpeakerInfoToUse->pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
 		if (m_audioRtpcIdLocal != INVALID_AUDIO_CONTROL_ID)
 		{

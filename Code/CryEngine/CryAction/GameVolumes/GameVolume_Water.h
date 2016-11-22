@@ -74,7 +74,6 @@ public:
 	virtual void                 PostInitClient(int channelId)                                                   {};
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual bool                 GetEntityPoolSignature(TSerialize signature);
 	virtual void                 Release();
 	virtual void                 FullSerialize(TSerialize ser)                                                 {};
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return false; };
@@ -84,6 +83,7 @@ public:
 	virtual void                 Update(SEntityUpdateContext& ctx, int slot);
 	virtual void                 HandleEvent(const SGameObjectEvent& gameObjectEvent);
 	virtual void                 ProcessEvent(SEntityEvent&);
+	virtual uint64               GetEventMask() const final;;
 	virtual void                 SetChannelId(uint16 id)     {};
 	virtual void                 SetAuthority(bool auth)     {};
 	virtual void                 PostUpdate(float frameTime) { CRY_ASSERT(false); }

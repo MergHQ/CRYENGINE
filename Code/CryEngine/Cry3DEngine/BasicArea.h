@@ -92,7 +92,7 @@ struct SCasterInfo
 	uint32       nGSMFrameId;
 	EERType      nRType;
 	bool         bCanExecuteAsRenderJob;
-	uint32       nRenderNodeFlags;
+	uint64       nRenderNodeFlags;
 };
 
 #define UPDATE_PTR_AND_SIZE(_pData, _nDataSize, _SIZE_PLUS) \

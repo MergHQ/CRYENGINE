@@ -56,10 +56,10 @@ void CPhysCallbacks::Done()
 
 IRenderNode* GetRenderNodeFromPhys(void* pForeignData, int iForeignData)
 {
-	IEntityRenderProxy* pRndProxy;
+	IEntityRender* pRndProxy;
 	if (iForeignData == PHYS_FOREIGN_ID_STATIC)
 		return (IRenderNode*)pForeignData;
-	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY && (pRndProxy = (IEntityRenderProxy*)((IEntity*)pForeignData)->GetProxy(ENTITY_PROXY_RENDER)))
+	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY && (pRndProxy = ((IEntity*)pForeignData)->GetRenderInterface()))
 		return pRndProxy->GetRenderNode();
 	return 0;
 }

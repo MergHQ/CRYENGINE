@@ -41,7 +41,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAff
 #endif // _DEBUG
 
 	// do not draw if marked to be not drawn or already drawn in this frame
-	unsigned int nRndFlags = pEnt->GetRndFlags();
+	auto nRndFlags = pEnt->GetRndFlags();
 
 	if (nRndFlags & ERF_HIDDEN)
 		return;
@@ -168,12 +168,14 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 #endif // _DEBUG
 
 	// do not draw if marked to be not drawn or already drawn in this frame
-	unsigned int nRndFlags = pEnt->GetRndFlags();
+	auto nRndFlags = pEnt->GetRndFlags();
 
 	if (nRndFlags & ERF_HIDDEN)
 		return;
 
 #ifndef _RELEASE
+	if (!passInfo.RenderEntities() && pEnt->GetOwnerEntity()) 
+		return;
 	// check cvars
 	switch (eERType)
 	{
@@ -316,6 +318,19 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 
 	if (pEnt->m_dwRndFlags & ERF_NO_DECALNODE_DECALS)
 		DrawParams.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
+
+	if (pEnt->GetRndFlags() & ERF_HUD_REQUIRE_DEPTHTEST)
+	{
+		DrawParams.nCustomFlags |= COB_HUD_REQUIRE_DEPTHTEST;
+	}
+	if (pEnt->GetRndFlags() & ERF_DISABLE_MOTION_BLUR)
+	{
+		DrawParams.nCustomFlags |= COB_DISABLE_MOTIONBLUR;
+	}
+	if (pEnt->GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
+	{
+		DrawParams.nCustomFlags |= COB_POST_3D_RENDER;
+	}
 
 	DrawParams.m_pVisArea = pVisArea;
 

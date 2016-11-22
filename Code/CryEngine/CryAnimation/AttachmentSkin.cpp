@@ -502,7 +502,6 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 		return;
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	pObj->m_fSort	= RendParams.fCustomSortOffset;
 	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
 	uint64 uLocalObjFlags = pObj->m_ObjFlags;
 

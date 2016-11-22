@@ -963,11 +963,11 @@ void CHeavyMountedWeapon::ReadProperties(IScriptTable *pProperties)
 //tSoundID CHeavyMountedWeapon::PlayRotationSound()
 //{
 //	tSoundID result = 0;
-//	IEntityAudioProxy* pIEntityAudioProxy = GetAudioProxy(true);
-//	if (pIEntityAudioProxy)
+//	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy(true);
+//	if (pIEntityAudioComponent)
 //	{
 //		const ItemString& soundName = m_stats.fp ? m_sharedparams->pMountParams->rotate_sound_fp : m_sharedparams->pMountParams->rotate_sound_tp;
-//		result = pIEntityAudioProxy->PlaySoundEx(soundName.c_str(), ZERO, FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, 1.0f, 0, 0, eSoundSemantic_Weapon);
+//		result = pIEntityAudioComponent->PlaySoundEx(soundName.c_str(), ZERO, FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, 1.0f, 0, 0, eSoundSemantic_Weapon);
 //	}
 //	return result;
 //}

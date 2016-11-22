@@ -573,7 +573,7 @@ CPlayer::CPlayer()
 	m_pMasterFader = new CMasterFader();
 	m_closeToWallFadeoutAmount = 0.f;
 
-	m_pIEntityAudioProxy = IEntityAudioProxyPtr();
+	m_pIEntityAudioComponent = nullptr;
 	m_fLastEffectFootStepTime = 0.f;
 
 	m_vehicleViewDir.Set(0,1,0);
@@ -820,7 +820,7 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	InitMannequinParams();
 	Revive(kRFR_FromInit);
 
-	if(IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRender* pProxy = pEntity->GetRenderInterface())
 	{
 		if(IRenderNode* pRenderNode = pProxy->GetRenderNode())
 			pRenderNode->SetRndFlags(ERF_REGISTER_BY_POSITION,true);
@@ -917,7 +917,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 void CPlayer::PostInit( IGameObject * pGameObject )
 {
 	RegisterGOEvents( *this, *GetGameObject() );
-	RegisterEvent( ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable );
 
 	CCCPOINT(PlayerState_PostInit);
 
@@ -1137,10 +1136,10 @@ void CPlayer::InitLocalPlayer()
 			m_playerHealthEffect.Stop();
 		}
 
-		m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO));
-		//m_pIEntityAudioProxy->SetFlags(m_pIEntityAudioProxy->GetFlags()|IEntityAudioProxy::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
+		m_pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
+		//m_pIEntityAudioComponent->SetFlags(m_pIEntityAudioComponent->GetFlags()|IEntityAudioComponent::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
 
-		if (m_pIEntityAudioProxy != NULL)
+		if (m_pIEntityAudioComponent != NULL)
 		{
 			AudioControlId nObjectSpeedSwitchID = INVALID_AUDIO_CONTROL_ID;
 			AudioSwitchStateId nObjectSpeedTrackingOnStateID = INVALID_AUDIO_SWITCH_STATE_ID;
@@ -1152,7 +1151,7 @@ void CPlayer::InitLocalPlayer()
 				if(nObjectSpeedTrackingOnStateID != INVALID_AUDIO_SWITCH_STATE_ID)
 				{
 					// This enables automatic updates of the object_speed ATLRtpc on the Player Character.
-					m_pIEntityAudioProxy->SetSwitchState(nObjectSpeedSwitchID, nObjectSpeedTrackingOnStateID);
+					m_pIEntityAudioComponent->SetSwitchState(nObjectSpeedSwitchID, nObjectSpeedTrackingOnStateID);
 				}
 			}
 		}
@@ -1330,17 +1329,6 @@ void CPlayer::PostReloadExtension( IGameObject * pGameObject, const SEntitySpawn
 			assistScoringModule->RegisterAssistTarget(params.id);
 		}
 	}
-}
-
-bool CPlayer::GetEntityPoolSignature( TSerialize signature )
-{
-	signature.BeginGroup("Player");
-
-	const bool bResult = CActor::GetEntityPoolSignature(signature);
-
-	signature.EndGroup();
-
-	return bResult;
 }
 
 void CPlayer::ResetAnimationState()
@@ -3421,13 +3409,7 @@ void CPlayer::SpawnCorpse()
 				}
 
 				// Set ViewDistRatio.
-				if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-				{
-					if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
-					{
-						pRenderNode->SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
-					}
-				}
+				pEntity->SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
 			}
 		}
 
@@ -7057,43 +7039,43 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 		case CPlayer::ESound_FootStep_Boot_Armor:
 			break;
 		case CPlayer::ESound_DiveIn:
-			if (m_pIEntityAudioProxy)
+			if (m_pIEntityAudioComponent)
 			{
 				if (m_waterDiveIn != INVALID_AUDIO_CONTROL_ID)
 				{
 					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
 					{
-						m_pIEntityAudioProxy->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
 					}
 
-					m_pIEntityAudioProxy->ExecuteTrigger(m_waterDiveIn);
+					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveIn);
 				}
 			}
 			break;
 		case CPlayer::ESound_DiveOut:
-			if (m_pIEntityAudioProxy)
+			if (m_pIEntityAudioComponent)
 			{
 				if (m_waterDiveOut != INVALID_AUDIO_CONTROL_ID)
 				{
 					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
 					{
-						m_pIEntityAudioProxy->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
 					}
 
-					m_pIEntityAudioProxy->ExecuteTrigger(m_waterDiveOut);
+					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveOut);
 				}
 			}
 			break;
 		case CPlayer::ESound_WaterEnter:
-			if (m_pIEntityAudioProxy && m_waterEnter != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterEnter != INVALID_AUDIO_CONTROL_ID)
 			{
-				m_pIEntityAudioProxy->ExecuteTrigger(m_waterEnter);
+				m_pIEntityAudioComponent->ExecuteTrigger(m_waterEnter);
 			}
 			break;
 		case CPlayer::ESound_WaterExit:
-			if (m_pIEntityAudioProxy && m_waterExit != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterExit != INVALID_AUDIO_CONTROL_ID)
 			{
-				m_pIEntityAudioProxy->ExecuteTrigger(m_waterExit);
+				m_pIEntityAudioComponent->ExecuteTrigger(m_waterExit);
 			}
 			break;
 		case CPlayer::ESound_EnterMidHealth:
@@ -7358,7 +7340,7 @@ void CPlayer::NotifyObjectGrabbed(bool bIsGrab, EntityId objectId, bool bIsNPC, 
 	CALL_PLAYER_EVENT_LISTENERS(OnObjectGrabbed(this, bIsGrab, objectId, bIsNPC, bIsTwoHanded));
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objectId);
-	IEntityScriptProxy* pScriptProx = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+	IEntityScriptComponent* pScriptProx = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 	IScriptTable *pTable = pScriptProx->GetScriptTable();
 
 	if(pTable && pTable->HaveValue("OnPickup"))
@@ -7449,7 +7431,7 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 		else if (event.m_EventNameLowercaseCRC32 == audioTriggerCRC)
 		{
 			//Only client ones (the rest are processed in AudioProxy)
-			if (isClient && m_pIEntityAudioProxy)
+			if (isClient && m_pIEntityAudioComponent)
 			{
 				AudioProxyId nAudioProxyID = INVALID_AUDIO_PROXY_ID;
 
@@ -7463,11 +7445,11 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 						nAudioProxyID = stl::find_in_map(m_cJointAudioProxies, nJointID, INVALID_AUDIO_PROXY_ID);
 						if (nAudioProxyID == INVALID_AUDIO_PROXY_ID)
 						{
-							nAudioProxyID = m_pIEntityAudioProxy->CreateAuxAudioProxy();
+							nAudioProxyID = m_pIEntityAudioComponent->CreateAuxAudioProxy();
 							m_cJointAudioProxies[nJointID] = nAudioProxyID;
 						}
 
-						m_pIEntityAudioProxy->SetAuxAudioProxyOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
+						m_pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
 					}
 				}
 				AudioControlId nTriggerID = INVALID_AUDIO_CONTROL_ID;
@@ -7475,7 +7457,7 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 
 				if (nTriggerID != INVALID_AUDIO_CONTROL_ID)
 				{
-					m_pIEntityAudioProxy->ExecuteTrigger(nTriggerID, nAudioProxyID);
+					m_pIEntityAudioComponent->ExecuteTrigger(nTriggerID, nAudioProxyID);
 				}
 
 				REINST("needs verification!");
@@ -7483,8 +7465,8 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 				if (strchr(event.m_CustomParameter, ':') == NULL)
 					flags |= FLAG_SOUND_VOICE;
 
-				if(m_pIEntityAudioProxy)
-					m_pIEntityAudioProxy->PlaySound(event.m_CustomParameter, offset, FORWARD_DIRECTION, flags, 0, eSoundSemantic_Animation, 0, 0);*/
+				if(m_pIEntityAudioComponent)
+					m_pIEntityAudioComponent->PlaySound(event.m_CustomParameter, offset, FORWARD_DIRECTION, flags, 0, eSoundSemantic_Animation, 0, 0);*/
 			}
 
 		}
@@ -9812,16 +9794,14 @@ void CPlayer::CommitKnockDown()
 	float knowDownSpeed = 1.0f;
 	StartInteractiveActionByName("KnockDown", false, knowDownSpeed);
 
-	IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
-	if (pPhysicsProxy)
 	{
 		AABB bbox;
-		pPhysicsProxy->GetWorldBounds(bbox);
+		GetEntity()->GetPhysicsWorldBounds(bbox);
 		if (!bbox.IsEmpty())
 		{
 			const Vec3 impulse = (m_pPlayerRotation->GetBaseQuat().GetColumn1() + Vec3(0.0f, 0.0f, 0.15f)).GetNormalized() * -backwardsImpulse;
 
-			pPhysicsProxy->AddImpulse(-1, bbox.GetCenter(), impulse, true, 1.0f);
+			GetEntity()->AddImpulse(-1, bbox.GetCenter(), impulse, true, 1.0f);
 		}
 	}
 }
