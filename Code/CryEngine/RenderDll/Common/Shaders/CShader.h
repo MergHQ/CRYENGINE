@@ -292,7 +292,9 @@ public:
 	bool                       m_bLoadedSystem;
 
 	string                     m_ShadersGamePath;
+	string                     m_ShadersGameExtPath;
 	const char*                m_ShadersPath;
+	const char*                m_ShadersExtPath;
 	const char*                m_ShadersCache;
 	const char*                m_ShadersFilter;
 	const char*                m_ShadersMergeCachePath;
