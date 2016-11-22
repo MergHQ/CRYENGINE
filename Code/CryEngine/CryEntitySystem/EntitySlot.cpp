@@ -169,6 +169,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 		EERType renderNodeType = m_pRenderNode->GetRenderNodeType();
 		
 		IRenderNode::RenderFlagsType renderNodeFlags = m_pRenderNode->GetRndFlags();
+		m_pRenderNode->SetEditorObjectId(m_pEntity->GetObjectID());
 
 		{
 			uint32 entityFlags = m_pEntity->GetFlags();
@@ -728,6 +729,8 @@ void CEntitySlot::SetRenderNode(IRenderNode* pRenderNode)
 		ReleaseObjects();
 	}
 	m_pRenderNode = pRenderNode;
+	m_pRenderNode->SetEditorObjectId(m_pEntity->GetObjectID());
+
 	if (m_pRenderNode)
 	{
 		m_renderNodeType = m_pRenderNode->GetRenderNodeType();
