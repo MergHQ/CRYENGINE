@@ -16,7 +16,6 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryPhysics/IPhysics.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryExtension/ICryUnknown.h>
@@ -51,6 +50,8 @@ enum ECharRenderFlags
 	CS_FLAG_BIAS_SKIN_SORT_DIST  = 1 << 11,
 
 	CS_FLAG_STREAM_HIGH_PRIORITY = 1 << 12,
+
+	CS_FLAG_RENDER_NODE_VISIBLE  = 1 << 13, //!< Set by 3DEngine when render node owning character is potentially visible and needs rendering
 };
 
 enum CHRLOADINGFLAGS
@@ -512,7 +513,7 @@ struct ICharacterInstance : IMeshObj
 	}
 
 	//! Set rendering flags defined in ECharRenderFlags for this character instance
-	//! \param nFlags Tendering flags
+	//! \param nFlags Rendering flags
 	virtual void SetFlags(int nFlags) = 0;
 
 	//! Get the enabled rendering flags. The valid flags are the ones declared in ECharRenderFlags.

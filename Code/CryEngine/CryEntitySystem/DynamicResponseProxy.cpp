@@ -5,19 +5,23 @@
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryNetwork/ISerialize.h>
 
+CRYREGISTER_CLASS(CEntityComponentDynamicResponse);
+
 //////////////////////////////////////////////////////////////////////////
-CDynamicResponseProxy::CDynamicResponseProxy()
+CEntityComponentDynamicResponse::CEntityComponentDynamicResponse()
 	: m_pResponseActor(nullptr)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CDynamicResponseProxy::~CDynamicResponseProxy()
+CEntityComponentDynamicResponse::~CEntityComponentDynamicResponse()
 {
+	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pResponseActor);
+	m_pResponseActor = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Initialize(SComponentInitializer const& init)
+void CEntityComponentDynamicResponse::Initialize(SComponentInitializer const& init)
 {
 	const char* szEntityName = init.m_pEntity->GetName();
 	m_pResponseActor = gEnv->pDynamicResponseSystem->GetResponseActor(szEntityName);
@@ -34,25 +38,7 @@ void CDynamicResponseProxy::Initialize(SComponentInitializer const& init)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Release()
-{
-	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pResponseActor);
-	m_pResponseActor = nullptr;
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Update(SEntityUpdateContext& ctx)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::ProcessEvent(SEntityEvent& event)
+void CEntityComponentDynamicResponse::ProcessEvent(SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_RESET)
 	{
@@ -62,40 +48,38 @@ void CDynamicResponseProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CDynamicResponseProxy::NeedSerialize()
+uint64 CEntityComponentDynamicResponse::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_RESET);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEntityComponentDynamicResponse::NeedGameSerialize()
 {
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CDynamicResponseProxy::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("DynamicResponseProxy");
-	signature.EndGroup();
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Serialize(TSerialize ser)
+void CEntityComponentDynamicResponse::GameSerialize(TSerialize ser)
 {
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentDynamicResponse::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 {
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-DRS::IVariableCollection* CDynamicResponseProxy::GetLocalVariableCollection() const
+DRS::IVariableCollection* CEntityComponentDynamicResponse::GetLocalVariableCollection() const
 {
 	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Proxy without an Actor detected. Should never happen.");
 	return m_pResponseActor->GetLocalVariables();
 }
 
 //////////////////////////////////////////////////////////////////////////
-DRS::IResponseActor* CDynamicResponseProxy::GetResponseActor() const
+DRS::IResponseActor* CEntityComponentDynamicResponse::GetResponseActor() const
 {
 	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Proxy without an Actor detected. Should never happen.");
 	return m_pResponseActor;

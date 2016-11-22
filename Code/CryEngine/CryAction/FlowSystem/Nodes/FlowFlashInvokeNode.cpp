@@ -100,12 +100,12 @@ public:
 		if (pEntity == 0)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if (pIEntityRender == 0)
 			return;
 
 		const int slot = GetPortInt(pActInfo, EIP_Slot);
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl == 0)
 		{
 			GameWarning("[flow] CFlowFlashInvokeNode: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);

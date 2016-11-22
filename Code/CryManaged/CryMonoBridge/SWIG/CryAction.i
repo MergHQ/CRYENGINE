@@ -10,7 +10,7 @@
 %{
 #include <CryNetwork/INetwork.h>
 #include <IGameObject.h>
-#include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <GameObjects/GameObject.h>
 #include <ILevelSystem.h>
 #include <IActionMapManager.h>
@@ -46,6 +46,7 @@
 #include <IUIDraw.h>
 #include <IWeapon.h>
 #include <IWorldQuery.h>
+#include <CryAction/ILipSyncProvider.h>
 %}
 
 %ignore operator==(const SFlowSystemVoid& a, const SFlowSystemVoid& b);
@@ -55,89 +56,6 @@
 %csconstvalue("0xFFFFFFFF") eEA_All;
 %typemap(csbase) EEntityAspects "uint"
 %ignore GameWarning;
-%ignore IGameObject::FullSerialize;
-%ignore IGameObject::NetSerialize;
-%feature("director") IGameObjectExtension;
-%feature("director") IGameObjectExtensionCreatorBase;
-%feature("director") IGameRules;
-%feature("director") IActor;
-
-%include <std_shared_ptr.i>
-%include "../../../CryEngine/CryAction/IGameObject.h"
-
-%template(IGameObjectExtensionPtr) std::shared_ptr<IGameObjectExtension>;
-%template(IGameObjectExtensionConstPtr) std::shared_ptr<const IGameObjectExtension>;
-%feature("director") GameObjectExtensionCreatorHelper;
-struct SRMIData
-{
-	SRMIData() :
-		m_nMessages(0),
-		m_extensionId(-1)
-	{}
-	size_t m_nMessages;
-	SGameObjectExtensionRMI m_vMessages[64];
-	IGameObjectSystem::ExtensionID m_extensionId;
-};
-class GameObjectExtensionCreatorHelper
-{
-public:
-	virtual IGameObjectExtension* Instantiate() = 0;
-};
-class GameObjectExtensionCreatorBase : public IGameObjectExtensionCreatorBase
-{
-public:
-	GameObjectExtensionCreatorBase(GameObjectExtensionCreatorHelper* helper) : m_pHelper(helper) {}
-
-	IGameObjectExtensionPtr Create()
-	{
-		return IGameObjectExtensionPtr(m_pHelper->Instantiate());
-	}
-
-	void GetGameObjectExtensionRMIData(void ** ppRMI, size_t * nCount)
-	{
-		*ppRMI = m_RMIdata.m_vMessages;
-		*nCount = m_RMIdata.m_nMessages;
-	}
-protected:
-	SRMIData							m_RMIdata;
-	GameObjectExtensionCreatorHelper*	m_pHelper;
-};
-%{
-struct SRMIData
-{
-	SRMIData() :
-		m_nMessages(0),
-		m_extensionId(-1)
-	{}
-	size_t m_nMessages;
-	SGameObjectExtensionRMI m_vMessages[64];
-	IGameObjectSystem::ExtensionID m_extensionId;
-};
-class GameObjectExtensionCreatorHelper
-{
-public:
-	virtual IGameObjectExtension* Instantiate() = 0;
-};
-class GameObjectExtensionCreatorBase : public IGameObjectExtensionCreatorBase
-{
-public:
-	GameObjectExtensionCreatorBase(GameObjectExtensionCreatorHelper* helper) : m_pHelper(helper) {}
-
-	IGameObjectExtensionPtr Create()
-	{
-		return IGameObjectExtensionPtr(m_pHelper->Instantiate());
-	}
-
-	void GetGameObjectExtensionRMIData(void ** ppRMI, size_t * nCount)
-	{
-		*ppRMI = m_RMIdata.m_vMessages;
-		*nCount = m_RMIdata.m_nMessages;
-	}
-protected:
-	SRMIData							m_RMIdata;
-	GameObjectExtensionCreatorHelper*	m_pHelper;
-};
-%}
 
 %feature("director") ILevelSystemListener;
 %include "../../../CryEngine/CryAction/ILevelSystem.h"

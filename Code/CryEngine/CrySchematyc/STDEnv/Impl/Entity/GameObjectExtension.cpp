@@ -67,13 +67,6 @@ bool CGameObjectExtension::ReloadExtension(IGameObject* pGameObject, const SEnti
 
 void CGameObjectExtension::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& spawnParams) {}
 
-bool CGameObjectExtension::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup(ms_szExtensionName);
-	signature.EndGroup();
-	return true;
-}
-
 void CGameObjectExtension::Release()
 {
 	delete this;

@@ -20,9 +20,9 @@
     clsDesc.sScriptFile = script;                                                                 \
     struct C ## extensionClassName ## Creator : public IGameObjectExtensionCreatorBase            \
     {                                                                                             \
-      IGameObjectExtensionPtr Create()                                                            \
+      IGameObjectExtension* Create(IEntity *pEntity)                                            \
       {                                                                                           \
-        return ComponentCreate_DeleteWithRelease<C ## extensionClassName>();                      \
+        return pEntity->CreateComponentClass<C ## extensionClassName>();                          \
       }                                                                                           \
       void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                           \
       {                                                                                           \

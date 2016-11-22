@@ -543,15 +543,11 @@ public:
 
 				if (IsPortActive(pActInfo, IN_ENABLE))
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-					if (pPhysicalProxy)
-						pPhysicalProxy->EnablePhysics(true);
+					pActInfo->pEntity->EnablePhysics(true);
 				}
 				if (IsPortActive(pActInfo, IN_DISABLE))
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-					if (pPhysicalProxy)
-						pPhysicalProxy->EnablePhysics(false);
+					pActInfo->pEntity->EnablePhysics(false);
 				}
 
 				if (IsPortActive(pActInfo, IN_ENABLE_AI))
@@ -1368,7 +1364,7 @@ public:
 						esp.vPosition = sp.pos;
 						esp.qRotation = sp.q;
 						pSkel = gEnv->pEntitySystem->SpawnEntity(esp);
-						((IEntityPhysicalProxy*)pSkel->CreateProxy(ENTITY_PROXY_PHYSICS).get())->AssignPhysicalEntity(pent);
+						pSkel->AssignPhysicalEntity(pent);
 						pe_params_foreign_data pfd;
 						pfd.pForeignData = pActInfo->pEntity;
 						pent->SetParams(&pfd); // revert the changes done in AssignPhysicalEntity
@@ -1394,7 +1390,7 @@ public:
 				if (iter!=g_mapSkels.end())
 				{
 					// during entity deletion, make sure the physics is reset to 0 to save it from deletion
-					((IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))->AssignPhysicalEntity(0);
+					pEntity->AssignPhysicalEntity(0);
 					g_mapSkels.erase(iter);
 					if (g_mapSkels.empty())
 						gEnv->pEntitySystem->RemoveSink(this);

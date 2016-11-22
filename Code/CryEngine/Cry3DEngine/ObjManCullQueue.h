@@ -15,7 +15,6 @@
 #define CObjManCullQueue_H
 
 #include <CryCore/Platform/platform.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CryMath/Cry_Camera.h>
 
 #include <CryMath/Cry_Geo.h>

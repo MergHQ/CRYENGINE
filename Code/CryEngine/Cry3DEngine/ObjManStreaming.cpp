@@ -1244,6 +1244,9 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 	float fObjScale = 1.f;
 	AABB objBox(pObj->GetBBox());
 
+	if (!passInfo.RenderEntities() && pObj->GetOwnerEntity())
+		return;
+
 	switch (nodeType)
 	{
 	case eERType_Brush:
@@ -1348,6 +1351,8 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		IMaterial* pSlotMat = pObj->GetEntitySlotMaterial(nEntSlot, false, &bDrawNear);
 		if (!pSlotMat)
 			pSlotMat = pRenderNodeMat;
+
+		bDrawNear = 0 != (pObj->GetRndFlags() & ERF_FOB_NEAREST);
 
 		// If the object is in camera space, don't use the prediction position.
 		const float fEntPrecacheDistance = (bDrawNear)

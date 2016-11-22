@@ -362,11 +362,10 @@ void CActionMultiCoopAnimation::SParticipant::ApplyDeltaTransform( const QuatT& 
 void CActionMultiCoopAnimation::SParticipant::SetRenderNearest( IEntity& entity, const bool bSet )
 {
 	bool bRendering = false;
-	if(IEntityRenderProxy* pProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
 	{
-		if(IRenderNode* pRenderNode = pProxy->GetRenderNode())
+		if(IRenderNode* pRenderNode = entity.GetRenderNode())
 		{
-			const int nslots = pRenderNode->GetSlotCount();
+			const int nslots = entity.GetSlotCount();
 			uint32 orFlags = 0;
 			uint32 andFlags = ~0;
 			if(bSet)

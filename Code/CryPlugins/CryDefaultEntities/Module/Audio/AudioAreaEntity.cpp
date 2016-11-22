@@ -164,7 +164,7 @@ void CAudioAreaEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
-	m_pProxy = crycomponent_cast<IEntityAudioProxyPtr>(entity.CreateProxy(ENTITY_PROXY_AUDIO));
+	m_pProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
 
 	// Get properties
 	m_bEnabled = GetPropertyBool(eProperty_Enabled);

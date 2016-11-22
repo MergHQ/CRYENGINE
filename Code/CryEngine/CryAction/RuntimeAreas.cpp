@@ -148,13 +148,13 @@ void CRuntimeAreaManager::CreateAreas()
 		areaSpawnParams.sName = szName;
 		areaSpawnParams.vPosition = cluster.extents.GetCenter() - Vec3(0.0f, 0.0f, cluster.extents.GetSize().z * 0.5f);//??
 
-		IEntityAreaProxy* pAreaProxy = NULL;
+		IEntityAreaComponent* pAreaProxy = NULL;
 		IEntity* pNewAreaEntity = gEnv->pEntitySystem->SpawnEntity(areaSpawnParams);
 		if (pNewAreaEntity)
 		{
 			EntityId const nAreaEntityID = pNewAreaEntity->GetId();
 
-			pAreaProxy = static_cast<IEntityAreaProxy*>(pNewAreaEntity->CreateProxy(ENTITY_PROXY_AREA).get());
+			pAreaProxy = static_cast<IEntityAreaComponent*>(pNewAreaEntity->CreateProxy(ENTITY_PROXY_AREA));
 			if (pAreaProxy)
 			{
 				int const nPointCount = cluster.boundary_points.size();

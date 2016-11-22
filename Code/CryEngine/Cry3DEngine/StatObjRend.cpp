@@ -164,7 +164,7 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 
 	pObj->m_pRenderNode = pRenderNode;
 	pObj->m_editorSelectionID = rParams.nEditorSelectionID;
-	pObj->m_fSort = rParams.fCustomSortOffset;
+
 	SRenderObjData* pOD = NULL;
 	if (rParams.pFoliage || rParams.pInstance || rParams.m_pVisArea || pInstInfo || rParams.nVisionParams || rParams.nHUDSilhouettesParams ||
 	    rParams.pLayerEffectParams || rParams.nSubObjHideMask != 0)
@@ -228,7 +228,6 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 	// Set render quality
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	pObj->m_nRenderQuality = (uint16)(rParams.fRenderQuality * 65535.0f);
 	pObj->m_fDistance = rParams.fDistance;
 
 	{

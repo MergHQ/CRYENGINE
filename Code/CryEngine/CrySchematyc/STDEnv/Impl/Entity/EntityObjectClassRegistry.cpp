@@ -30,9 +30,9 @@ public:
 
 	// IGameObjectExtensionCreatorBase
 
-	virtual IGameObjectExtensionPtr Create()
+	virtual IGameObjectExtension* Create(IEntity* pEntity)
 	{
-		return ComponentCreate_DeleteWithRelease<CGameObjectExtension>();
+		return pEntity->CreateComponentClass<CGameObjectExtension>();
 	}
 
 	virtual void GetGameObjectExtensionRMIData(void** ppRMI, size_t* pCount)
@@ -43,10 +43,10 @@ public:
 	// ~IGameObjectExtensionCreatorBase
 };
 
-IEntityProxyPtr CreateGameObjectProxyAndExtension(IEntity* pEntity, SEntitySpawnParams& spawnParams, void* pUserData)
+IEntityComponent* CreateGameObjectProxyAndExtension(IEntity* pEntity, SEntitySpawnParams& spawnParams, void* pUserData)
 {
 	IGameObject* pGameObject = nullptr;
-	IEntityProxyPtr pEntityProxy = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectEntityProxy(*pEntity, &pGameObject);
+	IEntityComponent* pEntityProxy = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectEntityProxy(*pEntity, &pGameObject);
 	SCHEMATYC_ENV_ASSERT(pGameObject);
 	if (pGameObject)
 	{
@@ -57,10 +57,10 @@ IEntityProxyPtr CreateGameObjectProxyAndExtension(IEntity* pEntity, SEntitySpawn
 		}
 		else
 		{
-			pEntity->RegisterComponent(pEntityProxy, false);
+			pEntity->RemoveComponent(pEntityProxy);
 		}
 	}
-	return IEntityProxyPtr();
+	return nullptr;
 }
 } // Anonymous
 

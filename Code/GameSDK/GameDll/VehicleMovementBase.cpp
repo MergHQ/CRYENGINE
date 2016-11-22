@@ -194,18 +194,18 @@ bool CVehicleMovementBase::Init(IVehicle* pVehicle, const CVehicleParams& table)
 
 	CacheAudioControlIDs();
 
-	m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	assert(m_pIEntityAudioProxy.get());
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	assert(pIEntityAudioComponent);
 
 	AudioSwitchStateId nSurfaceStateID = INVALID_AUDIO_SWITCH_STATE_ID;
 	gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], "concrete", nSurfaceStateID);
 
 	if (nSurfaceStateID != INVALID_AUDIO_SWITCH_STATE_ID)
 	{
-		m_pIEntityAudioProxy->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
+		pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
 	}
 
-	m_pIEntityAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, m_enginePos));
+	pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(IDENTITY, m_enginePos));
 
 	if (IVehicleComponent* pComp = m_pVehicle->GetComponent("Hull"))
 		m_damageComponents.push_back(pComp);
@@ -553,6 +553,9 @@ void CVehicleMovementBase::Update(const float deltaTime)
 	DebugDraw(deltaTime);
 #endif
 
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	assert(pIEntityAudioComponent);
+
 	if (m_isEngineStarting)
 	{
 		m_engineStartup += deltaTime;
@@ -565,7 +568,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 
 			m_rpmScale = fadeInRatio * ms_engineSoundIdleRatio;
 
-			m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 			
 			if(m_pVehicle->IsPlayerPassenger())
 			{
@@ -590,7 +593,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
  
 		if (m_rpmScale > 0.f)
 		{
-			m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 		}
 		
 		if (m_engineStartup <= 0.0f && m_rpmScale <= 0.f)
@@ -621,7 +624,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 		}
 	}
 
-	m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], m_speed);
+	pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], m_speed);
   
 	// Update Game Tokens
 	if(m_pVehicle->IsPlayerDriving(true)||m_pVehicle->IsPlayerPassenger())
@@ -675,7 +678,9 @@ void CVehicleMovementBase::UpdateRunSound(const float deltaTime)
 			m_rpmScaleSgn = sgn(delta)*0.3f;
 
 		m_rpmScale = max(ms_engineSoundIdleRatio, abs(m_rpmScaleSgn) * (1.0f - ms_engineSoundOverRevRatio)); // PS - Not sure if we ever actually get here, but the calculation might be wrong.
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+		IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 	}
 }
 
@@ -820,8 +825,12 @@ void CVehicleMovementBase::StopEngine()
 		m_pGameTokenSystem->SetOrCreateToken("vehicle.rpmNorm", TFlowInputData(0.f, true));
 	}
 
-	m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
-	m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	if (pIEntityAudioComponent)
+	{
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
+	}
 
 	// If no stop trigger is present we will need to manually stop the running event.
 	if (GetAudioControlID(eSID_Stop) != INVALID_AUDIO_CONTROL_ID)
@@ -1227,14 +1236,18 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 
 			if (nInOutStateID != INVALID_AUDIO_SWITCH_STATE_ID)
 			{
-				m_pIEntityAudioProxy->SetSwitchState(m_audioControlIDs[eSID_VehicleINOUT], nInOutStateID);
+				IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+				if (pIEntityAudioComponent)
+					pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleINOUT], nInOutStateID);
 			}
 		}
 		break;
 	case eVE_Damaged:
 	case eVE_Destroyed:
 		{
-			m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], GetSoundDamage());
+			IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+			if (pIEntityAudioComponent)
+				pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], GetSoundDamage());
 
 			if (!m_bFirstHit)
 			{
@@ -1248,7 +1261,9 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 			const float fSoundDamage = GetSoundDamage();
 			if (fSoundDamage <= 0.0f)
 			{
-				m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], fSoundDamage);
+				IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+				if (pIEntityAudioComponent)
+					pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], fSoundDamage);
 				ExecuteTrigger(eSID_StopDamage);
 				m_bFirstHit = false;
 			}
@@ -1259,23 +1274,25 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 
 void CVehicleMovementBase::ExecuteTrigger(EVehicleMovementSound eSID)
 {
-	assert(m_pIEntityAudioProxy && eSID>=0 && eSID<eSID_Max);
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
 	const AudioControlId id = m_audioControlIDs[eSID];
 	if (id != INVALID_AUDIO_CONTROL_ID)
 	{
-		m_pIEntityAudioProxy->ExecuteTrigger(id);
+		pIEntityAudioComponent->ExecuteTrigger(id);
 	}
 }
 
 void CVehicleMovementBase::StopTrigger(EVehicleMovementSound eSID)
 {
-	assert(m_pIEntityAudioProxy && eSID>=0 && eSID<eSID_Max);
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
 	const AudioControlId id = m_audioControlIDs[eSID];
 	if (id != INVALID_AUDIO_CONTROL_ID)
 	{
-		m_pIEntityAudioProxy->StopTrigger(id);
+		pIEntityAudioComponent->StopTrigger(id);
 	}
 }
 
@@ -2289,6 +2306,13 @@ void CVehicleMovementBase::ProcessEvent(SEntityEvent& event)
 { 
 }
 
+IEntityAudioComponent* CVehicleMovementBase::GetAudioProxy() const
+{
+	IEntityAudioComponent* pIEntityAudioComponent = m_pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+	assert(pIEntityAudioComponent);
+	return pIEntityAudioComponent;
+}
+
 void CVehicleMovementBase::CacheAudioControlIDs()
 {
 	IAudioSystem* pAudioSystem = gEnv->pAudioSystem;
@@ -2324,13 +2348,14 @@ void CVehicleMovementBase::CacheAudioControlIDs()
 
 void CVehicleMovementBase::ResetAudioParams()
 {
-	if (m_pIEntityAudioProxy)
+	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
+	if (pIEntityAudioComponent)
 	{
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], 0.0f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], 0.0f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], 0.0f);
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], 0.0f);
 	}
 }
 

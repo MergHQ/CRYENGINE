@@ -128,13 +128,6 @@
 %include "../../../../CryEngine/CryCommon/CryMath/Range.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/CryVersion.h"
 
-%include "../../../CryEngine/CryCommon/CryExtension/CryCreateClassInstance.h"
-%include "../../../CryEngine/CryCommon/CryExtension/CryGUID.h"
-%include "../../../CryEngine/CryCommon/CryExtension/CryTypeID.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryFactory.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryFactoryRegistry.h"
-%include "../../../CryEngine/CryCommon/CryExtension/ICryUnknown.h"
-
 SMART_PTR_TEMPLATE(CPriorityPulseState)
 SMART_PTR_TEMPLATE(IAttachmentSkin)
 SMART_PTR_TEMPLATE(IBreakDescriptionInfo)

@@ -10,7 +10,7 @@
 #include <Schematyc/Entity/EntityUtils.h>
 #include <Schematyc/Entity/EntityClasses.h>
 #include <Schematyc/Types/ResourceTypes.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryMath/Cry_Camera.h>
 
 #include <CryGame/IGameFramework.h>

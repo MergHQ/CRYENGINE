@@ -19,6 +19,7 @@
 struct SRenderingPassInfo;
 struct IFoliage;
 struct SRenderLight;
+struct SWaterRippleInfo;
 
 class CRenderView;
 
@@ -2547,25 +2548,19 @@ struct SRendParams
 	{
 		memset(this, 0, sizeof(SRendParams));
 		fAlpha = 1.f;
-		fRenderQuality = 1.f;
 		nAfterWater = 1;
 	}
 
 	// object transformations.
 	Matrix34*                 pMatrix;
-	struct SInstancingInfo*   pInstInfo;
 
 	Matrix34*                 pPrevMatrix; //!< object previous transformations - motion blur specific.
-
-	uint64                    m_ShadowMapCasters; //! List of shadow map casters.
 
 	IVisArea*                 m_pVisArea; //!< VisArea that contains this object, used for RAM-ambient cube query.
 
 	IMaterial*                pMaterial; //!< Override material.
 
 	IFoliage*                 pFoliage; //!< Skeleton implementation for bendable foliage.
-
-	IRenderMesh*              pWeights; //!< Weights stream for deform morphs.
 
 	struct IRenderNode*       pRenderNode; //!< Object Id for objects identification in renderer.
 
@@ -2577,15 +2572,11 @@ struct SRendParams
 
 	ColorF                    AmbientColor; //!< Ambient color for the object.
 
-	float                     fCustomSortOffset; //!< Custom sorting offset.
-
 	float                     fAlpha; //!< Object alpha.
 
 	float                     fDistance; //!< Distance from camera.
 
-	float                     fRenderQuality; //!< Quality of shaders rendering.
-
-	int32                     dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
+	uint64                    dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
 
 	uint32                    nMaterialLayersBlend; //!< Material layers blending amount
 

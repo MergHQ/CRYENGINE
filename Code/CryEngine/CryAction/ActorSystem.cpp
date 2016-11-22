@@ -455,7 +455,7 @@ void CActorSystem::GetMemoryUsage(class ICrySizer* pSizer) const
 
 //------------------------------------------------------------------------
 #if 0
-IEntityProxy* CActorSystem::CreateActor(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+IEntityComponent* CActorSystem::CreateActor(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 {
 	/*
 	   SActorUserData *pActorUserData = reinterpret_cast<SActorUserData *>(pUserData);

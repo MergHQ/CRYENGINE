@@ -162,9 +162,9 @@ History:
 	clsDesc.sScriptFile = script;\
 struct C##name##Creator : public IGameObjectExtensionCreatorBase\
 		{\
-		IGameObjectExtensionPtr Create()\
+		IGameObjectExtension* Create(IEntity *pEntity)\
 			{\
-			return ComponentCreate_DeleteWithRelease<C##name>();\
+				return pEntity->CreateComponentClass<C##name>();\
 			}\
 			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
 			{\
@@ -182,9 +182,9 @@ struct C##name##Creator : public IGameObjectExtensionCreatorBase\
 	clsDesc.sScriptFile = script;\
 struct C##name##Creator : public IGameObjectExtensionCreatorBase\
 		{\
-		IGameObjectExtensionPtr Create()\
+		IGameObjectExtension* Create(IEntity *pEntity)\
 			{\
-			return ComponentCreate_DeleteWithRelease<C##impl>();\
+				return pEntity->CreateComponentClass<C##impl>();\
 			}\
 			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
 			{\
@@ -199,9 +199,9 @@ struct C##name##Creator : public IGameObjectExtensionCreatorBase\
 	{\
 struct C##name##Creator : public IGameObjectExtensionCreatorBase\
 		{\
-		IGameObjectExtensionPtr Create()\
+		IGameObjectExtension* Create(IEntity *pEntity)\
 			{\
-			return ComponentCreate_DeleteWithRelease<C##name>();\
+				return pEntity->CreateComponentClass<C##name>();\
 			}\
 			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
 			{\

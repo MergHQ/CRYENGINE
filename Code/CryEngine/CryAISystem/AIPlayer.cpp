@@ -1164,7 +1164,7 @@ bool CAIPlayer::IsGrabbedEntityInView(const Vec3& pos) const
 
 	IEntity* pObjectEntity = GetGrabbedEntity();
 
-	IEntityRenderProxy* pObjectRenderProxy = (pObjectEntity ? static_cast<IEntityRenderProxy*>(pObjectEntity->GetProxy(ENTITY_PROXY_RENDER)) : NULL);
+	IEntityRender* pObjectRenderProxy = (pObjectEntity ? (pObjectEntity->GetRenderInterface()) : NULL);
 	if (pObjectRenderProxy)
 	{
 		IRenderNode* pObjectRenderNode = pObjectRenderProxy->GetRenderNode();

@@ -385,7 +385,7 @@ public:
 	void         DeleteObjectsByFlag(int nRndFlag);
 	void         UnregisterEngineObjectsInArea(const SHotUpdateInfo* pExportInfo, PodArray<IRenderNode*>& arrUnregisteredObjects, bool bOnlyEngineObjects);
 	uint32       GetLastVisFrameId() { return m_nLastVisFrameId; }
-	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady = NULL, uint32 dwFlags = ~0);
+	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady = NULL, uint64 dwFlags = ~0);
 	void         GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObjects);
 
 	void         GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority, CLightEntity*& pNearestLight, const AABB* pBBox);
@@ -400,8 +400,8 @@ public:
 	static int   GetSingleObjectFileDataSize(IRenderNode* pObj, const SHotUpdateInfo* pExportInfo);
 	static void  SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pObj, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, const SHotUpdateInfo* pExportInfo, const Vec3& segmentOffset);
 	static void  LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, int nChunkVersion, const SLayerVisibility* pLayerVisibility, int nSID, const Vec3& segmentOffset, ELoadObjectsMode eLoadMode, IRenderNode*& pRN);
-	static bool  IsObjectStreamable(EERType eType, uint32 dwRndFlags);
-	static bool  CheckSkipLoadObject(EERType eType, uint32 dwRndFlags, ELoadObjectsMode eLoadMode);
+	static bool  IsObjectStreamable(EERType eType, uint64 dwRndFlags);
+	static bool  CheckSkipLoadObject(EERType eType, uint64 dwRndFlags, ELoadObjectsMode eLoadMode);
 	bool         IsRightNode(const AABB& objBox, const float fObjRadius, float fObjMaxViewDist);
 	void         GetMemoryUsage(ICrySizer* pSizer) const;
 	void         UpdateTerrainNodes(CTerrainNode* pParentNode = 0);

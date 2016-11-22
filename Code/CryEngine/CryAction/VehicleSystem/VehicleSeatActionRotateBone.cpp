@@ -251,12 +251,12 @@ void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 		return;
 
 	IEntity* pEntity = m_pVehicle->GetEntity();
-	if (IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
+	if (IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>())
 	{
 		if (m_stopCurrentSound)
 		{
 			m_stopCurrentSound = 0;
-			//StopSound(*pIEntityAudioProxy, m_rotatingSoundID);
+			//StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
 		}
 
 		// Calculate Rotation Speed for the Audio.
@@ -274,7 +274,7 @@ void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 			if (fabs_tpl(prevSpeed - m_soundRotSpeed) > 0.001f)
 			{
 				const float rotationRate = clamp_tpl(m_soundRotSpeed * m_soundRotSpeedScalar, 0.f, 10.f);
-				//SetSoundParam(*pIEntityAudioProxy, m_rotatingSoundID, m_soundParamRotSpeed.c_str(), rotationRate);
+				//SetSoundParam(*pIEntityAudioComponent, m_rotatingSoundID, m_soundParamRotSpeed.c_str(), rotationRate);
 				m_soundRotLastAppliedSpeed = m_soundRotSpeed;
 			}
 		}
@@ -285,7 +285,7 @@ void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 		//	bool isNotPlaying = m_rotatingSoundID==INVALID_SOUNDID;
 		//	if(!isNotPlaying)
 		//	{
-		//		if(ISound* pSound = pIEntityAudioProxy->GetSound(m_rotatingSoundID))
+		//		if(ISound* pSound = pIEntityAudioComponent->GetSound(m_rotatingSoundID))
 		//		{
 		//			isNotPlaying = !pSound->IsPlaying();
 		//		}
@@ -300,7 +300,7 @@ void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 		//	{
 		//		IActor* pDriver = m_pVehicle->GetDriver();
 		//		const bool firstPerson = pDriver && pDriver->IsClient();
-		//		m_rotatingSoundID=PlaySound(*pIEntityAudioProxy, firstPerson?m_soundNameFP.c_str():m_soundNameTP.c_str());
+		//		m_rotatingSoundID=PlaySound(*pIEntityAudioComponent, firstPerson?m_soundNameFP.c_str():m_soundNameTP.c_str());
 		//	}
 		//}
 	}
@@ -369,31 +369,31 @@ void CVehicleSeatActionRotateBone::OnVehicleEvent(EVehicleEvent event, const SVe
 	else if (event == eVE_Destroyed || (event == eVE_Hide && params.iParam))
 	{
 		IEntity* pEntity = m_pVehicle->GetEntity();
-		if (IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
+		if (IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetComponent<IEntityAudioComponent>())
 		{
 			m_stopCurrentSound = 0;
-			//StopSound(*pIEntityAudioProxy, m_rotatingSoundID);
+			//StopSound(*pIEntityAudioComponent, m_rotatingSoundID);
 		}
 	}
 
 }
 
-///*static*/ tSoundID CVehicleSeatActionRotateBone::PlaySound( IEntityAudioProxy& rIEntityAudioProxy, const char * soundName )
+///*static*/ tSoundID CVehicleSeatActionRotateBone::PlaySound( IEntityAudioComponent& rIEntityAudioComponent, const char * soundName )
 //{
-//	return rIEntityAudioProxy.PlaySoundEx(soundName, ZERO, FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, 1.0f, 0, 0, eSoundSemantic_Weapon);
+//	return rIEntityAudioComponent.PlaySoundEx(soundName, ZERO, FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, 1.0f, 0, 0, eSoundSemantic_Weapon);
 //}
 //
-///*static*/ void CVehicleSeatActionRotateBone::SetSoundParam(IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID, const char* param, float value)
+///*static*/ void CVehicleSeatActionRotateBone::SetSoundParam(IEntityAudioComponent& rIEntityAudioComponent, tSoundID soundID, const char* param, float value)
 //{
-//	if(ISound* pSound = rIEntityAudioProxy.GetSound(soundID))
+//	if(ISound* pSound = rIEntityAudioComponent.GetSound(soundID))
 //	{
 //		pSound->SetParam(param, value, false);
 //	}
 //}
 //
-///*static*/ void CVehicleSeatActionRotateBone::StopSound( IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID )
+///*static*/ void CVehicleSeatActionRotateBone::StopSound( IEntityAudioComponent& rIEntityAudioComponent, tSoundID soundID )
 //{
-//	rIEntityAudioProxy.StopSound(soundID);
+//	rIEntityAudioComponent.StopSound(soundID);
 //}
 
 DEFINE_VEHICLEOBJECT(CVehicleSeatActionRotateBone);

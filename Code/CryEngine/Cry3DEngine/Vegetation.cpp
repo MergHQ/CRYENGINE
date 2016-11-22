@@ -907,7 +907,7 @@ void CVegetation::UpdateRndFlags()
 {
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
-	const uint32 dwFlagsToUpdate =
+	const auto dwFlagsToUpdate =
 		ERF_CASTSHADOWMAPS | ERF_DYNAMIC_DISTANCESHADOWS | ERF_HIDABLE | ERF_PICKABLE
 		| ERF_SPEC_BITS_MASK | ERF_OUTDOORONLY | ERF_ACTIVE_LAYER | ERF_GI_MODE_BITS_MASK;
 

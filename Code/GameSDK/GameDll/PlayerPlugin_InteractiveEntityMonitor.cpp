@@ -66,7 +66,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::Update( const float dt )
 				continue;
 			}
 
-			if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+			if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 			{
 				const Vec3& entityPos = pEntity->GetWorldTM().GetColumn3();
 				const float distSq = entityPos.GetSquaredDistance2D(playerPos);
@@ -81,17 +81,17 @@ void CPlayerPlugin_InteractiveEntityMonitor::Update( const float dt )
 
 					if( (it->second & EIES_ShootToInteract) == 0 )
 					{
-						pRenderProxy->SetHUDSilhouettesParams(m_silhouetteInteractColor.r*alpha, m_silhouetteInteractColor.g*alpha, m_silhouetteInteractColor.b*alpha, m_silhouetteInteractColor.a*alpha);
+						//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteInteractColor.r*alpha, m_silhouetteInteractColor.g*alpha, m_silhouetteInteractColor.b*alpha, m_silhouetteInteractColor.a*alpha);
 					}
 					else
 					{
-						pRenderProxy->SetHUDSilhouettesParams(m_silhouetteShootColor.r*alpha, m_silhouetteShootColor.g*alpha, m_silhouetteShootColor.b*alpha, m_silhouetteShootColor.a*alpha);
+						//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteShootColor.r*alpha, m_silhouetteShootColor.g*alpha, m_silhouetteShootColor.b*alpha, m_silhouetteShootColor.a*alpha);
 					}
 					it->second |= EIES_Highlighted;
 				}
 				else if( it->second & EIES_Highlighted )
 				{
-					pRenderProxy->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.f);
+					//pIEntityRender->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.f);
 					it->second &= ~EIES_Highlighted;
 				}
 			}
@@ -186,15 +186,15 @@ void CPlayerPlugin_InteractiveEntityMonitor::Register( IEntity* pEntity, uint8 i
 	//Check if it should already be on
 	if(m_bEnabled && GetOwnerPlayer()->GetEntity()->GetWorldPos().GetSquaredDistance2D(pEntity->GetWorldPos()) < g_pGameCVars->g_highlightingMovementDistanceToUpdateSquared)
 	{
-		if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+		if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 		{
 			if( (initialFlags & EIES_ShootToInteract) == 0 )
 			{
-				pRenderProxy->SetHUDSilhouettesParams(m_silhouetteInteractColor.r, m_silhouetteInteractColor.g, m_silhouetteInteractColor.b, m_silhouetteInteractColor.a);
+				//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteInteractColor.r, m_silhouetteInteractColor.g, m_silhouetteInteractColor.b, m_silhouetteInteractColor.a);
 			}
 			else
 			{
-				pRenderProxy->SetHUDSilhouettesParams(m_silhouetteShootColor.r, m_silhouetteShootColor.g, m_silhouetteShootColor.b, m_silhouetteShootColor.a);
+				//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteShootColor.r, m_silhouetteShootColor.g, m_silhouetteShootColor.b, m_silhouetteShootColor.a);
 			}
 		}
 	}
@@ -212,9 +212,9 @@ void CPlayerPlugin_InteractiveEntityMonitor::Unregister( IEntity* pEntity )
 		{
 			if(it->second)
 			{
-				if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+				if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 				{
-					pRenderProxy->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.0f);
+					//pIEntityRender->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.0f);
 				}
 			}
 #ifndef _RELEASE
@@ -246,15 +246,15 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+					if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 					{
 						if( (iter->second & EIES_ShootToInteract) == 0 )
 						{
-							pRenderProxy->SetHUDSilhouettesParams(m_silhouetteInteractColor.r, m_silhouetteInteractColor.g, m_silhouetteInteractColor.b, m_silhouetteInteractColor.a);
+							//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteInteractColor.r, m_silhouetteInteractColor.g, m_silhouetteInteractColor.b, m_silhouetteInteractColor.a);
 						}
 						else
 						{
-							pRenderProxy->SetHUDSilhouettesParams(m_silhouetteShootColor.r, m_silhouetteShootColor.g, m_silhouetteShootColor.b, m_silhouetteShootColor.a);
+							//pIEntityRender->SetHUDSilhouettesParams(m_silhouetteShootColor.r, m_silhouetteShootColor.g, m_silhouetteShootColor.b, m_silhouetteShootColor.a);
 						}
 					}
 				}
@@ -271,9 +271,9 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+					if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 					{
-						pRenderProxy->SetHUDSilhouettesParams(disableColor.r, disableColor.g, disableColor.b, disableColor.a);
+						//pIEntityRender->SetHUDSilhouettesParams(disableColor.r, disableColor.g, disableColor.b, disableColor.a);
 					}
 				}
 			}

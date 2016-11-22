@@ -115,7 +115,7 @@ static CTurret* GetCTurret(IEntity& entity)
 
 	if (strcmp(entityClassName, "Turret") == 0)
 	{
-		if (IEntityProxy* pUserProxy = entity.GetProxy(ENTITY_PROXY_USER))
+		if (IEntityComponent* pUserProxy = entity.GetProxy(ENTITY_PROXY_USER))
 		{
 			CGameObject* pGameObject = static_cast<CGameObject*>(pUserProxy);
 			CTurret* pTurret = static_cast<CTurret*>(pGameObject->QueryExtension("Turret"));

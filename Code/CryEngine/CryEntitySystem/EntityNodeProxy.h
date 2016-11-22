@@ -18,34 +18,35 @@
 #include "EntitySystem.h"
 #include <CryNetwork/ISerialize.h>
 
-class CEntityNodeProxy :
-	public IEntityProxy
+class CEntityComponentTrackViewNode :
+	public IEntityComponent
 {
 public:
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CEntityComponentTrackViewNode,"CEntityComponentTrackViewNode",0x60F18291C2A146F7,0xBA7F02F390C85BB2);
+	
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
-	void         GetMemoryUsage(ICrySizer* pSizer) const              {};
-	EEntityProxy GetType()                                            { return ENTITY_PROXY_ENTITYNODE; };
+	virtual void         GetMemoryUsage(ICrySizer* pSizer) const final {};
+	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ENTITYNODE; };
 
-	bool         Init(IEntity* pEntity, SEntitySpawnParams& params)   { m_pEntity = pEntity; return true; };
-	void         Reload(IEntity* pEntity, SEntitySpawnParams& params) { m_pEntity = pEntity; };
+	virtual void         Release() final                                      { delete this; }
+	virtual void         Update(SEntityUpdateContext& ctx) final {};
 
-	void         Done()                                               {};
-	void         Release()                                            { delete this; }
-	void         Update(SEntityUpdateContext& ctx)                    {};
-
-	void         SerializeXML(XmlNodeRef& entityNode, bool bLoading)  {};
-	void         Serialize(TSerialize ser)                            {};
-	bool         NeedSerialize()                                      { return false; };
-	bool         GetSignature(TSerialize signature)                   { return true; };
+	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final {};
+	virtual void         GameSerialize(TSerialize ser) final {};
+	virtual bool         NeedGameSerialize() final { return false; };
 
 private:
 	IEntity* m_pEntity;
 };
+
+inline CEntityComponentTrackViewNode::CEntityComponentTrackViewNode() {}
+inline CEntityComponentTrackViewNode::~CEntityComponentTrackViewNode() {}
 
 #endif

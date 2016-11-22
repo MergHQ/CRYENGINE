@@ -364,6 +364,12 @@ void CParticleEmitter::SetEntity(IEntity* pEntity, int nSlot)
 		m_entityId = 0;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CParticleEmitter::InvalidateCachedEntityData()
+{
+	UpdateFromEntity();
+}
+
 void CParticleEmitter::SetTarget(const ParticleTarget& target)
 {
 	if ((int)target.bPriority >= (int)m_target.bPriority)

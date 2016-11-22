@@ -5,7 +5,7 @@
 #include "PhysRenderer.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryEntitySystem/IEntity.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <Cry3DEngine/IStatObj.h>
 
 #pragma warning(disable: 4244)

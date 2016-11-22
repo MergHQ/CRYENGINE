@@ -5,33 +5,27 @@
 #ifndef __AnimatedCharacterComponents_h__
 	#define __AnimatedCharacterComponents_h__
 
-	#include <CryEntitySystem/IComponent.h>
+	#include <CryEntitySystem/IEntityComponent.h>
 
 class CAnimatedCharacter;
-class CAnimatedCharacterComponent_Base : public IComponent
+class CAnimatedCharacterComponent_Base : public IEntityComponent
 {
 public:
-	struct SComponentInitializerAnimChar : public SComponentInitializer
-	{
-		SComponentInitializerAnimChar(IEntity* piEntity, CAnimatedCharacter* pAnimChar)
-			: SComponentInitializer(piEntity)
-			, m_pAnimCharacter(pAnimChar)
-		{
-		}
+	void SetAnimatedCharacter( CAnimatedCharacter* pAnimChar ) { m_pAnimCharacter = pAnimChar; }
 
-		CAnimatedCharacter* m_pAnimCharacter;
-	};
-
-	virtual void Initialize(const SComponentInitializer& init);
-
+	virtual void Initialize(const SComponentInitializer& init) override;
+	virtual void Release() override { delete this; };
 protected:
 
 	typedef CAnimatedCharacterComponent_Base SuperClass;
 
 	explicit CAnimatedCharacterComponent_Base();
 
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual uint64 GetEventMask() const override;
 	virtual void OnPrePhysicsUpdate(float elapseTime) = 0;
+
+	virtual void GameSerialize(TSerialize ser) override {};
 
 	CAnimatedCharacter* m_pAnimCharacter;
 	IEntity*            m_piEntity;
@@ -39,6 +33,7 @@ protected:
 
 class CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate : public CAnimatedCharacterComponent_Base
 {
+	CRY_ENTITY_COMPONENT_INTERFACE(CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate,0x3F9D1B59EBAB4F73,0xABB9B04C675A32B9)
 public:
 	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate();
 
@@ -47,7 +42,7 @@ public:
 
 protected:
 
-	virtual IComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
 
 private:
 	Quat m_queuedRotation;
@@ -55,21 +50,22 @@ private:
 	virtual void OnPrePhysicsUpdate(float elapsedTime);
 };
 
-DECLARE_COMPONENT_POINTERS(CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate);
-
 class CAnimatedCharacterComponent_StartAnimProc : public CAnimatedCharacterComponent_Base
 {
-protected:
+	CRY_ENTITY_COMPONENT_INTERFACE(CAnimatedCharacterComponent_StartAnimProc,0xAA2D677D23A048D5,0xAA47116B97DD6216)
 
+protected:
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const;
 	virtual void                   OnPrePhysicsUpdate(float elapsedTime);
 };
 
 class CAnimatedCharacterComponent_GenerateMoveRequest : public CAnimatedCharacterComponent_Base
 {
+	CRY_ENTITY_COMPONENT_INTERFACE(CAnimatedCharacterComponent_GenerateMoveRequest,0x0CC3EE7E1ACE4BCD,0x9AEAE391B81B8E78)
+
 protected:
 
-	virtual IComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
+	virtual IEntityComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
 	virtual void                               OnPrePhysicsUpdate(float elapsedTime);
 };
 

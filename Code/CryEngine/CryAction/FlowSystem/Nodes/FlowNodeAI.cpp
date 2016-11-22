@@ -718,7 +718,7 @@ public:
 					IEntity* pEntity = members[i]->GetEntity();
 					if (pEntity)
 					{
-						IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+						IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 						if (pScriptProxy)
 							pScriptProxy->CallEvent("Enable");
 					}

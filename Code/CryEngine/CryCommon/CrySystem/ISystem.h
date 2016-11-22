@@ -889,6 +889,7 @@ struct SSystemGlobalEnvironment
 	bool bIgnoreAllAsserts;
 	bool bNoAssertDialog;
 	bool bTesting;
+	bool bStoppedOnAssert;
 	//////////////////////////////////////////////////////////////////////////
 
 	bool          bNoRandomSeed;

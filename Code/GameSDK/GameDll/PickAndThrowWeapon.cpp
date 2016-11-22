@@ -819,7 +819,7 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 
 		int16 actionType = eEVE_Pickup;
 
-		if (IEntityRenderProxy *pRenderProxy = validTargetEntity ? (IEntityRenderProxy*)pTargetEntity->GetProxy(ENTITY_PROXY_RENDER) : NULL)
+		if (IEntityRender *pIEntityRender = validTargetEntity ? pTargetEntity->GetRenderInterface() : NULL)
 		{
 			const Vec3 pos = pTargetEntity->GetWorldPos();
 			AABB aabb;
@@ -828,7 +828,7 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 			const Vec3 vRadius(radius,radius,radius);
 			AABB worldBox(pos-vRadius, pos+vRadius);
 
-			gEnv->p3DEngine->DeleteDecalsInRange(&worldBox, pRenderProxy->GetRenderNode());
+			gEnv->p3DEngine->DeleteDecalsInRange(&worldBox, pIEntityRender->GetRenderNode());
 		}
 
 		//////////////////////////////////////////////////////////////////////////
@@ -2236,14 +2236,8 @@ void CPickAndThrowWeapon::RestoreEntityViewDist( const SInfiniteViewDistEntity& 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity( info.entityId );
 	if (pEntity)
 	{
-		IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if (pRenderProxy)
 		{
-			IRenderNode *pRenderNode = pRenderProxy->GetRenderNode();
-			if (pRenderNode)
-			{
-				pRenderNode->SetViewDistRatio( info.oldViewDistRatio );
-			}
+			pEntity->SetViewDistRatio( info.oldViewDistRatio );
 		}
 	}
 }
@@ -2421,11 +2415,9 @@ void CPickAndThrowWeapon::ThrowObject()
 		if(m_state == eST_CHARGED_THROW_POST_RELEASE)
 		{
 			// Find the object's centre to work out the throw direction from
-			IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
-			if(pPhysProxy)
 			{
 				AABB aabb;
-				pPhysProxy->GetWorldBounds(aabb);
+				pEntity->GetPhysicsWorldBounds(aabb);
 				//find a target and the path to it (if any) , or straight ahead throw
 				throwDir = CalculateChargedThrowDir( gEnv->p3DEngine->GetRenderingCamera().GetMatrix(), aabb.GetCenter() ); 
 			}	
@@ -2487,8 +2479,8 @@ void CPickAndThrowWeapon::ThrowObject()
 				
 			if (m_state == eST_PUSHINGAWAY_POWER)
 			{
-				IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-				IRenderNode *pRenderNode = (pRenderProxy != NULL) ? pRenderProxy->GetRenderNode() : NULL;
+				IEntityRender *pIEntityRender = pEntity->GetRenderInterface();
+				IRenderNode *pRenderNode = (pIEntityRender != NULL) ? pIEntityRender->GetRenderNode() : NULL;
 				if (pRenderNode)
 				{
 					SInfiniteViewDistEntity info;
@@ -2663,16 +2655,10 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 			Vec3 targetTestPos; 
 
 			// We test against target aabb centre to reduce error
-			IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
-			if(pPhysProxy)
 			{
 				AABB aabb;
-				pPhysProxy->GetWorldBounds(aabb);
+				pEntity->GetPhysicsWorldBounds(aabb);
 				targetTestPos = aabb.GetCenter(); 
-			}
-			else
-			{
-				targetTestPos = pEntity->GetWorldPos();
 			}
 
 			Vec3 toTarget = targetTestPos - attackerPos; 
@@ -2741,11 +2727,9 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 		Vec3 targetTestPos = pBestTarget->GetPos(); 
 
 		// We use aabb centre to reduce error
-		IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pBestTarget->GetProxy(ENTITY_PROXY_PHYSICS));
-		if(pPhysProxy)
 		{
 			AABB aabb;
-			pPhysProxy->GetWorldBounds(aabb);
+			pBestTarget->GetPhysicsWorldBounds(aabb);
 			targetTestPos = aabb.GetCenter(); 
 		}
 

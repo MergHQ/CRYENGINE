@@ -105,12 +105,12 @@ CComponentEventDistributer::CComponentEventDistributer(const int flags)
 	SetFlags(flags);
 }
 
-void CComponentEventDistributer::RegisterEvent(const EntityId entityID, IComponentPtr pComponent, const int eventID, const int flags)
+void CComponentEventDistributer::RegisterEvent(const EntityId entityID, IEntityComponentPtr pComponent, const int eventID, const int flags)
 {
 	TComponentRegistrationContainer::iterator it = m_componentRegistration.find(entityID);
 	const TComponentRegistrationContainer::const_iterator iEnd = m_componentRegistration.end();
-	const bool bEnable = ((flags& IComponent::EComponentFlags_Enable) != 0);
-	if (bEnable && !pComponent->GetFlags().AreAllFlagsActive(IComponent::EComponentFlags_IsRegistered))
+	const bool bEnable = ((flags& IEntityComponent::EComponentFlags_Enable) != 0);
+	if (bEnable && !pComponent->GetFlags().AreAllFlagsActive(IEntityComponent::EComponentFlags_IsRegistered))
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityID);
 		pEntity->RegisterComponent(pComponent, flags);
@@ -180,7 +180,7 @@ void CComponentEventDistributer::EnableEventForEntity(const EntityId entityID, c
 	}
 }
 
-void CComponentEventDistributer::RegisterComponent(const EntityId entityID, IComponentPtr pComponent, bool bEnable)
+void CComponentEventDistributer::RegisterComponent(const EntityId entityID, IEntityComponentPtr pComponent, bool bEnable)
 {
 	if (bEnable)
 	{
@@ -195,7 +195,7 @@ void CComponentEventDistributer::RegisterComponent(const EntityId entityID, ICom
 		}
 		m_componentRegistration.insert(TComponentRegistrationContainer::value_type(entityID, pComponent));
 		pComponent->SetDistributer(this, entityID);
-		pComponent->GetFlags().SetFlags(IComponent::EComponentFlags_IsRegistered, true);
+		pComponent->GetFlags().SetFlags(IEntityComponent::EComponentFlags_IsRegistered, true);
 	}
 	else
 	{
@@ -214,12 +214,12 @@ void CComponentEventDistributer::RegisterComponent(const EntityId entityID, ICom
 			}
 		}
 		pComponent->SetDistributer(NULL, 0);
-		pComponent->GetFlags().SetFlags(IComponent::EComponentFlags_IsRegistered, false);
+		pComponent->GetFlags().SetFlags(IEntityComponent::EComponentFlags_IsRegistered, false);
 
 	}
 }
 
-void CComponentEventDistributer::EnableEventForComponent(const EntityId entityID, IComponentPtr pComponent, const int event, bool bEnable)
+void CComponentEventDistributer::EnableEventForComponent(const EntityId entityID, IEntityComponentPtr pComponent, const int event, bool bEnable)
 {
 	if (event == EVENT_ALL)
 	{
@@ -279,7 +279,7 @@ void CComponentEventDistributer::OnEntityDeleted(IEntity* piEntity)
 	}
 }
 
-void CComponentEventDistributer::ErasePtr(TEventPtrs& eventPtrs, IComponentPtr pComponent)
+void CComponentEventDistributer::ErasePtr(TEventPtrs& eventPtrs, IEntityComponentPtr pComponent)
 {
 	TEventPtrs::iterator iEventPtr = eventPtrs.begin();
 	const TEventPtrs::const_iterator iEnd = eventPtrs.end();

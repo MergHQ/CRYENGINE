@@ -1988,12 +1988,15 @@ void CVehicleMovementArcadeWheeled::UpdateSounds(const float deltaTime)
 
 	if (!gEnv->IsClient())
 		return;
+
+	auto pIEntityAudioComponent = GetAudioProxy();
 	
 	if (m_isEnginePowered && !m_isEngineGoingOff)
 	{
 		float oscillation = m_gears.changedUp ? expf(-sqr(m_gears.timer*m_pSharedParams->gears.gearChangeSpeed2))*sinf(m_gears.timer*m_pSharedParams->gears.gearOscillationFrequency*gf_PI2) : 0.f;
 		m_rpmScale = clamp_tpl(m_gears.curRpm + m_pSharedParams->gears.gearOscillationAmp*oscillation, 0.f, 1.f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 		//SetSoundParam(eSID_Run, "rpm_scale", m_rpmScale);
 		SetSoundParam(eSID_Run, "rpm_load", m_gears.rpmLoad);
 		SetSoundParam(eSID_Run, "clutch", clamp_tpl(m_gears.modulation + m_pSharedParams->gears.gearOscillationAmp2*oscillation, 0.f, 1.f));
@@ -2042,7 +2045,8 @@ void CVehicleMovementArcadeWheeled::UpdateSounds(const float deltaTime)
 	m_movementInfo.skidValue += (totalSkidValue - m_movementInfo.skidValue) * approxOneExp(deltaTime*m_pSharedParams->soundParams.skidLerpSpeed);
 	m_movementInfo.skidValue = clamp_tpl(m_movementInfo.skidValue, 0.f, 1.f);
 
-	m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], m_movementInfo.skidValue);
+	if (pIEntityAudioComponent)
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], m_movementInfo.skidValue);
 
 	// tire slip sound
 	{
@@ -2209,7 +2213,7 @@ void CVehicleMovementArcadeWheeled::UpdateBrakes(const float deltaTime)
 					{
 						char name[256];
 						cry_sprintf(name, "sounds/vehicles:%s:airbrake", m_pVehicle->GetEntity()->GetClass()->GetName());
-						m_pIEntityAudioProxy->PlaySound(name, Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);                
+						m_pIEntityAudioComponent->PlaySound(name, Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);                
 					}          
 				}*/
 			}
@@ -2265,7 +2269,9 @@ void CVehicleMovementArcadeWheeled::UpdateSuspensionSound(const float deltaTime)
 		if (m_compressionMax > soundParams->bumpMinSusp)
 		{	
 			const float fStroke = min(1.f, soundParams->bumpIntensityMult*m_compressionMax/soundParams->bumpMinSusp);
-			m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], fStroke);
+			auto pIEntityAudioComponent = GetAudioProxy();
+			if (pIEntityAudioComponent)
+				pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], fStroke);
 			ExecuteTrigger(eSID_Bump);
 			m_lastBump = 0;    
 		}            
@@ -3975,7 +3981,9 @@ void CVehicleMovementArcadeWheeled::UpdateSurfaceEffects(const float deltaTime)
 
 					if (nSurfaceStateID != INVALID_AUDIO_SWITCH_STATE_ID)
 					{
-						m_pIEntityAudioProxy->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
+						auto pIEntityAudioComponent = GetAudioProxy();
+						if (pIEntityAudioComponent)
+							pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
 					}
 				}
 			}

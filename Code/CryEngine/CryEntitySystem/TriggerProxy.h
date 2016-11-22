@@ -24,43 +24,42 @@ struct SProximityElement;
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-class CTriggerProxy : public IEntityTriggerProxy
+class CEntityComponentTriggerBounds : public IEntityTriggerComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentTriggerBounds,IEntityTriggerComponent,"CEntityComponentTriggerBounds",0x1C58115AA18E446E,0x8E82B3B4C6DD6F55);
+
 public:
-	CTriggerProxy();
-	~CTriggerProxy();
+	//CTriggerProxy();
+	//~CTriggerProxy();
 
 	CEntity* GetEntity() const { return m_pEntity; };
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                           { return ENTITY_PROXY_TRIGGER; }
-	virtual void         Release();
-	virtual void         Done()                                              {};
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params)  { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) {};
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
+	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final { return BIT64(ENTITY_EVENT_XFORM)|BIT64(ENTITY_EVENT_ENTERAREA)|BIT64(ENTITY_EVENT_LEAVEAREA); };
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityTriggerProxy
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void SetTriggerBounds(const AABB& bbox) { SetAABB(bbox); };
-	virtual void GetTriggerBounds(AABB& bbox)       { bbox = m_aabb; };
-	virtual void ForwardEventsTo(EntityId id)       { m_forwardingEntity = id; }
-	virtual void InvalidateTrigger();
+	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_TRIGGER; }
+	virtual void         Release() final { delete this; };
+	virtual void         Update(SEntityUpdateContext& ctx) final;
+	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final {};
+	virtual void         GameSerialize(TSerialize ser) final;
+	virtual bool         NeedGameSerialize() final;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// IEntityTriggerComponent
+	//////////////////////////////////////////////////////////////////////////
+	virtual void SetTriggerBounds(const AABB& bbox) final { SetAABB(bbox); };
+	virtual void GetTriggerBounds(AABB& bbox) final { bbox = m_aabb; };
+	virtual void ForwardEventsTo(EntityId id) final { m_forwardingEntity = id; }
+	virtual void InvalidateTrigger() final;
 	//////////////////////////////////////////////////////////////////////////
 
 	const AABB&              GetAABB() const { return m_aabb; }
@@ -68,7 +67,7 @@ public:
 
 	CProximityTriggerSystem* GetTriggerSystem() { return m_pEntity->GetCEntitySystem()->GetProximityTriggerSystem(); }
 
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const final
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}

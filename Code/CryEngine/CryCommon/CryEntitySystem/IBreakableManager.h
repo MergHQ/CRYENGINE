@@ -144,7 +144,7 @@ struct IBreakableManager
 		int           nMatLayers;
 		int           nEntityFlagsAdd;
 		int           nEntitySlotFlagsAdd;
-		int           nRenderNodeFlags;
+		uint64        nRenderNodeFlags;
 		IRenderNode*  pSrcStaticRenderNode;
 		const char*   pName;
 		IEntityClass* overrideEntityClass;

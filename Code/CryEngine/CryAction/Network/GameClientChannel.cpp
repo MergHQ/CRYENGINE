@@ -334,6 +334,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension userData;
 	userData.hookFunction = HookCreateActor;
 	userData.pUserData = &channelId;
+	userData.pSpawnSerializer = &ser;
 
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 	SEntitySpawnParams esp;
@@ -350,14 +351,12 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	esp.sName = param.name.c_str();
 	esp.vPosition = param.pos;
 	esp.vScale = param.scale;
+
 	if (IEntity* pEntity = pEntitySystem->SpawnEntity(esp, false))
 	{
 		const EntityId entityId = pEntity->GetId();
-
-		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
-			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 			return false;
 		}
 
@@ -368,7 +367,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			SetPlayerId(entityId);
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
-		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 		pGameObject->PostRemoteSpawn();
 		return true;
 	}

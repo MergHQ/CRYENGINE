@@ -81,11 +81,11 @@ void PrepareForAudioTriggerExecution(AudioProxyType* pIAudioProxy, const SMFXAud
 		pIAudioProxy->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
 	}
 
-	REINST("IEntityAudioProxy needs to support multiple IAudioProxy objects to properly handle Rtpcs tied to specific events");
+	REINST("IEntityAudioComponent needs to support multiple IAudioProxy objects to properly handle Rtpcs tied to specific events");
 
 	//Note: Rtpcs are global for the audio proxy object.
-	//      This can be a problem if the sound is processed through IEntityAudioProxy, where the object is shared for all audio events triggered through it!
-	//TODO: Add support to IEntityAudioProxy to handle multiple audio proxy objects
+	//      This can be a problem if the sound is processed through IEntityAudioComponent, where the object is shared for all audio events triggered through it!
+	//TODO: Add support to IEntityAudioComponent to handle multiple audio proxy objects
 	for (int i = 0; i < runtimeParams.numAudioRtpcs; ++i)
 	{
 		const char* rtpcName = runtimeParams.audioRtpcs[i].rtpcName;
@@ -147,12 +147,12 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : NULL;
 	if (pOwnerEntity)
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pOwnerEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-		CRY_ASSERT(pIEntityAudioProxy);
+		IEntityAudioComponent* pIEntityAudioComponent = pOwnerEntity->GetOrCreateComponent<IEntityAudioComponent>();
+		CRY_ASSERT(pIEntityAudioComponent);
 
-		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IEntityAudioProxy>(pIEntityAudioProxy.get(), m_audioParams, params);
+		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IEntityAudioComponent>(pIEntityAudioComponent, m_audioParams, params);
 
-		pIEntityAudioProxy->ExecuteTrigger(m_audioParams.trigger.GetTriggerId(), params.audioProxyId);
+		pIEntityAudioComponent->ExecuteTrigger(m_audioParams.trigger.GetTriggerId(), params.audioProxyId);
 	}
 	else
 	{

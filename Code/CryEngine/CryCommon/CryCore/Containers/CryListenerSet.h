@@ -149,6 +149,9 @@ public:
 	template<typename TFunctor>
 	inline void ForEachListener(const TFunctor& f);
 
+	template<typename LambdaFunction>
+	inline void ForEach(LambdaFunction f);
+
 	//! Allow access for Notifier for iteration.
 	friend class CListenerNotifier<T>;
 
@@ -424,15 +427,35 @@ template<typename TFunctor>
 void CListenerSet<T >::ForEachListener(const TFunctor& f)
 {
 	StartNotificationScope();
-	for (typename TListenerVec::const_iterator it = m_listeners.begin(), itEnd = m_listeners.end(); it != itEnd; ++it)
+	size_t count = m_listeners.size();
+	// Iterate only until current count, ignore new elements added during the loop
+	for (size_t index = 0; index < count; ++index)
 	{
-		if (const T& listener = it->m_pListener)
+		if (m_listeners[index].m_pListener)
 		{
-			f(listener);
+			f(m_listeners[index].m_pListener);
 		}
 	}
 	EndNotificationScope();
 }
+
+template<typename T>
+template<typename LambdaFunction>
+void CListenerSet<T >::ForEach(LambdaFunction f)
+{
+	StartNotificationScope();
+	size_t count = m_listeners.size();
+	// Iterate only until current count, ignore new elements added during the loop
+	for (size_t index = 0; index < count; ++index)
+	{
+		if (m_listeners[index].m_pListener)
+		{
+			f(m_listeners[index].m_pListener);
+		}
+	}
+	EndNotificationScope();
+}
+
 
 template<typename T>
 inline void CListenerSet<T >::StartNotificationScope()

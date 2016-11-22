@@ -4,7 +4,7 @@
 #include "EntityObjectPreviewer.h"
 
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
@@ -97,12 +97,17 @@ Sphere CEntityObjectPreviewer::GetObjectBounds(ObjectId objectId) const
 
 void CEntityObjectPreviewer::RenderObject(const IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const
 {
+	//@TODO: Should be support with the new component entity system
+
 	IEntity& entity = EntityUtils::GetEntity(object);
-	IEntityRenderProxy* pEntityRenderProxy = static_cast<IEntityRenderProxy*>(entity.GetProxy(ENTITY_PROXY_RENDER));
-	if (pEntityRenderProxy)
-	{
-		pEntityRenderProxy->GetRenderNode()->Render(params, passInfo);
-	}
+	
+	IEntity::SPreviewRenderParams previewParams;
+	previewParams.pPassInfo = &passInfo;
+	previewParams.pRenderParams = &params;
+
+	entity.PreviewRender(previewParams);
+	
+	//@TODO: check if this is really needed?
 	gEnv->pRenderer->GetIRenderAuxGeom()->Flush();
 }
 } // Schematyc

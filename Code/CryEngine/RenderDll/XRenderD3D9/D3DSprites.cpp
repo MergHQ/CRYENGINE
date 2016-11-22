@@ -7,7 +7,7 @@
 
 #include <Cry3DEngine/IStatObj.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 
 #include "Common/RenderView.h"
 
@@ -222,7 +222,6 @@ static void sRT_RenderObject(IStatObj* pEngObj, SRendParams& RP, const SRenderin
 	pObj->m_II.m_AmbColor = RP.AmbientColor;
 	pObj->m_ObjFlags |= FOB_INSHADOW;
 	pObj->m_fAlpha = RP.fAlpha;
-	pObj->m_nRenderQuality = (short)(RP.fRenderQuality * 65535.0f);
 	pObj->m_fDistance = RP.fDistance;
 	pObj->m_nMaterialLayers = RP.nMaterialLayersBlend;
 	pObj->m_pCurrMaterial = RP.pMaterial;
@@ -357,7 +356,6 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	CV_r_usezpass = 0;
 
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
-	rParms.fRenderQuality = 0.0f;
 	rParms.pRenderNode = (struct IRenderNode*)(intptr_t)-1; // avoid random skipping of rendering
 
 	Vec3 cSkyBackup = gEnv->p3DEngine->GetSkyColor();

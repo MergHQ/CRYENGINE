@@ -59,7 +59,7 @@ private:
 	//static tSoundID PlaySound( const string& name, const ESoundSemantic semantic, const Vec3& pos , uint32 flags = FLAG_SOUND_EVENT );
 	//void StopSound( const tSoundID soundID, EntityId entityID, const ESoundStopMode stopMode = ESoundStopMode_EventFade );
 	//bool IsSoundLooped( const tSoundID soundID, EntityId entityID );
-	//ISound* GetSoundInterface( IEntityAudioProxy* pProxy, tSoundID soundID ) const;	
+	//ISound* GetSoundInterface( IEntityAudioComponent* pProxy, tSoundID soundID ) const;	
 	static void ExecuteCommands( EntityId entityID, const CGameAudio::CAudioSignal* pAudioSignal );
 	
 private:

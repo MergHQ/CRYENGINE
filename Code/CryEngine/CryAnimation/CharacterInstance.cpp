@@ -861,3 +861,27 @@ void CCharInstance::SetupThroughParams(const SAnimationProcessParams* pParams)
 	if (Console::GetInst().ca_ForceUpdateSkeletons != 0)
 		m_SkeletonPose.m_bFullSkeletonUpdate = true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CCharInstance::PerFrameUpdate()
+{
+	if (m_rpFlags & CS_FLAG_UPDATE)
+	{
+		if ((m_rpFlags & CS_FLAG_UPDATE_ALWAYS) ||
+				(m_rpFlags & CS_FLAG_RENDER_NODE_VISIBLE))
+		{
+			// If we need to be updated always, or our render node is potentially visible.
+			// Animation should start
+
+			const CCamera& camera = GetISystem()->GetViewCamera();
+			float fDistance = (camera.GetPosition() - m_location.t).GetLength();
+			float fZoomFactor = 0.001f + 0.999f * (RAD2DEG(camera.GetFov()) / 60.f);
+
+			SAnimationProcessParams params;
+			params.locationAnimation = m_location;
+			params.bOnRender = 0;
+			params.zoomAdjustedDistanceFromCamera = fDistance * fZoomFactor;
+			StartAnimationProcessing(params);
+		}
+	}
+}

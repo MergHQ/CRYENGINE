@@ -1226,7 +1226,7 @@ struct IVehicleMovement
 
 	virtual void                   GetMemoryUsage(ICrySizer* s) const = 0;
 
-	virtual IEntityAudioProxy*     GetAudioProxy() const                      { return nullptr; }
+	virtual IEntityAudioComponent*     GetAudioProxy() const                      { return nullptr; }
 	virtual AudioControlId         GetPrimaryWeaponAudioTrigger() const       { return INVALID_AUDIO_CONTROL_ID; }
 	virtual AudioControlId         GetPrimaryWeaponAudioStopTrigger() const   { return INVALID_AUDIO_CONTROL_ID; }
 	virtual AudioControlId         GetSecondaryWeaponAudioTrigger() const     { return INVALID_AUDIO_CONTROL_ID; }

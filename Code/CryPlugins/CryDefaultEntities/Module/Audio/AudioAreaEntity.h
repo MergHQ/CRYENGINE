@@ -62,7 +62,7 @@ private:
 	float                 m_environmentFadeDistance = 5.0f;
 	ESoundObstructionType m_obstructionType = eSoundObstructionType_Ignore;
 
-	IEntityAudioProxyPtr  m_pProxy = nullptr;
+	IEntityAudioComponent*m_pProxy = nullptr;
 	bool                  m_bIsActive = false;
 	float                 m_fadeValue = 0.0f;
 

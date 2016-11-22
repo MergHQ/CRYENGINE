@@ -68,11 +68,11 @@ void CHUDSilhouettes::SetVisionParams(EntityId uiEntityId,float r,float g,float 
 		return;
 
 	// Some actor accessories may not have render proxy
-	IEntityRenderProxy *pEntityRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if(!pEntityRenderProxy)
+	IEntityRender *pIEntityRender = pEntity->GetRenderInterface();
+	if(!pIEntityRender)
 		return;
 
-	pEntityRenderProxy->SetHUDSilhouettesParams(r,g,b,a);
+	//pIEntityRender->SetHUDSilhouettesParams(r,g,b,a);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -690,10 +690,10 @@ void CHUDSilhouettes::HeatVisionActivated()
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pSilhouette.uiEntityId);
 		if(!pEntity)
 			continue;
-		IEntityRenderProxy* pEntityRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if(!pEntityRenderProxy)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if(!pIEntityRender)
 			continue;
-		pEntityRenderProxy->SetVisionParams(0.0f, 0.0f, 0.0f, 0.0f);
+		//pIEntityRender->SetVisionParams(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 }
 //-------------------------------------------------------------

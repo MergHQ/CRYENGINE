@@ -5,13 +5,25 @@
 
 #pragma once
 
-#include "IEntityProxy.h"
+#include "IEntityComponent.h"
+#include "IEntity.h"
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/Serializer.h>
 
 struct IEntityAttribute;
-
 DECLARE_SHARED_POINTERS(IEntityAttribute)
+
+//! Derive from this interface to expose custom entity properties in the editor using the serialization framework.
+struct IEntityAttribute
+{
+	virtual ~IEntityAttribute() {}
+
+	virtual const char*         GetName() const = 0;
+	virtual const char*         GetLabel() const = 0;
+	virtual void                Serialize(Serialization::IArchive& archive) = 0;
+	virtual IEntityAttributePtr Clone() const = 0;
+	virtual void                OnAttributeChange(IEntity* pEntity) const {}
+};
 
 typedef DynArray<IEntityAttributePtr> TEntityAttributeArray;
 
@@ -50,9 +62,9 @@ struct SEntityAttributesSerializer
 // Description:
 //    Proxy for storage of entity attributes.
 //////////////////////////////////////////////////////////////////////////
-struct IEntityAttributesProxy : public IEntityProxy
+struct IEntityAttributesComponent : public IEntityComponent
 {
-	virtual ~IEntityAttributesProxy() {}
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityAttributesComponent,0x807B86780DBF405E,0x892F24737D11CB20)
 
 	virtual void                         SetAttributes(const TEntityAttributeArray& attributes) = 0;
 	virtual TEntityAttributeArray&       GetAttributes() = 0;

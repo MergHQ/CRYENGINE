@@ -54,11 +54,8 @@ void CBullet::PostInit(IGameObject *pGameObject)
 	Physicalize();
 
 	// Make sure that bullets are always rendered regardless of distance
-	if (auto *pRenderProxy = static_cast<IEntityRenderProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER)))
-	{
-		// Ratio is 0 - 255, 255 being 100% visibility
-		pRenderProxy->SetViewDistRatio(255);
-	}
+	// Ratio is 0 - 255, 255 being 100% visibility
+	GetEntity()->SetViewDistRatio(255);
 
 	// Apply an impulse so that the bullet flies forward
 	if (auto *pPhysics = GetEntity()->GetPhysics())

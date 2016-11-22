@@ -43,7 +43,6 @@ CLightEntity::CLightEntity()
 	memset(&m_Matrix, 0, sizeof(m_Matrix));
 
 	m_pStatObj = NULL;
-	m_pSrcEnt = NULL;
 	GetInstCount(GetRenderNodeType())++;
 }
 
@@ -74,9 +73,27 @@ CLightEntity::~CLightEntity()
 	SAFE_RELEASE(m_pStatObj);
 }
 
+void CLightEntity::SetLayerId(uint16 nLayerId)
+{
+	bool bChanged = m_layerId != nLayerId;
+	m_layerId = nLayerId;
+
+	if (bChanged)
+	{
+		Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this);
+	}
+}
+
 const char* CLightEntity::GetName(void) const
 {
-	return m_pSrcEnt ? m_pSrcEnt->GetName() : (m_light.m_sName ? m_light.m_sName : "LightEntity");
+	return GetOwnerEntity() ? GetOwnerEntity()->GetName() : (m_light.m_sName ? m_light.m_sName : "LightEntity");
+}
+
+void CLightEntity::GetLocalBounds(AABB& bbox)
+{
+	bbox = m_WSBBox;
+	bbox.min -= m_light.m_Origin;
+	bbox.max -= m_light.m_Origin;
 }
 
 bool CLightEntity::IsLightAreasVisible()
@@ -128,6 +145,7 @@ void CLightEntity::SetMatrix(const Matrix34& mat)
 		SetBBox(AABB::CreateAABBfromOBB(wp, obb));
 	}
 	m_light.SetPosition(wp);
+	m_light.SetMatrix(mat);
 	SetLightProperties(m_light);
 	Get3DEngine()->RegisterEntity(this);
 
@@ -2029,9 +2047,24 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 	}
 }
 
+void CLightEntity::Hide(bool bHide)
+{
+	SetRndFlags(ERF_HIDDEN, bHide);
+
+	if (bHide)
+	{
+		m_light.m_Flags |= DLF_DISABLED;
+	}
+	else
+	{
+		m_light.m_Flags &= ~DLF_DISABLED;
+	}
+}
+
 void CLightEntity::SetViewDistRatio(int nViewDistRatio)
 {
 	IRenderNode::SetViewDistRatio(nViewDistRatio);
+	m_fWSMaxViewDist = GetMaxViewDist();
 }
 
 #if defined(FEATURE_SVO_GI)
@@ -2039,30 +2072,28 @@ IRenderNode::EGIMode CLightEntity::GetGIMode() const
 {
 	if (IRenderNode::GetGIMode() == eGM_StaticVoxelization || IRenderNode::GetGIMode() == eGM_DynamicVoxelization || m_light.m_Flags & DLF_SUN)
 	{
-		if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !(m_dwRndFlags & ERF_HIDDEN))
+	if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !(m_dwRndFlags & ERF_HIDDEN))
+	{
+		if (m_light.m_BaseColor.Luminance() > .01f && m_light.m_fBaseRadius > 0.5f)
 		{
-			if (m_light.m_BaseColor.Luminance() > .01f && m_light.m_fBaseRadius > 0.5f)
+			if (m_light.m_Flags & DLF_SUN)
 			{
-				if (m_light.m_Flags & DLF_SUN)
-				{
-					if (GetCVars()->e_Sun)
+				if (GetCVars()->e_Sun)
 						return eGM_StaticVoxelization;
-					else
+				else
 						return eGM_None;
-				}
-
-				return IRenderNode::GetGIMode();
 			}
 		}
 	}
+}
 
 	return eGM_None;
 }
 #endif
 
-void CLightEntity::SetSrcEntity(IEntity* pEnt)
+void CLightEntity::SetOwnerEntity(IEntity* pEnt)
 {
-	m_pSrcEnt = pEnt;
+	IRenderNode::SetOwnerEntity(pEnt);
 
 	SetRndFlags(ERF_GI_MODE_BIT0, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0) != 0);
 	SetRndFlags(ERF_GI_MODE_BIT1, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1) != 0);

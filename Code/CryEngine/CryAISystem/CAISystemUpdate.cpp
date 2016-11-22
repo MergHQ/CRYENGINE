@@ -29,7 +29,6 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryMath/Cry_Math.h>
 #include <CrySystem/ISystem.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IConsole.h>
 #include <CryNetwork/ISerialize.h>
@@ -76,10 +75,10 @@ static bool IsPuppetOnScreen(CPuppet* pPuppet)
 	IEntity* pEntity = pPuppet->GetEntity();
 	if (!pEntity)
 		return false;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (!pRenderProxy || !pRenderProxy->GetRenderNode())
+	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+	if (!pIEntityRender || !pIEntityRender->GetRenderNode())
 		return false;
-	int frameDiff = gEnv->nMainFrameID - pRenderProxy->GetRenderNode()->GetDrawFrame();
+	int frameDiff = gEnv->nMainFrameID - pIEntityRender->GetRenderNode()->GetDrawFrame();
 	if (frameDiff > 2)
 		return false;
 	return true;

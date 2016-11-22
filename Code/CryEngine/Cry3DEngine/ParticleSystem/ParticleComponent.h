@@ -129,7 +129,7 @@ struct SComponentParams
 	_smart_ptr<IMaterial>     m_pMaterial;
 	_smart_ptr<IMeshObj>      m_pMesh;
 	string                    m_diffuseMap;
-	uint32                    m_renderObjectFlags;
+	uint64                    m_renderObjectFlags;
 	size_t                    m_instanceDataStride;
 	STextureAnimation         m_textureAnimation;
 	float                     m_scaleParticleCount;

@@ -1167,6 +1167,7 @@ void CEngineStats::CollectGeometry()
 		GetObjectsByType(eERType_Vegetation, lstInstances);
 		GetObjectsByType(eERType_Light, lstInstances);
 		GetObjectsByType(eERType_Decal, lstInstances);
+		GetObjectsByType(eERType_Character, lstInstances);
 
 		std::vector<IRenderNode*>::const_iterator itEnd = lstInstances.end();
 		for (std::vector<IRenderNode*>::iterator it = lstInstances.begin(); it != itEnd; ++it)

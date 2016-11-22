@@ -154,6 +154,7 @@ CGameObject::CGameObject() :
 	m_bPhysicsDisabled(false),
 	m_bNoSyncPhysics(false),
 	m_bNeedsNetworkRebind(false),
+	m_bOnInitEventCalled(false),
 	m_cachedParentId(0)
 {
 	static_assert(eGFE_Last <= 64, "Unexpected enum value!");
@@ -227,7 +228,7 @@ bool CGameObject::IsProbablyVisible()
 
 	if (g_visibilityTimeout)
 	{
-		IEntityRenderProxy* pProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRender* pProxy = GetEntity()->GetRenderInterface();
 		if (pProxy)
 		{
 			float fDiff = gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime();
@@ -333,13 +334,23 @@ bool CGameObject::ShouldUpdateSlot(const SExtension* pExt, uint32 slot, uint32 s
 }
 
 //------------------------------------------------------------------------
-bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
+void CGameObject::Initialize(const SComponentInitializer& init)
 {
-	m_pEntity = pEntity;
-	m_entityId = pEntity->GetId();
+	m_pEntity = init.m_pEntity;
+	m_entityId = m_pEntity->GetId();
 
 	m_pSchedulingProfiles = ((CGameObjectSystem*)CCryAction::GetCryAction()->GetIGameObjectSystem())->GetEntitySchedulerProfiles(m_pEntity);
 
+	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CGameObject::OnInitEvent()
+{
+	if (m_bOnInitEventCalled)
+		return;
+
+	m_bOnInitEventCalled = true;
 	IGameObjectSystem* pGOS = m_pGOS;
 
 	if (!m_extensions.empty())
@@ -349,14 +360,17 @@ bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
 		// this loop repopulates m_extensions
 		for (TExtensions::const_iterator iter = preExtensions.begin(); iter != preExtensions.end(); ++iter)
 		{
+			auto *pParams = m_pUserData ?
+				static_cast<IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension*>(m_pUserData) : nullptr;
+
 			const char* szExtensionName = pGOS->GetName(iter->id);
-			if (!ChangeExtension(szExtensionName, eCE_Activate))
+			if (!ChangeExtension(szExtensionName, eCE_Activate, pParams ? pParams->pSpawnSerializer : nullptr))
 			{
 				if (szExtensionName)
 				{
 					gEnv->pLog->LogError("[GameObject]: Couldn't activate extension %s", szExtensionName);
 				}
-				return false;
+				//return false;
 			}
 		}
 
@@ -367,92 +381,6 @@ bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
 			iter->activated = false;
 		}
 	}
-
-	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-
-	return true;
-}
-
-//------------------------------------------------------------------------
-void CGameObject::Reload(IEntity* pEntity, SEntitySpawnParams& spawnParams)
-{
-	assert(pEntity);
-	assert(m_pEntity == pEntity);
-	PREFAST_ASSUME(pEntity);
-
-	m_pEntity = pEntity;
-	m_entityId = pEntity ? pEntity->GetId() : 0;
-	m_pMovementController = NULL;
-
-	m_pActionDelegate = 0;
-	m_pViewDelegate = 0;
-	m_pProfileManager = 0;
-	m_channelId = 0;
-	m_enabledAspects = NET_ASPECT_ALL;
-	;
-	m_delegatableAspects = NET_ASPECT_ALL;
-	m_enabledPhysicsEvents = 0;
-	m_forceUpdate = 0;
-	m_updateState = eUS_NotVisible_FarAway;
-	m_updateTimer = 0.1f;
-	m_isBoundToNetwork = false;
-	m_inRange = false;
-	m_justExchanging = false;
-	m_aiMode = eGOAIAM_VisibleOrInRange;
-	m_physDisableMode = eADPM_Never;
-	m_prePhysicsUpdateRule = ePPU_Never;
-	m_bPrePhysicsEnabled = false;
-	m_predictionHandle = 0;
-	m_bPhysicsDisabled = false;
-	m_bNoSyncPhysics = false;
-	m_bNeedsNetworkRebind = false;
-
-	m_pSchedulingProfiles = ((CGameObjectSystem*)CCryAction::GetCryAction()->GetIGameObjectSystem())->GetEntitySchedulerProfiles(m_pEntity);
-
-	m_pEntity->SetFlags(m_pEntity->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-
-	m_distanceChecker.Reset();
-
-	if (!m_extensions.empty())
-	{
-		TExtensions keepExtensions;
-		keepExtensions.reserve(m_extensions.size());
-		for (TExtensions::iterator itExtension = m_extensions.begin(), itExtensionsEnd = m_extensions.end(); itExtension != itExtensionsEnd; ++itExtension)
-		{
-			SExtension& extension = *itExtension;
-			assert(extension.pExtension.get());
-
-			if (!extension.pExtension || !extension.pExtension->ReloadExtension(this, spawnParams))
-			{
-				GetEntity()->RegisterComponent(extension.pExtension, false);
-				extension.pExtension.reset();
-			}
-			else
-			{
-				keepExtensions.push_back(extension);
-			}
-		}
-
-		m_extensions.resize(keepExtensions.size());
-		std::copy(keepExtensions.begin(), keepExtensions.end(), m_extensions.begin());
-
-		bool bHasPostUpdates = false;
-		if (!keepExtensions.empty())
-		{
-			for (TExtensions::iterator itExtension = keepExtensions.begin(), itExtensionsEnd = keepExtensions.end(); itExtension != itExtensionsEnd; ++itExtension)
-			{
-				SExtension& extension = *itExtension;
-				assert(extension.pExtension.get());
-
-				extension.pExtension->PostReloadExtension(this, spawnParams);
-				bHasPostUpdates |= extension.postUpdate;
-			}
-		}
-
-		m_pGOS->SetPostUpdate(this, bHasPostUpdates);
-	}
-
-	EvaluateUpdateActivation();
 }
 
 bool CGameObject::BindToNetwork(EBindToNetworkMode mode)
@@ -530,7 +458,7 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 	NetworkAspectType aspects = gameObjectAspects;
 	INetChannel* pControllingChannel = NULL;
 
-	if (!m_bNoSyncPhysics && (GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS) || m_pProfileManager))
+	if (!m_bNoSyncPhysics && (GetEntity()->GetPhysicalEntity() || m_pProfileManager))
 	{
 		aspects |= eEA_Physics;
 		//		aspects &= ~eEA_Volatile;
@@ -594,7 +522,7 @@ bool CGameObject::IsAspectDelegatable(NetworkAspectType aspect)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::Done()
+void CGameObject::OnShutDown()
 {
 	// cannot release extensions while Physics is in a CB.
 	AcquireMutex();
@@ -851,16 +779,35 @@ void CGameObject::ProcessEvent(SEntityEvent& event)
 	{
 		switch (event.event)
 		{
-		case ENTITY_EVENT_RENDER:
+		case ENTITY_EVENT_UPDATE:
 			{
-				const SRendParams* rParams = reinterpret_cast<const SRendParams*>(event.nParam[0]);
-				m_updateState = (rParams->fDistance < FAR_AWAY_DISTANCE) ? eUS_CheckVisibility_Close : eUS_CheckVisibility_FarAway;
+				SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+				Update(*pCtx);
+			}
+			break;
+		case ENTITY_EVENT_RENDER_VISIBILITY_CHANGE:
+			{
+				bool bVisible = event.nParam[0] != 0;
+				if (bVisible)
+				{
+					// Get distance of entity from camera.
+					float distanceFromCamera = GetEntity()->GetPos().GetDistance(GetISystem()->GetViewCamera().GetPosition());
+					m_updateState = (distanceFromCamera < FAR_AWAY_DISTANCE) ? eUS_CheckVisibility_Close : eUS_CheckVisibility_FarAway;
 
-				UpdateStateEvent(eUSE_BecomeVisible);
+					UpdateStateEvent(eUSE_BecomeVisible);
+				}
 			}
 			break;
 
 		case ENTITY_EVENT_INIT:
+			OnInitEvent();
+			if (m_bNeedsNetworkRebind)
+			{
+				m_bNeedsNetworkRebind = false;
+				BindToNetwork(eBTNM_Force);
+			}
+			break;
+		case ENTITY_EVENT_RESET:
 			if (m_bNeedsNetworkRebind)
 			{
 				m_bNeedsNetworkRebind = false;
@@ -937,11 +884,29 @@ void CGameObject::ProcessEvent(SEntityEvent& event)
 		if (IAIObject* aiObject = m_pEntity->GetAI())
 			aiObject->EntityEvent(event);
 
-		for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
-		{
-			iter->pExtension->ProcessEvent(event);
-		}
+		// Events to extensions are sent by Entity system as they are EntityComponents
+		/*
+		   for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
+		   {
+		   iter->pExtension->ProcessEvent(event);
+		   }
+		 */
 	}
+}
+
+uint64 CGameObject::GetEventMask() const
+{
+	return
+	  BIT64(ENTITY_EVENT_INIT) |
+		BIT64(ENTITY_EVENT_RESET) |
+	  BIT64(ENTITY_EVENT_DONE) |
+	  BIT64(ENTITY_EVENT_UPDATE) |
+	  BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) |
+	  BIT64(ENTITY_EVENT_ENTERAREA) |
+	  BIT64(ENTITY_EVENT_LEAVEAREA) |
+	  BIT64(ENTITY_EVENT_POST_SERIALIZE) |
+	  BIT64(ENTITY_EVENT_HIDE) |
+	  BIT64(ENTITY_EVENT_UNHIDE);
 }
 
 //------------------------------------------------------------------------
@@ -950,9 +915,9 @@ IGameObjectExtension* CGameObject::GetExtensionWithRMIBase(const void* pBase)
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 	{
 		if (iter->pExtension->GetRMIBase() == pBase)
-			return iter->pExtension.get();
+			return iter->pExtension;
 	}
-	return NULL;
+	return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1045,33 +1010,9 @@ void CGameObject::AfterAction()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CGameObject::NeedSerialize()
+bool CGameObject::NeedGameSerialize()
 {
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CGameObject::GetSignature(TSerialize signature)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
-
-	bool bResult = true;
-
-	signature.BeginGroup("GOExtensions");
-
-	TExtensions::iterator itExtension = m_extensions.begin();
-	TExtensions::iterator itExtensionEnd = m_extensions.end();
-	for (; bResult && itExtension != itExtensionEnd; ++itExtension)
-	{
-		struct SExtension& extension = *itExtension;
-
-		// Let extension add to signature
-		bResult &= (!extension.pExtension || extension.pExtension->GetEntityPoolSignature(signature));
-	}
-
-	signature.EndGroup();
-
-	return bResult;
 }
 
 static const char* AspectProfileSerializationName(int i)
@@ -1101,7 +1042,7 @@ static const char* AspectProfileSerializationName(int i)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::Serialize(TSerialize ser)
+void CGameObject::GameSerialize(TSerialize ser)
 {
 	FullSerialize(ser);
 }
@@ -1281,10 +1222,7 @@ bool CGameObject::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 
 	if (aspect == eEA_Physics && !m_pProfileManager)
 	{
-		if (IEntityPhysicalProxy* pProxy = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS))
-			pProxy->Serialize(ser);
-		else
-			return false;
+		GetEntity()->PhysicsNetSerialize(ser);
 	}
 
 	return true;
@@ -1299,7 +1237,7 @@ NetworkAspectType CGameObject::GetNetSerializeAspects()
 		aspects |= iter->pExtension->GetNetSerializeAspects();
 	}
 
-	if (!m_bNoSyncPhysics && (GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS) || m_pProfileManager))
+	if (!m_bNoSyncPhysics && (GetEntity()->GetPhysicalEntity() || m_pProfileManager))
 	{
 		aspects |= eEA_Physics;
 	}
@@ -1335,7 +1273,7 @@ void CGameObject::SetAuthority(bool auth)
 		AUTO_LOCK(g_updateSchedulingProfileCritSec);
 		g_updateSchedulingProfile.insert(this);
 	}
-	
+
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		iter->pExtension->SetAuthority(auth);
 }
@@ -1436,7 +1374,7 @@ IGameObjectExtension* CGameObject::QueryExtension(IGameObjectSystem::ExtensionID
 		// locate the extension
 		TExtensions::const_iterator iter = std::lower_bound(m_extensions.begin(), m_extensions.end(), ext);
 		if (iter != m_extensions.end() && iter->id == ext.id)
-			return iter->pExtension.get();
+			return iter->pExtension;
 	}
 
 	return 0;
@@ -1453,7 +1391,7 @@ bool CGameObject::SetExtensionParams(const char* extension, SmartScriptTable par
 }
 
 //------------------------------------------------------------------------
-IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExtension change)
+IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExtension change, TSerialize* pSpawnSerializer)
 {
 	IGameObjectExtension* pRet = NULL;
 
@@ -1462,7 +1400,7 @@ IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExte
 	// fetch extension id
 	ext.id = pGameObjectSystem->GetID(name);
 
-	if (m_pEntity) // init has been called, things are safe
+	if (m_pEntity && m_bOnInitEventCalled) // init has been called, things are safe
 	{
 		m_justExchanging = true;
 		if (ext.id != IGameObjectSystem::InvalidExtensionID)
@@ -1477,16 +1415,17 @@ IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExte
 				{
 					iter->refCount += (change == eCE_Acquire);
 					iter->activated |= (change == eCE_Activate);
-					pRet = iter->pExtension.get();
+					pRet = iter->pExtension;
 				}
 				else
 				{
 					ext.refCount += (change == eCE_Acquire);
 					ext.activated |= (change == eCE_Activate);
-					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this);
+					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this, pSpawnSerializer);
+					assert(ext.pExtension);
 					if (ext.pExtension)
 					{
-						pRet = ext.pExtension.get();
+						pRet = ext.pExtension;
 						if (updatingEntity == GetEntityId())
 						{
 							CRY_ASSERT(m_nAddingExtension < MAX_ADDING_EXTENSIONS);
@@ -1556,13 +1495,12 @@ void CGameObject::RemoveExtension(const TExtensions::iterator& iter)
 {
 	ClearCache();
 	if (iter->postUpdate)
-		DisablePostUpdates(iter->pExtension.get());
-	IGameObjectExtensionPtr pExtension = iter->pExtension;
+		DisablePostUpdates(iter->pExtension);
+	IGameObjectExtension* pExtension = iter->pExtension;
 	std::swap(m_extensions.back(), *iter);
 	m_extensions.pop_back();
 	std::sort(m_extensions.begin(), m_extensions.end());
-	GetEntity()->RegisterComponent(pExtension, false);
-	pExtension.reset();
+	GetEntity()->RemoveComponent(pExtension);
 }
 
 //------------------------------------------------------------------------
@@ -1611,8 +1549,8 @@ void CGameObject::FlushExtensions(bool includeStickyBits)
 		ReleaseProfileManager(m_pProfileManager);
 		CRY_ASSERT(0 == m_pProfileManager);
 
-		CRY_ASSERT(0 == m_pActionDelegate);
-		CRY_ASSERT(0 == m_pViewDelegate);
+		//CRY_ASSERT(0 == m_pActionDelegate);
+		//CRY_ASSERT(0 == m_pViewDelegate);
 	}
 
 	inFlush = wasInFlush;
@@ -1665,7 +1603,7 @@ void CGameObject::DisablePostUpdates(IGameObjectExtension* pExtension)
 	bool hasPostUpdates = false;
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 	{
-		if (iter->pExtension.get() == pExtension)
+		if (iter->pExtension == pExtension)
 		{
 			iter->postUpdate = false;
 		}
@@ -2439,7 +2377,7 @@ void SDistanceChecker::Init(CGameObjectSystem* pGameObjectSystem, EntityId recei
 	IEntity* pDistanceChecker = pGameObjectSystem->CreatePlayerProximityTrigger();
 	if (pDistanceChecker)
 	{
-		((IEntityTriggerProxy*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER))->ForwardEventsTo(receiverId);
+		((IEntityTriggerComponent*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER))->ForwardEventsTo(receiverId);
 		m_distanceCheckerTimer = -1.0f;
 		m_distanceChecker = pDistanceChecker->GetId();
 		Update(0.0f);
@@ -2468,7 +2406,7 @@ void SDistanceChecker::Update(CGameObject& owner, float frameTime)
 		m_distanceCheckerTimer -= frameTime;
 		if (m_distanceCheckerTimer < 0.0f)
 		{
-			IEntityTriggerProxy* pProxy = (IEntityTriggerProxy*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER);
+			IEntityTriggerComponent* pProxy = (IEntityTriggerComponent*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER);
 			if (pProxy)
 			{
 				pProxy->SetTriggerBounds(CreateDistanceAABB(owner.GetEntity()->GetWorldPos()));

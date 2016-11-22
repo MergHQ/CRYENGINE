@@ -119,8 +119,8 @@ void CVehicleDamageBehaviorBlowTire::Activate(bool activate)
         AABB areaBox(pos-vRadius, pos+vRadius);
         
         IRenderNode * pRenderNode = NULL;				
-        if (IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-					pRenderNode = pRenderProxy->GetRenderNode();
+        if (IEntityRender *pIEntityRender = pEntity->GetRenderInterface())
+					pRenderNode = pIEntityRender->GetRenderNode();
 
         gEnv->p3DEngine->DeleteDecalsInRange(&areaBox, pRenderNode);
 			}

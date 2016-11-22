@@ -25,7 +25,6 @@ public:
 	virtual void                 PostInitClient(int channelId)                                                   {}
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)     { return false; }
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual bool                 GetEntityPoolSignature(TSerialize signature)                                    { return false; }
 	virtual void                 Release()                                                                       { delete this; }
 	virtual void                 FullSerialize(TSerialize ser)                                                   {}
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)   { return true; }

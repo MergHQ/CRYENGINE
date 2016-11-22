@@ -872,7 +872,6 @@ void CGeomCacheRenderNode::FillRenderObject(const SRendParams& rendParams, const
 	IRenderer* const pRenderer = GetRenderer();
 
 	pRenderObject->m_pRenderNode = rendParams.pRenderNode;
-	pRenderObject->m_fSort = rendParams.fCustomSortOffset;
 	pRenderObject->m_fDistance = rendParams.fDistance;
 
 	pRenderObject->m_ObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;

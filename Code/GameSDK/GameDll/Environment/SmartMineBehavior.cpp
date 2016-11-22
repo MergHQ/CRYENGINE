@@ -243,7 +243,7 @@ private:
 	void SendSoundSystemGameHint( const EAudioHint audioHint );
 	void SetupLightSource( CSmartMine& smartMine );
 	
-	IEntityTriggerProxy* GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const;
+	IEntityTriggerComponent* GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const;
 
 	void EnableSmartMineUpdate( CSmartMine& smartMine );
 	void DisableSmartMineUpdate( CSmartMine& smartMine );
@@ -562,9 +562,9 @@ void CSmartMineBehavior::SetupSmartMine( CSmartMine& smartMine, const SmartMineS
 
 	// Other proxies
 	smartMine.GetEntity()->CreateProxy(ENTITY_PROXY_TRIGGER);
-	smartMine.GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO);
+	smartMine.GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 	
-	IEntityTriggerProxy* pTriggerProxy = GetTriggerProxyForSmartMine( smartMine );
+	IEntityTriggerComponent* pTriggerProxy = GetTriggerProxyForSmartMine( smartMine );
 	if (pTriggerProxy != NULL)
 	{
 		const Vec3& triggerBox = smartMineProperties.m_triggerBox;
@@ -691,9 +691,9 @@ void CSmartMineBehavior::SetupLightSource( CSmartMine& smartMine )
 	}
 }
 
-IEntityTriggerProxy* CSmartMineBehavior::GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const
+IEntityTriggerComponent* CSmartMineBehavior::GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const
 {
-	return static_cast<IEntityTriggerProxy*>(smartMine.GetEntity()->GetProxy(ENTITY_PROXY_TRIGGER));
+	return static_cast<IEntityTriggerComponent*>(smartMine.GetEntity()->GetProxy(ENTITY_PROXY_TRIGGER));
 }
 
 void CSmartMineBehavior::EnableSmartMineUpdate( CSmartMine& smartMine )

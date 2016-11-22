@@ -17,14 +17,13 @@
 	#define __Entity_h__
 
 	#include <CryEntitySystem/IEntity.h>
+	#include <CryCore/Containers/CryListenerSet.h>
 
 //////////////////////////////////////////////////////////////////////////
 // This is the order in which the proxies are serialized
 const static EEntityProxy ProxySerializationOrder[] = {
-	ENTITY_PROXY_RENDER,
 	ENTITY_PROXY_SCRIPT,
 	ENTITY_PROXY_AUDIO,
-	ENTITY_PROXY_AI,
 	ENTITY_PROXY_AREA,
 	ENTITY_PROXY_BOIDS,
 	ENTITY_PROXY_BOID_OBJECT,
@@ -33,7 +32,6 @@ const static EEntityProxy ProxySerializationOrder[] = {
 	ENTITY_PROXY_SUBSTITUTION,
 	ENTITY_PROXY_TRIGGER,
 	ENTITY_PROXY_USER,
-	ENTITY_PROXY_PHYSICS,
 	ENTITY_PROXY_ROPE,
 	ENTITY_PROXY_ENTITYNODE,
 	ENTITY_PROXY_ATTRIBUTES,
@@ -44,11 +42,12 @@ const static EEntityProxy ProxySerializationOrder[] = {
 
 //////////////////////////////////////////////////////////////////////////
 // These headers cannot be replaced with forward references.
-// They are needed for correct up casting from IEntityProxy to real proxy class.
+// They are needed for correct up casting from IEntityComponent to real proxy class.
 	#include "RenderProxy.h"
 	#include "PhysicsProxy.h"
 	#include "ScriptProxy.h"
 	#include "SubstitutionProxy.h"
+	#include "EntityComponentsVector.h"
 //////////////////////////////////////////////////////////////////////////
 
 // forward declarations.
@@ -73,8 +72,6 @@ class CEntity : public IEntity
 	CEntity(SEntitySpawnParams& params);
 
 public:
-	typedef std::pair<const int, IEntityProxyPtr> TProxyPair;
-
 	// Entity destructor.
 	// Should only be called from Entity System.
 	virtual ~CEntity();
@@ -84,51 +81,51 @@ public:
 	// Called by entity system to complete initialization of the entity.
 	bool Init(SEntitySpawnParams& params);
 	// Called by EntitySystem every frame for each pre-physics active entity.
-	void PrePhysicsUpdate(float fFrameTime);
+	void PrePhysicsUpdate(SEntityEvent& event);
 	// Called by EntitySystem every frame for each active entity.
 	void Update(SEntityUpdateContext& ctx);
 	// Called by EntitySystem before entity is destroyed.
-	void ShutDown(bool bRemoveAI = true, bool bRemoveProxies = true);
+	void ShutDown();
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntity interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual EntityId   GetId() const override   { return m_nID; }
-	virtual EntityGUID GetGuid() const override { return m_guid; }
+	virtual EntityId   GetId() const final   { return m_nID; }
+	virtual EntityGUID GetGuid() const final { return m_guid; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IEntityClass*     GetClass() const override     { return m_pClass; }
-	virtual IEntityArchetype* GetArchetype() const override { return m_pArchetype; }
+	virtual IEntityClass*     GetClass() const final     { return m_pClass; }
+	virtual IEntityArchetype* GetArchetype() const final { return m_pArchetype; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void   SetFlags(uint32 flags) override;
-	virtual uint32 GetFlags() const override                                 { return m_flags; }
-	virtual void   AddFlags(uint32 flagsToAdd) override                      { SetFlags(m_flags | flagsToAdd); }
-	virtual void   ClearFlags(uint32 flagsToClear) override                  { SetFlags(m_flags & (~flagsToClear)); }
-	virtual bool   CheckFlags(uint32 flagsToCheck) const override            { return (m_flags & flagsToCheck) == flagsToCheck; }
+	virtual void   SetFlags(uint32 flags) final;
+	virtual uint32 GetFlags() const final                      { return m_flags; }
+	virtual void   AddFlags(uint32 flagsToAdd) final           { SetFlags(m_flags | flagsToAdd); }
+	virtual void   ClearFlags(uint32 flagsToClear) final       { SetFlags(m_flags & (~flagsToClear)); }
+	virtual bool   CheckFlags(uint32 flagsToCheck) const final { return (m_flags & flagsToCheck) == flagsToCheck; }
 
-	virtual void   SetFlagsExtended(uint32 flags) override;
-	virtual uint32 GetFlagsExtended() const override                         { return m_flagsExtended; }
+	virtual void   SetFlagsExtended(uint32 flags) final;
+	virtual uint32 GetFlagsExtended() const final                            { return m_flagsExtended; }
 
-	virtual bool   IsGarbage() const override                                { return m_bGarbage; }
-	virtual bool   IsLoadedFromLevelFile() const override                    { return m_bLoadedFromLevelFile; }
+	virtual bool   IsGarbage() const final                                   { return m_bGarbage; }
+	virtual bool   IsLoadedFromLevelFile() const final                       { return m_bLoadedFromLevelFile; }
 	ILINE void     SetLoadedFromLevelFile(const bool bIsLoadedFromLevelFile) { m_bLoadedFromLevelFile = bIsLoadedFromLevelFile; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void        SetName(const char* sName) override;
-	virtual const char* GetName() const override { return m_szName.c_str(); }
-	virtual string GetEntityTextDescription() const override;
+	virtual void        SetName(const char* sName) final;
+	virtual const char* GetName() const final { return m_szName.c_str(); }
+	virtual string      GetEntityTextDescription() const final;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void     AttachChild(IEntity* pChildEntity, const SChildAttachParams& attachParams) override;
-	virtual void     DetachAll(int nDetachFlags = 0) override;
-	virtual void     DetachThis(int nDetachFlags = 0, int nWhyFlags = 0) override;
-	virtual int      GetChildCount() const override;
-	virtual IEntity* GetChild(int nIndex) const override;
+	virtual void     AttachChild(IEntity* pChildEntity, const SChildAttachParams& attachParams) final;
+	virtual void     DetachAll(int nDetachFlags = 0) final;
+	virtual void     DetachThis(int nDetachFlags = 0, int nWhyFlags = 0) final;
+	virtual int      GetChildCount() const final;
+	virtual IEntity* GetChild(int nIndex) const final;
 	virtual void     EnableInheritXForm(bool bEnable);
-	virtual IEntity* GetParent() const override { return (m_pBinds) ? m_pBinds->pParent : NULL; }
-	virtual Matrix34 GetParentAttachPointWorldTM() const override;
-	virtual bool     IsParentAttachmentValid() const override;
+	virtual IEntity* GetParent() const final { return m_hierarchy.pParent; }
+	virtual Matrix34 GetParentAttachPointWorldTM() const final;
+	virtual bool     IsParentAttachmentValid() const final;
 	virtual IEntity* GetAdam()
 	{
 		IEntity* pParent, * pAdam = this;
@@ -137,190 +134,227 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void SetWorldTM(const Matrix34& tm, int nWhyFlags = 0) override;
-	virtual void SetLocalTM(const Matrix34& tm, int nWhyFlags = 0) override;
+	virtual void SetWorldTM(const Matrix34& tm, int nWhyFlags = 0) final;
+	virtual void SetLocalTM(const Matrix34& tm, int nWhyFlags = 0) final;
 
 	// Set position rotation and scale at once.
-	virtual void            SetPosRotScale(const Vec3& vPos, const Quat& qRotation, const Vec3& vScale, int nWhyFlags = 0) override;
+	virtual void            SetPosRotScale(const Vec3& vPos, const Quat& qRotation, const Vec3& vScale, int nWhyFlags = 0) final;
 
-	virtual Matrix34        GetLocalTM() const override;
-	virtual const Matrix34& GetWorldTM() const override { return m_worldTM; }
+	virtual Matrix34        GetLocalTM() const final;
+	virtual const Matrix34& GetWorldTM() const final { return m_worldTM; }
 
-	virtual void            GetWorldBounds(AABB& bbox) const override;
-	virtual void            GetLocalBounds(AABB& bbox) const override;
-
-	//////////////////////////////////////////////////////////////////////////
-	virtual void        SetPos(const Vec3& vPos, int nWhyFlags = 0, bool bRecalcPhyBounds = false, bool bForce = false) override;
-	virtual const Vec3& GetPos() const override { return m_vPos; }
-
-	virtual void        SetRotation(const Quat& qRotation, int nWhyFlags = 0) override;
-	virtual const Quat& GetRotation() const override { return m_qRotation; }
-
-	virtual void        SetScale(const Vec3& vScale, int nWhyFlags = 0) override;
-	virtual const Vec3& GetScale() const override { return m_vScale; }
-
-	virtual Vec3        GetWorldPos() const override { return m_worldTM.GetTranslation(); }
-	virtual Ang3        GetWorldAngles() const override;
-	virtual Quat        GetWorldRotation() const override;
-	virtual const Vec3& GetForwardDir() const override { ComputeForwardDir(); return m_vForwardDir; }
-	//////////////////////////////////////////////////////////////////////////
+	virtual void            GetWorldBounds(AABB& bbox) const final;
+	virtual void            GetLocalBounds(AABB& bbox) const final;
+	virtual void            SetLocalBounds(const AABB& bounds, bool bDoNotRecalculate) final;
+	virtual void            InvalidateLocalBounds() final;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Activate(bool bActive) override;
-	virtual bool IsActive() const override { return m_bActive; }
+	virtual void        SetPos(const Vec3& vPos, int nWhyFlags = 0, bool bRecalcPhyBounds = false, bool bForce = false) final;
+	virtual const Vec3& GetPos() const final { return m_vPos; }
 
-	virtual void PrePhysicsActivate(bool bActive) override;
-	virtual bool IsPrePhysicsActive() override;
+	virtual void        SetRotation(const Quat& qRotation, int nWhyFlags = 0) final;
+	virtual const Quat& GetRotation() const final { return m_qRotation; }
+
+	virtual void        SetScale(const Vec3& vScale, int nWhyFlags = 0) final;
+	virtual const Vec3& GetScale() const final    { return m_vScale; }
+
+	virtual Vec3        GetWorldPos() const final { return m_worldTM.GetTranslation(); }
+	virtual Ang3        GetWorldAngles() const final;
+	virtual Quat        GetWorldRotation() const final;
+	virtual const Vec3& GetForwardDir() const final { ComputeForwardDir(); return m_vForwardDir; }
+	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Serialize(TSerialize ser, int nFlags) override;
+	virtual void Activate(bool bActive) final;
+	virtual bool IsActive() const final { return m_bActive; }
 
-	virtual bool SendEvent(SEntityEvent& event) override;
-	//////////////////////////////////////////////////////////////////////////
-
-	virtual void SetTimer(int nTimerId, int nMilliSeconds) override;
-	virtual void KillTimer(int nTimerId) override;
-
-	virtual void Hide(bool bHide) override;
-	virtual bool IsHidden() const override { return m_bHidden; }
-
-	virtual void Invisible(bool bInvisible) override;
-	virtual bool IsInvisible() const override { return m_bInvisible; }
+	virtual void PrePhysicsActivate(bool bActive) final;
+	virtual bool IsPrePhysicsActive() final;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IAIObject*  GetAI() override                       { return (m_aiObjectID ? GetAIObject() : NULL); }
-	virtual bool        HasAI() const override                 { return m_aiObjectID != 0; }
-	virtual tAIObjectID GetAIObjectID() const override         { return m_aiObjectID; }
-	virtual void        SetAIObjectID(tAIObjectID id) override { m_aiObjectID = id; }
+	virtual void Serialize(TSerialize ser, int nFlags) final;
+
+	virtual bool SendEvent(SEntityEvent& event) final;
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool        RegisterInAISystem(const AIObjectParams& params) override;
+
+	virtual void SetTimer(int nTimerId, int nMilliSeconds) final;
+	virtual void KillTimer(int nTimerId) final;
+
+	virtual void Hide(bool bHide) final;
+	virtual bool IsHidden() const final { return m_bHidden; }
+
+	virtual void Invisible(bool bInvisible) final;
+	virtual bool IsInvisible() const final { return m_bInvisible; }
+
+	//////////////////////////////////////////////////////////////////////////
+	virtual IAIObject*  GetAI() final                       { return (m_aiObjectID ? GetAIObject() : NULL); }
+	virtual bool        HasAI() const final                 { return m_aiObjectID != 0; }
+	virtual tAIObjectID GetAIObjectID() const final         { return m_aiObjectID; }
+	virtual void        SetAIObjectID(tAIObjectID id) final { m_aiObjectID = id; }
+	//////////////////////////////////////////////////////////////////////////
+	virtual bool        RegisterInAISystem(const AIObjectParams& params) final;
 	//////////////////////////////////////////////////////////////////////////
 	// reflect changes in position or orientation to the AI object
 	void UpdateAIObject();
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void                SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) override;
-	virtual EEntityUpdatePolicy GetUpdatePolicy() const override { return (EEntityUpdatePolicy)m_eUpdatePolicy; }
+	virtual void                SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) final;
+	virtual EEntityUpdatePolicy GetUpdatePolicy() const final { return (EEntityUpdatePolicy)m_eUpdatePolicy; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Entity Proxies Interfaces access functions.
 	//////////////////////////////////////////////////////////////////////////
-	virtual IEntityProxy*   GetProxy(EEntityProxy proxy) const override;
-	virtual void            SetProxy(EEntityProxy proxy, IEntityProxyPtr pProxy) override;
-	virtual IEntityProxyPtr CreateProxy(EEntityProxy proxy) override;
+	virtual IEntityComponent* GetProxy(EEntityProxy proxy) const final;
+	virtual IEntityComponent* CreateProxy(EEntityProxy proxy) final;
 	//////////////////////////////////////////////////////////////////////////
-	virtual void            RegisterComponent(IComponentPtr pComponentPtr, const int flags) override;
+
+	//////////////////////////////////////////////////////////////////////////
+	virtual IEntityComponent* AddComponent(CryInterfaceID typeId, std::shared_ptr<IEntityComponent> pComponent,bool bAllowDuplicate) final;
+	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
+	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void             Physicalize(SEntityPhysicalizeParams& params) override;
-	virtual void             EnablePhysics(bool enable) override;
-	virtual IPhysicalEntity* GetPhysics() const override;
+	virtual void             Physicalize(SEntityPhysicalizeParams& params) final;
+	virtual void             AssignPhysicalEntity(IPhysicalEntity* pPhysEntity, int nSlot = -1) final;
+	virtual void             EnablePhysics(bool enable) final;
+	virtual bool             IsPhysicsEnabled() const final;
+	virtual IPhysicalEntity* GetPhysics() const final;
 
-	virtual int              PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params) override;
-	virtual void             UnphysicalizeSlot(int slot) override;
-	virtual void             UpdateSlotPhysics(int slot) override;
+	virtual int              PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params) final;
+	virtual void             UnphysicalizeSlot(int slot) final;
+	virtual void             UpdateSlotPhysics(int slot) final;
 
-	virtual void             SetPhysicsState(XmlNodeRef& physicsState) override;
+	virtual void             SetPhysicsState(XmlNodeRef& physicsState) final;
+	virtual void             GetPhysicsWorldBounds(AABB& bounds) const final;
+
+	virtual void             AddImpulse(int ipart, const Vec3& pos, const Vec3& impulse, bool bPos, float fAuxScale, float fPushScale = 1.0f) final;
+
+	virtual bool             PhysicalizeFoliage(int iSlot) final;
+	virtual void             DephysicalizeFoliage(int iSlot) final;
+
+	//! retrieve starting partid for a given slot.
+	virtual int  GetPhysicalEntityPartId0(int islot = 0) final;
+
+	virtual void PhysicsNetSerializeEnable(bool enable) final;
+	virtual void PhysicsNetSerializeTyped(TSerialize& ser, int type, int flags) final;
+	virtual void PhysicsNetSerialize(TSerialize& ser) final;
+	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// Custom entity material.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void       SetMaterial(IMaterial* pMaterial) override;
-	virtual IMaterial* GetMaterial() override;
+	virtual void       SetMaterial(IMaterial* pMaterial) final;
+	virtual IMaterial* GetMaterial() final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Entity Slots interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool                  IsSlotValid(int nSlot) const override;
-	virtual void                  FreeSlot(int nSlot) override;
-	virtual int                   GetSlotCount() const override;
-	virtual bool                  GetSlotInfo(int nSlot, SEntitySlotInfo& slotInfo) const override;
-	virtual const Matrix34&       GetSlotWorldTM(int nIndex) const override;
-	virtual const Matrix34&       GetSlotLocalTM(int nIndex, bool bRelativeToParent) const override;
-	virtual void                  SetSlotLocalTM(int nIndex, const Matrix34& localTM, int nWhyFlags = 0) override;
-	virtual void                  SetSlotCameraSpacePos(int nIndex, const Vec3& cameraSpacePos) override;
-	virtual void                  GetSlotCameraSpacePos(int nSlot, Vec3& cameraSpacePos) const override;
-	virtual bool                  SetParentSlot(int nParentSlot, int nChildSlot) override;
-	virtual void                  SetSlotMaterial(int nSlot, IMaterial* pMaterial) override;
-	virtual void                  SetSlotFlags(int nSlot, uint32 nFlags) override;
-	virtual uint32                GetSlotFlags(int nSlot) const override;
-	virtual bool                  ShouldUpdateCharacter(int nSlot) const override;
-	virtual ICharacterInstance*   GetCharacter(int nSlot) override;
-	virtual int                   SetCharacter(ICharacterInstance* pCharacter, int nSlot) override;
-	virtual IStatObj*             GetStatObj(int nSlot) override;
-	virtual int                   SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) override;
-	virtual IParticleEmitter*     GetParticleEmitter(int nSlot) override;
-	virtual IGeomCacheRenderNode* GetGeomCacheRenderNode(int nSlot) override;
+	virtual bool                       IsSlotValid(int nSlot) const final;
+	virtual int                        AllocateSlot() final;
+	virtual void                       FreeSlot(int nSlot) final;
+	virtual int                        GetSlotCount() const final;
+	virtual void                       ClearSlots() final;
+	virtual bool                       GetSlotInfo(int nSlot, SEntitySlotInfo& slotInfo) const final;
+	virtual const Matrix34&            GetSlotWorldTM(int nIndex) const final;
+	virtual const Matrix34&            GetSlotLocalTM(int nIndex, bool bRelativeToParent) const final;
+	virtual void                       SetSlotLocalTM(int nIndex, const Matrix34& localTM, int nWhyFlags = 0) final;
+	virtual void                       SetSlotCameraSpacePos(int nIndex, const Vec3& cameraSpacePos) final;
+	virtual void                       GetSlotCameraSpacePos(int nSlot, Vec3& cameraSpacePos) const final;
+	virtual bool                       SetParentSlot(int nParentSlot, int nChildSlot) final;
+	virtual void                       SetSlotMaterial(int nSlot, IMaterial* pMaterial) final;
+	virtual IMaterial*                 GetSlotMaterial(int nSlot) const final;
+	virtual IMaterial*                 GetRenderMaterial(int nSlot = -1) const final;
+	virtual void                       SetSlotFlags(int nSlot, uint32 nFlags) final;
+	virtual uint32                     GetSlotFlags(int nSlot) const final;
+	virtual bool                       ShouldUpdateCharacter(int nSlot) const final;
+	virtual ICharacterInstance*        GetCharacter(int nSlot) final;
+	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot) final;
+	virtual IStatObj*                  GetStatObj(int nSlot) final;
+	virtual int                        SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) final;
+	virtual IParticleEmitter*          GetParticleEmitter(int nSlot) final;
+	virtual IGeomCacheRenderNode*      GetGeomCacheRenderNode(int nSlot) final;
+	virtual IRenderNode*               GetRenderNode(int nSlot = -1) const final;
+	virtual bool                       IsRendered() const final;
+	virtual void                       PreviewRender( SPreviewRenderParams &params) final;
 
-	virtual void                  MoveSlot(IEntity* targetIEnt, int nSlot) override;
+	virtual void                       MoveSlot(IEntity* targetIEnt, int nSlot) final;
 
-	virtual int                   LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName = NULL, int nLoadFlags = 0) override;
-	virtual int                   LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags = 0) override;
+	virtual int                        LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName = NULL, int nLoadFlags = 0) final;
+	virtual int                        LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags = 0) final;
 	#if defined(USE_GEOM_CACHES)
-	virtual int                   LoadGeomCache(int nSlot, const char* sFilename) override;
+	virtual int                        LoadGeomCache(int nSlot, const char* sFilename) final;
 	#endif
-	virtual int                   SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize = false) override;
-	virtual int                   LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) override;
-	virtual int                   LoadLight(int nSlot, CDLight* pLight) override;
-	int                           LoadLightImpl(int nSlot, CDLight* pLight);
+	virtual int                        SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize = false) final;
+	virtual int                        LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) final;
+	virtual int                        LoadLight(int nSlot, CDLight* pLight) final;
+	int                                LoadLightImpl(int nSlot, CDLight* pLight);
 
-	virtual bool                  UpdateLightClipBounds(CDLight& light);
-	virtual int                   LoadCloud(int nSlot, const char* sFilename) override;
-	virtual int                   SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties) override;
-	int                           LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
-	int                           LoadFogVolume(int nSlot, const SFogVolumeProperties& properties);
+	virtual bool                       UpdateLightClipBounds(CDLight& light);
+	virtual int                        LoadCloud(int nSlot, const char* sFilename) override;
+	virtual int                        SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties) override;
+	int                                LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
+	int                                LoadFogVolume(int nSlot, const SFogVolumeProperties& properties);
 
-	int                           FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);
-	int                           LoadVolumeObject(int nSlot, const char* sFilename);
-	int                           SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
+	int                                FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);
+	int                                LoadVolumeObject(int nSlot, const char* sFilename);
+	int                                SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties);
 
-	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) override;
+	virtual void                       SetSubObjHideMask(int nSlot, hidemask nSubObjHideMask) final        { GetEntityRender()->SetSubObjHideMask(nSlot, nSubObjHideMask); };
+	virtual hidemask                   GetSubObjHideMask(int nSlot) const final                            { return GetEntityRender()->GetSubObjHideMask(nSlot); };
+
+	virtual void                       SetRenderNodeParams(const IEntity::SRenderNodeParams& params) final { GetEntityRender()->SetRenderNodeParams(params); };
+	virtual IEntity::SRenderNodeParams GetRenderNodeParams() const final                                   { return GetEntityRender()->GetRenderNodeParams(); };
+
+	virtual void                       InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) final;
+
+	// Inline implementation.
+	virtual IScriptTable* GetScriptTable() const final;
 
 	// Load/Save entity parameters in XML node.
-	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading) override;
+	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading) final;
 
-	virtual IEntityLink* GetEntityLinks() override;
-	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) override;
-	virtual void         RemoveEntityLink(IEntityLink* pLink) override;
-	virtual void         RemoveAllEntityLinks() override;
+	virtual IEntityLink* GetEntityLinks() final;
+	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) final;
+	virtual void         RemoveEntityLink(IEntityLink* pLink) final;
+	virtual void         RemoveAllEntityLinks() final;
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual IEntity* UnmapAttachedChild(int& partId) override;
+	virtual IEntity* UnmapAttachedChild(int& partId) final;
 
-	virtual void     GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual void     GetMemoryUsage(ICrySizer* pSizer) const final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Local methods.
 	//////////////////////////////////////////////////////////////////////////
 
 	// Returns true if entity was already fully initialized by this point.
-	virtual bool IsInitialized() const override { return m_bInitialized; }
+	virtual bool IsInitialized() const final { return m_bInitialized; }
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo& info) override;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo& info) final;
 	//////////////////////////////////////////////////////////////////////////
 
 	// Get fast access to the slot, only used internally by entity components.
-	class CEntityObject* GetSlot(int nSlot) const;
+	class CEntitySlot* GetSlot(int nSlot) const;
 
-	// Specializations for the EntityPool
-	bool                  GetSignature(TSerialize& signature);
-	void                  SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading);
+	void               SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading);
+
 	// Get render proxy object.
-	ILINE CRenderProxy*   GetRenderProxy() const   { return (CRenderProxy*)CEntity::GetProxy(ENTITY_PROXY_RENDER); }
+	ILINE const CEntityRender* GetEntityRender() const { return static_cast<const CEntityRender*>(&m_render); }
+	ILINE CEntityRender*       GetEntityRender()       { return static_cast<CEntityRender*>(&m_render); }
+
 	// Get physics proxy object.
-	ILINE CPhysicalProxy* GetPhysicalProxy() const { return (CPhysicalProxy*)CEntity::GetProxy(ENTITY_PROXY_PHYSICS); }
+	ILINE const CEntityPhysics* GetPhysicalProxy() const { return static_cast<const CEntityPhysics*>(&m_physics); }
+	ILINE CEntityPhysics*       GetPhysicalProxy()       { return static_cast<CEntityPhysics*>(&m_physics); }
+
 	// Get script proxy object.
-	ILINE CScriptProxy*   GetScriptProxy() const   { return (CScriptProxy*)CEntity::GetProxy(ENTITY_PROXY_SCRIPT); }
+	ILINE CEntityComponentLuaScript* GetScriptProxy() const { return (CEntityComponentLuaScript*)CEntity::GetProxy(ENTITY_PROXY_SCRIPT); }
 	//////////////////////////////////////////////////////////////////////////
 
 	// For internal use.
 	CEntitySystem* GetCEntitySystem() const { return g_pIEntitySystem; }
-
-	//////////////////////////////////////////////////////////////////////////
-	bool ReloadEntity(SEntityLoadParams& loadParams);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Activates entity only for specified number of frames.
@@ -338,15 +372,18 @@ public:
 	void Hide(bool bHide, EEntityEvent eEvent1, EEntityEvent eEvent2);
 
 	// for ProximityTriggerSystem
-	SProximityElement* GetProximityElement()   { return m_pProximityEntity; }
+	SProximityElement* GetProximityElement()         { return m_pProximityEntity; }
 
-	virtual void       IncKeepAliveCounter() override   { m_nKeepAliveCounter++; }
-	virtual void       DecKeepAliveCounter() override   { assert(m_nKeepAliveCounter > 0); m_nKeepAliveCounter--; }
-	virtual void       ResetKeepAliveCounter() override { m_nKeepAliveCounter = 0; }
-	virtual bool       IsKeptAlive() const override     { return m_nKeepAliveCounter > 0; }
+	virtual void       IncKeepAliveCounter() final   { m_nKeepAliveCounter++; }
+	virtual void       DecKeepAliveCounter() final   { assert(m_nKeepAliveCounter > 0); m_nKeepAliveCounter--; }
+	virtual void       ResetKeepAliveCounter() final { m_nKeepAliveCounter = 0; }
+	virtual bool       IsKeptAlive() const final     { return m_nKeepAliveCounter > 0; }
 
 	// LiveCreate entity interface
-	virtual bool HandleVariableChange(const char* szVarName, const void* pVarData) override;
+	virtual bool  HandleVariableChange(const char* szVarName, const void* pVarData) final;
+
+	virtual void  OnRenderNodeVisibilityChange(bool bBecomeVisible) final;
+	virtual float GetLastSeenTime() const final;
 
 	#ifdef SEG_WORLD
 	virtual unsigned int GetSwObjDebugFlag() const             { return m_eSwObjDebugFlag; };
@@ -356,18 +393,18 @@ public:
 	virtual bool         IsLocalSeg() const                    { return m_bLocalSeg; }
 	#endif //SEG_WORLD
 
-	void        CheckMaterialFlags();
+	void SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
+	int  GetCloneLayerId() const           { return m_cloneLayerId; }
 
-	void        SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
-	int         GetCloneLayerId() const           { return m_cloneLayerId; }
+	//////////////////////////////////////////////////////////////////////////
+	void AddEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
+	void RemoveEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
+	void RemoveAllEventListeners();
 
 protected:
-
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.
 	//////////////////////////////////////////////////////////////////////////
-	void AllocBindings();
-	void DeallocBindings();
 	void OnRellocate(int nWhyFlags);
 	void LogEvent(SEntityEvent& event, CTimeValue dt);
 	//////////////////////////////////////////////////////////////////////////
@@ -382,48 +419,72 @@ private:
 	IAIObject* GetAIObject();
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// VARIABLES.
-	//////////////////////////////////////////////////////////////////////////
 	friend class CEntitySystem;
 	friend class CPhysicsEventListener; // For faster access to internals.
-	friend class CEntityObject;         // For faster access to internals.
-	friend class CRenderProxy;          // For faster access to internals.
-	friend class CTriggerProxy;
-	friend class CPhysicalProxy;
+	friend class CEntitySlot;           // For faster access to internals.
+	friend class CEntityRender;         // For faster access to internals.
+	friend class CEntityComponentTriggerBounds;
+	friend class CEntityPhysics;
+
+	enum class EBindingType
+	{
+		eBT_Pivot,
+		eBT_GeomCacheNode,
+		eBT_CharacterBone,
+	};
 
 	// Childs structure, only allocated when any child entity is attached.
-	struct SBindings
+	struct STransformHierarchy
 	{
-		enum EBindingType
-		{
-			eBT_Pivot,
-			eBT_GeomCacheNode,
-			eBT_CharacterBone,
-		};
-
-		SBindings() : pParent(NULL), parentBindingType(eBT_Pivot), attachId(-1), childrenAttachIds(0) {}
-
 		std::vector<CEntity*> childs;
-		CEntity*              pParent;
-		EBindingType          parentBindingType;
-		int                   attachId;
-		attachMask            childrenAttachIds; // bitmask of used attachIds of the children
+		CEntity*              pParent = nullptr;
+		EBindingType          parentBindingType = EBindingType::eBT_Pivot;
+		int                   attachId = -1;
+		attachMask            childrenAttachIds = 0; // bitmask of used attachIds of the children
 	};
+
+	struct SEventListeners
+	{
+		struct SListener
+		{
+			EEntityEvent          event;
+			IEntityEventListener* pListener;
+			SListener() : event(ENTITY_EVENT_LAST), pListener(nullptr) {}
+			SListener(EEntityEvent e, IEntityEventListener* l) : event(e), pListener(l) {}
+			SListener(IEntityEventListener* l) : event(ENTITY_EVENT_LAST), pListener(l) {}
+			operator bool() const { return pListener != 0; }
+			bool operator==(const SListener& l) const { return event == l.event && pListener == l.pListener; }
+			bool operator!=(const SListener& l) const { return !(*this == l); }
+
+		};
+		SEventListeners(size_t reserve) : m_listeners(reserve), haveListenersMask(0) {}
+		// Bit mask of the events where listener was registered
+		// Clearing the bit is not required, it will only cause slightly lower performance of the send event
+		uint64                  haveListenersMask;
+		CListenerSet<SListener> m_listeners;
+	};
+
+private:
+	//////////////////////////////////////////////////////////////////////////
+	// Member variables
+	//////////////////////////////////////////////////////////////////////////
+
+	// Name of the entity.
+	string m_szName;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Internal entity flags (must be first member var of CEntity) (Reduce cache misses on access to entity data).
 	//////////////////////////////////////////////////////////////////////////
-	unsigned int         m_bActive             : 1; // Active Entities are updated every frame.
-	unsigned int         m_bInActiveList       : 1; // Added to entity system active list.
-	mutable unsigned int m_bBoundsValid        : 1; // Set when the entity bounding box is valid.
-	unsigned int         m_bInitialized        : 1; // Set if this entity already Initialized.
-	unsigned int         m_bHidden             : 1; // Set if this entity is hidden.
-	unsigned int         m_bGarbage            : 1; // Set if this entity is garbage and will be removed soon.
-	unsigned int         m_bHaveEventListeners : 1; // Set if entity have an event listeners associated in entity system.
-	unsigned int         m_bTrigger            : 1; // Set if entity is proximity trigger itself.
-	unsigned int         m_bWasRelocated       : 1; // Set if entity was relocated at least once.
-	unsigned int         m_nUpdateCounter      : 4; // Update counter is used to activate the entity for the limited number of frames.
+	unsigned int         m_bActive        : 1;      // Active Entities are updated every frame.
+	unsigned int         m_bInActiveList  : 1;      // Added to entity system active list.
+	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.
+	unsigned int         m_bInitialized   : 1;      // Set if this entity already Initialized.
+	unsigned int         m_bHidden        : 1;      // Set if this entity is hidden.
+	unsigned int         m_bGarbage       : 1;      // Set if this entity is garbage and will be removed soon.
+
+	unsigned int         m_bTrigger       : 1;      // Set if entity is proximity trigger itself.
+	unsigned int         m_bWasRelocated  : 1;      // Set if entity was relocated at least once.
+	unsigned int         m_nUpdateCounter : 4;      // Update counter is used to activate the entity for the limited number of frames.
 	                                                // Usually used for Physical Triggers.
 	                                                // When update counter is set, and entity is activated, it will automatically
 	                                                // deactivate after this counter reaches zero
@@ -473,7 +534,7 @@ private:
 	// It contains array of child entities and pointer to the parent entity.
 	// Because entity attachments are not used very often most entities do not need it,
 	// and space is preserved by keeping it separate structure.
-	SBindings* m_pBinds;
+	STransformHierarchy m_hierarchy;
 
 	// The representation of this entity in the AI system.
 	tAIObjectID m_aiObjectID;
@@ -481,13 +542,8 @@ private:
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
 
-	//////////////////////////////////////////////////////////////////////////
-	typedef std::map<int, IEntityProxyPtr, std::less<uint32>, stl::STLPoolAllocator<TProxyPair>> TProxyContainer;
-
-	TProxyContainer m_proxy;
-	//////////////////////////////////////////////////////////////////////////
-	typedef std::set<IComponentPtr> TComponents;
-	TComponents m_components;
+	// Array of components, linear search in a small array is almost always faster then a more complicated set or map containers.
+	CEntityComponentsVector m_components;
 
 	// Entity Links.
 	IEntityLink* m_pEntityLinks;
@@ -500,35 +556,14 @@ private:
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint32 m_nKeepAliveCounter;
 
-	// Name of the entity.
-	string m_szName;
-
 	// If this entity is part of a layer that was cloned at runtime, this is the cloned layer
 	// id (not related to the layer id)
-	int m_cloneLayerId;
+	int                              m_cloneLayerId;
+
+	std::unique_ptr<SEventListeners> m_pEventListeners;
+
+	CEntityRender                    m_render;
+	CEntityPhysics                   m_physics;
 };
-
-//////////////////////////////////////////////////////////////////////////
-void ILINE CEntity::ComputeForwardDir() const
-{
-	if (m_bDirtyForwardDir)
-	{
-		if (IsScaled())
-		{
-			Matrix34 auxTM = m_worldTM;
-			auxTM.OrthonormalizeFast();
-
-			// assuming (0, 1, 0) as the local forward direction
-			m_vForwardDir = auxTM.GetColumn1();
-		}
-		else
-		{
-			// assuming (0, 1, 0) as the local forward direction
-			m_vForwardDir = m_worldTM.GetColumn1();
-		}
-
-		m_bDirtyForwardDir = false;
-	}
-}
 
 #endif // __Entity_h__

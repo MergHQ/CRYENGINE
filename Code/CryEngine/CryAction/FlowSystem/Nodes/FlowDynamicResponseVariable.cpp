@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 namespace
@@ -15,7 +15,7 @@ DRS::IVariableCollection* GetVariableCollection(EntityId entityID, const string&
 		IEntity* pVariableCollectionOwningEntity = gEnv->pEntitySystem->GetEntity(entityID);
 		if (pVariableCollectionOwningEntity)
 		{
-			const IEntityDynamicResponseProxyPtr pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pVariableCollectionOwningEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+			const IEntityDynamicResponseComponent* pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseComponent*>(pVariableCollectionOwningEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
 			if (pIEntityDrsProxy)
 			{
 				return pIEntityDrsProxy->GetLocalVariableCollection();

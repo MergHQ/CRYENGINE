@@ -1769,7 +1769,7 @@ void CGameRules::ProcessEvent( SEntityEvent& event)
 		m_clientStateScript=0;
 		m_serverStateScript=0;
 
-		IEntityScriptProxy *pScriptProxy=static_cast<IEntityScriptProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
+		IEntityScriptComponent *pScriptProxy=static_cast<IEntityScriptComponent *>(GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
 		if (pScriptProxy)
 		{
 			const char *stateName=pScriptProxy->GetState();
@@ -8808,7 +8808,7 @@ bool CGameRules::IsInsideForbiddenArea(const Vec3& pos, bool doResetCheck, IEnti
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(shapeId);
 		if(pEntity)
 		{
-			IEntityAreaProxy *pAreaProxy = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+			IEntityAreaComponent *pAreaProxy = (IEntityAreaComponent*)pEntity->GetProxy(ENTITY_PROXY_AREA);
 			if(pAreaProxy)
 			{
 				bool inside = pAreaProxy->CalcPointWithin(INVALID_ENTITYID, pos);

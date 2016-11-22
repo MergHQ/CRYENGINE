@@ -145,7 +145,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 
 	if (!GetPropertyBool(eProperty_Active))
 	{
-		if (auto* pAudioProxy = static_cast<IEntityAudioProxy*>(entity.GetProxy(ENTITY_PROXY_AUDIO)))
+		if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 		{
 			pAudioProxy->SetEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID);
 
@@ -155,7 +155,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 		return;
 	}
 
-	auto& audioProxy = static_cast<IEntityAudioProxy&>(*entity.CreateProxy(ENTITY_PROXY_AUDIO));
+	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_PlayTrigger), m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_StopTrigger), m_stopTriggerId);
@@ -196,7 +196,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 
 void CAudioAreaAmbienceEntity::Play(AudioControlId triggerId)
 {
-	if (auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO)))
+	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
 		if (m_playingTriggerId != INVALID_AUDIO_CONTROL_ID)
 		{
@@ -212,7 +212,7 @@ void CAudioAreaAmbienceEntity::Play(AudioControlId triggerId)
 
 void CAudioAreaAmbienceEntity::Stop()
 {
-	auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
 	if (pAudioProxy == nullptr)
 		return;
 
@@ -230,7 +230,7 @@ void CAudioAreaAmbienceEntity::Stop()
 
 void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 {
-	auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
 	if (pAudioProxy == nullptr)
 		return;
 
@@ -268,7 +268,7 @@ void CAudioAreaAmbienceEntity::UpdateFadeValue(float distance)
 
 void CAudioAreaAmbienceEntity::SetObstruction()
 {
-	auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
 	if (pAudioProxy == nullptr)
 		return;
 
@@ -278,7 +278,7 @@ void CAudioAreaAmbienceEntity::SetObstruction()
 
 void CAudioAreaAmbienceEntity::DisableObstruction()
 {
-	auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
 	if (pAudioProxy == nullptr)
 		return;
 

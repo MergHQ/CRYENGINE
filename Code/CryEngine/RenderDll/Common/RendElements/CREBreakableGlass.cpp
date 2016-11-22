@@ -8,7 +8,7 @@
 #include "Utils/SpatialHashGrid.h"
 
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 

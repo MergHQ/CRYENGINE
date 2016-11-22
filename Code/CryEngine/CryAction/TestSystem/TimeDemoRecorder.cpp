@@ -2228,7 +2228,7 @@ void CTimeDemoRecorder::PlayBackEntityEvent(const EntityEventRecord& rec)
 		break;
 	case ENTITY_EVENT_ENTER_SCRIPT_STATE:
 		{
-			IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+			IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 			if (pScriptProxy)
 			{
 				pScriptProxy->GotoStateId((int)rec.nParam[0]);

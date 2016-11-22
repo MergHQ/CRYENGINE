@@ -15,7 +15,7 @@
 #define __ProximityTriggerSystem_h__
 #pragma once
 
-class CTriggerProxy;
+class CEntityComponentTriggerBounds;
 class RadixSort;
 
 //////////////////////////////////////////////////////////////////////////

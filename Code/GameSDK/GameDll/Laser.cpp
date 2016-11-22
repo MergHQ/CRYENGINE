@@ -104,8 +104,8 @@ IEntity* CLaserBeam::CreateLaserEntity()
 		m_laserEntityId = pNewEntity->GetId();
 
 
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pNewEntity->GetProxy(ENTITY_PROXY_RENDER);
-		IRenderNode * pRenderNode = pRenderProxy?pRenderProxy->GetRenderNode():NULL;
+		IEntityRender *pIEntityRender = pNewEntity->GetRenderInterface();
+		IRenderNode * pRenderNode = pIEntityRender?pIEntityRender->GetRenderNode():NULL;
 
 		if(pRenderNode)
 			pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS,true);

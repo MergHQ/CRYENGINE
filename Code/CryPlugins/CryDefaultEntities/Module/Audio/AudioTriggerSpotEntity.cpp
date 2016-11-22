@@ -137,7 +137,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
-	auto& audioProxy = static_cast<IEntityAudioProxy&>(*entity.CreateProxy(ENTITY_PROXY_AUDIO));
+	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
 	const bool bEnabled = GetPropertyBool(eProperty_Enabled);
@@ -218,7 +218,7 @@ void CAudioTriggerSpotEntity::StartPlayingBehaviour()
 
 void CAudioTriggerSpotEntity::Play()
 {
-	if (auto* pAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO)))
+	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
 		if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID && m_playTriggerId != m_currentlyPlayingTriggerId)
 		{
@@ -243,7 +243,7 @@ void CAudioTriggerSpotEntity::Stop()
 	IEntity& entity = *GetEntity();
 	entity.KillTimer(DELAY_TIMER_ID);
 
-	if (auto* pAudioProxy = static_cast<IEntityAudioProxy*>(entity.GetProxy(ENTITY_PROXY_AUDIO)))
+	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
 		if (m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
 		{

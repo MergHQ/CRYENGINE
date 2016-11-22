@@ -98,12 +98,9 @@ void CPlayerInput::SpawnCursorEntity()
 	auto *pCursorMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("Materials/cursor");
 	m_pCursorEntity->SetMaterial(pCursorMaterial);
 
-	// Make sure that cursor is always rendered regardless of distance 
-	if (auto *pRenderProxy = static_cast<IEntityRenderProxy *>(m_pCursorEntity->GetProxy(ENTITY_PROXY_RENDER)))
-	{
-		// Ratio is 0 - 255, 255 being 100% visibility 
-		pRenderProxy->SetViewDistRatio(255);
-	}
+	// Make sure that bullets are always rendered regardless of distance
+	// Ratio is 0 - 255, 255 being 100% visibility
+	GetEntity()->SetViewDistRatio(255);
 }
 
 void CPlayerInput::OnPostUpdate(float fDeltaTime)

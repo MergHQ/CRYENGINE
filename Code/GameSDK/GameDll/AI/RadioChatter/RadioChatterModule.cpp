@@ -108,12 +108,12 @@ void RadioChatterModule::PlayChatterOnEntity(IEntity& entity)
 {
 	/*IEntity* pEnt = &entity;
 
-	IEntityAudioProxy *pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(GetOrMakeProxy(pEnt, ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent *pIEntityAudioComponent = pEnt->GetOrCreateComponent<IEntityAudioComponent*>();
 	ISound* pSound = gEnv->pSoundSystem->CreateSound(m_chatterSoundName, FLAG_SOUND_DEFAULT_3D | FLAG_SOUND_VOICE);
-	if (pSound && pIEntityAudioProxy)
+	if (pSound && pIEntityAudioComponent)
 	{
 		pSound->SetSemantic(eSoundSemantic_FlowGraph);
-		pIEntityAudioProxy->PlaySound(pSound, Vec3(ZERO), FORWARD_DIRECTION, 1.0f);
+		pIEntityAudioComponent->PlaySound(pSound, Vec3(ZERO), FORWARD_DIRECTION, 1.0f);
 	}*/
 }
 

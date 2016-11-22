@@ -681,13 +681,11 @@ bool CItem::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 			{
 				if(m_stats.physicalizedSlot != eIGS_Last)
 				{
-					IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
-					if (pPhysicsProxy)
 					{
 						SEntityPhysicalizeParams params;
 						params.type = PE_NONE;
 						params.nSlot = m_stats.physicalizedSlot;
-						pPhysicsProxy->Physicalize(params);
+						GetEntity()->Physicalize(params);
 					}
 
 					m_stats.physicalizedSlot = eIGS_Last;
@@ -745,9 +743,7 @@ void CItem::ProcessEvent(SEntityEvent &event)
 				m_stats.flying = false;
 				
 				//Add an small impulse, sometimes item keeps floating in the air
-				IEntityPhysicalProxy *pPhysics = GetPhysicalProxy();
-				if (pPhysics)
-					pPhysics->AddImpulse(-1, Vec3(0.0f,0.0f,0.0f), Vec3(0.0f,0.0f,-1.0f)*m_sharedparams->params.drop_impulse, false, 1.0f);
+				GetEntity()->AddImpulse(-1, Vec3(0.0f,0.0f,0.0f), Vec3(0.0f,0.0f,-1.0f)*m_sharedparams->params.drop_impulse, false, 1.0f);
 				break;
 			}
       break;
@@ -847,21 +843,16 @@ bool CItem::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, 
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
 		if (ser.IsWriting())
 		{
-			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
+			if (!GetEntity()->GetPhysicalEntity() || GetEntity()->GetPhysicalEntity()->GetType() != type)
 			{
 				gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot( ser, type, 0 );
 				return true;
 			}
 		}
-		else if (!pEPP)
-		{
-			return false;
-		}
 
-		pEPP->SerializeTyped( ser, type, pflags );
+		GetEntity()->PhysicsNetSerializeTyped( ser, type, pflags );
 	}
 #if NETSERIALIZE_MOUNTDIR
 	else if (aspect == eEA_GameServerA)
@@ -1118,9 +1109,7 @@ void CItem::PostSerialize()
 
 		if(m_serializeActivePhysics.len())	//this fixes objects being frozen in air because they were rephysicalized
 		{
-			IEntityPhysicalProxy *pPhysics = GetPhysicalProxy();
-			if (pPhysics)
-				pPhysics->AddImpulse(-1, Vec3(0.0075f,0,0.0075f), m_serializeActivePhysics*m_sharedparams->params.drop_impulse, true, 1.0f);
+			GetEntity()->AddImpulse(-1, Vec3(0.0075f,0,0.0075f), m_serializeActivePhysics*m_sharedparams->params.drop_impulse, true, 1.0f);
 			m_serializeActivePhysics = Vec3(0,0,0);
 		}
 	}
@@ -1880,7 +1869,7 @@ void CItem::DropAfterRaycast(const QueuedRayID& rayID, const RayCastResult& resu
 	if (result.hitCount == 0)
 	{
 		const Vec3 impulsePoint = GetEntity()->GetWorldTM().TransformPoint(Vec3(0.0075f,0,0.0075f));
-		GetPhysicalProxy()->AddImpulse(-1, impulsePoint, m_dropImpulse, true, 1.0f);
+		GetEntity()->AddImpulse(-1, impulsePoint, m_dropImpulse, true, 1.0f);
 	}
 	else
 	{
@@ -2156,12 +2145,12 @@ void CItem::DisableCollisionWithPlayers()
 //----------------------------------------------------------------------
 void CItem::RegisterFPWeaponForRenderingAlways(bool registerRenderAlways)
 {
-	IEntityRenderProxy* pProxy = GetRenderProxy();
-	IRenderNode* pRenderNode = pProxy ? pProxy->GetRenderNode() : NULL;
-	if(pRenderNode)
-	{
-		pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, registerRenderAlways);
-	}
+	auto params = GetEntity()->GetRenderNodeParams();
+	if (registerRenderAlways)
+		params.additionalRenderNodeFlags |= ERF_RENDER_ALWAYS;
+	else
+		params.additionalRenderNodeFlags &= ~ERF_RENDER_ALWAYS;
+	GetEntity()->SetRenderNodeParams(params);
 }
 //------------------------------------------------------------------------
 void CItem::Impulse(const Vec3 &position, const Vec3 &direction, float impulse)
@@ -2169,9 +2158,7 @@ void CItem::Impulse(const Vec3 &position, const Vec3 &direction, float impulse)
 	if (direction.len2() <= 0.001f)
 		return;
 
-	IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
-	if (pPhysicsProxy)
-		pPhysicsProxy->AddImpulse(-1, position, direction.GetNormalized()*impulse, true, 1);
+	GetEntity()->AddImpulse(-1, position, direction.GetNormalized()*impulse, true, 1);
 }
 
 //------------------------------------------------------------------------
@@ -3236,16 +3223,16 @@ void CItem::CloakSync(bool fade)
 	if(!pOwner)
 		return;
 
-	IEntityRenderProxy* pOwnerRP = (IEntityRenderProxy*)pOwner->GetProxy(ENTITY_PROXY_RENDER);
+	IEntityRender* pOwnerRP = pOwner->GetRenderInterface();
 	if (pOwnerRP)
 	{
-		uint8 ownerMask = pOwnerRP->GetMaterialLayersMask();
-		bool isCloaked = (ownerMask&MTL_LAYER_CLOAK) != 0;
-		float cloakBlendSpeedScale = pOwnerRP->GetCloakBlendTimeScale();
-		bool bFadeByDistance = pOwnerRP->DoesCloakFadeByDistance();
-		uint8 colorChannel = pOwnerRP->GetCloakColorChannel();
-		bool bIgnoreCloakRefractionColor = pOwnerRP->DoesIgnoreCloakRefractionColor();
-		CloakEnable(isCloaked, fade, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor, pOwner->GetId());
+		//uint8 ownerMask = pOwnerRP->GetMaterialLayersMask();
+		//bool isCloaked = (ownerMask&MTL_LAYER_CLOAK) != 0;
+		//float cloakBlendSpeedScale = pOwnerRP->GetCloakBlendTimeScale();
+		//bool bFadeByDistance = pOwnerRP->DoesCloakFadeByDistance();
+		//uint8 colorChannel = pOwnerRP->GetCloakColorChannel();
+		//bool bIgnoreCloakRefractionColor = pOwnerRP->DoesIgnoreCloakRefractionColor();
+		//CloakEnable(isCloaked, fade, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor, pOwner->GetId());
 	}
 }
 
@@ -3727,20 +3714,20 @@ void CItem::SetIgnoreHeat( bool ignoreHeat )
 		m_itemFlags &= ~eIF_IgnoreHeat;
 	}
 
-	IEntityRenderProxy* pItemRenderProxy = static_cast<IEntityRenderProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRender* pItemRenderProxy = (GetEntity()->GetRenderInterface());
 	if(pItemRenderProxy)
 	{
-		pItemRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
+		//pItemRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
 	}
 
 	const int numAccessories = m_accessories.size();
-	IEntityRenderProxy* pItemAccessoryRenderProxy(NULL);
+	IEntityRender* pItemAccessoryRenderProxy(NULL);
 	for(int i = 0; i < numAccessories; ++i)
 	{
 		IEntity* pAccessory = gEnv->pEntitySystem->GetEntity(m_accessories[i].accessoryId);
-		if(pAccessory && (pItemAccessoryRenderProxy = static_cast<IEntityRenderProxy*>(pAccessory->GetProxy(ENTITY_PROXY_RENDER))))
+		if(pAccessory && (pItemAccessoryRenderProxy = (pAccessory->GetRenderInterface())))
 		{
-			pItemAccessoryRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
+			//pItemAccessoryRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
 		}
 	}
 }

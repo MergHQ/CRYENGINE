@@ -58,9 +58,9 @@ void CScriptBind_Action::RegisterGlobals()
 	SCRIPT_REG_GLOBAL(eGE_Damage);
 	SCRIPT_REG_GLOBAL(eGE_WeaponHit);
 
-	RegisterGlobal("QueryAimFromMovementController", CAIProxy::QueryAimFromMovementController);
-	RegisterGlobal("OverriddenAndAiming", CAIProxy::OverriddenAndAiming);
-	RegisterGlobal("OverriddenAndNotAiming", CAIProxy::OverriddenAndNotAiming);
+	gEnv->pScriptSystem->SetGlobalValue("QueryAimFromMovementController", CAIProxy::QueryAimFromMovementController);
+	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndAiming", CAIProxy::OverriddenAndAiming);
+	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndNotAiming", CAIProxy::OverriddenAndNotAiming);
 }
 
 //------------------------------------------------------------------------

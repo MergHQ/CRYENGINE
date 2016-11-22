@@ -98,7 +98,7 @@ CDialogActorContext::~CDialogActorContext()
 		IEntity* pActorEntity = m_pSession->GetActorEntity(m_actorID);
 		if (pActorEntity)
 		{
-			IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+			IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 			if (pActorAudioProxy)
 			{
 				pActorAudioProxy->RemoveAsListenerFromAuxAudioProxy(m_SpeechAuxProxy, &CDialogActorContext::OnAudioTriggerFinished);
@@ -424,7 +424,7 @@ bool CDialogActorContext::Update(float dt)
 						if (pActorEntity == 0)
 							break;
 
-						IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+						IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 
 						if (pActorAudioProxy == 0)
 							break;
@@ -554,7 +554,7 @@ void CDialogActorContext::UpdateAuxProxyPosition()
 	if (pActorEntity == 0)
 		return;
 
-	IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+	IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 	if (pActorAudioProxy == 0)
 		return;
 
@@ -1093,7 +1093,7 @@ void CDialogActorContext::StopSound(bool bUnregisterOnly)
 		if (pActorEntity == 0)
 			return;
 
-		IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+		IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 		if (pActorAudioProxy == 0)
 			return;
 

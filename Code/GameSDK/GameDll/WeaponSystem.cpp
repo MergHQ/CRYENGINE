@@ -128,9 +128,9 @@ template <typename TWeaponCompnentInterface, typename TWeaponComponentImplementa
 #define REGISTER_PROJECTILE(name, T)	\
 struct C##name##Creator : public IGameObjectExtensionCreatorBase	\
 { \
-	IGameObjectExtensionPtr Create() \
+	IGameObjectExtension* Create(IEntity *pEntity) \
 	{ \
-		return ComponentCreate_DeleteWithRelease<T>(); \
+		return pEntity->CreateComponentClass<T>();\
 	} \
 	void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount ) \
 	{ \

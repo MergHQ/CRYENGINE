@@ -957,10 +957,10 @@ void CGameRulesHoldObjectiveBase::UpdateEffect(float frameTime)
 		Vec3 currentColor = LERP(*m_effectData.pPrevCol,*m_effectData.pDestCol,lerpValue);
 
 		// Set ring color
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pRingEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if(pRenderProxy)
+		IEntityRender* pIEntityRender = pRingEntity->GetRenderInterface();
+		if(pIEntityRender)
 		{
-			IMaterial* pRingMaterial = pRenderProxy->GetRenderMaterial();
+			IMaterial* pRingMaterial = pIEntityRender->GetRenderMaterial();
 			SetMaterialDiffuseColor(pRingMaterial,currentColor);
 		}
 		
@@ -1006,10 +1006,10 @@ void CGameRulesHoldObjectiveBase::SetRingAlpha(IEntity* pRingEntity,float alpha)
 {
 	if(pRingEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pRingEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if(pRenderProxy)
+		IEntityRender* pIEntityRender = pRingEntity->GetRenderInterface();
+		if(pIEntityRender)
 		{
-			IMaterial* pRindMaterial = pRenderProxy->GetRenderMaterial();
+			IMaterial* pRindMaterial = pIEntityRender->GetRenderMaterial();
 			SetMaterialDiffuseAlpha(pRindMaterial,alpha);
 		}
 	}

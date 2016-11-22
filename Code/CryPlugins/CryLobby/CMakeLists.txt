@@ -1,5 +1,4 @@
-option(PLUGIN_CRYLOBBY "Enable CryLobby" ON)
-if (NOT PLUGIN_CRYLOBBY)
+if (TARGET CryLobby)
 	return()
 endif()
 

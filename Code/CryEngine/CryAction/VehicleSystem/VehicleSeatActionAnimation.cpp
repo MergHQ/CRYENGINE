@@ -26,7 +26,7 @@ CVehicleSeatActionAnimation::CVehicleSeatActionAnimation()
 	, m_prevAction(0.f)
 	, m_speed(1.f)
 	, m_manualUpdate(true)
-	, m_pIEntityAudioProxy(NULL)
+	, m_pIEntityAudioComponent(NULL)
 {
 	m_control[0] = eVAI_Attack1;
 	m_control[1] = eVAI_Attack2;
@@ -58,9 +58,9 @@ bool CVehicleSeatActionAnimation::Init(IVehicle* pVehicle, IVehicleSeat* pSeat, 
 	animTable.getAttr("speed", m_speed);
 
 	REINST("start/stop event?");
-	/*m_pIEntityAudioProxy = (IEntityAudioProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+	/*m_pIEntityAudioComponent = m_pVehicle->GetEntity()->GetComponent<IEntityAudioComponent>();
 
-	   if (m_pIEntityAudioProxy)
+	   if (m_pIEntityAudioComponent)
 	   {
 	   if (animTable.haveAttr("sound"))
 	    m_pSound = gEnv->pAudioSystem->CreateSound(animTable.getAttr("sound"), FLAG_SOUND_DEFAULT_3D);
@@ -109,7 +109,7 @@ void CVehicleSeatActionAnimation::StopUsing()
 
 		REINST("event needed?");
 		/*if (m_pSound.get())
-		   m_pIEntityAudioProxy->StopSound(m_pSound->GetId());*/
+		   m_pIEntityAudioComponent->StopSound(m_pSound->GetId());*/
 	}
 
 	m_userId = 0;
@@ -168,8 +168,8 @@ void CVehicleSeatActionAnimation::Update(float frameTime)
 			if (m_prevAction == 0.f /*&& m_pSound.get()*/)
 			{
 				REINST("starting something");
-				/*m_pIEntityAudioProxy->PlaySound(m_pSound);
-				   m_pIEntityAudioProxy->SetStaticSound(m_pSound->GetId(), true);*/
+				/*m_pIEntityAudioComponent->PlaySound(m_pSound);
+				   m_pIEntityAudioComponent->SetStaticSound(m_pSound->GetId(), true);*/
 			}
 		}
 
@@ -183,12 +183,12 @@ void CVehicleSeatActionAnimation::Update(float frameTime)
 		{
 			REINST("stopping something");
 			/*if (m_pSound.get())
-			   m_pIEntityAudioProxy->StopSound(m_pSound->GetId());
+			   m_pIEntityAudioComponent->StopSound(m_pSound->GetId());
 
 			   if (m_pStopSound.get())
 			   {
-			   m_pIEntityAudioProxy->PlaySound(m_pStopSound);
-			   m_pIEntityAudioProxy->SetStaticSound(m_pStopSound->GetId(), true);
+			   m_pIEntityAudioComponent->PlaySound(m_pStopSound);
+			   m_pIEntityAudioComponent->SetStaticSound(m_pStopSound->GetId(), true);
 			   }*/
 		}
 	}

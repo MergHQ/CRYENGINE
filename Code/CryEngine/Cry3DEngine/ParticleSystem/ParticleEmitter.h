@@ -71,6 +71,7 @@ public:
 	virtual void                   EmitParticle(const EmitParticleData* pData = NULL)  override;
 	virtual IParticleAttributes& GetAttributes()  override    { return m_attributeInstance; }
 	virtual void                 SetEntity(IEntity* pEntity, int nSlot) override;
+	virtual void                 InvalidateCachedEntityData() override;
 	virtual void                 SetTarget(const ParticleTarget& target) override;
 	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
 	// ~pfx2 IParticleEmitter

@@ -27,17 +27,9 @@ public:
 
 	bool LoadEntities(XmlNodeRef& entitesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset = Vec3(0, 0, 0), std::vector<IEntity*>* outGlobalEntityIds = 0, std::vector<IEntity*>* outLocalEntityIds = 0);
 
-	void HoldLayerEntities(const char* pLayerName);
-	void CloneHeldLayerEntities(const char* pLayerName, const Vec3& localOffset, const Matrix34& l2w, const char** pIncludeLayers, int numIncludeLayers);
-	void ReleaseHeldEntities();
-
 	void PrepareBatchCreation(int nSize);
 	bool CreateEntity(SEntityLoadParams& loadParams, EntityId& outUsingId, bool bIsLoadingLevellFile);
 	void OnBatchCreationCompleted();
-
-	// Given a cloned layer id and the original entity id of an entity in that layer, this
-	// returns the id of the cloned copy of that entity.
-	EntityId GetClonedId(int clonedLayerId, EntityId originalId);
 
 	EntityId FindEntityByEditorGuid(const char* pGuid) const;
 
@@ -69,9 +61,6 @@ private:
 
 	void ResolveLinks();
 
-	bool IsHeldLayer(XmlNodeRef& entityNode);
-	void SetupHeldLayer(const char* pLayerName);
-
 	// Attachment queue for post Entity batch creation
 	typedef std::vector<SEntityAttachment> TQueuedAttachments;
 	TQueuedAttachments m_queuedAttachments;
@@ -93,19 +82,6 @@ private:
 
 	CEntitySystem*    m_pEntitySystem;
 	bool              m_bSWLoading;
-
-	struct SHeldLayer
-	{
-		string                  m_layerName;
-		std::vector<XmlNodeRef> m_entities;
-	};
-	std::vector<SHeldLayer> m_heldLayers;
-	std::map<uint32, int>   m_layerNameMap;
-
-	typedef std::map<EntityId, EntityId> TClonedIds;
-	typedef std::vector<TClonedIds>      TClonedLayerEntities;
-	TClonedLayerEntities  m_clonedLayerIds;
-	std::vector<EntityId> m_clonedEntitiesTemp;
 };
 
 #endif //__ENTITYLOADMANAGER_H__

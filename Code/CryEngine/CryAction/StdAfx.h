@@ -124,9 +124,9 @@ inline bool IsClientActor(EntityId id)
 
 //////////////////////////////////////////////////////////////////////////
 // Get a proxy or make it if not found
-inline IEntityProxy* GetOrMakeProxy(IEntity* pEntity, EEntityProxy proxyType)
+inline IEntityComponent* GetOrMakeProxy(IEntity* pEntity, EEntityProxy proxyType)
 {
-	IEntityProxy* pProxy = pEntity->GetProxy(proxyType);
+	IEntityComponent* pProxy = pEntity->GetProxy(proxyType);
 	if (!pProxy)
 	{
 		if (pEntity->CreateProxy(proxyType))

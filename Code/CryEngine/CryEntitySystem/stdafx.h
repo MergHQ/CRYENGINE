@@ -94,11 +94,6 @@ inline void EntityFileWarning(const char* file, const char* format, ...)
 	va_end(args);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Proxy creation functions.
-//////////////////////////////////////////////////////////////////////////
-extern IEntityProxyPtr CreateScriptProxy(class CEntity* pEntity, struct IEntityScript* pScript, SEntitySpawnParams* pSpawnParams);
-
 #define ENTITY_PROFILER FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 #define ENTITY_PROFILER_NAME(str) FRAME_PROFILER(str, GetISystem(), PROFILE_ENTITY);
 

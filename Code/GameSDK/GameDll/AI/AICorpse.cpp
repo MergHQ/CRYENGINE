@@ -200,11 +200,11 @@ void CAICorpse::FullSerialize( TSerialize ser )
 					ser.EndGroup();
 				}
 		
-				IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+				IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetPhysicsInterface());
 				if(ser.BeginOptionalGroup("characterPhysics", pPhysicsProxy != NULL))
 				{
 					assert(pPhysicsProxy != NULL);
-					pPhysicsProxy->Serialize(ser);
+					GetEntity()->Serialize(ser);
 		
 					ser.EndGroup();
 				}*/
@@ -246,11 +246,10 @@ void CAICorpse::FullSerialize( TSerialize ser )
 				ser.EndGroup();
 			}
 	
-			IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
-			if(ser.BeginOptionalGroup("characterPhysics", pPhysicsProxy != NULL))
+			if(ser.BeginOptionalGroup("characterPhysics", GetEntity()->GetPhysicalEntity() != NULL))
 			{
 				assert(pPhysicsProxy != NULL);
-				pPhysicsProxy->Serialize(ser);
+				GetEntity()->Serialize(ser);
 	
 				ser.EndGroup();
 			}*/
@@ -718,13 +717,8 @@ void CAICorpseManager::Update( const float frameTime )
 			}
 			else if(cullPhysics != corpseInfo.flags.AreAllFlagsActive( CorpseInfo::eFlag_PhysicsDisabled ))
 			{
-				IEntityPhysicalProxy* pCorpsePhysicsProxy = static_cast<IEntityPhysicalProxy*>(pCorpseEntity->GetProxy( ENTITY_PROXY_PHYSICS ));
-				if (pCorpsePhysicsProxy != NULL)
 				{
-					//Simulate entity event to enable/disable physics
-					SEntityEvent visibilityEvent;
-					visibilityEvent.event = cullPhysics ? ENTITY_EVENT_HIDE : ENTITY_EVENT_UNHIDE;
-					pCorpsePhysicsProxy->ProcessEvent( visibilityEvent );
+					pCorpseEntity->EnablePhysics(!cullPhysics);
 					
 					if(cullPhysics == false)
 					{

@@ -12,7 +12,7 @@
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include "../Common/ReverseDepth.h"
 #include "../Common/ComputeSkinningStorage.h"
 

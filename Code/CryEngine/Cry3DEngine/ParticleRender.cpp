@@ -455,7 +455,6 @@ bool CParticle::RenderGeometry(SRendParams& RenParamsShared, SParticleVertexCont
 	}
 
 	// Render separate draw call.
-	SaveRestore<SInstancingInfo*> SaveInst(RenParamsShared.pInstInfo, 0);
 	SaveRestore<ColorF> SaveColor(RenParamsShared.AmbientColor);
 	SaveRestore<float> SaveAlpha(RenParamsShared.fAlpha);
 

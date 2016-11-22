@@ -299,13 +299,11 @@ bool CJaw::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 			return true;
 		case eIPhys_NotPhysicalized:
 			{
-				IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
-				if (pPhysicsProxy)
 				{
 					SEntityPhysicalizeParams params;
 					params.type = PE_NONE;
 					params.nSlot = slot;
-					pPhysicsProxy->Physicalize(params);
+					GetEntity()->Physicalize(params);
 				}
 			}
 			return true;

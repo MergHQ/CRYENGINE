@@ -18,20 +18,20 @@ enum ELipSyncMethod
 	eLSM_MatchAnimationToSoundName,
 };
 
-struct IEntityAudioProxy;
+struct IEntityAudioComponent;
 
 struct ILipSyncProvider
 {
 	virtual ~ILipSyncProvider() {}
 
 	//! Use this to start loading as soon as the sound gets requested (this can be safely ignored).
-	virtual void RequestLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
 
-	virtual void StartLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
-	virtual void PauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
-	virtual void UnpauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
-	virtual void StopLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
-	virtual void UpdateLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void StartLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void PauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void UnpauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void StopLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
+	virtual void UpdateLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) = 0;
 };
 
 DECLARE_SHARED_POINTERS(ILipSyncProvider);

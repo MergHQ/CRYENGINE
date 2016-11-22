@@ -3007,7 +3007,6 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 			}
 		}
 	}
-	ro->m_fSort = m_rendParams.fCustomSortOffset;
 	ro->m_nRenderQuality = (uint16)(fRenderQuality * 65535.0f);
 	ro->m_fDistance = distance;
 	if (Get3DEngine()->IsTessellationAllowed(ro, passInfo))

@@ -5480,17 +5480,20 @@ void CSystem::OnAssert(const char* condition, const char* message, const char* f
 	{
 		(*it)->OnAssert(condition, message, fileName, fileLineNumber);
 	}
-	if (g_cvars.sys_asserts == 2)
+	if (!m_env.bIgnoreAllAsserts)
 	{
-		CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
-	}
-	if (g_cvars.sys_asserts >= 3)
-	{
+		if (g_cvars.sys_asserts == 2)
+		{
+			CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
+		}
+		if (g_cvars.sys_asserts >= 3)
+		{
 #ifndef _RELEASE
-	#ifdef WIN32
-		__debugbreak();
-	#endif
+#ifdef WIN32
+			__debugbreak();
 #endif
+#endif
+		}
 	}
 }
 

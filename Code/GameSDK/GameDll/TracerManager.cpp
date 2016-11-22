@@ -148,8 +148,7 @@ void CTracer::SetGeometry(const char *name, float scale)
 		}
 
 		// Set opacity
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		pRenderProxy->SetOpacity(m_geometryOpacity);
+		pEntity->SetOpacity(m_geometryOpacity);
 	}
 }
 
@@ -495,8 +494,7 @@ void CTracerManager::Update(float frameTime)
 					{
 						if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(tracer.m_entityId))
 						{
-							IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-							pRenderProxy->SetOpacity(max((tracer.m_fadeOutTime / tracer.m_startFadeOutTime) * tracer.m_geometryOpacity, 0.0f));
+							pEntity->SetOpacity(max((tracer.m_fadeOutTime / tracer.m_startFadeOutTime) * tracer.m_geometryOpacity, 0.0f));
 						}
 					}
 				}

@@ -202,11 +202,11 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void SetStateOnProxy(IEntity* const pIEntity, int const stateIndex)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pIEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioComponent* const pIEntityAudioComponent = pIEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-		if (pIEntityAudioProxy != nullptr)
+		if (pIEntityAudioComponent != nullptr)
 		{
-			pIEntityAudioProxy->SetSwitchState(m_requestData.audioSwitchId, m_audioSwitchStates[stateIndex]);
+			pIEntityAudioComponent->SetSwitchState(m_requestData.audioSwitchId, m_audioSwitchStates[stateIndex]);
 		}
 	}
 

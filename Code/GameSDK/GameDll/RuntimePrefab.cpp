@@ -263,7 +263,6 @@ void	CRuntimePrefab::Spawn(CPrefab &pRef)
 		return;
 	}
 	
-	IEntityRenderProxy * pRenderProxy = (IEntityRenderProxy*)pEntity->CreateProxy( ENTITY_PROXY_RENDER ).get();	
 	AABB box(AABB::RESET);
 		
 	// expand embedded prefabs
@@ -287,7 +286,7 @@ void	CRuntimePrefab::Spawn(CPrefab &pRef)
 	if (box.min.x>box.max.x || box.min.y>box.max.y || box.min.z>box.max.z)
 		box=AABB( 1.0f ); 
 
-	pRenderProxy->SetLocalBounds(box, true);
+	pEntity->GetRenderInterface()->SetLocalBounds(box, true);
 
 	// make sure all transformations are set
 	Move(); 

@@ -7,11 +7,13 @@
 
 struct IMaterial;
 struct IVisArea;
-struct SEntityEvent;
 struct SRenderingPassInfo;
 struct IGeomCache;
 struct SRendItemSorter;
 struct SFrameLodInfo;
+struct ICharacterInstance;
+struct IStatObj;
+struct IEntity;
 
 enum EERType
 {
@@ -40,6 +42,7 @@ enum EERType
 	eERType_CloudBlocker,
 	eERType_MergedMesh,
 	eERType_GeomCache,
+	eERType_Character,
 	eERType_TypesNum, //!< Must be at the end - gives the total number of ER types.
 };
 
@@ -90,42 +93,64 @@ struct OcclusionTestClient
 };
 
 // RenderNode flags
+enum ERenderNodeFlags : uint64
+{
+	ERF_GOOD_OCCLUDER              = BIT(0),
+	ERF_PROCEDURAL                 = BIT(1),
+	ERF_CLONE_SOURCE               = BIT(2), //!< set if this object was cloned from another one
+	ERF_CASTSHADOWMAPS             = BIT(3), //!< if you ever set this flag, be sure also to set ERF_HAS_CASTSHADOWMAPS
+	ERF_RENDER_ALWAYS              = BIT(4),
+	ERF_DYNAMIC_DISTANCESHADOWS    = BIT(5),
+	ERF_HIDABLE                    = BIT(6),
+	ERF_HIDABLE_SECONDARY          = BIT(7),
+	ERF_HIDDEN                     = BIT(8),
+	ERF_SELECTED                   = BIT(9),
 
-#define ERF_GOOD_OCCLUDER              BIT(0)
-#define ERF_PROCEDURAL                 BIT(1)
-#define ERF_CLONE_SOURCE               BIT(2)  // set if this object was cloned from another one
-#define ERF_CASTSHADOWMAPS             BIT(3)  // if you ever set this flag, be sure also to set ERF_HAS_CASTSHADOWMAPS
-#define ERF_RENDER_ALWAYS              BIT(4)
-#define ERF_DYNAMIC_DISTANCESHADOWS    BIT(5)
-#define ERF_HIDABLE                    BIT(6)
-#define ERF_HIDABLE_SECONDARY          BIT(7)
-#define ERF_HIDDEN                     BIT(8)
-#define ERF_SELECTED                   BIT(9)
-#define ERF_GI_MODE_BIT0               BIT(10) // Bit0 of GI mode.
-#define ERF_OUTDOORONLY                BIT(11)
-#define ERF_NODYNWATER                 BIT(12)
-#define ERF_EXCLUDE_FROM_TRIANGULATION BIT(13)
-#define ERF_REGISTER_BY_BBOX           BIT(14)
-#define ERF_PICKABLE                   BIT(15)
-#define ERF_GI_MODE_BIT1               BIT(16) // Bit1 of GI mode.
-#define ERF_NO_PHYSICS                 BIT(17)
-#define ERF_NO_DECALNODE_DECALS        BIT(18)
-#define ERF_REGISTER_BY_POSITION       BIT(19)
-#define ERF_STATIC_INSTANCING          BIT(20)
-#define ERF_RECVWIND                   BIT(21)
-#define ERF_COLLISION_PROXY            BIT(22) // Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
-#define ERF_GI_MODE_BIT2               BIT(23) // Bit2 of GI mode.
+	ERF_OUTDOORONLY                = BIT(11),
+	ERF_NODYNWATER                 = BIT(12),
+	ERF_EXCLUDE_FROM_TRIANGULATION = BIT(13),
+	ERF_REGISTER_BY_BBOX           = BIT(14),
+	ERF_PICKABLE                   = BIT(15),
+
+	ERF_NO_PHYSICS                 = BIT(17),
+	ERF_NO_DECALNODE_DECALS        = BIT(18),
+	ERF_REGISTER_BY_POSITION       = BIT(19),
+	ERF_STATIC_INSTANCING          = BIT(20),
+	ERF_RECVWIND                   = BIT(21),
+	ERF_COLLISION_PROXY            = BIT(22), //!< Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
+
+	ERF_SPEC_BIT0                  = BIT(24), //!< Bit0 of min config specification.
+	ERF_SPEC_BIT1                  = BIT(25), //!< Bit1 of min config specification.
+	ERF_SPEC_BIT2                  = BIT(26), //!< Bit2 of min config specification.
+	ERF_RAYCAST_PROXY              = BIT(27), //!< raycast proxy is only used for raycasting
+	ERF_HUD                        = BIT(28), //!< Hud object that can avoid some visibility tests
+	ERF_RAIN_OCCLUDER              = BIT(29), //!< Is used for rain occlusion map
+	ERF_HAS_CASTSHADOWMAPS         = BIT(30), //!< at one point had ERF_CASTSHADOWMAPS set
+	ERF_ACTIVE_LAYER               = BIT(31), //!< the node is on a currently active layer
+
+	ERF_ENABLE_ENTITY_RENDER_CALLBACK = BIT64(32),  //!< Enables render nodes to send a special render callback to their entity owner
+
+	ERF_CUSTOM_VIEW_DIST_RATIO     = BIT64(33), //!< Override normal view dist ratio for this node with the one from the cvar e_ViewDistRatioCustom (AI/Vehicles use it)
+	ERF_FORCE_POST_3D_RENDER       = BIT64(34), //!< Enables this node to be rendered in the special post 3d render pass
+	ERF_DISABLE_MOTION_BLUR        = BIT64(35), //!< Disable motion blur effect for this render node
+	ERF_SHADOW_DISSOLVE            = BIT64(36), //!< Clocking effect require shadow to also dissolve to simulate disappearance of the object
+	ERF_HUD_REQUIRE_DEPTHTEST      = BIT64(37), //!< If 3D HUD Object requires to be rendered at correct depth (i.e. behind weapon)
+	
+	ERF_MOVES_EVERY_FRAME          = BIT64(38), //!< Set on Render Nodes that are highly dynamic, for optimization reasons
+
+	// Special additional flags that are set on CRenderObject flags
+	ERF_FOB_RENDER_AFTER_POSTPROCESSING = BIT64(39), //!< Set FOB_RENDER_AFTER_POSTPROCESSING on the CRenderObject flags
+	ERF_FOB_NEAREST                     = BIT64(40), //!< Set FOB_NEAREST on the CRenderObject flags
+
+	ERF_GI_MODE_BIT0                    = BIT64(41),   //!< Bit0 of GI mode.
+	ERF_GI_MODE_BIT1                    = BIT64(42),   //!< Bit1 of GI mode.
+	ERF_GI_MODE_BIT2                    = BIT64(43),   //!< Bit2 of GI mode.
+};
+
+#define ERF_SPEC_BITS_MASK (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2)
+#define ERF_SPEC_BITS_SHIFT 24
+
 #define ERF_GI_MODE_BITS_MASK          (ERF_GI_MODE_BIT0 | ERF_GI_MODE_BIT1 | ERF_GI_MODE_BIT2) // Bit mask of the GI mode.
-#define ERF_SPEC_BIT0                  BIT(24)                                         // Bit0 of min config specification.
-#define ERF_SPEC_BIT1                  BIT(25)                                         // Bit1 of min config specification.
-#define ERF_SPEC_BIT2                  BIT(26)                                         // Bit2 of min config specification.
-#define ERF_SPEC_BITS_MASK             (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2) // Bit mask of the min spec bits.
-#define ERF_SPEC_BITS_SHIFT            (24)                                            // Bit offset of the ERF_SPEC_BIT0.
-#define ERF_RAYCAST_PROXY              BIT(27)                                         // raycast proxy is only used for raycasting
-#define ERF_HUD                        BIT(28)                                         // Hud object that can avoid some visibility tests
-#define ERF_RAIN_OCCLUDER              BIT(29)                                         // Is used for rain occlusion map
-#define ERF_HAS_CASTSHADOWMAPS         BIT(30)                                         // at one point had ERF_CASTSHADOWMAPS set
-#define ERF_ACTIVE_LAYER               BIT(31)                                         // the node is on a currently active layer
 
 struct IShadowCaster
 {
@@ -173,6 +198,9 @@ struct IRenderNode : public IShadowCaster
 		HAS_OCCLUSION_PROXY        = BIT(7),   //!< This node has occlusion proxy.
 		PERMANENT_RO_INVALID       = BIT(8)    //!< If this node uses permanent render object, it is not valid anymore and must be recreated.
 	};
+	typedef uint64 RenderFlagsType;
+
+public:
 
 	IRenderNode()
 	{
@@ -228,10 +256,14 @@ struct IRenderNode : public IShadowCaster
 	virtual void Hide(bool bHide) { SetRndFlags(ERF_HIDDEN, bHide); }
 
 	//! Gives access to object components.
-	virtual struct IStatObj*             GetEntityStatObj(unsigned int nPartId = 0, unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
+	virtual IStatObj*   GetEntityStatObj(unsigned int nPartId = 0, unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
 	virtual IMaterial*                   GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL)  { return NULL; }
 	virtual void                         SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matrix34A* pMatrix = NULL)              {};
-	virtual struct ICharacterInstance*   GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false)     { return 0; }
+	
+	// Retrieve access to the character instance of the the RenderNode
+	virtual ICharacterInstance*   GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false)     { return 0; }
+
+
 #if defined(USE_GEOM_CACHES)
 	virtual struct IGeomCacheRenderNode* GetGeomCacheRenderNode(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; }
 #endif
@@ -298,9 +330,7 @@ struct IRenderNode : public IShadowCaster
 	//	virtual float GetLodForDistance(float fDistance) { return 0; }
 
 	virtual void  OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) {}
-	virtual void  OnEntityEvent(IEntity* pEntity, SEntityEvent const& event)    {}
-
-	virtual bool  IsMovableByGame() const                                       { return false; }
+	virtual void  OnRenderNodeBecomeInvisible() {}
 
 	virtual uint8 GetSortPriority()                                             { return 0; }
 
@@ -345,10 +375,10 @@ struct IRenderNode : public IShadowCaster
 		//	be a crash when the dangling pointer is used on the other
 	}
 
-	//! Rendering flags.
-	ILINE void         SetRndFlags(unsigned int dwFlags)               { m_dwRndFlags = dwFlags; }
-	ILINE void         SetRndFlags(unsigned int dwFlags, bool bEnable) { if (bEnable) SetRndFlags(m_dwRndFlags | dwFlags); else SetRndFlags(m_dwRndFlags & (~dwFlags)); }
-	ILINE unsigned int GetRndFlags() const                             { return m_dwRndFlags; }
+	//! Rendering flags. (@see ERenderNodeFlags)
+	ILINE void   SetRndFlags(RenderFlagsType dwFlags)               { m_dwRndFlags = dwFlags; }
+	ILINE void   SetRndFlags(RenderFlagsType dwFlags, bool bEnable) { if (bEnable) SetRndFlags(m_dwRndFlags | dwFlags); else SetRndFlags(m_dwRndFlags & (~dwFlags)); }
+	ILINE RenderFlagsType GetRndFlags() const                       { return m_dwRndFlags; }
 
 	//! Object draw frames (set if was drawn).
 	ILINE void SetDrawFrame(int nFrameID, int nRecursionLevel)
@@ -404,6 +434,10 @@ struct IRenderNode : public IShadowCaster
 	//! \return Lod distance ratio.
 	ILINE int GetShadowLodBias() const { return m_cShadowLodBias; }
 
+	//! Sets camera space position of the render node.
+	//! Only implemented by few nodes.
+	virtual void SetCameraSpacePos( Vec3* pCameraSpacePos ) {};
+
 	//! Set material layers mask.
 	ILINE void               SetMaterialLayers(uint8 nMtlLayers) { m_nMaterialLayers = nMtlLayers; }
 
@@ -441,6 +475,10 @@ struct IRenderNode : public IShadowCaster
 		m_nEditorSelectionID |= flags;
 		InvalidatePermanentRenderObject();
 	}
+	// Set a new owner entity
+	virtual void SetOwnerEntity( IEntity *pEntity ) { m_pOwnerEntity = pEntity; }
+	// Retrieve a pointer to the entity who owns this render node.
+	ILINE IEntity* GetOwnerEntity() const { return m_pOwnerEntity; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables
@@ -460,8 +498,8 @@ public:
 	//! Max view distance.
 	float m_fWSMaxViewDist;
 
-	//! Render flags.
-	int m_dwRndFlags;
+	//! Render flags (@see ERenderNodeFlags)
+	RenderFlagsType m_dwRndFlags;
 
 	//! Segment Id.
 	int m_nSID;
@@ -470,13 +508,13 @@ public:
 	uint32 m_nInternalFlags;
 
 	//! Max view distance settings.
-	unsigned char m_ucViewDistRatio;
+	uint8 m_ucViewDistRatio;
 
 	//! LOD settings.
-	unsigned char m_ucLodRatio;
+	uint8 m_ucLodRatio;
 
 	//! Material layers bitmask -> which material layers are active.
-	unsigned char m_nMaterialLayers;
+	uint8 m_nMaterialLayers;
 
 	//! Shadow LOD bias.
 	//! Set to SHADOW_LODBIAS_DISABLE to disable any shadow lod overrides for this rendernode.
@@ -489,6 +527,9 @@ public:
 	//! The high 24 bits store the actual ID of the object. This need not be the same as CryGUID, 
 	//! though the CryGUID could be used to generate it
 	uint32 m_nEditorSelectionID;
+private:
+	// When render node is created by the entity, pointer to the owner entity.
+	IEntity* m_pOwnerEntity = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
@@ -518,6 +559,12 @@ struct IBrush : public IRenderNode
 {
 	virtual const Matrix34& GetMatrix() const = 0;
 	virtual void            SetDrawLast(bool enable) = 0;
+	virtual void            DisablePhysicalization(bool bDisable) = 0; //!< This render node will not be physicalized
+	virtual float           GetScale() const = 0;
+
+	// Hide mask disable individual sub-objects rendering in the compound static objects
+	// Only implemented by few nodes.
+	virtual void SetSubObjectHideMask( hidemask subObjHideMask ) {};
 };
 
 struct SVegetationSpriteInfo
@@ -580,7 +627,6 @@ struct ILightSource : public IRenderNode
 	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) = 0;
 	virtual bool                     IsLightAreasVisible() = 0;
 	virtual void                     SetCastingException(IRenderNode* pNotCaster) = 0;
-	virtual void                     SetSrcEntity(IEntity* pEnt) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -1051,5 +1097,12 @@ struct IGeomCacheRenderNode : public IRenderNode
 	virtual void InitPhysicalEntity(IPhysicalEntity* pPhysicalEntity, const pe_articgeomparams& params) = 0;
 };
 #endif
+
+//! Interface to the Character Rendering
+struct ICharacterRenderNode : public IRenderNode
+{
+	virtual void SetCharacter(struct ICharacterInstance* pCharacter) = 0;
+	virtual void SetCharacterRenderOffset(const QuatTS& renderOffset) = 0;
+};
 
 #endif // IRenderNodeSTATE_H

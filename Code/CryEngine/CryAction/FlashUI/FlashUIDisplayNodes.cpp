@@ -775,13 +775,13 @@ public:
 					if (type == PHYS_FOREIGN_ID_ENTITY)
 					{
 						IEntity* pEntity = (IEntity*)rayHit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-						IEntityRenderProxy* pRenderProxy = pEntity ? (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER) : 0;
+						IEntityRender* pIEntityRender = pEntity ? pEntity->GetRenderInterface() : 0;
 
 						// Get the renderproxy, and use it to check if the material is a DynTex, and get the UIElement if so
-						if (pRenderProxy)
+						
 						{
-							IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
-							IMaterial* pMaterial = pRenderProxy->GetRenderMaterial();
+							IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
+							IMaterial* pMaterial = pIEntityRender->GetRenderMaterial();
 							SEfResTexture* texture = 0;
 							if (pMaterial && pMaterial->GetShaderItem().m_pShaderResources)
 								texture = pMaterial->GetShaderItem().m_pShaderResources->GetTexture(EFTT_DIFFUSE);

@@ -3,10 +3,11 @@
 #pragma once
 
 #include <CrySerialization/Forward.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
+#include <CryEntitySystem/IEntityAttributesProxy.h>
 
 struct IEntity;
-struct IEntityProxy;
+struct IEntityComponent;
 struct SEntitySpawnParams;
 struct IEntityScript;
 struct IScriptTable;
@@ -522,24 +523,6 @@ struct IEntityEventHandler
 	virtual void SendEvent(IEntity* entity, const char* eventName) = 0;
 };
 
-struct IEntityAttribute;
-
-DECLARE_SHARED_POINTERS(IEntityAttribute)
-
-//! Derive from this interface to expose custom entity properties in the editor using the serialization framework.
-struct IEntityAttribute
-{
-	virtual ~IEntityAttribute() {}
-
-	virtual const char*         GetName() const = 0;
-	virtual const char*         GetLabel() const = 0;
-	virtual void                Serialize(Serialization::IArchive& archive) = 0;
-	virtual IEntityAttributePtr Clone() const = 0;
-	virtual void                OnAttributeChange(IEntity* pEntity) const {}
-};
-
-typedef DynArray<IEntityAttributePtr> TEntityAttributeArray;
-
 //! Entity class defines what is this entity, what script it uses, what user proxy will be spawned with the entity, etc.
 //! IEntityClass unique identify type of the entity, Multiple entities share the same entity class.
 //! Two entities can be compared if they are of the same type by just comparing their IEntityClass pointers.
@@ -548,11 +531,11 @@ struct IEntityClass
 	//! UserProxyCreateFunc is a function pointer type,.
 	//! By calling this function EntitySystem can create user defined UserProxy class for an entity in SpawnEntity.
 	//! For example:
-	//! IEntityProxy* CreateUserProxy( IEntity *pEntity, SEntitySpawnParams &params )
+	//! IEntityComponent* CreateUserProxy( IEntity *pEntity, SEntitySpawnParams &params )
 	//! {
 	//!     return new CUserProxy( pEntity,params );.
 	//! }
-	typedef IEntityProxyPtr (* UserProxyCreateFunc)(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
+	typedef IEntityComponent* (* UserProxyCreateFunc)(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
 
 	enum EventValueType
 	{

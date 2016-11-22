@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Cry3DEngine/I3DEngine.h> // Must be included before CREOcclusionQuery.h.
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 
 namespace Schematyc
 {
@@ -21,13 +21,11 @@ struct SEntityVisible
 	{
 		if (pEntity)
 		{
-			IEntityRenderProxy* pRenderProxy = reinterpret_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-			if (pRenderProxy)
 			{
-				IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+				IRenderNode* pRenderNode = pEntity->GetRenderNode();
 				if (pRenderNode)
 				{
-					return (gEnv->pRenderer->GetFrameID() - pRenderNode->GetDrawFrame()) < 5;
+					return (gEnv->nMainFrameID - pRenderNode->GetDrawFrame()) < 5;
 				}
 			}
 		}

@@ -252,6 +252,7 @@ public:
 				if (gEnv)
 				{
 					gEnv->bIgnoreAllAsserts = true;
+					g_cvars.sys_asserts = 0;
 					if (gEnv->pLog)
 					{
 						s_bHandleExceptionInProgressLock = true;

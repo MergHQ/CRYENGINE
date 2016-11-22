@@ -597,7 +597,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 
 		if (pSecondCameraEntity)
 		{
-			IEntityCameraProxy* pSecondCameraProxy = (IEntityCameraProxy*)pSecondCameraEntity->GetProxy(ENTITY_PROXY_CAMERA);
+			IEntityCameraComponent* pSecondCameraProxy = (IEntityCameraComponent*)pSecondCameraEntity->GetProxy(ENTITY_PROXY_CAMERA);
 
 			if (pSecondCameraProxy)
 			{

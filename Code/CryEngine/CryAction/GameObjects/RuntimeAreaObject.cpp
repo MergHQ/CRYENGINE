@@ -33,14 +33,6 @@ bool CRuntimeAreaObject::ReloadExtension(IGameObject* pGameObject, const SEntity
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CRuntimeAreaObject::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CRuntimeAreaObject::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 ///////////////////////////////////////////////////////////////////////////
 void CRuntimeAreaObject::Release()
 {
@@ -128,7 +120,7 @@ void CRuntimeAreaObject::UpdateParameterValues(IEntity* const pEntity, TAudioPar
 	static float const fParamEpsilon = 0.001f;
 	static float const fMaxDensity = 256.0f;
 
-	IEntityAudioProxy* const pAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO).get());
+	IEntityAudioComponent* const pAudioProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 	if (pAudioProxy != NULL)
 	{
 		ISurfaceType* aSurfaceTypes[MMRM_MAX_SURFACE_TYPES];
@@ -184,7 +176,7 @@ void CRuntimeAreaObject::StopEntitySounds(EntityId const entityId, TAudioParamet
 	IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(entityId);
 	if (pEntity != NULL)
 	{
-		IEntityAudioProxy* const pAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO).get());
+		IEntityAudioComponent* const pAudioProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 		if (pAudioProxy != NULL)
 		{
 			for (TAudioParameterMap::const_iterator iSoundPair = paramMap.begin(), iSoundPairEnd = paramMap.end(); iSoundPair != iSoundPairEnd; ++iSoundPair)

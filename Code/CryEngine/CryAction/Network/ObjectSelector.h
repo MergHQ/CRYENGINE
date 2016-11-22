@@ -164,7 +164,7 @@ private:
 
 	void FillDrawDistance(IEntity* pEnt)
 	{
-		if (IEntityRenderProxy* pRP = (IEntityRenderProxy*)pEnt->GetProxy(ENTITY_PROXY_RENDER))
+		if (IEntityRender* pRP = pEnt->GetRenderInterface())
 			if (IRenderNode* pRN = pRP->GetRenderNode())
 				m_drawDistance = pRN->GetMaxViewDist();
 	}

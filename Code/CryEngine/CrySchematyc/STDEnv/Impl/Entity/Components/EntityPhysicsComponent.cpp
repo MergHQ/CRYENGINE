@@ -10,7 +10,7 @@
 #include <Schematyc/Entity/EntityUtils.h>
 #include <Schematyc/Entity/EntityClasses.h>
 #include <Schematyc/Types/ResourceTypes.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryPhysics/physinterface.h>
 
 namespace Schematyc
@@ -97,9 +97,6 @@ namespace Schematyc
 	void CEntityPhysicsComponent::SetPhysicalize(bool bActive)
 	{
 		IEntity& entity = EntityUtils::GetEntity(*this);
-		IEntityPhysicalProxyPtr	pPhysicProxy = crycomponent_cast<IEntityPhysicalProxyPtr>(entity.CreateProxy(ENTITY_PROXY_PHYSICS));
-		
-		CRY_ASSERT_MESSAGE(pPhysicProxy, "Could not create physics proxy");
 
 		if (bActive)
 		{
@@ -110,7 +107,7 @@ namespace Schematyc
 			params.type = (pProperties->bStatic) ? PE_STATIC : PE_RIGID;
 			params.mass = pProperties->mass;
 			params.density = pProperties->density;
-			pPhysicProxy->Physicalize(params);
+			entity.Physicalize(params);
 
 			SetEnabled(pProperties->bEnabled);
 		}

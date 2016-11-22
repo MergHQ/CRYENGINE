@@ -138,16 +138,10 @@ IEntity* CFireModePlugin_AutoAim::CalculateBestProjectileAutoAimTarget(const Vec
 			else
 			{
 				// Then  ABBB centre as backup
-				IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
-				if(pPhysProxy)
 				{
 					AABB aabb;
-					pPhysProxy->GetWorldBounds(aabb);
+					pEntity->GetPhysicsWorldBounds(aabb);
 					targetTestPos = aabb.GetCenter();
-				}
-				else
-				{
-					targetTestPos = pEntity->GetWorldPos();
 				}
 			}
 
@@ -242,11 +236,9 @@ IEntity* CFireModePlugin_AutoAim::CalculateBestProjectileAutoAimTarget(const Vec
 		Vec3 targetTestPos = pBestTarget->GetPos();
 
 		// We use aabb centre to reduce error
-		IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pBestTarget->GetProxy(ENTITY_PROXY_PHYSICS));
-		if(pPhysProxy)
 		{
 			AABB aabb;
-			pPhysProxy->GetWorldBounds(aabb);
+			pBestTarget->GetPhysicsWorldBounds(aabb);
 			targetTestPos = aabb.GetCenter();
 		}
 

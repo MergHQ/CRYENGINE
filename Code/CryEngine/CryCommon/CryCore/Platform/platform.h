@@ -228,8 +228,13 @@ static inline void __dmb()
 #endif
 
 // Define BIT macro for use in enums and bit masks.
-#define BIT(x)   (1 << (x))
+#if !defined(SWIG)
+#define BIT(x)   (1u << (x))
 #define BIT64(x) (1ull << (x))
+#else
+#define BIT(x)   (1 << (x))
+#define BIT64(x)   (1 << (x))
+#endif
 
 //! ILINE always maps to CRY_FORCE_INLINE, which is the strongest possible inline preference.
 //! Note: Only use when shown that the end-result is faster when ILINE macro is used instead of inline.

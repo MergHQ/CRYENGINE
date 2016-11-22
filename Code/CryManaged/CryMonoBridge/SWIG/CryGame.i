@@ -8,10 +8,10 @@
 #include <CryGame/IGameVolumes.h>
 #include <CryGame/IGameStatistics.h>
 #include <CryGame/IGameTokens.h>
-#include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 %}
 
-%import "../../../../CryEngine/CryCommon/CryEntitySystem/IComponent.h"
+%import "../../../../CryEngine/CryCommon/CryEntitySystem/IEntityComponent.h"
 
 %include "../../../../CryEngine/CryCommon/CryGame/IGameRef.h"
 %ignore SNodeLocator::SNodeLocator;

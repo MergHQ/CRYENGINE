@@ -75,7 +75,7 @@ void CAIFlyingVehicle::SetObserver(bool observer)
 //	{
 //		if (IEntity *entity = GetEntity())
 //		{
-//			if (IEntityProxy *proxy = entity->GetProxy(ENTITY_PROXY_SCRIPT))
+//			if (IEntityComponent *proxy = entity->GetProxy(ENTITY_PROXY_SCRIPT))
 //			{
 //				SEntitySpawnParams params;
 //				proxy->Reload(entity, params);

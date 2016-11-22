@@ -328,12 +328,16 @@ void CVehicleMovementTank::Update(const float deltaTime)
 	AudioControlId id = m_audioControlIDs[eSID_TankTurnTurret];
 	if (m_bOnTurnTurret && !m_bTurretTurning)
 	{
-		m_pIEntityAudioProxy->ExecuteTrigger(id);
+		auto pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->ExecuteTrigger(id);
 		m_bTurretTurning = true;
 	}
 	else if (!m_bOnTurnTurret && m_bTurretTurning)
 	{
-		m_pIEntityAudioProxy->StopTrigger(id);
+		auto pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->StopTrigger(id);
 		m_bTurretTurning = false;
 	}
 
@@ -342,7 +346,10 @@ void CVehicleMovementTank::Update(const float deltaTime)
 		Interpolate(m_lastTurretTurnSpeed, m_turretTurnSpeed, 0.5f, gEnv->pTimer->GetFrameTime());
 		m_turretTurnSpeed = m_lastTurretTurnSpeed;
 		const float maxSpeedForSound = 2.0f;
-		m_pIEntityAudioProxy->SetRtpcValue(m_turretTurnRtpcId, min(m_turretTurnSpeed / maxSpeedForSound, 1.0f));
+
+		auto pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_turretTurnRtpcId, min(m_turretTurnSpeed / maxSpeedForSound, 1.0f));
 	}
 
 	m_bOnTurnTurret = false;

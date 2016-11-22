@@ -139,6 +139,8 @@ public:
 
 	void BeginSkinningTransformationsComputation(SSkinningData * pSkinningData);
 
+	void PerFrameUpdate();
+
 private:
 	// Functions that are called from Character Instance Processing
 	void SetupThroughParent(const CCharInstance * pParent);

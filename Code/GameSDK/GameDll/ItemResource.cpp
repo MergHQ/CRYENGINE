@@ -458,7 +458,7 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const ItemString& mate
 	else if (useParentMaterial && pParentEntity)
 	{
 		ICharacterInstance* pParentCharacter = pParentEntity->GetCharacter(slot);
-		IEntityRenderProxy* pParentRenderProxy = static_cast<IEntityRenderProxy*>(pParentEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pParentRenderProxy = (pParentEntity->GetRenderInterface());
 		if (pParentCharacter)
 			pOverrideMaterial = pParentCharacter->GetIMaterial();
 		else if (pParentRenderProxy)
@@ -467,12 +467,12 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const ItemString& mate
 	if (pOverrideMaterial)
 	{
 		ICharacterInstance* pCharacter = GetEntity()->GetCharacter(slot);
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pIEntityRender = (GetEntity()->GetRenderInterface());
 		OverrideAttachmentMaterial(pOverrideMaterial, this, slot);
 		if (pCharacter)
 			pCharacter->SetIMaterial_Instance(pOverrideMaterial);
-		else if (pRenderProxy)
-			pRenderProxy->SetSlotMaterial(slot, pOverrideMaterial);
+		else 
+			pIEntityRender->SetSlotMaterial(slot, pOverrideMaterial);
 	}
 
 	if(slot == eIGS_FirstPerson && IsSelected())
@@ -746,13 +746,13 @@ const Matrix33 &CItem::GetSlotHelperRotation(int slot, const char *helper, bool 
 //    return;
 //
 //	bool synchSound = false;
-//	IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
-//	if (pIEntityAudioProxy)
+//	IEntityAudioComponent *pIEntityAudioComponent = GetAudioProxy(false);
+//	if (pIEntityAudioComponent)
 //	{
 //		if(synchSound)
-//			pIEntityAudioProxy->StopSound(id, ESoundStopMode_OnSyncPoint);
+//			pIEntityAudioComponent->StopSound(id, ESoundStopMode_OnSyncPoint);
 //		else
-//			pIEntityAudioProxy->StopSound(id);
+//			pIEntityAudioComponent->StopSound(id);
 //	}
 //}
 
@@ -760,52 +760,38 @@ const Matrix33 &CItem::GetSlotHelperRotation(int slot, const char *helper, bool 
 void CItem::Quiet()
 {
 	REINST("needs verification!");
-	/*IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
-	if (pIEntityAudioProxy)
+	/*IEntityAudioComponent *pIEntityAudioComponent = GetAudioProxy(false);
+	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioProxy->StopAllSounds();
+		pIEntityAudioComponent->StopAllSounds();
 	}*/
 }
 
 //------------------------------------------------------------------------
 //ISound *CItem::GetISound(tSoundID id)
 //{
-//	IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
-//	if (pIEntityAudioProxy)
-//		return pIEntityAudioProxy->GetSound(id);
+//	IEntityAudioComponent *pIEntityAudioComponent = GetAudioProxy(false);
+//	if (pIEntityAudioComponent)
+//		return pIEntityAudioComponent->GetSound(id);
 //
 //	return 0;
 //}
 
 //------------------------------------------------------------------------
-IEntityAudioProxy *CItem::GetAudioProxy(bool create)
+IEntityAudioComponent *CItem::GetAudioProxy(bool create)
 {
-	IEntityAudioProxy *pIEntityAudioProxy = (IEntityAudioProxy *)GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+	IEntityAudioComponent *pIEntityAudioComponent = GetEntity()->GetComponent<IEntityAudioComponent>();
 
-	if (!pIEntityAudioProxy && create)
-		pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO)).get();
+	if (!pIEntityAudioComponent && create)
+		pIEntityAudioComponent = GetEntity()->CreateComponent<IEntityAudioComponent>();
 
-	return pIEntityAudioProxy;
+	return pIEntityAudioComponent;
 }
 
 //------------------------------------------------------------------------
-IEntityRenderProxy *CItem::GetRenderProxy(bool create)
+IEntityRender *CItem::GetRenderProxy(bool create)
 {
-	IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy *)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-	if (!pRenderProxy && create)
-		pRenderProxy = crycomponent_cast<IEntityRenderProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_RENDER)).get();
-
-	return pRenderProxy;
-}
-
-//------------------------------------------------------------------------
-IEntityPhysicalProxy *CItem::GetPhysicalProxy(bool create)
-{
-	IEntityPhysicalProxy *pPhysicalProxy = (IEntityPhysicalProxy *)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-	if (!pPhysicalProxy && create)
-		pPhysicalProxy = crycomponent_cast<IEntityPhysicalProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_PHYSICS)).get();
-
-	return pPhysicalProxy;
+	return GetEntity()->GetRenderInterface();
 }
 
 //------------------------------------------------------------------------

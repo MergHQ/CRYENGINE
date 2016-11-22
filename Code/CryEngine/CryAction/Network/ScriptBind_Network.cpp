@@ -49,23 +49,23 @@ CScriptBind_Network::~CScriptBind_Network()
 //------------------------------------------------------------------------
 void CScriptBind_Network::RegisterGlobals()
 {
-	RegisterGlobal("UNRELIABLE_ORDERED", eNRT_UnreliableOrdered);
-	RegisterGlobal("RELIABLE_ORDERED", eNRT_ReliableOrdered);
-	RegisterGlobal("RELIABLE_UNORDERED", eNRT_ReliableUnordered);
+	gEnv->pScriptSystem->SetGlobalValue("UNRELIABLE_ORDERED", eNRT_UnreliableOrdered);
+	gEnv->pScriptSystem->SetGlobalValue("RELIABLE_ORDERED", eNRT_ReliableOrdered);
+	gEnv->pScriptSystem->SetGlobalValue("RELIABLE_UNORDERED", eNRT_ReliableUnordered);
 
-	RegisterGlobal("NO_ATTACH", eRAT_NoAttach);
-	RegisterGlobal("PRE_ATTACH", eRAT_PreAttach);
-	RegisterGlobal("POST_ATTACH", eRAT_PostAttach);
+	gEnv->pScriptSystem->SetGlobalValue("NO_ATTACH", eRAT_NoAttach);
+	gEnv->pScriptSystem->SetGlobalValue("PRE_ATTACH", eRAT_PreAttach);
+	gEnv->pScriptSystem->SetGlobalValue("POST_ATTACH", eRAT_PostAttach);
 
-	RegisterGlobal("BOOL", eSST_Bool);
-	RegisterGlobal("FLOAT", eSST_Float);
-	RegisterGlobal("INT8", eSST_Int8);
-	RegisterGlobal("INT16", eSST_Int16);
-	RegisterGlobal("INT32", eSST_Int32);
-	RegisterGlobal("STRING", eSST_String);
-	RegisterGlobal("STRINGTABLE", eSST_StringTable);
-	RegisterGlobal("ENTITYID", eSST_EntityId);
-	RegisterGlobal("VEC3", eSST_Vec3);
+	gEnv->pScriptSystem->SetGlobalValue("BOOL", eSST_Bool);
+	gEnv->pScriptSystem->SetGlobalValue("FLOAT", eSST_Float);
+	gEnv->pScriptSystem->SetGlobalValue("INT8", eSST_Int8);
+	gEnv->pScriptSystem->SetGlobalValue("INT16", eSST_Int16);
+	gEnv->pScriptSystem->SetGlobalValue("INT32", eSST_Int32);
+	gEnv->pScriptSystem->SetGlobalValue("STRING", eSST_String);
+	gEnv->pScriptSystem->SetGlobalValue("STRINGTABLE", eSST_StringTable);
+	gEnv->pScriptSystem->SetGlobalValue("ENTITYID", eSST_EntityId);
+	gEnv->pScriptSystem->SetGlobalValue("VEC3", eSST_Vec3);
 }
 
 //------------------------------------------------------------------------

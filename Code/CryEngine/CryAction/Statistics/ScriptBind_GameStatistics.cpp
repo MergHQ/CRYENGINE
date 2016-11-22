@@ -46,22 +46,22 @@ void CScriptBind_GameStatistics::RegisterGlobals()
 {
 	size_t numEventTypes = m_pGS->GetEventCount();
 	for (size_t i = 0; i != numEventTypes; ++i)
-		RegisterGlobal(m_pGS->GetEventDesc(i)->scriptName, static_cast<int>(i));
+		gEnv->pScriptSystem->SetGlobalValue(m_pGS->GetEventDesc(i)->scriptName, static_cast<int>(i));
 
 	size_t numStateTypes = m_pGS->GetStateCount();
 	for (size_t i = 0; i != numStateTypes; ++i)
-		RegisterGlobal(m_pGS->GetStateDesc(i)->scriptName, static_cast<int>(i));
+		gEnv->pScriptSystem->SetGlobalValue(m_pGS->GetStateDesc(i)->scriptName, static_cast<int>(i));
 
 	size_t numScopeTypes = m_pGS->GetScopeCount();
 	for (size_t i = 0; i != numScopeTypes; ++i)
-		RegisterGlobal(m_pGS->GetScopeDesc(i)->scriptName, static_cast<int>(i));
+		gEnv->pScriptSystem->SetGlobalValue(m_pGS->GetScopeDesc(i)->scriptName, static_cast<int>(i));
 
 	size_t numElemTypes = m_pGS->GetElementCount();
 	for (size_t i = 0; i != numElemTypes; ++i)
 	{
 		const SGameElementDesc* desc = m_pGS->GetElementDesc(i);
-		RegisterGlobal(desc->scriptName, static_cast<int>(i));
-		RegisterGlobal(desc->locatorName, static_cast<int>(desc->locatorID));
+		gEnv->pScriptSystem->SetGlobalValue(desc->scriptName, static_cast<int>(i));
+		gEnv->pScriptSystem->SetGlobalValue(desc->locatorName, static_cast<int>(desc->locatorID));
 	}
 }
 

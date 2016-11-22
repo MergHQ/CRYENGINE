@@ -870,7 +870,6 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 		return; // false;
 	pObj->m_pRenderNode = this;
 	pObj->m_DissolveRef = rParams.nDissolveRef;
-	pObj->m_fSort = rParams.fCustomSortOffset;
 	pObj->m_ObjFlags |= FOB_TRANS_MASK | rParams.dwFObjFlags;
 	pObj->m_fAlpha = rParams.fAlpha;
 	pObj->m_II.m_AmbColor = rParams.AmbientColor;
@@ -881,7 +880,6 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Set render quality
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	pObj->m_nRenderQuality = (uint16)(rParams.fRenderQuality * 65535.0f);
 	pObj->m_fDistance = rParams.fDistance;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////

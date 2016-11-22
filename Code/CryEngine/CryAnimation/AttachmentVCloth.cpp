@@ -695,7 +695,6 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		return;
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	pObj->m_fSort	= RendParams.fCustomSortOffset;
 	uint64 uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player

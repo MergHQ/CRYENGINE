@@ -6,7 +6,7 @@
 
 namespace ATLUtils
 {
-void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAudioProxyPtr pIEntityAudioProxy)
+void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAudioComponent* pIEntityAudioComponent)
 {
 	assert(gEnv && gEnv->pAudioSystem);
 	IAudioSystem* pAudioSystem = gEnv->pAudioSystem;
@@ -20,7 +20,7 @@ void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAu
 		{
 			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "CommunicationHandler - You are trying to switch the state of the audio switch '%s' to the value '%s'. This switch state doesn't exist.", switchIdName, switchValue);
 		}
-		pIEntityAudioProxy->SetSwitchState(switchControlId, switchStateId);
+		pIEntityAudioComponent->SetSwitchState(switchControlId, switchStateId);
 	}
 }
 }
@@ -52,11 +52,11 @@ void CommunicationHandler::Reset()
 {
 	// Notify sound/voice listeners that the sounds have stopped
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy;
+		IEntityAudioComponent* pIEntityAudioComponent;
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 		if (pEntity)
 		{
-			pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+			pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 		}
 
 		PlayingSounds::iterator end = m_playingSounds.end();
@@ -71,9 +71,9 @@ void CommunicationHandler::Reset()
 				playingSound.listener->OnCommunicationHandlerEvent(cancelEvent, playingSound.playID, m_entityId);
 			}
 
-			if (pIEntityAudioProxy)
+			if (pIEntityAudioComponent)
 			{
-				pIEntityAudioProxy->ExecuteTrigger(playingSound.correspondingStopControlId);
+				pIEntityAudioComponent->ExecuteTrigger(playingSound.correspondingStopControlId);
 			}
 		}
 
@@ -104,8 +104,8 @@ void CommunicationHandler::Reset()
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-		if (pIEntityAudioProxy)
+		IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+		if (pIEntityAudioComponent)
 		{
 			const ICommunicationManager::WWiseConfiguration& wiseConfigutation = gEnv->pAISystem->GetCommunicationManager()->GetWiseConfiguration();
 
@@ -114,7 +114,7 @@ void CommunicationHandler::Reset()
 				const char* voiceLibraryName = m_proxy.GetVoiceLibraryName(useTestVoicePack);
 				if (voiceLibraryName && voiceLibraryName[0])
 				{
-					ATLUtils::SetSwitchState(wiseConfigutation.switchNameForCharacterVoice.c_str(), voiceLibraryName, pIEntityAudioProxy);
+					ATLUtils::SetSwitchState(wiseConfigutation.switchNameForCharacterVoice.c_str(), voiceLibraryName, pIEntityAudioComponent);
 				}
 			}
 
@@ -128,7 +128,7 @@ void CommunicationHandler::Reset()
 						characterType.Format("%f", pAIProxy->GetFmodCharacterTypeParam());
 						if (!characterType.empty())
 						{
-							ATLUtils::SetSwitchState(wiseConfigutation.switchNameForCharacterType.c_str(), characterType.c_str(), pIEntityAudioProxy);
+							ATLUtils::SetSwitchState(wiseConfigutation.switchNameForCharacterType.c_str(), characterType.c_str(), pIEntityAudioComponent);
 						}
 					}
 				}
@@ -186,16 +186,16 @@ void CommunicationHandler::StopSound(const SCommunicationSound& soundToStop)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-		if (pIEntityAudioProxy)
+		IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+		if (pIEntityAudioComponent)
 		{
 			if (soundToStop.stopSoundControlId != INVALID_AUDIO_CONTROL_ID)
 			{
-				pIEntityAudioProxy->ExecuteTrigger(soundToStop.stopSoundControlId);
+				pIEntityAudioComponent->ExecuteTrigger(soundToStop.stopSoundControlId);
 			}
 			else
 			{
-				pIEntityAudioProxy->StopTrigger(soundToStop.playSoundControlId);
+				pIEntityAudioComponent->StopTrigger(soundToStop.playSoundControlId);
 			}
 
 			PlayingSounds::iterator it = m_playingSounds.find(soundToStop.playSoundControlId);
@@ -303,8 +303,8 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-		if (pIEntityAudioProxy)
+		IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+		if (pIEntityAudioComponent)
 		{
 			const ICommunicationManager::WWiseConfiguration& wiseConfigutation = gEnv->pAISystem->GetCommunicationManager()->GetWiseConfiguration();
 
@@ -333,7 +333,7 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 				}
 
 				SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_entityId)), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-				pIEntityAudioProxy->ExecuteTrigger(playCommunicationControlId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+				pIEntityAudioComponent->ExecuteTrigger(playCommunicationControlId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
 
 				SCommunicationSound soundInfo;
 				soundInfo.playSoundControlId = playCommunicationControlId;

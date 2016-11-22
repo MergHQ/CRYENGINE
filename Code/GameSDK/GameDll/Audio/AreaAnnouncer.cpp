@@ -82,7 +82,7 @@ void CAreaAnnouncer::Init()
 			if(pEntity->GetClass() == pTargetClass)
 			{
 				//check entityName
-				IEntityAreaProxy *pArea = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+				IEntityAreaComponent *pArea = (IEntityAreaComponent*)pEntity->GetProxy(ENTITY_PROXY_AREA);
 				if (pArea)
 				{
 					LoadAnnouncementArea(pEntity, pEntity->GetName());
@@ -244,7 +244,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 						IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_areaList[areaIndex].m_areaProxyId);
 						if(pEntity)
 						{
-							IEntityAreaProxy *pArea = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+							IEntityAreaComponent *pArea = (IEntityAreaComponent*)pEntity->GetProxy(ENTITY_PROXY_AREA);
 							if(pArea && pArea->CalcPointWithin(INVALID_ENTITYID, actorData.position, true))
 							{
 								actorCount[areaIndex]++;

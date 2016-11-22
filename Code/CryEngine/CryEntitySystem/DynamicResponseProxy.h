@@ -9,29 +9,24 @@
 // Description:
 //    Implements dynamic response proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-class CDynamicResponseProxy final : public IEntityDynamicResponseProxy
+class CEntityComponentDynamicResponse final : public IEntityDynamicResponseComponent
 {
-public:
-	CDynamicResponseProxy();
-	virtual ~CDynamicResponseProxy();
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentDynamicResponse,IEntityDynamicResponseComponent,"CEntityComponentDynamicResponse",0x891F8E50BAF84E95,0xB5F94F7BC07EB663);
 
-	//IComponent override
+public:
+	//IEntityComponent.h override
 	virtual void Initialize(SComponentInitializer const& init) override;
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void         ProcessEvent(SEntityEvent& event) override;
-	virtual EEntityProxy GetType() override                                          { return ENTITY_PROXY_DYNAMICRESPONSE; }
-	virtual void         Release() override;
-	virtual void         Done() override                                             {}
-	virtual void         Update(SEntityUpdateContext& ctx) override;
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
+	virtual uint64       GetEventMask() const final;;
+	virtual EEntityProxy GetProxyType() const override                                    { return ENTITY_PROXY_DYNAMICRESPONSE; }
+	virtual void         Release() override { delete this; };
 	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
-	virtual bool         NeedSerialize() override;
-	virtual void         Serialize(TSerialize ser) override;
-	virtual bool         GetSignature(TSerialize signature) override;
+	virtual bool         NeedGameSerialize() override;
+	virtual void         GameSerialize(TSerialize ser) override;
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
@@ -39,7 +34,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityDynamicResponseProxy interface implementation.
+	// IEntityDynamicResponseComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const override;
 	virtual DRS::IResponseActor*      GetResponseActor() const override;

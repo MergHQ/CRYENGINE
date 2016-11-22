@@ -25,9 +25,12 @@ struct IShader;
 struct IShaderPublicParams;
 struct IMaterial;
 struct IMaterialManager;
+struct IRenderShaderResources;
 class CCamera;
 struct CMaterialCGF;
 struct CRenderChunk;
+struct SEfTexModificator;
+struct SInputShaderResources;
 
 #include <CryRenderer/Tarray.h>
 

@@ -1699,9 +1699,9 @@ void CAIProxy::GetWorldBoundingRect(Vec3& FL, Vec3& FR, Vec3& BL, Vec3& BR, floa
 
 	const Vec3 sideDir(dir.y, -dir.x, 0.0f);
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)m_pGameObject->GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
+	IEntityRender* pIEntityRender = m_pGameObject->GetEntity()->GetRenderInterface();
 	AABB bounds;
-	pRenderProxy->GetLocalBounds(bounds);
+	pIEntityRender->GetLocalBounds(bounds);
 
 	bounds.max.x += extra;
 	bounds.max.y += extra;

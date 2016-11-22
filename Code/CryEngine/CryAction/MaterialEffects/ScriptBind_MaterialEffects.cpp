@@ -37,7 +37,7 @@ CScriptBind_MaterialEffects::~CScriptBind_MaterialEffects()
 //------------------------------------------------------------------------
 void CScriptBind_MaterialEffects::RegisterGlobals()
 {
-	RegisterGlobal("MFX_INVALID_EFFECTID", InvalidEffectId);
+	gEnv->pScriptSystem->SetGlobalValue("MFX_INVALID_EFFECTID", InvalidEffectId);
 }
 
 //------------------------------------------------------------------------

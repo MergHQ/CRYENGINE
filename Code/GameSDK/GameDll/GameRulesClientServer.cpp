@@ -727,10 +727,9 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 					continue;
 
 				// get bounding box
-				if (IEntityPhysicalProxy* pPhysProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 				{
 					AABB aabb;
-					pPhysProxy->GetWorldBounds(aabb);
+					pEntity->GetPhysicsWorldBounds(aabb);
 
 					// don't remove objects which are larger than a predefined minimum volume
 					if (aabb.GetVolume() > minVolume)

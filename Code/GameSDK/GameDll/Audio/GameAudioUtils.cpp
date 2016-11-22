@@ -123,15 +123,15 @@ void CGameAudioUtils::UnregisterSignal(const CAudioSignalPlayer& signalPlayer)
 
 
 //---------------------------------------
-IEntityAudioProxy* CGameAudioUtils::GetEntityAudioProxy( EntityId entityID )
+IEntityAudioComponent* CGameAudioUtils::GetEntityAudioProxy( EntityId entityID )
 {
-	IEntityAudioProxy* pProxy = NULL;
+	IEntityAudioComponent* pProxy = NULL;
 	if (entityID != 0)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityID);
 		if (pEntity)
 		{
-			pProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO));
+			pProxy = pEntity->GetComponent<IEntityAudioComponent>();
 		}
 	}
 
@@ -142,7 +142,7 @@ IEntityAudioProxy* CGameAudioUtils::GetEntityAudioProxy( EntityId entityID )
 //---------------------------------------
 //ISound* CGameAudioUtils::GetSoundFromProxy(tSoundID soundID, EntityId entityID)
 //{
-//	IEntityAudioProxy* pProxy = GetEntityAudioProxy( entityID );
+//	IEntityAudioComponent* pProxy = GetEntityAudioProxy( entityID );
 //	if (pProxy)
 //	{
 //		return pProxy->GetSound(soundID);

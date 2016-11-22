@@ -614,7 +614,7 @@ public:
 			IEntity* pArea = pEntitySystem->FindEntityByName(area);
 			if (pArea)
 			{
-				IEntityAreaProxy* pAreaProxy = (IEntityAreaProxy*)pArea->GetProxy(ENTITY_PROXY_AREA);
+				IEntityAreaComponent* pAreaProxy = (IEntityAreaComponent*)pArea->GetProxy(ENTITY_PROXY_AREA);
 				if (pAreaProxy)
 				{
 					Vec3 worldPos(pArea->GetWorldPos());

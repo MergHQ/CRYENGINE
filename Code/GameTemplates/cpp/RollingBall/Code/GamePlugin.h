@@ -33,9 +33,9 @@ public:
 	template<class T>
 	struct CObjectCreator : public IGameObjectExtensionCreatorBase
 	{
-		IGameObjectExtensionPtr Create()
+		IGameObjectExtension* Create(IEntity* pEntity)
 		{
-			return ComponentCreate_DeleteWithRelease<T>();
+			return pEntity->CreateComponentClass<T>();
 		}
 
 		void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)

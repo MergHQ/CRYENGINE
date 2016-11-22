@@ -22,10 +22,7 @@ CEntityObject::~CEntityObject()
 
 bool CEntityObject::Init(IEntity* pEntity, bool bIsPreview)
 {
-	if (!pEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES))
-	{
-		pEntity->CreateProxy(ENTITY_PROXY_ATTRIBUTES);
-	}
+	pEntity->GetOrCreateComponent<IEntityAttributesComponent>();
 
 	m_pEntity = pEntity;
 	m_bIsPreview = bIsPreview;
@@ -143,7 +140,7 @@ CEntityObjectAttributePtr CEntityObject::GetEntityObjectAttribute()
 	SCHEMATYC_CORE_ASSERT(m_pEntity);
 	if (m_pEntity)
 	{
-		IEntityAttributesProxy* pAttributesProxy = static_cast<IEntityAttributesProxy*>(m_pEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES));
+		IEntityAttributesComponent* pAttributesProxy = static_cast<IEntityAttributesComponent*>(m_pEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES));
 		if (pAttributesProxy)
 		{
 			return std::static_pointer_cast<CEntityObjectAttribute>(EntityAttributeUtils::FindAttribute(pAttributesProxy->GetAttributes(), CEntityObjectAttribute::ms_szAttributeName));

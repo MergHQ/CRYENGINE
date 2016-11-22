@@ -147,8 +147,7 @@ int CScriptBind_Boids::CreateFlock(IFunctionHandler* pH, SmartScriptTable entity
 
 	//////////////////////////////////////////////////////////////////////////
 	// Creates a boids proxy for this entity, and attach flock to it.
-	CBoidsProxyPtr pBoidsProxy = ComponentCreateAndRegister_DeleteWithRelease<CBoidsProxy>(IComponent::SComponentInitializer(pEntity), true);
-	pEntity->SetProxy(ENTITY_PROXY_BOIDS, pBoidsProxy);
+	auto pBoidsProxy = pEntity->GetOrCreateComponent<CBoidsProxy>();
 
 	SBoidContext bc;
 	pFlock->GetBoidSettings(bc);

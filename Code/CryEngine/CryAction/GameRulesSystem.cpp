@@ -225,21 +225,21 @@ CGameRulesSystem::SGameRulesDef* CGameRulesSystem::GetGameRulesDef(const char* n
 }
 
 //------------------------------------------------------------------------
-IEntityProxyPtr CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+IEntityComponent* CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 {
 	CGameRulesSystem* pThis = static_cast<CGameRulesSystem*>(pUserData);
 	CRY_ASSERT(pThis);
 	TGameRulesMap::iterator it = pThis->m_GameRules.find(params.pClass->GetName());
 	CRY_ASSERT(it != pThis->m_GameRules.end());
 
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
+	auto pGameObject = pEntity->CreateComponentClass<CGameObject>();
 
 	if (!it->second.extension.empty())
 	{
 		if (!pGameObject->ActivateExtension(it->second.extension.c_str()))
 		{
-			pEntity->RegisterComponent(pGameObject, false);
-			pGameObject.reset();
+			pEntity->RemoveComponent(pGameObject);
+			return nullptr;
 		}
 	}
 
