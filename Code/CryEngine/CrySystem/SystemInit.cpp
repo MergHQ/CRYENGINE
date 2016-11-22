@@ -498,6 +498,11 @@ static void OnSysSpecChange(ICVar* pVar)
 	if (no_recursive)
 		return;
 	no_recursive = true;
+
+	// finish any outstanding rendering tasks
+	if (gEnv->pRenderer)
+		gEnv->pRenderer->FlushRTCommands(true, true, true);
+	
 	// Called when sys_spec (client config spec) variable changes.
 	int spec = pVar->GetIVal();
 
