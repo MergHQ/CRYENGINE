@@ -76,11 +76,6 @@ CIKTorsoAim::CIKTorsoAim()
 {
 	Init();
 };
-
-CIKTorsoAim::~CIKTorsoAim()
-{
-}
-
 //
 
 void CIKTorsoAim::Init()

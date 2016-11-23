@@ -1,59 +1,25 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 
+#include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
+
+#include <CrySerialization/Color.h>
+#include <CrySerialization/STL.h>
+#include <CrySerialization/Decorators/Resources.h>
 
 ////////////////////////////////////////////////////////
 // Sample entity for creating a light source
 ////////////////////////////////////////////////////////
-class CDefaultLightEntity : public CNativeEntityBase
+class CDefaultLightEntity final
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
 {
-	// Indices of the properties, registered in the Register function
-	enum EProperties
-	{
-		eProperty_Active = 0,
-		eProperty_Radius,
-		eProperty_AttenuationBulbSize,
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultLightEntity, "LightEntity", 0x61BFE88AAB1C4DFB, 0xBBD263D328C3D037);
 
-		ePropertyGroup_ColorBegin,
-		eProperty_DiffuseColor,
-		eProperty_DiffuseMultiplier,
-		ePropertyGroup_ColorEnd,
-
-		ePropertyGroup_OptionsBegin,
-		eProperty_IgnoreVisAreas,
-		eProperty_AffectThisAreaOnly,
-		eProperty_Ambient,
-		eProperty_FakeLight,
-		eProperty_AffectVolumetricFog,
-		eProperty_AffectVolumetricFogOnly,
-		eProperty_FogRadialLobe,
-		ePropertyGroup_OptionsEnd,
-
-		ePropertyGroup_ShadowsBegin,
-		eProperty_CastShadows,
-		ePropertyGroup_ShadowsEnd,
-
-		ePropertyGroup_AnimationBegin,
-		eProperty_Style,
-		eProperty_AnimationSpeed,
-		eProperty_AnimationPhase,
-		ePropertyGroup_AnimationEnd,
-
-		ePropertyGroup_ProjectionBegin,
-		eProperty_ProjectionTexture,
-		eProperty_ProjectionFieldOfView,
-		eProperty_ProjectionNearPlane,
-		ePropertyGroup_ProjectionEnd,
-
-		ePropertyGroup_FlaresBegin,
-		eProperty_FlarePath,
-		eProperty_FlareFieldOfView,
-		ePropertyGroup_FlaresEnd,
-
-		eNumProperties
-	};
+	CDefaultLightEntity();
+	virtual ~CDefaultLightEntity() {}
 
 	enum EFlowgraphInputPorts
 	{
@@ -68,12 +34,99 @@ class CDefaultLightEntity : public CNativeEntityBase
 	};
 
 public:
-	CDefaultLightEntity();
-	virtual ~CDefaultLightEntity() {}
+	enum ECastShadowsSpec
+	{
+		eCastShadowsSpec_No = 0,
+		eCastShadowsSpec_Low,
+		eCastShadowsSpec_Medium,
+		eCastShadowsSpec_High,
+		eCastShadowsSpec_VeryHigh
+	};
 
-	// CNativeEntityBase
+public:
+	// CDesignerEntityComponent
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+
 	virtual void OnResetState() override;
-	// ~CNativeEntityBase
+	// ~CDesignerEntityComponent
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "Light Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bActive, "Active", "Active");
+		archive(m_light.m_fRadius, "Radius", "Radius");
+		archive(m_light.m_fAttenuationBulbSize, "AttenuationBulbSize", "AttenuationBulbSize");
+
+		if (archive.openBlock("Color", "Color"))
+		{
+			archive(m_diffuseColor, "DiffuseColor", "DiffuseColor");
+			archive(m_diffuseMultiplier, "DiffuseMultiplier", "DiffuseMultiplier");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Options", "Options"))
+		{
+			archive(m_bIgnoreVisAreas, "IgnoreVisAreas", "IgnoreVisAreas");
+			archive(m_bAffectsThisAreaOnly, "AffectsThisAreaOnly", "AffectsThisAreaOnly");
+			archive(m_bAmbient, "Ambient", "Ambient");
+			archive(m_bFake, "FakeLight", "FakeLight");
+			archive(m_bAffectVolumetricFog, "AffectVolumetricFog", "AffectVolumetricFog");
+			archive(m_bAffectVolumetricFogOnly, "AffectVolumetricFogOnly", "AffectVolumetricFogOnly");
+			archive(m_light.m_fFogRadialLobe, "FogRadialLobe", "FogRadialLobe");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Shadows", "Shadows"))
+		{
+			archive(m_castShadowSpec, "CastShadows", "CastShadows");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Animation", "Animation"))
+		{
+			archive(m_light.m_nLightStyle, "Style", "Style");
+			archive(m_animSpeed, "Speed", "Speed");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Projector", "Projector"))
+		{
+			archive(Serialization::TextureFilename(m_projectorTexturePath), "ProjectionTexture", "ProjectionTexture");
+			archive(m_light.m_fLightFrustumAngle, "ProjectionFieldOfView", "ProjectionFieldOfView");
+			archive(m_light.m_fProjectorNearPlane, "ProjectionNearPlane", "ProjectionNearPlane");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("Flare", "Flare"))
+		{
+			archive(Serialization::TextureFilename(m_flareTexturePath), "FlareTextures", "FlareTextures");
+			archive(m_flareFieldOfView, "FlareFieldOfView", "FlareFieldOfView");
+
+			archive.closeBlock();
+		}
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
+
+	void SetActive(bool bActive)
+	{
+		if (bActive == bActive)
+			return;
+
+		m_bActive = bActive;
+		OnResetState();
+	}
 
 public:
 	static void OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
@@ -86,6 +139,24 @@ protected:
 	// Light parameters, updated in the OnResetState function
 	CDLight m_light;
 
-	// Additional active boolean coming from Flowgraph
-	bool m_bActive;
+	bool m_bActive = true;
+
+	bool m_bIgnoreVisAreas = false;
+	bool m_bAffectsThisAreaOnly = true;
+	bool m_bAmbient = false;
+	bool m_bFake = false;
+	bool m_bAffectVolumetricFog = true;
+	bool m_bAffectVolumetricFogOnly = false;
+
+	ECastShadowsSpec m_castShadowSpec = eCastShadowsSpec_No;
+
+	float m_animSpeed = 1.f;
+
+	ColorF m_diffuseColor = ColorF(1, 1, 1, 1);
+	float m_diffuseMultiplier = 1.f;
+
+	string m_projectorTexturePath;
+
+	string m_flareTexturePath;
+	float m_flareFieldOfView = 360.f;
 };

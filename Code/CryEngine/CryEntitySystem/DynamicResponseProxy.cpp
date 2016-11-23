@@ -21,9 +21,9 @@ CEntityComponentDynamicResponse::~CEntityComponentDynamicResponse()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentDynamicResponse::Initialize(SComponentInitializer const& init)
+void CEntityComponentDynamicResponse::Initialize()
 {
-	const char* szEntityName = init.m_pEntity->GetName();
+	const char* szEntityName = m_pEntity->GetName();
 	m_pResponseActor = gEnv->pDynamicResponseSystem->GetResponseActor(szEntityName);
 	if (m_pResponseActor)
 	{
@@ -31,7 +31,7 @@ void CEntityComponentDynamicResponse::Initialize(SComponentInitializer const& in
 	}
 	else
 	{
-		m_pResponseActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szEntityName, init.m_pEntity->GetId());
+		m_pResponseActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szEntityName, m_pEntity->GetId());
 	}
 	SET_DRS_USER_SCOPED("DrsProxy Initialize");
 	m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szEntityName));

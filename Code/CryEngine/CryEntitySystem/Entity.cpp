@@ -38,7 +38,6 @@
 #include "GeomCacheAttachmentManager.h"
 #include "CharacterBoneAttachmentManager.h"
 #include <CryString/StringUtils.h>
-#include "EntityAttributesProxy.h"
 #include "ClipVolumeProxy.h"
 #include "DynamicResponseProxy.h"
 #include <CryExtension/CryCreateClassInstance.h>
@@ -132,12 +131,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 			auto pScriptProxy = CreateComponent<IEntityScriptComponent>();
 			pScriptProxy->ChangeScript(pEntityScript, &params);
 		}
-	}
-
-	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())
-	{
-		if (IEntityArchetype* pArchetype = GetArchetype())
-			pPropertyHandler->InitArchetypeEntity(this, pArchetype->GetName(), params);
 	}
 
 	m_nKeepAliveCounter = 0;
@@ -1146,31 +1139,85 @@ string CEntity::GetEntityTextDescription() const
 	return m_szName + " (" + m_pClass->GetName() + ")";
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading)
+static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
 {
-	m_physics.SerializeXML(node, bLoading);
-
-	m_components.ForEach(
-	  [&node, bLoading](const SEntityComponentRecord& componentRecord)
-	{
-		componentRecord.pComponent->SerializeXML(node, bLoading);
-	}
-	  );
+	static_cast<IEntityPropertyGroup*>(rawPointer)->SerializeProperties(ar);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading)
+void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy)
 {
 	m_physics.SerializeXML(node, bLoading);
 
-	m_components.ForEach(
-	  [&node, bLoading](const SEntityComponentRecord& componentRecord)
+	if (bLoading)
 	{
-		if (componentRecord.proxyType != ENTITY_PROXY_SCRIPT && componentRecord.proxyType != ENTITY_PROXY_ATTRIBUTES)
-			componentRecord.pComponent->SerializeXML(node, bLoading);
+		if(XmlNodeRef componentsNode = node->findChild("Components"))
+		{
+			for (int i = 0, n = componentsNode->getChildCount(); i < n; ++i)
+			{
+				XmlNodeRef componentNode = componentsNode->getChild(i);
+				CryInterfaceID componentTypeId;
+				if (!componentNode->getAttr("typeId", componentTypeId))
+					continue;
+
+				IEntityComponent* pComponent = GetComponentByTypeId(componentTypeId);
+				if (pComponent == nullptr)
+				{
+					pComponent = AddComponent(componentTypeId, std::shared_ptr<IEntityComponent>(), false);
+					if (pComponent == nullptr)
+						continue;
+				}
+
+				pComponent->SerializeXML(componentNode, bLoading);
+
+				// Parse component properties, if any
+				if (IEntityPropertyGroup* pProperties = pComponent->GetPropertyGroup())
+				{
+					gEnv->pSystem->GetArchiveHost()->LoadXmlNode(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), (void*)pProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), componentNode);
+				}
+			}
+		}
 	}
-	  );
+	else
+	{
+		XmlNodeRef componentsNode = node->newChild("Components");
+
+		m_components.ForEach([&componentsNode, bIncludeScriptProxy, bLoading](const SEntityComponentRecord& record)
+		{
+			XmlNodeRef componentNode = componentsNode->newChild(record.GetName());
+			componentNode->setAttr("typeId", record.typeId);
+
+			if (record.proxyType != ENTITY_PROXY_SCRIPT || bIncludeScriptProxy)
+			{
+				record.pComponent->SerializeXML(componentNode, bLoading);
+			}
+
+			// Parse component properties, if any
+			if (IEntityPropertyGroup* pProperties = record.pComponent->GetPropertyGroup())
+			{
+				gEnv->pSystem->GetArchiveHost()->SaveXmlNode(componentNode, Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), (void*)pProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper));
+			}
+		});
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::SerializeProperties(Serialization::IArchive& ar)
+{
+	m_components.ForEach([&ar](const SEntityComponentRecord& componentRecord)
+	{
+		// Parse component properties, if any
+		if (IEntityPropertyGroup* pProperties = componentRecord.pComponent->GetPropertyGroup())
+		{
+			if (ar.openBlock(componentRecord.GetName(), pProperties->GetLabel()))
+			{
+				pProperties->SerializeProperties(ar);
+
+				ar.closeBlock();
+			}
+		}
+	});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1219,9 +1266,6 @@ IEntityComponent* CEntity::CreateProxy(EEntityProxy proxy)
 	case ENTITY_PROXY_ENTITYNODE:
 		return CreateComponent<CEntityComponentTrackViewNode>();
 		break;
-	case ENTITY_PROXY_ATTRIBUTES:
-		return CreateComponent<CEntityComponentAttributes>();
-		break;
 	case ENTITY_PROXY_CLIPVOLUME:
 		return CreateComponent<CEntityComponentClipVolume>();
 		break;
@@ -1264,7 +1308,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	pComponent->m_pEntity = this;
 
 	// Call initialization of the component
-	pComponent->Initialize(IEntityComponent::SComponentInitializer(this));
+	pComponent->Initialize();
 
 	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
@@ -1312,6 +1356,27 @@ IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& interfaceI
 		}
 	}
 	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::CloneComponentsFrom(IEntity& otherEntity)
+{
+	static_cast<CEntity&>(otherEntity).m_components.ForEach([this](const SEntityComponentRecord& componentRecord)
+	{
+		auto* pComponent = GetComponentByTypeId(componentRecord.typeId);
+		if (pComponent == nullptr)
+		{
+			pComponent = AddComponent(componentRecord.typeId, std::shared_ptr<IEntityComponent>(), false);
+		}
+
+		if (auto* pOtherProperties = componentRecord.pComponent->GetPropertyGroup())
+		{
+			DynArray<char> propertyBuffer;
+			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(propertyBuffer, Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pOtherProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper));
+
+			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pOtherProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), propertyBuffer.data(), propertyBuffer.size());
+		}
+	});
 }
 
 //////////////////////////////////////////////////////////////////////////

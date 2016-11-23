@@ -1,20 +1,20 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 
 ////////////////////////////////////////////////////////
 // Entity that sends out trigger events based on entering / leaving linked areas
 ////////////////////////////////////////////////////////
-class CTriggerEntity : public CNativeEntityBase
+class CTriggerEntity final
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
 {
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CTriggerEntity, "TriggerEntity", 0x717FCF92E0484479, 0xAB8D6AF20D94AA85);
+
+	CTriggerEntity();
+	virtual ~CTriggerEntity() {}
+
 public:
-	enum EProperties
-	{
-		eProperty_Enabled = 0,
-
-		eNumProperties,
-	};
-
 	enum EFlowgraphInputPorts
 	{
 		eInputPorts_Enable = 0,
@@ -30,15 +30,28 @@ public:
 	};
 
 public:
-	CTriggerEntity();
-	virtual ~CTriggerEntity() {}
-
 	// ISimpleExtension
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	// ~ISimpleExtension
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "TriggerEntity Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bActive, "Active", "Active");
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
 
 	static void OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
 
 protected:
-	bool m_bActive;
+	bool m_bActive = true;
 };

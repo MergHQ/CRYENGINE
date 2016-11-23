@@ -34,6 +34,8 @@ class CCore : public ICrySchematycCore, public ISystemEventListener
 	CRYGENERATE_SINGLETONCLASS(CCore, "Plugin_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
 
 public:
+	CCore();
+	virtual ~CCore();
 
 	// ICryPlugin
 	virtual const char* GetName() const override;

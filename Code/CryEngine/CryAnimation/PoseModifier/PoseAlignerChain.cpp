@@ -69,10 +69,6 @@ CPoseAlignerChain::CPoseAlignerChain()
 	m_targetLockPlane.Set(Vec3(0.0f, 0.0f, 1.0f), 0.0f);
 }
 
-CPoseAlignerChain::~CPoseAlignerChain()
-{
-}
-
 //
 
 void CPoseAlignerChain::Initialize(LimbIKDefinitionHandle solver, int contactJointIndex)

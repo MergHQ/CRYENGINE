@@ -13,11 +13,9 @@
 
 #pragma once
 
-#ifndef __Entity_h__
-	#define __Entity_h__
 
-	#include <CryEntitySystem/IEntity.h>
-	#include <CryCore/Containers/CryListenerSet.h>
+#include <CryEntitySystem/IEntity.h>
+#include <CryCore/Containers/CryListenerSet.h>
 
 //////////////////////////////////////////////////////////////////////////
 // This is the order in which the proxies are serialized
@@ -34,7 +32,6 @@ const static EEntityProxy ProxySerializationOrder[] = {
 	ENTITY_PROXY_USER,
 	ENTITY_PROXY_ROPE,
 	ENTITY_PROXY_ENTITYNODE,
-	ENTITY_PROXY_ATTRIBUTES,
 	ENTITY_PROXY_CLIPVOLUME,
 	ENTITY_PROXY_DYNAMICRESPONSE,
 	ENTITY_PROXY_LAST
@@ -213,6 +210,8 @@ public:
 	virtual void              RemoveComponent(IEntityComponent* pComponent) final;
 	virtual IEntityComponent* GetComponentByTypeId(const CryInterfaceID& interfaceID) const final;
 
+	virtual void CloneComponentsFrom(IEntity& otherEntity) final;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
@@ -313,7 +312,9 @@ public:
 	virtual IScriptTable* GetScriptTable() const final;
 
 	// Load/Save entity parameters in XML node.
-	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading) final;
+	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy) final;
+
+	virtual void SerializeProperties(Serialization::IArchive& ar) final;
 
 	virtual IEntityLink* GetEntityLinks() final;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) final;
@@ -338,8 +339,6 @@ public:
 
 	// Get fast access to the slot, only used internally by entity components.
 	class CEntitySlot* GetSlot(int nSlot) const;
-
-	void               SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading);
 
 	// Get render proxy object.
 	ILINE const CEntityRender* GetEntityRender() const { return static_cast<const CEntityRender*>(&m_render); }
@@ -565,5 +564,3 @@ private:
 	CEntityRender                    m_render;
 	CEntityPhysics                   m_physics;
 };
-
-#endif // __Entity_h__

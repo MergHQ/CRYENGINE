@@ -13,7 +13,14 @@
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAudio/IAudioSystem.h>
 
+#include <CrySerialization/IArchiveHost.h>
+#include <CrySerialization/Serializer.h>
+
+#include <CryCore/Containers/CryArray.h>
+
 #include <CryCore/BitMask.h>
+
+#include <CryNetwork/ISerialize.h>
 
 struct SEntitySpawnParams;
 struct SEntityEvent;
@@ -34,6 +41,16 @@ struct IRenderNode;
 
 typedef uint64 EntityGUID;  //!< Same as in IEntity.h.
 
+//! Derive from this interface to expose custom entity properties in the editor using the serialization framework.
+//! Each entity component can contain one property group, each component will be separated by label in the entity property view
+struct IEntityPropertyGroup
+{
+	virtual ~IEntityPropertyGroup() {}
+
+	virtual const char*         GetLabel() const = 0;
+	virtual void                SerializeProperties(Serialization::IArchive& archive) = 0;
+};
+
 //! Entity proxies that can be hosted by the entity.
 enum EEntityProxy
 {
@@ -47,7 +64,6 @@ enum EEntityProxy
 	ENTITY_PROXY_TRIGGER,
 	ENTITY_PROXY_ROPE,
 	ENTITY_PROXY_ENTITYNODE,
-	ENTITY_PROXY_ATTRIBUTES,
 	ENTITY_PROXY_CLIPVOLUME,
 	ENTITY_PROXY_DYNAMICRESPONSE,
 	ENTITY_PROXY_SCRIPT,
@@ -75,12 +91,6 @@ struct IEntityComponent : public ICryUnknown
 public:
 	typedef int ComponentEventPriority;
 
-	struct SComponentInitializer
-	{
-		explicit SComponentInitializer(IEntity* pEntity) : m_pEntity(pEntity) {}
-		IEntity* m_pEntity;
-	};
-
 public:
 	//~ICryUnknown
 	virtual ICryFactory* GetFactory() const { return 0; };
@@ -93,38 +103,40 @@ protected:
 public:
 	// Return Host entity pointer
 	ILINE IEntity* GetEntity() const { return m_pEntity; };
+	ILINE EntityId GetEntityId() const;
 
 public:
 	IEntityComponent() : m_pEntity(nullptr) {}
 	virtual ~IEntityComponent() {}
 
-	//! When host entity is destroyed every component will be called with the Release method to delete itself.
-	virtual void Release() = 0;
-
 	virtual EEntityProxy           GetProxyType() const { return ENTITY_PROXY_LAST; };
 
-	//! Return bit mask of the EEntityEvent flags (ex: BIT64(ENTITY_EVENT_HIDE)|BIT64(ENTITY_EVENT_UNHIDE))
-	virtual uint64                 GetEventMask() const = 0;
-
-	ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return (ComponentEventPriority)GetProxyType(); }
-
 	//! Called at the very first initialization of the component, at component creation time.
-	virtual void Initialize(const SComponentInitializer& init) = 0;
+	virtual void Initialize() {}
 
 	//! Called on all Entity components right before all of the Entity Components are destructed.
 	virtual void OnShutDown() {};
 
 	// By overriding this function component will be able to handle events sent from the host Entity.
+	// Requires returning the desired event flag in GetEventMask.
 	// \param event Event structure, contains event id and parameters.
-	virtual	void ProcessEvent(SEntityEvent &event) = 0;
+	virtual	void ProcessEvent(SEntityEvent &event) {}
+
+	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent (ex: BIT64(ENTITY_EVENT_HIDE)|BIT64(ENTITY_EVENT_UNHIDE))
+	virtual uint64                 GetEventMask() const { return 0; }
+
+	ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
+	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return (ComponentEventPriority)GetProxyType(); }
 
 	//! Optionally serialize component to/from XML.
+	//! For user-facing properties, see GetProperties.
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) {};
+
+	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
 
 	//! SaveGame serialization. Override to specify what to serialize in a saved game.
 	//! \param ser Serializing stream. Use IsReading() to decide read/write phase. Use Value() to read/write a property.
-	virtual void GameSerialize(TSerialize ser) = 0;
+	virtual void GameSerialize(TSerialize ser) {}
 
 	//! SaveGame serialization. Override to enable serialization for the component.
 	//! \return true If component needs to be serialized to/from a saved game.
@@ -134,8 +146,9 @@ public:
 
 protected:
 	friend class CEntity;
+
 	// Host Entity pointer
-	IEntity* m_pEntity = nullptr;
+	IEntity* m_pEntity;
 };
 
 struct IEntityScript;

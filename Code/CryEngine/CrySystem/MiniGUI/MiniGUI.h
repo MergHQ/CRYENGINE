@@ -138,6 +138,9 @@ public:
 	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS(CMiniGUI, "MiniGUI", 0x1a049b879a4e4b58, 0xac14026e17e6255e)
 
+	CMiniGUI();
+	virtual ~CMiniGUI() {}
+
 public:
 	void InitMetrics();
 	void ProcessInput();

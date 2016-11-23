@@ -16,6 +16,8 @@ class CEngineModule_CryScriptSystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryScriptSystem, "EngineModule_CryScriptSystem", 0xd032b16449784f82, 0xa99e7dc6b6338c5c)
 
+	virtual ~CEngineModule_CryScriptSystem() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryScriptSystem"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
@@ -40,14 +42,6 @@ class CEngineModule_CryScriptSystem : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryScriptSystem)
-
-CEngineModule_CryScriptSystem::CEngineModule_CryScriptSystem()
-{
-};
-
-CEngineModule_CryScriptSystem::~CEngineModule_CryScriptSystem()
-{
-};
 
 #if CRY_PLATFORM_WINDOWS && !defined(_LIB)
 HANDLE gDLLHandle = NULL;

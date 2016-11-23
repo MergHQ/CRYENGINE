@@ -24,7 +24,8 @@ public:
 
 	CRYGENERATE_CLASS(CTransformationPinning, "AnimationPoseModifier_TransformationPin", 0xcc34ddea972e47da, 0x93f9cdcb98c28c8e)
 
-public:
+	CTransformationPinning();
+	virtual ~CTransformationPinning();
 
 public:
 	virtual void SetBlendWeight(float factor) override;

@@ -19,9 +19,8 @@
 
 CRYREGISTER_CLASS(CEntityComponentTrackViewNode);
 
-void CEntityComponentTrackViewNode::Initialize(const SComponentInitializer& init)
+void CEntityComponentTrackViewNode::Initialize()
 {
-	m_pEntity = init.m_pEntity;
 }
 
 void CEntityComponentTrackViewNode::ProcessEvent(SEntityEvent& event)

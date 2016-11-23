@@ -7,10 +7,6 @@
 IEntityRegistrator *IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator *IEntityRegistrator::g_pLast = nullptr;
 
-CGamePlugin::CGamePlugin()
-{
-}
-
 CGamePlugin::~CGamePlugin()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);

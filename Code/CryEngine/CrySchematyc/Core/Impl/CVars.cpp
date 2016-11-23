@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "CVars.h"
@@ -42,7 +42,7 @@ void CVars::Unregister()
 	gEnv->pConsole->UnregisterVariable("sc_RootFolder");
 	gEnv->pConsole->UnregisterVariable("sc_IgnorePAKFiles");
 	gEnv->pConsole->UnregisterVariable("sc_IgnoreUnderscoredFolders");
-	gEnv->pConsole->UnregisterVariable("sc_EnableScriptPartitioning");
+	gEnv->pConsole->UnregisterVariable("​sc_EnableScriptPartitioning");
 	gEnv->pConsole->UnregisterVariable("sc_LogToFile");
 	gEnv->pConsole->UnregisterVariable("sc_LogFileStreams");
 	gEnv->pConsole->UnregisterVariable("sc_LogFileMessageTypes");

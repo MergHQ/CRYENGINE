@@ -16,6 +16,13 @@ enum ESoundObstructionType
 	eSoundObstructionType_Num,
 };
 
+enum EPlayBehavior
+{
+	ePlayBehavior_Single = 0,
+	ePlayBehavior_Delay,
+	ePlayBehavior_TriggerRate,
+};
+
 enum class EAreaState
 {
 	Outside = 0,

@@ -17,19 +17,17 @@
 #include "ParticleDebug.h"
 #include "ParticleJobManager.h"
 #include "ParticleProfiler.h"
-
-class CParticleEffect;
+#include "ParticleEmitter.h"
 
 namespace pfx2
 {
-
-class CParticleEffect;
-class CParticleEmitter;
-
 class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)
 	CRYGENERATE_SINGLETONCLASS(CParticleSystem, "CryEngine_ParticleSystem", 0xCD8D738D54B446F7, 0x82BA23BA999CF2AC)
+
+	CParticleSystem();
+	virtual ~CParticleSystem() {}
 
 private:
 	typedef std::vector<_smart_ptr<CParticleEmitter>>                                                                     TParticleEmitters;

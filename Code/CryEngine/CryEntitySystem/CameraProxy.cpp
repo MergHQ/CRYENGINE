@@ -18,19 +18,8 @@
 CRYREGISTER_CLASS(CEntityComponentCamera);
 
 //////////////////////////////////////////////////////////////////////////
-CEntityComponentCamera::CEntityComponentCamera()
-	: m_pEntity(NULL)
+void CEntityComponentCamera::Initialize()
 {
-}
-
-//////////////////////////////////////////////////////////////////////////
-CEntityComponentCamera::~CEntityComponentCamera()
-{}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityComponentCamera::Initialize(const SComponentInitializer& init)
-{
-	m_pEntity = (CEntity*)init.m_pEntity;
 	UpdateMaterialCamera();
 }
 

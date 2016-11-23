@@ -46,6 +46,8 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMonoBridge, "EngineModule_CryMonoBridge", 0x2b4615a571524d67, 0x920dc857f8503b3a)
 
+	virtual ~CEngineModule_CryMonoBridge() {}
+
 	virtual const char* GetName() { return "CryMonoBridge"; }
 	virtual const char* GetCategory() { return "CryEngine"; }
 
@@ -56,10 +58,6 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 
 		return true;
 	}
-
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryMonoBridge)
-
-CEngineModule_CryMonoBridge::CEngineModule_CryMonoBridge() {}
-CEngineModule_CryMonoBridge::~CEngineModule_CryMonoBridge() {}

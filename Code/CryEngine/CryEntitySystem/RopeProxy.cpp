@@ -22,8 +22,7 @@ CRYREGISTER_CLASS(CEntityComponentRope);
 
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentRope::CEntityComponentRope()
-	: m_pEntity(nullptr)
-	, m_pRopeRenderNode(nullptr)
+	: m_pRopeRenderNode(nullptr)
 	, m_nSegmentsOrg(0)
 	, m_texTileVOrg(0.0f)
 {
@@ -41,9 +40,8 @@ CEntityComponentRope::~CEntityComponentRope()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentRope::Initialize(const SComponentInitializer& init)
+void CEntityComponentRope::Initialize()
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
 	m_pRopeRenderNode = (IRopeRenderNode*)gEnv->p3DEngine->CreateRenderNode(eERType_Rope);
 	m_pRopeRenderNode->SetEntityOwner(m_pEntity->GetId());
 	m_nSegmentsOrg = -1;

@@ -536,7 +536,6 @@
       "CryEntitySystem/IEntityComponent.h",
       "CryEntitySystem/IEntitySystem.h",
       "CryEntitySystem/IEntity.h",
-      "CryEntitySystem/IEntityAttributesProxy.h",
       "CryEntitySystem/IEntityClass.h",
       "CryEntitySystem/IEntityLayer.h",
       "CryEntitySystem/IEntitySerialize.h",

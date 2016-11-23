@@ -20,8 +20,7 @@ CRYREGISTER_CLASS(CEntityComponentTriggerBounds)
 
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentTriggerBounds::CEntityComponentTriggerBounds()
-	: m_pEntity(NULL)
-	, m_forwardingEntity(0)
+	: m_forwardingEntity(0)
 	, m_pProximityTrigger(NULL)
 	, m_aabb(AABB::RESET)
 {
@@ -34,10 +33,8 @@ CEntityComponentTriggerBounds::~CEntityComponentTriggerBounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentTriggerBounds::Initialize(const SComponentInitializer& init)
+void CEntityComponentTriggerBounds::Initialize()
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
-
 	m_pProximityTrigger = GetTriggerSystem()->CreateTrigger();
 	m_pProximityTrigger->id = m_pEntity->GetId();
 
@@ -47,14 +44,16 @@ void CEntityComponentTriggerBounds::Initialize(const SComponentInitializer& init
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentTriggerBounds::Reset()
 {
-	m_pEntity->m_bTrigger = true;
+	auto* pCEntity = static_cast<CEntity*>(m_pEntity);
+
+	pCEntity->m_bTrigger = true;
 	m_forwardingEntity = 0;
 
 	// Release existing proximity entity if present, triggers should not trigger themself.
-	if (m_pEntity->m_pProximityEntity)
+	if (pCEntity->m_pProximityEntity)
 	{
-		GetTriggerSystem()->RemoveEntity(m_pEntity->m_pProximityEntity);
-		m_pEntity->m_pProximityEntity = 0;
+		GetTriggerSystem()->RemoveEntity(pCEntity->m_pProximityEntity);
+		pCEntity->m_pProximityEntity = 0;
 	}
 }
 

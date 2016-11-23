@@ -3,9 +3,7 @@
 #include "StdAfx.h"
 #include "ProceduralContextLook.h"
 
-
 CRYREGISTER_CLASS( CProceduralContextLook );
-
 
 //////////////////////////////////////////////////////////////////////////
 CProceduralContextLook::CProceduralContextLook()
@@ -16,13 +14,6 @@ CProceduralContextLook::CProceduralContextLook()
 {
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-CProceduralContextLook::~CProceduralContextLook()
-{
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::Initialise( IEntity& entity, IActionController& actionController )
 {
@@ -31,7 +22,6 @@ void CProceduralContextLook::Initialise( IEntity& entity, IActionController& act
 	InitialisePoseBlenderLook();
 	InitialiseGameLookTarget();
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::InitialisePoseBlenderLook()

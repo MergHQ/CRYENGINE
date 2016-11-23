@@ -1,31 +1,23 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 
-class CGeomEntity : public CNativeEntityBase
+#include <CrySerialization/Decorators/Resources.h>
+
+class CGeomEntity final 
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
 {
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CGeomEntity, "GeomEntity", 0xEC0CD266A6D14774, 0xB499690BD6FB61EE);
+
+	virtual ~CGeomEntity() {}
+
 public:
-	enum EProperties
-	{
-		eProperty_Model = 0,
-		eProperty_PhysicalizationType,
-		eProperty_ReceiveCollisionEvents,
-		eProperty_Mass,
-
-		ePropertyGroup_AnimationsBegin,
-		eProperty_Animation,
-		eProperty_Speed,
-		eProperty_Loop,
-		ePropertyGroup_AnimationsEnd,
-
-		eNumProperties,
-	};
-
 	enum EInputPorts
 	{
-		eInputPort_OnHide = 0,
-		eInputPort_OnUnHide,
-		eInputPort_LoadGeometry
+		eInputPort_Hide = 0,
+		eInputPort_UnHide,
+		eInputPort_Geometry
 	};
 
 	enum EOutputPorts
@@ -45,18 +37,42 @@ public:
 	};
 
 public:
-	CGeomEntity();
-	virtual ~CGeomEntity() {}
-
 	// ISimpleExtension
-	virtual void PostInit(IGameObject *pGameObject) final;
+	virtual void Initialize() final;
 
-	virtual void ProcessEvent(SEntityEvent& event) override;
-
-	virtual void HandleEvent(const SGameObjectEvent &event) final;
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_COLLISION) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE); }
 
 	virtual void OnResetState() final;
+
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
 	// ~ISimpleExtension
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "Geometry Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(Serialization::ModelFilename(m_model), "Geometry", "Geometry");
+		archive(m_physicalizationType, "Physicalize", "Physicalize");
+		archive(m_bReceiveCollisionEvents, "ReceiveCollisionEvents", "ReceiveCollisionEvents");
+		archive(m_mass, "Mass", "Mass");
+
+		if (archive.openBlock("Animations", "Animations"))
+		{
+			archive(m_animation, "Animation", "Animation");
+			archive(m_animationSpeed, "Speed", "Speed");
+			archive(m_bLoopAnimation, "Loop", "Loop");
+
+			archive.closeBlock();
+		}
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
 
 public:
 	static void OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
@@ -64,6 +80,14 @@ public:
 protected:
 	IPhysicalEntity* m_pPhysEnt;
 
-	bool m_bHide;
-	string m_geometryName;
+	string m_model;
+
+	EPhysicalizationType m_physicalizationType = ePhysicalizationType_Static;
+	float m_mass = 1.f;
+
+	string m_animation;
+	float m_animationSpeed = 1.f;
+	bool m_bLoopAnimation = true;
+
+	bool m_bReceiveCollisionEvents = false;
 };

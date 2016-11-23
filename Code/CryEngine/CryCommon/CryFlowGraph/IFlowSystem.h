@@ -7,6 +7,8 @@
 #include <CryNetwork/SerializeFwd.h>
 #include <CryNetwork/ISerialize.h>
 
+#include <CryEntitySystem/IEntity.h>
+
 #define _UICONFIG(x) x
 
 struct IFlowGraphModuleManager;

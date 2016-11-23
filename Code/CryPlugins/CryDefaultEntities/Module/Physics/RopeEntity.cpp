@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include "RopeEntity.h"
+#include "Helpers/DesignerEntityComponent.h"
 
 class CRopeEntityRegistrator
 	: public IEntityRegistrator
@@ -12,7 +12,7 @@ class CRopeEntityRegistrator
 			CryLog("Skipping registration of default engine entity class %s, overridden by game", szName);
 			return;
 		}
-		RegisterEntityWithDefaultComponent<CNativeEntityBase>(szName, szEditorPath);
+		RegisterEntityWithDefaultComponent<CDesignerEntityComponent>(szName, szEditorPath);
 	}
 
 	virtual void Register() override

@@ -658,11 +658,6 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 		if (params.guid)
 			RegisterEntityGuid(params.guid, params.id);
 
-		if (params.entityNode && params.pClass->GetPropertyHandler())
-		{
-			params.pClass->GetPropertyHandler()->LoadEntityXMLProperties(pEntity, params.entityNode);
-		}
-
 		//////////////////////////////////////////////////////////////////////////
 		// Check if entity needs to create a proxy class.
 		IEntityClass::UserProxyCreateFunc pUserProxyCreateFunc = params.pClass->GetUserProxyCreateFunc();

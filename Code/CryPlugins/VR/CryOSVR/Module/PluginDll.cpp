@@ -15,10 +15,6 @@ namespace CryVR
 {
 namespace Osvr {
 
-CPlugin_Osvr::CPlugin_Osvr()
-{
-}
-
 CPlugin_Osvr::~CPlugin_Osvr()
 {
 	CryVR::Osvr::Resources::Shutdown();

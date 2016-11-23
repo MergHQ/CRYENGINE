@@ -27,10 +27,6 @@ CRecoil::CRecoil()
 	m_bStateUpdate = false;
 }
 
-CRecoil::~CRecoil()
-{
-}
-
 // IAnimationPoseModifier
 
 bool CRecoil::Prepare(const SAnimationPoseModifierParams& params)

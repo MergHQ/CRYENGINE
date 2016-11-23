@@ -120,7 +120,7 @@ void CSchematycEntitySensorComponent::Run(Schematyc::ESimulationMode simulationM
 	{
 	case Schematyc::ESimulationMode::Game:
 		{
-			Schematyc::IEntityObject& entityObject = Schematyc::EntityUtils::GetEntityObject(*this);
+			Schematyc::IEntityComponentWrapper& entityObject = Schematyc::EntityUtils::GetEntityComponent(*this);
 			entityObject.GetEventSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CSchematycEntitySensorComponent::OnEntityEvent), m_connectionScope);
 			break;
 		}

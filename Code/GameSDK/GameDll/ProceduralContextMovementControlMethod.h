@@ -24,6 +24,8 @@ class CProceduralContextMovementControlMethod
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextMovementControlMethod, PROCEDURAL_CONTEXT_MOVEMENT_CONTROL_METHOD_NAME, 0x80140507bdc64be4, 0xa24190f322270e82 );
 
+	virtual ~CProceduralContextMovementControlMethod() {}
+
 	// IProceduralContext
 	virtual void Update( float timePassedSeconds ) override;
 	// ~IProceduralContext

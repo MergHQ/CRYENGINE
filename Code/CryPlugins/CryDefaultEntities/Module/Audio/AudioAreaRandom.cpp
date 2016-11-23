@@ -4,8 +4,6 @@
 #include "AudioAreaRandom.h"
 #include "AudioEntitiesUtils.h"
 
-const int timerId = 0;
-
 class CAudioAreaRandomRegistrator : public IEntityRegistrator
 {
 	virtual void Register() override
@@ -21,23 +19,12 @@ class CAudioAreaRandomRegistrator : public IEntityRegistrator
 		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaRandom");
 
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "Play Trigger", "audioTriggerPlayTriggerName", "", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "Stop Trigger", "audioTriggerStopTriggerName", "", "");
-		RegisterEntityPropertyAudioRtpc(pPropertyHandler, "RTPC", "audioRTPCRtpc", "", "");
-		RegisterEntityProperty<bool>(pPropertyHandler, "Move with Entity", "bMoveWithEntity", "0", "");
-		RegisterEntityProperty<bool>(pPropertyHandler, "Trigger Areas On Move", "bTriggerAreasOnMove", "0", "");
-		RegisterEntityPropertyEnum(pPropertyHandler, "Sound Obstruction Type", "eiSoundObstructionType", "1", "", 0, 1);
-		RegisterEntityProperty<float>(pPropertyHandler, "RTPC Distance", "fRtpcDistance", "5.0", "", 0.f, 100000.f);
-		RegisterEntityProperty<float>(pPropertyHandler, "Radius Random", "fRadiusRandom", "10.0", "", 0.f, 100000.f);
-		RegisterEntityProperty<float>(pPropertyHandler, "Min Delay", "fMinDelay", "0", "", 0.f, 100000.f);
-		RegisterEntityProperty<float>(pPropertyHandler, "Max Delay", "fMaxDelay", "1", "", 0.f, 100000.f);
 	}
 };
 
 CAudioAreaRandomRegistrator g_audioAreaRandomRegistrator;
+
+CRYREGISTER_CLASS(CAudioAreaRandom);
 
 void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 {
@@ -46,15 +33,6 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 
 	switch (event.event)
 	{
-	// Physicalize on level start for Launcher
-	case ENTITY_EVENT_START_LEVEL:
-	// Editor specific, physicalize on reset, property change or transform change
-	case ENTITY_EVENT_RESET:
-	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
-	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
-		Reset();
-		break;
-
 	case ENTITY_EVENT_ENTERNEARAREA:
 		{
 			if (m_areaState == EAreaState::Outside)
@@ -153,7 +131,7 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 
 	case ENTITY_EVENT_TIMER:
 		{
-			if (event.nParam[0] == timerId)
+			if (event.nParam[0] == m_timerId)
 			{
 				Play();
 			}
@@ -164,36 +142,28 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CAudioAreaRandom::Reset()
+void CAudioAreaRandom::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
 	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
-	const bool bEnabled = GetPropertyBool(eProperty_Enabled);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_PlayTrigger), m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_StopTrigger), m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_RTPC), m_rtpcId);
-	const bool bMoveWithEntity = GetPropertyBool(eProperty_MoveWithEntity);
-	const bool bTriggerAreas = GetPropertyBool(eProperty_TriggerAreasOnMove);
-	const ESoundObstructionType soundObstructionType = static_cast<ESoundObstructionType>(GetPropertyInt(eProperty_SoundObstructionType));
-	m_rtpcDistance = GetPropertyFloat(eProperty_RTPCDistance);
-	m_radius = GetPropertyFloat(eProperty_RadiusRandom);
-	m_minDelay = GetPropertyFloat(eProperty_MinDelay) * 1000.0f;
-	m_maxDelay = GetPropertyFloat(eProperty_MaxDelay) * 1000.0f;
+	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_rtpcName, m_rtpcId);
 
 	// Update values
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[soundObstructionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
 
 	audioProxy.SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
 	audioProxy.SetAuxAudioProxyOffset(Matrix34(IDENTITY));
-	audioProxy.AuxAudioProxiesMoveWithEntity(bMoveWithEntity);
+	audioProxy.AuxAudioProxiesMoveWithEntity(m_bMoveWithEntity);
 
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
-	if (bTriggerAreas)
+	if (m_bTriggerAreasOnMove)
 	{
 		entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_TRIGGER_AREAS);
 		entity.SetFlagsExtended(entity.GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE);
@@ -204,22 +174,22 @@ void CAudioAreaRandom::Reset()
 		entity.SetFlagsExtended(entity.GetFlagsExtended() & (~ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE));
 	}
 
-	if (bEnabled)
+	if (m_bEnabled)
 	{
-		if (!m_bEnabled)
+		if (!m_bPlaying)
 		{
 			// Entity was enabled
-			entity.KillTimer(timerId);
+			entity.KillTimer(m_timerId);
+			m_timerId = 0;
+
 			Play();
 		}
 	}
-	else if (m_bEnabled)
+	else if (m_bPlaying)
 	{
 		// Entity was disabled
 		Stop();
 	}
-
-	m_bEnabled = bEnabled;
 }
 
 Vec3 CAudioAreaRandom::GenerateOffset()
@@ -251,14 +221,15 @@ void CAudioAreaRandom::Play()
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
 
-		GetEntity()->SetTimer(timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		GetEntity()->SetTimer(m_timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		m_bPlaying = true;
 	}
 }
 
 void CAudioAreaRandom::Stop()
 {
 	IEntity& entity = *GetEntity();
-	entity.KillTimer(timerId);
+	entity.KillTimer(m_timerId);
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
@@ -273,6 +244,8 @@ void CAudioAreaRandom::Stop()
 
 		m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
 	}
+
+	m_bPlaying = false;
 }
 
 void CAudioAreaRandom::UpdateRtpc()

@@ -35,13 +35,13 @@ namespace Schematyc
 
 	bool CEntityPhysicsComponent::Init()
 	{
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(Schematyc::Delegate::Make(*this, &CEntityPhysicsComponent::OnGeometryChanged), m_connectionScope);
+		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().GetSlots().Connect(Schematyc::Delegate::Make(*this, &CEntityPhysicsComponent::OnGeometryChanged), m_connectionScope);
 		return true;
 	}
 
 	void CEntityPhysicsComponent::Shutdown()
 	{
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Disconnect(m_connectionScope);
+		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().GetSlots().Disconnect(m_connectionScope);
 		SetPhysicalize(false);
 	}
 

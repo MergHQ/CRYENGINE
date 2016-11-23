@@ -17,16 +17,12 @@ class CParticleRegistrator
 		}
 
 		RegisterEntityWithDefaultComponent<CDefaultParticleEntity>("ParticleEffect", "Particles", "Particle.bmp");
-		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("ParticleEffect");
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Active", "bActive", "1", "");
-
-		RegisterEntityProperty<string>(pPropertyHandler, "ParticleEffect", "", "", "");
 	}
 };
 
 CParticleRegistrator g_particleRegistrator;
+
+CRYREGISTER_CLASS(CDefaultParticleEntity);
 
 CDefaultParticleEntity::CDefaultParticleEntity()
 	: m_particleSlot(-1)
@@ -45,10 +41,10 @@ void CDefaultParticleEntity::OnResetState()
 	}
 
 	// Check if the light is active
-	if (!GetPropertyBool(eProperty_Active))
+	if (!m_bActive)
 		return;
 
-	if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(GetPropertyValue(eProperty_EffectName), "ParticleEntity"))
+	if (IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(m_particleEffectPath, "ParticleEntity"))
 	{
 		m_particleSlot = entity.LoadParticleEmitter(-1, pEffect);
 	}

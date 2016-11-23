@@ -25,13 +25,14 @@ class CEntityComponentFlowGraph : public IEntityFlowGraphComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentFlowGraph,IEntityFlowGraphComponent,"CEntityComponentFlowGraph",0x2BC1F44EBD734EC5,0xBC8F7982E75BE23C);
 
-public:
-	CEntity* GetEntity() const { return m_pEntity; };
+	CEntityComponentFlowGraph();
+	virtual ~CEntityComponentFlowGraph();
 
+public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final; // Need all events except pre physics update
 	//////////////////////////////////////////////////////////////////////////
@@ -64,11 +65,6 @@ private:
 	void OnMove();
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity*    m_pEntity;
 	IFlowGraph* m_pFlowGraph;
 
 	typedef std::list<IEntityEventListener*> Listeners;

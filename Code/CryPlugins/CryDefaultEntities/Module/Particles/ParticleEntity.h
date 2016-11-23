@@ -1,30 +1,46 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
+
+#include <CrySerialization/Decorators/Resources.h>
 
 ////////////////////////////////////////////////////////
 // Sample entity for creating a particle entity
 ////////////////////////////////////////////////////////
-class CDefaultParticleEntity : public CNativeEntityBase
+class CDefaultParticleEntity final
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
 {
-public:
-	// Indices of the properties, registered in the Register function
-	enum EProperties
-	{
-		eProperty_Active = 0,
-		eProperty_EffectName,
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultParticleEntity, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);
 
-		eNumProperties
-	};
-
-public:
 	CDefaultParticleEntity();
 	virtual ~CDefaultParticleEntity() {}
 
-	// CNativeEntityBase
+public:
+	// CDesignerEntityComponent
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+
 	virtual void OnResetState() override;
-	// ~CNativeEntityBase
+	// ~CDesignerEntityComponent
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "ParticleEffect Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bActive, "Active", "Active");
+		archive(Serialization::ParticleName(m_particleEffectPath), "ParticleEffect", "ParticleEffect");
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
 
 protected:
 	int m_particleSlot;
+
+	bool m_bActive = true;
+	string m_particleEffectPath;
 };

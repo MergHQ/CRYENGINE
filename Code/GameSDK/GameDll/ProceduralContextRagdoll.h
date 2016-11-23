@@ -33,6 +33,9 @@ class CProceduralContextRagdoll
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextRagdoll, PROCEDURAL_CONTEXT_RAGDOLL_NAME, 0x37856d62bd5f42f0, 0xad8a4314a0de6dd2 );
 
+	CProceduralContextRagdoll();
+	virtual ~CProceduralContextRagdoll() {}
+
 	ILINE EntityId GetEntityTarget() const { return m_targetEntityId; }
 	ILINE void SetEntityTarget( const EntityId entityID ) { m_targetEntityId = entityID; }
 	ILINE void SetAspectProfileScope( bool bScope ) { m_bDispatchedAspectProfile = bScope; }

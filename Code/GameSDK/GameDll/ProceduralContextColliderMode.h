@@ -24,6 +24,8 @@ class CProceduralContextColliderMode
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextColliderMode, PROCEDURAL_CONTEXT_COLLIDER_MODE_NAME, 0x2857e483964b45e4, 0x8e9e6a481db8c166 );
 
+	virtual ~CProceduralContextColliderMode() {}
+
 	// IProceduralContext
 	virtual void Update( float timePassedSeconds ) override;
 	// ~IProceduralContext

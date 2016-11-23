@@ -22,10 +22,6 @@ namespace Oculus {
 	float CPlugin_OculusVR::s_hmd_projection_screen_dist = 1.0f;
 	int CPlugin_OculusVR::s_hmd_post_inject_camera = 0;
 
-CPlugin_OculusVR::CPlugin_OculusVR()
-{
-}
-
 CPlugin_OculusVR::~CPlugin_OculusVR()
 {
 	CryVR::Oculus::Resources::Shutdown();

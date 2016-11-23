@@ -120,6 +120,8 @@ class CEngineModule_Cry3DEngine : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_Cry3DEngine, "EngineModule_Cry3DEngine", 0x2d38f12a521d43cf, 0xba18fd1fa7ea5020)
 
+	virtual ~CEngineModule_Cry3DEngine() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "Cry3DEngine"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
@@ -139,14 +141,6 @@ class CEngineModule_Cry3DEngine : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_Cry3DEngine)
-
-CEngineModule_Cry3DEngine::CEngineModule_Cry3DEngine()
-{
-};
-
-CEngineModule_Cry3DEngine::~CEngineModule_Cry3DEngine()
-{
-};
 
 //////////////////////////////////////////////////////////////////////////
 void Cry3DEngineBase::PrintComment(const char* szText, ...)

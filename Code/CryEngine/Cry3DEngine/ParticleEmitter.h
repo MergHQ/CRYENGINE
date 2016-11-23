@@ -25,6 +25,8 @@
 #include "ParticleSubEmitter.h"
 #include "ParticleManager.h"
 
+#include <CryEntitySystem/IEntity.h>
+
 #undef PlaySound
 
 class CParticle;

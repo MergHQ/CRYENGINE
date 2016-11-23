@@ -23,6 +23,9 @@ class CProceduralContextAim
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextAim, PROCEDURAL_CONTEXT_AIM_NAME, 0x4a5625bb01d149c6, 0xb5632cf301b58e38 );
 
+	CProceduralContextAim();
+	virtual ~CProceduralContextAim() {}
+
 	// IProceduralContext
 	virtual void Initialise( IEntity& entity, IActionController& actionController ) override;
 	virtual void Update( float timePassedSeconds ) override;

@@ -22,6 +22,9 @@ private:
 		int m_rightBlendIkIdx;
 	};
 
+	CFirstPersonHandIKContext();
+	virtual ~CFirstPersonHandIKContext() {}
+
 public:
 	PROCEDURAL_CONTEXT(CFirstPersonHandIKContext, "FirstPersonHandIK", 0xd8a55b349caa4b53, 0x89bcf1708d565bc3);
 

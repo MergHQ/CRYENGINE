@@ -21,16 +21,6 @@
 
 CRYREGISTER_CLASS(CFeetPoseStore)
 
-//
-
-CFeetPoseStore::CFeetPoseStore()
-{
-}
-
-CFeetPoseStore::~CFeetPoseStore()
-{
-}
-
 // IAnimationPoseModifier
 bool CFeetPoseStore::Execute(const SAnimationPoseModifierParams& params)
 {
@@ -89,16 +79,6 @@ bool CFeetPoseStore::Execute(const SAnimationPoseModifierParams& params)
  */
 
 CRYREGISTER_CLASS(CFeetPoseRestore)
-
-//
-
-CFeetPoseRestore::CFeetPoseRestore()
-{
-}
-
-CFeetPoseRestore::~CFeetPoseRestore()
-{
-}
 
 // IAnimationPoseModifier
 bool CFeetPoseRestore::Execute(const SAnimationPoseModifierParams& params)

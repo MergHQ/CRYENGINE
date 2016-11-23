@@ -29,6 +29,9 @@ namespace uqs
 
 			CRYGENERATE_SINGLETONCLASS(CHubPlugin, "Plugin_UQS", 0x2a2f00e0f0684baf, 0xb31bb3c8f78b3477)
 
+			CHubPlugin();
+			virtual ~CHubPlugin();
+
 		private:
 			// ICryPlugin (forwarded by IHubPlugin)
 			virtual const char*     GetName() const override;

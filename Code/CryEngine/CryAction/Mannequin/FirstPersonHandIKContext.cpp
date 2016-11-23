@@ -33,10 +33,6 @@ CFirstPersonHandIKContext::CFirstPersonHandIKContext()
 {
 }
 
-CFirstPersonHandIKContext::~CFirstPersonHandIKContext()
-{
-}
-
 void CFirstPersonHandIKContext::Initialize(ICharacterInstance* pCharacterInstance)
 {
 	++m_instanceCount;

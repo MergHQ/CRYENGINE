@@ -26,6 +26,8 @@ private:
 		string editorCategory;
 		string icon;
 		IEntityClassRegistry::SEntityClassDesc desc;
+
+		Schematyc::SGUID runtimeClassGUID;
 	};
 
 	typedef std::map<string, SEntityClass> EntityClasses;
@@ -33,6 +35,8 @@ private:
 public:
 
 	void Init();
+
+	const IRuntimeClass* GetRuntimeClassFromEntityClass(const char* entityClass) const;
 
 private:
 

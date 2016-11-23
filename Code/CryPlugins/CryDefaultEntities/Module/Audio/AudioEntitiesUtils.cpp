@@ -4,6 +4,21 @@
 #include "AudioEntitiesUtils.h"
 
 #include <CrySystem/ISystem.h>
+#include <CrySerialization/Enum.h>
+
+YASLI_ENUM_BEGIN(ESoundObstructionType, "SoundObstructionType")
+YASLI_ENUM_VALUE(eSoundObstructionType_Ignore, "Ignore")
+YASLI_ENUM_VALUE(eSoundObstructionType_Adaptive, "Adaptive")
+YASLI_ENUM_VALUE(eSoundObstructionType_Low, "Low")
+YASLI_ENUM_VALUE(eSoundObstructionType_Medium, "Medium")
+YASLI_ENUM_VALUE(eSoundObstructionType_High, "High")
+YASLI_ENUM_END()
+
+YASLI_ENUM_BEGIN(EPlayBehavior, "PlayBehavior")
+YASLI_ENUM_VALUE(ePlayBehavior_Single, "Single")
+YASLI_ENUM_VALUE(ePlayBehavior_Delay, "Delay")
+YASLI_ENUM_VALUE(ePlayBehavior_TriggerRate, "TriggerRate")
+YASLI_ENUM_END()
 
 AudioControlId AudioEntitiesUtils::GetObstructionOcclusionSwitch()
 {

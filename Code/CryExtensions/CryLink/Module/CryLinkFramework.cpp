@@ -14,10 +14,6 @@ using namespace CryLinkService;
 
 CRYREGISTER_CLASS(CCryLinkFramework)
 
-CCryLinkFramework::CCryLinkFramework()
-{
-}
-
 CCryLinkFramework::~CCryLinkFramework()
 {
 	CVars::GetInstance().Unregister();
@@ -44,7 +40,9 @@ IFramework* CryLinkService::CreateFramework(IGameFramework* pGameFramework)
 class CryLinkFrameworkCreator : public IGameFrameworkExtensionCreator
 {
 	CRYINTERFACE_SIMPLE(IGameFrameworkExtensionCreator)
-	CRYGENERATE_SINGLETONCLASS(CryLinkFrameworkCreator, CRY_LINK_EXTENSION_CREATOR, 0x89f52cbfdc2f4ad6 , 0xb5735b7cdcc6cc7f)
+	CRYGENERATE_SINGLETONCLASS(CryLinkFrameworkCreator, CRY_LINK_EXTENSION_CREATOR, 0x89f52cbfdc2f4ad6, 0xb5735b7cdcc6cc7f)
+
+	virtual ~CryLinkFrameworkCreator() {}
 
 	virtual ICryUnknown* Create(IGameFramework* pGameFramework, void* pData) override
 	{
@@ -64,6 +62,3 @@ class CryLinkFrameworkCreator : public IGameFrameworkExtensionCreator
 };
 
 CRYREGISTER_SINGLETON_CLASS(CryLinkFrameworkCreator)
-
-CryLinkFrameworkCreator::CryLinkFrameworkCreator() {}
-CryLinkFrameworkCreator::~CryLinkFrameworkCreator() {}

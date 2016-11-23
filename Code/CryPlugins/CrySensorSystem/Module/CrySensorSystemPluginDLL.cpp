@@ -8,10 +8,6 @@
 
 #include "SensorSystem.h"
 
-CCrySensorSystemPlugin::CCrySensorSystemPlugin() {}
-
-CCrySensorSystemPlugin::~CCrySensorSystemPlugin() {}
-
 const char* CCrySensorSystemPlugin::GetName() const
 {
 	return "CrySensorSystem";

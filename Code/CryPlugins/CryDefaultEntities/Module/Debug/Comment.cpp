@@ -16,54 +16,50 @@ class CCommentEntityRegistrator
 		}
 
 		RegisterEntityWithDefaultComponent<CCommentEntity>("Comment", "Debug");
-		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Comment");
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<string>(pPropertyHandler, "Text", "", "", "Text to draw to screen");
-		RegisterEntityProperty<float>(pPropertyHandler, "ViewDistance", "fMaxDist", "", "Maximum entity distance from player", 0.1f, 255);
-
-		RegisterEntityProperty<float>(pPropertyHandler, "FontSize", "fSize", "1.2", "Size of the text", 0, 100);
 	}
 };
 
 CCommentEntityRegistrator g_commentEntityRegistrator;
 
-void CCommentEntity::PostInit(IGameObject* pGameObject)
+CRYREGISTER_CLASS(CCommentEntity);
+
+void CCommentEntity::Initialize()
 {
-	GetEntity()->SetUpdatePolicy(ENTITY_UPDATE_VISIBLE);
-	pGameObject->EnableUpdateSlot(this, 0);
+	CDesignerEntityComponent::Initialize();
 
 	m_pEnableCommentsVar = gEnv->pConsole->GetCVar("cl_comment");
 }
 
-void CCommentEntity::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CCommentEntity::ProcessEvent(SEntityEvent& event)
 {
-	if (m_pEnableCommentsVar->GetIVal() == 0)
-		return;
-
-	const float maxDistance = GetPropertyFloat(eProperty_MaxDistance);
-	float cameraDistance = (GetEntity()->GetWorldPos() - gEnv->pSystem->GetViewCamera().GetPosition()).GetLength();
-
-	float alpha;
-
-	if (maxDistance >= 255.f)
+	if (event.event == ENTITY_EVENT_UPDATE)
 	{
-		alpha = 1.f;
-	}
-	else if(cameraDistance < maxDistance)
-	{
-		alpha = cameraDistance / maxDistance;
-		alpha = 1.f - alpha * alpha;
-	}
-	else
-	{
-		alpha = 0.f;
-	}
+		if (m_pEnableCommentsVar->GetIVal() == 0)
+			return;
 
-	if (alpha == 0.f)
-		return;
+		float cameraDistance = (GetEntity()->GetWorldPos() - gEnv->pSystem->GetViewCamera().GetPosition()).GetLength();
 
-	float color[4] = { 1, 1, 1, alpha };
+		float alpha;
 
-	IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos(), GetPropertyFloat(eProperty_FontSize), color, true, true, GetPropertyValue(eProperty_Text));
+		if (m_maxDistance >= 255.f)
+		{
+			alpha = 1.f;
+		}
+		else if (cameraDistance < m_maxDistance)
+		{
+			alpha = cameraDistance / m_maxDistance;
+			alpha = 1.f - alpha * alpha;
+		}
+		else
+		{
+			alpha = 0.f;
+		}
+
+		if (alpha == 0.f)
+			return;
+
+		float color[4] = { 1, 1, 1, alpha };
+
+		IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos(), m_fontSize, color, true, true, m_text);
+	}
 }

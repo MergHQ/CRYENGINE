@@ -19,11 +19,6 @@
 CRYREGISTER_CLASS(CEntityComponentSubstitution);
 
 //////////////////////////////////////////////////////////////////////////
-CEntityComponentSubstitution::CEntityComponentSubstitution()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CEntityComponentSubstitution::~CEntityComponentSubstitution()
 {
 	if (m_pSubstitute)

@@ -13,9 +13,12 @@ class CEntityComponentDynamicResponse final : public IEntityDynamicResponseCompo
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentDynamicResponse,IEntityDynamicResponseComponent,"CEntityComponentDynamicResponse",0x891F8E50BAF84E95,0xB5F94F7BC07EB663);
 
+	CEntityComponentDynamicResponse();
+	virtual ~CEntityComponentDynamicResponse();
+
 public:
 	//IEntityComponent.h override
-	virtual void Initialize(SComponentInitializer const& init) override;
+	virtual void Initialize() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
@@ -23,7 +26,6 @@ public:
 	virtual void         ProcessEvent(SEntityEvent& event) override;
 	virtual uint64       GetEventMask() const final;;
 	virtual EEntityProxy GetProxyType() const override                                    { return ENTITY_PROXY_DYNAMICRESPONSE; }
-	virtual void         Release() override { delete this; };
 	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
 	virtual bool         NeedGameSerialize() override;
 	virtual void         GameSerialize(TSerialize ser) override;

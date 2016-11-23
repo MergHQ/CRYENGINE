@@ -21,10 +21,6 @@ CPoseBlenderLook::CPoseBlenderLook()
 	m_pAttachmentEyeRight = 0;
 }
 
-CPoseBlenderLook::~CPoseBlenderLook()
-{
-}
-
 //
 bool CPoseBlenderLook::Prepare(const SAnimationPoseModifierParams& params)
 {

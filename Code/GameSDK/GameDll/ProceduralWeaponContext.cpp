@@ -39,12 +39,6 @@ CProceduralWeaponAnimationContext::CProceduralWeaponAnimationContext()
 
 
 
-CProceduralWeaponAnimationContext::~CProceduralWeaponAnimationContext()
-{
-}
-
-
-
 void CProceduralWeaponAnimationContext::Update(float timePassed)
 {
 	ICharacterInstance* pCharacter = m_pScope->GetCharInst();

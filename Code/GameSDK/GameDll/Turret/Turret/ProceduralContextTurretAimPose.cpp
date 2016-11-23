@@ -74,11 +74,6 @@ CProceduralContextTurretAimPose::CProceduralContextTurretAimPose()
 }
 
 
-CProceduralContextTurretAimPose::~CProceduralContextTurretAimPose()
-{
-}
-
-
 void CProceduralContextTurretAimPose::Initialise( IEntity& entity, IActionController& actionController )
 {
 	IProceduralContext::Initialise( entity, actionController );

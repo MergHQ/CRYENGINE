@@ -71,11 +71,6 @@
 			"EntityAudioProxy.cpp",
 			"EntityAudioProxy.h"
 		],
-		"Components/Attributes":
-		[
-			"EntityAttributesProxy.cpp",
-			"EntityAttributesProxy.h"
-		],
 		"Components/ClipVolume":
 		[
 			"ClipVolumeProxy.cpp",
@@ -129,9 +124,7 @@
 			"EntityClass.cpp",
 			"EntityClassRegistry.cpp",
 			"EntityClass.h",
-			"EntityClassRegistry.h",
-			"EntityPropertyHandler.cpp",
-			"EntityPropertyHandler.h"
+			"EntityClassRegistry.h"
 		]
 	},
 	"CryEntitySystem_uber_1.cpp":

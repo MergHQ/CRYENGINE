@@ -31,6 +31,8 @@ SERIALIZATION_ENUM_END();
 class CAudioContext : public IProceduralContext
 {
 private:
+	CAudioContext();
+	virtual ~CAudioContext() {}
 
 	typedef IProceduralContext BaseClass;
 
@@ -81,10 +83,6 @@ private:
 };
 
 CAudioContext::CAudioContext() : m_pIEntityAudioComponent()
-{
-}
-
-CAudioContext::~CAudioContext()
 {
 }
 

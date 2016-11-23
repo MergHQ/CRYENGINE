@@ -19,10 +19,13 @@ class CEntityComponentClipVolume : public IClipVolumeComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentClipVolume,IClipVolumeComponent,"CEntityComponentClipVolume",0x8065253292454CD7,0xA9062E7839EBB7A4);
 
+	CEntityComponentClipVolume();
+	virtual ~CEntityComponentClipVolume();
+
 public:
 	// IEntityComponent.h interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override;
+	virtual void Initialize() override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////

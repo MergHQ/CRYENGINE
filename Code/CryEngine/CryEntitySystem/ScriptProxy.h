@@ -32,10 +32,13 @@ class CEntityComponentLuaScript : public IEntityScriptComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentLuaScript,IEntityScriptComponent,"CEntityComponentLuaScript",0x38CF87CCD44B4A1D,0xA16D7EA3C5BDE757);
 
+	CEntityComponentLuaScript();
+	virtual ~CEntityComponentLuaScript();
+
 public:
 	void InitScript(CEntityComponentLuaScript* pScript = NULL, SEntitySpawnParams* pSpawnParams = NULL);
 
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
@@ -107,7 +110,6 @@ private:
 	bool           HaveTable(const char* name);
 
 private:
-	CEntity*       m_pEntity;
 	CEntityScript* m_pScript;
 	IScriptTable*  m_pThis;
 

@@ -28,13 +28,13 @@ class CEntityComponentCamera : public IEntityCameraComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentCamera,IEntityCameraComponent,"CEntityComponentCamera",0x0F8EEE88F3AA49B2,0xA20D2747B5E33DF9);
 
-public:
-	CEntity* GetEntity() const { return m_pEntity; };
+	virtual ~CEntityComponentCamera() {}
 
+public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
@@ -61,11 +61,6 @@ public:
 		pSizer->AddObject(this, sizeof(*this));
 	}
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity* m_pEntity;
 	CCamera  m_camera;
 };
 

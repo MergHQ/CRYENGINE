@@ -17,10 +17,6 @@ namespace OpenVR {
 	float CPlugin_OpenVR::s_hmd_quad_width = 1.0f;
 	int CPlugin_OpenVR::s_hmd_quad_absolute = 1;
 
-CPlugin_OpenVR::CPlugin_OpenVR()
-{
-}
-
 CPlugin_OpenVR::~CPlugin_OpenVR()
 {
 	CryVR::OpenVR::Resources::Shutdown();

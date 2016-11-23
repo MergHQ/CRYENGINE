@@ -14,6 +14,8 @@ public:
 	CRYINTERFACE_SIMPLE(ICryPlugin)
 	CRYGENERATE_SINGLETONCLASS(CGamePlugin, "Game_RollingBall", 0xF01244B0A4E74DC6, 0x91E10ED18906FE7C)
 
+	virtual ~CGamePlugin();
+	
 	//! Retrieve name of plugin.
 	virtual const char* GetName() const override { return "RollingBallGamePlugin"; }
 

@@ -3492,18 +3492,6 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 	{
 		pGameToEditor->SetUIEnums("LipSyncType", &gs_lipSyncExtensionNamesForExposureToEditor.front(), lipSyncCount);
 	}
-
-	const char* physicalizationTypes[] = { "None=0", "Static=1", "Rigid=2" };
-	pGameToEditor->SetUIEnums("Physicalize", physicalizationTypes, CRY_ARRAY_COUNT(physicalizationTypes));
-
-	const char* soundObstructionTypes[] = { "Ignore=0", "Adaptive=1", "Low=2", "Medium=3", "High=4" };
-	pGameToEditor->SetUIEnums("Sound Obstruction Type", soundObstructionTypes, CRY_ARRAY_COUNT(soundObstructionTypes));
-
-	const char* behaviourTypes[] = { "Single=0", "Delay=1", "Trigger Rate=2" };
-	pGameToEditor->SetUIEnums("Behaviour", behaviourTypes, CRY_ARRAY_COUNT(behaviourTypes));
-
-	const char* audioTriggerActivityRadiusTypes[] = { "Disabled=0", "Play Trigger=1", "Stop Trigger=2" };
-	pGameToEditor->SetUIEnums("Draw Activity Radius", audioTriggerActivityRadiusTypes, CRY_ARRAY_COUNT(audioTriggerActivityRadiusTypes));
 }
 
 //------------------------------------------------------------------------

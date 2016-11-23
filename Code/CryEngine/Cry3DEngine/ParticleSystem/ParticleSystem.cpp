@@ -41,10 +41,6 @@ CParticleSystem::CParticleSystem()
 {
 }
 
-CParticleSystem::~CParticleSystem()
-{
-}
-
 PParticleEffect CParticleSystem::CreateEffect()
 {
 	return new pfx2::CParticleEffect();

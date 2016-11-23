@@ -44,7 +44,6 @@ public:
 	virtual UserProxyCreateFunc          GetUserProxyCreateFunc() const override { return m_pfnUserProxyCreate; };
 	virtual void*                        GetUserProxyData() const override       { return m_pUserProxyUserData; };
 
-	virtual IEntityPropertyHandler*      GetPropertyHandler() const override;
 	virtual IEntityEventHandler*         GetEventHandler() const override;
 	virtual IEntityScriptFileHandler*    GetScriptFileHandler() const override;
 
@@ -55,11 +54,6 @@ public:
 	virtual IEntityClass::SEventInfo     GetEventInfo(int nIndex) override;
 	virtual bool                         FindEventInfo(const char* sEvent, SEventInfo& event) override;
 
-	virtual TEntityAttributeArray&       GetClassAttributes() override;
-	virtual const TEntityAttributeArray& GetClassAttributes() const override;
-	virtual TEntityAttributeArray&       GetEntityAttributes() override;
-	virtual const TEntityAttributeArray& GetEntityAttributes() const override;
-
 	//////////////////////////////////////////////////////////////////////////
 
 	void SetName(const char* sName);
@@ -67,18 +61,14 @@ public:
 	void SetEntityScript(IEntityScript* pScript);
 
 	void SetUserProxyCreateFunc(UserProxyCreateFunc pFunc, void* pUserData = NULL);
-	void SetPropertyHandler(IEntityPropertyHandler* pPropertyHandler);
 	void SetEventHandler(IEntityEventHandler* pEventHandler);
 	void SetScriptFileHandler(IEntityScriptFileHandler* pScriptFileHandler);
-	void SetEntityAttributes(const TEntityAttributeArray& attributes);
-	void SetClassAttributes(const TEntityAttributeArray& attributes);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(m_sName);
 		pSizer->AddObject(m_sScriptFile);
 		pSizer->AddObject(m_pEntityScript);
-		pSizer->AddObject(m_pPropertyHandler);
 		pSizer->AddObject(m_pEventHandler);
 		pSizer->AddObject(m_pScriptFileHandler);
 	}
@@ -93,14 +83,10 @@ private:
 
 	bool                      m_bScriptLoaded;
 
-	IEntityPropertyHandler*   m_pPropertyHandler;
 	IEntityEventHandler*      m_pEventHandler;
 	IEntityScriptFileHandler* m_pScriptFileHandler;
 
 	SEditorClassInfo          m_EditorClassInfo;
-
-	TEntityAttributeArray     m_entityAttributes;
-	TEntityAttributeArray     m_classAttributes;
 };
 
 #endif // __EntityClass_h__

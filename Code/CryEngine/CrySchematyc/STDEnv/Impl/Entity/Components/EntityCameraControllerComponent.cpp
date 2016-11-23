@@ -35,8 +35,10 @@ namespace Schematyc
 		{
 			gEnv->pGameFramework->GetIViewSystem()->RemoveView(m_viewId);
 			IEntity& cameraTarget = EntityUtils::GetEntity(*this);
-			IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(cameraTarget.GetId());
-			pGameObject->ReleaseView(this);
+			if(IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(cameraTarget.GetId()))
+			{
+				pGameObject->ReleaseView(this);
+			}
 			m_viewId = -1;
 		}
 	}
@@ -57,7 +59,7 @@ namespace Schematyc
 				m_viewId = pViewSystem->GetViewId(pView);
 
 				IEntity& cameraTarget = EntityUtils::GetEntity(*this);
-				IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(cameraTarget.GetId());
+				auto* pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(cameraTarget.GetId());
 				pView->LinkTo(pGameObject);
 				pGameObject->CaptureView(this);
 			}

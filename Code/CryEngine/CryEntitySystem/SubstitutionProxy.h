@@ -23,11 +23,13 @@ struct CEntityComponentSubstitution : IEntitySubstitutionComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentSubstitution,IEntitySubstitutionComponent,"CEntityComponentSubstitution",0xF60DBB948860494A,0x93586DE8C953B324);
 
+	virtual ~CEntityComponentSubstitution();
+
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final {};
+	virtual void Initialize() final {};
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;; // Need nothing
 	//////////////////////////////////////////////////////////////////////////

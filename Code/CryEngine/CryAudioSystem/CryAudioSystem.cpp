@@ -188,6 +188,9 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
 
+	CEngineModule_CryAudioSystem();
+	virtual ~CEngineModule_CryAudioSystem() {}
+
 	virtual const char* GetName() override { return "CryAudioSystem"; }
 	virtual const char* GetCategory() override { return "CryEngine"; }
 
@@ -371,11 +374,6 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 	                                          CEngineModule_CryAudioSystem::OnAudioImplChanged);
 
 	g_audioCVars.RegisterVariables();
-}
-
-//////////////////////////////////////////////////////////////////////////
-CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

@@ -22,10 +22,6 @@ CLookAtSimple::CLookAtSimple()
 	m_state.weight = 1.0f;
 };
 
-CLookAtSimple::~CLookAtSimple()
-{
-}
-
 //
 
 bool CLookAtSimple::ValidateJointId(IDefaultSkeleton& rIDefaultSkeleton)

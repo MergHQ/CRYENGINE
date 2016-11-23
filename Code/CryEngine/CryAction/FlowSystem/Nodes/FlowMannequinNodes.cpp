@@ -303,6 +303,8 @@ class CFlowGraphEventsProceduralContext
 public:
 	PROCEDURAL_CONTEXT(CFlowGraphEventsProceduralContext, kFlowGraphEventsProcContextName, 0x334455925E8947FB, 0x8008B3F89CAC0C37);
 
+	CFlowGraphEventsProceduralContext();
+
 	struct IProcClipEventListener
 	{
 		virtual void OnProcClipEvent(const string& eventName) = 0;
@@ -334,7 +336,6 @@ private:
 	CListenerSet<IProcClipEventListener*> m_listeners;
 };
 CFlowGraphEventsProceduralContext::CFlowGraphEventsProceduralContext() : m_listeners(4){}
-CFlowGraphEventsProceduralContext::~CFlowGraphEventsProceduralContext(){}
 CRYREGISTER_CLASS(CFlowGraphEventsProceduralContext);
 
 struct SProceduralClipFlowGraphEventParams

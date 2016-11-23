@@ -2,55 +2,76 @@
 
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
+#include "AudioEntitiesUtils.h"
+
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
-class CAudioTriggerSpotEntity final : public CNativeEntityBase
+#include <CrySerialization/Decorators/ResourcesAudio.h>
+#include <CrySerialization/Math.h>
+
+enum EDrawActivityRadius
 {
+	eDrawActivityRadius_Disabled = 0,
+	eDrawActivityRadius_PlayTrigger,
+	eDrawActivityRadius_StopTrigger,
+};
 
-public:
-	// Indices of the properties, registered in the Register function
-	enum EProperties
-	{
-		eProperty_Enabled = 0,
-		eProperty_PlayTrigger,
-		eProperty_StopTrigger,
-		eProperty_TriggerAreasOnMove,
-		eProperty_SoundObstructionType,
-		eProperty_GroupPlayModeBegin,
-		eProperty_Behaviour,
-		eProperty_MinDelay,
-		eProperty_MaxDelay,
-		eProperty_RandomizationArea,
-		eProperty_GroupPlayModeEnd,
-		eProperty_GroupDebugBegin,
-		eProperty_DrawActivityRadius,
-		eProperty_DrawRandomizationArea,
-		eProperty_GroupDebugEnd,
-		eNumProperties
-	};
-
-	enum EPlayBehaviour
-	{
-		ePlayBehaviour_Single = 0,
-		ePlayBehaviour_Delay,
-		ePlayBehaviour_TriggerRate,
-	};
+class CAudioTriggerSpotEntity final 
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
+{
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioTriggerSpotEntity, "AudioTriggerSpot", 0x1009FA03153C459C, 0x883D33B33298813D);
 
 public:
 	CAudioTriggerSpotEntity();
 	virtual ~CAudioTriggerSpotEntity();
 
-	// CNativeEntityBase
-	virtual void PostInit(IGameObject* pGameObject) override;
+	// CDesignerEntityComponent
 	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual uint64 GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_TIMER); }
 
-#if !defined(_RELEASE)
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
-#endif
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
 
 	virtual void OnResetState() override;
-	// ~CNativeEntityBase
+	// ~CDesignerEntityComponent
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "AudioTriggerSpot Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bEnabled, "Enabled", "Enabled");
+		archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
+		archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
+		archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
+
+		archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+
+		if(archive.openBlock("PlayMode", "Play Mode"))
+		{
+			archive(m_behavior, "Behavior", "Behavior");
+			archive(m_minDelay, "MinDelay", "MinDelay");
+			archive(m_maxDelay, "MaxDelay", "MaxDelay");
+			archive(m_randomizationArea, "RandomizationArea", "RandomizationArea");
+
+			archive.closeBlock();
+		}	
+
+		if(archive.openBlock("Debug", "Debug"))
+		{
+			archive(m_drawActivityRadius, "DrawActivityRadius", "DrawActivityRadius");
+			archive(m_bDrawRandomizationArea, "DrawRandomizationArea", "DrawRandomizationArea");
+
+			archive.closeBlock();
+		}
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
 
 private:
 	void        Stop();
@@ -60,24 +81,30 @@ private:
 	static void OnAudioTriggerFinished(SAudioRequestInfo const* const pAudioRequestInfo);
 	void        TriggerFinished(const AudioControlId trigger);
 
+	void DebugDraw();
+
 	AudioControlId m_playTriggerId = INVALID_AUDIO_CONTROL_ID;
 	AudioControlId m_stopTriggerId = INVALID_AUDIO_CONTROL_ID;
 
 	AudioControlId m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
-	Vec3           m_randomizationArea;
-	bool           m_bEnabled = true;
-	EPlayBehaviour m_behaviour = ePlayBehaviour_Single;
-	float          m_minDelay = 0.0f;
-	float          m_maxDelay = 1000.0f;
+	
+	EPlayBehavior m_currentBehavior = ePlayBehavior_Single;
 
-#if !defined(_RELEASE)
-	enum EDrawActivityRadius
-	{
-		eDrawActivityRadius_Disabled = 0,
-		eDrawActivityRadius_PlayTrigger,
-		eDrawActivityRadius_StopTrigger,
-	};
+protected:
+	bool m_bEnabled = true;
+	bool m_bTriggerAreasOnMove = false;
+
+	string m_playTriggerName;
+	string m_stopTriggerName;
+
+	ESoundObstructionType m_obstructionType = eSoundObstructionType_Adaptive;
+
+	EPlayBehavior m_behavior = ePlayBehavior_Single;
+
+	float m_minDelay = 0.0f;
+	float m_maxDelay = 1000.0f;
+
+	Vec3 m_randomizationArea = Vec3(ZERO);
 	EDrawActivityRadius m_drawActivityRadius = eDrawActivityRadius_Disabled;
-	bool                m_bDrawRandomizationArea = false;
-#endif
+	bool m_bDrawRandomizationArea = false;
 };

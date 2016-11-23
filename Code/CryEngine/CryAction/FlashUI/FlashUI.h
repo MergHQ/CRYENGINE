@@ -53,6 +53,9 @@ class CFlashUI
 
 	CRYGENERATE_SINGLETONCLASS(CFlashUI, IFlashUIExtensionName, 0x35AE7F0FBB13437B, 0x9C5FFCD2568616A5)
 
+	CFlashUI();
+	virtual ~CFlashUI() {}
+
 public:
 	// IFlashUI
 	virtual void                      Init() override;

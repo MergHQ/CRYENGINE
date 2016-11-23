@@ -22,6 +22,9 @@ private:
 		ELockMode              eLockMode;
 	};
 
+	CPoseAlignerChain();
+	virtual ~CPoseAlignerChain() {}
+
 public:
 	CRYINTERFACE_BEGIN()
 	CRYINTERFACE_ADD(IAnimationPoseModifier)

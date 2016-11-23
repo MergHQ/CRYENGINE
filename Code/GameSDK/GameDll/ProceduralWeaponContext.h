@@ -26,6 +26,9 @@ private:
 public:
 	PROCEDURAL_CONTEXT(CProceduralWeaponAnimationContext, "ProceduralWeaponAnimationContext", 0xDF1D02E05F4048A1, 0xBC7759DCC568AA7F);
 
+	CProceduralWeaponAnimationContext();
+	virtual ~CProceduralWeaponAnimationContext() {}
+
 	virtual void Update(float timePassed) override;
 	void SetAimDirection(Vec3 direction);
 	void Initialize(IScope* pScope);
