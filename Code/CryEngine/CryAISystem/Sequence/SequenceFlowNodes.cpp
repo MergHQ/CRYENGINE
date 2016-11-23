@@ -195,9 +195,11 @@ void CFlowNode_AISequenceStart::HandleSequenceEvent(SequenceEvent sequenceEvent)
 
 void CFlowNode_AISequenceStart::InitializeSequence(SActivationInfo* pActInfo)
 {
-	assert(pActInfo->pEntity);
 	if (!pActInfo->pEntity)
+	{
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_ERROR, "FG node CFlowNode_AISequenceStart: did you forget to assign an entity to this node?");
 		return;
+	}
 
 	IFlowNodeData* flowNodeData = pActInfo->pGraph->GetNodeData(pActInfo->myID);
 	assert(flowNodeData);
