@@ -36,26 +36,26 @@ void CParticleJobManager::AddEmitter(CParticleEmitter* pEmitter)
 {
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
 
-	auto gpuPfx = gEnv->pRenderer->GetGpuParticleManager();
+	const auto& runtimeRefs = pEmitter->GetRuntimes();
 
-	for (auto ref : pEmitter->GetRuntimes())
+	for (uint i = 0; i < runtimeRefs.size(); ++i)
 	{
-		if (auto pCpuRuntime = ref.pRuntime->GetCpuRuntime())
+		auto pCpuRuntime = runtimeRefs[i].pRuntime->GetCpuRuntime();
+		if (!pCpuRuntime)
+			continue;
+		const SComponentParams& params = pCpuRuntime->GetComponentParams();
+		const bool isActive = pCpuRuntime->IsActive();
+		const bool isSecondGen = params.IsSecondGen();
+		if (isActive && !isSecondGen)
 		{
-			const SComponentParams& params = pCpuRuntime->GetComponentParams();
-			const bool isActive = pCpuRuntime->IsActive();
-			const bool isSecondGen = params.IsSecondGen();
-			if (isActive && !isSecondGen)
-			{
-				size_t refIdx = m_componentRefs.size();
-				m_firstGenComponentsRef.push_back(refIdx);
-				m_componentRefs.push_back(SComponentRef(pCpuRuntime));
-				SComponentRef& componentRef = m_componentRefs.back();
-				componentRef.m_firstChild = m_componentRefs.size();
-				componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
-				componentRef.m_pPostSubUpdates->SetClassInstance(this);
-				AddComponentRecursive(pEmitter, refIdx);
-			}
+			size_t refIdx = m_componentRefs.size();
+			m_firstGenComponentsRef.push_back(refIdx);
+			m_componentRefs.push_back(SComponentRef(pCpuRuntime));
+			SComponentRef& componentRef = m_componentRefs.back();
+			componentRef.m_firstChild = m_componentRefs.size();
+			componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
+			componentRef.m_pPostSubUpdates->SetClassInstance(this);
+			AddComponentRecursive(pEmitter, refIdx);
 		}
 	}
 }
@@ -64,23 +64,22 @@ void CParticleJobManager::AddComponentRecursive(CParticleEmitter* pEmitter, size
 {
 	const CParticleComponentRuntime* pParentComponentRuntime = m_componentRefs[parentRefIdx].m_pComponentRuntime;
 	const SComponentParams& parentParams = pParentComponentRuntime->GetComponentParams();
+	const auto& runtimeRefs = pEmitter->GetRuntimes();
 
 	for (auto& childComponentId : parentParams.m_subComponentIds)
 	{
-		ICommonParticleComponentRuntime* pCommonRuntime =
-		  pEmitter->GetRuntimes()[childComponentId].pRuntime;
-		if (auto pChildComponent = pCommonRuntime->GetCpuRuntime())
+		auto pChildComponent = runtimeRefs[childComponentId].pRuntime->GetCpuRuntime();
+		if (!pChildComponent)
+			continue;
+		const bool isActive = pChildComponent->IsActive();
+		if (isActive)
 		{
-			const bool isActive = pChildComponent->IsActive();
-			if (isActive)
-			{
-				const SComponentParams& childParams = pChildComponent->GetComponentParams();
-				m_componentRefs.push_back(SComponentRef(pChildComponent));
-				SComponentRef& componentRef = m_componentRefs.back();
-				componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
-				componentRef.m_pPostSubUpdates->SetClassInstance(this);
-				++m_componentRefs[parentRefIdx].m_numChildren;
-			}
+			const SComponentParams& childParams = pChildComponent->GetComponentParams();
+			m_componentRefs.push_back(SComponentRef(pChildComponent));
+			SComponentRef& componentRef = m_componentRefs.back();
+			componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
+			componentRef.m_pPostSubUpdates->SetClassInstance(this);
+			++m_componentRefs[parentRefIdx].m_numChildren;
 		}
 	}
 
