@@ -54,7 +54,7 @@ void CSceneGBufferStage::Init()
 	  );
 
 	// Opaque with Velocity Pass
-	m_opaqueVelocityPass.SetLabel("OPAQUE");
+	m_opaqueVelocityPass.SetLabel("OPAQUE_VELOCITY");
 	m_opaqueVelocityPass.SetupPassContext(m_stageID, ePass_GBufferFill, TTYPE_Z, FB_Z);
 	m_opaqueVelocityPass.SetPassResources(m_pResourceLayout, m_pPerPassResources);
 	m_opaqueVelocityPass.SetRenderTargets(
@@ -290,14 +290,14 @@ void CSceneGBufferStage::RenderDepthPrepass()
 	{
 		PROFILE_LABEL_SCOPE("ZPREPASS");
 
+		m_depthPrepass.BeginExecution();
 		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_ZPREPASS);
+		m_depthPrepass.EndExecution();
 	}
 }
 
 void CSceneGBufferStage::RenderSceneOpaque()
 {
-	PROFILE_LABEL_SCOPE("OPAQUE");
-
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
 
 	int numItems_Nearest = gcpRendD3D->m_RP.m_pCurrentRenderView->GetRenderItems(EFSLIST_NEAREST_OBJECTS).size();
@@ -308,29 +308,33 @@ void CSceneGBufferStage::RenderSceneOpaque()
 	int numItems_Skin = gcpRendD3D->m_RP.m_pCurrentRenderView->GetRenderItems(EFSLIST_SKIN).size();
 	int velocityEnd_Skin = pRenderView->FindRenderListSplit(EFSLIST_SKIN, FOB_HAS_PREVMATRIX);
 
+	// Opaque
+	m_opaquePass.BeginExecution();
 	if (CRenderer::CV_r_nodrawnear == 0)
 	{
 		m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, velocityEnd_Nearest, numItems_Nearest);
-		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
 	}
-
 	m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, velocityEnd_General, numItems_General);
 	m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_SKIN, velocityEnd_Skin, numItems_Skin);
+	m_opaquePass.EndExecution();
+
+	// OpaqueVelocity
+	m_opaqueVelocityPass.BeginExecution();
+	if (CRenderer::CV_r_nodrawnear == 0)
+	{
+		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
+	}
 	m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, velocityEnd_General);
 	m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_SKIN, 0, velocityEnd_Skin);
+	m_opaqueVelocityPass.EndExecution();
 }
 
 void CSceneGBufferStage::RenderSceneOverlays()
 {
-	{
-		PROFILE_LABEL_SCOPE("TERRAIN_LAYERS");
-		m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_TERRAINLAYER);
-	}
-
-	{
-		PROFILE_LABEL_SCOPE("DECALS");
-		m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_DECAL);
-	}
+	m_overlayPass.BeginExecution();
+	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_TERRAINLAYER);
+	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_DECAL);
+	m_overlayPass.EndExecution();
 }
 
 void CSceneGBufferStage::ExecuteLinearizeDepth()

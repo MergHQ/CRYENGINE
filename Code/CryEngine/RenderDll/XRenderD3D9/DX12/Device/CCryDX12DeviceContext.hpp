@@ -822,10 +822,10 @@ public:
 		return TimestampIndex(m_pCmdLists[CMDQUEUE_GRAPHICS]);
 	}
 
-	ILINE void InsertTimestamp(INT index, INT commandQueue)
+	ILINE void InsertTimestamp(INT index, INT commandQueue, NCryDX12::CCommandList* pCommandList)
 	{
 		assert(commandQueue >= CMDQUEUE_GRAPHICS && commandQueue <= CMDQUEUE_COPY);
-		InsertTimestamp(m_pCmdLists[commandQueue], index);
+		InsertTimestamp(!pCommandList ? m_pCmdLists[commandQueue] : pCommandList, index);
 	}
 
 	ILINE void ResolveTimestamps()

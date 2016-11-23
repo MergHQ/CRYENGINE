@@ -921,20 +921,19 @@ void CShadowMapStage::Execute()
 	{
 		if (curPass.m_bRequiresRender)
 		{
-			PROFILE_LABEL_SCOPE(curPass.m_ProfileLabel);
 			CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
 			curPass.PreRender();
 			curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
+			curPass.BeginExecution();
 			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
+			curPass.EndExecution();
 		}
 	}
 
 	// Cached shadow maps cannot be jobified currently due to CopyShadowMap pass
 	rendItemDrawer.JobifyDrawSubmission(true);
 	rendItemDrawer.InitDrawSubmission();
-
-	const char* pLastProfileLabel = nullptr;
 
 	for (auto passGroup  = CRenderView::eShadowFrustumRenderType_HeightmapAO;
 	          passGroup != CRenderView::eShadowFrustumRenderType_Count;
@@ -946,27 +945,13 @@ void CShadowMapStage::Execute()
 			{
 				CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
-				if (curPass.m_ProfileLabel[0] && curPass.m_nShadowFrustumSide == 0)
-				{
-					if (pLastProfileLabel)
-					{
-						PROFILE_LABEL_POP(pLastProfileLabel);
-					}
-
-					PROFILE_LABEL_PUSH(curPass.m_ProfileLabel);
-					pLastProfileLabel = curPass.m_ProfileLabel;
-				}
-
 				curPass.PreRender();
 				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
+				curPass.BeginExecution();
 				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
+				curPass.EndExecution();
 			}
 		}
-	}
-
-	if (pLastProfileLabel)
-	{
-		PROFILE_LABEL_POP(pLastProfileLabel);
 	}
 
 	rendItemDrawer.JobifyDrawSubmission();

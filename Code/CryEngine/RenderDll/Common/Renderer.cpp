@@ -4581,7 +4581,7 @@ void CRenderer::ClearDrawCallsInfo()
 #endif
 
 #ifdef ENABLE_PROFILING_CODE
-void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList)
+void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bScenePass)
 {
 	SPipeStat& pipelineStats = m_RP.m_PS[m_RP.m_nProcessThreadID];
 
@@ -4591,6 +4591,12 @@ void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderL
 	CryInterlockedAdd(&pipelineStats.m_nNumInlineSets, stats.numInlineSets);
 	CryInterlockedAdd(&pipelineStats.m_nPolygons[renderList], stats.numPolygons);
 	CryInterlockedAdd(&pipelineStats.m_nDIPs[renderList], stats.numDIPs);
+
+	if (bScenePass)
+	{
+		CryInterlockedAdd(&pipelineStats.m_nScenePassDIPs, stats.numDIPs);
+		CryInterlockedAdd(&pipelineStats.m_nScenePassPolygons, stats.numPolygons);
+	}
 }
 #endif
 

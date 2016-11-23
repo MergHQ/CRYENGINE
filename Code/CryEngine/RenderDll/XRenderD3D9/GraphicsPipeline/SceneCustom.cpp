@@ -215,7 +215,9 @@ void CSceneCustomStage::Execute()
 	
 		RenderView()->GetDrawer().InitDrawSubmission();
 
+		m_wireframePass.BeginExecution();
 		m_wireframePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
+		m_wireframePass.EndExecution();
 
 		RenderView()->GetDrawer().JobifyDrawSubmission();
 		RenderView()->GetDrawer().WaitForDrawSubmission();
@@ -270,7 +272,9 @@ void CSceneCustomStage::Execute()
 		uint32 startSelected = pRenderView->FindRenderListSplit(selectionPredicate, EFSLIST_CUSTOM, 0, startHighlight);
 
 		// First pass, draw selected object IDs
+		m_selectionIDPass.BeginExecution();
 		m_selectionIDPass.DrawRenderItems(pRenderView, EFSLIST_CUSTOM, startSelected, numItems);
+		m_selectionIDPass.EndExecution();
 		pRenderView->GetDrawer().JobifyDrawSubmission();
 		pRenderView->GetDrawer().WaitForDrawSubmission();
 

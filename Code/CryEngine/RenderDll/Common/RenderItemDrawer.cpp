@@ -28,7 +28,8 @@ void DrawCompiledRenderItemsToCommandList(
 	SGraphicsPipelinePassContext passContext = *pInputPassContext;
 	passContext.pCommandList = commandList;
 
-	passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest);
+	bool bContextStart = passContext.renderItemGroup == 0 && startRenderItem == passContext.rendItems.start;
+	passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest, passContext.profilerSectionIndex, bContextStart);
 
 	static const int cDynamicInstancingMaxCount = 128;
 	int dynamicInstancingCount = 0;
@@ -106,7 +107,8 @@ void DrawCompiledRenderItemsToCommandList(
 		ri.nBatchFlags |= FB_COMPILED_OBJECT;
 	}
 
-	passContext.pSceneRenderPass->EndRenderPass(*commandList, passContext.renderNearest);
+	bool bContextEnd = passContext.renderItemGroup == passContext.pSceneRenderPass->GetNumRenderItemGroups() - 1 && endRenderItem == passContext.rendItems.end;
+	passContext.pSceneRenderPass->EndRenderPass(*commandList, passContext.renderNearest, passContext.profilerSectionIndex, bContextEnd);
 }
 
 // NOTE: Job-System can't handle references (copies) and can't use static member functions or __restrict (doesn't execute)
