@@ -2072,14 +2072,13 @@ void CRenderMesh::SetChunk(int nIndex, CRenderChunk &inChunk)
   pRenderChunk->nNumIndices		= MAX(inChunk.nNumIndices,0);
   pRenderChunk->nFirstVertId	= inChunk.nFirstVertId;
   pRenderChunk->nNumVerts			= MAX(inChunk.nNumVerts,0);
-	pRenderChunk->nSubObjectIndex = inChunk.nSubObjectIndex;
+  pRenderChunk->nSubObjectIndex = inChunk.nSubObjectIndex;
 
   pRenderChunk->m_texelAreaDensity = inChunk.m_texelAreaDensity;
 
   // update chunk RE
   if (pRenderChunk->pRE)
     AssignChunk(pRenderChunk, (CREMeshImpl*) pRenderChunk->pRE);
-  assert(!pRenderChunk->pRE || pRenderChunk->pRE->m_pChunk->nFirstIndexId<60000);  // TODO: do we need to compare with 60000 if vertex indices are 32-bit?
   assert(pRenderChunk->nFirstIndexId + pRenderChunk->nNumIndices <= m_nInds);
 }
 
@@ -3194,8 +3193,6 @@ void CRenderMesh::AddRenderElements(IMaterial *pIMatInfo, CRenderObject *pObj, c
     {
       TArray<CRenderElement *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
 
-      assert(pOrigRE->m_pChunk->nFirstIndexId<60000);
-
       if (!pREs || !pREs->Num())
 				gRenDev->EF_AddEf_NotVirtual(pOrigRE, shaderItem, pObj, passInfo, nList, nAW);
       else
@@ -3221,8 +3218,6 @@ void CRenderMesh::AddRE(IMaterial* pMaterial, CRenderObject* obj, IShader* ef, c
       SH.m_pShader = ef;
     if (SH.m_pShader)
     {
-      assert(m_Chunks[i].pRE->m_pChunk->nFirstIndexId<60000);
-
       TArray<CRenderElement *> *pRE = SH.m_pShader->GetREs(SH.m_nTechnique);
       if (!pRE || !pRE->Num())
 				gRenDev->EF_AddEf_NotVirtual(m_Chunks[i].pRE, SH, obj, passInfo, nList, nAW);
