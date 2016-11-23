@@ -414,8 +414,7 @@ public:
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 
 #define CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, cidHigh, cidLow) \
-	friend struct CFactory<implclassname>::CustomDeleter; \
-	CRYINTERFACE_SIMPLE(interfaceName)                                                           \
+	CRYINTERFACE_SIMPLE(interfaceName)                                                         \
 	CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
 
 #define CRYGENERATE_SINGLETONCLASS(implclassname, cname, cidHigh, cidLow) \
