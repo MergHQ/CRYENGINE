@@ -1131,8 +1131,6 @@ public:
 	virtual void SwitchDemoModeSpectator(bool activate) override;
 	bool IsTimeDemo() const { return m_timedemo; }
 
-	void StopLoopingSounds();
-
 	void RegisterPlayerEventListener	(IPlayerEventListener *pPlayerEventListener);
 	void UnregisterPlayerEventListener(IPlayerEventListener *pPlayerEventListener);
 	void RegisterPlayerUpdateListener(IPlayerUpdateListener *pListener);

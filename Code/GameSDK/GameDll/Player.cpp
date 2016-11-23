@@ -686,8 +686,6 @@ CPlayer::~CPlayer()
 	SAFE_DELETE(m_pLocalPlayerInteractionPlugin);
 	SAFE_DELETE(m_pInteractiveEntityMonitorPlugin);
 
-	StopLoopingSounds();
-
 	m_pPlayerInput.reset();
 	ICharacterInstance *pCharacter = GetEntity()->GetCharacter(0);
 	if(pCharacter)
@@ -5762,8 +5760,6 @@ void CPlayer::PostSerialize()
 		}
 	}
 
-	StopLoopingSounds();
-
 	UpdateThirdPersonState();
 
 	if (m_pHitDeathReactions)
@@ -6716,8 +6712,6 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 		m_stats.inAir=0.0f;
 		m_stats.onGround=0.0f;
 
-		StopLoopingSounds();
-
 		StateMachineHandleEventMovement( PLAYER_EVENT_SPECTATE );
 
 		if( gEnv->IsClient() && isLocalPlayer && m_pPlayerTypeComponent)
@@ -7364,13 +7358,6 @@ void CPlayer::NotifyObjectGrabbed(bool bIsGrab, EntityId objectId, bool bIsNPC, 
 			}
 		}
 	}
-}
-
-void CPlayer::StopLoopingSounds()
-{
-	//stop sounds
-	for(int i = (int)ESound_Player_First+1; i < (int)ESound_Player_Last;++i)
-		PlaySound((EPlayerSounds)i, false);
 }
 
 struct RecursionFlagLock
