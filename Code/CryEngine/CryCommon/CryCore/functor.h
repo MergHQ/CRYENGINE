@@ -1493,7 +1493,7 @@ public:
 	{
 		m_functors.push_back(f);
 	}
-	// Remvoe functor from list.
+	// Remove functor from list.
 	void Remove(const FUNCTOR& f)
 	{
 		typename Container::iterator it = std::find(m_functors.begin(), m_functors.end(), f);
@@ -1506,40 +1506,13 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Call all functors in this list.
-	// Also several template functions for multiple parameters.
 	//////////////////////////////////////////////////////////////////////////
-	void Call()
+	template<class... TArgs>
+	void Call(TArgs... args)
 	{
 		for (typename Container::iterator it = m_functors.begin(); it != m_functors.end(); ++it)
 		{
-			(*it)();
-		}
-	}
-
-	template<class T1>
-	void Call(const T1& param1)
-	{
-		for (typename Container::iterator it = m_functors.begin(); it != m_functors.end(); ++it)
-		{
-			(*it)(param1);
-		}
-	}
-
-	template<class T1, class T2>
-	void Call(const T1& param1, const T2& param2)
-	{
-		for (typename Container::iterator it = m_functors.begin(); it != m_functors.end(); ++it)
-		{
-			(*it)(param1, param2);
-		}
-	}
-
-	template<class T1, class T2, class T3>
-	void Call(const T1& param1, const T2& param2, const T3& param3)
-	{
-		for (typename Container::iterator it = m_functors.begin(); it != m_functors.end(); ++it)
-		{
-			(*it)(param1, param2, param3);
+			(*it)(args...);
 		}
 	}
 
