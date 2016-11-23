@@ -2885,7 +2885,7 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC, SResourceView::Key
 	IF (this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
 	{
 		// apply black by default
-		if (CTexture::s_ptexBlack)
+		if (CTexture::s_ptexBlack && this != CTexture::s_ptexBlack)
 		{
 			CTexture::s_ptexBlack->ApplyTexture(nTUnit, eHWSC, nResViewKey);
 		}
@@ -3060,7 +3060,7 @@ void CTexture::Apply(int nTUnit, int nState, int nTexMatSlot, int nSUnit, SResou
 	IF (this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
 	{
 		// apply black by default
-		if (CTexture::s_ptexBlack)
+		if (CTexture::s_ptexBlack && this != CTexture::s_ptexBlack)
 		{
 			CTexture::s_ptexBlack->Apply(nTUnit, nState, nTexMatSlot, nSUnit, nResViewKey);
 		}
