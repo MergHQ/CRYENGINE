@@ -3499,11 +3499,25 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 					file.Write(&(exclusionGuid), sizeof(exclusionGuid));
 				}
 	#else
-				uint32 exclusionShapesCount = mesh.exclusions.size();
-				file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
-				for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
 				{
-					WriteNavigationIdType(file, mesh.exclusions[exclusionCounter]);
+					// Figure out which of the exclusion volume IDs are valid in order to export only those.
+					// This check will also fix maps that get exported after 2016-11-23. All maps prior to that date might contain invalid exclusion volume IDs and need to get exported again.
+					NavigationMesh::ExclusionVolumes validExlusionVolumes;
+					for (NavigationVolumeID volumeID : mesh.exclusions)
+					{
+						if (m_volumes.validate(volumeID))
+						{
+							validExlusionVolumes.push_back(volumeID);
+						}
+					}
+					
+					// Now export only the valid exclusion volume IDs.
+					uint32 exclusionShapesCount = validExlusionVolumes.size();
+					file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
+					for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
+					{
+						WriteNavigationIdType(file, validExlusionVolumes[exclusionCounter]);
+					}
 				}
 	#endif
 
