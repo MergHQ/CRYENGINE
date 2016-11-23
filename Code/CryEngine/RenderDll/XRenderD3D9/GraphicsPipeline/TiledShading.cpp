@@ -426,7 +426,7 @@ void CTiledShadingStage::Execute()
 	int gridWidth = screenWidth;
 	int gridHeight = screenHeight;
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
 	
 	uint32 dispatchSizeX = gridWidth / LightTileSizeX + (gridWidth % LightTileSizeX > 0 ? 1 : 0);
@@ -580,7 +580,7 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetConstant(ssdoParamsName, CRenderer::CV_r_ssdo ? ssdoParams : ssdoNullParams);
 	}
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 	{
 		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
 		m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);

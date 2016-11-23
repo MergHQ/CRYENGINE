@@ -514,7 +514,7 @@ bool CShaderMan::mfModifyGenFlags(CShader* efGen, const CShaderResources* pRes, 
 				}
 
 				PREFAST_SUPPRESS_WARNING(6326)
-				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0 && !CVrProjectionManager::Instance()->IsMultiResEnabled();
+				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0 && !CVrProjectionManager::IsMultiResEnabledStatic();
 				if (pBit->m_nDependencySet & SHGD_HW_SILHOUETTE_POM)
 				{
 					nAndMaskHW &= ~pBit->m_Mask;

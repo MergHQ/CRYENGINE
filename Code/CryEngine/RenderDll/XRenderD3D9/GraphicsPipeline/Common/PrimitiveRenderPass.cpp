@@ -515,7 +515,7 @@ void CPrimitiveRenderPass::Prepare(CDeviceCommandListRef RESTRICT_REFERENCE comm
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
 	{
-		if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		if (CVrProjectionManager::IsMultiResEnabledStatic())
 			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, m_viewport);
 	}
 

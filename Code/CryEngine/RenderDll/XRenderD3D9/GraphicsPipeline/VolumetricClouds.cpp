@@ -1138,7 +1138,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 		int gridWidth = screenWidth;
 		int gridHeight = screenHeight;
 
-		if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		if (CVrProjectionManager::IsMultiResEnabledStatic())
 		{
 			CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
 
@@ -1257,7 +1257,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 	int gridWidth = screenWidth;
 	int gridHeight = screenHeight;
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 	{
 		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
 

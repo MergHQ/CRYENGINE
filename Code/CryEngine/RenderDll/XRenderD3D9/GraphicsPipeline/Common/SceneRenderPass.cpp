@@ -207,7 +207,7 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
 	{
-		if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+		if (CVrProjectionManager::IsMultiResEnabledStatic())
 		{
 			// we don't know the bNearest flag here, so just prepare for both cases
 			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, GetViewport(false));

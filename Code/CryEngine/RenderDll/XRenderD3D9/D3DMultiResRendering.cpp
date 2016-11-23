@@ -62,8 +62,13 @@ void CVrProjectionManager::Reset()
 }
 
 bool CVrProjectionManager::IsMultiResEnabled() const
-{ 
+{
 	return m_projection == eVrProjection_MultiRes || m_projection == eVrProjection_LensMatched;
+}
+
+bool CVrProjectionManager::IsMultiResEnabledStatic()
+{
+	return Instance() && Instance()->IsMultiResEnabled();
 }
 
 bool CVrProjectionManager::IsProjectionConfigured() const

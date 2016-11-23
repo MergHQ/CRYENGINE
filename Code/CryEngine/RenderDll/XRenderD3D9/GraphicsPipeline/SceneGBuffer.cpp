@@ -407,7 +407,7 @@ void CSceneGBufferStage::Execute()
 
 	bool bClearAll = CRenderer::CV_r_wireframe != 0;
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 		bClearAll = true;
 
 	if (bClearAll)

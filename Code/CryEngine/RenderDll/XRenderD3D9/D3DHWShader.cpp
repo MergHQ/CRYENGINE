@@ -597,7 +597,7 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 	// Check for auto MultiRes-Geom shader
 	if (eClass == eHWSC_Geometry && szEntryFunc[0] == '$')
 	{
-		if (!CVrProjectionManager::Instance()->IsMultiResEnabled())
+		if (!CVrProjectionManager::IsMultiResEnabledStatic())
 		{
 			pSH->Release();
 			return NULL;
@@ -5990,7 +5990,7 @@ bool CHWShader_D3D::mfSetGS(int nFlags)
 	CD3D9Renderer* rd = gcpRendD3D;
 	if (m_Flags & HWSG_GS_MULTIRES)
 	{
-		if (!s_pCurInstVS || !CVrProjectionManager::Instance()->IsMultiResEnabled())
+		if (!s_pCurInstVS || !CVrProjectionManager::IsMultiResEnabledStatic())
 			return false;
 	}
 

@@ -44,7 +44,7 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 			result[shaderStage].technique = technique;
 
 			// Special case for nvidia multires shading: auto geometry shader requires vertex shader instance
-			if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+			if (CVrProjectionManager::IsMultiResEnabledStatic())
 			{
 				if (shaderStage == eHWSC_Geometry && pHWShaderD3D)
 				{
@@ -520,7 +520,7 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	  ? D3D11_CULL_BACK
 	  : ((m_CullMode == eCULL_None) ? D3D11_CULL_NONE : D3D11_CULL_FRONT);
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 	{
 		rasterizerDesc.ScissorEnable = TRUE;
 	}

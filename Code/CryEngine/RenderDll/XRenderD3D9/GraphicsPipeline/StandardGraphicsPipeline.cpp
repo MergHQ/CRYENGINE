@@ -926,7 +926,7 @@ void CStandardGraphicsPipeline::Execute()
 
 	m_pSceneGBufferStage->ExecuteLinearizeDepth();
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 		CVrProjectionManager::Instance()->ExecuteFlattenDepth(CTexture::s_ptexZTarget, CVrProjectionManager::Instance()->GetZTargetFlattened());
 
 	// Depth downsampling

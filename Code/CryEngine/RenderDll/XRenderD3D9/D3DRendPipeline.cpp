@@ -3288,7 +3288,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		return;
 	}
 
-	const bool bUseNativeDepth = (CRenderer::CV_r_CBufferUseNativeDepth || CVrProjectionManager::Instance()->IsMultiResEnabled()) && !gEnv->IsEditor();
+	const bool bUseNativeDepth = (CRenderer::CV_r_CBufferUseNativeDepth || CVrProjectionManager::IsMultiResEnabledStatic()) && !gEnv->IsEditor();
 	const bool bReverseDepth   = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 
 	bool bDownSampleUpdate = false;
@@ -3477,7 +3477,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 	CTexture* pSrc = CTexture::s_ptexZTarget;
 	CTexture* pDst = CTexture::s_ptexZTarget;
 
-	if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
 		pSrc = CVrProjectionManager::Instance()->GetZTargetFlattened();
 
 	bool bUseMSAA = bMSAA;
