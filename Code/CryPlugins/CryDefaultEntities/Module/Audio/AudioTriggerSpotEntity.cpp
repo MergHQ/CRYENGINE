@@ -30,12 +30,20 @@ class CAudioTriggerSpotRegistrator final : public IEntityRegistrator
 		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "Stop Trigger", "audioTriggerStopTriggerName", "", "");
 		RegisterEntityProperty<bool>(pPropertyHandler, "Trigger Areas On Move", "bTriggerAreasOnMove", "0", "");
 		RegisterEntityPropertyEnum(pPropertyHandler, "Sound Obstruction Type", "eiSoundObstructionType", "1", "", 0, 1);
-		RegisterEntityPropertyEnum(pPropertyHandler, "Behaviour", "eiBehaviour", "0", "", 0, 1);
-		RegisterEntityProperty<float>(pPropertyHandler, "Min Delay", "fMinDelay", "0", "", 0.f, 100000.f);
-		RegisterEntityProperty<float>(pPropertyHandler, "Max Delay", "fMaxDelay", "1", "", 0.f, 100000.f);
-		RegisterEntityProperty<Vec3>(pPropertyHandler, "Randomization Area", "vectorRandomizationArea", "", "");
-		RegisterEntityPropertyEnum(pPropertyHandler, "Draw Activity Radius", "eiDrawActivityRadius", "0", "", 0, 1);
-		RegisterEntityProperty<bool>(pPropertyHandler, "Draw Randomization Area", "bDrawRandomizationArea", "0", "");
+
+		{
+			SEntityPropertyGroupHelper playModeGroup(pPropertyHandler, "Play Mode");
+			RegisterEntityPropertyEnum(pPropertyHandler, "Behaviour", "eiBehaviour", "0", "", 0, 1);
+			RegisterEntityProperty<float>(pPropertyHandler, "Min Delay", "fMinDelay", "0", "", 0.f, 100000.f);
+			RegisterEntityProperty<float>(pPropertyHandler, "Max Delay", "fMaxDelay", "1", "", 0.f, 100000.f);
+			RegisterEntityProperty<Vec3>(pPropertyHandler, "Randomization Area", "vectorRandomizationArea", "", "");
+		}
+
+		{
+			SEntityPropertyGroupHelper debugGroup(pPropertyHandler, "Debug");
+			RegisterEntityPropertyEnum(pPropertyHandler, "Draw Activity Radius", "eiDrawActivityRadius", "0", "", 0, 1);
+			RegisterEntityProperty<bool>(pPropertyHandler, "Draw Randomization Area", "bDrawRandomizationArea", "0", "");
+		}
 
 	}
 };

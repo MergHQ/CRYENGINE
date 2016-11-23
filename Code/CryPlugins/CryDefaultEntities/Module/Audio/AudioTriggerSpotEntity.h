@@ -17,12 +17,16 @@ public:
 		eProperty_StopTrigger,
 		eProperty_TriggerAreasOnMove,
 		eProperty_SoundObstructionType,
+		eProperty_GroupPlayModeBegin,
 		eProperty_Behaviour,
 		eProperty_MinDelay,
 		eProperty_MaxDelay,
 		eProperty_RandomizationArea,
+		eProperty_GroupPlayModeEnd,
+		eProperty_GroupDebugBegin,
 		eProperty_DrawActivityRadius,
 		eProperty_DrawRandomizationArea,
+		eProperty_GroupDebugEnd,
 		eNumProperties
 	};
 
