@@ -115,11 +115,11 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 	if (bSyncLoad)
 	{
 		PrintMessage("Updating level streaming priorities for %" PRISIZE_T " cameras (LevelFrameId = %d)", nPrecachePoints, Get3DEngine()->GetStreamingFramesSinceLevelStart());
-		for (size_t pci = 0; pci < nPrecachePoints; ++pci)
+		for (size_t pci = 0; pci < m_vStreamPreCacheCameras.size(); ++pci)
 			PrintMessage("-- %f %f %f",
-			             m_vStreamPreCacheCameras[m_vStreamPreCachePointDefs[pci].nId].vPosition.x,
-			             m_vStreamPreCacheCameras[m_vStreamPreCachePointDefs[pci].nId].vPosition.y,
-			             m_vStreamPreCacheCameras[m_vStreamPreCachePointDefs[pci].nId].vPosition.z);
+			             m_vStreamPreCacheCameras[pci].vPosition.x,
+			             m_vStreamPreCacheCameras[pci].vPosition.y,
+			             m_vStreamPreCacheCameras[pci].vPosition.z);
 	}
 
 	CVisAreaManager* pVisAreaMgr = GetVisAreaManager();

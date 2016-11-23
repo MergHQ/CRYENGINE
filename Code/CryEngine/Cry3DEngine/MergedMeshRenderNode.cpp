@@ -2302,6 +2302,15 @@ IRenderNode* CMergedMeshRenderNode::AddInstance(const SProcVegSample& sample)
 		           "CMergedMeshRenderNode::AddInstance no valid statobj given");
 		return NULL;
 	}
+	IF (!statObj->GetRenderMesh(), 0)
+	{
+		static CStatObj* lastReportedObj = NULL;
+		if (lastReportedObj != statObj)
+			FileWarning(0, statObj->GetFilePath(), "CMergedMeshRenderNode::AddInstance: CGF file does not support mesh auto merging");
+		lastReportedObj = statObj;
+		return NULL;
+	}
+
 	const Vec3 extents = (m_visibleAABB.max - m_visibleAABB.min) * 0.5f;
 	const Vec3 origin = m_pos - extents;
 	size_t headerIndex = (size_t)-1;

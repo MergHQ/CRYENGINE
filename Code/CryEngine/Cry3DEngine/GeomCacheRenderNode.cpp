@@ -284,7 +284,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 											};
 
 											memcpy(hashableData, pCREGeomCache, sizeof(pCREGeomCache));
-											pRenderObjData->m_uniqueObjectId = static_cast<uintptr_t>(XXH64(hashableData, sizeof(hashableData), 0));
+											pRenderObjData->m_uniqueObjectId = static_cast<uintptr_t>(XXH64(hashableData, sizeof(hashableData), 0)) + reinterpret_cast<uintptr_t>(this);
 
 											pCREGeomCache->SetupMotionBlur(pInstanceRenderObject, passInfo);
 										}

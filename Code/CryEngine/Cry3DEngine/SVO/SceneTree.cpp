@@ -1795,8 +1795,13 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 
 	ZeroStruct(svoInfo.arrAnalyticalOccluders);
 	for (int nStage = 0; nStage < 2; nStage++)
+	{
 		if (m_AnalyticalOccluders[nStage].Count())
-			memcpy(&svoInfo.arrAnalyticalOccluders[nStage][0], m_AnalyticalOccluders[nStage].GetElements(), m_AnalyticalOccluders[nStage].GetDataSize());
+		{
+			uint32 bytesToCopy = min((unsigned int)sizeof(svoInfo.arrAnalyticalOccluders[nStage]), m_AnalyticalOccluders[nStage].GetDataSize());
+			memcpy(&svoInfo.arrAnalyticalOccluders[nStage][0], m_AnalyticalOccluders[nStage].GetElements(), bytesToCopy);
+		}
+	}
 
 	svoInfo.vSvoOriginAndSize = m_vSvoOriginAndSize;
 
@@ -2576,10 +2581,10 @@ void CSvoEnv::CollectAnalyticalOccluders()
 
 	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
-	if (int nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderProxy, areaBox, (IRenderNode**)0))
+	if (int nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_Brush, areaBox, (IRenderNode**)0))
 	{
 		PodArray<IRenderNode*> arrObjects(nCount, nCount);
-		nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderProxy, areaBox, arrObjects.GetElements());
+		nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_Brush, areaBox, arrObjects.GetElements());
 
 		Vec3 camPos = gEnv->pSystem->GetViewCamera().GetPosition();
 
@@ -2599,8 +2604,8 @@ void CSvoEnv::CollectAnalyticalOccluders()
 			if (CStatObj* pStatObj = (CStatObj*)pRN->GetEntityStatObj(0, 0, &matParent, true))
 			{
 				bool bPO     = (pRN->GetGIMode() == IRenderNode::eGM_AnalytPostOccluder) && GetCVars()->e_svoTI_AnalyticalOccluders;				
-				bool bAO     = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Soft) && GetCVars()->e_svoTI_AnalyticalGI;
-				bool bAOHard = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Hard) && GetCVars()->e_svoTI_AnalyticalGI;
+				bool bAO     = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Soft) && (GetCVars()->e_svoTI_AnalyticalGI || GetCVars()->e_svoTI_AnalyticalOccluders);
+				bool bAOHard = (pRN->GetGIMode() == IRenderNode::eGM_AnalyticalProxy_Hard) && (GetCVars()->e_svoTI_AnalyticalGI || GetCVars()->e_svoTI_AnalyticalOccluders);
 
 				if (bPO || bAO || bAOHard)
 				{

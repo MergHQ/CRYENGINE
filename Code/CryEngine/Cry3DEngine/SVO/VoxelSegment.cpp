@@ -1967,11 +1967,11 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 								EFileStreamingStatus eStreamingStatusParent = pParent->m_eStreamingStatus;
 								bool bUnloadable = pParent->IsUnloadable();
 
-								if (pNode->GetRenderNodeType() == eERType_Brush)
-									info.fObjScale = ((CBrush*)pNode)->GetScale();
-								else if (pNode->GetRenderNodeType() == eERType_Vegetation)
+								if (pNode->GetRenderNodeType() == eERType_Vegetation)
+								{
 									info.fObjScale = ((CVegetation*)pNode)->GetScale();
-								else if (pNode->GetRenderNodeType() == eERType_RenderProxy)
+								}
+								else if (pNode->GetRenderNodeType() == eERType_RenderProxy || pNode->GetRenderNodeType() == eERType_Brush)
 								{
 									Vec3 vScaleAbs = info.matObj.TransformVector(Vec3(1, 1, 1)).abs();
 									info.fObjScale = min(min(vScaleAbs.x, vScaleAbs.y), vScaleAbs.z);

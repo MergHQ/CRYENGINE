@@ -235,7 +235,7 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 	m_fNodeDistance = fNodeDistance;
 	m_bNodeCompletelyInFrustum = bNodeCompletelyInFrustum;
 
-	if (GetCVars()->e_VegetationSpritesBatching)
+	if (GetCVars()->e_VegetationSpritesBatching && GetCVars()->e_VegetationSprites)
 		CheckManageVegetationSprites(fNodeDistance, (int)(fNodeDistance * 0.2f), passInfo);
 
 	if (HasAnyRenderableCandidates(passInfo))
@@ -1727,7 +1727,7 @@ bool COctreeNode::UpdateStreamingPriority(PodArray<COctreeNode*>& arrRecursion, 
 	if (fNodeDistance > min(m_fObjectsMaxViewDist, fMaxDist) + fPredictionDistanceFar)
 		return true;
 
-	if (GetCVars()->e_VegetationSpritesBatching)
+	if (GetCVars()->e_VegetationSpritesBatching && GetCVars()->e_VegetationSprites)
 		CheckManageVegetationSprites(fNodeDistance, 64, passInfo);
 
 	AABB objBox;
