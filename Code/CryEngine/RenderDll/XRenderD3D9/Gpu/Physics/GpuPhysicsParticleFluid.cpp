@@ -375,6 +375,9 @@ void CParticleFluidSimulation::DebugDraw()
 		m_pData->bodiesTemp.Readback(m_params->numberOfBodies);
 		const SFluidBody* parts = m_pData->bodiesTemp.Map(m_params->numberOfBodies);
 
+		if (!parts)
+			return;
+
 		gcpRendD3D.GetIRenderAuxGeom()->SetRenderFlags(e_Def3DPublicRenderflags);
 		m_points.resize(m_params->numberOfBodies);
 
