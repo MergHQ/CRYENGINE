@@ -75,6 +75,8 @@ void CGeomEntity::ProcessEvent(SEntityEvent& event)
 	{
 		m_bHide = (event.event == ENTITY_EVENT_HIDE);
 	}
+
+	CNativeEntityBase::ProcessEvent(event);
 }
 
 void CGeomEntity::HandleEvent(const SGameObjectEvent &event)
