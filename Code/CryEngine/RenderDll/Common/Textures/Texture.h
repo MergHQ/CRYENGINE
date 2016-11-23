@@ -1823,7 +1823,7 @@ public:
 	static volatile size_t s_nStatsStreamPoolBoundMem;          // Amount of stream pool currently bound and in use by textures (avail + non avail)
 	static volatile size_t s_nStatsStreamPoolBoundPersMem;      // Amount of stream pool currently bound and in use by persistent texture mem (avail + non avail)
 	static volatile int    s_nStatsCurManagedNonStreamedTexMem;
-	static volatile int    s_nStatsCurDynamicTexMem;
+	static volatile size_t s_nStatsCurDynamicTexMem;
 	static volatile size_t s_nStatsStreamPoolWanted;
 	static bool            s_bStatsComputeStreamPoolWanted;
 
