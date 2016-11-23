@@ -92,12 +92,12 @@ void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComp
 		objFlags &= ~FOB_LIGHTVOLUME;
 
 	const bool isCameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();;
-	const bool renderBellowWater = params.m_visibility.m_waterVisibility != EWaterVisibility::AboveWaterOnly;
-	const bool renderAboveWater = params.m_visibility.m_waterVisibility != EWaterVisibility::BellowWaterOnly;
+	const bool renderBelowWater = params.m_visibility.m_waterVisibility != EWaterVisibility::AboveWaterOnly;
+	const bool renderAboveWater = params.m_visibility.m_waterVisibility != EWaterVisibility::BelowWaterOnly;
 
-	if (m_waterCulling && ((isCameraUnderWater && renderAboveWater) || (!isCameraUnderWater && renderBellowWater)))
+	if (m_waterCulling && ((isCameraUnderWater && renderAboveWater) || (!isCameraUnderWater && renderBelowWater)))
 		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
-	if ((isCameraUnderWater && renderBellowWater) || (!isCameraUnderWater && renderAboveWater))
+	if ((isCameraUnderWater && renderBelowWater) || (!isCameraUnderWater && renderAboveWater))
 		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
 }
 

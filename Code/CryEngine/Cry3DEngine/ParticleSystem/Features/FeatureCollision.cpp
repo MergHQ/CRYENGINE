@@ -14,14 +14,14 @@ EParticleDataType PDT(EPDT_ContactPoint, SContactPoint, 1);
 // CFeatureCollision
 
 CFeatureCollision::CFeatureCollision()
-	: m_collisionsLimtMode(ECollisionLimitMode::Unlimited)
+	: m_collisionsLimitMode(ECollisionLimitMode::Unlimited)
 	, m_terrain(true), m_staticObjects(true), m_dynamicObjects(false)
 {
 }
 
 void CFeatureCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	if (m_collisionsLimtMode != ECollisionLimitMode::Unlimited)
+	if (m_collisionsLimitMode != ECollisionLimitMode::Unlimited)
 		pComponent->AddToUpdateList(EUL_Update, this);
 }
 
@@ -31,8 +31,8 @@ void CFeatureCollision::Serialize(Serialization::IArchive& ar)
 	ar(m_staticObjects, "StaticObjects", "Static Objects");
 	ar(m_dynamicObjects, "DynamicObjects", "Dynamic Objects");
 	ar(m_elasticity, "Elasticity", "Elasticity");
-	ar(m_collisionsLimtMode, "CollisionsLimtMode", "Collision Limit");
-	if (m_collisionsLimtMode != ECollisionLimitMode::Unlimited)
+	ar(m_collisionsLimitMode, "CollisionsLimitMode", "Collision Limit");
+	if (m_collisionsLimitMode != ECollisionLimitMode::Unlimited)
 		ar(m_maxCollisions, "MaxCollisions", "Maximum Collisions");
 }
 
@@ -95,7 +95,7 @@ void CFeatureCollision::Update(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	switch (m_collisionsLimtMode)
+	switch (m_collisionsLimitMode)
 	{
 	case ECollisionLimitMode::Ignore:
 		UpdateCollisionLimit<SCollisionLimitIgnore>(context);

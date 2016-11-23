@@ -1116,11 +1116,6 @@ class CFeatureLocationOmni : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureLocationOmni()
-		: m_wrapSector(true), m_wrapRotation(true), m_useEmitterLocation(false)
-	{
-	}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddParticleData(EPVF_AuxPosition);
@@ -1319,10 +1314,10 @@ private:
 	CParamMod<SModEffectField, UFloat100> m_visibility;
 
 	// Debugging and profiling options
-	bool m_wrapSector;
-	bool m_wrapRotation;
-	bool m_useEmitterLocation;
-	bool m_freezeCamera;
+	bool m_wrapSector         = true;
+	bool m_wrapRotation       = true;
+	bool m_useEmitterLocation = false;
+	bool m_freezeCamera       = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", colorLocation);

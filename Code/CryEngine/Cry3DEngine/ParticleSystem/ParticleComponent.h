@@ -87,7 +87,7 @@ SERIALIZATION_ENUM_DEFINE(EIndoorVisibility, ,
 
 SERIALIZATION_ENUM_DEFINE(EWaterVisibility, ,
 	AboveWaterOnly,
-	BellowWaterOnly,
+	BelowWaterOnly,
 	Both
 	)
 

@@ -8,13 +8,19 @@ namespace Serialization
 {
 
 //! Skip underscores and prefixes in identifier.
-inline cstr ToDisplayName(cstr name)
+inline string ToDisplayName(cstr name)
 {
 	if (name[0] == 'm' && name[1] == '_')
 		name += 2;
 	while (*name == '_')
 		name++;
-	return name;
+	string disp;
+	if (*name)
+	{
+		disp += toupper(*name);
+		disp += name + 1;
+	}
+	return disp;
 }
 
 //! Convert label to name: remove spaces.
@@ -62,6 +68,6 @@ inline string NameToLabel(cstr name)
 }
 
 #define SERIALIZE_VAR(ar, var)                                            \
-  cstr var ## _Name = Serialization::ToDisplayName( # var);               \
+  static string var ## _Name = Serialization::ToDisplayName( # var);      \
   static string var ## _Label = Serialization::NameToLabel(var ## _Name); \
   ar(var, var ## _Name, var ## _Label)
