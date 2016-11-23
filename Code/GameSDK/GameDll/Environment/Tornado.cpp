@@ -308,7 +308,6 @@ bool CTornado::UseFunnelEffect(const char* effectName)
 	GetEntity()->LoadParticleEmitter(0, m_pFunnelEffect, 0, true);
 	Matrix34 tm(IDENTITY);
 	GetEntity()->SetSlotLocalTM(0, tm);
-	GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0)|ENTITY_SLOT_RENDER);
 
 	// init the first time
 	if (!m_pCloudConnectEffect)
@@ -348,7 +347,6 @@ void CTornado::UpdateParticleEmitters()
 	{
 		cloudOffset.z = m_cloudHeight - pos.z;
 		GetEntity()->SetSlotLocalTM(1, Matrix34(ParticleLoc(cloudOffset)));
-		GetEntity()->SetSlotFlags(1, GetEntity()->GetSlotFlags(1)|ENTITY_SLOT_RENDER);
 	}
 
 	if (m_pTopEffect)
@@ -357,7 +355,6 @@ void CTornado::UpdateParticleEmitters()
 		topOffset.z -= 140.0f;
 
 		GetEntity()->SetSlotLocalTM(2, Matrix34(ParticleLoc(topOffset)));
-		GetEntity()->SetSlotFlags(2, GetEntity()->GetSlotFlags(2)|ENTITY_SLOT_RENDER);
 	}
 
 	m_pGroundEffect->Update();

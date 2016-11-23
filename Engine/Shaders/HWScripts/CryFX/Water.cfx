@@ -1010,10 +1010,8 @@ pixout WaterPS(v2f_hs IN)
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Water edge and foam softness
 
-	float2 sampleTC = MapViewportToRaster(IN.baseTC.xy);
-
 	//float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
-	float sceneDepth = wvGetLinearDepthScaled(sampleTC);
+	float sceneDepth = wvGetLinearDepthScaled(MapViewportToRaster(screenTC.xy));
 	half softIntersect = saturate( SoftIntersectionFactor * (sceneDepth - IN.screenProj.w) );
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////

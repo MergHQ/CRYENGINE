@@ -346,11 +346,12 @@ void CClearRegionPass::Execute(SDepthTexture* pDepthTex, const int nFlags, const
 	m_clearPass.SetDepthTarget(pDepthTex);
 	m_clearPass.SetViewport(viewport);
 
+	// allocate number of required primitives first
+	for (int i = m_clearPrimitives.size(); i < numRects; ++i)
+		m_clearPrimitives.push_back(CRenderPrimitive());
+
 	for (int i = 0; i < numRects; ++i)
 	{
-		if (i >= m_clearPrimitives.size())
-			m_clearPrimitives.push_back(CRenderPrimitive());
-
 		auto& prim = m_clearPrimitives[i];
 		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport);
 
@@ -381,11 +382,12 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 	m_clearPass.SetRenderTarget(0, pTex);
 	m_clearPass.SetViewport(viewport);
 
+	// allocate number of required primitives first
+	for (int i = m_clearPrimitives.size(); i < numRects; ++i)
+		m_clearPrimitives.push_back(CRenderPrimitive());
+
 	for (int i = 0; i < numRects; ++i)
 	{
-		if (i >= m_clearPrimitives.size())
-			m_clearPrimitives.push_back(CRenderPrimitive());
-
 		auto& prim = m_clearPrimitives[i];
 		PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport);
 
