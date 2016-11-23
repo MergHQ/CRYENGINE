@@ -26,6 +26,7 @@ public:
 	static void Reset();
 
 	static CVrProjectionManager* Instance() { return m_pInstance; }
+	static bool IsMultiResEnabledStatic();
 
 	bool IsMultiResEnabled() const;
 	bool IsProjectionConfigured() const;

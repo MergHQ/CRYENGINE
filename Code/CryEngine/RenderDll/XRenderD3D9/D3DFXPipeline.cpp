@@ -3767,7 +3767,7 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 				(float)(min(screenBounds[2] << 4, GetWidth())),                    (float)(min(screenBounds[3] << 4, GetHeight()))
 			};
 
-			if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+			if (CVrProjectionManager::IsMultiResEnabledStatic())
 			{
 				CVrProjectionManager::Instance()->MapScreenPosToMultiRes(boundsI2F[0], boundsI2F[1]);
 				CVrProjectionManager::Instance()->MapScreenPosToMultiRes(boundsI2F[2], boundsI2F[3]);

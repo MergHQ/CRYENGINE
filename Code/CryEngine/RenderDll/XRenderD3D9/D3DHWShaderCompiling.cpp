@@ -2872,7 +2872,7 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 			if (m_Flags & HWSG_GS_MULTIRES)
 			{
 #if defined(USE_NV_API)
-				if (CVrProjectionManager::Instance()->IsMultiResEnabled())
+				if (CVrProjectionManager::IsMultiResEnabledStatic())
 				{
 					NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = { NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER, NV_FASTGS_USE_VIEWPORT_MASK };
 					NvAPI_Status Status = NvAPI_D3D11_CreateFastGeometryShaderExplicit(gcpRendD3D->GetDevice().GetRealDevice(), alias_cast<DWORD*>(pBuf), nSize, NULL, &FastGSArgs, alias_cast<ID3D11GeometryShader**>(&pInst->m_Handle.m_pShader->m_pHandle));
