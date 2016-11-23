@@ -17,8 +17,7 @@ void CEntityComponentArea::ResetTempState()
 
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentArea::CEntityComponentArea()
-	: m_pEntity(nullptr)
-	, m_nFlags(0)
+	: m_nFlags(0)
 	, m_pArea(nullptr)
 	, m_fRadius(0.0f)
 	, m_fGravity(0.0f)
@@ -38,11 +37,9 @@ CEntityComponentArea::~CEntityComponentArea()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentArea::Initialize(const SComponentInitializer& init)
+void CEntityComponentArea::Initialize()
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
-
-	m_pArea = static_cast<CAreaManager*>(m_pEntity->GetCEntitySystem()->GetAreaManager())->CreateArea();
+	m_pArea = static_cast<CAreaManager*>(gEnv->pEntitySystem->GetAreaManager())->CreateArea();
 	m_pArea->SetEntityID(m_pEntity->GetId());
 
 	Reset();

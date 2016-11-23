@@ -29,24 +29,6 @@ struct IShaderParamCallback : public ICryUnknown
 	// </interfuscator:shuffle>
 };
 
-DECLARE_SHARED_POINTERS(IShaderParamCallback);
-
-//! Used to create an extra friendly-named class used to instantiate ShaderParamCallbacks based on lua properties.
-#define CREATE_SHADERPARAMCALLBACKUI_CLASS(classname, UIname, guidhigh, guidlow) \
-  class classname ## UI : public classname                                       \
-  {                                                                              \
-                                                                                 \
-    CRYINTERFACE_BEGIN()                                                         \
-    CRYINTERFACE_ADD(classname)                                                  \
-    CRYINTERFACE_END()                                                           \
-                                                                                 \
-    CRYGENERATE_CLASS(classname ## UI, UIname, guidhigh, guidlow)                \
-  };                                                                             \
-
-//! Used to create an extra friendly-named class used to instantiate ShaderParamCallbacks based on lua properties.
-#define CRYIMPLEMENT_AND_REGISTER_SHADERPARAMCALLBACKUI_CLASS(classname) \
-  CRYREGISTER_CLASS(classname ## UI)                                     \
-  classname ## UI::classname ## UI(){}                                   \
-  classname ## UI::~classname ## UI(){}                                  \
+DECLARE_SHARED_POINTERS(IShaderParamCallback);                                                                \
 
 #endif //__IShaderParamCallback_h__

@@ -49,6 +49,8 @@ class CProceduralContext_SetParam : public IProceduralContext
 private:
 	typedef IProceduralContext BaseClass;
 
+	virtual ~CProceduralContext_SetParam() {}
+
 public:
 	PROCEDURAL_CONTEXT(CProceduralContext_SetParam, "SetParamContext", 0xC6C0871257814854, 0xADC56AB4252834BD);
 
@@ -111,14 +113,6 @@ public:
 private:
 	VectorMap<uint32, SParamTarget> m_paramTargets;
 };
-
-CProceduralContext_SetParam::CProceduralContext_SetParam()
-{
-}
-
-CProceduralContext_SetParam::~CProceduralContext_SetParam()
-{
-}
 
 CRYREGISTER_CLASS(CProceduralContext_SetParam);
 

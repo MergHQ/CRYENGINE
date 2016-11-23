@@ -13,10 +13,13 @@ struct CEntityComponentAudio : public IEntityAudioComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentAudio,IEntityAudioComponent,"CEntityComponentAudio",0x51AE5FC21B454351,0xAC889CAF0C757B5F);
 
+	CEntityComponentAudio();
+	virtual ~CEntityComponentAudio();
+
 public:
 	// IEntityComponent.h
 	virtual void ProcessEvent(SEntityEvent& event) override;
-	virtual void Initialize(SComponentInitializer const& init) override;
+	virtual void Initialize() override;
 	virtual uint64 GetEventMask() const final;
 	// ~IEntityComponent.h
 
@@ -283,7 +286,6 @@ private:
 	AudioProxyId       m_audioProxyIDCounter;
 
 	AudioEnvironmentId m_audioEnvironmentId;
-	CEntity*           m_pEntity;
 	AudioEnumFlagsType m_flags;
 
 	float              m_fadeDistance;

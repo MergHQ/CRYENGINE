@@ -10,6 +10,8 @@
 #include "ObjMan.h"
 #include <CryThreading/IJobManager.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryEntitySystem/IEntity.h>
+
 #define SMALL_MESH_NUM_INDEX 30
 
 #pragma warning(disable: 4244)

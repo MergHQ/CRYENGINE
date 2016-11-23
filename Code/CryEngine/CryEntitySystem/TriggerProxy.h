@@ -28,16 +28,14 @@ class CEntityComponentTriggerBounds : public IEntityTriggerComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentTriggerBounds,IEntityTriggerComponent,"CEntityComponentTriggerBounds",0x1C58115AA18E446E,0x8E82B3B4C6DD6F55);
 
+	CEntityComponentTriggerBounds();
+	virtual ~CEntityComponentTriggerBounds();
+
 public:
-	//CTriggerProxy();
-	//~CTriggerProxy();
-
-	CEntity* GetEntity() const { return m_pEntity; };
-
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final { return BIT64(ENTITY_EVENT_XFORM)|BIT64(ENTITY_EVENT_ENTERAREA)|BIT64(ENTITY_EVENT_LEAVEAREA); };
 	//////////////////////////////////////////////////////////////////////////
@@ -65,7 +63,7 @@ public:
 	const AABB&              GetAABB() const { return m_aabb; }
 	void                     SetAABB(const AABB& aabb);
 
-	CProximityTriggerSystem* GetTriggerSystem() { return m_pEntity->GetCEntitySystem()->GetProximityTriggerSystem(); }
+	CProximityTriggerSystem* GetTriggerSystem() { return static_cast<CEntitySystem*>(gEnv->pEntitySystem)->GetProximityTriggerSystem(); }
 
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const final
 	{
@@ -76,11 +74,6 @@ private:
 	void Reset();
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity*           m_pEntity;
 	AABB               m_aabb;
 	SProximityElement* m_pProximityTrigger;
 	EntityId           m_forwardingEntity;

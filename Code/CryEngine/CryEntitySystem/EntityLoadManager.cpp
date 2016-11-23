@@ -19,7 +19,6 @@
 #include "EntityLayer.h"
 
 #include <CryNetwork/INetwork.h>
-#include <CryEntitySystem/IEntityAttributesProxy.h>
 
 //////////////////////////////////////////////////////////////////////////
 CEntityLoadManager::CEntityLoadManager(CEntitySystem* pEntitySystem)
@@ -490,10 +489,6 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			{
 				pSpawnedEntity->CreateComponent<IClipVolumeComponent>();
 			}
-			if (entityNode->findChild("Attributes"))
-			{
-				pSpawnedEntity->CreateComponent<IEntityAttributesComponent>();
-			}
 
 			// Load RenderNodeParams
 			{
@@ -526,9 +521,6 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			// Prepare the entity from Xml if it was just spawned
 			if (pCSpawnedEntity && bWasSpawned)
 			{
-				if (IEntityPropertyHandler* pPropertyHandler = pCSpawnedEntity->GetClass()->GetPropertyHandler())
-					pPropertyHandler->LoadEntityXMLProperties(pCSpawnedEntity, entityNode);
-
 				if (IEntityEventHandler* pEventHandler = pCSpawnedEntity->GetClass()->GetEventHandler())
 					pEventHandler->LoadEntityXMLEvents(pCSpawnedEntity, entityNode);
 
@@ -536,11 +528,6 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
 					pScriptProxy->SerializeXML(entityNode, true);
-
-				if (IEntityComponent* pAttributeProxy = static_cast<IEntityComponent*>(pCSpawnedEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES)))
-				{
-					pAttributeProxy->SerializeXML(entityNode, true);
-				}
 			}
 		}
 
@@ -607,7 +594,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			{
 				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 
-				pCSpawnedEntity->SerializeXML_ExceptScriptProxy(entityNode, true);
+				pCSpawnedEntity->SerializeXML(entityNode, true, false);
 			}
 
 			const char* attachmentType = entityNode->getAttr("AttachmentType");

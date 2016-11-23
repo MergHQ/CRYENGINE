@@ -14,6 +14,8 @@ class CEngineModule_CryLobby : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryLobby, "EngineModule_CryLobby", 0x2c5cc5ec41f7451c, 0xa785857ca7731c28)
 
+	virtual ~CEngineModule_CryLobby() {}
+
 	virtual const char* GetName() override { return "CryLobby"; }
 	virtual const char* GetCategory() override { return "CryEngine"; }
 
@@ -35,13 +37,5 @@ class CEngineModule_CryLobby : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryLobby)
-
-CEngineModule_CryLobby::CEngineModule_CryLobby()
-{
-}
-
-CEngineModule_CryLobby::~CEngineModule_CryLobby()
-{
-}
 
 #include <CryCore/CrtDebugStats.h>

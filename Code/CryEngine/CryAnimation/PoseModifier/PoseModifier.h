@@ -19,6 +19,9 @@ public:
 
 	CRYGENERATE_CLASS(CPoseModifierStack, "AnimationPoseModifier_PoseModifierStack", 0xaf9efa2dfec04de4, 0xa1663950bde6a3c6)
 
+	CPoseModifierStack();
+	virtual ~CPoseModifierStack() {}
+
 public:
 	void Clear() { m_modifiers.clear(); }
 	bool Push(IAnimationPoseModifierPtr instance);
@@ -47,6 +50,8 @@ class CPoseModifierSetup :
 	CRYINTERFACE_END()
 
 	CRYGENERATE_CLASS(CPoseModifierSetup, "PoseModifierSetup", 0x18b8cca76db947cc, 0x84dd1f003e97cbee)
+
+	virtual ~CPoseModifierSetup() {}
 
 private:
 	struct Entry

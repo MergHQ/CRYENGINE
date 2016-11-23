@@ -15,6 +15,7 @@
 #define __TimeOfDay_h__
 
 #include <Cry3DEngine/ITimeOfDay.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 class CEnvironmentPreset;
 //////////////////////////////////////////////////////////////////////////

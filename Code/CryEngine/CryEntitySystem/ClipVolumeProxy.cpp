@@ -33,7 +33,7 @@ CEntityComponentClipVolume::~CEntityComponentClipVolume()
 	m_GeometryFileName = "";
 }
 
-void CEntityComponentClipVolume::Initialize(const SComponentInitializer& init)
+void CEntityComponentClipVolume::Initialize()
 {
 	m_pClipVolume = gEnv->p3DEngine->CreateClipVolume();
 }

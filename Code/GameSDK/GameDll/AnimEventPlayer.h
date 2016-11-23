@@ -16,6 +16,8 @@ public:
 	CRYINTERFACE_END()
 	CRYGENERATE_CLASS(AnimEventPlayer_CRYENGINE_SDK, "AnimEventPlayer_CRYENGINE_SDK", 0x7cb241402ca9e311, 0x058e7ce6b77865e4)
 
+	virtual ~AnimEventPlayer_CRYENGINE_SDK() {}
+
 	const SCustomAnimEventType* GetCustomType(int customTypeIndex) const override;
 	int GetCustomTypeCount() const override;
 	bool Play(ICharacterInstance* character, const AnimEventInstance& event) override;

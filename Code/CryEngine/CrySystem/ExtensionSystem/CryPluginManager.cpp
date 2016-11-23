@@ -192,6 +192,8 @@ bool CCryPluginManager::Initialize()
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycCore", "Plugin_SchematycCore");
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycSTDEnv", "Plugin_SchematycSTDEnv");
 
+	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySensorSystem", "Plugin_CrySensorSystem");
+
 	return LoadExtensionFile("cryplugin.csv");
 }
 

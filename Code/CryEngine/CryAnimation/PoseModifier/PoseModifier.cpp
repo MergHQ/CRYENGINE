@@ -39,6 +39,9 @@ public:
 
 	CRYGENERATE_CLASS(CConstraintPoint, "AnimationPoseModifier_ConstraintPoint", 0x705fd8b7906f42a1, 0xb7d6d5dee73d3b54)
 
+	CConstraintPoint();
+	virtual ~CConstraintPoint() {}
+
 private:
 	void Draw(const Vec3& point1, const Vec3& target) const;
 
@@ -74,10 +77,6 @@ CConstraintPoint::CConstraintPoint() :
 	m_weightNodeIndex(-1),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CConstraintPoint::~CConstraintPoint()
 {
 }
 
@@ -176,6 +175,9 @@ public:
 
 	CRYGENERATE_CLASS(CConstraintLine, "AnimationPoseModifier_ConstraintLine", 0x705fd8b7906f42d2, 0xb7d6d5dee73d3c64)
 
+	CConstraintLine();
+	virtual ~CConstraintLine() {}
+
 private:
 	void Draw(const Vec3& point1, const Vec3& point2, const Vec3& target) const;
 
@@ -213,10 +215,6 @@ CConstraintLine::CConstraintLine() :
 	m_weightNodeIndex(-1),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CConstraintLine::~CConstraintLine()
 {
 }
 
@@ -327,6 +325,9 @@ public:
 
 	CRYGENERATE_CLASS(CConstraintAim, "AnimationPoseModifier_ConstraintAim", 0x9d07deeb5408413d, 0xad471fabc571f964)
 
+	CConstraintAim();
+	virtual ~CConstraintAim() {}
+
 private:
 	void Draw(const Vec3& origin, const Vec3& target, const Vec3& up);
 
@@ -366,10 +367,6 @@ CConstraintAim::CConstraintAim() :
 	m_frame(IDENTITY),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CConstraintAim::~CConstraintAim()
 {
 }
 
@@ -509,6 +506,9 @@ public:
 
 	CRYGENERATE_CLASS(CDrivenTwist, "AnimationPoseModifier_DrivenTwist", 0x4d9ef0061e064b8d, 0xb1a6d24fd84c599b)
 
+	CDrivenTwist();
+	virtual ~CDrivenTwist() {}
+
 	// IAnimationPoseModifier
 public:
 	virtual bool Prepare(const SAnimationPoseModifierParams& params) override;
@@ -536,10 +536,6 @@ CDrivenTwist::CDrivenTwist() :
 	m_sourceNodeIndex(-1),
 	m_targetNodeIndex(-1),
 	m_bInitialized(false)
-{
-}
-
-CDrivenTwist::~CDrivenTwist()
 {
 }
 
@@ -614,6 +610,9 @@ public:
 
 	CRYGENERATE_CLASS(CIk2Segments, "AnimationPoseModifier_Ik2Segments", 0x6a078d00c19441eb, 0xb8919c52d094076d);
 
+	CIk2Segments();
+	virtual ~CIk2Segments() {}
+
 private:
 	void Draw(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& target0, const Vec3& target1, const float targetWeight);
 
@@ -653,10 +652,6 @@ CIk2Segments::CIk2Segments() :
 	m_targetWeightNodeIndex(-1),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CIk2Segments::~CIk2Segments()
 {
 }
 
@@ -828,6 +823,9 @@ public:
 
 	CRYGENERATE_CLASS(CIkCCD, "AnimationPoseModifier_IkCcd", 0x6a078d00c19441e2, 0xb8919c52d094076d);
 
+	CIkCCD();
+	virtual ~CIkCCD() {}
+
 private:
 	void Draw(const QuatT& location, const QuatT& startAbsolute, const QuatT& targetAbsolute, const float weight);
 
@@ -870,10 +868,6 @@ CIkCCD::CIkCCD() :
 	m_weightNodeIndex(-1),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CIkCCD::~CIkCCD()
 {
 }
 
@@ -1113,6 +1107,9 @@ public:
 
 	CRYGENERATE_CLASS(CDynamicsSpring, "AnimationPoseModifier_DynamicsSpring", 0x92e070d5701b4f8a, 0xa76142e967579948)
 
+	CDynamicsSpring();
+	virtual ~CDynamicsSpring() {}
+
 private:
 	void Draw(const Vec3& position);
 
@@ -1150,10 +1147,6 @@ CDynamicsSpring::CDynamicsSpring() :
 	m_velocity(ZERO),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CDynamicsSpring::~CDynamicsSpring()
 {
 }
 
@@ -1360,6 +1353,9 @@ public:
 
 	CRYGENERATE_CLASS(CDynamicsPendulum, "AnimationPoseModifier_DynamicsPendulum", 0xf6c1b4da5caf4b9e, 0xbb97c28f9f17b003)
 
+	CDynamicsPendulum();
+	virtual ~CDynamicsPendulum() {}
+
 private:
 	void ApplyLimit1(const Quat& limitOrientation, const Vec3& targetDirection, Vec3& direction, Vec3& velocity);
 	void ApplyLimit2(const Quat& limitOrientation, const Quat& orientation, const Vec3& targetDirection, Vec3& directionNew, Vec3& velocity);
@@ -1423,10 +1419,6 @@ bool CDynamicsPendulum::SRuntimeDesc::Initialize(const SDynamicsPendulumDesc& de
 
 CDynamicsPendulum::CDynamicsPendulum() :
 	m_bDraw(false)
-{
-}
-
-CDynamicsPendulum::~CDynamicsPendulum()
 {
 }
 
@@ -1736,6 +1728,9 @@ public:
 
 	CRYGENERATE_CLASS(CTransformBlender, "AnimationPoseModifier_TransformBlender", 0x92e070d5601b4f9a, 0xa76143e967579958)
 
+	CTransformBlender();
+	virtual ~CTransformBlender() {}
+
 private:
 	void Draw(const QuatT& targetAbsolute, const QuatT& defaultAbsolute);
 
@@ -1772,10 +1767,6 @@ CTransformBlender::CTransformBlender() :
 	m_defaultTargetIndex(-1),
 	m_bInitialized(false),
 	m_bDraw(false)
-{
-}
-
-CTransformBlender::~CTransformBlender()
 {
 }
 
@@ -1969,10 +1960,6 @@ CPoseModifierStack::CPoseModifierStack()
 	m_modifiers.reserve(16);
 }
 
-CPoseModifierStack::~CPoseModifierStack()
-{
-}
-
 //
 
 bool CPoseModifierStack::Push(IAnimationPoseModifierPtr instance)
@@ -2048,18 +2035,6 @@ void CPoseModifierSetup::Entry::Serialize(Serialization::IArchive& ar)
  */
 
 CRYREGISTER_CLASS(CPoseModifierSetup)
-
-//
-
-CPoseModifierSetup::CPoseModifierSetup()
-{
-}
-
-CPoseModifierSetup::~CPoseModifierSetup()
-{
-}
-
-//
 
 bool CPoseModifierSetup::Create(CPoseModifierSetup& setup)
 {

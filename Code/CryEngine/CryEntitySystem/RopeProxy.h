@@ -28,13 +28,14 @@ class CEntityComponentRope : public IEntityRopeComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentRope,IEntityRopeComponent,"CEntityComponentRope",0xDFAE2B7E15BB4F3D,0xBD09E0C8E560BF85);
 
-public:
-	CEntity* GetEntity() const { return m_pEntity; };
+	CEntityComponentRope();
+	virtual ~CEntityComponentRope();
 
+public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
@@ -62,8 +63,6 @@ public:
 	}
 	void PreserveParams();
 protected:
-	CEntity*         m_pEntity;
-
 	IRopeRenderNode* m_pRopeRenderNode;
 	int              m_nSegmentsOrg;
 	float            m_texTileVOrg;

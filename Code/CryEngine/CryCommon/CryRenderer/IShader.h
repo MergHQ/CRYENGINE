@@ -2345,6 +2345,8 @@ struct SRenderLight
 		m_LensOpticsFrustumAngle = 255;
 		m_nAttenFalloffMax = 255;
 		m_fAttenuationBulbSize = 0.1f;
+		m_ProbeExtents = Vec3(10);
+		m_nSortPriority = 0;
 	}
 
 	const Vec3& GetPosition() const

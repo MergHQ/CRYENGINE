@@ -16,18 +16,12 @@ public:
 
 	CRYGENERATE_CLASS(CProceduralParamsComparerDefault, IProceduralParamsComparerDefaultName, 0xfc53bd9248534faa, 0xab0fb42b24e55b3e)
 
+	virtual ~CProceduralParamsComparerDefault() {}
+
 	virtual bool Equal(const IProceduralParams& lhs, const IProceduralParams& rhs) const override
 	{
 		return Serialization::CompareBinary(lhs, rhs);
 	}
 };
-
-CProceduralParamsComparerDefault::CProceduralParamsComparerDefault()
-{
-}
-
-CProceduralParamsComparerDefault::~CProceduralParamsComparerDefault()
-{
-}
 
 CRYREGISTER_CLASS(CProceduralParamsComparerDefault);

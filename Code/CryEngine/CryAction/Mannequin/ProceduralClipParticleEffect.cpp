@@ -85,6 +85,7 @@ struct SParticleEffectClipData
 class CParticleEffectContext : public IProceduralContext
 {
 private:
+	virtual ~CParticleEffectContext();
 
 	typedef IProceduralContext BaseClass;
 
@@ -176,11 +177,6 @@ REGISTER_PROCEDURAL_CLIP(CProceduralClipParticleEffect, "ParticleEffect");
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Impl
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-CParticleEffectContext::CParticleEffectContext()
-{
-}
-
 CParticleEffectContext::~CParticleEffectContext()
 {
 	//Destroy all requests as the context is over

@@ -265,9 +265,6 @@ struct IEntityArchetype
 	virtual IScriptTable*                GetProperties() = 0;
 	virtual XmlNodeRef                   GetObjectVars() = 0;
 	virtual void                         LoadFromXML(XmlNodeRef& propertiesNode, XmlNodeRef& objectVarsNode) = 0;
-	virtual const TEntityAttributeArray& GetAttributes() const = 0;
-	virtual void                         LoadEntityAttributesFromXML(const XmlNodeRef& entityAttributes) = 0;
-	virtual void                         SaveEntityAttributesToXML(XmlNodeRef& entityAttributes) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -671,3 +668,25 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 #define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)
 #define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)
 #endif
+
+template<class T>
+static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const char* editorCategory = "", const char* editorIcon = "")
+{
+	IEntityClassRegistry::SEntityClassDesc clsDesc;
+	clsDesc.sName = name;
+
+	clsDesc.editorClassInfo.sCategory = editorCategory;
+	clsDesc.editorClassInfo.sIcon = editorIcon;
+
+	struct CObjectCreator
+	{
+		static IEntityComponent* Create(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
+		{
+			return pEntity->CreateComponentClass<T>();
+		}
+	};
+
+	clsDesc.pUserProxyCreateFunc = &CObjectCreator::Create;
+
+	return gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(clsDesc);
+}

@@ -18,13 +18,6 @@ CProceduralContextAim::CProceduralContextAim()
 {
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-CProceduralContextAim::~CProceduralContextAim()
-{
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::Initialise( IEntity& entity, IActionController& actionController )
 {

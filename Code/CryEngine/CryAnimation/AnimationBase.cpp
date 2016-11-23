@@ -82,6 +82,8 @@ class CEngineModule_CryAnimation : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAnimation, "EngineModule_CryAnimation", 0x9c73d2cd142c4256, 0xa8f0706d80cd7ad2)
 
+	virtual ~CEngineModule_CryAnimation() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryAnimation"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
@@ -115,15 +117,6 @@ class CEngineModule_CryAnimation : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAnimation)
-
-CEngineModule_CryAnimation::CEngineModule_CryAnimation()
-{
-
-};
-
-CEngineModule_CryAnimation::~CEngineModule_CryAnimation()
-{
-};
 
 // cached interfaces - valid during the whole session, when the character manager is alive; then get erased
 ISystem* g_pISystem = NULL;

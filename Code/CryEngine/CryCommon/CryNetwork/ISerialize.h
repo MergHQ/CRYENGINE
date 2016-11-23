@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryEntitySystem/IEntity.h>       // <> required for Interfuscator
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
 #include <CryCore/CountedValue.h>
 #include <CryCore/Containers/MiniQueue.h>

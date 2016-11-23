@@ -22,6 +22,8 @@
 #include "Brush.h"
 #include "terrain.h"
 
+#include <CryEntitySystem/IEntity.h>
+
 CBrush::CBrush()
 	: m_bVehicleOnlyPhysics(0)
 	, m_bDrawLast(0)

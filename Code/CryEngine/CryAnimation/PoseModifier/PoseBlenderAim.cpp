@@ -13,13 +13,6 @@
 #include <CryExtension/CryCreateClassInstance.h>
 
 CRYREGISTER_CLASS(CPoseBlenderAim)
-CPoseBlenderAim::CPoseBlenderAim()
-{
-}
-
-CPoseBlenderAim::~CPoseBlenderAim()
-{
-}
 
 //
 bool CPoseBlenderAim::Prepare(const SAnimationPoseModifierParams& params)

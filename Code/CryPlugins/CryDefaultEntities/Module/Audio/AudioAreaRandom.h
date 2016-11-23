@@ -2,40 +2,58 @@
 
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 #include "AudioEntitiesUtils.h"
 
-class CAudioAreaRandom final : public CNativeEntityBase
-{
+#include <CrySerialization/Decorators/ResourcesAudio.h>
 
-public:
-	// Indices of the properties, registered in the Register function
-	enum EProperties
-	{
-		eProperty_Enabled = 0,
-		eProperty_PlayTrigger,
-		eProperty_StopTrigger,
-		eProperty_RTPC,
-		eProperty_MoveWithEntity,
-		eProperty_TriggerAreasOnMove,
-		eProperty_SoundObstructionType,
-		eProperty_RTPCDistance,
-		eProperty_RadiusRandom,
-		eProperty_MinDelay,
-		eProperty_MaxDelay,
-		eNumProperties
-	};
+class CAudioAreaRandom final
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
+{
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioAreaRandom, "AudioAreaRandom", 0x8952D4D63E2347D5, 0x86EC4724BF34789F);
 
 public:
 	CAudioAreaRandom() = default;
 	virtual ~CAudioAreaRandom() {}
 
 	// CNativeEntityBase
+	virtual uint64 GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA) | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA); }
 	virtual void ProcessEvent(SEntityEvent& event) override;
+
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+
+	virtual void OnResetState() override;
 	// ~CNativeEntityBase
 
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "AudioAreaAmbience Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bEnabled, "Enabled", "Enabled");
+		archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
+		archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
+		archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
+		archive(m_bMoveWithEntity, "Move with Entity", "MoveWithEntity");
+
+		archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+
+		archive(Serialization::AudioRTPC(m_rtpcName), "Rtpc", "Rtpc");
+		archive(m_rtpcDistance, "RTPC Distance", "RTPCDistance");
+		archive(m_radius, "Radius Random", "RadiusRandom");
+
+		archive(m_minDelay, "MinDelay", "MinDelay");
+		archive(m_maxDelay, "MaxDelay", "MaxDelay");
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
+
 private:
-	void       Reset();
 	void       Play();
 	void       Stop();
 	Vec3       GenerateOffset();
@@ -49,6 +67,16 @@ private:
 
 	AudioControlId m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
 
+	string         m_playTriggerName;
+	string         m_stopTriggerName;
+
+	string         m_rtpcName;
+
+	ESoundObstructionType m_obstructionType = eSoundObstructionType_Ignore;
+
+	bool           m_bTriggerAreasOnMove = false;
+	bool           m_bMoveWithEntity = false;
+
 	float          m_minDelay = 0.0f;
 	float          m_maxDelay = 1000.0f;
 	float          m_radius = 10.0f;
@@ -57,4 +85,6 @@ private:
 	EAreaState     m_areaState = EAreaState::Outside;
 	float          m_rtpcDistance = 5.0f;
 
+	bool           m_bPlaying = false;
+	int            m_timerId = 0;
 };

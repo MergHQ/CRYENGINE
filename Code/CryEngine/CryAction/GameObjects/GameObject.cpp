@@ -334,9 +334,8 @@ bool CGameObject::ShouldUpdateSlot(const SExtension* pExt, uint32 slot, uint32 s
 }
 
 //------------------------------------------------------------------------
-void CGameObject::Initialize(const SComponentInitializer& init)
+void CGameObject::Initialize()
 {
-	m_pEntity = init.m_pEntity;
 	m_entityId = m_pEntity->GetId();
 
 	m_pSchedulingProfiles = ((CGameObjectSystem*)CCryAction::GetCryAction()->GetIGameObjectSystem())->GetEntitySchedulerProfiles(m_pEntity);

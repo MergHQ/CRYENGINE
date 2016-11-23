@@ -59,6 +59,9 @@ public:
 	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS(CPerfHUD, "PerfHUD", 0x006945f9985e4ce2, 0x872120bfdec09ca5)
 
+	CPerfHUD();
+	virtual ~CPerfHUD() {}
+
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// ICryPerfHUD implementation

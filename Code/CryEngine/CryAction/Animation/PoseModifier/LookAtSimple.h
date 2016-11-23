@@ -26,6 +26,9 @@ public:
 
 	CRYGENERATE_CLASS(CLookAtSimple, "AnimationPoseModifier_LookAtSimple", 0xba7e2a809970435f, 0xb6679c08df616d74);
 
+	CLookAtSimple();
+	virtual ~CLookAtSimple() {}
+
 public:
 	void SetJointId(uint32 id)                      { m_state.jointId = id; }
 	void SetJointOffsetRelative(const Vec3& offset) { m_state.jointOffsetRelative = offset; }

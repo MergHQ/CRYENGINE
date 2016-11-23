@@ -33,7 +33,6 @@ public:
 	IScriptTable*                GetProperties()       { return m_pProperties; };
 	XmlNodeRef                   GetObjectVars()       { return m_ObjectVars; };
 	void                         LoadFromXML(XmlNodeRef& propertiesNode, XmlNodeRef& objectVarsNode);
-	const TEntityAttributeArray& GetAttributes() const { return m_attributes; }
 	void                         LoadEntityAttributesFromXML(const XmlNodeRef& entityAttributes);
 	void                         SaveEntityAttributesToXML(XmlNodeRef& entityAttributes);
 	//////////////////////////////////////////////////////////////////////////
@@ -42,7 +41,6 @@ public:
 
 private:
 	string                m_name;
-	TEntityAttributeArray m_attributes;
 	SmartScriptTable      m_pProperties;
 	XmlNodeRef            m_ObjectVars;
 	IEntityClass*         m_pClass;

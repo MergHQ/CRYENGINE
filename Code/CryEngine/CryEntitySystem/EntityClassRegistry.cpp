@@ -15,7 +15,6 @@
 #include "EntityClassRegistry.h"
 #include "EntityClass.h"
 #include "EntityScript.h"
-#include "EntityPropertyHandler.h"
 
 #include <CrySystem/File/CryFile.h>
 
@@ -97,8 +96,6 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 	pClass->SetEventHandler(entityClassDesc.pEventHandler);
 	pClass->SetScriptFileHandler(entityClassDesc.pScriptFileHandler);
 	pClass->SetEditorClassInfo(entityClassDesc.editorClassInfo);
-	pClass->SetClassAttributes(entityClassDesc.classAttributes);
-	pClass->SetEntityAttributes(entityClassDesc.entityAttributes);
 
 	// Check if need to create entity script.
 	if (entityClassDesc.sScriptFile[0] || entityClassDesc.pScriptTable)
@@ -119,12 +116,6 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 			return NULL;
 		}
 		pClass->SetEntityScript(pScript);
-	}
-
-	// Always create a property handler for non-Lua entities
-	if (pClass->GetIEntityScript() == nullptr)
-	{
-		pClass->SetPropertyHandler(new CEntityPropertyHandler());
 	}
 
 	if (!RegisterEntityClass(pClass))

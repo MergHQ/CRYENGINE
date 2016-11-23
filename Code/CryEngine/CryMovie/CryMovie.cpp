@@ -36,6 +36,8 @@ class CEngineModule_CryMovie : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMovie, "EngineModule_CryMovie", 0xdce26beebdc6400f, 0xa0e9b42839f2dd5b)
 
+	virtual ~CEngineModule_CryMovie() {}
+
 	virtual const char* GetName() override { return "CryMovie"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
 
@@ -50,12 +52,3 @@ class CEngineModule_CryMovie : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryMovie)
-
-CEngineModule_CryMovie::CEngineModule_CryMovie()
-{
-
-};
-
-CEngineModule_CryMovie::~CEngineModule_CryMovie()
-{
-};

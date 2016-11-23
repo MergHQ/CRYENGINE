@@ -11,7 +11,7 @@
 			"../Interface/Schematyc/Entity/EntityUpdateFilters.h",
 			"../Interface/Schematyc/Entity/EntityUserData.h",
 			"../Interface/Schematyc/Entity/EntityUtils.h",
-			"../Interface/Schematyc/Entity/IEntityObject.h"
+			"../Interface/Schematyc/Entity/IEntityComponent.h"
 		],
 		"Interface/Types":
 		[
@@ -35,10 +35,6 @@
 		[
 			"Entity/EntityClassProperties.cpp",
 			"Entity/EntityClassProperties.h",
-			"Entity/EntityObject.cpp",
-			"Entity/EntityObject.h",
-			"Entity/EntityObjectAttribute.cpp",
-			"Entity/EntityObjectAttribute.h",
 			"Entity/EntityObjectClassRegistry.cpp",
 			"Entity/EntityObjectClassRegistry.h",
 			"Entity/EntityObjectDebugger.cpp",
@@ -47,8 +43,8 @@
 			"Entity/EntityObjectMap.h",
 			"Entity/EntityObjectPreviewer.cpp",
 			"Entity/EntityObjectPreviewer.h",
- 			"Entity/GameObjectExtension.cpp",
-			"Entity/GameObjectExtension.h"
+ 			"Entity/EntityComponent.cpp",
+			"Entity/EntityComponent.h"
 		],
 		"Impl/Entity/Actions":
 		[

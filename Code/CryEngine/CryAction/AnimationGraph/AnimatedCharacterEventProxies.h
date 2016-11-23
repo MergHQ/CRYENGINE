@@ -13,8 +13,6 @@ class CAnimatedCharacterComponent_Base : public IEntityComponent
 public:
 	void SetAnimatedCharacter( CAnimatedCharacter* pAnimChar ) { m_pAnimCharacter = pAnimChar; }
 
-	virtual void Initialize(const SComponentInitializer& init) override;
-	virtual void Release() override { delete this; };
 protected:
 
 	typedef CAnimatedCharacterComponent_Base SuperClass;
@@ -28,7 +26,6 @@ protected:
 	virtual void GameSerialize(TSerialize ser) override {};
 
 	CAnimatedCharacter* m_pAnimCharacter;
-	IEntity*            m_piEntity;
 };
 
 class CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate : public CAnimatedCharacterComponent_Base

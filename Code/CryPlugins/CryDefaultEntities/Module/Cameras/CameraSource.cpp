@@ -19,7 +19,9 @@ class CCameraSourceRegistrator
 
 CCameraSourceRegistrator g_cameraSourceRegistrator;
 
-void CCameraSource::PostInit(IGameObject* pGameObject)
+CRYREGISTER_CLASS(CCameraSource);
+
+void CCameraSource::Initialize()
 {
 	GetEntity()->CreateProxy(ENTITY_PROXY_CAMERA);
 

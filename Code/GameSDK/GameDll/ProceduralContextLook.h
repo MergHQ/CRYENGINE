@@ -22,6 +22,9 @@ class CProceduralContextLook
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextLook, PROCEDURAL_CONTEXT_LOOK_NAME, 0x0928592BD91648A5, 0x9024C8221945BB17 );
 
+	CProceduralContextLook();
+	virtual ~CProceduralContextLook() {}
+
 	// IProceduralContext
 	virtual void Initialise( IEntity& entity, IActionController& actionController ) override;
 	virtual void Update( float timePassedSeconds ) override;

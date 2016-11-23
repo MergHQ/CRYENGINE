@@ -22,7 +22,6 @@ CRYREGISTER_CLASS(CEntityComponentFlowGraph);
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentFlowGraph::CEntityComponentFlowGraph()
 {
-	m_pEntity = NULL;
 	m_pFlowGraph = 0;
 }
 
@@ -35,9 +34,8 @@ CEntityComponentFlowGraph::~CEntityComponentFlowGraph()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentFlowGraph::Initialize(const SComponentInitializer& init)
+void CEntityComponentFlowGraph::Initialize()
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
 }
 
 //////////////////////////////////////////////////////////////////////////

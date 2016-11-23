@@ -21,6 +21,9 @@ class CEngineModule_CryAudioImplPortAudio : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule);
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplPortAudio, "CryAudioImplPortAudio", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
 
+	CEngineModule_CryAudioImplPortAudio();
+	virtual ~CEngineModule_CryAudioImplPortAudio() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual char const* GetName()     { return "CryAudioImplPortAudio"; }
 	virtual char const* GetCategory() { return "CryAudio"; }
@@ -73,10 +76,6 @@ bool CEngineModule_CryAudioImplPortAudio::m_bSuccess = false;
 CEngineModule_CryAudioImplPortAudio::CEngineModule_CryAudioImplPortAudio()
 {
 	g_audioImplCVars.RegisterVariables();
-}
-
-CEngineModule_CryAudioImplPortAudio::~CEngineModule_CryAudioImplPortAudio()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

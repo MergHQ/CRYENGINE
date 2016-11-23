@@ -6,6 +6,8 @@
 #include <CryMath/Random.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
+#include <CrySerialization/Enum.h>
+
 #define DELAY_TIMER_ID 0
 
 class CAudioTriggerSpotRegistrator final : public IEntityRegistrator
@@ -19,36 +21,21 @@ class CAudioTriggerSpotRegistrator final : public IEntityRegistrator
 			return;
 		}
 
-		RegisterEntityWithDefaultComponent<CAudioTriggerSpotEntity>("AudioTriggerSpot", "Audio", "Sound.bmp");
-		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioTriggerSpot");
-
+		auto* pEntityClass = RegisterEntityWithDefaultComponent<CAudioTriggerSpotEntity>("AudioTriggerSpot", "Audio", "Sound.bmp");
+		
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "Play Trigger", "audioTriggerPlayTriggerName", "", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "Stop Trigger", "audioTriggerStopTriggerName", "", "");
-		RegisterEntityProperty<bool>(pPropertyHandler, "Trigger Areas On Move", "bTriggerAreasOnMove", "0", "");
-		RegisterEntityPropertyEnum(pPropertyHandler, "Sound Obstruction Type", "eiSoundObstructionType", "1", "", 0, 1);
-
-		{
-			SEntityPropertyGroupHelper playModeGroup(pPropertyHandler, "Play Mode");
-			RegisterEntityPropertyEnum(pPropertyHandler, "Behaviour", "eiBehaviour", "0", "", 0, 1);
-			RegisterEntityProperty<float>(pPropertyHandler, "Min Delay", "fMinDelay", "0", "", 0.f, 100000.f);
-			RegisterEntityProperty<float>(pPropertyHandler, "Max Delay", "fMaxDelay", "1", "", 0.f, 100000.f);
-			RegisterEntityProperty<Vec3>(pPropertyHandler, "Randomization Area", "vectorRandomizationArea", "", "");
-		}
-
-		{
-			SEntityPropertyGroupHelper debugGroup(pPropertyHandler, "Debug");
-			RegisterEntityPropertyEnum(pPropertyHandler, "Draw Activity Radius", "eiDrawActivityRadius", "0", "", 0, 1);
-			RegisterEntityProperty<bool>(pPropertyHandler, "Draw Randomization Area", "bDrawRandomizationArea", "0", "");
-		}
-
 	}
 };
 
 CAudioTriggerSpotRegistrator g_audioTriggerSpotRegistrator;
+
+YASLI_ENUM_BEGIN(EDrawActivityRadius, "DrawActivityRadius")
+YASLI_ENUM_VALUE(eDrawActivityRadius_Disabled, "Disabled")
+YASLI_ENUM_VALUE(eDrawActivityRadius_PlayTrigger, "PlayTrigger")
+YASLI_ENUM_VALUE(eDrawActivityRadius_StopTrigger, "StopTrigger")
+YASLI_ENUM_END()
+
+CRYREGISTER_CLASS(CAudioTriggerSpotEntity);
 
 CAudioTriggerSpotEntity::CAudioTriggerSpotEntity()
 {
@@ -61,64 +48,32 @@ CAudioTriggerSpotEntity::~CAudioTriggerSpotEntity()
 	Stop();
 }
 
-void CAudioTriggerSpotEntity::PostInit(IGameObject* pGameObject)
-{
-#if !defined(_RELEASE)
-	pGameObject->EnableUpdateSlot(this, 0);
-#endif
-
-	CNativeEntityBase::PostInit(pGameObject);
-}
-
 void CAudioTriggerSpotEntity::ProcessEvent(SEntityEvent& event)
 {
 	if (gEnv->IsDedicated())
 		return;
 
-	CNativeEntityBase::ProcessEvent(event);
+	CDesignerEntityComponent::ProcessEvent(event);
 
 	switch (event.event)
 	{
-	case ENTITY_EVENT_ENTERNEARAREA:
-		{
-
-		}
-		break;
-	case ENTITY_EVENT_MOVENEARAREA:
-		{
-
-		}
-		break;
-	case ENTITY_EVENT_ENTERAREA:
-		{
-
-		}
-		break;
-	case ENTITY_EVENT_MOVEINSIDEAREA:
-		{
-
-		}
-		break;
-	case ENTITY_EVENT_LEAVEAREA:
-		{
-
-		}
-		break;
-	case ENTITY_EVENT_LEAVENEARAREA:
-		{
-
-		}
 	case ENTITY_EVENT_TIMER:
 		{
 			if (event.nParam[0] == DELAY_TIMER_ID)
 			{
 				Play();
-				if (m_behaviour == ePlayBehaviour_TriggerRate)
+
+				if (m_behavior == ePlayBehavior_TriggerRate)
 				{
 					GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 				}
 			}
 
+		}
+		break;
+	case ENTITY_EVENT_UPDATE:
+		{
+			DebugDraw();
 		}
 		break;
 	}
@@ -129,7 +84,7 @@ void CAudioTriggerSpotEntity::TriggerFinished(const AudioControlId trigger)
 	// If in delay mode, set a timer to play again. Note that the play trigger
 	// could have been changed  and this event refers the previous one finishing
 	// playing, that instance we need to ignore.
-	if (m_bEnabled && trigger == m_playTriggerId && m_behaviour == ePlayBehaviour_Delay)
+	if (m_bEnabled && trigger == m_playTriggerId && m_behavior == ePlayBehavior_Delay)
 	{
 		GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
@@ -148,25 +103,16 @@ void CAudioTriggerSpotEntity::OnResetState()
 	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
-	const bool bEnabled = GetPropertyBool(eProperty_Enabled);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_PlayTrigger), m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_StopTrigger), m_stopTriggerId);
-	const bool bTriggerAreas = GetPropertyBool(eProperty_TriggerAreasOnMove);
-	const EPlayBehaviour behaviour = static_cast<EPlayBehaviour>(GetPropertyInt(eProperty_Behaviour));
-	const ESoundObstructionType soundObstructionType = static_cast<ESoundObstructionType>(GetPropertyInt(eProperty_SoundObstructionType));
-	m_minDelay = GetPropertyFloat(eProperty_MinDelay) * 1000.0f;
-	m_maxDelay = GetPropertyFloat(eProperty_MaxDelay) * 1000.0f;
-	m_randomizationArea = GetPropertyVec3(eProperty_RandomizationArea);
-#if !defined(_RELEASE)
-	m_bDrawRandomizationArea = GetPropertyBool(eProperty_DrawRandomizationArea);
-	m_drawActivityRadius = static_cast<EDrawActivityRadius>(GetPropertyInt(eProperty_DrawActivityRadius));
-#endif
+	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
+	const ESoundObstructionType soundObstructionType = static_cast<ESoundObstructionType>(m_obstructionType);
 
 	// Reset values to their default
 	audioProxy.SetAuxAudioProxyOffset(Matrix34(IDENTITY));
 	audioProxy.SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
-	if (bTriggerAreas)
+
+	if (m_bTriggerAreasOnMove)
 	{
 		entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_TRIGGER_AREAS);
 		entity.SetFlagsExtended(entity.GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE);
@@ -180,16 +126,15 @@ void CAudioTriggerSpotEntity::OnResetState()
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
 	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[soundObstructionType]);
 
-	const bool bNewBehaviour = (behaviour != m_behaviour);
-	m_behaviour = behaviour;
-
-	if (bEnabled)
+	if (m_bEnabled)
 	{
-		if (!m_bEnabled || (m_playTriggerId != m_currentlyPlayingTriggerId) || bNewBehaviour)
+		if (!m_bEnabled || (m_playTriggerId != m_currentlyPlayingTriggerId) || (m_currentBehavior != m_behavior))
 		{
-			if (bNewBehaviour)
+			if (m_currentBehavior != m_behavior)
 			{
-				// Have to stop all running instances if the behaviour changes
+				m_currentBehavior = m_behavior;
+
+				// Have to stop all running instances if the behavior changes
 				if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID)
 				{
 					audioProxy.StopTrigger(m_currentlyPlayingTriggerId);
@@ -201,14 +146,11 @@ void CAudioTriggerSpotEntity::OnResetState()
 		}
 
 	}
-	else if (m_bEnabled)
+	else
 	{
 		// Entity was disabled
 		Stop();
 	}
-
-	m_bEnabled = bEnabled;
-
 }
 
 void CAudioTriggerSpotEntity::StartPlayingBehaviour()
@@ -218,7 +160,7 @@ void CAudioTriggerSpotEntity::StartPlayingBehaviour()
 
 	Play();
 
-	if (m_behaviour == ePlayBehaviour_TriggerRate)
+	if (m_behavior == ePlayBehavior_TriggerRate)
 	{
 		entity.SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
@@ -275,9 +217,9 @@ Vec3 CAudioTriggerSpotEntity::GenerateOffset()
 	return offset;
 }
 
-#if !defined(_RELEASE)
-void CAudioTriggerSpotEntity::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CAudioTriggerSpotEntity::DebugDraw()
 {
+#if !defined(_RELEASE)
 	if (m_drawActivityRadius > eDrawActivityRadius_Disabled || m_bDrawRandomizationArea)
 	{
 		IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -320,5 +262,5 @@ void CAudioTriggerSpotEntity::Update(SEntityUpdateContext& ctx, int updateSlot)
 			pRenderAuxGeom->SetRenderFlags(oldFlags);
 		}
 	}
-}
 #endif
+}

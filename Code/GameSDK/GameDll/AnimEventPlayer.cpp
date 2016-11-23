@@ -10,14 +10,6 @@ static SCustomAnimEventType g_sdkEvents[] = {
  	{ "swimmingStroke", 0, "Swimming strokes that cause ripples on the water surface." },
 	};
 
-AnimEventPlayer_CRYENGINE_SDK::AnimEventPlayer_CRYENGINE_SDK()
-{
-}
-
-AnimEventPlayer_CRYENGINE_SDK::~AnimEventPlayer_CRYENGINE_SDK()
-{
-}
-
 const SCustomAnimEventType* AnimEventPlayer_CRYENGINE_SDK::GetCustomType(int customTypeIndex) const
 {
 	const int count = GetCustomTypeCount();

@@ -5,3 +5,7 @@
 #define eCryModule eCryM_EnginePlugin
 
 #include <CryCore/Platform/platform.h>
+
+#include <CryEntitySystem/IEntitySystem.h>
+
+#include "PluginDll.h"

@@ -177,6 +177,9 @@ class CProceduralContext_AdjustPos : public IProceduralContext
 private:
 	typedef IProceduralContext BaseClass;
 
+	CProceduralContext_AdjustPos();
+	virtual ~CProceduralContext_AdjustPos() {}
+
 public:
 	PROCEDURAL_CONTEXT(CProceduralContext_AdjustPos, "AdjustPosContext", 0xC6C0871214214854, 0xADC56AB6422834BD);
 
@@ -533,10 +536,6 @@ private:
 CProceduralContext_AdjustPos::CProceduralContext_AdjustPos()
 	: m_enabled(false)
 	, m_collisionCheck(false)
-{
-}
-
-CProceduralContext_AdjustPos::~CProceduralContext_AdjustPos()
 {
 }
 

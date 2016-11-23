@@ -63,8 +63,6 @@ CPerfHUD::CPerfHUD() :
 	m_widgets.reserve(ICryPerfHUDWidget::eWidget_Num);
 }
 
-CPerfHUD::~CPerfHUD() {}
-
 void CPerfHUD::Destroy()
 {
 	m_widgets.clear();

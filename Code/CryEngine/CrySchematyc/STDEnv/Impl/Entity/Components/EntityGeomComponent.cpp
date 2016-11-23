@@ -42,7 +42,7 @@ void CEntityGeomComponent::Run(ESimulationMode simulationMode)
 
 		entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
 		
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
+		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().Send();
 	}
 }
 
@@ -76,7 +76,7 @@ void CEntityGeomComponent::Set(const GeomFileName& fileName)
 			EntityUtils::GetEntity(*this).FreeSlot(m_slot);
 			m_slot = EmptySlot;
 		}
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
+		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().Send();
 	}
 }
 

@@ -15,16 +15,17 @@ struct CEntityComponentArea : public IEntityAreaComponent
 {
 	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentArea,IEntityAreaComponent,"CEntityComponentArea",0xFEB82854291C4ABA,0x9652DDD7F403F24A);
 
+	CEntityComponentArea();
+	virtual ~CEntityComponentArea();
+
 public:
 	static void ResetTempState();
 
 public:
-	CEntity* GetEntity() const { return m_pEntity; };
-
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override;
+	virtual void Initialize() override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
@@ -114,12 +115,6 @@ private:
 	static std::vector<Vec3> s_tmpWorldPoints;
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity* m_pEntity;
-
 	int      m_nFlags;
 
 	typedef std::vector<bool> tSoundObstruction;

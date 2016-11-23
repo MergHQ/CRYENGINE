@@ -30,6 +30,7 @@ class CBinocular :	public CWeapon
 public:
 
 	CBinocular();
+	virtual ~CBinocular();
 
 	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	
@@ -56,8 +57,6 @@ protected:
 	virtual bool ShouldDoPostSerializeReset() const;
 
 private:
-
-	virtual ~CBinocular();
 
 	bool ShouldUseSoundAttenuation(const CActor& ownerActor) const;
 	void SwitchSoundAttenuation(const CActor& ownerActor, const float coneInRadians) const;

@@ -396,10 +396,6 @@ public:
       ICryUnknownPtr p = s_factory.CreateClassInstance();                                                           \
       return std::shared_ptr<implclassname>(*static_cast<std::shared_ptr<implclassname>*>(static_cast<void*>(&p))); \
     }                                                                                                               \
-                                                                                                                    \
-  protected:                                                                                                        \
-    implclassname();                                                                                                \
-    virtual ~implclassname();
 
 #define _BEFRIEND_OPS(implclassname) \
   _BEFRIEND_CRYINTERFACE_CAST()      \

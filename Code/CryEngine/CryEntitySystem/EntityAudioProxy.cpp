@@ -15,7 +15,6 @@ CAudioObjectTransformation CEntityComponentAudio::s_audioListenerLastTransformat
 CEntityComponentAudio::CEntityComponentAudio()
 	: m_audioProxyIDCounter(INVALID_AUDIO_PROXY_ID)
 	, m_audioEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID)
-	, m_pEntity(nullptr)
 	, m_flags(eEAPF_CAN_MOVE_WITH_ENTITY)
 	, m_fadeDistance(0.0f)
 	, m_environmentFadeDistance(0.0f)
@@ -25,15 +24,13 @@ CEntityComponentAudio::CEntityComponentAudio()
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentAudio::~CEntityComponentAudio()
 {
-	m_pEntity = nullptr;
 	std::for_each(m_mapAuxAudioProxies.begin(), m_mapAuxAudioProxies.end(), SReleaseAudioProxy());
 	m_mapAuxAudioProxies.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::Initialize(SComponentInitializer const& init)
+void CEntityComponentAudio::Initialize()
 {
-	m_pEntity = static_cast<CEntity*>(init.m_pEntity);
 	assert(m_mapAuxAudioProxies.empty());
 
 	if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)

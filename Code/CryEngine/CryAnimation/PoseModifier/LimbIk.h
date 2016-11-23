@@ -14,6 +14,9 @@ class CLimbIk :
 
 	CRYGENERATE_CLASS(CLimbIk, "AnimationPoseModifier_LimbIk", 0x3b00bbad5b9c4fa4, 0x97e9b720fcbc8839)
 
+	CLimbIk();
+	virtual ~CLimbIk() {}
+
 private:
 	struct Setup
 	{

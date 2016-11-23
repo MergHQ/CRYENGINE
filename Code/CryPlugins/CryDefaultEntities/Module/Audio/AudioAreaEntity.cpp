@@ -19,15 +19,7 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaEntity");
 
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
-		RegisterEntityProperty<bool>(pPropertyHandler, "Trigger Areas On Move", "bTriggerAreasOnMove", "0", "");
-		RegisterEntityPropertyAudioEnvironment(pPropertyHandler, "Environment", "audioEnvironmentEnvironment", "", "");
-		RegisterEntityPropertyEnum(pPropertyHandler, "Sound Obstruction Type", "eiSoundObstructionType", "1", "", 0, 1);
-		RegisterEntityProperty<float>(pPropertyHandler, "Fade Distance", "fFadeDistance", "5.0", "", 0.f, 100000.f);
-		RegisterEntityProperty<float>(pPropertyHandler, "Environment Distance", "fEnvironmentDistance", "5.0", "", 0.f, 100000.f);
-
+		
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
 		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AudioAreaEntity");
@@ -50,12 +42,14 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 
 CAudioAreaEntityRegistrator g_audioAreaEntityRegistrator;
 
+CRYREGISTER_CLASS(CAudioAreaEntity);
+
 void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 {
 	if (gEnv->IsDedicated())
 		return;
 
-	CNativeEntityBase::ProcessEvent(event);
+	CDesignerEntityComponent::ProcessEvent(event);
 
 	switch (event.event)
 	{
@@ -167,20 +161,15 @@ void CAudioAreaEntity::OnResetState()
 	m_pProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
 
 	// Get properties
-	m_bEnabled = GetPropertyBool(eProperty_Enabled);
-	const bool bTriggerAreas = GetPropertyBool(eProperty_TriggerAreasOnMove);
 	AudioControlId environmentId = INVALID_AUDIO_ENVIRONMENT_ID;
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_Environment), environmentId);
-	m_obstructionType = static_cast<ESoundObstructionType>(GetPropertyInt(eProperty_SoundObstructionType));
-	m_fadeDistance = GetPropertyFloat(eProperty_FadeDistance);
-	m_environmentFadeDistance = GetPropertyFloat(eProperty_EnvironmentDistance);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_environmentName, environmentId);
 
 	// Reset values
 	m_pProxy->SetFadeDistance(m_fadeDistance);
 	m_pProxy->SetEnvironmentFadeDistance(m_environmentFadeDistance);
 
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_VOLUME_SOUND);
-	if (bTriggerAreas)
+	if (m_bTriggerAreasOnMove)
 	{
 		entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_TRIGGER_AREAS);
 		entity.SetFlagsExtended(entity.GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE);
@@ -251,8 +240,8 @@ void CAudioAreaEntity::UpdateFadeValue(const float distance)
 
 void CAudioAreaEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode)
 {
-	auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId);
-	auto* pAudioAreaEntity = static_cast<CAudioAreaEntity*>(pGameObject->QueryExtension("AudioAreaEntity"));
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+	auto* pAudioAreaEntity = pEntity->GetComponent<CAudioAreaEntity>();
 
 	if (IsPortActive(pActInfo, eInputPorts_Enable))
 	{

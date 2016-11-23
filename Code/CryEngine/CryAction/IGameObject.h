@@ -722,12 +722,12 @@ struct IGameObjectProfileManager
 //   Interface used to implement a game object extension
 struct IGameObjectExtension : public IEntityComponent
 {
-	IGameObjectExtension() : m_pGameObject(0), m_entityId(0) {}
+	IGameObjectExtension() : m_pGameObject(0) {}
 
-	// IEntityComponent.h
+	// IEntityComponent
 	virtual uint64 GetEventMask() const { return ~(BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE)); } // All events except update and pre-physics update are subscribed to
-	virtual void Initialize(const SComponentInitializer& init) {};
-	// ~IEntityComponent.h
+	virtual void Initialize() {};
+	// ~IEntityComponent
 
 	// Summary
 	//   Initialize the extension
@@ -870,32 +870,19 @@ struct IGameObjectExtension : public IEntityComponent
 	//   A pointer to the game object which hold this extension
 	ILINE IGameObject* GetGameObject() const { return m_pGameObject; }
 
-	// Summary
-	//   Retrieves the EntityId
-	// Returns
-	//   An EntityId to the entity which hold this game object extension
-	ILINE EntityId GetEntityId() const { return m_entityId; }
+	virtual void Release() = 0;
 
 protected:
 	void SetGameObject(IGameObject* pGameObject)
 	{
 		m_pGameObject = pGameObject;
-		if (pGameObject)
-		{
-			m_pEntity = pGameObject->GetEntity();
-			m_entityId = pGameObject->GetEntityId();
-		}
 	}
 
-	void ResetGameObject()
-	{
-		m_pEntity = (m_pGameObject ? m_pGameObject->GetEntity() : 0);
-		m_entityId = (m_pGameObject ? m_pGameObject->GetEntityId() : 0);
-	}
+	// Kept around for legacy reasons
+	void ResetGameObject() {}
 
 private:
 	IGameObject* m_pGameObject;
-	EntityId     m_entityId;
 };
 
 #define CHANGED_NETWORK_STATE(object, aspects)     do { /* IEntity * pEntity = object->GetGameObject()->GetEntity(); CryLogAlways("%s changed aspect %x (%s %d)", pEntity ? pEntity->GetName() : "NULL", aspects, __FILE__, __LINE__); */ object->GetGameObject()->ChangedNetworkState(aspects); } while (0)

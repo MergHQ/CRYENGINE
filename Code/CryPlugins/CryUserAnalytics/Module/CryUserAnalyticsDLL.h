@@ -15,6 +15,9 @@ class CPlugin_CryUserAnalytics : public ICryUserAnalyticsPlugin
 
 	CRYGENERATE_SINGLETONCLASS(CPlugin_CryUserAnalytics, "Plugin_CryUserAnalytics", 0x2284d2bf677c4e72, 0x8ace10f924bdd068)
 
+	CPlugin_CryUserAnalytics();
+	virtual ~CPlugin_CryUserAnalytics();
+
 	//! Retrieve name of plugin.
 	virtual const char* GetName() const override { return "CryUserAnalytics"; }
 

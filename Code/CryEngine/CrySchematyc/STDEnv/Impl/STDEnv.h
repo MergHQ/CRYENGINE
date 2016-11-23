@@ -24,6 +24,8 @@ class CSTDEnv : public ISTDEnv, public ISystemEventListener
 	CRYGENERATE_SINGLETONCLASS(CSTDEnv, "Plugin_SchematycSTDEnv", 0x034c1d02501547ab, 0xb216c87cc5258a61)
 
 public:
+	CSTDEnv();
+	virtual ~CSTDEnv();
 
 	// ICryPlugin
 	virtual const char* GetName() const override;

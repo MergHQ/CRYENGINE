@@ -3,9 +3,6 @@
 #include "StdAfx.h"
 #include "EntityObjectClassRegistry.h"
 
-#include <CryEntitySystem/IEntityAttributesProxy.h>
-#include <GameObjects/GameObject.h>
-#include <GameObjects/GameObjectSystem.h>
 #include <Schematyc/Entity/EntityClasses.h>
 #include <Schematyc/Entity/EntityUserData.h>
 
@@ -13,10 +10,9 @@
 #include "STDEnv.h"
 #include "STDModules.h"
 #include "Entity/EntityClassProperties.h"
-#include "Entity/EntityObjectAttribute.h"
 #include "Entity/EntityObjectMap.h"
 #include "Entity/EntityObjectPreviewer.h"
-#include "Entity/GameObjectExtension.h"
+#include "Entity/EntityComponent.h"
 #include "Entity/Components/EntityDebugComponent.h"
 #include "Entity/Components/EntityMovementComponent.h"
 
@@ -24,42 +20,18 @@ namespace Schematyc
 {
 namespace
 {
-class CGameObjectExtensionCreator : public IGameObjectExtensionCreatorBase
+IEntityComponent* CreateSchematycEntityComponent(IEntity* pEntity, SEntitySpawnParams& spawnParams, void* pUserData)
 {
-public:
-
-	// IGameObjectExtensionCreatorBase
-
-	virtual IGameObjectExtension* Create(IEntity* pEntity)
+	if (auto* pEntityComponent = pEntity->CreateComponentClass<Schematyc::CEntityObjectComponent>())
 	{
-		return pEntity->CreateComponentClass<CGameObjectExtension>();
+		auto *pEntityUserData = (SEntityUserData *)spawnParams.pUserData;
+
+		const IRuntimeClass* pRuntimeClass = CSTDEnv::GetInstance().GetEntityObjectClassRegistry().GetRuntimeClassFromEntityClass(spawnParams.pClass->GetName());
+
+		pEntityComponent->SetRuntimeClass(pRuntimeClass, pEntityUserData != nullptr ? pEntityUserData->bIsPreview : false);
+		return pEntityComponent;
 	}
 
-	virtual void GetGameObjectExtensionRMIData(void** ppRMI, size_t* pCount)
-	{
-		CGameObjectExtension::GetGameObjectExtensionRMIData(ppRMI, pCount);
-	}
-
-	// ~IGameObjectExtensionCreatorBase
-};
-
-IEntityComponent* CreateGameObjectProxyAndExtension(IEntity* pEntity, SEntitySpawnParams& spawnParams, void* pUserData)
-{
-	IGameObject* pGameObject = nullptr;
-	IEntityComponent* pEntityProxy = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectEntityProxy(*pEntity, &pGameObject);
-	SCHEMATYC_ENV_ASSERT(pGameObject);
-	if (pGameObject)
-	{
-		if (pGameObject->ActivateExtension(CGameObjectExtension::ms_szExtensionName))
-		{
-			pGameObject->SetUserData(spawnParams.pUserData);
-			return pEntityProxy;
-		}
-		else
-		{
-			pEntity->RemoveComponent(pEntityProxy);
-		}
-	}
 	return nullptr;
 }
 } // Anonymous
@@ -81,10 +53,18 @@ CEntityObjectClassRegistry::SEntityClass::SEntityClass(const SEntityClass& rhs)
 
 void CEntityObjectClassRegistry::Init()
 {
-	static CGameObjectExtensionCreator gameObjectExtensionCreator;
-	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(CGameObjectExtension::ms_szExtensionName, &gameObjectExtensionCreator, nullptr);
-
 	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(Delegate::Make(*this, &CEntityObjectClassRegistry::OnClassCompilation), m_connectionScope);  // TODO : Can we filter by class guid?
+}
+
+const IRuntimeClass* CEntityObjectClassRegistry::GetRuntimeClassFromEntityClass(const char* entityClass) const
+{
+	auto entityClassIt = m_entityClasses.find(entityClass);
+	if (entityClassIt != m_entityClasses.end())
+	{
+		return gEnv->pSchematyc->GetRuntimeRegistry().GetClass(entityClassIt->second.runtimeClassGUID).get();
+	}
+
+	return nullptr;
 }
 
 CEntityObjectClassRegistry::SEntityClass::~SEntityClass()
@@ -118,8 +98,7 @@ void CEntityObjectClassRegistry::OnClassCompilation(const IRuntimeClass& runtime
 			const SEntityClassProperties& classProperties = DynamicCast<SEntityClassProperties>(*pEnvClassProperties);
 			SEntityClass& entityClass = itEntityClass->second;
 
-			entityClass.desc.classAttributes.clear();
-			entityClass.desc.entityAttributes.clear();
+			entityClass.runtimeClassGUID = runtimeClass.GetGUID();
 
 			entityClass.editorCategory = "Schematyc";
 			entityClass.editorCategory.append("/");
@@ -154,9 +133,8 @@ void CEntityObjectClassRegistry::OnClassCompilation(const IRuntimeClass& runtime
 			entityClass.desc.sName = szClassName;
 			entityClass.desc.editorClassInfo.sCategory = entityClass.editorCategory.c_str();
 			entityClass.desc.editorClassInfo.sIcon = entityClass.icon.c_str();
-			entityClass.desc.pUserProxyCreateFunc = &CreateGameObjectProxyAndExtension;
 
-			entityClass.desc.entityAttributes.push_back(std::make_shared<CEntityObjectAttribute>(runtimeClass.GetGUID(), runtimeClass.GetDefaultProperties()));
+			entityClass.desc.pUserProxyCreateFunc = &CreateSchematycEntityComponent;
 
 			entityClassRegistry.RegisterStdClass(entityClass.desc);
 		}

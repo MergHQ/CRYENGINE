@@ -65,6 +65,8 @@ class CEngineModule_CryLiveCreate : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryLiveCreate, "EngineModule_CryLiveCreate", 0xdc126beebdc6411f, 0xa111b42839f2dd1b)
 
+	virtual ~CEngineModule_CryLiveCreate() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() { return "CryLiveCreate"; };
 	virtual const char* GetCategory() { return "CryEngine"; };
@@ -102,14 +104,6 @@ class CEngineModule_CryLiveCreate : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryLiveCreate)
-
-CEngineModule_CryLiveCreate::CEngineModule_CryLiveCreate()
-{
-}
-
-CEngineModule_CryLiveCreate::~CEngineModule_CryLiveCreate()
-{
-}
 
 LiveCreate::IManager* CreateLiveCreate(ISystem* pSystem)
 {

@@ -24,10 +24,12 @@ class CEntityComponentTrackViewNode :
 public:
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CEntityComponentTrackViewNode,"CEntityComponentTrackViewNode",0x60F18291C2A146F7,0xBA7F02F390C85BB2);
 	
+	virtual ~CEntityComponentTrackViewNode() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) final;
+	virtual void Initialize() final;
 	virtual void ProcessEvent(SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
@@ -39,14 +41,6 @@ public:
 	virtual void         Update(SEntityUpdateContext& ctx) final {};
 
 	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final {};
-	virtual void         GameSerialize(TSerialize ser) final {};
-	virtual bool         NeedGameSerialize() final { return false; };
-
-private:
-	IEntity* m_pEntity;
 };
-
-inline CEntityComponentTrackViewNode::CEntityComponentTrackViewNode() {}
-inline CEntityComponentTrackViewNode::~CEntityComponentTrackViewNode() {}
 
 #endif

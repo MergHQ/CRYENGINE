@@ -6,8 +6,6 @@ typedef unsigned int EntityId;          //!< Unique identifier for each entity i
 #define INVALID_ENTITYID ((EntityId)(0))
 
 #include <CryEntitySystem/IEntityComponent.h>
-#include <CryEntitySystem/IEntityAttributesProxy.h>
-#include <CryNetwork/SerializeFwd.h>
 
 // Forward declarations.
 struct IPhysicalEntity;
@@ -381,7 +379,7 @@ enum EEntityEvent
 	//! nParam[1] = TFlowInputData* to send to output
 	ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT,
 
-	//! Called in the editor when some property of the current selected entity changes.
+	//! Called in the editor when a Lua property of the selected entity changes. This is *not* sent when using IEntityPropertyGroup
 	ENTITY_EVENT_EDITOR_PROPERTY_CHANGED,
 
 	//! Called when a script reloading is requested and done in the editor.
@@ -801,7 +799,9 @@ public:
 	virtual string GetEntityTextDescription() const = 0;
 
 	//! Serializes entity parameters to/from XML.
-	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) = 0;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bIncludeScriptProxy = true) = 0;
+
+	virtual void SerializeProperties(Serialization::IArchive& ar) = 0;
 
 	//! \retval true if this entity was loaded from level file.
 	//! \retval false for entities created dynamically.
@@ -1042,7 +1042,17 @@ public:
 	//! Helper template function to simplify querying components
 	//! ex: auto pScriptProxy = pEntity->GetComponent<IEntityScriptComponent>();
 	template<typename ComponentType>
-	ComponentType* GetComponent() const { return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>())); }
+	ComponentType* GetComponent() const 
+	{
+		//static_assert(IEntityComponent::IsDeclared<ComponentType>::Check, "Tried to query component  that was not declared with CRY_ENTITY_COMPONENT_INTERFACE, CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS or CRY_ENTITY_COMPONENT_CLASS!");
+
+		return static_cast<ComponentType*>(GetComponentByTypeId(cryiidof<ComponentType>())); 
+	}
+
+
+	//! Creates instances of the components contained in the other entity
+	//! Also copies over properties for all the components created.
+	virtual void CloneComponentsFrom(IEntity& otherEntity) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
@@ -1361,14 +1371,15 @@ DST crycomponent_cast(SRC pComponent) { return static_cast<DST>(pComponent); }
 template<typename ComponentType>
 inline ComponentType* IEntity::CreateComponentClass(bool bAllowDuplicate)
 {
-	std::shared_ptr<ComponentType> pComponent(new ComponentType, [=](ComponentType* p) { p->Release(); });
-	return static_cast<ComponentType*>(AddComponent(cryiidof<ComponentType>(), pComponent, bAllowDuplicate));
+	return static_cast<ComponentType*>(AddComponent(cryiidof<ComponentType>(), std::make_shared<ComponentType>(), bAllowDuplicate));
 }
 
 template<typename ComponentInterfaceType>
 inline ComponentInterfaceType* IEntity::CreateComponent(bool bAllowDuplicate)
 {
-	ComponentInterfaceType* pReturn = static_cast<ComponentInterfaceType*>(AddComponent(cryiidof<ComponentInterfaceType>(), std::shared_ptr<ComponentInterfaceType>(),bAllowDuplicate));
+	//static_assert(InterfaceCastSemantics::cryhasiid<ComponentInterfaceType>::Check, "Tried to create component class that was not declared with CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS, CRY_ENTITY_COMPONENT_CLASS or CRY_ENTITY_COMPONENT_INTERFACE in a public scope!");
+
+	ComponentInterfaceType* pReturn = static_cast<ComponentInterfaceType*>(AddComponent(cryiidof<ComponentInterfaceType>(), nullptr, bAllowDuplicate));
 	assert(pReturn); // Must return a valid component interface
 
 	return pReturn;
@@ -1413,3 +1424,5 @@ inline void IEntity::SetOpacity(float fAmount)
 	params.opacity = fAmount;
 	SetRenderNodeParams(params);
 }
+
+ILINE EntityId IEntityComponent::GetEntityId() const { return m_pEntity->GetId(); }

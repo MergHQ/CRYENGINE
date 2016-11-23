@@ -24,6 +24,8 @@ class CFeetPoseStore :
 
 	CRYGENERATE_CLASS(CFeetPoseStore, "AnimationPoseModifier_FeetPoseStore", 0x4095cfb096b5494f, 0x864d3c007b71d31d)
 
+	virtual ~CFeetPoseStore() {}
+
 	// IAnimationPoseModifier
 public:
 	virtual bool Prepare(const SAnimationPoseModifierParams& params) override { return true; }
@@ -47,6 +49,8 @@ class CFeetPoseRestore :
 	CRYINTERFACE_END()
 
 	CRYGENERATE_CLASS(CFeetPoseRestore, "AnimationPoseModifier_FeetPoseRestore", 0x90662f0ed05a4bf4, 0x8fb69924b5da2872)
+
+	virtual ~CFeetPoseRestore() {}
 
 	// IAnimationPoseModifier
 public:

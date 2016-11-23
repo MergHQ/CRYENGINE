@@ -16,6 +16,8 @@ class CPlugin_CryDefaultEntities
 	PLUGIN_FLOWNODE_REGISTER
 	PLUGIN_FLOWNODE_UNREGISTER
 
+	virtual ~CPlugin_CryDefaultEntities() {}
+
 public:
 	//! Retrieve name of plugin.
 	virtual const char* GetName() const override { return "CryDefaultEntities"; }
@@ -27,4 +29,29 @@ public:
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 
 	virtual void OnPluginUpdate(EPluginUpdateType updateType) override {}
+};
+
+struct IEntityRegistrator
+{
+	IEntityRegistrator()
+	{
+		if (g_pFirst == nullptr)
+		{
+			g_pFirst = this;
+			g_pLast = this;
+		}
+		else
+		{
+			g_pLast->m_pNext = this;
+			g_pLast = g_pLast->m_pNext;
+		}
+	}
+
+	virtual void Register() = 0;
+
+public:
+	IEntityRegistrator *m_pNext;
+
+	static IEntityRegistrator *g_pFirst;
+	static IEntityRegistrator *g_pLast;
 };

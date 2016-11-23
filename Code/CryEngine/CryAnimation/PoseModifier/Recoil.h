@@ -43,6 +43,9 @@ public:
 
 	CRYGENERATE_CLASS(CRecoil, "AnimationPoseModifier_Recoil", 0xd7900cb9e7be4825, 0x99e1cc1211f9c561)
 
+	CRecoil();
+	virtual ~CRecoil() {}
+
 public:
 	void SetState(const State& state) { m_state = state; m_bStateUpdate = true; }
 

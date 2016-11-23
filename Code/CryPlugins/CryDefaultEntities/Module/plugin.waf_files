@@ -18,9 +18,8 @@
 		],
 		"Helpers" :
 		[
-			"Helpers/ISimpleExtension.h",
-			"Helpers/NativeEntityBase.cpp",
-			"Helpers/NativeEntityBase.h",
+			"Helpers/DesignerEntityComponent.cpp",
+			"Helpers/DesignerEntityComponent.h",
 			"Helpers/EntityFlowNode.cpp",
 			"Helpers/EntityFlowNode.h"
 		],
@@ -71,8 +70,7 @@
 		],
 		"Physics" :
 		[
-			"Physics/RopeEntity.cpp",
-			"Physics/RopeEntity.h"
+			"Physics/RopeEntity.cpp"
 		],
 		"Triggers" :
 		[

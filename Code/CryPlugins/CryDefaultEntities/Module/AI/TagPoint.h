@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 
-class CTagPoint : public CNativeEntityBase
+class CTagPoint final : public CDesignerEntityComponent
 {
 	virtual void OnResetState() override;
 };

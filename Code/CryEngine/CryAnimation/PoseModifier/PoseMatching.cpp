@@ -78,10 +78,6 @@ CPoseMatching::CPoseMatching() :
 {
 }
 
-CPoseMatching::~CPoseMatching()
-{
-}
-
 //
 
 void CPoseMatching::SetAnimations(const uint* pAnimationIds, uint count)

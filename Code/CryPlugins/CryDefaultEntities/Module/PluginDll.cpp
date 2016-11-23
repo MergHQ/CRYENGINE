@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "PluginDll.h"
-#include "Helpers/ISimpleExtension.h"
 
 #include <CryEntitySystem/IEntityClass.h>
 
@@ -13,14 +12,6 @@ USE_CRYPLUGIN_FLOWNODES
 
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
-
-CPlugin_CryDefaultEntities::CPlugin_CryDefaultEntities()
-{
-}
-
-CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
-{
-}
 
 class CSystemEventListener : public ISystemEventListener
 {

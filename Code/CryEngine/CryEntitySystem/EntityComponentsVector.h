@@ -1,5 +1,7 @@
 #pragma once
 
+#include <CryExtension/ICryFactoryRegistry.h>
+
 // Implemented in a similar way to CListenerSet
 
 // Forward decl.
@@ -13,6 +15,16 @@ struct SEntityComponentRecord
 	uint64                            registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
+
+	const char* GetName() const
+	{
+		if(ICryFactory* pComponentFactory = gEnv->pSystem->GetCryFactoryRegistry()->GetFactory(typeId))
+		{
+			return pComponentFactory->GetName();
+		}
+
+		return "";
+	}
 };
 
 //! Main listener collection class used in conjunction with CEntityComponentsIterator.
@@ -113,6 +125,11 @@ public:
 	void Reserve(size_t capacity)
 	{
 		m_vector.reserve(capacity);
+	}
+
+	size_t Size() const
+	{
+		return m_vector.size();
 	}
 
 	//! Invokes the provided function f once with each component.

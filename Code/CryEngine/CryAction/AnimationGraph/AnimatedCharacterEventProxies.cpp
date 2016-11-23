@@ -15,13 +15,7 @@
 
 CAnimatedCharacterComponent_Base::CAnimatedCharacterComponent_Base()
 	: m_pAnimCharacter(nullptr)
-	, m_piEntity(nullptr)
 {
-}
-
-void CAnimatedCharacterComponent_Base::Initialize(const SComponentInitializer& init)
-{
-	m_piEntity = init.m_pEntity;
 }
 
 void CAnimatedCharacterComponent_Base::ProcessEvent(SEntityEvent& event)
@@ -53,7 +47,7 @@ void CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate::OnPrePhysics
 
 	if (CAnimationGraphCVars::Get().m_useQueuedRotation && m_hasQueuedRotation)
 	{
-		m_piEntity->SetRotation(m_queuedRotation, ENTITY_XFORM_USER | ENTITY_XFORM_NOT_REREGISTER);
+		m_pEntity->SetRotation(m_queuedRotation, ENTITY_XFORM_USER | ENTITY_XFORM_NOT_REREGISTER);
 		ClearQueuedRotation();
 	}
 

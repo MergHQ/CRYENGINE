@@ -17,37 +17,23 @@ class CAudioAreaAmbienceRegistrator
 			CryLog("Skipping registration of default engine entity class AudioAreaAmbience, overridden by game");
 			return;
 		}
-
-		RegisterEntityWithDefaultComponent<CAudioAreaAmbienceEntity>("AudioAreaAmbience", "Audio", "AudioAreaAmbience.bmp");
-		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaAmbience");
-
+		
+		auto* pEntityClass = RegisterEntityWithDefaultComponent<CAudioAreaAmbienceEntity>("AudioAreaAmbience", "Audio", "AudioAreaAmbience.bmp");
+		
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "PlayTrigger", "audioTriggerPlayTrigger", "", "");
-		RegisterEntityPropertyAudioTrigger(pPropertyHandler, "StopTrigger", "audioTriggerStopTrigger", "", "");
-		RegisterEntityProperty<bool>(pPropertyHandler, "TriggerAreasOnMove", "bTriggerAreasOnMove", "0", "");
-
-		RegisterEntityPropertyAudioRtpc(pPropertyHandler, "Rtpc", "audioRTPCRtpc", "", "");
-		RegisterEntityPropertyAudioRtpc(pPropertyHandler, "GlobalRtpc", "audioRTPCGlobalRtpc", "", "");
-		RegisterEntityProperty<float>(pPropertyHandler, "RtpcDistance", "fRtpcDistance", "5", "", 0.f, 100000.f);
-
-		RegisterEntityPropertyAudioEnvironment(pPropertyHandler, "Environment", "audioEnvironmentEnvironment", "", "");
-		RegisterEntityProperty<float>(pPropertyHandler, "EnvironmentDistance", "fEnvironmentDistance", "5", "", 0.f, 100000.f);
-
-		RegisterEntityPropertyEnum(pPropertyHandler, "SoundObstructionType", "eiSoundObstructionType", "1", "", 0, 1);
 	}
 };
 
 CAudioAreaAmbienceRegistrator g_audioAreaAmbienceRegistrator;
+
+CRYREGISTER_CLASS(CAudioAreaAmbienceEntity);
 
 void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 {
 	if (gEnv->IsDedicated())
 		return;
 
-	CNativeEntityBase::ProcessEvent(event);
+	CDesignerEntityComponent::ProcessEvent(event);
 
 	switch (event.event)
 	{
@@ -56,7 +42,7 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 			m_areaState = EAreaState::Near;
 
 			const float distance = event.fParam[0];
-			if (distance < GetPropertyFloat(eProperty_RtpcDistance))
+			if (distance < m_rtpcDistance)
 			{
 				Play(m_playTriggerId);
 				UpdateRtpc(0.f);
@@ -68,7 +54,7 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 			m_areaState = EAreaState::Near;
 
 			const float distance = event.fParam[0];
-			if (distance < GetPropertyFloat(eProperty_RtpcDistance))
+			if (distance < m_rtpcDistance)
 			{
 				if (!IsPlaying())
 				{
@@ -77,7 +63,7 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 
 				UpdateFadeValue(distance);
 			}
-			else if (IsPlaying() && distance > GetPropertyFloat(eProperty_RtpcDistance))
+			else if (IsPlaying() && distance > m_rtpcDistance)
 			{
 				Stop();
 				UpdateFadeValue(distance);
@@ -143,7 +129,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
-	if (!GetPropertyBool(eProperty_Active))
+	if (!m_bEnabled)
 	{
 		if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 		{
@@ -157,25 +143,25 @@ void CAudioAreaAmbienceEntity::OnResetState()
 
 	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_PlayTrigger), m_playTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(GetPropertyValue(eProperty_StopTrigger), m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioRtpcId(GetPropertyValue(eProperty_Rtpc), m_rtpcId);
-	gEnv->pAudioSystem->GetAudioRtpcId(GetPropertyValue(eProperty_GlobalRtpc), m_globalRtpcId);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
+	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
+	gEnv->pAudioSystem->GetAudioRtpcId(m_rtpcName, m_rtpcId);
+	gEnv->pAudioSystem->GetAudioRtpcId(m_globalRtpcName, m_globalRtpcId);
 
-	gEnv->pAudioSystem->GetAudioEnvironmentId(GetPropertyValue(eProperty_Environment), m_environmentId);
+	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
 
 	m_obstructionSwitchId = AudioEntitiesUtils::GetObstructionOcclusionSwitch();
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(m_obstructionSwitchId, stateIds[GetPropertyInt(eProperty_SoundObstructionType)]);
+	audioProxy.SetSwitchState(m_obstructionSwitchId, stateIds[m_obstructionType]);
 
-	audioProxy.SetFadeDistance(GetPropertyFloat(eProperty_RtpcDistance));
-	audioProxy.SetEnvironmentFadeDistance(eProperty_EnvironmentDistance);
+	audioProxy.SetFadeDistance(m_rtpcDistance);
+	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);
 	audioProxy.SetEnvironmentId(m_environmentId);
 
 	auto entityFlags = entity.GetFlags() | ENTITY_FLAG_VOLUME_SOUND | ENTITY_FLAG_CLIENT_ONLY;
 
-	if (GetPropertyBool(eProperty_TriggerAreasOnMove))
+	if (m_bTriggerAreasOnMove)
 	{
 		entityFlags |= ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE;
 		entity.SetFlagsExtended(entity.GetFlagsExtended() | ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE);
@@ -254,10 +240,9 @@ void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 
 void CAudioAreaAmbienceEntity::UpdateFadeValue(float distance)
 {
-	float rtpcDistance = GetPropertyFloat(eProperty_RtpcDistance);
-	if (rtpcDistance > 0.f)
+	if (m_rtpcDistance > 0.f)
 	{
-		float fade = max((rtpcDistance - distance) / rtpcDistance, 0.f);
+		float fade = max((m_rtpcDistance - distance) / m_rtpcDistance, 0.f);
 
 		if (abs(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon)
 		{
@@ -273,7 +258,7 @@ void CAudioAreaAmbienceEntity::SetObstruction()
 		return;
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	pAudioProxy->SetSwitchState(m_obstructionSwitchId, stateIds[GetPropertyInt(eProperty_SoundObstructionType)]);
+	pAudioProxy->SetSwitchState(m_obstructionSwitchId, stateIds[m_obstructionType]);
 }
 
 void CAudioAreaAmbienceEntity::DisableObstruction()

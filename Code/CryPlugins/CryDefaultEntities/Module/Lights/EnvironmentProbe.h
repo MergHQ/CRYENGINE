@@ -1,53 +1,62 @@
 #pragma once
 
-#include "Helpers/NativeEntityBase.h"
+#include "Helpers/DesignerEntityComponent.h"
 
+#include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
+
+#include <CrySerialization/Math.h>
+#include <CrySerialization/Decorators/Resources.h>
 
 ////////////////////////////////////////////////////////
 // Sample entity for creating an environment probe
 ////////////////////////////////////////////////////////
-class CEnvironmentProbeEntity : public CNativeEntityBase
+class CEnvironmentProbeEntity final 
+	: public CDesignerEntityComponent
+	, public IEntityPropertyGroup
 {
-public:
-	// Indices of the properties, registered in the Register function
-	enum EProperties
-	{
-		eProperty_Active = 0,
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CEnvironmentProbeEntity, "EnvironmentProbe", 0x0D3D1840D239411E, 0x873814C56CCCEE2C);
 
-		eProperty_BoxSizeX,
-		eProperty_BoxSizeY,
-		eProperty_BoxSizeZ,
-
-		ePropertyGroup_ProjectionBegin,
-		eProperty_BoxProject,
-
-		eProperty_fBoxWidth,
-		eProperty_fBoxHeight,
-		eProperty_fBoxLength,
-
-		ePropertyGroup_ProjectionEnd,
-
-		ePropertyGroup_OptionsBegin,
-		eProperty_IgnoreVisAreas,
-		eProperty_SortPriority,
-		eProperty_AttenuationFalloffMax,
-		ePropertyGroup_OptionsEnd,
-
-		ePropertyGroup_AdvancedBegin,
-		eProperty_Cubemap,
-		ePropertyGroup_AdvancedEnd,
-
-		eNumProperties
-	};
-
-public:
 	CEnvironmentProbeEntity();
 	virtual ~CEnvironmentProbeEntity() {}
 
-	// CNativeEntityBase
+public:
+	// CDesignerEntityComponent
+	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+
 	virtual void OnResetState() override;
-	// ~CNativeEntityBase
+	// ~CDesignerEntityComponent
+
+	// IEntityPropertyGroup
+	virtual const char* GetLabel() const override { return "EnvironmentProbe Properties"; }
+
+	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	{
+		archive(m_bActive, "Active", "Active");
+		archive(m_light.m_ProbeExtents, "BoxSize", "BoxSize");
+
+		if (archive.openBlock("Options", "Options"))
+		{
+			archive(m_bIgnoreVisAreas, "IgnoreVisAreas", "IgnoreVisAreas");
+			archive(m_light.m_nSortPriority, "SortPriority", "SortPriority");
+			archive(m_attentuationFalloffMax, "AttentuationFalloffMax", "AttentuationFalloffMax");
+
+			archive.closeBlock();
+		}
+
+		if (archive.openBlock("OptionsAdvanced", "Advanced"))
+		{
+			archive(Serialization::TextureFilename(m_cubemapPath), "Cubemap", "Cubemap");
+
+			archive.closeBlock();
+		}
+
+		if (archive.isInput())
+		{
+			OnResetState();
+		}
+	}
+	// ~IEntityPropertyGroup
 
 protected:
 	void GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse);
@@ -58,4 +67,10 @@ protected:
 
 	// Light parameters, updated in the OnResetState function
 	CDLight m_light;
+
+	bool m_bActive = true;
+	string m_cubemapPath;
+
+	bool m_bIgnoreVisAreas = false;
+	float m_attentuationFalloffMax = 1.f;
 };

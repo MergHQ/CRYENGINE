@@ -41,7 +41,7 @@ class CLipSync_FacialInstance : public CGameObjectExtensionHelper<CLipSync_Facia
 {
 public:
 	// IGameObjectExtension
-	virtual void                 Initialize(const SComponentInitializer& init) override {};
+	virtual void                 Initialize() override {};
 	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual bool                 Init(IGameObject* pGameObject) override;
 	virtual void                 PostInit(IGameObject* pGameObject) override;

@@ -18,6 +18,9 @@ class CWrinkleMapShaderParamCallback : public IShaderParamCallback
 
 	CRYGENERATE_CLASS(CWrinkleMapShaderParamCallback, "WrinkleMapShaderParamCallback", 0x68c7f0e0c36446fe, 0x82a3bc01b54dc7bf)
 
+	CWrinkleMapShaderParamCallback();
+	virtual ~CWrinkleMapShaderParamCallback();
+
 public:
 
 	//////////////////////////////////////////////////////////////////////////
@@ -61,6 +64,13 @@ protected:
 	bool             m_bWrinklesEnabled;
 };
 
-CREATE_SHADERPARAMCALLBACKUI_CLASS(CWrinkleMapShaderParamCallback, "bWrinkleMap", 0x1B9D46925918485B, 0xB7312C8FB3F5B763)
+class CWrinkleMapShaderParamCallbackUI : public CWrinkleMapShaderParamCallback
+{
+	CRYINTERFACE_BEGIN()
+	CRYINTERFACE_ADD(CWrinkleMapShaderParamCallback)
+	CRYINTERFACE_END()
+		
+	CRYGENERATE_CLASS(CWrinkleMapShaderParamCallbackUI, "bWrinkleMap", 0x1B9D46925918485B, 0xB7312C8FB3F5B763)
+};
 
 #endif //__WrinkleMapRenderProxyCallback_H__

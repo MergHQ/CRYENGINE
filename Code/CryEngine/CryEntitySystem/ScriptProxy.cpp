@@ -29,8 +29,7 @@ CRYREGISTER_CLASS(CEntityComponentLuaScript);
 
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentLuaScript::CEntityComponentLuaScript()
-	: m_pEntity(nullptr)
-	, m_pScript(nullptr)
+	: m_pScript(nullptr)
 	, m_pThis(nullptr)
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
@@ -46,14 +45,8 @@ CEntityComponentLuaScript::~CEntityComponentLuaScript()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::Initialize(const SComponentInitializer& init)
+void CEntityComponentLuaScript::Initialize()
 {
-	assert(init.m_pEntity);
-
-	if (m_pEntity == nullptr)
-	{
-		m_pEntity = (CEntity*)init.m_pEntity;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,8 +77,7 @@ void CEntityComponentLuaScript::CreateScriptTable(SEntitySpawnParams* pSpawnPara
 	m_pThis->AddRef();
 	//m_pThis->Clone( m_pScript->GetScriptTable() );
 
-	CEntitySystem* pEntitySystem = (CEntitySystem*)m_pEntity->GetEntitySystem();
-	if (pEntitySystem)
+	if (gEnv->pEntitySystem)
 	{
 		//pEntitySystem->GetScriptBindEntity()->DelegateCalls( m_pThis );
 		m_pThis->Delegate(m_pScript->GetScriptTable());
@@ -206,7 +198,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH:
 		// OnBind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -218,7 +210,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH_THIS:
 		// OnBindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -232,7 +224,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH:
 		// OnUnbind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -244,7 +236,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH_THIS:
 		// OnUnbindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -259,7 +251,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -306,7 +298,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -336,7 +328,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -383,7 +375,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -413,7 +405,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -443,7 +435,7 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -896,7 +888,7 @@ void CEntityComponentLuaScript::CallEvent(const char* sEvent, const char* sValue
 void CEntityComponentLuaScript::CallEvent(const char* sEvent, EntityId nEntityId)
 {
 	IScriptTable* pTable = nullptr;
-	IEntity* const pIEntity = m_pEntity->GetCEntitySystem()->GetEntity(nEntityId);
+	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(nEntityId);
 	
 	if (pIEntity != nullptr)
 	{

@@ -21,6 +21,9 @@ class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "CryAudioImplSDLMixer", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
 
+	CEngineModule_CryAudioImplSDLMixer();
+	virtual ~CEngineModule_CryAudioImplSDLMixer() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual char const* GetName()     override { return "CryAudioImplSDLMixer"; }
 	virtual char const* GetCategory() override { return "CryAudio"; }
@@ -73,10 +76,6 @@ bool CEngineModule_CryAudioImplSDLMixer::m_bSuccess = false;
 CEngineModule_CryAudioImplSDLMixer::CEngineModule_CryAudioImplSDLMixer()
 {
 	g_audioImplCVars.RegisterVariables();
-}
-
-CEngineModule_CryAudioImplSDLMixer::~CEngineModule_CryAudioImplSDLMixer()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

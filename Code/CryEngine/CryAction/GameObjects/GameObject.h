@@ -135,7 +135,7 @@ public:
 
 	// IEntityComponent
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_USER; };
-	virtual void         Initialize(const SComponentInitializer& init) final;
+	virtual void         Initialize() final;
 	virtual void         OnShutDown() final;
 	virtual void         Release() final;
 	virtual void         ProcessEvent(SEntityEvent& event) final;
@@ -420,7 +420,6 @@ private:
 	void EvaluateUpdateActivation();
 	void DebugUpdateState();
 	bool ShouldUpdateAI();
-	void UpdateLOD();
 	void RemoveExtension(const TExtensions::iterator& iter);
 	void UpdateStateEvent(EUpdateStateEvent evt);
 	bool TestIsProbablyVisible(uint state);

@@ -16,11 +16,7 @@ class CTriggerEntityRegistrator
 		}
 
 		RegisterEntityWithDefaultComponent<CTriggerEntity>("AreaTrigger", "Triggers");
-		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AreaTrigger");
-		auto* pPropertyHandler = pEntityClass->GetPropertyHandler();
-
-		RegisterEntityProperty<bool>(pPropertyHandler, "Enabled", "bEnabled", "1", "");
-
+		
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
 		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AreaTrigger");
@@ -41,10 +37,11 @@ class CTriggerEntityRegistrator
 
 CTriggerEntityRegistrator g_triggerEntityRegistrator;
 
+CRYREGISTER_CLASS(CTriggerEntity);
+
 CTriggerEntity::CTriggerEntity()
 	: m_bActive(true)
 {
-
 }
 
 void CTriggerEntity::ProcessEvent(SEntityEvent& event)
@@ -72,8 +69,8 @@ void CTriggerEntity::ProcessEvent(SEntityEvent& event)
 
 void CTriggerEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode)
 {
-	auto* pGameObject = gEnv->pGameFramework->GetGameObject(entityId);
-	auto* pTriggerEntity = static_cast<CTriggerEntity*>(pGameObject->QueryExtension("AreaTrigger"));
+	auto* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+	auto* pTriggerEntity = pEntity->GetComponent<CTriggerEntity>();
 
 	if (IsPortActive(pActInfo, eInputPorts_Enable))
 	{

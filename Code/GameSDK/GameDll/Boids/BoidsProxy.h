@@ -28,13 +28,16 @@ class CBoidsProxy : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CBoidsProxy,"CBoidsProxy",0x382D896A7C224637,0xB32321C67EC5F588)
 
+	CBoidsProxy();
+	virtual ~CBoidsProxy();
+
 public:
 
 	IEntity* GetEntity() const { return m_pEntity; };
 
 	// IEntityComponent.h interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize( const SComponentInitializer& init ) final;
+	virtual void Initialize() final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -66,9 +69,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Private member variables.
 	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	IEntity *m_pEntity;
-
 	// Flock of items.
 	CFlock *m_pFlock;
 
@@ -83,20 +83,22 @@ struct CBoidObjectProxy : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CBoidObjectProxy,"CBoidObjectProxy",0x191DC4B2C2224E1E,0x81BDFE1D882C9F3E)
 
+	CBoidObjectProxy();
+	virtual ~CBoidObjectProxy() {}
+
 public:
 	IEntity* GetEntity() const { return m_pEntity; };
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityEvent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize( const SComponentInitializer& init ) override;
+	virtual void Initialize() override;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_BOID_OBJECT; }
-	virtual void Release() override { delete this; };
 	virtual	void ProcessEvent( SEntityEvent &event ) override;
 	virtual uint64 GetEventMask() const final;
 	virtual void SerializeXML( XmlNodeRef &entityNode,bool bLoading ) override {};
