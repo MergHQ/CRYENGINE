@@ -297,6 +297,28 @@ QTabWidget#notificationTabs::pane QLineEdit
 	color: rgb(166,166,166);
 }
 
+QTabWidget > QTabBar > QToolButton
+{
+	background-color: rgb(66,66,66);
+	border: 0px;
+	border-radius: 0px;
+	margin-bottom: 2px;
+}
+
+QTabWidget > QTabBar > QToolButton:hover
+{
+	background-color:rgb(106,106,106);
+	color: rgb(255,255,255);
+	border: 0px;
+	border-radius: 0px;
+	margin-bottom: 2px;
+}
+
+QTabWidget > QTabBar > QToolButton:pressed
+{
+	background-color: rgb(86,86,86);
+}
+
 CNotificationList
 {
 	background-color: rgb(35, 35, 35);
