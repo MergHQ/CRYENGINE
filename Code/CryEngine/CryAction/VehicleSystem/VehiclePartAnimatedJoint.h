@@ -78,6 +78,7 @@ protected:
 	Matrix34 m_initialTM;
 	Matrix34 m_worldTM;
 	Matrix34 m_localTM;
+	Matrix34 m_nextFrameLocalTM;
 	AABB     m_localBounds;
 
 	// if using external geometry
