@@ -1148,6 +1148,12 @@ void CMatInfo::SetKeepLowResSysCopyForDiffTex()
 		if (!pRes)
 			continue;
 
+#ifndef FEATURE_SVO_GI_ALLOW_HQ
+		// For non HQ mode (consoles) keep the texture only if material is going to use alpha value from it
+		if ((pRes->GetAlphaRef() == 0.f) && (pRes->GetStrengthValue(EFTT_OPACITY) == 1.f))
+			continue;
+#endif
+		
 		int j = EFTT_DIFFUSE;
 		{
 			SEfResTexture* pResTexure = pRes->GetTexture(j);

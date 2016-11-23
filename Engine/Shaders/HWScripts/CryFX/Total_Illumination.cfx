@@ -124,6 +124,7 @@ struct pixout_RenderAtmosphere
 // _RT_VOLUMETRIC_FOG						Use RSM albedo colors and normals
 // _RT_LIGHTVOLUME1             Analytical GI mode - voxels are not used
 // _RT_TILED_SHADING            Enable voxels tracing
+// _RT_ENVIRONMENT_CUBEMAP      Analytical proxies included into voxel tracing
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -626,7 +627,7 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 	float fAoOpacity = 0;
 
 #if !ORBIS
-#if %_RT_LIGHTVOLUME1
+#if %_RT_LIGHTVOLUME1 || %_RT_ENVIRONMENT_CUBEMAP
 	{
 		float4 vC = 0;
 		float fDirectionality = 1;

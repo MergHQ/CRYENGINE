@@ -639,7 +639,7 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * p
 		rp.SetConstantArray(paramName3, (Vec4*)&vData3, 1);
 	}
 
-	if (e_svoTI_AnalyticalGI)
+	if ((e_svoTI_AnalyticalGI || e_svoTI_AnalyticalOccluders) && m_texInfo.arrAnalyticalOccluders[0][0].radius)
 	{
 		static CCryNameR paramName("SVO_AnalyticalOccluders");
 		rp.SetConstantArray(paramName, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
@@ -1375,6 +1375,9 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 
 	if (m_texInfo.arrPortalsPos[0].z)
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
+
+	if (bPixelShader && (e_svoTI_AnalyticalGI || e_svoTI_AnalyticalOccluders) && m_texInfo.arrAnalyticalOccluders[0][0].radius)
+		rtFlags |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];
 
 	if (bPixelShader && e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
 		rtFlags |= g_HWSR_MaskBit[HWSR_SPRITE];

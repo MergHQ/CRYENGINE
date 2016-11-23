@@ -2553,9 +2553,9 @@ public:
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			if (m_Color[i] < 0 || m_Color[i] > 100.0f || _isnan(m_Color[i]))
+			if (m_Color[i] < 0 || m_Color[i] > 1000.0f || _isnan(m_Color[i]))
 				return false;
-			if (m_BaseColor[i] < 0 || m_BaseColor[i] > 100.0f || _isnan(m_BaseColor[i]))
+			if (m_BaseColor[i] < 0 || m_BaseColor[i] > 1000.0f || _isnan(m_BaseColor[i]))
 				return false;
 		}
 		return true;

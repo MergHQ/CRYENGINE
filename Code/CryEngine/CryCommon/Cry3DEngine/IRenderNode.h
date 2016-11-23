@@ -105,20 +105,20 @@ enum ERenderNodeFlags : uint64
 	ERF_HIDABLE_SECONDARY          = BIT(7),
 	ERF_HIDDEN                     = BIT(8),
 	ERF_SELECTED                   = BIT(9),
-
+	ERF_GI_MODE_BIT0							 = BIT(10), //!< Bit0 of GI mode.
 	ERF_OUTDOORONLY                = BIT(11),
 	ERF_NODYNWATER                 = BIT(12),
 	ERF_EXCLUDE_FROM_TRIANGULATION = BIT(13),
 	ERF_REGISTER_BY_BBOX           = BIT(14),
 	ERF_PICKABLE                   = BIT(15),
-
+	ERF_GI_MODE_BIT1							 = BIT(16), //!< Bit1 of GI mode.
 	ERF_NO_PHYSICS                 = BIT(17),
 	ERF_NO_DECALNODE_DECALS        = BIT(18),
 	ERF_REGISTER_BY_POSITION       = BIT(19),
 	ERF_STATIC_INSTANCING          = BIT(20),
 	ERF_RECVWIND                   = BIT(21),
 	ERF_COLLISION_PROXY            = BIT(22), //!< Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
-
+	ERF_GI_MODE_BIT2							 = BIT(23), //!< Bit2 of GI mode.
 	ERF_SPEC_BIT0                  = BIT(24), //!< Bit0 of min config specification.
 	ERF_SPEC_BIT1                  = BIT(25), //!< Bit1 of min config specification.
 	ERF_SPEC_BIT2                  = BIT(26), //!< Bit2 of min config specification.
@@ -141,10 +141,6 @@ enum ERenderNodeFlags : uint64
 	// Special additional flags that are set on CRenderObject flags
 	ERF_FOB_RENDER_AFTER_POSTPROCESSING = BIT64(39), //!< Set FOB_RENDER_AFTER_POSTPROCESSING on the CRenderObject flags
 	ERF_FOB_NEAREST                     = BIT64(40), //!< Set FOB_NEAREST on the CRenderObject flags
-
-	ERF_GI_MODE_BIT0                    = BIT64(41),   //!< Bit0 of GI mode.
-	ERF_GI_MODE_BIT1                    = BIT64(42),   //!< Bit1 of GI mode.
-	ERF_GI_MODE_BIT2                    = BIT64(43),   //!< Bit2 of GI mode.
 };
 
 #define ERF_SPEC_BITS_MASK (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2)

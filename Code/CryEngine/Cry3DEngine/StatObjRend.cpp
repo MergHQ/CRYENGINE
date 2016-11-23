@@ -1061,8 +1061,13 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 						)
 					{
 						PrefetchLine(pRenderObject, 0);
+						
+						if (lodValue.LodA() >= 0)
+						{
 						RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
-						if (pRenderObjectB)
+						}
+
+						if (pRenderObjectB && lodValue.LodB()>=0)
 						{
 							PrefetchLine(pRenderObjectB, 0);
 							RenderSubObject(pRenderObjectB, lodValue.LodB(), i, renderTM, passInfo);
@@ -1086,8 +1091,12 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 	else
 	{
 		// draw mesh, don't even try to render childs
+		if (lodValue.LodA() >= 0)
+		{
 		RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
-		if (lodValue.DissolveRefB() != 255) // check here since we're passing in A's ref.
+		}
+
+		if (lodValue.DissolveRefB() != 255 && lodValue.LodB()>=0) // check here since we're passing in A's ref.
 		{
 			pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 			RenderObjectInternal(pRenderObject, lodValue.LodB(), lodValue.DissolveRefA(), false, passInfo);

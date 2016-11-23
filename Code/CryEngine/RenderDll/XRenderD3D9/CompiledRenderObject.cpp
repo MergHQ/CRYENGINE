@@ -165,6 +165,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		m_bDynamicInstancingPossible = false;
 	}
 	float dissolveOut = (pRenderObject->m_ObjFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
+	dissolve *= dissolveOut;
+
 	float tessellationPatchIDOffset = alias_cast<float>(m_TessellationPatchIDOffset);
 
 	// wrinkle blending
