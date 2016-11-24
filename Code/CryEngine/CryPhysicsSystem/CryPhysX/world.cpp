@@ -169,6 +169,7 @@ int PhysXWorld::GetSurfaceParameters(int surface_idx, float& bounciness, float& 
 		return 0;
 	friction = m_mats[surface_idx]->getStaticFriction();
 	bounciness = m_mats[surface_idx]->getRestitution();
+	flags = ((INT_PTR)m_mats[surface_idx]->userData >> 16) & 15;
 	return 1;
 }
 
@@ -208,7 +209,7 @@ struct RaycastFilter : PxQueryFilterCallback {
 		for(int i=1;i<nSkipEnts;i++) if (pSkipEnts[i]==Ent(actor))
 			return PxQueryHitType::eNONE;
 		PxMaterial *pMat;
-		shape->getMaterials(&pMat,sizeof(pMat));
+		shape->getMaterials(&pMat,1);
 		return pierceability < (int)(INT_PTR)pMat->userData>>16 ? PxQueryHitType::eTOUCH : PxQueryHitType::eBLOCK;
 	}
 	virtual PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) { return PxQueryHitType::eBLOCK; }
@@ -221,8 +222,8 @@ struct RaycastFilter : PxQueryFilterCallback {
 
 inline PxQueryFlags objtypesFilter(int objtypes) {
 	return 
-		(objtypes & (ent_terrain|ent_static) ? PxQueryFlag::eSTATIC : PxQueryFlags(PxEMPTY::PxEmpty)) | 
-		(objtypes & (ent_rigid|ent_sleeping_rigid) ? PxQueryFlag::eDYNAMIC : PxQueryFlags(PxEMPTY::PxEmpty));
+		(objtypes & (ent_terrain|ent_static) ? PxQueryFlag::eSTATIC : PxQueryFlags()) | 
+		(objtypes & (ent_rigid|ent_sleeping_rigid) ? PxQueryFlag::eDYNAMIC : PxQueryFlags());
 }
 
 PxQueryHitType::Enum RaycastBatchFilter(PxFilterData queryFD, PxFilterData shapeFD, const void* constantBlock, PxU32 constantBlockSize, PxHitFlags& hitFlags)
@@ -472,7 +473,7 @@ struct BBoxFilter : public PxQueryFilterCallback {
 	virtual PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) {
 		PhysXEnt *pent = Ent(actor);
 		if (!(pent->m_mask & 1<<ithread)) {
-			if (!actor->getWorldBounds().intersects(bbox))
+			if (!PxShapeExt::getWorldBounds(*shape,*actor,1.0f).intersects(bbox))
 				return PxQueryHitType::eNONE;
 			AtomicAdd(&pent->m_mask, 1<<ithread);
 			if (nEnts < 64)
@@ -900,7 +901,7 @@ PhysXWorld::PhysXWorld(ILog* pLog) : m_debugDraw(false)
 	m_vars.bProhibitUnprojection = 1;//2;
 	m_vars.bUseDistanceContacts = 0;
 	m_vars.unprojVelScale = 10.0f;
-	m_vars.maxUnprojVel = 2.5f;
+	m_vars.maxUnprojVel = 3.0f;
 	m_vars.maxUnprojVelRope = 10.0f;
 	m_vars.gravity.Set(0, 0, -9.8f);
 	m_vars.nGroupDamping = 8;
@@ -1039,9 +1040,6 @@ void PhysXWorld::DrawPhysicsHelperInformation(IPhysRenderer *pRenderer, int iCal
 	if (ICVar *CVdist = gEnv->pConsole->GetCVar("p_cull_distance"))
 		dist = CVdist->GetFVal();
 	Vec3 campos = gEnv->pSystem->GetViewCamera().GetPosition();
-	g_cryPhysX.Scene()->setVisualizationCullingBox(PxBounds3(V(campos-Vec3(dist)), V(campos+Vec3(dist))));
-
-	g_cryPhysX.Scene()->fetchResults();
 	physx::PxRenderBuffer const& rb = g_cryPhysX.Scene()->getRenderBuffer();
 
 	IRenderAuxGeom* renderer = gEnv->pAuxGeomRenderer;
