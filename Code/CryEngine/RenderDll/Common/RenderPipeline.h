@@ -127,7 +127,7 @@ struct SRendItem
 		int nRes = (nVal >> 6) & (MAX_REND_SHADER_RES - 1);
 		sh.m_pShaderResources = (IRenderShaderResources*)((nRes) ? CShader::s_ShaderResources_known[nRes] : nullptr);
 	}
-	static inline uint32 PackShaderItem(SShaderItem& shaderItem)
+	static inline uint32 PackShaderItem(const SShaderItem& shaderItem)
 	{
 		uint32 nResID = shaderItem.m_pShaderResources ? ((CShaderResources*)(shaderItem.m_pShaderResources))->m_Id : 0;
 		uint32 nShaderId = ((CShader*)shaderItem.m_pShader)->mfGetID();
