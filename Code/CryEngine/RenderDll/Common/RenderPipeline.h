@@ -373,6 +373,9 @@ struct CRY_ALIGN(128) SPipeStat
 	int m_nPolygons[EFSLIST_NUM];
 	int m_nPolygonsByTypes[EFSLIST_NUM][EVCT_NUM][2];
 
+	int m_nScenePassDIPs;
+	int m_nScenePassPolygons;
+
 	int m_nModifiedCompiledObjects;
 	int m_nTempCompiledObjects;
 	int m_nIncompleteCompiledObjects;

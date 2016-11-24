@@ -69,7 +69,7 @@ volatile size_t CTexture::s_nStatsStreamPoolInUseMem;
 volatile size_t CTexture::s_nStatsStreamPoolBoundMem;
 volatile size_t CTexture::s_nStatsStreamPoolBoundPersMem;
 volatile int CTexture::s_nStatsCurManagedNonStreamedTexMem = { 0 };
-volatile int CTexture::s_nStatsCurDynamicTexMem = { 0 };
+volatile size_t CTexture::s_nStatsCurDynamicTexMem = { 0 };
 volatile size_t CTexture::s_nStatsStreamPoolWanted = { 0 };
 bool CTexture::s_bStatsComputeStreamPoolWanted = false;
 std::vector<CTexture::WantedStat>* CTexture::s_pStatsTexWantedLists = NULL;

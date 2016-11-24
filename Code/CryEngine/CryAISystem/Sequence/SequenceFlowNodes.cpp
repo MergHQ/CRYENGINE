@@ -195,9 +195,11 @@ void CFlowNode_AISequenceStart::HandleSequenceEvent(SequenceEvent sequenceEvent)
 
 void CFlowNode_AISequenceStart::InitializeSequence(SActivationInfo* pActInfo)
 {
-	assert(pActInfo->pEntity);
 	if (!pActInfo->pEntity)
+	{
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_ERROR, "FG node CFlowNode_AISequenceStart: did you forget to assign an entity to this node?");
 		return;
+	}
 
 	IFlowNodeData* flowNodeData = pActInfo->pGraph->GetNodeData(pActInfo->myID);
 	assert(flowNodeData);
@@ -303,13 +305,11 @@ void CFlowNode_AISequenceBookmark::ProcessEvent(EFlowEvent event, SActivationInf
 		{
 			if (IsPortActive(pActInfo, InputPort_Set))
 			{
-				const SequenceId assignedSequenceId = GetAssignedSequenceId();
-				assert(assignedSequenceId);
-				if (!assignedSequenceId)
-					return;
-
-				GetAISystem()->GetSequenceManager()->SetBookmark(assignedSequenceId, pActInfo->myID);
-				ActivateOutput(pActInfo, OutputPort_Link, true);
+				if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+				{
+					GetAISystem()->GetSequenceManager()->SetBookmark(assignedSequenceId, pActInfo->myID);
+					ActivateOutput(pActInfo, OutputPort_Link, true);
+				}
 			}
 		}
 		break;
@@ -538,14 +538,12 @@ void CFlowNode_AISequenceActionMoveAlongPath::ProcessEvent(EFlowEvent event, SAc
 	case eFE_Activate:
 		{
 			m_actInfo = *pActInfo;
-			const SequenceId assignedSequenceId = GetAssignedSequenceId();
-			assert(assignedSequenceId);
-			if (!assignedSequenceId)
-				return;
-
-			if (IsPortActive(pActInfo, InputPort_Start))
+			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
 			{
-				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+				if (IsPortActive(pActInfo, InputPort_Start))
+				{
+					GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+				}
 			}
 		}
 		break;
@@ -1295,12 +1293,10 @@ void CFlowNode_AISequenceAction_Stance::ProcessEvent(EFlowEvent event, SActivati
 		{
 			m_actInfo = *pActInfo;
 
-			const SequenceId assignedSequenceId = GetAssignedSequenceId();
-			assert(assignedSequenceId);
-			if (!assignedSequenceId)
-				return;
-
-			GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+			{
+				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+			}
 		}
 	}
 }

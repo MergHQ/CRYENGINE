@@ -231,7 +231,7 @@ namespace uqs
 						for (; it2 != m_queries.cend(); ++it2)
 						{
 							const CQueryBase* q2 = it2->second.query.get();
-							if (q->RequiresSomeTimeBudgetForExecution())
+							if (q2->RequiresSomeTimeBudgetForExecution())
 							{
 								++numRemainingQueriesThatRequireSomeTimeBudget;
 							}

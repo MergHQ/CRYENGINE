@@ -72,7 +72,7 @@ private:
 	void UpdateCollisionLimit(const SUpdateContext& context);
 
 	UUnitFloat          m_elasticity;
-	ECollisionLimitMode m_collisionsLimtMode;
+	ECollisionLimitMode m_collisionsLimitMode;
 	UBytePos            m_maxCollisions;
 	bool                m_terrain;
 	bool                m_staticObjects;

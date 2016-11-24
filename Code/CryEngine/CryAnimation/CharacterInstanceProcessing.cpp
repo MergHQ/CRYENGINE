@@ -177,11 +177,7 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 	return SContext::EState::Finished;
 }
 
-void SContext::Initialize(
-  CCharInstance* _pInst,
-  const CAttachmentBONE* _pBone,
-  const CCharInstance* _pParent,
-  int _numChildren)
+void SContext::Initialize(CCharInstance* _pInst, const CAttachmentBONE* _pBone, const CCharInstance* _pParent, int _numChildren)
 {
 	pInstance = _pInst;
 	pBone = _pBone;
@@ -189,6 +185,13 @@ void SContext::Initialize(
 	numChildren = _numChildren;
 	pCommandBuffer = (Command::CBuffer*)CharacterInstanceProcessing::GetMemoryPool()->Allocate(sizeof(Command::CBuffer));
 	job = CJob(this);
+}
+
+bool SContext::IsInProgress() const
+{
+	return (state != EState::Unstarted) 
+		&& (state != EState::Finished) 
+		&& (state != EState::Failure);
 }
 
 SContext& CContextQueue::AppendContext()

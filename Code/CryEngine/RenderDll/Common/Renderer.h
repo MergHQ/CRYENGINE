@@ -1293,7 +1293,7 @@ public:
 	void ClearDrawCallsInfo();
 #endif
 #ifdef ENABLE_PROFILING_CODE
-	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList);
+	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList, bool bScenePass);
 #endif
 
 	virtual void                CollectDrawCallsInfo(bool status) override;

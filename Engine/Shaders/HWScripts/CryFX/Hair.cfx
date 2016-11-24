@@ -839,6 +839,10 @@ v2f_sh HairSG_VS(app2vertGeneral IN)
 	#if %_RT_SAMPLE0
 		OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
 	#endif
+	
+	#if !%_RT_NEAREST
+		HPosition.z *= HPosition.w;
+	#endif
 #else 
 	OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);
 	OUT.Depth += CP_ShadowGen_DepthTestBias.x;

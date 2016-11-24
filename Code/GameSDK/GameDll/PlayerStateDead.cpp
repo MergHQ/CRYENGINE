@@ -37,8 +37,6 @@ CPlayerStateDead::~CPlayerStateDead()
 
 void CPlayerStateDead::OnEnter( CPlayer& player )
 {
-	player.StopLoopingSounds();
-
 	player.SetDeathTimer();
 
 	if( player.m_pPickAndThrowProxy )

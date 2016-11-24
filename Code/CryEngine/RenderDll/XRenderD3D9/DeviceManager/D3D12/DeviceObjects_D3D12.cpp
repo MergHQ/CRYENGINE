@@ -1204,14 +1204,14 @@ void CDeviceTimestampGroup::EndMeasurement()
 	m_frequency = m_pDeviceContext->GetTimestampFrequency();
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp()
+uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
 {
 	assert(m_numTimestamps < kMaxTimestamps);
 
 	uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
 
 	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_pDeviceContext->InsertTimestamp(timestampIndex, 0);
+	m_pDeviceContext->InsertTimestamp(timestampIndex, 0, pCommandList ? reinterpret_cast<CDeviceCommandList*>(pCommandList)->GetDX12CommandList() : nullptr);
 
 	++m_numTimestamps;
 	return timestampIndex;

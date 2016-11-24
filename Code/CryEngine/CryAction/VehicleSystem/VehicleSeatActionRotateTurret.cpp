@@ -237,15 +237,6 @@ void CVehicleSeatActionRotateTurret::DoUpdate(const float frameTime)
 		UpdateAimGoal();
 	}
 
-	// now update each rotation type
-	for (int i = 0; i < eVTRT_NumRotationTypes; ++i)
-	{
-		if (m_rotations[i].m_pPart)
-		{
-			MaintainPartRotationWorldSpace((EVehicleTurretRotationType)i);
-		}
-	}
-
 	// Cache the helper position before applying any rotation
 	IActor* pActor = m_pSeat->GetPassengerActor();
 	bool checkRotation = (m_rotTestHelpers[0] && m_rotTestHelpers[1] && pActor);

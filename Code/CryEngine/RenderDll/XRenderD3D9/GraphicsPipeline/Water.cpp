@@ -1307,7 +1307,9 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
 
+		pass.BeginExecution();
 		pass.DrawRenderItems(pRenderView, renderList);
+		pass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();
 
@@ -1458,7 +1460,9 @@ void CWaterStage::ExecuteReflection(CRenderView* pRenderView)
 			auto& renderItemDrawer = pRenderView->GetDrawer();
 			renderItemDrawer.InitDrawSubmission();
 
+			pass.BeginExecution();
 			pass.DrawRenderItems(pRenderView, renderList);
+			pass.EndExecution();
 
 			renderItemDrawer.JobifyDrawSubmission();
 
@@ -1489,7 +1493,9 @@ void CWaterStage::ExecuteSceneRenderPass(CRenderView* pRenderView, CSceneRenderP
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
+	pass.BeginExecution();
 	pass.DrawRenderItems(pRenderView, renderList);
+	pass.EndExecution();
 
 	renderItemDrawer.JobifyDrawSubmission();
 

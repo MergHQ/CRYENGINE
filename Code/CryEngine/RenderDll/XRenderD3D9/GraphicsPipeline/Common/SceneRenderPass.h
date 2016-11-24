@@ -28,20 +28,23 @@ public:
 	void SetViewport(const D3DViewPort& viewport);
 	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
 
+	void BeginExecution();
 	void ExtractRenderTargetFormats(CDeviceGraphicsPSODesc& psoDesc);
+	void EndExecution();
 
 	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1, int profilingListID = -1);
 
 	// Called from rendering backend (has to be threadsafe)
 	void                PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
-	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
-	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
+	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const;
+	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const;
 
-	uint32              GetStageID()        const { return m_stageID; }
-	uint32              GetPassID()         const { return m_passID; }
-	EPassFlags          GetFlags()          const { return m_passFlags; }
-	const D3DViewPort&  GetViewport(bool n) const { return m_viewPort[n]; }
-	const D3DRectangle& GetScissorRect()   const { return m_scissorRect; }
+	uint32              GetStageID()             const { return m_stageID; }
+	uint32              GetPassID()              const { return m_passID; }
+	uint32              GetNumRenderItemGroups() const { return m_numRenderItemGroups; }
+	EPassFlags          GetFlags()               const { return m_passFlags; }
+	const D3DViewPort&  GetViewport(bool n)      const { return m_viewPort[n]; }
+	const D3DRectangle& GetScissorRect()         const { return m_scissorRect; }
 
 protected:
 	void DrawRenderItems_GP2(SGraphicsPipelinePassContext& passContext);
@@ -63,9 +66,15 @@ protected:
 	EPassFlags               m_passFlags;
 	ERenderListID            m_renderList;
 
+	uint32                   m_numRenderItemGroups;
+	uint32                   m_profilerSectionIndex;
+
 	float                    m_depthConstBias;
 	float                    m_depthSlopeBias;
 	float                    m_depthBiasClamp;
+
+protected:
+	static int               s_recursionCounter;  // For asserting Begin/EndExecution get called on pass
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)

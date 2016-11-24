@@ -216,21 +216,21 @@ void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
 {
 	FUNCTION_PROFILER_3DENGINE
 
-	auto gpuPfx = gEnv->pRenderer->GetGpuParticleManager();
+	const auto& runtimeRefs = pEmitter->GetRuntimes();
 
-	for (auto ref : pEmitter->GetRuntimes())
+	for (uint i = 0; i < runtimeRefs.size(); ++i)
 	{
-		if (auto pGpuRuntime = ref.pRuntime->GetGpuRuntime())
+		auto pGpuRuntime = runtimeRefs[i].pRuntime->GetGpuRuntime();
+		if (!pGpuRuntime)
+			continue;
+		const bool isActive = pGpuRuntime->IsActive();
+		if (isActive)
 		{
-			const bool isActive = pGpuRuntime->IsActive();
-			if (isActive)
-			{
-				gpu_pfx2::SEnvironmentParameters params;
-				params.physAccel = pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
-				params.physWind = pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
-				pGpuRuntime->SetEnvironmentParameters(params);
-				pGpuRuntime->SetEmitterData(pEmitter);
-			}
+			gpu_pfx2::SEnvironmentParameters params;
+			params.physAccel = pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
+			params.physWind = pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
+			pGpuRuntime->SetEnvironmentParameters(params);
+			pGpuRuntime->SetEmitterData(pEmitter);
 		}
 	}
 }

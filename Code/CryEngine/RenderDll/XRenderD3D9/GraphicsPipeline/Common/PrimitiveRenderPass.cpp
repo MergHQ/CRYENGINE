@@ -654,6 +654,6 @@ void CPrimitiveRenderPass::Execute()
 	}
 
 #ifdef ENABLE_PROFILING_CODE
-	rd->AddRecordedProfilingStats(pCommandList->EndProfilingSection(), EFSLIST_GENERAL);
+	rd->AddRecordedProfilingStats(pCommandList->EndProfilingSection(), EFSLIST_GENERAL, false);
 #endif
 }

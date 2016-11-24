@@ -7,14 +7,22 @@
 class CRenderPipelineProfiler
 {
 public:
+	enum EProfileSectionFlags
+	{
+		eProfileSectionFlags_MultithreadedSection = BIT(1)
+	};
+	
 	CRenderPipelineProfiler();
 
 	void                   Init();
 	void                   BeginFrame();
 	void                   EndFrame();
-	void                   BeginSection(const char* name, uint32 eProfileLabelFlags = 0);
+	void                   BeginSection(const char* name);
 	void                   EndSection(const char* name);
 
+	uint32                 InsertMultithreadedSection(const char* name);
+	void                   UpdateMultithreadedSection(uint32 index, bool bSectionStart, int numDIPs, int numPolys, bool bIssueGPUTimestamp, CDeviceCommandList* pCommandList);
+	
 	bool                   IsEnabled();
 	void                   SetEnabled(bool enabled)                                        { m_enabled = enabled; }
 
@@ -26,8 +34,9 @@ protected:
 	{
 		char            name[31];
 		int8            recLevel;   // Negative value means error in stack
+		uint8           flags;
 		CCryNameTSCRC   path;
-		uint32          numDIPs, numPolys;
+		int             numDIPs, numPolys;
 		CTimeValue      startTimeCPU, endTimeCPU;
 		uint32          startTimestamp, endTimestamp;
 		float           gpuTime;
@@ -84,6 +93,8 @@ protected:
 	};
 
 protected:
+	uint32 InsertSection(const char* name, uint32 profileSectionFlags = 0);
+	
 	bool FilterLabel(const char* name);
 	void UpdateGPUTimes(uint32 frameDataIndex);
 	void UpdateThreadTimings();

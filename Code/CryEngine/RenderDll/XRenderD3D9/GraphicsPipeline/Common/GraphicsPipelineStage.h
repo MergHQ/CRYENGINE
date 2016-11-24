@@ -21,7 +21,6 @@ struct SGraphicsPipelinePassContext
 		, techniqueID(technique)
 		, batchFilter(filter)
 		, batchExcludeFilter(excludeFilter)
-		, nFrameID(0)
 		, renderListId(EFSLIST_INVALID)
 		, stageID(0)
 		, passID(0)
@@ -43,20 +42,20 @@ struct SGraphicsPipelinePassContext
 	uint32             batchExcludeFilter;
 
 	ERenderListID      renderListId;
-	threadID           nProcessThreadID;
-
-	uint64             nFrameID;
 
 	// Stage ID of a scene stage (EStandardGraphicsPipelineStage)
-	uint32 stageID;
+	uint32             stageID;
 	// Pass ID, in case a stage has several different scene passes
-	uint32 passID;
+	uint32             passID;
+
+	uint32             renderItemGroup;
+	uint32             profilerSectionIndex;
 
 	// rend items
-	CRenderView* pRenderView;
-	TRange<int>  rendItems;
+	CRenderView*       pRenderView;
+	TRange<int>        rendItems;
 
-	bool         renderNearest;
+	bool               renderNearest;
 
 	// Output command list.
 	CDeviceCommandList* pCommandList;

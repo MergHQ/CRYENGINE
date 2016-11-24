@@ -60,6 +60,8 @@ void CGeomEntity::Initialize()
 
 void CGeomEntity::ProcessEvent(SEntityEvent& event)
 {
+	CDesignerEntityComponent::ProcessEvent(event);
+
 	switch (event.event)
 	{
 		case ENTITY_EVENT_HIDE:

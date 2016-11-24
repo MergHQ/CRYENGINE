@@ -516,7 +516,7 @@ void CDeviceTimestampGroup::EndMeasurement()
 	gcpRendD3D->GetDeviceContext().End(m_pDisjointQuery);
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp()
+uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
 {
 	assert(m_numTimestamps < m_timestampQueries.size());
 	gcpRendD3D->GetDeviceContext().End(m_timestampQueries[m_numTimestamps]);

@@ -111,7 +111,8 @@ void CAttachmentMerger::MergeContext::Update(const AttachmentRenderData& renderD
 				IRenderShaderResources* pShaderResources = pSubMtl->GetShaderItem().m_pShaderResources;
 
 				nAccumulatedIndexCount[lod] += chunk.nNumIndices;
-				if (pShaderResources->IsAlphaTested())
+
+				if (pShaderResources && pShaderResources->IsAlphaTested())
 					bAlphaTested = true;
 
 				if ((pSubMtl->GetFlags() & MTL_FLAG_2SIDED) != 0)

@@ -1277,6 +1277,7 @@ Property
 	Precache = WaterFogVolume_VS
 	Precache = GeneralVS
 	Precache = LensOpticsVS
+	Precache = StarsVS
 }
 
 Property

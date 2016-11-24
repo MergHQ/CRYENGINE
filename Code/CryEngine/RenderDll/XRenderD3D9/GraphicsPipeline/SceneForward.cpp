@@ -197,7 +197,9 @@ void CSceneForwardStage::Execute_Opaque()
 		CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
 		RenderView()->GetDrawer().InitDrawSubmission();
 
+		m_forwardOpaquePass.BeginExecution();
 		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE);
+		m_forwardOpaquePass.EndExecution();
 
 		RenderView()->GetDrawer().JobifyDrawSubmission();
 		RenderView()->GetDrawer().WaitForDrawSubmission();

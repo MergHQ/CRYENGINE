@@ -94,15 +94,17 @@ bool CSkeletonAnim::PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr pos
 			return true;
 		}
 		const CharacterInstanceProcessing::SContext* pCtx = m_pInstance->GetProcessingContext();
-		bool isStarted = pCtx && pCtx->state == CharacterInstanceProcessing::SContext::EState::StartAnimationProcessed;
+
+		const bool isInProgress = pCtx && pCtx->IsInProgress();
+
 		if (layer == uint32(-1))
 		{
-			return m_poseModifierQueue.Push(poseModifier, name, isStarted);
+			return m_poseModifierQueue.Push(poseModifier, name, isInProgress);
 		}
 
 		if (layer < numVIRTUALLAYERS)
 		{
-			return m_layers[layer].m_poseModifierQueue.Push(poseModifier, name, isStarted);
+			return m_layers[layer].m_poseModifierQueue.Push(poseModifier, name, isInProgress);
 		}
 	}
 
