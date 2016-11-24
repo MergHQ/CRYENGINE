@@ -1895,7 +1895,7 @@ void CD3D9Renderer::FX_DrawNormals()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *two* buffer vertices (endpoints of
 			// a normal vector).
-			const size_t maxBufferSize  = (size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20;
+			const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)ALLOCA_LIMIT);
 			const size_t maxVertexCount = maxBufferSize / (2 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
 
@@ -1998,7 +1998,7 @@ void CD3D9Renderer::FX_DrawTangents()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *six* buffer vertices (three tangent space
 			// vectors, two vertices per vector).
-			const size_t maxBufferSize  = (size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20;
+			const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)ALLOCA_LIMIT);
 			const size_t maxVertexCount = maxBufferSize / (6 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
 
@@ -4076,6 +4076,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		}
 	}                                     // r_GraphicsPipeline
 
+	if (CRenderer::CV_r_shownormals)
+		FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawNormals, false);
+	if (CRenderer::CV_r_showtangents)
+		FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawTangents, false);
+
 	CFlashTextureSourceBase::RenderLights();
 
 	FX_ApplyThreadState(m_RP.m_OldTI[nRecurse], NULL);
@@ -4250,21 +4255,6 @@ void CD3D9Renderer::EF_RenderScene(int nFlags, SViewport& VP, const SRenderingPa
 #endif
 
 	SubmitRenderViewForRendering(FX_FlushShader_General, nFlags, VP, passInfo, true);
-
-	//////////////////////////////////////////////////////////////////////////
-	{
-		// Draw light sources in debug mode
-		// Draw debug geometry/info
-		if (CV_r_showlines)
-			SubmitRenderViewForRendering(FX_DrawWire, 0, VP, passInfo, false);
-
-		if (CV_r_shownormals)
-			SubmitRenderViewForRendering(FX_DrawNormals, 0, VP, passInfo, false);
-
-		if (CV_r_showtangents)
-			SubmitRenderViewForRendering(FX_DrawTangents, 0, VP, passInfo, false);
-	}
-	//////////////////////////////////////////////////////////////////////////
 
 	m_RP.m_PS[nThreadID].m_fSceneTimeMT += iTimer->GetAsyncTime().GetDifferenceInSeconds(time0);
 }
