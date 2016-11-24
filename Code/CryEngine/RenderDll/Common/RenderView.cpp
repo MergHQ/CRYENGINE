@@ -697,8 +697,10 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
+#if !defined(_RELEASE)
 	if (CRenderer::CV_r_SkipAlphaTested && (ri.pObj->m_ObjFlags & FOB_ALPHATEST))
 		return;
+#endif
 
 	AddRenderItemToRenderLists<true>(ri, nList, nBatchFlags, shaderItem);
 
@@ -801,11 +803,13 @@ void CRenderView::ExpandPermanentRenderObjects()
 		{
 			ReadLock lock(pRenderObject->m_accessLock); // Block on read access to the render object
 
+#if !defined(_RELEASE)
 			if (CRenderer::CV_r_SkipAlphaTested && (pRenderObject->m_ObjFlags & FOB_ALPHATEST))
 			{
 				pRenderObject = pRenderObject->m_pNextPermanent;
 				continue;
 			}
+#endif
 
 			bool bRecompile = (pRenderObject->m_passReadyMask != pRenderObject->m_compiledReadyMask) && (pRenderObject->m_passReadyMask & passMask);
 

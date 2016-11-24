@@ -1433,7 +1433,7 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_TranspDepthFixup [0/1]\n"
 	                    "Default is 1 (enabled)\n");
 
-	DefineConstIntCVar3("r_SkipAlphaTested", CV_r_SkipAlphaTested, 0, VF_NULL,
+	DefineConstIntCVar3("r_SkipAlphaTested", CV_r_SkipAlphaTested, 0, VF_CHEAT,
 	                    "Disables rendering of alpha-tested objects.\n");
 
 	DefineConstIntCVar3("r_SoftAlphaTest", CV_r_SoftAlphaTest, 1, VF_NULL,
