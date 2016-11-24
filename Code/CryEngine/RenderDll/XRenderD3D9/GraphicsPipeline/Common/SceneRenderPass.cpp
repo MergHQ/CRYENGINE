@@ -224,7 +224,8 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
-	gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
+	if (gcpRendD3D->m_pPipelineProfiler)
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
 
 #if defined(ENABLE_PROFILING_CODE)
 	commandList.BeginProfilingSection();
@@ -273,13 +274,17 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->EndProfilerEvent(m_szLabel);
 
-	gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, commandList.EndProfilingSection().numDIPs, commandList.EndProfilingSection().numPolygons, bIssueGPUTimestamp, &commandList);
-
 #if !defined(CRY_USE_DX12)
 	pCommandInterface->SetDepthBias(0.0f, 0.0f, 0.0f);
 #endif
 
 #if defined(ENABLE_PROFILING_CODE)
+	if (gcpRendD3D->m_pPipelineProfiler)
+	{
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, commandList.EndProfilingSection().numDIPs,
+		                                                            commandList.EndProfilingSection().numPolygons, bIssueGPUTimestamp, &commandList);
+	}
+	
 	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
 #endif
 
@@ -296,7 +301,9 @@ void CSceneRenderPass::BeginExecution()
 	s_recursionCounter += 1;
 	
 	m_numRenderItemGroups = 0;
-	m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(m_szLabel);
+	
+	if (gcpRendD3D->m_pPipelineProfiler)
+		m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(m_szLabel);
 }
 
 void CSceneRenderPass::EndExecution()

@@ -113,19 +113,21 @@ uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSe
 
 	section.flags = profileSectionFlags;
 	section.recLevel = static_cast<int8>(m_stack.size() + 1);
+	section.numDIPs = 0;
+	section.numPolys = 0;
 	
 	if (!(profileSectionFlags & eProfileSectionFlags_MultithreadedSection))
 	{
+	#if defined(ENABLE_PROFILING_CODE)	
 		// Note: Stats from multithreaded sections need to be subtracted, they get handled later
 		section.numDIPs = gcpRendD3D->GetCurrentNumberOfDrawCalls() - gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_nScenePassDIPs;
 		section.numPolys = gcpRendD3D->RT_GetPolyCount() - gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_nScenePassPolygons;
+	#endif
 		section.startTimeCPU = gEnv->pTimer->GetAsyncTime();
 		section.startTimestamp = frameData.m_timestampGroup.IssueTimestamp(nullptr);
 	}
 	else
 	{
-		section.numDIPs = 0;
-		section.numPolys = 0;
 		section.startTimeCPU.SetValue(0);
 		section.endTimeCPU.SetValue(0);
 		section.startTimestamp = ~0u;
@@ -165,8 +167,10 @@ void CRenderPipelineProfiler::EndSection(const char* name)
 
 		if (!(section.flags & eProfileSectionFlags_MultithreadedSection))
 		{
+		#if defined(ENABLE_PROFILING_CODE)		
 			section.numDIPs = (gcpRendD3D->GetCurrentNumberOfDrawCalls() - gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_nScenePassDIPs) - section.numDIPs;
 			section.numPolys = (gcpRendD3D->RT_GetPolyCount() - gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_nScenePassPolygons) - section.numPolys;
+		#endif
 			section.endTimeCPU = gEnv->pTimer->GetAsyncTime();
 			section.endTimestamp = frameData.m_timestampGroup.IssueTimestamp(nullptr);
 		}
