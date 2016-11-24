@@ -6928,6 +6928,63 @@ void CD3D9Renderer::UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newda
 	pTex->UpdateTextureRegion(newdata, posx, posy, posz, w, h, sizez, eTFSrc);
 }
 
+bool CD3D9Renderer::EF_PrecacheResource(SShaderItem* pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
+{
+	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
+
+	CShader* pSH = (CShader*)pSI->m_pShader;
+
+	if (pSH && !(pSH->m_Flags & EF_NODRAW))
+	{
+		if (CShaderResources* pSR = (CShaderResources*)pSI->m_pShaderResources)
+		{
+			// Optimisations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
+			SEfResTexture* pNextResTex = NULL;
+			EEfResTextures iSlot;
+			for (iSlot = EEfResTextures(0); iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+			{
+				pNextResTex = pSR->m_Textures[iSlot];
+				if (pNextResTex)
+				{
+					PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+					iSlot = EEfResTextures(iSlot + 1);
+					break;
+				}
+			}
+			while (pNextResTex)
+			{
+				SEfResTexture* pResTex = pNextResTex;
+				pNextResTex = NULL;
+				for (; iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+				{
+					pNextResTex = pSR->m_Textures[iSlot];
+					if (pNextResTex)
+					{
+						PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+						iSlot = EEfResTextures(iSlot + 1);
+						break;
+					}
+				}
+				if (ITexture* pITex = pResTex->m_Sampler.m_pITex)
+				{
+					float minTiling = min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
+					int maxResolution = max(abs(pITex->GetHeight()), abs(pITex->GetWidth()));
+
+					float minMipMap = log(max(1.0f, iScreenTexels / minTiling)) / log(2.0f);
+					float maxMipMap = log(maxResolution) / log(2.0f);
+
+					float currentMipFactor = expf((maxMipMap - minMipMap) * 2.0f * 0.69314718055994530941723212145818f /*LN2*/);
+					float fMipFactor = currentMipFactor / (maxResolution * maxResolution * gRenDev->GetMipDistFactor());
+
+					CD3D9Renderer::EF_PrecacheResource(pITex, fMipFactor, 0.f, Flags, nUpdateId, nCounter);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 bool CD3D9Renderer::EF_PrecacheResource(SShaderItem* pSI, float fMipFactorSI, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
