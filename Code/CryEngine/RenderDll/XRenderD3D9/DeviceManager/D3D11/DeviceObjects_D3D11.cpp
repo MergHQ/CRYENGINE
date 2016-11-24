@@ -930,7 +930,7 @@ void CDeviceGraphicsCommandInterfaceImpl::ApplyRasterizerState()
 
 		if (m_graphicsState.custom.depthConstBias != 0.0f || m_graphicsState.custom.depthSlopeBias != 0.0f)
 		{
-			auto& rsDesc = gcpRendD3D->m_StatesRS[m_graphicsState.custom.rasterizerStateIndex].Desc;
+			auto rsDesc = gcpRendD3D->m_StatesRS[m_graphicsState.custom.rasterizerStateIndex].Desc;
 			rsDesc.DepthBias = int(m_graphicsState.custom.depthConstBias);
 			rsDesc.SlopeScaledDepthBias = m_graphicsState.custom.depthSlopeBias;
 			rsDesc.DepthBiasClamp = m_graphicsState.custom.depthBiasClamp;

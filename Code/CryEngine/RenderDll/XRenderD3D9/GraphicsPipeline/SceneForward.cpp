@@ -207,6 +207,8 @@ void CSceneForwardStage::Execute_Opaque()
 	
 	// Legacy pipeline
 	{
+		pRenderer->GetGraphicsPipeline().SwitchToLegacyPipeline();
+		
 		void (* pRenderFunc)() = &pRenderer->FX_FlushShader_General;
 		pRenderer->m_RP.m_PersFlags2 |= RBPF2_FORWARD_SHADING_PASS;
 
