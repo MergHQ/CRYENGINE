@@ -383,12 +383,12 @@ bool CActionController::CanInstall(const IAction& action, TagID subContext, cons
 					const IActionPtr pCompareAction = scope.m_pAction ? scope.m_pAction : scope.m_pExitingAction;
 					if (pCompareAction)
 					{
-						if (isRequeue && (&action.GetRootScope() != &scope))
+						if (isRequeue && (action.m_rootScope != &scope))
 						{
 							//--- If this is a requeued action, only use the primary scope to time transitions
 							priorityComp = Higher;
 						}
-						else if (&pCompareAction->GetRootScope() != &scope)
+						else if (pCompareAction->m_rootScope != &scope)
 						{
 							//--- Only test the action on its root scope, as that is timing the action
 							continue;
@@ -478,7 +478,7 @@ void CActionController::RequestInstall(const IAction& action, const ActionScopes
 			{
 				contextIDs |= scope.GetContextMask();
 				IAction* const pScopeAction = scope.m_pAction.get();
-				if (pScopeAction && (&pScopeAction->GetRootScope() == &scope))
+				if (pScopeAction && (pScopeAction->m_rootScope == &scope))
 				{
 					EPriorityComparison priorityComp = action.DoComparePriority(*pScopeAction);
 					pScopeAction->OnRequestBlendOut(priorityComp);
