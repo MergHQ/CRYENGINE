@@ -23,7 +23,7 @@ Other policies which apply with respect to the CryEngine include without limitat
 
 1.5. "CryEngine Redistributables": the redistributable parts of the CryEngine in object code as indicated in the CryEngine Documentation.
 
-1.6. "Game(s)": an interactive product for a certain Platform (which might have CryEngine Assets embedded) in object code form including the CryEngine Redistributables for the sole purpose of entertainment, developed and compiled by using the CryEngine pursuant to its documentation. Under this Agreement the following will not be considered Games:
+1.6. "Game(s)": a product for a certain Platform (which might have CryEngine Assets embedded) in object code form including the CryEngine Redistributables for the sole purpose of entertainment, developed and compiled by using the CryEngine pursuant to its documentation. Under this Agreement the following will not be considered Games:
 
   - military projects;
   - gambling;
@@ -39,7 +39,7 @@ Other policies which apply with respect to the CryEngine include without limitat
 
 1.9. "Seat": shall mean one (1) stand-alone computing unit on which Licensee uses the CryEngine.
 
-1.10. "Serious Games", i.e. 'games' which are not developed for the sole purpose of entertainment but for purposes training, simulation, science, architecture etc.
+1.10. "Serious Games", i.e. 'games' which are not developed for the sole purpose of entertainment but for purposes training, simulation, science, architecture etc. However, in no case for the purposes pornography, gambling or military projects.
 
 1.11. "Support": the support against payment of the Support Fee as announced and offered by Crytek in its sole discretion. The different support services may be defined in different tiers. For certain support services additional payments besides the Support Fee may apply in each tier.
 
@@ -61,7 +61,7 @@ Other policies which apply with respect to the CryEngine include without limitat
 
   2.1.4. publish, distribute, sell, sublicense or exploit in any other way Games developed and rendered during the Subscription Period in object code form only and only under terms consistent with and no less protective of Crytek's rights than those contained in this Agreement in perpetuity.
 
-2.2. If you are a student or a member of an academic institution you are in addition entitled to develop Serious Games using CryEngine and to render such Serious Games in object code form (including the CryEngine Assets and the CryEngine Redistributables) pursuant to the CryEngine documentation. However, you are in no case entitled to commercially exploit such Serious Games without Crytek's explicit prior written approval.
+2.2. If you are a student or a member of an academic institution you are in addition entitled to use CryEngine for science purposes and develop Serious Games using CryEngine and to render such Serious Games in object code form (including the CryEngine Assets and the CryEngine Redistributables) pursuant to the CryEngine documentation. However, you are in no case entitled to commercially exploit such Serious Games or science projects without Crytek's explicit prior written approval.
 
 2.3. Licensee may or may not make payments as consideration for the License ("Pay as much as you want").
 
