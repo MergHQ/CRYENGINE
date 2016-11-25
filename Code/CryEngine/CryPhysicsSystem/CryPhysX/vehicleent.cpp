@@ -150,7 +150,7 @@ PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData fdWheel, PxFilterData fd
 
 bool PhysXVehicle::SetupPxVehicle()
 {
-	if (!m_vehicle && m_wheels.size()<4)
+	if (!m_vehicle && m_wheels.size() != 4) // at the moment, only allow 4-wheeled vehicles
 		return false;
 	if (m_vehicle)
 		return true;
