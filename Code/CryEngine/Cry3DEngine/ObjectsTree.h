@@ -390,7 +390,7 @@ public:
 
 	void         GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority, CLightEntity*& pNearestLight, const AABB* pBBox);
 	void         GetObjects(PodArray<IRenderNode*>& lstObjects, const AABB* pBBox);
-	bool         GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, int renderNodeExcludeFlags, int& totalRemainingNodes, int nCurLevel, const SRenderingPassInfo& passInfo);
+	bool         GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, const PodArray<struct SPlaneObject>* pShadowHull, int renderNodeExcludeFlags, int& totalRemainingNodes, int nCurLevel, const SRenderingPassInfo& passInfo);
 	bool         IsObjectTypeInTheBox(EERType objType, const AABB& WSBBox);
 	bool         CleanUpTree();
 	int          GetObjectsCount(EOcTeeNodeListType eListType);

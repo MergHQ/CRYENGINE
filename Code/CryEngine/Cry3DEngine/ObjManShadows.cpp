@@ -142,7 +142,7 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 	}
 }
 
-int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, int renderNodeExcludeFlags, int nMaxNodes, const SRenderingPassInfo& passInfo)
+int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, const PodArray<struct SPlaneObject>* pShadowHull, int renderNodeExcludeFlags, int nMaxNodes, const SRenderingPassInfo& passInfo)
 {
 	int nRemainingNodes = nMaxNodes;
 
@@ -155,7 +155,7 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 	for (int nSID = nStartSID; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
 	{
 		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			Get3DEngine()->m_pObjectsTree[nSID]->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, renderNodeExcludeFlags, nRemainingNodes, 1, passInfo);
+			Get3DEngine()->m_pObjectsTree[nSID]->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 1, passInfo);
 
 		if (nRemainingNodes <= 0)
 			return nRemainingNodes;
@@ -185,7 +185,7 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 				if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->m_pObjectsTree)
 				{
 					if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, *lstAreas[i]->GetAABBox()))
-						lstAreas[i]->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, renderNodeExcludeFlags, nRemainingNodes, 0, passInfo);
+						lstAreas[i]->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 0, passInfo);
 				}
 
 				if (nRemainingNodes <= 0)

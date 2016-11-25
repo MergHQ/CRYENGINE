@@ -1359,7 +1359,7 @@ void COctreeNode::GetObjects(PodArray<IRenderNode*>& lstObjects, const AABB* pBB
 			m_arrChilds[i]->GetObjects(lstObjects, pBBox);
 }
 
-bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, int renderNodeExcludeFlags, int& totalRemainingNodes, int nCurLevel, const SRenderingPassInfo& passInfo)
+bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, const PodArray<struct SPlaneObject>* pShadowHull, int renderNodeExcludeFlags, int& totalRemainingNodes, int nCurLevel, const SRenderingPassInfo& passInfo)
 {
 	assert(pFrustum->pShadowCacheData);
 
@@ -1368,67 +1368,70 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 
 	if (!pFrustum->pShadowCacheData->mOctreePathNodeProcessed[nCurLevel])
 	{
-		if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, GetObjectsBBox()))
+		if (!pShadowHull || IsAABBInsideHull(pShadowHull->GetElements(), pShadowHull->Count(), m_objectsBox))
 		{
-			for (int l = 0; l < eRNListType_ListsNum; l++)
+			if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, GetObjectsBBox()))
 			{
-				for (IRenderNode* pNode = m_arrObjects[l].m_pFirstNode; pNode; pNode = pNode->m_pNext)
+				for (int l = 0; l < eRNListType_ListsNum; l++)
 				{
-					if (!IsRenderNodeTypeEnabled(pNode->GetRenderNodeType()))
-						continue;
-
-					if (pNode == pIgnoreNode)
-						continue;
-
-					auto nFlags = pNode->GetRndFlags();
-					if (nFlags & (ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags))
-						continue;
-
-					// Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
-					if (pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO && (pNode->GetRndFlags() & ERF_CASTSHADOWMAPS) == 0)
-						continue;
-
-					if (pFrustum->pShadowCacheData->mProcessedCasters.find(pNode) != pFrustum->pShadowCacheData->mProcessedCasters.end())
-						continue;
-
-					AABB objBox = pNode->GetBBox();
-					const float fDistanceSq = Distance::Point_PointSq(passInfo.GetCamera().GetPosition(), objBox.GetCenter());
-					const float fMaxDist = pNode->GetMaxViewDist() * GetCVars()->e_ShadowsCastViewDistRatio + objBox.GetRadius();
-
-					if (fDistanceSq > sqr(fMaxDist))
-						continue;
-
-					// find closest loaded lod
-					for (int nSlot = 0; nSlot < pNode->GetSlotCount(); ++nSlot)
+					for (IRenderNode* pNode = m_arrObjects[l].m_pFirstNode; pNode; pNode = pNode->m_pNext)
 					{
-						bool bCanRender = false;
+						if (!IsRenderNodeTypeEnabled(pNode->GetRenderNodeType()))
+							continue;
 
-						if (IStatObj* pStatObj = pNode->GetEntityStatObj(nSlot))
+						if (pNode == pIgnoreNode)
+							continue;
+
+						auto nFlags = pNode->GetRndFlags();
+						if (nFlags & (ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags))
+							continue;
+
+						// Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
+						if (pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO && (pNode->GetRndFlags() & ERF_CASTSHADOWMAPS) == 0)
+							continue;
+
+						if (pFrustum->pShadowCacheData->mProcessedCasters.find(pNode) != pFrustum->pShadowCacheData->mProcessedCasters.end())
+							continue;
+
+						AABB objBox = pNode->GetBBox();
+						const float fDistanceSq = Distance::Point_PointSq(passInfo.GetCamera().GetPosition(), objBox.GetCenter());
+						const float fMaxDist = pNode->GetMaxViewDist() * GetCVars()->e_ShadowsCastViewDistRatio + objBox.GetRadius();
+
+						if (fDistanceSq > sqr(fMaxDist))
+							continue;
+
+						// find closest loaded lod
+						for (int nSlot = 0; nSlot < pNode->GetSlotCount(); ++nSlot)
 						{
-							for (int i = 0; i < MAX_STATOBJ_LODS_NUM; ++i)
-							{
-								IStatObj* pLod = pStatObj->GetLodObject(i);
+							bool bCanRender = false;
 
-								if (pLod && pLod->m_eStreamingStatus == ecss_Ready)
+							if (IStatObj* pStatObj = pNode->GetEntityStatObj(nSlot))
+							{
+								for (int i = 0; i < MAX_STATOBJ_LODS_NUM; ++i)
 								{
-									bCanRender = true;
-									break;
+									IStatObj* pLod = pStatObj->GetLodObject(i);
+
+									if (pLod && pLod->m_eStreamingStatus == ecss_Ready)
+									{
+										bCanRender = true;
+										break;
+									}
 								}
 							}
-						}
-						else if (ICharacterInstance* pCharacter = pNode->GetEntityCharacter(nSlot))
-						{
-							bCanRender = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
-						}
-
-						if (bCanRender)
-						{
-							if (pNode->CanExecuteRenderAsJob())
+							else if (ICharacterInstance* pCharacter = pNode->GetEntityCharacter(nSlot))
 							{
-								pFrustum->jobExecutedCastersList.Add(pNode);
+								bCanRender = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
 							}
-							else
-								pFrustum->castersList.Add(pNode);
+
+							if (bCanRender)
+							{
+								if (pNode->CanExecuteRenderAsJob())
+								{
+									pFrustum->jobExecutedCastersList.Add(pNode);
+								}
+								else
+									pFrustum->castersList.Add(pNode);
+							}
 						}
 					}
 				}
@@ -1443,7 +1446,7 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 	{
 		if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS))
 		{
-			bool bDone = m_arrChilds[i]->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, renderNodeExcludeFlags, totalRemainingNodes, nCurLevel + 1, passInfo);
+			bool bDone = m_arrChilds[i]->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, totalRemainingNodes, nCurLevel + 1, passInfo);
 
 			if (!bDone)
 				return false;
