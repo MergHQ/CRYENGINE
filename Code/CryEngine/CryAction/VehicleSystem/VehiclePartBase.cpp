@@ -310,14 +310,10 @@ void CVehiclePartBase::OnEvent(const SVehiclePartEvent& event)
 	{
 	case eVPE_Damaged:
 		{
-			float old = m_damageRatio;
 			m_damageRatio = event.fparam;
 
-			if (m_damageRatio >= 1.0f && old < 1.f)
-			{
-				EVehiclePartState state = GetStateForDamageRatio(m_damageRatio);
-				ChangeState(state, eVPSF_Physicalize);
-			}
+			const EVehiclePartState state = GetStateForDamageRatio(m_damageRatio);
+			ChangeState(state, eVPSF_Physicalize);
 		}
 		break;
 	case eVPE_Repair:
