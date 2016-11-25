@@ -162,7 +162,7 @@ namespace cpx // CryPhysX helper
 		}
 
 		// create physics context
-		bool recordMemoryAllocations = true;
+		bool recordMemoryAllocations = false;
 		m_ProfileZoneManager = &PxProfileZoneManager::createProfileZoneManager(m_Foundation);
 		if (!m_ProfileZoneManager)
 		{
@@ -220,6 +220,7 @@ namespace cpx // CryPhysX helper
 		sceneDesc.cpuDispatcher = mCpuDispatcher;
 		sceneDesc.filterShader = CollFilter;
 		sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
+		sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
 		//sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE | PxSceneFlag::eENABLE_AVERAGE_POINT;
 
 		m_Scene = m_Physics->createScene(sceneDesc);

@@ -54,66 +54,8 @@ int PhysXLiving::SetParams(pe_params *_params, int bThreadSafe)
 	return PhysXEnt::SetParams(_params, bThreadSafe);
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-
 int PhysXLiving::GetStatus(pe_status* _status) const
 {
-	if (_status->type == pe_status_living::type_id) {
-		pe_status_living *status = (pe_status_living*)_status;
-
-		if (m_actor->getScene()) {
-			PxRigidDynamic *pRD = m_actor->isRigidDynamic();
-
-			// set some initial default values - similar to CryPhysics (see livingentity.cpp)
-			status->bFlying = 0;
-			status->timeFlying = 0;
-			status->camOffset = Vec3(0, 0, 0);
-			status->vel = V(pRD->getLinearVelocity());
-			status->velUnconstrained = Vec3(0);
-			status->velRequested = Vec3(0);
-			status->velGround = Vec3(0);
-			status->groundHeight = 1;
-			status->groundSlope = Vec3(0, 0, 1);
-			status->groundSurfaceIdx = 0;
-			status->groundSurfaceIdxAux = 0;
-			status->pGroundCollider = nullptr;
-			status->iGroundColliderPart = 0;
-			status->timeSinceStanceChange = 0;
-			status->bStuck = 0;
-			status->pLockStep = nullptr;
-			status->bSquashed = false;
-
-			// simple, exemplary implementation of determining bFlying
-			status->bFlying = 0;
-
-			int nShapes = pRD->getNbShapes();
-			PxShape **shapes = (PxShape**)alloca(nShapes * sizeof(void*));
-			pRD->getShapes(shapes, nShapes);
-			PxCapsuleGeometry caps;
-			if (nShapes > 0 && shapes[0]->getCapsuleGeometry(caps))
-			{
-				status->bFlying = 1;
-				PxOverlapBuffer hit;
-				PxTransform M(V(this->getGlobalPose().t), Q(this->getGlobalPose().q));
-				const float eps = -0.5f; // shift capsule down for floor collision
-				M = PxTransform(0, 0, eps) * M;
-
-				if ((cpx::g_cryPhysX.Scene()->overlap(caps, M, hit)))
-				{
-					if ((hit.getNbAnyHits() > 0) || (hit.getNbTouches() > 0))
-					{
-						status->bFlying = 0;
-					}
-				}
-			}
-		}
-		return 1;
-	}
-
 	return PhysXEnt::GetStatus(_status);
 }
 
@@ -123,7 +65,7 @@ int PhysXLiving::Action(pe_action* _action, int bThreadSafe)
 		pe_action_move *action = (pe_action_move*)_action;
 		if (!is_unused(action->dir) && m_actor->getScene()) {
 			PxRigidDynamic *pRD = m_actor->isRigidDynamic();
-			if (action->iJump == 1) pRD->clearForce();
+			pRD->clearForce();
 			pRD->addForce(V(action->dir*(pRD->getLinearDamping()*pRD->getMass())));
 		}
 		return 1;

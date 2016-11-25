@@ -263,9 +263,6 @@ void CREWaterOcean::Create(uint32 nVerticesCount, SVF_P3F_C4B_T2F* pVertices, ui
 
 void CREWaterOcean::FrameUpdate()
 {
-	// Update Water simulator
-	//  UpdateFFT();
-
 	static bool bInitialize = true;
 	static Vec4 pParams0(0, 0, 0, 0), pParams1(0, 0, 0, 0);
 
@@ -292,7 +289,6 @@ void CREWaterOcean::FrameUpdate()
 		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1,
 		                                            FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
 		                                            0, eTF_R32G32B32A32F, eTF_R32G32B32A32F);
-		//	CTexture::s_ptexWaterOcean->SetVertexTexture(true);
 	}
 
 	CTexture* pTexture = CTexture::s_ptexWaterOcean;
@@ -400,12 +396,15 @@ bool CREWaterOcean::Compile(CRenderObject* pObj)
 
 	const EVertexFormat vertexFormat = eVF_P3F_C4B_T2F;
 
-	const bool bUseWaterTessHW = rd->m_bUseWaterTessHW;
-	ERenderPrimitiveType primType = bUseWaterTessHW ? eptTriangleList : eptTriangleStrip;
+	// need to check mesh is ready for tessellation because m_bUseWaterTessHW is enabled but CREWaterOcean::Create() isn't called yet.
+	const bool bTessellationMesh = ((m_nIndicesCount % 3) == 0);
+	
+	const bool bUseWaterTess = rd->m_bUseWaterTessHW && bTessellationMesh;
+	ERenderPrimitiveType primType = bUseWaterTess ? eptTriangleList : eptTriangleStrip;
 	cro.m_bHasTessellation = 0;
 #ifdef WATER_TESSELLATION_RENDERER
 	// Enable tessellation for water geometry
-	if (SDeviceObjectHelpers::CheckTessellationSupport(shaderItem, TTYPE_GENERAL))
+	if (bUseWaterTess && SDeviceObjectHelpers::CheckTessellationSupport(shaderItem, TTYPE_GENERAL))
 	{
 		cro.m_bHasTessellation = 1;
 	}
@@ -516,7 +515,7 @@ void CREWaterOcean::DrawToCommandList(CRenderObject* pObj, const struct SGraphic
 
 	CRY_ASSERT(ctx.stageID == eStage_Water);
 	CRY_ASSERT(ctx.passID == CWaterStage::ePass_WaterSurface);
-	const auto passId = cobj.m_bAboveWater ? water::passIdAboveWater : water::passIdAboveWater;
+	const auto passId = cobj.m_bAboveWater ? water::passIdAboveWater : water::passIdUnderWater;
 	const CDeviceGraphicsPSOPtr& pPso = cobj.m_psoArray[passId];
 
 	if (!pPso || !pPso->IsValid() || !cobj.m_pMaterialResourceSet->IsValid())

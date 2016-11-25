@@ -423,7 +423,7 @@ void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
 	uint maskIndex = 0;
 	uint curMask = TileLightMask[bufferIdx];
 	
-	[loop] for (uint lightIter = 0; lightIter < 8; ++lightIter)  // Restrict number of probes being considered
+	[loop] for (;;)
 	{
 		while (maskIndex < 8)
 		{
@@ -437,7 +437,7 @@ void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
 			break;
 			
 		STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
-		float3 lightVec = light.posRad.xyz - pPass.IN.vView.xyz;
+		float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - pPass.IN.vView.xyz;
 
 		// Compute attenuation for box
 		float3 tmpLightVec;

@@ -566,7 +566,6 @@ public:
 
 	uint32 GetPriority(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return 0;
 
@@ -575,7 +574,6 @@ public:
 
 	void SetPriority(TagID tagID, uint32 priority)
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return;
 
@@ -603,7 +601,6 @@ public:
 
 	void SetSubTagDefinition(TagID tagID, const CTagDefinition* pTagDef)
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (IsValidTagID(tagID))
 		{
 			m_tags[tagID].m_pTagDefinition = pTagDef;
@@ -919,7 +916,6 @@ public:
 
 	TagGroupID GetGroupID(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return GROUP_ID_NONE;
 
@@ -1024,17 +1020,14 @@ public:
 
 	uint32 GetTagCRC(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return 0;
 
 		return m_tags[tagID].m_name.crc;
 	}
 
-	//#if STORE_TAG_STRINGS
 	const char* GetTagName(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return "<invalid>";
 
@@ -1043,17 +1036,14 @@ public:
 
 	void SetTagName(TagID tagID, const char* szTag)
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return;
 
 		m_tags[tagID].m_name.SetByString(szTag);
 	}
-	//#endif //STORE_TAG_STRINGS
 
 	void SetTagGroup(TagID tagID, TagGroupID groupID)
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return;
 
@@ -1188,7 +1178,6 @@ public:
 	template<typename T>
 	bool IsSet(const T& state, const TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return false;
 
@@ -1198,7 +1187,6 @@ public:
 	template<typename T>
 	void Set(T& state, const TagID tagID, bool set) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return;
 
