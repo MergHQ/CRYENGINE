@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryLink/CryLink.h>
+#include <CrySystem/ICryLink.h>
 #include <CrySerialization/Forward.h>
 
 #include "Schematyc/FundamentalTypes.h"

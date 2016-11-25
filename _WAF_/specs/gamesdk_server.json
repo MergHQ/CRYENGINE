@@ -31,6 +31,8 @@
 		"CryAudioCommon",
 		"CrySystem",
 		"CryAction",
+		"CrySchematycCore",
+		"CrySchematycSTDEnv",
 		"HWScripts",
 		
 		"CryDefaultEntities",
@@ -49,6 +51,12 @@
 		"curl",
 
 		"CryGameSDK"
+	],
+	
+	"force_shared_monolithic_build_modules" : 
+	[
+		"CrySchematycCore",
+		"CrySchematycSTDEnv"
 	],
 
 	"defines"                               : ["DEDICATED_SERVER"],

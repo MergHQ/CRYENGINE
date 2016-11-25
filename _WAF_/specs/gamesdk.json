@@ -31,6 +31,8 @@
 		"CrySystem",
 		"CryScaleformHelper",
 		"CryAction",
+		"CrySchematycCore",
+		"CrySchematycSTDEnv",
 		"HWScripts",
 		
 		"CryDefaultEntities",
@@ -53,6 +55,13 @@
 
 		"CryGameSDK"
 	],
+	
+	"force_shared_monolithic_build_modules" : 
+	[
+		"CrySchematycCore",
+		"CrySchematycSTDEnv"
+	],
+	
 	"win_force_shared_monolithic_build_modules" : 
 	[
 		"CryAudioImplSDLMixer",

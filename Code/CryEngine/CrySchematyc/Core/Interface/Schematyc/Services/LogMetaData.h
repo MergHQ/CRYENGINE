@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <CryLink/CryLink.h>
+#include <CrySystem/ICryLink.h>
 
 #include "Schematyc/Utils/CryLinkUtils.h"
 #include "Schematyc/Utils/GUID.h"

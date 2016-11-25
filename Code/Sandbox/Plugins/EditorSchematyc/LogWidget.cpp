@@ -10,7 +10,7 @@
 #include <QPushButton>
 #include <QSplitter>
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryLink/CryLink.h>
+#include <CrySystem/ICryLink.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <QAdvancedPropertyTree.h>
 #include <Schematyc/Script/IScriptRegistry.h>
