@@ -938,7 +938,7 @@ bool CActionGame::BlockingSpawnPlayer()
 
 	m_pGameContext->AllowCallOnClientConnect();
 
-	return BlockingConnect(&CActionGame::ConditionHavePlayer, true, "have player");
+	return BlockingConnect(&CActionGame::ConditionInGame, true, "in game");
 }
 
 bool CActionGame::ConditionHaveConnection(CGameClientChannel* pChannel)
