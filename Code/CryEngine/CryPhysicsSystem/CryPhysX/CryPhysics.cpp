@@ -79,12 +79,4 @@ class CEngineModule_CryPhysics : public IEngineModule
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryPhysics)
 
-CEngineModule_CryPhysics::CEngineModule_CryPhysics()
-{
-};
-
-CEngineModule_CryPhysics::~CEngineModule_CryPhysics()
-{
-};
-
 #endif
