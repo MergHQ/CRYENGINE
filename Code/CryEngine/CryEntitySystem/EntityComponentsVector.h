@@ -157,7 +157,7 @@ public:
 		{
 			// Requires resorting of the components
 			// Elements are sorted by the event priority
-			std::sort(m_vector.begin(), m_vector.end(), [](SEntityComponentRecord& a, SEntityComponentRecord& b) { return a.eventPriority < b.eventPriority; });
+			std::sort(m_vector.begin(), m_vector.end(), [](const SEntityComponentRecord& a, const SEntityComponentRecord& b) -> bool { return a.eventPriority < b.eventPriority; });
 			m_sortingValid = true;
 		}
 		ForEach(f);

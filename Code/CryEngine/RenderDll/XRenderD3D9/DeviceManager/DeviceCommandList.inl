@@ -4,6 +4,10 @@
 #if !defined (__DEVICE_COMMAND_LIST_INL__)
 #define __DEVICE_COMMAND_LIST_INL__
 
+#if defined(CRY_USE_GNM_RENDERER)
+#include "GNM/DeviceCommandList_GNM.inl"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////
 
 inline CDeviceGraphicsCommandInterface* CDeviceCommandList::GetGraphicsInterface()
@@ -447,8 +451,4 @@ inline void CDeviceNvidiaCommandInterface::SetModifiedWMode(bool enabled, uint32
 #endif
 }
 
-#endif
-
-#if defined(CRY_USE_GNM_RENDERER)
-	#include "GNM/DeviceCommandList_GNM.inl"
 #endif
