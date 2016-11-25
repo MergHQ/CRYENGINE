@@ -825,8 +825,7 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 					int nThreadID = m_RP.m_nProcessThreadID;
 					ri[numChunks].nBatchFlags = EF_BatchFlags(pSH, pObj, pRE, passInfo, 1); // naughty
 					//ri[numChunks].nStencRef = pObj->m_nClipVolumeStencilRef+1;
-					uint32 nResID = pR ? pR->m_Id : 0;
-					ri[numChunks].SortVal = (nResID << 6) | (pShader->mfGetID() << 20) | (pSH.m_nTechnique & 0x3f);
+					ri[numChunks].SortVal = SRendItem::PackShaderItem(pSH);
 					ri[numChunks].pElem = pRE;
 					numChunks++;
 				}

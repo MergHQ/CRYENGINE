@@ -646,11 +646,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 	ri.rendItemSorter = sorter;
 
-	uint32 nResID = shaderItem.m_pShaderResources ? ((CShaderResources*)(shaderItem.m_pShaderResources))->m_Id : 0;
-	uint32 nShaderId = pShader->mfGetID();
-	assert(nResID < CShader::s_ShaderResources_known.size());
-	assert(nShaderId != 0);
-	ri.SortVal = (nResID << 6) | (nShaderId << 20) | (shaderItem.m_nTechnique & 0x3f);
+	ri.SortVal = SRendItem::PackShaderItem(shaderItem);
 	ri.pElem = pElem;
 
 	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general
@@ -867,12 +863,12 @@ void CRenderView::ExpandPermanentRenderObjects()
 					}
 				}
 
-				if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources || !shaderItem.m_pShaderResources->IsValid())
+				// Rebuild permanent object next frame in case we still rendered with the shader item which has been replaced (and is old)
+				assert(shaderItem.m_pShader && shaderItem.m_pShaderResources);
+				if (!shaderItem.m_pShaderResources->IsValid())
 				{
 					if (pRenderObject->m_pRenderNode)
 						pRenderObject->m_pRenderNode->InvalidatePermanentRenderObject();
-
-					continue;
 				}
 
 				CheckAndScheduleForUpdate(shaderItem);

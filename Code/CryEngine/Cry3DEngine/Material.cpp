@@ -396,6 +396,24 @@ bool CMatInfo::IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION
 	return true;
 }
 
+bool CMatInfo::IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const
+{
+	if (m_Flags & MTL_FLAG_MULTI_SUBMTL)
+	{
+		for (int i = 0, num = m_subMtls.size(); i < num; i++)
+		{
+			if (!m_subMtls[i]->AreTexturesStreamedIn(nMinPrecacheRoundIds))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	return AreTexturesStreamedIn(nMinPrecacheRoundIds);
+}
+
 bool CMatInfo::AreChunkTexturesStreamedIn(CRenderChunk* pRenderChunk, const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const
 {
 	const CMatInfo* pMaterial = this;
@@ -991,6 +1009,16 @@ void CMatInfo::RequestTexturesLoading(const float fMipFactor)
 	PrecacheTextures(fMipFactor, FPR_STARTLOADING, false);
 }
 
+void CMatInfo::ForceTexturesLoading(const float fMipFactor)
+{
+	PrecacheTextures(fMipFactor, FPR_STARTLOADING + FPR_HIGHPRIORITY, true);
+}
+
+void CMatInfo::ForceTexturesLoading(const int iScreenTexels)
+{
+	PrecacheTextures(iScreenTexels, FPR_STARTLOADING + FPR_HIGHPRIORITY, true);
+}
+
 void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool bFullUpdate)
 {
 	SStreamingPredictionZone& rZone = m_streamZoneInfo[bFullUpdate ? 1 : 0];
@@ -1025,6 +1053,27 @@ void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool b
 		rZone.nRoundId = nRoundId;
 		rZone.fMinMipFactor = fMipFactor;
 		rZone.bHighPriority = bHighPriority;
+	}
+}
+
+void CMatInfo::PrecacheTextures(const int iScreenTexels, const int nFlags, bool bFullUpdate)
+{
+	int nRoundId = bFullUpdate ? GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast : GetObjManager()->m_nUpdateStreamingPrioriryRoundId;
+
+	// TODO: fix fast update
+	if (true)
+	{
+		int nCurrentFlags = Get3DEngine()->IsShadersSyncLoad() ? FPR_SYNCRONOUS : 0;
+		nCurrentFlags |= bFullUpdate ? FPR_SINGLE_FRAME_PRIORITY_UPDATE : 0;
+
+		SShaderItem& rSI = m_shaderItem;
+		if (rSI.m_pShader && rSI.m_pShaderResources && !(rSI.m_pShader->GetFlags() & EF_NODRAW))
+		{
+			{
+				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
+				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+			}
+		}
 	}
 }
 

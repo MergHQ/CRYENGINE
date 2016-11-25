@@ -1927,6 +1927,13 @@ void CTexture::StreamState_Update()
 				}
 			}
 
+#ifdef ENABLE_TEXTURE_STREAM_LISTENER
+			if (state.m_bAllStreamsComplete && s_pStreamListener)
+			{
+				s_pStreamListener->OnUploadedStreamedTexture(state.m_pTexture);
+			}
+#endif
+
 			--c;
 		}
 	}

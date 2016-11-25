@@ -582,7 +582,7 @@ bool CMenuRender3DModelMgr::HasCharacterStreamedIn(SRenderSingleEntityData& rd, 
 
 	if (IMaterial* pMat = pCharacter->GetIMaterial())
 	{
-		if (!pMat->IsStreamedIn(rd.firstPrecacheRoundIds, NULL))
+		if (!pMat->IsStreamedIn(rd.firstPrecacheRoundIds))
 		{
 			MR3MM_TRACE("[MR3MM] (%p) Missing character material '%s'", &rd, pMat->GetName());
 			bHasStreamed = false;

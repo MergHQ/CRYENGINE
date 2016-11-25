@@ -660,6 +660,7 @@ public:
 	virtual unsigned int DownLoadToVideoMemoryCube(unsigned char *data,int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat=true, int filter=FILTER_BILINEAR, int Id=0, const char *szCacheName=NULL, int flags=0, EEndian eEndian = eLittleEndian, RectI * pRegion = NULL, bool bAsynDevTexCreation = false) override;
 	virtual unsigned int DownLoadToVideoMemory3D(unsigned char *data,int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat=true, int filter=FILTER_BILINEAR, int Id=0, const char *szCacheName=NULL, int flags=0, EEndian eEndian = eLittleEndian, RectI * pRegion = NULL, bool bAsynDevTexCreation = false) override;
 	virtual	void UpdateTextureInVideoMemory(uint32 tnum, unsigned char *newdata,int posx,int posy,int w,int h,ETEX_Format eTF=eTF_R8G8B8A8,int posz=0, int sizez=1) override;
+	virtual bool EF_PrecacheResource(SShaderItem *pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
 	virtual bool EF_PrecacheResource(SShaderItem *pSI, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
 	virtual bool EF_PrecacheResource(ITexture *pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
   virtual void RemoveTexture(unsigned int TextureId) override;

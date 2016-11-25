@@ -307,10 +307,9 @@ void frag_custom_begin(inout fragPass pPass)
 	pPass.pCustom.vHairDir = pPass.IN.vBinormal.xyz;
 	
 #if %DIRECTION_MAP
-  half3 vDirectionMap = half3(GetXYNormalMap(DirectionTex, pPass.IN.baseTC.xy), 0);
-	vDirectionMap.xy = vDirectionMap.xy * 2 - 1;
-  pPass.pCustom.vHairDir = mul(vDirectionMap.xyz, pPass.mTangentToWS);
-	fShiftAmount = sqrt(saturate(1.h + dot(vDirectionMap.xy, -vDirectionMap.xy))) * ShiftVariation;  // Reconstructed z of direction
+	half3 vDirection = GetNormalMap(DirectionTex, pPass.IN.baseTC.xy);
+	pPass.pCustom.vHairDir = mul(vDirection.xyz, pPass.mTangentToWS);
+	fShiftAmount = vDirection.z * ShiftVariation;
 #endif
 
   const half PrimarySpecShift = 0;

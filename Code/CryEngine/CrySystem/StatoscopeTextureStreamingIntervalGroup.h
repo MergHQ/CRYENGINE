@@ -17,6 +17,7 @@ public:
 
 public: // ITextureStreamListener Members
 	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable);
+	virtual void OnUploadedStreamedTexture(void* pHandle);
 	virtual void OnDestroyedStreamedTexture(void* pHandle);
 	virtual void OnTextureWantsMip(void* pHandle, int nMinMip);
 	virtual void OnTextureHasMip(void* pHandle, int nMinMip);

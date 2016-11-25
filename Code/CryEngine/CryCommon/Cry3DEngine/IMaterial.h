@@ -297,6 +297,7 @@ struct IMaterial
 
 	//! Returns true if streamed in.
 	virtual bool IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES], IRenderMesh* pRenderMesh) const = 0;
+	virtual bool IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const = 0;
 
 	//! Sub-material access.
 	//! Sets number of child sub materials holded by this material.
@@ -369,6 +370,9 @@ struct IMaterial
 
 	//! Requests texture streamer to start loading textures asynchronously.
 	virtual void RequestTexturesLoading(const float fMipFactor) = 0;
+	//! Force texture streamer to start and finish loading textures asynchronously but within one frame, disregarding mesh visibility etc.
+	virtual void ForceTexturesLoading(const float fMipFactor) = 0;
+	virtual void ForceTexturesLoading(const int iScreenTexels) = 0;
 
 	virtual void PrecacheMaterial(const float fEntDistance, struct IRenderMesh* pRenderMesh, bool bFullUpdate, bool bDrawNear = false) = 0;
 
