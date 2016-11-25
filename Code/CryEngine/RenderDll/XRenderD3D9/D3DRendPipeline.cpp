@@ -3949,7 +3949,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		{
 			bool bLighting = !nFlags;
 
-			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && CV_r_usezpass)
+			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && !nRecurse && CV_r_usezpass)
 			{
 				FX_ProcessZPassRenderLists();
 
@@ -4076,10 +4076,13 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		}
 	}                                     // r_GraphicsPipeline
 
-	if (CRenderer::CV_r_shownormals)
-		FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawNormals, false);
-	if (CRenderer::CV_r_showtangents)
-		FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawTangents, false);
+	if (!nRecurse)
+	{
+		if (CRenderer::CV_r_shownormals)
+			FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawNormals, false);
+		if (CRenderer::CV_r_showtangents)
+			FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawTangents, false);
+	}
 
 	CFlashTextureSourceBase::RenderLights();
 
