@@ -15,12 +15,10 @@ def build(bld):
 	]
 
 	bld.CryEngineStaticModule( 
-		target    = 'libmikmod_static', 
+		target    = 'libmikmod', 
 		vs_filter = 'Libs/Audio',
 		file_list = 'libmikmod.waf_files',
 		exclude_from_static_code_analyzer = True,
-
-		output_file_name = "libmikmod",
 
 		includes = [ Path('Code/SDKs/libmikmod/include') ],
 
@@ -33,10 +31,11 @@ def build(bld):
 		win_cflags = [ '/W0' ],
 		linux_cflags = [ '-w'],
 
-		win_lib = ['Winmm'],
+		win_lib = ['Winmm', 'Dsound'],
 
 		module_provides = dict(
 			defines = ['MIKMOD_STATIC'],
-			includes = [ Path('Code/SDKs/libmikmod/include') ]
+			includes = [ Path('Code/SDKs/libmikmod/include') ],
+			win_lib = ['Winmm', 'Dsound']
 		)
 	)

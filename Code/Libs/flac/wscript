@@ -3,16 +3,14 @@
 def build(bld):	
 
 	bld.CryEngineStaticModule( 
-		target    = 'flac_static', 
+		target    = 'flac', 
 		vs_filter = 'Libs/Audio',
 		exclude_from_static_code_analyzer = True,
 
 		file_list = 'flac.waf_files',
 		win_file_list = 'win_flac.waf_files',
 
-		output_file_name = "flac",
-
-		use_module = [ 'libogg_static' ],
+		use_module = [ 'libogg' ],
 
 		includes = [
 			Path('Code/SDKs/flac/include'),

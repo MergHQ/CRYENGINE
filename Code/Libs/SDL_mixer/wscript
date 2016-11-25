@@ -23,7 +23,7 @@ def build(bld):
 	]
 
 	bld.CryEngineStaticModule( 
-		target    = 'sdl_mixer_static', 
+		target    = 'sdl_mixer', 
 		vs_filter = 'Libs/Audio',
 		file_list = 'SDL_mixer.waf_files',
 		exclude_from_static_code_analyzer = True,
@@ -35,13 +35,13 @@ def build(bld):
 
 		use_module = ['timidity',
 			'native_midi',
-			'flac_static',
-			'libogg_static',
-			'libmikmod_static',
-			'libvorbis_static',
+			'flac',
+			'libogg',
+			'libmikmod',
+			'libvorbis',
 			'libvorbisfile'
 			],
-		linux_use_module = [ 'libmodplug_static' ],
+		linux_use_module = [ 'libmodplug' ],
 		module_extensions = ['sdl2'],
 
 		win_lib = ['Winmm'],

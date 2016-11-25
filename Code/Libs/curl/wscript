@@ -51,6 +51,6 @@ def build(bld):
 		module_provides = dict(
 			defines  = [ 'CURL_STATICLIB' ],
 			includes = [ Path('Code/SDKs/curl/include') ],
-			win_lib = ['Ws2_32', 'Crypt32']
+			win_lib = ['Ws2_32', 'Crypt32'],
 		)
 	)
