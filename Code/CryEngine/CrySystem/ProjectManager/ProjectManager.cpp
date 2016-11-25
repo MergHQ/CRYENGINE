@@ -156,11 +156,6 @@ void CProjectManager::LoadConfiguration()
 		gEnv->pConsole->LoadConfigVar("sys_dll_game", sSysDllGame);
 		m_currentBinaryDirectory = PathUtil::ToUnixPath(PathUtil::Make(m_currentProjectDirectory, PathUtil::GetPathWithoutFilename(sSysDllGame)));
 	}
-	else
-	{
-		// Make sure to clear the dll path, since this project does not require one
-		gEnv->pConsole->LoadConfigVar("sys_dll_game", "");
-	}
 
 	const jsmntok_t* projectName = jsmnutil_xpath(js.data(), tokens.data(), "info", "name", 0);
 	if (projectName != nullptr && projectName->type == JSMN_STRING)

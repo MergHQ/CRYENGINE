@@ -15,16 +15,6 @@ struct SEntityComponentRecord
 	uint64                            registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
-
-	const char* GetName() const
-	{
-		if(ICryFactory* pComponentFactory = gEnv->pSystem->GetCryFactoryRegistry()->GetFactory(typeId))
-		{
-			return pComponentFactory->GetName();
-		}
-
-		return "";
-	}
 };
 
 //! Main listener collection class used in conjunction with CEntityComponentsIterator.
@@ -97,11 +87,11 @@ public:
 
 		//////////////////////////////////////////////////////////////////////////
 		// ShutDown all components.
-		std::vector<SEntityComponentRecord> tempComponents;
 		std::shared_ptr<IEntityComponent> pUserComponent;
 
-		// Iterate the local copy because OnShutDown can modify the components array.
-		tempComponents.swap(m_vector);
+		// Iterate a local copy because OnShutDown can modify the components array.
+		auto tempComponents = m_vector;
+
 		for (auto& componentRecord : tempComponents)
 		{
 			if (componentRecord.proxyType == ENTITY_PROXY_USER)
@@ -114,7 +104,6 @@ public:
 
 		// Remove all entity components.
 		m_vector.clear();
-		// Temp components array must clear last.
 		tempComponents.clear();
 		// User component must be the last of the components to be destroyed.
 		pUserComponent.reset();
