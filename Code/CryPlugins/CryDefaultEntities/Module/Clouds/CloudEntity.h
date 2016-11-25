@@ -16,7 +16,7 @@
 // Sample entity for creating a cloud entity
 ////////////////////////////////////////////////////////
 class CCloudEntity final  
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CCloudEntity, "CloudEntity", 0xA22A4310BC074CBC, 0x8E9FDC669F3BF254);

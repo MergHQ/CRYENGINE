@@ -5,7 +5,7 @@
 #include <CrySerialization/STL.h>
 
 class CCommentEntity final 
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CCommentEntity, "Comment", 0x979E412F68B94866, 0xB61EEB87CFA757CF);

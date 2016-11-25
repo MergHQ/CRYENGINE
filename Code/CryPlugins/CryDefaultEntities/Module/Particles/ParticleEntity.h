@@ -8,7 +8,7 @@
 // Sample entity for creating a particle entity
 ////////////////////////////////////////////////////////
 class CDefaultParticleEntity final
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultParticleEntity, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);

@@ -3,16 +3,31 @@
 ////////////////////////////////////////////////////////
 // Base entity for native C++ entities that require the use of Editor properties
 ////////////////////////////////////////////////////////
+template<typename T = IEntityComponent>
 class CDesignerEntityComponent
-	: public IEntityComponent
+	: public T
 {
 public:
 	virtual ~CDesignerEntityComponent() {}
 
 	// IEntityComponent
-	virtual void Initialize() override;
+	virtual void Initialize() override { OnResetState(); }
 
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(SEntityEvent& event) override
+	{
+		switch (event.event)
+		{
+			// Physicalize on level start for Launcher
+			case ENTITY_EVENT_START_LEVEL:
+				// Editor specific, physicalize on reset, property change or transform change
+			case ENTITY_EVENT_RESET:
+			case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
+			case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
+				OnResetState();
+				break;
+		}
+	}
+
 	virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_START_LEVEL) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR); }
 	// ~IEntityComponent
 
@@ -23,7 +38,7 @@ public:
 		evnt.nParam[0] = portIndex;
 
 		evnt.nParam[1] = (INT_PTR)&inputData;
-		GetEntity()->SendEvent(evnt);
+		T::GetEntity()->SendEvent(evnt);
 	}
 
 	// Helper for loading geometry or characters
@@ -31,11 +46,11 @@ public:
 	{
 		if (IsCharacterFile(path))
 		{
-			GetEntity()->LoadCharacter(slot, path);
+			T::GetEntity()->LoadCharacter(slot, path);
 		}
 		else
 		{
-			GetEntity()->LoadGeometry(slot, path);
+			T::GetEntity()->LoadGeometry(slot, path);
 		}
 	}
 

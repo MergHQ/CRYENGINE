@@ -99,6 +99,13 @@ void CGeomEntity::ProcessEvent(SEntityEvent& event)
 	}
 }
 
+void CGeomEntity::SetGeometry(const char* szFilePath)
+{
+	m_model = szFilePath;
+
+	OnResetState();
+}
+
 void CGeomEntity::OnResetState()
 {
 	if (m_model.size() > 0)
