@@ -462,7 +462,11 @@ void CScaleformRecording::SetVertexData(const void* pVertices, int numVertices, 
 	GetPlayback()->SetVertexData(pDataStore->GetPtr());
 
 	if (!pCache)
-		m_pDataStore[0] = pDataStore; // Defer Release();
+	{
+		m_pDataStore[0] = pDataStore;
+		pDataStore->Release();
+	}
+		
 }
 
 static inline size_t IndexSize(GRenderer::IndexFormat idxf)
@@ -496,7 +500,10 @@ void CScaleformRecording::SetIndexData(const void* pIndices, int numIndices, Ind
 	GetPlayback()->SetIndexData(pDataStore->GetPtr());
 
 	if (!pCache)
-		m_pDataStore[1] = pDataStore; // Defer Release();
+	{
+		m_pDataStore[1] = pDataStore;
+		pDataStore->Release();
+	}
 }
 
 void CScaleformRecording::DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount)
@@ -650,7 +657,10 @@ void CScaleformRecording::DrawBitmaps(BitmapDesc* pBitmapList, int listSize, int
 	GetPlayback()->DrawBitmaps(pDataStore->GetPtr(), startIndex, count, pTi, m);
 
 	if (!pCache)
-		m_pDataStore[2] = pDataStore; // Defer Release();
+	{
+		m_pDataStore[2] = pDataStore;
+		pDataStore->Release();
+	}
 }
 
 void CScaleformRecording::BeginSubmitMask(SubmitMaskMode _maskMode)
