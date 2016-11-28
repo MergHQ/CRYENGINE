@@ -19,12 +19,10 @@ def build(bld):
 	]
 
 	bld.CryEngineStaticModule( 
-		target    = 'libmodplug_static', 
+		target    = 'libmodplug', 
 		vs_filter = 'Libs/Audio',
 		file_list = 'libmodplug.waf_files',
 		exclude_from_static_code_analyzer = True,
-
-		output_file_name = "libmodplug",
 
 		includes = [ Path('Code/SDKs/libmodplug/src'),
 			Path('Code/SDKs/libmodplug/src/libmodplug')

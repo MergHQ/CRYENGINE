@@ -315,25 +315,29 @@ void CUserAnalytics::PrepareAndSendEvents()
 
 		res = curl_easy_perform(m_curl);
 
+		const ICVar* const cv_logging = gEnv->pConsole->GetCVar("sys_UserAnalyticsLogging");
+
 		if (res == CURLE_OK)
 		{
 			m_sendBuffer.clear();
+			eventsCount = 0;
 
-			static ICVar* const cv_logging = gEnv->pConsole->GetCVar("sys_UserAnalyticsLogging");
 			if (cv_logging && cv_logging->GetIVal() > 0)
 			{
 				CryLogAlways("[User Analytics] Successfully pushed %d event(s) to %s", eventsCount, UA_FULL_SERVER_URL);
+
+				CryLogAlways("[User Analytics] Queuing Event: SessionAlive");
 			}
 
-			eventsCount = 0;
-
 			// pushing an alive-event to check client state on server side
-			CryLogAlways("[User Analytics] Queuing Event: SessionAlive");
 			TriggerEvent("SessionAlive");
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[User Analytics] Failed to send user events to server: %s, stopping to collect new events.", curl_easy_strerror(res));
+			if (cv_logging && cv_logging->GetIVal() > 0)
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[User Analytics] Failed to send user events to server: %s, stopping to collect new events.", curl_easy_strerror(res));
+			}
 
 			// pushing a connection loss event in case the user reconnects again
 			TriggerEvent("SessionIncomplete");

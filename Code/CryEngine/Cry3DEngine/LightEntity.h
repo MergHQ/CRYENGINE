@@ -36,6 +36,7 @@ public:
 	virtual void                     OffsetPosition(const Vec3& delta);
 	virtual void                     SetCastingException(IRenderNode* pNotCaster) { m_pNotCaster = pNotCaster; }
 	virtual bool                     IsLightAreasVisible();
+	const PodArray<SPlaneObject>&    GetCastersHull() const { return s_lstTmpCastersHull; }
 
 	virtual struct IStatObj* GetEntityStatObj(unsigned int nPartId = 0, unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; }
 	virtual int              GetSlotCount() const;

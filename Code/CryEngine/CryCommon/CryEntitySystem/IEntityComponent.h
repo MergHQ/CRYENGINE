@@ -494,4 +494,12 @@ struct IEntityDynamicResponseComponent : public IEntityComponent
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const = 0;
 };
 
+//! Component interface for GeomEntity to work in the CreateObject panel
+struct IGeometryEntityComponent : public IEntityComponent
+{
+	CRY_ENTITY_COMPONENT_INTERFACE(IGeometryEntityComponent, 0x54B2C1308E274E07, 0x8BF0F1FE89228D14)
+
+		virtual void SetGeometry(const char* szFilePath) = 0;
+};
+
 #endif // __IEntityComponent_h__

@@ -772,17 +772,17 @@ bool CSystem::UnloadEngineModule(const char* dllName, const char* moduleClassNam
 {
 	bool bSuccess = false;
 
-	// Remove the factory.
 	ICryFactoryRegistryImpl* const pReg = static_cast<ICryFactoryRegistryImpl*>(GetCryFactoryRegistry());
-
-	if (pReg != NULL)
+	ICryFactory* pICryFactory = pReg->GetFactory(moduleClassName);
+	if (pICryFactory != nullptr)
 	{
-		ICryFactory* pICryFactory = pReg->GetFactory(moduleClassName);
-
-		if (pICryFactory != NULL)
-		{
-			pReg->UnregisterFactory(pICryFactory);
-		}
+#if !defined(_LIB)
+		// Remove all module-dependent factories
+		const SRegFactoryNode* pFactoryRegNode = pICryFactory->GetRegFactoryNode();
+		pReg->UnregisterFactories(pFactoryRegNode);
+#else
+		pReg->UnregisterFactory(pICryFactory);
+#endif
 	}
 
 	stack_string msg;

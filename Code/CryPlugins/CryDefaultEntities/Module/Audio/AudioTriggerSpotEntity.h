@@ -18,7 +18,7 @@ enum EDrawActivityRadius
 };
 
 class CAudioTriggerSpotEntity final 
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioTriggerSpotEntity, "AudioTriggerSpot", 0x1009FA03153C459C, 0x883D33B33298813D);

@@ -335,7 +335,6 @@ if(PLUGIN_SCHEMATYC)
 	yasli
     )
 	target_include_directories(${THIS_PROJECT} PUBLIC
-		${CRYENGINE_DIR}/Code/CryExtensions/CryLink/Interface
 		../Interface
 	)
 	if(LINUX)

@@ -1957,3 +1957,15 @@ CBreadcrumbsBar > QToolButton::pressed {
 				stop:0 rgb(35,35,35), stop: 0.9 rgb(55,55,55), stop:1 rgb(78,78,78));
 	color:rgb(166,166,166);
 }
+
+CPreviewToolTip
+{
+	margin: 0px;
+	padding: 0px;
+}
+
+CPreviewToolTip QWidget
+{
+	max-width: 400px;
+	max-height: 400px;
+}

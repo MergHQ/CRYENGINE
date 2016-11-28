@@ -6,7 +6,7 @@
 // Entity that sends out trigger events based on entering / leaving linked areas
 ////////////////////////////////////////////////////////
 class CTriggerEntity final
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CTriggerEntity, "TriggerEntity", 0x717FCF92E0484479, 0xAB8D6AF20D94AA85);

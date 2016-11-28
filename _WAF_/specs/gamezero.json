@@ -56,6 +56,12 @@
 		"CryGameZero"
 	],
 	
+	"force_shared_monolithic_build_modules" : 
+	[
+		"CrySchematycCore",
+		"CrySchematycSTDEnv"
+	],
+	
 	"win_force_shared_monolithic_build_modules" : 
 	[
 		"CryAudioImplSDLMixer",
@@ -80,13 +86,13 @@
 		"CryAudioImplPortAudio",
 
 		"oculus",
-		"flac_static",
-		"libmikmod_static",
-		"libogg_static",
-		"libvorbis_static",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
 		"libvorbisfile",
 		"native_midi",
-		"sdl_mixer_static",
+		"sdl_mixer",
 		"smpeg",
 		"timidity",
 
@@ -119,14 +125,14 @@
 		"CryAudioImplFmod",
 		"assert_term",
 
-		"libmodplug_static",
-		"flac_static",
-		"libmikmod_static",
-		"libogg_static",
-		"libvorbis_static",
+		"libmodplug",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
 		"libvorbisfile",
 		"native_midi",
-		"sdl_mixer_static",
+		"sdl_mixer",
 		"smpeg",
 		"timidity"
 	],
@@ -139,14 +145,14 @@
 		"CryRenderOpenGL",
 		"CryAudioImplSDLMixer",
 
-		"libmodplug_static",
-		"flac_static",
-		"libmikmod_static",
-		"libogg_static",
-		"libvorbis_static",
+		"libmodplug",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
 		"libvorbisfile",
 		"native_midi",
-		"sdl_mixer_static",
+		"sdl_mixer",
 		"smpeg",
 		"timidity"
 	]

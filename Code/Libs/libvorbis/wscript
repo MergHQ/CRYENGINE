@@ -9,17 +9,15 @@ def build(bld):
 	common_linux_cflags = [ '-w' ]
 
 	bld.CryEngineStaticModule(
-		target    = 'libvorbis_static',
+		target    = 'libvorbis',
 		vs_filter = 'Libs/Audio',
 		file_list = 'libvorbis.waf_files',
 		exclude_from_static_code_analyzer = True,
 
-		output_file_name = "libvorbis",
-
 		includes = [ Path('Code/SDKs/libvorbis/include')],
 		linux_includes = [ Path('Code/SDKs/libvorbis/lib') ],
 
-		use_module = ['libogg_static'],
+		use_module = ['libogg'],
 
 		win_cflags = common_win_cflags,
 		linux_cflags = common_linux_cflags,
@@ -35,7 +33,7 @@ def build(bld):
 		includes = [ Path('Code/SDKs/libvorbis/include') ],
 		linux_includes = [ Path('Code/SDKs/libvorbis/lib') ],
 
-		use_module = ['libogg_static', 'libvorbis_static'],
+		use_module = ['libogg', 'libvorbis'],
 
 		win_cflags = common_win_cflags,
 		linux_cflags = common_linux_cflags,

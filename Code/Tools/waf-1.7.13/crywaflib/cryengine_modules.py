@@ -903,6 +903,10 @@ def CryEngineStaticModule(ctx, *k, **kw):
 	"""	
 	# Initialize the Task Generator
 	InitializeTaskGenerator(ctx, kw)
+	
+	# Static modules are still valid module users in monolithic builds 	
+	ConfigureModuleUsers(ctx, kw)
+	
 	set_cryengine_flags(ctx, kw)
 
 	ConfigureTaskGenerator(ctx, kw)
@@ -1427,7 +1431,8 @@ def override_libname(self):
 		for target_module, target_override in self.bld.cry_module_output_file_name_overrides.iteritems():
 			if target_module in self.bld.spec_modules(spec, platform, configuration):
 				link_task = getattr(self, 'link_task', None)
-				link_task.env['LIB'] = [ target_override if lib == target_module else lib for lib in link_task.env['LIB']]
+				if link_task:
+					link_task.env['LIB'] = [ target_override if lib == target_module else lib for lib in link_task.env['LIB']]
 	
 ###############################################################################
 # Helper function to set Flags based on options

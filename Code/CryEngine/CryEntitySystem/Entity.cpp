@@ -1185,7 +1185,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 
 		m_components.ForEach([&componentsNode, bIncludeScriptProxy, bLoading](const SEntityComponentRecord& record)
 		{
-			XmlNodeRef componentNode = componentsNode->newChild(record.GetName());
+			XmlNodeRef componentNode = componentsNode->newChild("Component");
 			componentNode->setAttr("typeId", record.typeId);
 
 			if (record.proxyType != ENTITY_PROXY_SCRIPT || bIncludeScriptProxy)
@@ -1210,7 +1210,7 @@ void CEntity::SerializeProperties(Serialization::IArchive& ar)
 		// Parse component properties, if any
 		if (IEntityPropertyGroup* pProperties = componentRecord.pComponent->GetPropertyGroup())
 		{
-			if (ar.openBlock(componentRecord.GetName(), pProperties->GetLabel()))
+			if (ar.openBlock("Component", pProperties->GetLabel()))
 			{
 				pProperties->SerializeProperties(ar);
 

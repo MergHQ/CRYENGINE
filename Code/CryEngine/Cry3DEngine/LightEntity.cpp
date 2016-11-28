@@ -396,6 +396,9 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 		if (GetCVars()->e_ShadowsCacheUpdate)
 			nUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate;
 
+		if (s_lstTmpCastersHull.empty())
+			MakeShadowCastersHull(s_lstTmpCastersHull, passInfo);
+
 		ShadowCache shadowCache(this, nUpdateStrategy);
 
 		for (nLod = 0; nLod < nLodCount; ++nLod)

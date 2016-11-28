@@ -195,7 +195,7 @@ public:
 		if (!pGameRules)
 		{
 			GameWarning("No game rules");
-			return eCETR_Failed;
+			return eCETR_Ok; // Editor without gamedll can have no gamerules.
 		}
 		//CryLog( "Spawn player for channel %d%s", channelId, m_isReset? " as reset" : "" );
 		if (!(pGameRules->*m_func)(channelId, m_isReset))

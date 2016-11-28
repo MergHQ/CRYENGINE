@@ -199,7 +199,8 @@ pixout HDRSampleLumInitialPS(vtxOut IN)
 			baseColorLum = 0.2;
 		
 		half3 cTex = tex2D(baseMap, SampleTC).rgb;
-		half fLum = GetLuminance(cTex.rgb);
+		half fLum = all(isfinite(cTex)) ? GetLuminance(cTex.rgb) : 0;  // Filter out nans
+
 		vLumInfo.x += log(fLum + 1e-6);                      // Luminance
 		vLumInfo.y += log(fLum / baseColorLum * PI + 1e-6);  // Illuminance
 	}
@@ -247,15 +248,7 @@ pixout HDRCalculateAdaptedLumPS(vtxOut IN)
   half4 vAdaptedLum = tex2D(lumMap0, IN.baseTC.xy);
   half4 vCurrentLum = tex2D(lumMap1, IN.baseTC.xy);
 
-  // Check for bad fp conditions
-  if (!all(isfinite(vCurrentLum)))
-		vCurrentLum = 1.0f;
-
-  if (!all(isfinite(vAdaptedLum)))
-		vAdaptedLum = 1.0f;
-
   half4 vNewAdaptation = max(0, vAdaptedLum + (vCurrentLum - vAdaptedLum) *  ElapsedTime.yyzz);
-
   OUT.Color = vNewAdaptation;
 
   return OUT;

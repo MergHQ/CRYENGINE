@@ -53,15 +53,18 @@ struct SPluginModule
 		Shutdown();
 	}
 
-	void Shutdown()
+	bool Shutdown()
 	{
+		bool bSuccess = false;
 		if (m_engineModulePath.size() > 0)
 		{
-			GetISystem()->UnloadEngineModule(m_engineModulePath, m_className);
+			bSuccess = GetISystem()->UnloadEngineModule(m_engineModulePath, m_className);
 
 			// Prevent Shutdown twice
 			m_engineModulePath.clear();
 		}
+
+		return bSuccess;
 	}
 
 	void Clear()
@@ -105,9 +108,7 @@ struct SPluginContainer
 		m_pPlugin->UnregisterFlowNodes();
 		m_pPlugin.reset();
 
-		m_module.Shutdown();
-
-		return false;
+		return m_module.Shutdown();
 	}
 
 	ICryPlugin* GetPluginPtr() const

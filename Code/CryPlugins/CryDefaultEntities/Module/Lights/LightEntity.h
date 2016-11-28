@@ -13,7 +13,7 @@
 // Sample entity for creating a light source
 ////////////////////////////////////////////////////////
 class CDefaultLightEntity final
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultLightEntity, "LightEntity", 0x61BFE88AAB1C4DFB, 0xBBD263D328C3D037);

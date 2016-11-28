@@ -12,7 +12,7 @@
 // Sample entity for creating an environment probe
 ////////////////////////////////////////////////////////
 class CEnvironmentProbeEntity final 
-	: public CDesignerEntityComponent
+	: public CDesignerEntityComponent<>
 	, public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CEnvironmentProbeEntity, "EnvironmentProbe", 0x0D3D1840D239411E, 0x873814C56CCCEE2C);

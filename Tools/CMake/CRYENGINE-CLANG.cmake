@@ -64,7 +64,13 @@ message( "CLANG_COMMON_FLAGS = ${CLANG_COMMON_FLAGS}" )
 string(REPLACE ";" " " CLANG_COMMON_FLAGS "${CLANG_COMMON_FLAGS}")
 message( "CLANG_COMMON_FLAGS = ${CLANG_COMMON_FLAGS}" ) 
 
-set(CMAKE_CXX_FLAGS "${CLANG_COMMON_FLAGS} -std=c++11" CACHE STRING "C++ Common Flags" FORCE)
+if (NOT (ORBIS AND ${CMAKE_GENERATOR} MATCHES "Visual Studio"))
+	# HACK: Do not apply this to Orbis in Visual Studio; it breaks .c file compilation
+	set(CMAKE_CXX_FLAGS "${CLANG_COMMON_FLAGS} -std=c++11" CACHE STRING "C++ Common Flags" FORCE)
+else()
+	set(CMAKE_CXX_FLAGS "${CLANG_COMMON_FLAGS}" CACHE STRING "C++ Common Flags" FORCE)
+endif()
+
 message( "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}" ) 
 
 # Set MSVC option for Visual Studio properties to be displayed correctly
@@ -76,7 +82,7 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "Libraries linked by defalut wi
 
 set(CMAKE_C_FLAGS "${CLANG_COMMON_FLAGS}" CACHE STRING "C Common Flags" FORCE)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "C Debug Flags" FORCE)
-set(CMAKE_C_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_PROFILE}" CACHE STRING "C++ Profile Flags" FORCE)
+set(CMAKE_C_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_PROFILE}" CACHE STRING "C Profile Flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "C Release Flags" FORCE)
 
 #set(CMAKE_LINK_FLAGS "{$CMAKE_LINK_FLAGS}") #-Wl,-dead_strip
