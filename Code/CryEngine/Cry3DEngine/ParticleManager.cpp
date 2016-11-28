@@ -339,7 +339,6 @@ void CParticleManager::SetDefaultEffect(const IParticleEffect* pEffect)
 const ParticleParams& CParticleManager::GetDefaultParams(ParticleParams::EInheritance eInheritance, int nVersion) const
 {
 	static ParticleParams s_paramsStandard;
-	static ParticleParams s_paramsZero(ZERO);
 
 	if (eInheritance == eInheritance.System)
 	{
@@ -349,8 +348,6 @@ const ParticleParams& CParticleManager::GetDefaultParams(ParticleParams::EInheri
 				return pEffect->GetParticleParams();
 		}
 	}
-	else if (eInheritance == eInheritance.Zero)
-		return s_paramsZero;
 	return s_paramsStandard;
 }
 
