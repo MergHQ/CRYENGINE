@@ -29,7 +29,8 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 	
 	enum EPass
 	{
-		ePass_Wireframe   = 0,
+		ePass_DebugViewSolid = 0,
+		ePass_DebugViewWireframe,
 		ePass_SelectionIDs, // draw highlighted objects from editor
 	};
 
@@ -47,10 +48,11 @@ private:
 private:
 	CDeviceResourceSetPtr    m_pPerPassResources;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
+	CConstantBufferPtr       m_pPerPassConstantBuffer;
 	
-	CSceneRenderPass         m_wireframePass;
-	CSceneRenderPass         m_selectionIDPass;
+	CSceneRenderPass         m_debugViewPass;
 
+	CSceneRenderPass         m_selectionIDPass;
 	CFullscreenPass          m_highlightPass;
 
 	SDepthTexture            m_depthTarget;

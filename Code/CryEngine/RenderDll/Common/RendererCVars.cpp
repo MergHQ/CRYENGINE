@@ -731,13 +731,6 @@ static void OnChange_CV_r_HDRRendering(ICVar* pCVar)
 	}
 }
 
-static void OnChange_CV_r_TexelsPerMeter(ICVar* /*pCVar*/)
-{
-	ICVar* pCV_e_sketch_mode = gEnv->pConsole->GetCVar("e_sketch_mode");
-	if (pCV_e_sketch_mode)
-		pCV_e_sketch_mode->Set(CRenderer::CV_r_TexelsPerMeter > 0.0f ? 4 : 0);
-}
-
 static void OnChange_CV_r_ShadersAllowCompiliation(ICVar* pCVar)
 {
 	// disable async activation. Can be a problem though if some shader cache files were opened async/streamed
@@ -2895,12 +2888,11 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ZFightingDepthScale", CV_r_ZFightingDepthScale, 0.995f, VF_CHEAT, "Controls anti z-fighting measures in shaders (scaling homogeneous z).");
 	REGISTER_CVAR3("r_ZFightingExtrude", CV_r_ZFightingExtrude, 0.001f, VF_CHEAT, "Controls anti z-fighting measures in shaders (extrusion along normal in world units).");
 
-	REGISTER_CVAR3_CB("r_TexelsPerMeter", CV_r_TexelsPerMeter, 0, 0,
+	REGISTER_CVAR3("r_TexelsPerMeter", CV_r_TexelsPerMeter, 0, 0,
 	                  "Enables visualization of the color coded \"texels per meter\" ratio for objects in view.\n"
 	                  "The checkerboard pattern displayed represents the mapping of the assigned diffuse\n"
 	                  "texture onto the object's uv space. One block in the pattern represents 8x8 texels.\n"
-	                  "Usage: r_TexelsPerMeter [n] (where n is the desired number of texels per meter; 0 = off)",
-	                  OnChange_CV_r_TexelsPerMeter);
+	                  "Usage: r_TexelsPerMeter [n] (where n is the desired number of texels per meter; 0 = off)");
 
 	REGISTER_CVAR3("r_enableAltTab", CV_r_enableAltTab, 1, VF_NULL,
 	               "Toggles alt tabbing in and out of fullscreen when the game is not in devmode.\n"
