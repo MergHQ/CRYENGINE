@@ -1157,6 +1157,7 @@ void CD3DStereoRenderer::CalculateBackbufferResolution(int nativeWidth, int nati
 			*pRenderHeight = nativeHeight * 2;
 			break;
 		case STEREO_OUTPUT_HMD:
+			if (m_pHmdDevice)
 			{
 				// Update renderer resolution
 				HmdDeviceInfo deviceInfo;
@@ -1168,6 +1169,11 @@ void CD3DStereoRenderer::CalculateBackbufferResolution(int nativeWidth, int nati
 
 				*pRenderWidth = screenWidth / 2;
 				*pRenderHeight = screenHeight;
+			}
+			else
+			{
+				*pRenderWidth = nativeWidth;
+				*pRenderHeight = nativeHeight;
 			}
 			break;
 		default:
