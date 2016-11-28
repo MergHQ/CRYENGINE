@@ -119,6 +119,14 @@ bool CreatePipelineStates(
 	};
 	bFullyCompiled &= waterStage.CreatePipelineState(stateArray[passIdAboveWater], _stateDesc, CWaterStage::ePass_WaterSurface, modifyRenderState);
 
+	_stateDesc.technique = TTYPE_GENERAL;
+	auto modifyRenderStateMaskGen = [](CDeviceGraphicsPSODesc& psoDesc)
+	{
+		psoDesc.m_RenderState &= ~GS_DEPTHFUNC_MASK;
+		psoDesc.m_RenderState |= GS_DEPTHFUNC_GREAT;
+	};
+	bFullyCompiled &= waterStage.CreatePipelineState(stateArray[CWaterStage::ePass_OceanMaskGen], _stateDesc, CWaterStage::ePass_OceanMaskGen, modifyRenderStateMaskGen);
+
 	if (bFullyCompiled)
 	{
 		pStateCache->Put(stateDesc, stateArray);
@@ -398,7 +406,7 @@ bool CREWaterOcean::Compile(CRenderObject* pObj)
 
 	// need to check mesh is ready for tessellation because m_bUseWaterTessHW is enabled but CREWaterOcean::Create() isn't called yet.
 	const bool bTessellationMesh = ((m_nIndicesCount % 3) == 0);
-	
+
 	const bool bUseWaterTess = rd->m_bUseWaterTessHW && bTessellationMesh;
 	ERenderPrimitiveType primType = bUseWaterTess ? eptTriangleList : eptTriangleStrip;
 	cro.m_bHasTessellation = 0;
@@ -429,7 +437,7 @@ bool CREWaterOcean::Compile(CRenderObject* pObj)
 	{
 		const uint64 quality = g_HWSR_MaskBit[HWSR_QUALITY];
 		const uint64 quality1 = g_HWSR_MaskBit[HWSR_QUALITY1];
-		switch((rd->GetShaderProfile(pShader->m_eShaderType)).GetShaderQuality())
+		switch ((rd->GetShaderProfile(pShader->m_eShaderType)).GetShaderQuality())
 		{
 		case eSQ_Medium:
 			psoDescription.objectRuntimeMask |= quality;
@@ -514,8 +522,10 @@ void CREWaterOcean::DrawToCommandList(CRenderObject* pObj, const struct SGraphic
 #endif
 
 	CRY_ASSERT(ctx.stageID == eStage_Water);
-	CRY_ASSERT(ctx.passID == CWaterStage::ePass_WaterSurface);
-	const auto passId = cobj.m_bAboveWater ? water::passIdAboveWater : water::passIdUnderWater;
+	CRY_ASSERT(ctx.passID == CWaterStage::ePass_WaterSurface || ctx.passID == CWaterStage::ePass_OceanMaskGen);
+	const auto passId = (ctx.passID == CWaterStage::ePass_WaterSurface)
+	                    ? (cobj.m_bAboveWater ? water::passIdAboveWater : water::passIdUnderWater)
+	                    : ctx.passID;
 	const CDeviceGraphicsPSOPtr& pPso = cobj.m_psoArray[passId];
 
 	if (!pPso || !pPso->IsValid() || !cobj.m_pMaterialResourceSet->IsValid())

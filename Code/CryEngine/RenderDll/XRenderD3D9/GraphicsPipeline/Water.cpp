@@ -161,6 +161,7 @@ CWaterStage::CWaterStage()
 	, m_pWaterGlossTex(nullptr)
 	, m_pOceanWavesTex(nullptr)
 	, m_pOceanCausticsTex(nullptr)
+	, m_pOceanMaskTex(nullptr)
 	, m_rainRippleTexIndex(0)
 	, m_frameIdWaterSim(0)
 {
@@ -176,6 +177,7 @@ CWaterStage::~CWaterStage()
 	SAFE_RELEASE(m_pWaterGlossTex);
 	SAFE_RELEASE(m_pOceanWavesTex);
 	SAFE_RELEASE(m_pOceanCausticsTex);
+	SAFE_RELEASE(m_pOceanMaskTex);
 
 	for (auto& pTex : m_pRainRippleTex)
 	{
@@ -218,6 +220,11 @@ void CWaterStage::Init()
 	CRY_ASSERT(m_pOceanCausticsTex == nullptr);
 	m_pOceanCausticsTex = CTexture::ForName("EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
 
+	CRY_ASSERT(m_pOceanMaskTex == nullptr);
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+	const ETEX_Format format = eTF_R8;
+	m_pOceanMaskTex = CTexture::CreateTextureObject("$OceanMask", 0, 0, 0, eTT_2D, flags, eTF_R8);
+
 	CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(water::SPrimitiveConstants));
 	m_deferredOceanStencilPrimitive[0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
 	m_deferredOceanStencilPrimitive[1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
@@ -231,13 +238,20 @@ void CWaterStage::Init()
 	CRY_ASSERT(CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0]));
 	CRY_ASSERT(CTexture::IsTextureExist(CTexture::s_ptexWaterVolumeRefl[0]));
 
+	auto* pDepthTarget = &(gcpRendD3D->m_DepthBufferOrigMSAA);
+
+	m_passOceanMaskGen.SetLabel("OCEAN_MASK_GEN");
+	m_passOceanMaskGen.SetupPassContext(m_stageID, ePass_OceanMaskGen, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER, 0, false);
+	m_passOceanMaskGen.SetPassResources(m_pResourceLayout, m_pPerPassResources);
+	m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
+
 	m_passWaterCausticsSrcGen.SetLabel("WATER_VOLUME_CAUSTICS_SRC_GEN");
 	m_passWaterCausticsSrcGen.SetupPassContext(m_stageID, ePass_CausticsGen, TTYPE_WATERCAUSTICPASS, FB_WATER_CAUSTIC, EFSLIST_WATER, 0, false);
 	m_passWaterCausticsSrcGen.SetPassResources(m_pResourceLayout, m_pPerPassResources);
 	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, CTexture::s_ptexWaterCaustics[0]);
 
-	auto* pDepthTarget = &(gcpRendD3D->m_DepthBufferOrigMSAA);
 	auto* pRenderTarget = CTexture::s_ptexHDRTarget;
+
 	m_passWaterFogVolumeBeforeWater.SetLabel("WATER_FOG_VOLUME_BEFORE_WATER");
 	m_passWaterFogVolumeBeforeWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES, 0, false);
 	m_passWaterFogVolumeBeforeWater.SetPassResources(m_pResourceLayout, m_pPerPassResources);
@@ -263,6 +277,9 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
+	const int32 screenWidth = rd->GetWidth();
+	const int32 screenHeight = rd->GetHeight();
+
 	auto& waterRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER);
 	auto& waterVolumeRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER_VOLUMES);
 	const bool isEmpty = waterRenderItems.empty() && waterVolumeRenderItems.empty();
@@ -278,6 +295,33 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 		CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1,
 		                                            FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
 		                                            0, eTF_R32G32B32A32F, eTF_R32G32B32A32F);
+	}
+
+	{
+		bool bOceanMask = false;
+
+		switch ((rd->GetShaderProfile(eST_Water)).GetShaderQuality())
+		{
+		case eSQ_High:
+		case eSQ_VeryHigh:
+			// ocean surface can be displaced in these settings.
+			bOceanMask = true;
+			break;
+		}
+
+		if (!bOceanMask && CTexture::IsTextureExist(m_pOceanMaskTex))
+		{
+			m_pOceanMaskTex->ReleaseDeviceTexture(false);
+		}
+
+		const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+		const ETEX_Format format = eTF_R8;
+		if (bOceanMask
+		    && m_pOceanMaskTex
+		    && (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(screenWidth, screenHeight, format)))
+		{
+			m_pOceanMaskTex->Create2DTexture(screenWidth, screenHeight, 1, flags, nullptr, format, format);
+		}
 	}
 
 	// Activate puddle generation
@@ -330,6 +374,8 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	{
 		ExecuteWaterNormalGen();
 	}
+
+	ExecuteOceanMaskGen(pRenderView);
 
 	// Check if there are any water volumes that have caustics enabled
 	bool isEmpty = bEmpty;
@@ -536,7 +582,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 		rd->m_nStencilMaskRef += 1;
 		if (rd->m_nStencilMaskRef > STENC_MAX_REF)
 		{
-			rd->EF_ClearTargetsImmediately(FRT_CLEAR_STENCIL, Clr_Unused.r, 1);
+			rd->FX_ClearTarget(pDepthTarget, FRT_CLEAR_STENCIL, Clr_Unused.r, 1);
 			rd->m_nStencilMaskRef = 2;
 		}
 		stencilRef = rd->m_nStencilMaskRef;
@@ -618,9 +664,11 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 
 	// Deferred ocean caustic pass
 	{
+		auto* pOceanMask = CTexture::IsTextureExist(m_pOceanMaskTex) ? m_pOceanMaskTex : CTexture::s_ptexBlack;
+
 		auto& pass = m_passDeferredOceanCaustics;
 
-		if (pass.InputChanged(CRenderer::CV_r_watercausticsdeferred))
+		if (pass.InputChanged(CRenderer::CV_r_watercausticsdeferred, pOceanMask->GetID()))
 		{
 			static CCryNameTSCRC techName = "General";
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredCaustics, techName, 0);
@@ -637,6 +685,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 			pass.SetTexture(1, CTexture::s_ptexSceneNormalsMap);
 			pass.SetTexture(2, m_pOceanWavesTex);
 			pass.SetTexture(3, m_pOceanCausticsTex);
+			pass.SetTexture(4, pOceanMask);
 
 			pass.SetSampler(0, rd->m_nTrilinearClampSampler);
 			pass.SetSampler(1, rd->m_nTrilinearWrapSampler);
@@ -848,6 +897,16 @@ bool CWaterStage::CreatePipelineState(
 			bWaterRipples = true;
 		}
 		break;
+	case CWaterStage::ePass_OceanMaskGen:
+		{
+			m_passOceanMaskGen.ExtractRenderTargetFormats(psoDesc);
+
+			// use optimized shader to generate mask.
+			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+
+			bWaterRipples = true;
+		}
+		break;
 	default:
 		CRY_ASSERT(false);
 		return true;
@@ -956,7 +1015,16 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 
 	// Textures
 	{
-		m_pPerPassResources->SetTexture(ePerPassTexture_WaterGloss, m_pWaterGlossTex, SResourceView::DefaultView, EShaderStage_Pixel);
+		if (passId == ePass_FogVolume)
+		{
+			auto* pOceanMask = CTexture::IsTextureExist(m_pOceanMaskTex) ? m_pOceanMaskTex : CTexture::s_ptexBlack;
+			m_pPerPassResources->SetTexture(ePerPassTexture_WaterGloss, pOceanMask, SResourceView::DefaultView, EShaderStage_Pixel);
+		}
+		else
+		{
+			m_pPerPassResources->SetTexture(ePerPassTexture_WaterGloss, m_pWaterGlossTex, SResourceView::DefaultView, EShaderStage_Pixel);
+		}
+
 		m_pPerPassResources->SetTexture(ePerPassTexture_Foam, m_pFoamTex, SResourceView::DefaultView, EShaderStage_Pixel);
 
 		if (!pRenderer->m_bPauseTimer)
@@ -1229,6 +1297,39 @@ void CWaterStage::ExecuteWaterNormalGen()
 
 	// generate mipmap.
 	m_passWaterNormalMipmapGen.Execute(CTexture::s_ptexWaterVolumeDDN);
+}
+
+void CWaterStage::ExecuteOceanMaskGen(CRenderView* pRenderView)
+{
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
+	N3DEngineCommon::SOceanInfo& OceanInfo = rd->m_p3DEngineCommon.m_OceanInfo;
+	const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
+
+	if (!bOceanVolumeVisible)
+	{
+		return;
+	}
+
+	if (!CTexture::IsTextureExist(m_pOceanMaskTex))
+	{
+		return;
+	}
+
+	CRY_ASSERT(pRenderView);
+
+	PROFILE_LABEL_SCOPE("OCEAN_MASK_GEN");
+
+	// prepare per pass device resource
+	// this update must be called after water ripple stage's execute() because waterRippleLookup parameter depends on it.
+	// this update must be called after updating N3DEngineCommon::SCausticInfo.
+	PreparePerPassResources(pRenderView, false, ePass_OceanMaskGen);
+
+	// TODO: replace this with clear command to command list.
+	rd->FX_ClearTarget(m_pOceanMaskTex, Clr_Transparent);
+
+	// render ocean surface to generate the mask to identify the pixels where ocean is behind the others and invisible.
+	ExecuteSceneRenderPass(pRenderView, m_passOceanMaskGen, EFSLIST_WATER);
 }
 
 void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo, CRenderView* pRenderView)

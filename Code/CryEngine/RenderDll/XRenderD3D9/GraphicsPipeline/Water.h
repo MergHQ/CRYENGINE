@@ -18,6 +18,7 @@ public:
 		ePass_FogVolume,
 		ePass_WaterSurface,
 		ePass_CausticsGen,
+		ePass_OceanMaskGen,
 
 		ePass_Count,
 	};
@@ -29,6 +30,7 @@ public:
 		ePassMask_FogVolume     = BIT(ePass_FogVolume),
 		ePassMask_WaterSurface  = BIT(ePass_WaterSurface),
 		ePassMask_CausticsGen   = BIT(ePass_CausticsGen),
+		ePassMask_OceanMaskGen  = BIT(ePass_OceanMaskGen),
 	};
 
 	// default for water volume and ocean
@@ -112,6 +114,7 @@ private:
 	void  UpdatePerPassResources(CRenderView& renderView);
 
 	void  ExecuteWaterNormalGen();
+	void  ExecuteOceanMaskGen(CRenderView* pRenderView);
 	void  ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo, CRenderView* pRenderView);
 	void  ExecuteReflection(CRenderView* pRenderView);
 
@@ -123,6 +126,7 @@ private:
 private:
 	CFullscreenPass                           m_passWaterNormalGen;
 	CMipmapGenPass                            m_passWaterNormalMipmapGen;
+	CSceneRenderPass                          m_passOceanMaskGen;
 	CSceneRenderPass                          m_passWaterCausticsSrcGen;
 	CFullscreenPass                           m_passWaterCausticsDilation;
 	CGaussianBlurPass                         m_passBlurWaterCausticsGen0;
@@ -153,6 +157,7 @@ private:
 	CTexture*                                 m_pWaterGlossTex;
 	CTexture*                                 m_pOceanWavesTex;
 	CTexture*                                 m_pOceanCausticsTex;
+	CTexture*                                 m_pOceanMaskTex;
 
 	std::array<CTexture*, RainRippleTexCount> m_pRainRippleTex;
 	uint32 m_rainRippleTexIndex;

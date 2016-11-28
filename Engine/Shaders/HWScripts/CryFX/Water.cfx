@@ -242,14 +242,8 @@ half RipplesNormalsScale
 > = 1.0;
 
 ////////////////////////////////////////////////////////////////
-// per instance textures for water ocean
 
 TextureCube envCubeTex : register(t3) = TM_Env;
-
-// eTF_A32B32G32R32F
-Texture2D WaterDisplMapSampler : register(t14) = TS_WaterOceanMap;
-
-Texture2D oceanReflectionTex : register(t15);
 
 // TODO: remove after old graphics pipeline is removed.
 sampler2D ReflectionSampler : register(s0)
@@ -334,21 +328,25 @@ struct v2f
 	float4 Position		: POSITION; 
 #endif
 
+	half4  vView  	  : TEXCOORDN;
+
+	float4 vPosWS		: TEXCOORDN;
+
+#if !%_RT_SAMPLE3
 	float4 baseTC	  : TEXCOORDN;
 	float4 screenProj : TEXCOORDN;
 	float4 envTC      : TEXCOORDN;
-	half4  vView  	  : TEXCOORDN;
 
 	half4 GlossinessK : TEXCOORDN;
 	half4 cSpecular   : TEXCOORDN;
-
-	float4 vPosWS		: TEXCOORDN;
 
 #if %_RT_SAMPLE4
 	float4 ripplesTC	: TEXCOORDN;
 #endif
 
 	half4 vVertexNormal : TEXCOORDN;
+#endif
+
 #if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
 	float4 vOceanParams : TEXCOORDN;
 #endif
@@ -357,23 +355,28 @@ struct v2f
 struct v2f_hs
 {
 	float4 Position		: POSITION;
+
+	half4  vView  	  : TEXCOORDN;
+
+	float4 vPosWS		: TEXCOORDN;
+
+#if !%_RT_SAMPLE3
 	float4 baseTC	  : TEXCOORDN;
 	float4 screenProj : TEXCOORDN;
 	float4 envTC      : TEXCOORDN;
-	half4  vView  	  : TEXCOORDN;
 
 	half4 GlossinessK : TEXCOORDN;
 	half4 cSpecular   : TEXCOORDN;
-
-	float4 vPosWS		: TEXCOORDN;
 
 #if %_RT_SAMPLE4
 	float4 ripplesTC	: TEXCOORDN;
 #endif
 
 	half4 vVertexNormal : TEXCOORDN;
+
 #if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
 	float4 vOceanParams : TEXCOORDN;
+#endif
 #endif
 };
 
@@ -387,26 +390,27 @@ struct HS_CONSTANT_DATA_OUTPUT
 };
 
 struct HS_CONTROL_POINT_OUTPUT
-{  
+{
+	half4  vView  	  : TEXCOORDN;
+
+	float4 vPosWS		: TEXCOORDN;
+
+#if !%_RT_SAMPLE3
 	float4 baseTC	  : TEXCOORDN;
 	float4 screenProj : TEXCOORDN;
 	float4 envTC      : TEXCOORDN;
-	half4  vView  	  : TEXCOORDN;
 
 	half4 GlossinessK : TEXCOORDN;
 	half4 cSpecular   : TEXCOORDN;
-
-	float4 vPosWS		: TEXCOORDN;
 
 #if %_RT_SAMPLE4
 	float4 ripplesTC	: TEXCOORDN;
 #endif
 
-//if !%_RT_QUALITY && %_RT_QUALITY1
 	half4 vVertexNormal : TEXCOORDN;
-	float4 vOceanParams : TEXCOORDN;
-//endif
+#endif
 
+	float4 vOceanParams : TEXCOORDN;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -548,6 +552,7 @@ void ApplyVertexDisplacement( inout float4 vPos, inout v2f OUT)
 
 	vPos.xyz += fDisplaceAtten * vtxDispl.xyz * 0.06f * params.OceanParams1.x * float3(1.5f, 1.5f, 1.0f);
 
+#if !%_RT_SAMPLE3
 	// Compute normal on the fly (todo: prebake this in texture alpha..)
 	float4 h0 =  vtxDispl;
 	float4 h10 = WaterDisplMapSampler.SampleLevel(ssMaterialTrilinear, tcFFT.xy + float2( 1.0f / 64.0f, 0.0f), 0.0f);
@@ -557,16 +562,21 @@ void ApplyVertexDisplacement( inout float4 vPos, inout v2f OUT)
 	vNormal = normalize(vNormal.xyz);
 	OUT.vVertexNormal.xyz = vNormal;
 #endif
+#endif
 
 	// Apply dynamic ripples displacement
 
 #if %_RT_SAMPLE4
-	OUT.ripplesTC = GetWaterRipplesUvs( vPos, perPassParams );
+	float4 ripplesTC = GetWaterRipplesUvs( vPos, perPassParams );
 
 	#if !%_RT_QUALITY && %_RT_QUALITY1
-		vtxDispl = WaterDynRipplesTex.SampleLevel(ssMaterialTrilinear, OUT.ripplesTC.xy, 0.0f);
-		vPos.z -= ( vtxDispl.z ) * OUT.ripplesTC.w;
+		vtxDispl = WaterDynRipplesTex.SampleLevel(ssMaterialTrilinear, ripplesTC.xy, 0.0f);
+		vPos.z -= ( vtxDispl.z ) * ripplesTC.w;
 	#endif
+
+#if !%_RT_SAMPLE3
+	OUT.ripplesTC = ripplesTC;
+#endif
 #endif
 }
 
@@ -593,9 +603,11 @@ v2f WaterVS(a2v IN)
 	OUT.Position = mul(CV_ViewProjMatr, float4(vPos.xyz, 1));
 #endif
 
+#if !%_RT_SAMPLE3
 	// Output projected reflection texture coordinates
 	float4 vProjTex = mul(params.mReflProj, float4(vPos.xyz, 1) );
 	OUT.envTC = vProjTex;
+#endif
 
 	// Output eye/light vector
 	float3 vView = g_VS_WorldViewPos.xyz - vPos.xyz;
@@ -615,9 +627,12 @@ v2f WaterVS(a2v IN)
 #endif
 	}
 
+#if !%_RT_SAMPLE3
 	OUT.screenProj.xyw = HPosToScreenTC( OUT.Position ).xyw;
 #endif
+#endif
 
+#if !%_RT_SAMPLE3
 	// Output refraction depth scale
 	OUT.screenProj.z = saturate( 1.0f - 0.15f * sqrt( saturate(OUT.screenProj.w) ) );
 
@@ -653,6 +668,7 @@ v2f WaterVS(a2v IN)
 	DetailTilling = max(2, DetailTilling);
 #endif
 	OUT.baseTC.wz *= DetailTilling;
+#endif
   
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -766,17 +782,19 @@ HS_CONTROL_POINT_OUTPUT WaterHS(InputPatch<v2f, 3> inputPatch, uint uCPID : SV_O
   HS_CONTROL_POINT_OUTPUT OUT = (HS_CONTROL_POINT_OUTPUT)0;
 
   // passthrough hull shader
+  OUT.vView = inputPatch[uCPID].vView;
+  OUT.vPosWS = inputPatch[uCPID].vPosWS;
+  OUT.vOceanParams = inputPatch[uCPID].vOceanParams;
+#if !%_RT_SAMPLE3
   OUT.baseTC = inputPatch[uCPID].baseTC;
   OUT.screenProj = inputPatch[uCPID].screenProj;
   OUT.envTC = inputPatch[uCPID].envTC;
-  OUT.vView = inputPatch[uCPID].vView;
   OUT.GlossinessK = inputPatch[uCPID].GlossinessK;
   OUT.cSpecular = inputPatch[uCPID].cSpecular;
-  OUT.vPosWS = inputPatch[uCPID].vPosWS;
-  OUT.vOceanParams = inputPatch[uCPID].vOceanParams;
-  
+
 #if %_RT_SAMPLE4
   OUT.ripplesTC = inputPatch[uCPID].ripplesTC;
+#endif
 #endif
 
   return OUT;
@@ -791,11 +809,13 @@ v2f_hs WaterDS(HS_CONSTANT_DATA_OUTPUT IN,float3 BarycentricCoords : SV_DomainLo
 
 	// interpolate attributes
 
+	OUT.vView = BarycentricInterp(BarycentricCoords, TriPatch[0].vView, TriPatch[1].vView, TriPatch[2].vView);
+#if !%_RT_SAMPLE3
 	OUT.baseTC = BarycentricInterp(BarycentricCoords, TriPatch[0].baseTC, TriPatch[1].baseTC, TriPatch[2].baseTC);
 	OUT.envTC = BarycentricInterp(BarycentricCoords, TriPatch[0].envTC, TriPatch[1].envTC, TriPatch[2].envTC);
-	OUT.vView = BarycentricInterp(BarycentricCoords, TriPatch[0].vView, TriPatch[1].vView, TriPatch[2].vView);
 	OUT.GlossinessK = BarycentricInterp(BarycentricCoords, TriPatch[0].GlossinessK, TriPatch[1].GlossinessK, TriPatch[2].GlossinessK);
 	OUT.cSpecular = BarycentricInterp(BarycentricCoords, TriPatch[0].cSpecular, TriPatch[1].cSpecular, TriPatch[2].cSpecular);
+#endif
 
 	OUT.vPosWS = BarycentricInterp(BarycentricCoords, TriPatch[0].vPosWS, TriPatch[1].vPosWS, TriPatch[2].vPosWS);   
 
@@ -823,18 +843,24 @@ v2f_hs WaterDS(HS_CONSTANT_DATA_OUTPUT IN,float3 BarycentricCoords : SV_DomainLo
 
 	//vWorldPos.w = TriPatch[0].vOceanParams.w;//vtxDispl.z;
 
+#if !%_RT_SAMPLE3
 	float3 vVtxN = GetTexture2DLod(WaterNormalTex, aniso16xWrapSState, float4( tcFFT, 0, 0)).xyz;
 	vVtxN += GetTexture2DLod(WaterNormalTex, aniso16xWrapSState, float4(  tcFFT * 2, 0, 0)).xyz;
-
 	OUT.vVertexNormal.xyz = lerp( vVtxN, float3(0, 0, 1), saturate(OUT.vPosWS.w * 2) ) ;
+#endif
+
 	vWorldPos.w =  lerp(vWorldPos.w, 0, saturate(OUT.vPosWS.w * 1.5) ) ;
 	vtxDispl = 0;
 
 #if %_RT_SAMPLE4
 	SPerPassWaterParams perPassParams = GetPerPassWaterParams();
-	OUT.ripplesTC = GetWaterRipplesUvs( vWorldPos, perPassParams );
-	float fRipplesDisp = 0.5f * GetTexture2DLod(WaterDynRipplesTex, ssMaterialTrilinearClamp, float4(OUT.ripplesTC.xy, 0.0f, 0.0f)).z;
-	vtxDispl -= fRipplesDisp * OUT.ripplesTC.w ;
+	float4 ripplesTC = GetWaterRipplesUvs( vWorldPos, perPassParams );
+	float fRipplesDisp = 0.5f * GetTexture2DLod(WaterDynRipplesTex, ssMaterialTrilinearClamp, float4(ripplesTC.xy, 0.0f, 0.0f)).z;
+	vtxDispl -= fRipplesDisp * ripplesTC.w ;
+
+#if !%_RT_SAMPLE3
+	OUT.ripplesTC = ripplesTC;
+#endif
 #endif
 
 	vWorldPos.z += vtxDispl.z;
@@ -851,9 +877,11 @@ v2f_hs WaterDS(HS_CONSTANT_DATA_OUTPUT IN,float3 BarycentricCoords : SV_DomainLo
 // if( length(OUT.vView) < 2.0 )
 //	 OUT.Position.z *=saturate( abs(OUT.vView.z) > 0.2 );
 
+#if !%_RT_SAMPLE3
 	OUT.screenProj = HPosToScreenTC(HPosition);
 	// Output refraction depth scale
 	OUT.screenProj.z = saturate( 1 - 0.15 * sqrt( saturate(OUT.screenProj.w) ) );
+#endif
 
 	return OUT;
 }
@@ -862,6 +890,9 @@ v2f_hs WaterDS(HS_CONSTANT_DATA_OUTPUT IN,float3 BarycentricCoords : SV_DomainLo
 
 half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset )
 {
+#if %_RT_SAMPLE3
+	return half3(0.0f, 0.0f, 0.0f);
+#else
 	half3 bumpNormal = 0;
 
 	// hi frequency
@@ -903,12 +934,16 @@ half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset )
 #endif
 
 	return normalize( bumpNormal );
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float2 GetParalaxOffset(in v2f_hs IN, half3 vView)
-{	
+{
+#if %_RT_SAMPLE3
+	return float2(0.0f, 0.0f);
+#else
 	float4 tcBaseVectorized = IN.baseTC.xyxy * float4(0.25, 0.25, 1, 1) ; //float4(0.05, 0.1, 0.5, 0.25);
 	// adds 0.8 ms ....
 	//vView.xy /= vView.z;
@@ -952,12 +987,14 @@ float2 GetParalaxOffset(in v2f_hs IN, half3 vView)
 #endif
 
 	return vParalax;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SunSpecular(in v2f_hs IN, half fNdotL, half3 vNormal, half3 vView, inout half3 cSpecularAcc)
 {
+#if !%_RT_SAMPLE3
 	half3 R = reflect(-vView, vNormal);
 	half LdotR = saturate(dot(CV_SunLightDir.xyz, R) );
 
@@ -974,6 +1011,7 @@ void SunSpecular(in v2f_hs IN, half fNdotL, half3 vNormal, half3 vView, inout ha
 
 	// Add sun specular term
 	cSpecularAcc.xyz += cSunSpecular.xyz;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -985,6 +1023,14 @@ float2 MapScreenTC(float2 tc, float2 maxTC)
 
 pixout WaterPS(v2f_hs IN)
 {
+#if %_RT_SAMPLE3
+	pixout OUT = (pixout) 0;
+
+	// fill the pixel where ocean isn't visible.
+	OUT.Color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	return OUT;
+#else
 	pixout OUT = (pixout) 0;
 
 	SWaterParams params = GetWaterParams();
@@ -1187,6 +1233,7 @@ pixout WaterPS(v2f_hs IN)
 	OUT.Color.xyz =  cFinal * PS_HDR_RANGE_ADAPT_MAX;
 
 	return OUT;
+#endif
 }
 
 //////////////////////////////// technique ////////////////
@@ -1212,5 +1259,3 @@ technique Water
 		PixelShader = WaterPS() WaterSurfacePS;
 	}
 }
-
-/////////////////////// eof ///
