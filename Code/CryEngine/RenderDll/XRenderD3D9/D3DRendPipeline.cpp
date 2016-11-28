@@ -3723,7 +3723,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	// invalidate object pointers
 	m_RP.m_pCurObject = m_RP.m_pPrevObject = m_RP.m_pIdendityRenderObject;
 
-	static int oldFrameID = -1;
 	static int lightVolumeOldFrameID = -1;
 	int newFrameID   = this->GetFrameID(false);
 
@@ -3736,14 +3735,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	{
 		RT_UpdateLightVolumes();
 		lightVolumeOldFrameID = newFrameID;
-	}
-
-	if (oldFrameID != newFrameID)
-	{
-		// Update PSOs
-		CCryDeviceWrapper::GetObjectFactory().UpdatePipelineStates();
-
-		oldFrameID = newFrameID;
 	}
 
 	int nSaveDrawNear     = CV_r_nodrawnear;

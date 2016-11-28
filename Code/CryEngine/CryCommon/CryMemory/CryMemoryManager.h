@@ -87,8 +87,10 @@ struct SStackAllocation
 };
 
 //////////////////////////////////////////////////////////////////////////
-// _alloca is required to be 16-byte aligned (C11)
-#define ALLOCA_ALIGN 16
+// Some compilers/platforms do not guarantee any alignment for alloca, although standard says it should be sufficient for built-in types.
+// Experimental results show that it's possible to get entirely unaligned results (ie, LSB of address set).
+#define ALLOCA_ALIGN 1
+
 // Fire an assert when the allocation is large enough to risk a stack overflow
 #define ALLOCA_LIMIT (128 * 1024)
 

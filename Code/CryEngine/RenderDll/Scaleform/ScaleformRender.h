@@ -85,6 +85,7 @@ struct SSF_ResourcesD3D
 
 		CompiledRPList m_freeList;
 		std::unordered_map<int, CompiledRPList> m_useList;
+		CryCriticalSectionNonRecursive m_lock;
 
 		CRenderPrimitive* GetUsablePrimitive(int key);
 		void FreeUsedPrimitives(int key);
@@ -97,6 +98,7 @@ struct SSF_ResourcesD3D
 
 		TransientCBList m_freeList;
 		TransientCBList m_useList;
+		CryCriticalSectionNonRecursive m_lock;
 
 		CConstantBuffer* GetUsableConstantBuffer();
 		void FreeUsedConstantBuffers();
