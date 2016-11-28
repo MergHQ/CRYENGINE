@@ -619,7 +619,10 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 	if (!bShadowPass)
 	{
-		if (nList == EFSLIST_GENERAL && (pShader->m_Flags2 & EF2_HAIR))
+		const bool bHair        = (pShader->m_Flags2 & EF2_HAIR) != 0;
+		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
+
+		if (nList == EFSLIST_GENERAL && (bHair || bTransparent))
 		{
 			nList = EFSLIST_TRANSP;
 		}
