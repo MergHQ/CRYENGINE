@@ -8,11 +8,14 @@ public:
 	// ISimpleExtension
 	virtual void PostInit(IGameObject* pGameObject) override;
 	virtual void PostUpdate(float frameTime) override;
-	virtual void Release() override;
 	// ~ISimpleExtension
 
+	// IEntityComponent
+	virtual void OnShutDown() override;
+	// ~IEntityComponent
+
 	CMovementExtension();
-	virtual ~CMovementExtension();
+	virtual ~CMovementExtension() {}
 
 private:
 	float m_movementSpeed;

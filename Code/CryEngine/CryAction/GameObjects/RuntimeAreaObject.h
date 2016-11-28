@@ -36,7 +36,6 @@ public:
 	virtual void                 PostInitClient(int channelId) override                                                   {}
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
-	virtual void                 Release() override;
 	virtual void                 FullSerialize(TSerialize ser) override                        {}
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 	virtual void                 PostSerialize() override                                      {}
@@ -51,6 +50,10 @@ public:
 	virtual void                 PostRemoteSpawn() override                                    {}
 	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IGameObjectExtension
+
+	// IEntityComponent
+	virtual void OnShutDown() override;
+	// ~IEntityComponent
 
 private:
 

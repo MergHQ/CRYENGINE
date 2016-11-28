@@ -430,17 +430,6 @@ void CLipSync_TransitionQueue::PostReloadExtension(IGameObject* pGameObject, con
 	InjectLipSyncProvider();
 }
 
-void CLipSync_TransitionQueue::Release()
-{
-	IEntity* pEntity = GetEntity();
-	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
-	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
-	delete this;
-}
-
 void CLipSync_TransitionQueue::FullSerialize(TSerialize ser)
 {
 	ser.BeginGroup("LipSync_TransitionQueue");
@@ -504,4 +493,14 @@ void CLipSync_TransitionQueue::PostUpdate(float frameTime)
 
 void CLipSync_TransitionQueue::PostRemoteSpawn()
 {
+}
+
+void CLipSync_TransitionQueue::OnShutDown()
+{
+	IEntity* pEntity = GetEntity();
+	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
+	{
+		REINST(add SetLipSyncProvider to interface)
+			//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+	}
 }
