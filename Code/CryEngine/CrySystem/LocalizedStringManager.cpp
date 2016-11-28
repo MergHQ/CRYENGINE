@@ -1623,8 +1623,21 @@ bool CLocalizedStringsManager::LocalizeStringInternal(const char* pStr, size_t l
 		}
 
 		// find the end of the label
-		const char* pLabelEnd = strchr(pLabel, ' ');
-		if (!pLabelEnd) pLabelEnd = pEnd;
+		const char* pFirstAngleBracket = strchr(pLabel, '<');
+		const char* pFirstSpace = strchr(pLabel, ' ');
+		const char* pLabelEnd = pEnd;
+		if (pFirstAngleBracket && pFirstSpace)
+		{
+			pLabelEnd = min(pFirstSpace, pFirstAngleBracket);
+		}
+		else if (pFirstAngleBracket)
+		{
+			pLabelEnd = pFirstAngleBracket;
+		}
+		else if (pFirstSpace)
+		{
+			pLabelEnd = pFirstSpace;
+		}
 
 		// localize token
 		string token(pLabel, pLabelEnd);
