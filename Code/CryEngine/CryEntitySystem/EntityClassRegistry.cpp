@@ -110,7 +110,7 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 
 		if (!ok)
 		{
-			EntityWarning("EntityScript %s failed to initialize", entityClassDesc.sScriptFile);
+			EntityWarning("EntityScript %s failed to initialize", entityClassDesc.sScriptFile.c_str());
 			pScript->Release();
 			pClass->Release();
 			return NULL;

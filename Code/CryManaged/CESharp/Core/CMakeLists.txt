@@ -22,7 +22,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Debugging" FILES ${Debugging_FILES})
 
 
-	set(EntitySystem_FILES EntitySystem/Attributes.cs EntitySystem/CollisionEventListener.cs EntitySystem/Entity.cs EntitySystem/EntityClass.cs EntitySystem/EntityClassRegistry.cs EntitySystem/EntityCollisionListener.cs EntitySystem/EntityComponent.cs EntitySystem/EntityEventCallback.cs EntitySystem/EntityEventListener.cs EntitySystem/EntityId.cs EntitySystem/EntityPhysics.cs EntitySystem/EntityPropertyConverter.cs EntitySystem/EntityPropertyHandler.cs EntitySystem/EntityStatics.cs EntitySystem/EntitySystemSink.cs EntitySystem/EntityUpdateListener.cs EntitySystem/NativeEntity.cs)
+	set(EntitySystem_FILES EntitySystem/Attributes.cs EntitySystem/Entity.cs EntitySystem/EntityComponent.cs EntitySystem/EntityId.cs EntitySystem/EntityPhysics.cs EntitySystem/EntityProperty.cs EntitySystem/EntityStatics.cs EntitySystem/Native/NativeEntityMethods.cs)
 	source_group("EntitySystem" FILES ${EntitySystem_FILES})
 
 
@@ -59,7 +59,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 
 	set(SOURCE ${AI_FILES} ${Audio_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_FILES} ${FlowSystem_FILES} ${Input_FILES} ${Math_FILES} ${TempPE_FILES} ${Debug_FILES} ${x64_FILES} ${TempPE_FILES} ${Debug_FILES} ${x86_FILES} ${obj_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
-	add_custom_target(CryEngine.Core
+	add_custom_target(CryEngine.Core ALL
 		COMMAND ${MCS_PATH} -target:library -langversion:6 -platform:anycpu -optimize -debug -define:WIN64 -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		SOURCES ${SOURCE})

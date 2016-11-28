@@ -84,22 +84,22 @@
     <Compile Include="Debugging\ExceptionMessage.Designer.cs">
       <DependentUpon>ExceptionMessage.cs</DependentUpon>
     </Compile>
-    <Compile Include="EntitySystem\CollisionEventListener.cs" />
-    <Compile Include="EntitySystem\EntityClass.cs" />
-    <Compile Include="EntitySystem\EntityEventCallback.cs" />
-    <Compile Include="EntitySystem\EntityEventListener.cs" />
     <Compile Include="EntitySystem\EntityComponent.cs" />
     <Compile Include="EntitySystem\EntityId.cs" />
     <Compile Include="EntitySystem\EntityPhysics.cs" />
-    <Compile Include="EntitySystem\NativeEntity.cs" />
+    <Compile Include="EntitySystem\Native\NativeEntityMethods.cs" />
+    <Compile Include="EntitySystem\Attributes.cs" />
+    <Compile Include="EntitySystem\EntityStatics.cs" />
+    <Compile Include="EntitySystem\EntityProperty.cs" />
+    <Compile Include="EntitySystem\Entity.cs" />
     <Compile Include="Environment.cs" />
     <Compile Include="ICryEnginePlugin.cs" />
     <Compile Include="Input\Mouse.cs" />
-	<Compile Include="Input\ActionHandler.cs" />
-	<Compile Include="AI\Attributes.cs" />
-	<Compile Include="AI\BehaviorTreeNode.cs" />
-	<Compile Include="AI\BehaviorTreeNodeFactory.cs" />
-	<Compile Include="AI\LastingMovementRequest.cs" />
+    <Compile Include="Input\ActionHandler.cs" />
+    <Compile Include="AI\Attributes.cs" />
+    <Compile Include="AI\BehaviorTreeNode.cs" />
+    <Compile Include="AI\BehaviorTreeNodeFactory.cs" />
+    <Compile Include="AI\LastingMovementRequest.cs" />
     <Compile Include="Math\Angles3.cs" />
     <Compile Include="Math\Color.cs" />
     <Compile Include="GameFramework.cs" />
@@ -121,7 +121,6 @@
     <Compile Include="SystemEventHandler.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Util\Event.cs" />
-    <Compile Include="EntitySystem\Entity.cs" />
     <Compile Include="Util\FileSystem.cs" />
     <Compile Include="Util\ReflectionHelper.cs" />
     <Compile Include="Util\Tools.cs" />
@@ -131,15 +130,7 @@
     <Compile Include="FlowSystem\RunScene.cs" />
     <Compile Include="FlowSystem\FlowNode.cs" />
     <Compile Include="Camera.cs" />
-    <Compile Include="EntitySystem\Attributes.cs" />
-    <Compile Include="EntitySystem\EntityClassRegistry.cs" />
-    <Compile Include="EntitySystem\EntityStatics.cs" />
-    <Compile Include="EntitySystem\EntityUpdateListener.cs" />
-    <Compile Include="EntitySystem\EntitySystemSink.cs" />
-    <Compile Include="EntitySystem\EntityPropertyConverter.cs" />
-    <Compile Include="EntitySystem\EntityPropertyHandler.cs" />
     <Compile Include="Timer.cs" />
-    <Compile Include="EntitySystem\EntityCollisionListener.cs" />
     <Compile Include="Physics\Ray.cs" />
   </ItemGroup>
   <ItemGroup>

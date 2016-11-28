@@ -19,7 +19,7 @@ namespace CryEngine.Sydewinder
                 _deferredInsert.Add(gameObject);
             else
             {
-                _gameObjects.Add(gameObject.Id, gameObject);
+				_gameObjects.Add(gameObject.Entity.Id, gameObject);
             }
         }
 
@@ -36,7 +36,7 @@ namespace CryEngine.Sydewinder
         public static void UpdatePool()
         {
             foreach (var item in _deferredInsert)
-                _gameObjects.Add(item.Id, item);
+				_gameObjects.Add(item.Entity.Id, item);
             _deferredInsert.Clear();
 
             _updatingPool = true;
@@ -44,7 +44,7 @@ namespace CryEngine.Sydewinder
             // Collect active game objects.
             var removeables = _gameObjects.Values.Where(x => x.IsAlive == false).ToArray();
             for (int i = 0; i < removeables.Length; i++)
-                RemoveObjectFromPool(removeables[i].Id);
+				RemoveObjectFromPool(removeables[i].Entity.Id);
 
             // Move all game objects.
             foreach (DestroyableBase gameObj in _gameObjects.Values)
@@ -84,11 +84,6 @@ namespace CryEngine.Sydewinder
         private static void RemoveObjectFromPool(uint id)
         {
             _gameObjects.Remove(id);
-            var entity = Entity.Get(id);
-            if (entity != null)
-            {
-                entity.UnsubscribeFromCollision();
-            }
 
 			Entity.Remove(id);
         }

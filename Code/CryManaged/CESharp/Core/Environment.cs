@@ -41,7 +41,6 @@ namespace CryEngine
 			Mouse.Instance = new Mouse();
 			CryEngine.GameFramework.Instance = new CryEngine.GameFramework();
 			LevelSystem.Instance = new LevelSystem();
-			Entity.OnEngineStart();
 		}
 
 		/// <summary>
@@ -80,7 +79,7 @@ namespace CryEngine
 		{
 			foreach (Type t in assembly.GetTypes())
 			{
-				Entity.ClassRegistry.TryRegister(t);
+				EntityComponent.TryRegister(t);
 				BehaviorTreeNodeFactory.TryRegister(t);
 			}
 		}

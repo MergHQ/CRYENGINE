@@ -15,6 +15,10 @@ struct IMonoClass
 	virtual const char* GetNamespace() const = 0;
 
 	virtual IMonoAssembly* GetAssembly() const = 0;
+	virtual void* GetHandle() const = 0;
+
+	// Creates a new instance of this class without calling any constructors
+	virtual std::shared_ptr<IMonoObject> CreateUninitializedInstance() = 0;
 
 	// Creates a new instance of this class
 	virtual std::shared_ptr<IMonoObject> CreateInstance(void** pConstructorParams = nullptr, int numParams = 0) = 0;
@@ -30,4 +34,8 @@ struct IMonoClass
 	// This will NOT find methods in child or parent classes!
 	// If pObject is null we'll invoke a static function
 	virtual std::shared_ptr<IMonoObject> InvokeMethodWithDesc(const char* methodDesc, const IMonoObject* pObject = nullptr, void** pParams = nullptr) const = 0;
+
+	// Check whether a method with the specified description is implemented in the class hierarchy
+	// Returns false if method was not found, or pBaseClass is encountered in the hierarchy
+	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* methodDesc) = 0;
 };

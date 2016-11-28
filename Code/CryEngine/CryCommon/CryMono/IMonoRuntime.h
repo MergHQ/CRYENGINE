@@ -6,6 +6,8 @@
 
 struct IMonoDomain;
 struct IMonoAssembly;
+struct IMonoNativeToManagedInterface;
+
 namespace BehaviorTree { class Node; }
 
 struct IMonoListener
@@ -43,6 +45,8 @@ struct IMonoRuntime
 	
 	virtual IMonoAssembly*              GetCryCommonLibrary() const = 0;
 	virtual IMonoAssembly*              GetCryCoreLibrary() const = 0;
+
+	virtual void						RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface) = 0;
 
 	virtual void                        RegisterManagedActor(const char* className) = 0;
 

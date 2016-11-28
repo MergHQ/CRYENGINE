@@ -1,7 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using CryEngine.Common;
-using CryEngine.EntitySystem;
 using CryEngine.Sydewinder.Types;
 using System;
 using System.Collections.Generic;
@@ -67,45 +66,56 @@ namespace CryEngine.Sydewinder
 		{
 			Revive();
 
-			Position = pos;
-			Scale = 10;
+			Entity.Position = pos;
+			Entity.Scale = 10;
 
-			LoadGeometry(0, PlayerSkin.Geometry);
+			Entity.LoadGeometry(0, PlayerSkin.Geometry);
 
-            Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+			Entity.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
 
 			var particleEffect = Engine.ParticleManager.FindEffect("spaceship.Trails.fire_trail");
-			LoadParticleEmitter(1, particleEffect, 0.03f);
+			Entity.LoadParticleEmitter(1, particleEffect, 0.03f);
 
 			// Get position where to spawn the particle effect.
-			Vector3 jetPosition = GetHelperPos(0, "particle_01");
+			Vector3 jetPosition = Entity.GetHelperPos(0, "particle_01");
 
 			// Rotate particle effect to ensure it's shown at the back of the ship.
-			SetGeometrySlotLocalTransform(1, new Matrix3x4(Vector3.One, Quaternion.CreateRotationX(MathHelpers.DegreesToRadians(270f)), jetPosition));
+			Entity.SetGeometrySlotLocalTransform(1, new Matrix3x4(Vector3.One, Quaternion.CreateRotationX(MathHelpers.DegreesToRadians(270f)), jetPosition));
 
 			// Rotate Z-Axis of player ship in degrees.
-			Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(180.0f));
+			Entity.Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(180.0f));
 
 			Hud.CurrentHud.SetEnergy (MaxLife);
 			//GamePool.AddObjectToPool(this);
 		}
 
-		protected override void OnCollision(DestroyableBase hitEnt)
+		public override void OnCollision(CryEngine.EntitySystem.CollisionEvent collisionEvent)
 		{
-			// Handle player collision with lower tunnel by changing the player location.
-			if (hitEnt is Tunnel)
+			var hitEntity = collisionEvent.Source.OwnerEntity;
+			if(hitEntity == Entity)
 			{
-				// As the only colliding tunnel is a lower tunnel, always change player position.
-				Vector3 playerPos = Position;
-				Position = new Vector3(playerPos.x, playerPos.y, 75);
-				return;
+				hitEntity = collisionEvent.Target.OwnerEntity;
 			}
 
-			// Don't let player collide with own projectiles.
-			if (hitEnt is DefaultAmmo && !(hitEnt as DefaultAmmo).IsHostile)
-				return;
+			if(hitEntity != null)
+			{
+				// Handle player collision with lower tunnel by changing the player location.
+				if(hitEntity.HasComponent<Tunnel>())
+				{
+					// As the only colliding tunnel is a lower tunnel, always change player position.
+					Vector3 playerPos = Entity.Position;
+					Entity.Position = new Vector3(playerPos.x, playerPos.y, 75);
+					return;
+				}
 
-			ProcessHit (hitEnt is Door);
+				var defaultAmmo = hitEntity.GetComponent<DefaultAmmo>();
+
+				// Don't let player collide with own projectiles.
+				if(defaultAmmo != null && !defaultAmmo.IsHostile)
+					return;
+
+				ProcessHit(hitEntity.HasComponent<Door>());
+			}
 		}
 
 		public void UpdateRotation()
@@ -116,7 +126,7 @@ namespace CryEngine.Sydewinder
 			newRotation.x = MathHelpers.DegreesToRadians (_pitchAngle);
 			newRotation.y = MathHelpers.DegreesToRadians (_rollAngle);
 			newRotation.z = _yawDeg;
-			Rotation = Quaternion.CreateRotationXYZ(newRotation);
+			Entity.Rotation = Quaternion.CreateRotationXYZ(newRotation);
 		}
 
 		public void UpdateSpeed()
@@ -167,13 +177,13 @@ namespace CryEngine.Sydewinder
 			var eyePos = Input.GetAxis("EyeTracker");
 			if (eyePos != null) 
 			{
-				var currentScreenPos = Camera.ProjectToScreen (Position);
+				var currentScreenPos = Camera.ProjectToScreen (Entity.Position);
 				_upSpeed = 1 - (eyePos - currentScreenPos).Normalized.y * 20;
 			}
 
 			// Usded to ensure the player does not move outside of the visible window.
 			// ProjectToScreen returns a Vector3. Each value between 0 and 100 means it is visible on screen in this dimension.
-			Vector3 nextPos = Position + new Vector3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
+			Vector3 nextPos = Entity.Position + new Vector3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
 			var screenPosition = Camera.ProjectToScreen(nextPos);
 			
 			// In case new position on screen is outside of bounds
@@ -199,9 +209,9 @@ namespace CryEngine.Sydewinder
 					{
 						// Simulate blinking effect
 						if (i % 2 == 0)
-							FreeGeometrySlot(2);
+							Entity.FreeGeometrySlot(2);
 						else
-							LoadGeometry(2, "objects/ships/Impact.cgf");
+							Entity.LoadGeometry(2, "objects/ships/Impact.cgf");
 					}
 				}
 				
@@ -209,7 +219,7 @@ namespace CryEngine.Sydewinder
 
 				// Clean up cooldown
 				if (_impactCoolDownFrameCount == 0)
-					FreeGeometrySlot(2);
+					Entity.FreeGeometrySlot(2);
 			}
 		}
 
@@ -223,7 +233,7 @@ namespace CryEngine.Sydewinder
 			foreach (WeaponBase weapon in _weapons) 
 			{
 				// Spawn projectile in front of Ship to avoid collision with self.
-				weapon.Fire (Position + new Vector3(0, 1.2f, 0));
+				weapon.Fire (Entity.Position + new Vector3(0, 1.2f, 0));
 				SydewinderApp.Instance.MakeScore (1 * Hud.CurrentHud.Stage);
 			}
 		}
@@ -234,7 +244,7 @@ namespace CryEngine.Sydewinder
 				return;
 
 			DrainLife(HitDamage);
-			DestroyParticleEffect.Spawn (Position);
+			DestroyParticleEffect.Spawn (Entity.Position);
 			if (lethal)
 				DrainLife(MaxLife);
 			Hud.CurrentHud.SetEnergy(Life);

@@ -40,6 +40,14 @@ add_sources("CryMonoBridge_main_uber_3.cpp"
 		"NativeComponents/Actor.cpp"
 		"NativeComponents/GameRules.h"
 		"NativeComponents/GameRules.cpp"
+		"NativeComponents/ManagedEntityComponent.h"
+		"NativeComponents/ManagedEntityComponent.cpp"
+)
+
+add_sources("CryMonoBridge_main_uber_4.cpp"
+	SOURCE_GROUP "NativeToManagedInterfaces"
+		"NativeToManagedInterfaces/Entity.h"
+		"NativeToManagedInterfaces/Entity.cpp"
 )
 
 add_sources("NoUberFile"

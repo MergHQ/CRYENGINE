@@ -353,7 +353,8 @@
 	  "CryMono/IMonoClass.h",
 	  "CryMono/IMonoDomain.h",
 	  "CryMono/IMonoException.h",
-	  "CryMono/IMonoObject.h"
+	  "CryMono/IMonoObject.h",
+	  "CryMono/IMonoNativeToManagedInterface.h"
     ],
     "CryAISystem":[
       "CryAISystem/IAIMannequin.h",

@@ -9,7 +9,7 @@
 
 struct IMonoClass;
 
-class CMonoObject : public IMonoObject
+class CMonoObject final : public IMonoObject
 {
 public:
 	CMonoObject(MonoObject* pObject, std::shared_ptr<IMonoClass> pClass);
@@ -25,6 +25,7 @@ public:
 	virtual char* GetArrayAddress(size_t elementSize, size_t index) const override;
 
 	virtual void* GetHandle() const override { return m_pObject; }
+	virtual IMonoClass* GetClass() const override { return m_pClass.get(); }
 	// ~IMonoObject
 
 	void Serialize();

@@ -2050,7 +2050,7 @@ IMovementController* CGameObject::GetMovementController()
 	else if (IVehicle* pVehicle = CCryAction::GetCryAction()->GetIVehicleSystem()->GetVehicle(m_pEntity->GetId()))
 		return pVehicle->GetMovementController();
 	else
-		return NULL;
+		return m_pMovementController;
 }
 
 uint8 CGameObject::GetAspectProfile(EEntityAspects aspect)

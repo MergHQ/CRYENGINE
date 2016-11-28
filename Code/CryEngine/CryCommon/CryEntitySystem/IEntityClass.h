@@ -22,9 +22,9 @@ struct SEditorClassInfo
 	{
 	}
 
-	const char* sIcon;
-	const char* sHelper;
-	const char* sCategory;
+	string sIcon;
+	string sHelper;
+	string sCategory;
 };
 
 enum EEntityClassFlags
@@ -223,8 +223,8 @@ struct IEntityClassRegistry
 		};
 
 		int                               flags;
-		const char*                       sName;
-		const char*                       sScriptFile;
+		string                            sName;
+		string                            sScriptFile;
 		IScriptTable*                     pScriptTable;
 
 		SEditorClassInfo                  editorClassInfo;

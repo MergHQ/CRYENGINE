@@ -17,4 +17,8 @@ struct IMonoDomain
 
 	// Called to unload an app domain and then reload it afterwards, useful to use newly compiled assemblies without restarting
 	virtual bool Reload() = 0;
+
+	virtual void* GetHandle() const = 0;
+
+	virtual void* CreateManagedString(const char* str) = 0;
 };

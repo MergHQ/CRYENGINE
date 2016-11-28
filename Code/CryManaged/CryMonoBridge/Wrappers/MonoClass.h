@@ -7,7 +7,7 @@
 
 class CMonoLibrary;
 
-class CMonoClass : public IMonoClass
+class CMonoClass final : public IMonoClass
 {
 public:
 	CMonoClass(CMonoLibrary* pLibrary, const char *nameSpace, const char *name);
@@ -20,20 +20,22 @@ public:
 	virtual const char* GetNamespace() const override;
 
 	virtual IMonoAssembly* GetAssembly() const override;
+	virtual void* GetHandle() const override { return m_pClass; }
 
+	virtual std::shared_ptr<IMonoObject> CreateUninitializedInstance() override;
 	virtual std::shared_ptr<IMonoObject> CreateInstance(void** pConstructorParams = nullptr, int numParams = 0) override;
 	virtual std::shared_ptr<IMonoObject> CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams) override;
 
 	virtual std::shared_ptr<IMonoObject> InvokeMethod(const char *name, const IMonoObject* pObject = nullptr, void **pParams = nullptr, int numParams = 0) const override;
 	virtual std::shared_ptr<IMonoObject> InvokeMethodWithDesc(const char* methodDesc, const IMonoObject* pObject = nullptr, void** pParams = nullptr) const override;
+
+	virtual bool IsMethodImplemented(IMonoClass* pBaseClass, const char* methodDesc) override;
 	// ~IMonoClass
 
 	void Serialize();
 	void Deserialize();
 
 	void ReloadClass();
-
-	MonoClass* GetHandle() const { return m_pClass; }
 
 	// Temporary classes are assigned a weak pointer of itself to pass on to created objects
 	void SetWeakPointer(std::weak_ptr<CMonoClass> pClass) { m_pThis = pClass; }
