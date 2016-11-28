@@ -1161,6 +1161,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 {
 	char* cgs = NULL;
 
+	uint32 nSFlags = m_Flags;
 	bool bTempMap = (Table == NULL);
 	assert((Table && pSHData) || (!Table && !pSHData));
 	assert(m_pGlobalCache);
@@ -1172,7 +1173,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 	}
 	else
 	{
-		if (m_pGlobalCache)
+		if (m_pGlobalCache && !(nSFlags & HWSG_GS_MULTIRES))
 			mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
 		if (CParserBin::m_bEditable)
 		{
@@ -1186,9 +1187,12 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 			bTempMap = false;
 		}
 	}
-	assert(Table && pSHData);
-	if (!Table || !pSHData)
-		return false;
+	if (!(nSFlags & HWSG_GS_MULTIRES))
+	{
+		assert(Table && pSHData);
+		if (!Table || !pSHData)
+			return false;
+	}
 
 	ShaderTokensVec NewTokens;
 
@@ -1221,7 +1225,6 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 	if (eT != eT_unknown)
 		CParserBin::AddDefineToken(eT, NewTokens);
 
-	uint32 nSFlags = m_Flags;
 	if (nSFlags & HWSG_GS_MULTIRES)
 	{
 		// Generate script vor VS first;
@@ -1232,6 +1235,8 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 		Table = &curVS->m_TokenTable;
 		pSHData = &curVS->m_TokenData;
 		nSFlags = curVS->m_Flags;
+
+		bTempMap = false;
 	}
 
 	// Include runtime mask definitions in the script

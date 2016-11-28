@@ -582,7 +582,7 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 		pSH->m_CRC32 = CRC32;
 	}
 
-	if (CParserBin::m_bEditable)
+	if (CParserBin::m_bEditable || (CVrProjectionManager::IsMultiResEnabledStatic() && eClass == eHWSC_Vertex))
 	{
 		if (pTable)
 			pSH->m_TokenTable = *pTable;
