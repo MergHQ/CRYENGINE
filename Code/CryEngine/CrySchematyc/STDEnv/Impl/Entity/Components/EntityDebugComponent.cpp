@@ -23,7 +23,10 @@ void  CEntityDebugComponent::Shutdown() {}
 
 void CEntityDebugComponent::DrawText(const CSharedString& text, const Vec2& pos, const ColorF& color)
 {
-	IRenderAuxText::Draw2dLabel(pos.x, pos.y, 2.0f, color, false, "%s", text.c_str());
+	if (CComponent::GetObject().GetSimulationMode() == ESimulationMode::Game)
+	{
+		IRenderAuxText::Draw2dLabel(pos.x, pos.y, 2.0f, color, false, "%s", text.c_str());
+	}
 }
 
 SGUID CEntityDebugComponent::ReflectSchematycType(CTypeInfo<CEntityDebugComponent>& typeInfo)

@@ -75,8 +75,6 @@ public:
 	virtual IScriptElement*                    GetElement(const SGUID& guid) override;
 	virtual const IScriptElement*              GetElement(const SGUID& guid) const override;
 
-	virtual bool                               CopyElementsToJson(IString& output, IScriptElement& scope) const override;
-	virtual bool                               PasteElementsFromJson(const char* szInput, IScriptElement* pScope) override;
 	virtual bool                               CopyElementsToXml(XmlNodeRef& output, IScriptElement& scope) const override;
 	virtual bool                               PasteElementsFromXml(const XmlNodeRef& input, IScriptElement* pScope) override;
 

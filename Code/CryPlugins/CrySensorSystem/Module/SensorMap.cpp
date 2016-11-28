@@ -53,14 +53,14 @@ SensorVolumeId CSensorMap::CreateVolume(const SSensorVolumeParams& params)
 
 	volume.params = params;
 
-	if (!params.monitorTags.IsEmpty())
+	if (!params.listenerTags.IsEmpty())
 	{
 		volume.cache.reserve(20);
 	}
 
-	if (!params.tags.IsEmpty())
+	if (!params.attributeTags.IsEmpty())
 	{
-		MarkCellsDirty(params.bounds.ToAABB(), params.tags);
+		MarkCellsDirty(params.bounds.ToAABB(), params.attributeTags);
 	}
 
 	MapVolumeToCell(volume);
@@ -104,58 +104,58 @@ void CSensorMap::UpdateVolumeBounds(SensorVolumeId volumeId, const CSensorBounds
 	SVolume* pVolume = GetVolume(volumeId);
 	if (pVolume)
 	{
-		const SensorTags tags = pVolume->params.tags;
+		const SensorTags attributeTags = pVolume->params.attributeTags;
 
-		if (!tags.IsEmpty())
+		if (!attributeTags.IsEmpty())
 		{
-			MarkCellsDirty(pVolume->params.bounds.ToAABB(), tags);
+			MarkCellsDirty(pVolume->params.bounds.ToAABB(), attributeTags);
 		}
 
 		pVolume->params.bounds = bounds;
 		MapVolumeToCell(*pVolume);
 
-		if (!tags.IsEmpty())
+		if (!attributeTags.IsEmpty())
 		{
-			MarkCellsDirty(bounds.ToAABB(), tags);
+			MarkCellsDirty(bounds.ToAABB(), attributeTags);
 		}
 
-		if (!pVolume->params.monitorTags.IsEmpty())
+		if (!pVolume->params.listenerTags.IsEmpty())
 		{
 			m_pendingQueries.insert(volumeId);
 		}
 	}
 }
 
-void CSensorMap::SetVolumeTags(SensorVolumeId volumeId, const SensorTags& tags, bool bValue)
+void CSensorMap::SetVolumeAttributeTags(SensorVolumeId volumeId, const SensorTags& attributeTags, bool bValue)
 {
 	SVolume* pVolume = GetVolume(volumeId);
 	if (pVolume)
 	{
 		if (bValue)
 		{
-			pVolume->params.tags.Add(tags);
+			pVolume->params.attributeTags.Add(attributeTags);
 		}
 		else
 		{
-			pVolume->params.tags.Remove(tags);
+			pVolume->params.attributeTags.Remove(attributeTags);
 		}
 
-		MarkCellsDirty(pVolume->params.bounds.ToAABB(), tags);
+		MarkCellsDirty(pVolume->params.bounds.ToAABB(), attributeTags);
 	}
 }
 
-void CSensorMap::SetVolumeMonitorTags(SensorVolumeId volumeId, const SensorTags& monitorTags, bool bValue)
+void CSensorMap::SetVolumeListenerTags(SensorVolumeId volumeId, const SensorTags& listenerTags, bool bValue)
 {
 	SVolume* pVolume = GetVolume(volumeId);
 	if (pVolume)
 	{
 		if (bValue)
 		{
-			pVolume->params.monitorTags.Add(monitorTags);
+			pVolume->params.listenerTags.Add(listenerTags);
 		}
 		else
 		{
-			pVolume->params.monitorTags.Remove(monitorTags);
+			pVolume->params.listenerTags.Remove(listenerTags);
 		}
 
 		m_pendingQueries.insert(volumeId);
@@ -175,7 +175,7 @@ void CSensorMap::Query(SensorVolumeIdSet& results, const CSensorBounds& bounds, 
 		const SCell& cell = m_cells[octreeCell.idx];
 		for (const SVolume* pVolume = GetVolume(cell.firstVolumeId); pVolume; pVolume = GetVolume(pVolume->nextId))
 		{
-			if (tags.IsEmpty() || tags.CheckAny(pVolume->params.tags))
+			if (tags.IsEmpty() || tags.CheckAny(pVolume->params.attributeTags))
 			{
 				if (pVolume->id != exclusionId)
 				{
@@ -199,7 +199,7 @@ void CSensorMap::Update()
 		const SCell& cell = m_cells[dirtyCell.first];
 		for (const SVolume* pVolume = GetVolume(cell.firstVolumeId); pVolume; pVolume = GetVolume(pVolume->nextId))
 		{
-			if (pVolume->params.monitorTags.CheckAny(dirtyCell.second))
+			if (pVolume->params.listenerTags.CheckAny(dirtyCell.second))
 			{
 				m_pendingQueries.insert(pVolume->id);
 			}
@@ -220,10 +220,10 @@ void CSensorMap::Update()
 
 	for (const SSensorEvent& event : events)
 	{
-		SVolume* pVolume = GetVolume(event.monitorVolumeId);
-		if (pVolume && !pVolume->params.eventCallback.IsEmpty())
+		SVolume* pVolume = GetVolume(event.listenerVolumeId);
+		if (pVolume && !pVolume->params.eventListener.IsEmpty())
 		{
-			pVolume->params.eventCallback(event);
+			pVolume->params.eventListener(event);
 		}
 	}
 
@@ -415,7 +415,7 @@ void CSensorMap::Query(SensorVolumeId volumeId, Events& events)
 	{
 		m_queryResults.reserve(100);
 
-		Query(m_queryResults, pVolume->params.bounds, pVolume->params.monitorTags, volumeId);
+		Query(m_queryResults, pVolume->params.bounds, pVolume->params.listenerTags, volumeId);
 
 		uint32 eventCount = 0;
 
@@ -423,7 +423,7 @@ void CSensorMap::Query(SensorVolumeId volumeId, Events& events)
 		{
 			if (m_queryResults.find(otherVolumeId) == m_queryResults.end())
 			{
-				events.emplace_back(ESensorEventType::Leave, volumeId, otherVolumeId);
+				events.emplace_back(ESensorEventType::Leaving, volumeId, otherVolumeId);
 
 				++eventCount;
 			}
@@ -433,7 +433,7 @@ void CSensorMap::Query(SensorVolumeId volumeId, Events& events)
 		{
 			if (pVolume->cache.find(otherVolumeId) == pVolume->cache.end())
 			{
-				events.emplace_back(ESensorEventType::Enter, volumeId, otherVolumeId);
+				events.emplace_back(ESensorEventType::Entering, volumeId, otherVolumeId);
 
 				++eventCount;
 			}
@@ -510,7 +510,7 @@ void CSensorMap::DebugDrawVolumesAndOctree(float drawRange, const SensorMapDebug
 			if (flags.Check(ESensorMapDebugFlags::DrawVolumes))
 			{
 				ColorB color(255, 100, 10);
-				if (!pVolume->params.monitorTags.IsEmpty())
+				if (!pVolume->params.listenerTags.IsEmpty())
 				{
 					color = !pVolume->cache.empty() ? ColorB(255, 0, 0) : ColorB(0, 255, 0);
 				}
@@ -557,8 +557,8 @@ void CSensorMap::DebugDrawVolumesAndOctree(float drawRange, const SensorMapDebug
 					}
 				};
 
-				formatTagNames(pVolume->params.tags, "Tags");
-				formatTagNames(pVolume->params.monitorTags, "Monitor Tags");
+				formatTagNames(pVolume->params.attributeTags, "Attribute Tags");
+				formatTagNames(pVolume->params.listenerTags, "Listener Tags");
 			}
 
 			if (!text.empty())

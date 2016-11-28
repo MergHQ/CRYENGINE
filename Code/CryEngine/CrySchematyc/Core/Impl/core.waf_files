@@ -75,7 +75,8 @@
 			"../Interface/Schematyc/Script/IScriptGraph.h",
 			"../Interface/Schematyc/Script/IScriptRegistry.h",
 			"../Interface/Schematyc/Script/IScriptView.h",
-			"../Interface/Schematyc/Script/ScriptDependencyEnumerator.h"
+			"../Interface/Schematyc/Script/ScriptDependencyEnumerator.h",
+			"../Interface/Schematyc/Script/ScriptUtils.h"
 		],
 		"Interface/Script/Elements":
 		[

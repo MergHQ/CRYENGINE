@@ -13,6 +13,7 @@
 
 #include "STDEnv.h"
 #include "Entity/EntityObjectMap.h"
+#include "Entity/EntityObjectClassRegistry.h"
 
 namespace Schematyc
 {
@@ -23,13 +24,13 @@ ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 	IRuntimeClassConstPtr pRuntimeClass = gEnv->pSchematyc->GetRuntimeRegistry().GetClass(classGUID);
 	if (pRuntimeClass)
 	{
-		IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(pRuntimeClass->GetName()); // #SchematycTODO : Query directly from CEntityObjectClassRegistry?
-		if (pEntityClass)
+		const SEntityObjectClass* pEntityObjectClass = CSTDEnv::GetInstance().GetEntityObjectClassRegistry().GetEntityObjectClass(classGUID);
+		if (pEntityObjectClass && pEntityObjectClass->pEntityClass)
 		{
 			static const SEntityUserData userData(true);
 
 			SEntitySpawnParams entitySpawnParams;
-			entitySpawnParams.pClass = pEntityClass;
+			entitySpawnParams.pClass = pEntityObjectClass->pEntityClass;
 			entitySpawnParams.sName = "Preview";
 			entitySpawnParams.pUserData = const_cast<SEntityUserData*>(&userData);
 
@@ -45,7 +46,7 @@ ObjectId CEntityObjectPreviewer::CreateObject(const SGUID& classGUID) const
 
 ObjectId CEntityObjectPreviewer::ResetObject(ObjectId objectId) const
 {
-	// #SchematycTODO : Instead of re-creating the preview entity we should send a reset event, but that doesn't seem too update the entity's transform heirarchy / visual state reliably.
+	// #SchematycTODO : Instead of re-creating the preview entity we should send a reset event, but that doesn't seem too update the entity's transform hierarchy / visual state reliably.
 	IObject* pObject = gEnv->pSchematyc->GetObject(objectId);
 	if (pObject)
 	{
@@ -97,8 +98,6 @@ Sphere CEntityObjectPreviewer::GetObjectBounds(ObjectId objectId) const
 
 void CEntityObjectPreviewer::RenderObject(const IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const
 {
-	//@TODO: Should be support with the new component entity system
-
 	IEntity& entity = EntityUtils::GetEntity(object);
 	
 	IEntity::SPreviewRenderParams previewParams;

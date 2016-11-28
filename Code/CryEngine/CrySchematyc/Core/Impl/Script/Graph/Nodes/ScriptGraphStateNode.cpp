@@ -87,7 +87,6 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.SetName("State", szSubject);
 
 	layout.SetStyleId("Core::State");
-	layout.SetColor(EScriptGraphColor::Blue);
 
 	layout.AddInput("Select", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 

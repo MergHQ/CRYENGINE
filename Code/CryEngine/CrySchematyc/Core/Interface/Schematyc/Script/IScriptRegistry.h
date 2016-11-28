@@ -104,8 +104,6 @@ struct IScriptRegistry
 	virtual IScriptElement*                    GetElement(const SGUID& guid) = 0;
 	virtual const IScriptElement*              GetElement(const SGUID& guid) const = 0;
 
-	virtual bool                               CopyElementsToJson(IString& output, IScriptElement& scope) const = 0;
-	virtual bool                               PasteElementsFromJson(const char* szInput, IScriptElement* pScope) = 0;
 	virtual bool                               CopyElementsToXml(XmlNodeRef& output, IScriptElement& scope) const = 0;
 	virtual bool                               PasteElementsFromXml(const XmlNodeRef& input, IScriptElement* pScope) = 0;
 

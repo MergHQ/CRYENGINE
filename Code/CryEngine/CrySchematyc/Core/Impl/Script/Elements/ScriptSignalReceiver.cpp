@@ -104,6 +104,20 @@ void CScriptSignalReceiver::ProcessEvent(const SScriptEvent& event)
 	switch (event.id)
 	{
 	case EScriptEventId::EditorAdd:
+		{
+			if (m_type != EScriptSignalReceiverType::Universal)
+			{
+				IScriptGraph* pGraph = static_cast<IScriptGraph*>(CScriptElementBase::GetExtensions().QueryExtension(EScriptExtensionType::Graph));
+				SCHEMATYC_CORE_ASSERT(pGraph);
+				if (pGraph)
+				{
+					pGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+				}
+			}
+
+			m_userDocumentation.SetCurrentUserAsAuthor();
+			break;
+		}
 	case EScriptEventId::EditorPaste:
 		{
 			m_userDocumentation.SetCurrentUserAsAuthor();
@@ -213,14 +227,7 @@ void CScriptSignalReceiver::Validate(Serialization::IArchive& archive, const ISe
 
 void CScriptSignalReceiver::CreateGraph()
 {
-	CScriptGraphPtr pScriptGraph = std::make_shared<CScriptGraph>(*this, EScriptGraphType::Signal);
-
-	if (m_type != EScriptSignalReceiverType::Universal)
-	{
-		pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
-	}
-
-	CScriptElementBase::AddExtension(pScriptGraph);
+	CScriptElementBase::AddExtension(std::make_shared<CScriptGraph>(*this, EScriptGraphType::Signal));
 }
 
 void CScriptSignalReceiver::GoToSignal()

@@ -12,6 +12,7 @@
 #include <Schematyc/Script/IScriptExtension.h>
 #include <Schematyc/Script/IScriptGraph.h>
 #include <Schematyc/Script/IScriptRegistry.h>
+#include <Schematyc/Script/ScriptUtils.h>
 #include <Schematyc/Script/Elements/IScriptBase.h>
 #include <Schematyc/Script/Elements/IScriptClass.h>
 #include <Schematyc/Script/Elements/IScriptComponentInstance.h>
@@ -124,26 +125,6 @@ private:
 	uint32      m_graphNodeIdx;
 	SGraphNode& m_output;
 };
-
-inline void QualifyScriptElementName(CStackString& output, const IScriptElement& element, EScriptElementType scopeType)
-{
-	output.clear();
-	for (const IScriptElement* pScope = &element; pScope; pScope = pScope->GetParent())
-	{
-		if (pScope->GetElementType() == scopeType)
-		{
-			break;
-		}
-		else
-		{
-			if (!output.empty())
-			{
-				output.insert(0, "::");
-			}
-			output.insert(0, pScope->GetName());
-		}
-	}
-}
 } // Anonymous
 
 void CCompiler::CompileAll()
@@ -294,7 +275,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 		// Qualify class name.
 
 		CStackString className;
-		QualifyScriptElementName(className, scriptClass, EScriptElementType::Root);
+		ScriptUtils::QualifyName(className, scriptClass, EScriptElementType::Root);
 
 		// Create new class.
 
@@ -377,7 +358,7 @@ bool CCompiler::CompileComponentInstancesRecursive(SCompilerContext& context, CR
 		case EScriptElementType::ComponentInstance:
 			{
 				CStackString componentName;
-				QualifyScriptElementName(componentName, *pScriptElement, EScriptElementType::Class);
+				ScriptUtils::QualifyName(componentName, *pScriptElement, EScriptElementType::Class);
 				
 				const IScriptComponentInstance& scriptComponentInstance = DynamicCast<const IScriptComponentInstance>(*pScriptElement);
 				const uint32 componentInstanceIdx = runtimeClass.AddComponentInstance(scriptComponentInstance.GetGUID(), componentName.c_str(), scriptComponentInstance.GetAccessor() == EScriptElementAccessor::Public, scriptComponentInstance.GetTypeGUID(), scriptComponentInstance.GetTransform(), scriptComponentInstance.GetProperties(), parentIdx);

@@ -99,7 +99,6 @@ SGUID CScriptGraphSwitchNode::GetTypeGUID() const
 void CScriptGraphSwitchNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::FlowControl");
-	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Default", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::SpacerBelow });

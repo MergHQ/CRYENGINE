@@ -264,7 +264,8 @@ bool ReadFromClipboard(string& text, const char* szPrefix)
 			QByteArray byteArray = pMimeData->data(szPrefix);
 			if (byteArray.length() > 0)
 			{
-				text = byteArray.data();
+				text.reserve(byteArray.length());
+				text.assign(byteArray.data(), byteArray.length());
 				return true;
 			}
 		}

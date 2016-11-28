@@ -5,7 +5,7 @@
 #include <Schematyc/Action.h>
 #include <Schematyc/Component.h>
 
-#include "Schematyc/Entity/IEntityComponent.h"
+#include "Schematyc/Entity/IEntityObject.h"
 
 namespace Schematyc
 {
@@ -13,23 +13,25 @@ namespace EntityUtils
 {
 // N.B. The following helper methods may only be used by components and actions belonging to entity objects.
 
-inline IEntityComponentWrapper& GetEntityComponent(const IObject& object)
+inline IEntityObject& GetEntityObject(const IObject& object)
 {
-	auto* pEntityObject = static_cast<IEntityComponentWrapper*>(object.GetCustomData());
-	SCHEMATYC_ENV_ASSERT(pEntityObject);
-	return *pEntityObject;
+	IEntityObjectComponent* pEntityObjectComponent = static_cast<IEntityObjectComponent*>(object.GetCustomData());
+	SCHEMATYC_ENV_ASSERT(pEntityObjectComponent);
+	return *static_cast<IEntityObject*>(pEntityObjectComponent);
 }
 
 inline IEntity& GetEntity(const IObject& object)
 {
-	IEntity* pEntity = GetEntityComponent(object).GetEntity();
+	IEntityObjectComponent* pEntityObjectComponent = static_cast<IEntityObjectComponent*>(object.GetCustomData());
+	SCHEMATYC_ENV_ASSERT(pEntityObjectComponent);
+	IEntity* pEntity = pEntityObjectComponent->GetEntity();
 	SCHEMATYC_ENV_ASSERT(pEntity);
 	return *pEntity;
 }
 
-inline IEntityComponentWrapper& GetEntityComponent(const CComponent& component)
+inline IEntityObject& GetEntityObject(const CComponent& component)
 {
-	return GetEntityComponent(component.GetObject());
+	return GetEntityObject(component.GetObject());
 }
 
 inline IEntity& GetEntity(const CComponent& component)
@@ -37,9 +39,9 @@ inline IEntity& GetEntity(const CComponent& component)
 	return GetEntity(component.GetObject());
 }
 
-inline IEntityComponentWrapper& GetEntityComponent(const CAction& action)
+inline IEntityObject& GetEntityObject(const CAction& action)
 {
-	return GetEntityComponent(action.GetObject());
+	return GetEntityObject(action.GetObject());
 }
 
 inline IEntity& GetEntity(const CAction& action)

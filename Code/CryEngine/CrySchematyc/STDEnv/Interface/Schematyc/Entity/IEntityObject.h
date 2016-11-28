@@ -25,8 +25,14 @@ struct IEntityObject
 {
 	virtual ~IEntityObject() {}
 
-	virtual IEntity&                  GetEntity() = 0;
 	virtual EntityEventSignal::Slots& GetEventSignalSlots() = 0;
 	virtual GeomUpdateSignal&         GetGeomUpdateSignal() = 0;
+};
+
+struct IEntityObjectComponent : public IEntityObject, public IEntityComponent
+{
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityObjectComponent, 0xEF65C1F547754454, 0x8C4BF14686F6512B);
+
+	virtual ~IEntityObjectComponent() {}
 };
 } // Schematyc

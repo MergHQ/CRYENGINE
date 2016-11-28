@@ -374,7 +374,7 @@ struct SBinder<PARAM0 (*)()>
 
 		binding.pStub = &SBinder::Stub;
 
-		InitParamBinding<PARAM0>(binding.params[0]);
+		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
 
 	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
@@ -402,7 +402,7 @@ struct SBinder<PARAM0 (OBJECT::*)()>
 		binding.flags = EEnvFunctionFlags::Member;
 		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
 
-		InitParamBinding<PARAM0>(binding.params[0]);
+		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
 
 	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)

@@ -58,7 +58,6 @@ SGUID CScriptGraphSendSignalNode::GetTypeGUID() const
 void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::SendSignal");
-	layout.SetColor(EScriptGraphColor::Green);
 
 	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_signalGUID))
@@ -86,7 +85,7 @@ void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
-	layout.SetName("Send Signal", szSubject);
+	layout.SetName(nullptr, szSubject);
 }
 
 void CScriptGraphSendSignalNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const

@@ -43,9 +43,6 @@ namespace Schematyc
 
 	void CSettingsManager::LoadAllSettings()
 	{
-		LOADING_TIME_PROFILE_SECTION;
-
-		const char* szFileFormat = gEnv->pSchematyc->GetFileFormat();
 		const char* szSettingsFolder = gEnv->pSchematyc->GetSettingsFolder();
 		for(const Settings::value_type& settings : m_settings)
 		{
@@ -53,29 +50,15 @@ namespace Schematyc
 			CStackString fileName = szSettingsFolder;
 			fileName.append("/");
 			fileName.append(szName);
-			fileName.append(".");
-			fileName.append(szFileFormat);
+			fileName.append(".sc_settings");
 			fileName.MakeLower();
-			if (!strcmp(szFileFormat, "json"))
-			{
-				Serialization::LoadJsonFile(*settings.second, fileName);
-			}
-			else if (!strcmp(szFileFormat, "xml"))
-			{
-				Serialization::LoadXmlFile(*settings.second, fileName);
-			}
-			else
-			{
-				SCHEMATYC_CORE_ERROR("Unsupported file format: %s", szFileFormat);
-			}
+
+			Serialization::LoadXmlFile(*settings.second, fileName);
 		}
 	}
 
 	void CSettingsManager::SaveAllSettings()
 	{
-		LOADING_TIME_PROFILE_SECTION;
-
-		const char* szFileFormat = gEnv->pSchematyc->GetFileFormat();
 		const char* szSettingsFolder = gEnv->pSchematyc->GetSettingsFolder();
 		for(Settings::value_type& settings : m_settings)
 		{
@@ -83,21 +66,10 @@ namespace Schematyc
 			CStackString fileName = szSettingsFolder;
 			fileName.append("/");
 			fileName.append(szName);
-			fileName.append(".");
-			fileName.append(szFileFormat);
+			fileName.append(".sc_settings");
 			fileName.MakeLower();
-			if (!strcmp(szFileFormat, "json"))
-			{
-				Serialization::SaveJsonFile(fileName, *settings.second);
-			}
-			else if (!strcmp(szFileFormat, "xml"))
-			{
-				Serialization::SaveXmlFile(fileName, *settings.second, szName);
-			}
-			else
-			{
-				SCHEMATYC_CORE_ERROR("Unsupported file format: %s", szFileFormat);
-			}
+			
+			Serialization::SaveXmlFile(fileName, *settings.second, szName);
 		}
 	}
 }

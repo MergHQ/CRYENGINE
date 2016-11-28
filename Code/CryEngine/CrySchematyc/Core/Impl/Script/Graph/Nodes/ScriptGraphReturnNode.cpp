@@ -24,7 +24,7 @@ void CScriptGraphReturnNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Return");
 	layout.SetStyleId("Core::FlowControl::End");
-	layout.SetColor(EScriptGraphColor::Purple);
+
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 
 	const IScriptElement& scriptElement = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();

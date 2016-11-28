@@ -125,7 +125,6 @@ void CScriptGraphFormatStringNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Format String");
 	layout.SetStyleId("Core::Utility");
-	layout.SetColor(EScriptGraphColor::Orange);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);

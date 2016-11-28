@@ -61,8 +61,8 @@ public:
 	virtual SensorVolumeId      CreateVolume(const SSensorVolumeParams& params) override;
 	virtual void                DestroyVolume(SensorVolumeId volumeId) override;
 	virtual void                UpdateVolumeBounds(SensorVolumeId volumeId, const CSensorBounds& bounds) override;
-	virtual void                SetVolumeTags(SensorVolumeId volumeId, const SensorTags& tags, bool bValue) override;
-	virtual void                SetVolumeMonitorTags(SensorVolumeId volumeId, const SensorTags& monitorTags, bool bValue) override;
+	virtual void                SetVolumeAttributeTags(SensorVolumeId volumeId, const SensorTags& attributeTags, bool bValue) override;
+	virtual void                SetVolumeListenerTags(SensorVolumeId volumeId, const SensorTags& listenerTags, bool bValue) override;
 	virtual SSensorVolumeParams GetVolumeParams(SensorVolumeId volumeId) const override;
 
 	virtual void                Query(SensorVolumeIdSet& results, const CSensorBounds& bounds, const SensorTags& tags = SensorTags(), SensorVolumeId exclusionId = SensorVolumeId::Invalid) const override;

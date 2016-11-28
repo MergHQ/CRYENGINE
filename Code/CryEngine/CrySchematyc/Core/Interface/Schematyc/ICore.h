@@ -47,7 +47,6 @@ struct ICrySchematycCore : public ICryPlugin
 	virtual void                                SetGUIDGenerator(const Schematyc::GUIDGenerator& guidGenerator) = 0;
 	virtual Schematyc::SGUID                    CreateGUID() const = 0;
 
-	virtual const char*                         GetFileFormat() const = 0;
 	virtual const char*                         GetRootFolder() const = 0;
 	virtual const char*                         GetScriptsFolder() const = 0;     // #SchematycTODO : Do we really need access to this outside script registry?
 	virtual const char*                         GetSettingsFolder() const = 0;    // #SchematycTODO : Do we really need access to this outside env registry?

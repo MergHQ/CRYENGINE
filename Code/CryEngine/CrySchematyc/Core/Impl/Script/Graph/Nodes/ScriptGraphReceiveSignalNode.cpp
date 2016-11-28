@@ -37,7 +37,6 @@ SGUID CScriptGraphReceiveSignalNode::GetTypeGUID() const
 void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::ReceiveSignal");
-	layout.SetColor(EScriptGraphColor::Green);
 
 	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_signalId.guid))
@@ -74,9 +73,21 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 					{
 					case EScriptElementType::Signal:
 						{
-							szSubject = pScriptElement->GetName();
+							const IScriptSignal& scriptSignal = DynamicCast<IScriptSignal>(*pScriptElement);
+
+							szSubject = scriptSignal.GetName();
 
 							layout.AddOutput("Out", m_signalId.guid, EScriptGraphPortFlags::Signal);
+
+							for (uint32 signalInputIdx = 0, signalInputCount = scriptSignal.GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)
+							{
+								CAnyConstPtr pData = scriptSignal.GetInputData(signalInputIdx);
+								SCHEMATYC_CORE_ASSERT(pData);
+								if (pData)
+								{
+									layout.AddOutputWithData(CGraphPortId::FromGUID(scriptSignal.GetInputGUID(signalInputIdx)), scriptSignal.GetInputName(signalInputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+								}
+							}
 							break;
 						}
 					case EScriptElementType::Timer:
@@ -92,7 +103,7 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
-	layout.SetName("Receive Signal", szSubject);
+	layout.SetName(nullptr, szSubject);
 }
 
 void CScriptGraphReceiveSignalNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -106,7 +117,7 @@ void CScriptGraphReceiveSignalNode::Compile(SCompilerContext& context, IGraphNod
 		case EScriptElementType::Class:
 			{
 				pClass->AddSignalReceiver(m_signalId.guid, compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), EOutputIdx::Out, EActivationMode::Output));
-				compiler.BindCallback(&Execute);
+				compiler.BindCallback(m_signalId.domain == EDomain::Env ? &ExecuteReceiveEnvSignal : &ExecuteReceiveScriptSignal);
 				break;
 			}
 		case EScriptElementType::State:
@@ -115,7 +126,7 @@ void CScriptGraphReceiveSignalNode::Compile(SCompilerContext& context, IGraphNod
 				if (stateIdx != InvalidIdx)
 				{
 					pClass->AddStateSignalReceiver(stateIdx, m_signalId.guid, compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), EOutputIdx::Out, EActivationMode::Output));
-					compiler.BindCallback(&Execute);
+					compiler.BindCallback(m_signalId.domain == EDomain::Env ? &ExecuteReceiveEnvSignal : &ExecuteReceiveScriptSignal);
 				}
 				else
 				{
@@ -291,13 +302,34 @@ void CScriptGraphReceiveSignalNode::GoToSignal()
 	CryLinkUtils::ExecuteCommand(CryLinkUtils::ECommand::Show, m_signalId.guid);
 }
 
-SRuntimeResult CScriptGraphReceiveSignalNode::Execute(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
+SRuntimeResult CScriptGraphReceiveSignalNode::ExecuteReceiveEnvSignal(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
 {
 	for (uint8 outputIdx = EOutputIdx::FirstParam, outputCount = context.node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
 	{
 		if (context.node.IsDataOutput(outputIdx))
 		{
 			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx).AsUniqueId());
+			if (pSrcData)
+			{
+				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcData);
+			}
+			else
+			{
+				return SRuntimeResult(ERuntimeStatus::Error);
+			}
+		}
+	}
+
+	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
+}
+
+SRuntimeResult CScriptGraphReceiveSignalNode::ExecuteReceiveScriptSignal(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
+{
+	for (uint8 outputIdx = EOutputIdx::FirstParam, outputCount = context.node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
+	{
+		if (context.node.IsDataOutput(outputIdx))
+		{
+			CAnyConstPtr pSrcData = context.params.GetInput(outputIdx - EOutputIdx::FirstParam);
 			if (pSrcData)
 			{
 				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcData);

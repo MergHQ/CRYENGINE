@@ -21,6 +21,7 @@
 namespace CrySchematycEditor {
 
 CPropertiesWidget::CPropertiesWidget(CComponentItem& item)
+	: m_pPreview(nullptr)
 {
 	SetupTree();
 
@@ -34,6 +35,7 @@ CPropertiesWidget::CPropertiesWidget(CComponentItem& item)
 }
 
 CPropertiesWidget::CPropertiesWidget(CAbstractObjectStructureModelItem& item)
+	: m_pPreview(nullptr)
 {
 	SetupTree();
 
@@ -47,6 +49,7 @@ CPropertiesWidget::CPropertiesWidget(CAbstractObjectStructureModelItem& item)
 }
 
 CPropertiesWidget::CPropertiesWidget(CAbstractVariablesModelItem& item)
+	: m_pPreview(nullptr)
 {
 	SetupTree();
 
@@ -60,6 +63,7 @@ CPropertiesWidget::CPropertiesWidget(CAbstractVariablesModelItem& item)
 }
 
 CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items)
+	: m_pPreview(nullptr)
 {
 	SetupTree();
 
@@ -75,9 +79,10 @@ CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items)
 	addWidget(m_pPropertyTree);
 }
 
-CPropertiesWidget::CPropertiesWidget(IDetailItem& item)
+CPropertiesWidget::CPropertiesWidget(IDetailItem& item, Schematyc::CPreviewWidget* pPreview)
 	: m_pDetailItem(&item)
 	, m_pContextList(nullptr)
+	, m_pPreview(pPreview)
 {
 	SetupTree();
 
@@ -90,11 +95,20 @@ CPropertiesWidget::CPropertiesWidget(IDetailItem& item)
 		m_pPropertyTree->setArchiveContext(pContextList->Tail());
 	}
 
+	if (m_pPreview)
+	{
+		QObject::connect(m_pPreview, &Schematyc::CPreviewWidget::signalChanged, this, &CPropertiesWidget::OnPreviewChanged);
+	}
+
 	addWidget(m_pPropertyTree);
 }
 
 CPropertiesWidget::~CPropertiesWidget()
 {
+	if (m_pPreview)
+	{
+		QObject::disconnect(m_pPreview);
+	}
 	delete m_pContextList;
 }
 
@@ -117,6 +131,14 @@ void CPropertiesWidget::OnPropertiesChanged()
 {
 	SignalPropertyChanged();
 
+	if (m_pPropertyTree)
+	{
+		m_pPropertyTree->revertNoninterrupting();
+	}
+}
+
+void CPropertiesWidget::OnPreviewChanged()
+{
 	if (m_pPropertyTree)
 	{
 		m_pPropertyTree->revertNoninterrupting();

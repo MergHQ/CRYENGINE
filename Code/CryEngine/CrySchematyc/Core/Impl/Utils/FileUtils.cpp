@@ -14,8 +14,6 @@ namespace FileUtils
 {
 void EnumFilesInFolder(const char* szFolderName, const char* szExtension, FileEnumCallback callback, const FileEnumFlags& flags)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szFolderName);
-
 	SCHEMATYC_CORE_ASSERT(szFolderName);
 	if (szFolderName)
 	{

@@ -84,7 +84,7 @@ enum class EScriptElementFlags
 	FromFile      = BIT(1), // Element was loaded from file.
 	CanOwnScript  = BIT(2), // Element can own it's own script.
 	MustOwnScript = BIT(3), // Element must own it's own script.
-	Discard       = BIT(4), // #SchematycTODO : Either remove or replace with flag indicating element 'can' be discarded.
+	NotCopyable   = BIT(4), // Element can not be copied.
 	FixedName     = BIT(5)  // Element cannot be renamed.
 	                        // #SchematycTODO : Use flags to specify whether element can be renamed, copied, removed etc?
 	                        // #SchematycTODO : Separate flags which can be modified from those that are fixed?

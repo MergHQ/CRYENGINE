@@ -196,9 +196,6 @@ CScriptCopySerializer::CScriptCopySerializer(IScriptElement& root, const ScriptE
 
 void CScriptCopySerializer::Serialize(Serialization::IArchive& archive)
 {
-	uint32 versionNumber = 105;
-	archive(versionNumber, "version");
-
 	archive(CScriptElementOutputSerializer(m_root, ScriptElementOutputSerializerParams(ScriptElementSerializeCallback(), EScriptElementOutputSerializerFlags::Copying)), "root");
 }
 
@@ -209,12 +206,7 @@ CScriptPasteSerializer::CScriptPasteSerializer(SScriptInputBlock& inputBlock, co
 
 void CScriptPasteSerializer::Serialize(Serialization::IArchive& archive)
 {
-	uint32 versionNumber = 0;
-	archive(versionNumber, "version");
-	// #SchematycTODO : Check version number!
-	{
-		archive(m_inputBlock.rootElement, "root");
-	}
+	archive(m_inputBlock.rootElement, "root");
 }
 
 void UnrollScriptInputElementsRecursive(ScriptInputElementPtrs& output, SScriptInputElement& element)

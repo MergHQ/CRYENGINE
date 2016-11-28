@@ -776,6 +776,11 @@ void Expand(const CTransform& input, Vec3& translation, CRotation& rotation)
 	rotation = input.GetRotation();
 }
 
+Vec3 TransformVector3(const CTransform& rotation, const Vec3& vector)
+{
+	return rotation.ToQuatT() * vector;
+}
+
 static void RegisterFunctions(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(GetTypeInfo<CTransform>().GetGUID());
@@ -802,8 +807,17 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		pFunction->SetAuthor(g_szCrytek);
 		pFunction->SetDescription("Expand transform");
 		pFunction->BindInput(1, 'val', "Value");
-		pFunction->BindOutput(2, 'trns', "Translation");
+		pFunction->BindOutput(2, 'trn', "Translation");
 		pFunction->BindOutput(3, 'rot', "Rotation");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&TransformVector3, "88d9848b-c40c-4a19-ab8a-950da20267eb"_schematyc_guid, "TransformVector3");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Transform vector");
+		pFunction->BindInput(1, 'trn', "Transform");
+		pFunction->BindInput(2, 'vec', "Vector");
+		pFunction->BindOutput(0, 'res', "Result");
 		scope.Register(pFunction);
 	}
 }

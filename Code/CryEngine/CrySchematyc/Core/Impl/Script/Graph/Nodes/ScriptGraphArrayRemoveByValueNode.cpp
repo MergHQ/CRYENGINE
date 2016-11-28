@@ -28,7 +28,6 @@ SGUID CScriptGraphArrayRemoveByValueNode::GetTypeGUID() const
 void CScriptGraphArrayRemoveByValueNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::Data");
-	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Default", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::SpacerBelow });

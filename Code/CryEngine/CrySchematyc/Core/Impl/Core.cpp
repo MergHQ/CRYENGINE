@@ -157,12 +157,8 @@ void CCore::SetGUIDGenerator(const GUIDGenerator& guidGenerator)
 
 SGUID CCore::CreateGUID() const
 {
+	SCHEMATYC_CORE_ASSERT(!m_guidGenerator.IsEmpty());
 	return !m_guidGenerator.IsEmpty() ? m_guidGenerator() : SGUID();
-}
-
-const char* CCore::GetFileFormat() const
-{
-	return CVars::sc_FileFormat->GetString();
 }
 
 const char* CCore::GetRootFolder() const

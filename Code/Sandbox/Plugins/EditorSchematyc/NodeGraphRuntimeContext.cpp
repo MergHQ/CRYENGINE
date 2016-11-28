@@ -43,7 +43,7 @@ QVariant CNodesDictionaryNodeEntry::GetColumnValue(int32 columnIndex) const
 	return QVariant();
 }
 
-QIcon* CNodesDictionaryNodeEntry::GetColumnIcon(int32 columnIndex) const
+const QIcon* CNodesDictionaryNodeEntry::GetColumnIcon(int32 columnIndex) const
 {
 	switch (columnIndex)
 	{
@@ -173,7 +173,7 @@ public:
 			categories.removeLast();
 
 			m_ppCommand = &pCommand;
-			AddRecursive(name, categories, nullptr);
+			AddRecursive(name, categories, nullptr, szStyleId);
 
 			return true;
 		}
@@ -182,12 +182,6 @@ public:
 
 	void AddRecursive(const QString& name, QStringList& categories, CNodesDictionaryCategoryEntry* pParentCategory, const char* szStyleId = nullptr)
 	{
-		QIcon* pIcon = nullptr;
-		//if (szStyleId != nullptr && szStyleId[0])
-		{
-			pIcon = CNodeIconMap::GetMenuIcon(szStyleId);
-		}
-
 		if (categories.size() > 0)
 		{
 			std::vector<CNodesDictionaryCategoryEntry*>* pCategoryItems = pParentCategory ? &pParentCategory->m_categories : &m_dictionary.m_categories;
@@ -197,9 +191,15 @@ public:
 				if (pCategoryItem->GetName() == categories.front())
 				{
 					categories.removeFirst();
-					AddRecursive(name, categories, pCategoryItem);
+					AddRecursive(name, categories, pCategoryItem, szStyleId);
 					return;
 				}
+			}
+
+			const QIcon* pIcon = nullptr;
+			if (const CNodeStyle* pStyle = CNodeStyles::GetStyleById(szStyleId))
+			{
+				pIcon = pStyle->GetMenuIcon();
 			}
 
 			CNodesDictionaryCategoryEntry* pNewCategory = nullptr;
@@ -219,6 +219,12 @@ public:
 		}
 		else
 		{
+			const QIcon* pIcon = nullptr;
+			if (const CNodeStyle* pStyle = CNodeStyles::GetStyleById(szStyleId))
+			{
+				pIcon = pStyle->GetMenuIcon();
+			}
+
 			CNodesDictionaryNodeEntry* pNewNodeItem = new CNodesDictionaryNodeEntry(name, m_fullName, *m_ppCommand, pParentCategory, pIcon);
 			if (pParentCategory)
 			{

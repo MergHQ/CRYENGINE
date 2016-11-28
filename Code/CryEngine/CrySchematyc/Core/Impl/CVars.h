@@ -6,7 +6,6 @@ namespace Schematyc
 {
 struct CVars
 {
-	static ICVar* sc_FileFormat;
 	static ICVar* sc_RootFolder;
 	static int    sc_IgnorePAKFiles;
 	static int    sc_IgnoreUnderscoredFolders;

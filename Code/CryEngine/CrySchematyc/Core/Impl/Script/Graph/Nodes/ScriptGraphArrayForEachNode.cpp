@@ -41,7 +41,6 @@ SGUID CScriptGraphArrayForEachNode::GetTypeGUID() const
 void CScriptGraphArrayForEachNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::FlowControl");
-	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);

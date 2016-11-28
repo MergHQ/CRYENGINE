@@ -94,7 +94,7 @@ void CEntityMovementComponent::Register(IEnvRegistrar& registrar)
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Teleport, "56fcb8c0-1f1b-48b6-9ee6-1f202f969d84"_schematyc_guid, "Teleport");
 			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Teleport entity");
-			pFunction->BindInput(1, 'trns', "Transform", "Target transform");
+			pFunction->BindInput(1, 'trn', "Transform", "Target transform");
 			componentScope.Register(pFunction);
 		}
 	}

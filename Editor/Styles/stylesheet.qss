@@ -1790,7 +1790,7 @@ QNumericBox {
 CryGraphEditor--CGlobalStyle {
 	/* Selection color */
 	qproperty-selectionColor: rgb(97, 172, 237);
-	qproperty-highlightColor: rgb(120, 120, 120);
+	qproperty-highlightColor: rgb(140, 140, 140);
 	
 	/* Background */
 	qproperty-gridBackgroundColor: rgb(75, 75, 75);
@@ -1820,14 +1820,14 @@ CryGraphEditor--CPinWidget QLabel {
 	font: bold;
 }
 
-CryGraphEditor--CNodeName {
+CryGraphEditor--CNodeNameWidget {
 	color: rgb(32, 32, 32);
 	font: bold;
 }
 
 CryGraphEditor--CNodeStyle {
 	/* Content: Background */
-	qproperty-backgroundColor: rgb(35, 35, 35);
+	qproperty-backgroundColor: rgba(35, 35, 35, 200);
 	
 	/* Content: Margins */
 	qproperty-contentMarginTop: 3;
@@ -1876,6 +1876,12 @@ CryGraphEditor--CNodeStyle {
 	qproperty-headerRectAdjustmentRight: 0;
 }
 
+/* CryGraphEditor -------------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------- */
+/* CryParticleEditor ----------------------------------------------------- */
+
 CryParticleEditor--CFeatureStyle {
 	qproperty-backgroundColor: rgb(255, 255, 255);
 	qproperty-roundingRadius: 4.0;
@@ -1896,9 +1902,11 @@ CryParticleEditor--CFeatureGridStyle {
 	qproperty-featureSpacing: 3;
 }
 
-/* CryGraphEditor -------------------------------------------------------- */
+/* CryParticleEditor ----------------------------------------------------- */
 /* ----------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------- */
+/* CrySchematycEditor ---------------------------------------------------- */
 
 CrySchematycEditor--CComponentsWidget QLabel {
 	/*width: 16px;
@@ -1923,6 +1931,9 @@ CrySchematycEditor--CVariablesWidget QLabel {
 	font-size:14px;
 	color:rgb(166,166,166);
 }
+
+/* CrySchematycEditor ---------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
 
 CBreadcrumbsBar{
 	margin: 0px;

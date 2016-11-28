@@ -16,7 +16,7 @@ bool Serialize(Serialization::IArchive& archive, SSensorTagName& value, const ch
 
 typedef DynArray<SSensorTagName> SensorTagNames;
 
-class CSchematycEntitySensorComponent final : public Schematyc::CComponent
+class CSchematycEntitySensorVolumeComponent final : public Schematyc::CComponent
 {
 public:
 
@@ -34,8 +34,8 @@ private:
 
 		void Serialize(Serialization::IArchive& archive);
 
-		SensorTagNames tags;
-		SensorTagNames monitorTags;
+		SensorTagNames attributeTags;
+		SensorTagNames listenerTags;
 		EVolumeShape   shape;
 		Vec3           size;
 		float          radius;
@@ -64,22 +64,22 @@ private:
 
 	typedef std::vector<EntityId> EntityIds;
 
-	struct SEnterSignal
+	struct SEnteringSignal
 	{
-		SEnterSignal();
-		SEnterSignal(EntityId _entityId);
+		SEnteringSignal();
+		SEnteringSignal(EntityId _entityId);
 
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SEnterSignal>& typeInfo);
+		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SEnteringSignal>& typeInfo);
 
 		Schematyc::ExplicitEntityId entityId;
 	};
 
-	struct SLeaveSignal
+	struct SLeavingSignal
 	{
-		SLeaveSignal();
-		SLeaveSignal(EntityId _entityId);
+		SLeavingSignal();
+		SLeavingSignal(EntityId _entityId);
 
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SLeaveSignal>& typeInfo);
+		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SLeavingSignal>& typeInfo);
 
 		Schematyc::ExplicitEntityId entityId;
 	};
@@ -101,7 +101,7 @@ public:
 	void                    SetVolumeRadius(float radius);
 	float                   GetVolumeRadius() const;
 
-	static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CSchematycEntitySensorComponent>& typeInfo);
+	static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CSchematycEntitySensorVolumeComponent>& typeInfo);
 	static void             Register(Schematyc::IEnvRegistrar& registrar);
 
 private:

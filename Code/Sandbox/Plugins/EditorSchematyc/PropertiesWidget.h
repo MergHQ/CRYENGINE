@@ -4,8 +4,9 @@
 
 #include "DetailWidget.h"
 
-#include <NodeGraph/ICryGraphEditor.h>
+#include "PreviewWidget.h"
 
+#include <NodeGraph/ICryGraphEditor.h>
 #include <QScrollableBox.h>
 #include <CrySerialization/IArchive.h>
 
@@ -28,7 +29,7 @@ public:
 	CPropertiesWidget(CryGraphEditor::GraphItemSet& items);
 
 	// TEMP
-	CPropertiesWidget(IDetailItem& item);
+	CPropertiesWidget(IDetailItem& item, Schematyc::CPreviewWidget* pPreview = nullptr);
 	// ~TEMP
 
 	~CPropertiesWidget();
@@ -41,6 +42,7 @@ Q_SIGNALS:
 protected:
 	void SetupTree();
 	void OnPropertiesChanged();
+	void OnPreviewChanged();
 
 protected:
 	QAdvancedPropertyTree*       m_pPropertyTree;
@@ -48,6 +50,7 @@ protected:
 	Serialization::CContextList* m_pContextList;
 
 	// TEMP
+	Schematyc::CPreviewWidget*   m_pPreview;
 	std::unique_ptr<IDetailItem> m_pDetailItem;
 	//~TEMP
 };

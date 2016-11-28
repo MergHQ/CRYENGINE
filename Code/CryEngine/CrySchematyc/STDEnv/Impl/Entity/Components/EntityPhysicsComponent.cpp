@@ -35,13 +35,13 @@ namespace Schematyc
 
 	bool CEntityPhysicsComponent::Init()
 	{
-		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().GetSlots().Connect(Schematyc::Delegate::Make(*this, &CEntityPhysicsComponent::OnGeometryChanged), m_connectionScope);
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(Schematyc::Delegate::Make(*this, &CEntityPhysicsComponent::OnGeometryChanged), m_connectionScope);
 		return true;
 	}
 
 	void CEntityPhysicsComponent::Shutdown()
 	{
-		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().GetSlots().Disconnect(m_connectionScope);
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Disconnect(m_connectionScope);
 		SetPhysicalize(false);
 	}
 
@@ -49,7 +49,7 @@ namespace Schematyc
 	{
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
-			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent, "Physic");
+			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent, "Physics");
 			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity physics component");
 			pComponent->SetIcon("icons:schematyc/entity_physics_component.ico");
@@ -62,7 +62,7 @@ namespace Schematyc
 			{				
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::SetEnabled, "4DC3B15A-D143-4161-8C1F-F6FEE627A85A"_schematyc_guid, "SetPhysicsEnabled");
 				pFunction->SetAuthor(g_szCrytek);
-				pFunction->SetDescription("Enable/disable the physic (without destroying/recreating it)");
+				pFunction->SetDescription("Enable/disable physics (without destroying/recreating)");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ena', "Enabled");
 				componentScope.Register(pFunction);
@@ -101,7 +101,7 @@ namespace Schematyc
 		if (bActive)
 		{
 			const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-			CRY_ASSERT_MESSAGE(pProperties, "No properties provided to create physic object");
+			CRY_ASSERT_MESSAGE(pProperties, "No properties provided to create physics object");
 
 			SEntityPhysicalizeParams params;
 			params.type = (pProperties->bStatic) ? PE_STATIC : PE_RIGID;

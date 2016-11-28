@@ -69,7 +69,7 @@ public:
 		return optionIdx < m_names.size() ? m_names[optionIdx] : "";
 	}
 
-	//protected:
+protected:
 
 	Serialization::StringList m_names;
 	string                    m_header;

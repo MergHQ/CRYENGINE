@@ -46,7 +46,6 @@ void CScriptGraphSequenceNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Sequence");
 	layout.SetStyleId("Core::FlowControl");
-	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 

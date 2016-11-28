@@ -36,7 +36,6 @@ SGUID CScriptGraphExpandSignalNode::GetTypeGUID() const
 void CScriptGraphExpandSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::Data");
-	layout.SetColor(EScriptGraphColor::Blue);
 
 	const char* szSubject = g_szNoType;
 	if (!GUID::IsEmpty(m_typeId.guid))
