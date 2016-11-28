@@ -66,9 +66,11 @@ void CParticleEffect::Compile()
 TComponentId CParticleEffect::FindComponentIdByName(const char* name) const
 {
 	const auto it = std::find_if(m_components.begin(), m_components.end(), [name](TComponentPtr pComponent)
-		{
-			return strcmp(pComponent->GetName(), name) == 0;
-	  });
+	{
+		if (!pComponent)
+			return false;
+		return strcmp(pComponent->GetName(), name) == 0;
+	});
 	if (it == m_components.end())
 		return gInvalidId;
 	return TComponentId(it - m_components.begin());
