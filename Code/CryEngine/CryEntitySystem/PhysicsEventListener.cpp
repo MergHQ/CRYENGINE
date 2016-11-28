@@ -20,6 +20,8 @@
 #include "EntityCVars.h"
 #include "BreakableManager.h"
 
+#include "PhysicsProxy.h"
+
 #include <CryPhysics/IPhysics.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryParticleSystem/ParticleParams.h>
@@ -193,12 +195,12 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 			if (nNewSymClass == SC_ACTIVE_RIGID)
 			{
 				// Should activate entity if physics is awaken.
-				pCEntity->Activate(true);
+				pCEntity->GetPhysicalProxy()->SetActive(true);
 			}
 			else if (nNewSymClass == SC_SLEEPING_RIGID)
 			{
 				// Entity must go to sleep.
-				pCEntity->Activate(false);
+				pCEntity->GetPhysicalProxy()->SetActive(false);
 				//CallStateFunction(ScriptState_OnStopRollSlideContact, "roll");
 				//CallStateFunction(ScriptState_OnStopRollSlideContact, "slide");
 			}

@@ -1653,7 +1653,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 				if (ce->GetProxy(ENTITY_PROXY_SCRIPT))
 					nNumScriptable++;
 
-				if (ce->m_bGarbage || ce->GetUpdateStatus())
+				if (ce->m_bGarbage || ce->ShouldActivate())
 					continue;
 
 				DebugDraw(ce, 0);
@@ -2125,7 +2125,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 	{
 		// draw information about timing, physics, position, and textual representation of the entity (but no EntityId)
 
-		if (ce->GetUpdateStatus() && timeMs >= 0)
+		if (ce->ShouldActivate() && timeMs >= 0)
 		{
 			float colors[4] = { 1, 1, 1, 1 };
 			float colorsYellow[4] = { 1, 1, 0, 1 };
@@ -2455,20 +2455,16 @@ void CEntitySystem::DumpEntities()
 	it->MoveFirst();
 
 	int count = 0;
-	int acount = 0;
 
 	CryLogAlways("--------------------------------------------------------------------------------");
 	while (IEntity* pEntity = it->Next())
 	{
 		DumpEntity(pEntity);
 
-		if (pEntity->IsActive())
-			++acount;
-
 		++count;
 	}
 	CryLogAlways("--------------------------------------------------------------------------------");
-	CryLogAlways(" %d entities (%d active)", count, acount);
+	CryLogAlways(" %d entities (%" PRISIZE_T " active)", count, m_mapActiveEntities.size());
 	CryLogAlways("--------------------------------------------------------------------------------");
 }
 

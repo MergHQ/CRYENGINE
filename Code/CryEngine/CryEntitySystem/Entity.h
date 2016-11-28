@@ -161,7 +161,6 @@ public:
 	virtual const Vec3& GetForwardDir() const final { ComputeForwardDir(); return m_vForwardDir; }
 	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
 	virtual void Activate(bool bActive) final;
 	virtual bool IsActive() const final { return m_bActive; }
 
@@ -359,9 +358,9 @@ public:
 	// Activates entity only for specified number of frames.
 	// numUpdates must be a small number from 0-15.
 	void ActivateForNumUpdates(int numUpdates);
-	void SetUpdateStatus();
-	// Get status if entity need to be update every frame or not.
-	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
+
+	void ActivateEntityIfNecessary();
+	bool ShouldActivate() { return (m_bActive | m_bRequiresComponentUpdate || m_nUpdateCounter || (m_physics.m_nFlags & CEntityPhysics::FLAG_ACTIVE) != 0) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:
@@ -476,6 +475,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	unsigned int         m_bActive        : 1;      // Active Entities are updated every frame.
 	unsigned int         m_bInActiveList  : 1;      // Added to entity system active list.
+	unsigned int         m_bRequiresComponentUpdate  : 1; // Whether or not any components require update callbacks
 	mutable unsigned int m_bBoundsValid   : 1;      // Set when the entity bounding box is valid.
 	unsigned int         m_bInitialized   : 1;      // Set if this entity already Initialized.
 	unsigned int         m_bHidden        : 1;      // Set if this entity is hidden.

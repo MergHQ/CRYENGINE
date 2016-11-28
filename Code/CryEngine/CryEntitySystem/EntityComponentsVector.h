@@ -89,22 +89,20 @@ public:
 		// ShutDown all components.
 		std::shared_ptr<IEntityComponent> pUserComponent;
 
-		// Iterate a local copy because OnShutDown can modify the components array.
-		auto tempComponents = m_vector;
-
-		for (auto& componentRecord : tempComponents)
+		ForEach([&pUserComponent](const SEntityComponentRecord& rec)
 		{
-			if (componentRecord.proxyType == ENTITY_PROXY_USER)
+			if (rec.proxyType == ENTITY_PROXY_USER)
 			{
 				// User component must be deleted last after all other components are destroyed (Required by CGameObject)
-				pUserComponent = componentRecord.pComponent;
+				pUserComponent = rec.pComponent;
 			}
-			componentRecord.pComponent->OnShutDown();
-		}
+			rec.pComponent->OnShutDown();
+		});
 
-		// Remove all entity components.
-		m_vector.clear();
+		// Remove all entity components in a temporary vector, in case any components try to modify components in their destructor.
+		auto tempComponents = std::move(m_vector);
 		tempComponents.clear();
+
 		// User component must be the last of the components to be destroyed.
 		pUserComponent.reset();
 		//////////////////////////////////////////////////////////////////////////
