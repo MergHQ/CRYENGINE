@@ -63,6 +63,12 @@ public:
 	// EUL_InitSubInstance
 	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) {}
 
+	// EUL_GetExtents
+	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) {}
+
+	// EUL_GetEmitOffset
+	virtual Vec3 GetEmitOffset(const SUpdateContext& context, TParticleId parentId) { return Vec3(0); }
+
 	// EUL_Spawn
 	virtual void SpawnParticles(const SUpdateContext& context) {}
 
@@ -86,9 +92,6 @@ public:
 	virtual void ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                              {}
 	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)          {}
-
-	// EUL_GetExtents
-	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) {}
 
 protected:
 	void AddNoPropertiesLabel(Serialization::IArchive& ar);

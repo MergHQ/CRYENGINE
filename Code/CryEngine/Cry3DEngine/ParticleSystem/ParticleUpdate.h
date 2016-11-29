@@ -43,8 +43,8 @@ struct SUpdateContext
 
 #define CRY_PFX2_FOR_RANGE_PARTICLESGROUP(updateRange)                                                                                          \
   {                                                                                                                                             \
-    { const TParticleGroupId lastParticleId = CRY_PFX2_PARTICLESGROUP_LOWER(updateRange.m_lastParticleId + CRY_PFX2_PARTICLESGROUP_STRIDE - 1); \
-      for (TParticleGroupId particleGroupId = updateRange.m_firstParticleId; particleGroupId < lastParticleId; particleGroupId += CRY_PFX2_PARTICLESGROUP_STRIDE) {
+    { const TParticleGroupId lastParticleId = CRY_PFX2_PARTICLESGROUP_UPPER(updateRange.m_lastParticleId); \
+      for (TParticleGroupId particleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(updateRange.m_firstParticleId); particleGroupId < lastParticleId; particleGroupId += CRY_PFX2_PARTICLESGROUP_STRIDE) {
 
 #define CRY_PFX2_FOR_ACTIVE_PARTICLES(updateContext) \
   CRY_PFX2_FOR_RANGE_PARTICLES((updateContext).m_updateRange)

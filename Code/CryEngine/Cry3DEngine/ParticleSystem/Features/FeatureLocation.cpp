@@ -38,6 +38,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->AddToUpdateList(EUL_GetExtents, this);
+		pComponent->AddToUpdateList(EUL_GetEmitOffset, this);
 		pComponent->AddToUpdateList(EUL_InitUpdate, this);
 		m_scale.AddToComponent(pComponent, this);
 
@@ -73,6 +74,16 @@ public:
 			e = e * scales[i] + 1.0f;
 			extents[i] += e;
 		}
+	}
+
+	virtual Vec3 GetEmitOffset(const SUpdateContext& context, TParticleId parentId) override
+	{
+		TFloatArray scales(*context.m_pMemHeap, parentId + 1);
+		const SUpdateRange range(parentId, parentId + 1);
+
+		auto modRange = m_scale.GetValues(context, scales.data(), range, EMD_PerInstance, true);
+		const float scale = scales[parentId] * (modRange.start + modRange.end) * 0.5f;
+		return m_offset * scale;
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override

@@ -54,6 +54,8 @@ enum EUpdateList
 {
 	EUL_MainPreUpdate,    // this feature will update once per frame on the main thread
 	EUL_InitSubInstance,  // this feature has sub instance data to initialize
+	EUL_GetExtents,       // this feature has a spatial extent
+	EUL_GetEmitOffset,    // this feature moves the effective emit location
 	EUL_Spawn,            // this feature creates new particles
 	EUL_InitUpdate,       // this feature needs to initialize newborn particle data
 	EUL_PostInitUpdate,   // this feature needs to initialize newborn particle data after main InitUpdate
@@ -62,7 +64,6 @@ enum EUpdateList
 	EUL_Update,           // this feature changes particle data over time
 	EUL_Render,           // this feature has geometry to render
 	EUL_RenderDeferred,   // this feature has geometry to render but can only render after all updates are done
-	EUL_GetExtents,       // this feature has a spatial extent
 
 	EUL_Count,
 };

@@ -173,13 +173,13 @@ protected:
 
 				const float spawnedBefore = pSpawn->m_spawned;
 
-				impl.UpdateSpawnInfo(*pSpawn, entry, context, amount, spawnTime);
+				impl.UpdateSpawnInfo(*pSpawn, i, entry, context, amount, spawnTime);
 
-				entry.m_count = uint(ceil_tpl(pSpawn->m_spawned) - ceil_tpl(spawnedBefore));
+				entry.m_count = uint(ceil(pSpawn->m_spawned) - ceil(spawnedBefore));
 
-				const float spawnPast = 1.0f - (spawnedBefore - floor_tpl(spawnedBefore));
+				const float spawnPast = 1.0f - (spawnedBefore - floor(spawnedBefore));
 				entry.m_ageBegin += spawnPast * entry.m_ageIncrement - 1.0f;
-				entry.m_fractionBegin = floor_tpl(spawnedBefore) * entry.m_fractionCounter + entry.m_fractionCounter;
+				entry.m_fractionBegin = floor(spawnedBefore) * entry.m_fractionCounter + entry.m_fractionCounter;
 
 				runtime.SpawnParticles(entry);
 			}
@@ -287,7 +287,7 @@ public:
 		SpawnParticlesT(*this, context);
 	}
 
-	ILINE void UpdateSpawnInfo(SSpawnData& spawn, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
+	ILINE void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
 		const float spawnTime = min(context.m_params.m_baseParticleLifeTime, spawn.m_duration);
 		if (spawnTime > 0.0f)
@@ -349,7 +349,7 @@ public:
 		SpawnParticlesT(*this, context);
 	}
 
-	ILINE void UpdateSpawnInfo(SSpawnData& spawn, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
+	ILINE void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
 		const float spawned = dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount : rcp(amount));
 		spawn.m_spawned += spawned;
@@ -365,9 +365,9 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate",
 //////////////////////////////////////////////////////////////////////////
 
 SERIALIZATION_DECLARE_ENUM(ESpawnDistanceMode,
-                           ParticlesPerMeter,
-                           MetersPerParticle
-                           )
+    ParticlesPerMeter,
+    MetersPerParticle
+)
 
 class CFeatureSpawnDistance : public CParticleFeatureSpawnBase
 {
@@ -376,7 +376,8 @@ public:
 
 	CFeatureSpawnDistance()
 		: CParticleFeatureSpawnBase(gpu_pfx2::eGpuFeatureType_None)
-		, m_mode(ESpawnDistanceMode::ParticlesPerMeter) {}
+		, m_mode(ESpawnDistanceMode::ParticlesPerMeter)
+		{}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
@@ -384,18 +385,43 @@ public:
 		ar(m_mode, "Mode", "Mode");
 	}
 
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
+		m_emitPosOffset = pComponent->AddInstanceData(sizeof(Vec3));
+	}
+	virtual void InitSubInstance(CParticleComponentRuntime* pComponentRuntime, size_t firstInstance, size_t lastInstance) override
+	{
+		CParticleFeatureSpawnBase::InitSubInstance(pComponentRuntime, firstInstance, lastInstance);
+		for (size_t inst = firstInstance; inst < lastInstance; ++inst)
+			*GetEmitPosition(*pComponentRuntime, inst) = Vec3(gInfinity);
+	}
+
 	virtual void SpawnParticles(const SUpdateContext& context) override
 	{
 		SpawnParticlesT(*this, context);
 	}
 
-	ILINE void UpdateSpawnInfo(SSpawnData& spawn, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
+	void UpdateSpawnInfo(SSpawnData& spawn, size_t instanceId, CParticleContainer::SSpawnEntry& entry, const SUpdateContext& context, float amount, float dt) const
 	{
-		const CParticleContainer& parentContainer = context.m_parentContainer;
-		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
-		const Vec3 parentVelocity = parentVelocities.Load(entry.m_parentId);
-		const float parentSpeed = parentVelocity.GetLength();
-		const float distance = parentSpeed * dt;
+		CParticleContainer& parentContainer = context.m_parentContainer;
+		const TParticleId parentId = entry.m_parentId;
+
+		QuatT parentLoc;
+		parentLoc.t = parentContainer.GetIVec3Stream(EPVF_Position).SafeLoad(parentId);
+		parentLoc.q = parentContainer.GetIQuatStream(EPQF_Orientation).SafeLoad(parentId);
+		Vec3 emitOffset(0);
+		for (auto& it : context.m_runtime.GetComponent()->GetUpdateList(EUL_GetEmitOffset))
+			emitOffset += it->GetEmitOffset(context, entry.m_parentId);
+		const Vec3 emitPos1 = parentLoc * emitOffset;
+
+		Vec3* pEmitPos = GetEmitPosition(context.m_runtime, instanceId);
+		const Vec3 emitPos0 = *pEmitPos;
+		*pEmitPos = emitPos1;
+		if (!std::isfinite(emitPos0.x))
+			return;
+
+		const float distance = (emitPos1 - emitPos0).GetLengthFast();
 		const float spawned = distance * (m_mode == ESpawnDistanceMode::ParticlesPerMeter ? amount : rcp(amount));
 		spawn.m_spawned += spawned;
 		entry.m_ageIncrement = rcp_safe(spawned);
@@ -403,6 +429,9 @@ public:
 
 private:
 	ESpawnDistanceMode m_mode;
+	TInstanceDataOffset m_emitPosOffset;
+
+	Vec3* GetEmitPosition(CParticleComponentRuntime& runtime, size_t idx) const { return runtime.GetSubInstanceData<Vec3>(idx, m_emitPosOffset); }
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);
