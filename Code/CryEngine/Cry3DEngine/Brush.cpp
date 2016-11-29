@@ -780,7 +780,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 			if (GetCVars()->e_DebugDraw == 0)
 				return;
 	}
-	if (m_dwRndFlags & ERF_HIDDEN)
+
+	if (!m_pStatObj || m_dwRndFlags & ERF_HIDDEN)
 		return;
 
 	/*

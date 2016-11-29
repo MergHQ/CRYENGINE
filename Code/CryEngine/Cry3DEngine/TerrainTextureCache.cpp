@@ -42,6 +42,10 @@ void CTextureCache::ResetTexturePool()
 		GetRenderer()->RemoveTexture(m_nPoolTexId);
 	}
 	m_FreeTextures.Clear();
+	m_eTexFormat = eTF_Unknown;
+	m_nDim = 0;
+	m_nPoolTexId = 0;
+	m_nPoolDim = 0;
 }
 
 uint16 CTextureCache::GetTexture(byte* pData, uint16& nSlotId)
@@ -119,35 +123,32 @@ void CTextureCache::InitPool(byte* pData, int nDim, ETEX_Format eTexFormat)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Texture, 0, "Terrain texture cache");
 
-	if (m_eTexFormat != eTexFormat || m_nDim != nDim)
+	ResetTexturePool();
+
+	m_eTexFormat = eTexFormat;
+	m_nDim = nDim;
+
+	m_nPoolDim = (int)sqrt(GetCVars()->e_TerrainTextureStreamingPoolItemsNum);
+	int nPoolTexDim = m_nPoolDim * m_nDim;
+
+	stack_string sPoolTextureName;
+	sPoolTextureName.Format("$TERRAIN_TEX_POOL_%p", this);
+
+	m_nPoolTexId = GetRenderer()->DownLoadToVideoMemory(NULL, nPoolTexDim, nPoolTexDim, eTexFormat, eTexFormat, 0, false, FILTER_NONE, 0,
+		                                                  sPoolTextureName, (eTexFormat == eTF_R32F) ? 0 : FT_USAGE_ALLOWREADSRGB, GetPlatformEndian(), NULL, false);
+
+	if (m_nPoolTexId <= 0)
 	{
-		ResetTexturePool();
+		if (!gEnv->IsDedicated())
+			Error("Debug: CTextureCache::InitPool: GetRenderer()->DownLoadToVideoMemory returned %d", m_nPoolTexId);
 
-		m_eTexFormat = eTexFormat;
-		m_nDim = nDim;
+		if (!gEnv->IsDedicated())
+			Error("Debug: DownLoadToVideoMemory() params: dim=%d, eTexFormat=%d", nDim, eTexFormat);
+	}
 
-		m_nPoolDim = (int)sqrt(GetCVars()->e_TerrainTextureStreamingPoolItemsNum);
-		int nPoolTexDim = m_nPoolDim * m_nDim;
-
-		stack_string sPoolTextureName;
-		sPoolTextureName.Format("$TERRAIN_TEX_POOL_%p", this);
-
-		m_nPoolTexId = GetRenderer()->DownLoadToVideoMemory(NULL, nPoolTexDim, nPoolTexDim, eTexFormat, eTexFormat, 0, false, FILTER_NONE, 0,
-		                                                    sPoolTextureName, (eTexFormat == eTF_R32F) ? 0 : FT_USAGE_ALLOWREADSRGB, GetPlatformEndian(), NULL, false);
-
-		if (m_nPoolTexId <= 0)
-		{
-			if (!gEnv->IsDedicated())
-				Error("Debug: CTextureCache::InitPool: GetRenderer()->DownLoadToVideoMemory returned %d", m_nPoolTexId);
-
-			if (!gEnv->IsDedicated())
-				Error("Debug: DownLoadToVideoMemory() params: dim=%d, eTexFormat=%d", nDim, eTexFormat);
-		}
-
-		for (int i = GetCVars()->e_TerrainTextureStreamingPoolItemsNum - 1; i >= 0; i--)
-		{
-			m_FreeTextures.Add(i);
-		}
+	for (int i = GetCVars()->e_TerrainTextureStreamingPoolItemsNum - 1; i >= 0; i--)
+	{
+		m_FreeTextures.Add(i);
 	}
 
 	assert(m_FreeTextures.Count() + m_Quarantine.Count() + m_UsedTextures.Count() == GetCVars()->e_TerrainTextureStreamingPoolItemsNum);
