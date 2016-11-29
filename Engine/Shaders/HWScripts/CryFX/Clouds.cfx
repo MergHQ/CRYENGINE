@@ -2944,8 +2944,9 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 #endif
 
 	float2 uv = MapViewportToRaster(IN.baseTC.xy);
-	
-	float depth = GetLinearDepth(fullDepthBuffer, uv.xy);
+
+	const int3 vPixCoord = int3(IN.WPos.xy, 0);
+	const float depth = fullDepthBuffer.Load(vPixCoord).x;
 
 	const float2 resTex = params.scaledScreenSize.xy;
 	const float2 texel = params.scaledScreenSize.zw;
