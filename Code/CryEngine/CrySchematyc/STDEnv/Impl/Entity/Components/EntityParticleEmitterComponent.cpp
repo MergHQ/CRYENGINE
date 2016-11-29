@@ -52,10 +52,6 @@ void CEntityParticleEmitterComponent::SProperties::Serialize(Serialization::IArc
 	}
 }
 
-CEntityParticleEmitterComponent::CEntityParticleEmitterComponent()
-	: m_slot(EmptySlot)
-{}
-
 bool CEntityParticleEmitterComponent::Init()
 {
 	return true;
@@ -63,7 +59,7 @@ bool CEntityParticleEmitterComponent::Init()
 
 void CEntityParticleEmitterComponent::Run(ESimulationMode simulationMode)
 {
-	SProperties* pProperties = static_cast<SProperties*>(CComponent::GetProperties());
+	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
 	if (!pProperties->effectName.value.empty())
 	{
 		if (m_slot == EmptySlot)
@@ -79,7 +75,11 @@ void CEntityParticleEmitterComponent::Shutdown()
 	if (m_slot != EmptySlot)
 	{
 		IEntity& entity = EntityUtils::GetEntity(*this);
-		entity.GetParticleEmitter(m_slot)->Kill();
+		IParticleEmitter* const pParticleEmitter = entity.GetParticleEmitter(m_slot);
+		if (pParticleEmitter)
+		{
+			pParticleEmitter->Kill();
+		}
 		entity.FreeSlot(m_slot);
 		m_slot = EmptySlot;
 	}
@@ -102,31 +102,28 @@ void CEntityParticleEmitterComponent::SetTransform(const CTransform& transform)
 
 void CEntityParticleEmitterComponent::SetVisible(bool bVisible)
 {
-	SProperties* pProperties = static_cast<SProperties*>(CComponent::GetProperties());
-	if (bVisible != pProperties->bVisible)
+	if (bVisible != m_bVisible)
 	{
-		if (CComponent::GetObject().GetSimulationMode() != ESimulationMode::Idle)
+		IParticleEmitter* pParticleEmitter = EntityUtils::GetEntity(*this).GetParticleEmitter(m_slot);
+		if (pParticleEmitter)
 		{
-			IParticleEmitter* pParticleEmitter = EntityUtils::GetEntity(*this).GetParticleEmitter(m_slot);
-			SCHEMATYC_ENV_ASSERT(pParticleEmitter);
-			if (pParticleEmitter)
+			pParticleEmitter->Activate(bVisible);
+			if (bVisible)
 			{
-				pParticleEmitter->Activate(bVisible);
-				if (bVisible)
-				{
-					pParticleEmitter->Restart();
-				}
+				pParticleEmitter->Restart();
 			}
+			m_bVisible = bVisible;
 		}
-
-		pProperties->bVisible = bVisible;
+		else
+		{
+			m_bVisible = false;
+		}
 	}
 }
 
 bool CEntityParticleEmitterComponent::IsVisible() const
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	return pProperties->bVisible;
+	return m_bVisible;
 }
 
 SGUID CEntityParticleEmitterComponent::ReflectSchematycType(CTypeInfo<CEntityParticleEmitterComponent>& typeInfo)
@@ -139,7 +136,7 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityParticleEmitterComponent, "ParticleEmitter");
-		pComponent->SetAuthor("Achim Lang");
+		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Particle emitter component");
 		pComponent->SetIcon("icons:schematyc/entity_particle_emitter_component.png");
 		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
@@ -199,6 +196,12 @@ void CEntityParticleEmitterComponent::LoadParticleEmitter()
 			entity.SetParentSlot(pParent->GetSlot(), m_slot);
 		}
 		entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
+
+		m_bVisible = true;
+	}
+	else
+	{
+		m_bVisible = false;
 	}
 }
 } // Schematyc

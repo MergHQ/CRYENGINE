@@ -5,7 +5,7 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-#include "SchematycEntitySensorComponent.h"
+#include "SchematycEntitySensorVolumeComponent.h"
 #include "SensorMap.h"
 #include "SensorTagLibrary.h"
 
@@ -144,7 +144,7 @@ CSensorSystem& CSensorSystem::GetInstance()
 
 void CSensorSystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
 {
-	CSchematycEntitySensorComponent::Register(registrar);
+	CSchematycEntitySensorVolumeComponent::Register(registrar);
 }
 
 void CSensorSystem::SetOctreeDepthCommand(IConsoleCmdArgs* pArgs)

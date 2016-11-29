@@ -52,12 +52,6 @@
 
 		"CryGameZero"
 	],
-	
-	"force_shared_monolithic_build_modules" : 
-	[
-		"CrySchematycCore",
-		"CrySchematycSTDEnv"
-	],
 
 	"defines"                               : ["DEDICATED_SERVER"],
 

@@ -34,7 +34,7 @@ namespace CryEngine.Sydewinder
 		public static Gun Create(Vector3 firingDirection)
 		{
 			// We need an Id. Otherwise we can not add this to pool.
-			var gun = Entity.Spawn<Gun>(Vector3.Zero, Quaternion.Identity);
+			var gun = Entity.SpawnWithComponent<Gun>(Vector3.Zero, Quaternion.Identity);
 			gun.Speed = firingDirection;
 
 			// This is currently used to register Gun for receiving update calls (Move) which decreases the cool-downtimer.
@@ -79,7 +79,7 @@ namespace CryEngine.Sydewinder
 
 		public static LightGun Create(Vector3 firingDirection)
 		{
-			var lightGun = Entity.Spawn<LightGun> (Vector3.Zero, Quaternion.Identity);
+			var lightGun = Entity.SpawnWithComponent<LightGun> (Vector3.Zero, Quaternion.Identity);
 			lightGun.Speed = firingDirection;
 
 			// Weapon is usded by enemy. Prevent from firing immediatelly after spawn.
@@ -139,10 +139,10 @@ namespace CryEngine.Sydewinder
 		protected void SpawnParticles()
 		{ 
 			if (WeaponBulletParticleEffect != null)
-				LoadParticleEmitter(1, WeaponBulletParticleEffect);
+				Entity.LoadParticleEmitter(1, WeaponBulletParticleEffect);
 
 			if (WeaponSmokeParticleEffect != null)
-				LoadParticleEmitter(2, WeaponSmokeParticleEffect);
+				Entity.LoadParticleEmitter(2, WeaponSmokeParticleEffect);
 		}
 
 		public override Vector3 Move()
@@ -152,19 +152,19 @@ namespace CryEngine.Sydewinder
 				LifeTime -= FrameTime.Delta;			
 			}
 			else				
-				GamePool.FlagForPurge(Id); // Let destroy current projectile.
+				GamePool.FlagForPurge(Entity.Id); // Let destroy current projectile.
 
 			return base.Move();
 		}
 
-		protected override void OnCollision(DestroyableBase hitEnt)
+		public override void OnCollision(CollisionEvent collisionEvent)
 		{
 			// Always remove projectile on collision.
-			GamePool.FlagForPurge (Id);
+			GamePool.FlagForPurge (Entity.Id);
 
 			// Kill particle trail (bullet)
 			if (WeaponBulletParticleEffect != null)
-				GetParticleEmitter (1).Kill ();
+				Entity.GetParticleEmitter (1).Kill ();
 		}
 	}
 
@@ -175,11 +175,11 @@ namespace CryEngine.Sydewinder
 	{
 		public static DefaultAmmo Create(Vector3 pos, Vector3 speed, bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect) 
 		{
-			var ammo = Entity.Spawn<DefaultAmmo> (pos, Quaternion.Identity, 0.5f);
+			var ammo = Entity.SpawnWithComponent<DefaultAmmo> (pos, Quaternion.Identity, 0.5f);
 
-            ammo.LoadGeometry(0, "objects/default/primitive_sphere.cgf");
+			ammo.Entity.LoadGeometry(0, "objects/default/primitive_sphere.cgf");
 
-            ammo.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+			ammo.Entity.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
 
             ammo.LifeTime = 3f;
 			ammo.Speed = speed;
@@ -188,7 +188,7 @@ namespace CryEngine.Sydewinder
 			ammo.WeaponBulletParticleEffect = weaponTrailParticleEffect;
 
 			// Causes geometry not to be rendered, as the entity particle effect is used as bullet
-			ammo.SetSlotFlag(0, EEntitySlotFlags.ENTITY_SLOT_RENDER_NEAREST);
+			ammo.Entity.SetSlotFlag(0, EEntitySlotFlags.ENTITY_SLOT_RENDER_NEAREST);
 			ammo.SpawnParticles();
 			GamePool.AddObjectToPool(ammo);
 			return ammo;

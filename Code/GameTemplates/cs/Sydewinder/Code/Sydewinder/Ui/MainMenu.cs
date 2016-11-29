@@ -196,6 +196,8 @@ namespace CryEngine.Sydewinder.UI
 				Camera.Position = finalPosition;
 				Camera.ForwardDirection = finalFwdDirection;
 			}
+
+			Camera.FieldOfView = 30;
 		}
 		else
 		{

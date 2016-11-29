@@ -36,7 +36,6 @@ void CScriptGraphForNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("For");
 	layout.SetStyleId("Core::FlowControl");
-	layout.SetColor(EScriptGraphColor::Purple);
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddInputWithData("Begin", GetTypeInfo<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, int32(0));

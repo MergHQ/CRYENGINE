@@ -82,9 +82,16 @@ SGUID CScriptGraphFunctionNode::GetTypeGUID() const
 void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::Function");
-	layout.SetColor(EScriptGraphColor::Red);
 
-	const char* szSubject = nullptr;
+	stack_string subject;
+
+	const IScriptElement* pScriptObject = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_objectGUID);
+	if (pScriptObject)
+	{
+		subject = pScriptObject->GetName();
+		subject.append("::");
+	}
+
 	if (!GUID::IsEmpty(m_functionId.guid))
 	{
 		layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
@@ -98,7 +105,7 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IEnvFunction* pEnvFunction = envRegistry.GetFunction(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
 				if (pEnvFunction)
 				{
-					szSubject = pEnvFunction->GetName();
+					subject.append(pEnvFunction->GetName());
 
 					CreateInputsAndOutputs(layout, *pEnvFunction);
 				}
@@ -109,7 +116,7 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
 				if (pScriptElement && (pScriptElement->GetElementType() == EScriptElementType::Function))
 				{
-					szSubject = pScriptElement->GetName();
+					subject.append(pScriptElement->GetName());
 
 					CreateInputsAndOutputs(layout, DynamicCast<IScriptFunction>(*pScriptElement));
 				}
@@ -117,7 +124,8 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			}
 		}
 	}
-	layout.SetName("Function", szSubject);
+
+	layout.SetName(nullptr, subject.c_str());
 }
 
 void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const

@@ -75,6 +75,7 @@ CEntity::CEntity(SEntitySpawnParams& params)
 
 	// Set flags.
 	m_bActive = 0;
+	m_bRequiresComponentUpdate = 0;
 	m_bInActiveList = 0;
 
 	m_bBoundsValid = 0;
@@ -394,6 +395,7 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	SEntityEvent event;
 	event.event = ENTITY_EVENT_UPDATE;
 	event.nParam[0] = (INT_PTR)&ctx;
+	event.fParam[0] = ctx.fFrameTime;
 
 	m_components.ForEachSorted(
 	  [&event](const SEntityComponentRecord& componentRecord)
@@ -412,7 +414,7 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	{
 		if (--m_nUpdateCounter == 0)
 		{
-			SetUpdateStatus();
+			ActivateEntityIfNecessary();
 		}
 	}
 }
@@ -1021,9 +1023,9 @@ void CEntity::InvalidateLocalBounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetUpdateStatus()
+void CEntity::ActivateEntityIfNecessary()
 {
-	bool bEnable = GetUpdateStatus();
+	bool bEnable = ShouldActivate();
 
 	g_pIEntitySystem->ActivateEntity(this, bEnable);
 
@@ -1036,8 +1038,7 @@ void CEntity::SetUpdateStatus()
 void CEntity::Activate(bool bActive)
 {
 	m_bActive = bActive;
-	m_nUpdateCounter = 0;
-	SetUpdateStatus();
+	ActivateEntityIfNecessary();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1093,7 +1094,7 @@ void CEntity::Hide(bool bHide)
 			}
 		}
 
-		SetUpdateStatus();
+		ActivateEntityIfNecessary();
 	}
 }
 
@@ -1307,9 +1308,6 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	// Initialize component entity pointer
 	pComponent->m_pEntity = this;
 
-	// Call initialization of the component
-	pComponent->Initialize();
-
 	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
 	componentRecord.typeId = typeId;
@@ -1317,7 +1315,7 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
 
-	if (componentRecord.registeredEventsMask & ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)
+	if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE))
 	{
 		// If any component want to process ENTITY_EVENT_RENDER_VISIBILITY_CHANGE we have to enable ENTITY_FLAG_SEND_RENDER_EVENT flag on the entity
 		SetFlags(GetFlags()|ENTITY_FLAG_SEND_RENDER_EVENT);
@@ -1330,11 +1328,21 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 	// Sorted insertion, all elements of the m_components are sorted by the proxyType
 	m_components.Add(componentRecord);
 
-	if (componentRecord.registeredEventsMask & ENTITY_EVENT_PREPHYSICSUPDATE)
+	if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE))
 	{
 		// If component want to receive ENTITY_EVENT_PREPHYSICSUPDATE, we must mark this entity to be able to send it.
 		PrePhysicsActivate(true);
 	}
+
+	if (m_bRequiresComponentUpdate == 0 && componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
+	{
+		m_bRequiresComponentUpdate = 1;
+
+		ActivateEntityIfNecessary();
+	}
+
+	// Call initialization of the component
+	pComponent->Initialize();
 
 	return pComponent.get();
 }
@@ -1343,6 +1351,21 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 void CEntity::RemoveComponent(IEntityComponent* pComponent)
 {
 	m_components.Remove(pComponent);
+
+	// Check if the remaining components are still interested in updates
+	m_bRequiresComponentUpdate = 0;
+
+	for (auto& componentRecord : m_components.GetVector())
+	{
+		if (componentRecord.pComponent && componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE))
+		{
+			m_bRequiresComponentUpdate = 1;
+
+			break;
+		}
+	}
+
+	ActivateEntityIfNecessary();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2253,7 +2276,7 @@ void CEntity::ActivateForNumUpdates(int numUpdates)
 	}
 
 	m_nUpdateCounter = numUpdates;
-	SetUpdateStatus();
+	ActivateEntityIfNecessary();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -11,6 +11,8 @@
 
 #include "Wrappers/MonoObject.h"
 
+#include "NativeComponents/ManagedEntityComponent.h"
+
 class CMonoDomain;
 class CRootMonoDomain;
 class CAppDomain;
@@ -91,6 +93,8 @@ public:
 	virtual IMonoAssembly*              GetCryCommonLibrary() const override;
 	virtual IMonoAssembly*              GetCryCoreLibrary() const override;
 
+	virtual void						RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface) override;
+
 	virtual void                        RegisterManagedActor(const char* className) override;
 
 	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) override;
@@ -111,6 +115,8 @@ private:
 	static void MonoPrintErrorCallback(const char* szMessage, mono_bool is_stdout);
 
 	static MonoAssembly* MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData);
+
+	void RegisterInternalInterfaces();
 
 private:
 	typedef std::unordered_map<MonoDomain*, CMonoDomain*> TDomainLookupMap;

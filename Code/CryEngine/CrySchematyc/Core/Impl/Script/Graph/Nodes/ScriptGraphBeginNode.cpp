@@ -35,7 +35,6 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetName("Begin");
 	layout.SetStyleId("Core::FlowControl::Begin");
-	layout.SetColor(EScriptGraphColor::Green);
 	layout.AddOutput("Out", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::Begin });
 
 	const IScriptElement& scriptElement = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();

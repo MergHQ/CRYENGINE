@@ -58,13 +58,6 @@ public:
 		bool         m_bSuccess = false;
 	};
 
-	struct SProperties
-	{
-		void Serialize(Serialization::IArchive& archive);
-
-		Vec3 offset;
-	};
-
 	// CComponent
 	virtual bool Init() override;
 	virtual void Shutdown() override;

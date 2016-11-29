@@ -195,7 +195,7 @@ namespace CryEngine.Sydewinder
             _levelElements.UpdateGeometry();
 
             // Check Key input and update player speed.
-            if (Player.LocalPlayer.Exists)
+			if (Player.LocalPlayer.Entity.Exists)
             {
 				Player.LocalPlayer.CheckCoolDown();
 				Player.LocalPlayer.UpdateSpeed();
@@ -256,7 +256,7 @@ namespace CryEngine.Sydewinder
             if (State == GameState.Running)
             {
                 // Fire primary player weapon.
-                if ((e.KeyPressed(EKeyId.eKI_Space) || e.KeyPressed(EKeyId.eKI_XI_A)) && Player.LocalPlayer.Exists)
+				if ((e.KeyPressed(EKeyId.eKI_Space) || e.KeyPressed(EKeyId.eKI_XI_A)) && Player.LocalPlayer.Entity.Exists)
 					Player.LocalPlayer.Fire();
             }
 

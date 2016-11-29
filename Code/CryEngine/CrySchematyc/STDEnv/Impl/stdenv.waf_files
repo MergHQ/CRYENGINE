@@ -11,7 +11,7 @@
 			"../Interface/Schematyc/Entity/EntityUpdateFilters.h",
 			"../Interface/Schematyc/Entity/EntityUserData.h",
 			"../Interface/Schematyc/Entity/EntityUtils.h",
-			"../Interface/Schematyc/Entity/IEntityComponent.h"
+			"../Interface/Schematyc/Entity/IEntityObject.h"
 		],
 		"Interface/Types":
 		[
@@ -37,20 +37,24 @@
 			"Entity/EntityClassProperties.h",
 			"Entity/EntityObjectClassRegistry.cpp",
 			"Entity/EntityObjectClassRegistry.h",
+			"Entity/EntityObjectComponent.cpp",
+			"Entity/EntityObjectComponent.h",
 			"Entity/EntityObjectDebugger.cpp",
 			"Entity/EntityObjectDebugger.h",
 			"Entity/EntityObjectMap.cpp",
 			"Entity/EntityObjectMap.h",
 			"Entity/EntityObjectPreviewer.cpp",
-			"Entity/EntityObjectPreviewer.h",
- 			"Entity/EntityComponent.cpp",
-			"Entity/EntityComponent.h"
+			"Entity/EntityObjectPreviewer.h"
 		],
 		"Impl/Entity/Actions":
 		[
 		],
     "Impl/Entity/Components":
     [
+      "Entity/Components/EntityAudioComponent.cpp",
+      "Entity/Components/EntityAudioComponent.h",
+	  "Entity/Components/EntityCameraControllerComponent.cpp",
+	  "Entity/Components/EntityCameraControllerComponent.h",
       "Entity/Components/EntityDebugComponent.cpp",
       "Entity/Components/EntityDebugComponent.h",
       "Entity/Components/EntityGeomComponent.cpp",
@@ -63,12 +67,10 @@
       "Entity/Components/EntityMovementComponent.h",
       "Entity/Components/EntityParticleEmitterComponent.cpp",
       "Entity/Components/EntityParticleEmitterComponent.h",
-      "Entity/Components/EntityAudioComponent.cpp",
-      "Entity/Components/EntityAudioComponent.h",
 	  "Entity/Components/EntityPhysicsComponent.cpp",
       "Entity/Components/EntityPhysicsComponent.h",
-	  "Entity/Components/EntityCameraControllerComponent.cpp",
-	  "Entity/Components/EntityCameraControllerComponent.h"
+	  "Entity/Components/EntityUtilsComponent.cpp",
+      "Entity/Components/EntityUtilsComponent.h"
     ],
 		"Impl/Entity/Functions":
 		[

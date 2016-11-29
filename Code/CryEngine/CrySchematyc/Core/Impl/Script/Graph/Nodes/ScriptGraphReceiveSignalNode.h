@@ -46,7 +46,8 @@ private:
 
 	void                  GoToSignal();
 
-	static SRuntimeResult Execute(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
+	static SRuntimeResult ExecuteReceiveEnvSignal(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
+	static SRuntimeResult ExecuteReceiveScriptSignal(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
 
 public:
 

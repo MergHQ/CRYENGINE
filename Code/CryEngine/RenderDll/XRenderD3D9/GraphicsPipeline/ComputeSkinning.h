@@ -94,7 +94,7 @@ struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
 		sState_FullyInitialized
 	};
 	volatile int state;
-	SPerMeshResources() : state(0) {}
+	SPerMeshResources() : state(0){}
 	bool IsFullyInitialized() const { return state == sState_FullyInitialized; }
 
 	// per mesh data supply implementation
@@ -110,6 +110,7 @@ struct SPerInstanceResources
 	CComputeRenderPass passDeformWithMorphs;
 	CComputeRenderPass passTriangleTangents;
 	CComputeRenderPass passVertexTangents;
+	int                lastFrameInUse;
 
 	size_t             GetSizeBytes();
 
@@ -124,8 +125,8 @@ public:
 	std::shared_ptr<IPerMeshDataSupply>    GetOrCreateComputeSkinningPerMeshData(const CRenderMesh* pMesh) override;
 	virtual CGpuBuffer*                    GetOutputVertices(const void* pCustomTag) override;
 
-	void                                   ProcessPerMeshResources();
-	void                                   ProcessPerInstanceResources();
+	void                                   RetirePerMeshResources();
+	void                                   RetirePerInstanceResources();
 	std::shared_ptr<SPerMeshResources>     GetPerMeshResources(CRenderMesh* pMesh);
 	std::shared_ptr<SPerInstanceResources> GetOrCreatePerInstanceResources(const void* pCustomTag, const int numVertices, const int numTriangles);
 	void                                   DebugDraw();

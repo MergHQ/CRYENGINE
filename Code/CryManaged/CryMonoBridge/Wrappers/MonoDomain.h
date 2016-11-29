@@ -33,14 +33,14 @@ public:
 
 	virtual bool Activate(bool bForce = false) override;
 	virtual bool IsActive() const override;
+
+	virtual void* GetHandle() const override { return m_pDomain; }
+	virtual void* CreateManagedString(const char* str) override { return CreateString(str); }
 	// ~IMonoDomain
 
 	virtual void Release() = 0;
 
-	// TODO: Wrap string
 	MonoString* CreateString(const char *text);
-
-	MonoDomain *GetHandle() const { return m_pDomain; }
 
 	MonoAssembly* LoadMonoAssembly(const char* path, FILE* pFile, char** pImageDataOut, mono_byte** pDebugDataOut, bool bRefOnly = false);
 

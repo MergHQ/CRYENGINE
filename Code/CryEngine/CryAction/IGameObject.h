@@ -870,8 +870,6 @@ struct IGameObjectExtension : public IEntityComponent
 	//   A pointer to the game object which hold this extension
 	ILINE IGameObject* GetGameObject() const { return m_pGameObject; }
 
-	virtual void Release() = 0;
-
 protected:
 	void SetGameObject(IGameObject* pGameObject)
 	{

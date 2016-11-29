@@ -26,7 +26,7 @@ class CNodesDictionaryNodeEntry : public CAbstractDictionaryEntry
 	friend class CNodesDictionaryCreator;
 
 public:
-	CNodesDictionaryNodeEntry(QString name, QString fullName, const Schematyc::IScriptGraphNodeCreationCommandPtr pCommand, CNodesDictionaryCategoryEntry* pParent = nullptr, QIcon* pIcon = nullptr)
+	CNodesDictionaryNodeEntry(QString name, QString fullName, const Schematyc::IScriptGraphNodeCreationCommandPtr pCommand, CNodesDictionaryCategoryEntry* pParent = nullptr, const QIcon* pIcon = nullptr)
 		: CAbstractDictionaryEntry()
 		, m_name(name)
 		, m_fullName(fullName)
@@ -39,7 +39,7 @@ public:
 	// CAbstractDictionaryEntry
 	virtual uint32                          GetType() const override { return Type_Entry; }
 	virtual QVariant                        GetColumnValue(int32 columnIndex) const override;
-	virtual QIcon*                          GetColumnIcon(int32 columnIndex) const override;
+	virtual const QIcon*                    GetColumnIcon(int32 columnIndex) const override;
 
 	virtual const CAbstractDictionaryEntry* GetParentEntry() const override;
 	virtual QVariant                        GetIdentifier() const;
@@ -52,7 +52,7 @@ private:
 	CNodesDictionaryCategoryEntry*                      m_pParent;
 	QString                                             m_name;
 	QString                                             m_fullName;
-	QIcon*                                              m_pIcon;
+	const QIcon*                                        m_pIcon;
 	const Schematyc::IScriptGraphNodeCreationCommandPtr m_pCommand;
 };
 

@@ -10,18 +10,12 @@ CViewExtension::CViewExtension()
 {
 }
 
-CViewExtension::~CViewExtension()
-{
-}
-
-void CViewExtension::Release()
+void CViewExtension::OnShutDown()
 {
 	GetGameObject()->ReleaseView(this);
 
 	gEnv->pGameFramework->GetIViewSystem()->RemoveView(m_viewId);
 	gEnv->pConsole->UnregisterVariable("gamezero_cam_fov", true);
-
-	ISimpleExtension::Release();
 }
 
 void CViewExtension::PostInit(IGameObject* pGameObject)

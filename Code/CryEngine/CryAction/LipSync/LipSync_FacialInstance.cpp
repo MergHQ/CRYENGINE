@@ -141,17 +141,6 @@ void CLipSync_FacialInstance::PostReloadExtension(IGameObject* pGameObject, cons
 	InjectLipSyncProvider();
 }
 
-void CLipSync_FacialInstance::Release()
-{
-	IEntity* pEntity = GetEntity();
-	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
-	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
-	delete this;
-}
-
 void CLipSync_FacialInstance::FullSerialize(TSerialize ser)
 {
 	ser.BeginGroup("LipSync_FacialInstance");
@@ -220,4 +209,14 @@ void CLipSync_FacialInstance::PostUpdate(float frameTime)
 
 void CLipSync_FacialInstance::PostRemoteSpawn()
 {
+}
+
+void CLipSync_FacialInstance::OnShutDown()
+{
+	IEntity* pEntity = GetEntity();
+	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
+	{
+		REINST(add SetLipSyncProvider to interface)
+			//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+	}
 }

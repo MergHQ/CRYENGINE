@@ -514,6 +514,22 @@ void CEntityPhysics::AwakeOnRender(bool bRender)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntityPhysics::SetActive(bool bActive) 
+{
+	if(bActive)
+	{
+		m_nFlags |= FLAG_ACTIVE;
+	}
+	else
+	{
+		m_nFlags &= ~FLAG_ACTIVE;
+	}
+
+	// Add / remove from the active entity list if necessary
+	m_pEntity->ActivateEntityIfNecessary();
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CEntityPhysics::NeedNetworkSerialize()
 {
 	if (m_pPhysicalEntity)

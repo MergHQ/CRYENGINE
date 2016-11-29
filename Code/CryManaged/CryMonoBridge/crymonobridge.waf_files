@@ -40,7 +40,17 @@
 		  "NativeComponents/Actor.h",
 		  "NativeComponents/Actor.cpp",
 		  "NativeComponents/GameRules.h",
-		  "NativeComponents/GameRules.cpp"
+		  "NativeComponents/GameRules.cpp",
+		  "NativeComponents/ManagedEntityComponent.h",
+		  "NativeComponents/ManagedEntityComponent.cpp"
+		]
+	},
+	"CryMonoBridge_main_uber_4.cpp" :
+	{
+		"NativeToManagedInterfaces" :
+		[
+		  "NativeToManagedInterfaces/Entity.h",
+		  "NativeToManagedInterfaces/Entity.cpp"
 		]
 	},
 	"NoUberFile" :

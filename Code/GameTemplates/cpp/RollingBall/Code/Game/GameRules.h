@@ -14,7 +14,6 @@ public:
 	virtual void PostInitClient(int channelId) override {}
 	virtual bool ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override { return false; }
 	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
-  virtual void Release() override {};
 	virtual void FullSerialize(TSerialize ser) override {}
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override { return true; }
 	virtual void PostSerialize() override {}

@@ -14,15 +14,19 @@
 #include "NativeComponents/Actor.h"
 #include "NativeComponents/GameRules.h"
 
+#include "NativeToManagedInterfaces/Entity.h"
+
 #include <CrySystem/ILog.h>
 #include <CryAISystem/IAISystem.h>
 
 #include <mono/metadata/mono-gc.h>
-#include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/utils/mono-logger.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+
+#include <CryMono/IMonoNativeToManagedInterface.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#pragma comment(lib, "mono-2.0.lib")
@@ -135,7 +139,9 @@ bool CMonoRuntime::Initialize()
 	m_pRootDomain = new CRootMonoDomain();
 	m_pRootDomain->Initialize();
 
-	m_domainLookupMap.insert(TDomainLookupMap::value_type(m_pRootDomain->GetHandle(), m_pRootDomain));
+	m_domainLookupMap.insert(TDomainLookupMap::value_type((MonoDomain*)m_pRootDomain->GetHandle(), m_pRootDomain));
+
+	RegisterInternalInterfaces();
 
 	CryLog("[Mono] Initialization done.");
 	return true;
@@ -249,7 +255,7 @@ IMonoDomain* CMonoRuntime::GetActiveDomain()
 IMonoDomain* CMonoRuntime::CreateDomain(char* name, bool bActivate)
 {
 	auto* pAppDomain = new CAppDomain(name, bActivate);
-	m_domainLookupMap.insert(TDomainLookupMap::value_type(pAppDomain->GetHandle(), pAppDomain));
+	m_domainLookupMap.insert(TDomainLookupMap::value_type((MonoDomain*)pAppDomain->GetHandle(), pAppDomain));
 
 	return pAppDomain;
 }
@@ -318,6 +324,21 @@ void CMonoRuntime::RegisterManagedNodeCreator(const char* szClassName, IManagedN
 	CManagedNodeCreatorProxy* pProxy = new CManagedNodeCreatorProxy(szClassName, pCreator);
 	manager.GetNodeFactory().RegisterNodeCreator(pProxy);
 	m_nodeCreators.push_back(pProxy);
+}
+
+void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface)
+{
+	string functionNamePrefix;
+	functionNamePrefix.Format("%s.%s::", interface.GetNamespace(), interface.GetClassName());
+
+	auto registerInternalCall = [functionNamePrefix](const void* pMethod, const char* szMethodName)
+	{
+		string methodName = functionNamePrefix + szMethodName;
+
+		mono_add_internal_call(methodName, pMethod);
+	};
+
+	interface.RegisterFunctions(registerInternalCall);
 }
 
 CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoDomain* pDomain)
@@ -395,6 +416,12 @@ void CMonoRuntime::ReloadPluginDomain()
 		// Notify the framework so that internal listeners etc. can be added again.
 		pEngineClass->InvokeMethod("OnReloadDone");
 	}
+}
+
+void CMonoRuntime::RegisterInternalInterfaces()
+{
+	CManagedEntityInterface entityInterface;
+	RegisterNativeToManagedInterface(entityInterface);
 }
 
 void CMonoRuntime::HandleException(MonoObject* pException)

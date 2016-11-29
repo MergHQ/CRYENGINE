@@ -238,9 +238,9 @@ void CMainWindow::Show(const Schematyc::SGUID& elementGUID, const Schematyc::SGU
 void CMainWindow::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu, CEditor::MenuItems::New,   CEditor::MenuItems::Save,
-		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,
-		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
+		CEditor::MenuItems::FileMenu,                                                       /*CEditor::MenuItems::New,*/ CEditor::MenuItems::Save,
+		CEditor::MenuItems::EditMenu,                                                       /*CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,*/
+		CEditor::MenuItems::Copy,                                                           CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
 	};
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
@@ -451,19 +451,6 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 {
 	if (selection.pScriptElement)
 	{
-		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
-		{
-			IDetailItem* pDetailItem = new CScriptElementDetailItem(selection.pScriptElement);
-			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem);
-
-			auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
-			{
-				return pPropertiesWidget;
-			};
-			PopulateInspectorEvent populateEvent(populateInspector, "Properties");
-			pBroadcastManager->Broadcast(populateEvent);
-		}
-
 		Schematyc::IScriptGraph* pScriptGraph = selection.pScriptElement->GetExtensions().QueryExtension<Schematyc::IScriptGraph>();
 		if (pScriptGraph)
 		{
@@ -494,6 +481,20 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 				m_pGraphView->SetModel(nullptr);
 				delete pModel;
 			}
+		}
+
+		// Update properties
+		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
+		{
+			IDetailItem* pDetailItem = new CScriptElementDetailItem(selection.pScriptElement);
+			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, m_pPreview);
+
+			auto populateInspector = [pPropertiesWidget](const PopulateInspectorEvent&)
+			{
+				return pPropertiesWidget;
+			};
+			PopulateInspectorEvent populateEvent(populateInspector, "Properties");
+			pBroadcastManager->Broadcast(populateEvent);
 		}
 
 		// Attach to preview.
@@ -588,6 +589,7 @@ Schematyc::CLogWidget* CMainWindow::CreateLog()
 	if (m_pLog == nullptr)
 	{
 		m_pLog = new Schematyc::CLogWidget(m_logSettings);
+		m_pLog->InitLayout();
 
 		m_pClearLogToolbarAction->setEnabled(true);
 		m_pShowLogSettingsToolbarAction->setEnabled(true);
@@ -602,6 +604,7 @@ Schematyc::CLogWidget* CMainWindow::CreateCompilerLog()
 	if (m_pCompilerLog == nullptr)
 	{
 		m_pCompilerLog = new Schematyc::CLogWidget(m_compilerLogSettings);
+		m_pCompilerLog->InitLayout();
 
 		m_pClearCompilerLogToolbarAction->setEnabled(true);
 

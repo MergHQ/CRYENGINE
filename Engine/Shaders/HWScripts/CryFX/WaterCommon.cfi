@@ -364,6 +364,14 @@ Texture2D FlowOffTex : register(t14) = "EngineAssets/Textures/perlinNoise2d.tif"
 Texture2D interleaveSampleTex : register(t15) = "EngineAssets/Textures/FogVolShadowJitter.tif";
 
 //////////////////////////////////////////////////////////////////////////
+// per instance textures for water ocean
+
+// eTF_A32B32G32R32F
+Texture2D WaterDisplMapSampler : register(t14) = TS_WaterOceanMap;
+
+Texture2D oceanReflectionTex : register(t15);
+
+//////////////////////////////////////////////////////////////////////////
 // per pass textures
 
 // water ocean gloss
@@ -398,6 +406,20 @@ Texture2D reflectionTex : register(t31) = TS_WaterVolumeRefl;
 SamplerState aniso16xWrapSState : register(s1) = SS_MaterialAnisoHighWrap;
 SamplerState aniso16xClampSState : register(s10) = SS_MaterialAnisoHighWrap;
 SamplerComparisonState linearClampCompSState : register(s11) = SS_Shadow2;
+
+//////////////////////////////////////////////////////////////////////////
+// per pass textures for water volume reflection gen pass
+
+Texture2D sceneDepthScaledTex : register(t29) = TS_ZTargetScaled_d2;
+Texture2D refractionHalfResTex : register(t30) = TS_HDR_TargetPrev;
+Texture2D reflectionPrevTex : register(t31) = TS_WaterVolumeReflPrev;
+
+//////////////////////////////////////////////////////////////////////////
+// per pass textures for water fog volume pass
+
+Texture2D oceanMaskTex : register(t16);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VolumetricFogSampling GetVolumetricFogSampling()
 {

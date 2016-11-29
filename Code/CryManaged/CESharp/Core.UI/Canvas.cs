@@ -159,7 +159,7 @@ namespace CryEngine.UI
 		/// </summary>
 		/// <param name="target">Target Entity.</param>
 		/// <param name="resolution">Resolution of UI texture in 3D space.</param>
-		public bool SetupTargetEntity(EntitySystem.Entity target, int resolution = 768)
+		public bool SetupTargetEntity(Entity target, int resolution = 768)
 		{
 			byte[] data = new byte[resolution * resolution * 4];
 			TargetTexture = new UITexture(resolution, resolution, data, true, false, true);

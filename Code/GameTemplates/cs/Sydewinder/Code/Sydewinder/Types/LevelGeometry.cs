@@ -38,15 +38,15 @@ namespace CryEngine.Sydewinder.Types
 			_tunnelElementsQueue = new Queue<Tunnel>();
 
 			// Get position.
-			Vector3 firstTunnelPos = EntitySystem.Entity.Find("TunnelSpawnPoint").Position;
+			Vector3 firstTunnelPos = Entity.Find("TunnelSpawnPoint").Position;
 
 			_lastTunnel = Tunnel.Create(firstTunnelPos, 0);
 			_lastTunnel.Speed = LevelGeometry.GlobalGeomSpeed;
 
 			_tunnelElementsQueue.Enqueue(_lastTunnel);
 
-			_rotatingRingOne = EntitySystem.Entity.Find("ring_2");
-			_rotatingRingTwo = EntitySystem.Entity.Find("ring_3");
+			_rotatingRingOne = Entity.Find("ring_2");
+			_rotatingRingTwo = Entity.Find("ring_3");
 		}
 
 		/// <summary>
@@ -57,7 +57,7 @@ namespace CryEngine.Sydewinder.Types
 			// Get first tunnel in Queue without removing the tunnel from the Queue.
 			Tunnel firstTunnel = _tunnelElementsQueue.Peek();
 
-			if (firstTunnel.Position.y < 450)
+			if (firstTunnel.Entity.Position.y < 450)
 			{
 				// Remove the tunnel from the Queue.
 				_tunnelElementsQueue.Dequeue();
@@ -66,7 +66,7 @@ namespace CryEngine.Sydewinder.Types
 				firstTunnel.Purge();
 			}
 
-			Vector3 lastTunnelPos = _lastTunnel.Position;
+			Vector3 lastTunnelPos = _lastTunnel.Entity.Position;
 			if (lastTunnelPos.y < 700)
 			{
 				// Spawn new tunnel with door.
@@ -122,13 +122,13 @@ namespace CryEngine.Sydewinder.Types
 				throw new ArgumentOutOfRangeException (
 					string.Format ("tunnelType must betwenn 0 and {0}", (TunnelTypes.Length - 1).ToString()));
 
-			var tunnel = Entity.Spawn<Tunnel> (pos, Quaternion.Identity, 1.0f);
+			var tunnel = Entity.SpawnWithComponent<Tunnel> (pos, Quaternion.Identity, 1.0f);
 
-            tunnel.LoadGeometry(0, TunnelTypes[tunnelType].Geometry);
+			tunnel.Entity.LoadGeometry(0, TunnelTypes[tunnelType].Geometry);
 
 			if (tunnelType == 1)
 			{
-                tunnel.Physics.Physicalize(1f, EPhysicalizationType.ePT_Rigid);
+				tunnel.Entity.Physics.Physicalize(1f, EPhysicalizationType.ePT_Rigid);
 			}
 
 			tunnel.AddToGamePoolWithDoor(pos);
@@ -146,7 +146,7 @@ namespace CryEngine.Sydewinder.Types
 			}
 			else
 			{
-				position = this.Position;
+				position = this.Entity.Position;
 			}
 
 			// Create a door case as connector between tunnels.
@@ -165,7 +165,7 @@ namespace CryEngine.Sydewinder.Types
 			// Till 'MaxValue' as the for-loop is quit when once the first empty position is discovered.
 			for (int i = 1; i < int.MaxValue; i++)
 			{
-				Vector3 helperPos = GetHelperPos(0, "Light_0" + i.ToString());
+				Vector3 helperPos = Entity.GetHelperPos(0, "Light_0" + i.ToString());
 
 				if (helperPos.x != 0 || helperPos.y != 0 || helperPos.z != 0)
 				{
@@ -177,8 +177,8 @@ namespace CryEngine.Sydewinder.Types
 						m_BaseSpecMult = 1f
 					};
 
-					LoadLight (i, light);
-					SetGeometrySlotLocalTransform(i, new Matrix3x4(Vector3.One, Quaternion.Identity, helperPos));
+					Entity.LoadLight (i, light);
+					Entity.SetGeometrySlotLocalTransform(i, new Matrix3x4(Vector3.One, Quaternion.Identity, helperPos));
 				}
 				else
 					break;
@@ -187,8 +187,8 @@ namespace CryEngine.Sydewinder.Types
 
 		public void Purge()
 		{
-			GamePool.FlagForPurge(Id);
-			GamePool.FlagForPurge(_tunnelDoor.Id);
+			GamePool.FlagForPurge(Entity.Id);
+			GamePool.FlagForPurge(_tunnelDoor.Entity.Id);
 		}
 	}
 
@@ -218,21 +218,21 @@ namespace CryEngine.Sydewinder.Types
 				throw new ArgumentOutOfRangeException (
 					string.Format ("doorType must betwenn 0 and {0}", (DoorTypes.Length - 1).ToString()));
 
-			var door = Entity.Spawn<Door> (pos, Quaternion.Identity, 1);
+			var door = Entity.SpawnWithComponent<Door> (pos, Quaternion.Identity, 1);
             
             var material = DoorTypes[doorType].Material;
             if (material != null)
             {
-                door.LoadMaterial(material);
+				door.Entity.LoadMaterial(material);
             }
 
             var geometry = DoorTypes[doorType].Geometry;
             if (geometry != null)
             {
-                door.LoadGeometry(0, geometry);
+				door.Entity.LoadGeometry(0, geometry);
             }
 
-            door.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+			door.Entity.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
 
             GamePool.AddObjectToPool(door);
 			return door;

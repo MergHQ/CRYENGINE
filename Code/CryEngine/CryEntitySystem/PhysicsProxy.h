@@ -39,17 +39,19 @@ public:
 		CHARACTER_SLOT_MASK = 0x000F,     // Slot Id, of physicalized character.
 		// When set Physical proxy will ignore incoming xform events from the entity.
 		// Needed to prevent cycle change, when physical entity change entity xform and recieve back an event about entity xform.
-		FLAG_IGNORE_XFORM_EVENT        = 0x0010,
-		FLAG_IGNORE_BUOYANCY           = 0x0020,
-		FLAG_PHYSICS_DISABLED          = 0x0040,
-		FLAG_SYNC_CHARACTER            = 0x0080,
-		FLAG_WAS_HIDDEN                = 0x0100,
-		FLAG_PHYS_CHARACTER            = 0x0200,
-		FLAG_PHYS_AWAKE_WHEN_VISIBLE   = 0x0400,
-		FLAG_ATTACH_CLOTH_WHEN_VISIBLE = 0x0800,
-		FLAG_POS_EXTRAPOLATED          = 0x1000,
-		FLAG_DISABLE_ENT_SERIALIZATION = 0x2000,
-		FLAG_PHYSICS_REMOVED           = 0x4000,
+		FLAG_IGNORE_XFORM_EVENT        = 1 << 4,
+		FLAG_IGNORE_BUOYANCY           = 1 << 5,
+		FLAG_PHYSICS_DISABLED          = 1 << 6,
+		FLAG_SYNC_CHARACTER            = 1 << 7,
+		FLAG_WAS_HIDDEN                = 1 << 8,
+		FLAG_PHYS_CHARACTER            = 1 << 9,
+		FLAG_PHYS_AWAKE_WHEN_VISIBLE   = 1 << 10,
+		FLAG_ATTACH_CLOTH_WHEN_VISIBLE = 1 << 11,
+		FLAG_POS_EXTRAPOLATED          = 1 << 12,
+		FLAG_DISABLE_ENT_SERIALIZATION = 1 << 13,
+		FLAG_PHYSICS_REMOVED           = 1 << 14,
+		// Whether or not the physics proxy currently requires that the entity is active / updated every frame.
+		FLAG_ACTIVE                    = 1 << 15,
 	};
 
 	CEntityPhysics();
@@ -113,6 +115,8 @@ public:
 	static void EnableValidation();
 	static void DisableValidation();
 #endif
+
+	void               SetActive(bool bActive);
 
 private:
 	IPhysicalWorld*  PhysicalWorld() const { return gEnv->pPhysicalWorld; }

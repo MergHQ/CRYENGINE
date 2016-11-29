@@ -3,8 +3,10 @@
 
 struct vert2fragDebug
 {
-  OUT_P
-  float4 Color : TEXCOORDN;	
+	OUT_P
+	float4 baseTC : TEXCOORDN; 
+	float4 Color  : TEXCOORDN;
+	float4 vView  : TEXCOORDN;
 };
 
 struct app2vertDebug
@@ -24,15 +26,15 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
   vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
 
   OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
-#if %_RT_SAMPLE1
-    // We are passing the actual texture coordinate here for use in alpha testing
-    OUT.Color = float4(IN.vertCommon.baseTC.x, IN.vertCommon.baseTC.y, 0, 0);
-#elif %_RT_SAMPLE0  // Wireframe debug pass
+	OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+	_TCModify(vertPassPos.baseTC, OUT.baseTC, 0, 0, TS_DIFFUSE);
+	
+#if %_RT_SAMPLE1  // Selection Pass
+	// We are passing the actual texture coordinate here for use in alpha testing
+	OUT.Color = float4(IN.vertCommon.baseTC.x, IN.vertCommon.baseTC.y, 0, 0);
+#else  // Debug Views
+	// Prepare color for wireframe
 	OUT.Color = lerp(float4(0, 0.7, 0.9, 1), float4(0.35, 0.35, 0.35, 1), saturate(OUT.HPosition.w / 100.0));
-#elif (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
-	#fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
-#else
-    OUT.Color = AmbientOp;
 #endif
 	
   return OUT;            
@@ -42,13 +44,48 @@ Texture2D<float4> SceneDepthTex : register(t25);
 
 pixout Common_DebugPassPS(vert2fragDebug IN)
 {
-  pixout OUT = (pixout)0;  
+  pixout OUT = (pixout)0;
+	
+	// Debug Views
+#if !%_RT_SAMPLE1
+	[branch] if (CP_Custom_ViewMode.x == 0)  // Wireframe
+	{
+		OUT.Color.xyz = IN.Color.xyz;
+	}
+	else if (CP_Custom_ViewMode.x == 1)  // Texel density
+	{
+		float2 diffuseTexRes = 0;
+#if !OPENGL
+	diffuseTex.GetDimensions(diffuseTexRes.x, diffuseTexRes.y);
+#endif
+	
+		float3 ddx_P = ddx(IN.vView.xyz);
+		float3 ddy_P = ddy(IN.vView.xyz);
+		float2 ddx_T = ddx(IN.baseTC.xy);
+		float2 ddy_T = ddy(IN.baseTC.xy);
 
+		float tx = length(ddx_T) / length(ddx_P) * diffuseTexRes.x * 0.5 / CP_Custom_ViewMode.y;
+		float ty = length(ddy_T) / length(ddy_P) * diffuseTexRes.y * 0.5 / CP_Custom_ViewMode.y;
+		float t = max(tx, ty);
+		
+		float2 p = frac(IN.baseTC.xy * diffuseTexRes / 16.0); // 16x16 texels are a 2x2 checkerboard block
+		float checker = p.x < 0.5 ? (p.y < 0.5 ? 0.9 : 1) : (p.y < 0.5 ? 1 : 0.9);
+
+		// Sample diffuse tex so texture modificator in VS gets properly applied
+		// Multiply by very small number and use result so compiler doesn't optimize tex fetch away
+		float3 c = GetDiffuseTex(diffuseTex, IN.baseTC.xy) * 0.0001;
+		c += GetTexture2D(dissolveNoiseTex, ssMaterialBilinearClamp, float2(t, 0.25));
+		
+		OUT.Color = float4(c * checker, 1);
+	}
+#endif
+
+	// Selection Pass
 #if %_RT_SAMPLE1
-// ID flags. Make sure those are synced between PostEffects.cfx and IRenderNode
-#define SELECTED_FLAG    (1)
-#define HIGHLIGHTED_FLAG (1 << 1)
-#define HIDDEN_FLAG      (1 << 2)
+	// ID flags. Make sure those are synced between PostEffects.cfx and IRenderNode
+	#define SELECTED_FLAG    (1)
+	#define HIGHLIGHTED_FLAG (1 << 1)
+	#define HIDDEN_FLAG      (1 << 2)
 
 #if %_RT_ALPHATEST
   // only access texture for alpha tested meshes
@@ -72,10 +109,8 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   }
 
   OUT.Color.x = asfloat(selectionID);
-#else
-  OUT.Color.xyz = IN.Color.xyz;
-  OUT.Color.w = 0.25;
 #endif
+
   return OUT;
 }
 

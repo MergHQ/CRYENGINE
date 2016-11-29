@@ -46,7 +46,6 @@ SGUID CScriptGraphSetNode::GetTypeGUID() const
 void CScriptGraphSetNode::CreateLayout(CScriptGraphNodeLayout& layout)
 {
 	layout.SetStyleId("Core::Data");
-	layout.SetColor(EScriptGraphColor::Blue);
 
 	const char* szSubject = nullptr;
 	if (!GUID::IsEmpty(m_referenceGUID))

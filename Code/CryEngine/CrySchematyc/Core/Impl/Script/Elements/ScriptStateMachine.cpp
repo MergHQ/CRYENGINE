@@ -50,6 +50,16 @@ void CScriptStateMachine::ProcessEvent(const SScriptEvent& event)
 {
 	switch (event.id)
 	{
+	case EScriptEventId::EditorAdd:
+		{
+			IScriptGraph* pGraph = static_cast<IScriptGraph*>(CScriptElementBase::GetExtensions().QueryExtension(EScriptExtensionType::Graph));
+			SCHEMATYC_CORE_ASSERT(pGraph);
+			if (pGraph)
+			{
+				pGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>())); // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
+			}
+			break;
+		}
 	case EScriptEventId::EditorFixUp:
 	case EScriptEventId::EditorPaste:
 		{
@@ -104,48 +114,46 @@ void CScriptStateMachine::Save(Serialization::IArchive& archive, const ISerializ
 void CScriptStateMachine::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
 	/*
-	typedef std::vector<SGUID> GUIDs;
+	   typedef std::vector<SGUID> GUIDs;
 
-	GUIDs partnerGUIDs;
-	Serialization::StringList partnerNames;
-	partnerGUIDs.reserve(16);
-	partnerNames.reserve(16);
-	partnerGUIDs.push_back(SGUID());
-	partnerNames.push_back("None");
+	   GUIDs partnerGUIDs;
+	   Serialization::StringList partnerNames;
+	   partnerGUIDs.reserve(16);
+	   partnerNames.reserve(16);
+	   partnerGUIDs.push_back(SGUID());
+	   partnerNames.push_back("None");
 
-	CScriptView scriptView(GetParent()->GetGUID());
+	   CScriptView scriptView(GetParent()->GetGUID());
 
-	auto visitStateMachine = [this, &partnerGUIDs, &partnerNames](const IScriptStateMachine& stateMachine) -> EVisitStatus
-	{
-		if (stateMachine.GetLifetime() == EScriptStateMachineLifetime::Persistent)
-		{
-			const SGUID stateMachineGUID = stateMachine.GetGUID();
-			if (stateMachineGUID != CScriptElementBase::GetGUID())
-			{
-				partnerGUIDs.push_back(stateMachineGUID);
-				partnerNames.push_back(stateMachine.GetName());
-			}
-		}
-		return EVisitStatus::Continue;
-	};
-	scriptView.VisitScriptStateMachines(ScriptStateMachineConstVisitor::FromLambda(visitStateMachine), EDomainScope::Local);
+	   auto visitStateMachine = [this, &partnerGUIDs, &partnerNames](const IScriptStateMachine& stateMachine) -> EVisitStatus
+	   {
+	   if (stateMachine.GetLifetime() == EScriptStateMachineLifetime::Persistent)
+	   {
+	    const SGUID stateMachineGUID = stateMachine.GetGUID();
+	    if (stateMachineGUID != CScriptElementBase::GetGUID())
+	    {
+	      partnerGUIDs.push_back(stateMachineGUID);
+	      partnerNames.push_back(stateMachine.GetName());
+	    }
+	   }
+	   return EVisitStatus::Continue;
+	   };
+	   scriptView.VisitScriptStateMachines(ScriptStateMachineConstVisitor::FromLambda(visitStateMachine), EDomainScope::Local);
 
-	GUIDs::const_iterator itPartnerGUID = std::find(partnerGUIDs.begin(), partnerGUIDs.end(), m_partnerGUID);
-	const int partnerIdx = itPartnerGUID != partnerGUIDs.end() ? static_cast<int>(itPartnerGUID - partnerGUIDs.begin()) : 0;
-	Serialization::StringListValue partnerName(partnerNames, partnerIdx);
-	archive(partnerName, "partnerName", "Partner");
-	if (archive.isInput())
-	{
-		m_partnerGUID = partnerGUIDs[partnerName.index()];
-	}
-	*/
+	   GUIDs::const_iterator itPartnerGUID = std::find(partnerGUIDs.begin(), partnerGUIDs.end(), m_partnerGUID);
+	   const int partnerIdx = itPartnerGUID != partnerGUIDs.end() ? static_cast<int>(itPartnerGUID - partnerGUIDs.begin()) : 0;
+	   Serialization::StringListValue partnerName(partnerNames, partnerIdx);
+	   archive(partnerName, "partnerName", "Partner");
+	   if (archive.isInput())
+	   {
+	   m_partnerGUID = partnerGUIDs[partnerName.index()];
+	   }
+	 */
 }
 
 void CScriptStateMachine::CreateTransitionGraph()
 {
-	CScriptGraphPtr pScriptGraph = std::make_shared<CScriptGraph>(*this, EScriptGraphType::Transition);
-	pScriptGraph->AddNode(std::make_shared<CScriptGraphNode>(gEnv->pSchematyc->CreateGUID(), stl::make_unique<CScriptGraphBeginNode>()));   // #SchematycTODO : Shouldn't we be using CScriptGraphNodeFactory::CreateNode() instead of instantiating the node directly?!?
-	CScriptElementBase::AddExtension(pScriptGraph);
+	CScriptElementBase::AddExtension(std::make_shared<CScriptGraph>(*this, EScriptGraphType::Transition));
 }
 
 void CScriptStateMachine::RefreshTransitionGraph()

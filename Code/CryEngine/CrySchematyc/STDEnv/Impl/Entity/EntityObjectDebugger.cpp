@@ -95,8 +95,13 @@ CEntityObjectDebugger::~CEntityObjectDebugger()
 
 void CEntityObjectDebugger::Update(const SUpdateContext&)
 {
-	ObjectDumpFlags objectDumpFlags;
 	if (sc_EntityDebugConfig == 0)
+	{
+		return;
+	}
+
+	ObjectDumpFlags objectDumpFlags;
+	if (sc_EntityDebugConfig == 1)
 	{
 		objectDumpFlags.Add(EObjectDumpFlags::All);
 	}

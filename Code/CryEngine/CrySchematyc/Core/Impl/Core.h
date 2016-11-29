@@ -55,7 +55,6 @@ public:
 	virtual void                     SetGUIDGenerator(const GUIDGenerator& guidGenerator) override;
 	virtual SGUID                    CreateGUID() const override;
 
-	virtual const char*              GetFileFormat() const override;
 	virtual const char*              GetRootFolder() const override;
 	virtual const char*              GetScriptsFolder() const override;
 	virtual const char*              GetSettingsFolder() const override;

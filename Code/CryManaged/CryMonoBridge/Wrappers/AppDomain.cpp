@@ -113,7 +113,7 @@ void CAppDomain::CreateSerializationUtilities(bool bWriting)
 
 		auto* pDomain = static_cast<CMonoDomain*>(pCryObjectReaderClass->GetAssembly()->GetDomain());
 
-		auto* pMonoManagedBuffer = (MonoObject*)mono_array_new(pDomain->GetHandle(), mono_get_byte_class(), m_serializedDataSize);
+		auto* pMonoManagedBuffer = (MonoObject*)mono_array_new((MonoDomain*)pDomain->GetHandle(), mono_get_byte_class(), m_serializedDataSize);
 		auto pBufferClass = pNetCoreLibrary->GetClassFromMonoClass(mono_object_get_class(pMonoManagedBuffer));
 
 		auto pManagedBuffer = std::make_shared<CMonoObject>(pMonoManagedBuffer, pBufferClass);
@@ -125,7 +125,7 @@ void CAppDomain::CreateSerializationUtilities(bool bWriting)
 		memoryStreamCtorArgs[0] = pMonoManagedBuffer;
 
 		bool bWritable = false;
-		MonoObject* pBoolObject = mono_value_box(pDomain->GetHandle(), mono_get_boolean_class(), &bWritable);
+		MonoObject* pBoolObject = mono_value_box((MonoDomain*)pDomain->GetHandle(), mono_get_boolean_class(), &bWritable);
 		memoryStreamCtorArgs[1] = pBoolObject;
 
 		auto pMemoryStream = pMemoryStreamClass->CreateInstance(memoryStreamCtorArgs, 2);

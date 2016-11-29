@@ -64,7 +64,7 @@ static const char* g_szScriptRootIcon = "icons:schematyc/script_module.png";
 
 const QSize g_defaultColumnSize[EScriptBrowserColumn::Count] = { QSize(100, 20), QSize(20, 20) };
 
-const char* g_szClipboardPrefix = "[schematyc_script.json] ";
+const char* g_szClipboardPrefix = "[schematyc_xml]";
 }
 
 class CScriptBrowserFilter : public QSortFilterProxyModel
@@ -958,41 +958,44 @@ CScriptBrowserItem* CScriptBrowserModel::CreateScriptElementItem(IScriptElement&
 	CScriptBrowserItem* pParentParent = parentItem.GetParent();
 	EScriptElementType parentParentType = (pParentParent) ? pParentParent->GetFilter() : EScriptElementType::Root;
 
-	if (parentItem.GetType() != EScriptBrowserItemType::ScriptElement
-	    || parentParentType == EScriptElementType::Class
-	    || parentParentType == EScriptElementType::Root
-		|| parentParentType == EScriptElementType::None
-		) //we don't want sub-filters on other levels
+	if (scriptElement.GetElementType() != EScriptElementType::Class)
 	{
-		const char* szFilter = ScriptBrowserUtils::GetScriptElementFilterName(scriptElementType);
-		if (szFilter && szFilter[0])
+		if (parentItem.GetType() != EScriptBrowserItemType::ScriptElement
+			|| parentParentType == EScriptElementType::Class
+			|| parentParentType == EScriptElementType::Root
+			|| parentParentType == EScriptElementType::None
+			) //we don't want sub-filters on other levels
 		{
-			pFilterItem = parentItem.GetChildByTypeAndName(EScriptBrowserItemType::Filter, szFilter);
-			if (!pFilterItem)
+			const char* szFilter = ScriptBrowserUtils::GetScriptElementFilterName(scriptElementType);
+			if (szFilter && szFilter[0])
 			{
-				pFilterItem = AddItem(parentItem, std::make_shared<CScriptBrowserItem>(EScriptBrowserItemType::Filter, szFilter, scriptElementType));
-
-				const uint32 childCount = parentItem.GetChildCount();
-
-				if (childCount > 0)
+				pFilterItem = parentItem.GetChildByTypeAndName(EScriptBrowserItemType::Filter, szFilter);
+				if (!pFilterItem)
 				{
-					std::vector<CScriptBrowserItem*> childItems;
-					childItems.reserve(childCount);
-					for (uint32 childIdx = 0; childIdx < childCount; ++childIdx)
-					{
-						CScriptBrowserItem* pChildItem = parentItem.GetChildByIdx(childIdx);
-						const IScriptElement* pChildScriptElement = pChildItem->GetScriptElement();
-						if (pChildScriptElement && (pChildScriptElement->GetElementType() == scriptElementType))
-						{
-							childItems.push_back(pChildItem);
-						}
-					}
+					pFilterItem = AddItem(parentItem, std::make_shared<CScriptBrowserItem>(EScriptBrowserItemType::Filter, szFilter, scriptElementType));
 
-					if (!childItems.empty())
+					const uint32 childCount = parentItem.GetChildCount();
+
+					if (childCount > 0)
 					{
-						for (CScriptBrowserItem* pChildItem : childItems)
+						std::vector<CScriptBrowserItem*> childItems;
+						childItems.reserve(childCount);
+						for (uint32 childIdx = 0; childIdx < childCount; ++childIdx)
 						{
-							AddItem(*pFilterItem, RemoveItem(*pChildItem));
+							CScriptBrowserItem* pChildItem = parentItem.GetChildByIdx(childIdx);
+							const IScriptElement* pChildScriptElement = pChildItem->GetScriptElement();
+							if (pChildScriptElement && (pChildScriptElement->GetElementType() == scriptElementType))
+							{
+								childItems.push_back(pChildItem);
+							}
+						}
+
+						if (!childItems.empty())
+						{
+							for (CScriptBrowserItem* pChildItem : childItems)
+							{
+								AddItem(*pFilterItem, RemoveItem(*pChildItem));
+							}
 						}
 					}
 				}
@@ -1322,30 +1325,30 @@ void CScriptBrowserWidget::OnTreeViewCustomContextMenuRequested(const QPoint& po
 					   connect(pScopeToThisAction, SIGNAL(triggered()), this, SLOT(OnScopeToThis()));
 					   }*/
 
-					{
+					/*{
 						QAction* pFindReferencesAction = contextMenu.addAction(QString("Find references"));
 						connect(pFindReferencesAction, SIGNAL(triggered()), this, SLOT(OnFindReferences()));
-					}
+					}*/
 
-					contextMenu.addSeparator();
+					//contextMenu.addSeparator();
 
 					if (!m_pAddMenu->isEmpty())
 					{
 						contextMenu.addMenu(m_pAddMenu);
 					}
 
-					//if(ScriptBrowserUtils::CanCopyScriptElement(*pScriptElement))
+					/*if(ScriptBrowserUtils::CanCopyScriptElement(*pScriptElement))
 					{
 						QAction* pCopyAction = contextMenu.addAction(QString("Copy"));
 						connect(pCopyAction, SIGNAL(triggered()), this, SLOT(OnCopyItem()));
-					}
+					}*/
 
-					//if(ScriptBrowserUtils::CanPasteScriptElement(*pScriptElement))
-					{
+					// #SchematycTODO : Verify clipboard contents.
+					/*{
 						QAction* pPasteAction = contextMenu.addAction(QString("Paste"));
 						pPasteAction->setEnabled(CrySchematycEditor::Utils::ValidateClipboardContents(g_szClipboardPrefix));
 						connect(pPasteAction, SIGNAL(triggered()), this, SLOT(OnPasteItem()));
-					}
+					}*/
 
 					if (ScriptBrowserUtils::CanRemoveScriptElement(*pScriptElement))
 					{
@@ -1603,10 +1606,10 @@ void CScriptBrowserWidget::OnCopyItem()
 		IScriptElement* pScriptElement = pItem->GetScriptElement();
 		if (pScriptElement)
 		{
-			CStackString clipboardText;
-			if (gEnv->pSchematyc->GetScriptRegistry().CopyElementsToJson(clipboardText, *pScriptElement))
+			XmlNodeRef xml;
+			if (gEnv->pSchematyc->GetScriptRegistry().CopyElementsToXml(xml, *pScriptElement))
 			{
-				CrySchematycEditor::Utils::WriteToClipboard(clipboardText.c_str(), g_szClipboardPrefix);
+				CrySchematycEditor::Utils::WriteToClipboard(xml->getXMLData()->GetString(), g_szClipboardPrefix);
 			}
 		}
 	}
@@ -1623,7 +1626,11 @@ void CScriptBrowserWidget::OnPasteItem()
 			string clipboardText;
 			if (CrySchematycEditor::Utils::ReadFromClipboard(clipboardText, g_szClipboardPrefix))
 			{
-				gEnv->pSchematyc->GetScriptRegistry().PasteElementsFromJson(clipboardText.c_str(), pScriptElement);
+				XmlNodeRef xml = gEnv->pSystem->LoadXmlFromBuffer(clipboardText.c_str(), clipboardText.length());
+				if (xml)
+				{
+					gEnv->pSchematyc->GetScriptRegistry().PasteElementsFromXml(xml, pScriptElement);
+				}
 			}
 		}
 	}

@@ -15,4 +15,5 @@ struct IMonoObject
 	virtual char* GetArrayAddress(size_t elementSize, size_t index) const = 0;
 
 	virtual void* GetHandle() const = 0;
+	virtual struct IMonoClass* GetClass() const = 0;
 };

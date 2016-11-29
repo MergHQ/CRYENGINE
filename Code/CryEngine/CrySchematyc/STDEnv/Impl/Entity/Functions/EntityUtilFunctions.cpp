@@ -5,6 +5,8 @@
 #include <CryEntitySystem/IEntity.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/Forward.h>
+#include <CryMath/Cry_Camera.h>
+
 #include <Schematyc/Entity/EntityClasses.h>
 #include <Schematyc/Types/BasicTypes.h>
 #include <Schematyc/Types/MathTypes.h>
@@ -29,6 +31,17 @@ ObjectId GetEntityObjectId(ExplicitEntityId entityId)
 	return CSTDEnv::GetInstance().GetEntityObjectMap().GetEntityObjectId(static_cast<EntityId>(entityId));
 }
 
+CRotation GetViewRotation(bool bIgnorePitchAndRoll)
+{
+	Ang3 yawPitchRoll = gEnv->pSystem->GetViewCamera().GetAngles();
+	if (bIgnorePitchAndRoll)
+	{
+		yawPitchRoll.y = 0.0f;
+		yawPitchRoll.z = 0.0f;
+	}
+	return CRotation(Ang3(yawPitchRoll.y, yawPitchRoll.z, yawPitchRoll.x));
+}
+
 static void RegisterUtilFunctions(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
@@ -46,6 +59,14 @@ static void RegisterUtilFunctions(IEnvRegistrar& registrar)
 		pFunction->SetDescription("Get object id from entity");
 		pFunction->BindInput(1, 'ent', "EntityId");
 		pFunction->BindOutput(0, 'obj', "ObjectId");
+		scope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&GetViewRotation, "766aeb56-dba1-40ae-8094-028422563dca"_schematyc_guid, "GetViewRotation");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Get view rotation");
+		pFunction->BindInput(1, 'ipr', "IgnorePitchAndRoll", nullptr, true);
+		pFunction->BindOutput(0, 'rot', "Rotation");
 		scope.Register(pFunction);
 	}
 }

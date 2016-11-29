@@ -385,6 +385,16 @@ void CObject::ResetGraphs()
 
 bool CObject::ReadProperties()
 {
+	const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();
+	for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
+	{
+		const IPropertiesPtr& pComponentProperties = classComponentInstances[componentIdx].pProperties;
+		if (pComponentProperties)
+		{
+			m_components[componentIdx].pProperties = pComponentProperties->Clone();
+		}
+	}
+
 	if (m_pProperties)
 	{
 		const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();

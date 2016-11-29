@@ -54,6 +54,7 @@ size_t SPerMeshResources::GetSizeBytes()
 SPerInstanceResources::SPerInstanceResources(const int numVertices, const int numTriangles)
 	: verticesOut(numVertices)
 	, tangentsOut(numTriangles)
+	, lastFrameInUse(0)
 {
 	verticesOut.CreateDeviceBuffer();
 	tangentsOut.CreateDeviceBuffer();
@@ -99,9 +100,11 @@ std::shared_ptr<SPerInstanceResources> CStorage::GetOrCreatePerInstanceResources
 	if (it == m_perInstanceResources.end())
 	{
 		std::shared_ptr<SPerInstanceResources> element(std::make_shared<SPerInstanceResources>(numVertices, numTriangles));
-		m_perInstanceResources[pCustomTag] = element;
+		it = m_perInstanceResources.insert(std::make_pair(pCustomTag, element)).first;
 	}
-	return m_perInstanceResources[pCustomTag];
+
+	it->second->lastFrameInUse = gcpRendD3D->GetFrameID(false);
+	return it->second;
 }
 
 std::shared_ptr<SPerMeshResources> CStorage::GetPerMeshResources(CRenderMesh* pMesh)
@@ -115,7 +118,7 @@ std::shared_ptr<SPerMeshResources> CStorage::GetPerMeshResources(CRenderMesh* pM
 	return std::shared_ptr<SPerMeshResources>();
 }
 
-void CStorage::ProcessPerMeshResources()
+void CStorage::RetirePerMeshResources()
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csMesh);
 	// lock this
@@ -129,15 +132,17 @@ void CStorage::ProcessPerMeshResources()
 	}
 }
 
-void CStorage::ProcessPerInstanceResources()
+void CStorage::RetirePerInstanceResources()
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csInstance);
+	const int curFrameID = gcpRendD3D->GetFrameID(false);
+
 	for (auto iter = m_perInstanceResources.begin(); iter != m_perInstanceResources.end(); )
 	{
 		const std::shared_ptr<SPerInstanceResources>& pRes = iter->second;
 		const void* pCustom = iter->first;
 		++iter;
-		if (pRes.use_count() == 1)
+		if (pRes.use_count() == 1 && pRes->lastFrameInUse < curFrameID - 1)
 			m_perInstanceResources.erase(pCustom);
 	}
 }
@@ -198,6 +203,10 @@ void CComputeSkinningStage::Execute(CRenderView* pRenderView)
 
 	PROFILE_LABEL_SCOPE("CHARACTER_DEFORMATION");
 
+	// Delete resources which weren't used last frame.
+	m_storage.RetirePerMeshResources();
+	m_storage.RetirePerInstanceResources();
+
 	DispatchComputeShaders(pRenderView);
 }
 
@@ -209,10 +218,6 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 
 	bool bDoPreMorphs = cvar_gdMorphs && cvar_gdMorphs->GetIVal();
 	bool bDoTangents = cvar_gdTangents && cvar_gdTangents->GetIVal();
-
-	m_storage.ProcessPerMeshResources();
-
-	std::vector<std::shared_ptr<compute_skinning::SPerInstanceResources>> perInstanceResourcesInUse;
 
 	// TODO:/NOTE: possibly multi-threadable recording
 	auto& list = gcpRendD3D.GetComputeSkinningDataListRT();
@@ -234,9 +239,6 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 		}
 
 		auto ir = m_storage.GetOrCreatePerInstanceResources(pSD->pCustomTag, mr->indicesIn.GetSize(), mr->indicesIn.GetSize() / 3);
-
-		// make sure they are locked until the next frame
-		perInstanceResourcesInUse.push_back(ir);
 
 		// bind output skinning
 		ir->passDeform.SetOutputUAV(0, &ir->verticesOut.GetBuffer());
@@ -330,10 +332,6 @@ void CComputeSkinningStage::DispatchComputeShaders(CRenderView* pRenderView)
 			}
 		}
 	}
-
-	// process per instance resources -> remove the ones that are not in use, the ones in used will be picked up in the
-	// vertex shader
-	m_storage.ProcessPerInstanceResources();
 
 	static ICVar* cvar_gdDebugDraw = gEnv->pConsole->GetCVar("r_ComputeSkinningDebugDraw");
 	if (cvar_gdDebugDraw && cvar_gdDebugDraw->GetIVal())

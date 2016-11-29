@@ -5,7 +5,6 @@
 
 namespace Schematyc
 {
-ICVar* CVars::sc_FileFormat = nullptr;
 ICVar* CVars::sc_RootFolder = nullptr;
 int CVars::sc_IgnorePAKFiles = 0;
 int CVars::sc_IgnoreUnderscoredFolders = 1;
@@ -21,7 +20,6 @@ ICVar* CVars::sc_ExperimentalFeatures = nullptr;
 
 void CVars::Register()
 {
-	sc_FileFormat = REGISTER_STRING("sc_FileFormat", "xml", VF_READONLY, "Schematyc - Format of Schematyc files");
 	sc_RootFolder = REGISTER_STRING("sc_RootFolder", "libs/schematyc", VF_READONLY, "Schematyc - Root folder for files");
 	REGISTER_CVAR(sc_IgnorePAKFiles, sc_IgnorePAKFiles, VF_READONLY, "Schematyc - Ignore PAK files");
 	REGISTER_CVAR(sc_IgnoreUnderscoredFolders, sc_IgnoreUnderscoredFolders, VF_READONLY, "Schematyc - Ignore folders whose names begin with an underscore");
@@ -38,7 +36,6 @@ void CVars::Register()
 
 void CVars::Unregister()
 {
-	gEnv->pConsole->UnregisterVariable("sc_FileFormat");
 	gEnv->pConsole->UnregisterVariable("sc_RootFolder");
 	gEnv->pConsole->UnregisterVariable("sc_IgnorePAKFiles");
 	gEnv->pConsole->UnregisterVariable("sc_IgnoreUnderscoredFolders");

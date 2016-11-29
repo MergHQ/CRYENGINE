@@ -76,9 +76,19 @@ IMonoAssembly* CMonoClass::GetAssembly() const
 	return m_pLibrary;
 }
 
+std::shared_ptr<IMonoObject> CMonoClass::CreateUninitializedInstance()
+{
+	auto pWrappedObject = std::make_shared<CMonoObject>(mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass), m_pThis.lock());
+
+	// Push back a weak pointer to the instance, so that we can serialize the object in case of app domain reload
+	m_objects.push_back(pWrappedObject);
+
+	return pWrappedObject;
+}
+
 std::shared_ptr<IMonoObject> CMonoClass::CreateInstance(void** pConstructorParams, int numParams)
 {
-	auto* pObject = mono_object_new(static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
+	auto* pObject = mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
 
 	if (pConstructorParams != nullptr)
 	{
@@ -108,7 +118,7 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstance(void** pConstructorParam
 
 std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* parameterDesc, void** pConstructorParams)
 {
-	auto* pObject = mono_object_new(static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
+	auto* pObject = mono_object_new((MonoDomain*)static_cast<CMonoDomain*>(m_pLibrary->GetDomain())->GetHandle(), m_pClass);
 
 	string sMethodDesc;
 	sMethodDesc.Format(":.ctor(%s)", parameterDesc);
@@ -117,6 +127,8 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 
 	if (MonoMethod* pMethod = mono_method_desc_search_in_class(pMethodDesc, m_pClass))
 	{
+		mono_method_desc_free(pMethodDesc);
+
 		bool bException = false;
 		InvokeMethod(pMethod, pObject, pConstructorParams, bException);
 
@@ -132,6 +144,8 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 
 		return pWrappedObject;
 	}
+
+	mono_method_desc_free(pMethodDesc);
 
 	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException((MonoObject*)mono_get_exception_missing_method(GetName(), sMethodDesc));
 	return nullptr;
@@ -157,11 +171,15 @@ std::shared_ptr<IMonoObject> CMonoClass::InvokeMethodWithDesc(const char* method
 
 	if (MonoMethod* pMethod = mono_method_desc_search_in_class(pMethodDesc, m_pClass))
 	{
+		mono_method_desc_free(pMethodDesc);
+
 		MonoObject* pObjectHandle = pObject != nullptr ? (MonoObject*)pObject->GetHandle() : nullptr;
 
 		bool bException = false;
 		return InvokeMethod(pMethod, pObjectHandle, pParams, bException);
 	}
+
+	mono_method_desc_free(pMethodDesc);
 
 	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException((MonoObject*)mono_get_exception_missing_method(GetName(), methodDesc));
 	return nullptr;
@@ -181,4 +199,34 @@ std::shared_ptr<IMonoObject> CMonoClass::InvokeMethod(MonoMethod* pMethod, MonoO
 	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException(pException);
 
 	return nullptr;
+}
+
+bool CMonoClass::IsMethodImplemented(IMonoClass* pBaseClass, const char* methodDesc)
+{
+	void *pIterator = 0;
+
+	MonoClass *pClass = m_pClass;
+	
+	while (pClass != nullptr)
+	{
+		string sMethodDesc;
+		sMethodDesc.Format("%s:%s", GetName(), methodDesc);
+
+		MonoMethodDesc* pDesiredDesc = mono_method_desc_new(sMethodDesc, false);
+		
+		if (mono_method_desc_search_in_class(pDesiredDesc, pClass) != nullptr)
+		{
+			mono_method_desc_free(pDesiredDesc);
+			return true;
+		}
+
+		mono_method_desc_free(pDesiredDesc);
+		pClass = mono_class_get_parent(pClass);
+		if (pClass == mono_get_object_class() || pClass == pBaseClass->GetHandle())
+			break;
+
+		pIterator = 0;
+	}
+
+	return false;
 }

@@ -756,8 +756,9 @@ void CItem::ProcessEvent(SEntityEvent &event)
 
 			if (event.nParam[0]) // entering game mode in editor
 			{
-				m_editorstats=SEditorStats(GetOwnerId(), pInventory?pInventory->GetCurrentItem()==GetEntityId():0);
-				Pickalize(true, true);
+				m_editorstats = SEditorStats(GetOwnerId(), pInventory ? pInventory->GetCurrentItem() == GetEntityId() : 0);
+				const bool bhasOwner = GetOwnerId() != 0;
+				Pickalize(!bhasOwner, !bhasOwner);
 			}
 			else // leaving game mode
 			{

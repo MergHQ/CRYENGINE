@@ -42,7 +42,7 @@ void CEntityGeomComponent::Run(ESimulationMode simulationMode)
 
 		entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
 		
-		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().Send();
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
 	}
 }
 
@@ -76,7 +76,7 @@ void CEntityGeomComponent::Set(const GeomFileName& fileName)
 			EntityUtils::GetEntity(*this).FreeSlot(m_slot);
 			m_slot = EmptySlot;
 		}
-		EntityUtils::GetEntityComponent(*this).GetGeomUpdateSignal().Send();
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
 	}
 }
 
@@ -117,7 +117,7 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
 		// Functions
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::Set, "112b2aec-7c52-44b8-a16d-84c98c70d910"_schematyc_guid, "Set");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::Set, "112b2aec-7c52-44b8-a16d-84c98c70d910"_schematyc_guid, "SetGeom");
 			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set geometry");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);

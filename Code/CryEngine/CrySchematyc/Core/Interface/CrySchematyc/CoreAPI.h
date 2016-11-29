@@ -66,6 +66,7 @@
 #include "../Schematyc/Script/IScriptRegistry.h"
 #include "../Schematyc/Script/IScriptView.h"
 #include "../Schematyc/Script/ScriptDependencyEnumerator.h"
+#include "../Schematyc/Script/ScriptUtils.h"
 
 #include "../Schematyc/Script/Elements/IScriptActionInstance.h"
 #include "../Schematyc/Script/Elements/IScriptBase.h"

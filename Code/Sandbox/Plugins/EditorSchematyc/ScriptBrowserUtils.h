@@ -34,6 +34,7 @@ namespace ScriptBrowserUtils
 bool                      CanAddScriptElement(EScriptElementType elementType, IScriptElement* pScope);
 bool                      CanRemoveScriptElement(const IScriptElement& element);
 bool                      CanRenameScriptElement(const IScriptElement& element);
+bool                      CanCopyScriptElement(const IScriptElement& element);
 const char*               GetScriptElementTypeName(EScriptElementType scriptElementType);
 const char*               GetScriptElementFilterName(EScriptElementType scriptElementType);
 const char*               GetScriptElementIcon(const IScriptElement& scriptElement);

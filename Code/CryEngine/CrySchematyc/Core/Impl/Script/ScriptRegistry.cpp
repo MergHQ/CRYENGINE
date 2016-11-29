@@ -63,7 +63,7 @@ DECLARE_SHARED_POINTERS(CScriptStruct)
 DECLARE_SHARED_POINTERS(CScriptTimer)
 DECLARE_SHARED_POINTERS(CScriptVariable)
 
-namespace ScriptRegistryUtils
+namespace
 {
 void SaveAllScriptFilesCommand(IConsoleCmdArgs* pArgs)
 {
@@ -79,25 +79,18 @@ void ProcessEventRecursive(IScriptElement& element, const SScriptEvent& event)
 		ProcessEventRecursive(*pChildElement, event);
 	}
 }
-}   // ScriptRegistryUtils
+} // Anonymous
 
 CScriptRegistry::CScriptRegistry()
 	: m_changeDepth(0)
 {
 	m_pRoot = std::make_shared<CScriptRoot>();
-	REGISTER_COMMAND("sc_SaveAllScriptFiles", ScriptRegistryUtils::SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
+	REGISTER_COMMAND("sc_SaveAllScriptFiles", SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
 }
 
 void CScriptRegistry::ProcessEvent(const SScriptEvent& event)
 {
-	// #SchematycTODO : Sanity check event id?
-
-	/*for (FilesByCRC::iterator itFile = m_filesByCRC.begin(), itEndFile = m_filesByCRC.end(); itFile != itEndFile; ++itFile)
-	   {
-	   itFile->second->ProcessEvent(event);
-	   }*/
-
-	ScriptRegistryUtils::ProcessEventRecursive(*m_pRoot, event);
+	ProcessEventRecursive(*m_pRoot, event);
 }
 
 bool CScriptRegistry::Load()
@@ -105,6 +98,7 @@ bool CScriptRegistry::Load()
 	LOADING_TIME_PROFILE_SECTION;
 
 	// Configure file enumeration flags.
+
 	FileUtils::FileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
 	if (CVars::sc_IgnoreUnderscoredFolders)
 	{
@@ -112,35 +106,11 @@ bool CScriptRegistry::Load()
 	}
 
 	// Enumerate files and construct new elements.
-	// #SchematycTODO : How can we minimize some of the duplication between loadJsonFile and loadXmlFile?
+
 	ScriptInputBlocks inputBlocks;
 	const char* szScriptFolder = gEnv->pSchematyc->GetScriptsFolder();
 
-	auto loadJsonFile = [this, &inputBlocks](const char* szFileName, unsigned attributes)
-	{
-		SScriptInputBlock inputBlock;
-		CScriptLoadSerializer serializer(inputBlock);
-		Serialization::LoadJsonFile(serializer, szFileName);
-		if (!GUID::IsEmpty(inputBlock.guid) && inputBlock.rootElement.ptr)
-		{
-			CScript* pScript = GetScript(inputBlock.guid);
-			if (!pScript)
-			{
-				CStackString fileName = gEnv->pCryPak->GetGameFolder();
-				fileName.append("/");
-				fileName.append(szFileName);
-				fileName.MakeLower();
-
-				pScript = CreateScript(fileName.c_str(), inputBlock.guid);
-				pScript->SetRoot(inputBlock.rootElement.ptr.get());
-				inputBlock.rootElement.ptr->SetScript(pScript);
-				inputBlocks.push_back(std::move(inputBlock));
-			}
-		}
-	};
-	FileUtils::EnumFilesInFolder(szScriptFolder, "*.json", FileUtils::FileEnumCallback::FromLambda(loadJsonFile), fileEnumFlags);
-
-	auto loadXmlFile = [this, &inputBlocks](const char* szFileName, unsigned attributes)
+	auto loadScript = [this, &inputBlocks](const char* szFileName, unsigned attributes)
 	{
 		SScriptInputBlock inputBlock;
 		CScriptLoadSerializer serializer(inputBlock);
@@ -162,7 +132,7 @@ bool CScriptRegistry::Load()
 			}
 		}
 	};
-	FileUtils::EnumFilesInFolder(szScriptFolder, "*.xml", FileUtils::FileEnumCallback::FromLambda(loadXmlFile), fileEnumFlags);
+	FileUtils::EnumFilesInFolder(szScriptFolder, "*.sc_*", FileUtils::FileEnumCallback::FromLambda(loadScript), fileEnumFlags);
 
 	ProcessInputBlocks(inputBlocks, *m_pRoot, EScriptEventId::FileLoad);
 	return true;
@@ -781,41 +751,22 @@ const IScriptElement* CScriptRegistry::GetElement(const SGUID& guid) const
 	return itElement != m_elements.end() ? itElement->second.get() : nullptr;
 }
 
-bool CScriptRegistry::CopyElementsToJson(IString& output, IScriptElement& scope) const
-{
-	DynArray<char> buffer;
-	if (Serialization::SaveJsonBuffer(buffer, CScriptCopySerializer(scope)))
-	{
-		output.assign(&buffer[0]);
-		return true;
-	}
-	return false;
-}
-
-bool CScriptRegistry::PasteElementsFromJson(const char* szInput, IScriptElement* pScope)
-{
-	SCHEMATYC_CORE_ASSERT(szInput);
-	if (szInput)
-	{
-		ScriptInputBlocks inputBlocks(1);
-		CScriptPasteSerializer serializer(inputBlocks.back());
-		if (Serialization::LoadJsonBuffer(serializer, szInput, strlen(szInput)))
-		{
-			ProcessInputBlocks(inputBlocks, pScope ? *pScope : *m_pRoot, EScriptEventId::EditorPaste);
-		}
-	}
-	return false;
-}
-
 bool CScriptRegistry::CopyElementsToXml(XmlNodeRef& output, IScriptElement& scope) const
 {
+	// #SchematycTODO : Make sure elements don't have NotCopyable flag!!!
 	output = Serialization::SaveXmlNode(CScriptCopySerializer(scope), "schematycScript");
 	return !!output;
 }
 
 bool CScriptRegistry::PasteElementsFromXml(const XmlNodeRef& input, IScriptElement* pScope)
 {
-	return false;
+	ScriptInputBlocks inputBlocks(1);
+	CScriptPasteSerializer serializer(inputBlocks.back());
+	if (Serialization::LoadXmlNode(serializer, input))
+	{
+		ProcessInputBlocks(inputBlocks, pScope ? *pScope : *m_pRoot, EScriptEventId::EditorPaste);
+	}
+	return true;
 }
 
 bool CScriptRegistry::IsElementNameUnique(const char* szName, IScriptElement* pScope) const
@@ -1056,23 +1007,12 @@ void CScriptRegistry::SaveScript(CScript& script)
 		gEnv->pCryPak->MakeDir(folder.c_str());
 	}
 
-	bool bError = false;
-
 	auto elementSerializeCallback = [this](IScriptElement& element)
 	{
 		ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementSaved, element));
 	};
 
-	const CStackString extension = fileName.substr(fileName.rfind('.'));
-	if (extension == ".json")
-	{
-		bError = !Serialization::SaveJsonFile(fileName.c_str(), CScriptSaveSerializer(script, ScriptElementSerializeCallback::FromLambda(elementSerializeCallback)));
-	}
-	else if (extension == ".xml")
-	{
-		bError = !Serialization::SaveXmlFile(fileName.c_str(), CScriptSaveSerializer(script, ScriptElementSerializeCallback::FromLambda(elementSerializeCallback)), "schematycScript");
-	}
-
+	const bool bError = !Serialization::SaveXmlFile(fileName.c_str(), CScriptSaveSerializer(script, ScriptElementSerializeCallback::FromLambda(elementSerializeCallback)), "schematyc");
 	if (bError)
 	{
 		SCHEMATYC_CORE_ERROR("Failed to save file '%s'!", fileName.c_str());

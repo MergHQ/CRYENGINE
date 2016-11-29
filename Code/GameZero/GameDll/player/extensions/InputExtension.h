@@ -8,8 +8,11 @@ public:
 	// ISimpleExtension
 	virtual void PostInit(IGameObject* pGameObject) override;
 	virtual void FullSerialize(TSerialize ser) override;
-	virtual void Release() override;
 	// ~ISimpleExtension
+
+	// IEntityComponent
+	virtual void OnShutDown() override;
+	// ~IEntityComponent
 
 	// IActionListener
 	virtual void OnAction(const ActionId& action, int activationMode, float value) override;
@@ -20,7 +23,7 @@ public:
 	// ~ISystemEventListener
 
 	CInputExtension();
-	virtual ~CInputExtension();
+	virtual ~CInputExtension() {}
 
 private:
 	bool OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value);

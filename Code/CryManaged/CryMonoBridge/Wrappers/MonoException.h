@@ -5,7 +5,7 @@
 #include <CryMono/IMonoException.h>
 #include <mono/metadata/object.h>
 
-class CMonoException : public IMonoException
+class CMonoException final : public IMonoException
 {
 public:
 	CMonoException(MonoException* pException);

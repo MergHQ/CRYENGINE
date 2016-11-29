@@ -34,8 +34,6 @@ private:
 
 public:
 
-	CEntityParticleEmitterComponent();
-
 	// CComponent
 	virtual bool Init() override;
 	virtual void Run(ESimulationMode simulationMode) override;
@@ -56,6 +54,7 @@ private:
 
 private:
 
-	int m_slot;
+	int  m_slot = EmptySlot;
+	bool m_bVisible = false;
 };
 } // Schematyc

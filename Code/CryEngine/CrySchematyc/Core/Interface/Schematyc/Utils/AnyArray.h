@@ -136,9 +136,7 @@ public:
 
 		for (uint32 idx = 0, size = GetSize(); idx < size; )
 		{
-			CAnyRef ref((*this)[idx]);
-
-			if ((*equals)(&ref, &value))
+			if ((*equals)((*this)[idx].GetValue(), value.GetValue()))
 			{
 				RemoveByIdx(idx);
 				--size;

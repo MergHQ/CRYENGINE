@@ -371,7 +371,7 @@ private:
 		const XmlNodeRef pXml = (GetFileAttributes(cryasset) != INVALID_FILE_ATTRIBUTES) ? gEnv->pSystem->LoadXmlFromFile(cryasset) : nullptr;
 		if (!pXml)
 		{
-			return{ srcFile };
+			return{ PathUtil::GetFile(srcFile) };
 		}
 
 		std::vector<string> files;

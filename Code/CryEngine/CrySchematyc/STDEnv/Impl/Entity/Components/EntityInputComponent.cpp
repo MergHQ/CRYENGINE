@@ -322,7 +322,7 @@ namespace Schematyc
 			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity input component");
 			pComponent->SetIcon("icons:Game/Game_Play.ico");
-			pComponent->SetFlags(EEnvComponentFlags::None);
+			pComponent->SetFlags(EEnvComponentFlags::Singleton);
 			scope.Register(pComponent);
 
 			CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());

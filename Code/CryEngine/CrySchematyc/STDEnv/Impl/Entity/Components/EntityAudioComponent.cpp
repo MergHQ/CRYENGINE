@@ -33,11 +33,11 @@ bool CEntityAudioComponent::Init()
 		m_pAudioProxy->RemoveAuxAudioProxy(m_audioProxyId);  //#TODO: for now this is a workaround, because there are scenarios where 'Init' is called twice without a 'Shutdown' in between.
 	}
 
-	const CEntityAudioComponent::SProperties* pProperties = static_cast<const CEntityAudioComponent::SProperties*>(CComponent::GetProperties());
-	if (pProperties && !pProperties->offset.IsZero())  //only create an aux-proxy when needed (if there is an offset specified)
+	const Vec3 offset = Schematyc::CComponent::GetTransform().GetTranslation();
+	if (!IsEquivalent(offset, Vec3(ZERO)))  //only create an aux-proxy when needed (if there is an offset specified)
 	{
 		m_audioProxyId = m_pAudioProxy->CreateAuxAudioProxy();
-		m_pAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, pProperties->offset), m_audioProxyId);
+		m_pAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, offset), m_audioProxyId);
 	}
 	else
 	{
@@ -59,11 +59,6 @@ void CEntityAudioComponent::Shutdown()
 	m_audioProxyId = INVALID_AUDIO_PROXY_ID;
 }
 
-void CEntityAudioComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(offset, "offset", "Offset");
-}
-
 void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
@@ -72,8 +67,7 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity audio component");
 		pComponent->SetIcon("icons:schematyc/entity_audio_component.ico");
-		pComponent->SetFlags(EEnvComponentFlags::None);
-		pComponent->SetProperties(CEntityAudioComponent::SProperties());
+		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::Transform, Schematyc::EEnvComponentFlags::Attach });
 		scope.Register(pComponent);
 
 		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());

@@ -70,34 +70,6 @@ inline ColorB GetPortColor(const SGUID& typeGUID)
 	}
 	return ColorB(28, 212, 22);
 }
-
-inline ColorB GetColorValue(EScriptGraphColor color)
-{
-	struct SColors
-	{
-		EScriptGraphColor color;
-		ColorB            value;
-	};
-
-	static const SColors colorValues[] =
-	{
-		{ EScriptGraphColor::Red,    ColorB(215, 55,  55)  },
-		{ EScriptGraphColor::Green,  ColorB(38,  184, 33)  },
-		{ EScriptGraphColor::Blue,   ColorB(0,   108, 217) },
-		{ EScriptGraphColor::Yellow, ColorB(250, 232, 12)  },
-		{ EScriptGraphColor::Orange, ColorB(255, 100, 15)  },
-		{ EScriptGraphColor::Purple, ColorB(125, 55,  125) },
-	};
-
-	for (uint32 colorIdx = 0; colorIdx < CRY_ARRAY_COUNT(colorValues); ++colorIdx)
-	{
-		if (colorValues[colorIdx].color == color)
-		{
-			return colorValues[colorIdx].value;
-		}
-	}
-	return ColorB();
-}
 // ~SchematycTODO
 
 SScriptGraphNodePort::SScriptGraphNodePort() {}
@@ -110,18 +82,23 @@ SScriptGraphNodePort::SScriptGraphNodePort(const CGraphPortId& _id, const char* 
 	, pData(_pData)
 {}
 
-CScriptGraphNodeLayout::CScriptGraphNodeLayout()
-	: m_color(EScriptGraphColor::NotSet)
-{}
-
 void CScriptGraphNodeLayout::SetName(const char* szBehavior, const char* szSubject)
 {
-	m_name = szBehavior;
-	if (szSubject && (szSubject[0] != '\0'))
+	const bool bShowBehavior = szBehavior && (szBehavior[0] != '\0');
+	const bool bShowSubject = szSubject && (szSubject[0] != '\0');
+	if (bShowBehavior)
 	{
-		m_name.append(" [");
-		m_name.append(szSubject);
-		m_name.append("]");
+		m_name = szBehavior;
+		if (bShowSubject)
+		{
+			m_name.append(" [");
+			m_name.append(szSubject);
+			m_name.append("]");
+		}
+	}
+	else if (bShowSubject)
+	{
+		m_name = szSubject;
 	}
 }
 
@@ -138,16 +115,6 @@ void CScriptGraphNodeLayout::SetStyleId(const char* szStyleId)
 const char* CScriptGraphNodeLayout::GetStyleId() const
 {
 	return m_styleId.c_str();
-}
-
-void CScriptGraphNodeLayout::SetColor(EScriptGraphColor color)
-{
-	m_color = color;
-}
-
-EScriptGraphColor CScriptGraphNodeLayout::GetColor() const
-{
-	return m_color;
 }
 
 ScriptGraphNodePorts& CScriptGraphNodeLayout::GetInputs()
@@ -187,7 +154,6 @@ void CScriptGraphNodeLayout::Exchange(CScriptGraphNodeLayout& rhs)
 
 	std::swap(m_name, rhs.m_name);
 	std::swap(m_styleId, rhs.m_styleId);
-	std::swap(m_color, rhs.m_color);
 	std::swap(m_inputs, rhs.m_inputs);
 	std::swap(m_outputs, rhs.m_outputs);
 }
@@ -266,11 +232,6 @@ const char* CScriptGraphNode::GetName() const
 const char* CScriptGraphNode::GetStyleId() const
 {
 	return m_layout.GetStyleId();
-}
-
-ColorB CScriptGraphNode::GetColor() const
-{
-	return GetColorValue(m_layout.GetColor());
 }
 
 ScriptGraphNodeFlags CScriptGraphNode::GetFlags() const

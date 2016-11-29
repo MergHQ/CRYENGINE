@@ -183,4 +183,6 @@ struct TriangleIndex
 	#define INCLUDE_SAVECGF
 #endif
 
+#define ENABLE_TYPE_INFO_NAMES 1
+
 #endif // !defined(AFX_STDAFX_H__8B93AD4E_EE86_4127_9BED_37AC6D0F978B__INCLUDED_3DENGINE)

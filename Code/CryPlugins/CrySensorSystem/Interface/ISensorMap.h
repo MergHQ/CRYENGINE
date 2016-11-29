@@ -39,24 +39,24 @@ typedef VectorSet<SensorVolumeId> SensorVolumeIdSet;
 
 enum class ESensorEventType
 {
-	Enter, // Sent when any volume enters a monitored volume.
-	Leave  // Sent when any volume leaves a monitored volume.
+	Entering,
+	Leaving
 };
 
 struct SSensorEvent
 {
-	inline SSensorEvent(ESensorEventType _type, SensorVolumeId _monitorVolumeId, SensorVolumeId _eventVolumeId)
+	inline SSensorEvent(ESensorEventType _type, SensorVolumeId _listenerVolumeId, SensorVolumeId _eventVolumeId)
 		: type(_type)
-		, monitorVolumeId(_monitorVolumeId)
+		, listenerVolumeId(_listenerVolumeId)
 		, eventVolumeId(_eventVolumeId)
 	{}
 
 	ESensorEventType type;
-	SensorVolumeId   monitorVolumeId; // Id of monitored volume.
-	SensorVolumeId   eventVolumeId;   // Id of entering/leaving volume.
+	SensorVolumeId   listenerVolumeId;
+	SensorVolumeId   eventVolumeId;
 };
 
-typedef Schematyc::CDelegate<void (const SSensorEvent&)> SensorEventCallback;
+typedef Schematyc::CDelegate<void (const SSensorEvent&)> SensorEventListener;
 
 struct SSensorVolumeParams
 {
@@ -64,19 +64,19 @@ struct SSensorVolumeParams
 		: entityId(INVALID_ENTITYID)
 	{}
 
-	inline SSensorVolumeParams(EntityId _entityId, const CSensorBounds& _bounds, const SensorTags& _tags, const SensorTags& _monitorTags = SensorTags(), const SensorEventCallback& _eventCallback = SensorEventCallback())
+	inline SSensorVolumeParams(EntityId _entityId, const CSensorBounds& _bounds, const SensorTags& _attributeTags, const SensorTags& _listenerTags = SensorTags(), const SensorEventListener& _eventListener = SensorEventListener())
 		: entityId(_entityId)
 		, bounds(_bounds)
-		, tags(_tags)
-		, monitorTags(_monitorTags)
-		, eventCallback(_eventCallback)
+		, attributeTags(_attributeTags)
+		, listenerTags(_listenerTags)
+		, eventListener(_eventListener)
 	{}
 
 	EntityId            entityId;
 	CSensorBounds       bounds;
-	SensorTags          tags;
-	SensorTags          monitorTags;
-	SensorEventCallback eventCallback;
+	SensorTags          attributeTags;
+	SensorTags          listenerTags;
+	SensorEventListener eventListener;
 };
 
 enum class ESensorMapDebugFlags
@@ -99,8 +99,8 @@ struct ISensorMap
 	virtual SensorVolumeId      CreateVolume(const SSensorVolumeParams& params) = 0;
 	virtual void                DestroyVolume(SensorVolumeId volumeId) = 0;
 	virtual void                UpdateVolumeBounds(SensorVolumeId volumeId, const CSensorBounds& bounds) = 0;
-	virtual void                SetVolumeTags(SensorVolumeId volumeId, const SensorTags& tags, bool bValue) = 0;
-	virtual void                SetVolumeMonitorTags(SensorVolumeId volumeId, const SensorTags& monitorTags, bool bValue) = 0;
+	virtual void                SetVolumeAttributeTags(SensorVolumeId volumeId, const SensorTags& attributeTags, bool bValue) = 0;
+	virtual void                SetVolumeListenerTags(SensorVolumeId volumeId, const SensorTags& listenerTags, bool bValue) = 0;
 	virtual SSensorVolumeParams GetVolumeParams(SensorVolumeId volumeId) const = 0;
 
 	virtual void                Query(SensorVolumeIdSet& results, const CSensorBounds& bounds, const SensorTags& tags = SensorTags(), SensorVolumeId exclusionId = SensorVolumeId::Invalid) const = 0;

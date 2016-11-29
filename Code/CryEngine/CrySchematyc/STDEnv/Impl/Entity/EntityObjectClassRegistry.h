@@ -12,31 +12,32 @@ struct IScriptClass;
 // Forward declare structures
 struct SClassInfo;
 
+struct SEntityObjectClass
+{
+	SEntityObjectClass();
+	SEntityObjectClass(const SEntityObjectClass& rhs);
+
+	~SEntityObjectClass();
+
+	string                                 name;
+	SGUID                                  guid;
+	string                                 icon;
+	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
+	IEntityClass*                          pEntityClass = nullptr;
+};
+
 class CEntityObjectClassRegistry
 {
 private:
 
-	struct SEntityClass
-	{
-		SEntityClass();
-		SEntityClass(const SEntityClass& rhs);
-
-		~SEntityClass();
-
-		string editorCategory;
-		string icon;
-		IEntityClassRegistry::SEntityClassDesc desc;
-
-		Schematyc::SGUID runtimeClassGUID;
-	};
-
-	typedef std::map<string, SEntityClass> EntityClasses;
+	typedef std::map<string, SEntityObjectClass> EntityObjectClasses;
+	typedef std::map<SGUID, SEntityObjectClass*> EntityObjectClassesByGUID;
 
 public:
 
-	void Init();
+	void                      Init();
 
-	const IRuntimeClass* GetRuntimeClassFromEntityClass(const char* entityClass) const;
+	const SEntityObjectClass* GetEntityObjectClass(const SGUID& guid) const; // #SchematycTODO : Remove?
 
 private:
 
@@ -44,7 +45,8 @@ private:
 
 private:
 
-	EntityClasses    m_entityClasses;
-	CConnectionScope m_connectionScope;
+	EntityObjectClasses       m_entityObjectClasses;
+	EntityObjectClassesByGUID m_entityObjectClassesByGUID;
+	CConnectionScope          m_connectionScope;
 };
 } // Schematyc

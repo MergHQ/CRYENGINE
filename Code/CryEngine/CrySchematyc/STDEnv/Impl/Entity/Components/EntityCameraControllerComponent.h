@@ -9,59 +9,62 @@
 
 namespace Schematyc
 {
-	// Forward declare interfaces.
-	struct IEnvRegistrar;
+// Forward declare interfaces.
+struct IEnvRegistrar;
 
-	class CEntityOrbitCameraControllerComponent final : public CComponent, IGameObjectView
+class CEntityOrbitCameraControllerComponent final : public CComponent, IGameObjectView
+{
+public:
+	struct SProperties
 	{
-	public:		
-		struct SProperties
-		{
-			void Serialize(Serialization::IArchive& archive);
+		void Serialize(Serialization::IArchive& archive);
 
-			float yaw = 0.0f;
-			float pitch = 45.0f;
-			float roll = 0.0f;
-			float fov = 60.0f;
-			float distanceToTarget = 10.0f;
-			bool bActive = true;
-		};
-
-		virtual ~CEntityOrbitCameraControllerComponent();
-
-		// CComponent
-		virtual void Run(ESimulationMode simulationMode) override;
-		virtual bool Init() override;
-		// ~CComponent
-
-		static SGUID ReflectSchematycType(CTypeInfo<CEntityOrbitCameraControllerComponent>& typeInfo);
-		static void  Register(IEnvRegistrar& registrar);
-
-		void SetDistance(float distance, bool bRelative);
-		void SetYaw(float angle, bool bRelative);  //in degree
-		void SetPitch(float angle, bool bRelative);  //in degree
-		void SetRoll(float angle, bool bRelative);  //in degree
-		void SetFov(float fov, bool bRelative);
-		void SetActive(bool bEnable);
-		//TODO: camera shake?
-
-	private:
-
-		void QueueUpdate();
-
-		virtual void UpdateView(SViewParams& params) override;
-		virtual void PostUpdateView(SViewParams& params) override {}
-
-		unsigned int m_viewId = -1;
-		float m_distance;
-		float m_fov;
-		Ang3 m_rotation;
-
-		bool m_bNeedUpdate = true;
+		float yaw = 0.0f;
+		float pitch = 45.0f;
+		float roll = 0.0f;
+		float fov = 60.0f;
+		float distance = 10.0f;
+		bool  bActive = true;
+		bool  bAlwaysUpdate = false;
 	};
 
-	//#TODO:
-	//C3rdPersonCameraControllerComponent
-	//CFpsCameraControllerComponent
+	virtual ~CEntityOrbitCameraControllerComponent();
+
+	// CComponent
+	virtual void Run(ESimulationMode simulationMode) override;
+	virtual bool Init() override;
+	// ~CComponent
+
+	static SGUID ReflectSchematycType(CTypeInfo<CEntityOrbitCameraControllerComponent>& typeInfo);
+	static void  Register(IEnvRegistrar& registrar);
+
+	void         SetDistance(float distance, bool bRelative);
+	void         SetYaw(float angle, bool bRelative);   //in degree
+	void         SetPitch(float angle, bool bRelative); //in degree
+	void         SetRoll(float angle, bool bRelative);  //in degree
+	void         SetFov(float fov, bool bRelative);
+	void         SetActive(bool bEnable);
+	//TODO: camera shake?
+
+private:
+
+	void         QueueUpdate();
+
+	virtual void UpdateView(SViewParams& params) override;
+	virtual void PostUpdateView(SViewParams& params) override {}
+
+private:
+
+	unsigned int m_viewId = -1;
+	float        m_distance;
+	float        m_fov;
+	Ang3         m_rotation;
+	bool         m_bAlwaysUpdate = false;
+	bool         m_bNeedUpdate = true;
+};
+
+//#TODO:
+//C3rdPersonCameraControllerComponent
+//CFpsCameraControllerComponent
 
 } // Schematyc

@@ -7,8 +7,11 @@ class CViewExtension : public CGameObjectExtensionHelper<CViewExtension, ISimple
 public:
 	// ISimpleExtension
 	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void Release() override;
 	// ~ISimpleExtension
+
+	// IEntityComponent
+	virtual void OnShutDown() override;
+	// ~IEntityComponent
 
 	// IGameObjectView
 	virtual void UpdateView(SViewParams& params) override;
@@ -16,7 +19,7 @@ public:
 	// ~IGameObjectView
 
 	CViewExtension();
-	virtual ~CViewExtension();
+	virtual ~CViewExtension() {}
 
 private:
 	void CreateView();

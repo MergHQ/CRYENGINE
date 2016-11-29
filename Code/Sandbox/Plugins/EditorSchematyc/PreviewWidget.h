@@ -2,15 +2,16 @@
 
 #pragma once
 
-#include "QScrollableBox.h"
-
 #include <QWidget>
 #include <QObject.h>
+#include <QScrollableBox.h>
 #include <QViewportSettings.h>
 #include <QWidget.h>
 #include "Gizmos/ITransformManipulator.h"
 
 // Forward declare interfaces.
+struct IScriptComponentInstance;
+// Forward declare structures;
 struct SRenderContext;
 struct SMouseEvent;
 // Forward declare classes.
@@ -20,12 +21,12 @@ class QAdvancedPropertyTree;
 class QPushButton;
 class QSplitter;
 class QViewport;
-enum EMouseEvent;
-struct IScriptComponentInstance;
 
 namespace Schematyc {
 
+// Forward declare interfaces.
 struct IScriptClass;
+// Forward declare classes.
 class CPreviewWidget;
 
 class CPreviewSettingsWidget : public QScrollableBox
@@ -42,8 +43,7 @@ private:
 	QAdvancedPropertyTree* m_pPropertyTree;
 };
 
-// #SchematycTODO : Use generalized transform system.
-struct IGizmoTransformOp
+struct IGizmoTransformOp // #SchematycTODO : Use generalized transform system.
 {
 public:
 
@@ -97,7 +97,12 @@ public:
 	virtual void GetManipulatorPosition(Vec3& position) override;
 	// ~ITransformManipulatorOwner
 
+Q_SIGNALS:
+
+	void signalChanged(); // Executed every time selected script element is modified from preview widget.
+
 protected slots:
+
 	void OnRender(const SRenderContext& context);
 
 private:
@@ -126,4 +131,5 @@ private:
 	static const Vec3                  ms_defaultOrbitTarget;
 	static const float                 ms_defaultOrbitRadius;
 };
+
 } // Schematyc

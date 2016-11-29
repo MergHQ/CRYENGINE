@@ -27,7 +27,7 @@ namespace CryEngine.Sydewinder
 		}
 	}
 
-	public abstract class DestroyableBase : Entity
+	public abstract class DestroyableBase : EntityComponent
 	{
 		/// <summary>
 		/// The is velocity is already submit to the physics system.
@@ -53,29 +53,11 @@ namespace CryEngine.Sydewinder
 
 			DestroyParticleEffect = Engine.ParticleManager.FindEffect("spaceship.Destruction.explosion_blue");
 			ExplosionTrigger = string.Format ("enemy_explosion_0{0}", 1 + Random.Next(3));
-
-			SubscribeToCollision();
-			OnEntityCollision += Collision;
 		}
 
 		public void Revive()
 		{
 			Life = MaxLife = 100;
-		}
-
-		private void Collision(Entity hitEnt)
-		{
-			var hitObj = GamePool.GetMoveableByEntityId(hitEnt.Id);
-
-			// Check if one of the objects is already dead.
-			if (IsAlive && hitObj != null)
-				OnCollision (hitObj);
-		}
-
-		protected virtual void OnCollision (DestroyableBase hitEnt)
-		{
-			// Collision event was not overridden, so we can unsubscribe.
-			UnsubscribeFromCollision();
 		}
 
 		#region Moving Behaviour
@@ -85,7 +67,7 @@ namespace CryEngine.Sydewinder
 		public virtual Vector3 Move()
 		{
 			// HAndle null?
-			if (!Exists)
+			if (!Entity.Exists)
 				return Vector3.Zero;
 
 			// Empty jetPosition means x, y and z are all 0.
@@ -93,15 +75,15 @@ namespace CryEngine.Sydewinder
 			{
 				if(!_isVelocitySet)
                 {
-                    Physics.Velocity = Speed;
+					Entity.Physics.Velocity = Speed;
 
                     _isVelocitySet = true;
 				}
-				return Position;
+				return Entity.Position;
 			}
 
-			Vector3 newPosition = Position + Speed * FrameTime.Delta; 
-			Position = newPosition;
+			Vector3 newPosition = Entity.Position + Speed * FrameTime.Delta; 
+			Entity.Position = newPosition;
 			return newPosition;
 		}
 
@@ -111,11 +93,11 @@ namespace CryEngine.Sydewinder
 		/// </summary>
 		public void KeepPosition()
 		{
-			if (!Exists)
+			if (!Entity.Exists)
 				return;
 
 			_pausePositionSwitch = !_pausePositionSwitch;
-			Position = Position + new Vector3(_pausePositionSwitch ? 0.00001f : -0.00001f, 0, 0);
+			Entity.Position = Entity.Position + new Vector3(_pausePositionSwitch ? 0.00001f : -0.00001f, 0, 0);
 		}
 		#endregion
 
@@ -132,9 +114,9 @@ namespace CryEngine.Sydewinder
 
 		public virtual void Destroy(bool withEffect = true)
 		{
-			if (withEffect && Exists && DestroyParticleEffect != null)
+			if (withEffect && Entity.Exists && DestroyParticleEffect != null)
 			{
-				DestroyParticleEffect.Spawn (Position);
+				DestroyParticleEffect.Spawn (Entity.Position);
 				AudioManager.PlayTrigger (ExplosionTrigger);
 			}
 		}

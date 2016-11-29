@@ -91,15 +91,7 @@ Property
 {
   Name = %_RT_OCEAN_PARTICLE
   Mask = 0x4
-  Precache = PostProcessGamePS
-  Precache = DeferredLightPassPS
-  Precache = DeferredPassPS
-
-  Precache = WaterSurfaceVS
   Precache = WaterSurfacePS
-  Precache = WaterSurfaceHS
-  Precache = WaterSurfaceDS
-  Precache = WaterFogVolume_PS
 }
 
 Property
@@ -390,6 +382,11 @@ Property
 	Precache = TiledShadingCS
 	Precache = CloudShadowGenCS
 	Precache = VolumetricCloudsPS
+
+	Precache = WaterSurfaceVS
+	Precache = WaterSurfacePS
+	Precache = WaterSurfaceHS
+	Precache = WaterSurfaceDS
 }
 
 Property

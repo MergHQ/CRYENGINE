@@ -32,13 +32,6 @@
 
 // TODO: include in shaders
 
-hlsl_cbuffer(PerPassConstantBuffer_GBuffer)
-{
-	hlsl_float4(g_VS_WorldViewPos);
-	hlsl_matrix44(g_VS_ViewProjMatr);
-	hlsl_matrix44(g_VS_ViewProjZeroMatr);
-};
-
 hlsl_cbuffer(PerPassConstantBuffer_ShadowGen)
 {
 	hlsl_float4(CP_ShadowGen_LightPos);
@@ -48,6 +41,11 @@ hlsl_cbuffer(PerPassConstantBuffer_ShadowGen)
 	hlsl_float4(CP_ShadowGen_FrustrumInfo);
 
 	hlsl_float4(CP_ShadowGen_VegetationAlphaClamp);
+};
+
+hlsl_cbuffer(PerPassConstantBuffer_Custom)
+{
+	hlsl_float4(CP_Custom_ViewMode);
 };
 
 hlsl_cbuffer_register(PerInstanceConstantBuffer_Base, register (b12), 12) // eConstantBufferShaderSlot_PerInstance

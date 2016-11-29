@@ -26,25 +26,25 @@ namespace CryEngine.Sydewinder.Types
 
 		public static Enemy Create(int type, Vector3 pos)
 		{
-			var enemy = Entity.Spawn<Enemy>(pos, Quaternion.Identity, 0.5f);
+			var enemy = Entity.SpawnWithComponent<Enemy>(pos, Quaternion.Identity, 0.5f);
 
-            enemy.LoadGeometry(0, EnemyTypes[type].Geometry);
+			enemy.Entity.LoadGeometry(0, EnemyTypes[type].Geometry);
 
-            enemy.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+			enemy.Entity.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
 
 			if (EnemyTypes [type].Material != null) 
 			{
-				enemy.Material = Engine.Engine3D.GetMaterialManager ().LoadMaterial (EnemyTypes [type].Material);
+				enemy.Entity.Material = Engine.Engine3D.GetMaterialManager ().LoadMaterial (EnemyTypes [type].Material);
 			}
 
 			// Rotate Z-Axis in degrees to have enemy facing forward.
-			enemy.Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(90f));
+			enemy.Entity.Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(90f));
 
 			var pfx = Engine.ParticleManager.FindEffect("spaceship.Trails.blue_fire_trail");
-			enemy.LoadParticleEmitter(1, pfx, 0.5f);
+			enemy.Entity.LoadParticleEmitter(1, pfx, 0.5f);
 		
 			// Get position of jet on enemy (Note: Non-Existing position means x, y and z are all 0).
-			Vector3 jetPosition = enemy.GetHelperPos(0, "particle_01");
+			Vector3 jetPosition = enemy.Entity.GetHelperPos(0, "particle_01");
 
 			// NOTE ON Matrix3x4
 			// ----------------
@@ -53,25 +53,36 @@ namespace CryEngine.Sydewinder.Types
 			// Third Vector3 parameter indicates position
 
 			// Scale, Rotate and Position particle effect to ensure it's shown at the back of the ship.
-			enemy.SetGeometrySlotLocalTransform(1, new Matrix3x4(Vector3.One, Quaternion.CreateRotationX(MathHelpers.DegreesToRadians(270f)), jetPosition));	
+			enemy.Entity.SetGeometrySlotLocalTransform(1, new Matrix3x4(Vector3.One, Quaternion.CreateRotationX(MathHelpers.DegreesToRadians(270f)), jetPosition));	
 
 			// Put into game loop.
 			GamePool.AddObjectToPool(enemy);
 			return enemy;
 		}
 
-		protected override void OnCollision(DestroyableBase hitEnt)
+		public override void OnCollision(CollisionEvent collisionEvent)
 		{
-			if (hitEnt is Player || (hitEnt is DefaultAmmo && !(hitEnt as DefaultAmmo).IsHostile))
-				ProcessHit ();
+			var hitEntity = collisionEvent.Source.OwnerEntity;
+			if(hitEntity == Entity)
+			{
+				hitEntity = collisionEvent.Target.OwnerEntity;
+			}
+
+			if(hitEntity != null)
+			{
+				var ammoComponent = hitEntity.GetComponent<DefaultAmmo>();
+
+				if(hitEntity.HasComponent<Player>() || (ammoComponent != null && !ammoComponent.IsHostile))
+					ProcessHit();
+			}
 		}
 
 		public override Vector3 Move ()
 		{
-			if (Camera.ProjectToScreen(Position).x < -0.1f) 
+			if (Camera.ProjectToScreen(Entity.Position).x < -0.1f) 
 			{
 				Destroy(false);
-				return Position;
+				return Entity.Position;
 			}
 
 			// Flying in a smooth wave form
@@ -80,7 +91,7 @@ namespace CryEngine.Sydewinder.Types
 
 			// Spawn projectile in front of Ship to avoid collision with self
 			if (Weapon != null) 
-				Weapon.Fire(Position - new Vector3(0,3,0));
+				Weapon.Fire(Entity.Position - new Vector3(0,3,0));
 
 			return base.Move ();
 		}
@@ -98,9 +109,9 @@ namespace CryEngine.Sydewinder.Types
 		{
 			DrainLife(MaxLife);
 			base.Destroy (withEffect);
-			GamePool.FlagForPurge(Id);
+			GamePool.FlagForPurge(Entity.Id);
 			if(Weapon != null)
-				GamePool.FlagForPurge (Weapon.Id);
+				GamePool.FlagForPurge (Weapon.Entity.Id);
 		}
 
 		public enum WaveType

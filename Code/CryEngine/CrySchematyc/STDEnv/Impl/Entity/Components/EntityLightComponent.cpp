@@ -33,22 +33,22 @@ void CEntityLightComponent::SProperties::Serialize(Serialization::IArchive& arch
 	archive(color, "color", "Color");
 	archive.doc("Color");
 
-	archive(Serialization::Slider(diffuseMultiplier, 0.01f, 10.0f), "diffuseMultiplier", "Diffuse Multiplier");
+	archive(Serialization::Range(diffuseMultiplier, 0.01f, 999.0f), "diffuseMultiplier", "Diffuse Multiplier");
 	archive.doc("Diffuse Multiplier");
 
-	archive(Serialization::Slider(specularMultiplier, 0.01f, 10.0f), "specularMultiplier", "Specular Multiplier");
+	archive(Serialization::Range(specularMultiplier, 0.01f, 999.0f), "specularMultiplier", "Specular Multiplier");
 	archive.doc("Specular Multiplier");
 
-	archive(Serialization::Slider(hdrDynamicMultiplier, 0.01f, 10.0f), "hdrDynamicMultiplier", "HDR Dynamic Multiplier");
+	archive(Serialization::Range(hdrDynamicMultiplier, 0.01f, 999.0f), "hdrDynamicMultiplier", "HDR Dynamic Multiplier");
 	archive.doc("HDR Dynamic Multiplier");
 
-	archive(Serialization::Slider(radius, 0.01f, 50.0f), "radius", "Radius");
+	archive(Serialization::Slider(radius, 0.01f, 100.0f), "radius", "Radius");
 	archive.doc("Radius");
 
 	archive(Serialization::Slider(frustumAngle, 0.01f, 90.0f), "frustumAngle", "Frustum Angle");
 	archive.doc("Frustum Angle");
 
-	archive(Serialization::Slider(attenuationBulbSize, 0.01f, 5.0f), "attenuationBulbSize", "Attenuation Bulb Size");
+	archive(Serialization::Slider(attenuationBulbSize, 0.01f, 100.0f), "attenuationBulbSize", "Attenuation Bulb Size");
 	archive.doc("Attenuation Bulb Size");
 }
 

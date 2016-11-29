@@ -21,12 +21,14 @@
 
 namespace Schematyc
 {
+// #SchematycTODO : Need to set NotCopyable flag on everything we create from base!!!
+
 CScriptBase::CScriptBase()
-	: CScriptElementBase(EScriptElementFlags::FixedName)
+	: CScriptElementBase({ EScriptElementFlags::NotCopyable, EScriptElementFlags::FixedName })
 {}
 
 CScriptBase::CScriptBase(const SGUID& guid, const SElementId& classId)
-	: CScriptElementBase(guid, nullptr, EScriptElementFlags::FixedName)
+	: CScriptElementBase(guid, nullptr, { EScriptElementFlags::NotCopyable, EScriptElementFlags::FixedName })
 	, m_classId(classId)
 {}
 
@@ -103,7 +105,7 @@ void CScriptBase::LoadDependencies(Serialization::IArchive& archive, const ISeri
 
 void CScriptBase::Load(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	Refresh(ERefreshFlags::All);
+	Refresh({ ERefreshFlags::Name, ERefreshFlags::EnvClassProperties, ERefreshFlags::Variables });
 	if (m_pEnvClassProperties)
 	{
 		archive(*m_pEnvClassProperties, "envClassProperties");

@@ -14,96 +14,72 @@
 
 namespace CrySchematycEditor {
 
-CNodeIconMap CNodeIconMap::s_Instance;
+CNodeStyles CNodeStyles::s_instance;
 
-CNodeIconMap::CNodeIconMap()
+CNodeStyles::CNodeStyles()
+	: m_createdStyles(0)
 {
 
 }
 
-CNodeIconMap::~CNodeIconMap()
+const CNodeStyle* CNodeStyles::GetStyleById(const char* szStyleId)
 {
-	delete m_pDefaultWidgetIcon;
-	delete m_pDefaultMenuIcon;
-
-	for (auto icon : m_menuIcons)
+	s_instance.LoadIcons();
+	if (szStyleId)
 	{
-		delete icon.second;
+		return static_cast<const CNodeStyle*>(s_instance.GetStyle(szStyleId));
 	}
+	return static_cast<const CNodeStyle*>(s_instance.GetStyle(""));
 }
 
-void CNodeIconMap::LoadIcons()
+void CNodeStyles::LoadIcons()
 {
 	static bool iconsLoaded = false;
 	if (iconsLoaded == false)
 	{
-		const CryGraphEditor::NodeStyle::EIconType iconType = CryGraphEditor::NodeStyle::IconType_Header;
-
-		CryIcon* pDefaultIcon = new CryIcon("icons:schematyc/node_default.ico", {
-				{ QIcon::Mode::Normal, QColor(255, 0, 0) }
-		  });
-		m_pDefaultMenuIcon = pDefaultIcon;
-		m_pDefaultWidgetIcon = CryGraphEditor::NodeStyle::CreateIconPixmap(*pDefaultIcon, iconType);
-
-		AddIcon("Core::FlowControl::Begin", "icons:schematyc/node_default.ico", QColor(26, 26, 26));
-		AddIcon("Core::FlowControl::End", "icons:schematyc/node_default.ico", QColor(26, 26, 26));
-		AddIcon("Core::FlowControl", "icons:schematyc/node_default.ico", QColor(97, 172, 236));
-		AddIcon("Core::SendSignal", "icons:schematyc/node_default.ico", QColor(100, 193, 98));
-		AddIcon("Core::ReceiveSignal", "icons:schematyc/node_default.ico", QColor(100, 193, 98));
-		AddIcon("Core::Function", "icons:schematyc/node_default.ico", QColor(193, 98, 980));
-		AddIcon("Core::Data", "icons:schematyc/node_default.ico", QColor(156, 98, 193));
-		AddIcon("Core::Utility", "icons:schematyc/node_default.ico", QColor(153, 153, 153));
-		AddIcon("Core::State", "icons:schematyc/node_default.ico", QColor(192, 193, 98));
+		CreateStyle("", "icons:schematyc/node_default.ico", QColor(255, 0, 0));
+		CreateStyle("Core::FlowControl::Begin", "icons:schematyc/core_flowcontrol_begin.ico", QColor(26, 26, 26));
+		CreateStyle("Core::FlowControl::End", "icons:schematyc/core_flowcontrol_end.ico", QColor(26, 26, 26));
+		CreateStyle("Core::FlowControl", "icons:schematyc/core_flowcontrol.ico", QColor(255, 255, 255));
+		CreateStyle("Core::SendSignal", "icons:schematyc/core_sendsignal.ico", QColor(100, 193, 98));
+		CreateStyle("Core::ReceiveSignal", "icons:schematyc/core_receivesignal.ico", QColor(100, 193, 98));
+		CreateStyle("Core::Function", "icons:schematyc/core_function.ico", QColor(193, 98, 980));
+		CreateStyle("Core::Data", "icons:schematyc/core_data.ico", QColor(156, 98, 193));
+		CreateStyle("Core::Utility", "icons:schematyc/core_utility.ico", QColor(153, 153, 153));
+		CreateStyle("Core::State", "icons:schematyc/core_state.ico", QColor(192, 193, 98));
 
 		iconsLoaded = true;
 	}
 }
 
-void CNodeIconMap::AddIcon(const char* szStyleId, const char* szIcon, QColor color)
+void CNodeStyles::CreateStyle(const char* szStyleId, const char* szIcon, QColor color)
 {
-	const uint32 nameHash = CCrc32::Compute(szStyleId);
-
-	CryIcon* pIcon = new CryIcon(szIcon, {
-			{ QIcon::Mode::Normal, color }
-	  });
-	m_menuIcons[nameHash] = pIcon;
-
-	SetIcon(nameHash, *pIcon, CryGraphEditor::NodeStyle::IconType_Header);
-}
-
-QPixmap* CNodeIconMap::GetNodeWidgetIcon(const char* szStyleId)
-{
-	s_Instance.LoadIcons();
-	if (szStyleId != nullptr)
+	CRY_ASSERT_MESSAGE(m_createdStyles < s_NumStyles, "Not enough space in styles array");
+	if (m_createdStyles < s_NumStyles)
 	{
-		const uint32 nameHash = CCrc32::Compute(szStyleId);
-		QPixmap* pSpecialIcon = s_Instance.GetIcon(nameHash);
-		if (pSpecialIcon)
-			return pSpecialIcon;
-	}
-	return s_Instance.m_pDefaultWidgetIcon;
-}
+		CryIcon* pIcon = new CryIcon(szIcon, {
+				{ QIcon::Mode::Normal, color }
+		  });
 
-QIcon* CNodeIconMap::GetMenuIcon(const char* szStyleId)
-{
-	s_Instance.LoadIcons();
-	if (szStyleId != nullptr)
-	{
-		const uint32 nameHash = CCrc32::Compute(szStyleId);
-		auto result = s_Instance.m_menuIcons.find(nameHash);
-		if (result != s_Instance.m_menuIcons.end())
-		{
-			return result->second;
-		}
+		CNodeStyle& style = *(new(&m_nodeStyles[m_createdStyles++])CNodeStyle(szStyleId));
+		style.SetHeaderTextColor(color);
+		style.SetIcon(szIcon, color, CNodeStyle::Icon_NodeType);
+		style.SetMenuIcon(pIcon);
+
+		s_instance.AddStyle(&style);
 	}
-	return s_Instance.m_pDefaultMenuIcon;
 }
 
 CNodeTypeIcon::CNodeTypeIcon(CryGraphEditor::CNodeWidget& nodeWidget)
 	: CNodeHeaderIcon(nodeWidget)
 {
 	CNodeItem& nodeItem = static_cast<CNodeItem&>(nodeWidget.GetItem());
-	SetDisplayIcon(CNodeIconMap::GetNodeWidgetIcon(nodeItem.GetStyleId()));
+
+	if (const CNodeStyle* pStyle = CNodeStyles::GetStyleById(nodeItem.GetStyleId()))
+	{
+		if (const QPixmap* pIcon = pStyle->GetHeaderTypeIcon())
+			SetDisplayIcon(pIcon);
+	}
 }
 
 CNodeTypeIcon::~CNodeTypeIcon()
@@ -135,6 +111,11 @@ CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphV
 	pNodeWidget->AddHeaderIcon(new CNodeTypeIcon(*pNodeWidget), CryGraphEditor::CNodeHeader::EIconSlot::Left);
 
 	return pNodeWidget;
+}
+
+const CryGraphEditor::CNodeWidgetStyle* CNodeItem::GetStyle() const
+{
+	return CNodeStyles::GetStyleById(GetStyleId());
 }
 
 void CNodeItem::Serialize(Serialization::IArchive& archive)
@@ -233,7 +214,7 @@ Schematyc::SGUID CNodeItem::GetGUID() const
 	return m_scriptNode.GetGUID();
 }
 
-const char* CNodeItem::GetStyleId()
+const char* CNodeItem::GetStyleId() const
 {
 	return m_scriptNode.GetStyleId();
 }

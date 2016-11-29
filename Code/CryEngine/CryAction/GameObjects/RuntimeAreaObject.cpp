@@ -34,19 +34,6 @@ bool CRuntimeAreaObject::ReloadExtension(IGameObject* pGameObject, const SEntity
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CRuntimeAreaObject::Release()
-{
-	// Stop all of the currently playing sounds controlled by this RuntimeAreaObject instance.
-	for (TEntitySoundsMap::iterator iEntityData = m_activeEntitySounds.begin(),
-	     iEntityDataEnd = m_activeEntitySounds.end(); iEntityData != iEntityDataEnd; ++iEntityData)
-	{
-		StopEntitySounds(iEntityData->first, iEntityData->second);
-	}
-
-	delete this;
-}
-
-///////////////////////////////////////////////////////////////////////////
 bool CRuntimeAreaObject::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
 {
 	CRY_ASSERT_MESSAGE(false, "CRuntimeAreaObject::NetSerialize not implemented");
@@ -112,6 +99,16 @@ void CRuntimeAreaObject::ProcessEvent(SEntityEvent& entityEvent)
 void CRuntimeAreaObject::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
+}
+
+void CRuntimeAreaObject::OnShutDown()
+{
+	// Stop all of the currently playing sounds controlled by this RuntimeAreaObject instance.
+	for (TEntitySoundsMap::iterator iEntityData = m_activeEntitySounds.begin(),
+		iEntityDataEnd = m_activeEntitySounds.end(); iEntityData != iEntityDataEnd; ++iEntityData)
+	{
+		StopEntitySounds(iEntityData->first, iEntityData->second);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

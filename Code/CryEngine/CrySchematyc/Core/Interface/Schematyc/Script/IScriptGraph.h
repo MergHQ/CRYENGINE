@@ -23,17 +23,6 @@ struct SElementId;
 // Forward declare classes.
 class CAnyConstPtr;
 
-enum class EScriptGraphColor
-{
-	NotSet = 0,
-	Red,
-	Green,
-	Blue,
-	Yellow,
-	Orange,
-	Purple
-};
-
 enum class EScriptGraphNodeFlags
 {
 	NotCopyable  = BIT(0),
@@ -86,7 +75,6 @@ struct IScriptGraphNode // #SchematycTODO : Move to separate header?
 	//virtual const char*          GetSubject() const = 0;
 	//virtual const char*          GetDescription() const = 0;
 	virtual const char*          GetStyleId() const = 0;
-	virtual ColorB               GetColor() const = 0; // #SchematycTODO : Remove!!!
 	virtual ScriptGraphNodeFlags GetFlags() const = 0;
 	virtual void                 SetPos(Vec2 pos) = 0;
 	virtual Vec2                 GetPos() const = 0;

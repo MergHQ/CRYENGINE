@@ -29,14 +29,10 @@ class CScriptGraphNodeLayout   // #SchematycTODO : Move to separate cpp/h files?
 {
 public:
 
-	CScriptGraphNodeLayout();
-
 	void                        SetName(const char* szBehavior, const char* szSubject = nullptr);
 	const char*                 GetName() const;
 	void                        SetStyleId(const char* szStyleId);
 	const char*                 GetStyleId() const;
-	void                        SetColor(EScriptGraphColor color); // #SchematycTODO : Remove!!!
-	EScriptGraphColor           GetColor() const; // #SchematycTODO : Remove!!!
 	ScriptGraphNodePorts&       GetInputs(); // #SchematycTODO : Rather than allowing non-const access should we just provide a Serialize() function?
 	const ScriptGraphNodePorts& GetInputs() const;
 	ScriptGraphNodePorts&       GetOutputs(); // #SchematycTODO : Rather than allowing non-const access should we just provide a Serialize() function?
@@ -93,7 +89,6 @@ private:
 
 	string               m_name;
 	string               m_styleId;
-	EScriptGraphColor    m_color;
 	ScriptGraphNodePorts m_inputs;
 	ScriptGraphNodePorts m_outputs;
 };
@@ -113,7 +108,6 @@ public:
 	virtual SGUID                GetGUID() const override;
 	virtual const char*          GetName() const override;
 	virtual const char*          GetStyleId() const override;
-	virtual ColorB               GetColor() const override;
 	virtual ScriptGraphNodeFlags GetFlags() const override;
 	virtual void                 SetPos(Vec2 pos) override;
 	virtual Vec2                 GetPos() const override;

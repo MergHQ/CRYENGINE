@@ -4,7 +4,7 @@
 #include <CryMono/IMonoObject.h>
 
 // Wrapped manager of a mono app domain
-class CAppDomain : public CMonoDomain
+class CAppDomain final : public CMonoDomain
 {
 public:
 	CAppDomain(char *name, bool bActivate = false);

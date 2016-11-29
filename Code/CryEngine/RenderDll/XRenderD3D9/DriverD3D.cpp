@@ -1518,6 +1518,9 @@ void CD3D9Renderer::RT_BeginFrame()
 	}
 #endif
 
+	// Update PSOs
+	CCryDeviceWrapper::GetObjectFactory().UpdatePipelineStates();
+
 	CResFile::Tick();
 	m_DevBufMan.Update(m_RP.m_TI[m_RP.m_nProcessThreadID].m_nFrameUpdateID, false);
 

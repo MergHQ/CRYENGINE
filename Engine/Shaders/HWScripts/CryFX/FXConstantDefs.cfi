@@ -166,6 +166,11 @@ cbuffer CBPerPassShadowGen : register(b5)
 	
 	float4    CP_ShadowGen_VegetationAlphaClamp;
 };
+
+cbuffer CBPerPassCustom : register(b5)
+{
+	float4    CP_Custom_ViewMode;
+};
 	
 	
 #define g_VS_WindGridOffs          CV_WindGridOffset

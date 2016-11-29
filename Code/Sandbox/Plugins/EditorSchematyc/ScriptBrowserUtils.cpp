@@ -48,24 +48,22 @@ namespace ScriptBrowserUtils
 {
 // #SchematycTODO : Move icon declarations to separate file?
 
-static const char* g_szScriptElementIcon = "icons:schematyc/script_element.png";
-static const char* g_szScriptModuleIcon = "icons:schematyc/script_module.png";
-static const char* g_szScriptEnumIcon = "icons:schematyc/script_enum.png";
-static const char* g_szScriptStructIcon = "icons:schematyc/script_struct.png";
-static const char* g_szScriptSignalIcon = "icons:schematyc/script_signal.png";
-static const char* g_szScriptConstructorIcon = "icons:schematyc/script_constructor.png";
-static const char* g_szScriptDestructorIcon = "icons:schematyc/script_destructor.png";
-static const char* g_szScriptFunctionIcon = "icons:schematyc/script_function.png";
-static const char* g_szScriptInterfaceIcon = "icons:schematyc/script_interface.png";
-static const char* g_szScriptInterfaceFunctionIcon = "icons:schematyc/script_interface_function.png";
-static const char* g_szScriptInterfaceTaskIcon = "icons:schematyc/script_interface_task.png";
-static const char* g_szScriptStateMachineIcon = "icons:schematyc/script_state_machine.png";
-static const char* g_szScriptStateIcon = "icons:schematyc/script_state.png";
-static const char* g_szScriptVariableIcon = "icons:schematyc/script_variable.png";
-static const char* g_szScriptTimerIcon = "icons:schematyc/script_timer.png";
-static const char* g_szScriptSignalReceiverIcon = "icons:schematyc/script_signal_receiver.png";
-static const char* g_szScriptComponentIcon = "icons:schematyc/script_component.png";
-static const char* g_szScriptActionIcon = "icons:schematyc/script_action.png";
+static const char* g_szScriptModuleIcon = "icons:schematyc/element_folder.ico";
+static const char* g_szScriptEnumIcon = "icons:schematyc/element_enum.ico";
+static const char* g_szScriptStructIcon = "icons:schematyc/element_struct.ico";
+static const char* g_szScriptSignalIcon = "icons:schematyc/element_signal.ico";
+static const char* g_szScriptConstructorIcon = "icons:schematyc/element_constructor.ico";
+static const char* g_szScriptFunctionIcon = "icons:schematyc/element_function.ico";
+static const char* g_szScriptInterfaceIcon = "";
+static const char* g_szScriptInterfaceFunctionIcon = "";
+static const char* g_szScriptInterfaceTaskIcon = "";
+static const char* g_szScriptElementIcon = "icons:schematyc/element_class.ico";
+static const char* g_szScriptStateMachineIcon = "icons:schematyc/element_statemachine.ico";
+static const char* g_szScriptStateIcon = "icons:schematyc/element_state.ico";
+static const char* g_szScriptVariableIcon = "icons:schematyc/element_variable.ico";
+static const char* g_szScriptTimerIcon = "icons:schematyc/element_timer.ico";
+static const char* g_szScriptSignalReceiverIcon = "icons:schematyc/element_signalreceiver.ico";
+static const char* g_szScriptComponentIcon = "icons:schematyc/element_componentinstance.ico";
 
 struct SBase
 {
@@ -722,7 +720,14 @@ bool CanRemoveScriptElement(const IScriptElement& element)
 
 bool CanRenameScriptElement(const IScriptElement& element)
 {
+	// #SchematycTODO : Looks like it's not crashing on an item we removed!!!
+
 	return !element.GetElementFlags().Check(EScriptElementFlags::FixedName);
+}
+
+bool CanCopyScriptElement(const IScriptElement& element)
+{
+	return !element.GetElementFlags().Check(EScriptElementFlags::NotCopyable);
 }
 
 const char* GetScriptElementTypeName(EScriptElementType scriptElementType)
@@ -929,20 +934,20 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 			}
 			return g_szScriptComponentIcon;
 		}
-	case EScriptElementType::ActionInstance:
-		{
-			const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
-			const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
-			if (pEnvAction)
-			{
-				const char* szIcon = pEnvAction->GetIcon();
-				if (szIcon && szIcon[0])
-				{
-					return szIcon;
-				}
-			}
-			return g_szScriptActionIcon;
-		}
+	/*case EScriptElementType::ActionInstance:
+	   {
+	    const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
+	    const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
+	    if (pEnvAction)
+	    {
+	      const char* szIcon = pEnvAction->GetIcon();
+	      if (szIcon && szIcon[0])
+	      {
+	        return szIcon;
+	      }
+	    }
+	    return g_szScriptActionIcon;
+	   }*/
 	default:
 		{
 			return "";

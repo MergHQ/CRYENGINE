@@ -348,12 +348,19 @@ pixout OceanIntoPS( v2f IN )
 {
 	pixout OUT = (pixout) 0;
 
+	float2 baseTC = MapViewportToRaster(IN.hPos.xy * CV_ScreenSize.zw * 2.0f);
+
+	// if ocean surface is behind the others, ocean fog shouldn't be rendered.
+	const float oceanMask = oceanMaskTex.SampleLevel(ssPointClamp, baseTC.xy, 0.0f).x;
+	if (oceanMask > 0.0f)
+	{
+		discard;
+	}
+
 	SWaterVolumeParams params = GetWaterVolumeParams();
 
 	float3 viewDirNorm = normalize( IN.viewDir );
 	float viewDirCorrection = 1.0f / dot( viewDirNorm, -CV_CameraFrontVector.xyz );
-
-	float2 baseTC = MapViewportToRaster(IN.hPos.xy * CV_ScreenSize.zw * 2.0f);
 
 	float sceneDepth = wvGetLinearDepthScaled(baseTC.xy);
 	float volumeDepth = max( sceneDepth - dot( IN.viewDir, -CV_CameraFrontVector.xyz ), 0.0f );

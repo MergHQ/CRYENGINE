@@ -1342,7 +1342,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 	const float3 pixelCoord = DispatchThreadID.xyz;
 	float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
 	vPixelUV = MapRasterToViewport(vPixelUV);
-	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * frustumTL.xyz + (vPixelUV.x * frustumTR.xyz + (vPixelUV.y * frustumBL.xyz)));
 	const float3 camDir = normalize(vCamVec);
 
 
@@ -2677,7 +2677,7 @@ pixout ReprojectCloudsPS( vtxOutWPOS IN )
 
 	SReprojectionParams params = GetReprojectionParams();
 
-	int3 vPixCoord = int3(IN.HPosition.xy, 0);
+	int3 vPixCoord = int3(IN.WPos.xy, 0);
 #if %_RT_SAMPLE0
 	float currDepth = currDepthBuffer.Load(vPixCoord).x; // max-depth
 #else
@@ -2687,7 +2687,7 @@ pixout ReprojectCloudsPS( vtxOutWPOS IN )
 	float currCloudDepth = currCloudDepthBuffer.Load(vPixCoord).x;
 
 	const float2 texel = params.screenSize.zw;
-	float2 baseUV = IN.HPosition.xy * texel;
+	float2 baseUV = IN.WPos.xy * texel;
 
 	float4x4 colArray;
 	colArray[0] = currCloud.SampleLevel(vcTemporalReprojectionSState, baseUV + texel * float2(-1.5f, -0.5f), 0.0f);

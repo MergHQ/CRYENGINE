@@ -38,7 +38,9 @@ void CPreviewSettingsWidget::showEvent(QShowEvent* pEvent)
 	QScrollableBox::showEvent(pEvent);
 
 	if (m_pPropertyTree)
+	{
 		m_pPropertyTree->setSizeToContent(true);
+	}
 }
 
 CGizmoTranslateOp::CGizmoTranslateOp(ITransformManipulator& gizmo, IScriptComponentInstance& componentInstance)
@@ -202,6 +204,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 				{
 					m_pGizmoTransformOp->OnRelease();
 					m_pGizmoTransformOp.release();
+					signalChanged();
 				}
 			};
 			m_pGizmo->signalBeginDrag.Connect(onBeginDrag);
@@ -221,6 +224,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 				{
 					m_pGizmoTransformOp->OnRelease();
 					m_pGizmoTransformOp.release();
+					signalChanged();
 				}
 			};
 			m_pGizmo->signalEndDrag.Connect(onEndDrag);
@@ -325,6 +329,7 @@ void CPreviewWidget::OnRender(const SRenderContext& context)
 			{
 				pComponentPreviewer->Render(*pObject, component, *context.renderParams, *context.passInfo);
 			}
+
 			return EVisitStatus::Continue;
 		};
 		pObject->VisitComponents(ObjectComponentConstVisitor::FromLambda(visitComponent));
@@ -349,4 +354,5 @@ void CPreviewWidget::OnScriptRegistryChange(const SScriptRegistryChange& change)
 
 const Vec3 CPreviewWidget::ms_defaultOrbitTarget = Vec3(0.0f, 0.0f, 1.0f);
 const float CPreviewWidget::ms_defaultOrbitRadius = 2.0f;
+
 } // Schematyc

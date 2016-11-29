@@ -41,7 +41,7 @@ static const D3D11_INPUT_ELEMENT_DESC VertexDeclGlyph[] =
 
 CRenderPrimitive* SSF_ResourcesD3D::CRenderPrimitiveHeap::GetUsablePrimitive(int key)
 {
-	CryCriticalSectionNonRecursive threadSafe;
+	CryAutoCriticalSectionNoRecursive threadSafe(m_lock);
 
 	if (m_freeList.begin() == m_freeList.end())
 		m_useList[key].emplace_front();
@@ -53,7 +53,7 @@ CRenderPrimitive* SSF_ResourcesD3D::CRenderPrimitiveHeap::GetUsablePrimitive(int
 
 void SSF_ResourcesD3D::CRenderPrimitiveHeap::FreeUsedPrimitives(int key)
 {
-	CryCriticalSectionNonRecursive threadSafe;
+	CryAutoCriticalSectionNoRecursive threadSafe(m_lock);
 
 	for (auto& prim : m_useList[key])
 	{
@@ -65,7 +65,7 @@ void SSF_ResourcesD3D::CRenderPrimitiveHeap::FreeUsedPrimitives(int key)
 
 CConstantBuffer* SSF_ResourcesD3D::STransientConstantBufferHeap::GetUsableConstantBuffer()
 {
-	CryCriticalSectionNonRecursive threadSafe;
+	CryAutoCriticalSectionNoRecursive threadSafe(m_lock);
 
 	if (m_freeList.begin() == m_freeList.end())
 		m_useList.emplace_front(gRenDev->m_DevBufMan.CreateConstantBuffer(std::max(
@@ -80,7 +80,7 @@ CConstantBuffer* SSF_ResourcesD3D::STransientConstantBufferHeap::GetUsableConsta
 
 void SSF_ResourcesD3D::STransientConstantBufferHeap::FreeUsedConstantBuffers()
 {
-	CryCriticalSectionNonRecursive threadSafe;
+	CryAutoCriticalSectionNoRecursive threadSafe(m_lock);
 
 	m_freeList.splice_after(m_freeList.before_begin(), m_useList);
 }

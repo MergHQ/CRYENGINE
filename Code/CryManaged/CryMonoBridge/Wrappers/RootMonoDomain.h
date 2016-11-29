@@ -3,7 +3,7 @@
 #include "MonoDomain.h"
 
 // Wrapped manager of the root mono domain
-class CRootMonoDomain : public CMonoDomain
+class CRootMonoDomain final : public CMonoDomain
 {
 public:
 	CRootMonoDomain();

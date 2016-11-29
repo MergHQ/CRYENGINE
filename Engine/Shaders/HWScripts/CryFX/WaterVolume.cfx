@@ -871,7 +871,7 @@ float2 GetParalaxOffset(in v2f_hs IN, half3 vView)
 void SunSpecular(in v2f_hs IN, half fNdotL, half3 vNormal, half3 vView, half4 cGlossMap, inout half3 cSpecularAcc)
 {
 	half3 R = reflect(-vView, vNormal);
-	half LdotR = saturate(dot(g_PS_SunLightDir, R) );
+	half LdotR = saturate(dot(g_PS_SunLightDir.xyz, R) );
 
 	half4 GlossinessK;
 	GlossinessK.xy = half2(4.0, 0.5) * GlossToSpecExp255(MatSpecColor.w) * cGlossMap.x;

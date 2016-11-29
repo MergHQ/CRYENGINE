@@ -128,12 +128,16 @@ std::shared_ptr<CMonoClass> CMonoLibrary::GetClassFromMonoClass(MonoClass* pMono
 		}
 	}
 
-	return std::make_shared<CMonoClass>(this, pMonoClass);
+	auto pClass = std::make_shared<CMonoClass>(this, pMonoClass);
+
+	pClass->SetWeakPointer(pClass);
+
+	return pClass;
 }
 
 MonoObject* CMonoLibrary::GetManagedObject()
 {
-	return (MonoObject*)mono_assembly_get_object(m_pDomain->GetHandle(), m_pAssembly);
+	return (MonoObject*)mono_assembly_get_object((MonoDomain*)m_pDomain->GetHandle(), m_pAssembly);
 }
 
 const char* CMonoLibrary::GetImageName() const
