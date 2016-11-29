@@ -1860,8 +1860,8 @@ CryGraphEditor--CNodeStyle {
 	/* Header */
 	qproperty-headerHeight: 24.0;
 	qproperty-headerIconSize: 16px 16px;
-	qproperty-headerDefaultColorLeft: rgb(110, 110, 110);
-	qproperty-headerDefaultColorRight: rgb(110, 110, 110);
+	qproperty-headerDefaultColorLeft: rgb(26, 26, 26);
+	qproperty-headerDefaultColorRight: rgb(26, 26, 26);
 	
 	/* Header: Content margins */
 	qproperty-headerContentMarginTop: 1;
