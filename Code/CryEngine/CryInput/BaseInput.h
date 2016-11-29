@@ -61,7 +61,7 @@ public:
 	virtual bool                InputState(const TKeyName& keyName, EInputState state);
 	virtual const char*         GetKeyName(const SInputEvent& event) const;
 	virtual const char*         GetKeyName(EKeyId keyId) const;
-	virtual char                GetInputCharAscii(const SInputEvent& event);
+	virtual uint32              GetInputCharUnicode(const SInputEvent& event);
 	virtual SInputSymbol*       LookupSymbol(EInputDeviceType deviceType, int deviceIndex, EKeyId keyId);
 	virtual const SInputSymbol* GetSymbolByName(const char* name) const;
 	virtual const char*         GetOSKeyName(const SInputEvent& event);
@@ -113,8 +113,8 @@ public:
 	virtual void                ClearBlockingInputs();
 	virtual bool                ShouldBlockInputEventPosting(const EKeyId keyId, const EInputDeviceType deviceType, const uint8 deviceIndex) const;
 
-	virtual IKinectInput*       GetKinectInput() { return m_pKinectInput; }
-	virtual IEyeTrackerInput*   GetEyeTrackerInput() { return m_pEyeTrackerInput; }
+	virtual IKinectInput*       GetKinectInput()       { return m_pKinectInput; }
+	virtual IEyeTrackerInput*   GetEyeTrackerInput()   { return m_pEyeTrackerInput; }
 
 	virtual INaturalPointInput* GetNaturalPointInput() { return m_pNaturalPointInput; }
 
@@ -131,10 +131,10 @@ protected:
 	void ClearHoldEvent(SInputSymbol* pSymbol);
 
 private:
-	bool SendEventToListeners(const SInputEvent& event);
-	bool SendEventToListeners(const SUnicodeEvent& event);
-	void AddEventToHoldSymbols(const SInputEvent& event);
-	void RemoveDeviceHoldSymbols(EInputDeviceType deviceType, uint8 deviceIndex);
+	bool        SendEventToListeners(const SInputEvent& event);
+	bool        SendEventToListeners(const SUnicodeEvent& event);
+	void        AddEventToHoldSymbols(const SInputEvent& event);
+	void        RemoveDeviceHoldSymbols(EInputDeviceType deviceType, uint8 deviceIndex);
 	static bool OnFilterInputEventDummy(SInputEvent* pInput);
 
 	// listener functionality
@@ -178,7 +178,7 @@ private:
 	#endif
 #endif
 
-	IEyeTrackerInput* m_pEyeTrackerInput;
+	IEyeTrackerInput*   m_pEyeTrackerInput;
 
 	TNaturalPointInput* m_pNaturalPointInput;
 

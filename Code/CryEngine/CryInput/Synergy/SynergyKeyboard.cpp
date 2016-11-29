@@ -93,7 +93,7 @@ void CSynergyKeyboard::ProcessKey(uint32 key, bool bPressed, bool bRepeat, uint3
 	}
 }
 
-char CSynergyKeyboard::GetInputCharAscii(const SInputEvent& event)
+uint32 CSynergyKeyboard::GetInputCharUnicode(const SInputEvent& event)
 {
 	if (event.pSymbol && event.pSymbol->name)
 	{

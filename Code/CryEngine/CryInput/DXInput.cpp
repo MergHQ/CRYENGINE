@@ -47,6 +47,8 @@ CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
 
 	m_bImeComposing = false;
 	m_hwnd = hwnd;
+	m_pKeyboard = nullptr;
+	m_lastLayout = 0;
 	This = this;
 
 	pSystem->RegisterWindowMessageHandler(this);
@@ -76,7 +78,9 @@ bool CDXInput::Init()
 	}
 
 	// add keyboard and mouse
-	if (!AddInputDevice(new CKeyboard(*this))) return false;
+	m_pKeyboard = new CKeyboard(*this);
+	m_lastLayout = GetKeyboardLayout(0);
+	if (!AddInputDevice(m_pKeyboard)) return false;
 
 	if (GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == NULL)
 	{
@@ -106,6 +110,14 @@ bool CDXInput::Init()
 
 void CDXInput::Update(bool bFocus)
 {
+	// Ideally, we would use WM_INPUTLANGCHANGE, but this won't be sent in Sandbox.
+	const HKL layout = GetKeyboardLayout(0);
+	if (layout != m_lastLayout)
+	{
+		m_lastLayout = layout;
+		m_pKeyboard->RebuildScanCodeTable(layout);
+	}
+
 	CBaseInput::Update(bFocus);
 }
 

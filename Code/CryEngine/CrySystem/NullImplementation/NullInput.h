@@ -45,7 +45,7 @@ public:
 
 	virtual const char*          GetKeyName(EKeyId keyId) const override                                                                                     { return nullptr; }
 
-	virtual char                 GetInputCharAscii(const SInputEvent& event) override                                                                        { return 0; }
+	virtual uint32               GetInputCharUnicode(const SInputEvent& event) override                                                                      { return 0; }
 
 	virtual SInputSymbol*        LookupSymbol(EInputDeviceType deviceType, int deviceIndex, EKeyId keyId) override                                           { return nullptr; }
 
