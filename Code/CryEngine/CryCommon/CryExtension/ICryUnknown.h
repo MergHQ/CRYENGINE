@@ -146,14 +146,13 @@ std::shared_ptr<const ICryUnknown> crycomposite_query(const std::shared_ptr<cons
 {
 	return crycomposite_query(p.get(), name, pExposed);
 }
+}
 
 #define _BEFRIEND_CRYCOMPOSITE_QUERY()                                                                                                                   \
   template<class Src> friend std::shared_ptr<ICryUnknown> CompositeQuerySemantics::crycomposite_query(Src*, const char*, bool*);                         \
   template<class Src> friend std::shared_ptr<const ICryUnknown> CompositeQuerySemantics::crycomposite_query(const Src*, const char*, bool*);             \
   template<class Src> friend std::shared_ptr<ICryUnknown> CompositeQuerySemantics::crycomposite_query(const std::shared_ptr<Src> &, const char*, bool*); \
   template<class Src> friend std::shared_ptr<const ICryUnknown> CompositeQuerySemantics::crycomposite_query(const std::shared_ptr<const Src> &, const char*, bool*);
-
-}
 
 using CompositeQuerySemantics::crycomposite_query;
 
@@ -165,14 +164,9 @@ using CompositeQuerySemantics::crycomposite_query;
   protected:                   \
     virtual ~iname() {}
 
-//! Befriending cryinterface_cast<T>() and crycomposite_query() via CRYINTERFACE_DECLARE is actually only needed for ICryUnknown
-//! since QueryInterface() and QueryComposite() are usually not redeclared in derived interfaces but it doesn't hurt either
 #define CRYINTERFACE_DECLARE(iname, iidHigh, iidLow)                                     \
   _BEFRIEND_CRYIIDOF()                                                                   \
-  _BEFRIEND_CRYINTERFACE_CAST()                                                          \
-  _BEFRIEND_CRYCOMPOSITE_QUERY()                                                         \
   _BEFRIEND_DELETER(iname)                                                               \
-                                                                                         \
 private:                                                                                 \
   static const CryInterfaceID& IID()                                                     \
   {                                                                                      \
@@ -184,6 +178,9 @@ public:
 struct ICryUnknown
 {
 	CRYINTERFACE_DECLARE(ICryUnknown, 0x1000000010001000, 0x1000100000000000);
+
+	_BEFRIEND_CRYINTERFACE_CAST()
+	_BEFRIEND_CRYCOMPOSITE_QUERY()
 
 	virtual ICryFactory* GetFactory() const = 0;
 

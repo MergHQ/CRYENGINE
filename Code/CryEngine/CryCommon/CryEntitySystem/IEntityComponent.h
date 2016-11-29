@@ -82,7 +82,6 @@ enum EEntityProxy
 	CRYGENERATE_CLASS_FROM_INTERFACE(implclassname,interfaceName,cname,iidHigh,iidLow)
 
 #define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(implclassname,cname,iidHigh,iidLow) \
-	_BEFRIEND_CRYIIDOF()                                                             \
 	CRY_ENTITY_COMPONENT_INTERFACE(implclassname, iidHigh, iidLow) \
 	CRYGENERATE_CLASS_FROM_INTERFACE(implclassname,implclassname,cname,iidHigh,iidLow)
 
