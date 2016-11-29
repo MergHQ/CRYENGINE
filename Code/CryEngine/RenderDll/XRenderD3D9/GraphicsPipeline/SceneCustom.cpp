@@ -16,6 +16,9 @@ void CSceneCustomStage::Init()
 	
 	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_Custom));
 	
+	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+	cb.UploadZeros();
+	
 	bool bSuccess = PreparePerPassResources(true);
 	assert(bSuccess);
 	

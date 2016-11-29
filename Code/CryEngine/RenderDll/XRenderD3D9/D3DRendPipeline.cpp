@@ -1850,6 +1850,9 @@ void CD3D9Renderer::FX_DrawNormals()
 {
 	HRESULT h = S_OK;
 
+	const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)(4096 * 1024));
+	CryScopedAllocWithSizeVector(SVF_P3F_C4B_T2F, maxBufferSize / sizeof(SVF_P3F_C4B_T2F), Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	
 	float len = CRenderer::CV_r_normalslength;
 	int StrVrt, StrTan, StrNorm;
 	//if (gcpRendD3D->m_RP.m_pRE)
@@ -1895,12 +1898,8 @@ void CD3D9Renderer::FX_DrawNormals()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *two* buffer vertices (endpoints of
 			// a normal vector).
-			const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)ALLOCA_LIMIT);
 			const size_t maxVertexCount = maxBufferSize / (2 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
-
-			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, numVerts * 2, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 			uint32 col0 = 0x000000ff;
 			uint32 col1 = 0x00ffffff;
@@ -1959,6 +1958,9 @@ void CD3D9Renderer::FX_DrawTangents()
 {
 	HRESULT h = S_OK;
 
+	const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)(4096 * 1024));
+	CryScopedAllocWithSizeVector(SVF_P3F_C4B_T2F, maxBufferSize / sizeof(SVF_P3F_C4B_T2F), Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	
 	float len = CRenderer::CV_r_normalslength;
 	//if (gcpRendD3D->m_RP.m_pRE)
 	//  gcpRendD3D->m_RP.m_pRE->mfCheckUpdate(gcpRendD3D->m_RP.m_pShader->m_VertexFormatId, SHPF_TANGENTS);
@@ -1998,12 +2000,8 @@ void CD3D9Renderer::FX_DrawTangents()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *six* buffer vertices (three tangent space
 			// vectors, two vertices per vector).
-			const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)ALLOCA_LIMIT);
 			const size_t maxVertexCount = maxBufferSize / (6 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
-
-			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, numVerts * 6, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 			for (int v = 0; v < numVerts; v++, verts += StrVrt, tangents += StrTan)
 			{
