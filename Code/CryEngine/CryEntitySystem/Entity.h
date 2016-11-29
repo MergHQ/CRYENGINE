@@ -399,6 +399,11 @@ public:
 	void RemoveEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
 	void RemoveAllEventListeners();
 
+	uint32 GetEditorObjectID() const final override;
+	void   SetObjectID(uint32 ID) final override;
+	void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const final override;
+	void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) final override;
+
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.
@@ -563,4 +568,5 @@ private:
 
 	CEntityRender                    m_render;
 	CEntityPhysics                   m_physics;
+	uint32                           m_objectID;
 };

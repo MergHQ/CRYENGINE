@@ -102,6 +102,8 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	// Forward dir cache is initially invalid
 	m_bDirtyForwardDir = true;
 
+	m_objectID = 0;
+
 #ifdef SEG_WORLD
 	m_bLocalSeg = false;
 #endif
@@ -2660,3 +2662,38 @@ void CEntity::ComputeForwardDir() const
 		m_bDirtyForwardDir = false;
 	}
 }
+
+uint32 CEntity::GetEditorObjectID() const
+{
+	return m_objectID >> 8; 
+}
+
+void   CEntity::SetObjectID(uint32 ID)
+{
+	m_objectID = (ID << 8) | (m_objectID & 0xFF); 
+}
+
+void CEntity::GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const
+{
+	bSelected = (m_objectID & 1) != 0;
+	bHighlighted = (m_objectID & (1 << 1)) != 0;
+}
+
+void CEntity::SetEditorObjectInfo(bool bSelected, bool bHighlighted)
+{
+	uint32 flags = (bSelected * (1)) | (bHighlighted * (1 << 1));
+	m_objectID &= ~(0x3);
+	m_objectID |= flags;
+
+	int nSlots = GetSlotCount();
+
+	for (int i = 0; i < nSlots; ++i)
+	{
+		IRenderNode* pRenderNode = GetRenderNode(i);
+		if (pRenderNode)
+		{
+			pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
+		}
+	}
+}
+

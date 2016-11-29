@@ -461,7 +461,7 @@ public:
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
 		// lower 8 bits of the ID is for highlight/selection and other flags
-		m_nEditorSelectionID = nEditorObjectId << 8;
+		m_nEditorSelectionID = (nEditorObjectId << 8) | (m_nEditorSelectionID & 0xFF);
 		InvalidatePermanentRenderObject();
 	}
 	virtual void SetEditorObjectInfo(bool bSelected, bool bHighlighted)
