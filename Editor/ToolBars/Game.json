@@ -20,11 +20,6 @@
                 "command": "physics.step",
                 "custom": false,
                 "uiName": "Do a single physics step"
-            },
-            {
-                "command": "physics.set_physics_tool",
-                "custom": false,
-                "uiName": "Activate physics manipulator mode"
             }
         ]
     },
