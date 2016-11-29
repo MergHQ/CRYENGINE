@@ -235,6 +235,8 @@ static bool CopyResult(const char* szSrcFile, const char* szDstFile)
 			success = success && (DeleteFile(szDstFile) != FALSE);
 		}
 
+		gEnv->pCryPak->MakeDir(PathUtil::GetPathWithoutFilename(szDstFile));
+
 		success = success && (GetFileAttributes(szSrcFile) != INVALID_FILE_ATTRIBUTES);
 		success = success && (MoveFile(szSrcFile, szDstFile) != FALSE);
 
@@ -318,15 +320,26 @@ public:
 	}
 
 private:
+	static string GetTemporaryDirectoryPath()
+	{
+		char path[ICryPak::g_nMaxPath] = {};
+		return gEnv->pCryPak->AdjustFileName("%USER%/TextureCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+	}
 
 	// Create a temp directory to store texture asset during processing.
 	static std::vector<SAsset> CreateTemp(const string& srcFile, const string& dstFile)
 	{
+		// Temporary files are created outside the asset directory primarily to avoid interference with the editor asset system.
+		// Right now, when creating a temporary folder, we copy the folder hierarchy of the asset folder to avoid naming conflicts.
+		// Example: The temporary directory for 'textures/defaults/white.dds' will be '%USER%/TextureCompiler/assets/textures/defaults/white'
+		// In the future, this should be replaced by some central system that creates temporary folders.
+		static const string tempPrefix = GetTemporaryDirectoryPath();
+
 		string dir;
 		string filename;
 		string ext;
 		PathUtil::Split(dstFile, dir, filename, ext);
-		string tempDir = PathUtil::Make(dir, filename + "_tmp");
+		string tempDir = PathUtil::Make(tempPrefix + dir, filename);
 		gEnv->pCryPak->MakeDir(tempDir.c_str());
 
 		// Several assets may be created by RC from a single source file depends on the source file options.
