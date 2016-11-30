@@ -90,7 +90,7 @@ void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 //! Use the platform's default assert.
 		#include <assert.h>
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) assert(condition)
-		#define CRY_ASSERT_MESSAGE(condition, message)          assert(condition)
+		#define CRY_ASSERT_MESSAGE(condition, ... )             assert(condition)
 		#define CRY_ASSERT(condition)                           assert(condition)
 
 	#endif
