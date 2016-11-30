@@ -15,6 +15,9 @@ float Script : STANDARDSGLOBAL
 #if %VERTCOLORS
            "VertexColors"
 #endif
+#if %BILLBOARD
+					 "Billboard"
+#endif
 #if ENABLE_TESSELLATION
 					 "HWTessellation;"
 #endif

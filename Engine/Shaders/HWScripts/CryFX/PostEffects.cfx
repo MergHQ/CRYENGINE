@@ -34,6 +34,7 @@ float4 texToTexParams0;
 float4 texToTexParams1;
 float4 texToTexParams2;
 float4 texToTexParams3;
+float4 texToTexParamsTC;
 
 ////////////////// samplers /////////////////////
 
@@ -50,8 +51,16 @@ struct vtxOutTexToTex
 vtxOutTexToTex TexToTexVS(vtxIn IN)
 {
   vtxOutTexToTex OUT; 
-	OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.HPosition = Get2dHPos(IN.Position);
   OUT.baseTC.xy = IN.baseTC.xy;
+  return OUT;
+}
+
+vtxOutTexToTex TexToTexRegVS(vtxIn IN)
+{
+  vtxOutTexToTex OUT; 
+  OUT.HPosition = IN.Position;
+  OUT.baseTC.xy = IN.baseTC.xy * texToTexParamsTC.zw + texToTexParamsTC.xy;
   return OUT;
 }
 
@@ -415,6 +424,15 @@ technique TextureToTextureResampled
   pass p0
   {
     VertexShader = TexToTexVS() PostProcessGameVS;            
+    PixelShader = TexToTexSampledPS() PostProcessGamePS; // PostProcessGamePS for RT_SAMPLE2
+  }
+}
+
+technique TextureToTextureResampledReg
+{
+  pass p0
+  {
+    VertexShader = TexToTexRegVS() PostProcessGameVS;            
     PixelShader = TexToTexSampledPS() PostProcessGamePS; // PostProcessGamePS for RT_SAMPLE2
   }
 }

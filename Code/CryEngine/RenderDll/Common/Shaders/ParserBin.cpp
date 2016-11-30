@@ -720,6 +720,7 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(GatherAlpha);
 
 	FX_REGISTER_TOKEN($AutoGS_MultiRes);
+	FX_REGISTER_TOKEN(Billboard);
 
 	FXMacroItor it;
 	for (it = sStaticMacros.begin(); it != sStaticMacros.end(); it++)
@@ -2179,10 +2180,10 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 					switch (nFnRet)
 					{
 					case eT_br_sq_1: 
-						nCount++;
-						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
+					nCount++;
+					nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
 						if (nLastTok < 0)
-						{
+					{
 							Warning("Unmatched [");
 							assert(0);
 							nLastTok = nCur;
@@ -2207,9 +2208,9 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 						continue;
 
 					case eT_skip:
-						pTokens[nLastTok + 1] = eT_skip;
-						nLastTok += 2;
-						nFnRet = pTokens[nLastTok];
+							pTokens[nLastTok + 1] = eT_skip;
+							nLastTok += 2;
+							nFnRet = pTokens[nLastTok];
 						nCur = nLastTok + 1;
 						continue;
 					}

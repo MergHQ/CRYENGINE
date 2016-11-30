@@ -1372,6 +1372,7 @@ Property
 {
   Name = %_RT_SPRITE
   Mask = 0x2000000000000000
+  Precache = ZPS
   Precache = VegetationVS
   Precache = VegetationPS
   Precache = ParticleVS

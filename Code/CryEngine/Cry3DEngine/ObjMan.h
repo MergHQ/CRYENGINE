@@ -457,6 +457,7 @@ public:
 	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
+	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
 
 private:
 	void PrecacheCharacterCollect(IRenderNode* pObj, const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat,
@@ -504,6 +505,7 @@ public:
 	//	bool LoadStaticObjectsFromXML(XmlNodeRef xmlVegetation);
 	_smart_ptr<CStatObj>    m_pDefaultCGF;
 	_smart_ptr<IRenderMesh> m_pRMBox;
+	_smart_ptr<IRenderMesh> m_pBillboardMesh;
 
 	//////////////////////////////////////////////////////////////////////////
 	std::vector<_smart_ptr<IStatObj>> m_lockedObjects;

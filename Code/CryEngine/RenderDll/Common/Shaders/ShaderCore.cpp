@@ -780,6 +780,7 @@ void CShaderMan::mfInitCommonGlobalFlagsLegacyFix(void)
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%RIM_LIGHTING", (uint64)0x40000000));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%SPECULARPOW_GLOSSALPHA", (uint64)0x80000000));
 
+	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%BILLBOARD", (uint64)0x100000000ULL));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%TEMP_TERRAIN", (uint64)0x200000000ULL));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%TEMP_VEGETATION", (uint64)0x400000000ULL));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%TERRAINHEIGHTADAPTION", (uint64)0x800000000ULL));

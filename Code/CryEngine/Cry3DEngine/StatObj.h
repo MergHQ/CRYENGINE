@@ -293,6 +293,9 @@ public:
 	// Default material.
 	_smart_ptr<IMaterial> m_pMaterial;
 
+	// Billboard material and mesh
+	_smart_ptr<IMaterial> m_pBillboardMaterial;
+
 	float m_fRadiusHors;
 	float m_fRadiusVert;
 
@@ -458,6 +461,8 @@ public:
 	virtual void SetMaterial(IMaterial * pMaterial) final;
 	virtual IMaterial* GetMaterial() const final { return m_pMaterial; }
 	//////////////////////////////////////////////////////////////////////////
+
+	IMaterial * GetBillboardMaterial() { return m_pBillboardMaterial; }
 
 	void RenderInternal(CRenderObject * pRenderObject, hidemask nSubObjectHideMask, const CLodValue &lodValue, const SRenderingPassInfo &passInfo);
 	void RenderObjectInternal(CRenderObject * pRenderObject, int nLod, uint8 uLodDissolveRef, bool dissolveOut, const SRenderingPassInfo &passInfo);
@@ -717,6 +722,8 @@ protected:
 	}
 
 	bool CheckForStreamingDependencyLoop(const char* szFilenameDependancy) const;
+	void CheckCreateBillboardMaterial();
+	void CreateBillboardMesh(IMaterial* pMaterial);
 };
 
 //////////////////////////////////////////////////////////////////////////

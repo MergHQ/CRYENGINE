@@ -73,6 +73,134 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CStretchRectPass
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CStretchRegionPass *CStretchRegionPass::s_pPass = nullptr;
+
+CStretchRegionPass &CStretchRegionPass::GetPass()
+{
+	if (!s_pPass)
+		s_pPass = new CStretchRegionPass;
+	return *s_pPass;
+}
+void CStretchRegionPass::Shutdown()
+{
+	if (s_pPass)
+		delete s_pPass;
+	s_pPass = NULL;
+}
+
+void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample)
+{
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+
+	if (pSrcRT == NULL || pDestRT == NULL)
+		return;
+
+	PROFILE_LABEL_SCOPE("STRETCHREGION");
+
+	RECT rcS, rcD;
+	if (pSrcRect)
+		rcS = *pSrcRect;
+	else
+	{
+		rcS.left = 0; rcS.right = pSrcRT->GetWidth(); rcS.top = 0; rcS.bottom = pSrcRT->GetHeight();
+	}
+	if (pDstRect)
+		rcD = *pDstRect;
+	else
+	{
+		rcD.left = 0; rcD.right = pDestRT->GetWidth(); rcD.top = 0; rcS.bottom = pDestRT->GetHeight();
+	}
+	const D3DFormat destFormat = CTexture::DeviceFormatFromTexFormat(pDestRT->GetDstFormat());
+	const D3DFormat srcFormat = CTexture::DeviceFormatFromTexFormat(pSrcRT->GetDstFormat());
+
+	bool bResample = false;
+	if (pSrcRect || pDstRect || rcS.right - rcS.left != rcD.right - rcD.left || rcS.bottom - rcS.top != rcD.bottom - rcD.top || destFormat != srcFormat)
+		bResample = true;
+
+	if (!bResample && destFormat == srcFormat && !pSrcRT)
+	{
+		rd->GetDeviceContext().CopyResource(pDestRT->GetDevTexture()->GetBaseTexture(), pSrcRT->GetDevTexture()->GetBaseTexture());
+		return;
+	}
+
+	m_pass.SetRenderTarget(0, pDestRT);
+
+	D3DViewPort viewport;
+	viewport.TopLeftX = (float)rcD.left; viewport.TopLeftY = (float)rcD.top;
+	viewport.Width = (float)(rcD.right - rcD.left);
+	viewport.Height = (float)(rcD.bottom - rcD.top);
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	int renderState = GS_NODEPTHTEST;
+
+	m_pass.SetViewport(viewport);
+
+	m_pass.ClearPrimitives();
+	// FIXME: I had to Reset primitive here because otherwise it doesn't recognize texture change
+	m_Primitive.Reset();
+	PreparePrimitive(m_Primitive, rcS, renderState, viewport, bResample, bBigDownsample, pSrcRT, pDestRT);
+
+	m_pass.AddPrimitive(&m_Primitive);
+  m_pass.Execute();
+}
+
+void CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT)
+{
+	static CCryNameTSCRC techTexToTex("TextureToTexture");
+	static CCryNameTSCRC techTexToTexResampled("TextureToTextureResampledReg");
+
+	static CCryNameR param0Name("texToTexParams0");
+	static CCryNameR param1Name("texToTexParams1");
+	static CCryNameR paramTCName("texToTexParamsTC");
+
+	CTexture* pOffsetTex = bBigDownsample ? pDestRT : pSrcRT;
+
+	float s1 = 0.5f / (float)pOffsetTex->GetWidth();  // 2.0 better results on lower res images resizing
+	float t1 = 0.5f / (float)pOffsetTex->GetHeight();
+
+	Vec4 params0, params1;
+	if (bBigDownsample)
+	{
+		// Use rotated grid + middle sample (~Quincunx)
+		params0 = Vec4(s1 * 0.96f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
+		params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
+	}
+	else
+	{
+		// Use box filtering (faster - can skip bilinear filtering, only 4 taps)
+		params0 = Vec4(-s1, -t1, s1, -t1);
+		params1 = Vec4(s1, t1, -s1, t1);
+	}
+	Vec4 ParamsTC;
+	ParamsTC.x = (float)rcS.left / (float)pSrcRT->GetWidth();
+	ParamsTC.z = (float)(rcS.right - rcS.left) / (float)pSrcRT->GetWidth();
+	ParamsTC.y = (float)rcS.top / (float)pSrcRT->GetHeight();
+	ParamsTC.w = (float)(rcS.bottom - rcS.top) / (float)pSrcRT->GetHeight();
+
+	prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+	prim.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+
+	prim.SetTechnique(CShaderMan::s_shPostEffects, bResample ? techTexToTexResampled : techTexToTex, 0);
+	prim.SetRenderState(renderState);
+	int texFilter = CTexture::GetTexState(STexState(bResample ? FILTER_LINEAR : FILTER_POINT, true));
+	prim.SetTexture(0, pSrcRT);
+	prim.SetSampler(0, texFilter);
+
+	auto& constantManager = prim.GetConstantManager();
+	constantManager.BeginNamedConstantUpdate();
+
+	constantManager.SetNamedConstant(param0Name, params0, eHWSC_Pixel);
+	constantManager.SetNamedConstant(param1Name, params1, eHWSC_Pixel);
+	constantManager.SetNamedConstant(paramTCName, ParamsTC, eHWSC_Vertex);
+
+	constantManager.EndNamedConstantUpdate();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CStableDownsamplePass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -315,14 +315,14 @@ void CRenderer::InitRenderer()
 		m_RP.m_TempObjects[i].SetNoneWorkerThreadID(nThreadId);
 	}
 
+	const char *cc_RenderViewName[IRenderView::eViewType_Count] = { "Normal View", "Recursive View", "Shadow View", "BillboardGen View" };
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 	{
-		for (int recursion = 0; recursion < MAX_REND_RECURSION_LEVELS; recursion++)
+		for (int type = 0; type < IRenderView::eViewType_Count; type++)
 		{
-			const char* name            = (!recursion) ? ((i == 0) ? "Normal View 1" : "Normal View 2") : (((i == 0) ? "Recursive View 1" : "Recursive View 2"));
-			CRenderView::EViewType type = (!recursion) ? CRenderView::eViewType_Default : CRenderView::eViewType_Recursive;
+			string name; name.Format("%s %d", cc_RenderViewName[type], i);
 
-			m_RP.m_pRenderViews[i][recursion].reset(new CRenderView(name, type));
+			m_RP.m_pRenderViews[i][type].reset(new CRenderView(name, IRenderView::EViewType(type)));
 		}
 	}
 
@@ -4397,10 +4397,9 @@ float CRenderer::GetShadowJittering() const
 	return m_shadowJittering;
 }
 
-CRenderView* CRenderer::GetRenderViewForThread(int nThreadID, bool bRecursive)
+CRenderView* CRenderer::GetRenderViewForThread(int nThreadID, IRenderView::EViewType Type)
 {
-	int recursion = bRecursive ? 1 : 0;
-	return m_RP.m_pRenderViews[nThreadID][recursion].get();
+	return m_RP.m_pRenderViews[nThreadID][Type].get();
 }
 
 Matrix44A CRenderer::GetCameraMatrix()

@@ -1322,6 +1322,7 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 	FX_TOKEN(AlphaBlendShadows)
 	FX_TOKEN(EyeOverlay)
 	FX_TOKEN(WrinkleBlending)
+	FX_TOKEN(Billboard)
 	FX_END_TOKENS
 
 	int nIndex;
@@ -1527,6 +1528,12 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_VERTEXCOLORS;
+			break;
+
+		case eT_Billboard:
+			if (!ef)
+				break;
+			ef->m_Flags2 |= EF2_BILLBOARD;
 			break;
 
 		case eT_WrinkleBlending:

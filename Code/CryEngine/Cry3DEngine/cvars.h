@@ -180,6 +180,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_StreamPredictionMaxVisAreaRecursion;
 	float e_StreamPredictionBoxRadius;
 	int   e_Clouds;
+	int   e_VegetationBillboards;
 	int   e_VegetationUseTerrainColor;
 	float e_VegetationUseTerrainColorDistance;
 	int   e_BrushUseTerrainColor;

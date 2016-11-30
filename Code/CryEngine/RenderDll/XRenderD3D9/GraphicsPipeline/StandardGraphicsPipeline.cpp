@@ -871,6 +871,19 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	m_pToneMappingStage->Execute();
 }
 
+void CStandardGraphicsPipeline::ExecuteBillboards()
+{
+	CD3D9Renderer* pRenderer = gcpRendD3D;
+
+	pRenderer->FX_ClearTarget(CTexture::s_ptexSceneNormalsMap, Clr_Transparent);
+	pRenderer->FX_ClearTarget(CTexture::s_ptexSceneDiffuse, Clr_Transparent);
+
+	GetGBufferStage()->Execute();
+
+	m_pCurrentRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
+	m_pCurrentRenderView->Clear();
+}
+
 void CStandardGraphicsPipeline::Execute()
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;

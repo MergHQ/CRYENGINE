@@ -24,13 +24,6 @@ class CRenderView : public IRenderView
 public:
 	typedef TRange<int> ItemsRange;
 
-	enum EViewType
-	{
-		eViewType_Default,
-		eViewType_Recursive,
-		eViewType_Shadow,
-	};
-
 	enum eShadowFrustumRenderType
 	{
 		// NOTE: DO NOT reorder, shadow gen depends on values
@@ -137,6 +130,7 @@ public:
 
 	bool       IsRecursive() const     { return m_viewType == eViewType_Recursive; }
 	bool       IsShadowGenView() const { return m_viewType == eViewType_Shadow; }
+	bool       IsBillboardGenView() const { return m_viewType == eViewType_BillboardGen; }
 	EUsageMode GetUsageMode() const    { return m_usageMode; }
 	//////////////////////////////////////////////////////////////////////////
 	// Shadows related

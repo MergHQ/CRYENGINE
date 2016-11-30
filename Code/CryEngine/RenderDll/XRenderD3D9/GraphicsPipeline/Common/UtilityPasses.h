@@ -24,6 +24,30 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class CStretchRegionPass : public IUtilityRenderPass
+{
+public:
+	CStretchRegionPass() {};
+	~CStretchRegionPass() {};
+
+	void Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect=NULL, const RECT *pDstRect=NULL, bool bBigDownsample=false);
+	void PreparePrimitive(CRenderPrimitive& prim, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDstRT);
+
+	static CStretchRegionPass &GetPass();
+	static void Shutdown();
+
+protected:
+	CPrimitiveRenderPass m_pass;
+
+	CRenderPrimitive m_Primitive;
+
+private:
+	static CStretchRegionPass *s_pPass;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class CStableDownsamplePass : public IUtilityRenderPass
 {
 public:

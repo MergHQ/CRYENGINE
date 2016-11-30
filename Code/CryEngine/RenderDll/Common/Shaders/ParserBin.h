@@ -698,6 +698,7 @@ enum EToken
 	eT_GatherAlpha,
 
 	eT_$AutoGS_MultiRes,
+	eT_Billboard,
 
 	eT_max,
 	eT_user_first = eT_max + 1

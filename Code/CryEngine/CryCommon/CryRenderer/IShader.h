@@ -2054,7 +2054,7 @@ enum ERenderListID
 #define EF2_FORCE_ZPASS          0x10000
 #define EF2_FORCE_DRAWLAST       0x20000
 #define EF2_FORCE_DRAWAFTERWATER 0x40000
-// free 0x80000
+#define EF2_BILLBOARD            0x80000
 #define EF2_DEPTH_FIXUP          0x100000
 #define EF2_SINGLELIGHTPASS      0x200000
 #define EF2_FORCE_DRAWFIRST      0x400000

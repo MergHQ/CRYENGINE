@@ -827,7 +827,7 @@ struct SRenderPipeline
 	CRenderView*                        m_pCurrentRenderView;
 
 	// Separate render views per recursion
-	_smart_ptr<CRenderView> m_pRenderViews[RT_COMMAND_BUF_COUNT][MAX_REND_RECURSION_LEVELS];
+	_smart_ptr<CRenderView> m_pRenderViews[RT_COMMAND_BUF_COUNT][IRenderView::eViewType_Count];
 
 	//===================================================================
 	// Input render data

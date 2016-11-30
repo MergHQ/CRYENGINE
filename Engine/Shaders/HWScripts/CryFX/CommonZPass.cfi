@@ -134,7 +134,7 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 			fBlendFactor*=fBlendFactor;
 			OUT.terrainParams0.xyz = float3(blendColInfo.zz*vPos.yx+blendColInfo.xy, min(fBlendFactor, .75f));
 		#endif
-	
+
   #else
 
     // Output terrain related data. Terrain is separated into 2 diferent passes (base and detail layers)
@@ -489,6 +489,10 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 		vNormalTS.xy += vDetail.xy;
 	#endif
 
+#if %BILLBOARD
+		vNormalTS.xyz = GetNormalMap(normalsTex, IN.baseTC.xy).zyx;
+#endif
+
 	#if (!%GRASS && !%TEMP_TERRAIN) || %_RT_ALPHABLEND
 		attribs.NormalWorld = normalize(mTangentToWS[2]);
 		#if %NORMAL_MAP || %BLENDLAYER || %DETAIL_MAPPING
@@ -643,10 +647,20 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 
 	ApplyVegetationTerrainColor(IN, attribs);
 
+#if %BILLBOARD
+	attribs.LightingModel = LIGHTINGMODEL_TRANSMITTANCE;
+	attribs.Transmittance = .15;
+	attribs.Smoothness = .15;
+#endif
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output to GBuffer
 	
 	EncodeGBuffer( attribs, OUT.GBufferA, OUT.GBufferB, OUT.GBufferC );
+#if %_RT_SPRITE
+	OUT.GBufferB.w = diffuseMap.a * 2.0;
+	OUT.GBufferB.xyz *= OUT.GBufferB.xyz;
+#endif
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Velocity

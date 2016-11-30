@@ -123,6 +123,7 @@ public:
 	virtual void Init() override;
 	virtual void Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags) override;
 	virtual void Execute() override;
+	virtual void ExecuteBillboards();
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
 	                                  SGraphicsPipelineStateDescription stateDesc,
@@ -152,6 +153,7 @@ public:
 	CDeviceResourceSetPtr     GetDefaultInstanceExtraResources() const { return m_pDefaultInstanceExtraResources; }
 
 	CRenderView*              GetCurrentRenderView()             const { return m_pCurrentRenderView; };
+	CSceneGBufferStage*       GetGBufferStage()                        { return m_pSceneGBufferStage; }
 	CShadowMapStage*          GetShadowStage()                   const { return m_pShadowMapStage; }
 	CComputeSkinningStage*    GetComputeSkinningStage()          const { return m_pComputeSkinningStage; }
 	CGpuParticlesStage*       GetGpuParticlesStage()             const { return m_pGpuParticlesStage; }

@@ -518,6 +518,8 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 		//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING
 		psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];  // Enable flag to use static instancing
 	}
+	if (gcpRendD3D->m_RP.m_pCurrentRenderView->IsBillboardGenView())
+		psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];               // Enable flag to output alpha in G-Buffer shader
 
 	// Issue the barriers on the core command-list, which executes directly before the Draw()s in multi-threaded jobs
 	PrepareForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), false);

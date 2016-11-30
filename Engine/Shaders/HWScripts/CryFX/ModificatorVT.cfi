@@ -1455,16 +1455,64 @@ ISOLATE
 	VPMatrix = CV_ViewProjNearestMatr;
 #endif
 
-		// Get instanced matrix
-		Matrix_Inst_General(IN);
-		if (bRelativeToCam)
-		{
-		#if !%_RT_OBJ_IDENTITY 
-			IN.InstMatrix[0][3] -= g_VS_WorldViewPos.x;
-			IN.InstMatrix[1][3] -= g_VS_WorldViewPos.y;
-			IN.InstMatrix[2][3] -= g_VS_WorldViewPos.z;
-		#endif
-		}
+	// Get instanced matrix
+	Matrix_Inst_General(IN);
+	if (bRelativeToCam)
+	{
+	#if !%_RT_OBJ_IDENTITY 
+		IN.InstMatrix[0][3] -= g_VS_WorldViewPos.x;
+		IN.InstMatrix[1][3] -= g_VS_WorldViewPos.y;
+		IN.InstMatrix[2][3] -= g_VS_WorldViewPos.z;
+	#endif
+	}
+
+
+#if %BILLBOARD
+
+	{
+		// calculate billboard rotation angle
+		float3 vPosWS = mul(IN.InstMatrix, float4(0,0,0,1));
+		float2 vDir = normalize(vPosWS.xy);
+		float fAngle = atan2(vDir.x, -vDir.y);
+
+		// calculate object rotation angle
+		float3 vRotDir;
+		vRotDir = IN.InstMatrix[0];
+		vRotDir.xy = normalize(vRotDir.xy);
+		float fRotAngle = atan2(vRotDir.y, vRotDir.x);
+
+		// rotate position
+		float cs = cos(fAngle);
+		float sn = sin(fAngle);		
+		float2 vXY = IN.Position.xy;
+		IN.Position.x = vXY.x * cs - vXY.y * sn;
+		IN.Position.y = vXY.x * sn + vXY.y * cs;
+
+		// calculate texture atlas offset from rotation angle
+		const int nAtlasDim = 4;
+		const int nAtlasMsk = nAtlasDim - 1;
+		int nId = floor((-(fAngle + fRotAngle) / PI_X2 + .5) * nAtlasDim * nAtlasDim + .5f);
+		nId = nId & (nAtlasDim*nAtlasDim - 1);
+		int nX = (nId / nAtlasDim) & nAtlasMsk;
+		int nY = (nId & nAtlasMsk);
+
+		// apply texture atlas offset
+		IN.baseTC.x = (IN.baseTC.x + nY) / nAtlasDim;
+		IN.baseTC.y = (IN.baseTC.y + nX) / nAtlasDim;
+
+		// calculate tangent space
+		float3 vNorm = -float3 (normalize(vDir), 0);
+		IN.ObjToTangentSpace[2] = -float3(0,0,1);
+		IN.ObjToTangentSpace[1] = cross(vNorm, IN.ObjToTangentSpace[2].xyz);
+		IN.ObjToTangentSpace[0] = vNorm;
+
+		// remove rotation from matrix (copy values from Z axis)
+		IN.InstMatrix[0].xyz = IN.InstMatrix[2].zxy;
+		IN.InstMatrix[1].xyz = IN.InstMatrix[2].yzx;
+}
+
+#endif
+
 	 HPosition = _pos_Modificators(VPMatrix, IN.InstMatrix, IN, bRelativeToCam);
 
 	#if %TEMP_TERRAIN

@@ -976,6 +976,7 @@ enum EShaderRenderingFlags
 	SHDF_STEREO_LEFT_EYE  = BIT(3),
 	SHDF_STEREO_RIGHT_EYE = BIT(4),
 	SHDF_ALLOWPOSTPROCESS = BIT(5),
+	SHDF_BILLBOARDS       = BIT(6),
 	SHDF_ALLOW_AO         = BIT(8),
 	SHDF_ALLOW_WATER      = BIT(9),
 	SHDF_NOASYNC          = BIT(10),
@@ -1498,6 +1499,16 @@ struct SRenderPolygonDescription
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
 {
+	enum EViewType
+	{
+		eViewType_Default,
+		eViewType_Recursive,
+		eViewType_Shadow,
+		eViewType_BillboardGen,
+		eViewType_Count,
+	};
+
+
 	// View can be in either reading or writing modes.
 	enum EUsageMode
 	{
@@ -1676,7 +1687,7 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Get the renderer camera.
 	virtual const CCamera& GetCamera() = 0;
 
-	virtual CRenderView*   GetRenderViewForThread(int nThreadID, bool bRecursive = false) = 0;
+	virtual CRenderView*   GetRenderViewForThread(int nThreadID, IRenderView::EViewType Type=IRenderView::eViewType_Default) = 0;
 
 	//! Set delta gamma.
 	virtual bool SetGammaDelta(const float fGamma) = 0;
@@ -1939,6 +1950,9 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Load lightmap for name.
 	virtual int  EF_LoadLightmap(const char* name) = 0;
 	virtual bool EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) = 0;
+	
+	//! Stores GBuffers region to atlas textures.
+	virtual bool StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN) = 0;
 
 	//! Create new RE (RenderElement) of type (edt).
 	virtual CRenderElement*  EF_CreateRE(EDataType edt) = 0;

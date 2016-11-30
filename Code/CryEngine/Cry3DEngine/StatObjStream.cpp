@@ -441,6 +441,11 @@ bool CStatObj::UpdateStreamableComponents(float fImportance, const Matrix34A& ob
 		if (CStatObj* pNextState = (CStatObj*)GetObjManager()->FindStaticObjectByFilename(m_pParentObject->m_szStreamingDependencyFilePath))
 			pNextState->UpdateStreamableComponents(fImportance, objMatrix, bFullUpdate, nNewLod);
 
+	if (GetBillboardMaterial())
+	{
+		GetBillboardMaterial()->PrecacheMaterial(0, 0, false);
+	}
+
 	return true;
 }
 

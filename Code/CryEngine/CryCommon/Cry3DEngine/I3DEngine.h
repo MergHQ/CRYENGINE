@@ -2485,6 +2485,7 @@ struct SRenderingPassInfo
 	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false);
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
 	static SRenderingPassInfo CreateShadowPassRenderingInfo(CRenderView* pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
+	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
 	static SRenderingPassInfo CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo);
 	static SRenderingPassInfo CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo);
 
@@ -2926,6 +2927,23 @@ inline void SRenderingPassInfo::SetRenderView(CRenderView* pRenderView)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags)
+{
+	const CCamera& rCameraToSet = rCamera;
+
+	SRenderingPassInfo passInfo;
+	passInfo.SetCamera(rCameraToSet);
+	passInfo.InitRenderingFlags(nRenderingFlags);
+	passInfo.m_bAuxWindow = false;
+
+	passInfo.m_renderItemSorter.nValue = 0;
+
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_BillboardGen));
+
+	return passInfo;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
@@ -2960,7 +2978,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(con
 
 	passInfo.m_renderItemSorter.nValue = 0;
 
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), false));
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Default));
 
 	return passInfo;
 }
@@ -2979,7 +2997,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 
 	passInfo.InitRenderingFlags(nRenderingFlags);
 
-	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), true));
+	passInfo.SetRenderView(gEnv->pRenderer->GetRenderViewForThread(passInfo.ThreadID(), IRenderView::eViewType_Recursive));
 
 	passInfo.m_renderItemSorter.nValue = SRendItemSorter::eRecursivePassMask;
 

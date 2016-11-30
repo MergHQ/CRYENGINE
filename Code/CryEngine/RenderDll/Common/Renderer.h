@@ -799,7 +799,7 @@ public:
 
 	virtual int          GetWireframeMode()                            { return(m_wireframe_mode); }
 
-	virtual CRenderView* GetRenderViewForThread(int nThreadID, bool bRecursive = false) final;
+	virtual CRenderView* GetRenderViewForThread(int nThreadID, IRenderView::EViewType Type = IRenderView::eViewType_Default) final;
 
 	Matrix44A            GetCameraMatrix();
 	// Get camera matrix from the previous frame.

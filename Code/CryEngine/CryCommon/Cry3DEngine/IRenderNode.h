@@ -586,7 +586,7 @@ struct SVegetationSpriteInfo
 	void               GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
 };
 
-const int FAR_TEX_COUNT = 12;             //!< Number of sprites per object.
+const int FAR_TEX_COUNT = 16;             //!< Number of sprites per object.
 const int FAR_TEX_ANGLE = (360 / FAR_TEX_COUNT);
 const int FAR_TEX_HAL_ANGLE = (256 / FAR_TEX_COUNT) / 2;
 

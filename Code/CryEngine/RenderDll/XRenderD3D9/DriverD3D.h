@@ -1203,6 +1203,8 @@ public:
 
   virtual void SetColorOp(byte eCo, byte eAo, byte eCa, byte eAa) override;
 
+	virtual bool StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN) override;
+
 //////////////////////////////////////////////////////////////////////////
 public:
 	bool IsDeviceLost() { return( m_bDeviceLost!=0 ); }

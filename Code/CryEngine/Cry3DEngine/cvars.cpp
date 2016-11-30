@@ -307,6 +307,9 @@ void CVars::Init()
 	              "Maximum number of static decal render mesh updates per frame");
 	DefineConstIntCVar(e_VegetationBending, 2, VF_NULL,
 	                   "Enable vegetation bending (does not affect merged grass)");
+	REGISTER_CVAR(e_VegetationBillboards, 0, VF_NULL,
+								"Allow replacing distant vegetation with billboards\n"
+								"Billboard textures must be prepared by ed_GenerateBillboardTextures command in the editor");
 	REGISTER_CVAR(e_VegetationUseTerrainColor, 1, VF_NULL,
 	              "Allow blend with terrain color for vegetations");
 	REGISTER_CVAR(e_VegetationUseTerrainColorDistance, 0, VF_NULL,

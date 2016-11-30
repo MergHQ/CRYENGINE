@@ -28,6 +28,7 @@
 #include "GraphicsPipeline/Common/GraphicsPipelineStage.h"
 #include "GraphicsPipeline/Common/SceneRenderPass.h"
 #include "GraphicsPipeline/ComputeSkinning.h"
+#include "GraphicsPipeline/SceneGBuffer.h"
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
 
@@ -676,6 +677,8 @@ void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[1]);
 	SAFE_DELETE(CTexture::s_pMipperWaterRipplesDDN);
 	
+	CStretchRegionPass::Shutdown();
+
 	SAFE_DELETE(m_pGraphicsPipeline);
 	CCryDeviceWrapper::GetObjectFactory().ReleaseResources();
 }
@@ -3694,14 +3697,17 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 	CTimeValue Time = iTimer->GetAsyncTime();
 
+	if (pRenderView->IsBillboardGenView())
+	  pRenderView->GetCamera(CCamera::eEye_Left).GetViewPort(m_MainViewport.nX, m_MainViewport.nY, m_MainViewport.nWidth, m_MainViewport.nHeight);
+	else
 	if (!nRecurse)
 	{
 		m_MainViewport.nX      = 0;
 		m_MainViewport.nY      = 0;
 		m_MainViewport.nWidth  = m_width;
 		m_MainViewport.nHeight = m_height;
-
 	}
+
 
 	if (!nRecurse)
 	{
@@ -3924,7 +3930,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	if (bNewGraphicsPipeline)
 	{
 		GetGraphicsPipeline().Prepare(pRenderView, EShaderRenderingFlags(nFlags));
-		GetGraphicsPipeline().Execute();
+		if (pRenderView->IsBillboardGenView())
+			GetGraphicsPipeline().ExecuteBillboards();
+		else
+		  GetGraphicsPipeline().Execute();
 	}
 	else
 	{
@@ -4330,7 +4339,7 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 			}
 		}
 
-		if ((nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled())
+		if ((nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(nFlags & SHDF_BILLBOARDS))
 		{
 			SShaderItem shItem(CShaderMan::s_shHDRPostProcess);
 			CRenderObject* pObj = EF_GetObject_Temp(passInfo.ThreadID());
@@ -4341,7 +4350,7 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 			}
 		}
 
-		bool bAllowPostProcess = (nFlags & SHDF_ALLOWPOSTPROCESS) && (CV_r_PostProcess);
+		bool bAllowPostProcess = (nFlags & SHDF_ALLOWPOSTPROCESS) && (CV_r_PostProcess) && !(nFlags & SHDF_BILLBOARDS);
 		bAllowPostProcess &= (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_MIRRORCULL) == 0;
 		if (bAllowPostProcess)
 		{
@@ -4361,6 +4370,28 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 	EF_RenderScene(nFlags, VP, passInfo);
 
 	if (!passInfo.IsRecursivePass()) gRenDev->GetIRenderAuxGeom()->Flush();
+}
+
+bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN)
+{
+	bool bRes = true;
+
+	CTexture *pGBuffD = CTexture::s_ptexSceneDiffuse;
+	CTexture *pGBuffN = CTexture::s_ptexSceneNormalsMap;
+
+	CTexture *pDstD = (CTexture *)pDataD;
+	CTexture *pDstN = (CTexture *)pDataN;
+
+	RECT SrcBox, DstBox;
+	SrcBox.left = 0; SrcBox.top = 0; SrcBox.right = nSrcWidth; SrcBox.bottom = nSrcHeight;
+	DstBox.left = rcDst.x; DstBox.top = rcDst.y; DstBox.right = rcDst.x + nDstWidth; DstBox.bottom = rcDst.y + nDstHeight;
+
+	CStretchRegionPass::GetPass().Execute(pGBuffD, pDstD, &SrcBox, &DstBox);
+
+	CStretchRegionPass::GetPass().Execute(pGBuffN, pDstN, &SrcBox, &DstBox);
+
+
+	return bRes;
 }
 
 void CD3D9Renderer::RT_PrepareStereo(int mode, int output)

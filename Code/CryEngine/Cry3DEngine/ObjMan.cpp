@@ -1243,3 +1243,48 @@ uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode* pOwnerNode) co
 
 	return nModificationId;
 }
+
+IRenderMesh* CObjManager::GetBillboardRenderMesh(IMaterial* pMaterial)
+{
+	if(!m_pBillboardMesh)
+	{
+		PodArray<SVF_P3F_C4B_T2F> arrVertices;
+		PodArray<SPipTangents> arrTangents;
+		PodArray<vtx_idx> arrIndices;
+
+		SVF_P3F_C4B_T2F vert;
+		ZeroStruct(vert);
+		vert.st = Vec2(0.0f, 0.0f);
+		vert.color.dcolor = -1;
+
+		// verts
+		vert.xyz.Set(+.5, 0, -.5); vert.st = Vec2(1, 1); arrVertices.Add(vert);
+		vert.xyz.Set(-.5, 0, -.5); vert.st = Vec2(0, 1); arrVertices.Add(vert);
+		vert.xyz.Set(+.5, 0, +.5); vert.st = Vec2(1, 0); arrVertices.Add(vert);
+		vert.xyz.Set(-.5, 0, +.5); vert.st = Vec2(0, 0); arrVertices.Add(vert);
+
+		// tangents
+		arrTangents.Add(SPipTangents(Vec3(1, 0, 0), Vec3(0, 0, 1), 1));
+		arrTangents.Add(SPipTangents(Vec3(1, 0, 0), Vec3(0, 0, 1), 1));
+		arrTangents.Add(SPipTangents(Vec3(1, 0, 0), Vec3(0, 0, 1), 1));
+		arrTangents.Add(SPipTangents(Vec3(1, 0, 0), Vec3(0, 0, 1), 1));
+
+		// indices
+		arrIndices.Add(0);
+		arrIndices.Add(1);
+		arrIndices.Add(2);
+		arrIndices.Add(1);
+		arrIndices.Add(3);
+		arrIndices.Add(2);
+
+		m_pBillboardMesh = Cry3DEngineBase::GetRenderer()->CreateRenderMeshInitialized(
+			arrVertices.GetElements(), arrVertices.Count(), eVF_P3F_C4B_T2F,
+			arrIndices.GetElements(), arrIndices.Count(), prtTriangleList,
+			"Billboard", "Billboard", eRMT_Static, 1, 0, NULL, NULL, false, true,
+			arrTangents.GetElements());
+
+		m_pBillboardMesh->SetChunk(pMaterial, 0, arrVertices.Count(), 0, arrIndices.Count(), 1);
+	}
+
+	return m_pBillboardMesh;
+}
