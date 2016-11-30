@@ -3,9 +3,6 @@
 #ifndef __CRECLIENTPOLY_H__
 #define __CRECLIENTPOLY_H__
 
-#include "DeviceManager/TempDynBuffer.h"
-//=============================================================
-
 struct SClientPolyStat
 {
 	int NumOccPolys;
