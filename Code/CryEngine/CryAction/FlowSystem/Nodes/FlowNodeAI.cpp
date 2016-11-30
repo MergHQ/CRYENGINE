@@ -2774,6 +2774,94 @@ public:
 	}
 };
 
+
+//////////////////////////////////////////////////////////////////////////
+// Miscellaneous AI behavior tree settings
+//////////////////////////////////////////////////////////////////////////
+class CFlowNode_AIBehaviorTree : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	enum
+	{
+		InReset,
+	};
+
+	enum
+	{
+		OutDone,
+	};
+
+	CFlowNode_AIBehaviorTree(SActivationInfo* pActInfo) {}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig inConfig[] =
+		{
+			InputPortConfig_Void("Reset", _HELP("Reset the AI modular behavior tree.")),
+			{ 0 }
+		};
+
+		static const SOutputPortConfig outConfig[] =
+		{
+			OutputPortConfig_Void("Done", _HELP("Reset has been performed.")),
+			{ 0 }
+		};
+
+		config.sDescription = _HELP("Reset the AI modular behavior tree.");
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.pInputPorts = inConfig;
+		config.pOutputPorts = outConfig;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+			{
+				if (IsPortActive(pActInfo, InReset))
+				{
+					IAIActor* pAIActor = GetIAIActor(pActInfo);
+					if (pAIActor)
+					{
+						pAIActor->ResetModularBehaviorTree(AIOBJRESET_INIT);
+					}
+
+					ActivateOutput(pActInfo, OutDone, true);
+				}
+				break;
+			}
+		};
+	};
+
+	virtual void GetMemoryUsage(ICrySizer * s) const
+	{
+		s->Add(*this);
+	}
+
+	IAIActor* GetIAIActor(SActivationInfo* pActInfo) const
+	{
+		IAIActor* pAIActor = nullptr;
+
+		if (pActInfo->pEntity)
+		{
+			pAIActor = CastToIAIActorSafe(pActInfo->pEntity->GetAI());
+			if (!pAIActor)
+			{
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "AI:BehaviorTree: entity %s is not an AI Actor.", pActInfo->pEntity->GetName());
+			}
+
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "AI:BehaviorTree: missing entity in FG node.");
+		}
+
+		return pAIActor;
+	}
+};
+
 REGISTER_FLOW_NODE("AI:ActiveCount", CFlowNode_AIActiveCount)
 REGISTER_FLOW_NODE("AI:ActiveCountInFaction", CFlowNode_AIActiveCountInFaction)
 REGISTER_FLOW_NODE("AI:ActiveCountMonitor", CFlowNode_AIActiveCountMonitor)
@@ -2802,3 +2890,4 @@ REGISTER_FLOW_NODE("AI:SetCommunicationVariable", CFlowNode_AISetCommunicationVa
 REGISTER_FLOW_NODE("AI:RequestReinforcementReadability", CFlowNode_AIRequestReinforcementReadability)
 REGISTER_FLOW_NODE("AI:RegenerateMNM", CFlowNode_AIRegenerateMNM)
 REGISTER_FLOW_NODE("AI:Faction", CFlowNode_AIFaction)
+REGISTER_FLOW_NODE( "AI:BehaviorTree", CFlowNode_AIBehaviorTree)

@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CrySystem/IStreamEngine.h>
 
 class CFlowNode_MemoryStats : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -269,6 +270,56 @@ private:
 	unsigned long m_lFrameCounter;
 };
 
+class CFlowNode_TextureStreamingStats : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	enum Outputs
+	{
+		OUT_REQUESTCOUNT,
+	};
+	CFlowNode_TextureStreamingStats(SActivationInfo * pActInfo)
+	{
+	}
+	virtual void GetConfiguration(SFlowNodeConfig &config)
+	{
+		static const SInputPortConfig in_config[] = {
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("CurrentRequestCount"),
+			{ 0 }
+		};
+
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Initialize:
+			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
+			break;
+		case eFE_Update:
+			{
+				IRenderer* pRenderer = gEnv->pRenderer;
+				STextureStreamingStats statsTex(false);
+				pRenderer->EF_Query(EFQ_GetTexStreamingInfo, statsTex);
+
+				ActivateOutput(pActInfo, OUT_REQUESTCOUNT, int(statsTex.nNumStreamingRequests));
+			}
+			break;
+		}
+	}
+
+	virtual void GetMemoryUsage(ICrySizer * s) const
+	{
+		s->Add(*this);
+	}
+};
+
 REGISTER_FLOW_NODE("Debug:Memory", CFlowNode_MemoryStats);
 REGISTER_FLOW_NODE("Debug:Frame", CFlowNode_FrameStats);
 REGISTER_FLOW_NODE("Debug:FrameExtended", CFlowNode_FrameStatsEx);
+REGISTER_FLOW_NODE("Debug:TextureStreaming", CFlowNode_TextureStreamingStats);

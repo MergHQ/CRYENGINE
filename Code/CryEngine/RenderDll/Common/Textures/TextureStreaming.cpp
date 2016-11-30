@@ -44,6 +44,7 @@ CTextureArrayAlloc<STexStreamOutState, CTexture::MaxStreamTasks> CTexture::s_Str
 
 volatile int CTexture::s_nBytesSubmittedToStreaming = { 0 };
 volatile int CTexture::s_nMipsSubmittedToStreaming = { 0 };
+volatile int CTexture::s_nNumStreamingRequests = { 0 };
 int CTexture::s_nBytesRequiredNotSubmitted = 0;
 
 #if !defined (_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)

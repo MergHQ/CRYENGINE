@@ -92,7 +92,7 @@ public:
 	bool                      ProcessBehaviorSelectionTreeSignal(const char* signalName, uint32 signalCRC);
 	bool                      UpdateBehaviorSelectionTree();
 
-	void                      ResetModularBehaviorTree(EObjectResetType type);
+	void                      ResetModularBehaviorTree(EObjectResetType type) override;
 	virtual void              SetModularBehaviorTree(const char* szTreeName) override { m_modularBehaviorTreeName = szTreeName; ResetModularBehaviorTree(AIOBJRESET_INIT); }
 
 #if defined(CRYAISYSTEM_DEBUG)

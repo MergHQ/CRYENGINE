@@ -15,10 +15,17 @@ public:
 	{
 	}
 
+	enum EInPorts
+	{
+		EIN_Enabled = 0,
+		EIN_Get,
+	};
+
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<bool>("active", true, _HELP("Update data on/off")),
+			InputPortConfig<bool>("active", true, _HELP("Enable / disable continuous output"), _HELP("Enabled")),
+			InputPortConfig_Void("Get", _HELP("Trigger to get the values when continuous output is not enabled")),
 			{ 0 }
 		};
 
@@ -33,7 +40,7 @@ public:
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
-		config.sDescription = _HELP("Dynamic physical state of an entity");
+		config.sDescription = _HELP("Outputs the dynamic physical state of an entity");
 		config.SetCategory(EFLN_APPROVED); // POLICY CHANGE: Maybe an Enable/Disable Port
 	}
 
@@ -46,28 +53,46 @@ public:
 		switch (event)
 		{
 		case eFE_Initialize:
-			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
+			if (pActInfo->pGraph)
+			{
+				pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, GetPortBool(pActInfo, EIN_Enabled));
+			}
+			break;
+		case eFE_Activate:
+			{
+				if (IsPortActive(pActInfo, EIN_Get))
+				{
+					OutputDynamicsComponents(pActInfo);
+				}
+				if (IsPortActive(pActInfo, EIN_Enabled))
+				{
+					pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, GetPortBool(pActInfo, EIN_Enabled));
+				}
+			}
 			break;
 		case eFE_Update:
 			{
-				if (!GetPortBool(pActInfo, 0))
-					return;
+				OutputDynamicsComponents(pActInfo);
+			}
+			break;
+		}
+	}
 
-				IEntity* pEntity = pActInfo->pEntity;
-				if (pEntity)
-				{
-					IPhysicalEntity* pPhysEntity = pEntity->GetPhysics();
-					if (pPhysEntity)
-					{
-						pe_status_dynamics dyn;
-						pPhysEntity->GetStatus(&dyn);
-						ActivateOutput(pActInfo, 0, dyn.v);
-						ActivateOutput(pActInfo, 1, dyn.a);
-						ActivateOutput(pActInfo, 2, dyn.w);
-						ActivateOutput(pActInfo, 3, dyn.wa);
-						ActivateOutput(pActInfo, 4, dyn.mass);
-					}
-				}
+	void OutputDynamicsComponents(SActivationInfo* pActInfo)
+	{
+		IEntity * pEntity = pActInfo->pEntity;
+		if (pEntity)
+		{
+			IPhysicalEntity * pPhysEntity = pEntity->GetPhysics();
+			if (pPhysEntity)
+			{
+				pe_status_dynamics dyn;
+				pPhysEntity->GetStatus(&dyn);
+				ActivateOutput(pActInfo, 0, dyn.v);
+				ActivateOutput(pActInfo, 1, dyn.a);
+				ActivateOutput(pActInfo, 2, dyn.w);
+				ActivateOutput(pActInfo, 3, dyn.wa);
+				ActivateOutput(pActInfo, 4, dyn.mass);
 			}
 		}
 	}
@@ -302,7 +327,189 @@ public:
 	}
 };
 
-class CFlowNode_Raycast : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_PartIdConversion : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_PartIdConversion( SActivationInfo * pActInfo ) {}
+
+	enum EInPorts
+	{
+		eIP_GetJointId = 0,
+		eIP_GetJointName,
+		eIP_PartId,
+	};
+	enum EOutPorts
+	{
+		eOP_Failed = 0,
+		eOP_JointId,
+		eOP_JointName,
+	};
+
+	virtual void GetMemoryUsage(ICrySizer * s) const override
+	{
+		s->Add(*this);
+	}
+
+	virtual void GetConfiguration( SFlowNodeConfig& config ) override
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void( "GetJointId", _HELP("Get the Id of the joint to which the specified part Id is attached on the selected entity.") ),
+			InputPortConfig_Void( "GetJointName", _HELP("Get the name of the joint to which the specified part Id is attached on the selected entity.") ),
+			InputPortConfig<int>( "PartId", -1, _HELP("Part ID to get joint info for.") ),
+			{0}
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig_Void( "Failed", _HELP("Will trigger if the entity is invalid or doesn't have that part ID to find its joint name.") ),
+			OutputPortConfig<int>( "JointID", _HELP("Id of the joint to which the specified part Id is attached on the selected entity.") ),
+			OutputPortConfig<string>( "JointName", _HELP("Name of the joint to which the specified part Id is attached on the selected entity.") ),
+			{0}
+		};
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo ) override
+	{
+		if (event == eFE_Activate)
+		{
+			const bool bGetJointId   = IsPortActive(pActInfo, eIP_GetJointId);
+			const bool bGetJointName = IsPortActive(pActInfo, eIP_GetJointName);
+			if (bGetJointId || bGetJointName)
+			{
+				const int partId = GetPortInt(pActInfo, eIP_PartId);
+				if (bGetJointId)
+				{
+					ActivateOutput(pActInfo, eOP_JointId, partId);
+				}
+
+				if (bGetJointName)
+				{
+					bool bSucceeded = false;
+					if (IEntity * pEntity = pActInfo->pEntity)
+					{
+						if (const ICharacterInstance* pCharacterInstance = pEntity->GetCharacter(0))
+						{
+							const IDefaultSkeleton& defaultSkeleton = pCharacterInstance->GetIDefaultSkeleton();
+							const char* szJointName = defaultSkeleton.GetJointNameByID(partId);
+							if (szJointName && *szJointName)
+							{
+								ActivateOutput(pActInfo, eOP_JointName, string(szJointName));
+								bSucceeded = true;
+							}
+						}
+					}
+
+					if (!bSucceeded)
+					{
+						ActivateOutput(pActInfo, eOP_Failed, true);
+					}
+				}
+			}
+		}
+	}
+};
+
+struct SPhysicsRaycastFlowNodeHelper : CFlowBaseNode<eNCT_Singleton>
+{
+	static int GetObjTypes(SActivationInfo* pActInfo, int objTypeInputIndex)
+	{
+		int result = GetPortInt(pActInfo, objTypeInputIndex);
+		if ((result&ent_all) == 0)
+		{
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Raycast node got invalid flag sum %d for Object Types input", result);
+			result = ent_all;
+		}
+		if ((result&ent_all) != result)
+		{
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Raycast node got invalid flag sum %d for Object Types input", result);
+			result = ent_all;
+		}
+		return result;
+	}
+
+	static const char* GetObjTypesDescription()
+	{
+		static stack_string s_uiDesc;
+		if (s_uiDesc.empty())
+		{
+			s_uiDesc.append( "Sum of flags :" );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_all"           , ent_all           ).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_static"        , ent_static        ).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_sleeping_rigid", ent_sleeping_rigid).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_rigid"         , ent_rigid         ).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_living"        , ent_living        ).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_independent"   , ent_independent   ).c_str() );
+			s_uiDesc.append( stack_string().Format("\n%d = ent_terrain"       , ent_terrain       ).c_str() );
+		}
+		return s_uiDesc.c_str();
+	}
+
+	static const char* GetObjTypesUiConfig()
+	{
+		static stack_string s_uiConfig;
+		if (s_uiConfig.empty())
+		{
+			s_uiConfig.append( "enum_int:" );
+			s_uiConfig.append( stack_string().Format("ent_all=%d"            , ent_all           ).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_static=%d"        , ent_static        ).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_sleeping_rigid=%d", ent_sleeping_rigid).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_rigid=%d"         , ent_rigid         ).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_living=%d"        , ent_living        ).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_independent=%d"   , ent_independent   ).c_str() );
+			s_uiConfig.append( stack_string().Format(",ent_terrain=%d"       , ent_terrain       ).c_str() );
+		}
+		return s_uiConfig.c_str();
+	}
+};
+
+class CFlowNode_ObjTypeSelection : public SPhysicsRaycastFlowNodeHelper
+{
+public:
+	CFlowNode_ObjTypeSelection( SActivationInfo * pActInfo ) {}
+
+	enum EInPorts
+	{
+		eIP_ObjType = 0,
+	};
+	enum EOutPorts
+	{
+		eOP_ObjType = 0,
+	};
+
+	virtual void GetMemoryUsage(ICrySizer * s) const override
+	{
+		s->Add(*this);
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig<int>("ObjType", ent_all, _HELP(GetObjTypesDescription()),nullptr, _UICONFIG(GetObjTypesUiConfig())),
+			{0}
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("ObjType", _HELP("The selected value as an integer.")),
+			{0}
+		};
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo) override
+	{
+		if ((event == eFE_Initialize)
+			||((event == eFE_Activate) && IsPortActive(pActInfo, eIP_ObjType)))
+		{
+			const int val = GetPortInt(pActInfo, eIP_ObjType);
+			ActivateOutput(pActInfo, eOP_ObjType, val);
+		}
+	}
+};
+
+class CFlowNode_Raycast : public SPhysicsRaycastFlowNodeHelper
 {
 public:
 	CFlowNode_Raycast(SActivationInfo* pActInfo) {}
@@ -314,6 +521,8 @@ public:
 		MAXLENGTH,
 		POS,
 		TRANSFORM_DIRECTION,
+		OBJ_TYPES,
+		IGNORED_ENTITY,
 	};
 	enum EOutPorts
 	{
@@ -324,7 +533,9 @@ public:
 		HITPOINT,
 		NORMAL,
 		SURFTYPE,
+		PARTID,
 		HIT_ENTITY,
+		HIT_ENTITY_PHID,
 	};
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -340,8 +551,11 @@ public:
 			InputPortConfig<float>("maxLength",    10.0f,             _HELP("Maximum length of Raycast")),
 			InputPortConfig<Vec3>("position",      Vec3(0,            0,                                                        0),  _HELP("Ray start position, relative to entity")),
 			InputPortConfig<bool>("transformDir",  true,              _HELP("Direction is transformed by entity orientation.")),
+			InputPortConfig<int>("ObjTypes", ent_all, _HELP(GetObjTypesDescription())),
+			InputPortConfig<EntityId>("IgnoredEntity", INVALID_ENTITYID, _HELP("Entity to ignore in the raycast.")),
 			{ 0 }
 		};
+
 		static const SOutputPortConfig out_config[] = {
 			OutputPortConfig<SFlowSystemVoid>("nohit", _HELP("Triggered if NO object was hit by raycast")),
 			OutputPortConfig<SFlowSystemVoid>("hit",   _HELP("Triggered if an object was hit by raycast")),
@@ -350,7 +564,9 @@ public:
 			OutputPortConfig<Vec3>("hitpoint",         _HELP("Position the ray hit")),
 			OutputPortConfig<Vec3>("normal",           _HELP("Normal of the surface at the hitpoint")),
 			OutputPortConfig<int>("surfacetype",       _HELP("Surface type index at the hit point")),
+			OutputPortConfig<int>("partid", _HELP("Hit part id")),
 			OutputPortConfig<EntityId>("entity",       _HELP("Entity which was hit")),
+			OutputPortConfig<EntityId>("entityPhysId", _HELP("Id of the physical entity that was hit")),
 			{ 0 }
 		};
 		config.nFlags |= EFLN_TARGET_ENTITY;
@@ -366,6 +582,7 @@ public:
 			IEntity* pEntity = pActInfo->pEntity;
 			if (pEntity)
 			{
+				int objTypes = GetObjTypes(pActInfo, OBJ_TYPES);
 				ray_hit hit;
 				IPhysicalEntity* pSkip = pEntity->GetPhysics();
 				Vec3 direction = GetPortVec3(pActInfo, DIR).GetNormalized();
@@ -373,9 +590,9 @@ public:
 					direction = pEntity->GetWorldTM().TransformVector(GetPortVec3(pActInfo, DIR).GetNormalized());
 				IPhysicalWorld* pWorld = gEnv->pPhysicalWorld;
 				int numHits = pWorld->RayWorldIntersection(
-				  pEntity->GetPos() + GetPortVec3(pActInfo, POS),
+				  pEntity->GetWorldPos() + GetPortVec3(pActInfo, POS),
 				  direction * GetPortFloat(pActInfo, MAXLENGTH),
-				  ent_all,
+				  objTypes,
 				  rwi_stop_at_pierceable | rwi_colltype_any,
 				  &hit, 1,
 				  &pSkip, 1);
@@ -389,7 +606,9 @@ public:
 					ActivateOutput(pActInfo, HITPOINT, hit.pt);
 					ActivateOutput(pActInfo, NORMAL, hit.n);
 					ActivateOutput(pActInfo, SURFTYPE, (int)hit.surface_idx);
+					ActivateOutput(pActInfo, PARTID, hit.partid);
 					ActivateOutput(pActInfo, HIT_ENTITY, pEntity ? pEntity->GetId() : 0);
+					ActivateOutput(pActInfo, HIT_ENTITY_PHID, gEnv->pPhysicalWorld->GetPhysicalEntityId(hit.pCollider));
 				}
 				else
 					ActivateOutput(pActInfo, NOHIT, false);
@@ -398,7 +617,7 @@ public:
 	}
 };
 
-class CFlowNode_RaycastCamera : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_RaycastCamera : public SPhysicsRaycastFlowNodeHelper
 {
 public:
 	CFlowNode_RaycastCamera(SActivationInfo* pActInfo) {}
@@ -408,6 +627,8 @@ public:
 		GO = 0,
 		POS,
 		MAXLENGTH,
+		OBJ_TYPES,
+		IGNORED_ENTITY,
 	};
 	enum EOutPorts
 	{
@@ -434,6 +655,8 @@ public:
 			InputPortConfig<SFlowSystemVoid>("go", SFlowSystemVoid(), _HELP("Perform Raycast")),
 			InputPortConfig<Vec3>("offset",        Vec3(0,            0,                                  0),_HELP("Ray start position, relative to camera")),
 			InputPortConfig<float>("maxLength",    10.0f,             _HELP("Maximum length of Raycast")),
+			InputPortConfig<int>("ObjTypes", ent_all, _HELP(GetObjTypesDescription())),
+			InputPortConfig<EntityId>("IgnoredEntity", INVALID_ENTITYID, _HELP("Entity to ignore in the raycast.")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -459,37 +682,76 @@ public:
 	{
 		if (event == eFE_Activate && IsPortActive(pActInfo, GO))
 		{
-			IEntity* pEntity = pActInfo->pEntity;
-			// if (pEntity)
+			EntityId skipEntityId = GetPortEntityId(pActInfo, IGNORED_ENTITY);
+			ray_hit hit;
+			CCamera& cam = GetISystem()->GetViewCamera();
+			Vec3 pos = cam.GetPosition();
+			Vec3 direction = cam.GetViewdir();
+			IPhysicalWorld * pWorld = gEnv->pPhysicalWorld;
+
+			// build list of physical entities to ignore, including the one from the port IGNORED_ENTITY and the local player plus associated physentities
+			IActor* pLocalPlayer = gEnv->pGameFramework->GetClientActor();
+			EntityId localPlayerId = INVALID_ENTITYID;
+
+			const size_t maxSkipEntities = 16;
+			IPhysicalEntity* pSkipEntities[maxSkipEntities];
+			int numSkipEntities = 0;
+
+			if (pLocalPlayer)
 			{
-				ray_hit hit;
-				CCamera& cam = GetISystem()->GetViewCamera();
-				Vec3 pos = cam.GetPosition() + cam.GetViewdir();
-				Vec3 direction = cam.GetViewdir();
-				IPhysicalWorld* pWorld = gEnv->pPhysicalWorld;
-				//				IPhysicalEntity *pSkip = 0; // pEntity->GetPhysics();
-				int numHits = pWorld->RayWorldIntersection(
-				  pos + GetPortVec3(pActInfo, POS),
-				  direction * GetPortFloat(pActInfo, MAXLENGTH),
-				  ent_all,
-				  rwi_stop_at_pierceable | rwi_colltype_any,
-				  &hit, 1
-				  /* ,&pSkip, 1 */);
-				if (numHits)
+				localPlayerId = pLocalPlayer->GetEntityId();
+				numSkipEntities = pLocalPlayer->GetPhysicalSkipEntities(&pSkipEntities[0], maxSkipEntities);
+			}
+
+			if (skipEntityId != INVALID_ENTITYID && skipEntityId != localPlayerId)
+			{
+				if (numSkipEntities < maxSkipEntities)
 				{
-					pEntity = (IEntity*)hit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-					ActivateOutput(pActInfo, HIT, (bool)true);
-					ActivateOutput(pActInfo, DIROUT, direction);
-					ActivateOutput(pActInfo, DISTANCE, hit.dist);
-					ActivateOutput(pActInfo, HITPOINT, hit.pt);
-					ActivateOutput(pActInfo, NORMAL, hit.n);
-					ActivateOutput(pActInfo, SURFTYPE, (int)hit.surface_idx);
-					ActivateOutput(pActInfo, PARTID, hit.partid);
-					ActivateOutput(pActInfo, HIT_ENTITY, pEntity ? pEntity->GetId() : 0);
-					ActivateOutput(pActInfo, HIT_ENTITY_PHID, gEnv->pPhysicalWorld->GetPhysicalEntityId(hit.pCollider));
+					IActor* pSkippedActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(skipEntityId);
+					if (pSkippedActor)
+					{
+						numSkipEntities += pSkippedActor->GetPhysicalSkipEntities(&pSkipEntities[numSkipEntities], maxSkipEntities - numSkipEntities);
+					}
+					else
+					{
+						IEntity* pAdditionalSkipEntity = gEnv->pEntitySystem->GetEntity(skipEntityId);
+						if (pAdditionalSkipEntity && pAdditionalSkipEntity->GetPhysics())
+						{
+							pSkipEntities[numSkipEntities++] = pAdditionalSkipEntity->GetPhysics();
+						}
+					}
 				}
 				else
-					ActivateOutput(pActInfo, NOHIT, false);
+				{
+					CryLog("FG Node 'Physics:RayCastCamera': Maximum skipped entities reached: the IgnoredEntity is not being ignored!");
+				}
+			}
+
+			int numHits = pWorld->RayWorldIntersection(
+				pos + GetPortVec3(pActInfo, POS),
+				direction * GetPortFloat(pActInfo, MAXLENGTH),
+				GetObjTypes(pActInfo, OBJ_TYPES),
+				rwi_stop_at_pierceable|rwi_colltype_any,
+				&hit, 1,
+				&pSkipEntities[0], numSkipEntities
+			);
+
+			if (numHits)
+			{
+				IEntity* pEntity = (IEntity*)hit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+				ActivateOutput( pActInfo, HIT, (bool)true );
+				ActivateOutput( pActInfo, DIROUT, direction );
+				ActivateOutput( pActInfo, DISTANCE, hit.dist );
+				ActivateOutput( pActInfo, HITPOINT, hit.pt );
+				ActivateOutput( pActInfo, NORMAL, hit.n );
+				ActivateOutput( pActInfo, SURFTYPE, (int)hit.surface_idx );
+				ActivateOutput( pActInfo, PARTID, hit.partid );
+				ActivateOutput( pActInfo, HIT_ENTITY, pEntity ? pEntity->GetId() : 0);
+				ActivateOutput( pActInfo, HIT_ENTITY_PHID, gEnv->pPhysicalWorld->GetPhysicalEntityId(hit.pCollider));
+			}
+			else
+			{
+				ActivateOutput( pActInfo, NOHIT, false );
 			}
 		}
 	}
@@ -1018,13 +1280,13 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<EntityId>("AddListener",      0,                 _HELP("Register entity id as collision listener")),
-			InputPortConfig<int>("CollisionsPerFrame",    0,                 _HELP("Set the maximum amount of reported collisions per frame (0 = don't change)")),
-			InputPortConfig<bool>("IgnoreSameNode",       false,             _HELP("Suppress events if both colliders are registered via the same node")),
-			InputPortConfig<bool>("OnlySameNode",         false,             _HELP("Only send events if both colliders are registered via the same node")),
-			InputPortConfig<EntityId>("RemoveListener",   0,                 _HELP("Unregister entity id from collision listeners")),
-			InputPortConfig<SFlowSystemVoid>("RemoveAll", SFlowSystemVoid(), _HELP("Remove all registered listeners")),
-			{ 0 }
+			InputPortConfig<EntityId>( "AddListener", 0, _HELP("Register entity id as collision listener") ),
+			InputPortConfig<int>( "CollisionsPerFrame", 0, _HELP("Set the maximum amount of reported collisions per frame (0 = don't change)") ),
+			InputPortConfig<bool>( "IgnoreSameNode", false, _HELP("Suppress events if both colliders are registered via the same node") ),
+			InputPortConfig<bool>( "OnlySameNode", false, _HELP("Only send events if both colliders are registered via the same node") ),
+			InputPortConfig<EntityId>( "RemoveListener", 0, _HELP("Unregister entity id from collision listeners") ),
+			InputPortConfig<SFlowSystemVoid>("RemoveAll", SFlowSystemVoid(), _HELP("Remove listeners registered through this node")),
+			{0}
 		};
 
 		static const SOutputPortConfig out_config[] = {
@@ -1115,9 +1377,16 @@ public:
 
 			if (IsPortActive(pActInfo, IN_REMOVE_ALL))
 			{
-				for (auto iter : g_listeners) delete iter.second;
-				g_listeners.clear();
-				gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, (int (*)(const EventPhys*))OnCollision, 1);
+				for(auto iter=g_listeners.begin(); iter!=g_listeners.end(); )
+					if (iter->second->pNode==this)
+					{
+						delete iter->second;
+						iter = g_listeners.erase(iter);
+					}
+					else
+						++iter;
+				if (g_listeners.empty())
+					gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, (int(*)(const EventPhys*))OnCollision, 1);
 			}
 		}
 	}
@@ -1404,6 +1673,8 @@ public:
 
 REGISTER_FLOW_NODE("Physics:Dynamics", CFlowNode_Dynamics);
 REGISTER_FLOW_NODE("Physics:ActionImpulse", CFlowNode_ActionImpulse);
+REGISTER_FLOW_NODE("Physics:PartIdConversion", CFlowNode_PartIdConversion);
+REGISTER_FLOW_NODE("Physics:ObjTypeSelection", CFlowNode_ObjTypeSelection);
 REGISTER_FLOW_NODE("Physics:RayCast", CFlowNode_Raycast);
 REGISTER_FLOW_NODE("Physics:RayCastCamera", CFlowNode_RaycastCamera);
 REGISTER_FLOW_NODE("Physics:PhysicsEnable", CFlowNode_PhysicsEnable);

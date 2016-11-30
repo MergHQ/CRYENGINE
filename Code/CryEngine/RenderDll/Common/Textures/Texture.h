@@ -1866,6 +1866,7 @@ public:
 
 	static volatile int s_nBytesSubmittedToStreaming;
 	static volatile int s_nMipsSubmittedToStreaming;
+	static volatile int s_nNumStreamingRequests;
 	static int          s_nBytesRequiredNotSubmitted;
 
 #if !defined (_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)

@@ -185,6 +185,9 @@ public:
 	};
 	enum Outputs
 	{
+		OUT_YEAR,
+		OUT_MONTH,
+		OUT_DAY,
 		OUT_HOURS,
 		OUT_MINUTES,
 		OUT_SECONDS,
@@ -217,6 +220,9 @@ public:
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("year",  "Current Year"),
+			OutputPortConfig<int>("month", "Current Month [1..12]"),
+			OutputPortConfig<int>("day",   "Current Day of the Month [1..31]"),
 			OutputPortConfig<int>("hours"),
 			OutputPortConfig<int>("minutes"),
 			OutputPortConfig<int>("seconds"),
@@ -259,12 +265,21 @@ private:
 	{
 		time_t long_time = time(NULL);
 		tm* newtime = localtime(&long_time);
+
+		if ((forceUpdate == true) || (newtime->tm_mday != m_lasttime.tm_mday))
+			ActivateOutput(pActInfo, OUT_DAY, newtime->tm_mday);
+		if ((forceUpdate == true) || (newtime->tm_mon != m_lasttime.tm_mon))
+			ActivateOutput(pActInfo, OUT_MONTH, newtime->tm_mon + 1);
+		if ((forceUpdate == true) || (newtime->tm_year != m_lasttime.tm_year))
+			ActivateOutput(pActInfo, OUT_YEAR, newtime->tm_year + 1900);
+
 		if ((forceUpdate == true) || (newtime->tm_hour != m_lasttime.tm_hour))
 			ActivateOutput(pActInfo, OUT_HOURS, newtime->tm_hour);
 		if ((forceUpdate == true) || (newtime->tm_min != m_lasttime.tm_min))
 			ActivateOutput(pActInfo, OUT_MINUTES, newtime->tm_min);
 		if ((forceUpdate == true) || (newtime->tm_sec != m_lasttime.tm_sec))
 			ActivateOutput(pActInfo, OUT_SECONDS, newtime->tm_sec);
+
 		m_lasttime = *newtime;
 	}
 

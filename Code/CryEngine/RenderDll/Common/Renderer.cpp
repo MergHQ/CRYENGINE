@@ -2450,6 +2450,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 			stats->nStreamedTexturesSize = CTexture::s_nStatsStreamPoolInUseMem;
 
 			stats->nStaticTexturesSize      = CTexture::s_nStatsCurManagedNonStreamedTexMem;
+			stats->nNumStreamingRequests    = CTexture::s_nNumStreamingRequests;
 			stats->bPoolOverflow            = CTexture::s_pTextureStreamer->IsOverflowing();
 			stats->bPoolOverflowTotally     = CTexture::s_bOutOfMemoryTotally;
 			CTexture::s_bOutOfMemoryTotally = false;

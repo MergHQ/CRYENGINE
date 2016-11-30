@@ -204,6 +204,8 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 		int nNumSubmittedLoad = CTexture::s_nMipsSubmittedToStreaming;
 		size_t nAmtSubmittedLoad = CTexture::s_nBytesSubmittedToStreaming;
 
+		CTexture::s_nNumStreamingRequests = requested.size();
+
 		if (!requested.empty())
 		{
 			size_t nMaxRequestedBytes = CTexture::s_bPrestreamPhase
