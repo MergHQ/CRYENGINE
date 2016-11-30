@@ -21,7 +21,6 @@
 #include "IGameObject.h"
 #include "IItem.h"
 #include "IWeapon.h"
-#include <CryCore/BoostHelpers.h>
 #include "IActorSystem.h"
 #include <CryFlowGraph/IFlowSystem.h>
 

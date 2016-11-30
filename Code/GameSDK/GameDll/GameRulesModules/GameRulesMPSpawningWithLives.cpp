@@ -41,7 +41,7 @@ CGameRulesMPSpawningWithLives::CGameRulesMPSpawningWithLives()
 	, m_elimMarkerDuration(0.0f)
 	, m_bLivesDirty(false)
 {
-	std::memset(m_elimMarkers, 0, sizeof(m_elimMarkers));
+	memset(m_elimMarkers, 0, sizeof(m_elimMarkers));
 }
 
 CGameRulesMPSpawningWithLives::~CGameRulesMPSpawningWithLives()

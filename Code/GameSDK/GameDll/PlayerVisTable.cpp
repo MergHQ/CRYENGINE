@@ -25,7 +25,7 @@ CPlayerVisTable::CPlayerVisTable()
 	, m_numQueriesThisFrame(0)
 #endif
 {
-	std::memset(m_visTablePriorities, 0, sizeof(m_visTablePriorities));
+	memset(m_visTablePriorities, 0, sizeof(m_visTablePriorities));
 	ClearGlobalIgnoreEntities(); 
 }
 
