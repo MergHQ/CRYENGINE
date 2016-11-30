@@ -65,7 +65,7 @@ void FillEvalInput_CR(in HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER triPatch[3], in HS
 	evalInput.vViewPos = g_VS_WorldViewPos.xyz;
 }
 
-void ProcessEvalOutput(in CommonEvaluationOutputDS evalOutput, inout vert2fragCustomRender dsOutput)
+void ProcessEvalOutput_CustomRenderPass(in CommonEvaluationOutputDS evalOutput, inout vert2fragCustomRender dsOutput)
 {
 	dsOutput.baseTC    = evalOutput.vBaseTC;
 	dsOutput.HPosition = mul(g_VS_ViewProjZeroMatr, float4(evalOutput.vPos.xyz, 1));
@@ -90,7 +90,7 @@ vert2fragCustomRender Common_CustomRenderPassDS( HS_CONSTANT_DATA_OUTPUT hsConst
 		FillEvalInput_CR(TrianglePatch, hsConstData, vBaryCoords, evalInput);
 		CommonEvaluationOutputDS evalOutput;
 		Evaluate(evalInput, evalOutput);
-		ProcessEvalOutput(evalOutput, output);
+		ProcessEvalOutput_CustomRenderPass(evalOutput, output);
 	}
 
   output.cVision = EvalVec(TrianglePatch[0].cVision, TrianglePatch[1].cVision, TrianglePatch[2].cVision, vBaryCoords);
