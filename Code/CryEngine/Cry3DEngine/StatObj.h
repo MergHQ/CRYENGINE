@@ -445,7 +445,7 @@ public:
 	virtual ILINE const Vec3 GetVegCenter() final          { return m_vVegCenter; }
 
 	virtual void             SetFlags(int nFlags) final		{ m_nFlags = nFlags; IncrementModificationId(); }
-	virtual int              GetFlags() final              { return m_nFlags; };
+	virtual int              GetFlags() const final         { return m_nFlags; };
 
 	virtual unsigned int     GetVehicleOnlyPhysics() final { return m_bVehicleOnlyPhysics; };
 	virtual int              GetIDMatBreakable() final     { return m_idmatBreakable; };
@@ -653,7 +653,8 @@ public:
 	int CountChildReferences();
 	void ReleaseStreamableContent() final;
 	int GetStreamableContentMemoryUsage(bool bJustForDebug = false) final;
-	virtual void ComputeGeometricMean(SMeshLodInfo & lodInfo) final;
+	virtual SMeshLodInfo ComputeGeometricMean() const final;
+	SMeshLodInfo ComputeAndStoreLodDistances();
 	virtual float GetLodDistance() const final     { return m_fLodDistance; }
 	virtual Vec3  GetDepthSortOffset() const final { return m_depthSortOffset; }
 	virtual int ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) final;

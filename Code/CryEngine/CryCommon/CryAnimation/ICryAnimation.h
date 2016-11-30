@@ -528,7 +528,7 @@ struct ICharacterInstance : IMeshObj
 	//! \return Pointer to a null terminated char string which contain the filename of the character.
 	virtual const char* GetFilePath() const = 0;
 
-	virtual void        ComputeGeometricMean(SMeshLodInfo& lodInfo) const = 0;
+	virtual SMeshLodInfo ComputeGeometricMean() const = 0;
 
 	virtual bool        HasVertexAnimation() const = 0;
 

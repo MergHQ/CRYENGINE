@@ -490,7 +490,7 @@ struct IAttachmentSkin
 	virtual float             GetExtent(EGeomForm eForm) = 0;
 	virtual void              GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const = 0;
 	virtual void              GetMemoryUsage(class ICrySizer* pSizer) const = 0;
-	virtual void              ComputeGeometricMean(SMeshLodInfo& lodInfo) const = 0;
+	virtual SMeshLodInfo      ComputeGeometricMean() const = 0;
 	virtual ~IAttachmentSkin(){}
 	// </interfuscator:shuffle>
 

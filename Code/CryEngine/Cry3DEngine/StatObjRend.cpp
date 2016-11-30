@@ -860,8 +860,9 @@ void CStatObj::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
 		ran.zero();
 }
 
-void CStatObj::ComputeGeometricMean(SMeshLodInfo& lodInfo)
+SMeshLodInfo CStatObj::ComputeAndStoreLodDistances()
 {
+	SMeshLodInfo lodInfo;
 	lodInfo.Clear();
 
 	lodInfo.fGeometricMean = m_fGeometricMeanFaceArea;
@@ -873,13 +874,41 @@ void CStatObj::ComputeGeometricMean(SMeshLodInfo& lodInfo)
 		{
 			if (m_subObjects[i].nType == STATIC_SUB_OBJECT_MESH && m_subObjects[i].bShadowProxy == false && m_subObjects[i].pStatObj != NULL)
 			{
-				SMeshLodInfo subLodInfo;
-				static_cast<CStatObj*>(m_subObjects[i].pStatObj)->ComputeGeometricMean(subLodInfo);
+				CStatObj* pStatObj = static_cast<CStatObj*>(m_subObjects[i].pStatObj);
+
+				SMeshLodInfo subLodInfo = pStatObj->ComputeAndStoreLodDistances();
 
 				lodInfo.Merge(subLodInfo);
 			}
 		}
 	}
+
+	m_fLodDistance = sqrt(lodInfo.fGeometricMean);
+	return lodInfo;
+}
+
+SMeshLodInfo CStatObj::ComputeGeometricMean() const
+{
+	SMeshLodInfo lodInfo;
+	lodInfo.Clear();
+
+	lodInfo.fGeometricMean = m_fGeometricMeanFaceArea;
+	lodInfo.nFaceCount = m_nRenderTrisCount;
+
+	if (GetFlags() & STATIC_OBJECT_COMPOUND)
+	{
+		for (uint i = 0; i < m_subObjects.size(); ++i)
+		{
+			if (m_subObjects[i].nType == STATIC_SUB_OBJECT_MESH && m_subObjects[i].bShadowProxy == false && m_subObjects[i].pStatObj != NULL)
+			{
+				SMeshLodInfo subLodInfo = static_cast<const CStatObj*>(m_subObjects[i].pStatObj)->ComputeGeometricMean();
+
+				lodInfo.Merge(subLodInfo);
+			}
+		}
+	}
+
+	return lodInfo;
 }
 
 int CStatObj::ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache)
