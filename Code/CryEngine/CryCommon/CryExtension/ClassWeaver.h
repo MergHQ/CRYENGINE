@@ -400,28 +400,27 @@ public:
     {                                                                                                               \
       ICryUnknownPtr p = s_factory.CreateClassInstance();                                                           \
       return std::shared_ptr<implclassname>(*static_cast<std::shared_ptr<implclassname>*>(static_cast<void*>(&p))); \
-    }                                                                                                               \
+    }
 
-#define _BEFRIEND_OPS(implclassname) \
-  _BEFRIEND_CRYINTERFACE_CAST()      \
-  _BEFRIEND_CRYCOMPOSITE_QUERY()     \
-  _BEFRIEND_DELETER(implclassname)
+#define _BEFRIEND_OPS()           \
+  _BEFRIEND_CRYINTERFACE_CAST()   \
+  _BEFRIEND_CRYCOMPOSITE_QUERY()
 
 #define CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow) \
-  friend struct CFactory<implclassname>::CustomDeleter; \
+  friend struct CFactory<implclassname>::CustomDeleter;          \
   _CRYFACTORY_DECLARE(implclassname)                             \
-  _BEFRIEND_OPS(implclassname)                                   \
+  _BEFRIEND_OPS()                                                \
   _IMPLEMENT_ICRYUNKNOWN()                                       \
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 
 #define CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, cidHigh, cidLow) \
-	CRYINTERFACE_SIMPLE(interfaceName)                                                         \
-	CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
+  CRYINTERFACE_SIMPLE(interfaceName)                                                           \
+  CRYGENERATE_CLASS(implclassname, cname, cidHigh, cidLow)
 
 #define CRYGENERATE_SINGLETONCLASS(implclassname, cname, cidHigh, cidLow) \
-  friend struct CFactory<implclassname>::CustomDeleter;                    \
+  friend struct CFactory<implclassname>::CustomDeleter;                   \
   _CRYFACTORY_DECLARE_SINGLETON(implclassname)                            \
-  _BEFRIEND_OPS(implclassname)                                            \
+  _BEFRIEND_OPS()                                                         \
   _IMPLEMENT_ICRYUNKNOWN()                                                \
   _ENFORCE_CRYFACTORY_USAGE(implclassname, cname, cidHigh, cidLow)
 

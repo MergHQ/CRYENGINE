@@ -225,7 +225,7 @@ const char* CBaseInput::GetKeyName(EKeyId keyId) const
 	return NULL;
 }
 
-char CBaseInput::GetInputCharAscii(const SInputEvent& event)
+uint32 CBaseInput::GetInputCharUnicode(const SInputEvent& event)
 {
 	for (TInputDevices::iterator i = m_inputDevices.begin(); i != m_inputDevices.end(); ++i)
 	{
@@ -233,7 +233,7 @@ char CBaseInput::GetInputCharAscii(const SInputEvent& event)
 		CRY_ASSERT(pInputDevice != NULL);
 		if (event.deviceType == eIDT_Unknown || pInputDevice->GetDeviceType() == event.deviceType)
 		{
-			char inputChar = pInputDevice->GetInputCharAscii(event);
+			uint32 inputChar = pInputDevice->GetInputCharUnicode(event);
 			if (inputChar)
 			{
 				return inputChar;

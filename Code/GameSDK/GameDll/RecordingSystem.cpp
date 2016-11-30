@@ -6858,6 +6858,12 @@ void CRecordingSystem::OnFireModeChanged(IWeapon *pWeapon, int currentFireMode)
 
 void CRecordingSystem::OnWeaponRippedOff(CWeapon *pWeapon)
 {
+	// CE-10971: Killing a player with a ripped-off HMG would trigger an assertion
+	// and the gun would be missing in the kill cam. The gun entity wasn't present
+	// in the replay buffer.
+	IEntity *pEntity = pWeapon->GetEntity();
+	AddRecordingEntity(pEntity, RecordEntitySpawn(pEntity));
+
 	RecordWeaponSelection(pWeapon, true);
 }
 

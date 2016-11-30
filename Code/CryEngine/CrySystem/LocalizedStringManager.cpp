@@ -1815,9 +1815,9 @@ bool CLocalizedStringsManager::LocalizeLabel(const char* sLabel, string& outLoca
 					SInputEvent ev;
 					ev.deviceType = eIDT_Keyboard;
 					ev.keyName = sLabel + 4; // skip @cc_
-					char inputCharAscii = pInput->GetInputCharAscii(ev);
+					uint32 inputCharUTF32 = pInput->GetInputCharUnicode(ev);
 
-					if (inputCharAscii == 0)
+					if (inputCharUTF32 == 0)
 					{
 						// try OS key
 						const char* keyName = pInput->GetOSKeyName(ev);
@@ -1828,14 +1828,14 @@ bool CLocalizedStringsManager::LocalizeLabel(const char* sLabel, string& outLoca
 						}
 						// if we got some empty, try non-keyboard as well
 						ev.deviceType = eIDT_Unknown;
-						inputCharAscii = pInput->GetInputCharAscii(ev);
+						inputCharUTF32 = pInput->GetInputCharUnicode(ev);
 					}
 
-					if (inputCharAscii)
+					if (inputCharUTF32)
 					{
 						// Note: Since the input char is assumed to be ASCII, the uppercasing is trivial
-						if (inputCharAscii >= 'a' && inputCharAscii <= 'z') inputCharAscii = inputCharAscii - 'a' + 'A';
-						outLocalString.assign(1, inputCharAscii);
+						if (inputCharUTF32 >= 'a' && inputCharUTF32 <= 'z') inputCharUTF32 = inputCharUTF32 - 'a' + 'A';
+						Unicode::Convert(outLocalString, &inputCharUTF32, &inputCharUTF32 + 1);
 						return true;
 					}
 				}

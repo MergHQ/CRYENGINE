@@ -2088,8 +2088,8 @@ EAudioRequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const
 	result = ParsePreloadsData(configPath.c_str(), eAudioDataScope_Global);
 	CRY_ASSERT(result == eAudioRequestStatus_Success);
 
+	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
 	result = m_fileCacheMgr.TryLoadRequest(SATLInternalControlIDs::globalPreloadRequestId, true, true);
-	CRY_ASSERT(result == eAudioRequestStatus_Success);
 
 	if (szLevelName != nullptr && szLevelName[0] != '\0')
 	{

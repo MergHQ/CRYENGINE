@@ -20,8 +20,11 @@ elseif (NOT (DURANGO OR ORBIS))
 	OPTION(RENDERER_OPENGL "Renderer for OpenGL" ON)
 endif()
 
-if(ORBIS AND NOT RENDERER_GNM)
-	SET(RENDERER_DX11 ON)
+if(ORBIS)
+	OPTION(RENDERER_GNM "Use GNM renderer for Orbis" ON)
+	if(NOT RENDERER_GNM)
+		SET(RENDERER_DX11 ON)
+	endif()
 endif()
 
 #Audio modules

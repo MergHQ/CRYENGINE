@@ -26,10 +26,10 @@ class CKeyboard : public CDXInputDevice
 {
 	struct SScanCode
 	{
-		char lc;    // lowercase
-		char uc;    // uppercase
-		char ac;    // alt gr
-		char cl;    // caps lock (differs slightly from uppercase)
+		uint32 lc;    // lowercase
+		uint32 uc;    // uppercase
+		uint32 ac;    // alt gr
+		uint32 cl;    // caps lock (differs slightly from uppercase)
 	};
 public:
 	CKeyboard(CDXInput& input);
@@ -40,15 +40,14 @@ public:
 	virtual void        Update(bool bFocus);
 	virtual bool        SetExclusiveMode(bool value);
 	virtual void        ClearKeyState();
-	virtual char        GetInputCharAscii(const SInputEvent& event);
+	virtual uint32      GetInputCharUnicode(const SInputEvent& event);
 	virtual const char* GetOSKeyName(const SInputEvent& event);
 	virtual void        OnLanguageChange();
 	// ~IInputDevice
 
 public:
-	unsigned char Event2ASCII(const SInputEvent& event);
-	unsigned char ToAscii(unsigned int vKeyCode, unsigned int k, unsigned char sKState[256]) const;
-	wchar_t       ToUnicode(unsigned int vKeyCode, unsigned int k, unsigned char sKState[256]) const;
+	uint32 Event2Unicode(const SInputEvent& event);
+	void   RebuildScanCodeTable(HKL layout);
 
 protected:
 	void SetupKeyNames();

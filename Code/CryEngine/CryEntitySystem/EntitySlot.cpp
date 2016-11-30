@@ -169,7 +169,10 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 		EERType renderNodeType = m_pRenderNode->GetRenderNodeType();
 		
 		IRenderNode::RenderFlagsType renderNodeFlags = m_pRenderNode->GetRndFlags();
-		m_pRenderNode->SetEditorObjectId(m_pEntity->GetObjectID());
+		bool bSelected, bHighlighted;
+		m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
+		m_pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
+		m_pRenderNode->SetEditorObjectId(m_pEntity->GetEditorObjectID());
 
 		{
 			uint32 entityFlags = m_pEntity->GetFlags();
@@ -729,7 +732,10 @@ void CEntitySlot::SetRenderNode(IRenderNode* pRenderNode)
 		ReleaseObjects();
 	}
 	m_pRenderNode = pRenderNode;
-	m_pRenderNode->SetEditorObjectId(m_pEntity->GetObjectID());
+	bool bSelected, bHighlighted;
+	m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
+	m_pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
+	m_pRenderNode->SetEditorObjectId(m_pEntity->GetEditorObjectID());
 
 	if (m_pRenderNode)
 	{

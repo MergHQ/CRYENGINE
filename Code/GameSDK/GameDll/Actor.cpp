@@ -1609,9 +1609,9 @@ IEntity *CActor::LinkToVehicle(EntityId vehicleId)
 
 		// if the player is hidden when entering a vehicle, the collider mode
 		//	change will be ignored (caused problems in Convoy due to cutscene).
-		// (CE-10939) Disconnecting one player while both are sitting in a vehicle
-		// causes his entity to be hidden on a second client.
-		assert(!IsPlayer());
+		// (CE-10939) MP: Disconnecting one player while both are sitting in a vehicle
+		// triggers this assertion as the linking entity is both player and hidden.
+		//assert(!IsPlayer() || !GetEntity()->IsHidden());
 
 		m_pAnimatedCharacter->ForceRefreshPhysicalColliderMode();
 		m_pAnimatedCharacter->RequestPhysicalColliderMode(enabled ? eColliderMode_Disabled : eColliderMode_Undefined, eColliderModeLayer_Game, "Actor::LinkToVehicle");

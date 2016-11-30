@@ -457,7 +457,9 @@ bool CDeviceResourceSet_DX11::BuildImpl(EFlags updatedFlags)
 			m_CBInUse.push_back(compiledCB.pBuffer);
 		}
 
-		bBuildSuccess &= (compiledCB.pBuffer != nullptr) || (it.second.resource && it.second.resource->m_intentionallyNull); // If an intentional null resource was passed, the ResourceSet remains valid.
+		bool bValid = (compiledCB.pBuffer != nullptr) || (it.second.resource && it.second.resource->m_intentionallyNull); // If an intentional null resource was passed, the ResourceSet remains valid.
+		CRY_ASSERT_MESSAGE(bValid, "An invalid constant buffer has been added to the ResourceSet. You must either insert a null-buffer if this was intended, or fix the code that causes this.");
+		bBuildSuccess &= bValid;
 	}
 
 	return bBuildSuccess;

@@ -19,7 +19,7 @@ void CGameFactory::Init()
 	RegisterGameObject<CViewExtension>("ViewExtension", "", eGORF_NoEntityClass);
 	RegisterGameObject<CGameRules>("GameRules", "", eGORF_HiddenInEditor);
 
-	gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules("SinglePlayer", "GameRules");
+	gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules("SinglePlayer", "GameRules", false);
 	gEnv->pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias("SinglePlayer", "sp");
 }
 

@@ -818,7 +818,7 @@ void ProcessTiledLights(inout float4 vRGB, in float3 vPos0, in float3 vRayDir, i
 
 				bool shadowMap = false;
 
-				float3 position = vPos0.xyz - PS_WorldViewPos.xyz;
+				float3 position = vPos0.xyz;// -PS_WorldViewPos.xyz;
 				position += r.direction * fOffset;
 
 #if !%_RT_SAMPLE5 && %_PS

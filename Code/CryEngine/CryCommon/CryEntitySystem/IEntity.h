@@ -730,7 +730,6 @@ struct IEntity
 
 public:
 	// <interfuscator:shuffle>
-	IEntity() : m_objectID(0) {}
 	virtual ~IEntity(){}
 
 	//! Retrieves the runtime unique identifier of this entity assigned to it by the Entity System.
@@ -1344,10 +1343,11 @@ public:
 	//! ObjectID that corresponds to editor base objects. This is used for selection and highlighting
 	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
 	//! runtime ID and does not need to be serialized
-	uint32 GetObjectID() { return m_objectID; }
-	void   SetObjectID(uint32 ID) { m_objectID = ID; }
+	virtual uint32 GetEditorObjectID() const = 0;
+	virtual void   SetObjectID(uint32 ID) = 0;
+	virtual void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
+	virtual void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
 
-	uint32 m_objectID;
 	// </interfuscator:shuffle>
 
 	//////////////////////////////////////////////////////////////////////////

@@ -3773,7 +3773,7 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 				CVrProjectionManager::Instance()->MapScreenPosToMultiRes(boundsI2F[2], boundsI2F[3]);
 			}
 
-			if (((screenBounds[2] - screenBounds[0]) && (screenBounds[3] - screenBounds[1])) &&
+			if (((boundsI2F[2] - boundsI2F[0] > 0) && (boundsI2F[3] - boundsI2F[1] > 0)) &&
 			  !((rRP.m_nCurrResolveBounds[0] == screenBounds[0])
 			  && (rRP.m_nCurrResolveBounds[1] == screenBounds[1])
 			  && (rRP.m_nCurrResolveBounds[2] == screenBounds[2])

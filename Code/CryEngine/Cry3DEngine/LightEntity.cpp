@@ -2086,6 +2086,8 @@ IRenderNode::EGIMode CLightEntity::GetGIMode() const
 				else
 						return eGM_None;
 			}
+
+			return IRenderNode::GetGIMode();
 		}
 	}
 }
