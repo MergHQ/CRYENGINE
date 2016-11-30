@@ -14,9 +14,17 @@ int CWaterRippleManager::OnEventPhysCollision(const EventPhys* pEvent)
 	{
 		// Compute the momentum of the object.
 		// Clamp the mass so that particles and other "massless" objects still cause ripples.
-		float fMomentum = pEventPhysArea->vloc->GetLength() * max(pEventPhysArea->mass[0], 0.025f);
+		const float v = pEventPhysArea->vloc[0].GetLength();
+		float fMomentum = v * max(pEventPhysArea->mass[0], 0.025f);
 
-		if (gEnv->p3DEngine)
+		// Removes small velocity collisions because too many small collisions cause too strong ripples.
+		const float velRampMin = 1.0f;
+		const float velRampMax = 10.0f;
+		const float t = min(1.0f, max(0.0f, (v - velRampMin) / (velRampMax - velRampMin)));
+		const float smoothstep = t * t * (3.0f - 2.0f * t);
+		fMomentum *= smoothstep;
+
+		if(gEnv->p3DEngine && fMomentum > 0.0f)
 		{
 			gEnv->p3DEngine->AddWaterRipple(pEventPhysArea->pt, 1.0f, fMomentum);
 		}
