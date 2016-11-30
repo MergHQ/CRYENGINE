@@ -85,12 +85,12 @@ public:
 	{
 		static const SInputPortConfig in_config[] =
 		{
-			InputPortConfig_Void("Set",             _HELP("Trigger to set the material")),
-			InputPortConfig_Void("Get",             _HELP("Trigger to get the material name")),
-			InputPortConfig<int>("slot",            -1,                                              _HELP("Slot on which to apply the material. -1 if it should be applied to the whole entity.")),
+			InputPortConfig_Void("Set", _HELP("Trigger to set the material")),
+			InputPortConfig_Void("Get", _HELP("Trigger to get the material name")),
+			InputPortConfig<int>("slot", -1, _HELP("Slot on which to apply the material. -1 if it should be applied to the whole entity.")),
 			InputPortConfig<string>("mat_Material", _HELP("Name of material to apply")),
-			InputPortConfig_Void("Reset",           _HELP("Trigger to reset the original material")),
-			InputPortConfig<bool>("Serialize",      _HELP("Serialize this change")),
+			InputPortConfig_Void("Reset", _HELP("Trigger to reset the original material")),
+			InputPortConfig<bool>("Serialize", _HELP("Serialize this change")),
 			{ 0 }
 		};
 

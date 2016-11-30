@@ -109,18 +109,19 @@ public:
 
 								string rest = tagName.substr(pos + 1, tagName.size());
 								string curTagName = tagName.substr(0, pos);
-								bool found = false;
+								bool bFragmentTagFound = false;
 
 								if (tagDefinition)
 								{
 									const int tagCRC = CCrc32::ComputeLowercase(curTagName);
 									const TagID tagID = tagDefinition->Find(tagCRC);
-									found = tagID != TAG_ID_INVALID;
+									bFragmentTagFound = tagID != TAG_ID_INVALID;
 									tagDefinition->Set(tagState, tagID, true);
 								}
 
-								if (!found)
+								if (!bFragmentTagFound)
 								{
+									//if it is not a frag tag, could be global tag
 									const TagID tagID = pAnimChar->GetActionController()->GetContext().state.GetDef().Find(curTagName);
 									if (tagID != TAG_ID_INVALID)
 									{
@@ -134,8 +135,12 @@ public:
 						}
 
 						const int priority = GetPortInt(pActInfo, EIP_Prio);
-						m_CurrentAction = new TAction<SAnimationContext>(priority, fragID, tagState);
-						pAnimChar->GetActionController()->Queue(*m_CurrentAction);
+						if (fragID != FRAGMENT_ID_INVALID)
+						{
+							m_CurrentAction = new TAction<SAnimationContext>(priority, fragID, tagState);
+							pAnimChar->GetActionController()->Queue(*m_CurrentAction);
+						}
+
 						bSuccess = true;
 					}
 				}

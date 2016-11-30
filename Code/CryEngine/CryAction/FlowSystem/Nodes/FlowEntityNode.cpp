@@ -467,10 +467,10 @@ public:
 	virtual void         GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<Vec3>("pos",     _HELP("Entity position vector")),
-			InputPortConfig<Vec3>("rotate",  _HELP("Entity rotation angle in degrees")),
-			InputPortConfig<Vec3>("scale",   _HELP("Entity scale vector")),
-			InputPortConfig<int>("CoordSys", 1,                                         _HELP("In which coordinate system the values are expressed"),_HELP("CoordSys"), _UICONFIG("enum_int:Parent=0,World=1")),
+			InputPortConfig<Vec3>("pos", _HELP("Entity position vector")),
+			InputPortConfig<Vec3>("rotate", _HELP("Entity rotation angle in degrees")),
+			InputPortConfig<Vec3>("scale", _HELP("Entity scale vector")),
+			InputPortConfig<int>("CoordSys", 1, _HELP("In which coordinate system the values are expressed"), _HELP("CoordSys"), _UICONFIG("enum_int:Parent=0,World=1")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -692,17 +692,17 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Get",      _HELP("Trigger to get current values")),
-			InputPortConfig<int>("CoordSys", 1,                                      _HELP("In which coordinate system the values are expressed"),_HELP("CoordSys"), _UICONFIG("enum_int:Parent=0,World=1")),
+			InputPortConfig_Void("Get", _HELP("Trigger to get current values")),
+			InputPortConfig<int>("CoordSys", 1, _HELP("In which coordinate system the values are expressed"), _HELP("CoordSys"), _UICONFIG("enum_int:Parent=0,World=1")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("Pos",      _HELP("Entity position vector")),
-			OutputPortConfig<Vec3>("Rotate",   _HELP("Entity rotation angle in degrees")),
-			OutputPortConfig<Vec3>("Scale",    _HELP("Entity scale vector")),
-			OutputPortConfig<Vec3>("FwdDir",   _HELP("Entity direction vector - Y axis")),
+			OutputPortConfig<Vec3>("Pos", _HELP("Entity position vector")),
+			OutputPortConfig<Vec3>("Rotate", _HELP("Entity rotation angle in degrees")),
+			OutputPortConfig<Vec3>("Scale", _HELP("Entity scale vector always in parent coordinates")),
+			OutputPortConfig<Vec3>("FwdDir", _HELP("Entity direction vector - Y axis")),
 			OutputPortConfig<Vec3>("RightDir", _HELP("Entity direction vector - X axis")),
-			OutputPortConfig<Vec3>("UpDir",    _HELP("Entity direction vector - Z axis")),
+			OutputPortConfig<Vec3>("UpDir", _HELP("Entity direction vector - Z axis")),
 			{ 0 }
 		};
 		config.sDescription = _HELP("Get Entity Position/Rotation/Scale");
@@ -741,7 +741,7 @@ public:
 		case CS_PARENT:
 			{
 				ActivateOutput(pActInfo, OUT_POS, pEntity->GetPos());
-				ActivateOutput(pActInfo, OUT_ROTATE, Vec3(RAD2DEG(Ang3::GetAnglesXYZ(pEntity->GetLocalTM()))));
+				ActivateOutput(pActInfo, OUT_ROTATE, Vec3(RAD2DEG(Ang3::GetAnglesXYZ(pEntity->GetRotation()))));
 				ActivateOutput(pActInfo, OUT_SCALE, pEntity->GetScale());
 
 				const Matrix34& mat = pEntity->GetLocalTM();
@@ -851,8 +851,10 @@ public:
 		float maxRangeDist = GetPortFloat(pActInfo, INP_MAX_DIST);
 		float minRangeDist2 = minRangeDist * minRangeDist;
 		float maxRangeDist2 = maxRangeDist * maxRangeDist;
-		if (maxRangeDist2 == 0)
-			maxRangeDist2 = FLT_MAX;
+		if (maxRangeDist2==0)
+		{
+			maxRangeDist2 = FLT_MAX; // no limit on max distance when the input is 0
+		}
 
 		EntityId minEnt = 0;
 		EntityId maxEnt = 0;
@@ -866,8 +868,8 @@ public:
 			IEntity* pEntityCheck = gEnv->pEntitySystem->GetEntity(entityIdCheck);
 			if (pEntityCheck)
 			{
-				float dist2 = pEntityCheck->GetPos().GetSquaredDistance(pEntityNode->GetPos());
-				if (dist2 >= minRangeDist2 && dist2 <= maxRangeDist2)
+				float dist2 = pEntityCheck->GetWorldPos().GetSquaredDistance(pEntityNode->GetWorldPos());
+				if (dist2>=minRangeDist2 && dist2<=maxRangeDist2)
 				{
 					anyEntityInRange = true;
 					if (dist2 <= minDist2)
@@ -893,7 +895,9 @@ public:
 			ActivateOutput(pActInfo, OUT_FAR_ENT_DIST, sqrtf(maxDist2));
 		}
 		else
+		{
 			ActivateOutput(pActInfo, OUT_NOENTITIES_IN_RANGE, true);
+		}
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -1023,11 +1027,11 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<bool>("Enable",       false,              _HELP("Enable the node's update")),
-			InputPortConfig<int>("Output",        0,                  _HELP("OutputType"),                                              _HELP("Output Type"),_UICONFIG("enum_int:Angle(Degrees)=0,Percentage=1")),
-			InputPortConfig<float>("Threshold",   10,                 _HELP("Maximum Projection Angle to consider an entity in range")),
-			InputPortConfig<bool>("Sort",         false,              _HELP("Sorts the output from best to worst projection")),
-			InputPortConfig<bool>("Debug",        false,              _HELP("Shows debug information")),
+			InputPortConfig<bool>("Enable", false,_HELP("Enable the node's update")),
+			InputPortConfig<int>("Output", 0,     _HELP("OutputType"), _HELP("Output Type"),_UICONFIG("enum_int:Angle(Degrees)=0,Percentage=1")),
+			InputPortConfig<float>("Threshold",10,_HELP("Maximum Projection Angle to consider an entity in range")),
+			InputPortConfig<bool>("Sort", false,  _HELP("Sorts the output from best to worst projection")),
+			InputPortConfig<bool>("Debug", false, _HELP("Shows debug information")),
 			InputPortConfig<EntityId>("Entity1",  _HELP("EntityID")),
 			InputPortConfig<EntityId>("Entity2",  _HELP("EntityID")),
 			InputPortConfig<EntityId>("Entity3",  _HELP("EntityID")),
@@ -1047,41 +1051,41 @@ public:
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<EntityId>("Best Entity",       _HELP("EntityID with the best projection or 0 if no entity is in range")),
-			OutputPortConfig<float>("Best Projection",      _HELP("Best projection (in degrees or percentage). If no entity is in range then 180 degrees or 0 percentage")),
+			OutputPortConfig<EntityId>("Best Entity", _HELP("EntityID with the best projection or 0 if no entity is in range")),
+			OutputPortConfig<float>("Best Projection", _HELP("Best projection (in degrees or percentage). If no entity is in range then 180 degrees or 0 percentage")),
 			OutputPortConfig_AnyType("Best Entity Changed", _HELP("Triggered when the best entity changes")),
-			OutputPortConfig<EntityId>("Entity1",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity1 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity2",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity2 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity3",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity3 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity4",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity4 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity5",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity5 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity6",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity6 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity7",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity7 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity8",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity8 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity9",           _HELP("EntityID")),
-			OutputPortConfig<float>("Entity9 Projection",   _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity10",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity10 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity11",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity11 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity12",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity12 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity13",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity13 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity14",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity14 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity15",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity15 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
-			OutputPortConfig<EntityId>("Entity16",          _HELP("EntityID")),
-			OutputPortConfig<float>("Entity16 Projection",  _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity1", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity1 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity2", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity2 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity3", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity3 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity4", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity4 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity5", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity5 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity6", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity6 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity7", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity7 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity8", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity8 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity9", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity9 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity10", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity10 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity11", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity11 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity12", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity12 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity13", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity13 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity14", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity14 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity15", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity15 Projection", _HELP("Entity's projection (in degrees or percentage)")),
+			OutputPortConfig<EntityId>("Entity16", _HELP("EntityID")),
+			OutputPortConfig<float>("Entity16 Projection", _HELP("Entity's projection (in degrees or percentage)")),
 			{ 0 }
 		};
 		config.sDescription = _HELP("Check projection between the node's target entity forward direction (or the camera's view direction if not target entity selected) and the entities defined in the inputs");
@@ -1315,8 +1319,8 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig_Void("Get",      _HELP("")),
-			InputPortConfig<int>("CoordSys", 1,         _HELP("In which coordinate system the values are expressed"),_HELP("CoordSys"), _UICONFIG("enum_int:Local=0,World=1")),
+			InputPortConfig_Void("Get", _HELP("")),
+			InputPortConfig<int>("CoordSys", 1, _HELP("In which coordinate system the values are expressed"),_HELP("CoordSys"), _UICONFIG("enum_int:Local=0,World=1")),
 			{ 0 }
 		};
 
@@ -1410,15 +1414,15 @@ public:
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { pActInfo->m_pUserData = (void*)(UINT_PTR)m_entityId; return new CFlowNode_EntityFaceAt(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config)
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<EntityId>("target",            _HELP("face direction of target [EntityID]"), _HELP("Target")),
-			InputPortConfig<Vec3>("pos",                   Vec3(ZERO),                                   _HELP("target this position [Vec3]")),
-			InputPortConfig<SFlowSystemVoid>("Activate",   _HELP("start trigger")),
+			InputPortConfig<EntityId>("target", _HELP("face direction of target [EntityID]"), _HELP("Target")),
+			InputPortConfig<Vec3>("pos", Vec3(ZERO), _HELP("target this position [Vec3]")),
+			InputPortConfig<SFlowSystemVoid>("Activate", _HELP("start trigger")),
 			InputPortConfig<SFlowSystemVoid>("Deactivate", _HELP("stop trigger")),
-			InputPortConfig<int>("FwdDir",                 eFA_XPlus,                                    _HELP("Axis that will be made to point at the target"),        _HELP("FwdDir"),"enum_int:X+=0,X-=1,Y+=2,Y-=3,Z+=4,Z-=5"),
-			InputPortConfig<Vec3>("ReferenceVec",          Vec3(0.0f,                                    0.0f,                                                          1.0f),  _HELP("This reference vector represents the desired Up (Z+), unless you're using Z+ or Z- as FwdDir, in which case this vector represents the right vector (X+)")),
+			InputPortConfig<int>("FwdDir", eFA_XPlus, _HELP("Axis that will be made to point at the target"), _HELP( "FwdDir" ), "enum_int:X+=0,X-=1,Y+=2,Y-=3,Z+=4,Z-=5"),
+			InputPortConfig<Vec3>("ReferenceVec", Vec3( 0.0f, 0.0f, 1.0f ), _HELP("This reference vector represents the desired Up (Z+), unless you're using Z+ or Z- as FwdDir, in which case this vector represents the right vector (X+)")),
 			InputPortConfig<float>("BlendSpeed",           0,                                            _HELP("degrees per second. If 0, then there is no blending.")),
 			{ 0 }
 		};
@@ -1525,16 +1529,15 @@ public:
 		resMat.SetFromVectors(xAxis.GetNormalized(), yAxis.GetNormalized(), zAxis.GetNormalized(), worldPos);
 	}
 
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
-	{
-
-	}
+	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) {}
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		CFlowEntityNodeBase::ProcessEvent(event, pActInfo);
 
 		IEntity* pEntity = GetEntity();
+		if (!pEntity)
+			return;
 
 		switch (event)
 		{
@@ -1733,27 +1736,103 @@ public:
 	CFlowNode_ParentId(SActivationInfo* pActInfo) {}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_AnyType("Get",_HELP("Trigger to get the entity's parent ID")),
+			{ 0 }
+		};
 		static const SOutputPortConfig out_config[] = {
 			OutputPortConfig<int>("parentId", _HELP("Entity ID of the parent entity")),
 			{ 0 }
 		};
-		config.sDescription = _HELP("Parent entity ID");
+		config.sDescription = _HELP("Get the Entity ID of the Parent of an Entity");
 		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = 0;
+		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
 	}
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		if (event != eFE_SetEntityId)
-			return;
-		IEntity* pEntity = pActInfo->pEntity;
-		if (!pEntity)
-			return;
-		IEntity* pParentEntity = pEntity->GetParent();
-		if (!pParentEntity)
-			return;
-		ActivateOutput(pActInfo, 0, pParentEntity->GetId());
+		if (event == eFE_Activate)
+		{
+			IEntity* pEntity = pActInfo->pEntity;
+			if (!pEntity)
+				return;
+
+			if (IsPortActive(pActInfo, 0))
+			{
+				IEntity* pParentEntity = pEntity->GetParent();
+				ActivateOutput(pActInfo, 0, pParentEntity? pParentEntity->GetId() : INVALID_ENTITYID);
+			}
+		}
+	}
+
+	virtual void GetMemoryUsage(ICrySizer * s) const
+	{
+		s->Add(*this);
+	}
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+// Flow node for getting an entity's children information
+//////////////////////////////////////////////////////////////////////////
+class CFlowNode_ChildrenInfo : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	enum EInputs
+	{
+		IN_GetCount,
+		IN_GetByIndex,
+		IN_Index,
+	};
+	enum EOutputs
+	{
+		OUT_Count,
+		OUT_IndexChildId,
+	};
+
+	CFlowNode_ChildrenInfo(SActivationInfo *pActInfo) {}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("GetChildCount", _HELP("Trigger to get the number of children of the entity")),
+			InputPortConfig_Void("GetChildByIndex", _HELP("Trigger to get the ID of a child by index")),
+			InputPortConfig<int>("ChildIndex", _HELP("Index to be used when getting a child by ID")),
+			{0}
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<int>("ChildCount", _HELP("Number of children that this entity has")),
+			OutputPortConfig<EntityId>("ChildId", _HELP("ID of the child with the given index")),
+			{0}
+		};
+		config.sDescription = _HELP("Gets information (count and IDs) of an entity's children");
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	{
+		if (event == eFE_Activate)
+		{
+			IEntity* pEntity = pActInfo->pEntity;
+			if (!pEntity)
+				return;
+
+			if (IsPortActive(pActInfo, IN_GetCount))
+			{
+				ActivateOutput(pActInfo, OUT_Count, pEntity->GetChildCount());
+			}
+
+			if (IsPortActive(pActInfo, IN_GetByIndex))
+			{
+				int index = GetPortInt(pActInfo, IN_Index);
+				IEntity* pChild = pEntity->GetChild(index);
+				ActivateOutput(pActInfo, OUT_IndexChildId, pChild ? pChild->GetId() : INVALID_ENTITYID);
+			}
+		}
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -1783,11 +1862,11 @@ public:
 	virtual void         GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<SFlowSystemVoid>("Set",              _HELP("Trigger it to set the property.")),
-			InputPortConfig<string>("entityProperties_Property", _HELP("select entity property"),          0,                                                                                                 _UICONFIG("ref_entity=entityId")),
-			InputPortConfig<string>("Value",                     _HELP("Property string Value")),
-			InputPortConfig<bool>("perArchetype",                true,                                     _HELP("False: property is a per instance property True: property is a per archetype property.")),
-			{ 0 }
+			InputPortConfig<SFlowSystemVoid>("Set",_HELP("Trigger it to set the property.")),
+			InputPortConfig<string>("entityProperties_Property", _HELP("select entity property"), 0, _UICONFIG("ref_entity=entityId")),
+			InputPortConfig<string>("Value",_HELP("Property string Value")),
+			InputPortConfig<bool>("perArchetype",true,_HELP("False: property is a per instance property True: property is a per archetype property.")),
+			{0}
 		};
 
 		static const SOutputPortConfig out_config[] = {
@@ -2094,9 +2173,9 @@ public:
 	virtual void         GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<SFlowSystemVoid>("Get",              _HELP("Trigger it to get the property!")),
-			InputPortConfig<string>("entityProperties_Property", _HELP("select entity property"),          0,                                                                                                 _UICONFIG("ref_entity=entityId")),
-			InputPortConfig<bool>("perArchetype",                true,                                     _HELP("False: property is a per instance property True: property is a per archetype property.")),
+			InputPortConfig<SFlowSystemVoid>("Get", _HELP("Trigger it to get the property!")),
+			InputPortConfig<string>("entityProperties_Property", _HELP("select entity property"), 0, _UICONFIG("ref_entity=entityId")),
+			InputPortConfig<bool>("perArchetype", true, _HELP("False: property is a per instance property True: property is a per archetype property.")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -2265,10 +2344,10 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Attach",          _HELP("Trigger to attach entity")),
-			InputPortConfig<EntityId>("Child",      _HELP("Child Entity to Attach")),
-			InputPortConfig<bool>("KeepTransform",  _HELP("Child entity will remain in the same transformation in world space")),
-			InputPortConfig<bool>("DisablePhysics", false,                                                                       _HELP("Force disable physics of child entity on attaching")),
+			InputPortConfig_Void("Attach", _HELP("Trigger to attach entity")),
+			InputPortConfig<EntityId>("Child", _HELP("Child Entity to Attach")),
+			InputPortConfig<bool>("KeepTransform", _HELP("Child entity will remain in the same transformation in world space")),
+			InputPortConfig<bool>("DisablePhysics", false, _HELP("Force disable physics of child entity on attaching")),
 			{ 0 }
 		};
 		config.sDescription = _HELP("Attach Child Entity");
@@ -2317,9 +2396,9 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Detach",         _HELP("Trigger to detach entity from parent")),
+			InputPortConfig_Void("Detach", _HELP("Trigger to detach entity from parent")),
 			InputPortConfig<bool>("KeepTransform", _HELP("When attaching entity will stay in same transformation in world space")),
-			InputPortConfig<bool>("EnablePhysics", false,                                                                          _HELP("Force enable physics of entity after detaching")),
+			InputPortConfig<bool>("EnablePhysics", false, _HELP("Force enable physics of entity after detaching")),
 			{ 0 }
 		};
 		config.sDescription = _HELP("Detach child from its parent");
@@ -2364,11 +2443,11 @@ public:
 	enum EInputPorts
 	{
 		EIP_Beam = 0,
+		EIP_CoordSys,
 		EIP_Pos,
 		EIP_Rot,
 		EIP_UseZeroRot,
 		EIP_Scale,
-		EIP_Memo
 	};
 
 	enum EOutputPorts
@@ -2376,15 +2455,21 @@ public:
 		EOP_Done = 0,
 	};
 
+	enum ECoordSys
+	{
+		CS_PARENT = 0,
+		CS_WORLD,
+	};
+
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Beam",        _HELP("Trigger to beam the Entity")),
-			InputPortConfig<Vec3>("Position",   _HELP("Position in World Coords")),
-			InputPortConfig<Vec3>("Rotation",   _HELP("Rotation [Degrees] in World Coords. (0,0,0) leaves Rotation untouched, unless UseZeroRot is set to 1.")),
-			InputPortConfig<bool>("UseZeroRot", false,                                                                                                          _HELP("If true, rotation is applied even if is (0,0,0)")),
-			InputPortConfig<Vec3>("Scale",      _HELP("Scale. (0,0,0) leaves Scale untouched.")),
-			InputPortConfig<string>("Memo",     _HELP("Memo to log when position is zero")),
+			InputPortConfig_Void("Beam", _HELP("Trigger to beam the Entity")),
+			InputPortConfig<int>("CoordSys", 1, _HELP("In which coordinate system the values are expressed"), _HELP("CoordSys"), _UICONFIG("enum_int:Parent=0,World=1")),
+			InputPortConfig<Vec3>("Position", _HELP("Position in World Coords")),
+			InputPortConfig<Vec3>("Rotation", _HELP("Rotation [Degrees] in World Coords. (0,0,0) leaves Rotation untouched, unless UseZeroRot is set to 1.")),
+			InputPortConfig<bool>("UseZeroRot", false, _HELP("If true, rotation is applied even if is (0,0,0)")),
+			InputPortConfig<Vec3>("Scale", _HELP("Scale. (0,0,0) leaves Scale untouched.")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -2405,49 +2490,69 @@ public:
 			return;
 		if (!pActInfo->pEntity)
 			return;
+
 		if (IsPortActive(pActInfo, EIP_Beam))
 		{
-			const Vec3* vRot = pActInfo->pInputPorts[EIP_Rot].GetPtr<Vec3>();
+			const char* entityName = pActInfo->pEntity->GetName();
+			bool isPlayer = gEnv->pGameFramework->GetClientActorId() == pActInfo->pEntity->GetId();
+
+			const Vec3 vPrevSca = pActInfo->pEntity->GetScale();
+
 			const Vec3 vPos = GetPortVec3(pActInfo, EIP_Pos);
-
+			const Vec3 vRot = GetPortVec3(pActInfo, EIP_Rot);
+			const Vec3 vSca = GetPortVec3(pActInfo, EIP_Scale);
 			bool bUseZeroRot = GetPortBool(pActInfo, EIP_UseZeroRot);
+			ECoordSys coordSys = (ECoordSys)GetPortInt(pActInfo, EIP_CoordSys);
 
-			string memo = GetPortString(pActInfo, EIP_Memo);
-			const char* szEntityName = pActInfo->pEntity->GetName();
-
-			const bool bIsPlayer = CCryAction::GetCryAction()->GetClientActorId() == pActInfo->pEntity->GetId();
-
-			if (memo.empty() && bIsPlayer == 0)
+			switch (coordSys)
 			{
-				memo = "<no memo>";
+				// World & parent: initialize tm with the current value. overwrite with the orientation if valid and always overwrite position. scale goes last.
+			case CS_WORLD:
+				{
+					Matrix34 tm = pActInfo->pEntity->GetWorldTM();
+
+					if (!vRot.IsZero() || bUseZeroRot)
+					{
+						tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(vRot))));
+					}
+
+					tm.SetTranslation(vPos);
+					if (vPos.IsZero())
+					{
+						CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero.", entityName);
+					}
+
+					pActInfo->pEntity->SetWorldTM(tm, ENTITY_XFORM_TRACKVIEW);
+
+					break;
+				}
+			case CS_PARENT:
+				{
+					Matrix34 tm = pActInfo->pEntity->GetLocalTM();
+
+					if (!vRot.IsZero() || bUseZeroRot)
+					{
+						tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(vRot))));
+					}
+
+					tm.SetTranslation(vPos);
+					// No warning for vPos zero in parent coordinates (it is likely intended).
+
+					pActInfo->pEntity->SetLocalTM(tm, ENTITY_XFORM_TRACKVIEW);
+
+					break;
+				}
 			}
 
-			if (vPos.IsZero())
+			if (!vSca.IsZero())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", szEntityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
-			}
-			else if (!memo.empty())
-			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", szEntityName, memo.c_str());
-			}
-
-			Matrix34 tm;
-			bool bApplyRot = vRot != nullptr && (!vRot->IsZero() || bUseZeroRot);
-			if (!bApplyRot)
-			{
-				tm = pActInfo->pEntity->GetWorldTM();
+				pActInfo->pEntity->SetScale(vSca, ENTITY_XFORM_TRACKVIEW);
 			}
 			else
 			{
-				tm = Matrix33(Quat::CreateRotationXYZ(Ang3(DEG2RAD(*vRot))));
+				// if a valid scale is not supplied, reaply the previous value
+				pActInfo->pEntity->SetScale(vPrevSca, ENTITY_XFORM_TRACKVIEW);
 			}
-
-			tm.SetTranslation(vPos);
-			pActInfo->pEntity->SetWorldTM(tm, ENTITY_XFORM_TRACKVIEW);
-
-			const Vec3* vScale = pActInfo->pInputPorts[EIP_Scale].GetPtr<Vec3>();
-			if (vScale && vScale->IsZero() == false)
-				pActInfo->pEntity->SetScale(*vScale, ENTITY_XFORM_TRACKVIEW);
 
 			// TODO: Maybe add some tweaks/checks wrt. physics/collisions
 			ActivateOutput(pActInfo, EOP_Done, true);
@@ -2542,9 +2647,9 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Set",     _HELP("Trigger to activate the node")),
-			InputPortConfig<int>("Param",   0,                                     _HELP("Render parameter to set (of type float)"),                   NULL, _UICONFIG("enum_int:None=0,Opacity=1")),
-			InputPortConfig<float>("Value", 1.0f,                                  _HELP("Value to attribute to the render parameter (type float)")),
+			InputPortConfig_Void("Set", _HELP("Trigger to activate the node")),
+			InputPortConfig<int>("Param", 0, _HELP("Render parameter to set (of type float)") , NULL, _UICONFIG("enum_int:None=0,Opacity=1")),
+			InputPortConfig<float>("Value", 1.0f, _HELP("Value to attribute to the render parameter (type float)")),
 			{ 0 }
 		};
 
@@ -2667,17 +2772,17 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<int>("CharSlot",                  0,                                                              _HELP("Character Slot within Entity")),
-			InputPortConfig<string>("Attachment",             _HELP("Attachment"),                                            0,                                                                                                                                     _UICONFIG("dt=attachment,ref_entity=entityId")),
-			InputPortConfig_Void("SetMaterial",               _HELP("Trigger to force setting a material [ForcedMaterial]")),
-			InputPortConfig<string>("ForcedMaterial",         _HELP("Material"),                                              0,                                                                                                                                     _UICONFIG("dt=mat")),
-			InputPortConfig<int>("SubMtlId",                  0,                                                              _HELP("Sub Material Id")),
-			InputPortConfig_Void("Get",                       _HELP("Trigger to get current value")),
-			InputPortConfig<string>("ParamFloat",             _HELP("Float Parameter to be set/get"),                         0,                                                                                                                                     _UICONFIG("dt=matparamcharatt,charslot_ref=CharSlot,attachment_ref=Attachment,sub_ref=SubMtlId,param=float")),
-			InputPortConfig<float>("ValueFloat",              0.0f,                                                           _HELP("Trigger to set Float value")),
-			InputPortConfig<string>("ParamColor",             _HELP("Color Parameter to be set/get"),                         0,                                                                                                                                     _UICONFIG("dt=matparamcharatt,charslot_ref=CharSlot,attachment_ref=Attachment,sub_ref=SubMtlId,param=vec")),
-			InputPortConfig<Vec3>("color_ValueColor",         _HELP("Trigger to set Color value")),
-			InputPortConfig<bool>("StartFromDefaultMaterial", true,                                                           _HELP("Choose whether to start again from the attachment's default material or apply on top of a possibly already modified material")),
+			InputPortConfig<int>("CharSlot", 0, _HELP("Character Slot within Entity")),
+			InputPortConfig<string>("Attachment", _HELP("Attachment"), 0, _UICONFIG("dt=attachment,ref_entity=entityId")),
+			InputPortConfig_Void("SetMaterial", _HELP("Trigger to force setting a material [ForcedMaterial]")),
+			InputPortConfig<string>("ForcedMaterial", _HELP("Material"), 0, _UICONFIG("dt=mat")),
+			InputPortConfig<int>("SubMtlId", 0, _HELP("Sub Material Id")),
+			InputPortConfig_Void("Get", _HELP("Trigger to get current value")),
+			InputPortConfig<string>("ParamFloat", _HELP("Float Parameter to be set/get"), 0, _UICONFIG("dt=matparamcharatt,charslot_ref=CharSlot,attachment_ref=Attachment,sub_ref=SubMtlId,param=float")),
+			InputPortConfig<float>("ValueFloat", 0.0f, _HELP("Trigger to set Float value")),
+			InputPortConfig<string>("ParamColor", _HELP("Color Parameter to be set/get"), 0, _UICONFIG("dt=matparamcharatt,charslot_ref=CharSlot,attachment_ref=Attachment,sub_ref=SubMtlId,param=vec")),
+			InputPortConfig<Vec3>("color_ValueColor", _HELP("Trigger to set Color value")),
+			InputPortConfig<bool>("StartFromDefaultMaterial", true, _HELP("Choose whether to start again from the attachment's default material or apply on top of a possibly already modified material")),
 			{ 0 }
 		};
 
@@ -2935,20 +3040,20 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig_Void("Spawn",    _HELP("Spawn an entity using the values below")),
-			InputPortConfig<string>("Class", "",                                              _HELP("Entity class name i.e., \"BasicEntity\""),0,  0),
-			InputPortConfig<string>("Name",  "",                                              _HELP("Entity's name"),  0,  0),
-			InputPortConfig<Vec3>("Pos",     _HELP("Initial position")),
-			InputPortConfig<Vec3>("Rot",     _HELP("Initial rotation")),
-			InputPortConfig<Vec3>("Scale",   Vec3(1,                                          1,                       1), _HELP("Initial scale")),
+			InputPortConfig_Void("Spawn", _HELP("Spawn an entity using the values below")),
+			InputPortConfig<string>("Class", "", _HELP("Entity class name i.e., \"BasicEntity\""), 0, 0),
+			InputPortConfig<string>("Name", "", _HELP("Entity's name"), 0, 0),
+			InputPortConfig<Vec3>("Pos", _HELP("Initial position")),
+			InputPortConfig<Vec3>("Rot", _HELP("Initial rotation")),
+			InputPortConfig<Vec3>("Scale", Vec3(1,1,1), _HELP("Initial scale")),
 			{ 0 }
 		};
 
 		static const SOutputPortConfig outputs[] =
 		{
-			OutputPortConfig_Void("Done",           _HELP("Called when job is done")),
+			OutputPortConfig_Void("Done", _HELP("Called when job is done")),
 			OutputPortConfig<EntityId>("Succeeded", _HELP("Called when entity is spawned")),
-			OutputPortConfig_Void("Failed",         _HELP("Called when entity fails to spawn")),
+			OutputPortConfig_Void("Failed", _HELP("Called when entity fails to spawn")),
 			{ 0 }
 		};
 
@@ -3051,20 +3156,20 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig_Void("Spawn",        _HELP("Spawn an entity using the values below")),
-			InputPortConfig<string>("Archetype", "",                                              _HELP("Entity archetype name"),0,  _UICONFIG("enum_global:entity_archetypes")),
-			InputPortConfig<string>("Name",      "",                                              _HELP("Entity's name"),  0,  0),
-			InputPortConfig<Vec3>("Pos",         _HELP("Initial position")),
-			InputPortConfig<Vec3>("Rot",         _HELP("Initial rotation")),
-			InputPortConfig<Vec3>("Scale",       Vec3(1,                                          1,                       1), _HELP("Initial scale")),
+			InputPortConfig_Void("Spawn", _HELP("Spawn an entity using the values below")),
+			InputPortConfig<string>("Archetype", "", _HELP("Entity archetype name"), 0, _UICONFIG("enum_global:entity_archetypes")),
+			InputPortConfig<string>("Name", "", _HELP("Entity's name"), 0, 0),
+			InputPortConfig<Vec3>("Pos", _HELP("Initial position")),
+			InputPortConfig<Vec3>("Rot", _HELP("Initial rotation")),
+			InputPortConfig<Vec3>("Scale", Vec3(1,1,1), _HELP("Initial scale")),
 			{ 0 }
 		};
 
 		static const SOutputPortConfig outputs[] =
 		{
-			OutputPortConfig_Void("Done",           _HELP("Called when job is done")),
+			OutputPortConfig_Void("Done", _HELP("Called when job is done")),
 			OutputPortConfig<EntityId>("Succeeded", _HELP("Called when entity is spawned")),
-			OutputPortConfig_Void("Failed",         _HELP("Called when entity fails to spawn")),
+			OutputPortConfig_Void("Failed", _HELP("Called when entity fails to spawn")),
 			{ 0 }
 		};
 
@@ -3368,8 +3473,8 @@ public:
 	{
 		static const SInputPortConfig in_config[] =
 		{
-			InputPortConfig_Void("Set",     _HELP("Start search for entity with the specified name.")),
-			InputPortConfig<string>("Name", string(),                                                  _HELP("Name of the entity to look for.")),
+			InputPortConfig_Void   ("Set", _HELP( "Start search for entity with the specified name." )),
+			InputPortConfig<string>("Name", string(), _HELP( "Name of the entity to look for." )),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] =
@@ -3409,6 +3514,7 @@ REGISTER_FLOW_NODE("Entity:BroadcastEvent", CFlowNode_BroadcastEntityEvent)
 REGISTER_FLOW_NODE("Entity:EntityId", CFlowNode_EntityId)
 REGISTER_FLOW_NODE("Entity:EntityInfo", CFlowNode_EntityGetInfo)
 REGISTER_FLOW_NODE("Entity:ParentId", CFlowNode_ParentId)
+REGISTER_FLOW_NODE("Entity:GetChildrenInfo", CFlowNode_ChildrenInfo)
 REGISTER_FLOW_NODE("Entity:PropertySet", CFlowNode_EntitySetProperty)
 REGISTER_FLOW_NODE("Entity:PropertyGet", CFlowNode_EntityGetProperty)
 REGISTER_FLOW_NODE("Entity:ChildAttach", CFlowNode_EntityAttachChild)

@@ -17,7 +17,7 @@ public:
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_PortalSwitch(pActInfo); }
 
-	virtual void         GetMemoryUsage(ICrySizer* s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -93,6 +93,131 @@ public:
 		if (pActInfo->pEntity)
 		{
 			gEnv->p3DEngine->ActivatePortal(pActInfo->pEntity->GetWorldPos(), bActivate, pActInfo->pEntity->GetName());
+			m_bActivated = bActivate;
+		}
+	}
+
+private:
+	bool m_bActivated;
+
+};
+
+class CFlowNode_OcclusionAreaSwitch : public CFlowBaseNode<eNCT_Instanced>
+{
+public:
+	CFlowNode_OcclusionAreaSwitch(SActivationInfo* pActInfo)
+		: m_bActivated(false)
+	{
+	}
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_OcclusionAreaSwitch(pActInfo); }
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+
+	void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig<SFlowSystemVoid>("Activate"),
+			InputPortConfig<SFlowSystemVoid>("Deactivate"),
+			{ 0 }
+		};
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.pInputPorts = in_config;
+		config.SetCategory(EFLN_ADVANCED);
+	}
+
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	{
+		ser.Value("activated", m_bActivated);
+
+		if (ser.IsReading())
+			ActivateOcclusionAreas(pActInfo, m_bActivated);
+	}
+
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_SetEntityId:
+		{
+			if (!pActInfo->pEntity)
+				return;
+			// don't disable here, because it will trigger on QL as well
+			//gEnv->p3DEngine->ActivatePortal( pActInfo->pEntity->GetWorldPos(), false, pActInfo->pEntity->GetName() );
+		}
+		break;
+
+		case eFE_Initialize:
+		{
+			ActivateOcclusionAreas(pActInfo, false);    // i think this one is not needed anymore, but im keeping it just in case
+		}
+		break;
+		case eFE_Activate:
+		{
+			if (!pActInfo->pEntity)
+			{
+				GameWarning("[flow] Trying to activate a portal at a non-existent entity");
+				return;
+			}
+			bool doAnything = false;
+			bool activate = false;
+			if (IsPortActive(pActInfo, 0))
+			{
+				doAnything = true;
+				activate = true;
+			}
+			else if (IsPortActive(pActInfo, 1))
+			{
+				doAnything = true;
+				activate = false;
+			}
+			if (doAnything)
+			{
+				ActivateOcclusionAreas(pActInfo, activate);
+			}
+		}
+		break;
+		}
+	}
+
+	struct AreaProxyTestCallback : public IVisAreaTestCallback
+	{
+		EntityId id;
+		IEntityAreaComponent* proxy;
+		AreaProxyTestCallback(EntityId id, IEntityAreaComponent* p) : id(id), proxy(p) {}
+		virtual bool TestVisArea(IVisArea* pVisArea) const override
+		{
+			size_t nPoints;
+			const Vec3* pPoints;
+			pVisArea->GetShapePoints(pPoints, nPoints);
+
+			for (size_t i = 0; i < nPoints; i++)
+			{
+				if (proxy->CalcPointWithin(id, pPoints[i]))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	};
+
+	void ActivateOcclusionAreas(SActivationInfo* pActInfo, bool bActivate)
+	{
+		if (pActInfo->pEntity)
+		{
+			IEntityAreaComponent* pProxy = (IEntityAreaComponent*)pActInfo->pEntity->GetProxy(EEntityProxy::ENTITY_PROXY_AREA);
+
+			if (pProxy)
+			{
+				const EntityId id = pActInfo->pEntity->GetId();
+				AreaProxyTestCallback tester(id, pProxy);
+				gEnv->p3DEngine->ActivateOcclusionAreas(&tester, bActivate);
+			}
+
 			m_bActivated = bActivate;
 		}
 	}
@@ -631,7 +756,7 @@ public:
 	{
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig<Vec3>("Position", _HELP("Position")),
-			InputPortConfig<float>("Timeout", 3.0f,                               _HELP("Time out in seconds")),
+			InputPortConfig<float>("Timeout", 3.0f, _HELP("Time out in seconds")),
 			InputPortConfig_Void("Activate",  _HELP("Activate precaching event")),
 			{ 0 }
 		};
@@ -733,12 +858,116 @@ public:
 	}
 };
 
+class CFlowNode_ShadowCacheParams : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_ShadowCacheParams(SActivationInfo* pActInfo)
+	{
+	}
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+
+	enum EInputs
+	{
+		eIn_ShadowCachesCascade,
+		eIn_ShadowCachesResolution,
+		eIn_GsmLodsNum,
+		eIn_GsmRange,
+		eIn_GsmRangeStep,
+		eIn_Apply
+	};
+
+	enum EOutputs
+	{
+		eOut_Done
+	};
+
+	void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig<int>("ShadowCachesCascade", 4, _HELP("Sets what cascade we start using cached-shadows from (r_ShadowsCache)")),
+			InputPortConfig<string>("ShadowCachesResolution", _HELP("Sets the shadow cache resolution per cascade (r_ShadowsCacheResolutions)")),
+			InputPortConfig<int>("GsmLodsNum", 5, _HELP("Sets the number of Gsm Lods (minimum 1) (e_GsmLodsNum)")),
+			InputPortConfig<float>("GsmRange", 10.f, _HELP("Sets the size of LOD 0 GSM area (in meters) (e_GsmRange)")),
+			InputPortConfig<float>("GsmRangeStep", 1.f, _HELP("Sets the range of next GSM lod is previous range multiplied by step (minimum 1) (e_GsmRangeStep)")),
+			InputPortConfig_AnyType("Apply", _HELP("Apply shadow cache parameters")),
+			{ 0 }
+		};
+
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig_Void("Done", _HELP("Changes were applied")),
+			{ 0 }
+		};
+
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.sDescription = _HELP("Specify some shadow cache parameters");
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+			{
+				if (IsPortActive(pActInfo, eIn_Apply))
+				{
+					if (ICVar* pShadowsCache = gEnv->pConsole->GetCVar("r_ShadowsCache"))
+					{
+						const int nGsmCache = GetPortInt(pActInfo, eIn_ShadowCachesCascade);
+						pShadowsCache->Set(std::max(nGsmCache, 0));
+					}
+
+					if (ICVar* pSCR = gEnv->pConsole->GetCVar("r_ShadowsCacheResolutions"))
+					{
+						const string & resolution = GetPortString(pActInfo, eIn_ShadowCachesResolution);
+						pSCR->Set(resolution.c_str());
+					}
+
+					if (ICVar* pLodsNum = gEnv->pConsole->GetCVar("e_GsmLodsNum"))
+					{
+						const int lods = GetPortInt(pActInfo, eIn_GsmLodsNum);
+						pLodsNum->Set(std::max(lods, 1));
+					}
+
+					if (ICVar* pGsmRange = gEnv->pConsole->GetCVar("e_GsmRange"))
+					{
+						const float range = GetPortFloat(pActInfo, eIn_GsmRange);
+						pGsmRange->Set(std::max(range, 0.f));
+					}
+
+					if (ICVar* pGsmRangeStep = gEnv->pConsole->GetCVar("e_GsmRangeStep"))
+					{
+						const float rangeStep = GetPortFloat(pActInfo, eIn_GsmRangeStep);
+						pGsmRangeStep->Set(std::max(rangeStep, 1.f));
+					}
+
+					// Force one update of cached shadows whenever we modify the settings above
+					ICVar* pShadowsCacheUpdate = gEnv->pConsole->GetCVar("e_ShadowsCacheUpdate");
+					if (pShadowsCacheUpdate)
+						pShadowsCacheUpdate->Set(1);
+
+					ActivateOutput(pActInfo, eOut_Done, true);
+				}
+			}
+			break;
+		}
+	}
+};
+
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 REGISTER_FLOW_NODE("Engine:PortalSwitch", CFlowNode_PortalSwitch);
+REGISTER_FLOW_NODE("Engine:OcclusionAreaSwitch", CFlowNode_OcclusionAreaSwitch);
 REGISTER_FLOW_NODE("Environment:OceanSwitch", CFlowNode_OceanSwitch);
 REGISTER_FLOW_NODE("Environment:SkyboxSwitch", CFlowNode_SkyboxSwitch);
 REGISTER_FLOW_NODE("Engine:LayerSwitch", CFlowNode_LayerSwitch);
 REGISTER_FLOW_NODE("Material:SetObjectMaterial", CFlowNode_SetObjectMaterial);
 REGISTER_FLOW_NODE("Engine:PrecacheArea", CFlowNode_PrecacheArea);
 REGISTER_FLOW_NODE("Engine:Viewport", CFlowNode_Viewport);
+REGISTER_FLOW_NODE("Engine:ShadowCacheParams", CFlowNode_ShadowCacheParams);

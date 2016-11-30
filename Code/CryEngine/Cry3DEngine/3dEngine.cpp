@@ -2063,6 +2063,12 @@ void C3DEngine::ActivatePortal(const Vec3& vPos, bool bActivate, const char* szE
 		m_pVisAreaManager->ActivatePortal(vPos, bActivate, szEntityName);
 }
 
+void C3DEngine::ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate)
+{
+	if (m_pVisAreaManager)
+		m_pVisAreaManager->ActivateOcclusionAreas(pTest, bActivate);
+}
+
 bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, int nSID)
 {
 	assert(nSID >= 0 && nSID < m_pObjManager->m_lstStaticTypes.Count());
@@ -5507,7 +5513,6 @@ void C3DEngine::SaveInternalState(struct IDataWriteStream& writer, const AABB& f
 		info.nObjTypeMask = objectMask;
 		info.areaBox = filterArea;
 		info.pVisibleLayerMask = NULL; // not used during saving
-
 		int objectCompiledDataSize = 0;
 		int terrainCompiledDataSize = pTerrain->GetCompiledDataSize(&info);
 		if (terrainCompiledDataSize > 0)

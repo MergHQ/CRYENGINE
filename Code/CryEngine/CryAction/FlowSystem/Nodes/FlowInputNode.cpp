@@ -180,7 +180,8 @@ class CFlowNode_ForceFeedback : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 	enum INPUTS
 	{
-		eIP_EffectName = 0,
+		eIP_Controller = 0,
+		eIP_EffectName,
 		eIP_Play,
 		eIP_Intensity,
 		eIP_Delay,
@@ -196,12 +197,13 @@ public:
 		// declare input ports
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig<string>("EffectName", _HELP("Name of the force feedback effect to be played/stopped"), _HELP("Effect Name"),                                          _UICONFIG("enum_global:forceFeedback")),
-			InputPortConfig_Void("Play",          _HELP("Play the specified effect")),
-			InputPortConfig<float>("Intensity",   1.f,                                                             _HELP("Intensity factor applied to the effect being played")),
-			InputPortConfig<float>("Delay",       0.f,                                                             _HELP("Time delay to start the effect")),
-			InputPortConfig_Void("Stop",          _HELP("Stop the specified effect")),
-			InputPortConfig_Void("StopAll",       _HELP("Stop all currently playing force feedback effects")),
+			InputPortConfig<int>("Controller", _HELP("Number of the controller that should rumble" ), _HELP("Controller Number"), _UICONFIG("enum_int:1=0,2=1,3=2,4=3")),
+			InputPortConfig<string>("EffectName", _HELP("Name of the force feedback effect to be played/stopped" ), _HELP("Effect Name"), _UICONFIG("enum_global:forceFeedback")),
+			InputPortConfig_Void("Play", _HELP("Play the specified effect")),
+			InputPortConfig<float>("Intensity", 1.f, _HELP("Intensity factor applied to the effect being played")),
+			InputPortConfig<float>("Delay", 0.f, _HELP("Time delay to start the effect")),
+			InputPortConfig_Void("Stop", _HELP("Stop the specified effect")),
+			InputPortConfig_Void("StopAll", _HELP("Stop all currently playing force feedback effects")),
 			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] =
@@ -228,7 +230,8 @@ public:
 
 					if (IsPortActive(pActInfo, eIP_Play))
 					{
-						const string effectName = GetPortString(pActInfo, eIP_EffectName);
+						gEnv->pInput->ForceFeedbackSetDeviceIndex(GetPortInt(pActInfo,eIP_Controller));
+						const string effectName = GetPortString(pActInfo, eIP_EffectName).c_str();
 						ForceFeedbackFxId fxId = pForceFeedback->GetEffectIdByName(effectName);
 						const float intensity = GetPortFloat(pActInfo, eIP_Intensity);
 						const float delay = GetPortFloat(pActInfo, eIP_Delay);

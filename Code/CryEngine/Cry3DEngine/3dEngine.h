@@ -514,6 +514,7 @@ public:
 	virtual bool                      SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, int nSID);
 	virtual bool                      GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup, int nSID);
 	virtual void                      ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
+	virtual void                      ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	virtual void                      GetMemoryUsage(ICrySizer* pSizer) const;
 	virtual void                      GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
 	virtual IVisArea*                 CreateVisArea(uint64 visGUID);

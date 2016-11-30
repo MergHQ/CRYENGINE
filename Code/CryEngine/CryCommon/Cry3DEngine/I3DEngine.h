@@ -875,6 +875,11 @@ struct IVisAreaCallback
 	// </interfuscator:shuffle>
 };
 
+struct IVisAreaTestCallback
+{
+	virtual bool TestVisArea(IVisArea* pVisArea) const = 0;
+};
+
 struct IVisAreaManager
 {
 	// <interfuscator:shuffle>
@@ -1828,6 +1833,7 @@ struct I3DEngine : public IProcess
 	//! \param bActivate Set to true in order to enable the portal, or to false to disable
 	//! \param szEntityName
 	virtual void ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName) = 0;
+	virtual void ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate) = 0;
 
 	//! \internal
 	//! Counts memory usage

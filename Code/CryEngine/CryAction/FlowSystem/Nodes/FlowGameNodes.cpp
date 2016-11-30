@@ -745,6 +745,84 @@ public:
 	}
 };
 
+//////////////////////////////////////////////////////////////////////////
+class CFlowPauseGameUpdate : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	enum EInputs
+	{
+		IN_PAUSE,
+		IN_UNPAUSE,
+		IN_AFFECTS_ACTIONMAP,
+		IN_QUERY
+	};
+	enum EOutputs
+	{
+		OUT_ISPAUSED,
+		OUT_NOTPAUSED,
+	};
+
+	CFlowPauseGameUpdate(SActivationInfo * pActInfo)
+	{
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig inputs[] = {
+			InputPortConfig_Void("Pause", _HELP("Pauses game update")),
+			InputPortConfig_Void("Unpause", _HELP("Unpauses game update")),
+			InputPortConfig<bool>("AffectsActionMap", _HELP("If true, it will enable/disable action map manager when Upausing/pausing the game update")),
+			InputPortConfig_Void("Query", _HELP("Query whether the game update is paused or unpaused")),
+			{ 0 }
+		};
+		static const SOutputPortConfig outputs[] = {
+			OutputPortConfig_Void("IsPaused", _HELP("The game update is paused")),
+			OutputPortConfig_Void("NotPaused", _HELP("The game update is NOT paused")),
+			{ 0 }
+		};
+
+		config.pInputPorts = inputs;
+		config.pOutputPorts = outputs;
+		config.sDescription = _HELP("INPORTANT: USE THIS NODE IN UI FLOWGRAPH (e.g. UI_ACTIONS) NOT IN GAME FLOWGRAPH. This node allows pausing/unpausing the game update and querying its state.");
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+		{
+			const bool bAffectActionmap = GetPortBool(pActInfo, IN_AFFECTS_ACTIONMAP);
+			if (IsPortActive(pActInfo, IN_PAUSE))
+			{
+				gEnv->pGameFramework->PauseGame(true, false);
+				ActivateOutput(pActInfo, OUT_ISPAUSED, true);
+				if (bAffectActionmap) { gEnv->pGameFramework->GetIActionMapManager()->Enable(false, true); }
+			}
+			else if (IsPortActive(pActInfo, IN_UNPAUSE))
+			{
+				gEnv->pGameFramework->PauseGame(false, false);
+				ActivateOutput(pActInfo, OUT_NOTPAUSED, true);
+
+				if (bAffectActionmap) { gEnv->pGameFramework->GetIActionMapManager()->Enable(true); }
+			}
+			else if (IsPortActive(pActInfo, IN_QUERY))
+			{
+				const bool bPaused = gEnv->pGameFramework->IsGamePaused();
+				ActivateOutput(pActInfo, bPaused ? OUT_ISPAUSED : OUT_NOTPAUSED, true);
+			}
+		}
+		break;
+		}
+	}
+
+	virtual void GetMemoryUsage(ICrySizer * s) const
+	{
+		s->Add(*this);
+	}
+};
+
 REGISTER_FLOW_NODE("Actor:LocalPlayer", CFlowPlayer);
 REGISTER_FLOW_NODE("Actor:Damage", CFlowDamageActor);
 REGISTER_FLOW_NODE("Entity:Damage", CFlowDamageEntity)
@@ -756,3 +834,4 @@ REGISTER_FLOW_NODE("Game:ObjectEvent", CFlowGameObjectEvent);
 REGISTER_FLOW_NODE("Game:GetSupportedGameRulesForMap", CFlowGetSupportedGameRulesForMap);
 REGISTER_FLOW_NODE("Game:GetEntityState", CFlowGetStateOfEntity);
 REGISTER_FLOW_NODE("Game:IsLevelOfType", CFlowIsLevelOfType);
+REGISTER_FLOW_NODE("Game:PauseGameUpdate", CFlowPauseGameUpdate);
