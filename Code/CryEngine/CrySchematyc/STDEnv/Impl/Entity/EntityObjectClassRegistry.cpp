@@ -144,7 +144,7 @@ void RegisterEntityClasses(IEnvRegistrar& registrar)   // #SchematycTODO : Move 
 	{
 		auto pClass = SCHEMATYC_MAKE_ENV_CLASS(g_entityClassGUID, "Entity");
 		pClass->AddComponent(GetTypeInfo<CEntityDebugComponent>().GetGUID());
-		pClass->AddComponent(GetTypeInfo<CEntityMovementComponent>().GetGUID());
+		//pClass->AddComponent(GetTypeInfo<CEntityMovementComponent>().GetGUID());
 		pClass->AddComponent(GetTypeInfo<CEntityUtilsComponent>().GetGUID());
 		pClass->SetProperties(SEntityClassProperties());
 		pClass->SetPreviewer(CEntityObjectPreviewer());

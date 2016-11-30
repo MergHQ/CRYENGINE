@@ -36,10 +36,10 @@ struct SAudioSwitchWithStateSerializeHelper
 	void         Serialize(Serialization::IArchive& archive);
 	static SGUID ReflectSchematycType(CTypeInfo<SAudioSwitchWithStateSerializeHelper>& typeInfo);
 
-	AudioControlId m_switchId = INVALID_AUDIO_CONTROL_ID;
-	string         m_switchName;
-	AudioControlId m_switchStateId = INVALID_AUDIO_CONTROL_ID;
-	string         m_switchStateName;
+	AudioControlId     m_switchId = INVALID_AUDIO_CONTROL_ID;
+	string             m_switchName;
+	AudioSwitchStateId m_switchStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+	string             m_switchStateName;
 };
 
 class CEntityAudioComponent final : public CComponent

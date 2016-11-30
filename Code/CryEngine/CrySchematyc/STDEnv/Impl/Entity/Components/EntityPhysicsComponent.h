@@ -13,14 +13,27 @@ struct IEnvRegistrar;
 class CEntityPhysicsComponent final : public CComponent
 {
 public:
+	enum ePhysicType
+	{
+		ePhysicType_Static,
+		ePhysicType_Rigid,
+		ePhysicType_Living
+	};
+
 	struct SProperties
 	{
 		void Serialize(Serialization::IArchive& archive);
-		
+
 		bool bEnabled = true;
-		bool bStatic = false;
 		float mass = -1.0f;
 		float density = -1.0f;
+		ePhysicType type = ePhysicType_Rigid;
+		
+		//only needed for ePhysicType_Living
+		float colliderHeight = 0.45f;
+		float colliderRadius = 0.45f;
+		float colliderVerticalOffset = 0.0f;
+		float friction = 0.95f;
 	};
 
 	// CComponent
