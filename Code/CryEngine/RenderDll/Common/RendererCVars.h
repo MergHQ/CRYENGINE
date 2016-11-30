@@ -392,7 +392,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ZPassOnly, 0);
 	DeclareStaticConstIntCVar(CV_r_VegetationSpritesNoGen, 0);
 	DeclareStaticConstIntCVar(CV_r_VegetationSpritesGenAlways, 0);
-	DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
+	//DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
+	enum { CV_r_measureoverdraw = 0 };
 	DeclareStaticConstIntCVar(CV_r_ShowLightBounds, 0);
 	DeclareStaticConstIntCVar(CV_r_TextureCompressor, 1);
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);

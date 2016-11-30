@@ -399,7 +399,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_dof);
 int CRendererCVars::CV_r_DofMode;
 int CRendererCVars::CV_r_DofBokehQuality;
 
-AllocateConstIntCVar(CRendererCVars, CV_r_measureoverdraw);
+//AllocateConstIntCVar(CRendererCVars, CV_r_measureoverdraw);
 AllocateConstIntCVar(CRendererCVars, CV_r_printmemoryleaks);
 AllocateConstIntCVar(CRendererCVars, CV_r_releaseallresourcesonexit);
 
@@ -2796,14 +2796,14 @@ void CRendererCVars::InitCVars()
 	DefineConstIntCVar3("r_UseESRAM", CV_r_useESRAM, 1, VF_REQUIRE_APP_RESTART,
 	                    "Toggles using ESRAM for render targets (Durango only)\n"
 	                    "Usage: r_UseESRAM [0/1]");
-	DefineConstIntCVar3("r_MeasureOverdraw", CV_r_measureoverdraw, 0, VF_CHEAT,
-	                    "Activate a special rendering mode that visualize the rendering cost of each pixel by color.\n"
-	                    "0=off,\n"
-	                    "1=pixel shader instructions,\n"
-	                    "2=pass count,\n"
-	                    "3=vertex shader instructions,\n"
-	                    "4=overdraw estimation with 360 Hi-Z,\n"
-	                    "Usage: r_MeasureOverdraw [0/1/2/3/4]");
+	//DefineConstIntCVar3("r_MeasureOverdraw", CV_r_measureoverdraw, 0, VF_CHEAT,
+	//                    "Activate a special rendering mode that visualize the rendering cost of each pixel by color.\n"
+	//                    "0=off,\n"
+	//                    "1=pixel shader instructions,\n"
+	//                    "2=pass count,\n"
+	//                    "3=vertex shader instructions,\n"
+	//                    "4=overdraw estimation with 360 Hi-Z,\n"
+	//                    "Usage: r_MeasureOverdraw [0/1/2/3/4]");
 	REGISTER_CVAR3("r_MeasureOverdrawScale", CV_r_measureoverdrawscale, 1.5f, VF_CHEAT, "");
 
 	DefineConstIntCVar3("r_PrintMemoryLeaks", CV_r_printmemoryleaks, 0, VF_NULL, "");
