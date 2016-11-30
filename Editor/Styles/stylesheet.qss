@@ -610,24 +610,24 @@ QToolWindowArea > QTabBar::tab:selected {
 	padding-top:-2px;
 }
 
-QTabWidget QMenuBar {
+QTabWidget QMenuBar, CDockableDialog QMenuBar {
 	background-color:rgb(66,66,66);
 	padding-bottom:0px;
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item {
+QTabWidget QMenuBar:item, CDockableDialog QMenuBar:item {
 	color:rgb(140,140,140);
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item:selected {
+QTabWidget QMenuBar:item:selected, CDockableDialog QMenuBar:item:selected {
 	color:rgb(200,200,200);
 	background-color:rgb(109,109,109);
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item:pressed {
+QTabWidget QMenuBar:item:pressed, CDockableDialog QMenuBar:item:pressed {
 	background: rgb(97,172,236);
 	color:black;
 	margin-bottom:0px;
@@ -829,7 +829,7 @@ QToolWindowArea > QFrame {
 	margin:0px;
 }
 
-QTabWidget QToolBar {
+QTabWidget QToolBar, CDockableDialog QToolbar {
 	background-color:transparent;        /*layer toolbar secondary*/
 	border:0px solid rgb(78,78,78);
 	margin-left:0px;
@@ -841,14 +841,14 @@ QTabWidget QToolBar {
 	padding-bottom:0px;
 }
 
-QTabWidget QSearchBox {
+QTabWidget QSearchBox, CDockableDialog QSearchBox {
 	margin-left:4px;
 	margin-right:4px;
 	margin-top:0px;
 	margin-bottom:0px;
 	/*padding-top:4px;*/
 }
-QTabWidget QToolBar QToolButton {
+QTabWidget QToolBar QToolButton, CDockableDialog QToolBar QToolButton {
 	margin-top:0px;
 	margin-bottom:0px;
 }
@@ -876,7 +876,7 @@ QSplitter::handle:pressed {
 	border: none;
 }
 
-QTabWidget QSplitter::handle {
+QTabWidget QSplitter::handle, CDockableDialog QSplitter::handle {
 	background-color: rgb(58,58,58); /*dividing lines secondary*/
 }
 
@@ -1101,7 +1101,7 @@ CEditorDialog QPushButton::pressed {
 	color:white;
 }
 
-CEditorDialog {
+CEditorDialog, CDockableDialog {
 	background-color: rgb(35,35,35);
 	border:1px solid rgb(45,45,45);
 }
@@ -1525,12 +1525,12 @@ CAutoCompletePopup QLabel
 	background: rgb(50,50,50);
 }
 
-QTabWidget QSplitter {
+QTabWidget QSplitter, CDockableDialog QSplitter {
 	height:4px;
 	width:4px;
 }
 
-QTabWidget QCheckBox{
+QTabWidget QCheckBox, CDockableDialog QCheckBox {
 	margin-left:10px;
 	margin-right:-6px;
 }
@@ -1539,7 +1539,7 @@ CEditorDialog QHeaderView::section {
 	border: 0px;
 }
 
-CEditorDialog QSplitter::handle, CEditorDialog QSplitter::handle:hover  {
+CEditorDialog QSplitter::handle, CEditorDialog QSplitter::handle:hover {
 	border-left: 4px solid rgb(66, 66, 66);
 	border-right: 4px solid rgb(66, 66, 66);
 }
@@ -1979,4 +1979,12 @@ CPreviewToolTip QWidget
 {
 	max-width: 400px;
 	max-height: 400px;
+}
+
+CDockableDialog > QFrame {
+	background-color: rgb(66,66,66);
+}
+
+CDockableDialog > QCustomTitleBar {
+	background-color: transparent;
 }

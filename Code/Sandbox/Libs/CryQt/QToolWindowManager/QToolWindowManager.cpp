@@ -12,9 +12,11 @@
 #include <QTimer>
 #include <QSet>
 #include <QWindowStateChangeEvent>
+#include <QWindow>
 
 #include "QToolWindowDragHandlerDropTargets.h"
 #include "IToolWindowDragHandler.h"
+#include "QCustomWindowFrame.h"
 
 #if defined(WIN32) || defined(WIN64)
 #include <windows.h>
@@ -1090,36 +1092,17 @@ void QToolWindowManager::clear()
 void QToolWindowManager::bringAllToFront()
 {
 #if defined(WIN32) || defined(WIN64)
-	IToolWindowWrapper* w;
+	QWidget* w;
 	QSet<HWND> handles;
 	HWND h;
-	foreach (w, m_wrappers)
+	QList<QWidget*> list = QApplication::topLevelWidgets();
+	foreach (w, list)
 	{
-		QWidget* myWindow = w->getWidget();
-		while (myWindow && !myWindow->isWindow())
+		if (w && !w->windowState().testFlag(Qt::WindowMinimized) && (qobject_cast<IToolWindowWrapper*>(w) || qobject_cast<QCustomWindowFrame*>(w)))
 		{
-			myWindow = myWindow->parentWidget();
-		}
-		if (myWindow && !myWindow->windowState().testFlag(Qt::WindowMinimized))
-		{
-			h = (HWND)myWindow->winId();
+			h = (HWND)w->winId();
 			handles.insert(h);
 		}
-	}
-	QWidget* mainWindow = getMainWindow();
-	while (mainWindow && !mainWindow->isWindow())
-	{
-		mainWindow = mainWindow->parentWidget();
-	}
-	if (mainWindow && !mainWindow->windowState().testFlag(Qt::WindowMinimized))
-	{
-		h = (HWND)mainWindow->winId();
-		handles.insert(h);
-	}
-	if (w = findClosestParent<IToolWindowWrapper*>(this))
-	{
-		h = (HWND)w->getWidget()->winId();
-		handles.insert(h);
 	}
 	h = GetTopWindow(NULL);
 	QList<HWND> orderedHandles;
