@@ -702,9 +702,12 @@ void CAttachmentMerger::Merge(CAttachmentMerged* pDstAttachment, const DynArray<
 		chunk.nNumVerts = numVertices;
 		chunk.nNumIndices = numIndices;
 
-		pRenderMesh->SetChunk(-1, chunk);
-		pRenderMesh->GetChunks()[0].pRE->mfUpdateFlags(FCEF_SKINNED);
-		pRenderMesh->SetSkinned();
+		if (chunk.nNumVerts > 0 && chunk.nNumIndices > 0)
+		{
+			pRenderMesh->SetChunk(-1, chunk);
+			pRenderMesh->GetChunks()[0].pRE->mfUpdateFlags(FCEF_SKINNED);
+			pRenderMesh->SetSkinned();
+		}
 	}
 
 	pDstSkin->m_arrModelJoints = arrModelJoints;
