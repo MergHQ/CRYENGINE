@@ -164,7 +164,7 @@ void FillKillListCS(uint3 DTid : SV_DispatchThreadID)
 		// leave out dead particles
 		if (IsDead(j))
 		{
-			unsigned int i; 
+			uint i; 
 			InterlockedAdd(counter[c_managerSlot], 1, i);
 			// copy over the particle data
 			killList[i] = j;
@@ -274,7 +274,7 @@ float3 Curl(float4 s)
 		gradX.y - gradY.x);
 }
 
-float3 FractalPotential(float4 sample, uint octaves)
+float3 FractalPotential(float4 s, uint octaves)
 {
 	float3 total = float3(0,0,0);
 	float mult = 1.0;
@@ -288,14 +288,14 @@ float3 FractalPotential(float4 sample, uint octaves)
 	mult = 1.0 / totalMult;
 	for (uint i = 0; i < octaves; ++i)
 	{
-		total = Potential(sample * size) * mult + total;
+		total = Potential(s * size) * mult + total;
 		mult *= 0.5;
 		size *= 2.0;
 	}
 	return total;
 }
 
-float3 FractalCurl(float4 sample, uint octaves)
+float3 FractalCurl(float4 s, uint octaves)
 {
 	float3 total = float3(0,0,0);
 	float mult = 1.0;
@@ -309,7 +309,7 @@ float3 FractalCurl(float4 sample, uint octaves)
 	mult = 1.0 / totalMult;
 	for (uint i = 0; i < octaves; ++i)
 	{
-		total = Curl(sample * size) * mult + total;
+		total = Curl(s * size) * mult + total;
 		mult = mult * 0.5;
 		size *= 2.0;
 	}
