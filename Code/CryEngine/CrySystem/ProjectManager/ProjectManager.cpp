@@ -101,7 +101,7 @@ void CProjectManager::LoadConfiguration()
 		char buffer[MAX_PATH];
 		CryGetCurrentDirectory(MAX_PATH, buffer);
 
-		m_currentProjectDirectory = PathUtil::ToUnixPath(buffer);
+		m_currentProjectDirectory = PathUtil::RemoveSlash(PathUtil::ToUnixPath(buffer));
 
 		CryGetExecutableFolder(MAX_PATH, buffer);
 		m_currentBinaryDirectory = PathUtil::ToUnixPath(buffer);
@@ -116,7 +116,7 @@ void CProjectManager::LoadConfiguration()
 	string js = file_get_contents(sProjectFile);
 
 	// Set the current directory
-	m_currentProjectDirectory = PathUtil::ToUnixPath(PathUtil::GetPathWithoutFilename(sProjectFile));
+	m_currentProjectDirectory = PathUtil::RemoveSlash(PathUtil::ToUnixPath(PathUtil::GetPathWithoutFilename(sProjectFile)));
 
 #ifdef CRY_PLATFORM_WINDOWS
 	SetDllDirectoryW(CryStringUtils::UTF8ToWStr(m_currentProjectDirectory));
