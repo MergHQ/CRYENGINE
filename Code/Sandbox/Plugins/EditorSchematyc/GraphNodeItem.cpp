@@ -43,7 +43,7 @@ void CNodeStyles::LoadIcons()
 		CreateStyle("Core::FlowControl", "icons:schematyc/core_flowcontrol.ico", QColor(255, 255, 255));
 		CreateStyle("Core::SendSignal", "icons:schematyc/core_sendsignal.ico", QColor(100, 193, 98));
 		CreateStyle("Core::ReceiveSignal", "icons:schematyc/core_receivesignal.ico", QColor(100, 193, 98));
-		CreateStyle("Core::Function", "icons:schematyc/core_function.ico", QColor(193, 98, 980));
+		CreateStyle("Core::Function", "icons:schematyc/core_function.ico", QColor(193, 98, 98));
 		CreateStyle("Core::Data", "icons:schematyc/core_data.ico", QColor(156, 98, 193));
 		CreateStyle("Core::Utility", "icons:schematyc/core_utility.ico", QColor(153, 153, 153));
 		CreateStyle("Core::State", "icons:schematyc/core_state.ico", QColor(192, 193, 98));
