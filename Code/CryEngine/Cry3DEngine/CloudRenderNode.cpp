@@ -37,10 +37,6 @@ CCloudRenderNode::CCloudRenderNode()
 	GetCloudsManager()->AddCloudRenderNode(this);
 
 	m_origin = Vec3(0, 0, 0);
-	m_moveProps.m_autoMove = false;
-	m_moveProps.m_speed = Vec3(0, 0, 0);
-	m_moveProps.m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	m_moveProps.m_fadeDistance = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
