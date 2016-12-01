@@ -1195,6 +1195,9 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 
 	Matrix44 mViewProj;
 
+	// make sure any pending clear flags have been applied
+	m_renderer.FX_ClearTargets();
+
 	if (begin < end)
 	{
 		m_pCurCBRawData = data.m_pData;
