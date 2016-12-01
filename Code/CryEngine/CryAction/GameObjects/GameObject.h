@@ -140,7 +140,6 @@ public:
 	virtual void         Release() final;
 	virtual void         ProcessEvent(SEntityEvent& event) final;
 	virtual uint64       GetEventMask() const final;
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool loading) final;
 	virtual void         GameSerialize(TSerialize ser) final;
 	virtual bool         NeedGameSerialize() final;
 	// ~IEntityComponent

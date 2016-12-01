@@ -116,7 +116,7 @@ void CEntityComponentFlowGraph::RemoveEventListener(IEntityEventListener* pListe
 	stl::find_and_erase(m_listeners, pListener);
 }
 
-void CEntityComponentFlowGraph::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentFlowGraph::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	// don't serialize flowgraphs from the editor
 	// (editor needs more information, so it saves them specially)
@@ -126,7 +126,13 @@ void CEntityComponentFlowGraph::SerializeXML(XmlNodeRef& entityNode, bool bLoadi
 	XmlNodeRef flowGraphNode;
 	if (bLoading)
 	{
-		flowGraphNode = entityNode->findChild("FlowGraph");
+		flowGraphNode = componentNode->findChild("FlowGraph");
+		if (!flowGraphNode)
+		{
+			// legacy behavior, look for properties on the entity node level
+			flowGraphNode = entityNode->findChild("FlowGraph");
+		}
+
 		if (!flowGraphNode)
 			return;
 
@@ -174,8 +180,8 @@ void CEntityComponentFlowGraph::SerializeXML(XmlNodeRef& entityNode, bool bLoadi
 	}
 	else
 	{
-		flowGraphNode = entityNode->createNode("FlowGraph");
-		entityNode->addChild(flowGraphNode);
+		flowGraphNode = componentNode->createNode("FlowGraph");
+		componentNode->addChild(flowGraphNode);
 	}
 	assert(!!flowGraphNode);
 	if (m_pFlowGraph)

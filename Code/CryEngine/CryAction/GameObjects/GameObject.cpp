@@ -920,11 +920,6 @@ IGameObjectExtension* CGameObject::GetExtensionWithRMIBase(const void* pBase)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::SerializeXML(XmlNodeRef& entityNode, bool loading)
-{
-}
-
-//------------------------------------------------------------------------
 bool CGameObject::CaptureActions(IActionListener* pAL)
 {
 	if (m_pActionDelegate || !pAL)

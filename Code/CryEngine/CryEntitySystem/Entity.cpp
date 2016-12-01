@@ -1195,12 +1195,15 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 						continue;
 				}
 
-				pComponent->SerializeXML(componentNode, bLoading);
-
 				// Parse component properties, if any
 				if (IEntityPropertyGroup* pProperties = pComponent->GetPropertyGroup())
 				{
 					gEnv->pSystem->GetArchiveHost()->LoadXmlNode(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), (void*)pProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), componentNode);
+				}
+				else
+				{
+					// No property group, legacy serialization
+					pComponent->LegacySerializeXML(node, componentNode, bLoading);
 				}
 			}
 		}
@@ -1209,14 +1212,14 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 	{
 		XmlNodeRef componentsNode = node->newChild("Components");
 
-		m_components.ForEach([&componentsNode, bIncludeScriptProxy, bLoading](const SEntityComponentRecord& record)
+		m_components.ForEach([&node, &componentsNode, bIncludeScriptProxy, bLoading](const SEntityComponentRecord& record)
 		{
 			XmlNodeRef componentNode = componentsNode->newChild("Component");
 			componentNode->setAttr("typeId", record.typeId);
 
 			if (record.proxyType != ENTITY_PROXY_SCRIPT || bIncludeScriptProxy)
 			{
-				record.pComponent->SerializeXML(componentNode, bLoading);
+				record.pComponent->LegacySerializeXML(node, componentNode, bLoading);
 			}
 
 			// Parse component properties, if any

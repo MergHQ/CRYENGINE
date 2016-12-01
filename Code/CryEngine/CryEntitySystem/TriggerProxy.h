@@ -45,7 +45,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_TRIGGER; }
 	virtual void         Release() final { delete this; };
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final {};
 	virtual void         GameSerialize(TSerialize ser) final;
 	virtual bool         NeedGameSerialize() final;
 	//////////////////////////////////////////////////////////////////////////

@@ -780,13 +780,14 @@ void CEntityComponentLuaScript::SerializeTable(TSerialize ser, const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentLuaScript::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	// Initialize script properties.
 	if (bLoading)
 	{
 		CScriptProperties scriptProps;
 		// Initialize properties.
+		// Script properties are currently stored in the entity node, not the component itself (legacy)
 		scriptProps.SetProperties(entityNode, m_pThis);
 
 		XmlNodeRef eventTargets = entityNode->findChild("EventTargets");

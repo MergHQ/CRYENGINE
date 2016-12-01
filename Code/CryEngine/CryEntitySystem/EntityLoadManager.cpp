@@ -527,7 +527,25 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				// Serialize script proxy.
 				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
-					pScriptProxy->SerializeXML(entityNode, true);
+				{
+					XmlNodeRef componentNode;
+					if (XmlNodeRef componentsNode = entityNode->findChild("Components"))
+					{
+						for (int i = 0, n = componentsNode->getChildCount(); i < n; ++i)
+						{
+							CryInterfaceID componentTypeId;
+							componentNode = componentsNode->getChild(i);
+							if (!componentNode->getAttr("typeId", componentTypeId))
+								continue;
+							
+							if (componentTypeId == pScriptProxy->GetCID())
+								break;
+						}
+					}
+
+					pScriptProxy->LegacySerializeXML(entityNode, componentNode, true);
+				}
+					
 			}
 		}
 
@@ -566,34 +584,26 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 		if (entityNode)
 		{
-			//////////////////////////////////////////////////////////////////////////
-			// Load geom entity (Must be before serializing proxies.
-			//////////////////////////////////////////////////////////////////////////
-			if (spawnParams.pClass->GetFlags() & ECLF_DEFAULT)
+			// Check if it have geometry.
+			const char* sGeom = entityNode->getAttr("Geometry");
+			if (sGeom[0] != 0)
 			{
-				// Check if it have geometry.
-				const char* sGeom = entityNode->getAttr("Geometry");
-				if (sGeom[0] != 0)
+				// check if character.
+				const char* ext = PathUtil::GetExt(sGeom);
+				if (stricmp(ext, CRY_SKEL_FILE_EXT) == 0 || stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 || stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
 				{
-					// check if character.
-					const char* ext = PathUtil::GetExt(sGeom);
-					if (stricmp(ext, CRY_SKEL_FILE_EXT) == 0 || stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 || stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
-					{
-						pSpawnedEntity->LoadCharacter(0, sGeom, IEntity::EF_AUTO_PHYSICALIZE);
-					}
-					else
-					{
-						pSpawnedEntity->LoadGeometry(0, sGeom, 0, IEntity::EF_AUTO_PHYSICALIZE);
-					}
+					pSpawnedEntity->LoadCharacter(0, sGeom, IEntity::EF_AUTO_PHYSICALIZE);
+				}
+				else
+				{
+					pSpawnedEntity->LoadGeometry(0, sGeom, 0, IEntity::EF_AUTO_PHYSICALIZE);
 				}
 			}
-			//////////////////////////////////////////////////////////////////////////
 
+			//////////////////////////////////////////////////////////////////////////
 			// Serialize all entity proxies except Script proxy after initialization.
 			if (pCSpawnedEntity)
 			{
-				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
-
 				pCSpawnedEntity->SerializeXML(entityNode, true, false);
 			}
 
@@ -794,7 +804,7 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 		{
 			IEntityComponent* pProxy = f.pEntity->CreateProxy(ENTITY_PROXY_FLOWGRAPH);
 			if (pProxy)
-				pProxy->SerializeXML(f.pNode, true);
+				pProxy->LegacySerializeXML(f.pNode, f.pNode, true);
 		}
 	}
 	m_queuedFlowgraphs.clear();

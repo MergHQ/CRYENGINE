@@ -66,12 +66,6 @@ void CEntityComponentDynamicResponse::GameSerialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentDynamicResponse::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
-{
-
-}
-
-//////////////////////////////////////////////////////////////////////////
 DRS::IVariableCollection* CEntityComponentDynamicResponse::GetLocalVariableCollection() const
 {
 	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Proxy without an Actor detected. Should never happen.");

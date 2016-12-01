@@ -46,7 +46,7 @@ public:
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ROPE; }
 	virtual void         Release() final { delete this; };
 	virtual void         Update(SEntityUpdateContext& ctx) final;
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final;
+	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
 	virtual bool         NeedGameSerialize() final;
 	virtual void         GameSerialize(TSerialize ser) final;
 	//////////////////////////////////////////////////////////////////////////

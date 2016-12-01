@@ -37,9 +37,7 @@ public:
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const final {};
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ENTITYNODE; };
 
-	virtual void         Release() final                                      { delete this; }
-
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final {};
+	virtual void         Release() final { delete this; }
 };
 
 #endif
