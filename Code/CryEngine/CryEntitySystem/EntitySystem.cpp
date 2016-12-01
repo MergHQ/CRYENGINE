@@ -144,7 +144,6 @@ SEntityLoadParams& SEntityLoadParams::operator=(const SEntityLoadParams& other)
 		spawnParams.entityNode = other.spawnParams.entityNode;
 		bCallInit = other.bCallInit;
 
-
 		AddRef();
 	}
 
@@ -1546,7 +1545,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 			}
 		};
 		// Copy active entity ids into temporary buffer, this is needed because some entity can be added or deleted during Update call.
-		m_mapActiveEntities.for_each( entityUpdateLambda );
+		m_mapActiveEntities.for_each(entityUpdateLambda);
 	}
 	else
 	{
@@ -1561,7 +1560,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 
 		int nCounter = 0;
 
-		auto entityUpdateLambda = [this, &ctx,&xpos, &ypos, &nCounter,bProfileEntitiesToLog,bProfileEntitiesDesigner](EntityId eid)
+		auto entityUpdateLambda = [this, &ctx, &xpos, &ypos, &nCounter, bProfileEntitiesToLog, bProfileEntitiesDesigner](EntityId eid)
 		{
 			CEntity* ce = GetEntityFromID(eid);
 			if (ce && !ce->m_bGarbage)
@@ -1629,7 +1628,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 		};
 
 		// Update entities.
-		m_mapActiveEntities.for_each( entityUpdateLambda );
+		m_mapActiveEntities.for_each(entityUpdateLambda);
 
 		int nNumRenderable = 0;
 		int nNumPhysicalize = 0;
@@ -1699,7 +1698,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 			char szProfInfo[256];
 			if (bDebug)
 				cry_sprintf(szProfInfo, "Entities: Total=%d, Active=%d, Renderable=%d, Phys=%d, Script=%d", numEnts, ctx.numUpdatedEntities,
-					nNumRenderable, nNumPhysicalize, nNumScriptable);
+				            nNumRenderable, nNumPhysicalize, nNumScriptable);
 			else
 				cry_sprintf(szProfInfo, "Entities: Total=%d Active=%d", numEnts, ctx.numUpdatedEntities);
 			float colors[4] = { 1, 1, 1, 1 };
@@ -1987,7 +1986,7 @@ void CEntitySystem::ActivateEntity(CEntity* pEntity, bool bActivate)
 
 	if (bActivate)
 	{
-		m_mapActiveEntities.insert( pEntity->GetId() );
+		m_mapActiveEntities.insert(pEntity->GetId());
 
 		if (!pEntity->m_bInActiveList)
 		{
@@ -2090,7 +2089,7 @@ void CEntitySystem::AddEntityEventListener(EntityId nEntity, EEntityEvent event,
 	CEntity* pCEntity = (CEntity*)GetEntity(nEntity);
 	if (pCEntity)
 	{
-		pCEntity->AddEntityEventListener(event,pListener);
+		pCEntity->AddEntityEventListener(event, pListener);
 	}
 }
 
@@ -2317,6 +2316,11 @@ IEntityArchetype* CEntitySystem::LoadEntityArchetype(XmlNodeRef oArchetype)
 		{
 			piArchetype->LoadFromXML(propNode, objectVarsNode);
 		}
+
+		if (IEntityArchetypeManagerExtension* pExtension = m_pEntityArchetypeManager->GetEntityArchetypeManagerExtension())
+		{
+			pExtension->LoadFromXML(*piArchetype, oArchetype);
+		}
 	}
 
 	return piArchetype;
@@ -2338,6 +2342,17 @@ IEntityArchetype* CEntitySystem::CreateEntityArchetype(IEntityClass* pClass, con
 void CEntitySystem::RefreshEntityArchetypesInRegistry()
 {
 	m_pClassRegistry->LoadArchetypes("Libs/EntityArchetypes", true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::SetEntityArchetypeManagerExtension(IEntityArchetypeManagerExtension* pEntityArchetypeManagerExtension)
+{
+	m_pEntityArchetypeManager->SetEntityArchetypeManagerExtension(pEntityArchetypeManagerExtension);
+}
+
+IEntityArchetypeManagerExtension* CEntitySystem::GetEntityArchetypeManagerExtension() const
+{
+	return m_pEntityArchetypeManager->GetEntityArchetypeManagerExtension();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3286,20 +3301,20 @@ void CEntitySystem::DoPrePhysicsUpdate()
 	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
 
 	float fFrameTime = gEnv->pTimer->GetFrameTime();
-	
+
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = fFrameTime;
 
-	m_mapPrePhysicsEntities.for_each( 
-		[this,&event]( EntityId eid) 
-			{
-				CEntity* pEntity = (CEntity*)GetEntity(eid);
-				if (pEntity)
-				{
-					pEntity->PrePhysicsUpdate(event);
-				}
-			}
-	);
+	m_mapPrePhysicsEntities.for_each(
+	  [this, &event](EntityId eid)
+	{
+		CEntity* pEntity = (CEntity*)GetEntity(eid);
+		if (pEntity)
+		{
+		  pEntity->PrePhysicsUpdate(event);
+		}
+	}
+	  );
 }
 
 IBSPTree3D* CEntitySystem::CreateBSPTree3D(const IBSPTree3D::FaceList& faceList)

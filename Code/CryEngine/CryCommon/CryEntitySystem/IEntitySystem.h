@@ -259,13 +259,33 @@ struct IEntityArchetype
 	virtual ~IEntityArchetype(){}
 
 	//! Retrieve entity class of the archetype.
-	virtual IEntityClass*                GetClass() const = 0;
+	virtual IEntityClass* GetClass() const = 0;
 
-	virtual const char*                  GetName() const = 0;
-	virtual IScriptTable*                GetProperties() = 0;
-	virtual XmlNodeRef                   GetObjectVars() = 0;
-	virtual void                         LoadFromXML(XmlNodeRef& propertiesNode, XmlNodeRef& objectVarsNode) = 0;
+	virtual const char*   GetName() const = 0;
+	virtual IScriptTable* GetProperties() = 0;
+	virtual XmlNodeRef    GetObjectVars() = 0;
+	virtual void          LoadFromXML(XmlNodeRef& propertiesNode, XmlNodeRef& objectVarsNode) = 0;
 	// </interfuscator:shuffle>
+};
+
+//! Interface entity archetype manager extension. Allows to react to archetype changes.
+struct IEntityArchetypeManagerExtension
+{
+	virtual ~IEntityArchetypeManagerExtension() = default;
+
+	//! Called when new archetype is added.
+	virtual void OnArchetypeAdded(IEntityArchetype& archetype) = 0;
+	//! Called when an archetype is about to be removed.
+	virtual void OnArchetypeRemoved(IEntityArchetype& archetype) = 0;
+	//! Called when all archetypes are about to be removed.
+	virtual void OnAllArchetypesRemoved() = 0;
+
+	//! Called during archetype serialization, allows to inject extra data.
+	virtual void Serialize(IEntityArchetype& archetype, Serialization::IArchive& archive) = 0;
+	//! Called to load archetype extension data from the XML.
+	virtual void LoadFromXML(IEntityArchetype& archetype, XmlNodeRef& archetypeNode) = 0;
+	//! Called to save archetype extension data to the XML.
+	virtual void SaveToXML(IEntityArchetype& archetype, XmlNodeRef& archetypeNode) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -485,11 +505,13 @@ struct IEntitySystem
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Entity archetypes.
-	virtual IEntityArchetype* LoadEntityArchetype(XmlNodeRef oArchetype) = 0;
-	virtual IEntityArchetype* LoadEntityArchetype(const char* sArchetype) = 0;
-	virtual void              UnloadEntityArchetype(const char* sArchetype) = 0;
-	virtual IEntityArchetype* CreateEntityArchetype(IEntityClass* pClass, const char* sArchetype) = 0;
-	virtual void              RefreshEntityArchetypesInRegistry() = 0;
+	virtual IEntityArchetype*                 LoadEntityArchetype(XmlNodeRef oArchetype) = 0;
+	virtual IEntityArchetype*                 LoadEntityArchetype(const char* sArchetype) = 0;
+	virtual void                              UnloadEntityArchetype(const char* sArchetype) = 0;
+	virtual IEntityArchetype*                 CreateEntityArchetype(IEntityClass* pClass, const char* sArchetype) = 0;
+	virtual void                              RefreshEntityArchetypesInRegistry() = 0;
+	virtual void                              SetEntityArchetypeManagerExtension(IEntityArchetypeManagerExtension* pEntityArchetypeManagerExtension) = 0;
+	virtual IEntityArchetypeManagerExtension* GetEntityArchetypeManagerExtension() const = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Serializes basic entity system members (timers etc. ) to/from a savegame;
@@ -599,16 +621,15 @@ extern "C"
 
 typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 
-
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
-#define ENABLE_ENTITYEVENT_DEBUGGING 1
+	#define ENABLE_ENTITYEVENT_DEBUGGING 1
 #else
-#define ENABLE_ENTITYEVENT_DEBUGGING 0
+	#define ENABLE_ENTITYEVENT_DEBUGGING 0
 #endif
 
 // entity event listener debug output macro
 #if ENABLE_ENTITYEVENT_DEBUGGING
-#define ENTITY_EVENT_LISTENER_DEBUG                                      \
+	#define ENTITY_EVENT_LISTENER_DEBUG                                      \
 	  {                                                                      \
 	    if (gEnv && gEnv->pConsole)                                          \
 	    {                                                                    \
@@ -618,7 +639,7 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 	    }                                                                    \
 	  }
 
-#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)                                          \
+	#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)                                          \
 	  {                                                                                 \
 	    if (gEnv && gEnv->pConsole)                                                     \
 	    {                                                                               \
@@ -628,7 +649,7 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 	    }                                                                               \
 	  }
 
-#define ENTITY_EVENT_ENTITY_LISTENER(pListener)                          \
+	#define ENTITY_EVENT_ENTITY_LISTENER(pListener)                          \
 	  {                                                                      \
 	    if (gEnv && gEnv->pConsole)                                          \
 	    {                                                                    \
@@ -638,7 +659,7 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 	    }                                                                    \
 	  }
 
-#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)                                                                                 \
+	#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)                                                                                 \
 	  {                                                                                                                                     \
 	    if (gEnv && gEnv->pConsole)                                                                                                         \
 	    {                                                                                                                                   \
@@ -648,7 +669,7 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 	    }                                                                                                                                   \
 	  }
 
-#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)                                                                               \
+	#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)                                                                               \
 	  {                                                                                                                                     \
 	    if (gEnv && gEnv->pConsole)                                                                                                         \
 	    {                                                                                                                                   \
@@ -662,11 +683,11 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 	  }
 
 #else
-#define ENTITY_EVENT_LISTENER_DEBUG
-#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)
-#define ENTITY_EVENT_ENTITY_LISTENER(pListener)
-#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)
-#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)
+	#define ENTITY_EVENT_LISTENER_DEBUG
+	#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)
+	#define ENTITY_EVENT_ENTITY_LISTENER(pListener)
+	#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)
+	#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)
 #endif
 
 template<class T>
@@ -680,7 +701,7 @@ static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const 
 
 	struct CObjectCreator
 	{
-		static IEntityComponent* Create(IEntity *pEntity, SEntitySpawnParams& params, void* pUserData)
+		static IEntityComponent* Create(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 		{
 			return pEntity->CreateComponentClass<T>();
 		}
