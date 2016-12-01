@@ -18,7 +18,7 @@ set (SourceGroup_PluginMain
 	"GamePlugin.cpp"
 	"GamePlugin.h"
 )
-source_group("Dll" FILES ${SourceGroup_PluginMain})
+source_group("Main" FILES ${SourceGroup_PluginMain})
 
 set (SourceGroup_Game
 	"Game/GameRules.cpp"
