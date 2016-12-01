@@ -49,7 +49,10 @@ void CScriptGraphArrayAddNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 void CScriptGraphArrayAddNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
 {
-	compiler.BindCallback(&Execute);
+	if (!m_defaultValue.IsEmpty())
+	{
+		compiler.BindCallback(&Execute);
+	}
 }
 
 void CScriptGraphArrayAddNode::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)
@@ -57,14 +60,8 @@ void CScriptGraphArrayAddNode::LoadDependencies(Serialization::IArchive& archive
 	m_defaultValue.SerializeTypeId(archive);
 }
 
-void CScriptGraphArrayAddNode::Load(Serialization::IArchive& archive, const ISerializationContext& context)
-{
-	//archive(m_referenceMode, "referenceMode");
-}
-
 void CScriptGraphArrayAddNode::Save(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	//archive(m_referenceMode, "referenceMode");
 	m_defaultValue.SerializeTypeId(archive);
 }
 

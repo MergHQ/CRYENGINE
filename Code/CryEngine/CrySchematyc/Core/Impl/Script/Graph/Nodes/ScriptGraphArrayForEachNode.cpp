@@ -60,8 +60,11 @@ void CScriptGraphArrayForEachNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 void CScriptGraphArrayForEachNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
 {
-	compiler.BindCallback(&Execute);
-	compiler.BindData(SRuntimeData());
+	if (!m_defaultValue.IsEmpty())
+	{
+		compiler.BindCallback(&Execute);
+		compiler.BindData(SRuntimeData());
+	}
 }
 
 void CScriptGraphArrayForEachNode::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)

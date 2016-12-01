@@ -48,7 +48,6 @@ public:
 	virtual void  CreateLayout(CScriptGraphNodeLayout& layout) override;
 	virtual void  Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const override;
 	virtual void  LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context) override;
-	virtual void  Load(Serialization::IArchive& archive, const ISerializationContext& context) override;
 	virtual void  Save(Serialization::IArchive& archive, const ISerializationContext& context) override;
 	virtual void  Edit(Serialization::IArchive& archive, const ISerializationContext& context) override;
 	virtual void  RemapDependencies(IGUIDRemapper& guidRemapper) override;
