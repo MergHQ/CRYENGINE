@@ -34,6 +34,9 @@ public:
 	virtual void       OffsetPosition(const Vec3& delta) final;
 	virtual void       Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) final;
 
+	virtual CLodValue           ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo) final;
+	virtual bool                GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const final;
+
 	//! Gives access to object components.
 	virtual IMaterial*          GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) final { return m_pMaterial; }
 	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final    { return m_pCharacterInstance; }

@@ -880,6 +880,7 @@ void CStatObj::ComputeGeometricMean(SMeshLodInfo& lodInfo)
 			}
 		}
 	}
+	m_fLodDistance = sqrt(lodInfo.fGeometricMean);
 }
 
 int CStatObj::ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache)

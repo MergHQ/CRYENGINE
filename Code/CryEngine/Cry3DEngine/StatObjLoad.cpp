@@ -1187,7 +1187,6 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 
 	SMeshLodInfo lodInfo;
 	ComputeGeometricMean(lodInfo);
-	m_fLodDistance = sqrt(lodInfo.fGeometricMean);
 
 	return true;
 }

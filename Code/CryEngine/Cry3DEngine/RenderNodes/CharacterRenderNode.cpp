@@ -154,6 +154,48 @@ float CCharacterRenderNode::GetMaxViewDist()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CLodValue CCharacterRenderNode::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
+{
+	if (m_pCharacterInstance)
+	{
+		return m_pCharacterInstance->ComputeLod(wantedLod, passInfo);
+	}
+
+	return CLodValue(wantedLod);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CCharacterRenderNode::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const
+{
+	const float fEntityLodRatio = GetLodRatioNormalized();
+	if (fEntityLodRatio > 0.0f)
+	{
+		float fLodDistance = FLT_MAX;
+		if (m_pCharacterInstance)
+		{
+			SMeshLodInfo lodInfo;
+			m_pCharacterInstance->ComputeGeometricMean(lodInfo);
+			fLodDistance = sqrt(lodInfo.fGeometricMean);
+		}
+		const float fDistMultiplier = 1.0f / (fEntityLodRatio * frameLodInfo.fTargetSize);
+
+		for (uint i = 0; i < SMeshLodInfo::s_nMaxLodCount; ++i)
+		{
+			distances[i] = fLodDistance * (i + 1) * fDistMultiplier;
+		}
+	}
+	else
+	{
+		for (uint i = 0; i < SMeshLodInfo::s_nMaxLodCount; ++i)
+		{
+			distances[i] = FLT_MAX;
+		}
+	}
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CCharacterRenderNode::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 {
 	if (!passInfo.IsCachedShadowPass())
