@@ -1936,10 +1936,6 @@ bool CNetContextState::AllocateObject(EntityId userID, SNetObjectID netID, Netwo
 			}
 		};
 		objx.pPulseState = new CPriorityPulseStateWrapper();
-#if ENABLE_ASPECT_HASHING
-		for (int i = 0; i < NumAspects; i++)
-			objx.hash[i] = 0;
-#endif
 
 		if (obj.userID)
 		{

@@ -121,7 +121,6 @@ CNetContext::CNetContext(IGameContext* pGameContext, uint32 flags) :
 	m_delegatableAspects(0),
 	m_regularlyUpdatedAspects(0),
 	m_serverManagedProfileAspects(0),
-	m_hashAspects(0),
 	m_timestampedAspects(0),
 	m_disabledCompressionAspects(0),
 	m_pGameContext(pGameContext),
@@ -370,8 +369,6 @@ void CNetContext::DeclareAspect(const char* name, NetworkAspectType aspectBit, u
 		m_delegatableAspects |= aspectBit;
 	if (aspectFlags & eAF_ServerManagedProfile)
 		m_serverManagedProfileAspects |= aspectBit;
-	if (aspectFlags & eAF_HashState)
-		m_hashAspects |= aspectBit;
 	if (aspectFlags & eAF_TimestampState)
 		m_timestampedAspects |= aspectBit;
 	if (aspectFlags & eAF_NoCompression)

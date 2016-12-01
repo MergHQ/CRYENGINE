@@ -37,9 +37,6 @@ private:
 	NetworkAspectType m_allowedAspects;
 	NetworkAspectType m_fetchAspects;
 	NetworkAspectType m_takenAspects;
-#if ENABLE_ASPECT_HASHING
-	NetworkAspectType m_hashAspects;
-#endif
 	TMemHdl           m_oldHdls[NumAspects];
 
 	bool TakeChange(NetworkAspectID i, NetworkAspectType aspectBit, CByteOutputStream& stm, CMementoStreamAllocator& streamAllocatorForNewState);

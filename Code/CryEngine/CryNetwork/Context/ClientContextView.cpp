@@ -65,9 +65,6 @@ CClientContextView::CClientContextView(CNetChannel* pNetChannel, CNetContext* pN
 		static_array<CServerContextView::msgPartialAspect, NumAspects>::value,
 		{ {0} }, // Set aspect profile messages.  Double braces for Clang
 		static_array<CServerContextView::msgUpdateAspect, NumAspects>::value,
-#if ENABLE_ASPECT_HASHING
-		static_array<CServerContextView::msgHashAspect, NumAspects>::value,
-#endif
 		// rmi messages
 		{
 			CServerContextView::RMI_ReliableOrdered,

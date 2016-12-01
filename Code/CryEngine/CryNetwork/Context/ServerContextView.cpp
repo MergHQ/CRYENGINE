@@ -494,9 +494,6 @@ CServerContextView::CServerContextView(CNetChannel* pChannel, CNetContext* pCont
 		static_array<CClientContextView::msgPartialAspect, NumAspects>::value,
 		static_array<CClientContextView::msgSetAspectProfile, NumAspects>::value,
 		static_array<CClientContextView::msgUpdateAspect, NumAspects>::value,
-#if ENABLE_ASPECT_HASHING
-		static_array<CClientContextView::msgHashAspect, NumAspects>::value,
-#endif
 		// rmi messages
 		{
 			CClientContextView::RMI_ReliableOrdered,
@@ -1047,13 +1044,6 @@ void CServerContextView::SendUnbindMessage(SNetObjectID netID, bool bFromBind, C
 	{
 		NET_ASSERT(m_dependencyStaging.empty());
 		m_dependencyStaging.push_back(m_objects[netID.id].msgHandle);
-#if ENABLE_ASPECT_HASHING
-		if (Context()->IsMultiplayer())
-		{
-			for (NetworkAspectID i = 0; i < NumAspects; i++)
-				m_dependencyStaging.push_back(m_objectsEx[netID.id].hashMsgHandles[i]);
-		}
-#endif
 		GetSendablesDependentOnObject(netID, m_dependencyStaging);
 
 		Parent()->AddSendable(new CUnbindObjectMessage(netID, this, lk), m_dependencyStaging.size(), m_dependencyStaging.empty() ? NULL : &m_dependencyStaging[0], NULL);

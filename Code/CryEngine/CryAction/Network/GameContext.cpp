@@ -200,7 +200,7 @@ void CGameContext::Init(INetContext* pNetContext)
 	m_pNetContext->DeclareAspect("GameServerDynamic", eEA_GameServerDynamic, 0);
 	m_pNetContext->DeclareAspect("GameClientStatic", eEA_GameClientStatic, eAF_Delegatable);
 	m_pNetContext->DeclareAspect("GameServerStatic", eEA_GameServerStatic, eAF_ServerManagedProfile);
-	m_pNetContext->DeclareAspect("Physics", eEA_Physics, eAF_Delegatable | eAF_ServerManagedProfile | eAF_HashState | eAF_TimestampState);
+	m_pNetContext->DeclareAspect("Physics", eEA_Physics, eAF_Delegatable | eAF_ServerManagedProfile | eAF_TimestampState);
 	m_pNetContext->DeclareAspect("Script", eEA_Script, 0);
 
 	m_pNetContext->DeclareAspect("GameClientA", eEA_GameClientA, eAF_Delegatable);
@@ -843,53 +843,6 @@ uint8 CGameContext::GetDefaultProfileForAspect(EntityId id, NetworkAspectType as
 		CGameObject* pGameObject = (CGameObject*)pProxy;
 		return pGameObject->GetDefaultProfile((EEntityAspects)aspectID);
 	}
-	return 0;
-}
-
-static uint32 GetLowResSpacialCoord(float x)
-{
-	return (uint32)(x / 0.75f);
-}
-
-static uint32 GetLowResAngle(float x)
-{
-	return (uint32)(180.0f * x / gf_PI / 10);
-}
-
-uint32 CGameContext::HashAspect(EntityId entityId, NetworkAspectType nAspect)
-{
-	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
-	if (!pEntity)
-	{
-		if (!gEnv->IsEditor())
-			GameWarning("Trying to hash non-existant entity %d", entityId);
-		return 0;
-	}
-
-	switch (nAspect)
-	{
-	case eEA_Physics:
-		{
-			pe_status_pos p;
-			IPhysicalEntity* pPhys = pEntity->GetPhysics();
-			if (!pPhys)
-				break;
-			pPhys->GetStatus(&p);
-			static const int MULTIPLIER = 16;
-			static const uint32 MASK = 0xf;
-			uint32 hash = 0;
-			hash = MULTIPLIER * hash + (GetLowResSpacialCoord(p.pos.x) & MASK);
-			hash = MULTIPLIER * hash + (GetLowResSpacialCoord(p.pos.y) & MASK);
-			hash = MULTIPLIER * hash + (GetLowResSpacialCoord(p.pos.z) & MASK);
-			Ang3 angles(p.q);
-			hash = MULTIPLIER * hash + (GetLowResAngle(angles.x) & MASK);
-			hash = MULTIPLIER * hash + (GetLowResAngle(angles.y) & MASK);
-			hash = MULTIPLIER * hash + (GetLowResAngle(angles.z) & MASK);
-			return hash;
-		}
-		break;
-	}
-
 	return 0;
 }
 

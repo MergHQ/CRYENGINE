@@ -192,10 +192,6 @@ enum EAspectFlags
 	//! Aspect has more than one profile (serialization format).
 	eAF_ServerManagedProfile = 0x20,
 
-	//! Client should periodically send a hash of what it thinks the current state of an aspect is.
-	//! This hash is compared to the server hash and forces a server update if there's a mismatch.
-	eAF_HashState = 0x40,
-
 	//! Aspect needs a timestamp to make sense (i.e. physics).
 	eAF_TimestampState = 0x80,
 };
@@ -1436,7 +1432,6 @@ struct IGameContext
 	virtual void       OnEndNetworkFrame() = 0;
 	virtual void       OnStartNetworkFrame() = 0;
 
-	virtual uint32     HashAspect(EntityId id, NetworkAspectType nAspect) = 0;
 	virtual void       PlaybackBreakage(int breakId, INetBreakagePlaybackPtr pBreakage) = 0;
 	virtual void*      ReceiveSimpleBreakage(TSerialize ser)                                           { return NULL; }
 	virtual void       PlaybackSimpleBreakage(void* userData, INetBreakageSimplePlaybackPtr pBreakage) {}

@@ -123,7 +123,6 @@ public:
 	virtual void                OnStartNetworkFrame();
 	virtual void                OnEndNetworkFrame();
 	virtual void                ReconfigureGame(INetChannel* pNetChannel);
-	virtual uint32              HashAspect(EntityId id, NetworkAspectType nAspect);
 	virtual CTimeValue          GetPhysicsTime();
 	virtual void                BeginUpdateObjects(CTimeValue physTime, INetChannel* pChannel);
 	virtual void                EndUpdateObjects();

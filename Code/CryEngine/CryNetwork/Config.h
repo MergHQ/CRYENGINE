@@ -75,8 +75,6 @@
 
 #define DETAIL_REGULARLY_SYNCED_ITEM_DEBUG 0
 
-#define ENABLE_ASPECT_HASHING              0
-
 #define CRC8_ASPECT_FORMAT                 1
 #define CRC8_ENCODING_GLOBAL               1
 #define CRC8_ENCODING_MESSAGE              1
