@@ -5,6 +5,7 @@ import argparse
 import os.path
 import subprocess
 import shutil
+import glob
 
 import configparser
 import tempfile
@@ -60,6 +61,10 @@ def error_upgrade_template_missing (restore_path):
 def error_mono_not_set (path):
 	sys.stderr.write ("'%s' is not a C# project.\n" % path)
 	sys.exit (640)
+
+def error_solution_not_found(path):
+	sys.stderr.write ("Solution not found in '%s'. Make sure to first generate a solution if project contains code.\n" % path)
+	sys.exit (641)
 		
 def print_subprocess (cmd):
 	print (' '.join (map (lambda a: '"%s"' % a, cmd)))
@@ -398,40 +403,55 @@ def cmd_edit(argv):
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd)
 
-#--- MONO ---
+#--- DEVENV ---
+#Launch development environment
 
-def cmd_monodev (args):	
+def cmd_devenv (args):	
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)	
 
 	project= cryproject.load (args.project_file)
 	if project is None:
 		error_project_json_decode (args.project_file)
-
+	
+	#---
 	csharp= project.get ("csharp", {})
-	mono_solution= csharp.get ('monodev', {}).get ('solution')
-	if mono_solution is None:
-		error_mono_not_set (args.project_file)
-	
-	dirname= os.path.dirname (args.project_file)
-	mono_solution= os.path.abspath (os.path.join (dirname, mono_solution))
-	if not os.path.isfile (mono_solution):
-		error_mono_not_found (mono_solution)
-	
-	engine_path= get_engine_path()
-	tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'MonoDevelop.exe')
-	if not os.path.isfile (tool_path):
-		error_engine_tool_not_found (tool_path)
+	mono_solution= csharp.get ('monodev', {}).get ('solution')	
+	if mono_solution:
+		# launch monodev
+		dirname= os.path.dirname (args.project_file)
+		mono_solution= os.path.abspath (os.path.join (dirname, mono_solution))
+		if not os.path.isfile (mono_solution):
+			error_mono_not_found (mono_solution)
+		
+		engine_path= get_engine_path()
+		tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'MonoDevelop.exe')
+		if not os.path.isfile (tool_path):
+			error_engine_tool_not_found (tool_path)
 
-	#--- launch monodev
+		subcmd= (tool_path, mono_solution)
+		print_subprocess (subcmd)
+		subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
+	else:
+		# launch msdev
+		cmakelists_dir= cryproject.cmakelists_dir(project)
+		if cmakelists_dir is not None:
+			project_path= os.path.abspath (os.path.dirname (args.project_file))
+			solution_path= os.path.join (project_path, get_solution_dir (args))
+			solutions= glob.glob (os.path.join (solution_path, '*.sln'))
+			if not solutions:
+				error_solution_not_found(solution_path)
+						
+			solutions.sort()
+			subcmd= ('cmd', '/C', 'start', '', solutions[0])
+			print_subprocess (subcmd)
+			
+			engine_path= get_engine_path()
+			subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
+		else:
+			error_mono_not_set (args.project_file)
 
-	subcmd= (
-		tool_path,
-		mono_solution
-	)
 
-	print_subprocess (subcmd)
-	subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
 
 #--- UPGRADE ---					 
 					 
@@ -692,7 +712,7 @@ if __name__ == '__main__':
 	
 	parser_mono= subparsers.add_parser ('monodev')
 	parser_mono.add_argument ('project_file')
-	parser_mono.set_defaults(func=cmd_monodev)
+	parser_mono.set_defaults(func=cmd_devenv)
 
 	parser_edit= subparsers.add_parser ('metagen')
 	parser_edit.add_argument ('project_file')
