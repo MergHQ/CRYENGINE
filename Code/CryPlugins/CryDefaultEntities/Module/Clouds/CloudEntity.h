@@ -61,7 +61,7 @@ public:
 protected:
 	int m_cloudSlot;
 
-	string m_cloudFile = "Libs/Clouds/Default.xml";
+	string m_cloudFile;
 	float m_scale = 1.f;
 
 	SCloudMovementProperties m_properties;
