@@ -35,3 +35,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "/MD /Ox /GS- /DNDEBUG /D_RELEASE /DPURE_CLIENT" CAC
 
 set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "/debug" CACHE STRING "Profile link flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE    "/debug" CACHE STRING "Profile link flags" FORCE)
+
+function (wrap_whole_archive target source)
+	# no-op for MSVC (for now)
+	set(${target} "${${source}}" PARENT_SCOPE)
+endfunction()
+
