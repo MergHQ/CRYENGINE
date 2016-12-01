@@ -109,7 +109,7 @@ public:
 	CBootProfilerRecord* m_pLastChild;
 	CBootProfilerRecord* m_pNextSibling;
 
-	CryFixedStringT<128> m_args;
+	CryFixedStringT<256> m_args;
 
 	ILINE CBootProfilerRecord(const char* label, LARGE_INTEGER timestamp, unsigned int threadIndex, const char* args) :
 		m_label(label), m_startTimeStamp(timestamp), m_threadIndex(threadIndex), m_pParent(nullptr), m_pFirstChild(nullptr), m_pLastChild(nullptr), m_pNextSibling(nullptr)

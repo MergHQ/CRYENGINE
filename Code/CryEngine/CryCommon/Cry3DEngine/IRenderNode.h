@@ -628,10 +628,10 @@ struct ILightSource : public IRenderNode
 
 struct SCloudMovementProperties
 {
-	bool  m_autoMove;
-	Vec3  m_speed;
-	Vec3  m_spaceLoopBox;
-	float m_fadeDistance;
+	Vec3  m_speed        = Vec3(ZERO);
+	Vec3  m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
+	float m_fadeDistance = 0.0f;
+	bool  m_autoMove     = false;
 };
 
 //! Interface to the Cloud Render Node object.

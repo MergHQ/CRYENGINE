@@ -100,7 +100,7 @@ CPlayerMovementAction::CPlayerMovementAction(int priority)
 	m_spinning(false),
 	m_smoothMovement(false)
 {
-	std::memset (m_AAID, 0, sizeof (m_AAID));
+	memset (m_AAID, 0, sizeof (m_AAID));
 }
 
 void CPlayerMovementAction::OnInitialise()

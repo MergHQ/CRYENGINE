@@ -97,14 +97,10 @@ v2fWaterBottom OceanBottomVS(a2vWater IN)
   // Position in screen space.
   float4 vPos =IN.Position;
   GetGridVertexPos( vPos );
-	vPos.z =0;
+	vPos.z =0; // ocean bottom at zero height in world space.
 	vPos.w =1;
-	
-#if %_RT_REVERSE_DEPTH
-	vPos.z = vPos.w - vPos.z;
-#endif
-  
-  OUT.Position = mul(CV_ViewProjMatr, vPos);                                                           // 4 alu
+
+  OUT.Position = mul(CV_ViewProjMatr, vPos);
   OUT.Position.w -= 0.01;
 
   return OUT;
@@ -126,14 +122,10 @@ v2fWaterBottomZpass OceanBottomZpassVS(a2vWater IN)
   // Position in screen space.
   float4 vPos =IN.Position;
   GetGridVertexPos( vPos );
-	vPos.z =0;
+	vPos.z =0; // ocean bottom at zero height in world space.
 	vPos.w =1;
-	
-#if %_RT_REVERSE_DEPTH
-	vPos.z = vPos.w - vPos.z;
-#endif
 
-  OUT.Position = mul(CV_ViewProjMatr, vPos);                                                           // 4 alu
+  OUT.Position = mul(CV_ViewProjMatr, vPos);
 
   OUT.Position.w -= 0.01;  
 

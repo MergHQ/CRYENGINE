@@ -53,7 +53,7 @@ CPatchPakManager::SPatchPakData::SPatchPakData()
 	, m_MD5FileName(false)
 	, m_showingSaveMessage(false)
 {
-	std::memset(m_pMD5, 0, sizeof(m_pMD5));
+	memset(m_pMD5, 0, sizeof(m_pMD5));
 }
 
 CPatchPakManager::CPatchPakManager()

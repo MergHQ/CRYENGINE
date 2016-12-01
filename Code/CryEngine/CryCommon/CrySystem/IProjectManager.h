@@ -7,6 +7,7 @@ struct IProjectManager
 
 	virtual const char* GetCurrentProjectName() = 0;
 
+	//! \return Path without trailing separator.
 	virtual const char* GetCurrentProjectDirectoryAbsolute() = 0;
 
 	virtual const char* GetCurrentAssetDirectoryRelative() = 0;

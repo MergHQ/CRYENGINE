@@ -820,7 +820,7 @@ void CAnimatedCharacter::RunTests()
 	return;
 #else
 
-	static bool m_bDebugRunTests = true;
+	static bool m_bDebugRunTests = false;
 
 	if (!m_bDebugRunTests)
 		return;

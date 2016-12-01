@@ -1,9 +1,11 @@
-get_filename_component(_CryCommon_install_prefix "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
+find_package(yasli REQUIRED)
 
-# Load dependencies
-include(${CMAKE_CURRENT_LIST_DIR}/BoostConfig.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/yasliConfig.cmake)
+add_library(CryCommon INTERFACE IMPORTED)
 
+set (CRYENGINE_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../..")
 
-set(CryCommon_INCLUDE_DIRS ${_CryCommon_install_prefix}/include/CryCommon ${yasli_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+set_property(TARGET CryCommon PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryCommon"
+)
 
+set_property(TARGET CryCommon PROPERTY INTERFACE_LINK_LIBRARIES yasli)

@@ -54,7 +54,7 @@ CSmokeManager::CSmokeManager()
 	, m_clientInSmoke(false)
 	, m_loadedParticleEffects(false)
 {
-	std::memset(PRFETCH_PADDING, 0, sizeof(PRFETCH_PADDING));
+	memset(PRFETCH_PADDING, 0, sizeof(PRFETCH_PADDING));
 	Init();
 }
 
