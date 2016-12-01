@@ -670,13 +670,14 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 #endif
 
 template<class T>
-static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const char* editorCategory = "", const char* editorIcon = "")
+static IEntityClass* RegisterEntityWithDefaultComponent(const char* name, const char* editorCategory = "", const char* editorIcon = "", bool bIconOnTop = false)
 {
 	IEntityClassRegistry::SEntityClassDesc clsDesc;
 	clsDesc.sName = name;
 
 	clsDesc.editorClassInfo.sCategory = editorCategory;
 	clsDesc.editorClassInfo.sIcon = editorIcon;
+	clsDesc.editorClassInfo.bIconOnTop = bIconOnTop;
 
 	struct CObjectCreator
 	{
