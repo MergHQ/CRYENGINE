@@ -39,7 +39,7 @@ HS_CONTROL_POINT_OUTPUT_DEBUGPASS Common_DebugPassHS(InputPatch<vert2fragDebug, 
 
 ///////////////// domain shader //////////////////
 
-void FillEvalInput(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_DEBUGPASS, 3> triPatch, in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
+void FillEvalInput_DebugPass(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_DEBUGPASS, 3> triPatch, in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
 {
 	evalInput.vBaryCoords = vBaryCoords;
 	FillEvalInputControlPoint(triPatch[0].controlPoint, triPatch[1].controlPoint, triPatch[2].controlPoint, hsConstData, evalInput);
@@ -60,7 +60,7 @@ vert2fragDebug Common_DebugPassDS( HS_CONSTANT_DATA_OUTPUT hsConstData, float3 v
 	vert2fragDebug output = (vert2fragDebug)0;
 
 	CommonEvaluationInputDS evalInput = (CommonEvaluationInputDS)0;
-	FillEvalInput(TrianglePatch, hsConstData, vBaryCoords, evalInput);
+	FillEvalInput_DebugPass(TrianglePatch, hsConstData, vBaryCoords, evalInput);
 
 	CommonEvaluationOutputDS evalOutput;
 	Evaluate(evalInput, evalOutput);
