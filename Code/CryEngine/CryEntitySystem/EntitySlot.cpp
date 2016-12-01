@@ -732,14 +732,17 @@ void CEntitySlot::SetRenderNode(IRenderNode* pRenderNode)
 		ReleaseObjects();
 	}
 	m_pRenderNode = pRenderNode;
-	bool bSelected, bHighlighted;
-	m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
-	m_pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
-	m_pRenderNode->SetEditorObjectId(m_pEntity->GetEditorObjectID());
 
 	if (m_pRenderNode)
 	{
 		m_renderNodeType = m_pRenderNode->GetRenderNodeType();
+
+		m_pRenderNode->SetOwnerEntity(m_pEntity);
+
+		bool bSelected, bHighlighted;
+		m_pEntity->GetEditorObjectInfo(bSelected, bHighlighted);
+		m_pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
+		m_pRenderNode->SetEditorObjectId(m_pEntity->GetEditorObjectID());
 	}
 	else
 	{

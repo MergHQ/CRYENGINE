@@ -4704,13 +4704,8 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 		FUNCTION_PROFILER_3DENGINE;
 
-		if (*ppInputTempData && (*ppInputTempData)->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID))
+		if (*ppInputTempData && (*ppInputTempData)->IsValid())
 			return; // check if another thread already initialized temp data
-
-		if (pRNode)
-		{
-			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
-		}
 
 		if (*ppInputTempData)
 		{
@@ -4742,7 +4737,7 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 
 	SRenderNodeTempData* pCurrentTempData = *ppTempData;
 
-	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID));
+	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid());
 
 	// detect render resources modification (for example because of mesh streaming or material editing)
 	if (bValid && pCurrentTempData->userData.nStatObjLastModificationId)
@@ -4750,16 +4745,22 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 		if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pCurrentTempData->userData.nStatObjLastModificationId)
 		{
 			pRNode->InvalidatePermanentRenderObject();
-			bValid = false;
 		}
 	}
 
 	if (bValid)
 	{
+		if (pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID)
+		{
+			pCurrentTempData->FreeRenderObjects();
+			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
+		}
 		return m_visibleNodesManager.SetLastSeenFrame(pCurrentTempData, passInfo);
 	}
 	else
 	{
+		CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
+
 		CreateRenderNodeTempData(ppTempData, pRNode, passInfo);
 	}
 

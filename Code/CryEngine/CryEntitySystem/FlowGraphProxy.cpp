@@ -98,8 +98,10 @@ void CEntityComponentFlowGraph::ProcessEvent(SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentFlowGraph::GetEventMask() const
 {
-	// All event except ENTITY_EVENT_PREPHYSICSUPDATE
-	return ~BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	// All events except expensive ones, Update event is needed by FlowGraph
+	return
+		~(ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK) |
+		BIT64(ENTITY_EVENT_UPDATE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -112,12 +114,6 @@ void CEntityComponentFlowGraph::AddEventListener(IEntityEventListener* pListener
 void CEntityComponentFlowGraph::RemoveEventListener(IEntityEventListener* pListener)
 {
 	stl::find_and_erase(m_listeners, pListener);
-}
-
-void CEntityComponentFlowGraph::Update(SEntityUpdateContext& ctx)
-{
-	//	if (m_pFlowGraph)
-	//		m_pFlowGraph->Update();
 }
 
 void CEntityComponentFlowGraph::SerializeXML(XmlNodeRef& entityNode, bool bLoading)

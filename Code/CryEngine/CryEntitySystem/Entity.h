@@ -360,7 +360,7 @@ public:
 	void ActivateForNumUpdates(int numUpdates);
 
 	void ActivateEntityIfNecessary();
-	bool ShouldActivate() { return (m_bActive | m_bRequiresComponentUpdate || m_nUpdateCounter || (m_physics.m_nFlags & CEntityPhysics::FLAG_ACTIVE) != 0) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
+	bool ShouldActivate();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:

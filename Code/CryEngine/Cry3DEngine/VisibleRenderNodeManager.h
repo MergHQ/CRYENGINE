@@ -36,6 +36,7 @@ public:
 	~SRenderNodeTempData() { Free(); };
 
 	void Free();
+	void FreeRenderObjects();
 
 	void OffsetPosition(const Vec3& delta)
 	{

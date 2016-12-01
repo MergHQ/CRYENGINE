@@ -159,6 +159,12 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
+	case ENTITY_EVENT_UPDATE:
+		{
+			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+			Update(*pCtx);
+		}
+	break;
 	case ENTITY_EVENT_ANIM_EVENT:
 		{
 			const AnimEventInstance* const pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
@@ -530,8 +536,10 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentLuaScript::GetEventMask() const
 {
-	// All events except ENTITY_EVENT_PREPHYSICSUPDATE
-	return ~BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	// All events except runtime expensive ones
+	return 
+	  ~(ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK) |
+	  BIT64(ENTITY_EVENT_UPDATE);
 }
 
 //////////////////////////////////////////////////////////////////////////

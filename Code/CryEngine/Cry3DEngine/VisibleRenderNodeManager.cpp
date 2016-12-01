@@ -6,15 +6,7 @@
 //////////////////////////////////////////////////////////////////////////
 void SRenderNodeTempData::Free()
 {
-	// Release permanent CRenderObject(s)
-	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
-	{
-		if (userData.arrPermanentRenderObjects[lod])
-		{
-			gEnv->pRenderer->EF_FreeObject(userData.arrPermanentRenderObjects[lod]);
-			userData.arrPermanentRenderObjects[lod] = 0;
-		}
-	}
+	FreeRenderObjects();
 
 	if (userData.m_pFoliage)
 	{
@@ -24,6 +16,20 @@ void SRenderNodeTempData::Free()
 
 	userData.pOwnerNode = nullptr;
 	userData.bToDelete = true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SRenderNodeTempData::FreeRenderObjects()
+{
+	// Release permanent CRenderObject(s)
+	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
+	{
+		if (userData.arrPermanentRenderObjects[lod])
+		{
+			gEnv->pRenderer->EF_FreeObject(userData.arrPermanentRenderObjects[lod]);
+			userData.arrPermanentRenderObjects[lod] = 0;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

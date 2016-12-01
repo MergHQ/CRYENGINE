@@ -180,7 +180,7 @@ void CBrush::SetMatrix(const Matrix34& mat)
 		              + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
 		m_Matrix = mat;
 	}
-	m_bPermanentRenderObjectMatrixValid = false;
+	InvalidatePermanentRenderObjectMatrix();
 
 	pe_params_foreign_data foreignData;
 	foreignData.iForeignFlags = 0;
@@ -711,7 +711,7 @@ void CBrush::OffsetPosition(const Vec3& delta)
 {
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
-	m_bPermanentRenderObjectMatrixValid = false;
+	InvalidatePermanentRenderObjectMatrix();
 	m_WSBBox.Move(delta);
 
 	if (m_pPhysEnt)
@@ -806,7 +806,6 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 			return;
 
 		// Nearest objects recalculate instance matrix every frame
-		m_bPermanentRenderObjectMatrixValid = false;
 		CalcNearestTransform(transformMatrix,passInfo);
 	}
 
@@ -1029,6 +1028,20 @@ void CBrush::CalcNearestTransform(Matrix34 &transformMatrix,const SRenderingPass
 		// We don't have camera space relative position, so calculate it out from world space
 		// (This will not have the precision advantages of camera space rendering)
 		transformMatrix.AddTranslation(-passInfo.GetCamera().GetPosition());
+	}
+	InvalidatePermanentRenderObjectMatrix();
+}
+
+void CBrush::InvalidatePermanentRenderObjectMatrix()
+{
+	if (m_pStatObj && m_pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
+	{
+		// Compound unmerged stat objects create duplicate sub render objects and do not support fast matrix only instance update for PermanentRenderObject
+		InvalidatePermanentRenderObject();
+	}
+	else
+	{
+		m_bPermanentRenderObjectMatrixValid = false;
 	}
 }
 

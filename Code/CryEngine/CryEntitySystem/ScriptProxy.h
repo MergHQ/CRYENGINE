@@ -44,7 +44,7 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void ProcessEvent(SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final;; // Need all events except pre-physics update
+	virtual uint64 GetEventMask() const final; // Need all events except pre-physics update
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -52,7 +52,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const  final { return ENTITY_PROXY_SCRIPT; }
 	virtual void         Release()  final { delete this; };
-	virtual void         Update(SEntityUpdateContext& ctx) final;
 	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) final;
 	virtual void         GameSerialize(TSerialize ser) final;
 	virtual bool         NeedGameSerialize() final;
@@ -108,6 +107,8 @@ private:
 
 	void           SerializeTable(TSerialize ser, const char* name);
 	bool           HaveTable(const char* name);
+
+	void           Update(SEntityUpdateContext& ctx);
 
 private:
 	CEntityScript* m_pScript;

@@ -1029,11 +1029,34 @@ void CEntity::ActivateEntityIfNecessary()
 {
 	bool bEnable = ShouldActivate();
 
-	g_pIEntitySystem->ActivateEntity(this, bEnable);
+	if (bEnable != m_bInActiveList)
+	{
+		g_pIEntitySystem->ActivateEntity(this, bEnable);
 
-	if (IAIObject* pAIObject = GetAIObject())
-		if (IAIActorProxy* pProxy = pAIObject->GetProxy())
-			pProxy->EnableUpdate(bEnable);
+		if (IAIObject* pAIObject = GetAIObject())
+			if (IAIActorProxy* pProxy = pAIObject->GetProxy())
+				pProxy->EnableUpdate(bEnable);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEntity::ShouldActivate()
+{
+	bool bActivateByPhysics = false;
+	
+	EEntityUpdatePolicy policy = (EEntityUpdatePolicy)m_eUpdatePolicy;
+	// If its update depends on physics, physics state defines if this entity is to be updated.
+	if (policy == ENTITY_UPDATE_PHYSICS || policy == ENTITY_UPDATE_PHYSICS_VISIBLE)
+	{
+		if ((m_physics.m_nFlags & CEntityPhysics::FLAG_ACTIVE) != 0)
+		{
+			bActivateByPhysics = true;
+		}
+	}
+
+	// TODO: in future handle m_bRequiresComponentUpdate
+	return (m_bActive || m_nUpdateCounter || bActivateByPhysics) && 
+		(!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1329,6 +1352,9 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 
 	// Sorted insertion, all elements of the m_components are sorted by the proxyType
 	m_components.Add(componentRecord);
+	
+	// Call initialization of the component
+	pComponent->Initialize();
 
 	if (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE))
 	{
@@ -1342,9 +1368,6 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 
 		ActivateEntityIfNecessary();
 	}
-
-	// Call initialization of the component
-	pComponent->Initialize();
 
 	return pComponent.get();
 }
