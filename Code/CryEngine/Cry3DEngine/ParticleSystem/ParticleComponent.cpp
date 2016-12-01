@@ -343,12 +343,13 @@ void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleCompo
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		for (auto& it : GetUpdateList(EUL_Render))
-			it->Render(pEmitter, pRuntime, this, renderContext);
+		const bool isGpuParticles = (pRuntime->GetGpuRuntime() != nullptr);
 
-		if (!GetUpdateList(EUL_RenderDeferred).empty())
+		for (auto& it : GetUpdateList(EUL_Render))
+			it->Render(pEmitter, pRuntime, this, renderContext);		
+		
+		if (!GetUpdateList(EUL_RenderDeferred).empty() && !isGpuParticles)
 		{
-			CRY_PFX2_ASSERT(pRuntime->GetGpuRuntime() == nullptr);
 			CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
 			CParticleComponentRuntime* pCpuRuntime = static_cast<CParticleComponentRuntime*>(pRuntime);
 			jobManager.AddDeferredRender(pCpuRuntime, renderContext);
