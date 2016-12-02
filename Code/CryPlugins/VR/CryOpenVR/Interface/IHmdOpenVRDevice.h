@@ -6,7 +6,16 @@
 
 namespace CryVR
 {
-namespace OpenVR {
+namespace OpenVR
+{
+
+struct TextureDesc
+{
+	uint32 width;
+	uint32 height;
+	uint32 format;
+};
+
 enum ERenderAPI
 {
 	eRenderAPI_DirectX = 0,

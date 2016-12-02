@@ -173,9 +173,7 @@ bool CCharacterRenderNode::GetLodDistances(const SFrameLodInfo& frameLodInfo, fl
 		float fLodDistance = FLT_MAX;
 		if (m_pCharacterInstance)
 		{
-			SMeshLodInfo lodInfo;
-			m_pCharacterInstance->ComputeGeometricMean(lodInfo);
-			fLodDistance = sqrt(lodInfo.fGeometricMean);
+			fLodDistance = sqrt(m_pCharacterInstance->ComputeGeometricMean().fGeometricMean);
 		}
 		const float fDistMultiplier = 1.0f / (fEntityLodRatio * frameLodInfo.fTargetSize);
 

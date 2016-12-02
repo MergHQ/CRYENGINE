@@ -1074,14 +1074,19 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 	return pSkinningData;
 }
 
-void CAttachmentVCLOTH::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
+SMeshLodInfo CAttachmentVCLOTH::ComputeGeometricMean() const
 {
+	SMeshLodInfo lodInfo;
+	lodInfo.Clear();
+
 	CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(0);
 	if (pModelMesh)
 	{
 		lodInfo.fGeometricMean = pModelMesh->m_geometricMeanFaceArea;
 		lodInfo.nFaceCount = pModelMesh->m_faceCount;
 	}
+
+	return lodInfo;
 }
 
 #ifdef EDITOR_PCDEBUGCODE

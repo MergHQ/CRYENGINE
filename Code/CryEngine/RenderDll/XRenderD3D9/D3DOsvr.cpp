@@ -18,13 +18,13 @@ namespace CryVR
 namespace Osvr
 {
 CD3DOsvrRenderer::CD3DOsvrRenderer(IOsvrDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)
-	: m_pDevice(pDevice),
-	m_pRenderer(pRenderer),
-	m_pStereoRenderer(pStereoRenderer),
-	m_eyeWidth(0),
-	m_eyeHeight(0),
-	m_swapSetCount(0),
-	m_currentFrame(0)
+	: m_pOsvrDevice(pDevice)
+	, m_pRenderer(pRenderer)
+	, m_pStereoRenderer(pStereoRenderer)
+	, m_eyeWidth(0)
+	, m_eyeHeight(0)
+	, m_swapSetCount(0)
+	, m_currentFrame(0)
 {
 
 }
@@ -38,14 +38,14 @@ bool CD3DOsvrRenderer::Initialize()
 	ID3D11Device* d3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
 	ID3D11DeviceContext* d3d11DeviceContext = m_pRenderer->GetDeviceContext_Unsynchronized().GetRealDeviceContext();
 
-	if (!m_pDevice->InitializeRenderer(d3d11Device, d3d11DeviceContext))
-	{
-		m_pDevice->ShutdownRenderer();
-		return false;
-	}
-
 	m_eyeWidth = m_pRenderer->GetWidth();
 	m_eyeHeight = m_pRenderer->GetHeight();
+
+	if (!m_pOsvrDevice->InitializeRenderer(d3d11Device, d3d11DeviceContext))
+	{
+		m_pOsvrDevice->ShutdownRenderer();
+		return false;
+	}
 
 	CreateTextureSwapSets(m_eyeWidth, m_eyeHeight, 2);
 
@@ -70,7 +70,7 @@ void CD3DOsvrRenderer::CreateTextureSwapSets(uint32 width, uint32 height, uint32
 			sprintf_s(textureName, textureNameTemplate, eye, i);
 
 			CTexture* tex = CTexture::CreateRenderTarget(textureName, width, height, Clr_Transparent, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
-			m_eyeTextures[eye].textures.Add(tex);
+			m_scene3DRenderData[eye].textures.Add(tex);
 		}
 
 	}
@@ -92,7 +92,7 @@ void CD3DOsvrRenderer::CreateTextureSwapSets(uint32 width, uint32 height, uint32
 		{
 			uint32 index = i * EyeCount + eye;
 			Texture& tex = textures[index];
-			CTexture* ctex = m_eyeTextures[eye].textures[i];
+			CTexture* ctex = m_scene3DRenderData[eye].textures[i];
 			tex.pRtView = ctex->GetSurface(0, 0);
 			tex.pTexture = ctex->GetDevTexture()->Get2DTexture();
 
@@ -103,29 +103,29 @@ void CD3DOsvrRenderer::CreateTextureSwapSets(uint32 width, uint32 height, uint32
 		set.pTextures = &textures[i * EyeCount];
 	}
 
-	m_pDevice->RegisterTextureSwapSet(&swapSets);
+	m_pOsvrDevice->RegisterTextureSwapSet(&swapSets);
 
 }
 void CD3DOsvrRenderer::ReleaseTextureSwapSets()
 {
-	m_pStereoRenderer->SetEyeTextures(NULL, NULL);
-	for (uint32 i = 0; i < EyeCount; ++i)
+	for (uint32 eye = 0; eye < EyeCount; ++eye)
 	{
-		for (uint32 j = 0; j < m_eyeTextures[i].textures.Num(); ++j)
+		for (uint32 j = 0; j < m_scene3DRenderData[eye].textures.Num(); ++j)
 		{
-			SAFE_RELEASE(m_eyeTextures[i].textures[j]);
-
+			SAFE_RELEASE(m_scene3DRenderData[eye].textures[j]);
 		}
-		m_eyeTextures[i].textures.SetUse(0);
+		m_scene3DRenderData[eye].textures.SetUse(0);
 	}
+
 	m_swapSetCount = 0;
 }
 
 void CD3DOsvrRenderer::Shutdown()
 {
-	ReleaseTextureSwapSets();
-	m_pDevice->ShutdownRenderer();
+	m_pStereoRenderer->SetEyeTextures(nullptr, nullptr);
 
+	ReleaseTextureSwapSets();
+	m_pOsvrDevice->ShutdownRenderer();
 }
 
 void CD3DOsvrRenderer::OnResolutionChanged()
@@ -145,7 +145,7 @@ void CD3DOsvrRenderer::ReleaseBuffers()
 
 void CD3DOsvrRenderer::PrepareFrame()
 {
-	m_pStereoRenderer->SetEyeTextures(m_eyeTextures[0].textures[m_currentFrame], m_eyeTextures[1].textures[m_currentFrame]);
+	m_pStereoRenderer->SetEyeTextures(m_scene3DRenderData[0].textures[m_currentFrame], m_scene3DRenderData[1].textures[m_currentFrame]);
 }
 
 void CD3DOsvrRenderer::RestoreDeviceStateAfterFrameSubmit()
@@ -167,10 +167,11 @@ void CD3DOsvrRenderer::RestoreDeviceStateAfterFrameSubmit()
 void CD3DOsvrRenderer::SubmitFrame()
 {
 	#ifdef ENABLE_BENCHMARK_SENSOR
-	gcpRendD3D->m_benchmarkRendererSensor->PreStereoFrameSubmit(m_eyeTextures[0].textures[m_currentFrame], m_eyeTextures[1].textures[m_currentFrame]);
+	gcpRendD3D->m_benchmarkRendererSensor->PreStereoFrameSubmit(m_scene3DRenderData[0].textures[m_currentFrame], m_scene3DRenderData[1].textures[m_currentFrame]);
 	#endif
 
-	if (!m_pDevice->PresentTextureSet(m_currentFrame))
+	// Scene3D layer
+	if (!m_pOsvrDevice->PresentTextureSet(m_currentFrame))
 	{
 		CryLogAlways("[CD3DEOsvrRenderer] failed to present textureset %d!", m_currentFrame);
 	}
@@ -181,6 +182,7 @@ void CD3DOsvrRenderer::SubmitFrame()
 	#ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->AfterStereoFrameSubmit();
 	#endif
+
 	m_currentFrame = (m_currentFrame + 1) % m_swapSetCount;
 }
 
@@ -194,8 +196,8 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 			//with async timewarp, we are not allowed to touch the textures that have been submitted last, thus take the one before that
 			int frame = (m_currentFrame - 1) < 0 ? m_swapSetCount - 1 : m_currentFrame - 1;
 
-			CTexture* left = m_eyeTextures[0].textures[frame];
-			CTexture* right = m_eyeTextures[1].textures[frame];
+			CTexture* left = m_scene3DRenderData[0].textures[frame];
+			CTexture* right = m_scene3DRenderData[1].textures[frame];
 
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType();
 			switch (socialScreen)

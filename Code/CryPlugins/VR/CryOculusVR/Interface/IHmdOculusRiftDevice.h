@@ -53,7 +53,7 @@ struct STexture
 // This info is passed across DLL boundaries from the renderer to the Hmd device
 struct SHmdSwapChainInfo
 {
-	ovrTextureSwapChainData* pDevideTextureSwapChain; // data structure wrapping a texture set for a single image
+	ovrTextureSwapChainData* pDeviceTextureSwapChain; // data structure wrapping a texture set for a single image
 	Vec2i                    viewportPosition;
 	Vec2i                    viewportSize;
 	uint8                    eye;         // only for Scene3D layer (0 left , 1 right)

@@ -13,6 +13,7 @@
 
 #include "StdAfx.h"
 
+#include "StatObj.h"
 #include "terrain.h"
 #include "StatObj.h"
 #include "ObjMan.h"

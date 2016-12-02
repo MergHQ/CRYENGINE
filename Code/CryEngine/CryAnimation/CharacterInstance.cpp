@@ -333,32 +333,32 @@ void CCharInstance::ApplyJointVelocitiesToPhysics(IPhysicalEntity* pent, const Q
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
 
-void CCharInstance::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
+SMeshLodInfo CCharInstance::ComputeGeometricMean() const
 {
+	SMeshLodInfo lodInfo;
 	lodInfo.Clear();
 
 	const int attachmentCount = m_AttachmentManager.GetAttachmentCount();
 	for (int i = 0; i < attachmentCount; ++i)
 	{
-		SMeshLodInfo attachmentLodInfo;
-
 		const IAttachment* const pIAttachment = m_AttachmentManager.GetInterfaceByIndex(i);
 
 		if (pIAttachment != NULL && pIAttachment->GetIAttachmentObject() != NULL)
 		{
 			const IAttachmentObject* const pIAttachmentObject = pIAttachment->GetIAttachmentObject();
+			SMeshLodInfo attachmentLodInfo;
 
 			if (pIAttachmentObject->GetIAttachmentSkin())
 			{
-				pIAttachmentObject->GetIAttachmentSkin()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetIAttachmentSkin()->ComputeGeometricMean();
 			}
 			else if (pIAttachmentObject->GetIStatObj())
 			{
-				pIAttachmentObject->GetIStatObj()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetIStatObj()->ComputeGeometricMean();
 			}
 			else if (pIAttachmentObject->GetICharacterInstance())
 			{
-				pIAttachmentObject->GetICharacterInstance()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetICharacterInstance()->ComputeGeometricMean();
 			}
 
 			lodInfo.Merge(attachmentLodInfo);
@@ -375,16 +375,18 @@ void CCharInstance::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
 			// check StatObj attachments
 			for (uint32 i = 0; i < numJoints; i++)
 			{
-				SMeshLodInfo attachmentLodInfo;
 				IStatObj* pStatObj = pSkeletonPose->GetStatObjOnJoint(i);
 				if (pStatObj)
 				{
-					pStatObj->ComputeGeometricMean(attachmentLodInfo);
+					SMeshLodInfo attachmentLodInfo = pStatObj->ComputeGeometricMean();
+
 					lodInfo.Merge(attachmentLodInfo);
 				}
 			}
 		}
 	}
+
+	return lodInfo;
 }
 
 phys_geometry* CCharInstance::GetPhysGeom(int nType) const

@@ -734,7 +734,7 @@ public:
 	virtual ISkin*            GetISkin() override            { return m_pRenderSkin; };
 	virtual float             GetExtent(EGeomForm eForm) override;
 	virtual void              GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const override;
-	virtual void              ComputeGeometricMean(SMeshLodInfo& lodInfo) const override;
+	virtual SMeshLodInfo      ComputeGeometricMean() const override;
 
 	int                       GetGuid() const;
 

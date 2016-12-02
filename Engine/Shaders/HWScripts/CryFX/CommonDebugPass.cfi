@@ -3,10 +3,17 @@
 
 struct vert2fragDebug
 {
-	OUT_P
-	float4 baseTC : TEXCOORDN; 
-	float4 Color  : TEXCOORDN;
-	float4 vView  : TEXCOORDN;
+#if %_DS || %_PS || %_GS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT_HPOS_IN_WPOS
+#endif
+ 
+	float4 baseTC  : TEXCOORDN; 
+	float4 Color   : TEXCOORDN;
+	
+	float4 vView   : TEXCOORDN;
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	float4 vNormal : TEXCOORDN;
+#endif
 };
 
 struct app2vertDebug
@@ -24,9 +31,24 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
   
   streamPos vertPassPos = (streamPos)0;
   vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
+  
+#if %TEMP_TERRAIN
+  float4 HPosition = Pos_VS_Terrain(0.0005f, g_VS_ViewProjZeroMatr, vertPassPos);
+#else  
+  float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);  
+#endif
 
-  OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
-	OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+	float3 vPos = vertPassPos.WorldPos.xyz;
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	//relative position
+	OUT.vView.xyz = vPos.xyz;
+	OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+#else
+	OUT.vView.xyz = vPos.xyz;
+	OUT.HPosition = HPosition;
+#endif
+
 	_TCModify(vertPassPos.baseTC, OUT.baseTC, 0, 0, TS_DIFFUSE);
 	
 #if %_RT_SAMPLE1  // Selection Pass
@@ -34,7 +56,7 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
 	OUT.Color = float4(IN.vertCommon.baseTC.x, IN.vertCommon.baseTC.y, 0, 0);
 #else  // Debug Views
 	// Prepare color for wireframe
-	OUT.Color = lerp(float4(0, 0.7, 0.9, 1), float4(0.35, 0.35, 0.35, 1), saturate(OUT.HPosition.w / 100.0));
+	OUT.Color = lerp(float4(0, 0.7, 0.9, 1), float4(0.35, 0.35, 0.35, 1), saturate(HPosition.w / 100.0));
 #endif
 	
   return OUT;            
@@ -98,8 +120,8 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   uint selectionID = asuint(PerInstanceCustomData2.x);
 
   // now we need to compare the scene's depth to the fragment's depth. We do that here instead of after rendering, so precision is maintained better
-  float fragmentDepth = IN.HPosition.z;
-  int3 vPixCoord = int3(IN.HPosition.xy, 0);
+  float fragmentDepth = IN.WPos.z;
+  int3 vPixCoord = int3(IN.WPos.xy, 0);
   float sceneDepth = SceneDepthTex.Load(vPixCoord);
 
   if (fragmentDepth < 0.999 * sceneDepth)
@@ -114,11 +136,17 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
   return OUT;
 }
 
+#include "CommonDebugPassTess.cfi"
+
 technique DebugPass
 {
   pass p0
   {
     VertexShader = Common_DebugPassVS() DebugPassVS;
+#if ENABLE_TESSELLATION
+    HullShader   = Common_DebugPassHS() DebugPassHS;
+    DomainShader = Common_DebugPassDS() DebugPassDS;
+#endif
     PixelShader = Common_DebugPassPS() DebugPassPS;
 
     ZEnable = true;
