@@ -373,6 +373,14 @@ void CGeomCacheRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(this, sizeof(*this));
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CGeomCacheRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& ctx)
+{
+	float fObjScale = max(0.001f, GetMatrix().GetColumn0().GetLength());
+	float fInvObjScale = 1.0f / fObjScale;
+	UpdateStreamableComponents(ctx.importance, ctx.distance, ctx.bFullUpdate, ctx.lod, fInvObjScale, ctx.bFullUpdate);
+}
+
 void CGeomCacheRenderNode::SetMatrix(const Matrix34& matrix)
 {
 	m_matrix = matrix;

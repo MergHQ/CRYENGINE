@@ -244,9 +244,7 @@ public:
 	typedef std::vector<IDecalRenderNode*> DecalsToPrecreate;
 	DecalsToPrecreate m_decalsToPrecreate;
 
-	void PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEntDistance, IStatObj* pStatObj, bool bFullUpdate, bool bDrawNear);
-	void PrecacheCharacter(IRenderNode* pObj, const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat,
-	                       const Matrix34& matParent, const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod);
+	void                    PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEntDistance, IStatObj* pStatObj, bool bFullUpdate, bool bDrawNear);
 
 	void                    PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A& statObjMatrix, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority);
 
@@ -316,7 +314,7 @@ public:
 										 const AABB &objBox, float fEntDistance, bool bSunOnly,
 										 CVisArea * pVisArea, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
 
-	int ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
+	int  ComputeDissolve(const CLodValue& lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
 
 	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAffectingLights,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,
@@ -457,13 +455,6 @@ public:
 	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
-
-private:
-	void PrecacheCharacterCollect(IRenderNode* pObj, const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat,
-	                              const Matrix34& matParent, const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod,
-	                              const int nRoundId, std::vector<std::pair<IMaterial*, float>>& collectedMaterials);
-
-	std::vector<std::pair<IMaterial*, float>> m_collectedMaterials;
 
 public:
 	//////////////////////////////////////////////////////////////////////////

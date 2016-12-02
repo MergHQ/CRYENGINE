@@ -34,8 +34,8 @@ public:
 	virtual void       OffsetPosition(const Vec3& delta) final;
 	virtual void       Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) final;
 
-	virtual CLodValue           ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo) final;
-	virtual bool                GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const final;
+	virtual CLodValue  ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo) final;
+	virtual bool       GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const final;
 
 	//! Gives access to object components.
 	virtual IMaterial*          GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) final { return m_pMaterial; }
@@ -53,14 +53,16 @@ public:
 	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const final { return nullptr; };
 	virtual IMaterial* GetMaterialOverride() final                   { return m_pMaterial; };
 
-	virtual float      GetMaxViewDist();
+	virtual float      GetMaxViewDist() final;
 
-	virtual void  OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo);
-	virtual void  OnRenderNodeBecomeInvisible();
+	virtual void       OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) override;
+	virtual void       OnRenderNodeBecomeInvisible() override;
 
-	virtual void SetCameraSpacePos( Vec3* pCameraSpacePos );
+	virtual void       SetCameraSpacePos(Vec3* pCameraSpacePos) final;
 
-	virtual void       GetMemoryUsage(ICrySizer* pSizer) const {};
+	virtual void       GetMemoryUsage(ICrySizer* pSizer) const final {};
+
+	virtual void       UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -70,8 +72,15 @@ public:
 	virtual void SetCharacterRenderOffset(const QuatTS& renderOffset) final;
 	//////////////////////////////////////////////////////////////////////////
 
+	static void PrecacheCharacter(const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat,
+	                              const Matrix34& matParent, const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod);
+
 private:
-	void CalcNearestTransform(Matrix34 &transformMatrix, const SRenderingPassInfo& passInfo);
+	void        CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPassInfo& passInfo);
+
+	static void PrecacheCharacterCollect(const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat,
+	                                     const Matrix34& matParent, const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod,
+	                                     const int nRoundId, std::vector<std::pair<IMaterial*, float>>& collectedMaterials);
 
 private:
 	_smart_ptr<ICharacterInstance> m_pCharacterInstance;

@@ -619,7 +619,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 	if (!bShadowPass)
 	{
-		const bool bHair        = (pShader->m_Flags2 & EF2_HAIR) != 0;
+		const bool bHair = (pShader->m_Flags2 & EF2_HAIR) != 0;
 		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
 
 		if (nList == EFSLIST_GENERAL && (bHair || bTransparent))
@@ -742,7 +742,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			m_renderItems[EFSLIST_GENERAL].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_GENERAL], nBatchFlags);
 		}
-		
+
 		if (nBatchFlags & FB_ZPREPASS)
 		{
 			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
@@ -798,6 +798,8 @@ void CRenderView::ExpandPermanentRenderObjects()
 		const SPermanentObjectRecord& RESTRICT_REFERENCE record = m_permanentObjects[obj];
 		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
+
+		bool bInvalidateChildObjects = false;
 
 		// Submit all valid objects (skip not ready and helper objects), TODO: release helper objects
 		while (pRenderObject)
@@ -903,11 +905,13 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 			if (bRecompile ||
 			    pRenderObject->m_bInstanceDataDirty ||
-			    !pRenderObject->m_bAllCompiledValid)
+			    !pRenderObject->m_bAllCompiledValid ||
+			    bInvalidateChildObjects)
 			{
 				CPermanentRenderObject* pNonRestrict = pRenderObject;
 				m_permanentRenderObjectsToCompile.push_back(pNonRestrict);
 				pRenderObject->m_compiledReadyMask &= ~passMask;      // This compiled masks invalid
+				bInvalidateChildObjects = true;
 			}
 
 			pRenderObject = pRenderObject->m_pNextPermanent;
@@ -1377,9 +1381,9 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem)
 		auto& pRS = pSR->m_pCompiledResourceSet;
 
 		if (pSR->HasDynamicTexModifiers() || (pRS.get() && (pRS->IsDirty() || (pRS->GetFlags() & (
-			CDeviceResourceSet::EFlags_AnimatedSequence | 
-			CDeviceResourceSet::EFlags_DynamicUpdates | 
-			CDeviceResourceSet::EFlags_PendingAllocation)))))
+		                                                                         CDeviceResourceSet::EFlags_AnimatedSequence |
+		                                                                         CDeviceResourceSet::EFlags_DynamicUpdates |
+		                                                                         CDeviceResourceSet::EFlags_PendingAllocation)))))
 		{
 			if (CryInterlockedExchange((volatile LONG*)&pSR->m_nUpdateFrameID, (uint32)m_frameId) != (uint32)m_frameId)
 			{
@@ -1478,9 +1482,9 @@ void CRenderView::SShadows::AddNearestCaster(CRenderObject* pObj)
 	if (pObj->m_pRenderNode)
 	{
 		// CRenderProxy::GetLocalBounds is not thread safe due to lazy evaluation
-		CRY_ASSERT(pObj->m_pRenderNode->GetRenderNodeType() != eERType_RenderProxy || 
-			!gRenDev->m_pRT->IsMultithreaded() || 
-			 gRenDev->m_pRT->IsMainThread()); 
+		CRY_ASSERT(pObj->m_pRenderNode->GetRenderNodeType() != eERType_RenderProxy ||
+		           !gRenDev->m_pRT->IsMultithreaded() ||
+		           gRenDev->m_pRT->IsMainThread());
 
 		AABB* pObjectBox = reinterpret_cast<AABB*>(m_nearestCasterBoxes.push_back_new());
 		pObj->m_pRenderNode->GetLocalBounds(*pObjectBox);
@@ -1519,8 +1523,8 @@ void CRenderView::SShadows::PrepareNearestShadows()
 				CRY_ASSERT(pShadowsView->m_usageMode == IRenderView::eUsageModeReading);
 
 				pShadowsView->m_shadows.m_nearestCasterBoxes.CoalesceMemory();
-				for (int i=0; i<pShadowsView->m_shadows.m_nearestCasterBoxes.size(); ++i)
-					pNearestFrustum->pFrustum->aabbCasters.Add(pShadowsView->m_shadows.m_nearestCasterBoxes[i]); 
+				for (int i = 0; i < pShadowsView->m_shadows.m_nearestCasterBoxes.size(); ++i)
+					pNearestFrustum->pFrustum->aabbCasters.Add(pShadowsView->m_shadows.m_nearestCasterBoxes[i]);
 
 				for (auto& ri : pShadowsView->GetRenderItems(EFSLIST_NEAREST_OBJECTS))
 					nearestRenderItems.lockfree_push_back(ri);

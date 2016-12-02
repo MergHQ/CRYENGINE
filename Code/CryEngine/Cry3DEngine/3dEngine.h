@@ -559,12 +559,12 @@ public:
 	virtual void                      LockCGFResources();
 	virtual void                      UnlockCGFResources();
 
-	virtual void          SerializeState(TSerialize ser);
-	virtual void          PostSerialize(bool bReading);
+	virtual void                      SerializeState(TSerialize ser);
+	virtual void                      PostSerialize(bool bReading);
 
-	virtual void          SetHeightMapMaxHeight(float fMaxHeight);
+	virtual void                      SetHeightMapMaxHeight(float fMaxHeight);
 
-	virtual void          SetStreamableListener(IStreamedObjectListener* pListener);
+	virtual void                      SetStreamableListener(IStreamedObjectListener* pListener);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Materials access.
@@ -616,7 +616,7 @@ public:
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0);
 	virtual void   GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects);
 	virtual uint32 GetObjectsByFlags(uint dwFlags, IRenderNode** pObjects = 0);
-	virtual void   OnObjectModified(IRenderNode* pRenderNode, uint dwFlags);
+	virtual void   OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags);
 
 	virtual void   ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, bool bObjects, bool bStaticLights, const char* pLayerName, IGeneralMemoryHeap* pHeap = NULL, bool bCheckLayerActivation = true);
 	bool           IsObjectsLayerHidden(uint16 nLayerId, const AABB& objBox);
