@@ -859,7 +859,7 @@ bool Device::UpdateEyeFovLayer(ovrLayerEyeFov& layer, const SHmdSwapChainInfo* p
 		{
 			const uint32 eye = pEyeTarget->eye;
 
-			layer.ColorTexture[eye] = pEyeTarget->pDevideTextureSwapChain;
+			layer.ColorTexture[eye] = pEyeTarget->pDeviceTextureSwapChain;
 			layer.Viewport[eye].Pos.x = pEyeTarget->viewportPosition.x;
 			layer.Viewport[eye].Pos.y = pEyeTarget->viewportPosition.y;
 			layer.Viewport[eye].Size.w = pEyeTarget->viewportSize.x;
@@ -884,7 +884,7 @@ bool Device::UpdateQuadLayer(ovrLayerQuad& layer, const SHmdSwapChainInfo* pEyeT
 		const bool bHeadLock = CPlugin_OculusVR::s_hmd_projection == eHmdProjection_Mono_HeadLocked || pEyeTarget->layerType == RenderLayer::eLayer_Quad_HeadLoked;
 		layer.Header.Flags = bHeadLock ? ovrLayerFlag_HeadLocked : 0;
 
-		layer.ColorTexture = pEyeTarget->pDevideTextureSwapChain;
+		layer.ColorTexture = pEyeTarget->pDeviceTextureSwapChain;
 
 		layer.Viewport.Pos.x = pEyeTarget->viewportPosition.x;
 		layer.Viewport.Pos.y = pEyeTarget->viewportPosition.y;
@@ -930,7 +930,7 @@ void Device::CommitTextureSwapChain(const SHmdSwapChainInfo* pSwapChain)
 {
 	if (pSwapChain)
 	{
-		const ovrResult result = ovr_CommitTextureSwapChain(m_pSession, pSwapChain->pDevideTextureSwapChain);
+		const ovrResult result = ovr_CommitTextureSwapChain(m_pSession, pSwapChain->pDeviceTextureSwapChain);
 		if (!OVR_SUCCESS(result))
 		{
 			ovrErrorInfo errorInfo;

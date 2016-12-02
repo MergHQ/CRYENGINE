@@ -39,14 +39,14 @@ private:
 		TArray<CTexture*> textures;
 	};
 
-	CryVR::Osvr::IOsvrDevice* m_pDevice;
+	CryVR::Osvr::IOsvrDevice* m_pOsvrDevice;
 	CD3D9Renderer*            m_pRenderer;
 	CD3DStereoRenderer*       m_pStereoRenderer;
 
 	uint32                    m_eyeWidth;
 	uint32                    m_eyeHeight;
 
-	EyeTextures               m_eyeTextures[EyeCount];
+	EyeTextures               m_scene3DRenderData[EyeCount];
 
 	int                       m_swapSetCount;
 	int                       m_currentFrame;

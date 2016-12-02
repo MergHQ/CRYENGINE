@@ -50,8 +50,8 @@ private:
 		IUnknown*               pMirrorTextureNative;
 	};
 
-	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, int eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
-	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, uint32 eye, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
+	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, EEyeType eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
+	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, EEyeType eye, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeQuadTextureSwapSet(ID3D11Device* d3dDevice, RenderLayer::EQuadLayers id, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeMirrorTexture(ID3D11Device* d3dDevice, CryVR::Oculus::TextureDesc desc, const char* name);
 
@@ -102,8 +102,8 @@ private:
 
 	SLayersManager                m_layerManager;
 
-	uint32                        m_uEyeWidth;
-	uint32                        m_uEyeHeight;
+	uint32                        m_eyeWidth;
+	uint32                        m_eyeHeight;
 
 	CryVR::Oculus::IOculusDevice* m_pOculusDevice;
 	CD3D9Renderer*                m_pRenderer;
