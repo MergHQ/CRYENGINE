@@ -28,7 +28,7 @@ tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 class CEngineModule_CryAudioImplFmod : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule);
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "CryAudioImplFmod", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
+	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
 
 	CEngineModule_CryAudioImplFmod();
 	virtual ~CEngineModule_CryAudioImplFmod() {}

@@ -191,7 +191,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	CEngineModule_CryAudioSystem();
 	virtual ~CEngineModule_CryAudioSystem() {}
 
-	virtual const char* GetName() override { return "CryAudioSystem"; }
+	virtual const char* GetName() override     { return "CryAudioSystem"; }
 	virtual const char* GetCategory() override { return "CryEngine"; }
 
 	//////////////////////////////////////////////////////////////////////////
@@ -219,7 +219,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
-			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
+			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
 			{
 				PrepareAudioSystem(env.pAudioSystem);
 			}
@@ -257,18 +257,25 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 		SSystemInitParams systemInitParams;
 		s_currentModuleName = pAudioImplNameCvar->GetString();
 
+		if (!previousModuleName.empty())
+		{
+			// Set the null impl
+			SAudioRequest request;
+			SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> requestData(nullptr);
+			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
+			request.pData = &requestData;
+			gEnv->pAudioSystem->PushRequest(request);
+
+			// Unload the previous module
+			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), "EngineModule_AudioImpl");
+		}
+
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
-		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
+		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
 		{
 			SAudioRequest request;
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-
-			// Unload the previous module if the new one initialized successfully..
-			if (!previousModuleName.empty())
-			{
-				gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), previousModuleName.c_str());
-			}
 
 			// Then load global controls data and preloads.
 			PrepareAudioSystem(gEnv->pAudioSystem);
@@ -344,8 +351,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			gEnv->pAudioSystem->PushRequest(request);
 
 			// The module failed to initialize, unload both as we are running the null implementation now.
-			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), previousModuleName.c_str());
-			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str());
+			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl");
 			s_currentModuleName.clear();
 		}
 
