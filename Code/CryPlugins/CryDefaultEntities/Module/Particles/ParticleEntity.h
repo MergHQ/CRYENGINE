@@ -8,10 +8,10 @@
 // Sample entity for creating a particle entity
 ////////////////////////////////////////////////////////
 class CDefaultParticleEntity final
-	: public CDesignerEntityComponent<>
+	: public CDesignerEntityComponent<IParticleEntityComponent>
 	, public IEntityPropertyGroup
 {
-	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CDefaultParticleEntity, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);
+	CRY_ENTITY_COMPONENT_CLASS(CDefaultParticleEntity, IParticleEntityComponent, "ParticleEntity", 0x31B3EAD4C34442F7, 0xB794B33746D4232B);
 
 	CDefaultParticleEntity();
 	virtual ~CDefaultParticleEntity() {}
@@ -22,6 +22,10 @@ public:
 
 	virtual void OnResetState() override;
 	// ~CDesignerEntityComponent
+
+	// IParticleEntityComponent
+	virtual void SetParticleEffectName(cstr effectName) override;
+	// ~IParticleEntityComponent
 
 	// IEntityPropertyGroup
 	virtual const char* GetLabel() const override { return "ParticleEffect Properties"; }

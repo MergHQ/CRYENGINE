@@ -16,7 +16,7 @@ class CParticleRegistrator
 			return;
 		}
 
-		RegisterEntityWithDefaultComponent<CDefaultParticleEntity>("ParticleEffect", "Particles", "Particle.bmp");
+		RegisterEntityWithDefaultComponent<CDefaultParticleEntity>("ParticleEffect", "Particles", "Particles.bmp");
 	}
 };
 
@@ -27,6 +27,12 @@ CRYREGISTER_CLASS(CDefaultParticleEntity);
 CDefaultParticleEntity::CDefaultParticleEntity()
 	: m_particleSlot(-1)
 {
+}
+
+void CDefaultParticleEntity::SetParticleEffectName(cstr effectName)
+{
+	m_particleEffectPath = effectName;
+	OnResetState();
 }
 
 void CDefaultParticleEntity::OnResetState()

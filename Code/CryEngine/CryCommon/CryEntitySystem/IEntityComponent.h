@@ -501,4 +501,12 @@ struct IGeometryEntityComponent : public IEntityComponent
 	virtual void SetGeometry(const char* szFilePath) = 0;
 };
 
+//! Component interface for ParticleEntity to work in the CreateObject panel
+struct IParticleEntityComponent : public IEntityComponent
+{
+	CRY_ENTITY_COMPONENT_INTERFACE(IParticleEntityComponent, 0x68E3655DDDD34390, 0xAAD5448264E74461)
+
+	virtual void SetParticleEffectName(cstr effectName) = 0;
+};
+
 #endif // __IEntityComponent_h__
