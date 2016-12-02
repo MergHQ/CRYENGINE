@@ -4098,9 +4098,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 		pRenderView->Clear();
 		m_RP.m_pSunLight = nullptr;
-
-		// Free render objects that could have been used for this frame
-		FreePermanentRenderObjects(m_RP.m_nProcessThreadID);
 	}
 	m_RP.m_pCurrentRenderView = nullptr;
 

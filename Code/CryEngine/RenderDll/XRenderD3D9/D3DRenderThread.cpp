@@ -586,6 +586,8 @@ void CD3D9Renderer::RT_UnbindResources()
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 {
+	ForceFlushRTCommands();
+
 	if (nFlags & (FRR_PERMANENT_RENDER_OBJECTS | FRR_OBJECTS))
 	{
 		// Delete all items that have not been allocated from the object pool
@@ -601,7 +603,6 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 	m_cEF.m_Bin.InvalidateCache();
 	//m_cEF.m_Bin.m_BinPaths.clear();
-	ForceFlushRTCommands();
 
 	for (uint i = 0; i < CLightStyle::s_LStyles.Num(); i++)
 	{

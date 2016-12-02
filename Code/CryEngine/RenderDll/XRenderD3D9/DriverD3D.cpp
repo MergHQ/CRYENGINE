@@ -4497,6 +4497,9 @@ void CD3D9Renderer::RT_EndFrame()
 	// touching the memory that will be reclaimed below.
 	m_DevBufMan.ReleaseEmptyBanks(m_RP.m_TI[m_RP.m_nProcessThreadID].m_nFrameUpdateID);
 
+	// Free render objects that could have been used for this frame
+	FreePermanentRenderObjects(m_RP.m_nProcessThreadID);
+
 	if (m_bStopRendererAtFrameEnd)
 	{
 		m_mtxStopAtRenderFrameEnd.Lock();
