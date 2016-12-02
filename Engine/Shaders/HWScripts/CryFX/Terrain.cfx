@@ -679,7 +679,9 @@ technique General
   string Script =
         "NoLights;"
         "TechniqueZ=ZPass;"
+        "TechniqueZPrepass=ZPrepass;"
         "TechniqueShadowGen=ShadowGen;"
+        "TechniqueDebug=DebugPass;"
 >
 {
   pass p0
@@ -718,8 +720,11 @@ technique Layer
   }
 }
 
+#include "CommonZPrePass.cfi"
+
 #include "CommonZPass.cfi"
 #include "ShadowCommon.cfi"
 #include "CommonShadowGenPass.cfi"
+#include "CommonDebugPass.cfi"
 
 /////////////////////// eof ///

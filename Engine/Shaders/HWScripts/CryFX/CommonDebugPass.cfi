@@ -25,10 +25,15 @@ struct app2vertDebug
   #endif
 };
 
-vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
+vert2fragDebug Common_DebugPassVS(app2vertDebug IN_common)
 {
   vert2fragDebug OUT = (vert2fragDebug)0;
   
+	app2vertDebug IN = IN_common;
+#if %TEMP_TERRAIN
+	IN.vertCommon.Position.z = IN_common.vertCommon.baseTC.x;
+#endif
+
   streamPos vertPassPos = (streamPos)0;
   vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
   
