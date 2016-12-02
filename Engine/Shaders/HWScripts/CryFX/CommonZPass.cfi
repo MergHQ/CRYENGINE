@@ -146,7 +146,7 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 		if (blendColInfo.w<0)
 			OUT.terrainParams0.z = 1;
 		else
-			OUT.terrainParams0.z = saturate(length(g_VS_WorldViewPos.xyz - vPos.xyz) / 512.f - 1.f);
+			OUT.terrainParams0.z = saturate(length(g_VS_WorldViewPos.xyz - vPos.xyz) / 1024.f - 1.f);
 
     // Detail layers
     #if %_RT_ALPHABLEND

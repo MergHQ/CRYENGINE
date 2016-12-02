@@ -182,7 +182,7 @@ half3 GetTerrainNormal(Texture2D tex, float2 terrainTC)
 { 
 	half3 terrainNor = GetTexture2D(tex, ssMaterialBilinearClamp, terrainTC).xzy; 
 	terrainNor.xy = (terrainNor.xy - 0.5h) * 2.h; 
-	terrainNor.z = sqrt(saturate(1.h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y))); 
+	terrainNor.z = sqrt(saturate(1.02h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y))); 
 	return terrainNor; 
 }
 float GetTerrainElevation(Texture2D tex, float2 terrainTC)
@@ -678,7 +678,7 @@ half3 GetTerrainNormal(sampler2D s, float2 terrainTC)
 
 	half3 terrainNor = float3(tex2D(s, terrainTC).xz,0);
 	terrainNor.xy = (terrainNor.xy - 0.5h) * 2.h;
-	terrainNor.z = sqrt( saturate( 1.h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y) ) );
+	terrainNor.z = sqrt( saturate( 1.02h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y) ) );
 	return terrainNor;
 }
 
