@@ -550,7 +550,7 @@ pixout PostAA_PS(vtxOutAA IN)
 	
 	// Compute velocity vector for static geometry
 	#if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
-		float2 sourcePos = MapViewportToUnnormalizedRaster(NvGetProjectionData(), tc);
+		float2 sourcePos = MapViewportToUnnormalizedRaster(tc);
 		float depth = PostAA_DepthTex.Load(int3(sourcePos, 0));
 		#if %_RT_PROJECTION_LENS_MATCHED
 			// Correct for LMS warping

@@ -912,7 +912,7 @@ Property
 // or uses NvGetProjectionData() / NvGetGeometryShaderData(), should appear in this list.
 
   Name = %_RT_PROJECTION_MULTI_RES
-  Mask = 0x200000000
+  Mask = 0x80
   Precache = ZGS
   Precache = ZPS
   Precache = DeferredDecalPassGS
@@ -953,6 +953,7 @@ Property
   Precache = PostMotionBlurPS
   Precache = ParticleImposterGS
   Precache = ParticleImposterPS
+  Precache = LinearizeDepthPS
 }
 
 Property
@@ -1002,8 +1003,6 @@ Property
   Precache = PostMotionBlurPS
   Precache = ParticleImposterGS
   Precache = ParticleImposterPS
-
-  // Unique to _RT_PROJECTION_LENS_MATCHED
   Precache = LinearizeDepthPS
 }
 
