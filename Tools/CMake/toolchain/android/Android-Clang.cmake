@@ -1,60 +1,64 @@
-set(CMAKE_SYSTEM_NAME "Android")
 set(ANDROID TRUE)
+set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
 
-set(GCC_VERSION 4.9)
+set(CMAKE_CONFIGURATION_TYPES Debug Profile Release)
+set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to what we need" FORCE)
 
-set(NDKROOT $ENV{NDKROOT})
-set(CMAKE_ANDROID_API 23)
+set(CMAKE_SYSTEM_NAME "Android")
+set(CMAKE_SYSTEM_VERSION 23)
+set(CMAKE_ANDROID_API ${CMAKE_SYSTEM_VERSION})
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
 set(CMAKE_ARCH "armv7-a")
 set(CMAKE_SYSTEM_PROCESSOR "armv7-a")
 
+set(NDKROOT $ENV{NDKROOT})
 file(TO_CMAKE_PATH "${NDKROOT}" NDKROOT)
-
 string(REPLACE "\\" "/" NDKROOT ${NDKROOT})
 
-set(TOOLCHAIN_ROOT ${NDKROOT}/toolchains/arm-linux-androideabi-${GCC_VERSION}/prebuilt/windows-x86_64)
-set(TOOLCHAIN_BIN ${TOOLCHAIN_ROOT}/bin)
+set(TOOLCHAIN_COMPILER_BIN ${NDKROOT}/toolchains/llvm/prebuilt/windows-x86_64/bin)
+set(TOOLCHAIN_LINKER_BIN ${NDKROOT}/toolchains/arm-linux-androideabi-4.9/prebuilt/windows-x86_64)
 
+set(CMAKE_C_COMPILER   ${TOOLCHAIN_COMPILER_BIN}/clang.exe CACHE INTERNAL "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN_COMPILER_BIN}/clang++.exe CACHE INTERNAL "C++ compiler" FORCE)
+set(CMAKE_ASM_COMPILER ${TOOLCHAIN_COMPILER_BIN}/clang.exe CACHE INTERNAL "Assembler" FORCE)
+set(CMAKE_AR           ${TOOLCHAIN_LINKER_BIN}/bin/arm-linux-androideabi-gcc-ar.exe CACHE INTERNAL "Archiver" FORCE)
+set(CMAKE_RANLIB       ${TOOLCHAIN_LINKER_BIN}/bin/arm-linux-androideabi-ranlib.exe CACHE INTERNAL "Ranlib" FORCE)
+set(CMAKE_LINKER       ${TOOLCHAIN_LINKER_BIN}/bin/arm-linux-androideabi-ld.exe CACHE INTERNAL "Linker" FORCE)
 
-set(CMAKE_C_COMPILER   ${TOOLCHAIN_BIN}/arm-linux-androideabi-gcc.exe)
-set(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN}/arm-linux-androideabi-g++.exe)
-set(CMAKE_ASM_COMPILER ${TOOLCHAIN_BIN}/arm-linux-androideabi-gcc.exe CACHE PATH "Assembler")
-set(CMAKE_AR           ${TOOLCHAIN_BIN}/arm-linux-androideabi-gcc-ar.exe CACHE PATH "Archiver")
-set(CMAKE_RANLIB       ${TOOLCHAIN_BIN}/arm-linux-androideabi-ranlib.exe CACHE PATH "Ranlib")
-set(CMAKE_LINKER       ${TOOLCHAIN_BIN}/arm-linux-androideabi-ld.exe CACHE PATH "Linker")
+set(CMAKE_C_COMPILER_ID_RUN TRUE)
+set(CMAKE_CXX_COMPILER_ID_RUN TRUE)
+set(CMAKE_C_COMPILER_ID "GNU")
+set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_C_COMPILER_TARGET armv7-none-linux-androideabi)
+set(CMAKE_CXX_COMPILER_TARGET armv7-none-linux-androideabi)
+set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN ${TOOLCHAIN_LINKER_BIN})
+set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN ${TOOLCHAIN_LINKER_BIN})
 
-set(CMAKE_SYSROOT ${NDKROOT}/platforms/android-${CMAKE_ANDROID_API}/arch-arm)
+set(CMAKE_SYSROOT ${NDKROOT}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-arm)
+include_directories(${NDKROOT}/sources/cxx-stl/llvm-libc++/include)
 include_directories(${NDKROOT}/sources/android/support/include)
+include_directories(${NDKROOT}/sources/cxx-stl/llvm-libc++abi/include)
 include_directories(${NDKROOT}/sources/android/native_app_glue)
 
-# Include STL headers and lib
-include_directories(${NDKROOT}/sources/cxx-stl/gnu-libstdc++/${GCC_VERSION}/include)
-include_directories(${NDKROOT}/sources/cxx-stl/gnu-libstdc++/${GCC_VERSION}/include/backward)
-include_directories(${NDKROOT}/sources/cxx-stl/gnu-libstdc++/${GCC_VERSION}/libs/armeabi-v7a/include)
-
-# The static stl has to be linked to the shared object (!THERE MAY ONLY BE ONE SO using the static lib)
-set(STL ${NDKROOT}/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a)
+# The static stl has to be linked to the shared object
+set(STL_PATH "${NDKROOT}/sources/cxx-stl/llvm-libc++/libs/armeabi-v7a")
+set(STL_LIBS "\"${STL_PATH}/libc++_static.a\" \"${STL_PATH}/libc++abi.a\" \"${STL_PATH}/libunwind.a\" \"${STL_PATH}/libandroid_support.a\"")
 
 # Change link rule for shared objects to link against the static stl
-set(CMAKE_CXX_CREATE_SHARED_LIBRARY "<CMAKE_CXX_COMPILER> <CMAKE_SHARED_LIBRARY_CXX_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES> \"${STL}\"" )
-set(CMAKE_CXX_CREATE_SHARED_MODULE  "<CMAKE_CXX_COMPILER> <CMAKE_SHARED_LIBRARY_CXX_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES> \"${STL}\"" )
+set(CMAKE_CXX_CREATE_SHARED_LIBRARY "<CMAKE_CXX_COMPILER> <CMAKE_SHARED_LIBRARY_CXX_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES> ${STL_LIBS}" )
+set(CMAKE_CXX_CREATE_SHARED_MODULE  "<CMAKE_CXX_COMPILER> <CMAKE_SHARED_LIBRARY_CXX_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES> ${STL_LIBS}" )
 
-set(DEFINES "-DANDROID -DDISABLE_IMPORTGL -D__ANDROID__ -D__ARM_ARCH_7A__ -D_LINUX -DLINUX -DLINUX32 -DCRY_MOBILE -D_HAS_C9X -D_PROFILE -DPROFILE -D_MT -D_DLL -DCRY_PLATFORM_ANDROID")
-set(NOWARNS "-Wno-multichar -Wno-write-strings -Wno-narrowing")
-set(CXXNOWARNS "-Wno-invalid-offsetof -Wno-conversion-null")
+include (${CMAKE_MODULE_PATH}/../CRYENGINE-CLANG.cmake)
 
-set(CMAKE_C_FLAGS "-Wall -Werror" CACHE STRING "c flags")
-set(CMAKE_CXX_FLAGS "-Wall -Werror" CACHE STRING "c++ flags")
-set(CMAKE_SHARED_LINKER_FLAGS "" CACHE STRING "linker flags")
+set(ANDROID_FLAGS "-DANDROID -DLINUX -DDISABLE_IMPORTGL -DHAS_STPCPY -march=armv7-a -mfpu=neon -marm -mfloat-abi=softfp")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_FLAGS}")
+set(CMAKE_LINKER_FLAGS "-Wl,--build-id,--warn-shared-textrel,--fatal-warnings,--gc-sections,-z,nocopyreloc,--fix-cortex-a8,--exclude-libs,libunwind.a -Qunused-arguments")
 
-set(CMAKE_C_FLAGS "-march=armv7-a -fpic ${NOWARNS} ${DEFINES}")
-set(CMAKE_CXX_FLAGS "-fno-exceptions -fno-rtti -std=c++11 -fpic -std=gnu++11 -fpermissive -march=armv7-a -mfpu=neon -marm -mfloat-abi=softfp ${CXXNOWARNS} ${NOWARNS} ${DEFINES}")
-
-include( CMakeForceCompiler )
-CMAKE_FORCE_C_COMPILER( "${CMAKE_C_COMPILER}" GNU )
-CMAKE_FORCE_CXX_COMPILER( "${CMAKE_CXX_COMPILER}" GNU )
-
-set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
 macro(configure_android_build)
 	set(options DEBUGGABLE)
 	set(oneValueArgs PACKAGE APP_NAME VERSION_CODE VERSION_NAME)

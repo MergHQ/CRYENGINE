@@ -66,6 +66,7 @@ elseif(LINUX OR ANDROID)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
 		-DHAVE_STDINT_H
 		-DHAVE_LROUND
+		-DHAVE_SYS_PARAM_H
 	)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 endif()

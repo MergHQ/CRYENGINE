@@ -77,5 +77,5 @@ set(CMAKE_SHARED_LINKER_FLAGS_PROFILE ${CMAKE_SHARED_LINKER_FLAGS_DEBUG} CACHE S
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE ${CMAKE_EXE_LINKER_FLAGS_DEBUG} CACHE STRING "Linker Executable Profile Flags" FORCE)
 
 function (wrap_whole_archive target source)
-	set(${target} "--whole-archive;${${source}};--no-whole-archive" PARENT_SCOPE)
+	set(${target} "-Wl,--whole-archive;${${source}};-Wl,--no-whole-archive" PARENT_SCOPE)
 endfunction()
