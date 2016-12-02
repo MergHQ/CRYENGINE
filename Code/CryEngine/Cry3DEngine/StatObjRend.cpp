@@ -955,15 +955,15 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 	if (m_pParentObject)
 		m_pParentObject->m_nLastDrawMainFrameId = passInfo.GetMainFrameID();
 
-	if (m_nInitialSubObjHideMask != 0 && !nSubObjectHideMask)
+	hidemask *pMask = !nSubObjectHideMask ? &m_nInitialSubObjHideMask : &nSubObjectHideMask;
+	if (!!*pMask)
 	{
-		nSubObjectHideMask = m_nInitialSubObjHideMask;
 		if ((m_pMergedRenderMesh != NULL) && !(pRenderObject->m_ObjFlags & FOB_MESH_SUBSET_INDICES)) // If not already set by per-instance hide mask.
 		{
 			SRenderObjData* pOD = pRenderObject->GetObjData();
 
 			// Only pass SubObject hide mask for merged objects, because they have a correct correlation between Hide Mask and Render Chunks.
-			pOD->m_nSubObjHideMask = m_nInitialSubObjHideMask;
+			pOD->m_nSubObjHideMask = *pMask;
 			pRenderObject->m_ObjFlags |= FOB_MESH_SUBSET_INDICES;
 		}
 	}
@@ -1058,7 +1058,7 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 					if (pStatObj &&
 						(pStatObj->m_nRenderTrisCount >= 2) &&
 						!(pStatObj->m_nFlags & STATIC_OBJECT_HIDDEN) &&
-						!(nSubObjectHideMask & nBitIndex)
+						!(*pMask & nBitIndex)
 						)
 					{
 						PrefetchLine(pRenderObject, 0);
