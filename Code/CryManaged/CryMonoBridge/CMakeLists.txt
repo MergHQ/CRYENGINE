@@ -84,7 +84,18 @@ end_sources()
 CryEngineModule(CryMonoBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "CryMono")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /bigobj)
 target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
-process_csharp(CryEngine.Common)
+
+# c# assembly generation should be uniform across all projects for 32 bit and 64 bit. 
+# Currently there are 4 other assemblies being generated 
+# 1. CryEngine.Common
+# 2. CryEngine.Core
+# 3. CryEngine.Core.UI
+# 4. CryEngine.Core.Tests
+
+# Create the common mono assembly generation environment variables
+create_mono_compiler_settings()
+process_csharp(CryEngine.Common ${MONO_CPU_PLATFORM} ${MONO_LANGUAGE_VERSION})
+
 if(WIN32)
 	use_mono()
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)

@@ -628,7 +628,7 @@ macro(use_qt)
 	use_qt_modules(${QT_MODULES})
 endmacro()
 
-macro(process_csharp output_module)
+macro(process_csharp output_module platformAssembly languageVersion)
 	set(CMAKE_MODULE_LINKER_FLAGS_PROFILE ${CMAKE_SHARED_LINKER_FLAGS_PROFILE})
 	set(swig_inputs)
 	set(swig_globals)
@@ -720,10 +720,23 @@ macro(process_csharp output_module)
 	#TODO: Metadata
 	add_custom_command(
 		TARGET ${THIS_PROJECT} PRE_LINK
-		COMMAND ${mono_path} -target:library -langversion:4 -platform:anycpu -optimize -g -L ${mono_lib_path} ${mono_inputs} -out:${OUTPUT_DIRECTORY}/${output_module}.dll
+		COMMAND ${mono_path} -target:library -langversion:${languageVersion} -platform:${platformAssembly} -optimize -g -L ${mono_lib_path} ${mono_inputs} -out:${OUTPUT_DIRECTORY}/${output_module}.dll
 		DEPENDS ${mono_inputs}
 	)
 
+endmacro()
+
+macro(create_mono_compiler_settings)
+	set(MONO_LANGUAGE_VERSION 6)
+	if("${BUILD_PLATFORM}" STREQUAL "Win32")
+		set(MONO_CPU_PLATFORM x86)
+		set(MONO_LIB_PATH ${SDK_DIR}/Mono/lib/mono/x86)
+		set(MONO_PREPROCESSOR_DEFINE WIN32)
+	elseif("${BUILD_PLATFORM}" STREQUAL "Win64")
+		set(MONO_CPU_PLATFORM anycpu)
+		set(MONO_LIB_PATH ${SDK_DIR}/Mono/lib/mono/x64)
+		set(MONO_PREPROCESSOR_DEFINE WIN64)
+	endif()
 endmacro()
 
 macro(generate_rc_file)

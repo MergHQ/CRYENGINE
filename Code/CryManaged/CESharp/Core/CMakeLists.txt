@@ -3,10 +3,13 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 
 	set(SDK_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../SDKs)
 	set(MCS_PATH ${SDK_DIR}/Mono/bin/mcs.bat)
-	set(MONO_LIB_PATH ${SDK_DIR}/Mono/lib/mono)
-
-	set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x64)
-
+	if(MONO_WIN64)
+		set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x64)
+	else() 
+		set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x86)
+	endif()
+	create_mono_compiler_settings()
+	
 	set(AI_FILES AI/Attributes.cs AI/BehaviorTreeNode.cs AI/BehaviorTreeNodeFactory.cs AI/LastingMovementRequest.cs)
 	source_group("AI" FILES ${AI_FILES})
 
@@ -60,10 +63,10 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(SOURCE ${AI_FILES} ${Audio_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_FILES} ${FlowSystem_FILES} ${Input_FILES} ${Math_FILES} ${TempPE_FILES} ${Debug_FILES} ${x64_FILES} ${TempPE_FILES} ${Debug_FILES} ${x86_FILES} ${obj_FILES} ${Physics_FILES} ${Rendering_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core ALL
-		COMMAND ${MCS_PATH} -target:library -langversion:6 -platform:anycpu -optimize -debug -define:WIN64 -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll
+		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		SOURCES ${SOURCE})
-
+		
 	#Doesn't seem to do anything...
 	set_target_properties(CryEngine.Core PROPERTIES VS_DOTNET_REFERENCES "System;System.Data")
 else()
