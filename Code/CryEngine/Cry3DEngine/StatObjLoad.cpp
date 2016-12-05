@@ -1627,9 +1627,12 @@ void CStatObj::CheckCreateBillboardMaterial()
 	for (int nSlot = EFTT_DIFFUSE; nSlot <= EFTT_NORMALS; nSlot++)
 	{
 		string szTextureName = m_szFileName;
-		szTextureName.replace(".cgf", arrTextureSuffixes[nSlot]);
-		if (gEnv->pCryPak->IsFileExist(szTextureName.c_str()))
-			nBillboardTexturesFound++;
+		if (szTextureName.find(".cgf") != string::npos)
+		{
+			szTextureName.replace(".cgf", arrTextureSuffixes[nSlot]);
+			if (gEnv->pCryPak->IsFileExist(szTextureName.c_str()))
+				nBillboardTexturesFound++;
+		}
 	}
 
 	// create billboard material and cgf
@@ -1651,7 +1654,6 @@ void CStatObj::CheckCreateBillboardMaterial()
 				inputShaderResources->m_Textures[nSlot].m_Name = szTextureName;
 			}
 			SShaderItem newShaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderItem.m_pShader->GetName(), false, 0, inputShaderResources, shaderItem.m_pShader->GetGenerationMask());
-			gEnv->pRenderer->UpdateShaderItem(&newShaderItem, m_pBillboardMaterial);
 			m_pBillboardMaterial->AssignShaderItem(newShaderItem);
 		}
 	}
