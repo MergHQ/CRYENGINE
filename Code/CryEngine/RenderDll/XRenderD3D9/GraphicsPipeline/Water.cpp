@@ -164,6 +164,7 @@ CWaterStage::CWaterStage()
 	, m_pOceanMaskTex(nullptr)
 	, m_rainRippleTexIndex(0)
 	, m_frameIdWaterSim(0)
+	, m_bWaterNormalGen(false)
 {
 	std::fill(std::begin(m_pRainRippleTex), std::end(m_pRainRippleTex), nullptr);
 	std::fill(std::begin(m_oceanAnimationParams), std::end(m_oceanAnimationParams), Vec4(0.0f));
@@ -235,7 +236,7 @@ void CWaterStage::Init()
 	CRY_ASSERT(bSuccess0 && bSuccess1 && bSuccess2);
 
 	// TODO: move a texture to local member variable.
-	CRY_ASSERT(CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0]));
+	//CRY_ASSERT(CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0])); // this can fail because CTexture::s_ptexWaterCaustics[0] is null when launching the engine with r_watervolumecaustics=0.
 	CRY_ASSERT(CTexture::IsTextureExist(CTexture::s_ptexWaterVolumeRefl[0]));
 
 	auto* pDepthTarget = &(gcpRendD3D->m_DepthBufferOrigMSAA);
@@ -245,10 +246,13 @@ void CWaterStage::Init()
 	m_passOceanMaskGen.SetPassResources(m_pResourceLayout, m_pPerPassResources);
 	m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
 
+	auto* pDummyRenderTarget = CTexture::s_ptexSceneSpecular;
+	CRY_ASSERT(pDummyRenderTarget && pDummyRenderTarget->GetTextureDstFormat() == eTF_R8G8B8A8);
+
 	m_passWaterCausticsSrcGen.SetLabel("WATER_VOLUME_CAUSTICS_SRC_GEN");
 	m_passWaterCausticsSrcGen.SetupPassContext(m_stageID, ePass_CausticsGen, TTYPE_WATERCAUSTICPASS, FB_WATER_CAUSTIC, EFSLIST_WATER, 0, false);
 	m_passWaterCausticsSrcGen.SetPassResources(m_pResourceLayout, m_pPerPassResources);
-	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, CTexture::s_ptexWaterCaustics[0]);
+	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, pDummyRenderTarget);
 
 	auto* pRenderTarget = CTexture::s_ptexHDRTarget;
 
@@ -1393,6 +1397,9 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		auto& pass = m_passWaterCausticsSrcGen;
 		float fWidth = static_cast<float>(CTexture::s_ptexWaterCaustics[0]->GetWidth());
 		float fHeight = static_cast<float>(CTexture::s_ptexWaterCaustics[0]->GetHeight());
+
+		// need to set render target becuase CTexture::s_ptexWaterCaustics[0] is recreated when cvars are changed.
+		pass.ExchangeRenderTarget(0, CTexture::s_ptexWaterCaustics[0]);
 
 		D3DViewPort viewport = { 0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f };
 		rd->RT_SetViewport(0, 0, int32(viewport.Width), int32(viewport.Height));

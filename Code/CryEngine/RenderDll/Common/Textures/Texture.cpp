@@ -122,7 +122,7 @@ CTexture* CTexture::s_ptexSceneSpecularESRAM;
 #endif
 
 // Post-process related textures
-CTexture* CTexture::s_ptexBackBuffer;
+CTexture* CTexture::s_ptexBackBuffer = NULL;
 CTexture* CTexture::s_ptexModelHudBuffer;
 CTexture* CTexture::s_ptexPrevBackBuffer[2][2] = {
 	{ NULL }
@@ -139,8 +139,8 @@ CTexture* CTexture::s_ptexDepthBufferHalfQuarter;
 CTexture* CTexture::s_ptexWaterOcean;
 CTexture* CTexture::s_ptexWaterVolumeTemp[2];
 CTexture* CTexture::s_ptexWaterVolumeDDN;
-CTexture* CTexture::s_ptexWaterVolumeRefl[2];
-CTexture* CTexture::s_ptexWaterCaustics[2];
+CTexture* CTexture::s_ptexWaterVolumeRefl[2] = { NULL };
+CTexture* CTexture::s_ptexWaterCaustics[2] = { NULL };
 CTexture* CTexture::s_ptexWaterRipplesDDN;
 CTexture* CTexture::s_ptexRainOcclusion;
 CTexture* CTexture::s_ptexRainSSOcclusion[2];
