@@ -2629,16 +2629,26 @@ bool CAnimEntityNode::AnimateScriptTableProperty(IAnimTrack* pTrack, SAnimContex
 void CAnimEntityNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks)
 {
 	CAnimNode::Serialize(xmlNode, bLoading, bLoadEmptyTracks);
+	IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(m_name);
+
+	if (pEntity)
+	{
+		m_entityGuid = pEntity->GetGuid();
+	}
 
 	if (bLoading)
 	{
-		xmlNode->getAttr("EntityGUID", m_entityGuid);
+		if (!pEntity)
+		{
+			xmlNode->getAttr("EntityGUID", m_entityGuid);
+		}
 
 		xmlNode->getAttr("EntityGUIDTarget", m_entityGuidTarget);
 		xmlNode->getAttr("EntityGUIDSource", m_entityGuidSource);
 	}
 	else
 	{
+		// Save the latest object GUID obtained from the Entity System
 		xmlNode->setAttr("EntityGUID", m_entityGuid);
 
 		if (m_entityGuidTarget)
