@@ -1112,11 +1112,15 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		}
 	}
 
-	if (nodeType == eERType_Brush)
+	if (nodeType == eERType_Brush || nodeType == eERType_Vegetation)
 	{
 		Matrix34A brushMatrix;
 		IStatObj* pStatObj = pObj->GetEntityStatObj(0, 0, &brushMatrix);
-		PrecacheStatObj(static_cast<CStatObj*>(pStatObj), nLod, brushMatrix, pRenderNodeMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+		if (pStatObj)
+		{
+			IMaterial* pStatObjMat = pStatObj->GetMaterial();
+			PrecacheStatObj(static_cast<CStatObj*>(pStatObj), nLod, brushMatrix, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+		}
 		return;
 	}
 	else if (nodeType == eERType_ParticleEmitter)
@@ -1145,9 +1149,16 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		return;
 	}
 
-	// If not any of the known render nodes try to pre-cache only the override material
-	if (pRenderNodeMat)
+	Matrix34A matParent;
+	CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(0, 0, &matParent, false);
+	if (pStatObj)
 	{
+		IMaterial* pStatObjMat = pStatObj->GetMaterial();
+		PrecacheStatObj(pStatObj, nLod, matParent, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+	}
+	else if (pRenderNodeMat)
+	{
+		// If not any of the known render nodes try to pre-cache only the override material
 		pRenderNodeMat->PrecacheMaterial(fEntDistance * fInvObjScale, pObj->GetRenderMesh(nLod), bFullUpdate, bHighPriority);
 	}
 }
