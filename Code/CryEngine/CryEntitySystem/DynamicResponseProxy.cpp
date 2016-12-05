@@ -34,7 +34,11 @@ void CEntityComponentDynamicResponse::Initialize()
 		m_pResponseActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szEntityName, m_pEntity->GetId());
 	}
 	SET_DRS_USER_SCOPED("DrsProxy Initialize");
-	m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szEntityName));
+	DRS::IVariableCollection* pVariables = m_pResponseActor->GetLocalVariables();
+	if (pVariables)
+	{
+		pVariables->SetVariableValue("Name", CHashedString(szEntityName));
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -43,7 +47,11 @@ void CEntityComponentDynamicResponse::ProcessEvent(SEntityEvent& event)
 	if (event.event == ENTITY_EVENT_RESET)
 	{
 		SET_DRS_USER_SCOPED("DrsProxy Reset Event");
-		m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", m_pResponseActor->GetName());
+		DRS::IVariableCollection* pVariables = m_pResponseActor->GetLocalVariables();
+		if (pVariables)
+		{
+			pVariables->SetVariableValue("Name", m_pResponseActor->GetName());
+		}
 	}
 }
 
