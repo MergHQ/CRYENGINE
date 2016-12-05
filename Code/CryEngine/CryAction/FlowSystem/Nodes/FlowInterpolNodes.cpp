@@ -335,9 +335,11 @@ string GetDropdownString()
 	static string easingFunctionEnumString;
 	if (easingFunctionEnumString.empty())
 	{
+		string temp;
 		easingFunctionEnumString = "enum_int:";
 #define BUILD_EASING_UI_ENUMS(enumValue, enumName, ...) \
-  easingFunctionEnumString.Format("%s,%02d:%s=%d", easingFunctionEnumString.c_str(), static_cast<int>(enumValue), enumName, static_cast<int>(enumValue));
+  temp.Format(",%02d:%s=%d", static_cast<int>(enumValue), enumName, static_cast<int>(enumValue)); \
+		easingFunctionEnumString.append(temp);
 		EasingFunctionsList(BUILD_EASING_UI_ENUMS);
 #undef BUILD_EASING_UI_ENUMS
 	}
