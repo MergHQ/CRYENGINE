@@ -1643,7 +1643,7 @@ bool CSystem::InitPhysicsRenderer()
 	//////////////////////////////////////////////////////////////////////////
 	// Physics Renderer (for debug helpers)
 	//////////////////////////////////////////////////////////////////////////
-	if (m_env.pRenderer && !m_bUIFrameworkMode && !m_startupParams.bShaderCacheGen)
+	if (!m_bUIFrameworkMode && !m_startupParams.bShaderCacheGen)
 	{
 		m_pPhysRenderer = new CPhysRenderer;
 		m_pPhysRenderer->Init(); // needs to be created after physics and renderer
@@ -5450,6 +5450,7 @@ void CSystem::OnFrameStart(const char* szName)
 
 void CSystem::OnFrameEnd()
 {
+	SleepIfNeeded();
 #if defined(ENABLE_LOADING_PROFILER)
 	CBootProfiler& profiler = CBootProfiler::GetInstance();
 	profiler.StopFrame();
