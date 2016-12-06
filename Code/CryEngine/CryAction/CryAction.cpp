@@ -808,6 +808,12 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		params.pContextParams = &ctx;
 		params.port = ChooseListenPort();
 		params.session = CCryAction::GetCryAction()->GetIGameSessionHandler()->GetGameSessionHandle();
+
+		if (!CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
+		{
+			params.flags |= (eGSF_NoSpawnPlayer | eGSF_NoGameRules);
+		}
+
 		CCryAction::GetCryAction()->StartGameContext(&params);
 	}
 }
