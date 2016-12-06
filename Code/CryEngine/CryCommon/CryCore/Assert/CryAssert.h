@@ -46,13 +46,14 @@ struct SAssertCond
 	bool bLogAssert;
 };
 
-void CryAssertHandler(SAssertData const&, SAssertCond&, char const* const);
+void CryAssertHandler(SAssertData const&, SAssertCond&);
+void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szMessage);
 
 template<typename ... TraceArgs>
 void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szFormattedMessage, TraceArgs ... traceArgs)
 {
 	CryAssertTrace(szFormattedMessage, traceArgs ...);
-	CryAssertHandler(data, cond, nullptr);
+	CryAssertHandler(data, cond);
 }
 } // namespace Detail
 
