@@ -27,6 +27,7 @@
 #include <mono/metadata/exception.h>
 
 #include <CryMono/IMonoNativeToManagedInterface.h>
+#include <CryInput/IHardwareMouse.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#pragma comment(lib, "mono-2.0.lib")
@@ -439,6 +440,8 @@ void CMonoRuntime::HandleException(MonoObject* pException)
 	}
 #endif
 
+	gEnv->pHardwareMouse->UseSystemCursor(true);
+	
 	void* args[1];
 	args[0] = pException;
 
