@@ -130,7 +130,7 @@ public:
 
 	//! Optionally serialize component to/from XML.
 	//! For user-facing properties, see GetProperties.
-	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) {};
+	virtual void LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) {}
 
 	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
 
@@ -498,7 +498,15 @@ struct IGeometryEntityComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE(IGeometryEntityComponent, 0x54B2C1308E274E07, 0x8BF0F1FE89228D14)
 
-		virtual void SetGeometry(const char* szFilePath) = 0;
+	virtual void SetGeometry(const char* szFilePath) = 0;
+};
+
+//! Component interface for ParticleEntity to work in the CreateObject panel
+struct IParticleEntityComponent : public IEntityComponent
+{
+	CRY_ENTITY_COMPONENT_INTERFACE(IParticleEntityComponent, 0x68E3655DDDD34390, 0xAAD5448264E74461)
+
+	virtual void SetParticleEffectName(cstr effectName) = 0;
 };
 
 #endif // __IEntityComponent_h__

@@ -24,9 +24,8 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void         ProcessEvent(SEntityEvent& event) override;
-	virtual uint64       GetEventMask() const final;;
-	virtual EEntityProxy GetProxyType() const override                                    { return ENTITY_PROXY_DYNAMICRESPONSE; }
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
+	virtual uint64       GetEventMask() const override;
+	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_DYNAMICRESPONSE; }
 	virtual bool         NeedGameSerialize() override;
 	virtual void         GameSerialize(TSerialize ser) override;
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override

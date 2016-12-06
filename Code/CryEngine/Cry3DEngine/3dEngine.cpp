@@ -1302,9 +1302,9 @@ void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
 	const bool bInEditor = gEnv->IsEditor();
 	const bool bStatObjBufferRenderTasks = GetCVars()->e_StatObjBufferRenderTasks != 0;
 	const bool bIsFMVPlaying = gEnv->IsFMVPlaying();
-	const bool bCameraAtZero = IsEquivalent(rCamera.GetPosition(),Vec3(0,0,0),VEC_EPSILON);
+	const bool bCameraAtZero = IsEquivalent(rCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON);
 	const bool bPost3dEnabled = GetRenderer() && GetRenderer()->IsPost3DRendererEnabled();
-	if(!bInEditor && bStatObjBufferRenderTasks && !bIsFMVPlaying && (!bCameraAtZero || bPost3dEnabled))
+	if (!bInEditor && bStatObjBufferRenderTasks && !bIsFMVPlaying && (!bCameraAtZero || bPost3dEnabled))
 		GetObjManager()->PrepareCullbufferAsync(rCamera);
 }
 
@@ -1386,8 +1386,8 @@ void C3DEngine::SelectEntity(IRenderNode* pEntity)
 
 void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 {
-	IF(!GetCVars()->e_DecalsAllowGameDecals, 0)
-	return;
+	IF (!GetCVars()->e_DecalsAllowGameDecals, 0)
+		return;
 
 	if (GetCVars()->e_Decals == 2)
 	{
@@ -3146,8 +3146,8 @@ static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
 	__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
 	__m128i joined = _mm_or_si128(normal, not_normal);
 
-//	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
-//	__m128i final = _mm_or_si128(joined, sign_shift);
+	//	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+	//	__m128i final = _mm_or_si128(joined, sign_shift);
 	s = _mm_castps_si128(justsign);
 
 	// ~20 SSE2 ops
@@ -3161,9 +3161,9 @@ static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
 static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 {
 	#if defined(__GNUC__)
-	#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
+		#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
 	#else
-	#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
+		#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
 	#endif
 	#define GET_CONSTF(name)         *(const __m128*)&name
 
@@ -3190,8 +3190,8 @@ static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 
 	__m128i shifted = _mm_srli_epi32(_mm_castps_si128(merged), 13);
 
-//	__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
-//	__m128i final = _mm_or_si128(shifted, signshifted);
+	//	__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+	//	__m128i final = _mm_or_si128(shifted, signshifted);
 	s = _mm_castps_si128(justsign);
 
 	// ~15 SSE2 ops
@@ -3271,14 +3271,14 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
 
 #if CRY_PLATFORM_SSE2
-	__m128i  nFrames = _mm_set1_epi32(nFrame);
-	__m128i* pData   = (__m128i*)&rWindGrid.m_pData[0];
+	__m128i nFrames = _mm_set1_epi32(nFrame);
+	__m128i* pData = (__m128i*)&rWindGrid.m_pData[0];
 	__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[0];
-	__m128*  pField  = (__m128 *)&m_pWindField[0];
-	__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
-	__m128   fInterps = _mm_set1_ps(fInterp);
-	__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
-	__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+	__m128* pField = (__m128*)&m_pWindField[0];
+	__m128 vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+	__m128 fInterps = _mm_set1_ps(fInterp);
+	__m128 fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+	__m128 fBendMax = _mm_set1_ps(fMAX_BENDING);
 
 	for (x = 0; x < ((nSize + 3) / 4); ++x)
 	{
@@ -3312,25 +3312,25 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			__m128 loFieldLength = _mm_mul_ps(loField, loField);
 			__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
 
-#if CRY_PLATFORM_SSE4
+	#if CRY_PLATFORM_SSE4
 			loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
-#else
+	#else
 			loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 			hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
-#endif
+	#endif
 
-#if CRY_PLATFORM_F16C
+	#if CRY_PLATFORM_F16C
 			__m128i loData = _mm_cvtps_ph(loField, 0);
 			__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
 			_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
-#else
+	#else
 			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
 
@@ -3338,7 +3338,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			loData = _mm_packs_epi32(loData, hiData);
 
 			_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
-#endif
+	#endif
 		}
 	}
 #else
@@ -3434,17 +3434,17 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		Vec2 vWindCur = Vec2(windStart.x, windStart.y) + Vec2(vGlobalWind.x, vGlobalWind.y);
 
 #if CRY_PLATFORM_SSE2
-		__m128i  xs;
-		__m128i  nFrames = _mm_set1_epi32(nFrame);
-		__m128i  nSizes = _mm_set_epi32(nSize - 3, nSize - 2, nSize - 1, nSize - 0);
+		__m128i xs;
+		__m128i nFrames = _mm_set1_epi32(nFrame);
+		__m128i nSizes = _mm_set_epi32(nSize - 3, nSize - 2, nSize - 1, nSize - 0);
 		__m128i* pData = (__m128i*)&rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth + nXGrid];
 		__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth + nXGrid];
-		__m128*  pField = (__m128 *)&m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
-		__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
-		__m128   vWindDeltas = _mm_set_ps(windDelta.y, windDelta.x, windDelta.y, windDelta.x);
-		__m128   fInterps = _mm_set1_ps(fInterp);
-		__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
-		__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+		__m128* pField = (__m128*)&m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128 vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+		__m128 vWindDeltas = _mm_set_ps(windDelta.y, windDelta.x, windDelta.y, windDelta.x);
+		__m128 fInterps = _mm_set1_ps(fInterp);
+		__m128 fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+		__m128 fBendMax = _mm_set1_ps(fMAX_BENDING);
 
 		// Alignment doesn't matter currently, no memory loads requiring alignment are used below
 		{
@@ -3458,7 +3458,7 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 			__m128i cFrame = _mm_loadu_si128(pFrames + x);
 			__m128i bMask = _mm_cmpgt_epi32(nSizes, xs);
 
-			// Loop range ensures we either have a somewhat filled head, fully filled nodes, or somewhat filled tail, but never a empty iteration 
+			// Loop range ensures we either have a somewhat filled head, fully filled nodes, or somewhat filled tail, but never a empty iteration
 			if (false && _mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
 				continue;
 
@@ -3486,25 +3486,25 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 				__m128 loFieldLength = _mm_mul_ps(loField, loField);
 				__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
 
-#if CRY_PLATFORM_SSE4
+	#if CRY_PLATFORM_SSE4
 				loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
 
 				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
 				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
-#else
+	#else
 				loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 				hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 
 				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
 				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
-#endif
+	#endif
 
-#if CRY_PLATFORM_F16C
+	#if CRY_PLATFORM_F16C
 				__m128i loData = _mm_cvtps_ph(loField, 0);
 				__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
 				_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
-#else
+	#else
 				__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 				__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
 
@@ -3512,7 +3512,7 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 				loData = _mm_packs_epi32(loData, hiData);
 
 				_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
-#endif
+	#endif
 			}
 
 			vWindCurs = _mm_add_ps(vWindCurs, vWindDeltas);
@@ -4710,13 +4710,8 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 		FUNCTION_PROFILER_3DENGINE;
 
-		if (*ppInputTempData && (*ppInputTempData)->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID))
+		if (*ppInputTempData && (*ppInputTempData)->IsValid())
 			return; // check if another thread already initialized temp data
-
-		if (pRNode)
-		{
-			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
-		}
 
 		if (*ppInputTempData)
 		{
@@ -4748,7 +4743,7 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 
 	SRenderNodeTempData* pCurrentTempData = *ppTempData;
 
-	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID));
+	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid());
 
 	// detect render resources modification (for example because of mesh streaming or material editing)
 	if (bValid && pCurrentTempData->userData.nStatObjLastModificationId)
@@ -4756,16 +4751,22 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 		if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pCurrentTempData->userData.nStatObjLastModificationId)
 		{
 			pRNode->InvalidatePermanentRenderObject();
-			bValid = false;
 		}
 	}
 
 	if (bValid)
 	{
+		if (pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID)
+		{
+			pCurrentTempData->FreeRenderObjects();
+			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
+		}
 		return m_visibleNodesManager.SetLastSeenFrame(pCurrentTempData, passInfo);
 	}
 	else
 	{
+		CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
+
 		CreateRenderNodeTempData(ppTempData, pRNode, passInfo);
 	}
 
@@ -4850,10 +4851,14 @@ void C3DEngine::ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode)
 		GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
 }
 
-void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, uint dwFlags)
+void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags)
 {
 	if ((dwFlags & (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS)) != 0)
 		SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
+	if (pRenderNode)
+	{
+		pRenderNode->InvalidatePermanentRenderObject();
+	}
 }
 
 int SImageInfo::GetMemoryUsage()
@@ -5120,7 +5125,7 @@ void C3DEngine::PrecacheCharacter(IRenderNode* pObj, const float fImportance, IC
 {
 	if (m_pObjManager)
 	{
-		m_pObjManager->PrecacheCharacter(pObj, fImportance, pCharacter, pSlotMat, matParent, fEntDistance, fScale, nMaxDepth, false, true, 0);
+		CCharacterRenderNode::PrecacheCharacter(fImportance, pCharacter, pSlotMat, matParent, fEntDistance, fScale, nMaxDepth, false, true, 0);
 		if (bForceStreamingSystemUpdate)
 		{
 			m_pObjManager->ProcessObjectsStreaming(passInfo);
@@ -6213,7 +6218,7 @@ Vec3 C3DEngine::GetSkyColor() const
 ///////////////////////////////////////////////////////////////////////////////
 bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderingPassInfo& passInfo, bool bIgnoreShadowPass) const
 {
-	#ifdef MESH_TESSELLATION_ENGINE
+#ifdef MESH_TESSELLATION_ENGINE
 	assert(pObj && GetCVars());
 	bool rendererTessellation;
 	GetRenderer()->EF_Query(EFQ_MeshTessellation, rendererTessellation);
@@ -6242,7 +6247,7 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 
 		return bAllowTessellation;
 	}
-	#endif //#ifdef MESH_TESSELLATION_ENGINE
+#endif   //#ifdef MESH_TESSELLATION_ENGINE
 
 	return false;
 }
@@ -6336,21 +6341,21 @@ int C3DEngine::GetTerrainSize()
 {
 	return CTerrain::GetTerrainSize();
 }
-	#include "ParticleEmitter.h"
+#include "ParticleEmitter.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe, uint32 nFrameID, bool bUnRegisterOnly)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	#ifdef _DEBUG // crash test basically
+#ifdef _DEBUG   // crash test basically
 	const char* szClass = pEnt->GetEntityClassName();
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("I3DEngine::RegisterEntity: Entity undefined"); // do not register undefined objects
 	                                                          //  if(strstr(szName,"Dude"))
 	                                                          //  int y=0;
-	#endif
+#endif
 
 	IF (bUnRegisterOnly, 0)
 	{
@@ -6363,14 +6368,14 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	float fObjRadiusSqr = aabb.GetRadiusSqr();
 	EERType eERType = pEnt->GetRenderNodeType();
 
-	#ifdef SUPP_HMAP_OCCL
+#ifdef SUPP_HMAP_OCCL
 	if (pEnt->m_pTempData)
 		pEnt->m_pTempData->userData.m_OcclState.vLastVisPoint.Set(0, 0, 0);
-	#endif
+#endif
 
 	UpdateObjectsLayerAABB(pEnt);
 
-	auto  dwRndFlags = pEnt->GetRndFlags();
+	auto dwRndFlags = pEnt->GetRndFlags();
 
 	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
 		if (GetCVars()->e_ObjFastRegister && pEnt->m_pOcNode && ((COctreeNode*)pEnt->m_pOcNode)->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
@@ -6465,7 +6470,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	//////////////////////////////////////////////////////////////////////////
 	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
 	{
-	#ifndef SEG_WORLD
+#ifndef SEG_WORLD
 		if (nSID == -1)
 		{
 			nSID = 0;
@@ -6496,7 +6501,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 
 			m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-	#else
+#else
 		if (gEnv->IsEditor() || eERType != eERType_Vegetation)
 		{
 			// CS - opt here
@@ -6525,7 +6530,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 			if (nSID == nSIDConsideredSafe || IsSegmentSafeToUse(nSID))
 				m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-	#endif
+#endif
 	}
 
 	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
@@ -6573,12 +6578,12 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 
 	FUNCTION_PROFILER_3DENGINE;
 
-	#ifdef _DEBUG // crash test basically
+#ifdef _DEBUG   // crash test basically
 	const char* szClass = pEnt->GetEntityClassName();
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("C3DEngine::RegisterEntity: Entity undefined");
-	#endif
+#endif
 
 	EERType eRenderNodeType = pEnt->GetRenderNodeType();
 

@@ -201,14 +201,20 @@ uint64 CEntityComponentArea::GetEventMask() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentArea::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	if (m_nFlags & FLAG_NOT_SERIALIZE)
 		return;
 
 	if (bLoading)
 	{
-		XmlNodeRef areaNode = entityNode->findChild("Area");
+		XmlNodeRef areaNode = componentNode->findChild("Area");
+		if (!areaNode)
+		{
+			// legacy behavior, look for properties on the entity node level
+			areaNode = entityNode->findChild("Area");
+		}
+
 		if (!areaNode)
 			return;
 
@@ -435,7 +441,7 @@ void CEntityComponentArea::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 	else
 	{
 		// Save points.
-		XmlNodeRef const areaNode = entityNode->newChild("Area");
+		XmlNodeRef const areaNode = componentNode->newChild("Area");
 		areaNode->setAttr("Id", m_pArea->GetID());
 		areaNode->setAttr("Group", m_pArea->GetGroup());
 		areaNode->setAttr("Proximity", m_pArea->GetProximity());

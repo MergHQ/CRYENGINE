@@ -29,8 +29,11 @@ if(ANDROID)
 	foreach(game_module ${GAME_MODULES})
 		set(current_launcher ${game_module}Launcher)
 
-
+		set(MODULES_TEMP ${MODULES})
+		set(MODULES ${MODULES} ${game_module})
 		CryLauncher(${current_launcher} SOLUTION_FOLDER Launcher)
+		set(MODULES ${MODULES_TEMP})
+
 		target_compile_definitions(${current_launcher} PRIVATE 
 			ANDROID_NDK ANDROID DISABLE_IMPORTGL __ANDROID__ __ARM_EABI__ __ARM_ARCH_5__ __ARM_ARCH_5T__ __ARM_ARCH_5E__ __ARM_ARCH_5TE__ __ARM_ARCH_7__ __ARM_ARCH_7A__)
 		target_include_directories(${current_launcher} PRIVATE 
@@ -48,7 +51,7 @@ if(ANDROID)
 		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib")
 		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib")
 		set_property(TARGET ${current_launcher} PROPERTY ANDROID_JAVA_SOURCE_DIR .)
-		target_link_libraries(${current_launcher} PRIVATE ${game_module} c log ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
+		target_link_libraries(${current_launcher} PRIVATE c log ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
 	endforeach()
 
 else()

@@ -604,8 +604,7 @@ technique LinearizeDepth
 pixout FlattenDepthPS(vtxOutTexToTex IN)
 {
 	pixout OUT = (pixout) 0;
-
-	float2 PixCoord = NV_VR_MapUVToWindow(NvGetProjectionData(), IN.baseTC.xy);
+	float2 PixCoord = MapViewportToUnnormalizedRaster(IN.baseTC.xy);
 	OUT.Color.x = LinearizeDepth_DepthTex.Load(int3(PixCoord, 0)).x;
 
 	return OUT;

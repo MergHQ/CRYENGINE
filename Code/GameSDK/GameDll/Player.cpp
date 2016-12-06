@@ -4686,10 +4686,6 @@ void CPlayer::UpdateHealthRegeneration(float fHealth, float frameTime)
 	}
 }
 
-void CPlayer::SerializeXML( XmlNodeRef& node, bool bLoading )
-{
-}
-
 void CPlayer::SetAuthority( bool auth )
 {
 	// we've been given authority of this entity, mark the physics as changed

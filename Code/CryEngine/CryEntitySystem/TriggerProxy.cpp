@@ -58,11 +58,6 @@ void CEntityComponentTriggerBounds::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentTriggerBounds::Update(SEntityUpdateContext& ctx)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityComponentTriggerBounds::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)

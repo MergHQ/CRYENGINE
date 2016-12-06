@@ -98,6 +98,7 @@ public:
 
 private:
 	void CalcNearestTransform( Matrix34 &transformMatrix,const SRenderingPassInfo& passInfo );
+	void InvalidatePermanentRenderObjectMatrix();
 
 public:
 	// Transformation Matrix

@@ -401,8 +401,10 @@ enum EEntityEvent
 	ENTITY_EVENT_LAST,
 };
 
+#define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)|BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)|BIT64(ENTITY_EVENT_UPDATE))
+
 //! Variant of default BIT macro to safely handle 64-bit numbers.
-#define ENTITY_EVENT_BIT(x) (1ULL << (x))
+#define ENTITY_EVENT_BIT(x) BIT64((x))
 
 //! SEntityEvent structure describe event id and parameters that can be sent to an entity.
 struct SEntityEvent

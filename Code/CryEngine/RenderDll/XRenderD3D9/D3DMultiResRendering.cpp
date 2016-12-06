@@ -330,8 +330,8 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostEffects;
 
-	const int dstWidth  = pDestRT->GetWidth();
-	const int dstHeight = pDestRT->GetHeight();
+	const int dstWidth  = pSrcRT->GetWidth();
+	const int dstHeight = pSrcRT->GetHeight();
 
 	if (!CTexture::IsTextureExist(pDestRT) || pDestRT->GetWidth() != dstWidth || pDestRT->GetHeight() != dstHeight)
 	{
@@ -344,7 +344,7 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 	{
 		static CCryNameTSCRC techFlattenDepth("FlattenDepth");
 
-		m_passDepthFlattening.SetTechnique(pShader, techFlattenDepth, g_HWSR_MaskBit[HWSR_PROJECTION_LENS_MATCHED]);
+		m_passDepthFlattening.SetTechnique(pShader, techFlattenDepth, 0);
 		m_passDepthFlattening.SetRenderTarget(0, pDestRT);
 		m_passDepthFlattening.SetState(GS_NODEPTHTEST);
 		m_passDepthFlattening.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);

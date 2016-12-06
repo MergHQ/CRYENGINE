@@ -3,10 +3,14 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 
 	set(SDK_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../SDKs)
 	set(MCS_PATH ${SDK_DIR}/Mono/bin/mcs.bat)
-	set(MONO_LIB_PATH ${SDK_DIR}/Mono/lib/mono)
-
-	set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x64)
-
+	
+	if(MONO_WIN64)
+		set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x64)
+	else() 
+		set(CRYMONOBRIDGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bin/win_x86)
+	endif()
+	create_mono_compiler_settings()
+	
 	set(Component_FILES Components/ButtonCtrl.cs Components/CheckBoxCtrl.cs Components/CollapseCtrl.cs Components/ComboBoxCtrl.cs Components/Image.cs Components/RectTransform.cs Components/ScrollBarCtrl.cs Components/SplitBarCtrl.cs Components/Text.cs Components/TextCtrl.cs Components/UIComponent.cs)
 	source_group("Components" FILES ${Component_FILES})
 
@@ -19,7 +23,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	set(SOURCE ${Component_FILES} ${Resource_FILES} ${Root_FILES})
 
 	add_custom_target(CryEngine.Core.UI ALL
-		COMMAND ${MCS_PATH} -target:library -langversion:6 -platform:anycpu -optimize -debug -define:WIN64 -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll -r:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.UI.dll
+		COMMAND ${MCS_PATH} -target:library -langversion:${MONO_LANGUAGE_VERSION} -platform:${MONO_CPU_PLATFORM} -optimize -debug -define:${MONO_PREPROCESSOR_DEFINE} -lib:${MONO_LIB_PATH} -r:System -r:System.Data -r:System.Drawing -r:System.Runtime.Serialization -r:System.Windows.Forms -r:System.Xml -r:${CRYMONOBRIDGE_PATH}/CryEngine.Common.dll -r:${CRYMONOBRIDGE_PATH}/CryEngine.Core.dll ${SOURCE} -out:${CRYMONOBRIDGE_PATH}/CryEngine.Core.UI.dll
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		SOURCES ${SOURCE})
 

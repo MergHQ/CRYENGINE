@@ -483,14 +483,14 @@ bool CPrimitiveRenderPass::AddPrimitive(CRenderPrimitive* pPrimitive)
 	if (m_passFlags & ePassFlags_VrProjectionPass)
 		rtMask |= CVrProjectionManager::Instance()->GetRTFlags();
 
-	if (!pPrimitive->IsDirty() || 
-	     pPrimitive->Compile(m_pRenderTargets.size(), &m_pRenderTargets[0], m_pDepthTarget, nullptr, m_pOutputResources) == CRenderPrimitive::eDirty_None)
+	if (pPrimitive->IsDirty())
 	{
-		m_compiledPrimitives.push_back(pPrimitive);
-		return true;
+		if (pPrimitive->Compile(m_pRenderTargets.size(), &m_pRenderTargets[0], m_pDepthTarget, nullptr, m_pOutputResources, rtMask) != CRenderPrimitive::eDirty_None)
+			return false;
 	}
 
-	return false;
+	m_compiledPrimitives.push_back(pPrimitive);
+	return true;
 }
 
 bool CPrimitiveRenderPass::AddPrimitive(SCompiledRenderPrimitive* pPrimitive)

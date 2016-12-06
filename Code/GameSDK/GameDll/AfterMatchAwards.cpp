@@ -178,9 +178,9 @@ void CAfterMatchAwards::Update(const float dt)
 CAfterMatchAwards::SAwardsForPlayer *CAfterMatchAwards::GetAwardsForActor(EntityId actorId)
 {
 	// needs to be called now after the game has finished so an invalid actor has to be allowed
-//	IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
-//	if(!pActor || !pActor->IsPlayer())
-//		return NULL;
+	IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
+	if(!pActor || !pActor->IsPlayer())
+		return NULL;
 
 	CRY_ASSERT_MESSAGE(actorId, "GetAwardsForActor() has been passed an invalid NULL entityID.");
 	if (actorId == 0)

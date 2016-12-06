@@ -45,7 +45,10 @@ void CCloudEntity::OnResetState()
 		m_cloudSlot = -1;
 	}
 
-	m_cloudSlot = entity.LoadCloud(-1, m_cloudFile);
+	if (!m_cloudFile.empty())
+	{
+		m_cloudSlot = entity.LoadCloud(-1, m_cloudFile);
+	}
 	if (m_cloudSlot == -1)
 	{
 		return;

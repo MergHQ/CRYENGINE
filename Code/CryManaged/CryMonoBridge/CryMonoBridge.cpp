@@ -56,7 +56,7 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 		env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_crymonobridge);
 		env.pMonoRuntime = new CMonoRuntime();
 
-		return true;
+		return env.pMonoRuntime->Initialize();
 	}
 };
 

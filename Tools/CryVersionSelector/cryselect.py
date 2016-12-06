@@ -22,7 +22,7 @@ def command_title (args):
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
-	'monodev': 'Edit C# code',
+	'monodev': 'Edit code',
 	'switch': 'Switch engine version',
 	'metagen': 'Generate/repair metadata'
 	}.get (args.command, '')
@@ -128,7 +128,7 @@ def cmd_install (args):
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
 			(False, 'open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
-			(False, 'monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
+			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
@@ -144,7 +144,7 @@ def cmd_install (args):
 		project_commands= (
 			(False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
-			(False, 'monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
+			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),

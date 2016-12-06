@@ -34,7 +34,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const override                       { return ENTITY_PROXY_CLIPVOLUME; }
 	virtual void         Release() final { delete this; };
-	virtual void         SerializeXML(XmlNodeRef& entityNodeXML, bool loading) override;
+	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override;
 	virtual void         GameSerialize(TSerialize serialize) override {};
 	virtual bool         NeedGameSerialize() override                 { return false; }
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;

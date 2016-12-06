@@ -1982,8 +1982,6 @@ EntityId CEntitySystem::ReserveUnknownEntityId()
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::ActivateEntity(CEntity* pEntity, bool bActivate)
 {
-	assert(pEntity == GetEntityFromID(pEntity->GetId()));
-
 	if (bActivate)
 	{
 		m_mapActiveEntities.insert(pEntity->GetId());

@@ -1898,7 +1898,7 @@ CryParticleEditor--CFeatureStyle {
 }
 
 CryParticleEditor--CFeatureGridStyle {
-	qproperty-parentSpacing: 30;
+	qproperty-parentSpacing: 3;
 	qproperty-featureSpacing: 3;
 }
 

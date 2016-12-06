@@ -104,7 +104,6 @@ target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer)
 target_link_libraries(${THIS_PROJECT} PRIVATE
 	SDL2
 	timidity
-	native_midi
 	flac_static
 	libogg_static
 	libmikmod_static
@@ -118,7 +117,6 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DFLAC_MUSIC
 	-DMODPLUG_MUSIC
 	-DUSE_TIMIDITY_MIDI
-	-DUSE_NATIVE_MIDI
 )
 
 if(WIN32 OR WIN64)
@@ -127,8 +125,9 @@ if(WIN32 OR WIN64)
 		-DMP3_MUSIC
 		-DMODPLUG_DYNAMIC="libmodplug-1.dll"
 		-DMP3_DYNAMIC="smpeg2.dll"
+		-DUSE_NATIVE_MIDI
 	)
-	target_link_libraries(${THIS_PROJECT} PUBLIC Winmm)
+	target_link_libraries(${THIS_PROJECT} PUBLIC Winmm native_midi)
 	target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/SDL_mixer/VisualC/external/include)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 elseif(LINUX OR ANDROID)

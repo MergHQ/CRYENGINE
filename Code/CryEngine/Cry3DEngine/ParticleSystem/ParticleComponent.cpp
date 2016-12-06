@@ -343,12 +343,13 @@ void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleCompo
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		for (auto& it : GetUpdateList(EUL_Render))
-			it->Render(pEmitter, pRuntime, this, renderContext);
+		const bool isGpuParticles = (pRuntime->GetGpuRuntime() != nullptr);
 
-		if (!GetUpdateList(EUL_RenderDeferred).empty())
+		for (auto& it : GetUpdateList(EUL_Render))
+			it->Render(pEmitter, pRuntime, this, renderContext);		
+		
+		if (!GetUpdateList(EUL_RenderDeferred).empty() && !isGpuParticles)
 		{
-			CRY_PFX2_ASSERT(pRuntime->GetGpuRuntime() == nullptr);
 			CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
 			CParticleComponentRuntime* pCpuRuntime = static_cast<CParticleComponentRuntime*>(pRuntime);
 			jobManager.AddDeferredRender(pCpuRuntime, renderContext);
@@ -480,10 +481,36 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 
 void CParticleComponent::SetName(const char* name)
 {
-	if (m_pEffect)
-		m_name = m_pEffect->MakeUniqueName(m_componentId, name);
-	else
+	if (!m_pEffect)
+	{
 		m_name = name;
+		return;
+	}
+
+	string oldName = m_name;
+
+	m_name = m_pEffect->MakeUniqueName(m_componentId, name);
+
+	// #PFX2_TODO - not the best solution but needed for 5.3. Deprecate after SecondGen is reimplemented using UIDs
+	const uint numComponents = m_pEffect->GetNumComponents();
+	for (uint componentIdx = 0; componentIdx < numComponents; ++componentIdx)
+	{
+		IParticleComponent* pComponent = m_pEffect->GetComponent(componentIdx);
+		const uint numFeatures = pComponent->GetNumFeatures();
+		for (uint featureIdx = 0; featureIdx < numFeatures; ++featureIdx)
+		{
+			IParticleFeature* pFeature = pComponent->GetFeature(featureIdx);
+			const uint numConnectors = pFeature->GetNumConnectors();
+			for (uint connectorIdx = 0; connectorIdx < numConnectors; ++connectorIdx)
+			{
+				if (strcmp(pFeature->GetConnectorName(connectorIdx), oldName.c_str()) == 0)
+				{
+					pFeature->DisconnectFrom(oldName);
+					pFeature->ConnectTo(m_name.c_str());
+				}
+			}
+		}
+	}
 }
 
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");

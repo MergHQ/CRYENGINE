@@ -593,20 +593,20 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *passContext.pCommandList->GetGraphicsInterface();
 
 #if defined(ENABLE_PROFILING_CODE)
-	if (m_bIncomplete || !m_materialResourceSet->IsValid())
+	if (m_bIncomplete || !m_materialResourceSet || !m_materialResourceSet->IsValid())
 	{
 		CryInterlockedIncrement(&SPipeStat::Out()->m_nIncompleteCompiledObjects);
 	}
 #endif
 
-	assert(passContext.stageID < MAX_PIPELINE_SCENE_STAGES);
-	assert(passContext.passID < MAX_PIPELINE_SCENE_STAGE_PASSES);
+	//assert(passContext.stageID < MAX_PIPELINE_SCENE_STAGES);
+	//assert(passContext.passID < MAX_PIPELINE_SCENE_STAGE_PASSES);
 	const CDeviceGraphicsPSOPtr& pPso = m_pso[passContext.stageID][passContext.passID];
 
-	if (!pPso || !pPso->IsValid() || !m_materialResourceSet->IsValid())
+	if (!pPso || !pPso->IsValid() || !m_materialResourceSet && !m_materialResourceSet->IsValid())
 		return;
 
-	assert(m_perInstanceExtraResources->IsValid());
+	//assert(m_perInstanceExtraResources->IsValid());
 
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//assert(0 == (m_pRenderElement->m_Flags & FCEF_DIRTY));

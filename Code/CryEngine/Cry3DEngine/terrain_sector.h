@@ -387,6 +387,7 @@ public:
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
 	void          UpdateNodeTextureFromEditorData();
+	void					UpdateNodeNormalMapFromEditorData();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
 	IRenderMesh*  MakeSubAreaRenderMesh(const Vec3& vPos, float fRadius, IRenderMesh* pPrevRenderMesh, IMaterial* pMaterial, bool bRecalIRenderMeshconst, const char* szLSourceName);

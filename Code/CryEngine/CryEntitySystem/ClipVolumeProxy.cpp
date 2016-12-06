@@ -93,16 +93,23 @@ void CEntityComponentClipVolume::SetProperties(bool bIgnoresOutdoorAO)
 	}
 }
 
-void CEntityComponentClipVolume::SerializeXML(XmlNodeRef& entityNodeXML, bool loading)
+void CEntityComponentClipVolume::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
-	if (loading)
+	if (bLoading)
 	{
 		LOADING_TIME_PROFILE_SECTION;
 
-		if (XmlNodeRef pVolumeNode = entityNodeXML->findChild("ClipVolume"))
+		XmlNodeRef volumeNode = componentNode->findChild("ClipVolume");
+		if (!volumeNode)
+		{
+			// legacy behavior, look for properties on the entity node level
+			volumeNode = entityNode->findChild("ClipVolume");
+		}
+
+		if (volumeNode)
 		{
 			const char* szFileName = NULL;
-			if (pVolumeNode->getAttr("GeometryFileName", &szFileName))
+			if (volumeNode->getAttr("GeometryFileName", &szFileName))
 			{
 				// replace %level% by level path
 				char szFilePath[_MAX_PATH];
@@ -117,7 +124,7 @@ void CEntityComponentClipVolume::SerializeXML(XmlNodeRef& entityNodeXML, bool lo
 	}
 	else
 	{
-		XmlNodeRef volumeNode = entityNodeXML->newChild("ClipVolume");
+		XmlNodeRef volumeNode = componentNode->newChild("ClipVolume");
 		volumeNode->setAttr("GeometryFileName", m_GeometryFileName);
 	}
 }

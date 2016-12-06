@@ -263,7 +263,7 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentRope::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentRope::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	IRopeRenderNode::SRopeParams ropeParams = m_pRopeRenderNode->GetParams();
 	if (bLoading)

@@ -159,6 +159,12 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
+	case ENTITY_EVENT_UPDATE:
+		{
+			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+			Update(*pCtx);
+		}
+	break;
 	case ENTITY_EVENT_ANIM_EVENT:
 		{
 			const AnimEventInstance* const pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
@@ -530,8 +536,10 @@ void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentLuaScript::GetEventMask() const
 {
-	// All events except ENTITY_EVENT_PREPHYSICSUPDATE
-	return ~BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	// All events except runtime expensive ones
+	return 
+	  ~(ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK) |
+	  BIT64(ENTITY_EVENT_UPDATE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -772,13 +780,14 @@ void CEntityComponentLuaScript::SerializeTable(TSerialize ser, const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentLuaScript::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	// Initialize script properties.
 	if (bLoading)
 	{
 		CScriptProperties scriptProps;
 		// Initialize properties.
+		// Script properties are currently stored in the entity node, not the component itself (legacy)
 		scriptProps.SetProperties(entityNode, m_pThis);
 
 		XmlNodeRef eventTargets = entityNode->findChild("EventTargets");

@@ -47,7 +47,10 @@ void CScriptGraphArrayRemoveByValueNode::CreateLayout(CScriptGraphNodeLayout& la
 
 void CScriptGraphArrayRemoveByValueNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
 {
-	compiler.BindCallback(&Execute);
+	if (!m_defaultValue.IsEmpty())
+	{
+		compiler.BindCallback(&Execute);
+	}
 }
 
 void CScriptGraphArrayRemoveByValueNode::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)

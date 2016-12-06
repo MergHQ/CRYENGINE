@@ -184,8 +184,8 @@ struct SGeometryDebugDrawInfo
 	ColorB   lineColor; //!< Optional color of the lines.
 
 	//! Optional flags controlling how to render debug draw information.
-	uint32 bNoCull  : 1;
-	uint32 bNoLines : 1;
+	uint32 bNoCull      : 1;
+	uint32 bNoLines     : 1;
 	uint32 bDrawInFront : 1;   //!< Draw debug draw geometry on top of real geometry.
 
 	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoLines(0), bNoCull(0) { tm.SetIdentity(); }
@@ -2134,7 +2134,7 @@ struct I3DEngine : public IProcess
 	virtual void GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects) = 0;
 
 	//! Called from editor whenever an object is modified by the user.
-	virtual void        OnObjectModified(IRenderNode* pRenderNode, uint dwFlags) = 0;
+	virtual void        OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags) = 0;
 
 	virtual void        FillDebugFPSInfo(SDebugFPSInfo&) = 0;
 
@@ -2215,7 +2215,7 @@ struct I3DEngine : public IProcess
 			eCylinder_Hard
 		};
 
-		Vec3  v0;
+		Vec3 v0;
 
 		union
 		{

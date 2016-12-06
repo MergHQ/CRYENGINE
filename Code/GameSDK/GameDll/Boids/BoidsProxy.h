@@ -101,7 +101,6 @@ public:
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_BOID_OBJECT; }
 	virtual	void ProcessEvent( SEntityEvent &event ) override;
 	virtual uint64 GetEventMask() const final;
-	virtual void SerializeXML( XmlNodeRef &entityNode,bool bLoading ) override {};
 	virtual void GameSerialize( TSerialize ser ) override;
 	virtual bool NeedGameSerialize() override { return false; };
 	//////////////////////////////////////////////////////////////////////////

@@ -1091,15 +1091,8 @@ bool CSystem::InitMonoBridge()
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
 	if (!InitializeEngineModule(DLL_MONO_BRIDGE, "EngineModule_CryMonoBridge", false))
-		return false;
-
-	if (!m_env.pMonoRuntime)
 	{
 		gEnv->pLog->LogWarning("MonoRuntime not created.");
-		return false;
-	}
-	else if (!m_env.pMonoRuntime->Initialize())
-	{
 		m_env.pMonoRuntime = nullptr;
 		return false;
 	}

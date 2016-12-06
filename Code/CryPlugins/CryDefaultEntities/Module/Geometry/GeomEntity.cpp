@@ -20,7 +20,7 @@ class CGeomEntityRegistrator
 			return;
 		}
 
-		RegisterEntityWithDefaultComponent<CGeomEntity>("GeomEntity", "Geometry");
+		RegisterEntityWithDefaultComponent<CGeomEntity>("GeomEntity", "Geometry", "physicsobject.bmp", true);
 
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown

@@ -28,13 +28,13 @@ tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 class CEngineModule_CryAudioImplWwise : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplWwise, "CryAudioImplWwise", 0xb4971e5dd02442c5, 0xb34a9ac0b4abfffd)
+	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplWwise, "EngineModule_AudioImpl", 0xb4971e5dd02442c5, 0xb34a9ac0b4abfffd)
 
 	CEngineModule_CryAudioImplWwise();
 	virtual ~CEngineModule_CryAudioImplWwise() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() override { return "CryAudioImplWwise"; }
+	virtual const char* GetName() override     { return "CryAudioImplWwise"; }
 	virtual const char* GetCategory() override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
@@ -44,16 +44,16 @@ class CEngineModule_CryAudioImplWwise : public IEngineModule
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Implementation Memory Pool Primary");
 
 		size_t primaryPoolSize = g_audioImplCVars.m_prepareEventMemoryPoolSize
-			+ g_audioImplCVars.m_streamManagerMemoryPoolSize
-			+ g_audioImplCVars.m_streamDeviceMemoryPoolSize
-			+ g_audioImplCVars.m_soundEngineDefaultMemoryPoolSize
-			+ g_audioImplCVars.m_commandQueueMemoryPoolSize
-			+ g_audioImplCVars.m_lowerEngineDefaultPoolSize
+		                         + g_audioImplCVars.m_streamManagerMemoryPoolSize
+		                         + g_audioImplCVars.m_streamDeviceMemoryPoolSize
+		                         + g_audioImplCVars.m_soundEngineDefaultMemoryPoolSize
+		                         + g_audioImplCVars.m_commandQueueMemoryPoolSize
+		                         + g_audioImplCVars.m_lowerEngineDefaultPoolSize
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-			+ g_audioImplCVars.m_monitorMemoryPoolSize
-			+ g_audioImplCVars.m_monitorQueueMemoryPoolSize
+		                         + g_audioImplCVars.m_monitorMemoryPoolSize
+		                         + g_audioImplCVars.m_monitorQueueMemoryPoolSize
 #endif
-			;
+		;
 
 		size_t const poolSize = primaryPoolSize << 10;
 		uint8* const pPoolMemory = new uint8[poolSize];

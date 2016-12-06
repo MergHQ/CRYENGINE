@@ -19,7 +19,7 @@ CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "CryAudioImplSDLMixer", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
+	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
 
 	CEngineModule_CryAudioImplSDLMixer();
 	virtual ~CEngineModule_CryAudioImplSDLMixer() {}

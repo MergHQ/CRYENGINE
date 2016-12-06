@@ -18,13 +18,15 @@ struct SEditorClassInfo
 	SEditorClassInfo() :
 		sIcon(""),
 		sHelper(""),
-		sCategory("")
+		sCategory(""),
+		bIconOnTop(false)
 	{
 	}
 
 	string sIcon;
 	string sHelper;
 	string sCategory;
+	bool   bIconOnTop;
 };
 
 enum EEntityClassFlags

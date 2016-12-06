@@ -273,9 +273,9 @@ half CalcShadow(float4 vShPos, float2 vNoisePos, const bool bContactHardening)
 }
 
 ////////////////////////////////////////////////////////////
-struct vtxOutShadowMaskVolume { float4 HPosition : POSITION; };
+struct vtxOutShadowMaskVolume { float4 HPosition : SV_Position; };
 
-vtxOutShadowMaskVolume ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
+vtxOutShadowMaskVolume ShadowMaskVolumeVS(float3 inPosition  : POSITION)
 {
 	vtxOutShadowMaskVolume OUT = (vtxOutShadowMaskVolume)0;
 	OUT.HPosition = mul(float4(inPosition, 1.0), c_ShadowMaskConstants.unitMeshTransform);

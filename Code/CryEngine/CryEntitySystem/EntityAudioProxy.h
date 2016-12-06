@@ -26,7 +26,6 @@ public:
 	// IEntityComponent
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_AUDIO; }
 	virtual void         Release() final { delete this; };
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override {}
 	virtual void         GameSerialize(TSerialize ser) override;
 	virtual bool         NeedGameSerialize() override                                     { return false; }
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override             { pSizer->AddObject(this, sizeof(*this)); }

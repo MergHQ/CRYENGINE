@@ -103,7 +103,6 @@ struct ISimpleActor : public IActor
 		return GetEntity()->GetClass()->GetName();
 	}
 
-	virtual void SerializeXML( XmlNodeRef &node, bool bLoading ) override {}
 	virtual void SerializeLevelToLevel( TSerialize &ser ) override {}
 	
 	virtual IAnimatedCharacter*       GetAnimatedCharacter() override { return nullptr; }

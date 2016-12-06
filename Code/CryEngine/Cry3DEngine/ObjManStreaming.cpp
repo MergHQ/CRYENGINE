@@ -985,221 +985,6 @@ void CObjManager::PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEnt
 	}
 }
 
-namespace
-{
-void CollectRenderMeshMaterials(IMaterial* pMaterial, IRenderMesh* pRenderMesh, std::vector<std::pair<IMaterial*, float>>& collectedMaterials)
-{
-	if (!pMaterial || !pRenderMesh)
-	{
-		return;
-	}
-
-	stl::push_back_unique(collectedMaterials, std::pair<IMaterial*, float>(pMaterial, 1.0f));
-
-	TRenderChunkArray& chunks = pRenderMesh->GetChunks();
-	const uint subMtlCount = pMaterial->GetSubMtlCount();
-
-	const uint numChunks = chunks.size();
-	for (uint i = 0; i < numChunks; ++i)
-	{
-		CRenderChunk& chunk = chunks[i];
-		if (chunk.nNumIndices > 0 && chunk.nNumVerts > 0 && chunk.m_nMatID < subMtlCount)
-		{
-			stl::push_back_unique(collectedMaterials, std::pair<IMaterial*, float>(pMaterial->GetSubMtl(chunk.m_nMatID), chunk.m_texelAreaDensity));
-		}
-	}
-}
-}
-
-void CObjManager::PrecacheCharacterCollect(IRenderNode* pObj, const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat, const Matrix34& matParent,
-                                           const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod,
-                                           const int nRoundId, std::vector<std::pair<IMaterial*, float>>& collectedMaterials)
-{
-	if (!nMaxDepth || !pCharacter)
-		return;
-	nMaxDepth--;
-
-	static ICVar* pSkipVertexAnimationLOD = gEnv->pConsole->GetCVar("ca_vaSkipVertexAnimationLOD");
-	const bool bSkipVertexAnimationLOD = pSkipVertexAnimationLOD != NULL ? pSkipVertexAnimationLOD->GetIVal() != 0 : false;
-
-	int minLod = 0;
-	if (bSkipVertexAnimationLOD && pCharacter->HasVertexAnimation())
-	{
-		minLod = max(minLod, 1);
-		nLod = 1;
-	}
-
-	SFrameLodInfo lodParam = gEnv->p3DEngine->GetFrameLodInfo();
-
-	IAttachmentManager* pAttMan = pCharacter->GetIAttachmentManager();
-	ICharacterInstance* pCharInstance = pAttMan->GetSkelInstance();
-	if (pCharInstance && pCharInstance != pCharacter)
-	{
-		PrecacheCharacterCollect(pObj, fImportance, pCharInstance, pSlotMat, matParent, fEntDistance, fScale, nMaxDepth, bFullUpdate, bDrawNear, nLod, nRoundId, collectedMaterials);
-	}
-
-	int nCount = pAttMan->GetAttachmentCount();
-	for (int i = 0; i < nCount; i++)
-	{
-		if (IAttachment* pAtt = pAttMan->GetInterfaceByIndex(i))
-		{
-			IAttachmentObject* pIAttachmentObject = pAtt->GetIAttachmentObject();
-			if (pIAttachmentObject)
-			{
-				IAttachmentSkin* pIAttachmentSkin = pIAttachmentObject->GetIAttachmentSkin();
-				if (pIAttachmentSkin)
-				{
-					ISkin* pISkin = pIAttachmentSkin->GetISkin();
-
-					const int maxLod = (int)pISkin->GetNumLODs() - 1;
-
-					const int minPrecacheLod = clamp_tpl(nLod - 1, minLod, maxLod);
-					const int maxPrecacheLod = clamp_tpl(nLod + 1, minLod, maxLod);
-
-					IMaterial* pAttMatOverride = (IMaterial*)pIAttachmentObject->GetReplacementMaterial();
-					IMaterial* pAttMat = pAttMatOverride ? pAttMatOverride : (IMaterial*)pIAttachmentObject->GetBaseMaterial();
-
-					for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
-					{
-						pISkin->PrecacheMesh(bFullUpdate, nRoundId, currentLod);
-
-						IRenderMesh* pRenderMesh = pISkin->GetIRenderMesh(currentLod); //get the baseLOD
-						IMaterial* pCharObjMat = pISkin->GetIMaterial(currentLod);
-
-						CollectRenderMeshMaterials(pAttMat, pRenderMesh, collectedMaterials);
-						if (pCharObjMat != pAttMat)
-						{
-							CollectRenderMeshMaterials(pCharObjMat, pRenderMesh, collectedMaterials);
-						}
-					}
-
-					continue;
-				}
-
-				CStatObj* pStatObj = (CStatObj*)pIAttachmentObject->GetIStatObj();
-				if (pStatObj)
-				{
-					if (!pStatObj || pStatObj->GetFlags() & STATIC_OBJECT_HIDDEN)
-						continue;
-
-					const int minLod = pStatObj->GetMinUsableLod();
-					const int maxLod = (int)pStatObj->m_nMaxUsableLod;
-					const int minPrecacheLod = clamp_tpl(nLod - 1, minLod, maxLod);
-					const int maxPrecacheLod = clamp_tpl(nLod + 1, minLod, maxLod);
-
-					const QuatT& q = pAtt->GetAttAbsoluteDefault();
-					Matrix34A tm34 = matParent * Matrix34(q);
-
-					for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
-					{
-						pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
-
-						pStatObj = (CStatObj*)pStatObj->GetLodObject(currentLod, true);
-						IMaterial* pAttMatOverride = (IMaterial*)pIAttachmentObject->GetReplacementMaterial();
-						IMaterial* pAttMat = pAttMatOverride ? pAttMatOverride : (IMaterial*)pIAttachmentObject->GetBaseMaterial();
-						IMaterial* pMaterial = pAttMat ? pAttMat : pStatObj->GetMaterial();
-
-						CollectRenderMeshMaterials(pMaterial, pStatObj->GetRenderMesh(), collectedMaterials);
-					}
-
-					continue;
-				}
-
-				ICharacterInstance* pSkelInstance = pIAttachmentObject->GetICharacterInstance();
-				if (pSkelInstance)
-				{
-					IMaterial* pAttMatOverride = (IMaterial*)pIAttachmentObject->GetReplacementMaterial();
-					IMaterial* pAttMat = pAttMatOverride ? pAttMatOverride : (IMaterial*)pIAttachmentObject->GetBaseMaterial();
-
-					PrecacheCharacterCollect(pObj, fImportance, pSkelInstance, pAttMat, matParent, fEntDistance, fScale, nMaxDepth, bFullUpdate, bDrawNear, nLod, nRoundId, collectedMaterials);
-					continue;
-				}
-			}
-		}
-	}
-
-	IMaterial* pCharObjMat = pCharacter->GetIMaterial();
-
-	IDefaultSkeleton& rIDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
-	rIDefaultSkeleton.PrecacheMesh(bFullUpdate, nRoundId, nLod);
-
-	IRenderMesh* pIRenderMesh = rIDefaultSkeleton.GetIRenderMesh(); //get the baseLOD
-	CollectRenderMeshMaterials(pSlotMat, pIRenderMesh, collectedMaterials);
-	if (pSlotMat != pCharObjMat)
-	{
-		CollectRenderMeshMaterials(pCharObjMat, pIRenderMesh, collectedMaterials);
-	}
-
-	if (pCharInstance->GetObjectType() == CGA)
-	{
-		// joints
-		if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
-		{
-			uint32 numJoints = pCharacter->GetIDefaultSkeleton().GetJointCount();
-
-			// check StatObj attachments
-			for (uint32 i = 0; i < numJoints; i++)
-			{
-				CStatObj* pStatObj = (CStatObj*)pSkeletonPose->GetStatObjOnJoint(i);
-				if (!pStatObj || pStatObj->GetFlags() & STATIC_OBJECT_HIDDEN)
-					continue;
-
-				const int minLod = pStatObj->GetMinUsableLod();
-				const int maxLod = (int)pStatObj->m_nMaxUsableLod;
-				const int minPrecacheLod = clamp_tpl(nLod - 1, minLod, maxLod);
-				const int maxPrecacheLod = clamp_tpl(nLod + 1, minLod, maxLod);
-
-				for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
-				{
-					Matrix34A tm34 = matParent * Matrix34(pSkeletonPose->GetAbsJointByID(i));
-					pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
-
-					IMaterial* pStatObjMat = pStatObj->GetMaterial();
-					IStatObj* pStatObjLod = pStatObj->GetLodObject(currentLod, true);
-					PrecacheStatObjMaterial(pStatObjMat ? pStatObjMat : pSlotMat, fEntDistance / fScale, pStatObjLod, bFullUpdate, bDrawNear);
-				}
-			}
-		}
-	}
-}
-
-void CObjManager::PrecacheCharacter(IRenderNode* pObj, const float fImportance, ICharacterInstance* pCharacter, IMaterial* pSlotMat, const Matrix34& matParent,
-                                    const float fEntDistance, const float fScale, int nMaxDepth, bool bFullUpdate, bool bDrawNear, int nLod)
-{
-	const int nRoundId = bFullUpdate
-	                     ? m_nUpdateStreamingPrioriryRoundIdFast
-	                     : m_nUpdateStreamingPrioriryRoundId;
-
-	m_collectedMaterials.clear();
-	PrecacheCharacterCollect(pObj, fImportance, pCharacter, pSlotMat, matParent, fEntDistance, fScale, nMaxDepth, bFullUpdate, bDrawNear, nLod, nRoundId, m_collectedMaterials);
-
-	const uint numMaterials = m_collectedMaterials.size();
-	if (numMaterials > 0)
-	{
-		int nFlags = 0;
-		float scaledEntDistance = fEntDistance / fScale;
-
-		if (bDrawNear)
-		{
-			nFlags |= FPR_HIGHPRIORITY;
-		}
-		else
-		{
-			scaledEntDistance = max(GetFloatCVar(e_StreamPredictionMinReportDistance), scaledEntDistance);
-		}
-
-		const float fMipFactor = scaledEntDistance * scaledEntDistance;
-
-		for (uint i = 0; i < numMaterials; ++i)
-		{
-			const std::pair<IMaterial*, float>& collectedMaterial = m_collectedMaterials[i];
-			CMatInfo* pMaterial = ((CMatInfo*)collectedMaterial.first);
-			const float density = GetCVars()->e_StreamPredictionTexelDensity ? collectedMaterial.second : 1.0f;
-			pMaterial->PrecacheTextures(fMipFactor * density, nFlags, bFullUpdate);
-		}
-	}
-}
-
 void CObjManager::PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A& statObjMatrix, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority)
 {
 	if (!pStatObj)
@@ -1299,6 +1084,13 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 	int nLod = CObjManager::GetObjectLOD(pObj, fEntDistanceReal);
 	IMaterial* pRenderNodeMat = pObj->GetMaterialOverride();
 
+	IRenderNode::SUpdateStreamingPriorityContext ctx;
+	ctx.pPassInfo = &passInfo;
+	ctx.distance = fEntDistance;
+	ctx.importance = fImportance;
+	ctx.lod = nLod;
+	ctx.bFullUpdate = bFullUpdate;
+
 	if (pObj->m_pTempData)
 	{
 		if (GetFloatCVar(e_StreamCgfGridUpdateDistance) != 0.0f || GetFloatCVar(e_StreamPredictionAhead) != 0.0f || GetFloatCVar(e_StreamPredictionMinFarZoneDistance) != 0.0f)
@@ -1320,11 +1112,15 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		}
 	}
 
-	if (nodeType == eERType_Brush)
+	if (nodeType == eERType_Brush || nodeType == eERType_Vegetation)
 	{
 		Matrix34A brushMatrix;
 		IStatObj* pStatObj = pObj->GetEntityStatObj(0, 0, &brushMatrix);
-		PrecacheStatObj(static_cast<CStatObj*>(pStatObj), nLod, brushMatrix, pRenderNodeMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+		if (pStatObj)
+		{
+			IMaterial* pStatObjMat = pStatObj->GetMaterial();
+			PrecacheStatObj(static_cast<CStatObj*>(pStatObj), nLod, brushMatrix, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+		}
 		return;
 	}
 	else if (nodeType == eERType_ParticleEmitter)
@@ -1342,52 +1138,27 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		pMMRM->UpdateStreamableComponents(fImportance, fEntDistance, bFullUpdate);
 		return;
 	}
-
-	const int nSlotCount = pObj->GetSlotCount();
-	for (int nEntSlot = 0; nEntSlot < nSlotCount; ++nEntSlot)
+	else if (nodeType == eERType_Character)
 	{
-		bool bDrawNear = false;
+		pObj->UpdateStreamingPriority(ctx);
+		return;
+	}
+	else if (nodeType == eERType_GeomCache)
+	{
+		pObj->UpdateStreamingPriority(ctx);
+		return;
+	}
 
-		IMaterial* pSlotMat = pObj->GetEntitySlotMaterial(nEntSlot, false, &bDrawNear);
-		if (!pSlotMat)
-			pSlotMat = pRenderNodeMat;
-
-		bDrawNear = 0 != (pObj->GetRndFlags() & ERF_FOB_NEAREST);
-
-		// If the object is in camera space, don't use the prediction position.
-		const float fEntPrecacheDistance = (bDrawNear)
-		                                   ? sqrt_tpl(Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), objBox))
-		                                   : fEntDistance;
-
-		bDrawNear |= bHighPriority;
-
-		Matrix34A matParent;
-		CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(nEntSlot, 0, &matParent, false);
-		if (pStatObj)
-		{
-			IMaterial* pStatObjMat = pStatObj->GetMaterial();
-			PrecacheStatObj(pStatObj, nLod, matParent, pSlotMat ? pSlotMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
-		}
-		else if (ICharacterInstance* pChar = pObj->GetEntityCharacter(nEntSlot, &matParent, false))
-		{
-			FRAME_PROFILER("UpdateObjectsStreamingPriority_PrecacheCharacter", GetSystem(), PROFILE_3DENGINE);
-
-			if ((pChar->GetFlags() & CS_FLAG_STREAM_HIGH_PRIORITY) != 0)
-			{
-				bDrawNear = true;
-			}
-
-			PrecacheCharacter(pObj, fImportance, pChar, pSlotMat, matParent, fEntPrecacheDistance, fObjScale, bDrawNear ? 4 : 2, bFullUpdate, bDrawNear, nLod);
-		}
-#if defined(USE_GEOM_CACHES)
-		else if (CGeomCacheRenderNode* pGeomCacheRenderNode = static_cast<CGeomCacheRenderNode*>(pObj->GetGeomCacheRenderNode(nEntSlot, &matParent, false)))
-		{
-			pGeomCacheRenderNode->UpdateStreamableComponents(fImportance, fEntDistance, bFullUpdate, nLod, fInvObjScale, bFullUpdate);
-		}
-#endif
-		else if (pSlotMat)
-		{
-			pSlotMat->PrecacheMaterial(fEntDistance * fInvObjScale, pObj->GetRenderMesh(nLod), bFullUpdate, bHighPriority);
-		}
+	Matrix34A matParent;
+	CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(0, 0, &matParent, false);
+	if (pStatObj)
+	{
+		IMaterial* pStatObjMat = pStatObj->GetMaterial();
+		PrecacheStatObj(pStatObj, nLod, matParent, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+	}
+	else if (pRenderNodeMat)
+	{
+		// If not any of the known render nodes try to pre-cache only the override material
+		pRenderNodeMat->PrecacheMaterial(fEntDistance * fInvObjScale, pObj->GetRenderMesh(nLod), bFullUpdate, bHighPriority);
 	}
 }

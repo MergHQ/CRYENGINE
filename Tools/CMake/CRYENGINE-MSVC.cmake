@@ -12,15 +12,15 @@ set(MSVC_COMMON_FLAGS
 	/MP
 	/bigobj
 
-	#/Wx
+	/WX  #Treat warnings as errors
 )
 string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
  
 # Override cxx flags
 set(CMAKE_CXX_FLAGS "${MSVC_COMMON_FLAGS}" CACHE STRING "C++ Common Flags" FORCE)
 
-set(CMAKE_C_FLAGS_DEBUG "/MDd /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C Flags" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "/MDd /Zi /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C Flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Zo /Od /Ob0 /Oy- /RTC1 /GS /DDEBUG /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
 
 # Create PDBs (/Zi)
 # Create better debug info (/Zo)
@@ -35,3 +35,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "/MD /Ox /GS- /DNDEBUG /D_RELEASE /DPURE_CLIENT" CAC
 
 set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "/debug" CACHE STRING "Profile link flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE    "/debug" CACHE STRING "Profile link flags" FORCE)
+
+function (wrap_whole_archive target source)
+	# no-op for MSVC (for now)
+	set(${target} "${${source}}" PARENT_SCOPE)
+endfunction()
+

@@ -3529,7 +3529,7 @@ void CD3D9Renderer::FX_DrawTechnique(CShader* ef, SShaderTechnique* pTech)
 		break;
 	case eSHDT_CustomDraw:
 	case eSHDT_Sky:
-		if (m_RP.m_pRE)
+		if (m_RP.m_pRE && (m_RP.m_nRendFlags & SHDF_ALLOWHDR))
 		{
 			EF_Scissor(false, 0, 0, 0, 0);
 			if (pTech && pTech->m_Passes.Num())

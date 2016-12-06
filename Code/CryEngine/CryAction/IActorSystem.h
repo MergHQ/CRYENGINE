@@ -142,7 +142,6 @@ struct IActor : public IGameObjectExtension
 
 	virtual const char*               GetEntityClassName() const = 0;
 
-	virtual void                      SerializeXML(XmlNodeRef& node, bool bLoading) = 0;
 	virtual void                      SerializeLevelToLevel(TSerialize& ser) = 0;
 	virtual void                      ProcessEvent(SEntityEvent& event) = 0;
 

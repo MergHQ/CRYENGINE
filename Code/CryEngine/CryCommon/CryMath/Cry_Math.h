@@ -144,13 +144,7 @@ namespace crymath
 using std::abs;
 using std::floor;
 using std::ceil;
-
-#if CRY_PLATFORM_ANDROID
-	ILINE f32 trunc(f32 op) { return ::truncf(op); }
-	ILINE f64 trunc(f64 op) { return ::trunc(op); }
-#else
-	using std::trunc;
-#endif
+using std::trunc;
 
 template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
 template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }

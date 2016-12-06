@@ -186,9 +186,6 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 	CEntity* pCEntity = GetEntity(pStateChange->pForeignData, pStateChange->iForeignData);
 	if (pCEntity)
 	{
-		EEntityUpdatePolicy policy = (EEntityUpdatePolicy)pCEntity->m_eUpdatePolicy;
-		// If its update depends on physics, physics state defines if this entity is to be updated.
-		if (policy == ENTITY_UPDATE_PHYSICS || policy == ENTITY_UPDATE_PHYSICS_VISIBLE)
 		{
 			int nNewSymClass = pStateChange->iSimClass[1];
 			//			int nOldSymClass = pStateChange->iSimClass[0];

@@ -113,9 +113,9 @@ bool CMonoRuntime::Initialize()
 	CryFindEngineRootFolder(_MAX_PATH, engineRoot);
 
 	char sMonoLib[_MAX_PATH];
-	sprintf_s(sMonoLib, "%s\\Engine\\mono\\lib", engineRoot);
+	sprintf_s(sMonoLib, "%s\\bin\\common\\Mono\\lib", engineRoot);
 	char sMonoEtc[_MAX_PATH];
-	sprintf_s(sMonoEtc, "%s\\Engine\\mono\\etc", engineRoot);
+	sprintf_s(sMonoEtc, "%s\\bin\\common\\Mono\\etc", engineRoot);
 
 	if (!gEnv->pCryPak->IsFileExist(sMonoLib) || !gEnv->pCryPak->IsFileExist(sMonoEtc))
 	{

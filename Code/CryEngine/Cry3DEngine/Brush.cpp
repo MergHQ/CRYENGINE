@@ -180,7 +180,7 @@ void CBrush::SetMatrix(const Matrix34& mat)
 		              + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
 		m_Matrix = mat;
 	}
-	m_bPermanentRenderObjectMatrixValid = false;
+	InvalidatePermanentRenderObjectMatrix();
 
 	pe_params_foreign_data foreignData;
 	foreignData.iForeignFlags = 0;
@@ -601,7 +601,7 @@ void CBrush::CheckPhysicalized()
 	if (!m_pPhysEnt && !m_bNoPhysicalize)
 	{
 		Physicalize();
-		}
+	}
 }
 
 void CBrush::GetMemoryUsage(ICrySizer* pSizer) const
@@ -628,8 +628,9 @@ void CBrush::SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matr
 
 	if (bRePhysicalize && !m_bNoPhysicalize)
 	{
-			Physicalize();
+		Physicalize();
 	}
+	InvalidatePermanentRenderObject();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -659,7 +660,7 @@ void CBrush::SetStatObj(IStatObj* pStatObj)
 	{
 		m_pTempData->MarkForDelete();
 		m_pTempData = nullptr;
-}
+	}
 
 	m_nInternalFlags |= UPDATE_DECALS;
 
@@ -692,7 +693,7 @@ IRenderNode* CBrush::Clone() const
 void CBrush::SetLayerId(uint16 nLayerId)
 {
 	bool bChanged = m_nLayerId != nLayerId;
-	m_nLayerId = nLayerId; 
+	m_nLayerId = nLayerId;
 
 	if (bChanged)
 	{
@@ -711,7 +712,7 @@ void CBrush::OffsetPosition(const Vec3& delta)
 {
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
-	m_bPermanentRenderObjectMatrixValid = false;
+	InvalidatePermanentRenderObjectMatrix();
 	m_WSBBox.Move(delta);
 
 	if (m_pPhysEnt)
@@ -774,7 +775,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	FUNCTION_PROFILER_3DENGINE;
 
 	// Collision proxy is visible in Editor while in editing mode.
-	if (m_dwRndFlags & (ERF_COLLISION_PROXY|ERF_RAYCAST_PROXY))
+	if (m_dwRndFlags & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY))
 	{
 		if (!gEnv->IsEditor() || !gEnv->IsEditing())
 			if (GetCVars()->e_DebugDraw == 0)
@@ -785,18 +786,18 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		return;
 
 	/*
-	if (!passInfo.IsShadowPass())
-	{
-		if (pFoliage)
-		{
-			pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(rParams.nMaterialLayers&MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
-			float maxdist = GetCVars()->e_FoliageWindActivationDist;
-			Vec3 pos = m_worldTM.GetTranslation();
-			if (pStatObj && (gEnv->pSystem->GetViewCamera().GetPosition() - pos).len2() < sqr(maxdist) && gEnv->p3DEngine->GetWind(AABB(pos), false).len2() > 101.0f)
-				pStatObj->PhysicalizeFoliage(pEntity->GetPhysics(), m_worldTM, pFoliage, 0, 4);
-		}
-	}
-	*/
+	   if (!passInfo.IsShadowPass())
+	   {
+	   if (pFoliage)
+	   {
+	    pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(rParams.nMaterialLayers&MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
+	    float maxdist = GetCVars()->e_FoliageWindActivationDist;
+	    Vec3 pos = m_worldTM.GetTranslation();
+	    if (pStatObj && (gEnv->pSystem->GetViewCamera().GetPosition() - pos).len2() < sqr(maxdist) && gEnv->p3DEngine->GetWind(AABB(pos), false).len2() > 101.0f)
+	      pStatObj->PhysicalizeFoliage(pEntity->GetPhysics(), m_worldTM, pFoliage, 0, 4);
+	   }
+	   }
+	 */
 
 	Matrix34 transformMatrix = m_Matrix;
 
@@ -806,8 +807,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 			return;
 
 		// Nearest objects recalculate instance matrix every frame
-		m_bPermanentRenderObjectMatrixValid = false;
-		CalcNearestTransform(transformMatrix,passInfo);
+		CalcNearestTransform(transformMatrix, passInfo);
 	}
 
 	CRenderObject* pObj = 0;
@@ -845,7 +845,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	pObj->m_pRenderNode = this;
 	pObj->m_II.m_Matrix = transformMatrix;
 	pObj->m_fAlpha = 1.f;
-	IF(!m_bDrawLast, 1)
+	IF (!m_bDrawLast, 1)
 		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
 	else
 		pObj->m_fSort = 10000.0f;
@@ -856,7 +856,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
 	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_NEAREST) ? FOB_NEAREST : 0;
 
-	if (m_dwRndFlags & ERF_NO_DECALNODE_DECALS && !(gEnv->nMainFrameID-m_lastMoveFrameId < 3))
+	if (m_dwRndFlags & ERF_NO_DECALNODE_DECALS && !(gEnv->nMainFrameID - m_lastMoveFrameId < 3))
 	{
 		pObj->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
 	}
@@ -1016,7 +1016,7 @@ void CBrush::OnRenderNodeBecomeInvisible()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBrush::CalcNearestTransform(Matrix34 &transformMatrix,const SRenderingPassInfo& passInfo)
+void CBrush::CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPassInfo& passInfo)
 {
 	// Camera space
 	if (m_pCameraSpacePos)
@@ -1029,6 +1029,20 @@ void CBrush::CalcNearestTransform(Matrix34 &transformMatrix,const SRenderingPass
 		// We don't have camera space relative position, so calculate it out from world space
 		// (This will not have the precision advantages of camera space rendering)
 		transformMatrix.AddTranslation(-passInfo.GetCamera().GetPosition());
+	}
+	InvalidatePermanentRenderObjectMatrix();
+}
+
+void CBrush::InvalidatePermanentRenderObjectMatrix()
+{
+	if (m_pStatObj && m_pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
+	{
+		// Compound unmerged stat objects create duplicate sub render objects and do not support fast matrix only instance update for PermanentRenderObject
+		InvalidatePermanentRenderObject();
+	}
+	else
+	{
+		m_bPermanentRenderObjectMatrixValid = false;
 	}
 }
 
@@ -1087,7 +1101,7 @@ Vec3 CBrush::GetPos(bool bWorldOnly) const
 //////////////////////////////////////////////////////////////////////////
 float CBrush::GetScale() const
 {
-	return  m_Matrix.GetColumn0().GetLength();
+	return m_Matrix.GetColumn0().GetLength();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

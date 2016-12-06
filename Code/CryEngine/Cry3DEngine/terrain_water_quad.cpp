@@ -20,6 +20,11 @@
 #include "MatMan.h"
 #include "VisAreas.h"
 
+namespace
+{
+static const float OCEAN_FOG_DENSITY_MINIMUM = 0.0001f;
+}
+
 ITimer* COcean::m_pOceanTimer = 0;
 CREWaterOcean* COcean::m_pOceanRE = 0;
 uint32 COcean::m_nVisiblePixelsCount = ~0;
@@ -470,7 +475,7 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 		if (camPos.z - fWaterLevel >= p3DEngine->m_oceanWavesSize)
 		{
 			Vec3 cFinalFogColor = gEnv->p3DEngine->GetSunColor().CompMul(m_p3DEngine->m_oceanFogColor);
-			Vec4 vFogParams = Vec4(cFinalFogColor, m_p3DEngine->m_oceanFogDensity * 1.44269502f);// log2(e) = 1.44269502
+			Vec4 vFogParams = Vec4(cFinalFogColor, max(OCEAN_FOG_DENSITY_MINIMUM, m_p3DEngine->m_oceanFogDensity) * 1.44269502f);// log2(e) = 1.44269502
 
 			m_fRECustomData[8] = vFogParams.x;
 			m_fRECustomData[9] = vFogParams.y;
@@ -645,7 +650,7 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 
 				m_wvoParams[fillThreadID].m_fogColor = m_p3DEngine->m_oceanFogColor;
 				m_wvoParams[fillThreadID].m_fogColorShallow = m_p3DEngine->m_oceanFogColorShallow;
-				m_wvoParams[fillThreadID].m_fogDensity = m_p3DEngine->m_oceanFogDensity;
+				m_wvoParams[fillThreadID].m_fogDensity = max(OCEAN_FOG_DENSITY_MINIMUM, m_p3DEngine->m_oceanFogDensity);
 
 				m_pWVRE[fillThreadID]->m_pOceanParams = &m_wvoParams[fillThreadID];
 			}
