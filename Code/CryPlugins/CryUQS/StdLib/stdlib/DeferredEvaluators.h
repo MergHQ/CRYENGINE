@@ -11,11 +11,11 @@ namespace uqs
 
 		//===================================================================================
 		//
-		// CDeferredEvaluator_Raycast
+		// CDeferredEvaluator_TestRaycast
 		//
 		//===================================================================================
 
-		class CDeferredEvaluator_Raycast : public client::IDeferredEvaluator
+		class CDeferredEvaluator_TestRaycast : public client::IDeferredEvaluator
 		{
 		public:
 			struct SParams
@@ -49,7 +49,7 @@ namespace uqs
 			static CRaycastRegulator   s_regulator;
 
 		public:
-			explicit                   CDeferredEvaluator_Raycast(const SParams& params);
+			explicit                   CDeferredEvaluator_TestRaycast(const SParams& params);
 			virtual EUpdateStatus      Update(const SUpdateContext& updateContext) override;
 		};
 
