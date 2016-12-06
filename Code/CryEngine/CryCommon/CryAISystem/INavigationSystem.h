@@ -103,6 +103,14 @@ struct INavigationSystem
 		uint32 tileCount;
 	};
 
+	enum class EMeshUpdateRequestStatus
+	{
+		RequestInQueue = 0,
+		RequestDelayedAndBuffered,
+		RequestInvalid,
+		Count
+	};
+
 	// <interfuscator:shuffle>
 	virtual ~INavigationSystem() {}
 	virtual NavigationAgentTypeID CreateAgentType(const char* name, const CreateAgentTypeParams& params) = 0;
@@ -154,14 +162,39 @@ struct INavigationSystem
 	virtual void             SetMeshName(NavigationMeshID meshID, const char* name) = 0;
 
 	virtual WorkingState     GetState() const = 0;
-	virtual WorkingState     Update(bool blocking = false) = 0;
-	virtual void             PauseNavigationUpdate() = 0;
-	virtual void             RestartNavigationUpdate() = 0;
 
-	virtual size_t           QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) = 0;
-	virtual void             ProcessQueuedMeshUpdates() = 0;
+	// MNM regeneration tasks are queued up, but not executed
+	virtual void					PauseNavigationUpdate() = 0;
+	virtual void					RestartNavigationUpdate() = 0;
+	virtual WorkingState     		Update(bool blocking = false) = 0;
 
-	virtual void             Clear() = 0;
+	//! Allow MNM regeneration requests to be executed. 
+	//! note: at this point any previously buffered requests that were not executed when disabled are discarded
+	virtual void					EnableMNMRegenerationRequestsExecution() = 0;
+
+	//! Block MNM regeneration requests from being executed.
+	//! note: they will be buffered, but not implicitly executed when they are allowed again
+	virtual void					DisableMNMRegenerationRequestsAndBuffer() = 0;
+
+	virtual bool					AreMNMRegenerationRequestsDisabled() const = 0;
+
+	//! Clear the buffered MNM regeneration requests that were received when execution was disabled
+	virtual void					ClearBufferedMNMRegenerationRequests() = 0;
+
+	//! deprecated - RequestQueueMeshUpdate(meshID, aabb) should be used instead
+	virtual size_t					 QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) = 0;
+	
+	//! Request MNM regeneration on a specific AABB for a specific meshID
+	//! If MNM regeneration is disabled internally, requests will be stored in a buffer
+	//! Return values
+	//!   - RequestInQueue: request was successfully validated and is in execution queue
+	//!   - RequestDelayedAndBuffered: MNM regeneration is turned off, so request is stored in buffer
+	//!	  - RequestInvalid: there was something wrong with the request so it was ignored
+	virtual EMeshUpdateRequestStatus RequestQueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) = 0;
+
+	virtual void					 ProcessQueuedMeshUpdates() = 0;
+
+	virtual void					 Clear() = 0;
 
 	//! ClearAndNotify is used when the listeners need to be notified about the performed clear operation.
 	virtual void                  ClearAndNotify() = 0;

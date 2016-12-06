@@ -451,22 +451,44 @@ public:
 	virtual void                  PauseNavigationUpdate() override;
 	virtual void                  RestartNavigationUpdate() override;
 
-	virtual size_t                QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) override;
-	virtual void                  ProcessQueuedMeshUpdates() override;
+	//! deprecated - RequestQueueMeshUpdate(meshID, aabb) should be used instead
+	virtual size_t						QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) override;
+	
+	//! Request MNM regeneration on a specific AABB for a specific meshID
+	//! If MNM regeneration is disabled internally, requests will be stored in a buffer
+	//! Return values
+	//!   - RequestInQueue: request was successfully validated and is in execution queue
+	//!   - RequestDelayedAndBuffered: MNM regeneration is turned off, so request is stored in buffer
+	//!	  - RequestInvalid: there was something wrong with the request so it was ignored
+	virtual EMeshUpdateRequestStatus	RequestQueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) override;
 
-	virtual void                  Clear() override;
-	virtual void                  ClearAndNotify() override;
-	virtual bool                  ReloadConfig() override;
-	virtual void                  DebugDraw() override;
-	virtual void                  Reset() override;
+	virtual void						ProcessQueuedMeshUpdates() override;
 
-	void                          GetMemoryStatistics(ICrySizer* pSizer);
+	virtual void						Clear() override;
+	virtual void						ClearAndNotify() override;
+	virtual bool						ReloadConfig() override;
+	virtual void						DebugDraw() override;
+	virtual void						Reset() override;
+
+		void                          GetMemoryStatistics(ICrySizer* pSizer);
 
 	virtual void                  SetDebugDisplayAgentType(NavigationAgentTypeID agentTypeID) override;
 	virtual NavigationAgentTypeID GetDebugDisplayAgentType() const override;
 
+	//! deprecated - RequestQueueDifferenceUpdate(meshID, volume, volume) should be used instead
 	void                          QueueDifferenceUpdate(NavigationMeshID meshID, const NavigationBoundingVolume& oldVolume,
 	                                                    const NavigationBoundingVolume& newVolume);
+	
+	//! Request MNM 'difference' regeneration given an initial (old) and final (new) navigation  
+	//!	   bounding volume for a specific meshID.
+	//! note: current implementation is suboptimal, the code is the same as in RequestQueueMeshUpdate
+	//! If MNM regeneration is disabled internally, requests will be stored in a buffer.
+	//! Return values
+	//! 	 - RequestInQueue: request was successfully validated and is in execution queue
+	//!		 - RequestDelayedAndBuffered: MNM regeneration is turned off, so request is stored in buffer
+	//!		 - RequestInvalid: there was something wrong with the request so it was ignored
+	EMeshUpdateRequestStatus      RequestQueueDifferenceUpdate(NavigationMeshID meshID, const NavigationBoundingVolume& oldVolume,
+																const NavigationBoundingVolume& newVolume);
 
 	virtual void          WorldChanged(const AABB& aabb) override;
 
@@ -545,6 +567,19 @@ public:
 
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
+	
+	//! Allow MNM regeneration requests to be executed. 
+	//! note: at this point any previously buffered requests that were not executed when disabled are discarded
+	virtual void							 EnableMNMRegenerationRequestsExecution() override;
+
+	//! Block MNM regeneration requests from being executed.
+	//! note: they will be buffered, but not implicitly executed when they are allowed again
+	virtual void							 DisableMNMRegenerationRequestsAndBuffer() override;
+
+	virtual bool							 AreMNMRegenerationRequestsDisabled() const override;
+
+	//! Clear the buffered MNM regeneration requests that were received when execution was disabled
+	virtual void							 ClearBufferedMNMRegenerationRequests() override;
 
 	inline const WorldMonitor*               GetWorldMonitor() const
 	{
@@ -754,6 +789,8 @@ private:
 
 	CVolumesManager                        m_volumesManager;
 	bool                                   m_isNavigationUpdatePaused;
+
+	bool								   m_isMNMRegenerationRequestExecutionEnabled;
 
 	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
 };

@@ -55,6 +55,17 @@ bool WorldMonitor::IsEnabled() const
 	return m_enabled;
 }
 
+void WorldMonitor::BufferIgnoredMeshRegenerationUpdateRequests(const NavigationMeshID meshID, const AABB& aabb)
+{
+	m_ignoredMeshUpdateRequests.push_back(std::make_pair(meshID, aabb));
+}
+
+void WorldMonitor::BufferIgnoredMeshRegenerationDifferenceRequests(const NavigationMeshID meshID, 
+	const NavigationBoundingVolume& oldVolume, const NavigationBoundingVolume& newVolume)
+{
+	m_ignoredMeshDifferenceRequests.push_back(std::make_pair(meshID, std::make_pair(oldVolume, newVolume)));
+}
+
 int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
 {
 	WorldMonitor* pthis = gAIEnv.pNavigationSystem->GetWorldMonitor();
@@ -112,19 +123,19 @@ int WorldMonitor::EntityRemovedHandler(const EventPhys* pPhysEvent)
 	assert(pthis != NULL);
 	assert(pthis->IsEnabled());
 
-	AABB aabb;
+		AABB aabb;
 
-	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
-	{
-		pthis->m_callback(aabb);
-
-		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+		if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
 		{
-			CDebugDrawContext dc;
+			pthis->m_callback(aabb);
 
-			dc->DrawAABB(aabb, IDENTITY, false, Col_White, eBBD_Faceted);
+			if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+			{
+				CDebugDrawContext dc;
+
+				dc->DrawAABB(aabb, IDENTITY, false, Col_White, eBBD_Faceted);
+			}
 		}
-	}
 
 	return 1;
 }
@@ -135,13 +146,13 @@ int WorldMonitor::EntityRemovedHandlerAsync(const EventPhys* pPhysEvent)
 
 	assert(pthis != NULL);
 	assert(pthis->IsEnabled());
+	
+		AABB aabb;
 
-	AABB aabb;
-
-	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
-	{
-		pthis->m_queuedAABBChanges.push_back(aabb);
-	}
+		if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
+		{
+			pthis->m_queuedAABBChanges.push_back(aabb);
+		}
 
 	return 1;
 }
@@ -201,4 +212,11 @@ void WorldMonitor::FlushPendingAABBChanges()
 			}
 		}
 	}
+}
+
+
+void WorldMonitor::ClearBufferedMeshRegenerationRequests()
+{
+	m_ignoredMeshDifferenceRequests.clear();
+	m_ignoredMeshUpdateRequests.clear();
 }

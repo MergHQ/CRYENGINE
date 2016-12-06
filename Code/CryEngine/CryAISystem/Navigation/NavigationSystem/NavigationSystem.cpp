@@ -152,6 +152,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_configurationVersion(0)
 	, m_isNavigationUpdatePaused(false)
 	, m_tileGeneratorExtensionsContainer()
+	, m_isMNMRegenerationRequestExecutionEnabled(true)
 {
 	SetupTasks();
 
@@ -542,7 +543,7 @@ void NavigationSystem::DestroyVolume(NavigationVolumeID volumeID)
 
 				if (stl::find_and_erase(mesh.exclusions, volumeID))
 				{
-					QueueMeshUpdate(meshID, volume.aabb);
+					RequestQueueMeshUpdate(meshID, volume.aabb);
 					++mesh.version;
 				}
 			}
@@ -604,14 +605,14 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 					{
 						++mesh.version;
 						recomputeAABB = true;
-
-						QueueDifferenceUpdate(meshID, volume, newVolume);
+						
+						RequestQueueDifferenceUpdate(meshID, volume, newVolume);
 					}
 
 					if (std::find(mesh.exclusions.begin(), mesh.exclusions.end(), volumeID) != mesh.exclusions.end())
 					{
-						QueueMeshUpdate(meshID, volume.aabb);
-						QueueMeshUpdate(meshID, aabbNew);
+						RequestQueueMeshUpdate(meshID, volume.aabb);
+						RequestQueueMeshUpdate(meshID, aabbNew);
 						++mesh.version;
 					}
 				}
@@ -673,7 +674,7 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 
 				if (stl::find_and_erase(mesh.exclusions, volumeID))
 				{
-					QueueMeshUpdate(meshID, volume.aabb);
+					RequestQueueMeshUpdate(meshID, volume.aabb);
 
 					++mesh.version;
 				}
@@ -702,7 +703,7 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 #endif
 
 					if (mesh.boundary != volumeID)
-						QueueMeshUpdate(meshID, volume.aabb);
+						RequestQueueMeshUpdate(meshID, volume.aabb);
 					else
 					{
 						++mesh.version;
@@ -1289,6 +1290,8 @@ size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aa
 {
 	assert(meshID != 0);
 
+	AIWarning("NavigationSystem::QueueMeshUpdate() is deprecated! RequestQueueMeshUpdate should be used instead");
+
 	size_t affectedCount = 0;
 #if NAVIGATION_SYSTEM_PC_ONLY
 	if (meshID && m_meshes.validate(meshID))
@@ -1311,12 +1314,12 @@ size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aa
 		const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 		Vec3 bmin(std::max(0.0f, std::max(boundary.min.x, aabb.min.x - extraH) - paramsGrid.origin.x),
-		          std::max(0.0f, std::max(boundary.min.y, aabb.min.y - extraH) - paramsGrid.origin.y),
-		          std::max(0.0f, std::max(boundary.min.z, aabb.min.z - extraV) - paramsGrid.origin.z));
+			std::max(0.0f, std::max(boundary.min.y, aabb.min.y - extraH) - paramsGrid.origin.y),
+			std::max(0.0f, std::max(boundary.min.z, aabb.min.z - extraV) - paramsGrid.origin.z));
 
 		Vec3 bmax(std::max(0.0f, std::min(boundary.max.x, aabb.max.x + extraH) - paramsGrid.origin.x),
-		          std::max(0.0f, std::min(boundary.max.y, aabb.max.y + extraH) - paramsGrid.origin.y),
-		          std::max(0.0f, std::min(boundary.max.z, aabb.max.z + extraVM) - paramsGrid.origin.z));
+			std::max(0.0f, std::min(boundary.max.y, aabb.max.y + extraH) - paramsGrid.origin.y),
+			std::max(0.0f, std::min(boundary.max.z, aabb.max.z + extraVM) - paramsGrid.origin.z));
 
 		uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
 		uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
@@ -1335,8 +1338,8 @@ size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aa
 			TileTask& task = *it;
 
 			if ((task.meshID == meshID) && (task.x >= xmin) && (task.x <= xmax) &&
-			    (task.y >= ymin) && (task.y <= ymax) &&
-			    (task.z >= zmin) && (task.z <= zmax))
+				(task.y >= ymin) && (task.y <= ymax) &&
+				(task.z >= zmin) && (task.z <= zmax))
 			{
 				rear = rear - 1;
 				std::swap(task, *rear);
@@ -1376,6 +1379,102 @@ size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aa
 	return affectedCount;
 }
 
+INavigationSystem::EMeshUpdateRequestStatus NavigationSystem::RequestQueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb)
+{
+	assert(meshID != 0);
+
+#if NAVIGATION_SYSTEM_PC_ONLY
+	if (meshID && m_meshes.validate(meshID))
+	{
+		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+
+		NavigationMesh& mesh = m_meshes[meshID];
+		MNM::CNavMesh& navMesh = mesh.navMesh;
+
+		if (aabb.IsEmpty() || !mesh.boundary)
+			return EMeshUpdateRequestStatus::RequestInvalid;
+
+		if (!m_isMNMRegenerationRequestExecutionEnabled)
+		{
+			m_worldMonitor.BufferIgnoredMeshRegenerationUpdateRequests(meshID, aabb);
+			return EMeshUpdateRequestStatus::RequestDelayedAndBuffered;
+		}
+		else
+		{
+			const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
+
+			const AABB& boundary = m_volumes[mesh.boundary].aabb;
+			const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+
+			const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * (agentType.settings.radiusVoxelCount + 1);
+			const float extraV = paramsGrid.voxelSize.z * (agentType.settings.heightVoxelCount + 1);
+			const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
+
+			Vec3 bmin(std::max(0.0f, std::max(boundary.min.x, aabb.min.x - extraH) - paramsGrid.origin.x),
+				std::max(0.0f, std::max(boundary.min.y, aabb.min.y - extraH) - paramsGrid.origin.y),
+				std::max(0.0f, std::max(boundary.min.z, aabb.min.z - extraV) - paramsGrid.origin.z));
+
+			Vec3 bmax(std::max(0.0f, std::min(boundary.max.x, aabb.max.x + extraH) - paramsGrid.origin.x),
+				std::max(0.0f, std::min(boundary.max.y, aabb.max.y + extraH) - paramsGrid.origin.y),
+				std::max(0.0f, std::min(boundary.max.z, aabb.max.z + extraVM) - paramsGrid.origin.z));
+
+			uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
+			uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
+
+			uint16 ymin = (uint16)(floor_tpl(bmin.y / (float)paramsGrid.tileSize.y));
+			uint16 ymax = (uint16)(floor_tpl(bmax.y / (float)paramsGrid.tileSize.y));
+
+			uint16 zmin = (uint16)(floor_tpl(bmin.z / (float)paramsGrid.tileSize.z));
+			uint16 zmax = (uint16)(floor_tpl(bmax.z / (float)paramsGrid.tileSize.z));
+
+			TileTaskQueue::iterator it = m_tileQueue.begin();
+			TileTaskQueue::iterator rear = m_tileQueue.end();
+
+			for (; it != rear; )
+			{
+				TileTask& task = *it;
+
+				if ((task.meshID == meshID) && (task.x >= xmin) && (task.x <= xmax) &&
+					(task.y >= ymin) && (task.y <= ymax) &&
+					(task.z >= zmin) && (task.z <= zmax))
+				{
+					rear = rear - 1;
+					std::swap(task, *rear);
+
+					continue;
+				}
+				++it;
+			}
+
+			if (rear != m_tileQueue.end())
+			{
+				m_tileQueue.erase(rear, m_tileQueue.end());
+			}
+
+			for (size_t y = ymin; y <= ymax; ++y)
+			{
+				for (size_t x = xmin; x <= xmax; ++x)
+				{
+					for (size_t z = zmin; z <= zmax; ++z)
+					{
+						TileTask task;
+						task.meshID = meshID;
+						task.x = (uint16)x;
+						task.y = (uint16)y;
+						task.z = (uint16)z;
+
+						m_tileQueue.push_back(task);
+					}
+				}
+			}
+			return EMeshUpdateRequestStatus::RequestInQueue;
+		}
+	}
+
+#endif
+	return EMeshUpdateRequestStatus::RequestInvalid;
+}
+
 void NavigationSystem::ProcessQueuedMeshUpdates()
 {
 #if NAVIGATION_SYSTEM_PC_ONLY
@@ -1390,13 +1489,14 @@ void NavigationSystem::ProcessQueuedMeshUpdates()
 void NavigationSystem::QueueDifferenceUpdate(NavigationMeshID meshID, const NavigationBoundingVolume& oldVolume,
                                              const NavigationBoundingVolume& newVolume)
 {
+	AIWarning("NavigationSystem::QueueDifferenceUpdate() is deprecated! RequestQueueDifferenceUpdate should be used instead");
 #if NAVIGATION_SYSTEM_PC_ONLY
+
 	// TODO: implement properly by verifying what didn't change
 	// since there will be loads of volume-aabb intersection tests,
 	// this should be a new job running in a different thread
 	// producing an array of all the tiles that need updating
 	// which then gets concatenated into m_tileQueue in the main update
-
 	if (meshID && m_meshes.validate(meshID))
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
@@ -1416,12 +1516,12 @@ void NavigationSystem::QueueDifferenceUpdate(NavigationMeshID meshID, const Navi
 		const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 		Vec3 bmin(std::max(0.0f, (aabb.min.x - extraH) - paramsGrid.origin.x),
-		          std::max(0.0f, (aabb.min.y - extraH) - paramsGrid.origin.y),
-		          std::max(0.0f, (aabb.min.z - extraV) - paramsGrid.origin.z));
+			std::max(0.0f, (aabb.min.y - extraH) - paramsGrid.origin.y),
+			std::max(0.0f, (aabb.min.z - extraV) - paramsGrid.origin.z));
 
 		Vec3 bmax(std::max(0.0f, (aabb.max.x + extraH) - paramsGrid.origin.x),
-		          std::max(0.0f, (aabb.max.y + extraH) - paramsGrid.origin.y),
-		          std::max(0.0f, (aabb.max.z + extraVM) - paramsGrid.origin.z));
+			std::max(0.0f, (aabb.max.y + extraH) - paramsGrid.origin.y),
+			std::max(0.0f, (aabb.max.z + extraVM) - paramsGrid.origin.z));
 
 		uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
 		uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
@@ -1440,8 +1540,8 @@ void NavigationSystem::QueueDifferenceUpdate(NavigationMeshID meshID, const Navi
 			TileTask& task = *it;
 
 			if ((task.meshID == meshID) && (task.x >= xmin) && (task.x <= xmax) &&
-			    (task.y >= ymin) && (task.y <= ymax) &&
-			    (task.z >= zmin) && (task.z <= zmax))
+				(task.y >= ymin) && (task.y <= ymax) &&
+				(task.z >= zmin) && (task.z <= zmax))
 			{
 				rear = rear - 1;
 				std::swap(task, *rear);
@@ -1476,6 +1576,108 @@ void NavigationSystem::QueueDifferenceUpdate(NavigationMeshID meshID, const Navi
 #endif
 }
 
+INavigationSystem::EMeshUpdateRequestStatus NavigationSystem::RequestQueueDifferenceUpdate(NavigationMeshID meshID, const NavigationBoundingVolume& oldVolume,
+	const NavigationBoundingVolume& newVolume)
+{
+
+#if NAVIGATION_SYSTEM_PC_ONLY
+	// TODO: implement properly by verifying what didn't change
+	// since there will be loads of volume-aabb intersection tests,
+	// this should be a new job running in a different thread
+	// producing an array of all the tiles that need updating
+	// which then gets concatenated into m_tileQueue in the main update
+
+	if (meshID && m_meshes.validate(meshID))
+	{
+		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+
+		NavigationMesh& mesh = m_meshes[meshID];
+		MNM::CNavMesh& navMesh = mesh.navMesh;
+
+		if (!m_isMNMRegenerationRequestExecutionEnabled)
+		{
+			m_worldMonitor.BufferIgnoredMeshRegenerationDifferenceRequests(meshID, oldVolume, newVolume);
+			return INavigationSystem::EMeshUpdateRequestStatus::RequestDelayedAndBuffered;
+		}
+		else
+		{
+			const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
+
+			AABB aabb = oldVolume.aabb;
+			aabb.Add(newVolume.aabb);
+
+			const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+
+			const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * (agentType.settings.radiusVoxelCount + 1);
+			const float extraV = paramsGrid.voxelSize.z * (agentType.settings.heightVoxelCount + 1);
+			const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
+
+			Vec3 bmin(std::max(0.0f, (aabb.min.x - extraH) - paramsGrid.origin.x),
+				std::max(0.0f, (aabb.min.y - extraH) - paramsGrid.origin.y),
+				std::max(0.0f, (aabb.min.z - extraV) - paramsGrid.origin.z));
+
+			Vec3 bmax(std::max(0.0f, (aabb.max.x + extraH) - paramsGrid.origin.x),
+				std::max(0.0f, (aabb.max.y + extraH) - paramsGrid.origin.y),
+				std::max(0.0f, (aabb.max.z + extraVM) - paramsGrid.origin.z));
+
+			uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
+			uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
+
+			uint16 ymin = (uint16)(floor_tpl(bmin.y / (float)paramsGrid.tileSize.y));
+			uint16 ymax = (uint16)(floor_tpl(bmax.y / (float)paramsGrid.tileSize.y));
+
+			uint16 zmin = (uint16)(floor_tpl(bmin.z / (float)paramsGrid.tileSize.z));
+			uint16 zmax = (uint16)(floor_tpl(bmax.z / (float)paramsGrid.tileSize.z));
+
+			TileTaskQueue::iterator it = m_tileQueue.begin();
+			TileTaskQueue::iterator rear = m_tileQueue.end();
+
+			for (; it != rear; )
+			{
+				TileTask& task = *it;
+
+				if ((task.meshID == meshID) && (task.x >= xmin) && (task.x <= xmax) &&
+					(task.y >= ymin) && (task.y <= ymax) &&
+					(task.z >= zmin) && (task.z <= zmax))
+				{
+					rear = rear - 1;
+					std::swap(task, *rear);
+
+					continue;
+				}
+				++it;
+			}
+
+			if (rear != m_tileQueue.end())
+			{
+				m_tileQueue.erase(rear, m_tileQueue.end());
+			}
+
+			for (size_t y = ymin; y <= ymax; ++y)
+			{
+				for (size_t x = xmin; x <= xmax; ++x)
+				{
+					for (size_t z = zmin; z <= zmax; ++z)
+					{
+						TileTask task;
+						task.meshID = meshID;
+						task.x = (uint16)x;
+						task.y = (uint16)y;
+						task.z = (uint16)z;
+
+						m_tileQueue.push_back(task);
+					}
+				}
+			}
+		}
+
+		return INavigationSystem::EMeshUpdateRequestStatus::RequestInQueue;
+	}
+#endif
+
+	return INavigationSystem::EMeshUpdateRequestStatus::RequestInvalid;
+}
+
 void NavigationSystem::WorldChanged(const AABB& aabb)
 {
 #if NAVIGATION_SYSTEM_PC_ONLY
@@ -1497,10 +1699,10 @@ void NavigationSystem::WorldChanged(const AABB& aabb)
 				const NavigationMesh& mesh = m_meshes[meshID];
 
 				if (mesh.boundary && Overlap::AABB_AABB(aabb, m_volumes[mesh.boundary].aabb))
-					QueueMeshUpdate(meshID, aabb);
+					RequestQueueMeshUpdate(meshID, aabb);
+				}
 			}
 		}
-	}
 #endif
 }
 
@@ -3788,6 +3990,26 @@ bool NavigationSystem::UnRegisterTileGeneratorExtension(const TileGeneratorExten
 		return true;
 	}
 	return false;
+}
+
+void NavigationSystem::EnableMNMRegenerationRequestsExecution()
+{
+	m_isMNMRegenerationRequestExecutionEnabled = true;
+}
+
+void NavigationSystem::DisableMNMRegenerationRequestsAndBuffer()
+{
+	m_isMNMRegenerationRequestExecutionEnabled = false;
+}
+
+bool NavigationSystem::AreMNMRegenerationRequestsDisabled() const
+{
+	return m_isMNMRegenerationRequestExecutionEnabled;
+}
+
+void NavigationSystem::ClearBufferedMNMRegenerationRequests()
+{
+	m_worldMonitor.ClearBufferedMeshRegenerationRequests();
 }
 
 //////////////////////////////////////////////////////////////////////////
