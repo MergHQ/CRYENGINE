@@ -613,9 +613,8 @@ public:
 	int            GetShadowsCascadeCount(const CDLight* pLight) const;
 
 	virtual uint32 GetObjectsByType(EERType objType, IRenderNode** pObjects);
-	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects);
+	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects, uint64 dwFlags = ~0);
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0);
-	virtual void   GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects);
 	virtual uint32 GetObjectsByFlags(uint dwFlags, IRenderNode** pObjects = 0);
 	virtual void   OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags);
 
@@ -967,7 +966,7 @@ private:
 	void UpdateMoonDirection();
 
 	// Copy objects from tree
-	void CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plistObjects);
+	void CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plistObjects, uint64 dwFlags = ~0);
 	void CopyObjects(const AABB* pBox, PodArray<IRenderNode*>* plistObjects);
 
 	void CleanUpOldDecals();

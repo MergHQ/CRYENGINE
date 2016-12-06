@@ -4773,12 +4773,12 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 	return true;
 }
 
-void C3DEngine::CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plstObjects)
+void C3DEngine::CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plstObjects, uint64 dwFlags)
 {
-	GetObjectsByTypeGlobal(*plstObjects, objType, pBox);
+	GetObjectsByTypeGlobal(*plstObjects, objType, pBox, 0, dwFlags);
 
 	if (GetVisAreaManager())
-		GetVisAreaManager()->GetObjectsByType(*plstObjects, objType, pBox);
+		GetVisAreaManager()->GetObjectsByType(*plstObjects, objType, pBox, 0, dwFlags);
 }
 
 void C3DEngine::CopyObjects(const AABB* pBox, PodArray<IRenderNode*>* plstObjects)
@@ -4800,18 +4800,13 @@ uint32 C3DEngine::GetObjectsByType(EERType objType, IRenderNode** pObjects)
 	return lstObjects.Count();
 }
 
-uint32 C3DEngine::GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects)
+uint32 C3DEngine::GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects, uint64 dwFlags)
 {
 	PodArray<IRenderNode*> lstObjects;
-	CopyObjectsByType(objType, &bbox, &lstObjects);
+	CopyObjectsByType(objType, &bbox, &lstObjects, dwFlags);
 	if (pObjects && !lstObjects.IsEmpty())
 		memcpy(pObjects, &lstObjects[0], lstObjects.GetDataSize());
 	return lstObjects.Count();
-}
-
-void C3DEngine::GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects)
-{
-	CopyObjectsByType(objType, &bbox, pLstObjects);
 }
 
 uint32 C3DEngine::GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects)

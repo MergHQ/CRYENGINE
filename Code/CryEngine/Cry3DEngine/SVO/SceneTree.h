@@ -168,6 +168,7 @@ public:
 	void DetectMovement_StatLights();
 	void CollectLights();
 	void CollectAnalyticalOccluders();
+	void AddAnalyticalOccluder(IRenderNode* pRN, Vec3 camPos);
 
 	PodArray<I3DEngine::SLightTI>            m_lightsTI_S, m_lightsTI_D;
 	PodArray<I3DEngine::SAnalyticalOccluder> m_AnalyticalOccluders[2];

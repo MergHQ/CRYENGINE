@@ -2126,12 +2126,9 @@ struct I3DEngine : public IProcess
 	//! \param pObjects 0 if only the count is required
 	//! \return Count returned.
 	virtual uint32 GetObjectsByType(EERType objType, IRenderNode** pObjects = 0) = 0;
-	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects = 0) = 0;
+	virtual uint32 GetObjectsByTypeInBox(EERType objType, const AABB& bbox, IRenderNode** pObjects = 0, uint64 dwFlags = ~0) = 0;
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0) = 0;
 	virtual uint32 GetObjectsByFlags(uint dwFlag, IRenderNode** pObjects = 0) = 0;
-
-	//! Variant which takes a POD array which is resized in the function itself.
-	virtual void GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects) = 0;
 
 	//! Called from editor whenever an object is modified by the user.
 	virtual void        OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags) = 0;
