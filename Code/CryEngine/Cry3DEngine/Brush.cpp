@@ -146,7 +146,6 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 		rParms.nMaterialLayers = m_nMaterialLayers;
 
 	rParms.pMatrix = &m_Matrix;
-	rParms.nClipVolumeStencilRef = 0;
 	rParms.pMaterial = m_pMaterial;
 	rParms.nEditorSelectionID = m_nEditorSelectionID;
 
