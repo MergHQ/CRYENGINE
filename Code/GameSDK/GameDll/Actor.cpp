@@ -369,6 +369,15 @@ CActor::~CActor()
 				item->StopUse(GetEntityId());
 		}
 
+		// Notify all items that our action controller is being destroyed with the animated character extension below
+		for (int i = 0, n = m_pInventory->GetCount(); i < n; i++)
+		{
+			if (IItem* pItem = m_pItemSystem->GetItem(m_pInventory->GetItem(i)))
+			{
+				pItem->SetCurrentActionController(nullptr);
+			}
+		}
+
 		if (gEnv->bServer)
 			m_pInventory->Destroy();
 
