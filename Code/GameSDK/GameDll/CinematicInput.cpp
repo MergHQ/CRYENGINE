@@ -387,7 +387,7 @@ void CCinematicInput::ReEnablePlayerAfterCutscenes()
 			pPlayerEntity->SetFlagsExtended(playerFlags & ~ENTITY_FLAG_EXTENDED_AUDIO_DISABLED);
 		}
 
-		if (!m_bPlayerWasInvisible && !gEnv->IsEditor())
+		if (!m_bPlayerWasInvisible && pPlayerEntity->IsInvisible())
 		{
 			pPlayerEntity->Invisible(false);
 		}
