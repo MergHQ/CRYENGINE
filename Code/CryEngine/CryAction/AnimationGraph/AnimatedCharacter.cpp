@@ -308,13 +308,13 @@ void CAnimatedCharacter::PostInit(IGameObject* pGameObject)
 {
 	AC::RegisterEvents(*this, *pGameObject);
 
-	m_pComponentPrepareCharForUpdate = GetEntity()->GetOrCreateComponent<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
+	m_pComponentPrepareCharForUpdate = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
 	m_pComponentPrepareCharForUpdate->SetAnimatedCharacter(this);
 	
-	auto componentMoveRequest = GetEntity()->GetOrCreateComponent<CAnimatedCharacterComponent_GenerateMoveRequest>();
+	auto componentMoveRequest = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_GenerateMoveRequest>();
 	componentMoveRequest->SetAnimatedCharacter(this);
 
-	auto componentStartAnimProc = GetEntity()->GetOrCreateComponent<CAnimatedCharacterComponent_StartAnimProc>();
+	auto componentStartAnimProc = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_StartAnimProc>();
 	componentStartAnimProc->SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
