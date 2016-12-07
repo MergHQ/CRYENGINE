@@ -141,10 +141,6 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 	{
 		switch (event.event)
 		{
-		case ENTITY_EVENT_DONE:
-			m_pEntity = nullptr;
-			break;
-
 		case ENTITY_EVENT_XFORM:
 			{
 				int const flags = (int)event.nParam[0];

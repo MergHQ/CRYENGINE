@@ -13,22 +13,22 @@ namespace uqs
 
 		void CStdLibRegistration::InstantiateDeferredEvaluatorFactoriesForRegistration()
 		{
-			static const client::CDeferredEvaluatorFactory<CDeferredEvaluator_Raycast> deferredEvaluatorFactory_Raycast("std::Raycast");
+			static const client::CDeferredEvaluatorFactory<CDeferredEvaluator_TestRaycast> deferredEvaluatorFactory_TestRaycast("std::TestRaycast");
 		}
 
 		//===================================================================================
 		//
-		// CDeferredEvaluator_Raycast::CRaycastRegulator
+		// CDeferredEvaluator_TestRaycast::CRaycastRegulator
 		//
 		//===================================================================================
 
-		CDeferredEvaluator_Raycast::CRaycastRegulator::CRaycastRegulator(int maxRequestsPerFrame)
+		CDeferredEvaluator_TestRaycast::CRaycastRegulator::CRaycastRegulator(int maxRequestsPerFrame)
 			: m_maxRequestsPerFrame(maxRequestsPerFrame)
 			, m_currentFrame(0)
 			, m_numRequestsInCurrentFrame(0)
 		{}
 
-		bool CDeferredEvaluator_Raycast::CRaycastRegulator::RequestRaycast()
+		bool CDeferredEvaluator_TestRaycast::CRaycastRegulator::RequestRaycast()
 		{
 			const int currentFrame = gEnv->pRenderer->GetFrameID();
 
@@ -43,19 +43,19 @@ namespace uqs
 
 		//===================================================================================
 		//
-		// CDeferredEvaluator_Raycast
+		// CDeferredEvaluator_TestRaycast
 		//
 		//===================================================================================
 
-		CDeferredEvaluator_Raycast::CRaycastRegulator CDeferredEvaluator_Raycast::s_regulator(12);  // allow up to 12 raycasts per frame
+		CDeferredEvaluator_TestRaycast::CRaycastRegulator CDeferredEvaluator_TestRaycast::s_regulator(12);  // allow up to 12 raycasts per frame
 
-		CDeferredEvaluator_Raycast::CDeferredEvaluator_Raycast(const SParams& params)
+		CDeferredEvaluator_TestRaycast::CDeferredEvaluator_TestRaycast(const SParams& params)
 			: m_params(params)
 		{
 			// nothing
 		}
 
-		client::IDeferredEvaluator::EUpdateStatus CDeferredEvaluator_Raycast::Update(const SUpdateContext& updateContext)
+		client::IDeferredEvaluator::EUpdateStatus CDeferredEvaluator_TestRaycast::Update(const SUpdateContext& updateContext)
 		{
 			if (s_regulator.RequestRaycast())
 			{

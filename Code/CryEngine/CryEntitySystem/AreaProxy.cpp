@@ -235,6 +235,9 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 		m_pArea->SetInnerFadeDistance(innerFadeDistance);
 		const char* token(0);
 
+		// TODO: workaround for 5.3 - needs refactoring of CreateGameObject + Serialize mechanism
+		m_abObstructSound.clear();
+
 		XmlNodeRef pointsNode = areaNode->findChild("Points");
 
 		if (pointsNode)

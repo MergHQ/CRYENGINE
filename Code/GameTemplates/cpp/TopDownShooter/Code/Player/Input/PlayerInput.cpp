@@ -67,7 +67,10 @@ void CPlayerInput::ProcessEvent(SEntityEvent &event)
 
 void CPlayerInput::SpawnCursorEntity()
 {
-	CRY_ASSERT(m_pCursorEntity == nullptr);
+	if (m_pCursorEntity)
+	{
+		gEnv->pEntitySystem->RemoveEntity(m_pCursorEntity->GetId());
+	}
 
 	SEntitySpawnParams spawnParams;
 	// No need for a special class!

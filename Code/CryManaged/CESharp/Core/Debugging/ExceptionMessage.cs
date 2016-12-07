@@ -2,16 +2,18 @@ using System;
 using System.Diagnostics;
 using System.Windows.Forms;
 
+using CryEngine.Common;
+
 namespace CryEngine
 {
 	internal partial class ExceptionMessage : Form
 	{
 		public ExceptionMessage(Exception ex, bool fatal)
 		{
-			InitializeComponent();
+            InitializeComponent();
 
-			uxContinueBtn.Click += (s, a) => Close();
-			uxReportBtn.Click += (s, a) => Process.Start("https://answers.cryengine.com/");
+            uxContinueBtn.Click += OnContinueButtonPressed;
+            uxReportBtn.Click += (s, a) => Process.Start("https://answers.cryengine.com/");
 			uxCancelBtn.Click += (s, a) => Process.GetCurrentProcess().Kill();
 
 			var text = "";
@@ -35,6 +37,12 @@ namespace CryEngine
 
 			if (fatal)
 				uxContinueBtn.Enabled = false;
+		}
+
+		void OnContinueButtonPressed(Object sender, EventArgs e)
+		{
+			Global.gEnv.pHardwareMouse.UseSystemCursor(false);
+			Close();
 		}
 	}
 }
