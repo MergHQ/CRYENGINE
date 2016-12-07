@@ -37,6 +37,7 @@ public:
 
 	void Free();
 	void FreeRenderObjects();
+	void InvalidateRenderObjectsInstanceData();
 
 	void OffsetPosition(const Vec3& delta)
 	{
