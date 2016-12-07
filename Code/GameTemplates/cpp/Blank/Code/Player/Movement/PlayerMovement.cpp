@@ -16,6 +16,15 @@ class CPlayerMovementRegistrator
 		REGISTER_CVAR2("pl_movementSpeed", &m_movementSpeed, 20.0f, VF_NULL, "Player movement speed.");
 	}
 
+	virtual void Unregister() override
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("pl_movementSpeed");
+		}
+	}
+
 public:
 	CPlayerMovementRegistrator() {}
 

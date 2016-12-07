@@ -14,6 +14,8 @@ class CPlayerInputRegistrator
 	{
 		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
 	}
+
+	virtual void Unregister() override {}
 };
 
 CPlayerInputRegistrator g_playerInputRegistrator;
