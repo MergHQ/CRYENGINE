@@ -2064,14 +2064,14 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	if (startupParams.bExecuteCommandLine)
 		GetISystem()->ExecuteCommandLine();
 
-	gEnv->pConsole->ExecuteString("exec autoexec.cfg");
-
 	// game got initialized, time to finalize framework initialization
 	if (CompleteInit())
 	{
 		InlineInitializationProcessing("CCryAction::Init End");
 
 		gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE, 0, 0);
+
+		gEnv->pConsole->ExecuteString("exec autoexec.cfg");
 
 		// run main game loop
 		if (startupParams.bManualEngineLoop)
