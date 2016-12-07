@@ -10,6 +10,13 @@ IEntityRegistrator *IEntityRegistrator::g_pLast = nullptr;
 CPlugin::~CPlugin()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+
+	IEntityRegistrator* pTemp = IEntityRegistrator::g_pFirst;
+	while (pTemp != nullptr)
+	{
+		pTemp->Unregister();
+		pTemp = pTemp->m_pNext;
+	}
 }
 
 bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -26,14 +33,11 @@ void CPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 	{
 		// Register entities
-		if (IEntityRegistrator::g_pFirst != nullptr)
+		IEntityRegistrator* pTemp = IEntityRegistrator::g_pFirst;
+		while (pTemp != nullptr)
 		{
-			do
-			{
-				IEntityRegistrator::g_pFirst->Register();
-
-				IEntityRegistrator::g_pFirst = IEntityRegistrator::g_pFirst->m_pNext;
-			} while (IEntityRegistrator::g_pFirst != nullptr);
+			pTemp->Register();
+			pTemp = pTemp->m_pNext;
 		}
 	}
 	break;

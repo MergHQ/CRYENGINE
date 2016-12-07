@@ -31,6 +31,11 @@ class CPlayerRegistrator
 		RegisterCVars();
 	}
 
+	virtual void Unregister() override 
+	{
+		UnregisterCVars();
+	}
+
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("pl_mass", &m_mass, 90.f, VF_CHEAT, "Mass of the player entity in kg");
@@ -53,6 +58,28 @@ class CPlayerRegistrator
 		m_pFirstPersonMannequinContext = REGISTER_STRING("pl_firstPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the FP context used in Mannequin");
 		m_pFirstPersonAnimationDatabase = REGISTER_STRING("pl_firstPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
 		m_pFirstPersonControllerDefinition = REGISTER_STRING("pl_firstPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("pl_mass");
+			pConsole->UnregisterVariable("pl_moveSpeed");
+			pConsole->UnregisterVariable("pl_rotationSpeedYaw");
+			pConsole->UnregisterVariable("pl_rotationSpeedPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMinPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMaxPitch");
+			pConsole->UnregisterVariable("pl_eyeHeight");
+			pConsole->UnregisterVariable("pl_cameraOffsetY");
+			pConsole->UnregisterVariable("pl_cameraOffsetZ");
+			pConsole->UnregisterVariable("pl_firstPersonGeometry");
+			pConsole->UnregisterVariable("pl_cameraJointName");
+			pConsole->UnregisterVariable("pl_firstPersonMannequinContext");
+			pConsole->UnregisterVariable("pl_firstPersonAnimationDatabase");
+			pConsole->UnregisterVariable("pl_firstPersonControllerDefinition");
+		}
 	}
 };
 

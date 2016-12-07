@@ -24,6 +24,8 @@ class CRulesRegistrator
 		gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules(pDefaultGameRulesVar->GetString(), "GameRules");
 		gEnv->pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias(pDefaultGameRulesVar->GetString(), pDefaultGameRulesVar->GetString());
 	}
+
+	virtual void Unregister() override {}
 };
 
 CRulesRegistrator g_gameRulesRegistrator;
