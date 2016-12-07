@@ -5,6 +5,7 @@
 #include "CryAction.h"
 #include "AnimationGraphCVars.h"
 #include "PersistantDebug.h"
+#include "GameObjects/MannequinObject.h"
 #include <CryAnimation/IFacialAnimation.h>
 
 #include <CryExtension/CryCreateClassInstance.h>
@@ -92,7 +93,98 @@ bool CheckNANVec(const Vec3& v, IEntity* pEntity)
 	Vec3 v1(v);
 	return CheckNANVec(v1, pEntity);
 }
+
+template<class T, class U> bool CloneBinary(T&& outInstance, U&& inInstance)
+{
+	return gEnv->pSystem->GetArchiveHost()->CloneBinary(Serialization::SStruct(std::forward<T>(outInstance)), Serialization::SStruct(std::forward<U>(inInstance)));
 }
+
+struct SMannequinSettings
+{
+	string actionController;
+	string animDatabase1P;
+	string animDatabase3P;
+	string soundDatabase;
+	bool   useMannequinAGState;
+};
+
+//! Initializes SMannequinSettings based on existing entity components.
+static SMannequinSettings RetrieveMannequinSettingsFromEntity(IEntity& entity)
+{
+	const auto pScriptComponent = entity.GetComponent<IEntityScriptComponent>();
+	if (pScriptComponent)
+	{
+		const auto pScriptTable = pScriptComponent->GetScriptTable();
+		if (pScriptTable)
+		{
+			if (pScriptTable->HaveValue("ActionController") || pScriptTable->HaveValue("fileActionController"))
+			{
+				SMannequinSettings settings;
+
+				if (!pScriptTable->GetValue("ActionController", settings.actionController))
+				{
+					pScriptTable->GetValue("fileActionController", settings.actionController);
+				}
+
+				if (!pScriptTable->GetValue("AnimDatabase3P", settings.animDatabase3P))
+				{
+					pScriptTable->GetValue("fileAnimDatabase3P", settings.animDatabase3P);
+				}
+
+				if (!pScriptTable->GetValue("AnimDatabase1P", settings.animDatabase1P))
+				{
+					pScriptTable->GetValue("fileAnimDatabase1P", settings.animDatabase1P);
+				}
+
+				if (!pScriptTable->GetValue("SoundDatabase", settings.soundDatabase))
+				{
+					pScriptTable->GetValue("fileSoundDatabase", settings.soundDatabase);
+				}
+
+				pScriptTable->GetValue("UseMannequinAGState", settings.useMannequinAGState);
+
+				return settings;
+			}
+		}
+	}
+
+	IEntityComponent* const pMannequinObject = entity.GetComponent<CMannequinObject>();
+	if (pMannequinObject)
+	{
+		struct SEntityPropertyGroupSerialier
+		{
+			void Serialize(Serialization::IArchive& archive) { propertyGroup.SerializeProperties(archive); }
+
+			IEntityPropertyGroup& propertyGroup;
+		};
+
+		struct SMannequinObjectPropertyGroupToMannequinSettingsSerializer
+		{
+			void Serialize(Serialization::IArchive& archive)
+			{
+				archive(mannequinSettings.actionController, "actionController");
+				archive(mannequinSettings.animDatabase3P, "animationDatabase");
+
+				if (archive.isInput())
+				{
+					mannequinSettings.animDatabase1P = "";
+					mannequinSettings.soundDatabase = "";
+					mannequinSettings.useMannequinAGState = false;
+				}
+			}
+
+			SMannequinSettings& mannequinSettings;
+		};
+
+		SMannequinSettings settings;
+		CloneBinary(SMannequinObjectPropertyGroupToMannequinSettingsSerializer{ settings }, SEntityPropertyGroupSerialier{ *pMannequinObject->GetPropertyGroup() });
+		return settings;
+	}
+
+	return SMannequinSettings();
+}
+
+} // anonymous namespace
 
 namespace AC
 {
@@ -295,7 +387,7 @@ bool CAnimatedCharacter::Init(IGameObject* pGameObject)
 
 	SetGameObject(pGameObject);
 
-	LoadAnimationGraph(pGameObject);
+	InitializeMannequin();
 
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::Init %p end", pGameObject);
@@ -341,8 +433,7 @@ bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntity
 		m_pAnimationPlayerProxies[layer] = &s_defaultAnimPlayerProxy;
 	}
 
-	// Load the new animation graph in
-	LoadAnimationGraph(pGameObject);
+	InitializeMannequin();
 
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p end", pGameObject);
@@ -353,53 +444,25 @@ bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntity
 	return true;
 }
 
-bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
+bool CAnimatedCharacter::InitializeMannequin()
 {
-	IEntity* pEntity = GetEntity();
-	SmartScriptTable pScriptTable = pEntity ? pEntity->GetScriptTable() : NULL;
-	if (!pScriptTable)
-		return false;
-
-	SmartScriptTable pPropertiesTable = NULL;
-	pScriptTable->GetValue("Properties", pPropertiesTable);
-
-	// If the script table doesn't have an "ActionController" property, try and use the "Properties" table as a fallback
-	const SmartScriptTable pSourceTable = (pScriptTable->HaveValue("ActionController") || pScriptTable->HaveValue("fileActionController")) ? pScriptTable : pPropertiesTable;
-	if (!pSourceTable)
-		return false;
-
-	DeleteActionController();
-
-	const char* szActionController = 0;
-
-	if ((pSourceTable->GetValue("ActionController", szActionController) || pSourceTable->GetValue("fileActionController", szActionController)) && szActionController && szActionController[0])
+	SMannequinSettings mannequinSetup = RetrieveMannequinSettingsFromEntity(*GetEntity());
+	if (mannequinSetup.actionController.empty())
 	{
-		SetActionController(szActionController);
-
-		if (m_pActionController)
-		{
-			IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
-			const char* szAnimDatabase = 0;
-			const char* szSoundDatabase = 0;
-			if ((pSourceTable->GetValue("AnimDatabase3P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase3P", szAnimDatabase)) && szAnimDatabase)
-			{
-				m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
-			}
-			szAnimDatabase = 0;
-			if ((pSourceTable->GetValue("AnimDatabase1P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase1P", szAnimDatabase)) && szAnimDatabase)
-			{
-				m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
-			}
-			if ((pSourceTable->GetValue("SoundDatabase", szSoundDatabase) || pSourceTable->GetValue("fileSoundDatabase", szAnimDatabase)) && szSoundDatabase)
-			{
-				m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(szSoundDatabase);
-			}
-		}
+		return false;
 	}
 
-	m_useMannequinAGState = false;
-	pScriptTable->GetValue("UseMannequinAGState", m_useMannequinAGState);
+	DeleteActionController();
+	SetActionController(mannequinSetup.actionController);
+	if (m_pActionController)
+	{
+		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
+		m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase3P);
+		m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase1P);
+		m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.soundDatabase);
+	}
 
+	m_useMannequinAGState = mannequinSetup.useMannequinAGState;
 	if (m_useMannequinAGState)
 	{
 		CRY_ASSERT(m_pActionController);
@@ -409,7 +472,6 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 		m_pMannequinAGState->AddListener("animchar", this);
 	}
 
-	// Reset all internal variables to prepare for this new graph
 	ResetVars();
 
 	return true;
@@ -1208,7 +1270,7 @@ void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
 		{
 			if (!m_pActionController)
 			{
-				LoadAnimationGraph(GetGameObject());
+				InitializeMannequin();
 			}
 		}
 		break;

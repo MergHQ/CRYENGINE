@@ -344,7 +344,7 @@ private:
 	bool       EvaluateSimpleMovementConditions() const;
 	void       UpdateSimpleMovementConditions();
 
-	bool       LoadAnimationGraph(IGameObject* pGameObject);
+	bool       InitializeMannequin();
 
 	void       PreAnimationUpdate();
 

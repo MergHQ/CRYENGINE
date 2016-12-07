@@ -53,7 +53,8 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 	REGISTER_FACTORY(pFrameWork, "Interactor", CInteractor, false);
 
 	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
-	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "MannequinObject", MannequinObject, "Scripts/Entities/Anim/MannequinObject.lua");
+	RegisterEntityWithDefaultComponent<CMannequinObject>("MannequinEntity", "Animation", "User.bmp");
+
 	HIDE_FROM_EDITOR("WaterVolume");
 	REGISTER_EDITOR_VOLUME_CLASS(pFrameWork, "WaterVolume");
 }
