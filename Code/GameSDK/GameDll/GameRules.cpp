@@ -1038,17 +1038,7 @@ bool CGameRules::GetEntityPoolSignature( TSerialize signature )
 }
 
 //------------------------------------------------------------------------
-void CGameRules::Release()
-{
-	CCCPOINT(GameRules_Release);
-
-	UnregisterConsoleCommands(gEnv->pConsole);
-	UnregisterConsoleVars(gEnv->pConsole);
-	delete this;
-}
-
-//------------------------------------------------------------------------
-void CGameRules::FullSerialize( TSerialize ser )
+void CGameRules::FullSerialize(TSerialize ser)
 {
 }
 
@@ -5880,6 +5870,15 @@ void CGameRules::StoreMigratingPlayer(IActor* pActor)
 	{
 		GameWarning("Too many migrating players!");
 	}
+}
+
+//------------------------------------------------------------------------
+void CGameRules::OnShutDown()
+{
+	CCCPOINT(GameRules_Release);
+
+	UnregisterConsoleCommands(gEnv->pConsole);
+	UnregisterConsoleVars(gEnv->pConsole);
 }
 
 //------------------------------------------------------------------------

@@ -1491,6 +1491,7 @@ void CGameObject::RemoveExtension(const TExtensions::iterator& iter)
 	if (iter->postUpdate)
 		DisablePostUpdates(iter->pExtension);
 	IGameObjectExtension* pExtension = iter->pExtension;
+	pExtension->OnShutDown();
 	std::swap(m_extensions.back(), *iter);
 	m_extensions.pop_back();
 	std::sort(m_extensions.begin(), m_extensions.end());
