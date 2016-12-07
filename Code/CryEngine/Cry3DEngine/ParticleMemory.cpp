@@ -30,6 +30,7 @@ ParticleObjectPool& ParticleObjectAllocator()
 		{
 			new(sStorageParticleObjectPool) ParticleObjectPool();
 			alias_cast<ParticleObjectPool*>(sStorageParticleObjectPool)->Init(Cry3DEngineBase::GetCVars()->e_ParticlesPoolSize << 10);
+			MemoryBarrier();
 			g_bParticleObjectPoolInitialized = true;
 		}
 	}
