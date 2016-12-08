@@ -16,5 +16,5 @@ add_sources("EditorFmod_uber_0.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorCryAudioImplFmod SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl")
+CryEditorPlugin(EditorCryAudioImplFmod SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl")
 target_include_directories(${THIS_PROJECT} PRIVATE ../common)

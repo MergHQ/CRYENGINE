@@ -14,7 +14,7 @@ add_sources("NoUberFile"
 
 end_sources()
 
-CryPlugin(SandboxPythonBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins" DISABLE_MFC)
+CryEditorPlugin(SandboxPythonBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins" DISABLE_MFC)
 force_static_crt()
 set(PYSIDE_SDK_SRC ${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/PySide2/)
 set(PYSIDE_INCLUDE ${PYSIDE_SDK_SRC}include/)

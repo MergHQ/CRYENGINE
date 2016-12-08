@@ -34,60 +34,32 @@ macro(set_libpath_flag)
 	endif()
 endmacro()
 
-macro(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSource)
-	if (OPTION_PCH AND MSVC AND NOT OPTION_UNITY_BUILD)
+function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSource)
+  if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
+    # Now only support precompiled headers for the Visual Studio projects
+    return()
+  endif()
+  if (OPTION_PCH AND MSVC AND NOT OPTION_UNITY_BUILD)
 		if (WIN32 OR DURANGO)
-			get_filename_component(PCH_DIR "${PrecompiledSource}" DIRECTORY)
-			get_filename_component(PCH_NAME "${PrecompiledSource}" NAME_WE)
-			if(PCH_DIR)
-				string(REPLACE ".." "__" PCH_OUT_DIR ${PCH_DIR})
-			endif()
-
-			set(OBJ_DIR "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/${CFG_INTDIR}/${PCH_OUT_DIR}")
-
-			set(PCH_FILE "${OBJ_DIR}/${PCH_NAME}.pch")
-			set(PCH_OBJ "${OBJ_DIR}/${PCH_NAME}.cpp.obj")
-
-			set_target_properties(${TargetProject} PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\"")
-			set_source_files_properties(${PrecompiledSource} PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\"")
-			# Disable Precompiled Header on all C files
-			foreach(sourcefile ${SOURCES})
-				if (${sourcefile} MATCHES ".*\\.\\c$")
-					set_property(SOURCE "${sourcefile}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
-				elseif (${sourcefile} MATCHES ".*\\.\\qrc$")
-					get_filename_component(QRC_NAME ${sourcefile} NAME_WE)
-					set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/qrc_${QRC_NAME}.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
-				elseif (${sourcefile} STREQUAL ${PrecompiledSource})
-					# No special handling for the pch source required
+			if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
+				# Inside Visual Studio
+				set(PCH_FILE "$(IntDir)$(TargetName).pch")
 				else()
-					# To avoid cyclic dependencies we make sure that the .pch is built before
-					# other sources are build by depending on the .obj for the .pch
-					get_source_file_property(_object_depends ${sourcefile} OBJECT_DEPENDS)
-					if (_object_depends)
-						list(APPEND _object_depends ${PCH_OBJ})
-					else()
-						set(_object_depends ${PCH_OBJ})
-					endif()
-					set_source_files_properties(${sourcefile} PROPERTIES OBJECT_DEPENDS "${_object_depends}")
-				endif ()
-				
-			endforeach(sourcefile)
-			
-			# Disable Precompiled headers on QT generated files
-			get_target_property(IS_AUTOMOC ${TargetProject} AUTOMOC)
-			if(IS_AUTOMOC AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp")
-				file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" "int _dummy_automoc_${TargetProject} = 1;")
+				get_filename_component(PCH_NAME "${PrecompiledSource}" NAME_WE)
+				set(PCH_FILE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/${PCH_NAME}.pch")
 			endif()
-			if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp")
-				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
-				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" PROPERTY "SKIP_AUTOMOC" TRUE)
-			endif()
-			file(GLOB_RECURSE qrcs ${CMAKE_CURRENT_BINARY_DIR}/qrc_*.cpp)
-			foreach(f ${qrcs})
-				set_property( SOURCE ${f} APPEND PROPERTY COMPILE_FLAGS "/Y-")
-				set_property( SOURCE ${f} PROPERTY "SKIP_AUTOMOC" TRUE)
-			endforeach()
 
+			#set_target_properties(${TargetProject} PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\"")
+			set_source_files_properties(${PrecompiledSource} PROPERTIES COMPILE_FLAGS " /Yc\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" ")
+			# Disable Precompiled Header on all C files
+
+			foreach(sourcefile ${SOURCES})
+				if ("${sourcefile}" MATCHES ".*\\.\\cpp$")
+				  if (NOT ${sourcefile} STREQUAL "${PrecompiledSource}")
+					set_property(SOURCE "${sourcefile}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" ")
+				  endif()
+				endif()
+			endforeach(sourcefile)
 		endif()
 		
 		if (ORBIS)
@@ -95,7 +67,7 @@ macro(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSou
 			#set_source_files_properties(${PrecompiledSource} PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\"")
 		endif()
 	endif()
-endmacro()
+endfunction()
 
 MACRO(EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER)
 	if (MSVC)
@@ -124,12 +96,12 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	ENDIF(ORBIS)
   
 	if(VC_MDD_ANDROID)
-    if (VC_MDD_ANDROID_PLATFORM_TOOLSET)
-      set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_PLATFORM_TOOLSET "${VC_MDD_ANDROID_PLATFORM_TOOLSET}")
-    endif()
-    if (VC_MDD_ANDROID_USE_OF_STL)
-      set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_USE_OF_STL "${VC_MDD_ANDROID_USE_OF_STL}")
-    endif()
+		if (VC_MDD_ANDROID_PLATFORM_TOOLSET)
+			set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_PLATFORM_TOOLSET "${VC_MDD_ANDROID_PLATFORM_TOOLSET}")
+		endif()
+		if (VC_MDD_ANDROID_USE_OF_STL)
+			set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_USE_OF_STL "${VC_MDD_ANDROID_USE_OF_STL}")
+		endif()
 		set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_API_LEVEL "${VC_MDD_ANDROID_API_LEVEL}")
 		set_property(TARGET ${TargetProject} PROPERTY VS_GLOBAL_UseMultiToolTask "True")  
 	endif()
@@ -153,6 +125,33 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	endif()
 ENDMACRO(SET_PLATFORM_TARGET_PROPERTIES)
 
+function(JOIN VALUES GLUE OUTPUT)
+	string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
+	set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+
+# Writes an uber file to disk
+# If uber file already exist it's contents are compared and the file only is overridden if it changed, to allow incremental compilations.
+function(write_uber_file_to_disk UBER_FILE input_files)
+	set( uber_file_text "// Unity Build Uber File generated by CMake\n// This file is auto generated, do not manually edit it.\n\n" )
+
+	foreach(source_file ${${input_files}} )
+		set( uber_file_text "${uber_file_text}#include <${source_file}>\n" )
+	endforeach()
+	set( uber_file_text "${uber_file_text}\n" )
+  
+	if(EXISTS ${UBER_FILE})
+		#First check that existing file is exactly the same
+		file(READ ${UBER_FILE} old_uber_file_text)
+		if (NOT "${uber_file_text}" STREQUAL "${old_uber_file_text}")
+			FILE( WRITE ${UBER_FILE} "${uber_file_text}")
+		endif()
+	else()
+		FILE( WRITE ${UBER_FILE} "${uber_file_text}")
+	endif()
+
+endfunction()
+
 # Macro for the Unity Build, creating uber files
 function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 	if(OPTION_UNITY_BUILD)
@@ -161,24 +160,28 @@ function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 		# Generate a unique filename for the unity build translation unit
 		set(unit_build_file ${CMAKE_CURRENT_BINARY_DIR}/${UB_FILENAME})
 
+		set( unit_source_files )
+		if (MODULE_PCH_H)
+			# Add Pre-compiled Header
+			list(APPEND unit_source_files ${MODULE_PCH_H})
+		endif()
+
 		# Add include statement for each translation unit
 		foreach(source_file ${files} )
 			if (${source_file} MATCHES ".*\\.\\cpp$" OR 
 				${source_file} MATCHES ".*\\.\\CPP$" OR
-				${source_file} MATCHES ".*\\.\\c$")
-				# Exclude from compilation
-				set_source_files_properties(${source_file} PROPERTIES HEADER_FILE_ONLY true)
-				list(APPEND unit_sources ${source_file})
+				${source_file} MATCHES ".*\\.\\C$" OR
+						${source_file} MATCHES ".*\\.\\c$")
+				if (NOT "${source_file}" STREQUAL "${MODULE_PCH}")
+					# Exclude from compilation
+					set_source_files_properties(${source_file} PROPERTIES HEADER_FILE_ONLY true)
+					list(APPEND unit_sources ${source_file})
+					list(APPEND unit_source_files "${CMAKE_CURRENT_SOURCE_DIR}/${source_file}")
+				endif()
 			endif()
 		endforeach(source_file)
-		
-		# Add target to create uber files
-		string(REPLACE ";" "," unit_sources "${unit_sources}")
-		add_custom_command(OUTPUT ${unit_build_file}
-			           COMMAND ${CMAKE_COMMAND} -DUBER_FILE=${unit_build_file} 
-				   			    -DSRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-							    -DSRC_FILES="${unit_sources}"
-							    -P "${CRYENGINE_DIR}/Tools/CMake/write_uber_file.cmake")
+
+		write_uber_file_to_disk( ${unit_build_file} unit_source_files )
 
 		# Group Uber files in solution project
 		source_group("UBER FILES" FILES ${unit_build_file})
@@ -186,7 +189,7 @@ function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 
 		# Turn off precompiled header
 		if (WIN32 OR DURANGO)
-			set_source_files_properties(${unit_build_file} PROPERTIES COMPILE_FLAGS "/Y-")
+			#set_source_files_properties(${unit_build_file} PROPERTIES COMPILE_FLAGS "/Y-")
 		endif()
 	endif()
 endfunction(enable_unity_build)
@@ -301,6 +304,9 @@ macro(get_source_group output group)
 endmacro()
 
 macro(end_sources)
+endmacro()
+
+macro(generate_uber_files)
 	if(OPTION_UNITY_BUILD AND UBERFILES)
 		list(REMOVE_DUPLICATES UBERFILES)
 		foreach(u ${UBERFILES})
@@ -336,10 +342,14 @@ macro(force_static_crt)
 endmacro()
 
 macro(read_settings)
-	set(options DISABLE_MFC FORCE_STATIC FORCE_SHARED)
+	set(options DISABLE_MFC FORCE_STATIC FORCE_SHARED EDITOR_COMPILE_SETTINGS)
 	set(oneValueArgs SOLUTION_FOLDER PCH)
 	set(multiValueArgs FILE_LIST INCLUDES LIBS DEFINES)
 	cmake_parse_arguments(MODULE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+	if (MODULE_PCH)
+		string(REPLACE ".cpp" ".h" MODULE_PCH_HEADER_FILE ${MODULE_PCH})
+		get_filename_component(MODULE_PCH_H ${MODULE_PCH_HEADER_FILE} NAME)
+	endif()
 endmacro()
 
 macro(prepare_project)
@@ -348,6 +358,7 @@ macro(prepare_project)
 	include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 	project(${target})
 	read_settings(${ARGN})
+	generate_uber_files()
 	if(NOT ${THIS_PROJECT}_SOURCES)
 		set(${THIS_PROJECT}_SOURCES ${SOURCES})
 	endif()	
@@ -355,10 +366,8 @@ endmacro()
 
 macro(apply_compile_settings)
 	if (MODULE_PCH)
-		string(REPLACE ".cpp" ".h" PCH_H ${MODULE_PCH})
-		get_filename_component(PCH_H ${PCH_H} NAME)
-		USE_MSVC_PRECOMPILED_HEADER( ${THIS_PROJECT} ${PCH_H} ${MODULE_PCH} )
-		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY AUTOMOC_MOC_OPTIONS -b ${PCH_H})
+		USE_MSVC_PRECOMPILED_HEADER( ${THIS_PROJECT} ${MODULE_PCH_H} ${MODULE_PCH} )
+		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY AUTOMOC_MOC_OPTIONS -b${MODULE_PCH_H})
 	endif()
 	SET_PLATFORM_TARGET_PROPERTIES( ${THIS_PROJECT} )	
 	if(MODULE_SOLUTION_FOLDER)
@@ -374,6 +383,9 @@ function(CryEngineModule target)
 		add_library(${THIS_PROJECT} STATIC ${${THIS_PROJECT}_SOURCES})
 	else()
 		add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
+	endif()
+	if (MODULE_EDITOR_COMPILE_SETTINGS)
+		set_editor_module_flags()
 	endif()
 	apply_compile_settings()
 	if (NOT MODULE_FORCE_SHARED AND (OPTION_STATIC_LINKING OR MODULE_FORCE_STATIC))
@@ -413,13 +425,20 @@ endfunction()
 function(CreateDynamicModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} SHARED ${${THIS_PROJECT}_SOURCES})
+	if (MODULE_EDITOR_COMPILE_SETTINGS)
+		set_editor_module_flags()
+	endif()
 	apply_compile_settings()
 endfunction()
 
 function(CryEngineStaticModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} STATIC ${${THIS_PROJECT}_SOURCES})
+	set(MODULE_FORCE_STATIC TRUE)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_LIB)
+	if (MODULE_EDITOR_COMPILE_SETTINGS)
+		set_editor_module_flags()
+	endif()
 	apply_compile_settings()
 endfunction()
 
@@ -475,7 +494,15 @@ function(CryConsoleApplication target)
 endfunction()
 
 function(CryFileContainer target)
-	prepare_project(${ARGN})
+	set(THIS_PROJECT ${target} PARENT_SCOPE)
+	set(THIS_PROJECT ${target})
+	project(${target})
+
+	read_settings(${ARGN})
+	if(NOT ${THIS_PROJECT}_SOURCES)
+		set(${THIS_PROJECT}_SOURCES ${SOURCES})
+	endif()	
+
 	add_custom_target( ${THIS_PROJECT} SOURCES ${${THIS_PROJECT}_SOURCES})
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
@@ -499,22 +526,14 @@ macro(set_editor_module_flags)
 		-DUSE_PYTHON_SCRIPTING 
 		-DNO_WARN_MBCS_MFC_DEPRECATION
 	)
-	if(NOT MODULE_DISABLE_MFC)
+	if(NOT MODULE_DISABLE_MFC AND NOT MODULE_FORCE_STATIC)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
 	endif()
 	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
 	use_qt()
-	
+
 	target_include_directories(${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/Sandbox/Libs/CryQt)
 	target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
-endmacro()
-
-macro(set_editor_flags)
-	target_include_directories( ${THIS_PROJECT} PRIVATE
-		${EDITOR_DIR}
-		${EDITOR_DIR}/Include
-	)
-	set_editor_module_flags()
 endmacro()
 
 function(CryEditor target)
@@ -524,7 +543,7 @@ function(CryEditor target)
 	else()
 		add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	endif()
-	set_editor_flags()
+	set_editor_module_flags()
 	generate_rc_file()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /bigobj /Zm200 /wd4251 /wd4275)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_EXPORTS -DPLUGIN_IMPORTS -DEDITOR_COMMON_IMPORTS)
@@ -534,7 +553,7 @@ function(CryEditor target)
 	apply_compile_settings()
 endfunction()
 
-function(CryPlugin target)
+function(CryEditorPlugin target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	set_editor_module_flags()
@@ -544,15 +563,6 @@ function(CryPlugin target)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins)
 	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
 	apply_compile_settings()	
-endfunction()
-
-function(CryPluginModule target)
-	prepare_project(${ARGN})
-	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
-	set_editor_module_flags()
-	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /wd4251 /wd4275)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPLUGIN_EXPORTS -DEDITOR_COMMON_EXPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
-	apply_compile_settings()
 endfunction()
 
 macro(set_rc_flags)

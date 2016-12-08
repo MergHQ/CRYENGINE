@@ -20,5 +20,5 @@ add_sources("EditorWwise_uber_0.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorCryAudioImplWwise SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl")
+CryEditorPlugin(EditorCryAudioImplWwise SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl")
 target_include_directories(${THIS_PROJECT} PRIVATE ../common GeneratedFiles)

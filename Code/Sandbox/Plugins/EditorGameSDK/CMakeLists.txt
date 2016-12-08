@@ -24,7 +24,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
+CryEditorPlugin(EditorGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 
 target_include_directories(${THIS_PROJECT} PRIVATE ..)
 target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt/Include)

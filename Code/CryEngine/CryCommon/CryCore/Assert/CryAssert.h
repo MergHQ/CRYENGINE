@@ -97,6 +97,8 @@ void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 	#endif
 
 	#ifdef IS_EDITOR_BUILD
+		#undef  Q_ASSERT
+		#undef  Q_ASSERT_X
 		#define Q_ASSERT(cond)                CRY_ASSERT_MESSAGE(cond, "Q_ASSERT")
 		#define Q_ASSERT_X(cond, where, what) CRY_ASSERT_MESSAGE(cond, "Q_ASSERT_X" where what)
 	#endif

@@ -34,6 +34,7 @@ target_link_libraries (${THIS_PROJECT} PRIVATE
 )
 
 target_include_directories(${THIS_PROJECT}
+	PRIVATE datasource_xml
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 	INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
 )

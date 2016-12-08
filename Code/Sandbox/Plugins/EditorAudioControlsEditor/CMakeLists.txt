@@ -61,5 +61,5 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorAudioControlsEditor PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
+CryEditorPlugin(EditorAudioControlsEditor PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
 target_include_directories( ${THIS_PROJECT} PRIVATE .. common )

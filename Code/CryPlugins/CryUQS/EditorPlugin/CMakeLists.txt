@@ -33,7 +33,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorUQS PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryEditorPlugin(EditorUQS PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 target_link_libraries (${THIS_PROJECT} PRIVATE
 	CryUQS_Shared
 	CryUQS_DataSource_XML

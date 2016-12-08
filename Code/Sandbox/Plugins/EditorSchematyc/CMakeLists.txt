@@ -114,7 +114,7 @@ add_sources("Uber_Variables.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryPlugin(EditorSchematyc PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
+CryEditorPlugin(EditorSchematyc PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DSCHEMATYC_PLUGIN_EXPORTS)
 target_include_directories(${THIS_PROJECT}
 PRIVATE

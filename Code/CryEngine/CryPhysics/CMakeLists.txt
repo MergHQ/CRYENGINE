@@ -104,7 +104,7 @@ end_sources()
 
 if(NOT RESOURCE_COMPILER)
 	if (PHYSICS_CRYPHYSICS)
-		CryEngineModule(CryPhysics SOLUTION_FOLDER "CryEngine")
+		CryEngineModule(CryPhysics PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 		if(ORBIS OR LINUX OR ANDROID)
 			target_compile_options(${THIS_PROJECT} PRIVATE
 				-Wno-constant-conversion
