@@ -108,22 +108,21 @@ public:
 	void insert(const T& item)
 	{
 		if (m_bIterating)
-			m_added.push_back(item);
+			m_changeRequests.emplace_back(item, EChangeRequest::Add);
 		else
 			m_set.insert(item);
 	}
 	void erase(const T& item)
 	{
 		if (m_bIterating)
-			m_removed.push_back(item);
+			m_changeRequests.emplace_back(item, EChangeRequest::Remove);
 		else
 			m_set.erase(item);
 	}
 	void clear()
 	{
 		m_set.clear();
-		m_added.clear();
-		m_removed.clear();
+		m_changeRequests.clear();
 	}
 	size_t size() const               { return m_set.size(); }
 	size_t count(const T& item) const { return m_set.count(item); }
@@ -149,18 +148,30 @@ protected:
 	{
 		assert(m_bIterating);
 		m_bIterating = false;
-		for (const auto& item : m_added)
-			m_set.insert(item);
-		for (const auto& item : m_removed)
-			m_set.erase(item);
-		m_added.clear();
-		m_removed.clear();
+		for (const auto& itemRequestPair : m_changeRequests)
+		{
+			const T& item = itemRequestPair.first;
+			if (itemRequestPair.second == EChangeRequest::Add)
+			{
+				m_set.insert(item);
+			}
+			else
+			{
+				m_set.erase(item);
+			}
+		}
+		m_changeRequests.clear();
 	}
 private:
-	std::set<T>    m_set;
-	std::vector<T> m_added;
-	std::vector<T> m_removed;
-	bool           m_bIterating = false;
+	std::set<T> m_set;
+
+	enum class EChangeRequest
+	{
+		Add,
+		Remove
+	};
+	std::vector<std::pair<T, EChangeRequest>> m_changeRequests;
+	bool m_bIterating = false;
 };
 
 // Mutatable map is a specialized customization of the std::map where items can be added or removed within foreach iteration.
