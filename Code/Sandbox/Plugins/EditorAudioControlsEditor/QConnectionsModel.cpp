@@ -8,7 +8,7 @@
 #include "AudioControlsEditorPlugin.h"
 #include "AudioSystemModel.h"
 #include "ImplementationManager.h"
-#include "Undo/IUndoObject.h"
+#include "IUndoObject.h"
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <QtUtil.h>
 

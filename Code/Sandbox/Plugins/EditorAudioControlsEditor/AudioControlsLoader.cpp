@@ -11,7 +11,7 @@
 #include <IAudioSystemItem.h>
 #include "QAudioControlTreeWidget.h"
 #include "QtUtil.h"
-#include "Undo/IUndoObject.h"
+#include "IUndoObject.h"
 #include <QStandardItem>
 #include "QAudioControlTreeWidget.h"
 #include "QATLControlsTreeModel.h"

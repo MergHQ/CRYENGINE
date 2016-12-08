@@ -18,7 +18,7 @@
 #include "AudioSystemPanel.h"
 #include "AudioSystemModel.h"
 #include "QAudioControlTreeWidget.h"
-#include "Undo/IUndoObject.h"
+#include "IUndoObject.h"
 #include "Controls/QuestionDialog.h"
 
 #include <QWidgetAction>

@@ -7,6 +7,7 @@
 #include <IEditor.h>
 #include "ATLControlsModel.h"
 #include "AudioControlsEditorPlugin.h"
+#include "IUndoManager.h"
 
 using namespace ACE;
 const string g_sImplementationCVarName = "s_AudioImplName";
@@ -42,7 +43,7 @@ bool CImplementationManager::LoadImplementation()
 		{
 			// Need to flush the undo/redo queue to make sure we're not keeping data from
 			// previous implementation there
-			GetIEditor()->FlushUndo(false);
+			GetIEditor()->GetIUndoManager()->Flush();
 
 			FreeLibrary(ms_hMiddlewarePlugin);
 			ms_hMiddlewarePlugin = nullptr;

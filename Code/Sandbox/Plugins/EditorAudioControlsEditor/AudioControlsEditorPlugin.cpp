@@ -1,6 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "IUndoManager.h"
 #include "AudioControlsEditorPlugin.h"
 #include "QtViewPane.h"
 #include "AudioControlsEditorWindow.h"
@@ -72,7 +73,7 @@ void CAudioControlsEditorPlugin::SaveModels()
 
 void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 {
-	GetIEditor()->SuspendUndo();
+	GetIEditor()->GetIUndoManager()->Suspend();
 	ms_ATLModel.SetSuppressMessages(true);
 
 	ACE::IAudioSystemEditor* pImpl = ms_implementationManager.GetImplementation();
@@ -91,7 +92,7 @@ void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 	}
 
 	ms_ATLModel.SetSuppressMessages(false);
-	GetIEditor()->ResumeUndo();
+	GetIEditor()->GetIUndoManager()->Resume();
 }
 
 void CAudioControlsEditorPlugin::ReloadScopes()
@@ -160,9 +161,9 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	switch (event)
 	{
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
-		GetIEditor()->SuspendUndo();
+		GetIEditor()->GetIUndoManager()->Suspend();
 		ms_implementationManager.LoadImplementation();
-		GetIEditor()->ResumeUndo();
+		GetIEditor()->GetIUndoManager()->Resume();
 		break;
 	}
 }

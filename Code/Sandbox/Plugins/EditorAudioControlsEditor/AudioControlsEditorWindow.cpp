@@ -177,11 +177,11 @@ void CAudioControlsEditorWindow::keyPressEvent(QKeyEvent* pEvent)
 	{
 		if (pEvent->modifiers() & Qt::ShiftModifier)
 		{
-			GetIEditor()->Redo();
+			GetIEditor()->GetIUndoManager()->Redo();
 		}
 		else
 		{
-			GetIEditor()->Undo();
+			GetIEditor()->GetIUndoManager()->Undo();
 		}
 	}
 	QMainWindow::keyPressEvent(pEvent);

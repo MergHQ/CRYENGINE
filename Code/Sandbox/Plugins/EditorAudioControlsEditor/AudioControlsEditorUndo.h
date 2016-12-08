@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AudioControl.h"
-#include "Undo/IUndoObject.h"
+#include "IUndoObject.h"
 #include "QATLControlsTreeModel.h"
 
 #include <QAbstractItemModel>
