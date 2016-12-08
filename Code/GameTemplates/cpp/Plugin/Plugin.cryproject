@@ -1,6 +1,9 @@
 {
     "content": {
-        "code": [
+        "assets": [
+            "Assets"
+        ],
+		"code": [
             "Code"
         ]
     },

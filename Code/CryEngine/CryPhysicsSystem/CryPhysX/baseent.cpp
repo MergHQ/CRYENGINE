@@ -429,11 +429,13 @@ int PhysXEnt::Action(pe_action* _action, int bThreadSafe)
 
 	if (_action->type==pe_action_impulse::type_id) {
 		pe_action_impulse *action = (pe_action_impulse*)_action;
-		int i = is_unused(action->ipart) ? 0 : action->ipart;
-		if (!is_unused(action->partid)) i = idxPart(action->partid);
 
 		if (m_actor && !m_actor->getScene()) Enable(true); // enable (i.e., add to scene), if not already in scene
-		PxRigidBody *pRB = m_actor->isRigidBody();
+
+		int i = is_unused(action->ipart) ? 0 : action->ipart;
+		if (!is_unused(action->partid)) i = idxPart(action->partid);
+		PxRigidBody *pRB = getRigidBody(i);
+
 		if (pRB) {
 			Vec3 dL = !is_unused(action->angImpulse) ? action->angImpulse : Vec3(0);
 			if (!is_unused(action->impulse)) {

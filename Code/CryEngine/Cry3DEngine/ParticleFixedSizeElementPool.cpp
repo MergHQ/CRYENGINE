@@ -131,13 +131,11 @@ void* ParticleObjectPool::Allocate_128Byte()
 		{
 #if defined(TRACK_PARTICLE_POOL_USAGE)
 			CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory128BytesUsed), nAllocationSize);
-			CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
+			const int nUsedMemory = CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
 			int nMaxUsed = ~0;
-			int nUsedMemory = *const_cast<volatile int*>(&m_nUsedMemory);
-			volatile int* pMaxUsedMemory = const_cast<volatile int*>(&m_nMaxUsedMemory);
 			do
 			{
-				nMaxUsed = *pMaxUsedMemory;
+				nMaxUsed = *alias_cast<volatile int*>(&m_nMaxUsedMemory);
 				if (nUsedMemory <= nMaxUsed)
 					break;
 
@@ -181,15 +179,13 @@ void* ParticleObjectPool::Allocate_256Byte()
 		void* pListEntry = CryInterlockedPopEntrySList(m_freeList256Bytes);
 		if (pListEntry)
 		{
-#if defined(TRACK_PARTICLE_POOL_USAGE)
+#if defined(TRACK_PARTICLE_POOL_USAGE)			
 			CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory256BytesUsed), nAllocationSize);
-			CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
+			const int nUsedMemory = CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
 			int nMaxUsed = ~0;
-			int nUsedMemory = *const_cast<volatile int*>(&m_nUsedMemory);
-			volatile int* pMaxUsedMemory = const_cast<volatile int*>(&m_nMaxUsedMemory);
 			do
 			{
-				nMaxUsed = *pMaxUsedMemory;
+				nMaxUsed = *alias_cast<volatile int*>(&m_nMaxUsedMemory);
 				if (nUsedMemory <= nMaxUsed)
 					break;
 
@@ -234,13 +230,11 @@ void* ParticleObjectPool::Allocate_512Byte()
 		{
 #if defined(TRACK_PARTICLE_POOL_USAGE)
 			CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory512Bytesused), nAllocationSize);
-			CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
+			const int nUsedMemory = CryInterlockedAdd(alias_cast<volatile int*>(&m_nUsedMemory), nAllocationSize);
 			int nMaxUsed = ~0;
-			int nUsedMemory = *const_cast<volatile int*>(&m_nUsedMemory);
-			volatile int* pMaxUsedMemory = const_cast<volatile int*>(&m_nMaxUsedMemory);
 			do
 			{
-				nMaxUsed = *pMaxUsedMemory;
+				nMaxUsed = *alias_cast<volatile int*>(&m_nMaxUsedMemory);
 				if (nUsedMemory <= nMaxUsed)
 					break;
 

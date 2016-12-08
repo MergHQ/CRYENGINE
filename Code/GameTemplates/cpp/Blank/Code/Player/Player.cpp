@@ -17,6 +17,8 @@ class CPlayerRegistrator
 	{
 		CGamePlugin::RegisterEntityWithDefaultComponent<CPlayer>("Player");
 	}
+
+	virtual void Unregister() override {}
 };
 
 CPlayerRegistrator g_playerRegistrator;

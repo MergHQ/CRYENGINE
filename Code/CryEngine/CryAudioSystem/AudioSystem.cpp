@@ -243,7 +243,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	{
 	case ESYSTEM_EVENT_LEVEL_LOAD_START:
 		{
-			const string levelNameOnly = (const char*)wparam;
+			string const levelNameOnly = PathUtil::GetFileName(reinterpret_cast<const char*>(wparam));
 
 			if (!levelNameOnly.empty() && levelNameOnly.compareNoCase("Untitled") != 0)
 			{

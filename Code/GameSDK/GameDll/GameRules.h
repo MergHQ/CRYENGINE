@@ -469,7 +469,6 @@ public:
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) {}
 	virtual bool GetEntityPoolSignature( TSerialize signature );
-	virtual void Release();
 	virtual void FullSerialize( TSerialize ser );
 	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
 	virtual void PostSerialize();
@@ -567,6 +566,7 @@ public:
 			}
 		}
 	}
+	virtual void OnShutDown();
 	//~IGameRules
 	
 	// IGameFrameworkListener

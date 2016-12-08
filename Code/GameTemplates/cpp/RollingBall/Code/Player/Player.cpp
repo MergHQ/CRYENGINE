@@ -28,6 +28,11 @@ class CPlayerRegistrator
 		RegisterCVars();
 	}
 
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
+	}
+
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("pl_mass", &m_mass, 90.f, VF_CHEAT, "Mass of the player entity in kg");
@@ -39,9 +44,25 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_rotationLimitsMinPitch", &m_rotationLimitsMinPitch, -0.84f, VF_CHEAT, "Minimum entity pitch limit");
 		REGISTER_CVAR2("pl_rotationLimitsMaxPitch", &m_rotationLimitsMaxPitch, 1.5f, VF_CHEAT, "Maximum entity pitch limit");
 
-		REGISTER_CVAR2("pl_viewDistance", &m_viewDistance, 10.f, VF_CHEAT, "Determiens the distance between player and camera");
+		REGISTER_CVAR2("pl_viewDistance", &m_viewDistance, 10.f, VF_CHEAT, "Determines the distance between player and camera");
 		
 		m_pGeometry = REGISTER_STRING("pl_geometry", "Objects/Default/primitive_sphere.cgf", VF_CHEAT, "Sets the third person geometry to load");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("pl_mass");
+			pConsole->UnregisterVariable("pl_moveImpulseStrength");
+			pConsole->UnregisterVariable("pl_rotationSpeedYaw");
+			pConsole->UnregisterVariable("pl_rotationSpeedPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMinPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMaxPitch");
+			pConsole->UnregisterVariable("pl_viewDistance");
+			pConsole->UnregisterVariable("pl_geometry");
+		}
 	}
 };
 

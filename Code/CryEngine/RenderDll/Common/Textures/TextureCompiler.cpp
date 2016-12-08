@@ -339,7 +339,11 @@ private:
 		string filename;
 		string ext;
 		PathUtil::Split(dstFile, dir, filename, ext);
-		string tempDir = PathUtil::Make(tempPrefix + dir, filename);
+
+		// TODO : PathUtil::AbsolutePathToGamePath(dir)
+		string tempSuffix = dir.replace(':', '_');
+
+		string tempDir = PathUtil::Make(tempPrefix + tempSuffix, filename);
 		gEnv->pCryPak->MakeDir(tempDir.c_str());
 
 		// Several assets may be created by RC from a single source file depends on the source file options.

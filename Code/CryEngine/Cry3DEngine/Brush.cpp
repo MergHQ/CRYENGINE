@@ -27,7 +27,6 @@
 CBrush::CBrush()
 	: m_bVehicleOnlyPhysics(0)
 	, m_bDrawLast(0)
-	, m_bPermanentRenderObjectMatrixValid(0)
 	, m_bNoPhysicalize(0)
 {
 	m_WSBBox.min = m_WSBBox.max = Vec3(ZERO);
@@ -146,7 +145,6 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 		rParms.nMaterialLayers = m_nMaterialLayers;
 
 	rParms.pMatrix = &m_Matrix;
-	rParms.nClipVolumeStencilRef = 0;
 	rParms.pMaterial = m_pMaterial;
 	rParms.nEditorSelectionID = m_nEditorSelectionID;
 
@@ -822,16 +820,12 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	{
 		if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, &lodValue, passInfo))
 		{
-			if (!m_bPermanentRenderObjectMatrixValid && pObj)
+			if (pObj && pObj->m_bInstanceDataDirty)
 			{
-				// Force to recompile only changed per instance data for this render object.
-				pObj->m_bInstanceDataDirty = true;
-				m_bPermanentRenderObjectMatrixValid = true;
 				pObj->m_II.m_Matrix = transformMatrix;
 			}
 			return;
 		}
-		m_bPermanentRenderObjectMatrixValid = true;
 	}
 
 	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
@@ -1040,9 +1034,10 @@ void CBrush::InvalidatePermanentRenderObjectMatrix()
 		// Compound unmerged stat objects create duplicate sub render objects and do not support fast matrix only instance update for PermanentRenderObject
 		InvalidatePermanentRenderObject();
 	}
-	else
+	else if (m_pTempData)
 	{
-		m_bPermanentRenderObjectMatrixValid = false;
+		// Special optimization when only matrix change, we invalidate render object instance data flag
+		m_pTempData->InvalidateRenderObjectsInstanceData();
 	}
 }
 

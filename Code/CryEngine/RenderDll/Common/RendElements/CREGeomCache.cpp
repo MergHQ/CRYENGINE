@@ -94,7 +94,8 @@ void CREGeomCache::SetupMotionBlur(CRenderObject* pRenderObject, const SRenderin
 
 	if (pRenderObject->m_fDistance < CRenderer::CV_r_MotionBlurMaxViewDist)
 	{
-		pRenderObject->m_ObjFlags |= FOB_HAS_PREVMATRIX | FOB_MOTION_BLUR;
+		// Motion blur is temporary disabled because of CE-11256
+		//pRenderObject->m_ObjFlags |= FOB_HAS_PREVMATRIX | FOB_MOTION_BLUR;
 	}
 }
 

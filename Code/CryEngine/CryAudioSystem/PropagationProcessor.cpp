@@ -426,12 +426,6 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 			m_occlusion = (m_occlusion / numSamplePositions) * m_occlusionMultiplier;
 		}
 	}
-	else
-	{
-		// The audio object is tracking the listener.
-		// These should not have occlusion enabled!
-		CRY_ASSERT(false);
-	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (m_timeSinceLastUpdateMS > 100.0f && CanRunObstructionOcclusion()) // only re-sample the rays about 10 times per second for a smoother debug drawing

@@ -187,7 +187,6 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 	SRendParams drawParams = rendParams;
 
 	drawParams.pMatrix = &m_matrix;
-	drawParams.nClipVolumeStencilRef = 0;
 
 	static ICVar* pGraphicsPipelineCV = gEnv->pConsole->GetCVar("r_GraphicsPipeline");
 	static ICVar* pMotionVectorsCV = gEnv->pConsole->GetCVar("r_MotionVectors");

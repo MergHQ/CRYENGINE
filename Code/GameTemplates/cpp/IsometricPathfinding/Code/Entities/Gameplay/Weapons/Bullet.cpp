@@ -13,12 +13,28 @@ class CBulletRegistrator
 		RegisterCVars();
 	}
 
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
+	}
+
 	void RegisterCVars()
 	{
 		m_pGeometry = gEnv->pConsole->RegisterString("w_bulletGeometry", "Objects/Default/primitive_sphere.cgf", VF_CHEAT, "Sets the path to the geometry assigned to every weapon bullet");
 
 		REGISTER_CVAR2("w_bulletMass", &m_mass, 5000.f, VF_CHEAT, "Sets the mass of each individual bullet fired by weapons");
 		REGISTER_CVAR2("w_bulletInitialVelocity", &m_initialVelocity, 10.f, VF_CHEAT, "Sets the initial velocity of each individual bullet fired by weapons");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("w_bulletGeometry");
+			pConsole->UnregisterVariable("w_bulletMass");
+			pConsole->UnregisterVariable("w_bulletInitialVelocity");
+		}
 	}
 
 public:

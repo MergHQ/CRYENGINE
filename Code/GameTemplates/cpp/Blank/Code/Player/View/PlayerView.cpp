@@ -12,6 +12,8 @@ class CPlayerViewRegistrator
 	{
 		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
 	}
+
+	virtual void Unregister() override {}
 };
 
 CPlayerViewRegistrator g_playerViewRegistrator;

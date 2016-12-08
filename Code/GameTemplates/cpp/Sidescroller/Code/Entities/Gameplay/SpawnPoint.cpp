@@ -12,6 +12,8 @@ class CSpawnPointRegistrator
 	{
 		CGamePlugin::RegisterEntityWithDefaultComponent<CSpawnPoint>("SpawnPoint");
 	}
+
+	virtual void Unregister() override {}
 };
 
 CSpawnPointRegistrator g_spawnerRegistrator;

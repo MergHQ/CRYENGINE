@@ -1029,6 +1029,10 @@ public:
 	template<typename ComponentType>
 	ComponentType* GetOrCreateComponent();
 
+	//! Get existing or Create a new initialized component using the new operator of the class type, typeid of the component is null guid.
+	template<typename ComponentType>
+	ComponentType* GetOrCreateComponentClass();
+
 	//! Create a new initialized component using interface type id to create a class using factory component class creation.
 	//! ComponentType must be a valid interface that can be queried with cryidof<ComponentType>()
 	//! Instance of the component is created by the lookup in the class registry for the first class that implements ComponentType interface,
@@ -1396,6 +1400,17 @@ inline ComponentType* IEntity::GetOrCreateComponent()
 		return component;
 	else
 		return CreateComponent<ComponentType>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename ComponentType>
+inline ComponentType* IEntity::GetOrCreateComponentClass()
+{
+	auto component = GetComponent<ComponentType>();
+	if (component)
+		return component;
+	else
+		return CreateComponentClass<ComponentType>();
 }
 
 // Helper methods

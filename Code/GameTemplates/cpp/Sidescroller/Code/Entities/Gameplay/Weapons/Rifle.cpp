@@ -13,9 +13,23 @@ class CRifleRegistrator
 		RegisterCVars();
 	}
 
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
+	}
+
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("w_rifleBulletScale", &m_bulletScale, 0.05f, VF_CHEAT, "Determines the scale of the bullet geometry");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("w_rifleBulletScale");
+		}
 	}
 
 public:

@@ -370,6 +370,14 @@ bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
 
+	//////////////////////////////////////////////////////////////////////////
+	// Check if entity needs to create a proxy class.
+	IEntityClass::UserProxyCreateFunc pUserProxyCreateFunc = params.pClass->GetUserProxyCreateFunc();
+	if (pUserProxyCreateFunc)
+	{
+		pUserProxyCreateFunc(this, params, params.pClass->GetUserProxyData());
+	}
+
 	SEntityEvent entevnt;
 	entevnt.event = ENTITY_EVENT_INIT;
 	SendEvent(entevnt);

@@ -85,6 +85,7 @@ struct IEntityRegistrator
 	}
 
 	virtual void Register() = 0;
+	virtual void Unregister() = 0;
 
 public:
 	IEntityRegistrator *m_pNext;

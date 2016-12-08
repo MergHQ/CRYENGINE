@@ -32,6 +32,18 @@ void SRenderNodeTempData::FreeRenderObjects()
 	}
 }
 
+void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
+{
+	// Release permanent CRenderObject(s)
+	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
+	{
+		if (userData.arrPermanentRenderObjects[lod])
+		{
+			userData.arrPermanentRenderObjects[lod]->m_bInstanceDataDirty = true;
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 CVisibleRenderNodesManager::CVisibleRenderNodesManager()
 	: m_lastStartUpdateNode(0)

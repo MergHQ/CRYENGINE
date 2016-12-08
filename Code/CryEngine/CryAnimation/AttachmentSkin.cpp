@@ -841,10 +841,6 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 		return NULL;
 	}
 
-	uint32 skinningQuatCount = m_arrRemapTable.size();
-	uint32 skinningQuatCountMax = pMaster->GetSkinningTransformationCount() + m_pAttachmentManager->GetExtraBonesCount();
-	uint32 nNumBones = min(skinningQuatCount, skinningQuatCountMax);	
-
 	// get data to fill
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();
 	int nList = nFrameID % 3;
@@ -858,6 +854,8 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 	if(pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID )
 	{
 		pMaster->GetSkinningData(); // force master to compute skinning data if not available
+		assert(pMaster->arrSkinningRendererData[nList].nFrameID == nFrameID);
+		assert(pMaster->arrSkinningRendererData[nList].pSkinningData);
 	}
 
 	uint32 nCustomDataSize = 0;
@@ -919,6 +917,10 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 			sd->nNumActiveMorphs = numActiveMorphs;
 		}
 	}
+
+	const uint32 skinningQuatCount = m_arrRemapTable.size();
+	const uint32 skinningQuatCountMax = pMaster->arrSkinningRendererData[nList].pSkinningData->nNumBones;
+	const uint32 nNumBones = std::min(skinningQuatCount, skinningQuatCountMax);
 
 	SSkinningData *pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());	
 	pSkinningData->pCustomTag = this;

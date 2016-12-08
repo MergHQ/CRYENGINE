@@ -121,7 +121,6 @@ public:
 
 	uint32 m_bVehicleOnlyPhysics : 1;
 	uint32 m_bDrawLast : 1;
-	uint32 m_bPermanentRenderObjectMatrixValid : 1;
 	uint32 m_bNoPhysicalize : 1;
 
 	// World space bounding box for this node.

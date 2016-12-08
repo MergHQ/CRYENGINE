@@ -70,7 +70,6 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 
 	rParms.nMaterialLayers = m_nMaterialLayers;
 	rParms.pMatrix = &m_matrix;
-	rParms.nClipVolumeStencilRef = 0;
 	rParms.pMaterial = m_pMaterial;
 
 	rParms.dwFObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
