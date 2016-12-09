@@ -1433,7 +1433,7 @@ void CEntity::CloneComponentsFrom(IEntity& otherEntity)
 			DynArray<char> propertyBuffer;
 			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(propertyBuffer, Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pOtherProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper));
 
-			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pOtherProperties, sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), propertyBuffer.data(), propertyBuffer.size());
+			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(yasli::TypeID::get<IEntityPropertyGroup>(), pComponent->GetPropertyGroup(), sizeof(IEntityPropertyGroup), &SerializePropertiesWrapper), propertyBuffer.data(), propertyBuffer.size());
 		}
 	});
 }
