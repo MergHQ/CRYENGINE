@@ -190,20 +190,15 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 		params.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 	params.pClass = pEntityClass;
 
-	IEntity* pEntity = m_pEntitySystem->SpawnEntity(params, false);
+	IEntity* pEntity = m_pEntitySystem->SpawnEntity(params);
 	CRY_ASSERT(pEntity);
 
 	if (!pEntity)
 	{
 		return 0;
 	}
-
-	const EntityId entityId = pEntity->GetId();
-	if (m_pEntitySystem->InitEntity(pEntity, params))
-	{
-		return GetActor(entityId);
-	}
-	return NULL;
+	
+	return GetActor(pEntity->GetId());
 }
 
 //------------------------------------------------------------------------
@@ -280,7 +275,7 @@ void CActorSystem::RemoveActor(EntityId entityId)
 //------------------------------------------------------------------------
 bool CActorSystem::HookCreateActor(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)
 {
-	pGameObject->SetChannelId(*static_cast<uint16*>(pUserData));
+	pGameObject->SetChannelId(*reinterpret_cast<uint16*>(pUserData));
 	return true;
 }
 
@@ -452,43 +447,6 @@ void CActorSystem::GetMemoryUsage(class ICrySizer* pSizer) const
 {
 	pSizer->Add(sizeof *this);
 }
-
-//------------------------------------------------------------------------
-#if 0
-IEntityComponent* CActorSystem::CreateActor(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
-{
-	/*
-	   SActorUserData *pActorUserData = reinterpret_cast<SActorUserData *>(pUserData);
-	   string className = pActorUserData->className;
-
-	   CActorSystem *pActorSystem = reinterpret_cast<CActorSystem *>(pActorUserData->pActorSystem);
-	   CRY_ASSERT(pActorSystem);
-
-	   const SSpawnUserData * pSpawnUserData = static_cast<const SSpawnUserData *>(params.pUserData);
-
-	   TActorClassMap::iterator it = pActorSystem->m_classes.find(className);
-
-	   if (it == pActorSystem->m_classes.end())
-	   {
-	   GameWarning( "Unknown Actor class '%s'", className );
-
-	   return 0;
-	   }
-
-	   IActor *pActor = (*it->second)();
-	   CActor *pActor = new CActor(pActorSystem, className.c_str(), pEntity, pActor);
-	   CRY_ASSERT(pActor);
-	 */
-
-	pActor->GetGameObject()->SetChannelId(pSpawnUserData ? pSpawnUserData->channelId : 0);
-
-	//pEntity->Activate(true);
-
-	//pActorSystem->AddActor(pEntity->GetId(), pActor);
-
-	return pActor;
-}
-#endif
 
 IActorIteratorPtr CActorSystem::CreateActorIterator()
 {

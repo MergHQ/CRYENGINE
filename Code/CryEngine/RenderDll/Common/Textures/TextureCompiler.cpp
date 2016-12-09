@@ -341,7 +341,8 @@ private:
 		PathUtil::Split(dstFile, dir, filename, ext);
 
 		// TODO : PathUtil::AbsolutePathToGamePath(dir)
-		string tempSuffix = dir.replace(':', '_');
+		string tempSuffix = dir;
+		tempSuffix.replace(':', '_');
 
 		string tempDir = PathUtil::Make(tempPrefix + tempSuffix, filename);
 		gEnv->pCryPak->MakeDir(tempDir.c_str());

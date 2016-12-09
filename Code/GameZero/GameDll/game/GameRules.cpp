@@ -25,8 +25,15 @@ bool CGameRules::Init(IGameObject* pGameObject)
 	return true;
 }
 
-bool CGameRules::OnClientConnect(int channelId, bool isReset)
+bool InitializeGameObjectCallback(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)
 {
+	pGameObject->SetChannelId(*static_cast<uint16*>(pUserData));
+	return true;
+}
+
+bool CGameRules::OnClientConnect(int channelId_old, bool isReset)
+{
+	uint16 channelId = static_cast<uint16>(channelId_old);
 	const float fTerrainSize = static_cast<float>(gEnv->p3DEngine->GetTerrainSize());
 	const float fTerrainElevation = gEnv->p3DEngine->GetTerrainElevation(fTerrainSize * 0.5f, fTerrainSize * 0.5f);
 	const Vec3 vSpawnLocation(fTerrainSize * 0.5f, fTerrainSize * 0.5f, fTerrainElevation + 15.0f);
@@ -37,10 +44,15 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 	if (!pPlayerClass)
 		return false;
 
+	IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension userData;
+	userData.hookFunction = InitializeGameObjectCallback;
+	userData.pUserData = &channelId;
+
 	SEntitySpawnParams params;
 	params.sName = "Player";
 	params.vPosition = vSpawnLocation;
 	params.pClass = pPlayerClass;
+	params.pUserData = (void*)&userData;
 
 	if (channelId)
 	{
@@ -54,13 +66,7 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 		}
 	}
 
-	IEntity* pPlayerEntity = pEntitySystem->SpawnEntity(params, false);
-
-	CGameObject* pGameObject = static_cast<CGameObject*>(pPlayerEntity->GetProxy(ENTITY_PROXY_USER));
-	// always set the channel id before initializing the entity
-	pGameObject->SetChannelId(channelId);
-
-	return pEntitySystem->InitEntity(pPlayerEntity, params);
+	return (pEntitySystem->SpawnEntity(params) != nullptr);
 }
 
 void CGameRules::GetMemoryUsage(ICrySizer* s) const

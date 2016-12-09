@@ -254,6 +254,17 @@ enum EVerifyType
 	#ifdef CRY_PLATFORM_DURANGO
 		#include <d3d11_x.h>
 		#include "DX12\Includes\d3d11_empty.h"
+		#if BUFFER_USE_STAGED_UPDATES == 0
+		namespace detail
+		{
+			template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
+			template<> inline void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
+		}
+
+		// Call custom release-code for ID3D11Buffer on Durango by replacing SAFE_RELEASE()
+		#undef SAFE_RELEASE
+		#define SAFE_RELEASE(x) do { detail::safe_release((x)); } while (false)
+		#endif
 	#else
 		#include "D3D11_1.h"
 	#endif
