@@ -180,6 +180,7 @@ struct IGameObject;
 struct IEntity;
 struct IAnimSequence;
 struct SCameraParams;
+struct IGameObjectView;
 
 struct IView
 {
@@ -220,7 +221,7 @@ struct IView
 	virtual void               Release() = 0;
 	virtual void               Update(float frameTime, bool isActive) = 0;
 	virtual void               LinkTo(IGameObject* follow) = 0;
-	virtual void               LinkTo(IEntity* follow) = 0;
+	virtual void               LinkTo(IEntity* follow, IGameObjectView* callback = nullptr) = 0;
 	virtual EntityId           GetLinkedId() = 0;
 
 	virtual void               SetCurrentParams(SViewParams& params) = 0;

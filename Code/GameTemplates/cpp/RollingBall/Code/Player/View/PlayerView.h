@@ -1,6 +1,8 @@
 #pragma once
 
-#include "Entities/Helpers/ISimpleExtension.h"
+#include <CryEntitySystem/IEntityComponent.h>
+#include <IGameObject.h>	// only for IGameObjectView
+#include <IViewSystem.h>
 
 class CPlayer;
 
@@ -8,16 +10,18 @@ class CPlayer;
 // Player extension to manage the local client's view / camera
 ////////////////////////////////////////////////////////
 class CPlayerView 
-	: public CGameObjectExtensionHelper<CPlayerView, ISimpleExtension>
+	: public IEntityComponent
 	, public IGameObjectView
 {
 public:
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CPlayerView,
+		"CPlayerView", 0x857FB306FC0E4DDA, 0x9E5E1D0FFD20B0A1);
+
 	CPlayerView();
 	virtual ~CPlayerView();
 
-	// ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
-	// ~ISimpleExtension
+	// IEntityComponent
+	virtual void Initialize() override;
 
 	// IGameObjectView
 	virtual void UpdateView(SViewParams &viewParams) override;
@@ -28,6 +32,7 @@ public:
 
 protected:
 	CPlayer *m_pPlayer;
+	IView *m_pView;
 
 	Quat m_viewRotation;
 };

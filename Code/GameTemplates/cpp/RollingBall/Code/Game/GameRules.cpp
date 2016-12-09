@@ -10,8 +10,6 @@
 #include "Player/Player.h"
 #include "Entities/Gameplay/SpawnPoint.h"
 
-#include <IActorSystem.h>
-
 class CRulesRegistrator
 	: public IEntityRegistrator
 {
@@ -52,21 +50,28 @@ bool CGameRules::Init(IGameObject *pGameObject)
 
 bool CGameRules::OnClientConnect(int channelId, bool isReset)
 {
-	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
-	
 	// Called when a new client connects to the server
 	// Occurs during level load for the local player
 	// In this case we create a player called "DefaultPlayer", and use the "Player" entity class registered in Player.cpp
-	return pActorSystem->CreateActor(channelId, "DefaultPlayer", "Player", ZERO, IDENTITY, Vec3(1, 1, 1)) != nullptr;
+
+	SEntitySpawnParams params;
+	params.id = LOCAL_PLAYER_ENTITY_ID;
+	params.sName = "DefaultPlayer";
+	params.nFlags = ENTITY_FLAG_LOCAL_PLAYER;
+	params.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Player");
+	CRY_ASSERT(params.pClass);
+
+	IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(params);
+	if (pEntity)
+	{
+		m_players[channelId] = pEntity->GetId();
+	}
+	return pEntity ? true : false;
 }
 
 void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, const char *desc, bool keepClient)
 {
-	auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
-	if(IActor *pActor = pActorSystem->GetActorByChannelId(channelId))
-	{
-		pActorSystem->RemoveActor(pActor->GetEntityId());
-	}
+	m_players.erase(channelId);
 }
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
@@ -74,13 +79,11 @@ bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 	// Trigger actor revive, but never do this outside of game mode in the Editor
 	if (!gEnv->IsEditing())
 	{
-		auto *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
-
-		if (auto *pActor = pActorSystem->GetActorByChannelId(channelId))
-		{
-			// Trigger actor revive
-			pActor->SetHealth(pActor->GetMaxHealth());
-		}
+		// This is a quick hack. Previously there has been pActorSystem->GetActorByChannelId(channelId)
+		// It makes sense to call this in ENTITY_EVENT_SET_AUTHORITY for the player,
+		// but it's not network-bound yet, so that will fail.
+		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(m_players[channelId]);
+		pEntity->GetComponent<CPlayer>()->Respawn();
 	}
 
 	return true;

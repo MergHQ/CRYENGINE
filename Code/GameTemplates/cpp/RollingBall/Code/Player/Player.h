@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Player/ISimpleActor.h"
-
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryMath/Cry_Camera.h>
 
 class CPlayerInput;
@@ -18,9 +17,11 @@ struct ISimpleWeapon;
 ////////////////////////////////////////////////////////
 // Represents a player participating in gameplay
 ////////////////////////////////////////////////////////
-class CPlayer 
-	: public CGameObjectExtensionHelper<CPlayer, ISimpleActor>
+class CPlayer : public IEntityComponent
 {
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CPlayer,
+		"CPlayer", 0xC11F7CF4FEF448D8, 0x8A5D66122D945460);
+
 public:
 	enum EGeometrySlots
 	{
@@ -47,14 +48,11 @@ public:
 	CPlayer();
 	virtual ~CPlayer();
 
-	// ISimpleActor
-	virtual bool Init(IGameObject* pGameObject) override;
-	virtual void PostInit(IGameObject* pGameObject) override;
+	virtual void Initialize() override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual uint64 GetEventMask() const override;
 
-	virtual void SetHealth(float health) override;
-	virtual float GetHealth() const override { return m_bAlive ? GetMaxHealth() : 0.f; }
-	// ~ISimpleActor
+	void Respawn();
 
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }

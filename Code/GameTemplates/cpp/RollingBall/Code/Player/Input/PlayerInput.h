@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Entities/Helpers/ISimpleExtension.h"
+#include <CryEntitySystem/IEntityComponent.h>
+#include <IActionMapManager.h>
 
 class CPlayer;
 
@@ -8,9 +9,12 @@ class CPlayer;
 // Player extension to manage input
 ////////////////////////////////////////////////////////
 class CPlayerInput 
-	: public CGameObjectExtensionHelper<CPlayerInput, ISimpleExtension>
+	: public IEntityComponent
 	, public IActionListener
 {
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CPlayerInput,
+		"CPlayerInput", 0x1DE317DF05054D59, 0x901CCD149B654765);
+	
 	enum EInputFlagType
 	{
 		eInputFlagType_Hold = 0,
@@ -32,10 +36,11 @@ public:
 public:
 	virtual ~CPlayerInput() {}
 
-	// ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot) override;
-	// ~ISimpleExtension
+	// IEntityComponent
+	virtual void Initialize() override;
+	virtual void ProcessEvent(SEntityEvent& entityEvent) override;
+	virtual uint64 GetEventMask() const override;
+	void Update(SEntityUpdateContext &ctx);
 
 	// IActionListener
 	virtual void OnAction(const ActionId &action, int activationMode, float value) override;

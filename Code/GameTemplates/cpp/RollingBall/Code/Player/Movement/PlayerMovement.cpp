@@ -5,16 +5,15 @@
 #include "Player/Input/PlayerInput.h"
 #include "Player/View/PlayerView.h"
 
+CRYREGISTER_CLASS(CPlayerMovement);
+
 CPlayerMovement::CPlayerMovement()
 {
 }
 
-void CPlayerMovement::PostInit(IGameObject *pGameObject)
+void CPlayerMovement::Initialize()
 {
-	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
-
-	// Make sure that this extension is updated regularly via the Update function below
-	pGameObject->EnableUpdateSlot(this, 0);
+	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
 }
 
 void CPlayerMovement::Physicalize()
@@ -29,7 +28,25 @@ void CPlayerMovement::Physicalize()
 	GetEntity()->Physicalize(physParams);
 }
 
-void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
+uint64 CPlayerMovement::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_UPDATE);
+};
+
+void CPlayerMovement::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+		case ENTITY_EVENT_UPDATE:
+		{
+			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+			Update(*pCtx);
+		}
+		break;
+	}
+}
+
+void CPlayerMovement::Update(SEntityUpdateContext &ctx)
 {
 	IEntity &entity = *GetEntity();
 	IPhysicalEntity *pPhysicalEntity = entity.GetPhysics();
