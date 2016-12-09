@@ -133,12 +133,6 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
 	endif ()
 
-	if(WIN32 AND OPTION_CRYMONO)
-		# Deploy mono runtime
-		# This does not work as intended if CRYENGINE_DIR is not equal to CMAKE_SOURCE_DIR and should be rethought
-		deploy_runtime_dir(Code/SDKs/Mono ../../Engine/Mono)
-	endif()
-
 	if(DEPLOY_FILES)
 		set(DEPLOY_DESTINATIONS)
 
