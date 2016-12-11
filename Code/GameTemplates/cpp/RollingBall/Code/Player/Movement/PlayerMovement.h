@@ -1,24 +1,26 @@
 #pragma once
 
-#include "Entities/Helpers/ISimpleExtension.h"
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CPlayer;
 
 ////////////////////////////////////////////////////////
 // Player extension to manage movement
 ////////////////////////////////////////////////////////
-class CPlayerMovement : public CGameObjectExtensionHelper<CPlayerMovement, ISimpleExtension>
+class CPlayerMovement : public IEntityComponent
 {
+	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CPlayerMovement,
+		"CPlayerMovement", 0x1B9F01EDDDA6459B, 0x99CFCFE44E576AA8);
 public:
 	CPlayerMovement();
 	virtual ~CPlayerMovement() {}
 
-	//ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
+	// IEntityComponent
+	virtual void Initialize() override;
+	virtual void ProcessEvent(SEntityEvent& entityEvent) override;
+	virtual uint64 GetEventMask() const override;
 
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
-	//~ISimpleExtension
-
+	void Update(SEntityUpdateContext& ctx);
 	void Physicalize();
 
 protected:

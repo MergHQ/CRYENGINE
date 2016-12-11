@@ -8,10 +8,9 @@
 #include "GamePlugin.h"
 #include "Game/GameRules.h"
 
-
 #include "Entities/Gameplay/SpawnPoint.h"
 
-#include <CryRenderer/IRenderAuxGeom.h>
+CRYREGISTER_CLASS(CPlayer);
 
 class CPlayerRegistrator
 	: public IEntityRegistrator
@@ -19,12 +18,7 @@ class CPlayerRegistrator
 {
 	virtual void Register() override
 	{
-		CGamePlugin::RegisterEntityWithDefaultComponent<CPlayer>("Player");
-
-		CGamePlugin::RegisterEntityComponent<CPlayerMovement>("PlayerMovement");
-		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
-		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
-		
+		RegisterEntityWithDefaultComponent<CPlayer>("Player");
 		RegisterCVars();
 	}
 
@@ -78,7 +72,6 @@ CPlayer::CPlayer()
 
 CPlayer::~CPlayer()
 {
-	gEnv->pGameFramework->GetIActorSystem()->RemoveActor(GetEntityId());
 }
 
 const CPlayer::SExternalCVars &CPlayer::GetCVars() const
@@ -86,22 +79,16 @@ const CPlayer::SExternalCVars &CPlayer::GetCVars() const
 	return g_playerRegistrator;
 }
 
-bool CPlayer::Init(IGameObject *pGameObject)
+void CPlayer::Initialize()
 {
-	SetGameObject(pGameObject);
-
-	return pGameObject->BindToNetwork();
+	m_pMovement = GetEntity()->CreateComponent<CPlayerMovement>();
+	m_pInput = GetEntity()->CreateComponent<CPlayerInput>();
+	m_pView = GetEntity()->CreateComponent<CPlayerView>();
 }
 
-void CPlayer::PostInit(IGameObject *pGameObject)
+uint64 CPlayer::GetEventMask() const
 {
-	m_pMovement = static_cast<CPlayerMovement *>(GetGameObject()->AcquireExtension("PlayerMovement"));
-	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
-
-	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
-
-	// Register with the actor system
-	gEnv->pGameFramework->GetIActorSystem()->AddActor(GetEntityId(), this);
+	return BIT64(ENTITY_EVENT_RESET);
 }
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
@@ -113,15 +100,17 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			if (event.nParam[0] == 1)
 			{
 				// Make sure to revive player when respawning in Editor
-				SetHealth(GetMaxHealth());
+				Respawn();
 			}
 		}
 		break;
 	}
 }
 
-void CPlayer::SetHealth(float health)
+void CPlayer::Respawn()
 {
+	GetEntity()->Activate(true);
+
 	// Find a spawn point and move the entity there
 	SelectSpawnPoint();
 

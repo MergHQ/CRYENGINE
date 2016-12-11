@@ -1,11 +1,15 @@
 #include "StdAfx.h"
 #include "PlayerInput.h"
 
+#include <CryGame/IGameFramework.h>
+
 #include "Player/Player.h"
 
-void CPlayerInput::PostInit(IGameObject *pGameObject)
+CRYREGISTER_CLASS(CPlayerInput);
+
+void CPlayerInput::Initialize()
 {
-	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
 
 	// NOTE: Since CRYENGINE 5.3, the game is responsible to initialize the action maps
 	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
@@ -18,16 +22,31 @@ void CPlayerInput::PostInit(IGameObject *pGameObject)
 		pActionMap->SetActionListener(GetEntityId());
 	}
 
-	GetGameObject()->CaptureActions(this);
-
-	// Make sure that this extension is updated regularly via the Update function below
-	GetGameObject()->EnableUpdateSlot(this, 0);
+	pActionMapManager->AddExtraActionListener(this);
 
 	// Populate the action handler callbacks so that we get action map events
 	InitializeActionHandler();
 }
 
-void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
+uint64 CPlayerInput::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_UPDATE);
+};
+
+void CPlayerInput::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+		case ENTITY_EVENT_UPDATE:
+		{
+			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+			Update(*pCtx);
+		}
+		break;
+	}
+}
+
+void CPlayerInput::Update(SEntityUpdateContext &ctx)
 {
 	// Start by updating look dir
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));

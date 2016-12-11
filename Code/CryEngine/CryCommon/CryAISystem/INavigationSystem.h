@@ -167,6 +167,7 @@ struct INavigationSystem
 	virtual void					PauseNavigationUpdate() = 0;
 	virtual void					RestartNavigationUpdate() = 0;
 	virtual WorkingState     		Update(bool blocking = false) = 0;
+	virtual uint32                  GetWorkingQueueSize() const = 0;
 
 	//! Allow MNM regeneration requests to be executed. 
 	//! note: at this point any previously buffered requests that were not executed when disabled are discarded

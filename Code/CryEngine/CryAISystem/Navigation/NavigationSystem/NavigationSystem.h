@@ -462,6 +462,8 @@ public:
 	//!	  - RequestInvalid: there was something wrong with the request so it was ignored
 	virtual EMeshUpdateRequestStatus	RequestQueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) override;
 
+	virtual uint32                      GetWorkingQueueSize() const override { return m_tileQueue.size(); }
+
 	virtual void						ProcessQueuedMeshUpdates() override;
 
 	virtual void						Clear() override;

@@ -72,4 +72,7 @@ public:
 	virtual bool CanEnterVehicle(EntityId playerId) override { return true; }
 	virtual const char* GetTeamName(int teamId) const override { return nullptr; }
 	// ~IGameRules
+
+private:
+	std::map<int, EntityId> m_players;
 };

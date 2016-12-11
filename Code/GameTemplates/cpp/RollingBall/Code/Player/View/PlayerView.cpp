@@ -8,21 +8,23 @@
 #include <IViewSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 
+CRYREGISTER_CLASS(CPlayerView);
+
 CPlayerView::CPlayerView()
 {
 }
 
 CPlayerView::~CPlayerView()
 {
-	GetGameObject()->ReleaseView(this);
 }
 
-void CPlayerView::PostInit(IGameObject *pGameObject)
+void CPlayerView::Initialize()
 {
-	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
 
-	// Register for UpdateView callbacks
-	GetGameObject()->CaptureView(this);
+	m_pView = gEnv->pGameFramework->GetIViewSystem()->CreateView(); // non-owning
+	m_pView->LinkTo(GetEntity(), this);
+	gEnv->pGameFramework->GetIViewSystem()->SetActiveView(m_pView);
 
 	// Default view rotation to the entity's orientation
 	m_viewRotation = GetEntity()->GetWorldRotation();

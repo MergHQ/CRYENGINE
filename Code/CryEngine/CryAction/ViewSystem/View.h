@@ -23,6 +23,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 
 class CGameObject;
+struct IGameObjectView;
 
 class CView : public IView, public IEntityEventListener, public IHmdDevice::IAsyncCameraCallback
 {
@@ -114,7 +115,7 @@ public:
 	virtual void               ResetBlending() { m_viewParams.ResetBlending(); }
 	//FIXME: keep CGameObject *  or use IGameObject *?
 	virtual void               LinkTo(IGameObject* follow);
-	virtual void               LinkTo(IEntity* follow);
+	virtual void               LinkTo(IEntity* follow, IGameObjectView* callback);
 	virtual EntityId           GetLinkedId()                         { return m_linkedTo; };
 	virtual void               SetCurrentParams(SViewParams& params) { m_viewParams = params; };
 	virtual const SViewParams* GetCurrentParams()                    { return &m_viewParams; }
@@ -169,6 +170,7 @@ private:
 protected:
 
 	EntityId            m_linkedTo;
+	IGameObjectView*	m_linkedEntityCallback;
 
 	SViewParams         m_viewParams;
 	CCamera             m_camera;
