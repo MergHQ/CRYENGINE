@@ -860,7 +860,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	m_pBloomStage->Execute();
 
 	// Lens optics
-	if (CRenderer::CV_r_flares)
+	if (CRenderer::CV_r_flares && !CRenderer::CV_r_durango_async_dips)
 	{
 		PROFILE_LABEL_SCOPE("LENS_OPTICS");
 		m_pLensOpticsStage->Execute(m_pCurrentRenderView);

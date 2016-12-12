@@ -407,7 +407,9 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 	m_bIncomplete = true;
 	m_bCustomRenderElement = false;
 
-	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty;
+	// Optimization to only update per instance constant buffer and not recompile PSO,
+	// Object must be fully compiled already for this flag to have a per instance only effect.
+	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty && !m_bIncomplete;
 
 	// Only objects with RenderElements can be compiled
 	if (!m_pRenderElement)

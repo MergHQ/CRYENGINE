@@ -257,8 +257,8 @@ enum EVerifyType
 		#if BUFFER_USE_STAGED_UPDATES == 0
 		namespace detail
 		{
-			template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
-			template<> inline void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
+			template<typename T> void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
+			template<> void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
 		}
 
 		// Call custom release-code for ID3D11Buffer on Durango by replacing SAFE_RELEASE()
