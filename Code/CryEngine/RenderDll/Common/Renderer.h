@@ -1093,6 +1093,7 @@ public:
 #endif // #if RENDERER_SUPPORT_SCALEFORM
 
 	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;
+	virtual ITexture* CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eTF, int nCustomID) override;
 
 	enum ESPM {ESPM_PUSH = 0, ESPM_POP = 1};
 	virtual void   SetProfileMarker(const char* label, ESPM mode) const                              {};

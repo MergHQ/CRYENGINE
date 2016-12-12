@@ -108,6 +108,7 @@ struct SDeleteNonePoolRenderObjs
 CRenderer::CRenderer()
 	: m_bEditor(false)
 	, m_beginFrameCount(0)
+	, m_bStopRendererAtFrameEnd(false)
 {}
 
 void CRenderer::InitRenderer()
@@ -3425,6 +3426,14 @@ ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int 
 	char uniqueName[128];
 	cry_sprintf(uniqueName, "%s%d", name, m_TexGenID++);
 	return CTexture::Create2DTexture(uniqueName, width, height, numMips, flags, pData, eTF, eTF);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ITexture* CRenderer::CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eTF, int nCustomID)
+{
+	char uniqueName[128];
+	cry_sprintf(uniqueName, "%s%d", name, m_TexGenID++);
+	return CTexture::CreateTextureArray(uniqueName, eType, nWidth, nHeight, nArraySize, nMips, nFlags, eTF, nCustomID);
 }
 
 //////////////////////////////////////////////////////////////////////////
