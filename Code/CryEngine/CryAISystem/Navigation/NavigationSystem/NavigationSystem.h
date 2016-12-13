@@ -583,6 +583,9 @@ public:
 	//! Clear the buffered MNM regeneration requests that were received when execution was disabled
 	virtual void							 ClearBufferedMNMRegenerationRequests() override;
 
+	virtual bool							 WasMNMRegenerationRequestedThisCycle() const override;
+	virtual void							 ClearMNMRegenerationRequestedThisCycleFlag() override;
+
 	inline const WorldMonitor*               GetWorldMonitor() const
 	{
 		return &m_worldMonitor;
@@ -793,6 +796,7 @@ private:
 	bool                                   m_isNavigationUpdatePaused;
 
 	bool								   m_isMNMRegenerationRequestExecutionEnabled;
+	bool								   m_wasMNMRegenerationRequestedThisUpdateCycle;
 
 	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
 };

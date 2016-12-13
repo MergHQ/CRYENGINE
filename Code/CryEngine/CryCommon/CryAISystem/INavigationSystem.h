@@ -275,6 +275,9 @@ struct INavigationSystem
 
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) = 0;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) = 0;
+
+	virtual void							 ClearMNMRegenerationRequestedThisCycleFlag() = 0;
+	virtual bool							 WasMNMRegenerationRequestedThisCycle() const = 0;
 	// </interfuscator:shuffle>
 };
 

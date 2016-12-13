@@ -185,6 +185,11 @@
 #include <CrySerialization/ClassFactory.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
+#include <CrySystem/CryUnitTest.h>
+
+#ifdef ENABLE_STATS_AGENT
+	#include "StatsAgent.h"
+#endif // #ifdef ENABLE_STATS_AGENT
 
 //#define GAME_DEBUG_MEM  // debug memory usage
 #undef  GAME_DEBUG_MEM
@@ -1267,15 +1272,15 @@ bool CGame::CompleteInit()
 	// run unit tests
 	if (CryUnitTest::IUnitTestManager* pTestManager = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager())
 	{
-#if defined(_LIB)
+	#if defined(_LIB)
 		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
-#endif
+	#endif
 
-		const ICmdLineArg* pSkipUnitTest = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests"); 
-		if(pSkipUnitTest == NULL)
+		const ICmdLineArg* pSkipUnitTest = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests");
+		if (pSkipUnitTest == nullptr)
 		{
-			const ICmdLineArg* pUseUnitTestExcelReporter = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "use_unit_test_excel_reporter"); 
-			if(pUseUnitTestExcelReporter)
+			const ICmdLineArg* pUseUnitTestExcelReporter = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "use_unit_test_excel_reporter");
+			if (pUseUnitTestExcelReporter)
 			{
 				gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::ExcelReporter);
 			}
@@ -3026,6 +3031,10 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 	}
 #endif //#if USE_TELEMETRY_BUFFERS
 
+#ifdef ENABLE_STATS_AGENT
+	CStatsAgent::Update();
+#endif // #ifdef ENABLE_STATS_AGENT
+
 	if (m_telemetryCollector)
 	{
 		m_telemetryCollector->Update();
@@ -3573,7 +3582,6 @@ void CGame::OnActionEvent(const SActionEvent& event)
 			m_pMovementTransitionsSystem->Flush();
 			CSmokeManager::GetSmokeManager()->ReleaseObstructionObjects();
 
-
 			if (m_pGameAISystem)
 			{
 				m_pGameAISystem->Reset(false); // Going to lie about the unload here, and reset it for unload later...
@@ -3766,14 +3774,14 @@ void CGame::LoadActionMaps(const char* filename)
 		{
 			if (gEnv->pSystem->IsDevMode())
 			{
-			#ifndef _RELEASE
+#ifndef _RELEASE
 				//In devmode and not release get the default user if no users are signed in e.g. autotesting, map on the command line
 				pProfile = pPPMgr->GetDefaultProfile();
 				if (pProfile)
 				{
 					userId = pProfile->GetUserId();
 				}
-			#endif      // #ifndef _RELEASE
+#endif            // #ifndef _RELEASE
 			}
 			else
 			{

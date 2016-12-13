@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "CryUnitTest.h"
-
 struct ILog;
 struct IGameplayListener;
 

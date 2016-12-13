@@ -153,6 +153,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_isNavigationUpdatePaused(false)
 	, m_tileGeneratorExtensionsContainer()
 	, m_isMNMRegenerationRequestExecutionEnabled(true)
+	, m_wasMNMRegenerationRequestedThisUpdateCycle(false)
 {
 	SetupTasks();
 
@@ -1393,6 +1394,8 @@ INavigationSystem::EMeshUpdateRequestStatus NavigationSystem::RequestQueueMeshUp
 
 		if (aabb.IsEmpty() || !mesh.boundary)
 			return EMeshUpdateRequestStatus::RequestInvalid;
+		
+		m_wasMNMRegenerationRequestedThisUpdateCycle = true;
 
 		if (!m_isMNMRegenerationRequestExecutionEnabled)
 		{
@@ -1593,6 +1596,8 @@ INavigationSystem::EMeshUpdateRequestStatus NavigationSystem::RequestQueueDiffer
 
 		NavigationMesh& mesh = m_meshes[meshID];
 		MNM::CNavMesh& navMesh = mesh.navMesh;
+		
+		m_wasMNMRegenerationRequestedThisUpdateCycle = true;
 
 		if (!m_isMNMRegenerationRequestExecutionEnabled)
 		{
@@ -1700,9 +1705,9 @@ void NavigationSystem::WorldChanged(const AABB& aabb)
 
 				if (mesh.boundary && Overlap::AABB_AABB(aabb, m_volumes[mesh.boundary].aabb))
 					RequestQueueMeshUpdate(meshID, aabb);
-				}
 			}
 		}
+	}
 #endif
 }
 
@@ -4010,6 +4015,16 @@ bool NavigationSystem::AreMNMRegenerationRequestsDisabled() const
 void NavigationSystem::ClearBufferedMNMRegenerationRequests()
 {
 	m_worldMonitor.ClearBufferedMeshRegenerationRequests();
+}
+
+bool NavigationSystem::WasMNMRegenerationRequestedThisCycle() const
+{
+	return m_wasMNMRegenerationRequestedThisUpdateCycle;
+}
+
+void NavigationSystem::ClearMNMRegenerationRequestedThisCycleFlag()
+{
+	m_wasMNMRegenerationRequestedThisUpdateCycle = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
