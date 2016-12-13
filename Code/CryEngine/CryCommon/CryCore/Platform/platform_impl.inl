@@ -5,7 +5,7 @@
 #include <CryString/StringUtils.h>
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/ITestSystem.h>
+#include <CrySystem/CryUnitTest.h>
 #include <CryExtension/RegFactoryNode.h>
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryString/UnicodeFunctions.h>

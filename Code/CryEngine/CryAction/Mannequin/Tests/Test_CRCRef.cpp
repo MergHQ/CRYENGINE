@@ -6,6 +6,7 @@
 #include <CrySerialization/IClassFactory.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/CRCRef.h>
+#include <CrySystem/CryUnitTest.h>
 
 namespace mannequin
 {

@@ -11,8 +11,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __CryUnitTest_h__
-#define __CryUnitTest_h__
 #pragma once
 
 #include <CrySystem/ITestSystem.h>
@@ -25,7 +23,7 @@
 //! Supported Interface macros for Cry Unit Tests.
 //! CRY_UNIT_TEST_SUITE: Specify a suit name to group tests locally together.
 //! CRY_UNIT_TEST: Specify a new test which is automatically registered.
-//! CRY_UNIT_TEST_ASSERT: Fails and reports if the specified contion evaluates to false.
+//! CRY_UNIT_TEST_ASSERT: Fails and reports if the specified expression evaluates to false.
 //! CRY_UNIT_TEST_CHECK_CLOSE: Fails and reports if the specified floating pointer values are not equal with respect to epsilon.
 //! CRY_UNIT_TEST_CHECK_EQUAL: Fails and reports if the specified values are not equal.
 namespace CryUnitTest
@@ -271,5 +269,4 @@ ILINE string CryUnitTestFormatVar(const wstring& val) { return string().Format("
       gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(message.c_str(), __FILE__, __LINE__); \
     }                                                                                                                 \
   } while (0)
-
-#endif //__CryUnitTest_h__
+//The last line must exist to compile on gcc!

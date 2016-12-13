@@ -9,11 +9,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __ExcelExport_h__
-#define __ExcelExport_h__
 #pragma once
-
-#include <CrySystem/CryUnitTest.h>
 #include <CrySystem/XML/IXml.h>
 
 // Base class for custom CryEngine excel exporers
@@ -50,5 +46,3 @@ protected:
 	XmlNodeRef m_CurrRow;
 	XmlNodeRef m_CurrCell;
 };
-
-#endif //__ExcelExport_h__

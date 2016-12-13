@@ -79,8 +79,13 @@ bool CStatsAgentPipe::CreatePipe(const char *szName)
 	DWORD dwMode = PIPE_NOWAIT;
 	if (s_pipe != INVALID_HANDLE_VALUE)
 	{
+		CryLogAlways("Pipe %s created", szName);
 		s_pipeOpen = ::SetNamedPipeHandleState(s_pipe, &dwMode, NULL, NULL) == TRUE;
-	}	
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Failed to create pipe %s, error: 0x%X", szName, GetLastError());
+	}
 #endif
 
 	return s_pipeOpen;

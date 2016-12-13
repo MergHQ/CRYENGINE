@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include <ICryMannequin.h>
 #include <Mannequin/Serialization.h>
+#include <CrySystem/CryUnitTest.h>
 
 namespace mannequin
 {

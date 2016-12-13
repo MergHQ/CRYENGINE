@@ -16,6 +16,7 @@
 
 	#include <CryFlowGraph/IFlowGraphDebugger.h>
 	#include <CryFlowGraph/IFlowSystem.h>
+	#include <CrySystem/CryUnitTest.h>
 
 CRY_UNIT_TEST_SUITE(CryFlowgraphDebuggerUnitTest)
 {
