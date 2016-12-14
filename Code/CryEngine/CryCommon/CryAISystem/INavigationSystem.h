@@ -193,6 +193,8 @@ struct INavigationSystem
 	//!	  - RequestInvalid: there was something wrong with the request so it was ignored
 	virtual EMeshUpdateRequestStatus RequestQueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) = 0;
 
+	virtual void					 RequestQueueGlobalMeshUpdateForAgent(NavigationAgentTypeID agentTypeID) = 0;
+
 	virtual void					 ProcessQueuedMeshUpdates() = 0;
 
 	virtual void					 Clear() = 0;

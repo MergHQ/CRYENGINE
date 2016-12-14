@@ -4027,6 +4027,28 @@ void NavigationSystem::ClearMNMRegenerationRequestedThisCycleFlag()
 	m_wasMNMRegenerationRequestedThisUpdateCycle = false;
 }
 
+void NavigationSystem::RequestQueueGlobalMeshUpdateForAgent(NavigationAgentTypeID agentTypeID)
+{
+	if (agentTypeID && agentTypeID <= m_agentTypes.size())
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+		AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
+		AgentType::Meshes::const_iterator mend = agentType.meshes.end();
+
+		for (; mit != mend; ++mit)
+		{
+			const NavigationMeshID meshID = mit->id;
+			const NavigationMesh& mesh = m_meshes[meshID];
+			const NavigationVolumeID boundaryID = mesh.boundary;
+
+			if (boundaryID)
+			{
+				RequestQueueMeshUpdate(meshID, m_worldAABB);
+			}
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
