@@ -3,7 +3,7 @@
 #ifndef _RENDERAUXGEOM_H_
 #define _RENDERAUXGEOM_H_
 
-#if defined(ENABLE_PROFILING_CODE) || !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE) || !defined(_RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	#define ENABLE_RENDER_AUX_GEOM
 #endif
 

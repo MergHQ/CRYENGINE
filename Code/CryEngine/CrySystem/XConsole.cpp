@@ -422,7 +422,15 @@ void CXConsole::Init(CSystem* pSystem)
 		m_pInput->AddConsoleEventListener(this);
 	}
 
-	m_pSysDeactivateConsole = REGISTER_INT("sys_DeactivateConsole", 0, 0,
+#if !defined(_RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
+	const int disableConsoleDefault = 0;
+	const int disableConsoleFlags = 0;
+#else
+	const int disableConsoleDefault = 1;
+	const int disableConsoleFlags = VF_CONST_CVAR | VF_READONLY;
+#endif
+
+	m_pSysDeactivateConsole = REGISTER_INT("sys_DeactivateConsole", disableConsoleDefault, disableConsoleFlags,
 	                                       "0: normal console behavior\n"
 	                                       "1: hide the console");
 

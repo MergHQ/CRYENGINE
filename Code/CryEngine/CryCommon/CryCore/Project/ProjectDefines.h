@@ -208,7 +208,10 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #define ENABLE_FLASH_INFO
 #endif
 
-#if !defined(ENABLE_LW_PROFILERS)
+// Remove the line below to disable the console in release builds
+#define ENABLE_DEVELOPER_CONSOLE_IN_RELEASE
+
+#if !defined(ENABLE_LW_PROFILERS) && !defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	#ifndef USE_NULLFONT
 		#define USE_NULLFONT      1
 	#endif
