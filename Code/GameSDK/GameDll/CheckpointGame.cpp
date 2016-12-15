@@ -176,7 +176,7 @@ void CCheckpointGame::ReadPlayerInventory(XmlNodeRef parentNode)
 	pPlayer->GetInventory()->FullSerialize(ser);
 
 	// Make sure all the inventory data changes are applied
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->SetActorItem(pPlayer, pPlayer->GetCurrentItemId(), false);
+	gEnv->pGameFramework->GetIItemSystem()->SetActorItem(pPlayer, pPlayer->GetCurrentItemId(), false);
 
 	pSerializer->Release();
 }

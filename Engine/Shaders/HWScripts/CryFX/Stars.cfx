@@ -5,7 +5,6 @@
 #include "ModificatorVT.cfi"
 #include "shadeLib.cfi"
 
-
 float Script : STANDARDSGLOBAL
 <
   string Script =
@@ -75,9 +74,12 @@ v2f StarsVS(a2v IN)
 
   float4 pos = IN.Position;
   OUT.Position = _pos_Common(pos);
-  OUT.Position.z = OUT.Position.w; 
-    
-  // On DX9 OUT.QuadPos will be filled by GPU after point sprite expansion
+	
+#if %_RT_REVERSE_DEPTH
+	 OUT.Position.z = 0;
+#else
+	OUT.Position.z = OUT.Position.w;
+#endif
 
 	float4 ColAndMag = GetInputColor(IN.ColAndMag);
 
@@ -134,6 +136,7 @@ technique Stars
   pass p0
   {
     VertexShader = StarsVS();
+    GeometryShader = $AutoGS_MultiRes();
     PixelShader = StarsPS();
     
     ZEnable = true;

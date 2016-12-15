@@ -17,19 +17,17 @@
 #include "ParticleDebug.h"
 #include "ParticleJobManager.h"
 #include "ParticleProfiler.h"
-
-class CParticleEffect;
+#include "ParticleEmitter.h"
 
 namespace pfx2
 {
-
-class CParticleEffect;
-class CParticleEmitter;
-
 class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)
 	CRYGENERATE_SINGLETONCLASS(CParticleSystem, "CryEngine_ParticleSystem", 0xCD8D738D54B446F7, 0x82BA23BA999CF2AC)
+
+	CParticleSystem();
+	virtual ~CParticleSystem() {}
 
 private:
 	typedef std::vector<_smart_ptr<CParticleEmitter>>                                                                     TParticleEmitters;
@@ -61,6 +59,7 @@ public:
 	CParticleJobManager& GetJobManager()                  { return m_jobManager; }
 	CParticleProfiler&   GetProfiler()                    { return m_profiler; }
 	void                 SyncronizeUpdateKernels();
+	void                 DeferredRender();
 
 	void                 ClearRenderResources();
 
@@ -68,6 +67,7 @@ public:
 	{
 		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
 	}
+	QuatT                GetCameraMotion() const { return m_cameraMotion; }
 
 private:
 	void              UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter);
@@ -86,6 +86,9 @@ private:
 	TEffectNameMap             m_effects;
 	TParticleEmitters          m_emitters;
 	std::vector<TParticleHeap> m_memHeap;
+	QuatT                      m_lastCameraPose = ZERO;
+	QuatT                      m_cameraMotion = ZERO;
+	uint                       m_nextEmitterId;
 };
 
 std::vector<SParticleFeatureParams>& GetFeatureParams();

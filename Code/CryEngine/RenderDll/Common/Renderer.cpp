@@ -77,12 +77,6 @@ int CRenderer::m_iGeomInstancingThreshold = 0;      // 0 means not set yet
 
 #define RENDERER_DEFAULT_FONT "Fonts/default.xml"
 
-#if defined(_LIB)
-extern int g_CpuFlags;
-#else
-int g_CpuFlags;
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 // Pool allocators.
 //////////////////////////////////////////////////////////////////////////
@@ -123,7 +117,6 @@ void CRenderer::InitRenderer()
 	m_cEF.m_Bin.m_pCEF = &m_cEF;
 
 	m_pIntroMovieRenderer = 0;
-	m_bDualStereoSupport  = false;
 
 	m_bShaderCacheGen      = false;
 	m_bSystemResourcesInit = 0;
@@ -140,6 +133,7 @@ void CRenderer::InitRenderer()
 #endif
 	m_bVolumetricFogEnabled = false;
 	m_bVolumetricCloudsEnabled = false;
+	m_bDeferredRainEnabled = false;
 
 	m_nDisableTemporalEffects = 0;
 
@@ -165,7 +159,7 @@ void CRenderer::InitRenderer()
 	m_numSSAASamples   = 1;
 
 	CRendererCVars::InitCVars();
-#ifdef INCLUDE_SCALEFORM_SDK
+#if RENDERER_SUPPORT_SCALEFORM
 	CScaleformPlayback::InitCVars();
 #endif
 
@@ -308,7 +302,6 @@ void CRenderer::InitRenderer()
 
 	m_bCollectDrawCallsInfo        = false;
 	m_bCollectDrawCallsInfoPerNode = false;
-	m_bCopyScreenToBackBuffer      = false;
 
 	m_nMeshPoolTimeoutCounter = nMeshPoolMaxTimeoutCounter;
 
@@ -523,187 +516,8 @@ void CRenderer::RemoveListener(IRendererEventListener* pRendererEventListener)
     iConsole->Help("ShowFps");
    } */
 
-//////////////////////////////////////////////////////////////////////
-void CRenderer::TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...)
-{
-	//  if(!cVars->e_text_info)
-	//  return;
-
-	char buffer[512];
-	va_list args;
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, "%s", buffer);
-}
-
-//////////////////////////////////////////////////////////////////////
-void CRenderer::TextToScreen(float x, float y, const char* format, ...)
-{
-	//  if(!cVars->e_text_info)
-	//  return;
-
-	char buffer[512];
-	va_list args;
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	WriteXY((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, 1, 1, "%s", buffer);
-}
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderer::Draw2dText(float posX, float posY, const char* pStr, const SDrawTextInfo& ti)
-{
-	Draw2dTextWithDepth(posX, posY, 1.0f, pStr, ti);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti)
-{
-	IF (!m_pDefaultFont, 0)
-	return;
-
-	IFFont* pFont = m_pDefaultFont;
-
-	const float r = CLAMP(ti.color[0], 0.0f, 1.0f);
-	const float g = CLAMP(ti.color[1], 0.0f, 1.0f);
-	const float b = CLAMP(ti.color[2], 0.0f, 1.0f);
-	const float a = CLAMP(ti.color[3], 0.0f, 1.0f);
-
-	STextDrawContext ctx;
-	ctx.SetColor(ColorF(r, g, b, a));
-	ctx.SetCharWidthScale(1.0f);
-	ctx.EnableFrame((ti.flags & eDrawText_Framed) != 0);
-
-	if (ti.flags & eDrawText_Monospace)
-	{
-		if (ti.flags & eDrawText_FixedSize)
-			ctx.SetSizeIn800x600(false);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-		ctx.SetCharWidthScale(0.5f);
-		ctx.SetProportional(false);
-
-		if (ti.flags & eDrawText_800x600)
-			ScaleCoordInternal(posX, posY);
-	}
-	else if (ti.flags & eDrawText_FixedSize)
-	{
-		ctx.SetSizeIn800x600(false);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-		ctx.SetProportional(true);
-
-		if (ti.flags & eDrawText_800x600)
-			ScaleCoordInternal(posX, posY);
-	}
-	else
-	{
-		ctx.SetSizeIn800x600(true);
-		ctx.SetProportional(false);
-		ctx.SetCharWidthScale(0.5f);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-	}
-
-	// align left/right/center
-	if (ti.flags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right))
-	{
-		Vec2 textSize = pFont->GetTextSize(pStr, true, ctx);
-
-		// If we're using virtual 800x600 coordinates, convert the text size from
-		// pixels to that before using it as an offset.
-		if (ctx.m_sizeIn800x600)
-		{
-			textSize.x /= ScaleCoordXInternal(1.0f);
-			textSize.y /= ScaleCoordYInternal(1.0f);
-		}
-
-		if (ti.flags & eDrawText_Center)
-			posX -= textSize.x * 0.5f;
-		else if (ti.flags & eDrawText_Right)
-			posX -= textSize.x;
-
-		if (ti.flags & eDrawText_CenterV)
-			posY -= textSize.y * 0.5f;
-	}
-
-	// Pass flags so that overscan borders can be applied if necessary
-	ctx.SetFlags(ti.flags);
-
-	pFont->DrawString(posX, posY, posZ, pStr, true, ctx);
-}
-
-void CRenderer::PrintToScreen(float x, float y, float size, const char* buf)
-{
-	SDrawTextInfo ti;
-	ti.xscale   = size * 0.5f / 8;
-	ti.yscale   = size * 1.f / 8;
-	ti.color[0] = 1;
-	ti.color[1] = 1;
-	ti.color[2] = 1;
-	ti.color[3] = 1;
-	ti.flags    = eDrawText_800x600 | eDrawText_2D;
-	Draw2dText(x, y, buf, ti);
-}
-
-void CRenderer::WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* format, ...)
-{
-	//////////////////////////////////////////////////////////////////////
-	// Write a string to the screen
-	//////////////////////////////////////////////////////////////////////
-
-	va_list args;
-
-	char buffer[512];
-
-	// Check for the presence of a D3D device
-	// Format the string
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	SDrawTextInfo ti;
-	ti.xscale   = xscale;
-	ti.yscale   = yscale;
-	ti.color[0] = r;
-	ti.color[1] = g;
-	ti.color[2] = b;
-	ti.color[3] = a;
-	ti.flags    = eDrawText_800x600 | eDrawText_2D;
-	Draw2dText((float)x, (float)y, buffer, ti);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* text)
-{
-	int nT = m_pRT->GetThreadList();
-	if (text && !gEnv->IsDedicated())
-	{
-		// ti.yscale is currently ignored, input struct can be refactored
-
-		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
-
-		m_TextMessages[nT].PushEntry_Text(pos, col, ti.xscale, ti.flags, text);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args)
-{
-	int nT = m_pRT->GetThreadList();
-	if (format && !gEnv->IsDedicated())
-	{
-		char str[512];
-
-		cry_vsprintf(str, format, args);
-
-		// ti.yscale is currently ignored, input struct can be refactored
-
-		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
-
-		m_TextMessages[nT].PushEntry_Text(pos, col, ti.xscale, ti.flags, str);
-	}
-}
 
 const bool CRenderer::IsEditorMode() const
 {
@@ -731,145 +545,6 @@ int CRenderer::GetFrameID(bool bIncludeRecursiveCalls /*=true*/)
 	return m_RP.m_TI[nThreadID].m_nFrameUpdateID;
 }
 
-//////////////////////////////////////////////////////////////////////
-void CRenderer::FlushTextMessages()
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-
-	if (!m_TextMessages[m_RP.m_nFillThreadID].empty())
-		m_pRT->RC_FlushTextMessages();
-}
-
-void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
-{
-	EnableFog(false);
-	int vx, vy, vw, vh;
-	GetViewport(&vx, &vy, &vw, &vh);
-
-	while (const CTextMessages::CTextMessageHeader* pEntry = messages.GetNextEntry())
-	{
-		const CTextMessages::SText* pText = pEntry->CastTo_Text();
-
-		Vec3 vPos(0, 0, 0);
-		int  nDrawFlags    = 0;
-		const char* szText = 0;
-		Vec4  vColor(1, 1, 1, 1);
-		float fSize = 0;
-
-		if (pText)
-		{
-			nDrawFlags = pText->m_nDrawFlags;
-			szText     = pText->GetText();
-			vPos       = pText->m_vPos;
-			vColor     = pText->m_Color.toVec4() * 1.0f / 255.0f;
-			fSize      = pText->m_fFontSize;
-		}
-
-		bool b800x600 = (nDrawFlags & eDrawText_800x600) != 0;
-
-		float fMaxPosX = 100.0f;
-		float fMaxPosY = 100.0f;
-
-		if (!b800x600)
-		{
-			fMaxPosX = (float)vw;
-			fMaxPosY = (float)vh;
-		}
-
-		float sx, sy, sz;
-
-		if (!(nDrawFlags & eDrawText_2D))
-		{
-			float fDist = 1;   //GetDistance(pTextInfo->pos,GetCamera().GetPosition());
-
-			float K = GetCamera().GetFarPlane() / fDist;
-			if (fDist > GetCamera().GetFarPlane() * 0.5)
-				vPos = GetCamera().GetPosition() + K * (vPos - GetCamera().GetPosition());
-
-			ProjectToScreen(vPos.x, vPos.y, vPos.z, &sx, &sy, &sz);
-		}
-		else
-		{
-			if (b800x600)
-			{
-				// Make 2D coords in range 0-100
-				sx = (vPos.x) / vw * 100;
-				sy = (vPos.y) / vh * 100;
-			}
-			else
-			{
-				sx = vPos.x;
-				sy = vPos.y;
-			}
-
-			sz = vPos.z;
-		}
-
-		if (sx >= 0 && sx <= fMaxPosX)
-			if (sy >= 0 && sy <= fMaxPosY)
-				if (sz >= 0 && sz <= 1)
-				{
-					// calculate size
-					float sizeX;
-					float sizeY;
-					if (nDrawFlags & eDrawText_FixedSize)
-					{
-						sizeX = fSize;
-						sizeY = fSize;
-						//sizeX = pTextInfo->font_size * 800.0f/vw;
-						//sizeY = pTextInfo->font_size * 500.0f/vh;
-					}
-					else
-					{
-						sizeX  = sizeY = (1.0f - (float)(sz)) * 32.f * fSize;
-						sizeX *= 0.5f;
-					}
-
-					if (szText)
-					{
-						// print
-						SDrawTextInfo ti;
-						ti.flags    = nDrawFlags;
-						ti.color[0] = vColor.x;
-						ti.color[1] = vColor.y;
-						ti.color[2] = vColor.z;
-						ti.color[3] = vColor.w;
-						ti.xscale   = sizeX;
-						ti.yscale   = sizeY;
-						if (nDrawFlags & eDrawText_DepthTest)
-						{
-							sz = 1.0f - 2.0f * sz;
-						}
-						else
-						{
-							sz = 1.0f;
-						}
-						if (b800x600)
-							Draw2dTextWithDepth(0.01f * 800 * sx, 0.01f * 600 * sy, sz, szText, ti);
-						else
-							Draw2dTextWithDepth(sx, sy, sz, szText, ti);
-					}
-				}
-	}
-
-	messages.Clear(!reset);
-}
-
-void CRenderer::RT_FlushTextMessages()
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
-
-	int nT = m_RP.m_nProcessThreadID;
-
-	if (gEnv->IsDedicated() || (m_pRT && m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled))
-	{
-		m_TextMessages[nT].Clear();
-		return;
-	}
-
-	FlushTextMessages(m_TextMessages[nT], true);
-
-}
 
 #pragma pack (push)
 #pragma pack (1)
@@ -1140,9 +815,6 @@ void CRenderer::FreeResources(int nFlags)
 		for (int i = 0; i < sizeof(m_RP.m_RIs) / sizeof(m_RP.m_RIs[0]); ++i)
 			m_RP.m_RIs[i].Free();
 
-		stl::for_each_array(m_RP.m_SysVertexPool, stl::container_freer());
-		stl::for_each_array(m_RP.m_SysIndexPool, stl::container_freer());
-
 		// Reset render views
 		for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 		{
@@ -1254,7 +926,7 @@ void CRenderer::FreeResources(int nFlags)
 		ForceFlushRTCommands();
 		CTexture::ResetTMUs();
 
-		CRendElement::Cleanup();
+		CRenderElement::Cleanup();
 		ForceFlushRTCommands();
 
 		// sync dev buffer only once per frame, to prevent syncing to the currently rendered frame
@@ -1276,15 +948,12 @@ void CRenderer::FreeResources(int nFlags)
 	if (nFlags == FRR_ALL)
 	{
 		ForceFlushRTCommands();
-		CRendElementBase::ShutDown();
+		CRenderElement::ShutDown();
 	}
 	else if (nFlags & FRR_RENDERELEMENTS)
 	{
-		CRendElement::Cleanup();
+		CRenderElement::Cleanup();
 	}
-
-	// free flare queries
-	CRELensOptics::ClearResources();
 
 	if ((nFlags & FRR_RESTORE) && !(nFlags & FRR_SYSTEM))
 		m_cEF.mfInit();
@@ -1452,7 +1121,7 @@ const char* CRenderer::EF_GetStringFromShaderGlobalMaskGen(const char* szShaderN
 
 SShaderItem CRenderer::EF_LoadShaderItem (const char* szName, bool bShare, int flags, SInputShaderResources* Res, uint64 nMaskGen, const SLoadShaderItemArgs* pArgs)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(szName);
 
 	return m_cEF.mfShaderItemForName(szName, bShare, flags, Res, nMaskGen, pArgs);
 }
@@ -1743,7 +1412,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 				it->second->Clear();
 		}
 
-		EF_RemovePolysFromScene();
 		m_RP.m_fogVolumeContibutions[nThreadID].resize(0);
 
 		m_pRT->RC_SetStereoEye(0);
@@ -1781,29 +1449,18 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 
 void CRenderer::RT_PrepareLevelTexStreaming()
 {
-	if (CRenderer::CV_r_texturesstreampooldefragmentation)
-	{
-	}
 }
 
 void CRenderer::RT_PostLevelLoading()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	int nThreadID = m_pRT->GetThreadList();
 	m_RP.m_fogVolumeContibutions[nThreadID].reserve(2048);
-
-	m_cEF.m_Bin.InvalidateCache();
-	CHWShader::mfCleanupCache();
-	CResFile::m_nMaxOpenResFiles = 4;
 }
 
 void CRenderer::RT_DisableTemporalEffects()
 {
 	m_nDisableTemporalEffects = GetActiveGPUCount();
-}
-
-void CRenderer::DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const
-{
-	m_pRT->RC_DrawStringU(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 }
 
 void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
@@ -1813,14 +1470,14 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 	m_pRT->RC_SubmitWind(pWind);
 }
 
-void CRenderer::RT_CreateREPostProcess(CRendElementBase** re)
+void CRenderer::RT_CreateREPostProcess(CRenderElement** re)
 {
 	*re = new CREPostProcess;
 }
 
-CRendElementBase* CRenderer::EF_CreateRE(EDataType edt)
+CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 {
-	CRendElementBase* re = NULL;
+	CRenderElement* re = NULL;
 	switch (edt)
 	{
 	case eDATA_Mesh:
@@ -1885,11 +1542,6 @@ CRendElementBase* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_VolumeObject:
 		re = new CREVolumeObject;
 		break;
-#if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-	case eDATA_PrismObject:
-		re = new CREPrismObject;
-		break;
-#endif  // EXCLUDE_DOCUMENTATION_PURPOSE
 
 	case eDATA_GameEffect:
 		re = new CREGameEffect;
@@ -1913,14 +1565,6 @@ float CRenderer::EF_GetWaterZElevation(float fX, float fY)
 	if (!eng)
 		return 0;
 	return eng->GetWaterLevel();
-}
-
-void CRenderer::EF_RemovePolysFromScene()
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-
-	m_RP.m_SysVertexPool[m_RP.m_nFillThreadID].SetUse(0);
-	m_RP.m_SysIndexPool[m_RP.m_nFillThreadID].SetUse(0);
 }
 
 void CRenderer::FX_StartMerging()
@@ -2034,128 +1678,6 @@ void CRenderer::FX_SetMSAAFlagsRT()
 #endif
 }
 
-CRenderObject* CRenderer::EF_AddPolygonToScene(SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, CRenderObject* obj, const SRenderingPassInfo& passInfo, uint16* inds, int ninds, int nAW)
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-	int nThreadID = m_RP.m_nFillThreadID;
-	const uint32 nPersFlags = m_RP.m_TI[nThreadID].m_PersFlags;
-
-	assert(si.m_pShader && si.m_pShaderResources);
-	if (!si.m_pShader || !si.m_pShaderResources)
-	{
-		Warning("CRenderer::EF_AddPolygonToScene without shader...");
-		return NULL;
-	}
-	if (si.m_nPreprocessFlags == -1)
-	{
-		if (!si.Update())
-			return obj;
-	}
-
-	CREClientPoly* pl = passInfo.GetRenderView()->AddClientPoly();
-
-	pl->m_Shader       = si;
-	pl->m_sNumVerts    = numPts;
-	pl->m_pObject      = obj;
-	pl->m_nCPFlags     = 0;
-	pl->rendItemSorter = passInfo.GetRendItemSorter();
-	if (nAW)
-		pl->m_nCPFlags |= CREClientPoly::efAfterWater;
-	if (passInfo.IsShadowPass())
-		pl->m_nCPFlags |= CREClientPoly::efShadowGen;
-
-	int nSize           = CRenderMesh::m_cSizeVF[eVF_P3F_C4B_T2F] * numPts;
-	int nOffs           = m_RP.m_SysVertexPool[nThreadID].Num();
-	SVF_P3F_C4B_T2F* vt = (SVF_P3F_C4B_T2F*)m_RP.m_SysVertexPool[nThreadID].GrowReset(nSize);
-	pl->m_nOffsVert = nOffs;
-	for (int i = 0; i < numPts; i++, vt++)
-	{
-		vt->xyz          = verts[i].xyz;
-		vt->st           = verts[i].st;
-		vt->color.dcolor = verts[i].color.dcolor;
-	}
-	if (tangs)
-	{
-		nSize = sizeof(SPipTangents) * numPts;
-		nOffs = m_RP.m_SysVertexPool[nThreadID].Num();
-		SPipTangents* t = (SPipTangents*)m_RP.m_SysVertexPool[nThreadID].GrowReset(nSize);
-		pl->m_nOffsTang = nOffs;
-		for (int i = 0; i < numPts; i++, t++)
-		{
-			*t = tangs[i];
-		}
-	}
-	else
-		pl->m_nOffsTang = -1;
-
-	pl->m_nOffsInd = m_RP.m_SysIndexPool[nThreadID].Num();
-
-	if (inds && ninds)
-	{
-		uint16* dstind = m_RP.m_SysIndexPool[nThreadID].Grow(ninds);
-		memcpy(dstind, inds, ninds * sizeof(uint16));
-		pl->m_sNumIndices = ninds;
-	}
-	else
-	{
-		uint16* dstind = m_RP.m_SysIndexPool[nThreadID].Grow((numPts - 2) * 3);
-		for (int i = 0; i < numPts - 2; i++, dstind += 3)
-		{
-			dstind[0] = 0;
-			dstind[1] = i + 1;
-			dstind[2] = i + 2;
-		}
-		pl->m_sNumIndices = (numPts - 2) * 3;
-	}
-
-	return obj;
-}
-
-CRenderObject* CRenderer::EF_AddPolygonToScene(SShaderItem& si, CRenderObject* obj, const SRenderingPassInfo& passInfo, int numPts, int ninds, SVF_P3F_C4B_T2F*& verts, SPipTangents*& tangs, uint16*& inds, int nAW)
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-	int nThreadID = m_RP.m_nFillThreadID;
-	const uint32 nPersFlags = m_RP.m_TI[nThreadID].m_PersFlags;
-
-	assert(si.m_pShader && si.m_pShaderResources);
-	if (!si.m_pShader || !si.m_pShaderResources)
-	{
-		Warning("CRenderer::EF_AddPolygonToScene without shader...");
-		return NULL;
-	}
-	if (si.m_nPreprocessFlags == -1)
-	{
-		if (!si.Update())
-			return obj;
-	}
-	CREClientPoly* pl = passInfo.GetRenderView()->AddClientPoly();
-
-	pl->m_Shader  = si;
-	pl->m_pObject = obj;
-	if (nAW)
-		pl->m_nCPFlags |= CREClientPoly::efAfterWater;
-	if (passInfo.IsShadowPass())
-		pl->m_nCPFlags |= CREClientPoly::efShadowGen;
-
-	//////////////////////////////////////////////////////////////////////////
-	// allocate buffer space for caller to fill
-
-	pl->m_sNumVerts = numPts;
-	pl->m_nOffsVert = m_RP.m_SysVertexPool[nThreadID].Num();
-	pl->m_nOffsTang = m_RP.m_SysVertexPool[nThreadID].Num() + sizeof(SVF_P3F_C4B_T2F) * numPts;
-	m_RP.m_SysVertexPool[nThreadID].GrowReset((sizeof(SVF_P3F_C4B_T2F) + sizeof(SPipTangents)) * numPts);
-	verts = (SVF_P3F_C4B_T2F*) &m_RP.m_SysVertexPool[nThreadID][pl->m_nOffsVert];
-	tangs = (SPipTangents*) &m_RP.m_SysVertexPool[nThreadID][pl->m_nOffsTang];
-
-	pl->m_sNumIndices = ninds;
-	pl->m_nOffsInd    = m_RP.m_SysIndexPool[nThreadID].Num();
-	inds              = m_RP.m_SysIndexPool[nThreadID].Grow(ninds);
-
-	//////////////////////////////////////////////////////////////////////////
-
-	return obj;
-}
-
 void CRenderer::Logv(const char* format, ...)
 {
 	va_list argptr;
@@ -2241,7 +1763,7 @@ void CRenderer::EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, co
 	{
 		// Add render element if light has mtl bound
 		IShader* pShader = pLight->m_Shader.m_pShader;
-		TArray<CRendElementBase*>* pRendElemBase = pShader ? pLight->m_Shader.m_pShader->GetREs(pLight->m_Shader.m_nTechnique) : 0;
+		TArray<CRenderElement*>* pRendElemBase = pShader ? pLight->m_Shader.m_pShader->GetREs(pLight->m_Shader.m_nTechnique) : 0;
 		if (pRendElemBase && !pRendElemBase->empty())
 		{
 			CRenderObject* pRO = EF_GetObject_Temp(passInfo.ThreadID());
@@ -2259,7 +1781,7 @@ void CRenderer::EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, co
 			pRO->m_II.m_Matrix   = pLight->m_ObjMatrix;
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
-			CRendElementBase* pRE = pRendElemBase->Get(0);
+			CRenderElement* pRE = pRendElemBase->Get(0);
 			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP : EFSLIST_LENSOPTICS;
 
 			if (pRE->mfGetType() == eDATA_Beam)
@@ -2378,7 +1900,111 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl)
 
 	const uint32 nStyle = dl->m_nLightStyle;
 
-	if (nStyle > 0 && nStyle < CLightStyle::s_LStyles.Num() && CLightStyle::s_LStyles[nStyle])
+	const IAnimNode* pLightAnimNode = 0;
+
+	ILightAnimWrapper* pLightAnimWrapper = dl->m_pLightAnim;
+	IF (pLightAnimWrapper, 0)
+	{
+		pLightAnimNode = pLightAnimWrapper->GetNode();
+		IF (!pLightAnimNode, 0)
+		{
+			pLightAnimWrapper->Resolve();
+			pLightAnimNode = pLightAnimWrapper->GetNode();
+		}
+	}
+
+	IF (pLightAnimNode, 0)
+	{
+		//TODO: This may require further optimizations.
+		IAnimTrack* pPosTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_Position);
+		IAnimTrack* pRotTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_Rotation);
+		IAnimTrack* pColorTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightDiffuse);
+		IAnimTrack* pDiffMultTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightDiffuseMult);
+		IAnimTrack* pRadiusTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightRadius);
+		IAnimTrack* pSpecMultTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightSpecularMult);
+		IAnimTrack* pHDRDynamicTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightHDRDynamic);
+
+		TRange<SAnimTime> timeRange = const_cast<IAnimNode*>(pLightAnimNode)->GetSequence()->GetTimeRange();
+		float time = (dl->m_Flags & DLF_TRACKVIEW_TIMESCRUBBING) ? dl->m_fTimeScrubbed : fTime;
+		float phase = static_cast<float>(dl->m_nLightPhase) / 100.0f;
+
+		if (pPosTrack && pPosTrack->GetNumKeys() > 0 &&
+			!(pPosTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			Vec3 vOffset(0, 0, 0);
+			float duration = max(pPosTrack->GetKeyTime(pPosTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			vOffset = stl::get<Vec3>(pPosTrack->GetValue(timeNormalized));
+			dl->m_Origin = dl->m_BaseOrigin + vOffset;
+		}
+
+		if (pRotTrack && pRotTrack->GetNumKeys() > 0 &&
+			!(pRotTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			Vec3 vRot(0, 0, 0);
+			float duration = max(pRotTrack->GetKeyTime(pRotTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			vRot = stl::get<Vec3>(pRotTrack->GetValue(timeNormalized));
+			static_cast<CDLight*>(dl)->SetMatrix(
+				dl->m_BaseObjMatrix * Matrix34::CreateRotationXYZ(Ang3(DEG2RAD(vRot.x), DEG2RAD(vRot.y), DEG2RAD(vRot.z))),
+				false);
+		}
+
+		if (pColorTrack && pColorTrack->GetNumKeys() > 0 &&
+			!(pColorTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			Vec3 vColor(dl->m_Color.r, dl->m_Color.g, dl->m_Color.b);
+			float duration = max(pColorTrack->GetKeyTime(pColorTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			vColor = stl::get<Vec3>(pColorTrack->GetValue(timeNormalized));
+			dl->m_Color = ColorF(vColor.x / 255.0f, vColor.y / 255.0f, vColor.z / 255.0f);
+		}
+		else
+		{
+			dl->m_Color = dl->m_BaseColor;
+		}
+
+		if (pDiffMultTrack && pDiffMultTrack->GetNumKeys() > 0 &&
+			!(pDiffMultTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			float diffMult = 1.0;
+			float duration = max(pDiffMultTrack->GetKeyTime(pDiffMultTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			diffMult = stl::get<float>(pDiffMultTrack->GetValue(timeNormalized));
+			dl->m_Color *= diffMult;
+		}
+
+		if (pRadiusTrack && pRadiusTrack->GetNumKeys() > 0 &&
+			!(pRadiusTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			float radius = dl->m_fRadius;
+			float duration = max(pRadiusTrack->GetKeyTime(pRadiusTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			radius = stl::get<float>(pRadiusTrack->GetValue(timeNormalized));
+			dl->m_fRadius = radius;
+		}
+
+		if (pSpecMultTrack && pSpecMultTrack->GetNumKeys() > 0 &&
+			!(pSpecMultTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			float specMult = dl->m_SpecMult;
+			float duration = max(pSpecMultTrack->GetKeyTime(pSpecMultTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			specMult = stl::get<float>(pSpecMultTrack->GetValue(timeNormalized));
+			dl->m_SpecMult = specMult;
+		}
+
+		if (pHDRDynamicTrack && pHDRDynamicTrack->GetNumKeys() > 0 &&
+			!(pHDRDynamicTrack->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled))
+		{
+			float hdrDynamic = dl->m_fHDRDynamic;
+			float duration = max(pHDRDynamicTrack->GetKeyTime(pHDRDynamicTrack->GetNumKeys() - 1).ToFloat(), 0.001f);
+			float timeNormalized = static_cast<float>(fmod(time + phase*duration, duration));
+			hdrDynamic = stl::get<float>(pHDRDynamicTrack->GetValue(timeNormalized));
+			dl->m_fHDRDynamic = hdrDynamic;
+		}
+	}
+	else if(nStyle > 0 && nStyle < CLightStyle::s_LStyles.Num() && CLightStyle::s_LStyles[nStyle])
 	{
 		CLightStyle* ls = CLightStyle::s_LStyles[nStyle];
 
@@ -3801,6 +3427,12 @@ ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int 
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+void CRenderer::SetLevelLoadingThreadId( threadID threadId )
+{
+	m_pRT->m_nLevelLoadingThread = threadId;
+}
+
 void CRenderer::GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const
 {
 	if (m_pRT)
@@ -3953,7 +3585,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 
 		if (rRP.m_nBatchFilter & (FB_MOTIONBLUR | FB_CUSTOM_RENDER | FB_POST_3D_RENDER | FB_LAYER_EFFECT | FB_SOFTALPHATEST | FB_DEBUG))
 			nMisc++;
-		else if (!(rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
+		else
 		{
 			if (rRP.m_nBatchFilter & FB_GENERAL)
 			{
@@ -3971,8 +3603,6 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 				nZpass++;
 			}
 		}
-		else
-			nShadows++;
 	}
 }
 
@@ -4273,21 +3903,16 @@ void S3DEngineCommon::UpdateRainOccInfo(int nThreadID)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-namespace WaterVolumeStaticData {
-	void GetMemoryUsage(ICrySizer* pSizer);
-}
 
 void CRenderer::GetMemoryUsage(ICrySizer* pSizer)
 {
-	// should be called by all derived classes
-	for (uint32 i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-		pSizer->AddObject(m_TextMessages[i]);
-
 	pSizer->AddObject(m_pRT);
 #if 0  //XXXXXXXXXXXXXXXXXXXXXXX
 	pSizer->AddObject(m_DevBufMan);
 #endif
-	WaterVolumeStaticData::GetMemoryUsage(pSizer);
+
+	if(m_pWaterSimMgr)
+		m_pWaterSimMgr->GetMemoryUsage(pSizer);
 }
 
 // retrieves the bandwidth calculations for the audio streaming
@@ -4519,6 +4144,11 @@ void CRenderer::SetTexturePrecaching(bool stat)
 IOpticsElementBase* CRenderer::CreateOptics(EFlareType type) const
 {
 	return COpticsFactory::GetInstance()->Create(type);
+}
+
+void CRenderer::ReleaseOptics(IOpticsElementBase* pOpticsElement) const
+{
+	m_pRT->RC_ReleaseOptics(pOpticsElement);
 }
 
 void CRenderer::RT_UpdateLightVolumes()
@@ -4951,7 +4581,7 @@ void CRenderer::ClearDrawCallsInfo()
 #endif
 
 #ifdef ENABLE_PROFILING_CODE
-void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList)
+void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bScenePass)
 {
 	SPipeStat& pipelineStats = m_RP.m_PS[m_RP.m_nProcessThreadID];
 
@@ -4961,6 +4591,12 @@ void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderL
 	CryInterlockedAdd(&pipelineStats.m_nNumInlineSets, stats.numInlineSets);
 	CryInterlockedAdd(&pipelineStats.m_nPolygons[renderList], stats.numPolygons);
 	CryInterlockedAdd(&pipelineStats.m_nDIPs[renderList], stats.numDIPs);
+
+	if (bScenePass)
+	{
+		CryInterlockedAdd(&pipelineStats.m_nScenePassDIPs, stats.numDIPs);
+		CryInterlockedAdd(&pipelineStats.m_nScenePassPolygons, stats.numPolygons);
+	}
 }
 #endif
 
@@ -4981,7 +4617,6 @@ void CRenderer::EnableLevelUnloading(bool enable)
 
 void CRenderer::EnableBatchMode(bool enable)
 {
-	RENDER_LOCK_CS(SRenderThread::s_rcLock);
 	if (enable)
 	{
 		gRenDev->m_bEndLevelLoading   = false;
@@ -4992,11 +4627,6 @@ void CRenderer::EnableBatchMode(bool enable)
 		gRenDev->m_bEndLevelLoading   = true;
 		gRenDev->m_bStartLevelLoading = false;
 	}
-}
-
-void CRenderer::SetShouldCopyScreenToBackBuffer(bool bEnable)
-{
-	m_bCopyScreenToBackBuffer = bEnable;
 }
 
 bool CRenderer::StopRendererAtFrameEnd(uint timeoutMilliseconds)
@@ -5025,4 +4655,9 @@ void CRenderer::ResumeRendererFromFrameEnd()
 	m_bStopRendererAtFrameEnd = false;
 	m_mtxStopAtRenderFrameEnd.Unlock();
 	m_condStopAtRenderFrameEnd.Notify();
+}
+
+void CRenderer::QueryActiveGpuInfo(SGpuInfo& info) const
+{
+	info = m_adapterInfo;
 }

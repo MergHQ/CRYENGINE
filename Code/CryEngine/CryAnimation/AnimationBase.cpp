@@ -21,9 +21,6 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
 		case ESYSTEM_EVENT_LEVEL_UNLOAD:
 			break;
 		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
@@ -85,6 +82,8 @@ class CEngineModule_CryAnimation : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAnimation, "EngineModule_CryAnimation", 0x9c73d2cd142c4256, 0xa8f0706d80cd7ad2)
 
+	virtual ~CEngineModule_CryAnimation() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryAnimation"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
@@ -119,15 +118,6 @@ class CEngineModule_CryAnimation : public IEngineModule
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAnimation)
 
-CEngineModule_CryAnimation::CEngineModule_CryAnimation()
-{
-
-};
-
-CEngineModule_CryAnimation::~CEngineModule_CryAnimation()
-{
-};
-
 // cached interfaces - valid during the whole session, when the character manager is alive; then get erased
 ISystem* g_pISystem = NULL;
 ITimer* g_pITimer = NULL;                     //module implemented in CrySystem
@@ -149,6 +139,7 @@ DynArray<string> g_DataMismatch;
 SParametricSamplerInternal* g_parametricPool = NULL;
 bool* g_usedParametrics = NULL;
 int32 g_totalParametrics = 0;
+uint32 g_DefaultTransitionInterpolationType = (uint32)CA_Interpolation_Type::QuadraticInOut;
 AABB g_IdentityAABB = AABB(ZERO, ZERO);
 
 CControllerDefragHeap g_controllerHeap;
@@ -164,7 +155,6 @@ ILINE void g_LogToFile(const char* szFormat, ...)
 }
 
 f32 g_fCurrTime = 0;
-int g_CpuFlags = 0;
 bool g_bProfilerOn = false;
 
 AnimStatisticsInfo g_AnimStatisticsInfo;

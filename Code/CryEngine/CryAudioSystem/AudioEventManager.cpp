@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioEventManager.h"
 #include "AudioCVars.h"
+#include "ATLAudioObject.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 
 using namespace CryAudio::Impl;
@@ -11,9 +12,6 @@ using namespace CryAudio::Impl;
 CAudioEventManager::CAudioEventManager()
 	: m_audioEventPool(g_audioCVars.m_audioEventPoolSize, 1)
 	, m_pImpl(nullptr)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	, m_pDebugNameStore(nullptr)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 {
 }
 
@@ -280,7 +278,7 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 		CATLEvent* const pEvent = eventPair.second;
 		if (pEvent->m_pTrigger != nullptr)
 		{
-			char const* const szOriginalName = m_pDebugNameStore->LookupAudioTriggerName(pEvent->m_pTrigger->GetId());
+			char const* const szOriginalName = pEvent->m_pTrigger->m_name.c_str();
 			CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> sLowerCaseAudioTriggerName(szOriginalName);
 			sLowerCaseAudioTriggerName.MakeLower();
 			CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> sLowerCaseSearchString(g_audioCVars.m_pAudioTriggersDebugFilter->GetString());
@@ -309,19 +307,13 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, floa
 				                    false,
 				                    "%s on %s : %u",
 				                    szOriginalName,
-				                    m_pDebugNameStore->LookupAudioObjectName(pEvent->m_audioObjectId),
+				                    pEvent->m_pAudioObject->m_name.c_str(),
 				                    pEvent->GetId());
 
 				posY += 10.0f;
 			}
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::SetDebugNameStore(CATLDebugNameStore const* const pDebugNameStore)
-{
-	m_pDebugNameStore = pDebugNameStore;
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

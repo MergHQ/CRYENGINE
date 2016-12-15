@@ -156,6 +156,7 @@ public:
 	bool GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArray<I3DEngine::SLightTI>* pLightsTI_S, PodArray<I3DEngine::SLightTI>* pLightsTI_D);
 	void GetSvoBricksForUpdate(PodArray<I3DEngine::SSvoNodeInfo>& arrNodeInfo, float fNodeSize, PodArray<SVF_P3F_C4B_T2F>* pVertsOut);
 	bool Render();
+	void ProcessSvoRootTeleport();
 	void CheckUpdateMeshPools();
 	int  GetWorstPointInSubSet(const int nStart, const int eEnd);
 	void StartupStreamingTimeTest(bool bDone);
@@ -170,6 +171,7 @@ public:
 
 	PodArray<I3DEngine::SLightTI>            m_lightsTI_S, m_lightsTI_D;
 	PodArray<I3DEngine::SAnalyticalOccluder> m_AnalyticalOccluders[2];
+	Vec4 m_vSvoOriginAndSize;
 	AABB m_aabbLightsTI_D;
 	ITexture*                                m_pGlobalSpecCM;
 	float m_fGlobalSpecCM_Mult;

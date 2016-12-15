@@ -5,51 +5,39 @@
 #include "../../RenderDll/XRenderD3D9/DriverD3D.h"
 #include <CryRenderer/VertexFormats.h>
 
-void AbstractMeshElement::ApplyVert()
+AbstractMeshElement::~AbstractMeshElement()
 {
-	if (!GetVertCount())
-		return;
-
-	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(GetVertBufData(), GetVertCount(), 0);
-	gcpRendD3D->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F);
+	if (m_vertexBuffer != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_vertexBuffer);
+	if (m_indexBuffer  != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_indexBuffer);
 }
 
-void AbstractMeshElement::ApplyIndices()
+void AbstractMeshElement::ValidateMesh()
 {
-	if (!GetIndexCount())
-		return;
+	if (m_meshDirty)
+	{
+		GenMesh();
+		
+		if (m_vertexBuffer != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_vertexBuffer);
+		if (m_indexBuffer  != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_indexBuffer);
 
-	TempDynIB16::CreateFillAndBind(GetIndexBufData(), GetIndexCount());
+		if (!m_vertices.empty())
+		{
+			m_vertexBuffer = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, m_vertices.size() * sizeof(SVF_P3F_C4B_T2F));
+			gcpRendD3D->m_DevBufMan.UpdateBuffer(m_vertexBuffer, &m_vertices[0], m_vertices.size() * sizeof(SVF_P3F_C4B_T2F));
+		}
+
+		if (!m_indices.empty())
+		{
+			m_indexBuffer = gcpRendD3D->m_DevBufMan.Create(BBT_INDEX_BUFFER, BU_STATIC, m_indices.size() * sizeof(uint16));
+			gcpRendD3D->m_DevBufMan.UpdateBuffer(m_indexBuffer, &m_indices[0], m_indices.size() * sizeof(uint16));
+		}
+
+		m_meshDirty = false;
+	}
 }
 
-void AbstractMeshElement::ApplyMesh()
+int AbstractMeshElement::GetMeshDataSize() const
 {
-	ApplyVert();
-	ApplyIndices();
+	return m_vertices.size() * sizeof(SVF_P3F_C4B_T2F) + m_indices.size() * sizeof(uint16);
 }
 
-void AbstractMeshElement::DrawMeshTriList()
-{
-	int nVertexBufferCount = GetVertCount();
-	int nIndexBufferCount = GetIndexCount();
-	if (nVertexBufferCount <= 0 || nIndexBufferCount <= 0)
-		return;
-	gcpRendD3D->FX_Commit();
-	gcpRendD3D->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, nVertexBufferCount, 0, nIndexBufferCount);
-}
-
-void AbstractMeshElement::DrawMeshWireframe()
-{
-	int nVertexBufferCount = GetVertCount();
-	int nIndexBufferCount = GetIndexCount();
-	if (nVertexBufferCount <= 0 || nIndexBufferCount <= 0)
-		return;
-
-	const int32 nState = gRenDev->m_RP.m_CurState;
-	gcpRendD3D->FX_SetState(nState | GS_WIREFRAME);
-
-	gcpRendD3D->FX_Commit();
-	gcpRendD3D->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, nVertexBufferCount, 0, nIndexBufferCount);
-
-	gcpRendD3D->FX_SetState(nState);
-}

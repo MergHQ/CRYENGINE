@@ -127,7 +127,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, EIP_Trigger))
 			{
-				CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(gEnv->pGame->GetIGameFramework()->GetIMaterialEffects());
+				CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(gEnv->pGameFramework->GetIMaterialEffects());
 				if (pMatFX)
 				{
 					//const string& name = GetPortString(pActInfo, EIP_Name);
@@ -239,11 +239,11 @@ public:
 			{
 				if (pActInfo->pEntity)
 				{
-					IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_RENDER));
+					IEntityRender* pIEntityRender(pActInfo->pEntity->GetRenderInterface());
 
-					if (pRenderProxy)
+					
 					{
-						IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+						IMaterial* pMtl(pIEntityRender->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 						if (pMtl)
 						{
 							IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);
@@ -324,11 +324,11 @@ public:
 			{
 				if (pActInfo->pEntity)
 				{
-					IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_RENDER));
+					IEntityRender* pIEntityRender(pActInfo->pEntity->GetRenderInterface());
 
-					if (pRenderProxy)
+					
 					{
-						IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+						IMaterial* pMtl(pIEntityRender->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 						if (pMtl)
 						{
 							IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);
@@ -481,11 +481,11 @@ private:
 
 	bool SetFSCommandHandler(IEntity* pEntity, const bool bEnable)
 	{
-		IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 
-		if (pRenderProxy)
+		
 		{
-			IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+			IMaterial* pMtl(pIEntityRender->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 			if (pMtl)
 			{
 				IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);

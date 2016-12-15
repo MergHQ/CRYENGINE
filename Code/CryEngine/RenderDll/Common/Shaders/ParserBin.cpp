@@ -217,29 +217,61 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(Texture3D);
 	FX_REGISTER_TOKEN(RWTexture3D);
 
+	FX_REGISTER_TOKEN(unorm);
+	FX_REGISTER_TOKEN(snorm);
 	FX_REGISTER_TOKEN(float);
 	FX_REGISTER_TOKEN(float2);
 	FX_REGISTER_TOKEN(float3);
 	FX_REGISTER_TOKEN(float4);
-	FX_REGISTER_TOKEN(float4x4);
-	FX_REGISTER_TOKEN(float3x4);
 	FX_REGISTER_TOKEN(float2x4);
+	FX_REGISTER_TOKEN(float3x4);
+	FX_REGISTER_TOKEN(float4x4);
 	FX_REGISTER_TOKEN(float3x3);
 	FX_REGISTER_TOKEN(half);
 	FX_REGISTER_TOKEN(half2);
 	FX_REGISTER_TOKEN(half3);
 	FX_REGISTER_TOKEN(half4);
-	FX_REGISTER_TOKEN(half4x4);
-	FX_REGISTER_TOKEN(half3x4);
 	FX_REGISTER_TOKEN(half2x4);
+	FX_REGISTER_TOKEN(half3x4);
+	FX_REGISTER_TOKEN(half4x4);
 	FX_REGISTER_TOKEN(half3x3);
 	FX_REGISTER_TOKEN(bool);
 	FX_REGISTER_TOKEN(int);
 	FX_REGISTER_TOKEN(int2);
+	FX_REGISTER_TOKEN(int3);
 	FX_REGISTER_TOKEN(int4);
 	FX_REGISTER_TOKEN(uint);
 	FX_REGISTER_TOKEN(uint2);
+	FX_REGISTER_TOKEN(uint3);
 	FX_REGISTER_TOKEN(uint4);
+	FX_REGISTER_TOKEN(min16float);
+	FX_REGISTER_TOKEN(min16float2);
+	FX_REGISTER_TOKEN(min16float3);
+	FX_REGISTER_TOKEN(min16float4);
+	FX_REGISTER_TOKEN(min16float4x4);
+	FX_REGISTER_TOKEN(min16float3x4);
+	FX_REGISTER_TOKEN(min16float2x4);
+	FX_REGISTER_TOKEN(min16float3x3);
+	FX_REGISTER_TOKEN(min10float);
+	FX_REGISTER_TOKEN(min10float2);
+	FX_REGISTER_TOKEN(min10float3);
+	FX_REGISTER_TOKEN(min10float4);
+	FX_REGISTER_TOKEN(min10float4x4);
+	FX_REGISTER_TOKEN(min10float3x4);
+	FX_REGISTER_TOKEN(min10float2x4);
+	FX_REGISTER_TOKEN(min10float3x3);
+	FX_REGISTER_TOKEN(min16int);
+	FX_REGISTER_TOKEN(min16int2);
+	FX_REGISTER_TOKEN(min16int3);
+	FX_REGISTER_TOKEN(min16int4);
+	FX_REGISTER_TOKEN(min12int);
+	FX_REGISTER_TOKEN(min12int2);
+	FX_REGISTER_TOKEN(min12int3);
+	FX_REGISTER_TOKEN(min12int4);
+	FX_REGISTER_TOKEN(min16uint);
+	FX_REGISTER_TOKEN(min16uint2);
+	FX_REGISTER_TOKEN(min16uint3);
+	FX_REGISTER_TOKEN(min16uint4);
 
 	FX_REGISTER_TOKEN(inout);
 	FX_REGISTER_TOKEN(asm);
@@ -509,10 +541,7 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(cbuffer);
 	FX_REGISTER_TOKEN(PER_BATCH);
 	FX_REGISTER_TOKEN(PER_INSTANCE);
-	FX_REGISTER_TOKEN(PER_FRAME);
 	FX_REGISTER_TOKEN(PER_MATERIAL);
-	FX_REGISTER_TOKEN(PER_LIGHT);
-	FX_REGISTER_TOKEN(PER_SHADOWGEN);
 	FX_REGISTER_TOKEN(SKIN_DATA);
 	FX_REGISTER_TOKEN(INSTANCE_DATA);
 
@@ -689,6 +718,8 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(GatherGreen);
 	FX_REGISTER_TOKEN(GatherBlue);
 	FX_REGISTER_TOKEN(GatherAlpha);
+
+	FX_REGISTER_TOKEN($AutoGS_MultiRes);
 
 	FXMacroItor it;
 	for (it = sStaticMacros.begin(); it != sStaticMacros.end(); it++)
@@ -1605,7 +1636,7 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 		case eT_if_2:
 		case eT_ifdef_2:
 		case eT_ifndef_2:
-			if ((nPass == 0 && !bFirst) || (nPass == 1 && bFirst))
+			if (nPass != 2 && ((nPass == 0 && !bFirst) || (nPass == 1 && bFirst)))
 			{
 				if (nPass == 1)
 				{
@@ -2142,22 +2173,48 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 				// DX11 stuff
 				uint32 nCur = m_CurFrame.m_nCurToken + 1;
 				uint32 nCount = 0;
-				while (nFnRet == eT_br_sq_1)
+
+				while (true)
 				{
-					nCount++;
-					nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
-					if (nLastTok > 0)
+					switch (nFnRet)
 					{
+					case eT_br_sq_1: 
+						nCount++;
+						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
+						if (nLastTok < 0)
+						{
+							Warning("Unmatched [");
+							assert(0);
+							nLastTok = nCur;
+						}
 						nLastTok++;
 						nFnRet = pTokens[nLastTok];
-						if (nFnRet == eT_skip)
-						{
-							pTokens[nLastTok + 1] = eT_skip;
-							nLastTok += 2;
-							nFnRet = pTokens[nLastTok];
-						}
 						nCur = nLastTok + 1;
+						continue;
+
+					case eT_skip_1:
+						nCount++;
+						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_skip_2);
+						if (nLastTok < 0)
+						{
+							Warning("Unmatched #skip_(");
+							assert(0);
+							nLastTok = nCur;
+						}
+						nLastTok++;
+						nFnRet = pTokens[nLastTok];
+						nCur = nLastTok + 1;
+						continue;
+
+					case eT_skip:
+						pTokens[nLastTok + 1] = eT_skip;
+						nLastTok += 2;
+						nFnRet = pTokens[nLastTok];
+						nCur = nLastTok + 1;
+						continue;
 					}
+
+					break;
 				}
 				nFnName = pTokens[nLastTok + 1];
 				//const char *szFn = GetString(nFnName);
@@ -3094,6 +3151,7 @@ void CParserBin::SetupFeatureDefines()
 	}
 
 #if defined(FEATURE_SVO_GI)
-	AddMacro(CParserBin::GetCRC32("FEATURE_SVO_GI"), nEnable, 1, 0, m_StaticMacros);
+	if (m_nPlatform == SF_D3D11 || m_nPlatform == SF_DURANGO || m_nPlatform == SF_ORBIS)
+		AddMacro(CParserBin::GetCRC32("FEATURE_SVO_GI"), nEnable, 1, 0, m_StaticMacros);
 #endif
 }

@@ -15,6 +15,7 @@
 #include "ParticleComponent.h"
 #include "ParticleEffect.h"
 #include "ParticleFeature.h"
+#include "Features/FeatureMotion.h"
 
 CRY_PFX2_DBG
 
@@ -29,8 +30,14 @@ EParticleDataType PDT(EPDT_NormalAge, float);
 EParticleDataType PDT(EPDT_LifeTime, float);
 EParticleDataType PDT(EPDT_InvLifeTime, float);
 EParticleDataType PDT(EPDT_Random, float);
+
 EParticleDataType PDT(EPVF_Position, float, 3);
 EParticleDataType PDT(EPVF_Velocity, float, 3);
+EParticleDataType PDT(EPQF_Orientation, float, 4);
+EParticleDataType PDT(EPVF_AngularVelocity, float, 3);
+EParticleDataType PDT(EPVF_LocalPosition, float, 3);
+EParticleDataType PDT(EPVF_LocalVelocity, float, 3);
+EParticleDataType PDT(EPQF_LocalOrientation, float, 4);
 
 
 
@@ -252,6 +259,16 @@ uint CParticleComponent::GetNumFeatures(EFeatureType type) const
 	return count;
 }
 
+CParticleFeature* CParticleComponent::GetCFeatureByType(const SParticleFeatureParams* pSearchParams) const
+{
+	for (auto& pFeature : m_features)
+	{
+		if (pFeature->IsEnabled() && &pFeature->GetFeatureParams() == pSearchParams)
+			return pFeature.get();
+	}
+	return nullptr;
+}
+
 void CParticleComponent::AddToUpdateList(EUpdateList list, CParticleFeature* pFeature)
 {
 	if (std::find(m_updateLists[list].begin(), m_updateLists[list].end(), pFeature) != m_updateLists[list].end())
@@ -326,9 +343,36 @@ void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleCompo
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
+		const bool isGpuParticles = (pRuntime->GetGpuRuntime() != nullptr);
+
 		for (auto& it : GetUpdateList(EUL_Render))
-			it->Render(pEmitter, pRuntime, this, renderContext);
+			it->Render(pEmitter, pRuntime, this, renderContext);		
+		
+		if (!GetUpdateList(EUL_RenderDeferred).empty() && !isGpuParticles)
+		{
+			CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
+			CParticleComponentRuntime* pCpuRuntime = static_cast<CParticleComponentRuntime*>(pRuntime);
+			jobManager.AddDeferredRender(pCpuRuntime, renderContext);
+		}
 	}
+}
+
+void CParticleComponent::RenderDeferred(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	for (auto& it : GetUpdateList(EUL_RenderDeferred))
+		it->Render(pEmitter, pRuntime, this, renderContext);
+}
+
+bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
+{
+	for (auto& pFeature : m_features)
+	{
+		if (pFeature->IsEnabled() && !pFeature->CanMakeRuntime(pEmitter))
+			return false;
+	}
+	return true;
 }
 
 gpu_pfx2::IParticleFeatureGpuInterface** CParticleComponent::GetGpuUpdateList(EUpdateList list, int& size) const
@@ -368,6 +412,10 @@ void CParticleComponent::PreCompile()
 	AddParticleData(EPDT_InvLifeTime);
 	AddParticleData(EPDT_LifeTime);
 	AddParticleData(EPDT_State);
+
+	// add default motion feature
+	const bool hasMotion = GetNumFeatures(EFT_Motion) != 0;
+	m_defaultMotionFeature.reset(hasMotion ? nullptr : new CFeatureMotionPhysics());
 }
 
 void CParticleComponent::ResolveDependencies()
@@ -397,6 +445,8 @@ void CParticleComponent::Compile()
 			it->AddToComponent(this, &m_componentParams);
 		}
 	}
+	if (m_defaultMotionFeature)
+		m_defaultMotionFeature->AddToComponent(this, &m_componentParams);
 }
 
 void CParticleComponent::FinalizeCompile()
@@ -431,10 +481,36 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 
 void CParticleComponent::SetName(const char* name)
 {
-	if (m_pEffect)
-		m_name = m_pEffect->MakeUniqueName(m_componentId, name);
-	else
+	if (!m_pEffect)
+	{
 		m_name = name;
+		return;
+	}
+
+	string oldName = m_name;
+
+	m_name = m_pEffect->MakeUniqueName(m_componentId, name);
+
+	// #PFX2_TODO - not the best solution but needed for 5.3. Deprecate after SecondGen is reimplemented using UIDs
+	const uint numComponents = m_pEffect->GetNumComponents();
+	for (uint componentIdx = 0; componentIdx < numComponents; ++componentIdx)
+	{
+		IParticleComponent* pComponent = m_pEffect->GetComponent(componentIdx);
+		const uint numFeatures = pComponent->GetNumFeatures();
+		for (uint featureIdx = 0; featureIdx < numFeatures; ++featureIdx)
+		{
+			IParticleFeature* pFeature = pComponent->GetFeature(featureIdx);
+			const uint numConnectors = pFeature->GetNumConnectors();
+			for (uint connectorIdx = 0; connectorIdx < numConnectors; ++connectorIdx)
+			{
+				if (strcmp(pFeature->GetConnectorName(connectorIdx), oldName.c_str()) == 0)
+				{
+					pFeature->DisconnectFrom(oldName);
+					pFeature->ConnectTo(m_name.c_str());
+				}
+			}
+		}
+	}
 }
 
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");

@@ -57,6 +57,10 @@ void CStatoscopeTextureStreamingIntervalGroup::OnCreatedStreamedTexture(void* pH
 	}
 }
 
+void CStatoscopeTextureStreamingIntervalGroup::OnUploadedStreamedTexture(void* pHandle)
+{
+}
+
 void CStatoscopeTextureStreamingIntervalGroup::OnDestroyedStreamedTexture(void* pHandle)
 {
 	StatoscopeDataWriter::EventEndInterval* pEv = GetWriter()->BeginEvent<StatoscopeDataWriter::EventEndInterval>();

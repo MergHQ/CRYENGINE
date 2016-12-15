@@ -386,6 +386,10 @@ public:
 		assert(x < arrTerrainNode.m_nSize && y < arrTerrainNode.m_nSize);
 	#endif
 #endif
+
+		if (m_arrSecInfoPyramid.IsEmpty() || m_arrSecInfoPyramid[nSID].IsEmpty())
+			return nullptr;
+
 		return m_arrSecInfoPyramid[nSID][0][xu >> m_nUnitsToSectorBitShift][yu >> m_nUnitsToSectorBitShift];
 	}
 	ILINE CTerrainNode* GetSecInfoUnits(int xu, int yu, int nUnitsToSectorBitShift, int nSID)

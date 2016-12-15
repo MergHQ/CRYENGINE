@@ -367,21 +367,16 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 			return false;
 		}
 
-		IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
 		if (ser.IsWriting())
 		{
-			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
+			if (!GetEntity()->GetPhysicalEntity() || GetEntity()->GetPhysicalEntity()->GetType() != type)
 			{
 				gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot(ser, type, 0);
 				return true;
 			}
 		}
-		else if (!pEPP)
-		{
-			return false;
-		}
 
-		pEPP->SerializeTyped(ser, type, pflags);
+		GetEntity()->PhysicsNetSerializeTyped(ser, type, pflags);
 	}
 
 	if (aspect == ASPECT_DETONATION)
@@ -455,7 +450,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	LoadGeometry();
 	Physicalize();
 
-	IEntityRenderProxy* pProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRender* pProxy = pEntity->GetRenderInterface();
 	if (pProxy && pProxy->GetRenderNode())
 	{
 		pProxy->GetRenderNode()->SetViewDistRatio(255);
@@ -1388,7 +1383,7 @@ void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 #if !defined(_RELEASE)
 						if (g_pGameCVars->i_debug_projectiles > 2)
 						{
-							IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+							IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 							pDebug->Begin("CProjectile::UpdateWhizSound", true);
 							pDebug->AddCone(soundPos, dir, 0.1f, 1.0f, ColorF(0.0f, 0.0f, 1.0f, 1.0f), 5.0f);
 							pDebug->AddLine(m_last, pos, ColorF(0.0f, 0.0f, 1.0f, 1.0f), 5.0f);
@@ -1493,16 +1488,13 @@ IParticleEffect* CProjectile::GetCachedEffect(const char* effectName) const
 }
 
 //------------------------------------------------------------------------
-IEntityAudioProxy* CProjectile::GetAudioProxy()
+IEntityAudioComponent* CProjectile::GetAudioProxy()
 {
-	IEntityAudioProxy* pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (!pIEntityAudioProxy)
-		pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO)).get();
+	assert(pIEntityAudioComponent);
 
-	assert(pIEntityAudioProxy);
-
-	return pIEntityAudioProxy;
+	return pIEntityAudioComponent;
 }
 
 void CProjectile::FlashbangEffect(const SFlashbangParams* flashbang)
@@ -1576,8 +1568,6 @@ void CProjectile::Ricochet(EventPhysCollision* pCollision)
 		return;
 
 	f32 cosine = dir.Dot(-pCollision->n);
-	if (cosine > 1.0f) cosine = 1.0f;
-	if (cosine < -1.0f) cosine = -1.0f;
 	float angle = RAD2DEG(fabs_tpl(acos_tpl(cosine)));
 	if (angle < 10.0f)
 		return;
@@ -1905,7 +1895,7 @@ bool CProjectile::CanCollisionsDamageTarget(IEntity* pTarget) const
 	if (pTarget)
 	{
 		bool isOwner = pTarget->GetId() == m_ownerId || pTarget->GetId() == GetEntityId();
-		bool isActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pTarget->GetId()) != 0;
+		bool isActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pTarget->GetId()) != 0;
 		const SCollisionParams* pCollisionParams = m_pAmmoParams->pCollision;
 		return !isOwner && isActor &&
 		       pCollisionParams && ((pCollisionParams->damageScale * pCollisionParams->damageLimit) != 0.0f); // Damage limit or damage scale of 0.0f won't cause any damage, so skip it
@@ -2143,7 +2133,7 @@ bool CProjectile::ProximityDetector_SP(float proxyRadius)
 	query.box.max = proxyCenter + Vec3(proxyRadius, proxyRadius, proxyRadius);
 	gEnv->pEntitySystem->QueryProximity(query);
 
-	CActor* pOwnerActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_ownerId));
+	CActor* pOwnerActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(m_ownerId));
 	if (pOwnerActor && pOwnerActor->IsDead())
 		return false;
 

@@ -4,7 +4,7 @@
 #define _DeviceManager_D3D11_NVAPI_H_
 
 #if defined(USE_NV_API)
-	#include <NVAPI/nvapi.h>
+	#include NV_API_HEADER
 #endif
 
 #endif

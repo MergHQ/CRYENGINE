@@ -196,6 +196,21 @@ DECLARE_SHARED_POINTERS(IAnimationPoseModifier);
 
 //
 
+struct IAnimationPoseModifierSetup :
+	public IAnimationSerializable
+{
+	CRYINTERFACE_DECLARE(IAnimationPoseModifierSetup, 0x59b4f3ae61974bee, 0xba60d361b7975e69)
+
+	// <interfuscator:shuffle>
+	virtual IAnimationPoseModifier* GetEntry(int index) = 0;
+	virtual int GetEntryCount() = 0;
+	// </interfuscator:shuffle>
+};
+
+DECLARE_SHARED_POINTERS(IAnimationPoseModifierSetup);
+
+//
+
 struct IAnimationOperatorQueue :
 	public IAnimationPoseModifier
 {

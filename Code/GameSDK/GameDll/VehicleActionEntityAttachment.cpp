@@ -189,7 +189,7 @@ bool CVehicleActionEntityAttachment::DetachEntity()
 
 	if (IEntity* pEntity = pEntitySystem->GetEntity(m_entityId))
 	{
-		IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+		IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 		assert(pVehicleSystem);
 
 		if (IVehicle* pVehicle = pVehicleSystem->GetVehicle(m_entityId))

@@ -1,0 +1,11 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+SUBFOLDERS =	[
+	'Core',
+	'STDEnv'
+	]
+	
+def build(bld):
+	# Recursive into all sub projects
+	bld.recurse(SUBFOLDERS)
+	

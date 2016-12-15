@@ -1,0 +1,64 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#pragma once
+
+#include <QWidget>
+
+class QFilteringPanel;
+class QTreeView;
+class QAttributeFilterProxyModel;
+class QToolButton;
+class QItemSelection;
+class QPopupWidget;
+
+class CDictionaryWidget;
+class CAbstractDictionaryEntry;
+
+namespace CrySchematycEditor {
+
+class CComponentItem;
+class CAbstractComponentsModel;
+
+class CComponentsWidget : public QWidget
+{
+	Q_OBJECT;
+
+public:
+	CComponentsWidget(QWidget* pParent = nullptr);
+	~CComponentsWidget();
+
+	CAbstractComponentsModel* GetModel() const { return m_pModel; }
+	void                      SetModel(CAbstractComponentsModel* pModel);
+
+Q_SIGNALS:
+	void SignalComponentClicked(CComponentItem& component);
+	void SignalComponentDoubleClicked(CComponentItem& component);
+
+private:
+	void         OnClicked(const QModelIndex& index);
+	void         OnDoubleClicked(const QModelIndex& index);
+	void         OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
+	void         OnContextMenu(const QPoint& point);
+	void         OnAddButton(bool checked);
+
+	void         OnAddComponent(CAbstractDictionaryEntry& entry);
+
+	bool         OnDeleteEvent();
+	bool         OnCopyEvent();
+	bool         OnPasteEvent();
+
+	virtual void customEvent(QEvent* pEvent) override;
+
+private:
+	CAbstractComponentsModel*   m_pModel;
+
+	QFilteringPanel*            m_pFilter;
+	QTreeView*                  m_pComponentsList;
+	QAttributeFilterProxyModel* m_pFilterProxy;
+	QToolButton*                m_pAddButton;
+	QPopupWidget*               m_pContextMenu;
+	CDictionaryWidget*          m_pContextMenuContent;
+};
+
+}

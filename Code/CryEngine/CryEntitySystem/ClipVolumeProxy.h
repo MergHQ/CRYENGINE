@@ -7,7 +7,7 @@
 
 #include "EntitySystem.h"
 #include <CryEntitySystem/IEntityClass.h>
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryNetwork/ISerialize.h>
 #include <CryRenderer/IRenderMesh.h>
 
@@ -15,44 +15,43 @@
 // Description:
 //    Proxy for storage of entity attributes.
 //////////////////////////////////////////////////////////////////////////
-class CClipVolumeProxy : public IClipVolumeProxy
+class CEntityComponentClipVolume : public IClipVolumeComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentClipVolume,IClipVolumeComponent,"CEntityComponentClipVolume",0x8065253292454CD7,0xA9062E7839EBB7A4);
+
+	CEntityComponentClipVolume();
+	virtual ~CEntityComponentClipVolume();
+
 public:
-	CClipVolumeProxy();
-
-	// IComponent interface implementation.
+	// IEntityComponent.h interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override {};
+	virtual void Initialize() override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
-	// IEntityProxy
+	// IEntityComponent
 	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() override                             { return ENTITY_PROXY_CLIPVOLUME; }
-	virtual void         Release() override;
-	virtual void         Done() override                                {};
-	virtual void         Update(SEntityUpdateContext& context) override {};
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNodeXML, bool loading) override;
-	virtual void         Serialize(TSerialize serialize) override {};
-	virtual bool         NeedSerialize() override                 { return false; }
-	virtual bool         GetSignature(TSerialize signature) override;
+	virtual EEntityProxy GetProxyType() const override                       { return ENTITY_PROXY_CLIPVOLUME; }
+	virtual void         Release() final { delete this; };
+	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override;
+	virtual void         GameSerialize(TSerialize serialize) override {};
+	virtual bool         NeedGameSerialize() override                 { return false; }
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;
 	//////////////////////////////////////////////////////////////////////////
 
+	//~IClipVolumeComponent
+	virtual void         SetGeometryFilename(const char *sFilename) final;
 	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) override;
 	virtual IClipVolume* GetClipVolume() const override { return m_pClipVolume; }
 	virtual IBSPTree3D*  GetBspTree() const override    { return m_pBspTree; }
 	virtual void         SetProperties(bool bIgnoresOutdoorAO) override;
+	//~IClipVolumeComponent
 
 private:
 	bool LoadFromFile(const char* szFilePath);
 
 private:
-	// Host entity.
-	IEntity* m_pEntity;
-
 	// Engine clip volume
 	IClipVolume* m_pClipVolume;
 
@@ -69,6 +68,6 @@ private:
 	uint32 m_nFlags;
 };
 
-DECLARE_SHARED_POINTERS(CClipVolumeProxy)
+DECLARE_SHARED_POINTERS(CEntityComponentClipVolume)
 
 #endif //__CLIPVOLUMEPROXY_H__

@@ -10,6 +10,7 @@ import copy
 import re	
 import itertools
 from collections import Iterable
+from collections import Counter
 from waflib import Context
 import collections
 
@@ -327,6 +328,7 @@ def LoadFileLists(ctx, kw):
 	qt_source_files					= []
 	resource_files					= []
 	swig_files							= []
+	protobuf_files					= []
 	other_files							= []
 	uber_file_relative_list	= []
 	
@@ -408,6 +410,9 @@ def LoadFileLists(ctx, kw):
 				elif file.endswith('.i') or file.endswith('.swig'):
 					swig_files										+= [ file ]
 					
+				elif file.endswith('.proto'):
+					protobuf_files								+= [ file ]
+					
 				else:
 					other_files										+= [ file ]
 					
@@ -425,7 +430,7 @@ def LoadFileLists(ctx, kw):
 		# Compute final source list based on platform	
 		if platform == 'project_generator' or ctx.options.file_filter != "":			
 			# Collect all files plus uber files for project generators and when doing a single file compilation
-			kw['source'] = uber_file_relative_list + source_files + qt_source_files + darwin_source_files + java_source_files + header_files + resource_files + swig_files + other_files
+			kw['source'] = uber_file_relative_list + source_files + qt_source_files + darwin_source_files + java_source_files + header_files + resource_files + swig_files + protobuf_files + other_files
 			if platform == 'project_generator' and pch_file != '':
 				kw['source'] += [ pch_file ] # Also collect PCH for project generators
 
@@ -437,10 +442,10 @@ def LoadFileLists(ctx, kw):
 			# Regular compilation path
 			if ctx.is_option_true('use_uber_files'):
 				# Only take uber files when uber files are enabled and files not using uber files
-				kw['source'] = uber_file_relative_list + no_uber_file_files + qt_source_files + swig_files
+				kw['source'] = uber_file_relative_list + no_uber_file_files + qt_source_files + swig_files + protobuf_files
 			else:
 				# Fall back to pure list of source files
-				kw['source'] = source_files + qt_source_files + swig_files
+				kw['source'] = source_files + qt_source_files + swig_files + protobuf_files
 				
 			kw['header_source'] = header_files
 				
@@ -510,9 +515,26 @@ def ConfigureModuleUsers(ctx, kw):
 		if not lib  in ctx.cry_module_users:
 			ctx.cry_module_users[lib] = []
 		ctx.cry_module_users[lib] += [ kw['target'] ]	
-			
 	
-def LoadAddionalFileSettings(ctx, kw):
+def ConfigureOutputFileOverrideModules(ctx,kw):
+	"""
+	Helper function to maintain a list of modules that have a different output_file_name than their target name
+	"""
+	if not hasattr(ctx, 'cry_module_output_file_name_overrides'):
+		ctx.cry_module_output_file_name_overrides = {}
+		
+	if kw['output_file_name']:
+		out_file_name = kw['output_file_name'][0] if isinstance(kw['output_file_name'],list) else kw['output_file_name']
+		ctx.cry_module_output_file_name_overrides[kw['target']] =  out_file_name	
+
+def AddModuleToPackage(ctx, kw):
+	# Package the output of the following module (only used for android right now)
+	if not hasattr(ctx, 'deploy_modules_to_package'):
+		ctx.deploy_modules_to_package = []
+
+	ctx.deploy_modules_to_package += [kw['target']]
+	
+def LoadAdditionalFileSettings(ctx, kw):
 	"""
 	Load all settings from the addional_settings parameter, and store them in a lookup map
 	"""
@@ -560,13 +582,45 @@ def LoadAddionalFileSettings(ctx, kw):
 			# All fine, add file name to dictonary
 			kw['file_specifc_settings'][file_abspath] = setting
 			setting['source'] = []
+			
+def ApplyMonolithicBuildSettings(ctx, kw):	
 
+	# Add collected settings to link task	
+	kw['use']  += ctx.monolitic_build_settings['use']
+	kw['use_module']  += ctx.monolitic_build_settings['use_module']	
+	kw['lib']  += ctx.monolitic_build_settings['lib']
+	kw['libpath']    += ctx.monolitic_build_settings['libpath']
+	kw['linkflags']  += ctx.monolitic_build_settings['linkflags']
+	
+	# Add game specific files
+	prefix = kw['project_name'] + '_'
+	kw['use']  += ctx.monolitic_build_settings[prefix + 'use']
+	kw['use_module'] += ctx.monolitic_build_settings[prefix + 'use_module']
+	kw['lib']  += ctx.monolitic_build_settings[prefix + 'lib']
+	kw['libpath']    += ctx.monolitic_build_settings[prefix + 'libpath']
+	kw['linkflags']  += ctx.monolitic_build_settings[prefix + 'linkflags']
+	
+	kw['use']  = _preserved_order_remove_duplicates(kw['use'])
+	kw['use_module'] = _preserved_order_remove_duplicates(kw['use_module'])
+	kw['lib']  = _preserved_order_remove_duplicates(kw['lib'])
+	kw['libpath']   = _preserved_order_remove_duplicates(kw['libpath'])
+	kw['linkflags'] = _preserved_order_remove_duplicates(kw['linkflags'])
+	
 @conf
 def PostprocessBuildModules(ctx, *k, **kw):
 	if hasattr(ctx, '_processed_modules'):
 		return
 	ctx._processed_modules = True
 	platform = ctx.env['PLATFORM']
+	
+	if not ctx.env['PLATFORM'] == 'project_generator' and not ctx.cmd == 'generate_uber_files' and not ctx.cmd == 'configure':	
+		for (target_module, kw_target_module) in target_modules.items():
+			if not BuildTaskGenerator(ctx, kw_target_module):
+				continue
+			# Configure the modules users for static libraries
+			if _is_monolithic_build(ctx, kw_target_module['target']) and kw_target_module.get('is_monolithic_host', None):
+				ApplyMonolithicBuildSettings(ctx, kw_target_module)
+				ConfigureModuleUsers(ctx,kw_target_module)
 
 	for (target_module, kw_target_module) in target_modules.items():
 		target = kw_target_module['target']
@@ -620,10 +674,14 @@ def ConfigureTaskGenerator(ctx, kw):
 	
 	LoadFileLists(ctx, kw)
 	
-	LoadAddionalFileSettings(ctx, kw)
+	LoadAdditionalFileSettings(ctx, kw)
 
 	# Configure the modules users for static libraries
-	ConfigureModuleUsers(ctx,kw)
+	if not _is_monolithic_build(ctx, target):
+		ConfigureModuleUsers(ctx,kw)
+	
+	# Configure modules that have a different module output_file_name than their target name
+	ConfigureOutputFileOverrideModules(ctx,kw)
 		
 	# Handle meta includes for WinRT
 	for meta_include in kw.get('meta_includes', []):
@@ -663,10 +721,15 @@ def MonolithicBuildModule(ctx, *k, **kw):
 			ctx.monolitic_build_settings[key] = []
 		ctx.monolitic_build_settings[key] += values
 		
-	_append(prefix + 'use', 			[ kw['target'] ] )
-	_append(prefix + 'lib', 				kw['lib'] )
-	_append(prefix + 'libpath', 		kw['libpath'] )
-	_append(prefix + 'linkflags', 	kw['linkflags'] )
+	_append(prefix + 'use',         [ kw['target']] + kw['use'] )
+	_append(prefix + 'use_module',    kw['use_module']  )
+	_append(prefix + 'lib',           kw['lib'] )
+	_append(prefix + 'libpath',       kw['libpath'] )
+	_append(prefix + 'linkflags',     kw['linkflags'] )
+	
+	# Remove use and use_module as passed on to the monolithic parent_uber_file
+	kw['use'] = []
+	kw['use_module'] = []	
 
 	# Adjust own task gen settings
 	# When compiling as monolithic, set this define so modules are aware of this
@@ -691,7 +754,7 @@ def BuildTaskGenerator(ctx, kw):
 	spec = ctx.options.project_spec
 	platform = ctx.env['PLATFORM']
 	configuration = ctx.GetConfiguration(target)
-	
+			
 	if ctx.cmd == 'configure':
 		return False 		# Dont build during configure
 		
@@ -706,6 +769,9 @@ def BuildTaskGenerator(ctx, kw):
 	# Always include all projects when generating project for IDEs
 	if ctx.env['PLATFORM'] == 'project_generator':
 		return True
+	
+	if not spec:
+		return False
 			
 	if target in ctx.spec_modules():
 		return True		# Skip project is it is not part of the current spec
@@ -770,27 +836,27 @@ def CryEngineModule(ctx, *k, **kw):
 
 	if not BuildTaskGenerator(ctx, kw):
 		return
-
-	if _is_monolithic_build(ctx, kw['target']) and not kw['target'].startswith('AndroidLauncher'): # For monolithc builds, simply collect all build settings
-		MonolithicBuildModule(ctx, getattr(ctx, 'game_project', None), *k, **kw)
-		return
 	
-	# Temp monolothinc build hack for android
-	if 'android' in ctx.env['PLATFORM']:
-		kw['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-		kw['features'] += [ 'apply_monolithic_build_settings' ]
-		active_project_name = ctx.spec_game_projects(ctx.game_project)
-		
-		if len (active_project_name) != 1:
-			Logs.warn("Multiple project names found: %s, but only one is supported for android - using '%s'." % (active_project_name, active_project_name[0]))
-			active_project_name = active_project_name[0]
+	if _is_monolithic_build(ctx, kw['target']): # For monolithc builds, simply collect all build settings
+		if not kw.get('is_package_host', False):	
+			MonolithicBuildModule(ctx, getattr(ctx, 'game_project', None), *k, **kw)
+			return
+		else:
+			kw['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
+			kw['is_monolithic_host'] = True
+			active_project_name = ctx.spec_game_projects(ctx.game_project)
 			
-		kw['project_name'] = "".join(active_project_name)
-	
+			if len (active_project_name) != 1:
+				Logs.warn("Multiple project names found: %s, but only one is supported for android - using '%s'." % (active_project_name, active_project_name[0]))
+				active_project_name = active_project_name[0]
+				
+			kw['project_name'] = "".join(active_project_name)
+		
 	kw['features'] 			+= [ 'generate_rc_file' ]		# Always Generate RC files for Engine DLLs
 	if ctx.env['PLATFORM'] == 'darwin_x64':
 		kw['mac_bundle'] 		= True										# Always create a Mac Bundle on darwin	
 
+	AddModuleToPackage(ctx, kw)
 	ctx.shlib(*k, **kw)
 
 @conf
@@ -804,6 +870,7 @@ def CreateDynamicModule(ctx, *k, **kw):
 	if not BuildTaskGenerator(ctx, kw):
 		return
 
+	AddModuleToPackage(ctx, kw)
 	ctx.shlib(*k, **kw)
 
 def CreateStaticModule(ctx, *k, **kw):
@@ -836,6 +903,10 @@ def CryEngineStaticModule(ctx, *k, **kw):
 	"""	
 	# Initialize the Task Generator
 	InitializeTaskGenerator(ctx, kw)
+	
+	# Static modules are still valid module users in monolithic builds 	
+	ConfigureModuleUsers(ctx, kw)
+	
 	set_cryengine_flags(ctx, kw)
 
 	ConfigureTaskGenerator(ctx, kw)
@@ -845,7 +916,6 @@ def CryEngineStaticModule(ctx, *k, **kw):
 	
 ###############################################################################
 @feature('create_static_library')
-@before_method('apply_monolithic_build_settings')
 @before_method('process_source')
 def tg_create_static_library(self):
 	"""
@@ -874,7 +944,7 @@ def tg_create_static_library(self):
 		if depth > 100:
 			fatal('Circular dependency introduced, including at least module' + self.target)
 		if len(node_users) == 0:
-			if not node in out:
+			if not node in out and depth != 1: #depth != 1: Do not build a static library that is not referenced by anything
 				out += [ node ]
 		else:
 			for user in node_users:
@@ -1025,6 +1095,8 @@ def CryLauncher(ctx, *k, **kw):
 	else: # Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
 		
+	exectuable_name_clash = Counter( [ ctx.get_executable_name(project) for project in active_projects ] )
+		
 	orig_target = kw['target']
 	counter = 1
 	num_active_projects = len(active_projects)
@@ -1051,13 +1123,22 @@ def CryLauncher(ctx, *k, **kw):
 		# Setup values for Launcher Projects
 		kw_per_launcher['features'] 			+= [ 'generate_rc_file' ]	
 		kw_per_launcher['is_launcher'] 			= True
+		kw_per_launcher['is_package_host'] 		= True
 		kw_per_launcher['resource_path'] 		= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 		= project
-		kw_per_launcher['output_file_name'] 	= ctx.get_executable_name(project)		
+		executable_name = ctx.get_executable_name(project)
+		
+		# Avoid two project with the same executable name to link to the same output_file_name simultaneously. 
+		# Two link.exe writing to the same file in parallel does not work.
+		if exectuable_name_clash[executable_name] > 1:
+			Logs.warn('Warning: (%s) : Multiple project resolving to the same executable name:"%s. Using "project name" as "executable name" to avoid multiple linker writing to the same file simultaneously.' % (project, executable_name) )
+			executable_name = project
+			
+		kw_per_launcher['output_file_name'] 	= executable_name
 		
 		if _is_monolithic_build(ctx, kw_per_launcher['target']):	
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
+			kw_per_launcher['is_monolithic_host'] = True
 		
 		ctx.program(*k, **kw_per_launcher)
 		counter += 1
@@ -1088,6 +1169,8 @@ def CryDedicatedServer(ctx, *k, **kw):
 	else: #  Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
 
+	exectuable_name_clash = Counter( [ ctx.get_dedicated_server_executable_name(project) for project in active_projects ] )
+
 	orig_target = kw['target']
 	counter = 1
 	num_active_projects = len(active_projects)
@@ -1114,13 +1197,22 @@ def CryDedicatedServer(ctx, *k, **kw):
 		
 		kw_per_launcher['features'] 					+= [ 'generate_rc_file' ]
 		kw_per_launcher['is_dedicated_server']			= True
+		kw_per_launcher['is_package_host'] 	            = True
 		kw_per_launcher['resource_path'] 				= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 				= project
-		kw_per_launcher['output_file_name'] 			= ctx.get_dedicated_server_executable_name( project )
+		executable_name = ctx.get_dedicated_server_executable_name( project )
+		
+		# Avoid two project with the same executable name to link to the same output_file_name simultaneously. 
+		# Two link.exe writing to the same file in parallel does not work.
+		if exectuable_name_clash[executable_name] > 1:
+			Logs.warn('Warning: (%s) : Multiple project resolving to the same executable name:"%s. Using "project name" as "executable name" to avoid multiple linker writing to the same file simultaneously.' % (project, executable_name) )
+			executable_name = project + '_Server'
+			
+		kw_per_launcher['output_file_name'] 	= executable_name
 		
 		if _is_monolithic_build(ctx, kw_per_launcher['target']):
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
-			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
+			kw_per_launcher['is_monolithic_host'] = True
 
 		ctx.program(*k, **kw_per_launcher)
 		counter += 1
@@ -1220,22 +1312,13 @@ def CryPlugin(ctx, *k, **kw):
 	InitializeTaskGenerator(ctx, kw)	
 
 	# Setup TaskGenerator specific settings	
-	ctx.set_editor_flags(kw)
+	ctx.set_editor_module_flags(kw)
 	
 	SetupRunTimeLibraries(ctx,kw)
 	kw['cxxflags'] += ['/EHsc', '/GR', '/wd4251', '/wd4275']
-	kw['defines']   += [ 'SANDBOX_IMPORTS', 'PLUGIN_EXPORTS', 'EDITOR_COMMON_IMPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
-			
-	# [HACK]: QT Editor conversion	
-	platform = ctx.env['PLATFORM']
-	spec = ctx.options.project_spec
-	configuration = ctx.GetConfiguration(kw['target'])			
-	if platform and not platform == 'project_generator' and not ctx.cmd == 'generate_uber_files' and 'SandboxLegacy' in ctx.spec_modules(spec, platform, configuration):
-		kw['output_sub_folder']  = 'EditorPluginsLegacy' # Override output location
-		kw['use']  +=['SandboxLegacy', 'EditorCommon']
-	else:
-		kw['output_sub_folder']  = 'EditorPlugins'
-		kw['use']  +=['Sandbox', 'EditorCommon']
+	kw['defines']   += [ 'PLUGIN_EXPORTS', 'EDITOR_COMMON_IMPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
+	kw['output_sub_folder']  = 'EditorPlugins'
+	kw['use']  += ['EditorCommon']
 		
 	ConfigureTaskGenerator(ctx, kw)
 		
@@ -1244,39 +1327,17 @@ def CryPlugin(ctx, *k, **kw):
 		
 	ctx.shlib(*k, **kw)
 	
-# [HACK]: QT Editor conversion
-# For EditorQt spec we switch the output_file_name ... the parameter is not respected when the module is "used" by another module
-# Needs fixing
-@feature('c', 'cxx', 'use')
-@after_method('apply_link')
-def override_libname(self):
-
-	# [HACK]: QT Editor conversion
-	platform = self.bld.env['PLATFORM']
-	spec = self.bld.options.project_spec
-	configuration = self.bld.GetConfiguration(self.target)	
-	if platform and not platform == 'project_generator' and not self.bld.cmd == 'generate_uber_files' and 'SandboxLegacy' in self.bld.spec_modules(spec, platform, configuration):
-		link_task = getattr(self, 'link_task', None)
-		link_task.env['LIB'] = [ 'EditorCommonLegacy' if lib == 'EditorCommon' else lib for lib in link_task.env['LIB']]	
-		
 ###############################################################################
 @conf
 def CryPluginModule(ctx, *k, **kw):
 	"""
 	Wrapper for CryEngine Editor Plugins Util dlls, those used by multiple plugins
 	"""
-	# [HACK]: QT Editor conversion	
-	platform = ctx.env['PLATFORM']
-	spec = ctx.options.project_spec
-	configuration = ctx.GetConfiguration(kw['target'])		
-	if platform and not platform == 'project_generator' and not ctx.cmd == 'generate_uber_files' and 'SandboxLegacy' in ctx.spec_modules(spec, platform, configuration) and kw['target'] == 'EditorCommon':
-		kw['output_file_name']  = 'EditorCommonLegacy'
-		
 	# Initialize the Task Generator
 	InitializeTaskGenerator(ctx, kw)	
 
 	# Setup TaskGenerator specific settings	
-	ctx.set_editor_flags(kw)
+	ctx.set_editor_module_flags(kw)
 	SetupRunTimeLibraries(ctx,kw)
 	kw['cxxflags'] += [ '/EHsc', '/GR', '/wd4251', '/wd4275' ]
 	kw['defines']  += [ 'PLUGIN_EXPORTS', 'EDITOR_COMMON_EXPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
@@ -1358,6 +1419,21 @@ def CryPipelineModule(ctx, *k, **kw):
 
 	ctx.shlib(*k, **kw)
 
+###############################################################################
+# Override lib for targets that have a diffent output_file_name than their target name
+@feature('c', 'cxx', 'use')
+@after_method('apply_link')
+def override_libname(self):
+	platform = self.bld.env['PLATFORM']
+	spec = self.bld.options.project_spec
+	configuration = self.bld.GetConfiguration(self.target)	
+	if platform and not platform == 'project_generator' and not self.bld.cmd == 'generate_uber_files':
+		for target_module, target_override in self.bld.cry_module_output_file_name_overrides.iteritems():
+			if target_module in self.bld.spec_modules(spec, platform, configuration):
+				link_task = getattr(self, 'link_task', None)
+				if link_task:
+					link_task.env['LIB'] = [ target_override if lib == target_module else lib for lib in link_task.env['LIB']]
+	
 ###############################################################################
 # Helper function to set Flags based on options
 def ApplyBuildOptionSettings(self, kw):
@@ -1601,9 +1677,9 @@ def ApplySpecSpecificSettings(ctx, kw, platform, configuration, spec):
 
 ###############################################################################		
 def _is_monolithic_build(ctx, target):
-	if ctx.env['PLATFORM'] == 'project_generator':
+	if ctx.env['PLATFORM'] == 'project_generator' or ctx.cmd == 'generate_uber_files' or ctx.cmd == 'configure':
 		return False
-
+		
 	spec = ctx.options.project_spec
 	platform = ctx.env['PLATFORM']
 	configuration = ctx.GetConfiguration(target)		
@@ -1616,27 +1692,6 @@ def _is_monolithic_build(ctx, target):
 		return True
 		
 	return False
-
-@feature('apply_monolithic_build_settings')
-@before_method('process_source')
-def apply_monolithic_build_settings(self):
-	# Add collected settings to link task	
-	self.use  += self.bld.monolitic_build_settings['use']
-	self.lib  += self.bld.monolitic_build_settings['lib']
-	self.libpath    += self.bld.monolitic_build_settings['libpath']
-	self.linkflags  += self.bld.monolitic_build_settings['linkflags']
-	
-	# Add game specific files
-	prefix = self.project_name + '_'
-	self.use  += self.bld.monolitic_build_settings[prefix + 'use']
-	self.lib  += self.bld.monolitic_build_settings[prefix + 'lib']
-	self.libpath    += self.bld.monolitic_build_settings[prefix + 'libpath']
-	self.linkflags  += self.bld.monolitic_build_settings[prefix + 'linkflags']
-	
-	self.use  = _preserved_order_remove_duplicates(self.use)
-	self.lib  = _preserved_order_remove_duplicates(self.lib)
-	self.libpath   = _preserved_order_remove_duplicates(self.libpath)
-	self.linkflags = _preserved_order_remove_duplicates(self.linkflags)
 
 @feature('copy_bin_output_to_all_platform_output_folders')
 @after_method('set_pdb_flags')

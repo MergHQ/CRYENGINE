@@ -61,7 +61,7 @@ CTargetTrackGroup::CTargetTrackGroup(TargetTrackHelpers::ITargetTrackPoolProxy* 
 
 #ifdef TARGET_TRACK_DEBUG
 	m_fLastGraphUpdate = 0.0f;
-	m_pDebugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+	m_pDebugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 	assert(m_pDebugHistoryManager);
 
 	memset(m_bDebugGraphOccupied, 0, sizeof(m_bDebugGraphOccupied));

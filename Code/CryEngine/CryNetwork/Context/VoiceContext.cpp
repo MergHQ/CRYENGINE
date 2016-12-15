@@ -364,7 +364,7 @@ void CVoiceContext::OnObjectEvent(CNetContextState* pState, SNetObjectEvent* pEv
 				{
 					const SDecodingStats& stats = iter->second.m_stats;
 
-					gEnv->pRenderer->Draw2dLabel(100, y, 1, clr, false, "netid:%s minpp:%d maxpp:%d 0-samps:%d skip-samps:%d pending-pkts:%d first:%.8x ctr:%.8x",
+					IRenderAuxText::Draw2dLabel(100, y, 1, clr, false, "netid:%s minpp:%d maxpp:%d 0-samps:%d skip-samps:%d pending-pkts:%d first:%.8x ctr:%.8x",
 					                             iter->first.GetText(),
 					                             stats.MinPendingPackets,
 					                             stats.MaxPendingPackets,
@@ -379,13 +379,13 @@ void CVoiceContext::OnObjectEvent(CNetContextState* pState, SNetObjectEvent* pEv
 
 				y += 30.0f;
 
-				gEnv->pRenderer->Draw2dLabel(100, y, 1, clr, false, "allocated packets: %d", CVoicePacket::GetCount());
+				IRenderAuxText::Draw2dLabel(100, y, 1, clr, false, "allocated packets: %d", CVoicePacket::GetCount());
 
 				y += 30.0f;
 
 				for (size_t i = 0; i < m_voiceGroups.size(); ++i)
 				{
-					gEnv->pRenderer->Draw2dLabel(100, y, 1, clr, false, "VG%d %d players", (int)i, (int)m_voiceGroups[i]->m_objects.size());
+					IRenderAuxText::Draw2dLabel(100, y, 1, clr, false, "VG%d %d players", (int)i, (int)m_voiceGroups[i]->m_objects.size());
 					y += 10.0f;
 					//          if(m_voiceDebug > 1)
 					//          {
@@ -393,7 +393,7 @@ void CVoiceContext::OnObjectEvent(CNetContextState* pState, SNetObjectEvent* pEv
 					//            TObjectIDSet::iterator it = m_voiceGroups[i]->m_objects.begin();
 					//            for(; it != m_voiceGroups[i]->m_objects.end(); ++it)
 					//            {
-					//              gEnv->pRenderer->Draw2dLabel(120, y, 1, clr, false, "%d", *it);
+					//              IRenderAuxText::Draw2dLabel(120, y, 1, clr, false, "%d", *it);
 					//              y+=10.0f;
 					//            }
 					//          }

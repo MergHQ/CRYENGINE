@@ -223,7 +223,7 @@ void CFlowGameEntityNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActIn
 				RegisterEvent();
 			}
 
-			const int frameId = gEnv->pRenderer->GetFrameID(false);
+			const int frameId = gEnv->nMainFrameID;
 			if (frameId != m_lastInitializeFrameId)
 			{
 				m_lastInitializeFrameId = frameId;

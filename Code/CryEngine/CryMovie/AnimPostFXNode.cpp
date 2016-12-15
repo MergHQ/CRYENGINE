@@ -310,7 +310,7 @@ void CAnimPostFXNode::Animate(SAnimContext& animContext)
 			if (useDefaultValue)
 				m_pDescription->m_controlParams[paramIndex]->GetDefault(val);
 			else
-				val = boost::get<bool>(value);
+				val = stl::get<bool>(value);
 
 			gEnv->p3DEngine->SetShadowsGSMCache(val);
 		}
@@ -320,7 +320,7 @@ void CAnimPostFXNode::Animate(SAnimContext& animContext)
 			if (useDefaultValue)
 				m_pDescription->m_controlParams[paramIndex]->GetDefault(val);
 			else
-				val = boost::get<float>(value);
+				val = stl::get<float>(value);
 
 			gEnv->p3DEngine->SetPostEffectParam(m_pDescription->m_controlParams[paramIndex]->m_name.c_str(), val);
 		}
@@ -330,7 +330,7 @@ void CAnimPostFXNode::Animate(SAnimContext& animContext)
 			if (useDefaultValue)
 				m_pDescription->m_controlParams[paramIndex]->GetDefault(val);
 			else
-				val = boost::get<bool>(value);
+				val = stl::get<bool>(value);
 
 			gEnv->p3DEngine->SetPostEffectParam(m_pDescription->m_controlParams[paramIndex]->m_name.c_str(), (val ? 1.f : 0.f));
 		}
@@ -340,7 +340,7 @@ void CAnimPostFXNode::Animate(SAnimContext& animContext)
 			if (useDefaultValue)
 				m_pDescription->m_controlParams[paramIndex]->GetDefault(val);
 			else
-				val = boost::get<Vec4>(value);
+				val = stl::get<Vec4>(value);
 
 			gEnv->p3DEngine->SetPostEffectParamVec4(m_pDescription->m_controlParams[paramIndex]->m_name.c_str(), val);
 		}

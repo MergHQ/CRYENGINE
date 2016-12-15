@@ -371,7 +371,7 @@ static inline bool IsHexDigit(int ch)
 
 void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* Combinations, const char* pCombinations, int nType)
 {
-	COMPILE_TIME_ASSERT(SHADER_LIST_VER != SHADER_SERIALISE_VER);
+	static_assert(SHADER_LIST_VER != SHADER_SERIALISE_VER, "Version mismatch!");
 
 	char str[2048];
 	bool bFromFile = (Combinations == NULL);
@@ -1113,63 +1113,65 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 
 string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const
 {
+	string result;
+
+#define STRICT_MODE		" /Ges"
+#define COMPATIBLE_MODE	" /Gec"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
-	const char* pCompilerOrbis = "ORBIS/V029/DXOrbisShaderCompiler.exe %s %s %s %s";
+	const char* pCompilerOrbis   = "ORBIS/V031/DXOrbisShaderCompiler.exe %s %s %s %s";
+	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
+	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 
-	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
-
-	const char* pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
-
-#define ESSL_VERSION "es310"
+#define ESSL_VERSION   "es310"
 #if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
-#define GLSL_VERSION "450"
+	#define GLSL_VERSION "450"
 #elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
-#define GLSL_VERSION "440"
+	#define GLSL_VERSION "440"
 #elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_43
-#define GLSL_VERSION "430"
+	#define GLSL_VERSION "430"
 #elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_42
-#define GLSL_VERSION "420"
+	#define GLSL_VERSION "420"
 #elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_41
-#define GLSL_VERSION "410"
+	#define GLSL_VERSION "410"
 #elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_31
-#define GLSL_VERSION "310"
+	#define GLSL_VERSION "310"
 #elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_30
-#define GLSL_VERSION "300"
+	#define GLSL_VERSION "300"
 #else
-#error "Shading language revision not defined for this GL version"
+	#error "Shading language revision not defined for this GL version"
 #endif
 
-	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
-	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
+	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
+	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
 
 	if (CRenderer::CV_r_shadersdebug == 3)
 	{
 		// Set debug information
-		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
+		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
-		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
+		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
 	{
-		string result;
+#if defined(CRY_GNM_SHADER_COMPILER_VERSION)
 		if (CParserBin::m_nPlatform == SF_ORBIS)
 		{
-			const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s";
+			const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s --RowMajorMatrixStorage --UpgradeLegacySamplers --DebugHelperFiles";
 
 			static const char* kVsStages[] =
 			{
-				"VS",
-				"LS",
-				"ES",
-				"ES_LDS",
-				"DD",
-				"DDI",
+				"V2P",
+				"V2H",
+				"V2G",
+				"V2L",
+				"C2V2P",
+				"C2I2P",
 				nullptr,
 				nullptr
 			};
@@ -1194,19 +1196,19 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Hull:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "HS", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "H2D", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Domain:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "ES" : "VS", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "D2G" : "D2P", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Geometry:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "GS" : "GS_LDS", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "G2P" : "L2P", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Pixel:
-				result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
+				result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "P", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
 				break;
 			case eHWSC_Compute:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "CS", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "C", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
 				break;
 			default:
 				CRY_ASSERT(false && "Unknown stage");
@@ -1214,39 +1216,50 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 			}
 		}
 		else
+#endif
 		{
 			CRY_ASSERT(false && "PipelineState only supported for GNM backend at this time");
 		}
-
-		CRY_ASSERT(!result.empty());
 		return result;
 	}
 
 #if CRY_PLATFORM_ORBIS
-	return pCompilerOrbis;
+	result = pCompilerOrbis;
 #elif CRY_PLATFORM_DURANGO
-	return pCompilerDurango;
+	result = pCompilerDurango;
 #elif defined(OPENGL_ES) && DXGL_INPUT_GLSL
-	return pCompilerGLES3;
+	result = pCompilerGLES3;
 #elif defined(OPENGL) && DXGL_INPUT_GLSL
-	return pCompilerGL4;
+	result = pCompilerGL4;
 #else
 	if (CParserBin::m_nPlatform == SF_D3D11)
-		return pCompilerD3D11;
+		result = pCompilerD3D11;
 	else if (CParserBin::m_nPlatform == SF_ORBIS)
-		return pCompilerOrbis;
+		result = pCompilerOrbis;
 	else if (CParserBin::m_nPlatform == SF_DURANGO)
-		return pCompilerDurango;
+		result = pCompilerDurango;
 	else if (CParserBin::m_nPlatform == SF_GL4)
-		return pCompilerGL4;
+		result = pCompilerGL4;
 	else if (CParserBin::m_nPlatform == SF_GLES3)
-		return pCompilerGLES3;
+		result = pCompilerGLES3;
 	else
 	{
 		CryFatalError("Compiling shaders for unsupported platform");
-		return "";
+		result = "";
 	}
 #endif
+
+	if (!CRenderer::CV_r_shadersCompileStrict)
+	{
+		result = result.replace("" STRICT_MODE "", "");
+	}
+
+	if (!CRenderer::CV_r_shadersCompileCompatible)
+	{
+		result = result.replace("" COMPATIBLE_MODE "", "");
+	}
+
+	return result;
 }
 
 inline bool sCompareComb(const SCacheCombination& a, const SCacheCombination& b)

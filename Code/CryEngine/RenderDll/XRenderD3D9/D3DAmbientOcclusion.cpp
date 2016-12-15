@@ -15,7 +15,7 @@
 #include "../Common/Textures/TextureHelpers.h"
 
 #if defined(USE_NV_API)
-	#include <NVAPI/nvapi.h>
+	#include NV_API_HEADER
 #endif
 
 #if defined(USE_AMD_EXT)

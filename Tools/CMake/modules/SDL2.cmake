@@ -17,7 +17,7 @@ elseif(LINUX64)
 	set_target_properties(SDL2 PROPERTIES IMPORTED_LOCATION "${SDK_DIR}/SDL2/lib/linux_x64/libSDL2.so")
 	set_target_properties(SDL2 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/SDL2/include/linux")
 
-	deploy_runtime_files(${SDK_DIR}/SDL2/lib/linux_x64/libSDL2.*)
+	deploy_runtime_files(${SDK_DIR}/SDL2/lib/linux_x64/libSDL2*)
 elseif(ANDROID)
 	add_library(SDL2 SHARED IMPORTED GLOBAL)
 	set_target_properties(SDL2 PROPERTIES IMPORTED_LOCATION "${SDK_DIR}/SDL2/lib/android-armeabi-v7a/libSDL2.so")

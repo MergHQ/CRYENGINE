@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "DriverD3D.h"
 #include "D3DRenderAuxGeom.h"
+#include "GraphicsPipeline/StandardGraphicsPipeline.h"
+#include <climits>
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 
@@ -35,11 +37,7 @@ typedef std::vector<vtx_idx>       AuxObjIndexBuffer;
 
 CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	: m_renderer(renderer)
-	, m_pAuxGeomVB(0)
-	, m_pAuxGeomIB(0)
-	, m_pCurVB(0)
-	, m_pCurIB(0)
-	, m_auxGeomSBM()
+	, m_geomPass(false)
 	, m_wndXRes(0)
 	, m_wndYRes(0)
 	, m_aspect(1.0f)
@@ -62,7 +60,7 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 CRenderAuxGeomD3D::~CRenderAuxGeomD3D()
 {
 	ReleaseDeviceObjects();
-	
+
 	//SAFE_RELEASE(m_pAuxGeomShader);
 	// m_pAuxGeomShader released by CShaderMan ???
 	//delete m_pAuxGeomShader;
@@ -78,9 +76,6 @@ void CRenderAuxGeomD3D::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CRenderAuxGeomD3D::ReleaseDeviceObjects()
 {
-	SAFE_RELEASE(m_pAuxGeomVB);
-	SAFE_RELEASE(m_pAuxGeomIB);
-
 	for (uint32 i(0); i < e_auxObjNumLOD; ++i)
 	{
 		m_sphereObj[i].Release();
@@ -92,9 +87,6 @@ void CRenderAuxGeomD3D::ReleaseDeviceObjects()
 int CRenderAuxGeomD3D::GetDeviceDataSize()
 {
 	int nSize = 0;
-
-	nSize += _VertBufferSize(m_pAuxGeomVB);
-	nSize += _IndexBufferSize(m_pAuxGeomIB);
 
 	for (uint32 i = 0; i < e_auxObjNumLOD; ++i)
 	{
@@ -400,6 +392,24 @@ struct SCylinderMeshCreateFunc
 	unsigned int m_sections;
 };
 
+void CRenderAuxGeomD3D::SDrawObjMesh::Release()
+{
+	if( m_pVB != ~0u ) gcpRendD3D->m_DevBufMan.Destroy(m_pVB);
+	if( m_pIB != ~0u ) gcpRendD3D->m_DevBufMan.Destroy(m_pIB);
+
+	m_numVertices = 0;
+	m_numFaces = 0;
+}
+
+int CRenderAuxGeomD3D::SDrawObjMesh::GetDeviceDataSize() const
+{
+	int nSize = 0;
+	nSize += gcpRendD3D->m_DevBufMan.Size(m_pVB);
+	nSize += gcpRendD3D->m_DevBufMan.Size(m_pIB);
+
+	return nSize;
+}
+
 // Generalized CreateMesh function to create any mesh via passed-in functor.
 // The functor needs to provide a CreateMesh function which accepts an
 // AuxObjVertexBuffer and AuxObjIndexBuffer to stored the resulting mesh.
@@ -412,94 +422,36 @@ HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 	meshFunc.CreateMesh(vb, ib);
 
 	// create vertex buffer and copy data
-	HRESULT hr(S_OK);
-	D3D11_BUFFER_DESC BufDescV;
-	ZeroStruct(BufDescV);
-	BufDescV.ByteWidth = vb.size() * sizeof(SAuxObjVertex);
-	BufDescV.Usage = D3D11_USAGE_DEFAULT;
-	BufDescV.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	BufDescV.CPUAccessFlags = 0;
-	BufDescV.MiscFlags = 0;
 
-	D3D11_SUBRESOURCE_DATA InitData;
-	InitData.pSysMem = &vb[0];
-	InitData.SysMemPitch = 0;
-	InitData.SysMemSlicePitch = 0;
-	if (FAILED(hr = m_renderer.GetDevice().CreateBuffer(&BufDescV, &InitData, &mesh.m_pVB)))
+	mesh.m_pVB = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, vb.size() * sizeof(SAuxObjVertex));
+	mesh.m_pIB = gcpRendD3D->m_DevBufMan.Create(BBT_INDEX_BUFFER,  BU_STATIC, ib.size() * sizeof(vtx_idx));
+
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pVB, &vb[0], vb.size() * sizeof(SAuxObjVertex));
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pIB, &ib[0], ib.size() * sizeof(vtx_idx));
+
+
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
 	{
-		assert(SUCCEEDED(hr));
-		return(hr);
+		size_t vbOffset = 0, ibOffset = 0;
+		D3DVertexBuffer* vbAux = gcpRendD3D->m_DevBufMan.GetD3DVB(mesh.m_pVB, &vbOffset);
+		D3DIndexBuffer * ibAux = gcpRendD3D->m_DevBufMan.GetD3DIB(mesh.m_pIB, &ibOffset);
+
+		vbAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
+		ibAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
 	}
-
-	D3D11_BUFFER_DESC BufDescI;
-	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = ib.size() * sizeof(vtx_idx);
-	BufDescI.Usage = D3D11_USAGE_DEFAULT;
-	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	BufDescI.CPUAccessFlags = 0;
-	BufDescI.MiscFlags = 0;
-
-	InitData.pSysMem = &ib[0];
-	InitData.SysMemPitch = 0;
-	InitData.SysMemSlicePitch = 0;
-	if (FAILED(hr = m_renderer.GetDevice().CreateBuffer(&BufDescI, &InitData, &mesh.m_pIB)))
-	{
-		assert(SUCCEEDED(hr));
-		return(hr);
-	}
-
-	#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	mesh.m_pVB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-	mesh.m_pIB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-	#endif
+#endif
 
 	// write mesh info
 	mesh.m_numVertices = vb.size();
 	mesh.m_numFaces = ib.size() / 3;
 
-	return(hr);
+	return S_OK;
 }
 
 HRESULT CRenderAuxGeomD3D::RestoreDeviceObjects()
 {
 	HRESULT hr(S_OK);
 
-	// recreate vertex buffer
-	SAFE_RELEASE(m_pAuxGeomVB);
-
-	D3D11_BUFFER_DESC BufDescV;
-	ZeroStruct(BufDescV);
-	BufDescV.ByteWidth = e_auxGeomVBSize * sizeof(SAuxVertex);
-	BufDescV.Usage = D3D11_USAGE_DYNAMIC;
-	BufDescV.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	BufDescV.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	BufDescV.MiscFlags = 0;
-
-	if (FAILED(hr = m_renderer.GetDevice().CreateBuffer(&BufDescV, 0, &m_pAuxGeomVB)))
-	{
-		assert(0);
-		return(hr);
-	}
-
-	// recreate index buffer
-	SAFE_RELEASE(m_pAuxGeomIB);
-	D3D11_BUFFER_DESC BufDescI;
-	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = e_auxGeomIBSize * sizeof(vtx_idx);
-	BufDescI.Usage = D3D11_USAGE_DYNAMIC;
-	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	BufDescI.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	BufDescI.MiscFlags = 0;
-	if (FAILED(hr = m_renderer.GetDevice().CreateBuffer(&BufDescI, 0, &m_pAuxGeomIB)))
-	{
-		assert(0);
-		return(hr);
-	}
-
-	#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	m_pAuxGeomVB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom"), "Aux Geom");
-	m_pAuxGeomIB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom"), "Aux Geom");
-	#endif
 
 	// recreate aux objects
 	for (uint32 i(0); i < e_auxObjNumLOD; ++i)
@@ -525,220 +477,194 @@ HRESULT CRenderAuxGeomD3D::RestoreDeviceObjects()
 	return(hr);
 }
 
-void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const CAuxGeomCB::EPrimType& primType)
+template<class T = vtx_idx, int size = sizeof(T)*CHAR_BIT> struct indexbuffer_type;
+
+template<class T> struct indexbuffer_type<T, 16> { static const RenderIndexType type = Index16; };
+template<class T> struct indexbuffer_type<T, 32> { static const RenderIndexType type = Index32; };
+
+
+CRenderAuxGeomD3D::CBufferManager::~CBufferManager()
 {
-	assert(CAuxGeomCB::e_PtList == primType || CAuxGeomCB::e_LineList == primType || CAuxGeomCB::e_TriList == primType);
-
-	HRESULT hr(S_OK);
-
-	// bind vertex and index streams and set vertex declaration
-	bool streamsBound = BindStreams(eVF_P3F_C4B_T2F, m_pAuxGeomVB, m_pAuxGeomIB);
-
-	// get aux vertex buffer
-	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
-
-	// determine flags for prim type
-	uint32 d3dNumPrimDivider;
-	ERenderPrimitiveType ePrimType;
-
-	DetermineAuxPrimitveFlags(d3dNumPrimDivider, ePrimType, primType);
-
-	// helpers for DP call
-	uint32 initialVBLockOffset(m_auxGeomSBM.m_curVBIndex);
-	uint32 numVerticesWrittenToVB(0);
-
-	m_renderer.FX_Commit();
-
-	// process each entry
-	for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); it != itEnd; ++it)
-	{
-		// get current push buffer entry
-		const CAuxGeomCB::SAuxPushBufferEntry* curPBEntry(*it);
-
-		// number of vertices to copy
-		uint32 verticesToCopy(curPBEntry->m_numVertices);
-		uint32 verticesCopied(0);
-
-		// stream vertex data
-		while (verticesToCopy > 0)
-		{
-			// number of vertices which fit into current vb
-			uint32 maxVerticesInThisBatch(e_auxGeomVBSize - m_auxGeomSBM.m_curVBIndex);
-
-			// round down to previous multiple of "d3dNumPrimDivider"
-			maxVerticesInThisBatch -= maxVerticesInThisBatch % d3dNumPrimDivider;
-
-			// still enough space to feed data in the current vb
-			if (maxVerticesInThisBatch > 0)
-			{
-				// compute amount of vertices to move in this batch
-				uint32 toCopy(verticesToCopy > maxVerticesInThisBatch ? maxVerticesInThisBatch : verticesToCopy);
-
-				// determine lock flags
-				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
-				if (false != m_auxGeomSBM.m_discardVB)
-				{
-					m_auxGeomSBM.m_discardVB = false;
-					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-
-				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), toCopy * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied]);
-				
-				// update accumulators and buffer indices
-				verticesCopied += toCopy;
-				verticesToCopy -= toCopy;
-
-				m_auxGeomSBM.m_curVBIndex += toCopy;
-				numVerticesWrittenToVB += toCopy;
-			}
-			else
-			{
-				// not enough space in vb for (remainder of) current push buffer entry
-				if (numVerticesWrittenToVB > 0)
-				{
-					// commit batch
-					assert(0 == numVerticesWrittenToVB % d3dNumPrimDivider);
-					if (streamsBound)
-						m_renderer.FX_DrawPrimitive(ePrimType, initialVBLockOffset, numVerticesWrittenToVB);
-				}
-
-				// request a DISCARD lock of vb in the next run
-				m_auxGeomSBM.DiscardVB();
-				initialVBLockOffset = m_auxGeomSBM.m_curVBIndex;
-				numVerticesWrittenToVB = 0;
-			}
-		}
-	}
-
-	if (numVerticesWrittenToVB > 0)
-	{
-		// commit batch
-		assert(0 == numVerticesWrittenToVB % d3dNumPrimDivider);
-
-		if (streamsBound)
-			m_renderer.FX_DrawPrimitive(ePrimType, initialVBLockOffset, numVerticesWrittenToVB);
-	}
+	if( vbAux != ~0u ) gcpRendD3D->m_DevBufMan.Destroy(vbAux);
+	if( ibAux != ~0u ) gcpRendD3D->m_DevBufMan.Destroy(ibAux);
 }
 
-void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const CAuxGeomCB::EPrimType& primType)
+buffer_handle_t CRenderAuxGeomD3D::CBufferManager::update(BUFFER_BIND_TYPE type, const void* data, size_t size)
 {
-	assert(CAuxGeomCB::e_LineListInd == primType || CAuxGeomCB::e_TriListInd == primType);
+	buffer_handle_t buf = gcpRendD3D->m_DevBufMan.Create(type, BU_TRANSIENT, size);//BU_DYNAMIC
 
-	HRESULT hr(S_OK);
+	gcpRendD3D->m_DevBufMan.UpdateBuffer(buf, data, size);
 
-	// bind vertex and index streams and set vertex declaration
-	bool streamsBound = BindStreams(eVF_P3F_C4B_T2F, m_pAuxGeomVB, m_pAuxGeomIB);
-
-	// get aux vertex and index buffer
-	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
-	const CAuxGeomCB::AuxIndexBuffer& auxIndexBuffer(GetAuxIndexBuffer());
-	CAuxGeomCB::AuxIndexBuffer auxIndexBufferJoined(auxIndexBuffer.size());
-
-	// determine flags for prim type
-	uint32 d3dNumPrimDivider;
-	ERenderPrimitiveType ePrimType;
-	DetermineAuxPrimitveFlags(d3dNumPrimDivider, ePrimType, primType);
-
-	// helpers for DP call
-	uint32 initialVBLockOffset(m_auxGeomSBM.m_curVBIndex);
-	uint32 numVerticesWrittenToVB(0);
-	uint32 initialIBLockOffset(m_auxGeomSBM.m_curIBIndex);
-	uint32 numIndicesWrittenToIB(0);
-
-	m_renderer.FX_Commit();
-
-	// process each entry
-	for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); it != itEnd; )
-	{
-		// get current push buffer entry
-		const CAuxGeomCB::SAuxPushBufferEntry* curPBEntry(*it);
-
-		// process a push buffer entry if it can fit at all (otherwise silently skip it)
-		if (e_auxGeomVBSize >= curPBEntry->m_numVertices && e_auxGeomIBSize >= curPBEntry->m_numIndices)
-		{
-			// check if push buffer still fits into current buffer
-			if (e_auxGeomVBSize >= m_auxGeomSBM.m_curVBIndex + curPBEntry->m_numVertices && e_auxGeomIBSize >= m_auxGeomSBM.m_curIBIndex + curPBEntry->m_numIndices)
-			{
-				// move index data of this entry (modify indices to match VB insert location)
-				for (uint32 i(0); i < curPBEntry->m_numIndices; ++i)
-				{
-					// cppcheck-suppress nullPointer
-					auxIndexBufferJoined[curPBEntry->m_indexOffs + i] = numVerticesWrittenToVB + auxIndexBuffer[curPBEntry->m_indexOffs + i];
-				}
-
-				// determine lock vb flags
-				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
-				if (m_auxGeomSBM.m_discardVB)
-				{
-					m_auxGeomSBM.m_discardVB = false;
-					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-
-				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), curPBEntry->m_numVertices * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs]);
-
-				// determine lock ib flags
-				mapFlags = D3D11_MAP_WRITE_NO_OVERWRITE_IB;
-				if (m_auxGeomSBM.m_discardIB)
-				{
-					m_auxGeomSBM.m_discardIB = false;
-					mapFlags = D3D11_MAP_WRITE_DISCARD_IB;
-				}
-
-				CDeviceManager::UploadContents<false>(m_pAuxGeomIB, 0, m_auxGeomSBM.m_curIBIndex * sizeof(vtx_idx), curPBEntry->m_numIndices * sizeof(vtx_idx), mapFlags, &auxIndexBufferJoined[curPBEntry->m_indexOffs]);
-
-				// update buffer indices
-				m_auxGeomSBM.m_curVBIndex += curPBEntry->m_numVertices;
-				m_auxGeomSBM.m_curIBIndex += curPBEntry->m_numIndices;
-
-				numVerticesWrittenToVB += curPBEntry->m_numVertices;
-				numIndicesWrittenToIB += curPBEntry->m_numIndices;
-
-				// advance to next push puffer entry
-				++it;
-			}
-			else
-			{
-				// push buffer entry currently doesn't fit, will be processed in the next iteration when buffers got flushed
-				if (numVerticesWrittenToVB > 0 && numIndicesWrittenToIB > 0)
-				{
-					// commit batch
-					assert(0 == numIndicesWrittenToIB % d3dNumPrimDivider);
-					if (streamsBound)
-						m_renderer.FX_DrawIndexedPrimitive(ePrimType, initialVBLockOffset, 0, numVerticesWrittenToVB, initialIBLockOffset, numIndicesWrittenToIB);
-				}
-
-				// request a DISCARD lock / don't advance iterator!
-				m_auxGeomSBM.DiscardVB();
-				initialVBLockOffset = m_auxGeomSBM.m_curVBIndex;
-				numVerticesWrittenToVB = 0;
-
-				m_auxGeomSBM.DiscardIB();
-				initialIBLockOffset = m_auxGeomSBM.m_curIBIndex;
-				numIndicesWrittenToIB = 0;
-			}
-		}
-		else
-		{
-			// push buffer entry too big for dedicated vb/ib buffer
-			// advance to next push puffer entry
-			assert(0);
-			iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxIndexedPrimitives() - Auxiliary geometry too big to render!");
-			++it;
-		}
-	}
-
-	if (numVerticesWrittenToVB > 0 && numIndicesWrittenToIB > 0)
-	{
-		// commit batch
-		assert(0 == numIndicesWrittenToIB % d3dNumPrimDivider);
-		if (streamsBound)
-			m_renderer.FX_DrawIndexedPrimitive(ePrimType, initialVBLockOffset, 0, numVerticesWrittenToVB, initialIBLockOffset, numIndicesWrittenToIB);
-	}
+	return buf;
 }
 
-void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd)
+buffer_handle_t CRenderAuxGeomD3D::CBufferManager::fill(buffer_handle_t buf, BUFFER_BIND_TYPE type, const void* data, size_t size)
 {
-	CAuxGeomCB::EAuxDrawObjType objType(CAuxGeomCB::GetAuxObjType((*itBegin)->m_renderFlags));
+	if( buf != ~0u ) gcpRendD3D->m_DevBufMan.Destroy(buf);
+
+	return size ? update(type, data, size) : ~0u;
+}
+
+
+CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, EVertexFormat format, size_t stride, buffer_handle_t vb, buffer_handle_t ib, const Matrix44* mViewProj)
+{
+	CD3D9Renderer* const __restrict renderer = gcpRendD3D;
+
+	CStandardGraphicsPipeline::SViewInfo viewInfo[2];
+	const int32 viewInfoCount = renderer->GetGraphicsPipeline().GetViewInfo(viewInfo);
+
+	const bool bReverseDepth = (viewInfo[0].flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
+	int32 gsFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
+
+
+	const SViewport& vp = viewInfo[0].viewport;
+	D3DViewPort viewport = { float(vp.nX), float(vp.nY), float(vp.nX) + vp.nWidth, float(vp.nY) + vp.nHeight, vp.fMinZ, vp.fMaxZ };
+
+
+	m_geomPass.ClearPrimitives();
+	m_geomPass.SetViewport(viewport);
+
+	m_geomPass.SetRenderTarget(0, renderer->GetBackBufferTexture());
+	m_geomPass.SetDepthTarget(&renderer->m_DepthBufferNative);
+
+	auto& prim = m_geomPrimitiveCache[topology];
+
+	prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+
+	prim.SetTechnique(m_pAuxGeomShader, techique, 0);
+
+
+	if( flags.GetDepthTestFlag()  == e_DepthTestOff ) gsFunc |= GS_NODEPTHTEST;
+	if( flags.GetDepthWriteFlag() == e_DepthWriteOn ) gsFunc |= GS_DEPTHWRITE;
+
+	if( flags.GetFillMode() == e_FillModeWireframe ) gsFunc |= GS_WIREFRAME;
+
+
+	switch( flags.GetAlphaBlendMode() )
+	{
+		case e_AlphaBlended : gsFunc |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA; break;
+		case e_AlphaAdditive: gsFunc |= GS_BLSRC_ONE | GS_BLDST_ONE;
+	}
+
+	switch( flags.GetCullMode() )
+	{
+		case e_CullModeFront: prim.SetCullMode(eCULL_Front); break;
+		case e_CullModeNone : prim.SetCullMode(eCULL_None);  break;
+		default:              prim.SetCullMode(eCULL_Back);
+	}
+
+	prim.SetRenderState(gsFunc);
+
+
+	prim.SetCustomVertexStream(vb, format, stride);
+	prim.SetCustomIndexStream (ib, indexbuffer_type<vtx_idx>::type);
+
+	//		prim.SetTexture(0, CTexture::GetByID(pfProxy->GetTexture()));
+	//		prim.SetSampler(0, CTexture::GetTexState(STexState(FILTER_LINEAR, true)));
+
+
+	if( mViewProj )
+	{
+		static CCryNameR matViewProjName("matViewProj");
+
+		auto& constantManager = prim.GetConstantManager();
+
+		constantManager.BeginNamedConstantUpdate();
+		constantManager.SetNamedConstantArray(matViewProjName, (Vec4*)mViewProj, 4, eHWSC_Vertex);
+		constantManager.EndNamedConstantUpdate();
+	}
+
+	prim.m_instances.resize(1);
+
+	return prim;
+}
+
+
+void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj)
+{
+	ERenderPrimitiveType topology;
+
+	const SAuxGeomRenderFlags& flags = (*itBegin)->m_renderFlags;
+	CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(flags));
+
+	if     ( primType == CAuxGeomCB::e_LineList ) topology = eptLineList;
+	else if( primType == CAuxGeomCB::e_TriList  ) topology = eptTriangleList;
+	else if( primType == CAuxGeomCB::e_PtList   ) topology = eptPointList;
+	else
+	{
+		assert(false);
+		return;
+	}
+
+	static CCryNameTSCRC tGeom("AuxGeometry");
+
+	CRenderPrimitive& prim = PreparePrimitive(flags, tGeom, topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), ~0u, &mViewProj);
+
+	prim.SetDrawInfo(topology, 0, (*itBegin)->m_vertexOffs, (*itBegin)->m_numVertices);
+
+	for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); ++it != itEnd; )
+	{
+		SCompiledRenderPrimitive::SInstanceInfo instance;
+
+		instance.vertexBaseOffset = 0;
+		instance.vertexOrIndexOffset = (*it)->m_vertexOffs;
+		instance.vertexOrIndexCount = (*it)->m_numVertices;
+
+		prim.m_instances.push_back(instance);
+	}
+
+	if( !m_geomPass.AddPrimitive(&prim) )
+	{
+		return;
+	}
+
+	m_geomPass.Execute();
+}
+
+void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj)
+{
+	ERenderPrimitiveType topology;
+
+	const SAuxGeomRenderFlags& flags = (*itBegin)->m_renderFlags;
+	CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(flags));
+
+	if     ( primType == CAuxGeomCB::e_LineListInd ) topology = eptLineList;
+	else if( primType == CAuxGeomCB::e_TriListInd  ) topology = eptTriangleList;
+	else
+	{
+		assert(false);
+		return;
+	}
+
+	static CCryNameTSCRC tGeom("AuxGeometry");
+
+	CRenderPrimitive& prim = PreparePrimitive(flags, tGeom, topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), m_bufman.GetIB(), &mViewProj);
+
+	prim.SetDrawInfo(topology, (*itBegin)->m_vertexOffs, (*itBegin)->m_indexOffs, (*itBegin)->m_numIndices);
+
+	for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); ++it != itEnd; )
+	{
+		SCompiledRenderPrimitive::SInstanceInfo instance;
+
+		instance.vertexBaseOffset = (*it)->m_vertexOffs;
+		instance.vertexOrIndexOffset = (*it)->m_indexOffs;
+		instance.vertexOrIndexCount = (*it)->m_numIndices;
+
+		prim.m_instances.push_back(instance);
+	}
+
+	if( !m_geomPass.AddPrimitive(&prim) )
+	{
+		return;
+	}
+
+	m_geomPass.Execute();
+}
+
+void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj)
+{
+	const SAuxGeomRenderFlags& flags    = (*itBegin)->m_renderFlags;
+	CAuxGeomCB::EAuxDrawObjType objType = CAuxGeomCB::GetAuxObjType(flags);
 
 	// get draw params buffer
 	const CAuxGeomCB::AuxDrawObjParamBuffer& auxDrawObjParamBuffer(GetAuxDrawObjParamBuffer());
@@ -747,55 +673,112 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 	for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); it != itEnd; ++it)
 	{
 		// get current push buffer entry
-		const CAuxGeomCB::SAuxPushBufferEntry* curPBEntry(*it);
+		const CAuxGeomCB::SAuxPushBufferEntry* obj(*it);
 
 		// assert than all objects in this batch are of same type
-		assert(CAuxGeomCB::GetAuxObjType(curPBEntry->m_renderFlags) == objType);
+		assert(CAuxGeomCB::GetAuxObjType(obj->m_renderFlags) == objType);
 
-		uint32 drawParamOffs(0);
-		if (curPBEntry->GetDrawParamOffs(drawParamOffs))
+		uint32 drawParamOffs;
+
+		if( !obj->GetDrawParamOffs(drawParamOffs) )
 		{
-			// get draw params
-			const CAuxGeomCB::SAuxDrawObjParams& drawParams(auxDrawObjParamBuffer[drawParamOffs]);
+			assert(false);
+			continue;
+		}
 
-			// Prepare d3d world space matrix in draw param structure
-			// Attention: in d3d terms matWorld is actually matWorld^T
-			Matrix44A matWorld;
-			matWorld.SetIdentity();
-			memcpy(&matWorld, &drawParams.m_matWorld, sizeof(drawParams.m_matWorld));
+		// get draw params
+		const CAuxGeomCB::SAuxDrawObjParams& drawParams(auxDrawObjParamBuffer[drawParamOffs]);
 
-			// set transformation matrices
-			static CCryNameR matWorldViewProjName("matWorldViewProj");
+		// Prepare d3d world space matrix in draw param structure
+		// Attention: in d3d terms matWorld is actually matWorld^T
+
+		const Matrix44A& matView = GetCurrentView();
+		Matrix44A        matWorld;
+
+		matWorld.SetIdentity();
+		memcpy(&matWorld, &drawParams.m_matWorld, sizeof(drawParams.m_matWorld));
+
+
+		// LOD calculation
+		Matrix44 matWorldTrans = matWorld.GetTransposed();
+		Vec4 objCenterWorld;
+		Vec3 nullVec(0.0f, 0.0f, 0.0f);
+		mathVec3TransformF(&objCenterWorld, &nullVec, &matWorldTrans);
+		Vec4 objOuterRightWorld(objCenterWorld + (Vec4(matView.m00, matView.m10, matView.m20, 0.0f) * drawParams.m_size));
+
+		Vec4 v0, v1;
+
+		Vec3 objCenterWorldVec(objCenterWorld.x, objCenterWorld.y, objCenterWorld.z);
+		Vec3 objOuterRightWorldVec(objOuterRightWorld.x, objOuterRightWorld.y, objOuterRightWorld.z);
+		mathVec3TransformF(&v0, &objCenterWorldVec, m_matrices.m_pCurTransMat);
+		mathVec3TransformF(&v1, &objOuterRightWorldVec, m_matrices.m_pCurTransMat);
+
+		float scale;
+		assert(fabs(v0.w - v0.w) < 1e-4);
+		if( fabs(v0.w) < 1e-2 )
+		{
+			scale = 0.5f;
+		}
+		else
+		{
+			scale = ((v1.x - v0.x) / v0.w) * (float)max(m_wndXRes, m_wndYRes) / 500.0f;
+		}
+
+		// map scale to detail level
+		uint32 lodLevel((uint32)((scale / 0.5f) * (e_auxObjNumLOD - 1)));
+		if( lodLevel >= e_auxObjNumLOD )
+		{
+			lodLevel = e_auxObjNumLOD - 1;
+		}
+
+		// get appropriate mesh
+		assert(lodLevel >= 0 && lodLevel < e_auxObjNumLOD);
+
+		SDrawObjMesh* pMesh = 0;
+		switch( objType )
+		{
+			case CAuxGeomCB::eDOT_Cylinder: pMesh = m_cylinderObj;  break;
+			case CAuxGeomCB::eDOT_Cone:     pMesh = m_coneObj;      break;
+
+			default:
+			case CAuxGeomCB::eDOT_Sphere:   pMesh = m_sphereObj;
+		}
+
+		assert(0 != pMesh);
+
+		pMesh = &pMesh[lodLevel];
+
+		static CCryNameTSCRC techObj("AuxGeometryObj");
+
+		CRenderPrimitive& prim = PreparePrimitive(flags, techObj, eptTriangleList, eVF_P3F_T3F, sizeof(SVF_P3F_T3F), pMesh->m_pVB, pMesh->m_pIB, nullptr);
+
+		prim.SetDrawInfo(eptTriangleList, 0, 0, pMesh->m_numFaces * 3);
+
+
+		{
+			Matrix44A matWorldViewProj;
+
+			// calculate transformation matrices
 			if (m_curDrawInFrontMode == e_DrawInFrontOn)
 			{
 				Matrix44A matScale(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f)));
 
-				Matrix44A matWorldViewScaleProjT;
-				matWorldViewScaleProjT = (GetCurrentView() * matScale);
+				Matrix44A& matWorldViewScaleProjT = matWorldViewProj;
+				matWorldViewScaleProjT = matView * matScale;
 				matWorldViewScaleProjT = matWorldViewScaleProjT * GetCurrentProj();
 
 				matWorldViewScaleProjT = matWorldViewScaleProjT.GetTransposed();
 				matWorldViewScaleProjT = matWorldViewScaleProjT * matWorld;
-				m_pAuxGeomShader->FXSetVSFloat(matWorldViewProjName, alias_cast<Vec4*>(&matWorldViewScaleProjT), 4);
 			}
 			else
 			{
-				Matrix44A matWorldViewProjT;
+				Matrix44A& matWorldViewProjT = matWorldViewProj;
 				matWorldViewProjT = m_matrices.m_pCurTransMat->GetTransposed();
 				matWorldViewProjT = matWorldViewProjT * matWorld;
-				m_pAuxGeomShader->FXSetVSFloat(matWorldViewProjName, alias_cast<Vec4*>(&matWorldViewProjT), 4);
 			}
 
 			// set color
 			ColorF col(drawParams.m_color);
-			Vec4 colVec(col.b, col.g, col.r, col.a);   // need to flip r/b as drawParams.m_color was originally argb
-			static CCryNameR auxGeomObjColorName("auxGeomObjColor");
-			m_pAuxGeomShader->FXSetVSFloat(auxGeomObjColorName, &colVec, 1);
-
-			// set shading flag
-			Vec4 shadingVec(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1, 0, 0);
-			static CCryNameR auxGeomObjShadingName("auxGeomObjShading");
-			m_pAuxGeomShader->FXSetVSFloat(auxGeomObjShadingName, &shadingVec, 1);
 
 			// set light vector (rotate back into local space)
 			Matrix33 matWorldInv(drawParams.m_matWorld.GetInverted());
@@ -803,81 +786,35 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 
 			// normalize light vector (matWorld could contain non-uniform scaling)
 			lightLocalSpace.Normalize();
-			Vec4 lightVec(lightLocalSpace.x, lightLocalSpace.y, lightLocalSpace.z, 0.0f);
-			static CCryNameR globalLightLocalName("globalLightLocal");
-			m_pAuxGeomShader->FXSetVSFloat(globalLightLocalName, &lightVec, 1);
 
-			// LOD calculation
-			Matrix44A matWorldT;
-			matWorldT = matWorld.GetTransposed();
 
-			Vec4 objCenterWorld;
-			Vec3 nullVec(0.0f, 0.0f, 0.0f);
-			mathVec3TransformF(&objCenterWorld, &nullVec, &matWorldT);
-			Vec4 objOuterRightWorld(objCenterWorld + (Vec4(GetCurrentView().m00, GetCurrentView().m10, GetCurrentView().m20, 0.0f) * drawParams.m_size));
+			static CCryNameR matWorldViewProjName ("matWorldViewProj");
+			static CCryNameR auxGeomObjColorName  ("auxGeomObjColor");
+			static CCryNameR auxGeomObjShadingName("auxGeomObjShading");
+			static CCryNameR globalLightLocalName ("globalLightLocal");
 
-			Vec4 v0, v1;
 
-			Vec3 objCenterWorldVec(objCenterWorld.x, objCenterWorld.y, objCenterWorld.z);
-			Vec3 objOuterRightWorldVec(objOuterRightWorld.x, objOuterRightWorld.y, objOuterRightWorld.z);
-			mathVec3TransformF(&v0, &objCenterWorldVec, m_matrices.m_pCurTransMat);
-			mathVec3TransformF(&v1, &objOuterRightWorldVec, m_matrices.m_pCurTransMat);
+			Vec4 auxGeomObjColor  (col.b, col.g, col.r, col.a);                                           // need to flip r/b as drawParams.m_color was originally argb
+			Vec4 auxGeomObjShading(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1, 0, 0); // set shading flag
+			Vec4 globalLightLocal (lightLocalSpace.x, lightLocalSpace.y, lightLocalSpace.z, 0.0f);        // normalize light vector (matWorld could contain non-uniform scaling)
 
-			float scale;
-			assert(fabs(v0.w - v0.w) < 1e-4);
-			if (fabs(v0.w) < 1e-2)
-			{
-				scale = 0.5f;
-			}
-			else
-			{
-				scale = ((v1.x - v0.x) / v0.w) * (float) max(m_wndXRes, m_wndYRes) / 500.0f;
-			}
 
-			// map scale to detail level
-			uint32 lodLevel((uint32) ((scale / 0.5f) * (e_auxObjNumLOD - 1)));
-			if (lodLevel >= e_auxObjNumLOD)
-			{
-				lodLevel = e_auxObjNumLOD - 1;
-			}
+			auto& constantManager = prim.GetConstantManager();
 
-			// get appropriate mesh
-			assert(lodLevel >= 0 && lodLevel < e_auxObjNumLOD);
-			SDrawObjMesh* pMesh(0);
-			switch (objType)
-			{
-			case CAuxGeomCB::eDOT_Sphere:
-			default:
-				{
-					pMesh = &m_sphereObj[lodLevel];
-					break;
-				}
-			case CAuxGeomCB::eDOT_Cone:
-				{
-					pMesh = &m_coneObj[lodLevel];
-					break;
-				}
-			case CAuxGeomCB::eDOT_Cylinder:
-				{
-					pMesh = &m_cylinderObj[lodLevel];
-					break;
-				}
-			}
-			assert(0 != pMesh);
-
-			// bind vertex and index streams and set vertex declaration
-			if (BindStreams(eVF_P3F_T3F, pMesh->m_pVB, pMesh->m_pIB))
-			{
-				m_renderer.FX_Commit();
-
-				// draw mesh
-				m_renderer.FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, pMesh->m_numVertices, 0, pMesh->m_numFaces * 3);
-			}
+			constantManager.BeginNamedConstantUpdate();
+			constantManager.SetNamedConstantArray(matWorldViewProjName,  alias_cast<Vec4*>(&matWorldViewProj), 4, eHWSC_Vertex);
+			constantManager.SetNamedConstant     (auxGeomObjColorName,   auxGeomObjColor,   eHWSC_Vertex);
+			constantManager.SetNamedConstant     (auxGeomObjShadingName, auxGeomObjShading, eHWSC_Vertex);
+			constantManager.SetNamedConstant     (globalLightLocalName,  globalLightLocal,  eHWSC_Vertex);
+			constantManager.EndNamedConstantUpdate();
 		}
-		else
+
+		if( !m_geomPass.AddPrimitive(&prim) )
 		{
-			assert(0);   // GetDrawParamOffs( ... ) failed -- corrupt data in push buffer?
+			return;
 		}
+
+		m_geomPass.Execute();
 	}
 }
 
@@ -1163,7 +1100,7 @@ void CRenderAuxGeomD3D::PrepareRendering()
 	// update transformation matrices
 	m_matrices.UpdateMatrices(m_renderer);
 
-	// get current window resultion and update aspect ratios
+	// get current window resolution and update aspect ratios
 	m_wndXRes = m_renderer.GetWidth();
 	m_wndYRes = m_renderer.GetHeight();
 
@@ -1178,154 +1115,20 @@ void CRenderAuxGeomD3D::PrepareRendering()
 	// reset DrawInFront mode
 	m_curDrawInFrontMode = e_DrawInFrontOff;
 
-	// reset stream buffer manager
-	m_auxGeomSBM.Reset();
-
-	// reset current VB/IB
-	m_pCurVB = 0;
-	m_pCurIB = 0;
-
 	// reset current prim type
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 }
 
 
-#include<climits>
-
-template<class T = vtx_idx, int size = sizeof(T)*CHAR_BIT> struct indexbuffer_type;
-
-template<class T> struct indexbuffer_type<T, 16> { static const RenderIndexType type = Index16; };
-template<class T> struct indexbuffer_type<T, 32> { static const RenderIndexType type = Index32; };
-
-bool CRenderAuxGeomD3D::BindStreams(EVertexFormat newVertexFormat, D3DVertexBuffer* pNewVB, D3DIndexBuffer* pNewIB)
+void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat)
 {
-	// set vertex declaration
-	if (FAILED(m_renderer.FX_SetVertexDeclaration(0, newVertexFormat)))
-		return false;
-
-	// bind streams
-	HRESULT hr = S_OK;
-	if (m_pCurVB != pNewVB)
-	{
-		hr = m_renderer.FX_SetVStream(0, pNewVB, 0, CRenderMesh::m_cSizeVF[newVertexFormat]);
-		m_pCurVB = pNewVB;
-	}
-	if (m_pCurIB != pNewIB)
-	{
-		hr = m_renderer.FX_SetIStream(pNewIB, 0, indexbuffer_type<>::type);
-		m_pCurIB = pNewIB;
-	}
-
-	return SUCCEEDED(hr);
-}
-
-void CRenderAuxGeomD3D::SetShader(const SAuxGeomRenderFlags& renderFlags)
-{
-	if (0 == m_pAuxGeomShader)
-	{
-		// allow invalid file access for this shader because it shouldn't be used in the final build anyway
-		CDebugAllowFileAccess ignoreInvalidFileAccess;
-		m_pAuxGeomShader = m_renderer.m_cEF.mfForName("AuxGeom", EF_SYSTEM);
-		assert(0 != m_pAuxGeomShader);
-	}
-
-	if (0 != m_pAuxGeomShader)
-	{
-		bool dirty(0 != (m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_FP_DIRTY | RBPF_FP_MATRIXDIRTY)));
-		if (false != dirty)
-		{
-			// NOTE: dirty flags are either set when marking matrices as dirty or setting EF_ColorOp in AdjustRenderStates
-			m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_PersFlags &= ~RBPF_FP_DIRTY | RBPF_FP_MATRIXDIRTY;
-			m_renderer.m_RP.m_ObjFlags &= ~FOB_TRANS_MASK;
-			m_renderer.m_RP.m_pCurObject = m_renderer.m_RP.m_pIdendityRenderObject;
-			m_renderer.m_RP.m_FlagsShader_LT = m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_eCurColorOp | (m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_eCurAlphaOp << 8) |
-			                                   (m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_eCurColorArg << 16) | (m_renderer.m_RP.m_TI[m_renderer.m_RP.m_nProcessThreadID].m_eCurAlphaArg << 24);
-		}
-
-		EAuxGeomPublicRenderflags_DrawInFrontMode newDrawInFrontMode(renderFlags.GetDrawInFrontMode());
-		CAuxGeomCB::EPrimType newPrimType(CAuxGeomCB::GetPrimType(renderFlags));
-
-		if (false != dirty || m_pAuxGeomShader != m_renderer.m_RP.m_pShader || m_curDrawInFrontMode != newDrawInFrontMode || m_curPrimType != newPrimType)
-		{
-			if (CAuxGeomCB::e_Obj != newPrimType)
-			{
-				static CCryNameTSCRC techName("AuxGeometry");
-				m_pAuxGeomShader->FXSetTechnique(techName);
-				m_pAuxGeomShader->FXBegin(&m_renderer.m_RP.m_nNumRendPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-				m_pAuxGeomShader->FXBeginPass(0);
-
-				static CCryNameR matViewProjName("matViewProj");
-				if (e_DrawInFrontOn == renderFlags.GetDrawInFrontMode() && e_Mode3D == renderFlags.GetMode2D3DFlag())
-				{
-					Matrix44A matScale(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f)));
-
-					Matrix44A matViewScaleProjT;
-					if (HasWorldMatrix())
-					{
-						matViewScaleProjT = Matrix44A(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() * GetCurrentView() * matScale;
-					}
-					else
-					{
-						matViewScaleProjT = GetCurrentView() * matScale;
-					}
-					matViewScaleProjT = matViewScaleProjT * GetCurrentProj();
-					matViewScaleProjT = matViewScaleProjT.GetTransposed();
-					m_pAuxGeomShader->FXSetVSFloat(matViewProjName, alias_cast<Vec4*>(&matViewScaleProjT), 4);
-					m_curDrawInFrontMode = e_DrawInFrontOn;
-				}
-				else
-				{
-					Matrix44A matViewProjT;
-					if (HasWorldMatrix())
-					{
-						matViewProjT = Matrix44(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() *  *m_matrices.m_pCurTransMat;
-						matViewProjT = matViewProjT.GetTransposed();
-					}
-					else
-					{
-						matViewProjT = m_matrices.m_pCurTransMat->GetTransposed();
-					}
-					m_pAuxGeomShader->FXSetVSFloat(matViewProjName, alias_cast<Vec4*>(&matViewProjT), 4);
-					m_curDrawInFrontMode = e_DrawInFrontOff;
-				}
-			}
-			else
-			{
-				static CCryNameTSCRC techName("AuxGeometryObj");
-				m_pAuxGeomShader->FXSetTechnique(techName);
-				m_pAuxGeomShader->FXBegin(&m_renderer.m_RP.m_nNumRendPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-				m_pAuxGeomShader->FXBeginPass(0);
-
-				if (e_DrawInFrontOn == renderFlags.GetDrawInFrontMode() && e_Mode3D == renderFlags.GetMode2D3DFlag())
-				{
-					m_curDrawInFrontMode = e_DrawInFrontOn;
-				}
-				else
-				{
-					m_curDrawInFrontMode = e_DrawInFrontOff;
-				}
-			}
-			m_curPrimType = newPrimType;
-		}
-	}
-	else
-	{
-		m_renderer.FX_SetFPMode();
-	}
-}
-
-void CRenderAuxGeomD3D::AdjustRenderStates(const SAuxGeomRenderFlags& renderFlags)
-{
-	// init current render states mask
-	uint32 curRenderStates(0);
-
 	// mode 2D/3D -- set new transformation matrix
 	const Matrix44A* pNewTransMat(&GetCurrentTrans3D());
-	if (e_Mode2D == renderFlags.GetMode2D3DFlag())
+	if( e_Mode2D == renderFlags.GetMode2D3DFlag() )
 	{
 		pNewTransMat = &GetCurrentTrans2D();
 	}
-	if (m_matrices.m_pCurTransMat != pNewTransMat)
+	if( m_matrices.m_pCurTransMat != pNewTransMat )
 	{
 		m_matrices.m_pCurTransMat = pNewTransMat;
 
@@ -1334,129 +1137,66 @@ void CRenderAuxGeomD3D::AdjustRenderStates(const SAuxGeomRenderFlags& renderFlag
 		m_renderer.EF_DirtyMatrix();
 	}
 
-	// set alpha blending mode
-	switch (renderFlags.GetAlphaBlendMode())
+	m_curPointSize = (CAuxGeomCB::e_PtList == CAuxGeomCB::GetPrimType(renderFlags)) ? CAuxGeomCB::GetPointSize(renderFlags) : 1;
+
+	EAuxGeomPublicRenderflags_DrawInFrontMode newDrawInFrontMode(renderFlags.GetDrawInFrontMode());
+	CAuxGeomCB::EPrimType newPrimType(CAuxGeomCB::GetPrimType(renderFlags));
+
+	m_curDrawInFrontMode = (e_DrawInFrontOn == renderFlags.GetDrawInFrontMode() && e_Mode3D == renderFlags.GetMode2D3DFlag()) ? e_DrawInFrontOn : e_DrawInFrontOff;
+
+	if( CAuxGeomCB::e_Obj != newPrimType )
 	{
-	case e_AlphaAdditive:
+		if( m_curDrawInFrontMode == e_DrawInFrontOn )
 		{
-			curRenderStates |= GS_BLSRC_ONE | GS_BLDST_ONE;
-			break;
+			Matrix44A matScale(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f)));
+
+			mat = GetCurrentView();
+
+			if( HasWorldMatrix() )
+			{
+				mat = Matrix44A(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() * mat;
+			}
+
+			mat = mat * matScale;
+			mat = mat * GetCurrentProj();
+			mat = mat.GetTransposed();
 		}
-	case e_AlphaBlended:
+		else
 		{
-			curRenderStates |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
-			break;
-		}
-	case e_AlphaNone:
-	default:
-		{
-			break;
+			mat = *m_matrices.m_pCurTransMat;
+
+			if( HasWorldMatrix() )
+			{
+				mat = Matrix44(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() *  mat;
+			}
+
+			mat = mat.GetTransposed();
 		}
 	}
 
-	// set fill mode
-	switch (renderFlags.GetFillMode())
-	{
-	case e_FillModeWireframe:
-		{
-			curRenderStates |= GS_WIREFRAME;
-			break;
-		}
-	case e_FillModeSolid:
-	default:
-		{
-			break;
-		}
-	}
+	m_curPrimType = newPrimType;
 
-	// set cull mode
-	switch (renderFlags.GetCullMode())
-	{
-	case e_CullModeNone:
-		{
-			m_renderer.SetCullMode(R_CULL_NONE);
-			break;
-		}
-	case e_CullModeFront:
-		{
-			m_renderer.SetCullMode(R_CULL_FRONT);
-			break;
-		}
-	case e_CullModeBack:
-	default:
-		{
-			m_renderer.SetCullMode(R_CULL_BACK);
-			break;
-		}
-	}
-
-	// set depth write mode
-	switch (renderFlags.GetDepthWriteFlag())
-	{
-	case e_DepthWriteOff:
-		{
-			break;
-		}
-	case e_DepthWriteOn:
-	default:
-		{
-			curRenderStates |= GS_DEPTHWRITE;
-			break;
-		}
-	}
-
-	// set depth test mode
-	switch (renderFlags.GetDepthTestFlag())
-	{
-	case e_DepthTestOff:
-		{
-			curRenderStates |= GS_NODEPTHTEST;
-			break;
-		}
-	case e_DepthTestOn:
-	default:
-		{
-			break;
-		}
-	}
-
-	// set point size
-	uint8 newPointSize(m_curPointSize);
-	if (CAuxGeomCB::e_PtList == CAuxGeomCB::GetPrimType(renderFlags))
-	{
-		newPointSize = CAuxGeomCB::GetPointSize(renderFlags);
-	}
-	else
-	{
-		newPointSize = 1;
-	}
-
-	if (newPointSize != m_curPointSize)
-	{
-		assert(newPointSize > 0);
-		float pointSize((float) newPointSize);
-		assert(0);
-		m_curPointSize = newPointSize;
-	}
-
-	// apply states
-	m_renderer.FX_SetState(curRenderStates);
-
-	// set color operations
-	m_renderer.EF_SetColorOp(eCO_REPLACE, eCO_REPLACE, (eCA_Diffuse | (eCA_Diffuse << 3)), (eCA_Diffuse | (eCA_Diffuse << 3)));
 }
+
 
 void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset)
 {
 	if (!CV_r_auxGeom)
 		return;
 
-	PROFILE_LABEL_SCOPE("AuxGeom");
+	CStandardGraphicsPipeline::SwitchFromLegacyPipeline();
+
+	PROFILE_LABEL_SCOPE("AuxGeom_Flush");
 
 	// should only be called from render thread
 	assert(m_renderer.m_pRT->IsRenderThread());
 
 	assert(data.m_pData);
+
+	Matrix44 mViewProj;
+
+	// make sure any pending clear flags have been applied
+	m_renderer.FX_ClearTargets();
 
 	if (begin < end)
 	{
@@ -1472,6 +1212,51 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 
 			// get push buffer to process all submitted auxiliary geometries
 			m_pCurCBRawData->GetSortedPushBuffer(begin, end, m_auxSortedPushBuffer);
+
+			for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(m_auxSortedPushBuffer.begin()), itEnd(m_auxSortedPushBuffer.end()); it != itEnd; )
+			{
+				// mark current push buffer position
+				CAuxGeomCB::AuxSortedPushBuffer::const_iterator itCur(it);
+
+				// get current render flags
+				const SAuxGeomRenderFlags& curRenderFlags((*itCur)->m_renderFlags);
+				m_curTransMatrixIdx = (*itCur)->m_transMatrixIdx;
+				m_curWorldMatrixIdx = (*itCur)->m_worldMatrixIdx;
+
+				// get prim type
+				CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(curRenderFlags));
+
+				// find all entries sharing the same render flags
+				while( true )
+				{
+					++it;
+					if( (it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
+						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx) )
+					{
+						break;
+					}
+				}
+
+				// prepare thick lines
+				if( CAuxGeomCB::e_TriList == primType && CAuxGeomCB::IsThickLine(curRenderFlags) )
+				{
+					if( e_Mode3D == curRenderFlags.GetMode2D3DFlag() )
+					{
+						PrepareThickLines3D(itCur, it);
+					}
+					else
+					{
+						PrepareThickLines2D(itCur, it);
+					}
+				}
+			}
+
+			const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
+			const CAuxGeomCB::AuxIndexBuffer&  auxIndexBuffer (GetAuxIndexBuffer());
+
+			m_bufman.FillVB(auxVertexBuffer.data(), auxVertexBuffer.size() * sizeof(SAuxVertex));
+			m_bufman.FillIB(auxIndexBuffer.data(),  auxIndexBuffer.size()  * sizeof(vtx_idx));
+
 
 			// process push buffer
 			for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(m_auxSortedPushBuffer.begin()), itEnd(m_auxSortedPushBuffer.end()); it != itEnd; )
@@ -1491,31 +1276,23 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 				while (true)
 				{
 					++it;
-					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) || 
+					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
 						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx))
 					{
 						break;
 					}
 				}
 
-				// adjust render states based on current render flags
-				AdjustRenderStates(curRenderFlags);
+				// set appropriate rendering data
+				Prepare(curRenderFlags, mViewProj);
 
-				// prepare thick lines
-				if (CAuxGeomCB::e_TriList == primType && false != CAuxGeomCB::IsThickLine(curRenderFlags))
+				if( !m_pAuxGeomShader )
 				{
-					if (e_Mode3D == curRenderFlags.GetMode2D3DFlag())
-					{
-						PrepareThickLines3D(itCur, it);
-					}
-					else
-					{
-						PrepareThickLines2D(itCur, it);
-					}
+					// allow invalid file access for this shader because it shouldn't be used in the final build anyway
+					CDebugAllowFileAccess ignoreInvalidFileAccess;
+					m_pAuxGeomShader = m_renderer.m_cEF.mfForName("AuxGeom", EF_SYSTEM);
+					assert(0 != m_pAuxGeomShader);
 				}
-
-				// set appropriate shader
-				SetShader(curRenderFlags);
 
 				CD3DStereoRenderer& stereoRenderer = gcpRendD3D->GetS3DRend();
 				const bool bStereoEnabled = stereoRenderer.IsStereoEnabled();
@@ -1531,19 +1308,19 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 						if (bStereoEnabled)
 						{
 							stereoRenderer.BeginRenderingTo(LEFT_EYE);
-							DrawAuxPrimitives(itCur, it, primType);
+							DrawAuxPrimitives(itCur, it, mViewProj);
 							stereoRenderer.EndRenderingTo(LEFT_EYE);
 
 							if (bStereoSequentialMode)
 							{
 								stereoRenderer.BeginRenderingTo(RIGHT_EYE);
-								DrawAuxPrimitives(itCur, it, primType);
+								DrawAuxPrimitives(itCur, it, mViewProj);
 								stereoRenderer.EndRenderingTo(RIGHT_EYE);
 							}
 						}
 						else
 						{
-							DrawAuxPrimitives(itCur, it, primType);
+							DrawAuxPrimitives(itCur, it, mViewProj);
 						}
 					}
 					break;
@@ -1553,19 +1330,19 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 						if (bStereoEnabled)
 						{
 							stereoRenderer.BeginRenderingTo(LEFT_EYE);
-							DrawAuxIndexedPrimitives(itCur, it, primType);
+							DrawAuxIndexedPrimitives(itCur, it, mViewProj);
 							stereoRenderer.EndRenderingTo(LEFT_EYE);
 
 							if (bStereoSequentialMode)
 							{
 								stereoRenderer.BeginRenderingTo(RIGHT_EYE);
-								DrawAuxIndexedPrimitives(itCur, it, primType);
+								DrawAuxIndexedPrimitives(itCur, it, mViewProj);
 								stereoRenderer.EndRenderingTo(RIGHT_EYE);
 							}
 						}
 						else
 						{
-							DrawAuxIndexedPrimitives(itCur, it, primType);
+							DrawAuxIndexedPrimitives(itCur, it, mViewProj);
 						}
 					}
 					break;
@@ -1575,19 +1352,19 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 						if (bStereoEnabled)
 						{
 							stereoRenderer.BeginRenderingTo(LEFT_EYE);
-							DrawAuxObjects(itCur, it);
+							DrawAuxObjects(itCur, it, mViewProj);
 							stereoRenderer.EndRenderingTo(LEFT_EYE);
 
 							if (bStereoSequentialMode)
 							{
 								stereoRenderer.BeginRenderingTo(RIGHT_EYE);
-								DrawAuxObjects(itCur, it);
+								DrawAuxObjects(itCur, it, mViewProj);
 								stereoRenderer.EndRenderingTo(RIGHT_EYE);
 							}
 						}
 						else
 						{
-							DrawAuxObjects(itCur, it);
+							DrawAuxObjects(itCur, it, mViewProj);
 						}
 					}
 					break;
@@ -1604,11 +1381,9 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 		m_curWorldMatrixIdx = -1;
 	}
 
-	if (reset)
-	{
-		FlushTextMessages(data.m_pData->m_TextMessages, true);
-		data.m_pData->SetUsed(false);
-	}
+	CStandardGraphicsPipeline::SwitchToLegacyPipeline();
+
+	FlushTextMessages(data.m_pData->m_TextMessages, !reset);
 }
 
 void CRenderAuxGeomD3D::Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset)
@@ -1616,9 +1391,195 @@ void CRenderAuxGeomD3D::Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, siz
 	m_renderer.m_pRT->RC_AuxFlush(this, data, begin, end, reset);
 }
 
-void CRenderAuxGeomD3D::FlushTextMessages(CTextMessages& tMessages, bool reset)
+
+void CRenderAuxGeomD3D::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	gRenDev->FlushTextMessages(tMessages, reset);
+	CD3DStereoRenderer* const __restrict rendS3D = &gcpRendD3D->GetS3DRend();
+
+	if( rendS3D->IsStereoEnabled() && !rendS3D->DisplayStereoDone() )
+	{
+		rendS3D->BeginRenderingTo(LEFT_EYE);
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+		rendS3D->EndRenderingTo(LEFT_EYE);
+
+		if( rendS3D->RequiresSequentialSubmission() )
+		{
+			rendS3D->BeginRenderingTo(RIGHT_EYE);
+			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+			rendS3D->EndRenderingTo(RIGHT_EYE);
+		}
+	}
+	else
+	{
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+	}
+}
+
+void CRenderAuxGeomD3D::FlushTextMessages(CTextMessages& messages, bool reset)
+{
+	CD3D9Renderer* const renderer = gcpRendD3D;
+	renderer->EnableFog(false);
+	int vx, vy, vw, vh;
+	renderer->GetViewport(&vx, &vy, &vw, &vh);
+
+	while( const CTextMessages::CTextMessageHeader* pEntry = messages.GetNextEntry() )
+	{
+		const CTextMessages::SText* pText = pEntry->CastTo_Text();
+
+		Vec3 vPos(0, 0, 0);
+		int  nDrawFlags = 0;
+		const char* szText = 0;
+		Vec4  vColor(1, 1, 1, 1);
+		Vec2 fSize;
+		bool bDraw = true;
+
+		if( !pText )
+		{
+			return;
+		}
+
+		nDrawFlags = pText->m_nDrawFlags;
+		szText = pText->GetText();
+		vPos = pText->m_vPos;
+		vColor = pText->m_Color.toVec4() * 1.0f / 255.0f;
+		fSize = pText->m_fFontSize;
+
+		if( (nDrawFlags & eDrawText_LegacyBehavior) == 0 )
+		{
+
+			bool b800x600 = (nDrawFlags & eDrawText_800x600) != 0;
+
+			float fMaxPosX = 100.0f;
+			float fMaxPosY = 100.0f;
+
+			if( !b800x600 )
+			{
+				fMaxPosX = (float)vw;
+				fMaxPosY = (float)vh;
+			}
+
+			if( !(nDrawFlags & eDrawText_2D) )
+			{
+				float fDist = 1;   //GetDistance(pTextInfo->pos,GetCamera().GetPosition());
+
+				const CCamera& cam = renderer->GetCamera();
+				float     ferPlane = cam.GetFarPlane();
+				float K = ferPlane / fDist;
+				if( fDist > ferPlane * 0.5 )
+					vPos = cam.GetPosition()*(1 - K) + K * vPos;
+
+				float sx, sy, sz;
+				renderer->ProjectToScreen(vPos.x, vPos.y, vPos.z, &sx, &sy, &sz);
+
+				vPos.x = sx;
+				vPos.y = sy;
+				vPos.z = sz;
+			}
+			else
+			{
+				if( b800x600 )
+				{
+					// Make 2D coords in range 0-100
+					vPos.x *= 100.0f / vw;
+					vPos.y *= 100.0f / vh;
+				}
+			}
+
+			bDraw = vPos.x >= 0 && vPos.x <= fMaxPosX;
+			bDraw &= vPos.y >= 0 && vPos.y <= fMaxPosY;
+			bDraw &= vPos.z >= 0 && vPos.z <= 1;
+			//
+			// 			if( nDrawFlags & eDrawText_DepthTest )
+			// 			{
+			// 				sz = 1.0f - 2.0f * sz;
+			// 			}
+			// 			else
+			// 			{
+			// 				sz = 1.0f;
+			// 			}
+
+			vPos.x *= (b800x600 ? 8.f : 1.f);
+			vPos.y *= (b800x600 ? 6.f : 1.f);
+		}
+
+		if( szText && bDraw )
+		{
+			IFFont* pFont = nullptr;
+
+			if( gEnv->pSystem->GetICryFont() )
+				pFont = gEnv->pSystem->GetICryFont()->GetFont("default");
+
+			if( !pFont )
+			{
+				return;
+			}
+
+			const float r = CLAMP(vColor[0], 0.0f, 1.0f);
+			const float g = CLAMP(vColor[1], 0.0f, 1.0f);
+			const float b = CLAMP(vColor[2], 0.0f, 1.0f);
+			const float a = CLAMP(vColor[3], 0.0f, 1.0f);
+
+			STextDrawContext ctx;
+			ctx.SetColor(ColorF(r, g, b, a));
+			ctx.SetCharWidthScale(1.0f);
+			ctx.EnableFrame((nDrawFlags & eDrawText_Framed) != 0);
+
+			if( nDrawFlags & eDrawText_Monospace )
+			{
+				if( nDrawFlags & eDrawText_FixedSize )
+					ctx.SetSizeIn800x600(false);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+				ctx.SetCharWidthScale(0.5f);
+				ctx.SetProportional(false);
+
+				if( nDrawFlags & eDrawText_800x600 )
+					renderer->ScaleCoordInternal(vPos.x, vPos.y);
+			}
+			else if( nDrawFlags & eDrawText_FixedSize )
+			{
+				ctx.SetSizeIn800x600(false);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+				ctx.SetProportional(true);
+
+				if( nDrawFlags & eDrawText_800x600 )
+					renderer->ScaleCoordInternal(vPos.x, vPos.y);
+			}
+			else
+			{
+				ctx.SetSizeIn800x600(true);
+				ctx.SetProportional(false);
+				ctx.SetCharWidthScale(0.5f);
+				ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+			}
+
+			// align left/right/center
+			if( nDrawFlags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right) )
+			{
+				Vec2 textSize = pFont->GetTextSize(szText, true, ctx);
+
+				// If we're using virtual 800x600 coordinates, convert the text size from
+				// pixels to that before using it as an offset.
+				if( ctx.m_sizeIn800x600 )
+				{
+					textSize.x /= renderer->ScaleCoordXInternal(1.0f);
+					textSize.y /= renderer->ScaleCoordYInternal(1.0f);
+				}
+
+				if( nDrawFlags & eDrawText_Center ) vPos.x -= textSize.x * 0.5f;
+				else if( nDrawFlags & eDrawText_Right ) vPos.x -= textSize.x;
+
+				if( nDrawFlags & eDrawText_CenterV )
+					vPos.y -= textSize.y * 0.5f;
+			}
+
+			// Pass flags so that overscan borders can be applied if necessary
+			ctx.SetFlags(nDrawFlags);
+
+			pFont->DrawString(vPos.x, vPos.y, vPos.z, szText, true, ctx);
+		}
+	}
+
+	messages.Clear(!reset);
 }
 
 void CRenderAuxGeomD3D::SetOrthoMode(bool enable, Matrix44A* pMatrix)

@@ -52,6 +52,7 @@ enum ChunkTypes
 	ChunkType_MeshPhysicsData,                     //!< Physicalized mesh data.
 	ChunkType_ImportSettings,                      //!< Settings used to import the asset, in JSON format.
 	ChunkType_VCloth,                              //!< Describes per-mesh data for VCloth animation system.
+	ChunkType_AssetMetadata,                       //!< Asset Manager metadata.
 
 	// These are the new compiled chunks for characters.
 	ChunkType_CompiledBones = 0x2000,  //!< Was 0xACDC0000 in chunk files with versions <= 0x745.

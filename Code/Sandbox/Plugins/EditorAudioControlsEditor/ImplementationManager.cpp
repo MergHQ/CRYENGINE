@@ -51,11 +51,7 @@ bool CImplementationManager::LoadImplementation()
 
 		char szExecutableDirPath[_MAX_PATH];
 		CryGetExecutableFolder(sizeof(szExecutableDirPath), szExecutableDirPath);
-#ifdef SANDBOX_QT
 		cry_sprintf(szExecutableDirPath, "%sEditorPlugins\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
-#else
-		cry_sprintf(szExecutableDirPath, "%sEditorPluginsLegacy\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
-#endif
 
 		ms_hMiddlewarePlugin = LoadLibraryA(szExecutableDirPath);
 		if (!ms_hMiddlewarePlugin)
@@ -74,10 +70,9 @@ bool CImplementationManager::LoadImplementation()
 			}
 			else
 			{
-				IEditor* pEditor = GetIEditor();
-				if (pEditor)
+				if (GetIEditor())
 				{
-					ms_pAudioSystemImpl = pfnAudioInterface(pEditor->GetSystem());
+					ms_pAudioSystemImpl = pfnAudioInterface(GetIEditor()->GetSystem());
 					if (ms_pAudioSystemImpl)
 					{
 						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");

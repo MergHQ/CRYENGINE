@@ -18,6 +18,10 @@ def build(bld):
 		darwin_defines 	= ['HAVE_UNISTD_H'],
 		linux_defines 	= ['HAVE_UNISTD_H'],
 		orbis_defines 	= ['HAVE_UNISTD_H'],
+
+		orbis_cflags    = ['-Wno-shift-negative-value'],
+		linux_cflags    = ['-Wno-shift-negative-value'],
+		android_cflags  = ['-Wno-shift-negative-value'],
 		
 		durango_defines = ['_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_DEPRECATE'],
 	)	

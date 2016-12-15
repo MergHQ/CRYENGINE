@@ -5,6 +5,7 @@ import argparse
 import os.path
 import subprocess
 import shutil
+import glob
 
 import configparser
 import tempfile
@@ -60,6 +61,10 @@ def error_upgrade_template_missing (restore_path):
 def error_mono_not_set (path):
 	sys.stderr.write ("'%s' is not a C# project.\n" % path)
 	sys.exit (640)
+
+def error_solution_not_found(path):
+	sys.stderr.write ("Solution not found in '%s'. Make sure to first generate a solution if project contains code.\n" % path)
+	sys.exit (641)
 		
 def print_subprocess (cmd):
 	print (' '.join (map (lambda a: '"%s"' % a, cmd)))
@@ -149,20 +154,20 @@ def cmd_build(args):
 			sys.exit (errcode)		
 
 	#--- cmake
-
-	project_path= os.path.dirname (os.path.abspath (args.project_file))
-	solution_dir= get_solution_dir (args)
-	
-	subcmd= (
-		cmake_path,
-		'--build', solution_dir,
-		'--config', args.config
-	)
-	
-	print_subprocess (subcmd)
-	errcode= subprocess.call(subcmd, cwd= project_path)
-	if errcode != 0:
-		sys.exit (errcode)
+	if cryproject.cmakelists_dir(project) is not None:
+		project_path= os.path.dirname (os.path.abspath (args.project_file))
+		solution_dir= get_solution_dir (args)
+		
+		subcmd= (
+			cmake_path,
+			'--build', solution_dir,
+			'--config', args.config
+		)
+		
+		print_subprocess (subcmd)
+		errcode= subprocess.call(subcmd, cwd= project_path)
+		if errcode != 0:
+			sys.exit (errcode)
 
 
 #--- PROJGEN ---
@@ -226,34 +231,35 @@ def csharp_copylinks (args, update= True):
 def csharp_userfile (args, csharp):
 	dirname= os.path.dirname (args.project_file)
 	engine_path= get_engine_path()
+	tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameLauncher.exe')
+	projectfile_path= os.path.abspath (args.project_file)
 		
 	#--- debug file
 	user_settings= csharp.get("monodev", {}).get("user")
 	if user_settings:
-		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
-		projectfile_path= os.path.abspath (args.project_file)
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LocalDebuggerCommand>%s</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
+	<CryEngineRoot>{}</CryEngineRoot>
+    <LocalDebuggerCommand>{}</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-project "{}"</LocalDebuggerCommandArguments>
   </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
+</Project>'''.format (engine_path, tool_path, projectfile_path))
 		file.close()
 
 	user_settings= csharp.get("msdev", {}).get("user")
 	if user_settings:
-		projectfile_path= os.path.abspath (args.project_file)
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Platform)'=='x64'">
-    <MonoDebuggerCommand>%s</MonoDebuggerCommand>
-    <MonoDebuggerCommandArguments>-project "%s"</MonoDebuggerCommandArguments>
+	<CryEngineRoot>{}</CryEngineRoot>
+    <MonoDebuggerCommand>{}</MonoDebuggerCommand>
+    <MonoDebuggerCommandArguments>-project "{}"</MonoDebuggerCommandArguments>
     <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
   </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
+</Project>'''.format (engine_path, tool_path, projectfile_path))
 		file.close()
 
 def cmd_projgen(args):
@@ -263,18 +269,16 @@ def cmd_projgen(args):
 	project= cryproject.load (args.project_file)
 	if project is None:
 		error_project_json_decode (args.project_file)
-	
-	cmake_path= get_cmake_path()
-	if cmake_path is None:
-		error_cmake_not_found()
-	
+		
 	#--- remove old files
 	
 	dirname= os.path.dirname (os.path.abspath (args.project_file))
 	prevcwd= os.getcwd()
 	os.chdir (dirname)
 	
-	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('projgen_%y%m%d_'), dirname)
+	if not os.path.isdir ('Backup'):
+		os.mkdir ('Backup')	
+	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('projgen_%y%m%d_'), os.path.join (dirname, 'Backup'))
 	file= os.fdopen(fd, 'wb')
 	backup= zipfile.ZipFile (file, 'w', zipfile.ZIP_DEFLATED)
 	
@@ -299,41 +303,46 @@ def cmd_projgen(args):
 	backup_deletefiles (zfilename)	
 	os.chdir (prevcwd)
 	
-	#---
+	#--- csharp
 	
 	csharp= project.get ("csharp")
 	if csharp:
 		csharp_copylinks (args, update= False)
 		csharp_userfile (args, csharp)
 	
-	#---
+	#--- cpp
+	cmakelists_dir= cryproject.cmakelists_dir(project)
+	if cmakelists_dir is not None:
+		cmake_path= get_cmake_path()
+		if cmake_path is None:
+			error_cmake_not_found()
+			
+		project_path= os.path.abspath (os.path.dirname (args.project_file))
+		solution_path= os.path.join (project_path, get_solution_dir (args))
+		engine_path= get_engine_path()
 		
-	project_path= os.path.abspath (os.path.dirname (args.project_file))
-	solution_path= os.path.join (project_path, get_solution_dir (args))
-	engine_path= get_engine_path()
-	
-	subcmd= (
-		cmake_path,
-		'-Wno-dev',
-		{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
-		'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
-		'-DCryEngine_DIR:PATH=%s' % engine_path,
-		'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
-		os.path.join (project_path, cryproject.cmakelists_dir(project))
-	)
-	
-	if not os.path.isdir (solution_path):
-		os.makedirs (solution_path)
-
-	print_subprocess (subcmd)
-	errcode= subprocess.call(subcmd, cwd= solution_path)
-	if errcode != 0:
-		sys.exit (errcode)
+		subcmd= (
+			cmake_path,
+			'-Wno-dev',
+			{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
+			'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
+			'-DCryEngine_DIR:PATH=%s' % engine_path,
+			'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
+			os.path.join (project_path, cmakelists_dir)
+		)
 		
+		if not os.path.isdir (solution_path):
+			os.makedirs (solution_path)
+	
+		print_subprocess (subcmd)
+		errcode= subprocess.call(subcmd, cwd= solution_path)
+		if errcode != 0:
+			sys.exit (errcode)
+			
 	cmd_build (args)
 	
 #--- OPEN ---
@@ -346,7 +355,7 @@ def cmd_open (args):
 	if project is None:
 		error_project_json_decode (args.project_file)
 	
-	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'GameSDK.exe')
+	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'GameLauncher.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 		
@@ -394,40 +403,55 @@ def cmd_edit(argv):
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd)
 
-#--- MONO ---
+#--- DEVENV ---
+#Launch development environment
 
-def cmd_monodev (args):	
+def cmd_devenv (args):	
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)	
 
 	project= cryproject.load (args.project_file)
 	if project is None:
 		error_project_json_decode (args.project_file)
-
+	
+	#---
 	csharp= project.get ("csharp", {})
-	mono_solution= csharp.get ('monodev', {}).get ('solution')
-	if mono_solution is None:
-		error_mono_not_set (args.project_file)
-	
-	dirname= os.path.dirname (args.project_file)
-	mono_solution= os.path.abspath (os.path.join (dirname, mono_solution))
-	if not os.path.isfile (mono_solution):
-		error_mono_not_found (mono_solution)
-	
-	engine_path= get_engine_path()
-	tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'MonoDevelop.exe')
-	if not os.path.isfile (tool_path):
-		error_engine_tool_not_found (tool_path)
+	mono_solution= csharp.get ('monodev', {}).get ('solution')	
+	if mono_solution:
+		# launch monodev
+		dirname= os.path.dirname (args.project_file)
+		mono_solution= os.path.abspath (os.path.join (dirname, mono_solution))
+		if not os.path.isfile (mono_solution):
+			error_mono_not_found (mono_solution)
+		
+		engine_path= get_engine_path()
+		tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'MonoDevelop.exe')
+		if not os.path.isfile (tool_path):
+			error_engine_tool_not_found (tool_path)
 
-	#--- launch monodev
+		subcmd= (tool_path, mono_solution)
+		print_subprocess (subcmd)
+		subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
+	else:
+		# launch msdev
+		cmakelists_dir= cryproject.cmakelists_dir(project)
+		if cmakelists_dir is not None:
+			project_path= os.path.abspath (os.path.dirname (args.project_file))
+			solution_path= os.path.join (project_path, get_solution_dir (args))
+			solutions= glob.glob (os.path.join (solution_path, '*.sln'))
+			if not solutions:
+				error_solution_not_found(solution_path)
+						
+			solutions.sort()
+			subcmd= ('cmd', '/C', 'start', '', solutions[0])
+			print_subprocess (subcmd)
+			
+			engine_path= get_engine_path()
+			subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
+		else:
+			error_mono_not_set (args.project_file)
 
-	subcmd= (
-		tool_path,
-		mono_solution
-	)
 
-	print_subprocess (subcmd)
-	subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
 
 #--- UPGRADE ---					 
 					 
@@ -510,8 +534,10 @@ def cmd_upgrade (args):
 	(dirname, basename)= os.path.split (os.path.abspath (args.project_file))
 	prevcwd= os.getcwd()
 	os.chdir (dirname)
-		
-	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('upgrade_%y%m%d_'), dirname)
+	
+	if not os.path.isdir ('Backup'):
+		os.mkdir ('Backup')
+	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('upgrade_%y%m%d_'), os.path.join ('Backup', dirname))
 	file= os.fdopen(fd, 'wb')
 	backup= zipfile.ZipFile (file, 'w', zipfile.ZIP_DEFLATED)
 	restore= zipfile.ZipFile (restore_path, 'r')
@@ -617,9 +643,39 @@ def cmd_require (args):
 		plugin_file.write  (line + os.linesep)
 		
 	plugin_file.close()
+	
+#--- METAGEN ---
+
+def cmd_metagen(argv):
+	if not os.path.isfile (args.project_file):
+		error_project_not_found (args.project_file)
+	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
+	tool_path= os.path.join (get_engine_path(), 'Tools/rc/rc.exe')
+	if not os.path.isfile (tool_path):
+		error_engine_tool_not_found (tool_path)
+		
+	job_path= os.path.join (get_engine_path(), 'Tools/cryassets/rcjob_cryassets.xml')
+	if not os.path.isfile (job_path):
+		error_engine_tool_not_found (job_path)
+		
+	project_path= os.path.dirname (os.path.abspath (args.project_file))
+	asset_dir = cryproject.asset_dir(project)
+	asset_path = os.path.normpath (os.path.join (project_path, asset_dir))
+
+	subcmd= (
+		tool_path,
+		('/job=' + job_path),
+		('/src=' + asset_path)
+	)
+
+	print_subprocess (subcmd)
+	subprocess.Popen(subcmd)	
 
 #--- MAIN ---
-
 
 if __name__ == '__main__':
 	parser= argparse.ArgumentParser()
@@ -656,8 +712,12 @@ if __name__ == '__main__':
 	
 	parser_mono= subparsers.add_parser ('monodev')
 	parser_mono.add_argument ('project_file')
-	parser_mono.set_defaults(func=cmd_monodev)
+	parser_mono.set_defaults(func=cmd_devenv)
 
+	parser_edit= subparsers.add_parser ('metagen')
+	parser_edit.add_argument ('project_file')
+	parser_edit.set_defaults(func=cmd_metagen)
+	
 	args= parser.parse_args()
 	args.func (args)
 

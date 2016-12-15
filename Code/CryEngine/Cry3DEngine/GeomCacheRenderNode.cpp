@@ -187,7 +187,6 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 	SRendParams drawParams = rendParams;
 
 	drawParams.pMatrix = &m_matrix;
-	drawParams.nClipVolumeStencilRef = 0;
 
 	static ICVar* pGraphicsPipelineCV = gEnv->pConsole->GetCVar("r_GraphicsPipeline");
 	static ICVar* pMotionVectorsCV = gEnv->pConsole->GetCVar("r_MotionVectors");
@@ -244,7 +243,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 									continue;
 								}
 
-								CRendElementBase* RESTRICT_POINTER pREMesh = chunk.pRE;
+								CRenderElement* RESTRICT_POINTER pREMesh = chunk.pRE;
 								IRenderShaderResources* pR = shaderItem.m_pShaderResources;
 								IShader* RESTRICT_POINTER pS = shaderItem.m_pShader;
 
@@ -284,7 +283,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 											};
 
 											memcpy(hashableData, pCREGeomCache, sizeof(pCREGeomCache));
-											pRenderObjData->m_uniqueObjectId = static_cast<uintptr_t>(XXH64(hashableData, sizeof(hashableData), 0));
+											pRenderObjData->m_uniqueObjectId = static_cast<uintptr_t>(XXH64(hashableData, sizeof(hashableData), 0)) + reinterpret_cast<uintptr_t>(this);
 
 											pCREGeomCache->SetupMotionBlur(pInstanceRenderObject, passInfo);
 										}
@@ -371,6 +370,14 @@ void CGeomCacheRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	SIZER_COMPONENT_NAME(pSizer, "GeomCache");
 	pSizer->AddObject(this, sizeof(*this));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CGeomCacheRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& ctx)
+{
+	float fObjScale = max(0.001f, GetMatrix().GetColumn0().GetLength());
+	float fInvObjScale = 1.0f / fObjScale;
+	UpdateStreamableComponents(ctx.importance, ctx.distance, ctx.bFullUpdate, ctx.lod, fInvObjScale, ctx.bFullUpdate);
 }
 
 void CGeomCacheRenderNode::SetMatrix(const Matrix34& matrix)
@@ -872,7 +879,6 @@ void CGeomCacheRenderNode::FillRenderObject(const SRendParams& rendParams, const
 	IRenderer* const pRenderer = GetRenderer();
 
 	pRenderObject->m_pRenderNode = rendParams.pRenderNode;
-	pRenderObject->m_fSort = rendParams.fCustomSortOffset;
 	pRenderObject->m_fDistance = rendParams.fDistance;
 
 	pRenderObject->m_ObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;

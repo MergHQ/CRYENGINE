@@ -47,7 +47,7 @@
 //! Report how many elements can be stored without reallocating (see
 //! vector::capacity()).
 //! --------------------------------------------------------------------------
-template<typename K, typename V, typename T = std::less<K>, typename A = std::allocator<std::pair<K, V>>>
+template<typename K, typename V, typename T = std::less<K>, typename A = std::allocator<std::pair<const K, V>>>
 class VectorMap : private T // Empty base optimization
 {
 public:
@@ -55,7 +55,13 @@ public:
 	typedef V                                           mapped_type;
 	typedef A                                           allocator_type;
 
-	typedef std::pair</*const */ key_type, mapped_type> value_type;
+	typedef std::pair<const key_type, mapped_type> value_type;
+
+	// For std::map the std::pair key value should be const however we are emulating a map in an std::vector
+	// as we need functions such as sort() on the internal vector it cannot be const.
+	// For complete safety one would need to add a iterator wrapper, wrapping the none-const type to a const type, preventing the use to get access to the non-const key.
+	typedef std::pair<key_type, mapped_type> none_const_value_type; 
+	typedef typename A::template rebind<none_const_value_type>::other none_const_allocator_type;
 
 	typedef T                                           key_compare;
 
@@ -73,7 +79,7 @@ public:
 		const key_compare& m_comp;
 	};
 
-	typedef std::vector<value_type, allocator_type>         container_type;
+	typedef std::vector<none_const_value_type, none_const_allocator_type>         container_type;
 	typedef typename container_type::iterator               iterator;
 	typedef typename container_type::const_iterator         const_iterator;
 	typedef typename container_type::reverse_iterator       reverse_iterator;

@@ -56,10 +56,10 @@ void CPhysCallbacks::Done()
 
 IRenderNode* GetRenderNodeFromPhys(void* pForeignData, int iForeignData)
 {
-	IEntityRenderProxy* pRndProxy;
+	IEntityRender* pRndProxy;
 	if (iForeignData == PHYS_FOREIGN_ID_STATIC)
 		return (IRenderNode*)pForeignData;
-	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY && (pRndProxy = (IEntityRenderProxy*)((IEntity*)pForeignData)->GetProxy(ENTITY_PROXY_RENDER)))
+	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY && (pRndProxy = ((IEntity*)pForeignData)->GetRenderInterface()))
 		return pRndProxy->GetRenderNode();
 	return 0;
 }
@@ -543,17 +543,20 @@ void CDeferredCollisionEventOnPhysCollision::FinishTestCollisionWithRenderMesh()
 
 	pCollisionEvent->pt = ptnew;
 	pCollisionEvent->n = m_worldRot.TransformVector(m_HitInfo.vHitNormal);
-	if (m_pMatMapping)
+	if (pCollisionEvent->penetration >= 0)
 	{
-		// When using custom material mapping.
-		if (m_HitInfo.nHitMatID < m_nMats)
+		if (m_pMatMapping)
 		{
-			m_HitInfo.nHitSurfaceID = m_pMatMapping[m_HitInfo.nHitMatID];
+			// When using custom material mapping.
+			if (m_HitInfo.nHitMatID < m_nMats)
+			{
+				m_HitInfo.nHitSurfaceID = m_pMatMapping[m_HitInfo.nHitMatID];
+			}
 		}
-	}
-	if (m_HitInfo.nHitSurfaceID)
-	{
-		pCollisionEvent->idmat[1] = m_HitInfo.nHitSurfaceID;
+		if (m_HitInfo.nHitSurfaceID)
+		{
+			pCollisionEvent->idmat[1] = m_HitInfo.nHitSurfaceID;
+		}
 	}
 
 	pCollisionEvent->fDecalPlacementTestMaxSize = m_RayIntersectionData.fDecalPlacementTestMaxSize;

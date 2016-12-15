@@ -12,6 +12,8 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "EditorGame.h"
+#include "Game.h"
+#include "GamePhysicsSettings.h"
 #include "GameStartup.h"
 #include "IActionMapManager.h"
 #include "IActorSystem.h"
@@ -37,89 +39,19 @@
 
 #include <IForceFeedbackSystem.h>
 
-#define EDITOR_SERVER_PORT 0xed17
-
-ICVar * CEditorGame::s_pEditorGameMode;
-CEditorGame * CEditorGame::s_pEditorGame = NULL;
+CEditorGame* CEditorGame::s_pEditorGame = nullptr;
 struct IGameStartup;
 
 //------------------------------------------------------------------------
-CEditorGame::CEditorGame()
+CEditorGame::CEditorGame(const char* szBinariesDirectory)
+	: m_pGame(nullptr)
+	, m_pEquipmentSystemInterface(nullptr)
+	, m_bGameMode(false)
+	, m_bPlayer(false)
+	, m_binariesDir(szBinariesDirectory)
+	, m_pGTE(nullptr)
 {
-	InitMembers(nullptr);
-}
-
-CEditorGame::CEditorGame(const char* binariesDir)
-{
-	InitMembers(binariesDir);
-}
-
-void CEditorGame::InitMembers(const char* binariesDir)
-{
-	m_pGame = 0;
-	m_pGameStartup = 0;
-	m_pEquipmentSystemInterface = 0;
-	m_bEnabled = false;
-	m_bGameMode = false;
-	m_bPlayer = false;
-	m_bUsingMultiplayerGameRules = false;
 	s_pEditorGame = this;
-	s_pEditorGameMode = 0;
-	m_binariesDir = binariesDir;
-	m_pGTE = NULL;
-}
-
-void CEditorGame::ResetClient(IConsoleCmdArgs*)
-{
-	g_pGame->ReloadPlayerParamFiles();
-
-	bool value = s_pEditorGame->m_bPlayer;
-	s_pEditorGame->EnablePlayer(false);
-
-	IEntityClass *pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Player");
-	if (pClass)	pClass->LoadScript(true);
-
-	if (value)
-	{
-		s_pEditorGame->ConfigureNetContext(true);
-		const char *pGameRulesName = GetGameRulesName();
-		s_pEditorGame->m_pGame->GetIGameFramework()->GetIGameRulesSystem()->CreateGameRules(pGameRulesName);
-	}
-	s_pEditorGame->EnablePlayer(value);
-	s_pEditorGame->HidePlayer(true);
-
-	CActor *pActor = static_cast<CActor*>(g_pGame->GetIGameFramework()->GetClientActor());
-	if (pActor)
-	{
-		SEntityEvent event;
-		event.event = ENTITY_EVENT_RELOAD_SCRIPT;
-		pActor->GetEntity()->SendEvent(event);
-	}
-}
-
-//------------------------------------------------------------------------
-void CEditorGame::ToggleMultiplayerGameRules()
-{
-	m_bUsingMultiplayerGameRules = !m_bUsingMultiplayerGameRules;
-
-	bool value = s_pEditorGame->m_bPlayer;
-	s_pEditorGame->EnablePlayer(false);
-
-	s_pEditorGame->ConfigureNetContext(true);
-
-	IEntityClass *pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Player");
-	if (pClass)
-	{
-		pClass->LoadScript(true);
-	}
-
-	const char *pGameRulesName = GetGameRulesName();
-	s_pEditorGame->m_pGame->GetIGameFramework()->GetIGameRulesSystem()->CreateGameRules(pGameRulesName);
-
-	s_pEditorGame->EnablePlayer(value);
-	s_pEditorGame->HidePlayer(true);
-
-	gEnv->pConsole->ShowConsole(false);
 }
 
 //------------------------------------------------------------------------
@@ -127,18 +59,6 @@ CEditorGame::~CEditorGame()
 {
 	SAFE_DELETE(m_pEquipmentSystemInterface);
 	s_pEditorGame = NULL;
-
-	SAFE_RELEASE(s_pEditorGameMode);
-}
-
-//------------------------------------------------------------------------
-void CEditorGame::OnChangeEditorMode( ICVar * pVar )
-{
-	assert( pVar == s_pEditorGameMode );
-	if (s_pEditorGame)
-	{
-		s_pEditorGame->SetGameMode( s_pEditorGame->m_bGameMode );
-	}
 }
 
 //------------------------------------------------------------------------
@@ -152,13 +72,7 @@ bool CEditorGame::Init(ISystem *pSystem,IGameToEditorInterface *pGameToEditorInt
 {
 	assert(pSystem);
 
-	SSystemInitParams startupParams;
-	FillSystemInitParams(startupParams, pSystem);
-
-	m_pGameStartup = CreateGameStartup();
-
-	m_pGame = m_pGameStartup->Init(startupParams);
-
+	m_pGame = gEnv->pGameFramework->GetIGame();
 	if (!m_pGame)
 	{
 		return false;
@@ -166,27 +80,9 @@ bool CEditorGame::Init(ISystem *pSystem,IGameToEditorInterface *pGameToEditorInt
 
 	InitUIEnums(pGameToEditorInterface);
 
-	m_pGame->GetIGameFramework()->InitEditor(pGameToEditorInterface);
-
 	m_pEquipmentSystemInterface = new CEquipmentSystemInterface(this, pGameToEditorInterface);
 
-	gEnv->bServer = true;
-	gEnv->bMultiplayer = false;
-
-#if CRY_PLATFORM_DESKTOP
-	gEnv->SetIsClient(true);
-#endif
-
-	m_bUsingMultiplayerGameRules = (g_pGameCVars->g_multiplayerDefault != 0);
-
-	if (IConsole* pConsole = gEnv->pConsole)
-		s_pEditorGameMode = REGISTER_INT_CB("net_gamemode", 0, VF_NULL, "Should editor connect a new client?", &OnChangeEditorMode);
-
 	SetGameMode(false);
-
-	REGISTER_COMMAND( "net_reseteditorclient", ResetClient, VF_NULL, "Resets player and gamerules!" );
-
-	ConfigureNetContext(true);
 
 	g_pGame->OnEditorGameInitComplete();
 		
@@ -194,97 +90,33 @@ bool CEditorGame::Init(ISystem *pSystem,IGameToEditorInterface *pGameToEditorInt
 }
 
 //------------------------------------------------------------------------
-int CEditorGame::Update(bool haveFocus, unsigned int updateFlags)
-{
-	return m_pGameStartup->Update(haveFocus, updateFlags);
-}
-
-//------------------------------------------------------------------------
 void CEditorGame::Shutdown()
 {
-	gEnv->pConsole->RemoveCommand("net_reseteditorclient");
-
-	EnablePlayer(false);
-	SetGameMode(false);
-	m_pGameStartup->Shutdown();
 }
 
 //------------------------------------------------------------------------
-void CEditorGame::EnablePlayer(bool bPlayer)
+void CEditorGame::SetGameMode(bool bGameMode)
 {
-	bool spawnPlayer = false;
-	if (m_bPlayer != bPlayer)
+	CActor *pActor = static_cast<CActor*>(m_pGame->GetIGameFramework()->GetClientActor());
+	if (pActor)
 	{
-		spawnPlayer = m_bPlayer = bPlayer;
-	}
-	if (!SetGameMode( m_bGameMode ))
-	{
-		GameWarning("Failed setting game mode");
-	}
-	else if (m_bEnabled && spawnPlayer)
-	{
-		if (!m_pGame->GetIGameFramework()->BlockingSpawnPlayer())
-			GameWarning("Failed spawning player");
-	}
-}
-
-//------------------------------------------------------------------------
-bool CEditorGame::SetGameMode(bool bGameMode)
-{
-	m_bGameMode = bGameMode;
-	bool on = bGameMode;
-	if (s_pEditorGameMode->GetIVal() == 0)
-		on = m_bPlayer;
-	bool ok = ConfigureNetContext( on );
-	if (ok)
-	{
-		if(gEnv->IsEditor())
+		if (bGameMode)
 		{
-			m_pGame->EditorResetGame(bGameMode);
+			// Revive actor in its current location (it will be moved to the editor viewpoint location later)
+			const Vec3 pos = pActor->GetEntity()->GetWorldPos();
+			const Quat rot = pActor->GetEntity()->GetWorldRotation();
+			const int teamId = g_pGame->GetGameRules()->GetTeam(pActor->GetEntityId());
+			pActor->NetReviveAt(pos, rot, teamId, MP_MODEL_INDEX_DEFAULT);
 		}
-
-		IGameFramework * pGameFramework = m_pGame->GetIGameFramework();
-
-		pGameFramework->OnEditorSetGameMode(bGameMode);
-
-		CActor *pActor = static_cast<CActor*>(m_pGame->GetIGameFramework()->GetClientActor());
-		if (pActor)
+		else
 		{
-			if (bGameMode)
-			{
-				// Revive actor in its current location (it will be moved to the editor viewpoint location later)
-				const Vec3 pos = pActor->GetEntity()->GetWorldPos();
-				const Quat rot = pActor->GetEntity()->GetWorldRotation();
-				const int teamId = g_pGame->GetGameRules()->GetTeam(pActor->GetEntityId());
-				pActor->NetReviveAt(pos, rot, teamId, MP_MODEL_INDEX_DEFAULT);
-			}
-			else
-			{
-				pActor->Reset(true);
-			}
+			pActor->Reset(true);
 		}
 	}
-	else
-	{
-		GameWarning("Failed configuring net context");
-	}
-	return ok;
 }
 
 //------------------------------------------------------------------------
-IEntity * CEditorGame::GetPlayer()
-{
-	IGameFramework * pGameFramework = m_pGame->GetIGameFramework();	
-
-	if(!m_pGame)
-		return 0;
-
-	IActor * pActor = pGameFramework->GetClientActor();
-	return pActor? pActor->GetEntity() : NULL;
-}
-
-//------------------------------------------------------------------------
-void CEditorGame::SetPlayerPosAng(Vec3 pos,Vec3 viewDir)
+bool CEditorGame::SetPlayerPosAng(Vec3 pos,Vec3 viewDir)
 {
 	IActor * pClActor = m_pGame->GetIGameFramework()->GetClientActor();
 
@@ -305,68 +137,8 @@ void CEditorGame::SetPlayerPosAng(Vec3 pos,Vec3 viewDir)
 
 		pClActor->GetEntity()->SetPosRotScale( pos,Quat::CreateRotationVDir(viewDir),Vec3(1,1,1),ENTITY_XFORM_EDITOR|ENTITY_XFORM_POS|ENTITY_XFORM_ROT|ENTITY_XFORM_SCL);
 	}
-}
 
-//------------------------------------------------------------------------
-void CEditorGame::HidePlayer(bool bHide)
-{
-	IEntity * pEntity = GetPlayer();
-	if (pEntity)
-		pEntity->Hide( bHide );
-}
-
-//------------------------------------------------------------------------
-bool CEditorGame::ConfigureNetContext( bool on )
-{
-	bool ok = false;
-
-	IGameFramework * pGameFramework = m_pGame->GetIGameFramework();
-
-	if (on == m_bEnabled)
-	{
-		ok = true;
-	}
-	else if (on)
-	{
-		SGameContextParams ctx;
-
-		SGameStartParams gameParams;
-		gameParams.flags = eGSF_Server
-			| eGSF_NoSpawnPlayer
-			| eGSF_Client
-			| eGSF_NoLevelLoading
-			| eGSF_BlockingClientConnect
-			| eGSF_NoGameRules
-			| eGSF_NoQueries;
-
-		if (!m_bUsingMultiplayerGameRules)
-		{
-			gameParams.flags |= eGSF_LocalOnly;
-		}
-		
-		if (m_bUsingMultiplayerGameRules)
-		{
-			gameParams.flags |= eGSF_ImmersiveMultiplayer;
-		}
-
-		gameParams.connectionString = "";
-		gameParams.hostname = "localhost";
-		gameParams.port = EDITOR_SERVER_PORT;
-		gameParams.pContextParams = &ctx;
-		gameParams.maxPlayers = 1;
-
-		if (pGameFramework->StartGameContext( &gameParams ))
-			ok = true;
-	}
-	else
-	{
-		pGameFramework->EndGameContext();
-		gEnv->pNetwork->SyncWithGame(eNGS_Shutdown);
-		ok = true;
-	}
-
-	m_bEnabled = on && ok;
-	return ok;
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -374,28 +146,12 @@ void CEditorGame::OnBeforeLevelLoad()
 {
 	//This must be called before ILevelSystem::OnLoadingStart (good place to free resources in editor, before next level loads)
 	g_pGame->OnBeforeEditorLevelLoad();
-
-	EnablePlayer(false);
-	ConfigureNetContext(true);
-	const char *pGameRulesName = GetGameRulesName();
-	m_pGame->GetIGameFramework()->GetIGameRulesSystem()->CreateGameRules(pGameRulesName);
-	m_pGame->GetIGameFramework()->GetILevelSystem()->OnLoadingStart(0);
 }
 
 //------------------------------------------------------------------------
 void CEditorGame::OnAfterLevelInit(const char *levelName, const char *levelFolder)
 {
 	InitEntityArchetypeEnums(m_pGTE, levelFolder, levelName);
-	EnablePlayer(true);
-}
-
-//------------------------------------------------------------------------
-void CEditorGame::OnAfterLevelLoad(const char *levelName, const char *levelFolder)
-{
-	m_pGame->GetIGameFramework()->GetILevelSystem()->Rescan("levels", ILevelSystem::TAG_MAIN);
-
-	ILevelInfo* pLevel = m_pGame->GetIGameFramework()->GetILevelSystem()->SetEditorLoadedLevel(levelName);
-	m_pGame->GetIGameFramework()->GetILevelSystem()->OnLoadingComplete(pLevel);
 }
 
 //------------------------------------------------------------------------
@@ -411,21 +167,15 @@ void CEditorGame::OnCloseLevel()
 	g_pGame->GetGameSharedParametersStorage()->GetItemResourceCache().FlushCaches();
 }
 
-//------------------------------------------------------------------------
-IFlowSystem * CEditorGame::GetIFlowSystem()
-{
-	return m_pGame->GetIGameFramework()->GetIFlowSystem();
-}
-
-//------------------------------------------------------------------------
-IGameTokenSystem* CEditorGame::GetIGameTokenSystem()
-{
-	return m_pGame->GetIGameFramework()->GetIGameTokenSystem();
-}
 
 void CEditorGame::RegisterTelemetryTimelineRenderers(Telemetry::ITelemetryRepository* pRepository)
 {
 	// pRepository->RegisterTimelineRenderer("shot", RenderShot);
+}
+
+IGamePhysicsSettings* CEditorGame::GetIGamePhysicsSettings()
+{
+	return g_pGame->GetGamePhysicsSettings();
 }
 
 void CEditorGame::OnDisplayRenderUpdated( bool displayHelpers )
@@ -693,25 +443,9 @@ IEquipmentSystemInterface* CEditorGame::GetIEquipmentSystemInterface()
 	return m_pEquipmentSystemInterface;
 }
 
-void CEditorGame::FillSystemInitParams(SSystemInitParams &startupParams, ISystem* system)
-{
-	startupParams.bEditor = true;
-	startupParams.pSystem = system;
-	startupParams.bExecuteCommandLine=false;		// in editor we do it later - after other things are initialized
-	if (m_binariesDir && m_binariesDir[0])
-	{
-		cry_strcpy(startupParams.szBinariesDir, m_binariesDir);
-	}
-}
-
 const char * CEditorGame::GetGameRulesName()
 {
-	const char *pGameRulesName = "SinglePlayer";
-	if (s_pEditorGame->m_bUsingMultiplayerGameRules)
-	{
-		pGameRulesName = "TeamInstantAction";
-	}
-	return pGameRulesName;
+	return "SinglePlayer";
 }
 
 void CEditorGame::InitForceFeedbackEnums( IGameToEditorInterface* pGTE )
@@ -1187,7 +921,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 	IEntityIt* pIt = gEnv->pEntitySystem->GetEntityIterator();
 	while(IEntity* pEntity = pIt->Next())
 	{
-		IEntityFlowGraphProxy* pFGProxy = static_cast<IEntityFlowGraphProxy*>(pEntity->GetProxy(ENTITY_PROXY_FLOWGRAPH));
+		IEntityFlowGraphComponent* pFGProxy = static_cast<IEntityFlowGraphComponent*>(pEntity->GetProxy(ENTITY_PROXY_FLOWGRAPH));
 		if(pFGProxy)
 		{
 			flowGraphs.push_back(pFGProxy->GetFlowGraph());

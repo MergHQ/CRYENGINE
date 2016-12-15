@@ -837,7 +837,7 @@ void CNanoGlass::RenderPass(bool bDebugPass, bool bIsHudRendering)
 		if (pRenderMesh->m_pRenderMesh)
 			pRenderMesh->m_pRenderMesh->CheckUpdate(pRenderMesh->m_pRenderMesh->_GetVertexFormat(), 0);
 
-		gcpRendD3D->m_RP.m_pRE = const_cast<CRendElementBase*>(pRenderData.pRenderElement);
+		gcpRendD3D->m_RP.m_pRE = const_cast<CRenderElement*>(pRenderData.pRenderElement);
 		if (gcpRendD3D->FX_CommitStreams(&pShaderTech->m_Passes[0], true))
 		{
 			gcpRendD3D->m_RP.m_FirstVertex = pRenderMesh->m_nFirstVertId;

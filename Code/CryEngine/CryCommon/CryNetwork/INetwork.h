@@ -28,6 +28,8 @@
 #include <CryLobby/CommonICryMatchMaking.h> // <> required for Interfuscator
 #include <CryNetwork/INetworkService.h>
 
+#include <CryEntitySystem/IEntity.h>
+
 #define SERVER_DEFAULT_PORT        64087
 #define SERVER_DEFAULT_PORT_STRING "64087"
 

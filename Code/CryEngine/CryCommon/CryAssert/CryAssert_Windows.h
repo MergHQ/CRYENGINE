@@ -366,9 +366,10 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 	{
 		return false;
 	}
-
-	if (!gEnv->bNoAssertDialog && !gEnv->bIgnoreAllAsserts)
+	if (!gEnv->bNoAssertDialog && !gEnv->bIgnoreAllAsserts && !gEnv->bStoppedOnAssert)
 	{
+		gEnv->bStoppedOnAssert = true;
+
 		SCryAssertInfo assertInfo;
 
 		assertInfo.pszCondition = _pszCondition;
@@ -384,7 +385,7 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 		CCursorShowerWithStack cursorShowerWithStack;
 		cursorShowerWithStack.StoreCurrentAndShow();
 
-		DialogBoxIndirectParam(GetModuleHandle(NULL), (DLGTEMPLATE*)&g_dialogRC, GetDesktopWindow(), DlgProc, (LPARAM)&assertInfo);
+		DialogBoxIndirectParam(CryGetCurrentModule(), (DLGTEMPLATE*)&g_dialogRC, GetDesktopWindow(), DlgProc, (LPARAM)&assertInfo);
 
 		cursorShowerWithStack.RevertToPrevious();
 
@@ -401,8 +402,10 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 			gEnv->bIgnoreAllAsserts = true;
 			break;
 		case SCryAssertInfo::BUTTON_BREAK:
+			gEnv->bStoppedOnAssert = false;
 			return true;
 		case SCryAssertInfo::BUTTON_STOP:
+			gEnv->bStoppedOnAssert = false;
 			abort();
 			return true;
 		case SCryAssertInfo::BUTTON_REPORT_AS_BUG:
@@ -413,10 +416,13 @@ bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _ui
 			}
 			break;
 		}
+		gEnv->bStoppedOnAssert = false;
 	}
-	if (gEnv)
+	if (gEnv && !gEnv->bStoppedOnAssert)
 	{
+		gEnv->bStoppedOnAssert = true;
 		gEnv->pSystem->OnAssert(_pszCondition, gs_szMessage, _pszFile, _uiLine);
+		gEnv->bStoppedOnAssert = false;
 	}
 	return false;
 }

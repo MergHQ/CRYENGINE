@@ -167,7 +167,7 @@ void CGameRulesCommonDamageHandling::ClProcessHit(Vec3 dir, EntityId shooterId, 
 	const char* hit = g_pGame->GetGameRules()->GetHitType(hitTypeId);
 	if(hit)
 	{
-		IActor *pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor *pClientActor = gEnv->pGameFramework->GetClientActor();
 		string hitSound;
 		hitSound.Format("ClientDamage%s", hit);
 		float maxHealth = pClientActor->GetMaxHealth();
@@ -490,7 +490,7 @@ void CGameRulesCommonDamageHandling::LogHit(const HitInfo& hit, bool extended, b
 		CryLog("  radius.....: %.3f", hit.radius);
 		CryLog("  remote.....: %d", hit.remote);
 
-		if (IActor* targetActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hit.targetId))
+		if (IActor* targetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(hit.targetId))
 			CryLog("  health.....: %f", targetActor->GetHealth());
 		else
 			CryLog("  health.....: N/A");

@@ -24,6 +24,7 @@ struct CRY_ALIGN(4) pe_gridthunk {
 class CPhysicalEntity;
 const int NO_GRID_REG = -1<<14;
 const int GRID_REG_PENDING = NO_GRID_REG+1;
+const int GRID_REG_LAST = NO_GRID_REG+2;
 
 class CPhysicalPlaceholder : public IPhysicalEntity {
 public:
@@ -39,11 +40,11 @@ public:
 		, m_iSimClass(0)
 		, m_lockUpdate(0)
 	{ 
-		COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBox) == 2);
+		static_assert(CRY_ARRAY_COUNT(m_BBox) == 2, "Invalid array size!");
 		m_BBox[0].zero();
 		m_BBox[1].zero();
 
-		COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_ig) == 2);
+		static_assert(CRY_ARRAY_COUNT(m_ig) == 2, "Invalid array size!");
 		m_ig[0].x=m_ig[1].x=m_ig[0].y=m_ig[1].y = GRID_REG_PENDING;
 	}
 

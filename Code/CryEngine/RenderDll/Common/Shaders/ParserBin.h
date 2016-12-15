@@ -109,29 +109,62 @@ enum EToken
 	eT_Texture3D,
 	eT_RWTexture3D,
 
+	eT_snorm,
+	eT_unorm,
 	eT_float,
 	eT_float2,
 	eT_float3,
 	eT_float4,
-	eT_float4x4,
-	eT_float3x4,
 	eT_float2x4,
+	eT_float3x4,
+	eT_float4x4,
 	eT_float3x3,
 	eT_half,
 	eT_half2,
 	eT_half3,
 	eT_half4,
-	eT_half4x4,
-	eT_half3x4,
 	eT_half2x4,
+	eT_half3x4,
+	eT_half4x4,
 	eT_half3x3,
 	eT_bool,
 	eT_int,
 	eT_int2,
+	eT_int3,
 	eT_int4,
 	eT_uint,
 	eT_uint2,
+	eT_uint3,
 	eT_uint4,
+	eT_min16float,
+	eT_min16float2,
+	eT_min16float3,
+	eT_min16float4,
+	eT_min16float4x4,
+	eT_min16float3x4,
+	eT_min16float2x4,
+	eT_min16float3x3,
+	eT_min10float,
+	eT_min10float2,
+	eT_min10float3,
+	eT_min10float4,
+	eT_min10float4x4,
+	eT_min10float3x4,
+	eT_min10float2x4,
+	eT_min10float3x3,
+	eT_min16int,
+	eT_min16int2,
+	eT_min16int3,
+	eT_min16int4,
+	eT_min12int,
+	eT_min12int2,
+	eT_min12int3,
+	eT_min12int4,
+	eT_min16uint,
+	eT_min16uint2,
+	eT_min16uint3,
+	eT_min16uint4,
+
 	eT_sampler1D,
 	eT_sampler2D,
 	eT_sampler3D,
@@ -405,10 +438,7 @@ enum EToken
 	eT_cbuffer,
 	eT_PER_BATCH,
 	eT_PER_INSTANCE,
-	eT_PER_FRAME,
 	eT_PER_MATERIAL,
-	eT_PER_LIGHT,
-	eT_PER_SHADOWGEN,
 	eT_SKIN_DATA,
 	eT_INSTANCE_DATA,
 
@@ -667,6 +697,8 @@ enum EToken
 	eT_GatherBlue,
 	eT_GatherAlpha,
 
+	eT_$AutoGS_MultiRes,
+
 	eT_max,
 	eT_user_first = eT_max + 1
 };
@@ -796,6 +828,7 @@ struct SortByToken
 class CParserBin
 {
 	friend class CShaderManBin;
+	friend class CHWShader;
 	friend class CHWShader_D3D;
 	friend struct SFXParam;
 	friend struct SFXSampler;
@@ -807,7 +840,7 @@ class CParserBin
 	struct SShaderBin* m_pCurBinShader;
 	CShader* m_pCurShader;
 	TArray<uint32> m_Tokens;
-	FXMacroBin m_Macros[2];
+	FXMacroBin m_Macros[3];
 	FXShaderToken m_TokenTable;
 	TArray<uint64> m_IfAffectMask;
 	//std::vector<std::vector<int>> m_KeyOffsets;

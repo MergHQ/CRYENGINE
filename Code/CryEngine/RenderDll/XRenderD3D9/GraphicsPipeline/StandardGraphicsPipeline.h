@@ -17,6 +17,7 @@ class CScreenSpaceSSSStage;
 class CVolumetricFogStage;
 class CFogStage;
 class CVolumetricCloudsStage;
+class CWaterStage;
 class CWaterRipplesStage;
 class CMotionBlurStage;
 class CDepthOfFieldStage;
@@ -30,6 +31,7 @@ class CGpuParticlesStage;
 class CTiledShadingStage;
 class CColorGradingStage;
 class CSceneCustomStage;
+class CLensOpticsStage;
 class CRenderCamera;
 class CCamera;
 
@@ -55,6 +57,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ScreenSpaceSSS,
 	eStage_VolumetricFog,
 	eStage_Fog,
+	eStage_Water,
 	eStage_WaterRipples,
 	eStage_MotionBlur,
 	eStage_DepthOfField,
@@ -66,6 +69,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ClipVolumes,
 	eStage_ShadowMask,
 	eStage_ColorGrading,
+	eStage_LensOptics,
 
 	eStage_Count
 };
@@ -123,7 +127,7 @@ public:
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
 	                                  SGraphicsPipelineStateDescription stateDesc,
 	                                  CGraphicsPipelineStateLocalCache* pStateCache);
-	void UpdatePerViewConstantBuffer(const RECT* pCustomViewport = NULL);
+	void UpdatePerViewConstantBuffer(const D3DViewPort* pCustomViewport = nullptr);
 	void UpdatePerViewConstantBuffer(const SViewInfo* pViewInfo, int viewInfoCount, CConstantBufferPtr& pPerViewBuffer);
 	bool FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc);
 
@@ -132,13 +136,15 @@ public:
 	void   RenderScreenSpaceSSS(CTexture* pIrradianceTex);
 	void   RenderPostAA();
 
-	void   SwitchToLegacyPipeline();
-	void   SwitchFromLegacyPipeline();
+	static void   SwitchToLegacyPipeline();
+	static void   SwitchFromLegacyPipeline();
 
 	uint32 IncrementNumInvalidDrawcalls(int count) { return CryInterlockedAdd((volatile int*)&m_numInvalidDrawcalls, count); }
 	uint32 GetNumInvalidDrawcalls() const          { return m_numInvalidDrawcalls;   }
 
-	int GetViewInfo(SViewInfo viewInfo[2], const RECT * pCustomViewport = NULL);
+	int GetViewInfoCount() const;
+	int GetViewInfo(SViewInfo viewInfo[2], const D3DViewPort * pCustomViewport = NULL);
+	uint32 GetRenderFlags() const { return m_renderingFlags; }
 
 	CConstantBufferPtr        GetPerViewConstantBuffer()         const { return m_pPerViewConstantBuffer; }
 	CDeviceResourceSetPtr     GetDefaultMaterialResources()      const { return m_pDefaultMaterialResources; }
@@ -153,6 +159,8 @@ public:
 	CShadowMaskStage*         GetShadowMaskStage()               const { return m_pShadowMaskStage; }
 	CVolumetricFogStage*      GetVolumetricFogStage()            const { return m_pVolumetricFogStage; }
 	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
+	CWaterStage*              GetWaterStage()                    const { return m_pWaterStage; }
+	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
 
 public:
 	static void ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDesc, const SShaderProfile& shaderProfile);
@@ -170,6 +178,7 @@ private:
 	CVolumetricFogStage*          m_pVolumetricFogStage = nullptr;
 	CFogStage*                    m_pFogStage = nullptr;
 	CVolumetricCloudsStage*       m_pVolumetricCloudsStage = nullptr;
+	CWaterStage*                  m_pWaterStage;
 	CWaterRipplesStage*           m_pWaterRipplesStage;
 	CMotionBlurStage*             m_pMotionBlurStage = nullptr;
 	CDepthOfFieldStage*           m_pDepthOfFieldStage = nullptr;
@@ -183,6 +192,7 @@ private:
 	CTiledShadingStage*           m_pTiledShadingStage = nullptr;
 	CColorGradingStage*           m_pColorGradingStage = nullptr;
 	CSceneCustomStage*            m_pSceneCustomStage = nullptr;
+	CLensOpticsStage*             m_pLensOpticsStage = nullptr;
 
 	CConstantBufferPtr            m_pPerViewConstantBuffer = nullptr;
 	CDeviceResourceSetPtr         m_pDefaultMaterialResources = nullptr;

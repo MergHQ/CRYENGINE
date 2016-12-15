@@ -16,7 +16,6 @@
 #define _Cry3DEngineBase_h_
 
 #include "3DEngineMemory.h"
-#include <CryEntitySystem/IEntityRenderState.h>
 
 struct ISystem;
 struct IRenderer;
@@ -88,7 +87,6 @@ struct Cry3DEngineBase
 	static CGeomCacheManager*                     m_pGeomCacheManager;
 #endif
 
-	static float             m_fInvDissolveDistBand;
 	static bool              m_bProfilerEnabled;
 	static threadID          m_nMainThreadId;
 	static bool              m_bLevelLoadingInProgress;
@@ -97,7 +95,6 @@ struct Cry3DEngineBase
 	static bool              m_bRenderTypeEnabled[eERType_TypesNum];
 	static int               m_mergedMeshesPoolSize;
 
-	static int               m_CpuFlags;
 	static ESystemConfigSpec m_LightConfigSpec;
 #if CRY_PLATFORM_DESKTOP
 	static bool              m_bEditor;
@@ -172,7 +169,7 @@ struct Cry3DEngineBase
 
 	int&        GetInstCount(EERType eType)                            { return m_arrInstancesCounter[eType]; }
 
-	uint32      GetMinSpecFromRenderNodeFlags(uint32 dwRndFlags) const { return (dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; }
+	uint32      GetMinSpecFromRenderNodeFlags(uint64 dwRndFlags) const { return (dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; }
 	static bool CheckMinSpec(uint32 nMinSpec);
 
 	static bool IsEscapePressed();

@@ -386,7 +386,7 @@ CSWVisArea* CVisAreaManager::FindFreeVisAreaFromPool(PodArray<CVisArea*, Reserve
 	{
 		CSWVisArea* pVisArea = (CSWVisArea*)visAreas[i];
 
-		if (!pVisArea->NumRefs())
+		if (!pVisArea->UseCount())
 		{
 			pVisArea->m_nSlotID = i;
 			return pVisArea;

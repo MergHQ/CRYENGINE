@@ -21,6 +21,7 @@
 #include <CryInput/IInput.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const float CVisRegTest::MaxStreamingWait = 30.0f;
 
@@ -74,7 +75,7 @@ void CVisRegTest::Init(IConsoleCmdArgs* pParams)
 	}
 
 	gEnv->pTimer->SetTimeScale(0);
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	gEnv->pSystem->GetRandomGenerator().Seed(0);
 	srand(0);
 }
 
@@ -150,7 +151,7 @@ void CVisRegTest::ExecCommands()
 	if (m_nextCmd >= m_cmdBuf.size()) return;
 
 	float col[] = { 0, 1, 0, 1 };
-	gEnv->pRenderer->Draw2dLabel(10, 10, 2, col, false, "Visual Regression Test");
+	IRenderAuxText::Draw2dLabel(10, 10, 2, col, false, "Visual Regression Test");
 
 	if (m_waitFrames > 0)
 	{
@@ -196,7 +197,7 @@ void CVisRegTest::ExecCommands()
 			gEnv->pTimer->SetTimer(ITimer::ETIMER_GAME, 0);
 			gEnv->pTimer->SetTimer(ITimer::ETIMER_UI, 0);
 			gEnv->pConsole->ExecuteString("t_FixedStep 0.033333");
-			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+			gEnv->pSystem->GetRandomGenerator().Seed(0);
 			srand(0);
 			break;
 		case eCMDConsoleCmd:
@@ -239,7 +240,7 @@ void CVisRegTest::LoadMap(const char* mapName)
 	gEnv->pTimer->SetTimer(ITimer::ETIMER_GAME, 0);
 	gEnv->pTimer->SetTimer(ITimer::ETIMER_UI, 0);
 	gEnv->pConsole->ExecuteString("t_FixedStep 0");
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	gEnv->pSystem->GetRandomGenerator().Seed(0);
 	srand(0);
 
 	// Disable user input

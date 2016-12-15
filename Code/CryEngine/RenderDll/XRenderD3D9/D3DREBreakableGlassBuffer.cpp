@@ -103,8 +103,8 @@ void CREBreakableGlassBuffer::InitialiseBuffers()
 			SBuffer& buffer = m_buffer[i][j];
 
 			// Allocate buffers
-			buffer.pVertices = gRenDev->m_DevBufMan.CreateVBuffer(bufferConsts.maxNumVerts, eVF_P3F_C4B_T2F, "BreakableGlassPlaneVB", BU_DYNAMIC);
-			buffer.pIndices = gRenDev->m_DevBufMan.CreateIBuffer(bufferConsts.maxNumInds, "BreakableGlassPlaneIB", BU_DYNAMIC);
+			buffer.verticesHdl = gRenDev->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, bufferConsts.maxNumVerts * sizeof(SVF_P3F_C4B_T2F));
+			buffer.indicesHdl = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, BU_DYNAMIC, bufferConsts.maxNumInds * sizeof(uint16));
 			buffer.tangentStreamHdl = gRenDev->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, bufferConsts.maxNumVerts * sizeof(SPipTangents));
 
 			// Default state
@@ -129,16 +129,16 @@ void CREBreakableGlassBuffer::ReleaseBuffers()
 			SBuffer& buffer = m_buffer[i][j];
 
 			// Release buffers
-			if (buffer.pVertices)
+			if (buffer.verticesHdl != InvalidStreamHdl)
 			{
-				gRenDev->m_DevBufMan.ReleaseVBuffer(buffer.pVertices);
-				buffer.pVertices = NULL;
+				gRenDev->m_DevBufMan.Destroy(buffer.verticesHdl);
+				buffer.verticesHdl = InvalidStreamHdl;
 			}
 
-			if (buffer.pIndices)
+			if (buffer.indicesHdl != InvalidStreamHdl)
 			{
-				gRenDev->m_DevBufMan.ReleaseIBuffer(buffer.pIndices);
-				buffer.pIndices = NULL;
+				gRenDev->m_DevBufMan.Destroy(buffer.indicesHdl);
+				buffer.indicesHdl = InvalidStreamHdl;
 			}
 
 			if (buffer.tangentStreamHdl != InvalidStreamHdl)
@@ -234,9 +234,9 @@ bool CREBreakableGlassBuffer::RT_UpdateVertexBuffer(const uint32 id, const EBuff
 	// Update vertex data
 	const uint32 vertexCount = min(vertCount, bufferConsts.maxNumVerts);
 
-	if (vertexCount > 0 && buffer.pVertices && pVertData && RT_IsBufferValid(id, buffType))
+	if (vertexCount > 0 && buffer.verticesHdl && pVertData && RT_IsBufferValid(id, buffType))
 	{
-		const size_t devHdl = buffer.pVertices->m_VS.m_BufferHdl;
+		const size_t devHdl = buffer.verticesHdl;
 		CRY_ASSERT_MESSAGE(devHdl >= 0, "Updating an invalid VBuffer.");
 
 		const uint32 stride = sizeof(SVF_P3F_C4B_T2F);
@@ -263,9 +263,9 @@ bool CREBreakableGlassBuffer::RT_UpdateIndexBuffer(const uint32 id, const EBuffe
 	// Update index data
 	const uint32 indexCount = min(indCount, bufferConsts.maxNumInds);
 
-	if (indexCount > 0 && buffer.pIndices && pIndData && RT_IsBufferValid(id, buffType))
+	if (indexCount > 0 && buffer.indicesHdl && pIndData && RT_IsBufferValid(id, buffType))
 	{
-		const size_t devHdl = buffer.pIndices->m_VS.m_BufferHdl;
+		const size_t devHdl = buffer.indicesHdl;
 		CRY_ASSERT_MESSAGE(devHdl >= 0, "Updating an invalid VBuffer.");
 
 		const uint32 stride = sizeof(uint16);
@@ -349,9 +349,9 @@ void CREBreakableGlassBuffer::DrawBuffer(const uint32 cyclicId, const EBufferTyp
 		size_t vbOffset = 0, tbOffset = 0, ibOffset = 0;
 
 		// Get buffers
-		D3DVertexBuffer* pVBuffer = pRenderer->m_DevBufMan.GetD3DVB(buffer.pVertices->m_VS.m_BufferHdl, &vbOffset);
+		D3DVertexBuffer* pVBuffer = pRenderer->m_DevBufMan.GetD3DVB(buffer.verticesHdl, &vbOffset);
 		D3DVertexBuffer* pTBuffer = pRenderer->m_DevBufMan.GetD3DVB(buffer.tangentStreamHdl, &tbOffset);
-		D3DIndexBuffer* pIBuffer = pRenderer->m_DevBufMan.GetD3DIB(buffer.pIndices->m_VS.m_BufferHdl, &ibOffset);
+		D3DIndexBuffer*  pIBuffer = pRenderer->m_DevBufMan.GetD3DIB(buffer.indicesHdl, &ibOffset);
 
 		if (pVBuffer && pTBuffer && pIBuffer)
 		{

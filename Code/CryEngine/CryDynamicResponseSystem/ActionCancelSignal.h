@@ -9,9 +9,12 @@
 #pragma once
 
 #include <CryDynamicResponseSystem/IDynamicResponseAction.h>
+#include "ResponseManager.h"
 
 namespace CryDRS
 {
+	class CResponseActor;
+
 class CActionCancelSignal final : public DRS::IResponseAction
 {
 public:
@@ -30,5 +33,20 @@ public:
 private:
 	CHashedString m_signalName;
 	bool          m_bOnAllActors;
+};
+
+class CActionCancelSignalInstance final : public DRS::IResponseActionInstance
+{
+public:
+	CActionCancelSignalInstance(const CHashedString& signalName, CResponseActor* pSender = nullptr, DRS::SignalInstanceId instanceToSkip = DRS::s_InvalidSignalId);
+
+	//////////////////////////////////////////////////////////
+	// IResponseActionInstance implementation
+	virtual eCurrentState Update() override;
+	virtual void          Cancel() override;
+	//////////////////////////////////////////////////////////
+
+private:
+	SSignal m_signal;
 };
 }

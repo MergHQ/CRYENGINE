@@ -195,15 +195,4 @@ ILINE bool NumberValid(const uint64 x)
 	return true;
 }
 
-#if CRY_PLATFORM_SSE2
-
-ILINE bool NumberValid(__m128 x)
-{
-	const __m128 expMask = _mm_castsi128_ps(_mm_set1_epi32(FloatU32ExpMask));
-	const __m128 valid = _mm_cmpneq_ps(_mm_and_ps(x, expMask), expMask);
-	return _mm_movemask_ps(valid) == 0xf;
-}
-
-#endif
-
 #endif // __ValidNumber_h__

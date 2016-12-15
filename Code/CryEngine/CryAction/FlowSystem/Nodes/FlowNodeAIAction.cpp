@@ -522,7 +522,7 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivat
 	case AIOBJECT_VEHICLE:
 		{
 			// activate vehicle AI, unless it's destroyed
-			IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle || pVehicle->IsDestroyed())
 				return false;
 			pAI->Event(AIEVENT_DRIVER_IN, NULL);  // enabling vehicle's full update to process signals, even if there is no driver
@@ -2115,7 +2115,7 @@ void CFlowNode_AIUnload::ProcessEvent(EFlowEvent event, SActivationInfo* pActInf
 		{
 			// first check is the owner a vehicle
 			IAIObject* pAI = pEntity->GetAI();
-			IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle)
 			{
 				m_EntityId = 0;

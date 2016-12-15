@@ -4,6 +4,199 @@
 
 #include <process.h>
 
+namespace CryMT {
+namespace detail {
+enum eLOCK_TYPE
+{
+	eLockType_CRITICAL_SECTION,
+	eLockType_SRW,
+	eLockType_MUTEX
+};
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//! From winnt.h.
+// Since we are not allowed to include windows.h while being included from platform.h and there seems to be no good way to include the
+// required windows headers directly; without including a lot of other header, define a 1:1 copy of the required primitives defined in winnt.h.
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+struct CRY_CRITICAL_SECTION // From winnt.h
+{
+	void*          DebugInfo;
+	long           LockCount;
+	long           RecursionCount;
+	void*          OwningThread;
+	void*          LockSemaphore;
+	unsigned long* SpinCount;  //!< Force size on 64-bit systems when packed.
+};
+
+//////////////////////////////////////////////////////////////////////////
+struct CRY_SRWLOCK // From winnt.h
+{
+	CRY_SRWLOCK();
+	void* SRWLock_;
+};
+
+//////////////////////////////////////////////////////////////////////////
+struct CRY_CONDITION_VARIABLE // From winnt.h
+{
+	CRY_CONDITION_VARIABLE();
+	void* condVar_;
+};
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+class CryLock_SRWLOCK
+{
+public:
+	static const eLOCK_TYPE s_value = eLockType_SRW;
+	friend class CryConditionVariable;
+public:
+	CryLock_SRWLOCK() = default;
+
+	void Lock();
+	void Unlock();
+	bool TryLock();
+
+	void LockShared();
+	void UnlockShared();
+	bool TryLockShared();
+
+private:
+	CryLock_SRWLOCK(const CryLock_SRWLOCK&) = delete;
+	CryLock_SRWLOCK& operator=(const CryLock_SRWLOCK&) = delete;
+
+private:
+	CRY_SRWLOCK m_win32_lock_type;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// SRW Lock (Slim Reader/Writer Lock)
+// Faster + lighter than CriticalSection. Also only enters into kernel mode if contended.
+// Cannot be shared between processes.
+class CryLock_SRWLOCK_Recursive
+{
+public:
+	static const eLOCK_TYPE s_value = eLockType_SRW;
+	friend class CryConditionVariable;
+
+public:
+	CryLock_SRWLOCK_Recursive() : m_recurseCounter(0), m_exclusiveOwningThreadId(THREADID_NULL) {}
+
+	void Lock();
+	void Unlock();
+	bool TryLock();
+
+	// Deprecated
+#ifndef _RELEASE
+	bool IsLocked()
+	{
+		return m_exclusiveOwningThreadId == CryGetCurrentThreadId();
+	}
+#endif
+
+private:
+	CryLock_SRWLOCK_Recursive(const CryLock_SRWLOCK_Recursive&) = delete;
+	CryLock_SRWLOCK_Recursive& operator=(const CryLock_SRWLOCK_Recursive&) = delete;
+
+private:
+	CryLock_SRWLOCK m_win32_lock_type;
+	uint32          m_recurseCounter;
+	
+	// Due to its semantics, this member can be accessed in an unprotected manner,
+	// but only for comparison with the current tid.
+	threadID        m_exclusiveOwningThreadId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Critical section
+// Faster then WinMutex as it only enters into kernel mode if contended.
+// Cannot be shared between processes.
+class CryLock_CriticalSection
+{
+public:
+	static const eLOCK_TYPE s_value = eLockType_CRITICAL_SECTION;
+	friend class CryConditionVariable;
+
+public:
+	CryLock_CriticalSection();
+	~CryLock_CriticalSection();
+
+	void Lock();
+	void Unlock();
+	bool TryLock();
+
+	//! Deprecated: do not use this function - its return value might already be wrong the moment it is returned.
+#ifndef _RELEASE
+	bool IsLocked()
+	{
+		return m_win32_lock_type.RecursionCount > 0 && (UINT_PTR)m_win32_lock_type.OwningThread == CryGetCurrentThreadId();
+	}
+#endif
+
+private:
+	CryLock_CriticalSection(const CryLock_CriticalSection&) = delete;
+	CryLock_CriticalSection& operator=(const CryLock_CriticalSection&) = delete;
+
+private:
+	CRY_CRITICAL_SECTION m_win32_lock_type;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// WinMutex: (slow)
+// Calls into kernel even when not contended.
+// A named mutex can be shared between different processes.
+class CryLock_WinMutex
+{
+public:
+	static const eLOCK_TYPE s_value = eLockType_MUTEX;
+
+	CryLock_WinMutex();
+	~CryLock_WinMutex();
+
+	void Lock();
+	void Unlock();
+	bool TryLock();
+#ifndef _RELEASE
+	//! Deprecated: do not use this function - its return value might already be wrong the moment it is returned.
+	bool IsLocked()
+	{
+		if (TryLock())
+		{
+			Unlock();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+#endif
+private:
+	CryLock_WinMutex(const CryLock_WinMutex&) = delete;
+	CryLock_WinMutex& operator=(const CryLock_WinMutex&) = delete;
+
+private:
+	void* m_win32_lock_type;
+};
+} // detail
+} // CryMT
+
+  //////////////////////////////////////////////////////////////////////////
+  /////////////////////////    DEFINE LOCKS    /////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
+
+template<> class CryLockT<CRYLOCK_RECURSIVE> : public CryMT::detail::CryLock_SRWLOCK_Recursive
+{
+};
+template<> class CryLockT<CRYLOCK_FAST> : public CryMT::detail::CryLock_SRWLOCK
+{
+};
+
+typedef CryMT::detail::CryLock_SRWLOCK_Recursive CryMutex;
+typedef CryMT::detail::CryLock_SRWLOCK           CryMutexFast; // Not recursive
+
+//////////////////////////////////////////////////////////////////////////
 //! CryEvent represent a synchronization event.
 class CryEvent
 {
@@ -33,107 +226,17 @@ private:
 private:
 	void* m_handle;
 };
-
 typedef CryEvent CryEventTimed;
-
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-//! From winnt.h.
-struct CRY_CRITICAL_SECTION
-{
-	void*          DebugInfo;
-	long           LockCount;
-	long           RecursionCount;
-	void*          OwningThread;
-	void*          LockSemaphore;
-	unsigned long* SpinCount;        //!< Force size on 64-bit systems when packed.
-};
-
-//////////////////////////////////////////////////////////////////////////
-
-//! Kernel mutex - don't use... use CryMutex instead.
-class CryLock_WinMutex
-{
-public:
-	CryLock_WinMutex();
-	~CryLock_WinMutex();
-
-	void Lock();
-	void Unlock();
-	bool TryLock();
-#ifndef _RELEASE
-	//! Deprecated: do not use this function - its return value might already be wrong the moment it is returned.
-	bool IsLocked()
-	{
-		if (TryLock())
-		{
-			Unlock();
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-#endif
-
-	void* _get_win32_handle() { return m_hdl; }
-
-private:
-	CryLock_WinMutex(const CryLock_WinMutex&);
-	CryLock_WinMutex& operator=(const CryLock_WinMutex&);
-
-private:
-	void* m_hdl;
-};
-
-//! Critical section - don't use this, use CryCriticalSection instead.
-class CryLock_CritSection
-{
-public:
-	CryLock_CritSection();
-	~CryLock_CritSection();
-
-	void Lock();
-	void Unlock();
-	bool TryLock();
-
-	//! Deprecated: do not use this function - its return value might already be wrong the moment it is returned.
-	bool IsLocked()
-	{
-		return m_cs.RecursionCount > 0 && (UINT_PTR)m_cs.OwningThread == CryGetCurrentThreadId();
-	}
-
-private:
-	CryLock_CritSection(const CryLock_CritSection&);
-	CryLock_CritSection& operator=(const CryLock_CritSection&);
-
-private:
-	CRY_CRITICAL_SECTION m_cs;
-};
-
-template<> class CryLockT<CRYLOCK_RECURSIVE> : public CryLock_CritSection
-{
-};
-template<> class CryLockT<CRYLOCK_FAST> : public CryLock_CritSection
-{
-};
-class CryMutex : public CryLock_WinMutex
-{
-};
-#define _CRYTHREAD_CONDLOCK_GLITCH 1
 
 //////////////////////////////////////////////////////////////////////////
 class CryConditionVariable
 {
 public:
-	typedef CryMutex LockType;
-
-	CryConditionVariable();
-	~CryConditionVariable();
-	void Wait(LockType& lock);
-	bool TimedWait(LockType& lock, uint32 millis);
+	CryConditionVariable() = default;
+	void Wait(CryMutex& lock);
+	void Wait(CryMutexFast& lock);
+	bool TimedWait(CryMutex& lock, uint32 millis);
+	bool TimedWait(CryMutexFast& lock, uint32 millis);
 	void NotifySingle();
 	void Notify();
 
@@ -142,11 +245,7 @@ private:
 	CryConditionVariable& operator=(const CryConditionVariable&);
 
 private:
-	int                  m_waitersCount;
-	CRY_CRITICAL_SECTION m_waitersCountLock;
-	void*                m_sema;
-	void*                m_waitersDone;
-	size_t               m_wasBroadcast;
+	CryMT::detail::CRY_CONDITION_VARIABLE m_condVar;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,17 +280,10 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-#if !defined(_CRYTHREAD_HAVE_RWLOCK)
 class CryRWLock
 {
-	void* /*SRWLOCK*/ m_Lock;
-
-	CryRWLock(const CryRWLock&);
-	CryRWLock& operator=(const CryRWLock&);
-
 public:
-	CryRWLock();
-	~CryRWLock();
+	CryRWLock() = default;
 
 	void RLock();
 	void RUnlock();
@@ -202,14 +294,12 @@ public:
 	void Lock();
 	void Unlock();
 
-	#if defined(_CRYTHREAD_WANT_TRY_RWLOCK)
-	//! Enabling TryXXX requires Windows 7 or newer.
 	bool TryRLock();
 	bool TryWLock();
 	bool TryLock();
-	#endif
-};
+private:
+	CryMT::detail::CryLock_SRWLOCK m_srw;
 
-//! Indicate that this implementation header provides an implementation for CryRWLock.
-	#define _CRYTHREAD_HAVE_RWLOCK 1
-#endif
+	CryRWLock(const CryRWLock&) = delete;
+	CryRWLock& operator=(const CryRWLock&) = delete;
+};

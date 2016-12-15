@@ -32,10 +32,12 @@ C2DRenderUtils::C2DRenderUtils(ScreenLayoutManager* pLayoutManager)
 	m_pLayoutManager = pLayoutManager;
 	m_pRenderer = gEnv->pRenderer;
 
-	// TODO : Init/compile for Render-Testing only or get from Textures.h...
-	m_white_texture = m_pRenderer->EF_LoadTexture( "EngineAssets/Textures/White.dds", FT_DONT_RELEASE | FT_DONT_STREAM );
-
-	m_pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (m_pRenderer)
+	{
+		// TODO : Init/compile for Render-Testing only or get from Textures.h...
+		m_white_texture = m_pRenderer->EF_LoadTexture("EngineAssets/Textures/White.dds", FT_DONT_RELEASE | FT_DONT_STREAM);
+		m_pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	}
 
 	SetFont(gEnv->pCryFont->GetFont("default"));
 
@@ -64,6 +66,11 @@ void C2DRenderUtils::Release()
 
 void C2DRenderUtils::PreRender()
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	m_pRenderer->SetCullMode(R_CULL_DISABLE);
 	m_pRenderer->Set2DMode(true,m_pRenderer->GetOverlayWidth(),m_pRenderer->GetOverlayHeight());
 	m_pRenderer->SetColorOp(eCO_MODULATE,eCO_MODULATE,DEF_TEXARG0,DEF_TEXARG0);
@@ -77,6 +84,11 @@ void C2DRenderUtils::PreRender()
 
 void C2DRenderUtils::PostRender()
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	m_pRenderer->Set2DMode(false,0,0);
 
 	//reset render settings (aux geometry)
@@ -94,6 +106,11 @@ void C2DRenderUtils::DrawRect( float x, float y, float fSizeX, float fSizeY, con
 //-----------------------------------------------------------------------------------------------------
 void C2DRenderUtils::InternalDrawRect( const float x, const float y, const float fSizeX, const float fSizeY, const ColorF& screen_edge_color )
 {	
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	const float width = 1.0f;// TODO : fixme : g_pGameCVars->hud_safearea_linewidth;
 
 	float x1 = x;
@@ -122,6 +139,11 @@ void C2DRenderUtils::DrawLine( float fX1, float fY1, float fX2, float fY2, const
 //		Check this works on consoles.
 void C2DRenderUtils::InternalDrawLine(float fX1, float fY1, float fX2, float fY2, const ColorF& cfDiffuse)
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 #if C2DRU_USE_DVN_VB
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &fX1, &fY1 );
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &fX2, &fY2 );
@@ -189,6 +211,11 @@ void C2DRenderUtils::DrawTriangle(float fX0,float fY0,float fX1,float fY1,float 
 //-----------------------------------------------------------------------------------------------------
 void C2DRenderUtils::InternalDrawTriangle(float fX0,float fY0,float fX1,float fY1,float fX2,float fY2,const ColorF& cfColor)
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 #if C2DRU_USE_DVN_VB
 
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &fX0, &fY0 );
@@ -290,6 +317,12 @@ void C2DRenderUtils::InternalDrawQuad(	float fX, float fY,
 #                                    endif
 																			)
 {
+
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 #if C2DRU_USE_DVN_VB
 	SVF_P3F_C4B_T2F aVertices[4];
 #endif
@@ -352,6 +385,11 @@ void C2DRenderUtils::InternalDrawQuad(	float fX, float fY,
 
 void C2DRenderUtils::Draw2dImageList()
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	m_pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
 	m_pRenderer->Draw2dImageList();
 }
@@ -414,6 +452,11 @@ void C2DRenderUtils::InternalDrawImage(int iTextureID,
 																			 float fS1 /* = 1.0f*/, float fT1 /* = 1.0f*/,
 																			 bool pushToList /* = false*/)
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	if(pushToList)
 	{
 		m_pRenderer->Push2dImage(	fX, fY,
@@ -444,6 +487,11 @@ void C2DRenderUtils::InternalDrawImageStereo(int iTextureID,
 																			 float fS1 /* = 1.0f*/, float fT1 /* = 1.0f*/,
 																			 float fStereoDepth /* = 0.f*/)
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	m_pRenderer->Push2dImage(	fX, fY,
 		fSizeX, fSizeY,
 		iTextureID,
@@ -506,6 +554,11 @@ void C2DRenderUtils::DrawText(
 void C2DRenderUtils::InternalDrawText(const float fX, const float fY,
 																			const char *strText )
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	float drawX = fX;
 	float drawY = fY;
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &drawX, &drawY );
@@ -903,6 +956,11 @@ void C2DRenderUtils::RenderTest_CTRL( float fTime, const ColorF& activeColor )
 
 void C2DRenderUtils::RenderTest( float fTime )
 {
+	if (!m_pRenderer)
+	{
+		return;
+	}
+
 	if(!s_debugTestLevel)
 	{
 		return;

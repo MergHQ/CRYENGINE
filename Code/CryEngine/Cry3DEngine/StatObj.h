@@ -207,7 +207,7 @@ struct SPhysGeomArray
 		else if (i < (int)m_array.size())
 			m_array.erase(m_array.begin() + i);
 	}
-	int  GetGeomCount()       { return m_array.size(); }
+	int  GetGeomCount() const { return m_array.size(); }
 	int  GetGeomType(int idx) { return idx >= PHYS_GEOM_TYPE_DEFAULT ? idx : m_array[idx].type; }
 	std::vector<SPhysGeomThunk> m_array;
 	void GetMemoryUsage(ICrySizer* pSizer) const
@@ -433,30 +433,30 @@ public:
 	ILINE int                   SubObjectCount() const { return m_subObjects.size(); };
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual bool IsUnloadable() const override { return m_bCanUnload; }
+	virtual bool IsUnloadable() const final { return m_bCanUnload; }
 	void DisableStreaming();
 
-	virtual IIndexedMesh*    GetIndexedMesh(bool bCreatefNone = false) override;
-	virtual IIndexedMesh*    CreateIndexedMesh() override;
+	virtual IIndexedMesh*    GetIndexedMesh(bool bCreatefNone = false) final;
+	virtual IIndexedMesh*    CreateIndexedMesh() final;
 	void ReleaseIndexedMesh(bool bRenderMeshUpdated = false);
-	virtual ILINE const Vec3 GetVegCenter() override          { return m_vVegCenter; }
+	virtual ILINE const Vec3 GetVegCenter() final          { return m_vVegCenter; }
 
-	virtual void             SetFlags(int nFlags) override		{ m_nFlags = nFlags; IncrementModificationId(); }
-	virtual int              GetFlags() override              { return m_nFlags; };
+	virtual void             SetFlags(int nFlags) final		{ m_nFlags = nFlags; IncrementModificationId(); }
+	virtual int              GetFlags() const final         { return m_nFlags; };
 
-	virtual unsigned int     GetVehicleOnlyPhysics() override { return m_bVehicleOnlyPhysics; };
-	virtual int              GetIDMatBreakable() override     { return m_idmatBreakable; };
-	virtual unsigned int     GetBreakableByGame() override    { return m_bBreakableByGame; };
+	virtual unsigned int     GetVehicleOnlyPhysics() final { return m_bVehicleOnlyPhysics; };
+	virtual int              GetIDMatBreakable() final     { return m_idmatBreakable; };
+	virtual unsigned int     GetBreakableByGame() final    { return m_bBreakableByGame; };
 
-	virtual bool IsDeformable() override;
+	virtual bool IsDeformable() final;
 
 	// Loader
 	bool LoadCGF(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
 	bool LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void SetMaterial(IMaterial * pMaterial) override;
-	virtual IMaterial* GetMaterial() const override { return m_pMaterial; }
+	virtual void SetMaterial(IMaterial * pMaterial) final;
+	virtual IMaterial* GetMaterial() const final { return m_pMaterial; }
 	//////////////////////////////////////////////////////////////////////////
 
 	void RenderInternal(CRenderObject * pRenderObject, hidemask nSubObjectHideMask, const CLodValue &lodValue, const SRenderingPassInfo &passInfo);
@@ -464,58 +464,58 @@ public:
 	void RenderSubObject(CRenderObject * pRenderObject, int nLod,
 	                     int nSubObjId, const Matrix34A &renderTM, const SRenderingPassInfo &passInfo);
 	void RenderSubObjectInternal(CRenderObject * pRenderObject, int nLod, const SRenderingPassInfo &passInfo);
-	virtual void Render(const SRendParams &rParams, const SRenderingPassInfo &passInfo) override;
+	virtual void Render(const SRendParams &rParams, const SRenderingPassInfo &passInfo) final;
 	void RenderRenderMesh(CRenderObject * pObj, struct SInstancingInfo* pInstInfo, const SRenderingPassInfo &passInfo);
-	virtual phys_geometry* GetPhysGeom(int nGeomType = PHYS_GEOM_TYPE_DEFAULT) const override { return m_arrPhysGeomInfo[nGeomType]; }
-	virtual void           SetPhysGeom(phys_geometry* pPhysGeom, int nGeomType = PHYS_GEOM_TYPE_DEFAULT) override
+	virtual phys_geometry* GetPhysGeom(int nGeomType = PHYS_GEOM_TYPE_DEFAULT) const final { return m_arrPhysGeomInfo[nGeomType]; }
+	virtual void           SetPhysGeom(phys_geometry* pPhysGeom, int nGeomType = PHYS_GEOM_TYPE_DEFAULT) final
 	{
 		if (m_arrPhysGeomInfo[nGeomType])
 			GetPhysicalWorld()->GetGeomManager()->UnregisterGeometry(m_arrPhysGeomInfo[nGeomType]);
 		m_arrPhysGeomInfo.SetPhysGeom(pPhysGeom, nGeomType);
 	}
-	virtual IPhysicalEntity* GetPhysEntity() const override               { return NULL; }
-	virtual ITetrLattice*    GetTetrLattice() override                    { return m_pLattice; }
+	virtual IPhysicalEntity* GetPhysEntity() const final               { return NULL; }
+	virtual ITetrLattice*    GetTetrLattice() final                    { return m_pLattice; }
 
-	virtual float            GetAIVegetationRadius() const override       { return m_aiVegetationRadius; }
-	virtual void             SetAIVegetationRadius(float radius) override { m_aiVegetationRadius = radius; }
+	virtual float            GetAIVegetationRadius() const final       { return m_aiVegetationRadius; }
+	virtual void             SetAIVegetationRadius(float radius) final { m_aiVegetationRadius = radius; }
 
 	//! Refresh object ( reload shaders or/and object geometry )
-	virtual void Refresh(int nFlags) override;
+	virtual void Refresh(int nFlags) final;
 
-	virtual IRenderMesh* GetRenderMesh() const override { return m_pRenderMesh; };
+	virtual IRenderMesh* GetRenderMesh() const final { return m_pRenderMesh; };
 	void SetRenderMesh(IRenderMesh * pRM);
 
-	virtual const char* GetFilePath() override                       { return (m_szFileName); }
-	virtual void        SetFilePath(const char* szFileName) override { m_szFileName = szFileName; }
-	virtual const char* GetGeoName() override                        { return (m_szGeomName); }
-	virtual void        SetGeoName(const char* szGeoName) override   { m_szGeomName = szGeoName; }
-	virtual bool IsSameObject(const char* szFileName, const char* szGeomName) override;
+	virtual const char* GetFilePath() final                       { return (m_szFileName); }
+	virtual void        SetFilePath(const char* szFileName) final { m_szFileName = szFileName; }
+	virtual const char* GetGeoName() final                        { return (m_szGeomName); }
+	virtual void        SetGeoName(const char* szGeoName) final   { m_szGeomName = szGeoName; }
+	virtual bool IsSameObject(const char* szFileName, const char* szGeomName) final;
 
 	//set object's min/max bbox
-	virtual void SetBBoxMin(const Vec3& vBBoxMin) override { m_AABB.min = vBBoxMin; }
-	virtual void SetBBoxMax(const Vec3& vBBoxMax) override { m_AABB.max = vBBoxMax; }
-	virtual AABB GetAABB() const override                  { return m_AABB; }
+	virtual void SetBBoxMin(const Vec3& vBBoxMin) final { m_AABB.min = vBBoxMin; }
+	virtual void SetBBoxMax(const Vec3& vBBoxMax) final { m_AABB.max = vBBoxMax; }
+	virtual AABB GetAABB() const final                  { return m_AABB; }
 
-	virtual float GetExtent(EGeomForm eForm) override;
-	virtual void GetRandomPos(PosNorm & ran, CRndGen & seed, EGeomForm eForm) const override;
+	virtual float GetExtent(EGeomForm eForm) final;
+	virtual void GetRandomPos(PosNorm & ran, CRndGen & seed, EGeomForm eForm) const final;
 
-	virtual Vec3 GetHelperPos(const char* szHelperName) override;
-	virtual const Matrix34& GetHelperTM(const char* szHelperName) override;
+	virtual Vec3 GetHelperPos(const char* szHelperName) final;
+	virtual const Matrix34& GetHelperTM(const char* szHelperName) final;
 
-	virtual float&          GetRadiusVert() override { return m_fRadiusVert; }
-	virtual float&          GetRadiusHors() override { return m_fRadiusHors; }
+	virtual float           GetRadiusVert() const final { return m_fRadiusVert; }
+	virtual float           GetRadiusHors() const final { return m_fRadiusHors; }
 
-	virtual int AddRef() override;
-	virtual int Release() override;
-	virtual int  GetRefCount() const override { return m_nUsers; }
+	virtual int AddRef() final;
+	virtual int Release() final;
+	virtual int  GetRefCount() const final { return m_nUsers; }
 
-	virtual bool IsDefaultObject() override   { return (m_bDefaultObject); }
+	virtual bool IsDefaultObject() final   { return (m_bDefaultObject); }
 
 	int          GetLoadedTrisCount()         { return m_nLoadedTrisCount; }
 	int          GetRenderTrisCount()         { return m_nRenderTrisCount; }
 
 	// Load LODs
-	virtual void SetLodObject(int nLod, IStatObj * pLod) override;
+	virtual void SetLodObject(int nLod, IStatObj * pLod) final;
 	bool LoadLowLODS_Prep(bool bUseStreaming, unsigned long nLoadingFlags);
 	CStatObj* LoadLowLODS_Load(int nLodLevel, bool bUseStreaming, unsigned long nLoadingFlags, const void* pData, int nDataLen);
 	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj * loadedLods[MAX_STATOBJ_LODS_NUM]);
@@ -523,113 +523,113 @@ public:
 	// Free render resources for unused upper LODs.
 	void CleanUnusedLods();
 
-	virtual void FreeIndexedMesh() override;
+	virtual void FreeIndexedMesh() final;
 	bool RenderDebugInfo(CRenderObject * pObj, const SRenderingPassInfo &passInfo);
 
 	//! Release method.
-	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override;
+	virtual void GetMemoryUsage(class ICrySizer* pSizer) const final;
 
 	void ShutDown();
 	void Init();
 
 	//  void CheckLoaded();
-	virtual IStatObj* GetLodObject(int nLodLevel, bool bReturnNearest = false) override;
-	virtual IStatObj* GetLowestLod() override;
+	virtual IStatObj* GetLodObject(int nLodLevel, bool bReturnNearest = false) final;
+	virtual IStatObj* GetLowestLod() final;
 
-	virtual int FindNearesLoadedLOD(int nLodIn, bool bSearchUp = false) override;
-	virtual int FindHighestLOD(int nBias) override;
+	virtual int FindNearesLoadedLOD(int nLodIn, bool bSearchUp = false) final;
+	virtual int FindHighestLOD(int nBias) final;
 
 	// interface IStreamCallback -----------------------------------------------------
 
-	virtual void StreamAsyncOnComplete(IReadStream * pStream, unsigned nError) override;
-	virtual void StreamOnComplete(IReadStream * pStream, unsigned nError) override;
+	virtual void StreamAsyncOnComplete(IReadStream * pStream, unsigned nError) final;
+	virtual void StreamOnComplete(IReadStream * pStream, unsigned nError) final;
 	void IncrementModificationId();
 	uint32 GetModificationId() { return m_nModificationId; }
 
 	// -------------------------------------------------------------------------------
 
-	virtual void StartStreaming(bool bFinishNow, IReadStream_AutoPtr * ppStream) override;
+	virtual void StartStreaming(bool bFinishNow, IReadStream_AutoPtr * ppStream) final;
 	void UpdateStreamingPrioriryInternal(const Matrix34A &objMatrix, float fDistance, bool bFullUpdate);
 
 	void MakeCompiledFileName(char* szCompiledFileName, int nMaxLen);
 
-	virtual bool IsPhysicsExist() override;
+	virtual bool IsPhysicsExist() const final;
 	bool IsSphereOverlap(const Sphere &sSphere);
-	virtual void Invalidate(bool bPhysics = false, float tolerance = 0.05f) override;
+	virtual void Invalidate(bool bPhysics = false, float tolerance = 0.05f) final;
 
 	void AnalyzeFoliage(IRenderMesh * pRenderMesh, CContentCGF * pCGF);
 	void FreeFoliageData();
-	virtual void CopyFoliageData(IStatObj * pObjDst, bool bMove = false, IFoliage * pSrcFoliage = 0, int* pVtxMap = 0, primitives::box * pMoveBoxes = 0, int nMovedBoxes = -1) override;
-	virtual int PhysicalizeFoliage(IPhysicalEntity * pTrunk, const Matrix34 &mtxWorld, IFoliage * &pRes, float lifeTime = 0.0f, int iSource = 0) override;
+	virtual void CopyFoliageData(IStatObj * pObjDst, bool bMove = false, IFoliage * pSrcFoliage = 0, int* pVtxMap = 0, primitives::box * pMoveBoxes = 0, int nMovedBoxes = -1) final;
+	virtual int PhysicalizeFoliage(IPhysicalEntity * pTrunk, const Matrix34 &mtxWorld, IFoliage * &pRes, float lifeTime = 0.0f, int iSource = 0) final;
 	int SerializeFoliage(TSerialize ser, IFoliage * pFoliage);
 
-	virtual IStatObj* UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<Vec3> pNormals, int iVtx0, int nVtx, int* pVtxMap = 0, float rscale = 1.f) override;
+	virtual IStatObj* UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<Vec3> pNormals, int iVtx0, int nVtx, int* pVtxMap = 0, float rscale = 1.f) final;
 	bool              HasSkinInfo(float skinRadius = -1.0f)                                                { return m_hasSkinInfo && m_pSkinInfo && (skinRadius < 0.0f || m_pSkinInfo[m_nLoadedVertexCount].w[0] == skinRadius); }
 	void PrepareSkinData(const Matrix34 &mtxSkelToMesh, IGeometry * pPhysSkel, float r = 0.0f);
-	virtual IStatObj* SkinVertices(strided_pointer<Vec3> pSkelVtx, const Matrix34& mtxSkelToMesh) override { return SkinVertices(pSkelVtx, mtxSkelToMesh, NULL);  }
+	virtual IStatObj* SkinVertices(strided_pointer<Vec3> pSkelVtx, const Matrix34& mtxSkelToMesh) final { return SkinVertices(pSkelVtx, mtxSkelToMesh, NULL);  }
 	IStatObj*         SkinVertices(strided_pointer<Vec3> pSkelVtx, const Matrix34& mtxSkelToMesh, volatile int* ready);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Sub objects.
 	//////////////////////////////////////////////////////////////////////////
-	virtual int                   GetSubObjectCount() const override { return m_subObjects.size(); }
-	virtual void SetSubObjectCount(int nCount) override;
-	virtual IStatObj::SSubObject* FindSubObject(const char* sNodeName) override;
-	virtual IStatObj::SSubObject* FindSubObject_StrStr(const char* sNodeName) override;
-	virtual IStatObj::SSubObject* FindSubObject_CGA(const char* sNodeName) override;
-	virtual IStatObj::SSubObject* GetSubObject(int nIndex) override
+	virtual int                   GetSubObjectCount() const final { return m_subObjects.size(); }
+	virtual void SetSubObjectCount(int nCount) final;
+	virtual IStatObj::SSubObject* FindSubObject(const char* sNodeName) final;
+	virtual IStatObj::SSubObject* FindSubObject_StrStr(const char* sNodeName) final;
+	virtual IStatObj::SSubObject* FindSubObject_CGA(const char* sNodeName) final;
+	virtual IStatObj::SSubObject* GetSubObject(int nIndex) final
 	{
 		if (nIndex >= 0 && nIndex < (int)m_subObjects.size())
 			return &m_subObjects[nIndex];
 		else
 			return 0;
 	}
-	virtual bool RemoveSubObject(int nIndex) override;
-	virtual IStatObj* GetParentObject() const override      { return m_pParentObject; }
-	virtual IStatObj* GetCloneSourceObject() const override { return m_pClonedSourceObject; }
-	virtual bool      IsSubObject() const override          { return m_bSubObject; };
-	virtual bool CopySubObject(int nToIndex, IStatObj * pFromObj, int nFromIndex) override;
+	virtual bool RemoveSubObject(int nIndex) final;
+	virtual IStatObj* GetParentObject() const final      { return m_pParentObject; }
+	virtual IStatObj* GetCloneSourceObject() const final { return m_pClonedSourceObject; }
+	virtual bool      IsSubObject() const final          { return m_bSubObject; };
+	virtual bool CopySubObject(int nToIndex, IStatObj * pFromObj, int nFromIndex) final;
 	virtual int PhysicalizeSubobjects(IPhysicalEntity * pent, const Matrix34 * pMtx, float mass, float density = 0.0f, int id0 = 0,
-	                                  strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0) override;
-	virtual IStatObj::SSubObject& AddSubObject(IStatObj* pStatObj) override;
-	virtual int Physicalize(IPhysicalEntity * pent, pe_geomparams * pgp, int id = -1, const char* szPropsOverride = 0) override;
+	                                  strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0) final;
+	virtual IStatObj::SSubObject& AddSubObject(IStatObj* pStatObj) final;
+	virtual int Physicalize(IPhysicalEntity * pent, pe_geomparams * pgp, int id = -1, const char* szPropsOverride = 0) final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual bool SaveToCGF(const char* sFilename, IChunkFile * *pOutChunkFile = NULL, bool bHavePhiscalProxy = false) override;
+	virtual bool SaveToCGF(const char* sFilename, IChunkFile * *pOutChunkFile = NULL, bool bHavePhiscalProxy = false) final;
 
 	//virtual IStatObj* Clone(bool bCloneChildren=true, bool nDynamic=false);
-	virtual IStatObj* Clone(bool bCloneGeometry, bool bCloneChildren, bool bMeshesOnly) override;
+	virtual IStatObj* Clone(bool bCloneGeometry, bool bCloneChildren, bool bMeshesOnly) final;
 
-	virtual int SetDeformationMorphTarget(IStatObj * pDeformed) override;
+	virtual int SetDeformationMorphTarget(IStatObj * pDeformed) final;
 	virtual int SubobjHasDeformMorph(int iSubObj);
-	virtual IStatObj* DeformMorph(const Vec3& pt, float r, float strength, IRenderMesh* pWeights = 0) override;
+	virtual IStatObj* DeformMorph(const Vec3& pt, float r, float strength, IRenderMesh* pWeights = 0) final;
 
-	virtual IStatObj* HideFoliage() override;
+	virtual IStatObj* HideFoliage() final;
 
-	virtual int Serialize(TSerialize ser) override;
+	virtual int Serialize(TSerialize ser) final;
 
 	// Get object properties as loaded from CGF.
-	virtual const char* GetProperties() override                  { return m_szProperties.c_str(); };
-	virtual void        SetProperties(const char* props) override { m_szProperties = props; ParseProperties(); }
+	virtual const char* GetProperties() final                  { return m_szProperties.c_str(); };
+	virtual void        SetProperties(const char* props) final { m_szProperties = props; ParseProperties(); }
 
-	virtual bool GetPhysicalProperties(float& mass, float& density) override;
+	virtual bool GetPhysicalProperties(float& mass, float& density) final;
 
-	virtual IStatObj* GetLastBooleanOp(float& scale) override { scale = m_lastBooleanOpScale; return m_pLastBooleanOp; }
+	virtual IStatObj* GetLastBooleanOp(float& scale) final { scale = m_lastBooleanOpScale; return m_pLastBooleanOp; }
 
 	// Intersect ray with static object.
 	// Ray must be in object local space.
-	virtual bool RayIntersection(SRayHitInfo & hitInfo, IMaterial * pCustomMtl = 0) override;
-	virtual bool LineSegIntersection(const Lineseg &lineSeg, Vec3 & hitPos, int& surfaceTypeId) override;
+	virtual bool RayIntersection(SRayHitInfo & hitInfo, IMaterial * pCustomMtl = 0) final;
+	virtual bool LineSegIntersection(const Lineseg &lineSeg, Vec3 & hitPos, int& surfaceTypeId) final;
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo &info) override;
-	virtual void GetStatistics(SStatistics & stats) override;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo &info) final;
+	virtual void GetStatistics(SStatistics & stats) final;
 	//////////////////////////////////////////////////////////////////////////
 
 	IParticleEffect* GetSurfaceBreakageEffect(const char* sType);
 
-	virtual hidemask GetInitialHideMask() override { return m_nInitialSubObjHideMask; }
+	virtual hidemask GetInitialHideMask() final { return m_nInitialSubObjHideMask; }
 
-	virtual void     SetStreamingDependencyFilePath(const char* szFileName) override
+	virtual void     SetStreamingDependencyFilePath(const char* szFileName) final
 	{
 		const bool streamingDependencyLoop = CheckForStreamingDependencyLoop(szFileName);
 		if (streamingDependencyLoop)
@@ -646,14 +646,15 @@ public:
 	void RenderStreamingDebugInfo(CRenderObject * pRenderObject);
 	void RenderCoverInfo(CRenderObject * pRenderObject);
 	int CountChildReferences();
-	void ReleaseStreamableContent() override;
-	int GetStreamableContentMemoryUsage(bool bJustForDebug = false) override;
-	virtual void ComputeGeometricMean(SMeshLodInfo & lodInfo) override;
-	virtual float GetLodDistance() const override     { return m_fLodDistance; }
-	virtual Vec3  GetDepthSortOffset() const override { return m_depthSortOffset; }
-	virtual int ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) override;
+	void ReleaseStreamableContent() final;
+	int GetStreamableContentMemoryUsage(bool bJustForDebug = false) final;
+	virtual SMeshLodInfo ComputeGeometricMean() const final;
+	SMeshLodInfo ComputeAndStoreLodDistances();
+	virtual float GetLodDistance() const final     { return m_fLodDistance; }
+	virtual Vec3  GetDepthSortOffset() const final { return m_depthSortOffset; }
+	virtual int ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) final;
 	bool UpdateStreamableComponents(float fImportance, const Matrix34A &objMatrix, bool bFullUpdate, int nNewLod);
-	void GetStreamableName(string& sName) override
+	void GetStreamableName(string& sName) final
 	{
 		sName = m_szFileName;
 		if (m_szGeomName.length())
@@ -665,7 +666,7 @@ public:
 	void GetStreamFilePath(stack_string & strOut);
 	void FillRenderObject(const SRendParams &rParams, IRenderNode * pRenderNode, IMaterial * pMaterial,
 	                      SInstancingInfo * pInstInfo, CRenderObject * &pObj, const SRenderingPassInfo &passInfo);
-	virtual uint32 GetLastDrawMainFrameId() override { return m_nLastDrawMainFrameId; }
+	virtual uint32 GetLastDrawMainFrameId() final { return m_nLastDrawMainFrameId; }
 
 	// Allow pooled allocs
 	static void* operator new(size_t size);
@@ -717,17 +718,6 @@ protected:
 	}
 
 	bool CheckForStreamingDependencyLoop(const char* szFilenameDependancy) const;
-};
-
-//////////////////////////////////////////////////////////////////////////
-// Wrapper around CStatObj that allow rendering of static object with specified parameters.
-//////////////////////////////////////////////////////////////////////////
-class CStatObjWrapper : public CStatObj
-{
-	virtual void Render(const SRendParams& rParams, const SRenderingPassInfo& passInfo);
-private:
-	// Reference Static Object this wrapper was created for.
-	CStatObj* m_pReference;
 };
 
 //////////////////////////////////////////////////////////////////////////

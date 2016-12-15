@@ -40,27 +40,29 @@ CGameRulesSystem::~CGameRulesSystem()
 }
 
 //------------------------------------------------------------------------
-bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* extensionName)
+bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* extensionName, bool bUseScript)
 {
 	IEntityClassRegistry::SEntityClassDesc ruleClass;
 
 	char scriptName[1024];
-	cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+	if (bUseScript)
+	{
+		cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+		ruleClass.sScriptFile = scriptName;
+	}
 
 	ruleClass.sName = rulesName;
-	ruleClass.sScriptFile = scriptName;
 	ruleClass.pUserProxyCreateFunc = CreateGameObject;
 	ruleClass.pUserProxyData = this;
 	ruleClass.flags |= ECLF_INVISIBLE;
 
-	if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(ruleClass))
-	{
-		CRY_ASSERT(0);
-		return false;
-	}
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(ruleClass);
 
 	std::pair<TGameRulesMap::iterator, bool> rit = m_GameRules.insert(TGameRulesMap::value_type(rulesName, SGameRulesDef()));
 	rit.first->second.extension = extensionName;
+
+	// Automatically register scheduling profile
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterSchedulingProfile(ruleClass.sName, "rule", nullptr);
 
 	return true;
 }
@@ -223,21 +225,21 @@ CGameRulesSystem::SGameRulesDef* CGameRulesSystem::GetGameRulesDef(const char* n
 }
 
 //------------------------------------------------------------------------
-IEntityProxyPtr CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+IEntityComponent* CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
 {
 	CGameRulesSystem* pThis = static_cast<CGameRulesSystem*>(pUserData);
 	CRY_ASSERT(pThis);
 	TGameRulesMap::iterator it = pThis->m_GameRules.find(params.pClass->GetName());
 	CRY_ASSERT(it != pThis->m_GameRules.end());
 
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
+	auto pGameObject = pEntity->CreateComponentClass<CGameObject>();
 
 	if (!it->second.extension.empty())
 	{
 		if (!pGameObject->ActivateExtension(it->second.extension.c_str()))
 		{
-			pEntity->RegisterComponent(pGameObject, false);
-			pGameObject.reset();
+			pEntity->RemoveComponent(pGameObject);
+			return nullptr;
 		}
 	}
 

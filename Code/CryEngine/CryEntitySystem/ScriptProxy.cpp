@@ -25,26 +25,11 @@
 
 #include <CryScriptSystem/IScriptSystem.h>
 
-IEntityProxyPtr CreateScriptProxy(CEntity* pEntity, IEntityScript* pScript, SEntitySpawnParams* pSpawnParams)
-{
-	// Load script now (Will be ignored if already loaded).
-	CEntityScript* pEntityScript = (CEntityScript*)pScript;
-	if (pEntityScript->LoadScript())
-	{
-		IEntityProxyPtr pScriptProxy = ComponentCreate_DeleteWithRelease<CScriptProxy>();
-		CScriptProxy::SComponentInitializerScriptProxy initializer(pEntity, pEntityScript, pSpawnParams);
-		pEntity->RegisterComponent(pScriptProxy, IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-		pScriptProxy->Initialize(initializer);
-		return pScriptProxy;
-	}
-
-	return IEntityProxyPtr();
-}
+CRYREGISTER_CLASS(CEntityComponentLuaScript);
 
 //////////////////////////////////////////////////////////////////////////
-CScriptProxy::CScriptProxy()
-	: m_pEntity(nullptr)
-	, m_pScript(nullptr)
+CEntityComponentLuaScript::CEntityComponentLuaScript()
+	: m_pScript(nullptr)
 	, m_pThis(nullptr)
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
@@ -54,67 +39,18 @@ CScriptProxy::CScriptProxy()
 {}
 
 //////////////////////////////////////////////////////////////////////////
-CScriptProxy::~CScriptProxy()
+CEntityComponentLuaScript::~CEntityComponentLuaScript()
 {
 	SAFE_RELEASE(m_pThis);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Initialize(const SComponentInitializer& init)
+void CEntityComponentLuaScript::Initialize()
 {
-	assert(init.m_pEntity);
-
-	if (m_pEntity == nullptr)
-	{
-		m_pEntity = (CEntity*)init.m_pEntity;
-		m_pScript = static_cast<const SComponentInitializerScriptProxy&>(init).m_pScript;
-
-		// New object must be created here.
-		CreateScriptTable(static_cast<const SComponentInitializerScriptProxy&>(init).m_pSpawnParams);
-
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::Init(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	// Call Init.
-	CallInitEvent(false);
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	IEntityClass* pClass = (pEntity ? pEntity->GetClass() : nullptr);
-	CEntityScript* pEntityScript = (pClass ? (CEntityScript*)pClass->GetIEntityScript() : nullptr);
-	if (pEntityScript && pEntityScript->LoadScript())
-	{
-		// Release current
-		SAFE_RELEASE(m_pThis);
-
-		m_pEntity = (CEntity*)pEntity;
-		m_pScript = pEntityScript;
-		m_nCurrStateId = 0;
-		m_fScriptUpdateRate = 0;
-		m_fScriptUpdateTimer = 0;
-		m_bEnableSoundAreaEvents = false;
-
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
-
-		// New object must be created here.
-		CreateScriptTable(&params);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CScriptProxy::ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params)
+void CEntityComponentLuaScript::ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params)
 {
 	if (pScript)
 	{
@@ -127,28 +63,21 @@ void CScriptProxy::ChangeScript(IEntityScript* pScript, SEntitySpawnParams* para
 		m_fScriptUpdateTimer = 0;
 		m_bEnableSoundAreaEvents = false;
 
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
-
 		// New object must be created here.
 		CreateScriptTable(params);
+
+		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Done()
-{
-	m_pScript->Call_OnShutDown(m_pThis);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
+void CEntityComponentLuaScript::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 {
 	m_pThis = m_pScript->GetScriptSystem()->CreateTable();
 	m_pThis->AddRef();
 	//m_pThis->Clone( m_pScript->GetScriptTable() );
 
-	CEntitySystem* pEntitySystem = (CEntitySystem*)m_pEntity->GetEntitySystem();
-	if (pEntitySystem)
+	if (gEnv->pEntitySystem)
 	{
 		//pEntitySystem->GetScriptBindEntity()->DelegateCalls( m_pThis );
 		m_pThis->Delegate(m_pScript->GetScriptTable());
@@ -201,7 +130,7 @@ void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Update(SEntityUpdateContext& ctx)
+void CEntityComponentLuaScript::Update(SEntityUpdateContext& ctx)
 {
 	// Update`s script function if present.
 	if (m_bUpdateScript)
@@ -226,10 +155,16 @@ void CScriptProxy::Update(SEntityUpdateContext& ctx)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::ProcessEvent(SEntityEvent& event)
+void CEntityComponentLuaScript::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
+	case ENTITY_EVENT_UPDATE:
+		{
+			SEntityUpdateContext* pCtx = (SEntityUpdateContext*)event.nParam[0];
+			Update(*pCtx);
+		}
+	break;
 	case ENTITY_EVENT_ANIM_EVENT:
 		{
 			const AnimEventInstance* const pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
@@ -243,6 +178,10 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 				m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAnimationEvent, pAnimEvent->m_EventName, eventData);
 			}
 		}
+		break;
+	case ENTITY_EVENT_DONE:
+		if (m_pScript)
+			m_pScript->Call_OnShutDown(m_pThis);
 		break;
 	case ENTITY_EVENT_RESET:
 		// OnReset()
@@ -265,7 +204,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH:
 		// OnBind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -277,7 +216,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH_THIS:
 		// OnBindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -291,7 +230,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH:
 		// OnUnbind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -303,7 +242,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH_THIS:
 		// OnUnbindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -318,7 +257,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -365,7 +304,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -395,7 +334,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -442,7 +381,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -472,7 +411,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -502,7 +441,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -595,7 +534,16 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GotoState(const char* sStateName)
+uint64 CEntityComponentLuaScript::GetEventMask() const
+{
+	// All events except runtime expensive ones
+	return 
+	  ~(ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK) |
+	  BIT64(ENTITY_EVENT_UPDATE);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEntityComponentLuaScript::GotoState(const char* sStateName)
 {
 	int nStateId = m_pScript->GetStateId(sStateName);
 	if (nStateId >= 0)
@@ -611,7 +559,7 @@ bool CScriptProxy::GotoState(const char* sStateName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GotoState(int nState)
+bool CEntityComponentLuaScript::GotoState(int nState)
 {
 	if (nState == m_nCurrStateId)
 		return true; // Already in this state.
@@ -656,7 +604,7 @@ bool CScriptProxy::GotoState(int nState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::IsInState(const char* sStateName)
+bool CEntityComponentLuaScript::IsInState(const char* sStateName)
 {
 	int nStateId = m_pScript->GetStateId(sStateName);
 	if (nStateId >= 0)
@@ -667,25 +615,25 @@ bool CScriptProxy::IsInState(const char* sStateName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::IsInState(int nState)
+bool CEntityComponentLuaScript::IsInState(int nState)
 {
 	return nState == m_nCurrStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CScriptProxy::GetState()
+const char* CEntityComponentLuaScript::GetState()
 {
 	return m_pScript->GetStateName(m_nCurrStateId);
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CScriptProxy::GetStateId()
+int CEntityComponentLuaScript::GetStateId()
 {
 	return m_nCurrStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::NeedSerialize()
+bool CEntityComponentLuaScript::NeedGameSerialize()
 {
 	if (!m_pThis)
 		return false;
@@ -703,7 +651,7 @@ bool CScriptProxy::NeedSerialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeProperties(TSerialize ser)
+void CEntityComponentLuaScript::SerializeProperties(TSerialize ser)
 {
 	if (ser.GetSerializationTarget() == eST_Network)
 		return;
@@ -726,23 +674,7 @@ void CScriptProxy::SerializeProperties(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("ScriptProxy");
-	{
-		if (m_pThis->HaveValue("OnGetPoolSignature"))
-		{
-			SmartScriptTable persistTable(m_pThis->GetScriptSystem());
-			Script::CallMethod(m_pThis, "OnGetPoolSignature", persistTable);
-			signature.Value("ScriptData", persistTable.GetPtr());
-		}
-	}
-	signature.EndGroup();
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Serialize(TSerialize ser)
+void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 {
 	CHECK_SCRIPT_STACK;
 
@@ -750,7 +682,7 @@ void CScriptProxy::Serialize(TSerialize ser)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Script proxy serialization");
 
-		if (NeedSerialize())
+		if (NeedGameSerialize())
 		{
 			if (ser.BeginOptionalGroup("ScriptProxy", true))
 			{
@@ -811,7 +743,7 @@ void CScriptProxy::Serialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::HaveTable(const char* name)
+bool CEntityComponentLuaScript::HaveTable(const char* name)
 {
 	SmartScriptTable table;
 	if (m_pThis && m_pThis->GetValue(name, table))
@@ -821,7 +753,7 @@ bool CScriptProxy::HaveTable(const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeTable(TSerialize ser, const char* name)
+void CEntityComponentLuaScript::SerializeTable(TSerialize ser, const char* name)
 {
 	CHECK_SCRIPT_STACK;
 
@@ -848,13 +780,14 @@ void CScriptProxy::SerializeTable(TSerialize ser, const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CEntityComponentLuaScript::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)
 {
 	// Initialize script properties.
 	if (bLoading)
 	{
 		CScriptProperties scriptProps;
 		// Initialize properties.
+		// Script properties are currently stored in the entity node, not the component itself (legacy)
 		scriptProps.SetProperties(entityNode, m_pThis);
 
 		XmlNodeRef eventTargets = entityNode->findChild("EventTargets");
@@ -873,7 +806,7 @@ struct SEntityEventTarget
 
 //////////////////////////////////////////////////////////////////////////
 // Set event targets from the XmlNode exported by Editor.
-void CScriptProxy::SetEventTargets(XmlNodeRef& eventTargetsNode)
+void CEntityComponentLuaScript::SetEventTargets(XmlNodeRef& eventTargetsNode)
 {
 	std::set<string> sourceEvents;
 	std::vector<SEntityEventTarget> eventTargets;
@@ -937,34 +870,34 @@ void CScriptProxy::SetEventTargets(XmlNodeRef& eventTargetsNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, (bool)true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, float fValue)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent, float fValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, fValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, bool bValue)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent, bool bValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, bValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, const char* sValue)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent, const char* sValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, sValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, EntityId nEntityId)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent, EntityId nEntityId)
 {
 	IScriptTable* pTable = nullptr;
-	IEntity* const pIEntity = m_pEntity->GetCEntitySystem()->GetEntity(nEntityId);
+	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(nEntityId);
 	
 	if (pIEntity != nullptr)
 	{
@@ -975,25 +908,25 @@ void CScriptProxy::CallEvent(const char* sEvent, EntityId nEntityId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, const Vec3& vValue)
+void CEntityComponentLuaScript::CallEvent(const char* sEvent, const Vec3& vValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, vValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallInitEvent(bool bFromReload)
+void CEntityComponentLuaScript::CallInitEvent(bool bFromReload)
 {
 	m_pScript->Call_OnInit(m_pThis, bFromReload);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::OnPreparedFromPool()
+void CEntityComponentLuaScript::OnPreparedFromPool()
 {
 	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnPreparedFromPool);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
+void CEntityComponentLuaScript::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
 {
 	if (!CurrentState()->IsStateFunctionImplemented(ScriptState_OnCollision))
 		return;
@@ -1054,7 +987,7 @@ void CScriptProxy::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet)
+void CEntityComponentLuaScript::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1071,7 +1004,7 @@ void CScriptProxy::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pR
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, const char* str, bool* pRet)
+void CEntityComponentLuaScript::SendScriptEvent(int Event, const char* str, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1088,7 +1021,7 @@ void CScriptProxy::SendScriptEvent(int Event, const char* str, bool* pRet)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, int nParam, bool* pRet)
+void CEntityComponentLuaScript::SendScriptEvent(int Event, int nParam, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1104,17 +1037,17 @@ void CScriptProxy::SendScriptEvent(int Event, int nParam, bool* pRet)
 	}
 }
 
-void CScriptProxy::RegisterForAreaEvents(bool bEnable)
+void CEntityComponentLuaScript::RegisterForAreaEvents(bool bEnable)
 {
 	m_bEnableSoundAreaEvents = bEnable;
 }
 
-bool CScriptProxy::IsRegisteredForAreaEvents() const
+bool CEntityComponentLuaScript::IsRegisteredForAreaEvents() const
 {
 	return m_bEnableSoundAreaEvents;
 }
 
-void CScriptProxy::GetMemoryUsage(ICrySizer* pSizer) const
+void CEntityComponentLuaScript::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 }

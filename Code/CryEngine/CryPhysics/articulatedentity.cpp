@@ -79,12 +79,12 @@ CArticulatedEntity::CArticulatedEntity(CPhysicalWorld *pWorld, IGeneralMemoryHea
 	m_iVarPart0 = 0;
 	
 	//CArticulatedEntity
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_Ya_vec) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_Ya_vec) == 2, "Invalid array size!");
 	m_Ya_vec[0].Set(0,0,0);
 	m_Ya_vec[1].Set(0,0,0);
 
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_posHist) == 2);
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_qHist) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_posHist) == 2, "Invalid array size!");
+	static_assert(CRY_ARRAY_COUNT(m_qHist) == 2, "Invalid array size!");
 	m_posHist[0].zero(); m_qHist[0].SetIdentity();
 	m_posHist[1].zero(); m_qHist[1].SetIdentity();
 }
@@ -3066,7 +3066,7 @@ float __maxdiff = 0;
 
 int CArticulatedEntity::Update(float time_interval, float damping)
 {
-	if (m_bFeatherstone) {
+	if (m_bFeatherstone && m_nJoints>0) {
 		int active = 1;
 		if (m_joints[0].fs) {
 			CollectPendingImpulses(0,active);

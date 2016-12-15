@@ -179,7 +179,6 @@ public:
 	virtual void                 PostInitClient(int channelId)                                                   {};
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual bool                 GetEntityPoolSignature(TSerialize signature);
 	virtual void                 Release();
 	virtual void                 FullSerialize(TSerialize ser);
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
@@ -311,7 +310,6 @@ public:
 	void       PrepareAnimatedCharacterForUpdate();
 	void       GenerateMovementRequest();
 	void       PrepareAndStartAnimProc();
-	ILINE bool IsClient() const { return m_isClient; }
 
 private:
 	void PerformSimpleMovement();
@@ -346,7 +344,7 @@ private:
 	bool       EvaluateSimpleMovementConditions() const;
 	void       UpdateSimpleMovementConditions();
 
-	bool       LoadAnimationGraph(IGameObject* pGameObject);
+	bool       InitializeMannequin();
 
 	void       PreAnimationUpdate();
 
@@ -462,7 +460,7 @@ public:
 
 private:
 
-	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdatePtr m_pComponentPrepareCharForUpdate;
+	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate* m_pComponentPrepareCharForUpdate;
 
 	//EventListeners
 	typedef CListenerSet<IAnimatedCharacterListener*> TAnimCharListeners;
@@ -531,7 +529,6 @@ private:
 	// Not serialized
 	// TODO: Pack these as bits instead.
 	bool m_isPlayer;
-	bool m_isClient;
 
 	// Not serialized
 	CTimeValue m_curFrameStartTime;

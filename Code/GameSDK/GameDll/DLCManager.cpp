@@ -124,7 +124,7 @@ void CDLCManager::LoadDownloadableContent( uint32 userIdOveride /*= INVALID_CONT
 	}
 	else
 	{
-		IPlayerProfileManager *pPlayerProfileManager = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager();
+		IPlayerProfileManager *pPlayerProfileManager = gEnv->pGameFramework->GetIPlayerProfileManager();
 		userIndex = pPlayerProfileManager ? pPlayerProfileManager->GetExclusiveControllerDeviceIndex() : INVALID_CONTROLLER_INDEX;
 	}
 

@@ -46,7 +46,7 @@ public:
 	virtual void                SetUniqueId(uint8 const uniqueId) { m_uniqueId = uniqueId; }
 	virtual const char*         GetKeyName(const SInputEvent& event) const;
 	virtual const char*         GetKeyName(const EKeyId keyId) const;
-	virtual char                GetInputCharAscii(const SInputEvent& event);
+	virtual uint32              GetInputCharUnicode(const SInputEvent& event);
 	virtual const char*         GetOSKeyName(const SInputEvent& event);
 	virtual SInputSymbol*       LookupSymbol(EKeyId id) const;
 	virtual const SInputSymbol* GetSymbolByName(const char* name) const;

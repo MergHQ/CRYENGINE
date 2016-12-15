@@ -307,10 +307,9 @@ void frag_custom_begin(inout fragPass pPass)
 	pPass.pCustom.vHairDir = pPass.IN.vBinormal.xyz;
 	
 #if %DIRECTION_MAP
-  half3 vDirectionMap = half3(GetXYNormalMap(DirectionTex, pPass.IN.baseTC.xy), 0);
-	vDirectionMap.xy = vDirectionMap.xy * 2 - 1;
-  pPass.pCustom.vHairDir = mul(vDirectionMap.xyz, pPass.mTangentToWS);
-	fShiftAmount = sqrt(saturate(1.h + dot(vDirectionMap.xy, -vDirectionMap.xy))) * ShiftVariation;  // Reconstructed z of direction
+	half3 vDirection = GetNormalMap(DirectionTex, pPass.IN.baseTC.xy);
+	pPass.pCustom.vHairDir = mul(vDirection.xyz, pPass.mTangentToWS);
+	fShiftAmount = vDirection.z * ShiftVariation;
 #endif
 
   const half PrimarySpecShift = 0;
@@ -330,7 +329,7 @@ void frag_custom_begin(inout fragPass pPass)
 	// Soft intersection
 	if (SoftIntersection > 0)
 	{
-		float depthDiff = abs( pPass.IN.screenProj.w - DecodeSceneDepth( sceneDepthSampler, pPass.IN.screenProj ) );
+		float depthDiff = abs( pPass.IN.screenProj.w - GetLinearDepthScaledProj( sceneLinearDepthTex, pPass.IN.screenProj ) );
 		pPass.fAlpha *= saturate( lerp( 1, saturate( depthDiff * 100 ), SoftIntersection ) );
 	}
 
@@ -424,7 +423,7 @@ void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
 	uint maskIndex = 0;
 	uint curMask = TileLightMask[bufferIdx];
 	
-	[loop] for (uint lightIter = 0; lightIter < 8; ++lightIter)  // Restrict number of probes being considered
+	[loop] for (;;)
 	{
 		while (maskIndex < 8)
 		{
@@ -438,7 +437,7 @@ void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
 			break;
 			
 		STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
-		float3 lightVec = light.posRad.xyz - pPass.IN.vView.xyz;
+		float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - pPass.IN.vView.xyz;
 
 		// Compute attenuation for box
 		float3 tmpLightVec;
@@ -729,26 +728,7 @@ vert2fragZ_C ZPassVS(app2vertGBuffer IN)
   _TCModify(baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);	
 
   #if %_RT_ALPHATEST || %_RT_DISSOLVE
-    float4 fAlphaTest = 0.0f;
-    #if %_RT_DISSOLVE
-      // For dissolve and instancing, we use PI_AlphaTest
-      fAlphaTest = AlphaTest;
-      #if %_RT_INSTANCING_ATTR
-        {
-          float4 baseTC;
-          #fetchinst (baseTC = IN.InstAlphaTest, vertPassPos.nInstance);
-          fAlphaTest = baseTC;
-        }
-      #endif
-    #else
-      // For regular materials using alpha test, we use PB_AlphaTest
-	  int nInstance = 0;
-	#if %_RT_ENVIRONMENT_CUBEMAP
-	  nInstance = vertPassPos.nInstance;
-	#endif
-      fAlphaTest = Get_SPI_AlphaTest(nInstance);
-    #endif
-    OUT.baseTC.wz = fAlphaTest.wx;
+	OUT.baseTC.wz = float2(Get_MaterialAlphaTest(),Get_SPI_Dissolve());
   #endif
   
   return OUT;            
@@ -858,6 +838,10 @@ v2f_sh HairSG_VS(app2vertGeneral IN)
 
 	#if %_RT_SAMPLE0
 		OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
+	#endif
+	
+	#if !%_RT_NEAREST
+		HPosition.z *= HPosition.w;
 	#endif
 #else 
 	OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);

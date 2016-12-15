@@ -8,42 +8,100 @@
 // Constants
 ///////////////////////////////////////////////////////////////////////////////////
 
-float4 SvoTreeSettings0 : PB_SvoTreeSettings0; // world size, min node suze, brick tex res, pool tex res
-float4 SvoTreeSettings1 : PB_SvoTreeSettings1; // node max valid size, 0, 0, 0
-float4 SvoTreeSettings2 : PB_SvoTreeSettings2;
-float4 SvoTreeSettings3 : PB_SvoTreeSettings3;
-float4 SvoTreeSettings4 : PB_SvoTreeSettings4;
-float4 SvoTreeSettings5 : PB_SvoTreeSettings5;
+float4 SvoTreeSettings0  : PB_SvoTreeSettings0; // world size, min node suze, brick tex res, pool tex res
+float4 SvoTreeSettings1  : PB_SvoTreeSettings1; // node max valid size, 0, 0, 0
+float4 SvoTreeSettings2  : PB_SvoTreeSettings2;
+float4 SvoTreeSettings3  : PB_SvoTreeSettings3;
+float4 SvoTreeSettings4  : PB_SvoTreeSettings4;
+float4 SvoTreeSettings5  : PB_SvoTreeSettings5;
 
-float4 SvoParamsCommon : PB_SvoParams0; // shadows sev, diffuse spreading, diffuse base, even frame time
-float4 SvoParamsDiffuse : PB_SvoParams1; // wid, max cone len, diff targ res scale, mult
-float4 SvoParamsInject : PB_SvoParams2; // light, propagation booster, refl satur, trans mult
-float4 SvoParamsMisc : PB_SvoParams5; // emissive mult, propagation pass id, passes num, CM mult
-float4 SvoParamsMisc2 : PB_SvoParams6; // point light mult, 0, 0, 0
+float4 SvoParamsCommon   : PB_SvoParams0; // shadows sev, diffuse spreading, diffuse base, max tree depth
+float4 SvoParamsDiffuse  : PB_SvoParams1; // wid, max cone len, diff targ res scale, mult
+float4 SvoParamsInject   : PB_SvoParams2; // light, propagation booster, refl satur, trans mult
+float4 SvoParamsMisc     : PB_SvoParams5; // emissive mult, propagation pass id, passes num, CM mult
+float4 SvoParamsMisc2    : PB_SvoParams6; // point light mult, 0, 0, 0
 float4 SvoParamsSkyColor : PB_SvoParams4; // r, g, b, mult
 float4 SvoParamsSpecular : PB_SvoParams3; // wid, caust mult, air brightness, mult
-float4 SvoParamsMisc3 : PB_SvoParams7; // AO len, AO soft
+float4 SvoParamsMisc3    : PB_SvoParams7; // AO len, AO soft
+float4 SvoParamsMisc4    : PB_SvoParams8; // VoxelOpacityMultiplier, SkyLightBottomMultiplier
+float4 SvoParamsMisc5    : PB_SvoParams9; // 
 
-Texture2D<float4>sceneDepthMapSampler : register(t4);
-SamplerState ssSvoPointClamp : register(s4) = SS_PointClamp;
+float4x4 SVO_ViewProj;
+float4x4 SVO_ViewProjPrev;
+float4x4 SVO_RsmSunShadowProj;
+float4   SVO_RsmSunCol;
+float4   SVO_RsmSunDir;
+float4   SVO_DepthTargetRes;
+
+float4x4	SVO_LightCol0;
+float4x4	SVO_LightCol1;
+float4x4	SVO_LightDir0;
+float4x4	SVO_LightDir1;
+float4x4	SVO_LightPos0;
+float4x4	SVO_LightPos1;
+
+SamplerState ssSvoPointClamp : register(s0);
+SamplerState ssSvoLinearClamp : register(s1);
+SamplerState ssSvoLinearWrap : register(s2);
+
+float4 tex3DlodPC(Texture3D t, float3 tc)
+{
+	return t.SampleLevel(ssSvoPointClamp, tc, 0);
+}
+
+float4 LoadTexel(Texture3D t, uint3 coord)
+{
+	return t.Load(uint4(coord, 0));
+}
+
+float4 LoadTexel(Texture2D t, uint2 coord)
+{
+	return t.Load(uint4(coord, 0, 0));
+}
+
+float4 tex3DlodLC(Texture3D t, float3 tc)
+{
+	return t.SampleLevel(ssSvoLinearClamp, tc, 0);
+}
+
+float4 tex2DlodPC(Texture2D t, float2 tc)
+{
+	return t.SampleLevel(ssSvoPointClamp, tc, 0);
+}
+
+float4 tex2DlodLC(Texture2D t, float2 tc)
+{
+	return t.SampleLevel(ssSvoLinearClamp, tc, 0);
+}
+
+float4 tex2DlodLW(Texture2D t, float2 tc)
+{
+	return t.SampleLevel(ssSvoLinearWrap, tc, 0);
+}
+
+float4 texCUBElodLC(TextureCube t, float3 tc)
+{
+	return t.SampleLevel(ssSvoLinearClamp, tc, 0);
+}
 
 float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 {
-	float fDepth = depthTexture.SampleLevel(ssSvoPointClamp, float3(ScreenTC.xy, 0), 0).x;
+	// TODO: GetLinearDepth + GetLinearDepthUnclamped
+	int3 vPixCoord = int3(max(min(ScreenTC * SVO_DepthTargetRes.xy, SVO_DepthTargetRes.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
+	float fDepth = depthTexture.Load(vPixCoord).x;
 	return GetLinearDepth(fDepth);
 }
-
-float4x4 g_mViewProj;
-float4x4 g_mViewProjPrev;
 
 #define VOX_TEX_POOL_DIM				float3(min(SvoTreeSettings0.w, 512), min(SvoTreeSettings0.w, 512), clamp(SvoTreeSettings0.w, 256, 1024))
 #define VOX_SUBBLOCK_SIZE_RATIO 1
 #define VOX_DIST_TO_SURF_RANGE	4
 
 #define VOX_WORLD_SIZE		(SvoTreeSettings0.x)
+#define VOX_SVO_ORIGIN		float4(SvoParamsMisc2.y, SvoParamsMisc2.w, SvoParamsMisc3.z, SvoParamsMisc3.w)
+
 #define VOX_MIN_NODE_SIZE (SvoTreeSettings0.y)
 #define VOX_BRICK_TEXRES	(SvoTreeSettings0.z)
-#define VOX_MIN_VOX_SIZE	(VOX_MIN_NODE_SIZE / VOX_BRICK_TEXRES)
+#define VOX_MIN_VOX_SIZE	(SvoTreeSettings0.y / SvoTreeSettings0.z)
 #define VOX_MAX_NODE_SIZE (SvoTreeSettings1.x)
 #define VOX_MAX_RT_DIST		(SvoTreeSettings1.y)
 #define VOX_CONE_MAX_LEN	(SvoParamsDiffuse.y)
@@ -66,7 +124,6 @@ float4x4 g_mViewProjPrev;
 
 #define VOX_TI_ATMO_DENSITY (SvoTreeSettings1.w)
 
-#define SVO_PREDICTION_MAX_ALPHA_IN_RANGE  1
 #define SVO_PREDICTION_MIN_DIST_TO_SURFACE 0
 
 #define SVO_TRACE_MODE_GEOMETRY 0
@@ -93,6 +150,36 @@ float3 DecodeHDR(float4 Color)
 	return Color.rgb;
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+// SVO textures
+///////////////////////////////////////////////////////////////////////////////////
+
+Texture2D sceneDepth : register(t4);
+
+Texture3D brickPool_TTex : register (t8);
+Texture3D brickPool_Tris : register (t9);
+Texture3D brickPool_TInd : register (t13);
+
+Texture3D brickPool_Tree : register (t0);
+Texture3D brickPool_Rgbs : register (t1);
+Texture3D brickPool_Norm : register (t2);
+Texture3D brickPool_Opac : register (t3);
+
+#ifdef MESH_TRACING
+Texture3D brickPool_NTri : register (t6);
+#else
+TextureCube globalSpecCM : register (t6);
+#endif
+
+Texture2D sceneTargetPrev : register(t12);
+
+Texture2D rsmSunShadowMap : register(t29);
+Texture2D rsmSunColorsMap : register(t30);
+Texture2D rsmSunNormalMap : register(t31);
+
+Texture2D ForwRsmPoolCol : register(t26);
+Texture2D ForwRsmPoolNor : register(t27);
+
 RWTexture3D<uint> UAV_0	: register(u0);
 RWTexture3D<uint> UAV_1 : register(u1);
 RWTexture3D<uint> UAV_2 : register(u2);
@@ -101,90 +188,6 @@ RWTexture3D<uint> UAV_4 : register(u4);
 RWTexture3D<uint> UAV_5 : register(u5);
 RWTexture3D<uint> UAV_6 : register(u6);
 RWTexture3D<uint> UAV_7 : register(u7);
-
-#define gReadBackSize ((int)32)
-
-///////////////////////////////////////////////////////////////////////////////////
-// SVO textures
-///////////////////////////////////////////////////////////////////////////////////
-
-sampler3D brickPool_TTex : register (s8)
-{
-	MinFilter = LINEAR; MagFilter = LINEAR; MipFilter = LINEAR;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-
-sampler3D brickPool_Tris : register (s9);
-sampler3D brickPool_TInd : register (s13);
-
-sampler3D brickPool_Tree : register (s0)
-{
-	Texture = $SvoTree;
-	MinFilter = POINT; MagFilter = POINT; MipFilter = POINT;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-
-sampler3D brickPool_Rgbs : register (s1)
-{
-	Texture = $SvoRgbs;
-	MinFilter = LINEAR; MagFilter = LINEAR; MipFilter = LINEAR;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-
-sampler3D brickPool_Norm : register (s2)
-{
-	Texture = $SvoNorm;
-	MinFilter = LINEAR; MagFilter = LINEAR; MipFilter = LINEAR;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-
-sampler3D brickPool_Opac : register (s3)
-{
-	Texture = $SvoOpac;
-	MinFilter = LINEAR; MagFilter = LINEAR; MipFilter = LINEAR;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-
-#ifdef MESH_TRACING
-sampler3D brickPool_NTri : register (s6)
-{
-	Texture = $SvoTris;
-	MinFilter = POINT; MagFilter = POINT; MipFilter = POINT;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-	sRGBLookup = false;
-};
-#else
-samplerCUBE globalSpecCM : register (s6)
-{
-	Texture = $SvoGlobalCM;
-	MinFilter = LINEAR; MagFilter = LINEAR; MipFilter = LINEAR;
-	AddressU = Clamp; AddressV = Clamp; AddressW = Clamp;
-};
-#endif
-
-sampler2D noiseSampler2D : register(s15);
-
-sampler2D SVO_RsmSunShadowMapNoVox : register(s0);
-sampler2D SVO_RsmSunColorsMapNoVox : register(s1);
-sampler2D SVO_RsmSunNormalMapNoVox : register(s2);
-
-float4x4  SVO_RsmSunShadowProj;
-sampler2D SVO_RsmSunShadowMap : register(s12);
-sampler2D SVO_HDRTargetPrev : register(s12);
-sampler2D SVO_DiffuseFinRT : register(s15);
-sampler2D SVO_RsmSunColorsMap : register(s13);
-sampler2D SVO_RsmSunNormalMap : register(s9);
-float4    SVO_RsmSunCol;
-float4    SVO_RsmSunDir;
-sampler2D SVO_VelocityRT : register(s8);
-
-Texture2D<float4> ForwRsmPoolCol : register(t26);
-Texture2D<float4> ForwRsmPoolNor : register(t27);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Structures
@@ -216,18 +219,6 @@ bool IsDiffuseMode()
 #else
 	return false;
 #endif
-}
-
-int GetMaxTreeDepth()
-{
-	float nWS = VOX_WORLD_SIZE;
-	int nDepth = 0;
-	while (nWS>VOX_MIN_NODE_SIZE)
-	{
-		nWS /= 2;
-		nDepth++;
-	}
-	return nDepth;
 }
 
 bool IsPointInAABB(float3 p, float3 m1, float3 m2)
@@ -382,10 +373,10 @@ float ReadNodeCropBox(float3 tcMin, out float4 voxAreaMin, out float4 voxAreaMax
 	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
 	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
 
-	voxAreaMin = tex3Dlod(brickPool_Tree, float4(tcMin, 0));
-	voxAreaMax = tex3Dlod(brickPool_Tree, float4(tcMin + float3(fTexelSizeXY, 0, 0), 0));
+	voxAreaMin = tex3DlodPC(brickPool_Tree, float4(tcMin, 0));
+	voxAreaMax = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(fTexelSizeXY, 0, 0), 0));
 
-	return tex3Dlod(brickPool_Tree, float4(tcMin + float3(0, 0, fTexelSizeZ), 0)).x;
+	return tex3DlodPC(brickPool_Tree, float4(tcMin + float3(0, 0, fTexelSizeZ), 0)).x;
 }
 
 float3 ComputeDataTC(int nAtlasOffset)
@@ -407,7 +398,7 @@ int ReadChildPtr(float3 tcMin, int nChildId)
 	static const float fTexelSizeXY = (1.f / (VOX_ATLAS_SIZE.x * 2));
 	static const float fTexelSizeZ = (1.f / (VOX_ATLAS_SIZE.z * 2));
 
-	float4 childPtrT = tex3Dlod(brickPool_Tree, float4(tcMin + float3(nChildId<4 ? 0 : fTexelSizeXY, fTexelSizeXY, 0), 0));
+	float4 childPtrT = tex3DlodPC(brickPool_Tree, float4(tcMin + float3(nChildId<4 ? 0 : fTexelSizeXY, fTexelSizeXY, 0), 0));
 	return childPtrT[nChildId & 3];
 }
 
@@ -435,8 +426,8 @@ void PrepareBrickInjection(
 	{
 		const float3 vBoxSize = voxAreaMax.xyz - voxAreaMin.xyz;
 
-		float3 vBegPos = 0;
-		float3 vEndPos = VOX_WORLD_SIZE;
+		float3 vBegPos = -VOX_WORLD_SIZE*4;
+		float3 vEndPos =  VOX_WORLD_SIZE*5;
 
 		float ocNodeSize = voxAreaMin.w;
 		const float3 vHalfTexSizeWS = 0.5f / VOX_BRICK_TEXRES * ocNodeSize;
@@ -489,7 +480,7 @@ float3 SnapPoolTC_Real(float3 vCurTC)
 
 float ReadDecodeIso(float3 texTC)
 {
-	int4 vVal = tex3Dlod(brickPool_Rgbs, float4(texTC, 0)) * 255;
+	int4 vVal = tex3DlodLC(brickPool_Rgbs, float4(texTC, 0)) * 255;
 
 	int nRes = vVal.r + vVal.g * 256;
 
@@ -500,7 +491,7 @@ float ReadIsoValTrilinear(float3 texTC)
 {
 	return ReadDecodeIso(texTC);
 
-	//	return tex3Dlod( brickPool_Rgbs,  float4(texTC.xyz, 0) ).r;
+	//	return tex3DlodPC( brickPool_Rgbs,  float4(texTC.xyz, 0) ).r;
 
 	/*
 	float2 MapParams = float2 (VOX_TEX_POOL_DIM.x, 1.f / VOX_TEX_POOL_DIM.y );
@@ -541,9 +532,9 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 	const float fSafetyBorder = 0.001f;
 	const bool bHit = IntersectRayAABB(r, voxAreaMin.xyz - fSafetyBorder, voxAreaMax.xyz + fSafetyBorder, tmin, tmax);
 
-	sampler3D sPoolRGBI = brickPool_Opac;
-	sampler3D sPoolNNNS = brickPool_Norm;
-	sampler3D sPoolSSSS = brickPool_Rgbs;
+	Texture3D sPoolRGBI = brickPool_Opac;
+	Texture3D sPoolNNNS = brickPool_Norm;
+	Texture3D sPoolSSSS = brickPool_Rgbs;
 
 	if (bHit && (tmax>0))
 	{
@@ -567,9 +558,9 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 			vPosWS -= (vPosWS - (voxAreaMin + voxAreaMax) / 2) / VOX_BRICK_TEXRES;
 
 			float3 vCurTC = tcMin + ((clamp(vPosWS, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize))*vMulTC;
-			float4 vRGBI = tex3Dlod(sPoolRGBI, float4(vCurTC.xyz, 0));
-			float4 vNNNS = 0;//tex3Dlod( sPoolNNNS,  float4(vCurTC.xyz, 0) );
-			float4 vSSSS = 0;//tex3Dlod( sPoolSSSS,  float4(vCurTC.xyz, 0) );
+			float4 vRGBI = tex3DlodLC(sPoolRGBI, float4(vCurTC.xyz, 0));
+			float4 vNNNS = 0;//tex3DlodLC( sPoolNNNS,  float4(vCurTC.xyz, 0) );
+			float4 vSSSS = 0;//tex3DlodLC( sPoolSSSS,  float4(vCurTC.xyz, 0) );
 
 			float fIsoVal = (vRGBI.a - .5);
 			float3 vDetStartPoint = r.startpoint;
@@ -578,7 +569,7 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 				float fLastStepSize = fIsoVal + abs(fIsoValPrev);
 				vDetStartPoint -= r.direction*(ocNodeSize / VOX_BRICK_TEXRES)*fStepSize*(fIsoVal / fLastStepSize);
 				vCurTC = tcMin + ((clamp(vDetStartPoint, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize))*vMulTC;
-				vNNNS = tex3Dlod(sPoolNNNS, float4(vCurTC.xyz, 0));
+				vNNNS = tex3DlodLC(sPoolNNNS, float4(vCurTC.xyz, 0));
 
 				// read surface types
 				{
@@ -592,7 +583,7 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 						for (int y = 0; y<2; y++)
 							for (int z = 0; z<2; z++)
 							{
-								arrValsXYZ[x][y][z] = tex3Dlod(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
+								arrValsXYZ[x][y][z] = tex3DlodLC(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
 
 								/*int nType = int(arrValsXYZ[x][y][z].r * 255.f + .5f);
 
@@ -613,7 +604,7 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 						for (int y = 0; y<2; y++)
 							for (int z = 0; z<2; z++)
 							{
-								arrValsXYZ[x][y][z] = tex3Dlod(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
+								arrValsXYZ[x][y][z] = tex3DlodLC(sPoolSSSS, float4(Tris_SnapPoolTC(vCurTC.xyz) + float3(x, y, z) / VOX_TEX_POOL_DIM, 0));
 
 								int nType = int(arrValsXYZ[x][y][z].r * 255.f + .5f);
 
@@ -634,7 +625,7 @@ bool ConeTraceBrick_Terrain(const float3 vRayStartPos, inout Ray r, const float 
 
 					float4 arrVals = lerp(arrValsX[0], arrValsX[1], t.x);
 
-					vSSSS = arrVals;//tex3Dlod( sPoolSSSS,  float4((vCurTC.xyz), 0) );
+					vSSSS = arrVals;//tex3DlodLC( sPoolSSSS,  float4((vCurTC.xyz), 0) );
 				}
 			}
 
@@ -695,7 +686,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 
 		{
 			// get first triangle id and tris count
-			float4 vValII = tex3Dlod(brickPool_NTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
+			float4 vValII = tex3DlodPC(brickPool_NTri, float4(Tris_SnapPoolTC(arrGoodTC.xyz), 0));
 			int nFirstTriII =
 				+int(vValII.r * 255)
 				+ int(vValII.g * 255) * 256
@@ -708,7 +699,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 
 				int3 vTCII = int3(nTCII & 255, (nTCII / 256) & 255, (nTCII / 256 / 256) & 255);
 
-				float4 vVal = tex3Dlod(brickPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / 256.f);
+				float4 vVal = tex3DlodPC(brickPool_TInd, float4(vTCII.x, vTCII.y, vTCII.z, 0) / 256.f);
 
 				// get triangle id
 				int nTriId =
@@ -721,9 +712,9 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 				int3 nTC = int3(nTriId & 255, (nTriId / 256) & 255, (nTriId / 256 / 256) & 255);
 
 				// load triangle vertices
-				float4 v0 = tex3Dlod(brickPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / 256.f);
-				float4 v1 = tex3Dlod(brickPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / 256.f);
-				float4 v2 = tex3Dlod(brickPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / 256.f);
+				float4 v0 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 0, nTC.y, nTC.z, 0) / 256.f);
+				float4 v1 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 1, nTC.y, nTC.z, 0) / 256.f);
+				float4 v2 = tex3DlodPC(brickPool_Tris, float4(nTC.x + 2, nTC.y, nTC.z, 0) / 256.f);
 
 				// intersect
 				float3 vHitPoint = 0;
@@ -748,7 +739,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 		if (vNearestTC.x >= 0)
 		{
 			// load vertices TC
-			float4 vInf = tex3Dlod(brickPool_Tris, float4(vNearestTC.x + 3, vNearestTC.y, vNearestTC.z, 0) / 256.f);
+			float4 vInf = tex3DlodPC(brickPool_Tris, float4(vNearestTC.x + 3, vNearestTC.y, vNearestTC.z, 0) / 256.f);
 
 			float2 t0 = ExtractTC(arrNearestTriVerts[0].w);
 			float2 t1 = ExtractTC(arrNearestTriVerts[1].w);
@@ -761,7 +752,7 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 			int nTexId = (int)(vInf.x) - 1;
 
 			// add signed
-			float3 vCenterRGB = tex3Dlod(brickPool_TTex, float4(frac(vPosTC.xy)*vInf.y, float(nTexId) / 256.f + .5f / 256.f, 0));
+			float3 vCenterRGB = tex3DlodLC(brickPool_TTex, float4(frac(vPosTC.xy)*vInf.y, float(nTexId) / 256.f + .5f / 256.f, 0));
 			vRgbOut.xyz *= 1.f + (vCenterRGB - .5f) * 8.f * pow(saturate((1.f - fDistance / VOX_MAX_RT_DIST) * fMultTriRT), .5f) * saturate(VOX_MAX_ALPHA - (arrGoodTC.w - 1));
 
 			// 				float fR = 7.9;
@@ -777,13 +768,6 @@ void RayTraceMesh(const float fMultTriRT, const float ocNodeSize, inout float fD
 #endif
 
 #include "TiledShading.cfi"
-
-float4x4	SVO_LightCol0;
-float4x4	SVO_LightCol1;
-float4x4	SVO_LightDir0;
-float4x4	SVO_LightDir1;
-float4x4	SVO_LightPos0;
-float4x4	SVO_LightPos1;
 
 bool GetLightTI(int nLightId, out float4 vPosR, out float4 vDirF, out float4 vCol)
 {
@@ -834,7 +818,7 @@ void ProcessTiledLights(inout float4 vRGB, in float3 vPos0, in float3 vRayDir, i
 
 				bool shadowMap = false;
 
-				float3 position = vPos0.xyz - PS_WorldViewPos.xyz;
+				float3 position = vPos0.xyz;// -PS_WorldViewPos.xyz;
 				position += r.direction * fOffset;
 
 #if !%_RT_SAMPLE5 && %_PS
@@ -913,7 +897,7 @@ bool ConeTraceBrick_SS_Far(const float3 vRayStartPos, Ray r, const float _fDista
 			float4 vRGBD = 0;
 			float4 vNORA = 0;
 
-			float4 vOPAC = 0;//tex3Dlod( brickPool_Opac,  float4(vCurTC.xyz, 0) );		
+			float4 vOPAC = 0;//tex3DlodLC( brickPool_Opac,  float4(vCurTC.xyz, 0) );		
 
 			fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
 
@@ -923,12 +907,12 @@ bool ConeTraceBrick_SS_Far(const float3 vRayStartPos, Ray r, const float _fDista
 				{
 					// SS occlusion
 					float4 vPos0 = float4(r.startpoint, 1);
-					float4 vTC0 = mul(g_mViewProj, vPos0);
+					float4 vTC0 = mul(SVO_ViewProj, vPos0);
 					vTC0 /= vTC0.w;
 					vTC0.xy = vTC0.xy*0.5f + 0.5f;
 					vTC0.y = 1 - vTC0.y;
 
-					float fScrDepth = SampleLinearDepth(sceneDepthMapSampler, vTC0.xy) * PS_NearFarClipDist.y;
+					float fScrDepth = SampleLinearDepth(sceneDepth, vTC0.xy) * PS_NearFarClipDist.y;
 					float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC0.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - .5f;
 
 					float fSurDens = saturate(1 - max((fScrDepth - fRayDepth) / 4, (fRayDepth - fScrDepth) / 15));
@@ -947,12 +931,6 @@ bool ConeTraceBrick_SS_Far(const float3 vRayStartPos, Ray r, const float _fDista
 				{
 					vPosOut.xyz = r.startpoint;
 					vPosOut.w = vRGBD.a;
-
-					if (bUseLighting)
-					{
-						if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-							vNormal.a = vNORA.a; // precomputed lighting
-					}
 				}
 			}
 
@@ -1002,7 +980,7 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 			{
 				// SS occlusion
 				float4 vPos0 = float4(r.startpoint, 1);
-				float4 vTC0 = mul(g_mViewProj, vPos0);
+				float4 vTC0 = mul(SVO_ViewProj, vPos0);
 				vTC0 /= vTC0.w;
 				vTC0.xy = vTC0.xy*0.5f + 0.5f;
 				vTC0.y = 1 - vTC0.y;
@@ -1011,7 +989,7 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 					break;
 
 				// read depth
-				float fScrDepth = SampleLinearDepth(sceneDepthMapSampler, vTC0.xy) * PS_NearFarClipDist.y;
+				float fScrDepth = SampleLinearDepth(sceneDepth, vTC0.xy) * PS_NearFarClipDist.y;
 				float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC0.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - 0.05;
 				float fSurDens = saturate(1 - max((fScrDepth - fRayDepth), (fRayDepth - fScrDepth) / 2) > SvoParamsDiffuse.z);
 				float fFade = saturate(18 * (1.f - 2.f*max(abs(vTC0.x - .5), abs(vTC0.y - .5))));
@@ -1020,12 +998,12 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 #if %_RT_SAMPLE5
 				if (!IsDiffuseMode())
 				{
-					float4 vReprojTC = mul(g_mViewProjPrev, vPos0);
+					float4 vReprojTC = mul(SVO_ViewProjPrev, vPos0);
 					vReprojTC /= vReprojTC.w;
 					vReprojTC.xy = vReprojTC.xy*0.5f + 0.5f;
 					vReprojTC.y = 1 - vReprojTC.y;
 
-					float3 vSSR = tex2Dlod(SVO_HDRTargetPrev, float4(vReprojTC.xy, 0, 0));
+					float3 vSSR = tex2DlodPC(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
 					vRgbOut.xyz += vSSR.xyz * vRGBD.a * saturate(1 - vRgbOut.a);
 				}
 #endif
@@ -1072,23 +1050,17 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 		float4 arrGoodTC = 0;
 
-		float fAxisMult = 1.f;
-		if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE) // for MRT
-			fAxisMult = 1.f - 0.2f*saturate(dot(normalize(float3(1, 1, 1)), normalize(abs(r.direction))));
-
 		float t = max(0, tmin);
 		r.startpoint += r.direction*max(0, tmin);
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
 
 		const float fVoxSize = ocNodeSize / VOX_BRICK_TEXRES;
 
+		float3 vRayDirABS = normalize(abs(r.direction));
+
 		while(1)
 		{
 			float fStepSize = bAirOnlyMode ? 1.f : 0.5f; // todo: pass from outside
-
-			//			if(nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-			//			if( t<=(tmin+voxAreaMin.w/16) || t>=(tmax-voxAreaMin.w/7) )
-			//			fStepSize *= .5;
 
 			if (!bAirOnlyMode)
 			{
@@ -1102,23 +1074,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				}
 			}
 
-			/*if(!bAirOnlyMode)
-			{
-			if(nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-			{ // TODO: try level voxelization with a lot of alpha voxels for fog or clouds
-			//			fStepSize = (vRGBD.a>fAlphaRefMin) ? 0.5 : 3.0;//clamp(32.f-vRGBD.a*255.f, 0.5f, VOX_DIST_TO_SURF_RANGE);
-			float fFar = saturate((fAlphaRefMin-vRGBD.a)/(fAlphaRefMin/2));
-			fStepSize = lerp(0.5, VOX_DIST_TO_SURF_RANGE, fFar);
-			}
-			else // if(nPredictionMode == SVO_PREDICTION_MIN_DIST_TO_SURFACE)
-			{
-			//			const fStepSize = 1.f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			//			const fStepSize = vReadNormal.g ? 0.75f : 1.5f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			//			fStepSize = 0.5; //bMrtMode ? 0.35f : 1.f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			fStepSize = clamp((255.f - pow(vNORA.a,.6)*255.f) * fStepSize, fStepSize, 4);
-			}
-			}*/
-
 			r.startpoint += r.direction*fVoxSize*fStepSize;
 			t += fVoxSize*fStepSize;
 
@@ -1129,16 +1084,17 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 			if (bUseLighting)
 			{
-				vNORA = tex3Dlod(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
+				vNORA = tex3DlodLC(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
 
-				vRGBD = tex3Dlod(brickPool_Rgbs, float4(vCurTC.xyz, 0)) / max(0.1f, vNORA.a);
+				vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0));
+				vRGBD.xyz /= max(0.1f, vNORA.a);
 
 				if (nDebugMode != 2)
 					vRGBD.xyz = DecodeHDR(vRGBD);
 				vRGBD.w = 0;
 			}
 
-			float4 vOPAC = tex3Dlod(brickPool_Opac, float4(vCurTC.xyz, 0));
+			float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(vCurTC.xyz, 0));
 
 			// bigger steps collect more opacity
 			float fAirDensityScale = ocNodeSize * fStepSize;
@@ -1148,7 +1104,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 			if (!bAirOnlyMode)
 			{
-				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, fAxisMult*dot(vOPAC.zyx, normalize(abs(r.direction)))));
+				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, dot(vOPAC.zyx, vRayDirABS)));
 			}
 			else
 			{
@@ -1163,9 +1119,9 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 			}
 
 			fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
-			float fOverDist = saturate((fDistanceMax - fDistance) / fVoxSize);
+			const float fOverDist = 1;// saturate((fDistanceMax - fDistance) / fVoxSize);
 
-			vRGBD.a = saturate(vRGBD.a) * pow(saturate(1.f - fDistance / fDistanceMax), .5);
+			vRGBD.a = saturate(vRGBD.a * SvoParamsMisc4.x);// *pow(saturate(1.f - fDistance / fDistanceMax), .5);
 
 			//if(vRGBD.a > fAlphaRefMin && vRGBD.a > 0 && vRGBD.a <= fAlphaRefMax)
 			{
@@ -1208,12 +1164,12 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 					vShadTC.xy /= vShadTC.w;
 					if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
 					{
-						float fShadowDepth = tex2Dlod(SVO_RsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
+						float fShadowDepth = tex2DlodPC(rsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
 						vSunLight = (fShadowDepth > vShadTC.z + .0007);
 
 #if %_RT_VOLUMETRIC_FOG
-						half4 vMatColor = tex2Dlod(SVO_RsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
-						half3 vMatNormal = tex2Dlod(SVO_RsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
+						half4 vMatColor = tex2DlodPC(rsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
+						half3 vMatNormal = tex2DlodPC(rsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
 #else
 						half4 vMatColor = half4(SvoParamsMisc2.zzz, 0.15f);
 						half3 vMatNormal = 0;
@@ -1244,13 +1200,13 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				{
 					// SS occlusion
 					float4 vPos0 = float4(r.startpoint - vSurfNormOffset + r.direction*fVoxSize*fStepSize / 2, 1);
-					float4 vTC0 = mul(g_mViewProj, vPos0);
+					float4 vTC0 = mul(SVO_ViewProj, vPos0);
 					vTC0 /= vTC0.w;
 					vTC0.xy = vTC0.xy*0.5f + 0.5f;
 					vTC0.y = 1 - vTC0.y;
 
 					// read depth
-					float fScrDepth = SampleLinearDepth(sceneDepthMapSampler, vTC0.xy) * PS_NearFarClipDist.y;
+					float fScrDepth = SampleLinearDepth(sceneDepth, vTC0.xy) * PS_NearFarClipDist.y;
 					float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC0.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - 0.05;
 					float fSurDens = saturate(1 - max((fScrDepth - fRayDepth), (fRayDepth - fScrDepth) / 2) > SvoParamsDiffuse.z);
 					float fFade = saturate(8 * (1.f - 2.f*max(abs(vTC0.x - .5), abs(vTC0.y - .5))));
@@ -1260,12 +1216,12 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 					if (IsDiffuseMode())
 					{
 						// read RGB
-						float4 vReprojTC = mul(g_mViewProjPrev, vPos0);
+						float4 vReprojTC = mul(SVO_ViewProjPrev, vPos0);
 						vReprojTC /= vReprojTC.w;
 						vReprojTC.xy = vReprojTC.xy*0.5f + 0.5f;
 						vReprojTC.y = 1 - vReprojTC.y;
 
-						float3 vSSR = tex2Dlod(SVO_HDRTargetPrev, float4(vReprojTC.xy, 0, 0));
+						float3 vSSR = tex2DlodPC(sceneTargetPrev, float4(vReprojTC.xy, 0, 0));
 						vRgbOut.xyz += vSSR.xyz * saturate(fSurDens*fFade) * saturate(1 - vRgbOut.a);
 					}
 #endif
@@ -1284,12 +1240,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				{
 					vPosOut.xyz = r.startpoint;
 					vPosOut.w = vRGBD.a;
-
-					if (bUseLighting)
-					{
-						if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-							vNormal.a = vNORA.a; // precomputed lighting
-					}
 				}
 
 				if (bAirOnlyMode)
@@ -1340,8 +1290,6 @@ bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDist
 
 		const float3 vMulTC = 1.f / ocNodeSize*vBoxSize / VOX_ATLAS_SIZE*VOX_SUBBLOCK_SIZE_RATIO;
 
-		float fAxisMult = 1.f;
-
 		r.startpoint += r.direction*max(0, tmin);
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
 
@@ -1353,16 +1301,16 @@ bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDist
 
 			float3 vCurTC = tcMin + ((clamp(r.startpoint, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize))*vMulTC;
 
-			float4 vRGBD = tex3Dlod(brickPool_Rgbs, float4(vCurTC.xyz, 0));
+			float4 vRGBD = tex3DlodLC(brickPool_Rgbs, float4(vCurTC.xyz, 0));
 
-			float4 vNORA = tex3Dlod(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
+			float4 vNORA = tex3DlodLC(brickPool_Norm, float4(vCurTC.xyz, 0)).zyxw;
 
-			float4 vOPAC = tex3Dlod(brickPool_Opac, float4(vCurTC.xyz, 0));
+			float4 vOPAC = tex3DlodLC(brickPool_Opac, float4(vCurTC.xyz, 0));
 
 			// bigger steps collect more opacity
 			float fAirDensityScale = ocNodeSize * fStepSize;
 
-			vRGBD.a = saturate(max(pow(vOPAC.a, 2)*fAirDensityScale, fAxisMult*dot(vOPAC.zyx, normalize(abs(r.direction)))));
+			vRGBD.a = saturate(max(pow(vOPAC.a, 2)*fAirDensityScale, dot(vOPAC.zyx, normalize(abs(r.direction)))));
 
 			fDistance += (ocNodeSize / VOX_BRICK_TEXRES)*fStepSize;
 
@@ -1431,9 +1379,9 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 
 	// define root node
 	SNodeInfo rootNode;
-	rootNode.nId = 0;
-	rootNode.vMin = 0;
-	rootNode.vMax = VOX_WORLD_SIZE;
+	rootNode.nId = 0;	
+	rootNode.vMin.xyz = VOX_SVO_ORIGIN.xyz;
+	rootNode.vMax.xyz = VOX_SVO_ORIGIN.xyz + VOX_SVO_ORIGIN.w;
 	rootNode.vTC = 0;
 	rootNode.nTreeLevel = 0;
 
@@ -1454,7 +1402,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 			rayForTree.startpoint += rayForTree.direction * fMaxTMIN;
 	}
 
-	const int nVoxMaxTreeDepth = GetMaxTreeDepth();
+	const int nVoxMaxTreeDepth = (int)SvoParamsCommon.w;
 
 	float fIsoValPrev = 0;
 
@@ -1683,7 +1631,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 
 // hemi-sphere
 
-const static float3 kernel_HS_512[512] =
+static float3 kernel_HS_512[512] =
 {
 	float3(-0.615241, 0.246533, 0.748800),
 	float3(-0.043896, 0.577149, 0.815458),
@@ -2196,7 +2144,7 @@ const static float3 kernel_HS_512[512] =
 	float3(0.211330, -0.083186, 0.973868),
 	float3(0.672525, -0.121364, 0.730055),
 	float3(0.227295, -0.668052, 0.708550),
-	float3(0.527499, -0.579715, 0.621027),
+	float3(0.527499, -0.579715, 0.621027)
 };
 
 static float3 kernel_S_512[512] =
@@ -2712,10 +2660,10 @@ static float3 kernel_S_512[512] =
 	float3(0.581957, 0.518610, 0.626394),
 	float3(0.914163, -0.140978, -0.380041),
 	float3(0.401158, -0.872122, 0.280135),
-	float3(0.624162, -0.763886, 0.164012),
+	float3(0.624162, -0.763886, 0.164012)
 };
 
-const static float3 kernel_HS_256[256] =
+static float3 kernel_HS_256[256] =
 {
 	float3(-0.527747, 0.119389, 0.840969),
 	float3(-0.072454, 0.516697, 0.853097),
@@ -2972,10 +2920,10 @@ const static float3 kernel_HS_256[256] =
 	float3(-0.407163, -0.764607, 0.499595),
 	float3(0.361514, -0.787228, 0.499580),
 	float3(-0.120250, 0.857859, 0.499618),
-	float3(0.395487, -0.256278, 0.881993),
+	float3(0.395487, -0.256278, 0.881993)
 };
 
-const static float3 kernel_HS_128[128] =
+static float3 kernel_HS_128[128] =
 {
 	float3(0.378169, 0.622113, 0.685539),
 	float3(0.739083, -0.452051, 0.499406),
@@ -3104,7 +3052,7 @@ const static float3 kernel_HS_128[128] =
 	float3(-0.054456, 0.413412, 0.908914),
 	float3(0.561422, -0.164099, 0.811096),
 	float3(-0.015350, 0.711156, 0.702867),
-	float3(-0.205112, -0.439208, 0.874657),
+	float3(-0.205112, -0.439208, 0.874657)
 };
 
 static float3 kernel_S_128[128] =
@@ -3236,10 +3184,10 @@ static float3 kernel_S_128[128] =
 	float3(0.025769, -0.971450, 0.235839),
 	float3(-0.482893, 0.054955, -0.873953),
 	float3(0.485430, 0.227534, -0.844148),
-	float3(0.706470, -0.501444, -0.499453),
+	float3(0.706470, -0.501444, -0.499453)
 };
 
-const static float3 kernel_HS_64[64] =
+static float3 kernel_HS_64[64] =
 {
 	float3(-0.534693, 0.068143, 0.842295),
 	float3(-0.099921, 0.481922, 0.870498),
@@ -3304,7 +3252,7 @@ const static float3 kernel_HS_64[64] =
 	float3(0.599841, -0.102179, 0.793568),
 	float3(-0.267736, -0.630860, 0.728239),
 	float3(0.342928, 0.795822, 0.499067),
-	float3(0.756106, -0.423491, 0.498958),
+	float3(0.756106, -0.423491, 0.498958)
 };
 
 static float3 kernel_S_64[64] =
@@ -3372,10 +3320,10 @@ static float3 kernel_S_64[64] =
 	float3(-0.890770, 0.232752, -0.390328),
 	float3(0.503405, 0.816547, -0.282551),
 	float3(0.858983, -0.485483, 0.162647),
-	float3(0.405588, 0.355539, -0.842075),
+	float3(0.405588, 0.355539, -0.842075)
 };
 
-const static float3 kernel_HS_32[32] =
+static float3 kernel_HS_32[32] =
 {
 	float3(-0.514748, 0.006141, 0.857319),
 	float3(-0.275770, 0.575362, 0.770006),
@@ -3408,10 +3356,10 @@ const static float3 kernel_HS_32[32] =
 	float3(-0.247153, -0.518479, 0.818593),
 	float3(0.645359, -0.578623, 0.498706),
 	float3(0.133137, -0.254264, 0.957927),
-	float3(0.032093, 0.577059, 0.816072),
+	float3(0.032093, 0.577059, 0.816072)
 };
 
-const static float3 kernel_S_32[32] =
+static float3 kernel_S_32[32] =
 {
 	float3(-0.866867, 0.387031, -0.314242),
 	float3(0.869669, -0.454003, 0.193796),
@@ -3444,10 +3392,10 @@ const static float3 kernel_S_32[32] =
 	float3(-0.322009, -0.797401, 0.510354),
 	float3(0.813971, -0.376220, -0.442618),
 	float3(-0.185646, -0.239586, -0.952961),
-	float3(0.369399, 0.711567, 0.597676),
+	float3(0.369399, 0.711567, 0.597676)
 };
 
-const static float3 kernel_HS_16[16] =
+static float3 kernel_HS_16[16] =
 {
 	float3(0.188020, 0.358958, 0.914220),
 	float3(0.415860, -0.048357, 0.908142),
@@ -3464,10 +3412,10 @@ const static float3 kernel_HS_16[16] =
 	float3(0.122670, -0.412326, 0.902740),
 	float3(0.334456, 0.800416, 0.497468),
 	float3(-0.288950, 0.421420, 0.859601),
-	float3(0.701216, 0.508936, 0.499280),
+	float3(0.701216, 0.508936, 0.499280)
 };
 
-const static float3 kernel_HS_8[8] =
+static float3 kernel_HS_8[8] =
 {
 	float3(0.024513, 0.574757, 0.817957),
 	float3(0.680559, 0.538709, 0.496622),
@@ -3476,20 +3424,20 @@ const static float3 kernel_HS_8[8] =
 	float3(-0.629731, 0.597428, 0.496507),
 	float3(-0.329830, 0.014175, 0.943934),
 	float3(-0.021927, -0.572613, 0.819533),
-	float3(-0.682322, -0.536106, 0.497018),
+	float3(-0.682322, -0.536106, 0.497018)
 };
 
-const static float3 kernel_HS_4[4] =
+static float3 kernel_HS_4[4] =
 {
 	normalize(float3(1, -1, 0.7)),
 	normalize(float3(1, 1, 0.7)),
 	normalize(float3(-1, -1, 0.7)),
-	normalize(float3(-1, 1, 0.7)),
+	normalize(float3(-1, 1, 0.7))
 };
 
 // full sphere
 
-const static float3 kernel_S_8_box[8] =
+static float3 kernel_S_8_box[8] =
 {
 	float3(1, 1, 1),
 	float3(-1, 1, 1),
@@ -3498,10 +3446,10 @@ const static float3 kernel_S_8_box[8] =
 	float3(1, 1, -1),
 	float3(-1, 1, -1),
 	float3(1, -1, -1),
-	float3(-1, -1, -1),
+	float3(-1, -1, -1)
 };
 
-const static float3 kernel_S_8[8] =
+static float3 kernel_S_8[8] =
 {
 	float3(-0.825149, 0.149162, -0.544867),
 	float3(-0.449977, 0.778477, 0.437600),
@@ -3510,10 +3458,10 @@ const static float3 kernel_S_8[8] =
 	float3(-0.741538, -0.396629, 0.541117),
 	float3(0.694981, 0.718114, 0.036235),
 	float3(0.875026, -0.483035, -0.031718),
-	float3(0.331499, 0.001090, 0.943455),
+	float3(0.331499, 0.001090, 0.943455)
 };
 
-const static float3 kernel_S_16[16] =
+static float3 kernel_S_16[16] =
 {
 	float3(-0.888271, -0.085257, -0.451338),
 	float3(-0.374271, 0.559964, -0.739162),
@@ -3530,10 +3478,10 @@ const static float3 kernel_S_16[16] =
 	float3(0.730612, 0.567148, 0.380197),
 	float3(0.245251, 0.132155, 0.960410),
 	float3(-0.802549, -0.516613, 0.298374),
-	float3(0.489315, -0.668274, -0.560340),
+	float3(0.489315, -0.668274, -0.560340)
 };
 
-const static float3 box_expansion[18] =
+static float3 box_expansion[18] =
 {
 	float3(1, 1, 1),
 	float3(0, 1, 1),

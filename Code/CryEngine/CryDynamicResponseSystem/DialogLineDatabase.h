@@ -28,16 +28,18 @@ public:
 	virtual const string& GetEndAudioTrigger() const override                          { return m_audioStopTrigger; }
 	virtual const string& GetLipsyncAnimation() const override                         { return m_lipsyncAnimation; }
 	virtual const string& GetStandaloneFile() const override                           { return m_standaloneFile; }
-	virtual const float   GetPauseLength() const override                              { return m_pauseLength; }
 	virtual const string& GetCustomData() const override                               { return m_customData; }
+	virtual float         GetPauseLength() const override                              { return m_pauseLength; }
+	
 	virtual void          SetText(const string& text) override                         { m_text = text; }
 	virtual void          SetStartAudioTrigger(const string& trigger) override         { m_audioStartTrigger = trigger; }
 	virtual void          SetEndAudioTrigger(const string& trigger) override           { m_audioStopTrigger = trigger; }
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) override { m_lipsyncAnimation = lipsyncAnimation; }
 	virtual void          SetStandaloneFile(const string& value) override              { m_standaloneFile = value; }
+	virtual void          SetCustomData(const string& customData) override             { m_customData = customData; }
+	virtual void          SetPauseLength(float length) override                        { m_pauseLength = length; }
+	
 	virtual void          Serialize(Serialization::IArchive& ar) override;
-	virtual void          SetPauseLength(float length) override                  { m_pauseLength = length; }
-	virtual void          SetCustomData(const string& customData) override       { m_customData = customData; }
 	//////////////////////////////////////////////////////////
 
 private:
@@ -56,16 +58,23 @@ public:
 	CDialogLineSet();
 	const CDialogLine* PickLine();
 	const CDialogLine* GetFollowUpLine(const CDialogLine* pCurrentLine);
-	void Reset();
+	void               Reset();
+	bool               HasAvailableLines();
+	void               OnLineCanceled(const CDialogLine* pCanceledLine);
+
+	void               SetLastPickedLine(int value) { m_lastPickedLine = value; }
+	int                GetLastPickedLine() const    { return m_lastPickedLine; }
 
 	//////////////////////////////////////////////////////////
 	// IDialogLineSet implementation
 	virtual void              SetLineId(const CHashedString& lineId) override { m_lineId = lineId; }
 	virtual void              SetPriority(int priority) override              { m_priority = priority; }
 	virtual void              SetFlags(uint32 flags) override                 { m_flags = flags; }
+	virtual void              SetMaxQueuingDuration(float length) override    { m_maxQueuingDuration = length; }
 	virtual CHashedString     GetLineId() const override                      { return m_lineId; }
 	virtual int               GetPriority() const override                    { return m_priority; }
 	virtual uint32            GetFlags() const override                       { return m_flags; }
+	virtual float             GetMaxQueuingDuration() const override          { return m_maxQueuingDuration; }
 	virtual uint32            GetLineCount() const override                   { return m_lines.size(); }
 	virtual DRS::IDialogLine* GetLineByIndex(uint32 index) override;
 	virtual DRS::IDialogLine* InsertLine(uint32 index) override;
@@ -79,6 +88,7 @@ private:
 	uint32                   m_flags; //eDialogLineSetFlags
 	int                      m_lastPickedLine;
 	std::vector<CDialogLine> m_lines;
+	float                    m_maxQueuingDuration;
 };
 
 class CDialogLineDatabase final : public DRS::IDialogLineDatabase
@@ -87,23 +97,26 @@ class CDialogLineDatabase final : public DRS::IDialogLineDatabase
 public:
 	CDialogLineDatabase();
 	virtual ~CDialogLineDatabase();
-	bool InitFromFiles(const char* szFilePath);
+	bool            InitFromFiles(const char* szFilePath);
 	//will reset all temporary data (for example the data to pick variations in sequential order)
-	void Reset();
+	void            Reset();
 	CDialogLineSet* GetLineSetById(const CHashedString& lineID);
 
 	//////////////////////////////////////////////////////////
 	// IDialogLineDatabase implementation
-	virtual bool                             Save(const char* szFilePath) override;
-	virtual uint32                           GetLineSetCount() const override;
-	virtual DRS::IDialogLineSet*             GetLineSetByIndex(uint32 index) override;
-	virtual const DRS::IDialogLineSet*       GetLineSetById(const CHashedString& lineID) const override;
-	virtual DRS::IDialogLineSet*             InsertLineSet(uint32 index) override;
-	virtual void                             RemoveLineSet(uint32 index) override;
-	virtual bool                             ExecuteScript(uint32 index) override;
-	virtual void                             Serialize(Serialization::IArchive& ar) override;
-	virtual void                             SerializeLinesHistory(Serialization::IArchive& ar) override;
+	virtual bool                       Save(const char* szFilePath) override;
+	virtual uint32                     GetLineSetCount() const override;
+	virtual DRS::IDialogLineSet*       GetLineSetByIndex(uint32 index) override;
+	virtual const DRS::IDialogLineSet* GetLineSetById(const CHashedString& lineID) const override;
+	virtual DRS::IDialogLineSet*       InsertLineSet(uint32 index) override;
+	virtual void                       RemoveLineSet(uint32 index) override;
+	virtual bool                       ExecuteScript(uint32 index) override;
+	virtual void                       Serialize(Serialization::IArchive& ar) override;
+	virtual void                       SerializeLinesHistory(Serialization::IArchive& ar) override;
 	//////////////////////////////////////////////////////////
+
+	void GetAllLineData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues); //stores the current state
+	void SetAllLineData(DRS::ValuesListIterator start, DRS::ValuesListIterator end);    //restores a state
 
 private:
 	CHashedString GenerateUniqueId(const string& root) const;

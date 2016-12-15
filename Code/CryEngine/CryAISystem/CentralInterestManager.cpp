@@ -127,15 +127,9 @@ bool CCentralInterestManager::Enable(bool bEnable)
 		{
 			if (!m_pPersistentDebug)
 			{
-				IGameFramework* pGameFramework(NULL);
-				if (gEnv->pGame)
+				if (gEnv->pGameFramework)
 				{
-					pGameFramework = gEnv->pGame->GetIGameFramework();
-				}
-
-				if (pGameFramework)
-				{
-					m_pPersistentDebug = pGameFramework->GetIPersistantDebug();
+					m_pPersistentDebug = gEnv->pGameFramework->GetIPersistantDebug();
 				}
 			}
 		}
@@ -513,7 +507,7 @@ void CCentralInterestManager::AddDebugTag(EntityId entityId, const char* szStrin
 
 		if (!m_pPersistentDebug)
 		{
-			m_pPersistentDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+			m_pPersistentDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		}
 
 		if (fTime < 0.f)

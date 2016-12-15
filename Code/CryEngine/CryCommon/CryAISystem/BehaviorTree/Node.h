@@ -206,7 +206,7 @@ protected:
 	#endif //DEBUG_MODULAR_BEHAVIOR_TREE
 	{
 	}
-
+#ifndef SWIG
 	//! Called before the first call to Update.
 	virtual void OnInitialize(const UpdateContext& context) {}
 
@@ -223,6 +223,7 @@ protected:
 	//! - If you return Success or Failure the node will automatically
 	//! get OnTerminate called on itself.
 	virtual Status Update(const UpdateContext& context) { return Running; }
+#endif
 
 private:
 

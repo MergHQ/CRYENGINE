@@ -1,0 +1,23 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2014, Crytek Studios
+##
+## Creator: Pavlo Ilin
+## Date: Novemver 19, 2015
+## Description: WAF  based build system
+#############################################################################
+def build(bld):
+	bld.CryPlugin(
+		target = 'EditorUQS',
+		vs_filter = 'CryPlugins/CryUQS',
+		file_list = 'editorplugin.waf_files',
+		pch = 'StdAfx.cpp',
+		features = 'qt',
+		includes = [ 
+			'.', 
+			'..', 
+			'GeneratedFiles', 
+			Path('Code/GameUQS')],
+		use = [ 'Editor', 'EditorCommon' ],
+		use_module    = [ 'CryUQS_Interfaces', 'CryUQS_Shared', 'CryUQS_DataSource_XML' ]
+	)

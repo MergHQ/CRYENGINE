@@ -6,7 +6,6 @@
 #include <CryMovie/IMovieSystem.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 
 #include "D3DPostProcess.h"
@@ -24,13 +23,11 @@
 #if defined(FEATURE_SVO_GI)
 #include "D3D_SVO.h"
 #endif
-#include "D3DVolumetricClouds.h"
 
 #include "Gpu/Particles/GpuParticleManager.h"
 #include "GraphicsPipeline/Common/GraphicsPipelineStage.h"
 #include "GraphicsPipeline/Common/SceneRenderPass.h"
 #include "GraphicsPipeline/ComputeSkinning.h"
-#include "GraphicsPipeline/WaterRipples.h"
 #include "Common/RenderView.h"
 #include "CompiledRenderObject.h"
 
@@ -439,7 +436,7 @@ void CD3D9Renderer::EF_Init()
 			pRendObj->Init();
 		}
 
-		CRenderObject** arrPrefill = (CRenderObject**)(alloca(m_RP.m_nNumObjectsInPool * sizeof(CRenderObject*)));
+		CRenderObject* arrPrefill[TEMP_REND_OBJECTS_POOL] = {};
 		for (int j = 0; j < RT_COMMAND_BUF_COUNT; j++)
 		{
 			for (int k = 0; k < m_RP.m_nNumObjectsInPool; ++k)
@@ -505,7 +502,11 @@ void CD3D9Renderer::EF_Init()
 	texState.SetComparisonFilter(true);
 	m_nLinearClampComparisonSampler = CTexture::GetTexState(texState);
 	m_nBilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nBilinearClampSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_nBilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
+	m_nTrilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nTrilinearClampSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
+	m_nTrilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
 
 	CDeferredShading::CreateDeferredShading();
 
@@ -585,24 +586,19 @@ void CD3D9Renderer::EF_Restore()
 // Shutdown shaders pipeline
 void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 {
-	uint32 i, j;
-
 	FX_Invalidate();
 
 	SAFE_DELETE_ARRAY(m_RP.m_SysArray);
-	m_RP.m_SysVertexPool[0].Free();
-	m_RP.m_SysIndexPool[0].Free();
-#if !defined(STRIP_RENDER_THREAD)
-	m_RP.m_SysVertexPool[1].Free();
-	m_RP.m_SysIndexPool[1].Free();
-#endif
-
 	const uint32 n = m_RP.MaxD3DVertexDeclaration();
-	for (j = 0; j < n; j++)
+
+	for (uint32 j = 0; j < n; j++)
 	{
 		m_RP.m_D3DVertexDeclaration[j].m_Declaration.Free();
+	}
 
-		for (i = 0; i < (1 << VSF_NUM); i++)
+	for (uint32 i = 0; i < (1U << VSF_NUM); i++)
+	{
+		for (uint32 j = 0; j < n; j++)
 		{
 			SAFE_RELEASE(m_RP.m_D3DVertexDeclarationCache[i][0][j].m_pDeclaration);
 			SAFE_RELEASE(m_RP.m_D3DVertexDeclarationCache[i][1][j].m_pDeclaration);
@@ -699,7 +695,7 @@ void CD3D9Renderer::FX_ResetPipe()
 	m_RP.m_FlagsShader_PipelineState = 0;
 	m_RP.m_FlagsShader_LT      = 0;
 	m_RP.m_nCommitFlags        = FC_ALL;
-	m_RP.m_PersFlags2         |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM | RBPF2_COMMIT_SG;
+	m_RP.m_PersFlags2         |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM;
 
 	m_RP.m_nZOcclusionProcess = 0;
 	m_RP.m_nZOcclusionReady   = 1;
@@ -719,8 +715,6 @@ void CD3D9Renderer::FX_ResetPipe()
 			h                  = FX_SetVStream(i, NULL, 0, 0);
 		}
 	}
-
-	//m_RP.m_ShadowInfo.m_pCurShadowFrustum = NULL;
 
 	CHWShader_D3D::mfSetGlobalParams();
 }
@@ -758,7 +752,7 @@ void CD3D9Renderer::RT_SetCameraInfo()
 	}
 
 	bool bApplySubpixelShift = !(m_RP.m_PersFlags2 & RBPF2_NOPOSTAA);
-	bApplySubpixelShift &= !(pShaderThreadInfo->m_PersFlags & (RBPF_DRAWTOTEXTURE | RBPF_SHADOWGEN));
+	bApplySubpixelShift &= !(pShaderThreadInfo->m_PersFlags & RBPF_DRAWTOTEXTURE);
 
 	if (bApplySubpixelShift)
 	{
@@ -951,8 +945,8 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 				// Align the RECT boundaries to GPU memory layout
 				box.left   = box.left & 0xfffffff8;
 				box.top    = box.top & 0xfffffff8;
-				box.right  = min((int)((box.right + 8) & 0xfffffff8), iWidth);
-				box.bottom = min((int)((box.bottom + 8) & 0xfffffff8), iHeight);
+				box.right  = (box.right + 8) & 0xfffffff8;
+				box.bottom = (box.bottom + 8) & 0xfffffff8;
 			}
 
 			D3D11_RENDER_TARGET_VIEW_DESC backbufferDesc;
@@ -1022,7 +1016,13 @@ void CD3D9Renderer::FX_ScreenStretchRect(CTexture* pDst, CTexture* pHDRSrc)
 						box.top    = min(box.top, srcTex2desc.Height);
 						box.bottom = min(box.bottom, srcTex2desc.Height);
 
-						GetDeviceContext().CopySubresourceRegion(pDstResource->Get2DTexture(), 0, box.left, box.top, 0, pSrcResource, 0, &box);
+						// guard against a TDR
+						if (box.left < box.right && box.top < box.bottom)
+							GetDeviceContext().CopySubresourceRegion(pDstResource->Get2DTexture(), 0, box.left, box.top, 0, pSrcResource, 0, &box);
+#if !defined(_RELEASE)
+						else
+							__debugbreak();
+#endif
 					}
 					else
 					{
@@ -1591,7 +1591,7 @@ void CD3D9Renderer::FX_RenderForwardOpaque(void (* RenderFunc)(), const bool bLi
 		FX_MSAASampleFreqStencilSetup(MSAA_STENCILCULL | MSAA_STENCILMASK_SET);   // set stencil mask and enable stencil culling for pixel freq
 #endif
 
-	const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & (RBPF_SHADOWGEN | RBPF_MAKESPRITE)) != 0;
+	const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) != 0;
 
 	if ((m_RP.m_PersFlags2 & RBPF2_ALLOW_DEFERREDSHADING) && !bShadowGenSpritePasses && (!IsRecursiveRenderView()) && !m_wireframe_mode)
 		m_RP.m_PersFlags2 |= RBPF2_FORWARD_SHADING_PASS;
@@ -1672,1060 +1672,6 @@ void CD3D9Renderer::FX_RenderForwardOpaque(void (* RenderFunc)(), const bool bLi
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CD3D9Renderer::FX_RenderFog()
-{
-	FX_ResetPipe();
-
-#ifdef SUPPORTS_MSAA
-	const bool bMSAA = (FX_GetMSAAMode() == 1);
-	if (bMSAA)
-		FX_MSAASampleFreqStencilSetup(MSAA_STENCILCULL | MSAA_STENCILMASK_SET);     // restore stencil mask - some passes before might override mask (caustics, etc)
-#endif
-
-	FX_FogScene();
-
-#ifdef SUPPORTS_MSAA
-	if (bMSAA)
-	{
-		FX_MSAASampleFreqStencilSetup(MSAA_STENCILCULL | MSAA_SAMPLEFREQ_PASS);
-		FX_FogScene();
-		FX_MSAASampleFreqStencilSetup();
-	}
-#endif
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-inline static float expf_s(float arg)
-{
-	return expf(clamp_tpl(arg, -80.0f, 80.0f));
-}
-
-inline static float MaxChannel(const Vec4& col)
-{
-	return max(max(col.x, col.y), col.z);
-}
-
-bool CD3D9Renderer::FX_FogScene()
-{
-	if (m_LogFile)
-		Logv(" +++ Fog scene +++ \n");
-	m_RP.m_PersFlags2 &= ~(RBPF2_NOSHADERFOG);
-
-	FX_SetVStream(3, NULL, 0, 0);
-
-	const bool bMSAA = (FX_GetMSAAMode() == 1);
-	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
-
-	if (pShaderThreadInfo->m_FS.m_bEnable && CV_r_usezpass)
-	{
-		PROFILE_LABEL_SCOPE("FOG_GLOBAL");
-
-		int x = 0, y = 0, width = GetWidth(), height = GetHeight();
-
-		m_pNewTarget[0]->m_ClearFlags = 0;
-		RT_SetViewport(x, y, width, height);
-
-		CShader* pSH = CShaderMan::s_shHDRPostProcess;
-
-		float modelMatrix[16];
-		float projMatrix[16];
-		int viewport[4] = { x, y, width, height };
-		GetModelViewMatrix(modelMatrix);
-		GetProjectionMatrix(projMatrix);
-
-		Vec3 vFarPlaneVerts[4];
-		const float fFar = (pShaderThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH) ? 0.0f : 1.0f;
-		UnProject(width, height, fFar, &vFarPlaneVerts[0].x, &vFarPlaneVerts[0].y, &vFarPlaneVerts[0].z, modelMatrix, projMatrix, viewport);
-		UnProject(0, height, fFar, &vFarPlaneVerts[1].x, &vFarPlaneVerts[1].y, &vFarPlaneVerts[1].z, modelMatrix, projMatrix, viewport);
-		UnProject(0, 0, fFar, &vFarPlaneVerts[2].x, &vFarPlaneVerts[2].y, &vFarPlaneVerts[2].z, modelMatrix, projMatrix, viewport);
-		UnProject(width, 0, fFar, &vFarPlaneVerts[3].x, &vFarPlaneVerts[3].y, &vFarPlaneVerts[3].z, modelMatrix, projMatrix, viewport);
-
-		const float camZFar = GetCamera().GetFarPlane();
-		const Vec3  camPos  = GetCamera().GetPosition();
-		const Vec3  camDir  = GetCamera().GetViewdir();
-
-		const Vec3 vRT = vFarPlaneVerts[0] - camPos;
-		const Vec3 vLT = vFarPlaneVerts[1] - camPos;
-		const Vec3 vLB = vFarPlaneVerts[2] - camPos;
-		const Vec3 vRB = vFarPlaneVerts[3] - camPos;
-
-		const uint64 nFlagsShaderRTSave = m_RP.m_FlagsShader_RT;
-
-		//////////////////////////////////////////////////////////////////////////
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		const bool renderFogShadow = m_bVolFogShadowsEnabled && !m_bVolumetricFogEnabled;
-
-		Vec4 volFogShadowRange;
-		{
-			Vec3 volFogShadowRangeP;
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_RANGE, volFogShadowRangeP);
-			volFogShadowRangeP.x = clamp_tpl(volFogShadowRangeP.x, 0.01f, 1.0f);
-			volFogShadowRange    = Vec4(volFogShadowRangeP.x, 1.0f / volFogShadowRangeP.x, 0, 0);
-		}
-
-		// Recreate render targets if quality was changed
-		bool halfRes = (CV_r_FogShadows == 1), quarterRes = (CV_r_FogShadows == 2);
-		if ((halfRes && CTexture::s_ptexVolFogShadowBuf[0]->GetWidth() != GetWidth() / 2) ||
-		  (quarterRes && CTexture::s_ptexVolFogShadowBuf[0]->GetWidth() != GetWidth() / 4))
-		{
-			uint32 width  = GetWidth() / (halfRes ? 2 : 4);
-			uint32 height = GetHeight() / (halfRes ? 2 : 4);
-			for (uint32 i = 0; i < 2; ++i)
-			{
-				ETEX_Format fmt = CTexture::s_ptexVolFogShadowBuf[i]->GetDstFormat();
-				CTexture::s_ptexVolFogShadowBuf[i]->Invalidate(width, height, fmt);
-				CTexture::s_ptexVolFogShadowBuf[i]->CreateRenderTarget(fmt, Clr_Transparent);
-			}
-		}
-
-		if (renderFogShadow && (m_RP.m_PersFlags2 & RBPF2_MSAA_SAMPLEFREQ_PASS) == 0)
-		{
-			int oldWidth, oldHeight;
-			{
-				int dummy0, dummy1;
-				GetViewport(&dummy0, &dummy1, &oldWidth, &oldHeight);
-			}
-
-			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-			CryStackAllocWithSizeVector(SVF_P3F_T3F, 4, pQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
-
-			pQuad[0].p  = Vec3(-1, -1, 0);
-			pQuad[0].st = vLB;
-
-			pQuad[1].p  = Vec3(1, -1, 0);
-			pQuad[1].st = vRB;
-
-			pQuad[2].p  = Vec3(-1, 1, 0);
-			pQuad[2].st = vLT;
-
-			pQuad[3].p  = Vec3(1, 1, 0);
-			pQuad[3].st = vRT;
-
-			TempDynVB<SVF_P3F_T3F>::CreateFillAndBind(pQuad, 4, 0);
-
-			//////////////////////////////////////////////////////////////////////////
-			// interleave pass
-			{
-				FX_SetupShadowsForFog();
-
-				FX_PushRenderTarget(0, CTexture::s_ptexVolFogShadowBuf[0], 0);
-				RT_SetViewport(0, 0, CTexture::s_ptexVolFogShadowBuf[0]->GetWidth(), CTexture::s_ptexVolFogShadowBuf[0]->GetHeight());
-
-				const bool renderFogCloudShadow = m_bVolFogCloudShadowsEnabled;
-				m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE5] | g_HWSR_MaskBit[HWSR_SAMPLE4]);
-				if (renderFogCloudShadow)
-					m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
-				if (renderFogCloudShadow && m_bVolumetricCloudsEnabled)
-					m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-
-				static CCryNameTSCRC TechName0("FogPassVolShadowsInterleavePassLegacy");
-				static CCryNameTSCRC TechName1("MultiGSMShadowedFogLegacy");
-				pSH->FXSetTechnique(CRenderer::CV_r_FogShadowsMode == 1 ? TechName1 : TechName0);
-
-				uint32 nPasses;
-				pSH->FXBegin(&nPasses, FEF_DONTSETSTATES);
-				pSH->FXBeginPass(0);
-
-				CTexture::s_ptexZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, m_RP.m_MSAAData.Type ? SResourceView::DefaultViewMS : SResourceView::DefaultView); // bind as msaa target (if valid)
-
-				static CCryNameR volFogShadowRangeN("volFogShadowRange");
-				pSH->FXSetPSFloat(volFogShadowRangeN, &volFogShadowRange, 1);
-
-				FX_Commit();
-
-				const uint32 nRS = GS_NODEPTHTEST | (bMSAA ? GS_STENCIL : 0);
-				FX_SetState(nRS);
-				D3DSetCull(eCULL_None);
-
-				if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
-					FX_DrawPrimitive(eptTriangleStrip, 0, 4);
-
-				pSH->FXEndPass();
-
-				FX_PopRenderTarget(0);
-				m_RP.m_FlagsShader_RT = nFlagsShaderRTSave;
-			}
-
-			//////////////////////////////////////////////////////////////////////////
-			// gather pass
-			{
-				static CCryNameTSCRC TechName("FogPassVolShadowsGatherPassLegacy");
-				static CCryNameR volFogShadowBufSampleOffsetsN("volFogShadowBufSampleOffsets");
-				static const int texStatePoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
-
-				Vec4 sampleOffsets[8];
-
-				// horizontal
-				{
-					FX_PushRenderTarget(0, CTexture::s_ptexVolFogShadowBuf[1], 0);
-					RT_SetViewport(0, 0, CTexture::s_ptexVolFogShadowBuf[1]->GetWidth(), CTexture::s_ptexVolFogShadowBuf[1]->GetHeight());
-
-					pSH->FXSetTechnique(TechName);
-
-					uint32 nPasses;
-					pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-					pSH->FXBeginPass(0);
-
-					CTexture::s_ptexVolFogShadowBuf[0]->Apply(0, texStatePoint, EFTT_UNKNOWN, -1, SResourceView::DefaultView);
-
-					const float tU = 1.0f / (float) CTexture::s_ptexVolFogShadowBuf[0]->GetWidth();
-					for (int x = -4, index = 0; x < 4; ++x, ++index)
-					{
-						sampleOffsets[index] = Vec4(x * tU, 0, 0, 1);
-					}
-
-					pSH->FXSetPSFloat(volFogShadowBufSampleOffsetsN, sampleOffsets, 8);
-
-					FX_Commit();
-
-					const uint32 nRS = GS_NODEPTHTEST;
-					FX_SetState(nRS);
-					D3DSetCull(eCULL_None);
-
-					if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
-						FX_DrawPrimitive(eptTriangleStrip, 0, 4);
-
-					pSH->FXEndPass();
-
-					FX_PopRenderTarget(0);
-				}
-
-				// vertical
-				{
-					FX_PushRenderTarget(0, CTexture::s_ptexVolFogShadowBuf[0], 0);
-					RT_SetViewport(0, 0, CTexture::s_ptexVolFogShadowBuf[0]->GetWidth(), CTexture::s_ptexVolFogShadowBuf[0]->GetHeight());
-
-					uint32 nPasses;
-					pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-					pSH->FXBeginPass(0);
-
-					CTexture::s_ptexVolFogShadowBuf[1]->Apply(0, texStatePoint, EFTT_UNKNOWN, -1, SResourceView::DefaultView);
-
-					const float tV = 1.0f / (float) CTexture::s_ptexVolFogShadowBuf[1]->GetHeight();
-					for (int y = -4, index = 0; y < 4; ++y, ++index)
-					{
-						sampleOffsets[index] = Vec4(0, y * tV, 0, 1);
-					}
-
-					pSH->FXSetPSFloat(volFogShadowBufSampleOffsetsN, sampleOffsets, 8);
-
-					FX_Commit();
-
-					if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
-						FX_DrawPrimitive(eptTriangleStrip, 0, 4);
-
-					pSH->FXEndPass();
-
-					FX_PopRenderTarget(0);
-				}
-			}
-
-			RT_SetViewport(0, 0, oldWidth, oldHeight);
-		}
-#endif  // #if defined(VOLUMETRIC_FOG_SHADOWS)
-
-		//////////////////////////////////////////////////////////////////////////
-
-		if (m_RP.m_PersFlags2 & RBPF2_HDR_FP16)
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_HDR_MODE];
-
-		float fogDepth = 0.0f;
-		if (CV_r_FogDepthTest != 0.0f && !m_bVolumetricFogEnabled)
-		{
-			if (CV_r_FogDepthTest < 0.0f)
-			{
-				Vec4 fogColGradColBase(0, 0, 0, 0), fogColGradColDelta(0, 0, 0, 0);
-				CHWShader_D3D::GetFogColorGradientConstants(fogColGradColBase, fogColGradColDelta);
-
-				const Vec4 fogColGradRadial = CHWShader_D3D::GetFogColorGradientRadial();
-
-				const float fogColorIntensityBase   = MaxChannel(fogColGradColBase);
-				const float fogColorIntensityTop    = MaxChannel(fogColGradColBase + fogColGradColDelta);
-				const float fogColorIntensityRadial = MaxChannel(fogColGradRadial);
-				const float fogColorIntensity       = max(fogColorIntensityBase, fogColorIntensityTop) + fogColorIntensityRadial;
-
-				const float threshold = -CV_r_FogDepthTest;
-
-				const Vec4 volFogParams     = CHWShader_D3D::GetVolumetricFogParams();
-				const Vec4 volFogRampParams = CHWShader_D3D::GetVolumetricFogRampParams();
-				const Vec4 volFogSunDir     = CHWShader_D3D::GetVolumetricFogSunDir();
-
-				const float atmosphereScale             = volFogParams.x;
-				const float volFogHeightDensityAtViewer = volFogParams.y;
-				const float heightDiffFromBase          = volFogParams.z;
-				const float expHeightDiffFromBase       = volFogParams.w;
-				const float finalClamp = 1.0f - volFogSunDir.w;
-
-				Vec3 lookDir = vRT;
-				if (lookDir.z * atmosphereScale < vLT.z * atmosphereScale)
-					lookDir = vLT;
-				if (lookDir.z * atmosphereScale < vLB.z * atmosphereScale)
-					lookDir = vLB;
-				if (lookDir.z * atmosphereScale < vRB.z * atmosphereScale)
-					lookDir = vRB;
-
-				lookDir.Normalize();
-				const float viewDirAdj = lookDir.Dot(camDir);
-
-				float  depth    = camZFar * 0.5f;
-				float  step     = depth * 0.5f;
-				uint32 numSteps = 16;
-
-				while (numSteps)
-				{
-					Vec3 cameraToWorldPos = lookDir * depth;
-
-					float fogInt = 1.0f;
-
-					const float t              = atmosphereScale * cameraToWorldPos.z;
-					const float slopeThreshold = 0.01f;
-					if (fabsf(t) > slopeThreshold)
-					{
-						fogInt *= ((expf_s(t + heightDiffFromBase) - expHeightDiffFromBase) / t);
-					}
-					else
-					{
-						fogInt *= expHeightDiffFromBase;
-					}
-
-					const float l = depth;   // length(cameraToWorldPos);
-					const float u = l * volFogHeightDensityAtViewer;
-					fogInt = fogInt * u;
-
-					float f = clamp_tpl(expf_s(0.69314719f * -fogInt), 0.0f, 1.0f);
-
-					float r = clamp_tpl(l * volFogRampParams.x + volFogRampParams.y, 0.0f, 1.0f);
-					r = r * (2.0f - r);
-					r = r * volFogRampParams.z + volFogRampParams.w;
-
-					f = (1.0f - f) * r;
-					assert(f >= 0.0f && f <= 1.0f);
-
-					f  = min(f, finalClamp);
-					f *= fogColorIntensity;
-
-					if (f > threshold)
-					{
-						depth -= step;
-					}
-					else
-					{
-						fogDepth = depth * viewDirAdj;
-						depth   += step;
-					}
-					step *= 0.5f;
-
-					--numSteps;
-				}
-			}
-			else
-				fogDepth = CV_r_FogDepthTest;
-		}
-
-		m_fogCullDistance = fogDepth;
-
-		int nSUnitZTarget = -2;          // FogPassPS doesn't need a sampler for ZTarget.
-
-#if defined(FEATURE_SVO_GI)
-		// activate support for SVO atmosphere in fog shader
-		CSvoRenderer* pSR = CSvoRenderer::GetInstance();
-		m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE2];
-		if (pSR && pSR->GetTroposphereMinRT())
-		{
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
-			fogDepth               = 0;  // prevent fog depth clipping
-			nSUnitZTarget          = -1; // need a sampler
-		}
-#endif
-
-		const bool useFogDepthTest = fogDepth >= 0.01f;
-		uint32 nFlags              = FEF_DONTSETTEXTURES | FEF_DONTSETSTATES;
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE0];
-		if (renderFogShadow)
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-#endif
-
-		if (m_bVolumetricFogEnabled)
-		{
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
-			nFlags                &= ~FEF_DONTSETTEXTURES;
-		}
-
-		static CCryNameTSCRC TechName("FogPassLegacy");
-		pSH->FXSetTechnique(TechName);
-
-		uint32 nPasses;
-		pSH->FXBegin(&nPasses, nFlags);
-		pSH->FXBeginPass(0);
-
-		STexState TexStatePoint = STexState(FILTER_POINT, true);
-		CTexture::s_ptexZTarget->Apply(0, CTexture::GetTexState(TexStatePoint), EFTT_UNKNOWN, nSUnitZTarget, m_RP.m_MSAAData.Type ? SResourceView::DefaultViewMS : SResourceView::DefaultView);     // bind as msaa target (if valid)
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		if (renderFogShadow)
-		{
-			static int texStatePoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
-			CTexture::s_ptexVolFogShadowBuf[0]->Apply(1, texStatePoint, EFTT_UNKNOWN, -1, SResourceView::DefaultView);
-		}
-#endif
-
-#if defined(FEATURE_SVO_GI)
-		// bind SVO atmosphere
-		if (pSR && pSR->GetTroposphereMinRT())
-		{
-			static int texStateLinear = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
-			pSR->GetTroposphereMinRT()->Apply(12, texStateLinear);
-			pSR->GetTroposphereShadRT()->Apply(13, texStateLinear);
-			pSR->GetTroposphereMaxRT()->Apply(14, texStateLinear);
-
-			static int texStatePoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
-			pSR->GetTroposphereMinRT()->Apply(12, texStatePoint);
-			pSR->GetTroposphereShadRT()->Apply(13, texStatePoint);
-			pSR->GetTroposphereMaxRT()->Apply(14, texStatePoint);
-
-			static CCryNameR sSVO_AirTextureScale("SVO_AirTextureScale");
-			Vec4 vSVO_AirTextureScale(
-				float(GetWidth() / pSR->GetTroposphereMinRT()->GetWidth()),
-				float(GetHeight() / pSR->GetTroposphereMinRT()->GetHeight()),
-				0, 0);
-			pSH->FXSetPSFloat(sSVO_AirTextureScale, &vSVO_AirTextureScale, 1);
-		}
-		else
-		{
-			static CCryNameR sSVO_AirTextureScale("SVO_AirTextureScale");
-			Vec4 vSVO_AirTextureScale(0, 0, 0, 0);
-			pSH->FXSetPSFloat(sSVO_AirTextureScale, &vSVO_AirTextureScale, 1);
-		}
-#endif
-
-		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-		CryStackAllocWithSizeVector(SVF_P3F_T3F, 4, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
-
-		const Matrix44A& projMat = *pShaderThreadInfo->m_matProj->GetTop();
-		float clipZ              = 0;
-		if (useFogDepthTest)
-		{
-			// projMat.m23 is -1 or 1 depending on whether we use a RH or LH coord system
-			// done in favor of an if check to make homogeneous divide by fogDepth (which is always positive) work
-			clipZ  = projMat.m23 * fogDepth * projMat.m22 + projMat.m32;
-			clipZ /= fogDepth;
-			clipZ  = clamp_tpl(clipZ, 0.f, 1.f);
-		}
-
-		Verts[0].p  = Vec3(-1, -1, clipZ);
-		Verts[0].st = vLB;
-
-		Verts[1].p  = Vec3(1, -1, clipZ);
-		Verts[1].st = vRB;
-
-		Verts[2].p  = Vec3(-1, 1, clipZ);
-		Verts[2].st = vLT;
-
-		Verts[3].p  = Vec3(1, 1, clipZ);
-		Verts[3].st = vRT;
-
-		TempDynVB<SVF_P3F_T3F>::CreateFillAndBind(Verts, 4, 0);
-
-		static CCryNameR szHDRParams("HDRParams2");
-		Vec4 v = Vec4(m_vSceneLuminanceInfo.x, m_fAdaptedSceneScale, 0, 0);
-		pSH->FXSetPSFloat(szHDRParams, &v, 1);
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		if (renderFogShadow)
-		{
-			Vec3 volFogShadowDarkeningP;
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_DARKENING, volFogShadowDarkeningP);
-
-			Vec4 volFogShadowDarkening(volFogShadowDarkeningP, 0);
-			static CCryNameR volFogShadowDarkeningN("volFogShadowDarkening");
-			pSH->FXSetPSFloat(volFogShadowDarkeningN, &volFogShadowDarkening, 1);
-
-			const float aSun = (1.0f - clamp_tpl(volFogShadowDarkeningP.y, 0.0f, 1.0f)) * 1.0f;
-			const float bSun = 1.0f - aSun;
-			const float aAmb = (1.0f - clamp_tpl(volFogShadowDarkeningP.z, 0.0f, 1.0f)) * 0.4f;
-			const float bAmb = 1.0f - aAmb;
-
-			Vec4 volFogShadowDarkeningSunAmb(aSun, bSun, aAmb, bAmb);
-			static CCryNameR volFogShadowDarkeningSunAmbN("volFogShadowDarkeningSunAmb");
-			pSH->FXSetPSFloat(volFogShadowDarkeningSunAmbN, &volFogShadowDarkeningSunAmb, 1);
-
-			static CCryNameR volFogShadowRangeN("volFogShadowRange");
-			pSH->FXSetPSFloat(volFogShadowRangeN, &volFogShadowRange, 1);
-
-			Vec4 sampleOffsets[5];
-			{
-				const float tU = 1.0f / (float) CTexture::s_ptexVolFogShadowBuf[0]->GetWidth();
-				const float tV = 1.0f / (float) CTexture::s_ptexVolFogShadowBuf[0]->GetHeight();
-
-				sampleOffsets[0] = Vec4(0, 0, 0, 0);
-				sampleOffsets[1] = Vec4(0, -tV, 0, 0);
-				sampleOffsets[2] = Vec4(-tU, 0, 0, 0);
-				sampleOffsets[3] = Vec4(tU, 0, 0, 0);
-				sampleOffsets[4] = Vec4(0, tU, 0, 0);
-			}
-			static CCryNameR volFogShadowBufSampleOffsetsN("volFogShadowBufSampleOffsets");
-			pSH->FXSetPSFloat(volFogShadowBufSampleOffsetsN, sampleOffsets, 5);
-		}
-#endif
-
-		FX_Commit();
-
-		// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
-		uint32 nRS = GS_BLSRC_ONE | GS_BLDST_SRCALPHA | (useFogDepthTest ? GS_DEPTHFUNC_LEQUAL : GS_NODEPTHTEST) | (bMSAA ? GS_STENCIL : 0);
-
-		// Draw a fullscreen quad to sample the RT
-		FX_SetState(nRS);
-		D3DSetCull(eCULL_None);
-
-		if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
-			FX_DrawPrimitive(eptTriangleStrip, 0, 4);
-
-		pSH->FXEndPass();
-
-		//////////////////////////////////////////////////////////////////////////
-
-		Vec3 lCol;
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_COLOR, lCol);
-
-		bool useFogPassWithLightning(lCol.x > 1e-4f || lCol.y > 1e-4f || lCol.z > 1e-4f);
-		if (useFogPassWithLightning)
-		{
-			static CCryNameTSCRC TechNameAlt("FogPassWithLightningLegacy");
-			if (pSH->FXSetTechnique(TechNameAlt))
-			{
-				pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-				pSH->FXBeginPass(0);
-
-				Vec3 lPos;
-				gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_POS, lPos);
-				Vec4 lightningPosition(lPos.x, lPos.y, lPos.z, 0.0f);
-				static CCryNameR Param1Name("LightningPos");
-				pSH->FXSetPSFloat(Param1Name, &lightningPosition, 1);
-
-				Vec3 lSize;
-				gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_SIZE, lSize);
-				Vec4 lightningColorSize(lCol.x, lCol.y, lCol.z, lSize.x * 0.01f);
-				static CCryNameR Param2Name("LightningColSize");
-				pSH->FXSetPSFloat(Param2Name, &lightningColorSize, 1);
-
-				FX_Commit();
-
-				FX_SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | (bMSAA ? GS_STENCIL : 0));
-
-				if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
-					FX_DrawPrimitive(eptTriangleStrip, 0, 4);
-
-				pSH->FXEndPass();
-			}
-		}
-
-		//////////////////////////////////////////////////////////////////////////
-
-		m_RP.m_FlagsShader_RT = nFlagsShaderRTSave;
-	}
-
-	return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void SnapVector(Vec3& vVector, const float fSnapRange)
-{
-	Vec3 vSnapped = vVector / fSnapRange;
-	vSnapped.Set(floor_tpl(vSnapped.x), floor_tpl(vSnapped.y), floor_tpl(vSnapped.z));
-	vSnapped *= fSnapRange;
-	vVector   = vSnapped;
-}
-
-void CD3D9Renderer::FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticInfo& causticInfo)
-{
-	if (IsRecursiveRenderView())
-		return;
-
-	PROFILE_LABEL_SCOPE("PREPROCESS");
-	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
-
-	if (IsRecursiveRenderView())
-		return;
-
-	// Pre-process water ripples
-	if (!(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) && (m_RP.m_nRendFlags & SHDF_ALLOWPOSTPROCESS))
-	{
-		if (gRenDev->m_nGraphicsPipeline > 0)
-		{
-			auto& graphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
-			auto* pRenderView = graphicsPipeline.GetCurrentRenderView();
-			auto* pWaterRipplesStage = graphicsPipeline.GetWaterRipplesStage();
-
-			if (pWaterRipplesStage)
-			{
-				gRenDev->FX_PushVP();
-				graphicsPipeline.SwitchFromLegacyPipeline();
-
-				if(pWaterRipplesStage->IsVisible(pRenderView))
-				{
-					// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-					m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-				}
-
-				pWaterRipplesStage->Prepare(pRenderView);
-				pWaterRipplesStage->Execute(pRenderView);
-
-				graphicsPipeline.SwitchToLegacyPipeline();
-				gRenDev->FX_PopVP();
-			}
-		}
-		else
-		{
-			FX_ResetPipe();
-			CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
-			CEffectParam*  pParam        = PostEffectMgr()->GetByName("WaterRipples_Amount");
-			pParam->SetParam(1.0f);
-			if (pWaterRipples->Preprocess())  // Preprocess here will clear the list and skip the one in FX_RenderWater.
-			{
-				// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-				m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-				gcpRendD3D->FX_ResetPipe();
-				gcpRendD3D->Set2DMode(true, 1, 1);
-				pWaterRipples->Render();
-				gcpRendD3D->Set2DMode(false, 1, 1);
-				gcpRendD3D->FX_ResetPipe();
-
-				FX_Commit();
-			}
-		}
-	}
-
-	PostProcessUtils().Log(" +++ Begin watervolume caustics preprocessing +++ \n");
-
-	const float fMaxDistance = CRenderer::CV_r_watervolumecausticsmaxdistance;
-	CCamera origCam          = GetCamera();
-
-	float fWidth  = CTexture::s_ptexWaterCaustics[0]->GetWidth();
-	float fHeight = CTexture::s_ptexWaterCaustics[0]->GetHeight();
-
-	Vec3 vDir = gRenDev->GetRCamera().ViewDir();
-	Vec3 vPos = gRenDev->GetRCamera().vOrigin;
-
-	const float fOffsetDist = fMaxDistance * 0.25f;
-	vPos += Vec3(vDir.x * fOffsetDist, vDir.y * fOffsetDist, 0.0f);         // Offset in viewing direction to maximimze view distance.
-
-	// Snap to avoid some aliasing.
-	const float fSnapRange = CRenderer::CV_r_watervolumecausticssnapfactor;
-	if (fSnapRange > 0.05f)                                            // don't bother snapping if the value is low.
-		SnapVector(vPos, fSnapRange);
-
-	Vec3 vEye = vPos + Vec3(0.0f, 0.0f, 10.0f);
-
-	// Create the matrices.
-	Matrix44A mOrthoMatr;
-	Matrix44A mViewMatr;
-	mOrthoMatr.SetIdentity();
-	mViewMatr.SetIdentity();
-	mathMatrixOrtho(&mOrthoMatr, fMaxDistance, fMaxDistance, 0.25f, 100.0f);
-	mathMatrixLookAt(&mViewMatr, vEye, vPos, Vec3(0, 1, 0));
-
-	// Push the matrices.
-	EF_PushMatrix();
-	pShaderThreadInfo->m_matProj->Push();
-
-	Matrix44A* m = pShaderThreadInfo->m_matProj->GetTop();
-	pShaderThreadInfo->m_PersFlags |= RBPF_FP_MATRIXDIRTY;
-	m->SetIdentity();
-	*m = mOrthoMatr;
-
-	m = pShaderThreadInfo->m_matView->GetTop();
-	m->SetIdentity();
-	*m = mViewMatr;
-
-	// Store for projection onto the scene.
-	causticInfo.m_mCausticMatr = mViewMatr * mOrthoMatr;
-	causticInfo.m_mCausticMatr.Transpose();
-
-	pShaderThreadInfo->m_PersFlags |= RBPF_DRAWTOTEXTURE;
-
-	FX_ClearTarget(CTexture::s_ptexWaterCaustics[0], Clr_Transparent);
-	FX_PushRenderTarget(0, CTexture::s_ptexWaterCaustics[0], 0);
-	RT_SetViewport(0, 0, (int)fWidth, (int)fHeight);
-
-	FX_ProcessRenderList(EFSLIST_WATER, FX_FlushShader_General, false, FB_WATER_CAUSTIC);
-
-	FX_PopRenderTarget(0);
-
-	EF_PopMatrix();
-	pShaderThreadInfo->m_matProj->Pop();
-
-	FX_ResetPipe();
-	RT_SetViewport(0, 0, gcpRendD3D->GetWidth(), gcpRendD3D->GetHeight());
-
-	pShaderThreadInfo->m_PersFlags &= ~RBPF_DRAWTOTEXTURE;
-
-	FX_Commit();
-
-	PostProcessUtils().Log(" +++ End watervolume caustics preprocessing +++ \n");
-}
-
-bool CD3D9Renderer::FX_WaterVolumesCausticsUpdateGrid(N3DEngineCommon::SCausticInfo& causticInfo)
-{
-	// 16 bit index limit, can only do max 256x256 grid.
-	// could use hardware tessellation to reduce memory and increase tessellation amount for higher precision.
-	const uint32 nCausticMeshWidth  = clamp_tpl(CRenderer::CV_r_watervolumecausticsdensity, 16, 255);
-	const uint32 nCausticMeshHeight = clamp_tpl(CRenderer::CV_r_watervolumecausticsdensity, 16, 255);
-
-	// Update the grid mesh if required.
-	if ((!causticInfo.m_pCausticQuadMesh || causticInfo.m_nCausticMeshWidth != nCausticMeshWidth || causticInfo.m_nCausticMeshHeight != nCausticMeshHeight))
-	{
-		// Make sure we aren't recreating the mesh.
-		causticInfo.m_pCausticQuadMesh = NULL;
-
-		const uint32 nCausticVertexCount = (nCausticMeshWidth + 1) * (nCausticMeshHeight + 1);
-		const uint32 nCausticIndexCount  = (nCausticMeshWidth * nCausticMeshHeight) * 6;
-
-		// Store the new resolution and vertex/index counts.
-		causticInfo.m_nCausticMeshWidth  = nCausticMeshWidth;
-		causticInfo.m_nCausticMeshHeight = nCausticMeshHeight;
-		causticInfo.m_nVertexCount       = nCausticVertexCount;
-		causticInfo.m_nIndexCount        = nCausticIndexCount;
-
-		// Reciprocal for scaling.
-		float fRecipW = 1.0f / (float) nCausticMeshWidth;
-		float fRecipH = 1.0f / (float) nCausticMeshHeight;
-
-		// Buffers.
-		SVF_P3F_C4B_T2F* pCausticQuads = new SVF_P3F_C4B_T2F[nCausticVertexCount];
-		vtx_idx* pCausticIndices       = new vtx_idx[nCausticIndexCount];
-
-		// Fill vertex buffer.
-		for (uint32 y = 0; y <= nCausticMeshHeight; ++y)
-		{
-			for (uint32 x = 0; x <= nCausticMeshWidth; ++x)
-			{
-				pCausticQuads[y * (nCausticMeshWidth + 1) + x].xyz = Vec3(((float) x) * fRecipW, ((float) y) * fRecipH, 0.0f);
-			}
-		}
-
-		// Fill index buffer.
-		for (uint32 y = 0; y < nCausticMeshHeight; ++y)
-		{
-			for (uint32 x = 0; x < nCausticMeshWidth; ++x)
-			{
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6]     = y * (nCausticMeshWidth + 1) + x;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 1] = y * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 2] = (y + 1) * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 3] = (y + 1) * (nCausticMeshWidth + 1) + x + 1;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 4] = (y + 1) * (nCausticMeshWidth + 1) + x;
-				pCausticIndices[(y * (nCausticMeshWidth) + x) * 6 + 5] = y * (nCausticMeshWidth + 1) + x;
-			}
-		}
-
-		// Create the mesh.
-		causticInfo.m_pCausticQuadMesh = gRenDev->CreateRenderMeshInitialized(pCausticQuads, nCausticVertexCount, eVF_P3F_C4B_T2F, pCausticIndices, nCausticIndexCount, prtTriangleList, "WaterCausticMesh", "WaterCausticMesh");
-
-		// Delete the temporary buffers.
-		delete[] pCausticQuads;
-		delete[] pCausticIndices;
-	}
-
-	// If we created the mesh, return true.
-	if (causticInfo.m_pCausticQuadMesh)
-		return true;
-
-	return false;
-}
-
-void CD3D9Renderer::FX_WaterVolumesCaustics(CRenderView* pRenderView)
-{
-	uint64 nPrevFlagsShaderRT = gRenDev->m_RP.m_FlagsShader_RT;
-
-	const uint32 nList = EFSLIST_WATER;
-	uint32 nBatchMask  = SRendItem::BatchFlags(nList);
-
-	bool isEmpty = SRendItem::IsListEmpty(EFSLIST_WATER) && SRendItem::IsListEmpty(EFSLIST_WATER_VOLUMES);
-
-	// Check if there are any water volumes that have caustics enabled
-	if (!isEmpty)
-	{
-		auto& RESTRICT_REFERENCE RI = pRenderView->GetRenderItems(EFSLIST_WATER);
-
-		int curRI = 0;
-		int endRI = RI.size();
-
-		isEmpty = true;
-
-		while (curRI < endRI)
-		{
-			CRendElementBase* pRE = RI[curRI++].pElem;
-			if (pRE->m_Type == eDATA_WaterVolume && ((CREWaterVolume*)pRE)->m_pParams && ((CREWaterVolume*)pRE)->m_pParams->m_caustics == true)
-			{
-				isEmpty = false;
-				break;
-			}
-		}
-	}
-
-	// Pre-process refraction
-	if (!isEmpty && (nBatchMask & FB_WATER_CAUSTIC) && CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0]) && CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[1])
-	  && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred && CRenderer::CV_r_watervolumecaustics)
-	{
-		PROFILE_LABEL_SCOPE("WATERVOLUME_CAUSTICS");
-
-		// Caustics info.
-		N3DEngineCommon::SCausticInfo& causticInfo = gcpRendD3D->m_p3DEngineCommon.m_CausticInfo;
-
-		float fWidth  = CTexture::s_ptexWaterCaustics[0]->GetWidth();
-		float fHeight = CTexture::s_ptexWaterCaustics[0]->GetHeight();
-
-		// Preprocess (render all visible volumes to caustic gbuffer)
-		FX_WaterVolumesCausticsPreprocess(causticInfo);
-
-		gRenDev->m_cEF.mfRefreshSystemShader("DeferredCaustics", CShaderMan::s_ShaderDeferredCaustics);
-
-		// Dilate the gbuffer.
-		static CCryNameTSCRC pTechNameDilate("WaterCausticsInfoDilate");
-
-		{
-			PROFILE_LABEL_SCOPE("DILATION");
-
-			PostProcessUtils().Log(" +++ Begin watervolume caustics dilation +++ \n");
-
-			FX_Commit();
-			gcpRendD3D->FX_SetActiveRenderTargets();
-			FX_PushRenderTarget(0, CTexture::s_ptexWaterCaustics[1], NULL);
-			RT_SetViewport(0, 0, CTexture::s_ptexWaterCaustics[1]->GetWidth(), CTexture::s_ptexWaterCaustics[1]->GetHeight());
-			Set2DMode(true, 1, 1);
-
-			PostProcessUtils().ShBeginPass(CShaderMan::s_ShaderDeferredCaustics, pTechNameDilate, FEF_DONTSETSTATES | FEF_DONTSETTEXTURES);
-			FX_SetState(GS_NODEPTHTEST);
-
-			PostProcessUtils().SetTexture(CTexture::s_ptexWaterCaustics[0], 0);
-			PostProcessUtils().DrawFullScreenTri(CTexture::s_ptexWaterCaustics[1]->GetWidth(), CTexture::s_ptexWaterCaustics[1]->GetHeight());
-			PostProcessUtils().ShEndPass();
-			FX_PopRenderTarget(0);
-
-			PostProcessUtils().Log(" +++ End watervolume caustics dilation +++ \n");
-		}
-
-		// Super blur for alpha to mask edges of volumes.
-		PostProcessUtils().TexBlurGaussian(CTexture::s_ptexWaterCaustics[1], 1, 1.0, 10.0, true, 0, false, CTexture::s_ptexWaterCaustics[0]);
-
-		// Get current viewport
-		int iTempX, iTempY, iWidth, iHeight;
-		GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
-
-		////////////////////////////////////////////////
-		// Procedural caustic generation
-
-		// Generate the caustics map using the grid mesh.
-		// for future:
-		// - merge this somehow with shadow gen for correct projection/intersection with geometry (and lighting) - can use shadow map for position reconstruction of world around volume and project caustic geometry to it.
-		// - try hardware tessellation to increase quality and reduce memory (perhaps do projection per volume instead of as a single pass, that way it's basically screen-space)
-		if (FX_WaterVolumesCausticsUpdateGrid(causticInfo)) // returns true if the mesh is valid
-		{
-			static CCryNameTSCRC pTechNameCaustics("WaterCausticsGen");
-			PROFILE_LABEL_SCOPE("CAUSTICS_GEN");
-			PostProcessUtils().Log(" +++ Begin watervolume caustics generation +++ \n");
-
-			FX_PushRenderTarget(0, CTexture::s_ptexWaterCaustics[0], NULL);
-			FX_SetActiveRenderTargets();                      // Avoiding invalid d3d error (due to deferred rt setup, when ping-pong'ing between RTs we can bump into RTs still bound when binding it as a SRV)
-			RT_SetViewport(0, 0, CTexture::s_ptexWaterCaustics[0]->GetWidth(), CTexture::s_ptexWaterCaustics[0]->GetHeight());
-
-			PostProcessUtils().ShBeginPass(CShaderMan::s_ShaderDeferredCaustics, pTechNameCaustics, FEF_DONTSETSTATES | FEF_DONTSETTEXTURES);
-			FX_SetState(GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_G | GS_NOCOLMASK_A);
-
-			// Set vertex textures.
-			CTexture::s_ptexWaterCaustics[1]->SetVertexTexture(true);
-			PostProcessUtils().SetTexture(CTexture::s_ptexWaterCaustics[1], 0, FILTER_TRILINEAR);
-
-			FX_Commit();
-			// Render the grid mesh.
-			if (!FAILED(gcpRendD3D->FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
-			{
-				size_t voffset(0);
-				size_t ioffset(0);
-				CRenderMesh* pCausticQuadMesh = static_cast<CRenderMesh*>(causticInfo.m_pCausticQuadMesh.get());
-				pCausticQuadMesh->CheckUpdate(pCausticQuadMesh->_GetVertexFormat(), 0);
-				D3DVertexBuffer* pVB = gcpRendD3D->m_DevBufMan.GetD3DVB(pCausticQuadMesh->_GetVBStream(VSF_GENERAL), &voffset);
-				D3DIndexBuffer*  pIB = gcpRendD3D->m_DevBufMan.GetD3DIB(pCausticQuadMesh->_GetIBStream(), &ioffset);
-				FX_SetVStream(0, pVB, voffset, pCausticQuadMesh->GetStreamStride(VSF_GENERAL));
-				FX_SetIStream(pIB, ioffset, (sizeof(vtx_idx) == 2 ? Index16 : Index32));
-
-				FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, causticInfo.m_nVertexCount, 0, causticInfo.m_nIndexCount);
-			}
-
-			PostProcessUtils().ShEndPass();
-
-			// Unset vertex textures.
-			CTexture::s_ptexWaterCaustics[1]->SetVertexTexture(false);
-
-			FX_PopRenderTarget(0);
-			RT_SetViewport(0, 0, iWidth, iHeight);
-
-			RT_UnbindTMUs();// Avoid d3d error due to rtv (s_ptexWaterCaustics[0]) still bound as shader input.
-
-			// Smooth out any inconsistencies in the caustic map (pixels, etc).
-			PostProcessUtils().TexBlurGaussian(CTexture::s_ptexWaterCaustics[0], 1, 1.0, 1.0, false, NULL, false, CTexture::s_ptexWaterCaustics[1]);
-
-			PostProcessUtils().Log(" +++ End watervolume caustics generation +++ \n");
-
-			FX_DeferredWaterVolumeCaustics(causticInfo);
-		}
-
-		Set2DMode(false, 1, 1);
-	}
-
-	gRenDev->m_RP.m_FlagsShader_RT = nPrevFlagsShaderRT;
-}
-
-void CD3D9Renderer::FX_WaterVolumesPreprocess()
-{
-	const uint32 nList = EFSLIST_WATER;
-
-	uint32 nBatchMask = SRendItem::BatchFlags(nList);
-	if ((nBatchMask & FB_WATER_REFL) && CTexture::IsTextureExist(CTexture::s_ptexWaterVolumeRefl[0]))
-	{
-		PROFILE_LABEL_SCOPE("WATER_PREPROCESS");
-		const uint32 nCurrWaterVolID = gRenDev->GetFrameID(false) % 2;
-		CTexture* pCurrWaterVolRefl  = CTexture::s_ptexWaterVolumeRefl[nCurrWaterVolID];
-
-		PostProcessUtils().Log(" +++ Begin water volumes preprocessing +++ \n");
-
-		bool bRgbkSrc = false;
-
-		int nWidth  = int(pCurrWaterVolRefl->GetWidth() * m_RP.m_CurDownscaleFactor.x);
-		int nHeight = int(pCurrWaterVolRefl->GetHeight() * m_RP.m_CurDownscaleFactor.y);
-
-		PostProcessUtils().StretchRect(CTexture::s_ptexCurrSceneTarget, CTexture::s_ptexHDRTargetPrev, false, bRgbkSrc, false, true);
-
-		RECT rect = { 0, pCurrWaterVolRefl->GetHeight() - nHeight, nWidth, nHeight };
-
-		FX_ClearTarget(pCurrWaterVolRefl, Clr_Transparent, 1, &rect, true);
-		FX_PushRenderTarget(0, pCurrWaterVolRefl, 0);
-		RT_SetViewport(0, pCurrWaterVolRefl->GetHeight() - nHeight, nWidth, nHeight);
-
-		FX_ProcessRenderList(nList, FX_FlushShader_General, false, FB_WATER_REFL);
-
-		FX_PopRenderTarget(0);
-
-		// Generate mipmaps
-		{
-			if (!CTexture::s_pMipperWaterVolumeRefl[nCurrWaterVolID])
-				CTexture::s_pMipperWaterVolumeRefl[nCurrWaterVolID] = new CMipmapGenPass();
-
-			gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
-			CTexture::s_pMipperWaterVolumeRefl[nCurrWaterVolID]->Execute(pCurrWaterVolRefl);
-			gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
-		}
-
-		FX_ResetPipe();
-
-		RT_SetViewport(0, 0, gcpRendD3D->GetWidth(), gcpRendD3D->GetHeight());
-
-		PostProcessUtils().Log(" +++ End water volumes preprocessing +++ \n");
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CD3D9Renderer::FX_RenderWater(void (* RenderFunc)())
-{
-	if (IsRecursiveRenderView())
-		return;
-
-	PROFILE_LABEL_SCOPE("WATER");
-
-	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
-
-	if (!(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE))
-	{
-		const int nGridSize = 64;
-
-		// Pre-process refraction
-		const bool isEmpty = SRendItem::IsListEmpty(EFSLIST_WATER) && SRendItem::IsListEmpty(EFSLIST_WATER_VOLUMES);
-		if (!isEmpty && CTexture::IsTextureExist(CTexture::s_ptexCurrSceneTarget))
-		{
-			if (!CRenderer::CV_r_debugrefraction)
-				FX_ScreenStretchRect(CTexture::s_ptexCurrSceneTarget);
-			else
-				FX_ClearTarget(CTexture::s_ptexCurrSceneTarget, Clr_Debug);
-		}
-
-		// Create Domain Shader Texture
-		// NOTE: textures which are static uniform (with path in the code) are assigned before
-		// the render-element is called, so if the render element allocated the required textures
-		// then they will not make it into the first draw of the shader, and are 0 instead
-		if (!isEmpty && !CTexture::IsTextureExist(CTexture::s_ptexWaterOcean))
-		{
-			CTexture::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1,
-			  FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
-			  0, eTF_R32G32B32A32F, eTF_R32G32B32A32F);
-		}
-
-		// Pre-process rain ripples
-		if (!isEmpty && (m_RP.m_nRendFlags & SHDF_ALLOWPOSTPROCESS))
-		{
-			if(gRenDev->m_nGraphicsPipeline > 0)
-			{
-				auto& graphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
-				auto* pRenderView = graphicsPipeline.GetCurrentRenderView();
-				auto* pWaterRipplesStage = graphicsPipeline.GetWaterRipplesStage();
-
-				if(pWaterRipplesStage)
-				{
-					gRenDev->FX_PushVP();
-					graphicsPipeline.SwitchFromLegacyPipeline();
-
-					if(pWaterRipplesStage->IsVisible(pRenderView))
-					{
-						// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-						m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-					}
-
-					pWaterRipplesStage->Prepare(pRenderView);
-					pWaterRipplesStage->Execute(pRenderView);
-
-					graphicsPipeline.SwitchToLegacyPipeline();
-					gRenDev->FX_PopVP();
-				}
-			}
-			else
-			{
-				FX_ResetPipe();
-				CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
-				CEffectParam*  pParam = PostEffectMgr()->GetByName("WaterRipples_Amount");
-				pParam->SetParam(1.0f);
-				if(pWaterRipples->Preprocess())
-				{
-					// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-					m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-					gcpRendD3D->FX_ResetPipe();
-					gcpRendD3D->Set2DMode(true, 1, 1);
-					pWaterRipples->Render();
-					gcpRendD3D->Set2DMode(false, 1, 1);
-					gcpRendD3D->FX_ResetPipe();
-
-					FX_Commit();
-				}
-			}
-		}
-	}
-
-	FX_WaterVolumesPreprocess();
-
-	FX_ProcessRenderList(EFSLIST_WATER, RenderFunc, false);
-
-	m_RP.m_PersFlags2 &= ~(RBPF2_WATERRIPPLES | RBPF2_RAINRIPPLES);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void CD3D9Renderer::FX_LinearizeDepth()
 {
 	PROFILE_LABEL_SCOPE("LINEARIZE_DEPTH");
@@ -2748,8 +1694,13 @@ void CD3D9Renderer::FX_LinearizeDepth()
 	FX_SetState(GS_NODEPTHTEST);
 
 	D3DShaderResource* depthReadOnlySRV = gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->GetDeviceDepthReadOnlySRV(0, -1, false);
-	m_DevMan.BindSRV(CDeviceManager::TYPE_PS, &depthReadOnlySRV, 16, 1);
 
+
+	gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->ApplyTexture(0);
+#if defined(OPENGL_ES)
+	auto ts = CTexture::GetTexState(STexState(FILTER_POINT, true));
+	gcpRendD3D->m_DepthBufferOrigMSAA.pTexture->ApplySamplerState(0, eHWSC_Pixel, ts);
+#endif
 	static CCryNameR pParamName0("NearProjection");
 
 	I3DEngine* pEng = gEnv->p3DEngine;
@@ -2899,6 +1850,9 @@ void CD3D9Renderer::FX_DrawNormals()
 {
 	HRESULT h = S_OK;
 
+	const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)(4096 * 1024));
+	CryScopedAllocWithSizeVector(SVF_P3F_C4B_T2F, maxBufferSize / sizeof(SVF_P3F_C4B_T2F), Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	
 	float len = CRenderer::CV_r_normalslength;
 	int StrVrt, StrTan, StrNorm;
 	//if (gcpRendD3D->m_RP.m_pRE)
@@ -2916,9 +1870,9 @@ void CD3D9Renderer::FX_DrawNormals()
 			gcpRendD3D->m_RP.m_pRE->mfCheckUpdate(gcpRendD3D->m_RP.m_pShader->m_eVertexFormat, -1, gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_nFrameUpdateID);
 		}
 
-		const byte* verts    = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, FGP_SRC | FGP_REAL);
-		const byte* normals  = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Normal, &StrNorm, eType_FLOAT, eSrcPointer_Normal, FGP_SRC | FGP_REAL);
-		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, FGP_SRC | FGP_REAL);
+		const byte* verts = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, 0);
+		const byte* normals = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Normal, &StrNorm, eType_FLOAT, eSrcPointer_Normal, 0);
+		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, 0);
 
 		verts    = ((INT_PTR)verts > 256 && StrVrt >= sizeof(Vec3)) ? verts : 0;
 		normals  = ((INT_PTR)normals > 256 && StrNorm >= sizeof(SPipNormal)) ? normals : 0;
@@ -2944,12 +1898,8 @@ void CD3D9Renderer::FX_DrawNormals()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *two* buffer vertices (endpoints of
 			// a normal vector).
-			const size_t maxBufferSize  = (size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20;
 			const size_t maxVertexCount = maxBufferSize / (2 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
-
-			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, numVerts * 2, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 			uint32 col0 = 0x000000ff;
 			uint32 col1 = 0x00ffffff;
@@ -2982,7 +1932,6 @@ void CD3D9Renderer::FX_DrawNormals()
 				Verts[v * 2 + 1].color.dcolor = col1;
 			}
 
-
 			TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(Verts, numVerts * 2, 0);
 
 			if (gcpRendD3D->m_RP.m_pCurPass)
@@ -3009,6 +1958,9 @@ void CD3D9Renderer::FX_DrawTangents()
 {
 	HRESULT h = S_OK;
 
+	const size_t maxBufferSize  = std::min((size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20, (size_t)(4096 * 1024));
+	CryScopedAllocWithSizeVector(SVF_P3F_C4B_T2F, maxBufferSize / sizeof(SVF_P3F_C4B_T2F), Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	
 	float len = CRenderer::CV_r_normalslength;
 	//if (gcpRendD3D->m_RP.m_pRE)
 	//  gcpRendD3D->m_RP.m_pRE->mfCheckUpdate(gcpRendD3D->m_RP.m_pShader->m_VertexFormatId, SHPF_TANGENTS);
@@ -3023,12 +1975,9 @@ void CD3D9Renderer::FX_DrawTangents()
 		}
 
 		int StrVrt, StrTan;
-		const int flags = (CRenderer::CV_r_showtangents == 1)
-		  ? FGP_SRC | FGP_REAL
-		  : FGP_REAL;
 
-		const byte* verts    = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, flags);
-		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, FGP_SRC | FGP_REAL);
+		const byte* verts = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, 0);
+		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, 0);
 
 		verts    = ((INT_PTR)verts > 256 && StrVrt >= sizeof(Vec3)) ? verts : 0;
 		tangents = ((INT_PTR)tangents > 256 && (StrTan == sizeof(SPipQTangents) || StrTan == sizeof(SPipTangents))) ? tangents : 0;
@@ -3051,12 +2000,8 @@ void CD3D9Renderer::FX_DrawTangents()
 			// uses transient pool that has *limited* size. See DevBuffer.cpp for details.
 			// Note that one source vertex produces *six* buffer vertices (three tangent space
 			// vectors, two vertices per vector).
-			const size_t maxBufferSize  = (size_t)NextPower2(gRenDev->CV_r_transient_pool_size) << 20;
 			const size_t maxVertexCount = maxBufferSize / (6 * sizeof(SVF_P3F_C4B_T2F));
 			const int numVerts          = (int)(std::min)((size_t)gcpRendD3D->m_RP.m_RendNumVerts, maxVertexCount);
-
-			// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, numVerts * 6, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 			for (int v = 0; v < numVerts; v++, verts += StrVrt, tangents += StrTan)
 			{
@@ -3131,7 +2076,7 @@ struct SPreprocess
 	int m_nTech;
 	CShader* m_Shader;
 	CShaderResources* m_pRes;
-	CRendElementBase* m_RE;
+	CRenderElement* m_RE;
 };
 
 struct Compare2
@@ -3218,6 +2163,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 		case SPRID_SCANTEXWATER:
 			if (!(m_RP.m_TI[m_RP.m_nFillThreadID].m_PersFlags & RBPF_DRAWTOTEXTURE))
 			{
+				bool bTryPreprocess = false;
 				CRenderObject* pObj = pr->m_pObject;
 				int nT              = pr->m_nTech;
 				if (nT < 0)
@@ -3228,7 +2174,10 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 				{
 					SHRenderTarget* pTarg = pTech->m_RTargets[j];
 					if (pTarg->m_eOrder == eRO_PreProcess)
+					{
+						bTryPreprocess = true;
 						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+					}
 				}
 				if (pRes)
 				{
@@ -3236,8 +2185,48 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, Render
 					{
 						SHRenderTarget* pTarg = pRes->m_RTargets[j];
 						if (pTarg->m_eOrder == eRO_PreProcess)
+						{
+							bTryPreprocess = true;
 							bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+						}
 					}
+				}
+
+				// NOTE: try water reflection pre-process again because it wouldn't be executed when the shader uses only Texture and SamplerState instead of Sampler.
+				const uint64 ENVIRONMENT_MAP_MASK = 0x4; // this is defined in Water.ext as %ENVIRONMENT_MAP.
+				if (!bTryPreprocess
+					&& pr->m_RE->mfGetType() == eDATA_WaterOcean
+					&& ((pr->m_Shader->m_nMaskGenFX & ENVIRONMENT_MAP_MASK) == 0))
+				{
+					CREWaterOcean* pOcean = static_cast<CREWaterOcean*>(pr->m_RE);
+					SHRenderTarget* pTarg = pOcean->GetReflectionRenderTarget();
+					bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE);
+
+#if !defined(RELEASE) && defined(_DEBUG)
+					static string ENVIRONMENT_MAP_NAME("%ENVIRONMENT_MAP");
+					auto* pShaderGenBase = pr->m_Shader->GetGenerationParams();
+					bool findParameter = false;
+					if(pShaderGenBase)
+					{
+						for(unsigned nBaseBit(0); nBaseBit < pShaderGenBase->m_BitMask.size(); ++nBaseBit)
+						{
+							SShaderGenBit* pBaseBit = pShaderGenBase->m_BitMask[nBaseBit];
+
+							if(!pBaseBit->m_ParamName.empty())
+							{
+								if(ENVIRONMENT_MAP_NAME == pBaseBit->m_ParamName)
+								{
+									if (ENVIRONMENT_MAP_MASK == pBaseBit->m_Mask)
+									{
+										findParameter = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+					CRY_ASSERT(findParameter);
+#endif
 				}
 			}
 			break;
@@ -3281,7 +2270,7 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 
 //========================================================================================================
 
-bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRendElementBase* pRE, bool bResIdentical)
+bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRenderElement* pRE, bool bResIdentical)
 {
 #if !defined(_RELEASE)
 	if (!CV_r_Batching)
@@ -3300,6 +2289,9 @@ bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRendE
 	// (need to fetch render resources for heat value)
 	if (m_RP.m_PersFlags2 & RBPF2_THERMAL_RENDERMODE_PASS)
 		return false;
+
+	if(m_RP.m_PersFlags2 & RBPF2_CUSTOM_RENDER_PASS)
+		return false;  
 
 	if (!bResIdentical || pRE != m_RP.m_pRE)
 	{
@@ -3368,6 +2360,7 @@ static char* sDescList[] =
 	"FogVolume",
 	"Nearest",
 	"ForwardOpaque",
+	"Custom",
 };
 
 static char* sBatchList[] =
@@ -3447,18 +2440,11 @@ void CD3D9Renderer::FX_PostRender()
 }
 
 // Object changing handling (skinning, shadow maps updating, initial states setting, ...)
-bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRenderObject* obj, CRendElementBase* pRE)
+bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRenderObject* obj, CRenderElement* pRE)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
-
-	if ((pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN))
-	{
-		const bool bNearObjOnly = m_RP.m_ShadowInfo.m_pCurShadowFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest;
-		if (bNearObjOnly && !(obj->m_ObjFlags & FOB_NEAREST))
-			return false;
-	}
 
 	if ((obj->m_ObjFlags & FOB_NEAREST) && CV_r_nodrawnear)
 		return false;
@@ -3501,7 +2487,7 @@ bool CD3D9Renderer::FX_ObjectChange(CShader* Shader, CShaderResources* Res, CRen
 		HandleDefaultObject();
 	}
 
-	const uint32 nPerfFlagsExcludeMask  = (RBPF_SHADOWGEN | RBPF_ZPASS);
+	const uint32 nPerfFlagsExcludeMask  = RBPF_ZPASS;
 	const uint32 nPerfFlags2ExcludeMask = (RBPF2_THERMAL_RENDERMODE_PASS | RBPF2_MOTIONBLURPASS | RBPF2_THERMAL_RENDERMODE_TRANSPARENT_PASS | RBPF2_CUSTOM_RENDER_PASS);
 
 	if ((m_RP.m_nPassGroupID == EFSLIST_TRANSP)
@@ -3531,24 +2517,7 @@ void CD3D9Renderer::UpdateNearestChange(int flags)
 	const int nProcessThread             = m_RP.m_nProcessThreadID;
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[nProcessThread]);
 
-	const ShadowMapFrustum* pCurFrustum = m_RP.m_ShadowInfo.m_pCurShadowFrustum;
-	const bool bNearObjOnly             = pCurFrustum && (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest) && (m_RP.m_pCurObject->m_ObjFlags & FOB_NEAREST);
-	if (bNearObjOnly && (pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN)) //add additional flag
-	{
-		//set per-object camera view
-		Matrix44A& mPrj            = *pShaderThreadInfo->m_matProj->GetTop();
-		Matrix44A& mView           = *pShaderThreadInfo->m_matView->GetTop();
-		Vec4& vFrustumInfo         = pShaderThreadInfo->m_vFrustumInfo;
-		ShadowMapFrustum& curFrust = *m_RP.m_ShadowInfo.m_pCurShadowFrustum;
-
-		mPrj         = curFrust.mLightProjMatrix;
-		mView        = curFrust.mLightViewMatrix;
-		vFrustumInfo = curFrust.vFrustInfo;
-
-		EF_SetCameraInfo();
-	}
-
-	if (!(pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN) && (m_drawNearFov > 0.0f))
+	if (m_drawNearFov > 0.0f)
 	{
 		if (flags & RBF_NEAREST)
 		{
@@ -3637,7 +2606,7 @@ void CD3D9Renderer::UpdatePrevMatrix(bool bEnable)
 
 //=================================================================================
 // Check buffer overflow during geometry batching
-void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, int* nNewVerts, int* nNewInds)
+void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRenderElement* re, int* nNewVerts, int* nNewInds)
 {
 	if (nNewVerts)
 		*nNewVerts = nVerts;
@@ -3665,7 +2634,7 @@ void CRenderer::FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, in
 }
 
 // Start of the new shader pipeline (3D pipeline version)
-void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendElementBase* re)
+void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRenderElement* re)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 	  assert(ef);
@@ -3710,7 +2679,7 @@ void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendEle
 	if ((nPersFlags2 & RBPF2_HDR_FP16) && !(m_RP.m_nBatchFilter & (FB_Z)))
 		m_RP.m_FlagsShader_RT |= hdrMode;   // deprecated: redundant flag, will be dropped (rendering always HDR)
 
-	static const uint32 nPFlags2Mask = (RBPF2_THERMAL_RENDERMODE_PASS | RBPF2_WATERRIPPLES | RBPF2_RAINRIPPLES | RBPF2_SKIN);
+	static const uint32 nPFlags2Mask = (RBPF2_THERMAL_RENDERMODE_PASS | RBPF2_SKIN);
 	if (nPersFlags2 & nPFlags2Mask)
 	{
 		if (nPersFlags2 & RBPF2_THERMAL_RENDERMODE_PASS)
@@ -3718,11 +2687,6 @@ void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendEle
 
 		if (nPersFlags2 & RBPF2_SKIN)
 			m_RP.m_FlagsShader_RT |= sample0;
-		else if ((nPersFlags2 & (RBPF2_WATERRIPPLES | RBPF2_RAINRIPPLES)) && ef->m_eShaderType == eST_Water)
-		{
-			m_RP.m_FlagsShader_RT |= (nPersFlags2 & RBPF2_WATERRIPPLES) ? sample4 : 0;
-			m_RP.m_FlagsShader_RT |= (nPersFlags2 & RBPF2_RAINRIPPLES) ? g_HWSR_MaskBit[HWSR_OCEAN_PARTICLE] : 0;
-		}
 	}
 
 	// Set shader flag for tiled forward shading
@@ -3747,7 +2711,7 @@ void CRenderer::FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendEle
 
 static void sBatchFilter(uint32 nFilter, char* sFilt)
 {
-	STATIC_ASSERT((1 << ((CRY_ARRAY_COUNT(sBatchList)) - 1) <= FB_MASK), "Batch techniques/flags list mismatch");
+	static_assert((1 << ((CRY_ARRAY_COUNT(sBatchList)) - 1) <= FB_MASK), "Batch techniques/flags list mismatch");
 
 	sFilt[0] = 0;
 	int n = 0;
@@ -3800,7 +2764,7 @@ void CD3D9Renderer::OldPipeline_ProcessBatchesList(CRenderView::RenderItems& ren
 	}
 
 #ifdef DO_RENDERLOG
-	STATIC_ASSERT(((CRY_ARRAY_COUNT(sDescList)) == EFSLIST_NUM), "Batch techniques/flags list mismatch");
+	static_assert(((CRY_ARRAY_COUNT(sDescList)) == EFSLIST_NUM), "Batch techniques/flags list mismatch");
 
 	if (CV_r_log)
 	{
@@ -3827,7 +2791,7 @@ void CD3D9Renderer::OldPipeline_ProcessBatchesList(CRenderView::RenderItems& ren
 			continue;
 
 		CRenderObject* pObject = ri.pObj;
-		CRendElementBase* pRE  = ri.pElem;
+		CRenderElement* pRE  = ri.pElem;
 		bool bChangedShader    = false;
 		bool bResIdentical     = true;
 		if (prevSortVal != ri.SortVal)
@@ -4260,17 +3224,9 @@ int CD3D9Renderer::GetOcclusionBuffer(uint16* pOutOcclBuffer, int32 nSizeX, int3
 		if (pData == NULL)
 			return 0;
 		int nPitch = m_occlusionDataPitch;
-		float zn   = m_occlusionZNear[m_RP.m_nFillThreadID];
-		float zf   = m_occlusionZFar[m_RP.m_nFillThreadID];
-		//HACK
-		if (zf < 1000.f)
-		{
-			zn = m_occlusionLastZNear;
-			zf = m_occlusionLastZFar;
-		}
+		const float zn = m_occlusionZNear[m_RP.m_nFillThreadID];
+		const float zf = m_occlusionZFar[m_RP.m_nFillThreadID];
 		int nCameraID = -1;
-		m_occlusionLastZNear = zn;
-		m_occlusionLastZFar  = zf;
 		const float ProjRatioX = zf / (zf - zn);
 		const float ProjRatioY = zn / (zn - zf);
 
@@ -4330,7 +3286,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		return;
 	}
 
-	const bool bUseNativeDepth = CRenderer::CV_r_CBufferUseNativeDepth && !gEnv->IsEditor();
+	const bool bUseNativeDepth = (CRenderer::CV_r_CBufferUseNativeDepth || CVrProjectionManager::IsMultiResEnabledStatic()) && !gEnv->IsEditor();
 	const bool bReverseDepth   = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 
 	bool bDownSampleUpdate = false;
@@ -4449,17 +3405,8 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		{
 			float* pDepths = reinterpret_cast<float*>(pData);
 			const CRenderCamera& rc = GetRCamera();
-			float zn = rc.fNear;
-			float zf = rc.fFar;
-			//HACK
-			if (zf < 1000.f)
-			{
-				mCurProj = m_occlusionLastProj;
-				zn = m_occlusionLastZNear;
-				zf = m_occlusionLastZFar;
-			}
-			m_occlusionLastZNear = zn;
-			m_occlusionLastZFar = zf;
+			const float zn = rc.fNear;
+			const float zf = rc.fFar;
 			const float ProjRatioX = zf / (zf - zn);
 			const float ProjRatioY = zn / (zn - zf);
 
@@ -4490,7 +3437,6 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 			return true;
 		});
 	}
-	m_occlusionLastProj            = mCurProj;
 	m_occlusionViewProjBuffer[Idx] = mCurView * mCurProj;
 
 	if (bUseNativeDepth)
@@ -4529,6 +3475,9 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 	CTexture* pSrc = CTexture::s_ptexZTarget;
 	CTexture* pDst = CTexture::s_ptexZTarget;
 
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		pSrc = CVrProjectionManager::Instance()->GetZTargetFlattened();
+
 	bool bUseMSAA = bMSAA;
 	const SPostEffectsUtils::EDepthDownsample downsampleMode = (bUseNativeDepth && bReverseDepth)
 	  ? SPostEffectsUtils::eDepthDownsample_Min
@@ -4563,8 +3512,8 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 
 	FX_SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 	D3DSetCull(eCULL_None);
-	float  fX  = (float)m_CurViewport.nWidth;
-	float  fY  = (float)m_CurViewport.nHeight;
+	float fX = (float)m_CurViewport.nWidth;
+	float fY = (float)m_CurViewport.nHeight;
 	ColorF col = Col_Black;
 	DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, col, 1.0f, fX, fY, fX, fY);
 
@@ -4582,7 +3531,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		CTexture::s_ptexZTarget->SetShaderResourceView(pZTargetOrigSRV, bMSAA);
 	}
 
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	if (bReadZBufferDirectlyFromVMEM == true)
 	{
 		// get camera settings for reprojection
@@ -4731,13 +3680,14 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
 
+	int nRecurse = pRenderView->IsRecursive() ? 1 : 0;
+	FX_ApplyThreadState(TI, &m_RP.m_OldTI[nRecurse]);
+
 	////////////////////////////////////////////////
 	{
 		PROFILE_FRAME(WaitForRenderView);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
-
-	int nRecurse = pRenderView->IsRecursive() ? 1 : 0;
 
 	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
 	RT_RenderUITextures();
@@ -4753,10 +3703,24 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 	}
 
+	if (!nRecurse)
+	{
+		D3D11_VIEWPORT viewport;
+		viewport.TopLeftX = m_MainViewport.nX;
+		viewport.TopLeftY = m_MainViewport.nY;
+		viewport.Width = m_MainViewport.nWidth;
+		viewport.Height = m_MainViewport.nHeight;
+		viewport.MinDepth = 0.f; // m_MainViewport.fMinZ and fMaxZ are zeros
+		viewport.MaxDepth = 1.f;
+
+		bool bRightEye = (nFlags & SHDF_STEREO_RIGHT_EYE) != 0;
+
+		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
+	}
+
 	// invalidate object pointers
 	m_RP.m_pCurObject = m_RP.m_pPrevObject = m_RP.m_pIdendityRenderObject;
 
-	static int oldFrameID = -1;
 	static int lightVolumeOldFrameID = -1;
 	int newFrameID   = this->GetFrameID(false);
 
@@ -4769,14 +3733,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	{
 		RT_UpdateLightVolumes();
 		lightVolumeOldFrameID = newFrameID;
-	}
-
-	if (oldFrameID != newFrameID)
-	{
-		// Update PSOs
-		CCryDeviceWrapper::GetObjectFactory().UpdatePipelineStates();
-
-		oldFrameID = newFrameID;
 	}
 
 	int nSaveDrawNear     = CV_r_nodrawnear;
@@ -4792,7 +3748,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	m_bDeferredDecals = false;
 	uint32 nSaveRendFlags = m_RP.m_nRendFlags;
 	m_RP.m_nRendFlags = nFlags;
-	FX_ApplyThreadState(TI, &m_RP.m_OldTI[nRecurse]);
 
 	const bool bHDRRendering = (nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
 	const bool bNewGraphicsPipeline = m_nGraphicsPipeline >= 1 && !pRenderView->IsRecursive() && (nFlags & SHDF_ALLOWPOSTPROCESS) && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
@@ -4825,7 +3780,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 	// Prepare post processing
 	bool bAllowPostProcess = (nFlags & SHDF_ALLOWPOSTPROCESS) && !nRecurse && (CV_r_PostProcess) && !CV_r_measureoverdraw &&
-	  !(pShaderThreadInfo->m_PersFlags & (RBPF_MAKESPRITE | RBPF_SHADOWGEN));
+	  !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
 
 	bool bAllowSubpixelShift = bAllowPostProcess
 	  && (gcpRendD3D->FX_GetAntialiasingType() & eAT_REQUIRES_SUBPIXELSHIFT_MASK)
@@ -4981,11 +3936,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 			FX_ProcessCharDeformation(pRenderView);
 
 		{
-			bool bLighting = (pShaderThreadInfo->m_PersFlags & RBPF_SHADOWGEN) == 0;
-			if (!nFlags)
-				bLighting = false;
+			bool bLighting = !nFlags;
 
-			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && CV_r_usezpass)
+			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && !nRecurse && CV_r_usezpass)
 			{
 				FX_ProcessZPassRenderLists();
 
@@ -4993,18 +3946,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 				FX_DeferredSnowLayer();
 			}
 
-			//shadow generation
-			if (!nRecurse && !(nFlags & SHDF_NO_SHADOWGEN)) //|SHDF_ALLOWPOSTPROCESS
-			{
-				PROFILE_LABEL_SCOPE("SHADOWMAPS");
-				EF_PrepareAllDepthMaps(pRenderView);
-			}
-
-			// Generate the HDR cloud volume textures for shadow mapping.
-			if (bAllowPostProcess)
-			{
-				GetVolumetricCloud().GenerateVolumeTextures();
-			}
 #if defined(FEATURE_SVO_GI)
 			if ((nFlags & SHDF_ALLOWHDR) && !nRecurse && CSvoRenderer::GetInstance())
 			{
@@ -5028,42 +3969,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 			FX_RenderForwardOpaque(RenderFunc, bLighting, bAllowDeferred);
 
-			const bool bDeferredScenePasses = (nFlags & SHDF_ALLOWPOSTPROCESS) && !nRecurse && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) && !bEmpty;
-			if (bDeferredScenePasses)
-			{
-				FX_ResetPipe();
-
-				FX_DeferredCaustics();
-			}
-
-			const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & (RBPF_SHADOWGEN | RBPF_MAKESPRITE)) != 0;
-
-			if (bAllowDeferred && bDeferredScenePasses)
-			{
-				// make sure all all jobs which are computing particle vertices/indices
-				// have finished and their vertex/index buffers are unlocked
-				// before starting rendering of those
-				SyncComputeVerticesJobs();
-				UnLockParticleVideoMemory();
-
-				PROFILE_LABEL_SCOPE("VOLUMETRIC FOG");
-
-				GetVolumetricFog().RenderVolumetricsToVolume(RenderFunc);
-				GetVolumetricFog().RenderVolumetricFog(pRenderView);
-			}
-
-			if (bDeferredScenePasses && CV_r_measureoverdraw != 4)
-				FX_RenderFog();
-
-			if (bAllowPostProcess)
-			{
-				GetVolumetricCloud().RenderClouds();
-			}
-
-			if (nFlags & SHDF_ALLOW_WATER)
-			{
-				FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, RenderFunc, false);   // Sorted list without preprocess
-			}
+			const bool bShadowGenSpritePasses = (pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE) != 0;
 
 			UpdatePrevMatrix(bAllowPostProcess);
 
@@ -5084,9 +3990,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 				FX_ProcessRenderList(EFSLIST_TRANSP, RenderFunc, bLighting, FB_BELOW_WATER, 0);
 				GetTiledShading().UnbindForwardShadingResources();
 			}
-
-			if (nFlags & SHDF_ALLOW_WATER)
-				FX_RenderWater(RenderFunc);
 
 			{
 				PROFILE_LABEL_SCOPE("TRANSPARENT_AW");
@@ -5162,12 +4065,15 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		}
 	}                                     // r_GraphicsPipeline
 
-	CFlashTextureSourceBase::RenderLights();
-
-	if (m_bCopyScreenToBackBuffer)
+	if (!nRecurse)
 	{
-		RT_CopyScreenToBackBuffer();
+		if (CRenderer::CV_r_shownormals)
+			FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawNormals, false);
+		if (CRenderer::CV_r_showtangents)
+			FX_ProcessRenderList(EFSLIST_GENERAL, FX_DrawTangents, false);
 	}
+
+	CFlashTextureSourceBase::RenderLights();
 
 	FX_ApplyThreadState(m_RP.m_OldTI[nRecurse], NULL);
 
@@ -5179,7 +4085,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CV_r_texturesstreamingsync = nSaveStreamSync;
 
 	////////////////////////////////////////////////
-	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))  // Lists still needed for right eye when stereo is active
+	// Lists still needed for right eye when stereo is active
+	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))
 	{
 		PROFILE_FRAME(RenderViewEndFrame);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
@@ -5191,9 +4098,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 		pRenderView->Clear();
 		m_RP.m_pSunLight = nullptr;
-
-		// Free render objects that could have been used for this frame
-		FreePermanentRenderObjects(m_RP.m_nProcessThreadID);
 	}
 	m_RP.m_pCurrentRenderView = nullptr;
 
@@ -5203,19 +4107,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		assert(m_nRTStackLevel[0] == 0);
 		FX_SetRenderTarget(0, m_pBackBuffer, &m_DepthBufferNative, false);
 }
-}
-
-void CD3D9Renderer::RT_CopyScreenToBackBuffer()
-{
-	// If rendering kill-cam replay top kills....
-	PostProcessUtils().CopyScreenToTexture(CTexture::s_ptexBackBuffer);
-
-	// clear alpha channel on pc to avoid undesired mask being left in it by MSAA
-	gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexBackBuffer, NULL);
-	FX_SetActiveRenderTargets();
-	EF_ClearTargetsLater(FRT_CLEAR_COLOR, Clr_Empty);
-	FX_ClearTargetRegion(GS_COLMASK_A);
-	gcpRendD3D->FX_PopRenderTarget(0);
 }
 
 void CD3D9Renderer::RT_DrawUITextureInternal(S2DImage& img)
@@ -5353,21 +4244,6 @@ void CD3D9Renderer::EF_RenderScene(int nFlags, SViewport& VP, const SRenderingPa
 #endif
 
 	SubmitRenderViewForRendering(FX_FlushShader_General, nFlags, VP, passInfo, true);
-
-	//////////////////////////////////////////////////////////////////////////
-	{
-		// Draw light sources in debug mode
-		// Draw debug geometry/info
-		if (CV_r_showlines)
-			SubmitRenderViewForRendering(FX_DrawWire, 0, VP, passInfo, false);
-
-		if (CV_r_shownormals)
-			SubmitRenderViewForRendering(FX_DrawNormals, 0, VP, passInfo, false);
-
-		if (CV_r_showtangents)
-			SubmitRenderViewForRendering(FX_DrawTangents, 0, VP, passInfo, false);
-	}
-	//////////////////////////////////////////////////////////////////////////
 
 	m_RP.m_PS[nThreadID].m_fSceneTimeMT += iTimer->GetAsyncTime().GetDifferenceInSeconds(time0);
 }

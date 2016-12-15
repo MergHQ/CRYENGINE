@@ -24,6 +24,9 @@
 // Shared constants, structures and functions
 ////////////////////////////////////////////////////////////////////////////
 float4 ScreenInfo;
+float4 FrustumTL;
+float4 FrustumTR;
+float4 FrustumBL;
 
 // xyz: size of thread groups, w: number of entities
 float4 DispatchSize;

@@ -56,7 +56,7 @@ public:
 		if (event == eFE_Activate && IsPortActive(pActInfo, 0))
 		{
 			IActor* pActor = GetInputActor(pActInfo);
-			if (!pActor || pActor != gEnv->pGame->GetIGameFramework()->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
+			if (!pActor || pActor != gEnv->pGameFramework->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
 				return;
 
 			IEntitySystem* pEntSys = gEnv->pEntitySystem;
@@ -74,7 +74,7 @@ public:
 			{
 				if (gEnv->bServer)
 				{
-					gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GiveItem(pActor, pItemClass, false, true, true);
+					gEnv->pGameFramework->GetIItemSystem()->GiveItem(pActor, pItemClass, false, true, true);
 				}
 				else
 				{
@@ -158,7 +158,7 @@ public:
 		if (event == eFE_Activate && IsPortActive(pActInfo, eIn_Trigger))
 		{
 			IActor* pActor = GetInputActor(pActInfo);
-			if (!pActor || pActor != gEnv->pGame->GetIGameFramework()->GetClientActor()) // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
+			if (!pActor || pActor != gEnv->pGameFramework->GetClientActor()) // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
 			{
 				return;
 			}
@@ -223,10 +223,10 @@ public:
 	{
 		if (event == eFE_Activate && IsPortActive(pActInfo, 0))
 		{
-			IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
+			IGameFramework* pGF = gEnv->pGameFramework;
 
 			IActor* pActor = GetInputActor(pActInfo);
-			if (!pActor || pActor != gEnv->pGame->GetIGameFramework()->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
+			if (!pActor || pActor != gEnv->pGameFramework->GetClientActor())  // to avoid some extra RMIs and object creation. Tho, this causes the node to not work properly if it is used with non players entities. (which was never intended anyway)
 				return;
 
 			IInventory* pInventory = pActor->GetInventory();
@@ -336,7 +336,7 @@ public:
 
 	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGF = gEnv->pGameFramework;
 
 		if (event == eFE_Activate && IsPortActive(pActInfo, 0))
 		{
@@ -400,7 +400,7 @@ public:
 	{
 		if (event == eFE_Activate)
 		{
-			IGameFramework* pGF = gEnv->pGame->GetIGameFramework();
+			IGameFramework* pGF = gEnv->pGameFramework;
 
 			IActor* pActor = pGF->GetClientActor();
 			if (!pActor)
@@ -429,7 +429,7 @@ class CFlowNode_InventoryItemSelected : public CFlowFrameworkBaseNode<eNCT_Insta
 public:
 	CFlowNode_InventoryItemSelected(SActivationInfo* pActInfo) : m_actInfo(*pActInfo)
 	{
-		m_pGF = gEnv->pGame->GetIGameFramework();
+		m_pGF = gEnv->pGameFramework;
 	}
 
 	~CFlowNode_InventoryItemSelected()

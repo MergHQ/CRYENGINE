@@ -74,11 +74,6 @@ CProceduralContextTurretAimPose::CProceduralContextTurretAimPose()
 }
 
 
-CProceduralContextTurretAimPose::~CProceduralContextTurretAimPose()
-{
-}
-
-
 void CProceduralContextTurretAimPose::Initialise( IEntity& entity, IActionController& actionController )
 {
 	IProceduralContext::Initialise( entity, actionController );
@@ -210,10 +205,10 @@ void CProceduralContextTurretAimPose::UpdateSmoothedTargetWorldPosition( const f
 		const Vec3 reconstructedTargetWorldPosition = worldTM.TransformPoint( reconstructedTargetLocalPosition );
 		
 		float textY = 10;
-		gEnv->pRenderer->Draw2dLabel( 5, textY, 1.2f, color, false, "turret <%f, %f > <%f, %f>", RAD2DEG( pitchRadians ), RAD2DEG( yawRadians ), RAD2DEG( clampedPitchRadians ), RAD2DEG( clampedYawRadians ) ); textY += 15;
-		gEnv->pRenderer->Draw2dLabel( 5, textY, 1.2f, color, false, "reconstruct world pos <%f, %f, %f>", reconstructedTargetWorldPosition.x, reconstructedTargetWorldPosition.y, reconstructedTargetWorldPosition.z ); textY += 15;
+		IRenderAuxText::Draw2dLabel( 5, textY, 1.2f, color, false, "turret <%f, %f > <%f, %f>", RAD2DEG( pitchRadians ), RAD2DEG( yawRadians ), RAD2DEG( clampedPitchRadians ), RAD2DEG( clampedYawRadians ) ); textY += 15;
+		IRenderAuxText::Draw2dLabel( 5, textY, 1.2f, color, false, "reconstruct world pos <%f, %f, %f>", reconstructedTargetWorldPosition.x, reconstructedTargetWorldPosition.y, reconstructedTargetWorldPosition.z ); textY += 15;
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere( reconstructedTargetWorldPosition, 0.5f, Col_Red );
-		gEnv->pRenderer->Draw2dLabel( 5, textY, 1.2f, color, false, "clamped world pos <%f, %f, %f>", clampedTargetWorldPosition.x, clampedTargetWorldPosition.y, clampedTargetWorldPosition.z ); textY += 15;
+		IRenderAuxText::Draw2dLabel( 5, textY, 1.2f, color, false, "clamped world pos <%f, %f, %f>", clampedTargetWorldPosition.x, clampedTargetWorldPosition.y, clampedTargetWorldPosition.z ); textY += 15;
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere( clampedTargetWorldPosition, 0.5f, Col_Blue );
 	}
 #endif

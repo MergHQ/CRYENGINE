@@ -97,7 +97,7 @@ CVehicle::CVehicle() :
 	m_isDestroyed(false),
 	m_initialposition(0.0f),
 	m_lastWeaponId(0),
-	m_pIEntityAudioProxy(),
+	m_pIEntityAudioComponent(),
 	//m_abandonedSoundId(INVALID_SOUNDID),
 	m_bNeedsUpdate(true),
 	m_lastFrameId(0),
@@ -395,16 +395,20 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	    || s_normalHitTypeId == 0 || s_fireHitTypeId == 0 || s_punishHitTypeId == 0)
 	{
 		IGameRules* pGR = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-		s_repairHitTypeId = pGR->GetHitTypeId("repair");
-		s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
-		s_collisionHitTypeId = pGR->GetHitTypeId("collision");
-		s_normalHitTypeId = pGR->GetHitTypeId("normal");
-		s_fireHitTypeId = pGR->GetHitTypeId("fire");
-		s_punishHitTypeId = pGR->GetHitTypeId("punish");
-		s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
+		if (pGR)
+		{
+			s_repairHitTypeId = pGR->GetHitTypeId("repair");
+			s_disableCollisionsHitTypeId = pGR->GetHitTypeId("disableCollisions");
+			s_collisionHitTypeId = pGR->GetHitTypeId("collision");
+			s_normalHitTypeId = pGR->GetHitTypeId("normal");
+			s_fireHitTypeId = pGR->GetHitTypeId("fire");
+			s_punishHitTypeId = pGR->GetHitTypeId("punish");
+			s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
 
-		assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
-		       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
+				&& s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+		}
+		CRY_ASSERT_MESSAGE(pGR, "No valid game rules set!");
 	}
 
 	if (gEnv->bMultiplayer && (CCryActionCVars::Get().g_multiplayerEnableVehicles == 0))
@@ -418,8 +422,8 @@ bool CVehicle::Init(IGameObject* pGameObject)
 		}
 	}
 
-	m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	CRY_ASSERT(m_pIEntityAudioProxy && "no sound proxy on entity");
+	m_pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+	CRY_ASSERT(m_pIEntityAudioComponent && "no sound proxy on entity");
 
 	m_pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
 	m_engineSlotBySpeed = true;
@@ -731,7 +735,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			}
 		}
 	}
-
+	
 	InitPaint(vehicleParams);
 	InitActions(vehicleParams);
 
@@ -739,12 +743,10 @@ bool CVehicle::Init(IGameObject* pGameObject)
 
 	pEntity->AddFlags(ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO | ENTITY_FLAG_TRIGGER_AREAS);
 	//////////////////////////////////////////////////////////////////////////
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
 	{
 		int viewDistRatio = DEFAULT_VEHICLE_VIEW_DIST_RATIO;
 		vehicleParams.getAttr("viewDistRatio", viewDistRatio);
-		pRenderProxy->GetRenderNode()->SetViewDistRatio(viewDistRatio);
+		pEntity->SetViewDistRatio(viewDistRatio);
 	}
 	//////////////////////////////////////////////////////////////////////////
 
@@ -943,7 +945,6 @@ bool CVehicle::InitActions(const CVehicleParams& vehicleTable)
 void CVehicle::PostInit(IGameObject* pGameObject)
 {
 	Veh::RegisterEvents(*this, *pGameObject);
-	RegisterEvent(ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable);
 
 	if (GetMovement())
 		GetMovement()->PostInit();
@@ -1022,14 +1023,6 @@ bool CVehicle::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParam
 	CRY_ASSERT_MESSAGE(false, "CVehicle::ReloadExtension not implemented");
 
 	return false;
-}
-
-//------------------------------------------------------------------------
-bool CVehicle::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CVehicle::GetEntityPoolSignature not implemented");
-
-	return true;
 }
 
 #if ENABLE_VEHICLE_DEBUG
@@ -1119,13 +1112,13 @@ void CVehicle::SetAmmoCount(IEntityClass* pAmmoType, int amount)
 		// then trigger a reload
 		if (oldAmount == 0 && amount != 0 && gEnv->IsClient())
 		{
-			if (IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem())
+			if (IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem())
 			{
 				int weaponCount = GetWeaponCount();
 				for (int i = 0; i < weaponCount; ++i)
 				{
 					IItem* pItem = pItemSystem->GetItem(GetWeaponId(i));
-					if (pItem && pItem->GetOwnerId() == gEnv->pGame->GetIGameFramework()->GetClientActorId())
+					if (pItem && pItem->GetOwnerId() == gEnv->pGameFramework->GetClientActorId())
 					{
 						if (IWeapon* pWeapon = pItem->GetIWeapon())
 						{
@@ -1300,6 +1293,19 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 		m_pMovement->ProcessEvent(entityEvent);
 }
 
+uint64 CVehicle::GetEventMask() const
+{
+	return 
+		BIT64(ENTITY_EVENT_RESET) |
+		BIT64(ENTITY_EVENT_DONE) |
+		BIT64(ENTITY_EVENT_TIMER) |
+		BIT64(ENTITY_EVENT_MATERIAL_LAYER) |
+		BIT64(ENTITY_EVENT_HIDE) |
+		BIT64(ENTITY_EVENT_UNHIDE) |
+		BIT64(ENTITY_EVENT_ANIM_EVENT) |
+		BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+}
+
 //------------------------------------------------------------------------
 void CVehicle::DeleteActionController()
 {
@@ -1323,15 +1329,15 @@ void CVehicle::OnMaterialLayerChanged(const SEntityEvent& event)
 		for (int i = 0; i < n; ++i)
 		{
 			IEntity* pChild = GetEntity()->GetChild(i);
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pChild->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
+			IEntityRender* pIEntityRender = pChild->GetRenderInterface();
+			
 			{
 				if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pChild->GetId()))
 					if (pActor->IsPlayer()) // don't freeze players inside vehicles
 						continue;
 
-				uint8 mask = pRenderProxy->GetMaterialLayersMask();
-				pRenderProxy->SetMaterialLayersMask(frozen ? mask | MTL_LAYER_FROZEN : mask & ~MTL_LAYER_FROZEN);
+				//uint8 mask = pIEntityRender->GetMaterialLayersMask();
+				//pIEntityRender->SetMaterialLayersMask(frozen ? mask | MTL_LAYER_FROZEN : mask & ~MTL_LAYER_FROZEN);
 			}
 		}
 	}
@@ -1483,7 +1489,7 @@ void CVehicle::Reset(bool enterGame)
 		AudioControlId engineAudioTriggerId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_ON", engineAudioTriggerId))
 		{
-			m_pIEntityAudioProxy->ExecuteTrigger(engineAudioTriggerId);
+			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
 		}
 	}
 	else
@@ -1500,7 +1506,7 @@ void CVehicle::Reset(bool enterGame)
 		AudioControlId engineAudioTriggerId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_OFF", engineAudioTriggerId))
 		{
-			m_pIEntityAudioProxy->ExecuteTrigger(engineAudioTriggerId);
+			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
 		}
 	}
 
@@ -1582,7 +1588,7 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 
 			if (m_hasAuthority && !gEnv->bServer && VehicleCVars().v_serverControlled && VehicleCVars().v_clientPredict)
 			{
-				const INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetClientChannel();
+				const INetChannel* pNetChannel = gEnv->pGameFramework->GetClientChannel();
 				if (pNetChannel)
 				{
 					m_smoothedPing = pNetChannel->GetPing(true);
@@ -1808,7 +1814,7 @@ void CVehicle::DebugDraw(const float frameTime)
 
 		for (TVehiclePartVector::iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
 		{
-			gEnv->pRenderer->DrawLabelEx(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 
 			/*IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 			   AABB bounds = AABB::CreateTransformedAABB(ite->second->GetWorldTM(), ite->second->GetLocalBounds());
@@ -1827,7 +1833,7 @@ void CVehicle::DebugDraw(const float frameTime)
 				{
 					const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-					gEnv->pRenderer->DrawLabelEx(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
+					IRenderAuxText::DrawLabelExF(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
 				}
 
 				if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
@@ -1849,7 +1855,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		float damageRatio = GetDamageRatio();
 		string damageStr;
 		damageStr.Format("Health: %.2f/%.2f Damage Ratio: %.2f", m_damageMax * (1.f - damageRatio), m_damageMax, damageRatio);
-		gEnv->pRenderer->DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, "%s", damageStr.c_str());
+		IRenderAuxText::DrawLabelEx(GetEntity()->GetWorldPos() + Vec3(0.f, 0.f, 1.f), 1.5f, color, true, true, damageStr.c_str());
 	}
 	else if (cvars.v_debugdraw == eVDB_ClientPredict)
 	{
@@ -1868,7 +1874,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		{
 			Matrix34 tm;
 			ite->second->GetWorldTM(tm);
-			gEnv->pRenderer->DrawLabelEx(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
+			IRenderAuxText::DrawLabelExF(tm.GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 			pDB->AddDirection(tm.GetTranslation(), 0.25f, tm.GetColumn(1), ColorF(1, 1, 0, 1), 0.05f);
 		}
 	}
@@ -1883,10 +1889,10 @@ void CVehicle::DebugDraw(const float frameTime)
 			if (IVehicleHelper* pHelper = it->second->GetSitHelper())
 				pos = pHelper->GetVehicleSpaceTranslation();
 
-			gEnv->pRenderer->DrawLabelEx(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
+			IRenderAuxText::DrawLabelExF(GetEntity()->GetWorldTM() * pos, 1.1f, seatColor, true, true, "[%s]", it->second->GetName().c_str());
 
 			if (IVehicleHelper* pHelper = it->second->GetEnterHelper())
-				gEnv->pRenderer->DrawLabelEx(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
+				IRenderAuxText::DrawLabelExF(pHelper->GetWorldSpaceTranslation(), 1.0f, seatColor, true, true, "[%s enter]", it->second->GetName().c_str());
 		}
 	}
 
@@ -1899,12 +1905,12 @@ void CVehicle::DebugDraw(const float frameTime)
 			if (SVehicleSoundInfo* info = GetSoundInfo(i))
 			{
 				REINST("update speed RTPC");
-				/*if (ISound* pSound = m_pIEntityAudioProxy->GetSound(info->soundId))
+				/*if (ISound* pSound = m_pIEntityAudioComponent->GetSound(info->soundId))
 				   {
 				   float speed = 0.f;
 				   if (pSound->GetParam("speed", &speed, false))
 				   {
-				    gEnv->pRenderer->Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
+				    IRenderAuxText::Draw2dLabel(50.f, (float)(100+15*GetDebugIndex()), 1.25f, color, false, "%s: speed %.2f", info->name.c_str(), speed);
 				   }
 				   }*/
 			}
@@ -2586,16 +2592,7 @@ bool CVehicle::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-		if (!pEPP && ser.IsWriting())
-		{
-			gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot(ser, type, 0);
-			return true;
-		}
-		else if (!pEPP)
-			return false;
-
-		pEPP->SerializeTyped(ser, type, flags);
+		GetEntity()->PhysicsNetSerializeTyped(ser, type, flags);
 	}
 
 	return true;
@@ -3506,13 +3503,9 @@ void CVehicle::OnPhysPostStep(const EventPhys* pEvent, bool logged)
 			}
 
 			IEntity* pEntity = GetEntity();
-			IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-			if (pEPP)
 			{
-				// Potential optimisation: Should stop CPhysicalProxy::OnPhysicsPostStep from also calling SetPosRotScale as it gets overridden here anyway
-				pEPP->IgnoreXFormEvent(true);
-				pEntity->SetPosRotScale(renderPos, renderRot, Vec3(1.0f, 1.0f, 1.0f));
-				pEPP->IgnoreXFormEvent(false);
+				// Potential optimisation: Should stop CEntityPhysics::OnPhysicsPostStep from also calling SetPosRotScale as it gets overridden here anyway
+				pEntity->SetPosRotScale(renderPos, renderRot, Vec3(1.0f, 1.0f, 1.0f),ENTITY_XFORM_IGNORE_PHYSICS);
 			}
 		}
 	}
@@ -4709,7 +4702,7 @@ const char* CVehicle::GetSoundName(const char* eventName, bool isEngineSound)
 //------------------------------------------------------------------------
 bool CVehicle::EventIdValid(TVehicleSoundEventId eventId)
 {
-	return m_pIEntityAudioProxy && eventId > -1 && eventId < m_soundEvents.size();
+	return m_pIEntityAudioComponent && eventId > -1 && eventId < m_soundEvents.size();
 }
 
 //------------------------------------------------------------------------
@@ -4728,7 +4721,7 @@ SVehicleSoundInfo* CVehicle::GetSoundInfo(TVehicleSoundEventId eventId)
 //		return NULL;
 //
 //	SVehicleSoundInfo& info = m_soundEvents[eventId];
-//	ISound* pSound = m_pIEntityAudioProxy->GetSound(info.soundId);
+//	ISound* pSound = m_pIEntityAudioComponent->GetSound(info.soundId);
 //
 //	if (start && (!pSound || !pSound->IsPlaying()))
 //	{
@@ -4736,10 +4729,10 @@ SVehicleSoundInfo* CVehicle::GetSoundInfo(TVehicleSoundEventId eventId)
 //		Matrix34 tm;
 //		info.pHelper->GetVehicleTM(tm);
 //
-//		info.soundId = m_pIEntityAudioProxy->PlaySound(name, tm.GetTranslation(), tm.GetColumn1(), FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
+//		info.soundId = m_pIEntityAudioComponent->PlaySound(name, tm.GetTranslation(), tm.GetColumn1(), FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
 //	}
 //
-//	return m_pIEntityAudioProxy->GetSound(info.soundId);
+//	return m_pIEntityAudioComponent->GetSound(info.soundId);
 //}
 
 //------------------------------------------------------------------------
@@ -4760,7 +4753,7 @@ void CVehicle::StopSound(TVehicleSoundEventId eventId)
 		return;
 
 	REINST("still needed?");
-	/*if (ISound* pSound = m_pIEntityAudioProxy->GetSound(pInfo->soundId))
+	/*if (ISound* pSound = m_pIEntityAudioComponent->GetSound(pInfo->soundId))
 	   {
 	   if (pSound->IsPlaying())
 	    pSound->Stop();
@@ -4850,15 +4843,15 @@ void CVehicle::EnableAbandonedWarnSound(bool enable)
 		// kill old
 		/*if (m_abandonedSoundId != INVALID_SOUNDID)
 		   {
-		   if (ISound* pSound = m_pIEntityAudioProxy->GetSound(m_abandonedSoundId))
-		    m_pIEntityAudioProxy->StopSound(m_abandonedSoundId);
+		   if (ISound* pSound = m_pIEntityAudioComponent->GetSound(m_abandonedSoundId))
+		    m_pIEntityAudioComponent->StopSound(m_abandonedSoundId);
 
 		   m_abandonedSoundId = INVALID_SOUNDID;
 		   }
 
 		   if (enable)
 		   {
-		   m_abandonedSoundId = m_pIEntityAudioProxy->PlaySound("sounds/interface:multiplayer_interface:mp_vehicle_alarm", Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
+		   m_abandonedSoundId = m_pIEntityAudioComponent->PlaySound("sounds/interface:multiplayer_interface:mp_vehicle_alarm", Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
 		   }*/
 	}
 
@@ -4902,7 +4895,7 @@ void CVehicle::CheckFlippedStatus(const float deltaTime)
 			IVehicleSeat* pSeat = it->second;
 			if (pSeat && pSeat->GetPassenger())
 			{
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 				if (pActor && !pActor->IsPlayer())
 				{
 					ai = true;
@@ -4981,7 +4974,7 @@ void CVehicle::ProcessFlipped()
 		IVehicleSeat* pSeat = it->second;
 		if (pSeat && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && !pActor->IsPlayer())
 			{
 				ai = true;
@@ -4995,11 +4988,11 @@ void CVehicle::ProcessFlipped()
 		// if AI guys inside, we blow up in any case
 		// if not, we only blow up if no players are around
 		const float r = VehicleCVars().v_FlippedExplosionPlayerMinDistance;
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 		if (!gEnv->bMultiplayer)
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			IActor* pActor = gEnv->pGameFramework->GetClientActor();
 			if (pActor)
 			{
 				float distSq = pActor->GetEntity()->GetWorldPos().GetSquaredDistance(worldTM.GetTranslation());
@@ -5714,7 +5707,7 @@ void CVehicle::KillPassengersInExposedSeats(bool includePlayers)
 		IVehicleSeat* pSeat = seatIter->second;
 		if (pSeat && pSeat->IsPassengerExposed() && pSeat->GetPassenger())
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pSeat->GetPassenger());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pSeat->GetPassenger());
 			if (pActor && (!pActor->IsPlayer() || includePlayers))
 			{
 				if (!pActor->IsDead())
@@ -5899,7 +5892,7 @@ const char* CVehicle::GetModification() const
 	return m_modifications.c_str();
 }
 
-IComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID) const
 {
 	switch (eventID)
 	{

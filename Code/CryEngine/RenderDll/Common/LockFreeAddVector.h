@@ -104,7 +104,7 @@ struct lockfree_add_vector
 	size_t   size() const                   { return m_lastIndex; }
 
 	T*       begin()                        { return m_pCurrentBuffer; }
-	const T* begin() const                  { m_pCurrentBuffer; }
+	const T* begin() const                  { return m_pCurrentBuffer; }
 	T*       end()                          { return m_pCurrentBuffer + m_lastIndex; }
 	const T* end() const                    { return m_pCurrentBuffer + m_lastIndex; }
 

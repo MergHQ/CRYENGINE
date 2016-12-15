@@ -499,10 +499,11 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 			}
 		}
 
+		// One iteration for XY projections and one for Z projection
 		for (int nP = 0; nP < 2; nP++)
 			if (bDrawDetailLayersXYZ[nP])
 			{
-				CRenderObject* pDetailObj;
+				CRenderObject* pDetailObj = nullptr;
 
 				CLodValue dymmyLod(1 + nP, 0, 1 + nP);
 				if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pDetailObj, &dymmyLod, passInfo))
@@ -553,6 +554,9 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 											GetRenderer()->GetIRenderAuxGeom()->DrawAABB(aabb, false, ColorB(255 * ((m_nTreeLevel & 1) > 0), 255 * ((m_nTreeLevel & 2) > 0), 0, 255), eBBD_Faceted);
 
 										pMesh->SetCustomTexID(m_nTexSet.nTex0);
+
+										// every draw call uses custom constants (at least surface type id and direction of projection) so we have to duplicate render object
+										pDetailObj = GetRenderer()->EF_DuplicateRO(pDetailObj, passInfo);
 
 										pMesh->AddRenderElements(pMat, pDetailObj, passInfo, EFSLIST_TERRAINLAYER, 1);
 									}
@@ -1556,4 +1560,28 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 	m_pTerrain->m_pSharedRenderMesh->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
 
 	return m_pTerrain->m_pSharedRenderMesh;
+}
+
+uint32 CTerrainNode::GetMaterialsModificationId()
+{
+	uint32 nModificationId = 0;
+
+	for (int i = 0; i < m_lstSurfaceTypeInfo.Count(); i++)
+	{
+		if (!m_lstSurfaceTypeInfo[i].pSurfaceType->HasMaterial() || !m_lstSurfaceTypeInfo[i].HasRM())
+			continue;
+
+		uint8 szProj[] = "XYZ";
+		for (int p = 0; p < 3; p++)
+		{
+			if (SSurfaceType* pSurf = m_lstSurfaceTypeInfo[i].pSurfaceType)
+				if (IMaterial* pMat = pSurf->GetMaterialOfProjection(szProj[p]))
+				{
+					if (CMatInfo* pMatInfo = (CMatInfo*)pMat)
+						nModificationId += pMatInfo->GetModificationId();
+				}
+		}
+	}
+
+	return nModificationId;
 }

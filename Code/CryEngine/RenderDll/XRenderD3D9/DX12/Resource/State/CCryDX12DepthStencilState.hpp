@@ -15,10 +15,10 @@
 
 	#include "DX12/Device/CCryDX12DeviceChild.hpp"
 
-class CCryDX12DepthStencilState : public CCryDX12DeviceChild<ID3D11DepthStencilState>
+class CCryDX12DepthStencilState : public CCryDX12DeviceChild<ID3D11DepthStencilStateToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12DepthStencilState, CCryDX12DeviceChild<ID3D11DepthStencilState> );
+	DX12_OBJECT(CCryDX12DepthStencilState, CCryDX12DeviceChild<ID3D11DepthStencilStateToImplement> );
 
 	static CCryDX12DepthStencilState* Create(const D3D11_DEPTH_STENCIL_DESC* pDepthStencilDesc);
 

@@ -6,8 +6,7 @@
 
 	"game_projects"                         : "GameZero",
 
-	"module_extensions"                     : ["scaleform"],
-	"win_module_extensions"                 : ["audio_fmod", "brofiler", "openvr", "osvr", "eyex", "mono"],
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "eyex", "mono"],
 
 	"modules" :
 	[
@@ -20,7 +19,6 @@
 		"CryEntitySystem",
 		"CryFont",
 		"CryInput",
-		"CryLobby",
 		"CryMovie",
 		"CryNetwork",
 		"CryParticleSystem",
@@ -32,7 +30,12 @@
 		"CrySystem",
 		"CryScaleformHelper",
 		"CryAction",
+		"CrySchematycCore",
+		"CrySchematycSTDEnv",
+		"CrySensorSystem",
 		"HWScripts",
+		
+		"CryDefaultEntities",
 
 		"zlib",
 		"expat",
@@ -46,10 +49,13 @@
 		"yasli",
 		"tomcrypt",
 		"jsmn",
+		"png16",
+		"jpeg",
+		"curl",
 		
 		"CryGameZero"
 	],
-	
+		
 	"win_force_shared_monolithic_build_modules" : 
 	[
 		"CryAudioImplSDLMixer",
@@ -64,7 +70,30 @@
 		"CryScaleformHelper"
 	],
 
-	"win_modules"                           : ["WindowsLauncher", "CryRenderD3D11", "CryRenderD3D12", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "CryAudioImplPortAudio", "oculus", "CryMonoBridge"],
+	"win_modules": [
+		"WindowsLauncher",
+		"CryRenderD3D11",
+		"CryRenderD3D12",
+		"CryRenderOpenGL",
+		"CryAudioImplSDLMixer",
+		"CryAudioImplFmod",
+		"CryAudioImplPortAudio",
+
+		"oculus",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
+		"libvorbisfile",
+		"native_midi",
+		"sdl_mixer",
+		"smpeg",
+		"timidity",
+
+		"CryMonoBridge",
+		"CryUserAnalytics"
+	],
+
 	"win_debug_modules"                     : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
 	"win_profile_modules"                   : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
 
@@ -77,15 +106,48 @@
 	"durango_performance_monolithic_build"  : "True",
 	"durango_release_monolithic_build"      : "True",
 
-	"orbis_modules"                         : [ "OrbisLauncher", "CryRenderD3D11" ],
+	"orbis_modules"                         : [ "OrbisLauncher", "CryRenderGNM" ],
 	"orbis_monolithic_build"                : "True",
 	"orbis_debug_modules"                   : ["CryLiveCreate"],
 	"orbis_profile_modules"                 : ["CryLiveCreate"],
 
-	"linux_modules"                         : [ "LinuxLauncher", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "assert_term" ],
+	"linux_modules":
+	[
+		"LinuxLauncher",
+		"CryRenderOpenGL",
+		"CryAudioImplSDLMixer",
+		"CryAudioImplFmod",
+		"assert_term",
+
+		"libmodplug",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
+		"libvorbisfile",
+		"native_midi",
+		"sdl_mixer",
+		"smpeg",
+		"timidity"
+	],
 
 	"darwin_modules"                        : [ "MacLauncher", "CryRenderOpenGL" ],
 
-	"android_modules"                       : [ "AndroidLauncher", "CryRenderOpenGL" ],
-	"android_monolithic_build"              : "True"
+	"android_modules":
+	[
+		"AndroidLauncher",
+		"CryRenderOpenGL",
+		"CryAudioImplSDLMixer",
+
+		"libmodplug",
+		"flac",
+		"libmikmod",
+		"libogg",
+		"libvorbis",
+		"libvorbisfile",
+		"native_midi",
+		"sdl_mixer",
+		"smpeg",
+		"timidity"
+	]
 }

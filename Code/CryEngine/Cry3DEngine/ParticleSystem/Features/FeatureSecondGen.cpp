@@ -10,6 +10,7 @@
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleFeature.h"
 #include "ParticleSystem/ParticleEmitter.h"
+#include "FeatureCollision.h"
 
 CRY_PFX2_DBG
 
@@ -236,7 +237,9 @@ public:
 		TParticleHeap::Array<TParticleId> triggers(*context.m_pMemHeap);
 		triggers.reserve(context.m_container.GetNumSpawnedParticles());
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
-		triggers.push_back(particleId);
+		{
+			triggers.push_back(particleId);
+		}
 		CRY_PFX2_FOR_END;
 		TriggerParticles(context, triggers.data(), triggers.size());
 	}
@@ -265,5 +268,42 @@ public:
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", colorSecondGen);
+
+//////////////////////////////////////////////////////////////////////////
+
+class CFeatureSecondGenOnCollide : public CFeatureSecondGenBase
+{
+public:
+	CRY_PFX2_DECLARE_FEATURE
+
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		CFeatureSecondGenBase::AddToComponent(pComponent, pParams);
+		if (GetNumConnectors() != 0)
+			pComponent->AddToUpdateList(EUL_Update, this);
+	}
+
+	virtual void Update(const SUpdateContext& context) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		CParticleContainer& container = context.m_container;
+		const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+		TParticleHeap::Array<TParticleId> triggers(*context.m_pMemHeap);
+		triggers.reserve(container.GetLastParticleId());
+
+		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		{
+			const SContactPoint contact = contactPoints.Load(particleId);
+			if (contact.m_flags & uint(EContactPointsFlags::Collided))
+				triggers.push_back(particleId);
+		}
+		CRY_PFX2_FOR_END;
+
+		TriggerParticles(context, triggers.data(), triggers.size());
+	}
+};
+
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnCollide, "SecondGen", "OnCollide", colorSecondGen);
 
 }

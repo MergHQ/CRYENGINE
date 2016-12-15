@@ -4,16 +4,16 @@
 	<Tool Filename="cl" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false" VCCompiler="true"/>
 	<Tool Filename="link" AllowRemote="false" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false" VCCompiler="false"/>		
 	
-	<Tool Filename="orbis-clang" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
-	<Tool Filename="orbis-clang++" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="orbis-clang" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="orbis-clang++" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
 	
 	<Tool Filename="cppcheck" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
 	
-	<Tool Filename="x86_64-linux-gnu-gcc" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
-	<Tool Filename="x86_64-linux-gnu-g++" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="x86_64-linux-gnu-gcc" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="x86_64-linux-gnu-g++" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
 	
-	<Tool Filename="arm-linux-androideabi-gcc++.exe" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
-	<Tool Filename="arm-linux-androideabi-g++.exe" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="arm-linux-androideabi-gcc++.exe" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
+	<Tool Filename="arm-linux-androideabi-g++.exe" AllowRemoteIf="-c,/c" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>		
 	
 	<Tool Filename="swig" AllowRemote="true" AllowIntercept="false" DeriveCaptionFrom="lastparam" AllowRestartOnLocal="false"/>
 	

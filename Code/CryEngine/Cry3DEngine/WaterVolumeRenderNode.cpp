@@ -925,6 +925,8 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 	{
 		if ((insideWaterVolume || (!isFastpath && aboveWaterVolumeSurface)) && m_pVolumeRE[fillThreadID])
 		{
+			CRY_ASSERT(!(m_pVolumeRE[fillThreadID]->m_drawWaterSurface));
+
 			// fill in data for render object
 			if (!IsAttachedToEntity())
 			{
@@ -937,8 +939,11 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 			}
 			pROVol->m_fSort = 0;
 
+			auto pMaterial = m_wvParams[fillThreadID].m_viewerInsideVolume ? m_pWaterBodyOutofMat.get() : m_pWaterBodyIntoMat.get();
+			pROVol->m_pCurrMaterial = pMaterial;
+
 			// get shader item
-			SShaderItem& shaderItem(m_wvParams[fillThreadID].m_viewerInsideVolume ? m_pWaterBodyOutofMat->GetShaderItem(0) : m_pWaterBodyIntoMat->GetShaderItem(0));
+			SShaderItem& shaderItem(pMaterial->GetShaderItem(0));
 
 			// add to renderer
 			GetRenderer()->EF_AddEf(m_pVolumeRE[fillThreadID], shaderItem, pROVol, passInfo, EFSLIST_WATER_VOLUMES, aboveWaterVolumeSurface ? 0 : 1);
@@ -947,6 +952,8 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 
 	// submit surface
 	{
+		CRY_ASSERT(m_pSurfaceRE[fillThreadID]->m_drawWaterSurface);
+
 		// fill in data for render object
 		if (!IsAttachedToEntity())
 		{
@@ -958,6 +965,8 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 			pROSurf->m_ObjFlags |= FOB_TRANS_MASK;
 		}
 		pROSurf->m_fSort = 0;
+
+		pROSurf->m_pCurrMaterial = m_pMaterial;
 
 		// get shader item
 		SShaderItem& shaderItem(m_pMaterial->GetShaderItem(0));

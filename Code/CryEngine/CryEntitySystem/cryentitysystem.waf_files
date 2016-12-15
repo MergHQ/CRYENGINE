@@ -7,9 +7,9 @@
 			"stdafx.h"
 		]
 	},
-	"CryEntitySystem_proxy_uber.cpp":
+	"CryEntitySystem_component_uber.cpp":
 	{
-		"Proxy/Script":
+		"Components/Script":
 		[
 			"EntityScript.cpp",
 			"ScriptBind_Entity.cpp",
@@ -20,7 +20,7 @@
 			"ScriptProperties.h",
 			"ScriptProxy.h"
 		],
-		"Proxy/Physics":
+		"Components/Physics":
 		[
 			"PhysicsEventListener.cpp",
 			"PhysicsProxy.cpp",
@@ -29,59 +29,54 @@
 			"PhysicsProxy.h",
 			"RopeProxy.h"
 		],
-		"Proxy/Render":
+		"Components/Render":
 		[
-			"EntityObject.cpp",
-			"RenderProxy.cpp",
-			"EntityObject.h",
+			"EntitySlot.cpp",
+			"EntitySlot.h",
+      "RenderProxy.cpp",
 			"RenderProxy.h"
 		],
-		"Proxy/Area":
+		"Components/Area":
 		[	
 			"AreaProxy.cpp",
 			"AreaProxy.h"
 		],
-		"Proxy/FlowGraph":
+		"Components/FlowGraph":
 		[	
 			"FlowGraphProxy.cpp",
 			"FlowGraphProxy.h"
 		],
-		"Proxy/SubstitutionProxy":
+		"Components/SubstitutionProxy":
 		[
 			"SubstitutionProxy.cpp",
 			"SubstitutionProxy.h"
 		],	
-		"Proxy/TriggerProxy":
+		"Components/TriggerProxy":
 		[
 			"TriggerProxy.cpp",
 			"TriggerProxy.h"
 		],
-		"Proxy/CameraProxy":
+		"Components/CameraProxy":
 		[
 			"CameraProxy.cpp",
 			"CameraProxy.h"
 		],	
-		"Proxy/TrackView":
+		"Components/TrackView":
 		[
 			"EntityNodeProxy.cpp",
 			"EntityNodeProxy.h"
 		],
-		"Proxy/Audio":
+		"Components/Audio":
 		[
 			"EntityAudioProxy.cpp",
 			"EntityAudioProxy.h"
 		],
-		"Proxy/Attributes":
-		[
-			"EntityAttributesProxy.cpp",
-			"EntityAttributesProxy.h"
-		],
-		"Proxy/ClipVolume":
+		"Components/ClipVolume":
 		[
 			"ClipVolumeProxy.cpp",
 			"ClipVolumeProxy.h"
 		],
-		"Proxy/DynamicResponse":
+		"Components/DynamicResponse":
 		[
 			"DynamicResponseProxy.cpp",
 			"DynamicResponseProxy.h"
@@ -101,7 +96,6 @@
 			"AffineParts.cpp",
 			"AreaSolid.cpp",
 			"BSPTree3D.cpp",
-			"ComponentEventDistributer.cpp",
 			"CryEntityDLL.cpp",	
 			"Entity.cpp",
 			"EntityArchetype.cpp",
@@ -110,7 +104,6 @@
 			"EntitySystem.cpp",
 			"EntityTimeoutList.cpp",
 			"AffineParts.h",
-			"ComponentEventDistributer.h",
 			"Entity.h",
 			"EntityArchetype.h",
 			"EntityCVars.h",
@@ -118,6 +111,7 @@
 			"EntityLayer.h",
 			"EntitySystem.h",
 			"EntityTimeoutList.h",
+			"EntityComponentsVector.h",
 			"SaltBufferArray.h",
 			"SaltHandle.h",
 			"CharacterBoneAttachmentManager.h",

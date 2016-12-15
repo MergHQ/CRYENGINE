@@ -1,0 +1,21 @@
+{
+	"NoUberFile" :
+	{
+		"Root" :
+		[
+		  "StdAfx.cpp"
+		]
+	},
+  "CryUserAnalytics_uber_0.cpp": {
+   
+    "Root": [
+      "CryUserAnalyticsDLL.cpp",
+      "CryUserAnalyticsDLL.h",
+      "UserAnalytics.cpp",
+      "UserAnalytics.h",
+      "resource.h",
+      "StdAfx.cpp",
+      "StdAfx.h"
+    ]
+  }
+}

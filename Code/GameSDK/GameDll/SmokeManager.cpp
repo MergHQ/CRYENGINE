@@ -54,7 +54,7 @@ CSmokeManager::CSmokeManager()
 	, m_clientInSmoke(false)
 	, m_loadedParticleEffects(false)
 {
-	std::memset(PRFETCH_PADDING, 0, sizeof(PRFETCH_PADDING));
+	memset(PRFETCH_PADDING, 0, sizeof(PRFETCH_PADDING));
 	Init();
 }
 
@@ -642,7 +642,7 @@ void CSmokeManager::DrawSmokeDebugSpheres()
 
 		// Draw blur amount to screen
 		ColorF textCol(0.0f,1.0f,0.0f,1.0f);
-		gEnv->pRenderer->Draw2dLabel(50.0f,20.0f,1.4f,&textCol.r,false,"Client Blur Amount: %f",m_clientBlurAmount);
+		IRenderAuxText::Draw2dLabel(50.0f,20.0f,1.4f,&textCol.r,false,"Client Blur Amount: %f",m_clientBlurAmount);
 	}
 }
 #endif

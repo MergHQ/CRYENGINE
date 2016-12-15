@@ -46,7 +46,7 @@ public:
 
 	void                Release() { delete this; };
 
-	virtual bool        RegisterGameRules(const char* rulesName, const char* extensionName);
+	virtual bool        RegisterGameRules(const char* rulesName, const char* extensionName, bool bUseScript);
 	virtual bool        CreateGameRules(const char* rulesName);
 	virtual bool        DestroyGameRules();
 	virtual bool        HaveGameRules(const char* rulesName);
@@ -62,8 +62,8 @@ public:
 	void                GetMemoryStatistics(ICrySizer* s);
 
 private:
-	SGameRulesDef*         GetGameRulesDef(const char* name);
-	static IEntityProxyPtr CreateGameObject(
+	SGameRulesDef*           GetGameRulesDef(const char* name);
+	static IEntityComponent* CreateGameObject(
 	  IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
 
 	IGameFramework* m_pGameFW;

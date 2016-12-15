@@ -1363,7 +1363,7 @@ string CDownloadableResource::GetStateAsString(
 void CDownloadMgr::DbgList(
 	IConsoleCmdArgs			*pInArgs)
 {
-	CDownloadMgr			*pDlm=static_cast<CGame*>(gEnv->pGame)->GetDownloadMgr();
+	CDownloadMgr			*pDlm=static_cast<CGame*>(g_pGame)->GetDownloadMgr();
 	int						count=0;
 
 	for (TResourceVector::iterator iter=pDlm->m_resources.begin(); iter!=pDlm->m_resources.end(); ++iter)
@@ -1397,7 +1397,7 @@ void CDownloadMgr::DbgList(
 void CDownloadMgr::DbgPurge(
 	IConsoleCmdArgs				*pInArgs)
 {
-	CDownloadMgr				*pDlm=static_cast<CGame*>(gEnv->pGame)->GetDownloadMgr();
+	CDownloadMgr				*pDlm=static_cast<CGame*>(g_pGame)->GetDownloadMgr();
 
 	if (pInArgs->GetArgCount()==2)
 	{
@@ -1431,7 +1431,7 @@ void CDownloadMgr::DbgPurge(
 void CDownloadMgr::DbgCat(
 	IConsoleCmdArgs				*pInArgs)
 {
-	CDownloadMgr				*pDlm=static_cast<CGame*>(gEnv->pGame)->GetDownloadMgr();
+	CDownloadMgr				*pDlm=static_cast<CGame*>(g_pGame)->GetDownloadMgr();
 
 	if (pInArgs->GetArgCount()==2)
 	{

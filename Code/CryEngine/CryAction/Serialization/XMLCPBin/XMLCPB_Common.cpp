@@ -94,7 +94,7 @@ const char* s_constStrings[] =
 
 void XMLCPB::InitializeDataTypeInfo()
 {
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(s_constStrings) == DT_NUM_CONST_STR);
+	static_assert(CRY_ARRAY_COUNT(s_constStrings) == DT_NUM_CONST_STR, "Unexpected array size!");
 
 	// str constant types initialization
 	for (int i = DT_FIRST_CONST_STR; i <= DT_LAST_CONST_STR; i++)

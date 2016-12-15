@@ -821,107 +821,6 @@ bool CObjManager::GetStaticObjectBBox(int nType, Vec3& vBoxMin, Vec3& vBoxMax, i
 	return true;
 }
 
-void CObjManager::AddDecalToRenderer(float fDistance,
-                                     IMaterial* pMat,
-                                     const uint8 sortPrio,
-                                     Vec3 right,
-                                     Vec3 up,
-                                     const UCol& ucResCol,
-                                     const uint8 uBlendType,
-                                     const Vec3& vAmbientColor,
-                                     Vec3 vPos,
-                                     const int nAfterWater,
-                                     const SRenderingPassInfo& passInfo,
-                                     CVegetation* pVegetation)
-{
-	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AddDecalToRenderer");
-
-	bool bBending = pVegetation && pVegetation->m_pTempData && !!pVegetation->m_pTempData->userData.m_Bending.m_vBending;
-
-	if (bBending)
-	{
-		// transfer decal into object space
-		Matrix34A objMat;
-		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, 0, &objMat);
-		assert(pEntObject);
-		if (pEntObject)
-		{
-			objMat.Invert();
-			vPos = objMat.TransformPoint(vPos);
-			right = objMat.TransformVector(right);
-			up = objMat.TransformVector(up);
-		}
-	}
-
-	// repeated objects are free imedeately in renderer
-	CRenderObject* pOb(GetIdentityCRenderObject(passInfo.ThreadID()));
-	if (!pOb)
-		return;
-
-	if (bBending)
-	{
-		pVegetation->GetEntityStatObj(0, 0, &pOb->m_II.m_Matrix);
-		pOb->m_ObjFlags |= FOB_TRANS_MASK;
-		CStatObj* pBody = pVegetation->GetStatObj();
-		assert(pBody);
-		if (pBody)
-			Get3DEngine()->SetupBending(pOb, pVegetation, pBody->m_fRadiusVert, passInfo);
-	}
-
-	// prepare render object
-	pOb->m_fDistance = fDistance;
-	pOb->m_fAlpha = (float)ucResCol.bcolor[3] / 255.f;
-	pOb->m_II.m_AmbColor = vAmbientColor;
-	pOb->m_fSort = 0;
-	pOb->m_ObjFlags |= FOB_DECAL | FOB_INSHADOW;
-	pOb->m_nSort = sortPrio;
-
-	SVF_P3F_C4B_T2F pVerts[4];
-	uint16 pIndices[6];
-
-	// TODO: determine whether this is a decal on opaque or transparent geometry
-	// (put it in the respective renderlist for correct shadowing)
-	// fill general vertex data
-	pVerts[0].xyz = (-right - up) + vPos;
-	pVerts[0].st = Vec2(0, 1);
-	pVerts[0].color.dcolor = ~0;
-
-	pVerts[1].xyz = (right - up) + vPos;
-	pVerts[1].st = Vec2(1, 1);
-	pVerts[1].color.dcolor = ~0;
-
-	pVerts[2].xyz = (right + up) + vPos;
-	pVerts[2].st = Vec2(1, 0);
-	pVerts[2].color.dcolor = ~0;
-
-	pVerts[3].xyz = (-right + up) + vPos;
-	pVerts[3].st = Vec2(0, 0);
-	pVerts[3].color.dcolor = ~0;
-
-	// prepare tangent space (tangent, bitangent) and fill it in
-	Vec3 rightUnit(right.GetNormalized());
-	Vec3 upUnit(up.GetNormalized());
-
-	SPipTangents pTangents[4];
-
-	pTangents[0] = SPipTangents(rightUnit, -upUnit, -1);
-	pTangents[1] = pTangents[0];
-	pTangents[2] = pTangents[0];
-	pTangents[3] = pTangents[0];
-
-	// fill decals topology (two triangles)
-	pIndices[0] = 0;
-	pIndices[1] = 1;
-	pIndices[2] = 2;
-
-	pIndices[3] = 0;
-	pIndices[4] = 2;
-	pIndices[5] = 3;
-
-	GetRenderer()->EF_AddPolygonToScene(pMat->GetShaderItem(), 4, pVerts, pTangents, pOb, passInfo, pIndices, 6, nAfterWater);
-}
-
 void CObjManager::GetMemoryUsage(class ICrySizer* pSizer) const
 {
 	{
@@ -1064,6 +963,8 @@ void StatInstGroup::Update(CVars* pCVars, int nGeomDetailScreenRes)
 		m_dwRndFlags |= ERF_PICKABLE;
 	if (!bAllowIndoor)
 		m_dwRndFlags |= ERF_OUTDOORONLY;
+	if (bGIMode)
+		m_dwRndFlags |= ERF_GI_MODE_BIT0; // corresponds to IRenderNode::eGM_StaticVoxelization
 
 	uint32 nSpec = (uint32)minConfigSpec;
 	if (nSpec != 0)
@@ -1103,7 +1004,7 @@ void StatInstGroup::Update(CVars* pCVars, int nGeomDetailScreenRes)
 	}
 
 #if defined(FEATURE_SVO_GI)
-	IMaterial* pMat = pMaterial ? pMaterial : (pStatObj ? pStatObj->GetMaterial() : 0);
+	IMaterial* pMat = pMaterial ? pMaterial.get() : (pStatObj ? pStatObj->GetMaterial() : 0);
 	if (pMat && (Cry3DEngineBase::GetCVars()->e_svoTI_Active >= 0) && (gEnv->IsEditor() || Cry3DEngineBase::GetCVars()->e_svoTI_Apply))
 		pMat->SetKeepLowResSysCopyForDiffTex();
 #endif
@@ -1265,6 +1166,8 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 //////////////////////////////////////////////////////////////////////////
 bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const
 {
+	CRY_ASSERT(pRenderObject == nullptr);
+
 	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA()))
 	{
 		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
@@ -1288,69 +1191,35 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
 		uint32 passMask = 1 << passId;
 
-		if (pTempData)
-			pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
-
-		if (pRenderObject)
+		// Do we have to create a new permanent render object?
+		if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
 		{
-			// if input pRenderObject is not nullptr it is a permanent object that was already created and filled and can be immediately added to the render view.
-			assert(pRenderObject->m_bPermanent);
-
-			passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-			int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-			if (previousMask & passMask) // Object drawn once and can be used to fast add it.
-			{
-				if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-					GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
-
-				return true;
-			}
-			// Permanent object needs to be filled first time,
-			return false;
-		}
-		else
-		{
-			assert(pTempData);
-
-			// Need to create a new render object
 			// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-			{
-				WriteLock lock(pTempData->userData.permanentObjectCreateLock);
+			WriteLock lock(pTempData->userData.permanentObjectCreateLock);
 
-				// If other thread was locked on critical section, and object was already created before, we need just to add it to the view and not create again
-				pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
-				if (pRenderObject)
-				{
-					passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-					int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-					if (previousMask & passMask) // Object drawn once and can be used to fast add it.
-					{
-						if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-							GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
-
-						return true;
-					}
-					// Permanent object needs to be filled first time,
-					return false;
-				}
-				// Mark ready mask for that new object
-				pRenderObject = gEnv->pRenderer->EF_GetObject();
-				passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
-
-				CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-				MemoryBarrier();
-				pTempData->userData.arrPermanentRenderObjects[nLod] = pRenderObject;
-
-				// Store resources modification checksum
-				if(pTempData->IsValid())
-					pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
-			}
-
-			// Return false to fill the object.
-			return false;
+			// Did another thread succeed in creating the object in the meantime?
+			if (pTempData->userData.arrPermanentRenderObjects[nLod] == nullptr)
+				pTempData->userData.arrPermanentRenderObjects[nLod] = gEnv->pRenderer->EF_GetObject();
 		}
+
+		pRenderObject = pTempData->userData.arrPermanentRenderObjects[nLod];
+		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
+
+		// Has this object already been filled?
+		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
+		if (previousMask & passMask) // Object drawn once => fast path.
+		{
+			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
+				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
+
+			return true;
+		}
+
+		// Permanent object needs to be filled first time,
+		if (pTempData->IsValid())
+			pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+
+		return false;
 	}
 
 	pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());
@@ -1359,7 +1228,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const
+uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const
 {
 	uint32 nModificationId = 1;
 
@@ -1368,6 +1237,9 @@ uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode * pOwnerNode) c
 
 	if (CMatInfo* pMatInfo = (CMatInfo*)pOwnerNode->GetMaterial())
 		nModificationId += pMatInfo->GetModificationId();
+
+	if (pOwnerNode->GetRenderNodeType() == eERType_TerrainSector)
+		nModificationId += ((CTerrainNode*)pOwnerNode)->GetMaterialsModificationId();
 
 	return nModificationId;
 }

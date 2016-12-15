@@ -1,0 +1,20 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineModule(
+		target      = 'CryPhysX',
+		vs_filter   = 'CryEngine',		
+		file_list   = 'cryphysics.waf_files',
+		
+		includes   = [ Path('Code/SDKs/PhysX/Include') ],
+		
+		win_libpath = [ Path('Code/SDKs/PhysX/Lib/vc14win64/') ],
+#		win_lib = ['PhysX3_x64', 'PhysX3Common_x64', 'PhysX3Extensions', 'PhysXProfileSDK', 'PhysXVisualDebuggerSDK', 'PhysX3Cooking_x64'],
+		features = ['copy_physx_modules'],
+
+		pch_debug         = '../StdAfx.cpp',
+		pch_profile       = '../StdAfx.cpp',
+		
+		orbis_cxxflags  = ['-Wno-constant-conversion', '-Wno-null-dereference', '-Wno-array-bounds' ],
+	)

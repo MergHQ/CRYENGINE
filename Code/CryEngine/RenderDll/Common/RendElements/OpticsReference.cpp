@@ -66,8 +66,8 @@ void COpticsReference::Invalidate()
 		m_OpticsList[i]->Invalidate();
 }
 
-void COpticsReference::Render(SLensFlareRenderParam* pParam, const Vec3& vPos)
+void COpticsReference::RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos)
 {
 	for (int i = 0, iSize(m_OpticsList.size()); i < iSize; ++i)
-		m_OpticsList[i]->Render(pParam, vPos);
+		m_OpticsList[i]->RenderPreview(pParam, vPos);
 }

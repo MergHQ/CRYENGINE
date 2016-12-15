@@ -502,7 +502,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 		return;
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	pObj->m_fSort	= RendParams.fCustomSortOffset;
+	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
 	uint64 uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player
@@ -841,10 +841,6 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 		return NULL;
 	}
 
-	uint32 skinningQuatCount = m_arrRemapTable.size();
-	uint32 skinningQuatCountMax = pMaster->GetSkinningTransformationCount() + m_pAttachmentManager->GetExtraBonesCount();
-	uint32 nNumBones = min(skinningQuatCount, skinningQuatCountMax);	
-
 	// get data to fill
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();
 	int nList = nFrameID % 3;
@@ -858,6 +854,8 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 	if(pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID )
 	{
 		pMaster->GetSkinningData(); // force master to compute skinning data if not available
+		assert(pMaster->arrSkinningRendererData[nList].nFrameID == nFrameID);
+		assert(pMaster->arrSkinningRendererData[nList].pSkinningData);
 	}
 
 	uint32 nCustomDataSize = 0;
@@ -920,6 +918,10 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 		}
 	}
 
+	const uint32 skinningQuatCount = m_arrRemapTable.size();
+	const uint32 skinningQuatCountMax = pMaster->arrSkinningRendererData[nList].pSkinningData->nNumBones;
+	const uint32 nNumBones = std::min(skinningQuatCount, skinningQuatCountMax);
+
 	SSkinningData *pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());	
 	pSkinningData->pCustomTag = this;
 	pSkinningData->pRenderMesh = m_pModelSkin->GetIRenderMesh(nRenderLOD);
@@ -951,14 +953,19 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool bVertexAnimatio
 	return pSkinningData;
 }
 
-void CAttachmentSKIN::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
+SMeshLodInfo CAttachmentSKIN::ComputeGeometricMean() const
 {
+	SMeshLodInfo lodInfo;
+	lodInfo.Clear();
+
 	CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(0);
 	if (pModelMesh)
 	{
 		lodInfo.fGeometricMean = pModelMesh->m_geometricMeanFaceArea;
 		lodInfo.nFaceCount = pModelMesh->m_faceCount;
 	}
+
+	return lodInfo;
 }
 
 void CAttachmentSKIN::HideAttachment( uint32 x ) 

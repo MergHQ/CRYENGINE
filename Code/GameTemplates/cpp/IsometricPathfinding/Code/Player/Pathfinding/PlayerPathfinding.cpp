@@ -15,15 +15,26 @@ CPlayerPathFinding::CPlayerPathFinding()
 
 CPlayerPathFinding::~CPlayerPathFinding()
 {
-	gEnv->pAISystem->GetMovementSystem()->UnregisterEntity(GetEntityId());
-
-	SAFE_RELEASE(m_pPathFollower);
-	SAFE_RELEASE(m_pFoundPath);
+	Reset();
 }
 
 void CPlayerPathFinding::PostInit(IGameObject *pGameObject)
 {
-	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+	InitAI();
+}
+
+void CPlayerPathFinding::Reset()
+{
+	gEnv->pAISystem->GetMovementSystem()->UnregisterEntity(GetEntityId());
+	m_pPathFollower.reset();
+	SAFE_RELEASE(m_pFoundPath);
+}
+
+void CPlayerPathFinding::InitAI()
+{
+	Reset();
+
+	m_pPlayer = static_cast<CPlayer *>(GetGameObject()->QueryExtension("Player"));
 
 	m_navigationAgentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID("MediumSizedCharacters");
 
@@ -44,7 +55,7 @@ void CPlayerPathFinding::PostInit(IGameObject *pGameObject)
 
 		params.use2D = false;
 
-		m_pPathFollower = gEnv->pAISystem->CreatePathFollower(params);
+		m_pPathFollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(params, m_pathObstacles);
 	}
 
 	m_movementAbility.b3DMove = true;
@@ -60,6 +71,8 @@ void CPlayerPathFinding::RequestMoveTo(const Vec3 &position)
 	movementRequest.callback = functor(*this, &CPlayerPathFinding::MovementRequestCallback);
 	movementRequest.style.SetSpeed(MovementStyle::Walk);
 
+	movementRequest.type = MovementRequest::Type::MoveTo;
+
 	m_state = Movement::StillFinding;
 
 	m_movementRequestId = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
@@ -70,6 +83,8 @@ void CPlayerPathFinding::RequestPathTo(MNMPathRequest &request)
 	m_state = Movement::StillFinding;
 
 	request.resultCallback = functor(*this, &CPlayerPathFinding::OnMNMPathResult);
+	request.agentTypeID = m_navigationAgentTypeId;
+
 	m_pathFinderRequestId = gEnv->pAISystem->GetMNMPathfinder()->RequestPathTo(this, request);
 }
 

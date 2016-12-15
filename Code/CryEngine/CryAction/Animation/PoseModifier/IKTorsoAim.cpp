@@ -76,11 +76,6 @@ CIKTorsoAim::CIKTorsoAim()
 {
 	Init();
 };
-
-CIKTorsoAim::~CIKTorsoAim()
-{
-}
-
 //
 
 void CIKTorsoAim::Init()
@@ -150,8 +145,8 @@ bool CIKTorsoAim::Prepare(const SAnimationPoseModifierParams& params)
 	const float FONT_COLOUR[4] = { 1, 1, 1, 1 };
 	if (ShowDebug)
 	{
-		gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "Torso Aim Pose: %f (%f, %f, %f)", m_params.blend, m_params.targetDirection.x, m_params.targetDirection.y, m_params.targetDirection.z);
-		gEnv->pRenderer->Draw2dLabel(XPOS, YPOS + 15.0f, FONT_SIZE, FONT_COLOUR, false, "Absolute Position: (%f, %f, %f)", m_setParams.absoluteTargetPosition.x, m_setParams.absoluteTargetPosition.y, m_setParams.absoluteTargetPosition.z);
+		IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "Torso Aim Pose: %f (%f, %f, %f)", m_params.blend, m_params.targetDirection.x, m_params.targetDirection.y, m_params.targetDirection.z);
+		IRenderAuxText::Draw2dLabel(XPOS, YPOS + 15.0f, FONT_SIZE, FONT_COLOUR, false, "Absolute Position: (%f, %f, %f)", m_setParams.absoluteTargetPosition.x, m_setParams.absoluteTargetPosition.y, m_setParams.absoluteTargetPosition.z);
 	}
 
 #if DO_DEBUG_RENDER

@@ -102,7 +102,7 @@ void CAudioSignalPlayer::ExecuteCommands( EntityId entityID, const CGameAudio::C
 
 void CAudioSignalPlayer::SetPaused( EntityId entityID , const bool paused)
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -150,7 +150,7 @@ void CAudioSignalPlayer::SetSignal( TAudioSignalID signalID )
 
 bool CAudioSignalPlayer::IsPlaying( EntityId entityID ) const
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 		
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -168,7 +168,7 @@ bool CAudioSignalPlayer::IsPlaying( EntityId entityID ) const
 
 void CAudioSignalPlayer::SetVolume( EntityId entityID, float vol )
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -184,7 +184,7 @@ void CAudioSignalPlayer::SetVolume( EntityId entityID, float vol )
 
 void CAudioSignalPlayer::SetOffsetPos( EntityId entityID, const Vec3& pos )
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 	if (pProxy)
 	{
 		const size_t numSounds = m_playingSoundIDs.size();
@@ -201,7 +201,7 @@ void CAudioSignalPlayer::SetOffsetPos( EntityId entityID, const Vec3& pos )
 
 void CAudioSignalPlayer::SetCurrentSamplePos( EntityId entityID, float relativePosition )
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -221,7 +221,7 @@ void CAudioSignalPlayer::SetCurrentSamplePos( EntityId entityID, float relativeP
 float CAudioSignalPlayer::GetCurrentSamplePos( EntityId entityID )
 {
 	float position = 0.0f;
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -245,7 +245,7 @@ float CAudioSignalPlayer::GetCurrentSamplePos( EntityId entityID )
 
 void CAudioSignalPlayer::SetParam( EntityId entityID, const char* paramName, float paramValue )
 {
-	/*IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+	/*IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 	
 	const size_t numSounds = m_playingSoundIDs.size();
 	for (size_t s=0; s<numSounds; ++s)
@@ -309,10 +309,10 @@ void CAudioSignalPlayer::SetParam( EntityId entityID, const char* paramName, flo
 //
 //	if(pEntity)
 //	{
-//		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-//		if(pIEntityAudioProxy)
+//		IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+//		if(pIEntityAudioComponent)
 //		{
-//			const bool bResult = pIEntityAudioProxy->PlaySound(pSound);
+//			const bool bResult = pIEntityAudioComponent->PlaySound(pSound);
 //			if (!bResult)
 //			{
 //				pSound->Stop();
@@ -371,7 +371,7 @@ void CAudioSignalPlayer::SetParam( EntityId entityID, const char* paramName, flo
 //
 //void CAudioSignalPlayer::StopSound( const tSoundID soundID, EntityId entityID, const ESoundStopMode stopMode)
 //{
-//	IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+//	IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 //	if (pProxy)
 //		pProxy->StopSound(soundID);
 //	else
@@ -387,7 +387,7 @@ void CAudioSignalPlayer::SetParam( EntityId entityID, const char* paramName, flo
 //
 //bool CAudioSignalPlayer::IsSoundLooped( const tSoundID soundID, EntityId entityID )
 //{
-//	IEntityAudioProxy* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
+//	IEntityAudioComponent* pProxy = CGameAudioUtils::GetEntityAudioProxy( entityID );
 //	ISound* pSound = GetSoundInterface( pProxy, soundID );
 //	
 //	return (pSound && pSound->GetFlags() & FLAG_SOUND_LOOP);
@@ -395,7 +395,7 @@ void CAudioSignalPlayer::SetParam( EntityId entityID, const char* paramName, flo
 //
 ////////////////////////////////////////////////////////////////////////////
 //
-//ISound* CAudioSignalPlayer::GetSoundInterface( IEntityAudioProxy* pProxy, tSoundID soundID ) const
+//ISound* CAudioSignalPlayer::GetSoundInterface( IEntityAudioComponent* pProxy, tSoundID soundID ) const
 //{
 //	if (soundID != INVALID_SOUNDID)
 //	{

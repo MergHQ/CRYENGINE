@@ -294,8 +294,8 @@ public:
 	using super_type::interpolate;
 
 	// Implement serialization.
-	string ToString(FToString flags = 0) const;
-	bool   FromString(cstr str, FFromString flags = 0);
+	string ToString(FToString flags = {}) const;
+	bool   FromString(cstr str, FFromString flags = {});
 
 	// Access operators
 	T operator()(float fTime) const
@@ -748,9 +748,9 @@ struct ParticleParams
 
 		void Correct()
 		{
-			nFirstTile = min<uint>(nFirstTile, nTilesX * nTilesY - 1);
-			nAnimFramesCount = min<uint>(nAnimFramesCount, GetTileCount());
-			nVariantCount = min<uint>(nVariantCount, GetTileCount() / nAnimFramesCount);
+			nFirstTile = std::min<uint8>(nFirstTile, nTilesX * nTilesY - 1);
+			nAnimFramesCount = std::min<uint8>(nAnimFramesCount, GetTileCount());
+			nVariantCount = std::min<uint8>(nVariantCount, GetTileCount() / nAnimFramesCount);
 		}
 
 		AUTO_STRUCT_INFO;
@@ -1010,7 +1010,8 @@ struct ParticleParams
 		fSphericalApproximation(1.f),
 		fVolumeThickness(1.0f),
 		fSoundFXParam(1.f),
-		eConfigMax(eConfigMax.VeryHigh),
+		eConfigMax(EConfigSpecBrief::VeryHigh),
+		eConfigMin(EConfigSpecBrief::Low),
 		fFadeAtViewCosAngle(0.f)
 	{}
 

@@ -39,8 +39,8 @@
 #define PF_MERGE_SHIFT        12
 #define PF_INSTANCE           0x100000
 #define PF_MATERIAL           0x200000
-#define PF_LIGHT              0x400000
-#define PF_SHADOWGEN          0x800000
+// unused                     0x400000
+// unused                     0x800000
 #define PF_CUSTOM_BINDED      0x1000000
 #define PF_CANMERGED          0x2000000
 #define PF_AUTOMERGED         0x4000000
@@ -80,14 +80,11 @@ enum ECGParam
 	ECGP_PI_WrinklesMask0,
 	ECGP_PI_WrinklesMask1,
 	ECGP_PI_WrinklesMask2,
-	ECGP_Matr_PI_OceanMat,
 	ECGP_PB_AmbientOpacity,
 
 	ECGP_PB_Scalar,
 	ECGP_PM_Tweakable,
-	ECGP_Matr_PF_ViewProjMatrix,
-	ECGP_Matr_PF_ViewProjMatrixPrev,
-	ECGP_Matr_PF_ViewProjZeroMatrix,
+	ECGP_Matr_PB_ViewProjMatrixPrev,
 	ECGP_Matr_PB_ViewProjMatrix_IT,
 	ECGP_Matr_PB_ViewProjMatrix_I,
 	ECGP_Matr_PB_ProjMatrix,
@@ -167,22 +164,14 @@ enum ECGParam
 	ECGP_PB_HDRDynamicMultiplier,
 	ECGP_PB_CausticsParams,
 	ECGP_PB_CausticsSmoothSunDirection,
-	ECGP_PF_SunDirection,
-	ECGP_PF_FogColor,
-	ECGP_PF_SunColor,
-	ECGP_PF_SkyColor,
-	ECGP_PF_Time,
-	ECGP_PF_FrameTime,
-	ECGP_PF_CameraPos,
-	ECGP_PF_ScreenSize,
-	ECGP_PF_HPosScale,
-	ECGP_PF_NearFarDist,
-	ECGP_PF_ProjRatio,
-	ECGP_PF_NearestScaled,
-	ECGP_PF_DepthFactor,
-	ECGP_PF_FrustumPlaneEquation,
-	ECGP_PF_ShadowLightPos,
-	ECGP_PF_ShadowViewPos,
+	ECGP_PB_SunDirection,
+	ECGP_PB_SunColor,
+	ECGP_PB_Time,
+	ECGP_PB_FrameTime,
+	ECGP_PB_CameraPos,
+	ECGP_PB_ScreenSize,
+	ECGP_PB_HPosScale,
+	ECGP_PB_NearFarDist,
 	ECGP_PB_PullVerticesInfo,
 
 	ECGP_PB_CloudShadingColorSun,
@@ -237,6 +226,8 @@ enum ECGParam
 	ECGP_PB_SvoParams5,
 	ECGP_PB_SvoParams6,
 	ECGP_PB_SvoParams7,
+	ECGP_PB_SvoParams8,
+	ECGP_PB_SvoParams9,
 #endif
 
 	ECGP_COUNT,
@@ -281,6 +272,7 @@ public:
 
 	Vec3     pCausticsParams; //ECGP_PB_CausticsParams *
 	Vec3     pSunColor;       //ECGP_PF_SunColor *
+	float    sunSpecularMultiplier;
 	Vec3     pSkyColor;       //ECGP_PF_SkyColor *
 	Vec3     pSunDirection;   //ECGP_PF_SunDirection *
 
@@ -311,6 +303,8 @@ public:
 	Vec4     pVolumetricFogHeightDensityParams;      // ECGP_PB_VolumetricFogHeightDensityParams
 	Vec4     pVolumetricFogHeightDensityRampParams;  // ECGP_PB_VolumetricFogHeightDensityRampParams
 	Vec4     pVolumetricFogDistanceParams;           // ECGP_PB_VolumetricFogDistanceParams
+
+	float    irregularFilterKernel[8][4];
 };
 
 enum EOperation

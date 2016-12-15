@@ -20,6 +20,8 @@ uint32 SRendItem::BatchFlags(int nList)
 
 CRenderObjectsPools* CPermanentRenderObject::s_pPools;
 
+SPipeStat* SPipeStat::s_pCurrentOutput = nullptr;
+
 //=================================================================
 
 SRenderPipeline::SRenderPipeline()

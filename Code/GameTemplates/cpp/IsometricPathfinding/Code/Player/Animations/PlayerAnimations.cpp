@@ -137,7 +137,7 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	SAFE_DELETE(m_pAnimationContext);
 
 	// Now start loading the Mannequin data
-	IMannequin &mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin &mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
 	IAnimationDatabaseManager &animationDatabaseManager = mannequinInterface.GetAnimationDatabaseManager();
 
 	const char *mannequinControllerDefinition = m_pPlayer->GetCVars().m_pThirdPersonControllerDefinition->GetString();

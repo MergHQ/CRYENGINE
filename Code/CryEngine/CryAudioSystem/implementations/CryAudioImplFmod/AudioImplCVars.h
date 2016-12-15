@@ -8,34 +8,35 @@ namespace Impl
 {
 namespace Fmod
 {
-class CAudioImplCVars
+class CAudioImplCVars final
 {
 public:
 
-	CAudioImplCVars();
-	~CAudioImplCVars();
+	CAudioImplCVars() = default;
+	CAudioImplCVars(CAudioImplCVars const&) = delete;
+	CAudioImplCVars(CAudioImplCVars&&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars const&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars&&) = delete;
 
-	void RegisterVariables();
-	void UnregisterVariables();
+	void             RegisterVariables();
+	void             UnregisterVariables();
 
-	float m_lowpassMinCutoffFrequency;
-	float m_distanceFactor;
-	float m_dopplerScale;
-	float m_rolloffScale;
+	int   m_primaryMemoryPoolSize = 0;
+	int   m_maxChannels = 0;
+	int   m_enableLiveUpdate = 0;
+	int   m_enableSynchronousUpdate = 1;
 
-	int   m_primaryMemoryPoolSize;
-	int   m_maxChannels;
-	int   m_enableLiveUpdate;
-	int   m_enableSynchronousUpdate;
+	float m_lowpassMinCutoffFrequency = 10.0f;
+	float m_distanceFactor = 1.0f;
+	float m_dopplerScale = 1.0f;
+	float m_rolloffScale = 1.0f;
 
 #if CRY_PLATFORM_DURANGO
-	int m_secondaryMemoryPoolSize;
+	int m_secondaryMemoryPoolSize = 0;
 #endif  // CRY_PLATFORM_DURANGO
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioImplCVars);
 };
 
 extern CAudioImplCVars g_audioImplCVars;

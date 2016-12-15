@@ -2182,7 +2182,7 @@ void CGameRulesObjective_Extraction::OnEntityKilled( const HitInfo &hitInfo )
 			int shooterTeamId = pGameRules->GetTeam(hitInfo.shooterId);
 			int targetTeamId = pGameRules->GetTeam(hitInfo.targetId);
 
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitInfo.targetId);
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(hitInfo.targetId);
 
 			if(pActor && shooterTeamId != targetTeamId)
 			{
@@ -2565,7 +2565,7 @@ void CGameRulesObjective_Extraction::OnSvClientActionRMI(CGameRules::SModuleRMIS
 			DbgLog("CGameRulesObjective_Extraction::OnSvClientActionRMI() helperCarry_pickup action - picking up pickup");
 
 			CRY_ASSERT(params.m_datau.helperCarryPickup.pickupEid);
-			CPlayer* pFromPlayer=static_cast< CPlayer* >( gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(fromEid) );
+			CPlayer* pFromPlayer=static_cast< CPlayer* >( gEnv->pGameFramework->GetIActorSystem()->GetActor(fromEid) );
 			CRY_ASSERT(pFromPlayer);
 
 			if (pFromPlayer->IsDead())
@@ -2616,7 +2616,7 @@ void CGameRulesObjective_Extraction::OnAction(const ActionId& action, int activa
 	EntityId  clientEid = g_pGame->GetIGameFramework()->GetClientActorId();
 	CRY_ASSERT(clientEid);
 
-	if (CPlayer* pClientPlayer=static_cast< CPlayer* >( gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(clientEid) ))
+	if (CPlayer* pClientPlayer=static_cast< CPlayer* >( gEnv->pGameFramework->GetIActorSystem()->GetActor(clientEid) ))
 	{
 		CGameRules*  pGameRules = g_pGame->GetGameRules();
 		IGameRulesSpectatorModule*  specmod = pGameRules->GetSpectatorModule();

@@ -291,7 +291,7 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual void SetFlags(int nFlags) = 0;
 
 	//! Retrieve flags set on the static object.
-	virtual int GetFlags() = 0;
+	virtual int GetFlags() const = 0;
 
 	//! Retrieves the internal flag m_nVehicleOnlyPhysics.
 	virtual unsigned int GetVehicleOnlyPhysics() = 0;
@@ -423,13 +423,13 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const = 0;
 
 	//! Used for sprites.
-	virtual float& GetRadiusVert() = 0;
+	virtual float GetRadiusVert() const = 0;
 
 	//! Used for sprites.
-	virtual float& GetRadiusHors() = 0;
+	virtual float GetRadiusHors() const = 0;
 
 	//! Determines if the object has physics capabilities.
-	virtual bool IsPhysicsExist() = 0;
+	virtual bool IsPhysicsExist() const = 0;
 
 	//! Return a pointer to the object.
 	//! \return Pointer to the current object, which is simply done like this "return this;"
@@ -563,7 +563,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//! Expose the computelod function from the engine.
 	virtual int  ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) = 0;
 
-	virtual void ComputeGeometricMean(SMeshLodInfo& lodInfo) = 0;
+	virtual SMeshLodInfo ComputeGeometricMean() const = 0;
 
 	//! Return the distance for the first LOD switch. Used for brushes and vegetation.
 	virtual float GetLodDistance() const = 0;

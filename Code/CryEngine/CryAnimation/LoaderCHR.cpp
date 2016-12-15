@@ -55,7 +55,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
-	COMPILE_TIME_ASSERT(sizeof(TFace) == 6);
+	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
 
@@ -358,6 +358,18 @@ static const char* FindFirstMeshAndMaterial(CMesh*& pMesh, CNodeCGF*& pGFXNode, 
 	return nullptr;
 }
 
+static const char* FindFirstMaterial(_smart_ptr<IMaterial>& pMaterial, CContentCGF* pContent, const char* szFilenameNoExt)
+{
+	if (!pContent->GetMaterialCount())
+	{
+		return "Failed to Load Character file. No material found for physicalization.";
+	}
+
+	pMaterial = g_pI3DEngine->GetMaterialManager()->LoadCGFMaterial(pContent->GetMaterial(0)->name, PathUtil::GetPathWithoutFilename(szFilenameNoExt).c_str());
+	
+	return nullptr;
+}
+
 } // namespace SkelLoader_Helpers
 
 bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
@@ -366,7 +378,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 	LOADING_TIME_PROFILE_SECTION_ARGS(szFilePath);
 
-	COMPILE_TIME_ASSERT(sizeof(TFace) == 6);
+	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
 
@@ -438,6 +450,15 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 	CNodeCGF* pMeshNode = nullptr;
 	_smart_ptr<IMaterial> pMaterial = nullptr;
 	FindFirstMeshAndMaterial(pMesh, pMeshNode, pMaterial, cgfs.m_pContentCGF, strGeomFileNameNoExt.c_str());
+
+	if (!pMaterial)
+	{
+		const char* const szError = FindFirstMaterial(pMaterial, cgfs.m_pContentCGF, strGeomFileNameNoExt.c_str());
+		if (szError)
+		{
+			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, 0, "!CryAnimation: Error while loading material: %s", szError);
+		}
+	}
 
 	//------------------------------------------------------------------------------------
 	//--- initialize Physical Proxies

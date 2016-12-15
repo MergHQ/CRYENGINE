@@ -7,10 +7,50 @@
 		  "CryMonoBridge.cpp",
 		  "MonoRuntime.h",
 		  "MonoRuntime.cpp",
-		  "MonoLibrary.h",
-		  "MonoLibrary.cpp",
+		  "ManagedPlugin.h",
+		  "ManagedPlugin.cpp",
 		  "resource.h",
 		  "StdAfx.h"
+		]
+	},
+	"CryMonoBridge_main_uber_2.cpp" :
+	{
+		"Wrappers" :
+		[
+		  "Wrappers/MonoDomain.h",
+		  "Wrappers/MonoDomain.cpp",
+		  "Wrappers/RootMonoDomain.h",
+		  "Wrappers/RootMonoDomain.cpp",
+		  "Wrappers/AppDomain.h",
+		  "Wrappers/AppDomain.cpp",
+		  "Wrappers/MonoLibrary.h",
+		  "Wrappers/MonoLibrary.cpp",
+		  "Wrappers/MonoClass.h",
+		  "Wrappers/MonoClass.cpp",
+		  "Wrappers/MonoObject.h",
+		  "Wrappers/MonoObject.cpp",
+		  "Wrappers/MonoException.h",
+		  "Wrappers/MonoException.cpp"
+		]
+	},
+	"CryMonoBridge_main_uber_3.cpp" :
+	{
+		"NativeComponents" :
+		[
+		  "NativeComponents/Actor.h",
+		  "NativeComponents/Actor.cpp",
+		  "NativeComponents/GameRules.h",
+		  "NativeComponents/GameRules.cpp",
+		  "NativeComponents/ManagedEntityComponent.h",
+		  "NativeComponents/ManagedEntityComponent.cpp"
+		]
+	},
+	"CryMonoBridge_main_uber_4.cpp" :
+	{
+		"NativeToManagedInterfaces" :
+		[
+		  "NativeToManagedInterfaces/Entity.h",
+		  "NativeToManagedInterfaces/Entity.cpp"
 		]
 	},
 	"NoUberFile" :

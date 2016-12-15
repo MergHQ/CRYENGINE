@@ -87,16 +87,15 @@ void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderin
 	if (!passInfo.RenderClouds() || !pMaterial)
 		return; // false;
 
-	CRenderObject* pOb(gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID()));
-	if (!pOb)
-		return; // false;
-
 	const CCamera& cam(passInfo.GetCamera());
 	float zDist = cam.GetPosition().z - m_pos.z;
 	if (cam.GetViewdir().z < 0)
 		zDist = -zDist;
-	pOb->m_nSort = HalfFlip(CryConvertFloatToHalf(zDist));
-	//pOb->m_II.m_Matrix.SetIdentity();
+
+	CRenderObject* pRenderObject(gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID()));
+	if (!pRenderObject)
+		return;
+	pRenderObject->m_nSort = HalfFlip(CryConvertFloatToHalf(zDist));
 
 	// fill general vertex data
 	f32 sinZ(0), cosZ(1);
@@ -143,9 +142,8 @@ void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderin
 	pIndices[5] = 3;
 
 	int afterWater(GetObjManager()->IsAfterWater(m_pos, passInfo.GetCamera().GetPosition(), passInfo, Get3DEngine()->GetWaterLevel()) ? 1 : 0);
-	GetRenderer()->EF_AddPolygonToScene(pMaterial->GetShaderItem(), 4, pVerts, pTangents, pOb, passInfo, pIndices, 6, afterWater);
-
-	//	return true;
+	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_DECAL, afterWater);
+	passInfo.GetIRenderView()->AddPolygon(poly, passInfo);
 }
 
 IPhysicalEntity* CDistanceCloudRenderNode::GetPhysics() const

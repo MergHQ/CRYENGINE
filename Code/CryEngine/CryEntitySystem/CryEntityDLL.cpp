@@ -20,12 +20,26 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 			if (g_pIEntitySystem)
 				g_pIEntitySystem->OnLevelLoadStart();
+			break;
+		case ESYSTEM_EVENT_LEVEL_LOAD_END:
+			{
+				if (g_pIEntitySystem )
+				{
+					if (!gEnv->pSystem->IsSerializingFile())
+					{
+						// activate the default layers
+						g_pIEntitySystem->EnableDefaultLayers();
+					}
+					{
+						LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
+						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
+						g_pIEntitySystem->SendEventToAll( loadingCompleteEvent );
+					}
+				}
+			}
 			break;
 		case ESYSTEM_EVENT_3D_POST_RENDERING_END:
 			if (g_pIEntitySystem)
@@ -43,6 +57,8 @@ class CEngineModule_EntitySystem : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", 0x885655072f014c03, 0x820c5a1a9b4d623b)
+
+	virtual ~CEngineModule_EntitySystem() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryEntitySystem"; };
@@ -68,13 +84,5 @@ class CEngineModule_EntitySystem : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_EntitySystem)
-
-CEngineModule_EntitySystem::CEngineModule_EntitySystem()
-{
-};
-
-CEngineModule_EntitySystem::~CEngineModule_EntitySystem()
-{
-};
 
 #include <CryCore/CrtDebugStats.h>

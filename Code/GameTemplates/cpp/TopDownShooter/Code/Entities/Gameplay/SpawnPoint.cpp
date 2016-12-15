@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "SpawnPoint.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 #include "Player/Player.h"
 
@@ -10,8 +10,10 @@ class CSpawnPointRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterNativeEntity<CSpawnPoint>("SpawnPoint", "Gameplay");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CSpawnPoint>("SpawnPoint");
 	}
+
+	virtual void Unregister() override {}
 };
 
 CSpawnPointRegistrator g_spawnerRegistrator;

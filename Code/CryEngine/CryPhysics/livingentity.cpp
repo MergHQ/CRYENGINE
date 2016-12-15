@@ -941,7 +941,7 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 
 /*
 		{
-			IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			Vec3 pts[3] = {debugOnlyOriginalHelperPos, helper.pos, m_pos};
 			pPD->Begin("Snap", false);
 			Vec3 bump(0,0,0.2f);
@@ -1064,8 +1064,9 @@ float CLivingEntity::ShootRayDown(le_precomp_entity* pents, int nents, le_precom
 			quaternionf coll_q = pentbest->m_qrot*pentbest->m_parts[jbest].q;
 			float coll_scale = pentbest->m_parts[jbest].scale;
 			m_posLastGroundColl = ((pt-coll_origin)*coll_q)/coll_scale;
+			int mask = (2<<pentbest->m_iSimClass)-(pentbest->m_id>>31);
 			if (bHasMatSubst) for(i=nents-1;i>=0;--i) for(j1=pents[i].iPartsBegin;j1<pents[i].iPartsEnd;++j1)
-				if (pparts[j1].partflags & geom_mat_substitutor && 
+				if (pparts[j1].partflags & geom_mat_substitutor && pents[i].pent->m_parts[pparts[j1].ipart].flagsCollider & mask &&
 						pparts[j1].pgeom->PointInsideStatus(((pt-pparts[j1].partoff)*pparts[j1].partrot)*(fabs_tpl(pparts[j1].partscale-1)>1e-4f ? 1.0f/pparts[j1].partscale:1.0f)))
 					idbest=idbestAux = pents[i].pent->GetMatId(pparts[j1].surface_idx, pparts[j1].ipart);
 			m_lastGroundSurfaceIdx = idbest;
@@ -2037,6 +2038,7 @@ int CLivingEntity::Step(float time_interval)
 		UpdatePosition(pos,BBoxInner, m_pWorld->RepositionEntity(this,1,BBoxInner));
 		bMoving = 1;
 	} else if (!m_bActive) {
+		m_pos = pos;
 		if (m_velRequested.len2()>0) {
 			m_pos += m_velRequested*time_interval;
 			m_BBox[0] += m_velRequested*time_interval; m_BBox[1] += m_velRequested*time_interval;

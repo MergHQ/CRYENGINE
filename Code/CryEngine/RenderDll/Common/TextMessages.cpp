@@ -5,7 +5,7 @@
 
 const uint32 g_dwTextMessageMaxSizeInKB = 128;
 
-void CTextMessages::PushEntry_Text(const Vec3& vPos, const ColorB col, const float fFontSize, const int nDrawFlags, const char* szText)
+void CTextMessages::PushEntry_Text(const Vec3& vPos, const ColorB col, const Vec2& fFontSize, const int nDrawFlags, const char* szText)
 {
 	AUTO_LOCK(m_TextMessageLock); // Not thread safe without this
 

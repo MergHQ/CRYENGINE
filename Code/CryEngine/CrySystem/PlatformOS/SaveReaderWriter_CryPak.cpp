@@ -20,9 +20,9 @@ static const int INVALID_SEEK = -1;
 
 int TranslateSeekMode(IPlatformOS::ISaveReader::ESeekMode mode)
 {
-	COMPILE_TIME_ASSERT(INVALID_SEEK != SEEK_SET);
-	COMPILE_TIME_ASSERT(INVALID_SEEK != SEEK_CUR);
-	COMPILE_TIME_ASSERT(INVALID_SEEK != SEEK_END);
+	static_assert(INVALID_SEEK != SEEK_SET, "Invalid SEEK_SET value!");
+	static_assert(INVALID_SEEK != SEEK_CUR, "Invalid SEEK_CUR value!");
+	static_assert(INVALID_SEEK != SEEK_END, "INVALID SEEK_END value!");
 
 	switch (mode)
 	{

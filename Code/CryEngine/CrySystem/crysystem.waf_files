@@ -236,6 +236,10 @@
       "UnitTestExcelReporter.h",
       "UnitTestSystem.h",
       "VisRegTest.h"
+    ],
+    "UserAnalytics":[
+      "UserAnalytics/UserAnalyticsSystem.cpp",
+      "UserAnalytics/UserAnalyticsSystem.h"
     ]
   },
   "CrySystem_uber_6.cpp":{
@@ -379,29 +383,9 @@
       "HMDCVars.h",
       "HMDCVars.cpp"
     ],
-    "VR/Oculus":[
-      "Oculus/OculusConfig.h",
-      "Oculus/OculusDevice.h",
-      "Oculus/OculusDevice.cpp",
-      "Oculus/OculusResources.h",
-      "Oculus/OculusResources.cpp",
-      "Oculus/OculusTouchController.h",
-      "Oculus/OculusTouchController.cpp"
-    ],
-    "VR/OpenVR":[
-      "OpenVR/OpenVRConfig.h",
-      "OpenVR/OpenVRDevice.h",
-      "OpenVR/OpenVRDevice.cpp",
-      "OpenVR/OpenVRResources.h",
-      "OpenVR/OpenVRResources.cpp",
-      "OpenVR/OpenVRController.h",
-      "OpenVR/OpenVRController.cpp"
-    ],
-    "VR/Osvr":[
-      "Osvr/OsvrDevice.h",
-      "Osvr/OsvrDevice.cpp",
-      "Osvr/OsvrResources.h",
-      "Osvr/OsvrResources.cpp"
+	"ProjectManager":[
+      "ProjectManager/ProjectManager.h",
+      "ProjectManager/ProjectManager.cpp"
     ]
   },
   "NoUberFile":{

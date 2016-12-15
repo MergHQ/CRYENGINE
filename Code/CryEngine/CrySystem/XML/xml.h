@@ -221,6 +221,7 @@ public:
 	void setAttr(const char* key, const Vec4& value);
 	void setAttr(const char* key, const Vec3d& value);
 	void setAttr(const char* key, const Quat& value);
+	void setAttr(const char* key, const CryGUID& value);
 
 	//! Delete attrbute.
 	void delAttr(const char* key);
@@ -246,6 +247,7 @@ public:
 	bool getAttr(const char* key, Vec3d& value) const;
 	bool getAttr(const char* key, Quat& value) const;
 	bool getAttr(const char* key, ColorB& value) const;
+	bool getAttr(const char* key, CryGUID& value) const;
 
 protected:
 

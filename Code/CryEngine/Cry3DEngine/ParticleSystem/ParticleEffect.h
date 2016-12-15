@@ -13,8 +13,6 @@
 #pragma once
 
 #include "ParticleCommon.h"
-#include <CryParticleSystem/ParticleParams.h>
-#include "ParticleEnviron.h"
 #include "ParticleComponent.h"
 #include "ParticleAttributes.h"
 
@@ -59,7 +57,7 @@ public:
 	virtual bool                  IsTemporary() const override                                       { return false; }
 	virtual void                  SetParticleParams(const ParticleParams& params) override           {}
 	virtual const ParticleParams& GetParticleParams() const override                                 { return GetDefaultParams(); }
-	virtual const ParticleParams& GetDefaultParams() const override                                  { static ParticleParams paramsStandard; return paramsStandard; }
+	virtual const ParticleParams& GetDefaultParams() const override;
 	virtual int                   GetChildCount() const override                                     { return 0; }
 	virtual IParticleEffect*      GetChild(int index) const override                                 { return 0; }
 	virtual void                  ClearChilds() override                                             {}
@@ -84,6 +82,9 @@ public:
 	uint                   GetNumRenderObjectIds() const;
 
 	int                    GetEditVersion() const { return m_editVersion; }
+
+
+	int m_id;
 
 private:
 	CAttributeTable    m_attributes;

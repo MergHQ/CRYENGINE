@@ -40,7 +40,7 @@ void CShadowsSetupNode::Animate(SAnimContext& animContext)
 	if (pGsmCache && (pGsmCache->GetFlags() & IAnimTrack::eAnimTrackFlags_Disabled) == 0)
 	{
 		TMovieSystemValue value = pGsmCache->GetValue(animContext.time);
-		const bool boolValue = boost::get<bool>(value);
+		const bool boolValue = stl::get<bool>(value);
 		gEnv->p3DEngine->SetShadowsGSMCache(boolValue);
 	}
 }

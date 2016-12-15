@@ -4,11 +4,21 @@
 
 #include "OpticsElement.h"
 #include "OpticsGroup.h"
+#include "AbstractMeshElement.h"
 
 class CLensGhost : public COpticsElement
 {
+	struct SShaderParams : COpticsElement::SShaderParamsBase
+	{
+		Vec4 meshCenterAndBrt;
+		Vec4 baseTexSize;
+		Vec4 ghostTileInfo;
+		Vec4 color;
+	};
+
 	_smart_ptr<CTexture> m_pTex;
 	Vec4                 m_vTileDefinition;
+	CRenderPrimitive     m_primitive;
 
 protected:
 #if defined(FLARES_SUPPORT_EDITING)
@@ -17,16 +27,7 @@ protected:
 
 public:
 
-	CLensGhost(const char* name, CTexture* externalTex = NULL) :
-		COpticsElement(name),
-		m_pTex(externalTex)
-	{
-	}
-
-	virtual IOpticsElementBase* Clone()
-	{
-		return new CLensGhost(*this);
-	}
+	CLensGhost(const char* name, CTexture* externalTex = NULL);
 
 	Matrix34 mx33to34(Matrix33& mx)
 	{
@@ -36,9 +37,9 @@ public:
 		  mx.m20, mx.m21, mx.m22, 0);
 	}
 
-	EFlareType GetType() { return eFT_Ghost; }
-	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       Load(IXmlNode* pNode);
+	EFlareType GetType() override { return eFT_Ghost; }
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	CTexture*  GetTexture();
 	void       SetTexture(CTexture* tex) { m_pTex = tex; }
@@ -137,13 +138,13 @@ public:
 	}
 
 public:
-	void       GenGhosts(SAuxParams& aux);
+	void       GenGhosts(const SAuxParams& aux);
 
-	EFlareType GetType()               { return eFT_MultiGhosts; }
-	bool       IsGroup() const         { return false; }
-	int        GetElementCount() const { return 0; }
-	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       Load(IXmlNode* pNode);
+	EFlareType GetType() override               { return eFT_MultiGhosts; }
+	bool       IsGroup() const override         { return false; }
+	int        GetElementCount() const override { return 0; }
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	CTexture*  GetTexture() const { return m_pTex; }
 	void       SetTexture(CTexture* tex)

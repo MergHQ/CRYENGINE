@@ -8,12 +8,45 @@
 #include "Movement/MoveOp.h"
 #include "GoalOps/TeleportOp.h"
 #include <CryAISystem/IAgent.h>
+#include <CryGame/IGameFramework.h>
+
+#ifndef _LIB
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
+
+void AIFlowBaseNode::RegisterFlowNodes()
+{
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	if (pFlowSystem)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
+			pFactory = pFactory->m_pNext;
+		}
+	}
+}
+
+void AIFlowBaseNode::UnregisterFlowNodes()
+{
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	if (pFlowSystem)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			pFlowSystem->UnregisterType(pFactory->m_sClassName);
+			pFactory = pFactory->m_pNext;
+		}
+	}
+}
+#endif
 
 namespace AIActionSequence
 {
 
 //////////////////////////////////////////////////////////////////////////
-
 void GoalPipeListenerHelper::RegisterGoalPipeListener(IGoalPipeListener* listener, EntityId entityId, int goalPipeId)
 {
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
@@ -162,9 +195,11 @@ void CFlowNode_AISequenceStart::HandleSequenceEvent(SequenceEvent sequenceEvent)
 
 void CFlowNode_AISequenceStart::InitializeSequence(SActivationInfo* pActInfo)
 {
-	assert(pActInfo->pEntity);
 	if (!pActInfo->pEntity)
+	{
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_ERROR, "FG node CFlowNode_AISequenceStart: did you forget to assign an entity to this node?");
 		return;
+	}
 
 	IFlowNodeData* flowNodeData = pActInfo->pGraph->GetNodeData(pActInfo->myID);
 	assert(flowNodeData);
@@ -219,7 +254,7 @@ void CFlowNode_AISequenceEnd::ProcessEvent(EFlowEvent event, SActivationInfo* pA
 			if (IsPortActive(pActInfo, InputPort_End))
 			{
 				const SequenceId assignedSequenceId = GetAssignedSequenceId();
-				assert(assignedSequenceId);
+				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "AISequence:End node doesn't have any sequence assigned.");
 				if (!assignedSequenceId)
 					return;
 
@@ -270,13 +305,11 @@ void CFlowNode_AISequenceBookmark::ProcessEvent(EFlowEvent event, SActivationInf
 		{
 			if (IsPortActive(pActInfo, InputPort_Set))
 			{
-				const SequenceId assignedSequenceId = GetAssignedSequenceId();
-				assert(assignedSequenceId);
-				if (!assignedSequenceId)
-					return;
-
-				GetAISystem()->GetSequenceManager()->SetBookmark(assignedSequenceId, pActInfo->myID);
-				ActivateOutput(pActInfo, OutputPort_Link, true);
+				if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+				{
+					GetAISystem()->GetSequenceManager()->SetBookmark(assignedSequenceId, pActInfo->myID);
+					ActivateOutput(pActInfo, OutputPort_Link, true);
+				}
 			}
 		}
 		break;
@@ -505,14 +538,12 @@ void CFlowNode_AISequenceActionMoveAlongPath::ProcessEvent(EFlowEvent event, SAc
 	case eFE_Activate:
 		{
 			m_actInfo = *pActInfo;
-			const SequenceId assignedSequenceId = GetAssignedSequenceId();
-			assert(assignedSequenceId);
-			if (!assignedSequenceId)
-				return;
-
-			if (IsPortActive(pActInfo, InputPort_Start))
+			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
 			{
-				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+				if (IsPortActive(pActInfo, InputPort_Start))
+				{
+					GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+				}
 			}
 		}
 		break;
@@ -1262,12 +1293,10 @@ void CFlowNode_AISequenceAction_Stance::ProcessEvent(EFlowEvent event, SActivati
 		{
 			m_actInfo = *pActInfo;
 
-			const SequenceId assignedSequenceId = GetAssignedSequenceId();
-			assert(assignedSequenceId);
-			if (!assignedSequenceId)
-				return;
-
-			GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+			{
+				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+			}
 		}
 	}
 }

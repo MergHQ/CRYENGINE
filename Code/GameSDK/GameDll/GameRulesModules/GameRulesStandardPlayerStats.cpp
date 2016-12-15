@@ -211,7 +211,7 @@ bool CGameRulesStandardPlayerStats::NetSerialize( EntityId playerId, TSerialize 
 					// the respawn timer countdown
 					if (gEnv->bMultiplayer)
 					{
-						const EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+						const EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 						if( localClientId == playerStat->playerId)
 						{
 							CHUDEventDispatcher::CallEvent(SHUDEvent( eHUDEvent_OnLocalPlayerDeath ));
@@ -268,7 +268,7 @@ bool CGameRulesStandardPlayerStats::NetSerialize( EntityId playerId, TSerialize 
 				assert (ser.IsReading());
 
 #if DISPLAY_POINTS_ON_HUD
-				if (gEnv->IsClient() && (playerId == gEnv->pGame->GetIGameFramework()->GetClientActorId()))
+				if (gEnv->IsClient() && (playerId == gEnv->pGameFramework->GetClientActorId()))
 				{
 					if (CHUD *pHUD = g_pGame->GetUI())
 					{
@@ -522,7 +522,7 @@ void CGameRulesStandardPlayerStats::OnPlayerKilled(const HitInfo &info)
 			// this is done here so that all stats from this kill have been updated.
 			// this should hopefully fix problems with one life modes incorrectly showing 
 			// the respawn timer countdown
-			const EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+			const EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 			if( localClientId == info.targetId )
 			{
 				CHUDEventDispatcher::CallEvent(SHUDEvent( eHUDEvent_OnLocalPlayerDeath ));
@@ -563,7 +563,7 @@ void CGameRulesStandardPlayerStats::IncreasePoints(EntityId playerId, int amount
 		}
 
 #if DISPLAY_POINTS_ON_HUD
-		if (gEnv->bServer && gEnv->IsClient() && (playerId == gEnv->pGame->GetIGameFramework()->GetClientActorId()))
+		if (gEnv->bServer && gEnv->IsClient() && (playerId == gEnv->pGameFramework->GetClientActorId()))
 		{
 			if (CHUD *pHUD = g_pGame->GetUI())
 			{

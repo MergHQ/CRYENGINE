@@ -10,6 +10,8 @@
 #include "ObjMan.h"
 #include <CryThreading/IJobManager.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include <CryEntitySystem/IEntity.h>
+
 #define SMALL_MESH_NUM_INDEX 30
 
 #pragma warning(disable: 4244)
@@ -2969,10 +2971,10 @@ void CStatObj::AnalyzeFoliage(IRenderMesh* pRenderMesh, CContentCGF* pCGF)
 			dstSpine.iAttachSeg = srcSpine.iAttachSeg;
 			dstSpine.nVtx = nVtx;
 
-			COMPILE_TIME_ASSERT(sizeof(Vec3) == sizeof(dstSpine.pVtx[0]) && sizeof(Vec3) == sizeof(srcSpine.pVtx[0]));
+			static_assert(sizeof(Vec3) == sizeof(dstSpine.pVtx[0]) && sizeof(Vec3) == sizeof(srcSpine.pVtx[0]), "Invalid type size!");
 			memcpy(dstSpine.pVtx = new Vec3[nVtx], srcSpine.pVtx, sizeof(Vec3) * nVtx);
 
-			COMPILE_TIME_ASSERT(sizeof(Vec4) == sizeof(dstSpine.pSegDim[0]) && sizeof(Vec4) == sizeof(srcSpine.pSegDim[0]));
+			static_assert(sizeof(Vec4) == sizeof(dstSpine.pSegDim[0]) && sizeof(Vec4) == sizeof(srcSpine.pSegDim[0]), "Invalid type size!");
 			memcpy(dstSpine.pSegDim = new Vec4[nVtx], srcSpine.pSegDim, sizeof(Vec4) * nVtx);
 
 			dstSpine.pVtxCur = new Vec3[nVtx];

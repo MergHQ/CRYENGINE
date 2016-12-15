@@ -2,60 +2,39 @@
 
 #pragma once
 
-struct SVF_P3F_C4B_T2F;
 class AbstractMeshElement
 {
 protected:
-	std::vector<SVF_P3F_C4B_T2F> m_vertBuf;
-	std::vector<uint16>          m_idxBuf;
-	bool                         m_meshDirty;
-
-	virtual void ApplyMesh();
-	virtual void ApplyVert();
-	virtual void ApplyIndices();
-
-	//	Render the mesh. Must have ApplyMesh called before this to make sure
-	//	all data are copied and all states are set.
-	void DrawMeshTriList();
-
-	//	Render the mesh in wireframe mode. Primarily for debugging. NO FXCommit needed.
-	//	Must have ApplyMesh called before this to make sure
-	//	all data are copied and all states are set.
-	void DrawMeshWireframe();
-
-	// Custom Mesh Generation function.
-	// Force to generate the mesh only.
-	// This method doesn't alter the mark-dirty flag
 	virtual void GenMesh() = 0;
-
-	// Validate the internal mesh representation.
-	// This regenerates the mesh when the related data is modified
-	virtual void ValidateMesh()
-	{
-		if (m_meshDirty)
-		{
-			GenMesh();
-			m_meshDirty = false;
-		}
-	}
-
-	int GetMeshDataSize() const
-	{
-		return m_vertBuf.size() * sizeof(SVF_P3F_C4B_T2F) + m_idxBuf.size() * sizeof(uint16) + sizeof(bool);
-	}
+	int          GetMeshDataSize() const;
 
 public:
 	AbstractMeshElement() :
-		m_meshDirty(true)
-	{
-	}
-	virtual ~AbstractMeshElement() {}
+		m_meshDirty(true),
+		m_vertexBuffer(~0u),
+		m_indexBuffer(~0u)
+	{}
 
-	SVF_P3F_C4B_T2F* GetVertBufData()  { return &m_vertBuf[0]; }
-	int              GetVertCount()    { return m_vertBuf.size(); }
-	int              GetVertBufSize()  { return GetVertCount() * sizeof(SVF_P3F_C4B_T2F); }
+	virtual ~AbstractMeshElement();
 
-	uint16*          GetIndexBufData() { return &m_idxBuf[0]; }
-	int              GetIndexCount()   { return m_idxBuf.size(); }
-	int              GetIndexBufSize() { return GetIndexCount() * sizeof(uint16); }
+	void                          ValidateMesh();
+
+	int                           GetVertexCount() const  { return m_vertices.size(); }
+	int                           GetIndexCount()  const  { return m_indices.size();  }
+
+	std::vector<SVF_P3F_C4B_T2F>& GetVertices()           { return m_vertices; }
+	std::vector<uint16>&          GetIndices()            { return m_indices;  }
+
+	buffer_handle_t               GetVertexBuffer() const { return m_vertexBuffer; }
+	buffer_handle_t               GetIndexBuffer()  const { return m_indexBuffer;  }
+
+	void                          MarkDirty()             { m_meshDirty = true; }
+
+protected:
+	std::vector<SVF_P3F_C4B_T2F> m_vertices;
+	std::vector<uint16>          m_indices;
+	bool                         m_meshDirty;
+
+	buffer_handle_t              m_vertexBuffer;
+	buffer_handle_t              m_indexBuffer;
 };

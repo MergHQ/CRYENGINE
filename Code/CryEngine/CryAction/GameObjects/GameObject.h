@@ -120,29 +120,29 @@ struct SDistanceChecker
 
 struct IGOUpdateDbg;
 
-class CGameObject :
-	public IEntityProxy,
-	public IGameObject
+class CGameObject : public IGameObject
 {
+	CRY_ENTITY_COMPONENT_INTERFACE(CGameObject,0xEC4E2FDCDCFF4AB3,0xA691B9CC4ECE5788)
+
 public:
 	CGameObject();
 	virtual ~CGameObject();
 
 	static void CreateCVars();
 
-	// IEntityProxy
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_USER; };
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& spawnParams);
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Done();
-	virtual void         Release();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual void         ProcessEvent(SEntityEvent& event);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool loading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
-	// ~IEntityProxy
+	void OnInitEvent();
+	virtual void Update(SEntityUpdateContext& ctx);
+
+	// IEntityComponent
+	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_USER; };
+	virtual void         Initialize() final;
+	virtual void         OnShutDown() final;
+	virtual void         Release() final;
+	virtual void         ProcessEvent(SEntityEvent& event) final;
+	virtual uint64       GetEventMask() const final;
+	virtual void         GameSerialize(TSerialize ser) final;
+	virtual bool         NeedGameSerialize() final;
+	// ~IEntityComponent
 
 	// IActionListener
 	virtual void OnAction(const ActionId& actionId, int activationMode, float value);
@@ -160,7 +160,7 @@ public:
 
 	virtual bool                  SetExtensionParams(const char* extension, SmartScriptTable params);
 	virtual bool                  GetExtensionParams(const char* extension, SmartScriptTable params);
-	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change);
+	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change, TSerialize* pSpawnSerializer = nullptr);
 	virtual void                  SendEvent(const SGameObjectEvent&);
 	virtual void                  SetChannelId(uint16 id);
 	virtual uint16                GetChannelId() const { return m_channelId; }
@@ -263,7 +263,10 @@ public:
 
 private:
 	IActionListener*           m_pActionDelegate;
+
 	IGameObjectView*           m_pViewDelegate;
+	IView*                     m_pView;
+
 	IGameObjectProfileManager* m_pProfileManager;
 
 	uint8                      m_profiles[NUM_ASPECTS];
@@ -305,7 +308,7 @@ private:
 
 		// extension by flag event registration
 		uint64                         eventReg;
-		IGameObjectExtensionPtr        pExtension;
+		IGameObjectExtension*        pExtension;
 		IGameObjectSystem::ExtensionID id;
 		// refCount is the number of AcquireExtensions pending ReleaseExtensions
 		uint8                          refCount;
@@ -349,6 +352,7 @@ private:
 	bool              m_bPhysicsDisabled    : 1;
 	bool              m_bNoSyncPhysics      : 1;
 	bool              m_bNeedsNetworkRebind : 1;
+	bool              m_bOnInitEventCalled  : 1;
 	enum EUpdateState
 	{
 		eUS_Visible_Close = 0,
@@ -364,20 +368,20 @@ private:
 	uint                    m_aiMode: CompileTimeIntegerLog2_RoundUp<eGOAIAM_COUNT_STATES>::result;
 	uint                    m_physDisableMode: CompileTimeIntegerLog2_RoundUp<eADPM_COUNT_STATES>::result;
 
-	IGameObjectExtensionPtr m_pGameObjectExtensionCachedKey;
+	IGameObjectExtension* m_pGameObjectExtensionCachedKey;
 	SExtension*             m_pGameObjectExtensionCachedValue;
-	void        ClearCache() { m_pGameObjectExtensionCachedKey = IGameObjectExtensionPtr(); m_pGameObjectExtensionCachedValue = 0; }
+	void        ClearCache() { m_pGameObjectExtensionCachedKey = nullptr; m_pGameObjectExtensionCachedValue = nullptr; }
 	SExtension* GetExtensionInfo(IGameObjectExtension* pExt)
 	{
 		CRY_ASSERT(pExt);
-		if (m_pGameObjectExtensionCachedKey.get() == pExt)
+		if (m_pGameObjectExtensionCachedKey == pExt)
 		{
-			CRY_ASSERT(m_pGameObjectExtensionCachedValue->pExtension.get() == pExt);
+			CRY_ASSERT(m_pGameObjectExtensionCachedValue->pExtension == pExt);
 			return m_pGameObjectExtensionCachedValue;
 		}
 		for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		{
-			if (iter->pExtension.get() == pExt)
+			if (iter->pExtension == pExt)
 			{
 				m_pGameObjectExtensionCachedKey = iter->pExtension;
 				m_pGameObjectExtensionCachedValue = &*iter;
@@ -415,7 +419,6 @@ private:
 	void EvaluateUpdateActivation();
 	void DebugUpdateState();
 	bool ShouldUpdateAI();
-	void UpdateLOD();
 	void RemoveExtension(const TExtensions::iterator& iter);
 	void UpdateStateEvent(EUpdateStateEvent evt);
 	bool TestIsProbablyVisible(uint state);
@@ -433,7 +436,5 @@ private:
 
 	static CGameObjectSystem* m_pGOS;
 };
-
-DECLARE_COMPONENT_POINTERS(CGameObject);
 
 #endif //__GAMEOBJECT_H__

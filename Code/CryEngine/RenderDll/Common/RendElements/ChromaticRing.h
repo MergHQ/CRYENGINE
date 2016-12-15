@@ -9,6 +9,11 @@
 class CTexture;
 class ChromaticRing : public COpticsElement, public AbstractMeshElement
 {
+	struct SShaderParams : COpticsElement::SShaderParamsBase
+	{
+		Vec4 meshCenterAndBrt;
+	};
+
 private:
 	bool                 m_bLockMovement : 1;
 
@@ -26,12 +31,15 @@ private:
 	float                m_fCompletionEnd;
 	float                m_fCompletionFading;
 
+	CRenderPrimitive     m_primitive;
+	CRenderPrimitive     m_wireframePrimitive;
+
 protected:
 
 #if defined(FLARES_SUPPORT_EDITING)
 	void InitEditorParamGroups(DynArray<FuncVariableGroup>& groups);
 #endif
-	void GenMesh()
+	void GenMesh() override
 	{
 		ColorF c(1, 1, 1, 1);
 
@@ -42,38 +50,24 @@ protected:
 		MeshUtil::GenHoop(
 		  m_fSize, polyComplexity, m_fWidth, 2, c,
 		  m_fNoiseStrength * m_fSize, m_nNoiseSeed, m_fCompletionStart, m_fCompletionEnd, m_fCompletionFading,
-		  m_vertBuf, m_idxBuf);
+		  m_vertices, m_indices);
 	}
-	void DrawMesh();
-	void Invalidate()
+
+	void Invalidate() override
 	{
 		m_meshDirty = true;
 	}
 	static float computeDynamicSize(const Vec3& vSrcProjPos, const float maxSize);
 
+	CTexture* GetOrLoadSpectrumTex();
+
 public:
 
-	ChromaticRing(const char* name) :
-		COpticsElement(name),
-		m_bUseSpectrumTex(false),
-		m_fWidth(0.5f),
-		m_nPolyComplexity(160),
-		m_nColorComplexity(2),
-		m_fNoiseStrength(0.0f),
-		m_fCompletionStart(90.f),
-		m_fCompletionEnd(270.f),
-		m_fCompletionFading(45.f)
-	{
-		SetSize(0.9f);
-		SetAutoRotation(true);
-		SetAspectRatioCorrection(false);
+	ChromaticRing(const char* name);
 
-		m_meshDirty = true;
-	}
-
-	EFlareType GetType() { return eFT_ChromaticRing; }
-	void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux);
-	void       Load(IXmlNode* pNode);
+	EFlareType GetType() override { return eFT_ChromaticRing; }
+	bool       PreparePrimitives(const SPreparePrimitivesContext& context) override;
+	void       Load(IXmlNode* pNode) override;
 
 	void       SetSize(float s)
 	{
@@ -164,7 +158,7 @@ public:
 		m_meshDirty = true;
 	}
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this) + GetMeshDataSize());
 	}

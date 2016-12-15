@@ -70,8 +70,6 @@ void CharacterManager::PostInit()
 
 	PREFAST_ASSUME(g_pISystem);
 	g_pIRenderer = g_pISystem->GetIRenderer();
-	if (g_pIRenderer == 0 && !gEnv->IsDedicated())
-		CryFatalError("CryAnimation: failed to initialize pIRenderer");
 
 	g_pIPhysicalWorld = g_pISystem->GetIPhysicalWorld();
 	if (g_pIPhysicalWorld == 0)
@@ -165,7 +163,6 @@ void CharacterManager::PreloadModelsCHR()
 			}
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
-			assert(nFileOnDisk);
 			if (nFileOnDisk)
 			{
 				CDefaultSkeleton* pSkel = FetchModelSKEL(filename.c_str(), 0);
@@ -1707,6 +1704,9 @@ void CharacterManager::Update(bool bPaused)
 	   }
 	   #endif
 	 */
+
+
+	UpdateInstances(bPaused);
 
 	if (Console::GetInst().ca_DebugModelCache)
 	{
@@ -3311,8 +3311,6 @@ void CharacterManager::SyncAllAnimations()
 
 	if (Console::GetInst().ca_MemoryDefragEnabled)
 		g_controllerHeap.Update();
-
-	gEnv->pEntitySystem->RegisterCharactersForRendering();
 }
 
 void CharacterManager::ClearPoseModifiersFromSynchQueue()
@@ -3329,6 +3327,24 @@ void CharacterManager::ClearPoseModifiersFromSynchQueue()
 		}
 		pSkeletonAnim->m_poseModifierQueue.ClearAllPoseModifiers();
 		pSkeletonAnim->m_transformPinningPoseModifier.reset();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CharacterManager::UpdateInstances(bool bPause)
+{
+	if (bPause)
+		return;
+
+	// Go through all registered character instances and check if they need to be updated.
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
+
+	for (auto& modelRef : m_arrModelCacheSKEL)
+	{
+		for (CCharInstance* pCharInstance : modelRef.m_RefByInstances)
+		{
+			pCharInstance->PerFrameUpdate();
+		}
 	}
 }
 
@@ -3948,7 +3964,6 @@ void CharacterManager::RenderDebugInstances(const SRenderingPassInfo& passInfo)
 
 		SRendParams rp;
 		rp.fDistance = 3.5f;
-		rp.fRenderQuality = 1.0f;
 		rp.AmbientColor.r = m_arrCharacterBase[i].m_AmbientColor.r;
 		rp.AmbientColor.g = m_arrCharacterBase[i].m_AmbientColor.g;
 		rp.AmbientColor.b = m_arrCharacterBase[i].m_AmbientColor.b;

@@ -18,15 +18,6 @@ namespace pfx2
 class CParticleComponentRuntime;
 class CParticleContainer;
 
-struct SUpdateRange
-{
-	explicit SUpdateRange(TParticleId firstParticleId = 0, TParticleId lastParticleId = 0)
-		: m_firstParticleId(firstParticleId)
-		, m_lastParticleId(lastParticleId) {}
-	TParticleId m_firstParticleId;
-	TParticleId m_lastParticleId;
-};
-
 struct SUpdateContext
 {
 	explicit SUpdateContext(CParticleComponentRuntime* pRuntime);

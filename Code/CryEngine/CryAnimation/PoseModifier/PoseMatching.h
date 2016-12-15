@@ -16,6 +16,9 @@ public:
 
 	CRYGENERATE_CLASS(CPoseMatching, "AnimationPoseModifier_PoseMatching", 0x18318a272246464e, 0xa4b7adffa51a9508)
 
+	CPoseMatching();
+	virtual ~CPoseMatching() {}
+
 	// IAnimationPoseMatching
 public:
 	virtual void SetAnimations(const uint* pAnimationIds, uint count) override;

@@ -742,10 +742,10 @@ pixout BinocularViewPS(vtxOutBinocularView IN)
 #if %_RT_SAMPLE0
 	half4 cSilhouetteColor = (c + c0 + c1 + c2) * 0.25f;
 #else
-	float d = GetDepthMap(_tex1, IN.baseTC0).x;
-	float d0 = GetDepthMap(_tex1, IN.baseTC1).x;
-	float d1 = GetDepthMap(_tex1, IN.baseTC2).x;
-	float d2 = GetDepthMap(_tex1, IN.baseTC3).x;
+	float d  = GetDeviceDepth(_tex1, IN.baseTC0).x;
+	float d0 = GetDeviceDepth(_tex1, IN.baseTC1).x;
+	float d1 = GetDeviceDepth(_tex1, IN.baseTC2).x;
+	float d2 = GetDeviceDepth(_tex1, IN.baseTC3).x;
   float3 cSilhoueteMask = float3(d0, d1, d2) < d;
 
   // Silhouete color masking - need to make sure to get correct color for silhouette
@@ -1112,37 +1112,40 @@ technique ColorGrading
 
 /// Specific data ////////////////////////
 
+Texture2D waterVolumeDisplacementTex : register(t0);
+SamplerState waterVolumeDisplacementSampler : register(s0);
+
 float4 waterVolumesParams;
 
 pixout waterVolumesNormalGenPS(vtxOut IN)
 {
-  pixout OUT;
+	pixout OUT;
 
-  float p0 = tex2D( _tex0, IN.baseTC.xy ).z;
-  float p1 = tex2D( _tex0, IN.baseTC.xy + float2(1,0) / waterVolumesParams.w).z;
-  float p2 = tex2D( _tex0, IN.baseTC.xy + float2(0,1) / waterVolumesParams.w).z;
+	float p0 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy, 0.0f).z;
+	float p1 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy + (float2(1, 0) / waterVolumesParams.w), 0.0f).z;
+	float p2 = waterVolumeDisplacementTex.SampleLevel(waterVolumeDisplacementSampler, IN.baseTC.xy + (float2(0, 1) / waterVolumesParams.w), 0.0f).z;
 
-  float v0 = p0 - p1;
-  float v1 = p0 - p2;
+	float v0 = p0 - p1;
+	float v1 = p0 - p2;
 
-  float3 vNormal = float3(float2(v0, v1), 8);
-  vNormal = normalize(vNormal.xyz);                                                              // 3 inst
- 
-  // eTF_A8B8G8R8S
-  OUT.Color.xyz = vNormal;
-  OUT.Color.w = p0 / 20.0;
+	float3 vNormal = float3(float2(v0, v1), 8);
+	vNormal = normalize(vNormal.xyz);
 
-  return OUT;
+	// eTF_A8B8G8R8S
+	OUT.Color.xyz = vNormal;
+	OUT.Color.w = p0 / 20.0;
+
+	return OUT;
 }
 
 technique WaterVolumesNormalGen
 {
-  pass p0
-  {
-    VertexShader = BaseVS();
-    PixelShader = waterVolumesNormalGenPS();    
-    CullMode = None;    
-  }
+	pass p0
+	{
+		VertexShader = FullscreenTriVS();
+		PixelShader = waterVolumesNormalGenPS();
+		CullMode = None;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1345,16 +1348,6 @@ sampler2D rainOccSampler : register(s0) = sampler_state
   AddressV = Clamp;
 };
 
-sampler2D sceneZSampler : register(s1) = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
 sampler2D rainDistOccSampler : register(s2);
 
 sampler2D rainfallSampler  : register(s3) = sampler_state
@@ -1431,7 +1424,7 @@ pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 {
 	pixout OUT = (pixout)0;
 			
-	const float fDepth = GetLinearDepth(sceneZSampler, IN.baseTC.xy) * PS_NearFarClipDist.y;
+	const float fDepth = GetLinearDepth(sceneLinearDepthTex, IN.baseTC.xy, true);
 	const half fNoise = tex2Dlod(noiseSampler, float4(IN.baseTC.zw, 0,0)).x;
 	float fOcc = 0;
 	
@@ -1538,7 +1531,7 @@ pixout SceneRainPS(vtxOutRain IN)
 {
   pixout OUT;
   
-	const float fDepth = GetLinearDepth_ProjTC(depthMapSampler, IN.scaledTCProj) * PS_NearFarClipDist.y;       
+	const float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.scaledTCProj);       
 	const float fSoftIsec = saturate((fDepth-IN.scaledTCProj.w)*2);
 
 	// Soft intersection with depth, attenuate top to minimize artefacts, and soften bottom
@@ -1630,16 +1623,6 @@ sampler2D snowFlakesSampler : register (s6)
   sRGBLookup = false; 
 };
 
-
-sampler2D sceneZSampler = sampler_state
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
 
 sampler2D sceneMapSampler = sampler_state
 {
@@ -1813,7 +1796,7 @@ pixoutSnow SceneSnowPS(vtxOutSnow IN)
 	pixoutSnow OUT = (pixoutSnow) 0;
 
 	// Soft intersection with environment.
-	const half cDepth = GetLinearDepthScaled(sceneDepthSampler, IN.screenProj.xy/IN.screenProj.w);
+	const half cDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
 	const half fWaterAtten = saturate((IN.screenProj.z - (vWaterLevel.x - 0.125h)) * 4.h);
 	const half fSoftIsec = saturate((cDepth-IN.screenProj.w)*2) * fWaterAtten * fWaterAtten;
 

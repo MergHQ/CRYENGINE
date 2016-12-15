@@ -1,18 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IMovieSystem.h
-//  Created:     26/4/2002 by Timur.
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
+#include <CryCore/CryVariant.h>
 #include <CryMath/Range.h>
 #include <CryMovie/AnimKey.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryString/CryName.h>
-#include <CryCore/BoostHelpers.h>
 #include <CryExtension/CryGUID.h>
 
 // forward declaration.
@@ -23,13 +17,11 @@ struct IMovieSystem;
 struct STrackKey;
 class XmlNodeRef;
 struct ISplineInterpolator;
-//struct ILightAnimWrapper;
+struct ILightAnimWrapper;
 
 typedef IMovieSystem* (* PFNCREATEMOVIESYSTEM)(struct ISystem*);
 
 #define MAX_ANIM_NAME_LENGTH 64
-//! Very high priority for cut scene sounds.
-#define MOVIE_SOUND_PRIORITY 230
 
 #if CRY_PLATFORM_DESKTOP
 	#define MOVIESYSTEM_SUPPORT_EDITING
@@ -156,7 +148,6 @@ enum EAnimParamType
 	eAnimParamType_CommentText     = 70,
 	eAnimParamType_ScreenFader     = 71,
 
-	// Light params are unused, values needed for backward compatibility
 	eAnimParamType_LightDiffuse        = 81,
 	eAnimParamType_LightRadius         = 85,
 	eAnimParamType_LightDiffuseMult    = 86,
@@ -371,6 +362,10 @@ struct SCameraParams
 struct SMovieSystemVoid
 {
 };
+inline bool operator==(const SMovieSystemVoid&, const SMovieSystemVoid&)
+{
+	return true;
+}
 
 struct SSequenceAudioTrigger
 {
@@ -386,28 +381,30 @@ struct SSequenceAudioTrigger
 	AudioControlId m_onStopTrigger;
 	AudioControlId m_onPauseTrigger;
 	AudioControlId m_onResumeTrigger;
+
+	string         m_onStopTriggerName;
+	string         m_onPauseTriggerName;
+	string         m_onResumeTriggerName;
 };
 
-typedef boost::mpl::vector<
+typedef CryVariant<
     SMovieSystemVoid,
     float,
     Vec3,
     Vec4,
     Quat,
     bool
-    > TMovieTrackDataTypes;
+    > TMovieSystemValue;
 
 enum EMovieTrackDataTypes
 {
-	eTDT_Void  = boost::mpl::find<TMovieTrackDataTypes, SMovieSystemVoid>::type::pos::value,
-	eTDT_Float = boost::mpl::find<TMovieTrackDataTypes, float>::type::pos::value,
-	eTDT_Vec3  = boost::mpl::find<TMovieTrackDataTypes, Vec3>::type::pos::value,
-	eTDT_Vec4  = boost::mpl::find<TMovieTrackDataTypes, Vec4>::type::pos::value,
-	eTDT_Quat  = boost::mpl::find<TMovieTrackDataTypes, Quat>::type::pos::value,
-	eTDT_Bool  = boost::mpl::find<TMovieTrackDataTypes, bool>::type::pos::value,
+	eTDT_Void  = detail::get_index<SMovieSystemVoid, TMovieSystemValue>::value,
+	eTDT_Float = detail::get_index<float, TMovieSystemValue>::value,
+	eTDT_Vec3  = detail::get_index<Vec3, TMovieSystemValue>::value,
+	eTDT_Vec4  = detail::get_index<Vec4, TMovieSystemValue>::value,
+	eTDT_Quat  = detail::get_index<Quat, TMovieSystemValue>::value,
+	eTDT_Bool  = detail::get_index<bool, TMovieSystemValue>::value,
 };
-
-typedef boost::make_variant_over<TMovieTrackDataTypes>::type TMovieSystemValue;
 
 //! Interface for movie-system implemented by user for advanced function-support
 struct IMovieUser
@@ -802,6 +799,7 @@ struct IAnimSequence : public _i_reference_target_t
 		eSeqFlags_NoSpeed            = BIT(13), //!< Cannot modify sequence speed - TODO: add interface control if required
 		eSeqFlags_CanWarpInFixedTime = BIT(14), //!< Timewarping will work with a fixed time step.
 		eSeqFlags_EarlyMovieUpdate   = BIT(15), //!< Turn the 'sys_earlyMovieUpdate' on during the sequence.
+		eSeqFlags_LightAnimationSet  = BIT(16), //!< A special unique sequence for light animations
 		eSeqFlags_NoMPSyncingNeeded  = BIT(17), //!< this sequence doesn't require MP net syncing
 		eSeqFlags_Capture            = BIT(18), //!< this sequence is currently in capture mode
 	};
@@ -918,7 +916,7 @@ struct IAnimSequence : public _i_reference_target_t
 	virtual bool IsPaused() const = 0;
 
 	//! Serialize this sequence to XML.
-	virtual void Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0) = 0;
+	virtual void Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks = true, uint32 overrideId = 0, bool bResetLightAnimSet = false) = 0;
 
 	//! Adds/removes track events in sequence.
 	virtual bool AddTrackEvent(const char* szEvent) = 0;
@@ -1159,6 +1157,8 @@ struct IMovieSystem
 	virtual void EnableBatchRenderMode(bool bOn) = 0;
 	virtual bool IsInBatchRenderMode() const = 0;
 
+	virtual ILightAnimWrapper* CreateLightAnimWrapper(const char* szName) const = 0;
+
 	//! Should only be called from CAnimParamType
 	virtual void        SerializeParamType(CAnimParamType& animParamType, XmlNodeRef& xmlNode, bool bLoading, const uint version) = 0;
 
@@ -1231,15 +1231,18 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 	{
 		if (xmlNode->getAttr("onStopAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onStopAudioTrigger"), m_onStopTrigger);
+			m_onStopTriggerName = xmlNode->getAttr("onStopAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onStopTriggerName.c_str(), m_onStopTrigger);
 		}
 		if (xmlNode->getAttr("onPauseAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onPauseAudioTrigger"), m_onPauseTrigger);
+			m_onPauseTriggerName = xmlNode->getAttr("onPauseAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onPauseTriggerName.c_str(), m_onPauseTrigger);
 		}
 		if (xmlNode->getAttr("onResumeAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onResumeAudioTrigger"), m_onResumeTrigger);
+			m_onResumeTriggerName = xmlNode->getAttr("onResumeAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onResumeTriggerName.c_str(), m_onResumeTrigger);
 		}
 
 	}
@@ -1247,15 +1250,15 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 	{
 		if (m_onStopTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onStopAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onStopTrigger));
+			xmlNode->setAttr("onStopAudioTrigger", m_onStopTriggerName.c_str());
 		}
 		if (m_onPauseTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onPauseAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onPauseTrigger));
+			xmlNode->setAttr("onPauseAudioTrigger", m_onPauseTriggerName.c_str());
 		}
 		if (m_onResumeTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onResumeAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onResumeTrigger));
+			xmlNode->setAttr("onResumeAudioTrigger", m_onResumeTriggerName.c_str());
 		}
 	}
 }
@@ -1287,14 +1290,9 @@ inline void SSequenceAudioTrigger::Serialize(Serialization::IArchive& ar)
 	}
 	else
 	{
-		string stopTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onStopTrigger);
-		ar(Serialization::AudioTrigger<string>(stopTriggerName), "onStopAudioTrigger", "onStop");
-
-		string pauseTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onPauseTrigger);
-		ar(Serialization::AudioTrigger<string>(pauseTriggerName), "onPauseAudioTrigger", "onPause");
-
-		string resumeTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onResumeTrigger);
-		ar(Serialization::AudioTrigger<string>(resumeTriggerName), "onResumeAudioTrigger", "onResume");
+		ar(Serialization::AudioTrigger<string>(m_onStopTriggerName), "onStopAudioTrigger", "onStop");
+		ar(Serialization::AudioTrigger<string>(m_onPauseTriggerName), "onPauseAudioTrigger", "onPause");
+		ar(Serialization::AudioTrigger<string>(m_onResumeTriggerName), "onResumeAudioTrigger", "onResume");
 	}
 }
 

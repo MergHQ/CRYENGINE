@@ -31,9 +31,6 @@ public:
 	virtual bool            Init(IVehicle* pVehicle, const CVehicleParams& table, IVehiclePart* parent, CVehicle::SPartInitInfo& initInfo, int partType) override;
 	virtual void            InitGeometry();
 	virtual void            Reset() override;
-	virtual void            Release() override;
-
-	virtual void            OnEvent(const SVehiclePartEvent& event) override;
 
 	virtual bool            ChangeState(EVehiclePartState state, int flags = 0) override;
 
@@ -45,7 +42,6 @@ public:
 
 	virtual void            Update(const float frameTime) override;
 
-	virtual void            Serialize(TSerialize serialize, EEntityAspects aspects) override;
 	virtual void            RegisterSerializer(IGameObjectExtension* gameObjectExt) override {}
 	virtual void            GetMemoryUsage(ICrySizer* s) const override
 	{
@@ -58,8 +54,6 @@ public:
 	virtual void UpdateU();
 
 protected:
-
-	void SetDamageRatio(float value);
 
 	_smart_ptr<ICharacterInstance>     m_pCharInstance;
 	int                                m_lastWheelIndex;

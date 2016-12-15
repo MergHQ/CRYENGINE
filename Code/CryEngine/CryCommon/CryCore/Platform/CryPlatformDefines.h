@@ -18,7 +18,6 @@
 #elif defined(__i386) || defined(_M_IX86)
 	#define CRY_PLATFORM_X86       1
 	#define CRY_PLATFORM_32BIT     1
-	#define CRY_PLATFORM_SSE2      1
 #elif defined(__arm__)
 	#define CRY_PLATFORM_ARM    1
 	#define CRY_PLATFORM_32BIT  1
@@ -61,6 +60,8 @@
 	#endif
 	#define CRY_PLATFORM_SSE4    1
 	#define CRY_PLATFORM_F16C    1
+	#define CRY_PLATFORM_BMI1    1
+	#define CRY_PLATFORM_TBM     1
 
 #elif defined(_ORBIS) || defined(__ORBIS__)
 
@@ -72,6 +73,8 @@
 	#endif
 	#define CRY_PLATFORM_SSE4    1
 	#define CRY_PLATFORM_F16C    1
+	#define CRY_PLATFORM_BMI1    1
+	#define CRY_PLATFORM_TBM     0
 
 #elif defined(ANDROID) || defined(__ANDROID__)
 

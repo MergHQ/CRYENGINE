@@ -35,13 +35,22 @@ private:
 struct SContext
 {
 	SContext()
-		: pInstance(nullptr), pBone(nullptr), pParent(nullptr), numChildren(0), slot(-1), pCommandBuffer(nullptr), job(nullptr), state(EState::Unstarted) {}
+		: pInstance(nullptr)
+		, pBone(nullptr)
+		, pParent(nullptr)
+		, numChildren(0)
+		, slot(-1)
+		, pCommandBuffer(nullptr)
+		, job(nullptr)
+		, state(EState::Unstarted) 
+	{
+	}
 
-	void Initialize(
-	  CCharInstance* pInst,
-	  const CAttachmentBONE* pBone,
-	  const CCharInstance* pParent,
-	  int numChildren);
+	void Initialize(CCharInstance* pInst, const CAttachmentBONE* pBone, const CCharInstance* pParent, int numChildren);
+
+	//! Checks if computation of this processing context is currently in progress.
+	//! \return True if computation is still in progress. False if computation did not yet start or already finished for the current frame.
+	bool IsInProgress() const;
 
 	_smart_ptr<CCharInstance> pInstance;
 	const CAttachmentBONE*    pBone;

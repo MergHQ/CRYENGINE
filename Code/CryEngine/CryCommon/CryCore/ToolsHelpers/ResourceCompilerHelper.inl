@@ -16,7 +16,7 @@
 
 	#pragma warning (disable:4312)
 
-	#include <CryCore/Platform/CryWindows.h>
+	#include <CryCore/Platform/CryLibrary.h>
 	#include <shellapi.h> // ShellExecuteW()
 	#include <CryCore/Assert/CryAssert.h>
 
@@ -135,7 +135,7 @@ static void ShowMessageBoxRcNotFound(const wchar_t* const szCmdLine, const wchar
 //////////////////////////////////////////////////////////////////////////
 static void CryFindEngineToolsFolder(unsigned int nEngineToolsPathSize, wchar_t* szEngineToolsPath)
 {
-	const size_t len = ::GetModuleFileNameW(GetModuleHandle(NULL), szEngineToolsPath, nEngineToolsPathSize);
+	const size_t len = ::GetModuleFileNameW(CryGetCurrentModule(), szEngineToolsPath, nEngineToolsPathSize);
 
 	if (len <= 0)
 	{

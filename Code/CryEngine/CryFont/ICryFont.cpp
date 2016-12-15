@@ -45,6 +45,8 @@ class CEngineModule_CryFont : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryFont, "EngineModule_CryFont", 0x6758643f43214957, 0x9b920d898d31f434)
 
+	virtual ~CEngineModule_CryFont() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryFont"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
@@ -59,11 +61,3 @@ class CEngineModule_CryFont : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryFont)
-
-CEngineModule_CryFont::CEngineModule_CryFont()
-{
-};
-
-CEngineModule_CryFont::~CEngineModule_CryFont()
-{
-};

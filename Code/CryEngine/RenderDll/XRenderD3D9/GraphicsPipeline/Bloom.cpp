@@ -49,7 +49,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass1H.BeginConstantUpdate();
-	m_pass1H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(scaleW, 0, 0, 0));
+	m_pass1H.SetConstant(hdrParams0Name, Vec4(scaleW, 0, 0, 0), eHWSC_Pixel);
 	m_pass1H.Execute();
 
 	// Pass 1 Vertical
@@ -63,7 +63,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass1V.BeginConstantUpdate();
-	m_pass1V.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(0, scaleH, 0, 0));
+	m_pass1V.SetConstant(hdrParams0Name, Vec4(0, scaleH, 0, 0), eHWSC_Pixel);
 	m_pass1V.Execute();
 
 	// Pass 2 Horizontal
@@ -77,7 +77,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass2H.BeginConstantUpdate();
-	m_pass2H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4((sigma2 / sigma1) * scaleW, 0, 0, 0));
+	m_pass2H.SetConstant(hdrParams0Name, Vec4((sigma2 / sigma1) * scaleW, 0, 0, 0), eHWSC_Pixel);
 	m_pass2H.Execute();
 
 	// Pass 2 Vertical
@@ -92,6 +92,6 @@ void CBloomStage::Execute()
 	}
 
 	m_pass2V.BeginConstantUpdate();
-	m_pass2H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(0, (sigma2 / sigma1) * scaleH, 0, 0));
+	m_pass2H.SetConstant(hdrParams0Name, Vec4(0, (sigma2 / sigma1) * scaleH, 0, 0), eHWSC_Pixel);
 	m_pass2V.Execute();
 }

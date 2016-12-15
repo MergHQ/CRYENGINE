@@ -1,6 +1,7 @@
 %include "CryEngine.swig"
 
 %import "CryCommon.i"
+%import "CryEntitySystem.i"
 
 %{
 #include <CryAnimation/ICryAnimation.h>

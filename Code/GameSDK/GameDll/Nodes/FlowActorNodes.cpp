@@ -117,7 +117,7 @@ public:
 		++m_totalDeaths;
 		ActivateOutput(&m_actInfo, eOUT_TotalDeaths, m_totalDeaths);
 
-		IAIObject* pClientAI = gEnv->pGame->GetIGameFramework()->GetClientActor()->GetEntity()->GetAI();
+		IAIObject* pClientAI = gEnv->pGameFramework->GetClientActor()->GetEntity()->GetAI();
 
 		if (pAI->IsHostile(pClientAI, false))
 		{
@@ -192,7 +192,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, eIP_Trigger))
 			{
-				IActor* pActor = pActInfo->pEntity ? gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId()) : NULL;
+				IActor* pActor = pActInfo->pEntity ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId()) : NULL;
 				if (pActor)
 				{
 					bool isAlive = !pActor->IsDead();
@@ -269,7 +269,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, eIP_Trigger))
 			{
-				IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+				IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 				if (pClientActor && pClientActor->IsPlayer())
 				{
 					CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
@@ -340,7 +340,7 @@ public:
 				{
 					if (IFacialInstance* pInstance = pCharacter->GetFacialInstance())
 					{
-						const char* sSequence = GetPortString(pActInfo, eIP_Sequence).c_str();
+						const string sSequence = GetPortString(pActInfo, eIP_Sequence);
 						if (IFacialAnimSequence* pSequence = pInstance->LoadSequence(sSequence))
 						{
 							int iLayer = GetPortInt(pActInfo, eIP_Layer);
@@ -1122,7 +1122,7 @@ public:
 		if (factionID == IFactionMap::InvalidFactionID)
 			factionFilterType = eFCT_NoFilter;
 
-		IActorIteratorPtr actorIt = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+		IActorIteratorPtr actorIt = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 		while (IActor* pActor = actorIt->Next())
 		{
 			if (pActor)

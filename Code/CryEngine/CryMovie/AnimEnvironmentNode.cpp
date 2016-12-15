@@ -62,25 +62,25 @@ void CAnimEnvironmentNode::Animate(SAnimContext& ac)
 	if (pSunLongitudeTrack && pSunLongitudeTrack->GetNumKeys() > 0)
 	{
 		bUpdateSun = true;
-		sunLongitude = boost::get<float>(pSunLongitudeTrack->GetValue(ac.time));
+		sunLongitude = stl::get<float>(pSunLongitudeTrack->GetValue(ac.time));
 	}
 
 	if (pSunLatitudeTrack && pSunLatitudeTrack->GetNumKeys() > 0)
 	{
 		bUpdateSun = true;
-		sunLatitude = boost::get<float>(pSunLatitudeTrack->GetValue(ac.time));
+		sunLatitude = stl::get<float>(pSunLatitudeTrack->GetValue(ac.time));
 	}
 
 	if (pMoonLongitudeTrack && pMoonLongitudeTrack->GetNumKeys() > 0)
 	{
 		bUpdateMoon = true;
-		moonLongitude = boost::get<float>(pMoonLongitudeTrack->GetValue(ac.time));
+		moonLongitude = stl::get<float>(pMoonLongitudeTrack->GetValue(ac.time));
 	}
 
 	if (pMoonLatitudeTrack && pMoonLatitudeTrack->GetNumKeys() > 0)
 	{
 		bUpdateMoon = true;
-		moonLatitude = boost::get<float>(pMoonLatitudeTrack->GetValue(ac.time));
+		moonLatitude = stl::get<float>(pMoonLatitudeTrack->GetValue(ac.time));
 	}
 
 	if (bUpdateSun)

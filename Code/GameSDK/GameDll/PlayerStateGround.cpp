@@ -247,11 +247,11 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 			if ((strcmp(filter, "0") == 0) || (strcmp(filter, name) == 0))
 			{
 				float white[] = {1.0f,1.0f,1.0f,1.0f};
-				gEnv->pRenderer->Draw2dLabel(20, 450, 2.0f, white, false, "Speed: %.3f m/s", player.GetMoveRequest().velocity.len());
+				IRenderAuxText::Draw2dLabel(20, 450, 2.0f, white, false, "Speed: %.3f m/s", player.GetMoveRequest().velocity.len());
 
 				if(g_pGameCVars->pl_debug_movement > 1)
 				{
-					gEnv->pRenderer->Draw2dLabel(35, 470, 1.8f, white, false, "Stance Speed: %.3f m/s - (%sSprinting)", player.GetStanceMaxSpeed(player.GetStance()), player.IsSprinting() ? "" : "Not ");
+					IRenderAuxText::Draw2dLabel(35, 470, 1.8f, white, false, "Stance Speed: %.3f m/s - (%sSprinting)", player.GetStanceMaxSpeed(player.GetStance()), player.IsSprinting() ? "" : "Not ");
 				}
 			}
 		}
@@ -265,7 +265,7 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 			const float FONT_COLOUR[4] = {1,1,1,1};
 			if (!player.IsClient())
 			{
-				gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "PlayerMovement: (%f %f %f)", m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
+				IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "PlayerMovement: (%f %f %f)", m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
 			}
 
 			static float JumpTime = 0.0f;
@@ -275,7 +275,7 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 			{
 				if (!player.IsClient())
 				{
-					gEnv->pRenderer->Draw2dLabel(XPOS, YPOS+20, FONT_SIZE, FONT_COLOUR, false, "Jump: (%f %f %f) DesVel: (%f %f %f)", jumpVec.x, jumpVec.y, jumpVec.z, desiredVel.x, desiredVel.y, desiredVel.z);
+					IRenderAuxText::Draw2dLabel(XPOS, YPOS+20, FONT_SIZE, FONT_COLOUR, false, "Jump: (%f %f %f) DesVel: (%f %f %f)", jumpVec.x, jumpVec.y, jumpVec.z, desiredVel.x, desiredVel.y, desiredVel.z);
 				}
 				CryLogAlways("PlayerJump: %s (%f %f %f) DesVel: (%f %f %f)", player.GetEntity()->GetName(), jumpVec.x, jumpVec.y, jumpVec.z, desiredVel.x, desiredVel.y, desiredVel.z);
 				JumpTime = gEnv->pTimer->GetCurrTime();
@@ -361,9 +361,9 @@ bool CPlayerStateGround::CheckForVaultTrigger(CPlayer & player, float frameTime)
 							const float iconColor[4] = {0.3f, 1.f, 0.3f, 1.0f};
 							const char * iconText = "A";
 
-							gEnv->pRenderer->Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.65f), iconSize, bracketColor, true, "( )");
-							gEnv->pRenderer->Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.65f), iconSize, iconColor, true, "%s", iconText);
-							gEnv->pRenderer->Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.72f), textSize, textColor, true, "%s", message);
+							IRenderAuxText::Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.65f), iconSize, bracketColor, true, "( )");
+							IRenderAuxText::Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.65f), iconSize, iconColor, true, "%s", iconText);
+							IRenderAuxText::Draw2dLabel((gEnv->pRenderer->GetWidth() * 0.5f), (gEnv->pRenderer->GetHeight() * 0.72f), textSize, textColor, true, "%s", message);
 						}
 					}
 #endif

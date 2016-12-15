@@ -97,7 +97,7 @@ IItem* CPlayerRotation::GetCurrentItem(bool includeVehicle)
 	{
 		if (EntityId weaponId = pVehicle->GetCurrentWeaponId(m_player.GetEntity()->GetId())) 
 		{
-			if (IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId))    
+			if (IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId))    
 			{
 				if (IWeapon* pWeapon = pItem->GetIWeapon())
 				{
@@ -967,7 +967,7 @@ void CPlayerRotation::ProcessTargetAssistance( IItem* pCurrentPlayerItem )
 	if(g_pGameCVars->ctrlr_OUTPUTDEBUGINFO)
 	{
 		float white[] = {1,1,1,1};
-		gEnv->pRenderer->Draw2dLabel( 20, 100, 1.4f, white, false, "Aim Acceleration & Assist\n  absInput: %.6f", absInput );
+		IRenderAuxText::Draw2dLabel( 20, 100, 1.4f, white, false, "Aim Acceleration & Assist\n  absInput: %.6f", absInput );
 	}
 #endif
 }

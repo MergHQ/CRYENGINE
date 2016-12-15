@@ -42,7 +42,6 @@
 #include <CryNetwork/IRemoteControl.h>
 #include <CryNetwork/ISimpleHttpServer.h>
 #include <CryGame/IGameFramework.h>
-#include <CryGame/IGame.h>
 #include <CryFlowGraph/IFlowSystem.h>
 
 #include <CryAudio/IAudioSystem.h>

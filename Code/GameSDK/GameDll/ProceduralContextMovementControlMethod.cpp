@@ -6,19 +6,6 @@
 
 CRYREGISTER_CLASS( CProceduralContextMovementControlMethod );
 
-
-//////////////////////////////////////////////////////////////////////////
-CProceduralContextMovementControlMethod::CProceduralContextMovementControlMethod()
-{
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-CProceduralContextMovementControlMethod::~CProceduralContextMovementControlMethod()
-{
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextMovementControlMethod::Update( float timePassedSeconds )
 {

@@ -25,6 +25,8 @@
 #include "ParticleSubEmitter.h"
 #include "ParticleManager.h"
 
+#include <CryEntitySystem/IEntity.h>
+
 #undef PlaySound
 
 class CParticle;
@@ -74,8 +76,9 @@ public:
 	virtual void             SetPhysics(IPhysicalEntity*)      {}
 
 	virtual void             Render(SRendParams const& rParam, const SRenderingPassInfo& passInfo);
-	virtual void             OnEntityEvent(IEntity* pEntity, SEntityEvent const& event);
 	virtual void             OnPhysAreaChange() { m_PhysEnviron.m_nNonUniformFlags &= ~EFF_LOADED; }
+
+	virtual void             Hide(bool bHide);
 
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -98,10 +101,10 @@ public:
 		if ((int)target.bPriority >= (int)m_Target.bPriority)
 			m_Target = target;
 	}
-	virtual void               SetEmitGeom(const GeomRef& geom);
-	virtual void               SetSpawnParams(const SpawnParams& spawnParams);
-	virtual const SpawnParams& GetSpawnParams() const
-	{ return m_SpawnParams; }
+	virtual void                 SetEmitGeom(const GeomRef& geom);
+	virtual void                 SetSpawnParams(const SpawnParams& spawnParams);
+	virtual void                 GetSpawnParams(SpawnParams& sp) const { sp = m_SpawnParams; }
+	const SpawnParams&           GetSpawnParams() const                { return m_SpawnParams; }
 
 	virtual bool                 IsAlive() const;
 	virtual bool                 IsInstant() const;
@@ -112,10 +115,10 @@ public:
 	virtual void                 EmitParticle(const EmitParticleData* pData = NULL);
 
 	virtual void                 SetEntity(IEntity* pEntity, int nSlot);
+	virtual void                 InvalidateCachedEntityData() final;
 	virtual void                 OffsetPosition(const Vec3& delta);
 	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod);
-	virtual EntityId             GetAttachedEntityId()
-	{ return m_nEntityId; }
+	virtual EntityId             GetAttachedEntityId();
 	virtual int                  GetAttachedEntitySlot()
 	{ return m_nEntitySlot; }
 	virtual IParticleAttributes& GetAttributes();
@@ -197,7 +200,7 @@ public:
 	void     UpdateFromEntity();
 	bool     IsIndependent() const
 	{
-		return GetRefCount() == 1;
+		return  Unique();
 	}
 	bool NeedSerialize() const
 	{
@@ -237,9 +240,9 @@ public:
 		{
 			if (IEntity* pEntity = GetEntity())
 			{
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+				if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 				{
-					if (IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
+					if (IRenderNode* pRenderNode = pIEntityRender->GetRenderNode())
 						return (pRenderNode->GetRndFlags() & ERF_SELECTED) != 0;
 				}
 			}
@@ -313,7 +316,6 @@ private:
 	float          m_fDeathAge;                       // Age when all containers (particles) dead.
 
 	// Entity connection params.
-	int          m_nEntityId;
 	int          m_nEntitySlot;
 
 	uint32       m_nEmitterFlags;

@@ -1677,7 +1677,8 @@ int CSoftEntity::Step(float time_interval)
 		bbox.center = (m_BBox[0]+m_BBox[1])*0.5f-m_pos-m_parts[0].pos;
 		bbox.size = (m_BBox[1]-m_BBox[0])*(0.5f*rscale);
 		CTriMesh *pMesh = (CTriMesh*)m_parts[0].pPhysGeomProxy->pGeom;
-		((CSingleBoxTree*)pMesh->m_pTree)->SetBox(&bbox);
+		if (pMesh->m_pTree->GetType()==BVT_SINGLEBOX)
+			((CSingleBoxTree*)pMesh->m_pTree)->SetBox(&bbox);
 		if (m_parts[0].scale==1.0f && m_parts[0].q.w==1.0f)	for(i=0;i<m_nVtx;i++) {
 			pMesh->m_pVertices[i] = (m_vtx[i].pos + m_offs0) * m_qrot - m_parts[0].pos;
 			m_vtx[i].nmesh = m_vtx[i].n*m_qrot;
@@ -1844,7 +1845,8 @@ int CSoftEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 			}
 			box bbox; bbox.bOriented=0;	bbox.Basis.SetIdentity();
 			bbox.center=(BBox[0]+BBox[1])*0.5f; bbox.size=(BBox[1]-BBox[0])*0.5f;
-			((CSingleBoxTree*)pMesh->m_pTree)->SetBox(&bbox);
+			if (pMesh->m_pTree->GetType()==BVT_SINGLEBOX)
+				((CSingleBoxTree*)pMesh->m_pTree)->SetBox(&bbox);
 			ser.EndGroup();
 		}
 	}

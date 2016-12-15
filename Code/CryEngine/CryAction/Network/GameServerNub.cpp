@@ -125,7 +125,7 @@ SCreateChannelResult CGameServerNub::CreateChannel(INetChannel* pChannel, const 
 	if (info.isMigrating && CCryAction::GetCryAction()->IsGameSessionMigrating())
 	{
 		// Enable the game rules to find the migrating player details by channel id
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 		IGameRules* pGameRules = pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 
 		if (pGameRules)

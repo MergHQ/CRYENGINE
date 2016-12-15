@@ -593,6 +593,6 @@ void CFacialSentence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimationC
 		if (id >= 0)
 			pos += pChar->GetISkeletonPose()->GetAbsJointByID(id).t;
 		float color[4] = { 1, 1, 1, 1 };
-		g_pIRenderer->DrawLabelEx(pos, 1.2f, color, true, true, "%s", debugText.c_str());
+		IRenderAuxText::DrawLabelEx(pos, 1.2f, color, true, true, debugText.c_str());
 	}
 }

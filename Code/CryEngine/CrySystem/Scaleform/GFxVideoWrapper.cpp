@@ -10,7 +10,7 @@
 
 		#include "SharedStates.h"
 		#include "SharedResources.h"
-		#include "GTextureXRender.h"
+		#include "GTexture_Impl.h"
 		#include <GFxLoader.h>
 		#if CRY_PLATFORM_WINDOWS
 			#include <GFxVideoPC.h>

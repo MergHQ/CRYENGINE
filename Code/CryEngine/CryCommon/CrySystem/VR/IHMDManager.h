@@ -4,6 +4,12 @@
 
 #include <CrySystem/VR/IHMDDevice.h>
 
+struct IHmdEventListener
+{
+	// Called when the user requested that the pose is recentered
+	virtual void OnRecentered() = 0;
+};
+
 struct IHmdManager
 {
 public:
@@ -27,6 +33,9 @@ public:
 		float fov, aspectRatio, asymH, asymV, eyeDist;
 	};
 
+	//! Used to register a HMD headset with the system for later use by the user.
+	virtual void RegisterDevice(const char* name, IHmdDevice& device) = 0;
+
 	//! Basic functionality needed to setup and destroy an HMD during system init / system shutdown.
 	virtual void SetupAction(EHmdSetupAction cmd) = 0;
 
@@ -44,4 +53,10 @@ public:
 
 	//! Populates o_info with the asymmetric camera information returned by the current HMD device.
 	virtual bool GetAsymmetricCameraSetupInfo(int nEye, SAsymmetricCameraSetupInfo& outInfo) const = 0;
+
+	// Notifies all HMD devices of the post being recentered, current position / rotation should be IDENTITY
+	virtual void RecenterPose() = 0;
+
+	virtual void AddEventListener(IHmdEventListener *pListener) = 0;
+	virtual void RemoveEventListener(IHmdEventListener *pListener) = 0;
 };

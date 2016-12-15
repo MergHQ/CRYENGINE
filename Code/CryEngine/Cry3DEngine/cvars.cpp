@@ -192,7 +192,7 @@ void CVars::Init()
 	                   " z = freeze particle system");
 	REGISTER_CVAR(e_ParticlesThread, 1, VF_BITFIELD,
 	              "Enable particle threading");
-	REGISTER_CVAR(e_ParticlesObjectCollisions, 1, VF_NULL,
+	REGISTER_CVAR(e_ParticlesObjectCollisions, 2, VF_NULL,
 	              "Enable particle/object collisions for SimpleCollision:\n"
 	              "  1 = against static objects only, 2 = dynamic also");
 	REGISTER_CVAR(e_ParticlesMinPhysicsDynamicBounds, 2, VF_NULL,
@@ -234,8 +234,21 @@ void CVars::Init()
 	              "Memory Size of Index Pool between Particle and Render Thread");
 
 	REGISTER_CVAR(e_ParticlesProfile, 0, VF_NULL,
+                  "PFx1 only:\n"
 	              "1 - always show statistics about particle pools usage\n"
 	              "2 - disable the warning message when running out of pool memory");
+	REGISTER_CVAR(e_ParticlesProfiler, 0, VF_BITFIELD,
+		          "Wavicle only:\n"
+                  "1 - Display profiler on screen\n"
+		          "f - Output statistics to a csv file");
+	e_ParticlesProfilerOutputFolder = REGISTER_STRING("e_ParticlesProfilerOutputFolder", "%USER%/ParticlesProfiler/", VF_NULL,
+		"Folder to output particle profiler");
+	e_ParticlesProfilerOutputName = REGISTER_STRING("e_ParticlesProfilerOutputName", "frame", VF_NULL,
+		"Name of the particle statistics file name");
+	REGISTER_CVAR(e_ParticlesProfilerCountBudget, 80000, VF_NULL,
+		"Particle counts budget to be shown during profiling");
+	REGISTER_CVAR(e_ParticlesProfilerTimingBudget, 10000, VF_NULL,
+		"Particle processing time budget (in nanoseconds) to be shown during profiling");
 
 	DefineConstFloatCVar(e_ParticlesLightMinRadiusThreshold, VF_NULL,
 	                     "Threshold for minimum particle light radius");
@@ -307,9 +320,9 @@ void CVars::Init()
 	                 "Activates drawing of distributed objects like trees", OnVegetationVisibleChange); // it run Physicalize or UnPhysicalize, So when use this value on Game, you should check the Performance.
 	REGISTER_CVAR(e_VegetationSprites, 0, VF_DEPRECATED,
 	              "[DEPRECATED] Activates drawing of sprites instead of distributed objects at far distance");
-	REGISTER_CVAR(e_DissolveSpriteMinDist, 4.f, VF_DEPRECATED,
+	REGISTER_CVAR(e_LodTransitionSpriteMinDist, 4.f, VF_DEPRECATED,
 	              "[DEPRECATED] The min dist over which vegetation sprites dissolve");
-	REGISTER_CVAR(e_DissolveSpriteDistRatio, 0.1f, VF_DEPRECATED,
+	REGISTER_CVAR(e_LodTransitionSpriteDistRatio, 0.1f, VF_DEPRECATED,
 	              "[DEPRECATED] The fraction of vegetation sprite draw distance over which to dissolve");
 	DefineConstIntCVar(e_VegetationSpritesBatching, 1, VF_DEPRECATED,
 	                   "[DEPRECATED] Activates batch processing for sprites, optimizes CPU usage in case of dense vegetation");
@@ -429,8 +442,6 @@ void CVars::Init()
 	                   "Debug GSM bounds regions calculation");
 	DefineConstIntCVar(e_GsmStats, 0, VF_CHEAT,
 	                   "Show GSM statistics 0=off, 1=enable debug to the screens");
-	REGISTER_CVAR(e_GsmViewSpace, 0, VF_NULL,
-	              "0=world axis aligned GSM layout, 1=Rotate GSM frustums depending on view camera");
 	REGISTER_CVAR(e_RNTmpDataPoolMaxFrames, 300, VF_CHEAT,
 	              "Cache RNTmpData at least for X framres");
 
@@ -507,7 +518,7 @@ void CVars::Init()
 	              "Activates usage of software coverage buffer.\n"
 	              "1 - camera culling only\n"
 	              "2 - camera culling and light-to-object check");
-	DefineConstIntCVar(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 0, VF_CHEAT,
+	REGISTER_CVAR(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 16, VF_CHEAT,
 	                   "128 - cull only nodes of scene tree and very big brushes\n"
 	                   "0 - cull all brushes individually");
 	DefineConstIntCVar(e_CoverageBufferTerrain, 0, VF_NULL,
@@ -673,15 +684,6 @@ void CVars::Init()
 	DefineConstFloatCVar(e_StreamPredictionAheadDebug, VF_CHEAT,
 	                     "Draw ball at predicted position");
 
-	DefineConstFloatCVar(e_DissolveDistMax, VF_CHEAT,
-	                     "At most how near to object MVD dissolve effect triggers (10% of MVD, clamped to this)");
-
-	DefineConstFloatCVar(e_DissolveDistMin, VF_CHEAT,
-	                     "At least how near to object MVD dissolve effect triggers (10% of MVD, clamped to this)");
-
-	DefineConstFloatCVar(e_DissolveDistband, VF_CHEAT,
-	                     "Over how many metres transition takes place");
-
 	DefineConstIntCVar(e_StreamCgfUpdatePerNodeDistance, 1, VF_CHEAT,
 	                   "Use node distance as entity distance for far nodex ");
 
@@ -765,11 +767,6 @@ void CVars::Init()
 
 	DefineConstIntCVar(e_PrecacheLevel, 0, VF_NULL,
 	                   "Pre-render objects right after level loading");
-	//	REGISTER_CVAR(e_Dissolve, 0, VF_NULL,
-	//	"Objects alphatest_noise_fading out on distance and between lods");
-#ifndef CONSOLE_CONST_CVAR_MODE
-	e_Dissolve = 0; // TODO: support dissolve in new graphics pipeline (for now cvar is removed completely because otherwise it is getting re-enabled by multiple custom/user/project config files)
-#endif
 
 	DefineConstIntCVar(e_Lods, 1, VF_NULL,
 	                   "Load and use LOD models for static geometry");

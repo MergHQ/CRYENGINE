@@ -17,6 +17,7 @@
 #include "ImplementationManager.h"
 #include "QtUtil.h"
 #include <CryIcon.h>
+#include "Controls/QuestionDialog.h"
 
 // File watching
 #include <FileSystem/FileSystem_Snapshot.h>
@@ -24,7 +25,6 @@
 #include <QPushButton>
 #include <QApplication>
 #include <QPainter>
-#include <QMessageBox>
 #include <QAction>
 #include <QMenu>
 #include <QMenuBar>
@@ -115,7 +115,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	const uint errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
 	if (errorCodeMask & EErrorCode::eErrorCode_UnkownPlatform)
 	{
-		QMessageBox::warning(this, tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
+		CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
 	}
 	else if (errorCodeMask & EErrorCode::eErrorCode_NonMatchedActivityRadius)
 	{
@@ -123,7 +123,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		if (pAudioSystemImpl)
 		{
 			QString middlewareName = pAudioSystemImpl->GetName();
-			QMessageBox::warning(this, tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
+			CQuestionDialog::SWarning(tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
 		}
 	}
 }
@@ -191,21 +191,17 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 {
 	if (m_pATLModel && m_pATLModel->IsDirty())
 	{
-		QMessageBox messageBox;
-		messageBox.setText(tr("There are unsaved changes."));
-		messageBox.setInformativeText(tr("Do you want to save your changes?"));
-		messageBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-		messageBox.setDefaultButton(QMessageBox::Save);
-		messageBox.setWindowTitle("Audio Controls Editor");
-		switch (messageBox.exec())
+		CQuestionDialog messageBox;
+		messageBox.SetupQuestion("Audio Controls Editor", tr("There are unsaved changes.").append(QString(" ").append(tr("Do you want to save your changes?"))), QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Save);
+		switch (messageBox.Execute())
 		{
-		case QMessageBox::Save:
+		case QDialogButtonBox::Save:
 			QApplication::setOverrideCursor(Qt::WaitCursor);
 			Save();
 			QApplication::restoreOverrideCursor();
 			pEvent->accept();
 			break;
-		case QMessageBox::Discard:
+		case QDialogButtonBox::Discard:
 			{
 				ACE::IAudioSystemEditor* pAudioSystemEditorImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 				if (pAudioSystemEditorImpl)
@@ -233,13 +229,9 @@ void CAudioControlsEditorWindow::Reload()
 	bool bReload = true;
 	if (m_pATLModel && m_pATLModel->IsDirty())
 	{
-		QMessageBox messageBox;
-		messageBox.setText(tr("If you reload you will lose all your unsaved changes."));
-		messageBox.setInformativeText(tr("Are you sure you want to reload?"));
-		messageBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		messageBox.setDefaultButton(QMessageBox::No);
-		messageBox.setWindowTitle("Audio Controls Editor");
-		bReload = (messageBox.exec() == QMessageBox::Yes);
+		CQuestionDialog messageBox;
+		messageBox.SetupQuestion("Audio Controls Editor", tr("If you reload you will lose all your unsaved changes.").append(QString(" ").append(tr("Are you sure you want to reload?"))), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+		bReload = (messageBox.Execute() == QDialogButtonBox::Yes);
 	}
 
 	if (bReload)
@@ -283,12 +275,11 @@ void CAudioControlsEditorWindow::Save()
 	// if preloads have been modified, ask the user if s/he wants to refresh the audio system
 	if (bPreloadsChanged)
 	{
-		QMessageBox messageBox;
-		messageBox.setText(tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."));
-		messageBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		messageBox.setDefaultButton(QMessageBox::No);
+		CQuestionDialog messageBox;
+
+		messageBox.SetupQuestion("Audio Controls Editor", tr("Preload requests have been modified. \n\nFor the new data to be loaded the audio system needs to be refreshed, this will stop all currently playing audio. Do you want to do this now?. \n\nYou can always refresh manually at a later time through the Audio menu."), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 		messageBox.setWindowTitle("Audio Controls Editor");
-		if (messageBox.exec() == QMessageBox::Yes)
+		if (messageBox.Execute() == QDialogButtonBox::Yes)
 		{
 			SAudioRequest oAudioRequestData;
 			char const* sLevelName = GetIEditor()->GetLevelName();

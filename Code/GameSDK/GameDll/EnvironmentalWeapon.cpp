@@ -222,7 +222,7 @@ void CEnvironmentalWeapon::InitWeaponState_Held()
 	DoDetachFromParent();
 
 	// Since we are just forcing weapon state here, we dont run through the longwinded pickup anims etc, we are just forcing state
-	IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+	IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 	if(pOwnerActor)
 	{
 		// Force the player to attach and hold this weapon
@@ -231,7 +231,7 @@ void CEnvironmentalWeapon::InitWeaponState_Held()
 		pPlayer->EnterPickAndThrow(GetEntityId());
 
 		EntityId weaponId = pPlayer->GetInventory()->GetItemByClass(s_pEnvironmentalWeaponClass);
-		CPickAndThrowWeapon* pPickAndThrowWeapon = weaponId ? static_cast<CPickAndThrowWeapon*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId)) : NULL;
+		CPickAndThrowWeapon* pPickAndThrowWeapon = weaponId ? static_cast<CPickAndThrowWeapon*>(gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId)) : NULL;
 		if(pPickAndThrowWeapon)
 		{
 			pPickAndThrowWeapon->QuickAttach();
@@ -331,7 +331,7 @@ void CEnvironmentalWeapon::Release()
 void CEnvironmentalWeapon::RequestUse(EntityId requesterId)
 {
 	// If we are a client, only process use requests if we aren't still waiting on the server for a previous use request (e.g. for HMG weapon). 
-	CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(requesterId));
+	CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(requesterId));
 	if(!gEnv->bServer && pActor && !pActor->IsStillWaitingOnServerUseResponse())
 	{
 		pActor->SetStillWaitingOnServerUseResponse(true);
@@ -374,7 +374,7 @@ bool CEnvironmentalWeapon::Use(EntityId requesterId)
 				// No longer pickable as is held. 
 				pScriptTable->SetValue("bCurrentlyPickable", 0);
 
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(requesterId);
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(requesterId);
 				if(pActor)
 				{
 					SetOwner(requesterId);
@@ -465,7 +465,7 @@ void CEnvironmentalWeapon::SetOwner(EntityId ownerId)
 			if( !m_throwerId )
 			{
 				//released + not thrown = dropped
-				IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId );
+				IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId );
 				CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();
 
 				float health = GetCurrentHealth();
@@ -531,9 +531,8 @@ void CEnvironmentalWeapon::SetOwner(EntityId ownerId)
 		}
 
 		//Update physics netserialization (Only serialize when the shields aren't being held otherwise we get fighting from 1p/3p animation differences)
-		if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
 		{
-			pPhysicsProxy->EnableNetworkSerialization(m_OwnerId == 0);
+			GetEntity()->PhysicsNetSerializeEnable(m_OwnerId == 0);
 		}
 
 		// Let lua know about this too
@@ -864,13 +863,13 @@ void CEnvironmentalWeapon::DoVehicleAttach()
 		//get the Vehicle and ask it to link us to the part
 		if( m_parentVehicleId  != 0 )
 		{
-			if( IVehicleSystem* pVSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem() )
+			if( IVehicleSystem* pVSystem = gEnv->pGameFramework->GetIVehicleSystem() )
 			{
 				if( IVehicle* pVehicle = pVSystem->GetVehicle( m_parentVehicleId ) )
 				{
 					m_pLinkedVehicle = pVehicle;
 
-					INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+					INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 					if (pNetContext)
 					{
 						//send an event to attach
@@ -942,7 +941,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 	{
 		if(g_pGameCVars->pl_pickAndThrow.environmentalWeaponHealthDebugEnabled )
 		{
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 			if(pActor)
 			{
 				// If this weapon is being held...
@@ -971,7 +970,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 			{
 				attackStateName = "Primary Attack";
 			}
-			else if(m_currentAttackState & EAttackStateType_EnactingPrimaryAttack)
+			else if(m_currentAttackState & EAttackStateType_ChargedThrow)
 			{
 				attackStateName = "Charged Throw";
 			}
@@ -1021,7 +1020,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 
 						// Render number at pt
 						const int count = static_cast<int>(iter - m_debugCollisionPts_Geom.begin()); 
-						gEnv->pRenderer->DrawLabelEx(iter->m_wCollisionPos, fFontSize, txtDrawColor, true, true, "%d",count);
+						IRenderAuxText::DrawLabelExF(iter->m_wCollisionPos, fFontSize, txtDrawColor, true, true, "%d",count);
 
 						if(iter->m_showDamageZoneHelper)
 						{
@@ -1034,7 +1033,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 							pAuxGeom->DrawLine(dzhPos, drawCol, dzhPos + (iter->m_damageHelperDir*currentFacingLineLength), drawCol, 1.0f);
 					
 							// Render number at damage zone helper
-							gEnv->pRenderer->DrawLabelEx(dzhPos, fFontSize, txtDrawColor, true, true, "%d",count);
+							IRenderAuxText::DrawLabelExF(dzhPos, fFontSize, txtDrawColor, true, true, "%d",count);
 						}
 					}
 				}
@@ -1168,7 +1167,7 @@ void CEnvironmentalWeapon::RenderDebugStats() const
 		}
 	}
 	Vec3 vDrawPos = GetEntity()->GetWorldPos() + Vec3(0.0f,0.0f,0.6f);
-	gEnv->pRenderer->DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, "%s", sMsg.c_str());
+	IRenderAuxText::DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, sMsg.c_str());
 }
 #endif // #ifndef _RELEASE
 
@@ -1197,7 +1196,7 @@ void CEnvironmentalWeapon::ProcessEvent(SEntityEvent& event)
 				if( pLink )
 				{
 					//we're attached to a vehicle, get it
-					if( IVehicleSystem* pVSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem() )
+					if( IVehicleSystem* pVSystem = gEnv->pGameFramework->GetIVehicleSystem() )
 					{
 						if( IVehicle* pVehicle = pVSystem->GetVehicle( pLink->entityId ) )
 						{
@@ -2083,7 +2082,7 @@ void CEnvironmentalWeapon::GenerateMaterialEffects(const Vec3& pos, const int su
 		return; 
 	}
 
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	TMFXEffectId effectId = pMaterialEffects->GetEffectId(m_mfxLibraryName.c_str(),surfaceIndex);
 	if (effectId != InvalidEffectId)
@@ -2410,11 +2409,11 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 #endif //#ifndef _RELEASE
 		}
 		// OBJECTS
-		else if(IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+		else
 		{
 			const Vec3 vImpulseVec  = (hitInfo.impulseScale * hitInfo.dir); 
 			
-			IActor* pOwnerActor	= gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+			IActor* pOwnerActor	= gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 			CPlayer* pOwnerPlayer = static_cast<CPlayer*>(pOwnerActor);
 			if(pOwnerActor && pOwnerActor->IsPlayer())
 			{
@@ -2437,7 +2436,7 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 			}
 			else
 			{
-				pPhysicsProxy->AddImpulse(hitInfo.partId, hitInfo.pos, vImpulseVec, true, 1.0f, 1.0f);
+				pEntity->AddImpulse(hitInfo.partId, hitInfo.pos, vImpulseVec, true, 1.0f, 1.0f);
 			}
 
 			// LOGGING
@@ -2486,7 +2485,7 @@ void CEnvironmentalWeapon::ProcessHitPlayer( IActor* pVictimActor, const EntityH
 		
 		if( m_OwnerId )
 		{	
-			if( IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId ) )
+			if( IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId ) )
 			{
 				if( CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder() )
 				{
@@ -2626,9 +2625,9 @@ void CEnvironmentalWeapon::ProcessHitObject( const EntityHitRecord& entityHitRec
 
 void CEnvironmentalWeapon::OnStartChargedThrow()
 {
-	if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
+
 	{
-		pPhysicsProxy->EnableNetworkSerialization(true);
+		GetEntity()->PhysicsNetSerializeEnable(true);
 	}
 
 	m_initialThrowPos = GetEntity()->GetWorldPos();
@@ -2690,7 +2689,7 @@ void CEnvironmentalWeapon::OnStartChargedThrow()
 	}
 #endif //#ifndef_RELEASE
 
-	IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_OwnerId );
+	IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor( m_OwnerId );
 	CStatsRecordingMgr* pRecordingMgr = g_pGame->GetStatsRecorder();
 
 	int16 health = (int16)GetCurrentHealth();
@@ -3045,7 +3044,7 @@ void CEnvironmentalWeapon::PerformWeaponSweepTracking()
 			else
 			{
 				// Should really have an m_pDamageZoneHelper.. but for the sake of debugging.. or if the artist hasn't placed one (needs adding if not..)
-				IActor* pOwnerActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_OwnerId);
+				IActor* pOwnerActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_OwnerId);
 				if(pOwnerActor)
 				{
 					weaponStartPos = pOwnerActor->GetEntity()->GetWorldPos(); 
@@ -3258,7 +3257,7 @@ bool CEnvironmentalWeapon::IsRooted() const
 
 void CEnvironmentalWeapon:: EntityRevived(EntityId entityId)
 {
-	if(gEnv->IsClient() && gEnv->pGame->GetIGameFramework()->GetClientActorId() == entityId)
+	if(gEnv->IsClient() && gEnv->pGameFramework->GetClientActorId() == entityId)
 	{
 		AttemptToRegisterInteractiveEntity(); 
 	}

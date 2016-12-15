@@ -13,14 +13,6 @@
 #include "PostEffects.h"
 #include "PostProcessUtils.h"
 
-std::vector<CWaterRipples::SWaterHit> CWaterRipples::s_pWaterHitsMGPU;
-Vec3 CWaterRipples::s_CameraPos = Vec3(ZERO);
-Vec2 CWaterRipples::s_SimOrigin = Vec2(ZERO);
-int CWaterRipples::s_nUpdateMask;
-Vec4 CWaterRipples::s_vParams = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-Vec4 CWaterRipples::s_vLookupParams = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-bool CWaterRipples::s_bInitializeSim;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Engine specific post-effects
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -426,6 +418,11 @@ void CWaterFlow::Reset(bool bOnSpecChange)
 
 bool CWaterVolume::Preprocess()
 {
+	if(gRenDev->m_nGraphicsPipeline > 0)
+	{
+		return false;
+	}
+
 	if (!gRenDev->m_RP.m_eQuality)
 		return false;
 
@@ -851,7 +848,7 @@ void CNanoGlass::Reset(bool bOnSpecChange)
 	// constructor. This post effect is recreated at the start of each session, so the constructor gets called then
 }
 
-void CNanoGlass::AddRE(const CRendElementBase* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+void CNanoGlass::AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	// Main thread
 	const uint32 nThreadID = passInfo.ThreadID();

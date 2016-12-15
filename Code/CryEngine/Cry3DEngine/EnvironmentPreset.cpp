@@ -13,7 +13,7 @@
 
 namespace
 {
-static const unsigned int sCurrentPresetVersion = 1;
+static const unsigned int sCurrentPresetVersion = 2;
 static const float sAnimTimeSecondsIn24h = 24.0f;   // 24 hours = (sAnimTimeSecondsIn24h * SAnimTime::numTicksPerSecond) ticks
 
 static const float sBezierSplineKeyValueEpsilon = 0.001f;

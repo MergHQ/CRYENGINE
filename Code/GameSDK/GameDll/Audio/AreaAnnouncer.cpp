@@ -82,7 +82,7 @@ void CAreaAnnouncer::Init()
 			if(pEntity->GetClass() == pTargetClass)
 			{
 				//check entityName
-				IEntityAreaProxy *pArea = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+				IEntityAreaComponent *pArea = (IEntityAreaComponent*)pEntity->GetProxy(ENTITY_PROXY_AREA);
 				if (pArea)
 				{
 					LoadAnnouncementArea(pEntity, pEntity->GetName());
@@ -118,7 +118,7 @@ void CAreaAnnouncer::LoadAnnouncementArea(const IEntity* pEntity, const char* ar
 	{
 		SAnnouncementArea area;
 		area.m_areaProxyId = pEntity->GetId();
-		COMPILE_TIME_ASSERT(sizeof(area.m_signal) == sizeof(signal));
+		static_assert(sizeof(area.m_signal) == sizeof(signal), "Invalid type size!");
 		memcpy(area.m_signal, signal, sizeof(area.m_signal));
 
 #if !defined(_RELEASE)
@@ -160,7 +160,7 @@ void CAreaAnnouncer::Update(const float dt)
 #if !defined(_RELEASE)
 	if(aa_debug)
 	{
-		const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		TAudioSignalID signal = BuildAnnouncement(clientId);
 		CryWatch("Signal %d", signal);
 	}
@@ -198,7 +198,7 @@ void CAreaAnnouncer::EntityRevived(EntityId entityId)
 	if (!AnnouncerRequired())
 			return;
 
-	const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(entityId == clientId)
 	{
 		CGameRules *pGameRules = g_pGame->GetGameRules();
@@ -218,7 +218,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 	const int k_areaCount = m_areaList.size();
 	if (k_areaCount > 0)
 	{
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
 		if (CActor* pClientActor = static_cast<CActor*>(pActorSystem->GetActor(clientId)))
 		{
@@ -244,7 +244,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 						IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_areaList[areaIndex].m_areaProxyId);
 						if(pEntity)
 						{
-							IEntityAreaProxy *pArea = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+							IEntityAreaComponent *pArea = (IEntityAreaComponent*)pEntity->GetProxy(ENTITY_PROXY_AREA);
 							if(pArea && pArea->CalcPointWithin(INVALID_ENTITYID, actorData.position, true))
 							{
 								actorCount[areaIndex]++;
@@ -317,7 +317,7 @@ void CAreaAnnouncer::CmdPlay(IConsoleCmdArgs* pCmdArgs)
 	{
 		int randA = cry_random(0U, pAA->m_areaList.size() - 1);
 
-		const EntityId clientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 		CAudioSignalPlayer::JustPlay(pAA->m_areaList[randA].m_signal[pAA->GetAreaAnnouncerTeamIndex(clientId)]);
 
 		CryLogAlways("Playing - %s_%d", pAA->m_areaList[randA].m_name, pAA->GetAreaAnnouncerTeamIndex(clientId));

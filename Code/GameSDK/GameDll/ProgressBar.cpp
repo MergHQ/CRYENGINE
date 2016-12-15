@@ -138,7 +138,7 @@ void CProgressBar::Render()
 		float pixelPosX, pixelPosY;
 		pixelPosX = m_params.m_normalisedScreenPosition.x * gEnv->pRenderer->GetWidth();
 		pixelPosY = (m_params.m_normalisedScreenPosition.y-m_params.m_height*0.5f) * gEnv->pRenderer->GetHeight();
-		gEnv->pRenderer->Draw2dLabel(pixelPosX, pixelPosY, 3.0f, colour, true, "%s", m_params.m_text.c_str());
+		IRenderAuxText::Draw2dLabel(pixelPosX, pixelPosY, 3.0f, colour, true, "%s", m_params.m_text.c_str());
 	}
 
 	// Restore old render flags

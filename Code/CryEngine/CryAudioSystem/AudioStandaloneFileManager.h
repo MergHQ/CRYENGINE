@@ -13,12 +13,17 @@ struct IAudioImpl;
 }
 }
 
-class CAudioStandaloneFileManager
+class CAudioStandaloneFileManager final
 {
 public:
 
-	CAudioStandaloneFileManager();
-	virtual ~CAudioStandaloneFileManager();
+	CAudioStandaloneFileManager(AudioStandaloneFileLookup& audioStandaloneFiles);
+	~CAudioStandaloneFileManager();
+
+	CAudioStandaloneFileManager(CAudioStandaloneFileManager const&) = delete;
+	CAudioStandaloneFileManager(CAudioStandaloneFileManager&&) = delete;
+	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager const&) = delete;
+	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
 
 	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
 	void                Release();
@@ -29,10 +34,7 @@ public:
 
 private:
 
-	typedef std::map<AudioStandaloneFileId, CATLStandaloneFile*, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, CATLStandaloneFile*>>>
-	  ActiveStandaloneFilesMap;
-
-	ActiveStandaloneFilesMap m_activeAudioStandaloneFiles;
+	AudioStandaloneFileLookup& m_audioStandaloneFiles;
 
 	typedef CInstanceManager<CATLStandaloneFile, AudioStandaloneFileId> AudioStandaloneFilePool;
 	AudioStandaloneFilePool     m_audioStandaloneFilePool;
@@ -42,13 +44,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void SetDebugNameStore(CATLDebugNameStore* const pDebugNameStore);
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const;
 
-private:
-
-	CATLDebugNameStore* m_pDebugNameStore;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioStandaloneFileManager);
 };

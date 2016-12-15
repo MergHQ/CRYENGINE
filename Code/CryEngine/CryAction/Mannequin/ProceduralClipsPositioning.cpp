@@ -82,7 +82,7 @@ struct SPositionAdjuster
 		m_delta.zero();
 		m_deltaRot.SetIdentity();
 
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entity.GetId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entity.GetId());
 		m_pAnimatedCharacter = pActor ? pActor->GetAnimatedCharacter() : NULL;
 	}
 
@@ -176,6 +176,9 @@ class CProceduralContext_AdjustPos : public IProceduralContext
 {
 private:
 	typedef IProceduralContext BaseClass;
+
+	CProceduralContext_AdjustPos();
+	virtual ~CProceduralContext_AdjustPos() {}
 
 public:
 	PROCEDURAL_CONTEXT(CProceduralContext_AdjustPos, "AdjustPosContext", 0xC6C0871214214854, 0xADC56AB6422834BD);
@@ -289,7 +292,7 @@ public:
 
 			for (int i = 0; i < numScopes; i++)
 			{
-				if (installedScopeMask & (1 << i))
+				if (installedScopeMask & BIT64(i))
 				{
 					if (IActionController* pSlaveActionController = m_actionController->GetScope(i)->GetEnslavedActionController())
 					{
@@ -533,10 +536,6 @@ private:
 CProceduralContext_AdjustPos::CProceduralContext_AdjustPos()
 	: m_enabled(false)
 	, m_collisionCheck(false)
-{
-}
-
-CProceduralContext_AdjustPos::~CProceduralContext_AdjustPos()
 {
 }
 
@@ -794,7 +793,7 @@ public:
 
 	void UpdateDeltas(QuatT& animStartLoc)
 	{
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_entity->GetId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entity->GetId());
 		IAnimatedCharacter* pAnimatedCharacter = pActor ? pActor->GetAnimatedCharacter() : NULL;
 		const Vec3 vExpectedMovement = pAnimatedCharacter ? pAnimatedCharacter->GetExpectedEntMovement() : Vec3Constants<float>::fVec3_Zero;
 
@@ -922,15 +921,15 @@ public:
 				float fWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				static float xPos = 400.0f;
 				float yPos = 50.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Target: (%f %f %f)", m_posAdjuster.m_targetLoc.t.x, m_posAdjuster.m_targetLoc.t.y, m_posAdjuster.m_targetLoc.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Target: (%f %f %f)", m_posAdjuster.m_targetLoc.t.x, m_posAdjuster.m_targetLoc.t.y, m_posAdjuster.m_targetLoc.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Current: (%f %f %f)", entLoc.t.x, entLoc.t.y, entLoc.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Current: (%f %f %f)", entLoc.t.x, entLoc.t.y, entLoc.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Anim Remainder: (%f %f %f)", pendingMovement.t.x, pendingMovement.t.y, pendingMovement.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Anim Remainder: (%f %f %f)", pendingMovement.t.x, pendingMovement.t.y, pendingMovement.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Delta: (%f %f %f)", requiredDelta.t.x, requiredDelta.t.y, requiredDelta.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Delta: (%f %f %f)", requiredDelta.t.x, requiredDelta.t.y, requiredDelta.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "CNT: %f tgtTime: %f", curANTime, m_posAdjuster.m_targetTime);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "CNT: %f tgtTime: %f", curANTime, m_posAdjuster.m_targetTime);
 
 				DebugDrawLocation(
 				  expectedLoc,

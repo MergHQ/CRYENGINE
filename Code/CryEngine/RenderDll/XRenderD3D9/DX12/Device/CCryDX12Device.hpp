@@ -16,10 +16,12 @@
 	#include "DX12/CCryDX12Object.hpp"
 	#include "DX12/API/DX12Device.hpp"
 
-class CCryDX12Device : public CCryDX12Object<ID3D11Device1>
+	class CCryDX12DeviceContext;
+
+class CCryDX12Device : public CCryDX12Object<ID3D11Device1ToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12Device, CCryDX12Object<ID3D11Device1> );
+	DX12_OBJECT(CCryDX12Device, CCryDX12Object<ID3D11Device1ToImplement> );
 
 	static CCryDX12Device* Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel);
 

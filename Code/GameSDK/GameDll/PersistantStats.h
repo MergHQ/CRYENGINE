@@ -437,7 +437,7 @@ protected:
 	CAfterMatchAwards m_afterMatchAwards;
 
 	//Sessions are stored for every player for the current session
-	typedef std::map<EntityId, SSessionStats, std::less<EntityId>, stl::STLGlobalAllocator<std::pair<EntityId, SSessionStats> > > ActorSessionMap;
+	typedef std::map<EntityId, SSessionStats, std::less<EntityId>, stl::STLGlobalAllocator<std::pair<const EntityId, SSessionStats> > > ActorSessionMap;
 	ActorSessionMap m_sessionStats;
 
 	//local clients stats that are updated at the end of session

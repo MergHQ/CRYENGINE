@@ -596,7 +596,7 @@ int tri_capsule_intersection(const triangle *ptri, const capsule *pcaps, prim_in
 
 	// if capsule cap's lowest (wrt trinagle normal) point is inside tringle's voronoi region, force triangle normal as global intersection normal
 	pt = pcaps->center - pcaps->axis*(pcaps->hh*(j=sgnnz(pcaps->axis*ptri->n))) - ptri->n*pcaps->r;
-	if ((pt-ptri->pt[0])*ptri->n > (pcaps->hh+pcaps->r)*-0.2f &&
+	if (//(pt-ptri->pt[0])*ptri->n > (pcaps->hh+pcaps->r)*-0.2f &&
 			(pt-ptri->pt[0]^ptri->pt[1]-ptri->pt[0])*ptri->n<0 && (pt-ptri->pt[1]^ptri->pt[2]-ptri->pt[1])*ptri->n<0 &&
 			(pt-ptri->pt[2]^ptri->pt[0]-ptri->pt[2])*ptri->n<0 && pinters->nborderpt<pinters->nbordersz) 
 	{

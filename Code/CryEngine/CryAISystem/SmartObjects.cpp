@@ -863,11 +863,12 @@ CSmartObjectManager::CSmartObjectManager()
 	CSmartObject::CState("Dead");
 
 	uint64 onEventSubscriptions = 0;
-	onEventSubscriptions |= BIT(ENTITY_EVENT_INIT);
-	onEventSubscriptions |= BIT(ENTITY_EVENT_DONE);
-	onEventSubscriptions |= BIT(ENTITY_EVENT_HIDE);
-	onEventSubscriptions |= BIT(ENTITY_EVENT_UNHIDE);
-	onEventSubscriptions |= BIT(ENTITY_EVENT_XFORM);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_INIT);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
+	onEventSubscriptions |= ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
 
 	gEnv->pEntitySystem->AddSink(this, IEntitySystem::AllSinkEvents & (~IEntitySystem::OnBeforeSpawn), onEventSubscriptions);
 }
@@ -3461,6 +3462,7 @@ void CSmartObjectManager::OnEvent(IEntity* pEntity, SEntityEvent& event)
 			break;
 		}
 	case ENTITY_EVENT_INIT:
+	case ENTITY_EVENT_RESET:
 		{
 			SEntitySpawnParams params;
 			OnSpawn(pEntity, params);

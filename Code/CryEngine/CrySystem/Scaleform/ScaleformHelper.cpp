@@ -13,6 +13,8 @@ class CEngineModule_ScaleformHelper : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_ScaleformHelper, "EngineModule_ScaleformHelper", 0x3d38f12a521d43cf, 0xca18fd1fa7ea5020)
 
+	virtual ~CEngineModule_ScaleformHelper() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryScaleformHelper"; };
 
@@ -24,18 +26,18 @@ class CEngineModule_ScaleformHelper : public IEngineModule
 
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		ISystem* pSystem = env.pSystem;
+		if (env.pRenderer)
+		{
+			ISystem* pSystem = env.pSystem;
 
-		ModuleInitISystem(pSystem, "ScaleformHelper");
-		env.pScaleformHelper = new CScaleformHelper();
+			ModuleInitISystem(pSystem, "ScaleformHelper");
+			env.pScaleformHelper = new CScaleformHelper();	
+		}
+
 		return true;
 	}
 };
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_ScaleformHelper)
-
-// Declared through macro's above
-CEngineModule_ScaleformHelper::CEngineModule_ScaleformHelper() {}
-CEngineModule_ScaleformHelper::~CEngineModule_ScaleformHelper() {}
 #endif
 
 // If we are a stand-alone module, this will implement the module entry-points

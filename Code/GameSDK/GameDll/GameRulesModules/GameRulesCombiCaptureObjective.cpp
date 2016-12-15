@@ -101,7 +101,7 @@ void CGameRulesCombiCaptureObjective::SCaptureEntity::SetEnabled(const bool enab
 
 			if (IEntity* pEntity=gEnv->pEntitySystem->GetEntity(eid))
 			{
-				if (IEntityRenderProxy* renderProxy=static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+				if (IEntityRender* renderProxy=pEntity->GetRenderInterface())
 				{
 					if (IRenderNode* renderNode=renderProxy->GetRenderNode())
 					{
@@ -1175,7 +1175,7 @@ void CGameRulesCombiCaptureObjective::OnRoundStart()
 	}
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-	IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	while (CActor* pActor = (CActor*)pIter->Next())
 	{
 		EntityId actorId = pActor->GetEntityId();

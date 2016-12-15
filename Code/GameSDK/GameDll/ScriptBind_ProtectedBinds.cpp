@@ -303,7 +303,7 @@ int CScriptBind_ProtectedBinds::ActivateDemoEventEntitlement( IFunctionHandler *
 IPlayerProfile* CScriptBind_ProtectedBinds::GetCurrentUserProfile()
 {
 	IPlayerProfile* pProfile = NULL;
-	if( IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager() )
+	if( IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager() )
 	{
 		const char *user = pProfileMan->GetCurrentUser();
 		pProfile = pProfileMan->GetCurrentProfile( user );

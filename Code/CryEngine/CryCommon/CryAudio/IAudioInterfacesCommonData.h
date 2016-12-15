@@ -6,42 +6,13 @@
 #include <CryCore/BaseTypes.h>
 #include <CryCore/smartptr.h>
 
-#if __cplusplus >= 201103L
-	#if !defined(DELETE_DEFAULT_CONSTRUCTOR)
-		#define DELETE_DEFAULT_CONSTRUCTOR(type_name) \
-		  private:                                    \
-		    type_name() = delete;
-	#endif // !DELETE_DEFAULT_CONSTRUCTOR
-
-	#if !defined(PREVENT_OBJECT_COPY)
-		#define PREVENT_OBJECT_COPY(type_name)     \
-		  private:                                 \
-		    type_name(type_name const &) = delete; \
-		    type_name& operator=(type_name const&) = delete;
-	#endif // !PREVENT_OBJECT_COPY
-
-#else
-
-	#if !defined(DELETE_DEFAULT_CONSTRUCTOR)
-		#define DELETE_DEFAULT_CONSTRUCTOR(class_name) \
-		  private:
-	#endif // !DELETE_DEFAULT_CONSTRUCTOR
-
-	#if !defined(PREVENT_OBJECT_COPY)
-		#define PREVENT_OBJECT_COPY(type_name) \
-		  private:                             \
-		    type_name(type_name const &);      \
-		    type_name& operator=(type_name const&);
-	#endif // !PREVENT_OBJECT_COPY
-#endif   // __cplusplus
-
 #define AUDIO_SYSTEM_DATA_ROOT "audio"
 
-typedef uint32      AudioIdType;
+typedef uint32 AudioIdType;
 
-typedef AudioIdType AudioObjectId;
-#define INVALID_AUDIO_OBJECT_ID               ((AudioObjectId)(0))
-#define GLOBAL_AUDIO_OBJECT_ID                ((AudioObjectId)(1))
+class CATLListener;
+class CATLAudioObject;
+
 typedef AudioIdType AudioControlId;
 #define INVALID_AUDIO_CONTROL_ID              ((AudioControlId)(0))
 typedef AudioIdType AudioSwitchStateId;
@@ -70,6 +41,7 @@ typedef AudioIdType AudioProxyId;
 class CAudioObjectTransformation
 {
 public:
+
 	CAudioObjectTransformation()
 		: m_position(ZERO)
 		, m_forward(Vec3Constants<float>::fVec3_OneY)
@@ -111,7 +83,7 @@ private:
 
 #define AUDIO_TRIGGER_IMPL_ID_NUM_RESERVED 100 // IDs below that value are used for the CATLTriggerImpl_Internal
 
-#define MAX_AUDIO_CONTROL_NAME_LENGTH      64
+#define MAX_AUDIO_CONTROL_NAME_LENGTH      128
 #define MAX_AUDIO_FILE_NAME_LENGTH         128
 #define MAX_AUDIO_FILE_PATH_LENGTH         256
 #define MAX_AUDIO_OBJECT_NAME_LENGTH       256
@@ -152,12 +124,14 @@ struct SAudioRequestDataBase
 		: type(_type)
 	{}
 
-	virtual ~SAudioRequestDataBase() {}
+	virtual ~SAudioRequestDataBase() = default;
+
+	SAudioRequestDataBase(SAudioRequestDataBase const&) = delete;
+	SAudioRequestDataBase(SAudioRequestDataBase&&) = delete;
+	SAudioRequestDataBase& operator=(SAudioRequestDataBase const&) = delete;
+	SAudioRequestDataBase& operator=(SAudioRequestDataBase&&) = delete;
 
 	EAudioRequestType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioRequestDataBase);
-	PREVENT_OBJECT_COPY(SAudioRequestDataBase);
 };
 
 struct SAudioCallBackInfo
@@ -190,7 +164,7 @@ struct SAudioCallBackInfo
 
 struct SAudioPlayFileInfo
 {
-	SAudioPlayFileInfo(
+	explicit SAudioPlayFileInfo(
 	  char const* const _szFile
 	  , bool const _bLocalized = true
 	  , AudioControlId const _usedPlaybackTrigger = INVALID_AUDIO_CONTROL_ID)
@@ -206,25 +180,18 @@ struct SAudioPlayFileInfo
 
 struct SAudioRequest
 {
-	SAudioRequest()
-		: flags(eAudioRequestFlags_None)
-		, audioObjectId(INVALID_AUDIO_OBJECT_ID)
-		, pOwner(nullptr)
-		, pUserData(nullptr)
-		, pUserDataOwner(nullptr)
-		, pData(nullptr)
-	{}
+	SAudioRequest() = default;
+	SAudioRequest(SAudioRequest const&) = delete;
+	SAudioRequest(SAudioRequest&&) = delete;
+	SAudioRequest& operator=(SAudioRequest const&) = delete;
+	SAudioRequest& operator=(SAudioRequest&&) = delete;
 
-	~SAudioRequest() {}
-
-	AudioEnumFlagsType     flags;
-	AudioObjectId          audioObjectId;
-	void*                  pOwner;
-	void*                  pUserData;
-	void*                  pUserDataOwner;
-	SAudioRequestDataBase* pData;
-
-	PREVENT_OBJECT_COPY(SAudioRequest);
+	AudioEnumFlagsType     flags = eAudioRequestFlags_None;
+	CATLAudioObject*       pAudioObject = nullptr;
+	void*                  pOwner = nullptr;
+	void*                  pUserData = nullptr;
+	void*                  pUserDataOwner = nullptr;
+	SAudioRequestDataBase* pData = nullptr;
 };
 
 struct SAudioRequestInfo
@@ -238,7 +205,7 @@ struct SAudioRequestInfo
 	  EAudioRequestType const _audioRequestType,
 	  AudioEnumFlagsType const _specificAudioRequest,
 	  AudioControlId const _audioControlId,
-	  AudioObjectId const _audioObjectId,
+	  CATLAudioObject* const _pAudioObject,
 	  AudioStandaloneFileId const _audioStandaloneFileId,
 	  AudioEventId const _audioEventId)
 		: requestResult(_requestResult)
@@ -249,10 +216,15 @@ struct SAudioRequestInfo
 		, audioRequestType(_audioRequestType)
 		, specificAudioRequest(_specificAudioRequest)
 		, audioControlId(_audioControlId)
-		, audioObjectId(_audioObjectId)
+		, pAudioObject(_pAudioObject)
 		, audioStandaloneFileId(_audioStandaloneFileId)
 		, audioEventId(_audioEventId)
 	{}
+
+	SAudioRequestInfo(SAudioRequestInfo const&) = delete;
+	SAudioRequestInfo(SAudioRequestInfo&&) = delete;
+	SAudioRequestInfo& operator=(SAudioRequestInfo const&) = delete;
+	SAudioRequestInfo& operator=(SAudioRequestInfo&&) = delete;
 
 	EAudioRequestResult const   requestResult;
 	void* const                 pOwner;
@@ -262,35 +234,30 @@ struct SAudioRequestInfo
 	EAudioRequestType const     audioRequestType;
 	AudioEnumFlagsType const    specificAudioRequest;
 	AudioControlId const        audioControlId;
-	AudioObjectId const         audioObjectId;
+	CATLAudioObject* const      pAudioObject;
 	AudioStandaloneFileId const audioStandaloneFileId;
 	AudioEventId const          audioEventId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioRequestInfo);
-	PREVENT_OBJECT_COPY(SAudioRequestInfo);
-};
-
-struct SAudioDebugData
-{
-	DynArray<string> audioObjectNames;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioDebugData);
-	PREVENT_OBJECT_COPY(SAudioDebugData);
 };
 
 struct SAudioFileData
 {
-	SAudioFileData() : duration(0.0f) {}
-	float duration;
+	SAudioFileData() = default;
+	SAudioFileData(SAudioFileData const&) = delete;
+	SAudioFileData(SAudioFileData&&) = delete;
+	SAudioFileData& operator=(SAudioFileData const&) = delete;
+	SAudioFileData& operator=(SAudioFileData&&) = delete;
 
-	PREVENT_OBJECT_COPY(SAudioFileData);
+	float duration = 0.0f;
 };
 
 struct SAudioTriggerData
 {
-	SAudioTriggerData() : radius(0.0f), occlusionFadeOutDistance(0.0f) {}
-	float radius;
-	float occlusionFadeOutDistance;
+	SAudioTriggerData() = default;
+	SAudioTriggerData(SAudioTriggerData const&) = delete;
+	SAudioTriggerData(SAudioTriggerData&&) = delete;
+	SAudioTriggerData& operator=(SAudioTriggerData const&) = delete;
+	SAudioTriggerData& operator=(SAudioTriggerData&&) = delete;
 
-	PREVENT_OBJECT_COPY(SAudioTriggerData);
+	float radius = 0.0f;
+	float occlusionFadeOutDistance = 0.0f;
 };

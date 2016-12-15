@@ -24,7 +24,6 @@
 #include <CrySystem/IStreamEngine.h>
 
 // Access to some game info.
-#include <CryGame/IGame.h>           // IGame
 #include <CryGame/IGameFramework.h>  // IGameFramework
 #include <../CryAction/ILevelSystem.h>   // ILevelSystemListener
 
@@ -1168,6 +1167,7 @@ void CEngineStats::CollectGeometry()
 		GetObjectsByType(eERType_Vegetation, lstInstances);
 		GetObjectsByType(eERType_Light, lstInstances);
 		GetObjectsByType(eERType_Decal, lstInstances);
+		GetObjectsByType(eERType_Character, lstInstances);
 
 		std::vector<IRenderNode*>::const_iterator itEnd = lstInstances.end();
 		for (std::vector<IRenderNode*>::iterator it = lstInstances.begin(); it != itEnd; ++it)

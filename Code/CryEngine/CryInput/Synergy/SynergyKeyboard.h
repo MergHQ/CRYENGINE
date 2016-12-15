@@ -17,10 +17,10 @@ public:
 	virtual ~CSynergyKeyboard();
 
 	// IInputDevice overrides
-	virtual int  GetDeviceIndex() const { return eIDT_Keyboard; }
-	virtual bool Init();
-	virtual void Update(bool bFocus);
-	virtual char GetInputCharAscii(const SInputEvent& event);
+	virtual int    GetDeviceIndex() const { return eIDT_Keyboard; }
+	virtual bool   Init();
+	virtual void   Update(bool bFocus);
+	virtual uint32 GetInputCharUnicode(const SInputEvent& event);
 	// ~IInputDevice
 
 private:

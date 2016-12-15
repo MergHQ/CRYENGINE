@@ -35,7 +35,7 @@ CVisionMap::~CVisionMap()
 
 void CVisionMap::Reset()
 {
-	COMPILE_TIME_ASSERT((ObserverParams::MaxSkipListSize + ObservableParams::MaxSkipListSize) <= RayCastRequest::MaxSkipListCount);
+	static_assert(ObserverParams::MaxSkipListSize + ObservableParams::MaxSkipListSize <= RayCastRequest::MaxSkipListCount, "Unexpected enum value!");
 
 	for (Observers::iterator observerIt = m_observers.begin(), end = m_observers.end(); observerIt != end; ++observerIt)
 	{

@@ -5,10 +5,9 @@
 #include "Input/PlayerInput.h"
 #include "View/PlayerView.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 #include "Game/GameRules.h"
 
-#include "FlowNodes/Helpers/FlowGameEntityNode.h"
 
 #include "Entities/Gameplay/SpawnPoint.h"
 
@@ -20,13 +19,18 @@ class CPlayerRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CPlayer>("Player");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CPlayer>("Player");
 
-		CGameFactory::RegisterGameObjectExtension<CPlayerMovement>("PlayerMovement");
-		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");
-		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
+		CGamePlugin::RegisterEntityComponent<CPlayerMovement>("PlayerMovement");
+		CGamePlugin::RegisterEntityComponent<CPlayerInput>("PlayerInput");
+		CGamePlugin::RegisterEntityComponent<CPlayerView>("PlayerView");
 		
 		RegisterCVars();
+	}
+
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
 	}
 
 	void RegisterCVars()
@@ -40,9 +44,25 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_rotationLimitsMinPitch", &m_rotationLimitsMinPitch, -0.84f, VF_CHEAT, "Minimum entity pitch limit");
 		REGISTER_CVAR2("pl_rotationLimitsMaxPitch", &m_rotationLimitsMaxPitch, 1.5f, VF_CHEAT, "Maximum entity pitch limit");
 
-		REGISTER_CVAR2("pl_viewDistance", &m_viewDistance, 10.f, VF_CHEAT, "Determiens the distance between player and camera");
+		REGISTER_CVAR2("pl_viewDistance", &m_viewDistance, 10.f, VF_CHEAT, "Determines the distance between player and camera");
 		
 		m_pGeometry = REGISTER_STRING("pl_geometry", "Objects/Default/primitive_sphere.cgf", VF_CHEAT, "Sets the third person geometry to load");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("pl_mass");
+			pConsole->UnregisterVariable("pl_moveImpulseStrength");
+			pConsole->UnregisterVariable("pl_rotationSpeedYaw");
+			pConsole->UnregisterVariable("pl_rotationSpeedPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMinPitch");
+			pConsole->UnregisterVariable("pl_rotationLimitsMaxPitch");
+			pConsole->UnregisterVariable("pl_viewDistance");
+			pConsole->UnregisterVariable("pl_geometry");
+		}
 	}
 };
 
@@ -53,13 +73,12 @@ CPlayer::CPlayer()
 	, m_pMovement(nullptr)
 	, m_pView(nullptr)
 	, m_bAlive(false)
-	, m_bIsLocalClient(false)
 {
 }
 
 CPlayer::~CPlayer()
 {
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->RemoveActor(GetEntityId());
+	gEnv->pGameFramework->GetIActorSystem()->RemoveActor(GetEntityId());
 }
 
 const CPlayer::SExternalCVars &CPlayer::GetCVars() const
@@ -76,24 +95,13 @@ bool CPlayer::Init(IGameObject *pGameObject)
 
 void CPlayer::PostInit(IGameObject *pGameObject)
 {
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
-
 	m_pMovement = static_cast<CPlayerMovement *>(GetGameObject()->AcquireExtension("PlayerMovement"));
 	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
 
 	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
 
 	// Register with the actor system
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
-}
-
-void CPlayer::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		m_bIsLocalClient = true;
-	}
+	gEnv->pGameFramework->GetIActorSystem()->AddActor(GetEntityId(), this);
 }
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
@@ -145,7 +153,7 @@ void CPlayer::SelectSpawnPoint()
 	pEntityIterator->MoveFirst();
 
 	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
+	auto extensionId = gEnv->pGameFramework->GetIGameObjectSystem()->GetID("SpawnPoint");
 
 	while (!pEntityIterator->IsEnd())
 	{
@@ -154,7 +162,7 @@ void CPlayer::SelectSpawnPoint()
 		if (pEntity->GetClass() != pSpawnerClass)
 			continue;
 
-		auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+		auto *pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
 		if (pGameObject == nullptr)
 			continue;
 

@@ -27,11 +27,14 @@ typedef Serialization::ClassFactory<IResponseCondition> ConditionSerializationCl
 typedef std::shared_ptr<IResponseCondition>             IConditionSharedPtr;
 
 struct IVariableCollection;
-typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
+typedef std::shared_ptr<IVariableCollection>                        IVariableCollectionSharedPtr;
 
-typedef DynArray<std::pair<string, string>> VariableValuesList;
+typedef CryStackStringT<char, 64>                                   ValuesString;
+typedef DynArray<std::pair<const ValuesString, const ValuesString>> ValuesList;
+typedef std::shared_ptr<ValuesList>                                 ValuesListPtr;
+typedef ValuesList::const_iterator                                  ValuesListIterator;
 
-typedef int                                  SignalInstanceId;
+typedef int                                                         SignalInstanceId;
 static const SignalInstanceId s_InvalidSignalId = -1;
 
 typedef int LipSyncID;
@@ -43,7 +46,7 @@ struct ISpeakerManager
 {
 	struct ILipsyncProvider
 	{
-		virtual LipSyncID OnLineStarted(IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;
+		virtual LipSyncID OnLineStarted(IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;  //Remark: pLine can be a nullptr, if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
 		virtual void      OnLineEnded(LipSyncID lipsyncId, IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;
 		virtual bool      Update(LipSyncID lipsyncId, IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;       //returns if the lip animation has finished
 		//TODO: also pass in the current audio data for 'Update'
@@ -52,27 +55,32 @@ struct ISpeakerManager
 	{
 		enum eLineEvent
 		{
-			eLineEvent_Started                   = BIT(0), //line started successfully
+			eLineEvent_Started                               = BIT(0), //line started successfully
+			eLineEvent_Finished                              = BIT(1), //line finished successfully
+			eLineEvent_Canceled                              = BIT(2), //was canceled while playing (by calling cancel or by destroying the actor)
+			eLineEvent_Queued                                = BIT(3), //line is waiting to start
 
-			eLineEvent_Finished                  = BIT(1),                                    //line finished successfully
-			eLineEvent_Canceled                  = BIT(2),                                    //was canceled while playing (by calling cancel or by destroying the actor)
-			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled, //useful combination, if you are only interested in IF the line has ended and not HOW it happened.
+			eLineEvent_SkippedBecauseOfFaultyData            = BIT(4), //was not started because of incorrect data.
+			eLineEvent_SkippedBecauseOfPriority              = BIT(5), //another more important line was already playing (pLine will hold that line) and the line did not allow queuing
+			eLineEvent_SkippedBecauseOfTimeOut               = BIT(6), //line was queued for some time but could not start in the allowed max-queue time
+			eLineEvent_SkippedBecauseOfNoValidLineVariations = BIT(7), //line used up all his line variations. (most commonly happens with the only-once flag)
+			eLineEvent_SkippedBecauseOfAlreadyRequested      = BIT(8), //the line was already running or queued
+			eLineEvent_SkippedBecauseOfExternalCode          = BIT(9), //a registered listener declined the execution of the line
 
-			eLineEvent_Queued                    = BIT(3), //line is waiting to start
-			eLineEvent_Canceling                 = BIT(4), //waiting for stop trigger to finish
-
-			eLineEvent_CanceledWhileQueued       = BIT(5),                                                                                              //was canceled while queued (by calling cancel or by destroying the actor)
-			eLineEvent_CouldNotBeStarted         = BIT(6),                                                                                              //was not started because of incorrect data.
-			eLineEvent_SkippedBecauseOfPriority  = BIT(7),                                                                                              //another more important line was already playing (pLine will hold that line)
-			eLineEvent_WasNotStartedForAnyReason = eLineEvent_CanceledWhileQueued | eLineEvent_CouldNotBeStarted | eLineEvent_SkippedBecauseOfPriority, //useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
+			//useful combination, if you are only interested in IF the line has ended and not HOW it happened.
+			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled,
+			//useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
+			eLineEvent_WasNotStartedForAnyReason = eLineEvent_SkippedBecauseOfFaultyData | eLineEvent_SkippedBecauseOfPriority | eLineEvent_SkippedBecauseOfTimeOut | eLineEvent_SkippedBecauseOfNoValidLineVariations | eLineEvent_SkippedBecauseOfAlreadyRequested | eLineEvent_SkippedBecauseOfExternalCode,
 
 		};
-		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0;
+
+		virtual bool OnLineAboutToStart(const IResponseActor* pSpeaker, const CHashedString& lineID) { return true; }                              //line is going to be started, but the execution will be skipped if this function returns false. Remark: This is not really a listener method, since its return value changes the execution-flow
+		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0; //Remark: pLine can be a nullptr if the line was skipped or if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
 	};
 
-	virtual bool IsSpeaking(const IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty()) const = 0;
-	virtual bool StartSpeaking(IResponseActor* pActor, const CHashedString& lineID) = 0;
-	virtual bool CancelSpeaking(const IResponseActor* pActor, int maxPrioToCancel = -1) = 0;
+	virtual IListener::eLineEvent StartSpeaking(IResponseActor* pActor, const CHashedString& lineID) = 0;
+	virtual bool IsSpeaking(const IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCheckQueuedLinesAsWell = false) const = 0;
+	virtual bool CancelSpeaking(const IResponseActor* pActor, int maxPrioToCancel = -1, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCancelQueuedLines = true) = 0;
 	virtual bool AddListener(IListener* pListener) = 0;
 	virtual bool RemoveListener(IListener* pListener) = 0;
 	virtual void SetCustomLipsyncProvider(ILipsyncProvider* pProvider) = 0;
@@ -154,9 +162,9 @@ struct IVariableCollection
 	virtual const CHashedString& GetName() const = 0;
 
 	//! Simple way to store some additional user data with the variable collection. Might be useful, if you need to pass a string along with a signal. The string will be copied.
-	virtual void          SetUserString(const char* szUserString) = 0;
+	virtual void        SetUserString(const char* szUserString) = 0;
 	//! Returns the additional user data string
-	virtual const string& GetUserString() = 0;
+	virtual const char* GetUserString() const = 0;
 
 	/**
 	 * Serializes all the member variables of this class
@@ -222,7 +230,7 @@ struct IResponseInstance
 	 * @return returns the id of the signal-instance that triggered the response
 	 * @see DRS.IResponseManager.AddListener
 	 */
-	virtual const DRS::SignalInstanceId GetSignalInstanceId() const = 0;
+	virtual const SignalInstanceId GetSignalInstanceId() const = 0;
 
 	/**
 	 * Will return the context variable collection for this signal (if there was one specified when the signal was queued)
@@ -328,7 +336,7 @@ public:
 	 * @param signalName - Name of the signal for which we want to interrupt the execution of responses
 	 * @param pSender - the Actor for which we want to stop the execution
 	 */
-	virtual void CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr) = 0;
+	virtual bool CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr, SignalInstanceId instanceToSkip = s_InvalidSignalId) = 0;
 
 	/**
 	 * Will create a new Response Actor. This actor is registered in the DRS.
@@ -424,19 +432,23 @@ public:
 	//! \return A pointer to the ISpeakerManager
 	virtual ISpeakerManager* GetSpeakerManager() const = 0;
 
-	enum eSaveHints
+	enum eSaveHints : uint32
 	{
-		SaveHints_Variables = BIT(0),
-		SaveHints_ResponseData = BIT(1),
+		SaveHints_Variables         = BIT(0),
+		SaveHints_ResponseData      = BIT(1),
+		SaveHints_LineData          = BIT(2),
+		SaveHints_Everything        = SaveHints_Variables | SaveHints_ResponseData | SaveHints_LineData,
+
+		SaveHints_SkipDefaultValues = BIT(3),   //optimization: do not store data that has the default value into the VariableValueList
 	};
 
 	//! Saves the current state of the DRS as a list of variables
 	//! the saveHints parameter can be used to include additional data in the list.
-	virtual void GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables) const = 0;
+	virtual ValuesListPtr GetCurrentState(uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables | IDynamicResponseSystem::SaveHints_SkipDefaultValues) const = 0;
 
-	//! Restores a previously stored state of the DRS. 
+	//! Restores a previously stored state of the DRS.
 	//! Remark: Depending on the implementation you might need to call 'Reset' first, in order to stop all running responses.
-	virtual void SetCurrentState(const DRS::VariableValuesList& outCollectionsList) = 0;
+	virtual void SetCurrentState(const ValuesList& outCollectionsList) = 0;
 
 	//! Only needed for debug purposes, informs the system who is currently using it (so that debug outputs than create logs like "flowgraph 'human2' has changed variable X to value 0.3").
 	//! \return the currently source of DRS actions
@@ -490,13 +502,13 @@ struct IResponseManager
 
 	/**
 	 * will register the given class (derived from DRS.IResponseManager.IListener) as a listener to signal-processing. If a signalInstanceId is provided, only callbacks for that specific instance are sent
-	 * @return returns if successful
+	 * @return returns true if successful
 	 * @see DRS.IResponseManager.IListener, CryDRS.CResponseActor.QueueSignal
 	 */
 	virtual bool AddListener(IListener* pNewListener, SignalInstanceId onlySignalWithID = s_InvalidSignalId) = 0;
 	/**
-	 * Will return the listener from the classes to be notified about signal events.
-	 * @return returns if successful
+	 * Will remove the listener
+	 * @return returns true if successful
 	 * @see DRS.IResponseManager.IListener
 	 */
 	virtual bool RemoveListener(IListener* pListenerToRemove) = 0;
@@ -575,7 +587,6 @@ struct IResponseActor
 	 */
 	virtual SignalInstanceId QueueSignal(const CHashedString& signalName, IVariableCollectionSharedPtr pSignalContext = nullptr, IResponseManager::IListener* pSignalListener = nullptr) = 0;
 };
-
 //////////////////////////////////////////////////////////////////////////
 //! A base class for all objects (conditions, actions for now) that are displayed in Sandbox.
 struct IEditorObject
@@ -617,7 +628,7 @@ struct SCurrentDrsUserScopeHelper
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// Interfaces needed only for the editor plugin.
+// Interfaces needed mainly for the editor plugin.
 
 struct IDialogLine
 {
@@ -627,8 +638,9 @@ struct IDialogLine
 	virtual const string& GetEndAudioTrigger() const = 0;
 	virtual const string& GetLipsyncAnimation() const = 0;
 	virtual const string& GetStandaloneFile() const = 0;
-	virtual const float   GetPauseLength() const = 0;
+	virtual float         GetPauseLength() const = 0;
 	virtual const string& GetCustomData() const = 0;
+
 	virtual void          SetText(const string& text) = 0;
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
@@ -643,23 +655,26 @@ struct IDialogLine
 
 struct IDialogLineSet
 {
-	enum class EPickModeFlags
+	enum EPickModeFlags : uint32
 	{
-		None                      = 0,
-		RandomVariation           = 1 << 0, //!< Pick one variation at random
-		SequentialVariationRepeat = 1 << 1, //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
-		SequentialVariationClamp  = 1 << 2, //!< Pick the next variation in the order they are specified (repeat the last one)
-		SequentialAllSuccessively = 1 << 3, //!< Pick all, one after another.
-		Any                       = RandomVariation | SequentialVariationRepeat | SequentialVariationClamp | SequentialAllSuccessively
+		EPickModeFlags_None                        = 0,
+		EPickModeFlags_RandomVariation             = BIT(0), //!< Pick one variation at random, but try not to repeat the last picked variation
+		EPickModeFlags_SequentialVariationRepeat   = BIT(1), //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
+		EPickModeFlags_SequentialVariationClamp    = BIT(2), //!< Pick the next variation in the order they are specified (repeat the last one)
+		EPickModeFlags_SequentialAllSuccessively   = BIT(3), //!< Pick all, one after another. (so a single SpeakLine action will cause a series of lines to be spoken)
+		EPickModeFlags_SequentialVariationOnlyOnce = BIT(4), //!< Pick the next variation in the order they are specified (return 0 when all are spoken)
+		Any = EPickModeFlags_RandomVariation | EPickModeFlags_SequentialVariationRepeat | EPickModeFlags_SequentialVariationClamp | EPickModeFlags_SequentialAllSuccessively | EPickModeFlags_SequentialVariationOnlyOnce
 	};
 
 	virtual ~IDialogLineSet() {}
 	virtual void          SetLineId(const CHashedString& lineId) = 0;
 	virtual void          SetPriority(int priority) = 0;
 	virtual void          SetFlags(uint32 flags) = 0;
+	virtual void          SetMaxQueuingDuration(float length) = 0;
 	virtual CHashedString GetLineId() const = 0;
 	virtual int           GetPriority() const = 0;
 	virtual uint32        GetFlags() const = 0;
+	virtual float         GetMaxQueuingDuration() const = 0;
 	virtual uint32        GetLineCount() const = 0;
 	virtual IDialogLine*  GetLineByIndex(uint32 index) = 0;
 	virtual IDialogLine*  InsertLine(uint32 index) = 0;
@@ -689,9 +704,9 @@ struct IDataImportHelper
 	typedef IConditionSharedPtr (*      CondtionCreatorFct)(const string&, const char* szFormatName);
 	typedef IResponseActionSharedPtr (* ActionCreatorFct)(const string&, const char* szFormatName);
 
-	typedef uint32                      ResponseID;
-	typedef uint32                      ResponseSegmentID;
-	static const uint32              INVALID_ID = -1;
+	static const uint32 INVALID_ID = -1;
+	typedef uint32 ResponseID;
+	typedef uint32 ResponseSegmentID;
 
 	virtual ResponseID               AddSignalResponse(const string& szName) = 0;
 	virtual bool                     AddResponseCondition(ResponseID responseID, IConditionSharedPtr pCondition, bool bNegated) = 0;

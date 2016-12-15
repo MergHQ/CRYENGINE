@@ -161,7 +161,7 @@ void CClientHitEffectsMP::SpawnMaterialEffect(const CGameRules* pGameRules, cons
 
 	if(inArmour)
 	{
-		const CGameRules::eThreatRating threat = pGameRules->GetThreatRating(g_pGame->GetClientActorId(), pTargetPlayer->GetEntityId());
+		const CGameRules::eThreatRating threat = pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), pTargetPlayer->GetEntityId());
 		const int effect = CLAMP(threat==CGameRules::eHostile ? 1 : 0, 0, static_cast<int>(m_armourTeamEffects.size()) - 1);
 		effectInfos = &m_armourTeamEffects[effect];
 	}

@@ -401,7 +401,8 @@ void AIConsoleVars::Init()
 	                       "2 - triangles, mesh and contours\n"
 	                       "3 - triangles, mesh contours and external links\n"
 	                       "4 - triangles, mesh contours, external links and triangle IDs\n"
-	                       "5 - triangles, mesh contours, external links and island IDs\n");
+	                       "5 - triangles, mesh contours, external links and island IDs\n"
+	                       "6 - triangles with backfaces, mesh contours and external links\n");
 	DefineConstIntCVarName("ai_IslandConnectionsSystemProfileMemory", IslandConnectionsSystemProfileMemory, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Enables/Disables the memory profile for the island connections system.");
 	DefineConstIntCVarName("ai_NavigationSystemMT", NavigationSystemMT, 1, VF_CHEAT | VF_CHEAT_NOCHECK,

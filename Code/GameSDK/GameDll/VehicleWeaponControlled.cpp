@@ -153,7 +153,7 @@ void CVehicleWeaponControlled::StartUse(EntityId userId)
   Base::StartUse(userId);
   m_CurrentTime = 0.5f;
 
-  IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+  IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
   if (pVehicle)
   {
 	  SHUDEvent hudEvent(eHUDEvent_AddEntity);
@@ -171,7 +171,7 @@ void CVehicleWeaponControlled::StopUse(EntityId userId)
    SetOwnerId(id);
    m_CurrentTime = 0.5f;
 
-   IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+   IVehicle *pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
    if (pVehicle)
    {
 	   SHUDEvent hudEvent(eHUDEvent_RemoveEntity);
@@ -204,7 +204,7 @@ static float factor3 = 1.0f;
 
 void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
 {
-	IVehicle *pVehicle = m_vehicleId ? gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId) : NULL; 
+	IVehicle *pVehicle = m_vehicleId ? gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId) : NULL; 
   if (!m_vehicleId && GetEntity()->GetParent())
   {
     IEntity *entity = GetEntity();
@@ -215,7 +215,7 @@ void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
       if (parent)
       {
 				m_vehicleId = parent->GetId();
-        pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(parent->GetId());
+        pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(parent->GetId());
       }
     }
   }
@@ -467,7 +467,7 @@ void CVehicleWeaponPulseC::StartFire()
 	if(!m_vehicleId && GetEntity()->GetParent())
 	{
 		m_vehicleId = GetEntity()->GetParent()->GetId();
-		CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
+		CRY_ASSERT(gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
 	}
 }
 
@@ -481,7 +481,7 @@ void CVehicleWeaponPulseC::Update(SEntityUpdateContext& ctx, int update)
 	if(!m_vehicleId && GetEntity()->GetParent())
 	{
 		m_vehicleId = GetEntity()->GetParent()->GetId();
-		CRY_ASSERT(gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
+		CRY_ASSERT(gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId) && "Using VehicleWeapons on non-vehicles may lead to unexpected behavior.");
 	}
 
 	IVehicle* pVehicle = GetVehicle();

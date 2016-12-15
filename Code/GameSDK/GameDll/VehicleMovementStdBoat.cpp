@@ -282,47 +282,46 @@ void CVehicleMovementStdBoat::Update(const float deltaTime)
 		waveLoc.y += speedRatio*min(0.f, m_pushOffset.y-m_massOffset.y);
 		waveLoc = wTM * waveLoc;
 
-		IRenderer* pRenderer = gEnv->pRenderer;
 		static float color[4] = {1,1,1,1};    
 		float colorRed[4] = {1,0,0,1};
 		float colorGreen[4] = {0,1,0,1};
 		float y=50.f, step1=15.f, step2=20.f, size1=1.3f, size2=1.5f;
 
-		pRenderer->Draw2dLabel(5.0f,   y, size2, color, false, "Boat movement");
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, color, false, "Speed: %.1f (%.1f km/h)", speed, speed*3.6f);
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "LocalW.z norm: %.2f", abs(localW.z)/m_turnRateMax);
+		IRenderAuxText::Draw2dLabel(5.0f, y, size2, color, false, "Boat movement");
+		IRenderAuxText::Draw2dLabel(5.0f, y += step2, size1, color, false, "Speed: %.1f (%.1f km/h)", speed, speed*3.6f);
+		IRenderAuxText::Draw2dLabel(5.0f, y += step1, size1, color, false, "LocalW.z norm: %.2f", abs(localW.z) / m_turnRateMax);
 		if (m_velLift > 0.f)
 		{
-			pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, m_lifted ? colorGreen : color, false, m_lifted ? "Lifted" : "not lifted");
+			IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size1, m_lifted ? colorGreen : color, false, m_lifted ? "Lifted" : "not lifted");
 			//pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, color, false, "Impulse lift: %.0f", liftImp.impulse.len());               
 		}    
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, physStatus->submergedFraction > fSubmergedMin ? color : colorRed, false, "Submerged: %.2f", physStatus->submergedFraction);
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, fWaterLevelDiff < fWaterLevelMaxDiff ? color : colorRed, false, "WaterLevel: %.2f (max: %.2f)", fWaterLevelDiff, fWaterLevelMaxDiff);
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, physStatus->submergedFraction > fSubmergedMin ? color : colorRed, false, "Submerged: %.2f", physStatus->submergedFraction);
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, fWaterLevelDiff < fWaterLevelMaxDiff ? color : colorRed, false, "WaterLevel: %.2f (max: %.2f)", fWaterLevelDiff, fWaterLevelMaxDiff);
 
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Driver input");
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, color, false, "power: %.2f", m_movementAction.power);
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Driver input");
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size1, color, false, "power: %.2f", m_movementAction.power);
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
 
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Propelling");
-		//pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, color, false, "turnAccel (norm/real): %.2f / %.2f", turnAccelNorm, turnAccel);         
-		//pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse acc: %.0f", linearImp.impulse.len());         
-		//pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse steer/damp: %.0f", angularImp.angImpulse.len()); 
-		//pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse corner: %.0f", dampImp.impulse.len());
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Propelling");
+		//IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size1, color, false, "turnAccel (norm/real): %.2f / %.2f", turnAccelNorm, turnAccel);         
+		//IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse acc: %.0f", linearImp.impulse.len());         
+		//IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse steer/damp: %.0f", angularImp.angImpulse.len()); 
+		//IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Impulse corner: %.0f", dampImp.impulse.len());
 
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Waves");
-		pRenderer->Draw2dLabel(5.0f,  y+=step2, size1, color, false, "timer: %.1f", m_waveTimer); 
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "frequency: %.2f", waveFreq); 
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "random: %.2f", m_waveRandomMult); 
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "kX: %.2f", kx);     
-		pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "kY: %.2f", ky); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size2, color, false, "Waves");
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size1, color, false, "timer: %.1f", m_waveTimer); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "frequency: %.2f", waveFreq); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "random: %.2f", m_waveRandomMult); 
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "kX: %.2f", kx);     
+		IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "kY: %.2f", ky); 
 
 		if (Boosting())
-			pRenderer->Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Boost: %.2f", m_boostCounter);
+			IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size1, color, false, "Boost: %.2f", m_boostCounter);
 
-		IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
+		IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		ColorB colorB(0,255,0,255);
 
-		pRenderer->DrawLabel(worldPropPos, 1.3f, "WL: %.2f", waterLevelWorld);
+		IRenderAuxText::DrawLabelF(worldPropPos, 1.3f, "WL: %.2f", waterLevelWorld);
 
 		pGeom->DrawSphere(worldPropPos, 0.15f, colorB);
 		pGeom->DrawSphere(waveLoc, 0.25f, colorB);
@@ -392,7 +391,9 @@ void CVehicleMovementStdBoat::UpdateRunSound(const float deltaTime)
     m_rpmScale = abs(m_rpmScaleSgn);
     m_rpmScale = min(1.f, max(ms_engineSoundIdleRatio, m_rpmScale + m_waveSoundPitch));
 
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+		auto pIEntityAudioComponent = GetAudioProxy();
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
   }
 }
 
@@ -533,7 +534,7 @@ void CVehicleMovementStdBoat::UpdateSurfaceEffects(const float deltaTime)
       
       pAuxGeom->DrawSphere(ppos, 0.2f, red);
       pAuxGeom->DrawCone(ppos, slotTM.GetColumn1(), 0.1f, 0.5f, red);
-      gEnv->pRenderer->Draw2dLabel(50.f, (float)(400+10*emitterIt->slot), 1.2f, color, false, "<%s> water fx: slot %i [%s], speed %.1f, sizeScale %.2f, countScale %.2f (pos %.0f,%0.f,%0.f)", pEntity->GetName(), emitterIt->slot, effect, speed, sizeScale, countScale, ppos.x, ppos.y, ppos.z);        
+      IRenderAuxText::Draw2dLabel(50.f, (float)(400+10*emitterIt->slot), 1.2f, color, false, "<%s> water fx: slot %i [%s], speed %.1f, sizeScale %.2f, countScale %.2f (pos %.0f,%0.f,%0.f)", pEntity->GetName(), emitterIt->slot, effect, speed, sizeScale, countScale, ppos.x, ppos.y, ppos.z);        
     }  
 #endif
   }

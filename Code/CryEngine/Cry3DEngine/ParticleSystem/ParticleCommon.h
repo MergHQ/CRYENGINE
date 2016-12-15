@@ -60,7 +60,7 @@ namespace pfx2
 {
 
 const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 8;
+const uint gCurrentVersion = 9;
 
 class CParticleSystem;
 class CParticleEffect;
@@ -76,6 +76,7 @@ typedef _smart_ptr<CParticleFeature> TParticleFeaturePtr;
 
 typedef uint32                       TInstanceDataOffset;
 const TParticleId gInvalidId = -1;
+const float gInfinity = std::numeric_limits<float>::infinity();
 
 typedef stl::HeapAllocator<stl::PSyncNone>                                    TParticleHeap;
 typedef TParticleHeap::Array<TParticleId, uint, CRY_PFX2_PARTICLES_ALIGNMENT> TParticleIdArray;
@@ -122,6 +123,15 @@ struct SRenderContext
 	float                     m_distance;
 	uint16                    m_lightVolumeId;
 	uint16                    m_fogVolumeId;
+};
+
+struct SUpdateRange
+{
+	explicit SUpdateRange(TParticleId firstParticleId = 0, TParticleId lastParticleId = 0)
+		: m_firstParticleId(firstParticleId)
+		, m_lastParticleId(lastParticleId) {}
+	TParticleId m_firstParticleId;
+	TParticleId m_lastParticleId;
 };
 
 enum EFeatureType

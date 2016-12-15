@@ -40,12 +40,16 @@ void CClipVolumesStage::Init()
 	m_blendValuesPass.ClearPrimitives();
 	m_volumetricStencilPass.ClearPrimitives();
 
+	m_stencilPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_blendValuesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_volumetricStencilPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_stencilResolvePass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+
 	for (int i = 0; i < MaxDeferredClipVolumes; ++i)
 	{
 		// Stencil pass: two primitives per clip volume, both share the same constant buffer
 		{
-			CConstantBufferPtr pCB;
-			pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants)));
+			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
 			m_stencilPrimitives[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
 			m_stencilPrimitives[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
@@ -53,8 +57,7 @@ void CClipVolumesStage::Init()
 
 		// Blend values pass: one primitive per clip volume, shared CB for vertex and pixel shader
 		{
-			CConstantBufferPtr pCB;
-			pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants)));
+			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
 			m_blendPrimitives[i].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
 		}
@@ -177,8 +180,6 @@ void CClipVolumesStage::Prepare(CRenderView* pRenderView)
 
 			if (pRenderMesh = reinterpret_cast<CRenderMesh*>(volume.m_pRenderMesh.get()))
 			{
-				pRenderMesh->CheckUpdate(pRenderMesh->_GetVertexFormat(), 0);
-
 				hVertexStream = pRenderMesh->_GetVBStream(VSF_GENERAL);
 				hIndexStream = pRenderMesh->_GetIBStream();
 
@@ -231,7 +232,7 @@ void CClipVolumesStage::Prepare(CRenderView* pRenderView)
 				const int stencilTestRef = BIT_STENCIL_INSIDE_CLIPVOLUME + volume.nStencilRef + 1;
 
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
-				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, 0);
+				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, CVrProjectionManager::Instance()->GetRTFlags());
 				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_B | GS_NOCOLMASK_A);
 				primBlend.SetTexture(3, CTexture::s_ptexZTarget);
 				primBlend.SetCullMode(eCULL_Front);
@@ -473,7 +474,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 				static CCryNameR paramDepth("ParamDepth");
 				const Vec4 vParamDepth(static_cast<float>(i), factor1, factor0, nearDepth);
-				m_passWriteJitteredDepth.SetConstant(eHWSC_Pixel, paramDepth, vParamDepth);
+				m_passWriteJitteredDepth.SetConstant(paramDepth, vParamDepth, eHWSC_Pixel);
 
 				m_passWriteJitteredDepth.Execute();
 			}

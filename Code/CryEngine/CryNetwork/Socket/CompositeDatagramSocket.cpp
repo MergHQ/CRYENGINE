@@ -84,13 +84,13 @@ CRYSOCKET CCompositeDatagramSocket::GetSysSocket()
 	return CRY_INVALID_SOCKET;
 }
 
-void CCompositeDatagramSocket::RegisterBackoffAddress(TNetAddress addr)
+void CCompositeDatagramSocket::RegisterBackoffAddress(const TNetAddress& addr)
 {
 	for (ChildVecIter iter = m_children.begin(); iter != m_children.end(); ++iter)
 		(*iter)->RegisterBackoffAddress(addr);
 }
 
-void CCompositeDatagramSocket::UnregisterBackoffAddress(TNetAddress addr)
+void CCompositeDatagramSocket::UnregisterBackoffAddress(const TNetAddress& addr)
 {
 	for (ChildVecIter iter = m_children.begin(); iter != m_children.end(); ++iter)
 		(*iter)->UnregisterBackoffAddress(addr);

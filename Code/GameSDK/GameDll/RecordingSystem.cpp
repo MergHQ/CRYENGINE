@@ -601,7 +601,7 @@ CRecordingSystem::CRecordingSystem()
 	m_replayTimer.reset(gEnv->pTimer->CreateNewTimer());
 
 	//Cache information required for interactive object playback
-	IAnimationDatabaseManager& adbManager = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+	IAnimationDatabaseManager& adbManager = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager();
 	m_pDatabaseInteractiveObjects = adbManager.Load("Animations/Mannequin/ADB/interactiveObjects.adb");
 	m_pPlayerControllerDef = adbManager.LoadControllerDef("Animations/Mannequin/ADB/PlayerControllerDefs.xml");
 	const IAnimationDatabase* pDatabasePlayer = adbManager.Load("Animations/Mannequin/ADB/PlayerAnims1P.adb");
@@ -1741,7 +1741,7 @@ void CRecordingSystem::RevertBrokenObjectsToStateAtTime(float fTime)
 
 			//Clone all of the objects and re-set them to their original state, then apply the breaks that have
 			//	taken place up to fTime
-			gEnv->pGame->GetIGameFramework()->CloneBrokenObjectsAndRevertToStateAtTime(kFirstProceduralBreakEventIndex, pBreakEventIndicies, iNumProceduralBreakEvents, pClonedNodes, iNumClonedNodes, m_renderNodeLookup);
+			gEnv->pGameFramework->CloneBrokenObjectsAndRevertToStateAtTime(kFirstProceduralBreakEventIndex, pBreakEventIndicies, iNumProceduralBreakEvents, pClonedNodes, iNumClonedNodes, m_renderNodeLookup);
 
 			m_breakEventIndicies.resize(iNumProceduralBreakEvents);
 			m_clonedNodes.resize(iNumClonedNodes);
@@ -1785,11 +1785,11 @@ void CRecordingSystem::CleanUpBrokenObjects()
 	uint16 * pBreakEventIndices = m_breakEventIndicies.empty() ? NULL : &(m_breakEventIndicies[0]);
 	const int32 iNumBreakEventIndices = m_breakEventIndicies.size();
 
-	gEnv->pGame->GetIGameFramework()->UnhideBrokenObjectsByIndex(pBreakEventIndices, iNumBreakEventIndices);
+	gEnv->pGameFramework->UnhideBrokenObjectsByIndex(pBreakEventIndices, iNumBreakEventIndices);
 
-	if (gEnv->pGame->GetIGameFramework()->GetIMaterialEffects())
+	if (gEnv->pGameFramework->GetIMaterialEffects())
 	{
-		gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->ClearDelayedEffects();
+		gEnv->pGameFramework->GetIMaterialEffects()->ClearDelayedEffects();
 	}
 
 	const int iNumClonedNodes = m_clonedNodes.size();
@@ -2198,7 +2198,7 @@ void CRecordingSystem::ApplyWeaponShoot(const SRecording_OnShoot *pShoot)
 	IEntity* pReplayEntity = GetReplayEntity(pShoot->weaponId);
 	if(pReplayEntity)
 	{
-		IGameFramework *pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework *pGameFramework = gEnv->pGameFramework;
 		IItemSystem		*pItemSystem = pGameFramework->GetIItemSystem();
 		IItem * pItem = pItemSystem->GetItem(pReplayEntity->GetId());
 		if (pItem)
@@ -2439,7 +2439,7 @@ void CRecordingSystem::ApplyMannequinSetSlaveController(const SRecording_MannSet
 
 		if (pMasterActionController && pSlaveActionController)
 		{
-			const IAnimationDatabaseManager& animationDatabase = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+			const IAnimationDatabaseManager& animationDatabase = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager();
 			const IAnimationDatabase* piOptionalDatabase = animationDatabase.FindDatabase( pMannSetSlave->optionalDatabaseFilenameCRC );
 
 			pMasterActionController->SetSlaveController(*pSlaveActionController, pMannSetSlave->targetContext, pMannSetSlave->enslave, piOptionalDatabase);
@@ -2457,7 +2457,7 @@ void CRecordingSystem::ApplyMannequinSetSlaveController(const SRecording_MannSet
 				ICharacterInstance* pSlaveCharacterInstance = pSlaveEntity->GetCharacter(0);
 				if(pSlaveCharacterInstance)
 				{
-					const IAnimationDatabaseManager& animationDatabase = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+					const IAnimationDatabaseManager& animationDatabase = gEnv->pGameFramework->GetMannequinInterface().GetAnimationDatabaseManager();
 					const IAnimationDatabase* piOptionalDatabase = animationDatabase.FindDatabase( pMannSetSlave->optionalDatabaseFilenameCRC );
 
 					pMasterActionController->SetScopeContext(pMannSetSlave->targetContext, *pSlaveEntity, pSlaveCharacterInstance, piOptionalDatabase);
@@ -2507,17 +2507,8 @@ void CRecordingSystem::HideEntityKeepingPhysics(IEntity *pEntity, bool hide)
 	RecSysLogDebug(eRSD_Visibility, "%s [%d: %s]", hide ? "HideKeepPhys" : "ShowKeepPhys", pEntity->GetId(), pEntity->GetName() );
 
 	SEntityEvent event(hide ? ENTITY_EVENT_INVISIBLE : ENTITY_EVENT_VISIBLE);
-	for (int i = 0; i < ENTITY_PROXY_LAST; i++)
-	{
-		EEntityProxy proxyType = (EEntityProxy)i;
-		// Everybody hide, but don't tell the physics.
-		if (proxyType != ENTITY_PROXY_PHYSICS)
-		{
-			IEntityProxy *pProxy = pEntity->GetProxy(proxyType);
-			if (pProxy)
-				pProxy->ProcessEvent(event);
-		}
-	}
+	event.nParam[0] = 1; // 1 tels physics to ignore it.
+	pEntity->SendEvent(event);
 
 	// Propagate invisible flag to the child entities
 	const int childCount = pEntity->GetChildCount();
@@ -3021,7 +3012,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 							CRecordingSystem::RemoveEntityPhysics(*pCloneEntity);
 
 							const int team = initialState.teamChange.entityId ? initialState.teamChange.teamId : 0;
-							const bool isFriendly = pGameRules->GetTeamCount()==0 ? (playerId==g_pGame->GetClientActorId()) : team==m_playInfo.m_request.kill.localPlayerTeam;
+							const bool isFriendly = pGameRules->GetTeamCount()==0 ? (playerId==gEnv->pGameFramework->GetClientActorId()) : team==m_playInfo.m_request.kill.localPlayerTeam;
 
 							typedef CryFixedStringT<DISPLAY_NAME_LENGTH> TPlayerDisplayName;
 							TPlayerDisplayName playerDisplayname = initialState.playerJoined.displayName;
@@ -3187,7 +3178,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 void CRecordingSystem::SetPlayBackCameraView(bool bSetView)
 {
 	// Need to set capture view and "linked to" entity for camera space rendering to work 
-	IView* pActiveView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+	IView* pActiveView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 	if(pActiveView)
 	{
 		const bool bOriginalEntity = true;
@@ -3648,13 +3639,6 @@ void CRecordingSystem::RecordTPCharPacket(IEntity *pEntity, CActor *pActor)
 			chr.playerFlags |= eTPF_OnGround;
 		}
 	}
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if (pRenderProxy)
-	{
-		chr.layerEffectParams = pRenderProxy->GetEffectLayerParams();
-		if (pRenderProxy->GetMaterialLayersMask() & MTL_LAYER_CLOAK)
-			chr.playerFlags |= eTPF_Cloaked;
-	}
 
 	if (pEntity->IsInvisible()||pEntity->IsHidden())
 	{
@@ -3776,7 +3760,7 @@ void CRecordingSystem::Update(const float frameTime)
 		m_timeSinceLastFPRecord += frameTime;
 
 		//This was being done anyway; need to check the view vector to allow us to have higher temporal resolution if required
-		IViewSystem *cvs = gEnv->pGame->GetIGameFramework()->GetIViewSystem();
+		IViewSystem *cvs = gEnv->pGameFramework->GetIViewSystem();
 		IView *activeView = cvs->GetActiveView();
 		if (activeView)
 		{
@@ -4985,7 +4969,7 @@ void CRecordingSystem::UpdateFirstPersonPosition()
 			m_weaponParams.skelAnim = pCharacter->GetISkeletonAnim();
 
 			bool isZoomed = false;
-			IGameFramework *pGameFramework = gEnv->pGame->GetIGameFramework();
+			IGameFramework *pGameFramework = gEnv->pGameFramework;
 			IItemSystem *pItemSystem = pGameFramework->GetIItemSystem();
 			bool enableWeaponAim = false;
 			if (IItem *pItem = pItemSystem->GetItem(pReplayActor->GetGunId()))
@@ -5252,12 +5236,12 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 		bool isCloaked = ((tpchar->playerFlags & eTPF_Cloaked) != 0);
 		bool fade = true;
 
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pReplayEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
+		
 		{
-			pRenderProxy->SetEffectLayerParams( tpchar->layerEffectParams );
+			//pIEntityRender->SetEffectLayerParams( tpchar->layerEffectParams );
 			
-			bool wasCloaked = ((pRenderProxy->GetMaterialLayersMask() & MTL_LAYER_CLOAK) != 0);
+			bool wasCloaked = false; //((pIEntityRender->GetMaterialLayersMask() & MTL_LAYER_CLOAK) != 0);
 			if (pReplayActor && (isCloaked != wasCloaked))
 			{
 				// Calc cloak settings
@@ -5270,7 +5254,7 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 				const bool bIgnoreCloakRefractionColor = (m_killer==tpchar->eid);
 				EntityEffects::Cloak::CloakEntity(replayEntityId,isCloaked,fade,g_pGameCVars->g_cloakBlendSpeedScale,bCloakFadeByDistance,cloakColorChannel,bIgnoreCloakRefractionColor);
 
-				IGameFramework *pGameFramework = gEnv->pGame->GetIGameFramework();
+				IGameFramework *pGameFramework = gEnv->pGameFramework;
 				IItemSystem *pItemSystem = pGameFramework->GetIItemSystem();
 				if (CItem *pItem = (CItem*)pItemSystem->GetItem(pReplayActor->GetGunId()))
 				{
@@ -5404,27 +5388,8 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 	}
 }
 
-void CRecordingSystem::CloakEnable(IEntityRenderProxy* pRenderProxy, bool enable, bool fade)
+void CRecordingSystem::CloakEnable(IEntityRender* pIEntityRender, bool enable, bool fade)
 {
-	// Code taken from CItem::CloakEnable
-	uint8 mask = pRenderProxy->GetMaterialLayersMask();
-	uint32 blend = pRenderProxy->GetMaterialLayersBlend();
-	if (!fade)
-	{
-		blend = (blend & ~MTL_LAYER_BLEND_CLOAK) | (enable ? MTL_LAYER_BLEND_CLOAK : 0);
-	}
-	else
-	{
-		blend = (blend & ~MTL_LAYER_BLEND_CLOAK) | (enable ? 0 : MTL_LAYER_BLEND_CLOAK);
-	}
-
-	if (enable)
-		mask = mask|MTL_LAYER_CLOAK;
-	else
-		mask = mask&~MTL_LAYER_CLOAK;
-	
-	pRenderProxy->SetMaterialLayersMask(mask);
-	pRenderProxy->SetMaterialLayersBlend(blend);
 }
 
 void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpawn, float time)
@@ -5547,7 +5512,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 			{
 				if (m_pDatabaseInteractiveObjects && m_pPlayerControllerDef && pReplayObject && pGameObject)
 				{
-					IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+					IMannequin &mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 					SAnimationContext animContext(*m_pPlayerControllerDef);
 
 					IActionController *pActionController = mannequinSys.CreateActionController(pEntity, animContext);
@@ -5601,11 +5566,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 
 		if (entitySpawn->subObjHideMask != 0)
 		{
-			IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
-			{
-				pRenderProxy->SetSubObjHideMask(0, entitySpawn->subObjHideMask);
-			}
+			pEntity->SetSubObjHideMask(0, entitySpawn->subObjHideMask);
 		}
 	}
 }
@@ -5696,7 +5657,7 @@ const STracerParams* CRecordingSystem::GetKillerTracerParams()
 	CReplayActor* pReplayActor = GetReplayActor(m_killer, true);
 	if (pReplayActor)
 	{
-		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+		IGameFramework* pGameFramework = gEnv->pGameFramework;
 		IItemSystem* pItemSystem = pGameFramework->GetIItemSystem();
 
 		if (IItem* pItem = pItemSystem->GetItem(pReplayActor->GetGunId()))
@@ -5888,8 +5849,8 @@ void CRecordingSystem::DebugStoreHighlight( const float length, const int highli
 	const float startTime = currTime-length;
 	SKillInfo kill;
 	kill.deathTime = startTime + g_pGameCVars->kc_kickInTime;
-	kill.killerId = g_pGame->GetClientActorId();
-	kill.localPlayerTeam = g_pGame->GetGameRules()->GetTeam(g_pGame->GetClientActorId());
+	kill.killerId = gEnv->pGameFramework->GetClientActorId();
+	kill.localPlayerTeam = g_pGame->GetGameRules()->GetTeam(gEnv->pGameFramework->GetClientActorId());
 
 	SRecordedKill data(kill, 0.f, startTime);
 	SaveHighlight(data, highlightIndex);
@@ -5914,7 +5875,7 @@ SRecordingEntity::EEntityType CRecordingSystem::RecordEntitySpawn(IEntity* pEnti
 	RecordEntitySpawnGeometry(&entitySpawn, pEntity);
 
 	SRecordingEntity::EEntityType entityType = SRecordingEntity::eET_Generic;
-	CActor *pActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId());
+	CActor *pActor = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(pEntity->GetId());
 	if (pActor)
 	{
 		// If it is an actor then record the initial weapon
@@ -6083,7 +6044,7 @@ void CRecordingSystem::RecordActorWeapon()
 	std::vector<EntityId>::iterator itEntity;
 	for (itEntity = m_newActorEntities.begin(); itEntity != m_newActorEntities.end(); ++itEntity)
 	{
-		CActor *pActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(*itEntity);
+		CActor *pActor = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(*itEntity);
 		if (pActor)
 		{
 			// If it is an actor then record the initial weapon
@@ -6172,7 +6133,7 @@ void CRecordingSystem::RecordEntityInfo()
 			{
 				// If this entity is an actor then record it as a TPChar packet which contains more information
 				// such as cloak state, aim IK and velocity
-				CActor *pActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(recEnt.entityId);
+				CActor *pActor = (CActor*)gEnv->pGameFramework->GetIActorSystem()->GetActor(recEnt.entityId);
 				if (pActor)
 				{
 					RecordTPCharPacket(pEntity, pActor);
@@ -6191,7 +6152,7 @@ void CRecordingSystem::RecordEntityInfo()
 					IItem *pItem = NULL;
 					if (recEnt.type == SRecordingEntity::eET_Item)
 					{
-						pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(recEnt.entityId);
+						pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(recEnt.entityId);
 					}
 					// Don't record the position of selected items because their position will be controlled
 					// by the actor it is attached to
@@ -6425,16 +6386,14 @@ void CRecordingSystem::OnCreateEmitter(IParticleEmitter* pEmitter)
 			IParticleEffect* pEffectNonConst = const_cast<IParticleEffect*>(pEmitter->GetEffect());
 			if (!m_excludedParticleEffects.count(pEffectNonConst))
 			{
-				auto sp = pEmitter->GetSpawnParams(); sp.bNowhere = true;
-				pEmitter->SetSpawnParams(sp);
 				if (!pEffectNonConst->IsTemporary())
 				{
 					SRecording_ParticleCreated particle;
 					particle.pParticleEmitter = pEmitter;
 					particle.pParticleEffect = pEffectNonConst;
 					particle.location = pEmitter->GetLocation();
-					particle.entityId = 0;//pEmitter->GetAttachedEntityId(); This won't have been set yet
-					particle.entitySlot = 0;//pEmitter->GetAttachedEntitySlot();
+					particle.entityId = 0; //pEmitter->GetAttachedEntityId(); This won't have been set yet
+					particle.entitySlot = 0; //pEmitter->GetAttachedEntitySlot();
 					pEmitter->AddRef();
 					m_newParticles.push_back(particle);
 				}
@@ -6537,7 +6496,7 @@ void CRecordingSystem::OnSetTeam(EntityId entityId, int team)
 			teamChange.entityId = entityId;
 			teamChange.teamId = (uint8)team;
 			CGameRules* pGameRules = g_pGame->GetGameRules();
-			teamChange.isFriendly = pGameRules ? pGameRules->GetThreatRating(g_pGame->GetClientActorId(), entityId)==CGameRules::eFriendly : false;
+			teamChange.isFriendly = pGameRules ? pGameRules->GetThreatRating(gEnv->pGameFramework->GetClientActorId(), entityId)==CGameRules::eFriendly : false;
 			m_pBuffer->AddPacket(teamChange);
 			// Sometimes the models get changed when setting the team, so we'll update
 			// the entity spawn packet with the new models
@@ -6728,7 +6687,7 @@ void CRecordingSystem::OnKill(IActor* pVictimActor, const HitInfo& hitInfo, bool
 	const EntityId victimId = pVictimActor->GetEntityId();
 
 	// Who is the client?
-	const EntityId localPlayerId = g_pGame->GetClientActorId();
+	const EntityId localPlayerId = gEnv->pGameFramework->GetClientActorId();
 	const bool bKillerIsClient = (killerId==localPlayerId);
 	const bool bVictimIsClient = (victimId==localPlayerId);
 
@@ -6899,6 +6858,12 @@ void CRecordingSystem::OnFireModeChanged(IWeapon *pWeapon, int currentFireMode)
 
 void CRecordingSystem::OnWeaponRippedOff(CWeapon *pWeapon)
 {
+	// CE-10971: Killing a player with a ripped-off HMG would trigger an assertion
+	// and the gun would be missing in the kill cam. The gun entity wasn't present
+	// in the replay buffer.
+	IEntity *pEntity = pWeapon->GetEntity();
+	AddRecordingEntity(pEntity, RecordEntitySpawn(pEntity));
+
 	RecordWeaponSelection(pWeapon, true);
 }
 
@@ -6951,7 +6916,7 @@ void CRecordingSystem::DebugDrawAnimationData(void)
 						IAnimationSet* pAnimationSet = ici->GetIAnimationSet();
 						const char *animName = pAnimationSet->GetNameByAnimID( sad->animID );
 
-						gEnv->pRenderer->Draw2dLabel(xPos, yPos, FONT_SIZE, FONT_COLOUR, false, animName);
+						IRenderAuxText::Draw2dLabel(xPos, yPos, FONT_SIZE, FONT_COLOUR, false, animName);
 
 						yPos += TEXT_INC;
 					}
@@ -7023,7 +6988,6 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 			}
 		}
 
-		IRenderer *pRenderer = gEnv->pRenderer;
 		float red[] = {1.f, 0.f, 0.f, 1.f};
 		float green[] = {0.f, 1.f, 0.f, 1.f};
 		float white[] = {1.f, 1.f, 1.f, 1.f};
@@ -7038,20 +7002,20 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 
 		if (IsRecordingAndNotPlaying())
 		{
-			pRenderer->Draw2dLabel(70.f, yPos, 2, red, false, "RECORDING");
+			IRenderAuxText::Draw2dLabel(70.f, yPos, 2, red, false, "RECORDING");
 		}
 		else if(IsPlayingBack())
 		{
-			pRenderer->Draw2dLabel(70.f, yPos, 2, green, false, "PLAYBACK");
+			IRenderAuxText::Draw2dLabel(70.f, yPos, 2, green, false, "PLAYBACK");
 		}
 
 		yPos += 20.f;
 
 		char temp[255];
 		cry_sprintf(temp, "First person buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBufferFirstPerson->size(), numFPFrames, lastFPFrameTime - firstFPFrameTime);
-		pRenderer->Draw2dLabel(xPos, yPos, 2, red, false, temp);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, 2, red, false, temp);
 		yPos += 20.f;
-		pRenderer->Draw2dLabel(xPos, yPos, 2, red, false, "Recording buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBuffer->size(), numFrames, lastFrameTime - firstFrameTime);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, 2, red, false, "Recording buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBuffer->size(), numFrames, lastFrameTime - firstFrameTime);
 		yPos += 30.f;
 
 		for (int i=0; i<eTPP_Last; ++i)
@@ -7070,11 +7034,11 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 				const int packetIndex = i - eRBPT_Custom;
 				assert(packetIndex >= 0 && packetIndex < eTPP_Last - eRBPT_Custom);
 				const char* typeName = s_thirdPersonPacketList[packetIndex];
-				pRenderer->Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %s, size: %d", progress, percentage, typeName, memory[i]);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %s, size: %d", progress, percentage, typeName, memory[i]);
 			}
 			else
 			{
-				pRenderer->Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %d, size: %d", progress, percentage, i, memory[i]);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %d, size: %d", progress, percentage, i, memory[i]);
 			}
 			yPos += ySpacing;
 		}
@@ -7354,11 +7318,11 @@ void CRecordingSystem::ApplyPlaySound(const SRecording_PlaySound* pPlaySound, fl
 	//		pSound->SetSemantic(eSoundSemantic_Replay);
 	//		if (pEntity)
 	//		{
-	//			IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	//			CRY_ASSERT_MESSAGE(pIEntityAudioProxy.get(), "Failed to create sound proxy");
-	//			if(pIEntityAudioProxy)
+	//			IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
+	//			CRY_ASSERT_MESSAGE(pIEntityAudioComponent.get(), "Failed to create sound proxy");
+	//			if(pIEntityAudioComponent)
 	//			{
-	//				pIEntityAudioProxy->PlaySound(pSound);
+	//				pIEntityAudioComponent->PlaySound(pSound);
 	//			}
 	//		}
 	//		else
@@ -7429,7 +7393,7 @@ void CRecordingSystem::ApplyBattleChatter(const SRecording_BattleChatter* pPacke
 				if (itReplayActor != m_replayActors.end())
 				{
 					const float currentTime = gEnv->pTimer->GetCurrTime();
-					CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId));
+					CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 					
 					int killerTeam=-1;
 					CReplayActor *pKillerReplayActor = GetReplayActor(m_killer, true);
@@ -7658,7 +7622,7 @@ void CRecordingSystem::ApplyCorpseSpawned( const SRecording_CorpseSpawned *pCorp
 
 void CRecordingSystem::ApplySingleProceduralBreakEvent(const SRecording_ProceduralBreakHappened* pProceduralBreak)
 {
-	gEnv->pGame->GetIGameFramework()->ApplySingleProceduralBreakFromEventIndex(pProceduralBreak->uBreakEventIndex, m_renderNodeLookup);
+	gEnv->pGameFramework->ApplySingleProceduralBreakFromEventIndex(pProceduralBreak->uBreakEventIndex, m_renderNodeLookup);
 }
 
 void CRecordingSystem::ApplyDrawSlotChange(const SRecording_DrawSlotChange* pDrawSlotChangePacket)
@@ -7702,10 +7666,7 @@ void CRecordingSystem::ApplySubObjHideMask(const SRecording_SubObjHideMask* pHid
 {
 	if(IEntity* pEntity = GetReplayEntity(pHideMask->entityId))
 	{
-		if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-		{
-			pRenderProxy->SetSubObjHideMask(pHideMask->slot, pHideMask->subObjHideMask);
-		}
+		pEntity->SetSubObjHideMask(pHideMask->slot, pHideMask->subObjHideMask);
 	}
 }
 
@@ -7786,14 +7747,14 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
 
 		// Grab render proxies
-		IEntityRenderProxy* pCloakSlaveRP	 = static_cast<IEntityRenderProxy*>(pCloakSlave->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pCloakSlaveRP	 = (pCloakSlave->GetRenderInterface());
 		if (!pCloakSlaveRP)
 		{
 			GameWarning("CRecordingSystem::ApplyObjectCloakSync() - cloak Master/Slave Render proxy ID invalid, aborting cloak sync");
 			return;
 		}
 	
-		bool bSlaveIsCloaked	  = (pCloakSlaveRP->GetMaterialLayersMask()&MTL_LAYER_CLOAK) != 0;
+		bool bSlaveIsCloaked	  = false; //(pCloakSlaveRP->GetMaterialLayersMask()&MTL_LAYER_CLOAK) != 0;
 		
 		if(bSlaveIsCloaked == pObjectCloakSync->cloakSlave)
 		{
@@ -7801,12 +7762,12 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		}
 		else
 		{
-			IEntityRenderProxy* pCloakMasterRP = static_cast<IEntityRenderProxy*>(pCloakMaster->GetProxy(ENTITY_PROXY_RENDER));
-			const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
-			const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
-			const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
-			const bool  bIgnoreCloakRefractionColor = pCloakMasterRP->DoesIgnoreCloakRefractionColor();
-			EntityEffects::Cloak::CloakEntity(pCloakSlave->GetId(), pObjectCloakSync->cloakSlave, pObjectCloakSync->fadeToDesiredCloakTarget, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor);
+			IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
+			//const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
+			//const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
+			//const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
+			//const bool  bIgnoreCloakRefractionColor = pCloakMasterRP->DoesIgnoreCloakRefractionColor();
+			//EntityEffects::Cloak::CloakEntity(pCloakSlave->GetId(), pObjectCloakSync->cloakSlave, pObjectCloakSync->fadeToDesiredCloakTarget, cloakBlendSpeedScale, bFadeByDistance, colorChannel, bIgnoreCloakRefractionColor);
 		}
 	}
 }
@@ -7882,7 +7843,7 @@ void CRecordingSystem::ApplyImpulseToRagdoll( const SRecording_RagdollImpulse* p
 
 uint16 CRecordingSystem::EntityIdToNetId(EntityId entityId)
 {
-	INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+	INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 	if (pNetContext)
 	{
 		SNetObjectID netId = pNetContext->GetNetID(entityId, false);
@@ -7896,7 +7857,7 @@ uint16 CRecordingSystem::EntityIdToNetId(EntityId entityId)
 
 /*static*/ EntityId CRecordingSystem::NetIdToEntityId(uint16 netId)
 {
-	INetContext* pNetContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+	INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 	if (pNetContext)
 	{
 		SNetObjectID netObjectId(netId, 0);
@@ -8747,13 +8708,7 @@ void CRecordingSystem::NotifyOnPlaybackEnd( const SPlaybackInfo& info )
 	entity.Physicalize(params);
 
 	// Set ViewDistRatio.
-	if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
-	{
-		if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
-		{
-			pRenderNode->SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
-		}
-	}
+	entity.SetViewDistRatio(g_pGameCVars->g_actorViewDistRatio);
 }
 
 /*static*/ EntityId CRecordingSystem::FindWeaponAtTime( const SRecordedData& initialData, CRecordingBuffer& tpData, const EntityId playerId, const float atTime )

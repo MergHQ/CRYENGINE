@@ -1368,10 +1368,6 @@ bool CXConsole::OnInputEvent(const SInputEvent& event)
 		m_nCursorPos = 0;
 		if (m_pSystem)
 		{
-			if (!m_bConsoleActive)
-			{
-				//m_pSystem->GetIGame()->SendMessage("Switch");
-			}
 			ShowConsole(false);
 
 			ISystemUserCallback* pCallback = ((CSystem*)m_pSystem)->GetUserCallback();
@@ -1540,7 +1536,7 @@ bool CXConsole::ProcessInput(const SInputEvent& event)
 		// TODO: Rework windows processing of input (WM_CHAR) into CKeyboard (Both cases when in editor and not) and make all keyboard devices consistent and can remove the below code
 		if (gEnv->IsEditor())
 		{
-			const char inputChar = m_pInput->GetInputCharAscii(event);
+			const uint32 inputChar = m_pInput->GetInputCharUnicode(event);
 
 			if (inputChar)
 			{
@@ -1626,8 +1622,6 @@ void CXConsole::Draw()
 	if (m_pRenderer->GetIRenderAuxGeom())
 		m_pRenderer->GetIRenderAuxGeom()->Flush();
 
-	m_pRenderer->FlushTextMessages();
-
 	m_pRenderer->PushProfileMarker("DISPLAY_CONSOLE");
 
 	if (m_nScrollPos <= 0)
@@ -1693,24 +1687,13 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 {
 	if (m_pFont && m_pRenderer)
 	{
-		STextDrawContext ctx;
-		//ctx.Reset();
-		ctx.SetEffect(m_pFont->GetEffectId(szEffect));
-		ctx.SetProportional(false);
-		ctx.SetCharWidthScale(0.5f);
-		ctx.SetSize(Vec2(14, 14));
-		ctx.SetColor(ColorF(1, 1, 1, 1));
-		ctx.SetFlags(eDrawText_CenterV | eDrawText_2D);
-
-		float csize = 0.8f * ctx.GetCharHeight();
-		ctx.SetSizeIn800x600(true);
+		const int flags = eDrawText_Monospace | eDrawText_CenterV | eDrawText_2D;
+		const int fontSize = 14;
+		float csize = 0.8f * fontSize;
+		float fCharWidth = 0.5f * fontSize;
 
 		float yPos = nScrollPos - csize - 3.0f;
 		float xPos = LINE_BORDER;
-
-		float fCharWidth = (ctx.GetCharWidth() * ctx.GetCharWidthScale());
-
-		//int ypos=nScrollPos-csize-3;
 
 		//Draw the input line
 		if (m_bConsoleActive && !m_nProgressRange)
@@ -1720,15 +1703,15 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 			   if(m_bDrawCursor)
 			   m_pRenderer->DrawString(xPos+nCharWidth*m_nCursorPos, yPos, false, "_");*/
 
-			m_pFont->DrawString((float)(xPos - fCharWidth), (float)yPos, ">", false, ctx);
-			m_pFont->DrawString((float)xPos, (float)yPos, m_sInputBuffer.c_str(), false, ctx);
+			IRenderAuxText::DrawText(Vec3(xPos - fCharWidth, yPos, 1), 1.16, nullptr, flags, ">");
+			IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), 1.16, nullptr, flags, m_sInputBuffer.c_str());
 
 			if (m_bDrawCursor)
 			{
 				string szCursorLeft(m_sInputBuffer.c_str(), m_sInputBuffer.c_str() + m_nCursorPos);
 				int n = m_pFont->GetTextLength(szCursorLeft.c_str(), false);
 
-				m_pFont->DrawString((float)(xPos + (fCharWidth * n)), (float)yPos, "_", false, ctx);
+				IRenderAuxText::DrawText(Vec3(xPos + (fCharWidth * n), yPos, 1), 1.16, nullptr, flags, "_");
 			}
 		}
 
@@ -1746,7 +1729,7 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 				if (*buf > 0 && *buf < 32) buf++;    // to jump over verbosity level character
 
 				if (yPos + csize > 0)
-					m_pFont->DrawString((float)xPos, (float)yPos, buf, false, ctx);
+					IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), 1.16, nullptr, flags, buf);
 				yPos -= csize;
 			}
 			nScroll++;
@@ -2505,9 +2488,9 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 	{
 #if LOG_CVAR_INFRACTIONS
 		gEnv->pLog->LogError("[CVARS]: [EXECUTE] command %s is marked [VF_CHEAT]", cmd.m_sName.c_str());
-#if LOG_CVAR_INFRACTIONS_CALLSTACK
+	#if LOG_CVAR_INFRACTIONS_CALLSTACK
 		gEnv->pSystem->debug_LogCallStack();
-#endif // LOG_CVAR_INFRACTIONS_CALLSTACK
+	#endif // LOG_CVAR_INFRACTIONS_CALLSTACK
 #endif   // LOG_CVAR_INFRACTIONS
 		if (!(gEnv->IsEditor()) && !(m_pSystem->IsDevMode()) && !bIgnoreDevMode)
 		{

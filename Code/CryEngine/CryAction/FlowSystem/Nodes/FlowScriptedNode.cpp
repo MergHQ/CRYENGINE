@@ -30,7 +30,7 @@ bool GetCategory(const char* catName, uint32& outCategory)
 }
 }
 
-class CFlowDataToScriptDataVisitor : public boost::static_visitor<void>
+class CFlowDataToScriptDataVisitor
 {
 public:
 	CFlowDataToScriptDataVisitor(IScriptTable* pTable, const char* name) : m_pTable(pTable), m_name(name) {}
@@ -39,6 +39,11 @@ public:
 	void Visit(const T& value)
 	{
 		m_pTable->SetValue(m_name, value);
+	}
+
+	void Visit(const TFlowInputDataVariant& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(EntityId id)
@@ -65,11 +70,29 @@ public:
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TFlowInputDataVariant& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	IScriptTable* m_pTable;
 	const char*   m_name;
 };
+template<>
+void CFlowDataToScriptDataVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
-class CFlowDataToScriptParamVisitor : public boost::static_visitor<void>
+class CFlowDataToScriptParamVisitor
 {
 public:
 	CFlowDataToScriptParamVisitor(IScriptSystem* pSS) : m_pSS(pSS) {}
@@ -78,6 +101,11 @@ public:
 	void Visit(const T& value)
 	{
 		m_pSS->PushFuncParam(value);
+	}
+
+	void Visit(const TFlowInputDataVariant& var)
+	{
+		VisitVariant(var);
 	}
 
 	void Visit(EntityId id)
@@ -105,8 +133,26 @@ public:
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TFlowInputDataVariant& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	IScriptSystem* m_pSS;
 };
+template<>
+void CFlowDataToScriptParamVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 /*
  * node

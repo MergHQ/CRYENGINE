@@ -362,6 +362,9 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 
 	std::vector<float> rawHeightmap;
 
+	AABB modifiedArea;
+	modifiedArea.Reset();
+
 	for (int rangeX = rangeX1; rangeX < rangeX2; rangeX++)
 	{
 		for (int rangeY = rangeY1; rangeY < rangeY2; rangeY++)
@@ -514,6 +517,8 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			ri.iRange = iRange;
 			ri.iStep = iStep;
 
+			bool bHMDataIsModified = false;
+
 			for (int x = x1; x <= x2; x += nStep)
 			{
 				for (int y = y1; y <= y2; y += nStep)
@@ -538,7 +543,14 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 						usSurfType = ri.GetLocalSurfaceTypeID(pSurfaceData[nSurfCell]);
 					}
 
-					ri.pHMData[nCellLocal] = (usSurfType& SRangeInfo::e_index_hole) | (hdec << 4);
+					uint16 nNewValue = (usSurfType& SRangeInfo::e_index_hole) | (hdec << 4);
+
+					if (nNewValue != ri.pHMData[nCellLocal])
+					{
+						ri.pHMData[nCellLocal] = nNewValue;
+
+						bHMDataIsModified = true;
+					}
 				}
 			}
 
@@ -577,12 +589,15 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					// request elevation texture update
 					if (pNode->m_nNodeTexSet.nSlot0 != 0xffff && pNode->m_nNodeTexSet.nSlot0 < m_pTerrain->m_texCache[2].GetPoolSize())
 					{
-						pNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsDirty;
+						if(bHMDataIsModified)
+							pNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsDirty;
 					}
 
 					pNode = pNode->m_pParent;
 				}
 			}
+
+			modifiedArea.Add(pTerrainNode->GetBBox());
 		}
 	}
 
@@ -611,6 +626,12 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 
 	if (GetParentNode(nSID))
 		GetParentNode(nSID)->UpdateRangeInfoShift();
+
+	if (!modifiedArea.IsReset())
+	{
+		modifiedArea.Expand(Vec3(2.f * GetHeightMapUnitSize()));
+		ResetTerrainVertBuffers(&modifiedArea, 0);
+	}
 
 	m_bHeightMapModified = 0;
 
@@ -716,7 +737,7 @@ bool CTerrain::CanPaintSurfaceType(int x, int y, int r, uint16 usGlobalSurfaceTy
 
 			if (ri.GetLocalSurfaceTypeID(usGlobalSurfaceType) == SRangeInfo::e_index_hole)
 			{
-				GetISystem()->GetIRenderer()->DrawLabel(Vec3((float)y, (float)x, GetZfromUnits(y, x, -1) + 1.0f), 2.0f, "SECTOR PALETTE FULL!");
+				IRenderAuxText::DrawLabel(Vec3((float)y, (float)x, GetZfromUnits(y, x, -1) + 1.0f), 2.0f, "SECTOR PALETTE FULL!");
 				HighlightTerrain(
 				  rangeX << m_nUnitsToSectorBitShift, rangeY << m_nUnitsToSectorBitShift,
 				  (rangeX + 1) << m_nUnitsToSectorBitShift, (rangeY + 1) << m_nUnitsToSectorBitShift);

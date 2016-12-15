@@ -7,29 +7,6 @@
 using namespace CryAudio::Impl::Fmod;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioImplCVars::CAudioImplCVars()
-	: m_primaryMemoryPoolSize(0)
-	, m_maxChannels(0)
-	, m_enableLiveUpdate(0)
-	, m_enableSynchronousUpdate(1)
-	, m_lowpassMinCutoffFrequency(10.0f)
-	, m_distanceFactor(1.0f)
-	, m_dopplerScale(1.0f)
-	, m_rolloffScale(1.0f)
-#if CRY_PLATFORM_DURANGO
-	, m_secondaryMemoryPoolSize(0)
-#endif // CRY_PLATFORM_DURANGO
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAudioImplCVars::~CAudioImplCVars()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioImplCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS

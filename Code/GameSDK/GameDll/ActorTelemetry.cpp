@@ -230,7 +230,7 @@ void CActorTelemetry::SubscribeToWeapon(EntityId weaponId)
 		CItem* pItem = NULL;
 		if (weaponId)
 		{
-			pItem = (CItem*)gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(weaponId);
+			pItem = (CItem*)gEnv->pGameFramework->GetIItemSystem()->GetItem(weaponId);
 			if(pItem)
 			{
 				pWeapon=pItem->GetIWeapon();
@@ -298,7 +298,7 @@ void CActorTelemetry::SubscribeToWeapon(EntityId weaponId)
 
 void CActorTelemetry::UnsubscribeFromWeapon()
 {
-	IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_currentWeaponId);
+	IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(m_currentWeaponId);
 	if(pItem)
 	{
 		IWeapon *pWeapon = pItem->GetIWeapon();
@@ -463,7 +463,7 @@ void CActorTelemetry::PostSerialize()
 {
 	CActorPtr pActor = m_pOwner.lock();
 
-	IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_currentWeaponId);
+	IItem* pItem = gEnv->pGameFramework->GetIItemSystem()->GetItem(m_currentWeaponId);
 	if(pItem && pActor && pItem->GetOwnerId() != pActor->GetEntityId())
 		UnsubscribeFromWeapon();
 }

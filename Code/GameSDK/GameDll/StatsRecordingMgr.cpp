@@ -409,7 +409,7 @@ void CStatsRecordingMgr::DataFailedToDownload(
 
 bool CStatsRecordingMgr::IsTrackingEnabled()
 {
-	ITelemetryCollector		*tc=static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector();
+	ITelemetryCollector		*tc=static_cast<CGame*>(g_pGame)->GetITelemetryCollector();
 	bool					enabled=tc != NULL && tc->ShouldSubmitTelemetry();
 	return ((enabled && gEnv->bMultiplayer && gEnv->bServer && g_pGameCVars->g_telemetry_gameplay_enabled) ||
 			(!gEnv->bMultiplayer && g_pGameCVars->g_telemetryEnabledSP != 0));
@@ -524,7 +524,7 @@ void CStatsRecordingMgr::StateEndOfSessionStats()
 			m_sessionTracker->StateValue(eGSS_PatchPakVersion, patchPakVersion);
 		}
 
-		if( IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager() )
+		if( IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager() )
 		{
 			const char *user = pProfileMan->GetCurrentUser();
 			IPlayerProfile* pProfile = pProfileMan->GetCurrentProfile( user );
@@ -1104,7 +1104,7 @@ void CStatsRecordingMgr::SaveSessionData(
 	ITelemetryProducer				*pInProducer)
 {
 	bool											submitted=false;
-	CTelemetryCollector				*pTC=static_cast<CTelemetryCollector*>(static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector());
+	CTelemetryCollector				*pTC=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 	if (pTC != NULL && (GetSubmitPermissions()&k_submitStatsLogs))
 	{
 		string									filePath, remotePath;
@@ -1236,7 +1236,7 @@ void CStatsRecordingMgr::SaveSessionData(XmlNodeRef node)
 
 	if (success)
 	{
-		CTelemetryCollector		*pTC=static_cast<CTelemetryCollector*>(static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector());
+		CTelemetryCollector		*pTC=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 		if (pTC)
 		{
 			ITelemetryProducer		*pProd=new CTelemetryFileReader(filePath.c_str(),0);
@@ -1499,7 +1499,7 @@ void CStatsRecordingMgr::OnNodeRemoved(const SNodeLocator& locator, IStatsTracke
 // the stats recording mgr changes the telemetry collectors session id when sessions begin and end
 void CStatsRecordingMgr::SetNewSessionId( bool includeMatchDetails )
 {
-	ITelemetryCollector		*tc=static_cast<CGame*>(gEnv->pGame)->GetITelemetryCollector();
+	ITelemetryCollector		*tc=static_cast<CGame*>(g_pGame)->GetITelemetryCollector();
 	if (tc)
 	{
 		tc->SetNewSessionId(includeMatchDetails);

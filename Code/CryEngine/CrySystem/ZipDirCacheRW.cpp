@@ -428,7 +428,7 @@ ZipDir::ErrorEnum ZipDir::CacheRW::UpdateFileContinuousSegment(const char* szRel
 	#endif
 		return ZD_ERROR_IO_FAILED;
 
-	const bool encrypt = false; // we do not support encription for continous file update
+	const bool encrypt = false; // we do not support encription for continuous file update
 	if (!WriteCompressedData((char*)pUncompressed, nSegmentSize, encrypt))
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR,

@@ -9,7 +9,7 @@
 
 struct IFogVolumeRenderNode;
 
-class CREFogVolume : public CRendElementBase
+class CREFogVolume : public CRenderElement
 {
 public:
 	CREFogVolume();

@@ -26,7 +26,7 @@ CFlowNode_PrefabEventSource::~CFlowNode_PrefabEventSource()
 {
 	if (m_eventId != CUSTOMEVENTID_INVALID)
 	{
-		ICustomEventManager* pCustomEventManager = gEnv->pGame->GetIGameFramework()->GetICustomEventManager();
+		ICustomEventManager* pCustomEventManager = gEnv->pGameFramework->GetICustomEventManager();
 		CRY_ASSERT(pCustomEventManager != NULL);
 		pCustomEventManager->UnregisterEventListener(this, m_eventId);
 	}
@@ -60,7 +60,7 @@ void CFlowNode_PrefabEventSource::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowNode_PrefabEventSource::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
-	ICustomEventManager* pCustomEventManager = gEnv->pGame->GetIGameFramework()->GetICustomEventManager();
+	ICustomEventManager* pCustomEventManager = gEnv->pGameFramework->GetICustomEventManager();
 	CRY_ASSERT(pCustomEventManager != NULL);
 
 	if (event == eFE_Activate)
@@ -116,7 +116,7 @@ CFlowNode_PrefabInstance::CFlowNode_PrefabInstance(SActivationInfo* pActInfo)
 
 CFlowNode_PrefabInstance::~CFlowNode_PrefabInstance()
 {
-	ICustomEventManager* pCustomEventManager = gEnv->pGame->GetIGameFramework()->GetICustomEventManager();
+	ICustomEventManager* pCustomEventManager = gEnv->pGameFramework->GetICustomEventManager();
 	CRY_ASSERT(pCustomEventManager != NULL);
 
 	for (int i = 0; i < CUSTOMEVENTS_PREFABS_MAXNPERINSTANCE; ++i)
@@ -191,7 +191,7 @@ void CFlowNode_PrefabInstance::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowNode_PrefabInstance::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
-	ICustomEventManager* pCustomEventManager = gEnv->pGame->GetIGameFramework()->GetICustomEventManager();
+	ICustomEventManager* pCustomEventManager = gEnv->pGameFramework->GetICustomEventManager();
 	CRY_ASSERT(pCustomEventManager != NULL);
 
 	if (event == eFE_Activate)

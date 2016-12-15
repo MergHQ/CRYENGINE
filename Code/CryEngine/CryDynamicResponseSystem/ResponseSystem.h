@@ -49,7 +49,7 @@ public:
 
 private:
 	const EntityId      m_linkedEntityID;
-	const CHashedString m_localVariablesCollectionName;  //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
+	const CHashedString m_localVariablesCollectionName;    //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ public:
 	virtual void                                     ReleaseVariableCollection(DRS::IVariableCollection* pToBeReleased) override;
 	virtual DRS::IVariableCollectionSharedPtr        CreateContextCollection() override;
 
-	virtual void                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender = nullptr) override;
+	virtual bool                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender = nullptr, DRS::SignalInstanceId instanceToSkip = DRS::s_InvalidSignalId) override;
 
 	virtual CResponseActor*                          CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override;
 	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override;
@@ -89,13 +89,13 @@ public:
 	virtual CResponseManager*                        GetResponseManager() const override    { return m_pResponseManager; }
 	virtual CSpeakerManager*                         GetSpeakerManager() const override     { return m_pSpeakerManager; }
 
-	void                                             GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = SaveHints_Variables) const override;
-	void                                             SetCurrentState(const DRS::VariableValuesList& outCollectionsList) override;
-
+	virtual DRS::ValuesListPtr                    GetCurrentState(uint32 saveHints) const override;
+	virtual void                                     SetCurrentState(const DRS::ValuesList& outCollectionsList) override;
 	virtual void                                     Serialize(Serialization::IArchive& ar) override;
+
 #if !defined(_RELEASE)
-	virtual void                                     SetCurrentDrsUserName(const char* szNewDrsUserName) override;
-	virtual const char*                              GetCurrentDrsUserName() const override { return m_currentDrsUserName.c_str(); }
+	virtual void        SetCurrentDrsUserName(const char* szNewDrsUserName) override;
+	virtual const char* GetCurrentDrsUserName() const override { return m_currentDrsUserName.c_str(); }
 	string m_currentDrsUserName;
 #endif
 	//////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ public:
 
 	CVariableCollectionManager* GetVariableCollectionManager() const { return m_pVariableCollectionManager; }
 	//we store the current time for the DRS ourselves in a variable, so that we can use this variable in conditions and it allows us to save/load/modify the current DRS time easily
-	float                       GetCurrentDrsTime() const            { return m_CurrentTime.GetSeconds(); }
+	float                       GetCurrentDrsTime() const            { return m_currentTime.GetSeconds(); }
 
 #if defined(DRS_COLLECT_DEBUG_DATA)
 	CResponseSystemDebugDataProvider m_responseSystemDebugDataProvider;
@@ -117,7 +117,7 @@ public:
 #endif
 
 private:
-	void _Reset(uint32 resetFlags);
+	void InternalReset(uint32 resetFlags);
 
 	typedef std::vector<CResponseActor*> ResponseActorList;
 
@@ -127,9 +127,9 @@ private:
 	CDataImportHelper*          m_pDataImporterHelper;
 	CVariableCollectionManager* m_pVariableCollectionManager;
 	CResponseManager*           m_pResponseManager;
-	ResponseActorList           m_CreatedActors;
+	ResponseActorList           m_createdActors;
 	string                      m_filesFolder;
-	CTimeValue                  m_CurrentTime;
+	CTimeValue                  m_currentTime;
 	bool                        m_bIsCurrentlyUpdating;
 	uint32                      m_pendingResetRequest;
 

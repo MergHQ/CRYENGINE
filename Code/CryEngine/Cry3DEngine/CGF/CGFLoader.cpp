@@ -1109,7 +1109,7 @@ bool CLoaderCGF::ReadCompiledPhysicalProxies(IChunkFile::ChunkDesc* pChunkDesc)
 			sm.ChunkID = header.ChunkID;
 
 			//store the vertices
-			COMPILE_TIME_ASSERT(sizeof(sm.m_arrPoints[0]) == sizeof(Vec3));
+			static_assert(sizeof(sm.m_arrPoints[0]) == sizeof(Vec3), "Invalid type size!");
 			sm.m_arrPoints.resize(header.numPoints);
 			size_t size = sizeof(sm.m_arrPoints[0]) * header.numPoints;
 			if (size > 0)
@@ -1120,7 +1120,7 @@ bool CLoaderCGF::ReadCompiledPhysicalProxies(IChunkFile::ChunkDesc* pChunkDesc)
 			}
 
 			//store the indices
-			COMPILE_TIME_ASSERT(sizeof(sm.m_arrIndices[0]) == sizeof(uint16));
+			static_assert(sizeof(sm.m_arrIndices[0]) == sizeof(uint16), "Invalid type size!");
 			sm.m_arrIndices.resize(header.numIndices);
 			size = sizeof(sm.m_arrIndices[0]) * header.numIndices;
 			if (size > 0)
@@ -1131,7 +1131,7 @@ bool CLoaderCGF::ReadCompiledPhysicalProxies(IChunkFile::ChunkDesc* pChunkDesc)
 			}
 
 			//store the materials
-			COMPILE_TIME_ASSERT(sizeof(sm.m_arrMaterials[0]) == sizeof(uint8));
+			static_assert(sizeof(sm.m_arrMaterials[0]) == sizeof(uint8), "Invalid type size!");
 			sm.m_arrMaterials.resize(header.numMaterials);
 			size = sizeof(sm.m_arrMaterials[0]) * header.numMaterials;
 			if (size > 0)
@@ -1185,7 +1185,7 @@ bool CLoaderCGF::ReadCompiledMorphTargets(IChunkFile::ChunkDesc* pChunkDesc)
 			rawdata += header.NameLength;
 
 			// store the internal vertices&indices of morph-target
-			COMPILE_TIME_ASSERT(sizeof(pSm->m_arrIntMorph[0]) == sizeof(SMeshMorphTargetVertex));
+			static_assert(sizeof(pSm->m_arrIntMorph[0]) == sizeof(SMeshMorphTargetVertex), "Invalid type size!");
 			pSm->m_arrIntMorph.resize(header.numIntVertices);
 			size_t size = sizeof(pSm->m_arrIntMorph[0]) * header.numIntVertices;
 			if (size > 0)
@@ -1196,7 +1196,7 @@ bool CLoaderCGF::ReadCompiledMorphTargets(IChunkFile::ChunkDesc* pChunkDesc)
 			}
 
 			// store the external vertices&indices of morph-target
-			COMPILE_TIME_ASSERT(sizeof(pSm->m_arrExtMorph[0]) == sizeof(SMeshMorphTargetVertex));
+			static_assert(sizeof(pSm->m_arrExtMorph[0]) == sizeof(SMeshMorphTargetVertex), "Invalid type size!");
 			pSm->m_arrExtMorph.resize(header.numExtVertices);
 			size = sizeof(pSm->m_arrExtMorph[0]) * header.numExtVertices;
 			if (size > 0)
@@ -1289,25 +1289,25 @@ bool CLoaderCGF::ReadCompiledBonesBoxes(IChunkFile::ChunkDesc* pChunkDesc)
 		pSkinningInfo->m_arrCollisions.push_back(MeshCollisionInfo());
 		MeshCollisionInfo& info = pSkinningInfo->m_arrCollisions[pSkinningInfo->m_arrCollisions.size() - 1];
 
-		COMPILE_TIME_ASSERT(sizeof(info.m_iBoneId) == sizeof(int32));
+		static_assert(sizeof(info.m_iBoneId) == sizeof(int32), "Invalid type size!");
 		SwapEndian((int32*)pSrc, 1, bSwapEndianness);
 		memcpy(&info.m_iBoneId, pSrc, sizeof(info.m_iBoneId));
 		pSrc += sizeof(info.m_iBoneId);
 
-		COMPILE_TIME_ASSERT(sizeof(info.m_aABB) == sizeof(AABB));
+		static_assert(sizeof(info.m_aABB) == sizeof(AABB), "Invalid type size!");
 		SwapEndian((AABB*)pSrc, 1, bSwapEndianness);
 		memcpy(&info.m_aABB, pSrc, sizeof(info.m_aABB));
 		pSrc += sizeof(info.m_aABB);
 
 		int32 size;
-		COMPILE_TIME_ASSERT(sizeof(size) == sizeof(int32));
+		static_assert(sizeof(size) == sizeof(int32), "Invalid type size!");
 		SwapEndian((int32*)pSrc, 1, bSwapEndianness);
 		memcpy(&size, pSrc, sizeof(size));
 		pSrc += sizeof(size);
 
 		if (size > 0)
 		{
-			COMPILE_TIME_ASSERT(sizeof(info.m_arrIndexes[0]) == sizeof(int16));
+			static_assert(sizeof(info.m_arrIndexes[0]) == sizeof(int16), "Invalid type size!");
 			SwapEndian((int16*)pSrc, size, bSwapEndianness);
 			info.m_arrIndexes.resize(size);
 			memcpy(info.m_arrIndexes.begin(), pSrc, size * sizeof(info.m_arrIndexes[0]));
@@ -3040,7 +3040,7 @@ bool CLoaderCGF::LoadBoneMappingStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0
 		return false;
 	}
 
-	COMPILE_TIME_ASSERT(sizeof(mesh.m_pBoneMapping[0]) == sizeof(SMeshBoneMapping_uint16));
+	static_assert(sizeof(mesh.m_pBoneMapping[0]) == sizeof(SMeshBoneMapping_uint16), "Invalid type size!");
 
 	if (nStreamElemSize == sizeof(SMeshBoneMapping_uint8))
 	{
@@ -3061,7 +3061,7 @@ bool CLoaderCGF::LoadBoneMappingStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0
 		SMeshBoneMapping_uint16* const pMeshElements = mesh.GetStreamPtr<SMeshBoneMapping_uint16>(MStream);
 		if (!pMeshElements)
 		{
-			// Should never happen because we did check it by COMPILE_TIME_ASSERT() above.
+			// Should never happen because we did check it by static_assert above.
 			m_LastError.Format("Bone mapping has invalid size. Contact an RC programmer.");
 			return false;
 		}
@@ -3186,7 +3186,7 @@ bool CLoaderCGF::LoadBoneMappingStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0
 		SMeshBoneMapping_uint16* const pMeshElements = mesh.GetStreamPtr<SMeshBoneMapping_uint16>(MStream);
 		if (!pMeshElements)
 		{
-			// Should never happen because we did check it by COMPILE_TIME_ASSERT() above.
+			// Should never happen because we did check it by static_assert above.
 			m_LastError.Format("Bone mapping has invalid size. Contact an RC programmer.");
 			return false;
 		}
@@ -3265,8 +3265,8 @@ bool CLoaderCGF::LoadIndexStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0801& c
 	const bool bSourceAligned = (((UINT_PTR)pStreamData & 0x3) == 0);
 	const bool bShare = (m_bUseReadOnlyMesh && bSourceAligned && m_bAllowStreamSharing);
 
-	COMPILE_TIME_ASSERT(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx));
-	COMPILE_TIME_ASSERT(sizeof(vtx_idx) == 2 || sizeof(vtx_idx) == 4);
+	static_assert(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx), "Invalid type size!");
+	static_assert(sizeof(vtx_idx) == 2 || sizeof(vtx_idx) == 4, "Invalid type size!");
 
 	if (nStreamElemSize == sizeof(vtx_idx))
 	{
@@ -3284,7 +3284,7 @@ bool CLoaderCGF::LoadIndexStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0801& c
 		mesh.GetStreamInfo(MStream, pMeshIndices, nMeshIndexSize);
 		if (nMeshIndexSize != sizeof(vtx_idx))
 		{
-			// Should never happen - we already did COMPILE_TIME_ASSERT(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx))
+			// Should never happen - we already did static_assert(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx))
 			m_LastError.Format("Vertex index has invalid size. Contact an RC programmer.");
 			return false;
 		}
@@ -3316,7 +3316,7 @@ bool CLoaderCGF::LoadIndexStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0801& c
 		mesh.GetStreamInfo(MStream, pMeshIndices, nMeshIndexSizeCheck);
 		if (nMeshIndexSizeCheck != sizeof(vtx_idx))
 		{
-			// Should never happen - we already did COMPILE_TIME_ASSERT(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx))
+			// Should never happen - we already did static_assert(sizeof(mesh.m_pIndices[0]) == sizeof(vtx_idx))
 			m_LastError.Format("Vertex index has invalid size. Contact an RC programmer.");
 			return false;
 		}
@@ -3440,7 +3440,7 @@ bool CLoaderCGF::LoadCompiledMeshChunk(CNodeCGF* pNode, IChunkFile::ChunkDesc* p
 	// Read streams
 	//////////////////////////////////////////////////////////////////////////
 
-	COMPILE_TIME_ASSERT(sizeof(Vec3f16) == 8);
+	static_assert(sizeof(Vec3f16) == 8, "Invalid type size!");
 
 	bool ok = true;
 
@@ -3737,7 +3737,7 @@ bool CLoaderCGF::LoadFoliageInfoChunk(IChunkFile::ChunkDesc* pChunkDesc)
 		memcpy(pSpineVtx, pSpineVtxSrc, sizeof(pSpineVtx[0]) * chunk.nSpineVtx);
 		memcpy(pSpineSegDim, pSpineSegDimSrc, sizeof(pSpineSegDim[0]) * chunk.nSpineVtx);
 		memcpy(fi.pBoneMapping, pBoneMappingSrc, sizeof(pBoneMappingSrc[0]) * chunk.nSkinnedVtx);
-		COMPILE_TIME_ASSERT(sizeof(fi.chunkBoneIds[0]) == sizeof(pBoneIdsSrc[0]));
+		static_assert(sizeof(fi.chunkBoneIds[0]) == sizeof(pBoneIdsSrc[0]), "Invalid type size!");
 		memcpy(&fi.chunkBoneIds[0], pBoneIdsSrc, sizeof(fi.chunkBoneIds[0]) * chunk.nBoneIds);
 
 		int i, j;
@@ -4018,7 +4018,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 
 		if (size_t(chunk.nSubMaterials) <= MTL_NAME_CHUNK_DESC_0800_MAX_SUB_MATERIALS)
 		{
-			pMtlCGF->subMaterials.resize(chunk.nSubMaterials, NULL);
+			pMtlCGF->subMaterials.resize(chunk.nSubMaterials);
 			for (int i = 0; i < chunk.nSubMaterials; i++)
 			{
 				if (chunk.nSubMatChunkId[i] > 0)

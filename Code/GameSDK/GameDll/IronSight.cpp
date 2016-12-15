@@ -809,7 +809,7 @@ void CIronSight::OnEnterZoom()
 		pFireMode->OnZoomStateChanged();
 	}
 
-	IView* pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+	IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 	if (pView)
 	{
 		pView->SetZoomedScale(m_zoomParams->zoomParams.cameraShakeMultiplier);
@@ -915,7 +915,7 @@ void CIronSight::OnLeaveZoom()
 		}
 	}
 
-	IView* pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+	IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 	if (pView)
 	{
 		pView->SetZoomedScale(1.0f);
@@ -1005,7 +1005,7 @@ float CIronSight::GetActorFoVScale() const
 	CActor* pOwnerActor = m_pWeapon->GetOwnerActor();
 	if (!pOwnerActor)
 	{
-		IView *activeView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+		IView *activeView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 		if (activeView)
 		{
 			const SViewParams *vp = activeView->GetCurrentParams();

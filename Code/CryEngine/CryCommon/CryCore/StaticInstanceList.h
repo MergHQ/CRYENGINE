@@ -12,17 +12,22 @@
 
 *************************************************************************/
 
-#ifndef __STATICINSTANCELIST_H__
-#define __STATICINSTANCELIST_H__
+#pragma once
 
 template<typename TYPE> class CStaticInstanceList
 {
+private:
+
+	struct SInstanceList
+	{
+		CStaticInstanceList* pFirstInstance = nullptr;
+	};
+
 public:
 
 	inline CStaticInstanceList()
 	{
 		SInstanceList& instanceList = GetInstanceList();
-
 		m_pNextInstance = instanceList.pFirstInstance;
 		instanceList.pFirstInstance = this;
 	}
@@ -41,22 +46,13 @@ public:
 
 private:
 
-	struct SInstanceList
-	{
-		inline SInstanceList()
-			: pFirstInstance(NULL)
-		{}
-
-		CStaticInstanceList* pFirstInstance;
-	};
-
 	static inline SInstanceList& GetInstanceList()
 	{
 		static SInstanceList instanceList;
 		return instanceList;
 	}
 
+private:
+
 	CStaticInstanceList* m_pNextInstance;
 };
-
-#endif //__STATICINSTANCELIST_H__

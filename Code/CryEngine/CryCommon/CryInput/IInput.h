@@ -104,13 +104,13 @@ inline bool   operator>(const char* str, const TKeyName& n)  { return n > str; }
 
 #endif //USE_CRY_NAME_FOR_KEY_NAMES
 
-#define KI_KEYBOARD_BASE 0
-#define KI_MOUSE_BASE    256
-#define KI_XINPUT_BASE   512
-#define KI_ORBIS_BASE    1024
-#define KI_MOTION_BASE   2048
+#define KI_KEYBOARD_BASE   0
+#define KI_MOUSE_BASE      256
+#define KI_XINPUT_BASE     512
+#define KI_ORBIS_BASE      1024
+#define KI_MOTION_BASE     2048
 #define KI_EYETRACKER_BASE 4096
-#define KI_SYS_BASE      8192
+#define KI_SYS_BASE        8192
 
 enum EKeyId
 {
@@ -348,8 +348,8 @@ enum EKeyId
 
 	// Eye Tracker
 	eKI_EyeTracker_X = KI_EYETRACKER_BASE,
-	eKI_EyeTracker_Y,	
-	
+	eKI_EyeTracker_Y,
+
 	// OpenVR
 	eKI_Motion_OpenVR_System = KI_MOTION_BASE + eKI_Motion_OculusTouch_NUM_SYMBOLS,
 	eKI_Motion_OpenVR_ApplicationMenu,
@@ -1167,7 +1167,7 @@ struct IInputDevice
 	virtual void                SetUniqueId(uint8 const uniqueId) = 0;
 	virtual const char*         GetKeyName(const SInputEvent& event) const = 0;
 	virtual const char*         GetKeyName(const EKeyId keyId) const = 0;
-	virtual char                GetInputCharAscii(const SInputEvent& event) = 0;
+	virtual uint32              GetInputCharUnicode(const SInputEvent& event) = 0;
 	virtual const char*         GetOSKeyName(const SInputEvent& event) = 0;
 	virtual SInputSymbol*       LookupSymbol(EKeyId id) const = 0;
 	virtual const SInputSymbol* GetSymbolByName(const char* name) const = 0;
@@ -1251,10 +1251,10 @@ struct IInput
 	//! \return Translated key name.
 	virtual const char* GetKeyName(EKeyId keyId) const = 0;
 
-	//! Gets an input char translated to ascii from the event.
+	//! Gets an input char translated to unicode from the event.
 	//! The function should internally dispatch to all managed input devices and return the first recognized event.
 	//! \param event Input event to translate into a name.
-	virtual char GetInputCharAscii(const SInputEvent& event) = 0;
+	virtual uint32 GetInputCharUnicode(const SInputEvent& event) = 0;
 
 	//! Lookups a symbol for a given symbol and key ids.
 	virtual SInputSymbol* LookupSymbol(EInputDeviceType deviceType, int deviceIndex, EKeyId keyId) = 0;
@@ -1342,7 +1342,7 @@ struct IInput
 
 	//! Allows for Sandbox to intercept and modify events prior to system wide sending.
 	//! \return True if the event is supposed to be broadcasted.
-	bool (*OnFilterInputEvent)(SInputEvent*);
+	bool (* OnFilterInputEvent)(SInputEvent*);
 
 	// </interfuscator:shuffle>
 };

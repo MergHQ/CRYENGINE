@@ -362,6 +362,9 @@ struct IActionMapManager
 	virtual bool                          RemoveExtraActionListener(IActionListener* pExtraActionListener, const char* actionMap = NULL) = 0;
 	virtual const TActionListeners&       GetExtraActionListeners() const = 0;
 
+	virtual bool                          AddFlowgraphNodeActionListener(IActionListener* pFlowgraphActionListener, const char* actionMap = NULL) = 0;
+	virtual bool                          RemoveFlowgraphNodeActionListener(IActionListener* pFlowgraphActionListener, const char* actionMap = NULL) = 0;
+
 	virtual void                          AddAlwaysActionListener(TBlockingActionListener pActionListener) = 0;
 	virtual void                          RemoveAlwaysActionListener(TBlockingActionListener pActionListener) = 0;
 	virtual void                          RemoveAllAlwaysActionListeners() = 0;

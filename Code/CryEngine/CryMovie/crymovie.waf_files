@@ -16,7 +16,7 @@
 		"Source Files":
 		[
 			"AnimSequence.cpp",
-			"CryMovie.cpp", 	
+			"CryMovie.cpp",
 			"Movie.cpp",
 			"AnimSequence.h",
 			"Movie.h"
@@ -54,6 +54,7 @@
 			"AnimNode.cpp",
 			"AnimPostFXNode.cpp",
 			"AnimScreenFaderNode.cpp",
+			"AnimLightNode.cpp",
 			"CommentNode.cpp",
 			"CVarNode.cpp",
 			"EntityNode.cpp",
@@ -66,6 +67,7 @@
 			"AnimNode.h",
 			"AnimPostFXNode.h",
 			"AnimScreenFaderNode.h",
+			"AnimLightNode.h",
 			"CommentNode.h",
 			"CryMovie.h",
 			"CVarNode.h",

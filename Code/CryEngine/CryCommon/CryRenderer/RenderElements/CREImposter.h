@@ -18,7 +18,7 @@
 struct SDynTexture2;
 struct SDynTexture;
 
-class CREImposter : public CRendElementBase
+class CREImposter : public CRenderElement
 {
 	friend class CRECloud;
 
@@ -69,7 +69,7 @@ public:
 	static int m_PrevMemUpdated;
 	static int m_PrevMemPostponed;
 
-	CREImposter() : CRendElementBase(),
+	CREImposter() : CRenderElement(),
 		m_pTexture(NULL),
 		m_pFrontTexture(NULL),
 		m_pTextureDepth(NULL),
@@ -98,12 +98,13 @@ public:
 	{
 		ReleaseResources();
 	}
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void Release(bool bForce = false) override;
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
-	virtual void          mfPrepare(bool bCheckOverflow);
-	virtual bool          mfDraw(CShader* ef, SShaderPass* sl);
+	virtual void          mfPrepare(bool bCheckOverflow) override;
+	virtual bool          mfDraw(CShader* ef, SShaderPass* sl) override;
 
 	virtual CTerrainNode* GetTerrainNode()                           { return m_pTerrainNode; }
 	virtual void          SetTerrainNode(CTerrainNode* pTerrainNode) { m_pTerrainNode = pTerrainNode; }

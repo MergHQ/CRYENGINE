@@ -229,14 +229,12 @@ add_sources("CryAction_flowsystem_uber.cpp"
 add_sources("CryAction_game_objects_uber.cpp"
 	PROJECTS CryAction
 	SOURCE_GROUP "Game Objects"
-		"GameObjects/CameraSource.cpp"
 		"GameObjects/GameObject.cpp"
 		"GameObjects/GameObjectDispatch.cpp"
 		"GameObjects/GameObjectSystem.cpp"
 		"GameObjects/GameObjectSystem_FactoryRegistration.cpp"
 		"GameObjects/Interactor.cpp"
 		"GameObjects/WorldQuery.cpp"
-		"GameObjects/CameraSource.h"
 		"GameObjects/GameObject.h"
 		"GameObjects/GameObjectDispatch.h"
 		"GameObjects/GameObjectSystem.h"
@@ -368,6 +366,8 @@ add_sources("CryAction_main_uber_2.cpp"
 		"EntityTags.cpp"
 		"PersistantDebug.cpp"
 		"PersistantDebug.h"
+		"ManualFrameStep.cpp"
+		"ManualFrameStep.h"
 	SOURCE_GROUP "Graphics"
 		"ColorGradientManager.cpp"
 		"ColorGradientManager.h"
@@ -645,22 +645,18 @@ add_sources("CryAction_network_uber.cpp"
 		"Network/SimulateCreateEntityPart.h"
 		"Network/SimulateRemoveEntityParts.h"
 	SOURCE_GROUP "Network\\\\Context Establishment Tasks"
-		"Network/CET_ActionMap.cpp"
 		"Network/CET_ClassRegistry.cpp"
 		"Network/CET_CVars.cpp"
 		"Network/CET_EntitySystem.cpp"
 		"Network/CET_GameRules.cpp"
 		"Network/CET_LevelLoading.cpp"
 		"Network/CET_NetConfig.cpp"
-		"Network/CET_View.cpp"
-		"Network/CET_ActionMap.h"
 		"Network/CET_ClassRegistry.h"
 		"Network/CET_CVars.h"
 		"Network/CET_EntitySystem.h"
 		"Network/CET_GameRules.h"
 		"Network/CET_LevelLoading.h"
 		"Network/CET_NetConfig.h"
-		"Network/CET_View.h"
 	SOURCE_GROUP "Network\\\\Core"
 		"Network/ClassRegistryReplicator.cpp"
 		"Network/GameChannel.cpp"
@@ -949,7 +945,6 @@ add_sources("NoUberFile"
 		"IForceFeedbackSystem.h"
 		"IGameObject.h"
 		"IGameObjectSystem.h"
-		"IGamePhysicsSettings.h"
 		"IGameplayRecorder.h"
 		"IGameRulesSystem.h"
 		"IGameSessionHandler.h"
@@ -1006,16 +1001,15 @@ end_sources()
 CryEngineModule(CryAction PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 
-target_link_libraries( ${THIS_PROJECT} PRIVATE md5 )
+target_link_libraries( ${THIS_PROJECT} PRIVATE md5 yasli)
 if (WIN32 OR WIN64)
-	target_compile_options(${THIS_PROJECT} PRIVATE /Zm200)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)
 endif()
 if(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE jsmn)
 endif()
 
-target_include_directories(CryAction INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction> $<INSTALL_INTERFACE:include/CryAction>)
+target_include_directories(CryAction INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/CryAction>)
 
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.hpp")

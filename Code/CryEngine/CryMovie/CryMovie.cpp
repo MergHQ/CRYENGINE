@@ -13,28 +13,42 @@
 
 #undef GetClassName
 
+struct CSystemEventListner_Movie : public ISystemEventListener
+{
+public:
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+	{
+		switch (event)
+		{
+		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
+			{
+				CLightAnimWrapper::ReconstructCache();
+				break;
+			}
+		}
+	}
+};
+
+static CSystemEventListner_Movie g_system_event_listener_movie;
+
 class CEngineModule_CryMovie : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMovie, "EngineModule_CryMovie", 0xdce26beebdc6400f, 0xa0e9b42839f2dd5b)
+
+	virtual ~CEngineModule_CryMovie() {}
 
 	virtual const char* GetName() override { return "CryMovie"; };
 	virtual const char* GetCategory() override { return "CryEngine"; };
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		env.pMovieSystem = new CMovieSystem(env.pSystem);
+		ISystem* pSystem = env.pSystem;
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_movie);
+
+		env.pMovieSystem = new CMovieSystem(pSystem);
 		return true;
 	}
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryMovie)
-
-CEngineModule_CryMovie::CEngineModule_CryMovie()
-{
-
-};
-
-CEngineModule_CryMovie::~CEngineModule_CryMovie()
-{
-};

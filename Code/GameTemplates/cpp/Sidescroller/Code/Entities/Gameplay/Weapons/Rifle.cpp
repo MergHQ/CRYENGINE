@@ -1,21 +1,35 @@
 #include "StdAfx.h"
 #include "Rifle.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 class CRifleRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CRifle>("Rifle");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CRifle>("Rifle");
 
 		RegisterCVars();
+	}
+
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
 	}
 
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("w_rifleBulletScale", &m_bulletScale, 0.05f, VF_CHEAT, "Determines the scale of the bullet geometry");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("w_rifleBulletScale");
+		}
 	}
 
 public:

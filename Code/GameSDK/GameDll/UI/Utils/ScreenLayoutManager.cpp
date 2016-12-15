@@ -74,37 +74,39 @@ ScreenLayoutStates ScreenLayoutManager::GetState( void ) const
 
 void ScreenLayoutManager::UpdateHUDCanvasSize( void )
 {
-	const int renderWidth = gEnv->pRenderer->GetOverlayWidth();
-	const int renderHeight = gEnv->pRenderer->GetOverlayHeight();
-	RENDER_SCREEN_WIDTH = (float)renderWidth;
-	RENDER_SCREEN_HEIGHT = (float)renderHeight;
+	if (gEnv->pRenderer)
+	{
+		const int renderWidth = gEnv->pRenderer->GetOverlayWidth();
+		const int renderHeight = gEnv->pRenderer->GetOverlayHeight();
+		RENDER_SCREEN_WIDTH = (float)renderWidth;
+		RENDER_SCREEN_HEIGHT = (float)renderHeight;
 
-	assert(RENDER_SCREEN_WIDTH>0.0f);
-	assert(RENDER_SCREEN_HEIGHT>0.0f);
-	INV_RENDER_SCREEN_WIDTH = 1.0f*__fres(RENDER_SCREEN_WIDTH);
-	INV_RENDER_SCREEN_HEIGHT = 1.0f*__fres(RENDER_SCREEN_HEIGHT);
+		assert(RENDER_SCREEN_WIDTH > 0.0f);
+		assert(RENDER_SCREEN_HEIGHT > 0.0f);
+		INV_RENDER_SCREEN_WIDTH = 1.0f*__fres(RENDER_SCREEN_WIDTH);
+		INV_RENDER_SCREEN_HEIGHT = 1.0f*__fres(RENDER_SCREEN_HEIGHT);
 
-	// Force update of HUDAssets and other objects.
-	const float pa = gEnv->pRenderer->GetPixelAspectRatio();
-	Vec2 curCanvasSize( RENDER_SCREEN_WIDTH*__fres(pa), RENDER_SCREEN_HEIGHT );
+		// Force update of HUDAssets and other objects.
+		const float pa = gEnv->pRenderer->GetPixelAspectRatio();
+		Vec2 curCanvasSize(RENDER_SCREEN_WIDTH*__fres(pa), RENDER_SCREEN_HEIGHT);
 #if 0
-	Vec2 bp = GetSafeAreaBorderScreenFraction(eHSAID_curent);
-	bp.x = 1.0f - (2*bp.x);
-	bp.y = 1.0f - (2*bp.y);
-	curCanvasSize.x *= bp.x;
-	curCanvasSize.y *= bp.y;
+		Vec2 bp = GetSafeAreaBorderScreenFraction(eHSAID_curent);
+		bp.x = 1.0f - (2 * bp.x);
+		bp.y = 1.0f - (2 * bp.y);
+		curCanvasSize.x *= bp.x;
+		curCanvasSize.y *= bp.y;
 #endif
 
-	SHUDEvent resizeEvent(eHUDEvent_OnResolutionChange);
-	resizeEvent.AddData(SHUDEventData(curCanvasSize.x));
-	resizeEvent.AddData(SHUDEventData(curCanvasSize.y));
-	resizeEvent.AddData(SHUDEventData(RENDER_SCREEN_WIDTH));
-	resizeEvent.AddData(SHUDEventData(RENDER_SCREEN_HEIGHT));
-	resizeEvent.AddData(SHUDEventData(int_round(RENDER_SCREEN_WIDTH)));
-	resizeEvent.AddData(SHUDEventData(int_round(RENDER_SCREEN_HEIGHT)));
-	//resizeEvent.AddData(SHUDEventData(pa));
-	CHUDEventDispatcher::CallEvent(resizeEvent);
-
+		SHUDEvent resizeEvent(eHUDEvent_OnResolutionChange);
+		resizeEvent.AddData(SHUDEventData(curCanvasSize.x));
+		resizeEvent.AddData(SHUDEventData(curCanvasSize.y));
+		resizeEvent.AddData(SHUDEventData(RENDER_SCREEN_WIDTH));
+		resizeEvent.AddData(SHUDEventData(RENDER_SCREEN_HEIGHT));
+		resizeEvent.AddData(SHUDEventData(int_round(RENDER_SCREEN_WIDTH)));
+		resizeEvent.AddData(SHUDEventData(int_round(RENDER_SCREEN_HEIGHT)));
+		//resizeEvent.AddData(SHUDEventData(pa));
+		CHUDEventDispatcher::CallEvent(resizeEvent);
+	}
 }
 
 //---------------------------------------------------

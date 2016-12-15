@@ -17,14 +17,14 @@ struct IREGameEffect
 };
 
 //! Render element that uses the IREGameEffect interface for its functionality.
-class CREGameEffect : public CRendElementBase
+class CREGameEffect : public CRenderElement
 {
 public:
 
 	CREGameEffect();
 	~CREGameEffect();
 
-	// CRendElementBase interface
+	// CRenderElement interface
 	void mfPrepare(bool bCheckOverflow);
 	bool mfDraw(CShader* ef, SShaderPass* sfm);
 

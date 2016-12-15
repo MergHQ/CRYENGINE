@@ -9,6 +9,9 @@
 #include <CryMath/Cry_Color.h>
 #include <CryRenderer/IFlares.h>
 
+#include "XRenderD3D9/GraphicsPipeline/Common/PrimitiveRenderPass.h"
+#include "XRenderD3D9/GraphicsPipeline/StandardGraphicsPipeline.h"
+
 class CD3D9Renderer;
 class CTexture;
 class RootOpticsElement;
@@ -30,7 +33,6 @@ typedef void (IOpticsElementBase::*     Optics_MFPtr)(void);
 
 class COpticsElement : public IOpticsElementBase
 {
-
 public:
 	struct SAuxParams
 	{
@@ -43,6 +45,41 @@ public:
 		bool  bMultiplyColor;
 		bool  bForceRender;
 		bool  bIgnoreOcclusionQueries;
+	};
+
+	struct SPreparePrimitivesContext
+	{
+		SPreparePrimitivesContext(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses)
+			: pass(targetPass)
+			, prePasses(prePasses)
+			, viewInfoCount(0)
+			, pViewInfo(nullptr)
+			, lightWorldPos(ZERO)
+		{
+			ZeroStruct(auxParams);
+			ZeroArray(lightScreenPos);
+		}
+
+		CPrimitiveRenderPass&                       pass;
+		std::vector<CPrimitiveRenderPass*>&         prePasses;
+
+		const CStandardGraphicsPipeline::SViewInfo* pViewInfo;
+		int                                         viewInfoCount;
+
+		Vec3                                        lightWorldPos;
+		Vec3                                        lightScreenPos[CCamera::eEye_eCount];
+		SAuxParams                                  auxParams;
+	};
+
+	struct SShaderParamsBase
+	{
+		Vec4 outputDimAndSize;
+		Vec4 occPatternInfo;
+		Vec4 externTint;
+		Matrix34 xform;
+		Vec4 dynamics;
+		Vec4 lightProjPos;
+		Vec4 hdrParams;
 	};
 
 private:
@@ -91,63 +128,18 @@ protected:
 	bool     m_bDynamics           : 1;
 	bool     m_bDynamicsInvert     : 1;
 
+	int      m_samplerBilinearClamp;
+	int      m_samplerBilinearBorderBlack;
+	
 #if defined(FLARES_SUPPORT_EDITING)
 	DynArray<FuncVariableGroup> paramGroups;
 #endif
 public:
 
-	COpticsElement(const char* name, float size = 0.3f, const float brightness = 1.0f, const ColorF& color = LensOpConst::_LO_DEF_CLR)
-		: xform_scale(1.0f, 1.0f)
-		, xform_translate(ZERO)
-		, xform_rotation(0.0f)
-		, m_pParent(0)
-		, m_globalMovement(LensOpConst::_LO_DEF_VEC2_I)
-		, m_globalTransform(IDENTITY)
-		, m_globalColor(1.0f, 1.0f, 1.0f, 1.0f)
-		, m_globalFlareBrightness(1.0f)
-		, m_globalShaftBrightness(1.0f)
-		, m_globalSize(1.0f)
-		, m_globalPerspectiveFactor(1.0f)
-		, m_globalDistanceFadingFactor(0.0f)
-		, m_globalOrbitAngle(0.0f)
-		, m_globalSensorSizeFactor(0.0f)
-		, m_globalSensorBrightnessFactor(0.0f)
-		, m_globalAutoRotation(false)
-		, m_globalCorrectAspectRatio(false)
-		, m_globalOcclusionBokeh(false)
-		, m_bEnabled(true)
-		, m_name(name)
-		, m_mxTransform(LensOpConst::_LO_DEF_MX33)
-		, m_fSize(size)
-		, m_fPerspectiveFactor(1.0f)
-		, m_fDistanceFadingFactor(1.0f)
-		, m_Color(color)
-		, m_fBrightness(brightness)
-		, m_vMovement(1.0f, 1.0f)
-		, m_fOrbitAngle(0.0f)
-		, m_fSensorSizeFactor(0.0f)
-		, m_fSensorBrightnessFactor(0.0f)
-		, m_vDynamicsOffset(ZERO)
-		, m_fDynamicsRange(1.0f)
-		, m_fDynamicsFalloff(1.0f)
-		, m_bAutoRotation(false)
-		, m_bCorrectAspectRatio(true)
-		, m_bOcclusionBokeh(false)
-		, m_bDynamics(false)
-		, m_bDynamicsInvert(false)
-	{}
-
+	COpticsElement(const char* name, float size = 0.3f, const float brightness = 1.0f, const ColorF& color = LensOpConst::_LO_DEF_CLR);
 	virtual ~COpticsElement() {}
 
 	virtual void Load(IXmlNode* pNode);
-
-	COpticsElement(const COpticsElement& copyFrom)
-	{
-		*this = copyFrom;
-#if defined(FLARES_SUPPORT_EDITING)
-		paramGroups.clear();
-#endif
-	}
 
 	IOpticsElementBase* GetParent() const
 	{
@@ -208,7 +200,8 @@ public:
 		return m_globalColor.a > LensOpConst::_LO_MIN && m_globalFlareBrightness > LensOpConst::_LO_MIN;
 	}
 
-	virtual void Render(SLensFlareRenderParam* pParam, const Vec3& vPos) { assert(0); }
+	virtual void RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) { assert(0); }
+	virtual bool PreparePrimitives(const SPreparePrimitivesContext& context) { assert(0); return false; }
 
 protected:
 	void         updateXformMatrix();
@@ -272,7 +265,7 @@ protected:
 
 public:
 
-	virtual void validateGlobalVars(SAuxParams& aux);
+	virtual void validateGlobalVars(const SAuxParams& aux);
 
 	float        computeMovementLocationX(const Vec3& vSrcProjPos)
 	{
@@ -285,29 +278,14 @@ public:
 	}
 
 	static const Vec3 computeOrbitPos(const Vec3& vSrcProjPos, float orbitAngle);
-	void              ApplyVSParam_WPosAndSize(CShader* shader, const Vec3& wpos);
 
-	void              ApplyOcclusionPattern(CShader* shader);
-	void              ApplyGeneralFlags(CShader* shader);
-	void              ApplyOcclusionBokehFlag(CShader* shader);
-	void              ApplySpectrumTexFlag(CShader* shader, bool enabled);
-	void              ApplyExternTintAndBrightnessVS(CShader* shader, ColorF& cExTint, float fExBrt);
-	void              ApplyVSParam_Xform(CShader* shader, Matrix33& mx33);
-	void              ApplyVSParam_ScreenWidthHeight(CShader* shader);
-	void              ApplyVSParam_Dynamics(CShader* shader, const Vec3& projPos);
-	void              ApplyPSParam_LightProjPos(CShader* shader, const Vec3& lightProjPos);
-	void              ApplyVSParam_LightProjPos(CShader* shader, const Vec3& lightProjPos);
+	void              ApplyOcclusionPattern(SShaderParamsBase& shaderParams, CRenderPrimitive& primitive);
+	void              ApplyGeneralFlags(uint64& rtFlags);
+	void              ApplyOcclusionBokehFlag(uint64& rtFlags);
+	void              ApplySpectrumTexFlag(uint64& rtFlags, bool enabled);
+	void              ApplyCommonParams(SShaderParamsBase& shaderParams, const SViewport& viewport, const Vec3& lightProjPos, const Vec2& size);
 
-	void              ApplyCommonVSParams(CShader* shader, const Vec3& wpos, const Vec3& lightProjPos)
-	{
-		ApplyVSParam_WPosAndSize(shader, wpos);
-		ApplyVSParam_Xform(shader, m_globalTransform);
-		ApplyVSParam_Dynamics(shader, lightProjPos);
-		ApplyVSParam_ScreenWidthHeight(shader);
-	}
 
 	virtual EFlareType GetType()       { return eFT__Base__; }
 	virtual bool       IsGroup() const { return false; }
-
-	virtual void       Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SAuxParams& aux) = 0;
 };

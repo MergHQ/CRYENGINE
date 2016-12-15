@@ -188,7 +188,7 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpda
 	}
 	CRY_PFX2_FOR_END
 
-	for (auto& pMod : m_modInit)
+	for (auto & pMod : m_modInit)
 	{
 		if (pMod->GetDomain() >= domain)
 			pMod->Modify(context, range, stream, EParticleDataType(), domain);
@@ -203,6 +203,12 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpda
 			minmax = minmax * pMod->GetMinMax();
 	}
 	return minmax;
+}
+
+template<typename TParamModContext, typename T>
+TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpdateContext& context, Array<TType, uint> data, EModDomain domain, bool updating) const
+{
+	return GetValues(context, data.data(), SUpdateRange(0, data.size()), domain, updating);
 }
 
 template<typename TParamModContext, typename T>
@@ -238,9 +244,8 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValueRange() const
 	return minmax;
 }
 
-
 template<typename TParamModContext, typename T>
-void pfx2::CParamMod<TParamModContext, T>::Sample(TType* samples, int numSamples) const
+void pfx2::CParamMod<TParamModContext, T >::Sample(TType* samples, int numSamples) const
 {
 	const T baseValue = m_baseValue.Get();
 	for (int i = 0; i < numSamples; ++i)
@@ -256,14 +261,12 @@ void pfx2::CParamMod<TParamModContext, T>::Sample(TType* samples, int numSamples
 }
 
 template<typename TParamModContext, typename T>
-IOFStream CParamMod<TParamModContext, T>::GetParticleStream(CParticleContainer& container, EParticleDataType dataType) const
+IOFStream CParamMod<TParamModContext, T >::GetParticleStream(CParticleContainer& container, EParticleDataType dataType) const
 {
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return IOFStream();
 	IOFStream stream = container.GetIOFStream(dataType);
 	return stream;
 }
-
-
 
 }

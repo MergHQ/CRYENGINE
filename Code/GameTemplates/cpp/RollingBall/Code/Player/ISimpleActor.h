@@ -14,7 +14,6 @@ struct ISimpleActor : public IActor
 	virtual void PostInitClient(int channelId) override {}
 	virtual bool ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {return true;}
 	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
-	virtual bool GetEntityPoolSignature(TSerialize signature) override {return false;}
 	virtual void Release() override {delete this;}
 	virtual void FullSerialize(TSerialize ser) override {}
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override {return true;}
@@ -104,7 +103,6 @@ struct ISimpleActor : public IActor
 		return GetEntity()->GetClass()->GetName();
 	}
 
-	virtual void SerializeXML( XmlNodeRef &node, bool bLoading ) override {}
 	virtual void SerializeLevelToLevel( TSerialize &ser ) override {}
 	
 	virtual IAnimatedCharacter*       GetAnimatedCharacter() override { return nullptr; }
@@ -128,6 +126,8 @@ struct ISimpleActor : public IActor
 	// Begin unreferenced IActor mentions
 	virtual int   GetTeamId() const override { return 0; }
 	virtual bool ShouldMuteWeaponSoundStimulus() const override { return false; }
+
+	virtual bool IsInteracting() const override { return false; }
 	// ~IActor
 
 	ISimpleActor() {}

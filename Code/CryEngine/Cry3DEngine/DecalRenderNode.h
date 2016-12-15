@@ -74,6 +74,7 @@ private:
 	Matrix34              m_Matrix;
 	uint32                m_nLastRenderedFrameId;
 	uint16                m_nLayerId;
+	IPhysicalEntity*      m_physEnt;
 
 public:
 	static int m_nFillBigDecalIndicesCounter;

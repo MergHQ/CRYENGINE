@@ -494,7 +494,7 @@ inline void CBitArray::SerializeFloat(float* data, float min, float max, int tot
 
 inline void CBitArray::SerializeEntity(EntityId& entId)
 {
-	INetContext* pContext = gEnv->pGame->GetIGameFramework()->GetNetContext();
+	INetContext* pContext = gEnv->pGameFramework->GetNetContext();
 	if (IsReading())
 	{
 		SNetObjectID netId;

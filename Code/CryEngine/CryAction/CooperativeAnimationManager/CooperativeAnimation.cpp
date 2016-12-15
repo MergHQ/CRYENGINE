@@ -101,7 +101,7 @@ bool CCooperativeAnimation::AreActorsAlive()
 
 	for (; it != iend; ++it)
 	{
-		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(it->pActor->GetEntityId());
+		IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(it->pActor->GetEntityId());
 		CRY_ASSERT(pActor);
 		if (pActor)
 		{
@@ -926,7 +926,6 @@ void CCooperativeAnimation::DetermineReferencePositionAndCalculateTargets()
 
 			// get the rotation between those vectors (z axis rotation, from worldDir to animDir)
 			float fDot = secondPos * firstToSecW;
-			fDot = clamp_tpl(fDot, -1.0f, 1.0f);
 			float angle = acos_tpl(fDot);
 
 			// cross product to determine if the angle needs to be flipped - but only z component is relevant
@@ -1022,7 +1021,7 @@ void CCooperativeAnimation::CleanupForFinishedCharacter(SCharacterParams& params
 
 	IAnimatedCharacter* pAC = params.pActor;
 
-	const ICooperativeAnimationManager* const pCAManager = gEnv->pGame->GetIGameFramework()->GetICooperativeAnimationManager();
+	const ICooperativeAnimationManager* const pCAManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 	CRY_ASSERT(pCAManager);
 
 	CRY_ASSERT_MESSAGE(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");

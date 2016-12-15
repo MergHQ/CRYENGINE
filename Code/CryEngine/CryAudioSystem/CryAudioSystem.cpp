@@ -23,7 +23,7 @@
 // Define global objects.
 CAudioCVars g_audioCVars;
 CAudioLogger g_audioLogger;
-CSoundAllocator g_audioMemoryPoolPrimary;
+CSoundAllocator<13*1024*1024> g_audioMemoryPoolPrimary;
 CTimeValue g_lastMainThreadFrameStartTime;
 
 #define MAX_MODULE_NAME_LENGTH 256
@@ -45,11 +45,6 @@ public:
 		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
 			{
 				g_audioMemoryPoolPrimary.Cleanup();
-				break;
-			}
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			{
-				cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
 				break;
 			}
 		case ESYSTEM_EVENT_ACTIVATE:
@@ -193,7 +188,10 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
 
-	virtual const char* GetName() override { return "CryAudioSystem"; }
+	CEngineModule_CryAudioSystem();
+	virtual ~CEngineModule_CryAudioSystem() {}
+
+	virtual const char* GetName() override     { return "CryAudioSystem"; }
 	virtual const char* GetCategory() override { return "CryEngine"; }
 
 	//////////////////////////////////////////////////////////////////////////
@@ -221,7 +219,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
-			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
+			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
 			{
 				PrepareAudioSystem(env.pAudioSystem);
 			}
@@ -259,24 +257,31 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 		SSystemInitParams systemInitParams;
 		s_currentModuleName = pAudioImplNameCvar->GetString();
 
+		if (!previousModuleName.empty())
+		{
+			// Set the null impl
+			SAudioRequest request;
+			SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> requestData(nullptr);
+			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
+			request.pData = &requestData;
+			gEnv->pAudioSystem->PushRequest(request);
+
+			// Unload the previous module
+			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), "EngineModule_AudioImpl");
+		}
+
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
-		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
+		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
 		{
 			SAudioRequest request;
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-
-			// Unload the previous module if the new one initialized successfully..
-			if (!previousModuleName.empty())
-			{
-				gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), previousModuleName.c_str());
-			}
 
 			// Then load global controls data and preloads.
 			PrepareAudioSystem(gEnv->pAudioSystem);
 
 			// Then load level specific controls data and preloads.
-			string const levelName = PathUtil::GetFileName(gEnv->pGame->GetIGameFramework()->GetLevelName());
+			string const levelName = PathUtil::GetFileName(gEnv->pGameFramework->GetLevelName());
 
 			if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
 			{
@@ -304,32 +309,25 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			}
 
 			// Then adjust the listener transformation to the active view's transformation.
-			IGame* const pIGame = gEnv->pGame;
-
-			if (pIGame != nullptr)
+			if (gEnv->pGameFramework != nullptr)
 			{
-				IGameFramework* const pIGameFramework = pIGame->GetIGameFramework();
+				IViewSystem* const pIViewSystem = gEnv->pGameFramework->GetIViewSystem();
 
-				if (pIGameFramework != nullptr)
+				if (pIViewSystem != nullptr)
 				{
-					IViewSystem* const pIViewSystem = pIGameFramework->GetIViewSystem();
+					IView* const pActiveView = pIViewSystem->GetActiveView();
 
-					if (pIViewSystem != nullptr)
+					if (pActiveView != nullptr)
 					{
-						IView* const pActiveView = pIViewSystem->GetActiveView();
+						EntityId const id = pActiveView->GetLinkedId();
+						IEntity const* const pIEntity = gEnv->pEntitySystem->GetEntity(id);
 
-						if (pActiveView != nullptr)
+						if (pIEntity != nullptr)
 						{
-							EntityId const id = pActiveView->GetLinkedId();
-							IEntity const* pIEntity = gEnv->pEntitySystem->GetEntity(id);
+							SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData4(pIEntity->GetWorldTM());
+							request.pData = &requestData4;
 
-							if (pIEntity != nullptr)
-							{
-								SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData4(pIEntity->GetWorldTM());
-								request.pData = &requestData4;
-
-								gEnv->pAudioSystem->PushRequest(request);
-							}
+							gEnv->pAudioSystem->PushRequest(request);
 						}
 					}
 				}
@@ -353,8 +351,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			gEnv->pAudioSystem->PushRequest(request);
 
 			// The module failed to initialize, unload both as we are running the null implementation now.
-			gEnv->pSystem->UnloadEngineModule(previousModuleName.c_str(), previousModuleName.c_str());
-			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str());
+			gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl");
 			s_currentModuleName.clear();
 		}
 
@@ -383,11 +380,6 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 	                                          CEngineModule_CryAudioSystem::OnAudioImplChanged);
 
 	g_audioCVars.RegisterVariables();
-}
-
-//////////////////////////////////////////////////////////////////////////
-CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

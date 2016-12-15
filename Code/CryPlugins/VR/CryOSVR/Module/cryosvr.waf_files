@@ -1,0 +1,30 @@
+{
+	"NoUberFile" :
+	{
+		"Root" :
+		[
+		  "StdAfx.cpp"
+		]
+	},
+	"CryOSVR_uber_0.cpp" :
+	{
+		"Interface" :
+		[
+		  "../Interface/IHmdOsvrDevice.h",
+		  "../Interface/IOsvrPlugin.h"
+		],
+
+		"Root" :
+		[
+		  "PluginDll.cpp",
+		  "PluginDll.h",
+		  "OsvrDevice.cpp",
+		  "OsvrDevice.h",
+		  "OsvrResources.cpp",
+		  "OsvrResources.h",
+		  "resource.h",
+		  "StdAfx.cpp",
+		  "StdAfx.h"
+		]
+	}
+}

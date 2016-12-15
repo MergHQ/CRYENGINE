@@ -462,7 +462,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 {
 	s_pTimeDemoRecorder = this;
 
-	//gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
+	//gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 
 	CRY_ASSERT(GetISystem());
 
@@ -541,10 +541,10 @@ void CTimeDemoRecorder::Reset()
 const char* CTimeDemoRecorder::GetCurrentLevelPath()
 {
 	static char buf[_MAX_PATH];
-	gEnv->pGame->GetIGameFramework()->GetAbsLevelPath(buf, sizeof(buf));
+	gEnv->pGameFramework->GetAbsLevelPath(buf, sizeof(buf));
 	return &buf[0];
 	/*
-	   ILevel *pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+	   ILevel *pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 	   if (!pLevel)
 	    return "";
 	   ILevelInfo *pLevelInfo = pLevel->GetLevelInfo();
@@ -671,7 +671,7 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 	m_bPlaying = bEnable;
 
-	IActor* pClActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
 	if (pClActor)
 	{
 		IAnimatedCharacter* pAnimChar = pClActor->GetAnimatedCharacter();
@@ -1167,7 +1167,7 @@ bool CTimeDemoRecorder::Load(const char* filename)
 
 	case TIMEDEMO_FILE_VERSION_4:
 		{
-			float recFixedTimeStep = float(*hdr.reserved);
+			float recFixedTimeStep = *(float*)(hdr.reserved);
 			if (recFixedTimeStep > 0 && recFixedTimeStep < 1000)
 				m_demo_fixed_timestep = (uint16)recFixedTimeStep;
 
@@ -1263,7 +1263,7 @@ bool CTimeDemoRecorder::Load(const char* filename)
 
 	case TIMEDEMO_FILE_VERSION_7:
 		{
-			float recFixedTimeStep = float(*hdr.reserved);
+			float recFixedTimeStep = *(float*)(hdr.reserved);
 
 			if (recFixedTimeStep > fixedTimeStepMin && recFixedTimeStep < fixedTimeStepMax)
 			{
@@ -1479,7 +1479,7 @@ bool CTimeDemoRecorder::RecordFrame()
 		return true;
 	}
 
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	GetISystem()->GetRandomGenerator().Seed(0);
 
 	FrameRecord rec;
 
@@ -1487,7 +1487,7 @@ bool CTimeDemoRecorder::RecordFrame()
 
 	IEntity* pPlayerEntity = NULL;
 
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		pPlayerEntity = pClientActor->GetEntity();
@@ -1609,7 +1609,7 @@ bool CTimeDemoRecorder::PlayFrame()
 	//////////////////////////////////////////////////////////////////////////
 
 	IEntity* pPlayer = NULL;
-	IActor* pClActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
 	if (pClActor)
 	{
 		pPlayer = pClActor->GetEntity();
@@ -1764,17 +1764,16 @@ float CTimeDemoRecorder::RenderInfo(float y)
 
 	const char* sInfo = m_bPaused ? " (Paused)" : "";
 
-	IRenderer* pRenderer = gEnv->pRenderer;
 	if (m_bRecording)
 	{
 		// TO DO
 		float fColor[4] = { 0.7f, 0, 0, 1 };
-		pRenderer->Draw2dLabel(1, y, 1.3f, fColor, false, "Recording AutoTest%s", sInfo);
+		IRenderAuxText::Draw2dLabel(1, y, 1.3f, fColor, false, "Recording AutoTest%s", sInfo);
 	}
 	else if (m_bPlaying)
 	{
 		float fColor[4] = { 0, 0.7f, 0, 1 };
-		pRenderer->Draw2dLabel(1, y, 1.3f, fColor, false, "Playing AutoTest%s - Loop %d of %d, Orientation %d of %d", sInfo, (m_numLoops / m_numOrientations) + 1, m_maxLoops, (m_numLoops % m_numOrientations) + 1, m_numOrientations);
+		IRenderAuxText::Draw2dLabel(1, y, 1.3f, fColor, false, "Playing AutoTest%s - Loop %d of %d, Orientation %d of %d", sInfo, (m_numLoops / m_numOrientations) + 1, m_maxLoops, (m_numLoops % m_numOrientations) + 1, m_numOrientations);
 	}
 
 	y += 15;
@@ -1782,14 +1781,14 @@ float CTimeDemoRecorder::RenderInfo(float y)
 	if (m_bRecording)
 	{
 		float fColor[4] = { 1, 0, 0, 1 };
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frames: %d", sInfo, m_currentFrame);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frames: %d", sInfo, m_currentFrame);
 		retY += 15;
 	}
 	else if (m_bPlaying)
 	{
 		int numFrames = GetNumFrames();
 		float fColor[4] = { 0, 1, 0, 1 };
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frame %d of %d", sInfo, m_currentFrame, numFrames);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frame %d of %d", sInfo, m_currentFrame, numFrames);
 		retY += 15;
 
 		float aveFrameRate = GetAverageFrameRate();
@@ -1798,20 +1797,20 @@ float CTimeDemoRecorder::RenderInfo(float y)
 		float polyRatio = m_nTotalPolysPlayed ? (float)m_nTotalPolysRecorded / m_nTotalPolysPlayed : 0.0f;
 		//int numFrames = GetNumFrames();
 
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TestProfiler%s, Frame %d", sInfo, m_currentFrame);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TestProfiler%s, Frame %d", sInfo, m_currentFrame);
 		retY += 15;
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Last Played Length: %.2fs, FPS: %.2f", m_lastPlayedTotalTime, m_lastAveFrameRate);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Last Played Length: %.2fs, FPS: %.2f", m_lastPlayedTotalTime, m_lastAveFrameRate);
 		retY += 15;
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Average FPS: %.2f, FPS: %.2f, Polys/Frame: %d", aveFrameRate, m_currFPS, m_nCurrPolys);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Average FPS: %.2f, FPS: %.2f, Polys/Frame: %d", aveFrameRate, m_currFPS, m_nCurrPolys);
 		retY += 15;
 
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Polys Rec/Play Ratio: %.2f", polyRatio);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Polys Rec/Play Ratio: %.2f", polyRatio);
 		retY += 15;
 	}
 
 	if (!m_bPaused && m_demo_gameState && m_fileVersion >= TIMEDEMO_FILE_VERSION_4)
 	{
-		IGameStateRecorder* pGameStateRecorder = gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->GetIGameStateRecorder();
+		IGameStateRecorder* pGameStateRecorder = gEnv->pGameFramework->GetIGameplayRecorder()->GetIGameStateRecorder();
 		if (pGameStateRecorder)
 			retY += pGameStateRecorder->RenderInfo(y + retY, m_bRecording);
 	}
@@ -1888,11 +1887,11 @@ void CTimeDemoRecorder::StartSession()
 	m_prevGodMode = (int)GetConsoleVar("g_godMode");
 
 	if (m_demo_gameState && m_fileVersion >= TIMEDEMO_FILE_VERSION_4)
-		gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(true, this, m_bRecording);
+		gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(true, this, m_bRecording);
 
 	if (m_bPlaying)
 	{
-		IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 		if (pClientActor)
 		{
 			pClientActor->EnableTimeDemo(true);
@@ -1973,11 +1972,11 @@ void CTimeDemoRecorder::StopSession()
 	}
 	SetConsoleVar("mov_NoCutscenes", 0);
 
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 		pClientActor->EnableTimeDemo(false);
 
-	gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
+	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 
 	// Profile.
 	SetConsoleVar("profile_peak", m_oldPeakTolerance);
@@ -1999,8 +1998,8 @@ void CTimeDemoRecorder::ResetSessionLoop()
 		{
 		case 1:
 			// Quick load at the begining of the playback, so we restore initial state as good as possible.
-			if (gEnv->pGame->GetIGameFramework())
-				gEnv->pGame->GetIGameFramework()->LoadGame(GetInitSaveFileName());//, true, true);
+			if (gEnv->pGameFramework)
+				gEnv->pGameFramework->LoadGame(GetInitSaveFileName());//, true, true);
 
 			break;
 
@@ -2013,7 +2012,7 @@ void CTimeDemoRecorder::ResetSessionLoop()
 
 	}
 	// Reset random number generators seed.
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
+	GetISystem()->GetRandomGenerator().Seed(0);
 
 	m_totalDemoTime.SetMilliSeconds(0);
 	m_currentFrame = 0;
@@ -2229,7 +2228,7 @@ void CTimeDemoRecorder::PlayBackEntityEvent(const EntityEventRecord& rec)
 		break;
 	case ENTITY_EVENT_ENTER_SCRIPT_STATE:
 		{
-			IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+			IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 			if (pScriptProxy)
 			{
 				pScriptProxy->GotoStateId((int)rec.nParam[0]);
@@ -2485,7 +2484,7 @@ void CTimeDemoRecorder::StartNextChainedLevel()
 //////////////////////////////////////////////////////////////////////////
 string CTimeDemoRecorder::GetCurrentLevelName()
 {
-	return gEnv->pGame->GetIGameFramework()->GetLevelName();
+	return gEnv->pGameFramework->GetLevelName();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2627,7 +2626,7 @@ void CTimeDemoRecorder::ReplayGameState(FrameRecord& rec)
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Game state
-	IGameStateRecorder* pGameStateRecorder = gEnv->pGame->GetIGameFramework()->GetIGameplayRecorder()->GetIGameStateRecorder();
+	IGameStateRecorder* pGameStateRecorder = gEnv->pGameFramework->GetIGameplayRecorder()->GetIGameStateRecorder();
 	if (pGameStateRecorder && m_fileVersion >= TIMEDEMO_FILE_VERSION_4 && m_demo_gameState)
 	{
 		int n = rec.gameEvents.size();

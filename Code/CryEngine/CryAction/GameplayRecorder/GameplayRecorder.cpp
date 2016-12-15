@@ -260,7 +260,10 @@ IGameStateRecorder* CGameplayRecorder::EnableGameStateRecorder(bool bEnable, IGa
 {
 
 	if (!m_pGameStateRecorder)
-		m_pGameStateRecorder = gEnv->pGame->CreateGameStateRecorder(pL);//pTestManager);
+	{
+		if (auto* pGame = gEnv->pGameFramework->GetIGame())
+			m_pGameStateRecorder = pGame->CreateGameStateRecorder(pL);//pTestManager);
+	}
 
 	if (m_pGameStateRecorder)
 	{

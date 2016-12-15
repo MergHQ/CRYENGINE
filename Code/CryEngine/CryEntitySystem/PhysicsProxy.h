@@ -26,15 +26,12 @@ typedef bitmask_t<bitmaskPtr, 4>    attachMask;
 typedef bitmask_t<bitmaskBuf<4>, 4> attachMaskLoc;
 	#define attachMask1 (bitmask_t<bitmaskOneBit, 4>(1))
 #else
-typedef uint attachMask, attachMaskLoc;
+typedef uint32 attachMask, attachMaskLoc;
 	#define attachMask1 1
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-// Description:
-//    Implements base physical proxy class for entity.
-//////////////////////////////////////////////////////////////////////////
-class CPhysicalProxy : public IEntityPhysicalProxy
+// Implements physical behavior of the entity.
+class CEntityPhysics
 {
 public:
 	enum EFlags
@@ -42,66 +39,47 @@ public:
 		CHARACTER_SLOT_MASK = 0x000F,     // Slot Id, of physicalized character.
 		// When set Physical proxy will ignore incoming xform events from the entity.
 		// Needed to prevent cycle change, when physical entity change entity xform and recieve back an event about entity xform.
-		FLAG_IGNORE_XFORM_EVENT        = 0x0010,
-		FLAG_IGNORE_BUOYANCY           = 0x0020,
-		FLAG_PHYSICS_DISABLED          = 0x0040,
-		FLAG_SYNC_CHARACTER            = 0x0080,
-		FLAG_WAS_HIDDEN                = 0x0100,
-		FLAG_PHYS_CHARACTER            = 0x0200,
-		FLAG_PHYS_AWAKE_WHEN_VISIBLE   = 0x0400,
-		FLAG_ATTACH_CLOTH_WHEN_VISIBLE = 0x0800,
-		FLAG_POS_EXTRAPOLATED          = 0x1000,
-		FLAG_DISABLE_ENT_SERIALIZATION = 0x2000,
-		FLAG_PHYSICS_REMOVED           = 0x4000,
+		FLAG_IGNORE_XFORM_EVENT        = 1 << 4,
+		FLAG_IGNORE_BUOYANCY           = 1 << 5,
+		FLAG_PHYSICS_DISABLED          = 1 << 6,
+		FLAG_SYNC_CHARACTER            = 1 << 7,
+		FLAG_WAS_HIDDEN                = 1 << 8,
+		FLAG_PHYS_CHARACTER            = 1 << 9,
+		FLAG_PHYS_AWAKE_WHEN_VISIBLE   = 1 << 10,
+		FLAG_ATTACH_CLOTH_WHEN_VISIBLE = 1 << 11,
+		FLAG_POS_EXTRAPOLATED          = 1 << 12,
+		FLAG_DISABLE_ENT_SERIALIZATION = 1 << 13,
+		FLAG_PHYSICS_REMOVED           = 1 << 14,
+		// Whether or not the physics proxy currently requires that the entity is active / updated every frame.
+		FLAG_ACTIVE                    = 1 << 15,
 	};
 
-	CPhysicalProxy();
-	~CPhysicalProxy() {};
+	CEntityPhysics();
+	~CEntityPhysics();
+	;
 	CEntity* GetEntity() const { return m_pEntity; };
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityEvent interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
+	void     ProcessEvent(SEntityEvent& event);
+
+	void     SerializeXML(XmlNodeRef& entityNode, bool bLoading);
+	bool     NeedNetworkSerialize();
+	void     SerializeTyped(TSerialize ser, int type, int flags);
+	void     EnableNetworkSerialization(bool enable);
 	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_PHYSICS; }
-	virtual void         Release();
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual void         SerializeTyped(TSerialize ser, int type, int flags);
-	virtual bool         GetSignature(TSerialize signature);
-	virtual void         EnableNetworkSerialization(bool enable);
-	//////////////////////////////////////////////////////////////////////////
+	void             Serialize(TSerialize ser);
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityPhysicalProxy interface.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void             GetLocalBounds(AABB& bbox);
-	virtual void             GetWorldBounds(AABB& bbox);
+	void             GetLocalBounds(AABB& bbox) const;
+	void             GetWorldBounds(AABB& bbox) const;
 
-	virtual void             Physicalize(SEntityPhysicalizeParams& params);
-	virtual IPhysicalEntity* GetPhysicalEntity() const { return m_pPhysicalEntity; }
-	virtual void             EnablePhysics(bool bEnable);
-	virtual bool             IsPhysicsEnabled() const;
-	virtual void             AddImpulse(int ipart, const Vec3& pos, const Vec3& impulse, bool bPos, float fAuxScale, float fPushScale = 1.0f);
+	void             Physicalize(SEntityPhysicalizeParams& params);
+	IPhysicalEntity* GetPhysicalEntity() const { return m_pPhysicalEntity; }
+	void             EnablePhysics(bool bEnable);
+	bool             IsPhysicsEnabled() const;
+	void             AddImpulse(int ipart, const Vec3& pos, const Vec3& impulse, bool bPos, float fAuxScale, float fPushScale = 1.0f);
 
-	virtual void             SetTriggerBounds(const AABB& bbox);
-	virtual void             GetTriggerBounds(AABB& bbox);
-
-	virtual int              GetPartId0(int nSlot = 0);
-	int                      GetPhysAttachId();
-
-	virtual void             IgnoreXFormEvent(bool ignore) { SetFlags(ignore ? (m_nFlags | FLAG_IGNORE_XFORM_EVENT) : (m_nFlags & (~FLAG_IGNORE_XFORM_EVENT))); }
+	int              GetPartId0(int nSlot = 0);
+	int              GetPhysAttachId();
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -128,7 +106,7 @@ public:
 	int               AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params, int bNoSubslots = 1);
 	void              RemoveSlotGeometry(int nSlot);
 
-	void              MovePhysics(CPhysicalProxy* dstPhysics);
+	void              MovePhysics(CEntityPhysics* dstPhysics);
 
 	virtual void      GetMemoryUsage(ICrySizer* pSizer) const;
 	void              ReattachSoftEntityVtx(IPhysicalEntity* pAttachToEntity, int nAttachToPart);
@@ -138,65 +116,50 @@ public:
 	static void DisableValidation();
 #endif
 
-protected:
-	IPhysicalWorld* PhysicalWorld() const { return gEnv->pPhysicalWorld; }
-	void            OnEntityXForm(SEntityEvent& event);
-	void            OnChangedPhysics(bool bEnabled);
-	void            DestroyPhysicalEntity(bool bDestroyCharacters = true, int iMode = 0);
+	void               SetActive(bool bActive);
 
-	void            PhysicalizeSimple(SEntityPhysicalizeParams& params);
-	void            PhysicalizeLiving(SEntityPhysicalizeParams& params);
-	void            PhysicalizeParticle(SEntityPhysicalizeParams& params);
-	void            PhysicalizeSoft(SEntityPhysicalizeParams& params);
-	void            AttachSoftVtx(IRenderMesh* pRM, IPhysicalEntity* pAttachToEntity, int nAttachToPart);
-	void            PhysicalizeArea(SEntityPhysicalizeParams& params);
-	bool            PhysicalizeGeomCache(SEntityPhysicalizeParams& params);
-	bool            PhysicalizeCharacter(SEntityPhysicalizeParams& params);
-	bool            ConvertCharacterToRagdoll(SEntityPhysicalizeParams& params, const Vec3& velInitial);
+private:
+	IPhysicalWorld*  PhysicalWorld() const { return gEnv->pPhysicalWorld; }
+	void             OnEntityXForm(SEntityEvent& event);
+	void             OnChangedPhysics(bool bEnabled);
+	void             DestroyPhysicalEntity(bool bDestroyCharacters = true, int iMode = 0);
 
-	void            CreatePhysicalEntity(SEntityPhysicalizeParams& params);
-	phys_geometry*  GetSlotGeometry(int nSlot);
-	void            SyncCharacterWithPhysics();
+	void             PhysicalizeSimple(SEntityPhysicalizeParams& params);
+	void             PhysicalizeLiving(SEntityPhysicalizeParams& params);
+	void             PhysicalizeParticle(SEntityPhysicalizeParams& params);
+	void             PhysicalizeSoft(SEntityPhysicalizeParams& params);
+	void             AttachSoftVtx(IRenderMesh* pRM, IPhysicalEntity* pAttachToEntity, int nAttachToPart);
+	void             PhysicalizeArea(SEntityPhysicalizeParams& params);
+	bool             PhysicalizeGeomCache(SEntityPhysicalizeParams& params);
+	bool             PhysicalizeCharacter(SEntityPhysicalizeParams& params);
+	bool             ConvertCharacterToRagdoll(SEntityPhysicalizeParams& params, const Vec3& velInitial);
 
-	void            MoveChildPhysicsParts(IPhysicalEntity* pSrcAdam, CEntity* pChild, pe_action_move_parts& amp, uint64 usedRanges);
+	void             CreatePhysicalEntity(SEntityPhysicalizeParams& params);
+	phys_geometry*   GetSlotGeometry(int nSlot);
+	void             SyncCharacterWithPhysics();
 
-	//////////////////////////////////////////////////////////////////////////
-	// Handle colliders.
-	//////////////////////////////////////////////////////////////////////////
-	void AddCollider(EntityId id);
-	void RemoveCollider(EntityId id);
-	void CheckColliders();
-	//////////////////////////////////////////////////////////////////////////
+	void             MoveChildPhysicsParts(IPhysicalEntity* pSrcAdam, CEntity* pChild, pe_action_move_parts& amp, uint64 usedRanges);
 
 	IPhysicalEntity* QueryPhyscalEntity(IEntity* pEntity) const;
 	CEntity*         GetCEntity(IPhysicalEntity* pPhysEntity);
 
 	void             ReleasePhysicalEntity();
-	void             ReleaseColliders();
 
 	void             RemapChildAttachIds(CEntity* pent, attachMask& idmaskSrc, attachMask& idmaskDst, int* idmap);
 
-	uint32   m_nFlags;
+	bool             TriggerEventIfStateChanged(IPhysicalEntity* pPhysEntity, const pe_status_pos* pPrevStatus) const;
+	// Figures out render material at slot nSlot, and fills necessary data into the ppart output structure
+	void             UpdateParamsFromRenderMaterial(int nSlot, IPhysicalEntity* pPhysEntity);
 
-	CEntity* m_pEntity;
+	void             AwakeOnRender(bool vRender);
 
+private:
+	friend class CEntity;
+
+	uint32           m_nFlags = 0;
+	CEntity*         m_pEntity = nullptr;
 	// Pointer to physical object.
-	IPhysicalEntity* m_pPhysicalEntity;
-
-	//////////////////////////////////////////////////////////////////////////
-	//! List of colliding entities, used by all triggers.
-	//! When entity is first added to this list it is considered as entering
-	//! to proximity, when it erased from it it is leaving proximity.
-	typedef std::set<EntityId> ColliderSet;
-	struct Colliders
-	{
-		IPhysicalEntity* m_pPhysicalBBox;  // Pointer to physical bounding box (optional).
-		ColliderSet      colliders;
-	};
-	Colliders* m_pColliders;
-	float      m_timeLastSync;
+	IPhysicalEntity* m_pPhysicalEntity = nullptr;
 };
-
-DECLARE_COMPONENT_POINTERS(CPhysicalProxy);
 
 #endif // __PhysicsProxy_h__

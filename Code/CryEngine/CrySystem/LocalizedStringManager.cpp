@@ -209,7 +209,8 @@ void CLocalizedStringsManager::LocalizationDumpLoadedInfo(IConsoleCmdArgs* pArgs
 
 //////////////////////////////////////////////////////////////////////
 CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
-	: m_cvarLocalizationDebug(0)
+	: m_postProcessors(1)
+	, m_cvarLocalizationDebug(0)
 	, m_cvarLocalizationEncode(1)
 	, m_availableLocalizations(0)
 {
@@ -314,8 +315,8 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 //////////////////////////////////////////////////////////////////////
 CLocalizedStringsManager::~CLocalizedStringsManager()
 {
-	FreeData();
 	m_pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	FreeData();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -616,6 +617,20 @@ void CLocalizedStringsManager::OnSystemEvent(
 			break;
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CLocalizedStringsManager::RegisterPostProcessor(ILocalizationPostProcessor* pPostProcessor)
+{
+	assert(pPostProcessor);
+	m_postProcessors.Add(pPostProcessor);
+}
+
+void CLocalizedStringsManager::UnregisterPostProcessor(ILocalizationPostProcessor* pPostProcessor)
+{
+	assert(pPostProcessor);
+	m_postProcessors.Remove(pPostProcessor);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1622,6 +1637,12 @@ bool CLocalizedStringsManager::LocalizeStringInternal(const char* pStr, size_t l
 		{
 			LocalizeLabel(token.c_str(), sLocalizedToken);
 		}
+
+		for (PostProcessors::Notifier notifier(m_postProcessors); notifier.IsValid(); notifier.Next())
+		{
+			notifier->PostProcessString(sLocalizedToken);
+		}
+
 		out.append(sLocalizedToken);
 		pPos = pLabelEnd;
 	}
@@ -1781,9 +1802,9 @@ bool CLocalizedStringsManager::LocalizeLabel(const char* sLabel, string& outLoca
 					SInputEvent ev;
 					ev.deviceType = eIDT_Keyboard;
 					ev.keyName = sLabel + 4; // skip @cc_
-					char inputCharAscii = pInput->GetInputCharAscii(ev);
+					uint32 inputCharUTF32 = pInput->GetInputCharUnicode(ev);
 
-					if (inputCharAscii == 0)
+					if (inputCharUTF32 == 0)
 					{
 						// try OS key
 						const char* keyName = pInput->GetOSKeyName(ev);
@@ -1794,14 +1815,14 @@ bool CLocalizedStringsManager::LocalizeLabel(const char* sLabel, string& outLoca
 						}
 						// if we got some empty, try non-keyboard as well
 						ev.deviceType = eIDT_Unknown;
-						inputCharAscii = pInput->GetInputCharAscii(ev);
+						inputCharUTF32 = pInput->GetInputCharUnicode(ev);
 					}
 
-					if (inputCharAscii)
+					if (inputCharUTF32)
 					{
 						// Note: Since the input char is assumed to be ASCII, the uppercasing is trivial
-						if (inputCharAscii >= 'a' && inputCharAscii <= 'z') inputCharAscii = inputCharAscii - 'a' + 'A';
-						outLocalString.assign(1, inputCharAscii);
+						if (inputCharUTF32 >= 'a' && inputCharUTF32 <= 'z') inputCharUTF32 = inputCharUTF32 - 'a' + 'A';
+						Unicode::Convert(outLocalString, &inputCharUTF32, &inputCharUTF32 + 1);
 						return true;
 					}
 				}

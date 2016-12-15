@@ -277,32 +277,32 @@ void CAnimMaterialNode::Animate(SAnimContext& animContext)
 		switch (paramId.GetType())
 		{
 		case eAnimParamType_MaterialOpacity:
-			pShaderResources->SetStrengthValue(EFTT_OPACITY, boost::get<float>(value));
+			pShaderResources->SetStrengthValue(EFTT_OPACITY, stl::get<float>(value));
 			break;
 
 		case eAnimParamType_MaterialDiffuse:
-			vValue = boost::get<Vec3>(value);
+			vValue = stl::get<Vec3>(value);
 			{
 				pShaderResources->SetColorValue(EFTT_DIFFUSE, vValue / 255.0f);
 			}
 			break;
 
 		case eAnimParamType_MaterialSpecular:
-			vValue = boost::get<Vec3>(value);
+			vValue = stl::get<Vec3>(value);
 			{
 				pShaderResources->SetColorValue(EFTT_SPECULAR, vValue / 255.0f);
 			}
 			break;
 
 		case eAnimParamType_MaterialEmissive:
-			vValue = boost::get<Vec3>(value);
+			vValue = stl::get<Vec3>(value);
 			{
 				pShaderResources->SetColorValue(EFTT_EMITTANCE, vValue / 255.0f);
 			}
 			break;
 
 		case eAnimParamType_MaterialSmoothness:
-			fValue = boost::get<float>(value);
+			fValue = stl::get<float>(value);
 			{
 				pShaderResources->SetStrengthValue(EFTT_SMOOTHNESS, fValue / 255.0f);
 			}
@@ -321,7 +321,7 @@ void CAnimMaterialNode::Animate(SAnimContext& animContext)
 
 				if (id < (int)pShaderResources->GetParameters().size())
 				{
-					pShaderResources->GetParameters()[id].m_Value.m_Float = boost::get<float>(value);
+					pShaderResources->GetParameters()[id].m_Value.m_Float = stl::get<float>(value);
 				}
 			}
 		}
@@ -351,18 +351,18 @@ void CAnimMaterialNode::AnimateNamedParameter(SAnimContext& animContext, IRender
 		switch (pTrack->GetValueType())
 		{
 		case eAnimValue_Float:
-			param.m_Value.m_Float = boost::get<float>(value);
+			param.m_Value.m_Float = stl::get<float>(value);
 			break;
 
 		case eAnimValue_Vector:
-			vecValue = boost::get<Vec3>(value);
+			vecValue = stl::get<Vec3>(value);
 			param.m_Value.m_Vector[0] = vecValue[0];
 			param.m_Value.m_Vector[1] = vecValue[1];
 			param.m_Value.m_Vector[2] = vecValue[2];
 			break;
 
 		case eAnimValue_RGB:
-			colorValue = boost::get<Vec3>(value);
+			colorValue = stl::get<Vec3>(value);
 			param.m_Value.m_Color[0] = colorValue[0];
 			param.m_Value.m_Color[1] = colorValue[1];
 			param.m_Value.m_Color[2] = colorValue[2];
@@ -370,7 +370,7 @@ void CAnimMaterialNode::AnimateNamedParameter(SAnimContext& animContext, IRender
 			break;
 
 		case eAnimValue_Bool:
-			param.m_Value.m_Bool = boost::get<bool>(value);
+			param.m_Value.m_Bool = stl::get<bool>(value);
 			break;
 		}
 	}

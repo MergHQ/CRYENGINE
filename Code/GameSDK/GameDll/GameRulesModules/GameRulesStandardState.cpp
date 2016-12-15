@@ -360,7 +360,7 @@ void CGameRulesStandardState::Update( float frameTime )
 							if (bOk)
 							{
 								//-- Enforce a percentage of lobby players in game before starting countdown
-								bOk = (!gEnv->IsClient() || (g_pGame->GetClientActorId() != 0)) && CheckInitialChannelPlayers();
+								bOk = (!gEnv->IsClient() || (gEnv->pGameFramework->GetClientActorId() != 0)) && CheckInitialChannelPlayers();
 							}
 						}
 					}

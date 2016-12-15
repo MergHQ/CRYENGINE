@@ -24,23 +24,33 @@ namespace pfx2
 //////////////////////////////////////////////////////////////////////////
 // CParticleEmitter
 
-CParticleEmitter::CParticleEmitter()
+CParticleEmitter::CParticleEmitter(uint emitterId)
 	: m_pEffect(0)
 	, m_registered(false)
 	, m_bounds(0.0f)
 	, m_viewDistRatio(1.0f)
 	, m_active(false)
 	, m_location(IDENTITY)
+	, m_timeScale(1)
 	, m_editVersion(-1)
 	, m_entityId(0)
 	, m_entitySlot(-1)
 	, m_emitterGeometrySlot(-1)
 	, m_time(0.0f)
 	, m_initialSeed(0)
+	, m_emitterId(emitterId)
 {
 	m_currentSeed = m_initialSeed;
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
 	m_nInternalFlags |= IRenderNode::REQUIRES_NEAREST_CUBEMAP;
+
+	auto smoothstep = [](float x) { return x*x*(3 - 2 * x); };
+	auto contrast = [](float x) { return x * 0.75f + 0.25f; };
+	float x = smoothstep(cry_random(0.0f, 1.0f));
+	float r = contrast(smoothstep(max(0.0f, -x * 2 + 1)));
+	float g = contrast(smoothstep(1 - abs((x - 0.5f) * 2)));
+	float b = contrast(smoothstep(max(0.0f, x * 2 - 1)));
+	m_profilerColor = ColorF(r, g, b);
 }
 
 CParticleEmitter::~CParticleEmitter()
@@ -93,7 +103,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	ColorF fogVolumeContrib;
 	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
 	renderContext.m_fogVolumeId = GetRenderer()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
-
+	
 	for (auto& pComponentRuntime : m_componentRuntimes)
 	{
 		pComponentRuntime.pComponent->Render(this, pComponentRuntime.pRuntime, renderContext);
@@ -354,6 +364,12 @@ void CParticleEmitter::SetEntity(IEntity* pEntity, int nSlot)
 		m_entityId = 0;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CParticleEmitter::InvalidateCachedEntityData()
+{
+	UpdateFromEntity();
+}
+
 void CParticleEmitter::SetTarget(const ParticleTarget& target)
 {
 	if ((int)target.bPriority >= (int)m_target.bPriority)
@@ -387,8 +403,16 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 	return true;
 }
 
+void CParticleEmitter::GetSpawnParams(SpawnParams& sp) const
+{
+	sp = SpawnParams();
+	sp.fTimeScale = m_timeScale;
+}
+
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 {
+	m_timeScale = spawnParams.fTimeScale;
+	
 	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
 	if (spawnParams.nSeed != -1)
 	{
@@ -410,6 +434,8 @@ void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 
 void CParticleEmitter::UpdateRuntimeRefs()
 {
+	// #PFX2_TODO : clean up and optimize this function. Way too messy.
+
 	ResetRenderObjects();
 
 	TComponentRuntimes newRuntimes;
@@ -458,7 +484,9 @@ void CParticleEmitter::UpdateRuntimeRefs()
 			const SComponentParams& params = pComponent->GetComponentParams();
 			const bool isEnabled = pComponent->IsEnabled();
 			const bool isValid = params.IsValid();
-			if (!isEnabled || !isValid)
+			// #PFX2_TODO : Cache canMakeRuntime, it is evaluating same components more than once for secondgen.
+			const bool canMakeRuntime = pComponent->CanMakeRuntime(this);
+			if (!(isEnabled && isValid && canMakeRuntime))
 			{
 				isActive = false;
 				break;
@@ -510,7 +538,11 @@ void CParticleEmitter::UpdateRuntimeRefs()
 void CParticleEmitter::ResetRenderObjects()
 {
 	if (!m_pEffect)
-		return;		
+		return;
+
+	const uint numROs = m_pEffect->GetNumRenderObjectIds();
+	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
+		m_pRenderObjects[threadId].resize(numROs, nullptr);
 
 	const TComponentId lastComponentId = m_pEffect->GetNumComponents();
 	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
@@ -518,10 +550,6 @@ void CParticleEmitter::ResetRenderObjects()
 		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
 		pComponent->ResetRenderObjects(this);
 	}
-
-	const uint numROs = m_pEffect->GetNumRenderObjectIds();
-	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-		m_pRenderObjects[threadId].resize(numROs, nullptr);
 }
 
 void CParticleEmitter::AddInstance()
@@ -607,13 +635,14 @@ QuatTS CParticleEmitter::GetEmitterGeometryLocation() const
 CRenderObject* CParticleEmitter::GetRenderObject(uint threadId, uint renderObjectIdx)
 {
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
+	if (m_pRenderObjects[threadId].empty())
+		return nullptr;
 	return m_pRenderObjects[threadId][renderObjectIdx];
 }
 
 void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx)
 {
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
-	CRY_PFX2_ASSERT(m_pRenderObjects[threadId][renderObjectIdx] == nullptr);
 	m_pRenderObjects[threadId][renderObjectIdx] = pRenderObject;
 }
 
@@ -625,9 +654,6 @@ void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)
 	ParticleTarget target;
 	for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
 	{
-		if (stricmp(pLink->name, "Target") != 0 && strnicmp(pLink->name, "Target-", 7) != 0)
-			continue;
-
 		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(pLink->entityId);
 		if (pTarget)
 		{

@@ -23,7 +23,7 @@ public:
 	//bool GetPlayingSignalLength(const CAudioSignalPlayer signalPlayer, LengthCallback callback, EntityId entityID = 0);
 	
 	//static ISound* GetSoundFromProxy(tSoundID soundID, EntityId entityID);
-	static IEntityAudioProxy* GetEntityAudioProxy( EntityId entityID );
+	static IEntityAudioComponent* GetEntityAudioProxy( EntityId entityID );
 
 	//ISoundEventListener
 	//void OnSoundEvent( ESoundCallbackEvent event, ISound *pSound );

@@ -2,11 +2,7 @@
 
 #pragma once
 
-#ifndef SequenceManager_h
-	#define SequenceManager_h
-
-	#include <CryFlowGraph/IFlowSystem.h>
-	#include "Sequence.h"
+#include "Sequence.h"
 
 namespace AIActionSequence
 {
@@ -54,5 +50,3 @@ private:
 };
 
 } // namespace AIActionSequence
-
-#endif //SequenceManager_h

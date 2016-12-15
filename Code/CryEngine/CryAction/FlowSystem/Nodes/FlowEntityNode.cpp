@@ -227,7 +227,7 @@ void CFlowEntityNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 				SendEventToEntity(pActInfo, pEntity);
 			}
 
-			IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+			IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 			if (!pScriptProxy)
 				return;
 
@@ -1205,7 +1205,7 @@ public:
 							bEntityInRange = true;
 
 #ifndef _RELEASE
-							if (bDebug) pRenderer->DrawLabel(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
+							if (bDebug) IRenderAuxText::DrawLabelF(currentEntityPos, 1.5f, "%1.2f%s Id:%d", outEntityProjData, outputType == ePO_AngleDegrees ? "deg" : "%", currentEntityId);
 #endif
 						}
 
@@ -1664,7 +1664,7 @@ public:
 			{
 				if (strstr(pEntity->GetName(), sSubName) != 0)
 				{
-					IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+					IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 					if (pScriptProxy)
 						pScriptProxy->CallEvent(sEvent);
 				}
@@ -1901,7 +1901,7 @@ public:
 			if (IScriptTable* pScriptTable = pEntity->GetScriptTable())
 			{
 				const string inputPropertyName = GetPortString(pActInfo, IN_SMARTNAME);
-				const char* inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
+				const string inputPropertyValue = GetPortString(pActInfo, IN_VALUE);
 				const bool bPerArchetype = GetPortBool(pActInfo, IN_PERARCHETYPE);
 
 				const size_t pos = inputPropertyName.find_first_of(":");
@@ -2294,9 +2294,7 @@ public:
 					nFlags |= IEntity::ATTACHMENT_KEEP_TRANSFORMATION;
 				if (GetPortBool(pActInfo, 3))
 				{
-					IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*) pChild->GetProxy(ENTITY_PROXY_PHYSICS);
-					if (pPhysicsProxy)
-						pPhysicsProxy->EnablePhysics(false);
+					pChild->EnablePhysics(false);
 				}
 				pActInfo->pEntity->AttachChild(pChild, nFlags);
 			}
@@ -2343,9 +2341,7 @@ public:
 				nFlags |= IEntity::ATTACHMENT_KEEP_TRANSFORMATION;
 			if (GetPortBool(pActInfo, 2))
 			{
-				IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*) pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-				if (pPhysicsProxy)
-					pPhysicsProxy->EnablePhysics(true);
+				pActInfo->pEntity->EnablePhysics(true);
 			}
 			pActInfo->pEntity->DetachThis(nFlags);
 		}
@@ -2416,28 +2412,28 @@ public:
 
 			bool bUseZeroRot = GetPortBool(pActInfo, EIP_UseZeroRot);
 
-			const char* memo = GetPortString(pActInfo, EIP_Memo).c_str();
-			const char* entityName = pActInfo->pEntity->GetName();
+			string memo = GetPortString(pActInfo, EIP_Memo);
+			const char* szEntityName = pActInfo->pEntity->GetName();
 
-			bool isPlayer = GetISystem()->GetIGame()->GetIGameFramework()->GetClientActorId() == pActInfo->pEntity->GetId();
+			const bool bIsPlayer = CCryAction::GetCryAction()->GetClientActorId() == pActInfo->pEntity->GetId();
 
-			if ((memo == NULL || memo[0] == 0) && isPlayer == 0)
+			if (memo.empty() && bIsPlayer == 0)
 			{
 				memo = "<no memo>";
 			}
 
 			if (vPos.IsZero())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", entityName, (memo != NULL && memo[0] != 0) ? memo : "<no memo>");
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_WARNING, "BeamEntity Teleported %s to vPos zero. %s", szEntityName, (!memo.empty()) ? memo.c_str() : "<no memo>");
 			}
-			else if (memo != NULL && memo[0] != 0)
+			else if (!memo.empty())
 			{
-				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", entityName, memo);
+				CryWarning(VALIDATOR_MODULE_FLOWGRAPH, VALIDATOR_COMMENT, "BeamEntity Teleported %s: %s", szEntityName, memo.c_str());
 			}
 
 			Matrix34 tm;
-			bool applyRot = vRot != NULL && (!vRot->IsZero() || bUseZeroRot);
-			if (!applyRot)
+			bool bApplyRot = vRot != nullptr && (!vRot->IsZero() || bUseZeroRot);
+			if (!bApplyRot)
 			{
 				tm = pActInfo->pEntity->GetWorldTM();
 			}
@@ -2570,20 +2566,16 @@ public:
 		if (!pEntity)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (!pRenderProxy)
-			return;
-
 		if (ser.IsWriting())
 		{
-			float opacity = pRenderProxy->GetOpacity();
+			float opacity = pEntity->GetOpacity();
 			ser.Value("opacity", opacity);
 		}
 		else
 		{
 			float opacity;
 			ser.Value("opacity", opacity);
-			pRenderProxy->SetOpacity(opacity);
+			pEntity->SetOpacity(opacity);
 		}
 	}
 
@@ -2601,11 +2593,6 @@ public:
 		{
 			return;
 		}
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (!pRenderProxy)
-		{
-			return;
-		}
 
 		if (IsPortActive(pActInfo, EIP_Trigger))
 		{
@@ -2615,7 +2602,7 @@ public:
 			switch (paramType)
 			{
 			case 1: // Opacity
-				pRenderProxy->SetOpacity(clamp_tpl(paramValue, 0.0f, 1.0f));
+				pEntity->SetOpacity(clamp_tpl(paramValue, 0.0f, 1.0f));
 				success = true;
 				break;
 			default: // No valid parameter chosen, do nothing
@@ -3149,18 +3136,16 @@ public:
 						pEntity = gEnv->pEntitySystem->SpawnEntity(params);
 						if (pEntity)
 						{
-							IEntityRenderProxy* pRenderProx = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-							if (pRenderProx)
 							{
 								if (XmlNodeRef objectVars = pArchetype->GetObjectVars())
 								{
 									int nViewDistRatio = 100;
 									objectVars->getAttr("ViewDistRatio", nViewDistRatio);
-									pRenderProx->SetViewDistRatio(nViewDistRatio);
+									pEntity->SetViewDistRatio(nViewDistRatio);
 
 									int nLodRatio = 100;
 									objectVars->getAttr("lodRatio", nLodRatio);
-									pRenderProx->SetLodRatio(nLodRatio);
+									pEntity->SetLodRatio(nLodRatio);
 								}
 							}
 
@@ -3194,7 +3179,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Call a LUA function on an entity
-class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_CallScriptFunction : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs
@@ -3250,7 +3235,7 @@ public:
 			if (pActInfo->pEntity)
 			{
 				//Get entity's scripttable
-				IEntityScriptProxy* pScriptProx = (IEntityScriptProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+				IEntityScriptComponent* pScriptProx = (IEntityScriptComponent*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 				IScriptTable* pTable = pScriptProx->GetScriptTable();
 
 				if (pTable)
@@ -3312,7 +3297,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Returns the entity ID of the gamerules
-class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_GetGameRulesEntityId : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs

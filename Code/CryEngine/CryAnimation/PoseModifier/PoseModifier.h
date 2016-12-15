@@ -5,6 +5,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryExtension/ClassWeaver.h>
 #include <CrySerialization/Forward.h>
+#include <CryAnimation/IAnimationPoseModifier.h>
 
 struct IAnimationPoseData;
 
@@ -17,6 +18,9 @@ public:
 	CRYINTERFACE_END()
 
 	CRYGENERATE_CLASS(CPoseModifierStack, "AnimationPoseModifier_PoseModifierStack", 0xaf9efa2dfec04de4, 0xa1663950bde6a3c6)
+
+	CPoseModifierStack();
+	virtual ~CPoseModifierStack() {}
 
 public:
 	void Clear() { m_modifiers.clear(); }
@@ -39,13 +43,15 @@ DECLARE_SHARED_POINTERS(CPoseModifierStack);
 //
 
 class CPoseModifierSetup :
-	public IAnimationSerializable
+	public IAnimationPoseModifierSetup
 {
 	CRYINTERFACE_BEGIN()
-	CRYINTERFACE_ADD(IAnimationSerializable)
+		CRYINTERFACE_ADD(IAnimationPoseModifierSetup)
 	CRYINTERFACE_END()
 
 	CRYGENERATE_CLASS(CPoseModifierSetup, "PoseModifierSetup", 0x18b8cca76db947cc, 0x84dd1f003e97cbee)
+
+	virtual ~CPoseModifierSetup() {}
 
 private:
 	struct Entry
@@ -68,6 +74,11 @@ private:
 	// IAnimationSerializable
 public:
 	virtual void Serialize(Serialization::IArchive& ar) override;
+
+	// IAnimationPoseModifierSetup
+public:
+	virtual IAnimationPoseModifier* GetEntry(int index) override;
+	virtual int GetEntryCount() override;
 
 private:
 	std::vector<Entry>    m_modifiers;

@@ -51,7 +51,7 @@ void CDebugVelocity::Draw(const Vec3& origin, const float textXPos, const float 
 	const float velocQz = deltaQz * curFrameTimeInv;
 	const float colorFBGRA8888[4] = { m_colorF.r, m_colorF.g, m_colorF.b, m_colorF.a };
 
-	gEnv->pRenderer->Draw2dLabel(textXPos, textYPos, k_debugVelocityFontSize, colorFBGRA8888, false, "Vel: grounds=%2.3f m/s t=[%+2.3f, %+2.3f, %+2.3f] m/s, qz=%2.2f rad/s;  Offs: ground=%2.3f m t=[%+2.3f, %+2.3f, %+2.3f], qz=%2.2f rad;   dt: %2.3f s   %s", veloc.GetLength2D(), veloc.x, veloc.y, veloc.z, velocQz, delta.GetLength2D(), delta.x, delta.y, delta.z, deltaQz, (float)m_frameTime, m_sComment.c_str());
+	IRenderAuxText::Draw2dLabel(textXPos, textYPos, k_debugVelocityFontSize, colorFBGRA8888, false, "Vel: grounds=%2.3f m/s t=[%+2.3f, %+2.3f, %+2.3f] m/s, qz=%2.2f rad/s;  Offs: ground=%2.3f m t=[%+2.3f, %+2.3f, %+2.3f], qz=%2.2f rad;   dt: %2.3f s   %s", veloc.GetLength2D(), veloc.x, veloc.y, veloc.z, velocQz, delta.GetLength2D(), delta.x, delta.y, delta.z, deltaQz, (float)m_frameTime, m_sComment.c_str());
 
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
@@ -495,7 +495,7 @@ void CAnimatedCharacter::DebugRenderCurLocations() const
 	{
 		Ang3 EntOri(m_entLocation.q);
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(10, 1, 2.0f, (float*)&cWhite, false,
+		IRenderAuxText::Draw2dLabel(10, 1, 2.0f, (float*)&cWhite, false,
 		                             "  Ent Location[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
 		                             m_entLocation.t.x, m_entLocation.t.y, m_entLocation.t.z, RAD2DEG(EntOri.x), RAD2DEG(EntOri.y), RAD2DEG(EntOri.z));
 	}
@@ -535,14 +535,14 @@ void CAnimatedCharacter::DebugDisplayNewLocationsAndMovements(const QuatT& EntLo
 		Ang3 EntOri(EntLocation.q);
 		Ang3 EntRot(EntMovement.q);
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(10, 100, 2.0f, (float*)&cWhite, false,
+		IRenderAuxText::Draw2dLabel(10, 100, 2.0f, (float*)&cWhite, false,
 		                             "N Ent Location[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]  Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
 		                             EntLocation.t.x, EntLocation.t.y, EntLocation.t.z, RAD2DEG(EntOri.x), RAD2DEG(EntOri.y), RAD2DEG(EntOri.z),
 		                             EntMovement.t.x / frameTime, EntMovement.t.y / frameTime, EntMovement.t.z / frameTime,
 		                             RAD2DEG(EntRot.x), RAD2DEG(EntRot.y), RAD2DEG(EntRot.z));
 
 		Ang3 AnimRot(AnimMovement.q);
-		gEnv->pRenderer->Draw2dLabel(10, 125, 2.0f, (float*)&cWhite, false,
+		IRenderAuxText::Draw2dLabel(10, 125, 2.0f, (float*)&cWhite, false,
 		                             "N Anim Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
 		                             AnimMovement.t.x / frameTime, AnimMovement.t.y / frameTime, AnimMovement.t.z / frameTime,
 		                             RAD2DEG(AnimRot.x), RAD2DEG(AnimRot.y), RAD2DEG(AnimRot.z));
@@ -820,7 +820,7 @@ void CAnimatedCharacter::RunTests()
 	return;
 #else
 
-	static bool m_bDebugRunTests = true;
+	static bool m_bDebugRunTests = false;
 
 	if (!m_bDebugRunTests)
 		return;

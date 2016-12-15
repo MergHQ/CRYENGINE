@@ -26,18 +26,18 @@ CATLControlsModel::~CATLControlsModel()
 
 void CATLControlsModel::Initialize()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			SetSuppressMessages(true);
 			ClearAllConnections();
 			SetSuppressMessages(false);
-	  }));
+	  });
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
 			ClearDirtyFlags();
-	  }));
+	  });
 }
 
 CATLControl* CATLControlsModel::CreateControl(const string& sControlName, EACEControlType eType, CATLControl* pParent)

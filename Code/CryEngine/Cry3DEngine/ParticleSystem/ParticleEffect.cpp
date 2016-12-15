@@ -11,6 +11,7 @@
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
+#include <CryParticleSystem/ParticleParams.h>
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
 #include "ParticleFeature.h"
@@ -32,7 +33,7 @@ CParticleEffect::CParticleEffect()
 
 cstr CParticleEffect::GetName() const
 {
-	return m_name.c_str();
+	return m_name.empty() ? nullptr : m_name.c_str();
 }
 
 void CParticleEffect::Compile()
@@ -65,9 +66,11 @@ void CParticleEffect::Compile()
 TComponentId CParticleEffect::FindComponentIdByName(const char* name) const
 {
 	const auto it = std::find_if(m_components.begin(), m_components.end(), [name](TComponentPtr pComponent)
-		{
-			return strcmp(pComponent->GetName(), name) == 0;
-	  });
+	{
+		if (!pComponent)
+			return false;
+		return strcmp(pComponent->GetName(), name) == 0;
+	});
 	if (it == m_components.end())
 		return gInvalidId;
 	return TComponentId(it - m_components.begin());
@@ -148,6 +151,9 @@ IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnPara
 
 	PParticleEmitter pEmitter = GetPSystem()->CreateEmitter(this);
 	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter.get());
+	if (pSpawnParams)
+		pCEmitter->SetSpawnParams(*pSpawnParams);
+	pEmitter->Activate(true);
 	pCEmitter->SetLocation(loc);
 	return pEmitter;
 }
@@ -179,6 +185,12 @@ void CParticleEffect::SetChanged()
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
 {
 	return Serialization::SStruct(m_attributes);
+}
+
+const ParticleParams& CParticleEffect::GetDefaultParams() const
+{
+	static ParticleParams paramsStandard;
+	return paramsStandard;
 }
 
 }

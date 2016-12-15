@@ -16,14 +16,18 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryPhysics/IPhysics.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryExtension/ICryUnknown.h>
 
 #include "CryCharAnimationParams.h"
 
-// maximum number of LODs per one geometric model (CryGeometry)
+typedef int32 TJointId;
+
+//! default return for invalid joint when searching through the skeleton
+enum : TJointId { INVALID_JOINT_ID = -1 };
+
+//! maximum number of LODs per one geometric model (CryGeometry)
 enum {g_nMaxGeomLodLevels = 6};
 
 //! Flags used by ICharacterInstance::SetFlags and GetFlags.
@@ -46,6 +50,8 @@ enum ECharRenderFlags
 	CS_FLAG_BIAS_SKIN_SORT_DIST  = 1 << 11,
 
 	CS_FLAG_STREAM_HIGH_PRIORITY = 1 << 12,
+
+	CS_FLAG_RENDER_NODE_VISIBLE  = 1 << 13, //!< Set by 3DEngine when render node owning character is potentially visible and needs rendering
 };
 
 enum CHRLOADINGFLAGS
@@ -507,7 +513,7 @@ struct ICharacterInstance : IMeshObj
 	}
 
 	//! Set rendering flags defined in ECharRenderFlags for this character instance
-	//! \param nFlags Tendering flags
+	//! \param nFlags Rendering flags
 	virtual void SetFlags(int nFlags) = 0;
 
 	//! Get the enabled rendering flags. The valid flags are the ones declared in ECharRenderFlags.
@@ -522,7 +528,7 @@ struct ICharacterInstance : IMeshObj
 	//! \return Pointer to a null terminated char string which contain the filename of the character.
 	virtual const char* GetFilePath() const = 0;
 
-	virtual void        ComputeGeometricMean(SMeshLodInfo& lodInfo) const = 0;
+	virtual SMeshLodInfo ComputeGeometricMean() const = 0;
 
 	virtual bool        HasVertexAnimation() const = 0;
 
@@ -601,7 +607,7 @@ struct ICharacterInstance : IMeshObj
 #include <CryAnimation/IAnimationPoseModifier.h>                                                    // <> required for Interfuscator
 
 #ifndef SKELETON_ANIMATION_LAYER_COUNT
-#define SKELETON_ANIMATION_LAYER_COUNT 16
+#define SKELETON_ANIMATION_LAYER_COUNT 32
 #endif
 
 struct ISkeletonAnim
@@ -692,8 +698,8 @@ struct ISkeletonAnim
 
 	virtual bool                           PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name = NULL) = 0;
 
-	virtual IAnimationSerializablePtr      GetPoseModifierSetup() = 0;
-	virtual IAnimationSerializableConstPtr GetPoseModifierSetup() const = 0;
+	virtual IAnimationPoseModifierSetupPtr      GetPoseModifierSetup() = 0;
+	virtual IAnimationPoseModifierSetupConstPtr GetPoseModifierSetup() const = 0;
 
 	//! This function will move outside of this interface. Use at your own risk.
 	virtual QuatT CalculateRelativeMovement(const float deltaTime, const bool CurrNext = 0) const = 0;

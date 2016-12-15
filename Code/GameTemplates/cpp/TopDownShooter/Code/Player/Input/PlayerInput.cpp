@@ -17,11 +17,25 @@ CPlayerInput::CPlayerInput()
 
 void CPlayerInput::PostInit(IGameObject *pGameObject)
 {
-	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
-	pGameObject->UnRegisterExtForEvents(this, NULL, 0);
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
-
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+
+	// NOTE: Since CRYENGINE 5.3, the game is responsible to initialize the action maps
+	IActionMapManager *pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
+	pActionMapManager->InitActionMaps("Libs/config/defaultprofile.xml");
+	pActionMapManager->Enable(true);
+	pActionMapManager->EnableActionMap("player", true);
+
+	if (IActionMap *pActionMap = pActionMapManager->GetActionMap("player"))
+	{
+		pActionMap->SetActionListener(GetEntityId());
+	}
+
+	GetGameObject()->CaptureActions(this);
+
+	// Make sure that this extension is updated regularly via the Update function below
+	GetGameObject()->EnableUpdateSlot(this, 0);
+
+	m_cursorPositionInWorld = ZERO;
 
 	// Populate the action handler callbacks so that we get action map events
 	InitializeActionHandler();
@@ -51,34 +65,12 @@ void CPlayerInput::ProcessEvent(SEntityEvent &event)
 	}
 }
 
-void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_BecomeLocalPlayer)
-	{
-		IActionMapManager *pActionMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
-
-		pActionMapManager->InitActionMaps("Libs/config/defaultprofile.xml");
-		pActionMapManager->Enable(true);
-
-		pActionMapManager->EnableActionMap("player", true);
-
-		if(IActionMap *pActionMap = pActionMapManager->GetActionMap("player"))
-		{
-			pActionMap->SetActionListener(GetEntityId());
-		}
-
-		GetGameObject()->CaptureActions(this);
-
-		// Make sure that this extension is updated regularly via the Update function below
-		GetGameObject()->EnableUpdateSlot(this, 0);
-
-		m_cursorPositionInWorld = ZERO;
-	}
-}
-
 void CPlayerInput::SpawnCursorEntity()
 {
-	CRY_ASSERT(m_pCursorEntity == nullptr);
+	if (m_pCursorEntity)
+	{
+		gEnv->pEntitySystem->RemoveEntity(m_pCursorEntity->GetId());
+	}
 
 	SEntitySpawnParams spawnParams;
 	// No need for a special class!
@@ -98,12 +90,9 @@ void CPlayerInput::SpawnCursorEntity()
 	auto *pCursorMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("Materials/cursor");
 	m_pCursorEntity->SetMaterial(pCursorMaterial);
 
-	// Make sure that cursor is always rendered regardless of distance 
-	if (auto *pRenderProxy = static_cast<IEntityRenderProxy *>(m_pCursorEntity->GetProxy(ENTITY_PROXY_RENDER)))
-	{
-		// Ratio is 0 - 255, 255 being 100% visibility 
-		pRenderProxy->SetViewDistRatio(255);
-	}
+	// Make sure that bullets are always rendered regardless of distance
+	// Ratio is 0 - 255, 255 being 100% visibility
+	GetEntity()->SetViewDistRatio(255);
 }
 
 void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)

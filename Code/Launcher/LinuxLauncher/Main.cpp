@@ -1,9 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SystemInit.h"
-//#include <ISystem.h>
-//#include "../../CryEngine/Cry3DEngine/StdAfx.h"
+#include <CrySystem/ISystem.h>
 
 #include <CryCore/Platform/platform_impl.inl>
 
@@ -242,23 +240,6 @@ static void InitStackTracer(const char* libPath)
 	prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
 }
 
-//-------------------------------------------------------------------------------------
-static bool FindProjectFolderAndSetAsCurrentWorkingDirectory(int argc, char* argv[])
-{
-	bool result = false;
-	for (int i = 1; i < argc - 1; i++)
-	{
-		if (strcmp(argv[i], "-projectroot") == 0)
-		{
-			CrySetCurrentWorkingDirectory(argv[i + 1]);
-			result = true;
-			break;
-		}
-	}
-
-	return result;
-}
-
 int RunGame(const char *, int, char**) __attribute__ ((noreturn));
 
 int RunGame(const char *commandLine, int argc, char* argv[])
@@ -270,8 +251,6 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 
 	InitStackTracer(absPath);
 
-	int exitCode = 0;
-
 	size_t uDefStackSize;
 
 	if (!IncreaseResourceMaxLimit(RLIMIT_CORE, RLIM_INFINITY) || !IncreaseStackSizeToMax())
@@ -280,7 +259,6 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 	SSystemInitParams startupParams;
 	memset(&startupParams, 0, sizeof(SSystemInitParams));
 
-	startupParams.hInstance = 0;
 	cry_strcpy(startupParams.szSystemCmdLine, commandLine);
 #if defined(DEDICATED_SERVER)
 	startupParams.sLogFileName = "Server.log";
@@ -300,11 +278,7 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 	}
 #endif
 	
-	bool bUseProjectCfg = FindProjectFolderAndSetAsCurrentWorkingDirectory(argc, argv);
-	if (!bUseProjectCfg)
-	{
-		CryFindRootFolderAndSetAsCurrentWorkingDirectory();
-	}
+	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 
 	// We need pass the full command line, including the filename
 	// lpCmdLine does not contain the filename.
@@ -312,38 +286,22 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 	CryGetIMemReplay()->StartOnCommandLine(commandLine);
 #endif
 
-	HMODULE gameDll = 0;
+	HMODULE frameworkDll = 0;
 
 #ifndef _LIB
-	string dll_name;
-	if (bUseProjectCfg)
+	frameworkDll = CryLoadLibrary("libCryAction" CrySharedLibraryExtension);
+	if( !frameworkDll)
 	{
-		CProjectConfig projectCfg;
-		dll_name = projectCfg.m_gameDLL;
-	}
-	else
-	{
-		CEngineConfig engineCfg;
-		dll_name = engineCfg.m_gameDLL;
-	}
-
-	// workaround: compute .so name from dll name
-	string::size_type extension_pos = dll_name.rfind(".dll");
-	string shared_lib_name = string(CrySharedLibraryPrefix) + dll_name.substr(0, extension_pos) + string(CrySharedLibraryExtension);
-
-	gameDll = CryLoadLibrary(shared_lib_name.c_str());
-	if( !gameDll )
-	{
-		fprintf(stderr, "ERROR: failed to load GAME DLL (%s)\n", dlerror());
+		fprintf(stderr, "ERROR: failed to load CryAction DLL (%s)\n", dlerror());
 		RunGame_EXIT(1);
 	}
 	// get address of startup function
-	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(gameDll, "CreateGameStartup");
-	if (!CreateGameStartup)
+	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(frameworkDll, "CreateGameFramework");
+	if (!CreateGameFramework)
 	{
 		// dll is not a compatible game dll
-		CryFreeLibrary(gameDll);
-		fprintf(stderr, "Specified Game DLL is not valid!\n");
+		CryFreeLibrary(frameworkDll);
+		fprintf(stderr, "Specified CryAction DLL is not valid!\n");
 		RunGame_EXIT(1);
 	}
 #endif //_LIB
@@ -355,34 +313,26 @@ int RunGame(const char *commandLine, int argc, char* argv[])
 		exit(1);
 	}
 #endif
-	// create the startup interface
-	IGameStartup* pGameStartup = CreateGameStartup();
-
 	const char *const szAutostartLevel
 		= linux_autoload_level[0] ? linux_autoload_level : NULL;
 
-	if (!pGameStartup)
+	// create the startup interface
+	IGameFramework* pFramework = CreateGameFramework();
+	if (!pFramework)
 	{
-		fprintf(stderr, "ERROR: Failed to create the GameStartup Interface!\n");
+		CryFreeLibrary(frameworkDll);
+		fprintf(stderr, "ERROR: Failed to create the GameFramework Interface!\n");
 		RunGame_EXIT(1);
 	}
 
-	// run the game
-	IGame *game = pGameStartup->Init(startupParams);
-	if (game)
-	{
-		exitCode = pGameStartup->Run(szAutostartLevel);
-		pGameStartup->Shutdown();
-		pGameStartup = 0;
-		RunGame_EXIT(exitCode);
-	}
+	pFramework->StartEngine(startupParams);
 
-	// if initialization failed, we still need to call shutdown
-	pGameStartup->Shutdown();
-	pGameStartup = 0;
+	// The main engine loop has exited at this point, shut down
+	pFramework->ShutdownEngine();
 
-	fprintf(stderr, "ERROR: Failed to initialize the GameStartup Interface!\n");
-	RunGame_EXIT(exitCode);
+	CryFreeLibrary(frameworkDll);
+
+	RunGame_EXIT(0);
 }
 
 // An unreferenced function.  This function is needed to make sure that

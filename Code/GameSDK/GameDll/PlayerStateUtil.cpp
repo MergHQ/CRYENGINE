@@ -323,7 +323,7 @@ void CPlayerStateUtil::UpdatePlayerPhysicsStats( CPlayer& player, SActorPhysics&
 		{
 			if( actorPhysics.groundColliderId )
 			{
-				if( IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject( actorPhysics.groundColliderId ) )
+				if( IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject( actorPhysics.groundColliderId ) )
 				{
 					SGameObjectEvent event( eGFE_StoodOnChange, eGOEF_ToExtensions );
 					event.ptr = &player;
@@ -334,7 +334,7 @@ void CPlayerStateUtil::UpdatePlayerPhysicsStats( CPlayer& player, SActorPhysics&
 
 			if( newGroundColliderId )
 			{
-				if( IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject( newGroundColliderId ) )
+				if( IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject( newGroundColliderId ) )
 				{
 					SGameObjectEvent event( eGFE_StoodOnChange, eGOEF_ToExtensions );
 					event.ptr = &player;

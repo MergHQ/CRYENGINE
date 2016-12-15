@@ -117,7 +117,7 @@ void CAIBattleFrontGroup::DrawDebugInfo()
 
 	const float colorwhite[4]={1,1,1,1};
 
-	gEnv->pRenderer->DrawLabelEx(m_battleFrontPosition, 1, colorwhite, true, false, "GroupID - %d", m_groupID);
+	IRenderAuxText::DrawLabelExF(m_battleFrontPosition, 1, colorwhite, true, false, "GroupID - %d", m_groupID);
 
  	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
  	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);

@@ -106,6 +106,7 @@ public:
 	{
 		MEMSTAT_USAGE(begin(), 0);
 		MEMSTAT_UNBIND_FROM_CONTAINER(this, m_pElements);
+		Free();
 		m_pElements = NULL;
 		m_nCount = m_nAllocatedCount = src.Num();
 		Realloc(0);

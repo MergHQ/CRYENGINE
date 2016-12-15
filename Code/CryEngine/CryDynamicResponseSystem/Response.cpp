@@ -20,22 +20,28 @@ void CConditionParserHelper::GetResponseVariableValueFromString(const char* szVa
 {
 	for (int i = 0; szValueString[i] != '\0'; i++)
 	{
-		if (szValueString[i] == '.' || szValueString[i] == ',')
+		if (szValueString[i] == '.' && i > 0 && isdigit(szValueString[i+1]))
 		{
-			//its a float
-			*pOutValue = CVariableValue((float)atof(szValueString));
+			//it's (probably) a float
+			float valueAsFloat = (float)atof(szValueString);
+			if (valueAsFloat == 0.0f && szValueString[i-1] != '0') //atof will return 0 as an error code, so we do a very simple check, if 0 here means the value 0 or the error code
+			{
+				continue;
+			}
+			*pOutValue = valueAsFloat;
 			return;
+
 		}
 		else if (szValueString[i] >= 'A' && szValueString[i] <= 'z')
 		{
 			if (stricmp(szValueString, "true") == 0)
 			{
-				//its a boolean
+				//it's a boolean
 				*pOutValue = CVariableValue(true);
 			}
 			else if (stricmp(szValueString, "false") == 0)
 			{
-				//its a boolean
+				//it's a boolean
 				*pOutValue = CVariableValue(false);
 			}
 			else

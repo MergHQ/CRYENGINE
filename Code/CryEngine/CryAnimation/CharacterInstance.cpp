@@ -333,32 +333,32 @@ void CCharInstance::ApplyJointVelocitiesToPhysics(IPhysicalEntity* pent, const Q
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
 
-void CCharInstance::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
+SMeshLodInfo CCharInstance::ComputeGeometricMean() const
 {
+	SMeshLodInfo lodInfo;
 	lodInfo.Clear();
 
 	const int attachmentCount = m_AttachmentManager.GetAttachmentCount();
 	for (int i = 0; i < attachmentCount; ++i)
 	{
-		SMeshLodInfo attachmentLodInfo;
-
 		const IAttachment* const pIAttachment = m_AttachmentManager.GetInterfaceByIndex(i);
 
 		if (pIAttachment != NULL && pIAttachment->GetIAttachmentObject() != NULL)
 		{
 			const IAttachmentObject* const pIAttachmentObject = pIAttachment->GetIAttachmentObject();
+			SMeshLodInfo attachmentLodInfo;
 
 			if (pIAttachmentObject->GetIAttachmentSkin())
 			{
-				pIAttachmentObject->GetIAttachmentSkin()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetIAttachmentSkin()->ComputeGeometricMean();
 			}
 			else if (pIAttachmentObject->GetIStatObj())
 			{
-				pIAttachmentObject->GetIStatObj()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetIStatObj()->ComputeGeometricMean();
 			}
 			else if (pIAttachmentObject->GetICharacterInstance())
 			{
-				pIAttachmentObject->GetICharacterInstance()->ComputeGeometricMean(attachmentLodInfo);
+				attachmentLodInfo = pIAttachmentObject->GetICharacterInstance()->ComputeGeometricMean();
 			}
 
 			lodInfo.Merge(attachmentLodInfo);
@@ -375,16 +375,18 @@ void CCharInstance::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
 			// check StatObj attachments
 			for (uint32 i = 0; i < numJoints; i++)
 			{
-				SMeshLodInfo attachmentLodInfo;
 				IStatObj* pStatObj = pSkeletonPose->GetStatObjOnJoint(i);
 				if (pStatObj)
 				{
-					pStatObj->ComputeGeometricMean(attachmentLodInfo);
+					SMeshLodInfo attachmentLodInfo = pStatObj->ComputeGeometricMean();
+
 					lodInfo.Merge(attachmentLodInfo);
 				}
 			}
 		}
 	}
+
+	return lodInfo;
 }
 
 phys_geometry* CCharInstance::GetPhysGeom(int nType) const
@@ -860,4 +862,28 @@ void CCharInstance::SetupThroughParams(const SAnimationProcessParams* pParams)
 		m_SkeletonPose.m_bFullSkeletonUpdate = true;
 	if (Console::GetInst().ca_ForceUpdateSkeletons != 0)
 		m_SkeletonPose.m_bFullSkeletonUpdate = true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CCharInstance::PerFrameUpdate()
+{
+	if (m_rpFlags & CS_FLAG_UPDATE)
+	{
+		if ((m_rpFlags & CS_FLAG_UPDATE_ALWAYS) ||
+				(m_rpFlags & CS_FLAG_RENDER_NODE_VISIBLE))
+		{
+			// If we need to be updated always, or our render node is potentially visible.
+			// Animation should start
+
+			const CCamera& camera = GetISystem()->GetViewCamera();
+			float fDistance = (camera.GetPosition() - m_location.t).GetLength();
+			float fZoomFactor = 0.001f + 0.999f * (RAD2DEG(camera.GetFov()) / 60.f);
+
+			SAnimationProcessParams params;
+			params.locationAnimation = m_location;
+			params.bOnRender = 0;
+			params.zoomAdjustedDistanceFromCamera = fDistance * fZoomFactor;
+			StartAnimationProcessing(params);
+		}
+	}
 }

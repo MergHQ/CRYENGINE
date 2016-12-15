@@ -17,15 +17,18 @@
 #include "CryTypeID.h"
 
 struct ICryUnknown;
+struct SRegFactoryNode;
+
 DECLARE_SHARED_POINTERS(ICryUnknown);
 
 struct ICryFactory
 {
-	virtual const char*       GetName() const = 0;
-	virtual const CryClassID& GetClassID() const = 0;
-	virtual bool              ClassSupports(const CryInterfaceID& iid) const = 0;
-	virtual void              ClassSupports(const CryInterfaceID*& pIIDs, size_t& numIIDs) const = 0;
-	virtual ICryUnknownPtr    CreateClassInstance() const = 0;
+	virtual const char*            GetName() const = 0;
+	virtual const CryClassID&      GetClassID() const = 0;
+	virtual bool                   ClassSupports(const CryInterfaceID& iid) const = 0;
+	virtual void                   ClassSupports(const CryInterfaceID*& pIIDs, size_t& numIIDs) const = 0;
+	virtual const SRegFactoryNode* GetRegFactoryNode() const = 0;
+	virtual ICryUnknownPtr         CreateClassInstance() const = 0;
 
 protected:
 	//! Prevent explicit destruction from client side (delete, shared_ptr, etc).

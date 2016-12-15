@@ -12,22 +12,22 @@
 #pragma once
 #ifndef __CCRYDX12DEVICECONTEXT__
 	#define __CCRYDX12DEVICECONTEXT__
-
+	
 	#include "DX12/CCryDX12Object.hpp"
 	#include "DX12/Misc/SCryDX11PipelineState.hpp"
 
 	#include "DX12/API/DX12Base.hpp"
 	#include "DX12/API/DX12CommandList.hpp"
 
-class CCryDX12Device;
+	#include "DX12/Device/CCryDX12Device.hpp"
 
-class CCryDX12DeviceContext : public CCryDX12Object<ID3D11DeviceContext1>
+class CCryDX12DeviceContext : public CCryDX12Object<ID3D11DeviceContext1ToImplement>
 {
 	friend class CDeviceManager;
 	friend class CDeviceObjectFactory;
 
 public:
-	DX12_OBJECT(CCryDX12DeviceContext, CCryDX12Object<ID3D11DeviceContext1> );
+	DX12_OBJECT(CCryDX12DeviceContext, CCryDX12Object<ID3D11DeviceContext1ToImplement> );
 
 	static CCryDX12DeviceContext* Create(CCryDX12Device* pDevice, UINT nodeMask, bool isDeferred);
 
@@ -822,10 +822,10 @@ public:
 		return TimestampIndex(m_pCmdLists[CMDQUEUE_GRAPHICS]);
 	}
 
-	ILINE void InsertTimestamp(INT index, INT commandQueue)
+	ILINE void InsertTimestamp(INT index, INT commandQueue, NCryDX12::CCommandList* pCommandList)
 	{
 		assert(commandQueue >= CMDQUEUE_GRAPHICS && commandQueue <= CMDQUEUE_COPY);
-		InsertTimestamp(m_pCmdLists[commandQueue], index);
+		InsertTimestamp(!pCommandList ? m_pCmdLists[commandQueue] : pCommandList, index);
 	}
 
 	ILINE void ResolveTimestamps()

@@ -44,7 +44,7 @@ half4 GetSceneSpecularAccMS( float2 baseTC, int NumSamples, int nCurrSample )
 {
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
 	int3 vPixCoord = int3( baseTC * PS_ScreenSize.xy, 0);
-  return sceneSpecularAccTexMS.Load(vPixCoord, nCurrSample);
+	return sceneSpecularAccTexMS.Load(vPixCoord, nCurrSample);
 #else
 	return 0;
 #endif
@@ -54,7 +54,7 @@ half4 GetDecodedSceneDepthMS( float2 baseTC, int NumSamples, int nCurrSample )
 {
 #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
 	int3 vPixCoord = int3( baseTC * PS_ScreenSize.xy, 0);  
-  return GetLinearDepth(sceneDepthTexMS.Load(vPixCoord, nCurrSample).x, true, false) * PS_NearFarClipDist.y;
+	return GetLinearDepth(sceneDepthTexMS.Load(vPixCoord, nCurrSample).x, true);
 #else
 	return 0;
 #endif
@@ -744,9 +744,7 @@ float4 ComputeBarycentricCorrespondence(in float3 wsPos, in float3 wsTriPos[3], 
 	float3 p0, p1, p2;
 	float3 u, v, n, d;
 
-#if ORBIS // workaround for shader code generation bug
 	[unroll]
-#endif
 	for (int i=0; i<10; ++i)
 	{
 		p0 = wsTriPos[0] + w * wsTriDispl[0];
@@ -1134,58 +1132,6 @@ float4 EncodeSceneDepthWithAlpha( float depth, half alpha, half alphaTestRef)
 float4 EncodeSceneDepthNoAlpha( float depth)
 {
   return EncodeSceneDepth( depth );
-}
-
-// This function decodes a depth value coming from an ARGB8 rendertarget/texture 
-// NOTE: 1) float[X] was used in favor of half[X] as precision is curcial and half's is not sufficient!
-//			 2) smpDepth should be set up as follows...
-// 
-float DecodeSceneDepth( sampler2D smpDepth, float4 homogeneousPositionTexProj )
-{
- 	float depthNormalized = GetLinearDepth_ProjTC( smpDepth, homogeneousPositionTexProj );
-
-	// scale back to full range
-	return depthNormalized * PS_NearFarClipDist.y;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Screen space self-shadowing approximation
-
-half ScreenSpaceSelfShadow(sampler2D smpDepth, float4x4 mViewProjection, float4 tcProj, float3 vPosWS, half3 vLight, half fSoften ) 
-{
-	// todo: 
-	//	- jittering / try out getting away with less samples
-	//	- mask samples based on distance, should only self-shadow nearby surface
-
-	half fSign = sign(dot( vLight, miscCamFront ) );
-
-	float3 vLightPos = vPosWS - fSign * vLight.xyz;
-	half4 vLightProj = mul( mViewProjection, float4(vLightPos, 1) );
-	vLightProj.x = ( vLightProj.x + vLightProj.w)*0.5f / vLightProj.w;
-	vLightProj.y = (-vLightProj.y + vLightProj.w)*0.5f / vLightProj.w;		
-
-	vLightProj.xy = vLightProj.xy - tcProj.xy;
-	vLightProj.xy *= fSign;
-
-	float2 lightDelta = -vLightProj * PS_ScreenSize.zw*100;
-	  
-  float h0 = tcProj.w;//GetLinearDepthScaled(smpDepth, tcProj).x;
-  float h = h0;
-
-	half hKernelDepthScale = (1 / h0 );
-	//lightDelta *= hKernelDepthScale;
-
-  h = min(65535, GetLinearDepthScaled(smpDepth, tcProj + 1.000 * lightDelta).x); 
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.875 * lightDelta).x); 
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.750 * lightDelta).x); //
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.625 * lightDelta).x);
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.500 * lightDelta).x); //
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.375 * lightDelta).x);
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.250 * lightDelta).x); //
-  h = min(h, GetLinearDepthScaled(smpDepth, tcProj + 0.125 * lightDelta).x);
-
-	half fSelfShadow = 1 - saturate((h0 - h ) * fSoften);
-  return fSelfShadow;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -58,7 +58,7 @@ void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CPart
 	}
 }
 
-void CParticleRenderBase::RemoveRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
 {
 	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
 	if (isGpu)
@@ -81,13 +81,24 @@ void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComp
 	if (!params.m_pMaterial)
 		return;
 
-	uint64 objFlags = params.m_renderObjectFlags;
-	if (renderContext.m_lightVolumeId)
-		objFlags |= FOB_LIGHTVOLUME;
+	const bool isIndoors = pEmitter->GetVisEnv().OriginIndoors();
+	const bool renderIndoor = params.m_visibility.m_indoorVisibility != EIndoorVisibility::OutdoorOnly;
+	const bool renderOutdoors = params.m_visibility.m_indoorVisibility != EIndoorVisibility::IndoorOnly;
+	if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
+		return;
 
-	if (m_waterCulling)
+	uint64 objFlags = params.m_renderObjectFlags;
+	if (!renderContext.m_lightVolumeId)
+		objFlags &= ~FOB_LIGHTVOLUME;
+
+	const bool isCameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();;
+	const bool renderBelowWater = params.m_visibility.m_waterVisibility != EWaterVisibility::AboveWaterOnly;
+	const bool renderAboveWater = params.m_visibility.m_waterVisibility != EWaterVisibility::BelowWaterOnly;
+
+	if (m_waterCulling && ((isCameraUnderWater && renderAboveWater) || (!isCameraUnderWater && renderBelowWater)))
 		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
-	AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
+	if ((isCameraUnderWater && renderBelowWater) || (!isCameraUnderWater && renderAboveWater))
+		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
 }
 
 void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags)

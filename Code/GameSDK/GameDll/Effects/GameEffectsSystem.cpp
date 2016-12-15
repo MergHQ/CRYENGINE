@@ -10,6 +10,7 @@
 #include "Effects/RenderNodes/IGameRenderNode.h"
 #include "Effects/RenderElements/GameRenderElement.h"
 #include "GameRules.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //--------------------------------------------------------------------------------------------------
 // Desc: Defines
@@ -140,7 +141,7 @@ void CGameEffectsSystem::Destroy()
 		s_singletonInstance->AutoReleaseAndDeleteFlaggedEffects(s_singletonInstance->m_effectsToUpdate);
 		s_singletonInstance->AutoReleaseAndDeleteFlaggedEffects(s_singletonInstance->m_effectsNotToUpdate);
 
-		FX_ASSERT_MESSAGE(	(s_singletonInstance->m_effectsToUpdate==NULL) && 
+		FX_ASSERT_MESSAGE(	(s_singletonInstance->m_effectsToUpdate==NULL) &&
 												(s_singletonInstance->m_effectsNotToUpdate==NULL),
 												"Game Effects System being destroyed even though game effects still exist!");
 	}
@@ -411,7 +412,7 @@ void CGameEffectsSystem::SetPostEffectCVarCallbacks()
 {
 #if DEBUG_GAME_FX_SYSTEM
 	ICVar* postEffectCvar = NULL;
-	const char postEffectNames[][64] = {	"g_postEffect.FilterGrain_Amount", 
+	const char postEffectNames[][64] = {	"g_postEffect.FilterGrain_Amount",
 																				"g_postEffect.FilterRadialBlurring_Amount",
 																				"g_postEffect.FilterRadialBlurring_ScreenPosX",
 																				"g_postEffect.FilterRadialBlurring_ScreenPosY",
@@ -489,7 +490,7 @@ void CGameEffectsSystem::RegisterEffect(IGameEffect* effect)
 		bool isActive = effect->IsFlagSet(GAME_EFFECT_ACTIVE);
 		bool autoUpdatesWhenActive = effect->IsFlagSet(GAME_EFFECT_AUTO_UPDATES_WHEN_ACTIVE);
 		bool autoUpdatesWhenNotActive = effect->IsFlagSet(GAME_EFFECT_AUTO_UPDATES_WHEN_NOT_ACTIVE);
-		if((isActive && autoUpdatesWhenActive) || 
+		if((isActive && autoUpdatesWhenActive) ||
 			((!isActive) && autoUpdatesWhenNotActive))
 		{
 			effectList = &m_effectsToUpdate;
@@ -548,7 +549,7 @@ void CGameEffectsSystem::UnRegisterEffect(IGameEffect* effect)
 		{
 			effect->Next()->SetPrev(effect->Prev());
 		}
-	
+
 		effect->SetNext(NULL);
 		effect->SetPrev(NULL);
 
@@ -566,14 +567,10 @@ void CGameEffectsSystem::Update(float frameTime)
 
 	// Get pause state
 	bool isPaused = false;
-	IGame* pGame = gEnv->pGame;
-	if(pGame)
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
+	if(pGameFramework)
 	{
-		IGameFramework* pGameFramework = pGame->GetIGameFramework();
-		if(pGameFramework)
-		{
-			isPaused = pGameFramework->IsGamePaused();
-		}
+		isPaused = pGameFramework->IsGamePaused();
 	}
 
 	// Update effects
@@ -625,21 +622,21 @@ void CGameEffectsSystem::DrawDebugDisplay()
 	int debugEffectCount = s_effectDebugList.Size();
 	if((g_pGameCVars->g_gameFXSystemDebug) && (debugEffectCount > 0))
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug view:");
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", GAME_FX_DEBUG_VIEW_NAMES[m_debugView]);
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug view:");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", GAME_FX_DEBUG_VIEW_NAMES[m_debugView]);
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change debug view: Left/Right arrows)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change debug view: Left/Right arrows)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug effect:");
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", s_effectDebugList[s_currentDebugEffectId].effectName);
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug effect:");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", s_effectDebugList[s_currentDebugEffectId].effectName);
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change effect: NumPad +/-)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change effect: NumPad +/-)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reload effect data: NumPad .)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reload effect data: NumPad .)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reset Particle System: Delete)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reset Particle System: Delete)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Pause Particle System: End)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Pause Particle System: End)");
 		currentTextPos.y += textYSpacing;
 
 		if(s_effectDebugList[s_currentDebugEffectId].displayCallback)
@@ -657,7 +654,7 @@ void CGameEffectsSystem::DrawDebugDisplay()
 			const int EFFECT_LIST_COUNT = 2;
 			IGameEffect* pEffectListArray[EFFECT_LIST_COUNT] = {m_effectsToUpdate,m_effectsNotToUpdate};
 
-			gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&effectNameCol.r,false,"Name");
+			IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&effectNameCol.r,false,"Name");
 			currentTextPos.x += nameSize;
 
 			const int FLAG_COUNT = 9;
@@ -675,10 +672,10 @@ void CGameEffectsSystem::DrawDebugDisplay()
 
 			for(int i=0; i<FLAG_COUNT; i++)
 			{
-				gEnv->pRenderer->Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &effectNameCol.r, false, "%s", flagName[i]);
+				IRenderAuxText::Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &effectNameCol.r, false, "%s", flagName[i]);
 				currentTextPos.x += tabSize;
 			}
-		
+
 			currentTextPos.y += textYSpacing;
 
 			for(int l=0; l<EFFECT_LIST_COUNT; l++)
@@ -688,12 +685,12 @@ void CGameEffectsSystem::DrawDebugDisplay()
 				{
 					currentTextPos.x = listPos.x;
 
-					gEnv->pRenderer->Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &textCol.r, false, "%s", pCurrentEffect->GetName());
+					IRenderAuxText::Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &textCol.r, false, "%s", pCurrentEffect->GetName());
 					currentTextPos.x += nameSize;
 
 					for(int i=0; i<FLAG_COUNT; i++)
 					{
-						gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,pCurrentEffect->IsFlagSet(flag[i])?"1":"0");
+						IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,pCurrentEffect->IsFlagSet(flag[i])?"1":"0");
 						currentTextPos.x += tabSize;
 					}
 
@@ -880,8 +877,8 @@ void CGameEffectsSystem::OnDeActivateDebugView(int debugView)
 
 //--------------------------------------------------------------------------------------------------
 // Name: RegisterEffectDebugData
-// Desc: Registers effect's debug data with the game effects system, which will then call the 
-//			 relevant debug callback functions for the for the effect when its selected using the 
+// Desc: Registers effect's debug data with the game effects system, which will then call the
+//			 relevant debug callback functions for the for the effect when its selected using the
 //			 s_currentDebugEffectId
 //--------------------------------------------------------------------------------------------------
 #if DEBUG_GAME_FX_SYSTEM

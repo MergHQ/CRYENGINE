@@ -1,17 +1,17 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
 using CryEngine.Common;
 using CryEngine.Sydewinder.Types;
-using CryEngine.Sydewinder.UI;
+using System;
 using System.Collections.Generic;
-using CryEngine.Components;
-using CryEngine.EntitySystem;
 
 namespace CryEngine.Sydewinder
-{	
+{
+	[PlayerEntity]
 	public class Player : DestroyableBase
 	{
+		public static Player LocalPlayer { get; private set; }
+
 		// *** Player Translation Speed ***.
 		private float _maxSpeed = 17f;
 		private float _acceleration = 54f;
@@ -24,7 +24,7 @@ namespace CryEngine.Sydewinder
 		// Base Player rotation.
 		private float _rollAngle = 0f;
 		private float _pitchAngle = 0f;
-		private const float _yawDeg = (float)Math.PI; // Result of Deg2Rad(180)
+		private const float _yawDeg = (float)Math.PI; // Result of DegreesToRadians(180)
 		private float _maxRollAngle = 48f;
 
 		// Number of frames until cooldown is over (0 means no cooldown)
@@ -41,57 +41,81 @@ namespace CryEngine.Sydewinder
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CryEngine.Sydewinder.Player"/> class.
+		/// This is called automatically when a new client connects
 		/// </summary>
 		/// <param name="position">Position</param>
 		public Player()
 		{
-			// Fires as fast as spacebar is hit.
-			_weapons.Add(Gun.Create(new Vec3(0, 25f, 0)));
+            if (LocalPlayer == null)
+            {
+                LocalPlayer = this;
+            }
+
+            // Fires as fast as spacebar is hit.
+            _weapons.Add(Gun.Create(new Vector3(0, 25f, 0)));
 			ExplosionTrigger = "player_explosion";
 
 			// Use different explosion as the blue explosion in the base class is only used for enemies
-			DestroyParticleEffect = Env.ParticleManager.FindEffect("spaceship.Destruction.explosion");
+			DestroyParticleEffect = Engine.ParticleManager.FindEffect("spaceship.Destruction.explosion");
 		}
 
 		/// <summary>
-		/// Spawn this instance.
+		/// Revives the player
 		/// </summary>
-		public static Player Create(Vec3 pos)
+		public void Revive(Vector3 pos)
 		{
-			var player = Entity.Instantiate<Player>(pos, Quat.Identity, 10, PlayerSkin.Geometry);
-			var particleEffect = Env.ParticleManager.FindEffect("spaceship.Trails.fire_trail");
-			player.LoadParticleEmitter(1, particleEffect, 0.03f);
+			Revive();
+
+			Entity.Position = pos;
+			Entity.Scale = 10;
+
+			Entity.LoadGeometry(0, PlayerSkin.Geometry);
+
+			Entity.Physics.Physicalize(0, 1, EPhysicalizationType.ePT_Rigid);
+
+			var particleEffect = Engine.ParticleManager.FindEffect("spaceship.Trails.fire_trail");
+			Entity.LoadParticleEmitter(1, particleEffect, 0.03f);
 
 			// Get position where to spawn the particle effect.
-			Vec3 jetPosition = player.GetHelperPos(0, "particle_01");
+			Vector3 jetPosition = Entity.GetHelperPos(0, "particle_01");
 
 			// Rotate particle effect to ensure it's shown at the back of the ship.
-			player.SetTM(1, Matrix34.Create(Vec3.One, Quat.CreateRotationX(Utils.Deg2Rad(270f)), jetPosition));
+			Entity.SetGeometrySlotLocalTransform(1, new Matrix3x4(Vector3.One, Quaternion.CreateRotationX(MathHelpers.DegreesToRadians(270f)), jetPosition));
 
 			// Rotate Z-Axis of player ship in degrees.
-			player.Rotation = new Quat(Matrix34.CreateRotationZ(Utils.Deg2Rad(180.0f)));
+			Entity.Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(180.0f));
 
-			Hud.CurrentHud.SetEnergy (player.MaxLife);
-			GamePool.AddObjectToPool(player);
-			return player;
+			Hud.CurrentHud.SetEnergy (MaxLife);
+			//GamePool.AddObjectToPool(this);
 		}
 
-		protected override void OnCollision(DestroyableBase hitEnt)
+		public override void OnCollision(CryEngine.EntitySystem.CollisionEvent collisionEvent)
 		{
-			// Handle player collision with lower tunnel by changing the player location.
-			if (hitEnt is Tunnel)
+			var hitEntity = collisionEvent.Source.OwnerEntity;
+			if(hitEntity == Entity)
 			{
-				// As the only colliding tunnel is a lower tunnel, always change player position.
-				Vec3 playerPos = Position;
-				Position = new Vec3(playerPos.x, playerPos.y, 75);
-				return;
+				hitEntity = collisionEvent.Target.OwnerEntity;
 			}
 
-			// Don't let player collide with own projectiles.
-			if (hitEnt is DefaultAmmo && !(hitEnt as DefaultAmmo).IsHostile)
-				return;
+			if(hitEntity != null)
+			{
+				// Handle player collision with lower tunnel by changing the player location.
+				if(hitEntity.HasComponent<Tunnel>())
+				{
+					// As the only colliding tunnel is a lower tunnel, always change player position.
+					Vector3 playerPos = Entity.Position;
+					Entity.Position = new Vector3(playerPos.x, playerPos.y, 75);
+					return;
+				}
 
-			ProcessHit (hitEnt is Door);
+				var defaultAmmo = hitEntity.GetComponent<DefaultAmmo>();
+
+				// Don't let player collide with own projectiles.
+				if(defaultAmmo != null && !defaultAmmo.IsHostile)
+					return;
+
+				ProcessHit(hitEntity.HasComponent<Door>());
+			}
 		}
 
 		public void UpdateRotation()
@@ -99,10 +123,10 @@ namespace CryEngine.Sydewinder
 			// Roll - to Right side.
 			_rollAngle = _rollAngle * 0.8f + (_maxRollAngle * (_upSpeed / _maxSpeed)) * 0.2f;
 			Ang3 newRotation = new Ang3();
-			newRotation.x = Utils.Deg2Rad (_pitchAngle);
-			newRotation.y = Utils.Deg2Rad (_rollAngle);
+			newRotation.x = MathHelpers.DegreesToRadians (_pitchAngle);
+			newRotation.y = MathHelpers.DegreesToRadians (_rollAngle);
 			newRotation.z = _yawDeg;
-			Rotation = Quat.CreateRotationXYZ(newRotation);
+			Entity.Rotation = Quaternion.CreateRotationXYZ(newRotation);
 		}
 
 		public void UpdateSpeed()
@@ -153,14 +177,14 @@ namespace CryEngine.Sydewinder
 			var eyePos = Input.GetAxis("EyeTracker");
 			if (eyePos != null) 
 			{
-				var currentScreenPos = Env.Renderer.ProjectToScreen (Position);
+				var currentScreenPos = Camera.ProjectToScreen (Entity.Position);
 				_upSpeed = 1 - (eyePos - currentScreenPos).Normalized.y * 20;
 			}
 
 			// Usded to ensure the player does not move outside of the visible window.
-			// ProjectToScreen returns a Vec3. Each value between 0 and 100 means it is visible on screen in this dimension.
-			Vec3 nextPos = Position + new Vec3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
-			var screenPosition = Env.Renderer.ProjectToScreen(nextPos);
+			// ProjectToScreen returns a Vector3. Each value between 0 and 100 means it is visible on screen in this dimension.
+			Vector3 nextPos = Entity.Position + new Vector3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
+			var screenPosition = Camera.ProjectToScreen(nextPos);
 			
 			// In case new position on screen is outside of bounds
 			if (screenPosition.x <=0.05f || screenPosition.x >= 0.95f)
@@ -169,7 +193,7 @@ namespace CryEngine.Sydewinder
 			if (screenPosition.y <= 0.15f || screenPosition.y >= 0.75f)
 				_upSpeed = 0.001f;
 
-			Speed = new Vec3(0, _forwardSpeed, _upSpeed);
+			Speed = new Vector3(0, _forwardSpeed, _upSpeed);
 		}
 
 		/// <summary>
@@ -185,9 +209,9 @@ namespace CryEngine.Sydewinder
 					{
 						// Simulate blinking effect
 						if (i % 2 == 0)
-							FreeSlot(2);
+							Entity.FreeGeometrySlot(2);
 						else
-							LoadGeometry(2, "objects/ships/Impact.cgf");
+							Entity.LoadGeometry(2, "objects/ships/Impact.cgf");
 					}
 				}
 				
@@ -195,7 +219,7 @@ namespace CryEngine.Sydewinder
 
 				// Clean up cooldown
 				if (_impactCoolDownFrameCount == 0)
-					FreeSlot(2);
+					Entity.FreeGeometrySlot(2);
 			}
 		}
 
@@ -209,8 +233,8 @@ namespace CryEngine.Sydewinder
 			foreach (WeaponBase weapon in _weapons) 
 			{
 				// Spawn projectile in front of Ship to avoid collision with self.
-				weapon.Fire (Position + new Vec3(0, 1.2f, 0));
-				Program.GameApp.MakeScore (1 * Hud.CurrentHud.Stage);
+				weapon.Fire (Entity.Position + new Vector3(0, 1.2f, 0));
+				SydewinderApp.Instance.MakeScore (1 * Hud.CurrentHud.Stage);
 			}
 		}
 
@@ -220,16 +244,13 @@ namespace CryEngine.Sydewinder
 				return;
 
 			DrainLife(HitDamage);
-			DestroyParticleEffect.Spawn (Position);
+			DestroyParticleEffect.Spawn (Entity.Position);
 			if (lethal)
 				DrainLife(MaxLife);
 			Hud.CurrentHud.SetEnergy(Life);
 
 			if (Life == 0)
 			{
-				GamePool.FlagForPurge(ID);
-				for (int i = 0; i < _weapons.Count; i++)
-					GamePool.FlagForPurge (_weapons [i].ID);
 				Destroy();
 			}
 			else

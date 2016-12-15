@@ -7,23 +7,11 @@ namespace pfx2
 
 ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value)
 {
-	CRY_PFX2_ASSERT(uint(type) > EPST_Int && uint(type) < EPST_Float);
 	const uint32 threadId = JobManager::GetWorkerThreadId();
 	SEntry entry;
 	entry.m_pRuntime = pRuntime;
 	entry.m_type = type;
-	entry.m_value.m_int = value;
-	m_entries[threadId + 1].push_back(entry);
-}
-
-ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, float value)
-{
-	CRY_PFX2_ASSERT(uint(type) > EPST_Float && uint(type) < EPST_Count);
-	const uint32 threadId = JobManager::GetWorkerThreadId();
-	SEntry entry;
-	entry.m_pRuntime = pRuntime;
-	entry.m_type = type;
-	entry.m_value.m_float = value;
+	entry.m_value = value;
 	m_entries[threadId + 1].push_back(entry);
 }
 
@@ -37,16 +25,15 @@ ILINE CTimeProfiler::CTimeProfiler(CParticleProfiler& profiler, CParticleCompone
 
 ILINE CTimeProfiler::~CTimeProfiler()
 {
-	int64 endTicks = CryGetTicks();
-	m_profiler.AddEntry(
-	  m_pRuntime, m_stat,
-	  gEnv->pTimer->TicksToSeconds(endTicks - m_startTicks));
+	const int64 endTicks = CryGetTicks();
+	const uint time = uint(gEnv->pTimer->TicksToSeconds(endTicks - m_startTicks) * 1000000.0f);
+	m_profiler.AddEntry(m_pRuntime, m_stat, time);
+	m_profiler.AddEntry(m_pRuntime, EPS_TotalTiming, time);
 }
 
 #else
 
 ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value)  {}
-ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, float value) {}
 ILINE CTimeProfiler::CTimeProfiler(CParticleProfiler& profiler, CParticleComponentRuntime* pRuntime, EProfileStat stat) : m_profiler(profiler) {}
 ILINE CTimeProfiler::~CTimeProfiler() {}
 

@@ -14,58 +14,78 @@ class CAudioListener final : public IAudioListener
 {
 public:
 
-	CAudioListener() {}
-	virtual ~CAudioListener() {}
+	CAudioListener() = default;
+	virtual ~CAudioListener() override = default;
 
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioListener);
-	PREVENT_OBJECT_COPY(CAudioListener);
+	CAudioListener(CAudioListener const&) = delete;
+	CAudioListener(CAudioListener&&) = delete;
+	CAudioListener& operator=(CAudioListener const&) = delete;
+	CAudioListener& operator=(CAudioListener&&) = delete;
 };
 
 class CAudioParameter final : public IAudioRtpc
 {
 public:
 
-	CAudioParameter() {}
-	virtual ~CAudioParameter() {}
+	CAudioParameter() = default;
+	virtual ~CAudioParameter() override = default;
 
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioParameter);
-	PREVENT_OBJECT_COPY(CAudioParameter);
+	CAudioParameter(CAudioParameter const&) = delete;
+	CAudioParameter(CAudioParameter&&) = delete;
+	CAudioParameter& operator=(CAudioParameter const&) = delete;
+	CAudioParameter& operator=(CAudioParameter&&) = delete;
 };
 
 class CAudioSwitchState final : public IAudioSwitchState
 {
 public:
 
-	CAudioSwitchState() {}
-	virtual ~CAudioSwitchState() {}
+	CAudioSwitchState() = default;
+	virtual ~CAudioSwitchState() override = default;
 
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioSwitchState);
-	PREVENT_OBJECT_COPY(CAudioSwitchState);
+	CAudioSwitchState(CAudioSwitchState const&) = delete;
+	CAudioSwitchState(CAudioSwitchState&&) = delete;
+	CAudioSwitchState& operator=(CAudioSwitchState const&) = delete;
+	CAudioSwitchState& operator=(CAudioSwitchState&&) = delete;
 };
 
 class CAudioEnvironment final : public IAudioEnvironment
 {
 public:
 
-	CAudioEnvironment() {}
-	virtual ~CAudioEnvironment() {}
+	CAudioEnvironment() = default;
+	virtual ~CAudioEnvironment() override = default;
 
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioEnvironment);
-	PREVENT_OBJECT_COPY(CAudioEnvironment);
+	CAudioEnvironment(CAudioEnvironment const&) = delete;
+	CAudioEnvironment(CAudioEnvironment&&) = delete;
+	CAudioEnvironment& operator=(CAudioEnvironment const&) = delete;
+	CAudioEnvironment& operator=(CAudioEnvironment&&) = delete;
 };
 
 class CAudioFileEntry final : public IAudioFileEntry
 {
 public:
 
-	CAudioFileEntry() {}
-	virtual ~CAudioFileEntry() {}
+	CAudioFileEntry() = default;
+	virtual ~CAudioFileEntry() override = default;
 
-	PREVENT_OBJECT_COPY(CAudioFileEntry);
+	CAudioFileEntry(CAudioFileEntry const&) = delete;
+	CAudioFileEntry(CAudioFileEntry&&) = delete;
+	CAudioFileEntry& operator=(CAudioFileEntry const&) = delete;
+	CAudioFileEntry& operator=(CAudioFileEntry&&) = delete;
 };
 
 class CAudioStandaloneFile final : public IAudioStandaloneFile
 {
+public:
+
+	CAudioStandaloneFile() = default;
+	virtual ~CAudioStandaloneFile() override = default;
+
+	CAudioStandaloneFile(CAudioStandaloneFile const&) = delete;
+	CAudioStandaloneFile(CAudioStandaloneFile&&) = delete;
+	CAudioStandaloneFile& operator=(CAudioStandaloneFile const&) = delete;
+	CAudioStandaloneFile& operator=(CAudioStandaloneFile&&) = delete;
 };
 }
 }

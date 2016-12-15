@@ -100,13 +100,11 @@ void CVoiceListener::StartPlaying(bool checkStarted)
 
 	m_pSound->AddEventListener(this, "VoiceListener");
 
-	IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)GetGameObject()->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
-	if (!pIEntityAudioProxy)
-		pIEntityAudioProxy = (IEntityAudioProxy*)GetGameObject()->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO);
+	IEntityAudioComponent* pIEntityAudioComponent = GetGameObject()->GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-		pIEntityAudioProxy->PlaySound(m_pSound);
-	//pIEntityAudioProxy->PlaySound(m_pSound,Vec3(0.0f,0.0f,1.0f),FORWARD_DIRECTION,1.0f);
+	if (pIEntityAudioComponent)
+		pIEntityAudioComponent->PlaySound(m_pSound);
+	//pIEntityAudioComponent->PlaySound(m_pSound,Vec3(0.0f,0.0f,1.0f),FORWARD_DIRECTION,1.0f);
 
 	IActor* act = CCryAction::GetCryAction()->GetClientActor();
 	if (act && (act->GetEntityId() != GetGameObject()->GetEntityId()))
@@ -184,7 +182,7 @@ void CVoiceListener::UpdateSound3dPan()
 	//	assume players are far apart always
 
 	Vec3 sourcePos = GetEntity()->GetWorldPos();
-	IActor* playerActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* playerActor = gEnv->pGameFramework->GetClientActor();
 	if (playerActor)
 	{
 		//    Vec3 playerPos = playerActor->GetEntity()->GetWorldPos();

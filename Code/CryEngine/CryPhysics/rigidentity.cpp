@@ -117,7 +117,7 @@ CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_hasAuthority(false)
 #endif
 {	 
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBoxNew) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_BBoxNew) == 2, "Invalid array size!");
 	m_BBoxNew[0].zero();
 	m_BBoxNew[1].zero();
 
@@ -1538,8 +1538,10 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 				for(icont=0; icont<ncontacts; icont++) {
 					pcontacts[icont].id[0] = GetMatId(pcontacts[icont].id[0],i);
 					pcontacts[icont].id[1] = pentlist[ient]->GetMatId(pcontacts[icont].id[1],j);
-					if (bHasMatSubst && pentlist[ient]->m_id==-1) for(ient1=0;ient1<nents;ient1++) for(int j3=0;j3<pentlist[ient1]->GetUsedPartsCount(iCaller);j3++)
+					int scMask = (2<<pentlist[ient]->m_iSimClass)-(pentlist[ient]->m_id>>31);
+					if (bHasMatSubst & scMask) for(ient1=0;ient1<nents;ient1++) for(int j3=0;j3<pentlist[ient1]->GetUsedPartsCount(iCaller);j3++)
 						if (pentlist[ient1]->m_parts[j1=pentlist[ient1]->GetUsedPart(iCaller,j3)].flags & geom_mat_substitutor && 
+								pentlist[ient1]->m_parts[j1].flagsCollider & scMask &&
 								pentlist[ient1]->m_parts[j1].pPhysGeom->pGeom->PointInsideStatus(
 									((pcontacts[icont].center-pentlist[ient1]->m_pos)*pentlist[ient1]->m_qrot-pentlist[ient1]->m_parts[j1].pos)*pentlist[ient1]->m_parts[j1].q))
 						pcontacts[icont].id[1] = pentlist[ient1]->GetMatId(pentlist[ient1]->m_parts[j1].pPhysGeom->surface_idx,j1);
@@ -1571,7 +1573,7 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 			flagsAccum |= m_parts[i].flags|pentlist[ient]->m_parts[j].flags;
 			pip->bKeepPrevContacts = pip->bKeepPrevContacts || ncontacts>0;
 		}	else
-			bHasMatSubst |= pentlist[ient]->m_parts[j].flags & geom_mat_substitutor;
+			bHasMatSubst |= pentlist[ient]->m_parts[j].flagsCollider & -((int)pentlist[ient]->m_parts[j].flags & geom_mat_substitutor)>>31;
 	}
 	CollidersNoMore:
 	pip->bStopAtFirstTri = bStopAtFirstTri;
@@ -1787,7 +1789,7 @@ entity_contact *CRigidEntity::RegisterContactPoint(int idx, const Vec3 &pt, cons
 			Matrix33 K; K.SetZero();
 			pContact->pbody[0]->GetContactMatrix(pt-pContact->pbody[0]->pos, K);
 			pContact->pbody[1]->GetContactMatrix(pt-pContact->pbody[1]->pos, K);
-			ai.impulse.x = pContact->vrel*-(1+e)/(pContact->n*K*pContact->n);
+			ai.impulse.x = pContact->vrel*-(1+e)/max(pContact->n*K*pContact->n, (pContact->pbody[0]->Minv+pContact->pbody[1]->Minv)*0.1f);
 			if (sqr(ai.impulse.x*pContact->pbody[0]->Minv) < max(pContact->pbody[0]->v.len2(),pContact->pbody[1]->v.len2())*sqr(e+1.1f)) {
 				ArchiveContact(pContact, ai.impulse.x);
 				ai.impulse = pContact->n*ai.impulse.x;
@@ -2916,6 +2918,11 @@ int CRigidEntity::Step(float time_interval)
 		}
 
 		m_bCanopyContact <<= 1;
+		Vec3 extPull(ZERO);
+		for(i=0; m_constraintMask>=getmask(i); i++) if (m_constraintMask & getmask(i) && !(m_pConstraints[i].flags & contact_angular))
+			extPull += m_pConstraints[i].n*m_pConstraints[i].Pspare;
+		extPull *= isneg(sqr(m_body.M*m_lastTimeStep*3)*m_gravity.len2() - extPull.len2());
+
 		for(i=0;i<ncontacts;i++) if (pcontacts[i].t>=0) { // penetration contacts - register points and add additional penalty impulse in solver
 			if (!(m_parts[g_CurCollParts[i][0]].flags & geom_squashy)) {
 				Vec3 ntilt(ZERO), offs=pcontacts[i].dir*pcontacts[i].t;	float curdepth;	
@@ -2924,10 +2931,11 @@ int CRigidEntity::Step(float time_interval)
 				if (pcontacts[i].parea && pcontacts[i].parea->npt>=2) {
 					ntilt = (axis = pcontacts[i].parea->n1)^pcontacts[i].n;
 					pcontacts[i].n = -pcontacts[i].dir;
+					float esafe = max(0.0f,pcontacts[i].n*extPull);
 					for(j=0,r=ip.maxUnproj; j<pcontacts[i].parea->npt; j++)
 						r = min(r, axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt));
 					for(j=0; j<(pcontacts[i].parea->npt&-bPrimPrimContact); j++) 
-						if ((curdepth=(float)pcontacts[i].t-axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt)+r) > -e)
+						if ((curdepth=(float)pcontacts[i].t-axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt)+r) > -e-esafe)
 							RegisterContactPoint(i, pcontacts[i].parea->pt[j]-offs, pcontacts, pcontacts[i].parea->piPrim[0][j],
 								pcontacts[i].parea->piFeature[0][j], pcontacts[i].parea->piPrim[1][j],pcontacts[i].parea->piFeature[1][j], 
 								contact_area|contact_new|contact_inexact|flagsLast, max(0.001f,curdepth),iCaller, ntilt), flagsLast=0;
@@ -3694,7 +3702,7 @@ int CRigidEntity::GetStateSnapshot( TSerialize ser, float time_back, int flags )
 
 /*
 	{
-		IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 		char name[64];
 		cry_sprintf(name, "Send_%p", this);
 		pPD->Begin(name, true);
@@ -4097,7 +4105,7 @@ int CRigidEntity::SetStateFromSnapshot( TSerialize ser, int flags )
 
 /*
 		{
-			IPersistantDebug * pPD = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			char name[64];
 			cry_sprintf(name, "Snap_%p", this);
 			pPD->Begin(name, true);
@@ -4562,33 +4570,16 @@ void CRigidEntity::ApplyBuoyancy(float time_interval,const Vec3& gravity,pe_para
 }
 
 
-static inline void swap(edgeitem *plist, int i1,int i2) {
-	int ti=plist[i1].idx; plist[i1].idx=plist[i2].idx; plist[i2].idx=ti;
-}
-static void qsort(edgeitem *plist, int left,int right)
-{
-	if (left>=right) return;
-	int i,last; 
-	swap(plist, left, left+right>>1);
-	for(last=left,i=left+1; i<=right; i++)
-	if (plist[plist[i].idx].area < plist[plist[left].idx].area)
-		swap(plist, ++last, i);
-	swap(plist, left,last);
-
-	qsort(plist, left,last-1);
-	qsort(plist, last+1,right);
-}
-
 int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, float maxPlaneDist, int nMaxContacts,int &nContacts,
 																			entity_contact *&pResContact, Vec3 &n,float &maxDist, const Vec3 &ptTest, const Vec3 &dirTest) const
 {
-	int i,j,nEdges;
+	int i,nEdges;
 	Matrix33 C,Ctmp;
 	Vec3 pt,p_avg,center,axes[2];
 	float detabs[3],det;
 	const int NMAXCONTACTS = 256;
 	ptitem2d pts[NMAXCONTACTS];
-	edgeitem edges[NMAXCONTACTS],*pedge,*pminedge,*pnewedge;
+	edgeitem edges[NMAXCONTACTS],*pedge,*pminedge;
 	entity_contact *pContacts[NMAXCONTACTS];
 
 	nContacts=0; p_avg.zero();
@@ -4624,59 +4615,8 @@ int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, flo
 	if (maxDist>maxPlaneDist)
 		return 0;
 	
-	nEdges = qhull2d(pts,nContacts,edges);
-
-	if (nMaxContacts) { // chop off vertices until we have only the required amount left
-		Vec2 edge[2];
-		for(i=0;i<nEdges;i++)	{
-			edge[0] = edges[i].prev->pvtx->pt-edges[i].pvtx->pt; edge[1] = edges[i].next->pvtx->pt-edges[i].pvtx->pt;
-			edges[i].area = edge[1] ^ edge[0]; edges[i].areanorm2 = len2(edge[0])*len2(edge[1]);
-			edges[i].idx = i;
-		}
-		// sort edges by the area of triangles
-		qsort(edges,0,nEdges-1);
-		// transform sorted array into a linked list
-		pminedge = edges+edges[0].idx;
-		pminedge->next1=pminedge->prev1 = edges+edges[0].idx; 
-		for(pedge=pminedge,i=1; i<nEdges; i++) {
-			edges[edges[i].idx].prev1 = pedge; edges[edges[i].idx].next1 = pedge->next1;
-			pedge->next1->prev1 = edges+edges[i].idx; pedge->next1 = edges+edges[i].idx; pedge = edges+edges[i].idx;
-		}
-		
-		while(nEdges>2 && (nEdges>nMaxContacts || sqr(pminedge->area)<sqr(0.15f)*pminedge->areanorm2)) {
-			LOCAL_NAME_OVERRIDE_OK
-			edgeitem *pedge[2];
-			// delete the ith vertex with the minimum area triangle
-			pminedge->next->prev = pminedge->prev; pminedge->prev->next = pminedge->next;
-			pminedge->next1->prev1 = pminedge->prev1; pminedge->prev1->next1 = pminedge->next1;
-			pedge[0] = pminedge->prev; pedge[1] = pminedge->next; pminedge = pminedge->next1;
-			nEdges--;
-			for(i=0;i<2;i++) {
-				edge[0] = pedge[i]->prev->pvtx->pt-pedge[i]->pvtx->pt; edge[1] = pedge[i]->next->pvtx->pt-pedge[i]->pvtx->pt;
-				pedge[i]->area = edge[1]^edge[0]; pedge[i]->areanorm2 = len2(edge[0])*len2(edge[1]); // update area
-				for(pnewedge=pedge[i]->next1,j=0; pnewedge!=pminedge && pnewedge->area<pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->next1,j++);
-				if (pedge[i]->next1!=pnewedge) { // re-insert pedge[i] before pnewedge
-					if (pedge[i]==pminedge) pminedge = pedge[i]->next1;
-					if (pedge[i]!=pnewedge) {
-						pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
-						pedge[i]->prev1 = pnewedge->prev1; pedge[i]->next1 = pnewedge;
-						pnewedge->prev1->next1 = pedge[i]; pnewedge->prev1 = pedge[i];
-					}
-				}	else {
-					for(pnewedge=pedge[i]->prev1,j=0; pnewedge->next1!=pminedge && pnewedge->area>pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->prev1,j++);
-					if (pedge[i]->prev1!=pnewedge) { // re-insert pedge[i] after pnewedge
-						if (pnewedge->next1==pminedge) pminedge = pedge[i];
-						if (pedge[i]!=pnewedge) {
-							pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
-							pedge[i]->prev1 = pnewedge; pedge[i]->next1 = pnewedge->next1;
-							pnewedge->next1->prev1 = pedge[i]; pnewedge->next1 = pedge[i];
-						}
-					}
-				}
-			}
-		}
-	} else
-		pminedge = edges;
+	if (nEdges = qhull2d(pts,nContacts,pminedge=edges,nMaxContacts))
+		for(pminedge=edges; !pminedge->next; pminedge++);
 
 	for(i=nContacts=0,pedge=pminedge; i<nEdges; i++,nContacts++,pedge=pedge->next)	{
 		pContacts[pedge->pvtx->iContact]->nextAux = pContacts[pedge->next->pvtx->iContact];
@@ -4848,25 +4788,19 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	if (m_pWorld->m_vars.netDebugDraw && m_pNetStateHistory && m_bAwake) {
-		IRenderer *pRendererInstance = gEnv->pRenderer;
-		IRenderAuxGeom* pAux = pRendererInstance ? pRendererInstance->GetIRenderAuxGeom() : NULL;
-		if (pRendererInstance && pAux) {
+		IRenderAuxGeom* pAux = gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : NULL;
+		if (pAux) {
 			{
 				ReadLock lock(m_lockNetInterp);
 				for (int i=0; i<m_pNetStateHistory->GetNumReceivedStates(); ++i) {
 					SRigidEntityNetSerialize& receivedState = m_pNetStateHistory->GetReceivedState(i);
 					Vec3 pos = receivedState.pos + Vec3(0, 0, 3);
-					SDrawTextInfo ti;
-					ti.color[0] = 0.0f;
-					ti.color[1] = 1.0f;
-					ti.color[2] = 0.0f;
-					ti.xscale = ti.yscale = 1.5f;
-					ti.flags = eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest;
+
 					stack_string text;
 
 					text.Format("seq: %d", (int)receivedState.sequenceNumber);
 
-					pRendererInstance->DrawTextQueued(pos, ti, text.c_str());
+					IRenderAuxText::DrawText(pos, 1.5f, Vec3(0, 1, 0), eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest, text.c_str());
 					pAux->DrawCone(receivedState.pos + Vec3(0, 0, 2), receivedState.rot.GetColumn1(), 0.25f, 0.5f, ColorF(0,1,0,1));
 				}
 			}
@@ -4877,17 +4811,12 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 				SRigidEntityNetSerialize interpolatedPos;
 				if (GetInterpolatedState(interpedSequence, interpolatedPos)) {
 					Vec3 pos = interpolatedPos.pos + Vec3(0, 0, 3);
-					SDrawTextInfo ti;
-					ti.color[0] = 1.0f;
-					ti.color[1] = 1.0f;
-					ti.color[2] = 0.0f;
-					ti.xscale = ti.yscale = 1.5f;
-					ti.flags = eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest;
+
 					stack_string text;
 
 					text.Format("seq: %f", interpedSequence);
 
-					pRendererInstance->DrawTextQueued(pos, ti, text.c_str());
+					IRenderAuxText::DrawText(pos, 1.5f, Vec3(1, 1, 0), eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest, text.c_str());
 					pAux->DrawCone(interpolatedPos.pos + Vec3(0, 0, 2), interpolatedPos.rot.GetColumn1(), 0.25f, 0.5f, ColorF(1,1,0,1));
 				}
 			}

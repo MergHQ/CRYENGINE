@@ -10,6 +10,7 @@
 #include "ATLEntities.h"
 #include <sndfile.hh>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/CryPath.h>
 
@@ -20,16 +21,6 @@ char const* const CAudioImpl::s_szPortAudioEventTag = "PortAudioEvent";
 char const* const CAudioImpl::s_szPortAudioEventNameAttribute = "portaudio_name";
 char const* const CAudioImpl::s_szPortAudioEventTypeAttribute = "event_type";
 char const* const CAudioImpl::s_szPortAudioEventNumLoopsAttribute = "num_loops";
-
-///////////////////////////////////////////////////////////////////////////
-CAudioImpl::CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-CAudioImpl::~CAudioImpl()
-{
-}
 
 ///////////////////////////////////////////////////////////////////////////
 void CAudioImpl::Update(float const deltaTime)
@@ -43,14 +34,13 @@ void CAudioImpl::Update(float const deltaTime)
 ///////////////////////////////////////////////////////////////////////////
 EAudioRequestStatus CAudioImpl::Init()
 {
-	string const gameFolder = PathUtil::GetGameFolder().c_str();
-
-	if (gameFolder.empty())
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - PortAudio>: Needs a valid asset folder to proceed!");
 	}
 
-	m_regularSoundBankFolder = gameFolder.c_str();
+	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
 	m_regularSoundBankFolder += PORTAUDIO_IMPL_DATA_ROOT;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
@@ -65,7 +55,8 @@ EAudioRequestStatus CAudioImpl::Init()
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	m_fullImplString = Pa_GetVersionText();
 	m_fullImplString += " (";
-	m_fullImplString += gameFolder + CRY_NATIVE_PATH_SEPSTR PORTAUDIO_IMPL_DATA_ROOT ")";
+	m_fullImplString += szAssetDirectory;
+	m_fullImplString += CRY_NATIVE_PATH_SEPSTR PORTAUDIO_IMPL_DATA_ROOT ")";
 #endif // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	return eAudioRequestStatus_Success;
@@ -491,14 +482,14 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
 	POOL_NEW_CREATE(CAudioObject, pPAAudioObject);
 	return pPAAudioObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
 	POOL_NEW_CREATE(CAudioObject, pPAAudioObject);
 	return pPAAudioObject;
@@ -511,14 +502,14 @@ void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldAudioObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
 	POOL_NEW_CREATE(CAudioListener, pAudioListener);
 	return pAudioListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener()
 {
 	POOL_NEW_CREATE(CAudioListener, pAudioListener);
 	return pAudioListener;
@@ -551,8 +542,12 @@ void CAudioImpl::ResetAudioEvent(IAudioEvent* const pAudioEvent)
 	if (pPAAudioEvent != nullptr)
 	{
 		pPAAudioEvent->Reset();
-		pPAAudioEvent->pPAAudioObject->UnregisterAudioEvent(pPAAudioEvent);
-		pPAAudioEvent->pPAAudioObject = nullptr;
+
+		if (pPAAudioEvent->pPAAudioObject != nullptr)
+		{
+			pPAAudioEvent->pPAAudioObject->UnregisterAudioEvent(pPAAudioEvent);
+			pPAAudioEvent->pPAAudioObject = nullptr;
+		}
 	}
 }
 

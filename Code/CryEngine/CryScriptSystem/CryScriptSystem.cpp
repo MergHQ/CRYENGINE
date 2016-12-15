@@ -11,26 +11,12 @@
 #include <CryExtension/ClassWeaver.h>
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_Script : public ISystemEventListener
-{
-public:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-	{
-		switch (event)
-		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
-		}
-	}
-};
-static CSystemEventListner_Script g_system_event_listener_script;
-
-//////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryScriptSystem : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryScriptSystem, "EngineModule_CryScriptSystem", 0xd032b16449784f82, 0xa99e7dc6b6338c5c)
+
+	virtual ~CEngineModule_CryScriptSystem() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryScriptSystem"; };
@@ -42,8 +28,6 @@ class CEngineModule_CryScriptSystem : public IEngineModule
 		ISystem* pSystem = env.pSystem;
 
 		CScriptSystem* pScriptSystem = new CScriptSystem;
-
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_script);
 
 		bool bStdLibs = true;
 		if (!pScriptSystem->Init(pSystem, bStdLibs, 1024))
@@ -58,14 +42,6 @@ class CEngineModule_CryScriptSystem : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryScriptSystem)
-
-CEngineModule_CryScriptSystem::CEngineModule_CryScriptSystem()
-{
-};
-
-CEngineModule_CryScriptSystem::~CEngineModule_CryScriptSystem()
-{
-};
 
 #if CRY_PLATFORM_WINDOWS && !defined(_LIB)
 HANDLE gDLLHandle = NULL;

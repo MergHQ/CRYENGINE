@@ -495,7 +495,7 @@ private:
 	void ApplyMannequinSetParam(const SRecording_MannSetParam *pMannSetParam);
 	void ApplyMannequinSetParamFloat(const SRecording_MannSetParamFloat *pMannSetParamFloat);
 	void OnPlayerFirstPersonChange(IEntity* pPlayerEntity, EntityId weaponId, bool firstPerson);
-	void CloakEnable(IEntityRenderProxy* pRenderProxy, bool enable, bool fade);
+	void CloakEnable(IEntityRender* pIEntityRender, bool enable, bool fade);
 	void ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpawn, float time = 0.0f);
 	void ApplyEntityRemoved(const SRecording_EntityRemoved *entityRemoved);
 	void ApplyEntityLocation(const SRecording_EntityLocation *entityLocation, const SRecording_EntityLocation *entityLocation2 = NULL, float lerpValue = 0.f);

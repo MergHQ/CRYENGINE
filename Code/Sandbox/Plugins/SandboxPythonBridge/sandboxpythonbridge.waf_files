@@ -1,0 +1,15 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"main.cpp",
+			"SandboxPythonBridge.cpp",
+			"SandboxPythonBridge.h",
+			"SandboxPythonBridgePlugin.cpp",
+			"SandboxPythonBridgePlugin.h",
+			"StdAfx.cpp",
+			"StdAfx.h"
+		]
+	}
+}

@@ -148,7 +148,7 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRenderObject* obj, const SRenderingPassInfo& passInfo, int nList, int nAW)
+void CRenderer::EF_AddEf_NotVirtual(CRenderElement* re, SShaderItem& SH, CRenderObject* obj, const SRenderingPassInfo& passInfo, int nList, int nAW)
 {
 	assert(nList > 0 && nList < EFSLIST_NUM);
 	if (!re || !SH.m_pShader)
@@ -156,7 +156,12 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 
 	// shader item is not set up yet
 	if (SH.m_nPreprocessFlags == -1)
+	{
+		if (obj->m_bPermanent && obj->m_pRenderNode)
+			obj->m_pRenderNode->InvalidatePermanentRenderObject();
+
 		return;
+	}
 
 	CShader* const __restrict pSH = (CShader*)SH.m_pShader;
 	const uint32 nShaderFlags = pSH->m_Flags;
@@ -368,7 +373,7 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void CRenderer::EF_AddEf(CRendElementBase* re, SShaderItem& pSH, CRenderObject* obj, const SRenderingPassInfo& passInfo, int nList, int nAW)
+void CRenderer::EF_AddEf(CRenderElement* re, SShaderItem& pSH, CRenderObject* obj, const SRenderingPassInfo& passInfo, int nList, int nAW)
 {
 	EF_AddEf_NotVirtual(re, pSH, obj, passInfo, nList, nAW);
 }
@@ -405,7 +410,7 @@ void CRenderer::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRendElementBase* re, const SRenderingPassInfo& passInfo, int nAboveWater)
+uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater)
 {
 
 	uint32 nFlags = SH.m_nPreprocessFlags & FB_MASK;
@@ -493,14 +498,14 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRendEleme
 			}
 		}
 
-		if (pOD && (pOD->m_nCustomFlags & COB_POST_3D_RENDER))
+		if (pOD->m_nCustomFlags & COB_POST_3D_RENDER)
 		{
 			nFlags |= FB_POST_3D_RENDER;
 		}
 
 		if (nFlags & FB_LAYER_EFFECT)
 		{
-			if ((!pOD || !pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
+			if ((!pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
 				nFlags &= ~FB_LAYER_EFFECT;
 		}
 

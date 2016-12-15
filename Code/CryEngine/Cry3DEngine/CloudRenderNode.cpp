@@ -37,10 +37,6 @@ CCloudRenderNode::CCloudRenderNode()
 	GetCloudsManager()->AddCloudRenderNode(this);
 
 	m_origin = Vec3(0, 0, 0);
-	m_moveProps.m_autoMove = false;
-	m_moveProps.m_speed = Vec3(0, 0, 0);
-	m_moveProps.m_spaceLoopBox = Vec3(2000.0f, 2000.0f, 2000.0f);
-	m_moveProps.m_fadeDistance = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,7 +193,12 @@ void CCloudRenderNode::Render(const SRendParams& rParams, const SRenderingPassIn
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (!m_pMaterial || !passInfo.RenderClouds())
+	if (!m_pCloudDesc)
+		return;
+
+	IMaterial* pMaterial = (m_pMaterial) ? m_pMaterial : m_pCloudDesc->m_pMaterial;
+
+	if (!pMaterial || !passInfo.RenderClouds())
 		return;
 
 	IRenderer* pRenderer(GetRenderer());
@@ -207,7 +208,7 @@ void CCloudRenderNode::Render(const SRendParams& rParams, const SRenderingPassIn
 	if (!pRO)
 		return;
 
-	SShaderItem& shaderItem = (rParams.pMaterial) ? rParams.pMaterial->GetShaderItem(0) : m_pMaterial->GetShaderItem(0);
+	SShaderItem& shaderItem = (rParams.pMaterial) ? rParams.pMaterial->GetShaderItem(0) : pMaterial->GetShaderItem(0);
 
 	pRO->m_II.m_Matrix = m_offsetedMatrix;
 	pRO->m_ObjFlags |= FOB_TRANS_MASK;

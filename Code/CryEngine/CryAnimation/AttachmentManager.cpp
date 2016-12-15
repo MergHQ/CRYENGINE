@@ -1271,10 +1271,6 @@ void CAttachmentManager::UpdateAllRemapTables()
 		CAttachmentSKIN* pCAttachmentSkin = (CAttachmentSKIN*)pIAttachment;
 		pCAttachmentSkin->UpdateRemapTable();
 	}
-
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 }
 
 void CAttachmentManager::VerifyProxyLinks()
@@ -1428,9 +1424,6 @@ void CAttachmentManager::CreateCommands(Command::CBuffer& buffer)
 {
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 	buffer.CreateCommand<Command::PrepareAllRedirectedTransformations>();
 
@@ -1457,9 +1450,6 @@ int CAttachmentManager::GenerateAttachedInstanceContexts()
 {
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 	auto& sc = g_pCharacterManager->GetContextSyncQueue();
 
@@ -1499,9 +1489,6 @@ void CAttachmentManager::UpdateLocationsExceptExecute(Skeleton::CPoseData& rPose
 {
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 	for (uint32 i = m_sortedRanges[eRange_BoneEmpty].begin; i < m_sortedRanges[eRange_BoneEmpty].end; i++)
 	{
@@ -1538,9 +1525,6 @@ void CAttachmentManager::UpdateLocationsExecute(Skeleton::CPoseData& rPoseData)
 {
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 	for (uint32 i = m_sortedRanges[eRange_BoneExecute].begin; i < m_sortedRanges[eRange_BoneExecute].end; i++)
 	{
@@ -1561,9 +1545,6 @@ void CAttachmentManager::UpdateLocationsExecuteUnsafe(Skeleton::CPoseData& rPose
 {
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 	for (uint32 i = m_sortedRanges[eRange_BoneExecuteUnsafe].begin; i < m_sortedRanges[eRange_BoneExecuteUnsafe].end; i++)
 	{
@@ -1661,9 +1642,6 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 	if (m_TypeSortingRequired)
 		SortByType();
-#ifdef EDITOR_PCDEBUGCODE
-	Verification();
-#endif
 
 #if !defined(_RELEASE)
 	g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
@@ -2576,7 +2554,7 @@ float CAttachmentManager::DebugDrawAttachment(IAttachment* pAttachment, ISkin* p
 	static float scalar = 60.0f;
 	float drawOffset = (drawScale * (fDist / scalar));
 
-	gEnv->pRenderer->DrawLabelEx(drawLoc, drawScale, color, true, true, "%s (%d kb)", pAttachment->GetName(), nTexMemUsage / 1024);
+	IRenderAuxText::DrawLabelExF(drawLoc, drawScale, color, true, true, "%s (%d kb)", pAttachment->GetName(), nTexMemUsage / 1024);
 
 	return drawOffset;
 }

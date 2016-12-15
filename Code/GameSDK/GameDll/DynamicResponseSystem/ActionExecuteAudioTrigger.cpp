@@ -15,7 +15,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 		IEntity* pEntity = pResponseInstance->GetCurrentActor()->GetLinkedEntity();
 		if (pEntity)
 		{
-			const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+			IEntityAudioComponent* pEntityAudioProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
 			DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pEntityAudioProxy, audioStartTriggerID));
 
@@ -51,7 +51,7 @@ void CActionExecuteAudioTrigger::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(IEntityAudioProxyPtr pAudioProxy, AudioControlId audioStartTriggerID)
+CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(IEntityAudioComponent* pAudioProxy, AudioControlId audioStartTriggerID)
 	: m_pEntityAudioProxy(pAudioProxy)
 	, m_audioStartTriggerID(audioStartTriggerID)
 {

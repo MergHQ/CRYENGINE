@@ -138,9 +138,9 @@ void CBoidObject::ExecuteTrigger(int nIndex)
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entity);
 			if (pEntity)
 			{
-				IEntityAudioProxyPtr audioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+				IEntityAudioComponent* audioProxy = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-				if (audioProxy.get())
+				if (audioProxy)
 				{
 					audioProxy->ExecuteTrigger(id);
 				}

@@ -54,7 +54,7 @@ void CSceneGBufferStage::Init()
 	  );
 
 	// Opaque with Velocity Pass
-	m_opaqueVelocityPass.SetLabel("OPAQUE");
+	m_opaqueVelocityPass.SetLabel("OPAQUE_VELOCITY");
 	m_opaqueVelocityPass.SetupPassContext(m_stageID, ePass_GBufferFill, TTYPE_Z, FB_Z);
 	m_opaqueVelocityPass.SetPassResources(m_pResourceLayout, m_pPerPassResources);
 	m_opaqueVelocityPass.SetRenderTargets(
@@ -290,14 +290,14 @@ void CSceneGBufferStage::RenderDepthPrepass()
 	{
 		PROFILE_LABEL_SCOPE("ZPREPASS");
 
+		m_depthPrepass.BeginExecution();
 		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_ZPREPASS);
+		m_depthPrepass.EndExecution();
 	}
 }
 
 void CSceneGBufferStage::RenderSceneOpaque()
 {
-	PROFILE_LABEL_SCOPE("OPAQUE");
-
 	CRenderView* pRenderView = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
 
 	int numItems_Nearest = gcpRendD3D->m_RP.m_pCurrentRenderView->GetRenderItems(EFSLIST_NEAREST_OBJECTS).size();
@@ -308,29 +308,33 @@ void CSceneGBufferStage::RenderSceneOpaque()
 	int numItems_Skin = gcpRendD3D->m_RP.m_pCurrentRenderView->GetRenderItems(EFSLIST_SKIN).size();
 	int velocityEnd_Skin = pRenderView->FindRenderListSplit(EFSLIST_SKIN, FOB_HAS_PREVMATRIX);
 
+	// Opaque
+	m_opaquePass.BeginExecution();
 	if (CRenderer::CV_r_nodrawnear == 0)
 	{
 		m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, velocityEnd_Nearest, numItems_Nearest);
-		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
 	}
-
 	m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, velocityEnd_General, numItems_General);
 	m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_SKIN, velocityEnd_Skin, numItems_Skin);
+	m_opaquePass.EndExecution();
+
+	// OpaqueVelocity
+	m_opaqueVelocityPass.BeginExecution();
+	if (CRenderer::CV_r_nodrawnear == 0)
+	{
+		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
+	}
 	m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, velocityEnd_General);
 	m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_SKIN, 0, velocityEnd_Skin);
+	m_opaqueVelocityPass.EndExecution();
 }
 
 void CSceneGBufferStage::RenderSceneOverlays()
 {
-	{
-		PROFILE_LABEL_SCOPE("TERRAIN_LAYERS");
-		m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_TERRAINLAYER);
-	}
-
-	{
-		PROFILE_LABEL_SCOPE("DECALS");
-		m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_DECAL);
-	}
+	m_overlayPass.BeginExecution();
+	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_TERRAINLAYER);
+	m_overlayPass.DrawRenderItems(RenderView(), EFSLIST_DECAL);
+	m_overlayPass.EndExecution();
 }
 
 void CSceneGBufferStage::ExecuteLinearizeDepth()
@@ -348,6 +352,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 		m_passDepthLinearization.SetRenderTarget(0, CTexture::s_ptexZTarget);
 		m_passDepthLinearization.SetState(GS_NODEPTHTEST);
 		m_passDepthLinearization.SetRequirePerViewConstantBuffer(true);
+		m_passDepthLinearization.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 		m_passDepthLinearization.SetTexture(16, gcpRendD3D->m_DepthBufferOrigMSAA.pTexture);  // TODO: Change slot
 	}
@@ -367,8 +372,8 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 	nearProjParams.x = bReverseDepth ? 1.0f - zf / (zf - zn) * nearZRange : zf / (zf - zn) * nearZRange;
 	nearProjParams.y = bReverseDepth ? zn / (zf - zn) * nearZRange * camScale : zn / (zn - zf) * nearZRange * camScale;
 	nearProjParams.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
-	nearProjParams.w = 1.0f;
-	m_passDepthLinearization.SetConstant(eHWSC_Pixel, paramName, nearProjParams);
+	nearProjParams.w = 1.0f - nearZRange;
+	m_passDepthLinearization.SetConstant(paramName, nearProjParams, eHWSC_Pixel);
 
 	m_passDepthLinearization.Execute();
 }
@@ -385,26 +390,43 @@ void CSceneGBufferStage::Execute()
 	D3DViewPort viewport = { 0.f, 0.f, float(rd->m_MainViewport.nWidth), float(rd->m_MainViewport.nHeight), 0.0f, 1.0f };
 	rd->RT_SetViewport(0, 0, int(viewport.Width), int(viewport.Height));
 
+	auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+
 	// Clear depth (stencil initialized to 1 - 0 is reserved for MSAAed samples)
 	const bool bReverseDepth = (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-	rd->FX_ClearTarget(&rd->m_DepthBufferOrigMSAA, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+
+	if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
+	{ 
+		// use inverse depth here
+		rd->FX_ClearTarget(&rd->m_DepthBufferOrigMSAA, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 1.0f : 0.0f, 1);
+		CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(&rd->m_DepthBufferOrigMSAA);
+	}
+	else
+	{
+		commandList.GetGraphicsInterface()->ClearSurface(rd->m_DepthBufferOrigMSAA.pSurface, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	}
 
 	// Clear velocity target
-	rd->FX_ClearTarget(GetUtils().GetVelocityObjectRT(), Clr_Transparent);
+	commandList.GetGraphicsInterface()->ClearSurface(GetUtils().GetVelocityObjectRT()->GetSurface(0, 0), Clr_Transparent);
 
-	if (CRenderer::CV_r_wireframe != 0)
+	bool bClearAll = CRenderer::CV_r_wireframe != 0;
+
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		bClearAll = true;
+
+	if (bClearAll)
 	{
 		RECT rect = { 0, 0, int(viewport.Width), int(viewport.Height) };
-		rd->FX_ClearTarget(CTexture::s_ptexSceneNormalsMap, Clr_Transparent, 1, &rect, true);
-		rd->FX_ClearTarget(CTexture::s_ptexSceneDiffuse, Clr_Empty, 1, &rect, true);
-		rd->FX_ClearTarget(CTexture::s_ptexSceneSpecular, Clr_Empty, 1, &rect, true);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneNormalsMap->GetSurface(0, 0), Clr_Transparent);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneDiffuse->GetSurface(0, 0), Clr_Empty);
+		commandList.GetGraphicsInterface()->ClearSurface(CTexture::s_ptexSceneSpecular->GetSurface(0, 0), Clr_Empty);
 	}
 
 	// Stereo has separate velocity targets for left and right eye
 	m_opaqueVelocityPass.ExchangeRenderTarget(3, GetUtils().GetVelocityObjectRT());
 
 	// Update pass viewport and flags
-	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
+	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_VrProjectionPass;
 
 	if (pThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH)
 		passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;

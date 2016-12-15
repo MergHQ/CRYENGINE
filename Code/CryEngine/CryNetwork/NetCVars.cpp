@@ -4,7 +4,6 @@
 #include "NetCVars.h"
 #include "NetDebugInfo.h"
 #if NEW_BANDWIDTH_MANAGEMENT
-	#include <CryGame/IGame.h>
 	#include <CryGame/IGameFramework.h>
 	#include "Protocol/NetNub.h"
 #endif // NEW_BANDWIDTH_MANAGEMENT
@@ -235,10 +234,6 @@ CNetCVars::CNetCVars()
 	REGISTER_CVAR2("net_lan_scanport_first", &LanScanPortFirst, 64087, VF_DUMPTODISK, "Starting port for LAN games scanning");
 	REGISTER_CVAR2("net_lan_scanport_num", &LanScanPortNum, 5, VF_DUMPTODISK, "Num ports for LAN games scanning");
 
-#if ENABLE_DEBUG_KIT
-	REGISTER_COMMAND_DEV_ONLY("net_reload_scheduler", ReloadScheduler, 0, "Reload game/scripts/network/scheduler.xml");
-#endif
-
 	REGISTER_COMMAND("net_set_cdkey", SetCDKey, VF_DUMPTODISK, "");
 	StatsLogin = REGISTER_STRING("net_stats_login", "", VF_DUMPTODISK, "Login for reporting stats on dedicated server");
 	StatsPassword = REGISTER_STRING("net_stats_pass", "", VF_DUMPTODISK, "Password for reporting stats on dedicated server");
@@ -294,14 +289,6 @@ void CNetCVars::DumpObjectState(IConsoleCmdArgs* pArgs)
 	SCOPED_GLOBAL_LOCK;
 	CNetwork::Get()->BroadcastNetDump(eNDT_ObjectState);
 }
-
-#if ENABLE_DEBUG_KIT
-void CNetCVars::ReloadScheduler(IConsoleCmdArgs* pArgs)
-{
-	SCOPED_GLOBAL_LOCK;
-	CNetwork::Get()->ReloadScheduler();
-}
-#endif
 
 void CNetCVars::SetCDKey(IConsoleCmdArgs* pArgs)
 {
@@ -360,7 +347,7 @@ void CNetCVars::OnInternetSimLoadProfiles(ICVar* val)
 #if NEW_BANDWIDTH_MANAGEMENT
 void CNetCVars::GetChannelPerformanceMetrics(IConsoleCmdArgs* pArguments)
 {
-	CNetNub* pNetNub = (CNetNub*)gEnv->pGame->GetIGameFramework()->GetServerNetNub();
+	CNetNub* pNetNub = (CNetNub*)gEnv->pGameFramework->GetServerNetNub();
 	if (pNetNub)
 	{
 		uint32 id = 0;
@@ -393,7 +380,7 @@ void CNetCVars::GetChannelPerformanceMetrics(IConsoleCmdArgs* pArguments)
 
 void CNetCVars::SetChannelPerformanceMetrics(IConsoleCmdArgs* pArguments)
 {
-	CNetNub* pNetNub = (CNetNub*)gEnv->pGame->GetIGameFramework()->GetServerNetNub();
+	CNetNub* pNetNub = (CNetNub*)gEnv->pGameFramework->GetServerNetNub();
 	if (pNetNub)
 	{
 		INetChannel::SPerformanceMetrics metrics;

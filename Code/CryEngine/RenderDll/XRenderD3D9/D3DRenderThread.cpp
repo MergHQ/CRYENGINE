@@ -248,31 +248,6 @@ void CD3D9Renderer::RT_Draw2dImageInternal(S2DImage* images, uint32 numImages, b
 	m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Pop();
 }
 
-void CD3D9Renderer::RT_DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const
-{
-	SetProfileMarker("DRAWSTRINGU", CRenderer::ESPM_PUSH);
-
-	if (GetS3DRend().IsStereoEnabled() && !GetS3DRend().DisplayStereoDone())
-	{
-		GetS3DRend().BeginRenderingTo(LEFT_EYE);
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-		GetS3DRend().EndRenderingTo(LEFT_EYE);
-
-		if (GetS3DRend().RequiresSequentialSubmission())
-		{
-			GetS3DRend().BeginRenderingTo(RIGHT_EYE);
-			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-			GetS3DRend().EndRenderingTo(RIGHT_EYE);
-		}
-	}
-	else
-	{
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-	}
-
-	SetProfileMarker("DRAWSTRINGU", CRenderer::ESPM_POP);
-}
-
 void CD3D9Renderer::RT_DrawLines(Vec3 v[], int nump, ColorF& col, int flags, float fGround)
 {
 	if (m_bDeviceLost)
@@ -560,6 +535,11 @@ void CD3D9Renderer::RT_ReleaseResource(SResourceAsync* pRes)
 	delete pRes;
 }
 
+void CD3D9Renderer::RT_ReleaseOptics(IOpticsElementBase* pOpticsElement)
+{
+	SAFE_RELEASE(pOpticsElement);
+}
+
 void CD3D9Renderer::RT_UnbindTMUs()
 {
 	D3DShaderResource* pTex[MAX_TMU] = { NULL };
@@ -606,6 +586,8 @@ void CD3D9Renderer::RT_UnbindResources()
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 {
+	ForceFlushRTCommands();
+
 	if (nFlags & (FRR_PERMANENT_RENDER_OBJECTS | FRR_OBJECTS))
 	{
 		// Delete all items that have not been allocated from the object pool
@@ -621,7 +603,6 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 	m_cEF.m_Bin.InvalidateCache();
 	//m_cEF.m_Bin.m_BinPaths.clear();
-	ForceFlushRTCommands();
 
 	for (uint i = 0; i < CLightStyle::s_LStyles.Num(); i++)
 	{
@@ -692,7 +673,7 @@ void CD3D9Renderer::RT_PrecacheDefaultShaders()
 	SShaderCombination cmb;
 	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, NULL);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	SF_PrecacheShaders();
 #endif
 }
@@ -777,11 +758,14 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 		            0.0f, 0.0f, 1.0f, 1.0f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f);
 
 #if !defined(STRIP_RENDER_THREAD)
-		// Blit the accumulated commands from the renderloading thread into the current fill command queue
-		// : Currently hacked into the RC_UpdateMaterialConstants command, but will be generalized soon
-		void* buf = m_pRT->m_Commands[m_pRT->m_nCurThreadFill].Grow(m_pRT->m_CommandsLoading.size());
-		memcpy(buf, &m_pRT->m_CommandsLoading[0], m_pRT->m_CommandsLoading.size());
-		m_pRT->m_CommandsLoading.Free();
+		if(m_pRT->m_CommandsLoading.size() > 0)
+		{
+			// Blit the accumulated commands from the renderloading thread into the current fill command queue
+			// : Currently hacked into the RC_UpdateMaterialConstants command, but will be generalized soon
+			void* buf = m_pRT->m_Commands[m_pRT->m_nCurThreadFill].Grow(m_pRT->m_CommandsLoading.size());
+			memcpy(buf, &m_pRT->m_CommandsLoading[0], m_pRT->m_CommandsLoading.size());
+			m_pRT->m_CommandsLoading.Free();
+		}
 #endif // !defined(STRIP_RENDER_THREAD)
 	}
 }

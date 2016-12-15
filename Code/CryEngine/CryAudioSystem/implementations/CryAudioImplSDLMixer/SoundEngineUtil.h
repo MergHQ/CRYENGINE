@@ -32,7 +32,7 @@ inline void GetDistanceAngleToObject(const CAudioObjectTransformation& listener,
 
 	// Get angle between listener position and projected point
 	const Vec3 listenerDir = listener.GetForward().GetNormalizedFast();
-	out_angle = RAD2DEG(asin(objectDir.Cross(listenerDir).Dot(n)));
+	out_angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
 }
 }
 }

@@ -448,7 +448,7 @@ void frag_custom_begin(inout fragPass pPass)
 	fFarPlaneScale /= PS_NearFarClipDist.z;
 #endif
 
-	float fZBufferRefrac = GetLinearDepth(sceneDepthSampler, tcProj + tcRefractionOffset) * fFarPlaneScale;
+	float fZBufferRefrac = GetLinearDepthUnclamped(sceneLinearDepthTex, tcProj + tcRefractionOffset) * fFarPlaneScale;
 	tcProj += tcRefractionOffset * saturate(fZBufferRefrac - pPass.pCustom.fDepth);
 
 // Copy/pasted DOF blur code - This is too expensive for consoles...
@@ -681,10 +681,11 @@ technique General
 >
 {  
   pass p0
-  {   
+  {
     VertexShader = GlassVS() GlassVS;
     PixelShader = GlassPS() GlassPS;
-    
+    GeometryShader = $AutoGS_MultiRes();
+
     CullMode = Back;
     ZEnable = true;
     ZWriteEnable = false;  

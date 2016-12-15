@@ -5,7 +5,7 @@
 		"game_data_dir"       : "GameSDK",
 		"game_dll_filename"   : "CryGameSDK.dll",
 
-		"executable_name"     : "GameSDK",
+		"executable_name"     : "GameLauncher",
 
 		"product_name"        : "CRYENGINE SDK",
 
@@ -39,7 +39,7 @@
 		"game_data_dir"       : "GameZero",
 		"game_dll_filename"   : "CryGameZero.dll",
 
-		"executable_name"     : "GameZero",
+		"executable_name"     : "GameLauncher",
 
 		"product_name"        : "CRYENGINE SDK",
 
@@ -55,40 +55,6 @@
 			"version"           : "1.0.0.0",
 			"titleid"           :  "06BFF3BF",
 			"scid"              :  "84d70100-5e91-4cf0-bcc9-7b2f06bff3bf",
-			"appxmanifest"      : "AppxManifest.xml",
-			"logo"              : "DurangoLogo.png",
-			"small_logo"        : "DurangoSmallLogo.png",
-			"splash_screen"     : "DurangoSplashScreen.png",
-			"store_logo"        : "DurangoStoreLogo.png"
-		},
-
-		"orbis_settings" :
-		{
-			"data_folder"      : "/data/sdk/"
-		}
-	},
-	"GameMono" :
-	{
-		"code_folder"         : "Code/GameMono",
-		"game_data_dir"       : "GameMono",
-		"game_dll_filename"   : "CryGameMono.dll",
-
-		"executable_name"     : "GameMono",
-
-		"product_name"        : "CRYENGINE Mono",
-
-		"durango_settings" :
-		{
-			"app_id"            : "GameMono.app",
-			"package_name"      : "GameMono",
-			"display_name"      : "CRYENGINE Mono",
-			"publisher"         : "Crytek",
-			"description"       : "CRYENGINE Mono",
-			"foreground_text"   : "light",
-			"background_color"  : "#6495ED",
-			"version"           : "1.0.0.0",
-			"titleid"           : "06BFF3BF",
-			"scid"              : "84d70100-5e91-4cf0-bcc9-7b2f06bff3bf",
 			"appxmanifest"      : "AppxManifest.xml",
 			"logo"              : "DurangoLogo.png",
 			"small_logo"        : "DurangoSmallLogo.png",

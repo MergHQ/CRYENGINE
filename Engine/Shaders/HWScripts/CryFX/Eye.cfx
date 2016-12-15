@@ -318,7 +318,7 @@ void frag_custom_begin(inout fragPass pPass)
       #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
         pPass.fSceneDepthRT = GetDecodedSceneDepthMS(tcProj, GetMSAASampleNum(), pPass.IN.uSample );
       #else
-        pPass.fSceneDepthRT = DecodeSceneDepth(sceneDepthSampler, pPass.IN.screenProj.xyww);
+        pPass.fSceneDepthRT = GetLinearDepthScaledProj(sceneLinearDepthTex, pPass.IN.screenProj.xyww);
       #endif
 
 	pPass.cSpecularMap = half4(MatSpecColor.xyz, 1);
@@ -387,7 +387,7 @@ void frag_custom_per_light(inout fragPass pPass, inout fragLightPass pLight)
 	cSpecular *= fNdotL;
 #else
 	
-	half fNdotLVertex = dot(pLight.vLight, pPass.IN.vNormal);
+	half fNdotLVertex = dot(pLight.vLight, pPass.IN.vNormal.xyz);
 	half fNdotLCornea = dot(pLight.vLight, pPass.pCustom.vCorneaNormal);
 	
 	// Energy conserving wrap lighting for Iris SSS

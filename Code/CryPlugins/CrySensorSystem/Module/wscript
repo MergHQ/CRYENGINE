@@ -1,0 +1,16 @@
+#Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld) :
+
+	bld.CryEngineModule(
+	  target = 'CrySensorSystem',
+	  vs_filter = 'CryPlugins',
+	  file_list = 'crysensorsystem.waf_files',
+	  pch = 'StdAfx.cpp',
+	  includes = [
+			'.', 
+			Path('Code/CryEngine/CryCommon'),
+			Path('Code/CryEngine/CrySchematyc/Core/Interface'),
+			Path('Code/CryEngine/CrySchematyc/STDEnv/Interface')
+		]
+	  )

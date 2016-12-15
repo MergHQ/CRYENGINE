@@ -203,7 +203,7 @@ void CLTAGGrenade::HandleEvent(const SGameObjectEvent &event)
 	CProjectile::HandleEvent(event);
 
 	CActor* pStuckEntity =
-		static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(
+		static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(
 			m_stickyProjectile.GetStuckEntityId()));
 	if (pStuckEntity && pStuckEntity->IsDead())
 		m_enemyKilledByCollision = true;
@@ -411,12 +411,12 @@ void CLTAGGrenade::StateEnter(EState state)
 			{
 #if 0
 //			IEntity* pOwner = gEnv->pEntitySystem->GetEntity(m_ownerId);
-				EntityId clientActorId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+				EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
 				int clientActorTeam = g_pGame->GetGameRules()->GetTeam(clientActorId);
 				int ownerTeam = g_pGame->GetGameRules()->GetTeam(m_ownerId);
 #endif
 
-				CActor* clientActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+				CActor* clientActor = static_cast<CActor*>(gEnv->pGameFramework->GetClientActor());
 				
 				if (clientActor && clientActor->IsFriendlyEntity(m_ownerId))
 				{
@@ -511,7 +511,7 @@ void CLTAGGrenade::OnCollision(const SGameObjectEvent &event)
 	IEntity* pTargetEntity = pTarget ? gEnv->pEntitySystem->GetEntityFromPhysics(pTarget) : 0;
 	IActor* pHitActor =
 		pTargetEntity ?
-		(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pTargetEntity->GetId())) :
+		(gEnv->pGameFramework->GetIActorSystem()->GetActor(pTargetEntity->GetId())) :
 	0;
 
 	m_normal = pCollision->n;

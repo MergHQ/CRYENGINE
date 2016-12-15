@@ -5,76 +5,53 @@
 
 #pragma once
 
+#include <CryAISystem/NavigationSystem/MNMTile.h>
+
 #include "MNM.h"
 
 namespace MNM
 {
-struct Tile
+struct STile
 {
-	typedef uint16               Index;
-	typedef FixedVec3<uint16, 5> Vertex;
-	typedef FixedAABB<uint16, 5> AABB;
+	// #MNM_TODO pavloi 2016.07.22: CNavMesh is friend for time being, so I don't have to fix data access in lot's of places right now.
+	friend class CNavMesh;
 
-	struct Triangle
-	{
-		Triangle() {}
+	STile();
 
-		Index          vertex[3];      // Vertex index into Tile::vertices array
-		uint16         linkCount : 4;  // Total link count connected to this triangle (begins at 'firstLink')
-		uint16         firstLink : 12; // First link index into Tile::links array
-		StaticIslandID islandID;       // Island for this triangle
+	const Tile::STriangle* GetTriangles() const      { return triangles; }
+	const Tile::Vertex*    GetVertices() const       { return vertices; }
+	const Tile::SLink*     GetLinks() const          { return links; }
+	const Tile::SBVNode*   GetBVNodes() const        { return nodes; }
 
-		AUTO_STRUCT_INFO;
-	};
+	uint16                 GetTrianglesCount() const { return triangleCount; }
+	uint16                 GetVerticesCount() const  { return vertexCount; }
+	uint16                 GetLinksCount() const     { return linkCount; }
+	uint16                 GetBVNodesCount() const   { return nodeCount; }
 
-	struct BVNode
-	{
-		uint16 leaf   : 1;
-		uint16 offset : 15;
+	uint32                 GetHashValue() const      { return hashValue; }
 
-		AABB   aabb;
+	void                   GetTileData(Tile::STileData& outTileData) const;
 
-		AUTO_STRUCT_INFO;
-	};
+	void                   SetTriangles(std::unique_ptr<Tile::STriangle[]>&& pTriangles, uint16 count);
+	void                   SetVertices(std::unique_ptr<Tile::Vertex[]>&& pVertices, uint16 count);
+	void                   SetNodes(std::unique_ptr<Tile::SBVNode[]>&& pNodes, uint16 count);
+	void                   SetLinks(std::unique_ptr<Tile::SLink[]>&& pLinks, uint16 count);
 
-	struct Link
-	{
-		uint16 side     : 4;    // Side of the tile (cube) this link is associated with [0..13] or enumerated link type
-		                        // (See NeighbourOffset_MeshGrid and the enumeration below)
-		uint16 edge     : 2;    // Local edge index of the triangle this link is on [0..2]
-		                        // (NOTE: 'edge' is not used for off-mesh links)
-		uint16 triangle : 10;   // Index into Tile::triangles
-		                        // (NOTE: This bit count makes our max triangle count 1024)
-		                        // (NOTE: 'triangle' is re-purposed to be the index of the off-mesh index for off-mesh links)
+	void                   SetHashValue(uint32 value);
 
-		// This enumeration can be assigned to the 'side' variable
-		// which generally would index the 14 element array
-		// NeighbourOffset_MeshGrid, found in MeshGrid.cpp.
-		// If 'side' is found to be one of the values below,
-		// it will not be used as a lookup into the table but instead
-		// as a flag so we need to be sure these start after the final
-		// index and do not exceed the 'side' variable's bit count.
-		enum { OffMesh = 0xe, };    // A link to a nonadjacent triangle
-		enum { Internal = 0xf, };   // A link to an adjacent triangle (not exposed to the tile edge)
+	void                   CopyTriangles(const Tile::STriangle* triangles, uint16 count);
+	void                   CopyVertices(const Tile::Vertex* vertices, uint16 count);
+	void                   CopyNodes(const Tile::SBVNode* nodes, uint16 count);
+	void                   CopyLinks(const Tile::SLink* links, uint16 count);
 
-		AUTO_STRUCT_INFO;
-	};
+	void                   AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex);
+	void                   UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex);
+	void                   RemoveOffMeshLink(const TriangleID triangleID);
 
-	Tile();
+	void                   Swap(STile& other);
+	void                   Destroy();
 
-	void                  CopyTriangles(Triangle* triangles, uint16 count);
-	void                  CopyVertices(Vertex* vertices, uint16 count);
-	void                  CopyNodes(BVNode* nodes, uint16 count);
-	void                  CopyLinks(Link* links, uint16 count);
-
-	void                  AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex);
-	void                  UpdateOffMeshLink(const TriangleID triangleID, const uint16 offMeshIndex);
-	void                  RemoveOffMeshLink(const TriangleID triangleID);
-
-	void                  Swap(Tile& other);
-	void                  Destroy();
-
-	vector3_t::value_type GetTriangleArea(const TriangleID triangleID) const;
+	vector3_t::value_type  GetTriangleArea(const TriangleID triangleID) const;
 
 #if MNM_USE_EXPORT_INFORMATION
 	void        ResetConnectivity(uint8 accessible);
@@ -99,35 +76,47 @@ struct Tile
 
 	enum DrawFlags
 	{
-		DrawTriangles      = BIT(0),
-		DrawInternalLinks  = BIT(1),
-		DrawExternalLinks  = BIT(2),
-		DrawOffMeshLinks   = BIT(3),
-		DrawMeshBoundaries = BIT(4),
-		DrawBVTree         = BIT(5),
-		DrawAccessibility  = BIT(6),
-		DrawTrianglesId    = BIT(7),
-		DrawIslandsId      = BIT(8),
-		DrawAll            = ~0ul,
+		DrawTriangles         = BIT(0),
+		DrawInternalLinks     = BIT(1),
+		DrawExternalLinks     = BIT(2),
+		DrawOffMeshLinks      = BIT(3),
+		DrawMeshBoundaries    = BIT(4),
+		DrawBVTree            = BIT(5),
+		DrawAccessibility     = BIT(6),
+		DrawTrianglesId       = BIT(7),
+		DrawIslandsId         = BIT(8),
+		DrawTriangleBackfaces = BIT(9),
+		DrawAll               = ~0ul,
 	};
 
 	void Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::vector<float>& islandAreas) const;
 
-	Triangle* triangles;
-	Vertex*   vertices;
-	BVNode*   nodes;
-	Link*     links;
-
-	uint16    triangleCount;
-	uint16    vertexCount;
-	uint16    nodeCount;
-	uint16    linkCount;
-	uint32    hashValue;
+#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+	void ValidateTriangles() const;
+#else
+	void ValidateTriangles() const {}
+#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 private:
 	void ValidateTriangleLinks();
 #endif
+
+private:
+
+	// #MNM_TODO pavloi 2016.07.26: consider replacing with unique_ptr.
+	// Needs changes in TileContainerArray - it expects STile to be POD without destructor, so it can just memcpy it.
+	Tile::STriangle* triangles;
+	Tile::Vertex*    vertices;
+	Tile::SBVNode*   nodes;
+	Tile::SLink*     links;
+
+	uint16           triangleCount;
+	uint16           vertexCount;
+	uint16           nodeCount;
+	uint16           linkCount;
+
+	uint32           hashValue;
 
 #if MNM_USE_EXPORT_INFORMATION
 
@@ -152,35 +141,34 @@ private:
 	TileConnectivity connectivity;
 
 #endif
-
 };
 }
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 struct CompareLink
 {
-	CompareLink(const MNM::Tile::Link& link)
+	CompareLink(const MNM::Tile::SLink& link)
 	{
 		m_link.edge = link.edge;
 		m_link.side = link.side;
 		m_link.triangle = link.triangle;
 	}
 
-	bool operator()(const MNM::Tile::Link& other)
+	bool operator()(const MNM::Tile::SLink& other)
 	{
 		return m_link.edge == other.edge && m_link.side == other.side && m_link.triangle == other.triangle;
 	}
 
-	MNM::Tile::Link m_link;
+	MNM::Tile::SLink m_link;
 };
 
-inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::Link* start, const MNM::Tile::Link* end, const MNM::Tile::Link& linkToTest)
+inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::SLink* start, const MNM::Tile::SLink* end, const MNM::Tile::SLink& linkToTest)
 {
 	if (std::count_if(start, end, CompareLink(linkToTest)) > 1)
 		__debugbreak();
 }
 #else
-inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::Link* start, const MNM::Tile::Link* end, const MNM::Tile::Link& linkToTest)
+inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::SLink* start, const MNM::Tile::SLink* end, const MNM::Tile::SLink& linkToTest)
 {
 
 }

@@ -1,13 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CompileTimeUtils_h__
-#define __CompileTimeUtils_h__
-
 #pragma once
 
-#include <CryCore/MetaUtils.h>
-
-#define STATIC_ASSERT(condition, errMessage) static_assert(condition, errMessage)
+#include <type_traits>
 
 template<int left, int right> struct static_max
 {
@@ -60,27 +55,26 @@ public:
 	typedef                        int (alignment_type::* mptr);
 	typedef int (alignment_type::* mfptr)();
 
-	typedef typename metautils::select<SameAlignment<char>::value, char,
-	                                   typename metautils::select<SameAlignment<short>::value, short,
-	                                                              typename metautils::select<SameAlignment<int>::value, int,
-	                                                                                         typename metautils::select<SameAlignment<long>::value, long,
-	                                                                                                                    typename metautils::select<SameAlignment<long long>::value, long long,
-	                                                                                                                                               typename metautils::select<SameAlignment<float>::value, float,
-	                                                                                                                                                                          typename metautils::select<SameAlignment<double>::value, double,
-	                                                                                                                                                                                                     typename metautils::select<SameAlignment<long double>::value, long double,
-	                                                                                                                                                                                                                                typename metautils::select<SameAlignment<void*>::value, void*,
-	                                                                                                                                                                                                                                                           typename metautils::select<SameAlignment<mptr>::value, mptr,
-	                                                                                                                                                                                                                                                                                      typename metautils::select<SameAlignment<mfptr>::value, mfptr, char>::type
-	                                                                                                                                                                                                                                                                                      >::type
-	                                                                                                                                                                                                                                                           >::type
-	                                                                                                                                                                                                                                >::type
-	                                                                                                                                                                                                     >::type
-	                                                                                                                                                                          >::type
-	                                                                                                                                               >::type
-	                                                                                                                    >::type
-	                                                                                         >::type
-	                                                              >::type
-	                                   >::type type;
+	typedef typename std::conditional<SameAlignment<char>::value, char,
+		typename std::conditional<SameAlignment<short>::value, short,
+			typename std::conditional<SameAlignment<int>::value, int,
+				typename std::conditional<SameAlignment<long>::value, long,
+					typename std::conditional<SameAlignment<long long>::value, long long,
+						typename std::conditional<SameAlignment<float>::value, float,
+							typename std::conditional<SameAlignment<double>::value, double,
+								typename std::conditional<SameAlignment<long double>::value, long double,
+									typename std::conditional<SameAlignment<void*>::value, void*,
+										typename std::conditional<SameAlignment<mptr>::value, mptr,
+											typename std::conditional<SameAlignment<mfptr>::value, mfptr, char>::type>::type
+										>::type
+									>::type
+								>::type
+							>::type
+						>::type
+					>::type
+				>::type
+			>::type
+		>::type type;
 };
 
 //! aligned_buffer - declares a buffer with desired alignment and size
@@ -132,5 +126,3 @@ template<typename T1> struct SSameType<T1, T1>
 		value = true
 	};
 };
-
-#endif // __CompileTimeUtils_h__

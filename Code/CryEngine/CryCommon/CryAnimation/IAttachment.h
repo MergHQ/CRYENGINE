@@ -146,14 +146,14 @@ public:
 
 		// Stiffness and Elasticity
 		, stretchStiffness(1)
-		, shearStiffness(0.3)
-		, bendStiffness(0.3)
+		, shearStiffness(0.3f)
+		, bendStiffness(0.3f)
 		, bendStiffnessByTrianglesAngle(0)
 		, pullStiffness(0)
 
 		// Friction and Damping
-		, friction(0.01)
-		, rigidDamping(0.01)
+		, friction(0.01f)
+		, rigidDamping(0.01f)
 		, springDamping(0)
 		, springDampingPerSubstep(true)
 		, collisionDampingTangential(0)
@@ -490,7 +490,7 @@ struct IAttachmentSkin
 	virtual float             GetExtent(EGeomForm eForm) = 0;
 	virtual void              GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const = 0;
 	virtual void              GetMemoryUsage(class ICrySizer* pSizer) const = 0;
-	virtual void              ComputeGeometricMean(SMeshLodInfo& lodInfo) const = 0;
+	virtual SMeshLodInfo      ComputeGeometricMean() const = 0;
 	virtual ~IAttachmentSkin(){}
 	// </interfuscator:shuffle>
 

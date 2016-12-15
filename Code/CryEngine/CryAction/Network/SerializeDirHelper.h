@@ -18,7 +18,7 @@ static inline void SerializeDirHelper(TSerialize ser, Vec3& dir, int policyYaw, 
 		if (xy > 0.001f)
 		{
 			yaw = atan2_tpl(dir.y, dir.x);
-			elev = asin_tpl(clamp_tpl(dir.z, -1.f, +1.f));
+			elev = asin_tpl(dir.z);
 		}
 		else
 		{
@@ -55,7 +55,7 @@ static inline void SerializeDirHelper(CBitArray& array, Vec3& dir, int nYawBits,
 		if (xy > 0.001f)
 		{
 			yaw = atan2_tpl(dir.y, dir.x);
-			elev = asin_tpl(clamp_tpl(dir.z, -1.f, +1.f));
+			elev = asin_tpl(dir.z);
 		}
 		else
 		{

@@ -16,6 +16,7 @@
 #include "VolumetricFog.h"
 #include "Fog.h"
 #include "VolumetricClouds.h"
+#include "Water.h"
 #include "MotionBlur.h"
 #include "DepthOfField.h"
 #include "SunShafts.h"
@@ -28,6 +29,7 @@
 #include "TiledShading.h"
 #include "ColorGrading.h"
 #include "WaterRipples.h"
+#include "LensOptics.h"
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -48,7 +50,10 @@ CStandardGraphicsPipeline::SViewInfo::SViewInfo()
 	, cameraProjMatrix(IDENTITY)
 	, cameraProjNearestMatrix(IDENTITY)
 	, projMatrix(IDENTITY)
+	, viewMatrix(IDENTITY)
 	, invCameraProjMatrix(IDENTITY)
+	, invViewMatrix(IDENTITY)
+	, prevCameraMatrix(IDENTITY)
 	, prevCameraProjMatrix(IDENTITY)
 	, prevCameraProjNearestMatrix(IDENTITY)
 	, downscaleFactor(1)
@@ -132,9 +137,14 @@ void CStandardGraphicsPipeline::SViewInfo::SetLegacyCamera(CD3D9Renderer* pRende
 	cameraProjZeroMatrix = pRenderer->m_CameraProjZeroMatrix;
 	cameraProjMatrix = pRenderer->m_CameraProjMatrix;
 	projMatrix = pRenderer->m_ProjMatrix;
+	viewMatrix = pRenderer->m_ViewMatrix;
+	Matrix44_tpl<f64> invView64;
+	mathMatrixLookAtInverse(&invView64, &viewMatrix);
+	invViewMatrix = invView64;
 	invCameraProjMatrix = pRenderer->m_InvCameraProjMatrix;
 	cameraProjNearestMatrix = pRenderer->m_CameraZeroMatrix * nearestProj;
 
+	prevCameraMatrix = previousFrameCameraMatrix;
 	prevCameraProjMatrix = previousFrameCameraMatrix * pRenderer->m_ProjMatrix;
 	prevCameraProjNearestMatrix = previousFrameCameraMatrix;
 	prevCameraProjNearestMatrix.SetRow(3, Vec3(ZERO));
@@ -240,7 +250,7 @@ void CStandardGraphicsPipeline::Init()
 	}
 
 	// per view constant buffer
-	m_pPerViewConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer)));
+	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 
 	// Register scene stages that make use of the global PSO cache
 	RegisterSceneStage<CShadowMapStage, eStage_ShadowMap>(m_pShadowMapStage);
@@ -256,6 +266,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CVolumetricFogStage>(m_pVolumetricFogStage, eStage_VolumetricFog);
 	RegisterStage<CFogStage>(m_pFogStage, eStage_Fog);
 	RegisterStage<CVolumetricCloudsStage>(m_pVolumetricCloudsStage, eStage_VolumetricClouds);
+	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CWaterRipplesStage>(m_pWaterRipplesStage, eStage_WaterRipples);
 	RegisterStage<CMotionBlurStage>(m_pMotionBlurStage, eStage_MotionBlur);
 	RegisterStage<CDepthOfFieldStage>(m_pDepthOfFieldStage, eStage_DepthOfField);
@@ -270,6 +281,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CShadowMaskStage>(m_pShadowMaskStage, eStage_ShadowMask);
 	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
 	RegisterStage<CColorGradingStage>(m_pColorGradingStage, eStage_ColorGrading);
+	RegisterStage<CLensOpticsStage>(m_pLensOpticsStage, eStage_LensOptics);
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
@@ -305,6 +317,12 @@ bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* 
 		bFullyCompiled &= m_pShadowMapStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
 	}
 
+	// Forward
+	{
+		stateDesc.technique = TTYPE_GENERAL;
+		bFullyCompiled &= m_pSceneForwardStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+
 	// Custom
 	{
 		stateDesc.technique = TTYPE_DEBUG;
@@ -334,7 +352,36 @@ void CStandardGraphicsPipeline::ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDe
 	}
 }
 
-int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo viewInfo[2], const RECT* pCustomViewport)
+int CStandardGraphicsPipeline::GetViewInfoCount() const
+{
+	int viewInfoCount = 0;
+
+	if (m_pCurrentRenderView) // called from within CStandardGraphicsPipeline::Execute() scope => use renderview cameras
+	{
+		for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
+		{
+			uint32 renderingFlags = m_renderingFlags;
+
+			if ((renderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == 0) // non-stereo case
+				renderingFlags |= SHDF_STEREO_LEFT_EYE;
+
+			uint32 currentEyeFlag = eye == CCamera::eEye_Left ? SHDF_STEREO_LEFT_EYE : SHDF_STEREO_RIGHT_EYE;
+
+			if (renderingFlags & currentEyeFlag)
+			{
+				++viewInfoCount;
+			}
+		}
+	}
+	else
+	{
+		++viewInfoCount;
+	}
+
+	return viewInfoCount;
+}
+
+int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo viewInfo[2], const D3DViewPort* pCustomViewport)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
@@ -342,17 +389,17 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 	SViewInfo::eFlags viewFlags = SViewInfo::eFlags_None;
 	if (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) viewFlags |= SViewInfo::eFlags_ReverseDepth;
 	if (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_MIRRORCULL)    viewFlags |= SViewInfo::eFlags_MirrorCull;
-	if (!(rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & (RBPF_DRAWTOTEXTURE | RBPF_SHADOWGEN)) && !(rp.m_PersFlags2 & RBPF2_NOPOSTAA))
+	if (!(rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_DRAWTOTEXTURE) && !(rp.m_PersFlags2 & RBPF2_NOPOSTAA))
 		viewFlags |= SViewInfo::eFlags_SubpixelShift;
 
 	SViewport viewport = pRenderer->GetViewport();
 
 	if (pCustomViewport)
 	{
-		viewport.nX = pCustomViewport->left;
-		viewport.nY = pCustomViewport->top;
-		viewport.nWidth = pCustomViewport->right - pCustomViewport->left;
-		viewport.nHeight = pCustomViewport->bottom - pCustomViewport->top;
+		viewport.nX = int(pCustomViewport->TopLeftX);
+		viewport.nY = int(pCustomViewport->TopLeftY);
+		viewport.nWidth = int(pCustomViewport->Width);
+		viewport.nHeight = int(pCustomViewport->Height);
 	}
 
 	int viewInfoCount = 0;
@@ -391,19 +438,7 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 		viewInfo[viewInfoCount].SetLegacyCamera(pRenderer, pRenderer->GetPreviousFrameCameraMatrix());
 		viewInfo[viewInfoCount].viewport = viewport;
 		viewInfo[viewInfoCount].downscaleFactor = Vec4(rp.m_CurDownscaleFactor.x, rp.m_CurDownscaleFactor.y, pRenderer->m_PrevViewportScale.x, pRenderer->m_PrevViewportScale.y);
-
-		if (rp.m_ShadowInfo.m_pCurShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-		{
-			const SRenderPipeline::ShadowInfo& shadowInfo = rp.m_ShadowInfo;
-			assert(shadowInfo.m_nOmniLightSide >= 0 && shadowInfo.m_nOmniLightSide < OMNI_SIDES_NUM);
-
-			CCamera& cam = shadowInfo.m_pCurShadowFrustum->FrustumPlanes[shadowInfo.m_nOmniLightSide];
-			viewInfo[viewInfoCount].pFrustumPlanes = cam.GetFrustumPlane(0);
-		}
-		else
-		{
-			viewInfo[viewInfoCount].pFrustumPlanes = pRenderer->GetCamera().GetFrustumPlane(0);
-		}
+		viewInfo[viewInfoCount].pFrustumPlanes = pRenderer->GetCamera().GetFrustumPlane(0);
 
 		++viewInfoCount;
 	}
@@ -411,7 +446,7 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 	return viewInfoCount;
 }
 
-void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const RECT* pCustomViewport)
+void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const D3DViewPort* pCustomViewport)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
@@ -440,7 +475,6 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 
 		const float time = rp.m_TI[rp.m_nProcessThreadID].m_RealTime;
 		const bool bReverseDepth = (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
-		const bool bMirrorCull = (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_MirrorCull) != 0;
 
 		cb.CV_HPosScale = viewInfo.downscaleFactor;
 		cb.CV_ScreenSize = Vec4(float(viewInfo.viewport.nWidth),
@@ -466,12 +500,9 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_ScreenToWorldBasis.SetColumn(2, Vec3r(vWBasisZ));
 		cb.CV_ScreenToWorldBasis.SetColumn(3, viewInfo.pRenderCamera->vOrigin);
 
-		Vec3 sunColor, skyColor;
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_COLOR, skyColor);
-		cb.CV_SunLightDir = Vec4(rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0, 0, 0), 1.0f);
-		cb.CV_SunColor = Vec4(sunColor, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
-		cb.CV_SkyColor = Vec4(skyColor, 1.0f);
+		cb.CV_SunLightDir = Vec4(perFrameConstants.pSunDirection, 1.0f);
+		cb.CV_SunColor = Vec4(perFrameConstants.pSunColor, perFrameConstants.sunSpecularMultiplier);
+		cb.CV_SkyColor = Vec4(perFrameConstants.pSkyColor, 1.0f);
 		cb.CV_FogColor = Vec4(rp.m_TI[rp.m_nProcessThreadID].m_FS.m_CurColor.toVec3(), perFrameConstants.pVolumetricFogParams.z);
 		cb.CV_TerrainInfo = Vec4(gEnv->p3DEngine->GetTerrainTextureMultiplier(), 0, 0, 0);
 
@@ -534,20 +565,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_FrustumPlaneEquation.SetRow4(2, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_TOP]);
 		cb.CV_FrustumPlaneEquation.SetRow4(3, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_BOTTOM]);
 
-		// Shadow specific
-		{
-			const ShadowMapFrustum* pShadowFrustum = rp.m_ShadowInfo.m_pCurShadowFrustum;
-			if (pShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-			{
-				cb.CV_ShadowLightPos = Vec4(pShadowFrustum->vLightSrcRelPos + pShadowFrustum->vProjTranslation, 0);
-				cb.CV_ShadowViewPos = Vec4(rp.m_ShadowInfo.vViewerPos, 0);
-			}
-			else
-			{
-				cb.CV_ShadowLightPos = Vec4(0, 0, 0, 0);
-				cb.CV_ShadowViewPos = Vec4(0, 0, 0, 0);
-			}
-		}
+
 		if (gRenDev->m_pCurWindGrid)
 		{
 			float fSizeWH = (float)gRenDev->m_pCurWindGrid->m_nWidth * gRenDev->m_pCurWindGrid->m_fCellSize * 0.5f;
@@ -556,7 +574,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		}
 	}
 
-	pPerViewBuffer->UpdateBuffer(&bufferData[0], sizeof(HLSL_PerViewGlobalConstantBuffer), viewInfoCount);
+	pPerViewBuffer->UpdateBuffer(&bufferData[0], sizeof(HLSL_PerViewGlobalConstantBuffer), 0, viewInfoCount);
 }
 
 bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc)
@@ -647,6 +665,8 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
 	}
 
+	psoDesc.m_ShaderFlags_RT |= CVrProjectionManager::Instance()->GetRTFlags();
+
 	return true;
 }
 
@@ -674,6 +694,7 @@ void CStandardGraphicsPipeline::SwitchToLegacyPipeline()
 	CHWShader::s_pCurDS = nullptr;
 	CHWShader::s_pCurHS = nullptr;
 	CHWShader::s_pCurCS = nullptr;
+	CHWShader_D3D::s_nActivationFailMask = 0;
 
 	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 
@@ -694,6 +715,8 @@ void CStandardGraphicsPipeline::SwitchToLegacyPipeline()
 
 void CStandardGraphicsPipeline::SwitchFromLegacyPipeline()
 {
+	CHWShader_D3D::s_nActivationFailMask = 0;
+
 	CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 }
 
@@ -702,14 +725,14 @@ std::array<int, EFSS_MAX> CStandardGraphicsPipeline::GetDefaultMaterialSamplers(
 	std::array<int, EFSS_MAX> result =
 	{
 		{
-			gcpRendD3D->m_nMaterialAnisoHighSampler,                                                             // EFSS_ANISO_HIGH
-			gcpRendD3D->m_nMaterialAnisoLowSampler,                                                              // EFSS_ANISO_LOW
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),         // EFSS_TRILINEAR
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),          // EFSS_BILINEAR
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),      // EFSS_TRILINEAR_CLAMP
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),       // EFSS_BILINEAR_CLAMP
-			gcpRendD3D->m_nMaterialAnisoSamplerBorder,                                                           // EFSS_ANISO_HIGH_BORDER
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0)),   // EFSS_TRILINEAR_BORDER
+			gcpRendD3D->m_nMaterialAnisoHighSampler,   // EFSS_ANISO_HIGH
+			gcpRendD3D->m_nMaterialAnisoLowSampler,    // EFSS_ANISO_LOW
+			gcpRendD3D->m_nTrilinearWrapSampler,       // EFSS_TRILINEAR
+			gcpRendD3D->m_nBilinearWrapSampler,        // EFSS_BILINEAR
+			gcpRendD3D->m_nTrilinearClampSampler,      // EFSS_TRILINEAR_CLAMP
+			gcpRendD3D->m_nBilinearClampSampler,       // EFSS_BILINEAR_CLAMP
+			gcpRendD3D->m_nMaterialAnisoSamplerBorder, // EFSS_ANISO_HIGH_BORDER
+			gcpRendD3D->m_nTrilinearBorderSampler,     // EFSS_TRILINEAR_BORDER
 		}
 	};
 
@@ -809,7 +832,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		if (!m_bUtilityPassesInitialized) s_passStableDownsample = CreateStaticUtilityPass<CStableDownsamplePass>();
 		if (!m_bUtilityPassesInitialized) s_passSimpleDownsample = CreateStaticUtilityPass<CStretchRectPass>();
 
-		if (CRenderer::CV_r_HDRBloomQuality > 0)
+		if (CRenderer::CV_r_HDRBloomQuality > 1)
 			s_passStableDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
 		else
 			s_passSimpleDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0]);
@@ -837,36 +860,10 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	m_pBloomStage->Execute();
 
 	// Lens optics
+	if (CRenderer::CV_r_flares && !CRenderer::CV_r_durango_async_dips)
 	{
-		pRenderer->m_RP.m_PersFlags2 &= ~RBPF2_LENS_OPTICS_COMPOSITE;
-		if (CRenderer::CV_r_flares)
-		{
-			const uint32 nBatchMask = SRendItem::BatchFlags(EFSLIST_LENSOPTICS);
-			if (nBatchMask & (FB_GENERAL | FB_TRANSPARENT))
-			{
-				PROFILE_LABEL_SCOPE("LENS_OPTICS");
-
-				SwitchToLegacyPipeline();
-
-				CTexture* pLensOpticsComposite = CTexture::s_ptexSceneTargetR11G11B10F[0];
-				pRenderer->FX_ClearTarget(pLensOpticsComposite, Clr_Transparent);
-				pRenderer->FX_PushRenderTarget(0, pLensOpticsComposite, 0);
-
-				pRenderer->m_RP.m_PersFlags2 |= RBPF2_NOPOSTAA | RBPF2_LENS_OPTICS_COMPOSITE;
-
-				GetUtils().Log(" +++ Begin lens-optics scene +++ \n");
-				pRenderer->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_GENERAL);
-				pRenderer->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_TRANSPARENT);
-				pRenderer->FX_ResetPipe();
-				GetUtils().Log(" +++ End lens-optics scene +++ \n");
-
-				pRenderer->FX_SetActiveRenderTargets();
-				pRenderer->FX_PopRenderTarget(0);
-				pRenderer->FX_SetActiveRenderTargets();
-
-				SwitchFromLegacyPipeline();
-			}
-		}
+		PROFILE_LABEL_SCOPE("LENS_OPTICS");
+		m_pLensOpticsStage->Execute(m_pCurrentRenderView);
 	}
 
 	m_pSunShaftsStage->Execute();
@@ -883,11 +880,14 @@ void CStandardGraphicsPipeline::Execute()
 
 	pRenderer->RT_SetCameraInfo();
 
-	m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
-	SwitchToLegacyPipeline();
-	pRenderer->FX_DeferredRainPreprocess();
-	m_pComputeSkinningStage->Execute(m_pCurrentRenderView);
-	SwitchFromLegacyPipeline();
+	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
+	{
+		m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
+		SwitchToLegacyPipeline();
+		pRenderer->FX_DeferredRainPreprocess();
+		m_pComputeSkinningStage->Execute(m_pCurrentRenderView);
+		SwitchFromLegacyPipeline();
+	}
 
 	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
 
@@ -899,9 +899,7 @@ void CStandardGraphicsPipeline::Execute()
 
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{
-		SwitchToLegacyPipeline();
 		m_pShadowMapStage->Prepare(m_pCurrentRenderView);
-		SwitchFromLegacyPipeline();
 	}
 
 	if (pRenderer->m_nGraphicsPipeline >= 2)
@@ -927,6 +925,9 @@ void CStandardGraphicsPipeline::Execute()
 	}
 
 	m_pSceneGBufferStage->ExecuteLinearizeDepth();
+
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		CVrProjectionManager::Instance()->ExecuteFlattenDepth(CTexture::s_ptexZTarget, CVrProjectionManager::Instance()->GetZTargetFlattened());
 
 	// Depth downsampling
 	{
@@ -977,8 +978,9 @@ void CStandardGraphicsPipeline::Execute()
 		pRenderer->FX_DeferredSnowLayer();
 	}
 
-	// Generate cloud volume textures for shadow mapping.
 	SwitchFromLegacyPipeline();
+
+	// Generate cloud volume textures for shadow mapping.
 	m_pVolumetricCloudsStage->ExecuteShadowGen();
 
 	// SVOGI
@@ -1013,6 +1015,9 @@ void CStandardGraphicsPipeline::Execute()
 	// Screen Space Obscurance
 	m_pScreenSpaceObscuranceStage->Execute(pHeightMapFrustum, pHeightMapAOScreenDepthTex, pHeightMapAOTex);
 
+	// Water volume caustics
+	m_pWaterStage->ExecuteWaterVolumeCaustics();
+
 	pRenderer->m_RP.m_PersFlags2 |= RBPF2_NOSHADERFOG;
 
 	// Deferred shading
@@ -1035,13 +1040,10 @@ void CStandardGraphicsPipeline::Execute()
 	// Opaque forward passes
 	m_pSceneForwardStage->Execute_Opaque();
 
-	// Deferred water caustics
-	{
-		pRenderer->FX_ResetPipe();
-		pRenderer->FX_DeferredCaustics();
-	}
-
 	SwitchFromLegacyPipeline();
+
+	// Deferred ocean caustics
+	m_pWaterStage->ExecuteDeferredOceanCaustics();
 
 	// Fog
 	{
@@ -1057,20 +1059,26 @@ void CStandardGraphicsPipeline::Execute()
 		m_pVolumetricCloudsStage->Execute();
 	}
 
-	SwitchToLegacyPipeline();
-
-	// Water volumes
+	// Water fog volumes
 	{
-		pRenderer->FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, pRenderFunc, false);
+		m_pWaterStage->ExecuteWaterFogVolumeBeforeTransparent();
 	}
 
 	pRenderer->UpdatePrevMatrix(true);
 
+	SwitchToLegacyPipeline();
+
 	// Transparent (below water)
 	m_pSceneForwardStage->Execute_TransparentBelowWater();
 
+	SwitchFromLegacyPipeline();
+
 	// Ocean and water volumes
-	pRenderer->FX_RenderWater(pRenderFunc);
+	{
+		m_pWaterStage->Execute();
+	}
+
+	SwitchToLegacyPipeline();
 
 	// Transparent (above water)
 	m_pSceneForwardStage->Execute_TransparentAboveWater();
@@ -1099,7 +1107,10 @@ void CStandardGraphicsPipeline::Execute()
 		//pRenderer->EF_ClearTargetsLater(0);
 	}
 
-	m_pGpuParticlesStage->PostDraw(m_pCurrentRenderView);
+	if (pRenderer->m_CurRenderEye == RIGHT_EYE || !pRenderer->GetS3DRend().IsStereoEnabled() || !pRenderer->GetS3DRend().RequiresSequentialSubmission())
+	{
+		m_pGpuParticlesStage->PostDraw(m_pCurrentRenderView);
+	}
 
 	if (!(pRenderer->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN))
 	{

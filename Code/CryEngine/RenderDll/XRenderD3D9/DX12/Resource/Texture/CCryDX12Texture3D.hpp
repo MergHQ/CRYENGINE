@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12Resource.hpp"
 
-class CCryDX12Texture3D : public CCryDX12Resource<ID3D11Texture3D>
+class CCryDX12Texture3D : public CCryDX12Resource<ID3D11Texture3DToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12Texture3D, CCryDX12Resource<ID3D11Texture3D> );
+	DX12_OBJECT(CCryDX12Texture3D, CCryDX12Resource<ID3D11Texture3DToImplement> );
 
 	static CCryDX12Texture3D* Create(CCryDX12Device* pDevice);
 	static CCryDX12Texture3D* Create(CCryDX12Device* pDevice, CCryDX12SwapChain* pSwapChain, ID3D12Resource* pResource);

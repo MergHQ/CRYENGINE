@@ -125,11 +125,11 @@ namespace TurretBehaviorStateNames
 
 	ETurretBehaviorState FindId( const char* const name )
 	{
-		STATIC_ASSERT( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
-		STATIC_ASSERT( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Count == 4, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Undeployed == 0, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_PartiallyDeployed == 1, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Deployed == 2, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
+		static_assert( eTurretBehaviorState_Dead == 3, "Mismatch between g_turretStateNames and ETurretBehaviorState" );
 
 		for ( size_t i = 0; i < eTurretBehaviorState_Count; ++i )
 		{
@@ -274,7 +274,6 @@ void CTurret::PostInit( IGameObject* pGameObject )
 {
 	const bool runningUnderEditor = gEnv->IsEditor();
 	const bool enteringGameMode = ( ! runningUnderEditor );
-	RegisterEvent( ENTITY_EVENT_PREPHYSICSUPDATE,  IComponent::EComponentFlags_Enable );
 	Reset( enteringGameMode );
 }
 
@@ -974,7 +973,7 @@ void CTurret::InitActionController()
 
 	InitMannequinUserParams();
 
-	const ActionScopes scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
+	const TagID scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
 	ICharacterInstance* const pCharacterInstance = pEntity->GetCharacter( DEFAULT_TURRET_MODEL_SLOT );
 	if ( pCharacterInstance == NULL )
 	{
@@ -2608,12 +2607,12 @@ void CTurret::InitTurretSoundManager()
 	m_pSoundManager.reset();
 
 	IEntity* const pEntity = GetEntity();
-	IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
 	ICharacterInstance* const pCharacterInstance = pEntity->GetCharacter( DEFAULT_TURRET_MODEL_SLOT );
 
 	SmartScriptTable pSoundTable = GetSubPropertiesTable( pEntity, "Sound" );
-	m_pSoundManager.reset( new CTurretSoundManager( pSoundTable, pCharacterInstance, pIEntityAudioProxy ) );
+	m_pSoundManager.reset( new CTurretSoundManager( pSoundTable, pCharacterInstance, pIEntityAudioComponent ) );
 }
 
 
@@ -2654,7 +2653,7 @@ void CTurret::NotifyCancelPreparingToFire()
 	m_pSoundManager->NotifyCancelPreparingToFire();
 }
 
-IComponent::ComponentEventPriority CTurret::GetEventPriority(const int eventID) const
+IEntityComponent::ComponentEventPriority CTurret::GetEventPriority(const int eventID) const
 {
 	return ENTITY_PROXY_USER;
 }

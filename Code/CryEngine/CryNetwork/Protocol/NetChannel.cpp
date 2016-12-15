@@ -70,7 +70,7 @@ CNetChannel::CNetChannel(const TNetAddress& ipRemote, const CExponentialKeyExcha
 	m_bForcePacketSend(true),
 	m_sentDisconnect(false),
 	m_gotFakePacket(false),
-	m_isLocal((boost::get<TLocalNetAddress>(&m_ip)) ? true : false),
+	m_isLocal((stl::get_if<TLocalNetAddress>(&m_ip)) ? true : false),
 	m_gameHasRequestedUpdate(false),
 	m_bIsMigratingChannel(false)
 #if ENABLE_URGENT_RMIS
@@ -158,7 +158,7 @@ bool CNetChannel::GetRemoteNetAddress(uint32& uip, uint16& port, bool firstLocal
 		TNetAddressVec addrv;
 		GetLocalIPs(addrv);
 		for (uint32 i = 0; i < addrv.size(); i++)
-			if (boost::get<SIPv4Addr>(&addrv[i]))
+			if (stl::get_if<SIPv4Addr>(&addrv[i]))
 			{
 				ip = addrv[i];
 				if (firstLocal)
@@ -167,7 +167,7 @@ bool CNetChannel::GetRemoteNetAddress(uint32& uip, uint16& port, bool firstLocal
 	}
 
 	CRYSOCKADDR_IN addr;
-	if (const SIPv4Addr* adr = boost::get<const SIPv4Addr>(&ip))
+	if (const SIPv4Addr* adr = stl::get_if<SIPv4Addr>(&ip))
 	{
 		ConvertAddr(TNetAddress(*adr), &addr);
 		uip = S_ADDR_IP4(addr);
@@ -1352,7 +1352,7 @@ void CNetChannel::GC_AddPingReadout(float elapsedRemote, float sinceSent, float 
 
 	if (!m_pDebugHistory)
 	{
-		m_pDebugHistory = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+		m_pDebugHistory = gEnv->pGameFramework->CreateDebugHistoryManager();
 	}
 
 	if (!m_pElapsedRemote)

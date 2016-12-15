@@ -174,15 +174,15 @@ void CVehicleDamageBehaviorIndicator::Update(const float deltaTime)
 			REINST("report damage ratio?");
 			//      if (!m_sound.empty() && m_currentDamageRatio >= m_soundRatioMin)
 			//      {
-			//        IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
-			//        if (pIEntityAudioProxy)
+			//        IEntityAudioComponent* pIEntityAudioComponent = m_pVehicle->GetEntity()->GetComponent<IEntityAudioComponent>();
+			//        if (pIEntityAudioComponent)
 			//        {
 			//          if (m_lastDamageRatio != m_currentDamageRatio)
 			//            m_soundsPlayed = 0;
 			//          else
 			//            ++m_soundsPlayed;
 			//
-			//          /*if (ISound* pSound = pIEntityAudioProxy->GetSound(m_soundId))
+			//          /*if (ISound* pSound = pIEntityAudioComponent->GetSound(m_soundId))
 			//          {
 			//            if (pSound->IsPlaying())
 			//              pSound->Stop();
@@ -193,7 +193,7 @@ void CVehicleDamageBehaviorIndicator::Update(const float deltaTime)
 			//          if (m_pHelper)
 			//						offset = m_pHelper->GetVehicleSpaceTranslation();
 			//
-			//         m_soundId = pIEntityAudioProxy->PlaySound(m_sound.c_str(), offset, Vec3Constants<float>::fVec3_OneY, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
+			//         m_soundId = pIEntityAudioComponent->PlaySound(m_sound.c_str(), offset, Vec3Constants<float>::fVec3_OneY, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);
 			//
 			//          const int nSoundsMaxVol = 6;
 			//          const int nSoundsMinVol = 10;
@@ -202,7 +202,7 @@ void CVehicleDamageBehaviorIndicator::Update(const float deltaTime)
 			//          if (m_soundsPlayed > nSoundsMaxVol)
 			//          {
 			//            // reduce volume after n sounds
-			//            if (ISound* pSound = pIEntityAudioProxy->GetSound(m_soundId))
+			//            if (ISound* pSound = pIEntityAudioComponent->GetSound(m_soundId))
 			//            {
 			//              float vol = 1.f - 0.5f*min(1.f, float(m_soundsPlayed-nSoundsMaxVol)/float(nSoundsMinVol-nSoundsMaxVol));
 			//              pSound->GetInterfaceExtended()->SetVolume(vol);
@@ -220,11 +220,11 @@ void CVehicleDamageBehaviorIndicator::GetMaterial()
 {
 	if (!m_material.empty())
 	{
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = m_pVehicle->GetEntity()->GetRenderInterface();
+		
 		{
 			// use slot 0 here. if necessary, part can be added as attribute
-			IMaterial* pMtl = pRenderProxy->GetRenderMaterial(0);
+			IMaterial* pMtl = pIEntityRender->GetRenderMaterial(0);
 			if (pMtl)
 			{
 				for (int i = 0; i < pMtl->GetSubMtlCount(); ++i)

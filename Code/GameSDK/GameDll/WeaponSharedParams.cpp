@@ -1249,7 +1249,7 @@ void SPickAndThrowParams::SGrabTypeParams::CacheResources()
 {
 	if (!dbaFile.empty())
 	{
-		IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 		mannequinSys.GetAnimationDatabaseManager().Load(dbaFile.c_str());
 	}
 }

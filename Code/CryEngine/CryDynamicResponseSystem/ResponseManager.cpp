@@ -68,8 +68,7 @@ bool Serialize(Serialization::IArchive& ar, ResponsePairSorted& pair, const char
 //--------------------------------------------------------------------------------------------------
 CResponseManager::CResponseManager()
 {
-	m_bCurrentlyUpdating = false;
-	m_UsedFileFormat = CResponseManager::eUFF_JSON;
+	m_usedFileFormat = CResponseManager::eUFF_JSON;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -105,15 +104,15 @@ bool CResponseManager::_LoadFromFiles(const string& dataPath)
 				else
 				{
 					s_currentFilePath = dataPath + sName;
-					if (m_UsedFileFormat == eUFF_JSON)
+					if (m_usedFileFormat == eUFF_JSON)
 					{
 						Serialization::LoadJsonFile(*this, s_currentFilePath);
 					}
-					else if (m_UsedFileFormat == eUFF_XML)
+					else if (m_usedFileFormat == eUFF_XML)
 					{
 						Serialization::LoadXmlFile(*this, s_currentFilePath);
 					}
-					else if (m_UsedFileFormat == eUFF_BIN)
+					else if (m_usedFileFormat == eUFF_BIN)
 					{
 						Serialization::LoadBinaryFile(*this, s_currentFilePath);
 					}
@@ -143,17 +142,17 @@ bool CResponseManager::SaveToFiles(const char* szDataPath)
 	const string outFolder = szDataPath;
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
-		if (m_UsedFileFormat == eUFF_JSON)
+		if (m_usedFileFormat == eUFF_JSON)
 		{
 			string outfile = outFolder + it->first.GetText() + ".response";
 			Serialization::SaveJsonFile(outfile, Serialization::SStruct(*it->second));
 		}
-		else if (m_UsedFileFormat == eUFF_XML)
+		else if (m_usedFileFormat == eUFF_XML)
 		{
 			string outfile = outFolder + it->first.GetText() + ".xml";
 			Serialization::SaveXmlFile(outfile, Serialization::SStruct(*it->second), "responses");
 		}
-		else if (m_UsedFileFormat == eUFF_BIN)
+		else if (m_usedFileFormat == eUFF_BIN)
 		{
 			string outfile = outFolder + it->first.GetText() + ".bin";
 			Serialization::SaveBinaryFile(outfile, Serialization::SStruct(*it->second));
@@ -167,54 +166,46 @@ void CResponseManager::QueueSignal(const SSignal& signal)
 {
 	DRS_DEBUG_DATA_ACTION(AddSignalFired(signal.m_signalName.GetText(), (signal.m_pSender) ? signal.m_pSender->GetName().GetText() : "no sender", (signal.m_pSignalContext) ? signal.m_pSignalContext->GetVariablesAsString() : "(no context variables)"));
 
-	if (!m_bCurrentlyUpdating)
-	{
-		m_currentlyQueuedSignals.push_back(signal);
-	}
-	else
-	{
-		m_currentlyQueuedSignalsDuringUpdate.push_back(signal);
-	}
+	m_currentlyQueuedSignals.push_back(signal);
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseManager::CancelSignalProcessing(const SSignal& signal)
+bool CResponseManager::CancelSignalProcessing(const SSignal& signalToCancel)
 {
-	m_currentlySignalsWaitingToBeCanceled.push_back(signal);
+	bool bSomethingCanceled = false;
+	for (CResponseInstance* runningResponse : m_runningResponses)
+	{
+		if ((runningResponse->GetOriginalSender() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr)
+		    && (runningResponse->GetSignalName() == signalToCancel.m_signalName || !signalToCancel.m_signalName.IsValid())
+		    && (runningResponse->GetSignalInstanceId() != signalToCancel.m_id))
+		{
+			runningResponse->Cancel();
+			bSomethingCanceled = true;
+		}
+	}
+
+	for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
+	{
+		SSignal& currentSignal = *itQueued;
+		if ((currentSignal.m_pSender == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr)
+		    && currentSignal.m_signalName == signalToCancel.m_signalName)
+		{
+			InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
+			itQueued = m_currentlyQueuedSignals.erase(itQueued);
+			bSomethingCanceled = true;
+		}
+		else
+		{
+			++itQueued;
+		}
+	}
+	return bSomethingCanceled;
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::Update()
 {
 	float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
-
-	for (SignalList::iterator itToCancel = m_currentlySignalsWaitingToBeCanceled.begin(); itToCancel != m_currentlySignalsWaitingToBeCanceled.end(); )
-	{
-		SSignal& signalToCancel = *itToCancel;
-		for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
-		{
-			SSignal& currentSignal = *itQueued;
-			if ((currentSignal.m_pSender == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && currentSignal.m_signalName == signalToCancel.m_signalName)
-			{
-				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
-				itQueued = m_currentlyQueuedSignals.erase(itQueued);
-			}
-			else
-			{
-				++itQueued;
-			}
-		}
-
-		for (CResponseInstance* runningResponse : m_runningResponses)
-		{
-			if ((runningResponse->GetCurrentActor() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && runningResponse->GetSignalName() == signalToCancel.m_signalName)
-			{
-				runningResponse->Cancel();
-			}
-		}
-
-		itToCancel = m_currentlySignalsWaitingToBeCanceled.erase(itToCancel);
-	}
 
 	for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); )
 	{
@@ -230,44 +221,33 @@ void CResponseManager::Update()
 		}
 	}
 
-	m_bCurrentlyUpdating = true;
-
-	for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
+	if (!m_currentlyQueuedSignals.empty())
 	{
-		SSignal& currentSignal = *itQueued;
-		//find the mapped Response for the Signal
-		MappedSignals::const_iterator mappedResponse = m_mappedSignals.find(currentSignal.m_signalName);
-
-		if (mappedResponse != m_mappedSignals.end())
+		static SignalList signalsToBeProcessed;
+		signalsToBeProcessed.swap(m_currentlyQueuedSignals); // we don't work directly on m_currentlyQueuedSignals, because starting the responses can already queue new signals
+		for (SSignal& currentSignal : signalsToBeProcessed)
 		{
-			//drs-todo: handle queuing for a specified amount of time. Check if the response can be started right now, based on priorities of already running responses
-			CResponseInstance* pResponseInstance = mappedResponse->second->StartExecution(currentSignal);
-			InformListenerAboutSignalProcessingStarted(*itQueued, pResponseInstance);
-			if (!pResponseInstance) //no instance = conditions not met, we are done
+			//find the mapped Response for the Signal
+			MappedSignals::const_iterator mappedResponse = m_mappedSignals.find(currentSignal.m_signalName);
+
+			if (mappedResponse != m_mappedSignals.end())
 			{
-				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, pResponseInstance, DRS::IResponseManager::IListener::ProcessingResult_ConditionsNotMet);
+				CResponseInstance* pResponseInstance = mappedResponse->second->StartExecution(currentSignal);
+				InformListenerAboutSignalProcessingStarted(currentSignal, pResponseInstance);
+				if (!pResponseInstance) //no instance = conditions not met, we are done
+				{
+					InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, pResponseInstance, DRS::IResponseManager::IListener::ProcessingResult_ConditionsNotMet);
+				}
+			}
+			else
+			{
+				InformListenerAboutSignalProcessingStarted(currentSignal, nullptr);
+				DRS_DEBUG_DATA_ACTION(AddResponseStarted(currentSignal.m_signalName.GetText()));
+				DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_NoResponse));
+				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_NoResponseDefined);
 			}
 		}
-		else
-		{
-			InformListenerAboutSignalProcessingStarted(*itQueued, nullptr);
-			DRS_DEBUG_DATA_ACTION(AddResponseStarted(currentSignal.m_signalName.GetText()));
-			DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_NoResponse));
-			InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_NoResponseDefined);
-		}
-		itQueued = m_currentlyQueuedSignals.erase(itQueued);  //we finished handling this signal, therefore we can remove it from the queued-list
-	}
-
-	m_bCurrentlyUpdating = false;
-
-	if (!m_currentlyQueuedSignalsDuringUpdate.empty())
-	{
-		//we might have received queueSignals while updating, we now store these to our list for the next update
-		for (const SSignal& queuedSignal : m_currentlyQueuedSignalsDuringUpdate)
-		{
-			m_currentlyQueuedSignals.push_back(queuedSignal);
-		}
-		m_currentlyQueuedSignalsDuringUpdate.clear();
+		signalsToBeProcessed.clear();
 	}
 }
 
@@ -309,7 +289,6 @@ void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool remove
 void CResponseManager::Reset(bool bResetExecutionCounter)
 {
 	m_currentlyQueuedSignals.clear();
-	m_currentlyQueuedSignalsDuringUpdate.clear();
 
 	for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); ++it)
 	{
@@ -397,7 +376,7 @@ void CResponseManager::Serialize(Serialization::IArchive& ar)
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::SetFileFormat(EUsedFileFormat format)
 {
-	m_UsedFileFormat = format;
+	m_usedFileFormat = format;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -665,25 +644,22 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
+void CResponseManager::GetAllResponseData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues)
 {
 	std::pair<string, string> temp;
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
-		if (it->second->GetExecutionCounter() > 0)
+		if (!bSkipDefaultValues || it->second->GetExecutionCounter() > 0)
 		{
-			const string collectionName = "_Internal.";
-			temp.first = collectionName + it->first.GetText();
-			char buffer[128];
-			cry_sprintf(buffer, "%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
-			temp.second = buffer;
+			temp.first.Format("_Internal.%s", it->first.GetText().c_str());
+			temp.second.Format("%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
 			pOutCollectionsList->push_back(temp);
 		}
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList& collectionsList)
+void CResponseManager::SetAllResponseData(DRS::ValuesListIterator start, DRS::ValuesListIterator end)
 {
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
@@ -694,35 +670,71 @@ void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList&
 	float startTime;
 	float endTime;
 
-	string collectionAndVariable;
+	DRS::ValuesString collectionAndVariable;
+	DRS::ValuesString collectionName;
 	CHashedString responseName;
-	CHashedString collectionName;
-	for (std::pair<string, string> variableValuePair : collectionsList)
+
+	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
-		collectionAndVariable = variableValuePair.first;
+		collectionAndVariable = it->first;
 		const int pos = collectionAndVariable.find('.');
 		collectionName = collectionAndVariable.substr(0, pos);
 
 		if (collectionName == "_Internal")
 		{
-			responseName = collectionAndVariable.substr(pos + 1);
+			responseName = collectionAndVariable.substr(pos + 1).c_str();
 			ResponsePtr pResponse = GetResponse(responseName);
 			if (pResponse)
 			{
-				string responseData = variableValuePair.second;
-				if (sscanf(variableValuePair.second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
+				if (sscanf(it->second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
 				{
 					pResponse->SetExecutionCounter(executionCounter);
 					pResponse->SetLastStartTime(startTime);
 					pResponse->SetLastEndTime(endTime);
+				}
+				else
+				{
+					DrsLogWarning((string("Could not parse response execution information from given data '") + it->second.c_str() + "'.").c_str());
 				}
 			}
 		}
 	}
 }
 
+bool CResponseManager::IsSignalProcessed(const SSignal& signal)
+{
+	for (const SSignal& queuedSignal : m_currentlyQueuedSignals)
+	{
+		if ((queuedSignal.m_signalName == signal.m_signalName || !signal.m_signalName.IsValid())
+		    && (queuedSignal.m_pSender == signal.m_pSender || signal.m_pSender == nullptr)
+		    && queuedSignal.m_id != signal.m_id)
+		{
+			return true;
+		}
+	}
+
+	for (const CResponseInstance* pRunningInstance : m_runningResponses)
+	{
+		if ((pRunningInstance->GetSignalName() == signal.m_signalName || !signal.m_signalName.IsValid())
+		    && (pRunningInstance->GetOriginalSender() == signal.m_pSender || signal.m_pSender == nullptr)
+		    && pRunningInstance->GetSignalInstanceId() != signal.m_id)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 //--------------------------------------------------------------------------------------------------
-static int s_currentSignalId = 0;
+bool CResponseManager::HasMappingForSignal(const CHashedString& signalName)
+{
+	return m_mappedSignals.find(signalName) != m_mappedSignals.end();
+
+}
+
+//--------------------------------------------------------------------------------------------------
+DRS::SignalInstanceId g_currentSignalId = 0;
 
 SSignal::SSignal(
   const CHashedString& signalName,
@@ -731,6 +743,6 @@ SSignal::SSignal(
 	: m_signalName(signalName)
 	, m_pSender(pSender)
 	, m_pSignalContext(pSignalContext)
+	, m_id(++g_currentSignalId)
 {
-	m_id = static_cast<DRS::SignalInstanceId>(++s_currentSignalId);
 }

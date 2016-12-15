@@ -27,42 +27,42 @@
 class CSocketIOManagerSelect : public CSocketIOManager
 {
 public:
-	virtual const char* GetName() { return "Select"; }
+	virtual const char* GetName() override { return "Select"; }
 
 	bool                Init();
 	CSocketIOManagerSelect();
 	~CSocketIOManagerSelect();
 
-	virtual bool      PollWait(uint32 waitTime);
-	virtual int       PollWork(bool& performedWork);
+	virtual bool      PollWait(uint32 waitTime) override;
+	virtual int       PollWork(bool& performedWork) override;
 
-	virtual SSocketID RegisterSocket(CRYSOCKET sock, int protocol);
-	virtual void      SetRecvFromTarget(SSocketID sockid, IRecvFromTarget* pTarget);
-	virtual void      SetConnectTarget(SSocketID sockid, IConnectTarget* pTarget);
-	virtual void      SetSendToTarget(SSocketID sockid, ISendToTarget* pTarget);
-	virtual void      SetAcceptTarget(SSocketID sockid, IAcceptTarget* pTarget);
-	virtual void      SetRecvTarget(SSocketID sockid, IRecvTarget* pTarget);
-	virtual void      SetSendTarget(SSocketID sockid, ISendTarget* pTarget);
-	virtual void      RegisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid);
-	virtual void      UnregisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid);
-	virtual void      UnregisterSocket(SSocketID sockid);
+	virtual SSocketID RegisterSocket(CRYSOCKET sock, int protocol) override;
+	virtual void      SetRecvFromTarget(SSocketID sockid, IRecvFromTarget* pTarget) override;
+	virtual void      SetConnectTarget(SSocketID sockid, IConnectTarget* pTarget) override;
+	virtual void      SetSendToTarget(SSocketID sockid, ISendToTarget* pTarget) override;
+	virtual void      SetAcceptTarget(SSocketID sockid, IAcceptTarget* pTarget) override;
+	virtual void      SetRecvTarget(SSocketID sockid, IRecvTarget* pTarget) override;
+	virtual void      SetSendTarget(SSocketID sockid, ISendTarget* pTarget) override;
+	virtual void      RegisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid) override;
+	virtual void      UnregisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid) override;
+	virtual void      UnregisterSocket(SSocketID sockid) override;
 
-	virtual bool      RequestRecvFrom(SSocketID sockid);
-	virtual bool      RequestSendTo(SSocketID sockid, const TNetAddress& addr, const uint8* pData, size_t len);
-	virtual bool      RequestSendVoiceTo(SSocketID sockid, const TNetAddress& addr, const uint8* pData, size_t len);
+	virtual bool      RequestRecvFrom(SSocketID sockid) override;
+	virtual bool      RequestSendTo(SSocketID sockid, const TNetAddress& addr, const uint8* pData, size_t len) override;
+	virtual bool      RequestSendVoiceTo(SSocketID sockid, const TNetAddress& addr, const uint8* pData, size_t len) override;
 
-	virtual bool      RequestConnect(SSocketID sockid, const TNetAddress& addr);
-	virtual bool      RequestAccept(SSocketID sock);
-	virtual bool      RequestSend(SSocketID sockid, const uint8* pData, size_t len);
-	virtual bool      RequestRecv(SSocketID sockid);
+	virtual bool      RequestConnect(SSocketID sockid, const TNetAddress& addr) override;
+	virtual bool      RequestAccept(SSocketID sock) override;
+	virtual bool      RequestSend(SSocketID sockid, const uint8* pData, size_t len) override;
+	virtual bool      RequestRecv(SSocketID sockid) override;
 
-	virtual void      PushUserMessage(int msg);
+	virtual void      PushUserMessage(int msg) override;
 
-	virtual bool      HasPendingData() { return (m_pWatchdog && m_pWatchdog->HasStalled()); }
+	virtual bool      HasPendingData() override { return (m_pWatchdog && m_pWatchdog->HasStalled()); }
 
 	#if LOCK_NETWORK_FREQUENCY
-	virtual void ForceNetworkStart() { ++m_userMessageFrameID; }
-	virtual bool NetworkSleep()      { return true; }
+	virtual void ForceNetworkStart() override { ++m_userMessageFrameID; }
+	virtual bool NetworkSleep() override      { return true; }
 	#endif
 
 private:

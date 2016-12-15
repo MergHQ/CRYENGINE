@@ -160,7 +160,7 @@ private:
 			const IActor* pLocalPlayer = CCryAction::GetCryAction()->GetClientActor();
 			const IAIObject* pAILocalPlayer = pLocalPlayer ? pLocalPlayer->GetEntity()->GetAI() : NULL;
 
-			IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+			IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 			while (IActor* pActor = pIter->Next())
 			{
 				if (!pActor->IsPlayer())
@@ -221,6 +221,11 @@ public:
 		, m_includeHumanPlayers(false)
 		, m_currentCount(0)
 	{
+	}
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
+	{
+		return new CFlowNode_AIActiveCountInFaction(pActInfo);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config) override
@@ -291,7 +296,7 @@ private:
 	int CountCurrentlyActiveAIsInSpecifiedFaction()
 	{
 		int count = 0;
-		IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+		IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 		while (IActor* pActor = pIter->Next())
 		{
 			if (!pActor->IsPlayer() || m_includeHumanPlayers)
@@ -360,7 +365,7 @@ private:
 
 				int aiCount = 0;
 
-				IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+				IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 				while (IActor* pActor = pIter->Next())
 				{
 					if (!pActor->IsPlayer() && !pActor->IsDead())
@@ -713,7 +718,7 @@ public:
 					IEntity* pEntity = members[i]->GetEntity();
 					if (pEntity)
 					{
-						IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+						IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 						if (pScriptProxy)
 							pScriptProxy->CallEvent("Enable");
 					}
@@ -2351,7 +2356,7 @@ public:
 						EntityId entityId = GetPortEntityId(pActInfo, IN_ActorFirst + i);
 						if (entityId != 0)
 						{
-							IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId);
+							IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(entityId);
 							bool isAlive = pActor && !pActor->IsDead();
 							if (isAlive)
 							{

@@ -287,6 +287,7 @@ public:
 	CDefaultSkinningReferences* GetDefaultSkinningReferences(CSkin* pDefaultSkinning);
 
 private:
+	void UpdateInstances(bool bPause);
 
 	uint32 m_StartGAH_Iterator;
 	void   LoadAnimationImageFile(const char* filenameCAF, const char* filenameAIM);

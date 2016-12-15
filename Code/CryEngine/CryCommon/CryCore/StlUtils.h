@@ -85,6 +85,13 @@ unsigned countElements(const std::vector<T>& arrT, const T& x)
  */
 namespace stl
 {
+//! Implementation of std::make_unique - missing from C++/11
+//! Remove when all compilers provide the default implementation.
+template<class T, class... TArgs> inline std::unique_ptr<T> make_unique(TArgs&&... args)
+{
+	return (std::unique_ptr<T>(new T(std::forward<TArgs>(args)...)));
+}
+
 //! Compare member of class/struct.
 //! e.g. Sort Vec3s by x component
 //! std::sort(vec3s.begin(), vec3s.end(), stl::member_compare<Vec3, float, &Vec3::x>());
@@ -752,6 +759,42 @@ struct indirect_container : C
 
 	iterator begin() { return C::begin(); }
 	iterator end()   { return C::end(); }
+};
+
+//! Find the biggest of multiple values at compile time.
+template<size_t...>
+struct static_max;
+
+template<size_t First>
+struct static_max<First>
+{
+	static constexpr size_t value = First;
+};
+
+template<size_t First, size_t Second>
+struct static_max<First, Second>
+{
+	static constexpr size_t value = First > Second ? First : Second;
+};
+
+template<size_t First, size_t Second, size_t... Others>
+struct static_max<First, Second, Others...>
+{
+	static constexpr size_t value = First > Second ? static_max<First, Others...>::value : static_max<Second, Others...>::value;
+};
+
+
+//! Provides a member typedef with suitable size and alignment to hold any of the specified types. The size is at least \p Len.
+//! \note Can be replaced with std::aligned_union once GCC is upraded to 5.0 or later.
+template<size_t Len, class... Types>
+struct aligned_union
+{
+	static constexpr size_t alignment_value = static_max<alignof(Types)...>::value;
+
+	struct type
+	{
+		alignas(alignment_value + 0) char c[static_max<Len, sizeof(Types)...>::value]; // The '+ 0' is required due to a bug in GCC 4.8
+	};
 };
 }
 

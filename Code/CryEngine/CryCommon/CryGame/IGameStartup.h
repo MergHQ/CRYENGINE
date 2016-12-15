@@ -31,6 +31,7 @@ struct ISystemUserCallback;
 struct IGameStartup
 {
 	//! Entry function used to create a new instance of the game.
+	//! This is considered deprecated, in favor of ICryPlugin, and will be removed in the future
 	//! \return A new instance of the game startup.
 	typedef IGameStartup*(* TEntryFunction)();
 
@@ -45,28 +46,6 @@ struct IGameStartup
 
 	//! Shuts down the game and any loaded MOD and delete itself.
 	virtual void Shutdown() = 0;
-
-	//! Updates the game.
-	//! \param haveFocus true if the game has the input focus, false otherwise.
-	//! \return 0 to terminate the game (i.e. when quitting), non-zero to continue.
-	virtual int Update(bool haveFocus, unsigned int updateFlags) = 0;
-
-	//! Returns a restart level and thus triggers a restart.
-	//! \return NULL to quit the game, a levelname to restart with that level
-	virtual bool GetRestartLevel(char** levelName) = 0;
-
-	//! Returns whether a patch needs installing
-	//! \return path+filename if patch is to be installed, null otherwise.
-	virtual const char* GetPatch() const = 0;
-
-	//! Retrieves the next mod to use in case the engine got a restart request.
-	//! \return true indicates that a mod is requested.
-	virtual bool GetRestartMod(char* pModNameBuffer, int modNameBufferSizeInBytes) = 0;
-
-	//! Initiate and control the game loop.
-	//! \param autoStartLevelName Name of the level to jump into, or NULL for normal behaviour.
-	//! \return 0 when the game terminated normally, non-zero otherwise.
-	virtual int Run(const char* autoStartLevelName) = 0;
 
 	//! Returns the RSA Public Key used by the engine to decrypt pak files which are encrypted by an offline tool.
 	//! Part of the tools package includes a key generator, which will generate a header file with the public key which can be easily included in code.

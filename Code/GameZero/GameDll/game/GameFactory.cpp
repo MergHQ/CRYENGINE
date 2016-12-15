@@ -7,7 +7,6 @@
 #include "player/extensions/ViewExtension.h"
 #include "player/extensions/InputExtension.h"
 #include "player/extensions/MovementExtension.h"
-#include "entities/GeomEntity.h"
 #include "flownodes/FlowGameEntityNode.h"
 
 std::map<string, CGameEntityNodeFactory*> CGameFactory::s_flowNodeFactories;
@@ -19,20 +18,28 @@ void CGameFactory::Init()
 	RegisterGameObject<CMovementExtension>("MovementExtension", "", eGORF_NoEntityClass);
 	RegisterGameObject<CViewExtension>("ViewExtension", "", eGORF_NoEntityClass);
 	RegisterGameObject<CGameRules>("GameRules", "", eGORF_HiddenInEditor);
-	RegisterNoScriptGameObject<CGeomEntity>("GameGeomEntity", "Game/GeomEntity", eGORF_None);
 
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
-	pGameFramework->GetIGameRulesSystem()->RegisterGameRules("SinglePlayer", "GameRules");
-	pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias("SinglePlayer", "sp");
+	gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules("SinglePlayer", "GameRules", false);
+	gEnv->pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias("SinglePlayer", "sp");
 }
 
 void CGameFactory::RegisterEntityFlowNodes()
 {
-	IFlowSystem* pFlowSystem = gEnv->pGame->GetIGameFramework()->GetIFlowSystem();
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
 	std::map<string, CGameEntityNodeFactory*>::iterator it = s_flowNodeFactories.begin(), end = s_flowNodeFactories.end();
 	for (; it != end; ++it)
 	{
 		pFlowSystem->RegisterType(it->first.c_str(), it->second);
+	}
+}
+
+void CGameFactory::UnregisterEntityFlowNodes()
+{
+	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
+	std::map<string, CGameEntityNodeFactory*>::iterator it = s_flowNodeFactories.begin(), end = s_flowNodeFactories.end();
+	for (; it != end; ++it)
+	{
+		pFlowSystem->UnregisterType(it->first.c_str());
 	}
 
 	stl::free_container(s_flowNodeFactories);
@@ -59,12 +66,12 @@ void CGameFactory::CreateScriptTables(SEntityScriptProperties& out, uint32 flags
 template<class T>
 struct CObjectCreator : public IGameObjectExtensionCreatorBase
 {
-	IGameObjectExtensionPtr Create()
+	IGameObjectExtension* Create(IEntity *pEntity) override
 	{
-		return ComponentCreate_DeleteWithRelease<T>();
+		return pEntity->CreateComponentClass<T>();
 	}
 
-	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
+	void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount) override
 	{
 		T::GetGameObjectExtensionRMIData(ppRMI, nCount);
 	}
@@ -80,8 +87,8 @@ void CGameFactory::RegisterGameObject(const string& name, const string& script, 
 
 	static CObjectCreator<T> _creator;
 
-	gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name.c_str(), &_creator, registerClass ? &clsDesc : nullptr);
-	T::SetExtensionId(gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID(name.c_str()));
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(name.c_str(), &_creator, registerClass ? &clsDesc : nullptr);
+	T::SetExtensionId(gEnv->pGameFramework->GetIGameObjectSystem()->GetID(name.c_str()));
 
 	if ((flags & eGORF_HiddenInEditor) != 0)
 	{
@@ -125,8 +132,8 @@ void CGameFactory::RegisterNoScriptGameObject(const string& name, const string& 
 
 	static CObjectCreator<T> _creator;
 
-	gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name.c_str(), &_creator, registerClass ? &clsDesc : nullptr);
-	T::SetExtensionId(gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID(name.c_str()));
+	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(name.c_str(), &_creator, registerClass ? &clsDesc : nullptr);
+	T::SetExtensionId(gEnv->pGameFramework->GetIGameObjectSystem()->GetID(name.c_str()));
 
 	if ((flags & eGORF_HiddenInEditor) != 0)
 	{

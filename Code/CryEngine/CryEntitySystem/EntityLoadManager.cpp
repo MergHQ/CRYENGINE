@@ -38,7 +38,6 @@ CEntityLoadManager::~CEntityLoadManager()
 //////////////////////////////////////////////////////////////////////////
 void CEntityLoadManager::Reset()
 {
-	m_clonedLayerIds.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -57,247 +56,6 @@ bool CEntityLoadManager::LoadEntities(XmlNodeRef& entitiesNode, bool bIsLoadingL
 	}
 
 	return bResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityLoadManager::SetupHeldLayer(const char* pLayerName)
-{
-	// Look up the layer with this name.  Note that normally only layers that can be
-	// dynamically loaded will be in here, but we have a hack in ObjectLayerManager to make
-	// one of these for every layer.
-	const IEntityLayer* pLayer = m_pEntitySystem->FindLayer(pLayerName);
-
-	// Walk up the layer tree until we find the top level parent.  That's what we group held
-	// entities by.
-	while (pLayer != NULL)
-	{
-		const string& parentName = pLayer->GetParentName();
-
-		if (parentName.empty())
-			break;
-
-		pLayer = m_pEntitySystem->FindLayer(parentName.c_str());
-	}
-
-	if (!gEnv->IsEditor())
-		CRY_ASSERT_MESSAGE(pLayer != NULL, "All layers should be in the entity system, level may need to be reexported");
-
-	if (pLayer != NULL)
-	{
-		int heldLayerIdx = -1;
-
-		// Go through our held layers, looking for one with the parent name
-		for (size_t i = 0; i < m_heldLayers.size(); ++i)
-		{
-			if (m_heldLayers[i].m_layerName == pLayer->GetName())
-			{
-				heldLayerIdx = i;
-				break;
-			}
-		}
-
-		// Crc the original layer name and add it to the map.  If the layer is held we
-		// store the index, or -1 if it isn't held.
-		uint32 layerCrc = CCrc32::Compute(pLayerName);
-		m_layerNameMap[layerCrc] = heldLayerIdx;
-	}
-}
-
-bool CEntityLoadManager::IsHeldLayer(XmlNodeRef& entityNode)
-{
-	if (m_heldLayers.empty())
-		return false;
-
-	const char* pLayerName = entityNode->getAttr("Layer");
-
-	uint32 layerCrc = CCrc32::Compute(pLayerName);
-
-	std::map<uint32, int>::iterator it = m_layerNameMap.find(layerCrc);
-
-	// First time we've seen this layer, cache off info for it
-	if (it == m_layerNameMap.end())
-	{
-		SetupHeldLayer(pLayerName);
-		it = m_layerNameMap.find(layerCrc);
-
-		if (it == m_layerNameMap.end())
-			return false;
-	}
-
-	int heldLayerIdx = it->second;
-
-	// If this is a held layer, cache off the creation info and return true (don't add)
-	if (heldLayerIdx != -1)
-	{
-		m_heldLayers[heldLayerIdx].m_entities.push_back(entityNode);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-void CEntityLoadManager::HoldLayerEntities(const char* pLayerName)
-{
-	m_heldLayers.resize(m_heldLayers.size() + 1);
-	SHeldLayer& heldLayer = m_heldLayers[m_heldLayers.size() - 1];
-
-	heldLayer.m_layerName = pLayerName;
-}
-
-void CEntityLoadManager::CloneHeldLayerEntities(const char* pLayerName, const Vec3& localOffset, const Matrix34& l2w, const char** pIncludeLayers, int numIncludeLayers)
-{
-	int heldLayerIdx = -1;
-
-	// Get the index of the held layer
-	for (size_t i = 0; i < m_heldLayers.size(); ++i)
-	{
-		if (m_heldLayers[i].m_layerName == pLayerName)
-		{
-			heldLayerIdx = i;
-			break;
-		}
-	}
-
-	if (heldLayerIdx == -1)
-	{
-		CRY_ASSERT_MESSAGE(0, "Trying to add a layer that wasn't held");
-		return;
-	}
-
-	// Allocate a map for storing the mapping from the original entity ids to the cloned ones
-	int cloneIdx = (int)m_clonedLayerIds.size();
-	m_clonedLayerIds.resize(cloneIdx + 1);
-	TClonedIds& clonedIds = m_clonedLayerIds[cloneIdx];
-
-	// Get all the held entities for this layer
-	std::vector<XmlNodeRef>& entities = m_heldLayers[heldLayerIdx].m_entities;
-
-	const int nSize = entities.size();
-	for (int i = 0; i < nSize; i++)
-	{
-		XmlNodeRef entityNode = entities[i];
-
-		const char* pLayerName = entityNode->getAttr("Layer");
-
-		bool isIncluded = (numIncludeLayers > 0) ? false : true;
-
-		// Check if this layer is in our include list
-		for (int j = 0; j < numIncludeLayers; ++j)
-		{
-			if (strcmp(pLayerName, pIncludeLayers[j]) == 0)
-			{
-				isIncluded = true;
-				break;
-			}
-		}
-
-		if (!isIncluded)
-			continue;
-
-		//////////////////////////////////////////////////////////////////////////
-		//
-		// Copy/paste from CEntityLoadManager::ParseEntities
-		//
-		INDENT_LOG_DURING_SCOPE(true, "Parsing entity '%s'", entityNode->getAttr("Name"));
-
-		bool bSuccess = false;
-		SEntityLoadParams loadParams;
-		if (ExtractEntityLoadParams(entityNode, loadParams, Vec3(0, 0, 0), true))
-		{
-			// ONLY REAL CHANGES ////////////////////////////////////////////////////
-			Matrix34 local(Matrix33(loadParams.spawnParams.qRotation));
-			local.SetTranslation(loadParams.spawnParams.vPosition - localOffset);
-			Matrix34 world = l2w * local;
-
-			// If this entity has a parent, keep the transform local
-			EntityId parentId;
-			if (entityNode->getAttr("ParentId", parentId))
-			{
-				local.SetTranslation(loadParams.spawnParams.vPosition);
-				world = local;
-			}
-
-			loadParams.spawnParams.vPosition = world.GetTranslation();
-			loadParams.spawnParams.qRotation = Quat(world);
-
-			EntityId origId = loadParams.spawnParams.id;
-			loadParams.spawnParams.id = m_pEntitySystem->GenerateEntityId(true);
-
-			loadParams.clonedLayerId = cloneIdx;
-
-			//////////////////////////////////////////////////////////////////////////
-
-			// Default to just creating the entity
-			if (!bSuccess)
-			{
-				EntityId usingId = 0;
-
-				// if we just want to reload this entity's properties
-				if (entityNode->haveAttr("ReloadProperties"))
-				{
-					EntityId id;
-
-					entityNode->getAttr("EntityId", id);
-					loadParams.pReuseEntity = m_pEntitySystem->GetEntityFromID(id);
-				}
-
-				bSuccess = CreateEntity(loadParams, usingId, true);
-			}
-
-			if (!bSuccess)
-			{
-				string sName = entityNode->getAttr("Name");
-				EntityWarning("CEntityLoadManager::ParseEntities : Failed when parsing entity \'%s\'", sName.empty() ? "Unknown" : sName.c_str());
-			}
-			else
-			{
-				// If we successfully cloned the entity, save the mapping from original id to cloned
-				clonedIds[origId] = loadParams.spawnParams.id;
-				m_clonedEntitiesTemp.push_back(loadParams.spawnParams.id);
-			}
-		}
-		//
-		// End copy/paste
-		//
-		//////////////////////////////////////////////////////////////////////////
-	}
-
-	// All attachment parent ids will be for the source copy, so we need to remap that id
-	// to the cloned one.
-	TQueuedAttachments::iterator itQueuedAttachment = m_queuedAttachments.begin();
-	TQueuedAttachments::iterator itQueuedAttachmentEnd = m_queuedAttachments.end();
-	for (; itQueuedAttachment != itQueuedAttachmentEnd; ++itQueuedAttachment)
-	{
-		SEntityAttachment& entityAttachment = *itQueuedAttachment;
-		entityAttachment.parent = m_pEntitySystem->GetClonedEntityId(entityAttachment.parent, entityAttachment.child);
-	}
-
-	// Now that all the cloned ids are ready, go though all the entities we just cloned
-	// and update the ids for any entity links.
-	for (std::vector<EntityId>::iterator it = m_clonedEntitiesTemp.begin(); it != m_clonedEntitiesTemp.end(); ++it)
-	{
-		IEntity* pEntity = m_pEntitySystem->GetEntity(*it);
-		if (pEntity != NULL)
-		{
-			IEntityLink* pLink = pEntity->GetEntityLinks();
-			while (pLink != NULL)
-			{
-				pLink->entityId = m_pEntitySystem->GetClonedEntityId(pLink->entityId, *it);
-				pLink = pLink->next;
-			}
-		}
-	}
-	m_clonedEntitiesTemp.clear();
-
-	OnBatchCreationCompleted();
-}
-
-void CEntityLoadManager::ReleaseHeldEntities()
-{
-	m_heldLayers.clear();
-	m_layerNameMap.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -422,6 +180,9 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 
 	bool bResult = true;
 
+	static ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+
 	const int iChildCount = entitiesNode->getChildCount();
 
 	CryLog("Parsing %d entities...", iChildCount);
@@ -436,8 +197,8 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 		if (entityNode && entityNode->isTag("Entity") && CanParseEntity(entityNode, outGlobalEntityIds))
 		{
 
-			// Create entities only if they are not in an held layer and we are not in editor game mode.
-			if (!IsHeldLayer(entityNode) && !gEnv->IsEditorGameMode())
+			// Create entities only if we are not in editor game mode.
+			if (!gEnv->IsEditorGameMode())
 			{
 				INDENT_LOG_DURING_SCOPE(true, "Parsing entity '%s'", entityNode->getAttr("Name"));
 
@@ -449,15 +210,6 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 					if (!bSuccess)
 					{
 						EntityId usingId = 0;
-
-						// if we just want to reload this entity's properties
-						if (entityNode->haveAttr("ReloadProperties"))
-						{
-							EntityId id;
-
-							entityNode->getAttr("EntityId", id);
-							loadParams.pReuseEntity = m_pEntitySystem->GetEntityFromID(id);
-						}
 
 						bSuccess = CreateEntity(loadParams, usingId, bIsLoadingLevelFile);
 
@@ -484,7 +236,7 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 			}
 		}
 
-		if (0 == (i & 7))
+		if ((!bAsyncLoad) && (0 == (i & 7)))
 		{
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameStart);
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameEnd);
@@ -559,8 +311,10 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		bool bNoDecals = false;
 		bool bDynamicDistanceShadows = false;
 		int castShadowMinSpec = CONFIG_LOW_SPEC;
+		int giMode = 0;
 
 		entityNode->getAttr("CastShadowMinSpec", castShadowMinSpec);
+		entityNode->getAttr("GIMode", giMode);
 		entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows);
 		entityNode->getAttr("GoodOccluder", bGoodOccluder);
 		entityNode->getAttr("OutdoorOnly", bOutdoorOnly);
@@ -588,6 +342,8 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_NO_DECALNODE_DECALS;
 		}
+
+		spawnParams.nFlagsExtended = (spawnParams.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((giMode << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 
 		const char* szArchetypeName = entityNode->getAttr("Archetype");
 		if (szArchetypeName && szArchetypeName[0])
@@ -693,12 +449,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 	IEntity* pSpawnedEntity = NULL;
 	bool bWasSpawned = false;
-	if (loadParams.pReuseEntity)
-	{
-		// Attempt to reload
-		pSpawnedEntity = (loadParams.pReuseEntity->ReloadEntity(loadParams) ? loadParams.pReuseEntity : NULL);
-	}
-	else if (m_pEntitySystem->OnBeforeSpawn(spawnParams))
+	if (m_pEntitySystem->OnBeforeSpawn(spawnParams))
 	{
 		// Create a new one
 		pSpawnedEntity = m_pEntitySystem->SpawnEntity(spawnParams, false);
@@ -711,7 +462,6 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 		CEntity* pCSpawnedEntity = (CEntity*)pSpawnedEntity;
 		pCSpawnedEntity->SetLoadedFromLevelFile(bIsLoadingLevellFile);
-		pCSpawnedEntity->SetCloneLayerId(loadParams.clonedLayerId);
 
 		const char* szMtlName(NULL);
 
@@ -729,31 +479,36 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			// Create needed proxies
 			if (entityNode->findChild("Area"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_AREA);
+				pSpawnedEntity->CreateComponent<IEntityAreaComponent>();
 			}
 			if (entityNode->findChild("Rope"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_ROPE);
+				pSpawnedEntity->CreateComponent<IEntityRopeComponent>();
 			}
 			if (entityNode->findChild("ClipVolume"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
+				pSpawnedEntity->CreateComponent<IClipVolumeComponent>();
 			}
 
-			if (spawnParams.pClass)
+			// Load RenderNodeParams
 			{
-				const char* pClassName = spawnParams.pClass->GetName();
-				if (pClassName && !strcmp(pClassName, "Light"))
+				auto& renderNodeParams = pCSpawnedEntity->GetEntityRender()->GetRenderNodeParams();
+				int nLodRatio = 0;
+				int nViewDistRatio = 0;
+				if (entityNode->getAttr("LodRatio", nLodRatio))
 				{
-					IEntityRenderProxyPtr pRP = crycomponent_cast<IEntityRenderProxyPtr>(pSpawnedEntity->CreateProxy(ENTITY_PROXY_RENDER));
-					if (pRP)
-					{
-						pRP->SerializeXML(entityNode, true);
-
-						int nMinSpec = -1;
-						if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
-							pRP->GetRenderNode()->SetMinSpec(nMinSpec);
-					}
+					// Change LOD ratio.
+					renderNodeParams.lodRatio = nLodRatio;
+				}
+				if (entityNode->getAttr("ViewDistRatio", nViewDistRatio))
+				{
+					// Change ViewDistRatio ratio.
+					renderNodeParams.viewDistRatio = nViewDistRatio;
+				}
+				int nMinSpec = -1;
+				if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
+				{
+					renderNodeParams.minSpec = (ESystemConfigSpec)nMinSpec;
 				}
 			}
 
@@ -766,16 +521,31 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			// Prepare the entity from Xml if it was just spawned
 			if (pCSpawnedEntity && bWasSpawned)
 			{
-				if (IEntityPropertyHandler* pPropertyHandler = pCSpawnedEntity->GetClass()->GetPropertyHandler())
-					pPropertyHandler->LoadEntityXMLProperties(pCSpawnedEntity, entityNode);
-
 				if (IEntityEventHandler* pEventHandler = pCSpawnedEntity->GetClass()->GetEventHandler())
 					pEventHandler->LoadEntityXMLEvents(pCSpawnedEntity, entityNode);
 
 				// Serialize script proxy.
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
+				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
-					pScriptProxy->SerializeXML(entityNode, true);
+				{
+					XmlNodeRef componentNode;
+					if (XmlNodeRef componentsNode = entityNode->findChild("Components"))
+					{
+						for (int i = 0, n = componentsNode->getChildCount(); i < n; ++i)
+						{
+							CryInterfaceID componentTypeId;
+							componentNode = componentsNode->getChild(i);
+							if (!componentNode->getAttr("typeId", componentTypeId))
+								continue;
+							
+							if (componentTypeId == pScriptProxy->GetCID())
+								break;
+						}
+					}
+
+					pScriptProxy->LegacySerializeXML(entityNode, componentNode, true);
+				}
+					
 			}
 		}
 
@@ -806,7 +576,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 			if (pCSpawnedEntity && loadParams.bCallInit)
 			{
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
+				CEntityComponentLuaScript* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
 					pScriptProxy->CallInitEvent(true);
 			}
@@ -814,35 +584,27 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 		if (entityNode)
 		{
-			//////////////////////////////////////////////////////////////////////////
-			// Load geom entity (Must be before serializing proxies.
-			//////////////////////////////////////////////////////////////////////////
-			if (spawnParams.pClass->GetFlags() & ECLF_DEFAULT)
+			// Check if it have geometry.
+			const char* sGeom = entityNode->getAttr("Geometry");
+			if (sGeom[0] != 0)
 			{
-				// Check if it have geometry.
-				const char* sGeom = entityNode->getAttr("Geometry");
-				if (sGeom[0] != 0)
+				// check if character.
+				const char* ext = PathUtil::GetExt(sGeom);
+				if (stricmp(ext, CRY_SKEL_FILE_EXT) == 0 || stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 || stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
 				{
-					// check if character.
-					const char* ext = PathUtil::GetExt(sGeom);
-					if (stricmp(ext, CRY_SKEL_FILE_EXT) == 0 || stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 || stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
-					{
-						pSpawnedEntity->LoadCharacter(0, sGeom, IEntity::EF_AUTO_PHYSICALIZE);
-					}
-					else
-					{
-						pSpawnedEntity->LoadGeometry(0, sGeom, 0, IEntity::EF_AUTO_PHYSICALIZE);
-					}
+					pSpawnedEntity->LoadCharacter(0, sGeom, IEntity::EF_AUTO_PHYSICALIZE);
+				}
+				else
+				{
+					pSpawnedEntity->LoadGeometry(0, sGeom, 0, IEntity::EF_AUTO_PHYSICALIZE);
 				}
 			}
-			//////////////////////////////////////////////////////////////////////////
 
+			//////////////////////////////////////////////////////////////////////////
 			// Serialize all entity proxies except Script proxy after initialization.
 			if (pCSpawnedEntity)
 			{
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
-
-				pCSpawnedEntity->SerializeXML_ExceptScriptProxy(entityNode, true);
+				pCSpawnedEntity->SerializeXML(entityNode, true, false);
 			}
 
 			const char* attachmentType = entityNode->getAttr("AttachmentType");
@@ -935,13 +697,6 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				entityNode->getAttr("HiddenInGame", bHiddenInGame);
 				if (bHiddenInGame)
 					pSpawnedEntity->Hide(true);
-			}
-
-			int nMinSpec = -1;
-			if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
-			{
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pSpawnedEntity->GetProxy(ENTITY_PROXY_RENDER))
-					pRenderProxy->GetRenderNode()->SetMinSpec(nMinSpec);
 			}
 		}
 	}
@@ -1047,9 +802,9 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 
 		if (f.pEntity)
 		{
-			IEntityProxyPtr pProxy = f.pEntity->CreateProxy(ENTITY_PROXY_FLOWGRAPH);
+			IEntityComponent* pProxy = f.pEntity->CreateProxy(ENTITY_PROXY_FLOWGRAPH);
 			if (pProxy)
-				pProxy->SerializeXML(f.pNode, true);
+				pProxy->LegacySerializeXML(f.pNode, f.pNode, true);
 		}
 	}
 	m_queuedFlowgraphs.clear();
@@ -1098,18 +853,6 @@ void CEntityLoadManager::ResolveLinks()
 			pLink = pLink->next;
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-EntityId CEntityLoadManager::GetClonedId(int clonedLayerId, EntityId originalId)
-{
-	if (clonedLayerId >= 0 && clonedLayerId < (int)m_clonedLayerIds.size())
-	{
-		TClonedIds& clonedIds = m_clonedLayerIds[clonedLayerId];
-		return clonedIds[originalId];
-	}
-
-	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

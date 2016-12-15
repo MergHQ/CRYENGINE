@@ -10,12 +10,15 @@ namespace Impl
 {
 namespace Wwise
 {
-class CFileIOHandler : public AK::StreamMgr::IAkFileLocationResolver, public AK::StreamMgr::IAkIOHookBlocking
+class CFileIOHandler final : public AK::StreamMgr::IAkFileLocationResolver, public AK::StreamMgr::IAkIOHookBlocking
 {
 public:
 
 	CFileIOHandler();
-	virtual ~CFileIOHandler();
+	CFileIOHandler(CFileIOHandler const&) = delete;
+	CFileIOHandler(CFileIOHandler&&) = delete;
+	CFileIOHandler& operator=(CFileIOHandler const&) = delete;
+	CFileIOHandler& operator=(CFileIOHandler&&) = delete;
 
 	AKRESULT Init(AkDeviceSettings const& rDeviceSettings, bool const bAsyncOpen = false);
 	void     ShutDown();
@@ -46,8 +49,6 @@ private:
 	AkOSChar   m_sLanguageFolder[AK_MAX_PATH];
 	bool       m_bAsyncOpen;
 	AkDeviceID m_nDeviceID;
-
-	PREVENT_OBJECT_COPY(CFileIOHandler);
 };
 }
 }

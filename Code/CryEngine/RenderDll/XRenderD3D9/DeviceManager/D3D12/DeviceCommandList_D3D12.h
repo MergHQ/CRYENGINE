@@ -5,6 +5,8 @@
 #if defined(CRY_USE_DX12)
 class CDeviceGraphicsCommandInterfaceImpl;
 class CDeviceComputeCommandInterfaceImpl;
+class CDeviceNvidiaCommandInterfaceImpl;
+
 struct SEmpty {};
 
 struct SSharedState
@@ -20,14 +22,19 @@ struct SCustomGraphicsState
 class CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SEmpty>
 {
 public:
-	ILINE CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
+	inline CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
 	{
 		return reinterpret_cast<CDeviceGraphicsCommandInterfaceImpl*>(this);
 	}
 
-	ILINE CDeviceComputeCommandInterfaceImpl* GetComputeInterfaceImpl()
+	inline CDeviceComputeCommandInterfaceImpl* GetComputeInterfaceImpl()
 	{
 		return reinterpret_cast<CDeviceComputeCommandInterfaceImpl*>(this);
+	}
+
+	inline CDeviceNvidiaCommandInterfaceImpl* GetNvidiaCommandInterfaceImpl()
+	{
+		return nullptr;
 	}
 
 	void SetProfilerMarker(const char* label);
@@ -67,11 +74,13 @@ public:
 	void SetIndexBufferImpl(const CDeviceInputStream* indexStream);       // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants);
 	void SetStencilRefImpl(uint8 stencilRefValue);
+	void SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp);
 
 	void DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexedImpl(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
 	void ClearSurfaceImpl(D3DSurface* pView, const FLOAT Color[4], UINT NumRects, const D3D11_RECT* pRects);
+	void ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects);
 };
 
 class CDeviceComputeCommandInterfaceImpl : public CDeviceCommandListImpl
@@ -91,6 +100,10 @@ protected:
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+};
+
+class CDeviceNvidiaCommandInterfaceImpl : public CDeviceCommandListImpl
+{
 };
 
 #endif

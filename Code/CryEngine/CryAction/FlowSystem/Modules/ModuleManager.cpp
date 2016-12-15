@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ModuleManager.h"
+
 #include "Module.h"
 #include "FlowModuleNodes.h"
 #include "ILevelSystem.h"
@@ -15,7 +16,6 @@ void RenderModuleDebugInfo();
 
 AllocateConstIntCVar(CFlowGraphModuleManager, CV_fg_debugmodules);
 
-//////////////////////////////////////////////////////////////////////////
 IFlowGraphModule* CFlowGraphModuleManager::CModuleIterator::Next()
 {
 	if (m_cur == m_pModuleManager->m_Modules.end())
@@ -26,28 +26,29 @@ IFlowGraphModule* CFlowGraphModuleManager::CModuleIterator::Next()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
 CFlowGraphModuleManager::CFlowGraphModuleManager()
 	: m_listeners(1)
 {
-	m_moduleIdMaker = 0;
+	m_nextModuleId = 0;
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 
-	DefineConstIntCVarName("fg_debugmodules", CV_fg_debugmodules, 0, VF_NULL, "Display Module debug info.\n" \
+	DefineConstIntCVarName("fg_debugmodules", CV_fg_debugmodules, 0, VF_NULL, "Display Flowgraph Modules debug information.\n" \
 	  "0=Disabled"                                                                                           \
 	  "1=Modules only"                                                                                       \
 	  "2=Modules + Module Instances");
-	fg_debugmodules_filter = REGISTER_STRING("fg_debugmodules_filter", "", VF_NULL, "Only debug modules with this name");
+	fg_debugmodules_filter = REGISTER_STRING("fg_debugmodules_filter", "", VF_NULL,
+	                                         "List of module names to display with the CVar 'fg_debugmodules'. Partial names can be supplied, but not regular expressions.");
 
 #if !defined (_RELEASE)
-	CRY_ASSERT_MESSAGE(gEnv->pGame->GetIGameFramework(), "Unable to register as Framework listener!");
-	if (gEnv->pGame->GetIGameFramework())
+	CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
+		gEnv->pGameFramework->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
 	}
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
 CFlowGraphModuleManager::~CFlowGraphModuleManager()
 {
 	Shutdown();
@@ -56,21 +57,19 @@ CFlowGraphModuleManager::~CFlowGraphModuleManager()
 	gEnv->pConsole->UnregisterVariable("fg_debugmodules_filter", true);
 
 #if !defined (_RELEASE)
-	if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+	if (gEnv->pGameFramework)
 	{
-		gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		gEnv->pGameFramework->UnregisterListener(this);
 	}
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::Shutdown()
 {
 	ClearModules();
 	m_listeners.Clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::ClearModules()
 {
 	TModuleMap::iterator i = m_Modules.begin();
@@ -96,10 +95,11 @@ void CFlowGraphModuleManager::ClearModules()
 	m_Modules.clear();
 	m_ModuleIds.clear();
 	m_ModulesPathInfo.clear();
-	m_moduleIdMaker = 0;
+	m_nextModuleId = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
+/* Serialization */
+
 CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleName, const char* fileName, bool bGlobal)
 {
 	// NB: the module name passed in might be a best guess based on the filename. The actual name
@@ -107,7 +107,6 @@ CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleN
 
 	// first check for existing module
 	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleName));
-
 	if (pModule)
 	{
 		for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
@@ -126,8 +125,7 @@ CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleN
 	else
 	{
 		// not found, create
-
-		pModule = new CFlowGraphModule(m_moduleIdMaker++);
+		pModule = new CFlowGraphModule(m_nextModuleId++);
 		pModule->SetType(bGlobal ? IFlowGraphModule::eT_Global : IFlowGraphModule::eT_Level);
 
 		TModuleId id = pModule->GetId();
@@ -142,13 +140,11 @@ CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleN
 	return pModule;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char* fileName, IFlowGraphModuleListener::ERootGraphChangeReason rootGraphChangeReason)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(fileName);
 	// first check for existing module - must exist by this point
 	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleName));
-
 	assert(pModule);
 
 	if (pModule)
@@ -163,12 +159,10 @@ void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IFlowGraphModule* CFlowGraphModuleManager::LoadModuleFile(const char* moduleName, const char* fileName, bool bGlobal)
 {
 	// first check for existing module
 	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleName));
-
 	if (pModule)
 	{
 		for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
@@ -190,144 +184,6 @@ IFlowGraphModule* CFlowGraphModuleManager::LoadModuleFile(const char* moduleName
 	return pModule;
 }
 
-TModuleInstanceId CFlowGraphModuleManager::CreateModuleInstance(TModuleId moduleId, const TModuleParams& params, const ModuleInstanceReturnCallback& returnCallback)
-{
-	return CreateModuleInstance(moduleId, InvalidFlowGraphId, InvalidFlowNodeId, params, returnCallback);
-}
-
-//////////////////////////////////////////////////////////////////////////
-TModuleInstanceId CFlowGraphModuleManager::CreateModuleInstance(TModuleId moduleId, TFlowGraphId callerGraphId, TFlowNodeId callerNodeId, const TModuleParams& params, const ModuleInstanceReturnCallback& returnCallback)
-{
-	TModuleInstanceId result = MODULEINSTANCE_INVALID;
-
-	// Get module container
-	CFlowGraphModule* pModule = NULL;
-	if (moduleId != MODULEID_INVALID)
-	{
-		TModuleMap::iterator moduleEntry = m_Modules.find(moduleId);
-		if (m_Modules.end() != moduleEntry)
-		{
-			pModule = moduleEntry->second;
-		}
-	}
-	if (!pModule)
-	{
-		assert(false);
-	}
-
-	// Make instance
-	if (pModule)
-	{
-		result = pModule->CreateInstance(callerGraphId, callerNodeId, params, returnCallback);
-
-		for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
-		{
-			notifier->OnModuleInstanceCreated(pModule, result);
-		}
-
-		pModule->ActivateGraph(pModule->GetInstanceGraph(result), result, params);
-	}
-
-	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModuleManager::RefreshModuleInstance(TModuleId moduleId, TModuleInstanceId instanceId, TModuleParams const& params)
-{
-	// Get module container
-	CFlowGraphModule* pModule = NULL;
-	if (moduleId != MODULEID_INVALID)
-	{
-		TModuleMap::iterator moduleEntry = m_Modules.find(moduleId);
-		if (m_Modules.end() != moduleEntry)
-		{
-			pModule = moduleEntry->second;
-		}
-	}
-	if (!pModule)
-	{
-		assert(false);
-	}
-
-	// Refresh instance
-	if (pModule)
-	{
-		pModule->RefreshInstance(instanceId, params);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModuleManager::CancelModuleInstance(TModuleId moduleId, TModuleInstanceId instanceId)
-{
-	// Get module container
-	CFlowGraphModule* pModule = NULL;
-	if (moduleId != MODULEID_INVALID)
-	{
-		TModuleMap::iterator moduleEntry = m_Modules.find(moduleId);
-		if (m_Modules.end() != moduleEntry)
-		{
-			pModule = moduleEntry->second;
-		}
-	}
-	if (!pModule)
-	{
-		assert(false);
-	}
-
-	// Cancel instance
-	if (pModule)
-	{
-		pModule->CancelInstance(instanceId);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModuleManager::OnModuleFinished(TModuleId const& moduleId, TModuleInstanceId instanceId, bool bSuccess, TModuleParams const& params)
-{
-	TModuleMap::iterator moduleEntry = m_Modules.find(moduleId);
-	if (m_Modules.end() != moduleEntry)
-	{
-		CFlowGraphModule* pModule = moduleEntry->second;
-		if (pModule)
-		{
-			for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
-			{
-				notifier->OnModuleInstanceDestroyed(GetModule(pModule->GetId()), instanceId);
-			}
-			pModule->DestroyInstance(instanceId, bSuccess, params);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-{
-	switch (event)
-	{
-	case ESYSTEM_EVENT_LEVEL_LOAD_START:
-		{
-			ScanForModules();
-		}
-		break;
-	case ESYSTEM_EVENT_LEVEL_UNLOAD:
-		{
-			if (gEnv->pGame->GetIGameFramework()->GetILevelSystem()->IsLevelLoaded())
-				ClearModules();
-		}
-		break;
-	case ESYSTEM_EVENT_EDITOR_GAME_MODE_CHANGED:
-	case ESYSTEM_EVENT_EDITOR_SIMULATION_MODE_CHANGED:
-		{
-			if (wparam == 0)
-			{
-				DestroyActiveModuleInstances();
-			}
-		}
-		break;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CFlowGraphModuleManager::DeleteModuleXML(const char* moduleName)
 {
 	if (m_ModulesPathInfo.empty())
@@ -362,7 +218,7 @@ bool CFlowGraphModuleManager::DeleteModuleXML(const char* moduleName)
 				m_Modules.erase(modIt);
 
 				if (m_Modules.empty())
-					m_moduleIdMaker = 0;
+					m_nextModuleId = 0;
 
 				for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 				{
@@ -377,7 +233,6 @@ bool CFlowGraphModuleManager::DeleteModuleXML(const char* moduleName)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CFlowGraphModuleManager::RenameModuleXML(const char* moduleName, const char* newName)
 {
 	if (m_ModulesPathInfo.empty())
@@ -401,31 +256,6 @@ bool CFlowGraphModuleManager::RenameModuleXML(const char* moduleName, const char
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-const char* CFlowGraphModuleManager::GetStartNodeName(const char* moduleName) const
-{
-	static CryFixedStringT<64> temp;
-	temp.Format("Module:Start_%s", moduleName);
-	return temp.c_str();
-}
-
-//////////////////////////////////////////////////////////////////////////
-const char* CFlowGraphModuleManager::GetReturnNodeName(const char* moduleName) const
-{
-	static CryFixedStringT<64> temp;
-	temp.Format("Module:End_%s", moduleName);
-	return temp.c_str();
-}
-
-//////////////////////////////////////////////////////////////////////////
-const char* CFlowGraphModuleManager::GetCallerNodeName(const char* moduleName) const
-{
-	static CryFixedStringT<64> temp;
-	temp.Format("Module:Call_%s", moduleName);
-	return temp.c_str();
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 {
 	_finddata_t fd;
@@ -476,7 +306,6 @@ void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -493,12 +322,12 @@ void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 		{
 			char* levelName;
 			char* levelPath;
-			gEnv->pGame->GetIGameFramework()->GetEditorLevel(&levelName, &levelPath);
+			gEnv->pGameFramework->GetEditorLevel(&levelName, &levelPath);
 			path = levelPath;
 		}
 		else
 		{
-			ILevelInfo* pLevel = gEnv->pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
+			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->GetCurrentLevel();
 			if (pLevel)
 			{
 				path = pLevel->GetPath();
@@ -513,7 +342,6 @@ void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::ScanForModules()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -538,7 +366,22 @@ void CFlowGraphModuleManager::ScanForModules()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+bool CFlowGraphModuleManager::SaveModule(const char* moduleName, XmlNodeRef saveTo)
+{
+	TModuleId moduleId = stl::find_in_map(m_ModuleIds, moduleName, MODULEID_INVALID);
+	if (moduleId != MODULEID_INVALID)
+	{
+		CFlowGraphModule* pModule = stl::find_in_map(m_Modules, moduleId, nullptr);
+		if (pModule)
+		{
+			return pModule->SaveModuleXml(saveTo);
+		}
+	}
+
+	return false;
+}
+
+/* Iterator */
 IModuleIteratorPtr CFlowGraphModuleManager::CreateModuleIterator()
 {
 	if (m_iteratorPool.empty())
@@ -554,71 +397,13 @@ IModuleIteratorPtr CFlowGraphModuleManager::CreateModuleIterator()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-const char* CFlowGraphModuleManager::GetModulePath(const char* name)
-{
-	if (m_ModulesPathInfo.empty())
-		return NULL;
+/* Getters/Setters */
 
-	TModulesPathInfo::iterator modulePathEntry = m_ModulesPathInfo.find(name);
-	if (m_ModulesPathInfo.end() != modulePathEntry)
-	{
-		return modulePathEntry->second;
-	}
-
-	return NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphModuleManager::AddModulePathInfo(const char* moduleName, const char* path)
-{
-	TModulesPathInfo::iterator modulePathEntry = m_ModulesPathInfo.find(moduleName);
-	if (m_ModulesPathInfo.end() != modulePathEntry)
-	{
-		return false;
-	}
-
-	m_ModulesPathInfo.insert(TModulesPathInfo::value_type(moduleName, path));
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphModuleManager::SaveModule(const char* moduleName, XmlNodeRef saveTo)
-{
-	TModuleId moduleId = stl::find_in_map(m_ModuleIds, moduleName, MODULEID_INVALID);
-	if (moduleId != MODULEID_INVALID)
-	{
-		CFlowGraphModule* pModule = stl::find_in_map(m_Modules, moduleId, NULL);
-		if (pModule)
-			pModule->SaveModuleXml(saveTo);
-
-		return true;
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphModuleManager::CreateModuleNodes(const char* moduleName, TModuleId moduleId)
-{
-	assert(moduleId != MODULEID_INVALID);
-
-	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleId));
-	if (pModule)
-	{
-		pModule->RegisterNodes();
-	}
-
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 IFlowGraphModule* CFlowGraphModuleManager::GetModule(TModuleId moduleId) const
 {
 	return stl::find_in_map(m_Modules, moduleId, NULL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 IFlowGraphModule* CFlowGraphModuleManager::GetModule(const char* moduleName) const
 {
 	TModuleId id = stl::find_in_map(m_ModuleIds, moduleName, MODULEID_INVALID);
@@ -640,12 +425,98 @@ IFlowGraphModule* CFlowGraphModuleManager::GetModule(IFlowGraphPtr pFlowgraph) c
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
+const char* CFlowGraphModuleManager::GetModulePath(const char* name)
+{
+	if (m_ModulesPathInfo.empty())
+		return NULL;
+
+	TModulesPathInfo::iterator modulePathEntry = m_ModulesPathInfo.find(name);
+	if (m_ModulesPathInfo.end() != modulePathEntry)
+	{
+		return modulePathEntry->second;
+	}
+
+	return NULL;
+}
+
+bool CFlowGraphModuleManager::AddModulePathInfo(const char* moduleName, const char* path)
+{
+	TModulesPathInfo::iterator modulePathEntry = m_ModulesPathInfo.find(moduleName);
+	if (m_ModulesPathInfo.end() != modulePathEntry)
+	{
+		return false;
+	}
+
+	m_ModulesPathInfo.insert(TModulesPathInfo::value_type(moduleName, path));
+	return true;
+}
+
+const char* CFlowGraphModuleManager::GetStartNodeName(const char* moduleName) const
+{
+	static CryFixedStringT<64> temp;
+	temp.Format("Module:Start_%s", moduleName);
+	return temp.c_str();
+}
+
+const char* CFlowGraphModuleManager::GetReturnNodeName(const char* moduleName) const
+	{
+	static CryFixedStringT<64> temp;
+	temp.Format("Module:End_%s", moduleName);
+	return temp.c_str();
+	}
+
+const char* CFlowGraphModuleManager::GetCallerNodeName(const char* moduleName) const
+{
+	static CryFixedStringT<64> temp;
+	temp.Format("Module:Call_%s", moduleName);
+	return temp.c_str();
+}
+
+/* Create Module Nodes */
+bool CFlowGraphModuleManager::CreateModuleNodes(const char* moduleName, TModuleId moduleId)
+{
+	assert(moduleId != MODULEID_INVALID);
+
+	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleId));
+	if (pModule)
+	{
+		pModule->RegisterNodes();
+	}
+
+	return true;
+}
+
+/* Module handling */
 void CFlowGraphModuleManager::RemoveCompletedModuleInstances()
 {
 	for (TModuleMap::iterator it = m_Modules.begin(), end = m_Modules.end(); it != end; ++it)
-	{
+{
 		it->second->RemoveCompletedInstances();
+}
+}
+
+void CFlowGraphModuleManager::DestroyActiveModuleInstances()
+{
+	for (TModuleMap::const_iterator it = m_Modules.begin(), end = m_Modules.end(); it != end; ++it)
+	{
+		if (CFlowGraphModule* pModule = it->second)
+		{
+			pModule->RemoveAllInstances();
+			pModule->RemoveCompletedInstances();
+			pModule->ClearCallNodesForInstances();
+			pModule->ClearGlobalControlNodes();
+		}
+	}
+}
+
+void CFlowGraphModuleManager::ClearModuleRequestedInstances()
+{
+	for (TModuleMap::const_iterator it = m_Modules.begin(), end = m_Modules.end(); it != end; ++it)
+{
+		if (CFlowGraphModule* pModule = it->second)
+	{
+			pModule->ClearCallNodesForInstances();
+		}
 	}
 }
 
@@ -659,6 +530,51 @@ void CFlowGraphModuleManager::UnregisterListener(IFlowGraphModuleListener* pList
 	m_listeners.Remove(pListener);
 }
 
+void CFlowGraphModuleManager::BroadcastModuleInstanceStarted(IFlowGraphModule* module, TModuleInstanceId instanceID)
+{
+	for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
+	{
+		notifier->OnModuleInstanceCreated(module, instanceID);
+	}
+}
+
+void CFlowGraphModuleManager::BroadcastModuleInstanceFinished(IFlowGraphModule* module, TModuleInstanceId instanceID)
+{
+	for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
+	{
+		notifier->OnModuleInstanceDestroyed(module, instanceID);
+	}
+}
+
+/* ISystemEventListener */
+void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	switch (event)
+	{
+	case ESYSTEM_EVENT_LEVEL_LOAD_START:
+		{
+			ScanForModules();
+		}
+		break;
+	case ESYSTEM_EVENT_LEVEL_UNLOAD:
+{
+			if (gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
+				ClearModules();
+		}
+		break;
+	case ESYSTEM_EVENT_EDITOR_GAME_MODE_CHANGED:
+	case ESYSTEM_EVENT_EDITOR_SIMULATION_MODE_CHANGED:
+	{
+			if (wparam == 0)
+		{
+				DestroyActiveModuleInstances();
+			}
+		}
+		break;
+	}
+}
+
+/* IGameFrameworkListener */
 void CFlowGraphModuleManager::OnPostUpdate(float fDeltaTime)
 {
 #if !defined (_RELEASE)
@@ -669,32 +585,12 @@ void CFlowGraphModuleManager::OnPostUpdate(float fDeltaTime)
 #endif
 }
 
-void CFlowGraphModuleManager::DestroyActiveModuleInstances()
-{
-	for (TModuleMap::const_iterator it = m_Modules.begin(), end = m_Modules.end(); it != end; ++it)
-	{
-		if (CFlowGraphModule* pModule = it->second)
-		{
-			pModule->RemoveAllInstances();
-			pModule->RemoveCompletedInstances();
-		}
-	}
-}
-
+/* Debug Draw */
 #if !defined (_RELEASE)
-void DrawModule2dLabel(float x, float y, float fontSize, const float* pColor, const char* pText)
+void inline DrawModule2dLabel(float x, float y, float fontSize, const float* pColor, const char* pText)
 {
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = fontSize;
-	ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
-	if (pColor)
-	{
-		ti.color[0] = pColor[0];
-		ti.color[1] = pColor[1];
-		ti.color[2] = pColor[2];
-		ti.color[3] = pColor[3];
-	}
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, pText);
+	IRenderAuxText::DrawText(Vec3(x, y, 0.5f), fontSize, IRenderAuxText::AColor(pColor),
+		eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace, pText);
 }
 
 void DrawModuleTextLabel(float x, float y, const float* pColor, const char* pFormat, ...)
@@ -740,67 +636,63 @@ void RenderModuleDebugInfo()
 		static const float colorGreen[4] = { 0.3f, 1.0f, 0.8f, 1.0f };
 
 		const float col1 = 10;
-		const float col2 = 320;
-		const float col3 = 380;
-		const float col4 = 500;
-		const float col5 = 600;
-		const float col6 = 850;
+		const float col4 = col1 + 350;
+		const float col5 = col4 + 40;
 
 		DrawModuleTextLabel(col1, py, colorWhite, "Module");
-		DrawModuleTextLabel(col2, py, colorWhite, "ID");
-		DrawModuleTextLabel(col3, py, colorWhite, "Num Instances");
-		DrawModuleTextLabel(col4, py, colorWhite, "Instance ID");
-		DrawModuleTextLabel(col5, py, colorWhite, "Caller Graph - Node");
-		DrawModuleTextLabel(col6, py, colorWhite, "Type");
+		DrawModuleTextLabel(col4, py, colorWhite, "Instances");
 
 		py += dy + dy_space;
 
 		for (int i = 0; i < count; ++i)
 		{
+			// skip this module if the filter is being used and it's not there
 			string filter = gEnv->pConsole->GetCVar("fg_debugmodules_filter")->GetString();
 			string moduleName = pModule->GetName();
 			moduleName.MakeLower();
 			filter.MakeLower();
-
 			if (!filter.empty() && moduleName.find(filter) == string::npos)
 			{
 				pModule = pIter->Next();
 				continue;
 			}
 
-			if (IModuleInstanceIteratorPtr instanceIter = pModule->CreateInstanceIterator())
+			// module details
+			const int runningInstances = pModule->GetRunningInstancesCount();
+
+			DrawModuleTextLabel(col1, py, runningInstances ? colorBlue : colorGray, "%s", pModule->GetName());
+			DrawModuleTextLabel(col4, py, runningInstances ? colorGreen : colorGray, "%d", runningInstances);
+
+			// instances' details
+			if (CFlowGraphModuleManager::CV_fg_debugmodules == 2 && runningInstances > 0)
 			{
-				IModuleInstance* pInstance = instanceIter->Next();
-
-				DrawModuleTextLabel(col1, py, pInstance ? colorBlue : colorGray, "%s", pModule->GetName());
-				DrawModuleTextLabel(col2, py, pInstance ? colorGreen : colorGray, "%d", pModule->GetId());
-
-				const bool bGlobalModule = (pModule->GetType() == IFlowGraphModule::eT_Global);
-				DrawModuleTextLabel(col6, py, colorGreen, "%s", bGlobalModule ? "Global" : "Level");
-
-				if (pInstance)
+				IModuleInstanceIteratorPtr instanceIter = pModule->CreateInstanceIterator();
+				if (!instanceIter)
 				{
-					const int numInstances = instanceIter->Count();
-
-					DrawModuleTextLabel(col3, py, colorGreen, "%d", numInstances);
-
-					if (CFlowGraphModuleManager::CV_fg_debugmodules == 2)
-					{
-						for (int j = 0; j < numInstances; ++j)
-						{
-							py += dy;
-							DrawModuleTextLabel(col4, py, colorGreen, "%d", pInstance->instanceId);
-							DrawModuleTextLabel(col5, py, colorGreen, "Graph ID: %d - Node ID: %d", pInstance->callerGraph, pInstance->callerNode);
-
-							pInstance = instanceIter->Next();
-						}
-					}
+					continue;
 				}
+
+				DrawModuleTextLabel(col5, py, colorWhite, "IDs:");
+				stack_string s_idList("");
+				for (IModuleInstance* pInstance = instanceIter->Next(); pInstance; pInstance = instanceIter->Next())
+					{
+					if (!pInstance->m_bUsed)
+						{
+						continue;
+						}
+					EntityId entityId = static_cast<SModuleInstance*>(pInstance)->m_entityId;
+					stack_string s_inst;
+					if (entityId != INVALID_ENTITYID)
+					{
+						s_inst.Format(", %d (Entity %u)", (pInstance->m_instanceId != MODULEINSTANCE_INVALID ? pInstance->m_instanceId : -1), entityId);
+					}
 				else
 				{
-					DrawModuleTextLabel(col3, py, colorGray, "0");
-					DrawModuleTextLabel(col4, py, colorGray, "-");
+						s_inst.Format(", %u", pInstance->m_instanceId);
+					}
+					s_idList.append(s_inst.c_str());
 				}
+				DrawModuleTextLabel(col5 + 40, py, colorGreen, "%s", s_idList.size() > 2 ? s_idList.c_str() + 2 : "-");
 			}
 
 			py += dy;

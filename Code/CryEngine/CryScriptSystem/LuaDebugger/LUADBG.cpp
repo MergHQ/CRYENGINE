@@ -362,7 +362,7 @@ CLUADbg::CLUADbg(CScriptSystem* pScriptSystem)
 
 	LoadBreakpoints("breakpoints.lst");
 
-	_Tiny_InitApp((HINSTANCE)::GetModuleHandle(NULL), (HINSTANCE) gDLLHandle, NULL, NULL, IDI_SMALL);
+	_Tiny_InitApp((HINSTANCE)CryGetCurrentModule(), (HINSTANCE) gDLLHandle, NULL, NULL, IDI_SMALL);
 
 	m_coverage.reset(new CLUACodeCoverage());
 	m_trackCoverage = false;

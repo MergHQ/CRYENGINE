@@ -133,9 +133,12 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 			// update elevation texture
 			if (pTextureSourceNode->m_eElevTexEditingState == eTES_SectorIsModified_AtlasIsDirty)
 			{
+				pTextureSourceNode->UpdateNodeNormalMapFromEditorData();
+
 				static Array2d<float> arrHmData;
 				pTextureSourceNode->FillSectorHeightMapTextureData(arrHmData);
 				m_pTerrain->m_texCache[2].UpdateTexture((byte*)arrHmData.GetData(), pTextureSourceNode->m_nNodeTexSet.nSlot0);
+
 				pTextureSourceNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
 			}
 		}
@@ -569,6 +572,42 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 	m_pTerrain->m_texCache[0].UpdateTexture(gTerrainCompressedImgData.GetElements(), m_nNodeTexSet.nSlot0);
 }
 
+void CTerrainNode::UpdateNodeNormalMapFromEditorData()
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+	int nTexSize = GetTerrain()->m_arrBaseTexInfos[0].m_TerrainTextureLayer[1].nSectorSizePixels;
+	ETEX_Format texFormat = GetTerrain()->m_arrBaseTexInfos[0].m_TerrainTextureLayer[1].eTexFormat;
+
+	static Array2d<ColorB> arrRGB;
+	arrRGB.Allocate(nTexSize);
+
+	float fBoxSize = GetBBox().GetSize().x;
+
+	for (int x = 0; x < nTexSize; x++)
+	{
+		for (int y = 0; y < nTexSize; y++)
+		{
+			Vec3 vWSPos(
+				(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+				(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
+
+			Vec3 vNormal = GetTerrain()->GetTerrainSurfaceNormal_Int((int)vWSPos.x, (int)vWSPos.y, 0);
+
+			uint32 dwR = SATURATEB(uint32(vNormal.x * 127.5f + 127.5f));
+			uint32 dwB = SATURATEB(uint32(vNormal.y * 127.5f + 127.5f));
+			uint32 dwA = 0;
+			uint32 dwG = 0;
+
+			arrRGB[x][y] = (dwA << 24) | (dwB << 16) | (dwG << 8) | (dwR);
+		}
+	}
+
+	GetRenderer()->DXTCompress((byte*)arrRGB.GetData(), nTexSize, nTexSize, texFormat, false, false, 4, SaveCompressedMipmapLevel);
+
+	m_pTerrain->m_texCache[1].UpdateTexture(gTerrainCompressedImgData.GetElements(), m_nNodeTexSet.nSlot1);
+}
+
 void CTerrainNode::CheckNodeGeomUnload(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -684,7 +723,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		ColorB colour = ColorB(255 * ((m_nTreeLevel & 1) > 0), 255 * ((m_nTreeLevel & 2) > 0), 255, 255);
 		GetRenderer()->GetIRenderAuxGeom()->DrawAABB(GetBBox(), false, colour, eBBD_Faceted);
 		if (GetCVars()->e_TerrainBBoxes == 3 && m_rangeInfo.nSize)
-			GetRenderer()->DrawLabel(GetBBox().GetCenter(), 2, "%dx%d", m_rangeInfo.nSize, m_rangeInfo.nSize);
+			IRenderAuxText::DrawLabelF(GetBBox().GetCenter(), 2, "%dx%d", m_rangeInfo.nSize, m_rangeInfo.nSize);
 	}
 
 	if (GetCVars()->e_TerrainDetailMaterialsDebug)
@@ -700,7 +739,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		if (nLayersNum >= GetCVars()->e_TerrainDetailMaterialsDebug)
 		{
 			GetRenderer()->GetIRenderAuxGeom()->DrawAABB(GetBBox(), false, ColorB(255 * ((nLayersNum & 1) > 0), 255 * ((nLayersNum & 2) > 0), 255, 255), eBBD_Faceted);
-			GetRenderer()->DrawLabel(GetBBox().GetCenter(), 2, "%d", nLayersNum);
+			IRenderAuxText::DrawLabelF(GetBBox().GetCenter(), 2, "%d", nLayersNum);
 		}
 	}
 

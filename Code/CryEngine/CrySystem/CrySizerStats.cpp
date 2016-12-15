@@ -199,19 +199,14 @@ CrySizerStatsRenderer::CrySizerStatsRenderer(ISystem* pSystem, CrySizerStats* pS
 
 }
 
+
+#include <CryRenderer/IRenderAuxGeom.h>
+
 static void DrawStatsText(float x, float y, float fScale, float color[4], const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	SDrawTextInfo ti;
-	ti.xscale = fScale;
-	ti.yscale = fScale;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, format, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 0.5f), fScale, color, eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 

@@ -17,9 +17,11 @@
 class CFlowNodeEntityMaterial : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowNodeEntityMaterial(SActivationInfo* pActInfo)
+	CFlowNodeEntityMaterial(SActivationInfo * pActInfo) {}
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
 	{
-	};
+		return new CFlowNodeEntityMaterial(pActInfo);
+	}
 
 	enum EInputs
 	{
@@ -160,10 +162,10 @@ public:
 						}
 						else
 						{
-							IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-							if (pRenderProxy)
+							IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+							
 							{
-								IMaterial* pMtl = pRenderProxy->GetRenderMaterial(0);
+								IMaterial* pMtl = pIEntityRender->GetRenderMaterial(0);
 								if (pMtl)
 									ActivateOutput(pActInfo, OUT_VALUE, string(pMtl->GetName()));
 							}
@@ -194,9 +196,9 @@ public:
 		}
 		else
 		{
-			if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+			if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 			{
-				pRenderProxy->SetSlotMaterial(slot, pMtl);
+				pIEntityRender->SetSlotMaterial(slot, pMtl);
 			}
 		}
 	}
@@ -505,13 +507,11 @@ public:
 		m_pMaterial = NULL;
 	}
 
-	/*
-	   virtual IFlowNodePtr Clone( SActivationInfo *pActInfo )
-	   {
-	   pActInfo->m_pUserData = (void*)(UINT_PTR)m_entityId;
-	   return new CFlowNodeEntityMaterialShaderParam(pActInfo);
-	   };
-	 */
+	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
+	{
+		return new CFlowNodeEntityMaterialShaderParams(pActInfo);
+	}
+
 	enum EInputPorts
 	{
 		EIP_Get = 0,
@@ -812,11 +812,11 @@ public:
 		if (!pEntity)
 			return false;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if (pIEntityRender == 0)
 			return false;
 
-		IMaterial* pMaterial = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMaterial = pIEntityRender->GetRenderMaterial(slot);
 		if (pMaterial == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
@@ -831,7 +831,7 @@ public:
 				GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] Can't clone material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
 				return false;
 			}
-			pRenderProxy->SetSlotMaterial(slot, pMaterial);
+			pIEntityRender->SetSlotMaterial(slot, pMaterial);
 			m_pMaterial = pMaterial;
 		}
 
@@ -943,10 +943,10 @@ public:
 	{
 		if (pEntity == 0)
 			return;
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if (pIEntityRender == 0)
 			return;
-		pRenderProxy->SetSlotMaterial(slot, 0);
+		pIEntityRender->SetSlotMaterial(slot, 0);
 	}
 
 	void CloneAndApplyMaterial(IEntity* pEntity, int slot)
@@ -954,22 +954,22 @@ public:
 		if (pEntity == 0)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if (pIEntityRender == 0)
 			return;
 
-		IMaterial* pMtl = pRenderProxy->GetSlotMaterial(slot);
+		IMaterial* pMtl = pIEntityRender->GetSlotMaterial(slot);
 		if (pMtl)
 			return;
 
-		pMtl = pRenderProxy->GetRenderMaterial(slot);
+		pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityCloneMaterial: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
 			return;
 		}
 		pMtl = gEnv->p3DEngine->GetMaterialManager()->CloneMultiMaterial(pMtl);
-		pRenderProxy->SetSlotMaterial(slot, pMtl);
+		pIEntityRender->SetSlotMaterial(slot, pMtl);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

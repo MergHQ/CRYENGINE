@@ -151,7 +151,7 @@ CPhysArea::CPhysArea(CPhysicalWorld *pWorld)
 	m_iSimClass=5; 
 	m_iGThunk0 = 0; m_pEntBuddy = 0;
 	 
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBox) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_BBox) == 2, "Invalid array size!");
 	m_BBox[0].zero();
 	m_BBox[1].zero();
 }

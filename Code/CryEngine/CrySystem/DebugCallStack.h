@@ -50,6 +50,7 @@ public:
 	virtual void   DoneSymbols() { doneSymbols(); }
 
 	void           installErrorHandler(ISystem* pSystem);
+	void           uninstallErrorHandler();
 	virtual int    handleException(EXCEPTION_POINTERS* exception_pointer);
 
 	virtual void   ReportBug(const char*);
@@ -59,6 +60,12 @@ public:
 	void           SetUserDialogEnable(const bool bUserDialogEnable);
 
 	void           PrintThreadCallstack(const threadID nThreadId, FILE* f);
+
+	// Simulates generation of the crash report.
+	void           GenerateCrashReport();
+
+	// Register CVars needed for debug call stack.
+	void           RegisterCVars();
 
 	typedef std::map<void*, string> TModules;
 protected:
@@ -72,7 +79,6 @@ protected:
 
 	static int              PrintException(EXCEPTION_POINTERS* exception_pointer);
 	static INT_PTR CALLBACK ExceptionDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
-	static INT_PTR CALLBACK ConfirmSaveDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 	int                     updateCallStack(EXCEPTION_POINTERS* exception_pointer);
 	void                    LogExceptionInfo(EXCEPTION_POINTERS* exception_pointer);
@@ -103,6 +109,8 @@ protected:
 	CONTEXT          m_context;
 
 	TModules         m_modules;
+
+	LPTOP_LEVEL_EXCEPTION_FILTER m_previousHandler;
 };
 
 #endif // CRY_PLATFORM_WINDOWS

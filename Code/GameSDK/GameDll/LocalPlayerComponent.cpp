@@ -291,7 +291,7 @@ void CLocalPlayerComponent::TriggerFadeToBlack()
 	effectParams.pos = m_rPlayer.GetEntity()->GetWorldPos();
 	//effectParams.soundSemantic = eSoundSemantic_HUD;
 
-	gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->ExecuteEffect(m_screenFadeEffectId, effectParams);
+	gEnv->pGameFramework->GetIMaterialEffects()->ExecuteEffect(m_screenFadeEffectId, effectParams);
 }
 
 void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
@@ -321,7 +321,7 @@ void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
 			}
 
 			//const float white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-			//gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, visible ? "Rendering complete FP body" : "Rendering only arms");
+			//IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, visible ? "Rendering complete FP body" : "Rendering only arms");
 
 			//Early out if no change
 			if (m_fpCompleteBodyVisible == visible)
@@ -347,7 +347,7 @@ void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
 
 void CLocalPlayerComponent::UpdateScreenFadeEffect()
 {
-	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* pMaterialEffects = gEnv->pGameFramework->GetIMaterialEffects();
 
 	if(pMaterialEffects)
 	{
@@ -364,7 +364,7 @@ void CLocalPlayerComponent::ResetScreenFX()
 
 	if(m_screenFadeEffectId != InvalidEffectId)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIMaterialEffects()->StopEffect(m_screenFadeEffectId);
+		gEnv->pGameFramework->GetIMaterialEffects()->StopEffect(m_screenFadeEffectId);
 	}
 }
 
@@ -458,7 +458,7 @@ void CLocalPlayerComponent::AdjustTorsoAimDir(float fFrameTime, Vec3 &aimDir)
 		if (xy > 0.001f)
 		{
 			yaw = atan2_tpl(aimDir.y,aimDir.x);
-			elev = asin_tpl(clamp_tpl(aimDir.z, -1.f, +1.f));
+			elev = asin_tpl(aimDir.z);
 		}
 		else
 		{

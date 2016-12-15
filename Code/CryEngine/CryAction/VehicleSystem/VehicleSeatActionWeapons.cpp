@@ -735,7 +735,7 @@ void CVehicleSeatActionWeapons::StartFire()
 			const IVehicleMovement* const pMovement = m_pVehicle->GetMovement();
 			if (pMovement && pWeapon->CanFire())
 			{
-				IEntityAudioProxy* const pAudioProxy = pMovement->GetAudioProxy();
+				IEntityAudioComponent* const pAudioProxy = pMovement->GetAudioProxy();
 				if (pAudioSystem && pAudioProxy)
 				{
 					AudioControlId audioControlID = INVALID_AUDIO_CONTROL_ID;
@@ -784,7 +784,7 @@ void CVehicleSeatActionWeapons::StopFire()
 		const IVehicleMovement* const pMovement = m_pVehicle->GetMovement();
 		if (pMovement)
 		{
-			IEntityAudioProxy* const pAudioProxy = pMovement->GetAudioProxy();
+			IEntityAudioComponent* const pAudioProxy = pMovement->GetAudioProxy();
 			if (pAudioProxy)
 			{
 				AudioControlId audioControlID = INVALID_AUDIO_CONTROL_ID;

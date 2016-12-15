@@ -21,7 +21,6 @@ enum EPostEffectID
 {
 	ePFX_Invalid     = -1,
 	ePFX_WaterVolume = 0,
-	ePFX_WaterRipples,
 
 	ePFX_SceneRain,
 
@@ -361,7 +360,7 @@ public:
 	virtual void OnLostDevice() {}
 
 	// Add render element/object to post process (use for custom geometry)
-	virtual void AddRE(const CRendElementBase* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo) {}
+	virtual void AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo) {}
 	// release resources when required
 	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo)                                                                            {}
 

@@ -26,13 +26,14 @@ enum EAudioLoggingOptions
 /**
  * A simpler logger wrapper that adds and audio tag and a timestamp
  */
-class CAudioLogger
+class CAudioLogger final
 {
 public:
 
 	//DOC-IGNORE-BEGIN
-	CAudioLogger() {}
-	virtual ~CAudioLogger() {}
+	CAudioLogger() = default;
+	CAudioLogger(CAudioLogger const&) = delete;
+	CAudioLogger& operator=(CAudioLogger const&) = delete;
 	//DOC-IGNORE-END
 
 	/**
@@ -40,7 +41,7 @@ public:
 	 * @param eType        - log message type (eALT_COMMENT, eALT_WARNING, eALT_ERROR or eALT_ALWAYS)
 	 * @param sFormat, ... - printf-style format string and its arguments
 	 */
-	void Log(EAudioLogType const eType, char const* const sFormat, ...) const
+	static void Log(EAudioLogType const eType, char const* const sFormat, ...)
 	{
 #if defined(ENABLE_AUDIO_LOGGING)
 		if (sFormat && sFormat[0] && gEnv->pLog->GetVerbosityLevel() != -1)
@@ -107,6 +108,4 @@ public:
 		}
 #endif // ENABLE_AUDIO_LOGGING
 	}
-
-	PREVENT_OBJECT_COPY(CAudioLogger);
 };

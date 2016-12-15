@@ -299,7 +299,7 @@ protected:
 
 	virtual void SetUpParticleParams(IEntity* pOwnerEntity, uint8 pierceabilityModifier);
 
-	IEntityAudioProxy *GetAudioProxy();
+	IEntityAudioComponent *GetAudioProxy();
 
 	void DestroyImmediate();
 

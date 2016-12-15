@@ -94,12 +94,12 @@ CPhysicalEntity::CPhysicalEntity(CPhysicalWorld *pworld, IGeneralMemoryHeap* pHe
 	, m_pStructure(nullptr)
 { 
 	//CPhysicalPlaceholder
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_BBox) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_BBox) == 2, "Invalid array size!");
 	m_BBox[0].zero();
 	m_BBox[1].zero(); 
 	m_iSimClass = 0; 
 	m_iGThunk0 = 0;
-	COMPILE_TIME_ASSERT(CRY_ARRAY_COUNT(m_ig) == 2);
+	static_assert(CRY_ARRAY_COUNT(m_ig) == 2, "Invalid array size!");
 	m_ig[0].x=m_ig[1].x=m_ig[0].y=m_ig[1].y = GRID_REG_PENDING;
 	m_bProcessed = 0;
 	m_id = -1;
@@ -313,7 +313,8 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		bPosChanged = bForcePosChange;
 #endif
 		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.0001f) {
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
+			WriteLock lock(m_lockUpdate);
 			for(i=0;i<m_nParts;i++) {
 				phys_geometry *pgeom;
 				if (m_parts[i].pPhysGeom!=m_parts[i].pPhysGeomProxy) {
@@ -466,7 +467,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (i>=m_nParts)
 			return 0;
 		Vec3 scale;
-		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.0001f) {
+		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.03f) {
 			if (is_unused(params->pPhysGeom))
 				m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeom=m_parts[i].pPhysGeom);
 			if (is_unused(params->pPhysGeomProxy))
@@ -672,7 +673,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		}
 
 		if (m_flags&pef_traceable && m_ig[0].x==NO_GRID_REG) {
-			m_ig[0].x=m_ig[1].x=m_ig[0].y=m_ig[1].y = GRID_REG_PENDING;
+			m_ig[0].x=m_ig[1].x=m_ig[0].y=m_ig[1].y = m_flags & pef_disabled ? GRID_REG_LAST : GRID_REG_PENDING;
 			if (m_pos.len2()>0)
 				AtomicAdd(&m_pWorld->m_lockGrid,-m_pWorld->RepositionEntity(this,1));
 			RepositionParts();
@@ -1604,6 +1605,8 @@ void CPhysicalEntity::RemoveGeometry(int id, int bThreadSafe)
 			}
 		}
 		CPhysicalPlaceholder *ppc=0;
+		// keep the original bounding box while RepositionEntity emits the signal and substitute at the end
+		Vec3 newBBox[2];
 		{ WriteLockCond lock(m_lockUpdate,m_pWorld->m_vars.bLogStructureChanges);
 			if (m_parts[i].pMatMapping && m_parts[i].pMatMapping!=m_parts[i].pPhysGeom->pMatMapping) 
 				delete[] m_parts[i].pMatMapping;
@@ -1620,13 +1623,15 @@ void CPhysicalEntity::RemoveGeometry(int id, int bThreadSafe)
 			}
 			m_nParts--;
 			if (m_nPartsAlloc!=1) { MEMSTAT_USAGE(m_parts, sizeof(geom) * m_nParts); }
-			ComputeBBox(m_BBox);
+			ComputeBBox(newBBox);
 			for(m_iLastIdx=i=0;i<m_nParts;i++)
 				m_iLastIdx = max(m_iLastIdx, m_parts[i].id+1);
 		}
 		if (ppc)
 			m_pWorld->DestroyPhysicalEntity(ppc,0,1);
-		AtomicAdd(&m_pWorld->m_lockGrid,-m_pWorld->RepositionEntity(this,1));
+		AtomicAdd(&m_pWorld->m_lockGrid,-m_pWorld->RepositionEntity(this,1,newBBox));
+		m_BBox[0] = newBBox[0];
+		m_BBox[1] = newBBox[1];
 		RepositionParts();
 		return;
 	}

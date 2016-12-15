@@ -64,7 +64,6 @@ UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::Try
 	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
-	assert(pSOLink);
 	if (pSOLink)
 	{
 		CSmartObjectManager* pSmartObjectManager = gAIEnv.pSmartObjectManager;
@@ -140,9 +139,10 @@ UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::Try
 	}
 	else
 	{
-		// Error: No SOLink
-		assert(false);
-		return RequestDelayed_ContinuePathFollowing;
+		// TODO: listen to links unregistration and try to handle invalid movement block sooner than here
+
+		// No SOLink - link was unregistered (blocked, deleted...) and cannot be traversed anymore.
+		return RequestFailed_CancelImmediately;
 	}
 }
 

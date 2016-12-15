@@ -4,15 +4,9 @@
 #define _GRENDERER_XRENDER_H_
 
 #pragma once
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-
-#pragma warning(push)
-#pragma warning(disable : 6326)   // Potential comparison of a constant with another constant
-#pragma warning(disable : 6011)   // Dereferencing NULL pointer
-#include <CryCore/Platform/CryWindows.h>
 #include <CryRenderer/IScaleform.h>
-#pragma warning(pop)
+
+#if RENDERER_SUPPORT_SCALEFORM
 
 #include <vector>
 
@@ -489,6 +483,8 @@ private:
 	std::list<SSF_GlobalDrawParams::OutputParams> m_renderTargetStack;
 };
 
+#endif // #if RENDERER_SUPPORT_SCALEFORM
+
 //////////////////////////////////////////////////////////////////////
 class CScaleformSink final : public IScaleformPlayback
 {
@@ -852,7 +848,5 @@ void SF_Playback(T* pRenderer, GRendererCommandBufferReadOnly* pBuffer)
 	Unlock(pLastVertexStore);
 	Unlock(pLastIndexStore);
 };
-
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
 
 #endif // #ifndef _GRENDERER_XRENDER_H_

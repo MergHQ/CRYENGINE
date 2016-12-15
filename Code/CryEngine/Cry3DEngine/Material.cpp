@@ -93,7 +93,7 @@ size_t CMaterialLayer::GetResourceMemoryUsage(ICrySizer* pSizer)
 CMatInfo::CMatInfo()
 	: m_bDeleted(false)
 {
-	m_nRefCount = 0;
+	m_nRefCount = 1; // having a pointer to CMatInfo with ref count zero, results in CMatInfo being deleted from render thread
 	m_Flags = 0;
 	m_nModificationId = 0;
 
@@ -396,6 +396,24 @@ bool CMatInfo::IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION
 	return true;
 }
 
+bool CMatInfo::IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const
+{
+	if (m_Flags & MTL_FLAG_MULTI_SUBMTL)
+	{
+		for (int i = 0, num = m_subMtls.size(); i < num; i++)
+		{
+			if (!m_subMtls[i]->AreTexturesStreamedIn(nMinPrecacheRoundIds))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	return AreTexturesStreamedIn(nMinPrecacheRoundIds);
+}
+
 bool CMatInfo::AreChunkTexturesStreamedIn(CRenderChunk* pRenderChunk, const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const
 {
 	const CMatInfo* pMaterial = this;
@@ -592,12 +610,12 @@ void CMatInfo::Copy(IMaterial* pMtlDest, EMaterialCopyFlags flags)
 
 	if (GetShaderItem().m_pShaderResources)
 	{
-		//
-		SShaderItem& siSrc(GetShaderItem());
+		const SShaderItem& siSrc(GetShaderItem());
 		SInputShaderResourcesPtr pIsr = GetRenderer()->EF_CreateInputShaderResource(siSrc.m_pShaderResources);
-		//
-		SShaderItem& siDstTex(pMatInfo->GetShaderItem());
+		
+		const SShaderItem& siDstTex(pMatInfo->GetShaderItem());
 		SInputShaderResourcesPtr idsTex = GetRenderer()->EF_CreateInputShaderResource(siDstTex.m_pShaderResources);
+
 		if (!(flags & MTL_COPY_TEXTURES))
 		{
 			for (int n = 0; n < EFTT_MAX; n++)
@@ -605,9 +623,10 @@ void CMatInfo::Copy(IMaterial* pMtlDest, EMaterialCopyFlags flags)
 				pIsr->m_Textures[n] = idsTex->m_Textures[n];
 			}
 		}
+
 		SShaderItem siDst(GetRenderer()->EF_LoadShaderItem(siSrc.m_pShader->GetName(), false, 0, pIsr, siSrc.m_pShader->GetGenerationMask()));
+		siDst.m_pShaderResources->CloneConstants(siSrc.m_pShaderResources); // Lazy "Copy", stays a reference until changed, after which it becomes unlinked
 		pMatInfo->AssignShaderItem(siDst);
-		siDst.m_pShaderResources->CloneConstants(siSrc.m_pShaderResources);
 	}
 }
 
@@ -627,11 +646,12 @@ CMatInfo* CMatInfo::Clone(CMatInfo* pParentOfClonedMtl)
 	pMatInfo->m_pConsoleMtl = m_pConsoleMtl;
 #endif
 
-	if (m_shaderItem.m_pShaderResources)
+	if (GetShaderItem().m_pShaderResources)
 	{
 		const SShaderItem& siSrc(GetShaderItem());
+
 		SShaderItem siDst(siSrc.Clone());
-		pMatInfo->m_shaderItem = siDst;
+		pMatInfo->AssignShaderItem(siDst);
 	}
 
 	return pMatInfo;
@@ -989,6 +1009,16 @@ void CMatInfo::RequestTexturesLoading(const float fMipFactor)
 	PrecacheTextures(fMipFactor, FPR_STARTLOADING, false);
 }
 
+void CMatInfo::ForceTexturesLoading(const float fMipFactor)
+{
+	PrecacheTextures(fMipFactor, FPR_STARTLOADING + FPR_HIGHPRIORITY, true);
+}
+
+void CMatInfo::ForceTexturesLoading(const int iScreenTexels)
+{
+	PrecacheTextures(iScreenTexels, FPR_STARTLOADING + FPR_HIGHPRIORITY, true);
+}
+
 void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool bFullUpdate)
 {
 	SStreamingPredictionZone& rZone = m_streamZoneInfo[bFullUpdate ? 1 : 0];
@@ -1023,6 +1053,27 @@ void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool b
 		rZone.nRoundId = nRoundId;
 		rZone.fMinMipFactor = fMipFactor;
 		rZone.bHighPriority = bHighPriority;
+	}
+}
+
+void CMatInfo::PrecacheTextures(const int iScreenTexels, const int nFlags, bool bFullUpdate)
+{
+	int nRoundId = bFullUpdate ? GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast : GetObjManager()->m_nUpdateStreamingPrioriryRoundId;
+
+	// TODO: fix fast update
+	if (true)
+	{
+		int nCurrentFlags = Get3DEngine()->IsShadersSyncLoad() ? FPR_SYNCRONOUS : 0;
+		nCurrentFlags |= bFullUpdate ? FPR_SINGLE_FRAME_PRIORITY_UPDATE : 0;
+
+		SShaderItem& rSI = m_shaderItem;
+		if (rSI.m_pShader && rSI.m_pShaderResources && !(rSI.m_pShader->GetFlags() & EF_NODRAW))
+		{
+			{
+				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
+				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+			}
+		}
 	}
 }
 
@@ -1146,6 +1197,12 @@ void CMatInfo::SetKeepLowResSysCopyForDiffTex()
 		if (!pRes)
 			continue;
 
+#ifndef FEATURE_SVO_GI_ALLOW_HQ
+		// For non HQ mode (consoles) keep the texture only if material is going to use alpha value from it
+		if ((pRes->GetAlphaRef() == 0.f) && (pRes->GetStrengthValue(EFTT_OPACITY) == 1.f))
+			continue;
+#endif
+		
 		int j = EFTT_DIFFUSE;
 		{
 			SEfResTexture* pResTexure = pRes->GetTexture(j);

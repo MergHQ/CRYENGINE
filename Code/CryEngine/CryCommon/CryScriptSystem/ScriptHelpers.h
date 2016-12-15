@@ -208,20 +208,6 @@ public:
 protected:
 	CScriptableBase() { m_pSS = NULL; m_pMethodsTable = NULL; m_sGlobalName[0] = 0; }
 
-	void RegisterGlobal(const char* sName, float fValue)
-	{
-		m_pSS->SetGlobalValue(sName, fValue);
-	}
-
-	// [K01]: disabled int version since it is overloaded with float and isn't compiled
-	// under GCC for enum types
-#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	void RegisterGlobal(const char* sName, int nValue)
-	{
-		m_pSS->SetGlobalValue(sName, nValue);
-	}
-#endif
-
 	void RegisterFunction(const char* sFuncName, IScriptTable::FunctionFunctor function)
 	{
 		if (m_pMethodsTable)
@@ -269,7 +255,7 @@ protected:
 
 #define SCRIPT_REG_CLASSNAME
 #define SCRIPT_REG_FUNC(func)                   RegisterFunction( # func, functor_ret(*this, SCRIPT_REG_CLASSNAME func));
-#define SCRIPT_REG_GLOBAL(var)                  RegisterGlobal( # var, var);
+#define SCRIPT_REG_GLOBAL(var)                  gEnv->pScriptSystem->SetGlobalValue( # var, var);
 #define SCRIPT_REG_TEMPLFUNC(func, sFuncParams) RegisterTemplateFunction( # func, sFuncParams, *this, SCRIPT_REG_CLASSNAME func);
 
 #define SCRIPT_CHECK_PARAMETERS(_n)                                                                                                                  \

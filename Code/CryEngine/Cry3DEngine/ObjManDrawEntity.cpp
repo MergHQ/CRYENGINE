@@ -41,7 +41,7 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAff
 #endif // _DEBUG
 
 	// do not draw if marked to be not drawn or already drawn in this frame
-	unsigned int nRndFlags = pEnt->GetRndFlags();
+	auto nRndFlags = pEnt->GetRndFlags();
 
 	if (nRndFlags & ERF_HIDDEN)
 		return;
@@ -168,12 +168,14 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 #endif // _DEBUG
 
 	// do not draw if marked to be not drawn or already drawn in this frame
-	unsigned int nRndFlags = pEnt->GetRndFlags();
+	auto nRndFlags = pEnt->GetRndFlags();
 
 	if (nRndFlags & ERF_HIDDEN)
 		return;
 
 #ifndef _RELEASE
+	if (!passInfo.RenderEntities() && pEnt->GetOwnerEntity()) 
+		return;
 	// check cvars
 	switch (eERType)
 	{
@@ -279,6 +281,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 	DrawParams.fDistance = fEntDistance;
 	DrawParams.AmbientColor = vAmbColor;
 	DrawParams.pRenderNode = pEnt;
+	DrawParams.nEditorSelectionID = pEnt->m_nEditorSelectionID;
 	//DrawParams.pInstance = pEnt;
 
 	if (eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
@@ -298,16 +301,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 		DrawParams.nTextureID = nCubemapTexId;
 	}
 
-	if (pCVars->e_Dissolve && eERType != eERType_Light && passInfo.IsGeneralPass())
-	{
-		if (DrawParams.nDissolveRef = GetDissolveRef(fEntDistance, pEnt->m_fWSMaxViewDist))
-		{
-			DrawParams.dwFObjFlags |= FOB_DISSOLVE | FOB_DISSOLVE_OUT;
-			if (DrawParams.nDissolveRef == 255)
-				return;
-		}
-	}
-
 	DrawParams.nAfterWater = IsAfterWater(objBox.GetCenter(), vCamPos, passInfo) ? 1 : 0;
 
 	if (nRndFlags & ERF_SELECTED)
@@ -325,6 +318,19 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 
 	if (pEnt->m_dwRndFlags & ERF_NO_DECALNODE_DECALS)
 		DrawParams.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
+
+	if (pEnt->GetRndFlags() & ERF_HUD_REQUIRE_DEPTHTEST)
+	{
+		DrawParams.nCustomFlags |= COB_HUD_REQUIRE_DEPTHTEST;
+	}
+	if (pEnt->GetRndFlags() & ERF_DISABLE_MOTION_BLUR)
+	{
+		DrawParams.nCustomFlags |= COB_DISABLE_MOTIONBLUR;
+	}
+	if (pEnt->GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
+	{
+		DrawParams.nCustomFlags |= COB_POST_3D_RENDER;
+	}
 
 	DrawParams.m_pVisArea = pVisArea;
 
@@ -396,7 +402,7 @@ void CObjManager::RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistan
 			{
 				sLabel.Format("%s/%s", pEnt->GetName(), pEnt->GetEntityClassName());
 			}
-			GetRenderer()->DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, "%s", sLabel.c_str());
+			IRenderAuxText::DrawLabelEx(pEnt->GetBBox().GetCenter(), fFontSize, (float*)&color, true, true, sLabel.c_str());
 		}
 
 		IRenderAuxGeom* pRenAux = GetRenderer()->GetIRenderAuxGeom();

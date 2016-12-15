@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12View.hpp"
 
-class CCryDX12RenderTargetView : public CCryDX12View<ID3D11RenderTargetView>
+class CCryDX12RenderTargetView : public CCryDX12View<ID3D11RenderTargetViewToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12RenderTargetView, CCryDX12View<ID3D11RenderTargetView> );
+	DX12_OBJECT(CCryDX12RenderTargetView, CCryDX12View<ID3D11RenderTargetViewToImplement> );
 
 	static CCryDX12RenderTargetView* Create(CCryDX12Device* pDevice, ID3D11Resource* pResource, const D3D11_RENDER_TARGET_VIEW_DESC* pDesc);
 

@@ -41,7 +41,7 @@ end_sources()
 #END-FILE-LIST
 
 if(NOT (ORBIS OR ANDROID)) # Some platforms can never build to shared libraries, so we need to skip the helper library for those.
-	CryEngineModule(CryScaleformHelper SOLUTION_FOLDER "CryExtensions")
+	CryEngineModule(CryScaleformHelper SOLUTION_FOLDER "CryExtensions" FORCE_SHARED)
 
 	target_include_directories( ${THIS_PROJECT} PRIVATE .. )
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE -DCRY_IS_SCALEFORM_HELPER)
@@ -49,6 +49,12 @@ if(NOT (ORBIS OR ANDROID)) # Some platforms can never build to shared libraries,
 	use_scaleform()
 	if (WIN32 OR WIN64)
 		target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Winmm)
+	endif()
+	if (LINUX)
+		target_link_libraries(${THIS_PROJECT} PRIVATE png16 jpeg)
+	endif()
+	if (APPLE)
+		target_link_libraries(${THIS_PROJECT} PRIVATE png16)
 	endif()
 else()
 	CryFileContainer(CryScaleformHelper SOLUTION_FOLDER "CryExtensions")

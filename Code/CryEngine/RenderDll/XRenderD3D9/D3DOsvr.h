@@ -1,10 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#ifdef INCLUDE_OSVR_SDK
+#ifdef INCLUDE_VR_RENDERING
 
 	#include <CrySystem/VR/IHMDDevice.h>
-	#include <CrySystem/VR/IHmdOSVRDevice.h>
+	#include <../CryPlugins/VR/CryOSVR/Interface/IHmdOSVRDevice.h>
 	#include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;
@@ -23,7 +23,6 @@ public:
 	// IHDMRenderer implementation
 	virtual bool                      Initialize() override;
 	virtual void                      Shutdown() override;
-	virtual void                      CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight) override;
 	virtual void                      OnResolutionChanged() override;
 	virtual void                      ReleaseBuffers() override;
 	virtual void                      PrepareFrame() override;
@@ -40,14 +39,14 @@ private:
 		TArray<CTexture*> textures;
 	};
 
-	CryVR::Osvr::IOsvrDevice* m_pDevice;
+	CryVR::Osvr::IOsvrDevice* m_pOsvrDevice;
 	CD3D9Renderer*            m_pRenderer;
 	CD3DStereoRenderer*       m_pStereoRenderer;
 
 	uint32                    m_eyeWidth;
 	uint32                    m_eyeHeight;
 
-	EyeTextures               m_eyeTextures[EyeCount];
+	EyeTextures               m_scene3DRenderData[EyeCount];
 
 	int                       m_swapSetCount;
 	int                       m_currentFrame;

@@ -33,6 +33,9 @@ public:
 
 	CRYGENERATE_CLASS(COperatorQueue, "AnimationPoseModifier_OperatorQueue", 0xac90f2bc76a843ec, 0x9970463fb080a520);
 
+	COperatorQueue();
+	virtual ~COperatorQueue() {}
+
 private:
 	enum EOpInternal
 	{

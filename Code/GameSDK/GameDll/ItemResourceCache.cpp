@@ -660,41 +660,41 @@ void CItemAnimationDBAManager::Debug()
 		float posY = 50.f;
 		float posX = 50.f;
 
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Currently in use Items and DBAs");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Currently in use Items and DBAs");
 		posY += 15.0f;
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
 		posY += 15.0f;
 
 		for (size_t i = 0; i < m_inUseDBAs.size(); ++i)
 		{
-			gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Item: '%s'", m_inUseDBAs[i].first.c_str());
+			IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Item: '%s'", m_inUseDBAs[i].first.c_str());
 			posY += 15.0f;
 
 			const SItemDBAInfo& dbaInfo = m_inUseDBAs[i].second;
 			for (int j = 0; j < dbaInfo.GetDBACount(); ++j)
 			{
-				gEnv->pRenderer->Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA: '%s' - Users: %d", dbaInfo.GetDBA(j), dbaInfo.GetUserCount());
+				IRenderAuxText::Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA: '%s' - Users: %d", dbaInfo.GetDBA(j), dbaInfo.GetUserCount());
 				posY += 15.0f;
 			}
 
 			posY += 5.0f;
 		}
 
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Preloaded but not in use Items and DBAs");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Preloaded but not in use Items and DBAs");
 		posY += 15.0f;
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
 		posY += 15.0f;
 
 
 		for (size_t i = 0; i < m_preloadedDBASlots.size(); ++i)
 		{
-			gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Item: '%s'", m_preloadedDBASlots[i].first.c_str());
+			IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Item: '%s'", m_preloadedDBASlots[i].first.c_str());
 			posY += 15.0f;
 
 			const SItemDBAInfo& dbaInfo = m_preloadedDBASlots[i].second;
 			for (int j = 0; j < dbaInfo.GetDBACount(); ++j)
 			{
-				gEnv->pRenderer->Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA: '%s' - Time: %.2f", dbaInfo.GetDBA(j), dbaInfo.GetRequestedTime());
+				IRenderAuxText::Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA: '%s' - Time: %.2f", dbaInfo.GetDBA(j), dbaInfo.GetRequestedTime());
 				posY += 15.0f;
 			}
 
@@ -703,7 +703,7 @@ void CItemAnimationDBAManager::Debug()
 	}
 	else
 	{
-		gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "DBA management for 1p animations disabled");
+		IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "DBA management for 1p animations disabled");
 
 	}
 }

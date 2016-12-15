@@ -87,9 +87,7 @@ void CAICounter_Alertness::Update( float frameTime )
 //////////////////////////////////////////////////////////////////////////
 void CAICounter_Alertness::UpdateCounters()
 {
-	if (!gEnv->pGame)
-		return;
-	const IActor*     pLocalPlayer    = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	const IActor*     pLocalPlayer    = gEnv->pGameFramework->GetClientActor();
 	const IAIObject*  pAILocalPlayer  = pLocalPlayer ? pLocalPlayer->GetEntity()->GetAI() : NULL;
 	if (!pAILocalPlayer)
 		return;
@@ -111,7 +109,7 @@ void CAICounter_Alertness::UpdateCounters()
 	int alertnessEnemies = 0;
 
 
-	IActorIteratorPtr actorIt = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr actorIt = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	while (IActor *pActor=actorIt->Next())
 	{
 		if (pActor && pActor!=pLocalPlayer)

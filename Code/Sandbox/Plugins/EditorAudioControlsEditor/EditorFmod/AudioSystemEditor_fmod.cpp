@@ -329,7 +329,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionToControl(EACEControlType
 	if (pMiddlewareControl)
 	{
 		ItemType type = pMiddlewareControl->GetType();
-		if (type == eFmodItemType_Event)
+		if (type == eFmodItemType_Event || type == eFmodItemType_Snapshot)
 		{
 			return std::make_shared<CEventConnection>(pMiddlewareControl->GetId());
 		}
@@ -391,7 +391,6 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 			{
 			case eFmodItemType_Event:
 			case eFmodItemType_Snapshot:
-			case eFmodItemType_Return:
 				{
 					string eventType = pNode->getAttr(g_eventTypeAttribute);
 					auto pConnection = std::make_shared<CEventConnection>(pItem->GetId());
@@ -431,6 +430,7 @@ ConnectionPtr CAudioSystemEditor_fmod::CreateConnectionFromXMLNode(XmlNodeRef pN
 				}
 				break;
 			case eFmodItemType_Bank:
+			case eFmodItemType_Return:
 				{
 					return std::make_shared<IAudioConnection>(pItem->GetId());
 				}
@@ -451,6 +451,7 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 		switch (pItem->GetType())
 		{
 		case eFmodItemType_Event:
+		case eFmodItemType_Snapshot:
 			{
 				pNode->setAttr(g_nameAttribute, GetFullPathName(pItem));
 				auto pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
@@ -460,7 +461,6 @@ XmlNodeRef CAudioSystemEditor_fmod::CreateXMLNodeFromConnection(const Connection
 				}
 			}
 			break;
-		case eFmodItemType_Snapshot:
 		case eFmodItemType_Return:
 			{
 				pNode->setAttr(g_nameAttribute, GetFullPathName(pItem));

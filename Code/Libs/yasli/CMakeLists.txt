@@ -48,7 +48,11 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineStaticModule(yasli SOLUTION_FOLDER "Libs")
-target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+if(WIN32 OR WIN64)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+	target_compile_options(${THIS_PROJECT} PRIVATE /Zc:inline-)
+endif()
+
 target_include_directories(${THIS_PROJECT} PUBLIC ${CRY_LIBS_DIR}/yasli ${SDK_DIR}/yasli)
 
 install(DIRECTORY ${CRY_LIBS_DIR}/yasli/yasli DESTINATION include/SDKs/yasli)

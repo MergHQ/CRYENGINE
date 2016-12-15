@@ -7,7 +7,5 @@ def build(bld):
 		vs_filter   = 'Launcher',
 		
 		win_file_list   = 'launcher.waf_files', 
-		lib         = 'Shell32', 
-		
-		use_module = ['jsmn'],
+		lib         = 'Shell32',
 	)	

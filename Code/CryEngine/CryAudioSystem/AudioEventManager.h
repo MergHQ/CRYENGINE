@@ -4,22 +4,27 @@
 
 #include "ATLEntities.h"
 
-class CAudioEventManager
+class CAudioEventManager final
 {
 public:
 
 	CAudioEventManager();
-	virtual ~CAudioEventManager();
+	~CAudioEventManager();
 
-	void       Init(CryAudio::Impl::IAudioImpl* const pImpl);
-	void       Release();
-	void       Update(float const deltaTime);
+	CAudioEventManager(CAudioEventManager const&) = delete;
+	CAudioEventManager(CAudioEventManager&&) = delete;
+	CAudioEventManager& operator=(CAudioEventManager const&) = delete;
+	CAudioEventManager& operator=(CAudioEventManager&&) = delete;
 
-	CATLEvent* GetEvent(EAudioSubsystem const audioSubsystem);
-	CATLEvent* LookupId(AudioEventId const audioEventId) const;
-	void       ReleaseEvent(CATLEvent* const pEvent);
+	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
+	void                Release();
+	void                Update(float const deltaTime);
 
-	size_t     GetNumActive() const;
+	CATLEvent*          GetEvent(EAudioSubsystem const audioSubsystem);
+	CATLEvent*          LookupId(AudioEventId const audioEventId) const;
+	void                ReleaseEvent(CATLEvent* const pEvent);
+
+	size_t              GetNumActive() const;
 
 private:
 
@@ -29,7 +34,7 @@ private:
 	CATLEvent* GetInternalInstance();
 	void       ReleaseInternalInstance(CATLEvent* const pOldEvent);
 
-	typedef std::map<AudioEventId, CATLEvent*, std::less<AudioEventId>, STLSoundAllocator<std::pair<AudioEventId, CATLEvent*>>>
+	typedef std::map<AudioEventId, CATLEvent*, std::less<AudioEventId>, STLSoundAllocator<std::pair<AudioEventId const, CATLEvent*>>>
 	  TActiveEventMap;
 
 	TActiveEventMap m_activeAudioEvents;
@@ -42,13 +47,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void SetDebugNameStore(CATLDebugNameStore const* const pDebugNameStore);
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const;
 
-private:
-
-	CATLDebugNameStore const* m_pDebugNameStore;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioEventManager);
 };

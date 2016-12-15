@@ -1,38 +1,32 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IEntityClass.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CrySerialization/Forward.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 struct IEntity;
-struct IEntityProxy;
+struct IEntityComponent;
 struct SEntitySpawnParams;
 struct IEntityScript;
 struct IScriptTable;
+
+class ITexture;
 
 struct SEditorClassInfo
 {
 	SEditorClassInfo() :
 		sIcon(""),
 		sHelper(""),
-		sCategory("")
+		sCategory(""),
+		bIconOnTop(false)
 	{
 	}
 
-	const char* sIcon;
-	const char* sHelper;
-	const char* sCategory;
+	string sIcon;
+	string sHelper;
+	string sCategory;
+	bool   bIconOnTop;
 };
 
 enum EEntityClassFlags
@@ -47,88 +41,6 @@ enum EEntityClassFlags
 };
 
 struct IEntityClassRegistryListener;
-
-//! Custom interface that can be used to enumerate/set an entity class' property.
-//! Mostly used for comunication with the editor.
-struct IEntityPropertyHandler
-{
-	virtual ~IEntityPropertyHandler(){}
-
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const { /*REPLACE LATER*/ }
-
-	//! Property info for entity class.
-	enum EPropertyType
-	{
-		Bool,
-		Int,
-		Float,
-		Vector,
-		String,
-		Entity,
-		FolderBegin,
-		FolderEnd
-	};
-
-	enum EPropertyFlags
-	{
-		ePropertyFlag_UIEnum   = BIT(0),
-		ePropertyFlag_Unsorted = BIT(1),
-	};
-
-	struct SPropertyInfo
-	{
-		const char*   name;        //!< Name of the property.
-		EPropertyType type;        //!< Type of the property value.
-		const char*   editType;    //!< Type of edit control to use.
-		const char*   description; //!< Description of the property.
-		uint32        flags;       //!< Property flags.
-
-		//! Limits.
-		struct SLimits
-		{
-			float min;
-			float max;
-		} limits;
-	};
-
-	//! Refresh the class' properties.
-	virtual void RefreshProperties() = 0;
-
-	//! Load properties into the entity.
-	virtual void LoadEntityXMLProperties(IEntity* entity, const XmlNodeRef& xml) = 0;
-
-	//! Load archetype properties.
-	virtual void LoadArchetypeXMLProperties(const char* archetypeName, const XmlNodeRef& xml) = 0;
-
-	//! Init entity with archetype properties.
-	virtual void InitArchetypeEntity(IEntity* entity, const char* archetypeName, const SEntitySpawnParams& spawnParams) = 0;
-
-	//! \return Number of properties for this entity.
-	virtual int GetPropertyCount() const = 0;
-
-	//! Retrieve information about properties of the entity.
-	//! \param nIndex Index of the property to retrieve, must be in 0 to GetPropertyCount()-1 range.
-	//! \return Specified event description in SPropertyInfo structure.
-	virtual bool GetPropertyInfo(int index, SPropertyInfo& info) const = 0;
-
-	//! Set a property in a entity of this class.
-	//! \param index Index of the property to set, must be in 0 to GetPropertyCount()-1 range.
-	virtual void SetProperty(IEntity* entity, int index, const char* value) = 0;
-
-	//! Get a property in a entity of this class.
-	//! \param index Index of the property to get, must be in 0 to GetPropertyCount()-1 range.
-	virtual const char* GetProperty(IEntity* entity, int index) const = 0;
-
-	//! Get a property in a entity of this class.
-	//! \param index Index of the property to get, must be in 0 to GetPropertyCount()-1 range.
-	virtual const char* GetDefaultProperty(int index) const = 0;
-
-	//! Get script flags of this class.
-	virtual uint32 GetScriptFlags() const = 0;
-
-	//! Inform the implementation that properties have changed. Called at the end of a change block.
-	virtual void PropertiesChanged(IEntity* entity) = 0;
-};
 
 //! Custom interface that can be used to reload an entity's script.
 //! Only used by the editor, only.
@@ -195,24 +107,6 @@ struct IEntityEventHandler
 	virtual void SendEvent(IEntity* entity, const char* eventName) = 0;
 };
 
-struct IEntityAttribute;
-
-DECLARE_SHARED_POINTERS(IEntityAttribute)
-
-//! Derive from this interface to expose custom entity properties in the editor using the serialization framework.
-struct IEntityAttribute
-{
-	virtual ~IEntityAttribute() {}
-
-	virtual const char*         GetName() const = 0;
-	virtual const char*         GetLabel() const = 0;
-	virtual void                Serialize(Serialization::IArchive& archive) = 0;
-	virtual IEntityAttributePtr Clone() const = 0;
-	virtual void                OnAttributeChange(IEntity* pEntity) const {}
-};
-
-typedef DynArray<IEntityAttributePtr> TEntityAttributeArray;
-
 //! Entity class defines what is this entity, what script it uses, what user proxy will be spawned with the entity, etc.
 //! IEntityClass unique identify type of the entity, Multiple entities share the same entity class.
 //! Two entities can be compared if they are of the same type by just comparing their IEntityClass pointers.
@@ -221,11 +115,11 @@ struct IEntityClass
 	//! UserProxyCreateFunc is a function pointer type,.
 	//! By calling this function EntitySystem can create user defined UserProxy class for an entity in SpawnEntity.
 	//! For example:
-	//! IEntityProxy* CreateUserProxy( IEntity *pEntity, SEntitySpawnParams &params )
+	//! IEntityComponent* CreateUserProxy( IEntity *pEntity, SEntitySpawnParams &params )
 	//! {
 	//!     return new CUserProxy( pEntity,params );.
 	//! }
-	typedef IEntityProxyPtr (* UserProxyCreateFunc)(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
+	typedef IEntityComponent* (* UserProxyCreateFunc)(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
 
 	enum EventValueType
 	{
@@ -273,7 +167,6 @@ struct IEntityClass
 	//! \return IScriptTable interface if this entity have script, or NULL if no script defined for this entity class.
 	virtual IScriptTable*             GetScriptTable() const = 0;
 
-	virtual IEntityPropertyHandler*   GetPropertyHandler() const = 0;
 	virtual IEntityEventHandler*      GetEventHandler() const = 0;
 	virtual IEntityScriptFileHandler* GetScriptFileHandler() const = 0;
 
@@ -306,16 +199,6 @@ struct IEntityClass
 	//! \return True if event found and event parameter is initialized.
 	virtual bool FindEventInfo(const char* sEvent, SEventInfo& event) = 0;
 
-	//! Get attributes associated with this entity class.
-	//! \return Array of entity attributes.
-	virtual TEntityAttributeArray&       GetClassAttributes() = 0;
-	virtual const TEntityAttributeArray& GetClassAttributes() const = 0;
-
-	//! Get attributes associated with entities of this class.
-	//! \return Array of entity attributes.
-	virtual TEntityAttributeArray&       GetEntityAttributes() = 0;
-	virtual const TEntityAttributeArray& GetEntityAttributes() const = 0;
-
 	virtual void                         GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	// </interfuscator:shuffle>
 };
@@ -336,15 +219,14 @@ struct IEntityClassRegistry
 			, editorClassInfo()
 			, pUserProxyCreateFunc(NULL)
 			, pUserProxyData(NULL)
-			, pPropertyHandler(NULL)
 			, pEventHandler(NULL)
 			, pScriptFileHandler(NULL)
 		{
 		};
 
 		int                               flags;
-		const char*                       sName;
-		const char*                       sScriptFile;
+		string                            sName;
+		string                            sScriptFile;
 		IScriptTable*                     pScriptTable;
 
 		SEditorClassInfo                  editorClassInfo;
@@ -352,12 +234,8 @@ struct IEntityClassRegistry
 		IEntityClass::UserProxyCreateFunc pUserProxyCreateFunc;
 		void*                             pUserProxyData;
 
-		IEntityPropertyHandler*           pPropertyHandler;
 		IEntityEventHandler*              pEventHandler;
 		IEntityScriptFileHandler*         pScriptFileHandler;
-
-		TEntityAttributeArray             classAttributes;
-		TEntityAttributeArray             entityAttributes;
 	};
 
 	virtual ~IEntityClassRegistry(){}

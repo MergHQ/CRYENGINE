@@ -44,7 +44,7 @@ private:
 
 	IScriptTable* CurTable() { CRY_ASSERT(!m_tableStack.empty()); return m_tableStack.top().GetPtr(); }
 
-	class SSetValueVisitor : public boost::static_visitor<void>
+	class SSetValueVisitor
 	{
 	public:
 		SSetValueVisitor(IScriptTable* pTable, const char* name) : m_pTable(pTable), m_name(name) {}
@@ -56,16 +56,34 @@ private:
 		}
 
 		template<class T>
-		void operator()(T& type)
+		void operator()(const T& type)
 		{
 			Visit(type);
 		}
 
+		void operator()(const SReadWriteXMLCommon::TValue& var)
+		{
+			VisitVariant(var);
+		}
+
 	private:
+		template<size_t I = 0>
+		void VisitVariant(const SReadWriteXMLCommon::TValue& var)
+		{
+			if (var.index() == I)
+			{
+				Visit(stl::get<I>(var));
+			}
+			else
+			{
+				VisitVariant<I + 1>(var);
+			}
+		}
+
 		IScriptTable* m_pTable;
 		const char*   m_name;
 	};
-	class SSetValueAtVisitor : public boost::static_visitor<void>
+	class SSetValueAtVisitor
 	{
 	public:
 		SSetValueAtVisitor(IScriptTable* pTable, int elem) : m_pTable(pTable), m_elem(elem) {}
@@ -77,16 +95,44 @@ private:
 		}
 
 		template<class T>
-		void operator()(T& type)
+		void operator()(const T& type)
 		{
 			Visit(type);
 		}
 
+		void operator()(const SReadWriteXMLCommon::TValue& var)
+		{
+			VisitVariant(var);
+		}
+
 	private:
+		template<size_t I = 0>
+		void VisitVariant(const SReadWriteXMLCommon::TValue& var)
+		{
+			if (var.index() == I)
+			{
+				Visit(stl::get<I>(var));
+			}
+			else
+			{
+				VisitVariant<I + 1>(var);
+			}
+		}
+
 		IScriptTable* m_pTable;
 		int           m_elem;
 	};
 };
+template<>
+void CXmlScriptLoad::SSetValueVisitor::VisitVariant<stl::variant_size<SReadWriteXMLCommon::TValue>::value>(const SReadWriteXMLCommon::TValue& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
+template<>
+void CXmlScriptLoad::SSetValueAtVisitor::VisitVariant<stl::variant_size<SReadWriteXMLCommon::TValue>::value>(const SReadWriteXMLCommon::TValue& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 TYPEDEF_AUTOPTR(CXmlScriptLoad);
 typedef CXmlScriptLoad_AutoPtr CXmlScriptLoadPtr;
@@ -121,7 +167,7 @@ IReadXMLSinkPtr CXmlScriptLoad::BeginTableAt(int elem, const XmlNodeRef& definit
 bool CXmlScriptLoad::SetValue(const char* name, const TValue& value, const XmlNodeRef& definition)
 {
 	SSetValueVisitor visitor(CurTable(), name);
-	boost::apply_visitor(visitor, value);
+	stl::visit(visitor, value);
 	return true;
 }
 
@@ -150,7 +196,7 @@ IReadXMLSinkPtr CXmlScriptLoad::BeginArray(const char* name, const XmlNodeRef& d
 bool CXmlScriptLoad::SetAt(int elem, const TValue& value, const XmlNodeRef& definition)
 {
 	SSetValueAtVisitor visitor(CurTable(), elem);
-	boost::apply_visitor(visitor, value);
+	stl::visit(visitor, value);
 	return true;
 }
 
@@ -278,7 +324,7 @@ bool CXmlScriptSaver::EndArray(const char* name)
 namespace
 {
 
-struct CGetValueVisitor : public boost::static_visitor<void>
+struct CGetValueVisitor
 {
 public:
 	CGetValueVisitor(IScriptTable* pTable, const char* name) : m_ok(false), m_pTable(pTable), m_name(name) {}
@@ -295,18 +341,41 @@ public:
 		Visit(type);
 	}
 
+	void operator()(SReadWriteXMLCommon::TValue& var)
+	{
+		VisitVariant(var);
+	}
+
 	bool Ok()
 	{
 		return m_ok;
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(SReadWriteXMLCommon::TValue& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	bool          m_ok;
 	IScriptTable* m_pTable;
 	const char*   m_name;
 };
+template<>
+void CGetValueVisitor::VisitVariant<stl::variant_size<SReadWriteXMLCommon::TValue>::value>(SReadWriteXMLCommon::TValue& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
-struct CGetAtVisitor : public boost::static_visitor<void>
+struct CGetAtVisitor
 {
 public:
 	CGetAtVisitor(IScriptTable* pTable, int elem) : m_ok(false), m_pTable(pTable), m_elem(elem) {}
@@ -323,30 +392,52 @@ public:
 		Visit(type);
 	}
 
+	void operator()(SReadWriteXMLCommon::TValue& var)
+	{
+		VisitVariant(var);
+	}
+
 	bool Ok()
 	{
 		return m_ok;
 	}
 
 private:
+	template<size_t I = 0>
+	void VisitVariant(SReadWriteXMLCommon::TValue& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	bool          m_ok;
 	IScriptTable* m_pTable;
 	int           m_elem;
 };
-
+template<>
+void CGetAtVisitor::VisitVariant<stl::variant_size<SReadWriteXMLCommon::TValue>::value>(SReadWriteXMLCommon::TValue& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 }
 
 bool CXmlScriptSaver::GetValue(const char* name, TValue& value, const XmlNodeRef& definition)
 {
 	CGetValueVisitor visitor(CurTable(), name);
-	boost::apply_visitor(visitor, value);
+	stl::visit(visitor, value);
 	return visitor.Ok();
 }
 
 bool CXmlScriptSaver::GetAt(int elem, TValue& value, const XmlNodeRef& definition)
 {
 	CGetAtVisitor visitor(CurTable(), elem);
-	boost::apply_visitor(visitor, value);
+	stl::visit(visitor, value);
 	return visitor.Ok();
 }
 

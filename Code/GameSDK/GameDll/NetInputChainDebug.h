@@ -1,13 +1,13 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
+   -------------------------------------------------------------------------
 
-Description: Utilities for debugging input synchronization problems
+   Description: Utilities for debugging input synchronization problems
 
--------------------------------------------------------------------------
-History:
--	30:03:2007  : Created by Craig Tiller
+   -------------------------------------------------------------------------
+   History:
+   -	30:03:2007  : Created by Craig Tiller
 
 *************************************************************************/
 
@@ -19,16 +19,18 @@ History:
 #endif
 
 void NetInputChainInitCVars();
+void NetInputChainUnregisterCVars();
 
 #if ENABLE_NETINPUTCHAINDEBUG
-void NetInputChainPrint( const char * name, float val );
-void NetInputChainPrint( const char * name, const Vec3& val );
+void NetInputChainPrint(const char* name, float val);
+void NetInputChainPrint(const char* name, const Vec3& val);
 
 extern EntityId _netinputchain_debugentity;
 
-#define NETINPUT_TRACE(ent, val) if (ent != _netinputchain_debugentity); else NetInputChainPrint(#val, val)
+	#define NETINPUT_TRACE(ent, val) if (ent != _netinputchain_debugentity); else \
+	  NetInputChainPrint( # val, val)
 #else
-#define NETINPUT_TRACE(ent, val) ((void*)0)
+	#define NETINPUT_TRACE(ent, val) ((void*)0)
 #endif
 
 #endif

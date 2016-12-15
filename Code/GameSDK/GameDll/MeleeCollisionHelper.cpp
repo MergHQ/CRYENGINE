@@ -146,9 +146,9 @@ void CMeleeCollisionHelper::Impulse( IPhysicalEntity *pCollider, const Vec3 &pos
 			const float fPushImpulseScale = !gEnv->bMultiplayer || (pActor->IsClient() && (hitTypeID == CGameRules::EHitType::Melee)) ? 1.0f : 0.0f;
 			pActor->AddLocalHitImpulse(SHitImpulse(partId, -1, position, impulse, fPushImpulseScale));
 		}
-		else if(IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+		else
 		{
-			pPhysicsProxy->AddImpulse(partId, position, impulse, true, 1.0f, 1.0f);
+			pEntity->AddImpulse(partId, position, impulse, true, 1.0f, 1.0f);
 		}
 	}
 	else

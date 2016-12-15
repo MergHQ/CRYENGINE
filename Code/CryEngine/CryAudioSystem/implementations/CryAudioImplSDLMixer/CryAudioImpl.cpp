@@ -11,7 +11,7 @@
 using namespace CryAudio::Impl::SDL_mixer;
 
 // Define global objects.
-CSoundAllocator g_audioImplMemoryPool;
+CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 
@@ -19,14 +19,17 @@ CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "CryAudioImplSDLMixer", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
+	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplSDLMixer, "EngineModule_AudioImpl", 0x8030c0d1905b4031, 0xa3785a8b53125f3f)
+
+	CEngineModule_CryAudioImplSDLMixer();
+	virtual ~CEngineModule_CryAudioImplSDLMixer() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     { return "CryAudioImplSDLMixer"; }
-	virtual char const* GetCategory() { return "CryAudio"; }
+	virtual char const* GetName()     override { return "CryAudioImplSDLMixer"; }
+	virtual char const* GetCategory() override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		// Initialize memory pools.
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer Audio Implementation Memory Pool Primary");
@@ -73,10 +76,6 @@ bool CEngineModule_CryAudioImplSDLMixer::m_bSuccess = false;
 CEngineModule_CryAudioImplSDLMixer::CEngineModule_CryAudioImplSDLMixer()
 {
 	g_audioImplCVars.RegisterVariables();
-}
-
-CEngineModule_CryAudioImplSDLMixer::~CEngineModule_CryAudioImplSDLMixer()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

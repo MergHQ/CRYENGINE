@@ -40,6 +40,8 @@ class CEngineModule_CryNetwork : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryNetwork, "EngineModule_CryNetwork", 0x7dc5c3b8bb374063, 0xa29ac2d6dd718e0f)
 
+	virtual ~CEngineModule_CryNetwork() {}
+
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryNetwork"; };
 	virtual const char* GetCategory()  override { return "CryEngine"; };
@@ -85,15 +87,6 @@ class CEngineModule_CryNetwork : public IEngineModule
 	}
 };
 
-CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryNetwork)
-
-CEngineModule_CryNetwork::CEngineModule_CryNetwork()
-{
-
-};
-
-CEngineModule_CryNetwork::~CEngineModule_CryNetwork()
-{
-};
+CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryNetwork);
 
 #include <CryCore/CrtDebugStats.h>

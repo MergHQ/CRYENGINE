@@ -1,15 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   DialogActorContext.cpp
-//  Version:     v1.00
-//  Created:     07/07/2006 by AlexL
-//  Compilers:   Visual Studio.NET
-//  Description: Dialog System
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include "DialogActorContext.h"
 #include "DialogSession.h"
@@ -108,7 +98,7 @@ CDialogActorContext::~CDialogActorContext()
 		IEntity* pActorEntity = m_pSession->GetActorEntity(m_actorID);
 		if (pActorEntity)
 		{
-			IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+			IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 			if (pActorAudioProxy)
 			{
 				pActorAudioProxy->RemoveAsListenerFromAuxAudioProxy(m_SpeechAuxProxy, &CDialogActorContext::OnAudioTriggerFinished);
@@ -434,7 +424,7 @@ bool CDialogActorContext::Update(float dt)
 						if (pActorEntity == 0)
 							break;
 
-						IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+						IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 
 						if (pActorAudioProxy == 0)
 							break;
@@ -457,13 +447,9 @@ bool CDialogActorContext::Update(float dt)
 						{
 							m_bSoundStarted = true;
 							m_bHasScheduled = true;
-							//todo: get the length of the sound to schedule the next line (set m_soundLength). Currently we schedule the next line as soon as the current one is finished, ignoring the specified "delay" parameter. its done in: DialogTriggerFinishedCallback
 
-							const char* triggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_pCurLine->m_audioID);
-							if (triggerName == NULL)
-								triggerName = "dialog trigger";
 							DiaLOG::Log(DiaLOG::eDebugA, "[DIALOG] CDialogActorContex::Update: %s Now=%f actorID=%d phase=eDAC_ScheduleSoundPlay: Starting '%s'",
-							            m_pSession->GetDebugName(), now, m_actorID, triggerName);
+							            m_pSession->GetDebugName(), now, m_actorID, "dialog trigger");
 						}
 					}
 					else
@@ -568,7 +554,7 @@ void CDialogActorContext::UpdateAuxProxyPosition()
 	if (pActorEntity == 0)
 		return;
 
-	IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+	IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 	if (pActorAudioProxy == 0)
 		return;
 
@@ -679,7 +665,7 @@ bool CDialogActorContext::DoAnimAction(IEntity* pEntity, const string& action, b
 ////////////////////////////////////////////////////////////////////////////
 bool CDialogActorContext::DoAnimActionAG(IEntity* pEntity, const char* sAction)
 {
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_entityID);
+	IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entityID);
 	if (pActor)
 	{
 		m_pAGState = pActor->GetAnimationGraphState();
@@ -1107,7 +1093,7 @@ void CDialogActorContext::StopSound(bool bUnregisterOnly)
 		if (pActorEntity == 0)
 			return;
 
-		IEntityAudioProxy* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
+		IEntityAudioComponent* pActorAudioProxy = m_pSession->GetEntityAudioProxy(pActorEntity);
 		if (pActorAudioProxy == 0)
 			return;
 

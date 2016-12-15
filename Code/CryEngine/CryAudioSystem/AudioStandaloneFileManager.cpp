@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
+#include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IAudioImpl.h>
@@ -9,12 +10,10 @@
 using namespace CryAudio::Impl;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioStandaloneFileManager::CAudioStandaloneFileManager()
-	: m_audioStandaloneFilePool(g_audioCVars.m_audioStandaloneFilePoolSize, 1)
+CAudioStandaloneFileManager::CAudioStandaloneFileManager(AudioStandaloneFileLookup& audioStandaloneFiles)
+	: m_audioStandaloneFiles(audioStandaloneFiles)
+	, m_audioStandaloneFilePool(g_audioCVars.m_audioStandaloneFilePoolSize, 1)
 	, m_pImpl(nullptr)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	, m_pDebugNameStore(nullptr)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 {
 }
 
@@ -37,16 +36,16 @@ CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 		m_audioStandaloneFilePool.m_reserved.clear();
 	}
 
-	if (!m_activeAudioStandaloneFiles.empty())
+	if (!m_audioStandaloneFiles.empty())
 	{
-		for (auto const& standaloneFilePair : m_activeAudioStandaloneFiles)
+		for (auto const& standaloneFilePair : m_audioStandaloneFiles)
 		{
 			CATLStandaloneFile* const pStandaloneFile = standaloneFilePair.second;
 			CRY_ASSERT(pStandaloneFile->m_pImplData == nullptr);
 			POOL_FREE(pStandaloneFile);
 		}
 
-		m_activeAudioStandaloneFiles.clear();
+		m_audioStandaloneFiles.clear();
 	}
 }
 
@@ -56,7 +55,7 @@ void CAudioStandaloneFileManager::Init(IAudioImpl* const pImpl)
 	m_pImpl = pImpl;
 
 	size_t const numPooledAudioStandaloneFiles = m_audioStandaloneFilePool.m_reserved.size();
-	size_t const numActiveAudioStandaloneFiles = m_activeAudioStandaloneFiles.size();
+	size_t const numActiveAudioStandaloneFiles = m_audioStandaloneFiles.size();
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if ((numPooledAudioStandaloneFiles + numActiveAudioStandaloneFiles) > std::numeric_limits<size_t>::max())
@@ -84,7 +83,7 @@ void CAudioStandaloneFileManager::Init(IAudioImpl* const pImpl)
 		pStandaloneFile->m_pImplData = m_pImpl->NewAudioStandaloneFile();
 	}
 
-	for (auto const& standaloneFilePair : m_activeAudioStandaloneFiles)
+	for (auto const& standaloneFilePair : m_audioStandaloneFiles)
 	{
 		CATLStandaloneFile* const pStandaloneFile = standaloneFilePair.second;
 		CRY_ASSERT(pStandaloneFile->m_pImplData == nullptr);
@@ -101,7 +100,7 @@ void CAudioStandaloneFileManager::Release()
 		pStandaloneFile->m_pImplData = nullptr;
 	}
 
-	for (auto const& standaloneFilePair : m_activeAudioStandaloneFiles)
+	for (auto const& standaloneFilePair : m_audioStandaloneFiles)
 	{
 		CATLStandaloneFile* const pStandaloneFile = standaloneFilePair.second;
 		m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
@@ -141,10 +140,10 @@ CATLStandaloneFile* CAudioStandaloneFileManager::GetStandaloneFile(char const* c
 	if (pStandaloneFile != nullptr)
 	{
 		pStandaloneFile->m_id = static_cast<AudioStandaloneFileId>(AudioStringToId(szFile));
-		m_activeAudioStandaloneFiles[pStandaloneFile->GetId()] = pStandaloneFile;
+		m_audioStandaloneFiles[pStandaloneFile->GetId()] = pStandaloneFile;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		m_pDebugNameStore->AddAudioStandaloneFile(pStandaloneFile->m_id, szFile);
+		pStandaloneFile->m_name = szFile;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
@@ -158,11 +157,11 @@ CATLStandaloneFile* CAudioStandaloneFileManager::LookupId(AudioStandaloneFileId 
 
 	if (instanceId != INVALID_AUDIO_STANDALONE_FILE_ID)
 	{
-		ActiveStandaloneFilesMap::const_iterator const Iter(m_activeAudioStandaloneFiles.find(instanceId));
+		AudioStandaloneFileLookup::const_iterator const iter(m_audioStandaloneFiles.find(instanceId));
 
-		if (Iter != m_activeAudioStandaloneFiles.end())
+		if (iter != m_audioStandaloneFiles.end())
 		{
-			pStandaloneFile = Iter->second;
+			pStandaloneFile = iter->second;
 		}
 	}
 
@@ -174,12 +173,7 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 {
 	if (pStandaloneFile != nullptr)
 	{
-		m_activeAudioStandaloneFiles.erase(pStandaloneFile->GetId());
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		m_pDebugNameStore->RemoveAudioStandaloneFile(pStandaloneFile->m_id);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
+		m_audioStandaloneFiles.erase(pStandaloneFile->GetId());
 		pStandaloneFile->Clear();
 
 		m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
@@ -205,14 +199,13 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float p
 	static float const itemLoadingColor[4] = { 0.9f, 0.2f, 0.2f, 0.9f };
 	static float const itemOtherColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
 
-	auxGeom.Draw2dLabel(posX, posY, 1.6f, headerColor, false, "Standalone Files [%" PRISIZE_T "]", m_activeAudioStandaloneFiles.size());
+	auxGeom.Draw2dLabel(posX, posY, 1.6f, headerColor, false, "Standalone Files [%" PRISIZE_T "]", m_audioStandaloneFiles.size());
 	posX += 20.0f;
 	posY += 17.0f;
 
-	for (auto const& standaloneFilePair : m_activeAudioStandaloneFiles)
+	for (auto const& standaloneFilePair : m_audioStandaloneFiles)
 	{
 		CATLStandaloneFile* const pStandaloneFile = standaloneFilePair.second;
-		char const* const szName = m_pDebugNameStore->LookupAudioStandaloneFileName(pStandaloneFile->m_id);
 
 		float const* pColor = itemOtherColor;
 
@@ -242,18 +235,12 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float p
 		                    pColor,
 		                    false,
 		                    "%s on %s : %u",
-		                    szName,
-		                    m_pDebugNameStore->LookupAudioObjectName(pStandaloneFile->m_audioObjectId),
+		                    pStandaloneFile->m_name.c_str(),
+		                    pStandaloneFile->m_pAudioObject->m_name.c_str(),
 		                    pStandaloneFile->GetId());
 
 		posY += 10.0f;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::SetDebugNameStore(CATLDebugNameStore* const pDebugNameStore)
-{
-	m_pDebugNameStore = pDebugNameStore;
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

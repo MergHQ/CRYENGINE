@@ -7,9 +7,7 @@ def build(bld):
 		vs_filter	= 'Launcher',
 		win_file_list   = 'launcher.waf_files', 
 		features    = [ 'copy_dbghelp' ],
-		
-		use_module = ['jsmn'],
 
-		lib                  = 'Shell32', 
+		lib                  = ['Shell32','Ws2_32', 'Crypt32'], 
 		additional_manifests = 'DPIAware.xml', 		
 	)	

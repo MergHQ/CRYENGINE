@@ -58,8 +58,6 @@ public:
 	// ISimpleActor
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
-
-	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 
 	virtual void SetHealth(float health) override;
@@ -70,8 +68,6 @@ public:
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
 
 	ISimpleWeapon *GetCurrentWeapon() const { return m_pCurrentWeapon; }
-
-	const bool IsLocalClient() const { return m_bIsLocalClient; }
 
 	const SExternalCVars &GetCVars() const;
 
@@ -87,7 +83,6 @@ protected:
 	CPlayerView *m_pView;
 	CPlayerAnimations *m_pAnimations;
 
-	bool m_bIsLocalClient;
 	bool m_bAlive;
 
 	// Pointer to the weapon the player is currently using

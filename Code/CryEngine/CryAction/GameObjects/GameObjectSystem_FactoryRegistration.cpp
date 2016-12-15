@@ -20,9 +20,9 @@
     clsDesc.sScriptFile = script;                                                                 \
     struct C ## extensionClassName ## Creator : public IGameObjectExtensionCreatorBase            \
     {                                                                                             \
-      IGameObjectExtensionPtr Create()                                                            \
+      IGameObjectExtension* Create(IEntity *pEntity)                                            \
       {                                                                                           \
-        return ComponentCreate_DeleteWithRelease<C ## extensionClassName>();                      \
+        return pEntity->CreateComponentClass<C ## extensionClassName>();                          \
       }                                                                                           \
       void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                           \
       {                                                                                           \
@@ -53,7 +53,8 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 	REGISTER_FACTORY(pFrameWork, "Interactor", CInteractor, false);
 
 	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
-	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "MannequinObject", MannequinObject, "Scripts/Entities/Anim/MannequinObject.lua");
+	RegisterEntityWithDefaultComponent<CMannequinObject>("MannequinEntity", "Animation", "User.bmp");
+
 	HIDE_FROM_EDITOR("WaterVolume");
 	REGISTER_EDITOR_VOLUME_CLASS(pFrameWork, "WaterVolume");
 }

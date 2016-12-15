@@ -26,7 +26,7 @@ bool CWaypointPath::CreatePath(IEntity* pPathEntity)
 	m_Nodes.clear();
 	m_MaxNodeIndex = -1;
 
-	IGameVolumes* pGameVolumes = gEnv->pGame->GetIGameFramework()->GetIGameVolumesManager();
+	IGameVolumes* pGameVolumes = gEnv->pGameFramework->GetIGameVolumesManager();
 	if (pGameVolumes != NULL)
 	{
 		IGameVolumes::VolumeInfo volumeInfo;
@@ -504,7 +504,7 @@ void CWaypointPath::DebugDraw(bool renderLooped) const
 	for(TNodeId i = 0; i <= m_MaxNodeIndex; ++i)
 	{
 		pRenderAuxGeom->DrawSphere(m_Nodes[i].pos, 0.1f, nodeColour, false);
-		gEnv->pRenderer->DrawLabelEx(m_Nodes[i].pos+vTextPosOffset, g_pGameCVars->g_mpPathFollowingNodeTextSize, textColour, true, true, "%i", i);
+		IRenderAuxText::DrawLabelExF(m_Nodes[i].pos+vTextPosOffset, g_pGameCVars->g_mpPathFollowingNodeTextSize, textColour, true, true, "%i", i);
 
 		if(i > 0)
 		{

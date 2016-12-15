@@ -8,12 +8,72 @@
 #include "ConditionImpl.h"
 #include "ResponseSystem.h"
 
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
+
 using namespace CryDRS;
+
+enum EDrsLoggingOptions
+{
+	eDrsLoggingOptions_None       = 0,
+	eDrsLoggingOptions_Signals    = BIT(6),  // a
+	eDrsLoggingOptions_Lines      = BIT(7),  // b
+	eDrsLoggingOptions_Responses  = BIT(8),  // c
+	eDrsLoggingOptions_Conditions = BIT(9),  // d
+	eDrsLoggingOptions_Actions    = BIT(10), // e
+	eDrsLoggingOptions_Variables  = BIT(11)  // f
+};
+
+const char* GetStringFromEnum(CResponseSystemDebugDataProvider::EStatus valueToConvert)
+{
+	switch (valueToConvert)
+	{
+	case CResponseSystemDebugDataProvider::eER_NoValidSegment:
+		return "NotStarted - No Valid Responses";
+	case CResponseSystemDebugDataProvider::eER_Canceled:
+		return "Canceled";
+	case CResponseSystemDebugDataProvider::eER_Finished:
+		return "Finished";
+	case CResponseSystemDebugDataProvider::eER_NotStarted:
+		return "NotStarted";
+	case CResponseSystemDebugDataProvider::eER_Running:
+		return "Running";
+	case CResponseSystemDebugDataProvider::eER_NoResponse:
+		return "NotStarted - No Response";
+	case CResponseSystemDebugDataProvider::eER_Queued:
+		return "Queued";
+	}
+
+	return CryStringUtils::toString(static_cast<int>(valueToConvert));
+}
+
+//--------------------------------------------------------------------------------------------------
+CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider()
+	: m_currentResponse(MAX_NUMBER_OF_TRACKED_SIGNALS + 1)
+	, m_loggingOptions(0)
+{
+	REGISTER_CVAR2("drs_loggingOptions", &m_loggingOptions, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	               "Toggles the logging of DRS related messages.\n"
+	               "Usage: drs_loggingOptions [0ab...] (flags can be combined)\n"
+	               "Default: 0 (none)\n"
+	               "a: Received Signals\n"
+	               "b: Dialog Lines\n"
+	               "c: Started Responses\n"
+	               "d: Checked Conditions\n"
+	               "e: Started Actions\n"
+	               "f: Changed Variables\n");
+}
+
+//--------------------------------------------------------------------------------------------------
+CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
+{
+	CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
+}
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName, const string& collectionName, const CVariableValue& oldValue, const CVariableValue& newValue, float time)
 {
-	if (strncmp(collectionName.c_str(), "Context", 7) == 0 || strncmp(variableName.c_str(), "CurrentTime", 11) == 0)
+	if (cry_strncmp(collectionName.c_str(), "Context") == 0 || cry_strncmp(variableName.c_str(), "CurrentTime") == 0)
 	{
 		return;  //We dont want our list polluted by these...
 	}
@@ -35,24 +95,34 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	newEntry.drsUserName = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 
 	//hard coded limit
-	if (m_VariableChangeHistory.size() > 256)
+	if (m_variableChangeHistory.size() > 256)
 	{
-		m_VariableChangeHistory.erase(m_VariableChangeHistory.begin());
+		m_variableChangeHistory.erase(m_variableChangeHistory.begin());
 	}
-	m_VariableChangeHistory.push_back(newEntry);
+	m_variableChangeHistory.push_back(newEntry);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Variables)
+	{
+		CryLogAlways("<DRS> <%.3f> Variable Change: '%s' '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newEntry.variableName.c_str(), newEntry.change.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalName)
 {
-	const size_t numExecutedResponses = m_ExecutedResponses.size();
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> Response started: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), signalName.c_str());
+	}
+
+	const size_t numExecutedResponses = m_executedResponses.size();
 	for (int i = 0; i < numExecutedResponses; i++)
 	{
-		SStartedResponses& current = m_ExecutedResponses[i];
+		SStartedResponses& current = m_executedResponses[i];
 		if (current.currentState == CResponseSystemDebugDataProvider::eER_Queued && current.signalName.compareNoCase(signalName) == 0)
 		{
 			current.currentState = CResponseSystemDebugDataProvider::eER_Running;
-			m_CurrentResponse = current.id;
+			m_currentResponse = current.id;
 			return;
 		}
 	}
@@ -61,12 +131,12 @@ void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalNa
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CResponseSegment* pResponseSegment)
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
 
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
 
 	for (auto& segment : response.responseSegments)
 	{
@@ -81,18 +151,26 @@ bool CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CResponseSegmen
 	newResponseSegment.pResponseSegment = pResponseSegment;
 	newResponseSegment.levelInHierarchy = response.currentlevelInHierarchy;
 	response.responseSegments.push_back(newResponseSegment);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> ResponseSegment started: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), pResponseSegment->GetName());
+	}
+
 	return true;
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsCollection::SConditionInfo* pCondition, bool result)
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
 
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
+
 	SCheckedCondition newCondition;
 	newCondition.bMet = result;
 	if (pCondition->m_bNegated)
@@ -102,7 +180,15 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = true;
 	newCondition.conditionDesc += pCondition->m_pCondition->GetVerboseInfoWithType();
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = false;
-	response.responseSegments.back().checkedConditions.push_back(newCondition);
+	if (!response.responseSegments.empty())
+	{
+		response.responseSegments.back().checkedConditions.push_back(newCondition);
+	}
+
+	if (m_loggingOptions & eDrsLoggingOptions_Conditions)
+	{
+		CryLogAlways("<DRS> <%.3f> Condition checked: '%s', Met: %i", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newCondition.conditionDesc.c_str(), (int)newCondition.bMet);
+	}
 
 	return true;
 }
@@ -110,7 +196,7 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc, DRS::IResponseActionInstance* pInstance, DRS::IResponseActor* pActor, CResponseSegment* pResponseSegment)
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
@@ -119,29 +205,33 @@ bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc
 	newAction.actionDesc = actionDesc;
 	newAction.pInstance = pInstance;
 	newAction.bEnded = false;
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
 	for (std::vector<SStartedResponsesSegment>::iterator it = response.responseSegments.begin(); it != response.responseSegments.end(); ++it)
 	{
 		if (pResponseSegment == it->pResponseSegment)
 		{
+			if (m_loggingOptions & eDrsLoggingOptions_Actions)
+			{
+				CryLogAlways("<DRS> <%.3f> Action started: '%s', Actor '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newAction.actionDesc.c_str(), newAction.actorName.c_str());
+			}
+
 			it->bRunning = true;
 			it->bStarted = true;
 			it->executedAction.push_back(newAction);
 			return true;
 		}
 	}
-
 	return false;
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionInstance* pInstance)
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
 	for (std::vector<SStartedResponsesSegment>::iterator itEnd = response.responseSegments.begin(); itEnd != response.responseSegments.end(); ++itEnd)
 	{
 		for (std::vector<SExecutedAction>::iterator it = itEnd->executedAction.begin(); it != itEnd->executedAction.end(); ++it)
@@ -149,21 +239,33 @@ bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionIns
 			if (it->pInstance == pInstance && !it->bEnded)
 			{
 				it->bEnded = true;
+
+				if (m_loggingOptions & eDrsLoggingOptions_Actions)
+				{
+					CryLogAlways("<DRS> <%.3f> Action finished: '%s', Source: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), it->actionDesc.c_str(), itEnd->segmentName.c_str());
+				}
+
 				break;
 			}
 		}
 	}
+
 	return true;
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reason)
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> Response finished: '%s', Reason '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), response.signalName.c_str(), GetStringFromEnum(reason));
+	}
 
 	if (response.currentState != eER_Canceled)  //we dont want to change from canceled to finished
 	{
@@ -179,10 +281,10 @@ bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reaso
 
 		for (auto it = m_InstanceToID.begin(); it != m_InstanceToID.end(); ++it)
 		{
-			if (it->second == m_CurrentResponse)
+			if (it->second == m_currentResponse)
 			{
 				m_InstanceToID.erase(it);
-				m_CurrentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
+				m_currentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
 				break;
 			}
 		}
@@ -200,8 +302,6 @@ SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NotStarted, "NotStarted
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Running, "Running", "Running")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NoResponse, "NoResponse", "NotStarted - No Response")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Queued, "Queued", "Queued")
-SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_CanceledWhileQueued, "CanceledWhileQueued", "Canceled - while queued")
-SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Canceling, "Canceling", "Currently Canceling...")
 SERIALIZATION_ENUM_END()
 
 //--------------------------------------------------------------------------------------------------
@@ -314,28 +414,28 @@ void CResponseSystemDebugDataProvider::SetCurrentResponseInstance(CResponseInsta
 	ResponseInstanceToResponseInstanceIDMapping::iterator foundIT = m_InstanceToID.find(pInstanceForCurrentID);
 	if (foundIT == m_InstanceToID.end())
 	{
-		m_CurrentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
+		m_currentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
 	}
 	else
 	{
-		m_CurrentResponse = foundIT->second;
+		m_currentResponse = foundIT->second;
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::AddResponseInstanceCreated(CResponseInstance* pInstanceForCurrentID)
 {
-	m_InstanceToID[pInstanceForCurrentID] = m_CurrentResponse;
+	m_InstanceToID[pInstanceForCurrentID] = m_currentResponse;
 	return true;
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::Reset()
 {
-	m_ExecutedResponses.clear();
-	m_VariableChangeHistory.clear();
+	m_executedResponses.clear();
+	m_variableChangeHistory.clear();
 	m_InstanceToID.clear();
-	m_LineHistory.clear();
+	m_lineHistory.clear();
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -355,17 +455,6 @@ void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serializati
 }
 
 //--------------------------------------------------------------------------------------------------
-CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider() : m_CurrentResponse(MAX_NUMBER_OF_TRACKED_SIGNALS + 1)
-{
-}
-
-//--------------------------------------------------------------------------------------------------
-CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
-{
-	CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
-}
-
-//--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
 	string speakerName = (pSpeaker) ? pSpeaker->GetName().GetText() : "Missing Speaker";
@@ -374,28 +463,28 @@ void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pS
 	switch (lineEvent)
 	{
 	case eLineEvent_Started:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_Running, "");
+		AddDialogLineStarted(lineID, lineText, speakerName, eER_Running, "Started");
 		break;
 	case eLineEvent_Queued:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_Queued, "Another line needs to finish first");
 		break;
 	case eLineEvent_SkippedBecauseOfPriority:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "line ('" + lineText + "') with same/higher priority was already playing");
+		AddDialogLineStarted(lineID, "no line picked", speakerName, eER_NotStarted, "Line ('" + lineText + "') with same/higher priority was already playing");
 		break;
-	case eLineEvent_CouldNotBeStarted:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "missing entity for speaker");
+	case eLineEvent_SkippedBecauseOfNoValidLineVariations:
+		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "Skipped because no (more) valid line variations exist.");
+		break;
+	case eLineEvent_SkippedBecauseOfFaultyData:
+		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "Data problem, missing entity for speaker or missing DRS actor.");
 		break;
 	case eLineEvent_Finished:
 		AddDialogLineFinished(lineID, speakerName, eER_Finished, "Done");
 		break;
-	case eLineEvent_Canceling:
-		AddDialogLineFinished(lineID, speakerName, eER_Canceling, "Waiting for stop trigger");
-		break;
 	case eLineEvent_Canceled:
 		AddDialogLineFinished(lineID, speakerName, eER_Canceled, "Canceled or actor removed");
 		break;
-	case eLineEvent_CanceledWhileQueued:
-		AddDialogLineFinished(lineID, speakerName, eER_CanceledWhileQueued, "Canceled or actor removed while queued");
+	case eLineEvent_SkippedBecauseOfTimeOut:
+		AddDialogLineFinished(lineID, speakerName, eER_NotStarted, "Timed out of the queue");
 		break;
 	}
 	return;
@@ -411,10 +500,10 @@ void CResponseSystemDebugDataProvider::Init()
 void CResponseSystemDebugDataProvider::AddSignalFired(const string& signalName, const string& senderName, const string& contextVariables)
 {
 	//hard coded limit
-	if (m_ExecutedResponses.size() > MAX_NUMBER_OF_TRACKED_SIGNALS)
+	if (m_executedResponses.size() > MAX_NUMBER_OF_TRACKED_SIGNALS)
 	{
-		m_ExecutedResponses.clear();
-		m_CurrentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
+		m_executedResponses.clear();
+		m_currentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
 		m_InstanceToID.clear();
 	}
 
@@ -424,22 +513,27 @@ void CResponseSystemDebugDataProvider::AddSignalFired(const string& signalName, 
 	newResponse.contextVariables = contextVariables;
 	newResponse.drsUserName = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 	newResponse.currentState = CResponseSystemDebugDataProvider::eER_Queued;
-	newResponse.id = static_cast<ResponseInstanceID>(m_ExecutedResponses.size());
+	newResponse.id = static_cast<ResponseInstanceID>(m_executedResponses.size());
 	newResponse.currentlevelInHierarchy = 0;
 	newResponse.timeOfEvent = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
-	m_ExecutedResponses.push_back(newResponse);
+	m_executedResponses.push_back(newResponse);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Signals)
+	{
+		CryLogAlways("<DRS> <%.3f> Signal fired: '%s', sender '%s', '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), signalName.c_str(), senderName.c_str(), contextVariables.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystemDebugDataProvider::IncrementSegmentHierarchyLevel()
 {
-	if (m_CurrentResponse >= m_ExecutedResponses.size())
+	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
 
-	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+	SStartedResponses& response = m_executedResponses[m_currentResponse];
 	response.currentlevelInHierarchy++;
 	return true;
 }
@@ -447,15 +541,20 @@ bool CResponseSystemDebugDataProvider::IncrementSegmentHierarchyLevel()
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddDialogLineFinished(const CHashedString& lineID, const string& speakerName, EStatus status, const string& reason)
 {
-	for (LineHistoryList::iterator it = m_LineHistory.begin(); it != m_LineHistory.end(); ++it)
+	for (LineHistoryList::iterator it = m_lineHistory.begin(); it != m_lineHistory.end(); ++it)
 	{
-		if ((it->status == eER_Running || it->status == eER_Queued || it->status == eER_Canceling) &&
+		if ((it->status == eER_Running || it->status == eER_Queued) &&
 		    it->lineID == lineID &&
 		    it->speakerName == speakerName)
 		{
 			it->status = status;
 			it->description = reason;
 		}
+	}
+
+	if (m_loggingOptions & eDrsLoggingOptions_Lines)
+	{
+		CryLogAlways("<DRS> <%.3f> Line Finished: Speaker: '%s' ID: '%s' State: %s Reason: %s", CResponseSystem::GetInstance()->GetCurrentDrsTime(), speakerName.c_str(), lineID.GetText().c_str(), GetStringFromEnum(status), reason.c_str());
 	}
 }
 
@@ -467,17 +566,41 @@ void CResponseSystemDebugDataProvider::AddDialogLineStarted(const CHashedString&
 	temp.lineText = lineText;
 	temp.speakerName = speakerName;
 	temp.status = status;
-	temp.description = reason;
 	temp.source = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 	temp.timeOfEvent = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
-	m_LineHistory.push_back(temp);
+	bool bWasHandled = false;
+	if (status == eER_Running)  //if a line is started, after it was queued, then we do already have an entry, which we just can update
+	{
+		for (LineHistoryList::iterator it = m_lineHistory.begin(); it != m_lineHistory.end(); ++it)
+		{
+			if (it->status == eER_Queued
+				&& it->lineID == lineID
+				&& it->speakerName == speakerName)
+			{
+				temp.description = "Started (After Queue)";
+				*it = temp;
+				bWasHandled = true;
+			}
+		}
+	}
+
+	if (!bWasHandled)
+	{
+		temp.description = reason;
+		m_lineHistory.push_back(temp);
+	}
+
+	if (m_loggingOptions & eDrsLoggingOptions_Lines)
+	{
+		CryLogAlways("<DRS> <%.3f> Line Start Requested: Speaker: '%s' ID: '%s' State: '%s'. Reason: '%s' (Text: \"%s\") Source: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), speakerName.c_str(), lineID.GetText().c_str(), GetStringFromEnum(status), temp.description.c_str(), lineText.c_str(), temp.source.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::GetRecentSignals(DynArray<const char*>& outResults, DRS::IResponseManager::eSignalFilter filter /* = eSF_All */)
 {
-	for (StartedResponsesList::const_iterator it = m_ExecutedResponses.begin(); it != m_ExecutedResponses.end(); ++it)
+	for (StartedResponsesList::const_iterator it = m_executedResponses.begin(); it != m_executedResponses.end(); ++it)
 	{
 		if (filter == DRS::IResponseManager::eSF_All ||
 		    (filter == DRS::IResponseManager::eSF_OnlyWithoutResponses && it->currentState == eER_NoResponse) ||
@@ -495,7 +618,7 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 	{
 		if (signalNames.empty())  // ALL
 		{
-			m_ExecutedResponses.clear();
+			m_executedResponses.clear();
 		}
 		else
 		{
@@ -503,11 +626,11 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 			{
 				string signalName = itSignalNames->c_str();
 
-				for (StartedResponsesList::iterator it = m_ExecutedResponses.begin(); it != m_ExecutedResponses.end(); )
+				for (StartedResponsesList::iterator it = m_executedResponses.begin(); it != m_executedResponses.end(); )
 				{
 					if (it->signalName.compareNoCase(signalName) == 0)
 					{
-						it = m_ExecutedResponses.erase(it);
+						it = m_executedResponses.erase(it);
 					}
 					else
 					{
@@ -524,11 +647,11 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 
 		if (signalNames.empty()) // ALL
 		{
-			if (maxElemets > m_ExecutedResponses.size())
+			if (maxElemets > m_executedResponses.size())
 			{
-				maxElemets = m_ExecutedResponses.size();
+				maxElemets = m_executedResponses.size();
 			}
-			tempcopy.assign(m_ExecutedResponses.rbegin(), m_ExecutedResponses.rbegin() + maxElemets);
+			tempcopy.assign(m_executedResponses.rbegin(), m_executedResponses.rbegin() + maxElemets);
 			signalslist = "ALL";
 		}
 		else
@@ -543,7 +666,7 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 			}
 			tempcopy.clear();
 
-			for (StartedResponsesList::const_reverse_iterator it = m_ExecutedResponses.rbegin(); it != m_ExecutedResponses.rend(); ++it)
+			for (StartedResponsesList::const_reverse_iterator it = m_executedResponses.rbegin(); it != m_executedResponses.rend(); ++it)
 			{
 				for (DynArray<stack_string>::const_iterator itSignalNames = signalNames.begin(); itSignalNames != signalNames.end(); ++itSignalNames)
 				{
@@ -578,14 +701,14 @@ void CResponseSystemDebugDataProvider::SerializeVariableChanges(Serialization::I
 	{
 		if (bSerializeAll)
 		{
-			m_VariableChangeHistory.clear();
+			m_variableChangeHistory.clear();
 		}
 		else
 		{
-			for (VariableChangeInfoList::iterator it = m_VariableChangeHistory.begin(); it != m_VariableChangeHistory.end(); )
+			for (VariableChangeInfoList::iterator it = m_variableChangeHistory.begin(); it != m_variableChangeHistory.end(); )
 			{
 				if (it->variableName.compareNoCase(variableName) == 0)
-					it = m_VariableChangeHistory.erase(it);
+					it = m_variableChangeHistory.erase(it);
 				else
 					++it;
 			}
@@ -596,7 +719,7 @@ void CResponseSystemDebugDataProvider::SerializeVariableChanges(Serialization::I
 		static VariableChangeInfoList tempcopy;
 		tempcopy.clear();
 
-		for (VariableChangeInfoList::const_iterator it = m_VariableChangeHistory.begin(); it != m_VariableChangeHistory.end(); ++it)
+		for (VariableChangeInfoList::const_iterator it = m_variableChangeHistory.begin(); it != m_variableChangeHistory.end(); ++it)
 		{
 			if ((bSerializeAll ||
 			     it->variableName.find(variableName.c_str()) != string::npos) &&
@@ -618,11 +741,11 @@ void CResponseSystemDebugDataProvider::SerializeDialogLinesHistory(Serialization
 {
 	if (ar.getFilter() != 0)
 	{
-		m_LineHistory.clear();
+		m_lineHistory.clear();
 	}
 	else
 	{
-		ar(m_LineHistory, "linesHistory", "+!Spoken Lines");
+		ar(m_lineHistory, "linesHistory", "+!Spoken Lines");
 	}
 }
 

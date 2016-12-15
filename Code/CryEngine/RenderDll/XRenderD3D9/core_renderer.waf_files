@@ -23,6 +23,7 @@
 			"D3DREBreakableGlassBuffer.cpp",
 			"D3D_SVO.cpp",
 			"D3DRECloud.cpp",
+			"D3DMultiResRendering.cpp",
 			"D3DOsvr.cpp"
 		],
 		"Header Files":
@@ -37,7 +38,6 @@
 		[
 			"D3DREImposter.cpp",
 			"D3DRenderAuxGeom.cpp",
-			"D3DRenderRE.cpp",
 			"D3DRenderThread.cpp",
 			"D3DRendPipeline.cpp",
 			"D3DRendPipeline_Jobs.cpp",
@@ -50,17 +50,8 @@
 			"D3DTexturesStreaming.cpp",
 			"D3DTextureStreamPool.cpp",
 			"D3DTiledShading.cpp",
-			"D3DVolumetricFog.cpp",
-			"D3DVolumetricClouds.cpp",
 			"CompiledRenderObject.cpp"
 		],
-		
-		"Header Files":
-		[
-			"D3DVolumetricFog.h",
-			"D3DVolumetricClouds.h"
-		],
-				
 		"Source Files/Benchmark Customization": [
 			"BenchmarkCustom/BenchmarkRendererSensor.h",
 			"BenchmarkCustom/BenchmarkRendererSensor.cpp"
@@ -127,6 +118,7 @@
 			"PipelineProfiler.h",
 			"resource.h",
 			"StatoscopeRenderStats.h",
+			"D3DMultiResRendering.h",
 			"DeviceInfo.inl",
 			"D3DOsvr.h",
 			"CompiledRenderObject.h"
@@ -180,11 +172,8 @@
 		[
 			"../Scaleform/Scaleform.cpp",
 			"../Scaleform/ScaleformRender.cpp",
-			"../Scaleform/ScaleformPlayback.cpp"
-		],
-		"Scaleform_h":
-		[
-			"../Scaleform/ScaleformRender.h",
+			"../Scaleform/ScaleformPlayback.cpp",
+      "../Scaleform/ScaleformRender.h",
 			"../Scaleform/ScaleformPlayback.h"
 		]
 	},
@@ -225,16 +214,12 @@
 		[
 			"../Common/RendElements/CREParticle.cpp",
 			"../Common/RendElements/CREPostProcess.cpp",
-			"../Common/RendElements/CREPrismObject.cpp",
 			"../Common/RendElements/CRESky.cpp",
 			"../Common/RendElements/CREVolumeObject.cpp",
 			"../Common/RendElements/CREWaterOcean.cpp",
 			"../Common/RendElements/CREWaterVolume.cpp",
-			"../Common/RendElements/RendElement.cpp"
-		],
-		"Common/RendElements_h":
-		[
-			"../Common/RendElements/CRELensOptics.h",
+			"../Common/RendElements/RendElement.cpp",
+      "../Common/RendElements/CRELensOptics.h",
 			"../Common/RendElements/CREBeam.h",
 			"../Common/RendElements/CREClientPoly.h",
 			"../Common/RendElements/CRECloud.h",
@@ -318,11 +303,8 @@
 			"../Common/Textures/Image/CImage.cpp",
 			"../Common/Textures/Image/DDSImage.cpp",
 			"../Common/Textures/Image/JpgImage.cpp",
-			"../Common/Textures/Image/TgaImage.cpp"
-		],
-		"Common/Textures/Image/Image_h":
-		[
-			"../Common/Textures/Image/CImage.h",
+			"../Common/Textures/Image/TgaImage.cpp",
+      "../Common/Textures/Image/CImage.h",
 			"../Common/Textures/Image/DDSImage.h"
 		]
 	},
@@ -494,6 +476,8 @@
 			"GraphicsPipeline/DepthOfField.cpp",
 			"GraphicsPipeline/Fog.h",
 			"GraphicsPipeline/Fog.cpp",
+			"GraphicsPipeline/LensOptics.h",
+			"GraphicsPipeline/LensOptics.cpp",
 			"GraphicsPipeline/MotionBlur.h",
 			"GraphicsPipeline/MotionBlur.cpp",
 			"GraphicsPipeline/HeightMapAO.h",
@@ -528,6 +512,8 @@
 			"GraphicsPipeline/VolumetricClouds.cpp",
 			"GraphicsPipeline/VolumetricFog.h",
 			"GraphicsPipeline/VolumetricFog.cpp",
+			"GraphicsPipeline/Water.h",
+			"GraphicsPipeline/Water.cpp",
 			"GraphicsPipeline/WaterRipples.h",
 			"GraphicsPipeline/WaterRipples.cpp"
 		]

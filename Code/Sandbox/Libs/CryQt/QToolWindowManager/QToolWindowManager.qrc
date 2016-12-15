@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="QtDockLibrary">
+<file>gfx/base_window.png</file>
+<file>gfx/dock_bottom.png</file>
+<file>gfx/dock_left.png</file>
+<file>gfx/dock_right.png</file>
+<file>gfx/dock_top.png</file>
+<file>gfx/drag_handle.png</file>
+<file>gfx/hsplit_top.png</file>
+<file>gfx/hsplit_bottom.png</file>
+<file>gfx/vsplit_left.png</file>
+<file>gfx/vsplit_right.png</file>
+<file>gfx/minimize.png</file>
+<file>gfx/maximize.png</file>
+<file>gfx/restore.png</file>
+<file>gfx/close.png</file>
+    </qresource>
+</RCC>
+

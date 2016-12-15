@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -9,6 +9,8 @@
     <AssemblyName>CryEngine.Core</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <UseMSBuildEngine>False</UseMSBuildEngine>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -26,7 +28,7 @@
     <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>TRACE;WIN64</DefineConstants>
     <Optimize>true</Optimize>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
@@ -37,7 +39,7 @@
     <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
@@ -49,96 +51,92 @@
     <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
     <DefineConstants>TRACE;WIN86</DefineConstants>
     <Optimize>true</Optimize>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x86</PlatformTarget>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="CryEngine.Common" Condition="'$(Platform)' == 'x64'">
+    <Reference Include="CryEngine.Common">
       <HintPath>..\..\..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EntitySystem\EntityEventListener.cs" />
+    <Compile Include="Audio\AudioManager.cs" />
+    <Compile Include="Console\ConsoleCommand.cs" />
+    <Compile Include="Console\ConsoleVariable.cs" />
+    <Compile Include="Debugging\DebugDraw.cs" />
+    <Compile Include="Debugging\ExceptionHandler.cs" />
+    <Compile Include="Debugging\ExceptionMessage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugging\ExceptionMessage.Designer.cs">
+      <DependentUpon>ExceptionMessage.cs</DependentUpon>
+    </Compile>
     <Compile Include="EntitySystem\EntityComponent.cs" />
+    <Compile Include="EntitySystem\EntityId.cs" />
     <Compile Include="EntitySystem\EntityPhysics.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="SceneObject.cs" />
-    <Compile Include="System.cs" />
-    <Compile Include="UI\Canvas.cs" />
-    <Compile Include="UI\Panel.cs" />
-    <Compile Include="UI\UIElement.cs" />
-    <Compile Include="Components\Component.cs" />
-    <Compile Include="UI\Components\RectTransform.cs" />
-    <Compile Include="Components\Transform.cs" />
-    <Compile Include="UI\Components\Image.cs" />
-    <Compile Include="Resources\ImageSource.cs" />
-    <Compile Include="Resources\Resource.cs" />
-    <Compile Include="Resources\Texture.cs" />
-    <Compile Include="UI\Components\Text.cs" />
-    <Compile Include="Extentions.cs" />
-    <Compile Include="Resources\ScriptSystem.cs" />
-    <Compile Include="Util\Event.cs" />
-    <Compile Include="UI\CheckBox.cs" />
-    <Compile Include="UI\Components\UIComponent.cs" />
-    <Compile Include="UI\Splitter.cs" />
+    <Compile Include="EntitySystem\Native\NativeEntityMethods.cs" />
+    <Compile Include="EntitySystem\Attributes.cs" />
+    <Compile Include="EntitySystem\EntityStatics.cs" />
+    <Compile Include="EntitySystem\EntityProperty.cs" />
     <Compile Include="EntitySystem\Entity.cs" />
-    <Compile Include="UI\Window.cs" />
-    <Compile Include="UI\Components\CollapseCtrl.cs" />
-    <Compile Include="UI\Components\TextCtrl.cs" />
-    <Compile Include="UI\ScrollPanel.cs" />
-    <Compile Include="UI\TextInput.cs" />
+    <Compile Include="Environment.cs" />
+    <Compile Include="ICryEnginePlugin.cs" />
+    <Compile Include="Input\Mouse.cs" />
+    <Compile Include="Input\ActionHandler.cs" />
+    <Compile Include="AI\Attributes.cs" />
+    <Compile Include="AI\BehaviorTreeNode.cs" />
+    <Compile Include="AI\BehaviorTreeNodeFactory.cs" />
+    <Compile Include="AI\LastingMovementRequest.cs" />
+    <Compile Include="Math\Angles3.cs" />
+    <Compile Include="Math\Color.cs" />
+    <Compile Include="GameFramework.cs" />
+    <Compile Include="Input\Input.cs" />
+    <Compile Include="LevelSystem.cs" />
+    <Compile Include="Math\Matrix3x4.cs" />
+    <Compile Include="Math\Primitives.cs" />
+    <Compile Include="Math\Quaternion.cs" />
+    <Compile Include="Math\Vector2.cs" />
+    <Compile Include="Math\Vector3.cs" />
+    <Compile Include="Math\Vector4.cs" />
+    <Compile Include="Physics\RaycastHit.cs" />
+    <Compile Include="Random.cs" />
+    <Compile Include="Rendering\Renderer.cs" />
+    <Compile Include="Serialization\CachedTypeInfo.cs" />
+    <Compile Include="Serialization\DomainSerializer.cs" />
+    <Compile Include="Serialization\ObjectReader.cs" />
+    <Compile Include="Serialization\ObjectWriter.cs" />
+    <Compile Include="SystemEventHandler.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Util\Event.cs" />
+    <Compile Include="Util\FileSystem.cs" />
+    <Compile Include="Util\ReflectionHelper.cs" />
     <Compile Include="Util\Tools.cs" />
+    <Compile Include="Math\MathHelpers.cs" />
     <Compile Include="Attributes.cs" />
-    <Compile Include="Log.cs" />
+    <Compile Include="Debugging\Log.cs" />
     <Compile Include="FlowSystem\RunScene.cs" />
     <Compile Include="FlowSystem\FlowNode.cs" />
-    <Compile Include="UI\Button.cs" />
-    <Compile Include="UI\ComboBox.cs" />
-    <Compile Include="UI\Components\ButtonCtrl.cs" />
-    <Compile Include="UI\Components\ComboBoxCtrl.cs" />
-    <Compile Include="UI\Components\CheckBoxCtrl.cs" />
-    <Compile Include="UI\Components\ScrollBarCtrl.cs" />
-    <Compile Include="UI\Components\SplitBarCtrl.cs" />
-    <Compile Include="Components\Camera.cs" />
-    <Compile Include="Components\Application.cs" />
-    <Compile Include="EntitySystem\Attributes.cs" />
-    <Compile Include="EntitySystem\EntityClassRegistry.cs" />
-    <Compile Include="EntitySystem\EntityFramework.cs" />
-    <Compile Include="EntitySystem\EntityUpdateListener.cs" />
-    <Compile Include="EntitySystem\EntitySystemSink.cs" />
-    <Compile Include="EntitySystem\EntityPropertyConverter.cs" />
-    <Compile Include="EntitySystem\BaseEntity.cs" />
-    <Compile Include="EntitySystem\EntityPropertyHandler.cs" />
-    <Compile Include="Resources\ReflectionHelper.cs" />
+    <Compile Include="Camera.cs" />
     <Compile Include="Timer.cs" />
-    <Compile Include="UI\HorizontalLayoutGroup.cs" />
-    <Compile Include="UI\LayoutGroup.cs" />
-    <Compile Include="UI\VerticalLayoutGroup.cs" />
-    <Compile Include="UI\TextElement.cs" />
-    <Compile Include="EntitySystem\EntityCollisionListener.cs" />
-    <Compile Include="RaycastHelper.cs" />
+    <Compile Include="Physics\Ray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Debugging\ExceptionMessage.resx">
+      <DependentUpon>ExceptionMessage.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <Folder Include="UI\" />
-    <Folder Include="Components\" />
-    <Folder Include="UI\Components\" />
-    <Folder Include="Resources\" />
-    <Folder Include="EntitySystem\" />
-    <Folder Include="FlowSystem\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DomainHandler\DomainHandler.csproj">
-      <Project>{7BD337C0-36D4-4048-93D2-08D613023978}</Project>
-      <Name>DomainHandler</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>

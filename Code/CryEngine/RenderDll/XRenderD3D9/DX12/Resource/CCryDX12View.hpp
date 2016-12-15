@@ -72,7 +72,7 @@ public:
 	std::string GetResourceName()
 	{
 		ICryDX12Resource* ires = DX12_EXTRACT_ICRYDX12RESOURCE(m_pResource11.get());
-		CCryDX12Resource<ID3D11Resource>* cres = static_cast<CCryDX12Resource<ID3D11Resource>*>(ires);
+		CCryDX12Resource<ID3D11ResourceToImplement>* cres = static_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(ires);
 		return cres ? cres->GetName() : "-";
 	}
 

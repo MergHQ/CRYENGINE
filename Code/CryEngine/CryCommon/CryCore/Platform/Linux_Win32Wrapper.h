@@ -546,7 +546,7 @@ extern DWORD GetCurrentProcessId(void);
 #ifdef __cplusplus
 
 // Helper functions.
-extern const bool GetFilenameNoCase(const char* file, char*, const bool cCreateNew = false);
+extern const bool ConvertFilenameNoCase(char* file);
 extern void       adaptFilenameToLinux(char* rAdjustedFilename);
 extern const int  comparePathNames(const char* cpFirst, const char* cpSecond, unsigned int len); //!< \return 0 if identical.
 extern void       replaceDoublePathFilename(char* szFileName);                                   //!< Removes "\.\" to "\" and "/./" to "/".

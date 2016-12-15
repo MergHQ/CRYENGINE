@@ -371,6 +371,7 @@ public:
 	virtual void GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const;
 	virtual void CompactMemory() { }
 	virtual int Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationParams &params) { return 0; }
+	virtual int Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams=0) { return 0; }
 	virtual int SanityCheck() { return 1; }
 
 	volatile int m_lockUpdate;

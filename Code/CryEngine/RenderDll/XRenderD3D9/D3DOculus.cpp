@@ -12,7 +12,7 @@
 	#include <IBenchmarkFramework.h>
 	#include <IBenchmarkRendererSensorManager.h>
 #endif
-#if defined(INCLUDE_OCULUS_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 
 	#ifdef CRY_USE_DX12
 		#include "DX12/Resource/Texture/CCryDX12Texture2D.hpp"
@@ -27,7 +27,7 @@ CD3DOculusRenderer::SLayersManager::SLayersManager()
 	// Init swap chains data
 	for (uint32 eye = eSwapChainArray_Scene3D_LeftEye; eye <= eSwapChainArray_Scene3D_RightEye; ++eye)
 	{
-		m_swapChainInfoArray[eye].pDevideTextureSwapChain = nullptr;
+		m_swapChainInfoArray[eye].pDeviceTextureSwapChain = nullptr;
 		m_swapChainInfoArray[eye].viewportPosition = Vec2i(ZERO);
 		m_swapChainInfoArray[eye].viewportSize = Vec2i(1, 1);
 		m_swapChainInfoArray[eye].layerType = RenderLayer::eLayer_Scene3D;
@@ -38,7 +38,7 @@ CD3DOculusRenderer::SLayersManager::SLayersManager()
 
 	for (uint32 i = eSwapChainArray_FirstQuad; i <= eSwapChainArray_LastQuad; ++i)
 	{
-		m_swapChainInfoArray[i].pDevideTextureSwapChain = nullptr;
+		m_swapChainInfoArray[i].pDeviceTextureSwapChain = nullptr;
 		m_swapChainInfoArray[i].viewportPosition = Vec2i(ZERO);
 		m_swapChainInfoArray[i].viewportSize = Vec2i(1, 1);
 		m_swapChainInfoArray[i].layerType = RenderLayer::eLayer_Quad;
@@ -82,7 +82,7 @@ void CD3DOculusRenderer::SLayersManager::UpdateSwapChainData(CD3DStereoRenderer*
 
 	for (uint32 eye = eSwapChainArray_Scene3D_LeftEye; eye <= eSwapChainArray_Scene3D_RightEye; ++eye)
 	{
-		m_swapChainInfoArray[eye].pDevideTextureSwapChain = scene3DRenderData[eye].vrTextureSet.pDeviceTextureSwapChain;
+		m_swapChainInfoArray[eye].pDeviceTextureSwapChain = scene3DRenderData[eye].vrTextureSet.pDeviceTextureSwapChain;
 		m_swapChainInfoArray[eye].viewportPosition = scene3DRenderData[eye].viewportPosition;
 		m_swapChainInfoArray[eye].viewportSize = scene3DRenderData[eye].viewportSize;
 		m_swapChainInfoArray[eye].pose = scene3DLayerPropertiesRT.GetPose();     // dario: TODO FIX this for multiple scene layers
@@ -104,7 +104,7 @@ void CD3DOculusRenderer::SLayersManager::UpdateSwapChainData(CD3DStereoRenderer*
 		const RenderLayer::CProperties& quadLayerPropertiesRT = m_quadLayerProperties[layerId][frameIdx];
 
 		const STextureSwapChainRenderData& quadLayer = quadRenderData[layerId];
-		m_swapChainInfoArray[i].pDevideTextureSwapChain = quadLayer.vrTextureSet.pDeviceTextureSwapChain;
+		m_swapChainInfoArray[i].pDeviceTextureSwapChain = quadLayer.vrTextureSet.pDeviceTextureSwapChain;
 		m_swapChainInfoArray[i].viewportPosition = quadLayer.viewportPosition;
 		m_swapChainInfoArray[i].viewportSize = quadLayer.viewportSize;
 		m_swapChainInfoArray[i].layerType = quadLayerPropertiesRT.GetType();
@@ -136,8 +136,8 @@ CD3DOculusRenderer::CD3DOculusRenderer(CryVR::Oculus::IOculusDevice* oculusDevic
 	: m_pOculusDevice(oculusDevice)
 	, m_pRenderer(renderer)
 	, m_pStereoRenderer(stereoRenderer)
-	, m_uEyeWidth(~0L)
-	, m_uEyeHeight(~0L)
+	, m_eyeWidth(~0L)
+	, m_eyeHeight(~0L)
 {
 }
 
@@ -149,23 +149,28 @@ bool CD3DOculusRenderer::Initialize()
 {
 	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
 
-	m_uEyeWidth = m_pRenderer->GetWidth();
-	m_uEyeHeight = m_pRenderer->GetHeight();
+	m_eyeWidth = m_pRenderer->GetWidth();
+	m_eyeHeight = m_pRenderer->GetHeight();
 
 	CryVR::Oculus::TextureDesc eyeTextureDesc;
-	eyeTextureDesc.width = m_uEyeWidth;
-	eyeTextureDesc.height = m_uEyeHeight;
+	eyeTextureDesc.width = m_eyeWidth;
+	eyeTextureDesc.height = m_eyeHeight;
 	eyeTextureDesc.format = (uint32)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
+	CryVR::Oculus::TextureDesc quadTextureDesc;
+	quadTextureDesc.width = m_eyeWidth;
+	quadTextureDesc.height = m_eyeHeight;
+	quadTextureDesc.format = (uint32)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
 	CryVR::Oculus::TextureDesc mirrorTextureDesc;
-	mirrorTextureDesc.width = m_uEyeWidth * 2;
-	mirrorTextureDesc.height = m_uEyeHeight;
+	mirrorTextureDesc.width = m_eyeWidth * 2;
+	mirrorTextureDesc.height = m_eyeHeight;
 	mirrorTextureDesc.format = (uint32)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
-	if (!InitializeTextureSwapSet(pD3d11Device, 0, eyeTextureDesc, "$LeftEye_%d") ||
-	    !InitializeTextureSwapSet(pD3d11Device, 1, eyeTextureDesc, "$RightEye_%d") ||
-	    !InitializeQuadTextureSwapSet(pD3d11Device, RenderLayer::eQuadLayers_0, eyeTextureDesc, "$QuadLayer0_%d") ||
-	    !InitializeQuadTextureSwapSet(pD3d11Device, RenderLayer::eQuadLayers_1, eyeTextureDesc, "$QuadLayer1_%d") ||
+	if (!InitializeTextureSwapSet(pD3d11Device, EEyeType::eEyeType_LeftEye, eyeTextureDesc, "$LeftEye_%d") ||
+	    !InitializeTextureSwapSet(pD3d11Device, EEyeType::eEyeType_RightEye, eyeTextureDesc, "$RightEye_%d") ||
+	    !InitializeQuadTextureSwapSet(pD3d11Device, RenderLayer::eQuadLayers_0, quadTextureDesc, "$QuadLayer0_%d") ||
+	    !InitializeQuadTextureSwapSet(pD3d11Device, RenderLayer::eQuadLayers_1, quadTextureDesc, "$QuadLayer1_%d") ||
 	    !InitializeMirrorTexture(pD3d11Device, mirrorTextureDesc, "$StereoMirror"))
 	{
 		Shutdown();
@@ -175,7 +180,7 @@ bool CD3DOculusRenderer::Initialize()
 	return true;
 }
 
-bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, int eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
+bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, EEyeType eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
 	#ifdef CRY_USE_DX12
 	ID3D12CommandQueue* pD3d12Queue = CCryDeviceWrapper::GetObjectFactory().GetNativeCoreCommandQueue();
@@ -214,7 +219,7 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, in
 			#endif // CRY_USE_DX12
 
 			ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-			CTexture* eyeTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
+			CTexture* eyeTexture = m_pStereoRenderer->WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
 
 			if (eyeTexture == nullptr)
 				return false;
@@ -229,14 +234,14 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, in
 	return true;
 }
 
-bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, uint32 eye, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
+bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, EEyeType eye, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
 	return InitializeTextureSwapSet(pD3d11Device, eye, m_scene3DRenderData[eye], desc, szNameFormat);
 }
 
 bool CD3DOculusRenderer::InitializeQuadTextureSwapSet(ID3D11Device* d3dDevice, RenderLayer::EQuadLayers id, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
-	return InitializeTextureSwapSet(d3dDevice, -1, m_quadLayerRenderData[id], desc, szNameFormat);
+	return InitializeTextureSwapSet(d3dDevice, static_cast<EEyeType>(-1), m_quadLayerRenderData[id], desc, szNameFormat);
 }
 
 bool CD3DOculusRenderer::InitializeMirrorTexture(ID3D11Device* pD3d11Device, CryVR::Oculus::TextureDesc desc, const char* szName)
@@ -263,7 +268,7 @@ bool CD3DOculusRenderer::InitializeMirrorTexture(ID3D11Device* pD3d11Device, Cry
 		#endif // CRY_USE_DX12
 
 		ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-		m_mirrorData.pMirrorTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
+		m_mirrorData.pMirrorTexture = m_pStereoRenderer->WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
 
 		return m_mirrorData.pMirrorTexture != nullptr;
 	}
@@ -309,16 +314,10 @@ void CD3DOculusRenderer::Shutdown()
 	ReleaseBuffers();
 }
 
-void CD3DOculusRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight)
-{
-	*pBackbufferWidth = 2 * eyeWidth;
-	*pBackbufferHeight = eyeHeight;
-}
-
 void CD3DOculusRenderer::OnResolutionChanged()
 {
-	if (m_uEyeWidth != m_pRenderer->GetWidth() ||
-	    m_uEyeHeight != m_pRenderer->GetHeight())
+	if (m_eyeWidth != m_pRenderer->GetWidth() ||
+	    m_eyeHeight != m_pRenderer->GetHeight())
 	{
 		Shutdown();
 		Initialize();
@@ -381,6 +380,7 @@ void CD3DOculusRenderer::SubmitFrame()
 	// Update swap chain info with the latest render and layer properties
 	m_layerManager.UpdateSwapChainData(m_pStereoRenderer, m_scene3DRenderData, m_quadLayerRenderData);
 	CryVR::Oculus::SHmdSubmitFrameData data = m_layerManager.ConstructFrameData();
+
 	#ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->PreStereoFrameSubmit(m_pStereoRenderer->GetEyeTarget(LEFT_EYE), m_pStereoRenderer->GetEyeTarget(RIGHT_EYE));
 	#endif
@@ -453,22 +453,22 @@ void CD3DOculusRenderer::RenderSocialScreen()
 			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType(&bKeepAspect);
 			switch (socialScreen)
 			{
-			case EHmdSocialScreen::eHmdSocialScreen_Off:
+			case EHmdSocialScreen::Off:
 				// TODO: Clear backbuffer texture? Show a selected wallpaper?
 				GetUtils().ClearScreen(1.0f, 1.0f, 1.0f, 1.f);
 				break;
 			// intentional fall through
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
-			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage:
+			case EHmdSocialScreen::UndistortedLeftEye:
+			case EHmdSocialScreen::UndistortedRightEye:
+			case EHmdSocialScreen::UndistortedDualImage:
 				{
 					static CCryNameTSCRC pTechTexToTex("TextureToTexture");
 					const auto frameData = m_layerManager.ConstructFrameData();
-					const bool bRenderBothEyes = socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage;
+					const bool bRenderBothEyes = socialScreen == EHmdSocialScreen::UndistortedDualImage;
 
 					int eyesToRender[2] = { LEFT_EYE, -1 };
-					if (socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye)  eyesToRender[0] = RIGHT_EYE;
-					else if (socialScreen == EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage)
+					if (socialScreen == EHmdSocialScreen::UndistortedRightEye)  eyesToRender[0] = RIGHT_EYE;
+					else if (socialScreen == EHmdSocialScreen::UndistortedDualImage)
 						eyesToRender[1] = RIGHT_EYE;
 
 					uint64 nSaveFlagsShader_RT = gRenDev->m_RP.m_FlagsShader_RT;
@@ -482,7 +482,7 @@ void CD3DOculusRenderer::RenderSocialScreen()
 						gcpRendD3D->FX_ClearTarget(pBackbufferTexture, Clr_Empty);
 					}
 
-					gcpRendD3D->FX_PushRenderTarget(0, pBackbufferTexture, NULL);
+					gcpRendD3D->FX_PushRenderTarget(0, pBackbufferTexture, nullptr);
 					gcpRendD3D->FX_SetActiveRenderTargets();
 
 					for (int i = 0; i < CRY_ARRAY_COUNT(eyesToRender); ++i)
@@ -581,7 +581,7 @@ void CD3DOculusRenderer::RenderSocialScreen()
 				}
 				break;
 
-			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:
+			case EHmdSocialScreen::DistortedDualImage:
 			default:
 				{
 					if (pBackbufferTexture->GetDevTexture()->Get2DTexture() != nullptr)
@@ -662,42 +662,6 @@ bool CD3DOculusRenderer::PushTextureSet(RenderLayer::ELayerType type, RenderLaye
 	return false;
 }
 
-CTexture* CD3DOculusRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView)
-{
-	CTexture* texture = CTexture::CreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
-	if (texture == nullptr)
-	{
-		gEnv->pLog->Log("[HMD][Oculus] Unable to create texture object!");
-		return nullptr;
-	}
-
-	// CTexture::CreateTextureObject does not set width and height if the texture already existed
-	assert(texture->GetWidth() == width);
-	assert(texture->GetHeight() == height);
-	assert(texture->GetDepth() == 1);
-
-	d3dTexture->AddRef();
-	CDeviceTexture* pDeviceTexture = new CDeviceTexture(d3dTexture);
-	pDeviceTexture->SetNoDelete(true);
-
-	texture->SetDevTexture(pDeviceTexture);
-	texture->ClosestFormatSupported(format);
-
-	if (shaderResourceView)
-	{
-		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
-		if (default_srv == nullptr)
-		{
-			gEnv->pLog->Log("[HMD][Oculus] Unable to create default shader resource view!");
-			texture->Release();
-			return nullptr;
-		}
-		texture->SetShaderResourceView((D3DShaderResource*)default_srv, false);
-	}
-
-	return texture;
-}
-
 RenderLayer::EQuadLayers CD3DOculusRenderer::CalculateQuadLayerId(ESwapChainArray swapChainIndex)
 {
 	if (swapChainIndex >= eSwapChainArray_FirstQuad && swapChainIndex <= eSwapChainArray_LastQuad)
@@ -709,4 +673,4 @@ RenderLayer::EQuadLayers CD3DOculusRenderer::CalculateQuadLayerId(ESwapChainArra
 	return RenderLayer::eQuadLayers_0;
 }
 
-#endif // defined(INCLUDE_OCULUS_SDK)
+#endif // defined(INCLUDE_VR_RENDERING)

@@ -10,21 +10,13 @@
 
 using namespace CryAudio::Impl;
 
-// IDs below that number are reserved for the various unique
-// objects inside the AudioSystem a user may want to address
-// (e.g. an AudioManager, a MusicSystem, AudioListeners?...)
-AudioObjectId const CAudioObjectManager::s_minAudioObjectId = 100;
-
 //////////////////////////////////////////////////////////////////////////
-CAudioObjectManager::CAudioObjectManager(CAudioEventManager& _audioEventMgr, CAudioStandaloneFileManager& _audioStandaloneFileMgr)
-	: m_audioObjectPool(g_audioCVars.m_audioObjectPoolSize, s_minAudioObjectId)
+CAudioObjectManager::CAudioObjectManager(CAudioEventManager& audioEventMgr, CAudioStandaloneFileManager& audioStandaloneFileMgr)
+	: m_audioObjectPool(g_audioCVars.m_audioObjectPoolSize, 0)
 	, m_pImpl(nullptr)
 	, m_timeSinceLastControlsUpdate(0.0f)
-	, m_audioEventMgr(_audioEventMgr)
-	, m_audioStandaloneFileMgr(_audioStandaloneFileMgr)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	, m_pDebugNameStore(nullptr)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+	, m_audioEventMgr(audioEventMgr)
+	, m_audioStandaloneFileMgr(audioStandaloneFileMgr)
 {
 }
 
@@ -49,9 +41,8 @@ CAudioObjectManager::~CAudioObjectManager()
 
 	if (!m_registeredAudioObjects.empty())
 	{
-		for (auto const& audioObjectPair : m_registeredAudioObjects)
+		for (auto pAudioObject : m_registeredAudioObjects)
 		{
-			CATLAudioObject* const pAudioObject = audioObjectPair.second;
 			CRY_ASSERT(pAudioObject->GetImplDataPtr() == nullptr);
 			POOL_FREE(pAudioObject);
 		}
@@ -74,8 +65,8 @@ void CAudioObjectManager::Init(IAudioImpl* const pImpl)
 	{
 		for (size_t i = 0; i < m_audioObjectPool.m_reserveSize - numRegisteredAudioObjects; ++i)
 		{
-			AudioObjectId const id = m_audioObjectPool.GetNextID();
-			POOL_NEW_CREATE(CATLAudioObject, pNewObject)(id);
+			uint32 const id = m_audioObjectPool.GetNextID();
+			POOL_NEW_CREATE(CATLAudioObject, pNewObject)();
 			m_audioObjectPool.m_reserved.push_back(pNewObject);
 		}
 	}
@@ -83,20 +74,18 @@ void CAudioObjectManager::Init(IAudioImpl* const pImpl)
 	for (auto const pAudioObject : m_audioObjectPool.m_reserved)
 	{
 		CRY_ASSERT(pAudioObject->GetImplDataPtr() == nullptr);
-		pAudioObject->SetImplDataPtr(m_pImpl->NewAudioObject(pAudioObject->GetId()));
+		pAudioObject->SetImplDataPtr(m_pImpl->NewAudioObject());
 	}
 
 	EAudioRequestStatus result = eAudioRequestStatus_None;
 
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
 		CRY_ASSERT(pAudioObject->GetImplDataPtr() == nullptr);
-		pAudioObject->SetImplDataPtr(m_pImpl->NewAudioObject(pAudioObject->GetId()));
+		pAudioObject->SetImplDataPtr(m_pImpl->NewAudioObject());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		char const* const szAudioObjectName = m_pDebugNameStore->LookupAudioObjectName(pAudioObject->GetId());
-		result = m_pImpl->RegisterAudioObject(pAudioObject->GetImplDataPtr(), szAudioObjectName);
+		result = m_pImpl->RegisterAudioObject(pAudioObject->GetImplDataPtr(), pAudioObject->m_name.c_str());
 		CRY_ASSERT(result == eAudioRequestStatus_Success);
 #else
 		result = m_pImpl->RegisterAudioObject(pAudioObject->GetImplDataPtr());
@@ -116,9 +105,8 @@ void CAudioObjectManager::Release()
 
 	EAudioRequestStatus result = eAudioRequestStatus_None;
 
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
 		IAudioObject* const pImplData = pAudioObject->GetImplDataPtr();
 		result = m_pImpl->UnregisterAudioObject(pImplData);
 		CRY_ASSERT(result == eAudioRequestStatus_Success);
@@ -145,10 +133,10 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 	m_timeSinceLastControlsUpdate += deltaTime;
 	bool const bUpdateControls = m_timeSinceLastControlsUpdate > s_controlsUpdateInterval;
 
-	RegisteredAudioObjectsMap::const_iterator iterEnd = m_registeredAudioObjects.cend();
-	for (RegisteredAudioObjectsMap::iterator iter = m_registeredAudioObjects.begin(); iter != iterEnd; )
+	auto iterEnd = m_registeredAudioObjects.cend();
+	for (auto iter = m_registeredAudioObjects.begin(); iter != iterEnd; )
 	{
-		CATLAudioObject* const pAudioObject = iter->second;
+		CATLAudioObject* const pAudioObject = *iter;
 
 		SAudioObject3DAttributes const& attributes = pAudioObject->Get3DAttributes();
 		float const distance = (attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetLength();
@@ -195,7 +183,7 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 		{
 			if (pAudioObject->CanBeReleased())
 			{
-				m_registeredAudioObjects.erase(iter++);
+				iter = m_registeredAudioObjects.erase(iter);
 				iterEnd = m_registeredAudioObjects.cend();
 				ReleaseInstance(pAudioObject);
 				continue;
@@ -211,12 +199,12 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId)
+bool CAudioObjectManager::ReserveAudioObject(CATLAudioObject*& pAudioObjectId)
 {
 	CATLAudioObject* const pAudioObject = GetInstance();
 
 	bool bSuccess = false;
-	audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	pAudioObjectId = nullptr;
 
 	if (pAudioObject != nullptr)
 	{
@@ -225,8 +213,8 @@ bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId)
 		if (result == eAudioRequestStatus_Success)
 		{
 			pAudioObject->SetFlag(eAudioObjectFlags_DoNotRelease);
-			audioObjectId = pAudioObject->GetId();
-			m_registeredAudioObjects.insert(std::make_pair(audioObjectId, pAudioObject));
+			pAudioObjectId = pAudioObject;
+			m_registeredAudioObjects.push_back(pAudioObject);
 			bSuccess = true;
 		}
 		else
@@ -239,70 +227,28 @@ bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CObjectIDPredicate
+class CObjectIDPredicate final
 {
 public:
 
-	explicit CObjectIDPredicate(AudioObjectId const audioObjectId)
-		: m_audioObjectId(audioObjectId)
+	explicit CObjectIDPredicate(CATLAudioObject* const pAudioObject)
+		: m_pAudioObject(pAudioObject)
 	{}
-
-	~CObjectIDPredicate() {}
 
 	bool operator()(CATLAudioObject const* const pAudioObject)
 	{
-		return pAudioObject->GetId() == m_audioObjectId;
+		return pAudioObject == m_pAudioObject;
 	}
 
 private:
 
-	DELETE_DEFAULT_CONSTRUCTOR(CObjectIDPredicate);
-	AudioObjectId const m_audioObjectId;
+	CATLAudioObject* const m_pAudioObject;
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioObjectManager::ReserveThisId(AudioObjectId const audioObjectId)
+bool CAudioObjectManager::ReleaseAudioObject(CATLAudioObject* const pAudioObject)
 {
 	bool bSuccess = false;
-	CATLAudioObject* pAudioObject = LookupId(audioObjectId);
-
-	if (pAudioObject == nullptr)
-	{
-		//no active object uses nAudioObjectID, so we can create one
-		TAudioObjectPool::TPointerContainer::iterator ipObject = m_audioObjectPool.m_reserved.begin();
-		// not using const for .end() iterator, because find_if seems to expect two iterators of the same type
-		TAudioObjectPool::TPointerContainer::iterator const ipObjectEnd = m_audioObjectPool.m_reserved.end();
-
-		ipObject = std::find_if(ipObject, ipObjectEnd, CObjectIDPredicate(audioObjectId));
-
-		if (ipObject != ipObjectEnd)
-		{
-			// there is a reserved instance with the required ID
-			std::swap(*ipObject, m_audioObjectPool.m_reserved.back());
-			pAudioObject = m_audioObjectPool.m_reserved.back();
-			m_audioObjectPool.m_reserved.pop_back();
-		}
-		else
-		{
-			// none of the reserved instances have the required ID
-			IAudioObject* const pObjectData = m_pImpl->NewAudioObject(audioObjectId);
-			POOL_NEW(CATLAudioObject, pAudioObject)(audioObjectId, pObjectData);
-		}
-
-		m_registeredAudioObjects.insert(std::make_pair(audioObjectId, pAudioObject));
-
-		bSuccess = true;
-	}
-
-	return bSuccess;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CAudioObjectManager::ReleaseId(AudioObjectId const audioObjectId)
-{
-	bool bSuccess = false;
-	CATLAudioObject* const pAudioObject = LookupId(audioObjectId);
-
 	if (pAudioObject != nullptr)
 	{
 		pAudioObject->RemoveFlag(eAudioObjectFlags_DoNotRelease);
@@ -312,25 +258,11 @@ bool CAudioObjectManager::ReleaseId(AudioObjectId const audioObjectId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLAudioObject* CAudioObjectManager::LookupId(AudioObjectId const audioObjectId) const
-{
-	RegisteredAudioObjectsMap::const_iterator iter;
-	CATLAudioObject* pResult = nullptr;
-
-	if (FindPlaceConst(m_registeredAudioObjects, audioObjectId, iter))
-	{
-		pResult = iter->second;
-	}
-
-	return pResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::ReportStartedEvent(CATLEvent* const pEvent)
 {
 	if (pEvent != nullptr)
 	{
-		CATLAudioObject* const pAudioObject = LookupId(pEvent->m_audioObjectId);
+		CATLAudioObject* const pAudioObject = pEvent->m_pAudioObject;
 
 		if (pAudioObject != nullptr)
 		{
@@ -343,7 +275,7 @@ void CAudioObjectManager::ReportStartedEvent(CATLEvent* const pEvent)
 			  eAudioLogType_Warning,
 			  "Failed to report starting event %u on object %s as it does not exist!",
 			  pEvent->GetId(),
-			  m_pDebugNameStore->LookupAudioObjectName(pEvent->m_audioObjectId));
+			  pEvent->m_pAudioObject->m_name.c_str());
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -358,7 +290,7 @@ void CAudioObjectManager::ReportFinishedEvent(CATLEvent* const pEvent, bool cons
 {
 	if (pEvent != nullptr)
 	{
-		CATLAudioObject* const pAudioObject = LookupId(pEvent->m_audioObjectId);
+		CATLAudioObject* const pAudioObject = pEvent->m_pAudioObject;
 
 		if (pAudioObject != nullptr)
 		{
@@ -371,7 +303,7 @@ void CAudioObjectManager::ReportFinishedEvent(CATLEvent* const pEvent, bool cons
 			  eAudioLogType_Warning,
 			  "Removing Event %u from Object %s: Object no longer exists!",
 			  pEvent->GetId(),
-			  m_pDebugNameStore->LookupAudioObjectName(pEvent->m_audioObjectId));
+			  pEvent->m_pAudioObject->m_name.c_str());
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -382,24 +314,23 @@ void CAudioObjectManager::ReportFinishedEvent(CATLEvent* const pEvent, bool cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::GetStartedStandaloneFileRequestData(CATLStandaloneFile* const _pStandaloneFile, CAudioRequestInternal& _request)
+void CAudioObjectManager::GetStartedStandaloneFileRequestData(CATLStandaloneFile* const pStandaloneFile, CAudioRequestInternal& request)
 {
-	if (_pStandaloneFile != nullptr)
+	if (pStandaloneFile != nullptr)
 	{
-		CATLAudioObject* const pAudioObject = LookupId(_pStandaloneFile->m_audioObjectId);
+		CATLAudioObject* const pAudioObject = pStandaloneFile->m_pAudioObject;
 
 		if (pAudioObject != nullptr)
 		{
-			pAudioObject->GetStartedStandaloneFileRequestData(_pStandaloneFile, _request);
+			pAudioObject->GetStartedStandaloneFileRequestData(pStandaloneFile, request);
 		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else
 		{
 			g_audioLogger.Log(
 			  eAudioLogType_Warning,
-			  "Requesting request data from standalone file %u on Object %s which no longer exists!",
-			  _pStandaloneFile->GetId(),
-			  m_pDebugNameStore->LookupAudioObjectName(_pStandaloneFile->m_audioObjectId));
+			  "Requesting request data from standalone file %u from a non existent AudioObject!",
+			  pStandaloneFile->GetId());
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -410,24 +341,23 @@ void CAudioObjectManager::GetStartedStandaloneFileRequestData(CATLStandaloneFile
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const _pStandaloneFile)
+void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const pStandaloneFile)
 {
-	if (_pStandaloneFile != nullptr)
+	if (pStandaloneFile != nullptr)
 	{
-		CATLAudioObject* const pAudioObject = LookupId(_pStandaloneFile->m_audioObjectId);
+		CATLAudioObject* const pAudioObject = pStandaloneFile->m_pAudioObject;
 
 		if (pAudioObject != nullptr)
 		{
-			pAudioObject->ReportFinishedStandaloneFile(_pStandaloneFile);
+			pAudioObject->ReportFinishedStandaloneFile(pStandaloneFile);
 		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else
 		{
 			g_audioLogger.Log(
 			  eAudioLogType_Warning,
-			  "Removing standalone file %u from Object %s: Object no longer exists!",
-			  _pStandaloneFile->GetId(),
-			  m_pDebugNameStore->LookupAudioObjectName(_pStandaloneFile->m_audioObjectId));
+			  "Removing standalone file %u from a non existent AudioObject!",
+			  pStandaloneFile->GetId());
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
@@ -451,18 +381,16 @@ CATLAudioObject* CAudioObjectManager::GetInstance()
 	else
 	{
 		//need to get a new instance
-		AudioObjectId const id = m_audioObjectPool.GetNextID();
-		IAudioObject* const pImplAudioObject = m_pImpl->NewAudioObject(id);
-		POOL_NEW(CATLAudioObject, pAudioObject)(id, pImplAudioObject);
+		uint32 const id = m_audioObjectPool.GetNextID();
+		IAudioObject* const pImplAudioObject = m_pImpl->NewAudioObject();
+		POOL_NEW(CATLAudioObject, pAudioObject)(pImplAudioObject);
 
 		if (pAudioObject == nullptr)
 		{
 			--m_audioObjectPool.m_idCounter;
 			g_audioLogger.Log(eAudioLogType_Warning, "Failed to get a new instance of an AudioObject from the implementation");
 		}
-	}
-
-	return pAudioObject;
+	} return pAudioObject;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -470,15 +398,10 @@ bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 {
 	CRY_ASSERT(pOldObject);
 	bool bSuccess = false;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_pDebugNameStore->RemoveAudioObject(static_cast<AudioObjectId const>(pOldObject->GetId()));
-	pOldObject->CheckBeforeRemoval(m_pDebugNameStore);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	pOldObject->Clear();
 	bSuccess = (m_pImpl->UnregisterAudioObject(pOldObject->GetImplDataPtr()) == eAudioRequestStatus_Success);
-
 	m_pImpl->ResetAudioObject(pOldObject->GetImplDataPtr());
+
 	if (m_audioObjectPool.m_reserved.size() < m_audioObjectPool.m_reserveSize)
 	{
 		// can return the instance to the reserved pool
@@ -497,10 +420,8 @@ bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::ReleasePendingRays()
 {
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
-
 		if (pAudioObject != nullptr)
 		{
 			pAudioObject->ReleasePendingRays();
@@ -543,12 +464,12 @@ bool CAudioObjectManager::HasActiveData(CATLAudioObject const* const pAudioObjec
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId, char const* const szAudioObjectName)
+bool CAudioObjectManager::ReserveAudioObject(CATLAudioObject*& pAudioObject, char const* const szAudioObjectName)
 {
 	CATLAudioObject* const pNewObject = GetInstance();
 
 	bool bSuccess = false;
-	audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	pAudioObject = nullptr;
 
 	if (pNewObject != nullptr)
 	{
@@ -557,14 +478,13 @@ bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId, char const* co
 		if (result == eAudioRequestStatus_Success)
 		{
 			pNewObject->SetFlag(eAudioObjectFlags_DoNotRelease);
-			audioObjectId = pNewObject->GetId();
-			m_registeredAudioObjects.insert(std::make_pair(audioObjectId, pNewObject));
-			m_pDebugNameStore->AddAudioObject(audioObjectId, szAudioObjectName);
+			pAudioObject = pNewObject;
+			pAudioObject->m_name = szAudioObjectName;
+			m_registeredAudioObjects.push_back(pAudioObject);
 			bSuccess = true;
 		}
 		else
 		{
-			m_registeredAudioObjects.erase(static_cast<AudioObjectId const>(pNewObject->GetId()));
 			ReleaseInstance(pNewObject);
 			bSuccess = false;
 		}
@@ -583,10 +503,8 @@ size_t CAudioObjectManager::GetNumAudioObjects() const
 size_t CAudioObjectManager::GetNumActiveAudioObjects() const
 {
 	size_t numActiveAudioObjects = 0;
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
-
 		if (IsActive(pAudioObject))
 		{
 			++numActiveAudioObjects;
@@ -597,15 +515,29 @@ size_t CAudioObjectManager::GetNumActiveAudioObjects() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPos) const
+void CAudioObjectManager::DrawPerObjectDebugInfo(
+  IRenderAuxGeom& auxGeom,
+  Vec3 const& listenerPos,
+  AudioTriggerLookup const& triggers,
+  AudioRtpcLookup const& parameters,
+  AudioSwitchLookup const& switches,
+  AudioPreloadRequestLookup const& preloadRequests,
+  AudioEnvironmentLookup const& environments,
+  AudioStandaloneFileLookup const& audioStandaloneFiles) const
 {
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
-
 		if (IsActive(pAudioObject))
 		{
-			pAudioObject->DrawDebugInfo(auxGeom, listenerPos, m_pDebugNameStore);
+			pAudioObject->DrawDebugInfo(
+			  auxGeom,
+			  listenerPos,
+			  triggers,
+			  parameters,
+			  switches,
+			  preloadRequests,
+			  environments,
+			  audioStandaloneFiles);
 		}
 	}
 }
@@ -613,49 +545,42 @@ void CAudioObjectManager::DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom, Vec3 c
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
-	static float const fHeaderColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
-	static float const fItemActiveColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
-	static float const fItemInactiveColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
-	static float const fItemVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
+	static float const headerColor[4] = { 1.0f, 1.0f, 1.0f, 0.9f };
+	static float const itemActiveColor[4] = { 0.1f, 0.6f, 0.1f, 0.9f };
+	static float const itemInactiveColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
+	static float const itemVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
 
-	size_t nObjects = 0;
-	float const fHeaderPosY = posY;
+	size_t numAudioObjects = 0;
+	float const headerPosY = posY;
 	posX += 20.0f;
 	posY += 17.0f;
 
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	for (auto pAudioObject : m_registeredAudioObjects)
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
-		char const* const sOriginalName = m_pDebugNameStore->LookupAudioObjectName(pAudioObject->GetId());
-		CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> sLowerCaseAudioObjectName(sOriginalName);
-		sLowerCaseAudioObjectName.MakeLower();
-		CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> sLowerCaseSearchString(g_audioCVars.m_pAudioObjectsDebugFilter->GetString());
-		sLowerCaseSearchString.MakeLower();
+		char const* const szOriginalName = pAudioObject->m_name.c_str();
+		CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> lowerCaseAudioObjectName(szOriginalName);
+		lowerCaseAudioObjectName.MakeLower();
+		CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> lowerCaseSearchString(g_audioCVars.m_pAudioObjectsDebugFilter->GetString());
+		lowerCaseSearchString.MakeLower();
 		bool const bHasActiveData = HasActiveData(pAudioObject);
 		bool const bIsVirtual = (pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) > 0;
-		bool const bStringFound = (sLowerCaseSearchString.empty() || (sLowerCaseSearchString.compareNoCase("0") == 0)) || (sLowerCaseAudioObjectName.find(sLowerCaseSearchString) != CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>::npos);
+		bool const bStringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseAudioObjectName.find(lowerCaseSearchString) != CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>::npos);
 		bool const bDraw = bStringFound && ((g_audioCVars.m_showActiveAudioObjectsOnly == 0) || (g_audioCVars.m_showActiveAudioObjectsOnly > 0 && bHasActiveData && !bIsVirtual));
 
 		if (bDraw)
 		{
 			auxGeom.Draw2dLabel(posX, posY, 1.2f,
-			                    bIsVirtual ? fItemVirtualColor : (bHasActiveData ? fItemActiveColor : fItemInactiveColor),
+			                    bIsVirtual ? itemVirtualColor : (bHasActiveData ? itemActiveColor : itemInactiveColor),
 			                    false,
-			                    "%u : %s : %.2f",
-			                    pAudioObject->GetId(), sOriginalName, pAudioObject->GetMaxRadius());
+			                    "%s : %.2f",
+			                    szOriginalName, pAudioObject->GetMaxRadius());
 
 			posY += 10.0f;
-			++nObjects;
+			++numAudioObjects;
 		}
 	}
 
-	auxGeom.Draw2dLabel(posX, fHeaderPosY, 1.6f, fHeaderColor, false, "Audio Objects [%" PRISIZE_T "]", nObjects);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::SetDebugNameStore(CATLDebugNameStore* const pDebugNameStore)
-{
-	m_pDebugNameStore = pDebugNameStore;
+	auxGeom.Draw2dLabel(posX, headerPosY, 1.6f, headerColor, false, "Audio Objects [%" PRISIZE_T "]", numAudioObjects);
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

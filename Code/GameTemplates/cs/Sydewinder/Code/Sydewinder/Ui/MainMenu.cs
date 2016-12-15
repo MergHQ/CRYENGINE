@@ -1,20 +1,15 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
 using CryEngine.Common;
-using CryEngine.Components;
-using CryEngine.UI;
-using CryEngine;
-using CryEngine.UI.Components;
-using CryEngine.Resources;
 using CryEngine.EntitySystem;
+using CryEngine.Resources;
+using CryEngine.UI;
+using System.Collections.Generic;
+using System.IO;
 
 namespace CryEngine.Sydewinder.UI
 {
-public sealed class MainMenu : SceneObject
+	public sealed class MainMenu : SceneObject
 {
 	public event EventHandler StartClicked;
 	public event EventHandler ExitClicked;
@@ -29,8 +24,8 @@ public sealed class MainMenu : SceneObject
 	private static Table      _highscoreTable;
 
 	#region Variables to have a smooth camera movement while switching between main menu and highscore
-	private static Vec3  _positionChangeOnEachUpdate = null;
-	private static Vec3  _fwdDirectionChangeOnEachUpdate = null;
+	private static Vector3  _positionChangeOnEachUpdate = null;
+	private static Vector3  _fwdDirectionChangeOnEachUpdate = null;
 	private static float _numberOfRemainingFrames = 0;
 	#endregion
 
@@ -62,7 +57,7 @@ public sealed class MainMenu : SceneObject
 		}
 	}
 
-	public void OnAwake()
+	public override void OnAwake()
 	{
 		CreateMainMenu();
 		CreateHighscoreMenu();
@@ -93,7 +88,7 @@ public sealed class MainMenu : SceneObject
 		_mainMenuPage = SceneObject.Instantiate<Canvas>(Root);
 
 		// Get Entity placed in level.
-		Entity ent = Entity.ByName("UIPlane");
+		Entity ent = Entity.Find("UIPlane");
 		_mainMenuPage.SetupTargetEntity(ent, TEXTURE_RESOLUTION);
 
 		_mainMenuWindow = SceneObject.Instantiate<Window>(_mainMenuPage);
@@ -135,7 +130,7 @@ public sealed class MainMenu : SceneObject
 		_highscorePage = SceneObject.Instantiate<Canvas>(Root);
 
 		// Get plane entity for highscore menu item.
-		_highscorePage.SetupTargetEntity(Entity.ByName("UIPlane_Highscore"), TEXTURE_RESOLUTION);
+		_highscorePage.SetupTargetEntity(Entity.Find("UIPlane_Highscore"), TEXTURE_RESOLUTION);
 
 		Window highscoreWindow = SceneObject.Instantiate<Window>(_highscorePage);
 
@@ -157,9 +152,9 @@ public sealed class MainMenu : SceneObject
 
 	private void ApplyMenuStyle()
 	{
-		string backgroundImageURL = Path.Combine(Application.DataPath, "Textures/ui/scroller_window_512.png");
-		string buttonBackgroundURL = Path.Combine(Application.DataPath, "Textures/ui/Ui_button.png");
-		string buttonHighlightedURL = Path.Combine(Application.DataPath, "Textures/ui/Ui_button_selected.png");
+		string backgroundImageURL = Path.Combine(FileSystem.DataDirectory, "Textures/ui/scroller_window_512.png");
+		string buttonBackgroundURL = Path.Combine(FileSystem.DataDirectory, "Textures/ui/Ui_button.png");
+		string buttonHighlightedURL = Path.Combine(FileSystem.DataDirectory, "Textures/ui/Ui_button_selected.png");
 
 		Root.ForEach<Window>(x =>
 		{
@@ -186,11 +181,11 @@ public sealed class MainMenu : SceneObject
 	{
 		SelectedMenuPage(0);
 
-		Vec3 finalPosition = new Vec3(86, 37, 75);
-		Entity MenuPlaneEntity = Entity.ByName("UIPlane");
+		Vector3 finalPosition = new Vector3(86, 37, 75);
+		Entity MenuPlaneEntity = Entity.Find("UIPlane");
 		if (MenuPlaneEntity != null)
 		{
-			Vec3 finalFwdDirection = MenuPlaneEntity.Position - finalPosition;
+			Vector3 finalFwdDirection = MenuPlaneEntity.Position - finalPosition;
 			if (animated)
 			{
 				// Animated camera move to main menu.
@@ -198,9 +193,11 @@ public sealed class MainMenu : SceneObject
 			}
 			else
 			{
-				Camera.Current.Position = finalPosition;
-				Camera.Current.ForwardDirection = finalFwdDirection;
+				Camera.Position = finalPosition;
+				Camera.ForwardDirection = finalFwdDirection;
 			}
+
+			Camera.FieldOfView = 30;
 		}
 		else
 		{
@@ -213,8 +210,8 @@ public sealed class MainMenu : SceneObject
 		SelectedMenuPage(1);
 
 		// Set final position and view direction.
-		Vec3 finalPosition = new Vec3(68, 81, 73);
-		Vec3 finalFwdDirection = Entity.ByName("UIPlane_Highscore").Position - finalPosition;
+		Vector3 finalPosition = new Vector3(68, 81, 73);
+		Vector3 finalFwdDirection = Entity.Find("UIPlane_Highscore").Position - finalPosition;
 
 		if (animated)
 		{
@@ -223,8 +220,8 @@ public sealed class MainMenu : SceneObject
 		}
 		else
 		{
-			Camera.Current.Position = finalPosition;
-			Camera.Current.ForwardDirection = finalFwdDirection;
+			Camera.Position = finalPosition;
+			Camera.ForwardDirection = finalFwdDirection;
 		}
 
 		// Load highscore into table and display it on the UI.
@@ -238,29 +235,27 @@ public sealed class MainMenu : SceneObject
 		(_highscoreTable.Parent as Window).RectTransform.Height = _highscoreTable.ContentHeight + 240;
 	}
 
-	private static void StartCameraMove(int seconds, Vec3 finalPosition, Vec3 finalFordwardDirection)
+	private static void StartCameraMove(int seconds, Vector3 finalPosition, Vector3 finalFordwardDirection)
 	{
 		// Calculate number of frames until 2 seconds are elapsed based on the last frame time.
 		_numberOfRemainingFrames = (int)((float)seconds / FrameTime.Delta);
 
 		// Set values to be updated on each frame.
-		var cam = Camera.Current;
-		_positionChangeOnEachUpdate = (finalPosition - cam.Position) / _numberOfRemainingFrames;
-		_fwdDirectionChangeOnEachUpdate = (finalFordwardDirection - cam.ForwardDirection) / _numberOfRemainingFrames;
+		_positionChangeOnEachUpdate = (finalPosition - Camera.Position) / _numberOfRemainingFrames;
+		_fwdDirectionChangeOnEachUpdate = (finalFordwardDirection - Camera.ForwardDirection) / _numberOfRemainingFrames;
 	}
 
-	public void OnUpdate()
+	public override void OnUpdate()
 	{
 		if (_numberOfRemainingFrames > 0)
 		{
-			var cam = Camera.Current;
-			cam.Position += _positionChangeOnEachUpdate;
-			cam.ForwardDirection += _fwdDirectionChangeOnEachUpdate;
+			Camera.Position += _positionChangeOnEachUpdate;
+			Camera.ForwardDirection += _fwdDirectionChangeOnEachUpdate;
 			_numberOfRemainingFrames--;
 		}
 	}
 
-	public void OnDestroy()
+	public override void OnDestroy()
 	{
 		Input.OnKey -= OnKey;
 

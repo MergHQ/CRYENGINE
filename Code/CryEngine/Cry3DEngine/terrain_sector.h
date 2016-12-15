@@ -387,6 +387,7 @@ public:
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
 	void          UpdateNodeTextureFromEditorData();
+	void					UpdateNodeNormalMapFromEditorData();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
 	IRenderMesh*  MakeSubAreaRenderMesh(const Vec3& vPos, float fRadius, IRenderMesh* pPrevRenderMesh, IMaterial* pMaterial, bool bRecalIRenderMeshconst, const char* szLSourceName);
@@ -464,6 +465,7 @@ public:
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
 	void                         OffsetPosition(const Vec3& delta);
 	_smart_ptr<IRenderMesh>			 GetSharedRenderMesh();
+	uint32											 GetMaterialsModificationId();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Member variables

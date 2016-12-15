@@ -246,7 +246,7 @@ bool CVisibleObjectsHelper::CheckObjectViewDist(const Agent& agent, const SVisib
 	IEntity *pAIEntity = pEntitySystem->GetEntity(agent.GetEntityID());
 	IEntity *pObjectEntity = pEntitySystem->GetEntity(visibleObject.entityId);
 
-	IEntityRenderProxy *pObjectRenderProxy = (pAIEntity != NULL && pObjectEntity ? static_cast<IEntityRenderProxy *>(pObjectEntity->GetProxy(ENTITY_PROXY_RENDER)) : NULL);
+	IEntityRender *pObjectRenderProxy = (pAIEntity != NULL && pObjectEntity ? (pObjectEntity->GetRenderInterface()) : NULL);
 	if (pObjectRenderProxy != NULL)
 	{
 		IRenderNode *pObjectRenderNode = pObjectRenderProxy->GetRenderNode();

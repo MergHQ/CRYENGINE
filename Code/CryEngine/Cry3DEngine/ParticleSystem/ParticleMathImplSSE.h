@@ -1,207 +1,53 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     28/07/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 namespace pfx2
 {
 
 namespace detail
 {
 
-#ifdef CRY_PFX2_USE_SEE4
-
-template<int i>
-ILINE int ExtractI32(uint32v a)
-{
-	return _mm_extract_epi32(a, i);
 }
-
-template<int i>
-ILINE float ExtractF32(floatv a)
-{
-	float r;
-	_MM_EXTRACT_FLOAT(r, a, i);
-	return r;
-}
-
-#else
-
-template<int i>
-ILINE int ExtractI32(uint32v a)
-{
-	return _mm_cvtsi128_si32(_mm_shuffle_epi32(a, _MM_SHUFFLE(i, i, i, i)));
-}
-
-template<int i>
-ILINE float ExtractF32(floatv a)
-{
-	return _mm_cvtss_f32(_mm_shuffle_ps(a, a, _MM_SHUFFLE(i, i, i, i)));
-}
-
-#endif
-
-ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, float defaultVal)
-{
-	const i32mask4 mask = index == convert<uint32v>(gInvalidId);
-	const uint32v mIndex = _mm_andnot_si128((__m128i)mask, index);
-	const uint32v mFirst = _mm_shuffle_epi32(mIndex, 0);
-
-	if (All(index == mFirst + convert<uint32v>(0, 1, 2, 3)))
-		return _mm_loadu_ps(pStream + _mm_cvtsi128_si32(mFirst));
-
-	floatv output = _mm_load1_ps(pStream + _mm_cvtsi128_si32(mFirst));
-	if (!All(mFirst == mIndex))
-	{
-		const float f1 = *(pStream + ExtractI32<1>(mIndex));
-		const float f2 = *(pStream + ExtractI32<2>(mIndex));
-		const float f3 = *(pStream + ExtractI32<3>(mIndex));
-		const floatv m = _mm_castsi128_ps(_mm_set_epi32(0, 0, 0, ~0));
-		const floatv v0 = _mm_set_ps(f3, f2, f1, 0.0f);
-		output = _mm_or_ps(v0, _mm_and_ps(output, m));
-	}
-
-	return if_else(mask, _mm_set1_ps(defaultVal), output);
-}
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Streams
-
-ILINE floatv IFStream::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_ps(m_pStream + pgId);
-}
-
-ILINE floatv IFStream::Load(TParticleIdv pIdv, float defaultVal) const
-{
-	return detail::LoadIndexed4(m_pStream, pIdv, defaultVal);
-}
-
-ILINE floatv IFStream::SafeLoad(TParticleGroupId pgId) const
-{
-	return _mm_load_ps(m_pStream + (pgId & m_safeMask));
-}
-
-ILINE floatv IOFStream::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_ps(m_pStream + pgId);
-}
-
-ILINE void IOFStream::Store(TParticleGroupId pgId, floatv value)
-{
-	_mm_store_ps(m_pStream + pgId, value);
-}
-
-ILINE Vec3v IVec3Stream::Load(TParticleGroupId pgId) const
-{
-	return Vec3v(
-	  _mm_load_ps(m_pXStream + pgId),
-	  _mm_load_ps(m_pYStream + pgId),
-	  _mm_load_ps(m_pZStream + pgId));
-}
-
-ILINE Vec3v IVec3Stream::Load(TParticleIdv pIdv, Vec3 defaultVal) const
-{
-	return Vec3v(
-	  detail::LoadIndexed4(m_pXStream, pIdv, defaultVal.x),
-	  detail::LoadIndexed4(m_pYStream, pIdv, defaultVal.y),
-	  detail::LoadIndexed4(m_pZStream, pIdv, defaultVal.z));
-}
-
-ILINE Vec3v IVec3Stream::SafeLoad(TParticleGroupId pgId) const
-{
-	return Vec3v(
-	  _mm_load_ps(m_pXStream + (pgId & m_safeMask)),
-	  _mm_load_ps(m_pYStream + (pgId & m_safeMask)),
-	  _mm_load_ps(m_pZStream + (pgId & m_safeMask)));
-}
-
-ILINE Vec3v IOVec3Stream::Load(TParticleGroupId pgId) const
-{
-	return Vec3v(
-	  _mm_load_ps(m_pXStream + pgId),
-	  _mm_load_ps(m_pYStream + pgId),
-	  _mm_load_ps(m_pZStream + pgId));
-}
-
-ILINE void IOVec3Stream::Store(TParticleGroupId pgId, const Vec3v& value) const
-{
-	_mm_store_ps(m_pXStream + pgId, value.x);
-	_mm_store_ps(m_pYStream + pgId, value.y);
-	_mm_store_ps(m_pZStream + pgId, value.z);
-}
-
-ILINE UColv IOColorStream::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + pgId));
-}
-
-ILINE void IOColorStream::Store(TParticleGroupId pgId, UColv value)
-{
-	_mm_store_si128(reinterpret_cast<__m128i*>(m_pStream + pgId), value);
-}
-
-template<typename T, typename Tv>
-Tv TIStream<T, Tv >::Load(TParticleGroupId pgId) const
-{
-	static_assert(sizeof(T) == 4, "No Vector load for this type");
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + pgId));
-}
-
-template<>
-ILINE UColv TIStream<UCol, UColv >::Load(TParticleIdv pIdv, UCol defaultVal) const
-{
-	static_assert(sizeof(UColv) == sizeof(floatv), "cannot use floatv to store UColv");
-	const float defaultValF = _mm_cvtss_f32(_mm_castsi128_ps(_mm_set1_epi32(defaultVal.dcolor)));
-	const float* streamF = reinterpret_cast<const float*>(m_pStream);
-	floatv dataF = detail::LoadIndexed4(streamF, pIdv, defaultValF);
-	return _mm_castps_si128(dataF);
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Functions
 
 ILINE floatv ToFloatv(float v)
 {
-	return _mm_set1_ps(v);
+	return convert<floatv>(v);
 }
 
 ILINE uint32v ToUint32v(uint32 v)
 {
-	return _mm_set1_epi32(v);
+	return convert<uint32v>(v);
 }
 
 ILINE floatv ToFloatv(int32v v)
 {
-	return _mm_cvtepi32_ps(v);
+	return convert<floatv>(v);
+}
+
+ILINE floatv ToFloatv(uint32v v)
+{
+	return convert<floatv>(v);
 }
 
 ILINE uint32v ToUint32v(floatv v)
 {
-	return _mm_cvtps_epi32(v);
+	return convert<uint32v>(v);
 }
 
 ILINE Vec3v ToVec3v(Vec3 v)
 {
 	return Vec3v(
-	  _mm_set1_ps(v.x),
-	  _mm_set1_ps(v.y),
-	  _mm_set1_ps(v.z));
+		convert<floatv>(v.x),
+		convert<floatv>(v.y),
+		convert<floatv>(v.z));
 }
 
 ILINE Vec4v ToVec4v(Vec4 v)
 {
 	return Vec4v(
-	  _mm_set1_ps(v.x),
-	  _mm_set1_ps(v.y),
-	  _mm_set1_ps(v.z),
-	  _mm_set1_ps(v.w));
+		convert<floatv>(v.x),
+		convert<floatv>(v.y),
+		convert<floatv>(v.z),
+		convert<floatv>(v.w));
 }
 
 ILINE Planev ToPlanev(Plane v)
@@ -253,6 +99,11 @@ ILINE ColorFv operator*(const ColorFv& a, floatv b)
 	  Mul(a.b, b));
 }
 
+ILINE floatv DeltaTime(floatv normAge, floatv frameTime)
+{
+	return __fsel(normAge, frameTime, -(normAge * frameTime));
+}
+
 ILINE ColorFv ToColorFv(UColv color)
 {
 	ColorFv result;
@@ -285,6 +136,55 @@ ILINE UColv ColorFvToUColv(const ColorFv& color)
 ILINE UColv ToUColv(UCol color)
 {
 	return _mm_set1_epi32(color.dcolor);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Quaternions
+
+ILINE floatv sin_fast(floatv x)
+{
+	const floatv one = ToFloatv(1.0f);
+	const floatv negOne = ToFloatv(-1.0f);
+	const floatv half = ToFloatv(0.5f);
+	const floatv negHalfPi = ToFloatv(-gf_PI * 0.5f);
+	const floatv pi = ToFloatv(gf_PI);
+	const floatv ipi = ToFloatv(1.0f / gf_PI);
+	const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
+
+	const floatv x1 = MAdd(frac(x * ipi), pi, negHalfPi);
+	const floatv m = __fsel(Sub(frac(x * ipi2), half), one, negOne);
+
+	const floatv p0 = ToFloatv(-0.4964738f);
+	const floatv p1 = ToFloatv(0.036957536f);
+	const floatv x2 = x1 * x1;
+	const floatv x4 = x2 * x2;
+	const floatv result = MAdd(x4, p1, MAdd(x2, p0, one)) * m;
+
+	return result;
+}
+
+ILINE floatv cos_fast(floatv x)
+{
+	const floatv halfPi = ToFloatv(gf_PI * 0.5f);
+	return sin_fast(x - halfPi);
+}
+
+ILINE Quatv quat_exp_fast(Vec3v v)
+{
+	const floatv lenSqr = v.len2();
+	const floatv len = sqrt_fast_tpl(lenSqr);
+	const floatv invLen = rcp_fast(max(len, convert<floatv>(FLT_MIN)));
+	const floatv s = sin_fast(len) * invLen;
+	const floatv c = cos_fast(len);
+
+	return Quatv(c, v.x * s, v.y * s, v.z * s);
+}
+
+ILINE Quatv AddAngularVelocity(Quatv initial, Vec3v angularVel, floatv deltaTime)
+{
+	const floatv haldDt = deltaTime * ToFloatv(0.5f);
+	const Quatv rotated = quat_exp_fast(angularVel * haldDt) * initial;
+	return rotated.GetNormalized();
 }
 
 }

@@ -1,0 +1,1 @@
+MAX_PLUGIN("FlowPaint" "MaxPluginUtilities")

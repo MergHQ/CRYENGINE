@@ -181,7 +181,7 @@ namespace
 		if (!gEnv->bMultiplayer && !pOwnerActor->IsPlayer())
 			return bShouldArc;
 
-		CActor* pEntityActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targetedEntityId));
+		CActor* pEntityActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(targetedEntityId));
 		if (pEntityActor)
 			bShouldArc = !pOwnerActor->IsFriendlyEntity(targetedEntityId);
 
@@ -389,7 +389,7 @@ void CLightningBolt::Strike()
 		if (!pTarget || pTarget->GetId() == m_stuckProjectile.GetStuckEntityId())
 			continue;
 		
-		IActor* pTargetActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pTarget->GetId());
+		IActor* pTargetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(pTarget->GetId());
 		if (pTargetActor && pTargetActor->IsDead())
 			continue;
 		if (GetOwnerId() == pTarget->GetId())
@@ -458,7 +458,7 @@ void CLightningBolt::ProcessHit(CGameRules* gameRules, EntityId target, float da
 		{
 			bRemote = false;
 		}
-		else if(!m_stuckProjectile.IsStuck() && m_ownerId == g_pGame->GetClientActorId())
+		else if(!m_stuckProjectile.IsStuck() && m_ownerId == gEnv->pGameFramework->GetClientActorId())
 		{
 			bRemote = false;
 		}

@@ -15,7 +15,6 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CryMemory/IMemory.h>
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <CrySystem/TimeValue.h>
 #include <CryAudio/IAudioSystem.h>
 #include <Cry3DEngine/GeomRef.h>
@@ -341,15 +340,19 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 	}
 
 	//! Retrieves current SpawnParams.
-	virtual const SpawnParams& GetSpawnParams() const = 0;
-	void                       GetSpawnParams(SpawnParams& sp) const
+	virtual void GetSpawnParams(SpawnParams& sp) const = 0;
+	SpawnParams  GetSpawnParams() const
 	{
-		sp = GetSpawnParams();
+		SpawnParams sp;
+		GetSpawnParams(sp);
+		return sp;
 	}
 
 	//! Associates emitter with entity, for dynamic updating of positions etc.
 	//! \note Must be done when entity created or serialized, entity association is not serialized.
 	virtual void SetEntity(IEntity* pEntity, int nSlot) = 0;
+
+	virtual void InvalidateCachedEntityData() = 0;
 
 	//! Sets location with quat-based orientation.
 	//! \note IRenderNode.SetMatrix() is equivalent, but performs conversion.

@@ -635,7 +635,7 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv,const 
 				if (fabs_tpl(angleSrc-angleDst)>limit && a>1e-20f && (!m_segs[i+(iDir>>31)].pContactEnt || bPlane))
 					m_segs[i+(iDir>>31)].dir = m_segs[i+(iDir>>31)].dir.GetRotated(axis1src/a, angleDst-angleSrc-limit*sgnnz(angleDst-angleSrc));
 				if (bPlane)
-					(m_segs[i+(iDir>>31)].dir -= n*(n*m_segs[i+(iDir>>31)].dir)).NormalizeFast();
+					(m_segs[i+(iDir>>31)].dir -= n*(n*m_segs[i+(iDir>>31)].dir)).normalize();
 				m_segs[i+iDir].pt = m_segs[i].pt+m_segs[i+(iDir>>31)].dir*(len*scaletv);
 			}
 		}
@@ -657,7 +657,7 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv,const 
 		for(i=0;i<2;i++) m_segs[m_nSegs*i].kdP=!m_pTiedTo[i];
 
 		bHasContacts = max(100,float2int((dt>0 ? max(0.2f,dt/m_maxAllowedStep):1.0f)*min(sqr(m_nSegs),m_maxIters>>2)));
-		iDir = m_pTiedTo[1] && !m_pTiedTo[0] ? 1:-1;
+		int iDir0 = (iDir = m_pTiedTo[1] && !m_pTiedTo[0] ? 1:-1);
 		do {
 			iDir = -iDir;
 			iStart = m_nSegs & iDir>>31;
@@ -665,20 +665,20 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv,const 
 
 			for(i=iStart,bTargetPoseActive=0; i!=iEnd; i+=iDir)	{
 				dir = m_segs[i+iDir].pt-m_segs[i].pt; len2 = dir.len2(); 
-				diff = fabs_tpl(len2-seglen2);
-				if (diff*m_segs[i+iDir].kdP > seglen2*0.01f) {
-					if (diff<seglen2*0.1f) { // use 3 terms of 1/sqrt(x) Taylor series expansion
-						k = (len2-seglen2)*rseglen2; 
+				if ((1-inrange(len2, seglen2*1.02f,seglen2*0.98f))*m_segs[i+iDir].kdP) {
+					diff = sgnnz(len2-seglen2)*0.01f;
+					if (inrange(len2, seglen2*1.1f,seglen2*0.8f)) { // use 3 terms of 1/sqrt(x) Taylor series expansion
+						k = (len2-seglen2*(1+diff*2))*rseglen2*(1-diff*2); 
 						k = 1.0f+(-0.5f+(0.375f-0.3125f*k)*k)*k;
 					} else
-						k = seglen/sqrt_tpl(len2);
+						k = seglen*(1+diff)/sqrt_tpl(len2);
 					m_segs[i+iDir].pt = m_segs[i].pt + dir*k;
 					bHasContacts--;
 					bTargetPoseActive = 1;
 				}	else k = 1.0f;
 				m_segs[i+(iDir>>31)].dir = dir*(k*rseglen*iDir);
 			}
-		} while((m_pTiedTo[iDir+1>>1] || m_nAttach) && bTargetPoseActive && bHasContacts>0);
+		} while((m_pTiedTo[iDir+1>>1] || m_nAttach) && bTargetPoseActive && (iDir!=iDir0 || bHasContacts>0));
 
 		if (m_flags & rope_subdivide_segs && m_vtx)
 			for(i=0;i<m_nSegs;i++) m_vtx[m_segs[i].iVtx0].pt = m_segs[i].pt;
@@ -1836,7 +1836,7 @@ void CRopeEntity::CheckCollisions(int iDir, SRopeCheckPart *checkParts,int nChec
 				if (hinge) {
 					Vec3 dirSeg=aray.m_ray.dir, org0=aray.m_ray.origin;
 					aray.m_ray.origin += aray.m_ray.dir; 
-					(aray.m_dirn = ip.axisOfRotation^dirSeg).NormalizeFast();
+					(aray.m_dirn = ip.axisOfRotation^dirSeg).normalize();
 					aray.m_dirn *= sgnnz(aray.m_dirn*(aray.m_ray.origin-checkParts[j].bbox.center));
 					aray.m_ray.dir = aray.m_dirn*(m_length*0.5f);
 					aray.m_ray.origin -= aray.m_dirn*(m_collDist*1.3f);

@@ -406,7 +406,7 @@ public:
 		pSizer->AddObject(m_damageComponents);
 	}
 
-	virtual IEntityAudioProxy* GetAudioProxy() const override { return m_pIEntityAudioProxy.get(); }
+	virtual IEntityAudioComponent* GetAudioProxy() const override;
 	virtual AudioControlId GetPrimaryWeaponAudioTrigger() const override { return m_audioControlIDs[eSID_VehiclePrimaryWeapon]; }
 	virtual AudioControlId GetPrimaryWeaponAudioStopTrigger() const override { return m_audioControlIDs[eSID_VehicleStopPrimaryWeapon]; }
 	virtual AudioControlId GetSecondaryWeaponAudioTrigger() const override { return m_audioControlIDs[eSID_VehicleSecondaryWeapon]; }
@@ -488,7 +488,6 @@ public:
 protected:
 	IVehicle* m_pVehicle;
 	IEntity* m_pEntity;
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;	
 	static IGameTokenSystem* m_pGameTokenSystem;
 	static IVehicleSystem* m_pVehicleSystem;
 	static IActorSystem* m_pActorSystem;

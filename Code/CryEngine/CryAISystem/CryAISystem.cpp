@@ -27,26 +27,12 @@ CAISystem* g_pAISystem;
  */
 
 //////////////////////////////////////////////////////////////////////////
-struct CSystemEventListner_AI : public ISystemEventListener
-{
-public:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-	{
-		switch (event)
-		{
-		case ESYSTEM_EVENT_RANDOM_SEED:
-			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
-			break;
-		}
-	}
-};
-static CSystemEventListner_AI g_system_event_listener_ai;
-
-//////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryAISystem : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAISystem, "EngineModule_CryAISystem", 0x6b8e79a784004f44, 0x97db7614428ad251)
+
+	virtual ~CEngineModule_CryAISystem() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() override { return "CryAISystem"; };
@@ -56,8 +42,6 @@ class CEngineModule_CryAISystem : public IEngineModule
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		ISystem* pSystem = env.pSystem;
-
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_ai);
 
 		AIInitLog(pSystem);
 
@@ -69,14 +53,6 @@ class CEngineModule_CryAISystem : public IEngineModule
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAISystem)
-
-CEngineModule_CryAISystem::CEngineModule_CryAISystem()
-{
-};
-
-CEngineModule_CryAISystem::~CEngineModule_CryAISystem()
-{
-};
 
 //////////////////////////////////////////////////////////////////////////
 #include <CryCore/CrtDebugStats.h>

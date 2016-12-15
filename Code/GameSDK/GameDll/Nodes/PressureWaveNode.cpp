@@ -208,10 +208,8 @@ public:
 				bool affected = stl::find(m_entitiesAffected, pEntity->GetId());
 				if (!affected)
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
-					if (pPhysicalProxy)
 					{
-						pPhysicalProxy->GetWorldBounds(bounds);
+						pEntity->GetPhysicsWorldBounds(bounds);
 						Vec3 p = bounds.GetCenter();
 						Vec3 v = p - m_effectCenter;
 						float distFromCenter = v.GetLength() + FLT_EPSILON;
@@ -230,7 +228,7 @@ public:
 								impulse = impulse * amplitude;// / dyn.mass;
 								if (impulse > FLT_EPSILON)
 								{
-									pPhysicalProxy->AddImpulse(-1, p, dir * impulse, usePos, 1.0f);
+									pEntity->AddImpulse(-1, p, dir * impulse, usePos, 1.0f);
 									m_entitiesAffected.push_back(pEntity->GetId());
 								}
 							}

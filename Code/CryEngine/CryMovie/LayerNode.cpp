@@ -67,7 +67,7 @@ void CLayerNode::Animate(SAnimContext& animContext)
 				IAnimTrack* visTrack = pTrack;
 				TMovieSystemValue value = visTrack->GetValue(animContext.time);
 
-				bool bVisible = boost::get<bool>(value);
+				bool bVisible = stl::get<bool>(value);
 				if (m_bInit)
 				{
 					if (bVisible != m_bPreVisibility)

@@ -14,26 +14,26 @@
 namespace gpu_pfx2
 {
 
-struct CFeatureSpawnBase : public CFeatureWithParameterStruct<SFeatureParametersSpawn>
+class CFeatureSpawnBase : public CFeatureWithParameterStruct<SFeatureParametersSpawn>
 {
+public:
 	virtual void InitSubInstance(IParticleComponentRuntime* pRuntime, SSpawnData* pInstances, size_t count) override;
-protected:
-	bool         HasDuration() { return m_useDuration; }
-private:
-	bool m_useDuration;
 };
 
-struct CFeatureSpawnCount : public CFeatureSpawnBase
+class CFeatureSpawnCount : public CFeatureSpawnBase
 {
+public:
 	static const EGpuFeatureType type = eGpuFeatureType_SpawnCount;
 	virtual void SpawnParticles(const gpu_pfx2::SUpdateContext& context) override;
 };
 
-struct CFeatureSpawnRate : public CFeatureSpawnBase
+class CFeatureSpawnRate : public CFeatureSpawnBase
 {
+public:
 	static const EGpuFeatureType type = eGpuFeatureType_SpawnRate;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 	virtual void SpawnParticles(const gpu_pfx2::SUpdateContext& context) override;
+
 private:
 	ESpawnRateMode m_mode;
 };

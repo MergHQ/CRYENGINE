@@ -61,7 +61,7 @@ struct suspension_point {
 
 struct SWheeledVehicleEntityNetSerialize
 {
-	suspension_point * pSusp;
+	strided_pointer<suspension_point> pSusp;
 	float pedal;
 	float steer;
 	float clutch;
@@ -75,6 +75,7 @@ struct SWheeledVehicleEntityNetSerialize
 class CWheeledVehicleEntity : public CRigidEntity {
  public:
 	explicit CWheeledVehicleEntity(CPhysicalWorld *pworld, IGeneralMemoryHeap* pHeap = NULL);
+	virtual ~CWheeledVehicleEntity() { delete[] m_susp; }
 	virtual pe_type GetType() const { return PE_WHEELEDVEHICLE; }
 
 	virtual int SetParams(pe_params*,int bThreadSafe=1);
@@ -113,7 +114,8 @@ class CWheeledVehicleEntity : public CRigidEntity {
 	void RecalcSuspStiffness();
 	float ComputeDrivingTorque(float time_interval);
 
-	suspension_point m_susp[NMAXWHEELS];
+	suspension_point *m_susp = nullptr;
+	int m_suspAlloc = 0;
 	float m_enginePower,m_maxSteer;
 	float m_engineMaxw,m_engineMinw,m_engineIdlew,m_engineShiftUpw,m_engineShiftDownw,m_gearDirSwitchw,m_engineStartw;
 	float m_axleFriction,m_brakeTorque,m_clutchSpeed,m_minBrakingFriction,m_maxBrakingFriction,m_kDynFriction,m_slipThreshold;

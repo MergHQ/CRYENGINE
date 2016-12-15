@@ -47,18 +47,21 @@ struct SGraphicsPipelinePassContext;
 #include "D3DRenderAuxGeom.h"
 #include "D3DColorGradingController.h"
 #include "D3DStereo.h"
+#include "D3DMultiResRendering.h"
 #include "ShadowTextureGroupManager.h"		// CShadowTextureGroupManager
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "D3DDeferredShading.h"
 #include "D3DTiledShading.h"
-#include "D3DVolumetricFog.h"
 #include "PipelineProfiler.h"
 #include "D3DDebug.h"
 #include "DeviceInfo.h"
-#include "../Scaleform/ScaleformPlayback.h"
 #include <memory>
 #include "Common/RenderView.h"
+
+#if RENDERER_SUPPORT_SCALEFORM
+#include "../Scaleform/ScaleformPlayback.h"
 #include "../Scaleform/ScaleformRender.h"
+#endif
 
 inline DWORD FLOATtoDWORD( float f )
 {
@@ -297,14 +300,9 @@ class CD3D9Renderer final:public CRenderer, public IWindowMessageHandler
 public:
 	enum EDefShadows_Passes
 	{
-		DS_STENCIL_PASS,
-		DS_HISTENCIL_REFRESH,
-		DS_SHADOW_PASS,
 		DS_SHADOW_CULL_PASS,
 		DS_SHADOW_FRUSTUM_CULL_PASS,
-		DS_STENCIL_VOLUME_CLIP,
-		DS_CLOUDS_SEPARATE,
-		DS_VOLUME_SHADOW_PASS,
+
 		DS_PASS_MAX
 	};
 	struct S2DImage
@@ -319,7 +317,7 @@ public:
 	};
 	struct SCharacterInstanceCB
 	{
-		CConstantBuffer *boneTransformsBuffer;
+		CConstantBufferPtr boneTransformsBuffer;
 		// contains only the bone ids and the weighs [0-100] of the bones that move a morph for a particular frame
 		CGpuBuffer activeMorphsBuffer;
 		SSkinningData *m_pSD;
@@ -334,7 +332,7 @@ public:
 		{
 		}
 
-		~SCharacterInstanceCB() { SAFE_RELEASE(boneTransformsBuffer); list.erase(); }
+		~SCharacterInstanceCB() { list.erase(); }
 	};
 	struct SRenderTargetStack
 	{
@@ -461,9 +459,7 @@ public:
   void CreateDeferredUnitBox(t_arrDeferredMeshIndBuff& indBuff, t_arrDeferredMeshVertBuff& vertBuff);
   const t_arrDeferredMeshIndBuff& GetDeferredUnitBoxIndexBuffer() const;
 	const t_arrDeferredMeshVertBuff& GetDeferredUnitBoxVertexBuffer() const;
-	virtual bool                     PrepareDepthMap(CRenderView* pRenderView, ShadowMapFrustum* SMSource, int nLightFrustumID = 0, bool bClearPool = false) override;
   void ConfigShadowTexgen(int Num, ShadowMapFrustum * pFr, int nFrustNum = -1, bool bScreenToLocalBasis = false, bool bUseComparisonSampling = true);
-	virtual void                     DrawAllShadowsOnTheScreen() override;
   void DrawAllDynTextures(const char *szFilter, const bool bLogNames, const bool bOnlyIfUsedThisFrame);
 	virtual void                     OnEntityDeleted(IRenderNode* pRenderNode) override;
 
@@ -529,6 +525,7 @@ public:
   virtual void RT_SetCameraInfo() override;
   virtual void RT_CreateResource(SResourceAsync* Res) override;
   virtual void RT_ReleaseResource(SResourceAsync* pRes) override;
+  virtual void RT_ReleaseOptics(IOpticsElementBase* pOpticsElement) override;
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) override;
   virtual void RT_UnbindResources() override;
 	virtual void RT_UnbindTMUs() override;
@@ -543,7 +540,6 @@ public:
 
 	// =======================================================================================
 	// = Functions which draw directly into the swap-chain's backbuffer ======================
-  virtual void RT_DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const override;
 	virtual void RT_DrawLines(Vec3 v[], int nump, ColorF& col, int flags, float fGround) override;
   virtual void RT_Draw2dImage(float xpos,float ypos,float w,float h,CTexture *pTexture,float s0,float t0,float s1,float t1,float angle,DWORD col,float z) override;
   virtual void RT_Draw2dImageStretchMode(bool bStretch) override;
@@ -565,7 +561,6 @@ public:
 	virtual void RT_SetRendererCVar(ICVar* pCVar, const char* pArgText, const bool bSilentMode=false) override;
 
 	virtual void RT_PresentFast() override;
-	void RT_CopyScreenToBackBuffer();
 	virtual void RT_PrepareStereo(int mode, int output) override;
 
   //===============================================================================
@@ -575,7 +570,7 @@ public:
 
 	//===============================================================================
 
-  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HINSTANCE hinst, WIN_HWND Glhwnd=0, bool bReInit=false, const SCustomRenderInitArgs* pCustomArgs=0, bool bShaderCacheGen = false) override;
+  virtual WIN_HWND Init(int x,int y,int width,int height,unsigned int cbpp, int zbpp, int sbits, bool fullscreen,WIN_HWND Glhwnd=0, bool bReInit=false, const SCustomRenderInitArgs* pCustomArgs=0, bool bShaderCacheGen = false) override;
 
 	virtual void GetVideoMemoryUsageStats( size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false ) override;
 
@@ -665,6 +660,7 @@ public:
 	virtual unsigned int DownLoadToVideoMemoryCube(unsigned char *data,int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat=true, int filter=FILTER_BILINEAR, int Id=0, const char *szCacheName=NULL, int flags=0, EEndian eEndian = eLittleEndian, RectI * pRegion = NULL, bool bAsynDevTexCreation = false) override;
 	virtual unsigned int DownLoadToVideoMemory3D(unsigned char *data,int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat=true, int filter=FILTER_BILINEAR, int Id=0, const char *szCacheName=NULL, int flags=0, EEndian eEndian = eLittleEndian, RectI * pRegion = NULL, bool bAsynDevTexCreation = false) override;
 	virtual	void UpdateTextureInVideoMemory(uint32 tnum, unsigned char *newdata,int posx,int posy,int w,int h,ETEX_Format eTF=eTF_R8G8B8A8,int posz=0, int sizez=1) override;
+	virtual bool EF_PrecacheResource(SShaderItem *pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
 	virtual bool EF_PrecacheResource(SShaderItem *pSI, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
 	virtual bool EF_PrecacheResource(ITexture *pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override;
   virtual void RemoveTexture(unsigned int TextureId) override;
@@ -850,7 +846,7 @@ public:
   void DrawObjSprites (PodArray<SVegetationSpriteInfo> *pList, SSpriteInfo *pSPInfo, const int nSPI, bool bZ, bool bShadows);
   void ObjSpritesFlush (SVF_P3F_C4B_T2F *pVerts, uint16 *pInds, int numSprites, void *&pCurVB, SShaderTechnique *pTech, bool bZ);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	void SF_CreateResources();
 	void SF_PrecacheShaders();
 	void SF_DestroyResources();
@@ -870,15 +866,11 @@ public:
 	void SF_Flush();
 	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override;
 	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override;
-#else // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	void SF_DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawLineStrip(int baseVertexIndex, int lineCount, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxData, int baseVertexIndex, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxData, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_Flush() {}
+#else // #if RENDERER_SUPPORT_SCALEFORM
+	// These dummy functions are required when the feature is disabled, do not remove without testing the RENDERER_SUPPORT_SCALEFORM=0 case!
 	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override { return false; }
 	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override { return false; }
-#endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#endif // #if RENDERER_SUPPORT_SCALEFORM
 
 	virtual void SetProfileMarker(const char* label, ESPM mode) const override;
 
@@ -897,8 +889,7 @@ public:
   void FX_DrawShader_General(CShader *ef, SShaderTechnique *pTech);
 	void FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations = false);
 	void FX_SetupShadowsForTransp();
-	void FX_SetupShadowsForFog();
-	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRendElementBase* pRE);
+	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRenderElement* pRE);
 
   // hdr src texture is optional, if not specified uses default hdr destination target
 #if !CRY_PLATFORM_ORBIS
@@ -918,14 +909,8 @@ public:
 	void InsertParticleVideoDataFence();
 
   void FX_StencilTestCurRef(bool bEnable, bool bNoStencilClear=true, bool bStFuncEqual = true);
-	void EF_PrepareCustomShadowMaps(CRenderView* pRenderView);
-	void EF_PrepareAllDepthMaps(CRenderView* pRenderView);
   void FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInds);
 	void FX_StencilFrustumCull(int nStencilID, const SRenderLight* pLight, ShadowMapFrustum* pFrustum, int nAxis);
-  void FX_StencilCull(int nStencilID, t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, CShader *pShader);
-	void FX_StencilRefreshCustomVolume(int StencilFunc, uint32 nStencRef, uint32 nStencMask,
-	                                   Vec3 *pVerts, uint32 nNumVerts, uint16 *pInds, uint32 nNumInds);
-	void FX_StencilCullNonConvex(int nStencilID, IRenderMesh* pWaterTightMesh, const Matrix34& mWorldTM);
 
   void FX_ZTargetReadBack();
 
@@ -938,15 +923,10 @@ public:
 
   bool CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, D3DIndexBuffer*& pUnitFrustumIB, D3DVertexBuffer*& pUnitFrustumVB);	
   void FX_CreateDeferredQuad(const SRenderLight* pLight, float maskRTWidth, float maskRTHeight, Matrix44A* pmCurView, Matrix44A* pmCurComposite, float fCustomZ = 0.0f);
-	void FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapFrustum *pShadowFrustum, bool bShadowPass, bool bCloudShadowPass, bool bStencilPrepass, int nLod);
 	bool FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, const CCamera& cam, ShadowMapFrustum *pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest);
 	bool FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, const CCamera& cam, int nFrustumNum, float maskRTWidth, float maskRTHeight);
-	bool FX_DeferredShadows(CRenderView* pRenderView, SRenderLight* pLight, int maskRTWidth, int maskRTHeight);
 	void FX_DeferredShadowsNearFrustum( int maskRTWidth, int maskRTHeight );
 	void FX_SetDeferredShadows();
-	void FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TArray<uint32>& shadowPoolLights);
-  void FX_ShadowBlur(float fShadowBluriness, SDynTexture *tpSrc, CTexture *tpDst, int iShadowMode=-1, bool bScreenVP=false, CTexture *tpDst2=NULL, CTexture *tpSrc2 = NULL);
-	void FX_MergeShadowMaps(CRenderView* pRenderView, ShadowMapFrustum* pDst, const ShadowMapFrustum* pSrc);
 
   void FX_DrawEffectLayerPasses();
   void FX_DrawDebugPasses();
@@ -961,13 +941,9 @@ public:
 	void FX_HDRRangeAdaptUpdate();
 
   void FX_RenderForwardOpaque(void (*RenderFunc)(), const bool bLighting, const bool bAllowDeferred);
-	void FX_RenderWater(void (*RenderFunc)());
-  void FX_RenderFog();
 
   bool FX_ZScene(bool bEnable, bool bUseHDR, bool bClearZBuffer, bool bRenderNormalsOnly = false, bool bZPrePass = false);  
   bool FX_FogScene();
-	bool FX_DeferredCaustics();
-	bool FX_DeferredWaterVolumeCaustics(const N3DEngineCommon::SCausticInfo & causticInfo);
 	bool FX_DeferredRainOcclusionMap(const N3DEngineCommon::ArrOccluders & arrOccluders, const SRainParams & rainVolParams);
 	bool FX_DeferredRainOcclusion();
 	bool FX_DeferredRainPreprocess();
@@ -1015,7 +991,6 @@ public:
   void FX_Invalidate();
   void EF_Restore();
   virtual void FX_SetState(int st, int AlphaRef=-1, int RestoreState = 0) override;
-  void FX_StateRestore(int prevState);
 
   void ChangeLog();
 
@@ -1085,9 +1060,6 @@ public:
 	void FX_ClearTarget(SDepthTexture* pTex, const int nFlags);
 	void FX_ClearTarget(SDepthTexture* pTex);
 
-	// shader-implementation of clear
-	void FX_ClearTargetRegion(const uint32 nAdditionalStates = 0);
-
 	bool           FX_GetTargetSurfaces(CTexture* pTarget, D3DSurface*& pTargSurf, SRenderTargetStack* pCur, int nCMSide = -1, int nTarget = 0, uint32 nTileCount = 1);
 	bool           FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDepthTexture* pDepthTarget, uint32 nTileCount = 1);
 	bool           FX_PushRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDepthTexture* pDepthTarget, uint32 nTileCount = 1);
@@ -1142,7 +1114,7 @@ public:
 
   void EF_SetCameraInfo();
 	void FX_SetObjectTransform(CRenderObject* obj, CShader* pSH, uint64 nObjFlags);
-	bool FX_ObjectChange(CShader* Shader, CShaderResources* pRes, CRenderObject* pObject, CRendElementBase* pRE);
+	bool FX_ObjectChange(CShader* Shader, CShaderResources* pRes, CRenderObject* pObject, CRenderElement* pRE);
 
 private:
 	friend class CStandardGraphicsPipeline;
@@ -1163,7 +1135,6 @@ public:
   static void FX_DrawNormals();
   static void FX_DrawTangents();
 
-  static void FX_FlushShader_ShadowGen();
   static void FX_FlushShader_General();
   static void FX_FlushShader_ZPass();
 
@@ -1207,7 +1178,6 @@ public:
 	void FX_ProcessSkinRenderLists(int nList, void (*RenderFunc)(), bool bLighting);
 	void FX_ProcessEyeOverlayRenderLists(int nList, void (*RenderFunc)(), bool bLightin);
 	void FX_ProcessHalfResParticlesRenderList(CRenderView* pRenderView, int nList, void (* RenderFunc)(), bool bLighting);
-	void FX_WaterVolumesPreprocess();
   void FX_ProcessPostRenderLists(uint32 nBatchFilter);
 
   void FX_ProcessRenderList(int nList, uint32 nBatchFilter);
@@ -1216,10 +1186,6 @@ public:
 	void OldPipeline_ProcessRenderList(CRenderView::RenderItems& renderItems, int nums, int nume, int nList, void (* RenderFunc)(), bool bLighting, uint32 nBatchFilter = FB_GENERAL, uint32 nBatchExcludeFilter = 0);
 	void OldPipeline_ProcessBatchesList(CRenderView::RenderItems& renderItems, int nums, int nume, uint32 nBatchFilter, uint32 nBatchExcludeFilter = 0);
 	void FX_ProcessCharDeformation(CRenderView* pRenderView);
-
-	void FX_WaterVolumesCaustics(CRenderView* pRenderView);
-  void FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticInfo & causticInfo);
-  bool FX_WaterVolumesCausticsUpdateGrid(N3DEngineCommon::SCausticInfo & causticInfo);
 
 	// This method takes CRenderView prepared by 3D engine after it fully finished,and send it to the Renderer for drawing.
 	void SubmitRenderViewForRendering(void (* RenderFunc)(), int nFlags, SViewport& VP, const SRenderingPassInfo& passInfo, bool bSync3DEngineJobs);
@@ -1258,10 +1224,6 @@ public:
 
 	CStandardGraphicsPipeline& GetGraphicsPipeline() { return *m_pGraphicsPipeline; }
 	CTiledShading &GetTiledShading() { return *m_pTiledShading; }
-
-	CVolumetricFog& GetVolumetricFog() { return m_volumetricFog; }
-
-	CVolumetricCloudManager& GetVolumetricCloud() { return *m_pVolumetricCloudMan; }
 
 	CD3DStereoRenderer& GetS3DRend() const { return *m_pStereoRenderer; }
 	virtual bool        IsStereoEnabled() const override;
@@ -1379,7 +1341,11 @@ public:
 	int m_nPointClampSampler;
 	int m_nLinearClampComparisonSampler;
 	int m_nBilinearWrapSampler;
+	int m_nBilinearClampSampler;
 	int m_nBilinearBorderSampler;
+	int m_nTrilinearWrapSampler;
+	int m_nTrilinearClampSampler;
+	int m_nTrilinearBorderSampler;
 
 	CCryNameR m_nmInstancingParams;
 	CCryNameR m_nmInstancingData;
@@ -1464,7 +1430,6 @@ private:
 
 	// Windows context
 	char m_WinTitle[80];
-	HINSTANCE m_hInst;
 	HWND m_hWnd;                   // The main app window
 	HWND m_hWndDesktop;            // The desktop window
 #if CRY_PLATFORM_WINDOWS
@@ -1512,9 +1477,6 @@ private:
 	CStandardGraphicsPipeline* m_pGraphicsPipeline;
 	CTiledShading* m_pTiledShading;
 	CD3DStereoRenderer* m_pStereoRenderer;
-	CVolumetricFog m_volumetricFog;
-
-	CVolumetricCloudManager* m_pVolumetricCloudMan;
 
 	std::vector<_smart_ptr<D3DSurface> > m_pBackBuffers;
 	D3DSurface*  m_pBackBuffer;
@@ -1590,7 +1552,7 @@ private:
 	DeviceInfo m_devInfo;
 #endif
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	struct SSF_ResourcesD3D* m_pSFResD3D;
 #endif
 

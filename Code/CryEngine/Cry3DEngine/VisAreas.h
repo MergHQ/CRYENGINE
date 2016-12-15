@@ -319,7 +319,7 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 
 	// -------------------------------------
 
-	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL);
+	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
 	void         GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObjects);
 	int          GetObjectsCount(EOcTeeNodeListType eListType);
 	void         GetStreamedInNodesNum(int& nAllStreamable, int& nReady);

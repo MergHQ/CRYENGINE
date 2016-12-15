@@ -52,7 +52,7 @@ void UpdatePath(QStandardItem* pItem, TPath& path)
 
 void IUndoControlOperation::AddStoredControl()
 {
-	const CUndoSuspend suspendUndo;
+	const CScopedSuspendUndo suspendUndo;
 	CATLControlsModel* pModel = CAudioControlsEditorPlugin::GetATLModel();
 	QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	if (pModel && pTree)
@@ -74,7 +74,7 @@ void IUndoControlOperation::AddStoredControl()
 
 void IUndoControlOperation::RemoveStoredControl()
 {
-	const CUndoSuspend suspendUndo;
+	const CScopedSuspendUndo suspendUndo;
 	CATLControlsModel* pModel = CAudioControlsEditorPlugin::GetATLModel();
 	QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	if (pModel && pTree)
@@ -106,7 +106,7 @@ void CUndoControlAdd::Redo()
 
 CUndoControlRemove::CUndoControlRemove(std::shared_ptr<CATLControl>& pControl)
 {
-	CUndoSuspend suspendUndo;
+	CScopedSuspendUndo suspendUndo;
 	m_pStoredControl = pControl;
 	QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	if (pTree)
@@ -140,7 +140,7 @@ IUndoFolderOperation::IUndoFolderOperation(QStandardItem* pItem)
 
 void IUndoFolderOperation::AddFolderItem()
 {
-	CUndoSuspend suspendUndo;
+	CScopedSuspendUndo suspendUndo;
 	QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	if (pTree)
 	{
@@ -154,7 +154,7 @@ void IUndoFolderOperation::AddFolderItem()
 
 void IUndoFolderOperation::RemoveItem()
 {
-	CUndoSuspend suspendUndo;
+	CScopedSuspendUndo suspendUndo;
 	QATLTreeModel* pTree = CAudioControlsEditorPlugin::GetControlsTree();
 	if (pTree)
 	{
@@ -224,7 +224,7 @@ void CUndoControlModified::Redo()
 
 void CUndoControlModified::SwapData()
 {
-	const CUndoSuspend suspendUndo;
+	const CScopedSuspendUndo suspendUndo;
 	CATLControlsModel* pModel = CAudioControlsEditorPlugin::GetATLModel();
 	if (pModel)
 	{

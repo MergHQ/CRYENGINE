@@ -1108,7 +1108,7 @@ void CFeatureTester::ClearLocalPlayerAutoAim()
 //-------------------------------------------------------------------------------
 void CFeatureTester::SendInputToLocalPlayer(const char * inputName, EActionActivationMode mode, float value)
 {
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	if(pPlayer != NULL && pPlayer->GetPlayerInput())
 	{
 		pPlayer->GetPlayerInput()->OnAction(CCryName(inputName), mode, value);
@@ -1300,7 +1300,7 @@ void CFeatureTester::Instruction_kFTC_ResetCCCPointHitCounters()
 void CFeatureTester::Instruction_kFTC_SetItem()
 {
 	const char * itemClassName = GetTextParam();
-	CActor * pClientActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetClientActor();
+	CActor * pClientActor = (CActor*)gEnv->pGameFramework->GetClientActor();
 
 	if(pClientActor)
 	{
@@ -1330,7 +1330,7 @@ void CFeatureTester::Instruction_kFTC_SetItem()
 //-------------------------------------------------------------------------------
 void CFeatureTester::Instruction_kFTC_SetAmmo()
 {
-	CActor * pClientActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetClientActor();
+	CActor * pClientActor = (CActor*)gEnv->pGameFramework->GetClientActor();
 	if (!pClientActor)
 		return;
 	IInventory* pInventory = pClientActor->GetInventory();
@@ -1764,9 +1764,8 @@ bool CFeatureTester::CheckPrerequisite(const SFeatureTest * test)
 //-------------------------------------------------------------------------------
 void CFeatureTester::DisplayCaption(const SFeatureTest * test)
 {
-	IRenderer * renderer = gEnv->pRenderer;
 
-	if (renderer)
+	if ( IRenderer * renderer = gEnv->pRenderer )
 	{
 		assert (test);
 
@@ -1783,15 +1782,15 @@ void CFeatureTester::DisplayCaption(const SFeatureTest * test)
 		}
 
 		int height = renderer->GetHeight();
-		renderer->Draw2dLabel(30.f, height - 80.f, 3.f, m_currentTest ? s_colour_testName_Active : s_colour_testName_CannotStart, false, "%s%s", test->m_testName, paramString.c_str());
-		renderer->Draw2dLabel(30.f, height - 45.f, 2.f, s_colour_testDescription, false, "%s", test->m_testDescription);
+		IRenderAuxText::Draw2dLabel(30.f, height - 80.f, 3.f, m_currentTest ? s_colour_testName_Active : s_colour_testName_CannotStart, false, "%s%s", test->m_testName, paramString.c_str());
+		IRenderAuxText::Draw2dLabel(30.f, height - 45.f, 2.f, s_colour_testDescription, false, "%s", test->m_testDescription);
 
 		ICVar * timeScaleCVar = gEnv->pConsole->GetCVar("t_Scale");
 		if (timeScaleCVar)
 		{
-			renderer->Draw2dLabel(30.f, height - 100.f, 2.f, s_colour_testDescription, false, "Speed = %.1f", timeScaleCVar->GetFVal());
+			IRenderAuxText::Draw2dLabel(30.f, height - 100.f, 2.f, s_colour_testDescription, false, "Speed = %.1f", timeScaleCVar->GetFVal());
 		}
-		renderer->Draw2dLabel(30.f, height - 120.f, 2.f, s_colour_testDescription, false, "%s", m_informAutoTesterOfResults ? m_informAutoTesterOfResults->GetTestName() : "UNKNOWN" );
+		IRenderAuxText::Draw2dLabel(30.f, height - 120.f, 2.f, s_colour_testDescription, false, "%s", m_informAutoTesterOfResults ? m_informAutoTesterOfResults->GetTestName() : "UNKNOWN");
 	}
 }
 
@@ -1799,7 +1798,7 @@ void CFeatureTester::DisplayCaption(const SFeatureTest * test)
 void CFeatureTester::Update(float dt)
 {
 #if 0
-	IActorSystem * pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem * pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	IActorIteratorPtr pIter = pActorSystem->CreateActorIterator();
 
 	while (IActor * iActor = pIter->Next())
@@ -1811,7 +1810,7 @@ void CFeatureTester::Update(float dt)
 	}
 #endif
 
-	if (gEnv->pGame->GetIGameFramework()->StartingGameContext())
+	if (gEnv->pGameFramework->StartingGameContext())
 		return;
 
 	if (m_pFeatureTestMgr)
@@ -1819,7 +1818,7 @@ void CFeatureTester::Update(float dt)
 
 	if (m_numOverriddenInputs)
 	{
-		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 		IPlayerInput * playerInput = pPlayer ? pPlayer->GetPlayerInput() : NULL;
 
 		if (playerInput)
@@ -1889,8 +1888,8 @@ void CFeatureTester::Update(float dt)
 
 		if (m_localPlayerAutoAimSettings.m_entityId)
 		{
-			IActor * aimAtActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_localPlayerAutoAimSettings.m_entityId);
-			IActor * localActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			IActor * aimAtActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_localPlayerAutoAimSettings.m_entityId);
+			IActor * localActor = gEnv->pGameFramework->GetClientActor();
 			if (aimAtActor != NULL && localActor != NULL && ! aimAtActor->IsDead() && ! localActor->IsDead())
 			{
 				Vec3 lookFromPos = localActor->GetGameObject()->GetWorldQuery()->GetPos();
@@ -1955,7 +1954,7 @@ void CFeatureTester::Update(float dt)
 
 					case kFTPauseReason_untilWeaponIsReadyToUse:
 					{
-						CActor * pClientActor = (CActor*)gEnv->pGame->GetIGameFramework()->GetClientActor();
+						CActor * pClientActor = (CActor*)gEnv->pGameFramework->GetClientActor();
 						IItem * pCurrentItem = pClientActor ? pClientActor->GetCurrentItem() : NULL;
 						IWeapon* pCurrentWep = pCurrentItem ? pCurrentItem->GetIWeapon() : NULL;
 
@@ -2057,7 +2056,7 @@ void CFeatureTester::Update(float dt)
 					{
 						if (g_pGameCVars->autotest_verbose)
 						{
-							IActorSystem * pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+							IActorSystem * pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 							IActorIteratorPtr pIter = pActorSystem->CreateActorIterator();
 
 							while (IActor * iActor = pIter->Next())
@@ -2491,7 +2490,7 @@ void CFeatureTester::SubmitResultToAutoTester(const SFeatureTest * test, float t
 
 		if (gameRules)
 		{
-			IActorSystem * pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+			IActorSystem * pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 			IActorIteratorPtr pIter = pActorSystem->CreateActorIterator();
 
 			ILevelInfo* level = g_pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
@@ -2682,7 +2681,7 @@ void CFeatureTester::StopTest(const char * failureMessage)
 #endif
 
 	// Revert all inputs which are currently overridden by this feature test...
-	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer *pPlayer = static_cast<CPlayer *>(gEnv->pGameFramework->GetClientActor());
 	if(pPlayer != NULL && pPlayer->GetPlayerInput())
 	{
 		for (int i = 0; i < m_numOverriddenInputs; ++ i)
@@ -2766,7 +2765,7 @@ const char * CFeatureTester::StartTest(const SFeatureTest * test, const char * a
 
 		if (failReason == NULL && (requirements & kFTReq_localPlayerExists))
 		{
-			IActor * pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			IActor * pActor = gEnv->pGameFramework->GetClientActor();
 			CPlayer * pPlayer = (pActor != NULL && pActor->IsPlayer()) ? (static_cast<CPlayer *>(pActor)) : NULL;
 			IPlayerInput * inputs = pPlayer ? pPlayer->GetPlayerInput() : NULL;
 
@@ -3028,7 +3027,7 @@ CActor * CFeatureTester::GetPlayerForSelectionFlag(TBitfield flag)
 	switch (flag)
 	{
 		case kFTPS_localPlayer:
-		return (CActor*)gEnv->pGame->GetIGameFramework()->GetClientActor();
+		return (CActor*)gEnv->pGameFramework->GetClientActor();
 		break;
 
 		case kFTPS_firstRemotePlayer:
@@ -3046,8 +3045,8 @@ CActor * CFeatureTester::GetPlayerForSelectionFlag(TBitfield flag)
 //-------------------------------------------------------------------------------
 IActor * CFeatureTester::GetNthNonLocalActor(int skipThisManyBeforeReturning)
 {
-	IActorSystem * pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
-	IActor * localPlayerActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActorSystem * pActorSystem = gEnv->pGameFramework->GetIActorSystem();
+	IActor * localPlayerActor = gEnv->pGameFramework->GetClientActor();
 	IActorIteratorPtr pIter = pActorSystem->CreateActorIterator();
 
 	while (IActor * pActor = pIter->Next())

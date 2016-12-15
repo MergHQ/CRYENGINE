@@ -108,9 +108,6 @@ public:
 	static int   CV_r_dyntexatlasdyntexsrcsize;
 	static int   CV_r_texminanisotropy;
 	static int   CV_r_texmaxanisotropy;
-	static int   CV_r_texturesstreampooldefragmentation;
-	static int   CV_r_texturesstreampooldefragmentationmaxmoves;
-	static int   CV_r_texturesstreampooldefragmentationmaxamount;
 	static int   CV_r_texturesskiplowermips;
 	static int   CV_r_rendertargetpoolsize;
 	static int   CV_r_texturesstreamingsync;
@@ -252,7 +249,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenDepthClip, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowsUseClipVolume, SHADOWS_CLIP_VOL_DEFAULT_VAL);
-	static int CV_r_shadowblur;
 	DeclareStaticConstIntCVar(CV_r_ShadowGenMode, 1);
 	static int CV_r_ShadowsCache;
 	static int CV_r_ShadowsCacheFormat;
@@ -305,7 +301,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingnoupload, 0);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingonlyvideo, 0);
-	DeclareStaticConstIntCVar(CV_r_texturesstreamingResidencyEnabled, 1);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingmipfading, 8);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingUpdateType, TEXSTREAMING_UPDATETYPE_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingPrecacheRounds, 1);
@@ -342,6 +337,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_shadersdebug, 0);
 	DeclareStaticConstIntCVar(CV_r_shadersignoreincludeschanging, 0);
 	DeclareStaticConstIntCVar(CV_r_shaderslazyunload, 0);
+	DeclareStaticConstIntCVar(CV_r_shadersCompileStrict, 0);
+	DeclareStaticConstIntCVar(CV_r_shadersCompileCompatible, 1);
 	static int CV_r_shadersAllowCompilation;
 	DeclareStaticConstIntCVar(CV_r_shaderscompileautoactivate, 0);
 	DeclareStaticConstIntCVar(CV_r_shadersediting, 0);
@@ -380,6 +377,9 @@ public:
 	DeclareStaticConstIntCVar(CV_r_snowFlakeClusters, 100);
 	DeclareStaticConstIntCVar(CV_r_customvisions, CUSTOMVISIONS_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_DebugLayerEffect, 0);
+	DeclareStaticConstIntCVar(CV_r_VrProjectionType, 0);
+	DeclareStaticConstIntCVar(CV_r_VrProjectionPreset, 0);
+	DeclareStaticConstIntCVar(CV_r_stereoMirrorProjection, 1);
 	static int CV_r_DofMode;
 	static int CV_r_DofBokehQuality;
 	DeclareStaticConstIntCVar(CV_r_nohwgamma, 2);
@@ -392,7 +392,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ZPassOnly, 0);
 	DeclareStaticConstIntCVar(CV_r_VegetationSpritesNoGen, 0);
 	DeclareStaticConstIntCVar(CV_r_VegetationSpritesGenAlways, 0);
-	DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
+	//DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
+	enum { CV_r_measureoverdraw = 0 };
 	DeclareStaticConstIntCVar(CV_r_ShowLightBounds, 0);
 	DeclareStaticConstIntCVar(CV_r_TextureCompressor, 1);
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);
@@ -478,9 +479,6 @@ public:
 	static float CV_r_TexturesStreamingMipBias;
 	static int   CV_r_TexturesStreamingMipClampDVD;
 	static int   CV_r_TexturesStreamingDisableNoStreamDuringLoad;
-	static float CV_r_texturesstreamingResidencyTimeTestLimit;
-	static float CV_r_texturesstreamingResidencyTime;
-	static float CV_r_texturesstreamingResidencyThrottle;
 	static float CV_r_envtexupdateinterval;
 	static float CV_r_TextureLodDistanceRatio;
 	static float CV_r_water_godrays_distortion;

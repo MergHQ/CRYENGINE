@@ -4,6 +4,7 @@
 #include "PostAA.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
+#include "GraphicsPipeline/LensOptics.h"
 
 struct PostAAConstants
 {
@@ -151,6 +152,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetState(GS_NODEPTHTEST);
 		m_passTemporalAA.SetRequireWorldPos(true);
 		m_passTemporalAA.SetRequirePerViewConstantBuffer(true);
+		m_passTemporalAA.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
 		m_passTemporalAA.SetTextureSamplerPair(0, pCurrRT, m_samplerLinear);
 		m_passTemporalAA.SetTextureSamplerPair(1, pPrevRT, m_samplerLinear);
@@ -184,7 +186,13 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		for (int i = 0; i < viewInfoCount; ++i)
 		{
 			Matrix44A matProj = viewInfo[i].projMatrix;
-			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING || (matProj.m20 == 0 && matProj.m21 == 0));  // Ensure jittering is removed from projection matrix
+
+			// Changing stereo mode from dual-rendering to post-stereo causes 1 frame mismatch between projection matrix and stereo mode from GetStereoMode().
+			const bool exceptionalCase = (pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_POST_STEREO && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING);
+
+			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING
+			       || exceptionalCase
+			       || (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
 
 			Matrix44_tpl<f64> matViewInv, matProjInv;
 			mathMatrixLookAtInverse(&matViewInv, &viewInfo[i].viewMatrix);
@@ -250,7 +258,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 
-	if (pRenderer->m_RP.m_PersFlags2 & RBPF2_LENS_OPTICS_COMPOSITE)
+	if (pRenderer->GetGraphicsPipeline().GetLensOpticsStage()->HasContent())
 	{
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (CRenderer::CV_r_FlaresChromaShift > 0.5f / (float)pRenderer->GetWidth())  // Only relevant if bigger than half pixel
@@ -286,10 +294,10 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		}
 
 		const Vec4 params(max(1.0f + sharpening, 1.0f), 0, 0, 0);
-		m_passComposition.SetConstant(eHWSC_Pixel, paramsName, params);
+		m_passComposition.SetConstant(paramsName, params, eHWSC_Pixel);
 
 		const Vec4 lensOpticsParams(1.0f, 1.0f, 1.0f, CRenderer::CV_r_FlaresChromaShift);
-		m_passComposition.SetConstant(eHWSC_Pixel, lensOpticsParamsName, lensOpticsParams);
+		m_passComposition.SetConstant(lensOpticsParamsName, lensOpticsParams, eHWSC_Pixel);
 
 		// Apply grain (final luminance texture doesn't get its final value baked, so we have to replicate the entire hdr eye adaption)
 		Vec4 hdrSetupParams[5];
@@ -300,8 +308,8 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		const float grainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
 		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
 
-		m_passComposition.SetConstant(eHWSC_Pixel, hdrParamsName, v);
-		m_passComposition.SetConstant(eHWSC_Pixel, hdrEyeAdaptationName, hdrSetupParams[4]);
+		m_passComposition.SetConstant(hdrParamsName, v, eHWSC_Pixel);
+		m_passComposition.SetConstant(hdrEyeAdaptationName, hdrSetupParams[4], eHWSC_Pixel);
 	}
 
 	m_passComposition.Execute();

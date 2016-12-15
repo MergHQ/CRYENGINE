@@ -26,18 +26,20 @@ class Plan
 {
 public:
 	static const uint32 NoBlockIndex = ~0u;
-
-	Plan()
-		: m_current(NoBlockIndex)
-	{
-	}
-
+	
 	enum Status
 	{
+		None,
 		Running,
 		Finished,
 		CantBeFinished,
 	};
+
+	Plan()
+		: m_current(NoBlockIndex)
+		, m_lastStatus(Status::Running)
+	{
+	}
 
 	template<typename BlockType>
 	void AddBlock()
@@ -63,12 +65,16 @@ public:
 	const MovementRequestID& GetRequestId() const                             { return m_requestId; }
 	void                     SetRequestId(const MovementRequestID& requestId) { m_requestId = requestId; }
 
+	Status                   GetLastStatus() const { return m_lastStatus; }
+
 private:
 	typedef std::vector<std::shared_ptr<Block>> Blocks;
 	Blocks            m_blocks;
 	uint32            m_current;
 	MovementRequestID m_requestId;
+	Status            m_lastStatus;
 };
+
 }
 
 #endif // MovementPlan_h

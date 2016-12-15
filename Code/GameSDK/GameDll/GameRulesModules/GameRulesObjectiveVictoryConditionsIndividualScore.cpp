@@ -31,7 +31,7 @@ void CGameRulesObjectiveVictoryConditionsIndividualScore::OnEndGame(int teamId, 
 			}
 		}
 
-		EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localClient = gEnv->pGameFramework->GetClientActorId();
 		if ( shooterEntity == localClient && localClient != 0)
 		{
 			g_pGame->GetPersistantStats()->IncrementClientStats(EIPS_WinningKill);
@@ -134,7 +134,7 @@ void CGameRulesObjectiveVictoryConditionsIndividualScore::OnEndGame(int teamId, 
 		// the server has already increased these stats in the server block above
 		if (!gEnv->bServer)
 		{
-			EntityId localClient = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+			EntityId localClient = gEnv->pGameFramework->GetClientActorId();
 			if ( shooterEntity == localClient && localClient != 0)
 			{
 				g_pGame->GetPersistantStats()->IncrementClientStats(EIPS_WinningKill);

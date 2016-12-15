@@ -27,10 +27,6 @@ CLimbIk::CLimbIk()
 	m_setupCountExecute = 0;
 }
 
-CLimbIk::~CLimbIk()
-{
-}
-
 //
 
 void CLimbIk::AddSetup(LimbIKDefinitionHandle setup, const Vec3& targetPositionLocal)

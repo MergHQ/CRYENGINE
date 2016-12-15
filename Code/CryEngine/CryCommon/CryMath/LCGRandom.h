@@ -31,6 +31,16 @@ public:
 		m_state = (uint64)seed;
 	}
 
+	void SetState(uint64 state)
+	{
+		m_state = state;
+	}
+
+	uint64 GetState()
+	{
+		return m_state;
+	}
+
 	CRndGen& Next()
 	{
 		m_state = ((uint64)214013) * m_state + ((uint64)2531011);

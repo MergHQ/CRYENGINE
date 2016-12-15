@@ -1,6 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryEntitySystem/IEntity.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "ParticleProfiler.h"
 #include "ParticleComponentRuntime.h"
 #include "ParticleEmitter.h"
@@ -10,105 +12,180 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-const CParticleProfiler::SStatDisplay statDisplay[] =
+const cstr gDefaultEntityName = "- no entity -";
+const Vec2 gDisplayPosition = Vec2(0.05f, 0.05f);
+const Vec2 gDisplayBarSize = Vec2(0.45f, 0.025f);
+const uint gDisplayMaxNumComponents = 8;
+const float gDisplayFontSize = 1.2f;
+const float gDisplayLineGap = 0.0175f;
+const ColorB gBudgetOk = ColorB(16, 92, 198);
+const ColorB gBudgetOver = ColorB(255, 0, 0);
+const float gBudgetBarSize = 0.015f;
+const float gBudgetLineWidth = 1.5f;
+
+struct SStatDisplay
 {
-	{ 280.0f + 100.0f * 0.0f, EPS_Jobs,                "Jobs"                  },
-	{ 280.0f + 100.0f * 1.0f, EPS_RendereredParticles, "Rendered"              },
-	{ 280.0f + 100.0f * 2.0f, EPS_ActiveParticles,     "Active"                },
-	{ 280.0f + 100.0f * 3.0f, EPS_AllocatedParticles,  "Alloc"                 },
-	{ 280.0f + 100.0f * 5.0f, EPS_NewBornTime,         "New Borns (ms)"        },
-	{ 280.0f + 100.0f * 6.0f, EPS_UpdateTime,          "Update (ms)"           },
-	{ 280.0f + 100.0f * 7.0f, EPS_ComputeVerticesTime, "Compute Vertices (ms)" },
+	EProfileStat m_stat;
+	const char*  m_statName;
+	uint         m_budget;
 };
 
-// Output stats to display or file
-struct IStatOutput
+const SStatDisplay statisticsOutput[] =
 {
-	virtual void Column(cstr text) = 0;
-	virtual void NewLine() = 0;
-	virtual void NewPage() = 0;
-	virtual bool IsDisplay() const { return false; }
+	{ EPS_Jobs,                "Jobs",                  0 },
+	{ EPS_RendereredParticles, "Rendered",              0 },
+	{ EPS_ActiveParticles,     "Active",                0 },
+	{ EPS_AllocatedParticles,  "Alloc",                 0 },
+	{ EPS_NewBornTime,         "New Borns (ns)",        0 },
+	{ EPS_UpdateTime,          "Update (ns)",           0 },
+	{ EPS_ComputeVerticesTime, "Compute Vertices (ns)", 0 },
+	{ EPS_TotalTiming,         "Total Timing (ns)",     0 },
 };
 
-struct CScreenOutput : IStatOutput
+class CParticleProfiler::CCSVFileOutput
 {
-	CScreenOutput()
-		: fontSz(1.2f)
-		, lineSz(10)
-		, columnSz(100)
-		, startY(10)
-		, color(Col_White)
-	{
-		m_curY = startY;
-		m_curColumn = 0;
-	}
-
-	float              fontSz;
-	float              lineSz;
-	float              columnSz;
-	float              startY;
-	ColorF             color;
-	std::vector<float> columnX;
-
-	virtual void Column(cstr text)
-	{
-		float x = m_curColumn < (int)columnX.size() ?
-		          columnX[m_curColumn] :
-		          columnX.size() ? columnX.back() + columnSz * (m_curColumn + 1 - columnX.size()) :
-		          columnSz * m_curColumn;
-		gEnv->pRenderer->Draw2dLabel(x, m_curY, fontSz, color, false, "%s", text);
-		m_curColumn++;
-	}
-	virtual void NewLine()
-	{
-		m_curY += lineSz;
-		m_curColumn = 0;
-	}
-	virtual void NewPage()
-	{
-		m_curY = startY;
-		m_curColumn = 0;
-	}
-	virtual bool IsDisplay() const
-	{
-		return true;
-	}
-
-private:
-	float m_curY;
-	int   m_curColumn;
-};
-
-struct CCSVFileOutput : IStatOutput
-{
+public:
 	CCSVFileOutput(cstr fileName)
 	{
-		m_file = gEnv->pCryPak->FOpen(fileName, "w");
+		m_file = fxopen(fileName, "w");
 	}
 	~CCSVFileOutput()
 	{
-		gEnv->pCryPak->FClose(m_file);
+		fclose(m_file);
 	}
 
-	virtual void Column(cstr text)
+	operator bool() const { return m_file != nullptr; }
+
+	void WriteHeader()
 	{
-		if (m_file)
-			gEnv->pCryPak->FPrintf(m_file, "%s, ", text);
+		Column("Entity");
+		Column("Effect");
+		Column("Component");
+		for (const auto& stat : statisticsOutput)
+			Column(stat.m_statName);
+		NewLine();
 	}
-	virtual void NewLine()
+
+	void WriteStatistics(CParticleComponentRuntime* pRuntime, const SStatistics& statistics)
 	{
-		if (m_file)
-			gEnv->pCryPak->FPrintf(m_file, "\n");
-	}
-	virtual void NewPage()
-	{
+		CParticleComponent* pComponent = pRuntime->GetComponent();
+		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
+		CParticleEffect* pEffect = pEmitter->GetCEffect();
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pEmitter->GetEntityId());
+		cstr effectName = pEffect->GetFullName();
+		cstr componentName = pComponent->GetName();
+		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
+
+		Column(entityName);
+		Column(effectName);
+		Column(componentName);
+		for (const auto& stat : statisticsOutput)
+			Column(string().Format("%d", statistics.m_values[stat.m_stat]));
+		NewLine();
 	}
 
 private:
+	void Column(cstr text)
+	{
+		fprintf(m_file, "%s, ", text);
+	}
+	void NewLine()
+	{
+		fprintf(m_file, "\n");
+	}
+
 	FILE* m_file;
 };
 
-CParticleProfiler::SStatistics::SStatistics()
+class CParticleProfiler::CStatisticsDisplay
+{
+public:
+	CStatisticsDisplay()
+	{
+		m_pRender = gEnv->pRenderer;
+		m_pRenderAux = m_pRender->GetIRenderAuxGeom();
+		m_prevFlags = m_pRenderAux->GetRenderFlags();
+		m_screenSize = Vec2(float(m_pRender->GetWidth()), float(m_pRender->GetHeight()));
+		SAuxGeomRenderFlags curFlags = m_prevFlags;
+		curFlags.SetMode2D3DFlag(e_Mode2D);
+		curFlags.SetDepthTestFlag(e_DepthTestOff);
+		curFlags.SetDepthWriteFlag(e_DepthWriteOff);
+		m_pRenderAux->SetRenderFlags(curFlags);
+	}
+	~CStatisticsDisplay()
+	{
+		m_pRenderAux->SetRenderFlags(m_prevFlags);
+	}
+
+	void DrawBudgetBar(Vec2 pos, uint maxValue, uint budget)
+	{
+		AABB box;
+		box.min.x = pos.x;
+		box.min.y = pos.y;
+		box.max.x = pos.x + gDisplayBarSize.x;
+		box.max.y = pos.y + gDisplayBarSize.y;
+		box.min.z = box.max.z = 0.0f;
+
+		const Vec3 boxVertices[] =
+		{
+			Vec3(box.min.x, box.min.y, 0.0f), Vec3(box.max.x, box.min.y, 0.0f),
+			Vec3(box.max.x, box.min.y, 0.0f), Vec3(box.max.x, box.max.y, 0.0f),
+			Vec3(box.max.x, box.max.y, 0.0f), Vec3(box.min.x, box.max.y, 0.0f),
+			Vec3(box.min.x, box.max.y, 0.0f), Vec3(box.min.x, box.min.y, 0.0f),
+		};
+		m_pRenderAux->DrawLines(boxVertices, 8, ColorB(0, 0, 0));
+
+		const ColorB color = (maxValue <= budget) ? gBudgetOk : gBudgetOver;
+		const float linePos = pos.x + gDisplayBarSize.x * (budget / float(maxValue));
+		const Vec3 lineVertices[] =
+		{
+			Vec3(linePos, pos.y - gBudgetBarSize, 0.0f),
+			Vec3(linePos, pos.y + gDisplayBarSize.y + gBudgetBarSize, 0.0f),
+		};
+		m_pRenderAux->DrawLines(lineVertices, 2, color, gBudgetLineWidth);
+	}
+
+	void DrawBar(Vec2 pos, Vec2 size, uint maxValue, uint startValue, uint endValue, ColorB color)
+	{
+		AABB box;
+		box.min.x = pos.x + size.x * (startValue / float(maxValue));
+		box.min.y = pos.y;
+		box.max.x = pos.x + size.x * (endValue / float(maxValue));
+		box.max.y = pos.y + size.y;
+		box.min.z = box.max.z = 0.0f;
+
+		m_pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
+	}
+
+	void DrawBar(Vec2 pos, uint maxValue, uint startValue, uint endValue, ColorB color)
+	{
+		DrawBar(pos, gDisplayBarSize, maxValue, startValue, endValue, color);
+	}
+
+	void DrawBar(Vec2 pos, uint maxValue, uint curValue, ColorB color)
+	{
+		DrawBar(pos, gDisplayBarSize, maxValue, 0, curValue, color);
+	}
+
+	void DrawText(Vec2 pos, ColorF color, cstr text, ...)
+	{
+		va_list args;
+		va_start(args, text);
+		m_pRenderAux->Draw2dLabel(
+			pos.x * m_screenSize.x, pos.y * m_screenSize.y,
+			gDisplayFontSize, color, false,
+			text, args);
+		va_end(args);
+	}
+
+private:
+	IRenderer* m_pRender;
+	IRenderAuxGeom* m_pRenderAux;
+	SAuxGeomRenderFlags m_prevFlags;
+	Vec2 m_screenSize;
+};
+
+SStatistics::SStatistics()
 {
 	memset(m_values, 0, sizeof(m_values));
 }
@@ -123,156 +200,236 @@ void CParticleProfiler::Display()
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	if (pCVars->e_ParticlesDebug & AlphaBits('pf'))
+	const int anyProfilerFlags = 1 | AlphaBits('f');
+	if (pCVars->e_ParticlesProfiler & anyProfilerFlags)
 	{
-		if (pCVars->e_ParticlesDebug & AlphaBit('f'))
+		SortEntries();
+
+		if (!m_entries[0].empty())
 		{
 #ifndef _RELEASE
-			pCVars->e_ParticlesDebug &= ~AlphaBit('f');
-			SaveToFile();
+			if (pCVars->e_ParticlesProfiler & AlphaBit('f'))
+				SaveToFile();
 #endif
-		}
-		else
-			SortEntries();
-
-		if (pCVars->e_ParticlesDebug & AlphaBit('p'))
-		{
-			CScreenOutput output;
-			output.columnX.push_back(20);
-			output.columnX.push_back(40);
-			for (const auto& stat : statDisplay)
-				output.columnX.push_back(40 + stat.m_offsetX);
-
-			WriteEntries(output);
+			if (pCVars->e_ParticlesProfiler & 1)
+				DrawStats();
 		}
 	}
 	for (auto& entries : m_entries)
 		entries.clear();
 }
 
-void CParticleProfiler::SaveToFile(cstr fileName)
+void CParticleProfiler::SaveToFile()
 {
+	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
 	string genName;
-	if (!fileName)
+	string folderName = pCVars->e_ParticlesProfilerOutputFolder->GetString();
+	string fileName = pCVars->e_ParticlesProfilerOutputName->GetString();
+	if (folderName.empty() || fileName.empty())
+		return;
+	if (folderName[folderName.size() - 1] != '\\' || folderName[folderName.size() - 1] != '/')
+		folderName += '/';
+	static int fileIndex = 0;
+	do
 	{
-		static char strDefault[] = "%USER%/ParticleProfile/EmitterProfile";
-		genName = string(strDefault) + ".csv";
-		for (uint i = 1; gEnv->pCryPak->IsFileExist(genName); ++i)
-		{
-			genName.Format("%s-%d.csv", strDefault, i);
-		}
-		fileName = genName;
-	}
-	CCSVFileOutput output(fileName);
-	SortEntries();
-	WriteEntries(output);
+		genName.Format("%s%s%06d.csv", folderName.c_str(), fileName.c_str(), fileIndex);
+		++fileIndex;
+	} while (gEnv->pCryPak->IsFileExist(genName));
+
+	CCSVFileOutput output(genName.c_str());
+	if (output)
+		WriteEntries(output);
 }
 
 void CParticleProfiler::SortEntries()
 {
 	auto& finalElements = m_entries[0];
-	for (auto& elements : m_entries)
-	{
-		finalElements.insert(finalElements.end(), elements.begin(), elements.end());
-	}
-
-	if (finalElements.empty())
-		return;
-
+	for (uint i = 1; i < m_entries.size(); ++i)
+		finalElements.insert(finalElements.end(), m_entries[i].begin(), m_entries[i].end());
+	
 	auto predicate = [](const SEntry& entry0, const SEntry& entry1)
 	{
-		if (entry0.m_pRuntime->GetEmitter()->GetEffect() != entry1.m_pRuntime->GetEmitter()->GetEffect())
-			return entry0.m_pRuntime->GetEmitter()->GetEffect() < entry1.m_pRuntime->GetEmitter()->GetEffect();
-		if (entry0.m_pRuntime->GetEmitter() != entry1.m_pRuntime->GetEmitter())
-			return entry0.m_pRuntime->GetEmitter() < entry1.m_pRuntime->GetEmitter();
-		if (entry0.m_pRuntime != entry1.m_pRuntime)
-			return entry0.m_pRuntime < entry1.m_pRuntime;
-		return entry0.m_type < entry1.m_type;
+		const CParticleEmitter* pEmitter0 = entry0.m_pRuntime->GetEmitter();
+		const CParticleEmitter* pEmitter1 = entry1.m_pRuntime->GetEmitter();
+		if (pEmitter0->GetEmitterId() != pEmitter1->GetEmitterId())
+			return pEmitter0->GetEmitterId() < pEmitter1->GetEmitterId();
+
+		const CParticleComponent* pComponent0 = entry0.m_pRuntime->GetComponent();
+		const CParticleComponent* pComponent1 = entry1.m_pRuntime->GetComponent();
+		return pComponent0->GetComponentId() < pComponent1->GetComponentId();
 	};
 	std::sort(finalElements.begin(), finalElements.end(), predicate);
 }
 
-void CParticleProfiler::WriteEntries(IStatOutput& output) const
+void CParticleProfiler::WriteEntries(CCSVFileOutput& output) const
 {
 	const auto& finalElements = m_entries[0];
-	if (finalElements.size() <= 1)
-		return;
 
-	output.Column(output.IsDisplay() ? "" : "Effect");
-	output.Column(output.IsDisplay() ? "" : "Component");
-	for (const auto& stat : statDisplay)
-		output.Column(stat.m_statName);
-	output.NewLine();
-
-	SStatistics componentStats;
-	SStatistics emitterStats;
-	SStatistics totalStats;
+	output.WriteHeader();
 
 	const CParticleEmitter* pEmitter = nullptr;
+	SStatistics runtimeStats;
+	CParticleComponentRuntime* pCurrentRuntime = finalElements.front().m_pRuntime;
 
 	for (const SEntry& entry : finalElements)
 	{
-		if (entry.m_pRuntime->GetEmitter() != pEmitter)
+		if (entry.m_pRuntime != pCurrentRuntime)
 		{
-			pEmitter = entry.m_pRuntime->GetEmitter();
-			if (output.IsDisplay())
-			{
-				output.Column(pEmitter->GetEffect()->GetFullName());
-				output.NewLine();
-			}
+			output.WriteStatistics(entry.m_pRuntime, runtimeStats);
+			runtimeStats = SStatistics();
+			pCurrentRuntime = entry.m_pRuntime;
 		}
-
-		if (uint(entry.m_type) >= EPST_Float)
-		{
-			componentStats.m_values[entry.m_type].m_float += entry.m_value.m_float;
-			emitterStats.m_values[entry.m_type].m_float += entry.m_value.m_float;
-			totalStats.m_values[entry.m_type].m_float += entry.m_value.m_float;
-		}
-		else
-		{
-			componentStats.m_values[entry.m_type].m_int += entry.m_value.m_int;
-			emitterStats.m_values[entry.m_type].m_int += entry.m_value.m_int;
-			totalStats.m_values[entry.m_type].m_int += entry.m_value.m_int;
-		}
-
-		const SEntry* pNextEntry = &entry < &finalElements.back() ? &entry + 1 : nullptr;
-		if (!pNextEntry || pNextEntry->m_pRuntime != entry.m_pRuntime)
-		{
-			// Component stats
-			WriteStats(output, pEmitter->GetEffect()->GetFullName(), entry.m_pRuntime->GetComponent()->GetName(), componentStats);
-			componentStats = SStatistics();
-
-			if (!pNextEntry || pNextEntry->m_pRuntime->GetEmitter() != pEmitter)
-			{
-				// Emitter stats
-				WriteStats(output, pEmitter->GetEffect()->GetFullName(), "total", emitterStats);
-				emitterStats = SStatistics();
-			}
-		}
+		runtimeStats.m_values[entry.m_type] += entry.m_value;
 	}
-
-	WriteStats(output, "", "Pfx2 Total", totalStats);
+	output.WriteStatistics(pCurrentRuntime, runtimeStats);
 }
 
-void CParticleProfiler::WriteStats(IStatOutput& output, cstr emitterName, cstr componentName, const SStatistics& stats) const
+void CParticleProfiler::DrawStats()
 {
-	output.Column(output.IsDisplay() ? "" : emitterName);
-	output.Column(componentName);
-	for (const auto& stat : statDisplay)
-		WriteStat(output, stat, stats.m_values[stat.m_stat]);
-	output.NewLine();
+	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
+	const uint countsBudget = pCVars->e_ParticlesProfilerCountBudget;
+	const uint timingBudget = pCVars->e_ParticlesProfilerTimingBudget;
+
+	const SStatDisplay statisticsDisplay[] =
+	{
+		{ EPS_ActiveParticles,     "Active",            countsBudget },
+		{ EPS_RendereredParticles, "Rendered",          countsBudget },
+		{ EPS_TotalTiming,         "Total Timing (ns)", timingBudget },
+	};
+
+	CStatisticsDisplay output;
+	Vec2 statPos = gDisplayPosition;
+	DrawStatsCounts(output, statPos, countsBudget);
+	statPos.y += gDisplayBarSize.y + gDisplayLineGap * 4;
+	for (const auto& stat : statisticsDisplay)
+	{
+		DrawStats(output, statPos, stat.m_stat, stat.m_budget, stat.m_statName);
+		statPos.y += gDisplayBarSize.y + gDisplayLineGap * (gDisplayMaxNumComponents + 3);
+	}
 }
 
-void CParticleProfiler::WriteStat(IStatOutput& output, SStatDisplay stat, SValue value) const
+void CParticleProfiler::DrawStatsCounts(CStatisticsDisplay& output, Vec2 pos, uint budget)
 {
-	if (stat.m_stat >= EPST_Float)
+	uint numRendererd = 0;
+	uint numActive = 0;
+	uint numAllocated = 0;
+	for (const SEntry& entry : m_entries[0])
 	{
-		output.Column(string().Format("%2.3f", value.m_float * 1000.0f));
+		switch (entry.m_type)
+		{
+		case EPS_RendereredParticles:
+			numRendererd += entry.m_value;
+			break;
+		case EPS_ActiveParticles:
+			numActive += entry.m_value;
+			break;
+		case EPS_AllocatedParticles:
+			numAllocated += entry.m_value;
+			break;
+		}
 	}
-	else
+
+	const uint maxValue = max(budget, numAllocated);
+	const Vec2 barSize = Vec2(gDisplayBarSize.x, gDisplayBarSize.y / 3.0f);
+	Vec2 barPos = pos;
+	Vec2 textPos = Vec2(pos.x, pos.y + gDisplayBarSize.y);
+
+	output.DrawBar(barPos, barSize, maxValue, 0, numAllocated, ColorB(255, 0, 0));
+	barPos.y += barSize.y;
+	output.DrawBar(barPos, barSize, maxValue, 0, numActive, ColorB(255, 255, 0));
+	barPos.y += barSize.y;
+	output.DrawBar(barPos, barSize, maxValue, 0, numRendererd, ColorB(0, 255, 0));
+
+	output.DrawText(textPos, ColorF(0.0f, 1.0f, 0.0f), "Rendered (%d)", numRendererd);
+	textPos.y += gDisplayLineGap;
+	output.DrawText(textPos, ColorF(1.0f, 1.0f, 0.0f), "Active (%d)", numActive);
+	textPos.y += gDisplayLineGap;
+	output.DrawText(textPos, ColorF(1.0f, 0.0f, 0.0f), "Allocated (%d)", numAllocated);
+
+	output.DrawBudgetBar(pos, maxValue, budget);
+}
+
+void CParticleProfiler::DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfileStat stat, uint budget, cstr statName)
+{
+	struct SStatEntry
 	{
-		output.Column(string().Format("%d", value.m_int));
+		SStatEntry()
+			: pRuntime(nullptr)
+			, value(0) {}
+		CParticleComponentRuntime* pRuntime;
+		uint value;
+	};
+
+	const CParticleComponentRuntime* pRuntime = nullptr;
+	SStatEntry statEntry;
+	std::vector<SStatEntry> statEntries;
+	uint statTotal = 0;
+
+	for (const SEntry& entry : m_entries[0])
+	{
+		if (entry.m_type != stat)
+			continue;
+
+		if (entry.m_pRuntime != pRuntime)
+		{
+			pRuntime = entry.m_pRuntime;
+			if (pRuntime && statEntry.value != 0.0f)
+				statEntries.push_back(statEntry);
+			statEntry = SStatEntry();
+			statEntry.pRuntime = entry.m_pRuntime;
+			pRuntime = entry.m_pRuntime;
+		}
+
+		uint value = 0;
+		value += entry.m_value;
+		statEntry.value += value;
+		statTotal += value;
 	}
+	if (pRuntime && statEntry.value != 0.0f)
+		statEntries.push_back(statEntry);
+
+	std::sort(statEntries.begin(), statEntries.end(), [](const SStatEntry& v0, const SStatEntry& v1)
+	{
+		return v0.value > v1.value;
+	});
+
+	const Vec2 barPosition = Vec2(pos.x, pos.y + gDisplayLineGap);
+	const uint maxValue = max(statTotal, budget);
+	Vec2 textPos = pos;
+	uint lastStat = 0;
+
+	output.DrawText(textPos, ColorF(1.0f, 1.0f, 1.0f), "%s Total (%d)", statName, statTotal);
+	textPos.y += gDisplayLineGap + gDisplayBarSize.y;
+
+	uint statCount = min(uint(statEntries.size()), gDisplayMaxNumComponents);
+	for (uint i = 0; i < statCount; ++i)
+	{
+		CParticleComponentRuntime* pRuntime = statEntries[i].pRuntime;
+		CParticleComponent* pComponent = pRuntime->GetComponent();
+		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pEmitter->GetEntityId());
+
+		const ColorF color = pEmitter->GetProfilerColor();
+		const uint value = statEntries[i].value;
+
+		output.DrawBar(barPosition, maxValue, lastStat, lastStat + value, ColorB(color));
+
+		const cstr format = "\"%s\" : %s : %s (%d)";
+		const cstr componentName = pComponent->GetName();
+		const cstr effectName = pComponent->GetEffect()->GetFullName();
+		const cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
+		output.DrawText(textPos, color, format, entityName, effectName, componentName, value);
+		textPos.y += gDisplayLineGap;
+
+		lastStat += value;
+	}
+	if ((statTotal - lastStat) != 0)
+	{
+		output.DrawBar(barPosition, maxValue, lastStat, statTotal, ColorB(92, 92, 92));
+		output.DrawText(textPos, ColorF(0.35f, 0.35f, 0.35f), "other (%d)", statTotal - lastStat);
+	}
+
+	output.DrawBudgetBar(barPosition, maxValue, budget);
 }
 
 }

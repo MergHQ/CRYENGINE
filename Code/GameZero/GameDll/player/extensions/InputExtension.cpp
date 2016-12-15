@@ -13,11 +13,7 @@ CInputExtension::CInputExtension()
 {
 }
 
-CInputExtension::~CInputExtension()
-{
-}
-
-void CInputExtension::Release()
+void CInputExtension::OnShutDown()
 {
 	GetGameObject()->ReleaseActions(this);
 
@@ -28,15 +24,13 @@ void CInputExtension::Release()
 
 	gEnv->pConsole->UnregisterVariable("gamezero_mouse_sensitivity", true);
 	gEnv->pConsole->UnregisterVariable("gamezero_controller_sensitivity", true);
-
-	ISimpleExtension::Release();
 }
 
 void CInputExtension::PostInit(IGameObject* pGameObject)
 {
 	RegisterInputHandler();
 
-	IActionMapManager* pActionMapManager = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+	IActionMapManager* pActionMapManager = gEnv->pGameFramework->GetIActionMapManager();
 	if (pActionMapManager)
 	{
 		pActionMapManager->InitActionMaps("libs/config/defaultprofile.xml");

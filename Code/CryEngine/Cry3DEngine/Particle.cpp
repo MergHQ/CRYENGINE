@@ -1077,7 +1077,7 @@ void CParticle::Update(SParticleUpdateContext const& context, float fFrameTime, 
 					if (abs(fPosSpace) > 1.f)
 					{
 						float fCorrect = float(int(fPosSpace));
-						fCorrect += crymath::sign(fCorrect);
+						fCorrect += crymath::signnz(fCorrect);
 						stateNew.m_Loc.t -= context.SpaceLoop.vScaledAxes[a] * (fCorrect * sqr(context.SpaceLoop.vSize[a]));
 					}
 				}
@@ -1419,7 +1419,7 @@ void CParticle::TargetMovement(ParticleTarget const& target, SParticleState& sta
 		fArrivalTime = fHUGE;
 
 	// Goal is to reach target radius in a quarter revolution over particle's life.
-	float fLife = state.m_fStopAge - state.m_fAge;
+	float fLife = max(state.m_fStopAge - state.m_fAge, 0.0f);
 	fArrivalTime = div_min(gf_PI * 0.5f * fDist * fLife, fOrbitalVel * state.m_fStopAge, fArrivalTime);
 
 	if (fArrivalTime > fLife)

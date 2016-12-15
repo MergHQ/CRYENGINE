@@ -414,7 +414,6 @@ int CPostEffectsMgr::Init()
 	AddEffect(CSonarVision);
 	AddEffect(CThermalVision);
 	AddEffect(CImageGhosting);
-	AddEffect(CWaterRipples);
 	AddEffect(CWaterVolume);
 	AddEffect(CPostAA);
 	AddEffect(CPostStereo);

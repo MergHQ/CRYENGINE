@@ -156,7 +156,7 @@ void CManager::RenderThreadPostUpdate()
 		{
 			// Minimal clear
 			UINT nulls[4] = { 0 };
-#if defined(DEVICE_SUPPORTS_D3D11_1)
+#if defined(DEVICE_SUPPORTS_D3D11_1) && !CRY_PLATFORM_ORBIS
 			const UINT numRanges = 1;
 			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
 			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDeviceUAV(), nulls, numRanges, &uavRange);
@@ -190,7 +190,7 @@ void CManager::ProcessResources()
 	    GetWriteRuntimes().end(),
 	    [](const _smart_ptr<CParticleComponentRuntime>& runtime)
 		{
-			return runtime->NumRefs() <= 2;
+			return runtime->UseCount() <= 2;
 	  }),
 	  GetWriteRuntimes().end());
 
@@ -200,7 +200,7 @@ void CManager::ProcessResources()
 	    m_particleFeatureGpuInterfaces.end(),
 	    [](const _smart_ptr<CFeature>& feature)
 		{
-			return feature->NumRefs() == 1;
+			return feature->Unique();
 	  }),
 	  m_particleFeatureGpuInterfaces.end());
 

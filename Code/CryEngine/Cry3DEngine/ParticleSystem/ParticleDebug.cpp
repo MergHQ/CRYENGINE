@@ -16,6 +16,7 @@
 #include "ParticleComponentRuntime.h"
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
+#include "Features/FeatureCollision.h"
 
 CRY_PFX2_DBG
 
@@ -70,9 +71,14 @@ void DebugDrawEffect(CParticleEffect* pEffect, size_t effectBarIdx)
 
 void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitterBarIdx, size_t barIdx)
 {
-	IRenderer* pRender = gEnv->pRenderer;
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
+	SAuxGeomRenderFlags prevFlags = pRenderAux->GetRenderFlags();
+	SAuxGeomRenderFlags curFlags = prevFlags;
 	Vec2 screenSz = Vec2(float(gEnv->pRenderer->GetWidth()), float(gEnv->pRenderer->GetHeight()));
+	curFlags.SetMode2D3DFlag(e_Mode2D);
+	curFlags.SetDepthTestFlag(e_DepthTestOff);
+	curFlags.SetDepthWriteFlag(e_DepthWriteOff);
+	pRenderAux->SetRenderFlags(curFlags);
 
 	const SUpdateContext context = SUpdateContext(pRuntime);
 	const CParticleContainer& container = context.m_container;
@@ -143,10 +149,51 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		CRY_PFX2_FOR_END;
 	}
 
-	pRender->Draw2dLabel(
+	IRenderAuxText::Draw2dLabel(
 	  screenSz.x * (barIdx * barGap + startPos),
 	  screenSz.y * 0.95f, 1.0f, whiteF, false,
 	  "%s", pRuntime->GetComponent()->GetName());
+
+	pRenderAux->SetRenderFlags(prevFlags);
+}
+
+void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
+{
+	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
+	SAuxGeomRenderFlags prevFlags = pRenderAux->GetRenderFlags();
+	SAuxGeomRenderFlags curFlags = prevFlags;
+	Vec2 screenSz = Vec2(float(gEnv->pRenderer->GetWidth()), float(gEnv->pRenderer->GetHeight()));
+	curFlags.SetMode2D3DFlag(e_Mode3D);
+	curFlags.SetDepthTestFlag(e_DepthTestOn);
+	curFlags.SetDepthWriteFlag(e_DepthWriteOn);
+	pRenderAux->SetRenderFlags(curFlags);
+
+	const auto context = SUpdateContext(pRuntime);
+	const CParticleContainer& container = pRuntime->GetContainer();
+	if (!container.HasData(EPDT_ContactPoint))
+		return;
+	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+
+	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+	{
+		SContactPoint contact = contactPoints.Load(particleId);
+
+		ColorB color = ColorB(0, 0, 0);
+		if (contact.m_flags & uint(EContactPointsFlags::Ignore))
+			color = ColorB(128, 128, 128);
+		else if (contact.m_flags & uint(EContactPointsFlags::Sliding))
+			color = ColorB(255, 128, 64);
+		else
+			color = ColorB(64, 128, 255);
+
+		pRenderAux->DrawSphere(contact.m_point, 0.05f, color);
+		pRenderAux->DrawLine(
+			contact.m_point, color,
+			contact.m_point + contact.m_normal*0.25f, color);
+	}
+	CRY_PFX2_FOR_END;
+
+	pRenderAux->SetRenderFlags(prevFlags);
 }
 
 #if CRY_PLATFORM_SSE2
@@ -257,15 +304,13 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 	DebugOptSpline();
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	if (pCVars->e_ParticlesDebug & AlphaBit('b'))
+	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('b')) != 0;
+	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('c')) != 0;
+
+	if (debugContainers || debugCollisions)
 	{
 		IRenderer* pRender = gEnv->pRenderer;
 		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
-		SAuxGeomRenderFlags prevFlags = pRenderAux->GetRenderFlags();
-		SAuxGeomRenderFlags curFlags = prevFlags;
-		Vec2 screenSz = Vec2(float(gEnv->pRenderer->GetWidth()), float(gEnv->pRenderer->GetHeight()));
-		curFlags.SetMode2D3DFlag(e_Mode2D);
-		pRenderAux->SetRenderFlags(curFlags);
 
 		size_t emitterBarIdx = 0;
 		size_t barIdx = 0;
@@ -275,14 +320,18 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 			TComponentId lastComponentIt = pEffect->GetNumComponents();
 			for (TComponentId componentId = 0; componentId < lastComponentIt; ++componentId)
 			{
-				if (auto pComponentRuntime = pEmitter->GetRuntimes()[componentId].pRuntime->GetCpuRuntime())
-					if (pComponentRuntime->GetComponent()->IsEnabled())
-						DebugDrawComponentRuntime(pComponentRuntime, emitterBarIdx, barIdx++);
+				auto pComponentRuntime = pEmitter->GetRuntimes()[componentId].pRuntime->GetCpuRuntime();
+				if (!pComponentRuntime)
+					continue;
+				if (!pComponentRuntime->GetComponent()->IsEnabled())
+					continue;
+				if (debugContainers)
+					DebugDrawComponentRuntime(pComponentRuntime, emitterBarIdx, barIdx++);
+				if (debugCollisions)
+					DebugDrawComponentCollisions(pComponentRuntime);
 			}
 			emitterBarIdx = barIdx;
 		}
-
-		pRenderAux->SetRenderFlags(prevFlags);
 	}
 }
 

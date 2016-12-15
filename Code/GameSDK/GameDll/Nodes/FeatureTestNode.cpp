@@ -551,7 +551,7 @@ bool CFlowNode_FeatureTest::StartNextTestRun()
 		ActivateOutput(&m_actInfo, eOutputPorts_Start, true);
 	}
 
-	CPlayer* pPlayerActor = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer* pPlayerActor = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 	if (pPlayerActor)
 		pPlayerActor->SetThirdPerson(m_running);
 
@@ -840,7 +840,7 @@ public:
 		Log("Enabled", pProxy->IsEnabled(), depth);
 		Log("ForcedExecute", pProxy->IsForcedExecute(), depth);
 		Log("UpdateAlways", pProxy->IsUpdateAlways(), depth);
-		Log("NumRefs", pProxy->NumRefs(), depth);
+		Log("IsUnique", pProxy->Unique(), depth);
 	}
 
 	void Log(const char* name, IEntityArchetype* pArchetype, uint32 depth)
@@ -1486,7 +1486,7 @@ void CFlowNode_SimulateInput::ProcessEvent( EFlowEvent event, SActivationInfo* p
 				if (pClientActor->GetActorClass() == CPlayer::GetActorClassType())
 				{
 					CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
-					const char* action = GetPortString(pActInfo, eInputPorts_Action).c_str();
+					const string action = GetPortString(pActInfo, eInputPorts_Action);
 					const float inputValue = GetPortFloat(pActInfo, eInputPorts_Value);
 
 					IPlayerInput* pPlayerInput = pClientPlayer->GetPlayerInput();

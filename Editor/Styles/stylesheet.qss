@@ -13,6 +13,8 @@ green color					rgb(125,198,83)
 yellow						rgb(233,233,117)
 *******************************************************************/
 
+
+
 QWidget {
 	background-color: rgb(66,66,66);
 	font-family:"Arial";
@@ -42,7 +44,7 @@ QComboBox {
 
 QComboBox::item {
 	color:rgb(166,166,166);
-	background-color:rgb(50,50,50);
+	background-color:red; /* for debugging purposes - old value (rgb(50,50,50);*/
 }
 
 QComboBox::item:selected {
@@ -154,15 +156,15 @@ QViewportHeader > QToolButton::checked{
 	border-radius:2px;
 }*/
 
-QToolWindowCustomWrapper#mainWindow > QCustomTitleBar {
+QCustomWindowFrame#mainWindow > QCustomTitleBar {
 	background: center bottom url(icons:Logo/Cryengine_Logo_Top.png) no-repeat rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar {
+QCustomWindowFrame#mainWindow > QMainWindow > QMainFrameMenuBar {
 	background: center top url(icons:Logo/Cryengine_Logo_Bottom.png) no-repeat rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar {
+QCustomWindowFrame#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar {
 	background-color: rgba(35,35,35,0); /*Make this transparent and add the logo to the MenuBar container*/
 }
 
@@ -172,27 +174,26 @@ QMainFrameMenuBar > CTrayArea > QSearchBox {
 	margin-top: 0px;
 }
 
-QResizableMenu
+QPopupWidget
 {
-	background-color: rgb(97,172,236);
+	border: 1px solid rgb(97,172,236);
 }
 
-QResizableMenu > QWidget#InsetBorder {
+QPopupWidget > QWidget#InsetBorder {
 	background-color: rgb(35,35,35);
-	margin: 1 1 1 1;
 }
 
-QResizableMenu > QWidget#InsetBorder > QWidget{
-	margin: 1 5 7 7;
+QPopupWidget > QWidget#InsetBorder > QWidget{
+	margin: 4px;
 }
 
-QResizableMenu > QWidget#InsetBorder QTreeView QScrollBar:vertical {
+QPopupWidget > QWidget#InsetBorder QTreeView QScrollBar:vertical {
 	background-color: rgb(35,35,35);
 	margin-left:0px;
 	margin-right:0px;
 }
 
-QResizableMenu > QWidget#InsetBorder QTreeView::item
+QPopupWidget > QWidget#InsetBorder QTreeView::item
 {
 	height: 23px;
 }
@@ -225,7 +226,7 @@ CNotificationWidget QLabel#title
 	color: rgb(97,172,236);
 }
 
-QResizableMenu#NotificationCenterResizableMenu > QWidget#InsetBorder > QWidget
+QPopupWidget#NotificationCenterResizableMenu > QWidget#InsetBorder > QWidget
 {
 	margin: 4 5 5 5;
 }
@@ -294,6 +295,28 @@ QTabWidget#notificationTabs::pane QToolButton
 QTabWidget#notificationTabs::pane QLineEdit
 {
 	color: rgb(166,166,166);
+}
+
+QTabWidget > QTabBar > QToolButton
+{
+	background-color: rgb(66,66,66);
+	border: 0px;
+	border-radius: 0px;
+	margin-bottom: 2px;
+}
+
+QTabWidget > QTabBar > QToolButton:hover
+{
+	background-color:rgb(106,106,106);
+	color: rgb(255,255,255);
+	border: 0px;
+	border-radius: 0px;
+	margin-bottom: 2px;
+}
+
+QTabWidget > QTabBar > QToolButton:pressed
+{
+	background-color: rgb(86,86,86);
 }
 
 CNotificationList
@@ -587,24 +610,24 @@ QToolWindowArea > QTabBar::tab:selected {
 	padding-top:-2px;
 }
 
-QTabWidget QMenuBar {
+QTabWidget QMenuBar, CDockableDialog QMenuBar {
 	background-color:rgb(66,66,66);
 	padding-bottom:0px;
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item {
+QTabWidget QMenuBar:item, CDockableDialog QMenuBar:item {
 	color:rgb(140,140,140);
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item:selected {
+QTabWidget QMenuBar:item:selected, CDockableDialog QMenuBar:item:selected {
 	color:rgb(200,200,200);
 	background-color:rgb(109,109,109);
 	margin-bottom:0px;
 }
 
-QTabWidget QMenuBar:item:pressed {
+QTabWidget QMenuBar:item:pressed, CDockableDialog QMenuBar:item:pressed {
 	background: rgb(97,172,236);
 	color:black;
 	margin-bottom:0px;
@@ -734,6 +757,16 @@ QPushButton {
 				stop:1 rgb(78,78,78));
 }
 
+QPushButton::default {
+	border:1px solid rgb(97,172,236);
+	background: qlineargradient(x2:1, y2:2, x2:0, y2:2,
+				stop:0 rgb(110,110,110), 
+				stop:0.5 rgb(88,88,88), 
+				stop:1 rgb(78,78,78));
+	color:rgb(180,180,180);
+	padding:-1px;
+}
+
 QPushButton::hover {
 background-color: rgb(95,95,95);
 color:rgb(200,200,200);
@@ -796,7 +829,7 @@ QToolWindowArea > QFrame {
 	margin:0px;
 }
 
-QTabWidget QToolBar {
+QTabWidget QToolBar, CDockableDialog QToolbar {
 	background-color:transparent;        /*layer toolbar secondary*/
 	border:0px solid rgb(78,78,78);
 	margin-left:0px;
@@ -808,14 +841,14 @@ QTabWidget QToolBar {
 	padding-bottom:0px;
 }
 
-QTabWidget QSearchBox {
+QTabWidget QSearchBox, CDockableDialog QSearchBox {
 	margin-left:4px;
 	margin-right:4px;
 	margin-top:0px;
 	margin-bottom:0px;
 	/*padding-top:4px;*/
 }
-QTabWidget QToolBar QToolButton {
+QTabWidget QToolBar QToolButton, CDockableDialog QToolBar QToolButton {
 	margin-top:0px;
 	margin-bottom:0px;
 }
@@ -843,7 +876,7 @@ QSplitter::handle:pressed {
 	border: none;
 }
 
-QTabWidget QSplitter::handle {
+QTabWidget QSplitter::handle, CDockableDialog QSplitter::handle {
 	background-color: rgb(58,58,58); /*dividing lines secondary*/
 }
 
@@ -856,11 +889,11 @@ QToolBar::handle {
 	image: url(icons:Window/Handle_Round.ico);
 }
 
-QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
+QCustomWindowFrame > QWidget, QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
 	background-color: rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper > QFrame {
+QCustomWindowFrame > QFrame, QToolWindowCustomWrapper > QFrame {
 	background-color: rgb(35,35,35);
 }
 
@@ -965,6 +998,26 @@ QTreeView::indicator:checked
 	image: url("icons:General/Tick_Tinted.ico");
 }
 
+QTreeView::branch:has-children:closed
+{
+    image: url(icons:General/Pointer_Right_Tinted.ico);
+}
+
+QTreeView::branch:has-children::selected:closed
+{
+    image: url(icons:General/Pointer_Right.ico);
+}
+
+QTreeView::branch:has-children
+{
+    image: url(icons:General/Pointer_Down_Tinted.ico);
+}
+
+QTreeView::branch:has-children::selected
+{
+    image: url(icons:General/Pointer_Down.ico);
+}
+
 QTreeView QHeaderView {
 	color:rgb(166,166,166);
 	background-color:rgb(35,35,35);
@@ -997,8 +1050,6 @@ QTreeView QHeaderView::section {                /* the tree view header */
 	padding-bottom:3px;
 	padding-left:4px;
 }
-
-
 
 QViewportHeader {
 	background-color:rgb(58,58,58);
@@ -1039,17 +1090,28 @@ QCustomTitleBar {
 	border:0px;
 }
 
-QToolWindowCustomWrapper {           /*CEditorDialog*/
+QCustomWindowFrame, QToolWindowCustomWrapper {           /*CEditorDialog*/
 	background-color: rgb(35,35,35);
 	border:1px solid rgb(45,45,45);
 }
 
-CEditorDialog {
+CEditorDialog QPushButton::pressed {
+	border:0px solid rgb(97,172,236);
+	background: rgb(97,172,236);
+	color:white;
+}
+
+CEditorDialog, CDockableDialog {
 	background-color: rgb(35,35,35);
 	border:1px solid rgb(45,45,45);
 }
 
-QToolWindowCustomWrapper QToolWindowCustomWrapper {
+QCustomWindowFrame QCustomWindowFrame {
+	margin:0px;
+	border:0px;
+}
+
+QCustomWindowFrame > QToolWindowCustomWrapper {
 	background-color:rgb(35,35,35);                         /* this is the wierd line that goes long the toolbar */
 	/*padding:-10px;*/
 	margin:0px;
@@ -1110,7 +1172,7 @@ QToolWindowSingleTabAreaFrame > QLabel {
 	border-top-right-radius:2px;
 }
 
-QToolWindowSingleTabAreaFrame #closeButton {
+QToolWindowSingleTabAreaFrame > #closeButton {
 	border:0;
 	/*background-color: rgb(66,66,66);*/
 	background: qlineargradient(y1:1,
@@ -1163,7 +1225,7 @@ CTimeline QScrollBar:vertical{
 	padding-right:2px;
 }
 
-QLabel#TrackingTooltip {
+QTrackingTooltip {
 	border: 1px solid rgb(166,166,166);
 	color:rgb(166,166,166);
 	background-color:rgb(35,35,35);
@@ -1238,7 +1300,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:rgb(58,58,58);
+	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
 }
 
 QComboBox::drop-down:disabled {
@@ -1292,12 +1354,13 @@ EditorStyleHelper {
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
+	qproperty-timelineOutsideTrackColor: rgba(60, 60, 60,120);
 	qproperty-timelineDescriptionTrackColor: rgb(91, 91, 91);
-	qproperty-timelineCompositeTrackColor: rgb(75, 75, 75);
+	qproperty-timelineCompositeTrackColor: rgb(81, 81, 81);
 	qproperty-timelineSelectionColor: rgb(97, 172, 236);
 	qproperty-timelineDescriptionTextColor: rgb(149, 149, 149);
 	qproperty-timelineInnerTickLines: rgb(50, 50, 50);
-	qproperty-timelineOuterTickLines: rgb(97, 97, 97);
+	qproperty-timelineOuterTickLines: rgb(55, 55, 55);
 	qproperty-timelineBottomLines: rgb(50, 50, 50);
 	qproperty-timelineToggleColor: rgb(152, 152, 152);
 	qproperty-timelineClipPen: rgb(200, 200, 200);
@@ -1462,12 +1525,12 @@ CAutoCompletePopup QLabel
 	background: rgb(50,50,50);
 }
 
-QTabWidget QSplitter {
+QTabWidget QSplitter, CDockableDialog QSplitter {
 	height:4px;
 	width:4px;
 }
 
-QTabWidget QCheckBox{
+QTabWidget QCheckBox, CDockableDialog QCheckBox {
 	margin-left:10px;
 	margin-right:-6px;
 }
@@ -1476,7 +1539,7 @@ CEditorDialog QHeaderView::section {
 	border: 0px;
 }
 
-CEditorDialog QSplitter::handle, CEditorDialog QSplitter::handle:hover  {
+CEditorDialog QSplitter::handle, CEditorDialog QSplitter::handle:hover {
 	border-left: 4px solid rgb(66, 66, 66);
 	border-right: 4px solid rgb(66, 66, 66);
 }
@@ -1727,7 +1790,7 @@ QNumericBox {
 CryGraphEditor--CGlobalStyle {
 	/* Selection color */
 	qproperty-selectionColor: rgb(97, 172, 237);
-	qproperty-highlightColor: rgb(120, 120, 120);
+	qproperty-highlightColor: rgb(140, 140, 140);
 	
 	/* Background */
 	qproperty-gridBackgroundColor: rgb(75, 75, 75);
@@ -1757,14 +1820,14 @@ CryGraphEditor--CPinWidget QLabel {
 	font: bold;
 }
 
-CryGraphEditor--CNodeName {
+CryGraphEditor--CNodeNameWidget {
 	color: rgb(32, 32, 32);
 	font: bold;
 }
 
 CryGraphEditor--CNodeStyle {
 	/* Content: Background */
-	qproperty-backgroundColor: rgb(35, 35, 35);
+	qproperty-backgroundColor: rgba(35, 35, 35, 200);
 	
 	/* Content: Margins */
 	qproperty-contentMarginTop: 3;
@@ -1797,8 +1860,8 @@ CryGraphEditor--CNodeStyle {
 	/* Header */
 	qproperty-headerHeight: 24.0;
 	qproperty-headerIconSize: 16px 16px;
-	qproperty-headerDefaultColorLeft: rgb(110, 110, 110);
-	qproperty-headerDefaultColorRight: rgb(110, 110, 110);
+	qproperty-headerDefaultColorLeft: rgb(26, 26, 26);
+	qproperty-headerDefaultColorRight: rgb(26, 26, 26);
 	
 	/* Header: Content margins */
 	qproperty-headerContentMarginTop: 1;
@@ -1812,6 +1875,12 @@ CryGraphEditor--CNodeStyle {
 	qproperty-headerRectAdjustmentBottom: 0;
 	qproperty-headerRectAdjustmentRight: 0;
 }
+
+/* CryGraphEditor -------------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------- */
+/* CryParticleEditor ----------------------------------------------------- */
 
 CryParticleEditor--CFeatureStyle {
 	qproperty-backgroundColor: rgb(255, 255, 255);
@@ -1829,9 +1898,93 @@ CryParticleEditor--CFeatureStyle {
 }
 
 CryParticleEditor--CFeatureGridStyle {
-	qproperty-parentSpacing: 30;
+	qproperty-parentSpacing: 3;
 	qproperty-featureSpacing: 3;
 }
 
-/* CryGraphEditor -------------------------------------------------------- */
+/* CryParticleEditor ----------------------------------------------------- */
 /* ----------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------- */
+/* CrySchematycEditor ---------------------------------------------------- */
+
+CrySchematycEditor--CComponentsWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}
+
+CrySchematycEditor--CObjectStructureWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}
+
+CrySchematycEditor--CVariablesWidget QLabel {
+	/*width: 16px;
+	height: 16px;*/
+	/*margin-bottom:0px;*/
+	font-size:14px;
+	color:rgb(166,166,166);
+}
+
+/* CrySchematycEditor ---------------------------------------------------- */
+/* ----------------------------------------------------------------------- */
+
+CBreadcrumbsBar{
+	margin: 0px;
+}
+
+CBreadcrumbsBar > QToolButton {
+	color:rgb(180,180,180);
+	background-color:rgb(78,78,78);
+	border:solid;
+	border:0px;
+	border-radius:2px;
+	margin:1px;
+	padding:0px;
+	background: qlineargradient(x2:1, y2:2, x2:0, y2:2,
+				stop:0 rgb(110,110,110), 
+				stop:0.5 rgb(88,88,88), 
+				stop:1 rgb(78,78,78));
+}
+
+CBreadcrumbsBar > QToolButton::hover {
+background-color: rgb(95,95,95);
+color:rgb(200,200,200);
+background: qlineargradient(x2:1, y2:2, x2:0, y2:2,
+			stop:0 rgb(120,120,120), 
+			stop:0.5 rgb(100,100,100), 
+			stop:1 rgb(100,100,100))
+}
+
+CBreadcrumbsBar > QToolButton::pressed {
+	border:0px solid rgb(97,172,236);
+	background: qlineargradient(x2:1, y2:2, x2:0, y2:2,
+				stop:0 rgb(35,35,35), stop: 0.9 rgb(55,55,55), stop:1 rgb(78,78,78));
+	color:rgb(166,166,166);
+}
+
+CPreviewToolTip
+{
+	margin: 0px;
+	padding: 0px;
+}
+
+CPreviewToolTip QWidget
+{
+	max-width: 400px;
+	max-height: 400px;
+}
+
+CDockableDialog > QFrame {
+	background-color: rgb(66,66,66);
+}
+
+CDockableDialog > QCustomTitleBar {
+	background-color: transparent;
+}

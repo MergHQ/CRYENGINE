@@ -16,11 +16,11 @@ IDatagramSocketPtr CSocketIOManager::CreateDatagramSocket(const TNetAddress& add
 
 	TDatagramSockets::iterator socketIter;
 	IDatagramSocketPtr pSocket;
-	const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(&addr);
+	const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(&addr);
 
 	for (socketIter = m_datagramSockets.begin(); socketIter != m_datagramSockets.end(); ++socketIter)
 	{
-		const SIPv4Addr* pTestIPv4Addr = boost::get<const SIPv4Addr>(&socketIter->addr);
+		const SIPv4Addr* pTestIPv4Addr = stl::get_if<SIPv4Addr>(&socketIter->addr);
 
 		if ((socketIter->addr == addr) ||
 		    (pIPv4Addr && pTestIPv4Addr && ((flags & eSF_StrictAddress) == 0) && ((flags & eSF_Online) == (socketIter->flags & eSF_Online))))

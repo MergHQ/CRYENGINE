@@ -328,10 +328,7 @@ public:
 
 	~CFlowSaveGameNode()
 	{
-		if (gEnv->pGame)
-		{
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
-		}
+		gEnv->pGameFramework->UnregisterListener(this);
 	}
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowSaveGameNode(pActInfo); }
@@ -403,8 +400,7 @@ public:
 					{
 						ActivateOutput(pActInfo, EOP_SaveOrLoadDone, true);
 
-						if (gEnv->pGame)
-							gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+						gEnv->pGameFramework->UnregisterListener(this);
 
 						pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
 						m_state = ES_Idle;
@@ -413,7 +409,7 @@ public:
 
 				case ES_WaitForPlayerNotInAir:
 					{
-						if (!PlayerIsInAir() && gEnv->pGame->GetIGameFramework()->CanSave())
+						if (!PlayerIsInAir() && gEnv->pGameFramework->CanSave())
 						{
 							m_extraCheckDeadTimerCounter--;
 							if (m_extraCheckDeadTimerCounter <= 0)
@@ -430,12 +426,12 @@ public:
 			{
 				if (IsPortActive(pActInfo, EIP_DisableSave))
 				{
-					gEnv->pGame->GetIGameFramework()->AllowSave(false);
+					gEnv->pGameFramework->AllowSave(false);
 				}
 
 				if (IsPortActive(pActInfo, EIP_EnableSave))
 				{
-					gEnv->pGame->GetIGameFramework()->AllowSave(true);
+					gEnv->pGameFramework->AllowSave(true);
 				}
 
 				if (IsPortActive(pActInfo, EIP_Save))
@@ -456,7 +452,7 @@ public:
 
 					if (name == "$LAST")
 					{
-						gEnv->pGame->GetIGameFramework()->ExecuteCommandNextFrame("loadLastSave");
+						gEnv->pGameFramework->ExecuteCommandNextFrame("loadLastSave");
 					}
 					else
 					{
@@ -464,7 +460,7 @@ public:
 
 						name += CRY_SAVEGAME_FILE_EXT;
 
-						gEnv->pGame->GetIGameFramework()->LoadGame(name.c_str(), true);
+						gEnv->pGameFramework->LoadGame(name.c_str(), true);
 					}
 				}
 
@@ -476,7 +472,7 @@ public:
 	bool PlayerIsInAir()
 	{
 		bool InAir = false;
-		IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 		if (pClientActor && pClientActor->IsPlayer())
 		{
 			CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
@@ -502,18 +498,15 @@ public:
 		}
 		else
 		{
-			if (IGame* pGame = gEnv->pGame)
-			{
-				pGame->GetIGameFramework()->RegisterListener(this, "CFlowSaveGameNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
-			}
+			gEnv->pGameFramework->RegisterListener(this, "CFlowSaveGameNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 			m_state = ES_WaitForSaveDone;
 		}
 
-		if (gEnv->pGame)
-		{
-			gEnv->pGame->GetIGameFramework()->SaveGame(gEnv->pGame->CreateSaveGameName().c_str(), true, false, eSGR_FlowGraph, false, m_name.c_str());
-		}
+		auto saveGameName = gEnv->pGameFramework->CreateSaveGameName();
+
+		gEnv->pGameFramework->SaveGame(saveGameName, true, false, eSGR_FlowGraph, false, m_name.c_str());
 	}
 
 	// IGameFrameworkListener

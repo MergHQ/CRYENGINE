@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryEntitySystem/IEntity.h>       // <> required for Interfuscator
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
 #include <CryCore/CountedValue.h>
 #include <CryCore/Containers/MiniQueue.h>
@@ -243,6 +242,9 @@ template<class TISerialize>
 class CSerializeWrapper
 {
 public:
+	// Required for SWIG to properly expose serialize functions!
+	CSerializeWrapper() : m_pSerialize(nullptr) {}
+
 	CSerializeWrapper(TISerialize* pSerialize) :
 		m_pSerialize(pSerialize)
 	{

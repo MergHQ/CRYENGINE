@@ -1,11 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
 using CryEngine.Common;
+using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 /// <summary>
 /// All classes related to FlowNode usage.
@@ -22,16 +22,16 @@ namespace CryEngine.FlowSystem
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override void AddRef() {}
+		public override void AddRef() { }
 
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override void Release() {}
+		public override void Release() { }
 
 		private void Free()
 		{
-			_gcLock.Free ();
+			_gcLock.Free();
 		}
 
 		/// <summary>
@@ -39,20 +39,20 @@ namespace CryEngine.FlowSystem
 		/// </summary>
 		public static void Register()
 		{
-			var factory = new FlowNodeFactory<T> ();
-			factory._gcLock = GCHandle.Alloc (factory);
-			Env.FlowSystem.RegisterType("Mono:" + typeof(T).Name, new IFlowNodeFactoryPtr (factory));
+			var factory = new FlowNodeFactory<T>();
+			factory._gcLock = GCHandle.Alloc(factory);
+			Engine.FlowSystem.RegisterType("Mono:" + typeof(T).Name, new IFlowNodeFactoryPtr(factory));
 		}
 
 		public static void Unregister()
 		{
-			Env.FlowSystem.UnregisterType ("Mono:" + typeof(T).Name);
+			Engine.FlowSystem.UnregisterType("Mono:" + typeof(T).Name);
 		}
 
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override IFlowNodePtr Create (IFlowNode.SActivationInfo info)
+		public override IFlowNodePtr Create(IFlowNode.SActivationInfo info)
 		{
 			return new IFlowNodePtr(InternalFlowNode<T>.CreateInstance(info));
 		}
@@ -60,12 +60,12 @@ namespace CryEngine.FlowSystem
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override void GetMemoryUsage (ICrySizer s) {}
+		public override void GetMemoryUsage(ICrySizer s) { }
 
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>
-		public override void Reset () {}
+		public override void Reset() { }
 	}
 
 	/// <summary>
@@ -140,8 +140,8 @@ namespace CryEngine.FlowSystem
 		/// </summary>
 		public override void Release()
 		{
-			if (0 >= --_refs) 
-				_gcLock.Free ();
+			if (0 >= --_refs)
+				_gcLock.Free();
 		}
 
 		/// <summary>
@@ -150,8 +150,8 @@ namespace CryEngine.FlowSystem
 		public static IFlowNode CreateInstance(IFlowNode.SActivationInfo info)
 		{
 			var internalNode = new InternalFlowNode<T>();
-			internalNode._gcLock = GCHandle.Alloc (internalNode);
-			internalNode.Node = (T)Activator.CreateInstance (typeof(T), new object[]{});
+			internalNode._gcLock = GCHandle.Alloc(internalNode);
+			internalNode.Node = (T)Activator.CreateInstance(typeof(T), new object[] { });
 			return internalNode;
 		}
 
@@ -170,7 +170,7 @@ namespace CryEngine.FlowSystem
 		{
 			SetupInputPorts(cfg, Node.Inputs);
 			SetupOutputPorts(cfg, Node.Outputs);
-			cfg.SetDescription (Node.Description);
+			cfg.SetDescription(Node.Description);
 			cfg.SetCategory((int)EFlowNodeFlags.EFLN_APPROVED);
 		}
 
@@ -197,42 +197,42 @@ namespace CryEngine.FlowSystem
 			Info = info;
 			switch (evt)
 			{
-			case IFlowNode.EFlowEvent.eFE_Initialize:
-				foreach (var pc in Node.Inputs) 
-				{
-					if (pc.PropertyType != typeof(Signal))
-						pc.Info.SetValue (Node, GetPortValue (pc.PropertyType, pc.Index), null);
-				}
-				Info.pGraph.SetRegularlyUpdated (Info.myID, true);
-				break;
-
-			case IFlowNode.EFlowEvent.eFE_Activate:
-				foreach (var pc in Node.Inputs) 
-				{
-					if (pc.PropertyType != typeof(Signal)) 
-						pc.Info.SetValue (Node, GetPortValue (pc.PropertyType, pc.Index), null);
-					else if (IsPortActive (pc.Index)) 
-						Node.RaiseOnSignal (pc.Info);
-				}
-				break;
-
-			case IFlowNode.EFlowEvent.eFE_Update:
-				if (Node.OnQuit.Activate) 
-				{
-					Info.pGraph.SetRegularlyUpdated (Info.myID, false);
-					Node.OnQuit.Activate = false;
-					foreach (var pc in Node.Outputs) 
+				case IFlowNode.EFlowEvent.eFE_Initialize:
+					foreach (var pc in Node.Inputs)
 					{
 						if (pc.PropertyType != typeof(Signal))
-							ActivateOutput (pc.Index, pc.Info.GetValue (Node, null));
-						else
-							ActivateOutput (pc.Index);
+							pc.Info.SetValue(Node, GetPortValue(pc.PropertyType, pc.Index), null);
 					}
-				}
-				break;
+					Info.pGraph.SetRegularlyUpdated(Info.myID, true);
+					break;
 
-			default:
-				break;
+				case IFlowNode.EFlowEvent.eFE_Activate:
+					foreach (var pc in Node.Inputs)
+					{
+						if (pc.PropertyType != typeof(Signal))
+							pc.Info.SetValue(Node, GetPortValue(pc.PropertyType, pc.Index), null);
+						else if (IsPortActive(pc.Index))
+							Node.RaiseOnSignal(pc.Info);
+					}
+					break;
+
+				case IFlowNode.EFlowEvent.eFE_Update:
+					if (Node.OnQuit.Activate)
+					{
+						Info.pGraph.SetRegularlyUpdated(Info.myID, false);
+						Node.OnQuit.Activate = false;
+						foreach (var pc in Node.Outputs)
+						{
+							if (pc.PropertyType != typeof(Signal))
+								ActivateOutput(pc.Index, pc.Info.GetValue(Node, null));
+							else
+								ActivateOutput(pc.Index);
+						}
+					}
+					break;
+
+				default:
+					break;
 			}
 			Info = null;
 		}
@@ -266,18 +266,18 @@ namespace CryEngine.FlowSystem
 		/// <param name="ports">Definition of input Ports.</param>
 		protected void SetupInputPorts(SFlowNodeConfig cfg, List<PortConfig> ports)
 		{
-			cfg.SetInputSize (ports.Count);
-			for (int i = 0; i < ports.Count; i++) 
+			cfg.SetInputSize(ports.Count);
+			for (int i = 0; i < ports.Count; i++)
 			{
-				var t = ports [i].PropertyType;
+				var t = ports[i].PropertyType;
 				if (t == typeof(string))
-					cfg.AddStringInputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddStringInputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(Signal))
-					cfg.AddVoidInputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddVoidInputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(int))
-					cfg.AddIntInputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddIntInputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(bool))
-					cfg.AddBoolInputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddBoolInputPort(i, ports[i].Name, ports[i].Description);
 			}
 		}
 
@@ -288,18 +288,18 @@ namespace CryEngine.FlowSystem
 		/// <param name="ports">Definition of output ports.</param>
 		protected void SetupOutputPorts(SFlowNodeConfig cfg, List<PortConfig> ports)
 		{
-			cfg.SetOutputSize (ports.Count);
-			for (int i = 0; i < ports.Count; i++) 
+			cfg.SetOutputSize(ports.Count);
+			for (int i = 0; i < ports.Count; i++)
 			{
-				var t = ports [i].PropertyType;
+				var t = ports[i].PropertyType;
 				if (t == typeof(string))
-					cfg.AddStringOutputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddStringOutputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(Signal))
-					cfg.AddVoidOutputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddVoidOutputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(int))
-					cfg.AddIntOutputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddIntOutputPort(i, ports[i].Name, ports[i].Description);
 				else if (t == typeof(bool))
-					cfg.AddBoolOutputPort (i, ports[i].Name, ports[i].Description);
+					cfg.AddBoolOutputPort(i, ports[i].Name, ports[i].Description);
 			}
 		}
 
@@ -311,13 +311,13 @@ namespace CryEngine.FlowSystem
 		/// <typeparam name="T">Type of the value.</typeparam>
 		public object GetPortValue(Type t, int portIndex)
 		{
-			if (t == typeof(string)) 
-				return ((object)Info.pGraph.GetPortString (Info, portIndex).c_str ());
-			else if (t == typeof(int))
-				return (object)Info.pGraph.GetPortInt(Info, portIndex);
-			else if (t == typeof(bool))
-					return (object)Info.pGraph.GetPortBool(Info, portIndex);
-			return null;
+            if (t == typeof(string))
+                return ((object)Global.GetPortString(Info, portIndex).c_str());
+            else if (t == typeof(int))
+                return (object)Global.GetPortInt(Info, portIndex);
+            else if (t == typeof(bool))
+                return (object)Global.GetPortBool(Info, portIndex);
+            return null;
 		}
 
 		/// <summary>
@@ -328,27 +328,27 @@ namespace CryEngine.FlowSystem
 		public void ActivateOutput(int portIndex, object value = null)
 		{
 			if (value == null)
-				Info.pGraph.ActivateAnyOutput (Info.myID, portIndex);
+				Info.pGraph.ActivateAnyOutput(Info.myID, portIndex);
 			else if (value is string)
-				Info.pGraph.ActivateStringOutput (Info.myID, portIndex, new CryString((string)value));
+				Info.pGraph.ActivateStringOutput(Info.myID, portIndex, new CryString((string)value));
 			else if (value is int)
-				Info.pGraph.ActivateIntOutput (Info.myID, portIndex, (int)value);
+				Info.pGraph.ActivateIntOutput(Info.myID, portIndex, (int)value);
 			else if (value is bool)
-				Info.pGraph.ActivateBoolOutput (Info.myID, portIndex, (bool)value);
+				Info.pGraph.ActivateBoolOutput(Info.myID, portIndex, (bool)value);
 		}
 	}
 
 	/// <summary>
 	/// Base class for all Mono FlowNodes. Uses Reflection to find all input and output configs. Provides start and quit signals by default.
 	/// </summary>
-	public class FlowNode : MarshalByRefObject 
+	public class FlowNode : MarshalByRefObject
 	{
 		public static event EventHandler<FlowNode, PropertyInfo> OnSignal; ///< Raised whenever a signal port was activated.
 
-		public void RaiseOnSignal (PropertyInfo signal) ///< Raises OnSignal from an external source.
+		public void RaiseOnSignal(PropertyInfo signal) ///< Raises OnSignal from an external source.
 		{
 			if (OnSignal != null)
-				OnSignal (this, signal);
+				OnSignal(this, signal);
 		}
 
 		public string Description { get; protected set; } ///< Shown as FlowNode description in Sandbox.
@@ -365,33 +365,33 @@ namespace CryEngine.FlowSystem
 		/// </summary>
 		public FlowNode()
 		{
-			Inputs = new List<PortConfig> ();
-			Outputs = new List<PortConfig> ();
-			OnStart = new Signal ();
-			OnQuit = new Signal ();
+			Inputs = new List<PortConfig>();
+			Outputs = new List<PortConfig>();
+			OnStart = new Signal();
+			OnQuit = new Signal();
 
-			var propertyInfos = GetType ().GetProperties ().ToList();
-			foreach (var pi in propertyInfos) 
+			var propertyInfos = GetType().GetProperties().ToList();
+			foreach (var pi in propertyInfos)
 			{
-				var ips = pi.GetCustomAttributes (typeof(InputPortAttribute), true).ToList();
+				var ips = pi.GetCustomAttributes(typeof(InputPortAttribute), true).ToList();
 				if (ips.Count > 0)
 				{
-					Inputs.Add (new PortConfig 
+					Inputs.Add(new PortConfig
 					{
 						PortType = typeof(InputPortAttribute),
 						Info = pi,
-						Description = (ips [0] as InputPortAttribute).Description,
+						Description = (ips[0] as InputPortAttribute).Description,
 						Index = Inputs.Count
 					});
 				}
-				var ops = pi.GetCustomAttributes (typeof(OutputPortAttribute), true).ToList();
+				var ops = pi.GetCustomAttributes(typeof(OutputPortAttribute), true).ToList();
 				if (ops.Count > 0)
 				{
-					Outputs.Add (new PortConfig 
+					Outputs.Add(new PortConfig
 					{
 						PortType = typeof(OutputPortAttribute),
 						Info = pi,
-						Description = (ops [0] as OutputPortAttribute).Description,
+						Description = (ops[0] as OutputPortAttribute).Description,
 						Index = Outputs.Count
 					});
 				}
@@ -402,7 +402,7 @@ namespace CryEngine.FlowSystem
 		/// <summary>
 		/// Called internally. Do not call directly.
 		/// </summary>
-		public override object InitializeLifetimeService() 
+		public override object InitializeLifetimeService()
 		{
 			return null;
 		}
@@ -417,7 +417,7 @@ namespace CryEngine.FlowSystem
 	}
 
 	/// <summary>
-	/// Scenes which are instanciated along the logical input of a RunScene FlowNode may use this base class for convenience.
+	/// Scenes which are instantiated along the logical input of a RunScene FlowNode may use this base class for convenience.
 	/// </summary>
 	public class FlowScene<T> where T : FlowNode
 	{
@@ -447,7 +447,7 @@ namespace CryEngine.FlowSystem
 		public void SignalQuit()
 		{
 			if (OnSignalQuit != null)
-				OnSignalQuit (Node);
+				OnSignalQuit(Node);
 			Node.SignalQuit();
 		}
 	}

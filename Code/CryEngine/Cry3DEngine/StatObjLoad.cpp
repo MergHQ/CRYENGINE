@@ -1163,21 +1163,16 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 		m_eStreamingStatus = ecss_Ready;
 
 	const std::vector<CStatObj*> allObjects = GatherAllObjects();
-
-	// Determine if the cgf is deformable
 	for (CStatObj* obj : allObjects)
 	{
+		// Determine if the cgf is deformable
 		if (stristr(obj->m_szGeomName.c_str(), "bendable") && stristr(obj->m_szProperties.c_str(), "mergedmesh_deform"))
 		{
 			obj->m_isDeformable = 1;
 			obj->DisableStreaming();
 		}
 
-	}
-
-	// Read the depth sort offset
-	for (CStatObj* obj : allObjects)
-	{
+		// Read the depth sort offset
 		Vec3 depthSortOffset;
 		if (std::sscanf(obj->m_szProperties.c_str(), "depthoffset(x:%f,y:%f,z:%f)", &depthSortOffset.x, &depthSortOffset.y, &depthSortOffset.z) == 3)
 		{
@@ -1185,9 +1180,8 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 		}
 	}
 
-	SMeshLodInfo lodInfo;
-	ComputeGeometricMean(lodInfo);
-	m_fLodDistance = sqrt(lodInfo.fGeometricMean);
+	// Recursive computation of m_fLODDistance for compound- and sub-objects
+	ComputeAndStoreLodDistances();
 
 	return true;
 }
@@ -1349,7 +1343,7 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 	_smart_ptr<IRenderMesh> pOutRenderMesh;
 
 	// Create renderable mesh.
-	if (!gEnv->IsDedicated())
+	if (gEnv->pRenderer)
 	{
 		if (!pMesh)
 			return 0;

@@ -4,16 +4,7 @@
 start_sources()
 # -- gamezero.waf_files --
 sources_platform(ALL)
-add_sources("CryGameZero_uber_Editor.cpp"
-	SOURCE_GROUP "Editor"
-		"editor/EditorGame.cpp"
-		"editor/EditorGame.h"
-)
-
 add_sources("CryGameZero_uber_Game.cpp"
-	SOURCE_GROUP "Entities"
-		"entities/GeomEntity.cpp"
-		"entities/GeomEntity.h"
 	SOURCE_GROUP "Flownodes"
 		"flownodes/FlowGameEntityNode.cpp"
 		"flownodes/FlowGameEntityNode.h"
@@ -53,11 +44,9 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryGameZero PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameZero")
+CryGameModule(CryGameZero PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameZero")
 
-target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
-
-target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
+target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
 
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )

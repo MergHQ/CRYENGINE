@@ -15,6 +15,7 @@
 #include "EntityClassRegistry.h"
 #include "EntityClass.h"
 #include "EntityScript.h"
+
 #include <CrySystem/File/CryFile.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,12 +93,9 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 	pClass->SetFlags(entityClassDesc.flags);
 	pClass->SetScriptFile(entityClassDesc.sScriptFile);
 	pClass->SetUserProxyCreateFunc(entityClassDesc.pUserProxyCreateFunc, entityClassDesc.pUserProxyData);
-	pClass->SetPropertyHandler(entityClassDesc.pPropertyHandler);
 	pClass->SetEventHandler(entityClassDesc.pEventHandler);
 	pClass->SetScriptFileHandler(entityClassDesc.pScriptFileHandler);
 	pClass->SetEditorClassInfo(entityClassDesc.editorClassInfo);
-	pClass->SetClassAttributes(entityClassDesc.classAttributes);
-	pClass->SetEntityAttributes(entityClassDesc.entityAttributes);
 
 	// Check if need to create entity script.
 	if (entityClassDesc.sScriptFile[0] || entityClassDesc.pScriptTable)
@@ -112,7 +110,7 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 
 		if (!ok)
 		{
-			EntityWarning("EntityScript %s failed to initialize", entityClassDesc.sScriptFile);
+			EntityWarning("EntityScript %s failed to initialize", entityClassDesc.sScriptFile.c_str());
 			pScript->Release();
 			pClass->Release();
 			return NULL;
@@ -179,18 +177,6 @@ void CEntityClassRegistry::InitializeDefaultClasses()
 	stdClass.sName = "Default";
 	m_pDefaultClass = RegisterStdClass(stdClass);
 
-	SEntityClassDesc stdGeomClass;
-	stdGeomClass.flags |= ECLF_INVISIBLE | ECLF_DEFAULT;
-	stdGeomClass.sName = "GeomEntity";
-	stdGeomClass.sScriptFile = "Scripts/Entities/Default/GeomEntity.lua";
-	RegisterStdClass(stdGeomClass);
-
-	SEntityClassDesc stdRopeClass;
-	stdRopeClass.flags |= ECLF_INVISIBLE | ECLF_DEFAULT;
-	stdRopeClass.sName = "RopeEntity";
-	stdRopeClass.sScriptFile = "Scripts/Entities/Default/RopeEntity.lua";
-	RegisterStdClass(stdRopeClass);
-
 	SEntityClassDesc stdFlowgraphClass;
 	stdFlowgraphClass.flags |= ECLF_DEFAULT;
 	stdFlowgraphClass.sName = "FlowgraphEntity";
@@ -206,6 +192,10 @@ void CEntityClassRegistry::InitializeDefaultClasses()
 //////////////////////////////////////////////////////////////////////////
 void CEntityClassRegistry::LoadClasses(const char* szFilename, bool bOnlyNewClasses)
 {
+	// Skip if file does not exist
+	if (!gEnv->pCryPak->IsFileExist(szFilename))
+		return;
+
 	const XmlNodeRef root = m_pSystem->LoadXmlFromFile(szFilename);
 
 	if (root && root->isTag("Entities"))

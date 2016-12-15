@@ -5,6 +5,7 @@
 #include "CryAction.h"
 #include "AnimationGraphCVars.h"
 #include "PersistantDebug.h"
+#include "GameObjects/MannequinObject.h"
 #include <CryAnimation/IFacialAnimation.h>
 
 #include <CryExtension/CryCreateClassInstance.h>
@@ -92,7 +93,98 @@ bool CheckNANVec(const Vec3& v, IEntity* pEntity)
 	Vec3 v1(v);
 	return CheckNANVec(v1, pEntity);
 }
+
+template<class T, class U> bool CloneBinary(T&& outInstance, U&& inInstance)
+{
+	return gEnv->pSystem->GetArchiveHost()->CloneBinary(Serialization::SStruct(std::forward<T>(outInstance)), Serialization::SStruct(std::forward<U>(inInstance)));
 }
+
+struct SMannequinSettings
+{
+	string actionController;
+	string animDatabase1P;
+	string animDatabase3P;
+	string soundDatabase;
+	bool   useMannequinAGState;
+};
+
+//! Initializes SMannequinSettings based on existing entity components.
+static SMannequinSettings RetrieveMannequinSettingsFromEntity(IEntity& entity)
+{
+	const auto pScriptComponent = entity.GetComponent<IEntityScriptComponent>();
+	if (pScriptComponent)
+	{
+		const auto pScriptTable = pScriptComponent->GetScriptTable();
+		if (pScriptTable)
+		{
+			if (pScriptTable->HaveValue("ActionController") || pScriptTable->HaveValue("fileActionController"))
+			{
+				SMannequinSettings settings;
+
+				if (!pScriptTable->GetValue("ActionController", settings.actionController))
+				{
+					pScriptTable->GetValue("fileActionController", settings.actionController);
+				}
+
+				if (!pScriptTable->GetValue("AnimDatabase3P", settings.animDatabase3P))
+				{
+					pScriptTable->GetValue("fileAnimDatabase3P", settings.animDatabase3P);
+				}
+
+				if (!pScriptTable->GetValue("AnimDatabase1P", settings.animDatabase1P))
+				{
+					pScriptTable->GetValue("fileAnimDatabase1P", settings.animDatabase1P);
+				}
+
+				if (!pScriptTable->GetValue("SoundDatabase", settings.soundDatabase))
+				{
+					pScriptTable->GetValue("fileSoundDatabase", settings.soundDatabase);
+				}
+
+				pScriptTable->GetValue("UseMannequinAGState", settings.useMannequinAGState);
+
+				return settings;
+			}
+		}
+	}
+
+	IEntityComponent* const pMannequinObject = entity.GetComponent<CMannequinObject>();
+	if (pMannequinObject)
+	{
+		struct SEntityPropertyGroupSerialier
+		{
+			void Serialize(Serialization::IArchive& archive) { propertyGroup.SerializeProperties(archive); }
+
+			IEntityPropertyGroup& propertyGroup;
+		};
+
+		struct SMannequinObjectPropertyGroupToMannequinSettingsSerializer
+		{
+			void Serialize(Serialization::IArchive& archive)
+			{
+				archive(mannequinSettings.actionController, "actionController");
+				archive(mannequinSettings.animDatabase3P, "animationDatabase");
+
+				if (archive.isInput())
+				{
+					mannequinSettings.animDatabase1P = "";
+					mannequinSettings.soundDatabase = "";
+					mannequinSettings.useMannequinAGState = false;
+				}
+			}
+
+			SMannequinSettings& mannequinSettings;
+		};
+
+		SMannequinSettings settings;
+		CloneBinary(SMannequinObjectPropertyGroupToMannequinSettingsSerializer{ settings }, SEntityPropertyGroupSerialier{ *pMannequinObject->GetPropertyGroup() });
+		return settings;
+	}
+
+	return SMannequinSettings();
+}
+
+} // anonymous namespace
 
 namespace AC
 {
@@ -101,7 +193,6 @@ void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
 	const int eventToRegister[] =
 	{
 		eGFE_QueueRagdollCreation,
-		eGFE_BecomeLocalPlayer,
 		eGFE_OnCollision,
 		eGFE_ResetAnimationGraphs,
 		eGFE_QueueBlendFromRagdoll,
@@ -117,7 +208,7 @@ CAnimatedCharacter::CAnimatedCharacter() : m_listeners(1)
 {
 	InitVars();
 
-	m_debugHistoryManager = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+	m_debugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 	CryCreateClassInstance("AnimationPoseAlignerC3", m_pPoseAligner);
 }
@@ -159,7 +250,6 @@ void CAnimatedCharacter::InitVars()
 	m_bSimpleMovementSetOnce = false;
 	m_curWeaponRaisedPose = eWeaponRaisedPose_None;
 	m_isPlayer = false;
-	m_isClient = false;
 	m_curFrameTime = 0.0f;
 	m_prevFrameTime = 0.0f;
 	m_curFrameTimeOriginal = 0.0f;
@@ -297,7 +387,7 @@ bool CAnimatedCharacter::Init(IGameObject* pGameObject)
 
 	SetGameObject(pGameObject);
 
-	LoadAnimationGraph(pGameObject);
+	InitializeMannequin();
 
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::Init %p end", pGameObject);
@@ -310,9 +400,14 @@ void CAnimatedCharacter::PostInit(IGameObject* pGameObject)
 {
 	AC::RegisterEvents(*this, *pGameObject);
 
-	m_pComponentPrepareCharForUpdate = ComponentCreateAndRegister<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_GenerateMoveRequest>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_StartAnimProc>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
+	m_pComponentPrepareCharForUpdate = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
+	m_pComponentPrepareCharForUpdate->SetAnimatedCharacter(this);
+	
+	auto componentMoveRequest = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_GenerateMoveRequest>();
+	componentMoveRequest->SetAnimatedCharacter(this);
+
+	auto componentStartAnimProc = GetEntity()->GetOrCreateComponentClass<CAnimatedCharacterComponent_StartAnimProc>();
+	componentStartAnimProc->SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
 
@@ -338,8 +433,7 @@ bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntity
 		m_pAnimationPlayerProxies[layer] = &s_defaultAnimPlayerProxy;
 	}
 
-	// Load the new animation graph in
-	LoadAnimationGraph(pGameObject);
+	InitializeMannequin();
 
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p end", pGameObject);
@@ -350,53 +444,25 @@ bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntity
 	return true;
 }
 
-bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
+bool CAnimatedCharacter::InitializeMannequin()
 {
-	IEntity* pEntity = GetEntity();
-	SmartScriptTable pScriptTable = pEntity ? pEntity->GetScriptTable() : NULL;
-	if (!pScriptTable)
-		return false;
-
-	SmartScriptTable pPropertiesTable = NULL;
-	pScriptTable->GetValue("Properties", pPropertiesTable);
-
-	// If the script table doesn't have an "ActionController" property, try and use the "Properties" table as a fallback
-	const SmartScriptTable pSourceTable = (pScriptTable->HaveValue("ActionController") || pScriptTable->HaveValue("fileActionController")) ? pScriptTable : pPropertiesTable;
-	if (!pSourceTable)
-		return false;
-
-	DeleteActionController();
-
-	const char* szActionController = 0;
-
-	if ((pSourceTable->GetValue("ActionController", szActionController) || pSourceTable->GetValue("fileActionController", szActionController)) && szActionController && szActionController[0])
+	SMannequinSettings mannequinSetup = RetrieveMannequinSettingsFromEntity(*GetEntity());
+	if (mannequinSetup.actionController.empty())
 	{
-		SetActionController(szActionController);
-
-		if (m_pActionController)
-		{
-			IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
-			const char* szAnimDatabase = 0;
-			const char* szSoundDatabase = 0;
-			if ((pSourceTable->GetValue("AnimDatabase3P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase3P", szAnimDatabase)) && szAnimDatabase)
-			{
-				m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
-			}
-			szAnimDatabase = 0;
-			if ((pSourceTable->GetValue("AnimDatabase1P", szAnimDatabase) || pSourceTable->GetValue("fileAnimDatabase1P", szAnimDatabase)) && szAnimDatabase)
-			{
-				m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
-			}
-			if ((pSourceTable->GetValue("SoundDatabase", szSoundDatabase) || pSourceTable->GetValue("fileSoundDatabase", szAnimDatabase)) && szSoundDatabase)
-			{
-				m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(szSoundDatabase);
-			}
-		}
+		return false;
 	}
 
-	m_useMannequinAGState = false;
-	pScriptTable->GetValue("UseMannequinAGState", m_useMannequinAGState);
+	DeleteActionController();
+	SetActionController(mannequinSetup.actionController);
+	if (m_pActionController)
+	{
+		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
+		m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase3P);
+		m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase1P);
+		m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.soundDatabase);
+	}
 
+	m_useMannequinAGState = mannequinSetup.useMannequinAGState;
 	if (m_useMannequinAGState)
 	{
 		CRY_ASSERT(m_pActionController);
@@ -406,16 +472,8 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 		m_pMannequinAGState->AddListener("animchar", this);
 	}
 
-	// Reset all internal variables to prepare for this new graph
 	ResetVars();
 
-	return true;
-}
-
-bool CAnimatedCharacter::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("AnimatedCharacter");
-	signature.EndGroup();
 	return true;
 }
 
@@ -619,11 +677,6 @@ void CAnimatedCharacter::HandleEvent(const SGameObjectEvent& event)
 	case eGFE_QueueRagdollCreation:
 		SetRagdollizeParams(event);
 		break;
-	case eGFE_BecomeLocalPlayer:
-		{
-			m_isClient = true;
-			break;
-		}
 	case eGFE_OnCollision:
 		{
 			const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(event.ptr);
@@ -768,7 +821,6 @@ void CAnimatedCharacter::ResetVars()
 	m_groundAlignmentParams.ikDisableDistanceSqr = (float)__fsel(-ikDisableDistance, m_groundAlignmentParams.ikDisableDistanceSqr, sqr(ikDisableDistance));
 
 	m_isPlayer = false;
-	m_isClient = false;
 	if (pEntity)
 	{
 		IActorSystem* pActorSystem = CCryAction::GetCryAction()->GetIActorSystem();
@@ -779,7 +831,6 @@ void CAnimatedCharacter::ResetVars()
 		if (pActor != NULL)
 		{
 			m_isPlayer = pActor->IsPlayer();
-			m_isClient = pActor->IsClient();
 
 			// Turn on by default for 3rd person in singleplayer.
 			m_groundAlignmentParams.SetFlag(eGA_PoseAlignerUseRootOffset, pActor->IsThirdPerson() && !gEnv->bMultiplayer);
@@ -1215,10 +1266,11 @@ void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
 		}
 		break;
 	case ENTITY_EVENT_INIT:
+	case ENTITY_EVENT_RESET:
 		{
 			if (!m_pActionController)
 			{
-				LoadAnimationGraph(GetGameObject());
+				InitializeMannequin();
 			}
 		}
 		break;
@@ -1423,7 +1475,7 @@ void CAnimatedCharacter::DeleteActionController()
 
 void CAnimatedCharacter::SetActionController(const char* filename)
 {
-	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef* contDef = mannequinSys.GetAnimationDatabaseManager().LoadControllerDef(filename);
 
 	DeleteActionController();
@@ -1582,12 +1634,10 @@ void CAnimatedCharacter::KickOffRagdoll()
 
 		      if (pPhysicalEntity)
 		      {
-		        IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
-		        if (pPhysicsProxy)
 		        {
 		          GetEntity()->SetWorldTM(delta);
 		          m_entLocation = QuatT(delta);
-		          pPhysicsProxy->AssignPhysicalEntity(pPhysicalEntity);
+		          GetEntity()->AssignPhysicalEntity(pPhysicalEntity);
 
 		          GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
 		        }
@@ -1807,9 +1857,9 @@ void CAnimatedCharacter::GenerateMovementRequest()
 
 	UpdateCharacterPtrs();
 
-	UpdateSimpleMovementConditions();
-
 	RefreshAnimTarget();
+
+	UpdateSimpleMovementConditions();
 
 	PreAnimationUpdate();
 
@@ -1850,7 +1900,7 @@ void Preload(struct IScriptTable* pEntityScript)
 	// Cache Mannequin related files
 	bool hasActionController = false;
 	{
-		IMannequin& mannequinSystem = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSystem = gEnv->pGameFramework->GetMannequinInterface();
 		IAnimationDatabaseManager& animationDatabaseManager = mannequinSystem.GetAnimationDatabaseManager();
 
 		const char* szAnimationDatabase1p = 0;

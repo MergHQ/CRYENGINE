@@ -54,7 +54,10 @@
 %ignore PQLog::blendPQ;
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/CGFContent.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/IChunkFile.h"
-%include "../../../../CryEngine/CryCommon/CryEntitySystem/IEntityRenderState.h"
+
+%typemap(csbase) ERenderNodeFlags "long"
+
+%include "../../../../CryEngine/CryCommon/Cry3DEngine/IRenderNode.h"
 %include "../../../../CryEngine/CryCommon/CryPhysics/IDeferredCollisionEvent.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/IProcess.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/IStatObj.h"

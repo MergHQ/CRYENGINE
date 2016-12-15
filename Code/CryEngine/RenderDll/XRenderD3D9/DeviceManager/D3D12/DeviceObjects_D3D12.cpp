@@ -138,7 +138,7 @@ public:
 
 protected:
 
-	struct SBufferPatchingInfo
+	struct SResourcePatchingInfo
 	{
 		DeviceResourceBinding::SShaderSlot shaderSlot;
 		int                                descriptorTableOffset;
@@ -157,7 +157,8 @@ protected:
 
 	struct SDescriptorSet
 	{
-		std::vector<SBufferPatchingInfo>              bufferPatchingInfo;
+		std::vector<SResourcePatchingInfo>            texturePatchingInfo;
+		std::vector<SResourcePatchingInfo>            bufferPatchingInfo;
 		std::vector<SConstantBufferPatchingInfo>      constantBufferPatchingInfo;
 
 		CTrackedItemCustomAllocator<SDescriptorBlock> descriptorBlockAllocator;
@@ -179,6 +180,7 @@ protected:
 			descriptorBlockAllocator.Reset();
 			pCurrentDescriptorBlock = nullptr;
 
+			texturePatchingInfo.clear();
 			bufferPatchingInfo.clear();
 			constantBufferPatchingInfo.clear();
 		}
@@ -198,7 +200,8 @@ protected:
 	  std::vector<_smart_ptr<CCryDX12Buffer>>* pConstantBuffersInUse = nullptr,
 	  std::vector<_smart_ptr<CCryDX12ShaderResourceView>>* pShaderResourceViewsInUse = nullptr,
 	  std::vector<_smart_ptr<CCryDX12UnorderedAccessView>>* pUnorderedAccessViewsInUse = nullptr,
-	  std::vector<SBufferPatchingInfo>* pBufferPatchingInfo = nullptr,
+	  std::vector<SResourcePatchingInfo>* pTexturePatchingInfo = nullptr,
+	  std::vector<SResourcePatchingInfo>* pBufferPatchingInfo = nullptr,
 	  std::vector<SConstantBufferPatchingInfo>* pConstantBufferPatchingInfo = nullptr) const;
 
 	void FillDescriptorBlock(
@@ -296,6 +299,7 @@ bool CDeviceResourceSet_DX12::BuildImpl(EFlags updatedFlags)
 			&m_ConstantBuffersInUse,
 			&m_ShaderResourceViewsInUse,
 			&m_UnorderedAccessViewsInUse,
+			&m_DescriptorInfo.pDescriptorSet->texturePatchingInfo,
 			&m_DescriptorInfo.pDescriptorSet->bufferPatchingInfo,
 			&m_DescriptorInfo.pDescriptorSet->constantBufferPatchingInfo);
 	}
@@ -328,7 +332,8 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
   std::vector<_smart_ptr<CCryDX12Buffer>>* pConstantBuffersInUse,
   std::vector<_smart_ptr<CCryDX12ShaderResourceView>>* pShaderResourceViewsInUse,
   std::vector<_smart_ptr<CCryDX12UnorderedAccessView>>* pUnorderedAccessViewsInUse,
-  std::vector<SBufferPatchingInfo>* pBufferPatchingInfo,
+  std::vector<SResourcePatchingInfo>* pTexturePatchingInfo,
+  std::vector<SResourcePatchingInfo>* pBufferPatchingInfo,
   std::vector<SConstantBufferPatchingInfo>* pConstantBufferPatchingInfo) const
 {
 	auto pDevice = GetDevice();
@@ -430,12 +435,34 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
 			CCryDX12ShaderResourceView* pSrv = GET_DX12_TEXTURE_VIEW(pTexture, srvKey);
 			descriptors.emplace_back(pSrv->GetDX12View().GetDescriptorHandle());
 			if (bGatherResourcesInUse) pShaderResourceViewsInUse->emplace_back(pSrv);
+			if (bGatherPatchingInfo)
+			{
+				pTexturePatchingInfo->emplace_back();
+				SResourcePatchingInfo& patchingInfo = pTexturePatchingInfo->back();
+
+				patchingInfo.descriptorTableOffset = (descriptors.size() - 1) * descriptorSize;
+				patchingInfo.shaderSlot = it.first;
+				patchingInfo.inUseArrayOffset = (pShaderResourceViewsInUse ? pShaderResourceViewsInUse->size() : 0) - 1;
+				patchingInfo.bUnorderedAccess = false;
+				patchingInfo.pSrv = pSrv;
+			}
 		}
 		else
 		{
 			CCryDX12UnorderedAccessView* pUav = GET_DX12_UNORDERED_VIEW(pTexture);
 			descriptors.emplace_back(pUav->GetDX12View().GetDescriptorHandle());
 			if (bGatherResourcesInUse) pUnorderedAccessViewsInUse->emplace_back(pUav);
+			if (bGatherPatchingInfo)
+			{
+				pTexturePatchingInfo->emplace_back();
+				SResourcePatchingInfo& patchingInfo = pTexturePatchingInfo->back();
+
+				patchingInfo.descriptorTableOffset = (descriptors.size() - 1) * descriptorSize;
+				patchingInfo.shaderSlot = it.first;
+				patchingInfo.inUseArrayOffset = (pUnorderedAccessViewsInUse ? pUnorderedAccessViewsInUse->size() : 0) - 1;
+				patchingInfo.bUnorderedAccess = true;
+				patchingInfo.pUav = pUav;
+			}
 		}
 	}
 
@@ -476,7 +503,7 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
 			if (bGatherPatchingInfo)
 			{
 				pBufferPatchingInfo->emplace_back();
-				SBufferPatchingInfo& patchingInfo = pBufferPatchingInfo->back();
+				SResourcePatchingInfo& patchingInfo = pBufferPatchingInfo->back();
 
 				patchingInfo.descriptorTableOffset = (descriptors.size() - 1) * descriptorSize;
 				patchingInfo.shaderSlot = it.first;
@@ -493,7 +520,7 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
 			if (bGatherPatchingInfo)
 			{
 				pBufferPatchingInfo->emplace_back();
-				SBufferPatchingInfo& patchingInfo = pBufferPatchingInfo->back();
+				SResourcePatchingInfo& patchingInfo = pBufferPatchingInfo->back();
 
 				patchingInfo.descriptorTableOffset = (descriptors.size() - 1) * descriptorSize;
 				patchingInfo.shaderSlot = it.first;
@@ -557,7 +584,7 @@ void CDeviceResourceSet_DX12::PatchDescriptors(CDescriptorBlock& descriptorScrat
 	auto pDevice = GetDevice()->GetD3D12Device();
 	auto pDescriptors = m_DescriptorInfo.pDescriptorSet;
 
-	size_t dstDescriptorCount = pDescriptors->bufferPatchingInfo.size() + pDescriptors->constantBufferPatchingInfo.size();
+	size_t dstDescriptorCount = pDescriptors->texturePatchingInfo.size() + pDescriptors->bufferPatchingInfo.size() + pDescriptors->constantBufferPatchingInfo.size();
 	size_t srcDescriptorCount = dstDescriptorCount;
 
 	CryStackAllocatorWithSizeVector(D3D12_CPU_DESCRIPTOR_HANDLE, dstDescriptorCount, dstDescriptorMem, NoAlign);
@@ -625,6 +652,49 @@ void CDeviceResourceSet_DX12::PatchDescriptors(CDescriptorBlock& descriptorScrat
 		else
 		{
 			CCryDX12ShaderResourceView* pSrv = GET_DX12_BUFFER_VIEW(buffer);
+			CRY_ASSERT(pSrv != nullptr);
+
+			if (pSrv != patchingInfo.pSrv)
+			{
+				srcDescriptors.emplace_back(pSrv->GetDX12View().GetDescriptorHandle());
+				patchingInfo.pSrv = pSrv;
+
+				D3D12_CPU_DESCRIPTOR_HANDLE dstOffset = { patchingInfo.descriptorTableOffset };
+				dstDescriptors.emplace_back(dstOffset);
+
+				CRY_ASSERT(patchingInfo.inUseArrayOffset >= 0 && patchingInfo.inUseArrayOffset < m_ShaderResourceViewsInUse.size());
+				m_ShaderResourceViewsInUse[patchingInfo.inUseArrayOffset] = pSrv;
+			}
+		}
+	}
+
+	for (auto& patchingInfo : pDescriptors->texturePatchingInfo)
+	{
+		auto it = m_Textures.find(patchingInfo.shaderSlot);
+		CRY_ASSERT(it != m_Textures.end());
+
+		SResourceView::KeyType srvKey = it->second.view;
+		auto& texture = it->second.resource;
+		if (patchingInfo.bUnorderedAccess)
+		{
+			CCryDX12UnorderedAccessView* pUav = GET_DX12_UNORDERED_VIEW(texture);
+			CRY_ASSERT(pUav != nullptr);
+
+			if (pUav != patchingInfo.pUav)
+			{
+				srcDescriptors.emplace_back(pUav->GetDX12View().GetDescriptorHandle());
+				patchingInfo.pUav = pUav; // update patching info
+
+				D3D12_CPU_DESCRIPTOR_HANDLE dstOffset = { patchingInfo.descriptorTableOffset };
+				dstDescriptors.emplace_back(dstOffset);
+
+				CRY_ASSERT(patchingInfo.inUseArrayOffset >= 0 && patchingInfo.inUseArrayOffset < m_UnorderedAccessViewsInUse.size());
+				m_UnorderedAccessViewsInUse[patchingInfo.inUseArrayOffset] = pUav;
+			}
+		}
+		else
+		{
+			CCryDX12ShaderResourceView* pSrv = GET_DX12_TEXTURE_VIEW(texture, srvKey);
 			CRY_ASSERT(pSrv != nullptr);
 
 			if (pSrv != patchingInfo.pSrv)
@@ -1134,14 +1204,14 @@ void CDeviceTimestampGroup::EndMeasurement()
 	m_frequency = m_pDeviceContext->GetTimestampFrequency();
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp()
+uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
 {
 	assert(m_numTimestamps < kMaxTimestamps);
 
 	uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
 
 	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_pDeviceContext->InsertTimestamp(timestampIndex, 0);
+	m_pDeviceContext->InsertTimestamp(timestampIndex, 0, pCommandList ? reinterpret_cast<CDeviceCommandList*>(pCommandList)->GetDX12CommandList() : nullptr);
 
 	++m_numTimestamps;
 	return timestampIndex;
@@ -1389,10 +1459,10 @@ void CDeviceGraphicsCommandInterfaceImpl::BeginResourceTransitionsImpl(uint32 nu
 	uint32 numBarriers = 0;
 	for (uint32 i = 0; i < numTextures; i++)
 	{
-		CCryDX12Resource<ID3D11Resource>* pResource = nullptr;
+		CCryDX12Resource<ID3D11ResourceToImplement>* pResource = nullptr;
 		if (pTextures[i] && pTextures[i]->GetDevTexture())
 		{
-			pResource = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pTextures[i]->GetDevTexture()->GetBaseTexture());
+			pResource = DX12_EXTRACT_RESOURCE(pTextures[i]->GetDevTexture()->GetBaseTexture());
 		}
 
 		if (pResource != nullptr)
@@ -1651,6 +1721,11 @@ void CDeviceGraphicsCommandInterfaceImpl::SetStencilRefImpl(uint8 stencilRefValu
 	m_sharedState.pCommandList->SetStencilRef(stencilRefValue);
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp)
+{
+	CRY_ASSERT_MESSAGE(false, "Depth bias can only be set via PSO on DirectX 12");
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	m_sharedState.pCommandList->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
@@ -1665,6 +1740,12 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DSurface* pView, co
 {
 	const NCryDX12::CView& View = reinterpret_cast<CCryDX12RenderTargetView*>(pView)->GetDX12View();
 	m_sharedState.pCommandList->ClearRenderTargetView(View, Color, NumRects, pRects);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects)
+{
+	const NCryDX12::CView& View = reinterpret_cast<CCryDX12DepthStencilView*>(pView)->GetDX12View();
+	m_sharedState.pCommandList->ClearDepthStencilView(View, D3D12_CLEAR_FLAGS(clearFlags), depth, stencil, numRects, pRects);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

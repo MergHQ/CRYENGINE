@@ -149,6 +149,7 @@ public:
 	void                           ModifyUpdate(const SUpdateContext& context, TType* data, SUpdateRange range) const;
 
 	TRange<TType>                  GetValues(const SUpdateContext& context, TType* data, SUpdateRange range, EModDomain domain, bool updating) const;
+	TRange<TType>                  GetValues(const SUpdateContext& context, Array<TType,uint> data, EModDomain domain, bool updating) const;
 	TRange<TType>                  GetValueRange(const SUpdateContext& context) const;
 	TRange<TType>                  GetValueRange() const;
 	void                           Sample(TType* samples, int numSamples) const;

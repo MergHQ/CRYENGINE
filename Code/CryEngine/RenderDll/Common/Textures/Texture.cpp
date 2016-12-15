@@ -112,6 +112,9 @@ CTexture* CTexture::s_ptexAOColorBleed;
 CTexture* CTexture::s_ptexSceneDiffuse;
 CTexture* CTexture::s_ptexSceneSpecular;
 
+CTexture* CTexture::s_ptexSceneSelectionIDs;
+CTexture* CTexture::s_ptexSceneHalfDepthStencil;
+
 CTexture* CTexture::s_ptexWindGrid;
 
 #if defined(DURANGO_USE_ESRAM)
@@ -119,7 +122,7 @@ CTexture* CTexture::s_ptexSceneSpecularESRAM;
 #endif
 
 // Post-process related textures
-CTexture* CTexture::s_ptexBackBuffer;
+CTexture* CTexture::s_ptexBackBuffer = NULL;
 CTexture* CTexture::s_ptexModelHudBuffer;
 CTexture* CTexture::s_ptexPrevBackBuffer[2][2] = {
 	{ NULL }
@@ -136,8 +139,8 @@ CTexture* CTexture::s_ptexDepthBufferHalfQuarter;
 CTexture* CTexture::s_ptexWaterOcean;
 CTexture* CTexture::s_ptexWaterVolumeTemp[2];
 CTexture* CTexture::s_ptexWaterVolumeDDN;
-CTexture* CTexture::s_ptexWaterVolumeRefl[2];
-CTexture* CTexture::s_ptexWaterCaustics[2];
+CTexture* CTexture::s_ptexWaterVolumeRefl[2] = { NULL };
+CTexture* CTexture::s_ptexWaterCaustics[2] = { NULL };
 CTexture* CTexture::s_ptexWaterRipplesDDN;
 CTexture* CTexture::s_ptexRainOcclusion;
 CTexture* CTexture::s_ptexRainSSOcclusion[2];
@@ -363,7 +366,7 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_pFileTexMips = NULL;
 	m_fCurrentMipBias = 0.f;
 
-	COMPILE_TIME_ASSERT(MaxStreamTasks < 32767);
+	static_assert(MaxStreamTasks < 32767, "Too many stream tasks!");
 
 	if (devTexToOwn)
 	{
@@ -382,8 +385,8 @@ CTexture::~CTexture()
 {
 	// sizes of these structures should NOT exceed L2 cache line!
 #if CRY_PLATFORM_64BIT
-	COMPILE_TIME_ASSERT((offsetof(CTexture, m_composition) - offsetof(CTexture, m_pFileTexMips)) <= 64);
-	//COMPILE_TIME_ASSERT((offsetof(CTexture, m_pFileTexMips) % 64) == 0);
+	static_assert((offsetof(CTexture, m_composition) - offsetof(CTexture, m_pFileTexMips)) <= 64, "Invalid offset!");
+	//static_assert((offsetof(CTexture, m_pFileTexMips) % 64) == 0, "Invalid offset!");
 #endif
 
 #ifndef _RELEASE
@@ -2112,7 +2115,7 @@ void CTexture::Update()
 			if (fp)
 				fprintf(fp, "\n\n*** Textures used in current frame: ***\n");
 			else
-				rd->TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures used in current frame: ***");
+				IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures used in current frame: ***");
 			int nY = 17;
 
 			if (Texs.Num())
@@ -2126,7 +2129,7 @@ void CTexture::Update()
 				else
 				{
 					cry_sprintf(buf, "%.3fKb  Type: %s  Format: %s  (%s)", Texs[i]->GetDeviceDataSize() / 1024.0f, CTexture::NameForTextureType(Texs[i]->GetTextureType()), CTexture::NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
-					rd->TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
+					IRenderAuxText::TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
 					nY += 3;
 				}
 				PartSize += Texs[i]->GetDeviceDataSize();
@@ -2139,7 +2142,7 @@ void CTexture::Update()
 			else
 			{
 				cry_sprintf(buf, "*** Total Size: %.3fMb, Device Size: %.3fMb", Size / (1024.0f * 1024.0f), PartSize / (1024.0f * 1024.0f));
-				rd->TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
+				IRenderAuxText::TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
 			}
 
 			Texs.Free();
@@ -2162,7 +2165,7 @@ void CTexture::Update()
 			if (fp)
 				fprintf(fp, "\n\n*** All Existing Textures: ***\n");
 			else
-				rd->TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures loaded: ***");
+				IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures loaded: ***");
 
 			if (Texs.Num())
 				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
@@ -2179,7 +2182,7 @@ void CTexture::Update()
 				else
 				{
 					cry_sprintf(buf, "%.3fKb  Type: %s  Format: %s  (%s)", Texs[i]->GetDataSize() / 1024.0f, CTexture::NameForTextureType(Texs[i]->GetTextureType()), CTexture::NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
-					rd->TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
+					IRenderAuxText::TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
 					nY += 3;
 				}
 				Size += Texs[i]->GetDeviceDataSize();
@@ -2191,7 +2194,7 @@ void CTexture::Update()
 			else
 			{
 				cry_sprintf(buf, "*** Total Size: %.3fMb", Size / (1024.0f * 1024.0f));
-				rd->TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
+				IRenderAuxText::TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
 			}
 
 			Texs.Free();
@@ -2297,13 +2300,13 @@ void CTexture::Update()
 			}
 
 			cry_sprintf(buf, "All texture objects: %u (Size: %.3fMb), NonStreamed: %d (Size: %.3fMb)", Texs.Num(), AllSize / (1024.0 * 1024.0), nNoStr, NonStrSize / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 13, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Loaded Texture Maps: %d (All MIPS: %.3fMb, Loaded MIPS: %.3fMb)", nNumTex, Size / (1024.0f * 1024.0f), PartSize / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 16, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 16, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Loaded Normal Maps: %d (All MIPS: %.3fMb, Loaded MIPS: %.3fMb)", nNumTexNM, SizeNM / (1024.0 * 1024.0), PartSizeNM / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 19, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 19, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Dynamic textures: %d (%.3fMb), %d Atlases (%.3fMb), %d Separared (%.3fMb)", nNumTexDynAtl + nNumTexDynCom, (SizeDynAtl + SizeDynCom) / (1024.0 * 1024.0), nNumTexDynAtl, SizeDynAtl / (1024.0 * 1024.0), nNumTexDynCom, SizeDynCom / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 22, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 22, 1, 1, 0, 1, buf);
 
 			Texs.Free();
 			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
@@ -2339,7 +2342,7 @@ void CTexture::Update()
 					NonStrSize += Texs[i]->GetDataSize();
 			}
 			cry_sprintf(buf, "Current tex. objects: %u (Size: %.3fMb, Dyn. Atlases: %.3f, Dyn. Separated: %.3f, Loaded: %.3f, NonStreamed: %.3f)", Texs.Num(), Size / (1024.0f * 1024.0f), SizeDynAtl / (1024.0f * 1024.0f), SizeDynCom / (1024.0f * 1024.0f), PartSize / (1024.0f * 1024.0f), NonStrSize / (1024.0f * 1024.0f));
-			rd->TextToScreenColor(4, 27, 1, 0, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 27, 1, 0, 0, 1, buf);
 		}
 #endif
 	}
@@ -2378,7 +2381,7 @@ Ang3 sDeltAngles(Ang3& Ang0, Ang3& Ang1)
 	return out;
 }
 
-SEnvTexture* CTexture::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRendElementBase* pRE, bool* bMustUpdate)
+SEnvTexture* CTexture::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate)
 {
 	SEnvTexture* cm = NULL;
 	float time0 = iTimer->GetAsyncCurTime();
@@ -2968,8 +2971,8 @@ void CTexture::LoadDefaultSystemTextures()
 			s_ptexVelocityTiles[1] = CTexture::CreateTextureObject("$VelocityTilesTmp1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 			s_ptexVelocityTiles[2] = CTexture::CreateTextureObject("$VelocityTiles", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 			s_ptexVelocityObjects[0] = CTexture::CreateTextureObject("$VelocityObjects", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-			if (gRenDev->m_bDualStereoSupport)
-				s_ptexVelocityObjects[1] = CTexture::CreateTextureObject("$VelocityObjects_R", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+			// Only used for VR, but we need to support runtime switching
+			s_ptexVelocityObjects[1] = CTexture::CreateTextureObject("$VelocityObjects_R", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 
 			s_ptexBackBuffer = CTexture::CreateTextureObject("$BackBuffer", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
 
@@ -3025,6 +3028,9 @@ void CTexture::LoadDefaultSystemTextures()
 			s_ptexZTargetScaled2 = CTexture::CreateTextureObject("$ZTargetScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
 			s_ptexZTargetScaled3 = CTexture::CreateTextureObject("$ZTargetScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		}
+
+		s_ptexSceneSelectionIDs = CTexture::CreateTextureObject("$SceneSelectionIDs", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R32F);
+		s_ptexSceneHalfDepthStencil = CTexture::CreateTextureObject("$SceneHalfDepthStencil", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL, eTF_D32F);
 
 		s_ptexHDRTarget = CTexture::CreateTextureObject("$HDRTarget", 0, 0, 1, eTT_2D, nRTFlags, eTF_Unknown);
 
@@ -3256,6 +3262,7 @@ public:
 		SRenderThread* pRT = gRenDev->m_pRT;
 		if (!pRT || (pRT->IsMainThread() && pRT->m_eVideoThreadMode == SRenderThread::eVTM_Disabled))
 		{
+			CTimeValue curTime = gEnv->pTimer->GetAsyncTime();
 			const int frameID = gRenDev->GetFrameID(false);
 			if (ms_lastTickFrameID != frameID)
 			{
@@ -3268,7 +3275,7 @@ public:
 				const size_t size = ms_sources.size();
 				for (size_t i = 0; i < size; ++i)
 				{
-					ms_sources[i]->AutoUpdate(deltaTime, isEditing, isPaused);
+					ms_sources[i]->AutoUpdate(curTime, deltaTime, isEditing, isPaused);
 				}
 
 				ms_lastTickFrameID = frameID;
@@ -3332,26 +3339,18 @@ void CFlashTextureSourceBase::AddToLightRenderList(const IDynTextureSource* pSrc
 	FlashTextureSourceSharedRT_AutoUpdate::AddToLightList((CFlashTextureSourceBase*)pSrc);
 }
 
-void CFlashTextureSourceBase::AutoUpdate(const float delta, const bool isEditing, const bool isPaused)
+void CFlashTextureSourceBase::AutoUpdate(const CTimeValue& curTime, const float delta, const bool isEditing, const bool isPaused)
 {
 	if (m_autoUpdate)
 	{
 		m_pFlashPlayer->UpdatePlayer(this);
-		AutoReleasedFlashPlayerPtr pFlashPlayer(m_pFlashPlayer->GetTempPtr());
-		if (pFlashPlayer)
-		{
-			if (isPaused != pFlashPlayer->IsPaused())
-				pFlashPlayer->Pause(isPaused);
-
 #if CRY_PLATFORM_WINDOWS
-			m_perFrameRendering &= !isEditing;
+		m_perFrameRendering &= !isEditing;
 #endif
 
-			CTimeValue curTime = gEnv->pTimer->GetAsyncTime();
-			if (m_perFrameRendering || (curTime - m_lastVisible).GetSeconds() < 1.0f)
-			{
-				m_pFlashPlayer->Advance(delta);
-			}
+		if (m_perFrameRendering || (curTime - m_lastVisible).GetSeconds() < 1.0f)
+		{
+			Advance(delta, isPaused);
 		}
 	}
 }
@@ -3360,7 +3359,7 @@ void CFlashTextureSourceBase::AutoUpdateRT(const int frameID)
 {
 	if (m_autoUpdate)
 	{
-		if (m_perFrameRendering && frameID != m_lastVisibleFrameID)
+		if (m_perFrameRendering && (frameID != m_lastVisibleFrameID))
 		{
 			Update();
 		}
@@ -3606,13 +3605,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdatePlayer
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElementPlayer(CFlashTextureSourceBase* pSrc)
 {
-	assert(gRenDev->m_pRT->IsMainThread());
-
-#if !defined(_RELEASE) && !defined(STRIP_RENDER_THREAD)
-	if (!gRenDev->m_pRT->IsMainThread(true))
-		__debugbreak();
-#endif
-
 	if (m_pUIElement)
 	{
 		if (m_activated)
@@ -3621,6 +3613,8 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 			IFlashPlayer* pPlayer = isVisible ? m_pUIElement->GetFlashPlayer() : NULL;
 			if (pPlayer != m_pPlayer)
 			{
+				assert(gRenDev->m_pRT->IsMainThread());
+
 				const bool addTex = m_pPlayer == NULL;
 				SAFE_RELEASE(m_pPlayer);
 				if (isVisible)
@@ -3640,6 +3634,8 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 		}
 		else
 		{
+			assert(gRenDev->m_pRT->IsMainThread());
+
 			if (m_pPlayer)
 				m_pUIElement->RemoveTexture(pSrc);
 			SAFE_RELEASE(m_pPlayer);
@@ -3727,10 +3723,18 @@ bool CFlashTextureSourceBase::IsFlashFile(const char* pFlashFileName)
 	if (pFlashFileName)
 	{
 		const char* pExt = fpGetExtension(pFlashFileName);
+		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
 		{
-			return (!stricmp(pExt, ".ui") || !stricmp(pExt, ".layout") || !stricmp(pExt, ".gfx") || !stricmp(pExt, ".swf") || !stricmp(pExt, ".usm"));
+			if (!bPath)
+			{
+				// Pseudo files (no path, looks up flow-node)
+				return (!stricmp(pExt, ".ui"));
+			}
+
+			// Real files (looks up filesystem)
+			return (!stricmp(pExt, ".layout") || !stricmp(pExt, ".gfx") || !stricmp(pExt, ".swf") || !stricmp(pExt, ".usm"));
 		}
 	}
 
@@ -3742,10 +3746,15 @@ bool CFlashTextureSourceBase::IsFlashUIFile(const char* pFlashFileName)
 	if (pFlashFileName)
 	{
 		const char* pExt = fpGetExtension(pFlashFileName);
+		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
 		{
-			return !stricmp(pExt, ".ui");
+			if (!bPath)
+			{
+				// Pseudo files (no path, looks up flow-node)
+				return !stricmp(pExt, ".ui");
+			}
 		}
 	}
 
@@ -4241,7 +4250,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 	int nY = 30; // initial Y pos
 	int nX = 20; // initial X pos
 	ColorF col = Col_Green;
-	Draw2dLabel((float)nX, (float)nY, 1.6f, &col.r, false, "%s", szName);
+	IRenderAuxText::Draw2dLabel((float)nX, (float)nY, 1.6f, &col.r, false, "%s", szName);
 	nX += 10;
 	nY += 25;
 
@@ -4252,7 +4261,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 	{
 		SRTargetStat* pRT = &m_RP.m_RTStats[i];
 
-		Draw2dLabel((float)nX, (float)nY, 1.4f, &col.r, false, "%s (%d x %d x %s), Size: %.3f Mb", pRT->m_Name.c_str(), pRT->m_nWidth, pRT->m_nHeight, CTexture::NameForTextureFormat(pRT->m_eTF), (float)pRT->m_nSize / 1024.0f / 1024.0f);
+		IRenderAuxText::Draw2dLabel((float)nX, (float)nY, 1.4f, &col.r, false, "%s (%d x %d x %s), Size: %.3f Mb", pRT->m_Name.c_str(), pRT->m_nWidth, pRT->m_nHeight, CTexture::NameForTextureFormat(pRT->m_eTF), (float)pRT->m_nSize / 1024.0f / 1024.0f);
 		nY += nYstep;
 		if (nY >= m_height - 25)
 		{
@@ -4262,7 +4271,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 		nSize += pRT->m_nSize;
 	}
 	col = Col_Yellow;
-	Draw2dLabel((float)nX, (float)(nY + 10), 1.4f, &col.r, false, "Total: %d RT's, Size: %.3f Mb", m_RP.m_RTStats.size(), nSize / 1024.0f / 1024.0f);
+	IRenderAuxText::Draw2dLabel((float)nX, (float)(nY + 10), 1.4f, &col.r, false, "Total: %d RT's, Size: %.3f Mb", m_RP.m_RTStats.size(), nSize / 1024.0f / 1024.0f);
 }
 
 bool CTexture::IsMSAAChanged()
@@ -4353,7 +4362,7 @@ void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
 		return;
 
 	// this function handles only compressed textures for now
-	if (m_eTFDst != eTF_BC3 && m_eTFDst != eTF_BC1 && m_eTFDst != eTF_BC2)
+	if (m_eTFDst != eTF_BC3 && m_eTFDst != eTF_BC1 && m_eTFDst != eTF_BC2 && m_eTFDst != eTF_BC7)
 		return;
 
 	// make sure we skip non diffuse textures
@@ -4402,22 +4411,6 @@ void CTexture::InvalidateDeviceResource(uint32 dirtyFlags)
 {
 	for (const auto& cb : m_invalidateCallbacks)
 	{
-		cb.second(dirtyFlags);
-	}
-}
-
-void CTexture::AddInvalidateCallback(void* listener, InvalidateCallbackType callback)
-{
-	m_invalidateCallbacks.push_back(std::make_pair(listener, callback));
-}
-
-void CTexture::RemoveInvalidateCallbacks(void* listener)
-{
-	for (auto it = m_invalidateCallbacks.begin(); it != m_invalidateCallbacks.end(); )
-	{
-		if (it->first == listener)
-			it = m_invalidateCallbacks.erase(it);
-		else
-			++it;
+		cb.second(cb.first, dirtyFlags);
 	}
 }

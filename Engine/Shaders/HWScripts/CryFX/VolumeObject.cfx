@@ -144,7 +144,7 @@ pixout PS(v2f IN)
 #endif
 
 #if %SOFT_OBJECT_INTERSECTION
-	float sceneDepth = DecodeSceneDepth(sceneDepthSampler, IN.hPosTexProj);
+	float sceneDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.hPosTexProj);
 #endif
 
 	float3 jitter = GetTexture2DProj(jitterSampler, IN.hPosTexProjN);

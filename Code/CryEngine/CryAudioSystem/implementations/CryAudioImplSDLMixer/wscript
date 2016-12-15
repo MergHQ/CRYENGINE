@@ -5,12 +5,19 @@ def build(bld):
 	bld.CryEngineModule(
 		target		= 'CryAudioImplSDLMixer',
 		vs_filter	= 'CryEngine/Audio/Implementations',
-
 		file_list   = 'cryaudioimpl.waf_files',
 		pch			= 'stdafx.cpp',
+		use_module = ['sdl_mixer',
+			'timidity',
+			'native_midi',
+			'flac',
+			'libmikmod',
+			'libvorbis',
+			'libvorbisfile'
+		],
+		linux_use_module = [ 'libmodplug' ],
+		android_use_module = [ 'libmodplug' ],
 
-		win_module_extensions = ['sdl2', 'sdl_mixer'],
-		linux_module_extensions = ['sdl2', 'sdl_mixer'],
-
+		module_extensions = ['sdl2'],
 		includes = ['../../Common'],
 	)

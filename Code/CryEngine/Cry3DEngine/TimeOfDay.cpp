@@ -718,7 +718,12 @@ bool CTimeOfDay::GetVariableInfo(int nIndex, SVariableInfo& varInfo)
 //////////////////////////////////////////////////////////////////////////
 void CTimeOfDay::SetVariableValue(int nIndex, float fValue[3])
 {
-	// to be removed
+	if (nIndex < 0 || nIndex >= (int)ITimeOfDay::PARAM_TOTAL)
+		return;
+
+	m_vars[nIndex].fValue[0] = fValue[0];
+	m_vars[nIndex].fValue[1] = fValue[1];
+	m_vars[nIndex].fValue[2] = fValue[2];
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -788,7 +793,7 @@ void CTimeOfDay::ResetVariables()
 		return;
 
 	m_pCurrentPreset->ResetVariables();
-
+	
 	for (int i = 0; i < PARAM_TOTAL; ++i)
 	{
 		const CTimeOfDayVariable* presetVar = m_pCurrentPreset->GetVar((ETimeOfDayParamID)i);
@@ -878,7 +883,9 @@ void CTimeOfDay::SetTime(float fHour, bool bForceUpdate)
 	// Inform audio of this change.
 	if (m_timeOfDayRtpcId != INVALID_AUDIO_CONTROL_ID)
 	{
+		const bool isMainThread = (gEnv->mMainThreadId == CryGetCurrentThreadId());
 		SAudioRequest request;
+		request.flags = isMainThread ? eAudioRequestFlags_None : eAudioRequestFlags_ThreadSafePush;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData;
 		requestData.audioRtpcId = m_timeOfDayRtpcId;
 		requestData.value = m_fTime;
@@ -1380,21 +1387,19 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 					}
 				}
 			}
+
 		}
 		else
 		{
 			// old format - convert to the new one
 			string presetName("default");
-			if (gEnv->pGame)
+			if (gEnv->pGameFramework)
 			{
-				if (IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework())
+				const char* pLevelName = gEnv->pGameFramework->GetLevelName();
+				if (pLevelName && *pLevelName)
 				{
-					const char* pLevelName = pGameFramework->GetLevelName();
-					if (pLevelName && *pLevelName)
-					{
-						//presetName = pLevelName;
-						presetName = string(sPresetsLibsPath) + pLevelName + ".xml";
-					}
+					//presetName = pLevelName;
+					presetName = string(sPresetsLibsPath) + pLevelName + ".xml";
 				}
 			}
 

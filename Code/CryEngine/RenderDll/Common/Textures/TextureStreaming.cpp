@@ -31,7 +31,7 @@
 	#define CHK_MAINTH assert(gRenDev->m_pRT->IsMainThread())
 #endif
 #if !defined(CHK_MAINORRENDTH)
-	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread())
+	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread())
 #endif
 
 bool CTexture::s_bStreamingFromHDD = true;
@@ -69,7 +69,7 @@ volatile size_t CTexture::s_nStatsStreamPoolInUseMem;
 volatile size_t CTexture::s_nStatsStreamPoolBoundMem;
 volatile size_t CTexture::s_nStatsStreamPoolBoundPersMem;
 volatile int CTexture::s_nStatsCurManagedNonStreamedTexMem = { 0 };
-volatile int CTexture::s_nStatsCurDynamicTexMem = { 0 };
+volatile size_t CTexture::s_nStatsCurDynamicTexMem = { 0 };
 volatile size_t CTexture::s_nStatsStreamPoolWanted = { 0 };
 bool CTexture::s_bStatsComputeStreamPoolWanted = false;
 std::vector<CTexture::WantedStat>* CTexture::s_pStatsTexWantedLists = NULL;
@@ -1926,6 +1926,13 @@ void CTexture::StreamState_Update()
 					}
 				}
 			}
+
+#ifdef ENABLE_TEXTURE_STREAM_LISTENER
+			if (state.m_bAllStreamsComplete && s_pStreamListener)
+			{
+				s_pStreamListener->OnUploadedStreamedTexture(state.m_pTexture);
+			}
+#endif
 
 			--c;
 		}

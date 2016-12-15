@@ -1,11 +1,11 @@
 ﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CryEngine.UI;
 using CryEngine.UI.Components;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace CryEngine.Sydewinder
 {
@@ -84,7 +84,7 @@ namespace CryEngine.Sydewinder
 			}
 		}
 
-		public void OnUpdate()
+		public override void OnUpdate()
 		{
 			if (!_requiresUpdate || _dataSource == null)
 				return;

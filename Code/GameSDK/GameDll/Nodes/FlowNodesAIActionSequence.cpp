@@ -160,8 +160,8 @@ void CFlowNode_AISequenceAction_WeaponDraw::HandleSequenceEvent(AIActionSequence
 				return;
 			}
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActorSystem());
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
+			assert(gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
 				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
@@ -291,8 +291,8 @@ void CFlowNode_AISequenceAction_WeaponHolster::HandleSequenceEvent(AIActionSeque
 				return;
 			}
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActorSystem());
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
+			assert(gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
 				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
@@ -422,8 +422,8 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 				return;
 			}
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActorSystem());
-			IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
+			assert(gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
 				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
@@ -432,8 +432,8 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 				return;
 			}
 
-			assert(gEnv && gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIItemSystem());
-			IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+			assert(gEnv->pGameFramework && gEnv->pGameFramework->GetIItemSystem());
+			IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
 			IInventory* pInventory = pActor->GetInventory();
 			if (!pInventory)

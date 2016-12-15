@@ -19,46 +19,46 @@
 // Description:
 //    Implements base substitution proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-struct CSubstitutionProxy : IEntitySubstitutionProxy
+struct CEntityComponentSubstitution : IEntitySubstitutionComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentSubstitution,IEntitySubstitutionComponent,"CEntityComponentSubstitution",0xF60DBB948860494A,0x93586DE8C953B324);
+
+	virtual ~CEntityComponentSubstitution();
+
 public:
-	CSubstitutionProxy() { m_pSubstitute = 0; }
-	~CSubstitutionProxy() { if (m_pSubstitute) m_pSubstitute->ReleaseNode(); };
-
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(SEntityEvent& event) {}
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                           { return ENTITY_PROXY_SUBSTITUTION; }
-	virtual void         Release()                                           { delete this; }
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx)                   {}
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params)  { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) {}
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
+	virtual void Initialize() final {};
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final;; // Need nothing
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntitySubstitutionProxy interface.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void         SetSubstitute(IRenderNode* pSubstitute);
-	virtual IRenderNode* GetSubstitute() { return m_pSubstitute; }
+	virtual EEntityProxy GetProxyType() const final                                     { return ENTITY_PROXY_SUBSTITUTION; }
+	virtual void         Release() final                                          { delete this; }
+	virtual void         GameSerialize(TSerialize ser) final;
+	virtual bool         NeedGameSerialize() final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	//////////////////////////////////////////////////////////////////////////
+	// IEntitySubstitutionComponent interface.
+	//////////////////////////////////////////////////////////////////////////
+	virtual void         SetSubstitute(IRenderNode* pSubstitute) final;
+	virtual IRenderNode* GetSubstitute() final { return m_pSubstitute; }
+	//////////////////////////////////////////////////////////////////////////
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const final
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
-protected:
-	IRenderNode* m_pSubstitute;
+
+private:
+	void Done();
+private:
+	IRenderNode* m_pSubstitute = nullptr;
 };
 
 #endif // __SubstitutionProxy_h__

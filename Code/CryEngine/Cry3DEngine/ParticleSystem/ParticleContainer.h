@@ -16,6 +16,7 @@
 #include "ParticleCommon.h"
 #include "ParticleDataTypes.h"
 #include "ParticleMath.h"
+#include "ParticleDataStreams.h"
 #include "ParticleUpdate.h"
 
 namespace pfx2
@@ -94,8 +95,9 @@ public:
 	SUpdateRange                      GetSpawnedRange() const;
 
 private:
-	void DebugRemoveParticlesStability(const TParticleIdArray& toRemove, const TParticleIdArray& swapIds) const;
-	void DebugParticleCounters() const;
+	void AddParticles(const SSpawnEntry* pSpawnEntries, size_t numSpawnEntries);
+	void RemoveParticles(const TParticleIdArray& toRemove);
+	void MakeSwapIds(const TParticleIdArray& toRemove, TParticleIdArray* pSwapIds);
 
 	StaticEnumArray<void*, EParticleDataType> m_pData;
 	StaticEnumArray<bool, EParticleDataType>  m_useData;

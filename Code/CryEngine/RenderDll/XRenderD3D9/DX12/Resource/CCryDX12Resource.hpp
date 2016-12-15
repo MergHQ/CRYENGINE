@@ -20,15 +20,14 @@
 // "res" must be ID3D11Resource
 // This is potentialy dangerous, but easy & fast...
 	#define DX12_EXTRACT_RESOURCE(res) \
-	  (reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(res))
+	  (reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(res))
 	#define DX12_EXTRACT_RESOURCE_TYPE(res) \
-	  (reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(res))->GetDX12ResourceType()
+	  (reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(res))->GetDX12ResourceType()
 
 	#define DX12_EXTRACT_ICRYDX12RESOURCE(res) \
-	  ((res) ? (static_cast<ICryDX12Resource*>(reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(res))) : NULL)
-
+	  ((res) ? (static_cast<ICryDX12Resource*>(reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(res))) : NULL)
 	#define DX12_EXTRACT_D3D12RESOURCE(res) \
-	  ((res) ? (static_cast<ICryDX12Resource*>(reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(res)))->GetD3D12Resource() : NULL)
+	  ((res) ? (static_cast<ICryDX12Resource*>(reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(res)))->GetD3D12Resource() : NULL)
 
 	#define DX12_EXTRACT_BUFFER(res) \
 	  (reinterpret_cast<CCryDX12Buffer*>(res))

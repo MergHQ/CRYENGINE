@@ -150,9 +150,6 @@ cbuffer CBPerViewGlobal : register(b13)
 	
 	float4x4  CV_FrustumPlaneEquation;
 
-	float4    CV_ShadowLightPos;
-	float4    CV_ShadowViewPos;
-
 	float4    CV_WindGridOffset;
 	
 	float4x4  CV_ViewMatr;
@@ -168,6 +165,11 @@ cbuffer CBPerPassShadowGen : register(b5)
 	float4    CP_ShadowGen_FrustumInfo;
 	
 	float4    CP_ShadowGen_VegetationAlphaClamp;
+};
+
+cbuffer CBPerPassCustom : register(b5)
+{
+	float4    CP_Custom_ViewMode;
 };
 	
 	

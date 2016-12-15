@@ -274,7 +274,7 @@ void C3DHud::SetTextures(SHudData& pData)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void C3DHud::RenderMesh(const CRendElementBase* pRE, SShaderPass* pPass)
+void C3DHud::RenderMesh(const CRenderElement* pRE, SShaderPass* pPass)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CREMesh* pRenderMesh = (CREMeshImpl*) pRE;
@@ -288,7 +288,7 @@ void C3DHud::RenderMesh(const CRendElementBase* pRE, SShaderPass* pPass)
 		rd->m_RP.m_CurVFormat = pRenderMesh->m_pRenderMesh->_GetVertexFormat();
 	}
 
-	rd->m_RP.m_pRE = const_cast<CRendElementBase*>(pRE);
+	rd->m_RP.m_pRE = const_cast<CRenderElement*>(pRE);
 	if (rd->FX_CommitStreams(pPass, true))
 	{
 		rd->m_RP.m_FirstVertex = pRenderMesh->m_nFirstVertId;

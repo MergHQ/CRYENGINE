@@ -12,6 +12,7 @@ History:
 
 #include "GameXmlParamReader.h"
 #include "Stereo3D/StereoZoom.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define DEFAULT_ZOOM_EYE_DISTANCE         0.f   // default stereo off
 #define DEFAULT_ZOOM_CONVERGENCE_DISTANCE 0.01f
@@ -164,12 +165,11 @@ void CStereoZoom::PrintDebugOutput()
   }
 
 
-  IRenderer* pRenderer = gEnv->pRenderer;
-  static float color[4] = {1,1,1,1};    
+  static float color[4] = {1,1,1,1};
   float y=50.f, step1=15.f, step2=20.f, size1=1.3f, size2=1.5f;
 
-  pRenderer->Draw2dLabel(5.0f,  y         , size2, color, false, "Current PlaneDist: %f", dist);
-  pRenderer->Draw2dLabel(5.0f,  y += step1, size2, color, false, "Current EyeDist  : %f", eyedist);
+  IRenderAuxText::Draw2dLabel(5.0f,  y         , size2, color, false, "Current PlaneDist: %f", dist);
+  IRenderAuxText::Draw2dLabel(5.0f,  y += step1, size2, color, false, "Current EyeDist  : %f", eyedist);
 }
 
 //////////////////////////////////////////////////////////////////////////

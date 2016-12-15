@@ -4,16 +4,13 @@
 #include <CryCore/Platform/platform_impl.inl>
 #include "resource.h"
 #include <CryCore/Platform/CryLibrary.h>
-#include <CryGame/IGameStartup.h>
+#include <CryGame/IGameFramework.h>
 #include <CrySystem/IConsole.h>
 
 #include <CryCore/Platform/CryWindows.h>
 #include <ShellAPI.h> // requires <windows.h>
 
 #include <CrySystem/ParseEngineConfig.h>
-
-#include <jsmn.h>
-#include <jsmnutil.h>
 
 // We need shell api for Current Root Extruction.
 #include "shlwapi.h"
@@ -24,8 +21,8 @@ static unsigned text[4] = {4114048726,1217549643,1454516917,859556405};
 static unsigned hash[4] = {324609294,3710280652,1292597317,513556273};
 
 #ifdef _LIB
-extern "C" IGameStartup* CreateGameStartup();
-#endif
+extern "C" IGameFramework* CreateGameFramework();
+#endif //_LIB
 
 // src and trg can be the same pointer (in place encryption)
 // len must be in bytes and must be multiple of 8 byts (64bits).
@@ -65,136 +62,45 @@ ILINE unsigned Hash( unsigned a )
 // encode size ignore last 3 bits of size in bytes. (encode by 8bytes min)
 #define TEA_GETSIZE( len ) ((len) & (~7))
 
-static const LPWSTR GetProjectFileArgument(int argc, const LPWSTR argv[])
-{
-	for (int i = 1; i < argc - 1; i++)
-	{
-		if (wcscmp(argv[i], L"-project") == 0)
-			return argv[i + 1];
-	}
-
-	return nullptr;
-}
-
-static string file_get_contents(LPCWSTR lpFileName)
-{
-	FILE* file = _wfopen(lpFileName, L"rb");
-
-	string buffer;
-	if (file != NULL)
-	{
-		fseek(file, 0, SEEK_END);
-		size_t size = ftell(file);
-
-		buffer.resize(size);
-
-		fseek(file, 0, SEEK_SET);
-		fread((void*) &buffer[0], size, 1, file);
-		fclose(file);
-	}
-
-	return buffer;
-}
-
-static std::vector<jsmntok_t> json_decode(const string& buffer)
-{
-	std::vector<jsmntok_t> tokens;
-	tokens.resize(64);
-
-	jsmn_parser parser;
-	jsmn_init(&parser);
-	int ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
-	while (ntokens == JSMN_ERROR_NOMEM)
-	{
-		tokens.resize(tokens.size() * 2);
-		ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
-	}
-
-	if (0 <= ntokens)
-		tokens.resize(ntokens);
-	else
-		tokens.clear();
-
-	return tokens;
-}
-
 ILINE int RunGame(const char *commandLine)
 {
 	SSystemInitParams startupParams;
-	string gameDLLName;
+	const char* frameworkDLLName = "CryAction.dll";
 
-	// set game project related system changes
-	{
-		int argc = 0;
-		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-		const LPWSTR sProjectFile = GetProjectFileArgument(argc, argv);
-		if (sProjectFile)
-		{
-			string js = file_get_contents(sProjectFile);
-			std::vector<jsmntok_t> tokens = json_decode(js);
+	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
-			const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x64", nullptr);
-#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT)
-			const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x86", nullptr);
-#endif
-
-			string sSysGameDll;
-			if (shared && shared->type == JSMN_STRING)
-			{
-				sSysGameDll.assign(js.data() + shared->start, shared->end - shared->start);
-				gameDLLName = PathUtil::GetFile(sSysGameDll);
-
-				string szProjectDllDir = PathUtil::GetPathWithoutFilename(sSysGameDll);
-				cry_strcpy(startupParams.szProjectDllDir, szProjectDllDir);
-				if (!szProjectDllDir.empty())
-					SetDllDirectoryW(CryStringUtils::UTF8ToWStr(szProjectDllDir));
-			}
-
-			string sProjectRoot = PathUtil::GetPathWithoutFilename(CryStringUtils::WStrToUTF8(sProjectFile));
-			SetCurrentDirectoryW(CryStringUtils::UTF8ToWStr(sProjectRoot));
-		}
-		else
-		{
-			// default to old game folder behavior
-			CryFindRootFolderAndSetAsCurrentWorkingDirectory();
-			CEngineConfig engineCfg;
-			gameDLLName = engineCfg.m_gameDLL;
-		}
-		LocalFree(argv);
-	}
-	
 	//restart parameters
 	static const char logFileName[] = "Server.log";
 
 	unsigned buf[4];
 	TEA_DECODE((unsigned*)text,buf,16,(unsigned*)key);
 
-	HMODULE gameDll = 0;
+	HMODULE frameworkDll = 0;
 
-#if !defined(_LIB) || defined(IS_EAAS)
-	// load the game dll
-	gameDll = CryLoadLibrary( gameDLLName.c_str() );
+#if !defined(_LIB)
+	// load the framework dll
+	frameworkDll = CryLoadLibrary(frameworkDLLName);
 
-	if (!gameDll)
+	if (!frameworkDll)
 	{
-		// failed to load the dll
 		string errorStr;
-		errorStr.Format("Failed to load the Game DLL! %s", gameDLLName.c_str());
+		errorStr.Format("Failed to load the Game DLL! %s", frameworkDLLName);
 
 		MessageBox(0, errorStr.c_str(), "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
+		// failed to load the dll
 
 		return 0;
 	}
-	// get address of startup function
-	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(gameDll, "CreateGameStartup");
 
-	if (!CreateGameStartup)
+	// get address of startup function
+	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(frameworkDll, "CreateGameFramework");
+
+	if (!CreateGameFramework)
 	{
 		// dll is not a compatible game dll
-		CryFreeLibrary(gameDll);
+		CryFreeLibrary(frameworkDll);
 
-		MessageBox(0, "Specified Game DLL is not valid!", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
+		MessageBox(0, "Specified Game DLL is not valid! Please make sure you are running the correct executable", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
 
 		return 0;
 	}
@@ -202,7 +108,6 @@ ILINE int RunGame(const char *commandLine)
 
 	strcat((char*)commandLine, (char*)buf);	
 
-	startupParams.hInstance = GetModuleHandle(0);
 	startupParams.sLogFileName = logFileName;
 	strcpy(startupParams.szSystemCmdLine, commandLine);
 
@@ -211,40 +116,24 @@ ILINE int RunGame(const char *commandLine)
 			return 1;
 
 	// create the startup interface
-	IGameStartup *pGameStartup = CreateGameStartup();
-
-	if (!pGameStartup)
+	IGameFramework* pFramework = CreateGameFramework();
+	if (!pFramework)
 	{
 		// failed to create the startup interface
-		CryFreeLibrary(gameDll);
+		CryFreeLibrary(frameworkDll);
 
 		MessageBox(0, "Failed to create the GameStartup Interface!", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
 
 		return 0;
 	}
 
-	// run the game
-	if (pGameStartup->Init(startupParams))
-	{
-		pGameStartup->Run(NULL);
+	// main game loop
+	pFramework->StartEngine(startupParams);
 
-		pGameStartup->Shutdown();
-		pGameStartup = 0;
+	// The main engine loop has exited at this point, shut down
+	pFramework->ShutdownEngine();
 
-		CryFreeLibrary(gameDll);
-	}
-	else
-	{
-		MessageBox(0, "Failed to initialize the GameStartup Interface!", "Error", MB_OK | MB_DEFAULT_DESKTOP_ONLY);
-
-		// if initialization failed, we still need to call shutdown
-		pGameStartup->Shutdown();
-		pGameStartup = 0;
-
-		CryFreeLibrary(gameDll);
-
-		return 0;
-	}
+	CryFreeLibrary(frameworkDll);
 
 	return 0;
 }

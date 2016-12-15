@@ -6,6 +6,21 @@
 //////////////////////////////////////////////////////////////////////////
 void SRenderNodeTempData::Free()
 {
+	FreeRenderObjects();
+
+	if (userData.m_pFoliage)
+	{
+		userData.m_pFoliage->Release();
+		userData.m_pFoliage = NULL;
+	}
+
+	userData.pOwnerNode = nullptr;
+	userData.bToDelete = true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SRenderNodeTempData::FreeRenderObjects()
+{
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
@@ -15,11 +30,17 @@ void SRenderNodeTempData::Free()
 			userData.arrPermanentRenderObjects[lod] = 0;
 		}
 	}
+}
 
-	if (userData.m_pFoliage)
+void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
+{
+	// Release permanent CRenderObject(s)
+	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
-		userData.m_pFoliage->Release();
-		userData.m_pFoliage = NULL;
+		if (userData.arrPermanentRenderObjects[lod])
+		{
+			userData.arrPermanentRenderObjects[lod]->m_bInstanceDataDirty = true;
+		}
 	}
 }
 
@@ -66,12 +87,6 @@ bool CVisibleRenderNodesManager::SetLastSeenFrame(SRenderNodeTempData* pTempData
 		pTempData->userData.lastSeenFrame[recursion] = frame;
 	}
 	return bCanRenderThisFrame;
-}
-
-void CVisibleRenderNodesManager::MarkForDelete(SRenderNodeTempData* pTempData)
-{
-	pTempData->userData.bToDelete = true;
-	pTempData->userData.pOwnerNode = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,6 +138,7 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 			{
 				if (pTempData->userData.pOwnerNode)
 				{
+					pTempData->userData.pOwnerNode->OnRenderNodeBecomeInvisible();
 					pTempData->userData.pOwnerNode->m_pTempData = nullptr; // clear reference to use from owning render node.
 				}
 				m_visibleNodes[i]->Free();
@@ -171,6 +187,7 @@ void CVisibleRenderNodesManager::ClearAll()
 	{
 		if (node->userData.pOwnerNode)
 		{
+			node->userData.pOwnerNode->OnRenderNodeBecomeInvisible();
 			node->userData.pOwnerNode->m_pTempData = nullptr; // clear reference to use from owning render node.
 		}
 		m_pool.Delete(node);

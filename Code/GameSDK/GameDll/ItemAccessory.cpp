@@ -287,7 +287,7 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 					}
 				}
 
-				if( GetOwnerId() == g_pGame->GetClientActorId() )
+				if( GetOwnerId() == gEnv->pGameFramework->GetClientActorId() )
 				{
 					if( CEquipmentLoadout* pLoadout = g_pGame->GetEquipmentLoadout() )
 					{
@@ -328,10 +328,10 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 
 	if(pAccessory && (m_itemFlags & eIF_IgnoreHeat))
 	{
-		IEntityRenderProxy* pAccessoryRenderProxy = static_cast<IEntityRenderProxy*>(pAccessory->GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRender* pAccessoryRenderProxy = (pAccessory->GetEntity()->GetRenderInterface());
 		if(pAccessoryRenderProxy)
 		{
-			pAccessoryRenderProxy->SetIgnoreHeatAmount(attach);
+			//pAccessoryRenderProxy->SetIgnoreHeatAmount(attach);
 		}
 	}
 }

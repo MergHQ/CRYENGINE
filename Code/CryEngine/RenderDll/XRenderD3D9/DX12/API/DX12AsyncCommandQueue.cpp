@@ -198,7 +198,7 @@ void CAsyncCommandQueue::Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentR
 	{
 		while (m_QueuedFramesCounter > MAX_FRAMES_GPU_LAG)
 		{
-			CryYieldThread();
+			CryMT::CryYieldThread();
 		}
 	}
 }
@@ -209,14 +209,14 @@ void CAsyncCommandQueue::Flush(UINT64 lowerBoundFenceValue)
 	{
 		while (lowerBoundFenceValue > m_SignalledFenceValue)
 		{
-			CryYieldThread();
+			CryMT::CryYieldThread();
 		}
 	}
 	else
 	{
 		while (!m_bSleeping)
 		{
-			CryYieldThread();
+			CryMT::CryYieldThread();
 		}
 	}
 }
@@ -228,7 +228,7 @@ void CAsyncCommandQueue::FlushNextPresent()
 	{
 		while (numQueuedFrames == m_QueuedFramesCounter)
 		{
-			CryYieldThread();
+			CryMT::CryYieldThread();
 		}
 	}
 }

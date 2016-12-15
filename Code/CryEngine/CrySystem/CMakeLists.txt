@@ -330,6 +330,9 @@ add_sources("CrySystem_uber_5.cpp"
 		"UnitTestExcelReporter.h"
 		"UnitTestSystem.h"
 		"VisRegTest.h"
+	SOURCE_GROUP "UserAnalytics"
+		"UserAnalytics/UserAnalyticsSystem.cpp"
+		"UserAnalytics/UserAnalyticsSystem.h"
 )
 
 add_sources("CrySystem_uber_6.cpp"
@@ -426,6 +429,9 @@ add_sources("CrySystem_uber_9.cpp"
 	SOURCE_GROUP "LZ4Decompressor"
 		"LZ4Decompressor.h"
 		"LZ4Decompressor.cpp"
+	SOURCE_GROUP "ProjectManager"
+		"ProjectManager/ProjectManager.h"
+		"ProjectManager/ProjectManager.cpp"
 	SOURCE_GROUP "RemoteConsole"
 		"RemoteConsole/RemoteConsole.cpp"
 		"RemoteConsole/RemoteConsole.h"
@@ -454,27 +460,6 @@ add_sources("CrySystem_uber_9.cpp"
 		"HMDManager.cpp"
 		"HMDCVars.h"
 		"HMDCVars.cpp"
-	SOURCE_GROUP "VR\\\\Oculus"
-		"Oculus/OculusConfig.h"
-		"Oculus/OculusDevice.h"
-		"Oculus/OculusDevice.cpp"
-		"Oculus/OculusResources.h"
-		"Oculus/OculusResources.cpp"
-		"Oculus/OculusTouchController.h"
-		"Oculus/OculusTouchController.cpp"
-	SOURCE_GROUP "VR\\\\OpenVR"
-		"OpenVR/OpenVRConfig.h"
-		"OpenVR/OpenVRDevice.h"
-		"OpenVR/OpenVRDevice.cpp"
-		"OpenVR/OpenVRResources.h"
-		"OpenVR/OpenVRResources.cpp"
-		"OpenVR/OpenVRController.h"
-		"OpenVR/OpenVRController.cpp"
-	SOURCE_GROUP "VR\\\\Osvr"
-		"Osvr/OsvrDevice.h"
-		"Osvr/OsvrDevice.cpp"
-		"Osvr/OsvrResources.h"
-		"Osvr/OsvrResources.cpp"
 	SOURCE_GROUP "ZLibDecompressor"
 		"ZLibDecompressor.h"
 		"ZLibDecompressor.cpp"
@@ -531,24 +516,27 @@ end_sources()
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 yasli tomcrypt jsmn )
-if (WIN32 OR WIN64)
-	if(MSVC_VERSION EQUAL 1900)
-		target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
-	endif()
+use_scaleform()
+if (WIN32)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
-	target_link_libraries( ${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
+	target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
 elseif(LINUX)
-	use_ncurses()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE m )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
 elseif(APPLE)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ncurses m )
 elseif(ORBIS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> )
 elseif(DURANGO)
-	target_compile_options( ${THIS_PROJECT} PRIVATE /EHsc /ZW )
 	set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")	
 	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
 elseif(ANDROID)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/linux ${SDK_DIR}/SDL2/include/SDL )
 	target_link_libraries( ${THIS_PROJECT} PRIVATE m CryAnimation)
+endif()
+
+if (OPTION_ENABLE_CRASHRPT)
+	add_subdirectory( ${CRY_LIBS_DIR}/crashrpt ${CMAKE_CURRENT_BINARY_DIR}/crashrpt)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
 endif()

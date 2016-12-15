@@ -142,10 +142,10 @@ struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 		if (m_arrController.size() == 0)
 			return 0;
 
-		int nMax = m_arrController[0]->NumRefs();
+		int nMax = m_arrController[0]->UseCount();
 		for (int i = 0; i < m_nControllers; ++i)
-			if (m_arrController[i]->NumRefs() > nMax)
-				nMax = m_arrController[i]->NumRefs();
+			if (m_arrController[i]->UseCount() > nMax)
+				nMax = m_arrController[i]->UseCount();
 		return nMax;
 	}
 #endif

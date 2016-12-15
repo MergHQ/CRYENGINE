@@ -551,10 +551,10 @@ Vec3 CGunTurret::PredictTargetPos(IEntity* pTarget, bool sec)//sec - weapon to u
 	
 	if (g_pGameCVars->i_debug_turrets == eGTD_Prediction)
 	{ 
-		IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+		IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
 		pDebug->Begin("CGunTurret::PredictTargetPos", false);
 		pDebug->AddSphere(tpos+delta, 0.2f, ColorF(1,0,0,1), 1.f);
-		gEnv->pRenderer->DrawLabel(vpos, 1.4f, "Predict %s: speed %.1f (dspeed %.1f), acc %.1f, time %.1f", pTarget->GetName(), vel.len(), d_speed, a, time_to);
+		IRenderAuxText::DrawLabelF(vpos, 1.4f, "Predict %s: speed %.1f (dspeed %.1f), acc %.1f, time %.1f", pTarget->GetName(), vel.len(), d_speed, a, time_to);
 	}
 
 	return tpos+delta;
@@ -618,7 +618,7 @@ Vec3 CGunTurret::GetSweepPos(IEntity* pTarget, const Vec3& shootPos)
     pGeom->DrawSphere(lastHintPos, 0.3f, col);
     pGeom->DrawSphere(nextHintPos, 0.3f, col);
     pGeom->DrawLine(lastHintPos, col, nextHintPos, col);
-    gEnv->pRenderer->DrawLabel(currPos, 1.4f, "sweep, hint %i, ratio %.2f)", m_fireHint, sweepRelTime);
+    IRenderAuxText::DrawLabelF(currPos, 1.4f, "sweep, hint %i, ratio %.2f)", m_fireHint, sweepRelTime);
   }
 
   return currPos;  
@@ -825,7 +825,7 @@ bool CGunTurret::IsAiming(const Vec3 &pos, float treshold) const
 	Vec3 weaponDir = GetWeaponDir().normalized();
 	float dot = weaponDir.Dot(tdir);
 
-	float angle=RAD2DEG(acos_tpl(CLAMP(dot,-1.f,1.f)));
+	float angle=RAD2DEG(acos_tpl(dot));
 	if (fabs_tpl(angle)>treshold)
 		return false;
 	return true;
@@ -989,7 +989,7 @@ bool CGunTurret::GetTargetAngles(const Vec3& targetPos, float& z, float& x) cons
 	else
 	{
 		targetDirZ.Normalize();    
-		float cosZ = max(-1.f, min(1.f, FORWARD_DIRECTION * targetDirZ));   
+		float cosZ = FORWARD_DIRECTION * targetDirZ;   
 		z = acos_tpl(cosZ) * -sgnnz(targetDirZ.x);
 		if (z<0.0f)
 			z+=gf_PI2;
@@ -1006,8 +1006,8 @@ bool CGunTurret::GetTargetAngles(const Vec3& targetPos, float& z, float& x) cons
 		targetDirX.Normalize();
 		targetDirBase.Normalize();
 
-		float cosX = max(-1.f, min(1.f, targetDirBase * targetDirX));    
-		x = acos_tpl(cosX) * sgnnz(targetDirX.z);    
+		float cosX = targetDirBase * targetDirX;
+		x = acos_tpl(cosX) * sgnnz(targetDirX.z);
 	}
 
 	return true;
@@ -1130,7 +1130,7 @@ bool CGunTurret::IsTargetCloaked(IActor* pActor) const
       pGeom->DrawPolyline(points, 3, true, ColorB(0,255,0,255));          
 
       if (inside)
-        gEnv->pRenderer->Draw2dLabel(200,200,1.4f,color,false,"target inside cone");                
+        IRenderAuxText::Draw2dLabel(200,200,1.4f,color,false,"target inside cone");                
     }
   }  
 
@@ -1180,7 +1180,7 @@ void CGunTurret::UpdateDeviation(float deltaTime, const Vec3& shootPos)
   if (g_pGameCVars->i_debug_turrets == eGTD_Deviation)
   {
     float color[] = {0.8f,1.f,0.8f,1.f};
-    gEnv->pRenderer->Draw2dLabel(100,400,1.5f,color,false,"dev: %.2f (amount: %.2f)",dev.x, amount);
+    IRenderAuxText::Draw2dLabel(100,400,1.5f,color,false,"dev: %.2f (amount: %.2f)",dev.x, amount);
   }
 }
 
@@ -1280,7 +1280,7 @@ void CGunTurret::UpdateOrientation(float deltaTime)
   if (g_pGameCVars->i_debug_turrets == eGTD_Basic)
   {
     DrawDebug();
-    //gEnv->pRenderer->DrawLabel(entity.GetWorldPos(), 1.4f, "%s yaw: %.2f, goalYaw: %.2f (%.2f), goalPitch: %.2f (%.2f/%.2f)", searching?"[search]":"", RAD2DEG(turretAngles.z), RAD2DEG(m_goalYaw), 0.5f*(m_turretparams.yaw_range), RAD2DEG(m_goalPitch), m_turretparams.min_pitch, m_turretparams.max_pitch);
+    //IRenderAuxText::DrawLabelF(entity.GetWorldPos(), 1.4f, "%s yaw: %.2f, goalYaw: %.2f (%.2f), goalPitch: %.2f (%.2f/%.2f)", searching?"[search]":"", RAD2DEG(turretAngles.z), RAD2DEG(m_goalYaw), 0.5f*(m_turretparams.yaw_range), RAD2DEG(m_goalPitch), m_turretparams.min_pitch, m_turretparams.max_pitch);
   }
 }
 
@@ -1365,8 +1365,7 @@ void CGunTurret::UpdatePhysics()
 	if (IEntity* pParent = GetEntity()->GetParent())
 	{      
 		IPhysicalEntity* pParentPhysics = pParent->GetPhysics();
-		IEntityPhysicalProxy *pPhysicsProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-		if (pParentPhysics && pPhysicsProxy)
+		if (pParentPhysics)
 		{
       Matrix34 localTM = GetEntity()->GetLocalTM();
       localTM.OrthonormalizeFast();
@@ -1376,7 +1375,7 @@ void CGunTurret::UpdatePhysics()
       {
         pe_params_part params;    
 
-        params.partid = slots[i] + pPhysicsProxy->GetPartId0();
+        params.partid = slots[i] + GetEntity()->GetPhysicalEntityPartId0();
 
         const Matrix34& slotTM = GetEntity()->GetSlotLocalTM(slots[i], false);
         
@@ -1620,22 +1619,21 @@ void CGunTurret::ServerUpdate(SEntityUpdateContext& ctx, int update)
 
 			if (g_pGameCVars->i_debug_turrets)
       {
-        IRenderer* pRenderer = gEnv->pRenderer;
         static float white[4] = {1,1,1,1};    
         float x = 5.f, y = 50.f, step1 = 15.f, size=1.3f;
         
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "Target: %s", pCurrentTarget->GetName());
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "InRange: %i", inrange);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "CanShoot: %i", m_canShoot);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "IsAiming: %i", aim);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "Burst: %i", burst);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "MG: %i", mg);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "BurstTimer: %.2f", m_burstTimer);
-        //pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "Rocket: %i", rocket);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "TargetPos: %.1f %.1f %.1f", tpos.x, tpos.y, tpos.z);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "Abandon: %.2f", m_abandonTargetTimer);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "Update: %.2f", m_updateTargetTimer);
-        pRenderer->Draw2dLabel(x, y+=step1, size, white, false, "GoalYaw: %.2f, GoalPitch: %.2f", m_goalYaw, m_goalPitch);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "Target: %s", pCurrentTarget->GetName());
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "InRange: %i", inrange);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "CanShoot: %i", m_canShoot);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "IsAiming: %i", aim);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "Burst: %i", burst);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "MG: %i", mg);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "BurstTimer: %.2f", m_burstTimer);
+        //IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "Rocket: %i", rocket);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "TargetPos: %.1f %.1f %.1f", tpos.x, tpos.y, tpos.z);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "Abandon: %.2f", m_abandonTargetTimer);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "Update: %.2f", m_updateTargetTimer);
+        IRenderAuxText::Draw2dLabel(x, y+=step1, size, white, false, "GoalYaw: %.2f, GoalPitch: %.2f", m_goalYaw, m_goalPitch);
       }
 			
 			break;        
@@ -1907,7 +1905,7 @@ bool CGunTurret::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 //--------------------------------------------------------------------
 void CGunTurret::DrawDebug()
 {
-  IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
+  IPersistantDebug* pDebug = gEnv->pGameFramework->GetIPersistantDebug();
   pDebug->Begin("CGunTurret::DrawDebug", true);
 
   Vec3 gun(ZERO),rocket(ZERO),radar(ZERO),barrel(ZERO);

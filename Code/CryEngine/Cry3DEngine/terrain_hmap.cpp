@@ -504,10 +504,10 @@ bool CHeightMap::GetHole(const int x, const int y, int nSID)  const
 {
 	int nX_units = x >> m_nBitShift;
 	int nY_units = y >> m_nBitShift;
-	int nTerrainSize_units = (CTerrain::GetTerrainSize() >> m_nBitShift) - 2;
+	int nTerrainSize_units = (CTerrain::GetTerrainSize() >> m_nBitShift);
 
-	if (nX_units < 0 || nX_units > nTerrainSize_units || nY_units < 0 || nY_units > nTerrainSize_units)
-		return false;
+	if (nX_units < 0 || nX_units >= nTerrainSize_units || nY_units < 0 || nY_units >= nTerrainSize_units)
+		return true;
 
 	return GetSurfTypefromUnits(nX_units, nY_units, nSID) == SRangeInfo::e_hole;
 }

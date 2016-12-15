@@ -102,7 +102,7 @@ CActorImpulseHandler::CActorImpulseHandler(CActor& actor) : m_actor(actor)
 //////////////////////////////////////////////////////////////////////////
 void CActorImpulseHandler::ReadXmlData(const IItemParamsNode* pRootNode)
 {
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 
 	// If we change the SharedParamsManager to accept CRCs on its interface we could compute this once and store
@@ -199,7 +199,7 @@ float GenFactor(float time, float duration, bool &recovery)
 //////////////////////////////////////////////////////////////////////////
 void CActorImpulseHandler::AddLocalHitImpulse(const SHitImpulse& hitImpulse)
 {
-	IEntityPhysicalProxy *pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(m_actor.GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+	IEntity *pPhysicsProxy = m_actor.GetEntity();
 
 	const bool applyImpulse = (pPhysicsProxy != NULL) && !m_actor.GetLinkedVehicle();
 

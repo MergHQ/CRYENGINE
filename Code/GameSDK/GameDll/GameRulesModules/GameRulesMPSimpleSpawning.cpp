@@ -332,7 +332,7 @@ EntityId CGameRulesRSSpawning::GetBestSpawnUsingWeighting( SUsefulSpawnData& spa
 
 	EntityId lastPrecachedSpawnId = 0;
 	Vec3 lastPrecachedSpawnPos(ZERO);
-	if(spawnData.playerId==g_pGame->GetClientActorId())
+	if(spawnData.playerId==gEnv->pGameFramework->GetClientActorId())
 	{
 		if(IEntity* pLastPrecachedSpawnEnt = gEnv->pEntitySystem->GetEntity(m_currentBestSpawnId))
 		{

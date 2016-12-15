@@ -30,22 +30,21 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerInstanceConstantBuffer()
 {
 	if (!m_freeConstantBuffers.empty())
 	{
-		CConstantBufferPtr ptr = m_freeConstantBuffers.back();
+		CConstantBufferPtr ptr = std::move(m_freeConstantBuffers.back());
 		m_freeConstantBuffers.pop_back();
+		CRY_ASSERT(ptr && !ptr->m_intentionallyNull && "Invalid cached pointer");
 		return ptr;
 	}
-	// returns refcount==1
-	CConstantBufferPtr pBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_Skin)); // largest buffer type in use
-	pBuf->Release();                                                                                                     // now refcount==1 again
-	return pBuf;
+	return gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_Skin)); // largest buffer type in use
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderObjectsPools::FreePerInstanceConstantBuffer(const CConstantBufferPtr& buffer)
+void CRenderObjectsPools::FreePerInstanceConstantBuffer(CConstantBufferPtr&& buffer)
 {
-	if (buffer)
+	if (buffer && !buffer->m_intentionallyNull)
 	{
-		m_freeConstantBuffers.push_back(buffer);
+		// Constant buffer can still be temporary used CRY_ASSERT(buffer->m_nRefCount == 1 && "Attempt to free a buffer that is still used elsewhere");
+		m_freeConstantBuffers.emplace_back(std::move(buffer));
 	}
 }
 
@@ -59,15 +58,19 @@ CCompiledRenderObject::~CCompiledRenderObject()
 	m_StencilRef = 0;
 	m_nInstances = 0;
 
-	if (m_perInstanceCB && m_bOwnPerInstanceCB)
+	if (m_bOwnPerInstanceCB)
 	{
-		s_pPools->FreePerInstanceConstantBuffer(m_perInstanceCB);
+		CRY_ASSERT(m_perInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		if (m_perInstanceCB)
+		{
+			s_pPools->FreePerInstanceConstantBuffer(std::move(m_perInstanceCB));
+		}
 	}
 	m_perInstanceCB.reset();
 
 	m_materialResourceSet.reset();
 
-	m_InstancingCBs.clear();
+	m_pInstancingConstBuffer.reset();
 
 	for (int i = 0; i < MAX_PIPELINE_SCENE_STAGES; i++)
 	{
@@ -76,7 +79,7 @@ CCompiledRenderObject::~CCompiledRenderObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRendElementBase* pRE)
+void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRenderElement* pRE)
 {
 	SAFE_RELEASE(m_shaderItem.m_pShader);
 	SAFE_RELEASE(m_shaderItem.m_pShaderResources);
@@ -91,22 +94,57 @@ void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRendElementBase
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CCompiledRenderObject::CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CCompiledRenderObject* pNextObject) const
+{
+	if (!m_bDynamicInstancingPossible || !pNextObject->m_bDynamicInstancingPossible)
+		return false;
+
+	if (m_pRenderElement != pNextObject->m_pRenderElement)
+		return false;
+
+	if (m_materialResourceSet != pNextObject->m_materialResourceSet)
+		return false;
+
+	// Check that vegetation bending match
+	if (m_pRO->m_vegetationBendingData.scale != pNextObject->m_pRO->m_vegetationBendingData.scale)
+		return false;
+	if (m_pRO->m_vegetationBendingData.verticalRadius != pNextObject->m_pRO->m_vegetationBendingData.verticalRadius)
+		return false;
+
+	// Do not instance vegetation across different terrain sectors
+	if (m_pRO->m_data.m_pTerrainSectorTextureInfo != pNextObject->m_pRO->m_data.m_pTerrainSectorTextureInfo)
+		return false;
+
+	if (m_skinningCB[0] || pNextObject->m_skinningCB[0])
+		return false;
+
+	if (m_pso[passContext.stageID][passContext.passID] != pNextObject->m_pso[passContext.stageID][passContext.passID])
+		return false;
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // allocate and fill buffer
 void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 {
 	if (!m_perInstanceCB)
 	{
-		m_perInstanceCB = s_pPools->AllocatePerInstanceConstantBuffer();
+		CRY_ASSERT(!m_bOwnPerInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		if (!(m_perInstanceCB = s_pPools->AllocatePerInstanceConstantBuffer()))
+		{
+			return;
+		}
 		m_bOwnPerInstanceCB = true;
 	}
 	m_perInstanceCB->UpdateBuffer(pData, size);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, float realTime)
+void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject)
 {
 	CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
-	if (pRootCompiled && pRootCompiled->m_perInstanceCB && gcpRendD3D->m_nGraphicsPipeline >= 2)
+	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perInstanceCB && gcpRendD3D->m_nGraphicsPipeline >= 2)
 	{
 		// If root object have per instance constant buffer, share ours with root compiled object.
 		m_bOwnPerInstanceCB = false;
@@ -115,28 +153,21 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		return;
 	}
 
+	m_bDynamicInstancingPossible = CRendererCVars::CV_r_geominstancing != 0;
+	if (!pRenderObject->m_Instances.empty())
+		m_bDynamicInstancingPossible = false;
+
 	// Alpha Test
 	float dissolve = 0;
 	if (pRenderObject->m_ObjFlags & (FOB_DISSOLVE_OUT | FOB_DISSOLVE))
 	{
 		dissolve = float(pRenderObject->m_DissolveRef) * (1.0f / 255.0f);
+		m_bDynamicInstancingPossible = false;
 	}
 	float dissolveOut = (pRenderObject->m_ObjFlags & FOB_DISSOLVE_OUT) ? 1.0f : -1.0f;
+	dissolve *= dissolveOut;
+
 	float tessellationPatchIDOffset = alias_cast<float>(m_TessellationPatchIDOffset);
-
-	Vec4 bendInfo = Vec4(ZERO);
-	if (pRenderObject->m_ObjFlags & FOB_BENDED)
-	{
-		SVegetationBending* pBend = &pRenderObject->m_data.m_bending;
-
-		bendInfo.x = pBend->m_fRadiusVert;
-		bendInfo.y = 0;
-		bendInfo.z = 0;
-		bendInfo.w = pBend->m_fMainBendingScale;
-	}
-
-	m_rootConstants.dissolve = dissolve;
-	m_rootConstants.dissolveOut = dissolveOut;
 
 	// wrinkle blending
 	bool bHasWrinkleBending = false;
@@ -146,17 +177,36 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 	}
 
 	Matrix44A objPrevMatr;
-	CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objPrevMatr);
+	bool bMotionBlurMatrix = CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objPrevMatr);
+	if (bMotionBlurMatrix)
+		m_bDynamicInstancingPossible = false;
+
+	// Common shader per instance data.
+	m_instanceShaderData.matrix = pRenderObject->m_II.m_Matrix;
+	m_instanceShaderData.dissolve = dissolve;
+	m_instanceShaderData.tesselationPatchId = tessellationPatchIDOffset;
+	m_instanceShaderData.vegetationBendingRadius = pRenderObject->m_vegetationBendingData.verticalRadius;
+	m_instanceShaderData.vegetationBendingScale = pRenderObject->m_vegetationBendingData.scale;
+	//////////////////////////////////////////////////////////////////////////
 
 	if (pRenderObject->m_data.m_pTerrainSectorTextureInfo) // (%TEMP_TERRAIN || %TEMP_VEGETATION)
 	{
+		m_bDynamicInstancingPossible = false; //#TODO fix support of dynamic instancing for vegetation
+
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_TerrainVegetation, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->SPIObjWorldMat = pRenderObject->m_II.m_Matrix;
-		cb->SPIPrevObjWorldMat = Matrix34(objPrevMatr);
-		cb->SPIBendInfo = bendInfo;
-		cb->SPIAlphaTest = Vec4(dissolve, dissolveOut, tessellationPatchIDOffset, 0);
+		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
+
+		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
+		cb->PerInstanceCustomData =
+		  Vec4(
+		    pRenderObject->m_vegetationBendingData.verticalRadius,
+		    pRenderObject->m_vegetationBendingData.scale,
+		    tessellationPatchIDOffset,
+		    dissolve
+		    );
 
 		// Fill terrain texture info if present
 		cb->BlendTerrainColInfo[0] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetX;
@@ -186,17 +236,21 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 			pOut[3].f[3] = pData[15];
 		}
 
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
+
 		UpdatePerInstanceCB(cb, cbSize);
 	}
 	else if ((pRenderObject->m_ObjFlags & FOB_SKINNED) || bHasWrinkleBending) // (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %WRINKLE_BLENDING)
 	{
+		m_bDynamicInstancingPossible = false;
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSizeCleared(HLSL_PerInstanceConstantBuffer_Skin, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->SPIObjWorldMat = pRenderObject->m_II.m_Matrix;
-		cb->SPIPrevObjWorldMat = Matrix34(objPrevMatr);
-		cb->SPIBendInfo = bendInfo;
-		cb->SPIAlphaTest = Vec4(dissolve, dissolveOut, tessellationPatchIDOffset, 0);
+		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
+
+		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
+		cb->PerInstanceCustomData = Vec4(0, 0, tessellationPatchIDOffset, dissolve);
 
 		if (SRenderObjData* pOD = pRenderObject->GetObjData())
 		{
@@ -222,6 +276,9 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 			cb->SkinningInfo[3] = ((CREMeshImpl*)m_pRenderElement)->m_pRenderMesh->m_extraBonesBuffer.m_numElements > 0 ? 1.0f : 0.0f;
 		}
 
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
+
+		m_bDynamicInstancingPossible = false;
 		UpdatePerInstanceCB(cb, cbSize);
 	}
 	else // default base per instance buffer
@@ -229,10 +286,18 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_Base, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->SPIObjWorldMat = pRenderObject->m_II.m_Matrix;
-		cb->SPIPrevObjWorldMat = Matrix34(objPrevMatr);
-		cb->SPIAlphaTest = Vec4(dissolve, dissolveOut, tessellationPatchIDOffset, 0);
-		cb->SPIBendInfo = bendInfo;
+		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
+		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
+		cb->PerInstanceCustomData =
+		  Vec4(
+		    pRenderObject->m_vegetationBendingData.verticalRadius,
+		    pRenderObject->m_vegetationBendingData.scale,
+		    tessellationPatchIDOffset,
+		    dissolve
+		    );
+
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
 		UpdatePerInstanceCB(cb, cbSize);
 	}
@@ -240,42 +305,43 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 
 void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, bool bForce)
 {
-	int nSrcInsts = pRenderObject->m_Instances.size();
+	size_t nSrcInsts = pRenderObject->m_Instances.size();
 	if (m_nInstances == nSrcInsts && !bForce)
 		return;
 
-	assert(nSrcInsts);
-	m_nInstances = nSrcInsts;
+	assert(nSrcInsts != 0 || m_bDynamicInstancingPossible);
+	m_nInstances = std::min(nSrcInsts, (size_t)1);
 
-	//m_InstancingCBs.reserve(nSrcInsts);
-
-	m_InstancingCBs.clear();
-
-	int nBeginOffs = 0;
-	while (nSrcInsts)
+	// Allocate temporary aligned array of instances on stack.
+	CryStackAllocWithSizeVector(SPerInstanceShaderData, m_nInstances, tempInstanceBuffer, CDeviceBufferManager::AlignBufferSizeForStreaming); //May crash without m_nInstances+1
+	if (nSrcInsts == 0)
 	{
-		int nInstsPerCB = MIN(nSrcInsts, 800); // 4096 Vec4 entries max in DX11
-
-		// NOTE: The pointer and the size is optimal aligned when sizeof(SInstanceData) is optimal aligned
-		assert(sizeof(CRenderObject::SInstanceData) == Align(sizeof(CRenderObject::SInstanceData), CRY_PLATFORM_ALIGNMENT));
-		size_t nSize = nInstsPerCB * sizeof(CRenderObject::SInstanceData);
-
-		CConstantBuffer* pCB = gcpRendD3D.m_DevBufMan.CreateConstantBuffer(nSize); // returns refcount==1
-		if (pCB)
-		{
-			pCB->UpdateBuffer(&pRenderObject->m_Instances[nBeginOffs], nSize);
-
-			CCompiledRenderObject::SInstancingData ID;
-			ID.m_nInstances = nInstsPerCB;
-			ID.m_pConstBuffer = pCB;
-			pCB->Release(); // back to refcount==1
-			m_InstancingCBs.push_back(ID);
-		}
-
-		nBeginOffs += nInstsPerCB;
-		nSrcInsts -= nInstsPerCB;
+		// Only 1 instance i in case of the dynamic instancing
+		tempInstanceBuffer[0] = m_instanceShaderData;
 	}
-	//pRenderObject->m_Instances.clear();
+	else
+	{
+		for (size_t i = 0; i < m_nInstances; i++)
+		{
+			SPerInstanceShaderData& inst = tempInstanceBuffer[i];
+			inst = m_instanceShaderData;
+			if (i < nSrcInsts)
+			{
+				inst.matrix = pRenderObject->m_Instances[i].m_Matrix;
+			}
+		}
+	}
+
+	// NOTE: The pointer and the size is optimal aligned when sizeof(SPerInstanceShaderData) is optimal aligned
+	assert(sizeof(SPerInstanceShaderData) == Align(sizeof(SPerInstanceShaderData), CRY_PLATFORM_ALIGNMENT));
+	size_t nSize = m_nInstances * sizeof(SPerInstanceShaderData);
+
+	CConstantBufferPtr pCB = gcpRendD3D.m_DevBufMan.CreateConstantBuffer(nSize);
+	if (pCB)
+	{
+		pCB->UpdateBuffer(tempInstanceBuffer, nSize);
+		m_pInstancingConstBuffer = std::move(pCB);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -330,7 +396,7 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime)
+bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 {
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//{ char buf[1024]; cry_sprintf(buf,"compiled: %p : frame(%d) \r\n", pRenderObject, nFrameId); OutputDebugString(buf); }
@@ -339,8 +405,11 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 	const bool bMuteWarnings = gcpRendD3D->m_nGraphicsPipeline >= 1;  // @TODO: Remove later
 
 	m_bIncomplete = true;
+	m_bCustomRenderElement = false;
 
-	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty;
+	// Optimization to only update per instance constant buffer and not recompile PSO,
+	// Object must be fully compiled already for this flag to have a per instance only effect.
+	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty && !m_bIncomplete;
 
 	// Only objects with RenderElements can be compiled
 	if (!m_pRenderElement)
@@ -350,14 +419,19 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 	}
 
 	EDataType reType = m_pRenderElement->mfGetType();
-	if (reType != eDATA_Mesh && reType != eDATA_Terrain && reType != eDATA_GeomCache)
+	bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
+	if (!bMeshCompatibleRenderElement)
 	{
-		// Do not compile non mesh render elements
-		if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, unsupported render element type");
+		// Custom render elements cannot be dynamically instanced.
+		m_bDynamicInstancingPossible = false;
+
+		// Compile render element specific data.
+		m_bCustomRenderElement = true;
+		m_pRenderElement->Compile(pRenderObject);
 		return true;
 	}
 
-	CRendElementBase::SGeometryInfo geomInfo;
+	CRenderElement::SGeometryInfo geomInfo;
 	ZeroStruct(geomInfo);
 
 	if (!bInstanceDataUpdateOnly) // first update only: needed for per instance buffers
@@ -383,13 +457,13 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 		m_pTessellationAdjacencyBuffer = reinterpret_cast<CGpuBuffer*>(geomInfo.pTessellationAdjacencyBuffer);
 	}
 
-	if (pRenderObject->m_Instances.size())
-	{
-		CompileInstancingData(pRenderObject, false);
-	}
-
-	CompilePerInstanceConstantBuffer(pRenderObject, realTime);
+	CompilePerInstanceConstantBuffer(pRenderObject);
 	CompilePerInstanceExtraResources(pRenderObject);
+
+	if (!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible)
+	{
+		CompileInstancingData(pRenderObject, m_bDynamicInstancingPossible);
+	}
 
 	if (bInstanceDataUpdateOnly)
 	{
@@ -399,7 +473,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 		return true;
 	}
 
-	CRendElementBase* pRenderElement = m_pRenderElement;
+	CRenderElement* pRenderElement = m_pRenderElement;
 
 	CShaderResources* RESTRICT_POINTER pResources = static_cast<CShaderResources*>(m_shaderItem.m_pShaderResources);
 	assert(pResources);
@@ -418,14 +492,14 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 	m_nNumVertexStreams = geomInfo.nNumVertexStreams;
 	m_nLastVertexStreamSlot = geomInfo.CalcLastStreamSlot();
 
-	m_drawParams[0].m_nNumIndices = m_drawParams[1].m_nNumIndices = geomInfo.nNumIndices;
-	m_drawParams[0].m_nStartIndex = m_drawParams[1].m_nStartIndex = geomInfo.nFirstIndex;
-	m_drawParams[0].m_nVerticesCount = m_drawParams[1].m_nVerticesCount = geomInfo.nNumVertices;
+	m_drawParams[eDrawParam_General].m_nNumIndices = m_drawParams[eDrawParam_Shadow].m_nNumIndices = geomInfo.nNumIndices;
+	m_drawParams[eDrawParam_General].m_nStartIndex = m_drawParams[eDrawParam_Shadow].m_nStartIndex = geomInfo.nFirstIndex;
+	m_drawParams[eDrawParam_General].m_nVerticesCount = m_drawParams[eDrawParam_Shadow].m_nVerticesCount = geomInfo.nNumVertices;
 
-	if (pRenderObject->m_bPermanent && m_pRenderElement->mfGetType() == eDATA_Mesh)
+	if (pRenderObject->m_bPermanent && reType == eDATA_Mesh)
 	{
 		CREMeshImpl* pRE = ((CREMeshImpl*)m_pRenderElement);
-		pRE->m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(pRE->m_pChunk, pRenderObject->m_pCurrMaterial, m_drawParams[1].m_nVerticesCount, m_drawParams[1].m_nNumIndices);
+		pRE->m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(pRE->m_pChunk, pRenderObject->m_pCurrMaterial, m_drawParams[eDrawParam_Shadow].m_nVerticesCount, m_drawParams[eDrawParam_Shadow].m_nNumIndices);
 	}
 
 	// THIS IS DANGEROUS!
@@ -441,8 +515,9 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 	// Create Pipeline States
 	SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, geomInfo.primitiveType);
 	psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_PER_INSTANCE_CB_TEMP];  // Enable flag to use special per instance constant buffer
-	if (m_InstancingCBs.size() != 0)
+	if (m_pInstancingConstBuffer)
 	{
+		//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING
 		psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];  // Enable flag to use static instancing
 	}
 
@@ -494,42 +569,44 @@ void CCompiledRenderObject::PrepareForUse(CDeviceCommandListRef RESTRICT_REFEREN
 		}
 
 		{
-			if (!m_InstancingCBs.empty())
+			if (m_pInstancingConstBuffer)
 			{
 				// Render instanced draw calls.
-				for (auto& ID : m_InstancingCBs)
-				{
-					pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerInstanceCB, ID.m_pConstBuffer, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel);
-				}
+				pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerInstanceCB, m_pInstancingConstBuffer, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel);
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::DrawVerification(const SGraphicsPipelinePassContext& passContext) const
+void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,
+                                              CConstantBuffer* pDynamicInstancingBuffer,
+                                              uint32 dynamicInstancingCount
+                                              ) const
 {
-#if defined(ENABLE_PROFILING_CODE)
-	if (m_bIncomplete || !m_materialResourceSet->IsValid())
+	if (m_bCustomRenderElement)
 	{
-		CryInterlockedIncrement(&gcpRendD3D->m_RP.m_PS[gcpRendD3D->m_RP.m_nProcessThreadID].m_nIncompleteCompiledObjects);
+		m_pRenderElement->DrawToCommandList(m_pRO, passContext);
+		return;
+	}
+
+	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *passContext.pCommandList->GetGraphicsInterface();
+
+#if defined(ENABLE_PROFILING_CODE)
+	if (m_bIncomplete || !m_materialResourceSet || !m_materialResourceSet->IsValid())
+	{
+		CryInterlockedIncrement(&SPipeStat::Out()->m_nIncompleteCompiledObjects);
 	}
 #endif
 
+	//assert(passContext.stageID < MAX_PIPELINE_SCENE_STAGES);
+	//assert(passContext.passID < MAX_PIPELINE_SCENE_STAGE_PASSES);
 	const CDeviceGraphicsPSOPtr& pPso = m_pso[passContext.stageID][passContext.passID];
 
-	if (!pPso || !pPso->IsValid() || !m_materialResourceSet->IsValid())
-		return false;
+	if (!pPso || !pPso->IsValid() || !m_materialResourceSet && !m_materialResourceSet->IsValid())
+		return;
 
-	return true;
-}
-
-void CCompiledRenderObject::DrawToCommandList(CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface, const CDeviceGraphicsPSOPtr& pPso, uint32 drawParamsIndex) const
-{
-	assert(pPso != nullptr);
-	assert(pPso->IsValid());
-	assert(m_materialResourceSet->IsValid());
-	assert(m_perInstanceExtraResources->IsValid());
+	//assert(m_perInstanceExtraResources->IsValid());
 
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//assert(0 == (m_pRenderElement->m_Flags & FCEF_DIRTY));
@@ -541,7 +618,6 @@ void CCompiledRenderObject::DrawToCommandList(CDeviceGraphicsCommandInterface& R
 	commandInterface.SetResources(EResourceLayoutSlot_PerInstanceExtraRS, m_perInstanceExtraResources.get(), EShaderStage_AllWithoutCompute);
 
 	EShaderStage perInstanceCBShaderStages = m_bHasTessellation ? EShaderStage_Hull | EShaderStage_Vertex | EShaderStage_Pixel : EShaderStage_Vertex | EShaderStage_Pixel;
-	commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_perInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
 
 	{
 #ifndef _RELEASE
@@ -559,10 +635,13 @@ void CCompiledRenderObject::DrawToCommandList(CDeviceGraphicsCommandInterface& R
 
 		commandInterface.SetVertexBuffers(m_nNumVertexStreams, m_nLastVertexStreamSlot, m_vertexStreamSet);
 
+		uint32 drawParamsIndex = (passContext.stageID == eStage_ShadowMap) ? 1 : 0;
+
 		if (m_indexStreamSet == nullptr)
 		{
 			if (CRenderer::CV_r_NoDraw != 3)
 			{
+				commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_perInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
 				commandInterface.Draw(m_drawParams[drawParamsIndex].m_nVerticesCount, 1, 0, 0);
 			}
 
@@ -573,18 +652,22 @@ void CCompiledRenderObject::DrawToCommandList(CDeviceGraphicsCommandInterface& R
 
 		if (CRenderer::CV_r_NoDraw != 3)
 		{
-			if (!m_InstancingCBs.empty())
+			if (pDynamicInstancingBuffer)
 			{
-				// Render instanced draw calls.
-				for (auto& ID : m_InstancingCBs)
-				{
-					commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, ID.m_pConstBuffer, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel);
-					commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, ID.m_nInstances, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
-				}
+				commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, pDynamicInstancingBuffer, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
+				commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, dynamicInstancingCount, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
 				return;
 			}
-
+			else
 			{
+				if (m_pInstancingConstBuffer)
+				{
+					// Render instanced draw calls.
+					commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_pInstancingConstBuffer, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
+					commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, m_nInstances, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
+					return;
+				}
+				commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_perInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
 				commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, 1, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
 				return;
 			}

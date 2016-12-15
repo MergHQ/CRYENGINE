@@ -1,32 +1,23 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   animcameranode.cpp
-//  Version:     v1.00
-//  Created:     11/29/2010 by Jaesik.
-//  Compilers:   Microsoft Visual C++ 2008
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "AnimLightNode.h"
 #include <CryScriptSystem/IScriptSystem.h>
 
-CAnimNode::SParamInfo CAnimLightNode::s_nodeParams[CAnimLightNode::NumNodeParams] = {
-	CAnimNode::SParamInfo("Position",           eAnimParamType_Position,            eAnimValue_Vector,  IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("Rotation",           eAnimParamType_Rotation,            eAnimValue_Quat,    IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("Radius",             eAnimParamType_LightRadius,         eAnimValue_Float,   IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("DiffuseColor",       eAnimParamType_LightDiffuse,        eAnimValue_RGB,     IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("DiffuseMultiplier",  eAnimParamType_LightDiffuseMult,    eAnimValue_Float,   IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("HDRDynamic",         eAnimParamType_LightHDRDynamic,     eAnimValue_Float,   IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("SpecularMultiplier", eAnimParamType_LightSpecularMult,   eAnimValue_Float,   IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("SpecularPercentage", eAnimParamType_LightSpecPercentage, eAnimValue_Float,   IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("Visibility",         eAnimParamType_Visibility,          eAnimValue_Bool,    IAnimNode::ESupportedParamFlags(0)),
-	CAnimNode::SParamInfo("Event",              eAnimParamType_Event,               eAnimValue_Unknown, IAnimNode::ESupportedParamFlags(0))
-};
+namespace AnimLightNode
+{
+	bool s_nodeParamsInit = false;
+	std::vector<CAnimNode::SParamInfo> s_nodeParameters;
+
+	void AddSupportedParam(const char* szName, int paramId, EAnimValue valueType)
+	{
+		CAnimNode::SParamInfo param;
+		param.name = szName;
+		param.paramType = paramId;
+		param.valueType = valueType;
+		s_nodeParameters.push_back(param);
+	}
+}
 
 CAnimLightNode::CAnimLightNode(const int id)
 	: CAnimEntityNode(id),
@@ -38,10 +29,30 @@ CAnimLightNode::CAnimLightNode(const int id)
 	m_fSpecularPercentage(100.0f),
 	m_bJustActivated(false)
 {
+	CAnimLightNode::Initialize();
 }
 
 CAnimLightNode::~CAnimLightNode()
 {
+}
+
+void CAnimLightNode::Initialize()
+{
+	if (!AnimLightNode::s_nodeParamsInit)
+	{
+		AnimLightNode::s_nodeParamsInit = true;
+		AnimLightNode::s_nodeParameters.reserve(8);
+		AnimLightNode::AddSupportedParam("Position", eAnimParamType_Position, eAnimValue_Vector);
+		AnimLightNode::AddSupportedParam("Rotation", eAnimParamType_Rotation, eAnimValue_Quat);
+		AnimLightNode::AddSupportedParam("Radius", eAnimParamType_LightRadius, eAnimValue_Float);
+		AnimLightNode::AddSupportedParam("DiffuseColor", eAnimParamType_LightDiffuse, eAnimValue_RGB);
+		AnimLightNode::AddSupportedParam("DiffuseMultiplier", eAnimParamType_LightDiffuseMult, eAnimValue_Float);
+		AnimLightNode::AddSupportedParam("HDRDynamic", eAnimParamType_LightHDRDynamic, eAnimValue_Float);
+		AnimLightNode::AddSupportedParam("SpecularMultiplier", eAnimParamType_LightSpecularMult, eAnimValue_Float);
+		AnimLightNode::AddSupportedParam("SpecularPercentage", eAnimParamType_LightSpecPercentage, eAnimValue_Float);
+		AnimLightNode::AddSupportedParam("Visibility", eAnimParamType_Visibility, eAnimValue_Bool);
+		AnimLightNode::AddSupportedParam("Event", eAnimParamType_Event, eAnimValue_Unknown);
+	}
 }
 
 void CAnimLightNode::Animate(SAnimContext& ec)
@@ -132,11 +143,10 @@ void CAnimLightNode::Animate(SAnimContext& ec)
 bool CAnimLightNode::GetValueFromTrack(CAnimParamType type, float time, float& value) const
 {
 	IAnimTrack* pTrack = GetTrackForParameter(type);
-
-	if (pTrack == NULL)
+	if (pTrack == nullptr)
 		return false;
 
-	pTrack->GetValue(time, value);
+	value = stl::get<float>(pTrack->GetValue(time));
 
 	return true;
 }
@@ -144,11 +154,10 @@ bool CAnimLightNode::GetValueFromTrack(CAnimParamType type, float time, float& v
 bool CAnimLightNode::GetValueFromTrack(CAnimParamType type, float time, Vec3& value) const
 {
 	IAnimTrack* pTrack = GetTrackForParameter(type);
-
-	if (pTrack == NULL)
+	if (pTrack == nullptr)
 		return false;
 
-	pTrack->GetValue(time, value);
+	value = stl::get<Vec3>(pTrack->GetValue(time));
 
 	return true;
 }
@@ -162,32 +171,37 @@ void CAnimLightNode::CreateDefaultTracks()
 	CreateTrack(eAnimParamType_Event);
 }
 
+void CAnimLightNode::OnReset()
+{
+	CAnimEntityNode::OnReset();
+}
+
 void CAnimLightNode::InitializeTrackDefaultValue(IAnimTrack* pTrack, const CAnimParamType& paramType)
 {
 	switch (paramType.GetType())
 	{
 	case eAnimParamType_LightRadius:
-		pTrack->SetValue(0, m_fRadius, true);
+		pTrack->SetValue(0, m_fRadius);
 		break;
 
 	case eAnimParamType_LightDiffuse:
-		pTrack->SetValue(0, m_clrDiffuseColor, true);
+		pTrack->SetValue(0, m_clrDiffuseColor);
 		break;
 
 	case eAnimParamType_LightDiffuseMult:
-		pTrack->SetValue(0, m_fDiffuseMultiplier, true);
+		pTrack->SetValue(0, m_fDiffuseMultiplier);
 		break;
 
 	case eAnimParamType_LightHDRDynamic:
-		pTrack->SetValue(0, m_fHDRDynamic, true);
+		pTrack->SetValue(0, m_fHDRDynamic);
 		break;
 
 	case eAnimParamType_LightSpecularMult:
-		pTrack->SetValue(0, m_fSpecularMultiplier, true);
+		pTrack->SetValue(0, m_fSpecularMultiplier);
 		break;
 
 	case eAnimParamType_LightSpecPercentage:
-		pTrack->SetValue(0, m_fSpecularPercentage, true);
+		pTrack->SetValue(0, m_fSpecularPercentage);
 		break;
 	}
 }
@@ -221,52 +235,16 @@ void CAnimLightNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmp
 	}
 }
 
-bool CAnimLightNode::SetParamValue(float time, CAnimParamType param, float value)
-{
-	switch (param.GetType())
-	{
-	case eAnimParamType_LightRadius:
-		m_fRadius = value;
-		break;
-
-	case eAnimParamType_LightDiffuseMult:
-		m_fDiffuseMultiplier = value;
-		break;
-
-	case eAnimParamType_LightHDRDynamic:
-		m_fHDRDynamic = value;
-		break;
-
-	case eAnimParamType_LightSpecularMult:
-		m_fSpecularMultiplier = value;
-		break;
-
-	case eAnimParamType_LightSpecPercentage:
-		m_fSpecularPercentage = value;
-		break;
-	}
-
-	return CAnimEntityNode::SetParamValue(time, param, value);
-}
-
-bool CAnimLightNode::SetParamValue(float time, CAnimParamType param, const Vec3& value)
-{
-	if (param == eAnimParamType_LightDiffuse)
-		m_clrDiffuseColor = value;
-
-	return CAnimEntityNode::SetParamValue(time, param, value);
-}
-
 unsigned int CAnimLightNode::GetParamCount() const
 {
-	return NumNodeParams;
+	return AnimLightNode::s_nodeParameters.size();
 }
 
 CAnimParamType CAnimLightNode::GetParamType(unsigned int nIndex) const
 {
-	if (nIndex < NumNodeParams)
+	if (nIndex < AnimLightNode::s_nodeParameters.size())
 	{
-		return s_nodeParams[nIndex].paramType;
+		return AnimLightNode::s_nodeParameters[nIndex].paramType;
 	}
 
 	return eAnimParamType_Invalid;
@@ -274,11 +252,11 @@ CAnimParamType CAnimLightNode::GetParamType(unsigned int nIndex) const
 
 bool CAnimLightNode::GetParamInfoFromType(const CAnimParamType& paramId, SParamInfo& info) const
 {
-	for (unsigned int i = 0; i < NumNodeParams; i++)
+	for (unsigned int i = 0; i < AnimLightNode::s_nodeParameters.size(); ++i)
 	{
-		if (s_nodeParams[i].paramType == paramId)
+		if (AnimLightNode::s_nodeParameters[i].paramType == paramId)
 		{
-			info = s_nodeParams[i];
+			info = AnimLightNode::s_nodeParameters[i];
 			return true;
 		}
 	}

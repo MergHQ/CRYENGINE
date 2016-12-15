@@ -24,10 +24,6 @@ CProceduralContextRagdoll::CProceduralContextRagdoll()
 	Reset();
 }
 
-CProceduralContextRagdoll::~CProceduralContextRagdoll()
-{
-}
-
 void CProceduralContextRagdoll::EnableRagdoll( const EntityId entityID, const bool bAlive, const float stiffness, const bool bFromProcClip )
 {
 	CRY_ASSERT( !m_targetEntityId || m_targetEntityId==entityID );

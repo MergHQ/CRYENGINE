@@ -25,7 +25,17 @@ class CSystemEventListener_CryMonoBridge : public ISystemEventListener
 {
 
 public:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) {}
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+	{
+		switch (event)
+		{
+		case ESYSTEM_EVENT_FULL_SHUTDOWN:
+		{
+			SAFE_DELETE(gEnv->pMonoRuntime);
+		}
+		break;
+		}
+	}
 };
 
 static CSystemEventListener_CryMonoBridge g_system_event_listener_crymonobridge;
@@ -36,18 +46,18 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMonoBridge, "EngineModule_CryMonoBridge", 0x2b4615a571524d67, 0x920dc857f8503b3a)
 
+	virtual ~CEngineModule_CryMonoBridge() {}
+
 	virtual const char* GetName() { return "CryMonoBridge"; }
 	virtual const char* GetCategory() { return "CryEngine"; }
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 	{
 		env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_crymonobridge);
-		env.pMonoRuntime = new CMonoRuntime(initParams.szProjectDllDir);
-		return true;
+		env.pMonoRuntime = new CMonoRuntime();
+
+		return env.pMonoRuntime->Initialize();
 	}
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryMonoBridge)
-
-CEngineModule_CryMonoBridge::CEngineModule_CryMonoBridge() {}
-CEngineModule_CryMonoBridge::~CEngineModule_CryMonoBridge() {}

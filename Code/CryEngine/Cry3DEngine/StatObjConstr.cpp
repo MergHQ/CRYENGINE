@@ -650,7 +650,7 @@ IStatObj* CStatObj::GetLodObject(int nLodLevel, bool bReturnNearest)
 	return pLod;
 }
 
-bool CStatObj::IsPhysicsExist()
+bool CStatObj::IsPhysicsExist() const
 {
 	return m_arrPhysGeomInfo.GetGeomCount() > 0;
 }
@@ -795,14 +795,14 @@ IStatObj* CStatObj::Clone(bool bCloneGeometry, bool bCloneChildren, bool bMeshes
 	pNewObj->m_AABB = m_AABB;
 	pNewObj->m_vVegCenter = m_vVegCenter;
 
-	pNewObj->m_fGeometricMeanFaceArea = m_fGeometricMeanFaceArea;
-
 	pNewObj->m_fRadiusHors = m_fRadiusHors;
 	pNewObj->m_fRadiusVert = m_fRadiusVert;
 
 	pNewObj->m_nFlags = m_nFlags | STATIC_OBJECT_CLONE;
 
+	pNewObj->m_fGeometricMeanFaceArea = m_fGeometricMeanFaceArea;
 	pNewObj->m_fLodDistance = m_fLodDistance;
+	pNewObj->m_depthSortOffset = m_depthSortOffset;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Internal Flags.

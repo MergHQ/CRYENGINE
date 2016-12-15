@@ -358,7 +358,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 {
 	FUNCTION_PROFILER_RENDERER;
 
-	COMPILE_TIME_ASSERT(MAX_PREDICTION_ZONES == 2);
+	static_assert(MAX_PREDICTION_ZONES == 2, "Invalid maximum prediction zone value!");
 
 	size_t nListSize = 0;
 

@@ -360,7 +360,7 @@ void CBoidFish::Kill( const Vec3 &hitPoint,const Vec3 &force )
 
 	/*
 	// Can`t Kill fish in MP game.
-	IGame *pGame = gEnv->pGame;
+	IGame *pGame = g_pGame;
 	if (pGame && pGame->GetModuleState( EGameMultiplayer ) )
 		return;
 		*/

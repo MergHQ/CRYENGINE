@@ -1,30 +1,23 @@
 {
     "content": {
-	    "assets": ["Assets"],
-        "code": ["Code/Game/GameDll"],
-		"libs": [{
-			"name": "Game",
-			"shared": {
-				"win_x64": "bin/win_x64/Game.dll",
-				"win_x86": "bin/win_x86/Game.dll"
-			}
-		}]
+        "assets": [
+            "Assets"
+        ]
+    },
+    "csharp": {
+        "monodev": {
+            "solution": "Code/Sydewinder.sln",
+            "user": "Code/Sydewinder/Sydewinder.csproj.user"
+        },
+        "msdev": {
+            "solution": "Code/Sydewinder_VS.sln",
+            "user": "Code/Sydewinder/Sydewinder.ceproj.user"
+        }
     },
     "info": {
         "name": "CE# Framework - Sydewinder"
     },
-	"csharp":
-	{
-		"monodev": {
-			"solution": "Code/Sydewinder.sln",
-			"user": "Code/Sydewinder/Sydewinder.csproj.user"
-		},
-		"msdev": {
-			"solution": "Code/Sydewinder_VS.sln",
-			"user": "Code/Sydewinder/Sydewinder.ceproj.user"
-		}
-	},
     "require": {
-        "engine": "engine-5.2"
+        "engine": "engine-5.3"
     }
 }

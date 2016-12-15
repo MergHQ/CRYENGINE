@@ -62,12 +62,8 @@ LINK_THIRD_PARTY_LIBRARY("SDKs/AMD/AGS Lib/lib/Win32/static/amd_ags.lib")
 	#endif
 
 	#if defined(USE_NV_API)
-		#include <NVAPI/nvapi.h>
-		#if CRY_PLATFORM_64BIT
-LINK_THIRD_PARTY_LIBRARY("SDKs/NVAPI/amd64/nvapi64.lib")
-		#else
-LINK_THIRD_PARTY_LIBRARY("SDKs/NVAPI/x86/nvapi.lib")
-		#endif
+		#include NV_API_HEADER
+		LINK_THIRD_PARTY_LIBRARY(NV_API_LIB)
 	#endif
 
 	#if defined(USE_AMD_EXT)
@@ -133,7 +129,7 @@ void CD3D9Renderer::DisplaySplash()
 	if (IsEditorMode())
 		return;
 
-	HBITMAP hImage = (HBITMAP)LoadImage(GetModuleHandle(0), "splash.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	HBITMAP hImage = (HBITMAP)LoadImage(CryGetCurrentModule(), "splash.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 	if (hImage != INVALID_HANDLE_VALUE)
 	{
@@ -964,6 +960,8 @@ void SDepthTexture::Release(bool bReleaseTexture)
 
 void CD3D9Renderer::ShutDownFast()
 {
+	CVrProjectionManager::Reset();
+
 	// Flush RT command buffer
 	ForceFlushRTCommands();
 	CHWShader::mfFlushPendedShadersWait(-1);
@@ -987,11 +985,13 @@ void CD3D9Renderer::ShutDownFast()
 
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
+	CVrProjectionManager::Reset();
+
 	SAFE_RELEASE(m_pZTexture);
 	SAFE_RELEASE(m_pZTextureMSAA);
 	SAFE_RELEASE(m_pNativeZTexture);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	SF_DestroyResources();
 #endif
 
@@ -1015,7 +1015,7 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 		m_DevMan.ReleaseFence(m_frameFences[i]);
 
 	CHWShader::mfFlushPendedShadersWait(-1);
-	if (nFlags == FRR_ALL)
+	if (nFlags == FRR_ALL && !IsShaderCacheGenMode())
 	{
 		memset(&CTexture::s_TexStages[0], 0, sizeof(CTexture::s_TexStages));
 		CTexture::s_TexStates.clear();
@@ -1188,14 +1188,14 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 		memset(&wc, 0, sizeof(WNDCLASSA));
 		wc.style = CS_OWNDC;
 		wc.lpfnWndProc = DefWindowProcA;
-		wc.hInstance = m_hInst;
+		wc.hInstance = CryGetCurrentModule();
 		wc.lpszClassName = "D3DDeviceWindowClassForSandbox";
 		if (!RegisterClassA(&wc))
 		{
 			CryFatalError("Cannot Register Window Class %s", wc.lpszClassName);
 			return false;
 		}
-		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, wdt, hgt, NULL, NULL, m_hInst, NULL);
+		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, wdt, hgt, NULL, NULL, wc.hInstance, NULL);
 		ShowWindow(m_hWnd, SW_HIDE);
 	}
 	else
@@ -1216,7 +1216,7 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 			wc.cbSize = sizeof(WNDCLASSEXW);
 			wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 			wc.lpfnWndProc = (WNDPROC)GetISystem()->GetRootWindowMessageHandler();
-			wc.hInstance = m_hInst;
+			wc.hInstance = CryGetCurrentModule();
 			wc.hIcon = m_hIconBig;
 			wc.hIconSm = m_hIconSmall;
 			wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
@@ -1229,7 +1229,7 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 
 			wstring wideTitle = Unicode::Convert<wstring>(m_WinTitle);
 
-			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, wdt, hgt, NULL, NULL, m_hInst, NULL);
+			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, wdt, hgt, NULL, NULL, wc.hInstance, NULL);
 			if (m_hWnd && !IsWindowUnicode(m_hWnd))
 			{
 				CryFatalError("Expected an UNICODE window for launcher");
@@ -1448,7 +1448,7 @@ static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
 	}
 }
 
-WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HINSTANCE hinst, WIN_HWND Glhwnd, bool bReInit, const SCustomRenderInitArgs* pCustomArgs, bool bShaderCacheGen)
+WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd, bool bReInit, const SCustomRenderInitArgs* pCustomArgs, bool bShaderCacheGen)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -1532,8 +1532,6 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 #endif
 
 	iLog->Log("Creating window called '%s' (%dx%d)", m_WinTitle, width, height);
-
-	m_hInst = (HINSTANCE)(TRUNCATE_PTR)hinst;
 
 	if (Glhwnd == (WIN_HWND)1)
 	{
@@ -1631,6 +1629,8 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			assert(0);
 		iLog->Log(" Shader model usage: '%s'", str);
 
+		// Needs to happen post D3D device creation
+		CVrProjectionManager::Instance()->Init(this);
 	}
 	else
 	{
@@ -1736,7 +1736,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 #endif
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler)
+	if (m_pPipelineProfiler && !IsShaderCacheGenMode())
 	{
 		m_pPipelineProfiler->Init();
 	}
@@ -2065,7 +2065,7 @@ bool CD3D9Renderer::SetRes()
 		ID3D11Device1* pDevice1 = static_cast<ID3D11Device1*>(pDevice);
 		m_DeviceWrapper.AssignDevice(pDevice1);
 
-		ID3D11DeviceContext1* pDeviceContext1 = NULL;
+		D3DDeviceContext* pDeviceContext1 = NULL;
 		GetDevice().GetImmediateContext1(&pDeviceContext1);
 		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext1);
 	#else
@@ -2189,7 +2189,7 @@ bool CD3D9Renderer::SetRes()
 		width = m_deskwidth;
 		height = m_deskheight;
 	}
-
+	
 	// DirectX9 and DirectX10 device creating
 	#if defined(SUPPORT_DEVICE_INFO)
 	if (m_devInfo.CreateDevice(!m_bFullScreen, width, height, m_backbufferWidth, m_backbufferHeight, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
@@ -2200,6 +2200,14 @@ bool CD3D9Renderer::SetRes()
 	{
 		return false;
 	}
+
+	//query adapter name
+	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
+	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description);
+	m_adapterInfo.VendorId = desc.VendorId;
+	m_adapterInfo.DeviceId = desc.DeviceId;
+	m_adapterInfo.SubSysId = desc.SubSysId;
+	m_adapterInfo.Revision = desc.Revision;
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 	#endif
@@ -2279,6 +2287,14 @@ bool CD3D9Renderer::SetRes()
 	}
 
 	m_DevBufMan.Init();
+
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	if( m_pRenderAuxGeomD3D )
+	{
+		m_pRenderAuxGeomD3D->RestoreDeviceObjects();
+	}
+#endif
 
 	m_pStereoRenderer->InitDeviceAfterD3D();
 
@@ -2491,8 +2507,9 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	}
 
 	rd->m_nGPUs = min(rd->m_nGPUs, (uint32)MAX_GPU_NUM);
+	
 #endif
-
+	rd->m_adapterInfo.nNodeCount = max(rd->m_nGPUs, rd->m_adapterInfo.nNodeCount);
 	CryLogAlways("Active GPUs: %i", rd->m_nGPUs);
 
 #if CRY_PLATFORM_ORBIS
@@ -2749,11 +2766,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 
 	rd->m_bDeviceLost = 0;
 	rd->m_pLastVDeclaration = NULL;
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	if (rd->m_pRenderAuxGeomD3D && FAILED(hr = rd->m_pRenderAuxGeomD3D->RestoreDeviceObjects()))
-		return hr;
-#endif
 
 	CHWShader_D3D::mfSetGlobalParams();
 	//rd->ResetToDefault();

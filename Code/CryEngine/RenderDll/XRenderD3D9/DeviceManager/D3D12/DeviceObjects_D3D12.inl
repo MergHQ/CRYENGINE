@@ -13,14 +13,16 @@ public:
 	void BeginMeasurement();
 	void EndMeasurement();
 
-	uint32 IssueTimestamp();
+	uint32 IssueTimestamp(void* pCommandList);
 	bool ResolveTimestamps();
 
 	float GetTimeMS(uint32 timestamp0, uint32 timestamp1)
 	{
 		timestamp0 -= m_groupIndex * kMaxTimestamps;
 		timestamp1 -= m_groupIndex * kMaxTimestamps;
-		return (m_timeValues[std::max(timestamp0, timestamp1)] - m_timeValues[std::min(timestamp0, timestamp1)]) / (float)(m_frequency / 1000);
+		
+		uint64 duration = std::max(m_timeValues[timestamp0], m_timeValues[timestamp1]) - std::min(m_timeValues[timestamp0], m_timeValues[timestamp1]);
+		return duration / (float)(m_frequency / 1000);
 	}
 
 protected:

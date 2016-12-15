@@ -30,7 +30,7 @@ struct WritePropertyTyped
 		IWriteXMLSource::TValue vvalue((T()));
 		if (!pSource->GetValue(name, vvalue, definition))
 			return false;
-		T* pValue = boost::get<T>(&vvalue);
+		T* pValue = stl::get_if<T>(&vvalue);
 		if (!pValue)
 			return false;
 		data->setAttr(name, *pValue);
@@ -41,7 +41,7 @@ struct WritePropertyTyped
 		IWriteXMLSource::TValue vvalue((T()));
 		if (!pSource->GetAt(elem, vvalue, definition))
 			return false;
-		T* pValue = boost::get<T>(&vvalue);
+		T* pValue = stl::get_if<T>(&vvalue);
 		if (!pValue)
 			return false;
 		data->setAttr("value", *pValue);

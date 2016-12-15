@@ -229,6 +229,21 @@ enum EAIStimulusFilterMerge
 	                                      //!< lifetime of the existing stimulus is less than processDelay, else discard.
 };
 
+typedef uint16 EAILoadDataFlags;
+enum EAILoadDataFlag : EAILoadDataFlags
+{
+	eAILoadDataFlag_None             = 0,
+	eAILoadDataFlag_MNM              = BIT(0),
+	eAILoadDataFlag_DesignedAreas    = BIT(1),
+	eAILoadDataFlag_Covers           = BIT(2),
+	
+	eAILoadDataFlag_AfterExport      = BIT(14),
+	eAILoadDataFlag_QuickLoad        = BIT(15),
+
+	eAILoadDataFlag_Navigation = eAILoadDataFlag_MNM | eAILoadDataFlag_DesignedAreas,
+	eAILoadDataFlag_AllSystems = 0xFFFF & ~(eAILoadDataFlag_AfterExport | eAILoadDataFlag_QuickLoad),
+};
+
 struct SNavigationShapeParams
 {
 	SNavigationShapeParams(
@@ -715,10 +730,8 @@ struct IAISystem
 
 	virtual void LayerEnabled(const char* layerName, bool enabled, bool serialized) = 0;
 
-	virtual void LoadLevelData(const char* szLevel, const char* szMission, const bool bRequiredQuickLoading = false) = 0;
-	virtual void LoadCover(const char* szLevel, const char* szMission) = 0;
-
-	virtual void LoadNavigationData(const char* szLevel, const char* szMission, const bool bRequiredQuickLoading = false, bool bAfterExporting = false) = 0;
+	virtual void LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems) = 0;
+	virtual void LoadNavigationData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems) = 0;
 
 #if defined(SEG_WORLD)
 	// Reads areas from file. clears the existing areas.

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 #include "../Common/CryNameR.h"
 #include "ScaleformPlayback.h"
 
@@ -85,6 +85,7 @@ struct SSF_ResourcesD3D
 
 		CompiledRPList m_freeList;
 		std::unordered_map<int, CompiledRPList> m_useList;
+		CryCriticalSectionNonRecursive m_lock;
 
 		CRenderPrimitive* GetUsablePrimitive(int key);
 		void FreeUsedPrimitives(int key);
@@ -93,10 +94,11 @@ struct SSF_ResourcesD3D
 
 	struct STransientConstantBufferHeap
 	{
-		typedef std::forward_list<CConstantBuffer*> TransientCBList;
+		typedef std::forward_list<CConstantBufferPtr> TransientCBList;
 
 		TransientCBList m_freeList;
 		TransientCBList m_useList;
+		CryCriticalSectionNonRecursive m_lock;
 
 		CConstantBuffer* GetUsableConstantBuffer();
 		void FreeUsedConstantBuffers();

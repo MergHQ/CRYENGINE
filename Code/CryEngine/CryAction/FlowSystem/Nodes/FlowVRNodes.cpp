@@ -228,7 +228,7 @@ public:
 				ActivateOutput(pActInfo, EOP_HmdControllerValidData_R, bHmdRightControllerOk);
 
 				// Player Info
-				const IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+				const IActor* pActor = gEnv->pGameFramework->GetClientActor();
 				if (pActor)
 				{
 					Vec3 entityRotationInDegrees(RAD2DEG(Ang3(pActor->GetViewRotation())));
@@ -624,7 +624,7 @@ public:
 					if (pEntity == nullptr)
 					{
 						// if no entity is passed to the node use the local player
-						if (const IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor())
+						if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
 						{
 							pEntity = pActor->GetEntity();
 						}
@@ -828,7 +828,7 @@ public:
 	}
 };
 
-class CVRRenderLayerTexture : public CFlowBaseNode<eNCT_Instanced>
+class CVRRenderLayerTexture : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum INPUTS
 	{

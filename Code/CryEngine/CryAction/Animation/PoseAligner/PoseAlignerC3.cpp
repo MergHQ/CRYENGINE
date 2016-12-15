@@ -258,7 +258,7 @@ ILINE bool InitializePoseAlignerPinger(PoseAligner::CPose& pose, IEntity& entity
 
 	const bool bIsMP = gEnv->bMultiplayer;
 
-	IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(entity.GetId());
+	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(entity.GetId());
 	if (bIsMP && !pVehicle)
 		return false;
 
@@ -583,17 +583,11 @@ class CPoseAlignerC3 :
 {
 	CRYGENERATE_CLASS(CPoseAlignerC3, "AnimationPoseAlignerC3", 0xf5381a4c1374ff00, 0x8de19ba730cf572b)
 
+	virtual ~CPoseAlignerC3() {}
+
 public:
 	virtual bool Initialize(IEntity& entity) override;
 };
-
-CPoseAlignerC3::CPoseAlignerC3()
-{
-}
-
-CPoseAlignerC3::~CPoseAlignerC3()
-{
-}
 
 bool CPoseAlignerC3::Initialize(IEntity& entity)
 {

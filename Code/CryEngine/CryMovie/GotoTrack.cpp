@@ -38,13 +38,13 @@ TMovieSystemValue CGotoTrack::GetValue(SAnimTime time) const
 void CGotoTrack::SetValue(SAnimTime time, const TMovieSystemValue& value)
 {
 	SDiscreteFloatKey oKey;
-	oKey.m_value = boost::get<float>(value);
+	oKey.m_value = stl::get<float>(value);
 	SetKeyAtTime(time, &oKey);
 }
 
 void CGotoTrack::SetDefaultValue(const TMovieSystemValue& value)
 {
-	m_defaultValue = boost::get<float>(value);
+	m_defaultValue = stl::get<float>(value);
 }
 
 void CGotoTrack::SerializeKey(SDiscreteFloatKey& key, XmlNodeRef& keyNode, bool bLoading)

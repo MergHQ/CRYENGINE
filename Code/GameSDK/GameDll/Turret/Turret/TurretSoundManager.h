@@ -37,10 +37,10 @@ struct STurretSoundInfo
 class CTurretSoundManagerHelper
 {
 public:
-	CTurretSoundManagerHelper( IEntityAudioProxyPtr pIEntityAudioProxy )
-		: m_pIEntityAudioProxy( pIEntityAudioProxy )
+	CTurretSoundManagerHelper( IEntityAudioComponent* pIEntityAudioComponent )
+		: m_pIEntityAudioComponent( pIEntityAudioComponent )
 	{
-		assert( m_pIEntityAudioProxy != NULL );
+		assert( m_pIEntityAudioComponent != NULL );
 	}
 
 	~CTurretSoundManagerHelper()
@@ -57,7 +57,7 @@ public:
 
 	void StopAllSounds()
 	{
-		//m_pIEntityAudioProxy->StopAllSounds();
+		//m_pIEntityAudioComponent->StopAllSounds();
 		REINST("needs verification!");
 		for ( size_t i = 0; i < eTS_SoundCount; ++i )
 		{
@@ -71,7 +71,7 @@ public:
 	{
 		/*assert( soundId < eTS_SoundCount );
 		STurretSoundInfo& soundInfo = m_sounds[ soundId ];
-		m_pIEntityAudioProxy->StopSound( soundInfo.soundId );
+		m_pIEntityAudioComponent->StopSound( soundInfo.soundId );
 		soundInfo.soundId = INVALID_SOUNDID;*/
 	}
 
@@ -93,7 +93,7 @@ public:
 		{
 			/*const Vec3 offset( 0, 0, 0 );
 			const Vec3 direction( 0, 0, 0 );
-			soundInfo.soundId = m_pIEntityAudioProxy->PlaySound( soundName, offset, direction, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Mechanic_Entity );*/
+			soundInfo.soundId = m_pIEntityAudioComponent->PlaySound( soundName, offset, direction, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Mechanic_Entity );*/
 			soundInfo.speedParamValue = FLT_MAX;
 		}
 	}
@@ -102,7 +102,7 @@ public:
 	{
 		assert( soundId < eTS_SoundCount );
 		const STurretSoundInfo& soundInfo = m_sounds[ soundId ];
-		/*_smart_ptr< ISound > pSound = m_pIEntityAudioProxy->GetSound( soundInfo.soundId );
+		/*_smart_ptr< ISound > pSound = m_pIEntityAudioComponent->GetSound( soundInfo.soundId );
 		if ( pSound )
 		{
 			const bool logError = false;
@@ -123,7 +123,7 @@ public:
 	}
 
 private:
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioComponent;
 	STurretSoundInfo m_sounds[ eTS_SoundCount ];
 };
 
@@ -131,8 +131,8 @@ private:
 class CTurretSoundManager
 {
 public:
-	CTurretSoundManager( SmartScriptTable pSoundPropertiesTable, ICharacterInstance* pCharacterInstance, IEntityAudioProxyPtr pIEntityAudioProxy )
-		: m_soundManagerHelper( pIEntityAudioProxy )
+	CTurretSoundManager( SmartScriptTable pSoundPropertiesTable, ICharacterInstance* pCharacterInstance, IEntityAudioComponent* pIEntityAudioComponent )
+		: m_soundManagerHelper( pIEntityAudioComponent )
 		, m_oldYawRadians( 0 )
 		, m_oldPitchRadians( 0 )
 		, m_movingHorizontal( false )

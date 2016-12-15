@@ -18,6 +18,10 @@ namespace pfx2
 // GPU Random number generators based on this article:
 //		http://www.reedbeta.com/blog/2013/01/12/quick-and-easy-gpu-random-numbers-in-d3d11/
 
+
+static const float g_MaxU32toF = 1.0f / float(0xFFFFFFFF);
+static const float g_MaxI32toF = 1.0f / float(0x80000000);
+
 // Works for both scalar and SSE
 template<typename T>
 ILINE T RngXorShift(T rngState)
@@ -53,7 +57,7 @@ ILINE SChaosKey::SChaosKey(SChaosKey key1, SChaosKey key2, SChaosKey key3)
 ILINE uint32 SChaosKey::Rand()
 {
 	++m_key;
-	uint result = Jumble(m_key);
+	uint32 result = Jumble(m_key);
 	return result;
 }
 
@@ -64,12 +68,12 @@ ILINE uint32 SChaosKey::Rand(uint32 range)
 
 ILINE float SChaosKey::RandUNorm()
 {
-	return float(Rand()) * (1.0f / 4294967296.0f);
+	return float(Rand()) * g_MaxU32toF;
 }
 
 ILINE float SChaosKey::RandSNorm()
 {
-	return RandUNorm() * 2.0f - 1.0f;
+	return float(int32(Rand())) * g_MaxI32toF;  // Cast rand as signed to generate signed float
 }
 ILINE float SChaosKey::Rand(Range range)
 {
@@ -77,7 +81,7 @@ ILINE float SChaosKey::Rand(Range range)
 }
 ILINE SChaosKey::Range::Range(float lo, float hi)
 {
-	scale = (hi - lo) * (1.0f / 4294967296.0f);
+	scale = (hi - lo) * g_MaxU32toF;
 	bias = lo;
 }
 
@@ -109,13 +113,13 @@ ILINE Vec3 SChaosKey::RandSphere()
 
 ILINE SChaosKeyV::SChaosKeyV(SChaosKey key)
 {
-	m_keys = _mm_set_epi32(key.Rand(), key.Rand(), key.Rand(), key.Rand());
+	m_keys = convert<uint32v>(key.Rand(), key.Rand(), key.Rand(), key.Rand());
 }
 
 ILINE SChaosKeyV::SChaosKeyV(uint32 key)
 {
 	SChaosKey chaosKey(key);
-	m_keys = _mm_set_epi32(key, chaosKey.Rand(), chaosKey.Rand(), chaosKey.Rand());
+	m_keys = convert<uint32v>(key, chaosKey.Rand(), chaosKey.Rand(), chaosKey.Rand());
 }
 
 ILINE uint32v SChaosKeyV::Rand()
@@ -131,28 +135,29 @@ ILINE uint32v SChaosKeyV::Rand(uint32 range)
 
 ILINE floatv SChaosKeyV::RandUNorm()
 {
-	uint32v iv = Rand();
+	// Cast rand as signed, as only signed SIMD int-to-float conversions are available
+	int32v iv = Rand();
 	floatv fv = ToFloatv(iv);
-	return MAdd(fv, ToFloatv(1.0f / 4294967296.0f), ToFloatv(0.5f));
+	return MAdd(fv, ToFloatv(g_MaxU32toF), ToFloatv(0.5f));
 }
 
 ILINE floatv SChaosKeyV::RandSNorm()
 {
 	int32v iv = Rand();
 	floatv fv = ToFloatv(iv);
-	return Mul(fv, ToFloatv(1.0f / 2147483648.0f));
+	return fv * ToFloatv(g_MaxI32toF);
 }
 
 ILINE floatv SChaosKeyV::Rand(Range range)
 {
-	uint32v iv = Rand();
+	int32v iv = Rand();
 	floatv fv = ToFloatv(iv);
 	return MAdd(fv, range.scale, range.bias);
 }
 
 ILINE SChaosKeyV::Range::Range(float lo, float hi)
 {
-	scale = ToFloatv((hi - lo) * (1.0f / 4294967296.0f));
+	scale = ToFloatv((hi - lo) * g_MaxU32toF);
 	bias = ToFloatv((hi + lo) * 0.5f);
 }
 

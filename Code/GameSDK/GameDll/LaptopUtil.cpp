@@ -73,7 +73,7 @@ CLaptopUtil::CLaptopUtil()
 	if(m_isLaptop)
 	{
 		Update();
-		//gEnv->pGame->GetIGameFramework()->RegisterListener(this, "laptoputil", FRAMEWORKLISTENERPRIORITY_MENU);
+		//gEnv->pGameFramework->RegisterListener(this, "laptoputil", FRAMEWORKLISTENERPRIORITY_MENU);
 	}
 }
 
@@ -82,7 +82,7 @@ CLaptopUtil::~CLaptopUtil()
 {
 	if(m_isLaptop)
 	{
-		//gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		//gEnv->pGameFramework->UnregisterListener(this);
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
 		/*

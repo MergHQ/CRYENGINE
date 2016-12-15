@@ -162,12 +162,26 @@ struct IRenderAuxGeom
 
 	//! Draw Text.
 	//! ##@{
-	virtual void RenderText(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args) = 0;
+	virtual void RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
 
-	void         Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
+	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) {}
+
+	void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* format, va_list args)
+	{
+		if( format )
+		{
+			char str[512];
+
+			cry_vsprintf(str, format, args);
+
+			RenderTextQueued(pos, ti, str);
+		}
+	}
+
+	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
 	{
 		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
+		ti.scale = Vec2(font_size);
 		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
 		ti.color[0] = fColor[0];
 		ti.color[1] = fColor[1];
@@ -220,6 +234,206 @@ struct IRenderAuxGeom
 	//! for render and main thread this parameter has no effect
 	virtual void Commit(uint frames = 0) = 0;
 	// </interfuscator:shuffle>
+};
+
+
+
+class IRenderAuxText
+{
+	static IRenderAuxGeom* GetAux()
+	{
+		return gEnv->pRenderer->GetIRenderAuxGeom();
+	}
+
+public:
+	struct AColor
+	{
+		float rgba[4];
+
+		static const float* white()
+		{
+			static float col[] = { 1, 1, 1, 1 };
+			return col;
+		}
+
+		AColor(const float* ptr)
+		{
+			const float* col = ptr ? ptr : white();
+
+			rgba[0] = col[0];
+			rgba[1] = col[1];
+			rgba[2] = col[2];
+			rgba[3] = col[3];
+		}
+
+		AColor(const ColorF& cf)
+		{
+			rgba[0] = cf.r;
+			rgba[1] = cf.g;
+			rgba[2] = cf.b;
+			rgba[3] = cf.a;
+		}
+
+		AColor(const Vec3& v)
+		{
+			rgba[0] = v.x;
+			rgba[1] = v.y;
+			rgba[2] = v.z;
+			rgba[3] = 1;
+		}
+
+		AColor(const ColorB& cb)
+		{
+			rgba[0] = cb.r / 255.0f;
+			rgba[1] = cb.g / 255.0f;
+			rgba[2] = cb.b / 255.0f;
+			rgba[3] = cb.a / 255.0f;
+		}
+
+		AColor(float r, float g, float b, float a)
+		{
+			rgba[0] = r;
+			rgba[1] = g;
+			rgba[2] = b;
+			rgba[3] = a;
+		}
+	};
+
+	struct ASize
+	{
+		Vec2 val;
+
+		ASize(float f)          : val(f)    {}
+		ASize(float x, float y) : val(x, y) {}
+	};
+
+	static void DrawText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
+	{
+		GetAux()->RenderTextQueued(pos, ti, text);
+	}
+
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* text)
+	{
+		if( text && !gEnv->IsDedicated() )
+		{
+			SDrawTextInfo ti;
+			ti.scale = size.val;
+			ti.flags = flags;
+			ti.color[0] = color.rgba[0];
+			ti.color[1] = color.rgba[1];
+			ti.color[2] = color.rgba[2];
+			ti.color[3] = color.rgba[3];
+
+			DrawText(pos, ti, text);
+		}
+	}
+
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* format, va_list args)
+	{
+		if( format )
+		{
+			char str[512];
+
+			cry_vsprintf(str, format, args);
+
+			DrawText(pos, size, color, flags, str);
+		}
+	}
+
+	static void DrawTextF(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* label_text, ...) PRINTF_PARAMS(5, 6)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(pos, size, color, flags, label_text, args);
+		va_end(args);
+	}
+
+	static void DrawLabel(Vec3 pos, float font_size, const char* text)
+	{
+		DrawText(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, text);
+	}
+
+	static void DrawLabelF(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(3, 4)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, label_text, args);
+		va_end(args);
+	}
+
+	static void DrawLabelEx(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* text)
+	{
+		DrawText(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, text);
+	}
+
+	static void DrawLabelExF(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, label_text, args);
+		va_end(args);
+	}
+
+	static void Draw2dLabelEx(float x, float y, float font_size, const AColor& color, EDrawTextFlags flags, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(Vec3(x, y, 0.5f), font_size, color, flags, label_text, args);
+		va_end(args);
+	}
+
+	static void Draw2dLabel(float x, float y, float font_size, const AColor& color, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(Vec3(x, y, 0.5f), font_size, color, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0), label_text, args);
+		va_end(args);
+	}
+
+
+	static void Draw2dText(float posX, float posY, const AColor& color, const char* pStr)
+	{
+		DrawText(Vec3(posX, posY, 1.f), 1, color, eDrawText_LegacyBehavior, pStr);
+	}
+
+	static void PrintToScreen(float x, float y, float size, const char* buf)
+	{
+		DrawText(Vec3(x, y, 1.f), ASize(size * 0.5f / 8, size * 1.f / 8), AColor::white(), eDrawText_800x600 | eDrawText_2D | eDrawText_LegacyBehavior, buf);
+	}
+
+	static void WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		DrawText(Vec3(float(x), float(y), 1.f), ASize(xscale, yscale), AColor(r, g, b, a), eDrawText_800x600 | eDrawText_2D | eDrawText_LegacyBehavior, format, args);
+		va_end(args);
+	}
+
+	static void TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* text)
+	{
+		WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, "%s", text);
+	}
+
+	static void TextToScreen(float x, float y, const char* text)
+	{
+		TextToScreenColor((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, text);
+	}
+
+	static void TextToScreenF(float x, float y, const char* format, ...)
+	{
+		char buffer[512];
+		va_list args;
+		va_start(args, format);
+		cry_vsprintf(buffer, format, args);
+		va_end(args);
+
+		TextToScreenColor((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, buffer);
+	}
+
+	static void DrawString(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
+	{
+		GetAux()->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
+	}
 };
 
 //! Don't change the xxxShift values blindly as they affect the rendering output.

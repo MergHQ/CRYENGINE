@@ -698,7 +698,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		for (int j = 0; j < (int)pTech->m_Passes.Num(); j++)
 		{
 			SShaderPass* pPass = &pTech->m_Passes[j];
-			assert((pPass->m_VShader && pPass->m_PShader) || pPass->m_CShader);
+			//assert((pPass->m_VShader && pPass->m_PShader) || pPass->m_CShader);
 			if (pPass->m_VShader)
 			{
 				AddShaderParamToArray(FXParams, Params, eHWSC_Vertex);
@@ -768,7 +768,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		// NOTE: The pointers and the size is 16 byte aligned
 		size_t nSize = m_Constants.size() * sizeof(Vec4);
 
-		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
+		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBufferRaw(nSize, false);
 		(*ppBuf)->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS

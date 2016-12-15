@@ -1,0 +1,604 @@
+
+#ifndef NV_VR_CFI
+#define NV_VR_CFI
+
+/*
+
+The Multi-Projection SDK has been modified to be compatible with CryEngine's shader preprocessor, which is not a fully functional C preprocessor.
+
+  - The preprocessor treats #if just like #ifdef, so "#define X 0" means the same as "#define X 1" or just "#define X". 
+	For this reason, all NV_VR defines have to be either defined or not, instead of being defined to 0 or 1 or projection type.
+
+  - The preprocessor cannot concatenate tokens, so the GS output structure name has to be provided explicitly.
+
+  - Include files are renamed to .cfi because the preprocessor ignores the file extension in #include.
+
+  - Handling of shader [parameters] interleaved with #if was broken in the preprocessor, fixed in CParserBin::GetNextToken.
+
+  - Primary projection functions were defined in nv_vr_sdk.cfi under #if conditions, had to move the conditions inside the functions
+	because the code is broken into fragments before pass-2 preprocessing, and such functions under #if are not recognized as fragments.
+	This results in missing pieces of code and constants out of correct CBs.
+
+*/
+
+// Use this to pass the constants through a float4 array instead of structure 
+// (for engines which do not support structures in constant buffers).
+// The array can be explicitly or implicitly casted to NV_VR_FastGSCBData.
+// Declare like this: float4 NV_VR_FastGSConstants[NV_VR_FASTGS_DATA_SIZE];
+#define NV_VR_FASTGS_DATA_SIZE 2
+
+// Use this to pass the constants through a float4 array instead of structure 
+// (for engines which do not support structures in constant buffers).
+// The array can be explicitly or implicitly casted to NV_VR_RemapCBData.
+// Declare like this: float4 NV_VR_RemapConstants[NV_VR_REMAP_DATA_SIZE];
+#define NV_VR_REMAP_DATA_SIZE 12
+
+// Constant buffer data to supply the FastGS for culling primitives per-viewport
+// (matches corresponding struct in nv_vr.h)
+// Note: needs to be 16-byte-aligned when placed in a constant buffer.
+struct NV_VR_FastGSCBData
+{
+	// Split positions in NDC space (Y-up, [-1,1] range)
+	float2 NDCSplitsX;
+	float2 NDCSplitsY;
+
+	// Warp factors for Lens-Matched Shading
+	float WarpLeft;
+	float WarpRight;
+	float WarpUp;
+	float WarpDown;
+};
+
+// Calculates a column mask from column flags (left, middle, right)
+uint NV_VR_MRS_GetColumnMask(uint L, uint M, uint R) 
+{ 
+	uint N = L | (M << 1) | (R << 2);
+	return N | (N << 3) | (N << 6);
+}
+		
+// Calculates a row mask from row flags (top, middle, bottom)
+uint NV_VR_MRS_GetRowMask(uint T, uint M, uint B) 
+{
+	uint N = T | (M << 3) | (B << 6);
+	return N | (N << 1) | (N << 2);
+}
+
+// Calculates a column mask from column flags (left, right)
+uint NV_VR_LMS_GetColumnMask(uint L, uint R) 
+{
+	uint N = L | (R << 1);
+	return N | (N << 2);
+}
+
+// Calculates a row mask from row flags (top, bottom)
+uint NV_VR_LMS_GetRowMask(uint T, uint B) 
+{
+	uint N = T | (B << 2);
+	return N | (N << 1);
+}
+
+// Take three vertex positions in clip space, and calculate the
+// (conservative) mask of viewports the triangle touches
+uint NV_VR_CalculateViewportMask(
+	NV_VR_FastGSCBData	CBData,
+	float4				Position0,
+	float4				Position1,
+	float4				Position2)
+{
+	// Cull triangles entirely behind the near plane
+	// 1/w projection means the near plane is (z = w).
+	if (Position0.z > Position0.w && Position1.z > Position1.w && Position2.z > Position2.w)
+		return 0;
+
+#if %_RT_PROJECTION_MULTI_RES
+	const uint NV_VR_Width = 3;
+	const uint NV_VR_Height = 3;
+#elif %_RT_PROJECTION_LENS_MATCHED
+	const uint NV_VR_Width = 2;
+	const uint NV_VR_Height = 2;
+#else
+	const uint NV_VR_Width = 1;
+	const uint NV_VR_Height = 1;
+#endif
+
+#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+	// This function should never be used for planar projection, so if it is, the GS is not set correctly.
+	// Make it obvious by sending prims into every 2nd viewport.
+	return 0x155;
+#else
+	// If triangle has any vertices behind the camera, just give up and send it to all viewports.
+	// After culling triangles entirely behind the near plane, this shouldn't be many.
+	if (Position0.w <= 0.0 || Position1.w <= 0.0 || Position2.w <= 0.0)
+		return (1 << (NV_VR_Width * NV_VR_Height)) - 1;
+
+	// Project the vertices onto XY plane - all of them have positive W at this point
+	float2 V0 = Position0.xy / Position0.w;
+	float2 V1 = Position1.xy / Position1.w;
+	float2 V2 = Position2.xy / Position2.w;
+
+	// Calculate AABB on the XY plane
+	float2 BottomLeft = min(min(V0, V1), V2);
+	float2 TopRight = max(max(V0, V1), V2);
+
+	// Trivial reject
+	if (any(BottomLeft > 1.0) || any(TopRight < -1.0))
+		return 0;
+
+	// Now calculate a viewport mask based on which rows and columns does the AABB intersect.
+	// Let the HLSL compiler do most of the bit manipulations.
+
+#if %_RT_PROJECTION_MULTI_RES
+
+	// Calculate a mask of columns intersected by the AABB
+	uint MaskX = 0;
+
+	// Enable all columns to the right of the left edge of AABB
+	if (BottomLeft.x < CBData.NDCSplitsX[0])
+		MaskX = NV_VR_MRS_GetColumnMask(1, 1, 1);
+	else if (BottomLeft.x < CBData.NDCSplitsX[1])
+		MaskX = NV_VR_MRS_GetColumnMask(0, 1, 1);
+	else
+		MaskX = NV_VR_MRS_GetColumnMask(0, 0, 1);
+
+	// Disable all columns to the right of the right edge of AABB
+	if (TopRight.x < CBData.NDCSplitsX[0])
+		MaskX &= NV_VR_MRS_GetColumnMask(1, 0, 0);
+	else if (TopRight.x < CBData.NDCSplitsX[1])
+		MaskX &= NV_VR_MRS_GetColumnMask(1, 1, 0);
+
+	// Calculate a mask of rows intersected by the AABB
+	uint MaskY = 0;
+
+	// Enable all rows above the bottom edge of AABB
+	if (BottomLeft.y < CBData.NDCSplitsY[1])
+		MaskY = NV_VR_MRS_GetRowMask(1, 1, 1);
+	else if (BottomLeft.y < CBData.NDCSplitsY[0])
+		MaskY = NV_VR_MRS_GetRowMask(1, 1, 0);
+	else
+		MaskY = NV_VR_MRS_GetRowMask(1, 0, 0);
+
+	// Disable all rows above the top edge of AABB
+	if (TopRight.y < CBData.NDCSplitsY[1])
+		MaskY &= NV_VR_MRS_GetRowMask(0, 0, 1);
+	else if (TopRight.y < CBData.NDCSplitsY[0])
+		MaskY &= NV_VR_MRS_GetRowMask(0, 1, 1);
+
+	// Intersect the column mask with the row mask
+	return MaskX & MaskY;
+
+#elif %_RT_PROJECTION_LENS_MATCHED
+
+	// Same algorithm as the MRS branch, just for 2 columns and 2 rows instead of 3
+
+	uint MaskX = 0;
+
+	if (BottomLeft.x < CBData.NDCSplitsX[0])
+		MaskX = NV_VR_LMS_GetColumnMask(1, 1);
+	else
+		MaskX = NV_VR_LMS_GetColumnMask(0, 1);
+
+	if (TopRight.x < CBData.NDCSplitsX[0])
+		MaskX &= NV_VR_LMS_GetColumnMask(1, 0);
+
+	uint MaskY = 0;
+
+	if (BottomLeft.y < CBData.NDCSplitsY[1])
+		MaskY = NV_VR_LMS_GetRowMask(1, 1);
+	else
+		MaskY = NV_VR_LMS_GetRowMask(1, 0);
+
+	if (TopRight.y < CBData.NDCSplitsY[1])
+		MaskY &= NV_VR_LMS_GetRowMask(0, 1);
+
+	return MaskX & MaskY;
+
+#endif
+
+
+#endif
+}
+
+// Constant buffer data to supply the UV-remapping helper functions
+// (matches corresponding struct in nv_vr.h)
+// Note: needs to be 16-byte-aligned when placed in a constant buffer.
+struct NV_VR_RemapCBData
+{
+	float2 ClipToWindowSplitsX;
+	float2 ClipToWindowSplitsY;
+	float2 ClipToWindowX0;
+	float2 ClipToWindowX1;
+	float2 ClipToWindowX2;
+	float2 ClipToWindowY0;
+	float2 ClipToWindowY1;
+	float2 ClipToWindowY2;
+	float2 ClipToWindowZ;
+
+	float2 WindowToClipSplitsX;
+	float2 WindowToClipSplitsY;
+	float2 WindowToClipX0;
+	float2 WindowToClipX1;
+	float2 WindowToClipX2;
+	float2 WindowToClipY0;
+	float2 WindowToClipY1;
+	float2 WindowToClipY2;
+	float2 WindowToClipZ;
+
+	float2 BoundingRectOrigin;
+	float2 BoundingRectSize;
+	float2 BoundingRectSizeInv;
+
+	float2 TextureSize;
+	float2 TextureSizeInv;
+
+	float2 Padding;
+};
+
+NV_VR_RemapCBData NV_VR_GetPlanarRemapCBData(float2 ViewportOrigin, float2 ViewportSize, float2 ViewportSizeInv)
+{
+	NV_VR_RemapCBData cbData;
+
+	cbData.BoundingRectOrigin = ViewportOrigin;
+	cbData.BoundingRectSize = ViewportSize;
+	cbData.BoundingRectSizeInv = ViewportSizeInv;
+
+	cbData.ClipToWindowSplitsX = 0;
+	cbData.ClipToWindowSplitsY = 0;
+	cbData.ClipToWindowX0 = 0;
+	cbData.ClipToWindowX1 = 0;
+	cbData.ClipToWindowX2 = 0;
+	cbData.ClipToWindowY0 = 0;
+	cbData.ClipToWindowY1 = 0;
+	cbData.ClipToWindowY2 = 0;
+	cbData.ClipToWindowZ = float2(1, 0);
+
+	cbData.WindowToClipSplitsX = 0;
+	cbData.WindowToClipSplitsY = 0;
+	cbData.WindowToClipX0 = 0;
+	cbData.WindowToClipX1 = 0;
+	cbData.WindowToClipX2 = 0;
+	cbData.WindowToClipY0 = 0;
+	cbData.WindowToClipY1 = 0;
+	cbData.WindowToClipY2 = 0;
+	cbData.WindowToClipZ = float2(1, 0);
+
+	cbData.Padding = 0;
+
+	return cbData;
+}
+
+
+struct NV_VR_LMS_Configuration
+{
+	float WarpLeft;
+	float WarpRight;
+	float WarpUp;
+	float WarpDown;
+};
+
+NV_VR_LMS_Configuration NV_VR_LMS_GetConfiguration(NV_VR_FastGSCBData cbData)
+{
+	NV_VR_LMS_Configuration res;
+
+	res.WarpLeft	= cbData.WarpLeft;
+	res.WarpRight	= cbData.WarpRight;
+	res.WarpUp		= cbData.WarpUp;
+	res.WarpDown	= cbData.WarpDown;
+
+	return res;
+}
+
+NV_VR_LMS_Configuration NV_VR_LMS_GetConfiguration(NV_VR_RemapCBData cbData)
+{
+	NV_VR_LMS_Configuration res;
+
+	res.WarpLeft	= cbData.ClipToWindowSplitsX.x;
+	res.WarpRight	= cbData.ClipToWindowSplitsX.y;
+	res.WarpUp		= cbData.ClipToWindowSplitsY.x;
+	res.WarpDown	= cbData.ClipToWindowSplitsY.y;
+
+	return res;
+}
+
+float2 NV_VR_LMS_GetWarpFactors(float2 clip_pos, NV_VR_LMS_Configuration c)
+{
+	float2 f;
+	f.x = clip_pos.x < 0 ? -c.WarpLeft : +c.WarpRight;
+	f.y = clip_pos.y < 0 ? -c.WarpDown : +c.WarpUp;
+	return f;
+}
+
+float2 NV_VR_LMS_GetWarpFactors(uint viewport, NV_VR_LMS_Configuration c)
+{
+	float2 f;
+	f.x = ((viewport == 0) || (viewport == 2)) ? -c.WarpLeft : +c.WarpRight;
+	f.y = ((viewport == 2) || (viewport == 3)) ? -c.WarpDown : +c.WarpUp;
+	return f;
+}
+
+float4 NV_VR_MapWindowToClip(
+	NV_VR_RemapCBData	cbData,
+	float3				windowPos,
+	bool				normalize = true)
+{
+#if %_RT_PROJECTION_LENS_MATCHED
+
+	NV_VR_LMS_Configuration conf = NV_VR_LMS_GetConfiguration(cbData);
+
+	float A, B;
+	float2 ViewportX, ViewportY;
+
+	if (windowPos.x < cbData.WindowToClipSplitsX[0])
+	{
+		A = +conf.WarpLeft;
+		ViewportX = cbData.WindowToClipX0;
+	}
+	else
+	{
+		A = -conf.WarpRight;
+		ViewportX = cbData.WindowToClipX1;
+	}
+
+	if (windowPos.y < cbData.WindowToClipSplitsY[0])
+	{
+		B = -conf.WarpUp;
+		ViewportY = cbData.WindowToClipY0;
+	}
+	else
+	{
+		B = +conf.WarpDown;
+		ViewportY = cbData.WindowToClipY1;
+	}
+
+	float4 clipPos;
+	clipPos.x = windowPos.x * ViewportX.x + ViewportX.y;
+	clipPos.y = windowPos.y * ViewportY.x + ViewportY.y;
+	clipPos.z = windowPos.z * cbData.WindowToClipZ.x + cbData.WindowToClipZ.y;
+	clipPos.w = 1.0 + clipPos.x * A + clipPos.y * B;
+
+	if (normalize)
+	{
+		clipPos.xyz /= clipPos.w;
+		clipPos.w = 1.0;
+	}
+
+	return clipPos;
+
+#elif %_RT_PROJECTION_MULTI_RES
+
+	float4 result;
+
+	if (windowPos.x < cbData.WindowToClipSplitsX.x)
+	{
+		result.x = windowPos.x * cbData.WindowToClipX0.x + cbData.WindowToClipX0.y;
+	}
+	else if (windowPos.x < cbData.WindowToClipSplitsX.y)
+	{
+		result.x = windowPos.x * cbData.WindowToClipX1.x + cbData.WindowToClipX1.y;
+	}
+	else
+	{
+		result.x = windowPos.x * cbData.WindowToClipX2.x + cbData.WindowToClipX2.y;
+	}
+
+	if (windowPos.y < cbData.WindowToClipSplitsY.x)
+	{
+		result.y = windowPos.y * cbData.WindowToClipY0.x + cbData.WindowToClipY0.y;
+	}
+	else if (windowPos.y < cbData.WindowToClipSplitsY.y)
+	{
+		result.y = windowPos.y * cbData.WindowToClipY1.x + cbData.WindowToClipY1.y;
+	}
+	else
+	{
+		result.y = windowPos.y * cbData.WindowToClipY2.x + cbData.WindowToClipY2.y;
+	}
+
+	result.z = windowPos.z * cbData.WindowToClipZ.x + cbData.WindowToClipZ.y;
+	result.w = 1;
+
+	return result;
+
+#else
+
+	float2 UV = (windowPos.xy - cbData.BoundingRectOrigin) * cbData.BoundingRectSizeInv;
+	float z = windowPos.z * cbData.WindowToClipZ.x + cbData.WindowToClipZ.y;
+	float4 clipPos = float4(UV.x * 2 - 1, -UV.y * 2 + 1, z, 1);
+	return clipPos;
+
+#endif
+}
+
+float3 NV_VR_MapClipToWindow(
+	NV_VR_RemapCBData	cbData,
+	float4				clipPos,
+	bool				normalize = true)
+{
+#if %_RT_PROJECTION_LENS_MATCHED
+
+	NV_VR_LMS_Configuration conf = NV_VR_LMS_GetConfiguration(cbData);
+
+	float A, B;
+	float2 ViewportX, ViewportY;
+
+	if (clipPos.x < 0)
+	{
+		A = -conf.WarpLeft;
+		ViewportX = cbData.ClipToWindowX0;
+	}
+	else
+	{
+		A = +conf.WarpRight;
+		ViewportX = cbData.ClipToWindowX1;
+	}
+
+	if (clipPos.y < 0)
+	{
+		B = -conf.WarpDown;
+		ViewportY = cbData.ClipToWindowY0;
+	}
+	else
+	{
+		B = +conf.WarpUp;
+		ViewportY = cbData.ClipToWindowY1;
+	}
+
+	float4 warpedPos = clipPos;
+	warpedPos.w = clipPos.w + clipPos.x * A + clipPos.y * B;
+	warpedPos.xyz /= warpedPos.w;
+	warpedPos.w = 1.0;
+
+	float3 windowPos;
+	windowPos.x = warpedPos.x * ViewportX.x + ViewportX.y;
+	windowPos.y = warpedPos.y * ViewportY.x + ViewportY.y;
+	windowPos.z = warpedPos.z * cbData.ClipToWindowZ.x + cbData.ClipToWindowZ.y;
+
+	return windowPos;
+
+#elif %_RT_PROJECTION_MULTI_RES
+
+	float3 result;
+
+	if (normalize)
+	{
+		clipPos.xyz /= clipPos.w;
+		clipPos.w = 1;
+	}
+
+	if (clipPos.x < cbData.ClipToWindowSplitsX.x)
+	{
+		result.x = clipPos.x * cbData.ClipToWindowX0.x + cbData.ClipToWindowX0.y;
+	}
+	else if (clipPos.x < cbData.ClipToWindowSplitsX.y)
+	{
+		result.x = clipPos.x * cbData.ClipToWindowX1.x + cbData.ClipToWindowX1.y;
+	}
+	else
+	{
+		result.x = clipPos.x * cbData.ClipToWindowX2.x + cbData.ClipToWindowX2.y;
+	}
+
+	if (clipPos.y < cbData.ClipToWindowSplitsY.x)
+	{
+		result.y = clipPos.y * cbData.ClipToWindowY0.x + cbData.ClipToWindowY0.y;
+	}
+	else if (clipPos.y < cbData.ClipToWindowSplitsY.y)
+	{
+		result.y = clipPos.y * cbData.ClipToWindowY1.x + cbData.ClipToWindowY1.y;
+	}
+	else
+	{
+		result.y = clipPos.y * cbData.ClipToWindowY2.x + cbData.ClipToWindowY2.y;
+	}
+
+	result.z = clipPos.z * cbData.ClipToWindowZ.x + cbData.ClipToWindowZ.y;
+
+	return result;
+
+#else
+
+	if (normalize)
+	{
+		clipPos.xyz /= clipPos.w;
+		clipPos.w = 1;
+	}
+
+	float2 UV = float2(clipPos.x * 0.5 + 0.5, -clipPos.y * 0.5 + 0.5);
+	float3 windowPos;
+	windowPos.xy = UV * cbData.BoundingRectSize + cbData.BoundingRectOrigin;
+	windowPos.z = clipPos.z * cbData.ClipToWindowZ.x + cbData.ClipToWindowZ.y;
+	return windowPos;
+
+#endif
+}
+
+cbuffer CBVrProjection : register(b11)
+{
+	float4    CVP_GeometryShaderParams[NV_VR_FASTGS_DATA_SIZE];
+	float4    CVP_ProjectionParams[NV_VR_REMAP_DATA_SIZE];
+	float4    CVP_ProjectionParamsOtherEye[NV_VR_REMAP_DATA_SIZE];
+};
+
+NV_VR_RemapCBData NvGetProjectionData()
+{
+	return CVP_ProjectionParams;
+}
+
+NV_VR_RemapCBData NvGetProjectionDataOtherEye()
+{
+	return CVP_ProjectionParamsOtherEye;
+}
+
+NV_VR_FastGSCBData NvGetGeometryShaderData()
+{
+	return CVP_GeometryShaderParams;
+}
+
+
+// Convenience functions that operate on UV instead of clipPos and/or windowPos.
+// Linear UV = (0, 0) maps to clip (-1, 1) - top left corner;
+// Linear UV = (1, 1) maps to clip (1, -1) - bottom right corner.
+// VR "UV" are defined as coordinates relative to BoundingRect.
+
+float2 NV_VR_MapUVToWindow(
+	NV_VR_RemapCBData	cbData,
+	float2				linearUV)
+{
+	float4 clipPos = float4(linearUV.x * 2 - 1, -linearUV.y * 2 + 1, 0, 1);
+	float3 windowPos = NV_VR_MapClipToWindow(cbData, clipPos, false);
+	return windowPos.xy;
+}
+
+float2 NV_VR_MapWindowToUV(
+	NV_VR_RemapCBData	cbData,
+	float2				windowPos)
+{
+	float4 clipPos = NV_VR_MapWindowToClip(cbData, float3(windowPos, 0), true);
+	float2 linearUV = float2(clipPos.x * 0.5 + 0.5, -clipPos.y * 0.5 + 0.5);
+	return linearUV;
+}
+
+float2 NV_VR_MapUVToTexCoord(float2 linearUV)
+{
+#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+	return linearUV;
+#else
+	NV_VR_RemapCBData cbData = NvGetProjectionData();
+	float4 clipPos = float4(linearUV.x * 2 - 1, -linearUV.y * 2 + 1, 0, 1);
+	float3 windowPos = NV_VR_MapClipToWindow(cbData, clipPos, false);
+	float2 vrUV = windowPos.xy * cbData.TextureSizeInv;
+	return vrUV;
+#endif
+}
+
+float2 NV_VR_MapUVToTexCoord_OtherEye(float2 linearUV)
+{
+#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+	return linearUV;
+#else
+	NV_VR_RemapCBData cbData = NvGetProjectionDataOtherEye();
+	float4 clipPos = float4(linearUV.x * 2 - 1, -linearUV.y * 2 + 1, 0, 1);
+	float3 windowPos = NV_VR_MapClipToWindow(cbData, clipPos, false);
+	float2 vrUV = windowPos.xy * cbData.TextureSizeInv;
+	return vrUV;
+#endif
+}
+
+float2 NV_VR_MapTexCoordToUV(float2 vrUV)
+{
+#if !%_RT_PROJECTION_MULTI_RES && !%_RT_PROJECTION_LENS_MATCHED
+	return vrUV;
+#else
+	NV_VR_RemapCBData cbData = NvGetProjectionData();
+	float2 windowPos = vrUV * cbData.TextureSize;
+	float4 clipPos = NV_VR_MapWindowToClip(cbData, float3(windowPos, 0));
+	float2 linearUV = float2(clipPos.x * 0.5 + 0.5, -clipPos.y * 0.5 + 0.5);
+	return linearUV;
+#endif
+}
+
+
+//#define NV_VR_FASTGS_EMULATION
+#define NV_VR_FASTGS_VIEWPORT_MASK_COMPATIBILITY
+#define NV_VR_FASTGS_CONSTANT_DATA NvGetGeometryShaderData()
+
+#endif

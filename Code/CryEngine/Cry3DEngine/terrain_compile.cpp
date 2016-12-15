@@ -27,9 +27,9 @@
 #define SIGC_PICKABLE               BIT(5)
 #define SIGC_PROCEDURALLYANIMATED   BIT(6)
 #define SIGC_CASTSHADOW             BIT(7) // Deprecated
-#define SIGC_RECVSHADOW             BIT(8)
+#define SIGC_GI_MODE                BIT(8)
 #define SIGC_DYNAMICDISTANCESHADOWS BIT(9)
-#define SIGC_USEALPHABLENDING       BIT(10)
+#define SIGC_USEALPHABLENDING       BIT(10) // not used
 #define SIGC_USESPRITES             BIT(11)
 #define SIGC_RANDOMROTATION         BIT(12)
 #define SIGC_ALLOWINDOOR            BIT(13)
@@ -183,12 +183,10 @@ void CTerrain::SaveTables(byte*& pData, int& nDataSize, std::vector<struct IStat
 					lstFileChunks[i].nFlags |= SIGC_PICKABLE;
 				if (rTable[i]->bAutoMerged)
 					lstFileChunks[i].nFlags |= SIGC_PROCEDURALLYANIMATED;
-				if (rTable[i]->bRecvShadow)
-					lstFileChunks[i].nFlags |= SIGC_RECVSHADOW;
+				if (rTable[i]->bGIMode)
+					lstFileChunks[i].nFlags |= SIGC_GI_MODE;
 				if (rTable[i]->bDynamicDistanceShadows)
 					lstFileChunks[i].nFlags |= SIGC_DYNAMICDISTANCESHADOWS;
-				if (rTable[i]->bUseAlphaBlending)
-					lstFileChunks[i].nFlags |= SIGC_USEALPHABLENDING;
 				if (rTable[i]->bUseSprites)
 					lstFileChunks[i].nFlags |= SIGC_USESPRITES;
 				if (rTable[i]->bRandomRotation)
@@ -423,9 +421,8 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 	rTable[i].bHideabilitySecondary = (lstFileChunks[i].nFlags & SIGC_HIDEABILITYSECONDARY) != 0;
 	rTable[i].bPickable = (lstFileChunks[i].nFlags & SIGC_PICKABLE) != 0;
 	rTable[i].bAutoMerged = (lstFileChunks[i].nFlags & SIGC_PROCEDURALLYANIMATED) != 0;  // && GetCVars()->e_MergedMeshes;
-	rTable[i].bRecvShadow = (lstFileChunks[i].nFlags & SIGC_RECVSHADOW) != 0;
+	rTable[i].bGIMode = (lstFileChunks[i].nFlags & SIGC_GI_MODE) != 0;
 	rTable[i].bDynamicDistanceShadows = (lstFileChunks[i].nFlags & SIGC_DYNAMICDISTANCESHADOWS) != 0;
-	rTable[i].bUseAlphaBlending = (lstFileChunks[i].nFlags & SIGC_USEALPHABLENDING) != 0;
 	rTable[i].bUseSprites = (lstFileChunks[i].nFlags & SIGC_USESPRITES) != 0;
 	rTable[i].bRandomRotation = (lstFileChunks[i].nFlags & SIGC_RANDOMROTATION) != 0;
 
@@ -660,6 +657,8 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 					CryPathString sMtlName = matName.szFileName;
 					sMtlName = PathUtil::MakeGamePath(sMtlName);
 					rTable[tableIndex] = matName.szFileName[0] ? GetMatMan()->LoadMaterial(sMtlName) : NULL;
+					if (rTable[tableIndex])
+						rTable[tableIndex]->AddRef();
 
 					SLICE_AND_SLEEP();
 				}

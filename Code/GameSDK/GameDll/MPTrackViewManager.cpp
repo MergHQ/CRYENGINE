@@ -10,8 +10,8 @@ static const float s_TrackViewMinTimeDifferenceForSynch = 0.25f;
 
 CMPTrackViewManager::CMPTrackViewManager() : m_FinishedTrackViewCount(0), m_movieListener(false)
 {
-	std::memset(m_FinishedTrackViews, 0, sizeof (m_FinishedTrackViews));
-	std::memset(m_FinishedTrackViewTimes, 0, sizeof(m_FinishedTrackViewTimes));
+	memset(m_FinishedTrackViews, 0, sizeof (m_FinishedTrackViews));
+	memset(m_FinishedTrackViewTimes, 0, sizeof(m_FinishedTrackViewTimes));
 }
 
 CMPTrackViewManager::~CMPTrackViewManager()

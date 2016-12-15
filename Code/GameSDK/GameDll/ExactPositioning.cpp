@@ -298,8 +298,8 @@ void CExactPositioning::UpdateAnimationTrigger()
 	//
 	// TODO: Investigate
 	//
-	//IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*) pEntity->GetProxy( ENTITY_PROXY_RENDER );
-	//bool hasSplitUpdate = (pRenderProxy != NULL) && pRenderProxy->IsCharactersUpdatedBeforePhysics();
+	//IEntityRender* pIEntityRender =  pEntity->GetProxy( ENTITY_PROXY_RENDER );
+	//bool hasSplitUpdate = (pIEntityRender != NULL) && pIEntityRender->IsCharactersUpdatedBeforePhysics();
 	//if ( hasSplitUpdate && gEnv->pPhysicalWorld->GetPhysVars()->bMultithreaded )
 	//{
 	//	curLocation.t += m_pState->GetAnimatedCharacter()->GetRequestedEntityMovement().t;

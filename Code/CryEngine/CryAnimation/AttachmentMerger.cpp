@@ -111,7 +111,8 @@ void CAttachmentMerger::MergeContext::Update(const AttachmentRenderData& renderD
 				IRenderShaderResources* pShaderResources = pSubMtl->GetShaderItem().m_pShaderResources;
 
 				nAccumulatedIndexCount[lod] += chunk.nNumIndices;
-				if (pShaderResources->IsAlphaTested())
+
+				if (pShaderResources && pShaderResources->IsAlphaTested())
 					bAlphaTested = true;
 
 				if ((pSubMtl->GetFlags() & MTL_FLAG_2SIDED) != 0)
@@ -701,9 +702,12 @@ void CAttachmentMerger::Merge(CAttachmentMerged* pDstAttachment, const DynArray<
 		chunk.nNumVerts = numVertices;
 		chunk.nNumIndices = numIndices;
 
-		pRenderMesh->SetChunk(-1, chunk);
-		pRenderMesh->GetChunks()[0].pRE->mfUpdateFlags(FCEF_SKINNED);
-		pRenderMesh->SetSkinned();
+		if (chunk.nNumVerts > 0 && chunk.nNumIndices > 0)
+		{
+			pRenderMesh->SetChunk(-1, chunk);
+			pRenderMesh->GetChunks()[0].pRE->mfUpdateFlags(FCEF_SKINNED);
+			pRenderMesh->SetSkinned();
+		}
 	}
 
 	pDstSkin->m_arrModelJoints = arrModelJoints;

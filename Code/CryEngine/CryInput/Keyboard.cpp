@@ -147,7 +147,7 @@ DWORD CKeyboard::GetDeviceFlags() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-unsigned char CKeyboard::Event2ASCII(const SInputEvent& event)
+uint32 CKeyboard::Event2Unicode(const SInputEvent& event)
 {
 	unsigned int dik = NameToId(event.keyName);
 
@@ -206,101 +206,99 @@ unsigned char CKeyboard::Event2ASCII(const SInputEvent& event)
 	return m_scanCodes[dik].lc;
 }
 
-unsigned char CKeyboard::ToAscii(unsigned int vKeyCode, unsigned int k, unsigned char sKState[256]) const
-{
-	unsigned short ascii[2] = { 0 };
-	int nResult = ToAsciiEx(vKeyCode, k, sKState, ascii, 0, GetKeyboardLayout(0));
+//////////////////////////////////////////////////////////////////////////
 
-	if (nResult == 2)
-		return (char)(ascii[1] ? ascii[1] : (ascii[0] >> 8));
-	else if (nResult == 1)
-		return (char)ascii[0];
+void CKeyboard::RebuildScanCodeTable(HKL layout)
+{
+	wchar_t layoutName[KL_NAMELENGTH];
+	if (GetKeyboardLayoutNameW(layoutName) == TRUE)
+	{
+		const string layoutNameUtf8 = Unicode::Convert<string>(layoutName);
+		CryLog("Input locale changed to %s", layoutNameUtf8.c_str());
+	}
 	else
-		return 0;
-}
+	{
+		CryLog("Input locale changed to [unknown %p]", layout);
+	}
 
-wchar_t CKeyboard::ToUnicode(unsigned int vKeyCode, unsigned int k, unsigned char sKState[256]) const
-{
-	wchar_t unicode[2] = { 0 };
-	int nResult = ToUnicodeEx(vKeyCode, k, sKState, unicode, 2, 0, GetKeyboardLayout(0));
-	if (nResult == 1)
-		return unicode[0];
-	return 0;
+	const auto scanCodeToVirtualKey = [layout](UINT scanCode) -> UINT
+	{
+		return MapVirtualKeyExW(scanCode, MAPVK_VSC_TO_VK, layout);
+	};
+	const auto virtualKeyToScanCode = [layout](UINT virtualKey) -> UINT
+	{
+		return MapVirtualKeyExW(virtualKey, MAPVK_VK_TO_VSC, layout);
+	};
+
+	const UINT clearVirtualKey = VK_DECIMAL;
+	const UINT clearScanCode = virtualKeyToScanCode(clearVirtualKey);
+	const auto clearKeyboardBuffer = [=]()
+	{
+		static const BYTE emptyBuffer[256];
+		WCHAR output[3];
+		while (ToUnicodeEx(clearVirtualKey, clearScanCode, emptyBuffer, output, 2, 0, layout) < 0)
+			;
+	};
+	clearKeyboardBuffer();
+
+	BYTE keyboardState[256] = { 0 };
+	const auto translateScanCode = [&](UINT scanCode) -> uint32
+	{
+		const UINT virtualKey = scanCodeToVirtualKey(scanCode);
+		WCHAR output[2] = { 0 };
+		bool bHasOutput = ToUnicodeEx(virtualKey, scanCode, keyboardState, output, 2, 0, layout) != 0;
+		if (!bHasOutput)
+		{
+			keyboardState[scanCode] = 0x81;
+			bHasOutput = ToUnicodeEx(virtualKey, scanCode, keyboardState, output, 2, 0, layout) != 0;
+			keyboardState[scanCode] = 0x00;
+		}
+		clearKeyboardBuffer();
+		if (!bHasOutput)
+		{
+			return 0; // No character
+		}
+		const bool bIsSurrogate = IS_SURROGATE_PAIR(output[0], output[1]);
+		if (!bIsSurrogate)
+		{
+			return output[0]; // BMP character
+		}
+		return ((output[0] & 0x3FF) << 10) | (output[1] & 0x3FF) | 0x10000; // Surrogate pair
+	};
+
+	for (int k = 0; k < 256; k++)
+	{
+		// lower case
+		m_scanCodes[k].lc = translateScanCode(k);
+
+		// upper case
+		keyboardState[VK_SHIFT] = 0x80;
+		m_scanCodes[k].uc = translateScanCode(k);
+		keyboardState[VK_SHIFT] = 0x00;
+
+		// alternate
+		keyboardState[VK_CONTROL] = 0x80;
+		keyboardState[VK_MENU] = 0x80;
+		keyboardState[VK_LCONTROL] = 0x80;
+		keyboardState[VK_LMENU] = 0x80;
+		m_scanCodes[k].ac = translateScanCode(k);
+		keyboardState[VK_CONTROL] = 0x00;
+		keyboardState[VK_MENU] = 0x00;
+		keyboardState[VK_LCONTROL] = 0x00;
+		keyboardState[VK_LMENU] = 0x00;
+
+		// caps lock
+		keyboardState[VK_CAPITAL] = 0x01;
+		m_scanCodes[k].cl = translateScanCode(k);
+		keyboardState[VK_CAPITAL] = 0x00;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
+
 void CKeyboard::SetupKeyNames()
 {
-	////////////////////////////////////////////////////////////
-	memset(m_scanCodes, 0, sizeof(m_scanCodes));
-
-	unsigned char sKState[256] = { 0 };
-	unsigned int vKeyCode;
-
-	for (int k = 0; k < 256; k++)
-	{
-		vKeyCode = MapVirtualKeyEx(k, 1, GetKeyboardLayout(0));
-
-		// lower case
-		m_scanCodes[k].lc = ToAscii(vKeyCode, k, sKState);
-
-	#if 0
-		wchar_t wc = ToUnicode(vKeyCode, k, sKState);
-		CryLogAlways("ScanCode=%d VK=%d lc=%d unicode=%d '%c' '%C'", k, vKeyCode, (int)m_scanCodes[k].lc, (int)wc, m_scanCodes[k].lc, wc);
-	#endif
-
-		// upper case
-		sKState[VK_SHIFT] = 0x80;
-		m_scanCodes[k].uc = ToAscii(vKeyCode, k, sKState);
-		sKState[VK_SHIFT] = 0;
-
-		// alternate
-		sKState[VK_CONTROL] = 0x80;
-		sKState[VK_MENU] = 0x80;
-		sKState[VK_LCONTROL] = 0x80;
-		sKState[VK_LMENU] = 0x80;
-		m_scanCodes[k].ac = ToAscii(vKeyCode, k, sKState);
-		sKState[VK_CONTROL] = 0x0;
-		sKState[VK_MENU] = 0x0;
-		sKState[VK_LCONTROL] = 0x0;
-		sKState[VK_LMENU] = 0x0;
-
-		// caps lock
-		sKState[VK_CAPITAL] = 0x01;
-		m_scanCodes[k].cl = ToAscii(vKeyCode, k, sKState);
-		sKState[VK_CAPITAL] = 0;
-	}
-
-	// subtly different so, I will leave this here
-	for (int k = 0; k < 256; k++)
-	{
-		vKeyCode = MapVirtualKeyEx(k, 1, GetKeyboardLayout(0));
-
-		sKState[k] = 0x81;
-
-		if (m_scanCodes[k].lc == 0)
-		{
-			m_scanCodes[k].lc = ToAscii(vKeyCode, k, sKState);
-		}
-
-		if (m_scanCodes[k].uc == 0)
-		{
-			sKState[VK_SHIFT] = 0x80;
-			m_scanCodes[k].uc = ToAscii(vKeyCode, k, sKState);
-			sKState[VK_SHIFT] = 0;
-		}
-
-		if (m_scanCodes[k].cl == 0)
-		{
-			sKState[VK_CAPITAL] = 0x80;
-			m_scanCodes[k].cl = ToAscii(vKeyCode, k, sKState);
-			sKState[VK_CAPITAL] = 0;
-		}
-
-		sKState[k] = 0;
-	}
-
-	Symbol[DIK_ESCAPE] = Symbol[DIK_ESCAPE] = MapSymbol(DIK_ESCAPE, eKI_Escape, "escape");
+	Symbol[DIK_ESCAPE] = MapSymbol(DIK_ESCAPE, eKI_Escape, "escape");
 	Symbol[DIK_1] = MapSymbol(DIK_1, eKI_1, "1");
 	Symbol[DIK_2] = MapSymbol(DIK_2, eKI_2, "2");
 	Symbol[DIK_3] = MapSymbol(DIK_3, eKI_3, "3");
@@ -410,6 +408,8 @@ void CKeyboard::SetupKeyNames()
 	//Symbol[DIK_RWIN] = MapSymbol(DIK_RWIN, eKI_RWin,  "rwin");
 	//Symbol[DIK_APPS] = MapSymbol(DIK_APPS, eKI_Apps,  "apps");
 	Symbol[DIK_OEM_102] = MapSymbol(DIK_OEM_102, eKI_OEM_102, "oem_102");
+
+	RebuildScanCodeTable(GetKeyboardLayout(0));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -587,9 +587,9 @@ void CKeyboard::ClearKeyState()
 	CDXInputDevice::ClearKeyState();
 }
 
-char CKeyboard::GetInputCharAscii(const SInputEvent& event)
+uint32 CKeyboard::GetInputCharUnicode(const SInputEvent& event)
 {
-	return Event2ASCII(event);
+	return Event2Unicode(event);
 }
 
 	#define IS_KEYBOARD_KEY(key) ((key)& 0x0000FFFF)

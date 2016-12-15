@@ -17,10 +17,10 @@
 
 	#include "DX12/API/DX12SamplerState.hpp"
 
-class CCryDX12SamplerState : public CCryDX12DeviceChild<ID3D11SamplerState>
+class CCryDX12SamplerState : public CCryDX12DeviceChild<ID3D11SamplerStateToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12SamplerState, CCryDX12DeviceChild<ID3D11SamplerState> );
+	DX12_OBJECT(CCryDX12SamplerState, CCryDX12DeviceChild<ID3D11SamplerStateToImplement> );
 
 	static CCryDX12SamplerState* Create(const D3D11_SAMPLER_DESC* pSamplerDesc);
 

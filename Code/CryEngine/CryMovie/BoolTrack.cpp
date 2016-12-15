@@ -45,5 +45,5 @@ TMovieSystemValue CBoolTrack::GetDefaultValue() const
 
 void CBoolTrack::SetDefaultValue(const TMovieSystemValue& defaultValue)
 {
-	m_bDefaultValue = boost::get<bool>(defaultValue);
+	m_bDefaultValue = stl::get<bool>(defaultValue);
 }

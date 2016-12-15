@@ -22,7 +22,7 @@
 CEquipmentSystemInterface::CEquipmentSystemInterface(CEditorGame* pEditorGame, IGameToEditorInterface *pGameToEditorInterface)
 : m_pEditorGame(pEditorGame)
 {
-	m_pIItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+	m_pIItemSystem = gEnv->pGameFramework->GetIItemSystem();
 	m_pIEquipmentManager = m_pIItemSystem->GetIEquipmentManager();
 	InitItems(pGameToEditorInterface);
 }

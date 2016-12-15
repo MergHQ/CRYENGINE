@@ -16,7 +16,7 @@
 using namespace CryAudio::Impl::Fmod;
 
 // Define global objects.
-CSoundAllocator g_audioImplMemoryPool;
+CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::Fmod::g_audioImplCVars;
 
@@ -28,14 +28,17 @@ tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 class CEngineModule_CryAudioImplFmod : public IEngineModule
 {
 	CRYINTERFACE_SIMPLE(IEngineModule);
-	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "CryAudioImplFmod", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
+	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioImplFmod, "EngineModule_AudioImpl", 0xaa6a039a0ce5bbab, 0x33e0aad69f3136f4);
+
+	CEngineModule_CryAudioImplFmod();
+	virtual ~CEngineModule_CryAudioImplFmod() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     { return "CryAudioImplFmod"; }
-	virtual char const* GetCategory() { return "CryAudio"; }
+	virtual char const* GetName()     override { return "CryAudioImplFmod"; }
+	virtual char const* GetCategory() override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		// Initialize memory pools.
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Audio Implementation Memory Pool Primary");
@@ -98,10 +101,6 @@ bool CEngineModule_CryAudioImplFmod::m_bSuccess = false;
 CEngineModule_CryAudioImplFmod::CEngineModule_CryAudioImplFmod()
 {
 	g_audioImplCVars.RegisterVariables();
-}
-
-CEngineModule_CryAudioImplFmod::~CEngineModule_CryAudioImplFmod()
-{
 }
 
 #include <CryCore/CrtDebugStats.h>

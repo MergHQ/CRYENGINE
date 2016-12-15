@@ -58,9 +58,9 @@ void CScriptBind_Action::RegisterGlobals()
 	SCRIPT_REG_GLOBAL(eGE_Damage);
 	SCRIPT_REG_GLOBAL(eGE_WeaponHit);
 
-	RegisterGlobal("QueryAimFromMovementController", CAIProxy::QueryAimFromMovementController);
-	RegisterGlobal("OverriddenAndAiming", CAIProxy::OverriddenAndAiming);
-	RegisterGlobal("OverriddenAndNotAiming", CAIProxy::OverriddenAndNotAiming);
+	gEnv->pScriptSystem->SetGlobalValue("QueryAimFromMovementController", CAIProxy::QueryAimFromMovementController);
+	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndAiming", CAIProxy::OverriddenAndAiming);
+	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndNotAiming", CAIProxy::OverriddenAndNotAiming);
 }
 
 //------------------------------------------------------------------------
@@ -762,7 +762,7 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 
 	// Apparently we can't assume that there is just one IGameObject to an entity, because we choose between (at least) Actor and Vehicle objects.
 	// (MATT) Do we really need to check on the actor system here? {2008/02/15:18:38:34}
-	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
 	IVehicleSystem* pVSystem = pGameFramework->GetIVehicleSystem();
 	IActorSystem* pASystem = pGameFramework->GetIActorSystem();
 	if (!pASystem)
@@ -1012,7 +1012,7 @@ int CScriptBind_Action::PreLoadADB(IFunctionHandler* pH, const char* adbFileName
 {
 	IF_LIKELY (adbFileName != NULL)
 	{
-		IMannequin& mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
 		if (mannequinInterface.GetAnimationDatabaseManager().Load(adbFileName) == NULL)
 		{
 			GameWarning("PreLoadADB(): Failed to pre-load '%s'!", adbFileName);

@@ -7,16 +7,6 @@ using namespace CryAudio::Impl;
 using namespace CryAudio::Impl::Null;
 
 ///////////////////////////////////////////////////////////////////////////
-CAudioImpl::CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-CAudioImpl::~CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CAudioImpl::Update(float const deltaTime)
 {
 }
@@ -223,14 +213,14 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
 	POOL_NEW_CREATE(IAudioObject, pNewObject)();
 	return pNewObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
 	POOL_NEW_CREATE(IAudioObject, pNewObject)();
 	return pNewObject;
@@ -249,17 +239,17 @@ void CAudioImpl::DeleteAudioListener(IAudioListener* const pOldListener)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
-	POOL_NEW_CREATE(IAudioListener, pNewObject)();
-	return pNewObject;
+	POOL_NEW_CREATE(IAudioListener, pAudioListener)();
+	return pAudioListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+IAudioListener* CAudioImpl::NewAudioListener()
 {
-	POOL_NEW_CREATE(IAudioListener, pNewObject)();
-	return pNewObject;
+	POOL_NEW_CREATE(IAudioListener, pAudioListener)();
+	return pAudioListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////

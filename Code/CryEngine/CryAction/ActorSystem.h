@@ -91,7 +91,7 @@ public:
 
 private:
 
-	//	static IEntityProxy *CreateActor(IEntity *pEntity, SEntitySpawnParams &params, void *pUserData);
+	//	static IEntityComponent *CreateActor(IEntity *pEntity, SEntitySpawnParams &params, void *pUserData);
 	static bool HookCreateActor(IEntity*, IGameObject*, void*);
 
 	static void ActorSystemErrorMessage(const char* fileName, const char* errorInfo, bool displayErrorDialog);

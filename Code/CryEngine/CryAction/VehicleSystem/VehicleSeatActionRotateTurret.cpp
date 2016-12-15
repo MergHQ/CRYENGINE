@@ -237,15 +237,6 @@ void CVehicleSeatActionRotateTurret::DoUpdate(const float frameTime)
 		UpdateAimGoal();
 	}
 
-	// now update each rotation type
-	for (int i = 0; i < eVTRT_NumRotationTypes; ++i)
-	{
-		if (m_rotations[i].m_pPart)
-		{
-			MaintainPartRotationWorldSpace((EVehicleTurretRotationType)i);
-		}
-	}
-
 	// Cache the helper position before applying any rotation
 	IActor* pActor = m_pSeat->GetPassengerActor();
 	bool checkRotation = (m_rotTestHelpers[0] && m_rotTestHelpers[1] && pActor);
@@ -394,7 +385,7 @@ void CVehicleSeatActionRotateTurret::MaintainPartRotationWorldSpace(EVehicleTurr
 		{
 			float color[] = { 1, 1, 1, 1 };
 			Ang3 a(localTM), aBase(baseTM);
-			gEnv->pRenderer->Draw2dLabel(200, 200, 1.4f, color, false, "localAng: %.1f (real: %.1f)", RAD2DEG(a.z), RAD2DEG(aBase.z));
+			IRenderAuxText::Draw2dLabel(200, 200, 1.4f, color, false, "localAng: %.1f (real: %.1f)", RAD2DEG(a.z), RAD2DEG(aBase.z));
 		}
 #endif
 	}

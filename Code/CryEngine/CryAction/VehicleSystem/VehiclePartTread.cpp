@@ -82,10 +82,10 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 		int subMtlSlot = -1;
 
 		// find tread material
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = GetEntity()->GetRenderInterface();
+		
 		{
-			pMaterial = pRenderProxy->GetRenderMaterial(m_slot);
+			pMaterial = pIEntityRender->GetRenderMaterial(m_slot);
 			if (pMaterial)
 			{
 				// if matname doesn't fit, look in submaterials
@@ -110,7 +110,7 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 			IMaterial* pCloned = pMaterial->GetMaterialManager()->CloneMultiMaterial(pMaterial, subMtlName);
 			if (pCloned)
 			{
-				pRenderProxy->SetSlotMaterial(m_slot, pCloned);
+				pIEntityRender->SetSlotMaterial(m_slot, pCloned);
 				pMaterial = pCloned;
 				m_pMaterial = pMaterial;
 			}
@@ -173,17 +173,8 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 }
 
 //------------------------------------------------------------------------
-void CVehiclePartTread::Release()
-{
-	CVehiclePartBase::Release();
-}
-
-//------------------------------------------------------------------------
 void CVehiclePartTread::Reset()
 {
-	if (m_damageRatio > 0.0f)
-		SetDamageRatio(0.0f);
-
 	m_bForceSetU = false;
 	m_wantedU = 0.0f;
 	m_currentU = m_wantedU + 1.0f;
@@ -196,59 +187,39 @@ void CVehiclePartTread::Reset()
 }
 
 //------------------------------------------------------------------------
-void CVehiclePartTread::OnEvent(const SVehiclePartEvent& event)
-{
-	CVehiclePartBase::OnEvent(event);
-
-	if (event.type == eVPE_Damaged && event.fparam >= 1.0f)
-	{
-		SetDamageRatio(event.fparam);
-	}
-	else if (event.type == eVPE_Repair && event.fparam <= 0.25f)
-	{
-		SetDamageRatio(0.0f);
-	}
-}
-
-//------------------------------------------------------------------------
 bool CVehiclePartTread::ChangeState(EVehiclePartState state, int flags /* =0 */)
 {
-	EVehiclePartState old = m_state;
-	bool bOK = CVehiclePartBase::ChangeState(state, flags);
+	const EVehiclePartState previousState = m_state;
+	const bool stateChanged = CVehiclePartBase::ChangeState(state, flags);
 	m_state = state;
 
-	if (bOK && m_pVehicle->GetMovement())
+	if (stateChanged)
 	{
-		if (m_state > old && m_state == IVehiclePart::eVGS_Damaged1)
+		if (m_state == IVehiclePart::eVGS_Destroyed)
 		{
-			SVehicleMovementEventParams params;
-			m_pVehicle->GetMovement()->OnEvent(IVehicleMovement::eVME_TireBlown, params);
+			Hide(true);
 		}
-		else if (m_state < old && m_state == eVGS_Default)
+		else if (previousState == IVehiclePart::eVGS_Destroyed)
 		{
-			SVehicleMovementEventParams params;
-			m_pVehicle->GetMovement()->OnEvent(IVehicleMovement::eVME_TireRestored, params);
+			Hide(false);
+		}
+
+		if (const auto pMovement = m_pVehicle->GetMovement())
+		{
+			if (m_state == IVehiclePart::eVGS_Damaged1)
+			{
+				SVehicleMovementEventParams params;
+				pMovement->OnEvent(IVehicleMovement::eVME_TireBlown, params);
+			}
+			else if (m_state == eVGS_Default)
+			{
+				SVehicleMovementEventParams params;
+				pMovement->OnEvent(IVehicleMovement::eVME_TireRestored, params);
+			}
 		}
 	}
 
-	return bOK;
-}
-
-//------------------------------------------------------------------------
-void CVehiclePartTread::SetDamageRatio(float value)
-{
-	CRY_ASSERT(value >= 0.0f);
-
-	if (value >= 1.0f)
-	{
-		Hide(true);
-	}
-	else if (value == 0.0f)
-	{
-		Hide(false);
-	}
-
-	m_damageRatio = value;
+	return stateChanged;
 }
 
 //------------------------------------------------------------------------
@@ -384,23 +355,6 @@ void CVehiclePartTread::UpdateU()
 		SEfTexModificator& modif = *m_pShaderResources->GetTexture(i)->AddModificator();
 
 		modif.SetMember("m_OscRate[0]", m_wantedU);
-	}
-}
-
-//------------------------------------------------------------------------
-void CVehiclePartTread::Serialize(TSerialize ser, EEntityAspects aspects)
-{
-	float damageRatio = m_damageRatio;
-
-	CVehiclePartBase::Serialize(ser, aspects);
-
-	if (ser.GetSerializationTarget() != eST_Network)
-	{
-		if (ser.IsReading())
-		{
-			if (damageRatio != m_damageRatio)
-				SetDamageRatio(m_damageRatio);
-		}
 	}
 }
 

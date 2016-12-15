@@ -71,7 +71,7 @@ const int nThreadsNum = 3;
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <CryEntitySystem/IEntityRenderState.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryCore/Containers/StackContainer.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/File/ICryPak.h>
@@ -98,7 +98,7 @@ const int nThreadsNum = 3;
 template<class T>
 void AddToPtr(byte*& pPtr, T& rObj, EEndian eEndian)
 {
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(((sizeof(T) % 4) == 0));
+	PREFAST_SUPPRESS_WARNING(6326) static_assert((sizeof(T) % 4) == 0, "Invalid type size!");
 	assert(!((INT_PTR)pPtr & 3));
 	memcpy(pPtr, &rObj, sizeof(rObj));
 	SwapEndian(*(T*)pPtr, eEndian);
@@ -109,7 +109,7 @@ void AddToPtr(byte*& pPtr, T& rObj, EEndian eEndian)
 template<class T>
 void AddToPtr(byte*& pPtr, int& nDataSize, T& rObj, EEndian eEndian)
 {
-	PREFAST_SUPPRESS_WARNING(6326) COMPILE_TIME_ASSERT(((sizeof(T) % 4) == 0));
+	PREFAST_SUPPRESS_WARNING(6326) static_assert((sizeof(T) % 4) == 0, "Invalid type size!");
 	assert(!((INT_PTR)pPtr & 3));
 	memcpy(pPtr, &rObj, sizeof(rObj));
 	SwapEndian(*(T*)pPtr, eEndian);
@@ -182,5 +182,7 @@ struct TriangleIndex
 #if CRY_PLATFORM_DESKTOP
 	#define INCLUDE_SAVECGF
 #endif
+
+#define ENABLE_TYPE_INFO_NAMES 1
 
 #endif // !defined(AFX_STDAFX_H__8B93AD4E_EE86_4127_9BED_37AC6D0F978B__INCLUDED_3DENGINE)

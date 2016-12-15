@@ -100,7 +100,7 @@ private:
 
 	typedef OpenList<IslandNode, IsNodeLessCostlyPredicate>                                    IslandOpenList;
 
-	typedef stl::STLPoolAllocator<IslandNode, stl::PoolAllocatorSynchronizationSinglethreaded> TCameFromMapAllocator;
+	typedef stl::STLPoolAllocator<std::pair<const IslandNode, IslandNode>, stl::PoolAllocatorSynchronizationSinglethreaded> TCameFromMapAllocator;
 	typedef std::map<IslandNode, IslandNode, std::less<IslandNode>, TCameFromMapAllocator>     TCameFromMap;
 	typedef std::vector<MNM::GlobalIslandID>                                                   TIslandClosedSet;
 

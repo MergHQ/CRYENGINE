@@ -49,7 +49,7 @@ bool CGameCache::IsLuaCacheEnabled()
 //////////////////////////////////////////////////////////////////////////
 bool CGameCache::IsClient(EntityId entityId)
 {
-	const EntityId localClientId = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	const EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	return (localClientId == entityId);
 }
 
@@ -985,9 +985,9 @@ void CGameCharacterDBAs::Debug()
 		float posY = 50.f;
 		float posX = 50.f;
 
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Currently locked Character DBAs");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Currently locked Character DBAs");
 		posY += 15.0f;
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "======================================");
 		posY += 15.0f;
 
 		for (size_t i = 0; i < m_dbaGroups.size(); ++i)
@@ -995,12 +995,12 @@ void CGameCharacterDBAs::Debug()
 			if (m_dbaGroups[i].m_userCount == 0)
 				continue;
 
-			gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, white, false, "Group: '%s' - Users: '%d'", m_dbaGroups[i].m_groupId.GetDebugName(), m_dbaGroups[i].m_userCount);
+			IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, white, false, "Group: '%s' - Users: '%d'", m_dbaGroups[i].m_groupId.GetDebugName(), m_dbaGroups[i].m_userCount);
 			posY += 15.0f;
 
 			for (size_t j = 0; j < m_dbaGroups[i].m_dbas.size(); ++j)
 			{
-				gEnv->pRenderer->Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA Name: '%s'", m_dbaGroups[i].m_dbas[j].c_str());
+				IRenderAuxText::Draw2dLabel(posX + 50.0f, posY, 1.5f, grey, false, "DBA Name: '%s'", m_dbaGroups[i].m_dbas[j].c_str());
 				posY += 15.0f;
 			}
 
@@ -1009,7 +1009,7 @@ void CGameCharacterDBAs::Debug()
 	}
 	else
 	{
-		gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Game DBA management for characters disabled");
+		IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Game DBA management for characters disabled");
 	}
 }
 #endif

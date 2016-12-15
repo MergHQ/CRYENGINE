@@ -798,7 +798,10 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 			const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
 			const char* const szGameTypeName = pGameTypeInfo ? pGameTypeInfo->name.c_str() : "";
 			if (gEnv->pAISystem)
-				gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, requireQuickLoad);
+			{
+				const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems | (bIsQuickLoading ? eAILoadDataFlag_QuickLoad : eAILoadDataFlag_None);
+				gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, loadDataFlags);
+			}
 		}
 
 		checkpoint.Check("AIFlush");
@@ -884,9 +887,9 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 	checkpoint.Check("AI System");
 
 	//clear old entities from the systems [could become obsolete]
-	//gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reset(); //this respawns ammo, moved before serialization
-	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->Reset();
-	gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->Reset();
+	//gEnv->pGameFramework->GetIItemSystem()->Reset(); //this respawns ammo, moved before serialization
+	gEnv->pGameFramework->GetIActorSystem()->Reset();
+	gEnv->pGameFramework->GetIVehicleSystem()->Reset();
 	//We need to reset particles to get rid of certain effects from before the load
 	gEnv->pParticleManager->Reset();
 	checkpoint.Check("ResetSubSystems");
@@ -914,8 +917,11 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 	//inform all entities that serialization is over
 	SEntityEvent event2(ENTITY_EVENT_POST_SERIALIZE);
 	pEntitySystem->SendEventToAll(event2);
-	gEnv->pGame->PostSerialize();
-	gEnv->pGame->GetIGameFramework()->GetIViewSystem()->PostSerialize();
+
+	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
+		pGame->PostSerialize();
+
+	gEnv->pGameFramework->GetIViewSystem()->PostSerialize();
 
 	//return failure;
 	if (loadEnvironment.m_bLoadingErrors)
@@ -1135,14 +1141,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 				bed.isActive = pEntity->IsActive();
 				bed.isInvisible = pEntity->IsInvisible();
 
-				if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
-				{
-					bed.isPhysicsEnabled = pPhysicalProxy->IsPhysicsEnabled();
-				}
-				else
-				{
-					bed.isPhysicsEnabled = false;
-				}
+				bed.isPhysicsEnabled = pEntity->IsPhysicsEnabled();
 
 				bed.parentEntity = pParentEntity ? pParentEntity->GetId() : 0;
 				bed.iPhysType = pEntity->GetPhysics() ? pEntity->GetPhysics()->GetType() : PE_NONE;
@@ -1318,7 +1317,8 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 
 	savEnv.m_checkpoint.Check("ExtraEntity");
 
-	gEnv->pGame->FullSerialize(gameState);
+	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
+		pGame->FullSerialize(gameState);
 
 	// 3DEngine
 	gEnv->p3DEngine->PostSerialize(false);
@@ -1561,7 +1561,10 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 		const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
 		const char* const szGameTypeName = pGameTypeInfo ? pGameTypeInfo->name.c_str() : "";
 		if (gEnv->pAISystem)
-			gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, requireQuickLoad);
+		{
+			const EAILoadDataFlags loadDataFlags = eAILoadDataFlag_AllSystems | (bIsQuickLoading ? eAILoadDataFlag_QuickLoad : eAILoadDataFlag_None);
+			gEnv->pAISystem->LoadLevelData(pLevelInfo->GetPath(), szGameTypeName, loadDataFlags);
+		}
 	}
 
 	loadEnv.m_bHaveReserved = true;
@@ -1621,7 +1624,7 @@ bool CGameSerialize::LoadEntities(SLoadEnvironment& loadEnv, std::unique_ptr<TSe
 	loadEnv.m_checkpoint.Check("SerializeBreakables");
 
 	//reset item system, used to be after entity serialization
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reset();
+	gEnv->pGameFramework->GetIItemSystem()->Reset();
 
 	//lock entity system
 	pEntitySystem->LockSpawning(true);
@@ -1768,9 +1771,8 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 		// unhide and activate so that physicalization works (will be corrected after extra entity data is loaded)
 		pEntity->SetUpdatePolicy((EEntityUpdatePolicy) iter->updatePolicy);
 
-		if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 		{
-			pPhysicalProxy->EnablePhysics(true);
+			pEntity->EnablePhysics(true);
 		}
 
 		pEntity->Hide(false);
@@ -1848,21 +1850,14 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 				pEntity->Invisible(iter->isInvisible);
 				pEntity->Activate(iter->isActive);
 
-				if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 				{
-					pPhysicalProxy->EnablePhysics(iter->isPhysicsEnabled);
-				}
-
-				static SEntitySpawnParams dummySpawnParams;
-
-				if (IEntityAudioProxy* pAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
-				{
-					pAudioProxy->Reload(pEntity, dummySpawnParams);
+					pEntity->EnablePhysics(iter->isPhysicsEnabled);
 				}
 			}
 		}
 
 	loadEnv.m_checkpoint.Check("ExtraEntityData");
 
-	gEnv->pGame->FullSerialize(*loadEnv.m_pSer);
+	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
+		pGame->FullSerialize(*loadEnv.m_pSer);
 }

@@ -63,9 +63,10 @@ public:
 	CReplayActor();
 	virtual ~CReplayActor();
 
-	// IEntityEvent
+	// IEntityComponent
 	virtual	void ProcessEvent( SEntityEvent &event );
-	// ~IEntityEvent
+	virtual uint64 GetEventMask() const final;
+	// ~IEntityComponent
 
 	virtual void PostInit(IGameObject *pGameObject);
 	virtual void Release();

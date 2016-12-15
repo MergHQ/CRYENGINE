@@ -20,7 +20,7 @@ public:
 		: m_pElement(NULL)
 		, m_bPlaying(false)
 	{
-		m_pActionMapMan = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+		m_pActionMapMan = gEnv->pGameFramework->GetIActionMapManager();
 		m_pActionMapMan->AddExtraActionListener(this);
 
 		if (s_actionHandler.GetNumHandlers() == 0)
@@ -31,8 +31,8 @@ public:
 	{
 		if (m_pElement)
 			m_pElement->RemoveEventListener(this);
-		if (gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetIActionMapManager())
-			gEnv->pGame->GetIGameFramework()->GetIActionMapManager()->RemoveExtraActionListener(this);
+		if (gEnv->pGameFramework && gEnv->pGameFramework->GetIActionMapManager())
+			gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this);
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)

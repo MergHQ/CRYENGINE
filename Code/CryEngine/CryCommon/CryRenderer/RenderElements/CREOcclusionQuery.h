@@ -5,7 +5,7 @@
 
 class CRenderMesh;
 
-class CREOcclusionQuery : public CRendElementBase
+class CREOcclusionQuery : public CRenderElement
 {
 	friend class CRender3D;
 	bool m_bSucceeded;

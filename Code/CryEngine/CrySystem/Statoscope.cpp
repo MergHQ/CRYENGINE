@@ -9,7 +9,6 @@
 #include "StdAfx.h"
 #include "Statoscope.h"
 #include "FrameProfileSystem.h"
-#include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -18,6 +17,7 @@
 #include "ThreadProfiler.h"
 #include <CryThreading/IThreadManager.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CryParticleSystem/IParticlesPfx2.h>
 
 #include "StatoscopeStreamingIntervalGroup.h"
 #include "StatoscopeTextureStreamingIntervalGroup.h"
@@ -935,6 +935,23 @@ struct SParticlesDG : public IStatoscopeDataGroup
 	{
 		SParticleCounts particleCounts;
 		gEnv->pParticleManager->GetCounts(particleCounts);
+
+		SParticleCounts particleCountsPfx2;
+		pfx2::GetIParticleSystem()->GetCounts(particleCountsPfx2);
+
+		particleCounts.ParticlesRendered    += particleCountsPfx2.ParticlesRendered;
+		particleCounts.ParticlesActive      += particleCountsPfx2.ParticlesActive;
+		particleCounts.ParticlesAlloc       += particleCountsPfx2.ParticlesAlloc;
+		particleCounts.PixelsRendered       += particleCountsPfx2.PixelsRendered;
+		particleCounts.PixelsProcessed      += particleCountsPfx2.PixelsProcessed;
+		particleCounts.EmittersRendered     += particleCountsPfx2.EmittersRendered;
+		particleCounts.EmittersActive       += particleCountsPfx2.EmittersActive;
+		particleCounts.EmittersAlloc        += particleCountsPfx2.EmittersAlloc;
+		particleCounts.ParticlesReiterate   += particleCountsPfx2.ParticlesReiterate;
+		particleCounts.ParticlesReject      += particleCountsPfx2.ParticlesReject;
+		particleCounts.ParticlesCollideTest += particleCountsPfx2.ParticlesCollideTest;
+		particleCounts.ParticlesCollideHit  += particleCountsPfx2.ParticlesCollideHit;
+		particleCounts.ParticlesClip        += particleCountsPfx2.ParticlesClip;
 
 		float fScreenPix = (float)(gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
 		fr.AddValue(particleCounts.ParticlesRendered);
@@ -2384,9 +2401,9 @@ void CStatoscope::SetLogFilename()
 		//If we don't have a last map loaded, try to look up the current one now
 		if (m_currentMap.empty())
 		{
-			if (gEnv->pGame)
+			if (gEnv->pGameFramework)
 			{
-				mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+				mapName = gEnv->pGameFramework->GetLevelName();
 			}
 		}
 		//If we tracked the last map loaded then use it here
@@ -2599,9 +2616,9 @@ void CStatoscope::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 
 				const char* mapName = NULL;
 
-				if (gEnv->pGame && gEnv->pGame->GetIGameFramework())
+				if (gEnv->pGameFramework)
 				{
-					mapName = gEnv->pGame->GetIGameFramework()->GetLevelName();
+					mapName = gEnv->pGameFramework->GetLevelName();
 				}
 
 				if (!mapName)

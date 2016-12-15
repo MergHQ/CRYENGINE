@@ -200,7 +200,7 @@ void CPlayerStateJump::StartJump(CPlayer& player, const bool isHeavyWeapon, cons
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255, 255, 255, 255), entityPos, ColorB(255, 255, 0, 255), 2.0f);
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos + Vec3(0, 0, 2), ColorB(255, 255, 255, 255), entityPos + Vec3(0, 0, 2) + desiredVel, ColorB(0, 255, 0, 255), 2.0f);
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255, 255, 255, 255), entityPos + jumpVec, ColorB(0, 255, 255, 255), 2.0f);
-		gEnv->pRenderer->DrawLabel(entityPos - entityRight * 1.0f + Vec3(0, 0, 3.0f), 1.5f, "Velo[%2.3f = %2.3f, %2.3f, %2.3f]", m_request.velocity.len(), m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
+		IRenderAuxText::DrawLabelF(entityPos - entityRight * 1.0f + Vec3(0, 0, 3.0f), 1.5f, "Velo[%2.3f = %2.3f, %2.3f, %2.3f]", m_request.velocity.len(), m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
 	}
 #endif
 
@@ -364,7 +364,7 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 
 	Vec3 playerPosition = player.GetEntity()->GetWorldPos();
 	IPhysicalEntity* phys = player.GetEntity()->GetPhysics();
-	IMaterialEffects* mfx = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IMaterialEffects* mfx = gEnv->pGameFramework->GetIMaterialEffects();
 
 	const SActorPhysics& actorPhysics = player.GetActorPhysics();
 	int matID = actorPhysics.groundMaterialIdx != -1 ? actorPhysics.groundMaterialIdx : mfx->GetDefaultSurfaceIndex();

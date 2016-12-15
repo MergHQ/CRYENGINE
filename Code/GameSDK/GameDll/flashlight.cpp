@@ -12,7 +12,7 @@ namespace
 {
 	CItem* GetLocalPlayerItem()
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 
 		if (!pPlayer)
 		{
@@ -91,11 +91,11 @@ void CFlashLight::EnableLight(bool enable)
 
 		if (pOwner)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pOwner->GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRender* pIEntityRender = (pOwner->GetEntity()->GetRenderInterface());
 
-			if (pRenderProxy)
+			
 			{
-				pCasterException = pRenderProxy->GetRenderNode();
+				pCasterException = pIEntityRender->GetRenderNode();
 			}
 		}
 

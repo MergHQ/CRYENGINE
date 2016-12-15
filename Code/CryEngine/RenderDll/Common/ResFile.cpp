@@ -8,7 +8,7 @@
 #define UInt64 UInt64_NoOverwrite
 #include <lzss/LZSS.H>
 #include <lzma/Lzma86.h>
-static_assert(sizeof(uint32) == 4 && sizeof(uint64) == 8, "Bad type sizes");
+static_assert(sizeof(UInt32) == 4 && sizeof(UInt64) == 8, "Bad type sizes");
 #undef  UInt32
 #undef  UInt64
 
@@ -1629,7 +1629,7 @@ int CResFile::mfFlushDir(long nOffset, bool bOptimise)
 		buf = new byte[sizeUn];
 		memcpy(buf, (byte*)&FDir[0], sizeUn);
 #else
-		COMPILE_TIME_ASSERT(0);
+		static_assert(false, "This should never be compiled...");
 #endif
 	}
 	else
@@ -1831,7 +1831,7 @@ int CResFile::mfFlush(bool bOptimise)
 					memcpy(buf + 10 + de->size, "<<rawbuf<<", 10);
 					de->size += 20;
 #else
-					COMPILE_TIME_ASSERT(0);
+					static_assert(false, "This should never be compiled...");
 #endif
 					if (gEnv->pCryPak->FWrite(buf, 1, de->size, m_handle) != de->size)
 						mfSetError("Flush - Writing fault");

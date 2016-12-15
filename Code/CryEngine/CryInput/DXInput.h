@@ -31,6 +31,7 @@
 
 struct  ILog;
 struct  ISystem;
+class CKeyboard;
 
 class CDXInput : public CBaseInput, public IWindowMessageHandler
 {
@@ -60,6 +61,8 @@ private:
 	LPDIRECTINPUT8   m_pDI;
 	uint16           m_highSurrogate;
 	bool             m_bImeComposing;
+	CKeyboard*       m_pKeyboard;
+	HKL              m_lastLayout;
 	static CDXInput* This;
 };
 

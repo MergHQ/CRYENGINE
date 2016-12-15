@@ -173,7 +173,6 @@ void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix
 				// apply additional depth sort offset, if set
 				const Vec3 depthSortOffset = (orthoTm34 * Matrix34(poseData.GetJointAbsolute(i))).TransformVector(m_SkeletonPose.m_arrCGAJoints[i].m_CGAObjectInstance->GetDepthSortOffset());
 				// TODO: ^ Dot me against the camera's forward vector. Is orthoTm34 already operating in the camera-space?
-				// nodeRP.fCustomSortOffset = ???;
 
 				// apply custom joint material, if set
 				nodeRP.pMaterial = m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial ? m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial.get() : pMaterial;
@@ -214,9 +213,37 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 	if (!pObj)
 		return;
 
+	//#TODO Extracted from RenderProxy needed for WrinkleMap, should be implemented during character instance rendering
+	/*
+	{
+		// Make a local copy of render params as some of the parameters will be modified.
+		SRendParams rParams(inRenderParams);
+
+		if (m_Callbacks.size() > 0)
+		{
+			// if we have callbacks be sure the shader params are properly initialized
+			IShaderPublicParams* pParams = GetShaderPublicParams(true);
+
+			// get the current active material
+			IMaterial* pMaterial = m_pEntity->GetMaterial();
+			if (pMaterial == NULL)
+				pMaterial = GetSlotMaterial(0);
+
+			TCallbackVector::iterator itEnd = m_Callbacks.end();
+			for (TCallbackVector::iterator it = m_Callbacks.begin(); it != itEnd; ++it)
+			{
+				(*it)->SetupShaderParams(pParams, pMaterial);
+			}
+		}
+
+		if (m_pShaderPublicParams)
+			m_pShaderPublicParams->AssignToRenderParams(rParams);
+	}
+	*/
+
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	pObj->m_fSort = RendParams.fCustomSortOffset;
 	pObj->m_ObjFlags |= FOB_TRANS_MASK;
+	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
 
 	//check if it should be drawn close to the player
 	// For nearest geometry (weapons/arms) - make sure its rendered really at beginning (before water passes)

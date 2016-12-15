@@ -518,7 +518,7 @@ EAnnounceConditions CAnnouncer::GetConditionsFromTeamId(const int teamId) const
 	EAnnounceConditions conditions = kAnnouncerCondition_any;
 	CGameRules *pGameRules=g_pGame->GetGameRules();
 	CRY_ASSERT(pGameRules);
-	EntityId localActorEntityID = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localActorEntityID = gEnv->pGameFramework->GetClientActorId();
 
 	int localTeam = pGameRules->GetTeam(localActorEntityID);
 
@@ -539,7 +539,7 @@ EAnnounceConditions CAnnouncer::GetConditionsFromEntityId(const EntityId entityI
 	EAnnounceConditions conditions = kAnnouncerCondition_any;
 	CGameRules *pGameRules=g_pGame->GetGameRules();
 	CRY_ASSERT(pGameRules);
-	EntityId localActorEntityID = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+	EntityId localActorEntityID = gEnv->pGameFramework->GetClientActorId();
 
 	if (localActorEntityID == entityId)
 	{
@@ -926,7 +926,7 @@ const int CAnnouncer::GetTeam(const int overrideTeamId)
 		//get team of local client
 		CGameRules* pGameRules = g_pGame->GetGameRules();
 		CRY_ASSERT(pGameRules);
-		EntityId localActorEntityID = gEnv->pGame->GetIGameFramework()->GetClientActorId();
+		EntityId localActorEntityID = gEnv->pGameFramework->GetClientActorId();
 		teamIndex = pGameRules->GetTeam(localActorEntityID);
 	}
 

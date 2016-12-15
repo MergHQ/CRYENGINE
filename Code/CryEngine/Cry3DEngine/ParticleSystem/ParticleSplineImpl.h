@@ -20,7 +20,7 @@ ILINE float CParticleSpline::Interpolate(float time) const
 	time = std::min(std::max(time, m_keys[0].time), m_keys.back().time);
 
 	const SplineKey* pKey = &*m_keys.begin();
-	const SplineKey* pKeyEnd = &*m_keys.end() - 2;
+	const SplineKey* pKeyEnd = &*(m_keys.end() - 2);
 	while (pKey < pKeyEnd && pKey[1].time < time)
 		++pKey;
 
@@ -42,7 +42,7 @@ ILINE float CParticleSpline::Interpolate(float time) const
 ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 {
 	const SplineKey* __restrict pKey = &*m_keys.begin();
-	const SplineKey* __restrict pEndKey = &*m_keys.end() - 1;
+	const SplineKey* __restrict pEndKey = &*(m_keys.end() - 1);
 
 	// clamp time to curve bounds
 	const floatv minTime = _mm_load1_ps(&pKey->time);
@@ -60,7 +60,7 @@ ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 	for (pKey++; pKey < pEndKey; pKey++)
 	{
 		const floatv t = _mm_load1_ps(&pKey->time);
-		const f32mask4 condMask = t < tk;
+		const mask32v4 condMask = t < tk;
 		if (!Any(condMask))
 			break;
 		t0 = if_else(condMask, t, t0);
@@ -72,7 +72,7 @@ ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 	}
 
 	// calculate curve
-	const floatv one = _mm_set1_ps(1.0f);
+	const floatv one = ToFloatv(1.0f);
 	const floatv t = (tk - t0) * tm;
 	const floatv u = one - t;
 	const floatv tu = t * u;

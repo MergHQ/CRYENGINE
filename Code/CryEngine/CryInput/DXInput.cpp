@@ -37,6 +37,8 @@
 	#include <CrySystem/ICmdLine.h>
 	#include <CryString/UnicodeFunctions.h>
 
+	#include <CryCore/Platform/CryLibrary.h>
+
 CDXInput* CDXInput::This = 0;
 
 CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
@@ -45,6 +47,8 @@ CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
 
 	m_bImeComposing = false;
 	m_hwnd = hwnd;
+	m_pKeyboard = nullptr;
+	m_lastLayout = 0;
 	This = this;
 
 	pSystem->RegisterWindowMessageHandler(this);
@@ -65,7 +69,7 @@ bool CDXInput::Init()
 
 	gEnv->pLog->Log("Initializing DirectInput\n");
 
-	HRESULT hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&m_pDI, 0);
+	HRESULT hr = DirectInput8Create(CryGetCurrentModule(), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&m_pDI, 0);
 
 	if (FAILED(hr))
 	{
@@ -74,7 +78,9 @@ bool CDXInput::Init()
 	}
 
 	// add keyboard and mouse
-	if (!AddInputDevice(new CKeyboard(*this))) return false;
+	m_pKeyboard = new CKeyboard(*this);
+	m_lastLayout = GetKeyboardLayout(0);
+	if (!AddInputDevice(m_pKeyboard)) return false;
 
 	if (GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == NULL)
 	{
@@ -104,6 +110,14 @@ bool CDXInput::Init()
 
 void CDXInput::Update(bool bFocus)
 {
+	// Ideally, we would use WM_INPUTLANGCHANGE, but this won't be sent in Sandbox.
+	const HKL layout = GetKeyboardLayout(0);
+	if (layout != m_lastLayout)
+	{
+		m_lastLayout = layout;
+		m_pKeyboard->RebuildScanCodeTable(layout);
+	}
+
 	CBaseInput::Update(bFocus);
 }
 
@@ -176,49 +190,6 @@ bool CDXInput::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		input = (uint32)wParam;
 		break;
 
-	case WM_KEYDOWN:
-		// CTRL+V for clipboard paste support
-		if (wParam == 'V')
-		{
-			const bool bWasDown = (lParam & (1 << 30)) != 0;
-			const bool bControl = (GetKeyState(VK_CONTROL) & (1 << 15)) != 0;
-			if (!bWasDown && bControl)
-			{
-				if (OpenClipboard(NULL) != 0)
-				{
-					wstring data;
-					const HANDLE wideData = GetClipboardData(CF_UNICODETEXT);
-					if (wideData)
-					{
-						const LPCWSTR pWideData = (LPCWSTR)GlobalLock(wideData);
-						if (pWideData)
-						{
-							// Note: This conversion is just to make sure we discard malicious or malformed data
-							Unicode::ConvertSafe<Unicode::eErrorRecovery_Discard>(data, pWideData);
-							GlobalUnlock(wideData);
-						}
-					}
-					CloseClipboard();
-
-					for (Unicode::CIterator<wstring::const_iterator> it(data.begin(), data.end()); it != data.end(); ++it)
-					{
-						const uint32 cp = *it;
-						if (cp != '\r')
-						{
-							SUnicodeEvent evt(cp);
-							PostUnicodeEvent(evt);
-						}
-					}
-
-					if (wideData)
-					{
-						*pResult = 0;
-						return true;
-					}
-				}
-			}
-		}
-	// Fall through intended
 	default:
 		return false;
 	}

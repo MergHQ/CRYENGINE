@@ -310,14 +310,10 @@ void CVehiclePartBase::OnEvent(const SVehiclePartEvent& event)
 	{
 	case eVPE_Damaged:
 		{
-			float old = m_damageRatio;
 			m_damageRatio = event.fparam;
 
-			if (m_damageRatio >= 1.0f && old < 1.f)
-			{
-				EVehiclePartState state = GetStateForDamageRatio(m_damageRatio);
-				ChangeState(state, eVPSF_Physicalize);
-			}
+			const EVehiclePartState state = GetStateForDamageRatio(m_damageRatio);
+			ChangeState(state, eVPSF_Physicalize);
 		}
 		break;
 	case eVPE_Repair:
@@ -768,16 +764,17 @@ bool CVehiclePartBase::SetCGASlot(int jointId, IStatObj* pStatObj, bool bUpdateP
 	else
 		return false;
 	if (bUpdatePhys && GetEntity()->GetPhysics())
-		if (IEntityPhysicalProxy* pProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS))
-			if (pStatObj)
-			{
-				pe_params_part pp;
-				pp.partid = AllocPartIdRange(pProxy->GetPartId0(m_slot), PARTID_MAX_SLOTS) | jointId;
-				pp.pPhysGeom = pStatObj->GetPhysGeom();
-				GetEntity()->GetPhysics()->SetParams(&pp);
-			}
-			else
-				GetEntity()->GetPhysics()->RemoveGeometry(AllocPartIdRange(pProxy->GetPartId0(m_slot), PARTID_MAX_SLOTS) | jointId);
+	{
+		if (pStatObj)
+		{
+			pe_params_part pp;
+			pp.partid = AllocPartIdRange(GetEntity()->GetPhysicalEntityPartId0(m_slot), PARTID_MAX_SLOTS) | jointId;
+			pp.pPhysGeom = pStatObj->GetPhysGeom();
+			GetEntity()->GetPhysics()->SetParams(&pp);
+		}
+		else
+			GetEntity()->GetPhysics()->RemoveGeometry(AllocPartIdRange(GetEntity()->GetPhysicalEntityPartId0(m_slot), PARTID_MAX_SLOTS) | jointId);
+	}
 	return true;
 }
 

@@ -13,6 +13,9 @@
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/Containers/VectorSet.h>
 
+#include "NetCVars.h"
+#include "objcnt.h"
+
 #if NEW_BANDWIDTH_MANAGEMENT
 
 class CNetChannel;
@@ -153,8 +156,42 @@ enum EMessageQueueAddSendableResult
 
 class CMessageQueue
 {
+	struct SAccountingGroupPulse
+	{
+		SAccountingGroupPulse() : name(0) {}
+		uint32       name;
+		CPulseScaler scaler;
+		bool operator<(const SAccountingGroupPulse& pulse) const
+		{
+			return name < pulse.name;
+		}
+	};
+
+	struct SAccountingGroupPolicy
+	{
+		// scheduling policy
+		float                 priority;
+		float                 maxLatency;
+		float                 discardLatency;
+		float                 maxBandwidth;
+		bool                  drawn;
+		// distance/direction scaling
+		CDistanceScaler       distanceScaler;
+		CDirScaler            dirScaler;
+		// pulse scaling
+		uint32                numPulses;
+		SAccountingGroupPulse pulses[MAXIMUM_PULSES_PER_STATE];
+	};
+
 public:
-	class CConfig;
+	class CConfig
+	{
+	public:
+		bool Read(XmlNodeRef n);
+		void GetMemoryStatistics(ICrySizer* pSizer);
+
+		std::map<uint32, SAccountingGroupPolicy> m_policy;
+	};
 
 	CMessageQueue(CConfig* pConfig);
 	~CMessageQueue();
@@ -197,33 +234,6 @@ private:
 		float      bandwidth;
 	};
 	typedef MiniQueue<SSentEnt, 31> TSentEntQueue;
-
-	struct SAccountingGroupPulse
-	{
-		SAccountingGroupPulse() : name(0) {}
-		uint32       name;
-		CPulseScaler scaler;
-		bool operator<(const SAccountingGroupPulse& pulse) const
-		{
-			return name < pulse.name;
-		}
-	};
-
-	struct SAccountingGroupPolicy
-	{
-		// scheduling policy
-		float                 priority;
-		float                 maxLatency;
-		float                 discardLatency;
-		float                 maxBandwidth;
-		bool                  drawn;
-		// distance/direction scaling
-		CDistanceScaler       distanceScaler;
-		CDirScaler            dirScaler;
-		// pulse scaling
-		uint32                numPulses;
-		SAccountingGroupPulse pulses[MAXIMUM_PULSES_PER_STATE];
-	};
 
 	struct SAccountingGroup
 	{

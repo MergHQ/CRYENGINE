@@ -386,6 +386,19 @@ pixout NearestDepthUpsamplePS(vtxOutTexToTex IN)
 	return OUT;
 }
 
+Texture2D MultiResOutput : register(t0);
+
+pixout UpscaleMultiResPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout)0;
+
+	float2 uvMultiRes = MapViewportToRaster(IN.baseTC.xy);
+
+	OUT.Color = MultiResOutput.Sample(SampStateLinear, uvMultiRes);
+
+	return OUT;
+}
+
 ////////////////// technique /////////////////////
 
 technique TextureToTexture
@@ -439,6 +452,30 @@ technique NearestDepthUpsample
   {
     VertexShader = TexToTexVS() PostEffectsVS;
     PixelShader = NearestDepthUpsamplePS() PostEffectsPS;
+  }
+}
+
+technique DrawLensMatchedOctagon
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    GeometryShader = $AutoGS_MultiRes();
+    
+    CullMode = None;
+  }
+}
+
+technique UpscaleMultiRes
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    
+    ZEnable = false;
+    CullMode = None;
+    
+    PixelShader = UpscaleMultiResPS() PostEffectsPS;
   }
 }
 
@@ -507,11 +544,29 @@ pixout LinearizeDepthPS(vtxOutTexToTex IN)
 	float fDevDepth = LinearizeDepth_DepthTex.Load(vPixCoord);
 #endif
 
+#if %_RT_PROJECTION_LENS_MATCHED
+	float originalDevDepth = fDevDepth;
+
+	float4 clipPos = MapUnnormalizedRasterToClip(IN.HPosition.xy, fDevDepth, false);
+	float rcpW = rcp(clipPos.w);
+	fDevDepth *= rcpW;
+#endif
+
 	const float fNearestMax = g_PS_ProjRatio.y / (NearProjection.z - g_PS_ProjRatio.x);
 	float fDepthLinear = g_PS_ProjRatio.y / (fDevDepth - g_PS_ProjRatio.x);
 
 	if (fDepthLinear < fNearestMax)
-		 fDepthLinear = NearProjection.y / (fDevDepth - NearProjection.x);
+	{
+#if %_RT_PROJECTION_LENS_MATCHED
+		// Convert from [DrawNearZRange..1] to [0..1]
+		fDevDepth = (originalDevDepth - NearProjection.w) / (1.0 - NearProjection.w);
+		// Unwarp
+		fDevDepth *= rcpW;
+		// Convert back to [DrawNearZRange..1]
+		fDevDepth = fDevDepth * (1.0 - NearProjection.w) + NearProjection.w;
+#endif
+		fDepthLinear = NearProjection.y / (fDevDepth - NearProjection.x);
+	}
 
 	OUT.Color.x = (fDevDepth == 1.0) ? 1.0 : fDepthLinear;  // Preseve exact value of 1.0 that is used for the sky
 
@@ -523,7 +578,26 @@ technique LinearizeDepth
   pass p0
   {
     VertexShader = TexToTexVS();
-    PixelShader = LinearizeDepthPS();
+    PixelShader = LinearizeDepthPS() LinearizeDepthPS;
+    CullMode = None;
+  }
+}
+
+pixout FlattenDepthPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout) 0;
+	float2 PixCoord = MapViewportToUnnormalizedRaster(IN.baseTC.xy);
+	OUT.Color.x = LinearizeDepth_DepthTex.Load(int3(PixCoord, 0)).x;
+
+	return OUT;
+}
+
+technique FlattenDepth
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS();
+    PixelShader = FlattenDepthPS() LinearizeDepthPS;
     CullMode = None;
   }
 }
@@ -537,11 +611,11 @@ float4 DownsampleDepth_Params;
 pixout DownsampleDepthPS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
+
+	float2 scaledTC = (IN.WPos.xy * 2.0) * DownsampleDepth_Params.xy;
 	
-	IN.baseTC.xy *= DownsampleDepth_Params.xy;
-	
-	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(IN.baseTC.xy, 0));
-	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(IN.baseTC.xy, 0));
+	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(scaledTC, 0));
+	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(scaledTC, 0));
 	
 	// Linearize depth
 #if %_RT_SAMPLE0
@@ -555,6 +629,9 @@ pixout DownsampleDepthPS(vtxOut IN)
 
 	OUT.Color.x = max(max(vMaxDepths.x, vMaxDepths.y), max(vMaxDepths.z, vMaxDepths.w));
 	OUT.Color.y = min(min(vMinDepths.x, vMinDepths.y), min(vMinDepths.z, vMinDepths.w));
+	OUT.Color.z = (vMinDepths.x + vMinDepths.y + vMinDepths.z + vMinDepths.w) * 0.25;
+	uint2 WPos = (uint2)IN.WPos.xy;
+	OUT.Color.w = DownsampleDepth_DepthTex.Load(int3(2 * WPos.x + ((WPos.y & 1) ^ 1), 2 * WPos.y + ((WPos.x & 1) ^ 1), 0));
 
 	return OUT;
 }
@@ -1730,8 +1807,7 @@ struct _pixoutMRT
 
 float GetStereoDepth( sampler2D depthSampler, float2 ScreenTC )
 {	
-	float depth = GetDepthMap( depthSampler, ScreenTC.xy );
-	float linDepth = GetLinearDepth( depth );
+	float linDepth = GetLinearDepth( depthSampler, ScreenTC.xy );
 	
 	bool isNear = tex2D( _tex2, ScreenTC.xy ).x > 0;
 	
@@ -1964,6 +2040,171 @@ technique Post3DRendererSilhouttes
     VertexShader = BaseVS();            
     PixelShader = Post3DRendererSilhouttes_PS() PostProcessGamePS;      
   }
+}
+
+//////////////////////////// Selection Silhouettes and highlights /////////////
+
+struct vtxOutSilhouette
+{
+    float4 HPosition : POSITION;
+    float4 baseTC0 : TEXCOORD0;
+    float4 baseTC1 : TEXCOORD1;
+    float4 baseTC2 : TEXCOORD2;
+};
+
+float outlineWidth;
+
+vtxOutSilhouette SelectionSilhouetteVS(vtxIn IN)
+{
+    const half uvOffsetScale = outlineWidth;
+
+    vtxOutSilhouette OUT = (vtxOutSilhouette) 0;
+    OUT.HPosition = Get2dHPos(IN.Position);
+
+    OUT.baseTC0.xy = IN.baseTC.xy;
+ 
+    OUT.baseTC1.xy = IN.baseTC.xy + uvOffsetScale * float2(0, -1) * ScrSize.zw;
+    OUT.baseTC1.zw = IN.baseTC.xy + uvOffsetScale * float2(0,  1) * ScrSize.zw;
+    OUT.baseTC2.xy = IN.baseTC.xy + uvOffsetScale * float2(-1, 0) * ScrSize.zw;
+    OUT.baseTC2.zw = IN.baseTC.xy + uvOffsetScale * float2( 1, 0) * ScrSize.zw;
+
+    return OUT;
+}
+
+float4 highlightColor;
+float4 selectionColor;
+float ghostAlpha;
+
+pixout SelectionSilhouettePS(vtxOutSilhouette IN)
+{
+// ID flags. Make sure those are synced between CommonDebugPass.cfi and IRenderNode
+#define SELECTED_FLAG    (1)
+#define HIGHLIGHTED_FLAG (1 << 1)
+#define HIDDEN_FLAG      (1 << 2)
+
+    // alpha for hidden highlights.
+    const float fHiddenAlpha = ghostAlpha;
+
+    pixout OUT = (pixout) 0;
+
+    uint pixelInfo = asuint(tex2D(_tex0, IN.baseTC0).x);
+    // IDs are stored in higher 24 bits
+    uint pixelID = pixelInfo >> 8;
+
+    bool bIsHighlighted = (pixelInfo & HIGHLIGHTED_FLAG) != 0;
+    bool bIsSelected    = (pixelInfo & SELECTED_FLAG) != 0;
+    bool bIsHidden      = (pixelInfo & HIDDEN_FLAG) != 0;
+
+    uint4 edgesInfo = uint4(asuint(tex2D(_tex0, IN.baseTC1.xy).x),
+                            asuint(tex2D(_tex0, IN.baseTC1.zw).x),
+                            asuint(tex2D(_tex0, IN.baseTC2.xy).x),
+                            asuint(tex2D(_tex0, IN.baseTC2.zw).x));
+
+    uint4 edgeIDs =    (edgesInfo >> 8);
+    bool4 vbDiffMask = (edgeIDs != pixelID);
+    bool  bIsEdge =    any(vbDiffMask);
+
+    // edges are high priority, do them first
+    if (bIsEdge)
+    {
+        bool4 vbIsHigherID        = (edgeIDs > pixelID);
+        bool4 vbIsHighlightedEdge = ((edgesInfo & HIGHLIGHTED_FLAG) != 0);
+        bool4 vbIsSelectedEdge    = ((edgesInfo & SELECTED_FLAG) != 0);
+        bool4 vbIsHiddenEdge      = ((edgesInfo & HIDDEN_FLAG) != 0);
+
+        // highligh outlines get priority over all other drawing
+        if (any(vbIsHighlightedEdge && vbDiffMask))
+        {
+            if (bIsHighlighted)
+            {
+                bool4 vbMask = vbIsHigherID && vbIsHighlightedEdge;
+
+                // only draw on the side with the lower ID to avoid double outlines
+                if (any(vbMask))
+                {
+                    OUT.Color = highlightColor;
+                    // if any of the two sides is visible, we need to draw an opaque outline
+                    OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
+                }
+                else if (!bIsHidden)
+                {
+                    OUT.Color = highlightColor;
+                }
+            }
+            else
+            {
+                OUT.Color = highlightColor;
+                OUT.Color.a = (any(vbIsHiddenEdge && vbIsHighlightedEdge)) ? fHiddenAlpha : 1.0;
+            }
+        }
+        // selected outlines get similar treatment to highlight outlines
+        else if (any(vbIsSelectedEdge && vbDiffMask) && !bIsHighlighted)
+        {
+            if (bIsSelected)
+            {
+                bool4 vbMask = vbIsHigherID && vbIsSelectedEdge;
+
+                // only draw on the side with the lower ID to avoid double outlines
+                if (any(vbMask))
+                {
+                    OUT.Color = selectionColor;
+                    // if any of the two sides is visible, we need to draw an opaque outline
+                    OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
+                }
+                else if (!bIsHidden)
+                {
+                    OUT.Color = selectionColor;
+                }
+            }
+            else
+            {
+                OUT.Color = selectionColor;
+                OUT.Color.a = (any(vbIsHiddenEdge && vbIsSelectedEdge)) ? fHiddenAlpha : 1.0;
+            }
+        }
+        else if (bIsSelected)
+        {
+            if (!bIsHidden)
+            {
+                OUT.Color = selectionColor;
+            }
+        }
+        // Finally account for highlighted objects
+        else if (bIsHighlighted)
+        {
+            if (!bIsHidden)
+            {
+                OUT.Color = highlightColor;
+            }
+        }
+    }
+    // Selection coloring will get priority even for highlighted objects, so that we know they are also selected
+    else if (bIsSelected)
+    {
+        if (!bIsHidden)
+        {
+            OUT.Color = selectionColor;
+        }
+    }
+    // Finally account for highlighted objects
+    else if (bIsHighlighted)
+    {
+        if (!bIsHidden)
+        {
+            OUT.Color = highlightColor;
+        }
+    }
+
+    return OUT;
+}
+
+technique SelectionSilhouetteHighlight
+{
+    pass p0
+    {
+        VertexShader = SelectionSilhouetteVS();
+        PixelShader = SelectionSilhouettePS();
+    }
 }
 
 /////////////////////// eof ///

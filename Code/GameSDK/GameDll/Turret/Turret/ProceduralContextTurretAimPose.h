@@ -175,6 +175,8 @@ class CProceduralContextTurretAimPose
 public:
 	PROCEDURAL_CONTEXT( CProceduralContextTurretAimPose, "ProceduralContextTurretAimPose", 0xc47e5db73d574ae5, 0x8efe04de2442ed8f );
 
+	CProceduralContextTurretAimPose();
+	virtual ~CProceduralContextTurretAimPose() {}
 
 	virtual void Initialise( IEntity& entity, IActionController& actionController ) override;
 	virtual void Update( float timePassedSeconds ) override;

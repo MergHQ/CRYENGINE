@@ -79,7 +79,7 @@ bool CPlayerStateFly::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameMove
 					cry_sprintf( buffer,"FlyMode/NoClip ON" );
 					break;
 				}
-				gEnv->pRenderer->Draw2dLabel( 20.f, 20.f, 1.5f, Col_White, 0, "%s", buffer );
+				IRenderAuxText::Draw2dLabel( 20.f, 20.f, 1.5f, Col_White, 0, "%s", buffer );
 				m_flyModeDisplayTime-=gEnv->pTimer->GetFrameTime();
 			}
 		}

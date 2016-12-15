@@ -263,7 +263,7 @@ void CGameQueryListener::ConnectToServer(const char* server)
 	params.pContextParams = NULL;
 	params.port = pConsole->GetCVar("cl_serverport")->GetIVal();
 
-	CCryAction* action = (CCryAction*) (gEnv->pGame->GetIGameFramework());
+	CCryAction* action = (CCryAction*) (gEnv->pGameFramework);
 	if (action)
 	{
 		gEnv->pConsole->ExecuteString("net_lanbrowser 0");

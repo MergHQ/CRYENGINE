@@ -15,6 +15,7 @@ History:
 #include "EntityEffectsHeat.h"
 
 #include "Game.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #ifndef _RELEASE
 
@@ -32,7 +33,7 @@ public:
 		const float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 		const Vec3 entityPosition = ownerEntity->GetWorldPos();
 
-		gEnv->pRenderer->DrawLabelEx(entityPosition, 1.75f, textColor, true, false, "Thermal vision: %.3f", currentHeat);
+		IRenderAuxText::DrawLabelExF(entityPosition, 1.75f, textColor, true, false, "Thermal vision: %.3f", currentHeat);
 	}
 };
 
@@ -140,10 +141,10 @@ float EntityEffects::CHeatController::UpdateCoolDown(const float frameTime)
 
 void EntityEffects::CHeatController::SetThermalVisionParams( const float scale )
 {
-	IEntityRenderProxy *pEntityRenderProxy = static_cast<IEntityRenderProxy *>(m_ownerEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if(pEntityRenderProxy)
+	IEntityRender *pIEntityRender = (m_ownerEntity->GetRenderInterface());
+	if(pIEntityRender)
 	{
-		pEntityRenderProxy->SetVisionParams(scale, scale, scale, scale);
+		//pIEntityRender->SetVisionParams(scale, scale, scale, scale);
 	}
 
 	CHeatControllerDebug::DebugInfo(m_ownerEntity, scale);

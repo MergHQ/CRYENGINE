@@ -442,11 +442,13 @@ struct ParticleHSInput
 	app2vertParticleGeneral VSIn;
 };
 
-void ParticleTessVS(out ParticleHSInput OUT, float4 Position: POSITION, app2vertParticleGeneral IN)
+ParticleHSInput ParticleTessVS(float4 Position: POSITION, app2vertParticleGeneral IN)
 {
+	ParticleHSInput OUT;
 	OUT.Position = Position;
 	OUT.VSIn = IN;
 	ParticleSpriteCommon(OUT.Position, OUT.VSIn);
+	return OUT;
 }
 
 struct ControlPointHS
@@ -774,7 +776,7 @@ half ApplySoftIntersection( inout half4 cFinal, float4 WPos, half fThicknessK )
 	for (int s=0; s<nMsaaSamples; s++) // Ideally would use pre-resolved depth target (note that existing resolved versions use sample0 for proper pixel/sample passes - having a max depth target will require extra mem)
 		fDepth =  max(fDepth, GetDecodedSceneDepthMS(WPos.xy, nMsaaSamples, s));
 #else
-	const half fDepth = GetLinearDepthScaled( sceneDepthSampler, WPos.xy ).x; // todo: pre-computed linear depth could save a bunch
+	const half fDepth = GetLinearDepthScaled( sceneLinearDepthTex, WPos.xy ).x; // todo: pre-computed linear depth could save a bunch
 #endif
 
 	const half fDist = max(min(fDepth-WPos.w, WPos.w), 0.0);
@@ -806,7 +808,11 @@ void ApplyFog( inout half4 cFinal, half4 avgFogVolumeContrib, half4 localFogColo
 
 float4 GetScreenCoords( float4 WPos )
 { 
+#if %_RT_PROJECTION_MULTI_RES || %_RT_PROJECTION_LENS_MATCHED
+	float4 tcScreen = WPos * float4(NvGetProjectionData().TextureSizeInv, 1, 1);
+#else
 	float4 tcScreen = WPos * float4(CV_ScreenSize.zw * 2.0, 1, 1); //todo: zw should not be half pixel, should be pixel size
+#endif
 
 	return tcScreen;
 }
@@ -1185,6 +1191,7 @@ technique ParticlesTessellated
 		VertexShader = ParticleTessVS();
 		HullShader   = ParticleHS();
 		DomainShader = ParticleDS();    
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();  
 
 		ZEnable = true;
@@ -1203,6 +1210,7 @@ technique Particles
 	pass p0
 	{
  		VertexShader = ParticleVS() ParticleVS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
 
 		ZEnable = true;
@@ -1219,6 +1227,7 @@ technique ParticlesPulled
 	pass p0
 	{
 		VertexShader = PulledParticleVS() ParticleVS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
 
 		ZEnable = true;
@@ -1235,6 +1244,7 @@ technique ParticlesGpu
 	pass p0
 	{
 		VertexShader = GpuParticleVS() ParticleVS;
+		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
 
 		ZEnable = true;

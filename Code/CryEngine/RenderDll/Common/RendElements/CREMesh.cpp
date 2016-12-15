@@ -55,12 +55,6 @@ void CREMeshImpl::mfPrepare(bool bCheckOverflow)
 		rd->m_RP.m_FirstIndex = m_nFirstIndexId;
 		rd->m_RP.m_RendNumIndices = m_nNumIndices;
 		rd->m_RP.m_RendNumVerts = m_nNumVerts;
-
-		if (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN) && (gRenDev->m_RP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES) && !(gRenDev->m_RP.m_pCurObject->m_ObjFlags & FOB_SKINNED))
-		{
-			IMaterial* pMaterial = (gRenDev->m_RP.m_pCurObject) ? (gRenDev->m_RP.m_pCurObject->m_pCurrMaterial) : NULL;
-			m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(m_pChunk, pMaterial, rd->m_RP.m_RendNumVerts, rd->m_RP.m_RendNumIndices);
-		}
 	}
 }
 
@@ -200,6 +194,16 @@ EVertexFormat CREMeshImpl::GetVertexFormat() const
 	return eVF_Unknown;
 }
 
+//////////////////////////////////////////////////////////////////////////
+bool CREMeshImpl::Compile(CRenderObject* pObj)
+{
+	if (!m_pRenderMesh)
+		return false;
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation)
 {
 	if (!m_pRenderMesh)
@@ -344,7 +348,7 @@ bool CREMeshImpl::mfDraw(CShader* ef, SShaderPass* sl)
 	return true;
 }
 
-void CREMeshImpl::Draw(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
+void CREMeshImpl::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
 {
 	//@TODO: implement
 

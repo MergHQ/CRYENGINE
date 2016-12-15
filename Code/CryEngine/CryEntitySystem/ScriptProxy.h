@@ -16,7 +16,7 @@
 #pragma once
 
 // forward declarations.
-class CEntityScript;
+class CEntityComponentLuaScript;
 class CEntity;
 struct IScriptTable;
 struct SScriptState;
@@ -28,88 +28,76 @@ struct SScriptState;
 //    CScriptProxy object handles all the interaction of the entity with
 //    the entity script.
 //////////////////////////////////////////////////////////////////////////
-class CScriptProxy : public IEntityScriptProxy
+class CEntityComponentLuaScript : public IEntityScriptComponent
 {
+	CRY_ENTITY_COMPONENT_CLASS(CEntityComponentLuaScript,IEntityScriptComponent,"CEntityComponentLuaScript",0x38CF87CCD44B4A1D,0xA16D7EA3C5BDE757);
+
+	CEntityComponentLuaScript();
+	virtual ~CEntityComponentLuaScript();
+
 public:
+	void InitScript(CEntityComponentLuaScript* pScript = NULL, SEntitySpawnParams* pSpawnParams = NULL);
 
-	CScriptProxy();
-	~CScriptProxy();
-
-	struct SComponentInitializerScriptProxy : public SComponentInitializer
-	{
-		CEntityScript*      m_pScript;
-		SEntitySpawnParams* m_pSpawnParams;
-		SComponentInitializerScriptProxy(IEntity* pEntity, CEntityScript* pScript = NULL, SEntitySpawnParams* pSpawnParams = NULL)
-			: SComponentInitializer(pEntity)
-			, m_pScript(pScript)
-			, m_pSpawnParams(pSpawnParams)
-		{}
-	};
-
-	virtual void Initialize(const SComponentInitializer& init);
+	virtual void Initialize() final;
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
+	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(SEntityEvent& event) final;
+	virtual uint64 GetEventMask() const final; // Need all events except pre-physics update
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy implementation.
+	// IEntityComponent implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_SCRIPT; }
-	virtual void         Release() { delete this; };
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
+	virtual EEntityProxy GetProxyType() const  final { return ENTITY_PROXY_SCRIPT; }
+	virtual void         Release()  final { delete this; };
+	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
+	virtual void         GameSerialize(TSerialize ser) final;
+	virtual bool         NeedGameSerialize() final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityScriptProxy implementation.
+	// IEntityScriptComponent implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) { m_fScriptUpdateRate = fUpdateEveryNSeconds; };
-	virtual IScriptTable* GetScriptTable()                                { return m_pThis; };
+	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) final { m_fScriptUpdateRate = fUpdateEveryNSeconds; };
+	virtual IScriptTable* GetScriptTable() final { return m_pThis; };
 
-	virtual void          CallEvent(const char* sEvent);
-	virtual void          CallEvent(const char* sEvent, float fValue);
-	virtual void          CallEvent(const char* sEvent, bool bValue);
-	virtual void          CallEvent(const char* sEvent, const char* sValue);
-	virtual void          CallEvent(const char* sEvent, EntityId nEntityId);
-	virtual void          CallEvent(const char* sEvent, const Vec3& vValue);
+	virtual void          CallEvent(const char* sEvent) final;
+	virtual void          CallEvent(const char* sEvent, float fValue) final;
+	virtual void          CallEvent(const char* sEvent, bool bValue) final;
+	virtual void          CallEvent(const char* sEvent, const char* sValue) final;
+	virtual void          CallEvent(const char* sEvent, EntityId nEntityId) final;
+	virtual void          CallEvent(const char* sEvent, const Vec3& vValue) final;
 
-	void                  CallInitEvent(bool bFromReload);
+	virtual void                  CallInitEvent(bool bFromReload) final;
 
-	virtual void          SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet = NULL);
-	virtual void          SendScriptEvent(int Event, const char* str, bool* pRet = NULL);
-	virtual void          SendScriptEvent(int Event, int nParam, bool* pRet = NULL);
+	virtual void          SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet = NULL) final;
+	virtual void          SendScriptEvent(int Event, const char* str, bool* pRet = NULL) final;
+	virtual void          SendScriptEvent(int Event, int nParam, bool* pRet = NULL) final;
 
-	virtual void          ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params);
+	virtual void          ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params) final;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass);
-	virtual void OnPreparedFromPool();
+	virtual void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass) final;
+	virtual void OnPreparedFromPool() final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// State Management public interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool GotoState(const char* sStateName);
-	virtual bool GotoStateId(int nState) { return GotoState(nState); };
+	virtual bool GotoState(const char* sStateName) final;
+	virtual bool GotoStateId(int nState) final { return GotoState(nState); };
 	bool         GotoState(int nState);
-	bool         IsInState(const char* sStateName);
+	virtual bool         IsInState(const char* sStateName) final;
 	bool         IsInState(int nState);
-	const char*  GetState();
-	int          GetStateId();
+	virtual const char*  GetState() final;
+	virtual int          GetStateId() final;
 	void         RegisterForAreaEvents(bool bEnable);
 	bool         IsRegisteredForAreaEvents() const;
 
 	void         SerializeProperties(TSerialize ser);
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const;
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const final;
 
 private:
 	SScriptState*  CurrentState() { return m_pScript->GetState(m_nCurrStateId); }
@@ -120,8 +108,9 @@ private:
 	void           SerializeTable(TSerialize ser, const char* name);
 	bool           HaveTable(const char* name);
 
+	void           Update(SEntityUpdateContext& ctx);
+
 private:
-	CEntity*       m_pEntity;
 	CEntityScript* m_pScript;
 	IScriptTable*  m_pThis;
 

@@ -9,12 +9,26 @@
 namespace CryDRS
 {
 class CResponseActor;
+class CResponseInstance;
 
 class CActionSpeakLine final : public DRS::IResponseAction
 {
 public:
-	CActionSpeakLine() {}
-	CActionSpeakLine(const CHashedString& lineToSpeak) : m_lineIDToSpeak(lineToSpeak) {}
+	enum ESpeakLineFlags
+	{
+		eSpeakLineFlags_None                          = 0,
+		eSpeakLineFlags_CancelResponseOnSkip          = BIT(1),
+		eSpeakLineFlags_CancelResponseOnCanceled      = BIT(2),
+		ESpeakLineFlags_SendSignalOnStart             = BIT(3),
+		ESpeakLineFlags_SendSignalOnSkip              = BIT(4),
+		ESpeakLineFlags_SendSignalOnCancel            = BIT(5),
+		ESpeakLineFlags_SendSignalOnFinish            = BIT(7),
+		ESpeakLineFlags_ReevaluteConditionsAfterQueue = BIT(8),
+		ESpeakLineFlags_Default                       = ESpeakLineFlags_ReevaluteConditionsAfterQueue | eSpeakLineFlags_CancelResponseOnSkip | eSpeakLineFlags_CancelResponseOnCanceled
+	};
+
+	CActionSpeakLine() : m_flags(ESpeakLineFlags_Default) {}
+	CActionSpeakLine(const CHashedString& lineToSpeak) : m_lineIDToSpeak(lineToSpeak), m_flags(ESpeakLineFlags_Default) {}
 
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation
@@ -27,14 +41,16 @@ public:
 private:
 	CHashedString m_speakerOverrideName;
 	CHashedString m_lineIDToSpeak;
+	uint32        m_flags;            //ESpeakLineFlags
 };
 
 //////////////////////////////////////////////////////////
 
-class CActionSpeakLineInstance final : public DRS::IResponseActionInstance
+class CActionSpeakLineInstance final : public DRS::IResponseActionInstance, DRS::ISpeakerManager::IListener
 {
 public:
-	CActionSpeakLineInstance(const CResponseActor* pSpeaker, const CHashedString& lineID) : m_pSpeaker(pSpeaker), m_lineID(lineID) {}
+	CActionSpeakLineInstance(CResponseActor* pSpeaker, const CHashedString& lineID, CResponseInstance* pResponseInstance, uint32 flags);
+	~CActionSpeakLineInstance();
 
 	//////////////////////////////////////////////////////////
 	// IResponseActionInstance implementation
@@ -42,9 +58,19 @@ public:
 	virtual void          Cancel() override;
 	//////////////////////////////////////////////////////////
 
+	//////////////////////////////////////////////////////////
+	// DRS::ISpeakerManager::IListener implementation
+	virtual bool OnLineAboutToStart(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID) override;
+	virtual void OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, DRS::ISpeakerManager::IListener::eLineEvent lineEvent, const DRS::IDialogLine* pLine) override;
+	//////////////////////////////////////////////////////////
+
 private:
-	const CResponseActor* m_pSpeaker;
-	const CHashedString   m_lineID;
+	CResponseActor* const    m_pSpeaker;
+	const CHashedString      m_lineID;
+	CResponseInstance* const m_pResponseInstance;
+
+	eCurrentState            m_currentState;
+	uint32                   m_flags;
 };
 
 //////////////////////////////////////////////////////////
@@ -52,8 +78,8 @@ private:
 class CActionCancelSpeaking final : public DRS::IResponseAction
 {
 public:
-	CActionCancelSpeaking() : m_maxPrioToCancel(-1) {}
-	CActionCancelSpeaking(const CHashedString& speakerName) : m_maxPrioToCancel(-1) {}
+	CActionCancelSpeaking();
+	CActionCancelSpeaking(const CHashedString& speakerName);
 
 	//////////////////////////////////////////////////////////
 	// IResponseAction implementation
@@ -66,6 +92,7 @@ public:
 private:
 	CHashedString m_speakerOverrideName;
 	int           m_maxPrioToCancel;
+	CHashedString m_lineId;
 };
 
 //////////////////////////////////////////////////////////
@@ -73,7 +100,7 @@ private:
 class CActionCancelSpeakingInstance final : public DRS::IResponseActionInstance
 {
 public:
-	CActionCancelSpeakingInstance(const CResponseActor* pSpeaker) : m_pSpeaker(pSpeaker) {}
+	CActionCancelSpeakingInstance(const CResponseActor* pSpeaker, const CHashedString& lineId) : m_pSpeaker(pSpeaker), m_lineId(lineId) {}
 
 	//////////////////////////////////////////////////////////
 	// IResponseActionInstance implementation
@@ -83,5 +110,6 @@ public:
 
 private:
 	const CResponseActor* m_pSpeaker;
+	const CHashedString   m_lineId;
 };
 }  //namespace CryDRS

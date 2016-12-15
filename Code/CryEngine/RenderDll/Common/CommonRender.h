@@ -201,12 +201,12 @@ public:
 
 //=================================================================
 
-#if CAPTURE_REPLAY_LOG && (defined(WIN32) || defined (WIN64))
+#if CAPTURE_REPLAY_LOG && !CRY_USE_DX12 && (defined(WIN32) || defined (WIN64))
 	#define MEMREPLAY_WRAP_D3D11
 	#define MEMREPLAY_WRAP_D3D11_CONTEX
 #endif
 
-#if CAPTURE_REPLAY_LOG && defined(DURANGO) && defined(DIRECT3D10)
+#if CAPTURE_REPLAY_LOG && !CRY_USE_DX12 && defined(DURANGO) && defined(DIRECT3D10)
 	#define MEMREPLAY_WRAP_D3D11
 	#define MEMREPLAY_WRAP_D3D11_CONTEXT
 	#define MEMREPLAY_WRAP_XBOX_PERFORMANCE_DEVICE

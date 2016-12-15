@@ -4,7 +4,7 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-class CFlowNode_AudioRtpc : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_AudioRtpc final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
@@ -12,10 +12,15 @@ public:
 		: m_value(0.0f)
 	{}
 
-	~CFlowNode_AudioRtpc() {}
+	virtual ~CFlowNode_AudioRtpc() override = default;
+
+	CFlowNode_AudioRtpc(CFlowNode_AudioRtpc const&) = delete;
+	CFlowNode_AudioRtpc(CFlowNode_AudioRtpc&&) = delete;
+	CFlowNode_AudioRtpc& operator=(CFlowNode_AudioRtpc const&) = delete;
+	CFlowNode_AudioRtpc& operator=(CFlowNode_AudioRtpc&&) = delete;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_AudioRtpc(pActInfo);
 	}
@@ -31,7 +36,7 @@ public:
 	{
 	};
 
-	virtual void GetConfiguration(SFlowNodeConfig& config)
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] =
 		{
@@ -53,7 +58,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
 		float fValue = m_value;
 		ser.BeginGroup("FlowAudioRtpcNode");
@@ -67,7 +72,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
 	{
 		switch (event)
 		{
@@ -95,7 +100,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);
 	}
@@ -139,19 +144,18 @@ private:
 
 			m_request.pData = &m_requestData;
 
-			float const value = GetPortFloat(pActInfo, eIn_RtpcValue);
-			SetValue(pActInfo->pEntity, value);
+			SetValue(pActInfo->pEntity, 0.0f);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetOnProxy(IEntity* const pEntity, float const value)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-		if (pIEntityAudioProxy != nullptr)
+		if (pIEntityAudioComponent != nullptr)
 		{
-			pIEntityAudioProxy->SetRtpcValue(m_requestData.audioRtpcId, value);
+			pIEntityAudioComponent->SetRtpcValue(m_requestData.audioRtpcId, value);
 		}
 	}
 

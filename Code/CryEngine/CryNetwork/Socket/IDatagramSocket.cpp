@@ -11,15 +11,15 @@
 class CNullSocket : public IDatagramSocket
 {
 public:
-	virtual void         RegisterListener(IDatagramListener* pListener)                         {}
-	virtual void         UnregisterListener(IDatagramListener* pListener)                       {}
-	virtual void         GetSocketAddresses(TNetAddressVec& addrs)                              { addrs.push_back(TNetAddress(SNullAddr())); }
-	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to)      { return eSE_MiscFatalError; }
-	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to) { return eSE_MiscFatalError; }
-	virtual void         Die()                                                                  {}
-	virtual bool         IsDead()                                                               { return true; }
-	virtual void         RegisterBackoffAddress(TNetAddress addr)                               {}
-	virtual void         UnregisterBackoffAddress(TNetAddress addr)                             {}
+	virtual void         RegisterListener(IDatagramListener* pListener) override                         {}
+	virtual void         UnregisterListener(IDatagramListener* pListener) override                       {}
+	virtual void         GetSocketAddresses(TNetAddressVec& addrs) override                              { addrs.push_back(TNetAddress(SNullAddr())); }
+	virtual ESocketError Send(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override      { return eSE_MiscFatalError; }
+	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to) override { return eSE_MiscFatalError; }
+	virtual void         Die() override                                                                  {}
+	virtual bool         IsDead() override                                                               { return true; }
+	virtual void         RegisterBackoffAddress(const TNetAddress& addr) override                               {}
+	virtual void         UnregisterBackoffAddress(const TNetAddress& addr) override                             {}
 };
 
 void CDatagramSocket::RegisterListener(IDatagramListener* pListener)
@@ -48,10 +48,23 @@ void CDatagramSocket::OnError(const TNetAddress& addr, ESocketError error)
 	}
 }
 
-struct SOpenSocketVisitor : public boost::static_visitor<IDatagramSocketPtr>
+struct SOpenSocketVisitor
 {
 private:
 	uint32 flags;
+
+	template<size_t I = 0>
+	IDatagramSocketPtr CreateFromVariant(const TNetAddress& var)
+	{
+		if (var.index() == I)
+		{
+			return Create(stl::get<I>(var));
+		}
+		else
+		{
+			return CreateFromVariant<I + 1>(var);
+		}
+	}
 
 public:
 	SOpenSocketVisitor(uint32 _flags)
@@ -68,6 +81,11 @@ public:
 			return NULL;
 		}
 		return pSocket;
+	}
+
+	IDatagramSocketPtr Create(const TNetAddress& var)
+	{
+		return CreateFromVariant(var);
 	}
 
 	IDatagramSocketPtr Create(TLocalNetAddress addr)
@@ -114,18 +132,24 @@ public:
 	}
 
 	template<class T>
-	IDatagramSocketPtr operator()(T& type)
+	IDatagramSocketPtr operator()(const T& type)
 	{
 		return Create(type);
 	}
 };
+template<>
+IDatagramSocketPtr SOpenSocketVisitor::CreateFromVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	return nullptr;
+}
 
 IDatagramSocketPtr OpenSocket(const TNetAddress& addr, uint32 flags)
 {
 	SOpenSocketVisitor v(flags);
-	IDatagramSocketPtr pSocket = boost::apply_visitor(v, addr);
+	IDatagramSocketPtr pSocket = stl::visit(v, addr);
 #if INTERNET_SIMULATOR
-	if (pSocket && boost::get<const SIPv4Addr>(&addr))
+	if (pSocket && stl::get_if<SIPv4Addr>(&addr))
 		pSocket = new CInternetSimulatorSocket(pSocket);
 #endif
 

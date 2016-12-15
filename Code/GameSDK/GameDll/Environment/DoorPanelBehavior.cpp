@@ -405,7 +405,7 @@ void CDoorPanelBehavior::SetupDoorPanel( CDoorPanel& doorPanel )
 	SwitchSlot(doorPanel, DOOR_PANEL_MODEL_NORMAL_SLOT);
 
 	// Other proxies
-	pEntity->CreateProxy( ENTITY_PROXY_AUDIO );
+	pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 }
 
 bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
@@ -427,10 +427,10 @@ bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
 	}
 	else
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if (pRenderProxy)
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		
 		{
-			pOriginalMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
+			pOriginalMaterial = pIEntityRender->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
 			m_pOriginalAnimatedMaterial = pOriginalMaterial;
 		}
 	}
@@ -471,7 +471,7 @@ bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
 			CRY_ASSERT(pEntityToShareScreen != NULL);
 			if (pEntityToShareScreen != NULL)
 			{
-				IEntityRenderProxy* pEntityToShareRenderProxy = static_cast<IEntityRenderProxy*>(pEntityToShareScreen->GetProxy(ENTITY_PROXY_RENDER));
+				IEntityRender* pEntityToShareRenderProxy = (pEntityToShareScreen->GetRenderInterface());
 				if (pEntityToShareRenderProxy)
 				{
 					pAnimatedMaterial = pEntityToShareRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
@@ -562,10 +562,10 @@ IMaterial* CDoorPanelBehavior::CreateClonedMaterial( IEntity* pEntity, const int
 
 	IMaterial* pClonedMaterial = NULL;
 
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if (pRenderProxy)
+	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+	
 	{
-		IMaterial* pOriginalMaterial = pRenderProxy->GetRenderMaterial(iSlotIndex);
+		IMaterial* pOriginalMaterial = pIEntityRender->GetRenderMaterial(iSlotIndex);
 		if (pOriginalMaterial)
 		{
 			IMaterialManager* pMatManager = gEnv->p3DEngine->GetMaterialManager();
@@ -586,10 +586,6 @@ IMaterial* CDoorPanelBehavior::CreateClonedMaterial( IEntity* pEntity, const int
 		{
 			GameWarning("CDoorPanelBehavior::CreateClonedMaterial: Failed to get material from slot: %d", DOOR_PANEL_MODEL_NORMAL_SLOT);
 		}
-	}
-	else
-	{
-		GameWarning("CDoorPanelBehavior::CreateClonedMaterial: Failed getting render proxy");
 	}
 
 	return pClonedMaterial;
@@ -661,10 +657,10 @@ void CDoorPanelBehavior::DeinitFlashResources( CDoorPanel& doorPanel )
 		{
 			IEntity* pEntity = doorPanel.GetEntity();
 
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-			if (pRenderProxy)
+			IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+			
 			{
-				IMaterial* pMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
+				IMaterial* pMaterial = pIEntityRender->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
 				if (pMaterial)
 				{
 					IFlashPlayer* pFlashPlayer = CHUDUtils::GetFlashPlayerFromMaterialIncludingSubMaterials(pMaterial, true);

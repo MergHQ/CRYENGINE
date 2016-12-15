@@ -62,11 +62,7 @@ struct PakVars
 #endif
 
 		nMessageInvalidFileAccess = 0;
-#ifndef _RELEASE
-		nLogInvalidFileAccess = 1;
-#else
 		nLogInvalidFileAccess = 0;
-#endif
 
 #ifndef _RELEASE
 		nLogAllFileAccess = 0;

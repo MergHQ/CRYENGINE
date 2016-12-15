@@ -22,7 +22,7 @@
 
 #if CRY_PLATFORM_NEON
 	#include "VMath_NEON.hpp"
-#elif (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_MAC || defined(IOS_SIMULATOR)) && (defined(VEC4_SSE) || defined(VEC4_SSE4))
+#elif CRY_PLATFORM_SSE2 || CRY_PLATFORM_SSE4
 	#include "VMath_SSE.hpp"
 #else
 	#include "VMath_C.hpp"

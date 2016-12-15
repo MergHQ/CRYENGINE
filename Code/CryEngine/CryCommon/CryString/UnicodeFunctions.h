@@ -216,7 +216,7 @@ template<EEncoding InputEncoding, EEncoding OutputEncoding, EErrorRecovery Recov
 inline size_t LengthSafe(const InputStringType& source)
 {
 	// SRequire a safe recovery method.
-	COMPILE_TIME_ASSERT(SIsSafeEncoding<Recovery>::value);
+	static_assert(SIsSafeEncoding<Recovery>::value, "Unsafe encoding!");
 
 	// Bind methods.
 	const EBind bindMethod = SBindObject<InputStringType, false>::value;
@@ -324,7 +324,7 @@ template<EEncoding InputEncoding, EEncoding OutputEncoding, bool Append, EErrorR
 inline size_t ConvertSafe(OutputStringType& target, const InputStringType& source)
 {
 	// SRequire a safe recovery method.
-	COMPILE_TIME_ASSERT(SIsSafeEncoding<Recovery>::value);
+	static_assert(SIsSafeEncoding<Recovery>::value, "Unsafe encoding!");
 
 	// Bind methods.
 	const EBind inputBindMethod = SBindObject<InputStringType, false>::value;

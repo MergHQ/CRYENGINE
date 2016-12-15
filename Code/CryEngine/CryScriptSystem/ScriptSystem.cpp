@@ -265,7 +265,7 @@ extern "C"
 
 	void script_randseed(unsigned int seed)
 	{
-		cry_random_seed(seed);
+		gEnv->pSystem->GetRandomGenerator().Seed(seed);
 	}
 }
 
@@ -919,7 +919,7 @@ void CScriptSystem::LogStackTrace()
 //////////////////////////////////////////////////////////////////////
 int CScriptSystem::ErrorHandler(lua_State* L)
 {
-	if (!GetISystem()->GetIGame() || !lua_isstoredebuginfo(L))
+	if (!lua_isstoredebuginfo(L))
 		return 0; // ignore script errors if engine is running without game
 
 	// Handle error

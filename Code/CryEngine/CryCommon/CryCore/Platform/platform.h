@@ -228,8 +228,13 @@ static inline void __dmb()
 #endif
 
 // Define BIT macro for use in enums and bit masks.
-#define BIT(x)   (1 << (x))
+#if !defined(SWIG)
+#define BIT(x)   (1u << (x))
 #define BIT64(x) (1ull << (x))
+#else
+#define BIT(x)   (1 << (x))
+#define BIT64(x)   (1 << (x))
+#endif
 
 //! ILINE always maps to CRY_FORCE_INLINE, which is the strongest possible inline preference.
 //! Note: Only use when shown that the end-result is faster when ILINE macro is used instead of inline.
@@ -353,24 +358,40 @@ inline int IsHeapValid()
 // Assert dialog box macros
 #include <CryCore/Assert/CryAssert.h>
 
-#include <CryCore/Assert/CompileTimeAssert.h>
 // Platform dependent functions that emulate Win32 API. Mostly used only for debugging!
-void         CryDebugBreak();
-void         CrySleep(unsigned int dwMilliseconds);
-void         CryLowLatencySleep(unsigned int dwMilliseconds);
-int          CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType);
-bool         CryCreateDirectory(const char* lpPathName);
-void         CryGetCurrentDirectory(unsigned int pathSize, char* szOutPath);
-short        CryGetAsyncKeyState(int vKey);
-unsigned int CryGetFileAttributes(const char* lpFileName);
-int          CryGetWritableDirectory(unsigned int pathSize, char* szOutPath);
 
-void         CryGetExecutableFolder(unsigned int pathSize, char* szOutPath);
-void         CryFindEngineRootFolder(unsigned int pathSize, char* szOutPath);
-void         CrySetCurrentWorkingDirectory(const char* szWorkingDirectory);
-void         CryFindRootFolderAndSetAsCurrentWorkingDirectory();
+enum EQuestionResult
+{
+	eQR_None,
+	eQR_Cancel = eQR_None,
+	eQR_Yes,
+	eQR_No
+};
 
-inline void  CryHeapCheck()
+enum EMessageBox
+{
+	eMB_Info,
+	eMB_YesCancel,
+	eMB_YesNoCancel,
+	eMB_Error,
+};
+
+void            CryDebugBreak();
+void            CrySleep(unsigned int dwMilliseconds);
+void            CryLowLatencySleep(unsigned int dwMilliseconds);
+EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType = eMB_Info);
+bool            CryCreateDirectory(const char* lpPathName);
+void            CryGetCurrentDirectory(unsigned int pathSize, char* szOutPath);
+short           CryGetAsyncKeyState(int vKey);
+unsigned int    CryGetFileAttributes(const char* lpFileName);
+int             CryGetWritableDirectory(unsigned int pathSize, char* szOutPath);
+
+void            CryGetExecutableFolder(unsigned int pathSize, char* szOutPath);
+void            CryFindEngineRootFolder(unsigned int pathSize, char* szOutPath);
+void            CrySetCurrentWorkingDirectory(const char* szWorkingDirectory);
+void            CryFindRootFolderAndSetAsCurrentWorkingDirectory();
+
+inline void     CryHeapCheck()
 {
 #if CRY_PLATFORM_WINDOWS // todo: this might be readded with later xdks?
 	int Result = _heapchk();
@@ -498,17 +519,17 @@ struct ZeroInit
 
 //! Declare a const and variable version of a function simultaneously.
 #define CONST_VAR_FUNCTION(head, body) \
-  inline head body                     \
-  inline const head const body
+  ILINE head body                      \
+  ILINE const head const body          \
 
 template<class T>
-inline T& non_const(const T& t)
+ILINE T& non_const(const T& t)
 {
 	return const_cast<T&>(t);
 }
 
 template<class T>
-inline T* non_const(const T* t)
+ILINE T* non_const(const T* t)
 {
 	return const_cast<T*>(t);
 }
@@ -555,45 +576,8 @@ void SetFlags(T& dest, U flags, bool b)
 // Platform wrappers must be included before CryString.h
 #include <CryString/CryString.h>
 
-#include <functional>
-
-//! The 'string_less' class below provides less functor implementation for 'string'.
-//! Supports direct comparison against plain C strings and stack strings.
-//! This is most effective in combination with STLPORT, where various 'find' and related methods are templated on the parameter type.
-struct string_less : public std::binary_function<string, string, bool>
-{
-	bool operator()(const string& s1, const char* s2) const
-	{
-		return s1.compare(s2) < 0;
-	}
-	bool operator()(const char* s1, const string& s2) const
-	{
-		return s2.compare(s1) > 0;
-	}
-	bool operator()(const string& s1, const string& s2) const
-	{
-		return s1 < s2;
-	}
-
-#if !defined(NOT_USE_CRY_STRING)
-	template<size_t S>
-	bool operator()(const string& s1, const CryStackStringT<char, S>& s2) const
-	{
-		return s1.compare(s2.c_str()) < 0;
-	}
-	template<size_t S>
-	bool operator()(const CryStackStringT<char, S>& s1, const string& s2) const
-	{
-		return s1.compare(s2.c_str()) < 0;
-	}
-#endif // !defined(NOT_USE_CRY_STRING)
-};
-
 // Include support for meta-type data.
 #include <CryCore/TypeInfo_decl.h>
-
-// Include array.
-#include <CryCore/Containers/CryArray.h>
 
 bool     CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes);
 threadID CryGetCurrentThreadId();
@@ -694,6 +678,9 @@ extern "C" {
   typedef std::shared_ptr<const name> name ## ConstPtr; \
   typedef std::weak_ptr<name> name ##         WeakPtr;  \
   typedef std::weak_ptr<const name> name ##   ConstWeakPtr;
+
+// Include array.
+#include <CryCore/Containers/CryArray.h>
 
 #ifdef _WINDOWS_
 	#error windows.h should not be included through any headers within platform.h

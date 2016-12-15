@@ -17,7 +17,7 @@
 	#define __ComponentEventDistributer_h__
 
 	#include <CryEntitySystem/IEntitySystem.h>
-	#include <CryEntitySystem/IComponent.h>
+	#include <CryEntitySystem/IEntityComponent.h>
 	#include <CryCore/CryFlags.h>
 
 class CComponentEventDistributer : public IComponentEventDistributer
@@ -33,14 +33,14 @@ public:
 	struct SEventPtr
 	{
 		EntityId      m_entityID;
-		IComponentPtr m_pComponent;
+		IEntityComponentPtr m_pComponent;
 
 		bool operator==(const SEventPtr& rhs) const { return((m_entityID == rhs.m_entityID) && (m_pComponent == rhs.m_pComponent)); }
 
 		SEventPtr()
 			: m_entityID(0)
 		{}
-		SEventPtr(EntityId entityID, IComponentPtr pComponent)
+		SEventPtr(EntityId entityID, IEntityComponentPtr pComponent)
 			: m_pComponent(pComponent)
 			, m_entityID(entityID)
 		{}
@@ -72,7 +72,7 @@ public:
 	ILINE bool           IsEnabled() const   { return m_flags.AreAllFlagsActive(EEventUpdatePolicy_UseDistributer); }
 
 	void                 EnableEventForEntity(const EntityId id, const int eventID, const bool enable);
-	void                 RegisterComponent(const EntityId entityID, IComponentPtr pComponent, bool bEnable);
+	void                 RegisterComponent(const EntityId entityID, IEntityComponentPtr pComponent, bool bEnable);
 	void                 SendEvent(const SEntityEvent& event);
 	void                 RemapEntityID(EntityId oldID, EntityId newID);
 	void                 OnEntityDeleted(IEntity* piEntity);
@@ -81,16 +81,16 @@ public:
 
 protected:
 
-	virtual void RegisterEvent(const EntityId entityID, IComponentPtr pComponent, const int eventID, const int flags);
+	virtual void RegisterEvent(const EntityId entityID, IEntityComponentPtr pComponent, const int eventID, const int flags);
 
 private:
 
 	typedef std::set<int> TRegisteredEvents;
 	struct SRegisteredComponentEvents
 	{
-		SRegisteredComponentEvents(IComponentPtr pComponent) : m_pComponent(pComponent) {}
+		SRegisteredComponentEvents(IEntityComponentPtr pComponent) : m_pComponent(pComponent) {}
 
-		IComponentPtr     m_pComponent;
+		IEntityComponentPtr     m_pComponent;
 		TRegisteredEvents m_registeredEvents;
 	};
 
@@ -102,8 +102,8 @@ private:
 	TEventPtrs                      m_eventPtrTemp;
 	CCryFlags<uint>                 m_flags;
 
-	void     ErasePtr(TEventPtrs& eventPtrs, IComponentPtr pComponent);
-	void     EnableEventForComponent(EntityId entityID, IComponentPtr pComponent, const int eventID, bool bEnable);
+	void     ErasePtr(TEventPtrs& eventPtrs, IEntityComponentPtr pComponent);
+	void     EnableEventForComponent(EntityId entityID, IEntityComponentPtr pComponent, const int eventID, bool bEnable);
 	EntityId GetAndEraseMappedEntityID(const EntityId entityID);
 };
 

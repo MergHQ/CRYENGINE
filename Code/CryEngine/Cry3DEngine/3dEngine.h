@@ -536,7 +536,6 @@ public:
 
 	virtual Vec3                      GetGlobalWind(bool bIndoors) const;
 	virtual bool                      SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
-	void                              SetupBending(CRenderObject*& pObj, const IRenderNode* pNode, const float fRadiusVert, const SRenderingPassInfo& passInfo, bool alreadyDuplicated = false);
 	virtual IVisArea*                 GetVisAreaFromPos(const Vec3& vPos);
 	virtual bool                      IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	virtual bool                      ClipToVisAreas(IVisArea* pInside, Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
@@ -560,17 +559,12 @@ public:
 	virtual void                      LockCGFResources();
 	virtual void                      UnlockCGFResources();
 
-	//! paint voxel shape
-	virtual IMemoryBlock* Voxel_GetObjects(Vec3 vPos, float fRadius, int nSurfaceTypeId, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget);
-	virtual void          Voxel_Paint(Vec3 vPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fMinVoxelSize);
-	virtual void          Voxel_SetFlags(bool bPhysics, bool bSimplify, bool bShadows, bool bMaterials);
+	virtual void                      SerializeState(TSerialize ser);
+	virtual void                      PostSerialize(bool bReading);
 
-	virtual void          SerializeState(TSerialize ser);
-	virtual void          PostSerialize(bool bReading);
+	virtual void                      SetHeightMapMaxHeight(float fMaxHeight);
 
-	virtual void          SetHeightMapMaxHeight(float fMaxHeight);
-
-	virtual void          SetStreamableListener(IStreamedObjectListener* pListener);
+	virtual void                      SetStreamableListener(IStreamedObjectListener* pListener);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Materials access.
@@ -622,7 +616,7 @@ public:
 	virtual uint32 GetObjectsInBox(const AABB& bbox, IRenderNode** pObjects = 0);
 	virtual void   GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects);
 	virtual uint32 GetObjectsByFlags(uint dwFlags, IRenderNode** pObjects = 0);
-	virtual void   OnObjectModified(IRenderNode* pRenderNode, uint dwFlags);
+	virtual void   OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags);
 
 	virtual void   ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, bool bObjects, bool bStaticLights, const char* pLayerName, IGeneralMemoryHeap* pHeap = NULL, bool bCheckLayerActivation = true);
 	bool           IsObjectsLayerHidden(uint16 nLayerId, const AABB& objBox);
@@ -676,7 +670,6 @@ public:
 		m_fAverageFPS = 0.0f;
 		m_fMinFPS = m_fMinFPSDecay = 999.f;
 		m_fMaxFPS = m_fMaxFPSDecay = 0.0f;
-		ClearPrecacheInfo();
 		if (bUnload)
 			stl::free_container(arrFPSforSaveLevelStats);
 		else
@@ -1064,8 +1057,6 @@ public:
 	virtual IVisAreaManager*      GetIVisAreaManager()      { return (IVisAreaManager*)m_pVisAreaManager; }
 	virtual IMergedMeshesManager* GetIMergedMeshesManager() { return (IMergedMeshesManager*)m_pMergedMeshesManager; }
 
-	virtual IVoxTerrain*          GetIVoxTerrain();
-
 	virtual ITerrain*             CreateTerrain(const STerrainInfo& TerrainInfo);
 	void                          DeleteTerrain();
 	bool                          LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, int nSID, Vec3 vSegmentOrigin);
@@ -1124,7 +1115,7 @@ public:
 
 	void                      MarkRNTmpDataPoolForReset() { m_bResetRNTmpDataPool = true; }
 
-	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL);
+	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
 	static void               MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 
 	virtual ISegmentsManager* GetSegmentsManager() { return m_pSegmentsManager; };
@@ -1146,8 +1137,6 @@ public:
 
 	void         CreateRenderNodeTempData(SRenderNodeTempData** ppInfo, IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 	bool         CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempData, IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
-
-	void         FreeRenderNodeTempData(SRenderNodeTempData** ppInfo);
 
 	void         UpdateRNTmpDataPool(bool bFreeAll);
 
@@ -1279,11 +1268,11 @@ private:
 	PodArray<SCollisionClass>                 m_collisionClasses;
 
 #define MAX_LIGHTS_NUM 32
-	PodArray<CCamera>                 m_arrLightProjFrustums;
+	PodArray<CCamera> m_arrLightProjFrustums;
 
-	class CTimeOfDay*                 m_pTimeOfDay;
+	class CTimeOfDay* m_pTimeOfDay;
 
-	ICVar*                            m_pLightQuality;
+	ICVar*            m_pLightQuality;
 
 	// FPS for savelevelstats
 

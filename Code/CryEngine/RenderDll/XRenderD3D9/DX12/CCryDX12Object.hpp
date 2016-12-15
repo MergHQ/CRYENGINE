@@ -92,8 +92,8 @@ public:
 	{
 		if (
 		  (riid == __uuidof(T)) ||
-		  (riid == __uuidof(ID3D11Device) && __uuidof(ID3D11Device1) == __uuidof(T)) ||
-		  (riid == __uuidof(ID3D11DeviceContext) && __uuidof(ID3D11DeviceContext1) == __uuidof(T))
+			(riid == __uuidof(ID3D11Device) && __uuidof(ID3D11Device1ToImplement) == __uuidof(T)) ||
+		  (riid == __uuidof(ID3D11DeviceContext) && __uuidof(ID3D11DeviceContext1ToImplement) == __uuidof(T))
 		  )
 		{
 			if (ppvObject)

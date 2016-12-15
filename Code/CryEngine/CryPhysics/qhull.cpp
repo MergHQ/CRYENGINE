@@ -493,14 +493,31 @@ inline void add_item(ptitem2d *pitem, ptitem2d *&pref) {
 	}
 }
 
+static inline void swap(edgeitem *plist, int i1,int i2) {
+	int ti=plist[i1].idx; plist[i1].idx=plist[i2].idx; plist[i2].idx=ti;
+}
+static void qsort(edgeitem *plist, int left,int right)
+{
+	if (left>=right) return;
+	int i,last; 
+	swap(plist, left, left+right>>1);
+	for(last=left,i=left+1; i<=right; i++)
+	if (plist[plist[i].idx].area < plist[plist[left].idx].area)
+		swap(plist, ++last, i);
+	swap(plist, left,last);
 
-int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges)
+	qsort(plist, left,last-1);
+	qsort(plist, last+1,right);
+}
+
+
+int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges, int nMaxContacts)
 {
 	intptr_t imask;
-	int i,i0,i1,nEdges;
+	int i,j,i0,i1,nEdges;
 	Vec2 edge;
 	ptitem2d *ppt,*ppt_best,*ppt_next,*plist;
-	edgeitem *pedge,*pstart,*pend;
+	edgeitem *pedge,*pstart,*pend,*pminedge,*pnewedge;
 
 	for(i=i0=0;i<nVtx;i++) { // find the 1st point - the one w/ max y
 		imask = -isneg(pts[i0].pt.y-pts[i].pt.y);
@@ -530,11 +547,12 @@ int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges)
 			ppt_best = (ptitem2d*)((intptr_t)ppt&imask | (intptr_t)ppt_best&~imask);
 		} while((ppt=ppt->next)!=edges[i].plist);
 		// trace contour from i cw while edges are facing the point ppt_best (pstart - 1st edge to be deleted)
-		for(pstart=edges+i; pstart->prev!=edges+i && 
+		/*for(pstart=edges+i; pstart->prev!=edges+i && 
 			(ppt_best->pt-pstart->prev->pvtx->pt ^ pstart->pvtx->pt-pstart->prev->pvtx->pt)>0; pstart=pstart->prev);
 		// trace contour from i ccw while edges are facing the point ppt_best (pend - edge after the last edge to be deleted)
 		for(pend=edges[i].next; pend!=edges+i && 
-			(ppt_best->pt-pend->pvtx->pt ^ pend->next->pvtx->pt-pend->pvtx->pt)>0; pend=pend->next);
+			(ppt_best->pt-pend->pvtx->pt ^ pend->next->pvtx->pt-pend->pvtx->pt)>0; pend=pend->next);*/
+		pstart=edges+i; pend=edges[i].next;
 		// delete point ppt_best from the ith edge associated list
 		delete_item(ppt_best,edges[i].plist);
 		// merge point lists for edges pstart-pend
@@ -567,6 +585,58 @@ int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges)
 		}
 		nEdges++;
 	} while(true);
+
+	if (nMaxContacts) { // chop off vertices until we have only the required amount left
+		Vec2 edge[2];
+		for(i=0;i<nEdges;i++)	{
+			edge[0] = edges[i].prev->pvtx->pt-edges[i].pvtx->pt; edge[1] = edges[i].next->pvtx->pt-edges[i].pvtx->pt;
+			edges[i].area = edge[1] ^ edge[0]; edges[i].areanorm2 = len2(edge[0])*len2(edge[1]);
+			edges[i].idx = i;
+		}
+		// sort edges by the area of triangles
+		qsort(edges,0,nEdges-1);
+		// transform sorted array into a linked list
+		pminedge = edges+edges[0].idx;
+		pminedge->next1=pminedge->prev1 = edges+edges[0].idx; 
+		for(pedge=pminedge,i=1; i<nEdges; i++) {
+			edges[edges[i].idx].prev1 = pedge; edges[edges[i].idx].next1 = pedge->next1;
+			pedge->next1->prev1 = edges+edges[i].idx; pedge->next1 = edges+edges[i].idx; pedge = edges+edges[i].idx;
+		}
+		
+		while(nEdges>2 && (nEdges>nMaxContacts || sqr(pminedge->area)<sqr(0.15f)*pminedge->areanorm2)) {
+			LOCAL_NAME_OVERRIDE_OK
+			edgeitem *pedge[2];
+			// delete the ith vertex with the minimum area triangle
+			pminedge->next->prev = pminedge->prev; pminedge->prev->next = pminedge->next;
+			pminedge->next1->prev1 = pminedge->prev1; pminedge->prev1->next1 = pminedge->next1;
+			pedge[0] = pminedge->prev; pedge[1] = pminedge->next; 
+			pminedge->next=pminedge->prev = 0; pminedge = pminedge->next1;
+			nEdges--;
+			for(i=0;i<2;i++) {
+				edge[0] = pedge[i]->prev->pvtx->pt-pedge[i]->pvtx->pt; edge[1] = pedge[i]->next->pvtx->pt-pedge[i]->pvtx->pt;
+				pedge[i]->area = edge[1]^edge[0]; pedge[i]->areanorm2 = len2(edge[0])*len2(edge[1]); // update area
+				for(pnewedge=pedge[i]->next1,j=0; pnewedge!=pminedge && pnewedge->area<pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->next1,j++);
+				if (pedge[i]->next1!=pnewedge) { // re-insert pedge[i] before pnewedge
+					if (pedge[i]==pminedge) pminedge = pedge[i]->next1;
+					if (pedge[i]!=pnewedge) {
+						pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
+						pedge[i]->prev1 = pnewedge->prev1; pedge[i]->next1 = pnewedge;
+						pnewedge->prev1->next1 = pedge[i]; pnewedge->prev1 = pedge[i];
+					}
+				}	else {
+					for(pnewedge=pedge[i]->prev1,j=0; pnewedge->next1!=pminedge && pnewedge->area>pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->prev1,j++);
+					if (pedge[i]->prev1!=pnewedge) { // re-insert pedge[i] after pnewedge
+						if (pnewedge->next1==pminedge) pminedge = pedge[i];
+						if (pedge[i]!=pnewedge) {
+							pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
+							pedge[i]->prev1 = pnewedge; pedge[i]->next1 = pnewedge->next1;
+							pnewedge->next1->prev1 = pedge[i]; pnewedge->next1 = pedge[i];
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return nEdges;
 }

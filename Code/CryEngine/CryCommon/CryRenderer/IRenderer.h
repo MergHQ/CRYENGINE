@@ -19,6 +19,7 @@
 struct SRenderingPassInfo;
 struct IFoliage;
 struct SRenderLight;
+struct SWaterRippleInfo;
 
 class CRenderView;
 
@@ -64,7 +65,7 @@ struct  IStatObj;
 class CObjManager;
 struct  SPrimitiveGroup;
 struct  ICharacterInstance;
-class CRendElementBase;
+class CRenderElement;
 class CRenderObject;
 class CTexMan;
 //class   ColorF;
@@ -99,6 +100,7 @@ struct IAsyncTextureCompileListener;
 struct IClipVolume;
 struct SClipVolumeBlendInfo;
 class IImageFile;
+class CVrProjectionManager;
 
 //////////////////////////////////////////////////////////////////////
 struct IScaleformPlayback;
@@ -247,9 +249,7 @@ typedef _smart_ptr<IGraphicsDeviceConstantBuffer> IGraphicsDeviceConstantBufferP
    void CreateDeviceBuffer()
    {
     int size = sizeof(T);
-    CConstantBuffer *cb = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size);
-    m_constantBuffer = cb;
-    cb->Release(); // CConstantBuffer created with refcount=1
+    m_constantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size);
     CopyToDevice();
    }
    void CopyToDevice()
@@ -1208,6 +1208,7 @@ public:
 //! Flags used in DrawText function.
 enum EDrawTextFlags
 {
+	eDrawText_Default,
 	eDrawText_Center         = BIT(0),  //!< Centered alignment, otherwise right or left.
 	eDrawText_Right          = BIT(1),  //!< Right alignment, otherwise center or left.
 	eDrawText_CenterV        = BIT(2),  //!< Center vertically, oterhwise top.
@@ -1224,6 +1225,7 @@ enum EDrawTextFlags
 
 	eDrawText_DepthTest      = BIT(9),  //!< Text should be occluded by world geometry using the depth buffer.
 	eDrawText_IgnoreOverscan = BIT(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
+	eDrawText_LegacyBehavior = BIT(11)  //!< Reserved for internal system use.
 };
 
 // Debug stats/views for Partial resolves
@@ -1257,15 +1259,13 @@ struct SDrawTextInfo
 
 	//! Text color, (r,g,b,a) all members must be specified.
 	float color[4];
-	float xscale;
-	float yscale;
+	Vec2  scale;
 
 	SDrawTextInfo()
 	{
 		flags = 0;
 		color[0] = color[1] = color[2] = color[3] = 1;
-		xscale = 1.0f;
-		yscale = 1.0f;
+		scale = ZERO;
 	}
 };
 
@@ -1372,6 +1372,7 @@ class ITextureStreamListener
 {
 public:
 	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable) = 0;
+	virtual void OnUploadedStreamedTexture(void* pHandle) = 0;
 	virtual void OnDestroyedStreamedTexture(void* pHandle) = 0;
 	virtual void OnTextureWantsMip(void* pHandle, int nMinMip) = 0;
 	virtual void OnTextureHasMip(void* pHandle, int nMinMip) = 0;
@@ -1468,6 +1469,32 @@ struct ISvoRenderer
 	virtual void Release()                                                                   {}
 };
 
+struct SRenderPolygonDescription
+{
+	SShaderItem            shaderItem;
+	int                    numVertices = 0;
+	const SVF_P3F_C4B_T2F* pVertices = nullptr;
+	const SPipTangents*    pTangents = nullptr;
+	uint16*                pIndices = nullptr;
+	int                    numIndices = 0;
+	int                    afterWater = 0;
+	int                    renderListId = 0; // ERenderListID
+	CRenderObject*         pRenderObject = nullptr;
+
+	SRenderPolygonDescription() {}
+	SRenderPolygonDescription(CRenderObject* pRendObj, SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, uint16* inds, int ninds, ERenderListID _renderListId, int nAW)
+		: numVertices(numPts)
+		, pVertices(verts)
+		, pTangents(tangs)
+		, pIndices(inds)
+		, numIndices(ninds)
+		, renderListId(_renderListId)
+		, afterWater(nAW)
+		, pRenderObject(pRendObj)
+		, shaderItem(si)
+	{}
+};
+
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
 {
@@ -1531,6 +1558,7 @@ struct IRenderView : public CMultiThreadRefCount
 	//////////////////////////////////////////////////////////////////////////
 	// Water ripples
 	virtual void AddWaterRipple(const SWaterRippleInfo& waterRippleInfo) = 0;
+	virtual void AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -1543,7 +1571,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ERenderType GetRenderType() const = 0;
 
 	//! Initializes the renderer, parameters are self-explanatory.
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HINSTANCE hinst, WIN_HWND Glhwnd = 0, bool bReInit = false, const SCustomRenderInitArgs* pCustomArgs = 0, bool bShaderCacheGen = false) = 0;
+	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd = 0, bool bReInit = false, const SCustomRenderInitArgs* pCustomArgs = 0, bool bShaderCacheGen = false) = 0;
 	virtual void     PostInit() = 0;
 
 	//! Start active rendering of the intro movies while initializing the rest of the engine.
@@ -1818,7 +1846,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void FontRestoreRenderingState() = 0;
 
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
-	virtual void DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const = 0;
 
 	virtual int  RT_CurThreadList() = 0;
 	virtual void RT_FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) = 0;
@@ -1828,6 +1855,7 @@ struct IRenderer//: public IRendererCallbackServer
 	/////////////////////////////////////////////////////////////////////////////////
 	// External interface for shaders
 	/////////////////////////////////////////////////////////////////////////////////
+	virtual bool           EF_PrecacheResource(SShaderItem *pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
 	virtual bool           EF_PrecacheResource(SShaderItem* pSI, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
 	virtual bool           EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags) = 0;
 	virtual bool           EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
@@ -1841,9 +1869,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void           EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
 	virtual void           GetMemoryUsageParticleREs(ICrySizer* pSizer) {}
-
-	virtual CRenderObject* EF_AddPolygonToScene(SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, CRenderObject* obj, const SRenderingPassInfo& passInfo, uint16* inds, int ninds, int nAW) = 0;
-	virtual CRenderObject* EF_AddPolygonToScene(SShaderItem& si, CRenderObject* obj, const SRenderingPassInfo& passInfo, int numPts, int ninds, SVF_P3F_C4B_T2F*& verts, SPipTangents*& tangs, uint16*& inds, int nAW) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
 	// Shaders/Shaders management /////////////////////////////////////////////////////////////////////////////////
@@ -1916,7 +1941,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) = 0;
 
 	//! Create new RE (RenderElement) of type (edt).
-	virtual CRendElementBase* EF_CreateRE(EDataType edt) = 0;
+	virtual CRenderElement*  EF_CreateRE(EDataType edt) = 0;
 
 	//! Start using of the shaders (return first index for allow recursions).
 	virtual void EF_StartEf(const SRenderingPassInfo& passInfo) = 0;
@@ -1935,7 +1960,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual CRenderObject* EF_DuplicateRO(CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Add shader to the list.
-	virtual void EF_AddEf(CRendElementBase* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) = 0;
+	virtual void EF_AddEf(CRenderElement* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW) = 0;
 
 	//! Draw all shaded REs in the list
 	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) = 0;
@@ -2034,14 +2059,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void MakeMatrix(const Vec3& pos, const Vec3& angles, const Vec3& scale, Matrix34* mat) = 0;
 
-	//! Draws text queued.
-	//! \note Position can be in 3d or in 2d depending on the flags.
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args) = 0;
-
-	//! Draws text queued.
-	//! \note Position can be in 3D or in 2D depending on the flags.
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* text) = 0;
-
 	//////////////////////////////////////////////////////////////////////
 
 	virtual float ScaleCoordX(float value) const = 0;
@@ -2076,13 +2093,10 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual IColorGradingController* GetIColorGradingController() = 0;
 	virtual IStereoRenderer*         GetIStereoRenderer() = 0;
 
-	virtual void                     TextToScreen(float x, float y, const char* format, ...) PRINTF_PARAMS(4, 5) = 0;
-	virtual void                     TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...) PRINTF_PARAMS(8, 9) = 0;
 	virtual void                     ResetToDefault() = 0;
 	virtual void                     SetMaterialColor(float r, float g, float b, float a) = 0;
 
 	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, char* text, ColorF& color, float fScale) = 0;
-	virtual void                     FlushTextMessages() = 0;
 
 	// NOTE: deprecated
 	virtual void ClearTargetsImmediately(uint32 nFlags) = 0;
@@ -2186,6 +2200,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual float               EF_GetWaterZElevation(float fX, float fY) = 0;
 
 	virtual IOpticsElementBase* CreateOptics(EFlareType type) const = 0;
+	virtual void                ReleaseOptics(IOpticsElementBase* pOpticsElement) const = 0;
 
 	//! Used for pausing timer related stuff.
 	//! Example: For texture animations, and shader 'time' parameter.
@@ -2194,6 +2209,8 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Creates an Interface to the public params container.
 	//! \return Created IShaderPublicParams interface.
 	virtual IShaderPublicParams* CreateShaderPublicParams() = 0;
+
+	virtual void                 SetLevelLoadingThreadId(threadID threadId) = 0;
 
 	virtual void                 GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const = 0;
 
@@ -2255,6 +2272,18 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void RT_InsertGpuCallback(uint32 context, GpuCallbackFunc callback) = 0;
 	virtual void EnablePipelineProfiler(bool bEnable) = 0;
 
+	struct SGpuInfo
+	{
+		const char* name;
+		unsigned int nNodeCount;
+		UINT VendorId;
+		UINT DeviceId;
+		UINT SubSysId;
+		UINT Revision;
+	};
+
+	virtual void QueryActiveGpuInfo(SGpuInfo& info) const = 0;
+
 	struct SRenderTimes
 	{
 		float fWaitForMain;
@@ -2311,69 +2340,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void CollectDrawCallsInfo(bool status) = 0;
 	virtual void CollectDrawCallsInfoPerNode(bool status) = 0;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Summary:
-	//	 Helper functions to draw text.
-	//////////////////////////////////////////////////////////////////////////
-	void DrawLabel(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(4, 5)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_FixedSize | eDrawText_800x600;
-		DrawTextQueued(pos, ti, label_text, args);
-		va_end(args);
-	}
-
-	void DrawLabelEx(Vec3 pos, float font_size, const float* pfColor, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600;
-		if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-		DrawTextQueued(pos, ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabelEx(float x, float y, float font_size, const ColorF& fColor, EDrawTextFlags flags, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = flags;
-		{ ti.color[0] = fColor[0]; ti.color[1] = fColor[1]; ti.color[2] = fColor[2]; ti.color[3] = fColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const float* pfColor, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
-		if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
-		{ ti.color[0] = fColor[0]; ti.color[1] = fColor[1]; ti.color[2] = fColor[2]; ti.color[3] = fColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
 	// Summary:
 	virtual SSkinningData* EF_CreateSkinningData(uint32 nNumBones, bool bNeedJobSyncVar) = 0;
 	virtual SSkinningData* EF_CreateRemappedSkinningData(uint32 nNumBones, SSkinningData* pSourceSkinningData, uint32 nCustomDataSize, uint32 pairGuid) = 0;
@@ -2384,11 +2350,15 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void           ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial) = 0;
 	virtual void           RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMaterial* pMaterial) = 0;
 
+	//! Used for editor highlights, sets the highlight color
+	virtual void           SetHighlightColor(ColorF color) = 0;
+	//! Used for editor highlights, sets the selection color
+	virtual void           SetSelectionColor(ColorF color) = 0;
+	//! Used for editor highlights, sets outline thickness and ghost alpha parameters for the effect
+	virtual void           SetHighlightParams(float outlineThickness, float fGhostAlpha) = 0;
+
 	//! Determine if a switch to stereo mode will occur at the start of the next frame.
 	virtual bool IsStereoModeChangePending() = 0;
-
-	//! Set whether or not the screen should be copied into the back buffer each frame.
-	virtual void SetShouldCopyScreenToBackBuffer(bool bEnable) = 0;
 
 	//! Wait for all particle ComputeVertices jobs to finish.
 	virtual void SyncComputeVerticesJobs() = 0;
@@ -2580,25 +2550,19 @@ struct SRendParams
 	{
 		memset(this, 0, sizeof(SRendParams));
 		fAlpha = 1.f;
-		fRenderQuality = 1.f;
 		nAfterWater = 1;
 	}
 
 	// object transformations.
 	Matrix34*                 pMatrix;
-	struct SInstancingInfo*   pInstInfo;
 
 	Matrix34*                 pPrevMatrix; //!< object previous transformations - motion blur specific.
-
-	uint64                    m_ShadowMapCasters; //! List of shadow map casters.
 
 	IVisArea*                 m_pVisArea; //!< VisArea that contains this object, used for RAM-ambient cube query.
 
 	IMaterial*                pMaterial; //!< Override material.
 
 	IFoliage*                 pFoliage; //!< Skeleton implementation for bendable foliage.
-
-	IRenderMesh*              pWeights; //!< Weights stream for deform morphs.
 
 	struct IRenderNode*       pRenderNode; //!< Object Id for objects identification in renderer.
 
@@ -2610,15 +2574,11 @@ struct SRendParams
 
 	ColorF                    AmbientColor; //!< Ambient color for the object.
 
-	float                     fCustomSortOffset; //!< Custom sorting offset.
-
 	float                     fAlpha; //!< Object alpha.
 
 	float                     fDistance; //!< Distance from camera.
 
-	float                     fRenderQuality; //!< Quality of shaders rendering.
-
-	int32                     dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
+	uint64                    dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
 
 	uint32                    nMaterialLayersBlend; //!< Material layers blending amount
 
@@ -2647,6 +2607,8 @@ struct SRendParams
 	uint8                     nAfterWater; //!< Custom offset for sorting by distance.
 
 	uint8                     nMaterialLayers; //!< Material layers bitmask -> which material layers are active.
+
+	uint32                    nEditorSelectionID; //!< Selection ID and information for editor
 };
 
 struct SRendererCloakParams

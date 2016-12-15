@@ -332,6 +332,8 @@ void CTransitionQueue::ManualSeekAnimation(uint index, float time2, bool bTrigge
 			}
 		}
 
+		// Previous time has to be updated as well, otherwise animation events will be incorrectly calculated since prev will be 0 at all times until manual update stops.
+		animation.m_fAnimTimePrev[0] = time2;
 		// Update the time.
 		animation.m_fAnimTime[0] = time2;
 	}
@@ -356,11 +358,11 @@ void CTransitionQueue::ApplyManualMixingWeight(uint numAnims)
 	switch (numAnims)
 	{
 	case 2:
-		m_animations[0].m_fTransitionWeight = 1.0f - m_manualMixingWeight;
-		m_animations[1].m_fTransitionWeight = m_manualMixingWeight;
+		m_animations[0].SetTransitionWeight(1.0f - m_manualMixingWeight);
+		m_animations[1].SetTransitionWeight(m_manualMixingWeight);
 		break;
 	case 1:
-		m_animations[0].m_fTransitionWeight = 1.0f;
+		m_animations[0].SetTransitionWeight(1.0f);
 		break;
 	case 0:
 		break;
@@ -415,33 +417,16 @@ void CTransitionQueue::AdjustTransitionWeights(uint numAnims)
 	// here we adjust the the TRANSITION-WEIGHTS between all animations in the queue
 
 	// the first in the queue will always have the highest priority
-	m_animations[0].m_fTransitionWeight = 1.0f;
+	m_animations[0].SetTransitionWeight(1.0f);
 	for (uint32 i = 1; i < numAnims; i++)
 	{
 		CAnimation& rCurAnimation = m_animations[i];
 
-		rCurAnimation.m_fTransitionWeight = rCurAnimation.GetTransitionPriority();
+		rCurAnimation.SetTransitionWeightRequested(rCurAnimation.GetTransitionPriority());
 		f32 scale_previous = 1.0f - rCurAnimation.GetTransitionWeight();
-
+		
 		for (uint32 j = 0; j < i; j++)
-			m_animations[j].m_fTransitionWeight = m_animations[j].GetTransitionWeight() * scale_previous;
-	}
-
-	f32 sum = 0;
-	for (uint32 i = 0; i < numAnims; i++)
-	{
-		CAnimation& rCurAnimation = m_animations[i];
-		f32 w = rCurAnimation.GetTransitionWeight();
-		f32 x0 = clamp_tpl(w, 0.0f, 1.0f) - 0.5f;
-		x0 = x0 / (0.5f + 2.0f * x0 * x0) + 0.5f;
-		rCurAnimation.m_fTransitionWeight = x0;
-		sum += x0;
-	}
-
-	for (uint32 i = 0; i < numAnims; i++)
-	{
-		CAnimation& rCurAnimation = m_animations[i];
-		rCurAnimation.m_fTransitionWeight = rCurAnimation.GetTransitionWeight() / sum;
+			m_animations[j].SetTransitionWeight(m_animations[j].GetTransitionWeight() * scale_previous);
 	}
 }
 

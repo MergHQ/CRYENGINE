@@ -46,7 +46,7 @@ void CMFXParticleEffect::Execute(const SMFXRunTimeEffectParams& params)
 
 	bool tryToAttachEffect = (CMaterialEffectsCVars::Get().mfx_EnableAttachedEffects != 0);
 	float distToPlayer = 0.f;
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if (pClientActor)
 	{
 		distToPlayer = (pClientActor->GetEntity()->GetWorldPos() - params.pos).GetLength();

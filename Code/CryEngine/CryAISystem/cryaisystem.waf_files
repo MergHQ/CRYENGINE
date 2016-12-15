@@ -69,7 +69,7 @@
 			"Navigation/MNM/CompactSpanGrid.cpp",
 			"Navigation/MNM/DynamicSpanGrid.cpp",
 			"Navigation/MNM/IslandConnections.cpp",
-			"Navigation/MNM/MeshGrid.cpp",
+			"Navigation/MNM/NavMesh.cpp",
 			"Navigation/MNM/OffGridLinks.cpp",
 			"Navigation/MNM/Tile.cpp",
 			"Navigation/MNM/TileGenerator.cpp",
@@ -78,12 +78,9 @@
 			"Navigation/MNM/BoundingVolume.h",
 			"Navigation/MNM/CompactSpanGrid.h",
 			"Navigation/MNM/DynamicSpanGrid.h",
-			"Navigation/MNM/FixedAABB.h",
-			"Navigation/MNM/FixedVec2.h",
-			"Navigation/MNM/FixedVec3.h",
 			"Navigation/MNM/HashComputer.h",
 			"Navigation/MNM/IslandConnections.h",
-			"Navigation/MNM/MeshGrid.h",
+			"Navigation/MNM/NavMesh.h",
 			"Navigation/MNM/MNM.h",
 			"Navigation/MNM/OffGridLinks.h",
 			"Navigation/MNM/MNMProfiler.h",
@@ -453,11 +450,6 @@
 			"Sequence/SequenceAgent.h",
 			"Sequence/SequenceFlowNodes.h",
 			"Sequence/SequenceManager.h"
-		],
-		"FlowNodes":
-		[
-			"FlowNodes/AIFlowBaseNode.cpp",
-			"FlowNodes/AIFlowBaseNode.h"
 		],
 		"Behavior Tree":
 		[

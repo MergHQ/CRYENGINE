@@ -518,7 +518,7 @@ void CPost3DRenderer::ProcessBatchesList(int listStart, int listEnd, uint32 batc
 				continue;
 
 			// Detect if shader has changed
-			CRendElementBase* pRenderElement = renderItem.pElem;
+			CRenderElement* pRenderElement = renderItem.pElem;
 			bool bChangedShader = false;
 			CShaderResources* pShaderResources = NULL;
 			SRendItem::mfGet(renderItem.SortVal, tech, pShader, pShaderResources);

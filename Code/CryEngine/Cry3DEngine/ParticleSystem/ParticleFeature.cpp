@@ -31,7 +31,7 @@ gpu_pfx2::IParticleFeatureGpuInterface* pfx2::CParticleFeature::GetGpuInterface(
 {
 	if (m_gpuInterfaceRef.feature == gpu_pfx2::eGpuFeatureType_None)
 		return nullptr;
-	if (!m_gpuInterfaceNeeded)
+	if (!m_gpuInterfaceNeeded || !gEnv->pRenderer)
 		m_gpuInterfaceRef.gpuInterface.reset();
 	else
 	{

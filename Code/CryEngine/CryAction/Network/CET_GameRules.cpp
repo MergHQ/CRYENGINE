@@ -195,7 +195,7 @@ public:
 		if (!pGameRules)
 		{
 			GameWarning("No game rules");
-			return eCETR_Failed;
+			return eCETR_Ok; // Editor without gamedll can have no gamerules.
 		}
 		//CryLog( "Spawn player for channel %d%s", channelId, m_isReset? " as reset" : "" );
 		if (!(pGameRules->*m_func)(channelId, m_isReset))
@@ -290,7 +290,7 @@ public:
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
-		if (CCryAction::GetCryAction()->IsLevelPrecachingDone() || gEnv->bMultiplayer)
+		if(gEnv->IsEditor() || (gEnv->pSystem->GetSystemGlobalState() >= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END) || gEnv->bMultiplayer)
 		{
 			*m_pGameStart = true;
 			return eCETR_Ok;
@@ -322,7 +322,7 @@ public:
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
 		bool loadingSaveGame = CCryAction::GetCryAction()->IsLoadingSaveGame();
-		if (!loadingSaveGame && !GetISystem()->IsSerializingFile() && gEnv->pGame->DoInitialSavegame())
+		if (!loadingSaveGame && !GetISystem()->IsSerializingFile())
 		{
 			CCryAction::GetCryAction()->SaveGame(CCryAction::GetCryAction()->GetStartLevelSaveGameName(), true, true, eSGR_LevelStart);
 		}

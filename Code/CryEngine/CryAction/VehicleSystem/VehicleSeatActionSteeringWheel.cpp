@@ -51,7 +51,7 @@ bool CVehicleSeatActionSteeringWheel::Init(IVehicle* pVehicle, IVehicleSeat* pSe
 
 	CryFixedStringT<256> sharedParamsName;
 	IEntity* pEntity = pVehicle->GetEntity();
-	ISharedParamsManager* pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager* pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 	CRY_ASSERT(pSharedParamsManager);
 	sharedParamsName.Format("%s::%s::CVehicleSeatActionSteeringWheel", pEntity->GetClass()->GetName(), pVehicle->GetModification());
 	m_pSharedParams = CastSharedParamsPtr<SSharedParams>(pSharedParamsManager->Get(sharedParamsName));
@@ -221,8 +221,8 @@ void CVehicleSeatActionSteeringWheel::Update(float frameTime)
 			pActionController->SetParam("steeringTime", animationTime);
 
 			//float color[] = {1,1,1,1};
-			//gEnv->pRenderer->Draw2dLabel(100,230,1.5,color,false,"animationTime: %.3f", animationTime);
-			//gEnv->pRenderer->Draw2dLabel(100,250,1.5,color,false,"angle: %.2f", RAD2DEG(psv.steer));
+			//IRenderAuxText::Draw2dLabel(100,230,1.5,color,false,"animationTime: %.3f", animationTime);
+			//IRenderAuxText::Draw2dLabel(100,250,1.5,color,false,"angle: %.2f", RAD2DEG(psv.steer));
 		}
 		else if (params->steeringClass == eSC_Generic)
 		{
@@ -236,8 +236,8 @@ void CVehicleSeatActionSteeringWheel::Update(float frameTime)
 			pActionController->SetParam("steeringTime", animationTime);
 
 			//float color[] = {1,1,1,1};
-			//gEnv->pRenderer->Draw2dLabel(100,230,1.5,color,false,"action: %.2f", m_steeringActions.y);
-			//gEnv->pRenderer->Draw2dLabel(100,250,1.5,color,false,"value: %.2f", value);
+			//IRenderAuxText::Draw2dLabel(100,230,1.5,color,false,"action: %.2f", m_steeringActions.y);
+			//IRenderAuxText::Draw2dLabel(100,250,1.5,color,false,"value: %.2f", value);
 		}
 	}
 }

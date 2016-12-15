@@ -80,6 +80,21 @@ void CCodeCheckpointMgr::RegisterCheckpoint(CCodeCheckpoint* pCheckpoint)
 	}
 }
 
+void CCodeCheckpointMgr::UnRegisterCheckpoint(const char* szName)
+{
+	CryAutoCriticalSection lock(m_critSection);
+
+	for (TCheckpointVector::iterator iter(m_checkpoints.begin()), endIter(m_checkpoints.end()); iter != endIter; ++iter)
+	{
+		const CheckpointRecord& rec = *iter;
+		if (strcmp(rec.m_name, szName) == 0)
+		{
+			m_checkpoints.erase(iter);
+			break;
+		}
+	}
+}
+
 /// Performs a (possibly) expensive lookup by name for a given checkpoint index. Should never fail.
 size_t CCodeCheckpointMgr::GetCheckpointIndex(const char* name)
 {

@@ -236,7 +236,7 @@ pixout TemplBeamPS(v2f IN)
 
   // load the base
   half4 baseTex = GetDiffuseTex(diffuseTex, IN.baseTC.xy);  
-  float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.screenProj );
+  float sceneDepth = GetLinearDepthScaledProj( sceneLinearDepthTex, IN.screenProj );
   half fNoise = 1;
 #if %NOISE  
   fNoise = saturate(tex3D(noiseMapSampler, IN.noiseTC.xyz).a * 2.h - 0.25h);

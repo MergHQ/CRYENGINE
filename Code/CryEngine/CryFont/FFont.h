@@ -102,7 +102,6 @@ private:
 	virtual ~CFFont();
 
 	void Prepare(const char* pStr, bool updateTexture);
-	void DrawStringUInternal(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
 	Vec2 GetTextSizeUInternal(const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
 
 private:

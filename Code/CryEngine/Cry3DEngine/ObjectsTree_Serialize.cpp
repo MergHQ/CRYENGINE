@@ -86,12 +86,11 @@ struct SBrushChunk : public SRenderNodeChunk
 
 struct SRoadChunk : public SRenderNodeChunk
 {
-	int32 m_nVertsNum;
+	CRoadRenderNode::SData m_roadData;
+
 	int16 m_nSortPriority;
 	int16 m_nFlags;
 	int32 m_nMaterialId;
-	float m_arrTexCoors[2];
-	float m_arrTexCoorsGlobal[2];
 
 	AUTO_STRUCT_INFO_LOCAL;
 };
@@ -292,6 +291,10 @@ int COctreeNode::SaveObjects(CMemoryBlock* pMemBlock, std::vector<IStatObj*>* pS
 			if (!(nObjTypeMask & (1 << eType)))
 				continue;
 
+			// Do not serialize nodes owned by the Entity
+			if (pRenderNode->GetOwnerEntity())
+				continue;
+
 			nBlockSize += GetSingleObjectFileDataSize(pObj, pExportInfo);
 		}
 
@@ -312,6 +315,10 @@ int COctreeNode::SaveObjects(CMemoryBlock* pMemBlock, std::vector<IStatObj*>* pS
 			EERType eType = pRenderNode->GetRenderNodeType();
 
 			if (!(nObjTypeMask & (1 << eType)))
+				continue;
+
+			// Do not serialize nodes owned by the Entity
+			if (pRenderNode->GetOwnerEntity())
 				continue;
 
 			arrSortedObjects.Add(pRenderNode);
@@ -412,6 +419,17 @@ int COctreeNode::GetSingleObjectFileDataSize(IRenderNode* pObj, const SHotUpdate
 	{
 		nBlockSize += sizeof(eType);
 		nBlockSize += sizeof(SRoadChunk);
+
+		nBlockSize += ((CRoadRenderNode*)pRenderNode)->m_dynamicData.vertices.GetDataSize();
+		nBlockSize += ((CRoadRenderNode*)pRenderNode)->m_dynamicData.tangents.GetDataSize();
+
+		// vtx_idx is not used since we are exporting from PC and possibly loading on platform with <32 bit vertex indices
+		nBlockSize += ((CRoadRenderNode*)pRenderNode)->m_dynamicData.indices.size() * sizeof(uint32);
+
+		// Should be zero if m_bPhysicalize is false
+		nBlockSize += ((CRoadRenderNode*)pRenderNode)->m_dynamicData.physicsGeometry.GetDataSize();
+
+		// Include source vertex info
 		nBlockSize += ((CRoadRenderNode*)pRenderNode)->m_arrVerts.GetDataSize();
 	}
 	else if (eType == eERType_DistanceCloud)
@@ -547,21 +565,30 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 		chunk.m_nFlags = pObj->m_bIgnoreTerrainHoles ? ROADCHUNKFLAG_IGNORE_TERRAIN_HOLES : 0;
 		chunk.m_nFlags |= pObj->m_bPhysicalize ? ROADCHUNKFLAG_PHYSICALIZE : 0;
 
-		chunk.m_nVertsNum = pObj->m_arrVerts.Count();
+		chunk.m_roadData = pObj->m_serializedData;
 
-		for (int i = 0; i < 2; i++)
-			COPY_MEMBER_SAVE(&chunk, pObj, m_arrTexCoors[i]);
+		chunk.m_roadData.numVertices = pObj->m_dynamicData.vertices.size();
+		chunk.m_roadData.numIndices = pObj->m_dynamicData.indices.size();
+		chunk.m_roadData.numTangents = pObj->m_dynamicData.tangents.size();
 
-		for (int i = 0; i < 2; i++)
-			COPY_MEMBER_SAVE(&chunk, pObj, m_arrTexCoorsGlobal[i]);
+		chunk.m_roadData.physicsGeometryCount = pObj->m_dynamicData.physicsGeometry.Count();
+
+		chunk.m_roadData.sourceVertexCount = pObj->m_arrVerts.Count();
 
 		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
 
-		for (int i = 0; i < pObj->m_arrVerts.Count(); i++)
+		CRY_ASSERT_MESSAGE(sizeof(vtx_idx) == sizeof(uint32), "Road exporting can only occur on a platform with 32-bit vertex indices");
+
+		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.vertices.GetElements(), chunk.m_roadData.numVertices, eEndian);
+		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.indices.GetElements(), chunk.m_roadData.numIndices, eEndian);
+		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.tangents.GetElements(), chunk.m_roadData.numTangents, eEndian);
+
+		if (chunk.m_roadData.physicsGeometryCount > 0)
 		{
-			Vec3 vPos(pObj->m_arrVerts[i] + segmentOffset);
-			AddToPtr(pPtr, nDatanSize, vPos, eEndian);
+			AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.physicsGeometry.GetElements(), chunk.m_roadData.physicsGeometryCount, eEndian);
 		}
+
+		AddToPtr(pPtr, nDatanSize, pObj->m_arrVerts.GetElements(), pObj->m_arrVerts.Count(), eEndian);
 	}
 	else if (eERType_Decal == eType && !(pEnt->GetRndFlags() & ERF_PROCEDURAL))
 	{
@@ -737,12 +764,12 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 	}
 }
 
-bool COctreeNode::IsObjectStreamable(EERType eType, uint32 dwRndFlags)
+bool COctreeNode::IsObjectStreamable(EERType eType, uint64 dwRndFlags)
 {
 	return (eType == eERType_Vegetation && !(dwRndFlags & ERF_PROCEDURAL)) || (eType == eERType_Decal) || (eType == eERType_Road) || (eType == eERType_MergedMesh); // || (dwRndFlags & ERF_STREAMABLE)
 }
 
-bool COctreeNode::CheckSkipLoadObject(EERType eType, uint32 dwRndFlags, ELoadObjectsMode eLoadMode)
+bool COctreeNode::CheckSkipLoadObject(EERType eType, uint64 dwRndFlags, ELoadObjectsMode eLoadMode)
 {
 	return
 	  (eLoadMode == LOM_LOAD_ONLY_NON_STREAMABLE && (IsObjectStreamable(eType, dwRndFlags))) ||
@@ -863,6 +890,9 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		}
 
 		CMergedMeshRenderNode* pObj = m_pMergedMeshesManager->GetNode((pChunk->m_Extents.max + pChunk->m_Extents.min) * 0.5f + segmentOffset);
+		if (pObj->StreamedIn()) // MM is already streamed in
+			return;
+
 		pRN = pObj;
 
 #ifdef WH_MMRN_DEBUG
@@ -898,21 +928,30 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	{
 		SRoadChunk* pChunk = StepData<SRoadChunk>(pPtr, eEndian);
 
+		// Make sure we always step through the data, even if we return below
+		SVF_P3F_C4B_T2S* pVertices = StepData<SVF_P3F_C4B_T2S>(pPtr, pChunk->m_roadData.numVertices, eEndian);
+		uint32* pIndices = StepData<uint32>(pPtr, pChunk->m_roadData.numIndices, eEndian);
+		SPipTangents* pTangents = StepData<SPipTangents>(pPtr, pChunk->m_roadData.numTangents, eEndian);
+
+		CRoadRenderNode::SPhysicsGeometryParams* pPhysParams = nullptr;
+		if (pChunk->m_roadData.physicsGeometryCount > 0)
+		{
+			pPhysParams = StepData<CRoadRenderNode::SPhysicsGeometryParams>(pPtr, pChunk->m_roadData.physicsGeometryCount, eEndian);
+		}
+
+		Vec3* pSourceVertices = StepData<Vec3>(pPtr, pChunk->m_roadData.sourceVertexCount, eEndian);
+
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
-			for (int j = 0; j < pChunk->m_nVertsNum; j++)
-			{
-				StepData<Vec3>(pPtr, eEndian);
-			}
-
 			return;
 		}
 
 		CRoadRenderNode* pObj = new CRoadRenderNode();
 		pRN = pObj;
 
+		pObj->m_serializedData = pChunk->m_roadData;
+
 		// common node data
-		COPY_MEMBER_LOAD(pObj, pChunk, m_WSBBox);
 		LoadCommonData(pChunk, pObj, pLayerVisibility);
 
 		// road data
@@ -921,22 +960,33 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		pObj->m_bIgnoreTerrainHoles = (pChunk->m_nFlags & ROADCHUNKFLAG_IGNORE_TERRAIN_HOLES) != 0;
 		pObj->m_bPhysicalize = (pChunk->m_nFlags & ROADCHUNKFLAG_PHYSICALIZE) != 0;
 
-		for (int i = 0; i < 2; i++)
-			COPY_MEMBER_LOAD(pObj, pChunk, m_arrTexCoors[i]);
+		pObj->m_dynamicData.vertices.AddList(pVertices, pObj->m_serializedData.numVertices);
 
-		for (int i = 0; i < 2; i++)
-			COPY_MEMBER_LOAD(pObj, pChunk, m_arrTexCoorsGlobal[i]);
-
-		pObj->m_arrVerts.PreAllocate(pChunk->m_nVertsNum);
-		for (int j = 0; j < pChunk->m_nVertsNum; j++)
+		if (sizeof(vtx_idx) != sizeof(uint32))
 		{
-			Vec3* pVert = StepData<Vec3>(pPtr, eEndian);
-			pObj->m_arrVerts.Add(*pVert);
+			// Strided copy, need to cast uint32 from uint16 since we exported from PC (uint32 vertices) and load on console / mobile (uint16)
+			for (uint32 i = 0; i < pChunk->m_roadData.numIndices; i++)
+			{
+				pObj->m_dynamicData.indices.Add(static_cast<vtx_idx>(pIndices[i]));
+			}
+		}
+		else
+		{
+			pObj->m_dynamicData.indices.AddList(reinterpret_cast<vtx_idx*>(pIndices), pObj->m_serializedData.numIndices);
 		}
 
-		pObj->SetVertices(pObj->m_arrVerts.GetElements(), pObj->m_arrVerts.Count(),
-		                  pObj->m_arrTexCoors[0], pObj->m_arrTexCoors[1],
-		                  pObj->m_arrTexCoorsGlobal[0], pObj->m_arrTexCoorsGlobal[1]);
+		pObj->m_dynamicData.tangents.AddList(pTangents, pObj->m_serializedData.numTangents);
+
+		if (pObj->m_serializedData.physicsGeometryCount > 0)
+		{
+			pObj->m_dynamicData.physicsGeometry.AddList(pPhysParams, pObj->m_serializedData.physicsGeometryCount);
+		}
+
+		pObj->m_arrVerts.PreAllocate(pChunk->m_roadData.sourceVertexCount);
+		pObj->m_arrVerts.AddList(pSourceVertices, pObj->m_serializedData.sourceVertexCount);
+
+		// Trigger CRoadRenderNode::Compile, but don't perform a full rebuild
+		pObj->ScheduleRebuild(false);
 
 		// set object visibility
 		if (NULL != pLayerVisibility)
@@ -1043,6 +1093,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 				pMatName = pMaterial ? pMaterial->GetName() : "";
 			Warning("Warning: Removed placement decal at (%4.2f, %4.2f, %4.2f) with invalid material \"%s\"!\n", pChunk->m_pos.x, pChunk->m_pos.y, pChunk->m_pos.z, pMatName);
 			pObj->ReleaseNode();
+			pRN = NULL;
 		}
 		else
 		{
@@ -1055,8 +1106,13 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		// read common info
 		SWaterVolumeChunk* pChunk(StepData<SWaterVolumeChunk>(pPtr, eEndian));
 
+		const int volumeTypeAndMiscBitShift = 24;
+
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
+			int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift;
+			const float *pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
+
 			for (uint32 j(0); j < pChunk->m_numVertices; ++j)
 			{
 				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
@@ -1073,7 +1129,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		CWaterVolumeRenderNode* pObj(new CWaterVolumeRenderNode());
 		pRN = pObj;
 
-		int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> 24, auxCntDst;
+		int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift, auxCntDst;
 		float* pAuxDataDst = pObj->GetAuxSerializationDataPtr(auxCntDst);
 		const float* pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
 		memcpy(pAuxDataDst, pAuxDataDst, min(auxCntSrc, auxCntDst) * sizeof(float));
@@ -1259,6 +1315,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 				pMatName = pMaterial ? pMaterial->GetName() : "";
 			Warning("Warning: Removed distance cloud at (%4.2f, %4.2f, %4.2f) with invalid material \"%s\"!\n", pChunk->m_pos.x, pChunk->m_pos.y, pChunk->m_pos.z, pMatName);
 			pObj->ReleaseNode();
+			pRN = NULL;
 		}
 		else
 		{

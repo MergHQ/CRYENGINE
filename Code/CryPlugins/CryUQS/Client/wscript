@@ -1,0 +1,22 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2013, Crytek Studios
+##
+## Creator: Christian Werle
+## Date: Jan 06, 2016
+## Description: WAF  based build system
+#############################################################################
+
+def build(bld):
+
+	bld.CryEngineStaticModule(
+		target        = 'CryUQS_Client',
+		vs_filter     = 'CryPlugins/CryUQS',
+		file_list     = 'uqs_client.waf_files',
+		pch           = 'client/StdAfx.cpp',
+		includes      = [ '.' ],
+		use_module    = [ 'yasli', 'CryUQS_Shared', 'CryUQS_Interfaces' ],
+		module_provides = dict(
+			includes = [ Path('Code/CryPlugins')],
+		),
+	)

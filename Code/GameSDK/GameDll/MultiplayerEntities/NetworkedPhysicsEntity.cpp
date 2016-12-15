@@ -121,21 +121,16 @@ bool CNetworkedPhysicsEntity::NetSerialize( TSerialize ser, EEntityAspects aspec
 		if (type == PE_NONE)
 			return true;
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
 		if (ser.IsWriting())
 		{
-			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
+			if (!GetEntity()->GetPhysicalEntity() || GetEntity()->GetPhysicalEntity()->GetType() != type)
 			{
 				gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot( ser, type, 0 );
 				return true;
 			}
 		}
-		else if (!pEPP)
-		{
-			return false;
-		}
 
-		pEPP->SerializeTyped( ser, type, flags );
+		GetEntity()->PhysicsNetSerializeTyped( ser, type, flags );
 	}
 	return true;
 }

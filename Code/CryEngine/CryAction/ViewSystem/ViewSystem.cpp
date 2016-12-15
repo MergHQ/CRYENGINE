@@ -61,7 +61,10 @@ CViewSystem::CViewSystem(ISystem* const pSystem) :
 	               "Sets Debug information of the ViewSystem.");
 
 	REGISTER_CVAR2("cl_DefaultNearPlane", &m_fDefaultCameraNearZ, DEFAULT_NEAR, 0,
-	               "The default camera near plane. ");
+		"The default camera near plane. ");
+
+	REGISTER_CVAR2("cl_ViewApplyHmdOffset", &m_bApplyHmdOffset, 1, 0,
+		"Enables default engine HMD positional / rotational offset");
 
 	//Register as level system listener
 	if (CCryAction::GetCryAction()->GetILevelSystem())
@@ -732,45 +735,41 @@ void CViewSystem::ClearAllViews()
 ////////////////////////////////////////////////////////////////////
 void CViewSystem::DebugDraw()
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-	if (pRenderer)
+	float xpos = 20;
+	float ypos = 15;
+	float fColor[4] = { 1.0f, 1.0f, 1.0f, 0.7f };
+	float fColorRed[4] = { 1.0f, 0.0f, 0.0f, 0.7f };
+	//		float fColorYellow[4]	={1.0f, 1.0f, 0.0f, 0.7f};
+	float fColorGreen[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
+	//		float fColorOrange[4]	={1.0f, 0.5f, 0.0f, 0.7f};
+	//		float fColorBlue[4]		={0.4f, 0.4f, 7.0f, 0.7f};
+
+	IRenderAuxText::Draw2dLabel(xpos, 5, 1.35f, fColor, false, "ViewSystem Stats: %" PRISIZE_T " Views ", m_views.size());
+
+	IView* pActiveView = GetActiveView();
+	for (TViewMap::iterator it = m_views.begin(); it != m_views.end(); ++it)
 	{
-		float xpos = 20;
-		float ypos = 15;
-		float fColor[4] = { 1.0f, 1.0f, 1.0f, 0.7f };
-		float fColorRed[4] = { 1.0f, 0.0f, 0.0f, 0.7f };
-		//		float fColorYellow[4]	={1.0f, 1.0f, 0.0f, 0.7f};
-		float fColorGreen[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
-		//		float fColorOrange[4]	={1.0f, 0.5f, 0.0f, 0.7f};
-		//		float fColorBlue[4]		={0.4f, 0.4f, 7.0f, 0.7f};
-
-		pRenderer->Draw2dLabel(xpos, 5, 1.35f, fColor, false, "ViewSystem Stats: %" PRISIZE_T " Views ", m_views.size());
-
-		IView* pActiveView = GetActiveView();
-		for (TViewMap::iterator it = m_views.begin(); it != m_views.end(); ++it)
+		CView* pView = it->second;
+		const CCamera& cam = pView->GetCamera();
+		bool isActive = (pView == pActiveView);
+		bool cutSceneCamera = false;
+		for (int i = 0; i < m_cutsceneViewIdVector.size(); i++)
 		{
-			CView* pView = it->second;
-			const CCamera& cam = pView->GetCamera();
-			bool isActive = (pView == pActiveView);
-			bool cutSceneCamera = false;
-			for (int i = 0; i < m_cutsceneViewIdVector.size(); i++)
+			if (m_cutsceneViewIdVector[i] == it->first)
 			{
-				if (m_cutsceneViewIdVector[i] == it->first)
-				{
-					cutSceneCamera = true;
-					break;
-				}
+				cutSceneCamera = true;
+				break;
 			}
-
-			Vec3 pos = cam.GetPosition();
-			Ang3 ang = cam.GetAngles();
-			if (!cutSceneCamera)
-				pRenderer->Draw2dLabel(xpos, ypos, 1.35f, isActive ? fColorGreen : fColorRed, false, "View Camera: %p . View Id: %d, pos (%f, %f, %f), ang (%f, %f, %f)", &cam, it->first, pos.x, pos.y, pos.z, ang.x, ang.y, ang.z);
-			else
-				pRenderer->Draw2dLabel(xpos, ypos, 1.35f, isActive ? fColorGreen : fColorRed, false, "View Camera: %p . View Id: %d, pos (%f, %f, %f), ang (%f, %f, %f) - Created during Cut-Scene", &cam, it->first, pos.x, pos.y, pos.z, ang.x, ang.y, ang.z);
-
-			ypos += 11;
 		}
+
+		Vec3 pos = cam.GetPosition();
+		Ang3 ang = cam.GetAngles();
+		if (!cutSceneCamera)
+			IRenderAuxText::Draw2dLabel(xpos, ypos, 1.35f, isActive ? fColorGreen : fColorRed, false, "View Camera: %p . View Id: %d, pos (%f, %f, %f), ang (%f, %f, %f)", &cam, it->first, pos.x, pos.y, pos.z, ang.x, ang.y, ang.z);
+		else
+			IRenderAuxText::Draw2dLabel(xpos, ypos, 1.35f, isActive ? fColorGreen : fColorRed, false, "View Camera: %p . View Id: %d, pos (%f, %f, %f), ang (%f, %f, %f) - Created during Cut-Scene", &cam, it->first, pos.x, pos.y, pos.z, ang.x, ang.y, ang.z);
+
+		ypos += 11;
 	}
 }
 

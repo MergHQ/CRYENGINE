@@ -1,0 +1,15 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+    bld.CreateDynamicModule(
+        target = 'CryQt',
+        vs_filter = 'Sandbox',
+        includes = '.',
+        file_list = 'cryqt.waf_files',
+        pch = 'stdafx.cpp',
+        defines = ['CryQt_EXPORTS', 'WIN32'],
+        features = ['qt', 'copy_qt_binaries'],
+        win_lib = ['dwmapi', 'gdi32', 'Ole32'],
+        win_profile_lib = ['qtmain'],
+        win_debug_lib = ['qtmaind'],
+    )

@@ -1,16 +1,21 @@
 #include "StdAfx.h"
 #include "Bullet.h"
 
-#include "Game/GameFactory.h"
+#include "GamePlugin.h"
 
 class CBulletRegistrator
 	: public IEntityRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CBullet>("Bullet");
+		CGamePlugin::RegisterEntityWithDefaultComponent<CBullet>("Bullet");
 
 		RegisterCVars();
+	}
+
+	virtual void Unregister() override
+	{
+		UnregisterCVars();
 	}
 
 	void RegisterCVars()
@@ -19,6 +24,17 @@ class CBulletRegistrator
 
 		REGISTER_CVAR2("w_bulletMass", &m_mass, 5000.f, VF_CHEAT, "Sets the mass of each individual bullet fired by weapons");
 		REGISTER_CVAR2("w_bulletInitialVelocity", &m_initialVelocity, 10.f, VF_CHEAT, "Sets the initial velocity of each individual bullet fired by weapons");
+	}
+
+	void UnregisterCVars()
+	{
+		IConsole* pConsole = gEnv->pConsole;
+		if (pConsole)
+		{
+			pConsole->UnregisterVariable("w_bulletGeometry");
+			pConsole->UnregisterVariable("w_bulletMass");
+			pConsole->UnregisterVariable("w_bulletInitialVelocity");
+		}
 	}
 
 public:
@@ -54,11 +70,8 @@ void CBullet::PostInit(IGameObject *pGameObject)
 	Physicalize();
 
 	// Make sure that bullets are always rendered regardless of distance
-	if (auto *pRenderProxy = static_cast<IEntityRenderProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER)))
-	{
-		// Ratio is 0 - 255, 255 being 100% visibility
-		pRenderProxy->SetViewDistRatio(255);
-	}
+	// Ratio is 0 - 255, 255 being 100% visibility
+	GetEntity()->SetViewDistRatio(255);
 
 	// Apply an impulse so that the bullet flies forward
 	if (auto *pPhysics = GetEntity()->GetPhysics())

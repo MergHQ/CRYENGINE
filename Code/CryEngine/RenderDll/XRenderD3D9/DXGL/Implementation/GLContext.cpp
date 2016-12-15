@@ -1083,7 +1083,7 @@ bool CContext::GetImplicitStateCache(SImplicitStateCache& kCache)
 	}
 #else
 	GetStateVar(GL_VIEWPORT, kCache.m_akViewportData);
-	GetStateVar(GL_DEPTH_RANGE, kCache.m_akDeptRangeData);
+	GetStateVar(GL_DEPTH_RANGE, kCache.m_akDepthRangeData);
 #endif
 
 	for (uint32 uBufferBinding = 0; uBufferBinding < eBB_NUM; ++uBufferBinding)

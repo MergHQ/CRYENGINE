@@ -248,7 +248,7 @@ void CHitRecoilGameEffect::CamShake(float intensity, float attackTime, float dec
 	shakeRotationAngles.x *= m_cameraShakeParams.pCameraShake->m_pitchIntensity * m_cameraShakeParams.intensity;
 	shakeRotationAngles.y *= m_cameraShakeParams.pCameraShake->m_rollIntensity * m_cameraShakeParams.intensity;
 
-	IView* pView = gEnv->pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
+	IView* pView = gEnv->pGameFramework->GetIViewSystem()->GetActiveView();
 	if (pView)
 	{
 		IView::SShakeParams shakeParams;

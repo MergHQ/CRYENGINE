@@ -163,7 +163,8 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 		return;
 
 	pObj->m_pRenderNode = pRenderNode;
-	pObj->m_fSort = rParams.fCustomSortOffset;
+	pObj->m_editorSelectionID = rParams.nEditorSelectionID;
+
 	SRenderObjData* pOD = NULL;
 	if (rParams.pFoliage || rParams.pInstance || rParams.m_pVisArea || pInstInfo || rParams.nVisionParams || rParams.nHUDSilhouettesParams ||
 	    rParams.pLayerEffectParams || rParams.nSubObjHideMask != 0)
@@ -217,13 +218,16 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 	// Process bending
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	if (pRenderNode && pRenderNode->GetRndFlags() & ERF_RECVWIND)
-		Get3DEngine()->SetupBending(pObj, pRenderNode, m_fRadiusVert, passInfo, false);
+	{
+		// This can be different for CVegetation class render nodes
+		pObj->m_vegetationBendingData.scale = 1.0f; //#TODO Read it from RenderNode?
+		pObj->m_vegetationBendingData.verticalRadius = GetRadiusVert();
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Set render quality
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	pObj->m_nRenderQuality = (uint16)(rParams.fRenderQuality * 65535.0f);
 	pObj->m_fDistance = rParams.fDistance;
 
 	{
@@ -310,7 +314,6 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	if (!passInfo.IsGeneralPass())
 		return false;
 
-	IRenderer* pRend = GetRenderer();
 	IMaterial* pMaterial = pObj->m_pCurrMaterial;
 
 	IRenderAuxGeom* pAuxGeom = GetRenderer()->GetIRenderAuxGeom();
@@ -408,9 +411,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				else
 					shortName = PathUtil::GetFile(m_szFileName.c_str());
 				if (nNumLods > 1)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
 				else
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
 			}
 			break;
 
@@ -443,7 +446,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
 
 				return false;
 				//////////////////////////////////////////////////////////////////////////
@@ -500,7 +503,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					const int maxLod = GetMaxUsableLod();
 					const bool bRenderNodeValid(pObj && pObj->m_pRenderNode && ((UINT_PTR)(void*)(pObj->m_pRenderNode) > 0));
 					IRenderNode* pRN = (IRenderNode*)pObj->m_pRenderNode;
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
 					                   nLod, nLod0, maxLod,
 					                   bRenderNodeValid ? pRN->GetLodRatio() : -1, pObj->m_fDistance);
 				}
@@ -514,7 +517,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (m_pRenderMesh)
 				{
 					int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
 				}
 			}
 			break;
@@ -550,7 +553,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nRenderMats);
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nRenderMats);
 			}
 			break;
 
@@ -566,7 +569,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					col = pObj->m_II.m_AmbColor;
 				}
 
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
 			}
 			break;
 
@@ -574,7 +577,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 			if (m_pRenderMesh)
 			{
 				int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
 			}
 			break;
 
@@ -601,9 +604,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 
 					if (m_pParentObject == NULL)
 					{
-						pRend->Draw2dLabel(xOffset, 40.f, 1.5f, yellow, false, "%s", shortName);
+						IRenderAuxText::Draw2dLabel(xOffset, 40.f, 1.5f, yellow, false, "%s", shortName);
 
-						pRend->Draw2dLabel(xOffset, yOffset, 1.5f, color, false,
+						IRenderAuxText::Draw2dLabel(xOffset, yOffset, 1.5f, color, false,
 						                   //"Mesh: %s\n"
 						                   "LOD: %d/%d\n"
 						                   "Num Instances: %d\n"
@@ -631,12 +634,12 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 								//only render the header once
 								if (i == 0)
 								{
-									pRend->Draw2dLabel(600.f, 40.f, 2.f, yellow, false, "Debug Gun: %s", shortName);
+									IRenderAuxText::Draw2dLabel(600.f, 40.f, 2.f, yellow, false, "Debug Gun: %s", shortName);
 								}
 								float y = yOffset + ((i % 4) * 150.f);
 								float x = xOffset - (floor(i / 4.f) * 200.f);
 
-								pRend->Draw2dLabel(x, y, 1.5f, color, false,
+								IRenderAuxText::Draw2dLabel(x, y, 1.5f, color, false,
 								                   "Sub Mesh: %s\n"
 								                   "LOD: %d/%d\n"
 								                   "Num Instances: %d\n"
@@ -675,7 +678,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (nPhysTrisCount == 0)
 					color[3] = 0.1f;
 
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
+				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
 			}
 			return false;
 
@@ -684,7 +687,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				// Show texture usage.
 				if (m_pRenderMesh)
 				{
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
+					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
 				}
 			}
 			break;
@@ -763,7 +766,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 
 			// text
 			float color[4] = { 0, 1, 1, 1 };
-			pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s", pSubObject->name.c_str());
+			IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, pSubObject->name.c_str());
 		}
 	}
 
@@ -857,8 +860,9 @@ void CStatObj::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
 		ran.zero();
 }
 
-void CStatObj::ComputeGeometricMean(SMeshLodInfo& lodInfo)
+SMeshLodInfo CStatObj::ComputeAndStoreLodDistances()
 {
+	SMeshLodInfo lodInfo;
 	lodInfo.Clear();
 
 	lodInfo.fGeometricMean = m_fGeometricMeanFaceArea;
@@ -870,13 +874,41 @@ void CStatObj::ComputeGeometricMean(SMeshLodInfo& lodInfo)
 		{
 			if (m_subObjects[i].nType == STATIC_SUB_OBJECT_MESH && m_subObjects[i].bShadowProxy == false && m_subObjects[i].pStatObj != NULL)
 			{
-				SMeshLodInfo subLodInfo;
-				static_cast<CStatObj*>(m_subObjects[i].pStatObj)->ComputeGeometricMean(subLodInfo);
+				CStatObj* pStatObj = static_cast<CStatObj*>(m_subObjects[i].pStatObj);
+
+				SMeshLodInfo subLodInfo = pStatObj->ComputeAndStoreLodDistances();
 
 				lodInfo.Merge(subLodInfo);
 			}
 		}
 	}
+
+	m_fLodDistance = sqrt(lodInfo.fGeometricMean);
+	return lodInfo;
+}
+
+SMeshLodInfo CStatObj::ComputeGeometricMean() const
+{
+	SMeshLodInfo lodInfo;
+	lodInfo.Clear();
+
+	lodInfo.fGeometricMean = m_fGeometricMeanFaceArea;
+	lodInfo.nFaceCount = m_nRenderTrisCount;
+
+	if (GetFlags() & STATIC_OBJECT_COMPOUND)
+	{
+		for (uint i = 0; i < m_subObjects.size(); ++i)
+		{
+			if (m_subObjects[i].nType == STATIC_SUB_OBJECT_MESH && m_subObjects[i].bShadowProxy == false && m_subObjects[i].pStatObj != NULL)
+			{
+				SMeshLodInfo subLodInfo = static_cast<const CStatObj*>(m_subObjects[i].pStatObj)->ComputeGeometricMean();
+
+				lodInfo.Merge(subLodInfo);
+			}
+		}
+	}
+
+	return lodInfo;
 }
 
 int CStatObj::ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache)
@@ -951,15 +983,15 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 	if (m_pParentObject)
 		m_pParentObject->m_nLastDrawMainFrameId = passInfo.GetMainFrameID();
 
-	if (m_nInitialSubObjHideMask != 0 && !nSubObjectHideMask)
+	hidemask *pMask = !nSubObjectHideMask ? &m_nInitialSubObjHideMask : &nSubObjectHideMask;
+	if (!!*pMask)
 	{
-		nSubObjectHideMask = m_nInitialSubObjHideMask;
 		if ((m_pMergedRenderMesh != NULL) && !(pRenderObject->m_ObjFlags & FOB_MESH_SUBSET_INDICES)) // If not already set by per-instance hide mask.
 		{
 			SRenderObjData* pOD = pRenderObject->GetObjData();
 
 			// Only pass SubObject hide mask for merged objects, because they have a correct correlation between Hide Mask and Render Chunks.
-			pOD->m_nSubObjHideMask = m_nInitialSubObjHideMask;
+			pOD->m_nSubObjHideMask = *pMask;
 			pRenderObject->m_ObjFlags |= FOB_MESH_SUBSET_INDICES;
 		}
 	}
@@ -1054,12 +1086,17 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 					if (pStatObj &&
 						(pStatObj->m_nRenderTrisCount >= 2) &&
 						!(pStatObj->m_nFlags & STATIC_OBJECT_HIDDEN) &&
-						!(nSubObjectHideMask & nBitIndex)
+						!(*pMask & nBitIndex)
 						)
 					{
 						PrefetchLine(pRenderObject, 0);
+						
+						if (lodValue.LodA() >= 0)
+						{
 						RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
-						if (pRenderObjectB)
+						}
+
+						if (pRenderObjectB && lodValue.LodB()>=0)
 						{
 							PrefetchLine(pRenderObjectB, 0);
 							RenderSubObject(pRenderObjectB, lodValue.LodB(), i, renderTM, passInfo);
@@ -1083,8 +1120,12 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 	else
 	{
 		// draw mesh, don't even try to render childs
+		if (lodValue.LodA() >= 0)
+		{
 		RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
-		if (lodValue.DissolveRefB() != 255) // check here since we're passing in A's ref.
+		}
+
+		if (lodValue.DissolveRefB() != 255 && lodValue.LodB()>=0) // check here since we're passing in A's ref.
 		{
 			pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 			RenderObjectInternal(pRenderObject, lodValue.LodB(), lodValue.DissolveRefA(), false, passInfo);

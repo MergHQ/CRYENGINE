@@ -61,7 +61,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 			pRayInfo->numHits = min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
 			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> requestData(pRayInfo);
-			request.audioObjectId = pRayInfo->audioObjectId;
+			request.pAudioObject = pRayInfo->pAudioObject;
 			request.flags = eAudioRequestFlags_ThreadSafePush;
 			request.pData = &requestData;
 
@@ -81,7 +81,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CPropagationProcessor::CPropagationProcessor(AudioObjectId const audioObjectId, CAudioObjectTransformation const& transformation)
+CPropagationProcessor::CPropagationProcessor(CAudioObjectTransformation const& transformation)
 	: m_obstruction(0.0f)
 	, m_occlusion(0.0f)
 	, m_occlusionMultiplier(1.0f)
@@ -165,17 +165,21 @@ CPropagationProcessor::CPropagationProcessor(AudioObjectId const audioObjectId, 
 
 	m_raysOcclusion.resize(s_numRaySamplePositionsHigh, 0.0f);
 	m_raysInfo.reserve(s_numConcurrentRaysHigh);
-
-	for (size_t i = 0; i < s_numConcurrentRaysHigh; ++i)
-	{
-		m_raysInfo.push_back(CAudioRayInfo(audioObjectId));
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 CPropagationProcessor::~CPropagationProcessor()
 {
 	stl::free_container(m_raysInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::Init(CATLAudioObject* pAudioObject)
+{
+	for (size_t i = 0; i < s_numConcurrentRaysHigh; ++i)
+	{
+		m_raysInfo.push_back(CAudioRayInfo(pAudioObject));
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -355,7 +359,7 @@ void CPropagationProcessor::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo
 
 	if (m_remainingRays == 0)
 	{
-		CryFatalError("Negative ref or ray count on audio object %u", pAudioRayInfo->audioObjectId);
+		CryFatalError("Negative ref or ray count on audio object");
 	}
 #endif
 
@@ -421,12 +425,6 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 
 			m_occlusion = (m_occlusion / numSamplePositions) * m_occlusionMultiplier;
 		}
-	}
-	else
-	{
-		// The audio object is tracking the listener.
-		// These should not have occlusion enabled!
-		CRY_ASSERT(false);
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -773,8 +771,7 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 			  1.2f,
 			  labelColor,
 			  true,
-			  "ObjID:%u\nOccl:%3.2f",
-			  m_raysInfo[rayIndex].audioObjectId,
+			  "nOccl:%3.2f",
 			  m_occlusion);
 		}
 	}

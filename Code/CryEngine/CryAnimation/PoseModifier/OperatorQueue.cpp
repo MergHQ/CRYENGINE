@@ -20,10 +20,6 @@ COperatorQueue::COperatorQueue()
 	m_current = 0;
 };
 
-COperatorQueue::~COperatorQueue()
-{
-}
-
 //
 
 void COperatorQueue::PushPosition(uint32 jointIndex, EOp eOp, const Vec3& value)

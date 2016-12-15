@@ -27,15 +27,15 @@ namespace
 		float red[4] = {1,0,0,1};
 		float location = 50.0f;
 		const float step = 12.0f;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Lightning Stats: # (peak #)");
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Lightning Stats: # (peak #)");
 		textPos.y += step;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Active Sparks: %d (%d)", stats.m_activeSparks .GetCurrent(), stats.m_activeSparks.GetPeak());
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Active Sparks: %d (%d)", stats.m_activeSparks .GetCurrent(), stats.m_activeSparks.GetPeak());
 		textPos.y += step;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Memory: %d (%d) bytes", stats.m_memory.GetCurrent(), stats.m_memory.GetPeak());
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Memory: %d (%d) bytes", stats.m_memory.GetCurrent(), stats.m_memory.GetPeak());
 		textPos.y += step;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Tri Count: %d (%d)", stats.m_triCount.GetCurrent(), stats.m_triCount.GetPeak());
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Tri Count: %d (%d)", stats.m_triCount.GetCurrent(), stats.m_triCount.GetPeak());
 		textPos.y += step;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Branches: %d (%d)", stats.m_branches.GetCurrent(), stats.m_branches.GetPeak());
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 1.4f, red, false, "Branches: %d (%d)", stats.m_branches.GetCurrent(), stats.m_branches.GetPeak());
 	}
 
 

@@ -318,7 +318,7 @@ void CGameRulesAssistScoring::ClHandleAssistsForDeath(const EntityId victimId, c
 			}
 		}
 		
-		bool isShooterClient = (shooterId == gEnv->pGame->GetIGameFramework()->GetClientActorId());
+		bool isShooterClient = (shooterId == gEnv->pGameFramework->GetClientActorId());
 		if (!hadAssist && isShooterClient)
 		{
 			IActor *pShooterActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(shooterId);

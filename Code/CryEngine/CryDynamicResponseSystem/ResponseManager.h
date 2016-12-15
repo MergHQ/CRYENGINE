@@ -22,7 +22,7 @@ struct SSignal
 {
 	SSignal(const CHashedString& signalName, CResponseActor* pSender, VariableCollectionSharedPtr pSignalContext);
 
-	DRS::SignalInstanceId       m_id;  //a unique id for this instance of the sent-signal
+	DRS::SignalInstanceId       m_id;  //a unique id for this instance of the signal
 	CHashedString               m_signalName;
 	CResponseActor*             m_pSender;
 	VariableCollectionSharedPtr m_pSignalContext;
@@ -51,9 +51,9 @@ public:
 		eSH_EvaluateResponses         = BIT(2), //will display if the condition is currently met (editor only)
 	};
 
-	typedef std::unordered_map<CHashedString, ResponsePtr>                           MappedSignals;
-	typedef std::vector<SSignal>                                                     SignalList;
-	typedef std::vector<CResponseInstance*>                                          ResponseInstanceList;
+	typedef std::unordered_map<CHashedString, ResponsePtr>                                   MappedSignals;
+	typedef std::vector<SSignal>                                                             SignalList;
+	typedef std::vector<CResponseInstance*>                                                  ResponseInstanceList;
 	typedef std::vector<std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>> ListenerList;
 
 	CResponseManager();
@@ -81,13 +81,15 @@ public:
 	void               SerializeResponseStates(Serialization::IArchive& ar);
 
 	ResponsePtr        GetResponse(const CHashedString& signalName);
+	bool			   HasMappingForSignal(const CHashedString& signalName);
 
 	void               QueueSignal(const SSignal& signal);
-	void               CancelSignalProcessing(const SSignal& signal);
+	bool               CancelSignalProcessing(const SSignal& signal);
+	bool               IsSignalProcessed(const SSignal& signal);
 	void               Update();
 
-	void               GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList);
-	void               SetAllResponseData(const DRS::VariableValuesList& collectionsList);
+	void               GetAllResponseData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues);
+	void               SetAllResponseData(DRS::ValuesListIterator start, DRS::ValuesListIterator end);
 
 	CResponseInstance* CreateInstance(SSignal& signal, CResponse* pResponse);
 	void               ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances = true);
@@ -100,18 +102,14 @@ private:
 	void InformListenerAboutSignalProcessingStarted(const SSignal& signal, DRS::IResponseInstance* pInstance);
 	void InformListenerAboutSignalProcessingFinished(const CHashedString& signalName, CResponseActor* pSender, const VariableCollectionSharedPtr& pSignalContext, const DRS::SignalInstanceId signalID, DRS::IResponseInstance* pInstance, DRS::IResponseManager::IListener::eProcessingResult outcome);
 
-	EUsedFileFormat      m_UsedFileFormat;
+	EUsedFileFormat      m_usedFileFormat;
 
 	MappedSignals        m_mappedSignals;
 
 	ResponseInstanceList m_runningResponses;
 
-	bool                 m_bCurrentlyUpdating;
-
 	ListenerList         m_Listener;
 
-	SignalList           m_currentlyQueuedSignals;              //make this a lockfree list so that queuing signals is thread safe
-	SignalList           m_currentlyQueuedSignalsDuringUpdate;  //we have a second list where we store signals that gets queued while we are updating the normal list (because we dont want the original list to change, while we use it)
-	SignalList           m_currentlySignalsWaitingToBeCanceled; //make this a lockfree list so that queuing signals is thread safe
+	SignalList           m_currentlyQueuedSignals;
 };
 } // namespace CryDRS

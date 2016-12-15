@@ -16,6 +16,8 @@ public:
 	virtual void Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false);
 	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false);
 
+	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
+
 	virtual void FlushTextMessages(CTextMessages& tMessages, bool reset);
 
 	void         Process();
@@ -54,28 +56,13 @@ public:
 	}
 
 private:
-	struct SStreamBufferManager
-	{
-	public:
-		SStreamBufferManager();
-		void Reset();
-		void DiscardVB();
-		void DiscardIB();
-
-	public:
-		bool   m_discardVB;
-		uint32 m_curVBIndex;
-		bool   m_discardIB;
-		uint32 m_curIBIndex;
-	};
-
 	struct SDrawObjMesh
 	{
 		SDrawObjMesh()
 			: m_numVertices(0)
 			, m_numFaces(0)
-			, m_pVB(0)
-			, m_pIB(0)
+			, m_pVB(~0u)
+			, m_pIB(~0u)
 		{
 		}
 
@@ -84,28 +71,14 @@ private:
 			Release();
 		}
 
-		void Release()
-		{
-			SAFE_RELEASE(m_pVB);
-			SAFE_RELEASE(m_pIB);
+		void Release();
 
-			m_numVertices = 0;
-			m_numFaces = 0;
-		}
-
-		int GetDeviceDataSize()
-		{
-			int nSize = 0;
-			nSize += _VertBufferSize(m_pVB);
-			nSize += _IndexBufferSize(m_pIB);
-
-			return nSize;
-		}
+		int GetDeviceDataSize() const;
 
 		uint32           m_numVertices;
 		uint32           m_numFaces;
-		D3DVertexBuffer* m_pVB;
-		D3DIndexBuffer*  m_pIB;
+		buffer_handle_t m_pVB;
+		buffer_handle_t m_pIB;
 	};
 
 	enum EAuxObjNumLOD
@@ -180,8 +153,7 @@ private:
 					gRenDev->GetThreadIDs(mainThreadID, renderThreadID);
 
 					if (tid == renderThreadID) pAuxGeomCB = new CAuxGeomCB(pRenderAuxGeomImpl);
-					else if (tid == mainThreadID) pAuxGeomCB = new CAuxGeomCBMainThread(pRenderAuxGeomImpl);
-					else                             pAuxGeomCB = new CAuxGeomCBWorkerThread(pRenderAuxGeomImpl);
+					else                       pAuxGeomCB = new CAuxGeomCBWorkerThread(pRenderAuxGeomImpl);
 
 					m_rwlLocal.WLock();
 					m_auxJobMap.insert(AUXJobMap::value_type(jobID, pAuxGeomCB));
@@ -322,18 +294,19 @@ private:
 
 private:
 	CRenderAuxGeomD3D(CD3D9Renderer& renderer);
-	void DetermineAuxPrimitveFlags(uint32& d3dNumPrimDivider, ERenderPrimitiveType& d3dPrim, CAuxGeomCB::EPrimType primType) const;
-	void DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const CAuxGeomCB::EPrimType& primType);
-	void DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const CAuxGeomCB::EPrimType& primType);
-	void DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd);
+
+
+	CRenderPrimitive& PreparePrimitive(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, EVertexFormat format, size_t stride, buffer_handle_t vb, buffer_handle_t ib, const Matrix44* mViewProj);
+
+	void DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj);
+	void DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj);
+	void DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj);
 
 	void PrepareThickLines2D(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd);
 	void PrepareThickLines3D(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd);
 
 	void PrepareRendering();
-	void SetShader(const SAuxGeomRenderFlags& renderFlags);
-	void AdjustRenderStates(const SAuxGeomRenderFlags& renderFlags);
-	bool BindStreams(EVertexFormat newVertexFormat, ID3D11Buffer* pNewVB, ID3D11Buffer* pNewIB);
+	void Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat);
 
 	template<typename TMeshFunc>
 	HRESULT                                  CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc);
@@ -354,15 +327,30 @@ private:
 	const Matrix34&                          GetAuxWorldMatrix(int idx) const;
 
 private:
+
+	class CBufferManager
+	{
+		buffer_handle_t vbAux = ~0u;
+		buffer_handle_t ibAux = ~0u;
+
+		static buffer_handle_t fill(buffer_handle_t buf, BUFFER_BIND_TYPE type, const void* data, size_t size);
+		static buffer_handle_t update                   (BUFFER_BIND_TYPE type, const void* data, size_t size);
+
+	public:
+		~CBufferManager();
+
+		void FillVB(const void* src, size_t size) { vbAux = fill(vbAux, BBT_VERTEX_BUFFER, src, size); }
+		void FillIB(const void* src, size_t size) { ibAux = fill(ibAux, BBT_INDEX_BUFFER,  src, size); }
+
+		buffer_handle_t GetVB() { return vbAux; }
+		buffer_handle_t GetIB() { return ibAux; }
+	};
+
 	CD3D9Renderer&                            m_renderer;
 
-	ID3D11Buffer*                             m_pAuxGeomVB;
-	ID3D11Buffer*                             m_pAuxGeomIB;
-
-	ID3D11Buffer*                             m_pCurVB;
-	ID3D11Buffer*                             m_pCurIB;
-
-	SStreamBufferManager                      m_auxGeomSBM;
+	CBufferManager                                   m_bufman;
+	CPrimitiveRenderPass                             m_geomPass;
+	std::map<ERenderPrimitiveType, CRenderPrimitive> m_geomPrimitiveCache;
 
 	uint32                                    m_wndXRes;
 	uint32                                    m_wndYRes;
@@ -392,65 +380,6 @@ private:
 	SDrawObjMesh                              m_cylinderObj[e_auxObjNumLOD];
 };
 
-inline
-CRenderAuxGeomD3D::SStreamBufferManager::SStreamBufferManager()
-	: m_discardVB(true)
-	, m_curVBIndex(0)
-	, m_discardIB(true)
-	, m_curIBIndex(0)
-{
-}
-
-inline void
-CRenderAuxGeomD3D::SStreamBufferManager::Reset()
-{
-	m_discardVB = true;
-	m_curVBIndex = 0;
-	m_discardIB = true;
-	m_curIBIndex = 0;
-}
-
-inline void
-CRenderAuxGeomD3D::SStreamBufferManager::DiscardVB()
-{
-	m_discardVB = true;
-	m_curVBIndex = 0;
-}
-
-inline void
-CRenderAuxGeomD3D::SStreamBufferManager::DiscardIB()
-{
-	m_discardIB = true;
-	m_curIBIndex = 0;
-}
-
-inline void CRenderAuxGeomD3D::DetermineAuxPrimitveFlags(uint32& d3dNumPrimDivider, ERenderPrimitiveType& ePrimType, CAuxGeomCB::EPrimType primType) const
-{
-	switch (primType)
-	{
-	case CAuxGeomCB::e_PtList:
-		{
-			d3dNumPrimDivider = 1;
-			ePrimType = eptPointList;
-			break;
-		}
-	case CAuxGeomCB::e_LineList:
-	case CAuxGeomCB::e_LineListInd:
-		{
-			d3dNumPrimDivider = 2;
-			ePrimType = eptLineList;
-			break;
-		}
-	case CAuxGeomCB::e_TriList:
-	case CAuxGeomCB::e_TriListInd:
-	default:
-		{
-			d3dNumPrimDivider = 3;
-			ePrimType = eptTriangleList;
-			break;
-		}
-	}
-}
 
 #endif // #if defined(ENABLE_RENDER_AUX_GEOM)
 

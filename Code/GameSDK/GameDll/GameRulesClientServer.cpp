@@ -327,7 +327,7 @@ void CGameRules::ClientHit(const HitInfo &hitInfo)
 void CGameRules::KnockActorDown( EntityId actorEntityId )
 {
 	// Forbid fall and play if the actor is playing a hit/death reaction
-	CActor* pHitActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( actorEntityId ));
+	CActor* pHitActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor( actorEntityId ));
 	if (pHitActor)
 	{
 		// Don't trigger Fall and Play if the actor is playing a hit reaction
@@ -727,10 +727,9 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 					continue;
 
 				// get bounding box
-				if (IEntityPhysicalProxy* pPhysProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 				{
 					AABB aabb;
-					pPhysProxy->GetWorldBounds(aabb);
+					pEntity->GetPhysicsWorldBounds(aabb);
 
 					// don't remove objects which are larger than a predefined minimum volume
 					if (aabb.GetVolume() > minVolume)
@@ -774,13 +773,6 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 void CGameRules::ClientExplosion(SExplosionContainer &explosionContainer)
 {
 	ExplosionInfo& explosionInfo = explosionContainer.m_explosionInfo;
-
-	// let 3D engine know about explosion (will create holes and remove vegetation)
-	if (explosionInfo.hole_size > 1.0f && gEnv->p3DEngine->GetIVoxTerrain())
-	{
-		gEnv->p3DEngine->OnExplosion(explosionInfo.pos, explosionInfo.hole_size, true);
-	}
-
 	TExplosionAffectedEntities affectedEntities;
 		
 	CalculateExplosionAffectedEntities(explosionInfo, affectedEntities);
@@ -1391,7 +1383,7 @@ IMPLEMENT_RMI(CGameRules, SvRequestSpectatorMode)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, SvSetSpectatorState )
 {
-	CActor *pActor = static_cast<CActor*>( gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( params.entityId ) );
+	CActor *pActor = static_cast<CActor*>( gEnv->pGameFramework->GetIActorSystem()->GetActor( params.entityId ) );
 	if (pActor)
 	{
 		CActor::EActorSpectatorState prevState = pActor->GetSpectatorState();
@@ -1554,7 +1546,7 @@ IMPLEMENT_RMI(CGameRules, ClTaggedEntity)
 		return true;
 	}
 
-	CPlayer* pClientPlayer = static_cast<CPlayer*>( gEnv->pGame->GetIGameFramework()->GetClientActor() );
+	CPlayer* pClientPlayer = static_cast<CPlayer*>( gEnv->pGameFramework->GetClientActor() );
 	if( !pClientPlayer )
 	{
 		return true;
@@ -1743,7 +1735,7 @@ IMPLEMENT_RMI(CGameRules, ClKickVoteStatus)
 	CGameLobby::SChatMessage message;
 	if(pGameLobby)
 	{
-		const EntityId clientActorId = g_pGame->GetClientActorId();
+		const EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
 		switch(params.kickState)
 		{
 		case eKS_StartVote:

@@ -230,7 +230,7 @@ void CReader::ReadDataFromFileInternal(IPlatformOS::ISaveReaderPtr& pOSSaveReade
 
 bool CReader::ReadBinaryFile(const char* pFileName)
 {
-	IPlatformOS::ISaveReaderPtr pOSSaveReader = gEnv->pSystem->GetPlatformOS()->SaveGetReader(pFileName, IPlatformOS::Unknown_User);
+	IPlatformOS::ISaveReaderPtr pOSSaveReader = gEnv->pSystem->GetPlatformOS()->SaveGetReader(pFileName);
 	if (!m_pZLibBuffer)
 		m_pZLibBuffer = new uint8[XMLCPB_ZLIB_BUFFER_SIZE];
 	if (!m_pZLibCompressedBuffer)

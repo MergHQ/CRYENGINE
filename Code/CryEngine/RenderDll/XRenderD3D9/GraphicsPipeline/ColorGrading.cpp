@@ -170,11 +170,11 @@ void CColorGradingStage::PreparePrimitives(CColorGradingControllerD3D& controlle
 				prim.GetConstantManager().BeginNamedConstantUpdate();
 
 				static CCryNameR nameLayerBlendAmount("LayerBlendAmount");
-				prim.GetConstantManager().SetNamedConstant(eHWSC_Pixel, nameLayerBlendAmount, layerBlendAmount);
+				prim.GetConstantManager().SetNamedConstant(nameLayerBlendAmount, layerBlendAmount, eHWSC_Pixel);
 
 				static CCryNameR nameLayerSize("LayerSize");
 				Vec4 layerSize((float)m_pMergeLayers[0]->GetWidth(), (float)m_pMergeLayers[0]->GetHeight(), 0, 0);
-				prim.GetConstantManager().SetNamedConstant(eHWSC_Pixel, nameLayerSize, layerSize);
+				prim.GetConstantManager().SetNamedConstant(nameLayerSize, layerSize, eHWSC_Pixel);
 
 				prim.GetConstantManager().EndNamedConstantUpdate();
 
@@ -205,22 +205,22 @@ void CColorGradingStage::PreparePrimitives(CColorGradingControllerD3D& controlle
 		constantManager.BeginNamedConstantUpdate();
 
 		static CCryNameR pParamName0("ColorGradingParams0");
-		constantManager.SetNamedConstant(eHWSC_Pixel, pParamName0, mergeParams.pLevels[0]);
+		constantManager.SetNamedConstant(pParamName0, mergeParams.pLevels[0], eHWSC_Pixel);
 
 		static CCryNameR pParamName1("ColorGradingParams1");
-		constantManager.SetNamedConstant(eHWSC_Pixel, pParamName1, mergeParams.pLevels[1]);
+		constantManager.SetNamedConstant(pParamName1, mergeParams.pLevels[1], eHWSC_Pixel);
 
 		static CCryNameR pParamName2("ColorGradingParams2");
-		constantManager.SetNamedConstant(eHWSC_Pixel, pParamName2, mergeParams.pFilterColor);
+		constantManager.SetNamedConstant(pParamName2, mergeParams.pFilterColor, eHWSC_Pixel);
 
 		static CCryNameR pParamName3("ColorGradingParams3");
-		constantManager.SetNamedConstant(eHWSC_Pixel, pParamName3, mergeParams.pSelectiveColor[0]);
+		constantManager.SetNamedConstant(pParamName3, mergeParams.pSelectiveColor[0], eHWSC_Pixel);
 
 		static CCryNameR pParamName4("ColorGradingParams4");
-		constantManager.SetNamedConstant(eHWSC_Pixel, pParamName4, mergeParams.pSelectiveColor[1]);
+		constantManager.SetNamedConstant(pParamName4, mergeParams.pSelectiveColor[1], eHWSC_Pixel);
 
 		static CCryNameR pParamMatrix("mColorGradingMatrix");
-		constantManager.SetNamedConstantArray(eHWSC_Pixel, pParamMatrix, mergeParams.pColorMatrix, 3);
+		constantManager.SetNamedConstantArray(pParamMatrix, mergeParams.pColorMatrix, 3, eHWSC_Pixel);
 
 		constantManager.EndNamedConstantUpdate();
 

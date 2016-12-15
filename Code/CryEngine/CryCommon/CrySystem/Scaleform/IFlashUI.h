@@ -1,18 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IFlashUI.h
-//  Version:     v1.00
-//  Created:     10/9/2010 by Paul Reindell.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef __IFlashUI__h__
-#define __IFlashUI__h__
-
+#include <CryCore/CryVariant.h>
 #include <CryExtension/ICryUnknown.h>
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
@@ -20,23 +10,21 @@
 #include <CryString/CryName.h>
 #include <CryCore/functor.h>
 
-#include <CryCore/BoostHelpers.h>
-
 #define IFlashUIExtensionName "FlashUI"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////// UI variant data /////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef boost::mpl::vector<
-    int,
-    float,
-    EntityId,
-    Vec3,
-    string,
-    wstring,
-    bool
-    > TUIDataTypes;
+typedef CryVariant<
+	int,
+	float,
+	EntityId,
+	Vec3,
+	string,
+	wstring,
+	bool
+	> TUIDataVariant;
 
 //! Default conversion uses C++ rules.
 template<class From, class To>
@@ -44,8 +32,87 @@ struct SUIConversion
 {
 	static ILINE bool ConvertValue(const From& from, To& to)
 	{
-		to = (To)from;
+		to = static_cast<To>(from);
 		return true;
+	}
+};
+namespace detail
+{
+	template<class To, size_t I = 0>
+	ILINE bool ConvertVariant(const TUIDataVariant& from, To& to)
+	{
+		if (from.index() == I)
+		{
+			return SUIConversion<typename stl::variant_alternative<I, TUIDataVariant>::type, To>::ConvertValue(stl::get<I>(from), to);
+		}
+		else
+		{
+			return ConvertVariant<To, I + 1>(from, to);
+		}
+	}
+
+	template<size_t I = 0>
+	ILINE bool ConvertVariant(const TUIDataVariant& from, Vec3& to)
+	{
+		if (stl::holds_alternative<Vec3>(from))
+		{
+			to = stl::get<Vec3>(from);
+		}
+		else
+		{
+			float temp;
+			if (from.index() == I)
+			{
+				if (!SUIConversion<typename stl::variant_alternative<I, TUIDataVariant>::type, float>::ConvertValue(stl::get<I>(from), temp))
+					return false;
+			}
+			else
+			{
+				return ConvertVariant<float, I + 1>(from, temp);
+			}
+			to.x = to.y = to.z = temp;
+		}
+		return true;
+	}
+
+#define FLASHUI_CONVERTVARIANT_SPECIALIZATION(T) \
+template<> \
+ILINE bool ConvertVariant<T, stl::variant_size<TUIDataVariant>::value>(const TUIDataVariant&, T&) \
+{ \
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	return false; \
+}
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(int);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(float);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(EntityId);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(Vec3);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(string);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(wstring);
+	FLASHUI_CONVERTVARIANT_SPECIALIZATION(bool);
+#undef FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION
+}
+template<class To>
+struct SUIConversion<TUIDataVariant, To>
+{
+	static ILINE bool ConvertValue(const TUIDataVariant& from, To& to)
+	{
+		return detail::ConvertVariant(from, to);
+	}
+};
+template<>
+struct SUIConversion<TUIDataVariant, bool>
+{
+	static ILINE bool ConvertValue(const TUIDataVariant& from, bool& to)
+	{
+		return detail::ConvertVariant(from, to);
+	}
+};
+template<>
+struct SUIConversion<TUIDataVariant, Vec3>
+{
+	static ILINE bool ConvertValue(const TUIDataVariant& from, Vec3& to)
+	{
+		return detail::ConvertVariant(from, to);
 	}
 };
 
@@ -298,31 +365,28 @@ struct SUIConversion<wstring, string>
 enum EUIDataTypes
 {
 	eUIDT_Any      = -1,
-	eUIDT_Bool     = boost::mpl::find<TUIDataTypes, bool>::type::pos::value,
-	eUIDT_Int      = boost::mpl::find<TUIDataTypes, int>::type::pos::value,
-	eUIDT_Float    = boost::mpl::find<TUIDataTypes, float>::type::pos::value,
-	eUIDT_EntityId = boost::mpl::find<TUIDataTypes, EntityId>::type::pos::value,
-	eUIDT_Vec3     = boost::mpl::find<TUIDataTypes, Vec3>::type::pos::value,
-	eUIDT_String   = boost::mpl::find<TUIDataTypes, string>::type::pos::value,
-	eUIDT_WString  = boost::mpl::find<TUIDataTypes, wstring>::type::pos::value
+	eUIDT_Bool     = detail::get_index<bool, TUIDataVariant>::value,
+	eUIDT_Int      = detail::get_index<int, TUIDataVariant>::value,
+	eUIDT_Float    = detail::get_index<float, TUIDataVariant>::value,
+	eUIDT_EntityId = detail::get_index<EntityId, TUIDataVariant>::value,
+	eUIDT_Vec3     = detail::get_index<Vec3, TUIDataVariant>::value,
+	eUIDT_String   = detail::get_index<string, TUIDataVariant>::value,
+	eUIDT_WString  = detail::get_index<wstring, TUIDataVariant>::value,
 };
-
-typedef boost::make_variant_over<TUIDataTypes>::type TUIDataVariant;
 
 class TUIData
 {
-	class ExtractType : public boost::static_visitor<EUIDataTypes>
+	class ExtractType
 	{
 	public:
-		template<typename T>
-		EUIDataTypes operator()(const T& value) const
+		EUIDataTypes operator()(const TUIDataVariant& variant)
 		{
-			return (EUIDataTypes) boost::mpl::find<TUIDataTypes, T>::type::pos::value;
+			return static_cast<EUIDataTypes>(variant.index());
 		}
 	};
 
 	template<typename To>
-	class ConvertType_Get : public boost::static_visitor<bool>
+	class ConvertType_Get
 	{
 	public:
 		ConvertType_Get(To& to_) : to(to_) {}
@@ -366,13 +430,13 @@ public:
 	template<typename T>
 	bool GetValueWithConversion(T& value) const
 	{
-		return boost::apply_visitor(ConvertType_Get<T>(value), m_variant);
+		return stl::visit(ConvertType_Get<T>(value), m_variant);
 	}
 
-	EUIDataTypes                  GetType() const { return boost::apply_visitor(ExtractType(), m_variant); }
+	EUIDataTypes                  GetType() const { return stl::visit(ExtractType(), m_variant); }
 
-	template<typename T> T*       GetPtr()        { return boost::get<T>(&m_variant); }
-	template<typename T> const T* GetPtr() const  { return boost::get<const T>(&m_variant); }
+	template<typename T> T*       GetPtr()        { return stl::get_if<T>(&m_variant); }
+	template<typename T> const T* GetPtr() const  { return stl::get_if<const T>(&m_variant); }
 
 private:
 	TUIDataVariant m_variant;
@@ -837,8 +901,16 @@ template<class T> struct SUIItemLookupIDD
 template<class Base>
 struct SUIItemLookupSet_Impl
 {
+	struct CILess
+	{
+		bool operator() (const CCryName& lhs, const CCryName& rhs) const
+		{
+			return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+		}
+	};
+
 	typedef DynArray<Base*>                 TITems;
-	typedef std::map<CCryName, int>         TLookup;
+	typedef std::map<CCryName, int, CILess> TLookup;
 	typedef typename TITems::iterator       iterator;
 	typedef typename TITems::const_iterator const_iterator;
 	typedef typename TITems::size_type      size_type;
@@ -1638,6 +1710,9 @@ public:
 
 	//! Reload UI xml files.
 	virtual void Reload() = 0;
+
+	//! Clear UI Actions
+	virtual void ClearUIActions() = 0;
 
 	//! Shut down.
 	virtual void Shutdown() = 0;
@@ -2812,5 +2887,3 @@ struct SPerInstanceCall4
 private:
 	void _cb(IUIElement* pInstance, const SCallData& data) { data.cb(pInstance, data.arg1, data.arg2, data.arg3, data.arg4); }
 };
-
-#endif

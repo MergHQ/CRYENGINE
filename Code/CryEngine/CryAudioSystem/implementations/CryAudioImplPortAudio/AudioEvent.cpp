@@ -188,12 +188,16 @@ void CAudioEvent::Stop()
 //////////////////////////////////////////////////////////////////////////
 void CAudioEvent::Reset()
 {
-	CRY_ASSERT(pStream != nullptr);
-	PaError const err = Pa_CloseStream(pStream);
-
-	if (err != paNoError)
+	if (pStream != nullptr)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "CloseStream failed: %s", Pa_GetErrorText(err));
+		PaError const err = Pa_CloseStream(pStream);
+
+		if (err != paNoError)
+		{
+			g_audioImplLogger.Log(eAudioLogType_Error, "CloseStream failed: %s", Pa_GetErrorText(err));
+		}
+
+		pStream = nullptr;
 	}
 
 	if (pSndFile != nullptr)
@@ -202,7 +206,6 @@ void CAudioEvent::Reset()
 		pSndFile = nullptr;
 	}
 
-	pStream = nullptr;
 	bDone = false;
 }
 

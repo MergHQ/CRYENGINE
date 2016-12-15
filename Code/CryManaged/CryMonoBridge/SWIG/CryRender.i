@@ -84,11 +84,7 @@ public:
 		return Vec3();
 	}
 }
-// Possibly necessary for android (/gcc?) compilation . . .
-//%extend ISvoRenderer {
-//	virtual ~ISvoRenderer() {}
-//}
-// VERY HACKY ENUM DEFINITIONS!
+// hacky enum definitions
 %csconstvalue("0x0 << EAuxGeomPublicRenderflagBitMasks.e_Mode2D3DShift") e_Mode3D;
 %csconstvalue("0x1 << EAuxGeomPublicRenderflagBitMasks.e_Mode2D3DShift") e_Mode2D;
 %csconstvalue("0x0 << EAuxGeomPublicRenderflagBitMasks.e_AlphaBlendingShift") e_AlphaNone;
@@ -108,7 +104,7 @@ public:
 %csconstvalue("0x1 << EAuxGeomPublicRenderflagBitMasks.e_DepthTestShift") e_DepthTestOff;
 %csconstvalue("EAuxGeomPublicRenderflags_Mode2D3D.e_Mode3D|EAuxGeomPublicRenderflags_AlphaBlendMode.e_AlphaNone|EAuxGeomPublicRenderflags_DrawInFrontMode.e_DrawInFrontOff|EAuxGeomPublicRenderflags_FillMode.e_FillModeSolid|EAuxGeomPublicRenderflags_CullMode.e_CullModeBack|EAuxGeomPublicRenderflags_DepthWrite.e_DepthWriteOn|EAuxGeomPublicRenderflags_DepthTest.e_DepthTestOn") e_Def3DPublicRenderflags;
 %csconstvalue("EAuxGeomPublicRenderflags_Mode2D3D.e_Mode2D|EAuxGeomPublicRenderflags_AlphaBlendMode.e_AlphaNone|EAuxGeomPublicRenderflags_DrawInFrontMode.e_DrawInFrontOff|EAuxGeomPublicRenderflags_FillMode.e_FillModeSolid|EAuxGeomPublicRenderflags_CullMode.e_CullModeBack|EAuxGeomPublicRenderflags_DepthWrite.e_DepthWriteOn|EAuxGeomPublicRenderflags_DepthTest.e_DepthTestOn") e_Def2DPublicRenderflags;
-// ~VERY HACKY ENUM DEFINITIONS
+// ~hacky enum definitions
 %include "../../../../CryEngine/CryCommon/CryRenderer/IRenderAuxGeom.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/RenderElements/CREMesh.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/IColorGradingController.h"

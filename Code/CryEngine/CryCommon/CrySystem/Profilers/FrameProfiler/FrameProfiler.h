@@ -329,7 +329,7 @@ public:
 	EProfileDescription m_description;
 
 #if ALLOW_BROFILER
-	::Profiler::EventDescription * m_brofilerEventDescription;
+	std::shared_ptr<::Profiler::EventDescription> m_brofilerEventDescription;
 #endif
 
 	//! Tells if this FrameProfiler has yet been added to the FrameProfileSystem.

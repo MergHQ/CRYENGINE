@@ -431,12 +431,10 @@ public:
 		, m_bShot(false)
 		, m_bEnabled(false)
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 	}
 
 	~CFlowNode_WeaponSensor()
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 		Disable();
 	}
 
@@ -719,6 +717,7 @@ private:
 		RegisterWeapon(currItemId);
 		m_bEnabled = true;
 
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 	}
 
 	void Disable()
@@ -727,6 +726,8 @@ private:
 		UnRegisterItemSystem();
 		m_entityId = 0;
 		m_bEnabled = false;
+
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
 	void RegisterWeapon(EntityId itemId)
@@ -1113,7 +1114,7 @@ public:
 
 		observerParams.typeMask = Player;
 		EntityId entityToLookFor = GetPortEntityId(&m_actInfo, INP_ENTITY_TO_LOOK_FOR);
-		if (entityToLookFor != gEnv->pGame->GetIGameFramework()->GetClientActor()->GetEntityId())
+		if (entityToLookFor != gEnv->pGameFramework->GetClientActor()->GetEntityId())
 			observerParams.typeMask |= AliveAgent | General;
 
 		observerParams.skipList[0] = pObserverEntity->GetPhysics();
@@ -1543,8 +1544,8 @@ public:
 
 	~CFlowNode_EntityToScreenPos()
 	{
-		if (gEnv && gEnv->pGame)
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		if (gEnv)
+			gEnv->pGameFramework->UnregisterListener(this);
 	}
 
 	void GetConfiguration(SFlowNodeConfig& config)
@@ -1587,7 +1588,7 @@ public:
 		{
 		case eFE_Initialize:
 			m_actInfo = *pActInfo;
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+			gEnv->pGameFramework->UnregisterListener(this);
 			break;
 
 		case eFE_SetEntityId:
@@ -1598,11 +1599,11 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, EIP_ENABLE))
 			{
-				gEnv->pGame->GetIGameFramework()->RegisterListener(this, "CFlowNode_EntityToScreenPos", FRAMEWORKLISTENERPRIORITY_HUD);
+				gEnv->pGameFramework->RegisterListener(this, "CFlowNode_EntityToScreenPos", FRAMEWORKLISTENERPRIORITY_HUD);
 			}
 			if (IsPortActive(pActInfo, EIP_DISABLE))
 			{
-				gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+				gEnv->pGameFramework->UnregisterListener(this);
 			}
 			break;
 		}
@@ -1666,8 +1667,8 @@ public:
 
 	~CFlowNode_ScreenPosToWorldPos()
 	{
-		if (gEnv && gEnv->pGame)
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+		if (gEnv)
+			gEnv->pGameFramework->UnregisterListener(this);
 	}
 
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
@@ -1708,18 +1709,18 @@ public:
 		{
 		case eFE_Initialize:
 			m_actInfo = *pActInfo;
-			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+			gEnv->pGameFramework->UnregisterListener(this);
 			break;
 		case eFE_SetEntityId:
 			break;
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, EIP_ENABLE))
 			{
-				gEnv->pGame->GetIGameFramework()->RegisterListener(this, "CFlowNode_ScreenPosToWorldPos", FRAMEWORKLISTENERPRIORITY_HUD);
+				gEnv->pGameFramework->RegisterListener(this, "CFlowNode_ScreenPosToWorldPos", FRAMEWORKLISTENERPRIORITY_HUD);
 			}
 			if (IsPortActive(pActInfo, EIP_DISABLE))
 			{
-				gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+				gEnv->pGameFramework->UnregisterListener(this);
 			}
 			break;
 		}

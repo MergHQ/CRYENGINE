@@ -79,16 +79,32 @@ private:
 	void  Update();
 };
 
+SERIALIZATION_ENUM_DEFINE(EIndoorVisibility, ,
+	IndoorOnly,
+	OutdoorOnly,
+	Both
+	)
+
+SERIALIZATION_ENUM_DEFINE(EWaterVisibility, ,
+	AboveWaterOnly,
+	BelowWaterOnly,
+	Both
+	)
+
 struct SVisibilityParams
 {
 	UFloat m_viewDistanceMultiple;         // Multiply standard view distance calculated from max particle size and e_ParticlesMinDrawPixels
 	UFloat m_maxScreenSize;                // Override cvar e_ParticlesMaxDrawScreen, fade out near camera
 	UFloat m_minCameraDistance;
 	UFloat m_maxCameraDistance;
+	EIndoorVisibility m_indoorVisibility;
+	EWaterVisibility  m_waterVisibility;
 
 	SVisibilityParams()
 		: m_viewDistanceMultiple(1.0f)
 		, m_maxScreenSize(2.0f)
+		, m_indoorVisibility(EIndoorVisibility::Both)
+		, m_waterVisibility(EWaterVisibility::Both)
 	{}
 };
 
@@ -113,7 +129,7 @@ struct SComponentParams
 	_smart_ptr<IMaterial>     m_pMaterial;
 	_smart_ptr<IMeshObj>      m_pMesh;
 	string                    m_diffuseMap;
-	uint32                    m_renderObjectFlags;
+	uint64                    m_renderObjectFlags;
 	size_t                    m_instanceDataStride;
 	STextureAnimation         m_textureAnimation;
 	float                     m_scaleParticleCount;
@@ -166,6 +182,9 @@ public:
 	CParticleEffect*                      GetEffect() const             { return m_pEffect; }
 	uint                                  GetNumFeatures(EFeatureType type) const;
 	CParticleFeature*                     GetCFeature(size_t idx) const { return m_features[idx]; }
+	template<typename TFeatureType>
+	TFeatureType*                         GetCFeatureByType() const;
+	CParticleFeature*                     GetCFeatureByType(const SParticleFeatureParams* pSearchParams) const;
 
 	void                                  AddToUpdateList(EUpdateList list, CParticleFeature* pFeature);
 	TInstanceDataOffset                   AddInstanceData(size_t size);
@@ -181,6 +200,8 @@ public:
 	void                    PrepareRenderObjects(CParticleEmitter* pEmitter);
 	void                    ResetRenderObjects(CParticleEmitter* pEmitter);
 	void                    Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+	void                    RenderDeferred(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
 	friend class CParticleEffect;
@@ -193,12 +214,20 @@ private:
 	std::vector<CParticleFeature*>                       m_updateLists[EUL_Count];
 	std::vector<gpu_pfx2::IParticleFeatureGpuInterface*> m_gpuUpdateLists[EUL_Count];
 	StaticEnumArray<bool, EParticleDataType>             m_useParticleData;
+	TParticleFeaturePtr                                  m_defaultMotionFeature;
 	SEnable                                              m_enabled;
 	SEnable                                              m_visible;
 	bool                                                 m_dirty;
 
 	SRuntimeInitializationParameters                     m_runtimeInitializationParameters;
 };
+
+template<typename TFeatureType>
+ILINE TFeatureType* CParticleComponent::GetCFeatureByType() const
+{
+	const SParticleFeatureParams* pSearchParams = &TFeatureType::GetStaticFeatureParams();
+	return static_cast<TFeatureType*>(GetCFeatureByType(pSearchParams));
+}
 
 }
 

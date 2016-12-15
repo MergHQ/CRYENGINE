@@ -215,7 +215,7 @@ bool CVehicleMovementArcadeWheeled::Init(IVehicle* pVehicle, const CVehicleParam
 
 	sharedParamsName.Format("%s::%s::CVehicleMovementArcadeWheeled", pVehicle->GetEntity()->GetClass()->GetName(), pVehicle->GetModification());
 
-	ISharedParamsManager	*pSharedParamsManager = gEnv->pGame->GetIGameFramework()->GetISharedParamsManager();
+	ISharedParamsManager	*pSharedParamsManager = gEnv->pGameFramework->GetISharedParamsManager();
 
 	CRY_ASSERT(pSharedParamsManager);
 
@@ -1082,7 +1082,7 @@ void CVehicleMovementArcadeWheeled::OnEvent(EVehicleMovementEvent event, const S
 			{
 				if (IEntity* otherEntity = (IEntity*)otherPhys->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
 				{
-					if (IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(otherEntity->GetId()))
+					if (IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(otherEntity->GetId()))
 					{
 						m_collisionNorm = n * pCollision->normImpulse;
 					}
@@ -1373,7 +1373,7 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		pPhysics->GetStatus(&psv);
     	static float drawColor[4] = {1,1,1,1};
 		const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
-		gEnv->pRenderer->DrawLabelEx(worldTM.GetTranslation(), 2.0f, drawColor, true, true, "<%s> friction=%s,  enabled=%s, HB=%d", m_pVehicle->GetEntity()->GetName(), m_frictionState==k_frictionUseLowLevel ? "Low" : "Game", m_bMovementProcessingEnabled ? "on" : "off", psv.bHandBrake);
+		IRenderAuxText::DrawLabelExF(worldTM.GetTranslation(), 2.0f, drawColor, true, true, "<%s> friction=%s,  enabled=%s, HB=%d", m_pVehicle->GetEntity()->GetName(), m_frictionState==k_frictionUseLowLevel ? "Low" : "Game", m_bMovementProcessingEnabled ? "on" : "off", psv.bHandBrake);
 	}
 #endif
 
@@ -1419,40 +1419,40 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 	pe_params_car carparams;
 	pPhysics->GetParams(&carparams);
 	
-	pRenderer->Draw2dLabel(5.0f,   y, sizeL, color, false, "Car movement");
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "fake gear: %d", m_gears.curGear-1);
+	IRenderAuxText::Draw2dLabel(5.0f,   y, sizeL, color, false, "Car movement");
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "fake gear: %d", m_gears.curGear-1);
 
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "invTurningRadius: %.1f", m_invTurningRadius);
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "Speed: %.1f (%.1f km/h) (%i) (%f m/s)", speed, speed*3.6f, percent, speedMs);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "localVel: %.1f %.1f %.1f", localVel.x, localVel.y, localVel.z);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Dampers:  %.2f", m_suspDamping);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Stabi:  %.2f", m_stabi);
-	//pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "BrakeTime:  %.2f", m_brakeTimer);
-	//pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "compressionScale:  %.2f", m_handling.compressionScale);
+	IRenderAuxText::Draw2dLabel(5.0f, y += step2, size, color, false, "invTurningRadius: %.1f", m_invTurningRadius);
+	IRenderAuxText::Draw2dLabel(5.0f, y += step2, size, color, false, "Speed: %.1f (%.1f km/h) (%i) (%f m/s)", speed, speed*3.6f, percent, speedMs);
+	IRenderAuxText::Draw2dLabel(5.0f, y += step1, size, color, false, "localVel: %.1f %.1f %.1f", localVel.x, localVel.y, localVel.z);
+	IRenderAuxText::Draw2dLabel(5.0f, y += step1, size, color, false, "Dampers:  %.2f", m_suspDamping);
+	IRenderAuxText::Draw2dLabel(5.0f, y += step1, size, color, false, "Stabi:  %.2f", m_stabi);
+	//IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "BrakeTime:  %.2f", m_brakeTimer);
+	//IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "compressionScale:  %.2f", m_handling.compressionScale);
 
 	//if (m_statusDyn.submergedFraction > 0.f)
-	//	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Submerged:  %.2f", m_statusDyn.submergedFraction);
+	//	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Submerged:  %.2f", m_statusDyn.submergedFraction);
 
 	//if (m_damage > 0.f)
-	//	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "Damage:  %.2f", m_damage);  
+	//	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "Damage:  %.2f", m_damage);  
 
 	//if (Boosting())
 	//	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, green, false, "Boost:  %.2f", m_boostCounter);
 
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "using View: %s", viewName);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "using View: %s", viewName);
 
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Driver input");
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "power: %.2f", m_movementAction.power);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_movementAction.brake);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Driver input");
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "power: %.2f", m_movementAction.power);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_movementAction.brake);
 
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Car action");
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "pedal: %.2f", m_action.pedal);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f (max %.2f)", RAD2DEG(m_steering), RAD2DEG(steerMax)); 
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "steerFrac: %.2f", m_steering / DEG2RAD(m_steerMax));
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_action.bHandBrake);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Car action");
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "pedal: %.2f", m_action.pedal);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f (max %.2f)", RAD2DEG(m_steering), RAD2DEG(steerMax)); 
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "steerFrac: %.2f", m_steering / DEG2RAD(m_steerMax));
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_action.bHandBrake);
 
-	pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "steerSpeed: %.2f", steerSpeed); 
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "steerSpeed: %.2f", steerSpeed);
 
 	const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
 
@@ -1482,7 +1482,7 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 	for (int i=0; i<count; ++i)
 	{
 		{
-			pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "slip speed: %.2f", m_wheels[i].slipSpeed);
+			IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "slip speed: %.2f", m_wheels[i].slipSpeed);
 		}
 
 		if (0)
@@ -1560,7 +1560,7 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 
 	if (tScaleTotal != 0.f)
 	{
-		gEnv->pRenderer->DrawLabel(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
+		IRenderAuxText::DrawLabelF(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
 	}
 
 	if (m_pWind[0])
@@ -1569,11 +1569,11 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		pe_status_pos pos;
 		if (m_pWind[0]->GetParams(&buoy) && m_pWind[0]->GetStatus(&pos))
 		{
-			gEnv->pRenderer->DrawLabel(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
+			IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
 		}
 		if (m_pWind[1]->GetParams(&buoy) && m_pWind[1]->GetStatus(&pos))
 		{
-			gEnv->pRenderer->DrawLabel(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
+			IRenderAuxText::DrawLabelF(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
 		}
 	}
 
@@ -1623,8 +1623,8 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		pAuxGeom->DrawLine(centre2 + maxMarker*0.9f*radius, colWhite, centre2 + maxMarker*1.1f*radius, colWhite);
 		pAuxGeom->DrawLine(centre2, colRed, centre2 + rpmDial*radius*0.9f, colRed);
 		
-		pRenderer->Draw2dLabel(centre1.x-radius*0.3f, centre1.y+radius*1.4f, 1.3f, color, false, "Speed");
-		pRenderer->Draw2dLabel(centre2.x-radius*0.3f, centre2.y+radius*1.4f, 1.3f, color, false, "Rpm");
+		IRenderAuxText::Draw2dLabel(centre1.x-radius*0.3f, centre1.y+radius*1.4f, 1.3f, color, false, "Speed");
+		IRenderAuxText::Draw2dLabel(centre2.x-radius*0.3f, centre2.y+radius*1.4f, 1.3f, color, false, "Rpm");
 
 	}
 
@@ -1644,28 +1644,28 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		y = 0.8f*(float)height;
 		debugBar.m_colourBar.set(0,255,0,255);
 		debugBar.Draw(m_debugInfo->debugGearChange, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-25.f, y+20.f, 1.3f, color, false, "GearChange");
+		IRenderAuxText::Draw2dLabel(x-25.f, y+20.f, 1.3f, color, false, "GearChange");
 
 		// Draw the RPM-engine strain gauage (BLUE)
 		x-=130.f;
 		debugBar.m_colourBar.set(0,0,255,255);
 		value.Reset(fabsf(m_gears.rpmLoad));
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "RPM Load");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "RPM Load");
 
 		// Draw Forward Slip Fraction (RED-ISH)
 		x-=130.f;
 		debugBar.m_colourBar.set(150,50,50,255);
 		value.Reset(fabsf(m_movementInfo.averageSlipSpeedForward)*m_pSharedParams->soundParams.skidForwardFactor);
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Fwd SlipRatio");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Fwd SlipRatio");
 
 		// Draw Side Slip Fraction (RED-ISH)
 		x-=130.f;
 		debugBar.m_colourBar.set(150,50,50,255);
 		value.Reset(fabsf(m_movementInfo.averageSlipSpeedLateral)*m_pSharedParams->soundParams.skidLateralFactor);
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Side Slip");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Side Slip");
 		
 		// Draw Centrifugal accel (YELLOW)
 		x = 0.9f*(float)width;
@@ -1673,21 +1673,21 @@ void CVehicleMovementArcadeWheeled::DebugDrawMovement(const float deltaTime)
 		debugBar.m_colourBar.set(255,255,0,255);
 		value.Reset(fabsf(m_movementInfo.centrifugalAccel)*m_pSharedParams->soundParams.skidCentrifugalFactor);
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Centrif");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Centrif");
 
 		// Draw Effective Centrifugal accel (YELLOW)
 		x-=130.f;
 		debugBar.m_colourBar.set(255,255,0,255);
 		value.Reset(fabsf(m_movementInfo.effectiveCentrifugalAccel)*m_pSharedParams->soundParams.skidCentrifugalFactor);
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Eff. Centif");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "Eff. Centif");
 		
 		// Draw FMOD Skid Value (RED)
 		x-=130.f;
 		debugBar.m_colourBar.set(255,0,0,255);
 		value.Reset(m_movementInfo.skidValue);
 		debugBar.Draw(value, x, y, 20.f, 90.f);
-		pRenderer->Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "FMOD Skid Value");
+		IRenderAuxText::Draw2dLabel(x-20.f, y+20.f, 1.3f, color, false, "FMOD Skid Value");
 	}
 
 	pRenderer->Set2DMode(false, width, height);
@@ -1764,9 +1764,24 @@ void CVehicleMovementArcadeWheeled::GetCurrentWheelStatus(IPhysicalEntity* pPhys
 		if (pPhysics->GetStatus(&m_wheelStatus[i]) == 0)
 		{
 			new (&m_wheelStatus[i]) pe_status_wheel;
-			m_wheelStatus[i].iWheel = i;
 			m_wheelStatus[i].bContact = 0;
-			m_wheelStatus[i].w = 0.f;
+			m_wheelStatus[i].bSlip = 0;
+			m_wheelStatus[i].contactSurfaceIdx = 0;
+			m_wheelStatus[i].friction = 0.0f;
+			m_wheelStatus[i].iWheel = i;
+			m_wheelStatus[i].normContact = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].partid = 0;
+			m_wheelStatus[i].pCollider = nullptr;
+			m_wheelStatus[i].ptContact = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].r = 1.0f;
+			m_wheelStatus[i].steer = 0.0f;
+			m_wheelStatus[i].suspLen = 0.0f;
+			m_wheelStatus[i].suspLen0 = 0.0f;
+			m_wheelStatus[i].suspLenFull = 0.0f;
+			m_wheelStatus[i].torque = 0.0f;
+			m_wheelStatus[i].type = EPE_Status::ePE_status_wheel;
+			m_wheelStatus[i].velSlip = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].w = 0.0f;
 		}
 	}
 }
@@ -1973,12 +1988,15 @@ void CVehicleMovementArcadeWheeled::UpdateSounds(const float deltaTime)
 
 	if (!gEnv->IsClient())
 		return;
+
+	auto pIEntityAudioComponent = GetAudioProxy();
 	
 	if (m_isEnginePowered && !m_isEngineGoingOff)
 	{
 		float oscillation = m_gears.changedUp ? expf(-sqr(m_gears.timer*m_pSharedParams->gears.gearChangeSpeed2))*sinf(m_gears.timer*m_pSharedParams->gears.gearOscillationFrequency*gf_PI2) : 0.f;
 		m_rpmScale = clamp_tpl(m_gears.curRpm + m_pSharedParams->gears.gearOscillationAmp*oscillation, 0.f, 1.f);
-		m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+		if (pIEntityAudioComponent)
+			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 		//SetSoundParam(eSID_Run, "rpm_scale", m_rpmScale);
 		SetSoundParam(eSID_Run, "rpm_load", m_gears.rpmLoad);
 		SetSoundParam(eSID_Run, "clutch", clamp_tpl(m_gears.modulation + m_pSharedParams->gears.gearOscillationAmp2*oscillation, 0.f, 1.f));
@@ -2027,7 +2045,8 @@ void CVehicleMovementArcadeWheeled::UpdateSounds(const float deltaTime)
 	m_movementInfo.skidValue += (totalSkidValue - m_movementInfo.skidValue) * approxOneExp(deltaTime*m_pSharedParams->soundParams.skidLerpSpeed);
 	m_movementInfo.skidValue = clamp_tpl(m_movementInfo.skidValue, 0.f, 1.f);
 
-	m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], m_movementInfo.skidValue);
+	if (pIEntityAudioComponent)
+		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], m_movementInfo.skidValue);
 
 	// tire slip sound
 	{
@@ -2194,7 +2213,7 @@ void CVehicleMovementArcadeWheeled::UpdateBrakes(const float deltaTime)
 					{
 						char name[256];
 						cry_sprintf(name, "sounds/vehicles:%s:airbrake", m_pVehicle->GetEntity()->GetClass()->GetName());
-						m_pIEntityAudioProxy->PlaySound(name, Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);                
+						m_pIEntityAudioComponent->PlaySound(name, Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, eSoundSemantic_Vehicle);                
 					}          
 				}*/
 			}
@@ -2250,7 +2269,9 @@ void CVehicleMovementArcadeWheeled::UpdateSuspensionSound(const float deltaTime)
 		if (m_compressionMax > soundParams->bumpMinSusp)
 		{	
 			const float fStroke = min(1.f, soundParams->bumpIntensityMult*m_compressionMax/soundParams->bumpMinSusp);
-			m_pIEntityAudioProxy->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], fStroke);
+			auto pIEntityAudioComponent = GetAudioProxy();
+			if (pIEntityAudioComponent)
+				pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], fStroke);
 			ExecuteTrigger(eSID_Bump);
 			m_lastBump = 0;    
 		}            
@@ -3751,7 +3772,7 @@ SVehicleNetState CVehicleMovementArcadeWheeled::GetVehicleNetState()
 	SArcadeWheeledNetState arcadeWheeledNetState;
 	arcadeWheeledNetState.m_steering = m_steering;
 	SVehicleNetState state;
-	COMPILE_TIME_ASSERT(sizeof(SArcadeWheeledNetState) <= sizeof(SVehicleNetState));
+	static_assert(sizeof(SArcadeWheeledNetState) <= sizeof(SVehicleNetState), "Invalid type size!");
 	memcpy(&state, &arcadeWheeledNetState, sizeof(SArcadeWheeledNetState));
 	return state;
 }
@@ -3802,7 +3823,7 @@ void CVehicleMovementArcadeWheeled::UpdateSurfaceEffects(const float deltaTime)
 	if (DebugParticles())
 	{
 		float color[] = {1,1,1,1};
-		gEnv->pRenderer->Draw2dLabel(100, 280, 1.3f, color, false, "%s:", m_pVehicle->GetEntity()->GetName());
+		IRenderAuxText::Draw2dLabel(100, 280, 1.3f, color, false, "%s:", m_pVehicle->GetEntity()->GetName());
 	}
 #endif
 
@@ -3960,7 +3981,9 @@ void CVehicleMovementArcadeWheeled::UpdateSurfaceEffects(const float deltaTime)
 
 					if (nSurfaceStateID != INVALID_AUDIO_SWITCH_STATE_ID)
 					{
-						m_pIEntityAudioProxy->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
+						auto pIEntityAudioComponent = GetAudioProxy();
+						if (pIEntityAudioComponent)
+							pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
 					}
 				}
 			}
@@ -3982,7 +4005,7 @@ void CVehicleMovementArcadeWheeled::UpdateSurfaceEffects(const float deltaTime)
 		if (DebugParticles())
 		{
 			float color[] = {1,1,1,1};
-			gEnv->pRenderer->Draw2dLabel((float)(100+330*emitterIt->layer), (float)(300+25*emitterIt->group), 1.2f, color, false, "group %i, matId %i: sizeScale %.2f, countScale %.2f, speedScale %.2f (emit: %i)", emitterIt->group, emitterIt->matId, sizeScale, countScale, speedScale, info.pParticleEmitter?1:0);
+			IRenderAuxText::Draw2dLabel((float)(100+330*emitterIt->layer), (float)(300+25*emitterIt->group), 1.2f, color, false, "group %i, matId %i: sizeScale %.2f, countScale %.2f, speedScale %.2f (emit: %i)", emitterIt->group, emitterIt->matId, sizeScale, countScale, speedScale, info.pParticleEmitter?1:0);
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(m_pVehicle->GetEntity()->GetSlotWorldTM(emitterIt->slot).GetTranslation(), 0.2f, ColorB(0,0,255,200));
 		}
 #endif

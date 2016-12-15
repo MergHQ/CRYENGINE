@@ -2,9 +2,9 @@
 
 #include <CryCore/TypeInfo_impl.h>
 
-#include "Navigation/MNM/FixedVec3.h"
-#include "Navigation/MNM/FixedAABB.h"
-#include "Navigation/MNM/FixedVec3.h"
+#include <CryAISystem/NavigationSystem/MNMFixedAABB.h>
+#include <CryAISystem/NavigationSystem/MNMFixedVec2.h>
+#include <CryAISystem/NavigationSystem/MNMFixedVec3.h>
 
 STRUCT_INFO_T2_BEGIN(fixed_t, typename, BaseType, size_t, IntegerBitCount)
 VAR_INFO(v)

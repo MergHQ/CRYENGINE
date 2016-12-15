@@ -255,7 +255,7 @@ void DrawDebug()
 		if (savedMsgs[i].isUsed)
 		{
 			const ColorF& drawCol = (savedMsgs[i].isNew) ? fNew : fOld;
-			gEnv->pRenderer->Draw2dLabel(xPos, yPos, fontSize, drawCol, false, "%s", savedMsgs[i].savedMsg);
+			IRenderAuxText::Draw2dLabel(xPos, yPos, fontSize, drawCol, false, "%s", savedMsgs[i].savedMsg);
 			savedMsgs[i].isNew = false;
 			yPos += 20.0f;
 		}
@@ -265,7 +265,7 @@ void DrawDebug()
 		if (savedMsgs[i].isUsed)
 		{
 			const ColorF& drawCol = (savedMsgs[i].isNew) ? fNew : fOld;
-			gEnv->pRenderer->Draw2dLabel(xPos, yPos, fontSize, drawCol, false, "%s", savedMsgs[i].savedMsg);
+			IRenderAuxText::Draw2dLabel(xPos, yPos, fontSize, drawCol, false, "%s", savedMsgs[i].savedMsg);
 			savedMsgs[i].isNew = false;
 			yPos += 20.0f;
 		}

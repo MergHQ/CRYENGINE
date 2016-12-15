@@ -65,7 +65,7 @@ CMenuRender3DModelMgr::CMenuRender3DModelMgr()
 
 	m_bUserRotation = false;
 
-	gEnv->pGame->GetIGameFramework()->RegisterListener(this, "MenuRender3DModelMgr", FRAMEWORKLISTENERPRIORITY_MENU);
+	gEnv->pGameFramework->RegisterListener(this, "MenuRender3DModelMgr", FRAMEWORKLISTENERPRIORITY_MENU);
 }//-------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ CMenuRender3DModelMgr::~CMenuRender3DModelMgr()
 	stl::free_container(m_sceneSettings.lights);
 
 	// Unregister listeners
-	gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
+	gEnv->pGameFramework->UnregisterListener(this);
 }//-------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
@@ -328,12 +328,8 @@ void CMenuRender3DModelMgr::HideModel(bool bHide,int nEntityIdx,bool bUpdateMode
 		// Reset alpha
 		if(bHide)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-			if(pRenderProxy)
-			{
-				pRenderProxy->SetOpacity(0.0f);
-				renderEntityData.alpha=0.0f;
-			}
+			pEntity->SetOpacity(0.0f);
+			renderEntityData.alpha=0.0f;
 		}
 		else if((renderEntityData.flags & eRSE_HasModel) && bUpdateModelPos)
 		{
@@ -372,10 +368,10 @@ void CMenuRender3DModelMgr::ForceAnimationUpdate(IEntity* pEntity)
 			animProcessParams.zoomAdjustedDistanceFromCamera = fZoomAdjustedDistanceFromCamera;
 			pCharInst->StartAnimationProcessing(animProcessParams);
 			pCharInst->FinishAnimationComputations();
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-			if(pRenderProxy)
+			IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+			if(pIEntityRender)
 			{
-				pRenderProxy->InvalidateLocalBounds();
+				pIEntityRender->InvalidateLocalBounds();
 			}
 		}
 	}
@@ -586,7 +582,7 @@ bool CMenuRender3DModelMgr::HasCharacterStreamedIn(SRenderSingleEntityData& rd, 
 
 	if (IMaterial* pMat = pCharacter->GetIMaterial())
 	{
-		if (!pMat->IsStreamedIn(rd.firstPrecacheRoundIds, NULL))
+		if (!pMat->IsStreamedIn(rd.firstPrecacheRoundIds))
 		{
 			MR3MM_TRACE("[MR3MM] (%p) Missing character material '%s'", &rd, pMat->GetName());
 			bHasStreamed = false;
@@ -732,9 +728,9 @@ void CMenuRender3DModelMgr::PreCacheMaterial(SRenderSingleEntityData& rd, IEntit
 	const bool bFullUpdate = true;
 	const bool bDrawNear = true;
 
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-	if (pRenderProxy)
-		gEnv->p3DEngine->PrecacheRenderNode(pRenderProxy->GetRenderNode(), 0.0f);
+	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+	if (pIEntityRender && pIEntityRender->GetRenderNode())
+		gEnv->p3DEngine->PrecacheRenderNode(pIEntityRender->GetRenderNode(), 0.0f);
 
 	if (!rd.firstPrecacheRoundIds[0])
 	{
@@ -1037,18 +1033,11 @@ void CMenuRender3DModelMgr::SetAsPost3dRenderObject(IEntity* pEntity,uint8 group
 {
 	if(pEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-		if(pRenderProxy)
-		{
-			pRenderProxy->SetAsPost3dRenderObject(true,groupId,pScreenRect);
-
-			IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
-			if(pRenderNode)
-			{
-				pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS|ERF_HUD,true); // Set render node to always render
-				pRenderNode->SetLodRatio(0); // Ignore LODs
-			}
-		}
+		auto nodeParams = pEntity->GetRenderNodeParams();
+		nodeParams.additionalRenderNodeFlags |= ERF_FORCE_POST_3D_RENDER|ERF_RENDER_ALWAYS|ERF_HUD; // Set render node to always render
+		nodeParams.lodRatio = 0; // Ignore LODs
+		pEntity->SetRenderNodeParams(nodeParams);
+		//pIEntityRender->SetAsPost3dRenderObject(true,groupId,pScreenRect);
 	}
 }//-------------------------------------------------------------------------------------------------
 
@@ -1563,18 +1552,16 @@ void CMenuRender3DModelMgr::UpdateEntities()
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(renderEntityData.entityId);
 		if(pEntity)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-			if(pRenderProxy)
 			{
 				// Set silhouettes
 				const Vec3& silhouetteColor = renderEntityData.silhouetteColor;
-				pRenderProxy->SetHUDSilhouettesParams(silhouetteColor.x,silhouetteColor.y,silhouetteColor.z,0.0f);
+				//pIEntityRender->SetHUDSilhouettesParams(silhouetteColor.x,silhouetteColor.y,silhouetteColor.z,0.0f);
 			
 				// Update alpha
 				if(!pEntity->IsHidden())
 				{
 					renderEntityData.alpha = (renderEntityData.maxAlpha*invKeepOldAlphaFraction)+(renderEntityData.alpha*keepOldAlphaFraction);
-					pRenderProxy->SetOpacity(renderEntityData.alpha);
+					pEntity->SetOpacity(renderEntityData.alpha);
 				}
 			}
 

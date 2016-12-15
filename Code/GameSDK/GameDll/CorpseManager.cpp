@@ -213,18 +213,18 @@ void CCorpseManager::UpdateCorpses(float frameTime)
 			// Update thermal vision heat for corpse
 			if(m_bThermalVisionOn && (corpseAgePrevFrame < heatFadeDuration))
 			{
-				IEntityRenderProxy *pCorpseRenderProxy = static_cast<IEntityRenderProxy *>(pCorpseEntity->GetProxy(ENTITY_PROXY_RENDER));
+				IEntityRender *pCorpseRenderProxy = (pCorpseEntity->GetRenderInterface());
 				if(pCorpseRenderProxy)
 				{
 					if(m_activeCorpses[i].age < heatFadeDuration)
 					{
 						float heatFadeRatio = m_activeCorpses[i].age / heatFadeDuration;
 						float heatValue = LERP(m_activeCorpses[i].thermalVisionHeat,minHeatValue,heatFadeRatio);
-						pCorpseRenderProxy->SetVisionParams(heatValue, heatValue, heatValue, heatValue);
+						//pCorpseRenderProxy->SetVisionParams(heatValue, heatValue, heatValue, heatValue);
 					}
 					else
 					{
-						pCorpseRenderProxy->SetVisionParams(minHeatValue, minHeatValue, minHeatValue, minHeatValue);
+						//pCorpseRenderProxy->SetVisionParams(minHeatValue, minHeatValue, minHeatValue, minHeatValue);
 					}
 				}
 			}

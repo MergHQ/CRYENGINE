@@ -115,7 +115,7 @@ static CTurret* GetCTurret(IEntity& entity)
 
 	if (strcmp(entityClassName, "Turret") == 0)
 	{
-		if (IEntityProxy* pUserProxy = entity.GetProxy(ENTITY_PROXY_USER))
+		if (IEntityComponent* pUserProxy = entity.GetProxy(ENTITY_PROXY_USER))
 		{
 			CGameObject* pGameObject = static_cast<CGameObject*>(pUserProxy);
 			CTurret* pTurret = static_cast<CTurret*>(pGameObject->QueryExtension("Turret"));
@@ -158,7 +158,7 @@ CGunTurret* CFlowNode_SetTurretFaction::GetTurret(IEntity& entity) const
 	if ((strcmp(entityClassName, "AutoTurret") == 0) ||
 			(strcmp(entityClassName, "HumanTurret") == 0))
 	{
-		if (IItem* item = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(entity.GetId()))
+		if (IItem* item = gEnv->pGameFramework->GetIItemSystem()->GetItem(entity.GetId()))
 		{
 			return static_cast<CGunTurret*>(item);
 		}

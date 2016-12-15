@@ -19,7 +19,7 @@ CounterReadbackUsed::CounterReadbackUsed()
 	bufferDesc.MiscFlags = 0;
 	bufferDesc.ByteWidth = 16;
 	bufferDesc.StructureByteStride = sizeof(uint32);
-#ifdef DURANGO
+#if CRY_PLATFORM_DURANGO && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	HRESULT hr = D3DAllocateGraphicsMemory(4, 0, 0, D3D11_GRAPHICS_MEMORY_ACCESS_CPU_CACHE_COHERENT, &m_basePtr);
 	gcpRendD3D.GetPerformanceDevice().CreatePlacementBuffer(&bufferDesc, m_basePtr, &buffer);
 #else
@@ -62,7 +62,7 @@ DataReadbackUsed::DataReadbackUsed(int size, int stride)
 	readback_buffer_desc.Usage = D3D11_USAGE_STAGING;
 	readback_buffer_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 	readback_buffer_desc.StructureByteStride = stride;
-#ifdef DURANGO
+#if CRY_PLATFORM_DURANGO && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	HRESULT hr = D3DAllocateGraphicsMemory(
 	  size * stride, 0, 0, D3D11_GRAPHICS_MEMORY_ACCESS_CPU_CACHE_COHERENT, &m_basePtr);
 	gcpRendD3D.GetPerformanceDevice().CreatePlacementBuffer(&readback_buffer_desc, m_basePtr, &m_readback);

@@ -271,7 +271,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->active)
 		{
-			const char* childName = GetPortString(pActInfo, EIP_Name);
+			const string childName = GetPortString(pActInfo, EIP_Name);
 			const int childIndex = GetPortInt(pActInfo, EIP_Index);
 			const int childCount = doc->active->getChildCount();
 			XmlNodeRef ref = NULL;
@@ -447,7 +447,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->active)
 		{
-			const char* childName = GetPortString(pActInfo, EIP_Name);
+			const string childName = GetPortString(pActInfo, EIP_Name);
 			const int childCount = doc->active->getChildCount();
 			XmlNodeRef ref = NULL;
 			for (int i = 0; i < childCount; ++i)
@@ -540,7 +540,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->active)
 		{
-			const char* childName = GetPortString(pActInfo, EIP_Name);
+			const string childName = GetPortString(pActInfo, EIP_Name);
 			const int childIndex = GetPortInt(pActInfo, EIP_Index);
 			const int childCount = doc->active->getChildCount();
 			XmlNodeRef ref = NULL;

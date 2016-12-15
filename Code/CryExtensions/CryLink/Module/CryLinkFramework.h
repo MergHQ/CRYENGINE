@@ -20,6 +20,8 @@ namespace CryLinkService
 		CRYGENERATE_CLASS(CCryLinkFramework, CRY_LINK_EXTENSION_CRYCLASS_NAME, 0x8edceb7a34a74853, 0xbbd8cf7d2599eeab)
 
 	public:
+		virtual ~CCryLinkFramework();
+
 		//IFramework
 		virtual ICryLinkService& GetService() override;
 		//~IFramework

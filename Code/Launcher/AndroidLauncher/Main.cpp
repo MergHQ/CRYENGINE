@@ -5,17 +5,14 @@
 #include <CryCore/Platform/platform_impl.inl>
 #include <CryCore/Platform/AndroidSpecific.h>
 #include <android/log.h>
-#include <android_native_app_glue.h>
 #include <android/asset_manager.h>
 
 #define LOG_TAG "Cry"
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 
-#if !defined(DEDICATED_SERVER)
 #include <SDL.h>
 #include <SDL_Extension.h>
-#endif
 
 #include <CryGame/IGameStartup.h>
 #include <CryEntitySystem/IEntity.h>
@@ -25,6 +22,7 @@
 #include <netdb.h>
 #include <sys/resource.h>
 #include <sys/prctl.h>
+#include <dlfcn.h>
 
 #include <CrySystem/ParseEngineConfig.h>
 
@@ -90,7 +88,7 @@ bool IncreaseResourceMaxLimit(int iResource, rlim_t uMax)
 }
 
 #if defined(_LIB)
-extern "C" DLL_IMPORT IGameStartup* CreateGameStartup();
+extern "C" DLL_IMPORT IGameFramework* CreateGameFramework();
 #endif
 
 size_t fopenwrapper_basedir_maxsize = MAX_PATH;
@@ -158,40 +156,11 @@ static void LoadLauncherConfig(void)
 	fclose(fp);
 }
 
-static struct android_state
-{
-	bool m_isAppReady;
-	bool m_isInitialized;
-	struct android_app* m_state;
-
-	android_state() : 
-		m_isAppReady(false),
-		m_isInitialized(false),
-		m_state(NULL)
-	{
-	}
-} g_android_state;
-
-
 int RunGame(const char *) __attribute__ ((noreturn));
-
-DLL_EXPORT const char* androidGetInternalPath()
-{
-#if defined(DEDICATED_SERVER)
-	ANativeActivity* activity = g_android_state.m_state->activity;
-	return activity->internalDataPath;
-#else
-	return SDL_AndroidGetInternalStoragePath();
-#endif
-}
 
 const char* g_androidPakPath = "";
 
-DLL_EXPORT const char* androidGetPakPath()
-{
-	return g_androidPakPath;
-}
-
+#if defined(ANDROID_OBB)
 DLL_EXPORT const char* androidGetPackageName()
 {
 	return SDLExt_AndroidGetPackageName();
@@ -203,7 +172,7 @@ DLL_EXPORT const char* androidGetExpFilePath()
 
 	if (path[0] == '\0')
 	{
-		cry_strcpy(path, androidGetPakPath());
+		cry_strcpy(path, CryGetProjectStoragePath());
 		cry_strcat(path, "/Android/obb/");
 		cry_strcat(path, androidGetPackageName());
 		cry_strcat(path, "/");
@@ -233,6 +202,7 @@ DLL_EXPORT AAssetManager* androidGetAssetManager()
 {
 	return SDLExt_GetAssetManager();
 }
+#endif
 
 #if !defined(_RELEASE)
 struct COutputPrintSink : public IOutputPrintSink
@@ -246,154 +216,6 @@ struct COutputPrintSink : public IOutputPrintSink
 COutputPrintSink g_androidPrintSink;
 #endif
 
-#if defined(ANDROID_OBB)
-
-/// Return whether the given filename conforms with APK expansion file naming
-/// convension.
-///
-/// \param isMain If filename is expansion file, isMain indicate if it is main
-///               expansion file.
-/// \param filename The filename to be checked.
-///
-bool IsExpansionFileName(bool &isMain, const char *filename)
-{
-	bool possibleMain = false;
-
-	if (filename)
-	{
-		const char *src = filename;
-		const char *dst = strchr(filename, '.');
-		int length = 0;
-
-		/// Check whether filename starts with "main." or "patch."
-		if (dst)
-		{
-			length = dst - src + 1;
-			if (strncmp("main.", src, length) == 0)
-			{
-				possibleMain = true;
-			}
-			else if (!strncmp("patch.", src, length) == 0)
-			{
-				return false;
-			}
-		}
-		else {
-			return false;
-		}
-
-		/// update src and dst.
-		src = dst + 1;
-		if (src)
-		{
-			dst = strchr(src, '.');
-		}
-		else {
-			return false;
-		}
-
-		/// Check whether expansion version number is composed of digits only.
-		if (dst)
-		{
-			while (src != dst) {
-				if (!isdigit(*src)) {
-					return false;
-				}
-				++src;
-			}
-		}
-		else {
-			return false;
-		}
-
-		/// Check whether if the package name matches.
-		++src;
-		const char *package = androidGetPackageName();
-		length = strlen(package);
-
-		if (src && strncmp(src, package, length) != 0)
-		{
-			return false;
-		}
-
-		src += length;
-		if (src && *src == '.')
-		{
-			++src;
-		}
-		else
-		{
-			return false;
-		}
-
-		/// Check if the filename ends with "obb".
-		if (strcmp(src, "obb") != 0)
-		{
-			return false;
-		}
-
-		/// All the above tests are passed, the file is an expansion file.
-		if (possibleMain)
-		{
-			isMain = true;
-		}
-		return true;
-	}
-	return false;
-}
-
-/// Search main and patch expansion file in the specified directory, if Main
-/// expansion file exist, update g_androidMainExpName (and g_androidPatchExpName
-/// if patch expansion file exists), and returns true. Otherwise return false. 
-///
-bool SearchExpansionFiles(const char *path)
-{
-	struct dirent *pDirent = NULL;
-	DIR *pDir = NULL;
-	bool result = false;
-
-	if (path)
-	{
-		pDir = opendir(path);
-		if (pDir == NULL)
-		{
-			return false;
-		}
-
-		while ((pDirent = readdir(pDir)) != NULL)
-		{
-			// If it is a regular file, check the 
-			if (pDirent->d_type == DT_REG)
-			{
-				bool isMain = false;
-				const char *filename = pDirent->d_name;
-				if (IsExpansionFileName(isMain, filename))
-				{
-					if (isMain)
-					{
-						cry_strcpy(g_androidMainExpName, filename);
-						result = true;
-					}
-					else
-					{
-						cry_strcpy(g_androidPatchExpName, filename);
-					}
-				}
-			}
-		}
-		closedir(pDir);
-	}
-	// Clear g_androidPatchExpName if no Main expansion file is found, since
-	// patch expansion file cannot be used on its own.
-	if (result == false)
-	{
-		g_androidPatchExpName[0] = 0;
-	}
-
-	return result;
-}
-#endif
-
 int RunGame(const char *commandLine)
 {
 	char absPath[ MAX_PATH];
@@ -403,29 +225,17 @@ int RunGame(const char *commandLine)
 		RunGame_EXIT(1);
 	LOGI( "CWD = %s", absPath );
 
-#if !defined(DEDICATED_SERVER)
-	LOGI( "InternalStoragePath = %s", SDL_AndroidGetInternalStoragePath()); 
-	LOGI( "ExternalStoragePath = %s", SDL_AndroidGetExternalStoragePath());
-	LOGI( "ExternalStorageDirectory = %s", SDLExt_AndroidGetExternalStorageDirectory());
-#endif
-
 	// Try to figure out where the PAK files are stored
-	const char* paths[] = {
-		androidGetInternalPath(),
-		"/sdcard",
-		"/storage/sdcard",
-		"/storage/sdcard0",
-		"/storage/sdcard1",
-		"/storage/usbdrive",
+	const char* paths[] = {		
 		SDL_AndroidGetExternalStoragePath(),
 		SDLExt_AndroidGetExternalStorageDirectory(),
+		SDL_AndroidGetInternalStoragePath()  // user folder files e.g. "/data/user/0/com.crytek.cryengine/files"
 	};
 	for (int i = 0; i < CRY_ARRAY_COUNT(paths); ++i )
 	{
 		char path[1024];
 		cry_strcpy(path, paths[i]);
-#if !defined(ANDROID_OBB)
-		cry_strcat(path, "/GameSDK/GameData.pak");
+		cry_strcat(path, "/gamezero/gamedata.pak");
 		LOGI( "Searching for %s", path);
 		FILE* f = fopen( path, "r" );
 		if (f != NULL)
@@ -434,43 +244,21 @@ int RunGame(const char *commandLine)
 			fclose(f);
 			break;
 		}
-#else
-		cry_strcat(path, "/Android/obb/");
-		cry_strcat(path, androidGetPackageName());
-		cry_strcat(path, "/");
-		LOGI( "Searching expansion files in %s", path);
-		if (SearchExpansionFiles(path))
-		{
-			g_androidPakPath = paths[i];
-			break;
-		}
-#endif
 	}
 
-#if defined(ANDROID_OBB)
-	// Try to search assets within apk package.
-	AAssetManager *mgr = androidGetAssetManager();
-	if (mgr)
+	if (strcmp(CryGetProjectStoragePath(), g_androidPakPath) != 0)
 	{
-		AAsset *asset = AAssetManager_open(mgr, androidGetAssetFileName(), AASSET_MODE_STREAMING);
-		if (asset && strlen(g_androidPakPath) == 0)
-		{
-			g_androidPakPath = ".";
-		}
-		if (asset)
-		{
-			AAsset_close(asset);
-		}
+		LOGE("Hardcoded path does not match runtime identified internal storage location: Hard coded path:%s Runtime path:%s", CryGetProjectStoragePath(),  g_androidPakPath);
+		RunGame_EXIT(1);
 	}
-#endif
+
+
 	if (strlen(g_androidPakPath) == 0)
 	{
 		LOGE( "Unable to locate system.cfg files.  Exiting!" );
 		RunGame_EXIT(1);
 	}
 	LOGI( "system.cfg found in: %s", g_androidPakPath );
-
-	int exitCode = 0;
 
 	size_t uDefStackSize;
 
@@ -481,15 +269,10 @@ int RunGame(const char *commandLine)
 	SSystemInitParams startupParams;
 	memset(&startupParams, 0, sizeof(SSystemInitParams));
 
-	startupParams.hInstance = 0;
 	cry_strcpy(startupParams.szSystemCmdLine, commandLine);
-#if defined(DEDICATED_SERVER)
-	startupParams.sLogFileName = "Server.log";
-	startupParams.bDedicatedServer = true;
-#else
 	startupParams.sLogFileName = "Game.log";
-#endif
 	startupParams.pUserCallback = NULL;
+
 #if !defined(_RELEASE)
 	startupParams.pPrintSync = &g_androidPrintSink;
 #endif
@@ -504,70 +287,52 @@ int RunGame(const char *commandLine)
 	}
 #endif
 
-	chdir( androidGetPakPath() );
+	chdir( CryGetProjectStoragePath() );
 
-	HMODULE gameDll = 0;
+	HMODULE frameworkDll = 0;
 
 #ifndef _LIB
-	CEngineConfig engineCfg;
-	// workaround: compute .so name from dll name
-	string dll_name = engineCfg.m_gameDLL.c_str();
-
-	string::size_type extension_pos = dll_name.rfind(".dll");
-	string shared_lib_name = string(CrySharedLibraryPrefix) + dll_name.substr(0, extension_pos) + string(CrySharedLibraryExtension);
-
-	gameDll = CryLoadLibrary(shared_lib_name.c_str());
-	if( !gameDll )
+	frameworkDll = CryLoadLibraryDefName("CryAction");
+	if (!frameworkDll)
 	{
-		LOGE("ERROR: failed to load GAME DLL (%s)\n", dlerror());
+		LOGE("ERROR: failed to load CryAction! (%s)\n", dlerror());
 		RunGame_EXIT(1);
 	}
+
 	// get address of startup function
-	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(gameDll, "CreateGameStartup");
-	if (!CreateGameStartup)
+	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(frameworkDll, "CreateGameFramework");
+	if (!CreateGameFramework)
 	{
-		// dll is not a compatible game dll
-		CryFreeLibrary(gameDll);
-		LOGE("ERROR: Specified Game DLL is not valid!\n");
+		CryFreeLibrary(frameworkDll);
+		LOGE("ERROR: Specified CryAction library is not valid!\n");
 		RunGame_EXIT(1);
 	}
 #endif //_LIB
 
+	const char *const szAutostartLevel = linux_autoload_level[0] ? linux_autoload_level : NULL;
+
 	// create the startup interface
-	IGameStartup* pGameStartup = CreateGameStartup();
-
-	const char *const szAutostartLevel
-		= linux_autoload_level[0] ? linux_autoload_level : NULL;
-
-	if (!pGameStartup)
+	IGameFramework* pFramework = CreateGameFramework();
+	if (!pFramework)
 	{
-		LOGE("ERROR: Failed to create the GameStartup Interface!\n");
+#ifndef _LIB
+		CryFreeLibrary(frameworkDll);
+#endif
+
+		LOGE("ERROR: Failed to create the Game Framework Interface!\n");
 		RunGame_EXIT(1);
 	}
 
-	// run the game
-	IGame *game = pGameStartup->Init(startupParams);
-	if (game)
-	{
-		exitCode = pGameStartup->Run(szAutostartLevel);
-		pGameStartup->Shutdown();
-		pGameStartup = 0;
-		RunGame_EXIT(exitCode);
-	}
+	pFramework->StartEngine(startupParams);
 
-	// if initialization failed, we still need to call shutdown
-	pGameStartup->Shutdown();
-	pGameStartup = 0;
+	// The main engine loop has exited at this point, shut down
+	pFramework->ShutdownEngine();
 
-	fprintf(stderr, "ERROR: Failed to initialize the GameStartup Interface!\n");
-	RunGame_EXIT(exitCode);
-}
+#ifndef LIB
+	CryFreeLibrary(frameworkDll);
+#endif
 
-// An unreferenced function.  This function is needed to make sure that
-// unneeded functions don't make it into the final executable.  The function
-// section for this function should be removed in the final linking.
-void this_function_is_not_used(void)
-{
+	RunGame_EXIT(0);
 }
 
 //-------------------------------------------------------------------------------------
@@ -576,11 +341,9 @@ void this_function_is_not_used(void)
 //-------------------------------------------------------------------------------------
 int _main(int argc, char **argv)
 {
-	int err;
-
+	char* cmdLine = "";
 	LoadLauncherConfig();
 
-#if !defined(DEDICATED_SERVER)
 	// Initialize SDL.
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER ) < 0)
 	{
@@ -589,64 +352,6 @@ int _main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	atexit(SDL_Quit);
-#endif
-
-	// Build the command line.
-	// We'll attempt to re-create the argument quoting that was used in the
-	// command invocation.
-	size_t cmdLength = 0;
-	char needQuote[argc];
-	for (int i = 0; i < argc; ++i)
-	{
-		bool haveSingleQuote = false, haveDoubleQuote = false, haveBrackets = false;
-		bool haveSpace = false;
-		for (const char *p = argv[i]; *p; ++p)
-		{
-			switch (*p)
-			{
-			case '"': haveDoubleQuote = true; break;
-			case '\'': haveSingleQuote = true; break;
-			case '[': case ']': haveBrackets = true; break;
-			case ' ': haveSpace = true; break;
-			default: break;
-			}
-		}
-		needQuote[i] = 0;
-		if (haveSpace || haveSingleQuote || haveDoubleQuote || haveBrackets)
-		{
-			if (!haveSingleQuote)
-				needQuote[i] = '\'';
-			else if (!haveDoubleQuote)
-				needQuote[i] = '"';
-			else if (!haveBrackets)
-				needQuote[i] = '[';
-			else
-			{
-				fprintf(stderr, "CRYSIS LinuxLauncher Error: Garbled command line\n");
-				exit(EXIT_FAILURE);
-			}
-		}
-		cmdLength += strlen(argv[i]) + (needQuote[i] ? 2 : 0);
-		if (i > 0)
-			++cmdLength;
-	}
-	char cmdLine[cmdLength + 1], *q = cmdLine;
-	for (int i = 0; i < argc; ++i)
-	{
-		if (i > 0)
-			*q++ = ' ';
-		if (needQuote[i])
-			*q++ = needQuote[i];
-		strcpy(q, argv[i]);
-		q += strlen(q);
-		if (needQuote[i])
-			if (needQuote[i] == '[')
-				*q++ = ']';
-			else
-				*q++ = needQuote[i];
-	}
-	*q = 0;
-	assert(q - cmdLine == cmdLength);
 
 #if CAPTURE_REPLAY_LOG
 	// Since Android doesn't support native command line argument, please
@@ -655,114 +360,6 @@ int _main(int argc, char **argv)
 	CryGetIMemReplay()->StartOnCommandLine(cmdLine);
 #endif
 	return RunGame(cmdLine);
-}
-
-static void handle_cmd(struct android_app* app, int32_t cmd)
-{
-	/**
-	* On intial startup:
-	* APP_CMD_START
-	* APP_CMD_RESUME
-	* APP_CMD_INIT_WINDOW
-	* APP_CMD_GAINED_FOCUS
-	*
-	* On go to home:
-	* APP_CMD_PAUSE
-	* APP_CMD_LOST_FOCUS
-	* APP_CMD_TERM_WINDOW
-	* APP_CMD_SAVE_STATE
-	* APP_CMD_STOP
-	* 
-	* On return to app:
-	* APP_CMD_START
-	* APP_CMD_RESUME
-	* APP_CMD_INIT_WINDOW
-	* APP_CMD_GAINED_FOCUS
-	*/
-	switch(cmd)
-	{
-	case APP_CMD_INIT_WINDOW:
-		LOGI("Init window");
-		g_android_state.m_isAppReady = true;
-		break;
-	case APP_CMD_TERM_WINDOW:
-		LOGI("Terminiate window");
-		break;
-	case APP_CMD_GAINED_FOCUS:
-		LOGI("Gained focus");
-		break;
-	case APP_CMD_LOST_FOCUS:
-		LOGI("Lost focus");
-		break;
-	case APP_CMD_LOW_MEMORY:
-		LOGI("Low memory");
-		break;
-	case APP_CMD_START:
-		LOGI("Started");
-		break;
-	case APP_CMD_RESUME:
-		LOGI("Resumed");
-		break;
-	case APP_CMD_SAVE_STATE:
-		LOGI("Save app state");
-		break;
-	case APP_CMD_PAUSE:
-		LOGI("Paused");
-		break;
-	case APP_CMD_STOP:
-		LOGI("Stopped");
-		break;
-	default:
-		break;
-	}
-}
-
-static int32_t handle_input(struct android_app* app, AInputEvent * event)
-{
-	if(AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
-	{
-		LOGI("Motion Event (%f,%f)",AMotionEvent_getX(event,0), AMotionEvent_getY(event,0));
-		return 1;
-	}
-	return 0;
-}
-
-/**
- * Entry point when running as dedicated server.
- */
-void android_main(struct android_app* state)
-{
-	LOGI("Android Main");
-	app_dummy();
-	g_android_state.m_state = state;
-	state->onAppCmd = handle_cmd;
-	state->onInputEvent = handle_input;
-	LOGI("Loop cycle begin");
-	while(1)
-	{
-		int ident;
-		int fdesc;
-		int events;
-		struct android_poll_source* source;
-
-		while((ident = ALooper_pollAll(0, &fdesc, &events, (void**)&source)) >= 0)
-		{
-			LOGI("Loop event");
-			// process this event
-			if (source)
-				source->process(state, source);
-		}
-
-		if( g_android_state.m_isAppReady )
-		{
-			if( ! g_android_state.m_isInitialized )
-			{
-				g_android_state.m_isInitialized = true;
-				_main(0, NULL);
-			}
-		}
-	}
-	LOGI("Loop cycle end");
 }
 
 /**

@@ -108,7 +108,7 @@ IMaterial* FindFirstMaterialWithWrinkleBlending(ICharacterInstance& instance)
 //////////////////////////////////////////////////////////////////////////
 
 CRYREGISTER_CLASS(CWrinkleMapShaderParamCallback)
-CRYIMPLEMENT_AND_REGISTER_SHADERPARAMCALLBACKUI_CLASS(CWrinkleMapShaderParamCallback)
+CRYREGISTER_CLASS(CWrinkleMapShaderParamCallbackUI)
 
 //////////////////////////////////////////////////////////////////////////
 

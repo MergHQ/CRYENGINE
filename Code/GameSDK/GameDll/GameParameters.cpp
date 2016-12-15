@@ -124,7 +124,7 @@ void CGameSharedParametersStorage::GetDetailedMemoryStatics(TSharedParamsMap* pa
 		int paramSize = pSizer->GetTotalSize();
 		totalSize += paramSize;
 
-		gEnv->pRenderer->Draw2dLabel(posX, posY, 1.5f, purple, false, "%s Params: %s. Mem: %.3f Kb", typeName, iter->first.c_str(), paramSize*kbInvert);
+		IRenderAuxText::Draw2dLabel(posX, posY, 1.5f, purple, false, "%s Params: %s. Mem: %.3f Kb", typeName, iter->first.c_str(), paramSize*kbInvert);
 		posY += 15.f;
 
 		if(posY > 600.f)
@@ -138,7 +138,7 @@ void CGameSharedParametersStorage::GetDetailedMemoryStatics(TSharedParamsMap* pa
 		pSizer->Release();
 	}
 
-	gEnv->pRenderer->Draw2dLabel(50.0f, 30.0f, 1.5f, white, false, "%s Params Total: %d. Mem: %.2f Kb.", typeName, num, totalSize*kbInvert);
+	IRenderAuxText::Draw2dLabel(50.0f, 30.0f, 1.5f, white, false, "%s Params Total: %d. Mem: %.2f Kb.", typeName, num, totalSize*kbInvert);
 }
 
 void CGameSharedParametersStorage::ClearItemParamSets()

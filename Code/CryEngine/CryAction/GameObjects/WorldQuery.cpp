@@ -106,13 +106,6 @@ bool CWorldQuery::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 	return false;
 }
 
-bool CWorldQuery::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CWorldQuery::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 void CWorldQuery::Release()
 {
 	delete this;

@@ -288,7 +288,7 @@ bool CRadio::OnInputEvent( const SInputEvent &event )
 	//PlayVoice(pSoundName);
 
 	int id=(m_currentGroup*RADIO_GROUP_SIZE+iKey)-1;
-	//m_pGameRules->SendRadioMessage(gEnv->pGame->GetIGameFramework()->GetClientActor()->GetEntityId(),id);
+	//m_pGameRules->SendRadioMessage(gEnv->pGameFramework->GetClientActor()->GetEntityId(),id);
 
 	CancelRadio();
 

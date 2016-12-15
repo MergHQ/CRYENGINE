@@ -126,7 +126,7 @@ void CCustomAction::Serialize(TSerialize ser)
 		{
 			if (ser.IsReading())
 			{
-				ICustomAction* pAction = gEnv->pGame->GetIGameFramework()->GetICustomActionManager()->GetCustomActionFromLibrary(m_customActionGraphName);
+				ICustomAction* pAction = gEnv->pGameFramework->GetICustomActionManager()->GetCustomActionFromLibrary(m_customActionGraphName);
 				CRY_ASSERT(pAction);
 				if (pAction)
 					m_pFlowGraph = pAction->GetFlowGraph()->Clone();

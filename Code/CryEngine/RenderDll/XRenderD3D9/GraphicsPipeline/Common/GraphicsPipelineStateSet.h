@@ -27,11 +27,11 @@ struct SGraphicsPipelineStateDescription
 		, primitiveType(0)
 		, _dummy(0)
 	{};
-	SGraphicsPipelineStateDescription(CRenderObject* pObj, CRendElementBase* pRE, const SShaderItem& shaderItem, EShaderTechniqueID technique, EVertexFormat vertexFormat, uint32 streamMask, int primitiveType);
+	SGraphicsPipelineStateDescription(CRenderObject* pObj, CRenderElement* pRE, const SShaderItem& shaderItem, EShaderTechniqueID technique, EVertexFormat vertexFormat, uint32 streamMask, int primitiveType);
 
 	bool operator==(const SGraphicsPipelineStateDescription& other) const
 	{
-		return 0 == memcmp(this, &other, sizeof(this));
+		return 0 == memcmp(this, &other, sizeof(*this));
 	}
 };
 
@@ -55,7 +55,7 @@ struct SComputePipelineStateDescription
 
 	bool operator==(const SComputePipelineStateDescription& other) const
 	{
-		return 0 == memcmp(this, &other, sizeof(this));
+		return 0 == memcmp(this, &other, sizeof(*this));
 	}
 };
 

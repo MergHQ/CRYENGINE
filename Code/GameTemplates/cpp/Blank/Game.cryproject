@@ -1,19 +1,25 @@
 {
-	"content": {
-		"assets": ["Assets"],
-		"code": ["Code/Game/GameDll"],
-		"libs": [{
-			"name": "Game",
-			"shared": {
-				"win_x64": "bin/win_x64/Game.dll",
-				"win_x86": "bin/win_x86/Game.dll"
-			}
-		}]
-	},
-	"info": {
-		"name": "CRYENGINE SDK Example"
-	},
-	"require": {
-		"engine": "engine-5.2"
-	}
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "Blank",
+                "shared": {
+                    "win_x64": "bin/win_x64/Game.dll",
+                    "win_x86": "bin/win_x86/Game.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "Blank Game Template"
+    },
+    "require": {
+        "engine": "engine-5.3"
+    }
 }

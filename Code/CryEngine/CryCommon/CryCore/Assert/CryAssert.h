@@ -30,37 +30,67 @@ void CryLogAssert(const char*, const char*, unsigned int, bool*);
 bool CryAssert(const char*, const char*, unsigned int, bool*);
 void CryDebugBreak();
 
+namespace Detail
+{
+struct SAssertData
+{
+	char const* const szExpression;
+	char const* const szFunction;
+	char const* const szFile;
+	long const        line;
+};
+
+struct SAssertCond
+{
+	bool bIgnoreAssert;
+	bool bLogAssert;
+};
+
+void CryAssertHandler(SAssertData const&, SAssertCond&, char const* const);
+
+template<typename ... TraceArgs>
+void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szFormattedMessage, TraceArgs ... traceArgs)
+{
+	CryAssertTrace(szFormattedMessage, traceArgs ...);
+	CryAssertHandler(data, cond, nullptr);
+}
+} // namespace Detail
+
 //! The code to insert when assert is used.
-		#define CRY_ASSERT_TRACE(condition, parenthese_message)                    \
-		  do                                                                       \
-		  {                                                                        \
-		    static bool s_bIgnoreAssert = false;                                   \
-		    static bool s_bLogAssert = true;                                       \
-		    if (!(condition))                                                      \
-		    {                                                                      \
-		      CryAssertTrace parenthese_message;                                   \
-		      if (s_bLogAssert) /* Just log assert the first time */               \
-		        CryLogAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert);  \
-		      s_bLogAssert = false;                                                \
-		                                                                           \
-		      if (!s_bIgnoreAssert && CryAssertIsEnabled())                        \
-		      {                                                                    \
-		        if (CryAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert)) \
-		        {                                                                  \
-		          __debugbreak();                                                  \
-		        }                                                                  \
-		      }                                                                    \
-		    }                                                                      \
-		  } while (0)
-		#define CRY_ASSERT_MESSAGE(condition, message) CRY_ASSERT_TRACE(condition, (message))
-		#define CRY_ASSERT(condition)                  CRY_ASSERT_MESSAGE(condition, nullptr)
+		#define CRY_AUX_VA_ARGS(...)    __VA_ARGS__
+		#define CRY_AUX_STRIP_PARENS(X) X
+
+		#define CRY_ASSERT_MESSAGE(condition, ...)                             \
+		  do                                                                   \
+		  {                                                                    \
+		    IF_UNLIKELY (!(condition))                                         \
+		    {                                                                  \
+		      ::Detail::SAssertData const assertData =                         \
+		      {                                                                \
+		        # condition,                                                   \
+		        __func__,                                                      \
+		        __FILE__,                                                      \
+		        __LINE__                                                       \
+		      };                                                               \
+		      static ::Detail::SAssertCond assertCond =                        \
+		      {                                                                \
+		        false, true                                                    \
+		      };                                                               \
+		      ::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__); \
+		    }                                                                  \
+		  } while (false)
+
+		#define CRY_ASSERT_TRACE(condition, parenthese_message) \
+		  CRY_ASSERT_MESSAGE(condition, CRY_AUX_STRIP_PARENS(CRY_AUX_VA_ARGS parenthese_message))
+
+		#define CRY_ASSERT(condition) CRY_ASSERT_MESSAGE(condition, nullptr)
 
 	#else
 
 //! Use the platform's default assert.
 		#include <assert.h>
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) assert(condition)
-		#define CRY_ASSERT_MESSAGE(condition, message)          assert(condition)
+		#define CRY_ASSERT_MESSAGE(condition, ... )             assert(condition)
 		#define CRY_ASSERT(condition)                           assert(condition)
 
 	#endif
@@ -74,15 +104,28 @@ void CryDebugBreak();
 	#define BOOST_ENABLE_ASSERT_HANDLER
 namespace boost
 {
-inline void assertion_failed_msg(const char* expr, const char* msg, const char* function, const char* file, long line)
+inline void assertion_failed_msg(char const* const szExpr, char const* const szMsg, char const* const szFunction, char const* const szFile, long const line)
 {
-	CRY_ASSERT_TRACE(false, ("An assertion failed in boost: expr=%s, msg=%s, function=%s, file=%s, line=%d", expr, msg, function, file, (int)line));
+	#ifdef USE_CRY_ASSERT
+	::Detail::SAssertData const assertData =
+	{
+		szExpr, szFunction, szFile, line
+	};
+	static ::Detail::SAssertCond assertCond =
+	{
+		false, true
+	};
+	::Detail::CryAssertHandler(assertData, assertCond, szMsg);
+	#else
+	CRY_ASSERT_TRACE(false, ("An assertion failed in boost: expr=%s, msg=%s, function=%s, file=%s, line=%d", szExpr, szMsg, szFunction, szFile, (int)line));
+	#endif // USE_CRY_ASSERT
 }
-inline void assertion_failed(const char* expr, const char* function, const char* file, long line)
+
+inline void assertion_failed(char const* const szExpr, char const* const szFunction, char const* const szFile, long const line)
 {
-	assertion_failed_msg(expr, "BOOST_ASSERT", function, file, line);
+	assertion_failed_msg(szExpr, "BOOST_ASSERT", szFunction, szFile, line);
 }
-}
+} // namespace boost
 
 // Remember the value of USE_CRY_ASSERT
 	#if defined(USE_CRY_ASSERT)

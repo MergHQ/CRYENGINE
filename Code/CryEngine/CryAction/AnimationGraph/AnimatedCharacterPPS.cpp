@@ -45,7 +45,7 @@ bool CAnimatedCharacter::EvaluateSimpleMovementConditions() const
 		return true;
 
 	//--- Don't do simplified movement for the player client
-	if (m_isPlayer && m_isClient)
+	if (m_isPlayer && GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 		return false;
 
 	if ((m_pCharacter == NULL) || !m_pCharacter->IsCharacterVisible())
@@ -132,7 +132,7 @@ void CAnimatedCharacter::UpdateSkeletonSettings()
 	{
 		m_pSkeletonAnim->SetAnimationDrivenMotion(1); // Tell motion playback to calculate root/locator trajectory.
 
-		if (m_isPlayer && m_isClient)
+		if (m_isPlayer && GetEntityId() == CCryAction::GetCryAction()->GetClientActorId())
 		{
 			// Force the client skeleton to update always, even when seemingly invisible
 			m_pSkeletonPose->SetForceSkeletonUpdate(ISkeletonPose::kForceSkeletonUpdatesInfinitely);
@@ -176,7 +176,7 @@ void CAnimatedCharacter::UpdateTime()
 	if (DebugTextEnabled())
 	{
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(10, 50, 2.0f, (float*)&cWhite, false, "FrameTime Cur[%f] Prev[%f]", m_curFrameTime, m_prevFrameTime);
+		IRenderAuxText::Draw2dLabel(10, 50, 2.0f, (float*)&cWhite, false, "FrameTime Cur[%f] Prev[%f]", m_curFrameTime, m_prevFrameTime);
 	}
 #endif
 }
@@ -277,7 +277,7 @@ void CAnimatedCharacter::AcquireRequestedBehaviourMovement()
 	{
 		Ang3 requestedEntityRot(m_requestedEntityMovement.q);
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(350, 50, 2.0f, (float*)&cWhite, false, "Req Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
+		IRenderAuxText::Draw2dLabel(350, 50, 2.0f, (float*)&cWhite, false, "Req Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
 		                             m_requestedEntityMovement.t.x / m_curFrameTime, m_requestedEntityMovement.t.y / m_curFrameTime, m_requestedEntityMovement.t.z / m_curFrameTime,
 		                             RAD2DEG(requestedEntityRot.x), RAD2DEG(requestedEntityRot.y), RAD2DEG(requestedEntityRot.z));
 	}
@@ -330,7 +330,7 @@ void CAnimatedCharacter::ComputeGroundSlope()
 
 	m_pSkeletonAnim->SetDesiredMotionParam(eMotionParamID_TravelSlope, m_fGroundSlopeMoveDirSmooth, time);
 
-	float fGroundAngle = RAD2DEG(acos_tpl(clamp_tpl(rootNormal.z, -1.0f, 1.0f)));
+	float fGroundAngle = RAD2DEG(acos_tpl(rootNormal.z));
 	if (fGroundAngle > 35.0f)
 		fGroundAngle = 35.0f;
 	SmoothCD(m_fGroundSlopeSmooth, m_fGroundSlopeRate, time, fGroundAngle, 0.20f);
@@ -415,7 +415,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 		{
 			bool inAir = status.bFlying != 0;
 
-			//			gEnv->pRenderer->Draw2dLabel(10, 100, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "Ground: %f Ent: %f", groundHeight, entHeight);
+			//			IRenderAuxText::Draw2dLabel(10, 100, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "Ground: %f Ent: %f", groundHeight, entHeight);
 
 			if (inAir != m_wasInAir)
 			{
@@ -464,7 +464,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 			landingOffset -= t * m_totalLandBob;
 			snapAlignFeet = true;
 
-			//			gEnv->pRenderer->Draw2dLabel(10, 220, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "FT: %f t: %f", m_landBobTime, t);
+			//			IRenderAuxText::Draw2dLabel(10, 220, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "FT: %f t: %f", m_landBobTime, t);
 		}
 	}
 	else
@@ -986,16 +986,16 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 		static float h = 20.0f;
 
 		string name = GetEntity()->GetName();
-		gEnv->pRenderer->Draw2dLabel(x, y - h, 1.7f, (float*)&color, false, "ColliderMode (%s)", name.c_str());
+		IRenderAuxText::Draw2dLabel(x, y - h, 1.7f, (float*)&color, false, "ColliderMode (%s)", name.c_str());
 
 		int layer;
 		const char* tag;
 		for (layer = 0; layer < eColliderModeLayer_COUNT; layer++)
 		{
 			tag = (m_colliderModeLayersTag[layer] == NULL) ? "" : m_colliderModeLayersTag[layer];
-			gEnv->pRenderer->Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  %s(%d): %s(%d)   %s", g_szColliderModeLayerString[layer], layer, g_szColliderModeString[m_colliderModeLayers[layer]], m_colliderModeLayers[layer], tag);
+			IRenderAuxText::Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  %s(%d): %s(%d)   %s", g_szColliderModeLayerString[layer], layer, g_szColliderModeString[m_colliderModeLayers[layer]], m_colliderModeLayers[layer], tag);
 		}
-		gEnv->pRenderer->Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  FINAL: %s(%d)", g_szColliderModeString[newColliderMode], newColliderMode);
+		IRenderAuxText::Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  FINAL: %s(%d)", g_szColliderModeString[newColliderMode], newColliderMode);
 	}
 	//#endif
 
@@ -1069,8 +1069,9 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 		// Enable the loosen stuck checks (essentially disabling an addition sanity
 		// check in livingentity::step) for all animated characters except for the
 		// local player instance (remote clients' livingentities get synchronized).
-		pf.flagsOR = pef_pushable_by_players | (lef_loosen_stuck_checks & - (int)!m_isClient);
-		pf.flagsAND = ~(pef_ignore_areas | (lef_loosen_stuck_checks & - (int)m_isClient));
+		bool bIsClient = GetEntityId() == CCryAction::GetCryAction()->GetClientActorId();
+		pf.flagsOR = pef_pushable_by_players | (lef_loosen_stuck_checks & - (int)!bIsClient);
+		pf.flagsAND = ~(pef_ignore_areas | (lef_loosen_stuck_checks & - (int)bIsClient));
 	}
 	else if (m_colliderMode == eColliderMode_NonPushable)
 	{
@@ -1267,18 +1268,6 @@ void CAnimatedCharacter::UpdatePhysicsInertia()
 			m_fPrevInertiaAccel = dynNew.kInertiaAccel;
 			m_fPrevTimeImpulseRecover = dynNew.timeImpulseRecover;
 		}
-		else
-		{
-			CRY_ASSERT_MESSAGE(pPhysEnt->GetParams(&dynNew) && (dynNew.kInertia == m_fPrevInertia) && (dynNew.kInertiaAccel == m_fPrevInertiaAccel) && (m_fPrevTimeImpulseRecover == dynNew.timeImpulseRecover), "Some other code changed the inertia on this living entity, every inertia change for living entities should go through the animated character params!");
-		}
-
-		/*
-		   if (DebugTextEnabled())
-		   {
-		   ColorF colorWhite(1,1,1,1);
-		   gEnv->pRenderer->Draw2dLabel(500, 35, 1.0f, (float*)&colorWhite, false, "Inertia [%.2f, %.2f]", dynNew.kInertia, dynNew.kInertiaAccel);
-		   }
-		 */
 	}
 }
 

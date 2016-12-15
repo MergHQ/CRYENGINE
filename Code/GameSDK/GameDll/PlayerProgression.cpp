@@ -98,7 +98,7 @@ CPlayerProgression::~CPlayerProgression()
 		gEnv->pConsole->UnregisterVariable("pp_suitmodeAveraging");
 	}
 
-	if(IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager())
+	if(IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
 		pProfileMan->RemoveListener(this);
 	}
@@ -192,7 +192,7 @@ void CPlayerProgression::Init()
 //Post init is so all sub systems exist so you can UpdateUnlocks correctly
 void CPlayerProgression::PostInit()
 {
-	IPlayerProfileManager *pProfileMan = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager();
+	IPlayerProfileManager *pProfileMan = gEnv->pGameFramework->GetIPlayerProfileManager();
 	CRY_ASSERT(pProfileMan);
 	if(pProfileMan)
 	{
@@ -631,8 +631,8 @@ void CPlayerProgression::Event(EPPType type, bool skillKill, void *data)
 	DEBUG_XP("Event %s", s_eventName[type], m_events[type]);
 
 	// these two enums must stay in sync for the cast below to be valid
-	COMPILE_TIME_ASSERT(int(k_XPRsn_EPP_TeamRadar)==int(EPP_TeamRadar));
-	COMPILE_TIME_ASSERT(int(k_XPRsn_EPP_FlushedAssist)==int(EPP_FlushedAssist));
+	static_assert(static_cast<int>(k_XPRsn_EPP_TeamRadar) == static_cast<int>(EPP_TeamRadar), "Unexpected enum value!");
+	static_assert(static_cast<int>(k_XPRsn_EPP_FlushedAssist) == static_cast<int>(EPP_FlushedAssist), "Unexpected enum value!");
 
 	EXPReason		reason;
 	if (type==EPP_Invalid)
@@ -648,7 +648,7 @@ void CPlayerProgression::Event(EPPType type, bool skillKill, void *data)
 	int xpPointsToAward = m_events[type]; // XP Points
 
 	// Apply any active score/xp modifiers
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pActor = gEnv->pGameFramework->GetClientActor();
 	if(pActor && pActor->IsPlayer())
 	{
 		xpPointsToAward = static_cast<CPlayer*>(pActor)->GetXPBonusModifiedXP(xpPointsToAward);
@@ -776,7 +776,7 @@ void CPlayerProgression::SkillAssistEvent(CGameRules *pGameRules, IActor* pTarge
 {
 	CRY_ASSERT(pShooterActor == NULL || (pShooterActor && !pShooterActor->IsClient()));	//your client shouldn't be the shooter - this is just for assists
 
-	IActor* pClientActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
 	if(pClientActor && pTargetActor && pShooterActor)
 	{
 		CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
@@ -813,7 +813,7 @@ void CPlayerProgression::Update(CPlayer *pPlayer, float deltaTime, float fHealth
 	if (pRoundsMo && !pRoundsMo->IsInProgress())
 		return;
 
-	CRY_ASSERT_MESSAGE(pPlayer->GetEntityId() == gEnv->pGame->GetIGameFramework()->GetClientActorId() || g_pGame->IsGameSessionHostMigrating(), "CPlayerProgression::Update is happening on the wrong player entity!");
+	CRY_ASSERT_MESSAGE(pPlayer->GetEntityId() == gEnv->pGameFramework->GetClientActorId() || g_pGame->IsGameSessionHostMigrating(), "CPlayerProgression::Update is happening on the wrong player entity!");
 
 	if(fHealth > 0.0f)
 	{
@@ -822,7 +822,7 @@ void CPlayerProgression::Update(CPlayer *pPlayer, float deltaTime, float fHealth
 
 	if (m_rankUpQueuedForHUD)
 	{
-		CRY_ASSERT(pPlayer == gEnv->pGame->GetIGameFramework()->GetClientActor());
+		CRY_ASSERT(pPlayer == gEnv->pGameFramework->GetClientActor());
 
 		float newTime = m_rankUpQueuedTimer = m_rankUpQueuedTimer - deltaTime;
 
@@ -940,7 +940,7 @@ int CPlayerProgression::IncrementXP(int amount, EXPReason inReason)
 		DEBUG_XP("	Incrementing %d + %d = %d", m_xp, amount, newXp);
 		m_xp = newXp;
 
-		IActor*		pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+		IActor*		pActor = gEnv->pGameFramework->GetClientActor();
 		CPlayer*	pPlayer = NULL;
 
 		if (pActor && pActor->IsPlayer())
@@ -1598,7 +1598,7 @@ void CPlayerProgression::ResetXP()
 	
 	UpdateLocalUserData(); // static
 
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pActor = gEnv->pGameFramework->GetClientActor();
 	if(pActor && pActor->IsPlayer())
 	{
 		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
@@ -1775,7 +1775,7 @@ void CPlayerProgression::DebugFakeSetProgressions(int8 fakeRank, int8 fakeDefaul
 
 	UpdateLocalUserData(); // static
 
-	IActor*  pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor*  pActor = gEnv->pGameFramework->GetClientActor();
 	if (pActor && pActor->IsPlayer())
 	{
 		CPlayer*  pPlayer = static_cast<CPlayer*>(pActor);

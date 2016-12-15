@@ -199,7 +199,7 @@ void CPersistantDebug::UpdateTags(float frameTime, SObj& obj, bool doFirstPass)
 			clr.a *= iterList->params.fadeTime / iterList->totalFadeTime; // Apply fade out time to alpha
 
 			float clrAry[4] = { clr.r, clr.g, clr.b, clr.a };
-			gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y, fontSize, clrAry, true, "%s", iterList->params.text.c_str());
+			IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y, fontSize, clrAry, true, "%s", iterList->params.text.c_str());
 		}
 	}
 }

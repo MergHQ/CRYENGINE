@@ -54,5 +54,5 @@ public:
 	static void GenStreak(float dir, float radius, float thickness, const ColorF& clr, std::vector<SVF_P3F_C4B_T2F>& vertOut, std::vector<uint16>& idxOut);
 	static void GenSprites(std::vector<SpritePoint>& spriteList, float aspectRatio, bool packPivotPos, std::vector<SVF_P3F_C4B_T2F>& vertOut, std::vector<uint16>& idxOut);
 	static void TrianglizeQuadIndices(int quadCount, std::vector<uint16>& idxOut);
-	static void GenScreenTile(float x0, float y0, float x1, float y1, ColorF clr, int rowCount, int columnCount, std::vector<SVF_P3F_C4B_T2F>& vertOut, std::vector<uint16>& idxOut);
+	static void GenScreenTile(float x0, float y0, float x1, float y1, ColorF clr, int rowCount, int columnCount, stl::aligned_vector<SVF_P3F_C4B_T2F, CRY_PLATFORM_ALIGNMENT>& vertOut, stl::aligned_vector<uint16, CRY_PLATFORM_ALIGNMENT>& idxOut);
 };

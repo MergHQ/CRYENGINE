@@ -15,7 +15,6 @@
 #include "GameServerChannel.h"
 #include "GameClientChannel.h"
 #include "IActorSystem.h"
-#include <CryGame/IGame.h>
 #include "IGameSessionHandler.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
@@ -24,7 +23,6 @@
 #include "ScriptRMI.h"
 #include <CryPhysics/IPhysics.h>
 #include "PhysicsSync.h"
-#include <CryEntitySystem/IEntityRenderState.h>
 #include "GameClientNub.h"
 #include "GameServerNub.h"
 #include "ActionGame.h"
@@ -40,18 +38,17 @@
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>
-#include "CET_ActionMap.h"
 #include "CET_ClassRegistry.h"
 #include "CET_CVars.h"
 #include "CET_EntitySystem.h"
 #include "CET_GameRules.h"
 #include "CET_LevelLoading.h"
 #include "CET_NetConfig.h"
-#include "CET_View.h"
 
 #include "NetDebug.h"
 
 #include "NetMsgDispatcher.h"
+#include "ManualFrameStep.h"
 
 #define VERBOSE_TRACE_CONTEXT_SPAWNS 0
 
@@ -495,10 +492,6 @@ bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int e
 	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
-	if (gEnv->IsClient())
-	{
-		AddDisableActionMap(pEst, eCVS_Begin);
-	}
 	if (gEnv->IsEditor())
 	{
 		AddEstablishedContext(pEst, eCVS_EstablishContext, establishedToken);
@@ -634,18 +627,6 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	if (isClient && !HasContextFlag(eGSF_Server))
 	{
 		AddLoadLevelTasks(pEst, false, flags, &pLoadingStarted, establishedSerial, bIsChannelMigrating);
-	}
-
-	if (isClient && HasContextFlag(eGSF_InitClientActor))
-	{
-		AddInitActionMap_ClientActor(pEst, eCVS_InGame);
-		if (bIsChannelMigrating)
-		{
-			AddClearViews(pEst, eCVS_InGame);
-		}
-		AddInitView_ClientActor(pEst, eCVS_InGame);
-
-		AddDisableKeyboardMouse(pEst, eCVS_InGame);
 	}
 
 	if (isClient)
@@ -856,7 +837,7 @@ uint8 CGameContext::GetDefaultProfileForAspect(EntityId id, NetworkAspectType as
 		return ~uint8(0);
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 	if (pProxy)
 	{
 		CGameObject* pGameObject = (CGameObject*)pProxy;
@@ -958,7 +939,7 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 	case eEA_GameServerE:
 	case eEA_Aspect31:
 		{
-			IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+			IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 			if (!pProxy)
 			{
 				if (verboseLogging)
@@ -994,7 +975,7 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 					pflags |= ssf_compensate_time_diff;
 				}
 			}
-			IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+			IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 			if (pProxy)
 			{
 				NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
@@ -1008,9 +989,9 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 					return eSOR_Failed;
 				}
 			}
-			else if (pProxy = pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+			else
 			{
-				((IEntityPhysicalProxy*)pProxy)->Serialize(serialize);
+				pEntity->PhysicsNetSerialize(serialize);
 			}
 			if (m_pPhysicsSync && serialize.IsReading() && serialize.ShouldCommitValues())
 				m_pPhysicsSync->UpdatedEntity(entityId);
@@ -1018,11 +999,11 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 		break;
 	case eEA_Script:
 		{
-			IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT));
+			IEntityScriptComponent* pScriptProxy = static_cast<IEntityScriptComponent*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT));
 			if (pScriptProxy)
 			{
 				NET_PROFILE_SCOPE("ScriptProxy", serialize.IsReading());
-				pScriptProxy->Serialize(serialize);
+				pScriptProxy->GameSerialize(serialize);
 			}
 
 			NET_PROFILE_SCOPE("ScriptRMI", serialize.IsReading());
@@ -1056,7 +1037,7 @@ bool CGameContext::SetAspectProfile(EntityId id, NetworkAspectType aspectBit, ui
 
 	CRY_ASSERT(0 == (aspectBit & (aspectBit - 1)));
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 	if (pProxy)
 	{
 		CGameObject* pGameObject = (CGameObject*)pProxy;
@@ -1115,7 +1096,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 
 	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
 	assert(pGameObject);
@@ -1164,7 +1145,7 @@ void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 
 	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
 	if (pGameObject)
@@ -1188,7 +1169,7 @@ bool CGameContext::SendPostSpawnObject(EntityId id, INetChannel* pINetChannel)
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
+	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
 	if (pGameObject)
 		pGameObject->PostInitClient(channelId);
@@ -1207,9 +1188,9 @@ void CGameContext::ControlObject(EntityId id, bool bHaveControl)
 		{
 			pGameObject->SetAuthority(bHaveControl);
 		}
-		if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*) pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
 		{
-			if (IPhysicalEntity* pPhysicalEntity = pPhysicalProxy->GetPhysicalEntity())
+			IPhysicalEntity* pPhysicalEntity = pEntity->GetPhysicalEntity();
+			if (pPhysicalEntity)
 			{
 				pPhysicalEntity->SetNetworkAuthority(bHaveControl ? 1 : 0);
 			}
@@ -1512,7 +1493,7 @@ void CGameContext::OnEvent(IEntity* pEntity, SEntityEvent& event)
 			}
 #if FULL_ON_SCHEDULING
 			float drawDistance = -1;
-			if (IEntityRenderProxy* pRP = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+			if (IEntityRender* pRP = pEntity->GetRenderInterface())
 				if (IRenderNode* pRN = pRP->GetRenderNode())
 					drawDistance = pRN->GetMaxViewDist();
 			m_pNetContext->ChangedTransform(entId, pEntity->GetWorldPos(), pEntity->GetWorldRotation(), drawDistance);
@@ -1711,7 +1692,7 @@ bool CGameContext::Update()
 	float white[] = { 1, 1, 1, 1 };
 	if (!m_bHasSpawnPoint)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
+		IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
 	}
 
 	// TODO: This block should be moved into GameSDK code, since sv_pacifist is a GameSDK-only CVar
@@ -1725,7 +1706,7 @@ bool CGameContext::Update()
 		}
 		if (gEnv->IsClient() && !gEnv->bServer && pPacifist && pPacifist->GetIVal() == 1)
 		{
-			gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
+			IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
 		}
 	}
 
@@ -1804,11 +1785,11 @@ IHostMigrationEventListener::EHostMigrationReturn CGameContext::OnInitiate(SHost
 	// (such as health and ammo counts) that aren't normally transmitted
 	// to other clients). This info could be sent as part of the
 	// migrating player connection string, or a discrete message.
-	IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 	if (pGameRules)
 	{
 		pGameRules->ClearAllMigratingPlayers();
-		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 		IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 		IActor* pActor = pActorIterator->Next();
 
@@ -2023,23 +2004,6 @@ void CGameContext::EndUpdateObjects()
 	{
 		m_pPhysicsSync->OnPacketFooter();
 		m_pPhysicsSync = nullptr;
-	}
-}
-
-void CGameContext::PlayerIdSet(EntityId id)
-{
-#ifndef OLD_VOICE_SYSTEM_DEPRECATED
-	if (m_pVoiceController)
-		m_pVoiceController->PlayerIdSet(id);
-#endif
-	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
-	{
-		pEnt->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
-		if (CGameObject* pGO = (CGameObject*) pEnt->GetProxy(ENTITY_PROXY_USER))
-		{
-			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);
-			pGO->SendEvent(goe);
-		}
 	}
 }
 
@@ -2307,6 +2271,8 @@ void CGameContext::DefineContextProtocols(IProtocolBuilder* pBuilder, bool serve
 	CCryAction* cca = CCryAction::GetCryAction();
 	if (cca->GetNetMessageDispatcher())
 		cca->GetNetMessageDispatcher()->DefineProtocol(pBuilder);
+	if (cca->GetManualFrameStepController())
+		cca->GetManualFrameStepController()->DefineProtocol(pBuilder);
 }
 
 void CGameContext::PlaybackBreakage(int breakId, INetBreakagePlaybackPtr pBreakage)

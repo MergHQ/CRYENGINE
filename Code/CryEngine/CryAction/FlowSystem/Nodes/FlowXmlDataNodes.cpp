@@ -853,7 +853,7 @@ public:
 		SXmlDocument* doc;
 		if (GDM->GetXmlDocument(pActInfo->pGraph, &doc) && doc->active)
 		{
-			const char* attrName = GetPortString(pActInfo, EIP_Name);
+			const string attrName = GetPortString(pActInfo, EIP_Name);
 			const bool bHasAttr = doc->active->haveAttr(attrName);
 			if (bHasAttr)
 			{

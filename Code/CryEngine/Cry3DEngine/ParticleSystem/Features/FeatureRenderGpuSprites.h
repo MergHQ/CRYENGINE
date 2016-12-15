@@ -58,5 +58,6 @@ private:
 	EGpuSpritesSortMode   m_sortMode;
 	EGpuSpritesFacingMode m_facingMode;
 	UFloat10              m_axisScale;
+	SFloat                m_sortBias;
 };
 }

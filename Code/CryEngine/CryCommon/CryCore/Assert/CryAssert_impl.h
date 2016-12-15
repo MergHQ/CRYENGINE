@@ -74,4 +74,30 @@ bool CryAssertIsEnabled()
 	return !(bGlobalSuppress || bUserSuppress || bModuleSuppress);
 }
 
+namespace Detail
+{
+NO_INLINE
+void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szMessage)
+{
+	if (szMessage != nullptr && szMessage[0] != '\0')
+	{
+		CryAssertTrace(szMessage);
+	}
+
+	if (cond.bLogAssert) // Just log assert the first time
+	{
+		CryLogAssert(data.szExpression, data.szFile, data.line, &cond.bIgnoreAssert);
+		cond.bLogAssert = false;
+	}
+
+	if (!cond.bIgnoreAssert && CryAssertIsEnabled()) // Don't show assert once it was ignored
+	{
+		if (CryAssert(data.szExpression, data.szFile, data.line, &cond.bIgnoreAssert))
+		{
+			__debugbreak();
+		}
+	}
+}
+} // namespace Detail
+
 #endif // defined(USE_CRY_ASSERT)

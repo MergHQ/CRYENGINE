@@ -169,7 +169,6 @@ void CSvoManager::Render()
 		GetCVars()->e_svoTI_Active = 1;
 		GetCVars()->e_svoLoadTree = 1;
 		GetCVars()->e_svoRender = 1;
-		GetCVars()->e_GI = 0;
 
 		if (GetCVars()->e_svoTI_Troposphere_Active)
 		{
@@ -208,7 +207,7 @@ void CSvoManager::Render()
 				while (gSvoEnv->m_fSvoFreezeTime > 0)
 				{
 					gSvoEnv->Render();
-					CrySleep(0);
+					CrySleep(5);
 				}
 
 				gSvoEnv->m_fSvoFreezeTime = -1;
@@ -251,10 +250,6 @@ void CSvoManager::RegisterMovement(const AABB& objBox)
 {
 	if (gSvoEnv && gSvoEnv->m_pSvoRoot)
 		gSvoEnv->m_pSvoRoot->RegisterMovement(objBox);
-}
-
-void CSvoManager::Voxel_Paint(Vec3 vPaintPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fVoxelSize)
-{
 }
 
 #endif

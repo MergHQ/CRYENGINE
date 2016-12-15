@@ -92,14 +92,6 @@ bool CVehicleSeatSerializer::ReloadExtension(IGameObject* pGameObject, const SEn
 }
 
 //------------------------------------------------------------------------
-bool CVehicleSeatSerializer::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CVehicleSeatSerializer::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
-//------------------------------------------------------------------------
 void CVehicleSeatSerializer::FullSerialize(TSerialize ser)
 {
 }

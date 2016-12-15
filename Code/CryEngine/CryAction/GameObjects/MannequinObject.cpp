@@ -1,84 +1,126 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created          : 13/05/2014 by Jean Geffroy
-//
-///////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "MannequinObject.h"
 
-#include "IAnimatedCharacter.h"
+#include <CrySerialization/Decorators/Resources.h>
 
-///////////////////////////////////////////////////////////////////////////
-CMannequinObject::CMannequinObject()
-	: m_pAnimatedCharacter(NULL)
+#include "IAnimatedCharacter.h"
+#include "GameObjects/GameObject.h"
+
+CRYREGISTER_CLASS(CMannequinObject);
+
+CMannequinObject::CProperties::CProperties(CMannequinObject& owner)
+	: modelFilePath()
+	, actionControllerFilePath()
+	, animationDatabaseFilePath()
+	, ownerBackReference(owner)
 {
 }
 
-///////////////////////////////////////////////////////////////////////////
-CMannequinObject::~CMannequinObject()
+const char* CMannequinObject::CProperties::GetLabel() const
+{
+	return "Mannequin";
+}
+
+void CMannequinObject::CProperties::SerializeProperties(Serialization::IArchive& archive)
+{
+	archive(Serialization::ModelFilename(modelFilePath), "model", "Model");
+	archive(Serialization::GeneralFilename(actionControllerFilePath), "actionController", "Action Controller");
+	archive(Serialization::GeneralFilename(animationDatabaseFilePath), "animationDatabase", "Animation Database (3P)");
+
+	if (archive.isInput())
+	{
+		ownerBackReference.Reset();
+	}
+}
+
+CMannequinObject::CMannequinObject()
+	: m_properties(*this)
+	, m_pAnimatedCharacter(nullptr)
+{
+}
+
+void CMannequinObject::Initialize()
+{
+	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(GetEntity()->GetId());
+	assert(pGameObject);
+
+	pGameObject->EnablePrePhysicsUpdate(ePPU_Always);
+	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
+}
+
+void CMannequinObject::OnShutDown()
 {
 	if (m_pAnimatedCharacter)
 	{
-		IGameObject* pGameObject = GetGameObject();
+		IGameObject* pGameObject = GetEntity()->GetComponent<CGameObject>();
+		assert(pGameObject);
+		assert(pGameObject == gEnv->pGameFramework->GetGameObject(GetEntity()->GetId()));
+
 		pGameObject->ReleaseExtension("AnimatedCharacter");
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////
-bool CMannequinObject::Init(IGameObject* const pGameObject)
+void CMannequinObject::ProcessEvent(SEntityEvent& event)
 {
-	SetGameObject(pGameObject);
-
-	m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
-
-	pGameObject->EnablePrePhysicsUpdate(ePPU_Always);
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
-
-	return true;
+	switch (event.event)
+	{
+	case ENTITY_EVENT_START_LEVEL:
+	case ENTITY_EVENT_RESET:
+	case ENTITY_EVENT_EDITOR_PROPERTY_CHANGED:
+	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
+		Reset();
+		break;
+	default:
+		break;
+	}
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CMannequinObject::PostInit(IGameObject* const pGameObject)
+uint64 CMannequinObject::GetEventMask() const
 {
-	Reset();
+	return BIT64(ENTITY_EVENT_START_LEVEL)
+	       | BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED)
+	       | BIT64(ENTITY_EVENT_RESET)
+	       | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
 }
 
-///////////////////////////////////////////////////////////////////////////
+IEntityPropertyGroup* CMannequinObject::GetPropertyGroup()
+{
+	return &m_properties;
+}
+
+void CMannequinObject::GetMemoryUsage(ICrySizer* s) const
+{
+	s->Add(*this);
+}
+
 void CMannequinObject::Reset()
 {
-	IEntity* const pEntity = GetEntity();
+	IEntity& entity = *GetEntity();
 
-	// Reset AnimatedCharacter
-	if (m_pAnimatedCharacter)
+	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(entity.GetId());
+	assert(pGameObject);
+
+	if (!m_pAnimatedCharacter)
 	{
-		m_pAnimatedCharacter->ResetState();
-		m_pAnimatedCharacter->Init(GetGameObject());
-		m_pAnimatedCharacter->SetMovementControlMethods(eMCM_Animation, eMCM_Animation);
-
-		if (IActionController* pActionController = m_pAnimatedCharacter->GetActionController())
-		{
-			pActionController->GetContext().state.Clear();
-		}
+		m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
+		assert(m_pAnimatedCharacter);
 	}
 
-	// Load character
-	if (IScriptTable* pScriptTable = pEntity->GetScriptTable())
+	m_pAnimatedCharacter->ResetState();
+	m_pAnimatedCharacter->Init(pGameObject);
+	m_pAnimatedCharacter->SetMovementControlMethods(eMCM_Animation, eMCM_Animation);
+	if (IActionController* pActionController = m_pAnimatedCharacter->GetActionController())
 	{
-		SmartScriptTable propertiesTable;
-		if (pScriptTable->GetValue("Properties", propertiesTable))
-		{
-			const char* modelName = NULL;
-			if (propertiesTable->GetValue("objModel", modelName) && modelName)
-			{
-				const int slot = 0;
-				pEntity->LoadCharacter(slot, modelName);
-			}
-		}
+		pActionController->GetContext().state.Clear();
 	}
 
-	// Physicalize
+	if (!m_properties.modelFilePath.empty())
+	{
+		entity.LoadCharacter(0, m_properties.modelFilePath.c_str());
+	}
+
 	{
 		SEntityPhysicalizeParams physicsParams;
 		physicsParams.type = PE_LIVING;
@@ -104,41 +146,8 @@ void CMannequinObject::Reset()
 		playerDim.bUseCapsule = true;
 		physicsParams.pPlayerDimensions = &playerDim;
 
-		pEntity->Physicalize(physicsParams);
+		entity.Physicalize(physicsParams);
 	}
 
-	// Reset Inertia Cache after initialization of character
-	if (m_pAnimatedCharacter) m_pAnimatedCharacter->ResetInertiaCache();
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CMannequinObject::OnScriptEvent(const char* eventName)
-{
-	assert(eventName != NULL);
-
-	const bool isOnPropertyChangeEvent = 0 == strcmp(eventName, "OnPropertyChange");
-	if (isOnPropertyChangeEvent)
-	{
-		Reset();
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CMannequinObject::ProcessEvent(SEntityEvent& evt)
-{
-	switch (evt.event)
-	{
-	case ENTITY_EVENT_RESET:
-		{
-			Reset();
-		}
-		break;
-
-	case ENTITY_EVENT_SCRIPT_EVENT:
-		{
-			const char* eventName = reinterpret_cast<const char*>(evt.nParam[0]);
-			OnScriptEvent(eventName);
-		}
-		break;
-	}
+	m_pAnimatedCharacter->ResetInertiaCache();
 }

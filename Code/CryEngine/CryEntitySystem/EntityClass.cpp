@@ -20,7 +20,6 @@ CEntityClass::CEntityClass()
 {
 	m_pfnUserProxyCreate = NULL;
 	m_pUserProxyUserData = NULL;
-	m_pPropertyHandler = NULL;
 	m_pEventHandler = NULL;
 	m_pScriptFileHandler = NULL;
 
@@ -41,7 +40,7 @@ IScriptTable* CEntityClass::GetScriptTable() const
 
 	if (m_pEntityScript)
 	{
-		CEntityScript* pScript = (CEntityScript*)m_pEntityScript;
+		CEntityScript* pScript = static_cast<CEntityScript*>(m_pEntityScript);
 		pScriptTable = (pScript ? pScript->GetScriptTable() : NULL);
 	}
 
@@ -54,7 +53,7 @@ bool CEntityClass::LoadScript(bool bForceReload)
 	bool bRes = true;
 	if (m_pEntityScript)
 	{
-		CEntityScript* pScript = (CEntityScript*)m_pEntityScript;
+		CEntityScript* pScript = static_cast<CEntityScript*>(m_pEntityScript);
 		bRes = pScript->LoadScript(bForceReload);
 
 		m_bScriptLoaded = true;
@@ -62,9 +61,6 @@ bool CEntityClass::LoadScript(bool bForceReload)
 
 	if (m_pScriptFileHandler && bForceReload)
 		m_pScriptFileHandler->ReloadScriptFile();
-
-	if (m_pPropertyHandler && bForceReload)
-		m_pPropertyHandler->RefreshProperties();
 
 	if (m_pEventHandler && bForceReload)
 		m_pEventHandler->RefreshEvents();
@@ -177,30 +173,6 @@ bool CEntityClass::FindEventInfo(const char* sEvent, SEventInfo& event)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-TEntityAttributeArray& CEntityClass::GetClassAttributes()
-{
-	return m_classAttributes;
-}
-
-//////////////////////////////////////////////////////////////////////////
-const TEntityAttributeArray& CEntityClass::GetClassAttributes() const
-{
-	return m_classAttributes;
-}
-
-//////////////////////////////////////////////////////////////////////////
-TEntityAttributeArray& CEntityClass::GetEntityAttributes()
-{
-	return m_entityAttributes;
-}
-
-//////////////////////////////////////////////////////////////////////////
-const TEntityAttributeArray& CEntityClass::GetEntityAttributes() const
-{
-	return m_entityAttributes;
-}
-
 void CEntityClass::SetName(const char* sName)
 {
 	m_sName = sName;
@@ -222,11 +194,6 @@ void CEntityClass::SetUserProxyCreateFunc(UserProxyCreateFunc pFunc, void* pUser
 	m_pUserProxyUserData = pUserData;
 }
 
-void CEntityClass::SetPropertyHandler(IEntityPropertyHandler* pPropertyHandler)
-{
-	m_pPropertyHandler = pPropertyHandler;
-}
-
 void CEntityClass::SetEventHandler(IEntityEventHandler* pEventHandler)
 {
 	m_pEventHandler = pEventHandler;
@@ -235,11 +202,6 @@ void CEntityClass::SetEventHandler(IEntityEventHandler* pEventHandler)
 void CEntityClass::SetScriptFileHandler(IEntityScriptFileHandler* pScriptFileHandler)
 {
 	m_pScriptFileHandler = pScriptFileHandler;
-}
-
-IEntityPropertyHandler* CEntityClass::GetPropertyHandler() const
-{
-	return m_pPropertyHandler;
 }
 
 IEntityEventHandler* CEntityClass::GetEventHandler() const
@@ -260,16 +222,4 @@ const SEditorClassInfo& CEntityClass::GetEditorClassInfo() const
 void CEntityClass::SetEditorClassInfo(const SEditorClassInfo& editorClassInfo)
 {
 	m_EditorClassInfo = editorClassInfo;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityClass::SetEntityAttributes(const TEntityAttributeArray& attributes)
-{
-	m_entityAttributes = attributes;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityClass::SetClassAttributes(const TEntityAttributeArray& attributes)
-{
-	m_classAttributes = attributes;
 }

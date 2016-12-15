@@ -284,10 +284,10 @@ pixout BeamPS( v2f_boxIn IN )
 	#if %_RT_MSAA_SAMPLEFREQ_PASS
 			uSample = IN.uSample;
 	#endif
-		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true, true);
+		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true);
 	#else
-		//float	 sceneDepth = DecodeSceneDepth( sceneDepthSampler, float4(screenTC,1,1) );
-		float sceneDepthNorm = GetLinearDepth_ProjTC(sceneDepthSampler, float4(screenTC,1,1));
+
+		float sceneDepthNorm = GetLinearDepth(sceneLinearDepthTex, screenTC);
 		float sceneDepth = sceneDepthNorm * PS_NearFarClipDist.y;
 #endif
 
@@ -436,9 +436,9 @@ pixout BeamSamplingPS( v2f_boxIn IN )
 	#if %_RT_MSAA_SAMPLEFREQ_PASS
 			uSample = IN.uSample;
 	#endif
-		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true, true);
+		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true);
 	#else
-		float sceneDepthNorm = GetLinearDepth_ProjTC(sceneDepthSampler, float4(screenTC,1,1));
+		float sceneDepthNorm = GetLinearDepth(sceneLinearDepthTex, screenTC);
 		float sceneDepth = sceneDepthNorm * PS_NearFarClipDist.y;
 #endif 
 
@@ -550,9 +550,9 @@ pixoutDepth BeamZPS( v2f_boxIn IN )
 	#if %_RT_MSAA_SAMPLEFREQ_PASS
 			uSample = IN.uSample;
 	#endif
-		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true, true);
+		float	 sceneDepth = GetLinearDepth( GetZTargetMS( screenTC, GetMSAASampleNum(), uSample), true);
 	#else
-		float sceneDepthNorm = GetLinearDepth_ProjTC(sceneDepthSampler, float4(screenTC,1,1));
+		float sceneDepthNorm = GetLinearDepth(sceneLinearDepthTex, screenTC);
 		float sceneDepth = sceneDepthNorm * PS_NearFarClipDist.y;
 #endif 
 

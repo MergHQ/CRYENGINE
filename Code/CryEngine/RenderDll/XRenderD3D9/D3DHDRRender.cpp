@@ -69,7 +69,6 @@ public:
 	void MeasureLuminance();
 	void EyeAdaptation();
 	void BloomGeneration();
-	void ProcessLensOptics();
 	void ToneMapping();
 	void ToneMappingDebug();
 	void DrawDebugViews();
@@ -889,37 +888,6 @@ void CHDRPostProcess::BloomGeneration()
 	rd->m_RP.m_FlagsShader_RT = nPrevFlagsShaderRT;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CHDRPostProcess::ProcessLensOptics()
-{
-	gcpRendD3D->m_RP.m_PersFlags2 &= ~RBPF2_LENS_OPTICS_COMPOSITE;
-	if (CRenderer::CV_r_flares)
-	{
-		const uint32 nBatchMask = SRendItem::BatchFlags(EFSLIST_LENSOPTICS);
-		if (nBatchMask & (FB_GENERAL | FB_TRANSPARENT))
-		{
-			PROFILE_LABEL_SCOPE("LENS_OPTICS");
-
-			CTexture* pLensOpticsComposite = CTexture::s_ptexSceneTargetR11G11B10F[0];
-			gcpRendD3D->FX_ClearTarget(pLensOpticsComposite, Clr_Transparent);
-			gcpRendD3D->FX_PushRenderTarget(0, pLensOpticsComposite, 0);
-
-			gcpRendD3D->m_RP.m_PersFlags2 |= RBPF2_NOPOSTAA | RBPF2_LENS_OPTICS_COMPOSITE;
-
-			GetUtils().Log(" +++ Begin lens-optics scene +++ \n");
-			gcpRendD3D->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_GENERAL);
-			gcpRendD3D->FX_ProcessRenderList(EFSLIST_LENSOPTICS, FB_TRANSPARENT);
-			gcpRendD3D->FX_ResetPipe();
-			GetUtils().Log(" +++ End lens-optics scene +++ \n");
-
-			gcpRendD3D->FX_SetActiveRenderTargets();
-			gcpRendD3D->FX_PopRenderTarget(0);
-			gcpRendD3D->FX_SetActiveRenderTargets();
-		}
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1167,12 +1135,11 @@ void CHDRPostProcess::DrawDebugViews()
 		});
 
 		char str[256];
-		SDrawTextInfo ti;
-		ti.color[1] = 0;
+		Vec3 color(1, 0, 1);
 		cry_sprintf(str, "Average Luminance (cd/m2): %.2f", fLuminance * RENDERER_LIGHT_UNIT_SCALE);
-		rd->Draw2dText(5, 35, str, ti);
+		IRenderAuxText::Draw2dText(5, 35, color, str);
 		cry_sprintf(str, "Estimated Illuminance (lux): %.1f", fIlluminance * RENDERER_LIGHT_UNIT_SCALE);
-		rd->Draw2dText(5, 55, str, ti);
+		IRenderAuxText::Draw2dText(5, 55, color, str);
 
 		Vec4 vHDRSetupParams[5];
 		gEnv->p3DEngine->GetHDRSetupParams(vHDRSetupParams);
@@ -1184,7 +1151,7 @@ void CHDRPostProcess::DrawDebugViews()
 			float exposure = clamp_tpl<float>(sceneKey / fLuminance, vHDRSetupParams[4].y, vHDRSetupParams[4].z);
 
 			cry_sprintf(str, "Exposure: %.2f  SceneKey: %.2f", exposure, sceneKey);
-			rd->Draw2dText(5, 75, str, ti);
+			IRenderAuxText::Draw2dText(5, 75, color, str);
 		}
 		else
 		{
@@ -1194,7 +1161,7 @@ void CHDRPostProcess::DrawDebugViews()
 			float finalExposure = clamp_tpl<float>(exposure - autoCompensation, vHDRSetupParams[3].x, vHDRSetupParams[3].y);
 
 			cry_sprintf(str, "Measured EV: %.1f  Auto-EC: %.1f  Final EV: %.1f", exposure, autoCompensation, finalExposure);
-			rd->Draw2dText(5, 75, str, ti);
+			IRenderAuxText::Draw2dText(5, 75, color, str);
 		}
 
 		return;
@@ -1285,25 +1252,22 @@ void CHDRPostProcess::DrawDebugViews()
 	{
 		char str[256];
 
-		SDrawTextInfo ti;
-
 		cry_sprintf(str, "HDR rendering debug");
-		rd->Draw2dText(5, 310, str, ti);
+		IRenderAuxText::Draw2dText(5, 310, Vec3(1), str);
 
 		if (CRenderer::CV_r_HDRRangeAdapt)
 		{
 			cry_sprintf(str, "Range adaption enabled");
-			rd->Draw2dText(10, 325, str, ti);
+			IRenderAuxText::Draw2dText(10, 325, Vec3(1), str);
 		}
 	}
 
 	if (CRenderer::CV_r_HDRDebug == 4)
 	{
 		char str[256];
-		SDrawTextInfo ti;
 		cry_sprintf(str, "Avg Luminance: %.5f \nMin Luminance: %.5f \nAdapted scene scale: %.5f\nAdapted light buffer scale: %.5f",
 		            rd->m_vSceneLuminanceInfo.x, rd->m_vSceneLuminanceInfo.y, rd->m_fAdaptedSceneScale, rd->m_fAdaptedSceneScaleLBuffer);
-		rd->Draw2dText(5, 5, str, ti);
+		IRenderAuxText::Draw2dText(5, 5, Vec3(1), str);
 	}
 }
 
@@ -1506,5 +1470,4 @@ void CD3D9Renderer::FX_HDRPostProcessing()
 
 	CHDRPostProcess* pHDRPostProcess = CHDRPostProcess::GetInstance();
 	pHDRPostProcess->Render();
-	pHDRPostProcess->ProcessLensOptics();
 }

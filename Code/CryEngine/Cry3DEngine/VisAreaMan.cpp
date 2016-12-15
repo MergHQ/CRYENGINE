@@ -511,7 +511,7 @@ void CVisAreaManager::PortalsDrawDebug()
 		for (int v = 0; v < m_lstVisAreas.Count(); v++)
 		{
 			DrawBBox(m_lstVisAreas[v]->m_boxArea.min, m_lstVisAreas[v]->m_boxArea.max); //, DPRIM_SOLID_BOX);
-			GetRenderer()->DrawLabelEx((m_lstVisAreas[v]->m_boxArea.min + m_lstVisAreas[v]->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, "%s", m_lstVisAreas[v]->GetName());
+			IRenderAuxText::DrawLabelEx((m_lstVisAreas[v]->m_boxArea.min + m_lstVisAreas[v]->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, m_lstVisAreas[v]->GetName());
 
 			GetRenderer()->SetMaterialColor(0, 1, 0, 0.25f);
 			DrawBBox(m_lstVisAreas[v]->m_boxStatics, Col_LightGray);
@@ -532,7 +532,7 @@ void CVisAreaManager::PortalsDrawDebug()
 			  64);
 			DrawBBox(pPortal->m_boxArea.min, pPortal->m_boxArea.max, col);
 
-			GetRenderer()->DrawLabelEx((pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, "%s", pPortal->GetName());
+			IRenderAuxText::DrawLabelEx((pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, pPortal->GetName());
 
 			Vec3 vCenter = (pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f;
 			DrawBBox(vCenter - Vec3(0.1f, 0.1f, 0.1f), vCenter + Vec3(0.1f, 0.1f, 0.1f));
@@ -1884,8 +1884,8 @@ bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
 
 	bool bRes = FindShortestPathToVisArea(pAreaPos, pAreaBox, arrPortals, nRecursion, sv);
 
-	GetRenderer()->DrawLabel(box.GetCenter(), 2, "-%s-", bRes ? "Y" : "N");
-	GetRenderer()->DrawLabel(pos, 2, "-X-");
+	IRenderAuxText::DrawLabelF(box.GetCenter(), 2, "-%s-", bRes ? "Y" : "N");
+	IRenderAuxText::DrawLabel(pos, 2, "-X-");
 	DrawLine(pos, box.GetCenter());
 	DrawBBox(box, bRes ? Col_White : Col_NavyBlue);
 
@@ -1982,6 +1982,7 @@ void CVisAreaManager::ReleaseInactiveSegments()
 	for (int i = 0; i < m_arrDeletedVisArea.Count(); i++)
 	{
 		int nSlotID = m_arrDeletedVisArea[i];
+
 		SAFE_DELETE(m_visAreas[nSlotID]->m_pObjectsTree);
 	}
 	m_arrDeletedVisArea.Clear();
@@ -2040,22 +2041,14 @@ void CVisAreaManager::DeleteVisAreaSegment(int nSID,
 		int index = visAreasInSegment[i];
 		assert(index >= 0 && index < visAreas.Count());
 		CSWVisArea* pVisArea = (CSWVisArea*)visAreas[index];
-		pVisArea->Release();
-
-		// delete the visarea if it's ref count reaches zero
-		if (!pVisArea->NumRefs())
+		if (pVisArea->Unique())
+		{
+			lstVisAreas.Delete(pVisArea);
 			deletedVisAreas.push_back(index);
+		}
+		pVisArea->Release();		
 	}
 	visAreasInSegment.clear();
-
-	for (int i = 0; i < lstVisAreas.Count(); i++)
-	{
-		CSWVisArea* pVisArea = (CSWVisArea*)lstVisAreas[i];
-		if (!pVisArea->NumRefs())
-		{
-			lstVisAreas.Delete(i);
-		}
-	}
 }
 
 CVisArea* CVisAreaManager::FindVisAreaByGuid(VisAreaGUID guid, PodArray<CVisArea*>& lstVisAreas)

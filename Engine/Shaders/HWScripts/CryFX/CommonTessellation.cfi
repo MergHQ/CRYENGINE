@@ -209,7 +209,7 @@ struct HS_CONTROL_POINT_OUTPUT_ILLUM
 int GetPatchIDOffset()
 {
 #if %_RT_PER_INSTANCE_CB_TEMP
-	return asint(PerInstanceAlphaTest.z);
+	return Get_PerInstanceTessellationPatchId();
 #else
 	return patchIDOffset.Load(0);
 #endif

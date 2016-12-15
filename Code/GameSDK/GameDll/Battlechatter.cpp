@@ -370,7 +370,7 @@ void CBattlechatter::Event(EBattlechatter requestedChatter, EntityId actorId)
 {
 	CRY_ASSERT_MESSAGE(requestedChatter > BC_Null && requestedChatter < BC_Last, "invalid chatter index");
 
-	CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId));
+	CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 	if(pActor && UpdateEvent(requestedChatter, actorId, pActor))
 	{
 		float currentTime = gEnv->pTimer->GetCurrTime();
@@ -742,7 +742,7 @@ float CBattlechatter::GetMPTeamParam(CActor* pActor, EntityId actorId)
 
 bool CBattlechatter::IsSkillShot(const HitInfo &hitInfo)
 {
-	IActorSystem *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
+	IActorSystem *pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 	CActor* pShooterActor = static_cast<CActor*>(pActorSystem->GetActor(hitInfo.shooterId));
 
 	if (pShooterActor)
@@ -975,7 +975,7 @@ bool CBattlechatter::ShouldPlayForActor(EntityId actorId, float range) const
 //-------------------------------------------------------
 bool CBattlechatter::ShouldHearActor(EntityId actorId) const
 {
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
+	IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId);
 	if(pActor != NULL && actorId != m_clientPlayer->GetEntityId())
 	{
 		return true;
@@ -986,7 +986,7 @@ bool CBattlechatter::ShouldHearActor(EntityId actorId) const
 //-------------------------------------------------------
 float CBattlechatter::DistanceToActor(EntityId actorId) const
 {
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
+	IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId);
 	if(pActor)
 	{
 		Vec3 playerPos = m_clientPlayer->GetEntity()->GetWorldPos();
@@ -1006,7 +1006,7 @@ void CBattlechatter::UpdateActorBattlechatter(int actorIndex, const CActorManage
 	{
 		m_currentActorIndex++;
 	}
-	else if(CPlayer * pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorData.entityId)))
+	else if(CPlayer * pPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorData.entityId)))
 	{
 		UpdateVisualEvents(pPlayer, actorData);	//not in update functions list so it will trigger more often and is relatively cheap
 
@@ -1036,7 +1036,7 @@ void CBattlechatter::UpdateVisualEvents(CPlayer* pPlayer, const SActorData& rPla
 	//using whoever the actor is targetting
 	if(EntityId targettingId = pPlayer->GetCurrentTargetEntityId())
 	{
-		IActor* pTargetActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(targettingId);
+		IActor* pTargetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(targettingId);
 		if(pTargetActor != NULL)
 		{
 			if(rPlayerData.teamId == 0 || rPlayerData.teamId != g_pGame->GetGameRules()->GetTeam(targettingId))
@@ -1187,13 +1187,13 @@ float CBattlechatter::GetForwardAmount(IEntity* pEntity)
 void CBattlechatter::CmdPlay(IConsoleCmdArgs* pCmdArgs)
 {
 	float minDistance = 10000.0f;
-	CPlayer* clientPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
+	CPlayer* clientPlayer = static_cast<CPlayer*>(gEnv->pGameFramework->GetClientActor());
 	EntityId closestActorId = clientPlayer->GetEntityId();
 	CActor *pClosestActor = clientPlayer;
 
 	Vec3 clientPos = clientPlayer->GetEntity()->GetWorldPos();
 
-	IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+	IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 	while (CActor* pActor = (CActor*)pIter->Next())
 	{
 		if(pActor->GetEntityId() != clientPlayer->GetEntityId())
@@ -1549,7 +1549,7 @@ void CBattlechatter::Debug()
 			if(m_voice.size() > 0)
 			{
 				CryWatch("Battlechatter Actor Voice Test Assignment");
-				IActorIteratorPtr pIter = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+				IActorIteratorPtr pIter = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 				while (CActor* pActor = (CActor*)pIter->Next())
 				{
 					SVoiceInfo *pInfo = GetVoiceInfo(pActor->GetEntityId());
@@ -1585,7 +1585,7 @@ void CBattlechatter::Debug()
 			if(m_clientPlayer)
 				CryWatch("ShouldClientHear %d", ShouldClientHear(BC_Null));
 
-			IActorIteratorPtr actorIt = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->CreateActorIterator();
+			IActorIteratorPtr actorIt = gEnv->pGameFramework->GetIActorSystem()->CreateActorIterator();
 			IActor *actor;
 
 			while (actor=actorIt->Next())
@@ -1645,7 +1645,7 @@ void CBattlechatter::Debug()
 			for(int i = 0; i < visualChatterSize; i++)
 			{
 				const TVisualPair chatter = m_visualChatter[i];
-				IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(chatter.first);
+				IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(chatter.first);
 				if(pActor)
 				{
 					CryWatch("[%d]%s - %s", i, pActor->GetEntity()->GetName(), s_battlechatterName[chatter.second]);
@@ -1693,7 +1693,7 @@ void CBattlechatter::Debug()
 				{
 					
 					EntityId actorId = actorData.entityId;
-					CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId));
+					CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 					SVoiceInfo* pInfo = GetVoiceInfo(actorId);
 					if(pInfo && pActor != NULL)
 					{

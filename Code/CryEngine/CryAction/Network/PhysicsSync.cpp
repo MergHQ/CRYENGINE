@@ -337,7 +337,7 @@ void CPhysicsSync::OutputDebug(float deltaPhys, float deltaPing, float averagePi
 	}
 
 	if (!m_pDebugHistory)
-		m_pDebugHistory = gEnv->pGame->GetIGameFramework()->CreateDebugHistoryManager();
+		m_pDebugHistory = gEnv->pGameFramework->CreateDebugHistoryManager();
 
 	int nHist = 0;
 	IDebugHistory* pHist;

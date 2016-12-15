@@ -51,6 +51,7 @@ CVehiclePartAnimatedJoint::CVehiclePartAnimatedJoint()
 	m_baseTM.SetIdentity();
 	m_initialTM.SetIdentity();
 	m_localTM.SetIdentity();
+	m_nextFrameLocalTM.SetIdentity();
 	m_worldTM.SetIdentity();
 }
 
@@ -335,7 +336,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetLocalTM(bool relativeToParentPart,
 		else
 		{
 			const Matrix34& vehicleTM = LocalToVehicleTM(m_localTM);
-			CRY_ASSERT(vehicleTM.IsValid() && vehicleTM.IsOrthonormalRH());
+			CRY_ASSERT(vehicleTM.IsValid());
 
 			return VALIDATE_MAT(vehicleTM);
 		}
@@ -351,12 +352,10 @@ void CVehiclePartAnimatedJoint::SetLocalTM(const Matrix34& localTM)
 	if (!m_pCharInstance || m_jointId < 0)
 		return;
 
-	CRY_ASSERT(localTM.IsValid() && localTM.IsOrthonormalRH());
+	CRY_ASSERT(localTM.IsValid());
 
-	if (Matrix34::IsEquivalent(m_localTM, VALIDATE_MAT(localTM), 0.0001f))
-		return;
-
-	m_localTM = localTM;
+	m_localTM = m_nextFrameLocalTM;
+	m_nextFrameLocalTM = localTM;
 
 	if (m_pAnimatedPart)
 		m_pAnimatedPart->RotationChanged(this);
@@ -427,7 +426,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetWorldTM()
 	else
 		m_worldTM = GetEntity()->GetSlotWorldTM(m_slot);
 
-	CRY_ASSERT(m_worldTM.IsValid() && m_worldTM.IsOrthonormalRH(0.01f));
+	CRY_ASSERT(m_worldTM.IsValid());
 
 	return VALIDATE_MAT(m_worldTM);
 }
@@ -468,11 +467,11 @@ void CVehiclePartAnimatedJoint::Update(float frameTime)
 	{
 		if (m_operatorQueue)
 		{
-			m_operatorQueue->PushOrientation(m_jointId,
-			                                 IAnimationOperatorQueue::eOp_OverrideRelative, Quat(m_localTM));
+			m_operatorQueue->PushOrientation(m_jointId, IAnimationOperatorQueue::eOp_OverrideRelative, Quat(m_nextFrameLocalTM));
 			if (m_isTransMoveable)
-				m_operatorQueue->PushPosition(m_jointId,
-				                              IAnimationOperatorQueue::eOp_OverrideRelative, m_localTM.GetTranslation());
+			{
+				m_operatorQueue->PushPosition(m_jointId, IAnimationOperatorQueue::eOp_OverrideRelative, m_nextFrameLocalTM.GetTranslation());
+			}
 		}
 		pSkeletonAnim->PushPoseModifier(VEH_ANIM_POSE_MODIFIER_LAYER, m_operatorQueue, "VehiclePartAnimatedJoint");
 	}

@@ -12,8 +12,8 @@ class CAudioRayInfo
 {
 public:
 
-	CAudioRayInfo(AudioObjectId const _audioObjectId)
-		: audioObjectId(_audioObjectId)
+	CAudioRayInfo(CATLAudioObject* _pAudioObject)
+		: pAudioObject(_pAudioObject)
 		, samplePosIndex(0)
 		, numHits(0)
 		, totalSoundOcclusion(0.0f)
@@ -24,15 +24,15 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	{}
 
-	~CAudioRayInfo() {}
+	~CAudioRayInfo() = default;
 
 	void Reset();
 
-	AudioObjectId const audioObjectId;
-	size_t              samplePosIndex;
-	size_t              numHits;
-	float               totalSoundOcclusion;
-	ray_hit             hits[s_maxRayHits];
+	CATLAudioObject* pAudioObject;
+	size_t           samplePosIndex;
+	size_t           numHits;
+	float            totalSoundOcclusion;
+	ray_hit          hits[s_maxRayHits];
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	Vec3  startPosition;
@@ -50,8 +50,10 @@ public:
 	typedef std::vector<CAudioRayInfo, STLSoundAllocator<CAudioRayInfo>> RayInfoVec;
 	typedef std::vector<float, STLSoundAllocator<float>>                 RayOcclusionVec;
 
-	CPropagationProcessor(AudioObjectId const audioObjectId, CAudioObjectTransformation const& transformation);
+	CPropagationProcessor(CAudioObjectTransformation const& transformation);
 	~CPropagationProcessor();
+
+	void Init(CATLAudioObject* pAudioObject);
 
 	// PhysicsSystem callback
 	static int OnObstructionTest(EventPhys const* pEvent);

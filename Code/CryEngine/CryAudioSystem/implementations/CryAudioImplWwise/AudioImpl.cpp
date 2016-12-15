@@ -26,6 +26,7 @@
 #endif // WWISE_USE_OCULUS
 
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/IProjectManager.h>
 #include <CryThreading/IThreadManager.h>
 #include <CryThreading/IThreadConfigManager.h>
 
@@ -272,24 +273,18 @@ CAudioImpl::CAudioImpl()
 	, m_pOculusSpatializerLibrary(nullptr)
 #endif // WWISE_USE_OCULUS
 {
-	string sGameFolder = PathUtil::GetGameFolder().c_str();
-
-	if (sGameFolder.empty())
+	char const* const szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+	if (strlen(szAssetDirectory) == 0)
 	{
-		CryFatalError("<Audio>: Needs a valid game folder to proceed!");
+		CryFatalError("<Audio - Wwise>: Needs a valid asset folder to proceed!");
 	}
 
-	m_regularSoundBankFolder = sGameFolder.c_str();
+	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	m_fullImplString.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, sGameFolder.c_str(), CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
+	m_fullImplString.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, szAssetDirectory, CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
 #endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-}
-
-///////////////////////////////////////////////////////////////////////////
-CAudioImpl::~CAudioImpl()
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -819,7 +814,7 @@ EAudioRequestStatus CAudioImpl::ResetAudioObject(IAudioObject* const pAudioObjec
 {
 	SAudioObject* const pWwiseAudioObject = static_cast<SAudioObject* const>(pAudioObject);
 
-	pWwiseAudioObject->cEnvironemntImplAmounts.clear();
+	pWwiseAudioObject->environemntImplAmounts.clear();
 	pWwiseAudioObject->bNeedsToUpdateEnvironments = false;
 
 	return eAudioRequestStatus_Success;
@@ -1051,13 +1046,13 @@ EAudioRequestStatus CAudioImpl::SetEnvironment(
 		case eWwiseAudioEnvironmentType_AuxBus:
 			{
 				float const fCurrentAmount = stl::find_in_map(
-				  pWwiseAudioObject->cEnvironemntImplAmounts,
+				  pWwiseAudioObject->environemntImplAmounts,
 				  pAKEnvironmentData->busId,
 				  -1.0f);
 
 				if ((fCurrentAmount == -1.0f) || (fabs(fCurrentAmount - amount) > envEpsilon))
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts[pAKEnvironmentData->busId] = amount;
+					pWwiseAudioObject->environemntImplAmounts[pAKEnvironmentData->busId] = amount;
 					pWwiseAudioObject->bNeedsToUpdateEnvironments = true;
 				}
 
@@ -1450,16 +1445,18 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
 	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(AK_INVALID_GAME_OBJECT, false);
 	return pWwiseAudioObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
-	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(static_cast<AkGameObjectID>(audioObjectID), true);
+	static AkGameObjectID objectIDCounter = 1;
+	CRY_ASSERT(objectIDCounter != AK_INVALID_GAME_OBJECT);
+	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(static_cast<AkGameObjectID>(objectIDCounter++), true);
 	return pWwiseAudioObject;
 }
 
@@ -1470,18 +1467,18 @@ void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(0);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(0);
+	return pListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener()
 {
 	static AkUniqueID id = 0;
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(++id);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(++id);
+	return pListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1957,11 +1954,11 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 		AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
 		uint32 auxIndex = 0;
 
-		SAudioObject::TEnvironmentImplMap::iterator iEnvPair = pWwiseAudioObject->cEnvironemntImplAmounts.begin();
-		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvStart = pWwiseAudioObject->cEnvironemntImplAmounts.begin();
-		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvEnd = pWwiseAudioObject->cEnvironemntImplAmounts.end();
+		SAudioObject::TEnvironmentImplMap::iterator iEnvPair = pWwiseAudioObject->environemntImplAmounts.begin();
+		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvStart = pWwiseAudioObject->environemntImplAmounts.begin();
+		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvEnd = pWwiseAudioObject->environemntImplAmounts.end();
 
-		if (pWwiseAudioObject->cEnvironemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
+		if (pWwiseAudioObject->environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
 		{
 			for (; iEnvPair != iEnvEnd; ++auxIndex)
 			{
@@ -1973,7 +1970,7 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 				// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
 				if (fAmount == 0.0f)
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts.erase(iEnvPair++);
+					pWwiseAudioObject->environemntImplAmounts.erase(iEnvPair++);
 				}
 				else
 				{
@@ -2001,7 +1998,7 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 			{
 				if (iEnvPair->second == 0.0f)
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts.erase(iEnvPair++);
+					pWwiseAudioObject->environemntImplAmounts.erase(iEnvPair++);
 				}
 				else
 				{

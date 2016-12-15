@@ -52,6 +52,7 @@
 extern HMODULE DurangoLoadLibrary(const char* libName);
 		#define CryLoadLibrary(libName) DurangoLoadLibrary(libName)
 	#endif
+	#define CryGetCurrentModule() ::GetModuleHandle(nullptr)
 	#define CrySharedLibrarySupported true
 	#define CrySharedLibraryPrefix    ""
 	#define CrySharedLibraryExtension ".dll"
@@ -73,6 +74,7 @@ extern HMODULE DurangoLoadLibrary(const char* libName);
 
 	#define CryGetProcAddress(libHandle, procName) ::dlsym(libHandle, procName)
 	#define CryFreeLibrary(libHandle)              ::dlclose(libHandle)
+	#define CryGetCurrentModule()                  ::dlopen(NULL, RTLD_LAZY)
 	#define HMODULE void*
 static const char* gEnvName("MODULE_PATH");
 
@@ -88,18 +90,25 @@ static void SetModulePath(const char* pModulePath)
 
 static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInModulePath = true)
 {
-	//[K01]: linux version
-	if (bInModulePath)
-	{
-		char path[_MAX_PATH];
-		const char* modulePath = GetModulePath();
-		cry_sprintf(path, "%s/%s", modulePath ? modulePath : ".", libName);
-		libName = path;
-	}
+	char finalPath[_MAX_PATH] = {};
+	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryPrefix));
+	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryExtension));
+	
+#if CRY_PLATFORM_ANDROID
+	const char* libPath = bInModulePath ? (CryGetSharedLibraryStoragePath() ? CryGetSharedLibraryStoragePath() : ".") : "";
+#else
+	const char* libPath = bInModulePath ? (GetModulePath() ? GetModulePath() : ".") : "";
+#endif	
+
+	const char* filePre = strncmp(libName, CrySharedLibraryPrefix, CRY_ARRAY_COUNT(CrySharedLibraryPrefix) - 1) != 0 ? CrySharedLibraryPrefix : "";
+	const char* fileExt = strcmp(libName + strlen(libName) - (CRY_ARRAY_COUNT(CrySharedLibraryExtension) - 1), CrySharedLibraryExtension) != 0 ? CrySharedLibraryExtension : "";
+
+	cry_sprintf(finalPath, "%s%s%s%s%s", libPath, libPath ? "/" : "", filePre, libName, fileExt);
+
 	#if CRY_PLATFORM_LINUX
-	return ::dlopen(libName, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
+	return ::dlopen(finalPath, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
 	#else
-	return ::dlopen(libName, bLazy ? RTLD_LAZY : RTLD_NOW);
+	return ::dlopen(finalPath, bLazy ? RTLD_LAZY : RTLD_NOW);
 	#endif
 }
 #else
@@ -110,7 +119,13 @@ static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInM
 	#define CryGetProcAddress(libHandle, procName) NULL
 	#define CryFreeLibrary(libHandle)
 	#define GetModuleHandle(x)                     0
+
+	#ifdef CRY_PLATFORM_ORBIS
+		#define CryGetCurrentModule() ::dlopen(NULL, RTLD_LAZY)
+	#endif
+
 #endif
+
 #define CryLibraryDefName(libName)               CrySharedLibraryPrefix libName CrySharedLibraryExtension
 #define CryLoadLibraryDefName(libName)           CryLoadLibrary(CryLibraryDefName(libName))
 

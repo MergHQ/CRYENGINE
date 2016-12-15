@@ -109,7 +109,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_size.AddToComponent(pComponent, this, EPDT_Size);
-		pParams->m_maxParticleSize = max(pParams->m_maxParticleSize, m_size.GetBaseValue());
+		pParams->m_maxParticleSize = max(pParams->m_maxParticleSize, m_size.GetValueRange().end);
 
 		if (auto gpuInt = GetGpuInterface())
 		{

@@ -9,16 +9,10 @@ CMovementExtension::CMovementExtension()
 {
 }
 
-CMovementExtension::~CMovementExtension()
-{
-}
-
-void CMovementExtension::Release()
+void CMovementExtension::OnShutDown()
 {
 	gEnv->pConsole->UnregisterVariable("gamezero_pl_movementSpeed", true);
 	gEnv->pConsole->UnregisterVariable("gamezero_pl_boostMultiplier", true);
-
-	ISimpleExtension::Release();
 }
 
 void CMovementExtension::PostInit(IGameObject* pGameObject)

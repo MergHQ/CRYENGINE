@@ -1,0 +1,29 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'jpeg', 
+		vs_filter = 'Libs',
+		file_list = 'jpeg.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		module_provides = dict(
+			includes = [ Path('Code/SDKs/jpeg')],
+		),
+
+		win_cflags = ['/w'],
+		win_cxxflags = ['/w'],
+
+		durango_cflags = ['/w'],
+		durango_cxxflags = ['/w'],
+		
+		defines = ['STDC_HEADERS=1'],
+		orbis_defines = ['NO_GETENV'],
+
+		linux_cflags = ['-Wno-error=main', '-Wno-shift-negative-value', '-Wno-main'],
+		linux_cxxflags = ['-Wno-error=main', '-Wno-shift-negative-value', '-Wno-main'],
+
+		android_cflags = ['-Wno-error=main'],
+		android_cxxflags = ['-Wno-error=main'],
+	)

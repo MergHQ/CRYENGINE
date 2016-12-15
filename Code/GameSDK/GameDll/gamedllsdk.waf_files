@@ -1287,9 +1287,7 @@
 	  "Utility":
 	  [
 			"StatsAgentPipe.cpp",
-			"StatsAgentPipe.h",
-			"Utility/ManualFrameStep.h",
-			"Utility/ManualFrameStep.cpp"
+			"StatsAgentPipe.h"
 	  ]
 		},
 		"CryGameSDKDLL_uber_23.cpp":{

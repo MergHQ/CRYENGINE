@@ -79,34 +79,17 @@ def load_release_cryengine_settings(conf):
 	
 #############################################################################
 @conf	
-def set_editor_flags(self, kw):
+def set_editor_module_flags(self, kw):
 
-	includes = ['.']		
-
-	# [HACK]: EditorQT conversion
-	spec = self.options.project_spec
-	platform = self.env['PLATFORM']
-	configuration = self.GetConfiguration(kw['target'])
-	
-	if platform and (platform == 'project_generator' or self.cmd == 'generate_uber_files' or 'SandboxLegacy' in self.spec_modules(spec, platform, configuration)):
-		includes += [
-		self.CreateRootRelativePath('Code/Sandbox/Editor'),
-		self.CreateRootRelativePath('Code/Sandbox/Editor/Include')
-		]	
-	else:		
-		includes += [
-		self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
-		self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')		
-		]
-		kw['defines'] += ['SANDBOX_QT']
-
-	kw['includes'] = includes + [
+	kw['includes'] = ['.'] + kw['includes'] # ensure module folder is included first
+	kw['includes'] += [
+		self.CreateRootRelativePath('Code/Sandbox/EditorInterface'),
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon') ,
 		self.CreateRootRelativePath('Code/SDKs/boost'),
 		self.CreateRootRelativePath('Code/SDKs/yasli'),
 		self.CreateRootRelativePath('Code/Libs/yasli'),
-		] + kw['includes']
+		]
 	
 	if 'priority_includes' in kw:
 		kw['includes'] = kw['priority_includes'] + kw['includes']
@@ -122,6 +105,22 @@ def set_editor_flags(self, kw):
 	kw['features'] += ['qt']
 	kw['use_module'] += [ 'yasli' ]
 	kw['module_extensions'] += [ 'python27' ]
+
+	kw['use'] += ['CryQt']
+	kw['includes'] += [self.CreateRootRelativePath('Code/Sandbox/Libs/CryQt')]
+	
+#############################################################################
+@conf	
+def set_editor_flags(self, kw):
+
+	set_editor_module_flags(self, kw)
+	
+	kw['includes'] += [
+	self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
+	self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')
+	]
+	
+	kw['defines'] += ['SANDBOX_EDITOR_IMPL'] #HACK temporary to achieve GetIEditor() returning IEditorImpl for sandbox only
 
 ###############################################################################
 @conf	

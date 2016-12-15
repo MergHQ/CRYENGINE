@@ -1,6 +1,7 @@
 %include "CryEngine.swig"
 
 %import "CryCommon.i"
+%import "CryEntitySystem.i"
 
 %{
 #include <CryEntitySystem/IEntity.h>
@@ -34,7 +35,18 @@
 #include <CryAISystem/MovementRequest.h>
 #include <CryAISystem/MovementRequestID.h>
 #include <CryAISystem/IMNM.h>
+
+#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
+#include <CryAISystem/BehaviorTree/Node.h>
+
+using namespace BehaviorTree;
 %}
+
+%include "../../../../CryEngine/CryCommon/CryAISystem/NavigationSystem/NavigationIdTypes.h"
+%template(NavigationMeshID) TNavigationID<MeshIDTag>;
+%template(NavigationAgentTypeID) TNavigationID<AgentTypeIDTag>;
+%template(NavigationVolumeID) TNavigationID<VolumeIDTag>;
+%template(TileGeneratorExtensionID) TNavigationID<TileGeneratorExtensionIDTag>;
 %feature("director") IAISystemListener;
 %include "../../../../CryEngine/CryCommon/CryAISystem/AISystemListener.h"
 %feature("director") IAIEventListener;
@@ -81,6 +93,27 @@
 %include "../../../../CryEngine/CryCommon/CryAISystem/INavigation.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/INavigationSystem.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/MovementRequest.h"
+%feature("director") CLastingMovementRequest;
+class CLastingMovementRequest : public MovementRequest
+{
+public:
+	CLastingMovementRequest()
+	{
+		callback = functor(*this, &CLastingMovementRequest::OnMovementRequestCallback);
+	}
+	virtual void OnMovementRequestCallback(const MovementRequestResult& requestResult) { }
+};
+%{
+class CLastingMovementRequest : public MovementRequest
+{
+public:
+	CLastingMovementRequest()
+	{
+		callback = functor(*this, &CLastingMovementRequest::OnMovementRequestCallback);
+	}
+	virtual void OnMovementRequestCallback(const MovementRequestResult& requestResult) { }
+};
+%}
 %include "../../../../CryEngine/CryCommon/CryAISystem/MovementRequestID.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/MovementBlock.h"
 %ignore MovementStyle::ConstructDictionariesIfNotAlreadyDone;
@@ -89,3 +122,34 @@
 %include "../../../../CryEngine/CryCommon/CryAISystem/IOffMeshNavigationManager.h"
 %typemap(csbase) MNM::Constants::Edges "uint"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IMNM.h"
+
+%ignore BehaviorTree::BehaviorVariablesContext;
+%ignore BehaviorTree::UpdateContext::variables;
+%feature("director") INode;
+%include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/IBehaviorTree.h"
+%include <typemaps.i>
+%apply stack_string *OUTPUT { stack_string& debugText };
+%feature("director") NodeProxy;
+%include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/Node.h"
+namespace BehaviorTree
+{
+class NodeProxy : public Node
+{
+	struct RuntimeData {};
+public:
+	NodeProxy() {}
+	virtual void HandleEvent(const EventContext& context, const Event& event) {}
+};
+}
+%{
+namespace BehaviorTree
+{
+class NodeProxy : public Node
+{
+	struct RuntimeData {};
+public:
+	NodeProxy() {}
+	virtual void HandleEvent(const EventContext& context, const Event& event) {}
+};
+}
+%}

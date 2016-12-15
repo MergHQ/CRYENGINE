@@ -3,7 +3,7 @@
 #ifndef __CREMESH_H__
 #define __CREMESH_H__
 
-class CREMesh : public CRendElementBase
+class CREMesh : public CRenderElement
 {
 public:
 

@@ -74,7 +74,7 @@ CFlowVehicleEntityAttachment::CFlowVehicleEntityAttachment(SActivationInfo* pAct
 
 	if (IEntity* pEntity = pActivationInfo->pEntity)
 	{
-		IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+		IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 		assert(pVehicleSystem);
 
 		if (pVehicleSystem->GetVehicle(pEntity->GetId()))
@@ -125,7 +125,7 @@ void CFlowVehicleEntityAttachment::ProcessEvent(EFlowEvent flowEvent, SActivatio
 	{
 		if (IEntity* pEntity = pActivationInfo->pEntity)
 		{
-			IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+			IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 			assert(pVehicleSystem);
 
 			if (pEntity->GetId() != m_vehicleId)
@@ -163,7 +163,7 @@ IVehicle* CFlowVehicleEntityAttachment::GetVehicle()
 	if (!m_vehicleId)
 		return NULL;
 
-	IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	assert(pVehicleSystem);
 
 	return pVehicleSystem->GetVehicle(m_vehicleId);
@@ -175,7 +175,7 @@ CVehicleActionEntityAttachment* CFlowVehicleEntityAttachment::GetVehicleAction()
 	if (!m_vehicleId)
 		return NULL;
 
-	IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+	IVehicleSystem* pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 	assert(pVehicleSystem);
 
 	if (IVehicle* pVehicle = pVehicleSystem->GetVehicle(m_vehicleId))
@@ -293,7 +293,7 @@ public:
 		}
 
 		IVehicle* pVehicle;
-		pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_entityId);
+		pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_entityId);
 
 		if (pVehicle)
 		{
@@ -309,7 +309,7 @@ public:
 		m_bActive = bActive;
 
 		IVehicle* pVehicle;
-		pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_entityId);
+		pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_entityId);
 
 		if (bActive)
 		{
@@ -352,7 +352,7 @@ public:
 				return;
 
 			IVehicle* pVehicle;
-			pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle || pVehicle->IsDestroyed())
 			{
 				return;
@@ -418,7 +418,7 @@ public:
 			}
 
 			IVehicle* pVehicle;
-			pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
 			if (!pVehicle || pVehicle->IsDestroyed())
 			{
 				SetActive(false);
@@ -462,7 +462,7 @@ public:
 		}
 		else if (event == eVE_Hit) // Needed to detect collision in C2 code since above is disabled
 		{
-			IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+			IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 			if (pGameRules)
 			{
 				const int collisionHitType = pGameRules->GetHitTypeId("collision");
@@ -563,7 +563,7 @@ public:
 				if (!pActInfo->pEntity)
 					return;
 
-				pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+				pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 				pVehicle = pVehicleSystem->GetVehicle(pActInfo->pEntity->GetId());
 
 				if (!pVehicleSystem || !pVehicle)
@@ -584,9 +584,7 @@ public:
 
 		case eFE_Update:
 			{
-				IRenderer* pRenderer = gEnv->pRenderer;
-
-				pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
+				pVehicleSystem = gEnv->pGameFramework->GetIVehicleSystem();
 				pVehicle = pVehicleSystem->GetVehicle(pActInfo->pEntity->GetId());
 
 				if (!pVehicleSystem || !pActInfo->pEntity || !pVehicle)
@@ -594,7 +592,7 @@ public:
 					return;
 				}
 
-				pRenderer->Draw2dLabel(column1, 10, GetPortFloat(pActInfo, IN_SIZE) + 2.f, Col_Cyan, false, "%s", pActInfo->pEntity->GetName());
+				IRenderAuxText::Draw2dLabel(column1, 10, GetPortFloat(pActInfo, IN_SIZE) + 2.f, Col_Cyan, false, "%s", pActInfo->pEntity->GetName());
 
 				if (currentParam == "Seats")
 				{
@@ -624,19 +622,19 @@ public:
 							column2 = pMessage.size() * 8 * GetPortFloat(pActInfo, IN_SIZE);
 						}
 
-						pRenderer->Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessage.c_str());
+						IRenderAuxText::Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessage.c_str());
 
 						// column 2
 						if (currentSeat->GetPassenger(true))
 						{
 							pMessage = string().Format("- %s", gEnv->pEntitySystem->GetEntity(currentSeat->GetPassenger(true))->GetName());
-							pRenderer->Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessage.c_str());
+							IRenderAuxText::Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessage.c_str());
 						}
 					}
 				}
 				else if (currentParam == "Wheels")
 				{
-					pRenderer->Draw2dLabel(column1, 50.f, GetPortFloat(pActInfo, IN_SIZE) + 1.f, Col_Red, false, "!");
+					IRenderAuxText::Draw2dLabel(column1, 50.f, GetPortFloat(pActInfo, IN_SIZE) + 1.f, Col_Red, false, "!");
 				}
 				else if (currentParam == "Weapons")
 				{
@@ -644,7 +642,7 @@ public:
 
 					for (int i = 0; i < pVehicle->GetWeaponCount(); i++)
 					{
-						IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
+						IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 						IWeapon* currentWeapon;
 						EntityId currentEntityId;
 						IItem* pItem;
@@ -669,7 +667,7 @@ public:
 
 						// column 1
 						string pMessageName = string().Format("%s", gEnv->pEntitySystem->GetEntity(currentEntityId)->GetName());
-						pRenderer->Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessageName.c_str());
+						IRenderAuxText::Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessageName.c_str());
 
 						if (column2 < pMessageName.size() * 8 * GetPortFloat(pActInfo, IN_SIZE))
 						{
@@ -678,7 +676,7 @@ public:
 
 						// column 2
 						string pMessageValue = string().Format("seat: %s firemode: %i", pVehicle->GetWeaponParentSeat(currentEntityId)->GetSeatName(), currentWeapon->GetCurrentFireMode()).c_str();
-						pRenderer->Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessageName.c_str());
+						IRenderAuxText::Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), Col_Cyan, false, "%s", pMessageName.c_str());
 					}
 				}
 				else if (currentParam == "Components")
@@ -706,7 +704,7 @@ public:
 
 						// column 1
 						string pMessageName = string().Format("%s", currentComponent->GetComponentName()).c_str();
-						pRenderer->Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), labelColor, false, "%s", pMessageName.c_str());
+						IRenderAuxText::Draw2dLabel(column1, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), labelColor, false, "%s", pMessageName.c_str());
 
 						if (column2 < pMessageName.size() * 8 * GetPortFloat(pActInfo, IN_SIZE))
 						{
@@ -715,12 +713,12 @@ public:
 
 						// column 2
 						string pMessageValue = string().Format("%5.2f (%3.2f)", currentComponent->GetDamageRatio() * currentComponent->GetMaxDamage(), currentComponent->GetDamageRatio()).c_str();
-						pRenderer->Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), labelColor, false, "%s", pMessageName.c_str());
+						IRenderAuxText::Draw2dLabel(column2, (15 * (float(loops + 1)) * GetPortFloat(pActInfo, IN_SIZE)), GetPortFloat(pActInfo, IN_SIZE), labelColor, false, "%s", pMessageName.c_str());
 					}
 				}
 				else
 				{
-					pRenderer->Draw2dLabel(column1, 50.f, GetPortFloat(pActInfo, IN_SIZE) + 1.f, Col_Red, false, "no component selected!");
+					IRenderAuxText::Draw2dLabel(column1, 50.f, GetPortFloat(pActInfo, IN_SIZE) + 1.f, Col_Red, false, "no component selected!");
 				}
 				break;
 			}

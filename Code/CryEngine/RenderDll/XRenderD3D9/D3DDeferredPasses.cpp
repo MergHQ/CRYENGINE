@@ -7,215 +7,6 @@
 
 #pragma warning(disable: 4244)
 
-bool CD3D9Renderer::FX_DeferredCaustics()
-{
-	if (!CRenderer::CV_r_watercaustics || !CRenderer::CV_r_watercausticsdeferred || !CTexture::s_ptexBackBuffer || !CTexture::s_ptexSceneTarget)
-		return false;
-
-	const Vec4 causticParams = gEnv->p3DEngine->GetOceanAnimationCausticsParams();
-	float fCausticsHeight = causticParams.y;
-	float fCausticsDepth = causticParams.z;
-	float fCausticsIntensity = causticParams.w;
-
-	N3DEngineCommon::SOceanInfo& OceanInfo = gRenDev->m_p3DEngineCommon.m_OceanInfo;
-	bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
-	if (!bOceanVolumeVisible || iszero(fCausticsIntensity))
-		return false;
-
-	uint64 nFlagsShaderRTSave = gcpRendD3D->m_RP.m_FlagsShader_RT;
-
-	if (m_LogFile)
-		Logv(" +++ Deferred caustics pass begin +++ \n");
-
-	PROFILE_LABEL_SCOPE("OCEAN_CAUSTICS");
-	PROFILE_FRAME(DrawShader_DeferredCausticsPass);
-
-	float fWatLevel = OceanInfo.m_fWaterLevel;
-	float fCausticsLevel = fWatLevel + fCausticsHeight;
-	Vec4 pCausticsParams = Vec4(CRenderer::CV_r_watercausticsdistance, OceanInfo.m_vCausticsParams.z * fCausticsIntensity,
-	                            OceanInfo.m_vCausticsParams.w, fCausticsLevel);
-	static float fDist = 0.0f;
-
-	fDist = sqrtf((pCausticsParams.x * 5.0f) * 13.333f);  // Hard cut off when caustic would be attenuated to 0.2 (1/5.0f)
-
-	I3DEngine* pEng = gEnv->p3DEngine;
-
-	// Caustics are done with projection from sun - hence they update too fast with regular
-	// sun direction. Use a smooth sun direction update instead to workaround this
-
-	SCGParamsPF& PF = gRenDev->m_cEF.m_PF[m_RP.m_nProcessThreadID];
-	{
-		Vec3 pRealtimeSunDirNormalized = pEng->GetRealtimeSunDirNormalized();
-
-		const float fSnapDot = 0.98f;
-		float fDot = fabs(PF.vCausticsCurrSunDir.Dot(pRealtimeSunDirNormalized));
-		if (fDot < fSnapDot)
-			PF.vCausticsCurrSunDir = pRealtimeSunDirNormalized;
-
-		PF.vCausticsCurrSunDir += (pRealtimeSunDirNormalized - PF.vCausticsCurrSunDir) * 0.005f * gEnv->pTimer->GetFrameTime();
-		PF.vCausticsCurrSunDir.Normalize();
-	}
-
-	Matrix44 m_pLightView;
-
-	Vec3 up = Vec3(0, 0, 1);
-	Vec3 dirZ = -PF.vCausticsCurrSunDir.GetNormalized();
-	Vec3 dirX = up.Cross(dirZ).GetNormalized();
-	Vec3 dirY = dirZ.Cross(dirX).GetNormalized();
-
-	m_pLightView.SetIdentity();
-	m_pLightView.SetRow(0, dirX);
-	m_pLightView.SetRow(1, dirY);
-	m_pLightView.SetRow(2, dirZ);
-
-	float fTime = 0.125f * gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_RealTime;
-
-	Vec4 vAnimParams = Vec4(0.06f * fTime, 0.05f * fTime, 0.1f * fTime, -0.11f * fTime);
-
-	// Stencil pre-pass
-	if (CRenderer::CV_r_watercausticsdeferred == 2)
-	{
-		// stencil pre-pass
-		CShader* pSH(CShaderMan::s_ShaderShadowMaskGen);
-
-		// make box for stencil passes
-		t_arrDeferredMeshIndBuff arrDeferredInds;
-		t_arrDeferredMeshVertBuff arrDeferredVerts;
-		CreateDeferredUnitBox(arrDeferredInds, arrDeferredVerts);
-
-		Vec3 vCamPos = gRenDev->GetRCamera().vOrigin;
-		float fWaterPlaneSize = gRenDev->GetCamera().GetFarPlane();
-
-		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Push();
-		Matrix34 mLocal;
-		mLocal.SetIdentity();
-
-		float heightAboveWater = max(0.0f, vCamPos.z - fCausticsLevel);
-		fDist = sqrtf(max((fDist * fDist) - (heightAboveWater * heightAboveWater), 0.0f));
-
-		//TODO: Adjust Z on fog density
-
-		mLocal.SetScale(Vec3(fDist * 2, fDist * 2, fCausticsHeight + fCausticsDepth));
-		mLocal.SetTranslation(Vec3(vCamPos.x - fDist, vCamPos.y - fDist, fWatLevel - fCausticsDepth));
-
-		Matrix44 mLocalTransposed = mLocal.GetTransposed();
-		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->MultMatrixLocal(&mLocalTransposed);
-
-		uint32 nPasses = 0;
-		static CCryNameTSCRC TechName0 = "DeferredShadowPass";
-		pSH->FXSetTechnique(TechName0);
-		pSH->FXBegin(&nPasses, FEF_DONTSETSTATES);
-		pSH->FXBeginPass(DS_SHADOW_CULL_PASS);
-
-		//allocate vertices
-		TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(&arrDeferredVerts[0], arrDeferredVerts.size(), 0);
-
-		//allocate indices
-		TempDynIB16::CreateFillAndBind(&arrDeferredInds[0], arrDeferredInds.size());
-
-		if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
-			FX_StencilCullPass(-1, arrDeferredVerts.size(), arrDeferredInds.size());
-
-		pSH->FXEndPass();
-		pSH->FXEnd();
-
-		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Pop();
-
-		FX_StencilTestCurRef(true, false);
-
-	}
-
-	// Deferred caustic pass
-	gcpRendD3D->EF_Scissor(false, 0, 0, 0, 0);
-
-	gRenDev->m_cEF.mfRefreshSystemShader("DeferredCaustics", CShaderMan::s_ShaderDeferredCaustics);
-
-	CShader* pShader = CShaderMan::s_ShaderDeferredCaustics;
-	gcpRendD3D->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3];
-
-	static CCryNameTSCRC pTechName = "General";
-	SD3DPostEffectsUtils::ShBeginPass(pShader, pTechName, FEF_DONTSETSTATES);
-
-	int32 nRState = GS_NODEPTHTEST | ((CRenderer::CV_r_watercausticsdeferred == 2) ? GS_STENCIL : 0) | (GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
-
-	gcpRendD3D->FX_SetState(nRState);
-
-	static CCryNameR m_pParamAnimParams("vAnimParams");
-	static CCryNameR m_pCausticParams("vCausticParams");
-	static CCryNameR m_pParamLightView("mLightView");
-	pShader->FXSetPSFloat(m_pParamAnimParams, &vAnimParams, 1);
-	pShader->FXSetPSFloat(m_pCausticParams, &pCausticsParams, 1);
-	pShader->FXSetPSFloat(m_pParamLightView, (Vec4*) m_pLightView.GetData(), 4);
-
-	SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexSceneTarget->GetWidth(), CTexture::s_ptexSceneTarget->GetHeight()); // TODO: Use Volume
-
-	SD3DPostEffectsUtils::ShEndPass();
-
-	if (CRenderer::CV_r_watercausticsdeferred == 2)
-		FX_StencilTestCurRef(false);
-
-	if (m_LogFile)
-		Logv(" +++ Deferred caustics pass end +++ \n");
-
-	gcpRendD3D->m_RP.m_FlagsShader_RT = nFlagsShaderRTSave;
-	//m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags2 = nPersFlags2Save;
-
-	FX_ResetPipe();
-
-	return true;
-}
-
-bool CD3D9Renderer::FX_DeferredWaterVolumeCaustics(const N3DEngineCommon::SCausticInfo& causticInfo)
-{
-	if (!CTexture::s_ptexBackBuffer || !CTexture::s_ptexSceneTarget)
-		return false;
-
-	//gRenDev->m_cEF.mfRefreshSystemShader("DeferredCaustics", CShaderMan::m_ShaderDeferredCaustics);
-
-	CShader* pShader = CShaderMan::s_ShaderDeferredCaustics;
-
-	if (m_LogFile)
-		Logv(" +++ Deferred caustics pass begin +++ \n");
-
-	PROFILE_LABEL_SCOPE("DEFERRED WATERVOLUME CAUSTICS");
-
-	bool bTiledDeferredShading = CRenderer::CV_r_DeferredShadingTiled >= 2;
-
-	if (bTiledDeferredShading)
-		gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexSceneTargetR11G11B10F[1], NULL);
-	else
-		gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexSceneDiffuseAccMap, NULL);
-
-	static CCryNameTSCRC pTechName = "WaterVolumeCaustics";
-
-	SD3DPostEffectsUtils::ShBeginPass(pShader, pTechName, FEF_DONTSETSTATES);
-
-	int32 nRState = GS_NODEPTHTEST;
-	if (!bTiledDeferredShading)
-		nRState |= GS_BLSRC_ONE | GS_BLDST_ONE;  // Blend directly into light accumulation buffer
-
-	gcpRendD3D->FX_SetState(nRState);
-
-	static CCryNameR m_pParamLightView("mLightView");
-	pShader->FXSetPSFloat(m_pParamLightView, (Vec4*) causticInfo.m_mCausticMatr.GetData(), 4);
-
-	SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexSceneTarget->GetWidth(), CTexture::s_ptexSceneTarget->GetHeight());
-
-	SD3DPostEffectsUtils::ShEndPass();
-
-	gcpRendD3D->FX_PopRenderTarget(0);
-
-	if (m_LogFile)
-		Logv(" +++ Deferred caustics pass end +++ \n");
-
-	FX_ResetPipe();
-
-	if (bTiledDeferredShading)
-		GetTiledShading().NotifyCausticsVisible();
-
-	return true;
-}
-
 bool CD3D9Renderer::FX_DeferredRainOcclusionMap(const N3DEngineCommon::ArrOccluders& arrOccluders, const SRainParams& rainVolParams)
 {
 	PROFILE_LABEL_SCOPE("OCCLUSION_PASS");
@@ -346,7 +137,7 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 	SSnowParams& snowVolParams = m_p3DEngineCommon.m_SnowInfo;
 
 	bool bRenderSnow = ((snowVolParams.m_fSnowAmount > 0.05f || snowVolParams.m_fFrostAmount > 0.05f) && snowVolParams.m_fRadius > 0.05f && CV_r_snow > 0);
-	bool bRenderRain = (rainVolParams.fAmount * CRenderer::CV_r_rainamount > 0.05f && rainVolParams.fRadius > 0.05f && CV_r_rain > 0);
+	bool bRenderRain = m_bDeferredRainEnabled;
 
 	bool bRender = bRenderSnow || bRenderRain;
 	if (!bRender)
@@ -387,12 +178,10 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 
 bool CD3D9Renderer::FX_DeferredRainGBuffer()
 {
-	const SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
-	CEffectParam* pParam = PostEffectMgr()->GetByName("SceneRain_Active");
-	if (pParam == 0 || pParam->GetParam() < 0.5f
-	    || rainVolParams.fCurrentAmount < 0.05f
-	    || rainVolParams.fRadius < 0.05f)
+	if (!m_bDeferredRainEnabled)
+	{
 		return false;
+	}
 
 	PROFILE_LABEL_SCOPE("DEFERRED_RAIN_GBUFFER");
 
@@ -433,6 +222,8 @@ bool CD3D9Renderer::FX_DeferredRainGBuffer()
 
 	uint64 nFlagsShaderRTSave = m_RP.m_FlagsShader_RT;
 	m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0]);
+
+	const SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
 
 	if (rainVolParams.bApplyOcclusion)
 	{
@@ -514,9 +305,6 @@ bool CD3D9Renderer::FX_DeferredRainGBuffer()
 	FX_PopRenderTarget(0);
 	FX_PopRenderTarget(1);
 	FX_PopRenderTarget(2);
-
-	// Set persistent Rain Ripples Flag for Water Volumes and Ocean Ripple effect
-	m_RP.m_PersFlags2 |= RBPF2_RAINRIPPLES;
 
 	m_RP.m_FlagsShader_RT = nFlagsShaderRTSave;
 

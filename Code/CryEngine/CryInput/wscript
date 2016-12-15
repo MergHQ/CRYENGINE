@@ -22,7 +22,7 @@ def build(bld):
 		android_file_list   = ['cryinput_synergy.waf_files', 'cryinput_sdl.waf_files'],
 		orbis_file_list     = ['cryinput_synergy.waf_files', 'cryinput_orbis.waf_files', 'cryinput_orbis_shared.waf_files'],
 
-		pch         = 'StdAfx.cpp', 		
+		pch         = 'StdAfx.cpp', 
 
 		win_lib           = [ 'dinput8', 'dxguid' ],
 		win_x64_includes  = Path('Code/SDKs/OrbisPad/include'),
@@ -31,11 +31,7 @@ def build(bld):
 		durango_lib       = ['uuid', 'Ws2_32' ],
 		durango_cxxflags  = [ '/EHsc', '/ZW' ],
 
-		darwin_lib        = 'SDL2',
-		darwin_libpath    = Path('Code/SDKs/SDL2/lib/mac'),
-		darwin_includes   = [ Path('Code/SDKs/SDL2/include/mac'), Path('Code/SDKs/SDL2/include/SDL'), Path('Code/SDKs/SDL2/SDL@8112/include') ],
-
+		darwin_module_extensions = [ 'sdl2' ],
 		linux_module_extensions = [ 'sdl2' ],
-
-		android_includes  = [ Path('Code/SDKs/SDL2/include/linux'), Path('Code/SDKs/SDL2/include/SDL') ],
+		android_module_extensions = [ 'sdl2' ]
 	)

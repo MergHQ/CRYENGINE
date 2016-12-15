@@ -16,7 +16,11 @@ class CAudioImpl final : public IAudioImpl
 public:
 
 	CAudioImpl();
-	virtual ~CAudioImpl();
+	virtual ~CAudioImpl() override = default;
+	CAudioImpl(CAudioImpl const&) = delete;
+	CAudioImpl(CAudioImpl&&) = delete;
+	CAudioImpl& operator=(CAudioImpl const&) = delete;
+	CAudioImpl& operator=(CAudioImpl&&) = delete;
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
@@ -62,11 +66,11 @@ public:
 	virtual void                     DeleteAudioSwitchState(IAudioSwitchState const* const pOldAudioSwitchState) override;
 	virtual IAudioEnvironment const* NewAudioEnvironment(XmlNodeRef const pAudioEnvironmentNode) override;
 	virtual void                     DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudioEnvironment) override;
-	virtual IAudioObject*            NewGlobalAudioObject(AudioObjectId const audioObjectID) override;
-	virtual IAudioObject*            NewAudioObject(AudioObjectId const audioObjectID) override;
+	virtual IAudioObject*            NewGlobalAudioObject() override;
+	virtual IAudioObject*            NewAudioObject() override;
 	virtual void                     DeleteAudioObject(IAudioObject const* const pOldAudioObject) override;
-	virtual IAudioListener*          NewDefaultAudioListener(AudioObjectId const audioObjectId) override;
-	virtual IAudioListener*          NewAudioListener(AudioObjectId const audioObjectId) override;
+	virtual IAudioListener*          NewDefaultAudioListener() override;
+	virtual IAudioListener*          NewAudioListener() override;
 	virtual void                     DeleteAudioListener(IAudioListener* const pOldListenerData) override;
 	virtual IAudioEvent*             NewAudioEvent(AudioEventId const audioEventID) override;
 	virtual void                     DeleteAudioEvent(IAudioEvent const* const pOldAudioEvent) override;
@@ -100,14 +104,13 @@ private:
 	static char const* const s_szSDLEventLoopCountTag;
 	static char const* const s_szSDLEventIdTag;
 
-	string                   m_gameFolder;
 	size_t                   m_memoryAlignment;
 	string                   m_language;
 
 	ICVar*                   m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	std::map<AudioObjectId, string>             m_idToName;
+	std::map<uint32, string>                    m_idToName;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_fullImplString;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 

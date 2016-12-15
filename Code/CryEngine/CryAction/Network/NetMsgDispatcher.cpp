@@ -281,10 +281,6 @@ void CNetMessageDistpatcher::Update()
 // ------------------------------------------------------------------------
 void CNetMessageDistpatcher::DebugDraw()
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-	if (pRenderer == 0)
-		return;
-
 	const float xPosLabel = 10.f, xPosData = 10.f, yPos = 80.f, yDelta = 20.f;
 	float y = yPos;
 	const ColorF fColorLabel(1.0f, 1.0f, 1.0f, 1.0f);
@@ -293,9 +289,9 @@ void CNetMessageDistpatcher::DebugDraw()
 
 	const float kFontSize = m_stats.GetSentStats().m_max <= CVars::net_netMsgDispatcherWarnThreshold ? 1.3f : 1.7f;
 	const ColorF& fColor = m_stats.GetSentStats().m_max <= CVars::net_netMsgDispatcherWarnThreshold ? fColorData : fColorWarning;
-	pRenderer->Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "NetMsg Stats (Total: %" PRIu64 " / Local List.: %" PRISIZE_T ")", m_stats.GetSentStats().m_total, m_listeners.ValidListenerCount());
+	IRenderAuxText::Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "NetMsg Stats (Total: %" PRIu64 " / Local List.: %" PRISIZE_T ")", m_stats.GetSentStats().m_total, m_listeners.ValidListenerCount());
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, kFontSize, fColor, false, "Max frame cnt: %u/%d", m_stats.GetSentStats().m_max, CVars::net_netMsgDispatcherWarnThreshold);
+	IRenderAuxText::Draw2dLabel(xPosData, y, kFontSize, fColor, false, "Max frame cnt: %u/%d", m_stats.GetSentStats().m_max, CVars::net_netMsgDispatcherWarnThreshold);
 }
 
 // ------------------------------------------------------------------------

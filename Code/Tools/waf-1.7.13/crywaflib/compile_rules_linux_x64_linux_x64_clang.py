@@ -18,9 +18,9 @@ def load_linux_x64_linux_x64_clang_common_settings(conf):
 	
 	# Setup Tools for CLang Toolchain (simply used system installed version)
 	v['AR'] = 'ar'
-	v['CC'] = 'clang'
-	v['CXX'] = 'clang++'
-	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = 'clang++'
+	v['CC'] = 'clang-3.8'
+	v['CXX'] = 'clang++-3.8'
+	v['LINK'] = v['LINK_CC'] = v['LINK_CXX'] = 'clang++-3.8'
 	
 	# Introduce the compiler to generate 32 bit code
 	v['CFLAGS'] += [ '-m64' ]

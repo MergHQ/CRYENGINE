@@ -18,14 +18,14 @@
 
 // Do not add any headers here!
 #include "CryEngineDecalInfo.h"
-#include <Cry3DEngine/IStatObj.h> // <> required for Interfuscator
+#include <Cry3DEngine/IStatObj.h>
 #include <CryRenderer/IRenderer.h>
-#include <CrySystem/IProcess.h>                 // <> required for Interfuscator
-#include <Cry3DEngine/IMaterial.h>              // <> required for Interfuscator
-#include <Cry3DEngine/ISurfaceType.h>           // <> required for Interfuscator
-#include <CryEntitySystem/IEntityRenderState.h> // <> required for Interfuscator
+#include <CrySystem/IProcess.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/IRenderNode.h>
 #include <CryCore/Containers/CryArray.h>
-#include <CryMemory/IMemory.h> // <> required for Interfuscator
+#include <CryMemory/IMemory.h>
 //Do not add any headers here!
 
 struct ISystem;
@@ -184,8 +184,8 @@ struct SGeometryDebugDrawInfo
 	ColorB   lineColor; //!< Optional color of the lines.
 
 	//! Optional flags controlling how to render debug draw information.
-	uint32 bNoCull  : 1;
-	uint32 bNoLines : 1;
+	uint32 bNoCull      : 1;
+	uint32 bNoLines     : 1;
 	uint32 bDrawInFront : 1;   //!< Draw debug draw geometry on top of real geometry.
 
 	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoLines(0), bNoCull(0) { tm.SetIdentity(); }
@@ -302,13 +302,11 @@ struct IStatInstGroup
 		szFileName[0] = 0;
 		bHideability = 0;
 		bHideabilitySecondary = 0;
-
 		bPickable = 0;
 		fBending = 0;
 		nCastShadowMinSpec = 0;
-		bRecvShadow = 0;
 		bDynamicDistanceShadows = false;
-		bUseAlphaBlending = 0;
+		bGIMode = true;
 		fSpriteDistRatio = 1.f;
 		fShadowDistRatio = 1.f;
 		fMaxViewDistRatio = 1.f;
@@ -316,7 +314,6 @@ struct IStatInstGroup
 		fBrightness = 1.f;
 		pMaterial = 0;
 		bUseSprites = true;
-
 		fDensity = 1;
 		fElevationMax = 4096;
 		fElevationMin = 8;
@@ -347,11 +344,9 @@ struct IStatInstGroup
 	bool                 bHideabilitySecondary;
 	bool                 bPickable;
 	float                fBending;
-	//bool	bCastShadow;
 	uint8                nCastShadowMinSpec;
-	bool                 bRecvShadow;
 	bool                 bDynamicDistanceShadows;
-	bool                 bUseAlphaBlending;
+	bool                 bGIMode;
 	float                fSpriteDistRatio;
 	float                fLodDistRatio;
 	float                fShadowDistRatio;
@@ -360,12 +355,10 @@ struct IStatInstGroup
 	bool                 bUseSprites;
 	bool                 bRandomRotation;
 	int32                nRotationRangeToTerrainNormal;
-	//bool bAlignToTerrain;
 	float                fAlignToTerrainCoefficient;
 	bool                 bUseTerrainColor;
 	bool                 bAllowIndoor;
 	bool                 bAutoMerged;
-
 	float                fDensity;
 	float                fElevationMax;
 	float                fElevationMin;
@@ -377,11 +370,9 @@ struct IStatInstGroup
 	float                fDamping;
 	float                fVariance;
 	float                fAirResistance;
-
 	float                fVegRadius;
 	float                fVegRadiusVert;
 	float                fVegRadiusHor;
-
 	int                  nPlayerHideable;
 	int                  nID;
 
@@ -672,23 +663,6 @@ struct IGetLayerIdAtCallback
 	virtual ColorB GetColorAtPosition(const float x, const float y, bool bBilinear) = 0;
 	virtual float  GetElevationAtPosition(const float x, const float y) = 0;
 	virtual float  GetRGBMultiplier() = 0;
-	// </interfuscator:shuffle>
-};
-
-//! Interface to terrain engine.
-struct IVoxTerrain
-{
-	// <interfuscator:shuffle>
-	virtual ~IVoxTerrain(){}
-	virtual bool                    SetCompiledData(byte* pData, int nDataSize, bool bUpdateMesh, EEndian eEndian, AABB* pAreaBox, int nSID = 0) = 0;
-	virtual IMemoryBlock*           GetCompiledData(bool bSaveMesh, EEndian eEndian, bool bSaveForEditing, AABB* pAreaBox, int nSID = 0) = 0;
-	virtual void                    DrawEditingHelper(const Sphere& sp, EVoxelEditOperation eOperation, IMaterial* pHelperMat) = 0;
-	virtual void                    OnMouse(bool bUp) = 0;
-	virtual PodArray<IRenderNode*>* GetNodesForUpdate() = 0;
-	virtual void                    PaintLayerId(const float fpx, const float fpy, const float radius, const float hardness, const uint32 dwLayerId) = 0;
-	virtual void                    SetLayerData(void* pData, int nDataSize) = 0;
-	virtual void                    GetLayerData(void** pData, int& nDataSize) = 0;
-	virtual void                    SetTextureArea(Vec3* pPoints, int nPointsCount, int nShapePartId) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -2013,15 +1987,6 @@ struct I3DEngine : public IProcess
 	//! Creates the instance of the indexed mesh.
 	virtual IIndexedMesh* CreateIndexedMesh() = 0;
 
-	//! Paints voxel shape.
-	virtual void Voxel_Paint(Vec3 vPos, float fRadius, int nSurfaceTypeId, Vec3 vBaseColor, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget, PodArray<IRenderNode*>* pBrushes, float fMinVoxelSize) = 0;
-
-	//! Gets list of voxel objects that will be affected by paint operation, IMemoryBlock will contain array of IVoxelObject pointers.
-	virtual IMemoryBlock* Voxel_GetObjects(Vec3 vPos, float fRadius, int nSurfaceTypeId, EVoxelEditOperation eOperation, EVoxelBrushShape eShape, EVoxelEditTarget eTarget) = 0;
-
-	//! Setups voxel flags.
-	virtual void Voxel_SetFlags(bool bPhysics, bool bSimplify, bool bShadows, bool bMaterials) = 0;
-
 	//! Updates rendering mesh in the stat obj associated with pPhysGeom.
 	//! \note Creates or clones the object if necessary.
 	virtual IStatObj* UpdateDeformableStatObj(IGeometry* pPhysGeom, bop_meshupdate* pLastUpdate = 0, IFoliage* pSrcFoliage = 0) = 0;
@@ -2080,9 +2045,6 @@ struct I3DEngine : public IProcess
 
 	//! Deletes terrain.
 	virtual void DeleteTerrain() = 0;
-
-	//! Deprecated.
-	virtual IVoxTerrain* GetIVoxTerrain() = 0;
 
 	//! \return Interface to visarea manager.
 	virtual IVisAreaManager* GetIVisAreaManager() = 0;
@@ -2146,9 +2108,6 @@ struct I3DEngine : public IProcess
 	//! Used by editor during object alignment
 	virtual bool RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo& hitInfo, IMaterial* pCustomMtl = 0) = 0;
 
-	//! Frees lod transition state
-	virtual void FreeRenderNodeTempData(SRenderNodeTempData** ppInfo) = 0;
-
 	// pointer to ISegmentsManager interface
 	virtual ISegmentsManager* GetSegmentsManager() = 0;
 	virtual void              SetSegmentsManager(ISegmentsManager* pSegmentsManager) = 0;
@@ -2169,7 +2128,7 @@ struct I3DEngine : public IProcess
 	virtual void GetObjectsByTypeInBox(EERType objType, const AABB& bbox, PodArray<IRenderNode*>* pLstObjects) = 0;
 
 	//! Called from editor whenever an object is modified by the user.
-	virtual void        OnObjectModified(IRenderNode* pRenderNode, uint dwFlags) = 0;
+	virtual void        OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags) = 0;
 
 	virtual void        FillDebugFPSInfo(SDebugFPSInfo&) = 0;
 
@@ -2250,7 +2209,7 @@ struct I3DEngine : public IProcess
 			eCylinder_Hard
 		};
 
-		Vec3  v0;
+		Vec3 v0;
 
 		union
 		{
@@ -2303,15 +2262,16 @@ struct I3DEngine : public IProcess
 		bool   bSvoFreeze;
 		Sphere helperInfo;
 
-	#define SVO_MAX_PORTALS 16
+	#define SVO_MAX_PORTALS 8
 		Vec4 arrPortalsPos[SVO_MAX_PORTALS];
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
-	#define SVO_MAX_ANALYTICAL_OCCLUDERS 48
+	#define SVO_MAX_ANALYTICAL_OCCLUDERS 32
 		SAnalyticalOccluder arrAnalyticalOccluders[2][SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;
 		Vec3                vSkyColorBottom;
+		Vec4                vSvoOriginAndSize;
 	};
 
 	struct SLightTI
@@ -2589,9 +2549,8 @@ struct SRenderingPassInfo
 	void  SetWriteMutex(void* jobState) { m_pJobState = jobState; }
 	void* WriteMutex() const            { return m_pJobState; };
 
-	SRenderingPassInfo(threadID id)
+	SRenderingPassInfo(threadID id) : SRenderingPassInfo()
 	{
-		SRenderingPassInfo();
 		SetThreadID(id);
 	}
 

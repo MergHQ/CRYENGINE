@@ -15,6 +15,9 @@ class CPlugin_CryFramesPerSecond : public ICryFramesPerSecondPlugin
 
 	CRYGENERATE_SINGLETONCLASS(CPlugin_CryFramesPerSecond, "Plugin_CryFramesPerSecond", 0x342a829a2bbe4a5c, 0x6c64bccd93b94a00)
 
+	CPlugin_CryFramesPerSecond();
+	virtual ~CPlugin_CryFramesPerSecond();
+
 	PLUGIN_FLOWNODE_REGISTER
 	PLUGIN_FLOWNODE_UNREGISTER
 
@@ -31,9 +34,7 @@ public:
 	virtual IFramesPerSecond* GetIFramesPerSecond() const override;
 
 protected:
-	virtual void OnGameStart() override {};
-	virtual void Update(int updateFlags, int nPauseMode) override;
-	virtual void OnGameStop() override  {}
+	virtual void OnPluginUpdate(EPluginUpdateType updateType) override;
 
 private:
 	CFramesPerSecond* m_pFramesPerSecond;

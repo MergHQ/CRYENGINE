@@ -194,9 +194,10 @@ void CAsyncPakManager::ReleaseData(SAsyncPak* pLayerPak)
 	}
 
 	if (pLayerPak->pData)
-		assert(pLayerPak->pData->GetRefCount() == 1);
-
-	assert((!pLayerPak->pData) || (pLayerPak->pData && pLayerPak->pData->GetRefCount() == 1));
+	{
+		assert((!pLayerPak->pData) || (pLayerPak->pData && pLayerPak->pData->Unique()));
+	}
+	
 	SAFE_RELEASE(pLayerPak->pData);
 	pLayerPak->eState = SAsyncPak::STATE_UNLOADED;
 

@@ -57,11 +57,13 @@ struct IGameObjectSystem
 
 		bool  (* hookFunction)(IEntity* pEntity, IGameObject*, void* pUserData);
 		void* pUserData;
+		TSerialize *pSpawnSerializer;
 
 		SEntitySpawnParamsForGameObjectWithPreactivatedExtension()
 			: m_type(eSpawnParamsType_Default)
 			, pUserData(nullptr)
 			, hookFunction(nullptr)
+			, pSpawnSerializer(nullptr)
 		{
 		}
 
@@ -78,31 +80,28 @@ struct IGameObjectSystem
 	virtual IGameObjectSystem::ExtensionID GetID(const char* name) = 0;
 	virtual const char*                    GetName(IGameObjectSystem::ExtensionID id) = 0;
 	virtual uint32                         GetExtensionSerializationPriority(IGameObjectSystem::ExtensionID id) = 0;
-	virtual IGameObjectExtensionPtr        Instantiate(IGameObjectSystem::ExtensionID id, IGameObject* pObject) = 0;
+	virtual IGameObjectExtension*        Instantiate(IGameObjectSystem::ExtensionID id, IGameObject* pObject, TSerialize* pSpawnSerializer) = 0;
 	virtual void                           BroadcastEvent(const SGameObjectEvent& evt) = 0;
 
 	static const uint32                    InvalidEventID = ~uint32(0);
-	virtual void            RegisterEvent(uint32 id, const char* name) = 0;
-	virtual uint32          GetEventID(const char* name) = 0;
-	virtual const char*     GetEventName(uint32 id) = 0;
+	virtual void              RegisterEvent(uint32 id, const char* name) = 0;
+	virtual uint32            GetEventID(const char* name) = 0;
+	virtual const char*       GetEventName(uint32 id) = 0;
 
-	virtual IGameObject*    CreateGameObjectForEntity(EntityId entityId) = 0;
-	virtual IEntityProxyPtr CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject = NULL) = 0;
+	virtual IGameObject*      CreateGameObjectForEntity(EntityId entityId) = 0;
+	virtual IEntityComponent* CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject = NULL) = 0;
 
-	virtual void            RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pEntityCls) = 0;
+	virtual void            RegisterExtension(const char* szName, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pEntityCls) = 0;
 	virtual void            RegisterSchedulingProfile(const char* szEntityClassName, const char* szNormalPolicy, const char* szOwnedPolicy) = 0;
 	virtual void            DefineProtocol(bool server, IProtocolBuilder* pBuilder) = 0;
 
-	virtual void            PostUpdate(float frameTime) = 0;
-	virtual void            SetPostUpdate(IGameObject* pGameObject, bool enable) = 0;
+	virtual void              PostUpdate(float frameTime) = 0;
+	virtual void              SetPostUpdate(IGameObject* pGameObject, bool enable) = 0;
 
-	virtual void            Reset() = 0;
+	virtual void              Reset() = 0;
 
-	virtual void            SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer) = 0;
-	virtual void            ClearSpawnSerializerForEntity(const EntityId entityId) = 0;
-
-	virtual void            AddSink(IGameObjectSystemSink* pSink) = 0;
-	virtual void            RemoveSink(IGameObjectSystemSink* pSink) = 0;
+	virtual void              AddSink(IGameObjectSystemSink* pSink) = 0;
+	virtual void              RemoveSink(IGameObjectSystemSink* pSink) = 0;
 };
 
 // Summary

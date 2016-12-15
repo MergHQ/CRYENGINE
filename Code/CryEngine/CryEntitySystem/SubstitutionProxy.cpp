@@ -16,7 +16,19 @@
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
 
-void CSubstitutionProxy::Done()
+CRYREGISTER_CLASS(CEntityComponentSubstitution);
+
+//////////////////////////////////////////////////////////////////////////
+CEntityComponentSubstitution::~CEntityComponentSubstitution()
+{
+	if (m_pSubstitute)
+	{
+		m_pSubstitute->ReleaseNode();
+		m_pSubstitute = nullptr;
+	}
+}
+
+void CEntityComponentSubstitution::Done()
 {
 	// Substitution proxy does not need to be restored if entity system is being rested.
 	if (m_pSubstitute && !g_pIEntitySystem->m_bReseting)
@@ -36,7 +48,7 @@ void CSubstitutionProxy::Done()
 	}
 }
 
-void CSubstitutionProxy::SetSubstitute(IRenderNode* pSubstitute)
+void CEntityComponentSubstitution::SetSubstitute(IRenderNode* pSubstitute)
 {
 	m_pSubstitute = pSubstitute;
 	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::SetSubstitute: Ptr=%d", (int)m_pSubstitute);
@@ -45,27 +57,28 @@ void CSubstitutionProxy::SetSubstitute(IRenderNode* pSubstitute)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSubstitutionProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	m_pSubstitute = 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CSubstitutionProxy::NeedSerialize()
+bool CEntityComponentSubstitution::NeedGameSerialize()
 {
 	return m_pSubstitute != 0;
 };
 
-//////////////////////////////////////////////////////////////////////////
-bool CSubstitutionProxy::GetSignature(TSerialize signature)
+void CEntityComponentSubstitution::ProcessEvent(SEntityEvent& event)
 {
-	signature.BeginGroup("SubstitutionProxy");
-	signature.EndGroup();
-	return true;
+	switch (event.event)
+	{
+	case ENTITY_EVENT_DONE:
+		Done();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSubstitutionProxy::Serialize(TSerialize ser)
+uint64 CEntityComponentSubstitution::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_DONE);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentSubstitution::GameSerialize(TSerialize ser)
 {
 	Vec3 center, pos;
 	if (ser.IsReading())

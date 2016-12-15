@@ -36,7 +36,8 @@ public:
 		}
 
 #endif
-		m_pPlatformOSSaveWriter = gEnv->pSystem->GetPlatformOS()->SaveGetWriter(pFileName, IPlatformOS::Unknown_User);
+		
+		m_pPlatformOSSaveWriter = gEnv->pSystem->GetPlatformOS()->SaveGetWriter(pFileName);
 	}
 
 	~CFile()

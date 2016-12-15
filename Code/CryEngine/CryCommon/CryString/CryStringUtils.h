@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryCore/Assert/CompileTimeAssert.h>
 #include "UnicodeIterator.h"
 
 #include <algorithm> // std::min()
@@ -43,7 +42,7 @@ namespace CryStringUtils_Internal
 template<class TChar>
 inline bool strcpy_with_clamp(TChar* const dst, size_t const dst_size_in_bytes, const TChar* const src, size_t const src_size_in_bytes)
 {
-	COMPILE_TIME_ASSERT(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(wchar_t));
+	static_assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(wchar_t), "Invalid type size!");
 
 	if (!dst || dst_size_in_bytes < sizeof(TChar))
 	{
@@ -75,7 +74,7 @@ inline bool strcpy_with_clamp(TChar* const dst, size_t const dst_size_in_bytes, 
 template<class TChar>
 inline bool strcat_with_clamp(TChar* const dst, size_t const dst_size_in_bytes, const TChar* const src, size_t const src_size_in_bytes)
 {
-	COMPILE_TIME_ASSERT(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(wchar_t));
+	static_assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(wchar_t), "Invalid type size!");
 
 	if (!dst || dst_size_in_bytes < sizeof(TChar))
 	{
@@ -431,6 +430,11 @@ inline int cry_stricmp(const char* string1, const char* string2)
 inline int cry_strncmp(const char* string1, const char* string2, size_t count)
 {
 	return strncmp(string1, string2, count);
+}
+
+template<size_t STRING2_CHAR_COUNT> inline int cry_strncmp(const char* string1, const char(&string2)[STRING2_CHAR_COUNT])
+{
+	return strncmp(string1, string2, STRING2_CHAR_COUNT - 1);
 }
 
 inline int cry_strnicmp(const char* string1, const char* string2, size_t count)

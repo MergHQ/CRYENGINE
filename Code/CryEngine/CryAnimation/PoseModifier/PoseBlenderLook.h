@@ -17,6 +17,9 @@ class CPoseBlenderLook : public IAnimationPoseBlenderDir
 
 	CRYGENERATE_CLASS(CPoseBlenderLook, "AnimationPoseModifier_PoseBlenderLook", 0x058c3e18b9874faf, 0x8989b9cb2cff0d64)
 
+	CPoseBlenderLook();
+	virtual ~CPoseBlenderLook() {}
+
 	// This interface
 public:
 	void SetState(bool state) override                                                    { m_blender.m_Set.bUseDirIK = state; }

@@ -60,7 +60,7 @@ public:
 	virtual int                    GetFlags() const override                            { return m_rpFlags; }
 	virtual int                    GetObjectType() const override                       { return m_pDefaultSkeleton->m_ObjectType; }
 	virtual const char*            GetFilePath() const override                         { return m_strFilePath.c_str(); }
-	virtual void ComputeGeometricMean(SMeshLodInfo & lodInfo) const override;
+	virtual SMeshLodInfo           ComputeGeometricMean() const override;
 	virtual bool                   HasVertexAnimation() const override                  { return m_bHasVertexAnimation; }
 	virtual IMaterial*             GetMaterial() const override                         { return GetIMaterial(); }
 	virtual IMaterial*             GetIMaterial() const override                        { return m_pInstanceMaterial ? m_pInstanceMaterial.get() : m_pDefaultSkeleton->GetIMaterial(); }
@@ -138,6 +138,8 @@ public:
 	uint32 GetSkinningTransformationCount() const { return m_skinningTransformationsCount; }
 
 	void BeginSkinningTransformationsComputation(SSkinningData * pSkinningData);
+
+	void PerFrameUpdate();
 
 private:
 	// Functions that are called from Character Instance Processing

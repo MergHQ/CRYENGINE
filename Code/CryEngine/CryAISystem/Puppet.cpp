@@ -5128,7 +5128,7 @@ bool CPuppet::SetSoundPerceptionDescriptor(EAISoundStimType eType, const SSoundP
 	if (eType >= 0 && eType < AISOUND_LAST)
 	{
 		if (!m_SoundPerceptionDescriptor.size())
-			memcpy(m_SoundPerceptionDescriptor.grow_raw(AISOUND_LAST), s_DefaultSoundPerceptionDescriptor, sizeof(s_DefaultSoundPerceptionDescriptor));
+			m_SoundPerceptionDescriptor.append(s_DefaultSoundPerceptionDescriptor);
 
 		m_SoundPerceptionDescriptor[eType] = sDescriptor;
 		bResult = true;

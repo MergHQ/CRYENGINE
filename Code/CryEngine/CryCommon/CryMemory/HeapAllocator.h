@@ -204,7 +204,7 @@ private:
 
 public:
 
-	HeapAllocator(FHeap opts = 0)
+	HeapAllocator(FHeap opts = {})
 		: FHeap(opts)
 		, _pPageList(0)
 		, _pFreeList(0)
@@ -218,8 +218,8 @@ public:
 
 	void SupportStackDealloc(size_t nAlign)
 	{
-		StackDealloc = true;
-		StackAlignment = std::max(+StackAlignment, nAlign);
+		StackDealloc(true);
+		StackAlignment(std::max(StackAlignment(), nAlign));
 	}
 
 	// Raw memory allocation.
@@ -238,7 +238,7 @@ public:
 					return ptr;
 				}
 
-				if (!StackDealloc && _pPageList->pNext && _pPageList->pNext->GetMemoryFree() > _pPageList->GetMemoryFree())
+				if (!StackDealloc() && _pPageList->pNext && _pPageList->pNext->GetMemoryFree() > _pPageList->GetMemoryFree())
 				{
 					SortPage(lock, _pPageList);
 					Validate(lock);
@@ -251,7 +251,7 @@ public:
 						return ptr;
 					}
 				}
-				if (SinglePage)
+				if (SinglePage())
 					return 0;
 			}
 
@@ -272,7 +272,7 @@ public:
 			{
 				// Allocate the new page of the required size.
 				size_t nAllocSize = Align(sizeof(PageNode), nAlign) + nSize;
-				nAllocSize = RoundUpTo(nAllocSize, PageSize);
+				nAllocSize = RoundUpTo(nAllocSize, PageSize());
 
 				void* pAlloc = A::SysAlloc(nAllocSize);
 				pPageNode = new(pAlloc) PageNode(nAllocSize);
@@ -310,7 +310,7 @@ public:
 	bool Deallocate(const Lock& lock, void* ptr, size_t nSize, size_t nAlign)
 	{
 		assert(CheckPtr(lock, ptr, nSize));
-		if (StackDealloc)
+		if (StackDealloc())
 		{
 			if (ptr && _pPageList)
 			{
@@ -363,9 +363,10 @@ public:
 
 		NAlloc::AllocArray alloc(NAlloc::AllocArray a, size_t new_size, size_t align = 1, bool allow_slack = false)
 		{
-			align = _pHeap->StackAlignment;
+			align = std::max(align, _pHeap->StackAlignment());
 			if (new_size)
 			{
+				new_size = Align(new_size, _pHeap->StackAlignment());
 				if (a.size)
 				{
 					if (new_size != a.size)
@@ -402,7 +403,7 @@ public:
 		{
 			this->SetHeap(heap);
 			if (size)
-				this->grow(size);
+				this->resize(size);
 		}
 	};
 
@@ -510,7 +511,7 @@ public:
 		{
 			pPage->Validate();
 			MemCheck += pPage->GetMemoryUsage();
-			if (StackDealloc)
+			if (StackDealloc())
 			{
 				if (pPage != _pPageList)
 					assert(pPage->GetMemoryUsed() > 0);

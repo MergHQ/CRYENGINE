@@ -41,7 +41,7 @@ CVehicleDamageBehaviorAudioFeedback::~CVehicleDamageBehaviorAudioFeedback()
 {
 	if (gEnv->IsClient())
 	{
-		IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+		IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 		if(pVehicle)
 		{
 			pVehicle->UnregisterVehicleEventListener(this);
@@ -68,7 +68,7 @@ void CVehicleDamageBehaviorAudioFeedback::OnVehicleEvent(EVehicleEvent event, co
 		static ICVar* pDebugVehicle = gEnv->pConsole->GetCVar("v_debugVehicle");
 		if(pDebugVehicle)
 		{
-			IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId);
+			IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 			if(pVehicle)
 			{
 				const char* debugVehicle = pDebugVehicle->GetString();
@@ -88,7 +88,7 @@ TAudioSignalID CVehicleDamageBehaviorAudioFeedback::GetSignal() const
 {
 	CRY_ASSERT(gEnv->IsClient());
 
-	IActor* pLocalActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	IActor* pLocalActor = gEnv->pGameFramework->GetClientActor();
 	if(pLocalActor)
 	{
 		IVehicle* pVehicle = pLocalActor->GetLinkedVehicle();

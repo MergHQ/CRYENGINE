@@ -7,7 +7,6 @@
 
 #include "CryAction.h"
 #include "ActionGame.h"
-#include <CryEntitySystem/IEntityRenderState.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 
 // Defines
@@ -247,7 +246,7 @@ int CBreakableGlassSystem::HandleImpact(const EventPhys* pPhysEvent)
 						if (pCollider && pCollider->GetType() == PE_LIVING)
 						{
 							IEntity* pColliderEntity = (IEntity*)pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-							IActor* pActor = pColliderEntity ? gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pColliderEntity->GetId()) : NULL;
+							IActor* pActor = pColliderEntity ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pColliderEntity->GetId()) : NULL;
 
 							if (pActor && pActor->MustBreakGlass())
 							{
@@ -404,7 +403,7 @@ bool CBreakableGlassSystem::ExtractPhysDataFromEvent(const EventPhysCollision& p
 		IStatObj* pStatObj = NULL;
 		IMaterial* pRenderMat = NULL;
 		phys_geometry* pPhysGeom = NULL;
-		uint renderFlags = 0;
+		IRenderNode::RenderFlagsType renderFlags = 0;
 
 		Matrix34A entityMat;
 		entityMat.SetIdentity();
@@ -422,17 +421,17 @@ bool CBreakableGlassSystem::ExtractPhysDataFromEvent(const EventPhysCollision& p
 				pStatObj = pEntity->GetStatObj(entPart);
 				entityMat = pEntity->GetSlotWorldTM(entPart);
 
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+				if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 				{
-					pRenderMat = pRenderProxy->GetRenderMaterial(entPart);
+					pRenderMat = pIEntityRender->GetRenderMaterial(entPart);
 
-					IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+					IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 					renderFlags = pRenderNode ? pRenderNode->GetRndFlags() : 0;
 
 					// Fall back to top level material if sub-object fails to find it
 					if (!pRenderMat)
 					{
-						pRenderMat = pRenderProxy->GetRenderMaterial();
+						pRenderMat = pIEntityRender->GetRenderMaterial();
 
 						if (!pRenderMat && pStatObj)
 						{

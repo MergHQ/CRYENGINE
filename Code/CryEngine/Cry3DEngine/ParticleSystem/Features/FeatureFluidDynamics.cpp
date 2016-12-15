@@ -123,6 +123,7 @@ private:
 	TParticleCount m_numSpawnParticles;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionFluidDynamics, "Motion", "GPU Fluid Dynamics", colorMotion);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionFluidDynamics, "GPU Particles", "Fluid Dynamics", colorGPU);
+CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureMotionFluidDynamics, "MotionGPU Fluid Dynamics");
 
 }

@@ -132,6 +132,10 @@ void CUIHUD3D::UpdateView(const SViewParams &viewParams)
 		const Quat& hudRotation = hudTran.q;
 		Quat deltaHudRotation = cameraRotation.GetInverted() * hudRotation;
 
+		//If third person is active don't use the deltaHudRotation to avoid strange HUD behavior
+		if (pLocalPlayer->IsThirdPerson())
+			deltaHudRotation.SetIdentity();
+
 		if(pCVars->hud_bobHud > 0.0f && !pLocalPlayer->IsDead())
 		{
 			deltaHudRotation.w *= (float)__fres(pCVars->hud_bobHud);
@@ -273,7 +277,7 @@ void CUIHUD3D::SpawnHudEntities()
 		return;
 
 	const char* hudprefab = NULL;
-	IGameRules* pGameRules = gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules();
 	if (pGameRules)
 	{
 		IScriptTable* pTable = pGameRules->GetEntity()->GetScriptTable();
