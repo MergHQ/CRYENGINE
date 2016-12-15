@@ -208,9 +208,10 @@ void CGameClientChannel::OnDisconnect(EDisconnectionCause cause, const char* des
 	//CryLogAlways("CGameClientChannel::OnDisconnect(%d, %s)", cause, description?description:"");
 	CCryAction::GetCryAction()->OnActionEvent(SActionEvent(eAE_disconnected, int(cause), description));
 
-	IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-	if (pGameRules)
-		pGameRules->OnDisconnect(cause, description);
+	for (INetworkedClientListener* pListener : CCryAction::GetCryAction()->GetNetworkClientListeners())
+	{
+		pListener->OnLocalClientDisconnected(cause, description);
+	}
 
 	if (IInput* pInput = gEnv->pInput)
 	{

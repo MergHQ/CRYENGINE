@@ -795,8 +795,6 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	GetISystem()->GetPlatformOS()->AddListener(this, "CGame");
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 
-	LoadActionMaps("libs/config/defaultProfile.xml");
-	InlineInitializationProcessing("CGame::Init LoadActionMaps");
 	InitScriptBinds();
 
 	InlineInitializationProcessing("CGame::Init InitScriptBinds");
@@ -856,6 +854,9 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	{
 		gEnv->pSystem->GetPlatformOS()->UserDoSignIn(0); // sign in the default user
 	}
+
+	LoadActionMaps("libs/config/defaultProfile.xml");
+	InlineInitializationProcessing("CGame::Init LoadActionMaps");
 
 #if CRY_PLATFORM_DURANGO
 	XboxLiveGameEvents::CreateGUID(m_playerSessionId);

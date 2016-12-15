@@ -4215,11 +4215,8 @@ EntityId CCryAction::GetClientEntityId() const
 	if (m_pGame)
 	{
 		CGameClientChannel* pChannel = m_pGame->GetGameClientNub() ? m_pGame->GetGameClientNub()->GetGameClientChannel() : NULL;
-		EntityId pid = pChannel ? pChannel->GetPlayerId() : 0;
-		// #netentity: Temporary fallback to local id if the channel has no player
-		// Will be removed when netentity is ready. Tested by RollingBall template.
-		if (pid)
-			return pid;
+		if (pChannel)
+			return pChannel->GetPlayerId();
 	}
 
 	return LOCAL_PLAYER_ENTITY_ID;

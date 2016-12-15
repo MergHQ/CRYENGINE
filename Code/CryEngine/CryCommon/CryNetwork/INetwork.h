@@ -1524,6 +1524,25 @@ struct INetNub
 	// </interfuscator:shuffle>
 };
 
+// Listener that allows for listening to client connection and disconnect events
+struct INetworkedClientListener
+{
+	// Sent to the local client on disconnect
+	virtual void OnLocalClientDisconnected(EDisconnectionCause cause, const char* description) = 0;
+
+	// Sent to the server when a new client has started connecting
+	// Return false to disallow the connection
+	virtual bool OnClientConnectionReceived(int channelId, bool bIsReset) = 0;
+	// Sent to the server when a new client has finished connecting and is ready for gameplay
+	// Return false to disallow the connection and kick the player
+	virtual bool OnClientReadyForGameplay(int channelId, bool bIsReset) = 0;
+	// Sent to the server when a client is disconnected
+	virtual void OnClientDisconnected(int channelId, EDisconnectionCause cause, const char* description, bool bKeepClient) = 0;
+	// Sent to the server when a client is timing out (no packets for X seconds)
+	// Return true to allow disconnection, otherwise false to keep client.
+	virtual bool OnClientTimingOut(int channelId, EDisconnectionCause cause, const char* description) = 0;
+};
+
 #if ENABLE_RMI_BENCHMARK
 
 	#define RMI_BENCHMARK_MAX_RECORDS    256 //!< Integer of serialization width of SRMIBenchmarkParams::seq must be able to represent index into array of this size.

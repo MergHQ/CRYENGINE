@@ -278,6 +278,10 @@ public:
 
 	virtual void                  RegisterExtension(ICryUnknownPtr pExtension);
 	virtual void                  ReleaseExtensions();
+
+	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) { stl::push_back_unique(m_networkClientListeners, &listener); }
+	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) { stl::find_and_erase(m_networkClientListeners, &listener); }
+
 protected:
 	virtual ICryUnknownPtr        QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const;
 	// ~IGameFramework
@@ -368,6 +372,8 @@ public:
 	bool                    PreUpdate(bool haveFocus, unsigned int updateFlags);
 	int                     Update(bool haveFocus, unsigned int updateFlags);
 	void                    PostUpdate(bool haveFocus, unsigned int updateFlags);
+
+	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 
 private:
 	void InitScriptBinds();
@@ -678,6 +684,8 @@ private:
 	SExternalGameLibrary        m_externalGameLibrary;
 
 	CTimeValue                  m_levelStartTime;
+
+	std::vector<INetworkedClientListener*> m_networkClientListeners;
 };
 
 #endif //__CRYACTION_H__

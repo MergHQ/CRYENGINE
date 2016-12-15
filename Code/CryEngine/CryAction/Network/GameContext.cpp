@@ -44,6 +44,7 @@
 #include "CET_GameRules.h"
 #include "CET_LevelLoading.h"
 #include "CET_NetConfig.h"
+#include "CET_ClientConnections.h"
 
 #include "NetDebug.h"
 
