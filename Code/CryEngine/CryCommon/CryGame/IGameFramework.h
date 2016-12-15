@@ -934,6 +934,9 @@ struct IGameFramework
 		return cryinterface_cast<ExtensionInterface>(QueryExtensionInterfaceById(interfaceId)).get();
 	}
 
+	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) = 0;
+	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) = 0;
+
 protected:
 	//! Retrieves an extension interface by interface id.
 	//! Internal, client uses 'QueryExtension<ExtensionInterface>()

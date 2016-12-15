@@ -34,7 +34,6 @@ public:
 	virtual void PrecacheLevel() override {}
 	virtual void PrecacheLevelResource(const char* resourceName, EGameResourceType resourceType) override {}
 	virtual XmlNodeRef FindPrecachedXmlFile(const char* sFilename) override { return 0; }
-	virtual void OnConnect(struct INetChannel* pNetChannel) override {}
 	virtual void OnDisconnect(EDisconnectionCause cause, const char* desc) override {}
 	virtual bool OnClientConnect(int channelId, bool isReset) override;
 	virtual void OnClientDisconnect(int channelId, EDisconnectionCause cause, const char* desc, bool keepClient) override;

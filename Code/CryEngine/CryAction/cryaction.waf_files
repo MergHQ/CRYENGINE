@@ -565,7 +565,9 @@
       "Network/CET_EntitySystem.h",
       "Network/CET_GameRules.h",
       "Network/CET_LevelLoading.h",
-      "Network/CET_NetConfig.h"
+      "Network/CET_NetConfig.h",
+	  "Network/CET_ClientConnections.cpp",
+	  "Network/CET_ClientConnections.h"
     ],
     "Network/Helpers":[
       "Network/ObjectSelector.cpp",
