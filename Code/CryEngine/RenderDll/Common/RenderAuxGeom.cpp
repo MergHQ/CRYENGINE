@@ -307,7 +307,7 @@ void CAuxGeomCB::DrawThickLine(const Vec3& v0, const ColorB& colV0, const Vec3& 
 
 	// allocate space for two triangles
 	SAuxVertex* pVertices(0);
-	AddPrimitive(pVertices, 6, CreateTriangleRenderFlags(false) | e_TriListParam_ProcessThickLines);
+	AddPrimitive(pVertices, 4, CreateLineRenderFlags(false) | e_LineListParam_ProcessThickLines);
 
 	// Encode paramaters for thick line in vertex memory.
 	// The actual "aux render" implementation has to process these before feeding it to the GPU.
@@ -315,10 +315,10 @@ void CAuxGeomCB::DrawThickLine(const Vec3& v0, const ColorB& colV0, const Vec3& 
 	// (see D3DRenderAuxGeom.cpp for an implementation).
 	pVertices[0].xyz = v0;
 	pVertices[0].color.dcolor = PackColor(colV0);
+	pVertices[0].st = Vec2(thickness, 0.0f);
 	pVertices[1].xyz = v1;
 	pVertices[1].color.dcolor = PackColor(colV1);
-
-	pVertices[2].xyz = Vec3(thickness, 0.0f, 0.0f);
+	pVertices[1].st = Vec2(thickness, 0.0f);
 }
 
 void CAuxGeomCB::DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2)
@@ -987,10 +987,12 @@ void CAuxGeomCB::DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, con
 	}
 }
 
-void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
+// TODO: remove this function in favor of just using PushMatrix around the previous function users
+void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& mat, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
 {
 	SAuxVertex* pVertices(0);
 	vtx_idx* pIndices(0);
+	int oldMatrixIndex = PushMatrix(mat);
 
 	if (eBBD_Extremes_Color_Encoded == bbDrawStyle)
 	{
@@ -1076,21 +1078,21 @@ void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSoli
 		uint32 colorMin(PackColor(ColorB(15, 15, 15, col.a)));
 		uint32 colorMax(PackColor(ColorB(255, 255, 255, col.a)));
 
-		pVertices[0].xyz = matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
+		pVertices[0].xyz = Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
 		pVertices[0].color.dcolor = colorMin;
-		pVertices[1].xyz = matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
+		pVertices[1].xyz = Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
 		pVertices[1].color.dcolor = color;
-		pVertices[2].xyz = matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
+		pVertices[2].xyz = Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
 		pVertices[2].color.dcolor = color;
-		pVertices[3].xyz = matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
+		pVertices[3].xyz = Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
 		pVertices[3].color.dcolor = color;
-		pVertices[4].xyz = matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
+		pVertices[4].xyz = Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
 		pVertices[4].color.dcolor = color;
-		pVertices[5].xyz = matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
+		pVertices[5].xyz = Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
 		pVertices[5].color.dcolor = color;
-		pVertices[6].xyz = matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
+		pVertices[6].xyz = Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
 		pVertices[6].color.dcolor = colorMax;
-		pVertices[7].xyz = matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
+		pVertices[7].xyz = Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
 		pVertices[7].color.dcolor = color;
 	}
 	else
@@ -1101,21 +1103,21 @@ void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSoli
 
 			uint32 color(PackColor(col));
 
-			pVertices[0].xyz = matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
+			pVertices[0].xyz = Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
 			pVertices[0].color.dcolor = color;
-			pVertices[1].xyz = matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
+			pVertices[1].xyz = Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
 			pVertices[1].color.dcolor = color;
-			pVertices[2].xyz = matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
+			pVertices[2].xyz = Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
 			pVertices[2].color.dcolor = color;
-			pVertices[3].xyz = matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
+			pVertices[3].xyz = Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
 			pVertices[3].color.dcolor = color;
-			pVertices[4].xyz = matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
+			pVertices[4].xyz = Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
 			pVertices[4].color.dcolor = color;
-			pVertices[5].xyz = matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
+			pVertices[5].xyz = Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
 			pVertices[5].color.dcolor = color;
-			pVertices[6].xyz = matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
+			pVertices[6].xyz = Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
 			pVertices[6].color.dcolor = color;
-			pVertices[7].xyz = matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
+			pVertices[7].xyz = Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
 			pVertices[7].color.dcolor = color;
 
 			pIndices[0] = 0;
@@ -1149,14 +1151,14 @@ void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSoli
 		{
 			AddIndexedPrimitive(pVertices, 24, pIndices, 36, CreateTriangleRenderFlags(true));
 
-			Vec3 xyz(matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
-			Vec3 xyZ(matWorld * Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
-			Vec3 xYz(matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
-			Vec3 xYZ(matWorld * Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
-			Vec3 Xyz(matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
-			Vec3 XyZ(matWorld * Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
-			Vec3 XYz(matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
-			Vec3 XYZ(matWorld * Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
+			Vec3 xyz(Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
+			Vec3 xyZ(Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
+			Vec3 xYz(Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
+			Vec3 xYZ(Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
+			Vec3 Xyz(Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
+			Vec3 XyZ(Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
+			Vec3 XYz(Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
+			Vec3 XYZ(Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
 
 			uint32 colDown(PackColor(ScaleColor(col, 0.5f)));
 			pVertices[0].xyz = xyz;
@@ -1261,6 +1263,8 @@ void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSoli
 			pIndices[35] = 23;
 		}
 	}
+
+	m_cbCurrent->m_curWorldMatIdx = oldMatrixIndex;
 }
 
 void CAuxGeomCB::DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
@@ -1542,10 +1546,11 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const Col
 	}
 }
 
-void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
+void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& mat, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
 {
 	SAuxVertex* pVertices(0);
 	vtx_idx* pIndices(0);
+	int oldMatrixIndex = PushMatrix(mat);
 
 	if (eBBD_Extremes_Color_Encoded == bbDrawStyle)
 	{
@@ -1632,21 +1637,21 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, 
 		uint32 colorMax(PackColor(ColorB(255, 255, 255, col.a)));
 
 		AABB aabb(obb.c - obb.h, obb.c + obb.h);
-		pVertices[0].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
+		pVertices[0].xyz = obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
 		pVertices[0].color.dcolor = colorMin;
-		pVertices[1].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
+		pVertices[1].xyz = obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
 		pVertices[1].color.dcolor = color;
-		pVertices[2].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
+		pVertices[2].xyz = obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
 		pVertices[2].color.dcolor = color;
-		pVertices[3].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
+		pVertices[3].xyz = obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
 		pVertices[3].color.dcolor = color;
-		pVertices[4].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
+		pVertices[4].xyz = obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
 		pVertices[4].color.dcolor = color;
-		pVertices[5].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
+		pVertices[5].xyz = obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
 		pVertices[5].color.dcolor = color;
-		pVertices[6].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
+		pVertices[6].xyz = obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
 		pVertices[6].color.dcolor = colorMax;
-		pVertices[7].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
+		pVertices[7].xyz = obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
 		pVertices[7].color.dcolor = color;
 	}
 	else
@@ -1658,21 +1663,21 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, 
 			uint32 color(PackColor(col));
 
 			AABB aabb(obb.c - obb.h, obb.c + obb.h);
-			pVertices[0].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
+			pVertices[0].xyz = obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
 			pVertices[0].color.dcolor = color;
-			pVertices[1].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
+			pVertices[1].xyz = obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
 			pVertices[1].color.dcolor = color;
-			pVertices[2].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
+			pVertices[2].xyz = obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
 			pVertices[2].color.dcolor = color;
-			pVertices[3].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
+			pVertices[3].xyz = obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
 			pVertices[3].color.dcolor = color;
-			pVertices[4].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
+			pVertices[4].xyz = obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
 			pVertices[4].color.dcolor = color;
-			pVertices[5].xyz = matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
+			pVertices[5].xyz = obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
 			pVertices[5].color.dcolor = color;
-			pVertices[6].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
+			pVertices[6].xyz = obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
 			pVertices[6].color.dcolor = color;
-			pVertices[7].xyz = matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
+			pVertices[7].xyz = obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
 			pVertices[7].color.dcolor = color;
 
 			pIndices[0] = 0;
@@ -1707,14 +1712,14 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, 
 			AddIndexedPrimitive(pVertices, 24, pIndices, 36, CreateTriangleRenderFlags(true));
 
 			AABB aabb(obb.c - obb.h, obb.c + obb.h);
-			Vec3 xyz(matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z)));
-			Vec3 xyZ(matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z)));
-			Vec3 xYz(matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z)));
-			Vec3 xYZ(matWorld * (obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z)));
-			Vec3 Xyz(matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z)));
-			Vec3 XyZ(matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z)));
-			Vec3 XYz(matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z)));
-			Vec3 XYZ(matWorld * (obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z)));
+			Vec3 xyz(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
+			Vec3 xyZ(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
+			Vec3 xYz(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
+			Vec3 xYZ(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
+			Vec3 Xyz(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
+			Vec3 XyZ(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
+			Vec3 XYz(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
+			Vec3 XYZ(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
 
 			uint32 colDown(PackColor(ScaleColor(col, 0.5f)));
 			pVertices[0].xyz = xyz;
@@ -1819,6 +1824,7 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, 
 			pIndices[35] = 23;
 		}
 	}
+	m_cbCurrent->m_curWorldMatIdx = oldMatrixIndex;
 }
 
 void CAuxGeomCB::DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded)
