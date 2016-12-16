@@ -994,7 +994,7 @@ struct SUIParameterDesc;
 struct SUIMovieClipDesc;
 struct SUIEventDesc;
 
-#if defined(_LIB) && !defined(IS_EAAS)
+#if defined(_LIB)
 template<class Base> struct SUIItemLookupSet : public SUIItemLookupSet_Impl<Base> {};
 #else
 struct SUIItemLookupSetFactory
@@ -1803,14 +1803,14 @@ public:
 	virtual void SetEditorUILogEventCallback(TEditorUILogEventCallback& cb) = 0;
 	virtual void RemoveEditorUILogEventCallback() = 0;
 
-#if !defined(_LIB) || defined(IS_EAAS)
+#if !defined(_LIB)
 	virtual SUIItemLookupSet_Impl<SUIParameterDesc>* CreateLookupParameter() = 0;
 	virtual SUIItemLookupSet_Impl<SUIMovieClipDesc>* CreateLookupMovieClip() = 0;
 	virtual SUIItemLookupSet_Impl<SUIEventDesc>*     CreateLookupEvent() = 0;
 #endif
 };
 
-#if !defined(_LIB) || defined(IS_EAAS)
+#if !defined(_LIB)
 inline SUIItemLookupSet_Impl<SUIParameterDesc>* SUIItemLookupSetFactory::CreateLookupParameter() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupParameter(); }
 inline SUIItemLookupSet_Impl<SUIMovieClipDesc>* SUIItemLookupSetFactory::CreateLookupMovieClip() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupMovieClip(); }
 inline SUIItemLookupSet_Impl<SUIEventDesc>*     SUIItemLookupSetFactory::CreateLookupEvent()     { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupEvent(); }

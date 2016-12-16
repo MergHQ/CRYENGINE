@@ -359,8 +359,6 @@ public:
 	}
 };
 
-#if !defined(IS_EAAS)
 REGISTER_FLOW_NODE("DynamicResponse:SetFloatVariable", CFlowNode_SetFloatDynamicResponseVariable);
 REGISTER_FLOW_NODE("DynamicResponse:SetIntegerVariable", CFlowNode_SetIntegerDynamicResponseVariable);
 REGISTER_FLOW_NODE("DynamicResponse:SetStringVariable", CFlowNode_SetStringDynamicResponseVariable);
-#endif

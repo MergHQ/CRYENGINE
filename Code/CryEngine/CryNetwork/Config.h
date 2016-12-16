@@ -369,7 +369,7 @@
 
 	#define USUAL_DEBUG_STUFF 0
 
-	#if !defined(_RELEASE) && !defined(IS_EAAS) // guard against shipping this feature in cases where it cannot be rebuilt by the developer
+	#if !defined(_RELEASE) // guard against shipping this feature in cases where it cannot be rebuilt by the developer
 		#define INTERNET_SIMULATOR      1
 		#define ENABLE_DEBUG_KIT        0
 		#define ENABLE_NETWORK_MEM_INFO 1

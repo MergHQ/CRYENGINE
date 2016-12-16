@@ -195,10 +195,6 @@ void CSystem::LogVersion()
 
 	CryLogAlways("FileVersion: %d.%d.%d.%d", m_fileVersion.v[3], m_fileVersion.v[2], m_fileVersion.v[1], m_fileVersion.v[0]);
 	CryLogAlways("ProductVersion: %d.%d.%d.%d", m_productVersion.v[3], m_productVersion.v[2], m_productVersion.v[1], m_productVersion.v[0]);
-
-#if defined(IS_EAAS)
-	CryLogAlways("EaaS Build\n");
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

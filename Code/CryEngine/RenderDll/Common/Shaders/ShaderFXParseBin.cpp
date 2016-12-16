@@ -1004,7 +1004,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	const char *szExt = bInclude ? "cfi" : "cfx";
 	// First look for source in Game folder
 	nameFile.Format("%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersGamePath.c_str(), szName, szExt);
-#if !defined(_RELEASE) && !defined(IS_EAAS)
+#if !defined(_RELEASE)
 	{
 		fpSrc = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb");
 		nSourceCRC32 = fpSrc ? gEnv->pCryPak->ComputeCRC(nameFile) : 0;
@@ -1014,7 +1014,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	{
 		// Second look in Engine folder
 		nameFile.Format("%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersPath, szName, szExt);
-#if !defined(_RELEASE) && !defined(IS_EAAS)
+#if !defined(_RELEASE)
 		{
 			fpSrc = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb");
 			nSourceCRC32 = fpSrc ? gEnv->pCryPak->ComputeCRC(nameFile) : 0;
@@ -1065,7 +1065,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 			if (CParserBin::m_bEndians)
 				SwapEndian(Header[i], eBigEndian);
 
-#if !defined(_RELEASE) && !defined(IS_EAAS)
+#if !defined(_RELEASE)
 			// check source crc changes
 			if (nSourceCRC32 && nSourceCRC32 != Header[i].m_nSourceCRC32)
 			{
@@ -1087,7 +1087,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	}
 	if (i == n)
 	{
-#if !defined(_RELEASE) && !defined(CONSOLE_CONST_CVAR_MODE) && !defined(IS_EAAS)
+#if !defined(_RELEASE) && !defined(CONSOLE_CONST_CVAR_MODE)
 		{
 			char acTemp[512];
 			if (bValid & 1)
@@ -3490,7 +3490,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXM
 	PodArray<uint32> SHDataBuffer(SHDATA_BUFFER_SIZE);
 	const char* szName = Parser.GetString(dwSHName);
 	bRes &= ParseBinFX_Technique_Pass_GenerateShaderData(Parser, Macros, FXParams, dwSHName, eSHClass, nGenMask, dwSHType, SHDataBuffer, pShTech);
-#if defined(_DEBUG) && !defined(IS_EAAS)
+#if defined(_DEBUG)
 	if (SHDataBuffer.size() > SHDATA_BUFFER_SIZE)
 	{
 		CryLogAlways("CShaderManBin::ParseBinFX_Technique_Pass_LoadShader: SHDataBuffer has been exceeded (buffer=%d, count=%u). Adjust buffer size to remove unnecessary allocs", SHDATA_BUFFER_SIZE, SHDataBuffer.Size());
