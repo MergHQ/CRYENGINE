@@ -2754,7 +2754,20 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 		{
 			ICVar* pVar = itrVars->second;
 
+#ifdef _RELEASE
+			if (!gEnv->IsEditor())
+			{
+				const bool isCheat = (pVar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
+				if (isCheat)
+				{
+					++itrVars;
+					continue;
+				}
+			}
+#endif // _RELEASE
+
 			if ((pVar->GetFlags() & VF_RESTRICTEDMODE) || !con_restricted)     // in restricted mode we allow only VF_RESTRICTEDMODE CVars&CCmd
+			{
 				//if(itrVars->first.compare(0,m_sPrevTab.length(),m_sPrevTab)==0)
 				if (strnicmp(m_sPrevTab.c_str(), itrVars->first, m_sPrevTab.length()) == 0)
 				{
@@ -2766,6 +2779,7 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 						matches.push_back((char* const)itrVars->first);
 					}
 				}
+			}
 			++itrVars;
 		}
 	}
@@ -3526,6 +3540,15 @@ void CXConsole::FindVar(const char* substr)
 			ICVar* pCvar = gEnv->pConsole->GetCVar(cmds[i]);
 			if (pCvar)
 			{
+#ifdef _RELEASE
+				if (!gEnv->IsEditor())
+				{
+					const bool isCheat = (pCvar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
+					if (isCheat)
+						continue;
+				}
+#endif // _RELEASE
+
 				DisplayVarValue(pCvar);
 			}
 			else
