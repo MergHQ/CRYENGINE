@@ -249,7 +249,5 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 };
 
-#if !defined(IS_EAAS)
 REGISTER_FLOW_NODE("DynamicResponse:SendSignal", CFlowNode_SendDynamicResponseSignal);
 REGISTER_FLOW_NODE("DynamicResponse:CancelSignalProcessing", CFlowNode_CancelDynamicResponseSignal);
-#endif

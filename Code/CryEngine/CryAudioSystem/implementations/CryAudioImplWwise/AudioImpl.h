@@ -5,9 +5,9 @@
 #include "FileIOHandler.h"
 #include "ATLEntities.h"
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && !defined(IS_EAAS)
+#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#define WWISE_USE_OCULUS
-#endif // (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && !defined(IS_EAAS)
+#endif // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 
 namespace CryAudio
 {

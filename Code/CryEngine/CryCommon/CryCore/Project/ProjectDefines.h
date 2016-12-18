@@ -326,7 +326,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define SUPPORT_HW_MOUSE_CURSOR
 #endif
 
-#if !defined(_DEBUG) && CRY_PLATFORM_WINDOWS && !defined(IS_EAAS)
+#if !defined(_DEBUG) && CRY_PLATFORM_WINDOWS
 //# define CRY_PROFILE_MARKERS_USE_GPA
 //# define CRY_PROFILE_MARKERS_USE_NVTOOLSEXT
 #endif
@@ -347,7 +347,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 //! Defines for various encryption methodologies that we support (or did support at some stage).
 #define SUPPORT_UNENCRYPTED_PAKS             //Enable during dev and on consoles to support paks that aren't encrypted in any way
-#if !(defined(IS_EAAS) && defined(_RELEASE)) //For EaaS release builds, require signing (at least)
+#if !defined(_RELEASE)
 	#define SUPPORT_UNSIGNED_PAKS              //Enabled during dev to test release builds easier (remove this to enforce signed paks in release builds)
 #endif
 

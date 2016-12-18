@@ -16,7 +16,7 @@
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryNetwork/CrySocks.h>
 
-#if !defined(RELEASE) || (defined(RELEASE_LOGGING) && !defined(IS_EAAS)) || defined(ENABLE_PROFILING_CODE)
+#if !defined(RELEASE) || defined(RELEASE_LOGGING) || defined(ENABLE_PROFILING_CODE)
 	#define USE_REMOTE_CONSOLE
 #endif
 

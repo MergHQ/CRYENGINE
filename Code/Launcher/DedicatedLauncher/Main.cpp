@@ -104,7 +104,7 @@ ILINE int RunGame(const char *commandLine)
 
 		return 0;
 	}
-#endif //!defined(_LIB) || defined(IS_EAAS)
+#endif //!defined(_LIB)
 
 	strcat((char*)commandLine, (char*)buf);	
 

@@ -669,7 +669,7 @@ void PhysXWorld::TimeStep(float dt, int flags)
 	if (flags & ent_rigid && (!m_vars.bSingleStepMode || m_vars.bDoStep)) {
 		float dtFixed = g_cryPhysX.dt();
 		for(int i=0; m_dtSurplus+dt>dtFixed && i<m_vars.nMaxSubsteps; dt-=dtFixed,i++)	{
-			g_cryPhysX.Scene()->simulate(dtFixed);
+			g_cryPhysX.Scene()->simulate(dtFixed,0,m_scratchBuf.data(),m_scratchBuf.size());
 			WriteLockScene lockScene;
 			{ WriteLock lock(m_lockCollEvents); 
 				g_cryPhysX.Scene()->fetchResults(true);
@@ -841,6 +841,7 @@ PhysXWorld::PhysXWorld(ILog* pLog) : m_debugDraw(false)
 	bqd.preFilterShader = RaycastBatchFilter;
 	m_batchQuery[0] = g_cryPhysX.Scene()->createBatchQuery(bqd);
 	m_batchQuery[1] = g_cryPhysX.Scene()->createBatchQuery(bqd);
+	m_scratchBuf.resize(1<<11);
 
 	m_pbGlob.waterDensity = 1000;
 	m_pbGlob.kwaterDensity = 1;

@@ -514,6 +514,7 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 	const int32 viewInfoCount = renderer->GetGraphicsPipeline().GetViewInfo(viewInfo);
 
 	const bool bReverseDepth = (viewInfo[0].flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
+	const bool bDrawThickLines = CAuxGeomCB::IsThickLine(flags);
 	int32 gsFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
 
 
@@ -546,11 +547,18 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 		case e_AlphaAdditive: gsFunc |= GS_BLSRC_ONE | GS_BLDST_ONE;
 	}
 
-	switch( flags.GetCullMode() )
+	if (bDrawThickLines)
 	{
-		case e_CullModeFront: prim.SetCullMode(eCULL_Front); break;
-		case e_CullModeNone : prim.SetCullMode(eCULL_None);  break;
-		default:              prim.SetCullMode(eCULL_Back);
+		prim.SetCullMode(eCULL_None);
+	}
+	else
+	{
+		switch (flags.GetCullMode())
+		{
+			case e_CullModeFront: prim.SetCullMode(eCULL_Front); break;
+			case e_CullModeNone:  prim.SetCullMode(eCULL_None);  break;
+			default:              prim.SetCullMode(eCULL_Back);
+		}
 	}
 
 	prim.SetRenderState(gsFunc);
@@ -563,14 +571,25 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 	//		prim.SetSampler(0, CTexture::GetTexState(STexState(FILTER_LINEAR, true)));
 
 
-	if( mViewProj )
+	if( mViewProj || bDrawThickLines)
 	{
-		static CCryNameR matViewProjName("matViewProj");
-
 		auto& constantManager = prim.GetConstantManager();
 
 		constantManager.BeginNamedConstantUpdate();
-		constantManager.SetNamedConstantArray(matViewProjName, (Vec4*)mViewProj, 4, eHWSC_Vertex);
+
+		if (mViewProj)
+		{
+			static const CCryNameR matViewProjName("matViewProj");
+			constantManager.SetNamedConstantArray(matViewProjName, (Vec4*)mViewProj, 4, eHWSC_Vertex);
+		}
+
+		if (bDrawThickLines)
+		{
+			static const CCryNameR invScreenDimName("invScreenDim");
+			Vec4 vInvScreenDims = {1.0f / m_wndXRes, 1.0f / m_wndYRes, 0.0f, 0.0f };
+			constantManager.SetNamedConstant(invScreenDimName, vInvScreenDims, eHWSC_Geometry);
+		}
+
 		constantManager.EndNamedConstantUpdate();
 	}
 
@@ -597,8 +616,9 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 	}
 
 	static CCryNameTSCRC tGeom("AuxGeometry");
+	static CCryNameTSCRC tGeomThickLines("AuxGeometryThickLines");
 
-	CRenderPrimitive& prim = PreparePrimitive(flags, tGeom, topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), ~0u, &mViewProj);
+	CRenderPrimitive& prim = PreparePrimitive(flags, (CAuxGeomCB::IsThickLine(flags) ? tGeomThickLines : tGeom), topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), ~0u, &mViewProj);
 
 	prim.SetDrawInfo(topology, 0, (*itBegin)->m_vertexOffs, (*itBegin)->m_numVertices);
 
@@ -818,283 +838,6 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 	}
 }
 
-static inline Vec3 IntersectLinePlane(const Vec3& o, const Vec3& d, const Plane& p, float& t)
-{
-	t = -((p.n | o) + (p.d + c_clipThres)) / (p.n | d);
-	return(o + d * t);
-}
-
-// maps floating point channels (0.f to 1.f range) to DWORD
-	#define DWORD_COLORVALUE(r, g, b, a)        \
-	  DWORD(                                    \
-	    (((DWORD)((a) * 255.f) & 0xff) << 24) | \
-	    (((DWORD)((r) * 255.f) & 0xff) << 16) | \
-	    (((DWORD)((g) * 255.f) & 0xff) << 8) |  \
-	    (((DWORD)((b) * 255.f) & 0xff) << 0))
-
-static inline DWORD ClipColor(const DWORD& c0, const DWORD& c1, float t)
-{
-	// convert D3D DWORD color storage (ARGB) to custom ColorF storage (ColorB uses ABGR!)
-	const float f = 1.0f / 255.0f;
-	ColorF v0(
-	  f * (float)(unsigned char)(c0 >> 16),
-	  f * (float)(unsigned char)(c0 >> 8),
-	  f * (float)(unsigned char)(c0 >> 0),
-	  f * (float)(unsigned char)(c0 >> 24));
-	ColorF v1(
-	  f * (float)(unsigned char)(c1 >> 16),
-	  f * (float)(unsigned char)(c1 >> 8),
-	  f * (float)(unsigned char)(c1 >> 0),
-	  f * (float)(unsigned char)(c1 >> 24));
-	ColorF vRes(v0 + (v1 - v0) * t);
-	return(DWORD_COLORVALUE(vRes.r, vRes.g, vRes.b, vRes.a));
-}
-
-static bool ClipLine(Vec3* v, DWORD* c)
-{
-	// get near plane to perform clipping
-	Plane nearPlane(*gRenDev->GetCamera().GetFrustumPlane(FR_PLANE_NEAR));
-
-	// get clipping flags
-	bool bV0Behind(-((nearPlane.n | v[0]) + nearPlane.d) < c_clipThres);
-	bool bV1Behind(-((nearPlane.n | v[1]) + nearPlane.d) < c_clipThres);
-
-	// proceed only if both are not behind near clipping plane
-	if (false == bV0Behind || false == bV1Behind)
-	{
-		if (false == bV0Behind && false == bV1Behind)
-		{
-			// no clipping needed
-			return(true);
-		}
-
-		// define line to be clipped
-		Vec3 p(v[0]);
-		Vec3 d(v[1] - v[0]);
-
-		// get clipped position
-		float t;
-		v[0] = (false == bV0Behind) ? v[0] : IntersectLinePlane(p, d, nearPlane, t);
-		v[1] = (false == bV1Behind) ? v[1] : IntersectLinePlane(p, d, nearPlane, t);
-
-		// get clipped colors
-		c[0] = (false == bV0Behind) ? c[0] : ClipColor(c[0], c[1], t);
-		c[1] = (false == bV1Behind) ? c[1] : ClipColor(c[0], c[1], t);
-
-		return(true);
-	}
-	else
-	{
-		return(false);
-	}
-}
-
-static float ComputeConstantScale(const Vec3& v, const Matrix44A& matView, const Matrix44A& matProj, const uint32 wndXRes)
-{
-	Vec4 vCam0;
-	mathVec3TransformF(&vCam0, &v, &matView);
-
-	Vec4 vCam1(vCam0);
-	vCam1.x += 1.0f;
-
-	const float a = vCam0.y * matProj.m10 + vCam0.z * matProj.m20 + matProj.m30;
-	const float b = vCam0.y * matProj.m13 + vCam0.z * matProj.m23 + matProj.m33;
-
-	float c0((vCam0.x * matProj.m00 + a) / (vCam0.x * matProj.m03 + b));
-	float c1((vCam1.x * matProj.m00 + a) / (vCam1.x * matProj.m03 + b));
-
-	float s = (float)wndXRes * (c1 - c0);
-
-	const float epsilon = 0.001f;
-	return (fabsf(s) >= epsilon) ? 1.0f / s : 1.0f / epsilon;
-}
-
-void CRenderAuxGeomD3D::PrepareThickLines3D(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd)
-{
-	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
-
-	// process each entry
-	for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); it != itEnd; ++it)
-	{
-		// get current push buffer entry
-		const CAuxGeomCB::SAuxPushBufferEntry* curPBEntry(*it);
-
-		uint32 offset(curPBEntry->m_vertexOffs);
-		for (uint32 i(0); i < curPBEntry->m_numVertices / 6; ++i, offset += 6)
-		{
-			// get line vertices and thickness parameter
-			const float* aTmp0 = (const float*) &(auxVertexBuffer[offset + 0].xyz.x);
-			const float* aTmp1 = (const float*) &(auxVertexBuffer[offset + 1].xyz.x);
-			const Vec3 v[2] =
-			{
-				Vec3(aTmp0[0], aTmp0[1], aTmp0[2]),
-				Vec3(aTmp1[0], aTmp1[1], aTmp1[2])
-			};
-			DWORD col[2] =
-			{
-				auxVertexBuffer[offset + 0].color.dcolor,
-				auxVertexBuffer[offset + 1].color.dcolor
-			};
-			float thickness(auxVertexBuffer[offset + 2].xyz.x);
-
-			bool skipLine(false);
-			Vec4 vf[4];
-
-			if (false == IsOrthoMode())  // regular, 3d projected geometry
-			{
-				skipLine = !ClipLine((Vec3*)v, col);
-				if (false == skipLine)
-				{
-					// compute depth corrected thickness of line end points
-					float thicknessV0(0.5f * thickness * ComputeConstantScale(v[0], GetCurrentView(), GetCurrentProj(), m_wndXRes));
-					float thicknessV1(0.5f * thickness * ComputeConstantScale(v[1], GetCurrentView(), GetCurrentProj(), m_wndXRes));
-
-					// compute camera space line delta
-					Vec4 vt[2];
-					mathVec3TransformF(&vt[0], &v[0], &GetCurrentView());
-					mathVec3TransformF(&vt[1], &v[1], &GetCurrentView());
-					vt[0].z = (float) __fsel(-vt[0].z - c_clipThres, vt[0].z, -c_clipThres);
-					vt[1].z = (float) __fsel(-vt[1].z - c_clipThres, vt[1].z, -c_clipThres);
-					Vec4 tmp(vt[1] / vt[1].z - vt[0] / vt[0].z);
-					Vec2 delta(tmp.x, tmp.y);
-
-					// create screen space normal of line delta
-					Vec2 normalVec(-delta.y, delta.x);
-					mathVec2NormalizeF(&normalVec, &normalVec);
-					Vec2 normal(normalVec.x, normalVec.y);
-
-					Vec2 n[2];
-					n[0] = normal * thicknessV0;
-					n[1] = normal * thicknessV1;
-
-					// compute final world space vertices of thick line
-					Vec4 vertices[4] =
-					{
-						Vec4(vt[0].x + n[0].x, vt[0].y + n[0].y, vt[0].z, vt[0].w),
-						Vec4(vt[1].x + n[1].x, vt[1].y + n[1].y, vt[1].z, vt[1].w),
-						Vec4(vt[1].x - n[1].x, vt[1].y - n[1].y, vt[1].z, vt[1].w),
-						Vec4(vt[0].x - n[0].x, vt[0].y - n[0].y, vt[0].z, vt[0].w)
-					};
-					mathVec4TransformF(&vf[0], &vertices[0], &GetCurrentViewInv());
-					mathVec4TransformF(&vf[1], &vertices[1], &GetCurrentViewInv());
-					mathVec4TransformF(&vf[2], &vertices[2], &GetCurrentViewInv());
-					mathVec4TransformF(&vf[3], &vertices[3], &GetCurrentViewInv());
-				}
-			}
-			else // orthogonal projected geometry
-			{
-				// compute depth corrected thickness of line end points
-				float thicknessV0(0.5f * thickness * ComputeConstantScale(v[0], GetCurrentView(), GetCurrentProj(), m_wndXRes));
-				float thicknessV1(0.5f * thickness * ComputeConstantScale(v[1], GetCurrentView(), GetCurrentProj(), m_wndXRes));
-
-				// compute line delta
-				Vec2 delta(v[1] - v[0]);
-
-				// create normal of line delta
-				Vec2 normalVec(-delta.y, delta.x);
-				mathVec2NormalizeF(&normalVec, &normalVec);
-				Vec2 normal(normalVec.x, normalVec.y);
-
-				Vec2 n[2];
-				n[0] = normal * thicknessV0 * 2.0f;
-				n[1] = normal * thicknessV1 * 2.0f;
-
-				// compute final world space vertices of thick line
-				vf[0] = Vec4(v[0].x + n[0].x, v[0].y + n[0].y, v[0].z, 1.0f);
-				vf[1] = Vec4(v[1].x + n[1].x, v[1].y + n[1].y, v[1].z, 1.0f);
-				vf[2] = Vec4(v[1].x - n[1].x, v[1].y - n[1].y, v[1].z, 1.0f);
-				vf[3] = Vec4(v[0].x - n[0].x, v[0].y - n[0].y, v[0].z, 1.0f);
-			}
-
-			SAuxVertex* pVertices(const_cast<SAuxVertex*>(&auxVertexBuffer[offset]));
-			if (false == skipLine)
-			{
-				// copy data to vertex buffer
-				pVertices[0].xyz = Vec3(vf[0].x, vf[0].y, vf[0].z);
-				pVertices[0].color.dcolor = col[0];
-				pVertices[1].xyz = Vec3(vf[1].x, vf[1].y, vf[1].z);
-				pVertices[1].color.dcolor = col[1];
-				pVertices[2].xyz = Vec3(vf[2].x, vf[2].y, vf[2].z);
-				pVertices[2].color.dcolor = col[1];
-				pVertices[3].xyz = Vec3(vf[0].x, vf[0].y, vf[0].z);
-				pVertices[3].color.dcolor = col[0];
-				pVertices[4].xyz = Vec3(vf[2].x, vf[2].y, vf[2].z);
-				pVertices[4].color.dcolor = col[1];
-				pVertices[5].xyz = Vec3(vf[3].x, vf[3].y, vf[3].z);
-				pVertices[5].color.dcolor = col[0];
-			}
-			else
-			{
-				// invalidate parameter data of thick line stored in vertex buffer
-				// (generates two black degenerated triangles at (0,0,0))
-				memset(pVertices, 0, sizeof(SAuxVertex) * 6);
-			}
-		}
-	}
-}
-
-void CRenderAuxGeomD3D::PrepareThickLines2D(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd)
-{
-	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
-
-	// process each entry
-	for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); it != itEnd; ++it)
-	{
-		// get current push buffer entry
-		const CAuxGeomCB::SAuxPushBufferEntry* curPBEntry(*it);
-
-		uint32 offset(curPBEntry->m_vertexOffs);
-		for (uint32 i(0); i < curPBEntry->m_numVertices / 6; ++i, offset += 6)
-		{
-			// get line vertices and thickness parameter
-			const float* aTmp0 = (const float*) &(auxVertexBuffer[offset + 0].xyz.x);
-			const float* aTmp1 = (const float*) &(auxVertexBuffer[offset + 1].xyz.x);
-			const Vec3 v[2] =
-			{
-				Vec3(aTmp0[0], aTmp0[1], aTmp0[2]),
-				Vec3(aTmp1[0], aTmp1[1], aTmp1[2])
-			};
-			const DWORD col[2] =
-			{
-				auxVertexBuffer[offset + 0].color.dcolor,
-				auxVertexBuffer[offset + 1].color.dcolor
-			};
-			float thickness(auxVertexBuffer[offset + 2].xyz.x);
-
-			// get line delta and aspect ratio corrected normal
-			Vec3 delta(v[1] - v[0]);
-			Vec3 normalVec(-delta.y * m_aspectInv, delta.x * m_aspect, 0.0f);
-
-			// normalize and scale to line thickness
-			mathVec3NormalizeF(&normalVec, &normalVec);
-			Vec3 normal(normalVec.x, normalVec.y, normalVec.z);
-			normal *= thickness * 0.001f;
-
-			// compute final 2D vertices of thick line in normalized device space
-			Vec3 vf[4];
-			vf[0] = v[0] + normal;
-			vf[1] = v[1] + normal;
-			vf[2] = v[1] - normal;
-			vf[3] = v[0] - normal;
-
-			// copy data to vertex buffer
-			SAuxVertex* pVertices(const_cast<SAuxVertex*>(&auxVertexBuffer[offset]));
-			pVertices[0].xyz = Vec3(vf[0].x, vf[0].y, vf[0].z);
-			pVertices[0].color.dcolor = col[0];
-			pVertices[1].xyz = Vec3(vf[1].x, vf[1].y, vf[1].z);
-			pVertices[1].color.dcolor = col[1];
-			pVertices[2].xyz = Vec3(vf[2].x, vf[2].y, vf[2].z);
-			pVertices[2].color.dcolor = col[1];
-			pVertices[3].xyz = Vec3(vf[0].x, vf[0].y, vf[0].z);
-			pVertices[3].color.dcolor = col[0];
-			pVertices[4].xyz = Vec3(vf[2].x, vf[2].y, vf[2].z);
-			pVertices[4].color.dcolor = col[1];
-			pVertices[5].xyz = Vec3(vf[3].x, vf[3].y, vf[3].z);
-			pVertices[5].color.dcolor = col[0];
-		}
-	}
-}
-
 void CRenderAuxGeomD3D::PrepareRendering()
 {
 	// update transformation matrices
@@ -1234,19 +977,6 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx) )
 					{
 						break;
-					}
-				}
-
-				// prepare thick lines
-				if( CAuxGeomCB::e_TriList == primType && CAuxGeomCB::IsThickLine(curRenderFlags) )
-				{
-					if( e_Mode3D == curRenderFlags.GetMode2D3DFlag() )
-					{
-						PrepareThickLines3D(itCur, it);
-					}
-					else
-					{
-						PrepareThickLines2D(itCur, it);
 					}
 				}
 			}

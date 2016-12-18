@@ -185,6 +185,7 @@ public:
 	int m_idStep = 0;
 	volatile int m_updated=0;
 	double m_time = 0;
+	std::vector<char> m_scratchBuf;
 
 	PxBatchQuery *m_batchQuery[2];
 	int m_nqRWItouches=0;

@@ -111,7 +111,7 @@ public:
 
 	virtual void                      GetMemoryStatistics(ICrySizer* s) const override;
 
-#if !defined(_LIB) || defined(IS_EAAS)
+#if !defined(_LIB)
 	virtual SUIItemLookupSet_Impl<SUIParameterDesc>* CreateLookupParameter() override { return new SUIItemLookupSet_Impl<SUIParameterDesc>(); };
 	virtual SUIItemLookupSet_Impl<SUIMovieClipDesc>* CreateLookupMovieClip() override { return new SUIItemLookupSet_Impl<SUIMovieClipDesc>(); };
 	virtual SUIItemLookupSet_Impl<SUIEventDesc>*     CreateLookupEvent() override { return new SUIItemLookupSet_Impl<SUIEventDesc>(); };

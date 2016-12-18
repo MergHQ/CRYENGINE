@@ -1553,7 +1553,6 @@ struct ISystem
 	virtual bool SteamInit() = 0;
 
 	//! Loads a dynamic library, creates and initializes an instance of the module class
-	//! \note HintEaaS is used to load EaaS release configuration, it's ignored in all other configurations; pass true if the sourcecode for the module is available to EaaS users.
 	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) = 0;
 
 	//! Unloads a dynamic library as well as the corresponding instance of the module class
@@ -2112,7 +2111,7 @@ inline void CryLogAlways(const char* format, ...)
 
 //! Complex delegation required because it is not really easy to export a external standalone symbol like a memcpy function when building with modules.
 //! Dlls pay an extra indirection cost for calling this function.
-#if !defined(_LIB) || defined(IS_EAAS)
+#if !defined(_LIB)
 	#define CRY_ASYNC_MEMCPY_DELEGATE_TO_CRYSYSTEM
 #endif
 #define CRY_ASYNC_MEMCPY_API extern "C"

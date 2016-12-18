@@ -302,11 +302,11 @@ private:
 	enum EAuxGeomPrivateRenderflags
 	{
 		// for non-indexed triangles
-		e_TriListParam_ProcessThickLines = 0x00000001,
 
 		// for triangles
 
 		// for lines
+		e_LineListParam_ProcessThickLines = 0x00000001,
 
 		// for points
 
@@ -484,11 +484,11 @@ inline CAuxGeomCB::EPrimType CAuxGeomCB::GetPrimType(const SAuxGeomRenderFlags& 
 inline bool CAuxGeomCB::IsThickLine(const SAuxGeomRenderFlags& renderFlags)
 {
 	EPrimType primType(GetPrimType(renderFlags));
-	assert(e_TriList == primType);
+	//assert(e_LineList == primType);
 
-	if (e_TriList == primType)
+	if (e_LineList == primType)
 	{
-		return(0 != (renderFlags.m_renderFlags & e_TriListParam_ProcessThickLines));
+		return (0 != (renderFlags.m_renderFlags & e_LineListParam_ProcessThickLines));
 	}
 	else
 	{

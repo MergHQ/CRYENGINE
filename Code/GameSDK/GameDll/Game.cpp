@@ -944,13 +944,13 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 		{
 			pLobby->SetUserPacketEnd(eGUPD_End);
 
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD) || defined(IS_EAAS)
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 			if (!(g_pGameCVars && (g_pGameCVars->g_useOnlineServiceForDedicated) && gEnv->IsDedicated()))
 			{
 				error = pLobby->Initialise(eCLS_LAN, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
 				CRY_ASSERT_MESSAGE(error == eCLE_Success, "Failed to initialize LAN lobby service");
 			}
-#endif // #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD) || defined(IS_EAAS)
+#endif // #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 
 			if (!gEnv->IsDedicated())
 			{

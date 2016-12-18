@@ -3087,67 +3087,6 @@ L_done:;
 		                                  && !m_env.IsDedicated()
 		                                  && m_env.pRenderer;
 
-#if defined(IS_EAAS)
-		if (bStartScreensAllowed)
-		{
-			ITexture* pTex = m_env.pRenderer->EF_LoadTexture("engineassets/textures/startscreen_eaas.tif", FT_DONT_STREAM);
-			if (pTex)
-			{
-				const int splashWidth = pTex->GetWidth();
-				const int splashHeight = pTex->GetHeight();
-
-				if (splashWidth > 0 && splashHeight > 0)
-				{
-					const int screenWidth = m_env.pRenderer->GetWidth();
-					const int screenHeight = m_env.pRenderer->GetHeight();
-
-					const float scaleX = (float)screenWidth / (float)splashWidth;
-					const float scaleY = (float)screenHeight / (float)splashHeight;
-
-					const float scale = (scaleY * splashWidth > screenWidth) ? scaleX : scaleY;
-
-					const float w = splashWidth * scale;
-					const float h = splashHeight * scale;
-					const float x = (screenWidth - w) * 0.5f;
-					const float y = (screenHeight - h) * 0.5f;
-
-					const float vx = (800.0f / (float)screenWidth);
-					const float vy = (600.0f / (float)screenHeight);
-
-					m_env.pRenderer->SetViewport(0, 0, screenWidth, screenHeight);
-
-					float maxSeconds = 2.f;
-					float fTimeS = 0.f;
-					float fStartTime = gEnv->pTimer->GetAsyncCurTime();
-
-					m_env.pRenderer->Draw2dImageStretchMode(true);
-
-					while (fTimeS <= maxSeconds + 1)
-					{
-						fTimeS = (gEnv->pTimer->GetAsyncCurTime() - fStartTime);
-						// make sure it's rendered in full screen mode when triple buffering is enabled as well
-						for (size_t n = 0; n < 3; n++)
-						{
-							m_env.pRenderer->BeginFrame();
-							m_env.pRenderer->SetCullMode(R_CULL_NONE);
-							m_env.pRenderer->SetState(GS_BLSRC_ONE | GS_BLDST_ZERO /*GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA */ | GS_NODEPTHTEST);
-							m_env.pRenderer->Draw2dImage(x * vx, y * vy, w * vx, h * vy, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
-							m_env.pRenderer->EndFrame();
-						}
-					}
-
-					m_env.pRenderer->Draw2dImageStretchMode(false);
-				}
-				else
-				{
-					gEnv->pLog->LogWarning("Invalid splash screen texture");
-				}
-
-				pTex->Release();
-			}
-		}
-#endif
-
 		if (g_cvars.sys_intromoviesduringinit && bStartScreensAllowed)
 		{
 
