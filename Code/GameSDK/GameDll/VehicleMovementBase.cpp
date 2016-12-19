@@ -1,16 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Implements a base class for vehicle movements
-
--------------------------------------------------------------------------
-History:
-- 09:28:2005: Created by Mathieu Pinard
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "VehicleMovementBase.h"
 
@@ -23,6 +12,8 @@ History:
 #include <CryGame/GameUtils.h>
 #include "VehicleClient.h"
 #include "GamePhysicsSettings.h"
+
+using namespace CryAudio;
 
 #define RUNSOUND_FADEIN_TIME 0.5f
 #define RUNSOUND_FADEOUT_TIME 0.5f
@@ -97,7 +88,7 @@ CVehicleMovementBase::CVehicleMovementBase()
 	
 	for (int i=0; i<eSID_Max; ++i)
 	{
-		m_audioControlIDs[i] = INVALID_AUDIO_CONTROL_ID;
+		m_audioControlIDs[i] = InvalidControlId;
 	}
 
 	memset(m_animations, 0, sizeof(m_animations));
@@ -197,15 +188,15 @@ bool CVehicleMovementBase::Init(IVehicle* pVehicle, const CVehicleParams& table)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent);
 
-	AudioSwitchStateId nSurfaceStateID = INVALID_AUDIO_SWITCH_STATE_ID;
+	SwitchStateId nSurfaceStateID = InvalidSwitchStateId;
 	gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], "concrete", nSurfaceStateID);
 
-	if (nSurfaceStateID != INVALID_AUDIO_SWITCH_STATE_ID)
+	if (nSurfaceStateID != InvalidSwitchStateId)
 	{
 		pIEntityAudioComponent->SetSwitchState(m_audioControlIDs[eSID_VehicleSurface], nSurfaceStateID);
 	}
 
-	pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(IDENTITY, m_enginePos));
+	pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, m_enginePos));
 
 	if (IVehicleComponent* pComp = m_pVehicle->GetComponent("Hull"))
 		m_damageComponents.push_back(pComp);
@@ -568,7 +559,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 
 			m_rpmScale = fadeInRatio * ms_engineSoundIdleRatio;
 
-			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+			pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 			
 			if(m_pVehicle->IsPlayerPassenger())
 			{
@@ -593,7 +584,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
  
 		if (m_rpmScale > 0.f)
 		{
-			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+			pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 		}
 		
 		if (m_engineStartup <= 0.0f && m_rpmScale <= 0.f)
@@ -624,7 +615,7 @@ void CVehicleMovementBase::Update(const float deltaTime)
 		}
 	}
 
-	pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], m_speed);
+	pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleSpeed], m_speed);
   
 	// Update Game Tokens
 	if(m_pVehicle->IsPlayerDriving(true)||m_pVehicle->IsPlayerPassenger())
@@ -680,7 +671,7 @@ void CVehicleMovementBase::UpdateRunSound(const float deltaTime)
 		m_rpmScale = max(ms_engineSoundIdleRatio, abs(m_rpmScaleSgn) * (1.0f - ms_engineSoundOverRevRatio)); // PS - Not sure if we ever actually get here, but the calculation might be wrong.
 		IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 		if (pIEntityAudioComponent)
-			pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
+			pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleRPM], m_rpmScale);
 	}
 }
 
@@ -828,12 +819,12 @@ void CVehicleMovementBase::StopEngine()
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
 	}
 
 	// If no stop trigger is present we will need to manually stop the running event.
-	if (GetAudioControlID(eSID_Stop) != INVALID_AUDIO_CONTROL_ID)
+	if (GetAudioControlID(eSID_Stop) != InvalidControlId)
 	{
 		ExecuteTrigger(eSID_Stop);
 	}
@@ -1231,10 +1222,10 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 				}
 			}
 					
-			AudioSwitchStateId nInOutStateID = INVALID_AUDIO_SWITCH_STATE_ID;
+			SwitchStateId nInOutStateID = InvalidSwitchStateId;
 			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleINOUT], (m_soundStats.inout == 0.0f) ? "inside" : "outside", nInOutStateID);
 
-			if (nInOutStateID != INVALID_AUDIO_SWITCH_STATE_ID)
+			if (nInOutStateID != InvalidSwitchStateId)
 			{
 				IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 				if (pIEntityAudioComponent)
@@ -1247,7 +1238,7 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 		{
 			IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 			if (pIEntityAudioComponent)
-				pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], GetSoundDamage());
+				pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleDamage], GetSoundDamage());
 
 			if (!m_bFirstHit)
 			{
@@ -1263,7 +1254,7 @@ void CVehicleMovementBase::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 			{
 				IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 				if (pIEntityAudioComponent)
-					pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], fSoundDamage);
+					pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleDamage], fSoundDamage);
 				ExecuteTrigger(eSID_StopDamage);
 				m_bFirstHit = false;
 			}
@@ -1277,8 +1268,8 @@ void CVehicleMovementBase::ExecuteTrigger(EVehicleMovementSound eSID)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
-	const AudioControlId id = m_audioControlIDs[eSID];
-	if (id != INVALID_AUDIO_CONTROL_ID)
+	const ControlId id = m_audioControlIDs[eSID];
+	if (id != InvalidControlId)
 	{
 		pIEntityAudioComponent->ExecuteTrigger(id);
 	}
@@ -1289,8 +1280,8 @@ void CVehicleMovementBase::StopTrigger(EVehicleMovementSound eSID)
 	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
 	assert(pIEntityAudioComponent && eSID>=0 && eSID<eSID_Max);
 
-	const AudioControlId id = m_audioControlIDs[eSID];
-	if (id != INVALID_AUDIO_CONTROL_ID)
+	const ControlId id = m_audioControlIDs[eSID];
+	if (id != InvalidControlId)
 	{
 		pIEntityAudioComponent->StopTrigger(id);
 	}
@@ -2098,7 +2089,7 @@ void CVehicleMovementBase::SetAnimationSpeed(EVehicleMovementAnimation eAnim, fl
 }
 
 //------------------------------------------------------------------------
-const AudioControlId& CVehicleMovementBase::GetAudioControlID(EVehicleMovementSound eSID)
+const ControlId& CVehicleMovementBase::GetAudioControlID(EVehicleMovementSound eSID)
 {
   assert(eSID>=0 && eSID<eSID_Max);
 
@@ -2315,47 +2306,48 @@ IEntityAudioComponent* CVehicleMovementBase::GetAudioProxy() const
 
 void CVehicleMovementBase::CacheAudioControlIDs()
 {
-	IAudioSystem* pAudioSystem = gEnv->pAudioSystem;
+	IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
 
-	if (pAudioSystem)
+	if (pIAudioSystem != nullptr)
 	{
 		string triggerName = "";
 		const char* vehicleName = m_pVehicle->GetEntity()->GetClass()->GetName(); 
 
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_start", vehicleName).c_str(), m_audioControlIDs[eSID_Start]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_run", vehicleName).c_str(), m_audioControlIDs[eSID_Run]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_stop", vehicleName).c_str(), m_audioControlIDs[eSID_Stop]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_ambience", vehicleName).c_str(), m_audioControlIDs[eSID_Ambience]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_bump", vehicleName).c_str(), m_audioControlIDs[eSID_Bump]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_splash", vehicleName).c_str(), m_audioControlIDs[eSID_Splash]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_gear", vehicleName).c_str(), m_audioControlIDs[eSID_Gear]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_slip", vehicleName).c_str(), m_audioControlIDs[eSID_Slip]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_acceleration", vehicleName).c_str(), m_audioControlIDs[eSID_Acceleration]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_boost", vehicleName).c_str(), m_audioControlIDs[eSID_Boost]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_damage", vehicleName).c_str(), m_audioControlIDs[eSID_Damage]);
-		pAudioSystem->GetAudioTriggerId(triggerName.Format("Stop_%s_damage", vehicleName).c_str(), m_audioControlIDs[eSID_StopDamage]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_start", vehicleName).c_str(), m_audioControlIDs[eSID_Start]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_run", vehicleName).c_str(), m_audioControlIDs[eSID_Run]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_stop", vehicleName).c_str(), m_audioControlIDs[eSID_Stop]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_ambience", vehicleName).c_str(), m_audioControlIDs[eSID_Ambience]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_bump", vehicleName).c_str(), m_audioControlIDs[eSID_Bump]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_splash", vehicleName).c_str(), m_audioControlIDs[eSID_Splash]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_gear", vehicleName).c_str(), m_audioControlIDs[eSID_Gear]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_slip", vehicleName).c_str(), m_audioControlIDs[eSID_Slip]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_acceleration", vehicleName).c_str(), m_audioControlIDs[eSID_Acceleration]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_boost", vehicleName).c_str(), m_audioControlIDs[eSID_Boost]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Play_%s_damage", vehicleName).c_str(), m_audioControlIDs[eSID_Damage]);
+		pIAudioSystem->GetAudioTriggerId(triggerName.Format("Stop_%s_damage", vehicleName).c_str(), m_audioControlIDs[eSID_StopDamage]);
 
-		pAudioSystem->GetAudioRtpcId("vehicle_rpm", m_audioControlIDs[eSID_VehicleRPM]);
-		pAudioSystem->GetAudioRtpcId("vehicle_speed", m_audioControlIDs[eSID_VehicleSpeed]);
-		pAudioSystem->GetAudioRtpcId("vehicle_damage", m_audioControlIDs[eSID_VehicleDamage]);
-		pAudioSystem->GetAudioRtpcId("vehicle_slip", m_audioControlIDs[eSID_VehicleSlip]);
-		pAudioSystem->GetAudioRtpcId("vehicle_stroke", m_audioControlIDs[eSID_VehicleStroke]);
+		pIAudioSystem->GetAudioParameterId("vehicle_rpm", m_audioControlIDs[eSID_VehicleRPM]);
+		pIAudioSystem->GetAudioParameterId("vehicle_speed", m_audioControlIDs[eSID_VehicleSpeed]);
+		pIAudioSystem->GetAudioParameterId("vehicle_damage", m_audioControlIDs[eSID_VehicleDamage]);
+		pIAudioSystem->GetAudioParameterId("vehicle_slip", m_audioControlIDs[eSID_VehicleSlip]);
+		pIAudioSystem->GetAudioParameterId("vehicle_stroke", m_audioControlIDs[eSID_VehicleStroke]);
 
-		gEnv->pAudioSystem->GetAudioSwitchId("SurfaceType", m_audioControlIDs[eSID_VehicleSurface]);
-		gEnv->pAudioSystem->GetAudioSwitchId("in_out", m_audioControlIDs[eSID_VehicleINOUT]);
+		pIAudioSystem->GetAudioSwitchId("SurfaceType", m_audioControlIDs[eSID_VehicleSurface]);
+		pIAudioSystem->GetAudioSwitchId("in_out", m_audioControlIDs[eSID_VehicleINOUT]);
 	}
 }
 
 void CVehicleMovementBase::ResetAudioParams()
 {
-	IEntityAudioComponent* pIEntityAudioComponent = GetAudioProxy();
-	if (pIEntityAudioComponent)
+	IEntityAudioComponent* const pIEntityAudioComponent = GetAudioProxy();
+
+	if (pIEntityAudioComponent != nullptr)
 	{
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleDamage], 0.0f);
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleSlip], 0.0f);
-		pIEntityAudioComponent->SetRtpcValue(m_audioControlIDs[eSID_VehicleStroke], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleRPM], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleSpeed], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleDamage], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleSlip], 0.0f);
+		pIEntityAudioComponent->SetParameter(m_audioControlIDs[eSID_VehicleStroke], 0.0f);
 	}
 }
 

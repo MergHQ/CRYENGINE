@@ -5,16 +5,17 @@
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 #include "ParamMod.h"
 
+using namespace CryAudio;
+
 CRY_PFX2_DBG
 
 namespace pfx2
 {
 
 static const ColorB audioColor = ColorB(172, 196, 138);
-typedef TIOStream<IAudioProxy*> TIOAudioProxies;
+typedef TIOStream<IObject*> IOAudioObjects;
 
-EParticleDataType PDT(EPDT_AudioProxy, IAudioProxy*);
-
+EParticleDataType PDT(EPDT_AudioObject, IObject*);
 
 SERIALIZATION_DECLARE_ENUM(ETriggerType,
                            OnSpawn,
@@ -22,11 +23,11 @@ SERIALIZATION_DECLARE_ENUM(ETriggerType,
                            )
 
 SERIALIZATION_DECLARE_ENUM(EAudioOcclusionMode,
-                           Ignore = eAudioOcclusionType_Ignore,
-                           Adaptive = eAudioOcclusionType_Adaptive,
-                           Low = eAudioOcclusionType_Low,
-                           Medium = eAudioOcclusionType_Medium,
-                           High = eAudioOcclusionType_High
+                           Ignore = eOcclusionType_Ignore,
+                           Adaptive = eOcclusionType_Adaptive,
+                           Low = eOcclusionType_Low,
+                           Medium = eOcclusionType_Medium,
+                           High = eOcclusionType_High
                            )
 
 class CFeatureAudioTrigger : public CParticleFeature
@@ -37,17 +38,17 @@ public:
 	CFeatureAudioTrigger()
 		: m_triggerType(ETriggerType::OnSpawn)
 		, m_occlusionMode(EAudioOcclusionMode::Ignore)
-		, m_audioId(INVALID_AUDIO_CONTROL_ID)
+		, m_audioId(InvalidControlId)
 		, m_followParticle(true) {}
 
 	void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		gEnv->pAudioSystem->GetAudioTriggerId(m_audioName.c_str(), m_audioId);
-		if (m_audioId != INVALID_AUDIO_CONTROL_ID)
+		if (m_audioId != InvalidControlId)
 		{
 			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
 			pComponent->AddParticleData(EPVF_Position);
-			pComponent->AddParticleData(EPDT_AudioProxy);
+			pComponent->AddParticleData(EPDT_AudioObject);
 		}
 	}
 
@@ -84,24 +85,22 @@ private:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		IAudioSystem* pAudioSystem = gEnv->pAudioSystem;
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto states = container.GetTIStream<uint8>(EPDT_State);
-		TIOAudioProxies audioProxies = container.GetTIOStream<IAudioProxy*>(EPDT_AudioProxy);
+		IOAudioObjects audioObjects = container.GetTIOStream<IObject*>(EPDT_AudioObject);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
-			IAudioProxy* pAudioProxy = nullptr;
 			const uint8 state = states.Load(particleId);
 			const bool onSpawn = (m_triggerType == ETriggerType::OnSpawn) && (state == ES_NewBorn);
 			const bool onDeath = (m_triggerType == ETriggerType::OnDeath) && (state == ES_Expired);
 			if (onSpawn || onDeath)
 			{
-				pAudioProxy = MakeProxy(pAudioSystem, positions, particleId, proxyName);
-				pAudioProxy->ExecuteTrigger(m_audioId);
-				pAudioProxy->Release();
+				const Vec3 position = positions.Load(particleId);
+				SExecuteTriggerData const data(proxyName, EOcclusionType(m_occlusionMode), position, true, m_audioId);
+				gEnv->pAudioSystem->ExecuteTriggerEx(data);
 			}
 		}
 		CRY_PFX2_FOR_END;
@@ -111,28 +110,28 @@ private:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		IAudioSystem* pAudioSystem = gEnv->pAudioSystem;
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto states = container.GetTIStream<uint8>(EPDT_State);
-		TIOAudioProxies audioProxies = container.GetTIOStream<IAudioProxy*>(EPDT_AudioProxy);
+		IOAudioObjects audioObjects = container.GetTIOStream<IObject*>(EPDT_AudioObject);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
-			IAudioProxy* pAudioProxy = audioProxies.Load(particleId);
+			IObject* pIObject = audioObjects.Load(particleId);
 			const uint8 state = states.Load(particleId);
 			if ((state & ESB_NewBorn) != 0)
 			{
-				pAudioProxy = MakeProxy(pAudioSystem, positions, particleId, proxyName);
-				audioProxies.Store(particleId, pAudioProxy);
-				pAudioProxy->ExecuteTrigger(m_audioId);
+				CRY_ASSERT(pIObject == nullptr);
+				pIObject = MakeAudioObject(gEnv->pAudioSystem, positions, particleId, proxyName);
+				audioObjects.Store(particleId, pIObject);
+				pIObject->ExecuteTrigger(m_audioId);
 			}
-			if ((state & ESB_Dead) != 0 && pAudioProxy)
+			if ((state & ESB_Dead) != 0 && pIObject != nullptr)
 			{
-				pAudioProxy->StopTrigger(m_audioId);
-				pAudioProxy->Release();
-				audioProxies.Store(particleId, nullptr);
+				pIObject->StopTrigger(m_audioId);
+				gEnv->pAudioSystem->ReleaseObject(pIObject);
+				audioObjects.Store(particleId, nullptr);
 			}
 		}
 		CRY_PFX2_FOR_END;
@@ -145,37 +144,30 @@ private:
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		TIOAudioProxies audioProxies = container.GetTIOStream<IAudioProxy*>(EPDT_AudioProxy);
+		IOAudioObjects audioObjects = container.GetTIOStream<IObject*>(EPDT_AudioObject);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
-			IAudioProxy* pAudioProxy = audioProxies.Load(particleId);
-			if (pAudioProxy)
+			IObject* const pIObject = audioObjects.Load(particleId);
+			if (pIObject != nullptr)
 			{
 				const Vec3 position = positions.Load(particleId);
-				pAudioProxy->SetPosition(position);
+				pIObject->SetTransformation(position);
 			}
 		}
 		CRY_PFX2_FOR_END;
 	}
 
-	ILINE IAudioProxy* MakeProxy(IAudioSystem* pAudioSystem, IVec3Stream positions, TParticleId particleId, const char* proxyName)
+	ILINE IObject* MakeAudioObject(IAudioSystem* pAudioSystem, IVec3Stream positions, TParticleId particleId, const char* const szName)
 	{
-		IAudioProxy* pAudioProxy;
 		const Vec3 position = positions.Load(particleId);
 
-		pAudioProxy = pAudioSystem->GetFreeAudioProxy();
-
-		pAudioProxy->Initialize(proxyName);
-		pAudioProxy->SetOcclusionType(EAudioOcclusionType(m_occlusionMode));
-		pAudioProxy->SetPosition(position);
-		pAudioProxy->SetCurrentEnvironments();
-
-		return pAudioProxy;
+		SCreateObjectData const data(szName, EOcclusionType(m_occlusionMode), position, INVALID_ENTITYID, true);
+		return pAudioSystem->CreateObject(data);
 	}
 
 	string              m_audioName;
-	AudioControlId      m_audioId;
+	ControlId           m_audioId;
 	ETriggerType        m_triggerType;
 	EAudioOcclusionMode m_occlusionMode;
 	bool                m_followParticle;
@@ -183,19 +175,19 @@ private:
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", colorAudio);
 
-class CFeatureAudioRtpc : public CParticleFeature
+class CFeatureAudioParameter : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureAudioRtpc()
+	CFeatureAudioParameter()
 		: m_value(1.0f)
-		, m_rtpcId(INVALID_AUDIO_CONTROL_ID) {}
+		, m_parameterId(InvalidControlId) {}
 
 	void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		gEnv->pAudioSystem->GetAudioRtpcId(m_rtpcName.c_str(), m_rtpcId);
-		if (m_rtpcId != INVALID_AUDIO_CONTROL_ID)
+		gEnv->pAudioSystem->GetAudioParameterId(m_parameterName.c_str(), m_parameterId);
+		if (m_parameterId != InvalidControlId)
 		{
 			pComponent->AddToUpdateList(EUL_MainPreUpdate, this);
 			m_value.AddToComponent(pComponent, this);
@@ -205,7 +197,7 @@ public:
 	void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(Serialization::AudioRTPC(m_rtpcName), "Name", "Name");
+		ar(Serialization::AudioRTPC(m_parameterName), "Name", "Name");
 		ar(m_value, "Value", "Value");
 	}
 
@@ -213,9 +205,9 @@ public:
 	{
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
-		if (!container.HasData(EPDT_AudioProxy))
+		if (!container.HasData(EPDT_AudioObject))
 			return;
-		TIOAudioProxies audioProxies = container.GetTIOStream<IAudioProxy*>(EPDT_AudioProxy);
+		IOAudioObjects audioObjects = container.GetTIOStream<IObject*>(EPDT_AudioObject);
 
 		STempModBuffer values(context, m_value);
 		values.ModifyUpdate(context, m_value, container.GetFullRange());
@@ -223,19 +215,21 @@ public:
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
 			const float value = values.m_stream.Load(particleId);
-			IAudioProxy* pAudioProxy = audioProxies.Load(particleId);
-			if (pAudioProxy)
-				pAudioProxy->SetRtpcValue(m_rtpcId, value);
+			IObject* const pIObject = audioObjects.Load(particleId);
+			if (pIObject != nullptr)
+			{
+				pIObject->SetParameter(m_parameterId, value);
+			}
 		}
 		CRY_PFX2_FOR_END;
 	}
 
 private:
-	string                               m_rtpcName;
-	AudioControlId                       m_rtpcId;
+	string                               m_parameterName;
+	ControlId                            m_parameterId;
 	CParamMod<SModParticleField, SFloat> m_value;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioRtpc, "Audio", "Rtpc", colorAudio);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioParameter, "Audio", "Rtpc", colorAudio);
 
 }

@@ -6,7 +6,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-	#pragma once
+#pragma once
 
 #include <CrySystem/IConsole.h>     // <> required for Interfuscator
 #include <CrySystem/File/ICryPak.h> // <> required for Interfuscator
@@ -258,7 +258,7 @@ struct SSequenceKey : public STrackKey
 struct SAudioTriggerKey : public STrackDurationKey
 {
 	SAudioTriggerKey()
-	: STrackDurationKey()
+		: STrackDurationKey()
 	{}
 
 	static const char* GetType()              { return "AudioTrigger"; }
@@ -287,11 +287,11 @@ struct SAudioTriggerKey : public STrackDurationKey
 		}
 	}
 
-	string m_startTriggerName;
-	string m_stopTriggerName;
-	string m_keyDescription;
-	AudioControlId m_startTriggerId;
-	AudioControlId m_stopTriggerId;
+	string              m_startTriggerName;
+	string              m_stopTriggerName;
+	string              m_keyDescription;
+	CryAudio::ControlId m_startTriggerId;
+	CryAudio::ControlId m_stopTriggerId;
 };
 
 /** SAudioFileKey used in audio file track.
@@ -299,9 +299,9 @@ struct SAudioTriggerKey : public STrackDurationKey
 struct SAudioFileKey : public STrackDurationKey
 {
 	SAudioFileKey()
-	: STrackDurationKey()
-	, m_bIsLocalized(false)
-	, m_bNoTriggerInScrubbing(false)
+		: STrackDurationKey()
+		, m_bIsLocalized(false)
+		, m_bNoTriggerInScrubbing(false)
 	{}
 
 	static const char* GetType()              { return "AudioFile"; }
@@ -320,7 +320,7 @@ struct SAudioFileKey : public STrackDurationKey
 			int pathLength = m_audioFile.find(PathUtil::GetGameFolder());
 			const string tempFilePath = (pathLength == -1) ? PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_audioFile : m_audioFile;
 
-			SAudioFileData audioData;
+			CryAudio::SFileData audioData;
 			gEnv->pAudioSystem->GetAudioFileData(tempFilePath.c_str(), audioData);
 			m_duration = audioData.duration;
 		}
@@ -330,17 +330,17 @@ struct SAudioFileKey : public STrackDurationKey
 			{
 				const char* szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
 				m_audioFile = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + szLanguage + CRY_NATIVE_PATH_SEPSTR;
-		}
+			}
 			else
-		{
+			{
 				m_audioFile = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR;
-		}
+			}
 		}
 	}
 
 	string m_audioFile;
-	bool m_bIsLocalized;
-	bool m_bNoTriggerInScrubbing;
+	bool   m_bIsLocalized;
+	bool   m_bNoTriggerInScrubbing;
 };
 
 /** SAudioSwitchKey used in CAudioSwitchTrack
@@ -348,9 +348,9 @@ struct SAudioFileKey : public STrackDurationKey
 struct SAudioSwitchKey : public STrackKey
 {
 	SAudioSwitchKey()
-	: STrackKey()
-	, m_audioSwitchId(INVALID_AUDIO_CONTROL_ID)
-	, m_audioSwitchStateId(INVALID_AUDIO_SWITCH_STATE_ID)
+		: STrackKey()
+		, m_audioSwitchId(CryAudio::InvalidControlId)
+		, m_audioSwitchStateId(CryAudio::InvalidSwitchStateId)
 	{}
 
 	static const char* GetType()              { return "AudioSwitch"; }
@@ -372,19 +372,19 @@ struct SAudioSwitchKey : public STrackKey
 		m_keyDescription.Format("%s : %s", m_audioSwitchName.c_str(), m_audioSwitchStateName.c_str());
 	}
 
-	string m_audioSwitchName;
-	string m_audioSwitchStateName;
-	string m_keyDescription;
+	string                  m_audioSwitchName;
+	string                  m_audioSwitchStateName;
+	string                  m_keyDescription;
 
-	AudioControlId m_audioSwitchId;
-	AudioSwitchStateId m_audioSwitchStateId;
+	CryAudio::ControlId     m_audioSwitchId;
+	CryAudio::SwitchStateId m_audioSwitchStateId;
 };
 
 struct SDynamicResponseSignalKey : public STrackKey
-		{
+{
 	SDynamicResponseSignalKey()
-	: STrackKey()
-	, m_bNoTriggerInScrubbing(false)
+		: STrackKey()
+		, m_bNoTriggerInScrubbing(false)
 	{}
 
 	static const char* GetType()              { return "DynamicResponseSignal"; }
@@ -403,7 +403,7 @@ struct SDynamicResponseSignalKey : public STrackKey
 	string m_signalName;
 	string m_contextVariableName;
 	string m_contextVariableValue;
-	bool m_bNoTriggerInScrubbing;
+	bool   m_bNoTriggerInScrubbing;
 };
 
 /** SCharacterKey used in Character animation track.

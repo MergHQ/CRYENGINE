@@ -531,11 +531,11 @@ CPlayer::CPlayer()
 , m_isInWater(false)
 , m_isHeadUnderWater(false)
 , m_fOxygenLevel(1.0f)
-, m_waterEnter(INVALID_AUDIO_CONTROL_ID)
-, m_waterExit(INVALID_AUDIO_CONTROL_ID)
-, m_waterDiveIn(INVALID_AUDIO_CONTROL_ID)
-, m_waterDiveOut(INVALID_AUDIO_CONTROL_ID)
-, m_waterInOutSpeed(INVALID_AUDIO_CONTROL_ID)
+, m_waterEnter(CryAudio::InvalidControlId)
+, m_waterExit(CryAudio::InvalidControlId)
+, m_waterDiveIn(CryAudio::InvalidControlId)
+, m_waterDiveOut(CryAudio::InvalidControlId)
+, m_waterInOutSpeed(CryAudio::InvalidControlId)
 {
 	m_pPlayerRotation = new CPlayerRotation(*this);
 	CRY_ASSERT( m_pPlayerRotation );
@@ -666,7 +666,7 @@ CPlayer::CPlayer()
 	gEnv->pAudioSystem->GetAudioTriggerId("water_exit", m_waterExit);
 	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_in", m_waterDiveIn);
 	gEnv->pAudioSystem->GetAudioTriggerId("water_dive_out", m_waterDiveOut);
-	gEnv->pAudioSystem->GetAudioRtpcId("water_in_out_speed", m_waterInOutSpeed);
+	gEnv->pAudioSystem->GetAudioParameterId("water_in_out_speed", m_waterInOutSpeed);
 }
 
 CPlayer::~CPlayer()
@@ -1139,14 +1139,14 @@ void CPlayer::InitLocalPlayer()
 
 		if (m_pIEntityAudioComponent != NULL)
 		{
-			AudioControlId nObjectSpeedSwitchID = INVALID_AUDIO_CONTROL_ID;
-			AudioSwitchStateId nObjectSpeedTrackingOnStateID = INVALID_AUDIO_SWITCH_STATE_ID;
+			CryAudio::ControlId nObjectSpeedSwitchID = CryAudio::InvalidControlId;
+			CryAudio::SwitchStateId nObjectSpeedTrackingOnStateID = CryAudio::InvalidSwitchStateId;
 
 			gEnv->pAudioSystem->GetAudioSwitchId("object_velocity_tracking", nObjectSpeedSwitchID);
-			if (nObjectSpeedSwitchID != INVALID_AUDIO_CONTROL_ID)
+			if (nObjectSpeedSwitchID != CryAudio::InvalidControlId)
 			{
 				gEnv->pAudioSystem->GetAudioSwitchStateId(nObjectSpeedSwitchID, "on", nObjectSpeedTrackingOnStateID);
-				if(nObjectSpeedTrackingOnStateID != INVALID_AUDIO_SWITCH_STATE_ID)
+				if(nObjectSpeedTrackingOnStateID != CryAudio::InvalidSwitchStateId)
 				{
 					// This enables automatic updates of the object_speed ATLRtpc on the Player Character.
 					m_pIEntityAudioComponent->SetSwitchState(nObjectSpeedSwitchID, nObjectSpeedTrackingOnStateID);
@@ -7031,11 +7031,11 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 		case CPlayer::ESound_DiveIn:
 			if (m_pIEntityAudioComponent)
 			{
-				if (m_waterDiveIn != INVALID_AUDIO_CONTROL_ID)
+				if (m_waterDiveIn != CryAudio::InvalidControlId)
 				{
-					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
+					if (m_waterInOutSpeed != CryAudio::InvalidControlId)
 					{
-						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetParameter(m_waterInOutSpeed, paramValue);
 					}
 
 					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveIn);
@@ -7045,11 +7045,11 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 		case CPlayer::ESound_DiveOut:
 			if (m_pIEntityAudioComponent)
 			{
-				if (m_waterDiveOut != INVALID_AUDIO_CONTROL_ID)
+				if (m_waterDiveOut != CryAudio::InvalidControlId)
 				{
-					if (m_waterInOutSpeed != INVALID_AUDIO_CONTROL_ID)
+					if (m_waterInOutSpeed != CryAudio::InvalidControlId)
 					{
-						m_pIEntityAudioComponent->SetRtpcValue(m_waterInOutSpeed, paramValue);
+						m_pIEntityAudioComponent->SetParameter(m_waterInOutSpeed, paramValue);
 					}
 
 					m_pIEntityAudioComponent->ExecuteTrigger(m_waterDiveOut);
@@ -7057,13 +7057,13 @@ void CPlayer::PlaySound(EPlayerSounds soundID, bool play, const char* paramName,
 			}
 			break;
 		case CPlayer::ESound_WaterEnter:
-			if (m_pIEntityAudioComponent && m_waterEnter != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterEnter != CryAudio::InvalidControlId)
 			{
 				m_pIEntityAudioComponent->ExecuteTrigger(m_waterEnter);
 			}
 			break;
 		case CPlayer::ESound_WaterExit:
-			if (m_pIEntityAudioComponent && m_waterExit != INVALID_AUDIO_CONTROL_ID)
+			if (m_pIEntityAudioComponent && m_waterExit != CryAudio::InvalidControlId)
 			{
 				m_pIEntityAudioComponent->ExecuteTrigger(m_waterExit);
 			}
@@ -7416,7 +7416,7 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 			//Only client ones (the rest are processed in AudioProxy)
 			if (isClient && m_pIEntityAudioComponent)
 			{
-				AudioProxyId nAudioProxyID = INVALID_AUDIO_PROXY_ID;
+				CryAudio::AuxObjectId nAudioProxyID = CryAudio::InvalidAuxObjectId;
 
 				if (event.m_BonePathName && event.m_BonePathName[0] && pCharacter)
 				{
@@ -7425,20 +7425,20 @@ void CPlayer::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInst
 					int nJointID = rIDefaultSkeleton.GetJointIDByName(event.m_BonePathName);
 					if (nJointID >= 0)
 					{
-						nAudioProxyID = stl::find_in_map(m_cJointAudioProxies, nJointID, INVALID_AUDIO_PROXY_ID);
-						if (nAudioProxyID == INVALID_AUDIO_PROXY_ID)
+						nAudioProxyID = stl::find_in_map(m_cJointAudioProxies, nJointID, CryAudio::InvalidAuxObjectId);
+						if (nAudioProxyID == CryAudio::InvalidAuxObjectId)
 						{
-							nAudioProxyID = m_pIEntityAudioComponent->CreateAuxAudioProxy();
+							nAudioProxyID = m_pIEntityAudioComponent->CreateAudioAuxObject();
 							m_cJointAudioProxies[nJointID] = nAudioProxyID;
 						}
 
-						m_pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
+						m_pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(pSkeletonPose->GetAbsJointByID(nJointID)), nAudioProxyID);
 					}
 				}
-				AudioControlId nTriggerID = INVALID_AUDIO_CONTROL_ID;
+				CryAudio::ControlId nTriggerID = CryAudio::InvalidControlId;
 				gEnv->pAudioSystem->GetAudioTriggerId(event.m_CustomParameter, nTriggerID);
 
-				if (nTriggerID != INVALID_AUDIO_CONTROL_ID)
+				if (nTriggerID != CryAudio::InvalidControlId)
 				{
 					m_pIEntityAudioComponent->ExecuteTrigger(nTriggerID, nAudioProxyID);
 				}

@@ -2108,20 +2108,7 @@ void CLevelSystem::UnLoadLevel()
 	}
 
 	// Unload level specific audio binary data.
-	SAudioManagerRequestData<eAudioManagerRequestType_UnloadAFCMDataByScope> requestData1(eAudioDataScope_LevelSpecific);
-	SAudioRequest request;
-	request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-	request.pData = &requestData1;
-	gEnv->pAudioSystem->PushRequest(request);
-
-	// Now unload level specific audio config data.
-	SAudioManagerRequestData<eAudioManagerRequestType_ClearControlsData> requestData2(eAudioDataScope_LevelSpecific);
-	request.pData = &requestData2;
-	gEnv->pAudioSystem->PushRequest(request);
-
-	SAudioManagerRequestData<eAudioManagerRequestType_ClearPreloadsData> requestData3(eAudioDataScope_LevelSpecific);
-	request.pData = &requestData3;
-	gEnv->pAudioSystem->PushRequest(request);
+	gEnv->pAudioSystem->OnUnloadLevel();
 
 	// Delete engine resources
 	if (p3DEngine)

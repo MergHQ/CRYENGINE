@@ -42,6 +42,13 @@ public:
 	CAudioTrigger(CAudioTrigger const&) = delete;
 	CAudioTrigger& operator=(CAudioTrigger const&) = delete;
 
+	// IAudioTrigger
+	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
+	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	// ~IAudioTrigger
+
 	uint32 const               pathId;
 	int const                  numLoops;
 	double const               sampleRate;

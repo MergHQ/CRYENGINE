@@ -18,10 +18,8 @@ public:
 	CAudioImplCVars& operator=(CAudioImplCVars const&) = delete;
 	CAudioImplCVars& operator=(CAudioImplCVars&&) = delete;
 
-	void RegisterVariables();
-	void UnregisterVariables();
-
-	int m_primaryMemoryPoolSize = 0;
+	void             RegisterVariables();
+	void             UnregisterVariables();
 };
 
 extern CAudioImplCVars g_audioImplCVars;

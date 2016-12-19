@@ -4,6 +4,8 @@
 #include "ScriptBind_Sound.h"
 #include <CryAudio/IAudioSystem.h>
 
+using namespace CryAudio;
+
 CScriptBind_Sound::CScriptBind_Sound(IScriptSystem* pScriptSystem, ISystem* pSystem)
 {
 	CScriptableBase::Init(pScriptSystem, pSystem);
@@ -34,7 +36,7 @@ int CScriptBind_Sound::GetAudioTriggerID(IFunctionHandler* pH, char const* const
 {
 	if ((sTriggerName != nullptr) && (sTriggerName[0] != '\0'))
 	{
-		AudioControlId nTriggerID = INVALID_AUDIO_CONTROL_ID;
+		ControlId nTriggerID = InvalidControlId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId(sTriggerName, nTriggerID))
 		{
 			// ID retrieved successfully
@@ -54,7 +56,7 @@ int CScriptBind_Sound::GetAudioSwitchID(IFunctionHandler* pH, char const* const 
 {
 	if ((sSwitchName != nullptr) && (sSwitchName[0] != '\0'))
 	{
-		AudioControlId nSwitchID = INVALID_AUDIO_CONTROL_ID;
+		ControlId nSwitchID = InvalidControlId;
 		if (gEnv->pAudioSystem->GetAudioSwitchId(sSwitchName, nSwitchID))
 		{
 			// ID retrieved successfully
@@ -74,8 +76,8 @@ int CScriptBind_Sound::GetAudioSwitchStateID(IFunctionHandler* pH, ScriptHandle 
 {
 	if ((sSwitchStateName != nullptr) && (sSwitchStateName[0] != '\0'))
 	{
-		AudioSwitchStateId nSwitchStateID = INVALID_AUDIO_SWITCH_STATE_ID;
-		AudioControlId nSwitchID = HandleToInt<AudioControlId>(hSwitchID);
+		SwitchStateId nSwitchStateID = InvalidSwitchStateId;
+		ControlId nSwitchID = HandleToInt<ControlId>(hSwitchID);
 		if (gEnv->pAudioSystem->GetAudioSwitchStateId(nSwitchID, sSwitchStateName, nSwitchStateID))
 		{
 			// ID retrieved successfully
@@ -95,8 +97,8 @@ int CScriptBind_Sound::GetAudioRtpcID(IFunctionHandler* pH, char const* const sR
 {
 	if ((sRtpcName != nullptr) && (sRtpcName[0] != '\0'))
 	{
-		AudioControlId nRtpcID = INVALID_AUDIO_CONTROL_ID;
-		if (gEnv->pAudioSystem->GetAudioRtpcId(sRtpcName, nRtpcID))
+		ControlId nRtpcID = InvalidControlId;
+		if (gEnv->pAudioSystem->GetAudioParameterId(sRtpcName, nRtpcID))
 		{
 			// ID retrieved successfully
 			return pH->EndFunction(IntToHandle(nRtpcID));
@@ -115,7 +117,7 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 {
 	if ((sEnvironmentName != nullptr) && (sEnvironmentName[0] != '\0'))
 	{
-		AudioEnvironmentId nEnvironmentID = INVALID_AUDIO_ENVIRONMENT_ID;
+		EnvironmentId nEnvironmentID = InvalidEnvironmentId;
 		if (gEnv->pAudioSystem->GetAudioEnvironmentId(sEnvironmentName, nEnvironmentID))
 		{
 			// ID retrieved successfully
@@ -133,29 +135,22 @@ int CScriptBind_Sound::GetAudioEnvironmentID(IFunctionHandler* pH, char const* c
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle const hRtpcID, float const fValue)
 {
-	SAudioRequest request;
-	SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData(HandleToInt<AudioControlId>(hRtpcID), static_cast<float>(fValue));
-
-	request.flags = eAudioRequestFlags_PriorityNormal;
-	request.pData = &requestData;
-
-	gEnv->pAudioSystem->PushRequest(request);
-
+	gEnv->pAudioSystem->SetParameter(HandleToInt<ControlId>(hRtpcID), fValue);
 	return pH->EndFunction();
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::GetAudioTriggerRadius(IFunctionHandler* pH, ScriptHandle const hTriggerID)
 {
-	SAudioTriggerData data;
-	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<AudioControlId>(hTriggerID), data);
+	STriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<ControlId>(hTriggerID), data);
 	return pH->EndFunction(data.radius);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Sound::GetAudioTriggerOcclusionFadeOutDistance(IFunctionHandler* pH, ScriptHandle const hTriggerID)
 {
-	SAudioTriggerData data;
-	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<AudioControlId>(hTriggerID), data);
+	STriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<ControlId>(hTriggerID), data);
 	return pH->EndFunction(data.occlusionFadeOutDistance);
 }

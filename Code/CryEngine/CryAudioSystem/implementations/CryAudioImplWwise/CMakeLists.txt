@@ -19,6 +19,7 @@ add_sources("CryAudioImpl_uber_0.cpp"
 		"Common.cpp"
 		"CryAudioImpl.cpp"
 		"FileIOHandler.cpp"
+		"ATLEntities.cpp"
 )
 
 add_sources("NoUberFile"

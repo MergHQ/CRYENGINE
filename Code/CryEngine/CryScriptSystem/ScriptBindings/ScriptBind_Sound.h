@@ -4,10 +4,8 @@
 
 #include <CryScriptSystem/IScriptSystem.h>
 
-struct IAudioSystem;
-
 /*! <remarks>These function will never be called from C-Code. They're script-exclusive.</remarks>*/
-class CScriptBind_Sound : public CScriptableBase
+class CScriptBind_Sound final : public CScriptableBase
 {
 public:
 

@@ -2,6 +2,11 @@
 
 #include "stdafx.h"
 #include "ATLEntities.h"
+#include "AudioSystem.h"
+#include "ATLAudioObject.h"
+
+using namespace CryAudio;
+using namespace CryAudio::Impl;
 
 #if CRY_PLATFORM_WINDOWS
 char const* const SATLXMLTags::szPlatform = "pc";
@@ -24,14 +29,14 @@ char const* const SATLXMLTags::szPlatform = "linux";
 char const* const SATLXMLTags::szRootNodeTag = "ATLConfig";
 char const* const SATLXMLTags::szEditorDataTag = "EditorData";
 char const* const SATLXMLTags::szTriggersNodeTag = "AudioTriggers";
-char const* const SATLXMLTags::szRtpcsNodeTag = "AudioRtpcs";
+char const* const SATLXMLTags::szParametersNodeTag = "AudioRtpcs";
 char const* const SATLXMLTags::szSwitchesNodeTag = "AudioSwitches";
 char const* const SATLXMLTags::szPreloadsNodeTag = "AudioPreloads";
 char const* const SATLXMLTags::szEnvironmentsNodeTag = "AudioEnvironments";
 
 char const* const SATLXMLTags::szATLTriggerTag = "ATLTrigger";
 char const* const SATLXMLTags::szATLSwitchTag = "ATLSwitch";
-char const* const SATLXMLTags::szATLRtpcTag = "ATLRtpc";
+char const* const SATLXMLTags::szATLParametersTag = "ATLRtpc";
 char const* const SATLXMLTags::szATLSwitchStateTag = "ATLSwitchState";
 char const* const SATLXMLTags::szATLEnvironmentTag = "ATLEnvironment";
 char const* const SATLXMLTags::szATLPlatformsTag = "ATLPlatforms";
@@ -40,7 +45,7 @@ char const* const SATLXMLTags::szATLConfigGroupTag = "ATLConfigGroup";
 char const* const SATLXMLTags::szATLTriggerRequestTag = "ATLTriggerRequest";
 char const* const SATLXMLTags::szATLSwitchRequestTag = "ATLSwitchRequest";
 char const* const SATLXMLTags::szATLValueTag = "ATLValue";
-char const* const SATLXMLTags::szATLRtpcRequestTag = "ATLRtpcRequest";
+char const* const SATLXMLTags::szATLParametersRequestTag = "ATLRtpcRequest";
 char const* const SATLXMLTags::szATLPreloadRequestTag = "ATLPreloadRequest";
 char const* const SATLXMLTags::szATLEnvironmentRequestTag = "ATLEnvironmentRequest";
 
@@ -54,36 +59,35 @@ char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occ
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
-AudioControlId SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::objectDopplerTrackingSwitchId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::objectVelocityTrackingSwitchId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::loseFocusTriggerId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::getFocusTriggerId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::muteAllTriggerId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::unmuteAllTriggerId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::objectDopplerRtpcId = INVALID_AUDIO_CONTROL_ID;
-AudioControlId SATLInternalControlIDs::objectVelocityRtpcId = INVALID_AUDIO_CONTROL_ID;
-AudioSwitchStateId SATLInternalControlIDs::ignoreStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::adaptiveStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::lowStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::mediumStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::highStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::onStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::offStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioPreloadRequestId SATLInternalControlIDs::globalPreloadRequestId = INVALID_AUDIO_PRELOAD_REQUEST_ID;
+ControlId SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = InvalidControlId;
+ControlId SATLInternalControlIDs::objectDopplerTrackingSwitchId = InvalidControlId;
+ControlId SATLInternalControlIDs::objectVelocityTrackingSwitchId = InvalidControlId;
+ControlId SATLInternalControlIDs::loseFocusTriggerId = InvalidControlId;
+ControlId SATLInternalControlIDs::getFocusTriggerId = InvalidControlId;
+ControlId SATLInternalControlIDs::muteAllTriggerId = InvalidControlId;
+ControlId SATLInternalControlIDs::unmuteAllTriggerId = InvalidControlId;
+ControlId SATLInternalControlIDs::objectDopplerParameterId = InvalidControlId;
+ControlId SATLInternalControlIDs::objectVelocityParameterId = InvalidControlId;
+SwitchStateId SATLInternalControlIDs::ignoreStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::adaptiveStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::lowStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::mediumStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::highStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::onStateId = InvalidSwitchStateId;
+SwitchStateId SATLInternalControlIDs::offStateId = InvalidSwitchStateId;
+PreloadRequestId SATLInternalControlIDs::globalPreloadRequestId = InvalidPreloadRequestId;
 
-using namespace CryAudio::Impl;
+IAudioImpl* CATLControlImpl::s_pImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
-void InitATLControlIDs()
+void CryAudio::InitATLControlIDs()
 {
-	using namespace CryAudio::Impl;
 	SATLInternalControlIDs::loseFocusTriggerId = AudioStringToId("lose_focus");
 	SATLInternalControlIDs::getFocusTriggerId = AudioStringToId("get_focus");
 	SATLInternalControlIDs::muteAllTriggerId = AudioStringToId("mute_all");
 	SATLInternalControlIDs::unmuteAllTriggerId = AudioStringToId("unmute_all");
-	SATLInternalControlIDs::objectDopplerRtpcId = AudioStringToId("object_doppler");
-	SATLInternalControlIDs::objectVelocityRtpcId = AudioStringToId("object_speed");
+	SATLInternalControlIDs::objectDopplerParameterId = AudioStringToId("object_doppler");
+	SATLInternalControlIDs::objectVelocityParameterId = AudioStringToId("object_speed");
 	SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = AudioStringToId("ObstructionOcclusionCalculationType");
 	SATLInternalControlIDs::ignoreStateId = AudioStringToId("ignore");
 	SATLInternalControlIDs::adaptiveStateId = AudioStringToId("adaptive");
@@ -95,4 +99,84 @@ void InitATLControlIDs()
 	SATLInternalControlIDs::onStateId = AudioStringToId("on");
 	SATLInternalControlIDs::offStateId = AudioStringToId("off");
 	SATLInternalControlIDs::globalPreloadRequestId = AudioStringToId("global_atl_preloads");
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> requestData(transformation, this);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLListener::Update()
+{
+	// Exponential decay towards zero.
+	if (m_attributes.velocity.GetLengthSquared() > 0.0f)
+	{
+		float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
+		float const decay = std::max(1.0f - deltaTime / 0.125f, 0.0f);
+		m_attributes.velocity *= decay;
+	}
+	else if (m_bNeedsFinalSetPosition)
+	{
+		m_attributes.velocity = ZERO;
+		m_pImplData->Set3DAttributes(m_attributes);
+		m_bNeedsFinalSetPosition = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
+{
+	float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
+
+	if (deltaTime > 0.0f)
+	{
+		m_attributes.transformation = transformation;
+		m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
+		m_previousTime = g_lastMainThreadFrameStartTime;
+		m_previousAttributes = m_attributes;
+		m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
+	}
+	else if (deltaTime < 0.0f) //to handle time resets (e.g. loading a savegame might revert the gametime to a previous value)
+	{
+		m_attributes.transformation = transformation;
+		m_previousTime = g_lastMainThreadFrameStartTime;
+		m_previousAttributes = m_attributes;
+		m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
+	}
+
+	return m_pImplData->Set3DAttributes(m_attributes);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CATLEvent::Stop()
+{
+	return m_pImplData->Stop();
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CATLEvent::Reset()
+{
+	ERequestStatus const result = Stop();
+	m_pTrigger = nullptr;
+	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CParameterImpl::Set(CATLAudioObject& audioObject, float const value) const
+{
+	return audioObject.GetImplDataPtr()->SetParameter(m_pImplData, value);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
+{
+	return audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
 }

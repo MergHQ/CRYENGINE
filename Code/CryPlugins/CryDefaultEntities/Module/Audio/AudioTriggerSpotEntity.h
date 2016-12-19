@@ -17,9 +17,9 @@ enum EDrawActivityRadius
 	eDrawActivityRadius_StopTrigger,
 };
 
-class CAudioTriggerSpotEntity final 
+class CAudioTriggerSpotEntity final
 	: public CDesignerEntityComponent<>
-	, public IEntityPropertyGroup
+	  , public IEntityPropertyGroup
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(CAudioTriggerSpotEntity, "AudioTriggerSpot", 0x1009FA03153C459C, 0x883D33B33298813D);
 
@@ -28,18 +28,18 @@ public:
 	virtual ~CAudioTriggerSpotEntity();
 
 	// CDesignerEntityComponent
-	virtual void ProcessEvent(SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_TIMER); }
+	virtual void                  ProcessEvent(SEntityEvent& event) override;
+	virtual uint64                GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_TIMER); }
 
-	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }
+	virtual IEntityPropertyGroup* GetPropertyGroup() final      { return this; }
 
-	virtual void OnResetState() override;
+	virtual void                  OnResetState() override;
 	// ~CDesignerEntityComponent
 
 	// IEntityPropertyGroup
 	virtual const char* GetLabel() const override { return "AudioTriggerSpot Properties"; }
 
-	virtual void SerializeProperties(Serialization::IArchive& archive) override
+	virtual void        SerializeProperties(Serialization::IArchive& archive) override
 	{
 		archive(m_bEnabled, "Enabled", "Enabled");
 		archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
@@ -48,7 +48,7 @@ public:
 
 		archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
 
-		if(archive.openBlock("PlayMode", "Play Mode"))
+		if (archive.openBlock("PlayMode", "Play Mode"))
 		{
 			archive(m_behavior, "Behavior", "Behavior");
 			archive(m_minDelay, "MinDelay", "MinDelay");
@@ -56,9 +56,9 @@ public:
 			archive(m_randomizationArea, "RandomizationArea", "RandomizationArea");
 
 			archive.closeBlock();
-		}	
+		}
 
-		if(archive.openBlock("Debug", "Debug"))
+		if (archive.openBlock("Debug", "Debug"))
 		{
 			archive(m_drawActivityRadius, "DrawActivityRadius", "DrawActivityRadius");
 			archive(m_bDrawRandomizationArea, "DrawRandomizationArea", "DrawRandomizationArea");
@@ -78,33 +78,33 @@ private:
 	void        Play();
 	void        StartPlayingBehaviour();
 	Vec3        GenerateOffset();
-	static void OnAudioTriggerFinished(SAudioRequestInfo const* const pAudioRequestInfo);
-	void        TriggerFinished(const AudioControlId trigger);
+	static void OnAudioTriggerFinished(CryAudio::SRequestInfo const* const pAudioRequestInfo);
+	void        TriggerFinished(const CryAudio::ControlId trigger);
 
-	void DebugDraw();
+	void        DebugDraw();
 
-	AudioControlId m_playTriggerId = INVALID_AUDIO_CONTROL_ID;
-	AudioControlId m_stopTriggerId = INVALID_AUDIO_CONTROL_ID;
+	CryAudio::ControlId m_playTriggerId = CryAudio::InvalidControlId;
+	CryAudio::ControlId m_stopTriggerId = CryAudio::InvalidControlId;
 
-	AudioControlId m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
-	
-	EPlayBehavior m_currentBehavior = ePlayBehavior_Single;
+	CryAudio::ControlId m_currentlyPlayingTriggerId = CryAudio::InvalidControlId;
+
+	EPlayBehavior       m_currentBehavior = ePlayBehavior_Single;
 
 protected:
-	bool m_bEnabled = true;
-	bool m_bTriggerAreasOnMove = false;
+	bool                     m_bEnabled = true;
+	bool                     m_bTriggerAreasOnMove = false;
 
-	string m_playTriggerName;
-	string m_stopTriggerName;
+	string                   m_playTriggerName;
+	string                   m_stopTriggerName;
 
-	ESoundObstructionType m_obstructionType = eSoundObstructionType_Adaptive;
+	CryAudio::EOcclusionType m_obstructionType = CryAudio::eOcclusionType_Ignore;
 
-	EPlayBehavior m_behavior = ePlayBehavior_Single;
+	EPlayBehavior            m_behavior = ePlayBehavior_Single;
 
-	float m_minDelay = 0.0f;
-	float m_maxDelay = 1000.0f;
+	float                    m_minDelay = 0.0f;
+	float                    m_maxDelay = 1000.0f;
 
-	Vec3 m_randomizationArea = Vec3(ZERO);
-	EDrawActivityRadius m_drawActivityRadius = eDrawActivityRadius_Disabled;
-	bool m_bDrawRandomizationArea = false;
+	Vec3                     m_randomizationArea = Vec3(ZERO);
+	EDrawActivityRadius      m_drawActivityRadius = eDrawActivityRadius_Disabled;
+	bool                     m_bDrawRandomizationArea = false;
 };

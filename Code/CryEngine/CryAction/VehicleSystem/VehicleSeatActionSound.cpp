@@ -22,8 +22,8 @@ CVehicleSeatActionSound::CVehicleSeatActionSound()
 	, m_pHelper(nullptr)
 	, m_pSeat(nullptr)
 	, m_enabled(false)
-	, m_audioTriggerStartId(INVALID_AUDIO_CONTROL_ID)
-	, m_audioTriggerStopId(INVALID_AUDIO_CONTROL_ID)
+	, m_audioTriggerStartId(CryAudio::InvalidControlId)
+	, m_audioTriggerStopId(CryAudio::InvalidControlId)
 {
 }
 
@@ -101,9 +101,9 @@ void CVehicleSeatActionSound::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(this, sizeof(*this));
 }
 
-void CVehicleSeatActionSound::ExecuteTrigger(const AudioControlId& controlID)
+void CVehicleSeatActionSound::ExecuteTrigger(const CryAudio::ControlId& controlID)
 {
-	if (controlID == INVALID_AUDIO_CONTROL_ID)
+	if (controlID == CryAudio::InvalidControlId)
 		return;
 
 	if (m_pSeat)
@@ -130,11 +130,11 @@ void CVehicleSeatActionSound::StopTrigger()
 	if (m_pSeat)
 		m_pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
 
-	if (m_audioTriggerStopId != INVALID_AUDIO_CONTROL_ID)
+	if (m_audioTriggerStopId != CryAudio::InvalidControlId)
 	{
 		ExecuteTrigger(m_audioTriggerStopId);
 	}
-	else if (m_audioTriggerStartId != INVALID_AUDIO_CONTROL_ID)
+	else if (m_audioTriggerStartId != CryAudio::InvalidControlId)
 	{
 		IEntityAudioComponent* pIEntityAudioComponent = m_pVehicle->GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 		assert(pIEntityAudioComponent);

@@ -7,8 +7,7 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
-
-#include <SoundAllocator.h>
+#include <CryString/CryPath.h> // need to include before AK includes windows.h
 
 #if !defined(_RELEASE)
 // Define this to enable logging via CAudioLogger.
@@ -18,11 +17,7 @@
 
 #include <AudioLogger.h>
 
-extern CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 extern CAudioLogger g_audioImplLogger;
-
-#define AUDIO_ALLOCATOR_MEMORY_POOL g_audioImplMemoryPool
-#include <STLSoundAllocator.h>
 
 #if !defined(_RELEASE)
 	#define INCLUDE_WWISE_IMPL_PRODUCTION_CODE
@@ -36,9 +31,9 @@ extern CAudioLogger g_audioImplLogger;
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
 	#include <CryMemory/CryPool/PoolAlloc.h>
 
-typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4*1024, true>, NCryPoolAlloc::CListItemReference>> tMemoryPoolReferenced;
+typedef NCryPoolAlloc::CThreadSafe<NCryPoolAlloc::CBestFit<NCryPoolAlloc::CReferenced<NCryPoolAlloc::CMemoryDynamic, 4*1024, true>, NCryPoolAlloc::CListItemReference>> MemoryPoolReferenced;
 
-extern tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
+extern MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 
 //////////////////////////////////////////////////////////////////////////
 inline void* Secondary_Allocate(size_t const nSize)
@@ -47,7 +42,7 @@ inline void* Secondary_Allocate(size_t const nSize)
 	// and at the beginning the handle is saved.
 
 	/* Allocate in Referenced Secondary Pool */
-	uint32 const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, AUDIO_MEMORY_ALIGNMENT);
+	uint32 const nAllocHandle = g_audioImplMemoryPoolSecondary.Allocate<uint32>(nSize, MEMORY_ALLOCATION_ALIGNMENT);
 	CRY_ASSERT(nAllocHandle > 0);
 	void* pAlloc = NULL;
 

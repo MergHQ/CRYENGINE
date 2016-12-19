@@ -5,6 +5,8 @@
 #include "GameObjects/RuntimeAreaObject.h"
 #include <IGameObject.h>
 
+using namespace CryAudio;
+
 CRuntimeAreaManager::CRuntimeAreaManager()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
@@ -77,8 +79,8 @@ void CRuntimeAreaManager::FillAudioControls()
 
 				if ((sSurfaceName != NULL) && (sSurfaceName[0] != '\0'))
 				{
-					AudioControlId nTriggerID = INVALID_AUDIO_CONTROL_ID;
-					AudioControlId nRtpcID = INVALID_AUDIO_CONTROL_ID;
+					ControlId nTriggerID = InvalidControlId;
+					ControlId nRtpcID = InvalidControlId;
 
 					XmlNodeRef const pAudioNode(pSurfaceTypeNode->findChild(SXMLTags::sAudioTag));
 					if (pAudioNode)
@@ -94,10 +96,10 @@ void CRuntimeAreaManager::FillAudioControls()
 
 						if ((sATLRtpcName != NULL) && (sATLRtpcName[0] != '\0'))
 						{
-							gEnv->pAudioSystem->GetAudioRtpcId(sATLRtpcName, nRtpcID);
+							gEnv->pAudioSystem->GetAudioParameterId(sATLRtpcName, nRtpcID);
 						}
 
-						if ((nTriggerID != INVALID_AUDIO_CONTROL_ID) && (nRtpcID != INVALID_AUDIO_CONTROL_ID))
+						if ((nTriggerID != InvalidControlId) && (nRtpcID != InvalidControlId))
 						{
 							CRuntimeAreaObject::m_audioControls[CCrc32::ComputeLowercase(sSurfaceName)] =
 							  CRuntimeAreaObject::SAudioControls(nTriggerID, nRtpcID);

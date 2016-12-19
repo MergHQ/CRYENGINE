@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "Common.h"
 #include <ATLEntityData.h>
 #include <IAudioImpl.h>
+#include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
+#include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 namespace CryAudio
 {
@@ -12,16 +15,13 @@ namespace Impl
 {
 namespace Wwise
 {
-typedef std::vector<AkUniqueID, STLSoundAllocator<AkUniqueID>> TAKUniqueIDVector;
 
-struct SAudioObject final : public IAudioObject
+struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject>
 {
-	typedef std::map<AkAuxBusID, float, std::less<AkAuxBusID>,
-	                 STLSoundAllocator<std::pair<AkAuxBusID const, float>>> TEnvironmentImplMap;
+	typedef std::map<AkAuxBusID, float> EnvironmentImplMap;
 
-	explicit SAudioObject(AkGameObjectID const _id, bool const _bHasPosition)
+	explicit SAudioObject(AkGameObjectID const _id)
 		: id(_id)
-		, bHasPosition(_bHasPosition)
 		, bNeedsToUpdateEnvironments(false)
 	{}
 
@@ -32,10 +32,27 @@ struct SAudioObject final : public IAudioObject
 	SAudioObject& operator=(SAudioObject const&) = delete;
 	SAudioObject& operator=(SAudioObject&&) = delete;
 
-	AkGameObjectID const id;
-	bool const           bHasPosition;
-	bool                 bNeedsToUpdateEnvironments;
-	TEnvironmentImplMap  environemntImplAmounts;
+	// IAudioObject
+	virtual ERequestStatus Update() override;
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override;
+	virtual ERequestStatus SetParameter(IParameter const* const pIAudioRtpc, float const value) override;
+	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override;
+	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
+	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override;
+	virtual ERequestStatus StopAllTriggers() override;
+	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
+	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
+	// ~IAudioObject
+
+	AkGameObjectID const  id;
+	bool                  bNeedsToUpdateEnvironments;
+	EnvironmentImplMap    environemntImplAmounts;
+
+	static AkGameObjectID s_dummyGameObjectId;
+
+private:
+	ERequestStatus PostEnvironmentAmounts();
 };
 
 struct SAudioListener final : public IAudioListener
@@ -50,6 +67,10 @@ struct SAudioListener final : public IAudioListener
 	SAudioListener(SAudioListener&&) = delete;
 	SAudioListener& operator=(SAudioListener const&) = delete;
 	SAudioListener& operator=(SAudioListener&&) = delete;
+
+	// IAudioListener
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	// ~IAudioListener
 
 	AkUniqueID const id;
 };
@@ -67,10 +88,21 @@ struct SAudioTrigger final : public IAudioTrigger
 	SAudioTrigger& operator=(SAudioTrigger const&) = delete;
 	SAudioTrigger& operator=(SAudioTrigger&&) = delete;
 
+	// IAudioTrigger
+	virtual ERequestStatus Load() const override;
+	virtual ERequestStatus Unload() const override;
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override;
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override;
+	// ~IAudioTrigger
+
 	AkUniqueID const id;
+
+private:
+	ERequestStatus SetLoaded(bool bLoad) const;
+	ERequestStatus SetLoadedAsync(IAudioEvent* const pIAudioEvent, bool bLoad) const;
 };
 
-struct SAudioRtpc final : public IAudioRtpc
+struct SAudioRtpc final : public IParameter
 {
 	explicit SAudioRtpc(AkRtpcID const _id, float const _mult, float const _shift)
 		: mult(_mult)
@@ -90,7 +122,7 @@ struct SAudioRtpc final : public IAudioRtpc
 	AkRtpcID const id;
 };
 
-enum EWwiseSwitchType : AudioEnumFlagsType
+enum EWwiseSwitchType : EnumFlagsType
 {
 	eWwiseSwitchType_None = 0,
 	eWwiseSwitchType_Switch,
@@ -124,7 +156,7 @@ struct SAudioSwitchState final : public IAudioSwitchState
 	float const            rtpcValue;
 };
 
-enum EWwiseAudioEnvironmentType : AudioEnumFlagsType
+enum EWwiseAudioEnvironmentType : EnumFlagsType
 {
 	eWwiseAudioEnvironmentType_None = 0,
 	eWwiseAudioEnvironmentType_AuxBus,
@@ -184,12 +216,12 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	};
 };
 
-struct SAudioEvent final : public IAudioEvent
+struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent>
 {
-	explicit SAudioEvent(AudioEventId const _id)
+	explicit SAudioEvent(CATLEvent& _atlEvent)
 		: audioEventState(eAudioEventState_None)
 		, id(AK_INVALID_UNIQUE_ID)
-		, audioEventId(_id)
+		, atlEvent(_atlEvent)
 	{}
 
 	virtual ~SAudioEvent() override = default;
@@ -199,9 +231,13 @@ struct SAudioEvent final : public IAudioEvent
 	SAudioEvent& operator=(SAudioEvent const&) = delete;
 	SAudioEvent& operator=(SAudioEvent&&) = delete;
 
-	EAudioEventState   audioEventState;
-	AkUniqueID         id;
-	AudioEventId const audioEventId;
+	// IAudioEvent
+	virtual ERequestStatus Stop() override;
+	// ~IAudioEvent
+
+	EAudioEventState audioEventState;
+	AkUniqueID       id;
+	CATLEvent&       atlEvent;
 };
 
 struct SAudioFileEntry final : public IAudioFileEntry
@@ -226,7 +262,17 @@ struct SAudioStandaloneFile final : public IAudioStandaloneFile
 	SAudioStandaloneFile(SAudioStandaloneFile&&) = delete;
 	SAudioStandaloneFile& operator=(SAudioStandaloneFile const&) = delete;
 	SAudioStandaloneFile& operator=(SAudioStandaloneFile&&) = delete;
+
 };
+
+struct SEnvPairCompare
+{
+	bool operator()(std::pair<AkAuxBusID, float> const& pair1, std::pair<AkAuxBusID, float> const& pair2) const
+	{
+		return (pair1.second > pair2.second);
+	}
+};
+
 }
 }
 }

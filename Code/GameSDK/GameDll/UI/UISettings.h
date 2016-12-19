@@ -125,8 +125,8 @@ private:
 	ICVar* m_pGQVar;
 
 
-	AudioControlId m_musicVolumeId;
-	AudioControlId m_sfxVolumeId;
+	CryAudio::ControlId m_musicVolumeId;
+	CryAudio::ControlId m_sfxVolumeId;
 
 	ICVar* m_pVideoVar;
 

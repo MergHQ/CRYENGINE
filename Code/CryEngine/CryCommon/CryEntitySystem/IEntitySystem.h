@@ -109,22 +109,22 @@ struct SAudioAreaInfo
 {
 	SAudioAreaInfo()
 		: amount(0.0f)
-		, audioEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID)
+		, audioEnvironmentId(CryAudio::InvalidEnvironmentId)
 		, envProvidingEntityId(INVALID_ENTITYID)
 	{}
 
 	explicit SAudioAreaInfo(
 	  float const _amount,
-	  AudioEnvironmentId const _audioEnvironmentId,
+	  CryAudio::EnvironmentId const _audioEnvironmentId,
 	  EntityId const _envProvidingEntityId)
 		: amount(_amount)
 		, audioEnvironmentId(_audioEnvironmentId)
 		, envProvidingEntityId(_envProvidingEntityId)
 	{}
 
-	float              amount;
-	AudioEnvironmentId audioEnvironmentId;
-	EntityId           envProvidingEntityId;
+	float                   amount;
+	CryAudio::EnvironmentId audioEnvironmentId;
+	EntityId                envProvidingEntityId;
 };
 
 struct IBSPTree3D

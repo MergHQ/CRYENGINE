@@ -384,7 +384,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 		{
 			for (auto const& areaEnvironment : areaEnvironments)
 			{
-				pIEntityAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, INVALID_AUDIO_PROXY_ID);
+				pIEntityAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, CryAudio::InvalidAuxObjectId);
 			}
 		}
 
@@ -578,7 +578,7 @@ void CAreaManager::ProcessArea(
 //////////////////////////////////////////////////////////////////////////
 bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
   SAreasCache* const pAreaCache,
-	EntityId const entityId,
+  EntityId const entityId,
   Vec3 const& entityPos,
   CArea* const pArea,
   Vec3 const& onLowerHull,
@@ -721,9 +721,9 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::NotifyAreas(
-	CArea* const __restrict pArea,
-	SAreasCache const* const pAreaCache,
-	EntityId const entityId)
+  CArea* const __restrict pArea,
+  SAreasCache const* const pAreaCache,
+  EntityId const entityId)
 {
 	int const currentGroupId = pArea->GetGroup();
 
@@ -999,9 +999,9 @@ bool CAreaManager::RetrieveEnvironmentAmount(
 
 				if (pIEntityAudioComponent != nullptr)
 				{
-					AudioEnvironmentId const audioEnvironmentId = pIEntityAudioComponent->GetEnvironmentId();
+					CryAudio::EnvironmentId const audioEnvironmentId = pIEntityAudioComponent->GetEnvironmentId();
 
-					if (audioEnvironmentId != INVALID_AUDIO_ENVIRONMENT_ID)
+					if (audioEnvironmentId != CryAudio::InvalidEnvironmentId)
 					{
 						float finalAmount = amount;
 

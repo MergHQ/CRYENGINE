@@ -16,7 +16,6 @@
 			"ATLAudioObject.cpp",
 			"AudioEventManager.cpp",
 			"ATLEntities.cpp",
-			"AudioProxy.cpp",
 			"AudioRequests.cpp",
 			"AudioSystem.cpp",
 			"AudioImpl.cpp",
@@ -28,7 +27,8 @@
 			"AudioObjectManager.cpp",
 			"AudioListenerManager.cpp",
 			"AudioEventListenerManager.cpp",
-			"AudioXMLProcessor.cpp"
+			"AudioXMLProcessor.cpp",
+			"InternalEntities.cpp"
 		],
 
 		"Header Files": [
@@ -38,7 +38,6 @@
 			"ATLEntities.h",
 			"ATLUtils.h",
 			"AudioInternalInterfaces.h",
-			"AudioProxy.h",
 			"AudioSystem.h",
 			"AudioImpl.h",
 			"FileCacheManager.h",
@@ -47,10 +46,10 @@
 			"PropagationProcessor.h",
 			"AudioStandaloneFileManager.h",
 			"AudioObjectManager.h",
-			"AudioQueuedCommands.h",
 			"AudioListenerManager.h",
 			"AudioEventListenerManager.h",
-			"AudioXMLProcessor.h"
+			"AudioXMLProcessor.h",
+			"InternalEntities.h"
 		]
 	}
 }

@@ -5039,7 +5039,7 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 					if (pIEntityAudioComponent != NULL)
 					{
-						pIEntityAudioComponent->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+						pIEntityAudioComponent->SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
 					}
 				}
 			}

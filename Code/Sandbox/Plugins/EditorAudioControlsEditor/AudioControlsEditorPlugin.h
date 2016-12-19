@@ -11,7 +11,11 @@
 
 #include <QStandardItem>
 
-struct IAudioProxy;
+namespace CryAudio
+{
+struct IObject;
+}
+
 class CImplementationManager;
 
 //------------------------------------------------------------------
@@ -37,7 +41,7 @@ public:
 	static ACE::IAudioSystemEditor* GetAudioSystemEditorImpl();
 	static void                     ExecuteTrigger(const string& sTriggerName);
 	static void                     StopTriggerExecution();
-	static uint                     GetLoadingErrorMask() { return ms_loadingErrorMask; }
+	static uint                     GetLoadingErrorMask() { return s_loadingErrorMask; }
 
 private:
 	///////////////////////////////////////////////////////////////////////////
@@ -45,12 +49,12 @@ private:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 	///////////////////////////////////////////////////////////////////////////
 
-	static ACE::CATLControlsModel ms_ATLModel;
-	static ACE::QATLTreeModel     ms_layoutModel;
-	static std::set<string>       ms_currentFilenames;
-	static IAudioProxy*           ms_pIAudioProxy;
-	static AudioControlId         ms_nAudioTriggerID;
+	static ACE::CATLControlsModel s_ATLModel;
+	static ACE::QATLTreeModel     s_layoutModel;
+	static std::set<string>       s_currentFilenames;
+	static CryAudio::IObject*     s_pIAudioObject;
+	static CryAudio::ControlId    s_audioTriggerId;
 
-	static CImplementationManager ms_implementationManager;
-	static uint                   ms_loadingErrorMask;
+	static CImplementationManager s_implementationManager;
+	static uint                   s_loadingErrorMask;
 };

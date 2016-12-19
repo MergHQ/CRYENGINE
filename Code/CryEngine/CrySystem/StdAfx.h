@@ -105,7 +105,6 @@ struct ICryPak;
 struct ICryFont;
 struct I3DEngine;
 struct IMovieSystem;
-struct IAudioSystem;
 struct IPhysicalWorld;
 
 /////////////////////////////////////////////////////////////////////////////

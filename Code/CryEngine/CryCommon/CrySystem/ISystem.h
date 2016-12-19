@@ -23,7 +23,6 @@
 
 #include <CryMath/LCGRandom.h>
 
-struct ISystem;
 struct ILog;
 struct IProfileLogSystem;
 struct IEntitySystem;
@@ -55,7 +54,11 @@ struct ICryFont;
 struct IMovieSystem;
 struct IPhysicalWorld;
 struct IMemoryManager;
+namespace CryAudio
+{
 struct IAudioSystem;
+}
+struct ISystem;
 struct IFrameProfileSystem;
 struct IStatoscope;
 class IDiskProfiler;
@@ -818,7 +821,7 @@ struct SSystemGlobalEnvironment
 	ILocalMemoryUsage*           pLocalMemoryUsage;
 	IEntitySystem*               pEntitySystem;
 	IConsole*                    pConsole;
-	IAudioSystem*                pAudioSystem;
+	CryAudio::IAudioSystem*      pAudioSystem;
 	ISystem*                     pSystem;
 	ICharacterManager*           pCharacterManager;
 	IAISystem*                   pAISystem;
@@ -1216,41 +1219,41 @@ struct ISystem
 
 	// Return the related subsystem interface.
 
-	virtual IZLibCompressor*       GetIZLibCompressor() = 0;
-	virtual IZLibDecompressor*     GetIZLibDecompressor() = 0;
-	virtual ILZ4Decompressor*      GetLZ4Decompressor() = 0;
-	virtual ICryPerfHUD*           GetPerfHUD() = 0;
-	virtual IPlatformOS*           GetPlatformOS() = 0;
-	virtual INotificationNetwork*  GetINotificationNetwork() = 0;
-	virtual IHardwareMouse*        GetIHardwareMouse() = 0;
-	virtual IDialogSystem*         GetIDialogSystem() = 0;
-	virtual IFlowSystem*           GetIFlowSystem() = 0;
-	virtual IBudgetingSystem*      GetIBudgetingSystem() = 0;
-	virtual INameTable*            GetINameTable() = 0;
-	virtual IDiskProfiler*         GetIDiskProfiler() = 0;
-	virtual IFrameProfileSystem*   GetIProfileSystem() = 0;
-	virtual IValidator*            GetIValidator() = 0;
-	virtual IPhysicsDebugRenderer* GetIPhysicsDebugRenderer() = 0;
-	virtual IPhysRenderer*         GetIPhysRenderer() = 0;
-	virtual ICharacterManager*     GetIAnimationSystem() = 0;
-	virtual IStreamEngine*         GetStreamEngine() = 0;
-	virtual ICmdLine*              GetICmdLine() = 0;
-	virtual ILog*                  GetILog() = 0;
-	virtual ICryPak*               GetIPak() = 0;
-	virtual ICryFont*              GetICryFont() = 0;
-	virtual IEntitySystem*         GetIEntitySystem() = 0;
-	virtual IMemoryManager*        GetIMemoryManager() = 0;
-	virtual IAISystem*             GetAISystem() = 0;
-	virtual IMovieSystem*          GetIMovieSystem() = 0;
-	virtual IPhysicalWorld*        GetIPhysicalWorld() = 0;
-	virtual IAudioSystem*          GetIAudioSystem() = 0;
-	virtual I3DEngine*             GetI3DEngine() = 0;
-	virtual IScriptSystem*         GetIScriptSystem() = 0;
-	virtual IConsole*              GetIConsole() = 0;
-	virtual IRemoteConsole*        GetIRemoteConsole() = 0;
-	virtual IUserAnalyticsSystem*  GetIUserAnalyticsSystem() = 0;
-	virtual ICryPluginManager*     GetIPluginManager() = 0;
-	virtual IProjectManager*       GetIProjectManager() = 0;
+	virtual IZLibCompressor*        GetIZLibCompressor() = 0;
+	virtual IZLibDecompressor*      GetIZLibDecompressor() = 0;
+	virtual ILZ4Decompressor*       GetLZ4Decompressor() = 0;
+	virtual ICryPerfHUD*            GetPerfHUD() = 0;
+	virtual IPlatformOS*            GetPlatformOS() = 0;
+	virtual INotificationNetwork*   GetINotificationNetwork() = 0;
+	virtual IHardwareMouse*         GetIHardwareMouse() = 0;
+	virtual IDialogSystem*          GetIDialogSystem() = 0;
+	virtual IFlowSystem*            GetIFlowSystem() = 0;
+	virtual IBudgetingSystem*       GetIBudgetingSystem() = 0;
+	virtual INameTable*             GetINameTable() = 0;
+	virtual IDiskProfiler*          GetIDiskProfiler() = 0;
+	virtual IFrameProfileSystem*    GetIProfileSystem() = 0;
+	virtual IValidator*             GetIValidator() = 0;
+	virtual IPhysicsDebugRenderer*  GetIPhysicsDebugRenderer() = 0;
+	virtual IPhysRenderer*          GetIPhysRenderer() = 0;
+	virtual ICharacterManager*      GetIAnimationSystem() = 0;
+	virtual IStreamEngine*          GetStreamEngine() = 0;
+	virtual ICmdLine*               GetICmdLine() = 0;
+	virtual ILog*                   GetILog() = 0;
+	virtual ICryPak*                GetIPak() = 0;
+	virtual ICryFont*               GetICryFont() = 0;
+	virtual IEntitySystem*          GetIEntitySystem() = 0;
+	virtual IMemoryManager*         GetIMemoryManager() = 0;
+	virtual IAISystem*              GetAISystem() = 0;
+	virtual IMovieSystem*           GetIMovieSystem() = 0;
+	virtual IPhysicalWorld*         GetIPhysicalWorld() = 0;
+	virtual CryAudio::IAudioSystem* GetIAudioSystem() = 0;
+	virtual I3DEngine*              GetI3DEngine() = 0;
+	virtual IScriptSystem*          GetIScriptSystem() = 0;
+	virtual IConsole*               GetIConsole() = 0;
+	virtual IRemoteConsole*         GetIRemoteConsole() = 0;
+	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
+	virtual ICryPluginManager*      GetIPluginManager() = 0;
+	virtual IProjectManager*        GetIProjectManager() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;

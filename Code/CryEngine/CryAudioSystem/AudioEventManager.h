@@ -4,11 +4,13 @@
 
 #include "ATLEntities.h"
 
+namespace CryAudio
+{
 class CAudioEventManager final
 {
 public:
 
-	CAudioEventManager();
+	CAudioEventManager() = default;
 	~CAudioEventManager();
 
 	CAudioEventManager(CAudioEventManager const&) = delete;
@@ -16,33 +18,20 @@ public:
 	CAudioEventManager& operator=(CAudioEventManager const&) = delete;
 	CAudioEventManager& operator=(CAudioEventManager&&) = delete;
 
-	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
+	void                Init(Impl::IAudioImpl* const pImpl);
 	void                Release();
 	void                Update(float const deltaTime);
 
-	CATLEvent*          GetEvent(EAudioSubsystem const audioSubsystem);
-	CATLEvent*          LookupId(AudioEventId const audioEventId) const;
-	void                ReleaseEvent(CATLEvent* const pEvent);
+	CATLEvent*          ConstructAudioEvent();
+	void                ReleaseAudioEvent(CATLEvent* const pAudioEvent);
 
-	size_t              GetNumActive() const;
+	size_t              GetNumConstructed() const;
 
 private:
 
-	CATLEvent* GetImplInstance();
-	void       ReleaseEventInternal(CATLEvent* const pEvent);
-	void       ReleaseImplInstance(CATLEvent* const pOldEvent);
-	CATLEvent* GetInternalInstance();
-	void       ReleaseInternalInstance(CATLEvent* const pOldEvent);
+	std::list<CATLEvent*> m_constructedAudioEvents;
 
-	typedef std::map<AudioEventId, CATLEvent*, std::less<AudioEventId>, STLSoundAllocator<std::pair<AudioEventId const, CATLEvent*>>>
-	  TActiveEventMap;
-
-	TActiveEventMap m_activeAudioEvents;
-
-	typedef CInstanceManager<CATLEvent, AudioEventId> TAudioEventPool;
-	TAudioEventPool             m_audioEventPool;
-
-	CryAudio::Impl::IAudioImpl* m_pImpl;
+	Impl::IAudioImpl*     m_pImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -51,3 +40,4 @@ public:
 
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 };
+} // namespace CryAudio

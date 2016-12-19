@@ -13,15 +13,15 @@
 	#include <shapexmacontext.h>
 #endif // CRY_PLATFORM_DURANGO
 
+using namespace CryAudio;
 using namespace CryAudio::Impl::Wwise;
 
 // Define global objects.
-CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::Wwise::g_audioImplCVars;
 
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
+MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 //////////////////////////////////////////////////////////////////////////
@@ -40,25 +40,6 @@ class CEngineModule_CryAudioImplWwise : public IEngineModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		// initialize memory pools
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Implementation Memory Pool Primary");
-
-		size_t primaryPoolSize = g_audioImplCVars.m_prepareEventMemoryPoolSize
-		                         + g_audioImplCVars.m_streamManagerMemoryPoolSize
-		                         + g_audioImplCVars.m_streamDeviceMemoryPoolSize
-		                         + g_audioImplCVars.m_soundEngineDefaultMemoryPoolSize
-		                         + g_audioImplCVars.m_commandQueueMemoryPoolSize
-		                         + g_audioImplCVars.m_lowerEngineDefaultPoolSize
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-		                         + g_audioImplCVars.m_monitorMemoryPoolSize
-		                         + g_audioImplCVars.m_monitorQueueMemoryPoolSize
-#endif
-		;
-
-		size_t const poolSize = primaryPoolSize << 10;
-		uint8* const pPoolMemory = new uint8[poolSize];
-		g_audioImplMemoryPool.InitMem(poolSize, pPoolMemory, "Wwise Implementation Audio Pool");
-
 #if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
 		size_t secondarySize = 0;
 		void* pSecondaryMemory = nullptr;
@@ -75,34 +56,27 @@ class CEngineModule_CryAudioImplWwise : public IEngineModule
 		g_audioImplMemoryPoolSecondary.InitMem(secondarySize, (uint8*)pSecondaryMemory);
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
-		POOL_NEW_CREATE(CAudioImpl, pImpl);
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
+		SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
+		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr);
 
-		if (pImpl != nullptr)
+		if (m_bSuccess)
 		{
 			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplWwise loaded");
-
-			SAudioRequest request;
-			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-
-			SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> requestData(pImpl);
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr, eAudioRequestType_AudioManagerRequest, eAudioManagerRequestType_SetAudioImpl);
-			env.pAudioSystem->PushRequest(request);
-			gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplWwise::OnAudioEvent, nullptr);
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplWwise failed to load");
+			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplWwise failed to load");
 		}
 
 		return m_bSuccess;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	static void OnAudioEvent(SAudioRequestInfo const* const pAudioRequestInfo)
+	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == eAudioRequestResult_Success;
+		m_bSuccess = pAudioRequestInfo->requestResult == eRequestResult_Success;
 	}
 
 	static bool m_bSuccess;

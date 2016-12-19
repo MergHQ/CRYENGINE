@@ -38,11 +38,12 @@ namespace Proj
 {
 void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
 {
-	gameObject.RegisterExtForEvents(&goExt, NULL, 0);
+	gameObject.RegisterExtForEvents(&goExt, nullptr, 0);
 }
 }
 
 using namespace HazardSystem;
+using namespace CryAudio;
 
 CRY_IMPLEMENT_GTI_BASE(CProjectile);
 
@@ -62,12 +63,12 @@ void CProjectile::SMaterialLookUp::Init()
 
 	ISurfaceTypeManager* pSurfaceManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 
-	CRY_ASSERT(pSurfaceManager != NULL);
+	CRY_ASSERT(pSurfaceManager != nullptr);
 
 	for (int i = 0; i < eType_Count; ++i)
 	{
 		ISurfaceType* pSurfaceType = pSurfaceManager->GetSurfaceTypeByName(materialNames[i]);
-		if (pSurfaceType != NULL)
+		if (pSurfaceType != nullptr)
 		{
 			m_lookUp[i] = pSurfaceType->GetId();
 		}
@@ -137,8 +138,8 @@ CProjectile::SElectricHitTarget::SElectricHitTarget(IPhysicalEntity* pProjectile
 
 //------------------------------------------------------------------------
 CProjectile::CProjectile()
-	: m_whizTriggerID(INVALID_AUDIO_CONTROL_ID),
-	m_ricochetTriggerID(INVALID_AUDIO_CONTROL_ID),
+	: m_whizTriggerID(InvalidControlId),
+	m_ricochetTriggerID(InvalidControlId),
 	//m_trailSoundId(INVALID_SOUNDID),
 	m_trailEffectId(0),
 	m_pPhysicalEntity(0),
@@ -195,7 +196,7 @@ void CProjectile::DestroyObstructObject()
 	if (m_obstructObject)
 	{
 		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_obstructObject);
-		m_obstructObject = NULL;
+		m_obstructObject = nullptr;
 	}
 }
 
@@ -474,15 +475,16 @@ bool CProjectile::Init(IGameObject* pGameObject)
 
 	pEntity->SetFlags(flags | ENTITY_FLAG_NO_SAVE);
 
-	IAudioSystem* const pAudioSystem = gEnv->pAudioSystem;
-	if (pAudioSystem)
+	IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
+
+	if (pIAudioSystem != nullptr)
 	{
 		if (m_pAmmoParams->pRicochet)
 		{
 			const string& ricochetTriggerName = m_pAmmoParams->pRicochet->audioTriggerName;
 			if (!ricochetTriggerName.empty())
 			{
-				pAudioSystem->GetAudioTriggerId(ricochetTriggerName.c_str(), m_ricochetTriggerID);
+				pIAudioSystem->GetAudioTriggerId(ricochetTriggerName.c_str(), m_ricochetTriggerID);
 			}
 		}
 
@@ -491,7 +493,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 			const string& whizTriggerName = m_pAmmoParams->pWhiz->audioTriggerName;
 			if (!whizTriggerName.empty())
 			{
-				pAudioSystem->GetAudioTriggerId(whizTriggerName.c_str(), m_whizTriggerID);
+				pIAudioSystem->GetAudioTriggerId(whizTriggerName.c_str(), m_whizTriggerID);
 			}
 		}
 	}
@@ -503,7 +505,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 ////If the projectile is in a pool, this function will be called when this projectile is about to be "re-spawn"
 void CProjectile::ReInitFromPool()
 {
-	assert(m_pAmmoParams);
+	CRY_ASSERT(m_pAmmoParams);
 
 	float lifetime = m_pAmmoParams->lifetime;
 	if (lifetime > 0.0f)
@@ -593,7 +595,7 @@ void CProjectile::Release()
 //------------------------------------------------------------------------
 void CProjectile::FullSerialize(TSerialize ser)
 {
-	assert(ser.GetSerializationTarget() != eST_Network);
+	CRY_ASSERT(ser.GetSerializationTarget() != eST_Network);
 
 	bool remote = CheckAnyProjectileFlags(ePFlag_remote);
 	bool destroying = CheckAnyProjectileFlags(ePFlag_destroying);
@@ -745,7 +747,7 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 		{
 			DoCollisionDamage(pCollision, pTarget);
 
-			const SCollisionEffectParams* pCollisionFxParams = m_pAmmoParams->pCollision ? m_pAmmoParams->pCollision->pEffectParams : NULL;
+			const SCollisionEffectParams* pCollisionFxParams = m_pAmmoParams->pCollision ? m_pAmmoParams->pCollision->pEffectParams : nullptr;
 			if (pCollisionFxParams)
 			{
 				if (!pCollisionFxParams->effect.empty())
@@ -803,8 +805,8 @@ bool CProjectile::ProcessCollisionEvent(IEntity* pTarget) const
 	if ((!bEnableFriendlyHit) && (!gEnv->bMultiplayer))
 	{
 		IEntity* pOwner = gEnv->pEntitySystem->GetEntity(m_ownerId);
-		IAIObject* pOwnerAI = pOwner ? pOwner->GetAI() : NULL;
-		IAIObject* pTargetAI = pTarget ? pTarget->GetAI() : NULL;
+		IAIObject* pOwnerAI = pOwner ? pOwner->GetAI() : nullptr;
+		IAIObject* pTargetAI = pTarget ? pTarget->GetAI() : nullptr;
 
 		if (pOwnerAI && pTargetAI && !pOwnerAI->IsHostile(pTargetAI))
 			bResult = false;
@@ -814,7 +816,7 @@ bool CProjectile::ProcessCollisionEvent(IEntity* pTarget) const
 	if (gEnv->bMultiplayer && pTarget)
 	{
 		IEntity* pOwner = gEnv->pEntitySystem->GetEntity(m_ownerId);
-		IEntity* pParent = pOwner ? pOwner->GetParent() : NULL;
+		IEntity* pParent = pOwner ? pOwner->GetParent() : nullptr;
 
 		if (pOwner && pParent == pTarget)
 		{
@@ -895,7 +897,7 @@ void CProjectile::SetVelocity(const Vec3& pos, const Vec3& dir, const Vec3& velo
 
 	Vec3 totalVelocity = (dir * m_pAmmoParams->speed * speedScale) + velocity;
 
-	if (appliedVelocityOut != NULL)
+	if (appliedVelocityOut != nullptr)
 		*appliedVelocityOut = totalVelocity;
 
 	if (m_pPhysicalEntity->GetType() == PE_PARTICLE)
@@ -942,7 +944,7 @@ void CProjectile::SetParams(const SProjectileDesc& projectileDesc)
 	else
 		ClearProjectileFlags(ePFlag_aimedShot);
 
-	bool isParticle = (m_pPhysicalEntity != NULL) && (m_pPhysicalEntity->GetType() == PE_PARTICLE);
+	bool isParticle = (m_pPhysicalEntity != nullptr) && (m_pPhysicalEntity->GetType() == PE_PARTICLE);
 	if (isParticle)
 	{
 		SetUpParticleParams(pOwnerEntity, projectileDesc.bulletPierceabilityModifier);
@@ -1343,7 +1345,7 @@ void CProjectile::TrailSound(bool enable, const Vec3& dir)
 //------------------------------------------------------------------------
 void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 {
-	if (m_pAmmoParams->pWhiz && m_whizTriggerID != INVALID_AUDIO_CONTROL_ID && !IsEquivalent(m_last, pos))
+	if (m_pAmmoParams->pWhiz && m_whizTriggerID != InvalidControlId && !IsEquivalent(m_last, pos))
 	{
 		IActor* pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
 		if (pClientActor && (m_ownerId != pClientActor->GetEntityId()))
@@ -1421,39 +1423,15 @@ void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 //------------------------------------------------------------------------
 void CProjectile::WhizSound(const Vec3& pos)
 {
-	IAudioSystem* const pAudioSystem = gEnv->pAudioSystem;
-	if (pAudioSystem)
-	{
-		IAudioProxy* pIAudioProxy = pAudioSystem->GetFreeAudioProxy();
-		if (pIAudioProxy)
-		{
-			pIAudioProxy->Initialize("WhizBy");
-			pIAudioProxy->SetPosition(pos);
-			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_Adaptive);
-			pIAudioProxy->SetCurrentEnvironments();
-			pIAudioProxy->ExecuteTrigger(m_whizTriggerID);
-		}
-		SAFE_RELEASE(pIAudioProxy);
-	}
+	SExecuteTriggerData const data("WhizBy", eOcclusionType_Ignore, pos, true, m_whizTriggerID);
+	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 
 //------------------------------------------------------------------------
 void CProjectile::RicochetSound(const Vec3& pos)
 {
-	IAudioSystem* const pAudioSystem = gEnv->pAudioSystem;
-	if (pAudioSystem)
-	{
-		IAudioProxy* pIAudioProxy = pAudioSystem->GetFreeAudioProxy();
-		if (pIAudioProxy)
-		{
-			pIAudioProxy->Initialize("Ricochet");
-			pIAudioProxy->SetPosition(pos);
-			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_Adaptive);
-			pIAudioProxy->SetCurrentEnvironments();
-			pIAudioProxy->ExecuteTrigger(m_ricochetTriggerID);
-		}
-		SAFE_RELEASE(pIAudioProxy);
-	}
+	SExecuteTriggerData const data("Ricochet", eOcclusionType_Ignore, pos, true, m_ricochetTriggerID);
+	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 
 //------------------------------------------------------------------------
@@ -1478,7 +1456,6 @@ void CProjectile::TrailEffect(bool enable)
 		m_projectileEffects.DetachEffect(m_trailEffectId);
 		m_trailEffectId = 0;
 	}
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1492,7 +1469,7 @@ IEntityAudioComponent* CProjectile::GetAudioProxy()
 {
 	IEntityAudioComponent* pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 
-	assert(pIEntityAudioComponent);
+	CRY_ASSERT(pIEntityAudioComponent != nullptr);
 
 	return pIEntityAudioComponent;
 }
@@ -1725,7 +1702,7 @@ void CProjectile::SetDefaultParticleParams(pe_params_particle* pParams)
 		pParams->q0.SetIdentity();
 		pParams->surface_idx = m_pAmmoParams->pParticleParams->surface_idx;
 		pParams->flags = m_pAmmoParams->pParticleParams->flags;
-		pParams->pColliderToIgnore = NULL;
+		pParams->pColliderToIgnore = nullptr;
 		pParams->iPierceability = m_pAmmoParams->pParticleParams->iPierceability;
 		pParams->rollAxis = m_pAmmoParams->pParticleParams->rollAxis;
 	}
@@ -1861,7 +1838,7 @@ void CProjectile::SetUpParticleParams(IEntity* pOwnerEntity, uint8 pierceability
 	CRY_ASSERT(m_pPhysicalEntity);
 
 	pe_params_particle pparams;
-	pparams.pColliderToIgnore = pOwnerEntity ? pOwnerEntity->GetPhysics() : NULL;
+	pparams.pColliderToIgnore = pOwnerEntity ? pOwnerEntity->GetPhysics() : nullptr;
 	if (m_pAmmoParams)
 	{
 		pparams.iPierceability = max(0, min(m_pAmmoParams->pParticleParams->iPierceability + pierceabilityModifier, (int)sf_max_pierceable));
@@ -2094,7 +2071,7 @@ bool CProjectile::ProximityDetector_MP(float proxyRadius)
 				continue;
 
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(rTarget.entityId);
-			const IEntityClass* pEntityClass = NULL;
+			const IEntityClass* pEntityClass = nullptr;
 
 			if (!pEntity)
 				continue;
@@ -2255,13 +2232,13 @@ void CProjectile::ProcessElectricHit(const SElectricHitTarget& target)
 // ===========================================================================
 //	Get the hazard parameters.
 //
-//	Returns:	The hazard parameters (or NULL if none could be obtained).
+//	Returns:	The hazard parameters (or nullptr if none could be obtained).
 //
 const SHazardAmmoParams* CProjectile::GetHazardParams() const
 {
-	if (m_pAmmoParams == NULL)
+	if (m_pAmmoParams == nullptr)
 	{
-		return NULL;
+		return nullptr;
 	}
 	return m_pAmmoParams->pHazardParams;
 }
@@ -2273,7 +2250,7 @@ const SHazardAmmoParams* CProjectile::GetHazardParams() const
 //
 bool CProjectile::ShouldGenerateHazardArea() const
 {
-	return (GetHazardParams() != NULL && !gEnv->bMultiplayer);
+	return (GetHazardParams() != nullptr && !gEnv->bMultiplayer);
 }
 
 // ===========================================================================
@@ -2281,9 +2258,9 @@ bool CProjectile::ShouldGenerateHazardArea() const
 //
 //	In:		The estimated forward direction normal vector (a 0 vector
 //			will be ignored).
-//	Out:	The start position of the area (in world-space) (NULL is
+//	Out:	The start position of the area (in world-space) (nullptr is
 //			invalid!)
-//	Out:	The aiming direction normal vector (in world-space) (NULL
+//	Out:	The aiming direction normal vector (in world-space) (nullptr
 //			is invalid!)
 //
 void CProjectile::RetrieveHazardAreaPoseInFrontOfProjectile(
@@ -2291,10 +2268,10 @@ void CProjectile::RetrieveHazardAreaPoseInFrontOfProjectile(
   Vec3* hazardStartPos, Vec3* hazardForwardNormal) const
 {
 	// Sanity checks.
-	assert(hazardStartPos != NULL);
-	assert(hazardForwardNormal != NULL);
+	CRY_ASSERT(hazardStartPos != nullptr);
+	CRY_ASSERT(hazardForwardNormal != nullptr);
 	const SHazardAmmoParams* hazardParams = GetHazardParams();
-	assert(hazardParams != NULL);
+	CRY_ASSERT(hazardParams != nullptr);
 
 	const IEntity* entity = GetEntity();
 
@@ -2326,7 +2303,7 @@ void CProjectile::RegisterHazardArea()
 	const CWeapon* weapon = GetWeapon();
 
 	const SHazardAmmoParams* hazardParams = GetHazardParams();
-	assert(hazardParams != NULL);
+	CRY_ASSERT(hazardParams != nullptr);
 
 	HazardSystem::HazardProjectile context;
 	RetrieveHazardAreaPoseInFrontOfProjectile(
@@ -2337,12 +2314,12 @@ void CProjectile::RegisterHazardArea()
 	context.m_MaxScanDistance = hazardParams->maxHazardDistance;
 	context.m_MaxPosDeviationDistance = hazardParams->maxHazardApproxPosDeviation;
 	context.m_MaxAngleDeviationRad = DEG2RAD(hazardParams->maxHazardApproxAngleDeviationDeg);
-	if (weapon != NULL)
+	if (weapon != nullptr)
 	{
 		context.m_IgnoredWeaponEntityID = weapon->GetEntityId();
 	}
 	m_HazardID = gGameAIEnv.hazardModule->ReportHazard(setup, context);
-	assert(m_HazardID.IsDefined());
+	CRY_ASSERT(m_HazardID.IsDefined());
 }
 
 // ===========================================================================

@@ -3,10 +3,16 @@
 #include "stdafx.h"
 #include "PropagationProcessor.h"
 #include "AudioCVars.h"
+#include "ATLAudioObject.h"
+#include "AudioSystem.h"
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryRenderer/IRenderAuxGeom.h>
 #include <Cry3DEngine/ISurfaceType.h>
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+using namespace CryAudio;
 using namespace CryAudio::Impl;
 
 static size_t s_numRaySamplePositionsLow = 0;
@@ -28,7 +34,7 @@ struct SAudioRayOffset
 	float z;
 };
 
-typedef std::vector<SAudioRayOffset, STLSoundAllocator<SAudioRayOffset>> RaySamplePositions;
+typedef std::vector<SAudioRayOffset> RaySamplePositions;
 static RaySamplePositions s_raySamplePositionsLow;
 static RaySamplePositions s_raySamplePositionsMedium;
 static RaySamplePositions s_raySamplePositionsHigh;
@@ -59,13 +65,11 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 		if (pRayInfo != nullptr)
 		{
 			pRayInfo->numHits = min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
-			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> requestData(pRayInfo);
-			request.pAudioObject = pRayInfo->pAudioObject;
-			request.flags = eAudioRequestFlags_ThreadSafePush;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
+			CAudioRequest request(&requestData);
+			request.pObject = pRayInfo->pAudioObject;
+			request.flags = eRequestFlags_ThreadSafePush;
+			CATLAudioObject::s_pAudioSystem->PushRequest(request);
 		}
 		else
 		{
@@ -81,7 +85,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CPropagationProcessor::CPropagationProcessor(CAudioObjectTransformation const& transformation)
+CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation)
 	: m_obstruction(0.0f)
 	, m_occlusion(0.0f)
 	, m_occlusionMultiplier(1.0f)
@@ -89,9 +93,9 @@ CPropagationProcessor::CPropagationProcessor(CAudioObjectTransformation const& t
 	, m_rayIndex(0)
 	, m_transformation(transformation)
 	, m_currentListenerDistance(0.0f)
-	, m_occlusionType(eAudioOcclusionType_None)
-	, m_originalOcclusionType(eAudioOcclusionType_None)
-	, m_occlusionTypeWhenAdaptive(eAudioOcclusionType_None)
+	, m_occlusionType(eOcclusionType_None)
+	, m_originalOcclusionType(eOcclusionType_None)
+	, m_occlusionTypeWhenAdaptive(eOcclusionType_None)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	, m_rayDebugInfos(s_numConcurrentRaysHigh)
 	, m_timeSinceLastUpdateMS(0.0f)
@@ -191,7 +195,7 @@ void CPropagationProcessor::Update(
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_audioCVars.m_audioObjectsRayType > 0)
 	{
-		m_occlusionType = static_cast<EAudioOcclusionType>(clamp_tpl<AudioEnumFlagsType>(static_cast<AudioEnumFlagsType>(g_audioCVars.m_audioObjectsRayType), eAudioOcclusionType_Ignore, eAudioOcclusionType_High));
+		m_occlusionType = static_cast<EOcclusionType>(clamp_tpl<EnumFlagsType>(static_cast<EnumFlagsType>(g_audioCVars.m_audioObjectsRayType), eOcclusionType_Ignore, eOcclusionType_High));
 	}
 	else
 	{
@@ -207,15 +211,15 @@ void CPropagationProcessor::Update(
 		{
 			if (m_currentListenerDistance < g_audioCVars.m_occlusionHighDistance)
 			{
-				m_occlusionTypeWhenAdaptive = eAudioOcclusionType_High;
+				m_occlusionTypeWhenAdaptive = eOcclusionType_High;
 			}
 			else if (m_currentListenerDistance < g_audioCVars.m_occlusionMediumDistance)
 			{
-				m_occlusionTypeWhenAdaptive = eAudioOcclusionType_Medium;
+				m_occlusionTypeWhenAdaptive = eOcclusionType_Medium;
 			}
 			else
 			{
-				m_occlusionTypeWhenAdaptive = eAudioOcclusionType_Low;
+				m_occlusionTypeWhenAdaptive = eOcclusionType_Low;
 			}
 
 			RunObstructionQuery(audioListenerPosition);
@@ -233,7 +237,7 @@ void CPropagationProcessor::Update(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::SetOcclusionType(EAudioOcclusionType const occlusionType, Vec3 const& audioListenerPosition)
+void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& audioListenerPosition)
 {
 	m_occlusionType = m_originalOcclusionType = occlusionType;
 	m_obstruction = 0.0f;
@@ -521,17 +525,17 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 
 		switch (m_occlusionType)
 		{
-		case eAudioOcclusionType_Adaptive:
+		case eOcclusionType_Adaptive:
 			{
 				switch (m_occlusionTypeWhenAdaptive)
 				{
-				case eAudioOcclusionType_Low:
+				case eOcclusionType_Low:
 					ProcessLow(audioListenerPosition, up, side, bSynch);
 					break;
-				case eAudioOcclusionType_Medium:
+				case eOcclusionType_Medium:
 					ProcessMedium(audioListenerPosition, up, side, bSynch);
 					break;
-				case eAudioOcclusionType_High:
+				case eOcclusionType_High:
 					ProcessHigh(audioListenerPosition, up, side, bSynch);
 					break;
 				default:
@@ -540,13 +544,13 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 				}
 			}
 			break;
-		case eAudioOcclusionType_Low:
+		case eOcclusionType_Low:
 			ProcessLow(audioListenerPosition, up, side, bSynch);
 			break;
-		case eAudioOcclusionType_Medium:
+		case eOcclusionType_Medium:
 			ProcessMedium(audioListenerPosition, up, side, bSynch);
 			break;
-		case eAudioOcclusionType_High:
+		case eOcclusionType_High:
 			ProcessHigh(audioListenerPosition, up, side, bSynch);
 			break;
 		}
@@ -620,17 +624,17 @@ size_t CPropagationProcessor::GetNumConcurrentRays() const
 
 	switch (m_occlusionType)
 	{
-	case eAudioOcclusionType_Adaptive:
+	case eOcclusionType_Adaptive:
 		{
 			switch (m_occlusionTypeWhenAdaptive)
 			{
-			case eAudioOcclusionType_Low:
+			case eOcclusionType_Low:
 				numConcurrentRays = s_numConcurrentRaysLow;
 				break;
-			case eAudioOcclusionType_Medium:
+			case eOcclusionType_Medium:
 				numConcurrentRays = s_numConcurrentRaysMedium;
 				break;
-			case eAudioOcclusionType_High:
+			case eOcclusionType_High:
 				numConcurrentRays = s_numConcurrentRaysHigh;
 				break;
 			default:
@@ -639,13 +643,13 @@ size_t CPropagationProcessor::GetNumConcurrentRays() const
 			}
 		}
 		break;
-	case eAudioOcclusionType_Low:
+	case eOcclusionType_Low:
 		numConcurrentRays = s_numConcurrentRaysLow;
 		break;
-	case eAudioOcclusionType_Medium:
+	case eOcclusionType_Medium:
 		numConcurrentRays = s_numConcurrentRaysMedium;
 		break;
-	case eAudioOcclusionType_High:
+	case eOcclusionType_High:
 		numConcurrentRays = s_numConcurrentRaysHigh;
 		break;
 	}
@@ -660,17 +664,17 @@ size_t CPropagationProcessor::GetNumSamplePositions() const
 
 	switch (m_occlusionType)
 	{
-	case eAudioOcclusionType_Adaptive:
+	case eOcclusionType_Adaptive:
 		{
 			switch (m_occlusionTypeWhenAdaptive)
 			{
-			case eAudioOcclusionType_Low:
+			case eOcclusionType_Low:
 				numSamplePositions = s_numRaySamplePositionsLow;
 				break;
-			case eAudioOcclusionType_Medium:
+			case eOcclusionType_Medium:
 				numSamplePositions = s_numRaySamplePositionsMedium;
 				break;
-			case eAudioOcclusionType_High:
+			case eOcclusionType_High:
 				numSamplePositions = s_numRaySamplePositionsHigh;
 				break;
 			default:
@@ -679,13 +683,13 @@ size_t CPropagationProcessor::GetNumSamplePositions() const
 			}
 		}
 		break;
-	case eAudioOcclusionType_Low:
+	case eOcclusionType_Low:
 		numSamplePositions = s_numRaySamplePositionsLow;
 		break;
-	case eAudioOcclusionType_Medium:
+	case eOcclusionType_Medium:
 		numSamplePositions = s_numRaySamplePositionsMedium;
 		break;
-	case eAudioOcclusionType_High:
+	case eOcclusionType_High:
 		numSamplePositions = s_numRaySamplePositionsHigh;
 		break;
 	}
@@ -780,7 +784,7 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ResetRayData()
 {
-	if (m_occlusionType != eAudioOcclusionType_None && m_occlusionType != eAudioOcclusionType_Ignore)
+	if (m_occlusionType != eOcclusionType_None && m_occlusionType != eOcclusionType_Ignore)
 	{
 		for (size_t i = 0; i < s_numConcurrentRaysHigh; ++i)
 		{

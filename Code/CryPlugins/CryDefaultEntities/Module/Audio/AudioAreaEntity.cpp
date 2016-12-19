@@ -3,6 +3,9 @@
 #include "StdAfx.h"
 #include "AudioAreaEntity.h"
 #include "Helpers/EntityFlowNode.h"
+#include <CrySerialization/Enum.h>
+
+using namespace CryAudio;
 
 class CAudioAreaEntityRegistrator : public IEntityRegistrator
 {
@@ -19,7 +22,7 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 		auto* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AudioAreaEntity");
 
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
-		
+
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
 		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AudioAreaEntity");
@@ -161,7 +164,7 @@ void CAudioAreaEntity::OnResetState()
 	m_pProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
 
 	// Get properties
-	AudioControlId environmentId = INVALID_AUDIO_ENVIRONMENT_ID;
+	ControlId environmentId = InvalidEnvironmentId;
 	gEnv->pAudioSystem->GetAudioTriggerId(m_environmentName, environmentId);
 
 	// Reset values
@@ -186,15 +189,15 @@ void CAudioAreaEntity::OnResetState()
 	}
 	else
 	{
-		SetEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID);
+		SetEnvironmentId(InvalidEnvironmentId);
 	}
 
 	UpdateObstruction();
 }
 
-void CAudioAreaEntity::SetEnvironmentId(const AudioControlId environmentId)
+void CAudioAreaEntity::SetEnvironmentId(const ControlId environmentId)
 {
-	const AudioEnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
+	const EnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
 	m_pProxy->SetEnvironmentId(environmentId);
 
 	//
@@ -214,7 +217,7 @@ void CAudioAreaEntity::UpdateObstruction()
 	else if (m_areaState == EAreaState::Inside)
 	{
 		// Disable obstruction
-		m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[eSoundObstructionType_Ignore]);
+		m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[eOcclusionType_Ignore]);
 	}
 }
 
@@ -254,4 +257,21 @@ void CAudioAreaEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActi
 
 	pAudioAreaEntity->OnResetState();
 
+}
+
+void CAudioAreaEntity::SerializeProperties(Serialization::IArchive& archive)
+{
+	archive(m_bEnabled, "Enabled", "Enabled");
+	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
+
+	archive(Serialization::AudioEnvironment(m_environmentName), "Environment", "Environment");
+	archive(m_fadeDistance, "FadeDistance", "FadeDistance");
+	archive(m_environmentFadeDistance, "EnvironmentDistance", "EnvironmentDistance");
+
+	archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+
+	if (archive.isInput())
+	{
+		OnResetState();
+	}
 }

@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "MFXAudioEffect.h"
-
 #include <CryAudio/IAudioSystem.h>
+
+using namespace CryAudio;
 
 namespace MaterialEffectsUtils
 {
@@ -15,17 +16,17 @@ struct SAudio1pOr3pSwitch
 		return theInstance;
 	}
 
-	AudioControlId GetSwitchId() const
+	ControlId GetSwitchId() const
 	{
 		return m_switchID;
 	}
 
-	AudioSwitchStateId Get1pStateId() const
+	SwitchStateId Get1pStateId() const
 	{
 		return m_1pStateID;
 	}
 
-	AudioSwitchStateId Get3pStateId() const
+	SwitchStateId Get3pStateId() const
 	{
 		return m_3pStateID;
 	}
@@ -38,9 +39,9 @@ struct SAudio1pOr3pSwitch
 private:
 
 	SAudio1pOr3pSwitch()
-		: m_switchID(INVALID_AUDIO_CONTROL_ID)
-		, m_1pStateID(INVALID_AUDIO_SWITCH_STATE_ID)
-		, m_3pStateID(INVALID_AUDIO_SWITCH_STATE_ID)
+		: m_switchID(InvalidControlId)
+		, m_1pStateID(InvalidSwitchStateId)
+		, m_3pStateID(InvalidSwitchStateId)
 		, m_isValid(false)
 	{
 		Initialize();
@@ -52,25 +53,25 @@ private:
 		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "1stP", m_1pStateID);
 		gEnv->pAudioSystem->GetAudioSwitchStateId(m_switchID, "3rdP", m_3pStateID);
 
-		m_isValid = (m_switchID != INVALID_AUDIO_CONTROL_ID) &&
-		            (m_1pStateID != INVALID_AUDIO_SWITCH_STATE_ID) && (m_3pStateID != INVALID_AUDIO_SWITCH_STATE_ID);
+		m_isValid = (m_switchID != InvalidControlId) &&
+		            (m_1pStateID != InvalidSwitchStateId) && (m_3pStateID != InvalidSwitchStateId);
 	}
 
-	AudioControlId     m_switchID;
-	AudioSwitchStateId m_1pStateID;
-	AudioSwitchStateId m_3pStateID;
+	ControlId     m_switchID;
+	SwitchStateId m_1pStateID;
+	SwitchStateId m_3pStateID;
 
-	bool               m_isValid;
+	bool          m_isValid;
 };
 
-template<typename AudioProxyType>
-void PrepareForAudioTriggerExecution(AudioProxyType* pIAudioProxy, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
+template<typename AudioObjectType>
+void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
 {
 	const MaterialEffectsUtils::SAudio1pOr3pSwitch& audio1pOr3pSwitch = MaterialEffectsUtils::SAudio1pOr3pSwitch::Instance();
 
 	if (audio1pOr3pSwitch.IsValid())
 	{
-		pIAudioProxy->SetSwitchState(
+		pIAudioObject->SetSwitchState(
 		  audio1pOr3pSwitch.GetSwitchId(),
 		  runtimeParams.playSoundFP ? audio1pOr3pSwitch.Get1pStateId() : audio1pOr3pSwitch.Get3pStateId());
 	}
@@ -78,23 +79,18 @@ void PrepareForAudioTriggerExecution(AudioProxyType* pIAudioProxy, const SMFXAud
 	for (SMFXAudioEffectParams::TSwitches::const_iterator it = audioParams.triggerSwitches.begin(), itEnd = audioParams.triggerSwitches.end(); it != itEnd; ++it)
 	{
 		const SAudioSwitchWrapper& switchWrapper = *it;
-		pIAudioProxy->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
+		pIAudioObject->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
 	}
 
-	REINST("IEntityAudioComponent needs to support multiple IAudioProxy objects to properly handle Rtpcs tied to specific events");
-
-	//Note: Rtpcs are global for the audio proxy object.
-	//      This can be a problem if the sound is processed through IEntityAudioComponent, where the object is shared for all audio events triggered through it!
-	//TODO: Add support to IEntityAudioComponent to handle multiple audio proxy objects
 	for (int i = 0; i < runtimeParams.numAudioRtpcs; ++i)
 	{
 		const char* rtpcName = runtimeParams.audioRtpcs[i].rtpcName;
 		if (rtpcName && *rtpcName)
 		{
-			AudioControlId rtpcId = INVALID_AUDIO_CONTROL_ID;
-			if (gEnv->pAudioSystem->GetAudioRtpcId(rtpcName, rtpcId))
+			ControlId rtpcId = InvalidControlId;
+			if (gEnv->pAudioSystem->GetAudioParameterId(rtpcName, rtpcId))
 			{
-				pIAudioProxy->SetRtpcValue(rtpcId, runtimeParams.audioRtpcs[i].rtpcValue);
+				pIAudioObject->SetParameter(rtpcId, runtimeParams.audioRtpcs[i].rtpcValue);
 			}
 		}
 	}
@@ -156,19 +152,13 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	}
 	else
 	{
-		IAudioProxy* pIAudioProxy = gEnv->pAudioSystem->GetFreeAudioProxy();
-		if (pIAudioProxy != NULL)
-		{
-			pIAudioProxy->Initialize("MFXAudioEffect");
+		SCreateObjectData const objectData("MFXAudioEffect", eOcclusionType_Low, params.pos, INVALID_ENTITYID, true);
+		IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 
-			MaterialEffectsUtils::PrepareForAudioTriggerExecution<IAudioProxy>(pIAudioProxy, m_audioParams, params);
+		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IObject>(pIObject, m_audioParams, params);
 
-			pIAudioProxy->SetPosition(params.pos);
-			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_Low);
-			pIAudioProxy->SetCurrentEnvironments();
-			pIAudioProxy->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
-		}
-		SAFE_RELEASE(pIAudioProxy);
+		pIObject->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
+		gEnv->pAudioSystem->ReleaseObject(pIObject);
 	}
 }
 

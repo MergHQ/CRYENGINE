@@ -253,7 +253,7 @@ int CDialogLoader::LoadFromTable(XmlNodeRef tableNode, const string& groupName, 
 				if (bLineValid)
 				{
 					if (content == 0)
-						scriptLine.audioID = INVALID_AUDIO_CONTROL_ID;
+						scriptLine.audioID = CryAudio::InvalidControlId;
 					else
 						gEnv->pAudioSystem->GetAudioTriggerId(content, scriptLine.audioID);
 				}

@@ -1,0 +1,222 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#include "stdafx.h"
+#include "ATLEntities.h"
+#include <CryAudio/IAudioSystem.h>
+#include <CrySystem/ISystem.h> // needed for gEnv in Release builds
+#include <fmod_common.h>
+#include <fmod.hpp>
+
+using namespace CryAudio;
+using namespace CryAudio::Impl::Fmod;
+
+//////////////////////////////////////////////////////////////////////////
+FMOD_RESULT F_CALLBACK FileCallback(FMOD_CHANNELCONTROL* pChannelControl, FMOD_CHANNELCONTROL_TYPE controlType, FMOD_CHANNELCONTROL_CALLBACK_TYPE callbackType, void* pData1, void* pData2)
+{
+	if (controlType == FMOD_CHANNELCONTROL_CHANNEL && callbackType == FMOD_CHANNELCONTROL_CALLBACK_END)
+	{
+
+		FMOD::Channel* pChannel = (FMOD::Channel*)pChannelControl;
+		CAudioStandaloneFile* pFile = nullptr;
+		FMOD_RESULT const fmodResult = pChannel->getUserData(reinterpret_cast<void**>(&pFile));
+		ASSERT_FMOD_OK;
+
+		if (pFile != nullptr)
+		{
+			pFile->m_pChannel = nullptr;
+			pFile->ReportFileFinished();
+		}
+	}
+
+	return FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+FMOD_RESULT F_CALLBACK ProgrammerSoundFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* pEvent, void* pInOutParameters)
+{
+	if (pEvent != nullptr)
+	{
+		FMOD::Studio::EventInstance* const pEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEvent);
+		CProgrammerSoundAudioFile* pFile = nullptr;
+		FMOD_RESULT fmodResult = pEventInstance->getUserData(reinterpret_cast<void**>(&pFile));
+		ASSERT_FMOD_OK;
+
+		if (pFile != nullptr)
+		{
+			if (type == FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT(pInOutParameters);
+				FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES* const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+
+				// Create the sound
+				FMOD::Sound* pSound = nullptr;
+				fmodResult = pFile->s_pLowLevelSystem->createSound(pFile->m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &pSound);
+				ASSERT_FMOD_OK;
+
+				// Pass the sound to FMOD
+				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
+			}
+			else if (type == FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT(pInOutParameters);
+				FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES* const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+
+				// Obtain the sound
+				FMOD::Sound* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
+
+				// Release the sound
+				fmodResult = pSound->release();
+				ASSERT_FMOD_OK;
+			}
+			else if (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED)
+			{
+				pFile->ReportFileFinished();
+			}
+		}
+	}
+
+	return FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CAudioFileBase::CAudioFileBase(char const* const szFile, CATLStandaloneFile& atlStandaloneFile)
+	: m_atlStandaloneFile(atlStandaloneFile)
+	, m_fileName(szFile)
+{
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+CAudioFileBase::~CAudioFileBase()
+{
+	if (m_pAudioObject != nullptr)
+	{
+		m_pAudioObject->RemoveFile(this);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioFileBase::ReportFileStarted()
+{
+	SRequestUserData const data(eRequestFlags_ThreadSafePush);
+	gEnv->pAudioSystem->ReportStartedFile(m_atlStandaloneFile, true, data);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioFileBase::ReportFileFinished()
+{
+	SRequestUserData const data(eRequestFlags_ThreadSafePush);
+	gEnv->pAudioSystem->ReportStoppedFile(m_atlStandaloneFile, data);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioStandaloneFile::StartLoading()
+{
+	FMOD_RESULT fmodResult = s_pLowLevelSystem->createSound(m_fileName, FMOD_CREATESTREAM | FMOD_NONBLOCKING | FMOD_3D, nullptr, &m_pLowLevelSound);
+
+	ASSERT_FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CAudioStandaloneFile::IsReady()
+{
+	FMOD_OPENSTATE state = FMOD_OPENSTATE_ERROR;
+	if (m_pLowLevelSound)
+	{
+		m_pLowLevelSound->getOpenState(&state, nullptr, nullptr, nullptr);
+
+		if (state == FMOD_OPENSTATE_ERROR)
+		{
+			g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load audio file %s", m_fileName.c_str());
+		}
+	}
+
+	return state != FMOD_OPENSTATE_LOADING;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioStandaloneFile::Play(FMOD_3D_ATTRIBUTES const& attributes)
+{
+	FMOD_RESULT const fmodResult = s_pLowLevelSystem->playSound(m_pLowLevelSound, nullptr, true, &m_pChannel);
+	ASSERT_FMOD_OK;
+
+	if (m_pChannel != nullptr)
+	{
+		m_pChannel->setUserData(this);
+		m_pChannel->set3DAttributes(&attributes.position, &attributes.velocity);
+		m_pChannel->setCallback(FileCallback);
+		m_pChannel->setPaused(false);
+	}
+
+	ReportFileStarted();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioStandaloneFile::Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes)
+{
+	m_pChannel->set3DAttributes(&attributes.position, &attributes.velocity);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioStandaloneFile::Stop()
+{
+	if (m_pChannel != nullptr)
+	{
+		FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+		fmodResult = m_pChannel->stop();
+		ASSERT_FMOD_OK;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CProgrammerSoundAudioFile::StartLoading()
+{
+	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+
+	FMOD::Studio::EventDescription* pEventDescription = nullptr;
+	fmodResult = CAudioObjectBase::s_pSystem->getEventByID(&m_eventGuid, &pEventDescription);
+	ASSERT_FMOD_OK;
+
+	fmodResult = pEventDescription->createInstance(&m_pEventInstance);
+	ASSERT_FMOD_OK;
+
+	fmodResult = m_pEventInstance->setUserData(this);
+	ASSERT_FMOD_OK;
+
+	fmodResult = m_pEventInstance->setCallback(ProgrammerSoundFileCallback);
+	ASSERT_FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CProgrammerSoundAudioFile::IsReady()
+{
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CProgrammerSoundAudioFile::Play(FMOD_3D_ATTRIBUTES const& attributes)
+{
+	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+	fmodResult = m_pEventInstance->start();
+	ASSERT_FMOD_OK;
+
+	fmodResult = m_pEventInstance->set3DAttributes(&attributes);
+	ASSERT_FMOD_OK;
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CProgrammerSoundAudioFile::Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes)
+{
+	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+	fmodResult = m_pEventInstance->set3DAttributes(&attributes);
+	ASSERT_FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CProgrammerSoundAudioFile::Stop()
+{
+	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+	fmodResult = m_pEventInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
+	ASSERT_FMOD_OK;
+}

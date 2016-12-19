@@ -119,7 +119,7 @@ private:
 	ITimer*             m_pTimer;
 	float               m_fHDRMultiplier;
 	ICVar*              m_pTimeOfDaySpeedCVar;
-	AudioControlId      m_timeOfDayRtpcId;
+	CryAudio::ControlId m_timeOfDayRtpcId;
 };
 
 #endif //__TimeOfDay_h__

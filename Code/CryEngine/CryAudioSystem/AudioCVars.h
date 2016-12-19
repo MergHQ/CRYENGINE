@@ -4,6 +4,8 @@
 
 #include <CryAudio/IAudioSystem.h>
 
+namespace CryAudio
+{
 class CAudioCVars final
 {
 public:
@@ -17,7 +19,6 @@ public:
 	void         RegisterVariables();
 	void         UnregisterVariables();
 
-	int   m_audioPrimaryPoolSize = 0;
 	int   m_fileCacheManagerSize = 0;
 	int   m_audioObjectPoolSize = 0;
 	int   m_audioEventPoolSize = 0;
@@ -30,7 +31,7 @@ public:
 	float m_occlusionHighDistance = 0.0f;
 	float m_occlusionMediumDistance = 0.0f;
 	float m_fullObstructionMaxDistance = 0.0f;
-	float m_positionUpdateThreshold = 0.0f;
+	float m_positionUpdateThresholdMultiplier = 0.02f;
 	float m_velocityTrackingThreshold = 0.0f;
 	float m_occlusionRayLengthOffset = 0.0f;
 
@@ -52,5 +53,6 @@ private:
 	static void CmdSetRtpc(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
 };
+} // namespace CryAudio
 
-extern CAudioCVars g_audioCVars;
+extern CryAudio::CAudioCVars g_audioCVars;

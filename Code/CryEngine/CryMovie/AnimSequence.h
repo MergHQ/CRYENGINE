@@ -109,7 +109,7 @@ private:
 	void NotifyTrackEvent(ITrackEventListener::ETrackEventReason reason,
 	                      const char* event, const char* param = NULL);
 
-	void ExecuteAudioTrigger(const AudioControlId& audioTriggerId);
+	void ExecuteAudioTrigger(const CryAudio::ControlId audioTriggerId);
 
 	// Create a new animation node.
 	IAnimNode* CreateNodeInternal(EAnimNodeType nodeType, uint32 nNodeId = -1);

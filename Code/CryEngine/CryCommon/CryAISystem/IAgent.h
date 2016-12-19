@@ -1843,19 +1843,19 @@ struct SAIBodyInfoQuery
 struct SCommunicationSound
 {
 	SCommunicationSound()
-		: playSoundControlId(INVALID_AUDIO_CONTROL_ID)
-		, stopSoundControlId(INVALID_AUDIO_CONTROL_ID)
+		: playSoundControlId(CryAudio::InvalidControlId)
+		, stopSoundControlId(CryAudio::InvalidControlId)
 	{
 	}
 
-	SCommunicationSound(const AudioControlId _playSoundControlId, const AudioControlId _stopSoundControlId)
+	SCommunicationSound(const CryAudio::ControlId _playSoundControlId, const CryAudio::ControlId _stopSoundControlId)
 		: playSoundControlId(_playSoundControlId)
 		, stopSoundControlId(_stopSoundControlId)
 	{
 	}
 
-	AudioControlId playSoundControlId;
-	AudioControlId stopSoundControlId;
+	CryAudio::ControlId playSoundControlId;
+	CryAudio::ControlId stopSoundControlId;
 };
 
 struct IAICommunicationHandler
@@ -1912,7 +1912,7 @@ struct IAICommunicationHandler
 	virtual bool                IsPlayingAnimation() const = 0;
 	virtual bool                IsPlayingSound() const = 0;
 
-	virtual void                OnSoundTriggerFinishedToPlay(const AudioControlId nTriggerID) = 0;
+	virtual void                OnSoundTriggerFinishedToPlay(const CryAudio::ControlId nTriggerID) = 0;
 	// </interfuscator:shuffle>
 };
 

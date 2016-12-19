@@ -5,6 +5,7 @@
 #include <ATLEntityData.h>
 #include <portaudio.h>
 #include <atomic>
+#include <PoolObject.h>
 
 // Forward declare C struct
 struct SNDFILE_tag;
@@ -18,11 +19,11 @@ namespace PortAudio
 {
 class CAudioObject;
 
-class CAudioEvent final : public IAudioEvent
+class CAudioEvent final : public IAudioEvent, public CPoolObject<CAudioEvent>
 {
 public:
 
-	explicit CAudioEvent(AudioEventId const _audioEventId);
+	explicit CAudioEvent(CATLEvent& _audioEvent);
 	virtual ~CAudioEvent() override;
 
 	CAudioEvent(CAudioEvent const&) = delete;
@@ -35,20 +36,22 @@ public:
 	  double const sampleRate,
 	  CryFixedStringT<512> const& filePath,
 	  PaStreamParameters const& streamParameters);
-	void Stop();
-	void Reset();
 	void Update();
 
-	SNDFILE*           pSndFile;
-	PaStream*          pStream;
-	void*              pData;
-	CAudioObject*      pPAAudioObject;
-	int                numChannels;
-	int                remainingLoops;
-	AudioEventId const audioEventId;
-	uint32             pathId;
-	PaSampleFormat     sampleFormat;
-	std::atomic<bool>  bDone;
+	// IAudioEvent
+	virtual ERequestStatus Stop() override;
+	// ~IAudioEvent
+
+	SNDFILE*          pSndFile;
+	PaStream*         pStream;
+	void*             pData;
+	CAudioObject*     pPAAudioObject;
+	int               numChannels;
+	int               remainingLoops;
+	CATLEvent&        audioEvent;
+	uint32            pathId;
+	PaSampleFormat    sampleFormat;
+	std::atomic<bool> bDone;
 };
 }
 }

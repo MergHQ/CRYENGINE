@@ -642,8 +642,6 @@ void CViewSystem::SetOverrideCameraRotation(bool bOverride, Quat rotation)
 //////////////////////////////////////////////////////////////////////////
 void CViewSystem::UpdateSoundListeners()
 {
-	assert(gEnv->IsEditor() && !gEnv->IsEditorGameMode());
-
 	// In Editor we may want to control global listeners outside of the game view.
 	if (m_bControlsAudioListeners)
 	{

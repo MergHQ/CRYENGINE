@@ -6,38 +6,34 @@
 #include <CryAudio/IAudioSystem.h>
 %}
 
-%typemap(csbase) EAudioRequestType "uint"
+%typemap(csbase) CryAudio::ERequestFlags "uint"
+%typemap(csbase) CryAudio::ERequestStatus "uint"
+%typemap(csbase) CryAudio::ERequestResult "uint"
+%typemap(csbase) CryAudio::ESystemEvents "uint"
+%typemap(csbase) CryAudio::EDataScope "uint"
+%typemap(csbase) CryAudio::EOcclusionType "uint"
 %include "../../../../CryEngine/CryCommon/CryAudio/IAudioInterfacesCommonData.h"
 %feature("director") IAudioListener;
 %include "../../../../CryEngine/CryCommon/CryAudio/IAudioSystem.h"
 
-%extend IAudioSystem {
+%extend CryAudio::IAudioSystem {
 public:
-	unsigned int GetAudioTriggerId(const char* audioTriggerName)
+	int unsigned GetAudioTriggerId(char const* const szTriggerName)
 	{
-		AudioControlId audioControlId;
-		if ($self->GetAudioTriggerId(audioTriggerName, audioControlId))
-			return (unsigned int)audioControlId;
+		CryAudio::ControlId triggerId;
+		if ($self->GetAudioTriggerId(szTriggerName, triggerId))
+			return static_cast<int unsigned>(triggerId);
 		else
 			return 0;
 	}
 	
-	void PlayAudioTriggerId(unsigned int audioTriggerId)
+	void PlayAudioTriggerId(int unsigned const triggerId)
 	{
-		SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> executeRequestData;
-		executeRequestData.audioTriggerId = (AudioControlId)audioTriggerId;
-		SAudioRequest request;
-		request.pOwner = $self;
-		request.pData  = &executeRequestData;
-		gEnv->pAudioSystem->PushRequest(request);
+		gEnv->pAudioSystem->ExecuteTrigger(static_cast<CryAudio::ControlId const>(triggerId));
 	}
 	
-	void StopAudioTriggerId(unsigned int audioTriggerId)
+	void StopAudioTriggerId(int unsigned const triggerId)
 	{
-		SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> stopRequestData;
-		stopRequestData.audioTriggerId = (AudioControlId)audioTriggerId;
-		SAudioRequest request;
-		request.pData  = &stopRequestData;
-		gEnv->pAudioSystem->PushRequest(request);
+		gEnv->pAudioSystem->StopTrigger(static_cast<CryAudio::ControlId const>(triggerId));
 	}
 }

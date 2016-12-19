@@ -12,8 +12,8 @@ namespace SDL_mixer
 {
 namespace SoundEngine
 {
-typedef void (*FnEventCallback)(AudioEventId);
-typedef void (*FnStandaloneFileCallback)(AudioStandaloneFileId const, char const*);
+typedef void (* FnEventCallback)(CATLEvent&);
+typedef void (* FnStandaloneFileCallback)(CATLStandaloneFile&, char const*);
 
 // Global events
 bool Init();
@@ -36,8 +36,8 @@ void           UnloadSample(const SampleId id);
 // Events
 SAudioTrigger* CreateEventData();
 bool           ExecuteEvent(SAudioObject* const pAudioObject, SAudioTrigger const* const pEventStaticData, SAudioEvent* const pEventInstance);
-bool           PlayFile(SAudioObject* const pAudioObject, CAudioStandaloneFile* const pEventInstance, const SAudioTrigger* const pUsedTrigger, const char* const szFilePath);
-bool           StopFile(SAudioObject* const pAudioObject, AudioStandaloneFileId const fileInstanceID);
+bool           PlayFile(SAudioObject* const pAudioObject, CAudioStandaloneFile* const pFile);
+bool           StopFile(SAudioObject* const pAudioObject, CAudioStandaloneFile* const pFile);
 
 // stops an specific event instance
 bool StopEvent(SAudioEvent const* const pEventInstance);
@@ -45,12 +45,12 @@ bool StopEvent(SAudioEvent const* const pEventInstance);
 bool StopTrigger(SAudioTrigger const* const pEventData);
 
 // Listeners
-bool SetListenerPosition(const ListenerId listenerId, const CAudioObjectTransformation& position);
+bool SetListenerPosition(const ListenerId listenerId, const CObjectTransformation& position);
 
 // Audio Objects
 bool RegisterAudioObject(SAudioObject* pAudioObjectData);
-bool UnregisterAudioObject(SAudioObject* pAudioObjectData);
-bool SetAudioObjectPosition(SAudioObject* pAudioObjectData, const CAudioObjectTransformation& position);
+bool UnregisterAudioObject(SAudioObject const* const pAudioObjectData);
+bool SetAudioObjectPosition(SAudioObject* pAudioObjectData, const CObjectTransformation& position);
 
 // Callbacks
 void RegisterEventFinishedCallback(FnEventCallback pCallbackFunction);

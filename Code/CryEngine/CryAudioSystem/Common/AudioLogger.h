@@ -5,6 +5,9 @@
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IConsole.h>
+#ifdef ENABLE_AUDIO_LOGGING
+	#include <CrySystem/ISystem.h>
+#endif // ENABLE_AUDIO_LOGGING
 
 enum EAudioLogType
 {

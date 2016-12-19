@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioEventListenerManager.h"
 
+using namespace CryAudio;
 using namespace CryAudio::Impl;
 
 //////////////////////////////////////////////////////////////////////////
@@ -12,40 +13,39 @@ CAudioEventListenerManager::~CAudioEventListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-EAudioRequestStatus CAudioEventListenerManager::AddRequestListener(SAudioManagerRequestDataInternal<eAudioManagerRequestType_AddRequestListener> const* const pRequestData)
+ERequestStatus CAudioEventListenerManager::AddRequestListener(SAudioManagerRequestData<eAudioManagerRequestType_AddRequestListener> const* const pRequestData)
 {
-	EAudioRequestStatus result = eAudioRequestStatus_Failure;
+	ERequestStatus result = eRequestStatus_Failure;
 
 	for (auto const& listener : m_listeners)
 	{
 		if (listener.OnEvent == pRequestData->func && listener.pObjectToListenTo == pRequestData->pObjectToListenTo
-		    && listener.requestType == pRequestData->requestType && listener.specificRequestMask == pRequestData->specificRequestMask)
+		    && listener.eventMask == pRequestData->eventMask)
 		{
-			result = eAudioRequestStatus_Success;
+			result = eRequestStatus_Success;
 			break;
 		}
 	}
 
-	if (result == eAudioRequestStatus_Failure)
+	if (result == eRequestStatus_Failure)
 	{
 		SAudioEventListener audioEventListener;
 		audioEventListener.pObjectToListenTo = pRequestData->pObjectToListenTo;
 		audioEventListener.OnEvent = pRequestData->func;
-		audioEventListener.requestType = pRequestData->requestType;
-		audioEventListener.specificRequestMask = pRequestData->specificRequestMask;
+		audioEventListener.eventMask = pRequestData->eventMask;
 		m_listeners.push_back(audioEventListener);
-		result = eAudioRequestStatus_Success;
+		result = eRequestStatus_Success;
 	}
 
 	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-EAudioRequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void const* const pObjectToListenTo)
+ERequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* func)(SRequestInfo const* const), void const* const pObjectToListenTo)
 {
-	EAudioRequestStatus result = eAudioRequestStatus_Failure;
-	TListenerArray::iterator Iter(m_listeners.begin());
-	TListenerArray::const_iterator const IterEnd(m_listeners.end());
+	ERequestStatus result = eRequestStatus_Failure;
+	ListenerArray::iterator Iter(m_listeners.begin());
+	ListenerArray::const_iterator const IterEnd(m_listeners.end());
 
 	for (; Iter != IterEnd; ++Iter)
 	{
@@ -57,14 +57,14 @@ EAudioRequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* fu
 			}
 
 			m_listeners.pop_back();
-			result = eAudioRequestStatus_Success;
+			result = eRequestStatus_Success;
 
 			break;
 		}
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (result == eAudioRequestStatus_Failure)
+	if (result == eRequestStatus_Failure)
 	{
 		g_audioLogger.Log(eAudioLogType_Warning, "Failed to remove a request listener!");
 	}
@@ -74,15 +74,14 @@ EAudioRequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* fu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventListenerManager::NotifyListener(SAudioRequestInfo const* const pResultInfo)
+void CAudioEventListenerManager::NotifyListener(SRequestInfo const* const pResultInfo)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
 
 	for (auto const& listener : m_listeners)
 	{
-		if (((listener.specificRequestMask & pResultInfo->specificAudioRequest) > 0)                                                  //check: is the listener interested in this specific event?
-		    && (listener.pObjectToListenTo == nullptr || listener.pObjectToListenTo == pResultInfo->pOwner)                           //check: is the listener interested in events from this sender
-		    && (listener.requestType == eAudioRequestType_AudioAllRequests || listener.requestType == pResultInfo->audioRequestType)) //check: is the listener interested this eventType
+		if (((listener.eventMask & pResultInfo->audioSystemEvent) > 0)                                           //check: is the listener interested in this specific event?
+		    && (listener.pObjectToListenTo == nullptr || listener.pObjectToListenTo == pResultInfo->pOwner))     //check: is the listener interested in events from this sender
 		{
 			listener.OnEvent(pResultInfo);
 		}

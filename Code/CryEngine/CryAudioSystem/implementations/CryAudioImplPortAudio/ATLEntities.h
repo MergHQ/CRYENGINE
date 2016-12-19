@@ -17,13 +17,17 @@ public:
 	CAudioListener() = default;
 	virtual ~CAudioListener() override = default;
 
+	// IAudioListener
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return eRequestStatus_Success; }
+	// ~IAudioListener
+
 	CAudioListener(CAudioListener const&) = delete;
 	CAudioListener(CAudioListener&&) = delete;
 	CAudioListener& operator=(CAudioListener const&) = delete;
 	CAudioListener& operator=(CAudioListener&&) = delete;
 };
 
-class CAudioParameter final : public IAudioRtpc
+class CAudioParameter final : public IParameter
 {
 public:
 

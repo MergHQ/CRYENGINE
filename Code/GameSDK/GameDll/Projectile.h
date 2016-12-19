@@ -337,8 +337,8 @@ protected:
 	float			m_mpDestructionDelay;
 	
 	EntityEffects::TAttachedEffectId	m_trailEffectId;
-	AudioControlId m_whizTriggerID;
-	AudioControlId m_ricochetTriggerID;
+	CryAudio::ControlId m_whizTriggerID;
+	CryAudio::ControlId m_ricochetTriggerID;
 	//int				m_trailSoundId;
 	int				m_damage;
 	int				m_hitTypeId;

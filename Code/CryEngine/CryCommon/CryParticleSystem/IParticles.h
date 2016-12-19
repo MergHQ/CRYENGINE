@@ -25,23 +25,23 @@ class SmartScriptTable;
 //! Some parameters override emitter params.
 struct SpawnParams
 {
-	EGeomType           eAttachType;     //!< What type of object particles emitted from.
-	EGeomForm           eAttachForm;     //!< What aspect of shape emitted from.
-	bool                bCountPerUnit;   //!< Multiply particle count also by geometry extent (length/area/volume).
-	bool                bPrime;          //!< Advance emitter age to its equilibrium state.
-	bool                bRegisterByBBox; //!< Use the Bounding Box instead of Position to Register in VisArea.
-	bool                bNowhere;        //!< Exists outside of level.
-	float               fCountScale;     //!< Multiple for particle count (on top of bCountPerUnit if set).
-	float               fSizeScale;      //!< Multiple for all effect sizes.
-	float               fSpeedScale;     //!< Multiple for particle emission speed.
-	float               fTimeScale;      //!< Multiple for emitter time evolution.
-	float               fPulsePeriod;    //!< How often to restart emitter.
-	float               fStrength;       //!< Controls parameter strength curves.
-	int                 nSeed;           //!< Initial seed. Default is -1 which means random seed.
+	EGeomType                eAttachType;     //!< What type of object particles emitted from.
+	EGeomForm                eAttachForm;     //!< What aspect of shape emitted from.
+	bool                     bCountPerUnit;   //!< Multiply particle count also by geometry extent (length/area/volume).
+	bool                     bPrime;          //!< Advance emitter age to its equilibrium state.
+	bool                     bRegisterByBBox; //!< Use the Bounding Box instead of Position to Register in VisArea.
+	bool                     bNowhere;        //!< Exists outside of level.
+	float                    fCountScale;     //!< Multiple for particle count (on top of bCountPerUnit if set).
+	float                    fSizeScale;      //!< Multiple for all effect sizes.
+	float                    fSpeedScale;     //!< Multiple for particle emission speed.
+	float                    fTimeScale;      //!< Multiple for emitter time evolution.
+	float                    fPulsePeriod;    //!< How often to restart emitter.
+	float                    fStrength;       //!< Controls parameter strength curves.
+	int                      nSeed;           //!< Initial seed. Default is -1 which means random seed.
 
-	bool                bEnableAudio;  //!< Used by particle effect instances to indicate whether audio should be updated or not.
-	EAudioOcclusionType occlusionType; //!< Audio obstruction/occlusion calculation type.
-	string              audioRtpc;     //!< Indicates what audio RTPC this particle effect instance drives.
+	bool                     bEnableAudio;  //!< Used by particle effect instances to indicate whether audio should be updated or not.
+	CryAudio::EOcclusionType occlusionType; //!< Audio obstruction/occlusion calculation type.
+	string                   audioRtpc;     //!< Indicates what audio RTPC this particle effect instance drives.
 
 	inline SpawnParams()
 	{
@@ -59,7 +59,7 @@ struct SpawnParams
 		fStrength = -1;
 		nSeed = -1;
 		bEnableAudio = true;
-		occlusionType = eAudioOcclusionType_Ignore;
+		occlusionType = CryAudio::eOcclusionType_Ignore;
 	}
 };
 

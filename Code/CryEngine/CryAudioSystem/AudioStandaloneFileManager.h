@@ -10,14 +10,14 @@ namespace CryAudio
 namespace Impl
 {
 struct IAudioImpl;
-}
-}
+struct IAudioTrigger;
+} // namespace Impl
 
 class CAudioStandaloneFileManager final
 {
 public:
 
-	CAudioStandaloneFileManager(AudioStandaloneFileLookup& audioStandaloneFiles);
+	CAudioStandaloneFileManager() = default;
 	~CAudioStandaloneFileManager();
 
 	CAudioStandaloneFileManager(CAudioStandaloneFileManager const&) = delete;
@@ -25,21 +25,17 @@ public:
 	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager const&) = delete;
 	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
 
-	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
-	void                Release();
+	void                         Init(Impl::IAudioImpl* const pImpl);
+	void                         Release();
 
-	CATLStandaloneFile* GetStandaloneFile(char const* const szFile);
-	CATLStandaloneFile* LookupId(AudioStandaloneFileId const instanceId) const;
-	void                ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
+	CATLStandaloneFile*          ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::IAudioTrigger const* const pTriggerImpl = nullptr);
+	void                         ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
 
 private:
 
-	AudioStandaloneFileLookup& m_audioStandaloneFiles;
+	std::list<CATLStandaloneFile*> m_constructedStandaloneFiles;
 
-	typedef CInstanceManager<CATLStandaloneFile, AudioStandaloneFileId> AudioStandaloneFilePool;
-	AudioStandaloneFilePool     m_audioStandaloneFilePool;
-
-	CryAudio::Impl::IAudioImpl* m_pImpl;
+	Impl::IAudioImpl*    m_pImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -48,3 +44,4 @@ public:
 
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 };
+} // namespace CryAudio

@@ -13,6 +13,8 @@
 #include "StdAfx.h"
 #include "LipSync_FacialInstance.h"
 
+using namespace CryAudio;
+
 //=============================================================================
 //
 // CLipSyncProvider_FacialInstance
@@ -24,13 +26,13 @@ CLipSyncProvider_FacialInstance::CLipSyncProvider_FacialInstance(EntityId entity
 {
 }
 
-void CLipSyncProvider_FacialInstance::RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::RequestLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	// actually facial sequence is triggered in OnSoundEvent SOUND_EVENT_ON_PLAYBACK_STARTED of the CSoundProxy
 	// when playback is started, it will start facial sequence as well
 }
 
-void CLipSyncProvider_FacialInstance::StartLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::StartLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	if (lipSyncMethod != eLSM_None)
 	{
@@ -38,7 +40,7 @@ void CLipSyncProvider_FacialInstance::StartLipSync(IEntityAudioComponent* pProxy
 	}
 }
 
-void CLipSyncProvider_FacialInstance::PauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::PauseLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	if (lipSyncMethod != eLSM_None)
 	{
@@ -46,7 +48,7 @@ void CLipSyncProvider_FacialInstance::PauseLipSync(IEntityAudioComponent* pProxy
 	}
 }
 
-void CLipSyncProvider_FacialInstance::UnpauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::UnpauseLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	if (lipSyncMethod != eLSM_None)
 	{
@@ -54,7 +56,7 @@ void CLipSyncProvider_FacialInstance::UnpauseLipSync(IEntityAudioComponent* pPro
 	}
 }
 
-void CLipSyncProvider_FacialInstance::StopLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::StopLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	if (lipSyncMethod != eLSM_None)
 	{
@@ -62,7 +64,7 @@ void CLipSyncProvider_FacialInstance::StopLipSync(IEntityAudioComponent* pProxy,
 	}
 }
 
-void CLipSyncProvider_FacialInstance::UpdateLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_FacialInstance::UpdateLipSync(IEntityAudioComponent* pProxy, const ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 }
 
@@ -72,7 +74,7 @@ void CLipSyncProvider_FacialInstance::FullSerialize(TSerialize ser)
 	ser.EndGroup();
 }
 
-void CLipSyncProvider_FacialInstance::LipSyncWithSound(const AudioControlId audioTriggerId, bool bStop /*= false*/)
+void CLipSyncProvider_FacialInstance::LipSyncWithSound(const ControlId audioTriggerId, bool bStop /*= false*/)
 {
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId))
 	{
@@ -217,6 +219,6 @@ void CLipSync_FacialInstance::OnShutDown()
 	if (IEntityAudioComponent* pSoundProxy = pEntity->GetComponent<IEntityAudioComponent>())
 	{
 		REINST(add SetLipSyncProvider to interface)
-			//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
 	}
 }

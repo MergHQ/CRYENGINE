@@ -1,8 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include <CryFlowGraph/IFlowBaseNode.h>
+
+using namespace CryAudio;
 
 class CFlowNode_AudioSwitch final : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -10,6 +11,7 @@ public:
 
 	explicit CFlowNode_AudioSwitch(SActivationInfo* pActInfo)
 		: m_currentState(0)
+		, m_audioSwitchId(InvalidControlId)
 	{
 		//sanity checks
 		CRY_ASSERT((eIn_SwitchStateNameLast - eIn_SwitchStateNameFirst) == (NUM_STATES - 1));
@@ -17,7 +19,7 @@ public:
 
 		for (int i = 0; i < NUM_STATES; ++i)
 		{
-			m_audioSwitchStates[i] = INVALID_AUDIO_SWITCH_STATE_ID;
+			m_audioSwitchStates[i] = InvalidSwitchStateId;
 		}
 	}
 
@@ -156,7 +158,7 @@ private:
 
 		if (!switchName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioSwitchId(switchName.c_str(), m_requestData.audioSwitchId);
+			gEnv->pAudioSystem->GetAudioSwitchId(switchName.c_str(), m_audioSwitchId);
 		}
 	}
 
@@ -165,12 +167,9 @@ private:
 	{
 		string const& stateName = GetPortString(pActInfo, stateIndex);
 
-		if (!stateName.empty() && (m_requestData.audioSwitchId != INVALID_AUDIO_CONTROL_ID))
+		if (!stateName.empty() && (m_audioSwitchId != InvalidControlId))
 		{
-			gEnv->pAudioSystem->GetAudioSwitchStateId(
-			  m_requestData.audioSwitchId,
-			  stateName.c_str(),
-			  m_audioSwitchStates[stateIndex - eIn_SwitchStateNameFirst]);
+			gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioSwitchId, stateName.c_str(), m_audioSwitchStates[stateIndex - eIn_SwitchStateNameFirst]);
 		}
 	}
 
@@ -181,7 +180,7 @@ private:
 		{
 			GetSwitchId(pActInfo);
 
-			if (m_requestData.audioSwitchId != INVALID_AUDIO_CONTROL_ID)
+			if (m_audioSwitchId != InvalidControlId)
 			{
 				for (int stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
 				{
@@ -189,7 +188,6 @@ private:
 				}
 			}
 
-			m_request.pData = &m_requestData;
 			m_currentState = 0;
 
 			if (currentState != 0)
@@ -206,16 +204,14 @@ private:
 
 		if (pIEntityAudioComponent != nullptr)
 		{
-			pIEntityAudioComponent->SetSwitchState(m_requestData.audioSwitchId, m_audioSwitchStates[stateIndex]);
+			pIEntityAudioComponent->SetSwitchState(m_audioSwitchId, m_audioSwitchStates[stateIndex]);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetStateOnGlobalObject(int const stateIndex)
 	{
-		m_requestData.audioSwitchStateId = m_audioSwitchStates[stateIndex];
-
-		gEnv->pAudioSystem->PushRequest(m_request);
+		gEnv->pAudioSystem->SetSwitchState(m_audioSwitchId, m_audioSwitchStates[stateIndex]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -239,10 +235,9 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	int                m_currentState;
-	AudioSwitchStateId m_audioSwitchStates[NUM_STATES];
-	SAudioRequest      m_request;
-	SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> m_requestData;
+	int           m_currentState;
+	ControlId     m_audioSwitchId;
+	SwitchStateId m_audioSwitchStates[NUM_STATES];
 };
 
 REGISTER_FLOW_NODE("Audio:Switch", CFlowNode_AudioSwitch);
