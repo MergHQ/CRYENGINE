@@ -36,7 +36,7 @@ public:
 	virtual void PostSerialize() override               {}
 	virtual void Update(const float deltaTime) override {}
 
-	virtual void ExecuteTrigger(const AudioControlId& controlID);
+	virtual void ExecuteTrigger(const CryAudio::ControlId& controlID);
 	virtual void StopTrigger();
 
 	virtual void OnVehicleEvent(EVehicleEvent event, const SVehicleEventParams& params) override {}
@@ -45,14 +45,14 @@ public:
 
 protected:
 
-	IVehicle*       m_pVehicle;
-	IVehicleHelper* m_pHelper;
-	CVehicleSeat*   m_pSeat;
+	IVehicle*           m_pVehicle;
+	IVehicleHelper*     m_pHelper;
+	CVehicleSeat*       m_pSeat;
 
-	bool            m_enabled;
+	bool                m_enabled;
 
-	AudioControlId  m_audioTriggerStartId;
-	AudioControlId  m_audioTriggerStopId;
+	CryAudio::ControlId m_audioTriggerStartId;
+	CryAudio::ControlId m_audioTriggerStopId;
 };
 
 #endif

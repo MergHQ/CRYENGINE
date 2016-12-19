@@ -18,8 +18,8 @@ struct SAudioTriggerSerializeHelper
 	void         Serialize(Serialization::IArchive& archive);
 	static SGUID ReflectSchematycType(CTypeInfo<SAudioTriggerSerializeHelper>& typeInfo);
 
-	AudioControlId m_triggerId = INVALID_AUDIO_CONTROL_ID;
-	string         m_triggerName;
+	CryAudio::ControlId m_triggerId = CryAudio::InvalidControlId;
+	string              m_triggerName;
 };
 
 struct SAudioParameterSerializeHelper
@@ -27,8 +27,8 @@ struct SAudioParameterSerializeHelper
 	void         Serialize(Serialization::IArchive& archive);
 	static SGUID ReflectSchematycType(CTypeInfo<SAudioParameterSerializeHelper>& typeInfo);
 
-	AudioControlId m_parameterId = INVALID_AUDIO_CONTROL_ID;
-	string         m_parameterName;
+	CryAudio::ControlId m_parameterId = CryAudio::InvalidControlId;
+	string              m_parameterName;
 };
 
 struct SAudioSwitchWithStateSerializeHelper
@@ -36,10 +36,10 @@ struct SAudioSwitchWithStateSerializeHelper
 	void         Serialize(Serialization::IArchive& archive);
 	static SGUID ReflectSchematycType(CTypeInfo<SAudioSwitchWithStateSerializeHelper>& typeInfo);
 
-	AudioControlId     m_switchId = INVALID_AUDIO_CONTROL_ID;
-	string             m_switchName;
-	AudioSwitchStateId m_switchStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-	string             m_switchStateName;
+	CryAudio::ControlId     m_switchId = CryAudio::InvalidControlId;
+	string                  m_switchName;
+	CryAudio::SwitchStateId m_switchStateId = CryAudio::InvalidSwitchStateId;
+	string                  m_switchStateName;
 };
 
 class CEntityAudioComponent final : public CComponent
@@ -73,10 +73,10 @@ public:
 	static void  Register(IEnvRegistrar& registrar);
 
 	//audio callback
-	static void OnAudioCallback(SAudioRequestInfo const* const pAudioRequestInfo);
+	static void OnAudioCallback(CryAudio::SRequestInfo const* const pAudioRequestInfo);
 
 private:
-	AudioProxyId         m_audioProxyId = INVALID_AUDIO_PROXY_ID;
-	IEntityAudioComponent*   m_pAudioProxy;
+	CryAudio::AuxObjectId  m_audioProxyId = CryAudio::InvalidAuxObjectId;
+	IEntityAudioComponent* m_pAudioProxy;
 };
 } // Schematyc

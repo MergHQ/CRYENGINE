@@ -8,8 +8,6 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 
-#include <SoundAllocator.h>
-
 #if !defined(_RELEASE)
 // Define this to enable logging via CAudioLogger.
 // We disable logging for Release builds
@@ -18,11 +16,7 @@
 
 #include <AudioLogger.h>
 
-extern CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 extern CAudioLogger g_audioImplLogger;
-
-#define AUDIO_ALLOCATOR_MEMORY_POOL g_audioImplMemoryPool
-#include <STLSoundAllocator.h>
 
 #if !defined(_RELEASE)
 	#define INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE

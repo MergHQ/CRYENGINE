@@ -2,7 +2,9 @@
 
 #include "StdAfx.h"
 #include "AudioAreaRandom.h"
-#include "AudioEntitiesUtils.h"
+#include <CrySerialization/Enum.h>
+
+using namespace CryAudio;
 
 class CAudioAreaRandomRegistrator : public IEntityRegistrator
 {
@@ -40,7 +42,7 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 				m_areaState = EAreaState::Near;
 
 				const float distance = event.fParam[0];
-				if (distance < m_rtpcDistance)
+				if (distance < m_parameterDistance)
 				{
 					Play();
 					m_fadeValue = 0.0;
@@ -55,7 +57,7 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 			m_areaState = EAreaState::Near;
 
 			const float distance = event.fParam[0];
-			if (distance < m_rtpcDistance)
+			if (distance < m_parameterDistance)
 			{
 				if (!IsPlaying())
 				{
@@ -64,7 +66,7 @@ void CAudioAreaRandom::ProcessEvent(SEntityEvent& event)
 
 				UpdateFadeValue(distance);
 			}
-			else if (IsPlaying() && distance > m_rtpcDistance)
+			else if (IsPlaying() && distance > m_parameterDistance)
 			{
 				Stop();
 				UpdateFadeValue(distance);
@@ -146,21 +148,21 @@ void CAudioAreaRandom::OnResetState()
 {
 	IEntity& entity = *GetEntity();
 
-	auto& audioProxy = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
+	auto& audioEntityComponent = *(entity.GetOrCreateComponent<IEntityAudioComponent>());
 
 	// Get properties
 	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioTriggerId(m_rtpcName, m_rtpcId);
+	gEnv->pAudioSystem->GetAudioParameterId(m_parameterName, m_parameterId);
 
 	// Update values
-	audioProxy.SetFadeDistance(m_rtpcDistance);
+	audioEntityComponent.SetFadeDistance(m_parameterDistance);
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
+	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
 
-	audioProxy.SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-	audioProxy.SetAuxAudioProxyOffset(Matrix34(IDENTITY));
-	audioProxy.AuxAudioProxiesMoveWithEntity(m_bMoveWithEntity);
+	audioEntityComponent.SetCurrentEnvironments(InvalidAuxObjectId);
+	audioEntityComponent.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
+	audioEntityComponent.AudioAuxObjectsMoveWithEntity(m_bMoveWithEntity);
 
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 	if (m_bTriggerAreasOnMove)
@@ -203,20 +205,20 @@ Vec3 CAudioAreaRandom::GenerateOffset()
 
 void CAudioAreaRandom::Play()
 {
-	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
+	if (auto pIEntityAudioComponent = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID && m_playTriggerId != m_currentlyPlayingTriggerId)
+		if (m_currentlyPlayingTriggerId != InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
 		{
-			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
+			pIEntityAudioComponent->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		if (m_playTriggerId != INVALID_AUDIO_CONTROL_ID)
+		if (m_playTriggerId != InvalidControlId)
 		{
-			pAudioProxy->SetCurrentEnvironments();
-			pAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, GenerateOffset()));
+			pIEntityAudioComponent->SetCurrentEnvironments();
+			pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SAudioCallBackInfo const callbackInfo(this);
-			pAudioProxy->ExecuteTrigger(m_playTriggerId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+			SRequestUserData const userData(eRequestFlags_None, this);
+			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
@@ -233,16 +235,16 @@ void CAudioAreaRandom::Stop()
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
-		if (m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
+		if (m_stopTriggerId != InvalidControlId)
 		{
 			pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 		}
-		else if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID)
+		else if (m_currentlyPlayingTriggerId != InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
+		m_currentlyPlayingTriggerId = InvalidControlId;
 	}
 
 	m_bPlaying = false;
@@ -250,11 +252,11 @@ void CAudioAreaRandom::Stop()
 
 void CAudioAreaRandom::UpdateRtpc()
 {
-	if (m_rtpcId != INVALID_AUDIO_CONTROL_ID)
+	if (m_parameterId != InvalidControlId)
 	{
 		if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 		{
-			pAudioProxy->SetRtpcValue(m_rtpcId, m_fadeValue);
+			pAudioProxy->SetParameter(m_parameterId, m_fadeValue);
 		}
 	}
 }
@@ -266,14 +268,37 @@ void CAudioAreaRandom::UpdateFadeValue(float distance)
 		m_fadeValue = 0.0f;
 		UpdateRtpc();
 	}
-	else if (m_rtpcDistance > 0.0f)
+	else if (m_parameterDistance > 0.0f)
 	{
-		float fade = std::max((m_rtpcDistance - distance) / m_rtpcDistance, 0.f);
+		float fade = std::max((m_parameterDistance - distance) / m_parameterDistance, 0.f);
 		fade = (fade > 0.0f) ? fade : 0.0f;
 		if (abs(m_fadeValue - fade) > AudioEntitiesUtils::AreaFadeEpsilon)
 		{
 			m_fadeValue = fade;
 			UpdateRtpc();
 		}
+	}
+}
+
+void CAudioAreaRandom::SerializeProperties(Serialization::IArchive& archive)
+{
+	archive(m_bEnabled, "Enabled", "Enabled");
+	archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
+	archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
+	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
+	archive(m_bMoveWithEntity, "Move with Entity", "MoveWithEntity");
+
+	archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+
+	archive(Serialization::AudioRTPC(m_parameterName), "Rtpc", "Rtpc");
+	archive(m_parameterDistance, "RTPC Distance", "RTPCDistance");
+	archive(m_radius, "Radius Random", "RadiusRandom");
+
+	archive(m_minDelay, "MinDelay", "MinDelay");
+	archive(m_maxDelay, "MaxDelay", "MaxDelay");
+
+	if (archive.isInput())
+	{
+		OnResetState();
 	}
 }

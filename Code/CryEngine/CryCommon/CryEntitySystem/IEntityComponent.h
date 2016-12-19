@@ -2,24 +2,15 @@
 
 #pragma once
 
-#ifndef __IEntityComponent_h__
-#define __IEntityComponent_h__
-
 #include <CryMath/Cry_Math.h>
-
 #include <CryExtension/ICryUnknown.h>
 #include <CryExtension/ClassWeaver.h>
-
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAudio/IAudioSystem.h>
-
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/Serializer.h>
-
 #include <CryCore/Containers/CryArray.h>
-
 #include <CryCore/BitMask.h>
-
 #include <CryNetwork/ISerialize.h>
 
 struct SEntitySpawnParams;
@@ -47,8 +38,8 @@ struct IEntityPropertyGroup
 {
 	virtual ~IEntityPropertyGroup() {}
 
-	virtual const char*         GetLabel() const = 0;
-	virtual void                SerializeProperties(Serialization::IArchive& archive) = 0;
+	virtual const char* GetLabel() const = 0;
+	virtual void        SerializeProperties(Serialization::IArchive& archive) = 0;
 };
 
 //! Entity proxies that can be hosted by the entity.
@@ -76,14 +67,14 @@ enum EEntityProxy
 
 //////////////////////////////////////////////////////////////////////////
 //! Compatible to the CRYINTERFACE_DECLARE
-#define CRY_ENTITY_COMPONENT_INTERFACE(iname, iidHigh, iidLow) CRYINTERFACE_DECLARE(iname,iidHigh,iidLow)
+#define CRY_ENTITY_COMPONENT_INTERFACE(iname, iidHigh, iidLow) CRYINTERFACE_DECLARE(iname, iidHigh, iidLow)
 
-#define CRY_ENTITY_COMPONENT_CLASS(implclassname, interfaceName, cname,iidHigh,iidLow) \
-	CRYGENERATE_CLASS_FROM_INTERFACE(implclassname,interfaceName,cname,iidHigh,iidLow)
+#define CRY_ENTITY_COMPONENT_CLASS(implclassname, interfaceName, cname, iidHigh, iidLow) \
+  CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, interfaceName, cname, iidHigh, iidLow)
 
-#define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(implclassname,cname,iidHigh,iidLow) \
-	CRY_ENTITY_COMPONENT_INTERFACE(implclassname, iidHigh, iidLow) \
-	CRYGENERATE_CLASS_FROM_INTERFACE(implclassname,implclassname,cname,iidHigh,iidLow)
+#define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(implclassname, cname, iidHigh, iidLow) \
+  CRY_ENTITY_COMPONENT_INTERFACE(implclassname, iidHigh, iidLow)                        \
+  CRYGENERATE_CLASS_FROM_INTERFACE(implclassname, implclassname, cname, iidHigh, iidLow)
 
 //! Base interface for all entity components.
 struct IEntityComponent : public ICryUnknown
@@ -97,7 +88,7 @@ public:
 
 protected:
 	virtual void* QueryInterface(const CryInterfaceID& iid) const { return 0; };
-	virtual void* QueryComposite(const char* name) const { return 0; };
+	virtual void* QueryComposite(const char* name) const          { return 0; };
 	//~ICryUnknown
 
 public:
@@ -109,7 +100,7 @@ public:
 	IEntityComponent() : m_pEntity(nullptr) {}
 	virtual ~IEntityComponent() {}
 
-	virtual EEntityProxy           GetProxyType() const { return ENTITY_PROXY_LAST; };
+	virtual EEntityProxy GetProxyType() const { return ENTITY_PROXY_LAST; };
 
 	//! Called at the very first initialization of the component, at component creation time.
 	virtual void Initialize() {}
@@ -120,19 +111,19 @@ public:
 	// By overriding this function component will be able to handle events sent from the host Entity.
 	// Requires returning the desired event flag in GetEventMask.
 	// \param event Event structure, contains event id and parameters.
-	virtual	void ProcessEvent(SEntityEvent &event) {}
+	virtual void ProcessEvent(SEntityEvent& event) {}
 
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent (ex: BIT64(ENTITY_EVENT_HIDE)|BIT64(ENTITY_EVENT_UNHIDE))
-	virtual uint64                 GetEventMask() const { return 0; }
+	virtual uint64                 GetEventMask() const                      { return 0; }
 
-	ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
+	ComponentEventPriority         GetEventPriority() const                  { return (ComponentEventPriority)GetProxyType(); }
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return (ComponentEventPriority)GetProxyType(); }
 
 	//! Optionally serialize component to/from XML.
 	//! For user-facing properties, see GetProperties.
-	virtual void LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) {}
+	virtual void                         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) {}
 
-	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
+	virtual struct IEntityPropertyGroup* GetPropertyGroup()                                                                   { return nullptr; }
 
 	//! SaveGame serialization. Override to specify what to serialize in a saved game.
 	//! \param ser Serializing stream. Use IsReading() to decide read/write phase. Use Value() to read/write a property.
@@ -140,7 +131,7 @@ public:
 
 	//! SaveGame serialization. Override to enable serialization for the component.
 	//! \return true If component needs to be serialized to/from a saved game.
-	virtual bool NeedGameSerialize() { return false; };
+	virtual bool NeedGameSerialize()                     { return false; };
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const {};
 
@@ -156,7 +147,7 @@ struct IEntityScript;
 //! Lua Script component interface.
 struct IEntityScriptComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityScriptComponent,0xBD6403CF3B49F39E,0x95403FD1C6D4F755)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityScriptComponent, 0xBD6403CF3B49F39E, 0x95403FD1C6D4F755)
 
 	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) = 0;
 	virtual IScriptTable* GetScriptTable() = 0;
@@ -204,7 +195,7 @@ struct IEntityScriptComponent : public IEntityComponent
 //! Proximity trigger component interface.
 struct IEntityTriggerComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityTriggerComponent,0xDE73851B7E35419F,0xA50951D204F555DE)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityTriggerComponent, 0xDE73851B7E35419F, 0xA50951D204F555DE)
 
 	//! Creates a trigger bounding box.
 	//! When physics will detect collision with this bounding box it will send an events to the entity.
@@ -226,43 +217,43 @@ struct IEntityTriggerComponent : public IEntityComponent
 //! Entity Audio component interface.
 struct IEntityAudioComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityAudioComponent,0x9824845CFE377889,0xB1724A63F331D8A2)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityAudioComponent, 0x9824845CFE377889, 0xB1724A63F331D8A2)
 
-	virtual void               SetFadeDistance(float const fadeDistance) = 0;
-	virtual float              GetFadeDistance() const = 0;
-	virtual void               SetEnvironmentFadeDistance(float const environmentFadeDistance) = 0;
-	virtual float              GetEnvironmentFadeDistance() const = 0;
-	virtual float              GetGreatestFadeDistance() const = 0;
-	virtual void               SetEnvironmentId(AudioEnvironmentId const environmentId) = 0;
-	virtual AudioEnvironmentId GetEnvironmentId() const = 0;
-	virtual AudioProxyId       CreateAuxAudioProxy() = 0;
-	virtual bool               RemoveAuxAudioProxy(AudioProxyId const audioProxyId) = 0;
-	virtual void               SetAuxAudioProxyOffset(Matrix34 const& offset, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual Matrix34 const&    GetAuxAudioProxyOffset(AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual bool               PlayFile(SAudioPlayFileInfo const& _playbackInfo, AudioProxyId const _audioProxyId = DEFAULT_AUDIO_PROXY_ID, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
-	virtual void               StopFile(char const* const _szFile, AudioProxyId const _audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual bool               ExecuteTrigger(AudioControlId const audioTriggerId, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
-	virtual void               StopTrigger(AudioControlId const audioTriggerId, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioStateId, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               SetRtpcValue(AudioControlId const audioRtpcId, float const value, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               SetObstructionCalcType(EAudioOcclusionType const occlusionType, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               SetCurrentEnvironments(AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
-	virtual void               AuxAudioProxiesMoveWithEntity(bool const bCanMoveWithEntity) = 0;
-	virtual void               AddAsListenerToAuxAudioProxy(AudioProxyId const audioProxyId, void(*func)(SAudioRequestInfo const* const), EAudioRequestType requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) = 0;
-	virtual void               RemoveAsListenerFromAuxAudioProxy(AudioProxyId const audioProxyId, void(*func)(SAudioRequestInfo const* const)) = 0;
+	virtual void                    SetFadeDistance(float const fadeDistance) = 0;
+	virtual float                   GetFadeDistance() const = 0;
+	virtual void                    SetEnvironmentFadeDistance(float const environmentFadeDistance) = 0;
+	virtual float                   GetEnvironmentFadeDistance() const = 0;
+	virtual float                   GetGreatestFadeDistance() const = 0;
+	virtual void                    SetEnvironmentId(CryAudio::EnvironmentId const environmentId) = 0;
+	virtual CryAudio::EnvironmentId GetEnvironmentId() const = 0;
+	virtual CryAudio::AuxObjectId   CreateAudioAuxObject() = 0;
+	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
+	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                    SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                    AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
+	virtual void                    AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const), CryAudio::EnumFlagsType const eventMask) = 0;
+	virtual void                    RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const)) = 0;
 };
 
 //! Flags the can be set on each of the entity object slots.
 enum EEntitySlotFlags
 {
-	ENTITY_SLOT_RENDER = BIT(0), //!< Draw this slot.
-	ENTITY_SLOT_RENDER_NEAREST = BIT(1), //!< Draw this slot as nearest. [Rendered in camera space].
-	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA = BIT(2), //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
-	ENTITY_SLOT_IGNORE_PHYSICS = BIT(3), //!< This slot will ignore physics events sent to it.
-	ENTITY_SLOT_BREAK_AS_ENTITY = BIT(4),
+	ENTITY_SLOT_RENDER                      = BIT(0), //!< Draw this slot.
+	ENTITY_SLOT_RENDER_NEAREST              = BIT(1), //!< Draw this slot as nearest. [Rendered in camera space].
+	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA   = BIT(2), //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
+	ENTITY_SLOT_IGNORE_PHYSICS              = BIT(3), //!< This slot will ignore physics events sent to it.
+	ENTITY_SLOT_BREAK_AS_ENTITY             = BIT(4),
 	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = BIT(5),
-	ENTITY_SLOT_BREAK_AS_ENTITY_MP = BIT(6), //!< In MP this an entity that shouldn't fade or participate in network breakage.
+	ENTITY_SLOT_BREAK_AS_ENTITY_MP          = BIT(6), //!< In MP this an entity that shouldn't fade or participate in network breakage.
 };
 
 //! Type of an area managed by IEntityAreaComponent.
@@ -281,12 +272,12 @@ enum EEntityAreaType
 //! events to the target entities.
 struct IEntityAreaComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityAreaComponent,0x98EDA61FDE8BE2B1,0xA1CA2A88E4EEDE66)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityAreaComponent, 0x98EDA61FDE8BE2B1, 0xA1CA2A88E4EEDE66)
 
 	enum EAreaComponentFlags
 	{
 		FLAG_NOT_UPDATE_AREA = BIT(1), //!< When set points in the area will not be updated.
-		FLAG_NOT_SERIALIZE = BIT(2)  //!< Areas with this flag will not be serialized.
+		FLAG_NOT_SERIALIZE   = BIT(2)  //!< Areas with this flag will not be serialized.
 	};
 
 	//! Area flags.
@@ -430,9 +421,9 @@ struct IEntityAreaComponent : public IEntityComponent
 
 struct IClipVolumeComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IClipVolumeComponent,0x92BC520EAAA2B3F0,0x9095087AEE67D9FF)
+	CRY_ENTITY_COMPONENT_INTERFACE(IClipVolumeComponent, 0x92BC520EAAA2B3F0, 0x9095087AEE67D9FF)
 
-	virtual void         SetGeometryFilename(const char *sFilename) = 0;
+	virtual void         SetGeometryFilename(const char* sFilename) = 0;
 	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) = 0;
 	virtual IClipVolume* GetClipVolume() const = 0;
 	virtual IBSPTree3D*  GetBspTree() const = 0;
@@ -442,7 +433,7 @@ struct IClipVolumeComponent : public IEntityComponent
 //! Flow Graph component allows entity to host reference to the flow graph.
 struct IEntityFlowGraphComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityFlowGraphComponent,0x17E5EBA757E44662,0xA1C21F41DE946CDA)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityFlowGraphComponent, 0x17E5EBA757E44662, 0xA1C21F41DE946CDA)
 
 	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph) = 0;
 	virtual IFlowGraph* GetFlowGraph() = 0;
@@ -454,7 +445,7 @@ struct IEntityFlowGraphComponent : public IEntityComponent
 //! Substitution component remembers IRenderNode this entity substitutes and unhides it upon deletion
 struct IEntitySubstitutionComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntitySubstitutionComponent,0x429B0BCE294749D9,0xA458DF6FAEE6830C)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntitySubstitutionComponent, 0x429B0BCE294749D9, 0xA458DF6FAEE6830C)
 
 	virtual void         SetSubstitute(IRenderNode* pSubstitute) = 0;
 	virtual IRenderNode* GetSubstitute() = 0;
@@ -463,7 +454,7 @@ struct IEntitySubstitutionComponent : public IEntityComponent
 //! Represents entity camera.
 struct IEntityCameraComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityCameraComponent,0x9DA92DF237D74D2F,0xB64FB827FCECFDD3)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityCameraComponent, 0x9DA92DF237D74D2F, 0xB64FB827FCECFDD3)
 
 	virtual void     SetCamera(CCamera& cam) = 0;
 	virtual CCamera& GetCamera() = 0;
@@ -472,24 +463,24 @@ struct IEntityCameraComponent : public IEntityComponent
 //! Component for the entity rope.
 struct IEntityRopeComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityRopeComponent,0x368E5DCD0D954101,0xB1F9DA514945F40C)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityRopeComponent, 0x368E5DCD0D954101, 0xB1F9DA514945F40C)
 
 	virtual struct IRopeRenderNode* GetRopeRenderNode() = 0;
 };
 
 namespace DRS
 {
-	struct IResponseActor;
-	struct IVariableCollection;
-	typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
+struct IResponseActor;
+struct IVariableCollection;
+typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
 }
 
 //! Component for dynamic response system actors.
 struct IEntityDynamicResponseComponent : public IEntityComponent
 {
-	CRY_ENTITY_COMPONENT_INTERFACE(IEntityDynamicResponseComponent,0x6799464783DD41B8,0xA098E26B4B2C95FD)
+	CRY_ENTITY_COMPONENT_INTERFACE(IEntityDynamicResponseComponent, 0x6799464783DD41B8, 0xA098E26B4B2C95FD)
 
-	virtual DRS::IResponseActor*      GetResponseActor() const = 0;
+	virtual DRS::IResponseActor * GetResponseActor() const = 0;
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const = 0;
 };
 
@@ -508,5 +499,3 @@ struct IParticleEntityComponent : public IEntityComponent
 
 	virtual void SetParticleEffectName(cstr effectName) = 0;
 };
-
-#endif // __IEntityComponent_h__

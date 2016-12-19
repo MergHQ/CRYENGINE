@@ -21,12 +21,12 @@ public:
 	explicit CLipSyncProvider_TransitionQueue(EntityId entityId);
 
 	// ILipSyncProvider
-	void RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	void StartLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	void PauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	void UnpauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	void StopLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
-	void UpdateLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void RequestLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void StartLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void PauseLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void UnpauseLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void StopLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
+	void UpdateLipSync(IEntityAudioComponent* pProxy, const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod) override;
 	// ~ILipSyncProvider
 
 	void FullSerialize(TSerialize ser);
@@ -34,9 +34,9 @@ public:
 private:
 	IEntity*            GetEntity();
 	ICharacterInstance* GetCharacterInstance();
-	void                FindMatchingAnim(const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod, ICharacterInstance& character, int* pAnimIdOut, CryCharAnimationParams* pAnimParamsOut) const;
+	void                FindMatchingAnim(const CryAudio::ControlId audioTriggerId, const ELipSyncMethod lipSyncMethod, ICharacterInstance& character, int* pAnimIdOut, CryCharAnimationParams* pAnimParamsOut) const;
 	void                FillCharAnimationParams(const bool isDefaultAnim, CryCharAnimationParams* pParams) const;
-	void                SynchronizeAnimationToSound(const AudioControlId audioTriggerId);
+	void                SynchronizeAnimationToSound(const CryAudio::ControlId audioTriggerId);
 
 private:
 	enum EState
@@ -66,7 +66,7 @@ private:
 
 	// Filled when animation is started:
 	uint32         m_nCurrentAnimationToken;
-	AudioControlId m_soundId;
+	CryAudio::ControlId m_soundId;
 };
 DECLARE_SHARED_POINTERS(CLipSyncProvider_TransitionQueue);
 

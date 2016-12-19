@@ -1086,16 +1086,10 @@ bool CAnimSequence::IsAncestorOf(const IAnimSequence* pSequence) const
 	return false;
 }
 
-void CAnimSequence::ExecuteAudioTrigger(const AudioControlId& audioTriggerId)
+void CAnimSequence::ExecuteAudioTrigger(const CryAudio::ControlId audioTriggerId)
 {
-	if (audioTriggerId != INVALID_AUDIO_CONTROL_ID)
+	if (audioTriggerId != CryAudio::InvalidControlId)
 	{
-		SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> audioExecuteRequestData;
-		audioExecuteRequestData.audioTriggerId = audioTriggerId;
-
-		SAudioRequest audioRequest;
-		audioRequest.pOwner = this;
-		audioRequest.pData = &audioExecuteRequestData;
-		gEnv->pAudioSystem->PushRequest(audioRequest);
+		gEnv->pAudioSystem->ExecuteTrigger(audioTriggerId);
 	}
 }

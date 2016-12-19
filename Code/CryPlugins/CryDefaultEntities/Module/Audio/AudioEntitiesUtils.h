@@ -3,18 +3,7 @@
 #pragma once
 
 #include <array>
-#include "CryAudio/IAudioInterfacesCommonData.h"
-#include "CryAudio/IAudioSystem.h"
-
-enum ESoundObstructionType
-{
-	eSoundObstructionType_Ignore = 0,
-	eSoundObstructionType_Adaptive,
-	eSoundObstructionType_Low,
-	eSoundObstructionType_Medium,
-	eSoundObstructionType_High,
-	eSoundObstructionType_Num,
-};
+#include <CryAudio/IAudioSystem.h>
 
 enum EPlayBehavior
 {
@@ -30,23 +19,24 @@ enum class EAreaState
 	Inside
 };
 
+static int constexpr numOcclusionTypes = static_cast<int>(CryAudio::eOcclusionType_Count - 1);
+
 class AudioEntitiesUtils
 {
 	AudioEntitiesUtils() = delete;
 
 public:
 
-	static void                                                         Init();
-	static AudioControlId                                               GetObstructionOcclusionSwitch();
-	static const std::array<AudioControlId, eSoundObstructionType_Num>& GetObstructionOcclusionStateIds();
-	static const std::array<const char*, eSoundObstructionType_Num>&    GetObstructionNames();
+	static void                                                      Init();
+	static CryAudio::ControlId                                       GetObstructionOcclusionSwitch();
+	static const std::array<CryAudio::ControlId, numOcclusionTypes>& GetObstructionOcclusionStateIds();
+	static const std::array<const char*, numOcclusionTypes>&         GetObstructionNames();
 
 	static float AreaFadeEpsilon;
 
 private:
 
-	static AudioControlId m_obstructionOcclusionSwitch;
-	static std::array<const char*, eSoundObstructionType_Num>    m_obstructionNames;
-	static std::array<AudioControlId, eSoundObstructionType_Num> m_obstructionStateIds;
-
+	static CryAudio::ControlId                                m_obstructionOcclusionSwitch;
+	static std::array<const char*, numOcclusionTypes>         m_obstructionNames;
+	static std::array<CryAudio::ControlId, numOcclusionTypes> m_obstructionStateIds;
 };

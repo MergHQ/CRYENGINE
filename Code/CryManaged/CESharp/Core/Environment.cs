@@ -22,7 +22,7 @@ namespace CryEngine
 		public static I3DEngine Engine3D { get { return Global.gEnv.p3DEngine; } }
 		public static IGameFramework GameFramework { get { return Global.gEnv.pGameFramework; } }
 		public static ITimer Timer { get { return Global.gEnv.pTimer; } }
-		public static IAudioSystem AudioSystem { get { return Global.gEnv.pAudioSystem; } }
+		public static Common.CryAudio.IAudioSystem AudioSystem { get { return Global.gEnv.pAudioSystem; } }
 		public static IRenderAuxGeom AuxRenderer { get { return Global.gEnv.pRenderer.GetIRenderAuxGeom(); } }
 		public static IPhysicalWorld PhysicalWorld { get { return Global.gEnv.pPhysicalWorld; } }
 		public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } } ///< Indicates whether CryEngine is run in Editor mode.

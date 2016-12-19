@@ -5,131 +5,105 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
-//////////////////////////////////////////////////////////////////////////
-void OnCVarChangedAudioSystemCallback(ICVar* pCVar)
-{
-	if (gEnv->pAudioSystem != nullptr)
-	{
-		gEnv->pAudioSystem->OnCVarChanged(pCVar);
-	}
-}
+using namespace CryAudio;
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on PC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_DURANGO
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on XboxOne
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ORBIS
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on PS4
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_MAC
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on Mac
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_LINUX
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on Linux
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_IOS
-	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on iOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ANDROID
-	m_audioPrimaryPoolSize = 4 << 10;       // 4 MiB
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
-	m_audioStandaloneFilePoolSize = 0;
+	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #else
 	#error "Undefined platform."
 #endif
-
-	REGISTER_CVAR2("s_AudioPrimaryPoolSize", &m_audioPrimaryPoolSize, m_audioPrimaryPoolSize, VF_REQUIRE_APP_RESTART,
-	               "Specifies the size (in KiB) of the memory pool to be used by the ATL.\n"
-	               "Usage: s_AudioPrimaryPoolSize [0/...]\n"
-	               "Default PC: 8192 (8 MiB), XboxOne: 8192 (8 MiB), PS4: 8192 (8 MiB), Mac: 8192 (8 MiB), Linux: 8192 (8 MiB), iOS: 8192 (8 MiB), Android: 4096 (4 MiB)\n");
 
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Obstruction/Occlusion is not calculated for the sounds, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
@@ -156,11 +130,10 @@ void CAudioCVars::RegisterVariables()
 	               "Usage: s_FullObstructionMaxDistance [0/...]\n"
 	               "Default: 5 m\n");
 
-	REGISTER_CVAR2("s_PositionUpdateThreshold", &m_positionUpdateThreshold, m_positionUpdateThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "An audio object has to move by at least this amount to issue a position update request to the audio system.\n"
-	               "This kind of optimization should ideally be done by the parent system so this is here for convenience."
-	               "Usage: s_PositionUpdateThreshold [0/...]\n"
-	               "Default: 0.1 (10 cm)\n");
+	REGISTER_CVAR2("s_PositionUpdateThresholdMultiplier", &m_positionUpdateThresholdMultiplier, m_positionUpdateThresholdMultiplier, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An audio object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
+	               "Usage: s_PositionUpdateThresholdMultiplier [0/...]\n"
+	               "Default: 0.02\n");
 
 	REGISTER_CVAR2("s_VelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "An audio object has to change its velocity by at least this amount to issue an \"object_speed\" RTPC update request to the audio system.\n"
@@ -191,7 +164,7 @@ void CAudioCVars::RegisterVariables()
 	REGISTER_CVAR2("s_AudioStandaloneFilePoolSize", &m_audioStandaloneFilePoolSize, m_audioStandaloneFilePoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated audio standalone files.\n"
 	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
+	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
 
 	REGISTER_CVAR2("s_AudioProxiesInitType", &m_audioProxiesInitType, m_audioProxiesInitType, VF_NULL,
 	               "Can override AudioProxies' init type on a global scale.\n"
@@ -326,13 +299,12 @@ void CAudioCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
-		pConsole->UnregisterVariable("s_AudioPrimaryPoolSize");
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");
 		pConsole->UnregisterVariable("s_OcclusionMaxSyncDistance");
 		pConsole->UnregisterVariable("s_OcclusionHighDistance");
 		pConsole->UnregisterVariable("s_OcclusionMediumDistance");
 		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
-		pConsole->UnregisterVariable("s_PositionUpdateThreshold");
+		pConsole->UnregisterVariable("s_PositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_VelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_OcclusionRayLengthOffset");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
@@ -363,7 +335,7 @@ void CAudioCVars::UnregisterVariables()
 //////////////////////////////////////////////////////////////////////////
 void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	AudioControlId audioTriggerId = INVALID_AUDIO_CONTROL_ID;
+	ControlId audioTriggerId = InvalidControlId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -371,18 +343,13 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 	{
 		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
 
-		if (audioTriggerId == INVALID_AUDIO_CONTROL_ID)
+		if (audioTriggerId == InvalidControlId)
 		{
 			g_audioLogger.Log(eAudioLogType_Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
-			SAudioRequest request;
-			SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> requestData(audioTriggerId, 0.0f);
-			request.flags = eAudioRequestFlags_PriorityNormal;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
+			gEnv->pAudioSystem->ExecuteTrigger(audioTriggerId);
 		}
 	}
 	else
@@ -394,7 +361,7 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
-	AudioControlId audioTriggerId = INVALID_AUDIO_CONTROL_ID;
+	ControlId audioTriggerId = InvalidControlId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -402,18 +369,13 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 	{
 		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
 
-		if (audioTriggerId == INVALID_AUDIO_CONTROL_ID)
+		if (audioTriggerId == InvalidControlId)
 		{
 			g_audioLogger.Log(eAudioLogType_Error, "Unknown trigger name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
-			SAudioRequest request;
-			SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> requestData(audioTriggerId);
-			request.flags = eAudioRequestFlags_PriorityNormal;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
+			gEnv->pAudioSystem->StopTrigger(audioTriggerId);
 		}
 	}
 	else
@@ -425,28 +387,23 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 {
-	AudioControlId audioRtpcId = INVALID_AUDIO_CONTROL_ID;
+	ControlId parameterId = InvalidControlId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 3) || (numArgs == 4))
 	{
-		gEnv->pAudioSystem->GetAudioRtpcId(pCmdArgs->GetArg(1), audioRtpcId);
+		gEnv->pAudioSystem->GetAudioParameterId(pCmdArgs->GetArg(1), parameterId);
 
 		double const value = atof(pCmdArgs->GetArg(2));
 
-		if (audioRtpcId == INVALID_AUDIO_CONTROL_ID)
+		if (parameterId == InvalidControlId)
 		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown Rtpc name: %s", pCmdArgs->GetArg(1));
+			g_audioLogger.Log(eAudioLogType_Error, "Unknown parameter name: %s", pCmdArgs->GetArg(1));
 		}
 		else
 		{
-			SAudioRequest request;
-			SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData(audioRtpcId, static_cast<float>(value));
-			request.flags = eAudioRequestFlags_PriorityNormal;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
+			gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
 		}
 	}
 	else
@@ -458,8 +415,8 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
-	AudioControlId audioSwitchId = INVALID_AUDIO_CONTROL_ID;
-	AudioSwitchStateId audioSwitchStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+	ControlId audioSwitchId = InvalidControlId;
+	SwitchStateId audioSwitchStateId = InvalidSwitchStateId;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -467,18 +424,13 @@ void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 	{
 		gEnv->pAudioSystem->GetAudioSwitchId(pCmdArgs->GetArg(1), audioSwitchId);
 
-		if (audioSwitchId != INVALID_AUDIO_CONTROL_ID)
+		if (audioSwitchId != InvalidControlId)
 		{
 			gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, pCmdArgs->GetArg(2), audioSwitchStateId);
 
-			if (audioSwitchStateId != INVALID_AUDIO_SWITCH_STATE_ID)
+			if (audioSwitchStateId != InvalidSwitchStateId)
 			{
-				SAudioRequest request;
-				SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> requestData(audioSwitchId, audioSwitchStateId);
-				request.flags = eAudioRequestFlags_PriorityNormal;
-				request.pData = &requestData;
-
-				gEnv->pAudioSystem->PushRequest(request);
+				gEnv->pAudioSystem->SetSwitchState(audioSwitchId, audioSwitchStateId);
 			}
 			else
 			{

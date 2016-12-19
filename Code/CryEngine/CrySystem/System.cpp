@@ -2952,11 +2952,7 @@ void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 
 			if (gEnv->pAudioSystem != nullptr)
 			{
-				SAudioRequest audioRequest;
-				audioRequest.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-				SAudioManagerRequestData<eAudioManagerRequestType_ChangeLanguage> requestData;
-				audioRequest.pData = &requestData;
-				gEnv->pAudioSystem->PushRequest(audioRequest);
+				gEnv->pAudioSystem->OnLanguageChanged();
 			}
 		}
 	}

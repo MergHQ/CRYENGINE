@@ -1462,7 +1462,7 @@ private: // --------------------------------------------------------------------
 	} SIntersectionResult;
 
 	static int __cdecl cmpIntersectionResult(const void* v1, const void* v2);
-	static void        OnAudioTriggerFinishedEvent(SAudioRequestInfo const* const pAudioRequestInfo);
+	static void        OnAudioTriggerFinishedEvent(CryAudio::SRequestInfo const* const pAudioRequestInfo);
 	int                IStatObjRayIntersect(IStatObj* pStatObj, const Vec3& rayOrigin, const Vec3& rayDir, float maxDistance, SIntersectionResult* pOutResult, unsigned int maxResults);
 
 	//////////////////////////////////////////////////////////////////////////

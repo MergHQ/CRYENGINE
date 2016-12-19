@@ -21,6 +21,7 @@ add_sources("CryAudioImpl_uber_0.cpp"
 		"Common.cpp"
 		"CryAudioImpl.cpp"
 		"SoundEngine.cpp"
+		"SoundEngineTypes.cpp"
 )
 
 add_sources("NoUberFile"

@@ -100,7 +100,6 @@ CRY_ASYNC_MEMCPY_API void _cryAsyncMemcpy(void* dst, const void* src, size_t siz
 //forward declarations
 class CScriptSink;
 class CLUADbg;
-struct IAudioSystem;
 struct SDefaultValidator;
 class CPhysRenderer;
 class CVisRegTest;
@@ -331,7 +330,7 @@ public:
 	IScriptSystem*               GetIScriptSystem() override    { return m_env.pScriptSystem; }
 	I3DEngine*                   GetI3DEngine() override        { return m_env.p3DEngine; }
 	ICharacterManager*           GetIAnimationSystem() override { return m_env.pCharacterManager; }
-	IAudioSystem*                GetIAudioSystem() override     { return m_env.pAudioSystem; }
+	CryAudio::IAudioSystem*      GetIAudioSystem() override     { return m_env.pAudioSystem; }
 	IPhysicalWorld*              GetIPhysicalWorld() override   { return m_env.pPhysicalWorld; }
 	IMovieSystem*                GetIMovieSystem() override     { return m_env.pMovieSystem; };
 	IAISystem*                   GetAISystem() override         { return m_env.pAISystem; }
@@ -801,7 +800,7 @@ private: // ------------------------------------------------------
 	ICVar* m_rFullsceenNativeRes;
 	ICVar* m_rFullscreenWindow;
 	ICVar* m_rDriver;
-	ICVar *m_pPhysicsLibrary;
+	ICVar* m_pPhysicsLibrary;
 	ICVar* m_cvGameName;
 	ICVar* m_rDisplayInfo;
 	ICVar* m_rDisplayInfoTargetFPS;

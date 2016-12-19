@@ -15,16 +15,10 @@
 
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
-#include <SoundAllocator.h>
 #include <AudioLogger.h>
 
-extern CSoundAllocator<13*1024*1024> g_audioMemoryPoolPrimary;
 extern CAudioLogger g_audioLogger;
 extern CTimeValue g_lastMainThreadFrameStartTime;
-
-#define AUDIO_ALLOCATOR_MEMORY_POOL g_audioMemoryPoolPrimary
-
-#include <STLSoundAllocator.h>
 
 // Windows or Durango
 //////////////////////////////////////////////////////////////////////////

@@ -4,8 +4,25 @@
 #include "AudioEvent.h"
 #include "AudioObject.h"
 #include "AudioImplCVars.h"
+#include "ATLEntities.h"
 
+using namespace CryAudio;
 using namespace CryAudio::Impl::Fmod;
+
+//////////////////////////////////////////////////////////////////////////
+CAudioEvent::~CAudioEvent()
+{
+	if (m_pInstance != nullptr)
+	{
+		FMOD_RESULT const fmodResult = m_pInstance->release();
+		ASSERT_FMOD_OK_OR_INVALID_HANDLE;
+	}
+
+	if (m_pAudioObject != nullptr)
+	{
+		m_pAudioObject->RemoveEvent(this);
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool CAudioEvent::PrepareForOcclusion()
@@ -78,28 +95,6 @@ void CAudioEvent::SetObstructionOcclusion(float const obstruction, float const o
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent::Reset()
-{
-	if (m_pInstance != nullptr)
-	{
-		// Will be destroyed after the next update if the handle is valid.
-		// It's fine if not though as in that case it's been already released.
-		FMOD_RESULT const fmodResult = m_pInstance->release();
-		ASSERT_FMOD_OK_OR_INVALID_HANDLE;
-		m_pInstance = nullptr;
-	}
-
-	if (m_pAudioObject != nullptr)
-	{
-		m_pAudioObject->RemoveAudioEvent(this);
-		m_pAudioObject = nullptr;
-	}
-
-	m_eventPathId = AUDIO_INVALID_CRC32;
-	m_pMasterTrack = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioEvent::TrySetEnvironment(CAudioEnvironment const* const pEnvironment, float const value)
 {
 	if (m_pInstance != nullptr && m_pMasterTrack != nullptr)
@@ -159,4 +154,12 @@ void CAudioEvent::TrySetEnvironment(CAudioEnvironment const* const pEnvironment,
 		// Must exist at this point.
 		CRY_ASSERT(false);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioEvent::Stop()
+{
+	FMOD_RESULT const fmodResult = m_pInstance->stop(FMOD_STUDIO_STOP_IMMEDIATE);
+	ASSERT_FMOD_OK;
+	return eRequestStatus_Success;
 }

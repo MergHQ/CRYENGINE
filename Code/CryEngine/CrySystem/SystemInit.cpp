@@ -2959,7 +2959,7 @@ L_done:;
 
 		if (!bAudioInitSuccess)
 		{
-			m_env.pAudioSystem = new CNULLAudioSystem();
+			m_env.pAudioSystem = new CryAudio::Null::CSystem();
 
 			if (m_env.pAudioSystem != nullptr)
 			{

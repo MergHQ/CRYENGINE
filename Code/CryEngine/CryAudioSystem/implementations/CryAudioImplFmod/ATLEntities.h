@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AudioEvent.h"
-#include <atomic>
+#include "AudioObject.h"
 
 namespace CryAudio
 {
@@ -28,17 +28,29 @@ public:
 	CAudioListener&           operator=(CAudioListener const&) = delete;
 	CAudioListener&           operator=(CAudioListener&&) = delete;
 
-	ILINE int                 GetId() const                                               { return m_id; }
-	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes()                                           { return m_attributes; }
-	ILINE void                SetListenerAttributes(FMOD_3D_ATTRIBUTES const& attributes) { m_attributes = attributes; }
+	ILINE int                 GetId() const     { return m_id; }
+	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes() { return m_attributes; }
+
+	// IAudioListener
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override
+	{
+		FillFmodObjectPosition(attributes, m_attributes);
+		FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
+		ASSERT_FMOD_OK;
+		return eRequestStatus_Success;
+	}
+	// ~IAudioListener
 
 private:
 
 	int                m_id;
 	FMOD_3D_ATTRIBUTES m_attributes;
+
+public:
+	static FMOD::Studio::System* s_pSystem;
 };
 
-enum EFmodEventType : AudioEnumFlagsType
+enum EFmodEventType : EnumFlagsType
 {
 	eFmodEventType_None,
 	eFmodEventType_Start,
@@ -51,27 +63,27 @@ public:
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	explicit CAudioTrigger(
-	  uint32 const _eventPathId,
-	  AudioEnumFlagsType const _eventType,
-	  FMOD::Studio::EventDescription* const _pEventDescription,
-	  FMOD_GUID const _guid,
-	  char const* const _szEventPath)
-		: m_eventPathId(_eventPathId)
-		, m_eventType(_eventType)
-		, m_pEventDescription(_pEventDescription)
-		, m_guid(_guid)
-		, m_eventPath(_szEventPath)
+	  uint32 const eventPathId,
+	  EnumFlagsType const eventType,
+	  FMOD::Studio::EventDescription* const pEventDescription,
+	  FMOD_GUID const guid,
+	  char const* const szEventPath)
+		: m_eventPathId(eventPathId)
+		, m_eventType(eventType)
+		, m_pEventDescription(pEventDescription)
+		, m_guid(guid)
+		, m_eventPath(szEventPath)
 	{}
 #else
 	explicit CAudioTrigger(
-	  uint32 const _eventPathId,
-	  AudioEnumFlagsType const _eventType,
-	  FMOD::Studio::EventDescription* const _pEventDescription,
-	  FMOD_GUID const _guid)
-		: m_eventPathId(_eventPathId)
-		, m_eventType(_eventType)
-		, m_pEventDescription(_pEventDescription)
-		, m_guid(_guid)
+	  uint32 const eventPathId,
+	  EnumFlagsType const eventType,
+	  FMOD::Studio::EventDescription* const pEventDescription,
+	  FMOD_GUID const guid)
+		: m_eventPathId(eventPathId)
+		, m_eventType(eventType)
+		, m_pEventDescription(pEventDescription)
+		, m_guid(guid)
 	{}
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
@@ -82,8 +94,15 @@ public:
 	CAudioTrigger& operator=(CAudioTrigger const&) = delete;
 	CAudioTrigger& operator=(CAudioTrigger&&) = delete;
 
+	// IAudioTrigger
+	virtual ERequestStatus Load()  const override                                      { return eRequestStatus_Success; }
+	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	// ~IAudioTrigger
+
 	uint32 const                          m_eventPathId;
-	AudioEnumFlagsType const              m_eventType;
+	EnumFlagsType const                   m_eventType;
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 	FMOD_GUID const                       m_guid;
 
@@ -92,39 +111,39 @@ public:
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 
-class CAudioParameter final : public IAudioRtpc
+class CAudioParameter final : public IParameter
 {
 public:
 
 	explicit CAudioParameter(
-	  uint32 const _eventPathId,
-	  float const _multiplier,
-	  float const _shift,
-	  char const* const _szName)
-		: m_eventPathId(_eventPathId)
-		, m_multiplier(_multiplier)
-		, m_shift(_shift)
-		, m_name(_szName)
+	  uint32 const eventPathId,
+	  float const multiplier,
+	  float const shift,
+	  char const* const szName)
+		: m_eventPathId(eventPathId)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
+		, m_name(szName)
 	{}
 
 	virtual ~CAudioParameter() override = default;
 
 	CAudioParameter(CAudioParameter const&) = delete;
 	CAudioParameter(CAudioParameter&&) = delete;
-	CAudioParameter&                                     operator=(CAudioParameter const&) = delete;
-	CAudioParameter&                                     operator=(CAudioParameter&&) = delete;
+	CAudioParameter&                                      operator=(CAudioParameter const&) = delete;
+	CAudioParameter&                                      operator=(CAudioParameter&&) = delete;
 
-	uint32                                               GetEventPathId() const     { return m_eventPathId; }
-	float                                                GetValueMultiplier() const { return m_multiplier; }
-	float                                                GetValueShift() const      { return m_shift; }
-	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const& GetName() const            { return m_name; }
+	uint32                                                GetEventPathId() const     { return m_eventPathId; }
+	float                                                 GetValueMultiplier() const { return m_multiplier; }
+	float                                                 GetValueShift() const      { return m_shift; }
+	CryFixedStringT<CryAudio::MaxObjectNameLength> const& GetName() const            { return m_name; }
 
 private:
 
 	uint32 const m_eventPathId;
 	float const  m_multiplier;
 	float const  m_shift;
-	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const m_name;
+	CryFixedStringT<CryAudio::MaxObjectNameLength> const m_name;
 };
 
 class CAudioSwitchState final : public IAudioSwitchState
@@ -149,7 +168,7 @@ public:
 
 	uint32 const eventPathId;
 	float const  value;
-	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const name;
+	CryFixedStringT<CryAudio::MaxObjectNameLength> const name;
 };
 
 class CAudioEnvironment final : public IAudioEnvironment
@@ -189,54 +208,80 @@ public:
 	FMOD::Studio::Bank* pBank = nullptr;
 };
 
-class CAudioStandaloneFile final : public IAudioStandaloneFile
+class CAudioFileBase : public IAudioStandaloneFile
 {
 public:
 
-	CAudioStandaloneFile()
-		: fileId(INVALID_AUDIO_STANDALONE_FILE_ID)
-		, fileInstanceId(INVALID_AUDIO_STANDALONE_FILE_ID)
-		, programmerSoundEvent(INVALID_AUDIO_EVENT_ID)
-		, pLowLevelSystem(nullptr)
-		, pLowLevelSound(nullptr)
-		, bWaitingForData(false)
-		, bHasFinished(false)
-		, bShouldBeStreamed(false)
-	{}
+	explicit CAudioFileBase(char const* const szFile, CATLStandaloneFile& atlStandaloneFile);
+	virtual ~CAudioFileBase() override;
 
-	void Reset()
-	{
-		fileId = INVALID_AUDIO_STANDALONE_FILE_ID;
-		fileInstanceId = INVALID_AUDIO_STANDALONE_FILE_ID;
-		fileName.clear();
-		programmerSoundEvent.Reset();
-		pLowLevelSound = nullptr;
-		bWaitingForData = false;
-		bHasFinished = false;
-		bShouldBeStreamed = false;
-	}
+	virtual void StartLoading() = 0;
+	virtual bool IsReady() = 0;
+	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) = 0;
+	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) = 0;
+	virtual void Stop() = 0;
 
-	virtual ~CAudioStandaloneFile() override = default;
+	void         ReportFileStarted();
+	void         ReportFileFinished();
 
-	AudioStandaloneFileId                       fileId;                     // ID unique to the file, only needed for the 'finished' request
-	AudioStandaloneFileId                       fileInstanceId;             // ID unique to the file instance, only needed for the 'finished' request
-	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> fileName;
-	CAudioEvent programmerSoundEvent;                                  //the fmod event containing the programmer sound that is used for playing the file
-	FMOD::Sound*                                pLowLevelSound;
-	FMOD::System*                               pLowLevelSystem;
-	std::atomic<bool>                           bWaitingForData;
-	std::atomic<bool>                           bHasFinished;
-	bool bShouldBeStreamed;
+	CATLStandaloneFile&                          m_atlStandaloneFile;
+	CryFixedStringT<CryAudio::MaxFilePathLength> m_fileName;
+	CAudioObjectBase*                            m_pAudioObject = nullptr;
+	static FMOD::System*                         s_pLowLevelSystem;
+
 };
 
-class CAudioObject;
+class CAudioStandaloneFile final : public CAudioFileBase
+{
+public:
 
-typedef std::vector<CAudioObject*, STLSoundAllocator<CAudioObject*>>                                                                                                AudioObjects;
-typedef std::vector<CAudioEvent*, STLSoundAllocator<CAudioEvent*>>                                                                                                  AudioEvents;
-typedef std::vector<CAudioStandaloneFile*, STLSoundAllocator<CAudioStandaloneFile*>>                                                                                StandaloneFiles;
+	explicit CAudioStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile)
+		: CAudioFileBase(szFile, atlStandaloneFile)
+	{}
 
-typedef std::map<CAudioParameter const* const, int, std::less<CAudioParameter const* const>, STLSoundAllocator<std::pair<CAudioParameter const* const, int>>>       AudioParameterToIndexMap;
-typedef std::map<CAudioSwitchState const* const, int, std::less<CAudioSwitchState const* const>, STLSoundAllocator<std::pair<CAudioSwitchState const* const, int>>> FmodSwitchToIndexMap;
+	// CAudioFileBase
+	virtual void StartLoading() override;
+	virtual bool IsReady() override;
+	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void Stop() override;
+	// ~CAudioFileBase
+
+	FMOD::Sound*   m_pLowLevelSound = nullptr;
+	FMOD::Channel* m_pChannel = nullptr;
+
+};
+
+class CProgrammerSoundAudioFile final : public CAudioFileBase
+{
+public:
+
+	explicit CProgrammerSoundAudioFile(char const* const szFile, FMOD_GUID const eventGuid, CATLStandaloneFile& atlStandaloneFile)
+		: CAudioFileBase(szFile, atlStandaloneFile)
+		, m_eventGuid(eventGuid)
+	{}
+
+	// CAudioFileBase
+	virtual void StartLoading() override;
+	virtual bool IsReady() override;
+	virtual void Play(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void Set3DAttributes(FMOD_3D_ATTRIBUTES const& attributes) override;
+	virtual void Stop() override;
+	// ~CAudioFileBase
+
+private:
+	FMOD_GUID const              m_eventGuid;
+	FMOD::Studio::EventInstance* m_pEventInstance = nullptr;
+
+};
+class CAudioObjectBase;
+
+typedef std::vector<CAudioObjectBase*>                AudioObjects;
+typedef std::vector<CAudioEvent*>                     AudioEvents;
+typedef std::vector<CAudioStandaloneFile*>            StandaloneFiles;
+
+typedef std::map<CAudioParameter const* const, int>   AudioParameterToIndexMap;
+typedef std::map<CAudioSwitchState const* const, int> FmodSwitchToIndexMap;
 }
 }
 }

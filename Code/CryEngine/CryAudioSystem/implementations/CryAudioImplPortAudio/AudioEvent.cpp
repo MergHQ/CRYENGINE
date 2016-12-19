@@ -2,10 +2,13 @@
 
 #include "stdafx.h"
 #include "AudioEvent.h"
+#include "AudioObject.h"
 #include <CryAudio/IAudioSystem.h>
+#include <CrySystem/ISystem.h> // needed for gEnv in Release builds
 #include <portaudio.h>
 #include <sndfile.hh>
 
+using namespace CryAudio;
 using namespace CryAudio::Impl::PortAudio;
 
 static long unsigned const s_bufferLength = 256;
@@ -79,14 +82,14 @@ static int StreamCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioEvent::CAudioEvent(AudioEventId const _audioEventId)
+CAudioEvent::CAudioEvent(CATLEvent& _audioEvent)
 	: pSndFile(nullptr)
 	, pStream(nullptr)
 	, pData(nullptr)
 	, pPAAudioObject(nullptr)
 	, numChannels(0)
 	, remainingLoops(0)
-	, audioEventId(_audioEventId)
+	, audioEvent(_audioEvent)
 	, bDone(false)
 {
 }
@@ -94,9 +97,29 @@ CAudioEvent::CAudioEvent(AudioEventId const _audioEventId)
 //////////////////////////////////////////////////////////////////////////
 CAudioEvent::~CAudioEvent()
 {
+	if (pStream != nullptr)
+	{
+		PaError const err = Pa_CloseStream(pStream);
+
+		if (err != paNoError)
+		{
+			g_audioImplLogger.Log(eAudioLogType_Error, "CloseStream failed: %s", Pa_GetErrorText(err));
+		}
+	}
+
+	if (pSndFile != nullptr)
+	{
+		sf_close(pSndFile);
+	}
+
 	if (pData != nullptr)
 	{
-		POOL_FREE(pData);
+		delete pData;
+	}
+
+	if (pPAAudioObject != nullptr)
+	{
+		pPAAudioObject->UnregisterAudioEvent(this);
 	}
 }
 
@@ -135,20 +158,20 @@ bool CAudioEvent::Execute(
 			{
 			case paInt16:
 				{
-					POOL_NEW_CUSTOM(short, pData, numEntries);
-					ZeroMemory(pData, sizeof(short) * numEntries);
+					pData = CryModuleMalloc(sizeof(short) * static_cast<size_t>(numEntries));
+					std::memset(pData, 0, sizeof(short) * static_cast<size_t>(numEntries));
 				}
 				break;
 			case paInt32:
 				{
-					POOL_NEW_CUSTOM(int, pData, numEntries);
-					ZeroMemory(pData, sizeof(int) * numEntries);
+					pData = CryModuleMalloc(sizeof(int) * static_cast<size_t>(numEntries));
+					std::memset(pData, 0, sizeof(int) * static_cast<size_t>(numEntries));
 				}
 				break;
 			case paFloat32:
 				{
-					POOL_NEW_CUSTOM(float, pData, numEntries);
-					ZeroMemory(pData, sizeof(float) * numEntries);
+					pData = CryModuleMalloc(sizeof(float) * static_cast<size_t>(numEntries));
+					std::memset(pData, 0, sizeof(float) * static_cast<size_t>(numEntries));
 				}
 				break;
 			}
@@ -174,42 +197,6 @@ bool CAudioEvent::Execute(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent::Stop()
-{
-	// This should call Reset() on this object.
-	SAudioRequest request;
-	SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedEvent> requestData(audioEventId, true);
-	request.flags = eAudioRequestFlags_ThreadSafePush;
-	request.pData = &requestData;
-
-	gEnv->pAudioSystem->PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioEvent::Reset()
-{
-	if (pStream != nullptr)
-	{
-		PaError const err = Pa_CloseStream(pStream);
-
-		if (err != paNoError)
-		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "CloseStream failed: %s", Pa_GetErrorText(err));
-		}
-
-		pStream = nullptr;
-	}
-
-	if (pSndFile != nullptr)
-	{
-		sf_close(pSndFile);
-		pSndFile = nullptr;
-	}
-
-	bDone = false;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioEvent::Update()
 {
 	if (bDone)
@@ -225,14 +212,18 @@ void CAudioEvent::Update()
 		}
 		else
 		{
-			SAudioRequest request;
-			SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedEvent> requestData(audioEventId, true);
-			request.flags = eAudioRequestFlags_ThreadSafePush;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
+			SRequestUserData const data(eRequestFlags_ThreadSafePush);
+			gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
 		}
 
 		bDone = false;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioEvent::Stop()
+{
+	SRequestUserData const data(eRequestFlags_ThreadSafePush);
+	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
+	return eRequestStatus_Success;
 }

@@ -17,8 +17,7 @@ namespace Schematyc
 bool CEntityAudioComponent::Init()
 {
 	//the audio callbacks we are interested in, all related to executeTrigger, #TODO: Check if it`s worth constantly registering/unregister on ExecuteTrigger/TriggerFinished
-	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
-	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_ExecuteTrigger);
+	gEnv->pAudioSystem->AddRequestListener(&CEntityAudioComponent::OnAudioCallback, this, CryAudio::eSystemEvent_TriggerExecuted | CryAudio::eSystemEvent_TriggerFinished);
 
 	IEntity& entity = EntityUtils::GetEntity(*this);
 	m_pAudioProxy = entity.GetOrCreateComponent<IEntityAudioComponent>();
@@ -28,20 +27,20 @@ bool CEntityAudioComponent::Init()
 		return false;
 	}
 
-	if (m_audioProxyId != INVALID_AUDIO_PROXY_ID && m_audioProxyId != DEFAULT_AUDIO_PROXY_ID)
+	if (m_audioProxyId != CryAudio::InvalidAuxObjectId && m_audioProxyId != CryAudio::DefaultAuxObjectId)
 	{
-		m_pAudioProxy->RemoveAuxAudioProxy(m_audioProxyId);  //#TODO: for now this is a workaround, because there are scenarios where 'Init' is called twice without a 'Shutdown' in between.
+		m_pAudioProxy->RemoveAudioAuxObject(m_audioProxyId);  //#TODO: for now this is a workaround, because there are scenarios where 'Init' is called twice without a 'Shutdown' in between.
 	}
 
 	const Vec3 offset = Schematyc::CComponent::GetTransform().GetTranslation();
 	if (!IsEquivalent(offset, Vec3(ZERO)))  //only create an aux-proxy when needed (if there is an offset specified)
 	{
-		m_audioProxyId = m_pAudioProxy->CreateAuxAudioProxy();
-		m_pAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, offset), m_audioProxyId);
+		m_audioProxyId = m_pAudioProxy->CreateAudioAuxObject();
+		m_pAudioProxy->SetAudioAuxObjectOffset(Matrix34(IDENTITY, offset), m_audioProxyId);
 	}
 	else
 	{
-		m_audioProxyId = DEFAULT_AUDIO_PROXY_ID;
+		m_audioProxyId = CryAudio::DefaultAuxObjectId;
 	}
 
 	return true;
@@ -52,11 +51,11 @@ void CEntityAudioComponent::Shutdown()
 	gEnv->pAudioSystem->RemoveRequestListener(nullptr, this);  //remove all listener-callback-functions from this object
 
 	CRY_ASSERT_MESSAGE(m_pAudioProxy, "Audio proxy was not created");
-	if (m_audioProxyId != INVALID_AUDIO_PROXY_ID && m_audioProxyId != DEFAULT_AUDIO_PROXY_ID)
+	if (m_audioProxyId != CryAudio::InvalidAuxObjectId && m_audioProxyId != CryAudio::DefaultAuxObjectId)
 	{
-		m_pAudioProxy->RemoveAuxAudioProxy(m_audioProxyId);
+		m_pAudioProxy->RemoveAudioAuxObject(m_audioProxyId);
 	}
-	m_audioProxyId = INVALID_AUDIO_PROXY_ID;
+	m_audioProxyId = CryAudio::InvalidAuxObjectId;
 }
 
 void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
@@ -119,12 +118,12 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 
 void CEntityAudioComponent::ExecuteTrigger(const SAudioTriggerSerializeHelper trigger, uint32& _instanceId, uint32& _triggerId)
 {
-	if (m_pAudioProxy && trigger.m_triggerId != INVALID_AUDIO_CONTROL_ID)
+	if (m_pAudioProxy && trigger.m_triggerId != CryAudio::InvalidControlId)
 	{
 		_triggerId = static_cast<uint32>(trigger.m_triggerId);
 		static uint32 currentInstanceId = 1;
-		SAudioCallBackInfo callbackInfo(this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-		if (m_pAudioProxy->ExecuteTrigger(trigger.m_triggerId, m_audioProxyId, callbackInfo))
+		CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_PriorityNormal | CryAudio::eRequestFlags_SyncFinishedCallback, this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId));
+		if (m_pAudioProxy->ExecuteTrigger(trigger.m_triggerId, m_audioProxyId, userData))
 		{
 			_instanceId = currentInstanceId++;
 		}
@@ -138,7 +137,7 @@ void CEntityAudioComponent::ExecuteTrigger(const SAudioTriggerSerializeHelper tr
 
 void CEntityAudioComponent::StopTrigger(const SAudioTriggerSerializeHelper trigger)
 {
-	if (m_pAudioProxy && trigger.m_triggerId != INVALID_AUDIO_CONTROL_ID)
+	if (m_pAudioProxy && trigger.m_triggerId != CryAudio::InvalidControlId)
 	{
 		m_pAudioProxy->StopTrigger(trigger.m_triggerId, m_audioProxyId);
 	}
@@ -146,15 +145,15 @@ void CEntityAudioComponent::StopTrigger(const SAudioTriggerSerializeHelper trigg
 
 void CEntityAudioComponent::SetParameter(const SAudioParameterSerializeHelper parameter, float value)
 {
-	if (m_pAudioProxy && parameter.m_parameterId != INVALID_AUDIO_CONTROL_ID)
+	if (m_pAudioProxy && parameter.m_parameterId != CryAudio::InvalidControlId)
 	{
-		m_pAudioProxy->SetRtpcValue(parameter.m_parameterId, value, m_audioProxyId);
+		m_pAudioProxy->SetParameter(parameter.m_parameterId, value, m_audioProxyId);
 	}
 }
 
 void CEntityAudioComponent::SetSwitchState(const SAudioSwitchWithStateSerializeHelper switchAndState)
 {
-	if (m_pAudioProxy && switchAndState.m_switchId != INVALID_AUDIO_CONTROL_ID && switchAndState.m_switchStateId != INVALID_AUDIO_CONTROL_ID)
+	if (m_pAudioProxy && switchAndState.m_switchId != CryAudio::InvalidControlId && switchAndState.m_switchStateId != CryAudio::InvalidControlId)
 	{
 		m_pAudioProxy->SetSwitchState(switchAndState.m_switchId, switchAndState.m_switchStateId, m_audioProxyId);
 	}
@@ -165,18 +164,17 @@ SGUID CEntityAudioComponent::ReflectSchematycType(CTypeInfo<CEntityAudioComponen
 	return "7E792283-20BB-4D18-B3DD-08ADF38C92BE"_schematyc_guid;
 }
 
-void CEntityAudioComponent::OnAudioCallback(SAudioRequestInfo const* const pAudioRequestInfo)
+void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const pAudioRequestInfo)
 {
-	uint32 instanceId = (uint32)reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData);
-	uint32 triggerId = (uint32)reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserDataOwner);
+	uint32 instanceId = (uint32) reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData);
+	uint32 triggerId = (uint32) reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserDataOwner);
 	CEntityAudioComponent* pAudioComp = static_cast<CEntityAudioComponent*>(pAudioRequestInfo->pOwner);
 
-	if (pAudioRequestInfo->requestResult == eAudioRequestResult_Failure)  //failed to start/finish
+	if (pAudioRequestInfo->requestResult == CryAudio::eRequestResult_Failure)  //failed to start/finish
 	{
 		pAudioComp->GetObject().ProcessSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, false));
 	}
-	else if (pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest  //finished successful
-	         && pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance)
+	else if (pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerFinished)  //finished successful
 	{
 		pAudioComp->GetObject().ProcessSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, true));
 	}
@@ -229,7 +227,7 @@ void SAudioParameterSerializeHelper::Serialize(Serialization::IArchive& archive)
 
 	if (archive.isInput())
 	{
-		gEnv->pAudioSystem->GetAudioRtpcId(m_parameterName.c_str(), m_parameterId);
+		gEnv->pAudioSystem->GetAudioParameterId(m_parameterName.c_str(), m_parameterId);
 	}
 }
 

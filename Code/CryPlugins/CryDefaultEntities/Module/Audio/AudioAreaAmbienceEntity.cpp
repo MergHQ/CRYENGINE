@@ -3,8 +3,10 @@
 #include "StdAfx.h"
 #include "AudioAreaAmbienceEntity.h"
 #include "AudioEntitiesUtils.h"
-
 #include <CryAnimation/ICryAnimation.h>
+#include <CrySerialization/Enum.h>
+
+using namespace CryAudio;
 
 class CAudioAreaAmbienceRegistrator
 	: public IEntityRegistrator
@@ -17,9 +19,9 @@ class CAudioAreaAmbienceRegistrator
 			CryLog("Skipping registration of default engine entity class AudioAreaAmbience, overridden by game");
 			return;
 		}
-		
+
 		auto* pEntityClass = RegisterEntityWithDefaultComponent<CAudioAreaAmbienceEntity>("AudioAreaAmbience", "Audio", "AudioAreaAmbience.bmp");
-		
+
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
 	}
 };
@@ -133,7 +135,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	{
 		if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 		{
-			pAudioProxy->SetEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID);
+			pAudioProxy->SetEnvironmentId(InvalidEnvironmentId);
 
 			Stop();
 		}
@@ -145,8 +147,8 @@ void CAudioAreaAmbienceEntity::OnResetState()
 
 	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	gEnv->pAudioSystem->GetAudioRtpcId(m_rtpcName, m_rtpcId);
-	gEnv->pAudioSystem->GetAudioRtpcId(m_globalRtpcName, m_globalRtpcId);
+	gEnv->pAudioSystem->GetAudioParameterId(m_rtpcName, m_rtpcId);
+	gEnv->pAudioSystem->GetAudioParameterId(m_globalRtpcName, m_globalRtpcId);
 
 	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
 
@@ -180,11 +182,11 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	}
 }
 
-void CAudioAreaAmbienceEntity::Play(AudioControlId triggerId)
+void CAudioAreaAmbienceEntity::Play(ControlId triggerId)
 {
 	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_playingTriggerId != INVALID_AUDIO_CONTROL_ID)
+		if (m_playingTriggerId != InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_playingTriggerId);
 		}
@@ -202,16 +204,16 @@ void CAudioAreaAmbienceEntity::Stop()
 	if (pAudioProxy == nullptr)
 		return;
 
-	if (m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
+	if (m_stopTriggerId != InvalidControlId)
 	{
 		pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 	}
-	else if (m_playTriggerId != INVALID_AUDIO_CONTROL_ID)
+	else if (m_playTriggerId != InvalidControlId)
 	{
 		pAudioProxy->StopTrigger(m_playingTriggerId);
 	}
 
-	m_playingTriggerId = INVALID_AUDIO_CONTROL_ID;
+	m_playingTriggerId = InvalidControlId;
 }
 
 void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
@@ -220,19 +222,14 @@ void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 	if (pAudioProxy == nullptr)
 		return;
 
-	if (m_rtpcId != INVALID_AUDIO_CONTROL_ID)
+	if (m_rtpcId != InvalidControlId)
 	{
-		pAudioProxy->SetRtpcValue(m_rtpcId, fadeValue);
+		pAudioProxy->SetParameter(m_rtpcId, fadeValue);
 	}
 
-	if (m_globalRtpcId != INVALID_AUDIO_CONTROL_ID)
+	if (m_globalRtpcId != InvalidControlId)
 	{
-		SAudioRequest request;
-		SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData;
-		requestData.audioRtpcId = m_globalRtpcId;
-		requestData.value = fadeValue;
-		request.pData = &requestData;
-		gEnv->pAudioSystem->PushRequest(request);
+		gEnv->pAudioSystem->SetParameter(m_globalRtpcId, fadeValue);
 	}
 
 	m_fadeValue = fadeValue;
@@ -269,4 +266,26 @@ void CAudioAreaAmbienceEntity::DisableObstruction()
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
 	pAudioProxy->SetSwitchState(m_obstructionSwitchId, stateIds[0]);
+}
+
+void CAudioAreaAmbienceEntity::SerializeProperties(Serialization::IArchive& archive)
+{
+	archive(m_bEnabled, "Enabled", "Enabled");
+	archive(Serialization::AudioTrigger(m_playTriggerName), "PlayTrigger", "PlayTrigger");
+	archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
+	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
+
+	archive(Serialization::AudioRTPC(m_rtpcName), "Rtpc", "Rtpc");
+	archive(Serialization::AudioRTPC(m_globalRtpcName), "GlobalRtpc", "GlobalRtpc");
+	archive(m_rtpcDistance, "RtpcDistance", "RtpcDistance");
+
+	archive(Serialization::AudioEnvironment(m_environmentName), "Environment", "Environment");
+	archive(m_environmentDistance, "EnvironmentDistance", "EnvironmentDistance");
+
+	archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+
+	if (archive.isInput())
+	{
+		OnResetState();
+	}
 }

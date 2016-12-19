@@ -243,7 +243,7 @@ void CDialogLoaderMK2::ResetLine(CDialogScript::SScriptLine& scriptLine)
 	scriptLine.m_flagSoundStopsAnim = false;
 	scriptLine.m_flagAGSignal = false;
 	scriptLine.m_flagAGEP = false;
-	scriptLine.m_audioID = INVALID_AUDIO_CONTROL_ID;
+	scriptLine.m_audioID = CryAudio::InvalidControlId;
 	//scriptLine.m_sound = "";
 	scriptLine.m_anim = "";
 	scriptLine.m_facial = "";
@@ -279,7 +279,7 @@ bool CDialogLoaderMK2::ReadLine(const XmlNodeRef& lineNode, CDialogScript::SScri
 	if (audioIDString != 0)
 		gEnv->pAudioSystem->GetAudioTriggerId(audioIDString, line.m_audioID);
 	else
-		line.m_audioID = INVALID_AUDIO_CONTROL_ID;
+		line.m_audioID = CryAudio::InvalidControlId;
 	line.m_anim = lineNode->getAttr("anim");
 	line.m_facial = lineNode->getAttr("facial");
 	if (CryStringUtils::stristr(line.m_facial, "#RESET#") != 0)

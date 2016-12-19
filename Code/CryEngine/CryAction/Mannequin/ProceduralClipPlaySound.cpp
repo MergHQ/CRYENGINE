@@ -11,6 +11,8 @@
 #include <CryExtension/ClassWeaver.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 
+using namespace CryAudio;
+
 /*
    TEMPORARY_SOUND_FLAGS wraps soundFlags which are used to specify either
    an audio should be triggered on the local player or not.
@@ -20,12 +22,12 @@
  */
 #define TEMPORARY_SOUND_FLAGS
 
-SERIALIZATION_ENUM_BEGIN(EAudioOcclusionType, "SoundObstructionType");
-SERIALIZATION_ENUM(eAudioOcclusionType_Ignore, "Ignore", "Ignore");
-SERIALIZATION_ENUM(eAudioOcclusionType_Adaptive, "Adaptive", "Adaptive");
-SERIALIZATION_ENUM(eAudioOcclusionType_Low, "Low", "Low");
-SERIALIZATION_ENUM(eAudioOcclusionType_Medium, "Medium", "Medium");
-SERIALIZATION_ENUM(eAudioOcclusionType_High, "High", "High");
+SERIALIZATION_ENUM_BEGIN(EOcclusionType, "SoundObstructionType");
+SERIALIZATION_ENUM(eOcclusionType_Ignore, "Ignore", "Ignore");
+SERIALIZATION_ENUM(eOcclusionType_Adaptive, "Adaptive", "Adaptive");
+SERIALIZATION_ENUM(eOcclusionType_Low, "Low", "Low");
+SERIALIZATION_ENUM(eOcclusionType_Medium, "Medium", "Medium");
+SERIALIZATION_ENUM(eOcclusionType_High, "High", "High");
 SERIALIZATION_ENUM_END();
 
 class CAudioContext : public IProceduralContext
@@ -51,9 +53,9 @@ public:
 	{
 	}
 
-	void ExecuteAudioTrigger(AudioControlId const audioTriggerId, EAudioOcclusionType const occlusionType, bool playFacial)
+	void ExecuteAudioTrigger(ControlId const audioTriggerId, EOcclusionType const occlusionType, bool playFacial)
 	{
-		if (m_pIEntityAudioComponent != NULL)
+		if (m_pIEntityAudioComponent != nullptr)
 		{
 			m_pIEntityAudioComponent->SetObstructionCalcType(occlusionType);
 			REINST("support facial animations for CAudioContext (if needed)");
@@ -61,9 +63,9 @@ public:
 		}
 	}
 
-	void StopAudioTrigger(AudioControlId const audioTriggerId)
+	void StopAudioTrigger(ControlId const audioTriggerId)
 	{
-		if (m_pIEntityAudioComponent != NULL)
+		if (m_pIEntityAudioComponent != nullptr)
 		{
 			m_pIEntityAudioComponent->StopTrigger(audioTriggerId);
 		}
@@ -71,9 +73,17 @@ public:
 
 	void SetAudioObjectPos(QuatT const& offset)
 	{
-		if (m_pIEntityAudioComponent != NULL)
+		if (m_pIEntityAudioComponent != nullptr)
 		{
-			m_pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(IDENTITY, offset.t));
+			m_pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, offset.t));
+		}
+	}
+
+	void SetAudioParameter(ControlId const audioParameterId, float const value)
+	{
+		if (m_pIEntityAudioComponent != nullptr)
+		{
+			m_pIEntityAudioComponent->SetParameter(audioParameterId, value);
 		}
 	}
 
@@ -99,8 +109,9 @@ typedef enum
 struct SAudioParams : public IProceduralParams
 {
 	SAudioParams()
-		: audioOcclusionType(eAudioOcclusionType_Ignore)
-		, radius(0.f)
+		: audioOcclusionType(eOcclusionType_Ignore)
+		, radius(0.0f)
+		, audioParameterValue(0.0f)
 		, synchStop(false)
 		, forceStopOnExit(false)
 		, isVoice(false)
@@ -115,6 +126,8 @@ struct SAudioParams : public IProceduralParams
 	{
 		ar(Serialization::AudioTrigger<TProcClipString>(startTrigger), "StartTrigger", "Start Trigger");
 		ar(Serialization::AudioTrigger<TProcClipString>(stopTrigger), "StopTrigger", "Stop Trigger");
+		ar(Serialization::AudioRTPC<TProcClipString>(audioParameter), "AudioParameter", "Audio Parameter");
+		ar(audioParameterValue, "AudioParameterValue", "Audio Parameter Value");
 		ar(audioOcclusionType, "SoundObstructionType", "Sound Obstruction Type");
 		ar(Serialization::Decorators::JointName<SProcDataCRC>(attachmentJoint), "AttachmentJoint", "Joint Name");
 		if (!ar.isEdit())
@@ -134,15 +147,17 @@ struct SAudioParams : public IProceduralParams
 		extraInfoOut = startTrigger.c_str();
 	}
 
-	TProcClipString     startTrigger;
-	TProcClipString     stopTrigger;
-	EAudioOcclusionType audioOcclusionType;
-	SProcDataCRC        attachmentJoint;
-	float               radius;
-	bool                synchStop;
-	bool                forceStopOnExit;
-	bool                isVoice;
-	bool                playFacial;
+	TProcClipString startTrigger;
+	TProcClipString stopTrigger;
+	TProcClipString audioParameter;
+	EOcclusionType  audioOcclusionType;
+	SProcDataCRC    attachmentJoint;
+	float           radius;
+	float           audioParameterValue;
+	bool            synchStop;
+	bool            forceStopOnExit;
+	bool            isVoice;
+	bool            playFacial;
 
 #if defined(TEMPORARY_SOUND_FLAGS)
 	uint32 soundFlags;
@@ -154,8 +169,11 @@ class CProceduralClipAudio : public TProceduralContextualClip<CAudioContext, SAu
 public:
 	CProceduralClipAudio()
 		: m_referenceJointID(0)
-		, m_audioTriggerStartId(INVALID_AUDIO_CONTROL_ID)
-		, m_audioTriggerStopId(INVALID_AUDIO_CONTROL_ID)
+		, m_audioTriggerStartId(InvalidControlId)
+		, m_audioTriggerStopId(InvalidControlId)
+		, m_audioParameterId(InvalidControlId)
+		, m_audioOcclusionType(eOcclusionType_None)
+		, m_audioParameterValue(0.0f)
 	{
 	}
 
@@ -208,7 +226,7 @@ public:
 
 		ICharacterInstance const* const pCharacterInstance = m_scope->GetCharInst();
 
-		if (pCharacterInstance != NULL)
+		if (pCharacterInstance != nullptr)
 		{
 			m_referenceJointID = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByCRC32(params.attachmentJoint.ToUInt32());
 		}
@@ -217,11 +235,22 @@ public:
 
 		if (!bIsSilentPlaybackMode)
 		{
+			if (!params.audioParameter.empty())
+			{
+				gEnv->pAudioSystem->GetAudioParameterId(params.audioParameter.c_str(), m_audioParameterId);
+
+				if (m_audioParameterId != InvalidControlId)
+				{
+					m_audioParameterValue = params.audioParameterValue;
+					m_context->SetAudioParameter(m_audioParameterId, m_audioParameterValue);
+				}
+			}
+
 			if (!params.startTrigger.empty())
 			{
 				gEnv->pAudioSystem->GetAudioTriggerId(params.startTrigger.c_str(), m_audioTriggerStartId);
 
-				if (m_audioTriggerStartId != INVALID_AUDIO_CONTROL_ID)
+				if (m_audioTriggerStartId != InvalidControlId)
 				{
 					m_audioOcclusionType = params.audioOcclusionType;
 					m_context->ExecuteAudioTrigger(m_audioTriggerStartId, m_audioOcclusionType, playFacial);
@@ -237,23 +266,23 @@ public:
 
 	virtual void OnExit(float blendTime)
 	{
-		if (m_audioTriggerStopId != INVALID_AUDIO_CONTROL_ID)
+		if (m_audioTriggerStopId != InvalidControlId)
 		{
 			m_context->ExecuteAudioTrigger(m_audioTriggerStopId, m_audioOcclusionType, false);
 		}
-		else if (m_audioTriggerStartId != INVALID_AUDIO_CONTROL_ID)
+		else if (m_audioTriggerStartId != InvalidControlId)
 		{
 			m_context->StopAudioTrigger(m_audioTriggerStartId);
 		}
 
-		m_audioTriggerStartId = INVALID_AUDIO_CONTROL_ID;
-		m_audioTriggerStopId = INVALID_AUDIO_CONTROL_ID;
+		m_audioTriggerStartId = InvalidControlId;
+		m_audioTriggerStopId = InvalidControlId;
+		m_audioParameterId = InvalidControlId;
 	}
 
 	virtual void Update(float timePassed)
 	{
 		UpdateSoundParams();
-
 		UpdateSoundPosition();
 	}
 
@@ -288,7 +317,7 @@ private:
 	QuatT GetBoneAbsLocationByID(const int jointID)
 	{
 		ICharacterInstance* pCharacterInstance = m_scope->GetCharInst();
-		if ((pCharacterInstance != NULL) && (jointID >= 0))
+		if ((pCharacterInstance != nullptr) && (jointID >= 0))
 		{
 			return pCharacterInstance->GetISkeletonPose()->GetAbsJointByID(jointID);
 		}
@@ -296,13 +325,15 @@ private:
 		return QuatT(ZERO, IDENTITY);
 	}
 
-	TAudioParamVec      m_audioParams;
+	TAudioParamVec m_audioParams;
 
-	int                 m_referenceJointID;
+	int            m_referenceJointID;
 
-	AudioControlId      m_audioTriggerStartId;
-	AudioControlId      m_audioTriggerStopId;
-	EAudioOcclusionType m_audioOcclusionType;
+	ControlId      m_audioTriggerStartId;
+	ControlId      m_audioTriggerStopId;
+	ControlId      m_audioParameterId;
+	EOcclusionType m_audioOcclusionType;
+	float          m_audioParameterValue;
 };
 
 typedef CProceduralClipAudio CProceduralClipPlaySound;

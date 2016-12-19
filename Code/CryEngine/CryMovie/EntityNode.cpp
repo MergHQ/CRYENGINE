@@ -55,7 +55,7 @@ static const char* s_VariablePrefixes[] =
 	"aianchor",                                                 "soclass",         "soclasses",   "sostate",      "sostates"
 	                                                                                                              "sopattern", "soaction",        "sohelper",    "sonavhelper",
 	"soanimhelper",                                             "soevent",         "sotemplate",  "customaction",
-	"gametoken",                                                "seq_",            "mission_",    "seqid_", "lightanimation_"
+	"gametoken",                                                "seq_",            "mission_",    "seqid_",       "lightanimation_"
 };
 
 namespace
@@ -970,7 +970,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 							{
 								audioTriggerInfo.audioKeyStop = audioTriggerKeyNum;
 
-								if (audioTriggerKey.m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
+								if (audioTriggerKey.m_stopTriggerId != CryAudio::InvalidControlId)
 								{
 									ApplyAudioTriggerKey(audioTriggerKey.m_stopTriggerId);
 								}
@@ -1020,7 +1020,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 								IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 								if (pIEntityAudioComponent)
 								{
-									const SAudioPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
+									const CryAudio::SPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
 									pIEntityAudioComponent->PlayFile(audioPlayFileInfo);
 								}
 							}
@@ -1049,8 +1049,8 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					m_audioParameterTracks.resize(numAudioParameterTracks, 0.0f);
 				}
 
-				AudioControlId audioParameterId = static_cast<CAudioParameterTrack*>(pTrack)->m_audioParameterId;
-				if (audioParameterId != INVALID_AUDIO_CONTROL_ID)
+				CryAudio::ControlId audioParameterId = static_cast<CAudioParameterTrack*>(pTrack)->m_audioParameterId;
+				if (audioParameterId != CryAudio::InvalidControlId)
 				{
 					const float newAudioParameterValue = stl::get<float>(pTrack->GetValue(animContext.time));
 					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks - 1];
@@ -1059,7 +1059,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 						if (pIEntityAudioComponent)
 						{
-							pIEntityAudioComponent->SetRtpcValue(audioParameterId, newAudioParameterValue);
+							pIEntityAudioComponent->SetParameter(audioParameterId, newAudioParameterValue);
 							prevAudioParameterValue = newAudioParameterValue;
 						}
 					}
@@ -1087,9 +1087,9 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					{
 						if (newAudioSwitchKeyNum >= 0)
 						{
-							AudioControlId audioSwitchId = audioSwitchKey.m_audioSwitchId;
-							AudioSwitchStateId audioSwitchStateId = audioSwitchKey.m_audioSwitchStateId;
-							if (audioSwitchId != INVALID_AUDIO_CONTROL_ID && audioSwitchStateId != INVALID_AUDIO_SWITCH_STATE_ID)
+							CryAudio::ControlId audioSwitchId = audioSwitchKey.m_audioSwitchId;
+							CryAudio::SwitchStateId audioSwitchStateId = audioSwitchKey.m_audioSwitchStateId;
+							if (audioSwitchId != CryAudio::InvalidControlId && audioSwitchStateId != CryAudio::InvalidSwitchStateId)
 							{
 								IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 								if (pIEntityAudioComponent)
@@ -1864,9 +1864,9 @@ void CAnimEntityNode::ApplyEventKey(CEventTrack* track, int keyIndex, SEventKey&
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAnimEntityNode::ApplyAudioTriggerKey(AudioControlId audioTriggerId, bool const bPlay /* = true */)
+void CAnimEntityNode::ApplyAudioTriggerKey(CryAudio::ControlId audioTriggerId, bool const bPlay /* = true */)
 {
-	if (audioTriggerId != INVALID_AUDIO_CONTROL_ID)
+	if (audioTriggerId != CryAudio::InvalidControlId)
 	{
 		IEntity* const pEntity = GetEntity();
 

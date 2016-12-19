@@ -12,6 +12,7 @@
 #define SDL_MIXER_NUM_CHANNELS 512
 #define SDL_MIXER_PROJECT_PATH AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer" CRY_NATIVE_PATH_SEPSTR
 
+using namespace CryAudio;
 using namespace CryAudio::Impl::SDL_mixer;
 
 static const int g_nSupportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
@@ -50,16 +51,16 @@ enum EChannelFinishedRequestQueueId
 	eChannelFinishedRequestQueueId_Count
 };
 
-typedef std::deque<int, STLSoundAllocator<int>> ChannelFinishedRequests;
+typedef std::deque<int> ChannelFinishedRequests;
 ChannelFinishedRequests g_channelFinishedRequests[eChannelFinishedRequestQueueId_Count];
 CryCriticalSection g_channelFinishedCriticalSection;
 
 // Audio Objects
-typedef std::vector<SAudioObject*, STLSoundAllocator<SAudioObject*>> AudioObjectList;
+typedef std::vector<SAudioObject*> AudioObjectList;
 AudioObjectList g_audioObjects;
 
 // Listeners
-CAudioObjectTransformation g_listenerPosition;
+CObjectTransformation g_listenerPosition;
 bool g_bListenerPosChanged;
 bool g_bMuted;
 
@@ -76,19 +77,19 @@ void SoundEngine::RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallbac
 	g_fnStandaloneFileFinishedCallback = pCallbackFunction;
 }
 
-void EventFinishedPlaying(AudioEventId nEventID)
+void EventFinishedPlaying(CATLEvent& audioEvent)
 {
 	if (g_fnEventFinishedCallback)
 	{
-		g_fnEventFinishedCallback(nEventID);
+		g_fnEventFinishedCallback(audioEvent);
 	}
 }
 
-void StandaloneFileFinishedPlaying(AudioStandaloneFileId const fileInstanceId, char const* szFileName)
+void StandaloneFileFinishedPlaying(CATLStandaloneFile& standaloneFile, char const* const szFileName)
 {
 	if (g_fnStandaloneFileFinishedCallback)
 	{
-		g_fnStandaloneFileFinishedCallback(fileInstanceId, szFileName);
+		g_fnStandaloneFileFinishedCallback(standaloneFile, szFileName);
 	}
 }
 
@@ -133,7 +134,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 								{
 									eventsIt = pAudioObject->events.erase(eventsCurrent);
 									eventsEnd = pAudioObject->events.end();
-									EventFinishedPlaying(pEventInstance->eventId);
+									EventFinishedPlaying(pEventInstance->audioEvent);
 								}
 								break;
 							}
@@ -158,13 +159,13 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 								{
 									standaloneFilesIt = pAudioObject->standaloneFiles.erase(standaloneFilesCurrent);
 									standaloneFilesEnd = pAudioObject->standaloneFiles.end();
-									StandaloneFileFinishedPlaying(pStandaloneFileInstance->fileInstanceId, pStandaloneFileInstance->fileName.c_str());
+									StandaloneFileFinishedPlaying(pStandaloneFileInstance->atlFile, pStandaloneFileInstance->fileName.c_str());
 
-									SampleIdUsageCounterMap::iterator it = g_usageCounters.find(pStandaloneFileInstance->fileId);
+									SampleIdUsageCounterMap::iterator it = g_usageCounters.find(pStandaloneFileInstance->sampleId);
 									CRY_ASSERT(it != g_usageCounters.end() && it->second > 0);
 									if (--it->second == 0)
 									{
-										SoundEngine::UnloadSample(pStandaloneFileInstance->fileInstanceId);
+										SoundEngine::UnloadSample(pStandaloneFileInstance->sampleId);
 									}
 								}
 								break;
@@ -266,7 +267,7 @@ bool SoundEngine::Init()
 	g_bListenerPosChanged = false;
 
 	// need to reinit as the global variable might have been initialized with wrong values
-	g_listenerPosition = CAudioObjectTransformation();
+	g_listenerPosition = CObjectTransformation();
 
 	g_audioObjects.reserve(128);
 
@@ -355,19 +356,19 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 	else
 	{
 		// Sample could be inside a pak file so we need to open it manually and load it from the raw file
-		const size_t nFileSize = gEnv->pCryPak->FGetSize(samplePath);
+		const size_t fileSize = gEnv->pCryPak->FGetSize(samplePath);
 		FILE* const pFile = gEnv->pCryPak->FOpen(samplePath, "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
-		if (pFile && nFileSize > 0)
+		if (pFile && fileSize > 0)
 		{
-			void* const pData = AUDIO_ALLOCATOR_MEMORY_POOL.AllocateRaw(nFileSize, AUDIO_MEMORY_ALIGNMENT, "SDLMixerSample");
-			gEnv->pCryPak->FReadRawAll(pData, nFileSize, pFile);
-			const SampleId nNewID = SoundEngine::LoadSampleFromMemory(pData, nFileSize, samplePath, id);
-			if (nNewID == SDL_MIXER_INVALID_SAMPLE_ID)
+			void* const pData = CryModuleMalloc(fileSize);
+			gEnv->pCryPak->FReadRawAll(pData, fileSize, pFile);
+			const SampleId newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
+			if (newId == SDL_MIXER_INVALID_SAMPLE_ID)
 			{
 				g_audioImplLogger.Log(eAudioLogType_Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
 				bSuccess = false;
 			}
-			AUDIO_ALLOCATOR_MEMORY_POOL.Free(pData);
+			CryModuleFree(pData);
 		}
 	}
 	return bSuccess;
@@ -585,23 +586,14 @@ bool SoundEngine::ExecuteEvent(SAudioObject* const pAudioObject, SAudioTrigger c
 	return bSuccess;
 }
 
-bool SoundEngine::PlayFile(
-  SAudioObject* const pAudioObject,
-  CAudioStandaloneFile* const pEventInstance,
-  const SAudioTrigger* const pUsedTrigger,
-  const char* const szFilePath)
+bool SoundEngine::PlayFile(SAudioObject* const pAudioObject, CAudioStandaloneFile* const pStandaloneFile)
 {
-	if (!pUsedTrigger)
-	{
-		return false;
-	}
-
-	SampleId idForThisFile = pEventInstance->fileId;
+	SampleId idForThisFile = pStandaloneFile->sampleId;
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 
 	if (!pSample)
 	{
-		if (LoadSampleImpl(idForThisFile, szFilePath))
+		if (LoadSampleImpl(idForThisFile, pStandaloneFile->fileName.c_str()))
 		{
 			pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 		}
@@ -623,27 +615,30 @@ bool SoundEngine::PlayFile(
 
 	if (!g_freeChannels.empty())
 	{
-		int loopCount = pUsedTrigger->loopCount;
-		if (loopCount > 0)
-		{
-			// For SDL Mixer 0 loops means play only once, 1 loop play twice, etc ...
-			--loopCount;
-		}
-
-		int channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, loopCount);
+		int channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, 1);
 		if (channelId >= 0)
 		{
 			g_freeChannels.pop();
-			Mix_Volume(channelId, g_bMuted ? 0 : pUsedTrigger->volume);
+			Mix_Volume(channelId, g_bMuted ? 0 : 128);
 
 			// Get distance and angle from the listener to the audio object
 			float distance = 0.0f;
 			float angle = 0.0f;
 			GetDistanceAngleToObject(g_listenerPosition, pAudioObject->position, distance, angle);
-			SetChannelPosition(pUsedTrigger, channelId, distance, angle);
+
+			// Assuming a max distance of 100.0
+			uint8 sldMixerDistance = static_cast<uint8>((std::min((distance / 100.0f), 1.0f) * 255) + 0.5f);
+
+			Mix_SetDistance(channelId, sldMixerDistance);
+
+			float const absAngle = fabs(angle);
+			float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
+			float const rightVolume = (frontAngle + 90.0f) / 180.0f;
+			float const leftVolume = 1.0f - rightVolume;
+			Mix_SetPanning(channelId, static_cast<uint8>(255.0f * leftVolume), static_cast<uint8>(255.0f * rightVolume));
 
 			g_channels[channelId].pAudioObject = pAudioObject;
-			pEventInstance->channels.push_back(channelId);
+			pStandaloneFile->channels.push_back(channelId);
 		}
 		else
 		{
@@ -655,27 +650,27 @@ bool SoundEngine::PlayFile(
 		g_audioImplLogger.Log(eAudioLogType_Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", SDL_MIXER_NUM_CHANNELS);
 	}
 
-	if (!pEventInstance->channels.empty())
+	if (!pStandaloneFile->channels.empty())
 	{
 		// if any sample was added then add the event to the audio object
-		pAudioObject->standaloneFiles.push_back(pEventInstance);
+		pAudioObject->standaloneFiles.push_back(pStandaloneFile);
 	}
 
 	return true;
 }
 
-bool SoundEngine::StopFile(SAudioObject* const pAudioObject, AudioStandaloneFileId const fileInstanceID)
+bool SoundEngine::StopFile(SAudioObject* const pAudioObject, CAudioStandaloneFile* const pFile)
 {
 	bool bResult = false;
 	if (pAudioObject)
 	{
-		for (CAudioStandaloneFile* const standaloneFileEvent : pAudioObject->standaloneFiles)
+		for (CAudioStandaloneFile* const pStandaloneFile : pAudioObject->standaloneFiles)
 		{
-			if (standaloneFileEvent->fileInstanceId = fileInstanceID)
+			if (pFile == pStandaloneFile)
 			{
 				// need to make a copy because the callback
 				// registered with Mix_ChannelFinished can edit the list
-				ChannelList channels = standaloneFileEvent->channels;
+				ChannelList channels = pStandaloneFile->channels;
 				for (int channel : channels)
 				{
 					Mix_HaltChannel(channel);
@@ -687,7 +682,7 @@ bool SoundEngine::StopFile(SAudioObject* const pAudioObject, AudioStandaloneFile
 	return bResult;
 }
 
-bool SoundEngine::SetListenerPosition(const ListenerId listenerId, const CAudioObjectTransformation& position)
+bool SoundEngine::SetListenerPosition(const ListenerId listenerId, const CObjectTransformation& position)
 {
 	g_listenerPosition = position;
 	g_bListenerPosChanged = true;
@@ -704,7 +699,7 @@ bool SoundEngine::RegisterAudioObject(SAudioObject* pAudioObjectData)
 	return false;
 }
 
-bool SoundEngine::UnregisterAudioObject(SAudioObject* pAudioObjectData)
+bool SoundEngine::UnregisterAudioObject(SAudioObject const* const pAudioObjectData)
 {
 	if (pAudioObjectData)
 	{
@@ -714,7 +709,7 @@ bool SoundEngine::UnregisterAudioObject(SAudioObject* pAudioObjectData)
 	return false;
 }
 
-bool SoundEngine::SetAudioObjectPosition(SAudioObject* pAudioObjectData, const CAudioObjectTransformation& position)
+bool SoundEngine::SetAudioObjectPosition(SAudioObject* pAudioObjectData, const CObjectTransformation& position)
 {
 	if (pAudioObjectData)
 	{
@@ -753,9 +748,7 @@ bool SoundEngine::StopTrigger(SAudioTrigger const* const pEventData)
 
 SAudioTrigger* SoundEngine::CreateEventData()
 {
-	SAudioTrigger* pNewTriggerImpl = nullptr;
-	POOL_NEW(SAudioTrigger, pNewTriggerImpl)();
-	return pNewTriggerImpl;
+	return new SAudioTrigger();
 }
 
 void SoundEngine::Update()

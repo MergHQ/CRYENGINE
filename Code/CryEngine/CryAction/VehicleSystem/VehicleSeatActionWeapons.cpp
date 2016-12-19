@@ -17,6 +17,8 @@
 #include "IItem.h"
 #include "IWeapon.h"
 
+using namespace CryAudio;
+
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
@@ -731,14 +733,14 @@ void CVehicleSeatActionWeapons::StartFire()
 		{
 			UpdateWeaponTM(vehicleWeapon);
 
-			const IAudioSystem* const pAudioSystem = gEnv->pAudioSystem;
-			const IVehicleMovement* const pMovement = m_pVehicle->GetMovement();
-			if (pMovement && pWeapon->CanFire())
+			IAudioSystem const* const pIAudioSystem = gEnv->pAudioSystem;
+			IVehicleMovement const* const pMovement = m_pVehicle->GetMovement();
+			if (pMovement != nullptr && pWeapon->CanFire())
 			{
 				IEntityAudioComponent* const pAudioProxy = pMovement->GetAudioProxy();
-				if (pAudioSystem && pAudioProxy)
+				if (pIAudioSystem != nullptr && pAudioProxy != nullptr)
 				{
-					AudioControlId audioControlID = INVALID_AUDIO_CONTROL_ID;
+					ControlId audioControlID = InvalidControlId;
 					if (m_attackInput == eAI_Primary)
 					{
 						audioControlID = pMovement->GetPrimaryWeaponAudioTrigger();
@@ -787,7 +789,7 @@ void CVehicleSeatActionWeapons::StopFire()
 			IEntityAudioComponent* const pAudioProxy = pMovement->GetAudioProxy();
 			if (pAudioProxy)
 			{
-				AudioControlId audioControlID = INVALID_AUDIO_CONTROL_ID;
+				ControlId audioControlID = InvalidControlId;
 				if (m_attackInput == eAI_Primary)
 				{
 					audioControlID = pMovement->GetPrimaryWeaponAudioStopTrigger();

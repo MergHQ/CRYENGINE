@@ -6,6 +6,8 @@
 #include <CryPhysics/IPhysics.h>
 #include <CryAudio/IAudioSystem.h>
 
+namespace CryAudio
+{
 static const size_t s_maxRayHits = 5;
 
 class CAudioRayInfo
@@ -47,10 +49,10 @@ public:
 
 	static bool s_bCanIssueRWIs;
 
-	typedef std::vector<CAudioRayInfo, STLSoundAllocator<CAudioRayInfo>> RayInfoVec;
-	typedef std::vector<float, STLSoundAllocator<float>>                 RayOcclusionVec;
+	typedef std::vector<CAudioRayInfo> RayInfoVec;
+	typedef std::vector<float>         RayOcclusionVec;
 
-	CPropagationProcessor(CAudioObjectTransformation const& transformation);
+	CPropagationProcessor(CObjectTransformation const& transformation);
 	~CPropagationProcessor();
 
 	void Init(CATLAudioObject* pAudioObject);
@@ -59,8 +61,8 @@ public:
 	static int OnObstructionTest(EventPhys const* pEvent);
 
 	void       Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
-	void       SetOcclusionType(EAudioOcclusionType const occlusionType, Vec3 const& audioListenerPosition);
-	bool       CanRunObstructionOcclusion() const { return s_bCanIssueRWIs && m_occlusionType != eAudioOcclusionType_None && m_occlusionType != eAudioOcclusionType_Ignore; }
+	void       SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& audioListenerPosition);
+	bool       CanRunObstructionOcclusion() const { return s_bCanIssueRWIs && m_occlusionType != eOcclusionType_None && m_occlusionType != eOcclusionType_Ignore; }
 	void       GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void       ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	void       ReleasePendingRays();
@@ -95,23 +97,23 @@ private:
 	size_t GetNumConcurrentRays() const;
 	size_t GetNumSamplePositions() const;
 
-	float                             m_obstruction;
-	float                             m_lastQuerriedObstruction;
-	float                             m_lastQuerriedOcclusion;
-	float                             m_occlusion;
-	float                             m_occlusionMultiplier;
-	float                             m_currentListenerDistance;
-	RayOcclusionVec                   m_raysOcclusion;
+	float                        m_obstruction;
+	float                        m_lastQuerriedObstruction;
+	float                        m_lastQuerriedOcclusion;
+	float                        m_occlusion;
+	float                        m_occlusionMultiplier;
+	float                        m_currentListenerDistance;
+	RayOcclusionVec              m_raysOcclusion;
 
-	size_t                            m_remainingRays;
-	size_t                            m_rayIndex;
+	size_t                       m_remainingRays;
+	size_t                       m_rayIndex;
 
-	CAudioObjectTransformation const& m_transformation;
+	CObjectTransformation const& m_transformation;
 
-	RayInfoVec                        m_raysInfo;
-	EAudioOcclusionType               m_occlusionType;
-	EAudioOcclusionType               m_originalOcclusionType;
-	EAudioOcclusionType               m_occlusionTypeWhenAdaptive;
+	RayInfoVec                   m_raysInfo;
+	EOcclusionType               m_occlusionType;
+	EOcclusionType               m_originalOcclusionType;
+	EOcclusionType               m_occlusionTypeWhenAdaptive;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -119,11 +121,11 @@ public:
 	static size_t s_totalSyncPhysRays;
 	static size_t s_totalAsyncPhysRays;
 
-	void                DrawObstructionRays(IRenderAuxGeom& auxGeom) const;
-	void                DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const;
-	EAudioOcclusionType GetOcclusionType() const             { return m_occlusionType; }
-	EAudioOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }
-	void                ResetRayData();
+	void           DrawObstructionRays(IRenderAuxGeom& auxGeom) const;
+	void           DrawRay(IRenderAuxGeom& auxGeom, size_t const rayIndex) const;
+	EOcclusionType GetOcclusionType() const             { return m_occlusionType; }
+	EOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }
+	void           ResetRayData();
 
 private:
 
@@ -148,9 +150,10 @@ private:
 		int   numHits;
 	};
 
-	typedef std::vector<SRayDebugInfo, STLSoundAllocator<SRayDebugInfo>> RayDebugInfoVec;
+	typedef std::vector<SRayDebugInfo> RayDebugInfoVec;
 
 	RayDebugInfoVec m_rayDebugInfos;
 	mutable float   m_timeSinceLastUpdateMS;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
+}

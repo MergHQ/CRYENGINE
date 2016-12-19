@@ -39,6 +39,8 @@ if(AUDIO_PORTAUDIO)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ../../Common)
 
 	target_link_libraries(${THIS_PROJECT} PRIVATE libsndfile PortAudio)
+
+	copy_portaudio()
 else()
 	CryFileContainer(CryAudioImplPortAudio SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 endif()

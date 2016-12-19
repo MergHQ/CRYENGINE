@@ -40,6 +40,8 @@
 	#include <CryCore/Common_TypeInfo.h>
 #endif
 
+using namespace CryAudio;
+
 // Macro for getting IEntity pointer for function.
 #define GET_ENTITY                    CEntity * pEntity = (CEntity*)GetEntity(pH); if (!pEntity) return pH->EndFunction();
 
@@ -568,7 +570,7 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_GLOBAL(PE_AREA);
 
 	pSS->SetGlobalValue("ATTACHMENT_KEEP_TRANSFORMATION", IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
-	pSS->SetGlobalValue("INVALID_AUDIO_ENVIRONMENT_ID", IntToHandle(INVALID_AUDIO_ENVIRONMENT_ID));
+	pSS->SetGlobalValue("InvalidEnvironmentId", IntToHandle(InvalidEnvironmentId));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3263,7 +3265,7 @@ int CScriptBind_Entity::RenderShadow(IFunctionHandler* pH)
 	}
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		struct IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -4216,7 +4218,7 @@ int CScriptBind_Entity::AddConstraint(IFunctionHandler* pH)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptBind_Entity::OnAudioTriggerFinishedEvent(SAudioRequestInfo const* const pAudioRequestInfo)
+void CScriptBind_Entity::OnAudioTriggerFinishedEvent(SRequestInfo const* const pAudioRequestInfo)
 {
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 	if (gEnv->mMainThreadId != CryGetCurrentThreadId())
@@ -4225,16 +4227,15 @@ void CScriptBind_Entity::OnAudioTriggerFinishedEvent(SAudioRequestInfo const* co
 	}
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 
-	EntityId const nEntityID = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData));
-	IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
+	EntityId const entityId = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserData));
+	IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
 
-	if (pEntity)
+	if (pIEntity != nullptr)
 	{
-		SEntityEvent event;
-		event.event = ENTITY_EVENT_SOUND_DONE;
+		SEntityEvent event(ENTITY_EVENT_SOUND_DONE);
 		event.nParam[0] = reinterpret_cast<INT_PTR>(pAudioRequestInfo->pAudioObject);
 		event.nParam[1] = pAudioRequestInfo->audioControlId;
-		pEntity->SendEvent(event);
+		pIEntity->SendEvent(event);
 	}
 }
 
@@ -4248,7 +4249,7 @@ int CScriptBind_Entity::GetAllAuxAudioProxiesID(IFunctionHandler* pH)
 
 	if (pIEntityAudioComponent)
 	{
-		return pH->EndFunction(IntToHandle(INVALID_AUDIO_PROXY_ID));
+		return pH->EndFunction(IntToHandle(InvalidAuxObjectId));
 	}
 
 	return pH->EndFunction();
@@ -4264,7 +4265,7 @@ int CScriptBind_Entity::GetDefaultAuxAudioProxyID(IFunctionHandler* pH)
 
 	if (pIEntityAudioComponent)
 	{
-		return pH->EndFunction(IntToHandle(DEFAULT_AUDIO_PROXY_ID));
+		return pH->EndFunction(IntToHandle(DefaultAuxObjectId));
 	}
 
 	return pH->EndFunction();
@@ -4280,7 +4281,7 @@ int CScriptBind_Entity::CreateAuxAudioProxy(IFunctionHandler* pH)
 
 	if (pIEntityAudioComponent)
 	{
-		return pH->EndFunction(IntToHandle(pIEntityAudioComponent->CreateAuxAudioProxy()));
+		return pH->EndFunction(IntToHandle(pIEntityAudioComponent->CreateAudioAuxObject()));
 	}
 
 	return pH->EndFunction();
@@ -4296,7 +4297,7 @@ int CScriptBind_Entity::RemoveAuxAudioProxy(IFunctionHandler* pH, ScriptHandle c
 
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->RemoveAuxAudioProxy(HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioComponent->RemoveAudioAuxObject(HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4314,12 +4315,11 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 		// This is an optimizations as AddRequestListener is a blocking request.
 		if (!m_bIsAudioEventListener)
 		{
-			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
+			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, eSystemEvent_TriggerFinished);
 			m_bIsAudioEventListener = true;
 		}
 
-		SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID), callbackInfo);
+		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<ControlId>(hTriggerID), HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4335,7 +4335,8 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->StopTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		SRequestUserData const userData(eRequestFlags_PriorityNormal | eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
+		pIEntityAudioComponent->StopTrigger(HandleToInt<ControlId>(hTriggerID), HandleToInt<AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 
 	return pH->EndFunction();
@@ -4352,8 +4353,8 @@ int CScriptBind_Entity::SetAudioSwitchState(IFunctionHandler* pH, ScriptHandle c
 	if (pIEntityAudioComponent)
 	{
 		pIEntityAudioComponent->SetSwitchState(
-		  HandleToInt<AudioControlId>(hSwitchID),
-		  HandleToInt<AudioSwitchStateId>(hSwitchStateID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		  HandleToInt<ControlId>(hSwitchID),
+		  HandleToInt<SwitchStateId>(hSwitchStateID), HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4369,28 +4370,28 @@ int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int co
 
 	if (pIEntityAudioComponent)
 	{
-		EAudioOcclusionType audioOcclusionType = eAudioOcclusionType_None;
+		EOcclusionType occlusionType = eOcclusionType_None;
 
 		switch (nObstructionCalcType)
 		{
 		case 1:
-			audioOcclusionType = eAudioOcclusionType_Ignore;
+			occlusionType = eOcclusionType_Ignore;
 			break;
 		case 2:
-			audioOcclusionType = eAudioOcclusionType_Adaptive;
+			occlusionType = eOcclusionType_Adaptive;
 			break;
 		case 3:
-			audioOcclusionType = eAudioOcclusionType_Low;
+			occlusionType = eOcclusionType_Low;
 			break;
 		case 4:
-			audioOcclusionType = eAudioOcclusionType_Medium;
+			occlusionType = eOcclusionType_Medium;
 			break;
 		case 5:
-			audioOcclusionType = eAudioOcclusionType_High;
+			occlusionType = eOcclusionType_High;
 			break;
 		}
 
-		pIEntityAudioComponent->SetObstructionCalcType(audioOcclusionType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioComponent->SetObstructionCalcType(occlusionType, HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4423,7 +4424,7 @@ int CScriptBind_Entity::SetAudioProxyOffset(IFunctionHandler* pH, Vec3 const vOf
 
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->SetAuxAudioProxyOffset(Matrix34(IDENTITY, vOffset), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, vOffset), HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4455,15 +4456,15 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 
 	if (pIEntityAudioComponent)
 	{
-		AudioEnvironmentId const audioEnvironmentIdToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
-		AudioEnvironmentId const audioEnvironmentIdToUnset = pIEntityAudioComponent->GetEnvironmentId();
+		EnvironmentId const audioEnvironmentIdToSet = HandleToInt<EnvironmentId>(hAudioEnvironmentID);
+		EnvironmentId const audioEnvironmentIdToUnset = pIEntityAudioComponent->GetEnvironmentId();
 
 		pIEntityAudioComponent->SetEnvironmentId(audioEnvironmentIdToSet);
 
 		int flag = 0;
-		flag |= (audioEnvironmentIdToSet == INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 0;
-		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset == INVALID_AUDIO_ENVIRONMENT_ID) << 1;
-		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 2;
+		flag |= (audioEnvironmentIdToSet == InvalidEnvironmentId && audioEnvironmentIdToUnset != InvalidEnvironmentId) << 0;
+		flag |= (audioEnvironmentIdToSet != InvalidEnvironmentId && audioEnvironmentIdToUnset == InvalidEnvironmentId) << 1;
+		flag |= (audioEnvironmentIdToSet != InvalidEnvironmentId && audioEnvironmentIdToUnset != InvalidEnvironmentId) << 2;
 
 		// The audio environment is being tampered with, we need to inform all entities affected by the area.
 		TAreaPointers areas;
@@ -4495,14 +4496,14 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 							switch (flag)
 							{
 							case 1 << 0:
-								  pIEntityAudioComponentToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
+								  pIEntityAudioComponentToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, InvalidAuxObjectId);
 								break;
 							case 1 << 1:
-								  pIEntityAudioComponentToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+								  pIEntityAudioComponentToAdjust->SetCurrentEnvironments(InvalidAuxObjectId);
 								break;
 							case 1 << 2:
-								  pIEntityAudioComponentToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
-								pIEntityAudioComponentToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+								  pIEntityAudioComponentToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, InvalidAuxObjectId);
+								pIEntityAudioComponentToAdjust->SetCurrentEnvironments(InvalidAuxObjectId);
 								break;
 							default:
 								CRY_ASSERT(false);
@@ -4529,7 +4530,7 @@ int CScriptBind_Entity::SetCurrentAudioEnvironments(IFunctionHandler* pH)
 	if (pIEntityAudioComponent)
 	{
 		// Passing INVALID_AUDIO_PROXY_ID to address all auxiliary AudioProxies on pIEntityAudioComponent.
-		pIEntityAudioComponent->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+		pIEntityAudioComponent->SetCurrentEnvironments(InvalidAuxObjectId);
 	}
 
 	return pH->EndFunction();
@@ -4545,7 +4546,7 @@ int CScriptBind_Entity::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle con
 
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->SetRtpcValue(HandleToInt<AudioControlId>(hRtpcID), fValue, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioComponent->SetParameter(HandleToInt<ControlId>(hRtpcID), fValue, HandleToInt<AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4561,7 +4562,7 @@ int CScriptBind_Entity::AuxAudioProxiesMoveWithEntity(IFunctionHandler* pH, bool
 
 	if (pIEntityAudioComponent)
 	{
-		pIEntityAudioComponent->AuxAudioProxiesMoveWithEntity(bCanMoveWithEntity);
+		pIEntityAudioComponent->AudioAuxObjectsMoveWithEntity(bCanMoveWithEntity);
 	}
 
 	return pH->EndFunction();
@@ -4624,7 +4625,7 @@ int CScriptBind_Entity::SetLocalBBox(IFunctionHandler* pH, Vec3 vMin, Vec3 vMax)
 	GET_ENTITY;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	pIEntityRender->SetLocalBounds(AABB(vMin, vMax), true);
 
 	return pH->EndFunction();
@@ -4637,7 +4638,7 @@ int CScriptBind_Entity::GetLocalBBox(IFunctionHandler* pH)
 
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		pIEntityRender->GetLocalBounds(box);
 		//apply scaling if there is any
@@ -4653,7 +4654,7 @@ int CScriptBind_Entity::GetWorldBBox(IFunctionHandler* pH)
 
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		pIEntityRender->GetWorldBounds(box);
 	}
@@ -4668,7 +4669,6 @@ int CScriptBind_Entity::GetProjectedWorldBBox(IFunctionHandler* pH)
 	AABB aabb(Vec3(0, 0, 0), Vec3(0, 0, 0));
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 
-	
 	{
 		pIEntityRender->GetLocalBounds(aabb);
 
@@ -6086,7 +6086,7 @@ int CScriptBind_Entity::CloneMaterial(IFunctionHandler* pH, int slot)
 	GET_ENTITY;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl)
@@ -6107,7 +6107,7 @@ int CScriptBind_Entity::SetMaterialFloat(IFunctionHandler* pH, int slot, int nSu
 	GET_ENTITY;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl)
@@ -6130,7 +6130,7 @@ int CScriptBind_Entity::GetMaterialFloat(IFunctionHandler* pH, int slot, int nSu
 	float fValue = 0;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl)
@@ -6151,7 +6151,7 @@ int CScriptBind_Entity::SetMaterialVec3(IFunctionHandler* pH, int slot, int nSub
 	GET_ENTITY;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl)
@@ -6174,7 +6174,7 @@ int CScriptBind_Entity::GetMaterialVec3(IFunctionHandler* pH, int slot, int nSub
 	Vec3 vValue(0, 0, 0);
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IMaterial* pMtl = pIEntityRender->GetRenderMaterial(slot);
 		if (pMtl)
@@ -6822,7 +6822,7 @@ int CScriptBind_Entity::GetViewDistRatio(IFunctionHandler* pH)
 	GET_ENTITY
 	int value = 0;
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -6843,7 +6843,7 @@ int CScriptBind_Entity::SetViewDistRatio(IFunctionHandler* pH)
 	pH->GetParam(1, value);
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -6861,7 +6861,7 @@ int CScriptBind_Entity::SetViewDistUnlimited(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -6882,7 +6882,7 @@ int CScriptBind_Entity::SetLodRatio(IFunctionHandler* pH)
 	pH->GetParam(1, value);
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -6900,7 +6900,7 @@ int CScriptBind_Entity::GetLodRatio(IFunctionHandler* pH)
 	GET_ENTITY
 	int value = 0;
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -6916,7 +6916,7 @@ int CScriptBind_Entity::RemoveDecals(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)

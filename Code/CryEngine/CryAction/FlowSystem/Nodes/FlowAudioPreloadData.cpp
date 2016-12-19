@@ -1,8 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include <CryFlowGraph/IFlowBaseNode.h>
+
+using namespace CryAudio;
 
 class CFlowNode_AudioPreloadData final : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -19,7 +20,7 @@ public:
 	CFlowNode_AudioPreloadData& operator=(CFlowNode_AudioPreloadData const&) = delete;
 	CFlowNode_AudioPreloadData& operator=(CFlowNode_AudioPreloadData&&) = delete;
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
+	virtual IFlowNodePtr        Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_AudioPreloadData(pActInfo);
 	}
@@ -80,22 +81,17 @@ public:
 
 				if (!preloadName.empty())
 				{
-					SAudioRequest request;
-					AudioPreloadRequestId preloadRequestId = INVALID_AUDIO_PRELOAD_REQUEST_ID;
+					PreloadRequestId preloadRequestId = InvalidPreloadRequestId;
 
 					if (gEnv->pAudioSystem->GetAudioPreloadRequestId(preloadName.c_str(), preloadRequestId))
 					{
 						if (bEnable)
 						{
-							SAudioManagerRequestData<eAudioManagerRequestType_PreloadSingleRequest> requestData(preloadRequestId, false);
-							request.pData = &requestData;
-							gEnv->pAudioSystem->PushRequest(request);
+							gEnv->pAudioSystem->PreloadSingleRequest(preloadRequestId, false);
 						}
 						else
 						{
-							SAudioManagerRequestData<eAudioManagerRequestType_UnloadSingleRequest> requestData(preloadRequestId);
-							request.pData = &requestData;
-							gEnv->pAudioSystem->PushRequest(request);
+							gEnv->pAudioSystem->UnloadSingleRequest(preloadRequestId);
 						}
 					}
 				}

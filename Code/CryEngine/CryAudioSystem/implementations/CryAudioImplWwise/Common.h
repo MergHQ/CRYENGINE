@@ -22,7 +22,7 @@ inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-inline void FillAKObjectPosition(CAudioObjectTransformation const& transformation, AkSoundPosition& outTransformation)
+inline void FillAKObjectPosition(CryAudio::CObjectTransformation const& transformation, AkSoundPosition& outTransformation)
 {
 	AkVector vec1, vec2;
 	FillAKVector(transformation.GetPosition(), vec1);
@@ -33,7 +33,7 @@ inline void FillAKObjectPosition(CAudioObjectTransformation const& transformatio
 }
 
 ///////////////////////////////////////////////////////////////////////////
-inline void FillAKListenerPosition(CAudioObjectTransformation const& transformation, AkListenerPosition& outTransformation)
+inline void FillAKListenerPosition(CryAudio::CObjectTransformation const& transformation, AkListenerPosition& outTransformation)
 {
 	AkVector vec1, vec2;
 	FillAKVector(transformation.GetPosition(), vec1);

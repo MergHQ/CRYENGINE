@@ -169,8 +169,11 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		// e.g. if we request 56bytes and the next fitting bucket is 64bytes, we will be allocating 64bytes.
 		//
 		// Having the correct value is important because the whole bucket size is later used by CryFree when
-		// deallocating and both values should match for stats tracking to be accurate
-		sizePlus = g_GlobPageBucketAllocator.getSizeEx(p);
+		// deallocating and both values should match for stats tracking to be accurate.
+		//
+		// We use getSize and not getSizeEx because in the case of an allocation with "alignment" == 0 and "size" bigger than the bucket size
+		// the bucket allocator will end up allocating memory using CryCrtMalloc which falls outside the address range of the bucket allocator
+		sizePlus = g_GlobPageBucketAllocator.getSize(p);
 	}
 	else
 	{

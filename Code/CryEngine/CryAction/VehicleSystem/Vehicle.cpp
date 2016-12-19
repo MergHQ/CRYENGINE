@@ -406,7 +406,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
 
 			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
-				&& s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
+			       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
 		}
 		CRY_ASSERT_MESSAGE(pGR, "No valid game rules set!");
 	}
@@ -735,7 +735,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			}
 		}
 	}
-	
+
 	InitPaint(vehicleParams);
 	InitActions(vehicleParams);
 
@@ -1295,15 +1295,15 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 
 uint64 CVehicle::GetEventMask() const
 {
-	return 
-		BIT64(ENTITY_EVENT_RESET) |
-		BIT64(ENTITY_EVENT_DONE) |
-		BIT64(ENTITY_EVENT_TIMER) |
-		BIT64(ENTITY_EVENT_MATERIAL_LAYER) |
-		BIT64(ENTITY_EVENT_HIDE) |
-		BIT64(ENTITY_EVENT_UNHIDE) |
-		BIT64(ENTITY_EVENT_ANIM_EVENT) |
-		BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	return
+	  BIT64(ENTITY_EVENT_RESET) |
+	  BIT64(ENTITY_EVENT_DONE) |
+	  BIT64(ENTITY_EVENT_TIMER) |
+	  BIT64(ENTITY_EVENT_MATERIAL_LAYER) |
+	  BIT64(ENTITY_EVENT_HIDE) |
+	  BIT64(ENTITY_EVENT_UNHIDE) |
+	  BIT64(ENTITY_EVENT_ANIM_EVENT) |
+	  BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
 //------------------------------------------------------------------------
@@ -1330,7 +1330,7 @@ void CVehicle::OnMaterialLayerChanged(const SEntityEvent& event)
 		{
 			IEntity* pChild = GetEntity()->GetChild(i);
 			IEntityRender* pIEntityRender = pChild->GetRenderInterface();
-			
+
 			{
 				if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pChild->GetId()))
 					if (pActor->IsPlayer()) // don't freeze players inside vehicles
@@ -1486,7 +1486,7 @@ void CVehicle::Reset(bool enterGame)
 		NeedsUpdate(eVUF_AwakePhysics);
 
 		// Temp Code, testing only
-		AudioControlId engineAudioTriggerId;
+		CryAudio::ControlId engineAudioTriggerId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_ON", engineAudioTriggerId))
 		{
 			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
@@ -1503,7 +1503,7 @@ void CVehicle::Reset(bool enterGame)
 		}
 
 		// Temp Code, testing only
-		AudioControlId engineAudioTriggerId;
+		CryAudio::ControlId engineAudioTriggerId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_OFF", engineAudioTriggerId))
 		{
 			m_pIEntityAudioComponent->ExecuteTrigger(engineAudioTriggerId);
@@ -3505,7 +3505,7 @@ void CVehicle::OnPhysPostStep(const EventPhys* pEvent, bool logged)
 			IEntity* pEntity = GetEntity();
 			{
 				// Potential optimisation: Should stop CEntityPhysics::OnPhysicsPostStep from also calling SetPosRotScale as it gets overridden here anyway
-				pEntity->SetPosRotScale(renderPos, renderRot, Vec3(1.0f, 1.0f, 1.0f),ENTITY_XFORM_IGNORE_PHYSICS);
+				pEntity->SetPosRotScale(renderPos, renderRot, Vec3(1.0f, 1.0f, 1.0f), ENTITY_XFORM_IGNORE_PHYSICS);
 			}
 		}
 	}
@@ -4759,7 +4759,7 @@ void CVehicle::StopSound(TVehicleSoundEventId eventId)
 	    pSound->Stop();
 	   }*/
 
-	pInfo->soundId = INVALID_AUDIO_CONTROL_ID;
+	pInfo->soundId = CryAudio::InvalidControlId;
 }
 
 //------------------------------------------------------------------------

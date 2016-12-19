@@ -3,7 +3,7 @@
 #pragma once
 
 #include <IAudioImpl.h>
-#include <STLSoundAllocator.h>
+#include <PoolObject.h>
 
 namespace CryAudio
 {
@@ -11,9 +11,9 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-typedef uint                                     SampleId;
-typedef uint                                     ListenerId;
-typedef std::vector<int, STLSoundAllocator<int>> ChannelList;
+typedef uint             SampleId;
+typedef uint             ListenerId;
+typedef std::vector<int> ChannelList;
 
 struct SAudioTrigger final : public IAudioTrigger
 {
@@ -25,6 +25,13 @@ struct SAudioTrigger final : public IAudioTrigger
 	SAudioTrigger& operator=(SAudioTrigger const&) = delete;
 	SAudioTrigger& operator=(SAudioTrigger&&) = delete;
 
+	// IAudioTrigger
+	virtual ERequestStatus Load() const override                                       { return eRequestStatus_Success; }
+	virtual ERequestStatus Unload() const override                                     { return eRequestStatus_Success; }
+	virtual ERequestStatus LoadAsync(IAudioEvent* const pIAudioEvent) const override   { return eRequestStatus_Success; }
+	virtual ERequestStatus UnloadAsync(IAudioEvent* const pIAudioEvent) const override { return eRequestStatus_Success; }
+	// ~ IAudioTrigger
+
 	SampleId sampleId = 0;
 	float    attenuationMinDistance = 0.0f;
 	float    attenuationMaxDistance = 100.0f;
@@ -34,7 +41,7 @@ struct SAudioTrigger final : public IAudioTrigger
 	bool     bStartEvent = true;
 };
 
-struct SAudioParameter final : public IAudioRtpc
+struct SAudioParameter final : public IParameter
 {
 	// Empty implementation so that the engine has something
 	// to refer to since RTPCs are not currently supported by
@@ -76,36 +83,36 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	SAudioEnvironment& operator=(SAudioEnvironment&&) = delete;
 };
 
-struct SAudioEvent final : public IAudioEvent
+struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent>
 {
-	explicit SAudioEvent(AudioEventId const passedId)
-		: eventId(passedId)
-		, pStaticData(nullptr)
+	explicit SAudioEvent(CATLEvent& event)
+		: audioEvent(event)
 	{}
-
-	virtual ~SAudioEvent() override = default;
 
 	SAudioEvent(SAudioEvent const&) = delete;
 	SAudioEvent(SAudioEvent&&) = delete;
 	SAudioEvent& operator=(SAudioEvent const&) = delete;
 	SAudioEvent& operator=(SAudioEvent&&) = delete;
 
-	void         Reset()
-	{
-		channels.clear();
-		pStaticData = nullptr;
-	}
+	// IAudioEvent
+	virtual ERequestStatus Stop();
+	// ~ IAudioEvent
 
-	const AudioEventId   eventId;
+	CATLEvent&           audioEvent;
 	ChannelList          channels;
-	const SAudioTrigger* pStaticData;
+	const SAudioTrigger* pStaticData = nullptr;
 };
 
 class CAudioStandaloneFile final : public IAudioStandaloneFile
 {
 public:
 
-	CAudioStandaloneFile() = default;
+	CAudioStandaloneFile(char const* const szFile, CATLStandaloneFile& atlStandaloneFile)
+		: atlFile(atlStandaloneFile)
+		, fileName(szFile)
+	{
+
+	}
 	virtual ~CAudioStandaloneFile() override = default;
 
 	CAudioStandaloneFile(CAudioStandaloneFile const&) = delete;
@@ -113,28 +120,19 @@ public:
 	CAudioStandaloneFile& operator=(CAudioStandaloneFile const&) = delete;
 	CAudioStandaloneFile& operator=(CAudioStandaloneFile&&) = delete;
 
-	void                  Reset()
-	{
-		fileId = INVALID_AUDIO_STANDALONE_FILE_ID;
-		fileInstanceId = INVALID_AUDIO_STANDALONE_FILE_ID;
-		channels.clear();
-		fileName.clear();
-	}
-
-	AudioStandaloneFileId                       fileId = INVALID_AUDIO_STANDALONE_FILE_ID;               // ID unique to the file, only needed for the 'finished' request
-	AudioStandaloneFileId                       fileInstanceId = INVALID_AUDIO_STANDALONE_FILE_ID;       // ID unique to the file instance, only needed for the 'finished' request
-	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> fileName;
-	ChannelList channels;
+	CATLStandaloneFile&                atlFile;
+	SampleId                           sampleId = 0;                       // ID unique to the file, only needed for the 'finished' request
+	CryFixedStringT<MaxFilePathLength> fileName;
+	ChannelList                        channels;
 };
 
-typedef std::vector<SAudioEvent*, STLSoundAllocator<SAudioEvent*>>                   EventInstanceList;
-typedef std::vector<CAudioStandaloneFile*, STLSoundAllocator<CAudioStandaloneFile*>> StandAloneFileInstanceList;
+typedef std::vector<SAudioEvent*>          EventInstanceList;
+typedef std::vector<CAudioStandaloneFile*> StandAloneFileInstanceList;
 
-struct SAudioObject final : public IAudioObject
+struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject>
 {
-	explicit SAudioObject(uint32 id, bool bIsGlobal)
+	explicit SAudioObject(uint32 id)
 		: audioObjectId(id)
-		, bGlobal(bIsGlobal)
 		, bPositionChanged(false)
 	{}
 
@@ -145,11 +143,23 @@ struct SAudioObject final : public IAudioObject
 	SAudioObject& operator=(SAudioObject const&) = delete;
 	SAudioObject& operator=(SAudioObject&&) = delete;
 
+	// IAudioObject
+	virtual ERequestStatus Update() override;
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual ERequestStatus SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount) override;
+	virtual ERequestStatus SetParameter(IParameter const* const pIAudioParameter, float const value) override;
+	virtual ERequestStatus SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState) override;
+	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
+	virtual ERequestStatus ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent) override;
+	virtual ERequestStatus StopAllTriggers() override;
+	virtual ERequestStatus PlayFile(IAudioStandaloneFile* const pIFile) override;
+	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override;
+	// ~ IAudioObject
+
 	const uint32               audioObjectId;
-	CAudioObjectTransformation position;
+	CObjectTransformation      position;
 	EventInstanceList          events;
 	StandAloneFileInstanceList standaloneFiles;
-	bool                       bGlobal;
 	bool                       bPositionChanged;
 };
 
@@ -160,6 +170,10 @@ struct SAudioListener final : public IAudioListener
 	{}
 
 	virtual ~SAudioListener() override = default;
+
+	// IAudioListener
+	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	// ~ IAudioListener
 
 	SAudioListener(SAudioListener const&) = delete;
 	SAudioListener(SAudioListener&&) = delete;

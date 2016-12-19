@@ -7,14 +7,21 @@
 #include <IAudioImpl.h>
 #include <algorithm>
 
+using namespace CryAudio;
 using namespace CryAudio::Impl;
 
 //////////////////////////////////////////////////////////////////////////
 CAudioListenerManager::~CAudioListenerManager()
 {
-	if (m_pImpl != nullptr)
+	if (!m_activeListeners.empty())
 	{
-		Release();
+		for (auto pListener : m_activeListeners)
+		{
+			CRY_ASSERT(pListener->m_pImplData == nullptr);
+			delete pListener;
+		}
+
+		m_activeListeners.clear();
 	}
 }
 
@@ -23,10 +30,14 @@ void CAudioListenerManager::Init(IAudioImpl* const pImpl)
 {
 	m_pImpl = pImpl;
 
-	CRY_ASSERT(m_activeListeners.empty() && !m_pDefaultListenerObject);
-
-	POOL_NEW(CATLListener, m_pDefaultListenerObject)(m_pImpl->NewDefaultAudioListener());
-	m_activeListeners.push_back(m_pDefaultListenerObject);
+	if (!m_activeListeners.empty())
+	{
+		for (auto pListener : m_activeListeners)
+		{
+			pListener->m_pImplData = m_pImpl->ConstructAudioListener();
+			pListener->HandleSetTransformation(pListener->Get3DAttributes().transformation);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,12 +45,9 @@ void CAudioListenerManager::Release()
 {
 	for (auto pListener : m_activeListeners)
 	{
-		m_pImpl->DeleteAudioListener(pListener->m_pImplData);
-		POOL_FREE(pListener);
+		m_pImpl->DestructAudioListener(pListener->m_pImplData);
+		pListener->m_pImplData = nullptr;
 	}
-	m_activeListeners.clear();
-
-	m_pDefaultListenerObject = nullptr;
 
 	m_pImpl = nullptr;
 }
@@ -47,61 +55,60 @@ void CAudioListenerManager::Release()
 //////////////////////////////////////////////////////////////////////////
 void CAudioListenerManager::Update(float const deltaTime)
 {
-	CRY_ASSERT(m_pDefaultListenerObject != nullptr);
-	m_pDefaultListenerObject->Update(m_pImpl);
+	for (auto pListener : m_activeListeners)
+	{
+		pListener->Update();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLListener* CAudioListenerManager::CreateListener()
 {
-	POOL_NEW_CREATE(CATLListener, pListener)(m_pImpl->NewAudioListener());
+	if (!m_activeListeners.empty())
+	{
+		// Currently only one listener supported!
+		return m_activeListeners.front();
+	}
+
+	CATLListener* const pListener = new CATLListener(m_pImpl->ConstructAudioListener());
 	m_activeListeners.push_back(pListener);
 	return pListener;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::Release(CATLListener* const pListener)
+void CAudioListenerManager::ReleaseListener(CATLListener* const pListener)
 {
-	m_activeListeners.erase
+	// As we currently support only one listener we will destroy that instance only on engine shutdown!
+	/*m_activeListeners.erase
 	(
-	  std::find_if(m_activeListeners.begin(), m_activeListeners.end(), [=](CATLListener const* pRegisteredListener) { return pRegisteredListener == pListener; })
-	);
+	  std::find_if(m_activeListeners.begin(), m_activeListeners.end(), [=](CATLListener const* pRegisteredListener)
+	{
+		if (pRegisteredListener == pListener)
+		{
+			m_pImpl->DestructAudioListener(pListener->m_pImplData);
+			delete pListener;
+			return true;
+		}
+
+		return false;
+	})
+	);*/
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CAudioListenerManager::GetNumActive() const
+size_t CAudioListenerManager::GetNumActiveListeners() const
 {
 	return m_activeListeners.size();
 }
 
 //////////////////////////////////////////////////////////////////////////
-SAudioObject3DAttributes const& CAudioListenerManager::GetDefaultListenerAttributes() const
+SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() const
 {
-	if (m_pDefaultListenerObject != nullptr)
+	for (auto pListener : m_activeListeners)
 	{
-		return m_pDefaultListenerObject->Get3DAttributes();
+		// Only one listener supported currently!
+		return pListener->Get3DAttributes();
 	}
 
 	return g_sNullAudioObjectAttributes;
 }
-
-//////////////////////////////////////////////////////////////////////////
-CATLListener* CAudioListenerManager::GetDefaultListener() const
-{
-	return m_pDefaultListenerObject;
-}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-//////////////////////////////////////////////////////////////////////////
-float CAudioListenerManager::GetDefaultListenerVelocity() const
-{
-	float velocity = 0.0f;
-
-	if (m_pDefaultListenerObject != nullptr)
-	{
-		velocity = m_pDefaultListenerObject->GetVelocity();
-	}
-
-	return velocity;
-}
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE

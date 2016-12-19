@@ -8,10 +8,10 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
+using namespace CryAudio;
 using namespace CryAudio::Impl::SDL_mixer;
 
 // Define global objects.
-CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::SDL_mixer::g_audioImplCVars;
 
@@ -31,40 +31,27 @@ class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		// Initialize memory pools.
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "SDL Mixer Audio Implementation Memory Pool Primary");
-		size_t const poolSize = g_audioImplCVars.m_primaryMemoryPoolSize << 10;
-		uint8* const pPoolMemory = new uint8[poolSize];
-		g_audioImplMemoryPool.InitMem(poolSize, pPoolMemory, "SDL Mixer Implementation Audio Pool");
+		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
+		SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
+		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr);
 
-		POOL_NEW_CREATE(CAudioImpl, pImpl);
-
-		if (pImpl != nullptr)
+		if (m_bSuccess)
 		{
 			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplSDLMixer loaded");
-
-			SAudioRequest request;
-			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-
-			SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> requestData(pImpl);
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr, eAudioRequestType_AudioManagerRequest, eAudioManagerRequestType_SetAudioImpl);
-			env.pAudioSystem->PushRequest(request);
-			gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnAudioEvent, nullptr);
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplSDLMixer failed to load");
+			g_audioImplLogger.Log(eAudioLogType_Error, "CryAudioImplSDLMixer failed to load");
 		}
 
 		return m_bSuccess;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	static void OnAudioEvent(SAudioRequestInfo const* const pAudioRequestInfo)
+	static void OnAudioEvent(SRequestInfo const* const pAudioRequestInfo)
 	{
-		m_bSuccess = pAudioRequestInfo->requestResult == eAudioRequestResult_Success;
+		m_bSuccess = pAudioRequestInfo->requestResult == eRequestResult_Success;
 	}
 
 	static bool m_bSuccess;

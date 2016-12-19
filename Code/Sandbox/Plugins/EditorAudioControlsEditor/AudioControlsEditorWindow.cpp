@@ -281,19 +281,16 @@ void CAudioControlsEditorWindow::Save()
 		messageBox.setWindowTitle("Audio Controls Editor");
 		if (messageBox.Execute() == QDialogButtonBox::Yes)
 		{
-			SAudioRequest oAudioRequestData;
-			char const* sLevelName = GetIEditor()->GetLevelName();
+			char const* szLevelName = GetIEditor()->GetLevelName();
 
-			if (_stricmp(sLevelName, "Untitled") == 0)
+			if (_stricmp(szLevelName, "Untitled") == 0)
 			{
-				// Rather pass NULL to indicate that no level is loaded!
-				sLevelName = NULL;
+				// Rather pass nullptr to indicate that no level is loaded!
+				szLevelName = nullptr;
 			}
 
-			SAudioManagerRequestData<eAudioManagerRequestType_RefreshAudioSystem> oAMData(sLevelName);
-			oAudioRequestData.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
-			oAudioRequestData.pData = &oAMData;
-			gEnv->pAudioSystem->PushRequest(oAudioRequestData);
+			CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_PriorityHigh | CryAudio::eRequestFlags_ExecuteBlocking);
+			gEnv->pAudioSystem->RefreshAudioSystem(szLevelName);
 		}
 	}
 	m_pATLModel->ClearDirtyFlags();
@@ -332,14 +329,10 @@ void CAudioControlsEditorWindow::UpdateFilterFromSelection()
 
 void CAudioControlsEditorWindow::UpdateAudioSystemData()
 {
-	SAudioRequest audioRequest;
-	audioRequest.flags = eAudioRequestFlags_PriorityHigh;
-
 	string levelPath = CRY_NATIVE_PATH_SEPSTR "levels" CRY_NATIVE_PATH_SEPSTR;
 	levelPath += GetIEditor()->GetLevelName();
-	SAudioManagerRequestData<eAudioManagerRequestType_ReloadControlsData> data(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
-	audioRequest.pData = &data;
-	gEnv->pAudioSystem->PushRequest(audioRequest);
+	CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_PriorityHigh);
+	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str(), data);
 }
 
 void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)

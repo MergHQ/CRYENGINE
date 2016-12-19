@@ -1,15 +1,17 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include <CryFlowGraph/IFlowBaseNode.h>
+
+using namespace CryAudio;
 
 class CFlowNode_AudioRtpc final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
 	explicit CFlowNode_AudioRtpc(SActivationInfo* pActInfo)
-		: m_value(0.0f)
+		: m_parameterId(InvalidControlId)
+		, m_value(0.0f)
 	{}
 
 	virtual ~CFlowNode_AudioRtpc() override = default;
@@ -114,24 +116,29 @@ private:
 
 		if (!rtpcName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioRtpcId(rtpcName.c_str(), m_requestData.audioRtpcId);
+			gEnv->pAudioSystem->GetAudioParameterId(rtpcName.c_str(), m_parameterId);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetValue(IEntity* const pEntity, float const value)
+	void SetValue(IEntity* const pIEntity, float const value)
 	{
 		// Don't optimize here!
 		// We always need to set the value as it could have been manipulated by another entity.
 		m_value = value;
 
-		if (pEntity != nullptr)
+		if (pIEntity != nullptr)
 		{
-			SetOnProxy(pEntity, m_value);
+			IEntityAudioComponent* const pIEntityAudioComponent = pIEntity->GetOrCreateComponent<IEntityAudioComponent>();
+
+			if (pIEntityAudioComponent != nullptr)
+			{
+				pIEntityAudioComponent->SetParameter(m_parameterId, m_value);
+			}
 		}
 		else
 		{
-			SetOnGlobalObject(m_value);
+			gEnv->pAudioSystem->SetParameter(m_parameterId, m_value);
 		}
 	}
 
@@ -141,34 +148,13 @@ private:
 		if (gEnv->pAudioSystem != nullptr)
 		{
 			GetRtpcId(pActInfo);
-
-			m_request.pData = &m_requestData;
-
 			SetValue(pActInfo->pEntity, 0.0f);
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	void SetOnProxy(IEntity* const pEntity, float const value)
-	{
-		IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
-
-		if (pIEntityAudioComponent != nullptr)
-		{
-			pIEntityAudioComponent->SetRtpcValue(m_requestData.audioRtpcId, value);
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	void SetOnGlobalObject(float const value)
-	{
-		m_requestData.value = value;
-		gEnv->pAudioSystem->PushRequest(m_request);
-	}
-
-	float         m_value;
-	SAudioRequest m_request;
-	SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> m_requestData;
+	ControlId        m_parameterId;
+	float            m_value;
+	SRequestUserData m_requestUserData;
 };
 
 REGISTER_FLOW_NODE("Audio:Rtpc", CFlowNode_AudioRtpc);

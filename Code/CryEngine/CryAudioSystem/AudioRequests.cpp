@@ -3,45 +3,46 @@
 #include "stdafx.h"
 #include "AudioInternalInterfaces.h"
 
-#define REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                                         \
-  case ENUM:                                                                                        \
-    {                                                                                               \
-      POOL_NEW(CLASS ## Internal<ENUM>, P_RESULT)(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
-                                                                                                    \
-      break;                                                                                        \
+using namespace CryAudio;
+
+#define REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                        \
+  case ENUM:                                                                       \
+    {                                                                              \
+      P_RESULT = new CLASS<ENUM>(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
+                                                                                   \
+      break;                                                                       \
     }
 
-#define AM_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioManagerRequestData, ENUM, pExternalData, pResult)
-#define ACM_REQUEST_BLOCK(ENUM) REQUEST_CASE_BLOCK(SAudioCallbackManagerRequestData, ENUM, pExternalData, pResult)
-#define AO_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioObjectRequestData, ENUM, pExternalData, pResult)
-#define AL_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioListenerRequestData, ENUM, pExternalData, pResult)
+#define AM_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioManagerRequestData, ENUM, pRequestData, pResult)
+#define ACM_REQUEST_BLOCK(ENUM) REQUEST_CASE_BLOCK(SAudioCallbackManagerRequestData, ENUM, pRequestData, pResult)
+#define AO_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioObjectRequestData, ENUM, pRequestData, pResult)
+#define AL_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioListenerRequestData, ENUM, pRequestData, pResult)
 
-#define AM_REQUEST_BLOCK_INTERNAL(ENUM)                                                                                                                  \
-  case ENUM:                                                                                                                                             \
-    {                                                                                                                                                    \
-      POOL_NEW(SAudioManagerRequestDataInternal<ENUM>, pResult)(static_cast<SAudioManagerRequestDataInternal<ENUM> const* const>(pRequestDataInternal)); \
-                                                                                                                                                         \
-      break;                                                                                                                                             \
-    }
-
-///////////////////////////////////////////////////////////////////////////
-SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const pExternalData)
+////////////////////////////////////////////////////////////////////////////
+SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const pRequestData)
 {
-	CRY_ASSERT(pExternalData != nullptr);
-	SAudioRequestDataInternal* pResult = nullptr;
-	EAudioRequestType const requestType = pExternalData->type;
+	CRY_ASSERT(pRequestData != nullptr);
+	SAudioRequestData* pResult = nullptr;
+	EAudioRequestType const requestType = pRequestData->type;
 
 	switch (requestType)
 	{
 	case eAudioRequestType_AudioManagerRequest:
 		{
-			SAudioManagerRequestDataBase const* const pBase = static_cast<SAudioManagerRequestDataBase const* const>(pExternalData);
+			SAudioManagerRequestDataBase const* const pBase = static_cast<SAudioManagerRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReserveAudioObjectId)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_AddRequestListener)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_RemoveRequestListener)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_SetAudioImpl)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReleaseAudioImpl)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_RefreshAudioSystem)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_ConstructAudioListener)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_ConstructAudioObject)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_LoseFocus)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetFocus)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_MuteAll)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnmuteAll)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_StopAllSounds)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ParseControlsData)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ParsePreloadsData)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ClearControlsData)
@@ -49,16 +50,14 @@ SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const 
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_PreloadSingleRequest)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnloadSingleRequest)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnloadAFCMDataByScope)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_SetAudioImpl)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_RefreshAudioSystem)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_LoseFocus)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetFocus)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_MuteAll)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_UnmuteAll)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_StopAllSounds)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_DrawDebugInfo)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_AddRequestListener)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_RemoveRequestListener)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ChangeLanguage)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_RetriggerAudioControls)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReleasePendingRays)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReloadControlsData)
+				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetAudioFileData)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio manager request type (%u)", pBase->type);
@@ -70,9 +69,60 @@ SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const 
 
 			break;
 		}
+	case eAudioRequestType_AudioObjectRequest:
+		{
+			SAudioObjectRequestDataBase const* const pBase = static_cast<SAudioObjectRequestDataBase const* const>(pRequestData);
+
+			switch (pBase->type)
+			{
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_LoadTrigger)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_UnloadTrigger)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_PlayFile)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopFile)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ExecuteTrigger)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ExecuteTriggerEx)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopTrigger)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopAllTriggers)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetTransformation)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetParameter)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetSwitchState)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetCurrentEnvironments)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetEnvironment)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ResetEnvironments)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
+			default:
+				{
+					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);
+					CRY_ASSERT(false);
+
+					break;
+				}
+			}
+			break;
+		}
+	case eAudioRequestType_AudioListenerRequest:
+		{
+			SAudioListenerRequestDataBase const* const pBase = static_cast<SAudioListenerRequestDataBase const* const>(pRequestData);
+
+			switch (pBase->type)
+			{
+				AL_REQUEST_BLOCK(eAudioListenerRequestType_SetTransformation)
+				AL_REQUEST_BLOCK(eAudioListenerRequestType_ReleaseListener)
+			default:
+				{
+					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio listener request type (%u)", pBase->type);
+					CRY_ASSERT(false);
+
+					break;
+				}
+			}
+
+			break;
+		}
 	case eAudioRequestType_AudioCallbackManagerRequest:
 		{
-			SAudioCallbackManagerRequestDataBase const* const pBase = static_cast<SAudioCallbackManagerRequestDataBase const* const>(pExternalData);
+			SAudioCallbackManagerRequestDataBase const* const pBase = static_cast<SAudioCallbackManagerRequestDataBase const* const>(pRequestData);
 
 			switch (pBase->type)
 			{
@@ -94,101 +144,6 @@ SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const 
 
 			break;
 		}
-	case eAudioRequestType_AudioObjectRequest:
-		{
-			SAudioObjectRequestDataBase const* const pBase = static_cast<SAudioObjectRequestDataBase const* const>(pExternalData);
-
-			switch (pBase->type)
-			{
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_PrepareTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_UnprepareTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_PlayFile)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopFile)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ExecuteTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopTrigger)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_StopAllTriggers)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetTransformation)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetRtpcValue)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetSwitchState)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetVolume)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetEnvironmentAmount)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ResetEnvironments)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
-				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
-			default:
-				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);
-					CRY_ASSERT(false);
-
-					break;
-				}
-			}
-
-			break;
-		}
-	case eAudioRequestType_AudioListenerRequest:
-		{
-			SAudioListenerRequestDataBase const* const pBase = static_cast<SAudioListenerRequestDataBase const* const>(pExternalData);
-
-			switch (pBase->type)
-			{
-				AL_REQUEST_BLOCK(eAudioListenerRequestType_SetTransformation)
-			default:
-				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio listener request type (%u)", pBase->type);
-					CRY_ASSERT(false);
-
-					break;
-				}
-			}
-
-			break;
-		}
-	default:
-		{
-			g_audioLogger.Log(eAudioLogType_Error, "Unknown audio request type (%u)", requestType);
-			CRY_ASSERT(false);
-
-			break;
-		}
-	}
-
-	return pResult;
-}
-
-////////////////////////////////////////////////////////////////////////////
-SAudioRequestDataInternal* AllocateForInternal(SAudioRequestDataInternal const* const pRequestDataInternal)
-{
-	CRY_ASSERT(pRequestDataInternal);
-	SAudioRequestDataInternal* pResult = nullptr;
-	EAudioRequestType const requestType = pRequestDataInternal->type;
-
-	switch (requestType)
-	{
-	case eAudioRequestType_AudioManagerRequest:
-		{
-			SAudioManagerRequestDataInternalBase const* const pBase = static_cast<SAudioManagerRequestDataInternalBase const* const>(pRequestDataInternal);
-
-			switch (pBase->type)
-			{
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_AddRequestListener)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_RemoveRequestListener)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_DrawDebugInfo)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_ReleasePendingRays)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_ReleaseAudioImpl)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_UnloadAFCMDataByScope)
-				AM_REQUEST_BLOCK_INTERNAL(eAudioManagerRequestType_GetAudioFileData)
-			default:
-				{
-					g_audioLogger.Log(eAudioLogType_Error, "Unknown internal audio manager request type (%u)", pBase->type);
-					CRY_ASSERT(false);
-
-					break;
-				}
-			}
-
-			break;
-		}
 	default:
 		{
 			g_audioLogger.Log(eAudioLogType_Error, "Unknown audio request type (%u)", requestType);
@@ -202,16 +157,16 @@ SAudioRequestDataInternal* AllocateForInternal(SAudioRequestDataInternal const* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SAudioRequestDataInternal::Release()
+void SAudioRequestData::Release()
 {
-	int const nCount = CryInterlockedDecrement(&m_nRefCounter);
-	CRY_ASSERT(nCount >= 0);
+	int const numReferences = CryInterlockedDecrement(&m_nRefCounter);
+	CRY_ASSERT(numReferences >= 0);
 
-	if (nCount == 0)
+	if (numReferences == 0)
 	{
-		POOL_FREE(this);
+		delete this;
 	}
-	else if (nCount < 0)
+	else if (numReferences < 0)
 	{
 		CryFatalError("Deleting Reference Counted Object Twice");
 	}

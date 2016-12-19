@@ -174,7 +174,7 @@ public:
 			int pathLength = key.m_audioFile.find(PathUtil::GetGameFolder());
 			const string tempFilePath = (pathLength == -1) ? PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + key.m_audioFile : key.m_audioFile;
 
-			SAudioFileData audioData;
+			CryAudio::SFileData audioData;
 			gEnv->pAudioSystem->GetAudioFileData(tempFilePath.c_str(), audioData);
 			key.m_duration = audioData.duration;
 		}
@@ -207,19 +207,19 @@ class CAudioParameterTrack final : public CAnimSplineTrack
 {
 public:
 	CAudioParameterTrack()
-	: CAnimSplineTrack(eAnimParamType_Float)
-	, m_audioParameterId(INVALID_AUDIO_CONTROL_ID)
+		: CAnimSplineTrack(eAnimParamType_Float)
+		, m_audioParameterId(CryAudio::InvalidControlId)
 	{}
 
 	virtual CAnimParamType GetParameterType() const override { return eAnimParamType_AudioParameter; }
 
-	virtual void Serialize(Serialization::IArchive& ar) override
+	virtual void           Serialize(Serialization::IArchive& ar) override
 	{
 		ar(Serialization::AudioRTPC(m_audioParameterName), "AudioParameterName", "Parameter Name");
 
 		if (ar.isInput())
 		{
-			gEnv->pAudioSystem->GetAudioRtpcId(m_audioParameterName.c_str(), m_audioParameterId);
+			gEnv->pAudioSystem->GetAudioParameterId(m_audioParameterName.c_str(), m_audioParameterId);
 		}
 	}
 
@@ -230,7 +230,7 @@ public:
 		if (bLoading)
 		{
 			m_audioParameterName = xmlNode->getAttr("AudioParameterName");
-			gEnv->pAudioSystem->GetAudioRtpcId(m_audioParameterName, m_audioParameterId);
+			gEnv->pAudioSystem->GetAudioParameterId(m_audioParameterName, m_audioParameterId);
 		}
 		else
 		{
@@ -240,8 +240,8 @@ public:
 		return bResult;
 	}
 
-	string m_audioParameterName;
-	AudioControlId m_audioParameterId;
+	string              m_audioParameterName;
+	CryAudio::ControlId m_audioParameterId;
 };
 
 class CDynamicResponseSignalTrack final : public TAnimTrack<SDynamicResponseSignalKey>

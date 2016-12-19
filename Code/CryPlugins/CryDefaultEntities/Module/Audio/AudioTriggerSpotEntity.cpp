@@ -5,8 +5,9 @@
 #include "AudioEntitiesUtils.h"
 #include <CryMath/Random.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-
 #include <CrySerialization/Enum.h>
+
+using namespace CryAudio;
 
 #define DELAY_TIMER_ID 0
 
@@ -22,7 +23,7 @@ class CAudioTriggerSpotRegistrator final : public IEntityRegistrator
 		}
 
 		auto* pEntityClass = RegisterEntityWithDefaultComponent<CAudioTriggerSpotEntity>("AudioTriggerSpot", "Audio", "Sound.bmp");
-		
+
 		pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
 	}
 };
@@ -39,7 +40,7 @@ CRYREGISTER_CLASS(CAudioTriggerSpotEntity);
 
 CAudioTriggerSpotEntity::CAudioTriggerSpotEntity()
 {
-	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
+	gEnv->pAudioSystem->AddRequestListener(&CAudioTriggerSpotEntity::OnAudioTriggerFinished, this, eSystemEvent_TriggerFinished);
 }
 
 CAudioTriggerSpotEntity::~CAudioTriggerSpotEntity()
@@ -79,7 +80,7 @@ void CAudioTriggerSpotEntity::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CAudioTriggerSpotEntity::TriggerFinished(const AudioControlId trigger)
+void CAudioTriggerSpotEntity::TriggerFinished(const ControlId trigger)
 {
 	// If in delay mode, set a timer to play again. Note that the play trigger
 	// could have been changed  and this event refers the previous one finishing
@@ -90,7 +91,7 @@ void CAudioTriggerSpotEntity::TriggerFinished(const AudioControlId trigger)
 	}
 }
 
-void CAudioTriggerSpotEntity::OnAudioTriggerFinished(SAudioRequestInfo const* const pAudioRequestInfo)
+void CAudioTriggerSpotEntity::OnAudioTriggerFinished(SRequestInfo const* const pAudioRequestInfo)
 {
 	CAudioTriggerSpotEntity* pAudioTriggerSpot = static_cast<CAudioTriggerSpotEntity*>(pAudioRequestInfo->pOwner);
 	pAudioTriggerSpot->TriggerFinished(pAudioRequestInfo->audioControlId);
@@ -105,11 +106,11 @@ void CAudioTriggerSpotEntity::OnResetState()
 	// Get properties
 	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	const ESoundObstructionType soundObstructionType = static_cast<ESoundObstructionType>(m_obstructionType);
+	const EOcclusionType soundObstructionType = static_cast<EOcclusionType>(m_obstructionType);
 
 	// Reset values to their default
-	audioProxy.SetAuxAudioProxyOffset(Matrix34(IDENTITY));
-	audioProxy.SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
+	audioProxy.SetCurrentEnvironments(InvalidAuxObjectId);
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 
 	if (m_bTriggerAreasOnMove)
@@ -135,7 +136,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 				m_currentBehavior = m_behavior;
 
 				// Have to stop all running instances if the behavior changes
-				if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID)
+				if (m_currentlyPlayingTriggerId != InvalidControlId)
 				{
 					audioProxy.StopTrigger(m_currentlyPlayingTriggerId);
 				}
@@ -170,18 +171,18 @@ void CAudioTriggerSpotEntity::Play()
 {
 	if (auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>())
 	{
-		if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID && m_playTriggerId != m_currentlyPlayingTriggerId)
+		if (m_currentlyPlayingTriggerId != InvalidControlId && m_playTriggerId != m_currentlyPlayingTriggerId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		if (m_playTriggerId != INVALID_AUDIO_CONTROL_ID)
+		if (m_playTriggerId != InvalidControlId)
 		{
 			pAudioProxy->SetCurrentEnvironments();
-			pAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, GenerateOffset()));
+			pAudioProxy->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
-			SAudioCallBackInfo const callbackInfo(this);
-			pAudioProxy->ExecuteTrigger(m_playTriggerId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+			SRequestUserData const userData(eRequestFlags_None, this);
+			pAudioProxy->ExecuteTrigger(m_playTriggerId, DefaultAuxObjectId, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
@@ -195,16 +196,16 @@ void CAudioTriggerSpotEntity::Stop()
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
-		if (m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
+		if (m_stopTriggerId != InvalidControlId)
 		{
 			pAudioProxy->ExecuteTrigger(m_stopTriggerId);
 		}
-		else if (m_currentlyPlayingTriggerId != INVALID_AUDIO_CONTROL_ID)
+		else if (m_currentlyPlayingTriggerId != InvalidControlId)
 		{
 			pAudioProxy->StopTrigger(m_currentlyPlayingTriggerId);
 		}
 
-		m_currentlyPlayingTriggerId = INVALID_AUDIO_CONTROL_ID;
+		m_currentlyPlayingTriggerId = InvalidControlId;
 	}
 }
 
@@ -237,8 +238,8 @@ void CAudioTriggerSpotEntity::DebugDraw()
 			// Activity Radius
 			if (m_drawActivityRadius > eDrawActivityRadius_Disabled)
 			{
-				const AudioControlId triggerId = m_drawActivityRadius == eDrawActivityRadius_PlayTrigger ? m_playTriggerId : m_stopTriggerId;
-				SAudioTriggerData audioTriggerData;
+				const ControlId triggerId = m_drawActivityRadius == eDrawActivityRadius_PlayTrigger ? m_playTriggerId : m_stopTriggerId;
+				STriggerData audioTriggerData;
 				gEnv->pAudioSystem->GetAudioTriggerData(triggerId, audioTriggerData);
 
 				pRenderAuxGeom->DrawSphere(pos, audioTriggerData.radius, ColorB(250, 100, 100, 100), false);
