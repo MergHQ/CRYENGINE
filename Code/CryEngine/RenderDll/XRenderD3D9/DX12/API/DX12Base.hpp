@@ -45,8 +45,8 @@
 	#include <CryMath/Range.h>
 
 	#include "xxhash.h"
-	#include "../Includes/fasthash.inl"
-	#include "../Includes/concqueue.hpp"
+	#include <fasthash/fasthash.inl>
+	#include <concqueue/concqueue.hpp>
 
 	#define threadsafe
 	#define threadsafe_const const

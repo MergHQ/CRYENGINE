@@ -5,7 +5,7 @@
 
 // ==============================================================================
 // Always give out unique handles
-#include "../../Includes/concqueue.hpp"
+#include <concqueue/concqueue.hpp>
 
 #define DX12_MULTIGPU_VAR_HANDLE          true
 #define DX12_MULTIGPU_NUM_DESCRIPTORHEAPS (1 << 10)

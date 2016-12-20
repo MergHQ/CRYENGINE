@@ -749,6 +749,15 @@ add_sources("NoUberFile"
 		"CryThreading/Synchronization.h"
 	SOURCE_GROUP "Root"
 		"CryEngine.natvis"
+	SOURCE_GROUP "3rdParty\\\\concqueue"
+		"3rdParty/concqueue/concqueue.hpp"
+		"3rdParty/concqueue/concqueue-mpmc-bounded.hpp"
+		"3rdParty/concqueue/concqueue-mpsc.hpp"
+		"3rdParty/concqueue/concqueue-spsc-bounded.hpp"
+		"3rdParty/concqueue/concqueue-spsc.hpp"
+	SOURCE_GROUP "3rdParty\\\\fasthash"
+		"3rdParty/fasthash/fasthash.inl"
+		"3rdParty/fasthash/fasthash.h"
 )
 
 # -- crycommon_posix.waf_files --
@@ -765,6 +774,23 @@ add_sources("NoUberFile"
 		"CryThreading/CryAtomics_posix.h"
 		"CryThreading/CryThread_posix.h"
 		"CryThreading/CryThreadImpl_posix.h"
+)
+
+# -- crycommon 3rdParty --
+sources_platform(ANDROID APPLE LINUX ORBIS WIN32)
+add_sources("NoUberFile"
+	PROJECTS CryCommon
+	SOURCE_GROUP "3rdParty"
+		
+	SOURCE_GROUP "3rdParty\\\\fasthash"
+		"3rdParty/fasthash/fasthash.inl"
+		"3rdParty/fasthash/fasthash.h"
+	SOURCE_GROUP "3rdParty\\\\concqueue"
+		"3rdParty/concqueue/concqueue.hpp"
+        "3rdParty/concqueue/concqueue-mpmc-bounded.hpp"
+        "3rdParty/concqueue/concqueue-mpsc.hpp"
+        "3rdParty/concqueue/concqueue-spsc-bounded.hpp"
+        "3rdParty/concqueue/concqueue-spsc.hpp"
 )
 
 end_sources()
