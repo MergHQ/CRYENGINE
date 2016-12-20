@@ -301,7 +301,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 {
 	ERequestStatus result = eRequestStatus_Failure;
 
-	// Sets eATS_STARTING on this TriggerInstance to avoid
+	// Sets eAudioTriggerStatus_Starting on this TriggerInstance to avoid
 	// reporting TriggerFinished while the events are being started.
 	ReportStartingTriggerInstance(s_triggerInstanceIdCounter, pTrigger->GetId());
 
@@ -338,7 +338,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 		}
 	}
 
-	// Either removes the eATS_STARTING flag on this trigger instance or removes it if no event was started.
+	// Either removes the eAudioTriggerStatus_Starting flag on this trigger instance or removes it if no event was started.
 	ReportStartedTriggerInstance(s_triggerInstanceIdCounter++, pOwner, pUserData, pUserDataOwner, flags);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

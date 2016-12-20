@@ -1057,7 +1057,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				CATLAudioObject* const pObject = static_cast<CATLAudioObject*>(m_audioObjectMgr.ConstructAudioObject(pRequestData->data.szName));
 
 				result = pObject->HandleSetTransformation(pRequestData->data.transformation, 0.0f);
-				CRY_ASSERT(result == eRequestStatus_Success);
 
 				if (pRequestData->data.bSetCurrentEnvironments)
 				{
@@ -1078,13 +1077,11 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 						if (pState != nullptr)
 						{
 							result = pObject->HandleSetSwitchState(pSwitch, pState);
-							CRY_ASSERT(result == eRequestStatus_Success);
 						}
 					}
 				}
 
 				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				CRY_ASSERT(result == eRequestStatus_Success);
 				m_audioObjectMgr.ReleaseAudioObject(pObject);
 			}
 			else
