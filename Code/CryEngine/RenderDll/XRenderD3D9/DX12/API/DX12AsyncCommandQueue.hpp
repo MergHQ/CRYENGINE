@@ -5,7 +5,7 @@
 	#define __CCRYDX12SUBMISSIONTHREAD_
 
 	#include <CryThreading/IThreadManager.h>
-	#include "DX12/Includes/concqueue.hpp"
+	#include <concqueue/concqueue.hpp>
 	#include "DX12Base.hpp"
 
 struct IDXGISwapChain3;

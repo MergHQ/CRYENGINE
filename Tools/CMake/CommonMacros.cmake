@@ -514,6 +514,7 @@ macro(set_editor_module_flags)
 		${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorCommon
 		${CRYENGINE_DIR}/Code/Sandbox/EditorInterface
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon 
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
 		${CRY_LIBS_DIR}/yasli
@@ -579,6 +580,7 @@ macro(set_rc_flags)
 	)
 	target_include_directories( ${THIS_PROJECT} PRIVATE 
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon 
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty
 		${SDK_DIR}/boost
 		${SDK_DIR}/yasli
 		${CRY_LIBS_DIR}/yasli
@@ -597,6 +599,7 @@ macro(set_pipeline_flags)
 	)
 	target_include_directories( ${THIS_PROJECT} PRIVATE 
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon 
+		${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty
 	)
 endmacro()
 

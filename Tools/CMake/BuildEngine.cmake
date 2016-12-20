@@ -93,6 +93,7 @@ endif()
 
 
 include_directories("${CRYENGINE_DIR}/Code/CryEngine/CryCommon")
+include_directories("${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty")
 #include_directories("${CRYENGINE_DIR}/Code/CryEngine/CryAction")
 include_directories("${CRYENGINE_DIR}/Code/Libs/yasli")
 include_directories("${SDK_DIR}/yasli")

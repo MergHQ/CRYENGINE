@@ -86,6 +86,7 @@ def set_editor_module_flags(self, kw):
 		self.CreateRootRelativePath('Code/Sandbox/EditorInterface'),
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon') ,
+        self.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty') ,
 		self.CreateRootRelativePath('Code/SDKs/boost'),
 		self.CreateRootRelativePath('Code/SDKs/yasli'),
 		self.CreateRootRelativePath('Code/Libs/yasli'),
@@ -129,6 +130,7 @@ def set_rc_flags(self, kw):
 	kw['includes'] = [
 		'.',
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon'),
+        self.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty') ,
 		self.CreateRootRelativePath('Code/SDKs/boost'),
 		self.CreateRootRelativePath('Code/SDKs/yasli'),
 		self.CreateRootRelativePath('Code/Libs/yasli'),
@@ -150,7 +152,8 @@ def set_pipeline_flags(self, kw):
 
 	kw['includes'] = [
 		'.',
-		self.CreateRootRelativePath('Code/CryEngine/CryCommon')
+		self.CreateRootRelativePath('Code/CryEngine/CryCommon'),
+        self.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty') 
 	] + kw['includes']
 
 	kw['defines'] += [
