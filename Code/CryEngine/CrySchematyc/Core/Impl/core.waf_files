@@ -126,6 +126,7 @@
 		[
 			"../Interface/Schematyc/Utils/Any.h",
 			"../Interface/Schematyc/Utils/AnyArray.h",
+			"../Interface/Schematyc/Utils/Array.h",
 			"../Interface/Schematyc/Utils/Assert.h",
 			"../Interface/Schematyc/Utils/CryLinkUtils.h",
 			"../Interface/Schematyc/Utils/Delegate.h",

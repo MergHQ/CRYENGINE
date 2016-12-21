@@ -467,7 +467,7 @@ bool CObject::CreateStateMachines()
 			STimerParams timerParams = classStateTimer.params;
 			timerParams.flags.Remove(ETimerFlags::AutoStart);
 
-			timer.id = timerSystem.CreateTimer(timerParams, Delegate::Make(timer, &STimer::Activate));
+			timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(STimer::Activate, timer));
 		}
 	}
 
@@ -595,7 +595,7 @@ bool CObject::CreateTimers()
 		STimerParams timerParams = classTimer.params;
 		timerParams.flags.Remove(ETimerFlags::AutoStart);
 
-		timer.id = timerSystem.CreateTimer(timerParams, Delegate::Make(timer, &STimer::Activate));
+		timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(STimer::Activate, timer));
 	}
 	return true;
 }
@@ -638,7 +638,7 @@ void CObject::RegisterForUpdate()
 {
 	if (m_pClass->CountSignalReceviers(g_updateSignalGUID))
 	{
-		SUpdateParams updateParams(Delegate::Make(*this, &CObject::Update), m_connectionScope);
+		SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(CObject::Update, *this), m_connectionScope);
 		updateParams.frequency = EUpdateFrequency::EveryFrame;
 		// #SchematycTODO : Create an update filter?
 		gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);

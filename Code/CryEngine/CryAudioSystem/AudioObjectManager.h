@@ -10,6 +10,7 @@ namespace CryAudio
 class CATLAudioObject;
 class CAudioEventManager;
 class CAudioStandaloneFileManager;
+class CAudioListenerManager;
 
 namespace Impl
 {
@@ -22,7 +23,10 @@ public:
 
 	using ConstructedAudioObjectsList = std::list<CATLAudioObject*>;
 
-	explicit CAudioObjectManager(CAudioEventManager& audioEventMgr, CAudioStandaloneFileManager& audioStandaloneFileMgr);
+	explicit CAudioObjectManager(
+		CAudioEventManager& audioEventMgr,
+		CAudioStandaloneFileManager& audioStandaloneFileMgr,
+		CAudioListenerManager const& listenerManager);
 	~CAudioObjectManager();
 
 	CAudioObjectManager(CAudioObjectManager const&) = delete;
@@ -72,5 +76,6 @@ private:
 
 	CAudioEventManager&          m_audioEventMgr;
 	CAudioStandaloneFileManager& m_audioStandaloneFileMgr;
+	CAudioListenerManager const& m_listenerManager;
 };
 } // namespace CryAudio

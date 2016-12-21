@@ -18,6 +18,7 @@
 #include "ResponseInstance.h"
 #include "VariableCollection.h"
 #include "ResponseInstance.h"
+#include "SchematycEntityDrsComponent.h"
 
 using namespace CryDRS;
 
@@ -86,14 +87,20 @@ CResponseSystem::CResponseSystem()
 	REGISTER_COMMAND("drs_sendSignal", SendDrsSignal, VF_NULL, "Sends a DRS Signal by hand. Useful for testing. Format SendDrsSignal <senderEntityName> <signalname>");
 
 	m_pUsedFileFormat = REGISTER_STRING_CB("drs_fileFormat", "JSON", VF_NULL, "Specifies the file format to use (JSON, XML, BIN)", ::ChangeFileFormat);
+    m_pDataPath = REGISTER_STRING("drs_dataPath", "Libs" CRY_NATIVE_PATH_SEPSTR "DynamicResponseSystem", VF_NULL, "Specifies the path where to find the response and dialogline files");
 
-	DRS_DEBUG_DATA_ACTION(Init());
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+
+#if defined(DRS_COLLECT_DEBUG_DATA)
+	m_responseSystemDebugDataProvider.Init();
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------
 CResponseSystem::~CResponseSystem()
 {
 	gEnv->pConsole->UnregisterVariable("drs_fileFormat", true);
+	gEnv->pConsole->UnregisterVariable("drs_dataPath", true);
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 
 	delete m_pSpeakerManager;
@@ -106,14 +113,12 @@ CResponseSystem::~CResponseSystem()
 }
 
 //--------------------------------------------------------------------------------------------------
-bool CResponseSystem::Init(const char* szFilesFolder)
-{
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
-
-	m_filesFolder = szFilesFolder;
+bool CResponseSystem::Init()
+{	
+	m_filesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_pDataPath->GetString();
 	m_pSpeakerManager->Init();
 	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + "/DialogLines");
-
+	
 	m_currentTime.SetSeconds(0.0f);
 
 	m_pVariableCollectionManager->GetCollection("Global")->CreateVariable("CurrentTime", 0.0f);
@@ -290,11 +295,29 @@ DRS::IVariableCollectionSharedPtr CResponseSystem::CreateContextCollection()
 //--------------------------------------------------------------------------------------------------
 void CResponseSystem::OnSystemEvent(ESystemEvent event, UINT_PTR pWparam, UINT_PTR pLparam)
 {
-	if (event == ESYSTEM_EVENT_LEVEL_UNLOAD)
+	switch (event)
 	{
+	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		//stop active responses + active speakers on level change
 		Reset(DRS::IDynamicResponseSystem::eResetHint_StopRunningResponses | DRS::IDynamicResponseSystem::eResetHint_Speaker);
+		break;
+	case ESYSTEM_EVENT_INITIALIZE_DRS:  //= ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV
+		{
+			Init();
+
+			const Schematyc::SGUID guid = "981168e2-f16d-46b7-bfaa-e11966204d47"_schematyc_guid;
+			const char* szName = "DynamicResponseSystem";
+			Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(CResponseSystem::RegisterSchematycEnvPackage, *this);
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, callback));
+			break;
+		}
 	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CResponseSystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
+{
+	CSchematycEntityDrsComponent::Register(registrar);
 }
 
 //--------------------------------------------------------------------------------------------------

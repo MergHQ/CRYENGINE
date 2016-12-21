@@ -266,8 +266,10 @@ public:
 
 	inline void Add(const Key& key, const Value& value, CConnectionScope& scope)
 	{
+		typedef CScopedConnectionManager<TYPE, KEY, KEY_COMPARE> Type;
+
 		m_slots.push_back(SSlot(key, value));
-		m_slots.back().connection.Connect(scope, Delegate::Make(*this, &CScopedConnectionManager::Remove));
+		m_slots.back().connection.Connect(scope, ScopedConnectionCallback::FromMemberFunction<Type, &Type::Remove>(*this));
 		m_bSortSlots = true;
 	}
 
@@ -433,8 +435,10 @@ public:
 
 	inline void Add(const Value& value, CConnectionScope& scope)
 	{
+		typedef CScopedConnectionManager<TYPE> Type;
+
 		m_slots.push_back(SSlot(value));
-		m_slots.back().connection.Connect(scope, Delegate::Make(*this, &CScopedConnectionManager::Remove));
+		m_slots.back().connection.Connect(scope, ScopedConnectionCallback::FromMemberFunction<Type, &Type::Remove>(*this));
 	}
 
 	inline void Remove(CConnectionScope& scope)

@@ -92,7 +92,7 @@ public:
 		, m_bErrorObserverRegistered(false)
 	{
 		Initialize();
-		messageSignal.GetSlots().Connect(Delegate::Make(*this, &CFileOutput::OnLogMessage), m_connectionScope);
+		messageSignal.GetSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CFileOutput::OnLogMessage, *this), m_connectionScope);
 	}
 
 	~CFileOutput()
@@ -267,7 +267,7 @@ CLog::SStream::SStream(const char* _szName, LogStreamId _id)
 CLog::CLog()
 	: m_nextDynamicStreamId(ms_firstDynamicStreamId)
 {
-	m_pSettings = SSettingsPtr(new SSettings(Delegate::Make(*this, &CLog::OnSettingsModified)));
+	m_pSettings = SSettingsPtr(new SSettings(SCHEMATYC_MEMBER_DELEGATE(CLog::OnSettingsModified, *this)));
 }
 
 CLog::SSettings::SSettings(const SettingsModifiedCallback& _modifiedCallback)

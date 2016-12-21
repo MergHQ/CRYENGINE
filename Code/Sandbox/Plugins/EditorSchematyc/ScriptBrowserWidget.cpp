@@ -517,7 +517,7 @@ void CScriptBrowserItem::RefreshChildFlags()
 CScriptBrowserModel::CScriptBrowserModel(QObject* pParent)
 	: QAbstractItemModel(pParent)
 {
-	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CScriptBrowserModel::OnScriptRegistryChange), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CScriptBrowserModel::OnScriptRegistryChange, *this), m_connectionScope);
 
 	Populate();
 }

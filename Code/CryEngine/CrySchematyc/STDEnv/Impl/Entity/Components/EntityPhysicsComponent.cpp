@@ -34,6 +34,7 @@ namespace Schematyc
 				archive(colliderHeight, "height", "Height");
 				archive(colliderRadius, "radius", "Radius");
 				archive(colliderVerticalOffset, "verticalOffset", "VerticalOffset");
+				archive(gravity, "gravity", "Gravity");
 				archive(Serialization::Range(friction, 0.01f, 1.0f), "friction", "Friction");
 				archive.closeBlock();
 			}
@@ -52,7 +53,7 @@ namespace Schematyc
 
 	bool CEntityPhysicsComponent::Init()
 	{
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(Schematyc::Delegate::Make(*this, &CEntityPhysicsComponent::OnGeometryChanged), m_connectionScope);
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CEntityPhysicsComponent::OnGeometryChanged, *this), m_connectionScope);
 		return true;
 	}
 
@@ -135,7 +136,7 @@ namespace Schematyc
 				{
 					pPhysicalEntity->GetParams(&playerDyn);
 				}
-				playerDyn.gravity = Vec3(0, 0, -9.81f);
+				playerDyn.gravity = Vec3(0, 0, -pProperties->gravity);
 				playerDyn.kAirControl = pProperties->friction;
 				playerDyn.kAirResistance = 1.0f;
 				playerDyn.mass = pProperties->mass;

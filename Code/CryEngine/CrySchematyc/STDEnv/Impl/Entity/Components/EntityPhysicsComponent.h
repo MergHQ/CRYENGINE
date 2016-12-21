@@ -34,6 +34,7 @@ public:
 		float colliderRadius = 0.45f;
 		float colliderVerticalOffset = 0.0f;
 		float friction = 0.95f;
+		float gravity = 9.81f;
 	};
 
 	// CComponent

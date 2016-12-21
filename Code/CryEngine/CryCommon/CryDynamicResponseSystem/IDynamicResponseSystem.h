@@ -251,13 +251,12 @@ public:
 	virtual ~IDynamicResponseSystem() {}
 
 	/**
-	 * Will load all response definitions from the specified folder. Will also create all needed subsystems
+	 * Will load all response definitions from the folder specified in the CVAR "drs_dataPath". Will also create all needed subsystems
 	 *
-	 * Note: pDRS->Init(pPath)
-	 * @param pFilesFolder - the folder where the response definition files are located
+	 * Note: pDRS->Init()	
 	 * @return return if responses were loaded
 	 */
-	virtual bool Init(const char* pFilesFolder) = 0;
+	virtual bool Init() = 0;
 
 	/**
 	 * Will re-load all response definitions from the specified folder. Might be used for reloading-on-the-fly in the editor

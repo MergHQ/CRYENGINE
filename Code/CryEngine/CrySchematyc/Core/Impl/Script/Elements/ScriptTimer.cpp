@@ -122,7 +122,7 @@ void CScriptTimer::SerializeParams(Serialization::IArchive& archive)
 				m_params.duration = STimerDuration(1.0f, 1.0f);
 			}
 			archive(m_params.duration.range.min, "min", "Minimum");
-			archive(m_params.duration.range.max, "max", "^Maximum");
+			archive(m_params.duration.range.max, "max", "Maximum");
 			break;
 		}
 	}

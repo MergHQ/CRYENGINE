@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 
 #include <CrySerialization/Forward.h>
+#include <CryMath/Cry_Math.h>
 #include <Schematyc/Types/MathTypes.h>
 
 #include "AutoRegister.h"
@@ -37,6 +38,11 @@ float Subtract(float a, float b)
 float Multiply(float a, float b)
 {
 	return a * b;
+}
+
+float Clamp(float value, float min, float max)
+{
+	return crymath::clamp(value, min, max);
 }
 
 float Divide(float a, float b)
@@ -176,6 +182,16 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		pFunction->SetDescription("Divide A by B");
 		pFunction->BindInput(1, 'a', "A");
 		pFunction->BindInput(2, 'b', "B");
+		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
+		scope.Register(pFunction);
+	}
+	{	
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Clamp, "350ad86a-a61a-40c4-9f2e-30b6fdf2ae06"_schematyc_guid, "Clamp");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Clamp the value between min and max");
+		pFunction->BindInput(1, 'val', "Value");
+		pFunction->BindInput(2, 'min', "Min");
+		pFunction->BindInput(3, 'max', "Max");
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
 		scope.Register(pFunction);
 	}
@@ -340,6 +356,11 @@ Vec2 Subtract(const Vec2& a, const Vec2& b)
 	return a - b;
 }
 
+Vec2 Clamp(const Vec2& value, const Vec2& min, const Vec2& max)
+{
+	return crymath::clamp(value, min, max);
+}
+
 Vec2 Scale(const Vec2& input, float scale)
 {
 	return input * scale;
@@ -443,6 +464,16 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		scope.Register(pFunction);
 	}
 	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Clamp, "f51e6481-2666-4a1c-99e7-c121d6f5682d"_schematyc_guid, "Clamp");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Clamp the value between min and max");
+		pFunction->BindInput(1, 'val', "Value", nullptr, Vec2(ZERO));
+		pFunction->BindInput(2, 'min', "Min", nullptr, Vec2(ZERO));
+		pFunction->BindInput(3, 'max', "Max", nullptr, Vec2(ZERO));
+		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
+		scope.Register(pFunction);
+	}
+	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Scale, "db715617-aaf7-4f0a-a7d4-ecd0e6967c80"_schematyc_guid, "Scale");
 		pFunction->SetAuthor(g_szCrytek);
 		pFunction->SetDescription("Scale vector");
@@ -529,6 +560,11 @@ Vec3 Add(const Vec3& a, const Vec3& b)
 Vec3 Subtract(const Vec3& a, const Vec3& b)
 {
 	return a - b;
+}
+
+Vec3 Clamp(const Vec3& value, const Vec3& min, const Vec3& max)
+{
+	return crymath::clamp(value, min, max);
 }
 
 Vec3 Scale(const Vec3& input, float scale)
@@ -634,6 +670,16 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
 		scope.Register(pFunction);
 	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Clamp, "13ad859b-2611-4465-860a-8e6a1327ecd2"_schematyc_guid, "Clamp");
+		pFunction->SetAuthor(g_szCrytek);
+		pFunction->SetDescription("Clamp the value between min and max");
+		pFunction->BindInput(1, 'val', "Value", nullptr, Vec3(ZERO));
+		pFunction->BindInput(2, 'min', "Min", nullptr, Vec3(ZERO));
+		pFunction->BindInput(3, 'max', "Max", nullptr, Vec3(ZERO));
+		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
+		scope.Register(pFunction);
+	}	
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&Scale, "03d7b941-57f8-4731-b518-781ea3e1dd16"_schematyc_guid, "Scale");
 		pFunction->SetAuthor(g_szCrytek);

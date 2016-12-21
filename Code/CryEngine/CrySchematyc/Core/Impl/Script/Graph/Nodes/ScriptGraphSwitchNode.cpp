@@ -150,7 +150,7 @@ void CScriptGraphSwitchNode::Edit(Serialization::IArchive& archive, const ISeria
 		ScriptVariableData::CScopedSerializationConfig serializationConfig(archive);
 
 		const SGUID guid = CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID();
-		serializationConfig.DeclareEnvDataTypes(guid, Delegate::Make(&FilterEnvDataType));
+		serializationConfig.DeclareEnvDataTypes(guid, SCHEMATYC_DELEGATE(FilterEnvDataType));
 		serializationConfig.DeclareScriptEnums(guid);
 
 		m_defaultValue.SerializeTypeId(archive);

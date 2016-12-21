@@ -116,7 +116,7 @@ class CAnyRef
 public:
 
 	CAnyRef(const CCommonTypeInfo& typeInfo, void* pValue);
-	template<typename TYPE> CAnyRef(TYPE& value);
+	template<typename TYPE> explicit CAnyRef(TYPE& value);
 	CAnyRef(CAnyValue& rhs);
 	CAnyRef(const CAnyRef& rhs);
 
@@ -174,7 +174,7 @@ public:
 
 	CAnyPtr();
 	CAnyPtr(const CCommonTypeInfo& typeInfo, void* pValue);
-	template<typename TYPE> CAnyPtr(TYPE* pValue);
+	template<typename TYPE> explicit CAnyPtr(TYPE* pValue);
 	CAnyPtr(CAnyValue* pValue);
 	CAnyPtr(const CAnyValuePtr& pValue);
 	CAnyPtr(const CAnyRef* rhs);

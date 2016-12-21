@@ -2,6 +2,9 @@
 
 #pragma once
 
+#define SCHEMATYC_DELEGATE(function)                Schematyc::Delegate::SHelper<decltype(&function)>::Make<&function>()
+#define SCHEMATYC_MEMBER_DELEGATE(function, object) Schematyc::Delegate::SHelper<decltype(&function)>::Make<&function>(object)
+
 namespace Schematyc
 {
 template<typename SIGNATURE> class CDelegate;
@@ -10,73 +13,13 @@ template<typename RETURN_TYPE, typename ... PARAM_TYPES> class CDelegate<RETURN_
 {
 private:
 
-	typedef RETURN_TYPE (* StubPtr)(void*, PARAM_TYPES ...);
-
-	struct SGlobalFunctionStub
-	{
-	public:
-		typedef RETURN_TYPE (* FunctionPtr)(PARAM_TYPES ...);
-
-		static SGlobalFunctionStub& GetInstance()
-		{
-			static SGlobalFunctionStub s_instance;
-			return s_instance;
-		}
-
-		static RETURN_TYPE Invoke(void* pObject, PARAM_TYPES ... args)
-		{
-			return (*(GetInstance().pFunction))(args ...);
-		}
-
-		FunctionPtr pFunction;
-	};
-
-	template<typename OBJECT_TYPE> struct SMemberFunctionStub
-	{
-		typedef RETURN_TYPE (OBJECT_TYPE::* FunctionPtr)(PARAM_TYPES ...);
-
-		static RETURN_TYPE Invoke(void* pObject, PARAM_TYPES ... args)
-		{
-			return (static_cast<OBJECT_TYPE*>(pObject)->*(GetInstance().pFunction))(args ...);
-		}
-
-		static SMemberFunctionStub& GetInstance()
-		{
-			static SMemberFunctionStub s_instance;
-			return s_instance;
-		}
-
-		FunctionPtr pFunction;
-	};
-
-	template<typename OBJECT_TYPE> struct SMemberFunctionStub<const OBJECT_TYPE>
-	{
-		typedef RETURN_TYPE (OBJECT_TYPE::* FunctionPtr)(PARAM_TYPES ...) const;
-
-		static RETURN_TYPE Invoke(void* pObject, PARAM_TYPES ... args)
-		{
-			return (static_cast<OBJECT_TYPE*>(pObject)->*(GetInstance().pFunction))(args ...);
-		}
-
-		static SMemberFunctionStub& GetInstance()
-		{
-			static SMemberFunctionStub s_instance;
-			return s_instance;
-		}
-
-		FunctionPtr pFunction;
-	};
+	typedef RETURN_TYPE(*StubPtr)(void*, PARAM_TYPES ...);
 
 public:
 
 	inline CDelegate()
 		: m_pStub(nullptr)
 		, m_pObject(nullptr)
-	{}
-
-	inline CDelegate(StubPtr pStub, void* pObject)
-		: m_pStub(pStub)
-		, m_pObject(pObject)
 	{}
 
 	inline CDelegate(const CDelegate& rhs)
@@ -130,26 +73,19 @@ public:
 		return (m_pStub != rhs.m_pStub) || (m_pObject != rhs.m_pObject);
 	}
 
-	static inline CDelegate FromGlobalFunction(RETURN_TYPE (* functionPointer)(PARAM_TYPES ...))
+	template <RETURN_TYPE(*FUNCTION_PTR)(PARAM_TYPES ...)> static inline CDelegate FromFunction()
 	{
-		SGlobalFunctionStub::GetInstance().pFunction = functionPointer;
-		return CDelegate(&SGlobalFunctionStub::Invoke, nullptr);
+		return CDelegate(&CDelegate::InvokeFunction<FUNCTION_PTR>);
 	}
 
-	template<typename OBJECT_TYPE> static inline CDelegate FromMemberFunction(OBJECT_TYPE& object, RETURN_TYPE (OBJECT_TYPE::* functionPointer)(PARAM_TYPES ...))
+	template <typename OBJECT_TYPE, RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...)> static inline CDelegate FromMemberFunction(OBJECT_TYPE& object)
 	{
-		typedef SMemberFunctionStub<OBJECT_TYPE> Stub;
-
-		Stub::GetInstance().pFunction = functionPointer;
-		return CDelegate(&Stub::Invoke, &object);
+		return CDelegate(&CDelegate::InvokeMemberFunction<OBJECT_TYPE, FUNCTION_PTR>, &object);
 	}
 
-	template<typename OBJECT_TYPE> static inline CDelegate FromConstMemberFunction(const OBJECT_TYPE& object, RETURN_TYPE (OBJECT_TYPE::* functionPointer)(PARAM_TYPES ...) const)
+	template <typename OBJECT_TYPE, RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...) const> static inline CDelegate FromConstMemberFunction(const OBJECT_TYPE& object)
 	{
-		typedef SMemberFunctionStub<const OBJECT_TYPE> Stub;
-
-		Stub::GetInstance().pFunction = functionPointer;
-		return CDelegate(&Stub::Invoke, &const_cast<OBJECT_TYPE&>(object));
+		return CDelegate(&CDelegate::InvokeConstMemberFunction<OBJECT_TYPE, FUNCTION_PTR>, const_cast<OBJECT_TYPE*>(&object));
 	}
 
 	template<typename CLOSURE> static inline CDelegate FromLambda(CLOSURE& closure)
@@ -159,10 +95,30 @@ public:
 
 private:
 
+	inline CDelegate(StubPtr pStub, void* pObject = nullptr)
+		: m_pStub(pStub)
+		, m_pObject(pObject)
+	{}
+
 	inline void Copy(const CDelegate& rhs)
 	{
 		m_pStub = rhs.m_pStub;
 		m_pObject = rhs.m_pObject;
+	}
+
+	template<RETURN_TYPE(*FUNCTION_PTR)(PARAM_TYPES ...)> static RETURN_TYPE InvokeFunction(void* pObject, PARAM_TYPES ... args)
+	{
+		return (*FUNCTION_PTR)(args ...);
+	}
+
+	template<typename OBJECT_TYPE, RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...)> static RETURN_TYPE InvokeMemberFunction(void* pObject, PARAM_TYPES ... args)
+	{
+		return ((static_cast<OBJECT_TYPE*>(pObject))->*FUNCTION_PTR)(args ...);
+	}
+
+	template<typename OBJECT_TYPE, RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...) const> static RETURN_TYPE InvokeConstMemberFunction(void* pObject, PARAM_TYPES ... args)
+	{
+		return ((static_cast<const OBJECT_TYPE*>(pObject))->*FUNCTION_PTR)(args ...);
 	}
 
 	template<typename CLOSURE> static RETURN_TYPE InvokeLambda(void* pObject, PARAM_TYPES ... args)
@@ -178,19 +134,36 @@ private:
 
 namespace Delegate
 {
-template<typename RETURN_TYPE, typename ... PARAM_TYPES> static inline CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Make(RETURN_TYPE (* FUNCTION_PTR)(PARAM_TYPES ...))
-{
-	return CDelegate<RETURN_TYPE(PARAM_TYPES ...)>::FromGlobalFunction(FUNCTION_PTR);
-}
+template <typename TYPE> struct SHelper;
 
-template<typename OBJECT_TYPE, typename RETURN_TYPE, typename ... PARAM_TYPES> static inline CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Make(OBJECT_TYPE& object, RETURN_TYPE (OBJECT_TYPE::* FUNCTION_PTR)(PARAM_TYPES ...))
+template<typename RETURN_TYPE, typename ... PARAM_TYPES> struct SHelper<RETURN_TYPE(*)(PARAM_TYPES ...)>
 {
-	return CDelegate<RETURN_TYPE(PARAM_TYPES ...)>::FromMemberFunction(object, FUNCTION_PTR);
-}
+	typedef CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Type;
 
-template<typename OBJECT_TYPE, typename RETURN_TYPE, typename ... PARAM_TYPES> static inline CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Make(OBJECT_TYPE& object, RETURN_TYPE (OBJECT_TYPE::* FUNCTION_PTR)(PARAM_TYPES ...) const)
+	template<RETURN_TYPE(*FUNCTION_PTR)(PARAM_TYPES ...)> static inline Type Make()
+	{
+		return Type::template FromFunction<FUNCTION_PTR>();
+	}
+};
+
+template<typename OBJECT_TYPE, typename RETURN_TYPE, typename ... PARAM_TYPES> struct SHelper<RETURN_TYPE(OBJECT_TYPE::*)(PARAM_TYPES ...)>
 {
-	return CDelegate<RETURN_TYPE(PARAM_TYPES ...)>::FromConstMemberFunction(object, FUNCTION_PTR);
-}
+	typedef CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Type;
+
+	template<RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...)> static inline Type Make(OBJECT_TYPE& object)
+	{
+		return Type::template FromMemberFunction<OBJECT_TYPE, FUNCTION_PTR>(object);
+	}
+};
+
+template<typename OBJECT_TYPE, typename RETURN_TYPE, typename ... PARAM_TYPES> struct SHelper<RETURN_TYPE(OBJECT_TYPE::*)(PARAM_TYPES ...) const>
+{
+	typedef CDelegate<RETURN_TYPE(PARAM_TYPES ...)> Type;
+
+	template<RETURN_TYPE(OBJECT_TYPE::*FUNCTION_PTR)(PARAM_TYPES ...) const> static inline Type Make(const OBJECT_TYPE& object)
+	{
+		return Type::template FromConstMemberFunction<OBJECT_TYPE, FUNCTION_PTR>(object);
+	}
+};
 } // Delegate
 } // Schematyc

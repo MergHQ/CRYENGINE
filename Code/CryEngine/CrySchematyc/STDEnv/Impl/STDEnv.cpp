@@ -71,7 +71,7 @@ void CSTDEnv::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		}
 
 		m_pEntityObjectClassRegistry->Init();
-		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("e2e023df-afa7-43a6-bad4-1bc04eada8e7"_schematyc_guid, "STDEnv", Delegate::Make(*this, &CSTDEnv::RegisterPackage)));
+		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("e2e023df-afa7-43a6-bad4-1bc04eada8e7"_schematyc_guid, "STDEnv", SCHEMATYC_MEMBER_DELEGATE(CSTDEnv::RegisterPackage, *this)));
 
 		if (gEnv->IsEditor())
 		{

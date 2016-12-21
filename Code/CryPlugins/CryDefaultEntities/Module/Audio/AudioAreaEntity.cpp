@@ -109,7 +109,6 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 		m_fadeValue = 1.0f;
 		ActivateFlowNodeOutput(eOutputPorts_OnNearToInside, TFlowInputData(true));
 		ActivateFlowNodeOutput(eOutputPorts_FadeValue, TFlowInputData(m_fadeValue));
-		UpdateObstruction();
 		break;
 
 	case ENTITY_EVENT_MOVEINSIDEAREA:
@@ -140,7 +139,6 @@ void CAudioAreaEntity::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_LEAVEAREA:
 		m_areaState = EAreaState::Near;
 		ActivateFlowNodeOutput(eOutputPorts_OnInsideToNear, TFlowInputData(true));
-		UpdateObstruction();
 		break;
 
 	case ENTITY_EVENT_LEAVENEARAREA:
@@ -167,7 +165,9 @@ void CAudioAreaEntity::OnResetState()
 	ControlId environmentId = InvalidEnvironmentId;
 	gEnv->pAudioSystem->GetAudioTriggerId(m_environmentName, environmentId);
 
-	// Reset values
+	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
+	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
+
 	m_pProxy->SetFadeDistance(m_fadeDistance);
 	m_pProxy->SetEnvironmentFadeDistance(m_environmentFadeDistance);
 
@@ -191,8 +191,6 @@ void CAudioAreaEntity::OnResetState()
 	{
 		SetEnvironmentId(InvalidEnvironmentId);
 	}
-
-	UpdateObstruction();
 }
 
 void CAudioAreaEntity::SetEnvironmentId(const ControlId environmentId)
@@ -204,21 +202,6 @@ void CAudioAreaEntity::SetEnvironmentId(const ControlId environmentId)
 	// TODO: The audio environment is being tampered with, we need to inform all entities affected by the area.
 	//
 
-}
-
-void CAudioAreaEntity::UpdateObstruction()
-{
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	if (m_areaState == EAreaState::Near)
-	{
-		// Enable obstruction
-		m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
-	}
-	else if (m_areaState == EAreaState::Inside)
-	{
-		// Disable obstruction
-		m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[eOcclusionType_Ignore]);
-	}
 }
 
 void CAudioAreaEntity::UpdateFadeValue(const float distance)

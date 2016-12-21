@@ -16,21 +16,23 @@ namespace Impl
 namespace Wwise
 {
 
-struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject>
+class CAudioObject final : public IAudioObject, public CPoolObject<CAudioObject>
 {
+public:
+
 	typedef std::map<AkAuxBusID, float> EnvironmentImplMap;
 
-	explicit SAudioObject(AkGameObjectID const _id)
-		: id(_id)
-		, bNeedsToUpdateEnvironments(false)
+	explicit CAudioObject(AkGameObjectID const id)
+		: m_id(id)
+		, m_bNeedsToUpdateEnvironments(false)
 	{}
 
-	virtual ~SAudioObject() override = default;
+	virtual ~CAudioObject() override = default;
 
-	SAudioObject(SAudioObject const&) = delete;
-	SAudioObject(SAudioObject&&) = delete;
-	SAudioObject& operator=(SAudioObject const&) = delete;
-	SAudioObject& operator=(SAudioObject&&) = delete;
+	CAudioObject(CAudioObject const&) = delete;
+	CAudioObject(CAudioObject&&) = delete;
+	CAudioObject& operator=(CAudioObject const&) = delete;
+	CAudioObject& operator=(CAudioObject&&) = delete;
 
 	// IAudioObject
 	virtual ERequestStatus Update() override;
@@ -45,13 +47,14 @@ struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject
 	virtual ERequestStatus StopFile(IAudioStandaloneFile* const pIFile) override { return eRequestStatus_Success; }
 	// ~IAudioObject
 
-	AkGameObjectID const  id;
-	bool                  bNeedsToUpdateEnvironments;
-	EnvironmentImplMap    environemntImplAmounts;
+	AkGameObjectID const  m_id;
+	bool                  m_bNeedsToUpdateEnvironments;
+	EnvironmentImplMap    m_environemntImplAmounts;
 
 	static AkGameObjectID s_dummyGameObjectId;
 
 private:
+
 	ERequestStatus PostEnvironmentAmounts();
 };
 

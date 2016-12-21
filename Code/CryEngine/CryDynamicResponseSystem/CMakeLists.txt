@@ -63,6 +63,8 @@ add_sources("CryDRS_Uber_0.cpp"
 		"SpeakerManager.cpp"
 		"DialogLineDatabase.h"
 		"DialogLineDatabase.cpp"
+		"SchematycEntityDrsComponent.h"
+		"SchematycEntityDrsComponent.cpp"
 )
 
 add_sources("NoUberFile"
@@ -75,3 +77,10 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryDynamicResponseSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+
+target_include_directories(${THIS_PROJECT}
+PRIVATE 
+	${CRYENGINE_DIR}/Code/CryEngine/CryCommon
+	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
+	${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface
+)

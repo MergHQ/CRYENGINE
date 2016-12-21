@@ -52,7 +52,7 @@ public:
 	typedef std::vector<CAudioRayInfo> RayInfoVec;
 	typedef std::vector<float>         RayOcclusionVec;
 
-	CPropagationProcessor(CObjectTransformation const& transformation);
+	CPropagationProcessor(CObjectTransformation const& transformation, Vec3 const& audioListenerPosition);
 	~CPropagationProcessor();
 
 	void Init(CATLAudioObject* pAudioObject);
@@ -62,7 +62,7 @@ public:
 
 	void       Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
 	void       SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& audioListenerPosition);
-	bool       CanRunObstructionOcclusion() const { return s_bCanIssueRWIs && m_occlusionType != eOcclusionType_None && m_occlusionType != eOcclusionType_Ignore; }
+	bool       CanRunObstructionOcclusion() const;
 	void       GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void       ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	void       ReleasePendingRays();

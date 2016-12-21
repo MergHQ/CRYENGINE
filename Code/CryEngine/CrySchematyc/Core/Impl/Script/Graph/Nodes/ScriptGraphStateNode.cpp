@@ -151,8 +151,6 @@ void CScriptGraphStateNode::Compile(SCompilerContext& context, IGraphNodeCompile
 			const uint32 stateIdx = pClass->FindState(m_stateGUID);
 			compiler.BindData(SRuntimeData(stateIdx));
 
-
-
 			const CScriptGraphNode& node = CScriptGraphNodeModel::GetNode();
 			for (uint32 outputIdx = 0, outputCount = node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
 			{
