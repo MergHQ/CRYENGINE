@@ -55,7 +55,6 @@ public:
 
 private:
 	void SetEnvironmentId(const CryAudio::ControlId environmentId);
-	void UpdateObstruction();
 	void UpdateFadeValue(const float distance);
 
 	bool                     m_bEnabled = true;

@@ -26,7 +26,8 @@ public:
 	int   m_audioProxiesInitType = 0;
 	int   m_tickWithMainThread = 0;
 
-	float m_occlusionMaxDistance = 0.0f;
+	float m_occlusionMaxDistance = 500.0f;
+	float m_occlusionMinDistance = 0.1f;
 	float m_occlusionMaxSyncDistance = 0.0f;
 	float m_occlusionHighDistance = 0.0f;
 	float m_occlusionMediumDistance = 0.0f;

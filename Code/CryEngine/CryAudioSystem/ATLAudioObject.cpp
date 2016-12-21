@@ -32,9 +32,9 @@ SwitchStateId CryAudio::CATLAudioObject::s_occlusionTypeStateIds[eOcclusionType_
 };
 
 //////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CATLAudioObject(Impl::IAudioObject* const pImplData /*= nullptr*/)
+CATLAudioObject::CATLAudioObject(Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition)
 	: m_pImplData(pImplData)
-	, m_propagationProcessor(m_attributes.transformation)
+	, m_propagationProcessor(m_attributes.transformation, audioListenerPosition)
 {
 	m_propagationProcessor.Init(this);
 }

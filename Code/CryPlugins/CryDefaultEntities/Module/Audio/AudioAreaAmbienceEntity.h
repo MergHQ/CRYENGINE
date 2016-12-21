@@ -39,9 +39,6 @@ protected:
 
 	const bool IsPlaying() const { return m_playingTriggerId != CryAudio::InvalidControlId; }
 
-	void       SetObstruction();
-	void       DisableObstruction();
-
 protected:
 	CryAudio::ControlId m_playTriggerId = CryAudio::InvalidControlId;
 	CryAudio::ControlId m_stopTriggerId = CryAudio::InvalidControlId;
@@ -53,8 +50,6 @@ protected:
 	CryAudio::ControlId m_globalRtpcId = CryAudio::InvalidControlId;
 
 	CryAudio::ControlId m_environmentId = CryAudio::InvalidControlId;
-
-	CryAudio::ControlId m_obstructionSwitchId = CryAudio::InvalidControlId;
 
 	EAreaState          m_areaState = EAreaState::Outside;
 	float               m_fadeValue = 0.0f;

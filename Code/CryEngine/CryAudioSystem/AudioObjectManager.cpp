@@ -4,6 +4,7 @@
 #include "AudioObjectManager.h"
 #include "AudioEventManager.h"
 #include "AudioStandaloneFileManager.h"
+#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "IAudioImpl.h"
@@ -17,11 +18,15 @@ using namespace CryAudio;
 using namespace CryAudio::Impl;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioObjectManager::CAudioObjectManager(CAudioEventManager& audioEventMgr, CAudioStandaloneFileManager& audioStandaloneFileMgr)
+CAudioObjectManager::CAudioObjectManager(
+	CAudioEventManager& audioEventMgr,
+	CAudioStandaloneFileManager& audioStandaloneFileMgr,
+	CAudioListenerManager const& listenerManager)
 	: m_pImpl(nullptr)
 	, m_timeSinceLastControlsUpdate(0.0f)
 	, m_audioEventMgr(audioEventMgr)
 	, m_audioStandaloneFileMgr(audioStandaloneFileMgr)
+	, m_listenerManager(listenerManager)
 {
 }
 
@@ -159,7 +164,7 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 //////////////////////////////////////////////////////////////////////////
 CATLAudioObject* CAudioObjectManager::ConstructAudioObject(char const* const szName)
 {
-	CATLAudioObject* const pAudioObject = new CATLAudioObject(m_pImpl->ConstructAudioObject(szName));
+	CATLAudioObject* const pAudioObject = new CATLAudioObject(m_pImpl->ConstructAudioObject(szName), m_listenerManager.GetActiveListenerAttributes().transformation.GetPosition());
 	pAudioObject->SetFlag(eAudioObjectFlags_DoNotRelease);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

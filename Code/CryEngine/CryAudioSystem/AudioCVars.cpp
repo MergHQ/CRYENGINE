@@ -16,7 +16,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -29,7 +28,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -42,7 +40,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -55,7 +52,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -68,7 +64,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -81,7 +76,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -94,7 +88,6 @@ void CAudioCVars::RegisterVariables()
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
 	m_audioProxiesInitType = 0;
-	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -106,9 +99,14 @@ void CAudioCVars::RegisterVariables()
 #endif
 
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Obstruction/Occlusion is not calculated for the sounds, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
+	               "Occlusion is not calculated for audio objects, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
 	               "Usage: s_OcclusionMaxDistance [0/...]\n"
 	               "Default: 500 m\n");
+
+	REGISTER_CVAR2("s_OcclusionMinDistance", &m_occlusionMinDistance, m_occlusionMinDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Occlusion is not calculated for audio objects, whose distance to the listener is smaller than this value.\n"
+	               "Usage: s_OcclusionMinDistance [0/...]\n"
+	               "Default: 0.1 m\n");
 
 	REGISTER_CVAR2("s_OcclusionMaxSyncDistance", &m_occlusionMaxSyncDistance, m_occlusionMaxSyncDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Physics rays are processed synchronously for the sounds that are closer to the listener than this value, and asynchronously for the rest (possible performance optimization).\n"
@@ -300,6 +298,7 @@ void CAudioCVars::UnregisterVariables()
 	if (pConsole != nullptr)
 	{
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");
+		pConsole->UnregisterVariable("s_OcclusionMinDistance");
 		pConsole->UnregisterVariable("s_OcclusionMaxSyncDistance");
 		pConsole->UnregisterVariable("s_OcclusionHighDistance");
 		pConsole->UnregisterVariable("s_OcclusionMediumDistance");

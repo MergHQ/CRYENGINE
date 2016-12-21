@@ -82,7 +82,6 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 			m_areaState = EAreaState::Inside;
 
 			UpdateRtpc(1.f);
-			DisableObstruction();
 		}
 		break;
 	case ENTITY_EVENT_MOVEINSIDEAREA:
@@ -109,7 +108,6 @@ void CAudioAreaAmbienceEntity::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_LEAVEAREA:
 		{
 			m_areaState = EAreaState::Outside;
-			SetObstruction();
 		}
 		break;
 	case ENTITY_EVENT_LEAVENEARAREA:
@@ -149,13 +147,10 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
 	gEnv->pAudioSystem->GetAudioParameterId(m_rtpcName, m_rtpcId);
 	gEnv->pAudioSystem->GetAudioParameterId(m_globalRtpcName, m_globalRtpcId);
-
 	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
 
-	m_obstructionSwitchId = AudioEntitiesUtils::GetObstructionOcclusionSwitch();
-
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(m_obstructionSwitchId, stateIds[m_obstructionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
 
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);
@@ -246,26 +241,6 @@ void CAudioAreaAmbienceEntity::UpdateFadeValue(float distance)
 			UpdateRtpc(fade);
 		}
 	}
-}
-
-void CAudioAreaAmbienceEntity::SetObstruction()
-{
-	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
-	if (pAudioProxy == nullptr)
-		return;
-
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	pAudioProxy->SetSwitchState(m_obstructionSwitchId, stateIds[m_obstructionType]);
-}
-
-void CAudioAreaAmbienceEntity::DisableObstruction()
-{
-	auto pAudioProxy = GetEntity()->GetComponent<IEntityAudioComponent>();
-	if (pAudioProxy == nullptr)
-		return;
-
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	pAudioProxy->SetSwitchState(m_obstructionSwitchId, stateIds[0]);
 }
 
 void CAudioAreaAmbienceEntity::SerializeProperties(Serialization::IArchive& archive)

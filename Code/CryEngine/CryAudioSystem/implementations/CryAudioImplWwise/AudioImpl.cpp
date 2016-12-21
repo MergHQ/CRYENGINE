@@ -277,7 +277,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 	// we will need to shut down what has been initialized so far. Therefore make sure to call Shutdown() before returning eARS_FAILURE!
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Object Pool");
-	SAudioObject::CreateAllocator(audioObjectPoolSize);
+	CAudioObject::CreateAllocator(audioObjectPoolSize);
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Event Pool");
 	SAudioEvent::CreateAllocator(eventPoolSize);
@@ -552,7 +552,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 	//}
 
 	// Register the DummyGameObject used for the events that don't need a location in the game world
-	wwiseResult = AK::SoundEngine::RegisterGameObj(SAudioObject::s_dummyGameObjectId, "DummyObject");
+	wwiseResult = AK::SoundEngine::RegisterGameObj(CAudioObject::s_dummyGameObjectId, "DummyObject");
 
 	if (wwiseResult != AK_Success)
 	{
@@ -602,7 +602,7 @@ ERequestStatus CAudioImpl::ShutDown()
 	if (AK::SoundEngine::IsInitialized())
 	{
 		// UnRegister the DummyGameObject
-		wwiseResult = AK::SoundEngine::UnregisterGameObj(SAudioObject::s_dummyGameObjectId);
+		wwiseResult = AK::SoundEngine::UnregisterGameObj(CAudioObject::s_dummyGameObjectId);
 
 		if (wwiseResult != AK_Success)
 		{
@@ -671,7 +671,7 @@ ERequestStatus CAudioImpl::Release()
 
 	delete this;
 
-	SAudioObject::FreeMemoryPool();
+	CAudioObject::FreeMemoryPool();
 	SAudioEvent::FreeMemoryPool();
 
 	return eRequestStatus_Success;
@@ -847,7 +847,7 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 ///////////////////////////////////////////////////////////////////////////
 IAudioObject* CAudioImpl::ConstructGlobalAudioObject()
 {
-	return new SAudioObject(AK_INVALID_GAME_OBJECT);
+	return new CAudioObject(AK_INVALID_GAME_OBJECT);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -869,14 +869,14 @@ IAudioObject* CAudioImpl::ConstructAudioObject(char const* const szAudioObjectNa
 	AK::SoundEngine::RegisterGameObj(id);
 #endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IAudioObject*>(new SAudioObject(id));
+	return static_cast<IAudioObject*>(new CAudioObject(id));
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CAudioImpl::DestructAudioObject(IAudioObject const* const pAudioObject)
 {
-	SAudioObject const* pWwiseAudioObject = static_cast<SAudioObject const*>(pAudioObject);
-	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pWwiseAudioObject->id);
+	CAudioObject const* pWwiseAudioObject = static_cast<CAudioObject const*>(pAudioObject);
+	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pWwiseAudioObject->m_id);
 	if (!IS_WWISE_OK(wwiseResult))
 	{
 		g_audioImplLogger.Log(eAudioLogType_Warning, "Wwise UnregisterGameObj failed with AKRESULT: %d", wwiseResult);
@@ -1140,7 +1140,7 @@ void CAudioImpl::GetMemoryInfo(SAudioImplMemoryInfo& memoryInfo) const
 	memoryInfo.secondaryPoolAllocations = 0;
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 	{
-		auto& allocator = SAudioObject::GetAllocator();
+		auto& allocator = CAudioObject::GetAllocator();
 		auto mem = allocator.GetTotalMemory();
 		auto pool = allocator.GetCounts();
 		memoryInfo.poolUsedObjects = pool.nUsed;

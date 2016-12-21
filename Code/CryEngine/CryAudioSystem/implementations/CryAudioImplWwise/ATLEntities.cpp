@@ -15,7 +15,7 @@ namespace Impl
 namespace Wwise
 {
 
-AkGameObjectID SAudioObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
+AkGameObjectID CAudioObject::s_dummyGameObjectId = static_cast<AkGameObjectID>(-2);
 
 // AK callbacks
 void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
@@ -50,11 +50,11 @@ void PrepareEventCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::Update()
+ERequestStatus CAudioObject::Update()
 {
 	ERequestStatus result = eRequestStatus_Failure;
 
-	if (bNeedsToUpdateEnvironments)
+	if (m_bNeedsToUpdateEnvironments)
 	{
 		result = PostEnvironmentAmounts();
 	}
@@ -63,12 +63,12 @@ ERequestStatus SAudioObject::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::Set3DAttributes(SObject3DAttributes const& attributes)
+ERequestStatus CAudioObject::Set3DAttributes(SObject3DAttributes const& attributes)
 {
 	AkSoundPosition soundPos;
 	FillAKObjectPosition(attributes.transformation, soundPos);
 
-	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(id, soundPos);
+	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, soundPos);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
@@ -80,7 +80,7 @@ ERequestStatus SAudioObject::Set3DAttributes(SObject3DAttributes const& attribut
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
+ERequestStatus CAudioObject::SetEnvironment(IAudioEnvironment const* const pIAudioEnvironment, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
 
@@ -94,12 +94,12 @@ ERequestStatus SAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 		{
 		case eWwiseAudioEnvironmentType_AuxBus:
 			{
-				float const currentAmount = stl::find_in_map(environemntImplAmounts, pEnvironment->busId, -1.0f);
+				float const currentAmount = stl::find_in_map(m_environemntImplAmounts, pEnvironment->busId, -1.0f);
 
 				if ((currentAmount == -1.0f) || (fabs(currentAmount - amount) > envEpsilon))
 				{
-					environemntImplAmounts[pEnvironment->busId] = amount;
-					bNeedsToUpdateEnvironments = true;
+					m_environemntImplAmounts[pEnvironment->busId] = amount;
+					m_bNeedsToUpdateEnvironments = true;
 				}
 
 				result = eRequestStatus_Success;
@@ -109,7 +109,7 @@ ERequestStatus SAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 			{
 				AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pEnvironment->multiplier * amount + pEnvironment->shift);
 
-				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pEnvironment->rtpcId, rtpcValue, id);
+				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pEnvironment->rtpcId, rtpcValue, m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -122,7 +122,7 @@ ERequestStatus SAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 					  "Wwise failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
 					  pEnvironment->rtpcId,
 					  rtpcValue,
-					  id);
+					  m_id);
 				}
 				break;
 
@@ -142,7 +142,7 @@ ERequestStatus SAudioObject::SetEnvironment(IAudioEnvironment const* const pIAud
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::SetParameter(IParameter const* const pAudioRtpc, float const value)
+ERequestStatus CAudioObject::SetParameter(IParameter const* const pAudioRtpc, float const value)
 {
 	ERequestStatus result = eRequestStatus_Failure;
 	SAudioRtpc const* const pAKRtpcData = static_cast<SAudioRtpc const* const>(pAudioRtpc);
@@ -150,7 +150,7 @@ ERequestStatus SAudioObject::SetParameter(IParameter const* const pAudioRtpc, fl
 	{
 		AkRtpcValue rtpcValue = static_cast<AkRtpcValue>(pAKRtpcData->mult * value + pAKRtpcData->shift);
 
-		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pAKRtpcData->id, rtpcValue, id);
+		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pAKRtpcData->id, rtpcValue, m_id);
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
@@ -163,7 +163,7 @@ ERequestStatus SAudioObject::SetParameter(IParameter const* const pAudioRtpc, fl
 			  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
 			  pAKRtpcData->id,
 			  static_cast<AkRtpcValue>(value),
-			  id);
+			  m_id);
 		}
 	}
 	else
@@ -176,7 +176,7 @@ ERequestStatus SAudioObject::SetParameter(IParameter const* const pAudioRtpc, fl
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState)
+ERequestStatus CAudioObject::SetSwitchState(IAudioSwitchState const* const pIAudioSwitchState)
 {
 	ERequestStatus result = eRequestStatus_Failure;
 
@@ -188,7 +188,7 @@ ERequestStatus SAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 		{
 		case eWwiseSwitchType_Switch:
 			{
-				AkGameObjectID const gameObjectId = id != AK_INVALID_GAME_OBJECT ? id : s_dummyGameObjectId;
+				AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : s_dummyGameObjectId;
 
 				AKRESULT const wwiseResult = AK::SoundEngine::SetSwitch(
 				  pSwitchState->switchId,
@@ -237,7 +237,7 @@ ERequestStatus SAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
 				  pSwitchState->switchId,
 				  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-				  id);
+				  m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -250,7 +250,7 @@ ERequestStatus SAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 					  "Wwise failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
 					  pSwitchState->switchId,
 					  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-					  id);
+					  m_id);
 				}
 
 				break;
@@ -277,12 +277,12 @@ ERequestStatus SAudioObject::SetSwitchState(IAudioSwitchState const* const pIAud
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+ERequestStatus CAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	ERequestStatus result = eRequestStatus_Failure;
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
-	  id,
+	  m_id,
 	  0,                                // only set the obstruction/occlusion for the default listener for now
 	  static_cast<AkReal32>(occlusion), // Currently used on obstruction until the ATL produces a correct obstruction value.
 	  static_cast<AkReal32>(occlusion));
@@ -298,14 +298,14 @@ ERequestStatus SAudioObject::SetObstructionOcclusion(float const obstruction, fl
 		  "Wwise failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
 		  obstruction,
 		  occlusion,
-		  id);
+		  m_id);
 	}
 
 	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent)
+ERequestStatus CAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTrigger, IAudioEvent* const pIAudioEvent)
 {
 
 	ERequestStatus result = eRequestStatus_Failure;
@@ -317,15 +317,15 @@ ERequestStatus SAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 	{
 		AkGameObjectID gameObjectId = AK_INVALID_GAME_OBJECT;
 
-		if (id != AK_INVALID_GAME_OBJECT)
+		if (m_id != AK_INVALID_GAME_OBJECT)
 		{
-			gameObjectId = id;
+			gameObjectId = m_id;
 			PostEnvironmentAmounts();
 		}
 		else
 		{
 			// If ID is invalid, then it is the global audio object
-			gameObjectId = SAudioObject::s_dummyGameObjectId;
+			gameObjectId = CAudioObject::s_dummyGameObjectId;
 		}
 
 		AkPlayingID const id = AK::SoundEngine::PostEvent(pAudioTrigger->id, gameObjectId, AK_EndOfEvent, &EndEventCallback, pAudioEvent);
@@ -351,26 +351,26 @@ ERequestStatus SAudioObject::ExecuteTrigger(IAudioTrigger const* const pIAudioTr
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::StopAllTriggers()
+ERequestStatus CAudioObject::StopAllTriggers()
 {
-	AkGameObjectID const gameObjectId = id != AK_INVALID_GAME_OBJECT ? id : SAudioObject::s_dummyGameObjectId;
+	AkGameObjectID const gameObjectId = m_id != AK_INVALID_GAME_OBJECT ? m_id : CAudioObject::s_dummyGameObjectId;
 	AK::SoundEngine::StopAll(gameObjectId);
 	return eRequestStatus_Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SAudioObject::PostEnvironmentAmounts()
+ERequestStatus CAudioObject::PostEnvironmentAmounts()
 {
 
 	ERequestStatus result = eRequestStatus_Failure;
 	AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
 	uint32 auxIndex = 0;
 
-	SAudioObject::EnvironmentImplMap::iterator iEnvPair = environemntImplAmounts.begin();
-	SAudioObject::EnvironmentImplMap::const_iterator const iEnvStart = environemntImplAmounts.begin();
-	SAudioObject::EnvironmentImplMap::const_iterator const iEnvEnd = environemntImplAmounts.end();
+	CAudioObject::EnvironmentImplMap::iterator iEnvPair = m_environemntImplAmounts.begin();
+	CAudioObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environemntImplAmounts.begin();
+	CAudioObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environemntImplAmounts.end();
 
-	if (environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
+	if (m_environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
 	{
 		for (; iEnvPair != iEnvEnd; ++auxIndex)
 		{
@@ -382,7 +382,7 @@ ERequestStatus SAudioObject::PostEnvironmentAmounts()
 			// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
 			if (fAmount == 0.0f)
 			{
-				environemntImplAmounts.erase(iEnvPair++);
+				m_environemntImplAmounts.erase(iEnvPair++);
 			}
 			else
 			{
@@ -410,7 +410,7 @@ ERequestStatus SAudioObject::PostEnvironmentAmounts()
 		{
 			if (iEnvPair->second == 0.0f)
 			{
-				environemntImplAmounts.erase(iEnvPair++);
+				m_environemntImplAmounts.erase(iEnvPair++);
 			}
 			else
 			{
@@ -421,7 +421,7 @@ ERequestStatus SAudioObject::PostEnvironmentAmounts()
 
 	CRY_ASSERT(auxIndex <= AK_MAX_AUX_PER_OBJ);
 
-	AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(id, auxValues, auxIndex);
+	AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, auxValues, auxIndex);
 
 	if (IS_WWISE_OK(wwiseResult))
 	{
@@ -429,10 +429,10 @@ ERequestStatus SAudioObject::PostEnvironmentAmounts()
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Warning, "Wwise SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", id, wwiseResult);
+		g_audioImplLogger.Log(eAudioLogType_Warning, "Wwise SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", m_id, wwiseResult);
 	}
 
-	bNeedsToUpdateEnvironments = false;
+	m_bNeedsToUpdateEnvironments = false;
 
 	return result;
 }

@@ -55,7 +55,7 @@ inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestS
 
 ///////////////////////////////////////////////////////////////////////////
 CAudioTranslationLayer::CAudioTranslationLayer()
-	: m_audioObjectMgr(m_audioEventMgr, m_audioStandaloneFileMgr)
+	: m_audioObjectMgr(m_audioEventMgr, m_audioStandaloneFileMgr, m_audioListenerMgr)
 	, m_fileCacheMgr(m_preloadRequests)
 	, m_xmlProcessor(m_triggers, m_parameters, m_switches, m_environments, m_preloadRequests, m_fileCacheMgr, m_internalControls)
 {
@@ -1338,9 +1338,9 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 		//! \note We create the global audio object lazily to make sure it
 		//! gets created on the audio thread so that we can assert that all
 		//! pooled allocations happen on the audio thread (and that it is
-		//! therefore safe to use singlethreaded pool allocator
+		//! therefore safe to use single-threaded pool allocator
 		//! implementations).
-		m_pGlobalAudioObject = new CATLAudioObject(nullptr);
+		m_pGlobalAudioObject = new CATLAudioObject(nullptr, ZERO);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		m_pGlobalAudioObject->m_name = "Global Audio Object";

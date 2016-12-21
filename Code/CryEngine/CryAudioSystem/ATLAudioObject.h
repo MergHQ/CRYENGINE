@@ -77,7 +77,7 @@ class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject
 {
 public:
 
-	explicit CATLAudioObject(Impl::IAudioObject* const pImplData = nullptr);
+	explicit CATLAudioObject(Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
 
 	CATLAudioObject(CATLAudioObject const&) = delete;
 	CATLAudioObject(CATLAudioObject&&) = delete;
