@@ -12,28 +12,28 @@
 
 namespace Schematyc
 {
-	enum class EUnitTestResultFlags
-	{
-		Success       = 0,
-		CriticalError = BIT(0),
-		FatalError    = BIT(1)
-	};
+enum class EUnitTestResultFlags
+{
+	Success       = 0,
+	CriticalError = BIT(0),
+	FatalError    = BIT(1)
+};
 
-	typedef CEnumFlags<EUnitTestResultFlags> UnitTestResultFlags;
+typedef CEnumFlags<EUnitTestResultFlags> UnitTestResultFlags;
 
-	typedef UnitTestResultFlags(*UnitTestFunctionPtr)();
+typedef UnitTestResultFlags (*           UnitTestFunctionPtr)();
 
-	class CUnitTestRegistrar : public CStaticInstanceList<CUnitTestRegistrar>
-	{
-	public:
+class CUnitTestRegistrar : public CStaticInstanceList<CUnitTestRegistrar>
+{
+public:
 
-		CUnitTestRegistrar(UnitTestFunctionPtr pFuntion, const char* szName);
+	CUnitTestRegistrar(UnitTestFunctionPtr pFuntion, const char* szName);
 
-		static void RunUnitTests();
+	static void RunUnitTests();
 
-	private:
+private:
 
-		UnitTestFunctionPtr m_pFuntion;
-		const char*         m_szName;
-	};
+	UnitTestFunctionPtr m_pFuntion;
+	const char*         m_szName;
+};
 }

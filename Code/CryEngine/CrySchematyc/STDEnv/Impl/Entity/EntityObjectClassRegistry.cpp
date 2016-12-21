@@ -63,7 +63,7 @@ SEntityObjectClass::~SEntityObjectClass()
 
 void CEntityObjectClassRegistry::Init()
 {
-	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(Delegate::Make(*this, &CEntityObjectClassRegistry::OnClassCompilation), m_connectionScope); // TODO : Can we filter by class guid?
+	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CEntityObjectClassRegistry::OnClassCompilation, *this), m_connectionScope); // TODO : Can we filter by class guid?
 }
 
 const SEntityObjectClass* CEntityObjectClassRegistry::GetEntityObjectClass(const SGUID& guid) const

@@ -192,6 +192,7 @@ bool CCryPluginManager::Initialize()
 	//Schematyc + Schematyc Standard Enviroment
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycCore", "Plugin_SchematycCore");
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySchematycSTDEnv", "Plugin_SchematycSTDEnv");
+	//optional plugin, but we load it for now by default
 
 	LoadPluginFromDisk(EPluginType::EPluginType_CPP, "CrySensorSystem", "Plugin_CrySensorSystem");
 

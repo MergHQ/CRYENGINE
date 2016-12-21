@@ -170,7 +170,7 @@ CMainWindow::CMainWindow()
 	pVMainContentLayout->setSizes(QList<int> { 850, 200 });
 	pHMainContentLayout->setSizes(QList<int> { 300, 1300, 300 });
 
-	m_pScriptBrowser->GetSelectionSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CMainWindow::OnScriptBrowserSelection), m_connectionScope);
+	m_pScriptBrowser->GetSelectionSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CMainWindow::OnScriptBrowserSelection, *this), m_connectionScope);
 
 	GetIEditor()->RegisterNotifyListener(this);
 

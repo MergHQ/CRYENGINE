@@ -133,7 +133,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 	
 	env.pSchematyc = this;
 
-	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", Delegate::Make(&RegisterCoreEnvPackage))))
+	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", SCHEMATYC_DELEGATE(RegisterCoreEnvPackage))))
 	{
 		env.pSchematyc = nullptr;
 		return false;

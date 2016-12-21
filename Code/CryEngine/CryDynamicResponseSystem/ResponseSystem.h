@@ -64,7 +64,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// DRS::IDynamicResponseSystem implementation
-	virtual bool                                     Init(const char* szFilesFolder) override;
+	virtual bool                                     Init() override;
 	virtual bool                                     ReInit() override;
 	virtual void                                     Update() override;
 
@@ -89,7 +89,7 @@ public:
 	virtual CResponseManager*                        GetResponseManager() const override    { return m_pResponseManager; }
 	virtual CSpeakerManager*                         GetSpeakerManager() const override     { return m_pSpeakerManager; }
 
-	virtual DRS::ValuesListPtr                    GetCurrentState(uint32 saveHints) const override;
+	virtual DRS::ValuesListPtr                       GetCurrentState(uint32 saveHints) const override;
 	virtual void                                     SetCurrentState(const DRS::ValuesList& outCollectionsList) override;
 	virtual void                                     Serialize(Serialization::IArchive& ar) override;
 
@@ -117,7 +117,9 @@ public:
 #endif
 
 private:
-	void InternalReset(uint32 resetFlags);
+	void        RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar);
+
+	void        InternalReset(uint32 resetFlags);
 
 	typedef std::vector<CResponseActor*> ResponseActorList;
 
@@ -134,5 +136,8 @@ private:
 	uint32                      m_pendingResetRequest;
 
 	ICVar*                      m_pUsedFileFormat;
+	ICVar*                      m_pDataPath;
 };
+
+enum { ESYSTEM_EVENT_INITIALIZE_DRS = ESYSTEM_EVENT_GAME_POST_INIT_DONE };
 }

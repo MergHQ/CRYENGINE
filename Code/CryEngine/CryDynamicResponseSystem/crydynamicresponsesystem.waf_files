@@ -12,7 +12,9 @@
 			"SpeakerManager.h",
 			"SpeakerManager.cpp",
 			"DialogLineDatabase.h",
-			"DialogLineDatabase.cpp"
+			"DialogLineDatabase.cpp",
+			"SchematycEntityDrsComponent.h",
+			"SchematycEntityDrsComponent.cpp"
 		],
 		"Response Actions/Impl":
 		[

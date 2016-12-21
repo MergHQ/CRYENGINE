@@ -25,7 +25,7 @@ CSchematycPlugin::CSchematycPlugin()
 {
 	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
 	CryLogAlways("[SchematycEditor]: Initializing...");
-	gEnv->pSchematyc->SetGUIDGenerator(Schematyc::Delegate::Make(GenerateGUID));
+	gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(GenerateGUID));
 	CryLogAlways("[SchematycEditor]: Fixing up script files");
 	gEnv->pSchematyc->GetScriptRegistry().ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorFixUp));
 	CryLogAlways("[SchematycEditor]: Compiling script files");

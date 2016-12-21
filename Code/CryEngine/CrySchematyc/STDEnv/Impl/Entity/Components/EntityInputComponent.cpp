@@ -9,6 +9,7 @@
 #include "AutoRegister.h"
 #include "STDModules.h"
 
+
 SERIALIZATION_ENUM_BEGIN(EInputDeviceType, "DeviceType")
 	SERIALIZATION_ENUM(EInputDeviceType::eIDT_Keyboard, "Keyboard", "Keyboard")
 	SERIALIZATION_ENUM(EInputDeviceType::eIDT_Mouse, "Mouse", "Mouse")
@@ -137,13 +138,13 @@ SERIALIZATION_ENUM_BEGIN(EKeyId, "KeyId")
 	SERIALIZATION_ENUM(EKeyId::eKI_Mouse6, "Mouse_Button_6", "Mouse_Button_6")
 	SERIALIZATION_ENUM(EKeyId::eKI_Mouse7, "Mouse_Button_7", "Mouse_Button_7")
 	SERIALIZATION_ENUM(EKeyId::eKI_Mouse8, "Mouse_Button_8", "Mouse_Button_8")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseWheelUp, "MouseWheelUp", "MouseWheelUp")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseWheelDown, "MouseWheelDown", "MouseWheelDown")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseX, "MouseX", "MouseX")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseY, "MouseY", "MouseY")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseZ, "MouseZ", "MouseZ")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseXAbsolute, "MouseXAbsolute", "MouseXAbsolute")
-	SERIALIZATION_ENUM(EKeyId::eKI_MouseYAbsolute, "MouseYAbsolute", "MouseYAbsolute")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseWheelUp, "MouseWheelUp", "Mouse_WheelUp")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseWheelDown, "MouseWheelDown", "Mouse_WheelDown")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseX, "MouseX", "Mouse_X-Axis_Change")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseY, "MouseY", "Mouse_Y-Axis_Change")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseZ, "MouseZ", "Mouse_Z-Axis_Change")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseXAbsolute, "MouseXAbsolute", "Mouse_X-Axis_Absolute")
+	SERIALIZATION_ENUM(EKeyId::eKI_MouseYAbsolute, "MouseYAbsolute", "Mouse_Y-Axis_Absolute")
 	
 	SERIALIZATION_ENUM(EKeyId::eKI_XI_DPadUp, "Pad_DPad_Up", "Pad_DPad_Up")
 	SERIALIZATION_ENUM(EKeyId::eKI_XI_DPadDown, "Pad_DPad_Down", "Pad_DPad_Down")
@@ -246,6 +247,8 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc
 {
+	VectorMap<EKeyId, float> CEntityInputComponent::s_keyValue;
+
 	SGUID CEntityInputComponent::SActionPressedSignal::ReflectSchematycType(CTypeInfo<SActionPressedSignal>& typeInfo)
 	{
 		typeInfo.AddMember(&SActionPressedSignal::deviceType, 'type', "DeviceType", "Device type");
@@ -294,7 +297,7 @@ namespace Schematyc
 		if (event.keyId >= eKI_SYS_Commit)
 			return false;
 
-		m_keyValue[event.keyId] = event.value;
+		s_keyValue[event.keyId] = event.value;
 
 		if (event.state == eIS_Pressed)
 		{
@@ -371,8 +374,9 @@ namespace Schematyc
 
 	float CEntityInputComponent::GetKeyValue(EKeyId keyId)
 	{
-		return stl::find_in_map(m_keyValue, keyId, 0.0f);
+		return stl::find_in_map(s_keyValue, keyId, 0.0f);
 	}
+
 
 }  //namespace Schematyc
 

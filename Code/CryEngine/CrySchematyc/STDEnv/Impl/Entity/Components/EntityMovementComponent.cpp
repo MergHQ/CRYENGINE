@@ -9,9 +9,24 @@
 
 #include "AutoRegister.h"
 #include "STDModules.h"
+#include "yasli/BitVector.h"
 
 namespace Schematyc
 {
+	SERIALIZATION_ENUM_BEGIN_NESTED(CEntityMovementComponent, eMoveModifier, "Flags")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_None, "None", "None")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreX, "IgnoreX", "IgnoreX")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreY, "IgnoreY", "IgnoreY")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreZ, "IgnoreZ", "IgnoreZ")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreXandY, "IgnoreXandY", "IgnoreXandY")
+		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreNull, "IgnoreNullComponents", "IgnoreNullComponents")
+		SERIALIZATION_ENUM_END()
+
+	Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CEntityMovementComponent::eMoveModifier>& typeInfo)
+	{
+		return "4f9183b3-f53b-4dfa-8fcf-c54168614d4b"_schematyc_guid;
+	}
+
 	bool CEntityMovementComponent::Init()
 	{
 		return true;
@@ -23,17 +38,20 @@ namespace Schematyc
 		{
 		case ESimulationMode::Game:
 			{
-				gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(Delegate::Make(*this, &CEntityMovementComponent::Update), m_connectionScope));
+				gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(SCHEMATYC_MEMBER_DELEGATE(CEntityMovementComponent::Update, *this), m_connectionScope));
 				break;
 			}
 		}
 	}
 
-	void CEntityMovementComponent::Shutdown() {}
+	void CEntityMovementComponent::Shutdown() 
+	{
+	}
 
-	void CEntityMovementComponent::Move(const Vec3& velocity)
+	void CEntityMovementComponent::Move(const Vec3& velocity, eMoveModifier moveFlags)
 	{
 		m_velocity = velocity;
+		m_moveModifier = moveFlags;
 	}
 
 	void CEntityMovementComponent::SetRotation(const CRotation& rotation)
@@ -81,6 +99,7 @@ namespace Schematyc
 				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Move entity");
 				pFunction->BindInput(1, 'vel', "Velocity", "Velocity in meters per second", Vec3(ZERO));
+				pFunction->BindInput(2, 'flag', "MovementModifier", "Flag to indicate to not-set specific components of the movement-vector.", eMoveModifier_None);
 				componentScope.Register(pFunction);
 			}
 			{
@@ -108,6 +127,8 @@ namespace Schematyc
 			const pe_type physicType = pPhysics->GetType();
 			if (physicType == PE_LIVING)
 			{
+				HandleModifier(pPhysics);
+
 				pe_action_move move;
 				move.dir = m_velocity;
 				move.dt = updateContext.frameTime;
@@ -117,6 +138,8 @@ namespace Schematyc
 
 			if (!m_velocity.IsZero() && physicType != PE_ARTICULATED)
 			{
+				HandleModifier(pPhysics);
+
 				pe_action_set_velocity action_set_velocity;
 				action_set_velocity.v = m_velocity;
 				pPhysics->Action(&action_set_velocity);
@@ -124,12 +147,47 @@ namespace Schematyc
 		}
 		else if (!m_velocity.IsZero())
 		{
+			HandleModifier(pPhysics);
+
 			Matrix34 localTM = entity.GetLocalTM();
 			localTM.SetTranslation(localTM.GetTranslation() + (m_velocity * updateContext.frameTime));
 			entity.SetLocalTM(localTM);
 		}
 		m_velocity.zero();
 	}
+
+	void CEntityMovementComponent::HandleModifier(IPhysicalEntity* pPhysics)
+	{
+		if (m_moveModifier != eMoveModifier_None)
+		{
+			if (pPhysics)
+			{
+				pe_status_dynamics current;
+				if (pPhysics->GetStatus(&current))
+				{
+					if ((m_moveModifier & eMoveModifier_IgnoreX) > 0 ||
+						((m_moveModifier & eMoveModifier_IgnoreNull) && m_velocity.x == 0.0f))
+						m_velocity.x = current.v.x;
+					if ((m_moveModifier & eMoveModifier_IgnoreY) > 0 ||
+						((m_moveModifier & eMoveModifier_IgnoreNull) && m_velocity.y == 0.0f))
+						m_velocity.y = current.v.y;
+					if ((m_moveModifier & eMoveModifier_IgnoreZ) > 0 ||
+						((m_moveModifier & eMoveModifier_IgnoreNull) && m_velocity.z == 0.0f))
+						m_velocity.z = current.v.z;
+				}
+			}
+			else
+			{
+				if ((m_moveModifier & eMoveModifier_IgnoreX) > 0)
+					m_velocity.x = 0.0f;
+				if ((m_moveModifier & eMoveModifier_IgnoreY) > 0)
+					m_velocity.y = 0.0f;
+				if ((m_moveModifier & eMoveModifier_IgnoreZ) > 0)
+					m_velocity.z = 0.0f;
+			}
+		}
+	}
+
 } // Schematyc
 
 SCHEMATYC_AUTO_REGISTER(&Schematyc::CEntityMovementComponent::Register)

@@ -63,7 +63,7 @@ template<> struct SEquals<void> : std::integral_constant<bool, false> {};
 // Test to determine whether type is serializeable.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<class TYPE> struct SIsSerializeable
+template<class TYPE> struct SIsSerializeable // #SchematycTODO : Remove!!!
 {
 private:
 

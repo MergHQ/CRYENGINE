@@ -113,7 +113,7 @@ bool CSchematycEntitySensorVolumeComponent::Init()
 	volumeParams.bounds = CreateBounds(entity.GetWorldTM(), Schematyc::CComponent::GetTransform(), *pProperties);
 	volumeParams.attributeTags = GetTags(pProperties->attributeTags);
 	volumeParams.listenerTags = GetTags(pProperties->listenerTags);
-	volumeParams.eventListener = Schematyc::Delegate::Make(*this, &CSchematycEntitySensorVolumeComponent::OnSensorEvent);
+	volumeParams.eventListener = SCHEMATYC_MEMBER_DELEGATE(CSchematycEntitySensorVolumeComponent::OnSensorEvent, *this);
 
 	m_volumeId = CSensorSystem::GetInstance().GetMap().CreateVolume(volumeParams);
 
@@ -127,7 +127,7 @@ void CSchematycEntitySensorVolumeComponent::Run(Schematyc::ESimulationMode simul
 	case Schematyc::ESimulationMode::Game:
 		{
 			Schematyc::IEntityObject& entityObject = Schematyc::EntityUtils::GetEntityObject(*this);
-			entityObject.GetEventSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CSchematycEntitySensorVolumeComponent::OnEntityEvent), m_connectionScope);
+			entityObject.GetEventSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CSchematycEntitySensorVolumeComponent::OnEntityEvent, *this), m_connectionScope);
 			break;
 		}
 	}

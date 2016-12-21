@@ -22,9 +22,10 @@ struct IResponseCondition;
 #include <CrySystem/ITimer.h>
 #include <CryString/CryString.h>
 
+//yasli includes
 #include <yasli/ConfigLocal.h>
 #if !defined(YASLI_CXX11)
-	#define YASLI_CXX11 1
+#define YASLI_CXX11 1
 #endif
 
 #include <CrySerialization/Forward.h>
@@ -32,6 +33,10 @@ struct IResponseCondition;
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/STL.h>
+
+//Schematyc includes
+#include <CrySchematyc/CoreAPI.h>
+#include <CrySchematyc/STDEnvAPI.h>
 
 #include <CryString/HashedString.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>

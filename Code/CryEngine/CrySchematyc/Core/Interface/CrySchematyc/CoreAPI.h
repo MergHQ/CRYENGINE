@@ -106,6 +106,8 @@
 #include "../Schematyc/Services/LogStreamName.h"
 
 #include "../Schematyc/Utils/Any.h"
+#include "../Schematyc/Utils/AnyArray.h"
+#include "../Schematyc/Utils/Array.h"
 #include "../Schematyc/Utils/Assert.h"
 #include "../Schematyc/Utils/CryLinkUtils.h"
 #include "../Schematyc/Utils/Delegate.h"

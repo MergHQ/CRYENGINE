@@ -81,7 +81,7 @@ CPreviewWidget::CPreviewWidget(QWidget* pParent)
 
 	connect(m_pViewport, SIGNAL(SignalRender(const SRenderContext &)), SLOT(OnRender(const SRenderContext &)));
 
-	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(Schematyc::Delegate::Make(*this, &CPreviewWidget::OnScriptRegistryChange), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CPreviewWidget::OnScriptRegistryChange, *this), m_connectionScope);
 }
 
 CPreviewWidget::~CPreviewWidget()
@@ -204,7 +204,6 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 				{
 					m_pGizmoTransformOp->OnRelease();
 					m_pGizmoTransformOp.release();
-					signalChanged();
 				}
 			};
 			m_pGizmo->signalBeginDrag.Connect(onBeginDrag);

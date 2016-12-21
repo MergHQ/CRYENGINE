@@ -3,6 +3,7 @@
 #pragma once
 
 #include <IActionMapManager.h>
+#include <CryCore/Containers/VectorMap.h>
 #include <CrySerialization/Forward.h>
 #include <Schematyc/Component.h>
 #include <Schematyc/Types/ResourceTypes.h>
@@ -34,7 +35,7 @@ public:
 
 private:
 
-	std::map<EKeyId, float> m_keyValue;
+	static VectorMap<EKeyId, float> s_keyValue;  //as long as we don't differentiate between different input devices, one instance is enough
 
 	struct SActionPressedSignal
 	{

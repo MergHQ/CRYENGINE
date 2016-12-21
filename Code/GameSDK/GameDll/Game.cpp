@@ -1237,7 +1237,6 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 		REGISTER_DRS_CUSTOM_ACTION(CActionExecuteAudioTrigger);
 		REGISTER_DRS_CUSTOM_ACTION(CActionSpeakLineBasedOnVariable);
 		REGISTER_DRS_CUSTOM_CONDITION(CConditionDistanceToEntity);
-		gEnv->pDynamicResponseSystem->Init(PathUtil::GetGameFolder() + "/libs/DynamicResponseSystem");
 
 		// create a special DrsActor that sends out our automatic signals every time a gametoken changes its value
 		DRS::IResponseActor* pDrsActor = gEnv->pDynamicResponseSystem->CreateResponseActor("GameTokenSignalSender");
