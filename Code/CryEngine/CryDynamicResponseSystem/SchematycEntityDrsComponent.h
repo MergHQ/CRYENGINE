@@ -8,7 +8,6 @@
 class CSchematycEntityDrsComponent final : public Schematyc::CComponent, DRS::IResponseManager::IListener, DRS::ISpeakerManager::IListener
 {
 public:
-
 	struct SProperties
 	{
 		void Serialize(Serialization::IArchive& archive);
@@ -46,7 +45,6 @@ public:
 		bool    m_bWasCanceled ;
 		//animation, audioTrigger... do we need these as well?
 	};
-
 
 	CSchematycEntityDrsComponent();
 	~CSchematycEntityDrsComponent();

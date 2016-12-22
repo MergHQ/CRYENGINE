@@ -117,21 +117,21 @@ bool CResponseSystem::Init()
 {	
 	m_filesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_pDataPath->GetString();
 	m_pSpeakerManager->Init();
-	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + "/DialogLines");
+	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "DialogLines");
 	
 	m_currentTime.SetSeconds(0.0f);
 
 	m_pVariableCollectionManager->GetCollection("Global")->CreateVariable("CurrentTime", 0.0f);
 
-	return m_pResponseManager->LoadFromFiles(m_filesFolder + "/Responses");
+	return m_pResponseManager->LoadFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "Responses");
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystem::ReInit()
 {
 	Reset();  //stop running responses and reset variables
-	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + "/DialogLines");
-	return m_pResponseManager->LoadFromFiles(m_filesFolder + "/Responses");
+	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "DialogLines");
+	return m_pResponseManager->LoadFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "Responses");
 }
 
 //--------------------------------------------------------------------------------------------------
