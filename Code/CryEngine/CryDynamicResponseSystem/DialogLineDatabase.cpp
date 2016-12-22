@@ -64,6 +64,8 @@ bool CDialogLineDatabase::InitFromFiles(const char* szFilePath)
 //--------------------------------------------------------------------------------------------------
 bool CDialogLineDatabase::Save(const char* szFilePath)
 {
+	GetISystem()->GetIPak()->MakeDir(szFilePath);
+
 	string filepath = PathUtil::AddSlash(szFilePath);
 	filepath += s_szFilename;
 	if (m_drsDialogBinaryFileFormatCVar != 0)

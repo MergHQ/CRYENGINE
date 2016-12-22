@@ -45,6 +45,7 @@ bool CSchematycEntityDrsComponent::Init()
 	SET_DRS_USER_SCOPED("DrsProxy Initialize");
 
 	m_pDrsActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szDrsActorName));
+	gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
 	return true;
 }
 
@@ -55,6 +56,7 @@ void CSchematycEntityDrsComponent::Run(Schematyc::ESimulationMode simulationMode
 void CSchematycEntityDrsComponent::Shutdown()
 {
 	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pDrsActor);
+	gEnv->pDynamicResponseSystem->GetSpeakerManager()->RemoveListener(this);
 	m_pDrsActor = nullptr;
 }
 
@@ -167,7 +169,7 @@ void CSchematycEntityDrsComponent::SendSignal(const CSharedString& signalName, c
 	}
 	if (m_pDrsActor)
 	{
-		m_pDrsActor->QueueSignal(signalName.c_str(), pCollection);  //todo: listener registration
+		m_pDrsActor->QueueSignal(signalName.c_str(), pCollection, this);
 	}
 }
 
@@ -219,18 +221,21 @@ void CSchematycEntityDrsComponent::OnSignalProcessingFinished(SSignalInfos& sign
 
 void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine)
 {
+	const Schematyc::CSharedString text = (pLine) ? pLine->GetText().c_str() : lineID.GetText().c_str();
+	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName().GetText().c_str() : "No Actor";
+
 	if (lineEvent == ISpeakerManager::IListener::eLineEvent_HasEndedInAnyWay)
 	{
-		GetObject().ProcessSignal(SLineEndedSignal{ 
-			pLine->GetText().c_str(),
-			pSpeaker->GetName().GetText().c_str(),
+		GetObject().ProcessSignal(SLineEndedSignal{
+			text,
+			speakerName,
 			(lineEvent == ISpeakerManager::IListener::eLineEvent_Canceled) });
 	}
 	else if (lineEvent == ISpeakerManager::IListener::eLineEvent_Started)
 	{
 		GetObject().ProcessSignal(SLineStartedSignal{
-			pLine->GetText().c_str(),
-			pSpeaker->GetName().GetText().c_str() });
+			text,
+			speakerName });
 	}
 }
 
