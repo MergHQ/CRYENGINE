@@ -50,7 +50,10 @@ void CEntityComponentAudio::Initialize()
 		Matrix34 transformation = tm;
 		transformation += CVar::audioListenerOffset;
 		s_audioListenerLastTransformation = transformation;
-		m_pIListener->SetTransformation(s_audioListenerLastTransformation);
+		if (m_pIListener != nullptr)
+		{
+			m_pIListener->SetTransformation(s_audioListenerLastTransformation);
+		}
 	}
 
 	// Creating the default AudioProxy.
@@ -72,14 +75,16 @@ void CEntityComponentAudio::OnMove()
 	}
 	else if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 	{
-		CRY_ASSERT(m_pIListener != nullptr);
 		Matrix34 transformation = tm;
 		transformation += CVar::audioListenerOffset;
 
 		if (!s_audioListenerLastTransformation.IsEquivalent(transformation, 0.01f))
 		{
 			s_audioListenerLastTransformation = transformation;
-			m_pIListener->SetTransformation(s_audioListenerLastTransformation);
+			if (m_pIListener != nullptr)
+			{
+				m_pIListener->SetTransformation(s_audioListenerLastTransformation);
+			}
 
 			// As this is an audio listener add its entity to the AreaManager for raising audio relevant events.
 			gEnv->pEntitySystem->GetAreaManager()->MarkEntityForUpdate(m_pEntity->GetId());
