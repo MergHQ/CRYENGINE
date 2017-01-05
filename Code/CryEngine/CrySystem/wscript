@@ -34,7 +34,6 @@ def build(bld):
 			'expat',
 			'lz4',
 			'md5',
-			'yasli',
 			'tomcrypt',
 			'jsmn'
 		],

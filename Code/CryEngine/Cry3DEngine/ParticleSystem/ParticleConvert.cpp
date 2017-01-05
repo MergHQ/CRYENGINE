@@ -9,7 +9,7 @@
 #include "Features/ParamMod.h"
 #include "../ParticleEffect.h"
 #include <CrySerialization/IArchiveHost.h>
-#include <yasli/JSONOArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
 
 CRY_PFX2_DBG
 

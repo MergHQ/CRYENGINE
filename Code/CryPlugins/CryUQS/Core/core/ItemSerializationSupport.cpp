@@ -4,8 +4,8 @@
 
 #include "ItemSerializationSupport.h"
 
-#include <yasli/JSONIArchive.h>
-#include <yasli/JSONOArchive.h>
+#include <CrySerialization/yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 

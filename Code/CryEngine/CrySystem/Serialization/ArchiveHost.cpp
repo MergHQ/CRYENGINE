@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include <CrySerialization/IArchiveHost.h>
-#include <yasli/JSONIArchive.h>
-#include <yasli/JSONOArchive.h>
-#include <yasli/BinArchive.h>
+#include <CrySerialization/yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
+#include <CrySerialization/yasli/BinArchive.h>
 #include "XmlIArchive.h"
 #include "XmlOArchive.h"
 #include <CrySerialization/BlackBox.h>

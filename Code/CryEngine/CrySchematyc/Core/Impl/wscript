@@ -7,7 +7,7 @@ def build(bld):
 		file_list = 'core.waf_files',
 		pch = 'StdAfx.cpp',
 		defines = 'SCHEMATYC_EXPORTS',
-		use_module = ['yasli'],
+
 		includes = [ 
 			'.', 
 			Path('Code/CryEngine/CryCommon'),

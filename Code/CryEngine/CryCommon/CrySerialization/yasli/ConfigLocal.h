@@ -69,10 +69,12 @@ namespace yasli
 
 // Override string list types so that we can safely pass string lists over dll boundaries.
 
+
 namespace yasli
 {
 	class Archive;
 }
+
 
 template< class T, class I, class STORE>
 struct DynArray;

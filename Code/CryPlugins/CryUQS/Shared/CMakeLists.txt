@@ -27,9 +27,6 @@ CryEngineStaticModule(CryUQS_Shared PCH "shared/StdAfx.cpp" SOLUTION_FOLDER "Cry
 if(WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
 endif()
-target_link_libraries (${THIS_PROJECT} PRIVATE
-	yasli
-)
 
 target_include_directories(${THIS_PROJECT} 
 	PRIVATE shared

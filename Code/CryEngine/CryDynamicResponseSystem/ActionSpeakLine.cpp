@@ -13,7 +13,7 @@
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryDynamicResponseSystem/IDynamicResponseAction.h>
 
-#include <yasli/BitVectorImpl.h>
+#include <CrySerialization/yasli/BitVectorImpl.h>
 
 using namespace CryDRS;
 

@@ -17,8 +17,7 @@ def build(bld):
 		win_lib    = 'Shell32',
 
 		use_module = [
-			'md5',
-			'yasli'
+			'md5'
 		],
 		durango_use_module= [
 			'jsmn'

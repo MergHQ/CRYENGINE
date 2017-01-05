@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/decorators/Range.h>
+#include <CrySerialization/yasli/decorators/Range.h>
 
 namespace Serialization
 {

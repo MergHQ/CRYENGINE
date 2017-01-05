@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/STL.h>
+#include <CrySerialization/yasli/STL.h>
 
 namespace Serialization
 {

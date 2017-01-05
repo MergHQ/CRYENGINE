@@ -24,7 +24,7 @@
 
 #include <QtUtil.h>
 
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Controls/QuestionDialog.h>
 
 // UQS 3d rendering

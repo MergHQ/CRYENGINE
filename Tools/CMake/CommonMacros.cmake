@@ -516,8 +516,6 @@ macro(set_editor_module_flags)
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon 
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty
 		${SDK_DIR}/boost
-		${SDK_DIR}/yasli
-		${CRY_LIBS_DIR}/yasli
 	)
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE
 		-DWIN32
@@ -530,7 +528,7 @@ macro(set_editor_module_flags)
 	if(NOT MODULE_DISABLE_MFC AND NOT MODULE_FORCE_STATIC)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
 	endif()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli BoostPython python27)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE BoostPython python27)
 	use_qt()
 
 	target_include_directories(${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/Sandbox/Libs/CryQt)
@@ -582,11 +580,8 @@ macro(set_rc_flags)
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon 
 		${CRYENGINE_DIR}/Code/CryEngine/CryCommon/3rdParty
 		${SDK_DIR}/boost
-		${SDK_DIR}/yasli
-		${CRY_LIBS_DIR}/yasli
 		${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorCommon 
 	)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE yasli )
 endmacro()
 
 macro(set_pipeline_flags)

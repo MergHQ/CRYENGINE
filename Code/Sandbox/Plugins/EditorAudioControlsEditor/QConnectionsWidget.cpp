@@ -24,7 +24,7 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <QAdvancedTreeView.h>
 
 namespace ACE

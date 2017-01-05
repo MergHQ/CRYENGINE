@@ -42,10 +42,7 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineStaticModule(CryUQS_Client PCH "client/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
-target_link_libraries (${THIS_PROJECT} PRIVATE
-	yasli
-	CryUQS_Shared
-)
+target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_Shared)
 
 target_include_directories(${THIS_PROJECT}
 	PRIVATE client

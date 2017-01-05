@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/TypeID.h>
+#include <CrySerialization/yasli/TypeID.h>
 
 namespace Serialization
 {

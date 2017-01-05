@@ -3,7 +3,7 @@
 #pragma once
 
 #include <vector>
-#include <yasli/Config.h>
+#include <CrySerialization/yasli/Config.h>
 #include <CrySerialization/Forward.h>
 
 struct ITagSource

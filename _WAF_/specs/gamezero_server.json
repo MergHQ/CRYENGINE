@@ -46,7 +46,6 @@
 		"lua",
 		"freetype",
 		"bigdigits",
-		"yasli",
 		"tomcrypt",
 		"curl",
 
