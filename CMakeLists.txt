@@ -30,8 +30,8 @@ if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	endif()
 endif()
 
-if(${CMAKE_BUILD_TYPE} STREQUAL Release)
-  set(OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY}_release)
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+	set(OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY}_release)
 endif()
 
 set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
