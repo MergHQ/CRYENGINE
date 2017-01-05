@@ -956,31 +956,6 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 			// get push buffer to process all submitted auxiliary geometries
 			m_pCurCBRawData->GetSortedPushBuffer(begin, end, m_auxSortedPushBuffer);
 
-			for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(m_auxSortedPushBuffer.begin()), itEnd(m_auxSortedPushBuffer.end()); it != itEnd; )
-			{
-				// mark current push buffer position
-				CAuxGeomCB::AuxSortedPushBuffer::const_iterator itCur(it);
-
-				// get current render flags
-				const SAuxGeomRenderFlags& curRenderFlags((*itCur)->m_renderFlags);
-				m_curTransMatrixIdx = (*itCur)->m_transMatrixIdx;
-				m_curWorldMatrixIdx = (*itCur)->m_worldMatrixIdx;
-
-				// get prim type
-				CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(curRenderFlags));
-
-				// find all entries sharing the same render flags
-				while( true )
-				{
-					++it;
-					if( (it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
-						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx) )
-					{
-						break;
-					}
-				}
-			}
-
 			const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
 			const CAuxGeomCB::AuxIndexBuffer&  auxIndexBuffer (GetAuxIndexBuffer());
 
