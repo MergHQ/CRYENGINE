@@ -39,7 +39,6 @@ end_sources()
 
 CryEngineStaticModule(CryUQS_StdLib PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 target_link_libraries (${THIS_PROJECT} PRIVATE
-	yasli
 	CryUQS_Shared
 	CryUQS_Client
 )

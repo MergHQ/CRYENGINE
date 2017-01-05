@@ -14,7 +14,7 @@
 #include <Controls/EditorDialog.h>
 
 #include <CryUQS/Interfaces/InterfacesIncludes.h>
-#include "QPropertyTree/QPropertyTree.h"
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 
 struct SQuery;
 class CHistoricQueryTreeModel;

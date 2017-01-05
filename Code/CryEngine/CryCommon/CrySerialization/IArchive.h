@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <yasli/Archive.h>
-#include <CrySerialization/Serializer.h>
+#include <CrySerialization/yasli/Archive.h>
+#include "Serializer.h"
 
 namespace Serialization{
 
@@ -14,7 +14,9 @@ typedef yasli::Context       SContextLink;
 typedef yasli::TypeID        TypeID;
 typedef std::vector<SStruct> SStructs;
 
+/*
 using yasli::IsDefaultSerializeable;
 using yasli::HasSerializeOverride;
 using yasli::IsSerializeable;
+*/
 }

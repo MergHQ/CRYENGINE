@@ -16,7 +16,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Controls/QuestionDialog.h>
 
 #include "Document.h"

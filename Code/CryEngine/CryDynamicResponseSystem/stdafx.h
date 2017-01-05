@@ -22,8 +22,7 @@ struct IResponseCondition;
 #include <CrySystem/ITimer.h>
 #include <CryString/CryString.h>
 
-//yasli includes
-#include <yasli/ConfigLocal.h>
+#include <CrySerialization/yasli/ConfigLocal.h>
 #if !defined(YASLI_CXX11)
 #define YASLI_CXX11 1
 #endif

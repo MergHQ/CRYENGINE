@@ -811,8 +811,6 @@ def set_cryengine_flags(ctx, kw):
 	kw['includes'] = [ 
 		'.', 
 		ctx.CreateRootRelativePath('Code/SDKs/boost'), 
-		ctx.CreateRootRelativePath('Code/SDKs/yasli'), 
-		ctx.CreateRootRelativePath('Code/Libs/yasli'), 
 		ctx.CreateRootRelativePath('Code/CryEngine/CryCommon'),
         ctx.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty')
 		] + kw['includes']

@@ -7,7 +7,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/CryStrings.h>
 #include <CrySerialization/StringList.h>
-#include <PropertyTree/PropertyTree.h>
+#include <Serialization/PropertyTree/PropertyTree.h>
 
 #include "Blueprints.h"
 #include "EditorContext.h"

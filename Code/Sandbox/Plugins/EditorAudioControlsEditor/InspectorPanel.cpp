@@ -9,7 +9,7 @@
 #include "QConnectionsWidget.h"
 
 #include <QVBoxLayout>
-#include <QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <QLabel>
 
 using namespace QtUtil;

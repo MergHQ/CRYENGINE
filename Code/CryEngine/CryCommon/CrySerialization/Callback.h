@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/Callback.h>
+#include <CrySerialization/yasli/Callback.h>
 
 namespace Serialization
 {

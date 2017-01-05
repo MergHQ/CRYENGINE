@@ -327,8 +327,6 @@ end_sources()
 if(PLUGIN_SCHEMATYC)
 	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
 	
-	target_link_libraries (${THIS_PROJECT} PRIVATE yasli)
-	
 	target_compile_definitions(${THIS_PROJECT}
 		PRIVATE -DSCHEMATYC_EXPORTS
 		INTERFACE -DUSE_SCHEMATYC_CORE

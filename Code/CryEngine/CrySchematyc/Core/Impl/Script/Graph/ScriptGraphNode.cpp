@@ -4,6 +4,7 @@
 #include "Script/Graph/ScriptGraphNode.h"
 
 #include <CrySerialization/Math.h>
+#include <CrySerialization/yasli/ClassFactory.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/IGUIDRemapper.h>

@@ -1003,7 +1003,7 @@ end_sources()
 CryEngineModule(CryAction PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 
-target_link_libraries( ${THIS_PROJECT} PRIVATE md5 yasli)
+target_link_libraries( ${THIS_PROJECT} PRIVATE md5)
 if (WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32)
 endif()

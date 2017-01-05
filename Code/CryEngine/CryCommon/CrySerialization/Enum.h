@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <yasli/Enum.h>
+#include <CrySerialization/yasli/Enum.h>
 #include "NameGeneration.h"
 
 ///////////////////////////////////////////////////////////////////////

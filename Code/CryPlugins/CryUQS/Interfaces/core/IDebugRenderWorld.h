@@ -22,7 +22,7 @@ namespace uqs
 			virtual        ~IDebugRenderWorld() {}
 
 			virtual void   DrawSphere(const Vec3& pos, float radius, const ColorF& color) const = 0;
-			virtual void   DrawDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color) const = 0;
+			virtual void   DrawDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) const = 0;
 			virtual void   DrawLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color) const = 0;
 			virtual void   DrawCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, const ColorF& color) const = 0;
 			virtual void   DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color) const = 0;
@@ -32,7 +32,7 @@ namespace uqs
 			virtual void   DrawOBB(const OBB& obb, const ColorF& color) const = 0;
 
 			virtual void   AddSphere(const Vec3& pos, float radius, const ColorF& color) = 0;
-			virtual void   AddDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color) = 0;
+			virtual void   AddDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) = 0;
 			virtual void   AddLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color) = 0;
 			virtual void   AddCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, const ColorF& color) = 0;
 			virtual void   AddCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color) = 0;

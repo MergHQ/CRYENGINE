@@ -9,7 +9,7 @@
 
 #include "AutoRegister.h"
 #include "STDModules.h"
-#include "yasli/BitVector.h"
+#include "CrySerialization/yasli/BitVector.h"
 
 namespace Schematyc
 {
