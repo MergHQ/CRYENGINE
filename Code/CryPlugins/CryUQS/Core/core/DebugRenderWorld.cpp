@@ -19,21 +19,25 @@ namespace uqs
 		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::SDebugRenderPrimitiveWithItemAssociation()
 			: pPrimitive()
 			, associatedItemIndex(kItemIndexWithoutAssociation)
+			, bIsPartOfTheItem(false)
 		{}
 
 		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::SDebugRenderPrimitiveWithItemAssociation(const SDebugRenderPrimitiveWithItemAssociation& other)
 			: pPrimitive()   // bypass the unique_ptr
 			, associatedItemIndex(other.associatedItemIndex)
+			, bIsPartOfTheItem(other.bIsPartOfTheItem)
 		{}
 
-		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::SDebugRenderPrimitiveWithItemAssociation(std::unique_ptr<CDebugRenderPrimitiveBase>& _primitive, size_t _associatedItemIndex)
+		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::SDebugRenderPrimitiveWithItemAssociation(std::unique_ptr<CDebugRenderPrimitiveBase>& _primitive, size_t _associatedItemIndex, bool _bIsPartOfTheItem)
 			: pPrimitive(std::move(_primitive))
 			, associatedItemIndex(_associatedItemIndex)
+			, bIsPartOfTheItem(_bIsPartOfTheItem)
 		{}
 
 		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::SDebugRenderPrimitiveWithItemAssociation(SDebugRenderPrimitiveWithItemAssociation&& other)
 			: pPrimitive(std::move(other.pPrimitive))
 			, associatedItemIndex(other.associatedItemIndex)
+			, bIsPartOfTheItem(other.bIsPartOfTheItem)
 		{}
 
 		CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation& CDebugRenderWorld::SDebugRenderPrimitiveWithItemAssociation::operator=(const SDebugRenderPrimitiveWithItemAssociation& other)
@@ -42,6 +46,7 @@ namespace uqs
 			{
 				// bypass .pPrimitive due to its unique_ptr
 				associatedItemIndex = other.associatedItemIndex;
+				bIsPartOfTheItem = other.bIsPartOfTheItem;
 			}
 			return *this;
 		}
@@ -50,6 +55,7 @@ namespace uqs
 		{
 			ar(pPrimitive, "pPrimitive");
 			ar(associatedItemIndex, "associatedItemIndex");
+			ar(bIsPartOfTheItem, "bIsPartOfTheItem");
 		}
 
 		//===================================================================================
@@ -60,6 +66,7 @@ namespace uqs
 
 		CDebugRenderWorld::CDebugRenderWorld()
 			: m_indexOfCurrentlyEvaluatedItem(kItemIndexWithoutAssociation)
+			, m_bIsItemConstructionInProgress(false)
 		{
 			// nothing
 		}
@@ -69,9 +76,9 @@ namespace uqs
 			CDebugRenderPrimitive_Sphere::Draw(pos, radius, color, false);
 		}
 
-		void CDebugRenderWorld::DrawDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color) const
+		void CDebugRenderWorld::DrawDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) const
 		{
-			CDebugRenderPrimitive_Direction::Draw(pos, radius, dir, color, false);
+			CDebugRenderPrimitive_Direction::Draw(from, to, coneRadius, coneHeight, color, false);
 		}
 
 		void CDebugRenderWorld::DrawLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color) const
@@ -119,31 +126,31 @@ namespace uqs
 		void CDebugRenderWorld::AddSphere(const Vec3& pos, float radius, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Sphere(pos, radius, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
-		void CDebugRenderWorld::AddDirection(const Vec3& pos, float radius, const Vec3& dir, const ColorF& color)
+		void CDebugRenderWorld::AddDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color)
 		{
-			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Direction(pos, radius, dir, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Direction(from, to, coneRadius, coneHeight, color));
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddLine(const Vec3& pos1, const Vec3& pos2, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Line(pos1, pos2, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Cone(pos, dir, baseRadius, height, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Cylinder(pos, dir, radius, height, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddText(const Vec3& pos, float size, const ColorF& color, const char* fmt, ...)
@@ -156,25 +163,30 @@ namespace uqs
 			va_end(ap);
 
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Text(pos, size, text, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddQuat(const Vec3& pos, const Quat& q, float r, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_Quat(pos, q, r, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddAABB(const AABB& aabb, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_AABB(aabb, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
 		}
 
 		void CDebugRenderWorld::AddOBB(const OBB& obb, const ColorF& color)
 		{
 			std::unique_ptr<CDebugRenderPrimitiveBase> p(new CDebugRenderPrimitive_OBB(obb, color));
-			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem);
+			m_primitives.emplace_back(p, m_indexOfCurrentlyEvaluatedItem, m_bIsItemConstructionInProgress);
+		}
+
+		void CDebugRenderWorld::ItemConstructionBegin()
+		{
+			m_bIsItemConstructionInProgress = true;
 		}
 
 		void CDebugRenderWorld::AssociateAllUpcomingAddedPrimitivesWithItem(size_t indexOfCurrentlyEvaluatedItem)
@@ -182,12 +194,34 @@ namespace uqs
 			m_indexOfCurrentlyEvaluatedItem = indexOfCurrentlyEvaluatedItem;
 		}
 
-		void CDebugRenderWorld::DrawAllAddedPrimitives(size_t indexOfItemCurrentlyBeingFocusedForInspection) const
+		void CDebugRenderWorld::ItemConstructionEnd()
+		{
+			m_bIsItemConstructionInProgress = false;
+		}
+
+		void CDebugRenderWorld::DrawAllAddedPrimitivesAssociatedWithItem(size_t indexOfItemToDrawPrimitivesOf, const ColorF& colorToOverridePrimitivesWithIfPartOfTheItem, bool bHighlight) const
+		{
+			// FIXME: linear search of all relevant primitives is stupid
+			for (const SDebugRenderPrimitiveWithItemAssociation& p : m_primitives)
+			{
+				if (p.associatedItemIndex == indexOfItemToDrawPrimitivesOf)
+				{
+					// - primitives that the item is made of will get their color overridden (because the overriding color represents the score of that item)
+					// - all other primitives come from evaluators (but are still in the context of the item) and therefore will retain their color
+					const ColorF* pColor = p.bIsPartOfTheItem ? &colorToOverridePrimitivesWithIfPartOfTheItem : nullptr;
+					p.pPrimitive->Draw(bHighlight, pColor);
+				}
+			}
+		}
+
+		void CDebugRenderWorld::DrawAllAddedPrimitivesWithNoItemAssociation() const
 		{
 			for (const SDebugRenderPrimitiveWithItemAssociation& p : m_primitives)
 			{
-				const bool highlight = (indexOfItemCurrentlyBeingFocusedForInspection != kItemIndexWithoutAssociation && p.associatedItemIndex == indexOfItemCurrentlyBeingFocusedForInspection);
-				p.pPrimitive->Draw(highlight);
+				if (p.associatedItemIndex == kItemIndexWithoutAssociation)
+				{
+					p.pPrimitive->Draw(false, nullptr);
+				}
 			}
 		}
 
@@ -207,6 +241,7 @@ namespace uqs
 		{
 			ar(m_primitives, "m_primitives");
 			ar(m_indexOfCurrentlyEvaluatedItem, "m_indexOfCurrentlyEvaluatedItem");
+			ar(m_bIsItemConstructionInProgress, "m_bIsItemConstructionInProgress");
 		}
 
 	}

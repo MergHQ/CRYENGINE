@@ -29,11 +29,6 @@ namespace uqs
 			m_radius = radius;
 		}
 
-		void CItemDebugProxy_Sphere::Draw(const ColorF& color, bool bHighlight) const
-		{
-			CDebugRenderPrimitive_Sphere::Draw(m_pos, m_radius, color, bHighlight);
-		}
-
 		Vec3 CItemDebugProxy_Sphere::GetPivot() const
 		{
 			return m_pos;
@@ -85,24 +80,6 @@ namespace uqs
 		void CItemDebugProxy_Path::SetClosed(bool bClosed)
 		{
 			m_bClosed = bClosed;
-		}
-
-		void CItemDebugProxy_Path::Draw(const ColorF& color, bool bHighlight) const
-		{
-			if (!m_pathPoints.empty())
-			{
-				const size_t pointCount = m_pathPoints.size();
-
-				for (size_t i = 0; i < pointCount; ++i)
-				{
-					CDebugRenderPrimitive_Sphere::Draw(m_pathPoints[i], 0.05f, color, bHighlight);
-
-					if (i < pointCount - 1 || m_bClosed)
-					{
-						CDebugRenderPrimitive_Line::Draw(m_pathPoints[i], m_pathPoints[(i + 1) % pointCount], color, bHighlight);
-					}
-				}
-			}
 		}
 
 		Vec3 CItemDebugProxy_Path::GetPivot() const
@@ -175,11 +152,6 @@ namespace uqs
 		void CItemDebugProxy_AABB::SetAABB(const AABB& aabb)
 		{
 			m_aabb = aabb;
-		}
-
-		void CItemDebugProxy_AABB::Draw(const ColorF& color, bool bHighlight) const
-		{
-			CDebugRenderPrimitive_AABB::Draw(m_aabb, color, bHighlight);
 		}
 
 		Vec3 CItemDebugProxy_AABB::GetPivot() const

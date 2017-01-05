@@ -436,12 +436,13 @@ namespace uqs
 			shared::CUqsString queryIDAsString;
 			queryID.ToString(queryIDAsString);
 
-			CDrawUtil2d::DrawLabel(row, color, "#%s: '%s' / '%s' (%i/%i)",
+			CDrawUtil2d::DrawLabel(row, color, "#%s: '%s' / '%s' (%i/%i) still to inspect: %i",
 				queryIDAsString.c_str(),
 				statisticsToDraw.querierName.c_str(),
 				statisticsToDraw.queryBlueprintName.c_str(),
-				(int)statisticsToDraw.numRemainingItemsToInspect,
-				(int)statisticsToDraw.numGeneratedItems);
+				(int)statisticsToDraw.numItemsInFinalResultSet,
+				(int)statisticsToDraw.numGeneratedItems,
+				(int)statisticsToDraw.numRemainingItemsToInspect);
 			++row;
 
 			return row;

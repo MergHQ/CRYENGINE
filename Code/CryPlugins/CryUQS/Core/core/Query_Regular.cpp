@@ -333,11 +333,16 @@ namespace uqs
 			if (m_pHistory)
 			{
 				const client::IItemFactory& itemFactory = m_generatedItems.GetItemFactory();
+				CDebugRenderWorld& debugRenderWorld = m_pHistory->GetDebugRenderWorld();
 
 				for (size_t i = 0, n = m_generatedItems.GetItemCount(); i < n; ++i)
 				{
 					const void* pItem = m_generatedItems.GetItemAtIndex(i);
 					m_pHistory->CreateItemDebugProxyViaItemFactoryForItem(itemFactory, pItem, i);
+					debugRenderWorld.AssociateAllUpcomingAddedPrimitivesWithItem(i);
+					debugRenderWorld.ItemConstructionBegin();
+					itemFactory.AddItemToDebugRenderWorld(pItem, debugRenderWorld);
+					debugRenderWorld.ItemConstructionEnd();
 				}
 			}
 			m_currentPhaseFn = &CQuery_Regular::Phase4_PrepareEvaluationPhase;

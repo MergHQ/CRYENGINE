@@ -383,7 +383,7 @@ namespace uqs
 				{
 				case SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					// check for illegal score (one that is outside [0.0 .. 1.0] which can happen if an evaluator is implemented wrongly)
-					if (ieResult.nonWeightedScore < 0.0f || ieResult.nonWeightedScore > 1.0f)
+					if (ieResult.nonWeightedScore < -FLT_EPSILON || ieResult.nonWeightedScore > 1.0f + FLT_EPSILON)
 					{
 						outFoundScoreOutsideValidRange = true;
 					}
@@ -426,7 +426,7 @@ namespace uqs
 				{
 				case SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					// check for illegal score (one that is outside [0.0 .. 1.0] which can happen if an evaluator is implemented wrongly)
-					if (deResult.nonWeightedScore < 0.0f || deResult.nonWeightedScore > 1.0f)
+					if (deResult.nonWeightedScore < -FLT_EPSILON || deResult.nonWeightedScore > 1.0f + FLT_EPSILON)
 					{
 						outFoundScoreOutsideValidRange = true;
 					}
@@ -533,7 +533,7 @@ namespace uqs
 
 		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const
 		{
-			m_debugRenderWorld.DrawAllAddedPrimitives(indexOfItemCurrentlyBeingFocused);
+			m_debugRenderWorld.DrawAllAddedPrimitivesWithNoItemAssociation();
 
 			//
 			// - figure out the best and worst score of items that made it into the final result set
@@ -580,70 +580,70 @@ namespace uqs
 				const SHistoricItem& item = m_items[i];
 				const bool bShowDetails = (indexOfItemCurrentlyBeingFocused == i);
 
+				ColorF color = Col_Black;
+				bool bDrawScore = false;
+				bool bShouldDrawAnExclamationMarkAsWarning = false;
+
+				float accumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
+				bool bFoundItemScoreOutsideValidRange = false;
+
+				const EItemAnalyzeStatus status = AnalyzeItemStatus(item, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, bFoundItemScoreOutsideValidRange);
+
+				if (bFoundItemScoreOutsideValidRange)
+				{
+					bShouldDrawAnExclamationMarkAsWarning = true;
+				}
+
+				switch (status)
+				{
+				case EItemAnalyzeStatus::ExceptionOccurred:
+					bShouldDrawAnExclamationMarkAsWarning = true;
+					color = Col_Black;
+					break;
+
+				case EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator:
+					color = Col_Black;
+					break;
+
+				case EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun:
+					color = Col_Plum;
+					break;
+
+				case EItemAnalyzeStatus::StillBeingEvaluated:
+					color = Col_Yellow;
+					break;
+
+				case EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun:
+					if (0)  // TODO: currently, we don't draw items that were fully run but then disqualified due to bad score with a specific color (we just apply that nice color gradation), 
+						    // but in the future, we might wanna allow the user to tick a checkbox in the History Inspector for getting even more insight into an item)
+					{
+						bDrawScore = true;
+						color = Col_DarkGray;
+						break;
+					}
+					// fall through
+
+				case EItemAnalyzeStatus::SurvivedAllEvaluators:
+					{
+						// it's one of the items in the result set (or at least one that survived all masked evaluators) => gradate its color from red to green, depending on its score
+
+						const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
+						const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
+						const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
+
+						color = Lerp(Col_Red, Col_Green, fraction);
+						bDrawScore = true;
+					}
+					break;
+
+				default:
+					assert(0);
+				}
+
+				m_debugRenderWorld.DrawAllAddedPrimitivesAssociatedWithItem(i, color, bShowDetails);
+
 				if (item.pDebugProxy)
 				{
-					ColorF color = Col_Black;
-					bool bDrawScore = false;
-					bool bShouldDrawAnExclamationMarkAsWarning = false;
-
-					float accumulatedAndWeightedScoreOfMaskedEvaluators = 0.0f;
-					bool bFoundItemScoreOutsideValidRange = false;
-
-					const EItemAnalyzeStatus status = AnalyzeItemStatus(item, evaluatorDrawMasks, accumulatedAndWeightedScoreOfMaskedEvaluators, bFoundItemScoreOutsideValidRange);
-
-					if (bFoundItemScoreOutsideValidRange)
-					{
-						bShouldDrawAnExclamationMarkAsWarning = true;
-					}
-
-					switch (status)
-					{
-					case EItemAnalyzeStatus::ExceptionOccurred:
-						bShouldDrawAnExclamationMarkAsWarning = true;
-						color = Col_Black;
-						break;
-
-					case EItemAnalyzeStatus::DiscardedByAtLeastOneEvaluator:
-						color = Col_Black;
-						break;
-
-					case EItemAnalyzeStatus::DisqualifiedDueToBadScoreBeforeAllEvaluatorsHadRun:
-						color = Col_Plum;
-						break;
-
-					case EItemAnalyzeStatus::StillBeingEvaluated:
-						color = Col_Yellow;
-						break;
-
-					case EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun:
-						if (0)  // TODO: currently, we don't draw items that were fully run but then disqualified due to bad score with a specific color (we just apply that nice color gradation), 
-						        // but in the future, we might wanna allow the user to tick a checkbox in the History Inspector for getting even more insight into an item)
-						{
-							bDrawScore = true;
-							color = Col_DarkGray;
-							break;
-						}
-						// fall through
-
-					case EItemAnalyzeStatus::SurvivedAllEvaluators:
-						{
-							// it's one of the items in the result set (or at least one that survived all masked evaluators) => gradate its color from red to green, depending on its score
-
-							const float range = bestScoreAmongAllItems - worstScoreAmongAllItems;
-							const float itemRelativeScore = accumulatedAndWeightedScoreOfMaskedEvaluators - worstScoreAmongAllItems;
-							const float fraction = (range > 0.0f) ? itemRelativeScore / range : 1.0f;
-
-							color = Lerp(Col_Red, Col_Green, fraction);
-							bDrawScore = true;
-						}
-						break;
-
-					default:
-						assert(0);
-					}
-
-					item.pDebugProxy->Draw(color, bShowDetails);
-
 					if (bDrawScore)
 					{
 						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot(), 1.5f, color, "%f", accumulatedAndWeightedScoreOfMaskedEvaluators);
@@ -851,7 +851,7 @@ namespace uqs
 				case SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					text.Format("scored the item: %f", ieResult.nonWeightedScore);
 					ieColor = Col_Green;
-					if (ieResult.nonWeightedScore < 0.0f || ieResult.nonWeightedScore > 1.0f)
+					if (ieResult.nonWeightedScore < -FLT_EPSILON || ieResult.nonWeightedScore > 1.0f + FLT_EPSILON)
 					{
 						indexesOfInstantEvaluatorsWithIllegalScores.push_back(i);
 					}
@@ -901,7 +901,7 @@ namespace uqs
 				case SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem:
 					text.Format("scored the item: %f", deResult.nonWeightedScore);
 					deColor = Col_Green;
-					if (deResult.nonWeightedScore < 0.0f || deResult.nonWeightedScore > 1.0f)
+					if (deResult.nonWeightedScore < -FLT_EPSILON || deResult.nonWeightedScore > 1.0f + FLT_EPSILON)
 					{
 						indexesOfDeferredEvaluatorsWithIllegalScores.push_back(i);
 					}
