@@ -611,7 +611,7 @@ def utilities(bld):
 		Options.commands.insert(0, 'configure')
 		
 	def bootstrap_update():
-		bld.ExecuteBootstrap('update')
+		bld.ExecuteBootstrap()
 		Options.commands.insert(0, 'utilities')
 	
 	def regenerate_vs_solution():
@@ -1001,7 +1001,7 @@ def check_for_bootstrap(bld):
 	except OSError:				
 		pass
 		
-	bld.ExecuteBootstrap('update')
+	bld.ExecuteBootstrap()
 	
 	# Create TimeStamp File
 	bootstrap_timestamp.write('')
@@ -1096,7 +1096,7 @@ def is_bootstrap_available(bld):
 	
 ###############################################################################	
 @conf
-def ExecuteBootstrap(bld, command):
+def ExecuteBootstrap(bld):
 
 	if not is_bootstrap_available(bld):
 		return
@@ -1104,7 +1104,7 @@ def ExecuteBootstrap(bld, command):
 	host = Utils.unversioned_sys_platform()
 	executable = None
 	if host == 'win32':
-		executable = [bld.path.abspath() + '/Tools/branch_bootstrap/dist/bootstrap.exe']
+		executable = [bld.path.abspath() + '/Tools/branch_bootstrap/bootstrap.exe']
 	elif host == 'darwin':
 		executable = ['python3', bld.path.abspath() + '/Tools/branch_bootstrap/bootstrap.py']
 	elif host == 'linux':
@@ -1122,7 +1122,7 @@ def ExecuteBootstrap(bld, command):
 	ret = subprocess.call(
                 executable + [
                         '-d' + bootstrap_dat,
-                        '-m' + bootstrap_digest.abspath(), command])
+                        '-m' + bootstrap_digest.abspath()])
 	if ret == 0:
 		bld.msg('branch bootstrap', 'done')
 	else:
