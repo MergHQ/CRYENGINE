@@ -36,6 +36,8 @@ public:
 
 	virtual void showEvent(QShowEvent* pEvent) override;
 
+	void OnContentDeleted(CryGraphEditor::CAbstractNodeGraphViewModelItem* deletedItem);
+
 Q_SIGNALS:
 	void SignalPropertyChanged();
 
