@@ -1091,7 +1091,7 @@ def get_output_folders(self, platform, configuration, target_spec = None, game_p
 ###############################################################################
 @conf
 def is_bootstrap_available(bld):
-	bootstrap_path = bld.path.abspath() + '/Tools/branch_bootstrap/dist/bootstrap.exe'
+	bootstrap_path = bld.path.abspath() + '/Tools/branch_bootstrap/bootstrap.exe'
 	return os.path.isfile(bootstrap_path)
 	
 ###############################################################################	
