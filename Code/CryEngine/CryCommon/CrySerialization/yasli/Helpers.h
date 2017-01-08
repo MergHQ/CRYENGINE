@@ -38,35 +38,9 @@ struct Identity{
     typedef T type;
 };
 
-
-template<class T>
-struct IsArray{
-    enum{ value = false };
-};
-
-template<class T, int Size>
-struct IsArray< T[Size] >{
-    enum{ value = true };
-};
-
 template<class T, int Size>
 struct ArraySize{
     enum{ value = true };
-};
-
-template<class T>
-struct IsClass{
-private:
-    struct NoType{ char dummy; };
-    struct YesType{ char dummy[100]; };
-
-    template<class U>
-    static YesType function_helper(void(U::*)(void));
-
-    template<class U>
-    static NoType function_helper(...);
-public:
-    enum{ value = (sizeof(function_helper<T>(0)) == sizeof(YesType))};
 };
 
 template<int Size, class S8, class S16, class S32, class S64>
