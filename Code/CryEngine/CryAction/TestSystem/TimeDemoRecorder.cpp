@@ -427,7 +427,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 	, m_bPlaying(false)
 	, m_bPaused(false)
 	, m_bDemoFinished(false)
-	, m_demoEnded(false)
+	, m_bDemoEnded(false)
 	, m_bChainloadingDemo(false)
 	, m_currentFrame(0)
 	, m_nTotalPolysRecorded(0)
@@ -534,7 +534,7 @@ void CTimeDemoRecorder::Reset()
 	m_bDemoFinished = false;
 	m_bPaused = false;
 	m_bChainloadingDemo = false;
-	m_demoEnded = false;
+	m_bDemoEnded = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1427,7 +1427,7 @@ void CTimeDemoRecorder::PostUpdate()
 			return;
 		}
 		ICVar* pFinishCmd = gEnv->pConsole->GetCVar("demo_finish_cmd");
-		if (pFinishCmd)
+		if (pFinishCmd && !m_bDemoEnded)
 		{
 			const char* const szFinishCmd = pFinishCmd->GetString();
 			if (szFinishCmd && szFinishCmd[0] != '\0')
@@ -1439,7 +1439,7 @@ void CTimeDemoRecorder::PostUpdate()
 		{
 			QuitGame();
 		}
-		else if (!m_demoEnded)
+		else if (!m_bDemoEnded)
 		{
 			EndDemo();
 		}
@@ -1838,6 +1838,9 @@ float CTimeDemoRecorder::GetConsoleVar(const char* sVarName)
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::StartSession()
 {
+	m_bDemoEnded = false;
+	m_bDemoFinished = false;
+
 	Pause(false);
 
 	bool bCurrentlyRecording = m_bRecording;
@@ -2475,7 +2478,7 @@ void CTimeDemoRecorder::StartNextChainedLevel()
 		// If No more chained levels. quit.
 		QuitGame();
 	}
-	else if (!m_demoEnded)
+	else if (!m_bDemoEnded)
 	{
 		EndDemo();
 	}
@@ -2526,7 +2529,7 @@ void CTimeDemoRecorder::SaveChainloadingJUnitResults()
 void CTimeDemoRecorder::EndDemo()
 {
 	m_bDemoFinished = true;
-	m_demoEnded = true;
+	m_bDemoEnded = true;
 
 	if (!gEnv->IsEditor())
 	{
