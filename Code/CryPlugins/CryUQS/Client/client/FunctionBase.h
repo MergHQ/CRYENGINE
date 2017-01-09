@@ -151,9 +151,9 @@ namespace uqs
 			const bool bIsLeafFunction = (tLeafFunctionKind != IFunctionFactory::ELeafFunctionKind::None);
 			internal::SFunctionExecuteHelper<TFunction, TReturn, tLeafFunctionKind, bIsLeafFunction>::Execute(this, executeContext, pReturnValue);
 
-			IF_UNLIKELY(m_bAddReturnValueToDebugRenderWorldUponExecution && executeContext.blackboard.pDebugRenderWorld)
+			IF_UNLIKELY(m_bAddReturnValueToDebugRenderWorldUponExecution && executeContext.blackboard.pDebugRenderWorldPersistent)
 			{
-				m_pItemFactoryOfReturnValue->AddItemToDebugRenderWorld(pReturnValue, *executeContext.blackboard.pDebugRenderWorld);
+				m_pItemFactoryOfReturnValue->AddItemToDebugRenderWorld(pReturnValue, *executeContext.blackboard.pDebugRenderWorldPersistent);
 			}
 		}
 

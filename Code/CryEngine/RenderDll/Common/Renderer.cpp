@@ -434,11 +434,11 @@ void CRenderer::Release()
 	//SAFE_DELETE(g_pSDynTexture_PoolAlloc)
 	//g_pSDynTexture_PoolAlloc = NULL;
 
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
+	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 	{
-		for (int recursion = 0; recursion < MAX_REND_RECURSION_LEVELS; recursion++)
+		for (int j = 0; j < IRenderView::eViewType_Count; ++j)
 		{
-			m_RP.m_pRenderViews[i][recursion].reset();
+			m_RP.m_pRenderViews[i][j].reset();
 		}
 	}
 
@@ -817,11 +817,11 @@ void CRenderer::FreeResources(int nFlags)
 			m_RP.m_RIs[i].Free();
 
 		// Reset render views
-		for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
+		for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 		{
-			for (int recursion = 0; recursion < MAX_REND_RECURSION_LEVELS; recursion++)
+			for (int j = 0; j < IRenderView::eViewType_Count; ++j)
 			{
-				m_RP.m_pRenderViews[i][recursion]->Clear();
+				m_RP.m_pRenderViews[i][j]->Clear();
 			}
 		}
 

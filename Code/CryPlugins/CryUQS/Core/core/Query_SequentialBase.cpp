@@ -105,6 +105,10 @@ namespace uqs
 				m_exceptionMessageFromChild.Format("%s", result.error);
 				break;
 
+			case SQueryResult::EStatus::CanceledByHubTearDown:
+				// (nothing)
+				break;
+
 			default:
 				assert(0);
 			}

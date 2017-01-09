@@ -86,19 +86,19 @@ namespace uqs
 				updateContext.evaluationResult.bDiscardItem = (bHitSomething == m_params.raycastShallSucceed);
 
 				// persistent debug drawing of the ray
-				IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorld)
+				IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorldPersistent)
 				{
 					if (bHitSomething)
 					{
 						// yellow line: start pos -> impact
 						// red line:    impact -> end pos
-						updateContext.blackboard.pDebugRenderWorld->AddLine(m_params.from, singleHit.pt, Col_Yellow);
-						updateContext.blackboard.pDebugRenderWorld->AddLine(singleHit.pt, m_params.to, Col_Red);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from, singleHit.pt, Col_Yellow);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(singleHit.pt, m_params.to, Col_Red);
 					}
 					else
 					{
 						// green line: start pos -> end pos
-						updateContext.blackboard.pDebugRenderWorld->AddLine(m_params.from, m_params.to, Col_Green);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from, m_params.to, Col_Green);
 					}
 				}
 
@@ -111,9 +111,9 @@ namespace uqs
 				//
 
 				// draw a white line to indicate that we're still waiting to start the raycast
-				IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorld)
+				IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorldImmediate)
 				{
-					updateContext.blackboard.pDebugRenderWorld->DrawLine(m_params.from, m_params.to, Col_White);
+					updateContext.blackboard.pDebugRenderWorldImmediate->DrawLine(m_params.from, m_params.to, Col_White);
 				}
 
 				return EUpdateStatus::BusyButBlockedDueToResourceShortage;

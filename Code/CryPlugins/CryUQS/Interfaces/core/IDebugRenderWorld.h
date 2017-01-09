@@ -13,13 +13,17 @@ namespace uqs
 
 		//===================================================================================
 		//
-		// IDebugRenderWorld
+		// IDebugRenderWorldImmediate
+		//
+		// - this is a debug-render-world that draws the primitives immediately
+		// - it's usually used by generators and deferred evaluators to signal that something is being worked on
+		// - a typical use-case would be to draw a line in a specific color while waiting for a raycast to finish
 		//
 		//===================================================================================
 
-		struct IDebugRenderWorld
+		struct IDebugRenderWorldImmediate
 		{
-			virtual        ~IDebugRenderWorld() {}
+			virtual        ~IDebugRenderWorldImmediate() {}
 
 			virtual void   DrawSphere(const Vec3& pos, float radius, const ColorF& color) const = 0;
 			virtual void   DrawDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) const = 0;
@@ -30,6 +34,20 @@ namespace uqs
 			virtual void   DrawQuat(const Vec3& pos, const Quat& q, float r, const ColorF& color) const = 0;
 			virtual void   DrawAABB(const AABB& aabb, const ColorF& color) const = 0;
 			virtual void   DrawOBB(const OBB& obb, const ColorF& color) const = 0;
+		};
+
+		//===================================================================================
+		//
+		// IDebugRenderWorldPersistent
+		//
+		// - this debug-render-world persists all added debug-primitives into the query's history
+		// - the history can be saved alongside all of these debug-primitives and restored for later inspection (the debug-primitives will then get rendered again)
+		//
+		//===================================================================================
+
+		struct IDebugRenderWorldPersistent
+		{
+			virtual        ~IDebugRenderWorldPersistent() {}
 
 			virtual void   AddSphere(const Vec3& pos, float radius, const ColorF& color) = 0;
 			virtual void   AddDirection(const Vec3& from, const Vec3& to, float coneRadius, float coneHeight, const ColorF& color) = 0;

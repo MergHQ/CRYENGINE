@@ -260,7 +260,7 @@ private:
 	bool         m_bPlaying;
 	bool         m_bPaused;
 	bool         m_bDemoFinished;
-	bool         m_demoEnded;
+	bool         m_bDemoEnded;
 	bool         m_bChainloadingDemo;
 
 	//! Current play or record frame.

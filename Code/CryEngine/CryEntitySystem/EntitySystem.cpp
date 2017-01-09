@@ -39,6 +39,7 @@
 #include <CryCore/TypeInfo_impl.h>  // CRY_ARRAY_COUNT
 #include "BSPTree3D.h"
 
+#include <CryCore/StlUtils.h>
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/ILog.h>
@@ -460,7 +461,7 @@ void CEntitySystem::AddSink(IEntitySystemSink* pSink, uint32 subscriptions, uint
 	{
 		for (uint i = 0; i < SinkMaxEventSubscriptionCount; ++i)
 		{
-			if ((subscriptions & (1 << i)) && (i != static_log2<IEntitySystem::OnEvent>::value))
+			if ((subscriptions & (1 << i)) && (i != stl::static_log2<IEntitySystem::OnEvent>::value))
 			{
 				assert(!stl::find(m_sinks[i], pSink));
 				m_sinks[i].push_back(pSink);
@@ -502,7 +503,7 @@ void CEntitySystem::RemoveSink(IEntitySystemSink* pSink)
 //////////////////////////////////////////////////////////////////////////
 bool CEntitySystem::OnBeforeSpawn(SEntitySpawnParams& params)
 {
-	EntitySystemSinks& sinks = m_sinks[static_log2 < IEntitySystem::OnBeforeSpawn > ::value];
+	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnBeforeSpawn> ::value];
 	EntitySystemSinks::iterator si = sinks.begin();
 	EntitySystemSinks::iterator siEnd = sinks.end();
 
@@ -518,7 +519,7 @@ bool CEntitySystem::OnBeforeSpawn(SEntitySpawnParams& params)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params)
 {
-	EntitySystemSinks& sinks = m_sinks[static_log2 < IEntitySystem::OnReused > ::value];
+	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnReused>::value];
 	EntitySystemSinks::iterator si = sinks.begin();
 	EntitySystemSinks::iterator siEnd = sinks.end();
 
@@ -697,7 +698,7 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 		return false;
 	}
 
-	EntitySystemSinks& sinks = m_sinks[static_log2 < IEntitySystem::OnSpawn > ::value];
+	EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnSpawn>::value];
 	EntitySystemSinks::iterator si = sinks.begin();
 	EntitySystemSinks::iterator siEnd = sinks.end();
 
@@ -804,7 +805,7 @@ void CEntitySystem::RemoveEntity(EntityId entity, bool bForceRemoveNow)
 
 		if (!pEntity->m_bGarbage)
 		{
-			EntitySystemSinks& sinks = m_sinks[static_log2 < IEntitySystem::OnRemove > ::value];
+			EntitySystemSinks& sinks = m_sinks[stl::static_log2<IEntitySystem::OnRemove>::value];
 			EntitySystemSinks::iterator si = sinks.begin();
 			EntitySystemSinks::iterator siEnd = sinks.end();
 

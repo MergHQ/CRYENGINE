@@ -20,7 +20,7 @@ namespace uqs
 		{
 			typedef bool                      (*serializeFunc_t)(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel);
 			typedef TItem                     (*createDefaultObjectFunc_t)();
-			typedef void                      (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorld& debugRW);
+			typedef void                      (*addItemToDebugRenderWorldFunc_t)(const TItem& item, core::IDebugRenderWorldPersistent& debugRW);
 			typedef void                      (*createItemDebugProxyFunc_t)(const TItem& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
 
 			// - a serialization function is used to convert the item to and from its string representation
@@ -32,7 +32,7 @@ namespace uqs
 			// - this function usually gets provided for items whose constructor is bypassing initialization (e. g. Vec3's values are undefined by default)
 			createDefaultObjectFunc_t         pCreateDefaultObject;
 
-			// - an optional function that will add some debug-primitives to a given IDebugRenderWorld to represent the item in its visual form
+			// - an optional function that will add some debug-primitives to a given IDebugRenderWorldPersistent to represent the item in its visual form
 			// - this is typically *not* used for built-in types, such as int, bool, float, etc. because they can have different meanings in different contexts
 			// - but if, for example, the item is an area, then this function would add debug-primitives to draw such an area
 			addItemToDebugRenderWorldFunc_t   pAddItemToDebugRenderWorld;
@@ -77,7 +77,7 @@ namespace uqs
 				virtual void                         CopyItem(void* pTargetItem, const void* pSourceItem) const override = 0;
 				virtual void*                        GetItemAtIndex(void* pItems, size_t index) const override = 0;
 				virtual const void*                  GetItemAtIndex(const void* pItems, size_t index) const override = 0;
-				virtual void                         AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorld& debugRW) const override = 0;
+				virtual void                         AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const override = 0;
 				virtual void                         CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
 				virtual bool                         CanBePersistantlySerialized() const override = 0;
 				virtual bool                         TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
@@ -103,7 +103,7 @@ namespace uqs
 			// CItemFactoryInternal<>
 			//
 			// - passing a nullptr tSerializeFunc is OK and means that the item can NOT be persistent serialized in textual form
-			// - the tAddItemToDebugRenderWorldFunc can be a nullptr or valid pointer (it's used to add one of several debug-primitives to a given IDebugRenderWorld upon function calls)
+			// - the tAddItemToDebugRenderWorldFunc can be a nullptr or valid pointer (it's used to add one of several debug-primitives to a given IDebugRenderWorldPersistent upon function calls)
 			// - the tCreateItemDebugProxyFunc can be nullptr or valid pointer (it's used to create a geometrical debug proxy that will be used to pick a generated item for detailed inspection in the live 3D world after the query has finished)
 			//
 			//===================================================================================
@@ -153,7 +153,7 @@ namespace uqs
 				virtual void                        CopyItem(void* pTargetItem, const void* pSourceItem) const override;
 				virtual void*                       GetItemAtIndex(void* pItems, size_t index) const override;
 				virtual const void*                 GetItemAtIndex(const void* pItems, size_t index) const override;
-				virtual void                        AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorld& debugRW) const override;
+				virtual void                        AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorldPersistent& debugRW) const override;
 				virtual void                        CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
 				virtual bool                        CanBePersistantlySerialized() const override;
 				virtual bool                        TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
@@ -476,7 +476,7 @@ namespace uqs
 			}
 			
 			template <class TItem>
-			void CItemFactoryInternal<TItem>::AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorld& debugRW) const
+			void CItemFactoryInternal<TItem>::AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const
 			{
 				if (m_callbacks.pAddItemToDebugRenderWorld != nullptr)
 				{

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <CryCore/Assert/CompileTimeUtils.h>
+#include <type_traits>
 
 template<typename IDType, typename ValueType, typename IndexType = unsigned short, typename CounterType = unsigned short>
 class id_map
@@ -93,8 +93,8 @@ protected:
 		{
 		}
 
-		aligned_storage<value_type> value;
-		counter_type                counter;
+		typename std::aligned_storage<sizeof(value_type), alignof(value_type)>::type value;
+		counter_type                                                                 counter;
 	};
 
 	typedef std::vector<index_type> Frees;

@@ -33,8 +33,6 @@ using namespace TurretHelpers;
 #include "BodyDamage.h"
 #include "BodyDestruction.h"
 
-#include <CryCore/Assert/CompileTimeUtils.h>
-
 #include "Laser.h"
 #include "ItemSharedParams.h"
 

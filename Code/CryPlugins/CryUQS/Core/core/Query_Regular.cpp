@@ -333,7 +333,7 @@ namespace uqs
 			if (m_pHistory)
 			{
 				const client::IItemFactory& itemFactory = m_generatedItems.GetItemFactory();
-				CDebugRenderWorld& debugRenderWorld = m_pHistory->GetDebugRenderWorld();
+				CDebugRenderWorldPersistent& debugRenderWorld = m_pHistory->GetDebugRenderWorldPersistent();
 
 				for (size_t i = 0, n = m_generatedItems.GetItemCount(); i < n; ++i)
 				{
@@ -538,14 +538,17 @@ namespace uqs
 			assert(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
 			assert(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
+			// original index of the instant-evaluator as it appears in the blueprint
+			const size_t instantEvaluatorIndex = instantEvaluatorToRun.originalIndexInQueryBlueprint;
+
 			// associate given item with all primitives that the upcoming function and evaluators draw
 			if (m_pHistory)
 			{
-				m_pHistory->GetDebugRenderWorld().AssociateAllUpcomingAddedPrimitivesWithItem(workingDataToWriteResultTo.indexInGeneratedItems);
+				CDebugRenderWorldPersistent& debugRW = m_pHistory->GetDebugRenderWorldPersistent();
+				debugRW.AssociateAllUpcomingAddedPrimitivesWithItem(workingDataToWriteResultTo.indexInGeneratedItems);
+				debugRW.AssociateAllUpcomingAddedPrimitivesAlsoWithInstantEvaluator(instantEvaluatorIndex);
+				debugRW.AssociateAllUpcomingAddedPrimitivesAlsoWithDeferredEvaluator(CDebugRenderWorldPersistent::kIndexWithoutAssociation);
 			}
-
-			// original index of the instant-evaluator as it appears in the blueprint
-			const size_t instantEvaluatorIndex = instantEvaluatorToRun.originalIndexInQueryBlueprint;
 
 			// re-use the parameters from possible previous calls (they'll get overwritten by the function calls below)
 			void* pParams = instantEvaluatorToRun.pParamsHolder->GetParams();
@@ -740,7 +743,9 @@ namespace uqs
 			// associate given item with all primitives that the upcoming functions and evaluators draw
 			if (m_pHistory)
 			{
-				m_pHistory->GetDebugRenderWorld().AssociateAllUpcomingAddedPrimitivesWithItem(taskToUpdate.pWorkingData->indexInGeneratedItems);
+				CDebugRenderWorldPersistent& debugRW = m_pHistory->GetDebugRenderWorldPersistent();
+				debugRW.AssociateAllUpcomingAddedPrimitivesWithItem(taskToUpdate.pWorkingData->indexInGeneratedItems);
+				debugRW.AssociateAllUpcomingAddedPrimitivesAlsoWithInstantEvaluator(CDebugRenderWorldPersistent::kIndexWithoutAssociation);
 			}
 
 			bool bDiscardedItem = false;
@@ -748,11 +753,21 @@ namespace uqs
 
 			for (auto it = taskToUpdate.deferredEvaluators.begin(); it != taskToUpdate.deferredEvaluators.end() && !bDiscardedItem; )
 			{
+				SDeferredEvaluatorWithIndex& de = *it;
+
+				//
+				// associate this deferred-evaluator with all primitives that will get added by it
+				//
+
+				if (m_pHistory)
+				{
+					m_pHistory->GetDebugRenderWorldPersistent().AssociateAllUpcomingAddedPrimitivesAlsoWithDeferredEvaluator(de.originalIndexInQueryBlueprint);
+				}
+
 				//
 				// update this deferred-evaluator
 				//
 
-				SDeferredEvaluatorWithIndex& de = *it;
 				SItemEvaluationResult evaluationResult;
 				shared::CUqsString exceptionMessageFromDeferredEvaluatorHimself;
 				const client::IDeferredEvaluator::SUpdateContext evaluatorUpdateContext(evaluationResult, m_blackboard, exceptionMessageFromDeferredEvaluatorHimself);

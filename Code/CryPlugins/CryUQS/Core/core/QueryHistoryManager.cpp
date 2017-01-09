@@ -35,26 +35,29 @@ namespace uqs
 			const CTimeValue now = gEnv->pTimer->GetAsyncTime();
 
 			//
-			// draw all ongoing queries in the 3D world while they haven't been finished (destroyed) yet
+			// if debug-drawing is enabled, then draw all ongoing queries in the 3D world while they haven't been finished (destroyed) yet
 			//
 
-			for (size_t i = 0, n = history.GetHistorySize(); i < n; ++i)
+			if (SCvars::debugDraw)
 			{
-				const CHistoricQuery& query = history.GetHistoryEntryByIndex(i);
+				for (size_t i = 0, n = history.GetHistorySize(); i < n; ++i)
+				{
+					const CHistoricQuery& query = history.GetHistoryEntryByIndex(i);
 
-				// skip the query that we've selected for permanent drawing (we'll draw it separately outside this loop)
-				if (query.GetQueryID() == queryIdOfSelectedHistoricQuery)
-					continue;
+					// skip the query that we've selected for permanent drawing (we'll draw it separately outside this loop)
+					if (query.GetQueryID() == queryIdOfSelectedHistoricQuery)
+						continue;
 
-				// skip this query if it's finished and too old (we'll draw finished queries for just a short moment beyond their lifetime)
-				if (query.IsQueryDestroyed() && (now - query.GetQueryDestroyedTimestamp() > 2.0f))
-					continue;
+					// skip this query if it's finished and too old (we'll draw finished queries for just a short moment beyond their lifetime)
+					if (query.IsQueryDestroyed() && (now - query.GetQueryDestroyedTimestamp() > 2.0f))
+						continue;
 
-				query.DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation, SEvaluatorDrawMasks::CreateAllBitsSet());
+					query.DrawDebugPrimitivesInWorld(CDebugRenderWorldPersistent::kIndexWithoutAssociation, SEvaluatorDrawMasks::CreateAllBitsSet());
+				}
 			}
 
 			//
-			// - have the currently selected historic query draw its debug primitives in the world
+			// - have the currently selected historic query draw its debug primitives in the world (this is independent of whether debug-drawing is enabled or not)
 			// - figure out what the currently focused item by the camera is
 			//
 
@@ -72,7 +75,7 @@ namespace uqs
 					else
 					{
 						m_indexOfFocusedItem = s_noItemFocusedIndex;
-						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(CDebugRenderWorld::kItemIndexWithoutAssociation, evaluatorDrawMasks);
+						pHistoricQueryToDraw->DrawDebugPrimitivesInWorld(CDebugRenderWorldPersistent::kIndexWithoutAssociation, evaluatorDrawMasks);
 					}
 
 					if (m_indexOfFocusedItem != indexOfPreviouslyFocusedItem)

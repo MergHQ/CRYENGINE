@@ -166,6 +166,9 @@ namespace uqs
 		protected:
 			// !! m_blackboard: this needs to come after all other member variables, as it relies on their proper initialization!!
 			SQueryBlackboard                            m_blackboard;                     // bundles some stuff for functions, generators and evaluators to read from it
+
+		private:
+			static const CDebugRenderWorldImmediate     s_debugRenderWorldImmediate;      // handed out to all generators, evaluators and functions if immediate debug-rendering is turned on via SCvars::debugDraw
 		};
 
 	}

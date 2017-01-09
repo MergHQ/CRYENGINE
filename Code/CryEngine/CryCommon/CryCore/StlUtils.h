@@ -3,7 +3,6 @@
 #ifndef _STL_UTILS_HEADER_
 #define _STL_UTILS_HEADER_
 
-#include <CryCore/Assert/CompileTimeUtils.h>
 #include "Wrapper.h"
 
 #include <map>
@@ -781,6 +780,30 @@ template<size_t First, size_t Second, size_t... Others>
 struct static_max<First, Second, Others...>
 {
 	static constexpr size_t value = First > Second ? static_max<First, Others...>::value : static_max<Second, Others...>::value;
+};
+
+
+template<unsigned int num>
+struct static_log2
+{
+	enum
+	{
+		value = static_log2<(num >> 1)>::value + 1,
+	};
+};
+
+template<>
+struct static_log2<1>
+{
+	enum
+	{
+		value = 0,
+	};
+};
+
+template<>
+struct static_log2<0>
+{
 };
 
 

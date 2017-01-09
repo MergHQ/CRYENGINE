@@ -49,7 +49,6 @@ namespace uqs
 			virtual void                                               OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
 			void                                                       SendHubEventToAllListeners(EHubEvent ev);
-			void                                                       DebugDrawHistory2D(int row, const CQueryHistory* whichHistory, const char* descriptiveHistoryName) const;
 
 			static void                                                CmdListFactoryDatabases(IConsoleCmdArgs* pArgs);
 			static void                                                CmdListQueryBlueprintLibrary(IConsoleCmdArgs* pArgs);

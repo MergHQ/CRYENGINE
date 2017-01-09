@@ -156,9 +156,9 @@ namespace uqs
 			// nothing
 		}
 
-		CDebugRenderWorld& CHistoricQuery::GetDebugRenderWorld()
+		CDebugRenderWorldPersistent& CHistoricQuery::GetDebugRenderWorldPersistent()
 		{
-			return m_debugRenderWorld;
+			return m_debugRenderWorldPersistent;
 		}
 
 		void CHistoricQuery::OnQueryCreated()
@@ -353,7 +353,7 @@ namespace uqs
 			}
 
 			const size_t sizeOfAllItems = sizeOfSingleItem * m_items.size();
-			const size_t sizeOfDebugRenderWorld = m_debugRenderWorld.GetRoughMemoryUsage();
+			const size_t sizeOfDebugRenderWorld = m_debugRenderWorldPersistent.GetRoughMemoryUsage();
 			return sizeOfAllItems + sizeOfDebugRenderWorld;
 		}
 
@@ -533,7 +533,7 @@ namespace uqs
 
 		void CHistoricQuery::DrawDebugPrimitivesInWorld(size_t indexOfItemCurrentlyBeingFocused, const IQueryHistoryManager::SEvaluatorDrawMasks& evaluatorDrawMasks) const
 		{
-			m_debugRenderWorld.DrawAllAddedPrimitivesWithNoItemAssociation();
+			m_debugRenderWorldPersistent.DrawAllAddedPrimitivesWithNoItemAssociation();
 
 			//
 			// - figure out the best and worst score of items that made it into the final result set
@@ -640,19 +640,23 @@ namespace uqs
 					assert(0);
 				}
 
-				m_debugRenderWorld.DrawAllAddedPrimitivesAssociatedWithItem(i, color, bShowDetails);
+				m_debugRenderWorldPersistent.DrawAllAddedPrimitivesAssociatedWithItem(i, evaluatorDrawMasks, color, bShowDetails);
 
 				if (item.pDebugProxy)
 				{
 					if (bDrawScore)
 					{
-						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot(), 1.5f, color, "%f", accumulatedAndWeightedScoreOfMaskedEvaluators);
+						stack_string text;
+						text.Format("%f", accumulatedAndWeightedScoreOfMaskedEvaluators);
+						CDebugRenderPrimitive_Text::Draw(item.pDebugProxy->GetPivot(), 1.5f, text.c_str(), color, false);
 					}
 
 					if (bShowDetails)
 					{
 						// # item index
-						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot() + Vec3(0, 0, 1), 1.5f, color, "#%i", (int)i);
+						stack_string text;
+						text.Format("#%i", (int)i);
+						CDebugRenderPrimitive_Text::Draw(item.pDebugProxy->GetPivot() + Vec3(0, 0, 1), 1.5f, text.c_str(), color, false);
 					}
 
 					if (bShouldDrawAnExclamationMarkAsWarning)
@@ -667,7 +671,7 @@ namespace uqs
 							textSize *= CDebugRenderPrimitiveBase::Pulsate();
 						}
 
-						m_debugRenderWorld.DrawText(item.pDebugProxy->GetPivot() + Vec3(0, 0, 1), textSize, Col_Red, "!");
+						CDebugRenderPrimitive_Text::Draw(item.pDebugProxy->GetPivot() + Vec3(0, 0, 1), textSize, "!", Col_Red, false);
 					}
 				}
 			}
@@ -1003,7 +1007,7 @@ namespace uqs
 			ar(m_bGotCanceledPrematurely, "m_bGotCanceledPrematurely");
 			ar(m_bExceptionOccurred, "m_bExceptionOccurred");
 			ar(m_exceptionMessage, "m_exceptionMessage");
-			ar(m_debugRenderWorld, "m_debugRenderWorld");
+			ar(m_debugRenderWorldPersistent, "m_debugRenderWorldPersistent");
 			ar(m_items, "m_items");
 			ar(m_instantEvaluatorNames, "m_instantEvaluatorNames");
 			ar(m_deferredEvaluatorNames, "m_deferredEvaluatorNames");
