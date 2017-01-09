@@ -100,6 +100,8 @@ namespace uqs
 		//
 		//===================================================================================
 
+		const CDebugRenderWorldImmediate CQueryBase::s_debugRenderWorldImmediate;
+
 		CQueryBase::CQueryBase(const SCtorContext& ctorContext, bool bRequiresSomeTimeBudgetForExecution)
 			: m_querierName(ctorContext.querierName)
 			, m_pHistory(ctorContext.pOptionalHistoryToWriteTo)
@@ -107,7 +109,7 @@ namespace uqs
 			, m_totalElapsedFrames(0)
 			, m_bRequiresSomeTimeBudgetForExecution(bRequiresSomeTimeBudgetForExecution)
 			, m_pOptionalShuttledItems(std::move(ctorContext.optionalResultingItemsFromPreviousChainedQuery))
-			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorld() : nullptr)
+			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr)
 		{
 			if (m_pHistory)
 			{
@@ -210,6 +212,17 @@ namespace uqs
 		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& timeBudget, shared::CUqsString& error)
 		{
 			++m_totalElapsedFrames;
+
+			// immediate debug-rendering ON/OFF
+			if (SCvars::debugDraw)
+			{
+				m_blackboard.pDebugRenderWorldImmediate = &s_debugRenderWorldImmediate;
+			}
+			else
+			{
+				m_blackboard.pDebugRenderWorldImmediate = nullptr;
+			}
+
 			const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
 
 			bool bCorruptionOccurred = false;

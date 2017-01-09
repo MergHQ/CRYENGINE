@@ -86,6 +86,7 @@ namespace uqs
 			void                                                       Update();
 			void                                                       DebugDrawRunningQueriesStatistics2D() const;
 			void                                                       PrintRunningQueriesToConsole(CLogger& logger) const;
+			void                                                       CancelAllRunningQueriesDueToUpcomingTearDownOfHub();
 
 		private:
 			                                                           UQS_NON_COPYABLE(CQueryManager);

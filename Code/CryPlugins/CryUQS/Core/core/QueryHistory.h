@@ -119,7 +119,7 @@ namespace uqs
 			explicit                                            CHistoricQuery();
 			explicit                                            CHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager);
 
-			CDebugRenderWorld&                                  GetDebugRenderWorld();
+			CDebugRenderWorldPersistent&                        GetDebugRenderWorldPersistent();
 			void                                                OnQueryCreated();
 			void                                                OnQueryBlueprintInstantiationStarted(const char* queryBlueprintName);
 			void                                                OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics);
@@ -187,7 +187,7 @@ namespace uqs
 			bool                                                m_bGotCanceledPrematurely;
 			bool                                                m_bExceptionOccurred;
 			string                                              m_exceptionMessage;
-			CDebugRenderWorld                                   m_debugRenderWorld;
+			CDebugRenderWorldPersistent                         m_debugRenderWorldPersistent;
 			std::vector<SHistoricItem>                          m_items;                            // counter-part of all the generated items
 			std::vector<string>                                 m_instantEvaluatorNames;            // cached names of all instant-evaluator factories; this is necessary in case query blueprints get reloaded at runtime to prevent dangling pointers
 			std::vector<string>                                 m_deferredEvaluatorNames;           // ditto for deferred-evaluator factories

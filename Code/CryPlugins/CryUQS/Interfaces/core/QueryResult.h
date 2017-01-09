@@ -26,12 +26,14 @@ namespace uqs
 			enum EStatus
 			{
 				Success,                  // the query finished without runtime errors; the final result may still contain 0 items, though, but the .pResultSet pointer is definitely valid
-				ExceptionOccurred         // a runtime error occurred during the execution of the query; use the .error property to see what went wrong
+				ExceptionOccurred,        // a runtime error occurred during the execution of the query; use the .error property to see what went wrong
+				CanceledByHubTearDown     // the UQS Hub is about to get torn down and is therefore in the process of canceling all running queries
 			};
 
 			explicit                      SQueryResult(const CQueryID& _queryID, EStatus _status, QueryResultSetUniquePtr& _pResultSet, const char* _error);
 			static SQueryResult           CreateSuccess(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSet);
 			static SQueryResult           CreateError(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSetDummy, const char* _error);
+			static SQueryResult           CreateCanceledByHubTearDown(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSetDummy);
 
 			CQueryID                      queryID;
 			EStatus                       status;
@@ -55,6 +57,11 @@ namespace uqs
 		inline SQueryResult SQueryResult::CreateError(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSetDummy, const char* _error)
 		{
 			return SQueryResult(_queryID, EStatus::ExceptionOccurred, _pResultSetDummy, _error);
+		}
+
+		inline SQueryResult SQueryResult::CreateCanceledByHubTearDown(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSetDummy)
+		{
+			return SQueryResult(_queryID, EStatus::CanceledByHubTearDown, _pResultSetDummy, "");
 		}
 
 	}

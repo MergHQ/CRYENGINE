@@ -108,9 +108,9 @@ namespace uqs
 			}
 
 			// debug-persist the AABB
-			IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorld)
+			IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorldPersistent)
 			{
-				updateContext.blackboard.pDebugRenderWorld->AddAABB(AABB(m_params.pivot + m_params.localAABBMins, m_params.pivot + m_params.localAABBMaxs), Col_White);
+				updateContext.blackboard.pDebugRenderWorldPersistent->AddAABB(AABB(m_params.pivot + m_params.localAABBMins, m_params.pivot + m_params.localAABBMaxs), Col_White);
 			}
 
 			return EUpdateStatus::FinishedGeneratingItems;

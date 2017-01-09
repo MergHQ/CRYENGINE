@@ -10,7 +10,7 @@ namespace uqs
 	namespace stdlib
 	{
 
-		void EntityId_AddToDebugRenderWorld(const EntityIdWrapper& item, core::IDebugRenderWorld& debugRW)
+		void EntityId_AddToDebugRenderWorld(const EntityIdWrapper& item, core::IDebugRenderWorldPersistent& debugRW)
 		{
 			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(item.value))
 			{

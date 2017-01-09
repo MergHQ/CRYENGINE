@@ -318,7 +318,7 @@ namespace uqs
 							}
 							else
 							{
-								QueryResultSetUniquePtr pResultSetDummy = entry.query->ClaimResultSet();
+								QueryResultSetUniquePtr pResultSetDummy;
 								const SQueryResult result = SQueryResult::CreateError(entry.queryID, pResultSetDummy, entry.errorIfAny.c_str());
 								entry.callback(result);
 							}
@@ -374,6 +374,30 @@ namespace uqs
 			}
 
 			logger.Printf("");
+		}
+
+		void CQueryManager::CancelAllRunningQueriesDueToUpcomingTearDownOfHub()
+		{
+			// operate on a copy in case the query's callback cancels queries recursively (happens in hierarchical queries)
+			std::map<CQueryID, SRunningQueryInfo> copyOfRunningQueries;
+			copyOfRunningQueries.swap(m_queries);
+
+			for (auto it = copyOfRunningQueries.begin(); it != copyOfRunningQueries.end(); ++it)
+			{
+				const SRunningQueryInfo& runningQueryInfo = it->second;
+
+				// notify the originator of the query that we're prematurely canceling the query
+				if (runningQueryInfo.callback)
+				{
+					const CQueryID& queryID = it->first;
+					QueryResultSetUniquePtr pDummyResultSet;
+					const SQueryResult result = SQueryResult::CreateCanceledByHubTearDown(queryID, pDummyResultSet);
+					runningQueryInfo.callback(result);
+				}
+
+				// now cancel it (this might attempt to do some recursive cancelations, but they will effectively end up in CancelQuery() as a NOP since m_queries has already been emptied)
+				runningQueryInfo.query->Cancel();
+			}
 		}
 
 		void CQueryManager::DebugPrintQueryStatistics(CLogger& logger, const CQueryBase& query, const CQueryID& queryID)
