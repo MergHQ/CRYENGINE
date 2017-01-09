@@ -136,7 +136,7 @@ namespace uqs
 				// destroy the one and only Hub instance
 				//
 
-				m_pHub.release();
+				m_pHub.reset();
 			}
 		}
 

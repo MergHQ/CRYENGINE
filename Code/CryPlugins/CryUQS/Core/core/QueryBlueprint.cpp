@@ -326,7 +326,7 @@ namespace uqs
 				m_pGenerator.reset(new CGeneratorBlueprint);
 				if (!m_pGenerator->Resolve(*pGeneratorBlueprint, *this))
 				{
-					m_pGenerator.release();    // nullify the generator so that CInputBlueprint::Resolve() won't be tempted to use this half-baked object for further checks (and crash becuase it might be lacking a generator-factory)
+					m_pGenerator.reset();    // nullify the generator so that CInputBlueprint::Resolve() won't be tempted to use this half-baked object for further checks (and crash becuase it might be lacking a generator-factory)
 					bResolveSucceeded = false;
 				}
 			}
