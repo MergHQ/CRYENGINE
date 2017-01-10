@@ -7,6 +7,7 @@
 #include "Interactor.h"
 #include "GameVolumes/GameVolume_Water.h"
 #include "GameObjects/MannequinObject.h"
+#include "EntityContainers/EntityContainerObject.h"
 
 #include <CryGame/IGameVolumes.h>
 #include <CryGame/IGameFramework.h>
@@ -57,4 +58,5 @@ void CGameObjectSystem::RegisterFactories(IGameFramework* pFrameWork)
 
 	HIDE_FROM_EDITOR("WaterVolume");
 	REGISTER_EDITOR_VOLUME_CLASS(pFrameWork, "WaterVolume");
+	REGISTER_GAME_OBJECT_EXTENSION(pFrameWork, "EntityContainerObject", EntityContainerObject, "Scripts/Entities/Containers/EntityContainerObject.lua");
 }
