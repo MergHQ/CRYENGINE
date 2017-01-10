@@ -19,7 +19,7 @@ public:
 	{
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig<Vec3>("Position", _HELP("Position to compute lighting at")),
-			InputPortConfig<float>("Radius",  1.0f,                                       _HELP("Radius around the position")),
+			InputPortConfig<float>("Radius",  1.0f, _HELP("Radius around the position")),
 			InputPortConfig<bool>("Accuracy", _HELP("TRUE for accurate, FALSE for fast")),
 			{ 0 }
 		};
@@ -127,6 +127,74 @@ public:
 	}
 };
 
+class CRefreshStaticShadows_Node : public CFlowBaseNode<eNCT_Singleton>
+{
+	enum INPUTS
+	{
+		EIP_Apply = 0,
+	};
+
+	enum OUTPUTS
+	{
+		EOP_Done = 0,
+		EOP_Triggered,
+		EOP_Failed,
+	};
+
+public:
+	CRefreshStaticShadows_Node(SActivationInfo* pActInfo)
+	{
+	}
+
+	virtual void GetMemoryUsage(ICrySizer* s) const override
+	{
+		s->Add(*this);
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig &config) override
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("Apply",_HELP("Perform a refresh of all static shadow maps.")),
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig_AnyType("Done", _HELP("The selected operation has been acknoledged. This output will always get triggered.")),
+			OutputPortConfig_AnyType("Triggered", _HELP("The selected operation has been triggered.")),
+			OutputPortConfig_AnyType("Failed", _HELP("The selected operation did not work as expected (e.g. the VR operation was not supported).")),
+			{ 0 }
+		};
+		config.sDescription = _HELP("Static shadow helper");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+		{
+			const bool bApply = IsPortActive(pActInfo, EIP_Apply);
+			bool bTriggered = false;
+
+			if (bApply && pActInfo->pGraph != nullptr)
+			{
+				if (IConsole* pConsole = gEnv->pConsole)
+				{
+					ICVar* pCVar = gEnv->pConsole->GetCVar("e_shadowscacheupdate"); // full update time sliced?
+					if (pCVar) pCVar->Set(1);
+					bTriggered = true;
+				}
+				ActivateOutput(pActInfo, bTriggered ? EOP_Triggered : EOP_Failed, true);
+				ActivateOutput(pActInfo, EOP_Done, true);
+			}
+		}
+		break;
+		}
+	}
+};
+
 class CPerEntityShadow_Node : public CFlowBaseNode<eNCT_Instanced>
 {
 
@@ -231,4 +299,5 @@ public:
 
 REGISTER_FLOW_NODE("Environment:ComputeLighting", CComputeLighting_Node);
 REGISTER_FLOW_NODE("Environment:RecomputeStaticShadows", CComputeStaticShadows_Node);
+REGISTER_FLOW_NODE("Environment:RefreshStaticShadows", CRefreshStaticShadows_Node);
 REGISTER_FLOW_NODE("Environment:PerEntityShadows", CPerEntityShadow_Node);

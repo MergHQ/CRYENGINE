@@ -477,6 +477,7 @@ public:
 	{
 		EOP_Pos = 0,
 		EOP_Dir,
+		EOP_Rot,
 	};
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
@@ -488,6 +489,7 @@ public:
 		static const SOutputPortConfig out_config[] = {
 			OutputPortConfig<Vec3>("Pos", "Position of the camera"),
 			OutputPortConfig<Vec3>("Dir", "ViewDir of the camera"),
+			OutputPortConfig<Vec3>("Rot", "Rotation of the camera (in degrees)"),
 			{ 0 }
 		};
 
@@ -505,9 +507,12 @@ public:
 			{
 				if (IsPortActive(pActInfo, EIP_Get))
 				{
-					CCamera& cam = GetISystem()->GetViewCamera();
+					const CCamera& cam = GetISystem()->GetViewCamera();
+					const Ang3 angles = RAD2DEG(cam.GetAngles());
+					const Vec3 anglesAsVec3(angles);
 					ActivateOutput(pActInfo, EOP_Pos, cam.GetPosition());
 					ActivateOutput(pActInfo, EOP_Dir, cam.GetViewdir());
+					ActivateOutput(pActInfo, EOP_Rot, anglesAsVec3);
 				}
 
 			}

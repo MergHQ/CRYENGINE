@@ -96,7 +96,7 @@ public:
 					ActivateOutput(pActInfo, 1 + (inRange ? 1 : 0), true);
 					ActivateOutput(pActInfo, 3, distance);
 
-					const Vec3 distVector = pEnt2->GetPos() - pEnt1->GetPos();
+					const Vec3 distVector = pEnt2->GetWorldPos() - pEnt1->GetWorldPos();
 					ActivateOutput(pActInfo, 4, distVector);
 					m_errorLogSent = false;
 				}

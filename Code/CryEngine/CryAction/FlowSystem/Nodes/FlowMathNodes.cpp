@@ -2823,6 +2823,90 @@ public:
 	}
 };
 
+class CFlowNode_Wrap : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_Wrap(SActivationInfo* pActInfo) {};
+
+	enum EInputPorts
+	{
+		eIP_Set = 0,
+		eIP_Min,
+		eIP_Max,
+		eIP_Value,
+	};
+
+	enum EOutputPorts
+	{
+		eOP_Out = 0,
+	};
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("Set"),
+			InputPortConfig<float>("Min"),
+			InputPortConfig<float>("Max"),
+			InputPortConfig<float>("Value"),
+			{ 0 }
+		};
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig<float>("out"),
+			{ 0 }
+		};
+		config.sDescription = _HELP("Wraps Value around the interval defined by Min and Max");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.SetCategory(EFLN_APPROVED);
+	}
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+			if (IsPortActive(pActInfo, eIP_Set))
+			{
+				const float minVal = GetPortFloat(pActInfo, eIP_Min);
+				const float maxVal = GetPortFloat(pActInfo, eIP_Max);
+
+				if (minVal <= maxVal)
+				{
+					const float inputVal = GetPortFloat(pActInfo, eIP_Value);
+
+					// Move to a [0 ; X] interval
+					const float dividend = (inputVal - minVal);
+					const float divisor = (maxVal - minVal);
+
+					// Get the remainder
+					float remainder = std::remainder(dividend, divisor);
+					if (remainder < 0.0f)
+					{
+						// the remainder function is a bit awkward as it will give a result in the interval [-max/2; max/2] :
+						// remainder( 5.1, 3 ) => -0.9
+						// Though, it behaves better than fmod regarding negative numbers
+						remainder += divisor;
+					}
+
+					// Move the value back to the original interval
+					const float wrappedVal = remainder + minVal;
+
+					ActivateOutput(pActInfo, eOP_Out, wrappedVal);
+				}
+				else
+				{
+					GameWarning("Math:Wrap FG Node has an invalid range : [min=%.2f, max=%.2f]", minVal, maxVal);
+				}
+			}
+			break;
+		}
+	};
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+};
+
 REGISTER_FLOW_NODE("Math:Round", CFlowNode_Round);
 REGISTER_FLOW_NODE("Math:Add", CFlowNode_Add);
 REGISTER_FLOW_NODE("Math:Sub", CFlowNode_Sub);
@@ -2865,6 +2949,7 @@ REGISTER_FLOW_NODE("Math:ArcTangens", CFlowNode_TrigArcTan);
 REGISTER_FLOW_NODE("Math:Ceil", CFlowNode_Ceil);
 REGISTER_FLOW_NODE("Math:Floor", CFlowNode_Floor);
 REGISTER_FLOW_NODE("Math:Mod", CFlowNode_Modulo);
+REGISTER_FLOW_NODE("Math:Wrap", CFlowNode_Wrap);
 
 REGISTER_FLOW_NODE("Vec3:AddVec3", CFlowNode_AddVec3);
 REGISTER_FLOW_NODE("Vec3:SubVec3", CFlowNode_SubVec3);
