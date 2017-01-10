@@ -44,6 +44,7 @@
       "FlowSystem/Nodes/FlowDelayNode.cpp",
       "FlowSystem/Nodes/FlowDynamicResponseVariable.cpp",
       "FlowSystem/Nodes/FlowDynamicResponseSignal.cpp",
+      "FlowSystem/Nodes/FlowEntityContainerNodes.cpp",
       "FlowSystem/Nodes/FlowEngineEffectsNodes.cpp",
       "FlowSystem/Nodes/FlowEngineNodes.cpp",
       "FlowSystem/Nodes/FlowEntityNode.cpp",
@@ -761,6 +762,16 @@
       "BreakableGlassSystem.cpp",
       "BreakableGlassSystem.h",
       "DelayedPlaneBreak.h"
+    ],
+    "EntityContainers":
+    [
+      "EntityContainers/EntityContainer.cpp",
+      "EntityContainers/EntityContainer.h",
+      "EntityContainers/EntityContainerMgr.h",
+      "EntityContainers/EntityContainerMgr.cpp",
+      "EntityContainers/IEntityContainerListener.h",
+      "EntityContainers/EntityContainerObject.cpp",
+      "EntityContainers/EntityContainerObject.h"
     ]
   },
   "CryAction_main_uber_1.cpp":{

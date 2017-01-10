@@ -108,6 +108,7 @@ class CSegmentedWorld;
 
 class CNetMessageDistpatcher;
 class CManualFrameStepController;
+class CEntityContainerMgr;
 
 class CCryAction :
 	public IGameFramework
@@ -325,6 +326,8 @@ public:
 
 	CNetMessageDistpatcher*     GetNetMessageDispatcher()      { return m_pNetMsgDispatcher; }
 	CManualFrameStepController* GetManualFrameStepController() { return m_pManualFrameStepController; }
+
+	CEntityContainerMgr&         GetEntityContainerMgr()       { return *m_pEntityContainerMgr; }
 
 	//	INetQueryListener* GetLanQueryListener() {return m_pLanQueryListener;}
 	bool                          LoadingScreenEnabled() const;
@@ -682,6 +685,8 @@ private:
 	CNetMessageDistpatcher*     m_pNetMsgDispatcher;
 	CManualFrameStepController* m_pManualFrameStepController;
 	SExternalGameLibrary        m_externalGameLibrary;
+
+	CEntityContainerMgr*        m_pEntityContainerMgr;
 
 	CTimeValue                  m_levelStartTime;
 

@@ -76,6 +76,14 @@ public:
 		{
 		case eFE_Activate:
 			{
+				if (IsPortActive(pActInfo, eIP_CharacterSlot))
+				{
+					m_characterSlot = GetPortInt(pActInfo, eIP_CharacterSlot);
+				}
+				if (IsPortActive(pActInfo, eIP_BoneName))
+				{
+					m_boneName = GetPortString(pActInfo, eIP_BoneName);
+				}
 				if (IsPortActive(pActInfo, eIP_Attach))
 				{
 					AttachObject(pActInfo);

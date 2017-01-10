@@ -196,6 +196,7 @@ extern "C" IGameStartup* CreateGameStartup();
 #endif
 #include "Network/NetMsgDispatcher.h"
 #include "ManualFrameStep.h"
+#include "EntityContainers/EntityContainerMgr.h"
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
@@ -367,7 +368,8 @@ CCryAction::CCryAction()
 	m_PreUpdateTicks(0),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(0),
-	m_pManualFrameStepController(nullptr)
+	m_pManualFrameStepController(nullptr),
+	m_pEntityContainerMgr(nullptr)
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
@@ -2052,6 +2054,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
+	m_pEntityContainerMgr = new CEntityContainerMgr();
 	m_pManualFrameStepController = new CManualFrameStepController();
 
 	if (gEnv->pRenderer)
@@ -2662,6 +2665,7 @@ void CCryAction::ShutdownEngine()
 
 	SAFE_DELETE(m_pManualFrameStepController);
 	SAFE_DELETE(m_pNetMsgDispatcher);
+	SAFE_DELETE(m_pEntityContainerMgr);
 
 	ReleaseExtensions();
 
@@ -3065,6 +3069,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		}
 
 		m_pNetMsgDispatcher->Update();
+		m_pEntityContainerMgr->Update();
 	}
 
 	if (CGameServerNub* pServerNub = GetGameServerNub())
