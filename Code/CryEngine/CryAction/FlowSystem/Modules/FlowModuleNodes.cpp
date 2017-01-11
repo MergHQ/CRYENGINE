@@ -37,6 +37,7 @@ void CFlowModuleStartNodeFactory::GetConfiguration(SFlowNodeConfig& config)
 	config.pInputPorts = in_config;
 	config.nFlags |= EFLN_HIDE_UI | EFLN_UNREMOVEABLE;
 	config.SetCategory(EFLN_APPROVED);
+	config.SetDescription(_HELP("Starts the execution flow of a module and passes in inputs from the Call node"));
 
 	// if we are in runtime, the ports are no longer changing, so we only need to build once (when empty), no need to rebuild
 	if (m_pModule && (gEnv->IsEditing() || m_outputs.empty()))
@@ -183,6 +184,7 @@ void CFlowModuleReturnNodeFactory::GetConfiguration(SFlowNodeConfig& config)
 	config.pOutputPorts = out_config;
 	config.nFlags |= EFLN_HIDE_UI | EFLN_UNREMOVEABLE;
 	config.SetCategory(EFLN_APPROVED);
+	config.SetDescription(_HELP("Ends the module instance execution and passes the result and outputs to the Call node"));
 
 	// if we are in runtime, the ports are no longer changing, so we only need to build once (when empty), no need to rebuild
 	if (m_pModule && (gEnv->IsEditing() || m_inputs.empty()))
