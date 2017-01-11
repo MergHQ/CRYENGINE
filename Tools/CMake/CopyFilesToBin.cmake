@@ -41,10 +41,17 @@ if (PLUGIN_VR_OSVR)
 endif()
 if (OPTION_SANDBOX)
 	set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-		${SDK_DIR}/XT_13_4/bin_vc14/*.dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
+		${SDK_DIR}/XT_13_4/bin_vc14/*[^D].dll
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[^d].dll
 	)
+	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+			${SDK_DIR}/XT_13_4/bin_vc14/*D.dll
+			${SDK_DIR}/XT_13_4/bin_vc14/*D.pdb
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.dll
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
+		)
+	endif()
 endif()
 
 macro(deploy_runtime_file source destination)
@@ -85,7 +92,15 @@ macro(deploy_pyside)
 	set(PYSIDE_SDK_SOURCE ${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/)
 	set(PYSIDE_SOURCE ${PYSIDE_SDK_SOURCE}PySide2/)
 
-	set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll" "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
+	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
+	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
+		file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*_d.pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
+	else()
+		set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll")
+		file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*[^_d].pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
+	endif()
+
 	foreach(FILE_NAME ${PYSIDE_DLLS})
 		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
 		set(PDB_NAME ${name_without_extension}.pdb)
@@ -99,7 +114,6 @@ macro(deploy_pyside)
 		endif()
 	endforeach()
 	
-	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*.pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
 	foreach(FILE_NAME ${FILES_TO_COPY})
 		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
 		get_filename_component (dirname ${FILE_NAME} DIRECTORY)
@@ -134,7 +148,11 @@ macro(copy_binary_files_to_target)
 		if (OPTION_SANDBOX)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
-			deploy_runtime_files(${SDK_DIR}/Python27/*.zip)
+			if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+				deploy_runtime_files(${SDK_DIR}/Python27/*_d.zip)
+			else()
+				deploy_runtime_files(${SDK_DIR}/Python27/*[^_d].zip)
+			endif()
 			deploy_pyside()
 		endif()
 	elseif(WIN32)
