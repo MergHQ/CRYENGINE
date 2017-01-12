@@ -324,6 +324,9 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 	Matrix34 worldTM;
 	sp.pMtx3x4 = &worldTM;
 
+	//references to geoms need to be incremented because physical entity can potentially drop it's geometry anytime when this method is executed in different thread
+	sp.flags = status_addref_geoms;
+
 	HashComputer hash(hashValueSeed);
 	hash.Add((uint32)entityCount);
 
@@ -373,6 +376,9 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 
 			++sp.ipart;
 			MARK_UNUSED sp.partid;
+
+			if (sp.pGeomProxy) sp.pGeomProxy->Release();
+			if (sp.pGeom) sp.pGeom->Release();
 		}
 		MARK_UNUSED sp.ipart;
 	}
@@ -411,6 +417,8 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 								++sp.ipart;
 								MARK_UNUSED sp.partid;
 
+								if (sp.pGeomProxy) sp.pGeomProxy->Release();
+								if (sp.pGeom) sp.pGeom->Release();
 								continue;
 							}
 						}
@@ -421,6 +429,9 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 
 				++sp.ipart;
 				MARK_UNUSED sp.partid;
+
+				if (sp.pGeomProxy) sp.pGeomProxy->Release();
+				if (sp.pGeom) sp.pGeom->Release();
 			}
 			MARK_UNUSED sp.ipart;
 		}
