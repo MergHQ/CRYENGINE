@@ -15,6 +15,7 @@ namespace SerializationUtils
 {
 namespace Private
 {
+
 class CStringListQuickSearchOptions : public Serialization::ICustomResourceParams, public IQuickSearchOptions
 {
 public:
@@ -43,11 +44,6 @@ public:
 	}
 
 	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return "";
-	}
-
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
 	{
 		return "";
 	}
@@ -95,17 +91,15 @@ private:
 
 	struct SOption
 	{
-		inline SOption(const TYPE& _value, const char* _szLabel, const char* _szDescription, const char* _szWikiLink)
+		inline SOption(const TYPE& _value, const char* _szLabel, const char* _szDescription)
 			: value(_value)
 			, label(_szLabel)
 			, description(_szDescription)
-			, wikiLink(_szWikiLink)
 		{}
 
 		TYPE   value;
 		string label;
 		string description;
-		string wikiLink;
 	};
 
 	typedef std::vector<SOption> Options;
@@ -128,20 +122,15 @@ public:
 		return optionIdx < m_options.size() ? m_options[optionIdx].description.c_str() : "";
 	}
 
-	virtual const char* GetWikiLink(uint32 optionIdx) const
-	{
-		return optionIdx < m_options.size() ? m_options[optionIdx].wikiLink.c_str() : "";
-	}
-
 	// ~IQuickSearchOptions
 
-	inline void AddOption(const char* szName, const TYPE& value, const char* szLabel, const char* szDescription, const char* szWikiLink)
+	inline void AddOption(const char* szName, const TYPE& value, const char* szLabel, const char* szDescription)
 	{
 		SCHEMATYC_CORE_ASSERT(szName);
 		if (szName)
 		{
 			m_names.push_back(szName);
-			m_options.push_back(SOption(value, szLabel ? szLabel : szName, szDescription, szWikiLink));
+			m_options.push_back(SOption(value, szLabel ? szLabel : szName, szDescription));
 		}
 	}
 
@@ -172,7 +161,8 @@ private:
 
 	Options m_options;
 };
-}
+
+} // Private
 
 // Scoped configuration for mapping names to values and displaying as quick-search trees.
 template<typename TYPE> class CScopedQuickSearchConfig
@@ -192,9 +182,9 @@ public:
 		m_context.set(static_cast<CScopedQuickSearchConfig*>(this));
 	}
 
-	inline void AddOption(const char* szName, const TYPE& value, const char* szLabel = nullptr, const char* szDescription = nullptr, const char* szWikiLink = nullptr)
+	inline void AddOption(const char* szName, const TYPE& value, const char* szLabel = nullptr, const char* szDescription = nullptr)
 	{
-		m_pOptions->AddOption(szName, value, szLabel, szDescription, szWikiLink);
+		m_pOptions->AddOption(szName, value, szLabel, szDescription);
 	}
 
 	inline const OptionsPtr& GetOptions()
@@ -210,6 +200,7 @@ private:
 
 namespace Private
 {
+
 class CStringListStaticQuickSearchOptions : public Serialization::ICustomResourceParams, public IQuickSearchOptions
 {
 public:
@@ -233,11 +224,6 @@ public:
 	}
 
 	virtual const char* GetDescription(uint32 optionIdx) const override
-	{
-		return "";
-	}
-
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
 	{
 		return "";
 	}
@@ -365,7 +351,8 @@ template<typename TYPE> inline bool Serialize(Serialization::IArchive& archive, 
 		return archive(value.value, szName, szLabel);
 	}
 }
-}   // Private
+
+} // Private
 
 // Decorator for displaying static string lists as quick-search trees.
 inline Private::SStringListStaticQuickSearchDecorator QuickSearch(Serialization::StringListStaticValue& value, const char* szHeader = nullptr, const char* szDelimiter = nullptr)
@@ -405,5 +392,6 @@ template<typename TYPE> inline bool Serialize(Serialization::IArchive& archive, 
 {
 	return archive(SerializationUtils::QuickSearch(value.value), szName, szLabel);
 }
+
 } // SerializationUtils
 } // Schematyc

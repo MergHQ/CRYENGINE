@@ -32,7 +32,7 @@ struct IScriptTimer;
 struct IScriptVariable;
 // Forward declare structures.
 struct SElementId;
-struct SGUID;
+
 
 typedef CDelegate<EVisitStatus(IScript&)> ScriptVisitor;
 

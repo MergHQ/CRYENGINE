@@ -5,6 +5,7 @@
 
 #include <CryCore/Platform/platform_impl.inl>
 #include <CryGame/IGameFramework.h>
+#include <Schematyc/SerializationUtils/SerializationEnums.inl>
 
 #include "AutoRegister.h"
 #include "Entity/EntityObjectClassRegistry.h"
@@ -18,10 +19,12 @@ namespace Schematyc
 {
 namespace
 {
+
 inline bool WantUpdate()
 {
 	return !gEnv->pGameFramework->IsGamePaused() && (gEnv->pSystem->GetSystemGlobalState() == ESYSTEM_GLOBAL_STATE_RUNNING);
 }
+
 } // Anonymous
 
 CSTDEnv::CSTDEnv()
@@ -71,7 +74,8 @@ void CSTDEnv::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		}
 
 		m_pEntityObjectClassRegistry->Init();
-		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("e2e023df-afa7-43a6-bad4-1bc04eada8e7"_schematyc_guid, "STDEnv", SCHEMATYC_MEMBER_DELEGATE(CSTDEnv::RegisterPackage, *this)));
+
+		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("e2e023df-afa7-43a6-bad4-1bc04eada8e7"_schematyc_guid, "STDEnv", g_szCrytek, "Standard Schematyc environment", SCHEMATYC_MEMBER_DELEGATE(&CSTDEnv::RegisterPackage, *this)));
 
 		if (gEnv->IsEditor())
 		{
@@ -120,4 +124,5 @@ void CSTDEnv::RegisterPackage(IEnvRegistrar& registrar)
 CSTDEnv* CSTDEnv::s_pInstance = nullptr;
 
 CRYREGISTER_SINGLETON_CLASS(CSTDEnv)
+
 } // Schematyc

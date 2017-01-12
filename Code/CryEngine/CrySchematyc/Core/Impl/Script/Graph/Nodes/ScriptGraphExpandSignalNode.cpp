@@ -52,13 +52,15 @@ void CScriptGraphExpandSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 					layout.AddInput("In", m_typeId.guid, EScriptGraphPortFlags::Signal);
 					layout.AddOutput("Out", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::Begin });
 
-					for (uint32 signalInputIdx = 0, signalInputCount = pEnvSignal->GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)
+					const CClassDesc& signalDesc = pEnvSignal->GetDesc();
+					for (const CClassMemberDesc& signalMemberDesc : signalDesc.GetMembers())
 					{
-						CAnyConstPtr pData = pEnvSignal->GetInputData(signalInputIdx);
-						SCHEMATYC_CORE_ASSERT(pData);
-						if (pData)
+						const void* pDefaultValue = signalMemberDesc.GetDefaultValue();
+						SCHEMATYC_CORE_ASSERT(pDefaultValue);
+						if (pDefaultValue)
 						{
-							layout.AddOutputWithData(CGraphPortId::FromUniqueId(pEnvSignal->GetInputId(signalInputIdx)), pEnvSignal->GetInputName(signalInputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+							const CCommonTypeDesc& signalMemberTypeDesc = signalMemberDesc.GetTypeDesc();
+							layout.AddOutputWithData(CGraphPortId::FromUniqueId(signalMemberDesc.GetId()), signalMemberDesc.GetLabel(), signalMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, CAnyConstRef(signalMemberTypeDesc, pDefaultValue));
 						}
 					}
 				}

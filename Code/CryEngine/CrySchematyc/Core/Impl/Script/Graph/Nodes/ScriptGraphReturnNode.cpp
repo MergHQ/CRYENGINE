@@ -28,7 +28,7 @@ void CScriptGraphReturnNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 
 	const IScriptElement& scriptElement = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-	switch (scriptElement.GetElementType())
+	switch (scriptElement.GetType())
 	{
 	case EScriptElementType::Function:
 		{

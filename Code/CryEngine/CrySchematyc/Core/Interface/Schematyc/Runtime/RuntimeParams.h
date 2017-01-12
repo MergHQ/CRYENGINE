@@ -8,11 +8,13 @@
 #include <CryMath/Cry_Math.h>
 
 #include "Schematyc/FundamentalTypes.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/Scratchpad.h"
 
 namespace Schematyc
 {
+
 class CRuntimeParams
 {
 protected:
@@ -93,6 +95,11 @@ public:
 		return Get(paramId, EParamType::Input);
 	}
 
+	inline bool GetInput(uint32 paramId, const CAnyRef& value) const
+	{
+		return Get(paramId, value, EParamType::Input);
+	}
+
 	inline bool SetOutput(uint32 paramId, const CAnyConstRef& value)
 	{
 		return Set(paramId, EParamType::Output, value);
@@ -155,6 +162,12 @@ private:
 		return pos != InvalidIdx ? m_scratchPad.Get(pos) : CAnyConstPtr();
 	}
 
+	inline bool Get(uint32 paramId, const CAnyRef& value, EParamType paramType) const
+	{
+		CAnyConstPtr pSrc = Get(paramId, paramType);
+		return pSrc ? Any::CopyAssign(value, *pSrc) : false;
+	}
+
 	inline uint32 ParamIdToPos(uint32 paramId, EParamType paramType) const
 	{
 		for (const SParam* pParam = m_pParams, * pEnd = m_pParams + m_size; pParam != pEnd; ++pParam)
@@ -198,4 +211,55 @@ private:
 
 typedef CRuntimeParams                 HeapRuntimeParams;
 typedef CInPlaceRuntimeParams<64, 128> StackRuntimeParams;
+
+namespace RuntimeParams
+{
+
+inline bool FromInputClass(const CClassDesc& typeDesc, CRuntimeParams& output, const void* pInput)
+{
+	// #SchematycTODO : Implement some kind of type checking? Perhaps runtime params could store type guid?
+
+	for (const CClassMemberDesc& memberDesc : typeDesc.GetMembers())
+	{
+		if (!output.SetInput(memberDesc.GetId(), CAnyConstRef(memberDesc.GetTypeDesc(), reinterpret_cast<const uint8*>(pInput) + memberDesc.GetOffset())))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<typename TYPE> inline bool FromInputClass(CRuntimeParams& output, const TYPE& input)
+{
+	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
+	static_assert(std::is_class<TYPE>::value, "Type must be class!");
+
+	return FromInputClass(GetTypeDesc<TYPE>(), output, &input);
+}
+
+inline bool ToInputClass(const CClassDesc& typeDesc, void* pOutput, const CRuntimeParams& input)
+{
+	// #SchematycTODO : Implement some kind of type checking? Perhaps runtime params could store type guid?
+
+	for (const CClassMemberDesc& member : typeDesc.GetMembers())
+	{
+		if (!input.GetInput(member.GetId(), CAnyRef(member.GetTypeDesc(), reinterpret_cast<uint8*>(pOutput) + member.GetOffset())))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<typename TYPE> inline bool ToInputClass(TYPE& output, const CRuntimeParams& input)
+{
+	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
+	static_assert(std::is_class<TYPE>::value, "Type must be class!");
+
+	return ToInputClass(GetTypeDesc<TYPE>(), &output, input);
+}
+
+} // RuntimeParams
 } // Schematyc

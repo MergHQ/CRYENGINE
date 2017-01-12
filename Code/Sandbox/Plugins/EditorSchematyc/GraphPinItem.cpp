@@ -10,7 +10,7 @@
 #include "VariableStorage/AbstractVariableTypesModel.h"
 
 #include <Schematyc/Script/IScriptGraph.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 
 #include <NodeGraph/PinWidget.h>
 #include <NodeGraph/NodeGraphViewStyle.h>

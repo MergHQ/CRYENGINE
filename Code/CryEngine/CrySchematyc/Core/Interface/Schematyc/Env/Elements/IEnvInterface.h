@@ -9,6 +9,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CAnyConstPtr;
 
@@ -30,4 +31,5 @@ struct IEnvInterface : public IEnvElementBase<EEnvElementType::Interface>
 {
 	virtual ~IEnvInterface() {}
 };
+
 } // Schematyc

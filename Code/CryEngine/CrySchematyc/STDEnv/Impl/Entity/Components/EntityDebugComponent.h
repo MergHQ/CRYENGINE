@@ -6,6 +6,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 // Forward declare structures.
@@ -21,9 +22,10 @@ public:
 	virtual void Shutdown() override;
 	// ~CComponent
 
-	void DrawText(const CSharedString& text, const Vec2& pos, const ColorF& color);
+	void        DrawText(const CSharedString& text, const Vec2& pos, const ColorF& color);
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityDebugComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityDebugComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 };
+
 } // Schematyc

@@ -10,6 +10,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvElement;
 
@@ -33,24 +34,23 @@ enum class EEnvElementFlags
 	Deprecated = BIT(1)
 };
 
-typedef CEnumFlags<EEnvElementFlags>                EnvElementFlags;
+typedef CEnumFlags<EEnvElementFlags> EnvElementFlags;
 
 typedef CDelegate<EVisitStatus(const IEnvElement&)> EnvElementConstVisitor;
 
 // Environment element interface.
-// N.B. Do not inherit from this class directly but instead use IEnvElementBase.
+// N.B. Do not inherit from this class directly but instead use IEnvElementBase e.g. struct IEnvFunction : public IEnvElementBase<EEnvElementType::Function>.
 struct IEnvElement
 {
 	virtual ~IEnvElement() {}
 
-	virtual EEnvElementType    GetElementType() const = 0;
-	virtual EnvElementFlags    GetElementFlags() const = 0;
+	virtual EEnvElementType    GetType() const = 0;
+	virtual EnvElementFlags    GetFlags() const = 0;
+
 	virtual SGUID              GetGUID() const = 0;
 	virtual const char*        GetName() const = 0;
 	virtual SSourceFileInfo    GetSourceFileInfo() const = 0;
-	virtual const char*        GetAuthor() const = 0;
 	virtual const char*        GetDescription() const = 0;
-	virtual const char*        GetWikiLink() const = 0;
 
 	virtual bool               IsValidScope(IEnvElement& scope) const = 0;
 
@@ -78,7 +78,7 @@ template<EEnvElementType ELEMENT_TYPE> struct IEnvElementBase : public IEnvEleme
 {
 	static const EEnvElementType ElementType = ELEMENT_TYPE;
 
-	virtual EEnvElementType GetElementType() const override
+	virtual EEnvElementType GetType() const override
 	{
 		return ElementType;
 	}
@@ -86,23 +86,24 @@ template<EEnvElementType ELEMENT_TYPE> struct IEnvElementBase : public IEnvEleme
 
 template<typename TYPE> inline TYPE& DynamicCast(IEnvElement& envElement)
 {
-	SCHEMATYC_CORE_ASSERT(envElement.GetElementType() == TYPE::ElementType);
+	SCHEMATYC_CORE_ASSERT(envElement.GetType() == TYPE::ElementType);
 	return static_cast<TYPE&>(envElement);
 }
 
 template<typename TYPE> inline const TYPE& DynamicCast(const IEnvElement& envElement)
 {
-	SCHEMATYC_CORE_ASSERT(envElement.GetElementType() == TYPE::ElementType);
+	SCHEMATYC_CORE_ASSERT(envElement.GetType() == TYPE::ElementType);
 	return static_cast<const TYPE&>(envElement);
 }
 
 template<typename TYPE> inline TYPE* DynamicCast(IEnvElement* pEnvElement)
 {
-	return pEnvElement && (pEnvElement->GetElementType() == TYPE::ElementType) ? static_cast<TYPE*>(pEnvElement) : nullptr;
+	return pEnvElement && (pEnvElement->GetType() == TYPE::ElementType) ? static_cast<TYPE*>(pEnvElement) : nullptr;
 }
 
 template<typename TYPE> inline const TYPE* DynamicCast(const IEnvElement* pEnvElement)
 {
-	return pEnvElement && (pEnvElement->GetElementType() == TYPE::ElementType) ? static_cast<const TYPE*>(pEnvElement) : nullptr;
+	return pEnvElement && (pEnvElement->GetType() == TYPE::ElementType) ? static_cast<const TYPE*>(pEnvElement) : nullptr;
 }
+
 } // Schematyc

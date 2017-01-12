@@ -6,6 +6,7 @@
 
 namespace Schematyc
 {
+
 enum class ExplicitEntityId : EntityId
 {
 	Invalid = 0
@@ -25,10 +26,13 @@ inline void ToString(IString& output, const ExplicitEntityId& input)
 	output.Format("%d", static_cast<EntityId>(input));
 }
 
-inline SGUID ReflectSchematycType(CTypeInfo<ExplicitEntityId>& typeInfo)
+inline void ReflectType(CTypeDesc<ExplicitEntityId>& desc)
 {
-	typeInfo.SetToStringMethod<&ToString>();
-	typeInfo.DeclareSerializeable();
-	return "00782e22-3188-4538-b4f2-8749b8a9dc48"_schematyc_guid;
+	desc.SetGUID("00782e22-3188-4538-b4f2-8749b8a9dc48"_schematyc_guid);
+	desc.SetLabel("EntityId");
+	desc.SetDescription("Entity id");
+	desc.SetDefaultValue(ExplicitEntityId::Invalid);
+	desc.SetToStringOperator<&ToString>();
 }
+
 } // Schematyc

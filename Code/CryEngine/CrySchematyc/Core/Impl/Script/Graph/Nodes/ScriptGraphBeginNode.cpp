@@ -38,7 +38,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.AddOutput("Out", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::Begin });
 
 	const IScriptElement& scriptElement = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-	switch (scriptElement.GetElementType())
+	switch (scriptElement.GetType())
 	{
 	case EScriptElementType::Function:
 		{
@@ -56,7 +56,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	case EScriptElementType::SignalReceiver:
 		{
 			const IScriptSignalReceiver& scriptSignalReceiver = DynamicCast<IScriptSignalReceiver>(scriptElement);
-			switch (scriptSignalReceiver.GetType())
+			switch (scriptSignalReceiver.GetSignalReceiverType())
 			{
 			case EScriptSignalReceiverType::EnvSignal:
 				{
@@ -68,7 +68,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 						   CAnyConstPtr pData = pEnvSignal->GetInputData(signalInputIdx);
 						   if (pData)
 						   {
-						    layout.AddOutputWithData(CGraphPortId::FromUniqueId(pEnvSignal->GetInputId(signalInputIdx)), pData->GetTypeInfo().guid, pEnvSignal->GetInputTypeId(signalInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+						    layout.AddOutputWithData(CGraphPortId::FromUniqueId(pEnvSignal->GetInputId(signalInputIdx)), pData->GetTypeDesc().guid, pEnvSignal->GetInputTypeId(signalInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 						   }
 						   }*/
 					}
@@ -102,7 +102,7 @@ void CScriptGraphBeginNode::Compile(SCompilerContext& context, IGraphNodeCompile
 	if (pClass)
 	{
 		const IScriptElement& scriptElement = CScriptGraphNodeModel::GetNode().GetGraph().GetElement();
-		switch (scriptElement.GetElementType())
+		switch (scriptElement.GetType())
 		{
 		case EScriptElementType::Constructor:
 			{
@@ -128,13 +128,6 @@ void CScriptGraphBeginNode::Compile(SCompilerContext& context, IGraphNodeCompile
 				{
 					SCHEMATYC_COMPILER_ERROR("Failed to retrieve class state machine!");
 				}
-				break;
-			}
-		case EScriptElementType::SignalReceiver:
-			{
-				const IScriptSignalReceiver& scriptSignalReceiver = DynamicCast<IScriptSignalReceiver>(scriptElement);
-				pClass->AddSignalReceiver(scriptSignalReceiver.GetSignalGUID(), compiler.GetGraphIdx(), SRuntimeActivationParams(compiler.GetGraphNodeIdx(), EOutputIdx::Out, EActivationMode::Output));
-				compiler.BindCallback(&ExecuteSignalReceiver);
 				break;
 			}
 		}

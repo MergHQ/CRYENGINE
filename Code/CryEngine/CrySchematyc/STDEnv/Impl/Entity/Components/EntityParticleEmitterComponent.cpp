@@ -126,9 +126,9 @@ bool CEntityParticleEmitterComponent::IsVisible() const
 	return m_bVisible;
 }
 
-SGUID CEntityParticleEmitterComponent::ReflectSchematycType(CTypeInfo<CEntityParticleEmitterComponent>& typeInfo)
+void CEntityParticleEmitterComponent::ReflectType(CTypeDesc<CEntityParticleEmitterComponent>& desc)
 {
-	return "bf9503cf-d25c-4923-a1cb-8658847aa9a6"_schematyc_guid;
+	desc.SetGUID("bf9503cf-d25c-4923-a1cb-8658847aa9a6"_schematyc_guid);
 }
 
 void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
@@ -136,7 +136,6 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityParticleEmitterComponent, "ParticleEmitter");
-		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Particle emitter component");
 		pComponent->SetIcon("icons:schematyc/entity_particle_emitter_component.png");
 		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
@@ -147,7 +146,6 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::SetTransform, "97af940e-6a2c-4374-a43d-74d90ec385e2"_schematyc_guid, "SetTransform");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set particle emitter transform");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'trn', "Transform");
@@ -155,7 +153,6 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::SetVisible, "c9ac7f56-e6d2-4461-8871-54fb58d30e62"_schematyc_guid, "SetVisible");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Show/hide particle emitter");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'vis', "Visible");
@@ -163,7 +160,6 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::IsVisible, "ba91ef70-02fc-4171-b8a0-637f16e3321d"_schematyc_guid, "IsVisible");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Is particle emitter visible?");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindOutput(0, 'vis', "Visible");

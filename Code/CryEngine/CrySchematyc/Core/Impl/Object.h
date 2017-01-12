@@ -8,35 +8,28 @@
 #include <Schematyc/Services/ITimerSystem.h>
 #include <Schematyc/Utils/Transform.h>
 
+#include "Runtime/RuntimeClass.h"
+
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IComponentPreviewer;
 struct IObjectProperties;
 struct IProperties;
 // Forward declare structures.
-struct SRuntimeFunction;
 struct SUpdateContext;
 // Forward declare classes.
+class CAction;
+class CActionDesc;
 class CComponent;
-class CRuntimeClass;
 class CScratchpad;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IObjectProperties)
 DECLARE_SHARED_POINTERS(IProperties)
+DECLARE_SHARED_POINTERS(CAction)
 DECLARE_SHARED_POINTERS(CComponent)
 DECLARE_SHARED_POINTERS(CRuntimeClass)
-
-struct SObjectSignal
-{
-	inline SObjectSignal(const SGUID& _guid, const CRuntimeParams& _params)
-		: guid(_guid)
-		, params(_params)
-	{}
-
-	SGUID              guid;
-	StackRuntimeParams params;
-};
 
 typedef std::deque<SObjectSignal> ObjectSignalQueue;
 
@@ -57,8 +50,9 @@ private:
 
 	struct SComponent
 	{
-		SComponent(const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx);
+		SComponent(const SGUID& guid, const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx);
 
+		SGUID                guid;        // #SchematycTODO : Can we avoid duplicating this (stored both here and in the component itself)?
 		CComponentPtr        pComponent;
 		CTransform           transform;
 		IPropertiesPtr       pProperties; // #SchematycTODO : Can we avoid duplicating this (stored both here and in the component itself)?
@@ -67,6 +61,18 @@ private:
 	};
 
 	typedef std::vector<SComponent> Components;
+
+	struct SAction
+	{
+		SAction(const CActionDesc& _desc, const SRuntimeActionDesc& _runtimeDesc, const CActionPtr& _ptr);
+
+		const CActionDesc& desc;
+		SRuntimeActionDesc runtimeDesc;
+		CActionPtr         ptr;
+		bool               bRunning = false;
+	};
+
+	typedef std::vector<SAction> Actions;
 
 	struct STimer
 	{
@@ -105,7 +111,8 @@ public:
 	virtual ESimulationMode      GetSimulationMode() const override;
 
 	virtual bool                 Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPolicy) override;
-	virtual void                 ProcessSignal(const SGUID& signalGUID, CRuntimeParams& params) override;
+	virtual void                 ProcessSignal(const SObjectSignal& signal) override;
+	virtual void                 StopAction(CAction& action) override;
 
 	virtual EVisitResult         VisitComponents(const ObjectComponentConstVisitor& visitor) const override;
 	virtual void                 Dump(IObjectDump& dump, const ObjectDumpFlags& flags = EObjectDumpFlags::All) const override;
@@ -114,7 +121,8 @@ public:
 
 	CScratchpad& GetScratchpad();
 	CComponent*  GetComponent(uint32 componentIdx);
-	void         ExecuteFunction(uint32 functionIdx, CRuntimeParams& params);
+	bool         ExecuteFunction(uint32 functionIdx, CRuntimeParams& params);
+	bool         StartAction(uint32 actionIdx, CRuntimeParams& params);
 
 private:
 
@@ -142,6 +150,11 @@ private:
 	void ShutdownComponents();
 	void DestroyComponents();
 
+	bool CreateActions();
+	bool InitActions();
+	void ShutdownActions();
+	void DestroyActions();
+
 	bool CreateTimers();
 	void StartTimers(ESimulationMode simulationMode);
 	void StopTimers();
@@ -149,12 +162,12 @@ private:
 
 	void RegisterForUpdate();
 
-	void ExecuteSignalReceivers(const SGUID& signalGUID, CRuntimeParams& params);
+	void ExecuteSignalReceivers(const SObjectSignal& signal);
 
 	void StartStateTimers(uint32 stateMachineIdx);
 	void StopStateTimers(uint32 stateMachineIdx);
-	void ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SGUID& signalGUID, CRuntimeParams& params);
-	bool EvaluateStateTransitions(uint32 stateMachineIdx, const SGUID& signalGUID, CRuntimeParams& params);
+	void ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SObjectSignal& signal);
+	bool EvaluateStateTransitions(uint32 stateMachineIdx, const SObjectSignal& signal);
 	void ChangeState(uint32 stateMachineIdx, uint32 stateIdx);
 
 	void ExecuteFunction(const SRuntimeFunction& function, CRuntimeParams& params);
@@ -175,6 +188,7 @@ private:
 
 	StateMachines             m_stateMachines;
 	Components                m_components;
+	Actions                   m_actions;
 	Timers                    m_timers;
 	States                    m_states;
 
@@ -183,4 +197,5 @@ private:
 
 	CConnectionScope          m_connectionScope;
 };
+
 } // Schematyc

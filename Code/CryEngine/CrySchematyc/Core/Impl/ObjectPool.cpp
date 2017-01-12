@@ -57,22 +57,22 @@ void CObjectPool::DestroyObject(ObjectId objectId)
 	}
 }
 
-void CObjectPool::SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params)
+void CObjectPool::SendSignal(ObjectId objectId, const SObjectSignal& signal)
 {
 	IObject* pObject = GetObject(objectId);
 	if (pObject)
 	{
-		pObject->ProcessSignal(signalGUID, params);
+		pObject->ProcessSignal(signal);
 	}
 }
 
-void CObjectPool::BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params)
+void CObjectPool::BroadcastSignal(const SObjectSignal& signal)
 {
 	for (SSlot& slot : m_slots)
 	{
 		if (slot.pObject)
 		{
-			slot.pObject->ProcessSignal(signalGUID, params);
+			slot.pObject->ProcessSignal(signal);
 		}
 	}
 }

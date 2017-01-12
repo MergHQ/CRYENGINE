@@ -271,7 +271,8 @@ public:
 
 	virtual const CryClassID& GetClassID() const
 	{
-		return T::GetCID();
+		static constexpr CryClassID cid = T::GetCID();
+		return cid;
 	}
 
 	virtual bool ClassSupports(const CryInterfaceID& iid) const
@@ -391,10 +392,10 @@ public:
     {                                                                                                               \
       return cname;                                                                                                 \
     }                                                                                                               \
-    static const CryClassID& GetCID()                                                                               \
+                                                                                                                    \
+    static constexpr CryClassID GetCID()                                                                            \
     {                                                                                                               \
-      static const CryClassID cid = { (uint64) cidHigh ## LL, (uint64) cidLow ## LL };                              \
-      return cid;                                                                                                   \
+         return CryClassID::Construct( (uint64) cidHigh ## LL, (uint64) cidLow ## LL );                             \
     }                                                                                                               \
     static std::shared_ptr<implclassname> CreateClassInstance()                                                     \
     {                                                                                                               \

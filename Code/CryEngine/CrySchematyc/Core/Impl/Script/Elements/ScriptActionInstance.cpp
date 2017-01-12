@@ -17,6 +17,7 @@
 
 namespace Schematyc
 {
+
 CScriptActionInstance::CScriptActionInstance() {}
 
 CScriptActionInstance::CScriptActionInstance(const SGUID& guid, const char* szName, const SGUID& actionTypeGUID, const SGUID& componentInstanceGUID)
@@ -94,22 +95,12 @@ void CScriptActionInstance::Edit(Serialization::IArchive& archive, const ISerial
 
 void CScriptActionInstance::RefreshProperties()
 {
-	const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(m_actionTypeGUID);
-	if (pEnvAction)
-	{
-		const IProperties* pEnvActionProperties = pEnvAction ? pEnvAction->GetProperties() : nullptr;
-		if (pEnvActionProperties)
-		{
-			m_pProperties = pEnvActionProperties->Clone();
-		}
-	}
+	// #SchematycTODO : Implement!!!
 }
 
 void CScriptActionInstance::SerializeProperties(Serialization::IArchive& archive)
 {
-	if (m_pProperties)
-	{
-		archive(*m_pProperties, "properties", "Properties");
-	}
+	// #SchematycTODO : Implement!!!
 }
+
 } // Schematyc

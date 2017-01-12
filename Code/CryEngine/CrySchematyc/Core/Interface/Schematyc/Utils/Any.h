@@ -7,11 +7,13 @@
 
 #include <CrySerialization/Forward.h>
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/ReflectionUtils.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Assert.h"
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CAnyValue;
 class CAnyRef;
@@ -36,12 +38,12 @@ template<typename T> struct SAnyValueAllocator
 		typedef SAnyValueAllocator<U> other;
 	};
 
-	inline SAnyValueAllocator(const CCommonTypeInfo& _typeInfo)
-		: typeInfo(_typeInfo)
+	inline SAnyValueAllocator(const CCommonTypeDesc& _typeDesc)
+		: typeDesc(_typeDesc)
 	{}
 
 	template<typename OTHER_TYPE> inline SAnyValueAllocator(const SAnyValueAllocator<OTHER_TYPE>& rhs)
-		: typeInfo(rhs.typeInfo)
+		: typeDesc(rhs.typeDesc)
 	{}
 
 	pointer address(reference x)
@@ -56,7 +58,7 @@ template<typename T> struct SAnyValueAllocator
 
 	inline pointer allocate(size_type n)
 	{
-		return static_cast<pointer>(CryModuleMalloc((sizeof(value_type) + typeInfo.GetSize()) * n));
+		return static_cast<pointer>(CryModuleMalloc((sizeof(value_type) + typeDesc.GetSize()) * n));
 	}
 
 	inline void deallocate(pointer p, size_type n)
@@ -75,7 +77,7 @@ template<typename T> struct SAnyValueAllocator
 		p->~U();
 	}
 
-	const CCommonTypeInfo& typeInfo;
+	const CCommonTypeDesc& typeDesc;
 };
 
 // Owning container for value of any reflected type. It is assumed that value follows immediately after object in memory therefore instances must be allocated using Make functions provided.
@@ -89,21 +91,23 @@ public:
 
 	~CAnyValue();
 
-	const CCommonTypeInfo&                      GetTypeInfo() const;
+	const CCommonTypeDesc&                      GetTypeDesc() const;
 	void*                                       GetValue();
 	const void*                                 GetValue() const;
 
-	static CAnyValuePtr                         MakeShared(const CCommonTypeInfo& typeInfo, const void* pValue);
 	template<typename TYPE> static CAnyValuePtr MakeShared(const TYPE& value);
+	static CAnyValuePtr                         MakeShared(const CCommonTypeDesc& typeDesc, const void* pValue);
+	static CAnyValuePtr                         MakeSharedDefault(const CCommonTypeDesc& typeDesc);
 	static CAnyValuePtr                         CloneShared(const CAnyConstRef& value);
 
 protected:
 
-	CAnyValue(const CCommonTypeInfo& typeInfo, const void* pValue);
+	CAnyValue(const CCommonTypeDesc& typeDesc);
+	CAnyValue(const CCommonTypeDesc& typeDesc, const void* pValue);
 
 private:
 
-	const CCommonTypeInfo& m_typeInfo;
+	const CCommonTypeDesc& m_typeDesc;
 };
 
 // Reference to value of any reflected type.
@@ -115,12 +119,12 @@ class CAnyRef
 
 public:
 
-	CAnyRef(const CCommonTypeInfo& typeInfo, void* pValue);
+	CAnyRef(const CCommonTypeDesc& typeDesc, void* pValue);
 	template<typename TYPE> explicit CAnyRef(TYPE& value);
 	CAnyRef(CAnyValue& rhs);
 	CAnyRef(const CAnyRef& rhs);
 
-	const CCommonTypeInfo& GetTypeInfo() const;
+	const CCommonTypeDesc& GetTypeDesc() const;
 	void*                  GetValue() const;
 
 protected:
@@ -132,7 +136,7 @@ protected:
 
 private:
 
-	const CCommonTypeInfo* m_pTypeInfo;
+	const CCommonTypeDesc* m_pTypeDesc;
 	void*                  m_pValue;
 };
 
@@ -145,13 +149,13 @@ class CAnyConstRef
 
 public:
 
-	CAnyConstRef(const CCommonTypeInfo& typeInfo, const void* pValue);
+	CAnyConstRef(const CCommonTypeDesc& typeDesc, const void* pValue);
 	template<typename TYPE> CAnyConstRef(const TYPE& value);
 	CAnyConstRef(const CAnyValue& rhs);
 	CAnyConstRef(const CAnyRef& rhs);
 	CAnyConstRef(const CAnyConstRef& rhs);
 
-	const CCommonTypeInfo& GetTypeInfo() const;
+	const CCommonTypeDesc& GetTypeDesc() const;
 	const void*            GetValue() const;
 
 protected:
@@ -163,7 +167,7 @@ protected:
 
 private:
 
-	const CCommonTypeInfo* m_pTypeInfo;
+	const CCommonTypeDesc* m_pTypeDesc;
 	const void*            m_pValue;
 };
 
@@ -173,7 +177,7 @@ class CAnyPtr
 public:
 
 	CAnyPtr();
-	CAnyPtr(const CCommonTypeInfo& typeInfo, void* pValue);
+	CAnyPtr(const CCommonTypeDesc& typeDesc, void* pValue);
 	template<typename TYPE> explicit CAnyPtr(TYPE* pValue);
 	CAnyPtr(CAnyValue* pValue);
 	CAnyPtr(const CAnyValuePtr& pValue);
@@ -196,7 +200,7 @@ class CAnyConstPtr
 public:
 
 	CAnyConstPtr();
-	CAnyConstPtr(const CCommonTypeInfo& typeInfo, const void* pValue);
+	CAnyConstPtr(const CCommonTypeDesc& typeDesc, const void* pValue);
 	template<typename TYPE> CAnyConstPtr(const TYPE* pValue);
 	CAnyConstPtr(const CAnyValue* pValue);
 	CAnyConstPtr(const CAnyValuePtr& pValue);
@@ -219,12 +223,12 @@ private:
 
 inline CAnyValue::~CAnyValue()
 {
-	m_typeInfo.GetMethods().destruct(GetValue());
+	m_typeDesc.GetOperators().destruct(GetValue());
 }
 
-inline const CCommonTypeInfo& CAnyValue::GetTypeInfo() const
+inline const CCommonTypeDesc& CAnyValue::GetTypeDesc() const
 {
-	return m_typeInfo;
+	return m_typeDesc;
 }
 
 inline void* CAnyValue::GetValue()
@@ -237,76 +241,102 @@ inline const void* CAnyValue::GetValue() const
 	return this + 1;
 }
 
-inline CAnyValuePtr CAnyValue::MakeShared(const CCommonTypeInfo& typeInfo, const void* pValue)
+template<typename TYPE> inline CAnyValuePtr CAnyValue::MakeShared(const TYPE& value)
+{
+	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
+	static_assert(std::is_copy_constructible<TYPE>::value, "Type must provide copy constructor!");
+	return MakeShared(Schematyc::GetTypeDesc<TYPE>(), &value);
+}
+
+inline CAnyValuePtr CAnyValue::MakeShared(const CCommonTypeDesc& typeDesc, const void* pValue)
 {
 	class CAnyValueImpl : public CAnyValue
 	{
 	public:
 
-		inline CAnyValueImpl(const CCommonTypeInfo& typeInfo, const void* pValue)
-			: CAnyValue(typeInfo, pValue)
+		inline CAnyValueImpl(const CCommonTypeDesc& typeDesc, const void* pValue)
+			: CAnyValue(typeDesc, pValue)
 		{}
 	};
 
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().copyConstruct, "Type must provide copy constructor!");
-	if (typeInfo.GetMethods().copyConstruct)
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().copyConstruct, "Type must provide copy constructor!");
+	if (typeDesc.GetOperators().copyConstruct)
 	{
 		SCHEMATYC_CORE_ASSERT(pValue);
 		if (pValue)
 		{
-			SAnyValueAllocator<CAnyValueImpl> allocator(typeInfo);
-			return std::static_pointer_cast<CAnyValue>(std::allocate_shared<CAnyValueImpl, SAnyValueAllocator<CAnyValueImpl>>(allocator, typeInfo, pValue));
+			SAnyValueAllocator<CAnyValueImpl> allocator(typeDesc);
+			return std::static_pointer_cast<CAnyValue>(std::allocate_shared<CAnyValueImpl, SAnyValueAllocator<CAnyValueImpl>>(allocator, typeDesc, pValue));
 		}
 	}
 	return CAnyValuePtr();
 }
 
-template<typename TYPE> inline CAnyValuePtr CAnyValue::MakeShared(const TYPE& value)
+inline CAnyValuePtr CAnyValue::MakeSharedDefault(const CCommonTypeDesc& typeDesc)
 {
-	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
-	static_assert(std::is_copy_constructible<TYPE>::value, "Type must provide copy constructor!");
-	return MakeShared(Schematyc::GetTypeInfo<TYPE>(), &value);
+	class CAnyValueImpl : public CAnyValue
+	{
+	public:
+
+		inline CAnyValueImpl(const CCommonTypeDesc& typeDesc)
+			: CAnyValue(typeDesc)
+		{}
+	};
+
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().defaultConstruct, "Type must provide default constructor!");
+	if (typeDesc.GetOperators().defaultConstruct)
+	{
+		SAnyValueAllocator<CAnyValueImpl> allocator(typeDesc);
+		return std::static_pointer_cast<CAnyValue>(std::allocate_shared<CAnyValueImpl, SAnyValueAllocator<CAnyValueImpl>>(allocator, typeDesc));
+	}
+	return CAnyValuePtr();
 }
 
 inline CAnyValuePtr CAnyValue::CloneShared(const CAnyConstRef& value)
 {
-	return MakeShared(value.GetTypeInfo(), value.GetValue());
+	return MakeShared(value.GetTypeDesc(), value.GetValue());
 }
 
-inline CAnyValue::CAnyValue(const CCommonTypeInfo& typeInfo, const void* pValue)
-	: m_typeInfo(typeInfo)
+inline CAnyValue::CAnyValue(const CCommonTypeDesc& typeDesc)
+	: m_typeDesc(typeDesc)
 {
-	m_typeInfo.GetMethods().copyConstruct(GetValue(), pValue);
+	m_typeDesc.GetOperators().defaultConstruct(GetValue());
+}
+
+inline CAnyValue::CAnyValue(const CCommonTypeDesc& typeDesc, const void* pValue)
+	: m_typeDesc(typeDesc)
+{
+	m_typeDesc.GetOperators().copyConstruct(GetValue(), pValue);
 }
 
 // CAnyRef functions.
 
-inline CAnyRef::CAnyRef(const CCommonTypeInfo& typeInfo, void* pValue)
-	: m_pTypeInfo(&typeInfo)
+inline CAnyRef::CAnyRef(const CCommonTypeDesc& typeDesc, void* pValue)
+	: m_pTypeDesc(&typeDesc)
 	, m_pValue(pValue)
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
 }
 
 template<typename TYPE> inline CAnyRef::CAnyRef(TYPE& value)
-	: m_pTypeInfo(&Schematyc::GetTypeInfo<TYPE>())
+	: m_pTypeDesc(&Schematyc::GetTypeDesc<TYPE>())
 	, m_pValue(&value)
 {}
 
 inline CAnyRef::CAnyRef(CAnyValue& rhs)
-	: m_pTypeInfo(&rhs.GetTypeInfo())
+	: m_pTypeDesc(&rhs.GetTypeDesc())
 	, m_pValue(rhs.GetValue())
 {}
 
 inline CAnyRef::CAnyRef(const CAnyRef& rhs)
-	: m_pTypeInfo(rhs.m_pTypeInfo)
+	: m_pTypeDesc(rhs.m_pTypeDesc)
 	, m_pValue(rhs.m_pValue)
 {}
 
-inline const CCommonTypeInfo& CAnyRef::GetTypeInfo() const
+inline const CCommonTypeDesc& CAnyRef::GetTypeDesc() const
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
-	return *m_pTypeInfo;
+	return *m_pTypeDesc;
 }
 
 inline void* CAnyRef::GetValue() const
@@ -316,7 +346,7 @@ inline void* CAnyRef::GetValue() const
 }
 
 inline CAnyRef::CAnyRef()
-	: m_pTypeInfo(nullptr)
+	: m_pTypeDesc(nullptr)
 	, m_pValue(nullptr)
 {}
 
@@ -327,43 +357,43 @@ inline bool CAnyRef::IsValid() const
 
 inline void CAnyRef::Reset(const CAnyRef& rhs)
 {
-	m_pTypeInfo = rhs.m_pTypeInfo;
+	m_pTypeDesc = rhs.m_pTypeDesc;
 	m_pValue = rhs.m_pValue;
 }
 
 // CAnyConstRef functions.
 
-inline CAnyConstRef::CAnyConstRef(const CCommonTypeInfo& typeInfo, const void* pValue)
-	: m_pTypeInfo(&typeInfo)
+inline CAnyConstRef::CAnyConstRef(const CCommonTypeDesc& typeDesc, const void* pValue)
+	: m_pTypeDesc(&typeDesc)
 	, m_pValue(pValue)
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
 }
 
 template<typename TYPE> inline CAnyConstRef::CAnyConstRef(const TYPE& value)
-	: m_pTypeInfo(&Schematyc::GetTypeInfo<TYPE>())
+	: m_pTypeDesc(&Schematyc::GetTypeDesc<TYPE>())
 	, m_pValue(&value)
 {}
 
 inline CAnyConstRef::CAnyConstRef(const CAnyValue& rhs)
-	: m_pTypeInfo(&rhs.GetTypeInfo())
+	: m_pTypeDesc(&rhs.GetTypeDesc())
 	, m_pValue(rhs.GetValue())
 {}
 
 inline CAnyConstRef::CAnyConstRef(const CAnyRef& rhs)
-	: m_pTypeInfo(&rhs.GetTypeInfo())
+	: m_pTypeDesc(&rhs.GetTypeDesc())
 	, m_pValue(rhs.GetValue())
 {}
 
 inline CAnyConstRef::CAnyConstRef(const CAnyConstRef& rhs)
-	: m_pTypeInfo(rhs.m_pTypeInfo)
+	: m_pTypeDesc(rhs.m_pTypeDesc)
 	, m_pValue(rhs.m_pValue)
 {}
 
-inline const CCommonTypeInfo& CAnyConstRef::GetTypeInfo() const
+inline const CCommonTypeDesc& CAnyConstRef::GetTypeDesc() const
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
-	return *m_pTypeInfo;
+	return *m_pTypeDesc;
 }
 
 inline const void* CAnyConstRef::GetValue() const
@@ -372,7 +402,7 @@ inline const void* CAnyConstRef::GetValue() const
 }
 
 inline CAnyConstRef::CAnyConstRef()
-	: m_pTypeInfo(nullptr)
+	: m_pTypeDesc(nullptr)
 	, m_pValue(nullptr)
 {}
 
@@ -383,7 +413,7 @@ inline bool CAnyConstRef::IsValid() const
 
 inline void CAnyConstRef::Reset(const CAnyConstRef& rhs)
 {
-	m_pTypeInfo = rhs.m_pTypeInfo;
+	m_pTypeDesc = rhs.m_pTypeDesc;
 	m_pValue = rhs.m_pValue;
 }
 
@@ -391,12 +421,12 @@ inline void CAnyConstRef::Reset(const CAnyConstRef& rhs)
 
 inline CAnyPtr::CAnyPtr() {}
 
-inline CAnyPtr::CAnyPtr(const CCommonTypeInfo& typeInfo, void* pValue)
-	: m_ref(typeInfo, pValue)
+inline CAnyPtr::CAnyPtr(const CCommonTypeDesc& typeDesc, void* pValue)
+	: m_ref(typeDesc, pValue)
 {}
 
 template<typename TYPE> inline CAnyPtr::CAnyPtr(TYPE* pValue)
-	: m_ref(Schematyc::GetTypeInfo<TYPE>(), pValue)
+	: m_ref(Schematyc::GetTypeDesc<TYPE>(), pValue)
 {}
 
 inline CAnyPtr::CAnyPtr(CAnyValue* pValue)
@@ -442,12 +472,12 @@ inline CAnyPtr& CAnyPtr::operator=(const CAnyPtr& rhs)
 
 inline CAnyConstPtr::CAnyConstPtr() {}
 
-inline CAnyConstPtr::CAnyConstPtr(const CCommonTypeInfo& typeInfo, const void* pValue)
-	: m_ref(typeInfo, pValue)
+inline CAnyConstPtr::CAnyConstPtr(const CCommonTypeDesc& typeDesc, const void* pValue)
+	: m_ref(typeDesc, pValue)
 {}
 
 template<typename TYPE> inline CAnyConstPtr::CAnyConstPtr(const TYPE* pValue)
-	: m_ref(Schematyc::GetTypeInfo<TYPE>(), pValue)
+	: m_ref(Schematyc::GetTypeDesc<TYPE>(), pValue)
 {}
 
 inline CAnyConstPtr::CAnyConstPtr(const CAnyValue* rhs)
@@ -501,17 +531,18 @@ inline CAnyConstPtr& CAnyConstPtr::operator=(const CAnyConstPtr& rhs)
 
 namespace Any
 {
+
 inline bool CopyAssign(const CAnyRef& lhs, const CAnyConstRef& rhs)
 {
-	const CCommonTypeInfo& typeInfo = lhs.GetTypeInfo();
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().copyAssign, "Type must provide copy assignment operator!");
-	if (typeInfo.GetMethods().copyAssign)
+	const CCommonTypeDesc& typeDesc = lhs.GetTypeDesc();
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().copyAssign, "Type must provide copy assignment operator!");
+	if (typeDesc.GetOperators().copyAssign)
 	{
-		const void* pRHSValue = Private::DynamicCast(rhs.GetTypeInfo(), rhs.GetValue(), typeInfo);
+		const void* pRHSValue = Helpers::DynamicCast(rhs.GetTypeDesc(), rhs.GetValue(), typeDesc);
 		SCHEMATYC_CORE_ASSERT_MESSAGE(pRHSValue, "Type mismatch!");
 		if (pRHSValue)
 		{
-			(*typeInfo.GetMethods().copyAssign)(lhs.GetValue(), pRHSValue);
+			(*typeDesc.GetOperators().copyAssign)(lhs.GetValue(), pRHSValue);
 			return true;
 		}
 	}
@@ -520,15 +551,15 @@ inline bool CopyAssign(const CAnyRef& lhs, const CAnyConstRef& rhs)
 
 inline bool Equals(const CAnyConstRef& lhs, const CAnyConstRef& rhs)
 {
-	const CCommonTypeInfo& typeInfo = lhs.GetTypeInfo();
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().equals, "Type must provide equals operator!");
-	if (typeInfo.GetMethods().equals)
+	const CCommonTypeDesc& typeDesc = lhs.GetTypeDesc();
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().equals, "Type must provide equals operator!");
+	if (typeDesc.GetOperators().equals)
 	{
-		const void* pRHSValue = Private::DynamicCast(rhs.GetTypeInfo(), rhs.GetValue(), typeInfo);
+		const void* pRHSValue = Helpers::DynamicCast(rhs.GetTypeDesc(), rhs.GetValue(), typeDesc);
 		SCHEMATYC_CORE_ASSERT_MESSAGE(pRHSValue, "Type mismatch!");
 		if (pRHSValue)
 		{
-			return (*typeInfo.GetMethods().equals)(lhs.GetValue(), pRHSValue);
+			return (*typeDesc.GetOperators().equals)(lhs.GetValue(), pRHSValue);
 		}
 	}
 	return false;
@@ -536,37 +567,38 @@ inline bool Equals(const CAnyConstRef& lhs, const CAnyConstRef& rhs)
 
 inline bool ToString(IString& output, const CAnyConstRef& input)
 {
-	const CCommonTypeInfo& typeInfo = input.GetTypeInfo();
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().toString, "Type must provide 'ToString' method!");
-	if (typeInfo.GetMethods().toString)
+	const CCommonTypeDesc& typeDesc = input.GetTypeDesc();
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().toString, "Type must provide 'ToString' method!");
+	if (typeDesc.GetOperators().toString)
 	{
-		(*typeInfo.GetMethods().toString)(output, input.GetValue());
+		(*typeDesc.GetOperators().toString)(output, input.GetValue());
 		return true;
 	}
 	return false;
 }
+
 } // Any
 
 // Serialization functions.
 
 inline bool Serialize(Serialization::IArchive& archive, const CAnyRef& value, const char* szName, const char* szLabel)
 {
-	const CCommonTypeInfo& typeInfo = value.GetTypeInfo();
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().toString, "Type must provide 'Serialize' method!");
-	if (typeInfo.GetMethods().serialize)
+	const CCommonTypeDesc& typeDesc = value.GetTypeDesc();
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().toString, "Type must provide 'Serialize' method!");
+	if (typeDesc.GetOperators().serialize)
 	{
-		return (*typeInfo.GetMethods().serialize)(archive, value.GetValue(), szName, szLabel);
+		return (*typeDesc.GetOperators().serialize)(archive, value.GetValue(), szName, szLabel);
 	}
 	return false;
 }
 
 inline bool Serialize(Serialization::IArchive& archive, CAnyValue& value, const char* szName, const char* szLabel)
 {
-	const CCommonTypeInfo& typeInfo = value.GetTypeInfo();
-	SCHEMATYC_CORE_ASSERT_MESSAGE(typeInfo.GetMethods().serialize, "Type must provide 'Serialize' method!");
-	if (typeInfo.GetMethods().serialize)
+	const CCommonTypeDesc& typeDesc = value.GetTypeDesc();
+	SCHEMATYC_CORE_ASSERT_MESSAGE(typeDesc.GetOperators().serialize, "Type must provide 'Serialize' method!");
+	if (typeDesc.GetOperators().serialize)
 	{
-		return (*typeInfo.GetMethods().serialize)(archive, value.GetValue(), szName, szLabel);
+		return (*typeDesc.GetOperators().serialize)(archive, value.GetValue(), szName, szLabel);
 	}
 	return false;
 }
@@ -575,25 +607,26 @@ inline bool Serialize(Serialization::IArchive& archive, CAnyValue& value, const 
 
 template<typename TO_TYPE> TO_TYPE& DynamicCast(const CAnyRef& from)
 {
-	TO_TYPE* pResult = Private::DynamicCast<TO_TYPE>(from.GetTypeInfo(), from.GetValue());
+	TO_TYPE* pResult = Helpers::DynamicCast<TO_TYPE>(from.GetTypeDesc(), from.GetValue());
 	SCHEMATYC_CORE_ASSERT(pResult);
 	return *pResult;
 }
 
 template<typename TO_TYPE> const TO_TYPE& DynamicCast(const CAnyConstRef& from)
 {
-	const TO_TYPE* pResult = Private::DynamicCast<TO_TYPE>(from.GetTypeInfo(), from.GetValue());
+	const TO_TYPE* pResult = Helpers::DynamicCast<TO_TYPE>(from.GetTypeDesc(), from.GetValue());
 	SCHEMATYC_CORE_ASSERT(pResult);
 	return *pResult;
 }
 
 template<typename TO_TYPE> TO_TYPE* DynamicCast(const CAnyPtr& pFrom)
 {
-	return pFrom ? Private::DynamicCast<TO_TYPE>(pFrom->GetTypeInfo(), pFrom->GetValue()) : nullptr;
+	return pFrom ? Helpers::DynamicCast<TO_TYPE>(pFrom->GetTypeDesc(), pFrom->GetValue()) : nullptr;
 }
 
 template<typename TO_TYPE> const TO_TYPE* DynamicCast(const CAnyConstPtr& pFrom)
 {
-	return pFrom ? Private::DynamicCast<TO_TYPE>(pFrom->GetTypeInfo(), pFrom->GetValue()) : nullptr;
+	return pFrom ? Helpers::DynamicCast<TO_TYPE>(pFrom->GetTypeDesc(), pFrom->GetValue()) : nullptr;
 }
+
 } // Schematyc

@@ -15,7 +15,6 @@
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/StackString.h>
 
-#include <CrySerialization/IArchiveHost.h>
 namespace Schematyc
 {
 struct SEnvPackageElement
@@ -394,7 +393,7 @@ bool CEnvRegistry::RegisterPackageElements(const EnvPackageElements& packageElem
 
 		m_elements.insert(Elements::value_type(packageElement.elementGUID, packageElement.pElement));
 
-		switch (packageElement.pElement->GetElementType())
+		switch (packageElement.pElement->GetType())
 		{
 		case EEnvElementType::Module:
 			{
@@ -496,7 +495,7 @@ void CEnvRegistry::ReleasePackageElements(const EnvPackageElements& packageEleme
 			pScope->DetachChild(*packageElement.pElement);
 		}
 
-		switch (packageElement.pElement->GetElementType())
+		switch (packageElement.pElement->GetType())
 		{
 		case EEnvElementType::Module:
 			{
@@ -561,7 +560,7 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 			const IEnvComponent* pDependencyComponent = GetComponent(dependencyGUID);
 			if (pDependencyComponent)
 			{
-				if (!pDependencyComponent->GetFlags().Check(EEnvComponentFlags::Singleton))
+				if (!pDependencyComponent->GetComponentFlags().Check(EEnvComponentFlags::Singleton))
 				{
 					SCHEMATYC_CORE_CRITICAL_ERROR("Non-singleton component detected as dependency: component = %s, dependency = %s", component.second->GetName(), pDependencyComponent->GetName());
 					bError = true;

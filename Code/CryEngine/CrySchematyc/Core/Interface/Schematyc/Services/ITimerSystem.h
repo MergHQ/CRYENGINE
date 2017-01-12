@@ -17,9 +17,10 @@
 
 namespace Schematyc
 {
+
 enum class ETimerUnits
 {
-	Invalid,
+	Empty,
 	Frames,
 	Seconds,
 	Random
@@ -28,7 +29,7 @@ enum class ETimerUnits
 struct STimerDuration
 {
 	inline STimerDuration()
-		: units(ETimerUnits::Invalid)
+		: units(ETimerUnits::Empty)
 	{
 		memset(this, 0, sizeof(STimerDuration));
 	}
@@ -141,4 +142,5 @@ struct ITimerSystem
 	virtual STimerDuration GetTimeRemaining(const TimerId& timerId) const = 0;
 	virtual void           Update() = 0;
 };
+
 } // Schematyc

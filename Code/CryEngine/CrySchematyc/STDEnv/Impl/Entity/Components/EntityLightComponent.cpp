@@ -107,9 +107,9 @@ void CEntityLightComponent::Switch(bool bOn)
 	}
 }
 
-SGUID CEntityLightComponent::ReflectSchematycType(CTypeInfo<CEntityLightComponent>& typeInfo)
+void CEntityLightComponent::ReflectType(CTypeDesc<CEntityLightComponent>& desc)
 {
-	return "ed123a98-462f-49a0-8d1b-362d6449d81a"_schematyc_guid;
+	desc.SetGUID("ed123a98-462f-49a0-8d1b-362d6449d81a"_schematyc_guid);
 }
 
 void CEntityLightComponent::Register(IEnvRegistrar& registrar)
@@ -117,7 +117,6 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityLightComponent, "Light");
-		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity light component");
 		pComponent->SetIcon("icons:schematyc/entity_light_component.png");
 		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
@@ -128,7 +127,6 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityLightComponent::SetTransform, "729721c4-a09e-4903-a8a6-fa69388acfc6"_schematyc_guid, "SetTransform");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set transform");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'trn', "Transform");
@@ -136,7 +134,6 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityLightComponent::Switch, "f3d21e93-054d-4df6-ba31-2b44f0d2e1eb"_schematyc_guid, "Switch");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Switch light on/off");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'on', "On");

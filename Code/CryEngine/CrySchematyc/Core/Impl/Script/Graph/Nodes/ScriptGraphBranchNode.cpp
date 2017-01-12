@@ -23,7 +23,7 @@ void CScriptGraphBranchNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.SetStyleId("Core::FlowControl");
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
-	layout.AddInputWithData("Value", GetTypeInfo<bool>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, bool(false));
+	layout.AddInputWithData("Value", GetTypeDesc<bool>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, bool(false));
 
 	layout.AddOutput("True", SGUID(), EScriptGraphPortFlags::Flow);
 	layout.AddOutput("False", SGUID(), EScriptGraphPortFlags::Flow);

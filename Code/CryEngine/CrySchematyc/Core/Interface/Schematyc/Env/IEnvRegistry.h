@@ -11,6 +11,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvAction;
 struct IEnvClass;
@@ -76,4 +77,5 @@ struct IEnvRegistry
 	virtual void                         BlacklistElement(const SGUID& guid) = 0;
 	virtual bool                         IsBlacklistedElement(const SGUID& guid) const = 0;
 };
+
 } // Schematyc

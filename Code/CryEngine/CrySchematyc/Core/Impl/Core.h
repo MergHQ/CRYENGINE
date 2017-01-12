@@ -8,6 +8,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct ILogOutput;
 // Forward declare classes.
@@ -34,7 +35,9 @@ class CCore : public ICrySchematycCore, public ISystemEventListener
 	CRYGENERATE_SINGLETONCLASS(CCore, "Plugin_SchematycCore", 0x96d98d9835aa4fb6, 0x830b53dbfe71908d)
 
 public:
+
 	CCore();
+
 	virtual ~CCore();
 
 	// ICryPlugin
@@ -77,8 +80,8 @@ public:
 	virtual IObject*                 CreateObject(const SObjectParams& params) override;
 	virtual IObject*                 GetObject(ObjectId objectId) override;
 	virtual void                     DestroyObject(ObjectId objectId) override;
-	virtual void                     SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params) override;
-	virtual void                     BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params) override;
+	virtual void                     SendSignal(ObjectId objectId, const SObjectSignal& signal) override;
+	virtual void                     BroadcastSignal(const SObjectSignal& signal) override;
 
 	virtual void                     RefreshLogFileSettings() override;
 	virtual void                     RefreshEnv() override;
@@ -118,4 +121,5 @@ private:
 	std::unique_ptr<CSettingsManager> m_pSettingsManager;
 	std::unique_ptr<CUpdateScheduler> m_pUpdateScheduler;
 };
+
 } // Schematyc

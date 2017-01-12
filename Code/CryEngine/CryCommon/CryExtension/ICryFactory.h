@@ -32,7 +32,7 @@ struct ICryFactory
 
 protected:
 	//! Prevent explicit destruction from client side (delete, shared_ptr, etc).
-	virtual ~ICryFactory() {}
+	virtual ~ICryFactory() = default;
 };
 
 #endif // #ifndef _ICRYFACTORYREGISTRY_H_

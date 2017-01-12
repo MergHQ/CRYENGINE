@@ -22,4 +22,10 @@ void SEntityClassProperties::Serialize(Serialization::IArchive& archive)
 	archive(bTriggerAreas, "bTriggerAreas", "Trigger Areas");
 	archive.doc("Entity can enter and trigger areas");
 }
+
+void SEntityClassProperties::ReflectType(CTypeDesc<SEntityClassProperties>& desc)
+{
+	desc.SetGUID("cb7311ea-9a07-490a-a351-25c298a91550"_schematyc_guid);
+}
+
 } // Schematyc

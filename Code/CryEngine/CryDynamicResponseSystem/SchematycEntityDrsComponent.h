@@ -17,20 +17,20 @@ public:
 
 	struct SResponseStartedSignal
 	{
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SResponseStartedSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SResponseStartedSignal>& typeInfo);
 
 		int   m_signalId;
 	};
 	struct SResponseFinishedSignal
 	{
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SResponseFinishedSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SResponseFinishedSignal>& typeInfo);
 
 		int   m_signalId;
 		int   m_result;  //ProcessingResult_NoResponseDefined, ProcessingResult_ConditionsNotMet, ProcessingResult_Done, ProcessingResult_Canceled	
 	};
 	struct SLineStartedSignal
 	{
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SLineStartedSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SLineStartedSignal>& typeInfo);
 
 		Schematyc::CSharedString  m_text;
 		Schematyc::CSharedString  m_speakerName;
@@ -38,7 +38,7 @@ public:
 	};
 	struct SLineEndedSignal
 	{
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SLineEndedSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SLineEndedSignal>& typeInfo);
 
 		Schematyc::CSharedString  m_text;
 		Schematyc::CSharedString  m_speakerName;
@@ -64,8 +64,8 @@ public:
 	virtual void OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, DRS::ISpeakerManager::IListener::eLineEvent lineEvent, const DRS::IDialogLine* pLine) override;
 	// ~DRS::ISpeakerManager::IListener
 
-	static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CSchematycEntityDrsComponent>& typeInfo);
-	static void             Register(Schematyc::IEnvRegistrar& registrar);
+	static void ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc);
+	static void Register(Schematyc::IEnvRegistrar& registrar);
 
 
 private:

@@ -3,10 +3,13 @@
 #include "StdAfx.h"
 #include "Object.h"
 
+#include <Schematyc/Action.h>
 #include <Schematyc/Component.h>
 #include <Schematyc/IObjectProperties.h>
 #include <Schematyc/Env/IEnvRegistry.h>
+#include <Schematyc/Env/Elements/IEnvAction.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
+#include <Schematyc/Reflection/ActionDesc.h>
 #include <Schematyc/Runtime/IRuntimeClass.h>
 #include <Schematyc/Services/IUpdateScheduler.h>
 #include <Schematyc/Utils/Assert.h>
@@ -16,21 +19,28 @@
 #include "Core.h"
 #include "CVars.h"
 #include "CoreEnv/CoreEnvSignals.h"
-#include "Runtime/RuntimeClass.h"
 #include "Runtime/RuntimeRegistry.h"
 
 namespace Schematyc
 {
+
 CObject::SStateMachine::SStateMachine()
 	: stateIdx(InvalidIdx)
 {}
 
-CObject::SComponent::SComponent(const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx)
-	: pComponent(_pComponent)
+CObject::SComponent::SComponent(const SGUID& _guid, const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx)
+	: guid(_guid)
+	, pComponent(_pComponent)
 	, transform(_transform)
 	, pProperties(_pProperties ? _pProperties->Clone() : IPropertiesPtr())
 	, pPreviewer(_pPreviewer)
 	, parentIdx(_parentIdx)
+{}
+
+CObject::SAction::SAction(const CActionDesc& _desc, const SRuntimeActionDesc& _runtimeDesc, const CActionPtr& _ptr)
+	: desc(_desc)
+	, runtimeDesc(_runtimeDesc)
+	, ptr(_ptr)
 {}
 
 CObject::STimer::STimer(CObject* _pObject, const SGUID& _guid, TimerFlags _flags)
@@ -44,8 +54,7 @@ void CObject::STimer::Activate()
 	SCHEMATYC_CORE_ASSERT(pObject);
 	if (pObject)
 	{
-		StackRuntimeParams inputs; // #SchematycTODO : Would it be helpful to pass delta time and perhaps even a counter?
-		pObject->ProcessSignal(guid, inputs);
+		pObject->ProcessSignal(SObjectSignal(guid));
 	}
 }
 
@@ -59,6 +68,7 @@ CObject::~CObject()
 {
 	Stop();
 	DestroyTimers();
+	DestroyActions();
 	DestroyComponents();
 	DestroyStateMachines();
 }
@@ -129,27 +139,27 @@ bool CObject::Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPoli
 	return true;
 }
 
-void CObject::ProcessSignal(const SGUID& signalGUID, CRuntimeParams& params)
+void CObject::ProcessSignal(const SObjectSignal& signal)
 {
 	if (m_bQueueSignals)
 	{
-		m_signalQueue.emplace_back(signalGUID, params);
+		m_signalQueue.emplace_back(signal);
 	}
 	else
 	{
 		m_bQueueSignals = true;
 
-		ExecuteSignalReceivers(signalGUID, params);
+		ExecuteSignalReceivers(signal);
 
 		const uint32 stateMachineCount = m_stateMachines.size();
 		for (uint32 stateMachineIdx = 0; stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 		{
-			ExecuteStateSignalReceivers(stateMachineIdx, signalGUID, params);
+			ExecuteStateSignalReceivers(stateMachineIdx, signal);
 		}
 
 		for (uint32 stateMachineIdx = 0; stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 		{
-			if (EvaluateStateTransitions(stateMachineIdx, signalGUID, params))
+			if (EvaluateStateTransitions(stateMachineIdx, signal))
 			{
 				break;
 			}
@@ -158,6 +168,21 @@ void CObject::ProcessSignal(const SGUID& signalGUID, CRuntimeParams& params)
 		SCHEMATYC_CORE_ASSERT(m_bQueueSignals);
 		m_bQueueSignals = false;
 		ProcessSignalQueue();
+	}
+}
+
+void CObject::StopAction(CAction& action)
+{
+	for (SAction& _action : m_actions)
+	{
+		if (_action.ptr.get() == &action)
+		{
+			if (_action.bRunning)
+			{
+				action.Stop();
+				_action.bRunning = false;
+			}
+		}
 	}
 }
 
@@ -240,23 +265,43 @@ CComponent* CObject::GetComponent(uint32 componentIdx)
 	return componentIdx < m_components.size() ? m_components[componentIdx].pComponent.get() : nullptr;
 }
 
-void CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParams& params)
+bool CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParams& params)
 {
-	const bool bPrevQueueSignals = m_bQueueSignals;
-	m_bQueueSignals = true;
-
 	const RuntimeClassFunctions& classFunctions = m_pClass->GetFunctions();
 	if (functionIdx < classFunctions.size())
 	{
+		const bool bPrevQueueSignals = m_bQueueSignals;
+		m_bQueueSignals = true;
+
 		const SRuntimeClassFunction& classFunction = classFunctions[functionIdx];
 		ExecuteFunction(classFunction.graphIdx, params, classFunction.activationParams);
-	}
 
-	if (!bPrevQueueSignals)
-	{
-		ProcessSignalQueue();
+		if (!bPrevQueueSignals)
+		{
+			ProcessSignalQueue();
+		}
+		m_bQueueSignals = bPrevQueueSignals;
+
+		return true;
 	}
-	m_bQueueSignals = bPrevQueueSignals;
+	return false;
+}
+
+bool CObject::StartAction(uint32 actionIdx, CRuntimeParams& params)
+{
+	if (actionIdx < m_actions.size())
+	{
+		SAction& action = m_actions[actionIdx];
+		if (!action.bRunning)
+		{
+			RuntimeParams::ToInputClass(action.desc, action.ptr.get(), params);
+			action.ptr->Start(params);
+			action.bRunning = true;
+
+			return true;
+		}
+	}
+	return false;
 }
 
 bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
@@ -268,12 +313,14 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	}
 
 	DestroyTimers();
+	DestroyActions();
 	DestroyComponents();
 	DestroyStateMachines();
 
 	m_graphs.clear();
 	m_stateMachines.clear();
 	m_components.clear();
+	m_actions.clear();
 	m_timers.clear();
 
 	m_pClass = pClass;
@@ -287,6 +334,11 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	}
 
 	if (!CreateComponents())
+	{
+		return false;
+	}
+
+	if (!CreateActions())
 	{
 		return false;
 	}
@@ -317,6 +369,11 @@ bool CObject::Start(ESimulationMode simulationMode)
 		return false;
 	}
 
+	if (!InitActions())
+	{
+		return false;
+	}
+
 	ExecuteConstructors(simulationMode);
 	RunComponents(simulationMode);
 
@@ -324,8 +381,7 @@ bool CObject::Start(ESimulationMode simulationMode)
 	{
 	case ESimulationMode::Game:
 		{
-			StackRuntimeParams params;
-			ExecuteSignalReceivers(g_startSignalGUID, params);
+			ExecuteSignalReceivers(SStartSignal());
 
 			StartStateMachines(simulationMode);
 			StartTimers(simulationMode);
@@ -347,12 +403,12 @@ void CObject::Stop()
 	{
 	case ESimulationMode::Game:
 		{
-			StackRuntimeParams params;
-			ExecuteSignalReceivers(g_stopSignalGUID, params);
+			ExecuteSignalReceivers(SStopSignal());
 			break;
 		}
 	}
 
+	ShutdownActions();
 	ShutdownComponents();
 
 	m_simulationMode = ESimulationMode::Idle;
@@ -360,9 +416,7 @@ void CObject::Stop()
 
 void CObject::Update(const SUpdateContext& updateContext)
 {
-	StackRuntimeParams runtimeParams;
-	runtimeParams.SetInput('time', updateContext.frameTime);
-	ProcessSignal(g_updateSignalGUID, runtimeParams);
+	ProcessSignal(SUpdateSignal(updateContext.frameTime));
 }
 
 void CObject::CreateGraphs()
@@ -467,7 +521,7 @@ bool CObject::CreateStateMachines()
 			STimerParams timerParams = classStateTimer.params;
 			timerParams.flags.Remove(ETimerFlags::AutoStart);
 
-			timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(STimer::Activate, timer));
+			timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(&STimer::Activate, timer));
 		}
 	}
 
@@ -511,6 +565,7 @@ void CObject::DestroyStateMachines()
 			timer.id = TimerId::Invalid;
 		}
 	}
+	// #SchematycTODO : m_stateMachines.clear()? m_states.clear()?
 }
 
 bool CObject::CreateComponents()
@@ -534,7 +589,7 @@ bool CObject::CreateComponents()
 			return false;
 		}
 
-		m_components.emplace_back(pComponent, classComponentInstance.transform, classComponentInstance.pProperties.get(), pEnvComponent->GetPreviewer(), classComponentInstance.parentIdx);
+		m_components.emplace_back(classComponentInstance.guid, pComponent, classComponentInstance.transform, classComponentInstance.pProperties.get(), pEnvComponent->GetPreviewer(), classComponentInstance.parentIdx);
 	}
 	return true;
 }
@@ -543,7 +598,7 @@ bool CObject::InitComponents()
 {
 	for (SComponent& component : m_components)
 	{
-		SComponentParams componentParams(*this, component.transform);
+		SComponentParams componentParams(component.guid, *this, component.transform);
 		componentParams.pProperties = component.pProperties ? component.pProperties->GetValue() : nullptr;
 		componentParams.pPreviewer = component.pPreviewer;
 		componentParams.pParent = component.parentIdx != InvalidIdx ? m_components[component.parentIdx].pComponent.get() : nullptr;
@@ -577,8 +632,71 @@ void CObject::DestroyComponents()
 {
 	for (SComponent& component : stl::reverse(m_components))
 	{
-		component.pComponent->Shutdown();
+		component.pComponent.reset();
 	}
+	// #SchematycTODO : m_components.clear()?
+}
+
+bool CObject::CreateActions()
+{
+	const RuntimeActionDescs& actionDescs = m_pClass->GetActions();
+	const uint32 actionCount = actionDescs.size();
+
+	m_actions.reserve(actionCount);
+
+	for (const SRuntimeActionDesc& actionDesc : actionDescs)
+	{
+		const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(actionDesc.typeGUID);
+		if (!pEnvAction)
+		{
+			return false;
+		}
+
+		CActionPtr pAction = pEnvAction->CreateFromPool();
+		if (!pAction)
+		{
+			return false;
+		}
+
+		m_actions.emplace_back(pEnvAction->GetDesc(), actionDesc, pAction);
+	}
+	return true;
+}
+
+bool CObject::InitActions()
+{
+	for (SAction& action : m_actions)
+	{
+		SActionParams actionParams(action.runtimeDesc.guid, *this);
+		action.ptr->PreInit(actionParams);
+		if (!action.ptr->Init())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void CObject::ShutdownActions()
+{
+	for (SAction& action : stl::reverse(m_actions))
+	{
+		if (action.bRunning)
+		{
+			action.ptr->Stop();
+			action.bRunning = false;
+		}
+		action.ptr->Shutdown();
+	}
+}
+
+void CObject::DestroyActions()
+{
+	for (SAction& action : stl::reverse(m_actions))
+	{
+		action.ptr.reset();
+	}
+	// #SchematycTODO : m_actions.clear()?
 }
 
 bool CObject::CreateTimers()
@@ -595,7 +713,7 @@ bool CObject::CreateTimers()
 		STimerParams timerParams = classTimer.params;
 		timerParams.flags.Remove(ETimerFlags::AutoStart);
 
-		timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(STimer::Activate, timer));
+		timer.id = timerSystem.CreateTimer(timerParams, SCHEMATYC_MEMBER_DELEGATE(&STimer::Activate, timer));
 	}
 	return true;
 }
@@ -632,27 +750,28 @@ void CObject::DestroyTimers()
 		timerSystem.DestroyTimer(timer.id);
 		timer.id = TimerId::Invalid;
 	}
+	// #SchematycTODO : m_timers.clear()?
 }
 
 void CObject::RegisterForUpdate()
 {
-	if (m_pClass->CountSignalReceviers(g_updateSignalGUID))
+	if (m_pClass->CountSignalReceviers(GetTypeDesc<SUpdateSignal>().GetGUID()))
 	{
-		SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(CObject::Update, *this), m_connectionScope);
+		SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(&CObject::Update, *this), m_connectionScope);
 		updateParams.frequency = EUpdateFrequency::EveryFrame;
 		// #SchematycTODO : Create an update filter?
 		gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
 	}
 }
 
-void CObject::ExecuteSignalReceivers(const SGUID& signalGUID, CRuntimeParams& params)
+void CObject::ExecuteSignalReceivers(const SObjectSignal& signal)
 {
 	StackRuntimeParams outputs;
 	for (const SRuntimeClassSignalReceiver& classSignalReceiver : m_pClass->GetSignalReceivers())
 	{
-		if (classSignalReceiver.signalGUID == signalGUID)
+		if ((classSignalReceiver.signalGUID == signal.typeGUID) && (GUID::IsEmpty(classSignalReceiver.senderGUID) || (classSignalReceiver.senderGUID == signal.senderGUID))) // #SchematycTODO : How can we optimize this query?
 		{
-			ExecuteFunction(classSignalReceiver.graphIdx, params, classSignalReceiver.activationParams);
+			ExecuteFunction(classSignalReceiver.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classSignalReceiver.activationParams); // #SchematycTODO : How can we eliminate the const cast without having to copy parameters?
 		}
 	}
 }
@@ -686,7 +805,7 @@ void CObject::StopStateTimers(uint32 stateMachineIdx)
 	}
 }
 
-void CObject::ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SGUID& signalGUID, CRuntimeParams& params)
+void CObject::ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SObjectSignal& signal)
 {
 	const uint32 stateIdx = m_stateMachines[stateMachineIdx].stateIdx;
 	if (stateIdx != InvalidIdx)
@@ -694,15 +813,15 @@ void CObject::ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SGUID& s
 		const RuntimeClassStates& classStates = m_pClass->GetStates();
 		for (const SRuntimeClassStateSignalReceiver& classStateSignalReceiver : classStates[stateIdx].signalReceivers)
 		{
-			if (classStateSignalReceiver.signalGUID == signalGUID)
+			if ((classStateSignalReceiver.signalGUID == signal.typeGUID) && (GUID::IsEmpty(classStateSignalReceiver.senderGUID) || (classStateSignalReceiver.senderGUID == signal.senderGUID))) // #SchematycTODO : How can we optimize this query?
 			{
-				ExecuteFunction(classStateSignalReceiver.graphIdx, params, classStateSignalReceiver.activationParams);
+				ExecuteFunction(classStateSignalReceiver.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classStateSignalReceiver.activationParams); // #SchematycTODO : How can we eliminate the const cast without having to copy parameters?
 			}
 		}
 	}
 }
 
-bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SGUID& signalGUID, CRuntimeParams& params)
+bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SObjectSignal& signal)
 {
 	const uint32 stateIdx = m_stateMachines[stateMachineIdx].stateIdx;
 	if (stateIdx != InvalidIdx)
@@ -710,11 +829,11 @@ bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SGUID& sign
 		const RuntimeClassStates& classStates = m_pClass->GetStates();
 		for (const SRuntimeClassStateTransition& classStateTransition : classStates[stateIdx].transitions)
 		{
-			if (classStateTransition.signalGUID == signalGUID)
+			if (classStateTransition.signalGUID == signal.typeGUID)
 			{
-				ExecuteFunction(classStateTransition.graphIdx, params, classStateTransition.activationParams);
+				ExecuteFunction(classStateTransition.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classStateTransition.activationParams);
 
-				const uint32* pStateIdx = DynamicCast<uint32>(params.GetOutput(0));
+				const uint32* pStateIdx = DynamicCast<uint32>(signal.params.GetOutput(0));
 				if (pStateIdx)
 				{
 					ChangeState(stateMachineIdx, *pStateIdx);
@@ -728,11 +847,10 @@ bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SGUID& sign
 
 void CObject::ChangeState(uint32 stateMachineIdx, uint32 stateIdx)
 {
-	StackRuntimeParams params;
 	StopStateTimers(stateMachineIdx);
-	ExecuteStateSignalReceivers(stateMachineIdx, g_stopSignalGUID, params);
+	ExecuteStateSignalReceivers(stateMachineIdx, SStopSignal());
 	m_stateMachines[stateMachineIdx].stateIdx = stateIdx;
-	ExecuteStateSignalReceivers(stateMachineIdx, g_startSignalGUID, params);
+	ExecuteStateSignalReceivers(stateMachineIdx, SStartSignal());
 	StartStateTimers(stateMachineIdx);
 }
 
@@ -755,7 +873,8 @@ void CObject::ProcessSignalQueue()
 	{
 		SObjectSignal signal = m_signalQueue.front();
 		m_signalQueue.pop_front();
-		ProcessSignal(signal.guid, signal.params);
+		ProcessSignal(signal);
 	}
 }
+
 } // Schematyc

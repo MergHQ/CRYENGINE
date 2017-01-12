@@ -15,8 +15,8 @@ struct IEnvRegistrar;
 
 struct SAudioTriggerSerializeHelper
 {
-	void         Serialize(Serialization::IArchive& archive);
-	static SGUID ReflectSchematycType(CTypeInfo<SAudioTriggerSerializeHelper>& typeInfo);
+	void        Serialize(Serialization::IArchive& archive);
+	static void ReflectType(CTypeDesc<SAudioTriggerSerializeHelper>& desc);
 
 	CryAudio::ControlId m_triggerId = CryAudio::InvalidControlId;
 	string              m_triggerName;
@@ -24,8 +24,8 @@ struct SAudioTriggerSerializeHelper
 
 struct SAudioParameterSerializeHelper
 {
-	void         Serialize(Serialization::IArchive& archive);
-	static SGUID ReflectSchematycType(CTypeInfo<SAudioParameterSerializeHelper>& typeInfo);
+	void        Serialize(Serialization::IArchive& archive);
+	static void ReflectType(CTypeDesc<SAudioParameterSerializeHelper>& desc);
 
 	CryAudio::ControlId m_parameterId = CryAudio::InvalidControlId;
 	string              m_parameterName;
@@ -33,8 +33,8 @@ struct SAudioParameterSerializeHelper
 
 struct SAudioSwitchWithStateSerializeHelper
 {
-	void         Serialize(Serialization::IArchive& archive);
-	static SGUID ReflectSchematycType(CTypeInfo<SAudioSwitchWithStateSerializeHelper>& typeInfo);
+	void        Serialize(Serialization::IArchive& archive);
+	static void ReflectType(CTypeDesc<SAudioSwitchWithStateSerializeHelper>& desc);
 
 	CryAudio::ControlId     m_switchId = CryAudio::InvalidControlId;
 	string                  m_switchName;
@@ -51,7 +51,7 @@ public:
 		SAudioTriggerFinishedSignal() {}
 		SAudioTriggerFinishedSignal(uint32 instanceId, uint32 triggerId, bool bSuccess);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SAudioTriggerFinishedSignal>& typeInfo);
+		static void ReflectType(CTypeDesc<SAudioTriggerFinishedSignal>& desc);
 
 		uint32       m_instanceId = 0;
 		uint32       m_triggerId = 0;
@@ -68,7 +68,7 @@ public:
 	void         SetParameter(const SAudioParameterSerializeHelper parameter, float value);
 	void         SetSwitchState(const SAudioSwitchWithStateSerializeHelper switchAndState);
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityAudioComponent>& typeInfo);
+	static void ReflectType(CTypeDesc<CEntityAudioComponent>& desc);
 
 	static void  Register(IEnvRegistrar& registrar);
 
@@ -76,6 +76,7 @@ public:
 	static void OnAudioCallback(CryAudio::SRequestInfo const* const pAudioRequestInfo);
 
 private:
+
 	CryAudio::AuxObjectId  m_audioProxyId = CryAudio::InvalidAuxObjectId;
 	IEntityAudioComponent* m_pAudioProxy;
 };

@@ -14,6 +14,7 @@ struct SRenderingPassInfo;
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IComponentPreviewer;
 struct IObject;
@@ -23,11 +24,13 @@ class CTransform;
 
 struct SComponentParams
 {
-	inline SComponentParams(IObject& _object, CTransform& _transform)
-		: object(_object)
+	inline SComponentParams(const SGUID& _guid, IObject& _object, CTransform& _transform)
+		: guid(_guid)
+		, object(_object)
 		, transform(_transform)
 	{}
 
+	const SGUID&           guid;
 	IObject&               object;
 	CTransform&            transform;
 	void*                  pProperties = nullptr;
@@ -44,23 +47,16 @@ public:
 
 	virtual ~CComponent() {}
 
+	// Virtual interface.
+
 	virtual bool Init()
 	{
 		return true;
 	}
 
-	virtual void Run(ESimulationMode simulationMode) {}
+	virtual void                   Run(ESimulationMode simulationMode) {}
 
-	virtual void Shutdown()                          {}
-
-	virtual void PreInit(const SComponentParams& params)
-	{
-		m_pObject = &params.object;
-		m_pTransform = &params.transform;
-		m_pProperties = params.pProperties;
-		m_pPreviewer = params.pPreviewer;
-		m_pParent = params.pParent;
-	}
+	virtual void                   Shutdown()                          {}
 
 	virtual INetworkSpawnParamsPtr GetNetworkSpawnParams() const
 	{
@@ -70,6 +66,30 @@ public:
 	virtual int GetSlot() const // #SchematycTODO : This name is super generic. Rename GetEntitySlot() or create CEntityComponent class?
 	{
 		return EmptySlot;
+	}
+
+	// System functions.
+
+	inline void PreInit(const SComponentParams& params)
+	{
+		m_guid = params.guid;
+		m_pObject = &params.object;
+		m_pTransform = &params.transform;
+		m_pProperties = params.pProperties;
+		m_pPreviewer = params.pPreviewer;
+		m_pParent = params.pParent;
+	}
+
+	// Utility functions.
+
+	template <typename SIGNAL> inline void OutputSignal(const SIGNAL& signal)
+	{
+		GetObject().ProcessSignal(signal, m_guid);
+	}
+
+	inline const SGUID& GetGUID() const
+	{
+		return m_guid;
 	}
 
 	inline IObject& GetObject() const
@@ -101,6 +121,7 @@ public:
 
 private:
 
+	SGUID                m_guid;
 	IObject*             m_pObject = nullptr;
 	CTransform*          m_pTransform = nullptr;
 	void*                m_pProperties = nullptr;
@@ -115,4 +136,5 @@ struct IComponentPreviewer
 	virtual void SerializeProperties(Serialization::IArchive& archive) = 0;
 	virtual void Render(const IObject& object, const CComponent& component, const SRendParams& params, const SRenderingPassInfo& passInfo) const = 0; // #SchematycTODO : Pass SRenderContext instead of SRendParams and SRenderingPassInfo?
 };
+
 } // Schematyc

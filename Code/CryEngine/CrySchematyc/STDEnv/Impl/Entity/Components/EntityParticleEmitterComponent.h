@@ -8,6 +8,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 
@@ -41,12 +42,12 @@ public:
 	virtual int  GetSlot() const override;
 	// ~CComponent
 
-	void         SetTransform(const CTransform& transform);
-	void         SetVisible(bool bVisible);
-	bool         IsVisible() const;
+	void        SetTransform(const CTransform& transform);
+	void        SetVisible(bool bVisible);
+	bool        IsVisible() const;
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityParticleEmitterComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityParticleEmitterComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
 private:
 
@@ -57,4 +58,5 @@ private:
 	int  m_slot = EmptySlot;
 	bool m_bVisible = false;
 };
+
 } // Schematyc

@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "SchematycEntityDrsComponent.h"
 
-#include <Schematyc/Reflection/Reflection.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 void CSchematycEntityDrsComponent::SProperties::Serialize(Serialization::IArchive& archive)
@@ -60,9 +59,9 @@ void CSchematycEntityDrsComponent::Shutdown()
 	m_pDrsActor = nullptr;
 }
 
-Schematyc::SGUID CSchematycEntityDrsComponent::ReflectSchematycType(Schematyc::CTypeInfo<CSchematycEntityDrsComponent>& typeInfo)
+void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc)
 {
-	return "25854445-cd59-4257-827d-aef984790598"_schematyc_guid;
+	desc.SetGUID("25854445-cd59-4257-827d-aef984790598"_schematyc_guid);
 }
 
 void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -70,7 +69,6 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(Schematyc::g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycEntityDrsComponent, "DRS");
-		pComponent->SetAuthor(Schematyc::g_szCrytek);
 		pComponent->SetDescription("Dynamic Response System component");
 		pComponent->SetIcon("icons:Dialogs/notification_text.ico");
 		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::None });
@@ -87,7 +85,6 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SendSignal, "3f00d849-3a9e-4fdf-b322-30ce546005ed"_schematyc_guid, "SendSignal");
-			pFunction->SetAuthor(Schematyc::g_szCrytek);
 			pFunction->SetDescription("Sends a DRS signal");
 			pFunction->BindInput(1, 'sig', "SignalName");
 			pFunction->BindInput(2, 'cfn', "ContextFloatName", "(optional) The name of a float-variable that can be passed along with this signal");
@@ -99,7 +96,6 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetFloatVariable, "322c7c23-f4bd-4582-a55b-7ccce84aa6c1"_schematyc_guid, "SetFloatVariable");
-			pFunction->SetAuthor(Schematyc::g_szCrytek);
 			pFunction->SetDescription("Sets a float variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -108,7 +104,6 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetStringVariable, "47b46015-0bb9-4c15-bc40-50914746cfd3"_schematyc_guid, "SetStringVariable");
-			pFunction->SetAuthor(Schematyc::g_szCrytek);
 			pFunction->SetDescription("Sets a string variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -117,7 +112,6 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CSchematycEntityDrsComponent::SetIntVariable, "a0119cb0-f4c3-4c53-959b-4fe06f5d0691"_schematyc_guid, "SetIntVariable");
-			pFunction->SetAuthor(Schematyc::g_szCrytek);
 			pFunction->SetDescription("Sets a int variable in a variable collection");
 			pFunction->BindInput(1, 'col', "CollectionName");
 			pFunction->BindInput(2, 'var', "VariableName");
@@ -126,28 +120,10 @@ void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 		}
 		// Signals
 		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SResponseFinishedSignal, "ResponseFinished");
-			pSignal->SetAuthor(Schematyc::g_szCrytek);
-			pSignal->SetDescription("Sent when a response has finished (or was not even started/existing).");
-			componentScope.Register(pSignal);
-		}
-		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SResponseStartedSignal, "ResponseStarted");
-			pSignal->SetAuthor(Schematyc::g_szCrytek);
-			pSignal->SetDescription("Sent when a response is started.");
-			componentScope.Register(pSignal);
-		}
-		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SLineStartedSignal, "LineStarted");
-			pSignal->SetAuthor(Schematyc::g_szCrytek);
-			pSignal->SetDescription("Sent when a dialog line is started.");
-			componentScope.Register(pSignal);
-		}
-		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SLineEndedSignal, "LineEnded");
-			pSignal->SetAuthor(Schematyc::g_szCrytek);
-			pSignal->SetDescription("Sent when a dialog line has finished/wasCanceled.");
-			componentScope.Register(pSignal);
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SResponseFinishedSignal));
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SResponseStartedSignal));
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SLineStartedSignal));
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SLineEndedSignal));
 		}
 	}
 }
@@ -239,31 +215,38 @@ void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, c
 	}
 }
 
-Schematyc::SGUID CSchematycEntityDrsComponent::SResponseStartedSignal::ReflectSchematycType(Schematyc::CTypeInfo<SResponseStartedSignal>& typeInfo)
+void CSchematycEntityDrsComponent::SResponseStartedSignal::ReflectType(Schematyc::CTypeDesc<SResponseStartedSignal>& desc)
 {
-	typeInfo.AddMember(&SResponseStartedSignal::m_signalId, 'id', "responseId", "ResponseId");  //actually ResponseInstanceId
-
-	return "f01fdb01-b03f-4eab-a0af-8d2359b4547b"_schematyc_guid;
+	desc.SetGUID("f01fdb01-b03f-4eab-a0af-8d2359b4547b"_schematyc_guid);
+	desc.SetLabel("ResponseStarted");
+	desc.SetDescription("Sent when a response is started.");
+	desc.AddMember(&SResponseStartedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
 }
 
-Schematyc::SGUID CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectSchematycType(Schematyc::CTypeInfo<SResponseFinishedSignal>& typeInfo)
+void CSchematycEntityDrsComponent::SResponseFinishedSignal::ReflectType(Schematyc::CTypeDesc<SResponseFinishedSignal>& desc)
 {
-	typeInfo.AddMember(&SResponseFinishedSignal::m_signalId, 'id', "responseId", "ResponseId");  //actually ResponseInstanceId
-	typeInfo.AddMember(&SResponseFinishedSignal::m_result, 'res', "result", "Result");  
-	return "cece4601-9f11-4e7c-800c-222c601200fa"_schematyc_guid;
+	desc.SetGUID("cece4601-9f11-4e7c-800c-222c601200fa"_schematyc_guid);
+	desc.SetLabel("ResponseFinished");
+	desc.SetDescription("Sent when a response has finished (or was not even started/existing).");
+	desc.AddMember(&SResponseFinishedSignal::m_signalId, 'id', "responseId", "ResponseId", nullptr);  //actually ResponseInstanceId
+	desc.AddMember(&SResponseFinishedSignal::m_result, 'res', "result", "Result", nullptr);
 }
 
-Schematyc::SGUID CSchematycEntityDrsComponent::SLineStartedSignal::ReflectSchematycType(Schematyc::CTypeInfo<SLineStartedSignal>& typeInfo)
+void CSchematycEntityDrsComponent::SLineStartedSignal::ReflectType(Schematyc::CTypeDesc<SLineStartedSignal>& desc)
 {
-	typeInfo.AddMember(&SLineStartedSignal::m_text, 'text', "text", "Text");
-	typeInfo.AddMember(&SLineStartedSignal::m_speakerName, 'act', "speaker", "Speaker");
-	return "e397e62c-5c7f-4fab-9195-12032f670c9f"_schematyc_guid;
+	desc.SetGUID("e397e62c-5c7f-4fab-9195-12032f670c9f"_schematyc_guid);
+	desc.SetLabel("LineStarted");
+	desc.SetDescription("Sent when a dialog line is started.");
+	desc.AddMember(&SLineStartedSignal::m_text, 'text', "text", "Text", nullptr);
+	desc.AddMember(&SLineStartedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr);
 }
 
-Schematyc::SGUID CSchematycEntityDrsComponent::SLineEndedSignal::ReflectSchematycType(Schematyc::CTypeInfo<SLineEndedSignal>& typeInfo)
+void CSchematycEntityDrsComponent::SLineEndedSignal::ReflectType(Schematyc::CTypeDesc<SLineEndedSignal>& desc)
 {
-	typeInfo.AddMember(&SLineEndedSignal::m_text, 'text', "text", "Text");
-	typeInfo.AddMember(&SLineEndedSignal::m_speakerName, 'act', "speaker", "Speaker");
-	typeInfo.AddMember(&SLineEndedSignal::m_bWasCanceled, 'id', "wasCanceled", "WasCanceled");
-	return "75e5e2ac-377f-4992-84ad-42c551f96e46"_schematyc_guid;
+	desc.SetGUID("75e5e2ac-377f-4992-84ad-42c551f96e46"_schematyc_guid);
+	desc.SetLabel("LineEnded");
+	desc.SetDescription("Sent when a dialog line has finished/wasCanceled.");
+	desc.AddMember(&SLineEndedSignal::m_text, 'text', "text", "Text", nullptr);
+	desc.AddMember(&SLineEndedSignal::m_speakerName, 'act', "speaker", "Speaker", nullptr);
+	desc.AddMember(&SLineEndedSignal::m_bWasCanceled, 'id', "wasCanceled", "WasCanceled", nullptr);
 }

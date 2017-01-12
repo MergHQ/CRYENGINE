@@ -81,7 +81,7 @@ CPreviewWidget::CPreviewWidget(QWidget* pParent)
 
 	connect(m_pViewport, SIGNAL(SignalRender(const SRenderContext &)), SLOT(OnRender(const SRenderContext &)));
 
-	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CPreviewWidget::OnScriptRegistryChange, *this), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CPreviewWidget::OnScriptRegistryChange, *this), m_connectionScope);
 }
 
 CPreviewWidget::~CPreviewWidget()

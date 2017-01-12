@@ -7,7 +7,7 @@
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvFunction.h"
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Runtime/RuntimeGraph.h"
 #include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Utils/Any.h"
@@ -19,12 +19,14 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvAction;
 struct IEnvComponent;
 
 namespace EnvFunctionUtils
 {
+
 struct SBinding;
 
 enum class EParamFlags
@@ -37,7 +39,7 @@ enum class EParamFlags
 
 typedef CEnumFlags<EParamFlags> ParamFlags;
 
-typedef void (*                 StubPtr)(const SBinding&, SRuntimeContext& context, void* pObject);
+typedef void (* StubPtr)(const SBinding&, SRuntimeContext& context, void* pObject);
 
 enum : uint32
 {
@@ -123,7 +125,7 @@ struct SBinding
 {
 	inline SBinding()
 		: flags(EEnvFunctionFlags::None)
-		, pObjectTypeInfo(nullptr)
+		, pObjectTypeDesc(nullptr)
 		, inputCount(0)
 		, outputCount(0)
 	{}
@@ -132,7 +134,7 @@ struct SBinding
 	StubPtr                pStub;
 
 	EnvFunctionFlags       flags;
-	const CCommonTypeInfo* pObjectTypeInfo;
+	const CCommonTypeDesc* pObjectTypeDesc;
 	SParamBinding          params[MaxParams];
 	uint32                 inputCount;
 	uint32                 inputs[MaxParams];
@@ -322,7 +324,7 @@ struct SBinder<void (OBJECT::*)()>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 	}
 
 	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
@@ -348,7 +350,7 @@ struct SBinder<void (OBJECT::*)() const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 	}
 
 	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
@@ -400,7 +402,7 @@ struct SBinder<PARAM0 (OBJECT::*)()>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
@@ -428,7 +430,7 @@ struct SBinder<PARAM0 (OBJECT::*)() const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
@@ -484,7 +486,7 @@ struct SBinder<void (OBJECT::*)(PARAM1)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
@@ -514,7 +516,7 @@ struct SBinder<void (OBJECT::*)(PARAM1) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		*reinterpret_cast<FunctionPtr*>(binding.pFunction) = pFunction;
 
@@ -576,7 +578,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -608,7 +610,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -670,7 +672,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -702,7 +704,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -766,7 +768,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -800,7 +802,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -866,7 +868,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -900,7 +902,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -968,7 +970,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1004,7 +1006,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1074,7 +1076,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1110,7 +1112,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1182,7 +1184,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1220,7 +1222,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1294,7 +1296,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1332,7 +1334,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1408,7 +1410,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1448,7 +1450,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1526,7 +1528,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6)>
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1566,7 +1568,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6) 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1646,7 +1648,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1688,7 +1690,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1770,7 +1772,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1812,7 +1814,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -1896,7 +1898,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -1940,7 +1942,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -2026,7 +2028,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -2070,7 +2072,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -2158,7 +2160,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -2204,7 +2206,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -2294,7 +2296,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -2340,7 +2342,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitParamBinding<PARAM1>(binding.params[1]);
 		InitParamBinding<PARAM2>(binding.params[2]);
@@ -2432,7 +2434,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = EEnvFunctionFlags::Member;
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -2480,7 +2482,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 		binding.pStub = &SBinder::Stub;
 		binding.flags = { EEnvFunctionFlags::Member, EEnvFunctionFlags::Const };
-		binding.pObjectTypeInfo = &GetTypeInfo<OBJECT>();
+		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 
@@ -2513,6 +2515,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 
 	static const bool IsSupported = true;
 };
+
 } // EnvFunctionUtils
 
 class CEnvFunction : public CEnvElementBase<IEnvFunction>
@@ -2533,7 +2536,7 @@ public:
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		switch (scope.GetElementType())
+		switch (scope.GetType())
 		{
 		case EEnvElementType::Module:
 		case EEnvElementType::DataType:
@@ -2559,14 +2562,14 @@ public:
 		return EnvFunctionUtils::ValidateBinding(m_binding);
 	}
 
-	virtual EnvFunctionFlags GetFlags() const override
+	virtual EnvFunctionFlags GetFunctionFlags() const override
 	{
 		return m_binding.flags;
 	}
 
-	virtual const CCommonTypeInfo* GetObjectTypeInfo() const override
+	virtual const CCommonTypeDesc* GetObjectTypeDesc() const override
 	{
-		return m_binding.pObjectTypeInfo;
+		return m_binding.pObjectTypeDesc;
 	}
 
 	virtual uint32 GetInputCount() const override
@@ -2657,9 +2660,11 @@ private:
 
 namespace EnvFunction
 {
+
 template<typename FUNCTION_PTR_TYPE> inline std::shared_ptr<CEnvFunction> MakeShared(FUNCTION_PTR_TYPE pFunction, const SGUID& guid, const char* szName, const SSourceFileInfo& sourceFileInfo)
 {
 	return std::make_shared<CEnvFunction>(pFunction, guid, szName, sourceFileInfo);
 }
+
 } // EnvFunction
 } // Schematyc

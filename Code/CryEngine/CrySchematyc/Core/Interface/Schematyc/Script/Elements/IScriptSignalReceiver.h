@@ -7,7 +7,7 @@
 namespace Schematyc
 {
 // Forward declare structures.
-struct SGUID;
+
 
 enum class EScriptSignalReceiverType
 {
@@ -22,7 +22,7 @@ struct IScriptSignalReceiver : public IScriptElementBase<EScriptElementType::Sig
 {
 	virtual ~IScriptSignalReceiver() {}
 
-	virtual EScriptSignalReceiverType GetType() const = 0;
+	virtual EScriptSignalReceiverType GetSignalReceiverType() const = 0;
 	virtual SGUID                     GetSignalGUID() const = 0;
 };
 } // Schematyc

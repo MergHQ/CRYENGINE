@@ -6,11 +6,16 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/IString.h"
 
 namespace Schematyc
 {
+
+class CSharedString;
+
+SCHEMATYC_DECLARE_STRING_TYPE(CSharedString)
+
 class CSharedString : public IString
 {
 	friend bool Serialize(Serialization::IArchive& archive, CSharedString& value, const char* szName, const char* szLabel);
@@ -224,12 +229,14 @@ public:
 		return (m_pString != rhs.m_pString) && (*m_pString != *rhs.m_pString);
 	}
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<CSharedString>& typeInfo)
+	static inline void ReflectType(CTypeDesc<CSharedString>& desc)
 	{
-		typeInfo.SetFlags(ETypeFlags::IsString);
-		typeInfo.SetToStringMethod<&CSharedString::ToString>();
-		typeInfo.DeclareSerializeable();
-		return "02b79308-c51c-4841-99ec-c887577217a7"_schematyc_guid;
+		desc.SetGUID("02b79308-c51c-4841-99ec-c887577217a7"_schematyc_guid);
+		desc.SetLabel("String");
+		desc.SetDescription("String");
+		desc.SetFlags(ETypeFlags::Switchable);
+		desc.SetToStringOperator<&CSharedString::ToString>();
+		desc.SetStringGetCharsOperator<&CSharedString::c_str>();
 	}
 
 private:

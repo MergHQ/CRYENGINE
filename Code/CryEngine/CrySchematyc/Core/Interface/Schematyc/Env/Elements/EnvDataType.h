@@ -5,28 +5,33 @@
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvDataType.h"
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/TypeName.h"
 
-#define SCHEMATYC_MAKE_ENV_DATA_TYPE(type, name) Schematyc::EnvDataType::MakeShared<type>(name, SCHEMATYC_SOURCE_FILE_INFO)
+#define SCHEMATYC_MAKE_ENV_DATA_TYPE(type) Schematyc::EnvDataType::MakeShared<type>(SCHEMATYC_SOURCE_FILE_INFO)
 
 namespace Schematyc
 {
+
 template<typename TYPE> class CEnvDataType : public CEnvElementBase<IEnvDataType>
 {
 public:
 
-	inline CEnvDataType(const char* szName, const SSourceFileInfo& sourceFileInfo)
-		: CEnvElementBase(Schematyc::GetTypeInfo<TYPE>().GetGUID(), szName, sourceFileInfo)
-		, m_defaultValue()
-	{}
+	inline CEnvDataType(const SSourceFileInfo& sourceFileInfo)
+		: CEnvElementBase(sourceFileInfo)
+	{
+		const CCommonTypeDesc& typeDesc = Schematyc::GetTypeDesc<TYPE>();
+		CEnvElementBase::SetGUID(typeDesc.GetGUID());
+		CEnvElementBase::SetName(typeDesc.GetLabel());
+		CEnvElementBase::SetDescription(typeDesc.GetDescription());
+	}
 
 	// IEnvElement
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		const EEnvElementType elementType = scope.GetElementType();
+		const EEnvElementType elementType = scope.GetType();
 		switch (elementType)
 		{
 		case EEnvElementType::Root:
@@ -48,46 +53,24 @@ public:
 
 	// IEnvType
 
-	virtual const CCommonTypeInfo& GetTypeInfo() const override
+	virtual const CCommonTypeDesc& GetDesc() const override
 	{
-		return Schematyc::GetTypeInfo<TYPE>();
-	}
-
-	virtual EnvDataTypeFlags GetFlags() const override
-	{
-		return m_flags;
-	}
-
-	virtual CAnyValuePtr Create() const override
-	{
-		return CAnyValue::MakeShared(m_defaultValue);
+		return Schematyc::GetTypeDesc<TYPE>();
 	}
 
 	// IEnvType
-
-	inline void SetFlags(const EnvDataTypeFlags& flags)
-	{
-		m_flags = flags;
-	}
-
-	inline void SetDefaultValue(const TYPE& defaultValue)
-	{
-		m_defaultValue = defaultValue;
-	}
-
-private:
-
-	EnvDataTypeFlags m_flags;
-	TYPE             m_defaultValue;
 };
 
 namespace EnvDataType
 {
-template<typename TYPE> inline std::shared_ptr<CEnvDataType<TYPE>> MakeShared(const char* szName, const SSourceFileInfo& sourceFileInfo)
+
+template<typename TYPE> inline std::shared_ptr<CEnvDataType<TYPE>> MakeShared(const SSourceFileInfo& sourceFileInfo)
 {
+	static_assert(std::is_default_constructible<TYPE>::value, "Type must be default constructible!");
 	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
 
-	return std::make_shared<CEnvDataType<TYPE>>(szName, sourceFileInfo);
+	return std::make_shared<CEnvDataType<TYPE>>(sourceFileInfo);
 }
+
 } // EnvDataType
 } // Schematyc

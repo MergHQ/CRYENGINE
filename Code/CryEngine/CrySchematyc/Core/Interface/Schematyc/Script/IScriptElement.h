@@ -13,6 +13,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IGUIDRemapper;
 struct IScript;
@@ -101,14 +102,14 @@ struct IScriptElement
 {
 	virtual ~IScriptElement() {}
 
-	virtual EScriptElementType         GetElementType() const = 0;
+	virtual EScriptElementType         GetType() const = 0;
 	virtual SGUID                      GetGUID() const = 0;
 
 	virtual void                       SetName(const char* szName) = 0;
 	virtual const char*                GetName() const = 0;
 	virtual EScriptElementAccessor     GetAccessor() const = 0;
-	virtual void                       SetElementFlags(const ScriptElementFlags& flags) = 0;
-	virtual ScriptElementFlags         GetElementFlags() const = 0;
+	virtual void                       SetFlags(const ScriptElementFlags& flags) = 0;
+	virtual ScriptElementFlags         GetFlags() const = 0;
 	virtual void                       SetScript(IScript* pScript) = 0;
 	virtual IScript*                   GetScript() = 0;
 	virtual const IScript*             GetScript() const = 0;
@@ -147,7 +148,7 @@ template<EScriptElementType ELEMENT_TYPE> struct IScriptElementBase : public ISc
 {
 	static const EScriptElementType ElementType = ELEMENT_TYPE;
 
-	virtual EScriptElementType GetElementType() const override
+	virtual EScriptElementType GetType() const override
 	{
 		return ElementType;
 	}
@@ -155,23 +156,24 @@ template<EScriptElementType ELEMENT_TYPE> struct IScriptElementBase : public ISc
 
 template<typename TYPE> inline TYPE& DynamicCast(IScriptElement& scriptElement)
 {
-	SCHEMATYC_CORE_ASSERT(scriptElement.GetElementType() == TYPE::ElementType);
+	SCHEMATYC_CORE_ASSERT(scriptElement.GetType() == TYPE::ElementType);
 	return static_cast<TYPE&>(scriptElement);
 }
 
 template<typename TYPE> inline const TYPE& DynamicCast(const IScriptElement& scriptElement)
 {
-	SCHEMATYC_CORE_ASSERT(scriptElement.GetElementType() == TYPE::ElementType);
+	SCHEMATYC_CORE_ASSERT(scriptElement.GetType() == TYPE::ElementType);
 	return static_cast<const TYPE&>(scriptElement);
 }
 
 template<typename TYPE> inline TYPE* DynamicCast(IScriptElement* pScriptElement)
 {
-	return pScriptElement && (pScriptElement->GetElementType() == TYPE::ElementType) ? static_cast<TYPE*>(pScriptElement) : nullptr;
+	return pScriptElement && (pScriptElement->GetType() == TYPE::ElementType) ? static_cast<TYPE*>(pScriptElement) : nullptr;
 }
 
 template<typename TYPE> inline const TYPE* DynamicCast(const IScriptElement* pScriptElement)
 {
-	return pScriptElement && (pScriptElement->GetElementType() == TYPE::ElementType) ? static_cast<const TYPE*>(pScriptElement) : nullptr;
+	return pScriptElement && (pScriptElement->GetType() == TYPE::ElementType) ? static_cast<const TYPE*>(pScriptElement) : nullptr;
 }
+
 } // Schematyc

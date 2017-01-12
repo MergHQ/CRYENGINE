@@ -28,8 +28,8 @@ public:
 	virtual bool OnInputEvent(const SInputEvent& event) override;
 	// ~IInputEventListener
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityInputComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityInputComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
 	float GetKeyValue(EKeyId keyId);
 
@@ -39,7 +39,7 @@ private:
 
 	struct SActionPressedSignal
 	{
-		static SGUID ReflectSchematycType(CTypeInfo<SActionPressedSignal>& typeInfo);
+		static void ReflectType(CTypeDesc<SActionPressedSignal>& desc);
 
 		EInputDeviceType deviceType = eIDT_Unknown;   //!< Device type from which the event originated.
 		EKeyId           keyId = eKI_Unknown;         //!< Device-specific id corresponding to the event.
@@ -48,7 +48,7 @@ private:
 
 	struct SActionReleasedSignal
 	{
-		static SGUID ReflectSchematycType(CTypeInfo<SActionReleasedSignal>& typeInfo);
+		static void ReflectType(CTypeDesc<SActionReleasedSignal>& desc);
 
 		EInputDeviceType deviceType = eIDT_Unknown;   //!< Device type from which the event originated.
 		EKeyId           keyId = eKI_Unknown;         //!< Device-specific id corresponding to the event.

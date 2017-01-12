@@ -30,7 +30,7 @@ public:
 
 	// IScriptComponentInstance
 	virtual SGUID                        GetTypeGUID() const override;
-	virtual ScriptComponentInstanceFlags GetFlags() const override;
+	virtual ScriptComponentInstanceFlags GetComponentInstanceFlags() const override;
 	virtual bool                         HasTransform() const override;
 	virtual void                         SetTransform(const CTransform& transform) override;
 	virtual const CTransform&  GetTransform() const override;

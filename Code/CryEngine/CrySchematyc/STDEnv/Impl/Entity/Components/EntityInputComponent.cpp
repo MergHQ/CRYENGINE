@@ -249,34 +249,46 @@ namespace Schematyc
 {
 	VectorMap<EKeyId, float> CEntityInputComponent::s_keyValue;
 
-	SGUID CEntityInputComponent::SActionPressedSignal::ReflectSchematycType(CTypeInfo<SActionPressedSignal>& typeInfo)
+	void CEntityInputComponent::SActionPressedSignal::ReflectType(CTypeDesc<SActionPressedSignal>& desc)
 	{
-		typeInfo.AddMember(&SActionPressedSignal::deviceType, 'type', "DeviceType", "Device type");
-		typeInfo.AddMember(&SActionPressedSignal::keyId, 'id', "Key", "Key identifier");
-		typeInfo.AddMember(&SActionPressedSignal::deviceIndex, 'dev', "DeviceIndex", "Device index");
-		return "10A6D786-19A5-41A8-8065-EFECEE730558"_schematyc_guid;
+		desc.SetGUID("10A6D786-19A5-41A8-8065-EFECEE730558"_schematyc_guid);
+		desc.SetLabel("ActionPressed");
+		desc.SetDescription("Sent when input action is pressed.");
+		desc.AddMember(&SActionPressedSignal::deviceType, 'type', "deviceType", "DeviceType", "Device type");
+		desc.AddMember(&SActionPressedSignal::keyId, 'id', "keyId", "Key", "Key identifier");
+		desc.AddMember(&SActionPressedSignal::deviceIndex, 'dev', "deviceIndex", "DeviceIndex", "Device index");
 	}
 
-	SGUID CEntityInputComponent::SActionReleasedSignal::ReflectSchematycType(CTypeInfo<SActionReleasedSignal>& typeInfo)
+	void CEntityInputComponent::SActionReleasedSignal::ReflectType(CTypeDesc<SActionReleasedSignal>& desc)
 	{
-		typeInfo.AddMember(&SActionReleasedSignal::deviceType, 'type', "DeviceType", "Device type");
-		typeInfo.AddMember(&SActionReleasedSignal::keyId, 'id', "Key", "Key identifier");
-		return "744FFAA6-1B4B-4BDD-B171-C2B3334EA02D"_schematyc_guid;
+		desc.SetGUID("744FFAA6-1B4B-4BDD-B171-C2B3334EA02D"_schematyc_guid);
+		desc.SetLabel("ActionReleased");
+		desc.SetDescription("Sent when input action is released.");
+		desc.AddMember(&SActionReleasedSignal::deviceType, 'type', "deviceType", "DeviceType", "Device type");
+		desc.AddMember(&SActionReleasedSignal::keyId, 'id', "Key", "keyId", "Key identifier");
 	}
 
-	Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<EInputDeviceType>& typeInfo)
+	void ReflectType(Schematyc::CTypeDesc<EInputDeviceType>& desc)
 	{
-		return "FF5535D3-B4F2-416A-B9CF-B747371AD687"_schematyc_guid;
+		desc.SetGUID("FF5535D3-B4F2-416A-B9CF-B747371AD687"_schematyc_guid);
+		desc.SetLabel("InputDeviceType");
+		desc.SetDescription("Input device type");
+		desc.SetFlags(ETypeFlags::Switchable);
+		desc.SetDefaultValue(EInputDeviceType::eIDT_Gamepad);
 	}
 
-	Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<EKeyId>& typeInfo)
+	void ReflectType(Schematyc::CTypeDesc<EKeyId>& desc)
 	{
-		return "F113E161-96B2-4698-AAEF-F50AE7FD96C2"_schematyc_guid;
+		desc.SetGUID("F113E161-96B2-4698-AAEF-F50AE7FD96C2"_schematyc_guid);
+		desc.SetLabel("InputKeyId");
+		desc.SetDescription("Input KeyId");
+		desc.SetFlags(ETypeFlags::Switchable);
+		desc.SetDefaultValue(EKeyId::eKI_XI_A);
 	}
 
-	SGUID CEntityInputComponent::ReflectSchematycType(CTypeInfo<CEntityInputComponent>& typeInfo)
+	void CEntityInputComponent::ReflectType(CTypeDesc<CEntityInputComponent>& desc)
 	{
-		return "528CBD7D-D334-4653-9B68-9C2AB30B2861"_schematyc_guid;
+		desc.SetGUID("528CBD7D-D334-4653-9B68-9C2AB30B2861"_schematyc_guid);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -322,7 +334,6 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityInputComponent, "Input");
-			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity input component");
 			pComponent->SetIcon("icons:Game/Game_Play.ico");
 			pComponent->SetFlags(EEnvComponentFlags::Singleton);
@@ -330,40 +341,21 @@ namespace Schematyc
 
 			CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
 
-			//Types
+			// Types
 			{
-				auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(EInputDeviceType, "InputDeviceType");
-				pDataType->SetAuthor(g_szCrytek);
-				pDataType->SetDescription("Input device type");
-				pDataType->SetDefaultValue(EInputDeviceType::eIDT_Gamepad);
-				componentScope.Register(pDataType);
-			}
-			{
-				auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(EKeyId, "InputKeyId");
-				pDataType->SetAuthor(g_szCrytek);
-				pDataType->SetDescription("Input KeyId");
-				pDataType->SetDefaultValue(EKeyId::eKI_XI_A);
-				componentScope.Register(pDataType);
+				componentScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(EInputDeviceType));
+				componentScope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(EKeyId));
 			}
 
 			// Signals
 			{
-				auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SActionPressedSignal, "ActionPressed");
-				pSignal->SetAuthor(g_szCrytek);
-				pSignal->SetDescription("Sent when input action is pressed.");
-				componentScope.Register(pSignal);
-			}
-			{
-				auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SActionReleasedSignal, "ActionReleased");
-				pSignal->SetAuthor(g_szCrytek);
-				pSignal->SetDescription("Sent when input action is released.");
-				componentScope.Register(pSignal);
+				componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionPressedSignal));
+				componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SActionReleasedSignal));
 			}
 
-			// Function
+			// Functions
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityInputComponent::GetKeyValue, "9108B96B-AEC2-4E6E-8211-FA65B31CBB82"_schematyc_guid, "GetKeyValue");
-				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Returns the current value of the button");
 				pFunction->BindInput(1, 'dis', "Key");
 				pFunction->BindOutput(0, 'val', "Value");

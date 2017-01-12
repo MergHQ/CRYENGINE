@@ -144,7 +144,7 @@ void CScriptInterfaceImpl::RefreshEnvInterfaceFunctions(const IEnvInterface& env
 	   // Iterate through all functions in interface and create corresponding graphs (if they don't already exist).
 	   for(const IEnvElement* pEnvInterfaceChild = envInterface.GetFirstChild(); pEnvInterfaceChild; pEnvInterfaceChild = pEnvInterfaceChild->GetNextSibling())
 	   {
-	   if(pEnvInterfaceChild->GetElementType() == EEnvElementType::InterfaceFunction)
+	   if(pEnvInterfaceChild->GetType() == EEnvElementType::InterfaceFunction)
 	   {
 	    const IEnvInterfaceFunction& envInterfaceFunction = EnvElement::Cast<const IEnvInterfaceFunction>(*pEnvInterfaceChild);
 	    const SGUID                  functionGUID = envInterfaceFunction.GetGUID();
@@ -212,7 +212,7 @@ void CScriptInterfaceImpl::RefreshEnvInterfaceFunctions(const IEnvInterface& env
 
    for(FunctionGraphs::value_type& functionGraph : functionGraphs)
    {
-    functionGraph.second->SetElementFlags(EScriptElementFlags::Discard);
+    functionGraph.second->SetFlags(EScriptElementFlags::Discard);
    }
    }*/
 
@@ -252,11 +252,12 @@ void CScriptInterfaceImpl::RefreshEnvInterfaceFunctions(const IEnvInterface& env
 
    for(TaskStateMachines::value_type& taskStateMachine : taskStateMachines)
    {
-    taskStateMachine.second->SetElementFlags(EScriptElementFlags::Discard);
+    taskStateMachine.second->SetFlags(EScriptElementFlags::Discard);
    }
    }*/
 
 /*void CScriptInterfaceImpl::RefreshScriptInterfaceTaskPropertiess(const IScriptFile& interfaceFile, const SGUID& taskGUID)
    {
    }*/
+
 } // Schematyc

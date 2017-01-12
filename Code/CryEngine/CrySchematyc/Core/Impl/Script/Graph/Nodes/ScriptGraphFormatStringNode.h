@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/SerializationUtils/MultiPassSerializer.h>
 #include <Schematyc/Utils/GUID.h>
@@ -69,7 +69,7 @@ public: // #SchematycTODO :  Workaround for serialization of EElementForm!
 		SRuntimeData(const ElementsPtr& _pElements);
 		SRuntimeData(const SRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SRuntimeData>& desc);
 
 		ElementsPtr  pElements;
 	};

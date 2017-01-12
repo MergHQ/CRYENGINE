@@ -7,6 +7,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 
@@ -41,11 +42,11 @@ public:
 	virtual int  GetSlot() const override;
 	// ~CComponent
 
-	void         SetTransform(const CTransform& transform);
-	void         Switch(bool bOn);
+	void        SetTransform(const CTransform& transform);
+	void        Switch(bool bOn);
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityLightComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityLightComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
 private:
 
@@ -59,4 +60,5 @@ private:
 	int  m_slot;
 	bool m_bOn;
 };
+
 } // Schematyc

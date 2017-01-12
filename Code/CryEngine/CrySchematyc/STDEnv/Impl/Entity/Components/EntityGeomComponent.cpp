@@ -97,9 +97,9 @@ bool CEntityGeomComponent::IsVisible() const
 	return true;
 }
 
-SGUID CEntityGeomComponent::ReflectSchematycType(CTypeInfo<CEntityGeomComponent>& typeInfo)
+void CEntityGeomComponent::ReflectType(CTypeDesc<CEntityGeomComponent>& desc)
 {
-	return "d2474675-c67c-42b2-af33-5c5ace2d1d8c"_schematyc_guid;
+	desc.SetGUID("d2474675-c67c-42b2-af33-5c5ace2d1d8c"_schematyc_guid);
 }
 
 void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
@@ -107,7 +107,6 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityGeomComponent, "Geom");
-		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity geometry component");
 		pComponent->SetIcon("icons:schematyc/entity_geom_component.png");
 		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
@@ -118,7 +117,6 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::Set, "112b2aec-7c52-44b8-a16d-84c98c70d910"_schematyc_guid, "SetGeom");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set geometry");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'file', "FileName");
@@ -126,7 +124,6 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::SetTransform, "2a8c1345-ffb3-4a3e-ac80-b99154f04b69"_schematyc_guid, "SetTransform");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Set transform");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'trn', "Transform");
@@ -134,7 +131,6 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::SetVisible, "abc4938d-a631-4a36-9f10-22cf6dc9dabd"_schematyc_guid, "SetVisible");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Show/hide geometry");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'vis', "Visible");
@@ -142,7 +138,6 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		}
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::IsVisible, "5aa5e8f0-b4f4-491d-8074-d8b129500d09"_schematyc_guid, "IsVisible");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Is geometry visible?");
 			pFunction->SetFlags(EEnvFunctionFlags::Construction);
 			pFunction->BindOutput(0, 'vis', "Visible");

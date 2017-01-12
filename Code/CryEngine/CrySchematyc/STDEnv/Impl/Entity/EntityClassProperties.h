@@ -6,21 +6,18 @@
 
 namespace Schematyc
 {
+
 struct SEntityClassProperties
 {
 	SEntityClassProperties();
 
-	void                Serialize(Serialization::IArchive& archive);
+	void        Serialize(Serialization::IArchive& archive);
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<SEntityClassProperties>& typeInfo);
+	static void ReflectType(CTypeDesc<SEntityClassProperties>& desc);
 
-	string              icon;
-	bool                bHideInEditor;
-	bool                bTriggerAreas;
+	string      icon;
+	bool        bHideInEditor;
+	bool        bTriggerAreas;
 };
 
-SGUID SEntityClassProperties::ReflectSchematycType(CTypeInfo<SEntityClassProperties>& typeInfo)
-{
-	return "cb7311ea-9a07-490a-a351-25c298a91550"_schematyc_guid;
-}
 } // Schematyc

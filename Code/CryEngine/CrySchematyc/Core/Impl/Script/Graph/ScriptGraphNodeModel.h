@@ -5,6 +5,8 @@
 #include <CryCore/StaticInstanceList.h>
 #include <CrySerialization/Forward.h>
 
+#include "Schematyc/Utils/GUID.h"
+
 #define SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(function) static Schematyc::CScriptGraphNodeRegistrar SCHEMATYC_PP_JOIN_XY(schematycScriptGraphNodeRegistrar, __COUNTER__)(function);
 
 namespace Schematyc
@@ -15,7 +17,7 @@ struct IGUIDRemapper;
 struct ISerializationContext;
 // Froward declare structures.
 struct SCompilerContext;
-struct SGUID;
+
 // Forward declare classes.
 class CScriptGraphNode;
 class CScriptGraphNodeFactory;

@@ -7,6 +7,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 // Forward declare structures.
@@ -24,7 +25,8 @@ public:
 
 	ExplicitEntityId GetEntityId() const;
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityUtilsComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void      ReflectType(CTypeDesc<CEntityUtilsComponent>& desc);
+	static void      Register(IEnvRegistrar& registrar);
 };
+
 } // Schematyc

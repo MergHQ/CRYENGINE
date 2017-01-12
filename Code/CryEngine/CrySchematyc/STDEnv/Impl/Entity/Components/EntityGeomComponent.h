@@ -33,13 +33,13 @@ public:
 	virtual int  GetSlot() const override;
 	// ~CComponent
 
-	void         Set(const GeomFileName& fileName);
-	void         SetTransform(const CTransform& transform);
-	void         SetVisible(bool bVisible);
-	bool         IsVisible() const;
+	void        Set(const GeomFileName& fileName);
+	void        SetTransform(const CTransform& transform);
+	void        SetVisible(bool bVisible);
+	bool        IsVisible() const;
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityGeomComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityGeomComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
 private:
 

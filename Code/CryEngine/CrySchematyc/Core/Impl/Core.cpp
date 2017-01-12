@@ -34,6 +34,7 @@ namespace Schematyc
 {
 namespace
 {
+
 static void OnLogFileStreamsChange(ICVar* pCVar)
 {
 	CCore::GetInstance().RefreshLogFileStreams();
@@ -53,6 +54,7 @@ inline bool WantUpdate()
 {
 	return !gEnv->pGameFramework->IsGamePaused() && (gEnv->pSystem->GetSystemGlobalState() == ESYSTEM_GLOBAL_STATE_RUNNING);
 }
+
 } // Anonymous
 
 static const char* g_szScriptsFolder = "scripts";
@@ -133,7 +135,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 	
 	env.pSchematyc = this;
 
-	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", SCHEMATYC_DELEGATE(RegisterCoreEnvPackage))))
+	if (!m_pEnvRegistry->RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE("a67cd89b-a62c-417e-851c-85bc2ffafdc9"_schematyc_guid, "CoreEnv", g_szCrytek, "Core Schematyc environment", SCHEMATYC_DELEGATE(&RegisterCoreEnvPackage))))
 	{
 		env.pSchematyc = nullptr;
 		return false;
@@ -266,14 +268,14 @@ void CCore::DestroyObject(ObjectId objectId)
 	m_pObjectPool->DestroyObject(objectId);
 }
 
-void CCore::SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params)
+void CCore::SendSignal(ObjectId objectId, const SObjectSignal& signal)
 {
-	m_pObjectPool->SendSignal(objectId, signalGUID, params);
+	m_pObjectPool->SendSignal(objectId, signal);
 }
 
-void CCore::BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params)
+void CCore::BroadcastSignal(const SObjectSignal& signal)
 {
-	m_pObjectPool->BroadcastSignal(signalGUID, params);
+	m_pObjectPool->BroadcastSignal(signal);
 }
 
 void CCore::OnPluginUpdate(EPluginUpdateType updateType)
@@ -420,4 +422,5 @@ void CCore::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 CCore* CCore::s_pInstance = nullptr;
 
 CRYREGISTER_SINGLETON_CLASS(CCore)
+
 } // Schematyc

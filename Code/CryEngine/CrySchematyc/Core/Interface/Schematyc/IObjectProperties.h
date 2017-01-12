@@ -10,7 +10,7 @@ namespace Schematyc
 struct IObjectProperties;
 struct IProperties;
 // Forward declare structures.
-struct SGUID;
+
 // Forward declare classes.
 class CAnyRef;
 // Forward declare shared pointers.

@@ -12,10 +12,11 @@
 
 namespace Schematyc
 {
+
 // Get offset of base structure/class.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename TYPE, typename BASE_TYPE> /*constexpr*/ inline ptrdiff_t GetBaseOffset()
+template<typename TYPE, typename BASE_TYPE> inline ptrdiff_t GetBaseOffset()
 {
 	return reinterpret_cast<uint8*>(static_cast<BASE_TYPE*>(reinterpret_cast<TYPE*>(1))) - reinterpret_cast<uint8*>(1);
 }
@@ -23,23 +24,10 @@ template<typename TYPE, typename BASE_TYPE> /*constexpr*/ inline ptrdiff_t GetBa
 // Get offset of structure/class member variable.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename TYPE, typename MEMBER_TYPE> /*constexpr*/ inline ptrdiff_t GetMemberOffset(MEMBER_TYPE TYPE::* pMember)
+template<typename TYPE, typename MEMBER_TYPE> inline ptrdiff_t GetMemberOffset(MEMBER_TYPE TYPE::* pMember)
 {
 	return reinterpret_cast<uint8*>(&(reinterpret_cast<TYPE*>(1)->*pMember)) - reinterpret_cast<uint8*>(1);
 }
-
-// Get length of array at compile time.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename TYPE> struct SArrayLength
-{
-	static const size_t value = 1;
-};
-
-template<typename TYPE, size_t LENGTH> struct SArrayLength<TYPE[LENGTH]>
-{
-	static const size_t value = LENGTH;
-};
 
 // Tests to determine whether type has specific operators.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,8 +36,10 @@ namespace HasOperator
 {
 namespace Private
 {
+
 struct SNo {};
-}     // Private
+
+} // Private
 
 template<typename TYPE> Private::SNo operator==(TYPE const&, TYPE const&);
 
@@ -58,38 +48,8 @@ template<typename TYPE> struct SEquals : std::integral_constant<bool, !std::is_s
 template<typename TYPE> struct SEquals<std::shared_ptr<TYPE>> : std::integral_constant<bool, true> {}; // Workaround for error 'error C2593: 'operator ==' is ambiguous'.
 
 template<> struct SEquals<void> : std::integral_constant<bool, false> {};
-}   // HasOperator
 
-// Test to determine whether type is serializeable.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<class TYPE> struct SIsSerializeable // #SchematycTODO : Remove!!!
-{
-private:
-
-	typedef char Yes[1];
-	typedef char No[2];
-
-	template<typename FUNCTION_PTR_TYPE, FUNCTION_PTR_TYPE> struct SVerify;
-
-private:
-
-	template<typename TEST_TYPE> static Yes& TestNative(SVerify<bool (Serialization::IArchive::*)(TEST_TYPE&, const char*, const char*), & Serialization::IArchive::operator()>*);
-	template<typename> static No&            TestNative(...);
-
-	template<typename TEST_TYPE> static Yes& TestIntrusive(SVerify<void (TEST_TYPE::*)(Serialization::IArchive&), & TEST_TYPE::Serialize>*);
-	template<typename> static No&            TestIntrusive(...);
-
-private:
-
-	static const bool native = sizeof(TestNative<TYPE>(0)) == sizeof(Yes);
-	static const bool intrusive = sizeof(TestIntrusive<TYPE>(0)) == sizeof(Yes);
-	//static const bool non_intrusive = !std::is_same<decltype(Serialize(std::declval<Serialization::IArchive>(), std::declval<TYPE>(), std::declval<const char*>(), std::declval<const char*>())), SErrorType>::value;
-
-public:
-
-	static const bool value = std::is_enum<TYPE>::value || native || intrusive /* || non_intrusive*/;
-};
+} // HasOperator
 
 // Test to determine whether types in first list can be converted to respective types in second.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,7 +126,8 @@ template<typename FUNCTION_PTR_TYPE, FUNCTION_PTR_TYPE FUNCTION_PTR> struct SExt
 		return functionName;
 	}
 };
-}   // Private
+
+} // Private
 
 template<typename FUNCTION_PTR_TYPE, FUNCTION_PTR_TYPE FUNCTION_PTR> inline const char* GetFunctionName()
 {
@@ -216,5 +177,6 @@ template<typename TYPE> struct SExtractTypeName
 		return typeName;
 	}
 };
+
 } // Private
 } // Schematyc

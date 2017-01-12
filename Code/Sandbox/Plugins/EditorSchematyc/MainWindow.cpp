@@ -93,7 +93,7 @@ inline void FormatDetailHeader(Schematyc::CStackString& detailHeader, const Sche
 		detailHeader.append(" [");
 		{
 			Schematyc::CStackString elementType;
-			Schematyc::SerializationUtils::ToString(elementType, pScriptElement->GetElementType());
+			Schematyc::SerializationUtils::ToString(elementType, pScriptElement->GetType());
 			detailHeader.append(elementType.c_str());
 		}
 		detailHeader.append("]");
@@ -170,7 +170,7 @@ CMainWindow::CMainWindow()
 	pVMainContentLayout->setSizes(QList<int> { 850, 200 });
 	pHMainContentLayout->setSizes(QList<int> { 300, 1300, 300 });
 
-	m_pScriptBrowser->GetSelectionSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CMainWindow::OnScriptBrowserSelection, *this), m_connectionScope);
+	m_pScriptBrowser->GetSelectionSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CMainWindow::OnScriptBrowserSelection, *this), m_connectionScope);
 
 	GetIEditor()->RegisterNotifyListener(this);
 
@@ -499,14 +499,14 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 
 		// Attach to preview.
 		const Schematyc::IScriptElement* pScriptClass = selection.pScriptElement;
-		for (; pScriptClass && (pScriptClass->GetElementType() != Schematyc::EScriptElementType::Class); pScriptClass = pScriptClass->GetParent())
+		for (; pScriptClass && (pScriptClass->GetType() != Schematyc::EScriptElementType::Class); pScriptClass = pScriptClass->GetParent())
 		{
 		}
 		if (pScriptClass)
 		{
 			m_pPreview->SetClass(static_cast<const Schematyc::IScriptClass*>(pScriptClass));
 		}
-		if (selection.pScriptElement->GetElementType() == Schematyc::EScriptElementType::ComponentInstance)
+		if (selection.pScriptElement->GetType() == Schematyc::EScriptElementType::ComponentInstance)
 		{
 			m_pPreview->SetComponentInstance(static_cast<const Schematyc::IScriptComponentInstance*>(selection.pScriptElement));
 		}

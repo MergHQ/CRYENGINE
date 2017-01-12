@@ -13,6 +13,7 @@ namespace Schematyc
 {
 namespace SerializationUtils
 {
+
 template<Serialization::ResourceFilePath(* SERIALIZER) (string&)> struct SResourceNameSerializer
 {
 	inline SResourceNameSerializer() {}
@@ -105,105 +106,101 @@ inline Serialization::ResourceSelector<string> ActionMapActionName(string& value
 
 typedef SerializationUtils::SResourceNameSelector<& Serialization::MaterialPicker<string>> MaterialFileName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<MaterialFileName>& typeInfo)
+inline void ReflectType(CTypeDesc<MaterialFileName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "2c8887a2-0878-42cc-8cee-a0595baa0820"_schematyc_guid;
+	desc.SetGUID("2c8887a2-0878-42cc-8cee-a0595baa0820"_schematyc_guid);
+	desc.SetLabel("MaterialFileName");
+	desc.SetDescription("Material file name");
 }
 
 typedef SerializationUtils::SResourceNameSerializer<&SerializationUtils::GeomPath> GeomFileName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<GeomFileName>& typeInfo)
+inline void ReflectType(CTypeDesc<GeomFileName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "bd6f2953-1127-4cdd-bfe7-79f98c97058c"_schematyc_guid;
+	desc.SetGUID("bd6f2953-1127-4cdd-bfe7-79f98c97058c"_schematyc_guid);
+	desc.SetLabel("GeomFileName");
+	desc.SetDescription("Geometry file name");
 }
 
 typedef SerializationUtils::SResourceNameSerializer<&SerializationUtils::SkinName> SkinName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<SkinName>& typeInfo)
+inline void ReflectType(CTypeDesc<SkinName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "243e1764-0bca-4af4-8a24-bf8a2fc8f9c8"_schematyc_guid;
+	desc.SetGUID("243e1764-0bca-4af4-8a24-bf8a2fc8f9c8"_schematyc_guid);
+	desc.SetLabel("SkinName");
+	desc.SetDescription("Skin name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::CharacterPath<string>> CharacterFileName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<CharacterFileName>& typeInfo)
+inline void ReflectType(CTypeDesc<CharacterFileName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "cb3189c1-92de-4851-b26a-22894ec039b0"_schematyc_guid;
+	desc.SetGUID("cb3189c1-92de-4851-b26a-22894ec039b0"_schematyc_guid);
+	desc.SetLabel("CharacterFileName");
+	desc.SetDescription("Character file name");
 }
 
 typedef SerializationUtils::SResourceNameSerializer<&SerializationUtils::ParticleEffectName> ParticleEffectName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<ParticleEffectName>& typeInfo)
+inline void ReflectType(CTypeDesc<ParticleEffectName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "a6f326e7-d3d3-428a-92c9-97185f003bec"_schematyc_guid;
+	desc.SetGUID("a6f326e7-d3d3-428a-92c9-97185f003bec"_schematyc_guid);
+	desc.SetLabel("ParticleEffectName");
+	desc.SetDescription("Particle effect name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioSwitch<string>> AudioSwitchName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<AudioSwitchName>& typeInfo)
+inline void ReflectType(CTypeDesc<AudioSwitchName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "43ae9bb4-9831-449d-b082-3e37b71ec872"_schematyc_guid;
+	desc.SetGUID("43ae9bb4-9831-449d-b082-3e37b71ec872"_schematyc_guid);
+	desc.SetLabel("AudioSwitchName");
+	desc.SetDescription("Audio switch name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioSwitchState<string>> AudioSwitchStateName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<AudioSwitchStateName>& typeInfo)
+inline void ReflectType(CTypeDesc<AudioSwitchStateName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "1877be04-a1db-490c-b6a2-47f99cac7fc2"_schematyc_guid;
+	desc.SetGUID("1877be04-a1db-490c-b6a2-47f99cac7fc2"_schematyc_guid);
+	desc.SetLabel("AudioSwitchStateName");
+	desc.SetDescription("Audio switch state name");
 }
 
-typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> RtpcName;
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> AudioRtpcName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<RtpcName>& typeInfo)
+inline void ReflectType(CTypeDesc<AudioRtpcName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "730c191c-531f-48ae-bba9-5c1d8216b701"_schematyc_guid;
+	desc.SetGUID("730c191c-531f-48ae-bba9-5c1d8216b701"_schematyc_guid);
+	desc.SetLabel("AudioRtpcName");
+	desc.SetDescription("Audio Rtpc name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::DialogName<string>> DialogName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<DialogName>& typeInfo)
+inline void ReflectType(CTypeDesc<DialogName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "839adde8-cc62-4636-9f26-16dd4236855f"_schematyc_guid;
+	desc.SetGUID("839adde8-cc62-4636-9f26-16dd4236855f"_schematyc_guid);
+	desc.SetLabel("DialogName");
+	desc.SetDescription("Dialog name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&SerializationUtils::EntityClassName> EntityClassName;
 
-inline SGUID ReflectSchematycType(CTypeInfo<EntityClassName>& typeInfo)
+inline void ReflectType(CTypeDesc<EntityClassName>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "c366ed5c-5242-453f-bb2d-7247f7be2655"_schematyc_guid;
+	desc.SetGUID("c366ed5c-5242-453f-bb2d-7247f7be2655"_schematyc_guid);
+	desc.SetLabel("EntityClassName");
+	desc.SetDescription("Entity class name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::ForceFeedbackIdName<string>> ForceFeedbackId;
 
-inline SGUID ReflectSchematycType(CTypeInfo<ForceFeedbackId>& typeInfo)
+inline void ReflectType(CTypeDesc<ForceFeedbackId>& desc)
 {
-	typeInfo.DeclareSerializeable();
-	return "40dce92c-9532-4c02-8752-4afac04331ef"_schematyc_guid;
+	desc.SetGUID("40dce92c-9532-4c02-8752-4afac04331ef"_schematyc_guid);
+	desc.SetLabel("ForceFeedbackId");
+	desc.SetDescription("Force feedback id");
 }
 
-typedef SerializationUtils::SResourceNameSelector<&SerializationUtils::ActionMapName> ActionMapName;
-
-inline SGUID ReflectSchematycType(CTypeInfo<ActionMapName>& typeInfo)
-{
-	typeInfo.DeclareSerializeable();
-	return "251774a8-69f9-4dea-a736-add52cd21352"_schematyc_guid;
-}
-
-typedef SerializationUtils::SResourceNameSelector<&SerializationUtils::ActionMapActionName> ActionMapActionName;
-
-inline SGUID ReflectSchematycType(CTypeInfo<ActionMapActionName>& typeInfo)
-{
-	typeInfo.DeclareSerializeable();
-	return "842fe61d-0103-43ff-8936-7d24a87f64a8"_schematyc_guid;
-}
 } // Schematyc

@@ -3,7 +3,6 @@
 #pragma once
 
 #include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Reflection/Reflection.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 
@@ -12,6 +11,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CAnyValue;
 // Forward declare shared pointers.
@@ -67,4 +67,5 @@ private:
 
 	CScriptVariableData m_defaultValue;
 };
+
 } // Schematyc

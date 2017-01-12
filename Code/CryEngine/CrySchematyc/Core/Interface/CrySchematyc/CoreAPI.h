@@ -26,6 +26,7 @@
 #include "../Schematyc/Env/EnvContext.h"
 #include "../Schematyc/Env/EnvElementBase.h"
 #include "../Schematyc/Env/EnvPackage.h"
+#include "../Schematyc/Env/EnvUtils.h"
 #include "../Schematyc/Env/IEnvContext.h"
 #include "../Schematyc/Env/IEnvElement.h"
 #include "../Schematyc/Env/IEnvPackage.h"
@@ -52,7 +53,12 @@
 #include "../Schematyc/Network/INetworkObject.h"
 #include "../Schematyc/Network/INetworkSpawnParams.h"
 
-#include "../Schematyc/Reflection/Reflection.h"
+#include "../Schematyc/Reflection/ActionDesc.h"
+#include "../Schematyc/Reflection/ComponentDesc.h"
+#include "../Schematyc/Reflection/FunctionDesc.h"
+#include "../Schematyc/Reflection/ReflectionUtils.h"
+#include "../Schematyc/Reflection/TypeDesc.h"
+#include "../Schematyc/Reflection/TypeOperators.h"
 
 #include "../Schematyc/Runtime/IRuntimeClass.h"
 #include "../Schematyc/Runtime/IRuntimeRegistry.h"

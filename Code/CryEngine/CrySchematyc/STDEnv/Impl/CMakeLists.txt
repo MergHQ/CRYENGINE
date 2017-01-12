@@ -47,7 +47,7 @@ add_sources("Schematyc_Uber_STDEnv_1.cpp"
 		"Entity/EntityObjectPreviewer.cpp"
 		"Entity/EntityObjectPreviewer.h"
 	SOURCE_GROUP "Impl\\\\Entity\\\\Actions"
-		
+		"Entity/Actions/EntityActions.cpp"
 	SOURCE_GROUP "Impl\\\\Entity\\\\Components"
 		"Entity/Components/EntityAudioComponent.cpp"
 		"Entity/Components/EntityAudioComponent.h"

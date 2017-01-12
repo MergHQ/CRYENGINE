@@ -192,7 +192,7 @@ bool CUpdateScheduler::Connect(const SUpdateParams& params)
 		}
 		// Connect to slot and to appropriate buckets.
 		m_slots.push_back(SSlot(static_cast<uint32>(firstBucketIdx), params.frequency, params.priority));
-		m_slots.back().connection.Connect(params.scope, SCHEMATYC_MEMBER_DELEGATE(CUpdateScheduler::Disconnect, *this));
+		m_slots.back().connection.Connect(params.scope, SCHEMATYC_MEMBER_DELEGATE(&CUpdateScheduler::Disconnect, *this));
 		for (CBucket* pBucket = m_buckets + firstBucketIdx, * pEndBucket = m_buckets + BucketCount; pBucket < pEndBucket; pBucket += bucketStride)
 		{
 			pBucket->Connect(params.scope, params.callback, params.frequency, params.priority, params.filter);

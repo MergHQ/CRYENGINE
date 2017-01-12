@@ -122,7 +122,7 @@ void CScriptVariableData::SerializeValue(Serialization::IArchive& archive)
 
 void CScriptVariableData::Refresh()
 {
-	if (!m_pValue || (m_pValue->GetTypeInfo().GetGUID() != m_typeId.guid)) // #SchematycTODO : Should we also check to see if m_bIsArray has changed?
+	if (!m_pValue || (m_pValue->GetTypeDesc().GetGUID() != m_typeId.guid)) // #SchematycTODO : Should we also check to see if m_bIsArray has changed?
 	{
 		m_pValue = m_bIsArray ? ScriptVariableData::CreateArrayData(m_typeId) : ScriptVariableData::CreateData(m_typeId);
 	}
@@ -145,7 +145,7 @@ void CScopedSerializationConfig::DeclareEnvDataTypes(const SGUID& scopeGUID, con
 			CStackString fullName;
 			scriptView.QualifyName(envDataType, fullName);
 
-			m_typeIdQuickSearchConfig.AddOption(envDataType.GetName(), SElementId(EDomain::Env, envDataType.GetGUID()), fullName.c_str(), envDataType.GetDescription(), envDataType.GetWikiLink());
+			m_typeIdQuickSearchConfig.AddOption(envDataType.GetName(), SElementId(EDomain::Env, envDataType.GetGUID()), fullName.c_str(), envDataType.GetDescription());
 		}
 		return EVisitStatus::Continue;
 	};
@@ -195,7 +195,7 @@ CAnyValuePtr CreateData(const SElementId& typeId)
 			const IEnvDataType* pEnvDataType = gEnv->pSchematyc->GetEnvRegistry().GetDataType(typeId.guid);
 			if (pEnvDataType)
 			{
-				return pEnvDataType->Create();
+				return CAnyValue::MakeSharedDefault(pEnvDataType->GetDesc());
 			}
 			break;
 		}
@@ -204,7 +204,7 @@ CAnyValuePtr CreateData(const SElementId& typeId)
 			const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(typeId.guid);
 			if (pScriptElement)
 			{
-				switch (pScriptElement->GetElementType())
+				switch (pScriptElement->GetType())
 				{
 				case EScriptElementType::Enum:
 					{
@@ -231,7 +231,7 @@ CAnyValuePtr CreateArrayData(const SElementId& typeId)
 			const IEnvDataType* pEnvDataType = gEnv->pSchematyc->GetEnvRegistry().GetDataType(typeId.guid);
 			if (pEnvDataType)
 			{
-				return CAnyValue::MakeShared(CAnyArray(pEnvDataType->GetTypeInfo()));
+				return CAnyValue::MakeShared(CAnyArray(pEnvDataType->GetDesc()));
 			}
 			break;
 		}
@@ -240,15 +240,15 @@ CAnyValuePtr CreateArrayData(const SElementId& typeId)
 			const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(typeId.guid);
 			if (pScriptElement)
 			{
-				/*switch (pScriptElement->GetElementType())
+				/*switch (pScriptElement->GetType())
 				{
 				case EScriptElementType::Enum:
 					{
-						return std::make_shared<CAnyArray>(GetTypeInfo<CScriptEnumValue>());
+						return std::make_shared<CAnyArray>(GetTypeDesc<CScriptEnumValue>());
 					}
 				case EScriptElementType::Struct:
 					{
-						return std::make_shared<CAnyArray>(GetTypeInfo<IScriptStruct>());
+						return std::make_shared<CAnyArray>(GetTypeDesc<IScriptStruct>());
 					}
 				}*/
 			}

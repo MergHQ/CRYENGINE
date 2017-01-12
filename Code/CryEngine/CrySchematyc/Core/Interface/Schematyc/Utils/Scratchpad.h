@@ -10,6 +10,7 @@
 #include <CryMath/Cry_Math.h>
 
 #include "Schematyc/FundamentalTypes.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Any.h"
 
 namespace Schematyc
@@ -22,8 +23,8 @@ private:
 	{
 	public:
 
-		inline CAnyValueImpl(const CCommonTypeInfo& typeInfo, const void* pValue)
-			: CAnyValue(typeInfo, pValue)
+		inline CAnyValueImpl(const CCommonTypeDesc& typeDesc, const void* pValue)
+			: CAnyValue(typeDesc, pValue)
 		{}
 	};
 
@@ -85,15 +86,15 @@ public:
 
 	inline uint32 Add(const CAnyConstRef& value)
 	{
-		const CCommonTypeInfo& typeInfo = value.GetTypeInfo();
+		const CCommonTypeDesc& typeDesc = value.GetTypeDesc();
 
-		const uint32 size = m_size + sizeof(CAnyValueImpl) + typeInfo.GetSize();
+		const uint32 size = m_size + sizeof(CAnyValueImpl) + typeDesc.GetSize();
 		Reserve(size);
 
 		const uint32 pos = m_size;
 		m_size = size;
 
-		new(m_pData + pos)CAnyValueImpl(typeInfo, value.GetValue());
+		new(m_pData + pos)CAnyValueImpl(typeDesc, value.GetValue());
 
 		return pos;
 	}
@@ -158,9 +159,9 @@ private:
 		for (uint32 pos = 0; pos < size; )
 		{
 			const CAnyValueImpl* pSrcValue = reinterpret_cast<const CAnyValueImpl*>(pSrc + pos);
-			const CCommonTypeInfo& typeInfo = pSrcValue->GetTypeInfo();
-			new(pDst + pos)CAnyValueImpl(typeInfo, pSrcValue->GetValue());
-			pos += sizeof(CAnyValueImpl) + typeInfo.GetSize();
+			const CCommonTypeDesc& typeDesc = pSrcValue->GetTypeDesc();
+			new(pDst + pos)CAnyValueImpl(typeDesc, pSrcValue->GetValue());
+			pos += sizeof(CAnyValueImpl) + typeDesc.GetSize();
 		}
 	}
 
@@ -169,8 +170,8 @@ private:
 		for (uint32 pos = 0; pos < size; )
 		{
 			CAnyValueImpl* pValue = reinterpret_cast<CAnyValueImpl*>(pData + pos);
-			const CCommonTypeInfo& typeInfo = pValue->GetTypeInfo();
-			pos += sizeof(CAnyValueImpl) + typeInfo.GetSize();
+			const CCommonTypeDesc& typeDesc = pValue->GetTypeDesc();
+			pos += sizeof(CAnyValueImpl) + typeDesc.GetSize();
 			pValue->~CAnyValueImpl();
 		}
 	}

@@ -6,30 +6,38 @@
 #include <CryMemory/CrySizer.h>
 #include <CryMemory/STLPoolAllocator.h>
 
+#include "Schematyc/Action.h"
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvAction.h"
+#include "Schematyc/Reflection/ActionDesc.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/GUID.h"
 #include "Schematyc/Utils/Properties.h"
 
-#define SCHEMATYC_MAKE_ENV_ACTION(action, name) Schematyc::EnvAction::MakeShared<action>(name, SCHEMATYC_SOURCE_FILE_INFO)
+#define SCHEMATYC_MAKE_ENV_ACTION(type) Schematyc::EnvAction::MakeShared<type>(SCHEMATYC_SOURCE_FILE_INFO)
 
 namespace Schematyc
 {
-template<typename ACTION> class CEnvAction : public CEnvElementBase<IEnvAction>
+
+template<typename TYPE> class CEnvAction : public CEnvElementBase<IEnvAction> // #SchematycTODO : Does this type need to be template or can we simply store a const reference to the type description?
 {
 public:
 
-	inline CEnvAction(const char* szName, const SSourceFileInfo& sourceFileInfo)
-		: CEnvElementBase(Schematyc::GetTypeInfo<ACTION>().guid, szName, sourceFileInfo)
-	{}
+	inline CEnvAction(const SSourceFileInfo& sourceFileInfo)
+		: CEnvElementBase(sourceFileInfo)
+	{
+		const CCommonTypeDesc& typeDesc = Schematyc::GetTypeDesc<TYPE>();
+		CEnvElementBase::SetGUID(typeDesc.GetGUID());
+		CEnvElementBase::SetName(typeDesc.GetLabel());
+		CEnvElementBase::SetDescription(typeDesc.GetDescription());
+	}
 
 	// IEnvElement
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		switch (scope.GetElementType())
+		switch (scope.GetType())
 		{
 		case EEnvElementType::Module:
 		case EEnvElementType::Class:
@@ -48,58 +56,33 @@ public:
 
 	// IEnvAction
 
-	virtual const char* GetIcon() const override
+	virtual const CActionDesc& GetDesc() const override
 	{
-		return m_icon.c_str();
+		return Schematyc::GetTypeDesc<TYPE>();
 	}
 
-	virtual EnvActionFlags GetFlags() const override
+	virtual CActionPtr CreateFromPool() const override
 	{
-		return m_flags;
-	}
-
-	virtual CActionPtr Create() const override
-	{
-		return std::allocate_shared<ACTION>(m_allocator);
-	}
-
-	virtual const IProperties* GetProperties() const override
-	{
-		return m_pProperties.get();
+		return std::allocate_shared<TYPE>(m_allocator);
 	}
 
 	// ~IEnvAction
 
-	inline void SetIcon(const char* szIcon)
-	{
-		m_icon = szIcon;
-	}
-
-	inline void SetFlags(const EnvActionFlags& flags)
-	{
-		m_flags = flags;
-	}
-
-	template<typename TYPE> inline void SetProperties(const TYPE& properties)
-	{
-		m_pProperties = Properties::MakeShared(properties);
-	}
-
 private:
 
-	string                        m_icon;
-	EnvActionFlags                m_flags;
-	stl::STLPoolAllocator<ACTION> m_allocator;
-	IPropertiesPtr                m_pProperties;
+	stl::STLPoolAllocator<TYPE> m_allocator;
 };
 
 namespace EnvAction
 {
-template<typename TYPE> inline std::shared_ptr<CEnvAction<TYPE>> MakeShared(const char* szName, const SSourceFileInfo& sourceFileInfo)
+
+template<typename TYPE> inline std::shared_ptr<CEnvAction<TYPE>> MakeShared(const SSourceFileInfo& sourceFileInfo)
 {
+	static_assert(std::is_base_of<CAction, TYPE>::value, "Type must be derived from Schematyc::CAction!");
 	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
 
-	return std::make_shared<CEnvAction<TYPE>>(szName, sourceFileInfo);
+	return std::make_shared<CEnvAction<TYPE>>(sourceFileInfo);
 }
+
 } // EnvAction
 } // Schematyc

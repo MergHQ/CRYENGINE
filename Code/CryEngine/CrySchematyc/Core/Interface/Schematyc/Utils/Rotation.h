@@ -8,7 +8,7 @@
 #include <CrySerialization/Math.h>
 #include <CrySerialization/Decorators/Range.h>
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 
 namespace Schematyc
 {
@@ -149,10 +149,11 @@ public:
 		m_value = Quat(rotation);
 	}
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<CRotation>& typeInfo)
+	static inline void ReflectType(CTypeDesc<CRotation>& desc)
 	{
-		typeInfo.DeclareSerializeable();
-		return "991960c1-3b34-45cc-ac3c-f3f0e55ed7ef"_schematyc_guid;
+		desc.SetGUID("991960c1-3b34-45cc-ac3c-f3f0e55ed7ef"_schematyc_guid);
+		desc.SetLabel("Rotation");
+		desc.SetDescription("Quaternion rotation");
 	}
 
 private:

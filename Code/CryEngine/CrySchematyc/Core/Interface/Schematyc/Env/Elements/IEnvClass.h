@@ -7,6 +7,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IObject;
 struct IObjectPreviewer;
@@ -24,4 +25,5 @@ struct IEnvClass : public IEnvElementBase<EEnvElementType::Class>
 	virtual CAnyConstPtr      GetProperties() const = 0;
 	virtual IObjectPreviewer* GetPreviewer() const = 0;
 };
+
 } // Schematyc

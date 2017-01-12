@@ -34,9 +34,9 @@ CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData::SEnvGlobalFunctionRunti
 	: pEnvFunction(rhs.pEnvFunction)
 {}
 
-SGUID CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData>& typeInfo)
+void CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData::ReflectType(CTypeDesc<CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData>& desc)
 {
-	return "90c48655-4a34-49cc-a618-44ae349c9c7b"_schematyc_guid;
+	desc.SetGUID("90c48655-4a34-49cc-a618-44ae349c9c7b"_schematyc_guid);
 }
 
 CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData::SEnvComponentFunctionRuntimeData(const IEnvFunction* _pEnvFunction, uint32 _componentIdx)
@@ -49,9 +49,9 @@ CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData::SEnvComponentFunctio
 	, componentIdx(rhs.componentIdx)
 {}
 
-SGUID CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData>& typeInfo)
+void CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData::ReflectType(CTypeDesc<CScriptGraphFunctionNode::SEnvComponentFunctionRuntimeData>& desc)
 {
-	return "205a9972-3dc7-4d20-97f6-a322ae2d9e37"_schematyc_guid;
+	desc.SetGUID("205a9972-3dc7-4d20-97f6-a322ae2d9e37"_schematyc_guid);
 }
 
 CScriptGraphFunctionNode::SScriptFunctionRuntimeData::SScriptFunctionRuntimeData(uint32 _functionIdx)
@@ -62,9 +62,9 @@ CScriptGraphFunctionNode::SScriptFunctionRuntimeData::SScriptFunctionRuntimeData
 	: functionIdx(rhs.functionIdx)
 {}
 
-SGUID CScriptGraphFunctionNode::SScriptFunctionRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphFunctionNode::SScriptFunctionRuntimeData>& typeInfo)
+void CScriptGraphFunctionNode::SScriptFunctionRuntimeData::ReflectType(CTypeDesc<CScriptGraphFunctionNode::SScriptFunctionRuntimeData>& desc)
 {
-	return "e049b617-7e1e-4f61-aefc-b827e5d353f5"_schematyc_guid;
+	desc.SetGUID("e049b617-7e1e-4f61-aefc-b827e5d353f5"_schematyc_guid);
 }
 
 CScriptGraphFunctionNode::CScriptGraphFunctionNode() {}
@@ -114,7 +114,7 @@ void CScriptGraphFunctionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 		case EDomain::Script:
 			{
 				const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_functionId.guid); // #SchematycTODO : Should we be using a script view to retrieve this?
-				if (pScriptElement && (pScriptElement->GetElementType() == EScriptElementType::Function))
+				if (pScriptElement && (pScriptElement->GetType() == EScriptElementType::Function))
 				{
 					subject.append(pScriptElement->GetName());
 
@@ -144,7 +144,7 @@ void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeComp
 					{
 						if (GUID::IsEmpty(m_objectGUID))
 						{
-							if (!pEnvFunction->GetFlags().Check(EEnvFunctionFlags::Member))
+							if (!pEnvFunction->GetFunctionFlags().Check(EEnvFunctionFlags::Member))
 							{
 								compiler.BindCallback(&ExecuteEnvGlobalFunction);
 								compiler.BindData(SEnvGlobalFunctionRuntimeData(pEnvFunction));
@@ -159,12 +159,12 @@ void CScriptGraphFunctionNode::Compile(SCompilerContext& context, IGraphNodeComp
 							const IScriptElement* pScriptObject = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_objectGUID);
 							if (pScriptObject)
 							{
-								switch (pScriptObject->GetElementType())
+								switch (pScriptObject->GetType())
 								{
 								case EScriptElementType::ComponentInstance:
 									{
 										const IScriptComponentInstance& scriptComponentInstance = DynamicCast<IScriptComponentInstance>(*pScriptObject);
-										if (scriptComponentInstance.GetTypeGUID() == pEnvFunction->GetObjectTypeInfo()->GetGUID()) // #SchematycTODO : Check type info before dereferencing?
+										if (scriptComponentInstance.GetTypeGUID() == pEnvFunction->GetObjectTypeDesc()->GetGUID()) // #SchematycTODO : Check object type desc is not null before dereferencing?
 										{
 											compiler.BindCallback(&ExecuteEnvComponentFunction);
 
@@ -254,7 +254,7 @@ void CScriptGraphFunctionNode::Validate(Serialization::IArchive& archive, const 
 				const IEnvFunction* pEnvFunction = gEnv->pSchematyc->GetEnvRegistry().GetFunction(m_functionId.guid);
 				if (pEnvFunction)
 				{
-					if (pEnvFunction->GetElementFlags().Check(EEnvElementFlags::Deprecated))
+					if (pEnvFunction->GetFlags().Check(EEnvElementFlags::Deprecated))
 					{
 						archive.warning(*this, "Function is deprecated!");
 					}
@@ -381,21 +381,21 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 
 			auto visitEnvFunction = [&nodeCreationMenu, &scriptView, graphType, &objects](const IEnvFunction& envFunction) -> EVisitStatus
 			{
-				if (envFunction.GetElementFlags().Check(EEnvElementFlags::Deprecated))
+				if (envFunction.GetFlags().Check(EEnvElementFlags::Deprecated))
 				{
 					return EVisitStatus::Continue;
 				}
 
 				// #SchematycTODO : Create utility functions to determine which nodes are callable from which graphs?
 
-				if ((graphType == EScriptGraphType::Construction) && !envFunction.GetFlags().Check(EEnvFunctionFlags::Construction))
+				if ((graphType == EScriptGraphType::Construction) && !envFunction.GetFunctionFlags().Check(EEnvFunctionFlags::Construction))
 				{
 					return EVisitStatus::Continue;
 				}
 
-				if (envFunction.GetFlags().Check(EEnvFunctionFlags::Member))
+				if (envFunction.GetFunctionFlags().Check(EEnvFunctionFlags::Member))
 				{
-					const SGUID objectTypeGUID = envFunction.GetObjectTypeInfo()->GetGUID();
+					const SGUID objectTypeGUID = envFunction.GetObjectTypeDesc()->GetGUID();
 					for (SObject& object : objects)
 					{
 						if (object.typeGUID == objectTypeGUID)
@@ -445,7 +445,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = envFunction.GetInputData(inputIdx);
 		if (pData)
 		{
-			layout.AddInputWithData(CGraphPortId::FromUniqueId(envFunction.GetInputId(inputIdx)), envFunction.GetInputName(inputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+			layout.AddInputWithData(CGraphPortId::FromUniqueId(envFunction.GetInputId(inputIdx)), envFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 		}
 	}
 
@@ -454,7 +454,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = envFunction.GetOutputData(outputIdx);
 		if (pData)
 		{
-			layout.AddOutputWithData(CGraphPortId::FromUniqueId(envFunction.GetOutputId(outputIdx)), envFunction.GetOutputName(outputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+			layout.AddOutputWithData(CGraphPortId::FromUniqueId(envFunction.GetOutputId(outputIdx)), envFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 		}
 	}
 }
@@ -466,7 +466,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = scriptFunction.GetInputData(inputIdx);
 		if (pData)
 		{
-			layout.AddInputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(inputIdx)), scriptFunction.GetInputName(inputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+			layout.AddInputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(inputIdx)), scriptFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 		}
 	}
 
@@ -475,7 +475,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = scriptFunction.GetOutputData(outputIdx);
 		if (pData)
 		{
-			layout.AddOutputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(outputIdx)), scriptFunction.GetOutputName(outputIdx), pData->GetTypeInfo().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+			layout.AddOutputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(outputIdx)), scriptFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 		}
 	}
 }

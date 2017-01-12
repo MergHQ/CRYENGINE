@@ -63,7 +63,7 @@ SEntityObjectClass::~SEntityObjectClass()
 
 void CEntityObjectClassRegistry::Init()
 {
-	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CEntityObjectClassRegistry::OnClassCompilation, *this), m_connectionScope); // TODO : Can we filter by class guid?
+	gEnv->pSchematyc->GetCompiler().GetClassCompilationSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CEntityObjectClassRegistry::OnClassCompilation, *this), m_connectionScope); // TODO : Can we filter by class guid?
 }
 
 const SEntityObjectClass* CEntityObjectClassRegistry::GetEntityObjectClass(const SGUID& guid) const
@@ -143,9 +143,9 @@ void RegisterEntityClasses(IEnvRegistrar& registrar)   // #SchematycTODO : Move 
 	CEnvRegistrationScope scope = registrar.Scope(g_stdModuleGUID);
 	{
 		auto pClass = SCHEMATYC_MAKE_ENV_CLASS(g_entityClassGUID, "Entity");
-		pClass->AddComponent(GetTypeInfo<CEntityDebugComponent>().GetGUID());
-		//pClass->AddComponent(GetTypeInfo<CEntityMovementComponent>().GetGUID());
-		pClass->AddComponent(GetTypeInfo<CEntityUtilsComponent>().GetGUID());
+		pClass->AddComponent(GetTypeDesc<CEntityDebugComponent>().GetGUID());
+		//pClass->AddComponent(GetTypeDesc<CEntityMovementComponent>().GetGUID());
+		pClass->AddComponent(GetTypeDesc<CEntityUtilsComponent>().GetGUID());
 		pClass->SetProperties(SEntityClassProperties());
 		pClass->SetPreviewer(CEntityObjectPreviewer());
 		scope.Register(pClass);

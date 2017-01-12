@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 
@@ -10,6 +10,7 @@
 
 namespace Schematyc
 {
+
 class CScriptGraphSendSignalNode : public CScriptGraphNodeModel
 {
 public:
@@ -36,9 +37,9 @@ private:
 		SRuntimeData(const SGUID& _signalGUID);
 		SRuntimeData(const SRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SRuntimeData>& desc);
 
-		SGUID        signalGUID;
+		SGUID       signalGUID;
 	};
 
 public:
@@ -76,4 +77,5 @@ private:
 	SGUID   m_signalGUID;
 	ETarget m_target;
 };
-}
+
+} // Schematyc

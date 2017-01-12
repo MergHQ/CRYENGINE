@@ -5,7 +5,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/Math.h>
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Rotation.h"
 
 namespace Schematyc
@@ -88,9 +88,11 @@ public:
 		m_rotation = Matrix33(transform);
 	}
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<CTransform>& typeInfo)
+	static inline void ReflectType(CTypeDesc<CTransform>& desc)
 	{
-		return "a19ff444-7d11-49ea-80ea-5b629c44f588"_schematyc_guid;
+		desc.SetGUID("a19ff444-7d11-49ea-80ea-5b629c44f588"_schematyc_guid);
+		desc.SetLabel("Transform");
+		desc.SetDescription("Transform");
 	}
 
 private:

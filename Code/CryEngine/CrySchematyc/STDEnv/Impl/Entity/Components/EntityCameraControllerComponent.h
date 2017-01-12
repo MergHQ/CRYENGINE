@@ -35,15 +35,15 @@ public:
 	virtual bool Init() override;
 	// ~CComponent
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityOrbitCameraControllerComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityOrbitCameraControllerComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
-	void         SetDistance(float distance, bool bRelative);
-	void         SetYaw(float angle, bool bRelative);   //in degree
-	void         SetPitch(float angle, bool bRelative); //in degree
-	void         SetRoll(float angle, bool bRelative);  //in degree
-	void         SetFov(float fov, bool bRelative);
-	void         SetActive(bool bEnable);
+	void        SetDistance(float distance, bool bRelative);
+	void        SetYaw(float angle, bool bRelative);    //in degree
+	void        SetPitch(float angle, bool bRelative);  //in degree
+	void        SetRoll(float angle, bool bRelative);   //in degree
+	void        SetFov(float fov, bool bRelative);
+	void        SetActive(bool bEnable);
 	//TODO: camera shake?
 
 private:

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 
@@ -61,7 +61,7 @@ private:
 		SRuntimeData(const CasesPtr& _pCases);
 		SRuntimeData(const SRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SRuntimeData>& desc);
 
 		CasesPtr     pCases;
 	};

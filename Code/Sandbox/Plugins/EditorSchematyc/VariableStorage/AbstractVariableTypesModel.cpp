@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "AbstractVariableTypesModel.h"
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Utils/SharedString.h>
 
 const CDataTypeItem& CDataTypeItem::Empty()
@@ -65,10 +65,10 @@ void CDataTypesModel::GenerateTypeInfo()
 {
 #define CREATE_TYPE_ITEM(_type_, _color_)                                                                    \
   {                                                                                                          \
-    const Schematyc::CTypeInfo<_type_>& typeInfo = Schematyc::GetTypeInfo<_type_>();                         \
-    CDataTypeItem* pTypeItem = new CDataTypeItem(typeInfo.GetName().c_str(), (_color_), typeInfo.GetGUID()); \
+    const Schematyc::CTypeDesc<_type_>& typeDesc = Schematyc::GetTypeDesc<_type_>();                         \
+    CDataTypeItem* pTypeItem = new CDataTypeItem(typeDesc.GetName().c_str(), (_color_), typeDesc.GetGUID()); \
     m_typesByIndex.emplace_back(pTypeItem);                                                                  \
-    m_typesByGuid.emplace(typeInfo.GetGUID(), pTypeItem);                                                    \
+    m_typesByGuid.emplace(typeDesc.GetGUID(), pTypeItem);                                                    \
   }
 
 	CREATE_TYPE_ITEM(bool, QColor(17, 100, 100));

@@ -5,7 +5,7 @@
 
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 
 #include <Schematyc/Script/IScriptView.h>
 #include <Schematyc/Script/IScriptRegistry.h>
@@ -93,7 +93,7 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 			const Schematyc::IEnvComponent* pEnvComponent = registry.GetComponent(pScriptComponentInstance->GetTypeGUID());
 			if (pEnvComponent)
 			{
-				if (pEnvComponent->GetFlags().Check(Schematyc::EEnvComponentFlags::Socket))
+				if (pEnvComponent->GetComponentFlags().Check(Schematyc::EEnvComponentFlags::Socket))
 				{
 					bAttach = true;
 				}
@@ -116,7 +116,7 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 
 		auto visitEnvComponentFactory = [this, bAttach, &singletonExclusions, &pScriptView](const Schematyc::IEnvComponent& envComponent) -> Schematyc::EVisitStatus
 		{
-			const Schematyc::EnvComponentFlags envComponentFlags = envComponent.GetFlags();
+			const Schematyc::EnvComponentFlags envComponentFlags = envComponent.GetComponentFlags();
 			if (!bAttach || envComponentFlags.Check(Schematyc::EEnvComponentFlags::Attach))
 			{
 				const Schematyc::SGUID envComponentGUID = envComponent.GetGUID();
@@ -130,7 +130,6 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 					entry.m_name = envComponent.GetName();
 					entry.m_fullName = fullName.c_str();
 					entry.m_description = envComponent.GetDescription();
-					entry.m_wikiLink = envComponent.GetWikiLink();
 
 					m_components.emplace_back(entry);
 				}

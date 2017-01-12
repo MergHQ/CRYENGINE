@@ -45,7 +45,7 @@ private:
 	{
 		void Serialize(Serialization::IArchive& archive);
 
-		bool  bShowVolumes = false;
+		bool bShowVolumes = false;
 	};
 
 	class CPreviewer : public Schematyc::IComponentPreviewer
@@ -69,7 +69,7 @@ private:
 		SEnteringSignal();
 		SEnteringSignal(EntityId _entityId);
 
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SEnteringSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SEnteringSignal>& desc);
 
 		Schematyc::ExplicitEntityId entityId;
 	};
@@ -79,7 +79,7 @@ private:
 		SLeavingSignal();
 		SLeavingSignal(EntityId _entityId);
 
-		static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<SLeavingSignal>& typeInfo);
+		static void ReflectType(Schematyc::CTypeDesc<SLeavingSignal>& desc);
 
 		Schematyc::ExplicitEntityId entityId;
 	};
@@ -92,17 +92,17 @@ public:
 	virtual void Shutdown() override;
 	// ~Schematyc::CComponent
 
-	void                    Enable();
-	void                    Disable();
+	void        Enable();
+	void        Disable();
 
-	void                    SetVolumeSize(const Vec3& size);
-	Vec3                    GetVolumeSize() const;
+	void        SetVolumeSize(const Vec3& size);
+	Vec3        GetVolumeSize() const;
 
-	void                    SetVolumeRadius(float radius);
-	float                   GetVolumeRadius() const;
+	void        SetVolumeRadius(float radius);
+	float       GetVolumeRadius() const;
 
-	static Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CSchematycEntitySensorVolumeComponent>& typeInfo);
-	static void             Register(Schematyc::IEnvRegistrar& registrar);
+	static void ReflectType(Schematyc::CTypeDesc<CSchematycEntitySensorVolumeComponent>& desc);
+	static void Register(Schematyc::IEnvRegistrar& registrar);
 
 private:
 

@@ -14,9 +14,21 @@ typedef yasli::Context       SContextLink;
 typedef yasli::TypeID        TypeID;
 typedef std::vector<SStruct> SStructs;
 
-/*
-using yasli::IsDefaultSerializeable;
-using yasli::HasSerializeOverride;
-using yasli::IsSerializeable;
-*/
+template<class T>
+constexpr bool IsDefaultSerializeable()
+{
+	return yasli::Helpers::IsDefaultSerializaeble<T>::value;
+}
+
+template<class T>
+constexpr bool HasSerializeOverride()
+{
+	return yasli::Helpers::HasSerializeOverride<T>(0);
+}
+
+template<class T>
+constexpr bool IsSerializeable()
+{
+	return IsDefaultSerializeable<T>() || HasSerializeOverride<T>();
+}
 }

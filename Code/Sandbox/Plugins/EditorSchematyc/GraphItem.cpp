@@ -124,7 +124,7 @@ void CGraphItem::Serialize(Serialization::IArchive& archive)
 
 bool CGraphItem::AllowsRenaming() const
 {
-	const bool allowsRenaming = !m_pScriptElement->GetElementFlags().Check(Schematyc::EScriptElementFlags::FixedName);
+	const bool allowsRenaming = !m_pScriptElement->GetFlags().Check(Schematyc::EScriptElementFlags::FixedName);
 	return allowsRenaming;
 }
 

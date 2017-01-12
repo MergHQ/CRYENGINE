@@ -51,7 +51,7 @@ inline const IScriptClass* GetScriptBaseClass(const IScriptElement& scriptElemen
 	SElementId baseClassId;
 	auto visitScriptElement = [&baseClassId](const IScriptElement& scriptElement) -> EVisitStatus
 	{
-		if (scriptElement.GetElementType() == EScriptElementType::Base)
+		if (scriptElement.GetType() == EScriptElementType::Base)
 		{
 			baseClassId = DynamicCast<IScriptBase>(scriptElement).GetClassId();
 			return EVisitStatus::Stop;
@@ -70,7 +70,7 @@ template<typename ELEMENT> void VisitScriptElements(const CDelegate<EVisitStatus
 		if (pScriptElement->GetAccessor() <= accessor)
 		{
 			VisitScriptElements<ELEMENT>(visitor, filterElementType, accessor, *pScriptElement);
-			if (pScriptElement->GetElementType() == filterElementType)
+			if (pScriptElement->GetType() == filterElementType)
 			{
 				if (visitor(static_cast<const ELEMENT&>(*pScriptElement)) == EVisitStatus::Stop)
 				{
@@ -88,7 +88,7 @@ template<typename ELEMENT> void VisitScriptElementsInClass(const CDelegate<EVisi
 	while (pScriptElement)
 	{
 		VisitScriptElements<ELEMENT>(visitor, elementType, EScriptElementAccessor::Private, *pScriptElement);
-		if (pScriptElement->GetElementType() != EScriptElementType::Class)
+		if (pScriptElement->GetType() != EScriptElementType::Class)
 		{
 			pScriptElement = pScriptElement->GetParent();
 		}
@@ -113,7 +113,7 @@ template<typename ELEMENT> void VisitScriptElementsRecursive(const CDelegate<EVi
 	{
 		if (pScriptElement != pSkipElement)
 		{
-			const EScriptElementType elementType = pScriptElement->GetElementType();
+			const EScriptElementType elementType = pScriptElement->GetType();
 
 			if ((elementType == type) && (pScriptElement->GetAccessor() <= accessor))
 			{
@@ -199,7 +199,7 @@ template<typename ELEMENT> void VisitElementsRecursive(const IScriptElement& sco
 
 				if (accessor >= EScriptElementAccessor::Protected)
 				{
-					switch (pScriptElement->GetElementType())
+					switch (pScriptElement->GetType())
 					{
 					case EScriptElementType::Base:
 						{
@@ -283,7 +283,7 @@ inline bool QualifyScriptElementName(const IScriptElement& scriptScope, const IS
 		{
 			output.assign(scriptElement.GetName());
 
-			for (const IScriptElement* pScriptScope = scriptElement.GetParent(); pScriptScope && (pScriptScope->GetElementType() != EScriptElementType::Root); pScriptScope = pScriptScope->GetParent())
+			for (const IScriptElement* pScriptScope = scriptElement.GetParent(); pScriptScope && (pScriptScope->GetType() != EScriptElementType::Root); pScriptScope = pScriptScope->GetParent())
 			{
 				output.insert(0, "::");
 				output.insert(0, pScriptScope->GetName());
@@ -297,7 +297,7 @@ inline bool QualifyScriptElementName(const IScriptElement& scriptScope, const IS
 				output.assign(scriptElement.GetName());
 
 				const IScriptElement* pFirstCommonScriptAncestor = FindFirstCommonScriptAncestor(scriptScope, scriptElement);
-				for (const IScriptElement* pScriptScope = scriptElement.GetParent(); (pScriptScope != pFirstCommonScriptAncestor) && (pScriptScope->GetElementType() != EScriptElementType::Root); pScriptScope = pScriptScope->GetParent())
+				for (const IScriptElement* pScriptScope = scriptElement.GetParent(); (pScriptScope != pFirstCommonScriptAncestor) && (pScriptScope->GetType() != EScriptElementType::Root); pScriptScope = pScriptScope->GetParent())
 				{
 					output.insert(0, "::");
 					output.insert(0, pScriptScope->GetName());
@@ -331,7 +331,7 @@ const IEnvClass* CScriptView::GetEnvClass() const
 	{
 		auto visitScriptElement = [&baseClassId](const IScriptElement& scriptElement) -> EVisitStatus
 		{
-			if (scriptElement.GetElementType() == EScriptElementType::Base)
+			if (scriptElement.GetType() == EScriptElementType::Base)
 			{
 				baseClassId = DynamicCast<IScriptBase>(scriptElement).GetClassId();
 				return EVisitStatus::Stop;
@@ -356,7 +356,7 @@ const IScriptClass* CScriptView::GetScriptClass() const
 	const IScriptElement* pScriptElement = gEnv->pSchematyc->GetScriptRegistry().GetElement(m_scopeGUID);
 	while (pScriptElement)
 	{
-		if (pScriptElement->GetElementType() == EScriptElementType::Class)
+		if (pScriptElement->GetType() == EScriptElementType::Class)
 		{
 			return DynamicCast<IScriptClass>(pScriptElement);
 		}
@@ -452,7 +452,7 @@ void CScriptView::VisitEnvComponents(const EnvComponentConstVisitor& visitor) co
 		auto visitScriptComponentInstances = [&visitor, &exclusions](const IScriptComponentInstance& componentInstance) -> EVisitStatus
 		{
 			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
-			if (pEnvComponent && pEnvComponent->GetFlags().Check(EEnvComponentFlags::Singleton))
+			if (pEnvComponent && pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Singleton))
 			{
 				exclusions.push_back(pEnvComponent);
 			}
@@ -649,7 +649,7 @@ bool CScriptView::QualifyName(const IEnvComponent& envComponent, IString& output
 void CScriptView::QualifyName(const IEnvElement& envElement, IString& output) const
 {
 	output.assign(envElement.GetName());
-	for (const IEnvElement* pEnvScope = envElement.GetParent(); pEnvScope && (pEnvScope->GetElementType() != EEnvElementType::Root); pEnvScope = pEnvScope->GetParent())
+	for (const IEnvElement* pEnvScope = envElement.GetParent(); pEnvScope && (pEnvScope->GetType() != EEnvElementType::Root); pEnvScope = pEnvScope->GetParent())
 	{
 		output.insert(0, "::");
 		output.insert(0, pEnvScope->GetName());

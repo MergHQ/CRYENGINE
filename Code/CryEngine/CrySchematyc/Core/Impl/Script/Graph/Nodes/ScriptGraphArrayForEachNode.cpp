@@ -24,9 +24,9 @@ CScriptGraphArrayForEachNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs
 	: pos(rhs.pos)
 {}
 
-SGUID CScriptGraphArrayForEachNode::SRuntimeData::ReflectSchematycType(CTypeInfo<SRuntimeData>& typeInfo)
+void CScriptGraphArrayForEachNode::SRuntimeData::ReflectType(CTypeDesc<SRuntimeData>& desc)
 {
-	return "3270fe0e-fd07-46cb-9ac5-99ee7d03f55a"_schematyc_guid;
+	desc.SetGUID("3270fe0e-fd07-46cb-9ac5-99ee7d03f55a"_schematyc_guid);
 }
 
 CScriptGraphArrayForEachNode::CScriptGraphArrayForEachNode(const SElementId& typeId)

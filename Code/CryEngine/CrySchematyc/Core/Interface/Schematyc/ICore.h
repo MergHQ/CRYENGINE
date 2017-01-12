@@ -10,6 +10,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct ICompiler;
 struct IScriptView;
@@ -26,8 +27,9 @@ struct ITimerSystem;
 struct IUpdateScheduler;
 struct IValidatorArchive;
 // Forward declare structures.
-struct SGUID;
+
 struct SObjectParams;
+struct SObjectSignal;
 struct SSerializationContextParams;
 struct SValidatorArchiveParams;
 // Forward declare classes.
@@ -38,6 +40,7 @@ DECLARE_SHARED_POINTERS(ISerializationContext)
 DECLARE_SHARED_POINTERS(IValidatorArchive)
 
 typedef CDelegate<SGUID ()> GUIDGenerator;
+
 } // Schematyc
 
 struct ICrySchematycCore : public ICryPlugin
@@ -69,10 +72,9 @@ struct ICrySchematycCore : public ICryPlugin
 	virtual Schematyc::IObject*                 CreateObject(const Schematyc::SObjectParams& params) = 0;
 	virtual Schematyc::IObject*                 GetObject(Schematyc::ObjectId objectId) = 0;
 	virtual void                                DestroyObject(Schematyc::ObjectId objectId) = 0;
-	virtual void                                SendSignal(Schematyc::ObjectId objectId, const Schematyc::SGUID& signalGUID, Schematyc::CRuntimeParams& params) = 0;
-	virtual void                                BroadcastSignal(const Schematyc::SGUID& signalGUID, Schematyc::CRuntimeParams& params) = 0;
+	virtual void                                SendSignal(Schematyc::ObjectId objectId, const Schematyc::SObjectSignal& signal) = 0;
+	virtual void                                BroadcastSignal(const Schematyc::SObjectSignal& signal) = 0;
 
 	virtual void                                RefreshLogFileSettings() = 0;
 	virtual void                                RefreshEnv() = 0;
 };
-

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 

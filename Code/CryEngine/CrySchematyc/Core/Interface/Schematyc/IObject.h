@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include <CryMath/Cry_Geo.h>
 #include <CrySerialization/Forward.h>
 
 #include "Schematyc/FundamentalTypes.h"
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Runtime/RuntimeParams.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/Delegate.h"
@@ -19,13 +20,15 @@ struct SRenderingPassInfo;
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IObjectProperties;
 struct IRuntimeClass;
 // Forward declare structures.
-struct SGUID;
+
 struct STimerDuration;
 // Forward declare classes.
+class CAction;
 class CComponent;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IObjectProperties)
@@ -45,11 +48,36 @@ struct SObjectParams
 
 enum class EObjectResetPolicy
 {
-	OnChange,   // Only reset simulation if mode changes.
-	Always      // Always reset simulation.
+	OnChange, // Only reset simulation if mode changes.
+	Always    // Always reset simulation.
 };
 
-typedef CDelegate<EVisitStatus (const CComponent&)> ObjectComponentConstVisitor;
+struct SObjectSignal
+{
+	inline SObjectSignal(const SGUID& _typeGUID, const SGUID& _senderGUID = SGUID())
+		: typeGUID(_typeGUID)
+		, senderGUID(_senderGUID)
+	{}
+
+	template <typename SIGNAL> inline SObjectSignal(const SIGNAL& _signal, const SGUID& _senderGUID = SGUID())
+		: typeGUID(GetTypeDesc<SIGNAL>().GetGUID())
+		, senderGUID(_senderGUID)
+	{
+		RuntimeParams::FromInputClass(params, _signal);
+	}
+
+	inline SObjectSignal(const SObjectSignal& rhs)
+		: typeGUID(rhs.typeGUID)
+		, senderGUID(rhs.senderGUID)
+		, params(rhs.params)
+	{}
+
+	SGUID              typeGUID;
+	SGUID              senderGUID;
+	StackRuntimeParams params;
+};
+
+typedef CDelegate<EVisitStatus(const CComponent&)> ObjectComponentConstVisitor;
 
 enum class EObjectDumpFlags : uint32
 {
@@ -130,23 +158,15 @@ struct IObject
 	virtual ESimulationMode               GetSimulationMode() const = 0;
 
 	virtual bool                          Reset(ESimulationMode simulationMode, EObjectResetPolicy resetPolicy) = 0;
-	virtual void                          ProcessSignal(const SGUID& signalGUID, CRuntimeParams& params) = 0;
+	virtual void                          ProcessSignal(const SObjectSignal& signal) = 0;
+	virtual void                          StopAction(CAction& action) = 0; // #SchematycTODO : We need a better way for actions to signal that they're done! Perhaps it would be best to pass a callback?
 
 	virtual EVisitResult                  VisitComponents(const ObjectComponentConstVisitor& visitor) const = 0;
 	virtual void                          Dump(IObjectDump& dump, const ObjectDumpFlags& flags = EObjectDumpFlags::All) const = 0;
 
-	template<typename SIGNAL> inline void ProcessSignal(const SIGNAL& signal)
+	template<typename SIGNAL> inline void ProcessSignal(const SIGNAL& signal, const SGUID& senderGUID = SGUID())
 	{
-		StackRuntimeParams params;
-		const CCommonTypeInfo& typeInfo = GetTypeInfo<SIGNAL>();
-		if (typeInfo.GetClassification() == ETypeClassification::Class)
-		{
-			for (const SClassTypeInfoMember& member : static_cast<const CClassTypeInfo&>(typeInfo).GetMembers())
-			{
-				params.SetInput(member.id, CAnyConstRef(member.typeInfo, reinterpret_cast<const uint8*>(&signal) + member.offset));
-			}
-		}
-		ProcessSignal(typeInfo.GetGUID(), params);
+		ProcessSignal(SObjectSignal(signal, senderGUID));
 	}
 };
 
@@ -161,4 +181,5 @@ struct IObjectPreviewer
 	virtual Sphere   GetObjectBounds(ObjectId objectId) const = 0;
 	virtual void     RenderObject(const IObject& object, const SRendParams& params, const SRenderingPassInfo& passInfo) const = 0; // #SchematycTODO : Pass SRenderContext instead of SRendParams and SRenderingPassInfo?
 };
+
 } // Schematyc

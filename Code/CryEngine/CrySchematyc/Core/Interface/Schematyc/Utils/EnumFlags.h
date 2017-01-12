@@ -1,5 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+// #SchematycTODO : Merge with CryFlags?
+
 #pragma once
 
 #include <CrySerialization/Enum.h>

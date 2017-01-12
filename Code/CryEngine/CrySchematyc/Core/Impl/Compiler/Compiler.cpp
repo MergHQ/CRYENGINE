@@ -152,7 +152,7 @@ void CCompiler::CompileDependencies(const SGUID& guid)
 
 		while (true)
 		{
-			const EScriptElementType scriptElementType = pScriptElement->GetElementType();
+			const EScriptElementType scriptElementType = pScriptElement->GetType();
 			if (scriptElementType == EScriptElementType::Root)
 			{
 				break;
@@ -232,7 +232,7 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 		const IScriptBase* pScriptBase = nullptr;
 		for (const IScriptElement* pChildScriptElement = pScriptClass->GetFirstChild(); pChildScriptElement; pChildScriptElement = pChildScriptElement->GetNextSibling())
 		{
-			if (pChildScriptElement->GetElementType() == EScriptElementType::Base)
+			if (pChildScriptElement->GetType() == EScriptElementType::Base)
 			{
 				pScriptBase = DynamicCast<const IScriptBase>(pChildScriptElement);
 				break;
@@ -348,7 +348,7 @@ bool CCompiler::CompileComponentInstancesRecursive(SCompilerContext& context, CR
 {
 	for (const IScriptElement* pScriptElement = scriptScope.GetFirstChild(); pScriptElement; pScriptElement = pScriptElement->GetNextSibling())
 	{
-		switch (pScriptElement->GetElementType())
+		switch (pScriptElement->GetType())
 		{
 		case EScriptElementType::Base:
 			{
@@ -374,7 +374,7 @@ bool CCompiler::CompileElementsRecursive(SCompilerContext& context, CRuntimeClas
 {
 	for (const IScriptElement* pScriptElement = scriptScope.GetFirstChild(); pScriptElement; pScriptElement = pScriptElement->GetNextSibling())
 	{
-		switch (pScriptElement->GetElementType())
+		switch (pScriptElement->GetType())
 		{
 		case EScriptElementType::Constructor:
 			{
@@ -454,7 +454,7 @@ bool CCompiler::CompileVariable(SCompilerContext& context, CRuntimeClass& runtim
 bool CCompiler::CompileTimer(SCompilerContext& context, CRuntimeClass& runtimeClass, const IScriptTimer& scriptTimer) const
 {
 	const IScriptElement* pScriptScope = scriptTimer.GetParent();
-	if (pScriptScope->GetElementType() != EScriptElementType::State)
+	if (pScriptScope->GetType() != EScriptElementType::State)
 	{
 		runtimeClass.AddTimer(scriptTimer.GetGUID(), scriptTimer.GetName(), scriptTimer.GetParams());
 		return true;

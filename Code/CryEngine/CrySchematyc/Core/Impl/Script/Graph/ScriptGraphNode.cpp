@@ -53,13 +53,13 @@ inline ColorB GetPortColor(const SGUID& typeGUID)
 
 	static const SColors portColors[] =
 	{
-		{ GetTypeInfo<bool>().GetGUID(),          ColorB(0,   108, 217) },
-		{ GetTypeInfo<int32>().GetGUID(),         ColorB(215, 55,  55)  },
-		{ GetTypeInfo<uint32>().GetGUID(),        ColorB(215, 55,  55)  },
-		{ GetTypeInfo<float>().GetGUID(),         ColorB(185, 185, 185) },
-		{ GetTypeInfo<Vec3>().GetGUID(),          ColorB(250, 232, 12)  },
-		{ GetTypeInfo<SGUID>().GetGUID(),         ColorB(38,  184, 33)  },
-		{ GetTypeInfo<CSharedString>().GetGUID(), ColorB(128, 100, 162) }
+		{ GetTypeDesc<bool>().GetGUID(),          ColorB(0,   108, 217) },
+		{ GetTypeDesc<int32>().GetGUID(),         ColorB(215, 55,  55)  },
+		{ GetTypeDesc<uint32>().GetGUID(),        ColorB(215, 55,  55)  },
+		{ GetTypeDesc<float>().GetGUID(),         ColorB(185, 185, 185) },
+		{ GetTypeDesc<Vec3>().GetGUID(),          ColorB(250, 232, 12)  },
+		{ GetTypeDesc<SGUID>().GetGUID(),         ColorB(38,  184, 33)  },
+		{ GetTypeDesc<CSharedString>().GetGUID(), ColorB(128, 100, 162) }
 	};
 
 	for (uint32 portColorIdx = 0; portColorIdx < CRY_ARRAY_COUNT(portColors); ++portColorIdx)

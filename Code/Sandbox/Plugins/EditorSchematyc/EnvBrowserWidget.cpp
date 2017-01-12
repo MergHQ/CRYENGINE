@@ -346,15 +346,15 @@ void CEnvBrowserModel::Populate()
 		// #SchematycTODO : Would be better if we could filter deprecated/non-deprecated elements and use an icon rather than text to indicate status!!!
 
 		CStackString name = envElement.GetName();
-		if (envElement.GetElementFlags().Check(EEnvElementFlags::Deprecated))
+		if (envElement.GetFlags().Check(EEnvElementFlags::Deprecated))
 		{
 			name.append(" [DEPRECATED]");
 		}
 
 		const SGUID guid = envElement.GetGUID();
-		CEnvBrowserItemPtr pItem = std::make_shared<CEnvBrowserItem>(guid, name.c_str(), GetElementIcon(envElement.GetElementType()));
+		CEnvBrowserItemPtr pItem = std::make_shared<CEnvBrowserItem>(guid, name.c_str(), GetElementIcon(envElement.GetType()));
 		const IEnvElement* pParentEnvElement = envElement.GetParent();
-		if (pParentEnvElement && (pParentEnvElement->GetElementType() != EEnvElementType::Root))
+		if (pParentEnvElement && (pParentEnvElement->GetType() != EEnvElementType::Root))
 		{
 			CEnvBrowserItem* pParentItem = ItemFromGUID(pParentEnvElement->GetGUID());
 			if (pParentItem)

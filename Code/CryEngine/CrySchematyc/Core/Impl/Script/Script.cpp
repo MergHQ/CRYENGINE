@@ -49,7 +49,7 @@ const char* CScript::SetNameFromRoot()
 
 		name.insert(0, path);
 
-		switch (m_pRoot->GetElementType())
+		switch (m_pRoot->GetType())
 		{
 		case EScriptElementType::Class:
 			{
@@ -124,7 +124,7 @@ EVisitStatus CScript::VisitElementsRecursive(const ScriptElementVisitor& visitor
 void CScript::SetNameFromRootRecursive(CStackString& name, IScriptElement& element)
 {
 	IScriptElement* pParent = element.GetParent();
-	if (pParent && (pParent->GetElementType() != EScriptElementType::Root))
+	if (pParent && (pParent->GetType() != EScriptElementType::Root))
 	{
 		SetNameFromRootRecursive(name, *pParent);
 		name.append("/");
