@@ -41,7 +41,6 @@ private:
 	QString          m_name;
 	QString          m_fullName;
 	QString          m_description;
-	QString          m_wikiLink;
 	QIcon            m_icon;
 };
 

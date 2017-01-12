@@ -149,7 +149,7 @@ void CScriptRegistry::Save(bool bAlwaysSave)
 
 bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElement* pScope) const
 {
-	const EScriptElementType scopeElementType = pScope ? pScope->GetElementType() : EScriptElementType::Root;
+	const EScriptElementType scopeElementType = pScope ? pScope->GetType() : EScriptElementType::Root;
 	switch (elementType)
 	{
 	case EScriptElementType::Module:
@@ -235,7 +235,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 					const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
 					if (pEnvComponent)
 					{
-						if (pEnvComponent->GetFlags().Check(EEnvComponentFlags::Socket))
+						if (pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Socket))
 						{
 							return true;
 						}
@@ -932,15 +932,15 @@ void CScriptRegistry::AddElement(const IScriptElementPtr& pElement, IScriptEleme
 	bool bCreateScript = false;
 	if (CVars::sc_EnableScriptPartitioning)
 	{
-		bCreateScript = pElement->GetElementFlags().Check(EScriptElementFlags::CanOwnScript);
+		bCreateScript = pElement->GetFlags().Check(EScriptElementFlags::CanOwnScript);
 	}
 	else
 	{
-		if (pElement->GetElementFlags().Check(EScriptElementFlags::MustOwnScript))
+		if (pElement->GetFlags().Check(EScriptElementFlags::MustOwnScript))
 		{
 			bCreateScript = true;
 		}
-		else if (pElement->GetElementFlags().Check(EScriptElementFlags::CanOwnScript))
+		else if (pElement->GetFlags().Check(EScriptElementFlags::CanOwnScript))
 		{
 			bCreateScript = true;
 			for (const IScriptElement* pScope = &scope; pScope; pScope = pScope->GetParent())

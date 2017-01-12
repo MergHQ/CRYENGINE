@@ -6,7 +6,7 @@
 #include <Schematyc/Compiler/IGraphNodeCompiler.h>
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/Elements/IEnvDataType.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Script/Elements/IScriptEnum.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/StackString.h>

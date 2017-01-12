@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 
@@ -11,6 +11,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvFunction;
 struct IScriptFunction;
@@ -42,7 +43,7 @@ public:
 		SEnvGlobalFunctionRuntimeData(const IEnvFunction* _pEnvFunction);
 		SEnvGlobalFunctionRuntimeData(const SEnvGlobalFunctionRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SEnvGlobalFunctionRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SEnvGlobalFunctionRuntimeData>& desc);
 
 		const IEnvFunction* pEnvFunction;
 	};
@@ -52,7 +53,7 @@ public:
 		SEnvComponentFunctionRuntimeData(const IEnvFunction* _pEnvFunction, uint32 _componentIdx);
 		SEnvComponentFunctionRuntimeData(const SEnvComponentFunctionRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SEnvComponentFunctionRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SEnvComponentFunctionRuntimeData>& desc);
 
 		const IEnvFunction* pEnvFunction;
 		uint32              componentIdx;
@@ -63,7 +64,7 @@ public:
 		SScriptFunctionRuntimeData(uint32 _functionIdx);
 		SScriptFunctionRuntimeData(const SScriptFunctionRuntimeData& rhs);
 
-		static SGUID ReflectSchematycType(CTypeInfo<SScriptFunctionRuntimeData>& typeInfo);
+		static void ReflectType(CTypeDesc<SScriptFunctionRuntimeData>& desc);
 
 		uint32       functionIdx;
 	};
@@ -106,4 +107,5 @@ private:
 	SElementId m_functionId;
 	SGUID      m_objectGUID;
 };
-}
+
+} // Schematyc

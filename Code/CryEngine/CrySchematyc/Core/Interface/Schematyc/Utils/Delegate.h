@@ -2,11 +2,12 @@
 
 #pragma once
 
-#define SCHEMATYC_DELEGATE(function)                Schematyc::Delegate::SHelper<decltype(&function)>::Make<&function>()
-#define SCHEMATYC_MEMBER_DELEGATE(function, object) Schematyc::Delegate::SHelper<decltype(&function)>::Make<&function>(object)
+#define SCHEMATYC_DELEGATE(functionPtr)                Schematyc::Delegate::SHelper<decltype(functionPtr)>::Make<functionPtr>()
+#define SCHEMATYC_MEMBER_DELEGATE(functionPtr, object) Schematyc::Delegate::SHelper<decltype(functionPtr)>::Make<functionPtr>(object)
 
 namespace Schematyc
 {
+
 template<typename SIGNATURE> class CDelegate;
 
 template<typename RETURN_TYPE, typename ... PARAM_TYPES> class CDelegate<RETURN_TYPE(PARAM_TYPES ...)>
@@ -134,6 +135,7 @@ private:
 
 namespace Delegate
 {
+
 template <typename TYPE> struct SHelper;
 
 template<typename RETURN_TYPE, typename ... PARAM_TYPES> struct SHelper<RETURN_TYPE(*)(PARAM_TYPES ...)>
@@ -165,5 +167,6 @@ template<typename OBJECT_TYPE, typename RETURN_TYPE, typename ... PARAM_TYPES> s
 		return Type::template FromConstMemberFunction<OBJECT_TYPE, FUNCTION_PTR>(object);
 	}
 };
+
 } // Delegate
 } // Schematyc

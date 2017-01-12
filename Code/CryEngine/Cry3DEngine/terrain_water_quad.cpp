@@ -228,8 +228,11 @@ void COcean::Create()
 	if (!bUseWaterTessHW && m_bOceanFFT)
 		nScrGridSizeX = nScrGridSizeY = 20 * 10; // for hi/very specs - use maximum tessellation
 
+	// swath width must be equal or shorter than nScrGridSizeX, otherwise it causes corrupted indices.
+	const int32 currentSwathWidth = min(nScrGridSizeX, GetCVars()->e_WaterTessellationSwathWidth);
+
 	// Generate screen space grid
-	if ((m_bOceanFFT && bUsingFFT != m_bOceanFFT) || bUseTessHW != bUseWaterTessHW || swathWidth != GetCVars()->e_WaterTessellationSwathWidth || !m_nVertsCount || !m_nIndicesCount || nScrGridSizeX * nScrGridSizeY != m_nPrevGridDim)
+	if ((m_bOceanFFT && bUsingFFT != m_bOceanFFT) || bUseTessHW != bUseWaterTessHW || swathWidth != currentSwathWidth || !m_nVertsCount || !m_nIndicesCount || nScrGridSizeX * nScrGridSizeY != m_nPrevGridDim)
 	{
 		m_nPrevGridDim = nScrGridSizeX * nScrGridSizeY;
 		m_pMeshVerts.Clear();
@@ -240,7 +243,7 @@ void COcean::Create()
 		bUsingFFT = m_bOceanFFT;
 		bUseTessHW = bUseWaterTessHW;
 		// Update the swath width
-		swathWidth = GetCVars()->e_WaterTessellationSwathWidth;
+		swathWidth = currentSwathWidth;
 
 		// Render ocean with screen space tessellation
 
@@ -710,9 +713,9 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 			pROVol->m_fSort = 0;
 
 			auto pMaterial =
-				m_wvParams[fillThreadID].m_viewerInsideVolume
-				? (isLowSpec ? m_pFogOutofMatLowSpec.get() : m_pFogOutofMat.get())
-				: (isLowSpec ? m_pFogIntoMatLowSpec.get() : m_pFogIntoMat.get());
+			  m_wvParams[fillThreadID].m_viewerInsideVolume
+			  ? (isLowSpec ? m_pFogOutofMatLowSpec.get() : m_pFogOutofMat.get())
+			  : (isLowSpec ? m_pFogIntoMatLowSpec.get() : m_pFogIntoMat.get());
 
 			pROVol->m_pCurrMaterial = pMaterial;
 

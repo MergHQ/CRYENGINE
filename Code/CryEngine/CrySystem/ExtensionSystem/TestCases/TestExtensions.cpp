@@ -720,7 +720,7 @@ public:
 	}
 	virtual const CryClassID& GetClassID() const
 	{
-		static const CryClassID cid = { 0x73c3ab0042e6488aull, 0x89ca1a3763365565ull };
+		static constexpr cid{ { 0x73c3ab0042e6488aull, 0x89ca1a3763365565ull } };
 		return cid;
 	}
 	virtual bool ClassSupports(const CryInterfaceID& iid) const

@@ -20,9 +20,9 @@ namespace NullDRS
 		virtual bool Save(const char* szFilePath) override { return false; }
 		virtual uint32 GetLineSetCount() const override { return 0; }
 		virtual DRS::IDialogLineSet* GetLineSetByIndex(uint32 index) override { return nullptr; }
-		virtual const DRS::IDialogLineSet* GetLineSetById(const CHashedString& lineID) const override { return nullptr; }
+		virtual DRS::IDialogLineSet* GetLineSetById(const CHashedString& lineID) override { return nullptr; }
 		virtual DRS::IDialogLineSet* InsertLineSet(uint32 index) override { return nullptr; }
-		virtual void RemoveLineSet(uint32 index) override {}
+		virtual bool RemoveLineSet(uint32 index) override { return false; }
 		virtual bool ExecuteScript(uint32 index) override { return false; }
 		virtual void Serialize(Serialization::IArchive& ar) override {}
 		virtual void SerializeLinesHistory(Serialization::IArchive& ar) override {}

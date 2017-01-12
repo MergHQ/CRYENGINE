@@ -71,7 +71,7 @@ DECLARE_SHARED_POINTERS(ICustomC);
 
 struct IDontLikeMacros : public ICryUnknown
 {
-	template<class T> friend const CryInterfaceID& InterfaceCastSemantics::cryiidof();
+	template<class T> friend constexpr CryInterfaceID InterfaceCastSemantics::cryiidof();
 protected:
 	virtual ~IDontLikeMacros() {}
 
@@ -79,10 +79,9 @@ private:
 	// It's very important that this static function is implemented for each interface!
 	// Otherwise the consistency of cryinterface_cast<T>() is compromised because
 	// cryiidof<T>() = cryiidof<baseof<T>>() {baseof<T> = ICryUnknown in most cases}
-	static const CryInterfaceID& IID()
+	static constexpr CryInterfaceID IID()
 	{
-		static const CryInterfaceID iid = { 0x0f43b7e3f1364af0ull, 0xb4a16a975bea3ec4ull };
-		return iid;
+		return CryInterfaceID::Construct( 0x0f43b7e3f1364af0ull, 0xb4a16a975bea3ec4ull );
 	}
 
 public:

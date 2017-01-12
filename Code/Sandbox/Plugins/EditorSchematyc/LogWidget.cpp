@@ -214,8 +214,8 @@ CLogWidget::CLogWidget(const SLogSettings& settings)
 
 	QObject::connect(m_pOutput, SIGNAL(anchorClicked(const QUrl &)), this, SLOT(OnLinkClicked(const QUrl &)));
 
-	gEnv->pSchematyc->GetLogRecorder().VisitMessages(SCHEMATYC_MEMBER_DELEGATE(CLogWidget::VisitRecordedLogMessage, *this));
-	gEnv->pSchematyc->GetLog().GetMessageSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CLogWidget::OnLogMessage, *this), m_connectionScope);
+	gEnv->pSchematyc->GetLogRecorder().VisitMessages(SCHEMATYC_MEMBER_DELEGATE(&CLogWidget::VisitRecordedLogMessage, *this));
+	gEnv->pSchematyc->GetLog().GetMessageSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CLogWidget::OnLogMessage, *this), m_connectionScope);
 
 	QWidget::startTimer(80);
 }

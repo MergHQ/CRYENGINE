@@ -10,6 +10,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphForNode::SRuntimeData::SRuntimeData()
 	: pos(InvalidIdx)
 	, bBreak(false)
@@ -20,9 +21,9 @@ CScriptGraphForNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs)
 	, bBreak(rhs.bBreak)
 {}
 
-SGUID CScriptGraphForNode::SRuntimeData::ReflectSchematycType(CTypeInfo<SRuntimeData>& typeInfo)
+void CScriptGraphForNode::SRuntimeData::ReflectType(CTypeDesc<SRuntimeData>& desc)
 {
-	return "2cf6b75a-caed-4d69-914a-08ca7b0e5a67"_schematyc_guid;
+	desc.SetGUID("2cf6b75a-caed-4d69-914a-08ca7b0e5a67"_schematyc_guid);
 }
 
 CScriptGraphForNode::CScriptGraphForNode() {}
@@ -38,13 +39,13 @@ void CScriptGraphForNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.SetStyleId("Core::FlowControl");
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
-	layout.AddInputWithData("Begin", GetTypeInfo<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, int32(0));
-	layout.AddInputWithData("End", GetTypeInfo<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, int32(0));
+	layout.AddInputWithData("Begin", GetTypeDesc<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, int32(0));
+	layout.AddInputWithData("End", GetTypeDesc<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, int32(0));
 	layout.AddInput("Break", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::End });
 
 	layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);
 	layout.AddOutput("Loop", SGUID(), EScriptGraphPortFlags::Flow);
-	layout.AddOutputWithData("Pos", GetTypeInfo<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, int32(0));
+	layout.AddOutputWithData("Pos", GetTypeDesc<int32>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, int32(0));
 }
 
 void CScriptGraphForNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const
@@ -155,6 +156,7 @@ SRuntimeResult CScriptGraphForNode::Execute(SRuntimeContext& context, const SRun
 }
 
 const SGUID CScriptGraphForNode::ms_typeGUID = "a902d2a5-cc66-49e0-8c2e-e52b48cc7159"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphForNode::Register)

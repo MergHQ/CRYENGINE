@@ -1,5 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+// #SchematycTODO : How can we reduce duplication of functionality between persistent state and intermittent states?
+// #SchematycTODO : Create lightweight runtime element id system to replace guids? We can always build an id to guid map (or vice-versa) if we need access to guids at runtime (e.g. for debugging).
+
 #pragma once
 
 #include "ObjectProperties.h"
@@ -14,6 +17,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IProperties;
 // Forward declare classes.
@@ -74,11 +78,12 @@ struct SRuntimeClassStateTimer : public SRuntimeFunction
 
 typedef std::vector<SRuntimeClassStateTimer> RuntimeClassStateTimers;
 
-struct SRuntimeClassStateSignalReceiver : public SRuntimeFunction
+struct SRuntimeClassStateSignalReceiver : public SRuntimeFunction // #SchematycTODO : Rename signal receiver to signal mapping / connection?
 {
-	SRuntimeClassStateSignalReceiver(const SGUID& _signalGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams);
+	SRuntimeClassStateSignalReceiver(const SGUID& _signalGUID, const SGUID& _senderGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams);
 
 	SGUID signalGUID;
+	SGUID senderGUID;
 };
 
 typedef std::vector<SRuntimeClassStateSignalReceiver> RuntimeClassStateSignalReceivers;
@@ -92,6 +97,16 @@ struct SRuntimeClassStateTransition : public SRuntimeFunction
 
 typedef std::vector<SRuntimeClassStateTransition> RuntimeClassStateTransitions;
 
+struct SRuntimeStateActionDesc
+{
+	SRuntimeStateActionDesc(const SGUID& _guid, const SGUID& _typeGUID);
+
+	SGUID guid;
+	SGUID typeGUID; // #SchematycTODO : Can we store a raw pointer to the env action rather than referencing by GUID?
+};
+
+typedef std::vector<SRuntimeStateActionDesc> RuntimeStateActionDescs;
+
 struct SRuntimeClassState
 {
 	SRuntimeClassState(const SGUID& _guid, const char* _szName);
@@ -101,6 +116,7 @@ struct SRuntimeClassState
 	RuntimeClassStateTimers          timers;
 	RuntimeClassStateSignalReceivers signalReceivers;
 	RuntimeClassStateTransitions     transitions;
+	RuntimeStateActionDescs          actions;
 };
 
 typedef std::vector<SRuntimeClassState> RuntimeClassStates;
@@ -143,11 +159,22 @@ struct SRuntimeClassComponentInstance
 
 typedef std::vector<SRuntimeClassComponentInstance> RuntimeClassComponentInstances;
 
-struct SRuntimeClassSignalReceiver : public SRuntimeFunction
+struct SRuntimeActionDesc
 {
-	SRuntimeClassSignalReceiver(const SGUID& _signalGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams);
+	SRuntimeActionDesc(const SGUID& _guid, const SGUID& _typeGUID);
+
+	SGUID guid;
+	SGUID typeGUID; // #SchematycTODO : Can we store a raw pointer to the env action rather than referencing by GUID?
+};
+
+typedef std::vector<SRuntimeActionDesc> RuntimeActionDescs;
+
+struct SRuntimeClassSignalReceiver : public SRuntimeFunction // #SchematycTODO : Rename signal receiver to signal mapping / connection?
+{
+	SRuntimeClassSignalReceiver(const SGUID& _signalGUID, const SGUID& _senderGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams);
 
 	SGUID signalGUID;
+	SGUID senderGUID;
 };
 
 typedef std::vector<SRuntimeClassSignalReceiver> RuntimeClassSignalReceivers;
@@ -198,7 +225,8 @@ public:
 	uint32                                AddState(const SGUID& guid, const char* szName);
 	uint32                                FindState(const SGUID& guid) const;
 	void                                  AddStateTimer(uint32 stateIdx, const SGUID& guid, const char* szName, const STimerParams& params);
-	void                                  AddStateSignalReceiver(uint32 stateIdx, const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
+	void                                  AddStateSignalReceiver(uint32 stateIdx, const SGUID& signalGUID, const SGUID& senderGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
+	uint32                                AddStateAction(uint32 stateIdx, const SGUID& guid, const SGUID& typeGUID);
 	void                                  AddStateTransition(uint32 stateIdx, const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
 	const RuntimeClassStates&             GetStates() const;
 
@@ -213,12 +241,15 @@ public:
 	uint32                                FindComponentInstance(const SGUID& guid) const;
 	const RuntimeClassComponentInstances& GetComponentInstances() const;
 
-	uint32                                AddSignalReceiver(const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
-	const RuntimeClassSignalReceivers& GetSignalReceivers() const;
+	uint32                                AddSignalReceiver(const SGUID& signalGUID, const SGUID& senderGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams);
+	const RuntimeClassSignalReceivers&    GetSignalReceivers() const;
 
-	uint32                             CountSignalReceviers(const SGUID& signalGUID) const;
-	void                               FinalizeComponentInstances();
-	void                               Finalize();
+	uint32                                AddAction(const SGUID& guid, const SGUID& typeGUID);
+	const RuntimeActionDescs&             GetActions() const;
+
+	uint32                                CountSignalReceviers(const SGUID& signalGUID) const;
+	void                                  FinalizeComponentInstances();
+	void                                  Finalize();
 
 private:
 
@@ -241,5 +272,7 @@ private:
 	RuntimeClassTimers             m_timers;
 	RuntimeClassComponentInstances m_componentInstances;
 	RuntimeClassSignalReceivers    m_signalReceivers;
+	RuntimeActionDescs             m_actions;
 };
+
 } // Schematyc

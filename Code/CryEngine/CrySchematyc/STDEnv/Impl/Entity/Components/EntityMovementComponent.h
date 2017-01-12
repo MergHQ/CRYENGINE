@@ -36,7 +36,7 @@ namespace Schematyc
 		void         SetRotation(const CRotation& rotation);
 		void         Teleport(const CTransform& transform);
 
-		static SGUID ReflectSchematycType(CTypeInfo<CEntityMovementComponent>& typeInfo);
+		static void  ReflectType(CTypeDesc<CEntityMovementComponent>& desc);
 		static void  Register(IEnvRegistrar& registrar);
 
 	private:

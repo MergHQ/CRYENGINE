@@ -7,8 +7,10 @@
 
 namespace Schematyc
 {
+
 struct ISTDEnv : public ICryPlugin
 {
 	CRYINTERFACE_DECLARE(ISTDEnv, 0x2846c43757b24803, 0xa281b1938659395e)
 };
+
 } // Schematyc

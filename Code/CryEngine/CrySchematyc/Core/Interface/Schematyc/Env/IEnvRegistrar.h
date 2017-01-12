@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include "Schematyc/Env/IEnvElement.h"
+#include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Utils/GUID.h"
 
 namespace Schematyc
 {
-// Forward declare interfaces.
-struct IEnvElement;
+
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IEnvElement)
 
@@ -24,14 +25,20 @@ class CEnvRegistrationScope
 {
 public:
 
-	inline CEnvRegistrationScope(IEnvElementRegistrar& registrar, const SGUID& scopeGUID)
-		: m_elementRegistrar(registrar)
+	inline CEnvRegistrationScope(IEnvElementRegistrar& elementRegistrar, const SGUID& scopeGUID)
+		: m_elementRegistrar(elementRegistrar)
 		, m_scopeGUID(scopeGUID)
 	{}
 
-	inline void Register(const IEnvElementPtr& pElement)
+	inline CEnvRegistrationScope Register(const IEnvElementPtr& pElement)
 	{
-		m_elementRegistrar.Register(pElement, m_scopeGUID);
+		SCHEMATYC_CORE_ASSERT(pElement);
+		if (pElement)
+		{
+			m_elementRegistrar.Register(pElement, m_scopeGUID);
+			return CEnvRegistrationScope(m_elementRegistrar, pElement->GetGUID());
+		}
+		return *this;
 	}
 
 private:
@@ -47,4 +54,5 @@ struct IEnvRegistrar
 	virtual CEnvRegistrationScope RootScope() = 0;
 	virtual CEnvRegistrationScope Scope(const SGUID& scopeGUID) = 0;
 };
+
 } // Schematyc

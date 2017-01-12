@@ -7,7 +7,7 @@
 namespace Schematyc
 {
 // Forward declare structures.
-struct SGUID;
+	struct SGUID;
 
 typedef CDelegate<void (const SGUID&)> ScriptDependencyEnumerator;
 

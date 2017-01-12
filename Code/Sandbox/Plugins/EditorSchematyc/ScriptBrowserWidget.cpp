@@ -122,8 +122,8 @@ public:
 			const IScriptElement* pRHSScriptElement = pRHSItem->GetScriptElement();
 			if (pLHSScriptElement && pRHSScriptElement)
 			{
-				const uint32 lhsScriptElementPriority = GetScriptElementPriority(pLHSScriptElement->GetElementType());
-				const uint32 rhsScriptElementPriority = GetScriptElementPriority(pRHSScriptElement->GetElementType());
+				const uint32 lhsScriptElementPriority = GetScriptElementPriority(pLHSScriptElement->GetType());
+				const uint32 rhsScriptElementPriority = GetScriptElementPriority(pRHSScriptElement->GetType());
 				if (lhsScriptElementPriority != rhsScriptElementPriority)
 				{
 					return lhsScriptElementPriority > rhsScriptElementPriority;
@@ -517,7 +517,7 @@ void CScriptBrowserItem::RefreshChildFlags()
 CScriptBrowserModel::CScriptBrowserModel(QObject* pParent)
 	: QAbstractItemModel(pParent)
 {
-	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CScriptBrowserModel::OnScriptRegistryChange, *this), m_connectionScope);
+	gEnv->pSchematyc->GetScriptRegistry().GetChangeSignalSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CScriptBrowserModel::OnScriptRegistryChange, *this), m_connectionScope);
 
 	Populate();
 }
@@ -952,13 +952,13 @@ void CScriptBrowserModel::OnScriptElementSaved(IScriptElement& scriptElement)
 CScriptBrowserItem* CScriptBrowserModel::CreateScriptElementItem(IScriptElement& scriptElement, const ScriptBrowserItemFlags& flags, CScriptBrowserItem& parentItem)
 {
 	// Select parent/filter item.
-	const EScriptElementType scriptElementType = scriptElement.GetElementType();
+	const EScriptElementType scriptElementType = scriptElement.GetType();
 	CScriptBrowserItem* pFilterItem = nullptr;
 
 	CScriptBrowserItem* pParentParent = parentItem.GetParent();
 	EScriptElementType parentParentType = (pParentParent) ? pParentParent->GetFilter() : EScriptElementType::Root;
 
-	if (scriptElement.GetElementType() != EScriptElementType::Class)
+	if (scriptElement.GetType() != EScriptElementType::Class)
 	{
 		if (parentItem.GetType() != EScriptBrowserItemType::ScriptElement
 			|| parentParentType == EScriptElementType::Class
@@ -984,7 +984,7 @@ CScriptBrowserItem* CScriptBrowserModel::CreateScriptElementItem(IScriptElement&
 						{
 							CScriptBrowserItem* pChildItem = parentItem.GetChildByIdx(childIdx);
 							const IScriptElement* pChildScriptElement = pChildItem->GetScriptElement();
-							if (pChildScriptElement && (pChildScriptElement->GetElementType() == scriptElementType))
+							if (pChildScriptElement && (pChildScriptElement->GetType() == scriptElementType))
 							{
 								childItems.push_back(pChildItem);
 							}
@@ -1194,7 +1194,7 @@ bool CScriptBrowserWidget::SetScope(bool classOnly)
 				Schematyc::IScriptElement* pScriptElement = pItem->GetScriptElement();
 				if (pScriptElement)
 				{
-					const Schematyc::EScriptElementType type = pScriptElement->GetElementType();
+					const Schematyc::EScriptElementType type = pScriptElement->GetType();
 					if (type != Schematyc::EScriptElementType::Class)
 					{
 						pItem = pItem->GetParent();
@@ -1692,7 +1692,7 @@ void CScriptBrowserWidget::RefreshAddMenu(CScriptBrowserItem* pItem)
 		case EScriptBrowserItemType::ScriptElement:
 			{
 				IScriptElement* pScriptScope = pItem->GetScriptElement();
-				EScriptElementType elementType = (pScriptScope) ? pScriptScope->GetElementType() : EScriptElementType::Root;
+				EScriptElementType elementType = (pScriptScope) ? pScriptScope->GetType() : EScriptElementType::Root;
 				switch (elementType)
 				{
 				case EScriptElementType::Root:

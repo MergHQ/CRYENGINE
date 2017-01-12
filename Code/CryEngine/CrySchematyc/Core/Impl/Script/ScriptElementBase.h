@@ -81,7 +81,7 @@ public:
 	{
 		for (const IScriptElement* pParent = m_pParent; pParent; pParent = pParent->GetParent())
 		{
-			switch (pParent->GetElementType())
+			switch (pParent->GetType())
 			{
 			case EScriptElementType::Class:
 			case EScriptElementType::State:
@@ -93,12 +93,12 @@ public:
 		return EScriptElementAccessor::Public;
 	}
 
-	virtual void SetElementFlags(const ScriptElementFlags& flags) override
+	virtual void SetFlags(const ScriptElementFlags& flags) override
 	{
 		m_flags = flags;
 	}
 
-	virtual ScriptElementFlags GetElementFlags() const override
+	virtual ScriptElementFlags GetFlags() const override
 	{
 		return m_flags;
 	}
@@ -319,7 +319,7 @@ public:
 
 		if (archive.isOutput())
 		{
-			EScriptElementType elementType = static_cast<const INTERFACE*>(this)->GetElementType();
+			EScriptElementType elementType = static_cast<const INTERFACE*>(this)->GetType();
 			archive(elementType, "elementType");
 		}
 

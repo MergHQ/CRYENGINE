@@ -18,6 +18,7 @@ namespace Schematyc
 {
 namespace
 {
+
 typedef std::vector<uint32> Dependencies;
 
 struct SComponentInstanceSortRef
@@ -41,7 +42,8 @@ struct SComponentInstanceSortPredicate
 		return lhs.priority > rhs.priority;
 	}
 };
-}
+
+} // Anonymous
 
 SRuntimeFunction::SRuntimeFunction()
 	: graphIdx(InvalidIdx)
@@ -75,14 +77,20 @@ SRuntimeClassStateTimer::SRuntimeClassStateTimer(const SGUID& _guid, const char*
 	, params(_params)
 {}
 
-SRuntimeClassStateSignalReceiver::SRuntimeClassStateSignalReceiver(const SGUID& _signalGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
-	: signalGUID(_signalGUID)
-	, SRuntimeFunction(_graphIdx, _activationParams)
+SRuntimeClassStateSignalReceiver::SRuntimeClassStateSignalReceiver(const SGUID& _signalGUID, const SGUID& _senderGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
+	: SRuntimeFunction(_graphIdx, _activationParams)
+	, signalGUID(_signalGUID)
+	, senderGUID(_senderGUID)
 {}
 
 SRuntimeClassStateTransition::SRuntimeClassStateTransition(const SGUID& _signalGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
-	: signalGUID(_signalGUID)
-	, SRuntimeFunction(_graphIdx, _activationParams)
+	: SRuntimeFunction(_graphIdx, _activationParams)
+	, signalGUID(_signalGUID)
+{}
+
+SRuntimeStateActionDesc::SRuntimeStateActionDesc(const SGUID& _guid, const SGUID& _typeGUID)
+	: guid(_guid)
+	, typeGUID(_typeGUID)
 {}
 
 SRuntimeClassState::SRuntimeClassState(const SGUID& _guid, const char* _szName)
@@ -113,9 +121,15 @@ SRuntimeClassComponentInstance::SRuntimeClassComponentInstance(const SGUID& _gui
 	, parentIdx(_parentIdx)
 {}
 
-SRuntimeClassSignalReceiver::SRuntimeClassSignalReceiver(const SGUID& _signalGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
-	: signalGUID(_signalGUID)
-	, SRuntimeFunction(_graphIdx, _activationParams)
+SRuntimeActionDesc::SRuntimeActionDesc(const SGUID& _guid, const SGUID& _typeGUID)
+	: guid(_guid)
+	, typeGUID(_typeGUID)
+{}
+
+SRuntimeClassSignalReceiver::SRuntimeClassSignalReceiver(const SGUID& _signalGUID, const SGUID& _senderGUID, uint32 _graphIdx, const SRuntimeActivationParams& _activationParams)
+	: SRuntimeFunction(_graphIdx, _activationParams)
+	, signalGUID(_signalGUID)
+	, senderGUID(_senderGUID)
 {}
 
 CRuntimeClass::CRuntimeClass(time_t timeStamp, const SGUID& guid, const char* szName, const SGUID& envClassGUID, const CAnyConstPtr& pEnvClassProperties)
@@ -165,7 +179,7 @@ const CScratchpad& CRuntimeClass::GetScratchpad() const
 uint32 CRuntimeClass::AddGraph(const SGUID& guid, const char* szName)
 {
 	m_graphs.reserve(20);
-	m_graphs.push_back(std::make_shared<CRuntimeGraph>(guid, szName));
+	m_graphs.emplace_back(std::make_shared<CRuntimeGraph>(guid, szName));
 	return m_graphs.size() - 1;
 }
 
@@ -199,7 +213,7 @@ const CRuntimeGraph* CRuntimeClass::GetGraph(uint32 graphIdx) const
 uint32 CRuntimeClass::AddFunction(uint32 graphIdx, const SRuntimeActivationParams& activationParams)
 {
 	m_functions.reserve(20);
-	m_functions.push_back(SRuntimeClassFunction(graphIdx, activationParams));
+	m_functions.emplace_back(graphIdx, activationParams);
 	return m_functions.size() - 1;
 }
 
@@ -223,7 +237,7 @@ uint32 CRuntimeClass::FindOrReserveFunction(const SGUID& guid)
 		}
 	}
 	m_functions.reserve(20);
-	m_functions.push_back(SRuntimeClassFunction(guid));
+	m_functions.emplace_back(guid);
 	return functionCount;
 }
 
@@ -235,7 +249,7 @@ const RuntimeClassFunctions& CRuntimeClass::GetFunctions() const
 void CRuntimeClass::AddConstructor(uint32 graphIdx, const SRuntimeActivationParams& activationParams)
 {
 	m_constructors.reserve(5);
-	m_constructors.push_back(SRuntimeClassConstructor(graphIdx, activationParams));
+	m_constructors.emplace_back(graphIdx, activationParams);
 }
 
 const RuntimeClassConstructors& CRuntimeClass::GetConstructors() const
@@ -246,7 +260,7 @@ const RuntimeClassConstructors& CRuntimeClass::GetConstructors() const
 uint32 CRuntimeClass::AddStateMachine(const SGUID& guid, const char* szName)
 {
 	m_stateMachines.reserve(10);
-	m_stateMachines.push_back(SRuntimeClassStateMachine(guid, szName));
+	m_stateMachines.emplace_back(guid, szName);
 	return m_stateMachines.size() - 1;
 }
 
@@ -279,7 +293,7 @@ const RuntimeClassStateMachines& CRuntimeClass::GetStateMachines() const
 uint32 CRuntimeClass::AddState(const SGUID& guid, const char* szName)
 {
 	m_states.reserve(20);
-	m_states.push_back(SRuntimeClassState(guid, szName));
+	m_states.emplace_back(guid, szName);
 	return m_states.size() - 1;
 }
 
@@ -302,19 +316,32 @@ void CRuntimeClass::AddStateTimer(uint32 stateIdx, const SGUID& guid, const char
 	{
 		SRuntimeClassState& state = m_states[stateIdx];
 		state.timers.reserve(10);
-		state.timers.push_back(SRuntimeClassStateTimer(guid, szName, params));
+		state.timers.emplace_back(guid, szName, params);
 	}
 }
 
-void CRuntimeClass::AddStateSignalReceiver(uint32 stateIdx, const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams)
+void CRuntimeClass::AddStateSignalReceiver(uint32 stateIdx, const SGUID& signalGUID, const SGUID& senderGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams)
 {
 	SCHEMATYC_CORE_ASSERT(stateIdx < m_states.size());
 	if (stateIdx < m_states.size())
 	{
 		SRuntimeClassState& state = m_states[stateIdx];
 		state.signalReceivers.reserve(10);
-		state.signalReceivers.push_back(SRuntimeClassStateSignalReceiver(signalGUID, graphIdx, activationParams));
+		state.signalReceivers.emplace_back(signalGUID, senderGUID, graphIdx, activationParams);
 	}
+}
+
+uint32 CRuntimeClass::AddStateAction(uint32 stateIdx, const SGUID& guid, const SGUID& typeGUID)
+{
+	SCHEMATYC_CORE_ASSERT(stateIdx < m_states.size());
+	if (stateIdx < m_states.size())
+	{
+		SRuntimeClassState& state = m_states[stateIdx];
+		state.actions.reserve(10);
+		state.actions.emplace_back(guid, typeGUID);
+		return m_actions.size() - 1;
+	}
+	return InvalidIdx;
 }
 
 void CRuntimeClass::AddStateTransition(uint32 stateIdx, const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams)
@@ -324,7 +351,7 @@ void CRuntimeClass::AddStateTransition(uint32 stateIdx, const SGUID& signalGUID,
 	{
 		SRuntimeClassState& state = m_states[stateIdx];
 		state.transitions.reserve(10);
-		state.transitions.push_back(SRuntimeClassStateTransition(signalGUID, graphIdx, activationParams));
+		state.transitions.emplace_back(signalGUID, graphIdx, activationParams);
 	}
 }
 
@@ -342,7 +369,7 @@ uint32 CRuntimeClass::AddVariable(const SGUID& guid, const char* szName, bool bP
 
 	const uint32 pos = m_scratchPad.Add(value);
 	m_variables.reserve(20);
-	m_variables.push_back(SRuntimeClassVariable(guid, szName, bPublic, pos));
+	m_variables.emplace_back(guid, szName, bPublic, pos);
 	return m_variables.size() - 1;
 }
 
@@ -366,7 +393,7 @@ uint32 CRuntimeClass::GetVariablePos(const SGUID& guid) const
 uint32 CRuntimeClass::AddTimer(const SGUID& guid, const char* szName, const STimerParams& params)
 {
 	m_timers.reserve(20);
-	m_timers.push_back(SRuntimeClassTimer(guid, szName, params));
+	m_timers.emplace_back(guid, szName, params);
 	return m_timers.size() - 1;
 }
 
@@ -383,7 +410,7 @@ uint32 CRuntimeClass::AddComponentInstance(const SGUID& guid, const char* szName
 	}
 
 	m_componentInstances.reserve(10);
-	m_componentInstances.push_back(SRuntimeClassComponentInstance(guid, szName, bPublic, componentTypeGUID, transform, pProperties, parentIdx));
+	m_componentInstances.emplace_back(guid, szName, bPublic, componentTypeGUID, transform, pProperties, parentIdx);
 	return m_componentInstances.size() - 1;
 }
 
@@ -404,16 +431,27 @@ const RuntimeClassComponentInstances& CRuntimeClass::GetComponentInstances() con
 	return m_componentInstances;
 }
 
-uint32 CRuntimeClass::AddSignalReceiver(const SGUID& signalGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams)
+uint32 CRuntimeClass::AddSignalReceiver(const SGUID& signalGUID, const SGUID& senderGUID, uint32 graphIdx, const SRuntimeActivationParams& activationParams)
 {
 	m_signalReceivers.reserve(20);
-	m_signalReceivers.push_back(SRuntimeClassSignalReceiver(signalGUID, graphIdx, activationParams));
+	m_signalReceivers.emplace_back(signalGUID, senderGUID, graphIdx, activationParams);
 	return m_signalReceivers.size() - 1;
 }
 
 const RuntimeClassSignalReceivers& CRuntimeClass::GetSignalReceivers() const
 {
 	return m_signalReceivers;
+}
+
+uint32 CRuntimeClass::AddAction(const SGUID& guid, const SGUID& typeGUID)
+{
+	m_actions.emplace_back(guid, typeGUID);
+	return m_actions.size() - 1;
+}
+
+const RuntimeActionDescs& CRuntimeClass::GetActions() const
+{
+	return m_actions;
 }
 
 uint32 CRuntimeClass::CountSignalReceviers(const SGUID& signalGUID) const
@@ -524,12 +562,15 @@ void CRuntimeClass::Finalize()
 	m_variables.shrink_to_fit();
 	m_timers.shrink_to_fit();
 	m_componentInstances.shrink_to_fit();
+	m_actions.shrink_to_fit();
 	m_signalReceivers.shrink_to_fit();
 
 	for (SRuntimeClassState& state : m_states)
 	{
 		state.signalReceivers.shrink_to_fit();
 		state.transitions.shrink_to_fit();
+		state.actions.shrink_to_fit();
 	}
 }
+
 } // Schematyc

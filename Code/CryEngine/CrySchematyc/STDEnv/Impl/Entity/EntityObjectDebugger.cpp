@@ -82,7 +82,7 @@ CEntityObjectDebugger::CEntityObjectDebugger()
 	sc_EntityDebugFilter = REGISTER_STRING("sc_EntityDebugFilter", "", VF_NULL, "Schematyc - Entity debug filter");
 	sc_EntityDebugTextPos = REGISTER_STRING("sc_EntityDebugTextPos", "20, 10", VF_NULL, "Schematyc - Entity debug text position");
 
-	SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(CEntityObjectDebugger::Update, *this), m_connectionScope);
+	SUpdateParams updateParams(SCHEMATYC_MEMBER_DELEGATE(&CEntityObjectDebugger::Update, *this), m_connectionScope);
 	gEnv->pSchematyc->GetUpdateScheduler().Connect(updateParams);
 }
 

@@ -7,6 +7,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 
@@ -47,10 +48,11 @@ public:
 	void SetPhysicalize(bool bActive);
 	void SetEnabled(bool bEnable);
 
-	static SGUID ReflectSchematycType(CTypeInfo<CEntityPhysicsComponent>& typeInfo);
-	static void  Register(IEnvRegistrar& registrar);
+	static void ReflectType(CTypeDesc<CEntityPhysicsComponent>& desc);
+	static void Register(IEnvRegistrar& registrar);
 
 private:
 	CConnectionScope    m_connectionScope;
 };
+
 } // Schematyc

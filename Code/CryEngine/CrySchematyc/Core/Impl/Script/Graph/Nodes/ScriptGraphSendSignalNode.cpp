@@ -36,18 +36,18 @@ CScriptGraphSendSignalNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs)
 	: signalGUID(rhs.signalGUID)
 {}
 
-SGUID CScriptGraphSendSignalNode::SRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphSendSignalNode::SRuntimeData>& typeInfo)
+void CScriptGraphSendSignalNode::SRuntimeData::ReflectType(CTypeDesc<CScriptGraphSendSignalNode::SRuntimeData>& desc)
 {
-	return "a88a4c08-22df-493b-ab27-973a893acefb"_schematyc_guid;
+	desc.SetGUID("a88a4c08-22df-493b-ab27-973a893acefb"_schematyc_guid);
 }
 
 CScriptGraphSendSignalNode::CScriptGraphSendSignalNode()
-	: m_target(ETarget::Self)
+	: m_target(ETarget::Object)
 {}
 
 CScriptGraphSendSignalNode::CScriptGraphSendSignalNode(const SGUID& signalGUID)
 	: m_signalGUID(signalGUID)
-	, m_target(ETarget::Self)
+	, m_target(ETarget::Object)
 {}
 
 SGUID CScriptGraphSendSignalNode::GetTypeGUID() const
@@ -67,7 +67,7 @@ void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 		if (m_target == ETarget::Object)
 		{
-			layout.AddInputWithData("ObjectId", GetTypeInfo<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, ObjectId());
+			layout.AddInputWithData("ObjectId", GetTypeDesc<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, ObjectId());
 		}
 
 		const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_signalGUID));
@@ -268,16 +268,17 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteSendToSelf(SRuntimeContext& co
 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
 
-	CRuntimeParams params;
+	SObjectSignal signal(data.signalGUID);
+
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
 		}
 	}
 
-	static_cast<IObject*>(context.pObject)->ProcessSignal(data.signalGUID, params);
+	static_cast<IObject*>(context.pObject)->ProcessSignal(signal);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
@@ -297,16 +298,17 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteSendToObject(SRuntimeContext& 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
 	const ObjectId objectId = DynamicCast<ObjectId>(*context.node.GetInputData(EInputIdx::ObjectId));
 
-	CRuntimeParams params;
+	SObjectSignal signal(data.signalGUID);
+
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
 		}
 	}
 
-	gEnv->pSchematyc->SendSignal(objectId, data.signalGUID, params);
+	gEnv->pSchematyc->SendSignal(objectId, signal);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
@@ -324,16 +326,17 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteBroadcast(SRuntimeContext& con
 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
 
-	CRuntimeParams params;
+	SObjectSignal signal(data.signalGUID);
+
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
 		}
 	}
 
-	gEnv->pSchematyc->BroadcastSignal(data.signalGUID, params);
+	gEnv->pSchematyc->BroadcastSignal(signal);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }

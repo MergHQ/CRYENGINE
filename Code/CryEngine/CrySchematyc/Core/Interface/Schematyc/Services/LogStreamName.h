@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Services/ILog.h"
 
 namespace Schematyc
@@ -22,10 +22,9 @@ struct SLogStreamName
 		return value == rhs.value;
 	}
 
-	static SGUID ReflectSchematycType(CTypeInfo<SLogStreamName>& typeInfo)
+	static void ReflectType(CTypeDesc<SLogStreamName>& desc)
 	{
-		typeInfo.DeclareSerializeable();
-		return "e43f1341-ac7c-4dd7-892f-097810eee478"_schematyc_guid;
+		desc.SetGUID("e43f1341-ac7c-4dd7-892f-097810eee478"_schematyc_guid);
 	}
 
 	string value;

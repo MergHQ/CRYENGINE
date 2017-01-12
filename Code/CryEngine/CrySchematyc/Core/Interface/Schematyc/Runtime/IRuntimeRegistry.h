@@ -8,6 +8,7 @@ namespace Schematyc
 struct IRuntimeClass;
 // Forward declare structures.
 struct SGUID;
+
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IRuntimeClass)
 

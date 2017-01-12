@@ -6,7 +6,7 @@
 #include <Schematyc/Compiler/IGraphNodeCompiler.h>
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/Elements/IEnvDataType.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Script/Elements/IScriptEnum.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/StackString.h>
@@ -22,10 +22,12 @@ namespace Schematyc
 {
 namespace
 {
+
 inline bool FilterEnvDataType(const IEnvDataType& envDataType)
 {
-	return (envDataType.GetTypeInfo().GetClassification() == ETypeClassification::Enum) || envDataType.GetFlags().Check(EEnvDataTypeFlags::Switchable);
+	return envDataType.GetDesc().GetFlags().Check(ETypeFlags::Switchable);
 }
+
 } // Anonymous
 
 CScriptGraphSwitchNode::SCase::SCase() {}
@@ -81,9 +83,9 @@ CScriptGraphSwitchNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs)
 	: pCases(rhs.pCases)
 {}
 
-SGUID CScriptGraphSwitchNode::SRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphSwitchNode::SRuntimeData>& typeInfo)
+void CScriptGraphSwitchNode::SRuntimeData::ReflectType(CTypeDesc<CScriptGraphSwitchNode::SRuntimeData>& desc)
 {
-	return "d4f18128-844e-4269-8108-103c13631c76"_schematyc_guid;
+	desc.SetGUID("d4f18128-844e-4269-8108-103c13631c76"_schematyc_guid);
 }
 
 CScriptGraphSwitchNode::CScriptGraphSwitchNode(const SElementId& typeId)
@@ -150,7 +152,7 @@ void CScriptGraphSwitchNode::Edit(Serialization::IArchive& archive, const ISeria
 		ScriptVariableData::CScopedSerializationConfig serializationConfig(archive);
 
 		const SGUID guid = CScriptGraphNodeModel::GetNode().GetGraph().GetElement().GetGUID();
-		serializationConfig.DeclareEnvDataTypes(guid, SCHEMATYC_DELEGATE(FilterEnvDataType));
+		serializationConfig.DeclareEnvDataTypes(guid, SCHEMATYC_DELEGATE(&FilterEnvDataType));
 		serializationConfig.DeclareScriptEnums(guid);
 
 		m_defaultValue.SerializeTypeId(archive);
@@ -331,6 +333,7 @@ SRuntimeResult CScriptGraphSwitchNode::Execute(SRuntimeContext& context, const S
 }
 
 const SGUID CScriptGraphSwitchNode::ms_typeGUID = "1d081133-e900-4244-add5-f0831d27b16f"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphSwitchNode::Register)

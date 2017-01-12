@@ -107,9 +107,9 @@ CScriptGraphFormatStringNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs
 	: pElements(rhs.pElements)
 {}
 
-SGUID CScriptGraphFormatStringNode::SRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphFormatStringNode::SRuntimeData>& typeInfo)
+void CScriptGraphFormatStringNode::SRuntimeData::ReflectType(CTypeDesc<CScriptGraphFormatStringNode::SRuntimeData>& desc)
 {
-	return "3ade58a5-2317-406c-8411-807cb081a6e6"_schematyc_guid;
+	desc.SetGUID("3ade58a5-2317-406c-8411-807cb081a6e6"_schematyc_guid);
 }
 
 CScriptGraphFormatStringNode::CScriptGraphFormatStringNode()
@@ -128,7 +128,7 @@ void CScriptGraphFormatStringNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 	layout.AddInput("In", SGUID(), { EScriptGraphPortFlags::Flow, EScriptGraphPortFlags::MultiLink });
 	layout.AddOutput("Out", SGUID(), EScriptGraphPortFlags::Flow);
-	layout.AddOutputWithData("Result", GetTypeInfo<CSharedString>().GetGUID(), EScriptGraphPortFlags::Data, CSharedString());
+	layout.AddOutputWithData("Result", GetTypeDesc<CSharedString>().GetGUID(), EScriptGraphPortFlags::Data, CSharedString());
 
 	for (const SElement& element : m_elements)
 	{

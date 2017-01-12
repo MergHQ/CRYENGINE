@@ -26,7 +26,7 @@ public:
 	// ~IScriptElement
 
 	// IScriptSignalReceiver
-	virtual EScriptSignalReceiverType GetType() const override;
+	virtual EScriptSignalReceiverType GetSignalReceiverType() const override;
 	virtual SGUID                     GetSignalGUID() const override;
 	// ~IScriptSignalReceiver
 

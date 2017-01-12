@@ -40,23 +40,29 @@ if (PLUGIN_VR_OSVR)
 	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
 endif()
 if (OPTION_SANDBOX)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-		${SDK_DIR}/XT_13_4/bin_vc14/*[^D].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[^d].dll
+	set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
+		${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[^Dd].dll
 	)
-	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-		set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-			${SDK_DIR}/XT_13_4/bin_vc14/*D.dll
-			${SDK_DIR}/XT_13_4/bin_vc14/*D.pdb
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.dll
-			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb
-		)
-	endif()
+	set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
+		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
+		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
+	)
 endif()
 
 macro(deploy_runtime_file source destination)
-	list(APPEND DEPLOY_FILES ${source})
-	list(APPEND DEPLOY_FILES ${destination})
+	if(USE_CONFIG)
+		# HACK: This works on the assumption that any individual file is only used by *one* configuration, or *all* configurations. CMake will generate errors otherwise.
+		list(APPEND DEPLOY_FILES $<$<CONFIG:${USE_CONFIG}>:${source}>)
+		list(APPEND DEPLOY_FILES ${source})
+		list(APPEND DEPLOY_FILES ${destination})
+	else()
+		list(APPEND DEPLOY_FILES ${source})
+		list(APPEND DEPLOY_FILES ${source})
+		list(APPEND DEPLOY_FILES ${destination})
+	endif()
 	set(DEPLOY_FILES "${DEPLOY_FILES}" CACHE INTERNAL "List of files to deploy before running")
 endmacro()
 
@@ -88,19 +94,7 @@ macro(deploy_runtime_dir dir output_dir)
 	install(DIRECTORY ${dir} DESTINATION bin/${output_dir})
 endmacro()
 
-macro(deploy_pyside)
-	set(PYSIDE_SDK_SOURCE ${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/)
-	set(PYSIDE_SOURCE ${PYSIDE_SDK_SOURCE}PySide2/)
-
-	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
-	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-		set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
-		file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*_d.pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
-	else()
-		set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll")
-		file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*[^_d].pyd ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
-	endif()
-
+macro(deploy_pyside_files)
 	foreach(FILE_NAME ${PYSIDE_DLLS})
 		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
 		set(PDB_NAME ${name_without_extension}.pdb)
@@ -113,7 +107,7 @@ macro(deploy_pyside)
 			install(FILES ${PDB_PATH} DESTINATION bin)
 		endif()
 	endforeach()
-	
+
 	foreach(FILE_NAME ${FILES_TO_COPY})
 		get_filename_component (name_without_extension ${FILE_NAME} NAME_WE)
 		get_filename_component (dirname ${FILE_NAME} DIRECTORY)
@@ -126,7 +120,26 @@ macro(deploy_pyside)
 			deploy_runtime_file(${PDB_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/PySide2/${PDB_NAME})
 			install(FILES ${PDB_PATH} DESTINATION bin/PySide2)
 		endif()
-	endforeach()
+	endforeach()	
+endmacro()
+
+macro(deploy_pyside)
+	set(PYSIDE_SDK_SOURCE ${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/)
+	set(PYSIDE_SOURCE ${PYSIDE_SDK_SOURCE}PySide2/)
+
+	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
+	set(USE_CONFIG Debug)
+	set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
+	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*_d.pyd)
+	deploy_pyside_files()
+	set(USE_CONFIG Profile)
+	set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll")
+	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*[^_][^d].pyd)
+	deploy_pyside_files()	
+	set(USE_CONFIG)
+	set(PYSIDE_DLLS)
+	file(GLOB FILES_TO_COPY RELATIVE ${PYSIDE_SOURCE} ${PYSIDE_SOURCE}*.py ${PYSIDE_SOURCE}scripts/*.py)
+	deploy_pyside_files()
 	
 	deploy_runtime_dir(${PYSIDE_SDK_SOURCE}pyside2uic pyside2uic)
 	
@@ -138,6 +151,14 @@ macro(copy_binary_files_to_target)
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
+
+	foreach(config IN ITEMS Debug Profile Release)
+		set( file_list_name "BinaryFileList_${BUILD_PLATFORM}_${config}" )
+		get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
+		set(USE_CONFIG ${config})
+		deploy_runtime_files("${BINARY_FILE_LIST}")
+		set(USE_CONFIG)
+	endforeach()
   
 	if (ORBIS)
 		deploy_runtime_files(${SDK_DIR}/Orbis/target/sce_module/*.prx app/sce_module)
@@ -148,11 +169,11 @@ macro(copy_binary_files_to_target)
 		if (OPTION_SANDBOX)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
-			if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-				deploy_runtime_files(${SDK_DIR}/Python27/*_d.zip)
-			else()
-				deploy_runtime_files(${SDK_DIR}/Python27/*[^_d].zip)
-			endif()
+			set(USE_CONFIG Debug)
+			deploy_runtime_files(${SDK_DIR}/Python27/*_d.zip)
+			set(USE_CONFIG Profile)
+			deploy_runtime_files(${SDK_DIR}/Python27/*[^_][^d].zip)
+			set(USE_CONFIG)
 			deploy_pyside()
 		endif()
 	elseif(WIN32)
@@ -164,16 +185,17 @@ macro(copy_binary_files_to_target)
 
 		list(LENGTH DEPLOY_FILES deployFilesCount)
 		math(EXPR idxRangeEnd "${deployFilesCount} - 1")
-
-		foreach(idx RANGE 0 ${idxRangeEnd} 2)
+		foreach(idx RANGE 0 ${idxRangeEnd} 3)
 			math(EXPR idxIncr "${idx} + 1")
+			math(EXPR idxIncr2 "${idx} + 2")
 			list(GET DEPLOY_FILES ${idx} source)
-			list(GET DEPLOY_FILES ${idxIncr} destination)
+			list(GET DEPLOY_FILES ${idxIncr} source_file)
+			list(GET DEPLOY_FILES ${idxIncr2} destination)
       
 			add_custom_command(OUTPUT ${destination} 
 				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CRYENGINE_DIR}/Tools/CMake/deploy_runtime_files.cmake
-				COMMENT "Deploying ${source}"
-				DEPENDS ${source})
+				COMMENT "Deploying ${source_file}"
+				DEPENDS ${source_file})
 
 			list(APPEND DEPLOY_DESTINATIONS ${destination})
 		endforeach(idx)

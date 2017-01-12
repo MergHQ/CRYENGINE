@@ -7,7 +7,7 @@ namespace Schematyc
 // Forward declare interfaces.
 struct IObjectProperties;
 // Forward declare structures.
-struct SGUID;
+
 // Forward declare classes.
 class CAnyConstPtr;
 class CScratchpad;

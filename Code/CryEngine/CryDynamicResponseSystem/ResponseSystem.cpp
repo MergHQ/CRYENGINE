@@ -307,8 +307,9 @@ void CResponseSystem::OnSystemEvent(ESystemEvent event, UINT_PTR pWparam, UINT_P
 
 			const Schematyc::SGUID guid = "981168e2-f16d-46b7-bfaa-e11966204d47"_schematyc_guid;
 			const char* szName = "DynamicResponseSystem";
-			Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(CResponseSystem::RegisterSchematycEnvPackage, *this);
-			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, callback));
+			const char* szDescription = "Dynamic response system";
+			Schematyc::EnvPackageCallback callback = SCHEMATYC_MEMBER_DELEGATE(&CResponseSystem::RegisterSchematycEnvPackage, *this);
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(SCHEMATYC_MAKE_ENV_PACKAGE(guid, szName, Schematyc::g_szCrytek, szDescription, callback));
 			break;
 		}
 	}

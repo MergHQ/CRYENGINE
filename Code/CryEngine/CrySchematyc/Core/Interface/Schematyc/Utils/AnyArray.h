@@ -10,25 +10,27 @@
 #include <CrySerialization/DynArray.h>
 #include <CrySerialization/Forward.h>
 
-#include "Schematyc/Reflection/Reflection.h"
+#include "Schematyc/Reflection/TypeDesc.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/Assert.h"
+#include "Schematyc/Utils/IString.h"
 
 namespace Schematyc
 {
+
 class CAnyArray
 {
 public:
 
-	inline CAnyArray(const CCommonTypeInfo& typeInfo)
-		: m_typeInfo(typeInfo)
+	inline CAnyArray(const CCommonTypeDesc& typeDesc)
+		: m_typeDesc(typeDesc)
 		, m_capacity(0)
 		, m_pBegin(nullptr)
 		, m_pEnd(nullptr)
 	{}
 
 	inline CAnyArray(const CAnyArray& rhs)
-		: m_typeInfo(rhs.m_typeInfo)
+		: m_typeDesc(rhs.m_typeDesc)
 		, m_capacity(0)
 		, m_pBegin(nullptr)
 		, m_pEnd(nullptr)
@@ -50,7 +52,7 @@ public:
 
 	inline uint32 GetSize() const
 	{
-		return static_cast<uint32>(m_pEnd - m_pBegin) / m_typeInfo.GetSize();
+		return static_cast<uint32>(m_pEnd - m_pBegin) / m_typeDesc.GetSize();
 	}
 
 	inline uint32 GetCapacity() const
@@ -83,19 +85,19 @@ public:
 	{
 		Reserve(GetSize() + 1);
 
-		SCommonTypeInfoMethods::CopyConstruct copyConstruct = m_typeInfo.GetMethods().copyConstruct;
+		STypeOperators::CopyConstruct copyConstruct = m_typeDesc.GetOperators().copyConstruct;
 		SCHEMATYC_CORE_ASSERT(copyConstruct);
 
 		(*copyConstruct)(m_pEnd, value.GetValue());
 
-		m_pEnd += m_typeInfo.GetSize();
+		m_pEnd += m_typeDesc.GetSize();
 	}
 
 	inline void PopBack()
 	{
-		m_pEnd -= m_typeInfo.GetSize();
+		m_pEnd -= m_typeDesc.GetSize();
 
-		SCommonTypeInfoMethods::Destruct destruct = m_typeInfo.GetMethods().destruct;
+		STypeOperators::Destruct destruct = m_typeDesc.GetOperators().destruct;
 		SCHEMATYC_CORE_ASSERT(destruct);
 
 		(*destruct)(m_pEnd);
@@ -113,13 +115,13 @@ public:
 		{
 			// #SchematycTODO : Remove elements rather than destroying and re-constructing?
 
-			SCommonTypeInfoMethods::Destruct destruct = m_typeInfo.GetMethods().destruct;
+			STypeOperators::Destruct destruct = m_typeDesc.GetOperators().destruct;
 			SCHEMATYC_CORE_ASSERT(destruct);
 
-			SCommonTypeInfoMethods::CopyConstruct copyConstruct = m_typeInfo.GetMethods().copyConstruct;
+			STypeOperators::CopyConstruct copyConstruct = m_typeDesc.GetOperators().copyConstruct;
 			SCHEMATYC_CORE_ASSERT(copyConstruct);
 
-			const uint32 stride = m_typeInfo.GetSize();
+			const uint32 stride = m_typeDesc.GetSize();
 			for (uint8* pPos = m_pBegin + idx, * pNext = pPos + stride; pNext < m_pEnd; pPos = pNext, pNext += stride)
 			{
 				(*destruct)(pPos);
@@ -131,7 +133,7 @@ public:
 
 	inline void RemoveByValue(const CAnyConstRef& value)
 	{
-		SCommonTypeInfoMethods::Equals equals = m_typeInfo.GetMethods().equals;
+		STypeOperators::Equals equals = m_typeDesc.GetOperators().equals;
 		SCHEMATYC_CORE_ASSERT(equals);
 
 		for (uint32 idx = 0, size = GetSize(); idx < size; )
@@ -159,7 +161,7 @@ public:
 	{
 		output.assign("{ ");
 
-		SCommonTypeInfoMethods::ToString toString = m_typeInfo.GetMethods().toString;
+		STypeOperators::ToString toString = m_typeDesc.GetOperators().toString;
 		if (toString)
 		{
 			for (uint32 idx = 0, size = GetSize(); idx < size; ++idx)
@@ -177,29 +179,29 @@ public:
 
 	inline CAnyRef operator[](uint32 idx)
 	{
-		return CAnyRef(m_typeInfo, m_pBegin + (idx * m_typeInfo.GetSize()));
+		return CAnyRef(m_typeDesc, m_pBegin + (idx * m_typeDesc.GetSize()));
 	}
 
 	inline CAnyConstRef operator[](uint32 idx) const
 	{
-		return CAnyRef(m_typeInfo, m_pBegin + (idx * m_typeInfo.GetSize()));
+		return CAnyRef(m_typeDesc, m_pBegin + (idx * m_typeDesc.GetSize()));
 	}
 
 	//inline CAnyArray& operator = (const CAnyArray& rhs);
 	//inline bool operator == (const CAnyArray& rhs) const
 	//inline bool operator != (const CAnyArray& rhs) const
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<CAnyArray>& typeInfo)
+	static inline void ReflectType(CTypeDesc<CAnyArray>& desc)
 	{
-		typeInfo.SetToStringMethod<& CAnyArray::ToString>();
-		return "f6af4221-8344-49e9-9ef8-5f7e8144aa57"_schematyc_guid;
+		desc.SetGUID("f6af4221-8344-49e9-9ef8-5f7e8144aa57"_schematyc_guid);
+		desc.SetToStringOperator<&CAnyArray::ToString>();
 	}
 
 private:
 
 	void CopyConstruct(const uint8* pSrc, const uint8* pEnd, uint8* pDst) const
 	{
-		SCommonTypeInfoMethods::CopyConstruct copyConstruct = m_typeInfo.GetMethods().copyConstruct;
+		STypeOperators::CopyConstruct copyConstruct = m_typeDesc.GetOperators().copyConstruct;
 		SCHEMATYC_CORE_ASSERT(copyConstruct);
 
 		for (; pSrc < pEnd; ++pSrc, ++pDst)
@@ -210,10 +212,10 @@ private:
 
 	void Move(uint8* pSrc, uint8* pEnd, uint8* pDst) const
 	{
-		SCommonTypeInfoMethods::CopyConstruct copyConstruct = m_typeInfo.GetMethods().copyConstruct;
+		STypeOperators::CopyConstruct copyConstruct = m_typeDesc.GetOperators().copyConstruct;
 		SCHEMATYC_CORE_ASSERT(copyConstruct);
 
-		SCommonTypeInfoMethods::Destruct destruct = m_typeInfo.GetMethods().destruct;
+		STypeOperators::Destruct destruct = m_typeDesc.GetOperators().destruct;
 		SCHEMATYC_CORE_ASSERT(destruct);
 
 		for (; pSrc < pEnd; ++pSrc, ++pDst)
@@ -225,7 +227,7 @@ private:
 
 	void Destruct(uint8* pPos, uint8* pEnd) const
 	{
-		SCommonTypeInfoMethods::Destruct destruct = m_typeInfo.GetMethods().destruct;
+		STypeOperators::Destruct destruct = m_typeDesc.GetOperators().destruct;
 		SCHEMATYC_CORE_ASSERT(destruct);
 
 		for (; pPos < pEnd; ++pPos)
@@ -236,7 +238,7 @@ private:
 
 private:
 
-	const CCommonTypeInfo& m_typeInfo;   // #SchematycTODO : Rather than storing type info could we just store size, copyConstruct and destruct?
+	const CCommonTypeDesc& m_typeDesc;   // #SchematycTODO : Rather than storing type info could we just store size, copyConstruct and destruct?
 	uint32                 m_capacity;
 	uint8*                 m_pBegin;
 	uint8*                 m_pEnd;   // #SchematycTODO : Store size explicitly as uint32?
@@ -287,13 +289,14 @@ public:
 		return *this;
 	}
 
-	static inline SGUID ReflectSchematycType(CTypeInfo<CAnyArrayPtr>& typeInfo)
+	static inline void ReflectType(CTypeDesc<CAnyArrayPtr>& desc)
 	{
-		return "9500b20f-4264-4a09-a7ec-6c8136113369"_schematyc_guid;
+		desc.SetGUID("9500b20f-4264-4a09-a7ec-6c8136113369"_schematyc_guid);
 	}
 
 private:
 
 	CAnyArray* m_pArray;
 };
+
 }   // Schematyc

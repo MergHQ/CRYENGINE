@@ -9,11 +9,11 @@
 namespace Schematyc
 {
 // Forward declare structures.
-struct SGUID;
+
 struct SRuntimeContext;
 // Forward declare classes.
 class CAnyConstPtr;
-class CCommonTypeInfo;
+class CCommonTypeDesc;
 class CTypeName;
 
 enum class EEnvFunctionFlags
@@ -32,8 +32,8 @@ struct IEnvFunction : public IEnvElementBase<EEnvElementType::Function>
 	virtual ~IEnvFunction() {}
 
 	virtual bool                   Validate() const = 0;
-	virtual EnvFunctionFlags       GetFlags() const = 0;
-	virtual const CCommonTypeInfo* GetObjectTypeInfo() const = 0;
+	virtual EnvFunctionFlags       GetFunctionFlags() const = 0;
+	virtual const CCommonTypeDesc* GetObjectTypeDesc() const = 0;
 	virtual uint32                 GetInputCount() const = 0;
 	virtual uint32                 GetInputId(uint32 inputIdx) const = 0;
 	virtual const char*            GetInputName(uint32 inputIdx) const = 0;

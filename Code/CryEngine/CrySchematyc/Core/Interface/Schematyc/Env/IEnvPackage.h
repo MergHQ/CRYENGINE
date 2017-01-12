@@ -7,6 +7,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 
@@ -18,6 +19,9 @@ struct IEnvPackage
 
 	virtual SGUID              GetGUID() const = 0;
 	virtual const char*        GetName() const = 0;
+	virtual const char*        GetAuthor() const = 0;
+	virtual const char*        GetDescription() const = 0;
 	virtual EnvPackageCallback GetCallback() const = 0;
 };
+
 } // Schematyc

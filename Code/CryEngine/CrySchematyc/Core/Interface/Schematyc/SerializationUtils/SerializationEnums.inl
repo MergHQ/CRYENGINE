@@ -3,6 +3,7 @@
 // This header should be included once (and only once) per module.
 
 #include "Schematyc/FundamentalTypes.h"
+#include "Schematyc/Services/ITimerSystem.h"
 #include "Schematyc/Script/IScriptElement.h"
 #include "Schematyc/Script/Elements/IScriptSignalReceiver.h"
 #include "Schematyc/Utils/GraphPortId.h"
@@ -16,6 +17,18 @@ SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, EOverridePolicy, "Schematyc Override 
 SERIALIZATION_ENUM(Schematyc::EOverridePolicy::Default, "Default", "Default")
 SERIALIZATION_ENUM(Schematyc::EOverridePolicy::Override, "Override", "Override")
 SERIALIZATION_ENUM(Schematyc::EOverridePolicy::Final, "Final", "Final")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, ETimerUnits, "Schematyc Timer Units")
+SERIALIZATION_ENUM(Schematyc::ETimerUnits::Empty, "Empty", "Empty")
+SERIALIZATION_ENUM(Schematyc::ETimerUnits::Frames, "Frames", "Frames")
+SERIALIZATION_ENUM(Schematyc::ETimerUnits::Seconds, "Seconds", "Seconds")
+SERIALIZATION_ENUM(Schematyc::ETimerUnits::Random, "Random", "Random")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, ETimerFlags, "Schematyc Timer Flags")
+SERIALIZATION_ENUM(Schematyc::ETimerFlags::AutoStart, "AutoStart", "Auto Start")
+SERIALIZATION_ENUM(Schematyc::ETimerFlags::Repeat, "Repeat", "Repeat")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc, CGraphPortId, EType, "Schematyc Graph Port Id Type")

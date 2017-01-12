@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "ScriptGraphNodeFactory.h"
 
+#include <CrySystem/ITimer.h>
+
 namespace Schematyc
 {
 	bool CScriptGraphNodeFactory::RegisterCreator(const IScriptGraphNodeCreatorPtr& pCreator)
@@ -34,9 +36,14 @@ namespace Schematyc
 
 	void CScriptGraphNodeFactory::PopulateNodeCreationMenu(IScriptGraphNodeCreationMenu& nodeCreationMenu, const IScriptView& scriptView, const IScriptGraph& graph)
 	{
+		const int64 startTime = CryGetTicks();
+
 		for(Creators::value_type& creator : m_creators)
 		{
 			creator.second->PopulateNodeCreationMenu(nodeCreationMenu, scriptView, graph);
 		}
+
+		const float time = gEnv->pTimer->TicksToSeconds(CryGetTicks() - startTime);
+		SCHEMATYC_CORE_COMMENT("Populating node creatiion menu : time = %f(s)", time);
 	}
 }

@@ -7,17 +7,6 @@
 #include <CrySystem/ITimer.h>
 #include <Schematyc/Utils/Assert.h>
 
-SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, ETimerUnits, "Schematyc Timer Units")
-SERIALIZATION_ENUM(Schematyc::ETimerUnits::Frames, "Frames", "Frames")
-SERIALIZATION_ENUM(Schematyc::ETimerUnits::Seconds, "Seconds", "Seconds")
-SERIALIZATION_ENUM(Schematyc::ETimerUnits::Random, "Random", "Random")
-SERIALIZATION_ENUM_END()
-
-SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, ETimerFlags, "Schematyc Timer Flags")
-SERIALIZATION_ENUM(Schematyc::ETimerFlags::AutoStart, "AutoStart", "Auto Start")
-SERIALIZATION_ENUM(Schematyc::ETimerFlags::Repeat, "Repeat", "Repeat")
-SERIALIZATION_ENUM_END()
-
 namespace Schematyc
 {
 uint32 CTimerSystem::ms_nextTimerId = 1;

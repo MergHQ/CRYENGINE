@@ -9,7 +9,7 @@ namespace Schematyc
 // Forward declare interfaces.
 struct IProperties;
 // Forward declare structures.
-struct SGUID;
+
 
 struct IScriptActionInstance : public IScriptElementBase<EScriptElementType::ActionInstance>
 {

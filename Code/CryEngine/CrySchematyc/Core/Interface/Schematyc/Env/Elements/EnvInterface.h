@@ -14,6 +14,7 @@
 
 namespace Schematyc
 {
+
 class CEnvInterface : public CEnvElementBase<IEnvInterface>
 {
 public:
@@ -26,7 +27,7 @@ public:
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		switch (scope.GetElementType())
+		switch (scope.GetType())
 		{
 		case EEnvElementType::Root:
 		case EEnvElementType::Module:
@@ -76,7 +77,7 @@ public:
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		switch (scope.GetElementType())
+		switch (scope.GetType())
 		{
 		case EEnvElementType::Interface:
 			{
@@ -155,17 +156,21 @@ private:
 
 namespace EnvInterface
 {
+
 inline std::shared_ptr<CEnvInterface> MakeShared(const SGUID& guid, const char* szName, const SSourceFileInfo& sourceFileInfo)
 {
 	return std::make_shared<CEnvInterface>(guid, szName, sourceFileInfo);
 }
+
 } // EnvInterface
 
 namespace EnvInterfaceFunction
 {
+
 inline std::shared_ptr<CEnvInterfaceFunction> MakeShared(const SGUID& guid, const char* szName, const SSourceFileInfo& sourceFileInfo)
 {
 	return std::make_shared<CEnvInterfaceFunction>(guid, szName, sourceFileInfo);
 }
+
 } // EnvInterfaceFunction
 } // Schematyc

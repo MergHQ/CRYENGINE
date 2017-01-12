@@ -63,7 +63,6 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
 		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityAudioComponent, "Audio");
-		pComponent->SetAuthor(g_szCrytek);
 		pComponent->SetDescription("Entity audio component");
 		pComponent->SetIcon("icons:schematyc/entity_audio_component.ico");
 		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::Transform, Schematyc::EEnvComponentFlags::Attach });
@@ -73,7 +72,6 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioComponent::ExecuteTrigger, "0D58AF22-775A-4FBE-BC5C-3A7CE250EF98"_schematyc_guid, "ExecuteAudioTrigger");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Executes a trigger");
 			pFunction->BindInput(1, 'sta', "StartTrigger");
 			pFunction->BindOutput(2, 'inst', "InstanceId");
@@ -83,7 +81,6 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioComponent::StopTrigger, "E4016C26-87E9-4880-8BAE-D8D39E974AFC"_schematyc_guid, "StopAudioTrigger");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Stops a trigger");
 			pFunction->BindInput(1, 'sto', "StopTrigger");
 			componentScope.Register(pFunction);
@@ -91,7 +88,6 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioComponent::SetParameter, "FBE1DD7C-57C1-46CE-89A1-3612CFD017E4"_schematyc_guid, "SetAudioParameter");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Sets a parameter to a specific value");
 			pFunction->BindInput(1, 'par', "Parameter");
 			pFunction->BindInput(2, 'val', "Value");
@@ -100,7 +96,6 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioComponent::SetSwitchState, "7ABA1505-527C-4882-9399-716C0E43FFCD"_schematyc_guid, "SetAudioSwitch");
-			pFunction->SetAuthor(g_szCrytek);
 			pFunction->SetDescription("Sets a switch to a specific state");
 			pFunction->BindInput(1, 'swi', "SwitchAndState");
 			componentScope.Register(pFunction);
@@ -108,10 +103,7 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 
 		// Signals
 		{
-			auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SAudioTriggerFinishedSignal, "AudioTriggerFinishedSignal");
-			pSignal->SetAuthor(g_szCrytek);
-			pSignal->SetDescription("Sent when an audio trigger finishes");
-			componentScope.Register(pSignal);
+			componentScope.Register(SCHEMATYC_MAKE_ENV_SIGNAL(SAudioTriggerFinishedSignal));
 		}
 	}
 }
@@ -159,9 +151,9 @@ void CEntityAudioComponent::SetSwitchState(const SAudioSwitchWithStateSerializeH
 	}
 }
 
-SGUID CEntityAudioComponent::ReflectSchematycType(CTypeInfo<CEntityAudioComponent>& typeInfo)
+void CEntityAudioComponent::ReflectType(CTypeDesc<CEntityAudioComponent>& desc)
 {
-	return "7E792283-20BB-4D18-B3DD-08ADF38C92BE"_schematyc_guid;
+	desc.SetGUID("7E792283-20BB-4D18-B3DD-08ADF38C92BE"_schematyc_guid);
 }
 
 void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const pAudioRequestInfo)
@@ -180,28 +172,28 @@ void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const 
 	}
 }
 
-SGUID SAudioTriggerSerializeHelper::ReflectSchematycType(CTypeInfo<SAudioTriggerSerializeHelper>& typeInfo)
+void SAudioTriggerSerializeHelper::ReflectType(CTypeDesc<SAudioTriggerSerializeHelper>& desc)
 {
-	return "C5DE4974-ECAB-4D6F-A93D-02C1F5C55C31"_schematyc_guid;
+	desc.SetGUID("C5DE4974-ECAB-4D6F-A93D-02C1F5C55C31"_schematyc_guid);
 }
 
-SGUID SAudioParameterSerializeHelper::ReflectSchematycType(CTypeInfo<SAudioParameterSerializeHelper>& typeInfo)
+void SAudioParameterSerializeHelper::ReflectType(CTypeDesc<SAudioParameterSerializeHelper>& desc)
 {
-	return "5287D8F9-7638-41BB-BFDD-2F5B47DEEA07"_schematyc_guid;
+	desc.SetGUID("5287D8F9-7638-41BB-BFDD-2F5B47DEEA07"_schematyc_guid);
 }
 
-SGUID SAudioSwitchWithStateSerializeHelper::ReflectSchematycType(CTypeInfo<SAudioSwitchWithStateSerializeHelper>& typeInfo)
+void SAudioSwitchWithStateSerializeHelper::ReflectType(CTypeDesc<SAudioSwitchWithStateSerializeHelper>& desc)
 {
-	return "9DB56B33-57FE-4E97-BED2-F0BBD3012967"_schematyc_guid;
+	desc.SetGUID("9DB56B33-57FE-4E97-BED2-F0BBD3012967"_schematyc_guid);
 }
 
-SGUID CEntityAudioComponent::SAudioTriggerFinishedSignal::ReflectSchematycType(CTypeInfo<SAudioTriggerFinishedSignal>& typeInfo)
+void CEntityAudioComponent::SAudioTriggerFinishedSignal::ReflectType(CTypeDesc<SAudioTriggerFinishedSignal>& desc)
 {
-	typeInfo.AddMember(&SAudioTriggerFinishedSignal::m_instanceId, 'inst', "InstanceId", "TriggerId");
-	typeInfo.AddMember(&SAudioTriggerFinishedSignal::m_triggerId, 'id', "TriggerId", "TriggerId");
-	typeInfo.AddMember(&SAudioTriggerFinishedSignal::m_bSuccess, 'res', "Result", "Result");
-
-	return "A16A29CB-8E39-42C0-88C2-33FED1680545"_schematyc_guid;
+	desc.SetGUID("A16A29CB-8E39-42C0-88C2-33FED1680545"_schematyc_guid);
+	desc.SetLabel("AudioTriggerFinishedSignal");
+	desc.AddMember(&SAudioTriggerFinishedSignal::m_instanceId, 'inst', "instanceId", "InstanceId", "TriggerId");
+	desc.AddMember(&SAudioTriggerFinishedSignal::m_triggerId, 'id', "triggerId", "TriggerId", "TriggerId");
+	desc.AddMember(&SAudioTriggerFinishedSignal::m_bSuccess, 'res', "bSuccess", "Result", "Result");
 }
 
 CEntityAudioComponent::SAudioTriggerFinishedSignal::SAudioTriggerFinishedSignal(uint32 instanceId, uint32 triggerId, bool bSuccess)

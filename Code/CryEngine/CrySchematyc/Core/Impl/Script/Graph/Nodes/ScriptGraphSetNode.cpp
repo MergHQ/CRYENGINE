@@ -27,9 +27,9 @@ CScriptGraphSetNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs)
 	: pos(rhs.pos)
 {}
 
-SGUID CScriptGraphSetNode::SRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphSetNode::SRuntimeData>& typeInfo)
+void CScriptGraphSetNode::SRuntimeData::ReflectType(CTypeDesc<CScriptGraphSetNode::SRuntimeData>& desc)
 {
-	return "1a4b1431-c8fe-46f5-aecd-fc8c11500e99"_schematyc_guid;
+	desc.SetGUID("1a4b1431-c8fe-46f5-aecd-fc8c11500e99"_schematyc_guid);
 }
 
 CScriptGraphSetNode::CScriptGraphSetNode() {}
@@ -57,7 +57,7 @@ void CScriptGraphSetNode::CreateLayout(CScriptGraphNodeLayout& layout)
 		const IScriptElement* pReferenceElement = scriptView.GetScriptElement(m_referenceGUID);
 		if (pReferenceElement)
 		{
-			switch (pReferenceElement->GetElementType())
+			switch (pReferenceElement->GetType())
 			{
 			case EScriptElementType::Variable:
 				{
@@ -85,7 +85,7 @@ void CScriptGraphSetNode::Compile(SCompilerContext& context, IGraphNodeCompiler&
 		const IScriptElement* pReferenceElement = scriptView.GetScriptElement(m_referenceGUID);
 		if (pReferenceElement)
 		{
-			switch (pReferenceElement->GetElementType())
+			switch (pReferenceElement->GetType())
 			{
 			case EScriptElementType::Variable:
 				{

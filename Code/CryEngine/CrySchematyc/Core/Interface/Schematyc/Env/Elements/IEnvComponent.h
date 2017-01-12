@@ -7,12 +7,13 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IComponentPreviewer;
 struct INetworkSpawnParams;
 struct IProperties;
 // Forward declare structures.
-struct SGUID;
+
 // Forward declare classes.
 class CComponent;
 // Forward declare shared pointers.
@@ -53,7 +54,7 @@ struct IEnvComponent : public IEnvElementBase<EEnvElementType::Component>
 	virtual ~IEnvComponent() {}
 
 	virtual const char*                    GetIcon() const = 0;
-	virtual EnvComponentFlags              GetFlags() const = 0;
+	virtual EnvComponentFlags              GetComponentFlags() const = 0;
 
 	virtual uint32                         GetDependencyCount() const = 0;
 	virtual const SEnvComponentDependency* GetDependency(uint32 dependencyIdx) const = 0;
@@ -65,4 +66,5 @@ struct IEnvComponent : public IEnvElementBase<EEnvElementType::Component>
 	virtual const INetworkSpawnParams*     GetNetworkSpawnParams() const = 0;
 	virtual IComponentPreviewer*           GetPreviewer() const = 0;
 };
+
 } // Schematyc

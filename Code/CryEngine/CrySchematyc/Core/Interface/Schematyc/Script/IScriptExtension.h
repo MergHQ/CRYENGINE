@@ -9,7 +9,7 @@
 namespace Schematyc
 {
 // Forward declare structures.
-struct SGUID;
+
 struct SScriptEvent;
 // Froward declare interfaces.
 struct IGUIDRemapper;

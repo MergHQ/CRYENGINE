@@ -11,83 +11,25 @@
 
 namespace Schematyc
 {
-// System GUID structure. This type is aggregate and has.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef GUID_DEFINED
-typedef ::GUID SSysGUID;
-#else
-struct SSysGUID
-{
-	unsigned long  Data1;
-	unsigned short Data2;
-	unsigned short Data3;
-	unsigned char  Data4[8];
-};
-#endif
 
-// Non-aggregate GUID structure.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SGUID : public SSysGUID
+struct SGUID : public CryGUID  //separate class (for now) because we want a more standard serialize method
 {
-
-	inline SGUID()
-		: SSysGUID {0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 }}
+	inline constexpr SGUID()  //remark: this custom constructor will turn SGUID into a non-aggregate
+		: CryGUID(CryGUID::Null())
 	{}
 
-	constexpr SGUID(const SSysGUID& rhs)
-		: SSysGUID(rhs)
+	constexpr SGUID(const CryGUID& rhs)
+		: CryGUID(rhs)
 	{}
 };
 
-namespace GUID
+struct SGUID_mapped
 {
-// Read high 64bits of GUID.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-inline uint64 High(const SGUID& guid)
-{
-	return reinterpret_cast<const uint64*>(&guid)[0];
-}
-
-// Read low 64bits of GUID.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-inline uint64 Low(const SGUID& guid)
-{
-	return reinterpret_cast<const uint64*>(&guid)[1];
-}
-}   // GUID
-
-// GUID comparison operators.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-inline bool operator==(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) == GUID::High(rhs)) && (GUID::Low(lhs) == GUID::Low(rhs));
-}
-
-inline bool operator!=(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) != GUID::High(rhs)) || (GUID::Low(lhs) != GUID::Low(rhs));
-}
-
-inline bool operator<(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) < GUID::High(rhs)) || ((GUID::High(lhs) == GUID::High(rhs)) && (GUID::Low(lhs) < GUID::Low(rhs)));
-}
-
-inline bool operator>(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) > GUID::High(rhs)) || ((GUID::High(lhs) == GUID::High(rhs)) && (GUID::Low(lhs) > GUID::Low(rhs)));
-}
-
-inline bool operator<=(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) < GUID::High(rhs)) || ((GUID::High(lhs) == GUID::High(rhs)) && (GUID::Low(lhs) <= GUID::Low(rhs)));
-}
-
-inline bool operator>=(const SGUID& lhs, const SGUID& rhs)
-{
-	return (GUID::High(lhs) > GUID::High(rhs)) || ((GUID::High(lhs) == GUID::High(rhs)) && (GUID::Low(lhs) >= GUID::Low(rhs)));
-}
+	uint32 Data1;
+	uint16 Data2;
+	uint16 Data3;
+	uint8  Data4[8];
+};
 
 namespace GUID
 {
@@ -95,42 +37,47 @@ namespace GUID
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 constexpr SGUID FromString(const char* szInput)
 {
-	return SSysGUID {
-					 StringUtils::HexStringToUnsignedLong(szInput),
-					 StringUtils::HexStringToUnsignedShort(szInput + 9),
-					 StringUtils::HexStringToUnsignedShort(szInput + 14),
-					 {
-						 StringUtils::HexStringToUnsignedChar(szInput + 19),
-						 StringUtils::HexStringToUnsignedChar(szInput + 21),
-						 StringUtils::HexStringToUnsignedChar(szInput + 24),
-						 StringUtils::HexStringToUnsignedChar(szInput + 26),
-						 StringUtils::HexStringToUnsignedChar(szInput + 28),
-						 StringUtils::HexStringToUnsignedChar(szInput + 30),
-						 StringUtils::HexStringToUnsignedChar(szInput + 32),
-						 StringUtils::HexStringToUnsignedChar(szInput + 34)
-					 }
-	};
-}
+	return SGUID::Construct(
+	  StringUtils::HexStringToUnsignedLong(szInput),        // uint32 data1
+	  StringUtils::HexStringToUnsignedShort(szInput + 9),   // uint16 data2
+	  StringUtils::HexStringToUnsignedShort(szInput + 14),  // uint16 data3
+	  StringUtils::HexStringToUnsignedChar(szInput + 19),   // uint8  data4[8]
+	  StringUtils::HexStringToUnsignedChar(szInput + 21),
+	  StringUtils::HexStringToUnsignedChar(szInput + 24),
+	  StringUtils::HexStringToUnsignedChar(szInput + 26),
+	  StringUtils::HexStringToUnsignedChar(szInput + 28),
+	  StringUtils::HexStringToUnsignedChar(szInput + 30),
+	  StringUtils::HexStringToUnsignedChar(szInput + 32),
+	  StringUtils::HexStringToUnsignedChar(szInput + 34)
+	  );
+};
 
 // Write GUID to string.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 inline void ToString(IString& output, const SGUID& guid)
 {
+	static_assert(sizeof(SGUID_mapped) == sizeof(SGUID), "SGUID_mapped and SGUID must be the same size");
+
+	const SGUID_mapped* pMappedGUID = reinterpret_cast<const SGUID_mapped*>(&guid);
+
 	unsigned int Data1;
 	unsigned int Data2;
 	unsigned int Data3;
 	unsigned int Data4[8];
-	Data1 = static_cast<unsigned int>(guid.Data1);
-	Data2 = static_cast<unsigned int>(guid.Data2);
-	Data3 = static_cast<unsigned int>(guid.Data3);
-	Data4[0] = static_cast<unsigned int>(guid.Data4[0]);
-	Data4[1] = static_cast<unsigned int>(guid.Data4[1]);
-	Data4[2] = static_cast<unsigned int>(guid.Data4[2]);
-	Data4[3] = static_cast<unsigned int>(guid.Data4[3]);
-	Data4[4] = static_cast<unsigned int>(guid.Data4[4]);
-	Data4[5] = static_cast<unsigned int>(guid.Data4[5]);
-	Data4[6] = static_cast<unsigned int>(guid.Data4[6]);
-	Data4[7] = static_cast<unsigned int>(guid.Data4[7]);
+
+	Data1 = static_cast<unsigned int>(pMappedGUID->Data1);
+	Data2 = static_cast<unsigned int>(pMappedGUID->Data2);
+	Data3 = static_cast<unsigned int>(pMappedGUID->Data3);
+
+	Data4[0] = static_cast<unsigned int>(pMappedGUID->Data4[0]);
+	Data4[1] = static_cast<unsigned int>(pMappedGUID->Data4[1]);
+	Data4[2] = static_cast<unsigned int>(pMappedGUID->Data4[2]);
+	Data4[3] = static_cast<unsigned int>(pMappedGUID->Data4[3]);
+	Data4[4] = static_cast<unsigned int>(pMappedGUID->Data4[4]);
+	Data4[5] = static_cast<unsigned int>(pMappedGUID->Data4[5]);
+	Data4[6] = static_cast<unsigned int>(pMappedGUID->Data4[6]);
+	Data4[7] = static_cast<unsigned int>(pMappedGUID->Data4[7]);
+
 	output.Format("%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x", Data1, Data2, Data3, Data4[0], Data4[1], Data4[2], Data4[3], Data4[4], Data4[5], Data4[6], Data4[7]);
 }
 
@@ -139,11 +86,7 @@ inline void ToString(IString& output, const SGUID& guid)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 constexpr SGUID Empty()
 {
-	return SSysGUID {
-					 0, 0, 0, {
-						 0, 0, 0, 0, 0, 0, 0, 0
-					 }
-	};
+	return SGUID(CryGUID::Null());
 }
 
 // Is GUID empty?
@@ -158,14 +101,16 @@ inline bool IsEmpty(const SGUID& guid)
 inline size_t Hash(const SGUID& guid)
 {
 	std::hash<uint64> hash;
-	return hash(High(guid)) ^ hash(Low(guid));
+	return hash(guid.hipart) ^ hash(guid.lopart);
 }
-}     // GUID
+
+} // GUID
 
 // Serialize GUID.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 inline bool Serialize(Serialization::IArchive& archive, SGUID& value, const char* szName, const char* szLabel)
 {
+	// SchematycTODO: Optimized version for binary archives? just save the uint64s there
 	CStackString temp;
 	if (archive.isInput())
 	{
@@ -190,6 +135,7 @@ inline bool Serialize(Serialization::IArchive& archive, SGUID& value, const char
 	}
 	return true;
 }
+
 } // Schematyc
 
 // GUID string literal.
@@ -210,4 +156,4 @@ template<> struct hash<Schematyc::SGUID>
 		return Schematyc::GUID::Hash(value);
 	}
 };
-}   // std
+} // std

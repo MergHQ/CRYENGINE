@@ -9,7 +9,7 @@
 
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 
 #include <Schematyc/Script/IScriptView.h>
 #include <Schematyc/Script/IScriptRegistry.h>
@@ -226,7 +226,7 @@ void CObjectModel::LoadFromScriptElement()
 	Schematyc::IScriptElement* pElement = m_scriptElement.GetFirstChild();
 	while (pElement)
 	{
-		const Schematyc::EScriptElementType elementType = pElement->GetElementType();
+		const Schematyc::EScriptElementType elementType = pElement->GetType();
 		switch (elementType)
 		{
 		case Schematyc::EScriptElementType::ComponentInstance:

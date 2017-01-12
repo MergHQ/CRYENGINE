@@ -135,11 +135,6 @@ public:
 		return optionIdx < m_bases.size() ? m_bases[optionIdx].description.c_str() : "";
 	}
 
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
-	{
-		return nullptr;
-	}
-
 	virtual const char* GetHeader() const override
 	{
 		return "Base";
@@ -238,11 +233,6 @@ private:
     return nullptr;
    }
 
-   virtual const char* GetWikiLink(uint32 optionIdx) const override
-   {
-    return nullptr;
-   }
-
    virtual const char* GetHeader() const override
    {
     return "Type";
@@ -267,32 +257,29 @@ private:
 
 struct SSignalReceiver
 {
-	inline SSignalReceiver(EScriptSignalReceiverType _type, const SGUID& _guid, const char* _szLabel, const char* szDescription, const char* szWikiLink = nullptr)
+	inline SSignalReceiver(EScriptSignalReceiverType _type, const SGUID& _guid, const char* _szLabel, const char* szDescription)
 		: type(_type)
 		, guid(_guid)
 		, label(_szLabel)
 		, description(szDescription)
-		, wikiLink(szWikiLink)
 	{}
 
 	EScriptSignalReceiverType type;
 	SGUID                     guid;
 	string                    label;
 	string                    description;
-	string                    wikiLink;
 };
 
 struct SInterface
 {
 	inline SInterface() {}
 
-	inline SInterface(EDomain _domain, const SGUID& _guid, const char* _szName, const char* _szFullName, const char* szDescription, const char* szWikiLink)
+	inline SInterface(EDomain _domain, const SGUID& _guid, const char* _szName, const char* _szFullName, const char* szDescription)
 		: domain(_domain)
 		, guid(_guid)
 		, name(_szName)
 		, fullName(_szFullName)
 		, description(szDescription)
-		, wikiLink(szWikiLink)
 	{}
 
 	EDomain domain;
@@ -300,7 +287,6 @@ struct SInterface
 	string  name;
 	string  fullName;
 	string  description;
-	string  wikiLink;
 };
 
 class CInterfaceQuickSearchOptions : public IQuickSearchOptions
@@ -322,7 +308,7 @@ public:
 			{
 				CStackString fullName;
 				pScriptView->QualifyName(envInterface, fullName);
-				m_interfaces.push_back(SInterface(EDomain::Env, envInterface.GetGUID(), envInterface.GetName(), fullName.c_str(), envInterface.GetDescription(), envInterface.GetWikiLink()));
+				m_interfaces.push_back(SInterface(EDomain::Env, envInterface.GetGUID(), envInterface.GetName(), fullName.c_str(), envInterface.GetDescription()));
 				return EVisitStatus::Continue;
 			};
 			pScriptView->VisitEnvInterfaces(EnvInterfaceConstVisitor::FromLambda(visitEnvInterface));
@@ -344,11 +330,6 @@ public:
 	virtual const char* GetDescription(uint32 optionIdx) const override
 	{
 		return optionIdx < m_interfaces.size() ? m_interfaces[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
-	{
-		return optionIdx < m_interfaces.size() ? m_interfaces[optionIdx].wikiLink.c_str() : "";
 	}
 
 	virtual const char* GetHeader() const override
@@ -377,19 +358,17 @@ struct SComponent
 {
 	inline SComponent() {}
 
-	inline SComponent(const SGUID& _typeGUID, const char* _szName, const char* _szFullName, const char* szDescription, const char* szWikiLink)
+	inline SComponent(const SGUID& _typeGUID, const char* _szName, const char* _szFullName, const char* szDescription)
 		: typeGUID(_typeGUID)
 		, name(_szName)
 		, fullName(_szFullName)
 		, description(szDescription)
-		, wikiLink(szWikiLink)
 	{}
 
 	SGUID  typeGUID;
 	string name;
 	string fullName;
 	string description;
-	string wikiLink;
 };
 
 class CComponentQuickSearchOptions : public IQuickSearchOptions
@@ -414,7 +393,7 @@ public:
 				const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(pScriptComponentInstance->GetTypeGUID());
 				if (pEnvComponent)
 				{
-					if (pEnvComponent->GetFlags().Check(EEnvComponentFlags::Socket))
+					if (pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Socket))
 					{
 						bAttach = true;
 					}
@@ -428,11 +407,11 @@ public:
 			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 			auto visitEnvComponent = [this, bAttach, &pScriptView](const IEnvComponent& envComponent) -> EVisitStatus
 			{
-				if (!bAttach || envComponent.GetFlags().Check(EEnvComponentFlags::Attach))
+				if (!bAttach || envComponent.GetComponentFlags().Check(EEnvComponentFlags::Attach))
 				{
 					CStackString fullName;
 					pScriptView->QualifyName(envComponent, fullName);
-					m_components.push_back(SComponent(envComponent.GetGUID(), envComponent.GetName(), fullName.c_str(), envComponent.GetDescription(), envComponent.GetWikiLink()));
+					m_components.push_back(SComponent(envComponent.GetGUID(), envComponent.GetName(), fullName.c_str(), envComponent.GetDescription()));
 				}
 				return EVisitStatus::Continue;
 			};
@@ -463,11 +442,6 @@ public:
 		return optionIdx < m_components.size() ? m_components[optionIdx].description.c_str() : "";
 	}
 
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
-	{
-		return optionIdx < m_components.size() ? m_components[optionIdx].wikiLink.c_str() : "";
-	}
-
 	virtual const char* GetHeader() const override
 	{
 		return "Component";
@@ -494,13 +468,12 @@ struct SAction
 {
 	inline SAction() {}
 
-	inline SAction(const SGUID& _guid, const SGUID& _componentInstanceGUID, const char* _szName, const char* _szFullName, const char* _szDescription, const char* _szWikiLink)
+	inline SAction(const SGUID& _guid, const SGUID& _componentInstanceGUID, const char* _szName, const char* _szFullName, const char* _szDescription)
 		: guid(_guid)
 		, componentInstanceGUID(_componentInstanceGUID)
 		, name(_szName)
 		, fullName(_szFullName)
 		, description(_szDescription)
-		, wikiLink(_szWikiLink)
 	{}
 
 	SGUID  guid;
@@ -508,7 +481,6 @@ struct SAction
 	string name;
 	string fullName;
 	string description;
-	string wikiLink;
 };
 
 class CActionQuickSearchOptions : public IQuickSearchOptions
@@ -534,7 +506,7 @@ public:
 			auto visitEnvAction = [this, &pScriptView, &scriptComponentInstances](const IEnvAction& envAction) -> EVisitStatus
 			{
 				const IEnvElement* pParent = envAction.GetParent();
-				if (pParent && (pParent->GetElementType() == EEnvElementType::Component))
+				if (pParent && (pParent->GetType() == EEnvElementType::Component))
 				{
 					const SGUID componentTypeGUID = pParent->GetGUID();
 					for (const IScriptComponentInstance* pScriptComponentInstance : scriptComponentInstances)
@@ -543,7 +515,7 @@ public:
 						{
 							CStackString fullName;
 							pScriptView->QualifyName(envAction, fullName);
-							m_actions.push_back(SAction(envAction.GetGUID(), pScriptComponentInstance->GetGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription(), envAction.GetWikiLink()));
+							m_actions.push_back(SAction(envAction.GetGUID(), pScriptComponentInstance->GetGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription()));
 						}
 					}
 				}
@@ -551,7 +523,7 @@ public:
 				{
 					CStackString fullName;
 					pScriptView->QualifyName(envAction, fullName);
-					m_actions.push_back(SAction(envAction.GetGUID(), SGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription(), envAction.GetWikiLink()));
+					m_actions.push_back(SAction(envAction.GetGUID(), SGUID(), envAction.GetName(), fullName.c_str(), envAction.GetDescription()));
 				}
 				return EVisitStatus::Continue;
 			};
@@ -580,11 +552,6 @@ public:
 	virtual const char* GetDescription(uint32 optionIdx) const override
 	{
 		return optionIdx < m_actions.size() ? m_actions[optionIdx].description.c_str() : "";
-	}
-
-	virtual const char* GetWikiLink(uint32 optionIdx) const override
-	{
-		return optionIdx < m_actions.size() ? m_actions[optionIdx].wikiLink.c_str() : "";
 	}
 
 	virtual const char* GetHeader() const override
@@ -638,7 +605,7 @@ private:
 	          DocUtils::GetFullElementName(m_scriptFile, componentInstance, fullName, EScriptElementType::Class);
 	          fullName.append("::");
 	          fullName.append(szName);
-	          m_actions.push_back(SAction(envAction.GetGUID(), componentInstance.GetGUID(), szName, fullName.c_str(), envAction.GetDescription(), envAction.GetWikiLink(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
+	          m_actions.push_back(SAction(envAction.GetGUID(), componentInstance.GetGUID(), szName, fullName.c_str(), envAction.GetDescription(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
 	        }
 	      }
 	    }
@@ -651,7 +618,7 @@ private:
 	      const char*  szName = envAction.GetName();
 	      CStackString fullName;
 	      EnvRegistryUtils::GetFullName(szName, szNamespace, componentGUID, fullName);
-	      m_actions.push_back(SAction(envAction.GetGUID(), componentGUID, szName, fullName.c_str(), envAction.GetDescription(), envAction.GetWikiLink(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
+	      m_actions.push_back(SAction(envAction.GetGUID(), componentGUID, szName, fullName.c_str(), envAction.GetDescription(), (envAction.GetFlags() & EActionFlags::Singleton) != 0));
 	    }
 	   }
 	   return EVisitStatus::Continue;
@@ -694,7 +661,7 @@ bool CanAddScriptElement(EScriptElementType elementType, IScriptElement* pScope)
 
 bool CanRemoveScriptElement(const IScriptElement& element)
 {
-	const EScriptElementType elementType = element.GetElementType();
+	const EScriptElementType elementType = element.GetType();
 	switch (elementType)
 	{
 	case EScriptElementType::Root:
@@ -722,12 +689,12 @@ bool CanRenameScriptElement(const IScriptElement& element)
 {
 	// #SchematycTODO : Looks like it's not crashing on an item we removed!!!
 
-	return !element.GetElementFlags().Check(EScriptElementFlags::FixedName);
+	return !element.GetFlags().Check(EScriptElementFlags::FixedName);
 }
 
 bool CanCopyScriptElement(const IScriptElement& element)
 {
-	return !element.GetElementFlags().Check(EScriptElementFlags::NotCopyable);
+	return !element.GetFlags().Check(EScriptElementFlags::NotCopyable);
 }
 
 const char* GetScriptElementTypeName(EScriptElementType scriptElementType)
@@ -850,7 +817,7 @@ const char* GetScriptElementFilterName(EScriptElementType scriptElementType)
 
 const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 {
-	switch (scriptElement.GetElementType())
+	switch (scriptElement.GetType())
 	{
 	case EScriptElementType::Module:
 		{

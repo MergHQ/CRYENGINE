@@ -28,7 +28,7 @@ void CScriptGraphGetObjectIdNode::CreateLayout(CScriptGraphNodeLayout& layout)
 	layout.SetName("GetObjectId");
 	layout.SetStyleId("Core::Data");
 	
-	layout.AddOutputWithData("ObjectId", GetTypeInfo<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::Pull }, ObjectId());
+	layout.AddOutputWithData("ObjectId", GetTypeDesc<ObjectId>().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::Pull }, ObjectId());
 }
 
 void CScriptGraphGetObjectIdNode::Compile(SCompilerContext& context, IGraphNodeCompiler& compiler) const

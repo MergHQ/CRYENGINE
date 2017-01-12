@@ -16,7 +16,12 @@ Schematyc::SGUID GenerateGUID()
 {
 	Schematyc::SGUID guid;
 #if CRY_PLATFORM_WINDOWS
-	::CoCreateGuid(&guid);
+	GUID winGuid;
+	::CoCreateGuid(&winGuid);
+	static_assert(sizeof(winGuid)==sizeof(guid),"GUID and CryGUID sizes should match.");
+	memcpy(&guid,&winGuid,sizeof(guid));
+#else
+	guid = Schematyc::SGUID::Create();
 #endif
 	return guid;
 }
@@ -25,7 +30,7 @@ CSchematycPlugin::CSchematycPlugin()
 {
 	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
 	CryLogAlways("[SchematycEditor]: Initializing...");
-	gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(GenerateGUID));
+	gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(&GenerateGUID));
 	CryLogAlways("[SchematycEditor]: Fixing up script files");
 	gEnv->pSchematyc->GetScriptRegistry().ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorFixUp));
 	CryLogAlways("[SchematycEditor]: Compiling script files");

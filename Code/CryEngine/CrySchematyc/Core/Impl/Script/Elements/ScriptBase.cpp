@@ -222,7 +222,7 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 	BaseVariables baseVariables;
 	auto collectBaseVariables = [&baseVariables](const IScriptElement& scriptElement) -> EVisitStatus
 	{
-		switch (scriptElement.GetElementType())
+		switch (scriptElement.GetType())
 		{
 		case EScriptElementType::Variable: // #SchematycTODO : Make sure variable is public/protected?
 			{
@@ -243,7 +243,7 @@ void CScriptBase::RefreshVariables(const IScriptClass& scriptClass)
 	DerivedVariables derivedVariables;
 	auto collectDerivedVariables = [&derivedVariables](IScriptElement& scriptElement) -> EVisitStatus
 	{
-		switch (scriptElement.GetElementType())
+		switch (scriptElement.GetType())
 		{
 		case EScriptElementType::Variable: // #SchematycTODO : Make sure variable is public/protected?
 			{
@@ -315,7 +315,7 @@ void CScriptBase::RefreshComponentInstances(const IEnvClass& envClass)
 	DerivedComponentInstances derivedComponentInstances;
 	auto collectDerivedComponentInstances = [&derivedComponentInstances](IScriptElement& scriptElement) -> EVisitStatus
 	{
-		switch (scriptElement.GetElementType())
+		switch (scriptElement.GetType())
 		{
 		case EScriptElementType::ComponentInstance:
 			{

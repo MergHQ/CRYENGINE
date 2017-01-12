@@ -37,9 +37,9 @@ CScriptGraphStateNode::SRuntimeData::SRuntimeData(const SRuntimeData& rhs)
 	: stateIdx(rhs.stateIdx)
 {}
 
-SGUID CScriptGraphStateNode::SRuntimeData::ReflectSchematycType(CTypeInfo<CScriptGraphStateNode::SRuntimeData>& typeInfo)
+void CScriptGraphStateNode::SRuntimeData::ReflectType(CTypeDesc<CScriptGraphStateNode::SRuntimeData>& desc)
 {
-	return "3b0cfc25-30ed-44fb-afae-6b92e007bb0e"_schematyc_guid;
+	desc.SetGUID("3b0cfc25-30ed-44fb-afae-6b92e007bb0e"_schematyc_guid);
 }
 
 CScriptGraphStateNode::SOutputParams::SOutputParams()
@@ -189,7 +189,7 @@ void CScriptGraphStateNode::Edit(Serialization::IArchive& archive, const ISerial
 			CStackString fullName;
 			scriptView.QualifyName(envSignal, fullName);
 
-			quickSearchConfig.AddOption(envSignal.GetName(), outputParams, fullName.c_str(), envSignal.GetDescription(), envSignal.GetWikiLink());
+			quickSearchConfig.AddOption(envSignal.GetName(), outputParams, fullName.c_str(), envSignal.GetDescription());
 			return EVisitStatus::Continue;
 		};
 		scriptView.VisitEnvSignals(EnvSignalConstVisitor::FromLambda(visitEnvSignal));

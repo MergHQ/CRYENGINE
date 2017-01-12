@@ -33,8 +33,8 @@ public:
 	IObject* GetObject(ObjectId objectId);
 	void     DestroyObject(ObjectId objectId);
 
-	void     SendSignal(ObjectId objectId, const SGUID& signalGUID, CRuntimeParams& params);
-	void     BroadcastSignal(const SGUID& signalGUID, CRuntimeParams& params);
+	void     SendSignal(ObjectId objectId, const SObjectSignal& signal);
+	void     BroadcastSignal(const SObjectSignal& signal);
 
 private:
 

@@ -22,9 +22,9 @@ namespace Schematyc
 		SERIALIZATION_ENUM(CEntityMovementComponent::eMoveModifier_IgnoreNull, "IgnoreNullComponents", "IgnoreNullComponents")
 		SERIALIZATION_ENUM_END()
 
-	Schematyc::SGUID ReflectSchematycType(Schematyc::CTypeInfo<CEntityMovementComponent::eMoveModifier>& typeInfo)
+	void ReflectType(Schematyc::CTypeDesc<CEntityMovementComponent::eMoveModifier>& desc)
 	{
-		return "4f9183b3-f53b-4dfa-8fcf-c54168614d4b"_schematyc_guid;
+		desc.SetGUID("4f9183b3-f53b-4dfa-8fcf-c54168614d4b"_schematyc_guid);
 	}
 
 	bool CEntityMovementComponent::Init()
@@ -38,7 +38,7 @@ namespace Schematyc
 		{
 		case ESimulationMode::Game:
 			{
-				gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(SCHEMATYC_MEMBER_DELEGATE(CEntityMovementComponent::Update, *this), m_connectionScope));
+				gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(SCHEMATYC_MEMBER_DELEGATE(&CEntityMovementComponent::Update, *this), m_connectionScope));
 				break;
 			}
 		}
@@ -76,9 +76,9 @@ namespace Schematyc
 		EntityUtils::GetEntity(*this).SetLocalTM(transform.ToMatrix34());
 	}
 
-	SGUID CEntityMovementComponent::ReflectSchematycType(CTypeInfo<CEntityMovementComponent>& typeInfo)
+	void CEntityMovementComponent::ReflectType(CTypeDesc<CEntityMovementComponent>& desc)
 	{
-		return "04e1520c-be32-420d-9857-c39b2f7f7d4a"_schematyc_guid;
+		desc.SetGUID("04e1520c-be32-420d-9857-c39b2f7f7d4a"_schematyc_guid);
 	}
 
 	void CEntityMovementComponent::Register(IEnvRegistrar& registrar)
@@ -86,7 +86,6 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityMovementComponent, "Movement");
-			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity movement component");
 			pComponent->SetIcon("icons:Navigation/Move_Classic.ico");
 			pComponent->SetFlags(EEnvComponentFlags::Singleton);
@@ -96,7 +95,6 @@ namespace Schematyc
 			// Functions
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Move, "07209f7e-db47-4e2b-86a8-d6ea01ccf22c"_schematyc_guid, "Move");
-				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Move entity");
 				pFunction->BindInput(1, 'vel', "Velocity", "Velocity in meters per second", Vec3(ZERO));
 				pFunction->BindInput(2, 'flag', "MovementModifier", "Flag to indicate to not-set specific components of the movement-vector.", eMoveModifier_None);
@@ -104,14 +102,12 @@ namespace Schematyc
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::SetRotation, "804855a4-a998-4fb0-9787-d2edd0b844dd"_schematyc_guid, "SetRotation");
-				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Set entity's rotation");
 				pFunction->BindInput(1, 'rot', "Rotation", "Target rotation");
 				componentScope.Register(pFunction);
 			}
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Teleport, "56fcb8c0-1f1b-48b6-9ee6-1f202f969d84"_schematyc_guid, "Teleport");
-				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Teleport entity");
 				pFunction->BindInput(1, 'trn', "Transform", "Target transform");
 				componentScope.Register(pFunction);

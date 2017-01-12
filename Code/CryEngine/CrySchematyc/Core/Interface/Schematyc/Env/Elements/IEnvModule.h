@@ -6,8 +6,10 @@
 
 namespace Schematyc
 {
+
 struct IEnvModule : public IEnvElementBase<EEnvElementType::Module>
 {
 	virtual ~IEnvModule() {}
 };
-}
+
+} // Schematyc

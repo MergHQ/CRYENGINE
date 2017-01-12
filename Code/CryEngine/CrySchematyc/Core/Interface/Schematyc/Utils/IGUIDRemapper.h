@@ -5,7 +5,7 @@
 namespace Schematyc
 {
 // Forward declare structures.
-struct SGUID;
+
 
 struct IGUIDRemapper
 {

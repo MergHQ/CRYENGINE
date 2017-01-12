@@ -3,15 +3,14 @@
 #pragma once
 
 #include <CrySerialization/Forward.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/FundamentalTypes.h>
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IScriptEnum;
-// Forward declare classes.
-class CCommonTypeInfo;
 
 // Script enumeration value.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,10 +21,10 @@ public:
 	CScriptEnumValue(const IScriptEnum* pEnum);
 	CScriptEnumValue(const CScriptEnumValue& rhs);
 
-	bool         Serialize(Serialization::IArchive& archive, const char* szName, const char* szLabel);
-	void         ToString(IString& output) const;
+	bool        Serialize(Serialization::IArchive& archive, const char* szName, const char* szLabel);
+	void        ToString(IString& output) const;
 
-	static SGUID ReflectSchematycType(CTypeInfo<CScriptEnumValue>& typeInfo);
+	static void ReflectType(CTypeDesc<CScriptEnumValue>& desc);
 
 private:
 
@@ -34,4 +33,5 @@ private:
 };
 
 bool Serialize(Serialization::IArchive& archive, CScriptEnumValue& value, const char* szName, const char* szLabel);
+
 } // Schematyc

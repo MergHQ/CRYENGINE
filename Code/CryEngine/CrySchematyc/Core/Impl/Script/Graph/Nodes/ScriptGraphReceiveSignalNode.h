@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Schematyc/FundamentalTypes.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Utils/GUID.h>
 
@@ -11,6 +11,7 @@
 
 namespace Schematyc
 {
+
 class CScriptGraphReceiveSignalNode : public CScriptGraphNodeModel
 {
 private:
@@ -27,7 +28,7 @@ private:
 public:
 
 	CScriptGraphReceiveSignalNode();
-	CScriptGraphReceiveSignalNode(const SElementId& signalId);
+	CScriptGraphReceiveSignalNode(const SElementId& signalId, const SGUID& objectGUID = SGUID());
 
 	// CScriptGraphNodeModel
 	virtual SGUID GetTypeGUID() const override;
@@ -56,5 +57,7 @@ public:
 private:
 
 	SElementId m_signalId;
+	SGUID      m_objectGUID;
 };
-}
+
+} // Schematyc

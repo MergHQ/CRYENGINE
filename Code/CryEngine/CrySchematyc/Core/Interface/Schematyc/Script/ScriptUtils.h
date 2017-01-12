@@ -7,13 +7,45 @@
 #include "Schematyc/Script/IScriptElement.h"
 #include "Schematyc/Script/Elements/IScriptBase.h"
 #include "Schematyc/Script/Elements/IScriptClass.h"
+#include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Utils/GUID.h"
+#include "Schematyc/Utils/Delegate.h"
 #include "Schematyc/Utils/IString.h"
 
 namespace Schematyc
 {
 namespace ScriptUtils
 {
+
+// #SchematycTODO : Do we still need IScriptElement::VisitChildren?
+inline void VisitChildren(const IScriptElement& scriptElement, const CDelegate<void(const IScriptElement&)>& visitor)
+{
+	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
+	if (!visitor.IsEmpty())
+	{
+		for (const IScriptElement* pScriptChildElement = scriptElement.GetFirstChild(); pScriptChildElement; pScriptChildElement = pScriptChildElement->GetNextSibling())
+		{
+			visitor(*pScriptChildElement);
+		}
+	}
+}
+
+template<typename TYPE> inline void VisitChildren(const IScriptElement& scriptElement, const CDelegate<void(const TYPE&)>& visitor)
+{
+	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
+	if (!visitor.IsEmpty())
+	{
+		for (const IScriptElement* pScriptChildElement = scriptElement.GetFirstChild(); pScriptChildElement; pScriptChildElement = pScriptChildElement->GetNextSibling())
+		{
+			const TYPE* pScriptChildElementImpl = DynamicCast<TYPE>(pScriptChildElement);
+			if (pScriptChildElementImpl)
+			{
+				visitor(*pScriptChildElementImpl);
+			}
+		}
+	}
+}
+
 inline const IScriptClass* GetClass(const IScriptElement& scriptElement)
 {
 	for (const IScriptElement* pScriptElement = &scriptElement; pScriptElement; pScriptElement = pScriptElement->GetParent())
@@ -45,7 +77,7 @@ inline void QualifyName(IString& output, const IScriptElement& element, EScriptE
 	output.clear();
 	for (const IScriptElement* pScope = &element; pScope; pScope = pScope->GetParent())
 	{
-		if (pScope->GetElementType() == scopeType)
+		if (pScope->GetType() == scopeType)
 		{
 			break;
 		}
@@ -59,5 +91,6 @@ inline void QualifyName(IString& output, const IScriptElement& element, EScriptE
 		}
 	}
 }
+
 } // ScriptUtils
 } // Schematyc

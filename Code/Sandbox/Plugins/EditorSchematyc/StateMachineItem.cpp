@@ -94,7 +94,7 @@ void CStateMachineItem::Serialize(Serialization::IArchive& archive)
 
 bool CStateMachineItem::AllowsRenaming() const
 {
-	const bool allowsRenaming = !m_scriptStateMachine.GetElementFlags().Check(Schematyc::EScriptElementFlags::FixedName);
+	const bool allowsRenaming = !m_scriptStateMachine.GetFlags().Check(Schematyc::EScriptElementFlags::FixedName);
 	return allowsRenaming;
 }
 
@@ -146,7 +146,7 @@ void CStateMachineItem::LoadFromScriptElement()
 	Schematyc::IScriptElement* pElement = m_scriptStateMachine.GetFirstChild();
 	while (pElement)
 	{
-		const Schematyc::EScriptElementType elementType = pElement->GetElementType();
+		const Schematyc::EScriptElementType elementType = pElement->GetType();
 		switch (elementType)
 		{
 		case Schematyc::EScriptElementType::State:

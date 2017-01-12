@@ -24,7 +24,7 @@ public:
 		: m_pArray(rhs.m_pArray)
 	{}
 
-	inline uint32 GetSize() const
+	inline uint32 Size() const
 	{
 		return m_pArray ? m_pArray->size() : 0;
 	}
@@ -40,6 +40,18 @@ public:
 		CRY_ASSERT(m_pArray);
 		CopyOnWrite();
 		m_pArray->pop_back();
+	}
+
+	inline TYPE& At(uint32 pos)
+	{
+		CRY_ASSERT(m_pArray);
+		return (*m_pArray)[pos];
+	}
+
+	inline const TYPE& At(uint32 pos) const
+	{
+		CRY_ASSERT(m_pArray);
+		return (*m_pArray)[pos];
 	}
 
 	friend inline bool Serialize(Serialization::IArchive& archive, CArray& value, const char* szName, const char* szLabel)

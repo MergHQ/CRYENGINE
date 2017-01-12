@@ -69,7 +69,7 @@ SGUID CScriptComponentInstance::GetTypeGUID() const
 	return m_typeGUID;
 }
 
-ScriptComponentInstanceFlags CScriptComponentInstance::GetFlags() const
+ScriptComponentInstanceFlags CScriptComponentInstance::GetComponentInstanceFlags() const
 {
 	return m_flags;
 }
@@ -162,7 +162,7 @@ void CScriptComponentInstance::ApplyComponent()
 	const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(m_typeGUID);
 	if (pEnvComponent)
 	{
-		m_bHasTransform = pEnvComponent->GetFlags().Check(EEnvComponentFlags::Transform);
+		m_bHasTransform = pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Transform);
 
 		const IProperties* pEnvComponentProperties = pEnvComponent->GetProperties();
 		if (pEnvComponentProperties)

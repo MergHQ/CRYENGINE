@@ -53,7 +53,7 @@ namespace Schematyc
 
 	bool CEntityPhysicsComponent::Init()
 	{
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(CEntityPhysicsComponent::OnGeometryChanged, *this), m_connectionScope);
+		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().GetSlots().Connect(SCHEMATYC_MEMBER_DELEGATE(&CEntityPhysicsComponent::OnGeometryChanged, *this), m_connectionScope);
 		return true;
 	}
 
@@ -68,7 +68,6 @@ namespace Schematyc
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
 			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent, "Physics");
-			pComponent->SetAuthor(g_szCrytek);
 			pComponent->SetDescription("Entity physics component");
 			pComponent->SetIcon("icons:schematyc/entity_physics_component.ico");
 			pComponent->SetFlags(EEnvComponentFlags::None);
@@ -79,7 +78,6 @@ namespace Schematyc
 			// Functions
 			{				
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::SetEnabled, "4DC3B15A-D143-4161-8C1F-F6FEE627A85A"_schematyc_guid, "SetPhysicsEnabled");
-				pFunction->SetAuthor(g_szCrytek);
 				pFunction->SetDescription("Enable/disable physics (without destroying/recreating)");
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ena', "Enabled");
@@ -89,16 +87,15 @@ namespace Schematyc
 			//// Signals  #TODO
 			//{
 			//	auto pSignal = SCHEMATYC_MAKE_ENV_SIGNAL_TYPE(SPhysicCollisionSignal, "PhysicCollisionSignal");
-			//	pSignal->SetAuthor(g_szCrytek);
 			//	pSignal->SetDescription("Sent when two physical objects collided");
 			//	componentScope.Register(pSignal);
 			//}
 		}
 	}
 
-	SGUID CEntityPhysicsComponent::ReflectSchematycType(CTypeInfo<CEntityPhysicsComponent>& typeInfo)
+	void CEntityPhysicsComponent::ReflectType(CTypeDesc<CEntityPhysicsComponent>& desc)
 	{
-		return "178287AF-CFD5-4757-93FA-2CDE64FB633C"_schematyc_guid;
+		desc.SetGUID("178287AF-CFD5-4757-93FA-2CDE64FB633C"_schematyc_guid);
 	}
 	
 	void CEntityPhysicsComponent::SetEnabled(bool bEnable)

@@ -11,7 +11,7 @@ namespace Schematyc
 // Forward declare interfaces.
 struct IProperties;
 // Forward declare structures.
-struct SGUID;
+
 // Forward declare classes.
 class CTransform;
 
@@ -28,7 +28,7 @@ struct IScriptComponentInstance : public IScriptElementBase<EScriptElementType::
 	virtual ~IScriptComponentInstance() {}
 
 	virtual SGUID                        GetTypeGUID() const = 0;
-	virtual ScriptComponentInstanceFlags GetFlags() const = 0;
+	virtual ScriptComponentInstanceFlags GetComponentInstanceFlags() const = 0;
 	virtual bool                         HasTransform() const = 0;
 	virtual void                         SetTransform(const CTransform& transform) = 0;
 	virtual const CTransform&            GetTransform() const = 0;

@@ -24,6 +24,7 @@
 		[
 			"../Interface/Schematyc/Env/EnvElementBase.h",
 			"../Interface/Schematyc/Env/EnvPackage.h",
+			"../Interface/Schematyc/Env/EnvUtils.h",
 			"../Interface/Schematyc/Env/IEnvElement.h",
 			"../Interface/Schematyc/Env/IEnvPackage.h",
 			"../Interface/Schematyc/Env/IEnvRegistrar.h",
@@ -55,10 +56,15 @@
 		],
 		"Interface/Reflection":
 		[
-			"../Interface/Schematyc/Reflection/Reflection.h",
-			"../Interface/Schematyc/Reflection/ReflectionCast.h",
-			"../Interface/Schematyc/Reflection/ReflectionTypes.h",
-			"../Interface/Schematyc/Reflection/ReflectionUtils.h"
+			"../Interface/Schematyc/Reflection/ActionDesc.h",
+			"../Interface/Schematyc/Reflection/ComponentDesc.h",
+			"../Interface/Schematyc/Reflection/DefaultTypeReflection.inl",
+			"../Interface/Schematyc/Reflection/FunctionDesc.h",
+			"../Interface/Schematyc/Reflection/ReflectionUtils.h",
+			"../Interface/Schematyc/Reflection/TypeDesc.h",
+			"../Interface/Schematyc/Reflection/TypeDesc.inl",
+			"../Interface/Schematyc/Reflection/TypeOperators.h",
+			"../Interface/Schematyc/Reflection/TypeOperators.inl"
 		],
 		"Interface/Runtime":
 		[
@@ -288,6 +294,8 @@
 		],
 		"Impl/Script/Graph/Nodes":
 		[
+			"Script/Graph/Nodes/ScriptGraphActionNode.cpp",
+			"Script/Graph/Nodes/ScriptGraphActionNode.h",
 			"Script/Graph/Nodes/ScriptGraphArrayAddNode.cpp",
 			"Script/Graph/Nodes/ScriptGraphArrayAddNode.h",
 			"Script/Graph/Nodes/ScriptGraphArrayForEachNode.cpp",

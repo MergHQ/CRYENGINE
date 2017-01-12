@@ -2014,7 +2014,7 @@ void CPoseModifierSetup::Entry::Serialize(Serialization::IArchive& ar)
 	if (!ar(instance, "instance", "^"))
 	{
 		// load old GUID-based name
-		CryClassID classId = { 0, 0 };
+		CryClassID classId = CryClassID::Null();
 		ar(classId.hipart, "guidHiPart");
 		ar(classId.lopart, "guidLoPart");
 		if (classId.hipart != 0 || classId.lopart != 0)

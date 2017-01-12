@@ -5,7 +5,7 @@
 
 #include "ScriptBrowserUtils.h"
 
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 
 #include <Schematyc/Script/IScriptView.h>
 #include <Schematyc/Script/IScriptRegistry.h>

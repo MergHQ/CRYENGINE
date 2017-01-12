@@ -14,6 +14,7 @@ CRYREGISTER_CLASS(Schematyc::CEntityObjectComponent);
 
 namespace Schematyc
 {
+
 CEntityObjectComponent::~CEntityObjectComponent()
 {
 	DestroyObject();
@@ -24,7 +25,7 @@ bool CEntityObjectComponent::RegisterSerializeCallback(int32 aspects, const Netw
 	return false;
 }
 
-void   CEntityObjectComponent::MarkAspectsDirty(int32 aspects) {}
+void CEntityObjectComponent::MarkAspectsDirty(int32 aspects) {}
 
 uint16 CEntityObjectComponent::GetChannelId() const
 {
@@ -130,6 +131,7 @@ void CEntityObjectComponent::SerializeProperties(Serialization::IArchive& archiv
 	if (m_pObject && gEnv->IsEditing() && archive.isInput())
 	{
 		DestroyObject();
+
 		CreateObject(ESimulationMode::Editor);
 	}
 }
@@ -224,4 +226,5 @@ void CEntityObjectComponent::ShowInSchematyc()
 {
 	CryLinkUtils::ExecuteCommand(CryLinkUtils::ECommand::Show, m_pRuntimeClass->GetGUID());
 }
+
 } // Schematyc

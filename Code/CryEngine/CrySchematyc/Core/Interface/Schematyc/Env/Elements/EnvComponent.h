@@ -14,6 +14,7 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct INetworkSpawnParams;
 
@@ -26,14 +27,14 @@ private:
 public:
 
 	inline CEnvComponent(const char* szName, const SSourceFileInfo& sourceFileInfo)
-		: CEnvElementBase(Schematyc::GetTypeInfo<COMPONENT>().GetGUID(), szName, sourceFileInfo)
+		: CEnvElementBase(Schematyc::GetTypeDesc<COMPONENT>().GetGUID(), szName, sourceFileInfo)
 	{}
 
 	// IEnvElement
 
 	virtual bool IsValidScope(IEnvElement& scope) const override
 	{
-		switch (scope.GetElementType())
+		switch (scope.GetType())
 		{
 		case EEnvElementType::Module:
 		case EEnvElementType::Class:
@@ -56,7 +57,7 @@ public:
 		return m_icon.c_str();
 	}
 
-	virtual EnvComponentFlags GetFlags() const override
+	virtual EnvComponentFlags GetComponentFlags() const override
 	{
 		return m_flags;
 	}
@@ -148,11 +149,13 @@ private:
 
 namespace EnvComponent
 {
+
 template<typename TYPE> inline std::shared_ptr<CEnvComponent<TYPE>> MakeShared(const char* szName, const SSourceFileInfo& sourceFileInfo)
 {
 	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
 
 	return std::make_shared<CEnvComponent<TYPE>>(szName, sourceFileInfo);
 }
+
 } // EnvComponent
 } // Schematyc

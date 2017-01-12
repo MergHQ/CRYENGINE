@@ -11,6 +11,7 @@
 
 namespace Schematyc
 {
+
 class CGraphPortId
 {
 public:
@@ -47,13 +48,13 @@ public:
 	inline uint32 AsIdx() const
 	{
 		SCHEMATYC_CORE_ASSERT(m_type == EType::Idx);
-		return m_value.Data1;
+		return static_cast<uint32>(m_value.hipart);
 	}
 
 	inline uint32 AsUniqueId() const
 	{
 		SCHEMATYC_CORE_ASSERT(m_type == EType::UniqueId);
-		return m_value.Data1;
+		return static_cast<uint32>(m_value.hipart);
 	}
 
 	inline SGUID AsGUID() const
@@ -71,7 +72,12 @@ public:
 		case EType::Idx:
 		case EType::UniqueId:
 			{
-				archive(m_value.Data1, "value");
+				uint32 temp = static_cast<uint32>(m_value.hipart);
+				archive(temp, "value");
+				if (archive.isInput())
+				{
+					m_value.hipart = temp;
+				}
 				break;
 			}
 		case EType::GUID:
@@ -132,7 +138,7 @@ private:
 	explicit inline CGraphPortId(EType type, uint32 value)
 		: m_type(type)
 	{
-		m_value.Data1 = value;
+		m_value.hipart = value;
 	}
 
 	explicit inline CGraphPortId(EType type, const SGUID& value)
@@ -145,4 +151,5 @@ private:
 	EType m_type;
 	SGUID m_value;
 };
+
 } // Schematyc

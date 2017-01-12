@@ -33,9 +33,9 @@ CScriptSignalReceiver::CScriptSignalReceiver(const SGUID& guid, const char* szNa
 {
 	if (m_type != EScriptSignalReceiverType::Universal)
 	{
-		ScriptElementFlags elementFlags = CScriptElementBase::GetElementFlags();
+		ScriptElementFlags elementFlags = CScriptElementBase::GetFlags();
 		elementFlags.Add(EScriptElementFlags::FixedName);
-		CScriptElementBase::SetElementFlags(elementFlags);
+		CScriptElementBase::SetFlags(elementFlags);
 	}
 
 	CreateGraph();
@@ -134,7 +134,7 @@ void CScriptSignalReceiver::Serialize(Serialization::IArchive& archive)
 	CScriptElementBase::SerializeExtensions(archive);
 }
 
-EScriptSignalReceiverType CScriptSignalReceiver::GetType() const
+EScriptSignalReceiverType CScriptSignalReceiver::GetSignalReceiverType() const
 {
 	return m_type;
 }
@@ -156,9 +156,9 @@ void CScriptSignalReceiver::Load(Serialization::IArchive& archive, const ISerial
 
 	if (m_type != EScriptSignalReceiverType::Universal)
 	{
-		ScriptElementFlags elementFlags = CScriptElementBase::GetElementFlags();
+		ScriptElementFlags elementFlags = CScriptElementBase::GetFlags();
 		elementFlags.Add(EScriptElementFlags::FixedName);
-		CScriptElementBase::SetElementFlags(elementFlags);
+		CScriptElementBase::SetFlags(elementFlags);
 	}
 }
 

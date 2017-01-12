@@ -19,6 +19,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphArrayAddNode::CScriptGraphArrayAddNode(const SElementId& typeId)
 	: m_defaultValue(typeId)
 {}
@@ -180,6 +181,7 @@ SRuntimeResult CScriptGraphArrayAddNode::Execute(SRuntimeContext& context, const
 }
 
 const SGUID CScriptGraphArrayAddNode::ms_typeGUID = "02368e7b-7939-495e-bf65-f044c440f4f3"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphArrayAddNode::Register)

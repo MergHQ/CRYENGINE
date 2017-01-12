@@ -7,7 +7,7 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>
 #include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Reflection/Reflection.h>
+#include <Schematyc/Reflection/TypeDesc.h>
 #include <Schematyc/SerializationUtils/ISerializationContext.h>
 #include <Schematyc/SerializationUtils/SerializationUtils.h>
 #include <Schematyc/Utils/Any.h>

@@ -9,46 +9,25 @@
 
 namespace Schematyc
 {
+
 void RegisterResourceTypes(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_resourceModuleGUID);
 	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(GeomFileName, "GeomFileName");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Geometry file name");
-		scope.Register(pDataType);
-	}
-	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(CharacterFileName, "CharacterFileName");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Character file name");
-		scope.Register(pDataType);
-	}
-	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(ParticleEffectName, "ParticleEffectName");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Particle effect name");
-		scope.Register(pDataType);
-	}
-	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(DialogName, "DialogName");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Dialog name");
-		scope.Register(pDataType);
-	}
-	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(ForceFeedbackId, "ForceFeedbackId");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Force feedback identifier");
-		scope.Register(pDataType);
-	}
-	{
-		auto pDataType = SCHEMATYC_MAKE_ENV_DATA_TYPE(ActionMapName, "ActionMapName");
-		pDataType->SetAuthor(g_szCrytek);
-		pDataType->SetDescription("Action map name");
-		scope.Register(pDataType);
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(MaterialFileName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(GeomFileName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(SkinName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(CharacterFileName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(ParticleEffectName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(AudioSwitchName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(AudioSwitchStateName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(AudioRtpcName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(DialogName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(EntityClassName));
+		scope.Register(SCHEMATYC_MAKE_ENV_DATA_TYPE(ForceFeedbackId));
 	}
 }
+
 } // Schematyc
 
 SCHEMATYC_AUTO_REGISTER(&Schematyc::RegisterResourceTypes)
