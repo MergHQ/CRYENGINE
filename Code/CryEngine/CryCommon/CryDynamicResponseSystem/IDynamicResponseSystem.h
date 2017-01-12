@@ -643,11 +643,12 @@ struct IDialogLine
 	virtual void          SetText(const string& text) = 0;
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
-	virtual void          Serialize(Serialization::IArchive& ar) = 0;
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) = 0;
 	virtual void          SetStandaloneFile(const string& standAlonefile) = 0;
 	virtual void          SetPauseLength(float length) = 0;
 	virtual void          SetCustomData(const string& data) = 0;
+
+	virtual void          Serialize(Serialization::IArchive& ar) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -674,11 +675,13 @@ struct IDialogLineSet
 	virtual int           GetPriority() const = 0;
 	virtual uint32        GetFlags() const = 0;
 	virtual float         GetMaxQueuingDuration() const = 0;
+	virtual void          Serialize(Serialization::IArchive& ar) = 0;
+
+	//mainly for the editor
 	virtual uint32        GetLineCount() const = 0;
 	virtual IDialogLine*  GetLineByIndex(uint32 index) = 0;
-	virtual IDialogLine*  InsertLine(uint32 index) = 0;
-	virtual void          RemoveLine(uint32 index) = 0;
-	virtual void          Serialize(Serialization::IArchive& ar) = 0;
+	virtual IDialogLine*  InsertLine(uint32 index = -1) = 0;
+	virtual bool          RemoveLine(uint32 index) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -687,13 +690,15 @@ struct IDialogLineDatabase
 {
 	virtual ~IDialogLineDatabase() {}
 	virtual bool                  Save(const char* szFilePath) = 0;
+	virtual IDialogLineSet*       GetLineSetById(const CHashedString& lineID) = 0;
+	virtual void                  Serialize(Serialization::IArchive& ar) = 0;
+
+	//mainly for the editor
 	virtual uint32                GetLineSetCount() const = 0;
 	virtual IDialogLineSet*       GetLineSetByIndex(uint32 index) = 0;
-	virtual const IDialogLineSet* GetLineSetById(const CHashedString& lineID) const = 0;
-	virtual IDialogLineSet*       InsertLineSet(uint32 index) = 0;
-	virtual void                  RemoveLineSet(uint32 index) = 0;
+	virtual IDialogLineSet*       InsertLineSet(uint32 index = -1) = 0;
+	virtual bool                  RemoveLineSet(uint32 index) = 0;
 	virtual bool                  ExecuteScript(uint32 index) = 0;
-	virtual void                  Serialize(Serialization::IArchive& ar) = 0;
 	virtual void                  SerializeLinesHistory(Serialization::IArchive& ar) = 0;
 };
 

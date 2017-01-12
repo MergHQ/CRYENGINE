@@ -292,6 +292,13 @@ inline wstring UTF8ToWStr(const char* str)
 	return Unicode::Convert<wstring>(str);
 }
 
+//! Converts an UTF-8 string to wide string (can be UTF-16 or UTF-32 depending on platform).
+//! This function is Unicode aware and locale agnostic.
+inline wstring UTF8ToWStrSafe(const char* szString)
+{
+	return Unicode::ConvertSafe<Unicode::eErrorRecovery_FallbackWin1252ThenReplace, wstring>(szString);
+}
+
 #endif // NOT_USE_CRY_STRING
 
 //! The type used to parse a yes/no string.
