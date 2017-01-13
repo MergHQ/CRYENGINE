@@ -64,6 +64,9 @@ public:
 	// Simulates generation of the crash report.
 	void           GenerateCrashReport();
 
+	// Creates a minimal necessary crash reporting, without UI.
+	void           MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointer);
+
 	// Register CVars needed for debug call stack.
 	void           RegisterCVars();
 
@@ -82,6 +85,9 @@ protected:
 
 	int                     updateCallStack(EXCEPTION_POINTERS* exception_pointer);
 	void                    LogExceptionInfo(EXCEPTION_POINTERS* exception_pointer);
+
+	void                    WriteErrorLog( const char *filename,const char *writeString );
+	void                    CaptureScreenshot();
 
 	bool                    BackupCurrentLevel();
 	int                     SubmitBug(EXCEPTION_POINTERS* exception_pointer);
@@ -111,6 +117,8 @@ protected:
 	TModules         m_modules;
 
 	LPTOP_LEVEL_EXCEPTION_FILTER m_previousHandler;
+
+	string           m_outputPath;
 };
 
 #endif // CRY_PLATFORM_WINDOWS

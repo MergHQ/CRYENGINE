@@ -164,6 +164,8 @@ public:
 		if (!g_crashrpt_cvars.sys_crashrpt)
 			return false;
 
+		char appVersionBuffer[256];
+
 		// Define CrashRpt configuration parameters
 		CR_INSTALL_INFOA info;
 		memset(&info, 0, sizeof(CR_INSTALL_INFO));
@@ -177,6 +179,14 @@ public:
 		if (g_crashrpt_cvars.sys_crashrpt_appversion && 0 != strlen(g_crashrpt_cvars.sys_crashrpt_appversion->GetString()))
 		{
 			info.pszAppVersion = g_crashrpt_cvars.sys_crashrpt_appversion->GetString();
+		}
+		else
+		{
+			#if CRY_PLATFORM_WINDOWS
+				SFileVersion ver = GetSystemVersionInfo();
+				ver.ToString(appVersionBuffer);
+				info.pszAppVersion = appVersionBuffer;
+			#endif //CRY_PLATFORM_WINDOWS
 		}
 		info.pszEmailSubject = NULL;
 		if (g_crashrpt_cvars.sys_crashrpt_email)
@@ -249,30 +259,15 @@ public:
 		{
 		case CR_CB_STAGE_PREPARE:
 			{
-				if (gEnv)
+				if (gEnv && gEnv->pLog)
 				{
-					gEnv->bIgnoreAllAsserts = true;
-					g_cvars.sys_asserts = 0;
-					if (gEnv->pLog)
-					{
-						s_bHandleExceptionInProgressLock = true;
-						gEnv->pLog->FlushAndClose();
-						s_bHandleExceptionInProgressLock = false;
-					}
+					s_bHandleExceptionInProgressLock = true;
+					((DebugCallStack*)DebugCallStack::instance())->MinimalExceptionReport(pInfo->pExceptionInfo->pexcptrs);
+					s_bHandleExceptionInProgressLock = false;
 				}
 			}
 			break;
 		case CR_CB_STAGE_FINISH:
-			s_bHandleExceptionInProgressLock = true;
-			CrySpinLock(&s_exception_handler_lock, 0, 1);
-			g_cvars.sys_no_crash_dialog = 1;
-			int result = DebugCallStack::instance()->handleException(pInfo->pExceptionInfo->pexcptrs);
-			if (result == EXCEPTION_CONTINUE_EXECUTION)
-			{
-				// We want to continue program execution after crash report generation
-				pInfo->bContinueExecution = TRUE;
-			}
-			s_bHandleExceptionInProgressLock = false;
 			break;
 		}
 
@@ -308,6 +303,40 @@ public:
 		UninstallHandler();
 		InstallHandler();
 	}
+	
+	static SFileVersion GetSystemVersionInfo()
+	{
+		SFileVersion productVersion;
+#if CRY_PLATFORM_WINDOWS
+		char moduleName[_MAX_PATH];
+
+		char ver[1024 * 8];
+
+		GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
+		#ifndef _LIB
+			cry_strcpy(moduleName, "CrySystem.dll"); // we want to version from the system dll
+		#endif //_LIB
+
+		DWORD dwHandle(0);
+		int verSize = GetFileVersionInfoSize(moduleName, &dwHandle);
+		if (verSize > 0)
+		{
+			GetFileVersionInfo(moduleName, dwHandle, 1024 * 8, ver);
+			VS_FIXEDFILEINFO* vinfo;
+			UINT len(0);
+			VerQueryValue(ver, "\\", (void**)&vinfo, &len);
+
+			const uint32 verIndices[4] = { 0, 1, 2, 3 };
+
+			productVersion.v[verIndices[0]] = vinfo->dwFileVersionLS & 0xFFFF;
+			productVersion.v[verIndices[1]] = vinfo->dwFileVersionLS >> 16;
+			productVersion.v[verIndices[2]] = vinfo->dwFileVersionMS & 0xFFFF;
+			productVersion.v[verIndices[3]] = vinfo->dwFileVersionMS >> 16;
+		}
+#endif //CRY_PLATFORM_WINDOWS
+		return productVersion;
+	}
+	
 };
 
 	#endif //CRY_USE_CRASHRPT
@@ -343,6 +372,11 @@ DebugCallStack::DebugCallStack()
 			CryFatalError("Error spawning \"CaptureCrashScreenShot\" thread.");
 		}
 	}
+
+	m_outputPath = "";
+#if defined(DEDICATED_SERVER)
+	m_outputPath = gEnv->pSystem->GetRootFolder();
+#endif // defined(DEDICATED_SERVER)
 }
 
 DebugCallStack::~DebugCallStack()
@@ -1138,7 +1172,6 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 		cry_strcat(errs, tempString);
 	}
 
-	if (gEnv)
 	{
 		threadID mainThread = 0;
 		threadID renderThread = 0;
@@ -1203,39 +1236,77 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 
 	cry_strcat(errorString, errs);
 
-	//////////////////////////////////////////////////////////////////////////
-	string path(
-	#if defined(DEDICATED_SERVER)
-	  gEnv->pSystem->GetRootFolder()
-	#else
-	  ""
-	#endif // defined(DEDICATED_SERVER)
-	  );
+	stack_string errorlogFilename(m_outputPath.c_str());
+	errorlogFilename += "error.log";
 
-	string fileName(path);
-	fileName += "error.log";
+	WriteErrorLog(errorlogFilename.c_str(),errorString);
+}
 
-	#if defined(DEDICATED_SERVER)
-	string backupPath = PathUtil::ToUnixPath(PathUtil::AddSlash(path + "DumpBackups"));
-	CryCreateDirectory(backupPath.c_str());
+//////////////////////////////////////////////////////////////////////////
+void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointer)
+{
+	if (!gEnv || !gEnv->pLog)
+		return;
 
-	struct stat fileInfo;
-	string timeStamp;
+	gEnv->bIgnoreAllAsserts = true;
+	g_cvars.sys_no_crash_dialog = 1;
+	g_cvars.sys_asserts = 0;
 
-	if (stat(fileName.c_str(), &fileInfo) == 0)
+	CrySpinLock(&s_exception_handler_lock, 0, 1);
+
+	gEnv->pLog->FlushAndClose();
+
+	if (gEnv->pCryPak)
 	{
-		// Backup log
-		tm* creationTime = localtime(&fileInfo.st_mtime);
-		char tempBuffer[32];
-		strftime(tempBuffer, CRY_ARRAY_COUNT(tempBuffer), "%d %b %Y (%H %M %S)", creationTime);
-		timeStamp = tempBuffer;
-
-		string backupFileName = backupPath + timeStamp + " error.log";
-		CopyFile(fileName.c_str(), backupFileName.c_str(), true);
+		gEnv->pCryPak->DisableRuntimeFileAccess(false);
 	}
-	#endif // defined(DEDICATED_SERVER)
 
-	FILE* f = fopen(fileName.c_str(), "wt");
+	ResetFPU(exception_pointer);
+	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
+	if (gEnv->pRenderer)
+		gEnv->pRenderer->StopRendererAtFrameEnd(200);
+
+	// Ensure all threads have finished writing to log before suspending them.
+	// Otherwise we run the risk of suspending a thread which is holding a WinApi lock
+	// resulting in a deadlock when we attempt to log to file from this thread.
+	gEnv->pLog->ThreadExclusiveLogAccess(true);
+
+	// Suspend all threads but this one
+	if (g_cvars.sys_dump_aux_threads | g_cvars.sys_keyboard_break)
+		gEnv->pThreadManager->ForEachOtherThread(SuspendAnyThread);
+
+	// Ensure logging is enabled
+	gEnv->pLog->SetVerbosity(4);
+	gEnv->pLog->SetLogMode(eLogMode_AppCrash); // Log straight to file
+
+
+	// If in full screen minimize render window
+	{
+		ICVar* pFullscreen = (gEnv && gEnv->pConsole) ? gEnv->pConsole->GetCVar("r_Fullscreen") : 0;
+		if (pFullscreen && pFullscreen->GetIVal() != 0 && gEnv->pRenderer && gEnv->pRenderer->GetHWND())
+		{
+			::ShowWindow((HWND)gEnv->pRenderer->GetHWND(), SW_MINIMIZE);
+		}
+	}
+
+	if (initSymbols())
+	{
+		// Rise exception to call updateCallStack method.
+		updateCallStack(exception_pointer);
+		
+		LogExceptionInfo(exception_pointer);
+
+		doneSymbols();
+	}
+	CaptureScreenshot();
+
+	CrySpinLock(&s_exception_handler_lock, 1, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DebugCallStack::WriteErrorLog( const char *filename,const char *errorString )
+{
+	FILE* f = fopen(filename, "wt");
 	if (f)
 	{
 		fwrite(errorString, strlen(errorString), 1, f);
@@ -1251,54 +1322,19 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 		fflush(f);
 		fclose(f);
 	}
+}
 
-	if (pex)
-	{
-		MINIDUMP_TYPE mdumpValue;
-		bool bDump = true;
-		switch (g_cvars.sys_dump_type)
-		{
-		case 0:
-			bDump = false;
-			break;
-		case 1:
-			mdumpValue = MiniDumpNormal;
-			break;
-		case 2:
-			mdumpValue = (MINIDUMP_TYPE)(MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithDataSegs);
-			break;
-		case 3:
-			mdumpValue = MiniDumpWithFullMemory;
-			break;
-		default:
-			mdumpValue = (MINIDUMP_TYPE)g_cvars.sys_dump_type;
-			break;
-		}
-		if (bDump)
-		{
-			fileName = path + "error.dmp";
-	#if defined(DEDICATED_SERVER)
-			if (stat(fileName.c_str(), &fileInfo) == 0)
-			{
-				// Backup dump (use timestamp from error.log if available)
-				if (timeStamp.empty())
-				{
-					tm* creationTime = localtime(&fileInfo.st_mtime);
-					char tempBuffer[32];
-					strftime(tempBuffer, CRY_ARRAY_COUNT(tempBuffer), "%d %b %Y (%H %M %S)", creationTime);
-					timeStamp = tempBuffer;
-				}
+//////////////////////////////////////////////////////////////////////////
+void DebugCallStack::CaptureScreenshot()
+{
+#if !defined(DEDICATED_SERVER)
+	if (!gEnv->pRenderer)
+		return;
 
-				string backupFileName = backupPath + timeStamp + " error.dmp";
-				CopyFile(fileName.c_str(), backupFileName.c_str(), true);
-			}
-	#endif // defined(DEDICATED_SERVER)
+	if (!gEnv->pLog)
+		return;
 
-			CryEngineExceptionFilterMiniDump(pex, fileName.c_str(), mdumpValue);
-		}
-	}
-
-	#if !defined(DEDICATED_SERVER)
+	gEnv->pLog->SetLogMode(eLogMode_AppCrash); // Log straight to file
 
 	// Allow screenshot thread to write to log, too
 	gEnv->pLog->ThreadExclusiveLogAccess(false);
@@ -1320,41 +1356,7 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 	// Re-enable exclusive logging for this thread
 	gEnv->pLog->ThreadExclusiveLogAccess(true);
 
-	#endif // !defined(DEDICATED_SERVER)
-
-	//if no crash dialog don't even submit the bug
-	if (m_postBackupProcess && g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog)
-	{
-		m_postBackupProcess();
-	}
-	else
-	{
-		ReportJiraBug();
-	}
-	const bool bQuitting = !gEnv || !gEnv->pSystem || gEnv->pSystem->IsQuitting();
-
-	if (g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog && gEnv->IsEditor() && !bQuitting && pex)
-	{
-		EQuestionResult res = CryMessageBox("WARNING!\n\nThe engine / game / editor crashed and is now unstable.\r\nSaving may cause level corruption or further crashes.\r\n\r\nProceed with Save ? ", "Crash", eMB_YesCancel);
-		if (res == eQR_Yes)
-		{
-			// Make one additional backup.
-			if (BackupCurrentLevel())
-			{
-				CryMessageBox("Level has been successfully saved!\r\nPress Ok to terminate Editor.", "Save");
-			}
-			else
-			{
-				CryMessageBox("Error saving level.\r\nPress Ok to terminate Editor.", "Save", eMB_Error);
-			}
-		}
-		TerminateProcess(GetCurrentProcess(), 1);
-	}
-
-	if (g_cvars.sys_no_crash_dialog != 0 || !g_bUserDialog)
-	{
-		_exit(1); // Immediate termination of process.
-	}
+#endif // !defined(DEDICATED_SERVER)
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1393,6 +1395,13 @@ void DebugCallStack::PrintThreadCallstack(const threadID nThreadId, FILE* f)
 
 	fprintf(f, "%s", errorString);
 	WriteLineToLog(errorString);
+}
+
+void DebugCallStack::GenerateCrashReport()
+{
+#ifdef CRY_USE_CRASHRPT
+	CCrashRpt::CmdGenerateCrashReport(0);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1501,21 +1510,126 @@ int DebugCallStack::SubmitBug(EXCEPTION_POINTERS* exception_pointer)
 
 	RemoveOldFiles();
 
-	if (initSymbols())
+#if defined(DEDICATED_SERVER)
+	string fileName(PathUtil::Make(m_outputPath.c_str(),"error.log"));
+	string backupPath = PathUtil::ToUnixPath(PathUtil::AddSlash(PathUtil::Make(m_outputPath.c_str(),"DumpBackups")));
+	CryCreateDirectory(backupPath.c_str());
+
+	struct stat fileInfo;
+	string timeStamp;
+
+	if (stat(fileName.c_str(), &fileInfo) == 0)
 	{
-		// Rise exception to call updateCallStack method.
-		updateCallStack(exception_pointer);
+		// Backup log
+		tm* creationTime = localtime(&fileInfo.st_mtime);
+		char tempBuffer[32];
+		strftime(tempBuffer, CRY_ARRAY_COUNT(tempBuffer), "%d %b %Y (%H %M %S)", creationTime);
+		timeStamp = tempBuffer;
 
-		LogExceptionInfo(exception_pointer);
-
-		if (IsFloatingPointException(exception_pointer))
-		{
-			//! Print exception dialog.
-			ret = PrintException(exception_pointer);
-		}
-
-		doneSymbols();
+		string backupFileName = backupPath + timeStamp + " error.log";
+		CopyFile(fileName.c_str(), backupFileName.c_str(), true);
 	}
+#endif // defined(DEDICATED_SERVER)
+
+
+	if (!initSymbols())
+		return ret;
+
+	// Rise exception to call updateCallStack method.
+	updateCallStack(exception_pointer);
+
+	LogExceptionInfo(exception_pointer);
+
+	CaptureScreenshot();
+
+	if (exception_pointer)
+	{
+		MINIDUMP_TYPE mdumpValue;
+		bool bDump = true;
+		switch (g_cvars.sys_dump_type)
+		{
+		case 0:
+			bDump = false;
+			break;
+		case 1:
+			mdumpValue = MiniDumpNormal;
+			break;
+		case 2:
+			mdumpValue = (MINIDUMP_TYPE)(MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithDataSegs);
+			break;
+		case 3:
+			mdumpValue = MiniDumpWithFullMemory;
+			break;
+		default:
+			mdumpValue = (MINIDUMP_TYPE)g_cvars.sys_dump_type;
+			break;
+		}
+		if (bDump)
+		{
+			stack_string fileName = "error.dmp";
+#if defined(DEDICATED_SERVER)
+			if (stat(fileName.c_str(), &fileInfo) == 0)
+			{
+				// Backup dump (use timestamp from error.log if available)
+				if (timeStamp.empty())
+				{
+					tm* creationTime = localtime(&fileInfo.st_mtime);
+					char tempBuffer[32];
+					strftime(tempBuffer, CRY_ARRAY_COUNT(tempBuffer), "%d %b %Y (%H %M %S)", creationTime);
+					timeStamp = tempBuffer;
+				}
+
+				string backupFileName = backupPath + timeStamp + " error.dmp";
+				CopyFile(fileName.c_str(), backupFileName.c_str(), true);
+			}
+#endif // defined(DEDICATED_SERVER)
+
+			CryEngineExceptionFilterMiniDump(exception_pointer, fileName.c_str(), mdumpValue);
+		}
+	}
+
+	//if no crash dialog don't even submit the bug
+	if (m_postBackupProcess && g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog)
+	{
+		m_postBackupProcess();
+	}
+	else
+	{
+		ReportJiraBug();
+	}
+
+	const bool bQuitting = !gEnv || !gEnv->pSystem || gEnv->pSystem->IsQuitting();
+
+	if (g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog && gEnv->IsEditor() && !bQuitting && exception_pointer)
+	{
+		EQuestionResult res = CryMessageBox("WARNING!\n\nThe engine / game / editor crashed and is now unstable.\r\nSaving may cause level corruption or further crashes.\r\n\r\nProceed with Save ? ", "Crash", eMB_YesCancel);
+		if (res == eQR_Yes)
+		{
+			// Make one additional backup.
+			if (BackupCurrentLevel())
+			{
+				CryMessageBox("Level has been successfully saved!\r\nPress Ok to terminate Editor.", "Save");
+			}
+			else
+			{
+				CryMessageBox("Error saving level.\r\nPress Ok to terminate Editor.", "Save", eMB_Error);
+			}
+		}
+		TerminateProcess(GetCurrentProcess(), 1);
+	}
+
+	if (g_cvars.sys_no_crash_dialog != 0 || !g_bUserDialog)
+	{
+		_exit(1); // Immediate termination of process.
+	}
+
+	if (IsFloatingPointException(exception_pointer))
+	{
+		//! Print exception dialog.
+		ret = PrintException(exception_pointer);
+	}
+
+	doneSymbols();
 
 	return ret;
 }
