@@ -313,10 +313,8 @@ bool CListeners::Remove(INotificationNetworkListener* pListener)
 
 void CListeners::NotificationPush(const SBuffer& buffer)
 {
-	// TODO: Use auto lock.
-	m_notificationCriticalSection.Lock();
+	CryAutoCriticalSection lock(m_notificationCriticalSection);
 	m_pNotificationWrite->push(buffer);
-	m_notificationCriticalSection.Unlock();
 }
 
 void CListeners::NotificationsProcess()

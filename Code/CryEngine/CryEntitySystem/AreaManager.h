@@ -200,7 +200,7 @@ private:
 	bool GetEnvFadeValueInner(SAreasCache const& areaCache, SAreaCacheEntry const& areaCacheEntry, Vec3 const& entityPos, Vec3 const& posOnLowerArea, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 	bool RetrieveEnvironmentAmount(CArea const* const pArea, float const amount, float const distance, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 
-	// Unary predicates for conditional removing!
+	// Unary predicates for conditional removing
 	static inline bool IsDoneUpdating(std::pair<EntityId, size_t> const& entry)
 	{
 		return entry.second == 0;
@@ -243,13 +243,16 @@ private:
 		size_t const               numAreas;
 	};
 
-	TAreaCacheMap        m_mapAreaCache;          // Area cache per entity id.
-	TEntitiesToUpdateMap m_mapEntitiesToUpdate;
+	TAreaCacheMap                    m_mapAreaCache;          // Area cache per entity id.
+	TEntitiesToUpdateMap             m_mapEntitiesToUpdate;
+
+	CryCriticalSectionNonRecursive   m_lockAddRemoveArea;
 
 #if defined(DEBUG_AREAMANAGER)
 	//////////////////////////////////////////////////////////////////////////
 	void CheckArea(CArea const* const pArea)
 	{
+		CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
 		if (!stl::find(m_areas, pArea))
 		{
 			CryFatalError("<AreaManager>: area not found in overall areas list!");

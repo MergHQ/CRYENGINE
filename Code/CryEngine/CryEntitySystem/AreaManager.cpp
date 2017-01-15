@@ -6,7 +6,7 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
-CAreaManager::CAreaManager(CEntitySystem* pEntitySystem)  // : CSoundAreaManager(pEntitySystem)
+CAreaManager::CAreaManager(CEntitySystem* pEntitySystem) 
 	: m_pEntitySystem(pEntitySystem)
 	, m_bAreasDirty(true)
 {
@@ -35,7 +35,9 @@ CArea* CAreaManager::CreateArea()
 {
 	CArea* pArea = new CArea(this);
 
+	m_lockAddRemoveArea.Lock();
 	m_areas.push_back(pArea);
+	m_lockAddRemoveArea.Unlock();
 
 	m_bAreasDirty = true;
 
@@ -45,6 +47,8 @@ CArea* CAreaManager::CreateArea()
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::Unregister(CArea const* const pArea)
 {
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	// Remove the area reference from the entity's area cache.
 	m_mapAreaCache.erase_if(SRemoveIfNoAreasLeft(pArea, m_areas, m_areas.size()));
 
@@ -57,7 +61,6 @@ void CAreaManager::Unregister(CArea const* const pArea)
 		if (pArea == (*IterAreas))
 		{
 			m_areas.erase(IterAreas);
-
 			break;
 		}
 	}
@@ -80,6 +83,8 @@ IArea const* const CAreaManager::GetArea(size_t const nAreaIndex) const
 	}
 #endif // DEBUG_AREAMANAGER
 
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	return static_cast<IArea*>(m_areas.at(nAreaIndex));
 }
 
@@ -98,6 +103,8 @@ void CAreaManager::DrawLinkedAreas(EntityId linkedId) const
 //////////////////////////////////////////////////////////////////////////
 bool CAreaManager::GetLinkedAreas(EntityId linkedId, EntityId* pOutArray, int& outAndMaxResults) const
 {
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	int nMaxResults = outAndMaxResults;
 	int nArrayIndex = 0;
 	size_t const nCount = m_areas.size();
@@ -140,6 +147,8 @@ bool CAreaManager::GetLinkedAreas(EntityId linkedId, EntityId* pOutArray, int& o
 //////////////////////////////////////////////////////////////////////////
 size_t CAreaManager::GetLinkedAreas(EntityId linkedId, int areaId, std::vector<CArea*>& areas) const
 {
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	size_t const nCount = m_areas.size();
 
 	for (size_t aIdx = 0; aIdx < nCount; aIdx++)
@@ -391,6 +400,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 		// Remove all entries in the cache which are no longer in the grid.
 		if (!pAreaCache->entries.empty())
 		{
+			CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
 			pAreaCache->entries.erase(std::remove_if(pAreaCache->entries.begin(), pAreaCache->entries.end(), SIsNotInGrid(entityId, m_areas, m_areas.size())), pAreaCache->entries.end());
 		}
 
@@ -1078,6 +1088,9 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 {
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 	bool bDraw = CVar::pDrawAreas->GetIVal() != 0;
+
+	m_lockAddRemoveArea.Lock();
+
 	size_t const nCountAreasTotal = m_areas.size();
 
 	if (bDraw)
@@ -1085,6 +1098,8 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 		for (size_t aIdx = 0; aIdx < nCountAreasTotal; aIdx++)
 			m_areas[aIdx]->Draw(aIdx);
 	}
+
+	m_lockAddRemoveArea.Unlock();
 
 	int const nDrawDebugValue = CVar::pDrawAreaDebug->GetIVal();
 	bDraw = nDrawDebugValue != 0;
@@ -1197,6 +1212,8 @@ void CAreaManager::DrawGrid()
 //////////////////////////////////////////////////////////////////////////
 size_t CAreaManager::MemStat()
 {
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	size_t memSize = sizeof(*this);
 
 	for (auto const pArea : m_areas)
@@ -1240,9 +1257,11 @@ void CAreaManager::ResetAreas()
 			}
 		}
 	}
-
+	
 	m_mapAreaCache.clear();
 	stl::free_container(m_mapEntitiesToUpdate);
+
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
 
 	// invalidate cached event + data
 	for (auto const pArea : m_areas)
@@ -1282,6 +1301,7 @@ void CAreaManager::UpdateDirtyAreas()
 {
 	if (m_bAreasDirty)
 	{
+		CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
 		m_areaGrid.Compile(m_pEntitySystem, m_areas);
 		m_bAreasDirty = false;
 	}
@@ -1316,6 +1336,8 @@ void CAreaManager::OnEvent(EEntityEvent event, EntityId TriggerEntityID, IArea* 
 //////////////////////////////////////////////////////////////////////////
 int CAreaManager::GetNumberOfPlayersNearOrInArea(CArea const* const pArea)
 {
+	CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
+
 	// Find the area index
 	for (auto const pRegisteredArea : m_areas)
 	{
@@ -1420,6 +1442,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 		// This seems to be enabled by Segmented World, which is turned of in ProjectDefines.h
 		// if(GetEntitySystem()->EntitiesUseGUIDs())
 		{
+			CryAutoCriticalSectionNoRecursive lock(m_lockAddRemoveArea);
 			for (auto const pArea : m_areas)
 			{
 				pArea->ResolveEntityIds();

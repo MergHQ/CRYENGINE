@@ -386,6 +386,9 @@ gotcontacts:
 	}
 };
 
+getSurfTypeCallback g_getSurfType;
+unsigned char getSurfTypeNoHoles(int ix, int iy) { return max((int)(char)g_getSurfType(ix,iy),0);	}
+
 void CPhysicalWorld::RayHeightfield(const Vec3 &org,Vec3 &dir, ray_hit *hits, int flags, int iCaller) 
 {
 	geom_world_data gwd;
@@ -396,19 +399,21 @@ void CPhysicalWorld::RayHeightfield(const Vec3 &org,Vec3 &dir, ray_hit *hits, in
 	gwd.offset = m_HeightfieldOrigin;
   IGeometry* iGeom = PrepGeom(m_pHeightfield[iCaller]->m_parts[0].pPhysGeom->pGeom,iCaller);
 	CHeightfield* hfGeom = (CHeightfield*)iGeom;
+	g_getSurfType = hfGeom->m_hf.fpGetSurfTypeCallback;
+	if (flags & rwi_ignore_terrain_holes) 
+		hfGeom->m_hf.fpGetSurfTypeCallback = getSurfTypeNoHoles;
 	if (hfGeom->CHeightfield::Intersect(&aray, &gwd, (geom_world_data*)0, &ip, pcontacts)) {
-		if (pcontacts->id[0]>=0 || flags&rwi_ignore_terrain_holes) {
-			dir = pcontacts->pt-org;
-			hits[0].dist = pcontacts->t;
-			hits[0].pCollider = m_pHeightfield[iCaller]; 
-			hits[0].partid = hits[0].ipart = 0;
-			hits[0].surface_idx = m_pHeightfield[iCaller]->GetMatId(pcontacts->id[0],0);
-			hits[0].idmatOrg = pcontacts->id[0];
-			hits[0].pt = pcontacts->pt; 
-			hits[0].n = pcontacts->n;
-			hits[0].bTerrain = 1;
-		}
+		dir = pcontacts->pt-org;
+		hits[0].dist = pcontacts->t;
+		hits[0].pCollider = m_pHeightfield[iCaller]; 
+		hits[0].partid = hits[0].ipart = 0;
+		hits[0].surface_idx = m_pHeightfield[iCaller]->GetMatId(pcontacts->id[0],0);
+		hits[0].idmatOrg = pcontacts->id[0];
+		hits[0].pt = pcontacts->pt; 
+		hits[0].n = pcontacts->n;
+		hits[0].bTerrain = 1;
 	}
+	hfGeom->m_hf.fpGetSurfTypeCallback = g_getSurfType;
 }
 
 void CPhysicalWorld::RayWater(const Vec3 &org,const Vec3 &dir, entity_grid_checker &egc, int flags,int nMaxHits, ray_hit *hits)
