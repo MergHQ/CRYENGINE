@@ -419,7 +419,8 @@
       },
       {
         "NavigationSystem": [
-          "CryAISystem/NavigationSystem/MNMBaseTypes.h",
+          "CryAISystem/NavigationSystem/INavigationUpdatesManager.h",
+		  "CryAISystem/NavigationSystem/MNMBaseTypes.h",
           "CryAISystem/NavigationSystem/MNMFixedAABB.h",
           "CryAISystem/NavigationSystem/MNMFixedVec2.h",
           "CryAISystem/NavigationSystem/MNMFixedVec3.h",

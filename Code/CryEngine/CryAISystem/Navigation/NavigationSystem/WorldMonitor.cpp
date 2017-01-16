@@ -55,17 +55,6 @@ bool WorldMonitor::IsEnabled() const
 	return m_enabled;
 }
 
-void WorldMonitor::BufferIgnoredMeshRegenerationUpdateRequests(const NavigationMeshID meshID, const AABB& aabb)
-{
-	m_ignoredMeshUpdateRequests.push_back(std::make_pair(meshID, aabb));
-}
-
-void WorldMonitor::BufferIgnoredMeshRegenerationDifferenceRequests(const NavigationMeshID meshID, 
-	const NavigationBoundingVolume& oldVolume, const NavigationBoundingVolume& newVolume)
-{
-	m_ignoredMeshDifferenceRequests.push_back(std::make_pair(meshID, std::make_pair(oldVolume, newVolume)));
-}
-
 int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
 {
 	WorldMonitor* pthis = gAIEnv.pNavigationSystem->GetWorldMonitor();
@@ -99,8 +88,10 @@ int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
 
 			if (((aabbOld.min - aabbNew.min).len2() + (aabbOld.max - aabbNew.max).len2()) > 0.0f)
 			{
-				pthis->m_callback(aabbOld);
-				pthis->m_callback(aabbNew);
+				int entityId = gEnv->pPhysicalWorld->GetPhysicalEntityId(event->pEntity);
+				
+				pthis->m_callback(entityId, aabbOld);
+				pthis->m_callback(entityId, aabbNew);
 
 				if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
 				{
@@ -123,19 +114,18 @@ int WorldMonitor::EntityRemovedHandler(const EventPhys* pPhysEvent)
 	assert(pthis != NULL);
 	assert(pthis->IsEnabled());
 
-		AABB aabb;
+	EntityAABBChange change;
+	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
+	{
+		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
+		pthis->m_callback(change.entityId, change.aabb);
 
-		if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
+		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
 		{
-			pthis->m_callback(aabb);
-
-			if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
-			{
-				CDebugDrawContext dc;
-
-				dc->DrawAABB(aabb, IDENTITY, false, Col_White, eBBD_Faceted);
-			}
+			CDebugDrawContext dc;
+			dc->DrawAABB(change.aabb, IDENTITY, false, Col_White, eBBD_Faceted);
 		}
+	}
 
 	return 1;
 }
@@ -147,17 +137,17 @@ int WorldMonitor::EntityRemovedHandlerAsync(const EventPhys* pPhysEvent)
 	assert(pthis != NULL);
 	assert(pthis->IsEnabled());
 	
-		AABB aabb;
-
-		if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, aabb))
-		{
-			pthis->m_queuedAABBChanges.push_back(aabb);
-		}
+	EntityAABBChange change;
+	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
+	{
+		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
+		pthis->m_queuedAABBChanges.push_back(change);
+	}
 
 	return 1;
 }
 
-bool WorldMonitor::ShallEventPhysEntityDeletedBeHandled(const EventPhys* pPhysEvent, AABB& outAabb)
+bool WorldMonitor::ShallEventPhysEntityDeletedBeHandled(const EventPhys* pPhysEvent, EntityAABBChange& outChange)
 {
 	assert(pPhysEvent->idval == EventPhysEntityDeleted::id);
 
@@ -184,8 +174,9 @@ bool WorldMonitor::ShallEventPhysEntityDeletedBeHandled(const EventPhys* pPhysEv
 		if (physEnt->GetStatus(&sp))
 		{
 			// Careful: the AABB we just received is relative to the entity's position. This is specific to the EventPhysEntityDeleted we're currently handling.
-			outAabb.min = sp.BBox[0] + sp.pos;
-			outAabb.max = sp.BBox[1] + sp.pos;
+			outChange.aabb.min = sp.BBox[0] + sp.pos;
+			outChange.aabb.max = sp.BBox[1] + sp.pos;
+			outChange.entityId = gEnv->pPhysicalWorld->GetPhysicalEntityId(physEnt);
 			return true;
 		}
 	}
@@ -195,28 +186,23 @@ bool WorldMonitor::ShallEventPhysEntityDeletedBeHandled(const EventPhys* pPhysEv
 
 void WorldMonitor::FlushPendingAABBChanges()
 {
-	std::vector<AABB> changesInTheWorld;
+	std::vector<EntityAABBChange> changesInTheWorld;
 	m_queuedAABBChanges.swap(changesInTheWorld);
 
 	if (!changesInTheWorld.empty())
 	{
-		for (const AABB& aabb : changesInTheWorld)
+		for (const EntityAABBChange& aabbChange : changesInTheWorld)
 		{
-			m_callback(aabb);
+			m_callback(aabbChange.entityId, aabbChange.aabb);
+		}
 
-			if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+		{
+			CDebugDrawContext dc;
+			for (const EntityAABBChange& aabbChange : changesInTheWorld)
 			{
-				CDebugDrawContext dc;
-
-				dc->DrawAABB(aabb, IDENTITY, false, Col_White, eBBD_Faceted);
+				dc->DrawAABB(aabbChange.aabb, IDENTITY, false, Col_White, eBBD_Faceted);
 			}
 		}
 	}
-}
-
-
-void WorldMonitor::ClearBufferedMeshRegenerationRequests()
-{
-	m_ignoredMeshDifferenceRequests.clear();
-	m_ignoredMeshUpdateRequests.clear();
 }
