@@ -93,11 +93,13 @@
 		[
 			"Navigation/NavigationSystem/IslandConnectionsManager.cpp",
 			"Navigation/NavigationSystem/NavigationSystem.cpp",
+			"Navigation/NavigationSystem/NavigationUpdatesManager.cpp",
 			"Navigation/NavigationSystem/OffMeshNavigationManager.cpp",
 			"Navigation/NavigationSystem/VolumesManager.cpp",
 			"Navigation/NavigationSystem/WorldMonitor.cpp",
 			"Navigation/NavigationSystem/IslandConnectionsManager.h",
 			"Navigation/NavigationSystem/NavigationSystem.h",
+			"Navigation/NavigationSystem/NavigationUpdatesManager.h",
 			"Navigation/NavigationSystem/OffMeshNavigationManager.h",
 			"Navigation/NavigationSystem/VolumesManager.h",
 			"Navigation/NavigationSystem/WorldMonitor.h"

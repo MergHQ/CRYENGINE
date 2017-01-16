@@ -25,6 +25,7 @@
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IFactionMap.h>
 #include <CryAISystem/ICommunicationManager.h>
+#include <CryAISystem/NavigationSystem/INavigationUpdatesManager.h>
 /*
    //////////////////////////////////////////////////////////////////////////
    // broadcast AI signal
@@ -2699,7 +2700,7 @@ public:
 
 		case eFE_FinalActivate:
 			AABB aabb(GetPortVec3(pActInfo, eIN_Min), GetPortVec3(pActInfo, eIN_Max));
-			gEnv->pAISystem->GetNavigationSystem()->WorldChanged(aabb);
+			gEnv->pAISystem->GetNavigationSystem()->GetUpdateManager()->WorldChanged(aabb);
 			break;
 		}
 	}

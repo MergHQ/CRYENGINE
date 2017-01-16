@@ -343,6 +343,10 @@ ERequestStatus CAudioTranslationLayer::ParsePreloadsData(char const* const szFol
 ERequestStatus CAudioTranslationLayer::ClearControlsData(EDataScope const dataScope)
 {
 	m_xmlProcessor.ClearControlsData(dataScope);
+	if (dataScope == eDataScope_All || dataScope == eDataScope_Global)
+	{
+		InitInternalControls();
+	}
 
 	return eRequestStatus_Success;
 }
@@ -755,7 +759,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 			if (ClearControlsData(eDataScope_All) == eRequestStatus_Success)
 			{
-				InitInternalControls();
 				if (ParseControlsData(pRequestData->folderPath, eDataScope_Global) == eRequestStatus_Success)
 				{
 					if (strcmp(pRequestData->levelName, "") != 0)
@@ -1122,7 +1125,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			{
 				float const distanceToListener = (m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition() - pObject->GetTransformation().GetPosition()).GetLength();
 				SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> const* const pRequestData =
-					static_cast<SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> const* const>(request.GetData().get());
+				  static_cast<SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> const* const>(request.GetData().get());
 
 				result = pObject->HandleSetTransformation(pRequestData->transformation, distanceToListener);
 			}
