@@ -10,16 +10,17 @@ namespace uqs
 	namespace core
 	{
 
-		CFunctionBlueprint::CFunctionBlueprint(client::IFunctionFactory& functionFactory, const char* returnValueForLeafFunction, bool bAddReturnValueToDebugRenderWorldUponExecution)
+		CFunctionBlueprint::CFunctionBlueprint(client::IFunctionFactory& functionFactory, const CLeafFunctionReturnValue& leafFunctionReturnValue, bool bAddReturnValueToDebugRenderWorldUponExecution)
 			: m_functionFactory(functionFactory)
-			, m_returnValueInCaseOfLeafFunction(returnValueForLeafFunction)
+			, m_returnValueInCaseOfLeafFunction(leafFunctionReturnValue)
 			, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 		{
 		}
 
 		client::FunctionUniquePtr CFunctionBlueprint::InstantiateCallHierarchy(const SQueryBlackboard& blackboard, shared::CUqsString& error) const
 		{
-			const client::IFunction::SCtorContext ctorContext(m_returnValueInCaseOfLeafFunction.c_str(), blackboard, m_functionFactory.GetInputParameterRegistry(), m_bAddReturnValueToDebugRenderWorldUponExecution);
+			const CLeafFunctionReturnValue* pLeafFunctionReturnValue = m_returnValueInCaseOfLeafFunction.IsActuallyALeafFunction() ? &m_returnValueInCaseOfLeafFunction : nullptr;
+			const client::IFunction::SCtorContext ctorContext(pLeafFunctionReturnValue, blackboard, m_functionFactory.GetInputParameterRegistry(), m_bAddReturnValueToDebugRenderWorldUponExecution);
 			client::FunctionUniquePtr pFunc = m_functionFactory.CreateFunction(ctorContext);
 			assert(pFunc);       // function factories are never supposed to return nullptr
 

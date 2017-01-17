@@ -49,7 +49,9 @@
 			"core/IQueryHistoryManager.h",
 			"core/IQueryHistoryListener.h",
 			"core/IQueryHistoryConsumer.h",
-			"core/QueryBlueprintID.h"
+			"core/QueryBlueprintID.h",
+			"core/ITimeBudget.h",
+			"core/ILeafFunctionReturnValue.h"
 		],
 		"client":
 		[

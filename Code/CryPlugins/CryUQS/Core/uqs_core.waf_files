@@ -95,7 +95,11 @@
 			"core/Query_Fallbacks.h",
 			"core/Query_Fallbacks.cpp",
 			"core/GeomUtil.h",
-			"core/GeomUtil.cpp"
+			"core/GeomUtil.cpp",
+			"core/TimeBudget.h",
+			"core/TimeBudget.cpp",
+			"core/LeafFunctionReturnValue.h",
+			"core/LeafFunctionReturnValue.cpp"
 		]
 	}
 }

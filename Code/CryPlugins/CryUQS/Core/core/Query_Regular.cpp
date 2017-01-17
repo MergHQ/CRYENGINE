@@ -18,9 +18,8 @@ namespace uqs
 		//
 		//===================================================================================
 
-		CQuery_Regular::SPhaseUpdateContext::SPhaseUpdateContext(const CTimeValue& _timeLimit, shared::CUqsString& _error)
-			: timeLimit(_timeLimit)
-			, error(_error)
+		CQuery_Regular::SPhaseUpdateContext::SPhaseUpdateContext(shared::CUqsString& _error)
+			: error(_error)
 		{}
 
 		//===================================================================================
@@ -144,20 +143,17 @@ namespace uqs
 			return true;
 		}
 
-		CQuery_Regular::EUpdateState CQuery_Regular::OnUpdate(const CTimeValue& timeBudget, shared::CUqsString& error)
+		CQuery_Regular::EUpdateState CQuery_Regular::OnUpdate(shared::CUqsString& error)
 		{
 			assert(m_currentPhaseFn);	// query has already finished before; cannot recycle a query
 
 			++m_elapsedFramesPerPhase.back();
 
-			const CTimeValue queryStartTime = gEnv->pTimer->GetAsyncTime();
-			const CTimeValue queryTimeLimit = queryStartTime + timeBudget;
-			const SPhaseUpdateContext phaseUpdateContext(queryTimeLimit, error);
+			const SPhaseUpdateContext phaseUpdateContext(error);
 
-			CTimeValue endTime;
 			EUpdateState status = EUpdateState::StillRunning;
 
-			do
+			while(1)
 			{
 				const CTimeValue phaseStartTime = gEnv->pTimer->GetAsyncTime();
 
@@ -166,8 +162,8 @@ namespace uqs
 				const EPhaseStatus phaseStatus = (this->*m_currentPhaseFn)(phaseUpdateContext);
 
 				// keep track of the elapsed time in the current phase
-				endTime = gEnv->pTimer->GetAsyncTime();
-				const CTimeValue elapsedTimeInPhaseUpdate = (endTime - phaseStartTime);
+				const CTimeValue phaseEndTime = gEnv->pTimer->GetAsyncTime();
+				const CTimeValue elapsedTimeInPhaseUpdate = (phaseEndTime - phaseStartTime);
 				m_elapsedTimePerPhase.back() += elapsedTimeInPhaseUpdate;
 				m_peakElapsedTimePerPhaseUpdate.back() = std::max(m_peakElapsedTimePerPhaseUpdate.back(), elapsedTimeInPhaseUpdate);
 
@@ -203,7 +199,9 @@ namespace uqs
 					m_peakElapsedTimePerPhaseUpdate.resize(m_peakElapsedTimePerPhaseUpdate.size() + 1);
 				}
 
-			} while(endTime < queryTimeLimit);
+				if (m_timeBudgetForCurrentUpdate.IsExhausted())
+					break;
+			}
 
 			return status;
 		}
@@ -407,93 +405,27 @@ namespace uqs
 				const std::vector<CInstantEvaluatorBlueprint*>& instantEvaluatorBlueprints = m_queryBlueprint->GetInstantEvaluatorBlueprints();
 				const size_t numInstantEvaluators = instantEvaluatorBlueprints.size();
 
-				//
-				// - instantiate all instant-evaluators into temporary containers
-				// - afterwards, we'll sort and keep them around in the following order:
-				//    m_cheapInstantEvaluators:     [tester1, tester2, tester3, ..., scorer1, scorer2, scorer3, ...]
-				//    m_expensiveInstantEvaluators: [tester1, tester2, tester3, ..., scorer1, scorer2, scorer3, ...]
-				//
-				// FIXME: the sorting could be done at the blueprint level already
-
-				std::vector<SInstantEvaluatorWithIndex> cheapTesters;
-				std::vector<SInstantEvaluatorWithIndex> cheapScorers;
-				std::vector<SInstantEvaluatorWithIndex> expensiveTesters;
-				std::vector<SInstantEvaluatorWithIndex> expensiveScorers;
-
 				for (size_t i = 0; i < numInstantEvaluators; ++i)
 				{
 					client::IInstantEvaluatorFactory& instantEvaluatorFactory = instantEvaluatorBlueprints[i]->GetFactory();
 					client::InstantEvaluatorUniquePtr pEval = instantEvaluatorFactory.CreateInstantEvaluator();
 					client::ParamsHolderUniquePtr pParamsHolder = instantEvaluatorFactory.GetParamsHolderFactory().CreateParamsHolder();
 					const client::IInputParameterRegistry* pInputParameterRegistry = &instantEvaluatorFactory.GetInputParameterRegistry();
-
 					const client::IInstantEvaluatorFactory::ECostCategory costCategory = instantEvaluatorFactory.GetCostCategory();
-					const client::IInstantEvaluatorFactory::EEvaluationModality evaluationModality = instantEvaluatorFactory.GetEvaluationModality();
 
 					switch (costCategory)
 					{
 					case client::IInstantEvaluatorFactory::ECostCategory::Cheap:
-						switch (evaluationModality)
-						{
-						case client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
-							cheapTesters.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
-							break;
-
-						case client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
-							cheapScorers.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
-							break;
-
-						default:
-							assert(0);
-						}
+						m_cheapInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
 						break;
 
 					case client::IInstantEvaluatorFactory::ECostCategory::Expensive:
-						switch (evaluationModality)
-						{
-						case client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
-							expensiveTesters.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
-							break;
-
-						case client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
-							expensiveScorers.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
-							break;
-
-						default:
-							assert(0);
-						}
+						m_expensiveInstantEvaluators.emplace_back(std::move(pEval), std::move(pParamsHolder), pInputParameterRegistry, i);
 						break;
 
 					default:
 						assert(0);
 					}
-				}
-
-				m_cheapInstantEvaluators.reserve(cheapTesters.size() + cheapScorers.size());
-				m_expensiveInstantEvaluators.reserve(expensiveTesters.size() + expensiveScorers.size());
-
-				// cheap testers
-				for (SInstantEvaluatorWithIndex& eval : cheapTesters)
-				{
-					m_cheapInstantEvaluators.push_back(std::move(eval));
-				}
-
-				// cheap scorers
-				for (SInstantEvaluatorWithIndex& eval : cheapScorers)
-				{
-					m_cheapInstantEvaluators.push_back(std::move(eval));
-				}
-
-				// expensive testers
-				for (SInstantEvaluatorWithIndex& eval : expensiveTesters)
-				{
-					m_expensiveInstantEvaluators.push_back(std::move(eval));
-				}
-
-				// expensive scorers
-				for (SInstantEvaluatorWithIndex& eval : expensiveScorers)
-				{
-					m_expensiveInstantEvaluators.push_back(std::move(eval));
 				}
 			}
 
@@ -677,7 +609,7 @@ namespace uqs
 					++m_remainingItemWorkingDatasIndexForCheapInstantEvaluators;
 				}
 
-				if (phaseUpdateContext.timeLimit <= gEnv->pTimer->GetAsyncTime())
+				if (m_timeBudgetForCurrentUpdate.IsExhausted())
 					break;
 			}
 
@@ -1188,7 +1120,7 @@ namespace uqs
 
 				m_remainingItemWorkingDatasToInspect.erase(itWorkingDataToInspectNext);
 
-				if (phaseUpdateContext.timeLimit <= gEnv->pTimer->GetAsyncTime())
+				if (m_timeBudgetForCurrentUpdate.IsExhausted())
 					break;
 			}
 		}

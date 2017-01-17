@@ -31,7 +31,7 @@ namespace uqs
 		private:
 			// CQueryBase
 			virtual bool                             OnInstantiateFromQueryBlueprint(const shared::IVariantDict& runtimeParams, shared::CUqsString& error) override final;
-			virtual EUpdateState                     OnUpdate(const CTimeValue& timeBudget, shared::CUqsString& error) override final;
+			virtual EUpdateState                     OnUpdate(shared::CUqsString& error) override final;
 			virtual void                             OnCancel() override final;
 			virtual void                             OnGetStatistics(SStatistics& out) const override final;
 			// ~CQueryBase

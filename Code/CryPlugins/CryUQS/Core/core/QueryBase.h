@@ -128,7 +128,7 @@ namespace uqs
 			bool                                        InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& queryBlueprint, const shared::IVariantDict& runtimeParams, shared::CUqsString& error);
 			void                                        AddItemMonitor(client::ItemMonitorUniquePtr&& pItemMonitor);
 			void                                        TransferAllItemMonitorsToOtherQuery(CQueryBase& receiver);
-			EUpdateState                                Update(const CTimeValue& timeBudget, shared::CUqsString& error);
+			EUpdateState                                Update(const CTimeValue& amountOfGrantedTime, shared::CUqsString& error);
 			void                                        Cancel();
 			void                                        GetStatistics(SStatistics& out) const;
 
@@ -137,7 +137,7 @@ namespace uqs
 
 		private:
 			virtual bool                                OnInstantiateFromQueryBlueprint(const shared::IVariantDict& runtimeParams, shared::CUqsString& error) = 0;
-			virtual EUpdateState                        OnUpdate(const CTimeValue& timeBudget, shared::CUqsString& error) = 0;
+			virtual EUpdateState                        OnUpdate(shared::CUqsString& error) = 0;
 			virtual void                                OnCancel() = 0;
 			virtual void                                OnGetStatistics(SStatistics& out) const = 0;
 
@@ -150,6 +150,7 @@ namespace uqs
 			const CQueryID                              m_queryID;                        // the unique queryID that can be used to identify this instance from inside the CQueryManager
 			std::shared_ptr<const CQueryBlueprint>      m_queryBlueprint;                 // we'll instantiate all query components (generator, evaluators, etc) via this blueprint
 			QueryResultSetUniquePtr                     m_pResultSet;                     // once the query has finished evaluating all items (and hasn't bumped into a runtime exception), it will write the final items to here
+			CTimeBudget                                 m_timeBudgetForCurrentUpdate;     // this gets "restarted" on each Update() call with the amount of granted time that has been passed in by the caller
 
 		private:
 			// debugging

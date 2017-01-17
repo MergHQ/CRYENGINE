@@ -109,7 +109,7 @@ namespace uqs
 			, m_totalElapsedFrames(0)
 			, m_bRequiresSomeTimeBudgetForExecution(bRequiresSomeTimeBudgetForExecution)
 			, m_pOptionalShuttledItems(std::move(ctorContext.optionalResultingItemsFromPreviousChainedQuery))
-			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr)
+			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), m_timeBudgetForCurrentUpdate, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr)
 		{
 			if (m_pHistory)
 			{
@@ -209,7 +209,7 @@ namespace uqs
 			}
 		}
 
-		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& timeBudget, shared::CUqsString& error)
+		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& amountOfGrantedTime, shared::CUqsString& error)
 		{
 			++m_totalElapsedFrames;
 
@@ -251,7 +251,8 @@ namespace uqs
 			// allow the derived class to update itself if no item corruption has occurred yet
 			//
 
-			const EUpdateState state = bCorruptionOccurred ? EUpdateState::ExceptionOccurred : OnUpdate(timeBudget, error);
+			m_timeBudgetForCurrentUpdate.Restart(amountOfGrantedTime);
+			const EUpdateState state = bCorruptionOccurred ? EUpdateState::ExceptionOccurred : OnUpdate(error);
 
 			//
 			// finish timings
@@ -259,7 +260,7 @@ namespace uqs
 
 			const CTimeValue timeSpent = gEnv->pTimer->GetAsyncTime() - startTime;
 			m_totalConsumedTime += timeSpent;
-			m_grantedAndUsedTimePerFrame.emplace_back(timeBudget, timeSpent);
+			m_grantedAndUsedTimePerFrame.emplace_back(amountOfGrantedTime, timeSpent);
 
 			//
 			// track a possible exception

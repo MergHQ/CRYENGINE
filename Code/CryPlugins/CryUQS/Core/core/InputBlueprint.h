@@ -83,17 +83,15 @@ namespace uqs
 			size_t                              GetChildCount() const;
 			const CInputBlueprint&              GetChild(size_t index) const;
 			client::IFunctionFactory*           GetFunctionFactory() const;
-			const char*                         GetFunctionReturnValueLiteral() const;
+			const CLeafFunctionReturnValue&     GetLeafFunctionReturnValue() const;
 			bool                                GetAddReturnValueToDebugRenderWorldUponExecution() const;
 
 		private:
-			explicit                            CInputBlueprint(client::IFunctionFactory& functionFactory, const char* functionReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
-
 			                                    UQS_NON_COPYABLE(CInputBlueprint);
 
 		private:
 			client::IFunctionFactory*           m_pFunctionFactory;
-			string                              m_functionReturnValueLiteral;
+			CLeafFunctionReturnValue            m_leafFunctionReturnValue;
 			bool                                m_bAddReturnValueToDebugRenderWorldUponExecution;
 			std::vector<CInputBlueprint*>       m_children;	// in order of how the input parameters need to appear at runtime
 		};

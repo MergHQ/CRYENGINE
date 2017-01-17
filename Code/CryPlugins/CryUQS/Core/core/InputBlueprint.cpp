@@ -127,13 +127,6 @@ namespace uqs
 		{
 		}
 
-		CInputBlueprint::CInputBlueprint(client::IFunctionFactory& functionFactory, const char* functionReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
-			: m_pFunctionFactory(&functionFactory)
-			, m_functionReturnValueLiteral(functionReturnValueLiteral)
-			, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
-		{
-		}
-
 		CInputBlueprint::~CInputBlueprint()
 		{
 			for(CInputBlueprint* b : m_children)
@@ -203,8 +196,6 @@ namespace uqs
 					bResolveSucceeded = false;
 					continue;   // without a function, we cannot continue parsing this child and also cannot go down deeper the call hierarchy
 				}
-
-				pNewChild->m_functionReturnValueLiteral = pSourceChild->GetFuncReturnValueLiteral();
 
 				//
 				// ensure that the function's return type matches the parameter's type
@@ -276,6 +267,10 @@ namespace uqs
 							}
 							bResolveSucceeded = false;
 						}
+						else
+						{
+							pNewChild->m_leafFunctionReturnValue.SetItemIteration();
+						}
 					}
 				}
 
@@ -285,7 +280,7 @@ namespace uqs
 
 				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::GlobalParam)
 				{
-					const char* nameOfGlobalParam = pNewChild->GetFunctionReturnValueLiteral();
+					const char* nameOfGlobalParam = pSourceChild->GetFuncReturnValueLiteral();
 					const client::IItemFactory* pItemFactoryOfThatGlobalParam = nullptr;
 
 					// search among the global constant-params
@@ -322,6 +317,10 @@ namespace uqs
 							}
 							bResolveSucceeded = false;
 						}
+						else
+						{
+							pNewChild->m_leafFunctionReturnValue.SetGlobalParam(nameOfGlobalParam);
+						}
 					}
 					else
 					{
@@ -348,21 +347,30 @@ namespace uqs
 					if (pItemFactoryOfReturnType)
 					{
 						if (pItemFactoryOfReturnType->CanBePersistantlySerialized())
-						{ 
+						{
 							// try to deserialize the literal from its textual representation
+
+							const char* szTextualRepresentationOfThatLiteral = pSourceChild->GetFuncReturnValueLiteral();
 							IItemSerializationSupport& itemSerializationSupport = uqs::core::IHubPlugin::GetHub().GetItemSerializationSupport();
-							const char* textualRepresentationOfThatLiteral = pNewChild->m_functionReturnValueLiteral.c_str();
-							shared::CVariantDict tempDict;
-							shared::CUqsString errorMessage;
-							shared::IUqsString* pErrorMessage = (pSourceChild->GetSyntaxErrorCollector()) ? &errorMessage : nullptr;
-							if (!itemSerializationSupport.DeserializeItemIntoDictFromCStringLiteral(tempDict, "key_does_not_matter", *pItemFactoryOfReturnType, textualRepresentationOfThatLiteral, pErrorMessage))
+							shared::CUqsString deserializationErrorMessage;
+
+							void* pTmpItem = pItemFactoryOfReturnType->CreateItems(1, client::IItemFactory::EItemInitMode::UseDefaultConstructor);
+							const bool bDeserializationSucceeded = itemSerializationSupport.DeserializeItemFromCStringLiteral(pTmpItem, *pItemFactoryOfReturnType, szTextualRepresentationOfThatLiteral, &deserializationErrorMessage);
+
+							if (bDeserializationSucceeded)
+							{
+								pNewChild->m_leafFunctionReturnValue.SetLiteral(*pItemFactoryOfReturnType, pTmpItem);
+							}
+							else
 							{
 								if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 								{
-									pSE->AddErrorMessage("Function '%s' returns a literal of type %s, but the literal could not be parsed from its archive representation: '%s'. Reason:\n%s", pNewChild->m_pFunctionFactory->GetName(), returnType.name(), textualRepresentationOfThatLiteral, errorMessage.c_str());
+									pSE->AddErrorMessage("Function '%s' returns a literal of type %s, but the literal could not be parsed from its archive representation: '%s'. Reason:\n%s", pNewChild->m_pFunctionFactory->GetName(), returnType.name(), szTextualRepresentationOfThatLiteral, deserializationErrorMessage.c_str());
 								}
 								bResolveSucceeded = false;
 							}
+
+							pItemFactoryOfReturnType->DestroyItems(pTmpItem);
 						}
 						else
 						{
@@ -399,6 +407,10 @@ namespace uqs
 								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pExpectedShuttleType->name(), pContainedType->name());
 							}
 							bResolveSucceeded = false;
+						}
+						else
+						{
+							pNewChild->m_leafFunctionReturnValue.SetShuttledItems();
 						}
 					}
 					else
@@ -440,9 +452,9 @@ namespace uqs
 			return m_pFunctionFactory;
 		}
 
-		const char* CInputBlueprint::GetFunctionReturnValueLiteral() const
+		const CLeafFunctionReturnValue& CInputBlueprint::GetLeafFunctionReturnValue() const
 		{
-			return m_functionReturnValueLiteral.c_str();
+			return m_leafFunctionReturnValue;
 		}
 
 		bool CInputBlueprint::GetAddReturnValueToDebugRenderWorldUponExecution() const

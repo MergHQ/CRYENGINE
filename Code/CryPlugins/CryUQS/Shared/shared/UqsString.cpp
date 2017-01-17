@@ -16,6 +16,18 @@ namespace uqs
 		//
 		//===================================================================================
 
+		CUqsString::CUqsString()
+			: m_message()
+		{
+			// nothing
+		}
+
+		CUqsString::CUqsString(const char* szString)
+			: m_message(szString)
+		{
+			// nothing
+		}
+
 		void CUqsString::Set(const char* szString)
 		{
 			m_message = szString;

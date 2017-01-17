@@ -33,10 +33,9 @@ namespace uqs
 
 			struct SPhaseUpdateContext
 			{
-				explicit                                          SPhaseUpdateContext(const CTimeValue& _timeLimit, shared::CUqsString& _error);
+				explicit                                          SPhaseUpdateContext(shared::CUqsString& _error);
 
-				CTimeValue                                        timeLimit;                        // future timestamp until the phase can do its work before it should interrupt itself
-				shared::CUqsString&                               error;                            // output error message for when EPhaseStatus::Exception is returned
+				shared::CUqsString&                               error;                            // output error message for when EPhaseStatus::ExceptionOccurred is returned
 			};
 
 			//===================================================================================
@@ -107,7 +106,7 @@ namespace uqs
 				client::InstantEvaluatorUniquePtr                 pInstantEvaluator;                    // instantiated exactly once for all items; gets re-used as it's stateless
 				client::ParamsHolderUniquePtr                     pParamsHolder;                        // also instantiated exactly once; gets refreshed to on each item iteration before passing it into the instant-evaluator
 				const client::IInputParameterRegistry*            pInputParameterRegistry;              // points back into the instant-evaluator factory (who owns it); used when making function calls to get the offsets of all parameters in memory so that each function knows where to write its return value to
-				size_t                                            originalIndexInQueryBlueprint;        // the original position among the instant-evaluator blueprints in the query blueprint as it was loaded from the datasource
+				size_t                                            originalIndexInQueryBlueprint;        // the original position among the instant-evaluator blueprints in the query blueprint (*after* it was loaded from the datasource)
 			};
 
 			//===================================================================================
@@ -166,7 +165,7 @@ namespace uqs
 
 			// CQueryBase
 			virtual bool                                          OnInstantiateFromQueryBlueprint(const shared::IVariantDict& runtimeParams, shared::CUqsString& error) override;
-			virtual EUpdateState                                  OnUpdate(const CTimeValue& timeBudget, shared::CUqsString& error) override;
+			virtual EUpdateState                                  OnUpdate(shared::CUqsString& error) override;
 			virtual void                                          OnCancel() override;
 			virtual void                                          OnGetStatistics(SStatistics& out) const override;
 			// ~CQueryBase

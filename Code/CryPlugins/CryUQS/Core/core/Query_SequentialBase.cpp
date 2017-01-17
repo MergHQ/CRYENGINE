@@ -48,7 +48,7 @@ namespace uqs
 			return true;
 		}
 
-		CQueryBase::EUpdateState CQuery_SequentialBase::OnUpdate(const CTimeValue& timeBudget, shared::CUqsString& error)
+		CQueryBase::EUpdateState CQuery_SequentialBase::OnUpdate(shared::CUqsString& error)
 		{
 			// did an error occur during the last child query?
 			if (m_bExceptionOccurredInChild)

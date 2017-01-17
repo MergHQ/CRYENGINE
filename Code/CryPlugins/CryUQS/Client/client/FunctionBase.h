@@ -82,8 +82,6 @@ namespace uqs
 		protected:
 			explicit                                           CFunctionBase(const SCtorContext& ctorContext);
 
-			IItemFactory*                                      GetItemFactoryOfReturnType() const { return m_pItemFactoryOfReturnValue; }
-
 		private:
 			IItemFactory*                                      m_pItemFactoryOfReturnValue;
 			std::vector<FunctionUniquePtr>                     m_children;
