@@ -35,35 +35,34 @@ namespace uqs
 				virtual bool                                ValidateDynamic(const SValidationContext& validationContext) const override;
 
 			private:
-				const core::SItemIterationContext*          m_pItemIterationContext;   // FIXME: weak pointer?
-				bool                                        m_itemTypeIsFine;
+				const core::IItemList*                      m_pGeneratedItems;   // FIXME: weak pointer?
 			};
 
 			template <class TItem>
 			CFunc_IteratedItem<TItem>::CFunc_IteratedItem(const SCtorContext& ctorContext)
 				: BaseClass(ctorContext)
-				, m_pItemIterationContext(ctorContext.blackboard.pItemIterationContext)
-				, m_itemTypeIsFine(false)
+				, m_pGeneratedItems(nullptr)
 			{
-				if (m_pItemIterationContext)
-				{
-					m_itemTypeIsFine = (m_pItemIterationContext->generatedItems.GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo());
-				}
+				assert(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
+
+				const core::ILeafFunctionReturnValue::SItemIterationInfo itemIterationInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetItemIteration(ctorContext.blackboard);
+
+				m_pGeneratedItems = itemIterationInfo.pGeneratedItems;
 			}
 
 			template <class TItem>
 			bool CFunc_IteratedItem<TItem>::ValidateDynamic(const SValidationContext& validationContext) const
 			{
-				if (m_pItemIterationContext)
+				if (m_pGeneratedItems)
 				{
-					if (m_itemTypeIsFine)
+					if (m_pGeneratedItems->GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo())
 					{
 						return true;
 					}
 					else
 					{
 						validationContext.error.Format("%s: item type mismatch: this function expects items of type '%s', but the underlying item list contains items of type '%s'",
-							validationContext.nameOfFunctionBeingValidated, shared::SDataTypeHelper<TItem>::GetTypeInfo().name(), m_pItemIterationContext->generatedItems.GetItemFactory().GetItemType().name());
+							validationContext.nameOfFunctionBeingValidated, shared::SDataTypeHelper<TItem>::GetTypeInfo().name(), m_pGeneratedItems->GetItemFactory().GetItemType().name());
 						return false;
 					}
 				}
@@ -78,9 +77,9 @@ namespace uqs
 			template <class TItem>
 			TItem CFunc_IteratedItem<TItem>::DoExecute(const SExecuteContext& executeContext) const
 			{
-				assert(m_pItemIterationContext);
-				assert(m_pItemIterationContext->generatedItems.GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo());
-				const client::CItemListProxy_Readable<TItem> actualItems(m_pItemIterationContext->generatedItems);
+				assert(m_pGeneratedItems);
+				assert(m_pGeneratedItems->GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo());
+				const client::CItemListProxy_Readable<TItem> actualItems(*m_pGeneratedItems);
 				return actualItems.GetItemAtIndex(executeContext.currentItemIndex);
 			}
 

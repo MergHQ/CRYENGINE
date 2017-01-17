@@ -34,14 +34,14 @@ namespace uqs
 
 		void CBlueprintWithInputs::ResolveInputs(const CInputBlueprint& rootOfInputs)
 		{
-			for(size_t i = 0; i < rootOfInputs.GetChildCount(); ++i)
+			for (size_t i = 0; i < rootOfInputs.GetChildCount(); ++i)
 			{
 				const CInputBlueprint& input = rootOfInputs.GetChild(i);
 				client::IFunctionFactory* pFunctionFactory = input.GetFunctionFactory();
 				assert(pFunctionFactory);
-				const char* returnValueForLeafFunction = input.GetFunctionReturnValueLiteral();
+				const CLeafFunctionReturnValue& returnValueInCaseOfLeafFunction = input.GetLeafFunctionReturnValue();
 				bool bAddReturnValueToDebugRenderWorldUponExecution = input.GetAddReturnValueToDebugRenderWorldUponExecution();
-				CFunctionBlueprint* bp = new CFunctionBlueprint(*pFunctionFactory, returnValueForLeafFunction, bAddReturnValueToDebugRenderWorldUponExecution);
+				CFunctionBlueprint* bp = new CFunctionBlueprint(*pFunctionFactory, returnValueInCaseOfLeafFunction, bAddReturnValueToDebugRenderWorldUponExecution);
 				m_resolvedInputs.push_back(bp);
 				bp->ResolveInputs(input);
 			}

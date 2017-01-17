@@ -95,6 +95,10 @@ add_sources("UQS_uber_core.cpp"
 		"core/Query_Fallbacks.cpp"
 		"core/GeomUtil.h"
 		"core/GeomUtil.cpp"
+		"core/TimeBudget.h"
+		"core/TimeBudget.cpp"
+		"core/LeafFunctionReturnValue.h"
+		"core/LeafFunctionReturnValue.cpp"
 )
 
 end_sources()

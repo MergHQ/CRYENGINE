@@ -128,6 +128,7 @@ namespace uqs
 		private:
 			                                                   UQS_NON_COPYABLE(CQueryBlueprint);
 
+			void                                               SortInstantEvaluatorBlueprintsByCostAndEvaluationModality();
 			void                                               GrabRuntimeParamsRecursively(std::map<string, client::IItemFactory*>& out) const;
 
 		private:

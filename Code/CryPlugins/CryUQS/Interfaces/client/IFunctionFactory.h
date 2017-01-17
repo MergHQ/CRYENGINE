@@ -25,7 +25,7 @@ namespace uqs
 				GlobalParam,      // the function returns one of the global parameters
 				IteratedItem,     // the function returns the item that is currently being iterated on in the "main query loop"
 				Literal,          // the function returns a literal value that was parsed from its textual representation; the same functionality could already be achieved via a global parameter, but literals are easier to set up for ad-hoc tests
-				ShuttledItems,    // the function returns the item list that was the output of the previous query (it gets it from the SQueryBlackboard)
+				ShuttledItems,    // the function returns the item list that was the output of the previous query
 			};
 
 			virtual                                 ~IFunctionFactory() {}

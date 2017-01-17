@@ -465,6 +465,13 @@ namespace uqs
 				}
 			}
 
+			// sort the instant-evaluator blueprints by cost and evaluation modality such that their order at execution time won't change
+			// (this also helps the user to read the query history as it will show all evaluators in order of how they were executed)
+			if (bResolveSucceeded)
+			{
+				SortInstantEvaluatorBlueprintsByCostAndEvaluationModality();
+			}
+
 			return bResolveSucceeded;
 		}
 
@@ -666,6 +673,87 @@ namespace uqs
 					m_children[i]->PrintToConsole(logger);
 				}
 			}
+		}
+
+		void CQueryBlueprint::SortInstantEvaluatorBlueprintsByCostAndEvaluationModality()
+		{
+			//
+			// sort all instant-evaluator blueprints such that we end up with the following order:
+			//
+			//   cheap tester1
+			//   cheap tester2
+			//   cheap tester3
+			//   ...
+			//   cheap scorer1
+			//   cheap scorer2
+			//   cheap scorer3
+			//   ...
+			//   expensive tester1
+			//   expensive tester2
+			//   expensive tester3
+			//   ...
+			//   expensive scorer1
+			//   expensive scorer2
+			//   expensive scorer3
+			//   ...
+			//
+
+			std::vector<CInstantEvaluatorBlueprint *> cheapTesters;
+			std::vector<CInstantEvaluatorBlueprint *> cheapScorers;
+			std::vector<CInstantEvaluatorBlueprint *> expensiveTesters;
+			std::vector<CInstantEvaluatorBlueprint *> expensiveScorers;
+
+			for (CInstantEvaluatorBlueprint* pIEBlueprint : m_instantEvaluators)
+			{
+				const client::IInstantEvaluatorFactory& factory = pIEBlueprint->GetFactory();
+				const client::IInstantEvaluatorFactory::ECostCategory costCategory = factory.GetCostCategory();
+				const client::IInstantEvaluatorFactory::EEvaluationModality evaluationModality = factory.GetEvaluationModality();
+
+				switch (costCategory)
+				{
+				case client::IInstantEvaluatorFactory::ECostCategory::Cheap:
+					switch (evaluationModality)
+					{
+					case client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
+						cheapTesters.push_back(pIEBlueprint);
+						break;
+
+					case client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
+						cheapScorers.push_back(pIEBlueprint);
+						break;
+
+					default:
+						assert(0);
+					}
+					break;
+
+				case client::IInstantEvaluatorFactory::ECostCategory::Expensive:
+					switch (evaluationModality)
+					{
+					case client::IInstantEvaluatorFactory::EEvaluationModality::Testing:
+						expensiveTesters.push_back(pIEBlueprint);
+						break;
+
+					case client::IInstantEvaluatorFactory::EEvaluationModality::Scoring:
+						expensiveScorers.push_back(pIEBlueprint);
+						break;
+
+					default:
+						assert(0);
+					}
+					break;
+
+				default:
+					assert(0);
+				}
+			}
+
+			m_instantEvaluators.clear();
+
+			m_instantEvaluators.insert(m_instantEvaluators.end(), cheapTesters.begin(), cheapTesters.end());
+			m_instantEvaluators.insert(m_instantEvaluators.end(), cheapScorers.begin(), cheapScorers.end());
+			m_instantEvaluators.insert(m_instantEvaluators.end(), expensiveTesters.begin(), expensiveTesters.end());
+			m_instantEvaluators.insert(m_instantEvaluators.end(), expensiveScorers.begin(), expensiveScorers.end());
 		}
 
 		void CQueryBlueprint::GrabRuntimeParamsRecursively(std::map<string, client::IItemFactory*>& out) const
