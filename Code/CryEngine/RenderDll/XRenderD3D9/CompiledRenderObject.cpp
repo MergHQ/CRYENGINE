@@ -310,7 +310,7 @@ void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, 
 		return;
 
 	assert(nSrcInsts != 0 || m_bDynamicInstancingPossible);
-	m_nInstances = std::min(nSrcInsts, (size_t)1);
+	m_nInstances = std::max(nSrcInsts, (size_t)1);
 
 	// Allocate temporary aligned array of instances on stack.
 	CryStackAllocWithSizeVector(SPerInstanceShaderData, m_nInstances, tempInstanceBuffer, CDeviceBufferManager::AlignBufferSizeForStreaming); //May crash without m_nInstances+1

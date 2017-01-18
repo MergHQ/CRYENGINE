@@ -1239,6 +1239,13 @@ protected:
 	virtual ~IStreamedObjectListener() {}
 };
 
+struct IRenderNodeStatusListener
+{
+	virtual void OnEntityDeleted(IRenderNode* pRenderNode) = 0;
+protected:
+	virtual ~IRenderNodeStatusListener() {}
+};
+
 #pragma pack(push, 16)
 
 //     Light volumes data
@@ -2157,6 +2164,10 @@ struct I3DEngine : public IProcess
 
 	//! Set Callback for Editor to store additional information in Minimap tool.
 	virtual void SetScreenshotCallback(IScreenshotCallback* pCallback) = 0;
+
+	//! Register or unregister a call back for render node status updates
+	virtual void RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType) = 0;
+	virtual void UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType) = 0;
 
 	//! Show/Hide objects by layer (useful for streaming and performance).
 	virtual void ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, bool bObjects, bool bStaticLights, const char* pLayerName, IGeneralMemoryHeap* pHeap = NULL, bool bCheckLayerActivation = true) = 0;

@@ -19,6 +19,7 @@
 #endif
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
+#include <CryCore/Containers/CryListenerSet.h>
 #include "VisibleRenderNodeManager.h"
 #include "LightVolumeManager.h"
 
@@ -529,11 +530,13 @@ public:
 	virtual void                      DeleteRenderNode(IRenderNode* pRenderNode);
 	virtual void                      SetWind(const Vec3& vWind);
 	virtual Vec3                      GetWind(const AABB& box, bool bIndoors) const;
+	virtual void                      AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius);
 
 	void                              StartWindGridJob(const Vec3& vPos);
 	void                              FinishWindGridJob();
 	void                              UpdateWindGridJobEntry(Vec3 vPos);
 	void                              UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoorWindArea& windArea, const AABB& windBox);
+	void                              RasterWindAreas(std::vector<SOptimizedOutdoorWindArea> *pWindAreas, const Vec3& vGlobalWind);
 
 	virtual Vec3                      GetGlobalWind(bool bIndoors) const;
 	virtual bool                      SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
@@ -1169,6 +1172,9 @@ public:
 
 	virtual void                          SetScreenshotCallback(IScreenshotCallback* pCallback);
 
+	virtual void                          RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
+	virtual void                          UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
+
 	virtual IDeferredPhysicsEventManager* GetDeferredPhysicsEventManager() { return m_pDeferredPhysicsEventManager; }
 
 	void                                  PrintDebugInfo(const SRenderingPassInfo& passInfo);
@@ -1298,6 +1304,11 @@ private:
 	std::map<string, SImageSubInfo*>       m_imageInfos;
 	byte**         AllocateMips(byte* pImage, int nDim, byte** pImageMips);
 	IScreenshotCallback*                   m_pScreenshotCallback;
+
+	typedef CListenerSet<IRenderNodeStatusListener*> TRenderNodeStatusListeners;
+	typedef std::vector<TRenderNodeStatusListeners> TRenderNodeStatusListenersArray;
+	TRenderNodeStatusListenersArray        m_renderNodeStatusListenersArray;
+
 	OcclusionTestClient                    m_OceanOcclTestVar;
 
 	IDeferredPhysicsEventManager*          m_pDeferredPhysicsEventManager;
@@ -1311,6 +1322,7 @@ private:
 	int                                    m_nCurrentWindAreaList;
 	std::vector<SOptimizedOutdoorWindArea> m_outdoorWindAreas[2];
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];
+	std::vector<SOptimizedOutdoorWindArea> m_forcedWindAreas;
 
 	CLightVolumesMgr                       m_LightVolumesMgr;
 

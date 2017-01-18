@@ -776,7 +776,7 @@ float CVegetation::GetZAngle() const
 	return BYTE2RAD(m_ucAngle);
 }
 
-void CVegetation::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
+void CVegetation::OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo)
 {
 	assert(m_pTempData);
 	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;

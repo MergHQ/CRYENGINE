@@ -383,7 +383,7 @@ void CTerrain::ApplyForceToEnvironment(Vec3 vPos, float fRadius, float fAmountOf
 	    vPos.z < (GetZApr(vPos.x, vPos.y, GetDefSID()) - 1.f))                                            // under ground
 		return;
 
-	//#TODO Add temporary physical wind force to an environment, that will fade out slowly
+	Get3DEngine()->AddForcedWindArea(vPos, fAmountOfForce, fRadius);
 }
 
 Vec3 CTerrain::GetTerrainSurfaceNormal_Int(int x, int y, int nSID)

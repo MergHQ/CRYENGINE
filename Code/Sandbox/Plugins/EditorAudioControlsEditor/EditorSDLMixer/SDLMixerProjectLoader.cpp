@@ -52,7 +52,7 @@ void CSdlMixerProjectLoader::LoadFolder(const string& folderPath, IAudioSystemIt
 					string::size_type posExtension = name.rfind('.');
 					if (posExtension != string::npos)
 					{
-						if (stricmp(name.data() + posExtension, ".mp3") == 0 
+						if (stricmp(name.data() + posExtension, ".mp3") == 0
 							|| stricmp(name.data() + posExtension, ".ogg") == 0
 							|| stricmp(name.data() + posExtension, ".wav") == 0)
 						{
