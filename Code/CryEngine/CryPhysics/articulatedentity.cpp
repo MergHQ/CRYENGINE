@@ -374,61 +374,23 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 	if (CRigidEntity::SetParams(_params,1)) {
 		if (_params->type==pe_params_pos::type_id) {
 			pe_params_pos *params = (pe_params_pos*)_params;
-			int i=-1;
 			{ WriteLock lock(m_lockUpdate);
 				if ((prevq.v-m_qrot.v).len2()>0) {
-					if ((m_nJoints>0) && (m_joints[0].quat0.v-m_qrot.v).len2()>0) {
-						/*if (m_bGrounded) {
-							if ((m_joints[0].flags & all_angles_locked)!=all_angles_locked)	{
-								Vec3 dangle; int j;
-								quaternionf qalpha(m_joints[0].q+m_joints[0].qext); 
-								(!m_qrot*m_joints[0].quat0*qalpha).get_Euler_angles_xyz(dangle);
-								for(j=0;j<3;j++) if (!(m_joints[0].flags & angle0_locked<<j))
-									m_joints[0].q[j] = dangle[i]-m_joints[0].qext[j];
-							}
-							m_joints[0].quat0 = m_qrot;
-						} else {
-							m_qrot.get_Euler_angles_xyz(m_joints[0].q);
-							m_joints[0].qext.zero();
-						}*/
-						if (prevq.w==1.0f)
-							prevq = m_joints[0].quat0;
-						m_offsPivot = (m_qrot*!prevq)*m_offsPivot;
-						m_posPivot = m_pos + m_offsPivot;
-						for(i=0;i<m_nJoints;i++) if (m_joints[i].iParent<0)	{
-							m_joints[i].quat0 = m_qrot; m_joints[i].bQuat0Changed = 1;
-							if (m_joints[i].flags & joint_rotate_pivot)
-								m_joints[i].pivot[0] = (m_qrot*!prevq)*m_joints[i].pivot[0];
-						}
-						i = 0;
+					m_offsPivot = (m_qrot*!prevq)*m_offsPivot;
+					m_posPivot = m_pos + m_offsPivot;
+					for(int i=0;i<m_nJoints;i++) if (m_joints[i].iParent<0)	{
+						if (m_joints[i].flags & joint_rotate_pivot)
+							m_joints[i].pivot[0] = (m_qrot*!prevq)*m_joints[i].pivot[0];
 					}
 				}
-				if (!m_bPartPosForced) {
-					m_qrot.SetIdentity(); m_qNew.SetIdentity();
-				}
-				float diff = (prevpos-m_pos).len2();
-				if (diff>0) {
-					m_posPivot = m_pos + m_offsPivot; i = 0;
-				}
-				if (diff>sqr(0.003f) && m_body.M>0 && !(m_flags & aef_recorded_physics) && !m_bGrounded && !m_bFeatherstone && m_iLastLog>0) 
-					for(i=0;i<m_nJoints;i++) {
-						/*m_joints[i].body.v.zero(); m_joints[i].body.P.zero();
-						m_joints[i].body.w.zero(); m_joints[i].body.L.zero();
-						m_joints[i].dq.zero();
-						m_joints[i].Pimpact.zero(); m_joints[i].Limpact.zero();*/
-						m_joints[i].body.pos += m_pos-prevpos;
-					}
-			}
-			if (i>=0 && params->bRecalcBounds && m_nRoots >= 1) {
-				for(;i<m_nJoints;i++) SyncBodyWithJoint(i,1);
-				ComputeBBox(m_BBoxNew);
-				UpdatePosition(0);
+				m_bPartPosForced |= 2;
+				m_posPivot = m_pos + m_offsPivot;
 			}
 		}
 		if (_params->type==pe_params_part::type_id)	{
 			pe_params_part *params = (pe_params_part*)_params;
 			if (!is_unused(params->pos) && !(m_nJoints==0 || m_joints[0].flags & joint_rotate_pivot))
-				m_bPartPosForced = 1;
+				m_bPartPosForced |= 1;
 			if (!m_pHost && params->bRecalcBBox && m_body.Minv==0 && m_nParts) {
 				CPhysicalEntity **pentlist;
 				Vec3 gap(m_pWorld->m_vars.maxContactGapPlayer);
@@ -467,7 +429,7 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 
 	if (_params->type==pe_params_joint::type_id) {
 		pe_params_joint *params = (pe_params_joint*)_params;
-		m_bPartPosForced = 0;
+		m_bPartPosForced &= ~1;
 		int i,j,op[2]={-1,-1},nChanges=0,bAnimated=m_bFeatherstone|iszero(m_body.M);
 		for(i=0;i<m_nJoints;i++) {
 			if (m_joints[i].idbody==params->op[0]) op[0]=i;
@@ -681,7 +643,7 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (!is_unused(params->bInheritVel)) { m_bInheritVel = params->bInheritVel; bRecalcPos = 1; }
 		if (!is_unused(params->posHostPivot)) { m_posHostPivot = params->posHostPivot; bRecalcPos = 1; }
 		if (!is_unused(params->qHostPivot)) { m_qHostPivot = params->qHostPivot; bRecalcPos = 1; }
-		if (bRecalcPos)
+		if (bRecalcPos && (!m_bAwake || m_body.M<=0 || m_flags & aef_recorded_physics))
 			SyncWithHost(params->bRecalcJoints,0);
 		if (!is_unused(params->bCheckCollisions)) m_bCheckCollisions = params->bCheckCollisions;
 		if (!is_unused(params->bCollisionResp)) m_bFeatherstone = !params->bCollisionResp;
@@ -899,7 +861,7 @@ int CArticulatedEntity::Action(pe_action *_action, int bThreadSafe)
 		UpdatePosition(m_pWorld->RepositionEntity(this,1,m_BBoxNew));
 
 		if (!(m_nJoints==0 || m_joints[0].flags & joint_rotate_pivot))
-			m_bPartPosForced = 1;
+			m_bPartPosForced |= 1;
 		if (!m_pHost && m_body.Minv==0 && m_nParts && m_iSimClass<4) {
 			CPhysicalEntity **pentlist;
 			int nEnts=m_pWorld->GetEntitiesAround(m_BBox[0],m_BBox[1],pentlist,m_collTypes&(ent_sleeping_rigid|ent_living|ent_independent)|ent_triggers,this);
@@ -1152,7 +1114,12 @@ int CArticulatedEntity::SyncWithHost(int bRecalcJoints, float time_interval)
 		pp.pos = m_posPivot - m_offsPivot;
 		pp.q = m_pHost->m_qrot*m_qHostPivot;
 		pp.bRecalcBounds = 0;
-		SetParams(&pp,1);
+		if (!m_bAwake || m_body.M<=0 || m_flags & aef_recorded_physics)
+			SetParams(&pp,1);
+		else if (m_nJoints)	{
+			m_joints[0].quat0 = pp.q;
+			m_posPivot = pp.pos;
+		}
 		m_flags = m_flags & ~pef_invisible | m_pHost->m_flags & pef_invisible;
 		if (time_interval>0) {
 			pe_status_dynamics sd;
@@ -1336,7 +1303,7 @@ int CArticulatedEntity::Step(float time_interval)
 		for(i=0;i<m_nJoints;i++) {
 			j = m_joints[i].iStartPart;
 			m_joints[i].quat = m_qrot*m_parts[j].q*!m_infos[j].q0;
-			m_joints[i].body.pos = m_parts[j].pos-m_joints[i].quat*m_infos[j].pos0+m_pos;
+			m_joints[i].body.pos = m_qrot*m_parts[j].pos-m_joints[i].quat*m_infos[j].pos0+m_pos;
 			m_joints[i].body.q = m_joints[i].quat*!m_joints[i].body.qfb;
 			SyncJointWithBody(i);
 			m_joints[i].qext += m_joints[i].q;
@@ -1534,10 +1501,17 @@ void CArticulatedEntity::SyncJointWithBody(int idx, int flags)
 	if (flags & 1) { // sync angles
 		quaternionf qparent = m_joints[idx].iParent>=0 ? m_joints[m_joints[idx].iParent].quat : m_qNew;
 		m_joints[idx].quat = m_joints[idx].body.q*m_joints[idx].body.qfb;
-		m_joints[idx].q = Ang3::GetAnglesXYZ( Matrix33(!(qparent*m_joints[idx].quat0)*m_joints[idx].quat) );
-		m_joints[idx].q -= m_joints[idx].qext;
-		UpdateJointRotationAxes(idx);
-		CheckForGimbalLock(idx);
+		if (idx==0 && !m_bGrounded) {
+			m_joints[idx].quat0 = m_joints[idx].quat;
+			m_joints[idx].bQuat0Changed = 1;
+			m_joints[idx].q = -m_joints[idx].qext;
+			SetBasisTFromMtx(m_joints[idx].rotaxes, Matrix33(m_joints[idx].quat));
+		} else {
+			m_joints[idx].q = Ang3::GetAnglesXYZ( Matrix33(!(qparent*m_joints[idx].quat0)*m_joints[idx].quat) );
+			m_joints[idx].q -= m_joints[idx].qext;
+			UpdateJointRotationAxes(idx);
+			CheckForGimbalLock(idx);
+		}
 	}
 
 	if (flags & 2) { // sync velocities
@@ -3155,6 +3129,10 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 			SyncJointWithBody(i,2);
 			if (m_iSimTypeCur==0)
 				SyncBodyWithJoint(i,2);
+		}
+		if (!m_bGrounded && m_nJoints>0 && m_joints[0].body.w.len2()>sqr(m_maxw)) {
+			m_joints[0].body.w.normalize() *= m_maxw;
+			m_joints[0].dq.normalize() *= m_maxw;
 		}
 
 		if (m_iSimClass-1!=m_bAwake) {
