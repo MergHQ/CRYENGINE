@@ -335,9 +335,13 @@ public:
 
 	//	virtual float GetLodForDistance(float fDistance) { return 0; }
 
-	virtual void  OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) {}
-	virtual void  OnRenderNodeBecomeInvisible()                                 {}
+	//! Called immediately when render node becomes visible from any thread.
+	//! Not reentrant, multiple simultaneous calls to this method on the same rendernode from multiple threads is not supported and should not happen
+	virtual void  OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) {}
 
+	//! Called when RenderNode becomes visible or invisible, can only be called from the Main thread
+	virtual void  OnRenderNodeVisible( bool bBecomeVisible ) {}
+	
 	virtual uint8 GetSortPriority()                                             { return 0; }
 
 	//! Object can be used by GI system in several ways.

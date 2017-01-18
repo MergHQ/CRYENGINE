@@ -4773,7 +4773,7 @@ void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, 
 
 	if (pRNode)
 	{
-		pRNode->OnRenderNodeBecomeVisible(passInfo); // Internally uses the just assigned RNTmpData pointer i.e IRenderNode::m_pRNTmpData ...
+		pRNode->OnRenderNodeBecomeVisibleAsync(passInfo); // Internally uses the just assigned RNTmpData pointer i.e IRenderNode::m_pRNTmpData ...
 
 		if (IVisArea* pVisArea = pRNode->GetEntityVisArea())
 			pRNode->m_pTempData->userData.m_pClipVolume = pVisArea;

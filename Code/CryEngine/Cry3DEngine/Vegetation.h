@@ -122,7 +122,7 @@ public:
 	//	float GetLodForDistance(float fDistance);
 	void         Init();
 	void         ShutDown();
-	void         OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) final;
+	void         OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) final;
 	void         UpdateSpriteInfo(SVegetationSpriteInfo& properties, float fSpriteAmount, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo) const;
 	void         UpdateBending();
 	static void  InitVegDecomprTable();

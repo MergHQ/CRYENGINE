@@ -22,8 +22,6 @@
 #include "Brush.h"
 #include "terrain.h"
 
-#include <CryEntitySystem/IEntity.h>
-
 CBrush::CBrush()
 	: m_bVehicleOnlyPhysics(0)
 	, m_bDrawLast(0)
@@ -982,8 +980,10 @@ IStatObj* CBrush::GetEntityStatObj(unsigned int nPartId, unsigned int nSubPartId
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CBrush::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
+void CBrush::OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo)
 {
+	// Not reentrant, multiple simultaneous calls to this method on the same Render Node from multiple threads is not supported
+
 	assert(m_pTempData);
 	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
 
@@ -992,21 +992,6 @@ void CBrush::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
-
-	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
-	{
-		// When render node becomes visible notify our owner render node that it is now visible.
-		GetOwnerEntity()->OnRenderNodeVisibilityChange(true);
-	}
-}
-
-void CBrush::OnRenderNodeBecomeInvisible()
-{
-	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
-	{
-		// When render node becomes invisible notify our owner render node that it is now invisible.
-		GetOwnerEntity()->OnRenderNodeVisibilityChange(false);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

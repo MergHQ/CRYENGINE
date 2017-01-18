@@ -636,12 +636,6 @@ void CRoadRenderNode::OnTerrainChanged()
 	ScheduleRebuild(true);
 }
 
-void CRoadRenderNode::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
-{
-	assert(m_pTempData);
-	m_pTempData->userData.objMat.SetIdentity();
-}
-
 void CRoadRenderNode::GetTexCoordInfo(float* pTexCoordInfo)
 {
 	pTexCoordInfo[0] = m_serializedData.arrTexCoors[0];

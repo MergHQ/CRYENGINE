@@ -193,35 +193,22 @@ bool CCharacterRenderNode::GetLodDistances(const SFrameLodInfo& frameLodInfo, fl
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCharacterRenderNode::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
+void CCharacterRenderNode::OnRenderNodeVisible( bool bBecomeVisible )
 {
-	if (!passInfo.IsCachedShadowPass())
+	if (bBecomeVisible)
 	{
 		if (m_pCharacterInstance)
 		{
 			m_pCharacterInstance->SetFlags(m_pCharacterInstance->GetFlags() | CS_FLAG_RENDER_NODE_VISIBLE);
 		}
-
-		if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
+	}
+	else
+	{
+		if (m_pCharacterInstance)
 		{
-			// When render node becomes visible notify our owner render node that it is now visible.
-			GetOwnerEntity()->OnRenderNodeVisibilityChange(true);
+			m_pCharacterInstance->SetFlags(m_pCharacterInstance->GetFlags() & ~CS_FLAG_RENDER_NODE_VISIBLE);
+			m_pCharacterInstance->KillAllSkeletonEffects();
 		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCharacterRenderNode::OnRenderNodeBecomeInvisible()
-{
-	if (m_pCharacterInstance)
-	{
-		m_pCharacterInstance->SetFlags(m_pCharacterInstance->GetFlags() & ~CS_FLAG_RENDER_NODE_VISIBLE);
-		m_pCharacterInstance->KillAllSkeletonEffects();
-	}
-	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
-	{
-		// When render node becomes invisible notify our owner render node that it is now invisible.
-		GetOwnerEntity()->OnRenderNodeVisibilityChange(false);
 	}
 }
 

@@ -84,8 +84,13 @@ public:
 	void       ClearAll();
 
 private:
+	void OnRenderNodeVisibilityChange( IRenderNode *pRenderNode,bool bVisible );
+
+private:
 	std::vector<SRenderNodeTempData*> m_visibleNodes;
 	int                               m_lastStartUpdateNode;
+
+	int                               m_firstAddedNode;
 
 	int                               m_currentNodesToDelete;
 	std::vector<SRenderNodeTempData*> m_toDeleteNodes[MAX_DELETE_BUFFERS];
