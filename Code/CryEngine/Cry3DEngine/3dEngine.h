@@ -529,11 +529,13 @@ public:
 	virtual void                      DeleteRenderNode(IRenderNode* pRenderNode);
 	virtual void                      SetWind(const Vec3& vWind);
 	virtual Vec3                      GetWind(const AABB& box, bool bIndoors) const;
+	virtual void                      AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius);
 
 	void                              StartWindGridJob(const Vec3& vPos);
 	void                              FinishWindGridJob();
 	void                              UpdateWindGridJobEntry(Vec3 vPos);
 	void                              UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoorWindArea& windArea, const AABB& windBox);
+	void                              RasterWindAreas(std::vector<SOptimizedOutdoorWindArea> *pWindAreas, const Vec3& vGlobalWind);
 
 	virtual Vec3                      GetGlobalWind(bool bIndoors) const;
 	virtual bool                      SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
@@ -1311,6 +1313,7 @@ private:
 	int                                    m_nCurrentWindAreaList;
 	std::vector<SOptimizedOutdoorWindArea> m_outdoorWindAreas[2];
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];
+	std::vector<SOptimizedOutdoorWindArea> m_forcedWindAreas;
 
 	CLightVolumesMgr                       m_LightVolumesMgr;
 

@@ -3202,9 +3202,69 @@ static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 }
 #endif
 
+void C3DEngine::AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius)
+{
+	SOptimizedOutdoorWindArea area;
+	area.point[4].x = vPos.x; area.point[4].y = vPos.y;
+
+	Vec3 vSpeed = cry_random(Vec3(-1, -1, -1), Vec3(1, 1, 1));
+	vSpeed.Normalize();
+	area.windSpeed[4] = vSpeed * fAmountOfForce;
+
+	area.point[0].x = vPos.x - fRadius; area.point[0].y = vPos.y - fRadius;
+	area.windSpeed[0] = Vec3(-0.01f, -0.01f, 0);
+
+	area.point[1].x = vPos.x + fRadius; area.point[1].y = vPos.y - fRadius;
+	area.windSpeed[1] = Vec3(0.01f, -0.01f, 0);
+
+	area.point[2].x = vPos.x + fRadius; area.point[2].y = vPos.y + fRadius;
+	area.windSpeed[2] = Vec3(0.01f, 0.01f, 0);
+
+	area.point[3].x = vPos.x - fRadius; area.point[3].y = vPos.y + fRadius;
+	area.windSpeed[3] = Vec3(-0.01f, 0.01f, 0);
+
+	m_forcedWindAreas.push_back(area);
+}
+
 void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 {
 	FUNCTION_PROFILER_3DENGINE
+
+	bool bIndoors = false;
+
+	auto* pWindAreas = &m_outdoorWindAreas[m_nCurrentWindAreaList];
+	if (bIndoors)
+		pWindAreas = &m_indoorWindAreas[m_nCurrentWindAreaList];
+	Vec3 vGlobalWind = GetGlobalWind(bIndoors);
+
+	float fElapsedTime = gEnv->pTimer->GetFrameTime();
+
+	RasterWindAreas(pWindAreas, vGlobalWind);
+
+	pWindAreas = &m_forcedWindAreas;
+	RasterWindAreas(pWindAreas, vGlobalWind);
+
+	// Fade forced wind out
+	for (size_t i=0; i<pWindAreas->size(); i++)
+	{
+		SOptimizedOutdoorWindArea& WA = (*pWindAreas)[i];
+		WA.windSpeed[4].x *= 1.0f - fElapsedTime;
+		if (WA.windSpeed->IsZero(0.001f))
+		{
+			pWindAreas->erase(pWindAreas->begin()+i);
+			i--;
+		}
+	}
+}
+
+void C3DEngine::RasterWindAreas(std::vector<SOptimizedOutdoorWindArea> *pWindAreas, const Vec3& vGlobalWind)
+{
+	static const float fBEND_RESPONSE = 0.25f;
+	static const float fMAX_BENDING = 2.f;
+
+	// Don't update anything if there are no areas with wind
+	if (pWindAreas->size() == 0 && vGlobalWind.IsZero())
+		return;
 
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 
@@ -3212,23 +3272,9 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	rWindGrid.m_vCentr = m_vWindFieldCamera;
 	rWindGrid.m_vCentr.z = 0;
 
-	static const float fBEND_RESPONSE = 0.25f;
-	static const float fMAX_BENDING = 2.f;
-	bool bIndoors = false;
-
 	float fSize = (float)rWindGrid.m_nWidth * rWindGrid.m_fCellSize;
 	Vec3 vHalfSize = Vec3(fSize * 0.5f, fSize * 0.5f, 0.0f);
 	AABB windBox(rWindGrid.m_vCentr - vHalfSize, rWindGrid.m_vCentr + vHalfSize);
-
-	auto* pWindAreas = &m_outdoorWindAreas[m_nCurrentWindAreaList];
-	if (bIndoors)
-		pWindAreas = &m_indoorWindAreas[m_nCurrentWindAreaList];
-
-	Vec3 vGlobalWind = GetGlobalWind(bIndoors);
-
-	// Don't update anything if there are no areas with wind
-	if (pWindAreas->size() == 0 && vGlobalWind.IsZero())
-		return;
 
 	float fInterp = min(gEnv->pTimer->GetFrameTime() * 0.8f, 1.f);
 
