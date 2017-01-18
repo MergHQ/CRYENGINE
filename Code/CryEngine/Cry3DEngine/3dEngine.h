@@ -19,6 +19,7 @@
 #endif
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
+#include <CryCore/Containers/CryListenerSet.h>
 #include "VisibleRenderNodeManager.h"
 #include "LightVolumeManager.h"
 
@@ -1171,6 +1172,9 @@ public:
 
 	virtual void                          SetScreenshotCallback(IScreenshotCallback* pCallback);
 
+	virtual void                          RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
+	virtual void                          UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType);
+
 	virtual IDeferredPhysicsEventManager* GetDeferredPhysicsEventManager() { return m_pDeferredPhysicsEventManager; }
 
 	void                                  PrintDebugInfo(const SRenderingPassInfo& passInfo);
@@ -1300,6 +1304,11 @@ private:
 	std::map<string, SImageSubInfo*>       m_imageInfos;
 	byte**         AllocateMips(byte* pImage, int nDim, byte** pImageMips);
 	IScreenshotCallback*                   m_pScreenshotCallback;
+
+	typedef CListenerSet<IRenderNodeStatusListener*> TRenderNodeStatusListeners;
+	typedef std::vector<TRenderNodeStatusListeners> TRenderNodeStatusListenersArray;
+	TRenderNodeStatusListenersArray        m_renderNodeStatusListenersArray;
+
 	OcclusionTestClient                    m_OceanOcclTestVar;
 
 	IDeferredPhysicsEventManager*          m_pDeferredPhysicsEventManager;

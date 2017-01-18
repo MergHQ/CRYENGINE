@@ -143,6 +143,8 @@ CryCriticalSectionNonRecursive g_renderNodeTempDataLock;
 //////////////////////////////////////////////////////////////////////
 C3DEngine::C3DEngine(ISystem* pSystem)
 {
+	m_renderNodeStatusListenersArray.resize(EERType::eERType_TypesNum, TRenderNodeStatusListeners(0));
+
 	//#if defined(_DEBUG) && CRY_PLATFORM_WINDOWS
 	//	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	//#endif
@@ -2006,10 +2008,12 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 
 	m_lstAlwaysVisible.Delete(pEnt);
 
+	const EERType type = pEnt->GetRenderNodeType();
+
 	if (m_pDecalManager && (pEnt->m_nInternalFlags & IRenderNode::DECAL_OWNER))
 		m_pDecalManager->OnEntityDeleted(pEnt);
 
-	if (pEnt->GetRenderNodeType() == eERType_Light && GetRenderer())
+	if (type == eERType_Light && GetRenderer())
 		GetRenderer()->OnEntityDeleted(pEnt);
 
 	if (pEnt->GetRndFlags() & (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS))
@@ -2020,6 +2024,15 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 			Warning("IRenderNode has ERF_CASTSHADOWMAPS set but not ERF_HAS_CASTSHADOWMAPS, name: '%s', class: '%s'.", pEnt->GetName(), pEnt->GetEntityClassName());
 #endif
 		Get3DEngine()->OnCasterDeleted(pEnt);
+	}
+
+	TRenderNodeStatusListeners& listeners = m_renderNodeStatusListenersArray[type];
+	if (!listeners.Empty())
+	{
+		for (TRenderNodeStatusListeners::Notifier notifier(listeners); notifier.IsValid(); notifier.Next())
+		{
+			notifier->OnEntityDeleted(pEnt);
+		}
 	}
 
 	UnRegisterEntityImpl(pEnt);
@@ -5078,6 +5091,16 @@ void C3DEngine::SyncProcessStreamingUpdate()
 void C3DEngine::SetScreenshotCallback(IScreenshotCallback* pCallback)
 {
 	m_pScreenshotCallback = pCallback;
+}
+
+void C3DEngine::RegisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType)
+{
+	m_renderNodeStatusListenersArray[renderNodeType].Add(pListener);
+}
+
+void C3DEngine::UnregisterRenderNodeStatusListener(IRenderNodeStatusListener* pListener, EERType renderNodeType)
+{
+	m_renderNodeStatusListenersArray[renderNodeType].Remove(pListener);
 }
 
 void C3DEngine::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, bool bObjects, bool bStaticLights, const char* pLayerName, IGeneralMemoryHeap* pHeap, bool bCheckLayerActivation /*=true*/)
