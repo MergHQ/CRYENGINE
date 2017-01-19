@@ -320,6 +320,7 @@ private:
 	bool m_bPhysicsSynchronize;
 	bool m_bPhysicsSynchronizeFromEntity;
 	bool m_bPhysBufferFilled;
+	int  m_idLastSyncFrame = 0;
 
 	struct PhysAuxData
 	{
