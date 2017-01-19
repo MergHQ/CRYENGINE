@@ -71,3 +71,14 @@
 #else
 	#define CRY_FUNCTION_CONTAINS_UNDEFINED_BEHAVIOR
 #endif
+
+
+#ifdef  _MSC_VER
+// For clang on MSBuild
+#define stricmp   _stricmp
+#define strnicmp  _strnicmp
+#define wcsicmp   _wcsicmp
+#define wcsnicmp  _wcsnicmp
+#define alloca    _alloca
+#define itoa      _itoa
+#endif //CRY_PLATFORM_ORBIS

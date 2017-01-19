@@ -2,20 +2,15 @@
 #include "EntityFlowNode.h"
 
 CEntityFlowNodeFactory::CEntityFlowNodeFactory(const char* className)
-	: CAutoRegFlowNodeBase(className)
 {
 	m_nRefCount = 0;
 	m_activateCallback = 0;
+	m_className = className;
 }
 
 CEntityFlowNodeFactory::~CEntityFlowNodeFactory()
 {
 	Reset();
-
-	if (!gEnv->pFlowSystem->UnregisterType(m_sClassName))
-	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CryDefaultEntities] Error unregistering flownode '%s'", m_sClassName);
-	}
 }
 
 void CEntityFlowNodeFactory::Reset()
@@ -27,6 +22,14 @@ void CEntityFlowNodeFactory::MakeHumanName(SInputPortConfig& config)
 	char* name = strchr((char*)config.name, '_');
 	if (name != 0)
 		config.humanName = name+1;
+}
+
+void CEntityFlowNodeFactory::UnregisterFactory()
+{
+	if (!gEnv->pFlowSystem->UnregisterType(m_className.c_str()))
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CryDefaultEntities] Error unregistering flownode '%s'", m_className.c_str());
+	}
 }
 
 void CEntityFlowNodeFactory::AddInputs(const std::vector<SInputPortConfig>& inputs, FlowNodeOnActivateFunction callback)
@@ -121,7 +124,7 @@ void CEntityFlowNodeFactory::Close()
 	if (gEnv->pFlowSystem->HasRegisteredDefaultFlowNodes())
 	{
 		// handing over factory ownership to flowsystem (will also delete it on shutdown)
-		gEnv->pFlowSystem->RegisterType(m_sClassName, this);
+		gEnv->pFlowSystem->RegisterType(m_className.c_str(), this);
 	}
 }
 

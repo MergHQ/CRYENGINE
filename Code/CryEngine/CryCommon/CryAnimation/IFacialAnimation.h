@@ -539,7 +539,7 @@ struct IFacialAnimSequence
 		FLAG_RANGE_FROM_SOUND = 0x00001,  //!< Take time range from the sound length.
 	};
 
-	enum ESerializationFlags
+	enum ESerializationFlags : uint32
 	{
 		SFLAG_SOUND_ENTRIES = 0x00000001,
 		SFLAG_CAMERA_PATH   = 0x00000002,

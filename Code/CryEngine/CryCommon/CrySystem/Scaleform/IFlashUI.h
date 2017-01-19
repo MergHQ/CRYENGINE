@@ -36,7 +36,7 @@ struct SUIConversion
 		return true;
 	}
 };
-namespace detail
+namespace cry_variant
 {
 	template<class To, size_t I = 0>
 	ILINE bool ConvertVariant(const TUIDataVariant& from, To& to)
@@ -96,7 +96,7 @@ struct SUIConversion<TUIDataVariant, To>
 {
 	static ILINE bool ConvertValue(const TUIDataVariant& from, To& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 template<>
@@ -104,7 +104,7 @@ struct SUIConversion<TUIDataVariant, bool>
 {
 	static ILINE bool ConvertValue(const TUIDataVariant& from, bool& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 template<>
@@ -112,7 +112,7 @@ struct SUIConversion<TUIDataVariant, Vec3>
 {
 	static ILINE bool ConvertValue(const TUIDataVariant& from, Vec3& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 
@@ -365,13 +365,13 @@ struct SUIConversion<wstring, string>
 enum EUIDataTypes
 {
 	eUIDT_Any      = -1,
-	eUIDT_Bool     = detail::get_index<bool, TUIDataVariant>::value,
-	eUIDT_Int      = detail::get_index<int, TUIDataVariant>::value,
-	eUIDT_Float    = detail::get_index<float, TUIDataVariant>::value,
-	eUIDT_EntityId = detail::get_index<EntityId, TUIDataVariant>::value,
-	eUIDT_Vec3     = detail::get_index<Vec3, TUIDataVariant>::value,
-	eUIDT_String   = detail::get_index<string, TUIDataVariant>::value,
-	eUIDT_WString  = detail::get_index<wstring, TUIDataVariant>::value,
+	eUIDT_Bool     = cry_variant::get_index<bool, TUIDataVariant>::value,
+	eUIDT_Int      = cry_variant::get_index<int, TUIDataVariant>::value,
+	eUIDT_Float    = cry_variant::get_index<float, TUIDataVariant>::value,
+	eUIDT_EntityId = cry_variant::get_index<EntityId, TUIDataVariant>::value,
+	eUIDT_Vec3     = cry_variant::get_index<Vec3, TUIDataVariant>::value,
+	eUIDT_String   = cry_variant::get_index<string, TUIDataVariant>::value,
+	eUIDT_WString  = cry_variant::get_index<wstring, TUIDataVariant>::value,
 };
 
 class TUIData

@@ -34,8 +34,8 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 	virtual ~CEngineModule_CryAudioImplFmod() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     override { return "CryAudioImplFmod"; }
-	virtual char const* GetCategory() override { return "CryAudio"; }
+	virtual char const* GetName()  const override { return "CryAudioImplFmod"; }
+	virtual char const* GetCategory()  const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

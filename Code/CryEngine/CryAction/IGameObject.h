@@ -28,7 +28,7 @@ struct IMovementController;
 struct IGameObjectProfileManager;
 struct IWorldQuery;
 
-enum EEntityAspects
+enum EEntityAspects : uint32
 {
 	eEA_All               = NET_ASPECT_ALL,
 	// 0x01u                       // aspect 0

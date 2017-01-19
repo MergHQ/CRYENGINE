@@ -7739,9 +7739,9 @@ class CEngineModule_CryRenderer : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryRenderer, "EngineModule_CryRenderer", 0x540c91a7338e41d3, 0xaceeac9d55614450)
 
 	virtual ~CEngineModule_CryRenderer() {}
+	virtual const char* GetName() const override { return "CryRenderer"; }
+	virtual const char* GetCategory() const override { return "CryEngine"; }
 
-	virtual const char* GetName() override { return "CryRenderer"; }
-	virtual const char* GetCategory() override { return "CryEngine"; }
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{

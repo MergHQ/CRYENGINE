@@ -503,6 +503,8 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 
 	InlineInitializationProcessing("CGameStartup::Init End");
 
+	CryRegisterFlowNodes();
+
 	assert(gEnv);
 	PREFAST_ASSUME(gEnv);
 	
@@ -531,6 +533,8 @@ IGameRef CGameStartup::Reset(ISystem* pSystem)
 
 void CGameStartup::Shutdown()
 {
+	CryUnregisterFlowNodes();
+
 #if CRY_PLATFORM_WINDOWS
 	AllowAccessibilityShortcutKeys(true);
 #endif

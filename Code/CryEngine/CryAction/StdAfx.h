@@ -122,19 +122,6 @@ inline bool IsClientActor(EntityId id)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Get a proxy or make it if not found
-inline IEntityComponent* GetOrMakeProxy(IEntity* pEntity, EEntityProxy proxyType)
-{
-	IEntityComponent* pProxy = pEntity->GetProxy(proxyType);
-	if (!pProxy)
-	{
-		if (pEntity->CreateProxy(proxyType))
-			pProxy = pEntity->GetProxy(proxyType);
-	}
-	return pProxy;
-}
-
 template<typename T> bool inline GetAttr(const XmlNodeRef& node, const char* key, T& val)
 {
 	return node->getAttr(key, val);

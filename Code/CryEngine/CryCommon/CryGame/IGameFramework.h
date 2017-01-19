@@ -381,6 +381,8 @@ struct IPersistantDebug
 	virtual void ClearStaticTag(EntityId entityId, const char* staticId) = 0;
 	virtual void ClearTagContext(const char* tagContext) = 0;
 	virtual void ClearTagContext(const char* tagContext, EntityId entityId) = 0;
+	virtual void Update(float frameTime) = 0;
+	virtual void PostUpdate(float frameTime) = 0;
 	virtual void Reset() = 0;
 	// </interfuscator:shuffle>
 };
@@ -792,6 +794,8 @@ struct IGameFramework
 	virtual ELoadGameResult LoadGame(const char* path, bool quick = false, bool ignoreDelay = false) = 0;
 
 	virtual TSaveGameName CreateSaveGameName() = 0;
+
+	virtual void ScheduleEndLevel(const char* nextLevel) = 0;
 
 	//! Schedules the level load for the next level
 	virtual void ScheduleEndLevelNow(const char* nextLevel) = 0;

@@ -116,6 +116,7 @@ class CCryAction :
 
 public:
 	CCryAction();
+	~CCryAction();
 
 	// IGameFramework
 	void                                  ClearTimers();
@@ -228,7 +229,7 @@ public:
 	virtual ELoadGameResult               LoadGame(const char* path, bool quick = false, bool ignoreDelay = false);
 	virtual TSaveGameName                 CreateSaveGameName();
 
-	virtual void                          ScheduleEndLevel(const char* nextLevel = "");
+	virtual void                          ScheduleEndLevel(const char* nextLevel);
 	virtual void                          ScheduleEndLevelNow(const char* nextLevel);
 
 	virtual void                          OnEditorSetGameMode(int iMode);
@@ -395,9 +396,6 @@ private:
 
 	void InitCommands();
 
-	// TODO: remove
-	static void FlowTest(IConsoleCmdArgs*);
-
 	// console commands provided by CryAction
 	static void DumpMapsCmd(IConsoleCmdArgs* args);
 	static void MapCmd(IConsoleCmdArgs* args);
@@ -515,7 +513,7 @@ private:
 	CViewSystem*                  m_pViewSystem;
 	CGameplayRecorder*            m_pGameplayRecorder;
 	CGameRulesSystem*             m_pGameRulesSystem;
-	CFlowSystem*                  m_pFlowSystem;
+
 	CGameObjectSystem*            m_pGameObjectSystem;
 	CUIDraw*                      m_pUIDraw;
 	CScriptRMI*                   m_pScriptRMI;
@@ -526,7 +524,7 @@ private:
 	CPlayerProfileManager*        m_pPlayerProfileManager;
 	CDialogSystem*                m_pDialogSystem;
 	CSubtitleManager*             m_pSubtitleManager;
-	IGameTokenSystem*             m_pGameTokenSystem;
+
 	IEffectSystem*                m_pEffectSystem;
 	CGameSerialize*               m_pGameSerialize;
 	CallbackTimer*                m_pCallbackTimer;

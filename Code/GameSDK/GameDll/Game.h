@@ -387,8 +387,6 @@ public:
 	virtual IGame::ExportFilesInfo ExportLevelData(const char* levelName, const char* missionName) const;
 	virtual void                   LoadExportedLevelData(const char* levelName, const char* missionName);
 
-	virtual void                   RegisterGameFlowNodes();
-	void                           UnregisterGameFlowNodes();
 	// ~IGame
 
 	// IGameFrameworkListener

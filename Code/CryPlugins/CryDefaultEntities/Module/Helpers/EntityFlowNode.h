@@ -14,7 +14,7 @@ struct IEntityClass;
 typedef void (*FlowNodeInputFunction)(EntityId id, const TFlowInputData& data);
 typedef void (*FlowNodeOnActivateFunction)(EntityId id, IFlowNode::SActivationInfo* pActInfo, const class CEntityFlowNode* pNode);
 
-class CEntityFlowNodeFactory : public CAutoRegFlowNodeBase
+class CEntityFlowNodeFactory : public IFlowNodeFactory
 {
 public:
 	CEntityFlowNodeFactory(const char* className);
@@ -46,9 +46,12 @@ public:
 
 	void MakeHumanName(SInputPortConfig& config);
 
+	void UnregisterFactory();
+
 	friend class CEntityFlowNode;
 
 	int m_nRefCount;
+	string m_className;
 	std::vector<FlowNodeInputFunction> m_callbacks;
 	std::vector<SInputPortConfig> m_inputs;
 	std::vector<SOutputPortConfig> m_outputs;

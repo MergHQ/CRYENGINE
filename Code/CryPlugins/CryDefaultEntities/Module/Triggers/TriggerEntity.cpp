@@ -19,7 +19,7 @@ class CTriggerEntityRegistrator
 		
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
-		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AreaTrigger");
+		pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AreaTrigger");
 
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig_Void("Disable", ""));
@@ -33,6 +33,17 @@ class CTriggerEntityRegistrator
 
 		pFlowNodeFactory->Close();
 	}
+
+public:
+	~CTriggerEntityRegistrator()
+	{
+		if (pFlowNodeFactory)
+			pFlowNodeFactory->UnregisterFactory();
+		pFlowNodeFactory = nullptr;
+	}
+
+private:
+	CEntityFlowNodeFactory* pFlowNodeFactory = nullptr;
 };
 
 CTriggerEntityRegistrator g_triggerEntityRegistrator;

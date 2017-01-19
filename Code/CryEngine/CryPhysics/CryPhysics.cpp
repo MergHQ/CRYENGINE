@@ -205,8 +205,8 @@ class CEngineModule_CryPhysics : public IEngineModule
 	virtual ~CEngineModule_CryPhysics() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char *GetName() override { return "CryPhysics"; };
-	virtual const char *GetCategory() override { return "CryEngine"; };
+	virtual const char *GetName() const override { return "CryPhysics"; };
+	virtual const char *GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize( SSystemGlobalEnvironment &env,const SSystemInitParams &initParams ) override

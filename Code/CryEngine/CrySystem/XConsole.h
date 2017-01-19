@@ -169,7 +169,7 @@ public:
 	virtual void                   Exit(const char* command, ...) PRINTF_PARAMS(2, 3);
 	virtual bool                   IsOpened();
 	virtual int                    GetNumVars(bool bIncludeCommands = false);
-	virtual size_t                 GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0);
+	virtual size_t                 GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0,int nListTypes=0);
 	virtual int                    GetNumCheatVars();
 	virtual void                   SetCheatVarHashRange(size_t firstVar, size_t lastVar);
 	virtual void                   CalcCheatVarHash();

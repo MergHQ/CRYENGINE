@@ -34,7 +34,7 @@
 	#define UIACTION_ERROR   (void)
 #endif
 
-class CAutoRegUIFlowNode;
+class CFlashUiFlowNodeFactory;
 struct CUIActionManager;
 class CFlashUIActionEvents;
 
@@ -180,7 +180,6 @@ public:
 
 	EPlatformUI GetCurrentPlatform();
 
-	typedef std::vector<CAutoRegUIFlowNode*> TUIFlowNodes;
 private:
 	CFlashUI(const CFlashUI&) : m_modules(8) {}
 
@@ -252,7 +251,7 @@ private:
 	typedef std::vector<IFlashPlayer*> TPlayerList;
 	TPlayerList           m_loadtimePlayerList;
 
-	TUIFlowNodes          m_UINodes;
+	std::vector<CFlashUiFlowNodeFactory*> m_UINodes;
 
 	typedef std::map<ITexture*, string> TTextureMap;
 	TTextureMap       m_preloadedTextures;

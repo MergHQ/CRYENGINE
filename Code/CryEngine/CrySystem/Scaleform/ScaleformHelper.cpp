@@ -16,12 +16,12 @@ class CEngineModule_ScaleformHelper : public IEngineModule
 	virtual ~CEngineModule_ScaleformHelper() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() override { return "CryScaleformHelper"; };
+	virtual const char* GetName() const override { return "CryScaleformHelper"; };
 
 	#if CRY_IS_SCALEFORM_HELPER
-	virtual const char* GetCategory() override { return "CryExtensions"; };
+	virtual const char* GetCategory() const override { return "CryExtensions"; };
 	#else
-	virtual const char* GetCategory() override { return "CryEngine"; };
+	virtual const char* GetCategory() const override { return "CryEngine"; };
 	#endif
 
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

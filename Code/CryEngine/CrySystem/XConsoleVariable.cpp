@@ -134,17 +134,6 @@ bool CXConsoleVariableBase::RemoveOnChangeFunctor(const uint64 nElement)
 	return false;
 }
 
-bool CXConsoleVariableBase::RemoveOnChangeFunctor(const SFunctor& changeFunctor)
-{
-	const auto it = std::find(std::begin(m_cpChangeFunctors), std::end(m_cpChangeFunctors), changeFunctor);
-	if (it != std::end(m_cpChangeFunctors))
-	{
-		m_cpChangeFunctors.erase(it);
-		return true;
-	}
-	return false;
-}
-
 ConsoleVarFunc CXConsoleVariableBase::GetOnChangeCallback() const
 {
 	return m_pChangeFunc;

@@ -200,7 +200,7 @@ private:
 
 struct ReadLockCond
 {
-	ReadLockCond(volatile int& rw, int bActive) : prw(&rw), iActive(0)
+	ReadLockCond(volatile int& rw, int bActive) : iActive(0),prw(&rw)
 	{
 		if (bActive)
 		{

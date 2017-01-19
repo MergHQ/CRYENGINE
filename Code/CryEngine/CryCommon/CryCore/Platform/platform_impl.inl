@@ -12,6 +12,8 @@
 #include <CrySystem/CryUtils.h>
 #include <CryCore/Platform/CryWindows.h>
 
+#include <CryFlowGraph/IFlowBaseNode.h>
+
 //////////////////////////////////////////////////////////////////////////
 // Global environment variable.
 //////////////////////////////////////////////////////////////////////////
@@ -25,7 +27,7 @@ extern SSystemGlobalEnvironment gEnv;
 struct SSystemGlobalEnvironment* gEnv = NULL;
 #endif
 
-#if defined(_LAUNCHER) && (defined(_RELEASE) || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS) || !defined(_LIB)
+#if defined(_LAUNCHER) && (defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project
 struct SRegFactoryNode* g_pHeadToRegFactories = 0;
 #endif
@@ -502,6 +504,18 @@ int64 CryGetTicks()
 #else
 	#define THR_INLINE
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+// Support for automatic FlowNode types registration
+//////////////////////////////////////////////////////////////////////////
+#if !defined(_LIB) || defined(_LAUNCHER)
+#pragma message(	"Define CAutoRegFlowNodeBase::m_pFirst" )
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
+bool                  CAutoRegFlowNodeBase::m_bNodesRegistered = false;
+#endif
+
+//////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
 //inline void CryDebugStr( const char *format,... )

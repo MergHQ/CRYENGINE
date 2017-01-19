@@ -101,7 +101,7 @@ enum EPostEffectFlags
 };
 
 //! Bit offsets for shader layer flags.
-enum EMaterialLayerFlags
+enum EMaterialLayerFlags : uint32
 {
 	// Active layers flags
 	MTL_LAYER_FROZEN        = 0x0001,

@@ -25,8 +25,8 @@ class CEngineModule_CryAudioImplSDLMixer : public IEngineModule
 	virtual ~CEngineModule_CryAudioImplSDLMixer() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     override { return "CryAudioImplSDLMixer"; }
-	virtual char const* GetCategory() override { return "CryAudio"; }
+	virtual char const* GetName() const override     { return "CryAudioImplSDLMixer"; }
+	virtual char const* GetCategory() const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

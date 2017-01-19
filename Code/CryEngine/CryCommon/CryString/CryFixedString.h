@@ -244,7 +244,7 @@ public:
 	typedef const_pointer         const_iterator;
 	static const size_type MAX_SIZE = S;
 
-	enum _npos_type
+	enum _npos_type : size_t
 	{
 		npos = (size_type) ~0
 	};

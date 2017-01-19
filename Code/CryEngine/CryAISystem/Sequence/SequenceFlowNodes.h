@@ -5,14 +5,6 @@
 #include "SequenceManager.h"
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-#ifndef _LIB
-struct AIFlowBaseNode
-{
-	static void RegisterFlowNodes();
-	static void UnregisterFlowNodes();
-};
-#endif
-
 namespace AIActionSequence
 {
 

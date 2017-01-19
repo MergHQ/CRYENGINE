@@ -63,6 +63,9 @@
 
 #include <CrySystem/IProjectManager.h>
 
+#include <CryFlowGraph/IFlowSystem.h>
+#include <CryFlowGraph/IFlowGraphModuleManager.h>
+
 #include "Serialization/GameSerialize.h"
 
 #include "Mannequin/AnimationDatabaseManager.h"
@@ -78,10 +81,8 @@
 // game object extensions
 #include "Inventory.h"
 
-#include "FlowSystem/FlowSystem.h"
-#include "FlowSystem/Modules/ModuleManager.h"
 #include "IVehicleSystem.h"
-#include "GameTokens/GameTokenSystem.h"
+
 #include "EffectSystem/EffectSystem.h"
 #include "VehicleSystem/ScriptBind_Vehicle.h"
 #include "VehicleSystem/ScriptBind_VehicleSeat.h"
@@ -182,6 +183,8 @@
 
 #include "LipSync/LipSync_TransitionQueue.h"
 #include "LipSync/LipSync_FacialInstance.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #ifdef _LIB
 extern "C" IGameStartup* CreateGameStartup();
@@ -299,7 +302,6 @@ CCryAction::CCryAction()
 	m_pGameplayRecorder(0),
 	m_pGameplayAnalyst(0),
 	m_pGameRulesSystem(0),
-	m_pFlowSystem(0),
 	m_pGameObjectSystem(0),
 	m_pScriptRMI(0),
 	m_pUIDraw(0),
@@ -311,7 +313,6 @@ CCryAction::CCryAction()
 	m_pPlayerProfileManager(0),
 	m_pDialogSystem(0),
 	m_pSubtitleManager(0),
-	m_pGameTokenSystem(0),
 	m_pEffectSystem(0),
 	m_pGameSerialize(0),
 	m_pCallbackTimer(0),
@@ -379,15 +380,9 @@ CCryAction::CCryAction()
 	cry_strcpy(m_gameGUID, "{00000000-0000-0000-0000-000000000000}");
 }
 
-#if 0
-// TODO: REMOVE: Temporary for testing (Craig)
-void CCryAction::FlowTest(IConsoleCmdArgs* args)
+CCryAction::~CCryAction()
 {
-	IFlowGraphPtr pFlowGraph = GetCryAction()->m_pFlowSystem->CreateFlowGraph();
-	pFlowGraph->SerializeXML(::GetISystem()->LoadXmlFromFile("Libs/FlowNodes/testflow.xml"), true);
-	GetCryAction()->m_pFlowSystem->SetActiveFlowGraph(pFlowGraph);
 }
-#endif
 
 //------------------------------------------------------------------------
 void CCryAction::DumpMapsCmd(IConsoleCmdArgs* args)
@@ -1770,6 +1765,13 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	startupParams.pGameFramework = this;
 
+	m_pGFListeners = new TGameFrameworkListeners();
+
+	// These vectors must have enough space allocated up-front so as to guarantee no further allocs
+	// If they do exceed this capacity, the level heap mechanism should result in a crash
+	m_pGFListeners->reserve(20);
+	m_validListeners.reserve(m_pGFListeners->capacity());
+
 	if (!startupParams.pSystem)
 	{
 #if !defined(_LIB)
@@ -1801,6 +1803,9 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	}
 
 	ModuleInitISystem(m_pSystem, "CryAction");  // Needed by GetISystem();
+
+	// Flow nodes are registered only when compiled as dynamic library
+	CryRegisterFlowNodes();
 
 	// here we have gEnv and m_pSystem
 	LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() after system");
@@ -1876,7 +1881,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 	m_pScriptRMI = new CScriptRMI();
 
 	// initialize subsystems
-	m_pGameTokenSystem = new CGameTokenSystem;
 	m_pEffectSystem = new CEffectSystem;
 	m_pEffectSystem->Init();
 	m_pUIDraw = new CUIDraw;
@@ -1989,9 +1993,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	// m_pGameRulesSystem = new CGameRulesSystem(m_pSystem, this);
 
-	// TODO: temporary testing stuff
-	//	REGISTER_COMMAND( "flow_test", FlowTest,VF_NULL,"" );
-
 	m_pLocalAllocs = new SLocalAllocs();
 
 #if 0
@@ -2015,13 +2016,6 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 #ifdef CRYACTION_DEBUG_MEM
 	DumpMemInfo("CryAction::Init End");
 #endif
-
-	m_pGFListeners = new TGameFrameworkListeners();
-
-	// These vectors must have enough space allocated up-front so as to guarantee no further allocs
-	// If they do exceed this capacity, the level heap mechanism should result in a crash
-	m_pGFListeners->reserve(20);
-	m_validListeners.reserve(m_pGFListeners->capacity());
 
 	m_nextFrameCommand = new string();
 
@@ -2347,14 +2341,7 @@ bool CCryAction::CompleteInit()
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Init();
 
-	SAFE_DELETE(m_pFlowSystem);
-	m_pFlowSystem = new CFlowSystem();
-	m_pSystem->SetIFlowSystem(m_pFlowSystem);
-	m_pFlowSystem->PreInit();
 	m_pSystem->SetIDialogSystem(m_pDialogSystem);
-
-	if (m_pFlowSystem)
-		m_pFlowSystem->Init();
 
 	InlineInitializationProcessing("CCryAction::CompleteInit SetDialogSystem");
 
@@ -2527,7 +2514,7 @@ bool CCryAction::ShutdownGame()
 	// unload game dll if present
 	if (m_externalGameLibrary.IsValid())
 	{
-		CFlowGraphModuleManager* pFlowGraphModuleManager = m_pFlowSystem->GetModuleManager();
+		IFlowGraphModuleManager* pFlowGraphModuleManager = gEnv->pFlowSystem->GetIModuleManager();
 		if (pFlowGraphModuleManager)
 		{
 			pFlowGraphModuleManager->ClearModules();
@@ -2560,6 +2547,11 @@ bool CCryAction::ShutdownGame()
 void CCryAction::ShutdownEngine()
 {
 	ShutdownGame();
+
+#ifndef _LIB
+	// Flow nodes are registered/unregistered only when compiled as dynamic library
+	CryUnregisterFlowNodes();
+#endif
 
 	XMLCPB::ShutdownCompressorThread();
 
@@ -2605,9 +2597,6 @@ void CCryAction::ShutdownEngine()
 	if (m_pDialogSystem)
 		m_pDialogSystem->Shutdown();
 
-	if (m_pFlowSystem)
-		m_pFlowSystem->Shutdown();
-
 	SAFE_RELEASE(m_pActionMapManager);
 	SAFE_RELEASE(m_pItemSystem);
 	SAFE_RELEASE(m_pLevelSystem);
@@ -2624,7 +2613,6 @@ void CCryAction::ShutdownEngine()
 	SAFE_DELETE(m_pSubtitleManager);
 	SAFE_DELETE(m_pUIDraw);
 	SAFE_DELETE(m_pScriptRMI);
-	SAFE_DELETE(m_pGameTokenSystem);
 	SAFE_DELETE(m_pEffectSystem);
 	SAFE_DELETE(m_pAnimationGraphCvars);
 	SAFE_DELETE(m_pGameObjectSystem);
@@ -2673,14 +2661,6 @@ void CCryAction::ShutdownEngine()
 	// this will allow clean dtor for all UIFlowNodes
 	if (gEnv && gEnv->pFlashUI)
 		gEnv->pFlashUI->Shutdown();
-
-	// Nodes might try to access the FlowSystem at any time therefore
-	// keep it around until the last node has been destroyed.
-	SAFE_RELEASE(m_pFlowSystem);
-	if (m_pSystem)
-	{
-		m_pSystem->SetIFlowSystem(nullptr);
-	}
 
 	//NOTE: m_pGFListeners->erase got commented out in UnregisterListener
 	//	CRY_ASSERT(0 == m_pGFListeners->size());
@@ -2833,11 +2813,18 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 			if (m_pGameplayRecorder)
 				m_pGameplayRecorder->Update(frameTime);
 
+		{
+			// These things need to be updated in game mode and ai/physics mode
+			gEnv->pGameFramework->GetIPersistantDebug()->Update(gEnv->pTimer->GetFrameTime());
+			CDebugHistoryManager::RenderAll();
+			CCryAction::GetCryAction()->GetTimeOfDayScheduler()->Update();
+		}
+
 		if (!bGameIsPaused && gameRunning)
 		{
-			if (m_pFlowSystem)
+			if (gEnv->pFlowSystem)
 			{
-				m_pFlowSystem->Update();
+				gEnv->pFlowSystem->Update();
 			}
 		}
 
@@ -3943,7 +3930,7 @@ void CCryAction::OnEditorSetGameMode(int iMode)
 //------------------------------------------------------------------------
 IFlowSystem* CCryAction::GetIFlowSystem()
 {
-	return m_pFlowSystem;
+	return gEnv->pFlowSystem;
 }
 
 //------------------------------------------------------------------------
@@ -4475,7 +4462,7 @@ IGameObjectSystem* CCryAction::GetIGameObjectSystem()
 
 IGameTokenSystem* CCryAction::GetIGameTokenSystem()
 {
-	return m_pGameTokenSystem;
+	return gEnv->pFlowSystem->GetIGameTokenSystem();
 }
 
 IEffectSystem* CCryAction::GetIEffectSystem()
@@ -4779,6 +4766,8 @@ void CCryAction::RegisterListener(IGameFrameworkListener* pGameFrameworkListener
 
 void CCryAction::UnregisterListener(IGameFrameworkListener* pGameFrameworkListener)
 {
+	if (!m_pGFListeners)
+		return;
 	/*for (TGameFrameworkListeners::iterator iter = m_pGFListeners->begin(); iter != m_pGFListeners->end(); ++iter)
 	   {
 	   if (iter->pListener == pGFListener)
@@ -5197,7 +5186,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	CHILD_STATISTICS(m_pActionMapManager);
 	s->AddObject(m_pViewSystem);
 	CHILD_STATISTICS(m_pGameRulesSystem);
-	s->AddObject(m_pFlowSystem);
 	CHILD_STATISTICS(m_pUIDraw);
 	s->AddObject(m_pGameObjectSystem);
 	CHILD_STATISTICS(m_pScriptRMI);
@@ -5207,7 +5195,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_pBreakableGlassSystem);
 	CHILD_STATISTICS(m_pPlayerProfileManager);
 	CHILD_STATISTICS(m_pDialogSystem);
-	CHILD_STATISTICS(m_pGameTokenSystem);
 	CHILD_STATISTICS(m_pEffectSystem);
 	CHILD_STATISTICS(m_pGameSerialize);
 	CHILD_STATISTICS(m_pCallbackTimer);
@@ -5218,7 +5205,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	CHILD_STATISTICS(m_pGameplayRecorder);
 	CHILD_STATISTICS(m_pGameplayAnalyst);
 	CHILD_STATISTICS(m_pTimeOfDayScheduler);
-	s->AddObject(m_pFlowSystem);
 	CHILD_STATISTICS(m_pGameStatistics);
 	CHILD_STATISTICS(gEnv->pFlashUI);
 	s->Add(*m_pScriptA);

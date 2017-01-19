@@ -32,11 +32,14 @@ class CEngineModule_CryAISystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAISystem, "EngineModule_CryAISystem", 0x6b8e79a784004f44, 0x97db7614428ad251)
 
-	virtual ~CEngineModule_CryAISystem() {}
+	virtual ~CEngineModule_CryAISystem()
+	{
+		CryUnregisterFlowNodes();
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() override { return "CryAISystem"; };
-	virtual const char* GetCategory() override { return "CryEngine"; };
+	virtual const char* GetName()  const override { return "CryAISystem"; };
+	virtual const char* GetCategory()  const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
@@ -47,6 +50,8 @@ class CEngineModule_CryAISystem : public IEngineModule
 
 		g_pAISystem = new CAISystem(pSystem);
 		env.pAISystem = g_pAISystem;
+
+		CryRegisterFlowNodes();
 
 		return true;
 	}

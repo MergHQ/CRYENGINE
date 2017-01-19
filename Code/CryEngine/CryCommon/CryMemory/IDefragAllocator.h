@@ -37,7 +37,7 @@ struct IDefragAllocatorCopyNotification
 class IDefragAllocatorPolicy
 {
 public:
-	enum
+	enum : uint32
 	{
 		InvalidUserMoveId = 0xffffffff
 	};

@@ -126,6 +126,8 @@ if (OPTION_ENGINE)
 	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryNetwork" "${CMAKE_BINARY_DIR}/CryEngine/CryNetwork")
 	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc" "${CMAKE_BINARY_DIR}/CryEngine/CrySchematyc")
 	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryScriptSystem" "${CMAKE_BINARY_DIR}/CryEngine/CryScriptSystem")
+	add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryFlowGraph" "${CMAKE_BINARY_DIR}/CryEngine/CryFlowGraph")
+
 
 	if (WIN32)
 		add_subdirectory ("${CRYENGINE_DIR}/Code/CryEngine/CryLiveCreate" "${CMAKE_BINARY_DIR}/CryEngine/CryLiveCreate")

@@ -15,9 +15,9 @@ class CEngineModule_CryLobby : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryLobby, "EngineModule_CryLobby", 0x2c5cc5ec41f7451c, 0xa785857ca7731c28)
 
 	virtual ~CEngineModule_CryLobby() {}
+	virtual const char* GetName() const override { return "CryLobby"; }
+	virtual const char* GetCategory() const override { return "CryEngine"; }
 
-	virtual const char* GetName() override { return "CryLobby"; }
-	virtual const char* GetCategory() override { return "CryEngine"; }
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{

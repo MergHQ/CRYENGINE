@@ -16,9 +16,10 @@
 #include "IItemSystem.h"
 #include "IWeapon.h"
 #include "IActorSystem.h"
-#include "FlowFrameworkBaseNode.h"
+
 
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 namespace
 {
@@ -368,7 +369,7 @@ private:
 	bool            m_active;
 };
 
-class CFlowNode_WeaponAmmo : public CFlowFrameworkBaseNode<eNCT_Singleton>
+class CFlowNode_WeaponAmmo : public CFlowBaseNode<eNCT_Singleton>
 {
 	enum EInputs
 	{
@@ -459,6 +460,19 @@ public:
 				}
 			}
 		}
+	}
+
+	//-------------------------------------------------------------
+	// returns the actor associated with the input entity. In single player, it returns the local player if that actor does not exists.
+	IActor* GetInputActor(const IFlowNode::SActivationInfo* const pActInfo) const
+	{
+		IActor* pActor = pActInfo->pEntity ? gEnv->pGameFramework->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId()) : nullptr;
+		if (!pActor && !gEnv->bMultiplayer)
+		{
+			pActor = gEnv->pGameFramework->GetClientActor();
+		}
+
+		return pActor;
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

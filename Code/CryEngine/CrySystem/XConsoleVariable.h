@@ -84,7 +84,6 @@ public:
 	virtual void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override;
 	virtual uint64          AddOnChangeFunctor(const SFunctor& pChangeFunctor) override;
 	virtual bool            RemoveOnChangeFunctor(const uint64 nElement) override;
-	virtual bool            RemoveOnChangeFunctor(const SFunctor& changeFunctor) override;
 	virtual uint64          GetNumberOfOnChangeFunctors() const override;
 	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override;
 	virtual ConsoleVarFunc  GetOnChangeCallback() const override;
@@ -129,6 +128,8 @@ protected: // ------------------------------------------------------------------
 
 	std::vector<SFunctor> m_cpChangeFunctors;
 	ConsoleVarFunc        m_pChangeFunc;            // Callback function that is called when this variable changes.
+
+
 	CXConsole*            m_pConsole;               // used for the callback OnBeforeVarChange()
 };
 

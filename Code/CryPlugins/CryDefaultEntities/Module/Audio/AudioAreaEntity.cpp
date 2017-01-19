@@ -25,7 +25,7 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
-		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AudioAreaEntity");
+		pFlowNodeFactory = new CEntityFlowNodeFactory("entity:AudioAreaEntity");
 
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Disable", ""));
@@ -41,6 +41,17 @@ class CAudioAreaEntityRegistrator : public IEntityRegistrator
 		pFlowNodeFactory->Close();
 
 	}
+
+public:
+	~CAudioAreaEntityRegistrator()
+	{
+		if (pFlowNodeFactory)
+			pFlowNodeFactory->UnregisterFactory();
+		pFlowNodeFactory = nullptr;
+	}
+
+private:
+	CEntityFlowNodeFactory* pFlowNodeFactory = nullptr;
 };
 
 CAudioAreaEntityRegistrator g_audioAreaEntityRegistrator;
