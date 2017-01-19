@@ -608,7 +608,6 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 	ConsoleVariablesMapItor::value_type value = ConsoleVariablesMapItor::value_type(pCVar->GetName(), pCVar);
 
 	m_mapVariables.insert(value);
-	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_REGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
 
 	int flags = pCVar->GetFlags();
 
@@ -1055,7 +1054,6 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	}
 
 	m_mapVariables.erase(sVarName);
-	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_UNREGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
 
 	delete pCVar;
 }
@@ -3471,12 +3469,13 @@ char* CXConsole::GetCheatVarAt(uint32 nOffset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix)
+size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix,int nListTypes)
 {
 	size_t i = 0;
 	size_t iPrefixLen = szPrefix ? strlen(szPrefix) : 0;
 
 	// variables
+	if (nListTypes == 0 || nListTypes == 1)
 	{
 		ConsoleVariablesMap::const_iterator it, end = m_mapVariables.end();
 		for (it = m_mapVariables.begin(); it != end; ++it)
@@ -3499,6 +3498,7 @@ size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const ch
 	}
 
 	// commands
+	if (nListTypes == 0 || nListTypes == 2)
 	{
 		ConsoleCommandsMap::iterator it, end = m_mapCommands.end();
 		for (it = m_mapCommands.begin(); it != end; ++it)

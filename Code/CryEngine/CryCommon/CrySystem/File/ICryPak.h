@@ -189,7 +189,7 @@ struct ICryPakFileAcesssSink
 };
 
 //! This special flag is used for findfirst/findnext routines to mark the files that were actually found in Archive.
-enum {_A_IN_CRYPAK = 0x80000000};
+enum  : uint32 {_A_IN_CRYPAK = 0x80000000};
 
 //! Interface to the Pak file system.
 //! \see CryPak.

@@ -60,8 +60,8 @@ class CEngineModule_CryPhysics : public IEngineModule
 		CRYGENERATE_SINGLETONCLASS(CEngineModule_CryPhysics, "EngineModule_CryPhysics", 0x526cabf3d776407f, 0xaa2338545bb6ae7f)
 
 		//////////////////////////////////////////////////////////////////////////
-		virtual const char *GetName() override { return "CryPhysics"; };
-	virtual const char *GetCategory() override { return "CryEngine"; };
+		virtual const char *GetName() const override { return "CryPhysics"; };
+	virtual const char *GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment &env, const SSystemInitParams &initParams) override

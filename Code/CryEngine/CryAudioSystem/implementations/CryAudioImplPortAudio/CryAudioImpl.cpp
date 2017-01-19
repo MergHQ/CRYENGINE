@@ -25,11 +25,11 @@ class CEngineModule_CryAudioImplPortAudio : public IEngineModule
 	virtual ~CEngineModule_CryAudioImplPortAudio() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual char const* GetName()     { return "CryAudioImplPortAudio"; }
-	virtual char const* GetCategory() { return "CryAudio"; }
+	virtual char const* GetName()  const override { return "CryAudioImplPortAudio"; }
+	virtual char const* GetCategory() const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplPortAudio::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
 		SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);

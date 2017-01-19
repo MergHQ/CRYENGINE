@@ -113,17 +113,6 @@ inline float LinePointDistanceSqr(const Line& line, const Vec3& point, float zSc
 	return ((x2-x1).Cross(x1-x0)).GetLengthSquared()/(x2-x1).GetLengthSquared();
 }
 
-inline IEntityComponent* GetOrMakeProxy(IEntity *pEntity, EEntityProxy proxyType)
-{
-	IEntityComponent* pProxy = pEntity->GetProxy(proxyType);
-	if (!pProxy)
-	{
-		if (pEntity->CreateProxy(proxyType))
-			pProxy = pEntity->GetProxy(proxyType);
-	}
-	return pProxy;
-}
-
 #if !defined(_RELEASE)
 #	define ENABLE_DEBUG_FLASH_PLAYBACK
 #endif

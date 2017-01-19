@@ -13,6 +13,7 @@
 
 struct IFlowGraphModuleManager;
 struct IFlowGraphDebugger;
+struct IGameTokenSystem;
 
 typedef uint8  TFlowPortId;
 typedef uint16 TFlowNodeId;
@@ -55,13 +56,13 @@ typedef CryVariant<
 enum EFlowDataTypes
 {
 	eFDT_Any = -1,
-	eFDT_Void = detail::get_index<SFlowSystemVoid, TFlowInputDataVariant>::value,
-	eFDT_Int = detail::get_index<int, TFlowInputDataVariant>::value,
-	eFDT_Float = detail::get_index<float, TFlowInputDataVariant>::value,
-	eFDT_EntityId = detail::get_index<EntityId, TFlowInputDataVariant>::value,
-	eFDT_Vec3 = detail::get_index<Vec3, TFlowInputDataVariant>::value,
-	eFDT_String = detail::get_index<string, TFlowInputDataVariant>::value,
-	eFDT_Bool = detail::get_index<bool, TFlowInputDataVariant>::value,
+	eFDT_Void = cry_variant::get_index<SFlowSystemVoid, TFlowInputDataVariant>::value,
+	eFDT_Int = cry_variant::get_index<int, TFlowInputDataVariant>::value,
+	eFDT_Float = cry_variant::get_index<float, TFlowInputDataVariant>::value,
+	eFDT_EntityId = cry_variant::get_index<EntityId, TFlowInputDataVariant>::value,
+	eFDT_Vec3 = cry_variant::get_index<Vec3, TFlowInputDataVariant>::value,
+	eFDT_String = cry_variant::get_index<string, TFlowInputDataVariant>::value,
+	eFDT_Bool = cry_variant::get_index<bool, TFlowInputDataVariant>::value,
 };
 
 //! Default conversion uses C++ rules.
@@ -75,7 +76,7 @@ struct SFlowSystemConversion
 	}
 };
 
-namespace detail
+namespace cry_variant
 {
 	template<class To, size_t I = 0>
 	ILINE bool ConvertVariant(const TFlowInputDataVariant& from, To& to)
@@ -194,7 +195,7 @@ struct SFlowSystemConversion<TFlowInputDataVariant, To>
 {
 	static ILINE bool ConvertValue(const TFlowInputDataVariant& from, To& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 
@@ -204,7 +205,7 @@ struct SFlowSystemConversion<TFlowInputDataVariant, bool>
 {
 	static ILINE bool ConvertValue(const TFlowInputDataVariant& from, bool& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 template<>
@@ -212,7 +213,7 @@ struct SFlowSystemConversion<TFlowInputDataVariant, Vec3>
 {
 	static ILINE bool ConvertValue(const TFlowInputDataVariant& from, Vec3& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 template<>
@@ -220,7 +221,7 @@ struct SFlowSystemConversion<TFlowInputDataVariant, TFlowInputDataVariant>
 {
 	static ILINE bool ConvertValue(const TFlowInputDataVariant& from, TFlowInputDataVariant& to)
 	{
-		return detail::ConvertVariant(from, to);
+		return cry_variant::ConvertVariant(from, to);
 	}
 };
 
@@ -412,7 +413,7 @@ struct SFlowSystemConversion<From, TFlowInputDataVariant>
 {
 	static ILINE bool ConvertValue(const From& from, TFlowInputDataVariant& to)
 	{
-		return detail::ConvertToVariant(from, to);
+		return cry_variant::ConvertToVariant(from, to);
 	}
 };
 template<>
@@ -420,7 +421,7 @@ struct SFlowSystemConversion<SFlowSystemVoid, TFlowInputDataVariant>
 {
 	static ILINE bool ConvertValue(const SFlowSystemVoid& from, TFlowInputDataVariant& to)
 	{
-		return detail::ConvertToVariant(from, to);
+		return cry_variant::ConvertToVariant(from, to);
 	}
 };
 template<>
@@ -428,7 +429,7 @@ struct SFlowSystemConversion<Vec3, TFlowInputDataVariant>
 {
 	static ILINE bool ConvertValue(const Vec3& from, TFlowInputDataVariant& to)
 	{
-		return detail::ConvertToVariant(from, to);
+		return cry_variant::ConvertToVariant(from, to);
 	}
 };
 
@@ -985,7 +986,7 @@ struct SOutputPortConfig
 template<class T>
 ILINE SOutputPortConfig OutputPortConfig(const char* name, const char* description = NULL, const char* humanName = NULL)
 {
-	SOutputPortConfig result = { name, humanName, description, detail::get_index<T, TFlowInputDataVariant>::value };
+	SOutputPortConfig result = { name, humanName, description, cry_variant::get_index<T, TFlowInputDataVariant>::value };
 	return result;
 }
 
@@ -1751,6 +1752,9 @@ struct IFlowSystem
 
 	//! Gets the module manager.
 	virtual IFlowGraphModuleManager* GetIModuleManager() = 0;
+
+	//! Gets the game tokens system
+	virtual IGameTokenSystem* GetIGameTokenSystem() = 0;
 
 	//! Create, Delete and access flowsystem's global containers.
 	virtual bool                    CreateContainer(TFlowSystemContainerId id) = 0;

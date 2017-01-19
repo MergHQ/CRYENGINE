@@ -112,7 +112,7 @@ inline bool   operator>(const char* str, const TKeyName& n)  { return n > str; }
 #define KI_EYETRACKER_BASE 4096
 #define KI_SYS_BASE        8192
 
-enum EKeyId
+enum EKeyId : uint32
 {
 	eKI_Escape = KI_KEYBOARD_BASE,
 	eKI_1,
@@ -694,7 +694,7 @@ enum KIN_SKELETON_POSITION_INDEX
 
 #define KIN_IDENTITY_MAX_ENROLLMENT_COUNT 8
 
-enum KIN_IDENTITY_ENROLLMENT
+enum KIN_IDENTITY_ENROLLMENT : uint32
 {
 	KIN_IDENTITY_ENROLLMENT_INDEX_CALL_IDENTIFY = 0xFFFFFFFF,
 	KIN_IDENTITY_ENROLLMENT_INDEX_UNKNOWN       = 0xFFFFFFFE,

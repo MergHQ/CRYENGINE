@@ -117,6 +117,8 @@ struct IFlowGraphModule
 
 	virtual IModuleInstanceIteratorPtr                 CreateInstanceIterator() = 0;
 	virtual size_t                                     GetRunningInstancesCount() const = 0;
+
+	virtual void                                       CallDefaultInstanceForEntity(IEntity* pEntity) = 0;
 };
 typedef _smart_ptr<IFlowGraphModule> IFlowGraphModulePtr;
 
@@ -190,4 +192,6 @@ struct IFlowGraphModuleManager
 	virtual bool               CreateModuleNodes(const char* moduleName, TModuleId moduleId) = 0;
 
 	virtual IModuleIteratorPtr CreateModuleIterator() = 0;
+	//! Unload all loaded modules
+	virtual void               ClearModules() = 0;
 };

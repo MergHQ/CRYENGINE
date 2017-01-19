@@ -30,6 +30,7 @@ enum ECryModule
 	eCryM_AudioImplementation,
 	eCryM_MonoBridge,
 	eCryM_ScaleformHelper,
+	eCryM_FlowGraph,
 
 	eCryM_EnginePlugin,
 

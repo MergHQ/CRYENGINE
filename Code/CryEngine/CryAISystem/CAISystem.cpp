@@ -463,10 +463,6 @@ bool CAISystem::Init()
 
 bool CAISystem::CompleteInit()
 {
-#ifndef _LIB
-	AIFlowBaseNode::RegisterFlowNodes();
-#endif
-
 	return true;
 }
 

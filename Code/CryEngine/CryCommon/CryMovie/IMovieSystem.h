@@ -398,12 +398,12 @@ typedef CryVariant<
 
 enum EMovieTrackDataTypes
 {
-	eTDT_Void  = detail::get_index<SMovieSystemVoid, TMovieSystemValue>::value,
-	eTDT_Float = detail::get_index<float, TMovieSystemValue>::value,
-	eTDT_Vec3  = detail::get_index<Vec3, TMovieSystemValue>::value,
-	eTDT_Vec4  = detail::get_index<Vec4, TMovieSystemValue>::value,
-	eTDT_Quat  = detail::get_index<Quat, TMovieSystemValue>::value,
-	eTDT_Bool  = detail::get_index<bool, TMovieSystemValue>::value,
+	eTDT_Void  = cry_variant::get_index<SMovieSystemVoid, TMovieSystemValue>::value,
+	eTDT_Float = cry_variant::get_index<float, TMovieSystemValue>::value,
+	eTDT_Vec3  = cry_variant::get_index<Vec3, TMovieSystemValue>::value,
+	eTDT_Vec4  = cry_variant::get_index<Vec4, TMovieSystemValue>::value,
+	eTDT_Quat  = cry_variant::get_index<Quat, TMovieSystemValue>::value,
+	eTDT_Bool  = cry_variant::get_index<bool, TMovieSystemValue>::value,
 };
 
 //! Interface for movie-system implemented by user for advanced function-support

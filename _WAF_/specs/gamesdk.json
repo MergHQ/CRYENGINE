@@ -33,6 +33,7 @@
 		"CryAction",
 		"CrySchematycCore",
 		"CrySchematycSTDEnv",
+		"CryFlowGraph",
 		"HWScripts",
 		
 		"CryDefaultEntities",

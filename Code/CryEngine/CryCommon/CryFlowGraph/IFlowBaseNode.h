@@ -4,6 +4,8 @@
 
 #include <CryFlowGraph/IFlowSystem.h>
 
+struct IActor;
+
 //////////////////////////////////////////////////////////////////////////
 // Enum used for templating node base class
 //////////////////////////////////////////////////////////////////////////
@@ -74,6 +76,7 @@ public:
 	CAutoRegFlowNodeBase*        m_pNext;
 	static CAutoRegFlowNodeBase* m_pFirst;
 	static CAutoRegFlowNodeBase* m_pLast;
+	static bool                  m_bNodesRegistered;
 	//////////////////////////////////////////////////////////////////////////
 };
 
@@ -206,3 +209,31 @@ public:
 
 	static const int myCloneType = eNCT_Singleton;
 };
+
+inline void CryRegisterFlowNodes()
+{
+	if (gEnv->pFlowSystem && !CAutoRegFlowNodeBase::m_bNodesRegistered)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			gEnv->pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
+			pFactory = pFactory->m_pNext;
+		}
+		CAutoRegFlowNodeBase::m_bNodesRegistered = true;
+	}
+}
+
+inline void CryUnregisterFlowNodes()
+{
+	if (gEnv->pFlowSystem && CAutoRegFlowNodeBase::m_bNodesRegistered)
+	{
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		while (pFactory)
+		{
+			gEnv->pFlowSystem->UnregisterType(pFactory->m_sClassName);
+			pFactory = pFactory->m_pNext;
+		}
+		CAutoRegFlowNodeBase::m_bNodesRegistered = false;
+	}
+}

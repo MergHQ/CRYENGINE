@@ -123,8 +123,8 @@ class CEngineModule_Cry3DEngine : public IEngineModule
 	virtual ~CEngineModule_Cry3DEngine() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() override { return "Cry3DEngine"; };
-	virtual const char* GetCategory() override { return "CryEngine"; };
+	virtual const char* GetName() const override { return "Cry3DEngine"; };
+	virtual const char* GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

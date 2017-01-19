@@ -3,7 +3,7 @@
 #ifndef _ICONSOLE_H_
 #define _ICONSOLE_H_
 
-struct SFunctor;
+#include <CryCore/SFunctor.h>
 
 struct ConsoleBind;
 
@@ -34,7 +34,7 @@ enum ELoadConfigurationType;
 #define CVF_CHANGE_SOURCE (1u << 16)
 
 //! Flags used by ICVar.
-enum EVarFlags
+enum EVarFlags : uint32
 {
 	VF_NULL                    = 0x00000000,      //!< Just to have one recognizable spot where the flags are located in the Register call.
 	VF_CHEAT                   = 0x00000002,      //!< Stays in the default state when cheats are disabled.
@@ -362,7 +362,8 @@ struct IConsole
 
 	//! \param szPrefix - 0 or prefix e.g. "sys_spec_".
 	//! \return Used size.
-	virtual size_t      GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0) = 0;
+	//! nListType = 0 get all values, nListTypes=1 return only cvars, nListTypes=2 return only console commands
+	virtual size_t      GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0,int nListTypes=0) = 0;
 	virtual const char* AutoComplete(const char* substr) = 0;
 	virtual const char* AutoCompletePrev(const char* substr) = 0;
 	virtual const char* ProcessCompletion(const char* szInputBuffer) = 0;
@@ -492,6 +493,7 @@ struct ICVar
 		eCLM_FileOnly,          //!< Normal info to file only.
 		eCLM_FullInfo           //!< Full info to file only.
 	};
+	typedef std::function<void(void)> CallbackFunction;
 
 	// <interfuscator:shuffle>
 	// TODO make protected;
@@ -564,6 +566,10 @@ struct ICVar
 	//! It will add from index 1 on (0 is reserved).
 	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) = 0;
 
+	//! Adds a new on change callback function to the cvar.
+	//! It will add from index 1 on (0 is reserved).
+	uint64 AddOnChange(const CallbackFunction &callback) { return AddOnChangeFunctor(SFunctor(callback)); };
+
 	//!  \return The number of registered on change functos.
 	virtual uint64 GetNumberOfOnChangeFunctors() const = 0;
 
@@ -573,7 +579,6 @@ struct ICVar
 	//! Removes an on change functor.
 	//! \return true if removal was successful.
 	virtual bool RemoveOnChangeFunctor(const uint64 nElement) = 0;
-	virtual bool RemoveOnChangeFunctor(const SFunctor& changeFunctor) = 0;
 
 	//! Get the current callback function.
 	virtual ConsoleVarFunc GetOnChangeCallback() const = 0;

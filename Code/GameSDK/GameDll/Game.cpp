@@ -213,12 +213,6 @@ STRUCT_INFO_T_INSTANTIATE(QuatT_tpl, <float> )
 	#endif
 #endif
 
-// Needed for the Game02 specific flow node
-#ifndef _LIB
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = 0;
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = 0;
-#endif
-
 #if CRY_PLATFORM_WINDOWS
 	#define   DISABLE_FORCE_FEEDBACK_WHEN_USING_MOUSE_AND_KEYBOARD 1
 #else
@@ -600,8 +594,6 @@ CGame::~CGame()
 	{
 		pStereoOutput->RemoveOnChangeFunctor(m_stereoOutputFunctorId);
 	}
-
-	UnregisterGameFlowNodes();
 
 	gEnv->pGameFramework->EndGameContext();
 	gEnv->pGameFramework->UnregisterListener(this);
@@ -1299,37 +1291,6 @@ void CGame::OnEditorGameInitComplete()
 {
 	//This will load the parameters in shared storage
 	m_pWeaponSystem->Reload();
-}
-
-void CGame::RegisterGameFlowNodes()
-{
-#ifndef _LIB
-	if (IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem())
-	{
-		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
-		while (pFactory)
-		{
-			pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
-			pFactory = pFactory->m_pNext;
-		}
-	}
-#endif
-}
-
-void CGame::UnregisterGameFlowNodes()
-{
-#ifndef _LIB
-	IFlowSystem* pFlowSystem = gEnv->pGameFramework->GetIFlowSystem();
-	if (pFlowSystem)
-	{
-		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
-		while (pFactory)
-		{
-			pFlowSystem->UnregisterType(pFactory->m_sClassName);
-			pFactory = pFactory->m_pNext;
-		}
-	}
-#endif
 }
 
 CRevertibleConfigLoader& CGame::GetGameModeCVars()
@@ -4903,12 +4864,6 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_REGISTER_FLOWNODES:
-		{
-			RegisterGameFlowNodes();
-		}
-		break;
-
 	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
 		{
 			CryLog("Preparing to load level!");

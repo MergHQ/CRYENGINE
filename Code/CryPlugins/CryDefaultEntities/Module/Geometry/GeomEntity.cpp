@@ -24,7 +24,7 @@ class CGeomEntityRegistrator
 
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
-		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
+		pFlowNodeFactory = new CEntityFlowNodeFactory("entity:GeomEntity");
 
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Hide", ""));
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("UnHide", ""));
@@ -39,6 +39,17 @@ class CGeomEntityRegistrator
 
 		pFlowNodeFactory->Close();
 	}
+
+public:
+	~CGeomEntityRegistrator()
+	{
+		if (pFlowNodeFactory)
+			pFlowNodeFactory->UnregisterFactory();
+		pFlowNodeFactory = nullptr;
+	}
+
+private:
+	CEntityFlowNodeFactory* pFlowNodeFactory = nullptr;
 };
 
 CGeomEntityRegistrator g_geomEntityRegistrator;

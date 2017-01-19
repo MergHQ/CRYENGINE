@@ -459,12 +459,6 @@ enum ESystemEvent
 	//! while others would prefer to suspend their operation
 	ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE,
 
-	//! Sent when a new CVar is registered
-	ESYSTEM_EVENT_CVAR_REGISTERED,
-
-	//! Sent when a CVar is unregistered
-	ESYSTEM_EVENT_CVAR_UNREGISTERED,
-
 	// Sent when flow nodes should be registered
 	ESYSTEM_EVENT_REGISTER_FLOWNODES,
 
@@ -1866,7 +1860,6 @@ struct SDummyCVar : ICVar
 	uint64          GetNumberOfOnChangeFunctors() const override                   { return 0; }
 	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override        { InvalidAccess(); return *(const SFunctor*)NULL; }
 	bool            RemoveOnChangeFunctor(const uint64 nElement) override          { return true; }
-	bool            RemoveOnChangeFunctor(const SFunctor& changeFunctor) override  { return true; }
 	ConsoleVarFunc  GetOnChangeCallback() const override                           { InvalidAccess(); return NULL; }
 	void            GetMemoryUsage(class ICrySizer* pSizer) const override         {}
 	int             GetRealIVal() const override                                   { return GetIVal(); }

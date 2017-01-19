@@ -326,7 +326,7 @@ struct SEntityProximityQuery
 //! The entity system also keeps track of entities that have to be drawn last and with more zbuffer resolution.
 struct IEntitySystem
 {
-	enum SinkEventSubscriptions
+	enum SinkEventSubscriptions : uint32
 	{
 		OnBeforeSpawn = BIT(0),
 		OnSpawn       = BIT(1),

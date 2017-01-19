@@ -259,7 +259,7 @@ static THREADLOCAL char gs_szMessage[MAX_PATH];
 
 void CryAssertTrace(const char* _pszFormat, ...)
 {
-	if (gEnv == nullptr)
+	if (!gEnv)
 	{
 		return;
 	}

@@ -47,11 +47,11 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMonoBridge, "EngineModule_CryMonoBridge", 0x2b4615a571524d67, 0x920dc857f8503b3a)
 
 	virtual ~CEngineModule_CryMonoBridge() {}
+	virtual const char* GetName() const override { return "CryMonoBridge"; }
+	virtual const char* GetCategory() const override { return "CryEngine"; }
 
-	virtual const char* GetName() { return "CryMonoBridge"; }
-	virtual const char* GetCategory() { return "CryEngine"; }
 
-	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_crymonobridge);
 		env.pMonoRuntime = new CMonoRuntime();

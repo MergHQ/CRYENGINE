@@ -30,6 +30,7 @@
 		"CrySystem",
 		"CryScaleformHelper",
 		"CryAction",
+		"CryFlowGraph",
 		"CrySchematycCore",
 		"CrySchematycSTDEnv",
 		"CrySensorSystem",

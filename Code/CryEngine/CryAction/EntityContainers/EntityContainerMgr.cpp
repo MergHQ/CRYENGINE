@@ -5,7 +5,6 @@
 #include "EntityContainerMgr.h"
 
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
-#include "FlowSystem/Modules/Module.h"
 
 
 CEntityContainerMgr::CEntityContainerMgr()
@@ -257,7 +256,7 @@ void CEntityContainerMgr::Reset()
 
 bool CEntityContainerMgr::RunModule(EntityId containerId, const char* moduleName)
 {
-	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(gEnv->pFlowSystem->GetIModuleManager()->GetModule(moduleName));
+	IFlowGraphModule* pModule = gEnv->pFlowSystem->GetIModuleManager()->GetModule(moduleName);
 	if (!pModule)
 	{
 		return false;

@@ -31,11 +31,6 @@
 	#endif
 #endif
 
-// The following definitions are used by Sandbox and RC to determine which platform support is needed
-#define TOOLS_SUPPORT_POWERVR
-#define TOOLS_SUPPORT_DURANGO
-#define TOOLS_SUPPORT_ORBIS
-
 // Durango SDK and Orbis SDK are 64-bit only
 #if !(CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
 	#undef TOOLS_SUPPORT_DURANGO

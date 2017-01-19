@@ -171,7 +171,7 @@ struct CRY_ALIGN(128) SWorkerStats
 typedef uint16 TSemaphoreHandle;
 
 //! Magic value to reprensent an invalid job handle.
-enum { INVALID_JOB_HANDLE = ((unsigned int)-1) };
+enum  : uint32 { INVALID_JOB_HANDLE = ((unsigned int)-1) };
 
 //! BackEnd Type.
 enum EBackEndType

@@ -43,7 +43,7 @@ public:
 	typedef std::reverse_iterator<iterator>       reverse_iterator;
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-	enum _npos_type
+	enum _npos_type : size_type
 	{
 		npos = (size_type) ~0
 	};

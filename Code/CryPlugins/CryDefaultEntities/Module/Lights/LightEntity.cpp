@@ -22,7 +22,7 @@ public:
 	
 		// Register flow node
 		// Factory will be destroyed by flowsystem during shutdown
-		CEntityFlowNodeFactory* pFlowNodeFactory = new CEntityFlowNodeFactory("entity:Light");
+		pFlowNodeFactory = new CEntityFlowNodeFactory("entity:Light");
 
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Active", ""));
 		pFlowNodeFactory->m_inputs.push_back(InputPortConfig<bool>("Enable", ""));
@@ -34,6 +34,17 @@ public:
 
 		pFlowNodeFactory->Close();
 	}
+
+public:
+	~CLightRegistrator()
+	{
+		if (pFlowNodeFactory)
+			pFlowNodeFactory->UnregisterFactory();
+		pFlowNodeFactory = nullptr;
+	}
+
+private:
+	CEntityFlowNodeFactory* pFlowNodeFactory = nullptr;
 };
 
 CLightRegistrator g_lightRegistrator;

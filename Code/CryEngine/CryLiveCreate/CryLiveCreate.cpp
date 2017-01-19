@@ -68,8 +68,8 @@ class CEngineModule_CryLiveCreate : public IEngineModule
 	virtual ~CEngineModule_CryLiveCreate() {}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() { return "CryLiveCreate"; };
-	virtual const char* GetCategory() { return "CryEngine"; };
+	virtual const char* GetName() const override { return "CryLiveCreate"; };
+	virtual const char* GetCategory() const override { return "CryEngine"; };
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)

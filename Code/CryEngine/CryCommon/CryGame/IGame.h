@@ -142,9 +142,6 @@ struct IGame
 	//! Interface hook to load all game exported data when the level is loaded.
 	virtual void LoadExportedLevelData(const char* levelName, const char* missionName) = 0;
 
-	//! Called by FlowSystem to register all game specific flow nodes.
-	virtual void RegisterGameFlowNodes() = 0;
-
 	//! Access to game interface.
 	virtual void* GetGameInterface() = 0;
 
