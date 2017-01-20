@@ -166,7 +166,7 @@ void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivatio
 {
 	if (auto* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
 	{
-		if (IsPortActive(pActInfo, eInputPort_Hide) || IsPortActive(pActInfo, eInputPort_Hide))
+		if (IsPortActive(pActInfo, eInputPort_UnHide) || IsPortActive(pActInfo, eInputPort_Hide))
 		{
 			pEntity->Hide(IsPortActive(pActInfo, eInputPort_Hide));
 		}
