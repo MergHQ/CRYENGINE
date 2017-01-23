@@ -128,7 +128,7 @@
 #define H5_HAVE_FILTER_DEFLATE 1
 
 /* Define if support for szip filter is enabled */
-#define H5_HAVE_FILTER_SZIP 1
+/* #undef H5_HAVE_FILTER_SZIP */
 
 /* Define to 1 if you have the `fork' function. */
 /* #undef H5_HAVE_FORK */
@@ -384,7 +384,7 @@
 #define H5_HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <szlib.h> header file. */
-#define H5_HAVE_SZLIB_H 1
+/* #undef H5_HAVE_SZLIB_H */
 
 /* Define if we have thread safe support */
 /* #undef H5_HAVE_THREADSAFE */
