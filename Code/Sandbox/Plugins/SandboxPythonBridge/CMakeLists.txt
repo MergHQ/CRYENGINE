@@ -3,7 +3,6 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-			"main.cpp"
 			"SandboxPythonBridge.cpp"
 			"SandboxPythonBridge.h"
 			"SandboxPythonBridgePlugin.cpp"

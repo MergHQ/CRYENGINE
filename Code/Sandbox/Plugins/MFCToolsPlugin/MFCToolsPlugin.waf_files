@@ -1,0 +1,18 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"MFCToolsPlugin.cpp",
+			"MFCToolsPlugin.h",
+			"StdAfx.h",
+			"StdAfx.cpp",
+			"MFCUtil.h",
+			"MFCUtil.cpp"
+		],
+		"Controls":
+		[
+			"Controls/TemplDef.h"
+		]
+	}
+}

@@ -7,13 +7,6 @@
 
 #include <QLabel>
 
-#if (defined(_WIN32) || defined(_WIN64))
-#include <windows.h>
-#include <dwmapi.h>
-#pragma warning(disable: 4264)
-#pragma warning(disable: 4266)
-#endif
-
 class QToolWindowManager;
 class QPushButton;
 class QToolButton;
@@ -43,7 +36,7 @@ public:
 
 	QWidget* getWidget() Q_DECL_OVERRIDE { return this; }
 	virtual QWidget* getContents() { return m_contents; }
-	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { QCustomWindowFrame::setContents(widget,false); }
+	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { internalSetContents(widget,false); }
 	virtual void startDrag() Q_DECL_OVERRIDE;
 
 	QRect getWrapperFrameSize();

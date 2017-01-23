@@ -40,9 +40,13 @@ if (PLUGIN_VR_OSVR)
 	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
 endif()
 if (OPTION_SANDBOX)
+	set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
+	)
 	set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
 		${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[^Dd].dll
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
+		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
 	)
 	set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
 		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll

@@ -1,0 +1,12 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"DialogEditorPlugin.cpp",
+			"DialogEditorPlugin.h",
+			"StdAfx.h",
+			"StdAfx.cpp"
+		]
+	}
+}

@@ -20,6 +20,8 @@
 #include <windowsx.h>
 #include <dwmapi.h>
 
+typedef HRESULT(WINAPI *dwmExtendFrameIntoClientArea_t)(HWND hwnd, const MARGINS* pMarInset);
+
 #ifdef UNICODE
 #define _UNICODE
 #endif
@@ -402,7 +404,7 @@ bool QCustomTitleBar::winEvent(MSG *msg, long *result)
 QCustomWindowFrame* QCustomWindowFrame::wrapWidget(QWidget* w)
 {
 	QCustomWindowFrame* windowFrame = new QCustomWindowFrame();
-	windowFrame->setContents(w);
+	windowFrame->internalSetContents(w);
 	return windowFrame;
 }
 
@@ -423,10 +425,10 @@ QCustomWindowFrame::QCustomWindowFrame()
 
 #if defined(WIN32) || defined(WIN64)
 	SetWindowLong((HWND)winId(), GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_SYSMENU);
-	m_dwm = LoadLibraryEx(_T("dwmapi.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+	m_dwm = (void*)LoadLibraryEx(_T("dwmapi.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 	if (m_dwm)
 	{
-		dwmExtendFrameIntoClientArea = (dwmExtendFrameIntoClientArea_t)GetProcAddress(m_dwm, "DwmExtendFrameIntoClientArea");
+		dwmExtendFrameIntoClientArea = (void*)GetProcAddress((HMODULE)m_dwm, "DwmExtendFrameIntoClientArea");
 	}
 	else
 	{
@@ -448,12 +450,12 @@ QCustomWindowFrame::~QCustomWindowFrame()
 	dwmExtendFrameIntoClientArea = nullptr;
 	if (m_dwm)
 	{
-		FreeLibrary(m_dwm);
+		FreeLibrary((HMODULE)m_dwm);
 	}
 #endif
 }
 
-void QCustomWindowFrame::setContents(QWidget* widget, bool useContentsGeometry)
+void QCustomWindowFrame::internalSetContents(QWidget* widget, bool useContentsGeometry)
 {
 	if (m_contents)
 	{
@@ -665,7 +667,8 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 		MARGINS shadow_on = { 1, 1, 1, 1 };
 		if (dwmExtendFrameIntoClientArea)
 		{
-			dwmExtendFrameIntoClientArea((HWND)winId(), &shadow_on);
+			auto pFunc = (dwmExtendFrameIntoClientArea_t)dwmExtendFrameIntoClientArea;
+			pFunc((HWND)winId(), &shadow_on);
 		}
 		*result = 0;
 		// Don't intercept the message, so default functionality still happens.
@@ -871,7 +874,8 @@ void QCustomWindowFrame::updateWindowFlags()
 	if (dwmExtendFrameIntoClientArea)
 	{
 		MARGINS shadow_on = { 1, 1, 1, 1 };
-		dwmExtendFrameIntoClientArea((HWND)winId(), &shadow_on);
+		auto pFunc = (dwmExtendFrameIntoClientArea_t)dwmExtendFrameIntoClientArea;
+		pFunc((HWND)winId(), &shadow_on);
 	}
 #endif
 
