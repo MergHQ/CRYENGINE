@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <CryEntitySystem/IEntity.h>
+
 struct IGoalPipe;
 struct IFlowGraph;
 

@@ -72,6 +72,11 @@
 		"PerforcePlugin",
 		"SandboxPythonBridge",
 		"EditorGameSDK",
+		"SamplePlugin",
+		"MFCToolsPlugin",
+		"DialogEditorPlugin",
+		"VehicleEditorPlugin",
+		"SmartObjectEditorPlugin",
 		
 		"zlib",
 		"tiff",

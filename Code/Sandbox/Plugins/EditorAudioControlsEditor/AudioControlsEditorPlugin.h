@@ -22,15 +22,12 @@ class CImplementationManager;
 class CAudioControlsEditorPlugin : public IPlugin, public ISystemEventListener
 {
 public:
-	explicit CAudioControlsEditorPlugin(IEditor* editor);
+	explicit CAudioControlsEditorPlugin();
+	~CAudioControlsEditorPlugin();
 
-	void                            Release() override;
-	void                            ShowAbout() override                                 {}
-	const char*                     GetPluginGUID() override                             { return "{DFA4AFF7-2C70-4B29-B736-GRH00040314}"; }
-	DWORD                           GetPluginVersion() override                          { return 1; }
-	const char*                     GetPluginName() override                             { return "AudioControlsEditor"; }
-	bool                            CanExitNow() override                                { return true; }
-	void                            OnEditorNotify(EEditorNotifyEvent aEventId) override {}
+	int32                           GetPluginVersion() override                          { return 1; }
+	const char*                     GetPluginName() override                             { return "Audio Controls Editor"; }
+	const char*                     GetPluginDescription() override						 { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 
 	static void                     SaveModels();
 	static void                     ReloadModels(bool bReloadImplementation);

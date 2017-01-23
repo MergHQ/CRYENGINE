@@ -3,14 +3,20 @@
 #include "StdAfx.h"
 #include "Plugin.h"
 
+#include <CryCore/Platform/platform_impl.inl>
+
+#include "IResourceSelectorHost.h"
+
 #include <Schematyc/Compiler/ICompiler.h>
 #include <Schematyc/Script/IScriptRegistry.h>
 #include <Schematyc/SerializationUtils/SerializationEnums.inl>
 #include <Schematyc/Utils/GUID.h>
 
-const char* g_szPluginGUID = "{91A8A207-F8F0-4D5B-B8CA-613B4920581F}";
+#include "CryLinkCommands.h"
+
 const int g_pluginVersion = 1;
-const char* g_szPluginName = "Schematyc Plug-in";
+const char* g_szPluginName = "Schematyc Plugin";
+const char* g_szPluginDesc = "Schematyc Editor integration";
 
 Schematyc::SGUID GenerateGUID()
 {
@@ -26,8 +32,14 @@ Schematyc::SGUID GenerateGUID()
 	return guid;
 }
 
+REGISTER_PLUGIN(CSchematycPlugin);
+
 CSchematycPlugin::CSchematycPlugin()
 {
+	RegisterModuleResourceSelectors(GetIEditor()->GetResourceSelectorHost());
+
+	Schematyc::CCryLinkCommands::GetInstance().Register(g_pEditor->GetSystem()->GetIConsole());
+
 	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
 	CryLogAlways("[SchematycEditor]: Initializing...");
 	gEnv->pSchematyc->SetGUIDGenerator(SCHEMATYC_DELEGATE(&GenerateGUID));
@@ -38,19 +50,7 @@ CSchematycPlugin::CSchematycPlugin()
 	CryLogAlways("[SchematycEditor]: Initialization complete");
 }
 
-void CSchematycPlugin::Release()
-{
-	delete this;
-}
-
-void        CSchematycPlugin::ShowAbout() {}
-
-const char* CSchematycPlugin::GetPluginGUID()
-{
-	return g_szPluginGUID;
-}
-
-DWORD CSchematycPlugin::GetPluginVersion()
+int32 CSchematycPlugin::GetPluginVersion()
 {
 	return g_pluginVersion;
 }
@@ -60,18 +60,9 @@ const char* CSchematycPlugin::GetPluginName()
 	return g_szPluginName;
 }
 
-bool CSchematycPlugin::CanExitNow()
+const char* CSchematycPlugin::GetPluginDescription()
 {
-	return true;
+	return g_szPluginDesc;
 }
 
-void CSchematycPlugin::Serialize(FILE* hFile, bool bIsStoring) {}
 
-void CSchematycPlugin::ResetContent()                          {}
-
-bool CSchematycPlugin::CreateUIElements()
-{
-	return true;
-}
-
-void CSchematycPlugin::OnEditorNotify(EEditorNotifyEvent eventId) {}

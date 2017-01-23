@@ -1339,7 +1339,7 @@ def CryPluginModule(ctx, *k, **kw):
 	ctx.set_editor_module_flags(kw)
 	SetupRunTimeLibraries(ctx,kw)
 	kw['cxxflags'] += [ '/EHsc', '/GR', '/wd4251', '/wd4275' ]
-	kw['defines']  += [ 'PLUGIN_EXPORTS', 'EDITOR_COMMON_EXPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
+	kw['defines']  += [ 'PLUGIN_EXPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
 	
 	ConfigureTaskGenerator(ctx, kw)
 		

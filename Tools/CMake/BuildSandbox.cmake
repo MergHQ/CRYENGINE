@@ -43,6 +43,11 @@ add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/FbxPlugin" "${CMAKE_BINA
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/MeshImporter" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/MeshImporter")
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/PerforcePlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/PerforcePlugin")
 add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/SandboxPythonBridge" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/SandboxPythonBridge")
+add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/SamplePlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/SamplePlugin")
+add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/VehicleEditor" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/VehicleEditor")
+add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/SmartObjectEditor" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/SmartObjectEditor")
+add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/DialogEditor" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/DialogEditor")
+add_subdirectory("${CRYENGINE_DIR}/Code/Sandbox/Plugins/MFCToolsPlugin" "${CMAKE_BINARY_DIR}/Sandbox/Plugins/MFCToolsPlugin")
 
 #libs
 add_subdirectory ("${CRYENGINE_DIR}/Code/Libs/prt" "${CMAKE_BINARY_DIR}/Libs/prt")

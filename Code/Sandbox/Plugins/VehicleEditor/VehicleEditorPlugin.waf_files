@@ -1,0 +1,12 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"VehicleEditorPlugin.cpp",
+			"VehicleEditorPlugin.h",
+			"StdAfx.h",
+			"StdAfx.cpp"
+		]
+	}
+}

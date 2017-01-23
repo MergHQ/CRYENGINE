@@ -1,8 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IUndoManager.h"
 #include "AudioControlsEditorPlugin.h"
+
+#include <CryCore/Platform/platform_impl.inl>
+
+#include "IUndoManager.h"
 #include "QtViewPane.h"
 #include "AudioControlsEditorWindow.h"
 #include "IResourceSelectorHost.h"
@@ -16,6 +19,9 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 #include "ImplementationManager.h"
+
+REGISTER_PLUGIN(CAudioControlsEditorPlugin);
+
 
 using namespace CryAudio;
 using namespace ACE;
@@ -31,9 +37,8 @@ uint CAudioControlsEditorPlugin::s_loadingErrorMask;
 
 REGISTER_VIEWPANE_FACTORY(CAudioControlsEditorWindow, "Audio Controls Editor", "Tools", true)
 
-CAudioControlsEditorPlugin::CAudioControlsEditorPlugin(IEditor* editor)
+CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	RegisterPlugin();
 	RegisterModuleResourceSelectors(GetIEditor()->GetResourceSelectorHost());
 
 	SCreateObjectData const objectData("Audio trigger preview", eOcclusionType_Ignore);
@@ -46,16 +51,14 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin(IEditor* editor)
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 }
 
-void CAudioControlsEditorPlugin::Release()
+CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 {
-	UnregisterPlugin();
 	s_implementationManager.Release();
 	if (s_pIAudioObject != nullptr)
 	{
 		StopTriggerExecution();
 		gEnv->pAudioSystem->ReleaseObject(s_pIAudioObject);
 	}
-	delete this;
 }
 
 void CAudioControlsEditorPlugin::SaveModels()
