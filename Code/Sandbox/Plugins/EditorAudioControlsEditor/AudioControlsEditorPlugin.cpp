@@ -39,8 +39,6 @@ REGISTER_VIEWPANE_FACTORY(CAudioControlsEditorWindow, "Audio Controls Editor", "
 
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	RegisterModuleResourceSelectors(GetIEditor()->GetResourceSelectorHost());
-
 	SCreateObjectData const objectData("Audio trigger preview", eOcclusionType_Ignore);
 	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 

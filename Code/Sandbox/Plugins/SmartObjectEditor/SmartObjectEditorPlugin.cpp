@@ -16,14 +16,10 @@
 #include "SmartObjectTemplateDialog.h"
 #include "SmartObjectStateDialog.h"
 
-#include "IResourceSelectorHost.h"
-
 REGISTER_PLUGIN(CSmartObjectEditorPlugin);
 
 CSmartObjectEditorPlugin::CSmartObjectEditorPlugin()
 {
-	RegisterModuleResourceSelectors(GetIEditor()->GetResourceSelectorHost());
-
 	typedef std::function<bool(const string&, string&)> EditPropertyFunc;
 
 	GetIEditor()->RegisterDeprecatedPropertyEditor(ePropertySOClass, EditPropertyFunc([this](const string& oldValue, string& newValue)

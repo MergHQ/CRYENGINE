@@ -36,8 +36,6 @@ REGISTER_PLUGIN(CSchematycPlugin);
 
 CSchematycPlugin::CSchematycPlugin()
 {
-	RegisterModuleResourceSelectors(GetIEditor()->GetResourceSelectorHost());
-
 	Schematyc::CCryLinkCommands::GetInstance().Register(g_pEditor->GetSystem()->GetIConsole());
 
 	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
