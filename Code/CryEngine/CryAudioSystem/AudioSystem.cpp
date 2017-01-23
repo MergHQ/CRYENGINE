@@ -166,6 +166,8 @@ void CSystem::PushRequest(CAudioRequest const& request)
 
 			if ((request.flags & eRequestFlags_ExecuteBlocking) > 0)
 			{
+				m_audioThreadWakeupEvent.Set(); // If sleeping, wake up the audio thread to start processing requests again
+
 				m_mainEvent.Wait();
 				m_mainEvent.Reset();
 
@@ -318,7 +320,11 @@ void CSystem::InternalUpdate()
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_AUDIO, "Wait - Audio Update");
 
-		CrySleep(10);
+		if (m_audioThreadWakeupEvent.Wait(10))
+		{
+			// Only reset if the event was signalled, not timed-out
+			m_audioThreadWakeupEvent.Reset();
+		}
 	}
 }
 

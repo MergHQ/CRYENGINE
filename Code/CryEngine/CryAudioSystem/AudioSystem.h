@@ -160,6 +160,7 @@ private:
 	CAudioTranslationLayer             m_atl;
 
 	CryEvent                           m_mainEvent;
+	CryEvent                           m_audioThreadWakeupEvent;
 	CryCriticalSection                 m_mainCS;
 	CryCriticalSection                 m_syncCallbacksPendingCS;
 	CryCriticalSection                 m_internalRequestsCS[eAudioRequestQueueIndex_Count];
