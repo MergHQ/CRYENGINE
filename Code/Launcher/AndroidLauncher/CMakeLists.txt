@@ -26,33 +26,29 @@ if(ANDROID)
 			${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c
 	)
 
-	foreach(game_module ${GAME_MODULES})
-		set(current_launcher ${game_module}Launcher)
+	set(MODULES_TEMP ${MODULES})
+	set(MODULES ${MODULES} ${game_module})
+	CryLauncher(AndroidLauncher SOLUTION_FOLDER Launcher)
+	set(MODULES ${MODULES_TEMP})
 
-		set(MODULES_TEMP ${MODULES})
-		set(MODULES ${MODULES} ${game_module})
-		CryLauncher(${current_launcher} SOLUTION_FOLDER Launcher)
-		set(MODULES ${MODULES_TEMP})
+	target_compile_definitions(${THIS_PROJECT} PRIVATE 
+		ANDROID_NDK ANDROID DISABLE_IMPORTGL __ANDROID__ __ARM_EABI__ __ARM_ARCH_5__ __ARM_ARCH_5T__ __ARM_ARCH_5E__ __ARM_ARCH_5TE__ __ARM_ARCH_7__ __ARM_ARCH_7A__)
+	target_include_directories(${THIS_PROJECT} PRIVATE 
+		${CMAKE_SOURCE_DIR}/Code/CryEngine/CrySystem
+		${SDK_DIR}/SDL2/include/linux
+		${SDK_DIR}/SDL2/include/android-armeabi-v7a
+		${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include)
 
-		target_compile_definitions(${current_launcher} PRIVATE 
-			ANDROID_NDK ANDROID DISABLE_IMPORTGL __ANDROID__ __ARM_EABI__ __ARM_ARCH_5__ __ARM_ARCH_5T__ __ARM_ARCH_5E__ __ARM_ARCH_5TE__ __ARM_ARCH_7__ __ARM_ARCH_7A__)
-		target_include_directories(${current_launcher} PRIVATE 
-			${CMAKE_SOURCE_DIR}/Code/CryEngine/CrySystem
-			${SDK_DIR}/SDL2/include/linux
-			${SDK_DIR}/SDL2/include/android-armeabi-v7a
-			${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include)
-
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY C_FLAGS "-g2 -gdwarf-2 -fpic -ffunction-sections -funwind-tables -fno-omit-frame-pointer -fno-strict-aliasing")
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY CXX_FLAGS "-g2 -gdwarf-2 -fpic -ffunction-sections -funwind-tables -fno-omit-frame-pointer -fno-strict-aliasing")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY C_FLAGS "-g2 -gdwarf-2 -fpic -ffunction-sections -funwind-tables -fno-omit-frame-pointer -fno-strict-aliasing")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY CXX_FLAGS "-g2 -gdwarf-2 -fpic -ffunction-sections -funwind-tables -fno-omit-frame-pointer -fno-strict-aliasing")
 	
-		set_libpath_flag()
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--allow-multiple-definition -Wl,--no-undefined -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -shared -Wl,-soname,\"libAndroidLauncher.so\"")
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Debug ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Debug/lib")
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib")
-		set_property(TARGET ${current_launcher} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib")
-		set_property(TARGET ${current_launcher} PROPERTY ANDROID_JAVA_SOURCE_DIR .)
-		target_link_libraries(${current_launcher} PRIVATE c log ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
-	endforeach()
+	set_libpath_flag()
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--allow-multiple-definition -Wl,--no-undefined -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -shared -Wl,-soname,\"libAndroidLauncher.so\"")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Debug ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Debug/lib")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib")
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-arm-eabi-v7a/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib")
+	set_property(TARGET ${THIS_PROJECT} PROPERTY ANDROID_JAVA_SOURCE_DIR .)
+	target_link_libraries(${THIS_PROJECT} PRIVATE c log ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so SDL2)
 
 else()
 	CryFileContainer(AndroidLauncher SOLUTION_FOLDER "Launcher")
