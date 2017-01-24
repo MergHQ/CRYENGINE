@@ -37,8 +37,8 @@ endif()
 set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
 project(${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM} CXX C)
 
-set(MODULES CACHE INTERNAL "Modules for monolithic builds" FORCE)
-set(GAME_MODULES CACHE INTERNAL "Game Modules for monolithic builds" FORCE)
+set(MODULES CACHE INTERNAL "List of engine modules being built" FORCE)
+set(GAME_MODULES CACHE INTERNAL "List of game modules being built" FORCE)
 
 if (DURANGO OR ORBIS OR ANDROID OR LINUX)
 	# WIN32 Should be unset  again after project( line to work correctly
@@ -152,6 +152,10 @@ if(OPTION_STATIC_LINKING)
 	# Enable static libraries
 	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
 	set(BUILD_SHARED_LIBS FALSE)
+	if(OPTION_SANDBOX)
+		message(STATUS "Disabling Sandbox - requires dynamic linking")
+		set(OPTION_SANDBOX OFF)
+	endif()
 else()
 	# Enable dynamic libraries
 	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )

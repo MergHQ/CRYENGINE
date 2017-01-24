@@ -101,8 +101,8 @@ namespace uqs
 		CItemListProxy_Writable<TItem>::CItemListProxy_Writable(core::IItemList& itemList)
 			: m_itemList(itemList)
 			, m_itemFactory(itemList.GetItemFactory())
-			, m_pItems(nullptr)
-			, m_itemCount(0)
+			, m_pItems(itemList.GetItems())         // this may be or may not point to potentially created items, depending on whether the underlying item-list had been filled in a previous roundtrip already
+			, m_itemCount(itemList.GetItemCount())  // ditto
 		{
 			// ensure type correctness (this presumes that given item-list has already been provided with an item-factory)
 			assert(itemList.GetItemFactory().GetItemType() == shared::SDataTypeHelper<TItem>::GetTypeInfo());
@@ -112,6 +112,8 @@ namespace uqs
 		void CItemListProxy_Writable<TItem>::CreateItemsByItemFactory(size_t numItemsToCreate)
 		{
 			m_itemList.CreateItemsByItemFactory(numItemsToCreate);
+
+			// retrieve the items in case they hadn't been created in a previous roundtrip
 			m_pItems = m_itemList.GetItems();
 			m_itemCount = numItemsToCreate;
 		}
