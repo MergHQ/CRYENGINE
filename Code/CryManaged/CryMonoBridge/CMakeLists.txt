@@ -48,6 +48,8 @@ add_sources("CryMonoBridge_main_uber_4.cpp"
 	SOURCE_GROUP "NativeToManagedInterfaces"
 		"NativeToManagedInterfaces/Entity.h"
 		"NativeToManagedInterfaces/Entity.cpp"
+		"NativeToManagedInterfaces/Console.h"
+		"NativeToManagedInterfaces/Console.cpp"
 )
 
 add_sources("NoUberFile"

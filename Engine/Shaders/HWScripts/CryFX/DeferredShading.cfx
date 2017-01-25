@@ -2223,6 +2223,97 @@ technique ClipVolumeBlendValue
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// Clip Volumes for volumetric fog ////////////////////////
+
+cbuffer CBClipVolumeVolFog : register(b0)
+{
+	struct ClipVolumeVolFogConstants
+	{
+		float4x4 transformMatrix;
+		uint4    sliceIndex;
+	} cbClipVolumeVolFog;
+};
+
+struct vtxOutClipVolumeVolFogGS
+{
+	float4 HPosition  : POSITION;
+	uint rtindex      : SV_RenderTargetArrayIndex;
+};
+
+vtxOutClipVolume ClipVolumeVolFogVS(vtxInLightPrePass IN)
+{
+	vtxOutClipVolume OUT = (vtxOutClipVolume)0; 
+
+	float4 vPos = IN.Position;
+	OUT.HPosition = mul(vPos, cbClipVolumeVolFog.transformMatrix);
+
+	return OUT;
+}
+
+// max 64 slices per one clip volume.
+[maxvertexcount(192)]
+void ClipVolumeVolFogGS(triangle vtxOutClipVolume IN[3], inout TriangleStream<vtxOutClipVolumeVolFogGS> outputStream)
+{
+	uint sliceStartIndex = cbClipVolumeVolFog.sliceIndex.x;
+	uint sliceEndIndex = cbClipVolumeVolFog.sliceIndex.y;
+
+	for(uint i = sliceStartIndex; i < sliceEndIndex; ++i)
+	{
+		vtxOutClipVolumeVolFogGS OUT;
+		OUT.rtindex = i;
+
+		[unroll] for(uint j = 0; j < 3; ++j)
+		{
+			OUT.HPosition = IN[j].HPosition;
+			outputStream.Append(OUT);
+		}
+
+		outputStream.RestartStrip();
+	}
+}
+
+technique ClipVolumeStencilVolFog
+{
+	pass p0
+	{
+		VertexShader = ClipVolumeVolFogVS();
+		GeometryShader = ClipVolumeVolFogGS();
+		PixelShader  = ClipVolumePS();
+		CullMode = None;
+	}
+}
+
+float4 ResolveStencilVolFogPS(vtxOut IN) : COLOR0 
+{
+	const int BIT_STENCIL_STATIC            = 0x0000007F;
+	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;
+
+	const float fMaxStencilRefRcp = 1.0f / 255.0f;
+	
+	int2 nStencilVal;
+	int3 vPixCoord = int3( IN.WPos.xy, 0);
+	nStencilVal = StencilTex.Load(vPixCoord);
+
+	nStencilVal = nStencilVal & BIT_STENCIL_STATIC;
+
+#if DURANGO || ORBIS
+	return nStencilVal.r * fMaxStencilRefRcp;
+#else
+	return nStencilVal.g * fMaxStencilRefRcp;
+#endif
+}
+
+technique ResolveStencilVolFog
+{
+	pass p0
+	{
+		VertexShader = FullscreenTriVS();
+		PixelShader  = ResolveStencilVolFogPS();
+		CullMode = None;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 struct vtxOutShadowMaskVolume { float4 HPosition : POSITION; };
 

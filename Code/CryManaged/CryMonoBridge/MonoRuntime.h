@@ -71,7 +71,7 @@ private:
 };
 
 class CMonoRuntime
-	: public IMonoRuntime
+	: public IMonoRuntime, public IManagedConsoleCommandListener
 {
 public:
 	CMonoRuntime();
@@ -100,6 +100,11 @@ public:
 	virtual void                        RegisterManagedNodeCreator(const char* szClassName, IManagedNodeCreator* pCreator) override;
 	// ~IMonoRuntime
 
+	// IManagedConsoleCommandListener
+	virtual void OnManagedConsoleCommandEvent(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments) override;
+
+	// ~IManagedConsoleCommandListener
+
 	CMonoDomain* FindDomainByHandle(MonoDomain* pDomain);
 
 	CAppDomain*  LaunchPluginDomain();
@@ -117,6 +122,8 @@ private:
 	static MonoAssembly* MonoAssemblySearchCallback(MonoAssemblyName* pAssemblyName, void* pUserData);
 
 	void RegisterInternalInterfaces();
+
+	void InvokeManagedConsoleCommandNotification(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments);
 
 private:
 	typedef std::unordered_map<MonoDomain*, CMonoDomain*> TDomainLookupMap;

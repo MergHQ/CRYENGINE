@@ -100,7 +100,16 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		}
 		else
 		{
-			InitializePlugin();
+			bool pluginInitialized = InitializePlugin();
+			if (pluginInitialized)
+			{
+				// scans for console command attributes
+				auto attributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
+				CRY_ASSERT(attributeManager != nullptr);
+				void* args[1];
+				args[0] = m_pLibrary->GetManagedObject();; //load the plugin assembly to scans for ConsoleCommandRegisterAttribute
+				attributeManager->InvokeMethod("RegisterAttribute", nullptr, args, 1);
+			}
 		}
 	}
 	break;

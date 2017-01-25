@@ -15,9 +15,11 @@
 #include "NativeComponents/GameRules.h"
 
 #include "NativeToManagedInterfaces/Entity.h"
+#include "NativeToManagedInterfaces/Console.h"
 
 #include <CrySystem/ILog.h>
 #include <CryAISystem/IAISystem.h>
+#include <CrySystem/IConsole.h>
 
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/assembly.h>
@@ -72,6 +74,8 @@ CMonoRuntime::CMonoRuntime()
 
 CMonoRuntime::~CMonoRuntime()
 {
+	gEnv->pConsole->UnregisterListener(this);
+
 	if (m_pLibCore != nullptr)
 	{
 		// Get the equivalent of gEnv
@@ -143,6 +147,8 @@ bool CMonoRuntime::Initialize()
 	m_domainLookupMap.insert(TDomainLookupMap::value_type((MonoDomain*)m_pRootDomain->GetHandle(), m_pRootDomain));
 
 	RegisterInternalInterfaces();
+
+	gEnv->pConsole->RegisterListener(this, "MonoRuntime::ManagedConsoleCommandListener");
 
 	CryLog("[Mono] Initialization done.");
 	return true;
@@ -423,6 +429,39 @@ void CMonoRuntime::RegisterInternalInterfaces()
 {
 	CManagedEntityInterface entityInterface;
 	RegisterNativeToManagedInterface(entityInterface);
+
+	CConsoleCommandInterface consoleCommandInterface;
+	RegisterNativeToManagedInterface(consoleCommandInterface);
+}
+
+void CMonoRuntime::OnManagedConsoleCommandEvent(const char* commandName, IConsoleCmdArgs* consoleCommandArguments)
+{
+	gEnv->pLog->Log("[Mono] %s", "OnManagedConsoleCommandEvent invoked");
+	InvokeManagedConsoleCommandNotification(commandName, consoleCommandArguments);
+}
+
+void CMonoRuntime::InvokeManagedConsoleCommandNotification(const char* commandName, IConsoleCmdArgs* commandArguments)
+{
+	IMonoClass* classConsoleCommandArgumentHolder = m_pLibCore->GetClass("CryEngine", "ConsoleCommandArgumentsHolder");
+	void* constructorArg[1];
+	int noArguments = commandArguments->GetArgCount();
+	constructorArg[0] = &noArguments;
+	std::shared_ptr<IMonoObject> consoleCommandArgumentHolderInstance = classConsoleCommandArgumentHolder->CreateInstance(constructorArg, 1);
+
+	void* methodArg[2];
+	for (int j = 0; j < noArguments; ++j)
+	{
+		methodArg[0] = &j;
+		methodArg[1] = m_pRootDomain->CreateManagedString(commandArguments->GetArg(j));
+		consoleCommandArgumentHolderInstance->InvokeMethod("SetArgument", methodArg, 2);
+	}
+
+	void* methodArg2[3];
+	methodArg2[0] = m_pRootDomain->CreateManagedString(commandName);
+	methodArg2[1] = &noArguments;
+	methodArg2[2] = consoleCommandArgumentHolderInstance->GetHandle();
+	IMonoClass* classConsoleCommand = m_pLibCore->GetClass("CryEngine", "ConsoleCommand");
+	classConsoleCommand->InvokeMethod("NotifyManagedConsoleCommand", nullptr, methodArg2, 3);
 }
 
 void CMonoRuntime::HandleException(MonoObject* pException)

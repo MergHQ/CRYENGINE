@@ -1150,6 +1150,8 @@ void CStandardGraphicsPipeline::Execute()
 			pRenderer->FX_DeferredRendering(m_pCurrentRenderView, true);
 	}
 
+	m_pVolumetricFogStage->ResetFrame();
+
 	m_bUtilityPassesInitialized = true;
 	m_pCurrentRenderView = nullptr;
 }

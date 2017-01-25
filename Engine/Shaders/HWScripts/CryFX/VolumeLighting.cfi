@@ -9,15 +9,19 @@
 #define ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
 #define ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 
+#if ORBIS
+// if FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER isn't defined in ClipVolume.h, this macro must be used.
+#define ENABLE_CLIPVOLUME_STENCIL_FLOAT
+#endif
 
 #define EARLY_REJECTION_LENGTH										(6.0f)
 #define EARLY_REJECTION_VOXELS										(2.0f)
 #define MAX_NUM_FOG_VOLUMES												(64)
 #define VOLUMETRIC_FOG_RANGE_SHIFT_INSCATTER			(16.0f)
 
-#define BLOCK_SIZE_X								(4)
-#define BLOCK_SIZE_Y								(4)
-#define BLOCK_SIZE_Z								(4)
+#define BLOCK_SIZE_X								4
+#define BLOCK_SIZE_Y								4
+#define BLOCK_SIZE_Z								4
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -678,7 +682,11 @@ RWTexture3D<float>	VolumetricFogDensityOutput : register(u0);
 RWTexture3D<float3>	VolumetricFogColorDensityOutput : register(u1);
 RWTexture3D<float3>	VolumetricFogEmissiveOutput : register(u2);
 
+#if ENABLE_CLIPVOLUME_STENCIL_FLOAT
+Texture2DArray<float> VolumetricClipVolumeStencil : register(t0) = TS_VolumetricClipVolumeStencil;
+#else
 Texture2DArray<uint2> VolumetricClipVolumeStencil : register(t0) = TS_VolumetricClipVolumeStencil;
+#endif
 Texture2D FogNoiseTexture : register(t1) = "EngineAssets/Textures/rotrandomcm.dds";
 StructuredBuffer<SFogVolumeInjectInfo> FogVolumeInjectInfo : register(t8);
 StructuredBuffer<SFogVolumeCullInfo> FogVolumeCullInfo : register(t9);
@@ -924,10 +932,14 @@ void InjectFogDensityCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	const float3 pixelCoord = DispatchThreadID.xyz;
 
 	// read clip volume stencil value
+#if ENABLE_CLIPVOLUME_STENCIL_FLOAT
+	int nStencilVal = 255.0f * VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
+#else
 #if DURANGO || ORBIS
 	int nStencilVal = VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
 #else
 	int nStencilVal = VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
+#endif
 #endif
 	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
 	const uint clipVolumeIndex = clipVolumeStencilID & (MAX_CLIPVOLUMES-1);
@@ -936,7 +948,7 @@ void InjectFogDensityCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	// Barycentric interpolation for reconstructing position
 	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
 	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
-	float n = dot(-vfCameraFrontVector, vCamVec);
+	float n = dot(-vfCameraFrontVector.xyz, vCamVec);
 	float3 normalizedCamVec = vCamVec / n;
 
 	float depthIndex = pixelCoord.z;
@@ -1368,7 +1380,11 @@ float AccumulateSunShadow(in float depth, in float depthFront, in float3 eyeRay,
 Buffer<uint> LightGridInput : register(t8);
 Buffer<uint> LightCountInput : register(t9);
 Texture2D<float> MaxDepthBuffer : register(t10);
+#if ENABLE_CLIPVOLUME_STENCIL_FLOAT
+Texture2DArray<float> ClipVolumeStencil : register(t11);
+#else
 Texture2DArray<uint2> ClipVolumeStencil : register(t11);
+#endif
 StructuredBuffer<SVolumeLightShadeInfo> VolumeLightsShadeInfo : register(t12);
 Texture3D<float3> VolumetricFogDensityColorInput : register(t13);
 #if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
@@ -1880,10 +1896,14 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	float maxLinearZ = MaxDepthBuffer[DispatchThreadID.xy] * maxDistance;
 
 	int nStencilVal;
+#if ENABLE_CLIPVOLUME_STENCIL_FLOAT
+	nStencilVal = 255.0f * ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
+#else
 #if DURANGO || ORBIS
 	nStencilVal = ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
 #else
 	nStencilVal = ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
+#endif
 #endif
 	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
 	const uint clipVolumeData = TiledClipVolumeInfo[clipVolumeStencilID & (MAX_CLIPVOLUMES-1)].data;
@@ -1893,7 +1913,7 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
 	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
 
-	float n = dot(-vfCameraFrontVector, vCamVec);
+	float n = dot(-vfCameraFrontVector.xyz, vCamVec);
 	float3 normalizedCamVec = vCamVec / n;
 	float3 normalizedEyeRay = normalize(normalizedCamVec);
 
@@ -2015,7 +2035,7 @@ void RaymarchVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID)
 		// Barycentric interpolation for reconstructing position
 		float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
 
-		float n = dot(-vfCameraFrontVector, normalize(vCamVec));
+		float n = dot(-vfCameraFrontVector.xyz, normalize(vCamVec));
 		float3 normalizedFactor = 1 / n;
 
 		const uint maxStepNum = ScreenInfo.w;
@@ -2163,7 +2183,7 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
 	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
 
-	float n = dot(-vfCameraFrontVector, vCamVec);
+	float n = dot(-vfCameraFrontVector.xyz, vCamVec);
 	float3 normalizedCamVec = vCamVec / n;
 
 	float depthIndex = pixelCoord.z;

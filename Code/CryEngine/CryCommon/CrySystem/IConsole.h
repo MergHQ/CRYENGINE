@@ -145,6 +145,12 @@ typedef void (* ConsoleCommandFunc)(IConsoleCmdArgs*);
 //! This a definition of the callback function that is called when variable change.
 typedef void (* ConsoleVarFunc)(ICVar*);
 
+struct IManagedConsoleCommandListener
+{
+	virtual ~IManagedConsoleCommandListener() {};
+	virtual void OnManagedConsoleCommandEvent(const char* commandName, IConsoleCmdArgs* consoleCommandArguments) = 0;
+};
+
 //! Interface to the engine console.
 //! The engine console allow to manipulate the internal engine parameters and to invoke commands.
 //! This interface allow external modules to integrate their functionalities into the console as commands or variables.
@@ -323,12 +329,15 @@ struct IConsole
 	//! Draw the console.
 	virtual void Draw() = 0;
 
+	virtual void RegisterListener(IManagedConsoleCommandListener* pListener, const char* name) = 0;
+	virtual void UnregisterListener(IManagedConsoleCommandListener* pListener) = 0;
+
 	//! Register a new console command.
 	//! \param sCommand Command name.
 	//! \param func     Pointer to the console command function to be called when command is invoked.
 	//! \param nFlags   Bitfield consisting of VF_ flags (e.g. VF_CHEAT).
 	//! \param sHelp    Help string, will be displayed when typing in console "command ?".
-	virtual void AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL) = 0;
+	virtual void AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManaged=false) = 0;
 
 	//! Register a new console command that execute script function.
 	//! EG "Game.Connect(%1)" the symbol "%1" will be replaced with the command parameter 1

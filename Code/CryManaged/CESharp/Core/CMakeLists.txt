@@ -17,7 +17,7 @@ if(OPTION_BUILD_CSHARP_WITH_MCS)
 	source_group("Audio" FILES ${Audio_FILES})
 
 
-	set(Console_FILES Console/ConsoleCommand.cs Console/ConsoleVariable.cs)
+	set(Console_FILES Console/Attributes.cs Console/ConsoleCommand.cs Console/ConsoleVariable.cs Console/Native/NativeConsoleMethods.cs)
 	source_group("Console" FILES ${Console_FILES})
 
 
