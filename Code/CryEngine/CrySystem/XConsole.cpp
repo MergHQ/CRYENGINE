@@ -261,6 +261,7 @@ int CXConsole::con_restricted = 0;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CXConsole::CXConsole()
+	:m_managedConsoleCommandListeners(1)
 {
 	m_fRepeatTimer = 0;
 	m_pSysDeactivateConsole = 0;
@@ -1567,6 +1568,16 @@ void CXConsole::OnConsoleCommand(const char* cmd)
 	ExecuteString(cmd, false);
 }
 
+void CXConsole::RegisterListener(IManagedConsoleCommandListener* pListener, const char* name)
+{
+	m_managedConsoleCommandListeners.Add(pListener, name);
+}
+
+void CXConsole::UnregisterListener(IManagedConsoleCommandListener* pListener)
+{
+	m_managedConsoleCommandListeners.Remove(pListener);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* CXConsole::GetHistoryElement(const bool bUpOrDown)
 {
@@ -1817,7 +1828,7 @@ void CXConsole::ScrollConsole()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp)
+void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp, bool bIsManagedExternally)
 {
 	AssertName(sCommand);
 
@@ -1826,6 +1837,7 @@ void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nF
 		CConsoleCommand cmd;
 		cmd.m_sName = sCommand;
 		cmd.m_func = func;
+		cmd.m_isManagedExternally = bIsManagedExternally;
 		if (sHelp)
 		{
 			cmd.m_sHelp = sHelp;
@@ -2508,7 +2520,18 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 	{
 		// This is function command, execute it with a list of parameters.
 		CConsoleCommandArgs cmdArgs(str, args);
-		cmd.m_func(&cmdArgs);
+		if (!cmd.m_isManagedExternally)
+		{
+			cmd.m_func(&cmdArgs);
+		}
+		else
+		{
+			for (TManagedConsoleCommandListener::Notifier notifier(m_managedConsoleCommandListeners); notifier.IsValid(); notifier.Next())
+			{
+				notifier->OnManagedConsoleCommandEvent(cmd.m_sName.c_str(), &cmdArgs);
+			}
+		}
+		
 		return;
 	}
 

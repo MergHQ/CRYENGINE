@@ -10,6 +10,7 @@
 #include <CrySystem/IConsole.h>
 #include <CryInput/IInput.h>
 #include <CryCore/CryCrc32.h>
+#include <CryCore/Containers/CryListenerSet.h>
 #include "Timer.h"
 
 //forward declaration
@@ -37,6 +38,7 @@ struct CConsoleCommand
 	string             m_sHelp;    // optional help string - can be shown in the console with "<commandname> ?"
 	int                m_nFlags;   // bitmask consist of flag starting with VF_ e.g. VF_CHEAT
 	ConsoleCommandFunc m_func;     // Pointer to console command.
+	bool               m_isManagedExternally;// true if console command is added from C# and the notification of console commands will be through C# class method invocation via mono
 
 	//////////////////////////////////////////////////////////////////////////
 	CConsoleCommand() : m_func(0), m_nFlags(0) {}
@@ -162,7 +164,9 @@ public:
 	virtual void                   Clear();
 	virtual void                   Update();
 	virtual void                   Draw();
-	virtual void                   AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL);
+	virtual void                   RegisterListener(IManagedConsoleCommandListener* pListener, const char* name);
+	virtual void                   UnregisterListener(IManagedConsoleCommandListener* pListener);
+	virtual void                   AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManagedExternally = false);
 	virtual void                   AddCommand(const char* sName, const char* sScriptFunc, int nFlags = 0, const char* sHelp = NULL);
 	virtual void                   RemoveCommand(const char* sName);
 	virtual void                   ExecuteString(const char* command, const bool bSilentMode, const bool bDeferExecution = false);
@@ -279,6 +283,9 @@ private: // ----------------------------------------------------------
 	typedef ConsoleVariablesMap::iterator                   ConsoleVariablesMapItor;
 
 	typedef std::vector<std::pair<const char*, ICVar*>>     ConsoleVariablesVector;
+
+	typedef CListenerSet<IManagedConsoleCommandListener*> TManagedConsoleCommandListener;
+	TManagedConsoleCommandListener m_managedConsoleCommandListeners;
 
 	void LogChangeMessage(const char* name, const bool isConst, const bool isCheat, const bool isReadOnly, const bool isDeprecated,
 	                      const char* oldValue, const char* newValue, const bool isProcessingGroup, const bool allowChange);
