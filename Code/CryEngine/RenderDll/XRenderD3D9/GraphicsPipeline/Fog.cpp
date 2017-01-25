@@ -337,7 +337,6 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			m_passVolFogShadowRaycast.SetTexture(1, m_pTexInterleaveSamplePattern);
 
 			CShadowUtils::SetShadowSamplingContextToRenderPass(m_passVolFogShadowRaycast, 0, 1, 2, 3, 2);
-			CShadowUtils::SetShadowCascadesToRenderPass(m_passVolFogShadowRaycast, 4, 3, cascades);
 
 			if (bVolCloudShadow)
 			{
@@ -345,6 +344,8 @@ void CFogStage::ExecuteVolumetricFogShadow()
 				m_passVolFogShadowRaycast.SetSampler(4, rd->m_nBilinearBorderSampler);
 			}
 		}
+
+		CShadowUtils::SetShadowCascadesToRenderPass(m_passVolFogShadowRaycast, 4, 3, cascades);
 
 		m_passVolFogShadowRaycast.BeginConstantUpdate();
 

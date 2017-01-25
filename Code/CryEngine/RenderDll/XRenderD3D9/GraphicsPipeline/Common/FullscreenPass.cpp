@@ -37,7 +37,7 @@ void CFullscreenPass::BeginConstantUpdate()
 	m_bPendingConstantUpdate = true;
 }
 
-void CFullscreenPass::Execute()
+bool CFullscreenPass::Execute()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -111,8 +111,14 @@ void CFullscreenPass::Execute()
 
 	ClearPrimitives();
 
+	bool success = false;
+
 	if (AddPrimitive(&m_primitive))
 	{
 		CPrimitiveRenderPass::Execute();
+
+		success = true;
 	}
+
+	return success;
 }

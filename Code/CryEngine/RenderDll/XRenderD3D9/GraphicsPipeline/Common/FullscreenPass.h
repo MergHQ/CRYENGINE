@@ -114,7 +114,7 @@ public:
 		return m_primitive.GetConstantManager().EndTypedConstantUpdate<T>(constants);
 	}
 
-	void Execute();
+	bool Execute();
 
 private:
 	int                      m_inputVars[4];

@@ -14,6 +14,7 @@ public:
 	static bool  IsEnabledInFrame();
 	static int32 GetVolumeTextureDepthSize();
 	static int32 GetVolumeTextureSize(int32 size, int32 scale);
+	static float GetDepthTexcoordFromLinearDepthScaled(float linearDepthScaled, float raymarchStart, float invRaymarchDistance, float depthSlicesNum);
 
 public:
 	CVolumetricFogStage();
@@ -31,6 +32,7 @@ public:
 	const Vec4& GetGlobalEnvProbeShaderParam1() const { return m_globalEnvProbeParam1; }
 	CTexture*   GetGlobalEnvProbeTex0() const;
 	CTexture*   GetGlobalEnvProbeTex1() const;
+	void        ResetFrame();
 
 private:
 	static const int32 MaxFrameNum = 4;
@@ -46,7 +48,6 @@ private:
 
 	bool      IsVisible() const;
 	bool      IsTexturesValid() const;
-	void      ResetFrame();
 	void      UpdateFrame();
 	void      RenderDownscaledShadowmap(CRenderView* pRenderView);
 	void      PrepareLightList(CRenderView* pRenderView);

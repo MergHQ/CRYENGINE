@@ -155,18 +155,6 @@ AABB vfRotateAABB(const AABB& aabb, const Matrix33& mat)
 
 	return AABB(pos - sz, pos + sz);
 }
-
-float vfGetDepthIndex(float linearDepth)
-{
-	const float raymarchStart = gcpRendD3D->GetRCamera().fNear;
-	Vec3 volFogCtrlParams(0.0f, 0.0f, 0.0f);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG2_CTRL_PARAMS, volFogCtrlParams);
-	const float raymarchDistance = (volFogCtrlParams.x > raymarchStart) ? (volFogCtrlParams.x - raymarchStart) : 0.0001f;
-	float d = powf(((linearDepth - raymarchStart) / raymarchDistance), (1.0f / 2.0f));
-	float maxIndex = static_cast<f32>(CTexture::s_ptexVolumetricFog ? CTexture::s_ptexVolumetricFog->GetDepth() : 1.0f);
-	d = (0.5f - d) / maxIndex + d;
-	return d;
-}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,6 +185,14 @@ int32 CVolumetricFogStage::GetVolumeTextureSize(int32 size, int32 scale)
 {
 	scale = max(scale, 2);
 	return (size / scale) + ((size % scale) > 0 ? 1 : 0);
+}
+
+float CVolumetricFogStage::GetDepthTexcoordFromLinearDepthScaled(float linearDepthScaled, float raymarchStart, float invRaymarchDistance, float depthSlicesNum)
+{
+	linearDepthScaled = max(0.0f, linearDepthScaled - raymarchStart);
+	float d = powf((linearDepthScaled * invRaymarchDistance), (1.0f / 2.0f));
+	d = (0.5f - d) / depthSlicesNum + d;
+	return d;
 }
 
 CVolumetricFogStage::CVolumetricFogStage()
@@ -674,9 +670,9 @@ void CVolumetricFogStage::BindVolumetricFogResources(RenderPassType& pass, int32
 
 // explicit instantiation
 template
-void CVolumetricFogStage::BindVolumetricFogResources(CFullscreenPass& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
+void      CVolumetricFogStage::BindVolumetricFogResources(CFullscreenPass& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
 template
-void CVolumetricFogStage::BindVolumetricFogResources(CComputeRenderPass& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
+void      CVolumetricFogStage::BindVolumetricFogResources(CComputeRenderPass& pass, int32 startTexSlot, int32 trilinearClampSamplerSlot);
 
 CTexture* CVolumetricFogStage::GetGlobalEnvProbeTex0() const
 {
@@ -965,10 +961,10 @@ void CVolumetricFogStage::RenderDownscaledShadowmap(CRenderView* pRenderView)
 
 				pass.SetState(GS_COLMASK_NONE | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 
-				CShadowUtils::SetShadowCascadesToRenderPass(pass, 0, -1, cascades);
-
 				pass.SetSampler(0, samplerPointClamp);
 			}
+
+			CShadowUtils::SetShadowCascadesToRenderPass(pass, 0, -1, cascades);
 
 			pass.BeginConstantUpdate();
 
@@ -1967,7 +1963,6 @@ void CVolumetricFogStage::InjectInscatteringLight(CRenderView* pRenderView, cons
 		pass.SetOutputUAV(0, m_pInscatteringVolume);
 
 		CShadowUtils::SetShadowSamplingContextToRenderPass(pass, 0, -1, -1, 1, -1);
-		CShadowUtils::SetShadowCascadesToRenderPass(pass, 0, 4, cascades);
 
 		pass.SetSampler(3, m_samplerTrilinearClamp);
 
@@ -1993,6 +1988,8 @@ void CVolumetricFogStage::InjectInscatteringLight(CRenderView* pRenderView, cons
 		// TODO: refactor after removing old graphics pipeline.
 		rd->GetTiledShading().BindForwardShadingResources(pass);
 	}
+
+	CShadowUtils::SetShadowCascadesToRenderPass(pass, 0, 4, cascades);
 
 	pass.BeginConstantUpdate();
 

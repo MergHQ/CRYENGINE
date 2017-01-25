@@ -1470,8 +1470,7 @@ void CD3D9Renderer::RT_BeginFrame()
 		if (!pCVarVolumetricFog) pCVarVolumetricFog = iConsole->GetCVar("e_VolumetricFog");
 		bool bVolumetricFog = pCVarVolumetricFog && (pCVarVolumetricFog->GetIVal() != 0);
 		m_bVolumetricFogEnabled = bVolumetricFog
-		                          && CVolumetricFogStage::IsEnabledInFrame()
-		                          && !IsRecursiveRenderView(); // volumetric fog doesn't support recursive pass currently.
+		                          && CVolumetricFogStage::IsEnabledInFrame();
 		if (pCVarVolumetricFog && bVolumetricFog && (CRenderer::CV_r_DeferredShadingTiled == 0))
 		{
 #if !defined(_RELEASE)
@@ -3228,13 +3227,13 @@ void CD3D9Renderer::DebugDrawStats()
 				const int nYstep = 30;
 				int nYpos = 270; // initial Y pos
 				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery stats:%d",
-				               CREOcclusionQuery::m_nQueriesPerFrameCounter);
+				                        CREOcclusionQuery::m_nQueriesPerFrameCounter);
 				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nQueriesPerFrameCounter=%d",
-				               CREOcclusionQuery::m_nQueriesPerFrameCounter);
+				                        CREOcclusionQuery::m_nQueriesPerFrameCounter);
 				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultNowCounter=%d",
-				               CREOcclusionQuery::m_nReadResultNowCounter);
+				                        CREOcclusionQuery::m_nReadResultNowCounter);
 				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultTryCounter=%d",
-				               CREOcclusionQuery::m_nReadResultTryCounter);
+				                        CREOcclusionQuery::m_nReadResultTryCounter);
 			}
 			break;
 
@@ -3272,7 +3271,7 @@ void CD3D9Renderer::DebugDrawStats()
 					}
 
 					IRenderAuxText::DrawLabelExF(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
-					                            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
+					                             nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 
 				IRenderAuxText::Draw2dLabel(40.f, 40.f, 1.3f, &clrInfo.r, false, "Instance drawcall count (zpass/general/transparent/shadows/misc)");
@@ -4137,9 +4136,9 @@ void CD3D9Renderer::RT_EndFrame()
 		m_pPipelineProfiler->EndFrame();
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
-	if( m_pRenderAuxGeomD3D )
+	if (m_pRenderAuxGeomD3D)
 	{
-		if( CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom() )
+		if (CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom())
 		{
 			aux->Flush(true);
 		}
@@ -4155,9 +4154,9 @@ void CD3D9Renderer::RT_EndFrame()
 		m_pPipelineProfiler->EndFrame();
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
-	if( m_pRenderAuxGeomD3D )
+	if (m_pRenderAuxGeomD3D)
 	{
-		if( CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom() )
+		if (CAuxGeomCB* aux = m_pRenderAuxGeomD3D->GetRenderAuxGeom())
 		{
 			aux->Flush(true);
 		}
@@ -5673,7 +5672,7 @@ int CD3D9Renderer::RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* p
 			IEntityRender* pIEntityRender = pEntity ? pEntity->GetRenderInterface() : 0;
 
 			// Get the renderproxy, and use it to check if the material is a DynTex, and get the UIElement if so
-			
+
 			{
 				IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 				if (pRenderNode)
@@ -7739,9 +7738,8 @@ class CEngineModule_CryRenderer : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryRenderer, "EngineModule_CryRenderer", 0x540c91a7338e41d3, 0xaceeac9d55614450)
 
 	virtual ~CEngineModule_CryRenderer() {}
-	virtual const char* GetName() const override { return "CryRenderer"; }
+	virtual const char* GetName() const override     { return "CryRenderer"; }
 	virtual const char* GetCategory() const override { return "CryEngine"; }
-
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{

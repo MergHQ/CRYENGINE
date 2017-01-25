@@ -4145,7 +4145,7 @@ void CD3D9Renderer::FX_FlushShader_General()
 		if (!(rRP.m_PersFlags2 & RBPF2_NOSHADERFOG) && rTI.m_FS.m_bEnable && !(rRP.m_ObjFlags & FOB_NO_FOG) || !(rRP.m_PersFlags2 & RBPF2_ALLOW_DEFERREDSHADING))
 		{
 			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_FOG];
-			if (rd->m_bVolumetricFogEnabled)
+			if (rd->m_bVolumetricFogEnabled && !rRP.RenderView()->IsRecursive()) // volumetric fog doesn't support recursive pass currently.
 			{
 				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
 			}
