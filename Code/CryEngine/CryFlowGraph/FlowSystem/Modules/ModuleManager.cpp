@@ -31,7 +31,7 @@ CFlowGraphModuleManager::CFlowGraphModuleManager()
 	: m_listeners(1)
 {
 	m_nextModuleId = 0;
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CFlowGraphModuleManager");
 
 	DefineConstIntCVarName("fg_debugmodules", CV_fg_debugmodules, 0, VF_NULL, "Display Flowgraph Modules debug information.\n" \
 	  "0=Disabled"                                                                                           \

@@ -210,7 +210,7 @@ Device::Device(vr::IVRSystem* pSystem)
 		m_eyeTargets[i] = nullptr;
 
 	if (GetISystem()->GetISystemEventDispatcher())
-		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::OpenVR::Device");
 
 	m_controller.Init();
 

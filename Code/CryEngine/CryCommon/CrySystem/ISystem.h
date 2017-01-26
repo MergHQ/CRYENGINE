@@ -524,7 +524,7 @@ struct ISystemEventDispatcher
 {
 	// <interfuscator:shuffle>
 	virtual ~ISystemEventDispatcher(){}
-	virtual bool RegisterListener(ISystemEventListener* pListener) = 0;
+	virtual bool RegisterListener(ISystemEventListener* pListener, const char* szName) = 0;
 	virtual bool RemoveListener(ISystemEventListener* pListener) = 0;
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam, bool force_queue = false) = 0;

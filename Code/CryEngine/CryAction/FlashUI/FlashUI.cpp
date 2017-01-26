@@ -192,7 +192,7 @@ void CFlashUI::RegisterListeners()
 	CRY_ASSERT_MESSAGE(gEnv->pSystem, "Unable to register as system listener!");
 	if (gEnv->pSystem)
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CFlashUI");
 	}
 }
 

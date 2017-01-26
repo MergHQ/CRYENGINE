@@ -427,7 +427,7 @@ CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes, const IG
 
 	m_mainThreadId = GetCurrentThreadId();
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CCryPak");
 
 #ifdef INCLUDE_LIBTOMCRYPT
 	if (pGameStartup)

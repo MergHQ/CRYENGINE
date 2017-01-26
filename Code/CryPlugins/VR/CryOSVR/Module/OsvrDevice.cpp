@@ -109,7 +109,7 @@ Device::Device()
 
 	if (GetISystem()->GetISystemEventDispatcher())
 	{
-		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::Osvr::Device");
 	}
 
 	gEnv->pSystem->GetHmdManager()->AddEventListener(this);

@@ -17,7 +17,7 @@ CSensorSystem::CSensorSystem()
 	CRY_ASSERT(!ms_pInstance);
 	ms_pInstance = this;
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CSensorSystem");
 
 	m_pTagLibrary.reset(new CSensorTagLibrary());
 

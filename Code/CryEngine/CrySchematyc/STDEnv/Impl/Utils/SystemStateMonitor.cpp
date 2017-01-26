@@ -8,7 +8,7 @@ namespace Schematyc
 CSystemStateMonitor::CSystemStateMonitor()
 	: m_bLoadingLevel(false)
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CSystemStateMonitor");
 }
 
 CSystemStateMonitor::~CSystemStateMonitor()

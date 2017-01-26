@@ -9,7 +9,7 @@ using namespace CryAudio;
 
 CRuntimeAreaManager::CRuntimeAreaManager()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CRuntimeAreaManager");
 
 	IEntityClassRegistry::SEntityClassDesc runtimeObjectDesc;
 	runtimeObjectDesc.sName = "RuntimeAreaObject";

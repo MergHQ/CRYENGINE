@@ -132,7 +132,8 @@ class CEngineModule_Cry3DEngine : public IEngineModule
 		ISystem* pSystem = env.pSystem;
 
 		ModuleInitISystem(pSystem, "Cry3DEngine");
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_engine);
+
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_engine, "CSystemEventListner_3DEngine");
 
 		C3DEngine* p3DEngine = CryAlignedNew<C3DEngine>(pSystem);
 		env.p3DEngine = p3DEngine;

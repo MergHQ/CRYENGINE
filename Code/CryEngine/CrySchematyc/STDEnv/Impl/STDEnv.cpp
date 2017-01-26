@@ -57,7 +57,7 @@ bool CSTDEnv::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams&
 
 	s_pInstance = this;
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CSTDEnv");
 
 	return true;
 }

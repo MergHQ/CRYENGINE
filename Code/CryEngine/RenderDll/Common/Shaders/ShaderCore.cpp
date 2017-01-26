@@ -598,6 +598,15 @@ void CShaderMan::ShutDown(void)
 	mfCloseShadersCache(0);
 	mfCloseShadersCache(1);
 
+	if (gEnv && gEnv->pSystem)
+	{
+		ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher();
+		if (pSystemEventDispatcher)
+		{
+			pSystemEventDispatcher->RemoveListener(this);
+		}
+	}
+
 	m_bInitialized = false;
 }
 
@@ -1082,7 +1091,7 @@ void CShaderMan::mfInit(void)
 
 	if (!m_bInitialized)
 	{
-		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CShaderMan");
 
 		m_ShadersPath = "Shaders/HWScripts/";
 		m_ShadersExtPath = "Shaders/";

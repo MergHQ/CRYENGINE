@@ -32,7 +32,7 @@ struct SegmentedWorldLocation : public Vec3, public ISystemEventListener
 public:
 	SegmentedWorldLocation(const Vec3& vec3) : Vec3(vec3)
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"SegmentedWorldLocation");
 	}
 
 	~SegmentedWorldLocation()

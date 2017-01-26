@@ -988,7 +988,7 @@ void CAIRecorder::Init(void)
 	{
 		ISystemEventDispatcher* pDispatcher = gEnv->pSystem->GetISystemEventDispatcher();
 		if (pDispatcher)
-			pDispatcher->RegisterListener(this);
+			pDispatcher->RegisterListener(this, "CAIRecorder");
 	}
 }
 

@@ -65,7 +65,7 @@ CStreamEngine::CStreamEngine()
 	StartThreads();
 
 	// register system listener
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CStreamEngine");
 }
 
 //////////////////////////////////////////////////////////////////////////

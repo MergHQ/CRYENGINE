@@ -27,7 +27,7 @@ bool CGame::Init()
 
 	// Request loading of the example map next frame
 	gEnv->pConsole->ExecuteString("map example", false, true);
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CGame");
 
 	return true;
 }

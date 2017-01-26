@@ -13,7 +13,7 @@ public:
 	virtual ~CSystemEventDispatcher(){}
 
 	// ISystemEventDispatcher
-	virtual bool RegisterListener(ISystemEventListener* pListener);
+	virtual bool RegisterListener(ISystemEventListener* pListener, const char* szName);
 	virtual bool RemoveListener(ISystemEventListener* pListener);
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam, bool force_queue = false);

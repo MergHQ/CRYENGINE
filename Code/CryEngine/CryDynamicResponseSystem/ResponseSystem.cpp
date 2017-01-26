@@ -89,7 +89,7 @@ CResponseSystem::CResponseSystem()
 	m_pUsedFileFormat = REGISTER_STRING_CB("drs_fileFormat", "JSON", VF_NULL, "Specifies the file format to use (JSON, XML, BIN)", ::ChangeFileFormat);
     m_pDataPath = REGISTER_STRING("drs_dataPath", "Libs" CRY_NATIVE_PATH_SEPSTR "DynamicResponseSystem", VF_NULL, "Specifies the path where to find the response and dialogline files");
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CResponseSystem");
 
 #if defined(DRS_COLLECT_DEBUG_DATA)
 	m_responseSystemDebugDataProvider.Init();

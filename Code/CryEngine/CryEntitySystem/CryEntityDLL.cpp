@@ -58,7 +58,9 @@ class CEngineModule_EntitySystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_EntitySystem, "EngineModule_CryEntitySystem", 0x885655072f014c03, 0x820c5a1a9b4d623b)
 
-	virtual ~CEngineModule_EntitySystem() {}
+	virtual ~CEngineModule_EntitySystem() 
+	{
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() const override { return "CryEntitySystem"; };
@@ -76,7 +78,8 @@ class CEngineModule_EntitySystem : public IEngineModule
 			pEntitySystem->Release();
 			return false;
 		}
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_entity);
+
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_entity, "CSystemEventListner_Entity");
 
 		env.pEntitySystem = pEntitySystem;
 		return true;

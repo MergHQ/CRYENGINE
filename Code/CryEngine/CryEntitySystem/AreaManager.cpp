@@ -15,7 +15,7 @@ CAreaManager::CAreaManager(CEntitySystem* pEntitySystem)
 
 	if (ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher())
 	{
-		pSystemEventDispatcher->RegisterListener(this);
+		pSystemEventDispatcher->RegisterListener(this,"CAreaManager");
 	}
 }
 

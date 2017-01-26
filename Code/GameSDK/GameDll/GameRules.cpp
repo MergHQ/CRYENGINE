@@ -370,7 +370,7 @@ CGameRules::CGameRules()
 	s_pSmartMineClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SmartMine");
 	s_pTurretClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Turret");
 		
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener( this );
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener( this, "CGameRules" );
 }
 
 //------------------------------------------------------------------------

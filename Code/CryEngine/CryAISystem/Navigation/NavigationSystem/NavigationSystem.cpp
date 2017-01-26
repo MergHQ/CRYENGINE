@@ -165,7 +165,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 #ifdef SEG_WORLD
 	if (ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher())
 	{
-		pSystemEventDispatcher->RegisterListener(this);
+		pSystemEventDispatcher->RegisterListener(this, "NavigationSystem");
 	}
 #endif
 
@@ -4758,7 +4758,7 @@ void NavigationSystemBackgroundUpdate::RegisterAsSystemListener()
 {
 	if (IsEnabled())
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "NavigationSystemBackgroundUpdate");
 	}
 }
 

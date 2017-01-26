@@ -353,7 +353,7 @@ void CPersistantStats::Init()
 		pProfileMan->AddListener(this, true);
 	}
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CPersistantStats");
 
 	// we can't just reserve here sadly (deque) so resize will have to do. 
 	m_clientPersistantStatHistory.resize(NUM_HISTORY_ENTRIES); 

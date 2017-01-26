@@ -785,7 +785,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	m_pGamePhysicsSettings = new CGamePhysicsSettings();
 
 	GetISystem()->GetPlatformOS()->AddListener(this, "CGame");
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CGame");
 
 	InitScriptBinds();
 

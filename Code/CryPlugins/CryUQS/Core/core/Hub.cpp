@@ -38,7 +38,7 @@ namespace uqs
 		{
 			assert(!g_hubImpl);
 			g_hubImpl = this;
-			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHub");
 			m_utils.SubscribeToStuffInHub(*this);
 
 			CQueryFactoryBase::RegisterAllInstancesInDatabase(m_queryFactoryDatabase);

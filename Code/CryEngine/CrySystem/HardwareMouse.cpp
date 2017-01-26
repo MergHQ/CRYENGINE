@@ -84,7 +84,7 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 	Reset(bVisibleByDefault);
 
 	if (gEnv->pSystem)
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CHardwareMouse");
 
 #if !defined(_RELEASE)
 	if (gEnv->pConsole)

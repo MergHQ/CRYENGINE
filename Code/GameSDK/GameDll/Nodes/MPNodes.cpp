@@ -1449,7 +1449,7 @@ public:
 			else
 			{
 				// We can now start as sooon as all entities we need are available to us
-				GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+				GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CRequestCinematicIntroSequence_Node");
 			}
 		}
 

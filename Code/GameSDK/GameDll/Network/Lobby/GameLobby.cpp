@@ -422,7 +422,7 @@ CGameLobby::CGameLobby( CGameLobbyManager* pMgr )
 	gEnv->pNetwork->AddHostMigrationEventListener(this, "GameLobby", ELPT_PostEngine);
 
 	// Register as System Event Listener.
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CGameLobby");
 
 #if !defined(_RELEASE)
 	m_timeTillAutoLeaveLobby = 0.f;
