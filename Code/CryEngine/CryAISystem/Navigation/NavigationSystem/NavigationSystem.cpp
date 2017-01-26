@@ -708,12 +708,12 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
 #ifdef SW_NAVMESH_USE_GUID
 					mesh.exclusionsGUID.push_back(volumeGUID);
 #endif
+					++mesh.version;
 
 					if (mesh.boundary != volumeID)
 						m_updatesManager.RequestQueueMeshUpdate(meshID, volume.aabb);
 					else
 					{
-						++mesh.version;
 						AILogComment("NavigationSystem::SetExclusionVolume: volumeID %u for a mesh %u '%s'", (unsigned int)volumeID, (unsigned int)meshID, mesh.name.c_str());
 						mesh.boundary = NavigationVolumeID();
 						recomputeAABB = true;
@@ -2901,6 +2901,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						exclusions.push_back(exclusionId);
 					}
 #endif
+					m_agentTypes[agentTypeID - 1].exclusions = exclusions;
 
 					// Reading tile count
 					uint32 tilesCount = 0;
