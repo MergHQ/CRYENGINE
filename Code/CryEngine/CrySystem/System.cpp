@@ -219,7 +219,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	if (m_pSystemEventDispatcher)
 	{
-		m_pSystemEventDispatcher->RegisterListener(this);
+		m_pSystemEventDispatcher->RegisterListener(this,"CSystem");
 	}
 
 #if CRY_PLATFORM_WINDOWS
@@ -562,6 +562,11 @@ void CSystem::ShutDown()
 #if defined(ENABLE_LOADING_PROFILER)
 	CLoadingProfilerSystem::ShutDown();
 #endif
+
+	if (m_pSystemEventDispatcher)
+	{
+		m_pSystemEventDispatcher->RemoveListener(this);
+	}
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnShutdown();

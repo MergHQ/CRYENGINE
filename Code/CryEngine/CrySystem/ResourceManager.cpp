@@ -608,7 +608,7 @@ void CResourceManager::Update()
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::Init()
 {
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CResourceManager");
 }
 
 //////////////////////////////////////////////////////////////////////////

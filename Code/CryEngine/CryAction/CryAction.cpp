@@ -1812,7 +1812,7 @@ bool CCryAction::StartEngine(SSystemInitParams& startupParams)
 
 	InlineInitializationProcessing("CCryAction::Init CrySystem and CryAction init");
 
-	m_pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_action);
+	m_pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_action, "CCryAction");
 
 	// init gEnv->pFlashUI
 

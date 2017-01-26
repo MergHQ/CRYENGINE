@@ -131,7 +131,7 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 		CUnitTestRegistrar::RunUnitTests();
 	}
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCore");
 	
 	env.pSchematyc = this;
 

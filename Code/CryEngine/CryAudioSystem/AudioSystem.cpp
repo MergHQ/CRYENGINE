@@ -63,7 +63,7 @@ CSystem::CSystem()
 	, m_allowedThreadId(gEnv->mMainThreadId)
 	, m_atl()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
 	m_mainThread.Init(this);
 }
 

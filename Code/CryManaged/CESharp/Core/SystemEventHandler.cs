@@ -32,7 +32,7 @@ namespace CryEngine
 
 		void AddListener()
 		{
-			Engine.System.GetISystemEventDispatcher().RegisterListener(this);
+			Engine.System.GetISystemEventDispatcher().RegisterListener(this, "SystemEventHandler.cs");
 		}
 
 		public override void Dispose()

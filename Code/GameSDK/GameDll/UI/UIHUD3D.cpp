@@ -50,7 +50,7 @@ void CUIHUD3D::InitEventSystem()
 {
 	assert(gEnv->pSystem);
 	if (gEnv->pSystem)
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener( this );
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener( this, "CUIHUD3D");
 
 	if(gEnv->pFlashUI)
 		gEnv->pFlashUI->RegisterModule(this, "CUIHUD3D");

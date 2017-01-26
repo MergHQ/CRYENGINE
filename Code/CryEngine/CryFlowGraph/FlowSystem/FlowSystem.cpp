@@ -172,7 +172,7 @@ CFlowSystem::CFlowSystem()
 
 	m_pGameTokenSystem = new CGameTokenSystem;
 
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CFlowSystem");
 }
 
 void CFlowSystem::PreInit()

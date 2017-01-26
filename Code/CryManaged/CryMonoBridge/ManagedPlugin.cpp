@@ -16,7 +16,7 @@ CManagedPlugin::CManagedPlugin(const char* szBinaryPath)
 	, m_libraryPath(szBinaryPath)
 	, m_pMonoObject(nullptr)
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CManagedPlugin");
 }
 
 CManagedPlugin::~CManagedPlugin()

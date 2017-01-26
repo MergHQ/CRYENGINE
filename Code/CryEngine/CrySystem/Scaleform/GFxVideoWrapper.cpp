@@ -86,7 +86,7 @@ public:
 		static bool s_registered = false;
 		if (!s_registered)
 		{
-			gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&ms_inst);
+			gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&ms_inst, "CryGFxVideoPlayer_SystemEventListener");
 			s_registered = true;
 		}
 	}

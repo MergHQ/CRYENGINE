@@ -184,7 +184,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 				static_cast<CSystem*>(env.pAudioSystem)->SetImpl(nullptr, data);
 			}
 
-			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound);
+			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound, "CSystemEventListner_Sound");
 
 			// As soon as the audio system was created we consider this a success (even if the NULL implementation was used)
 			bSuccess = true;

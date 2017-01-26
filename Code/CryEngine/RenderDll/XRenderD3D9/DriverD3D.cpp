@@ -7728,7 +7728,7 @@ extern "C" DLL_EXPORT IRenderer * CreateCryRenderInterface(ISystem * pSystem)
 	QueryPerformanceCounter(&li);
 	srand((uint32) li.QuadPart);
 
-	iSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_render);
+	iSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_render, "CSystemEventListner_Render");
 	return gRenDev;
 }
 

@@ -53,7 +53,7 @@ class CEngineModule_CryMonoBridge : public IEngineModule
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_crymonobridge);
+		env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_crymonobridge, "CSystemEventListener_CryMonoBridge");
 		env.pMonoRuntime = new CMonoRuntime();
 
 		return env.pMonoRuntime->Initialize();

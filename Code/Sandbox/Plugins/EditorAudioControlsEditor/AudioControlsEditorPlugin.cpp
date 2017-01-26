@@ -46,7 +46,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	ReloadModels(false);
 	s_layoutModel.Initialize(&s_ATLModel);
 	s_ATLModel.Initialize();
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
 }
 
 CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()

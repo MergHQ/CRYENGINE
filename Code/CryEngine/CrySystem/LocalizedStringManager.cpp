@@ -215,7 +215,7 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 	, m_availableLocalizations(0)
 {
 	m_pSystem = pSystem;
-	m_pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	m_pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CLocalizedStringsManager");
 
 	m_languages.reserve(4);
 	m_pLanguage = 0;

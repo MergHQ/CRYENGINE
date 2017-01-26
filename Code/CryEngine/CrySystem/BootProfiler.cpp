@@ -436,6 +436,15 @@ CBootProfiler::CBootProfiler()
 
 CBootProfiler::~CBootProfiler()
 {
+	if (gEnv && gEnv->pSystem)
+	{
+		ISystemEventDispatcher* pSystemEventDispatcher = gEnv->pSystem->GetISystemEventDispatcher();
+		if (pSystemEventDispatcher)
+		{
+			pSystemEventDispatcher->RemoveListener(this);
+		}
+	}
+
 	delete m_pCurrentSession;
 }
 
@@ -600,7 +609,7 @@ void CBootProfiler::StopFrame()
 
 void CBootProfiler::Init(ISystem* pSystem)
 {
-	pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CBootProfiler");
 	StartSession("boot");
 }
 

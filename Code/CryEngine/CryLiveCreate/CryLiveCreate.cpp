@@ -76,7 +76,7 @@ class CEngineModule_CryLiveCreate : public IEngineModule
 	{
 		ISystem* pSystem = env.pSystem;
 
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_livecreate);
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_livecreate, "CEngineModule_CryLiveCreate");
 
 		// new implementation
 	#if CRY_PLATFORM_WINDOWS

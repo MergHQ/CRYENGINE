@@ -1790,7 +1790,7 @@ CStatoscope::CStatoscope()
 
 	REGISTER_COMMAND("e_StatoscopeAddUserMarker", &ConsoleAddUserMarker, 0, "Add a user marker to the perf stat logging for this frame");
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CStatoscope");
 
 	CryCreateDirectory("%USER%/statoscope");
 

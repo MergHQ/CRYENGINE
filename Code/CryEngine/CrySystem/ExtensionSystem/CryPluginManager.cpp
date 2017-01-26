@@ -148,7 +148,7 @@ CCryPluginManager::CCryPluginManager(const SSystemInitParams& initParams)
 {
 	s_pThis = this;
 
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CCryPluginManager");
 }
 
 CCryPluginManager::~CCryPluginManager()

@@ -134,7 +134,7 @@ void CStatsAgent::CreatePipe(const ICmdLineArg* pPipeName)
 	if (pPipeName)
 	{
 		s_delayMessages = false;
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_statsagent);
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_statsagent, "CStatsAgent");
 
 		CStatsAgentPipe::OpenPipe(pPipeName->GetValue());
 

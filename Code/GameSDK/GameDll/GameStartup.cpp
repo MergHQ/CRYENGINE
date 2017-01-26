@@ -488,7 +488,7 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 	const ICmdLineArg *pModArg = NULL;
 #endif // !defined(_RELEASE)
 
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CGameStartup");
 
 	// Creates and starts the realtime update system listener.
 	if (GetISystem()->IsDevMode())

@@ -188,7 +188,7 @@ CRYPHYSICS_API IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
 
 	if (pSystem)
 	{
-		pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics );
+		pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics, "CSystemEventListner_Physics");
 		return new CPhysicalWorld(pSystem->GetILog());
 	}
 
@@ -216,7 +216,9 @@ class CEngineModule_CryPhysics : public IEngineModule
 		g_bHasSSE = pSystem && (pSystem->GetCPUFlags() & CPUF_SSE)!=0;
 
 		if (pSystem)
-			pSystem->GetISystemEventDispatcher()->RegisterListener( &g_system_event_listener_physics );
+		{
+			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics,"CEngineModule_CryPhysics");
+		}
 
 		env.pPhysicalWorld = new CPhysicalWorld(pSystem ? pSystem->GetILog():0);
 

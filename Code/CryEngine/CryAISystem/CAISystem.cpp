@@ -325,7 +325,7 @@ bool CAISystem::Init()
 
 	AILogProgress("[AISYSTEM] Initialization started.");
 
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CAISystem");
 
 	SetupAIEnvironment();
 

@@ -43,7 +43,7 @@ CRYPHYSICS_API IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
 	
 	if (pSystem)
 	{
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics);
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics, "CSystemEventListner_Physics");
 		return new PhysXWorld(pSystem->GetILog());
 	}
 
@@ -69,7 +69,7 @@ class CEngineModule_CryPhysics : public IEngineModule
 		ISystem* pSystem = env.pSystem;
 
 		if (pSystem)
-			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics);
+			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics, "CSystemEventListner_Physics");
 
 		env.pPhysicalWorld = new PhysXWorld(pSystem ? pSystem->GetILog() : 0);
 

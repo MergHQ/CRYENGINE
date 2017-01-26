@@ -1161,7 +1161,7 @@ CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
 		pWorld->AddEventClient(EventPhysJointBroken::id, OnJointBroken, true, 100000.f);
 	}
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CBreakReplicator");
 
 	float max = CNetworkCVars::Get().BreakMaxWorldSize;
 	m_inaccurateWorldPosNumBits = IntegerLog2_RoundUp(uint32(max / WORLD_POS_SAMPLE_DISTANCE_APPART_INACCURATE));

@@ -131,7 +131,7 @@ Device::Device()
 	UpdateCurrentIPD();
 
 	if (m_pSession && GetISystem()->GetISystemEventDispatcher())
-		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::Oculus::Device");
 
 	gEnv->pSystem->GetHmdManager()->AddEventListener(this);
 }

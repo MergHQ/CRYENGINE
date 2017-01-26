@@ -63,7 +63,7 @@ namespace uqs
 		CHubPlugin::CHubPlugin()
 		{
 			m_updateFlags = 0;  // the ctor of ICryPlugin base class should have done that, but didn't
-			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
+			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHubPlugin");
 		}
 
 		CHubPlugin::~CHubPlugin()

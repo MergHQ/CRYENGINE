@@ -162,7 +162,7 @@ CryGFxTextClipboard::CryGFxTextClipboard()
 		HandleMessage(reinterpret_cast<HWND>(pSystem->GetHWND()), WM_CLIPBOARDUPDATE, 0, 0, nullptr); // Sync current clipboard content with Scaleform
 #endif // CRY_PLATFORM_WINDOWS
 		pSystem->RegisterWindowMessageHandler(this);
-		pSystem->GetISystemEventDispatcher()->RegisterListener(this);
+		pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryGFxTextClipboard");
 	}
 }
 

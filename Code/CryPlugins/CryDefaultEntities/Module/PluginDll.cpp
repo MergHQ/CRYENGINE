@@ -67,7 +67,7 @@ CSystemEventListener g_listener;
 
 bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 {
-	env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_listener);
+	env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_listener,"CCryPluginManager::CSystemEventListener");
 
 	return true;
 }
