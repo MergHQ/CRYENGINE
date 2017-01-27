@@ -30,6 +30,7 @@
 #include "ColorGrading.h"
 #include "WaterRipples.h"
 #include "LensOptics.h"
+
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -758,6 +759,21 @@ void CStandardGraphicsPipeline::RenderPostAA()
 	SwitchFromLegacyPipeline();
 	m_pPostAAStage->Execute();
 	SwitchToLegacyPipeline();
+}
+
+void CStandardGraphicsPipeline::ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly)
+{
+	static CAnisotropicVerticalBlurPass* s_passVerticalBlur = nullptr;
+
+	if (!s_passVerticalBlur)
+	{
+		s_passVerticalBlur = CreateStaticUtilityPass<CAnisotropicVerticalBlurPass>();
+	}
+
+	if (s_passVerticalBlur)
+	{
+		s_passVerticalBlur->Execute(pTex, nAmount, fScale, fDistribution, bAlphaOnly);
+	}
 }
 
 void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()

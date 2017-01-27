@@ -124,3 +124,15 @@ protected:
 	std::vector<CRenderPrimitive> m_clearPrimitives;
 	buffer_handle_t               m_quadVertices;
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CAnisotropicVerticalBlurPass : public IUtilityRenderPass
+{
+public:
+	void Execute(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly);
+
+private:
+	CFullscreenPass m_passBlurAnisotropicVertical[2];
+};

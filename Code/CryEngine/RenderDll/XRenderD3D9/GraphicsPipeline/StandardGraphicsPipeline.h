@@ -136,6 +136,7 @@ public:
 	void   RenderTiledShading();
 	void   RenderScreenSpaceSSS(CTexture* pIrradianceTex);
 	void   RenderPostAA();
+	void   ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly);
 
 	static void   SwitchToLegacyPipeline();
 	static void   SwitchFromLegacyPipeline();

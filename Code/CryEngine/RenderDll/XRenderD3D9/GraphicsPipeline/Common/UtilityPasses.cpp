@@ -562,3 +562,102 @@ void CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 
 	constantManager.EndNamedConstantUpdate();
 }
+
+void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly)
+{
+	if (!pTex)
+	{
+		return;
+	}
+
+	std::unique_ptr<SDynTexture> pBlurTempTex = CryMakeUnique<SDynTexture>(pTex->GetWidth(), pTex->GetHeight(), pTex->GetDstFormat(), eTT_2D, FT_STATE_CLAMP, "TempBlurAnisoVertRT");
+
+	if (!pBlurTempTex)
+	{
+		return;
+	}
+
+	pBlurTempTex->Update(pTex->GetWidth(), pTex->GetHeight());
+
+	if (!pBlurTempTex->m_pTexture)
+	{
+		return;
+	}
+
+	// TODO: remove after removing old graphics pipeline.
+	// Get current viewport
+	int iTempX, iTempY, iWidth, iHeight;
+	gRenDev->GetViewport(&iTempX, &iTempY, &iWidth, &iHeight);
+	gcpRendD3D->RT_SetViewport(0, 0, pTex->GetWidth(), pTex->GetHeight());
+
+	static CCryNameTSCRC techName("AnisotropicVertical");
+	static CCryNameR paramName("blurParams0");
+
+	D3DViewPort viewport;
+	viewport.TopLeftX = 0.0f;
+	viewport.TopLeftY = 0.0f;
+	viewport.Width = static_cast<float>(pTex->GetWidth());
+	viewport.Height = static_cast<float>(pTex->GetHeight());
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	// setup texture offsets, for texture sampling
+	float s1 = 1.0f / (float)pTex->GetWidth();
+	float t1 = 1.0f / (float)pTex->GetHeight();
+
+	Vec4 pWeightsPS;
+	pWeightsPS.x = 0.25f * t1;
+	pWeightsPS.y = 0.5f * t1;
+	pWeightsPS.z = 0.75f * t1;
+	pWeightsPS.w = 1.0f * t1;
+	pWeightsPS *= -fScale;
+
+	for (int p(1); p <= nAmount; ++p)
+	{
+		// Vertical
+		{
+			auto& pass = m_passBlurAnisotropicVertical[0];
+
+			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
+
+			pass.SetRenderTarget(0, pBlurTempTex->m_pTexture);
+			pass.SetViewport(viewport);
+
+			pass.SetState(GS_NODEPTHTEST);
+
+			pass.SetTextureSamplerPair(0, pTex, gcpRendD3D->m_nBilinearClampSampler);
+
+			pass.BeginConstantUpdate();
+
+			pass.SetConstant(paramName, pWeightsPS);
+
+			pass.Execute();
+		}
+
+		pWeightsPS *= 2.0f;
+
+		// Vertical
+		{
+			auto& pass = m_passBlurAnisotropicVertical[1];
+
+			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
+
+			pass.SetRenderTarget(0, pTex);
+			pass.SetViewport(viewport);
+
+			pass.SetState(GS_NODEPTHTEST);
+
+			pass.SetTextureSamplerPair(0, pBlurTempTex->m_pTexture, gcpRendD3D->m_nBilinearClampSampler);
+
+			pass.BeginConstantUpdate();
+
+			pass.SetConstant(paramName, pWeightsPS);
+
+			pass.Execute();
+		}
+	}
+
+	// TODO: remove after removing old graphics pipeline.
+	// Restore previous viewport
+	gcpRendD3D->RT_SetViewport(iTempX, iTempY, iWidth, iHeight);
+}
