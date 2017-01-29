@@ -1037,81 +1037,37 @@ technique BlurDirectional
 /// Vertical Blur technique (used for ocean "anisotropic" reflections aproximation) ////////////////
 
 float4 blurParams0;
-sampler2D blurMap0 : register(s0);
 
-struct vtxOutAnisotropicVertical
-{
-  float4 HPosition  : POSITION;
-  float2 baseTC0 : TEXCOORDN;    
-  float2 baseTC1 : TEXCOORDN;    
-  float2 baseTC2 : TEXCOORDN;    
-  float2 baseTC3 : TEXCOORDN;    
-  float2 baseTC4 : TEXCOORDN;    
-  float2 baseTC5 : TEXCOORDN;    
-  float2 baseTC6 : TEXCOORDN;    
-  float2 baseTC7 : TEXCOORDN;    
-};
-
-vtxOutAnisotropicVertical AnisotropicVerticalVS(vtxIn IN)
-{
-  vtxOutAnisotropicVertical OUT = (vtxOutAnisotropicVertical)0; 
-	OUT.HPosition = Get2dHPos(IN.Position);
-
-  // todo: remove all interpolators, pass constants instead to pixel shader (faster)
-  
-#if !%_RT_SAMPLE0
-  OUT.baseTC0.xy = IN.baseTC.xy + float2(0,blurParams0.x)*0.125*0.75f;
-  OUT.baseTC1.xy = IN.baseTC.xy + float2(0,blurParams0.y)*0.125*0.75f;
-  OUT.baseTC2.xy = IN.baseTC.xy + float2(0,blurParams0.z)*0.125*0.75f;
-  OUT.baseTC3.xy = IN.baseTC.xy + float2(0,blurParams0.w)*0.125*0.75f;
-
-  OUT.baseTC4.xy = IN.baseTC.xy - float2(0,blurParams0.x)*0.75f;
-  OUT.baseTC5.xy = IN.baseTC.xy - float2(0,blurParams0.y)*0.75f;
-  OUT.baseTC6.xy = IN.baseTC.xy - float2(0,blurParams0.z)*0.75f;
-  OUT.baseTC7.xy = IN.baseTC.xy - float2(0,blurParams0.w)*0.75f;
-#else
-  OUT.baseTC0.xy = IN.baseTC.xy + float2(0,blurParams0.x)*0;
-  OUT.baseTC1.xy = IN.baseTC.xy + float2(0,blurParams0.x)*1.0;
-  OUT.baseTC2.xy = IN.baseTC.xy + float2(0,blurParams0.x)*2.0;
-  OUT.baseTC3.xy = IN.baseTC.xy + float2(0,blurParams0.x)*3.0;
-  OUT.baseTC4.xy = IN.baseTC.xy + float2(0,blurParams0.x)*4.0;
-  OUT.baseTC5.xy = IN.baseTC.xy + float2(0,blurParams0.x)*5.0;
-  OUT.baseTC6.xy = IN.baseTC.xy + float2(0,blurParams0.x)*6.0;
-  OUT.baseTC7.xy = IN.baseTC.xy + float2(0,blurParams0.x)*7.0;
-#endif
-
-  return OUT;
-}
+Texture2D verticalBlurTex : register(t0);
+SamplerState verticalBlurSampler : register(s0);
 
 ///////////////// pixel shader //////////////////
-pixout AnisotropicVerticalBlurPS(vtxOutAnisotropicVertical IN)
+pixout AnisotropicVerticalBlurPS(vtxOut IN)
 {
-  pixout OUT;
+	pixout OUT;
 
-  float4 canis = tex2D(blurMap0, IN.baseTC0.xy);
-  canis += tex2D(blurMap0, IN.baseTC1.xy);
-  canis += tex2D(blurMap0, IN.baseTC2.xy);
-  canis += tex2D(blurMap0, IN.baseTC3.xy);
-  canis += tex2D(blurMap0, IN.baseTC4.xy);
-  canis += tex2D(blurMap0, IN.baseTC5.xy);
-  canis += tex2D(blurMap0, IN.baseTC6.xy);
-  canis += tex2D(blurMap0, IN.baseTC7.xy);
+	float4 canis = verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy + (float2(0.0f, blurParams0.x) * 0.125f * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy + (float2(0.0f, blurParams0.y) * 0.125f * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy + (float2(0.0f, blurParams0.z) * 0.125f * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy + (float2(0.0f, blurParams0.w) * 0.125f * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy - (float2(0.0f, blurParams0.x) * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy - (float2(0.0f, blurParams0.y) * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy - (float2(0.0f, blurParams0.z) * 0.75f), 0.0f);
+	canis += verticalBlurTex.SampleLevel(verticalBlurSampler, IN.baseTC.xy - (float2(0.0f, blurParams0.w) * 0.75f), 0.0f);
 
-  OUT.Color = canis / 8.0;
-   
-  return OUT;
+	OUT.Color = canis / 8.0;
+
+	return OUT;
 }
 
 ////////////////// technique /////////////////////
 technique AnisotropicVertical
 {
-  pass p0
-  {
-    VertexShader = AnisotropicVerticalVS() PostEffectsVS;
-    PixelShader = AnisotropicVerticalBlurPS() PostEffectsPS;
-    
-    CullMode = Back;        
-  }
+	pass p0
+	{
+		VertexShader = FullscreenTriVS();
+		PixelShader = AnisotropicVerticalBlurPS();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1786,7 +1786,7 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 
 								float4 P0 = mul( light.shadowMatrix, float4( pos, 1 ) );
 								P0.xy /= P0.w;
-								shadowing += ShadowPool.SampleCmpLevelZero( SampStateComp, P0.xy, P0.z );
+								shadowing += ShadowPool.SampleCmpLevelZero( vfShadowLinearClampCompSS, P0.xy, P0.z );
 							}
 							fragLight.fFallOff *= shadowing / countShadow;
 #else
@@ -1799,7 +1799,7 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 	#endif
 							float4 P0 = mul( light.shadowMatrix, float4( position, 1 ) );
 							P0.xy /= P0.w;
-							fragLight.fFallOff *= ShadowPool.SampleCmpLevelZero( SampStateComp, P0.xy, P0.z );
+							fragLight.fFallOff *= ShadowPool.SampleCmpLevelZero( vfShadowLinearClampCompSS, P0.xy, P0.z );
 #endif
 						}
 

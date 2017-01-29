@@ -11,6 +11,12 @@ set (BinaryFileList_Win32
 	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
 	)
 
+file(TO_CMAKE_PATH "${DURANGO_SDK}" DURANGO_SDK_CMAKE)
+set (BinaryFileList_Durango
+	"${DURANGO_SDK_CMAKE}/xdk/symbols/d3dcompiler_47.dll"
+	)
+
+
 set (BinaryFileList_LINUX64
 	${SDK_DIR}/ncurses/lib/libncursesw.so.6
 	)

@@ -731,13 +731,12 @@ void SRenderThread::RC_EntityDelete(IRenderNode* pRenderNode)
 	}
 }
 
-void TexBlurAnisotropicVertical(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly);
-
 void SRenderThread::RC_TexBlurAnisotropicVertical(CTexture* Tex, float fAnisoScale)
 {
 	if (IsRenderThread())
 	{
-		TexBlurAnisotropicVertical(Tex, 1, 8 * max(1.0f - min(fAnisoScale / 100.0f, 1.0f), 0.2f), 1, false);
+		CStandardGraphicsPipeline& gp = gcpRendD3D->GetGraphicsPipeline();
+		gp.ExecuteAnisotropicVerticalBlur(Tex, 1, 8 * max(1.0f - min(fAnisoScale / 100.0f, 1.0f), 0.2f), 1, false);
 		return;
 	}
 
@@ -3135,7 +3134,8 @@ void SRenderThread::ProcessCommands()
 				float fAnisoScale = ReadCommand<float>(n);
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
-					TexBlurAnisotropicVertical(pTex, 1, 8 * max(1.0f - min(fAnisoScale / 100.0f, 1.0f), 0.2f), 1, false);
+					CStandardGraphicsPipeline& gp = gcpRendD3D->GetGraphicsPipeline();
+					gp.ExecuteAnisotropicVerticalBlur(pTex, 1, 8 * max(1.0f - min(fAnisoScale / 100.0f, 1.0f), 0.2f), 1, false);
 				}
 			}
 			break;
