@@ -98,6 +98,7 @@ if(WIN32 OR WIN64)
 	option(PLUGIN_VR_OSVR "OSVR support" ON)
 	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
 	option(OPTION_CRYMONO "C# support" OFF)
+	option(AUDIO_HRTF "HRTF support " ON)
 endif()
 
 if (WIN32 OR WIN64)

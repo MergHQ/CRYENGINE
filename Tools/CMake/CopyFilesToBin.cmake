@@ -11,6 +11,12 @@ set (BinaryFileList_Win32
 	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
 	)
 
+file(TO_CMAKE_PATH "${DURANGO_SDK}" DURANGO_SDK_CMAKE)
+set (BinaryFileList_Durango
+	"${DURANGO_SDK_CMAKE}/xdk/symbols/d3dcompiler_47.dll"
+	)
+
+
 set (BinaryFileList_LINUX64
 	${SDK_DIR}/ncurses/lib/libncursesw.so.6
 	)
@@ -30,8 +36,9 @@ if (OPTION_CRYMONO)
 	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Mono/bin/x64/mono-2.0.dll)
 	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Mono/bin/x86/mono-2.0.dll)
 endif()
-if (PLUGIN_VR_OCULUS)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/bin/plugins/OculusSpatializer.dll)
+if (PLUGIN_VR_OCULUS OR OPTION_HRTF)
+	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializer.dll)
+	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializer.dll)
 endif()
 if (PLUGIN_VR_OPENVR)
 	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OpenVR/bin/win64/*.*)
