@@ -484,6 +484,8 @@
 			"GraphicsPipeline/HeightMapAO.cpp",
 			"GraphicsPipeline/PostAA.h",
 			"GraphicsPipeline/PostAA.cpp",
+			"GraphicsPipeline/PostEffects.h",
+			"GraphicsPipeline/PostEffects.cpp",
 			"GraphicsPipeline/SceneCustom.h",
 			"GraphicsPipeline/SceneCustom.cpp",
 			"GraphicsPipeline/SceneForward.h",

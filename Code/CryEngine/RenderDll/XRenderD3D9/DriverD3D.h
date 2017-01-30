@@ -1348,6 +1348,8 @@ public:
 	int m_nTrilinearWrapSampler;
 	int m_nTrilinearClampSampler;
 	int m_nTrilinearBorderSampler;
+	int m_nLinearWrapSampler;
+	int m_nLinearClampSampler;
 
 	CCryNameR m_nmInstancingParams;
 	CCryNameR m_nmInstancingData;

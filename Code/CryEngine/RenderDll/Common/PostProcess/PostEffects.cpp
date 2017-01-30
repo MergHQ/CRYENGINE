@@ -201,6 +201,8 @@ void CFilterBlurring::Reset(bool bOnSpecChange)
 
 bool CUberGamePostProcess::Preprocess()
 {
+	m_nCurrPostEffectsMask = 0;
+
 	const float fParamThreshold = 1.0f / 255.0f;
 	const Vec4 vWhite = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -670,7 +672,6 @@ void CFlashBang::Reset(bool bOnSpecChange)
 	m_pTime->ResetParam(2.0f);
 	m_pDifractionAmount->ResetParam(1.0f);
 	m_pBlindAmount->ResetParam(0.5f);
-	m_fBlindAmount = 1.0f;
 	m_fSpawnTime = 0.0f;
 }
 
@@ -769,6 +770,10 @@ bool CFilterKillCamera::Preprocess()
 			m_blindTimer = 0.0f;
 			m_lastMode = mode;
 		}
+
+		// Update time
+		float frameTime = gEnv->pTimer->GetFrameTime();
+		m_blindTimer += frameTime;
 
 		return true;
 	}

@@ -591,7 +591,8 @@ void CPostStereo::Render()
 	if (!rendS3D->IsPostStereoEnabled())
 		return;
 
-	if (CRenderer::CV_r_PostProcessHUD3D &&
+	if (gcpRendD3D->m_nGraphicsPipeline == 0 &&
+	    CRenderer::CV_r_PostProcessHUD3D &&
 	    CRenderer::CV_r_PostProcessHUD3D != 2 /* temporary code - tbr */ &&
 	    !PostEffectMgr()->GetEffect(ePFX_NanoGlass)->IsActive() /* NanoGlass also updates flash */)
 	{
@@ -772,7 +773,6 @@ void CUberGamePostProcess::Render()
 
 	GetUtils().ShEndPass();
 
-	m_nCurrPostEffectsMask = 0;
 	gRenDev->m_RP.m_FlagsShader_RT = nSaveFlagsShader_RT;
 }
 

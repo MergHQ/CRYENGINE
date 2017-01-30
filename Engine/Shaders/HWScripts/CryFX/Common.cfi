@@ -119,6 +119,16 @@ half3 GetNormalMap(Texture2D bumpTex, float2 bumpTC)
   return bumpNormal;
 }
 
+half3 GetNormalMap(Texture2D bumpTex, SamplerState samplerState, float2 bumpTC)
+{
+  half3 bumpNormal;
+
+  bumpNormal.xy = GetXYNormalMap(bumpTex, samplerState, bumpTC.xy);
+  bumpNormal.z = sqrt(saturate(1.h + dot(bumpNormal.xy, -bumpNormal.xy)));
+
+  return bumpNormal;
+}
+
 half3 GetNormalMapLod(sampler2D bumpMap, float4 bumpTC)
 {
   half3 bumpNormal;

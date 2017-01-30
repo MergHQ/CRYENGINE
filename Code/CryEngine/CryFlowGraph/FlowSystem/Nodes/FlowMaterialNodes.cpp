@@ -17,8 +17,8 @@
 class CFlowNodeEntityMaterial : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowNodeEntityMaterial(SActivationInfo * pActInfo) {}
-	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo)
+	CFlowNodeEntityMaterial(SActivationInfo* pActInfo) : m_bMaterialChanged(false) {}
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlowNodeEntityMaterial(pActInfo);
 	}
@@ -40,6 +40,8 @@ public:
 
 	_smart_ptr<IMaterial> m_pMaterial;
 	_smart_ptr<IMaterial> m_pEditorMaterial;
+
+	bool m_bMaterialChanged;
 
 	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
@@ -121,12 +123,11 @@ public:
 				// and to the fact that there is not any special event to signal when its going back to editor mode
 				if (gEnv->IsEditor())
 				{
-					if (pEntity)
+					//if the material has been changed revert it to the original
+					if (pEntity != nullptr && m_bMaterialChanged)
 					{
-						if (gEnv->IsEditing())
-							m_pEditorMaterial = pEntity->GetMaterial();
-						else
-							pEntity->SetMaterial(m_pEditorMaterial);
+						ApplyMaterialChange(pActInfo, pEntity, m_pEditorMaterial);
+						m_bMaterialChanged = false;
 					}
 				}
 				break;
@@ -151,7 +152,7 @@ public:
 
 					if (IsPortActive(pActInfo, IN_RESET))
 					{
-						ApplyMaterialChange(pActInfo, pEntity, nullptr);
+						ApplyMaterialChange(pActInfo, pEntity, m_pEditorMaterial);
 					}
 
 					if (!IsPortActive(pActInfo, IN_MATERIAL) && !IsPortActive(pActInfo, IN_SERIALIZE))
@@ -179,6 +180,13 @@ public:
 
 	void ChangeMat(SActivationInfo* pActInfo, IEntity* pEntity)
 	{
+		//saving the original material before change it
+		if (!m_bMaterialChanged)
+		{
+			m_pEditorMaterial = pEntity->GetMaterial();
+			m_bMaterialChanged = true;
+		}
+
 		const string& mtlName = GetPortString(pActInfo, IN_MATERIAL);
 		_smart_ptr<IMaterial> pMtl = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(mtlName.c_str());
 		if (pMtl != NULL)

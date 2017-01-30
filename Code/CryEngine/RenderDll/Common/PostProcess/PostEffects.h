@@ -379,6 +379,8 @@ private:
 
 class CUberGamePostProcess : public CPostEffect
 {
+	friend class CUberGamePostEffectPass;
+
 public:
 
 	// Bitmaks used to enable only certain effects or combinations of most expensive effects
@@ -1145,6 +1147,8 @@ private:
 
 class CFlashBang : public CPostEffect
 {
+	friend class CFlashBangPass;
+
 public:
 	CFlashBang()
 	{
@@ -1155,8 +1159,7 @@ public:
 		AddParamFloat("FlashBang_Time", m_pTime, 2.0f);               // flashbang time duration in seconds
 		AddParamFloat("FlashBang_BlindAmount", m_pBlindAmount, 0.5f); // flashbang blind time (fraction of frashbang time)
 
-		m_pGhostImage = 0;
-		m_fBlindAmount = 1.0f;
+		m_pGhostImage = nullptr;
 		m_fSpawnTime = 0.0f;
 	}
 
@@ -1179,7 +1182,6 @@ private:
 
 	SDynTexture* m_pGhostImage;
 
-	float        m_fBlindAmount;
 	float        m_fSpawnTime;
 
 	// float, float
@@ -1500,6 +1502,8 @@ struct HudDataSortCmp
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class C3DHud : public CPostEffect
 {
+	friend class C3DHudPass;
+
 public:
 
 	typedef CThreadSafeRendererContainer<SHudData> SHudDataVec;
@@ -1568,29 +1572,19 @@ public:
 #endif
 	}
 
-	virtual int  CreateResources();
-	virtual void Release();
-	virtual bool Preprocess();
+	virtual int         CreateResources();
+	virtual void        Release();
+	virtual bool        Preprocess();
 
-	virtual void Update();
-	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo);
+	virtual void        Update();
+	virtual void        OnBeginFrame(const SRenderingPassInfo& passInfo);
 
-	virtual void Reset(bool bOnSpecChange = false);
-	virtual void AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	virtual void Render();
-
-	// Shared shader params/textures setup
-	void                CalculateProjMatrix();
-	void                SetShaderParams(SHudData& pData);
-	void                SetTextures(SHudData& pData);
-	void                RenderMesh(const CRenderElement* pRE, SShaderPass* pPass);
+	virtual void        Reset(bool bOnSpecChange = false);
+	virtual void        AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
+	virtual void        Render();
 
 	void                FlashUpdateRT();
-	void                DownsampleHud4x4(CTexture* pDstRT);
 	void                UpdateBloomRT(CTexture* pDstRT, CTexture* pBlurDst);
-	void                FinalPass();
-	void                ReleaseFlashPlayerRef(const uint32 nThreadID);
-	void                RenderFinalPass();
 
 	virtual const char* GetName() const
 	{
@@ -1606,6 +1600,18 @@ public:
 	{
 		m_maxParallax = maxParallax;
 	}
+
+private:
+	// Shared shader params/textures setup
+	void CalculateProjMatrix();
+	void SetShaderParams(SHudData& pData);
+	void SetTextures(SHudData& pData);
+	void RenderMesh(const CRenderElement* pRE, SShaderPass* pPass);
+
+	void DownsampleHud4x4(CTexture* pDstRT);
+	void FinalPass();
+	void ReleaseFlashPlayerRef(const uint32 nThreadID);
+	void RenderFinalPass();
 
 private:
 
@@ -1658,6 +1664,8 @@ private:
 
 class CFilterKillCamera : public CPostEffect
 {
+	friend class CKillCameraPass;
+
 public:
 
 	CFilterKillCamera()

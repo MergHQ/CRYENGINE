@@ -26,8 +26,9 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	float3x4  PerInstanceWorldMatrix;
 	float3x4  PerInstancePrevWorldMatrix;
 	float4    PerInstanceCustomData;       // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
-    // TODO: Should be moved after all the data below
-    float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass,
+	float4    PerInstanceCustomData1;      // [xyzw=ShilouetteColor]
+	// TODO: Should be moved after all the data below
+	float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass,
 
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;

@@ -768,10 +768,16 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			}
 		}
 
-		if (bIsSelectable)
+		if(nBatchFlags & FB_CUSTOM_RENDER)
 		{
 			m_renderItems[EFSLIST_CUSTOM].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_CUSTOM], nBatchFlags);
+		}
+
+		if (bIsSelectable)
+		{
+			m_renderItems[EFSLIST_HIGHLIGHT].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
 		}
 	}
 }
@@ -1245,6 +1251,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		break;
 
 	case EFSLIST_FORWARD_OPAQUE:
+	case EFSLIST_CUSTOM:
 		{
 			{
 				PROFILE_FRAME(State_SortingForwardOpaque);
@@ -1271,7 +1278,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		// No need to sort.
 		break;
 
-	case EFSLIST_CUSTOM:
+	case EFSLIST_HIGHLIGHT:
 		// only sort the selection list if we are in editor and not in game mode
 		if (gcpRendD3D->IsEditorMode() && !gEnv->IsEditorGameMode())
 		{

@@ -87,7 +87,7 @@ private:
 	void   VoxelizeGeometry(const strided_pointer<Vec3>& vertices, const index_t* indices, size_t triCount,
 	                        const Matrix34& worldTM);
 	void   VoxelizeGeometry(const Vec3* vertices, const uint32* indices, size_t triCount, const Matrix34& worldTM);
-	AABB   ComputeTerrainAABB(IGeometry* geometry);
+	uint32 ComputeTerrainHashAndAABB(IGeometry* geometry, AABB& aabb);
 	size_t VoxelizeTerrain(IGeometry* geometry, const Matrix34& worldTM);
 	size_t VoxelizeGeometry(IGeometry* geometry, const Matrix34& worldTM);
 };

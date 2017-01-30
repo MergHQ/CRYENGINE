@@ -13,6 +13,7 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 {
 	enum EPerPassTexture
 	{
+		ePerPassTexture_SceneLinearDepth = 24,
 		ePerPassTexture_SceneDepthBuffer = 25,
 		ePerPassTexture_TerrainElevMap = 26,
 		ePerPassTexture_WindGrid,
@@ -32,12 +33,14 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 		ePass_DebugViewSolid = 0,
 		ePass_DebugViewWireframe,
 		ePass_SelectionIDs, // draw highlighted objects from editor
+		ePass_Silhouette,
 	};
 
 public:
 	virtual void Init() override;
 
 	void Execute();
+	void ExecuteSilhouettePass();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 
@@ -54,6 +57,8 @@ private:
 
 	CSceneRenderPass         m_selectionIDPass;
 	CFullscreenPass          m_highlightPass;
+
+	CSceneRenderPass         m_silhouetteMaskPass;
 
 	SDepthTexture            m_depthTarget;
 

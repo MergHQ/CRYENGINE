@@ -795,7 +795,8 @@ void C3DHud::Render()
 
 	// If post-stereo not enabled, update flash player
 	// NanoGlass also updates Flash
-	if ((!bPostProcStereo && !PostEffectMgr()->GetEffect(ePFX_NanoGlass)->IsActive()) || m_pHUD_RT == NULL)
+	if (gcpRendD3D->m_nGraphicsPipeline == 0
+	    && ((!bPostProcStereo && !PostEffectMgr()->GetEffect(ePFX_NanoGlass)->IsActive()) || m_pHUD_RT == NULL))
 	{
 		FlashUpdateRT();
 	}
