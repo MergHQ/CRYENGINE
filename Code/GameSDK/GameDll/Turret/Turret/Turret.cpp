@@ -513,13 +513,17 @@ void CTurret::Reset( const bool enteringGameMode )
 
 	InitActionController();
 
+	InitAiRepresentation(eIARM_RebuildFromScratch);
+
 	if ( enteringGameMode )
 	{
 		InitWeapons();
+		ResetVision();
 	}
 	else
 	{
 		RemoveWeapons();
+		RemoveVision();
 	}
 
 	ResetTarget();
@@ -527,9 +531,6 @@ void CTurret::Reset( const bool enteringGameMode )
 
 	InitAutoAimParams();
 	RegisterInAutoAimSystem();
-
-	InitAiRepresentation( eIARM_RebuildFromScratch );
-	ResetVision();
 
 	AddToTacticalManager();
 
