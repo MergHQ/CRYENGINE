@@ -565,7 +565,7 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(cl_controllerYawSnapMax, 0.8f, 0, "Input threshold that must be reached to trigger snapping");
 	REGISTER_CVAR(cl_controllerYawSnapMin, 0.5f, 0, "Input threshold that must be reached to reset snapping");
 
-	REGISTER_CVAR(i_grenade_showTrajectory, 1, 0, "Switches on trajectory display");
+	REGISTER_CVAR(i_grenade_showTrajectory, 0, 0, "Switches on trajectory display");
 	REGISTER_CVAR(i_grenade_trajectory_resolution, 0.03f, 0, "Trajectory display resolution");
 	REGISTER_CVAR(i_grenade_trajectory_dashes, 0.5f, 0, "Trajectory display dashes length");
 	REGISTER_CVAR(i_grenade_trajectory_gaps, 0.3f, 0, "Trajectory gaps length");
