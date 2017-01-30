@@ -30,6 +30,7 @@
 #include "ColorGrading.h"
 #include "WaterRipples.h"
 #include "LensOptics.h"
+#include "PostEffects.h"
 
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
@@ -283,6 +284,7 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
 	RegisterStage<CColorGradingStage>(m_pColorGradingStage, eStage_ColorGrading);
 	RegisterStage<CLensOpticsStage>(m_pLensOpticsStage, eStage_LensOptics);
+	RegisterStage<CPostEffectStage>(m_pPostEffectStage, eStage_PostEffet);
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
@@ -565,7 +567,6 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_FrustumPlaneEquation.SetRow4(1, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_LEFT]);
 		cb.CV_FrustumPlaneEquation.SetRow4(2, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_TOP]);
 		cb.CV_FrustumPlaneEquation.SetRow4(3, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_BOTTOM]);
-
 
 		if (gRenDev->m_pCurWindGrid)
 		{
@@ -1148,17 +1149,28 @@ void CStandardGraphicsPipeline::Execute()
 		// HDR and LDR post-processing
 		{
 			pRenderer->m_RP.m_PersFlags1 &= ~RBPF1_SKIP_AFTER_POST_PROCESS;
+
 			SwitchToLegacyPipeline();
 
 			pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_HDRPOSTPROCESS, pRenderFunc, false);
-			pRenderer->FX_ProcessRenderList(EFSLIST_POSTPROCESS, pRenderFunc, false);
+
+			SwitchFromLegacyPipeline();
+
+			m_pPostEffectStage->Execute();
 
 			pRenderer->RT_SetViewport(0, 0, pRenderer->GetWidth(), pRenderer->GetHeight());
 
-			pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_POSTPROCESS, pRenderFunc, false);
+			// NOTE: this flag can be enabled in CThermalVision::Render().
+			bool bDrawAfterPostProcess = !(pRenderer->m_RP.m_PersFlags1 & RBPF1_SKIP_AFTER_POST_PROCESS);
+
+			if (bDrawAfterPostProcess)
+			{
+				SwitchToLegacyPipeline();
+				pRenderer->FX_ProcessRenderList(EFSLIST_AFTER_POSTPROCESS, pRenderFunc, false);
+				SwitchFromLegacyPipeline();
+			}
 		}
 
-		SwitchFromLegacyPipeline();
 		m_pSceneCustomStage->Execute();
 		SwitchToLegacyPipeline();
 

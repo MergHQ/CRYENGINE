@@ -964,10 +964,14 @@ vert2fragCustomRender Hair_CustomRenderPassVS(app2vertCustomViews IN)
 	streamPos vertPassPos = (streamPos)0;
 	streamPos_FromCustomViews(IN, vertPassPos);
 
+#if %_RT_PER_INSTANCE_CB_TEMP
+	OUT.cVision = PerInstanceCustomData1;
+#else
 #if %_RT_INSTANCING_ATTR
 	OUT.cVision = vertPassPos.InstVisionParams;
 #else
 	OUT.cVision = VisionParams;
+#endif
 #endif
 
 	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);

@@ -595,8 +595,10 @@ void SRenderThread::RC_ResetPostEffects(bool bOnSpecChange)
 {
 	if (IsRenderThread())
 	{
-		if (gRenDev->m_RP.m_pREPostProcess)
-			gRenDev->m_RP.m_pREPostProcess->Reset(bOnSpecChange);
+		if (gRenDev->m_pPostProcessMgr)
+		{
+			gRenDev->m_pPostProcessMgr->Reset(bOnSpecChange);
+		}
 		return;
 	}
 
@@ -2373,12 +2375,12 @@ void SRenderThread::ProcessCommands()
 				gRenDev->m_pPostProcessMgr->ReleaseResources();
 			break;
 		case eRC_ResetPostEffects:
-			if (gRenDev->m_RP.m_pREPostProcess)
-				gRenDev->m_RP.m_pREPostProcess->mfReset();
+			if (gRenDev->m_pPostProcessMgr)
+				gRenDev->m_pPostProcessMgr->Reset();
 			break;
 		case eRC_ResetPostEffectsOnSpecChange:
-			if (gRenDev->m_RP.m_pREPostProcess)
-				gRenDev->m_RP.m_pREPostProcess->Reset(true);
+			if (gRenDev->m_pPostProcessMgr)
+				gRenDev->m_pPostProcessMgr->Reset(true);
 			break;
 		case eRC_DisableTemporalEffects:
 			gRenDev->RT_DisableTemporalEffects();

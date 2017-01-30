@@ -411,10 +411,6 @@ void CFilterKillCamera::Render()
 {
 	PROFILE_LABEL_SCOPE("KILL_CAMERA");
 
-	// Update time
-	float frameTime = PostProcessUtils().m_pTimer->GetFrameTime();
-	m_blindTimer += frameTime;
-
 	gRenDev->m_cEF.mfRefreshSystemShader("PostEffectsGame", CShaderMan::s_shPostEffectsGame);
 
 	float grainStrength = m_pGrainStrength->GetParam();
@@ -512,7 +508,7 @@ void CNanoGlass::Render()
 	// Update HUD Flash here so we can create a mask from it
 	C3DHud* pHud3D = (C3DHud*) PostEffectMgr()->GetEffect(ePFX_3DHUD);
 	const bool bIsHudRendering = pHud3D->Preprocess();
-	if (bIsHudRendering)
+	if(bIsHudRendering && gcpRendD3D->m_nGraphicsPipeline == 0)
 	{
 		pHud3D->FlashUpdateRT();
 	}

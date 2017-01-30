@@ -20,7 +20,7 @@ void CParamBool::SetParam(float fParam, bool bForceValue)
 	pThreadSafeData->bSetThisFrame = true;
 }
 
-float CParamBool::GetParam()
+float CParamBool::GetParam() const
 {
 	const int threadID = gRenDev->m_pRT ? gRenDev->m_pRT->GetThreadList() : 0;
 	return static_cast<float>(m_threadSafeData[threadID].bParam);
@@ -60,7 +60,7 @@ void CParamInt::SetParam(float fParam, bool bForceValue)
 	pThreadSafeData->bSetThisFrame = true;
 }
 
-float CParamInt::GetParam()
+float CParamInt::GetParam() const
 {
 	const int threadID = gRenDev->m_pRT ? gRenDev->m_pRT->GetThreadList() : 0;
 	return static_cast<float>(m_threadSafeData[threadID].nParam);
@@ -127,7 +127,7 @@ void CParamFloat::SetParam(float fParam, bool bForceValue)
 	}
 }
 
-float CParamFloat::GetParam()
+float CParamFloat::GetParam() const
 {
 	const int threadID = gRenDev->m_pRT ? gRenDev->m_pRT->GetThreadList() : 0;
 	return m_threadSafeData[threadID].fParam;
@@ -231,7 +231,7 @@ void CParamVec4::SetParamVec4(const Vec4& vParam, bool bForceValue)
 	}
 }
 
-Vec4 CParamVec4::GetParamVec4()
+Vec4 CParamVec4::GetParamVec4() const
 {
 	const int threadID = gRenDev->m_pRT ? gRenDev->m_pRT->GetThreadList() : 0;
 	return m_threadSafeData[threadID].vParam;

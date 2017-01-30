@@ -32,6 +32,7 @@ class CTiledShadingStage;
 class CColorGradingStage;
 class CSceneCustomStage;
 class CLensOpticsStage;
+class CPostEffectStage;
 class CRenderCamera;
 class CCamera;
 
@@ -70,6 +71,7 @@ enum EStandardGraphicsPipelineStage
 	eStage_ShadowMask,
 	eStage_ColorGrading,
 	eStage_LensOptics,
+	eStage_PostEffet,
 
 	eStage_Count
 };
@@ -164,6 +166,7 @@ public:
 	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
 	CWaterStage*              GetWaterStage()                    const { return m_pWaterStage; }
 	CLensOpticsStage*         GetLensOpticsStage()               const { return m_pLensOpticsStage; }
+	CSceneCustomStage*        GetSceneCustomStage()              const { return m_pSceneCustomStage; }
 
 public:
 	static void ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDesc, const SShaderProfile& shaderProfile);
@@ -196,6 +199,7 @@ private:
 	CColorGradingStage*           m_pColorGradingStage = nullptr;
 	CSceneCustomStage*            m_pSceneCustomStage = nullptr;
 	CLensOpticsStage*             m_pLensOpticsStage = nullptr;
+	CPostEffectStage*             m_pPostEffectStage = nullptr;
 
 	CConstantBufferPtr            m_pPerViewConstantBuffer = nullptr;
 	CDeviceResourceSetPtr         m_pDefaultMaterialResources = nullptr;

@@ -101,8 +101,8 @@ public:
 	virtual void ResetParamVec4(const Vec4& pParam)                         { SetParamVec4(pParam, true); }
 
 	// Get parameters
-	virtual float       GetParam()             { return 1.0f; }
-	virtual Vec4        GetParamVec4()         { return Vec4(1.0f, 1.0f, 1.0f, 1.0f); }
+	virtual float       GetParam()       const { return 1.0f; }
+	virtual Vec4        GetParamVec4()   const { return Vec4(1.0f, 1.0f, 1.0f, 1.0f); }
 	virtual const char* GetParamString() const { return 0; }
 
 	// Sync main thread data with render thread data
@@ -132,7 +132,7 @@ public:
 	}
 
 	virtual void  SetParam(float fParam, bool bForceValue);
-	virtual float GetParam();
+	virtual float GetParam() const;
 	virtual void  SyncMainWithRender();
 
 private:
@@ -163,7 +163,7 @@ public:
 	}
 
 	virtual void  SetParam(float fParam, bool bForceValue);
-	virtual float GetParam();
+	virtual float GetParam() const;
 	virtual void  SyncMainWithRender();
 
 private:
@@ -198,7 +198,7 @@ public:
 	}
 
 	virtual void  SetParam(float fParam, bool bForceValue);
-	virtual float GetParam();
+	virtual float GetParam() const;
 	virtual void  SyncMainWithRender();
 
 private:
@@ -238,7 +238,7 @@ public:
 	}
 
 	virtual void SetParamVec4(const Vec4& vParam, bool bForceValue);
-	virtual Vec4 GetParamVec4();
+	virtual Vec4 GetParamVec4() const;
 	virtual void SyncMainWithRender();
 
 private:

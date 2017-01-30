@@ -176,6 +176,14 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		bHasWrinkleBending = (m_shaderItem.m_pShader->GetFlags2() & EF2_WRINKLE_BLENDING) != 0;
 	}
 
+	// silhouette color
+	const uint32 params = pRenderObject->m_data.m_nHUDSilhouetteParams;
+	const Vec4 silhouetteColor(
+	  float((params & 0xff000000) >> 24) * (1.0f / 255.0f),
+	  float((params & 0x00ff0000) >> 16) * (1.0f / 255.0f),
+	  float((params & 0x0000ff00) >> 8) * (1.0f / 255.0f),
+	  float((params & 0x000000ff)) * (1.0f / 255.0f));
+
 	Matrix44A objPrevMatr;
 	bool bMotionBlurMatrix = CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objPrevMatr);
 	if (bMotionBlurMatrix)
@@ -207,6 +215,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		    tessellationPatchIDOffset,
 		    dissolve
 		    );
+
+		cb->PerInstanceCustomData1 = silhouetteColor;
 
 		// Fill terrain texture info if present
 		cb->BlendTerrainColInfo[0] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetX;
@@ -252,6 +262,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->PerInstanceCustomData = Vec4(0, 0, tessellationPatchIDOffset, dissolve);
 
+		cb->PerInstanceCustomData1 = silhouetteColor;
+
 		if (SRenderObjData* pOD = pRenderObject->GetObjData())
 		{
 			// Skinning precision offset
@@ -296,6 +308,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		    tessellationPatchIDOffset,
 		    dissolve
 		    );
+
+		cb->PerInstanceCustomData1 = silhouetteColor;
 
 		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 

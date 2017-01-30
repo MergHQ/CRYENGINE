@@ -508,6 +508,8 @@ void CD3D9Renderer::EF_Init()
 	m_nTrilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
 	m_nTrilinearClampSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_nTrilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
+	m_nLinearWrapSampler = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nLinearClampSampler = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 
 	CDeferredShading::CreateDeferredShading();
 
@@ -2364,6 +2366,7 @@ static char* sDescList[] =
 	"Nearest",
 	"ForwardOpaque",
 	"Custom",
+	"Highlight",
 };
 
 static char* sBatchList[] =

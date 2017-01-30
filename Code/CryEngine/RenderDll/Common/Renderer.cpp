@@ -4084,52 +4084,108 @@ void CRenderer::ExecuteAsyncDIP()
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bForceValue)
 {
-	if (pParam && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfSetParameter(pParam, fValue, bForceValue);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
+	if (!pParam)
+	{
+		return;
+	}
+
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if (!pEffectParam)
+	{
+		return;
+	}
+
+	pEffectParam->SetParam(fValue, bForceValue);
 }
 
 void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue, bool bForceValue)
 {
-	if (pParam && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfSetParameterVec4(pParam, pValue, bForceValue);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
+
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if (!pEffectParam)
+	{
+		return;
+	}
+
+	pEffectParam->SetParamVec4(pValue, bForceValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszArg)
 {
-	if (pParam && pszArg && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfSetParameterString(pParam, pszArg);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam && pszArg) && "mfSetParameter: null parameter");
+
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if (!pEffectParam)
+	{
+		return;
+	}
+
+	pEffectParam->SetParamString(pszArg);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 {
-	if (pParam && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfGetParameter(pParam, fValue);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
+
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if (!pEffectParam)
+	{
+		return;
+	}
+
+	fValue = pEffectParam->GetParam();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 {
-	if (pParam && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfGetParameterVec4(pParam, pValue);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
 
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if (!pEffectParam)
+	{
+		return;
+	}
+
+	pValue = pEffectParam->GetParamVec4();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& pszArg)
 {
-	if (pParam && m_RP.m_pREPostProcess)
-		m_RP.m_pREPostProcess->mfGetParameterString(pParam, pszArg);
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT((pParam && pszArg) && "mfGetParameter: null parameter");
 
+	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
+	if(!pParam || !pszArg)
+	{
+		return;
+	}
+
+	pszArg = pEffectParam->GetParamString();
 }
 
 //////////////////////////////////////////////////////////////////////////
 int32 CRenderer::EF_GetPostEffectID(const char* pPostEffectName)
 {
-	if (pPostEffectName && m_RP.m_pREPostProcess)
-		return m_RP.m_pREPostProcess->mfGetPostEffectID(pPostEffectName);
-	return ePFX_Invalid;
+	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
+	CRY_ASSERT(pPostEffectName && "mfGetParameter: null parameter");
+
+	if (!pPostEffectName)
+	{
+		return ePFX_Invalid;
+	}
+
+	return PostEffectMgr()->GetEffectID(pPostEffectName);
 }
 
 //////////////////////////////////////////////////////////////////////////
