@@ -1473,6 +1473,8 @@ bool CFlowGraphBase::ReadXML(const XmlNodeRef& root)
 				continue;
 			if (0 == strcmp(type, "_commentbox"))
 				continue;
+			if (0 == strcmp(type, "_blackbox"))
+				continue;
 			++nConcreteNodes;
 		}
 
@@ -1490,6 +1492,8 @@ bool CFlowGraphBase::ReadXML(const XmlNodeRef& root)
 			if (0 == strcmp(type, "_comment"))
 				continue;
 			if (0 == strcmp(type, "_commentbox"))
+				continue;
+			if (0 == strcmp(type, "_blackbox"))
 				continue;
 			TFlowNodeTypeId typeId = m_pSys->GetTypeId(type);
 			std::pair<CFlowData*, TFlowNodeId> info = CreateNodeInt(typeId, name);
