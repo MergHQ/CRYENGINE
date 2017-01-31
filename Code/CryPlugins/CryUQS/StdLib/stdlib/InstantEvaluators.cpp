@@ -30,7 +30,7 @@ namespace uqs
 		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMinDistance::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			const float minRequiredDistanceSqr = sqr(params.minRequiredDistance);
-			const float actualDistanceSqr = (params.pos1 - params.pos2).GetLengthSquared();
+			const float actualDistanceSqr = (params.pos1.value - params.pos2.value).GetLengthSquared();
 
 			if (actualDistanceSqr < minRequiredDistanceSqr)
 			{
@@ -49,7 +49,7 @@ namespace uqs
 		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestMaxDistance::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
 			const float maxAllowedDistanceSqr = sqr(params.maxAllowedDistance);
-			const float actualDistanceSqr = (params.pos1 - params.pos2).GetLengthSquared();
+			const float actualDistanceSqr = (params.pos1.value - params.pos2.value).GetLengthSquared();
 
 			if (actualDistanceSqr > maxAllowedDistanceSqr)
 			{
@@ -73,7 +73,7 @@ namespace uqs
 
 		client::IInstantEvaluator::ERunStatus CInstantEvaluator_TestLocationInNavMesh::DoRun(const SRunContext& runContext, const SParams& params) const
 		{
-			const bool bIsInNavMesh = m_pNavSys->IsLocationValidInNavigationMesh(params.navigationAgentTypeID, params.locationToTest);
+			const bool bIsInNavMesh = m_pNavSys->IsLocationValidInNavigationMesh(params.navigationAgentTypeID, params.locationToTest.value);
 			runContext.evaluationResult.bDiscardItem = !bIsInNavMesh;
 			return ERunStatus::Finished;
 		}
@@ -93,7 +93,7 @@ namespace uqs
 				return ERunStatus::ExceptionOccurred;
 			}
 
-			const float distanceBetweenPoints = (params.pos1 - params.pos2).GetLength();
+			const float distanceBetweenPoints = (params.pos1.value - params.pos2.value).GetLength();
 			runContext.evaluationResult.score = std::min(distanceBetweenPoints, params.distanceThreshold) / params.distanceThreshold;
 			return ERunStatus::Finished;
 		}
@@ -113,7 +113,7 @@ namespace uqs
 				return ERunStatus::ExceptionOccurred;
 			}
 
-			const float distanceBetweenPoints = (params.pos1 - params.pos2).GetLength();
+			const float distanceBetweenPoints = (params.pos1.value - params.pos2.value).GetLength();
 			runContext.evaluationResult.score = 1.0f - std::min(distanceBetweenPoints, params.distanceThreshold) / params.distanceThreshold;
 			return ERunStatus::Finished;
 		}

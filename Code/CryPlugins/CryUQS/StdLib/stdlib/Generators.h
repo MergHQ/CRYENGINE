@@ -22,12 +22,12 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CGenerator_PointsOnPureGrid : public client::CGeneratorBase<CGenerator_PointsOnPureGrid, Vec3>
+		class CGenerator_PointsOnPureGrid : public client::CGeneratorBase<CGenerator_PointsOnPureGrid, Pos3>
 		{
 		public:
 			struct SParams
 			{
-				Vec3                    center;                  // center of the grid
+				Pos3                    center;                  // center of the grid
 				float                   size;                    // length of one edge of the grid
 				float                   spacing;                 // space between individual points on both, the x- and y-axis
 
@@ -40,7 +40,7 @@ namespace uqs
 
 		public:
 			explicit                    CGenerator_PointsOnPureGrid(const SParams& params);
-			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Vec3>& itemListToPopulate);
+			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
 
 		private:
 			const SParams               m_params;
@@ -57,14 +57,14 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CGenerator_PointsOnNavMesh : public client::CGeneratorBase<CGenerator_PointsOnNavMesh, Vec3>
+		class CGenerator_PointsOnNavMesh : public client::CGeneratorBase<CGenerator_PointsOnNavMesh, Pos3>
 		{
 		public:
 			struct SParams
 			{
-				Vec3                    pivot;                   // center of the AABB
-				Vec3                    localAABBMins;           // local min extents of the AABB in which the points will be generated
-				Vec3                    localAABBMaxs;           // local max extents of the AABB in which the points will be generated
+				Pos3                    pivot;                   // center of the AABB
+				Ofs3                    localAABBMins;           // local min extents of the AABB in which the points will be generated
+				Ofs3                    localAABBMaxs;           // local max extents of the AABB in which the points will be generated
 				NavigationAgentTypeID   navigationAgentTypeID;   // the points will be generated in this layer of the NavMesh
 
 				UQS_EXPOSE_PARAMS_BEGIN
@@ -77,7 +77,7 @@ namespace uqs
 
 		public:
 			explicit                    CGenerator_PointsOnNavMesh(const SParams& params);
-			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Vec3>& itemListToPopulate);
+			EUpdateStatus               DoUpdate(const SUpdateContext& updateContext, client::CItemListProxy_Writable<Pos3>& itemListToPopulate);
 
 		private:
 			const SParams               m_params;

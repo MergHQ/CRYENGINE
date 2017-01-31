@@ -33,10 +33,10 @@ namespace uqs
 			}
 		}
 
-		void Vec3_CreateItemDebugProxyForItem(const Vec3& item, core::IItemDebugProxyFactory& itemDebugProxyFactory)
+		void Pos3_CreateItemDebugProxyForItem(const Pos3& item, core::IItemDebugProxyFactory& itemDebugProxyFactory)
 		{
 			core::IItemDebugProxy_Sphere& sphere = itemDebugProxyFactory.CreateSphere();
-			sphere.SetPosAndRadius(item, 0.2f);  // let's assume that a radius of 20cm is "just fine for all purposes"
+			sphere.SetPosAndRadius(item.value, 0.2f);  // let's assume that a radius of 20cm is "just fine for all purposes"
 		}
 
 	}

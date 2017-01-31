@@ -27,8 +27,8 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3      pos1;
-				Vec3      pos2;
+				Pos3      pos1;
+				Pos3      pos2;
 				float     minRequiredDistance;
 
 				UQS_EXPOSE_PARAMS_BEGIN
@@ -58,8 +58,8 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3      pos1;
-				Vec3      pos2;
+				Pos3      pos1;
+				Pos3      pos2;
 				float     maxAllowedDistance;
 
 				UQS_EXPOSE_PARAMS_BEGIN
@@ -76,7 +76,7 @@ namespace uqs
 		//
 		// CInstantEvaluator_TestLocationInNavMesh
 		//
-		// - checks for whether a given Vec3 resides in the NavMesh (roughly on a walkable surface)
+		// - checks for whether a given Pos3 resides in the NavMesh (roughly on a walkable surface)
 		// - discards the item if it's not on the NavMesh
 		//
 		//===================================================================================
@@ -90,7 +90,7 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3                    locationToTest;
+				Pos3                    locationToTest;
 				NavigationAgentTypeID   navigationAgentTypeID;
 
 				UQS_EXPOSE_PARAMS_BEGIN
@@ -126,8 +126,8 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3      pos1;
-				Vec3      pos2;
+				Pos3      pos1;
+				Pos3      pos2;
 				float     distanceThreshold;
 
 				UQS_EXPOSE_PARAMS_BEGIN
@@ -159,8 +159,8 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3      pos1;
-				Vec3      pos2;
+				Pos3      pos1;
+				Pos3      pos2;
 				float     distanceThreshold;
 
 				UQS_EXPOSE_PARAMS_BEGIN

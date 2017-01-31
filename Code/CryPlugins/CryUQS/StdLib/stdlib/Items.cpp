@@ -15,9 +15,11 @@ namespace uqs
 			return T();
 		}
 
-		Vec3 GetVec3Zero()
+		// for client::STypeWrapper<> types whose underlying type is Vec3
+		template <class TVec3BasedTypeWrapper>
+		TVec3BasedTypeWrapper GetVec3BasedTypeWrapperZero()
 		{
-			return Vec3(ZERO);
+			return TVec3BasedTypeWrapper(Vec3(ZERO));
 		}
 
 		void CStdLibRegistration::InstantiateItemFactoriesForRegistration()
@@ -36,7 +38,7 @@ namespace uqs
 			{
 				client::SItemFactoryCallbacks<int> callbacks_int;
 
-				callbacks_int.pSerialize = &Int_Serialize;
+				callbacks_int.pSerialize = &client::SerializeItem<int>;
 				callbacks_int.pCreateDefaultObject = &GetValueInitializedItem<int>;
 
 				static const client::CItemFactory<int> itemFactory_int("std::int", callbacks_int);
@@ -46,7 +48,7 @@ namespace uqs
 			{
 				client::SItemFactoryCallbacks<bool> callbacks_bool;
 
-				callbacks_bool.pSerialize = &Bool_Serialize;
+				callbacks_bool.pSerialize = &client::SerializeItem<bool>;
 				callbacks_bool.pCreateDefaultObject = &GetValueInitializedItem<bool>;
 
 				static const client::CItemFactory<bool> itemFactory_bool("std::bool", callbacks_bool);
@@ -56,24 +58,42 @@ namespace uqs
 			{
 				client::SItemFactoryCallbacks<float> callbacks_float;
 
-				callbacks_float.pSerialize = &Float_Serialize;
+				callbacks_float.pSerialize = &client::SerializeItem<float>;
 				callbacks_float.pCreateDefaultObject = &GetValueInitializedItem<float>;
 
 				static const client::CItemFactory<float> itemFactory_float("std::float", callbacks_float);
 			}
 
-			// std::Vec3
+			// std::Pos3
 			{
-				client::SItemFactoryCallbacks<Vec3> callbacks_Vec3;
+				client::SItemFactoryCallbacks<Pos3> callbacks_Pos3;
 
-				callbacks_Vec3.pSerialize = &Vec3_Serialize;
-				callbacks_Vec3.pCreateDefaultObject = &GetVec3Zero;
-				callbacks_Vec3.pCreateItemDebugProxy = &Vec3_CreateItemDebugProxyForItem;
-				//#error maybe do NOT force our Vec3 debug-proxy function on the client?
-				//#error alternative idea: provide a way such that the client can override already provided callbacks? (might require some type casts geared around SItemFactoryCallbacks<T>)
-				// FIXME: no debug-rendering? on the other hand: is it good to have a debug-proxy (Vec3_CreateItemDebugProxyForItem) for it? after all, a Vec3 item could be anything: position, direction, force, etc.
+				callbacks_Pos3.pSerialize = &client::SerializeTypeWrappedItem<Pos3>;
+				callbacks_Pos3.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Pos3>;
+				callbacks_Pos3.pAddItemToDebugRenderWorld = &Pos3_AddToDebugRenderWorld;
+				callbacks_Pos3.pCreateItemDebugProxy = &Pos3_CreateItemDebugProxyForItem;
 
-				static const client::CItemFactory<Vec3> itemFactory_Vec3("std::Vec3", callbacks_Vec3);
+				static const client::CItemFactory<Pos3> itemFactory_Pos3("std::Pos3", callbacks_Pos3);
+			}
+
+			// std::Ofs3
+			{
+				client::SItemFactoryCallbacks<Ofs3> callbacks_Ofs3;
+
+				callbacks_Ofs3.pSerialize = &client::SerializeTypeWrappedItem<Ofs3>;
+				callbacks_Ofs3.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Ofs3>;
+
+				static const client::CItemFactory<Ofs3> itemFactory_Ofs3("std::Ofs3", callbacks_Ofs3);
+			}
+
+			// std::Dir3
+			{
+				client::SItemFactoryCallbacks<Dir3> callbacks_Dir3;
+
+				callbacks_Dir3.pSerialize = &client::SerializeTypeWrappedItem<Dir3>;
+				callbacks_Dir3.pCreateDefaultObject = &GetVec3BasedTypeWrapperZero<Dir3>;
+
+				static const client::CItemFactory<Dir3> itemFactory_Dir3("std::Dir3", callbacks_Dir3);
 			}
 
 			// std::NavigationAgentTypeID

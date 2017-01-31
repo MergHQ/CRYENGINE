@@ -52,6 +52,27 @@ namespace uqs
 			, pCreateItemDebugProxy(nullptr)
 		{}
 
+
+		//-----------------------------------------------------------------------------------
+		// SerializeItem<>() - standard serialize function for items whose data types are already supported by yasli out-of-the-box
+		//-----------------------------------------------------------------------------------
+
+		template <class TItem>
+		bool SerializeItem(Serialization::IArchive& archive, TItem& item, const char* szName, const char* szLabel)
+		{
+			return archive(item, szName, szLabel);
+		}
+
+		//-----------------------------------------------------------------------------------
+		// SerializeTypeWrappedItem<>() - serialize function for items of type uqs::client::STypeWrapper<> whose underlying type is already supported by yasli out-of-the-box 
+		//-----------------------------------------------------------------------------------
+
+		template <class TTypeWrapper>
+		bool SerializeTypeWrappedItem(Serialization::IArchive& archive, TTypeWrapper& item, const char* szName, const char* szLabel)
+		{
+			return archive(item.value, szName, szLabel);
+		}
+
 		namespace internal
 		{
 
@@ -101,10 +122,6 @@ namespace uqs
 			//===================================================================================
 			//
 			// CItemFactoryInternal<>
-			//
-			// - passing a nullptr tSerializeFunc is OK and means that the item can NOT be persistent serialized in textual form
-			// - the tAddItemToDebugRenderWorldFunc can be a nullptr or valid pointer (it's used to add one of several debug-primitives to a given IDebugRenderWorldPersistent upon function calls)
-			// - the tCreateItemDebugProxyFunc can be nullptr or valid pointer (it's used to create a geometrical debug proxy that will be used to pick a generated item for detailed inspection in the live 3D world after the query has finished)
 			//
 			//===================================================================================
 

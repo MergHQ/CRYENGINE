@@ -21,7 +21,7 @@ namespace uqs
 		//===================================================================================
 
 		void EntityId_CreateItemDebugProxyForItem(const EntityIdWrapper& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
-		void Vec3_CreateItemDebugProxyForItem(const Vec3& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
+		void Pos3_CreateItemDebugProxyForItem(const Pos3& item, core::IItemDebugProxyFactory& itemDebugProxyFactory);
 
 	}
 }
