@@ -18,6 +18,7 @@ namespace uqs
 		//===================================================================================
 
 		void EntityId_AddToDebugRenderWorld(const EntityIdWrapper& item, core::IDebugRenderWorldPersistent& debugRW);
+		void Pos3_AddToDebugRenderWorld(const Pos3& item, core::IDebugRenderWorldPersistent& debugRW);
 
 	}
 }

@@ -693,15 +693,23 @@ void CMainEditorWindow::OnSaveLiveHistoryToFile()
 void CMainEditorWindow::OnLoadHistoryFromFile()
 {
 	QString qFilePath = QFileDialog::getOpenFileName(this, "Load File", "*.xml", "XML file (*.xml)");
-	string sFilePath = QtUtil::ToString(qFilePath);
-	uqs::shared::CUqsString uqsErrorMessage;
-	if (!m_pQueryHistoryManager->DeserializeQueryHistory(sFilePath.c_str(), uqsErrorMessage))
+	if (!qFilePath.isEmpty())
 	{
-		// show the error message
-		stack_string error;
-		error.Format("Deserializing the query history from '%s' failed: %s", sFilePath.c_str(), uqsErrorMessage.c_str());
-		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "UQS Query History Inspector: %s", error.c_str());
-		QMessageBox::warning(this, "Error loading the query history", error.c_str());
+		string sFilePath = QtUtil::ToString(qFilePath);
+		uqs::shared::CUqsString uqsErrorMessage;
+		if (m_pQueryHistoryManager->DeserializeQueryHistory(sFilePath.c_str(), uqsErrorMessage))
+		{
+			// ensure the "deserialized" entry in the history origin combo-box is selected
+			m_pComboBoxHistoryOrigin->setCurrentIndex(1);
+		}
+		else
+		{
+			// show the error message
+			stack_string error;
+			error.Format("Deserializing the query history from '%s' failed: %s", sFilePath.c_str(), uqsErrorMessage.c_str());
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "UQS Query History Inspector: %s", error.c_str());
+			QMessageBox::warning(this, "Error loading the query history", error.c_str());
+		}
 	}
 }
 

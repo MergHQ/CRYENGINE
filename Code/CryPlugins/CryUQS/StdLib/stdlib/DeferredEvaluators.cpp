@@ -72,8 +72,8 @@ namespace uqs
 				ray_hit singleHit;
 
 				IPhysicalWorld::SRWIParams params;
-				params.org = m_params.from;
-				params.dir = m_params.to - m_params.from;
+				params.org = m_params.from.value;
+				params.dir = m_params.to.value - m_params.from.value;
 				params.objtypes = objectTypesToTestAgainst;
 				params.flags = blockingHardColliders | blockingSoftColliders;
 				params.hits = &singleHit;
@@ -92,13 +92,13 @@ namespace uqs
 					{
 						// yellow line: start pos -> impact
 						// red line:    impact -> end pos
-						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from, singleHit.pt, Col_Yellow);
-						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(singleHit.pt, m_params.to, Col_Red);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from.value, singleHit.pt, Col_Yellow);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(singleHit.pt, m_params.to.value, Col_Red);
 					}
 					else
 					{
 						// green line: start pos -> end pos
-						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from, m_params.to, Col_Green);
+						updateContext.blackboard.pDebugRenderWorldPersistent->AddLine(m_params.from.value, m_params.to.value, Col_Green);
 					}
 				}
 
@@ -113,7 +113,7 @@ namespace uqs
 				// draw a white line to indicate that we're still waiting to start the raycast
 				IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorldImmediate)
 				{
-					updateContext.blackboard.pDebugRenderWorldImmediate->DrawLine(m_params.from, m_params.to, Col_White);
+					updateContext.blackboard.pDebugRenderWorldImmediate->DrawLine(m_params.from.value, m_params.to.value, Col_White);
 				}
 
 				return EUpdateStatus::BusyButBlockedDueToResourceShortage;

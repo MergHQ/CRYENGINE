@@ -11,29 +11,29 @@ namespace uqs
 
 		//===================================================================================
 		//
-		// CFunction_Vec3Add
+		// CFunction_Pos3AddOfs3
 		//
-		// - adds two Vec3's and returns the sum
+		// - adds an Ofs3 to a Pos3 and returns the new Pos3
 		//
 		//===================================================================================
 
-		class CFunction_Vec3Add : public client::CFunctionBase<CFunction_Vec3Add, Vec3, client::IFunctionFactory::ELeafFunctionKind::None>
+		class CFunction_Pos3AddOfs3 : public client::CFunctionBase<CFunction_Pos3AddOfs3, Pos3, client::IFunctionFactory::ELeafFunctionKind::None>
 		{
 		public:
 			struct SParams
 			{
-				Vec3      v1;
-				Vec3      v2;
+				Pos3      pos;
+				Ofs3      ofs;
 
 				UQS_EXPOSE_PARAMS_BEGIN
-					UQS_EXPOSE_PARAM("v1", v1);
-					UQS_EXPOSE_PARAM("v2", v2);
+					UQS_EXPOSE_PARAM("pos", pos);
+					UQS_EXPOSE_PARAM("ofs", ofs);
 				UQS_EXPOSE_PARAMS_END
 			};
 
 		public:
-			explicit   CFunction_Vec3Add(const SCtorContext& ctorContext);
-			Vec3       DoExecute(const SExecuteContext& executeContext, const SParams& params) const;
+			explicit   CFunction_Pos3AddOfs3(const SCtorContext& ctorContext);
+			Pos3       DoExecute(const SExecuteContext& executeContext, const SParams& params) const;
 		};
 
 		//===================================================================================
@@ -45,7 +45,7 @@ namespace uqs
 		//
 		//===================================================================================
 
-		class CFunction_PosFromEntity : public client::CFunctionBase<CFunction_PosFromEntity, Vec3, client::IFunctionFactory::ELeafFunctionKind::None>
+		class CFunction_PosFromEntity : public client::CFunctionBase<CFunction_PosFromEntity, Pos3, client::IFunctionFactory::ELeafFunctionKind::None>
 		{
 		public:
 			struct SParams
@@ -59,7 +59,7 @@ namespace uqs
 
 		public:
 			explicit   CFunction_PosFromEntity(const SCtorContext& ctorContext);
-			Vec3       DoExecute(const SExecuteContext& executeContext, const SParams& params) const;
+			Pos3       DoExecute(const SExecuteContext& executeContext, const SParams& params) const;
 		};
 
 	}

@@ -40,5 +40,10 @@ namespace uqs
 			}
 		}
 
+		void Pos3_AddToDebugRenderWorld(const Pos3& item, core::IDebugRenderWorldPersistent& debugRW)
+		{
+			debugRW.AddSphere(item.value, 0.2f, Col_White);
+		}
+
 	}
 }

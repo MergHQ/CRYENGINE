@@ -20,8 +20,8 @@ namespace uqs
 		public:
 			struct SParams
 			{
-				Vec3                   from;
-				Vec3                   to;
+				Pos3                   from;
+				Pos3                   to;
 				bool                   raycastShallSucceed;
 
 				UQS_EXPOSE_PARAMS_BEGIN

@@ -52,7 +52,7 @@ namespace uqs
 		public:
 
 			                                               CLeafFunctionReturnValue();
-														   CLeafFunctionReturnValue(const CLeafFunctionReturnValue& rhs);
+			                                               CLeafFunctionReturnValue(const CLeafFunctionReturnValue& rhs);
 			                                               ~CLeafFunctionReturnValue();
 			CLeafFunctionReturnValue&                      operator=(const CLeafFunctionReturnValue& rhs);
 
