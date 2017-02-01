@@ -52,7 +52,7 @@ bool CImplementationManager::LoadImplementation()
 
 		char szExecutableDirPath[_MAX_PATH];
 		CryGetExecutableFolder(sizeof(szExecutableDirPath), szExecutableDirPath);
-		cry_sprintf(szExecutableDirPath, "%sEditorPlugins\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
+		cry_sprintf(szExecutableDirPath, "%sEditorPlugins\\ace\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
 
 		ms_hMiddlewarePlugin = LoadLibraryA(szExecutableDirPath);
 		if (!ms_hMiddlewarePlugin)
