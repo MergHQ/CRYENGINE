@@ -3281,23 +3281,6 @@ L_done:;
 
 		InlineInitializationProcessing("CSystem::Init InitMiniGUI");
 
-		//////////////////////////////////////////////////////////////////////////
-		// AI
-		//////////////////////////////////////////////////////////////////////////
-		if (!m_startupParams.bPreview && !m_bUIFrameworkMode && !m_startupParams.bShaderCacheGen)
-		{
-			if (gEnv->IsDedicated() && m_svAISystem && !m_svAISystem->GetIVal())
-				;
-			else
-			{
-				CryLogAlways("AI initialization");
-				INDENT_LOG_DURING_SCOPE();
-
-				if (!InitAISystem())
-					return false;
-			}
-		}
-
 		if (m_env.pConsole != 0)
 			((CXConsole*)m_env.pConsole)->Init(this);
 
@@ -3393,27 +3376,6 @@ L_done:;
 		//////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////
-		// AI SYSTEM INITIALIZATION
-		//////////////////////////////////////////////////////////////////////////
-		// AI System needs to be initialized after entity system
-		if (!m_startupParams.bPreview && !m_bUIFrameworkMode && m_env.pAISystem)
-		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Initialize AI System");
-
-			if (m_pUserCallback)
-				m_pUserCallback->OnInitProgress("Initializing AI System...");
-			CryLogAlways("Initializing AI System");
-			INDENT_LOG_DURING_SCOPE();
-			m_env.pAISystem->Init();
-		}
-
-		if (m_pUserCallback)
-			m_pUserCallback->OnInitProgress("Initializing additional systems...");
-		CryLogAlways("Initializing additional systems");
-
-		InlineInitializationProcessing("CSystem::Init AIInit");
-
-		//////////////////////////////////////////////////////////////////////////
 		// DYNAMIC RESPONSE SYSTEM
 		if (!m_startupParams.bShaderCacheGen)
 		{
@@ -3463,6 +3425,44 @@ L_done:;
 		//////////////////////////////////////////////////////////////////////////
 		// Load FlowGraph
 		GetISystem()->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryFlowGraph", "EngineModule_FlowGraph");
+
+		//////////////////////////////////////////////////////////////////////////
+		// AI
+		//////////////////////////////////////////////////////////////////////////
+		if (!m_startupParams.bPreview && !m_bUIFrameworkMode && !m_startupParams.bShaderCacheGen)
+		{
+			if (gEnv->IsDedicated() && m_svAISystem && !m_svAISystem->GetIVal())
+				;
+			else
+			{
+				CryLogAlways("AI initialization");
+				INDENT_LOG_DURING_SCOPE();
+
+				if (!InitAISystem())
+					return false;
+			}
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// AI SYSTEM INITIALIZATION
+		//////////////////////////////////////////////////////////////////////////
+		// AI System needs to be initialized after entity system
+		if (!m_startupParams.bPreview && !m_bUIFrameworkMode && m_env.pAISystem)
+		{
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Initialize AI System");
+
+			if (m_pUserCallback)
+				m_pUserCallback->OnInitProgress("Initializing AI System...");
+			CryLogAlways("Initializing AI System");
+			INDENT_LOG_DURING_SCOPE();
+			m_env.pAISystem->Init();
+		}
+
+		if (m_pUserCallback)
+			m_pUserCallback->OnInitProgress("Initializing additional systems...");
+		CryLogAlways("Initializing additional systems");
+
+		InlineInitializationProcessing("CSystem::Init AIInit");
 
 		//////////////////////////////////////////////////////////////////////////
 		// Create PerfHUD
