@@ -3382,38 +3382,6 @@ int CActionGame::OnCreatePhysicalEntityLogged(const EventPhys* pEvent)
 		IRenderNode* rn = (IRenderNode*)pCEvent->pForeignData;
 		if (eERType_Vegetation == rn->GetRenderNodeType())
 		{
-			// notify AISystem
-			if (gEnv->pAISystem)
-			{
-				IEntity* pNewEnt = (IEntity*)pCEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-				if (pNewEnt)
-				{
-					AABB bounds;
-					pNewEnt->GetWorldBounds(bounds);
-				}
-
-				// Classify the collision type.
-				SAICollisionObjClassification type = AICOL_LARGE;
-				if (pCEvent->breakSize < 0.5f)
-					type = AICOL_SMALL;
-				else if (pCEvent->breakSize < 2.0f)
-					type = AICOL_MEDIUM;
-				else
-					type = AICOL_LARGE;
-
-				// Magic formula to calculate the reaction and sound radii.
-				const float impulse = pCEvent->breakImpulse.GetLength();
-				const float reactionRadius = pCEvent->breakSize * 2.0f;
-				const float soundRadius = 10.0f + sqrtf(clamp_tpl(impulse / 800.0f, 0.0f, 1.0f)) * 60.0f;
-
-				SAIStimulus stim(AISTIM_COLLISION, type, pNewEnt ? pNewEnt->GetId() : 0, 0, rn->GetPos(), ZERO, reactionRadius);
-				gEnv->pAISystem->RegisterStimulus(stim);
-
-				SAIStimulus stimSound(AISTIM_SOUND, type == AICOL_SMALL ? AISOUND_COLLISION : AISOUND_COLLISION_LOUD,
-				                      pNewEnt ? pNewEnt->GetId() : 0, 0, rn->GetPos(), ZERO, soundRadius, AISTIMPROC_FILTER_LINK_WITH_PREVIOUS);
-				gEnv->pAISystem->RegisterStimulus(stimSound);
-			}
-
 			IMaterialEffects* pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
 			TMFXEffectId effectId = pMaterialEffects ? pMaterialEffects->GetEffectIdByName("vegetation", "tree_break") : InvalidEffectId;
 			if (effectId != InvalidEffectId)

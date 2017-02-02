@@ -52,7 +52,6 @@
 #include "AI/BehaviorTreeNodes_Action.h"
 #include <CryAISystem/ICommunicationManager.h>
 #include <CryAISystem/IFactionMap.h>
-#include <CryAISystem/ISelectionTreeManager.h>
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CrySandbox/IEditorGame.h>
@@ -3422,25 +3421,6 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 			configNames[i] = gEnv->pAISystem->GetCommunicationManager()->GetConfigName(i);
 
 		pGameToEditor->SetUIEnums("CommConfig", &configNames.front(), commConfigCount);
-	}
-
-	const char* behaviorSelectionTreeType = "BehaviorSelectionTree";
-	uint32 behaviorSelectionTreeCount = gEnv->pAISystem->GetSelectionTreeManager()
-	                                    ->GetSelectionTreeCountOfType(behaviorSelectionTreeType);
-
-	if (behaviorSelectionTreeCount)
-	{
-		std::vector<const char*> selectionTreeNames;
-		selectionTreeNames.resize(behaviorSelectionTreeCount + 1);
-		selectionTreeNames[0] = "None";
-
-		for (uint i = 0; i < behaviorSelectionTreeCount; ++i)
-		{
-			selectionTreeNames[i + 1] = gEnv->pAISystem->GetSelectionTreeManager()
-			                            ->GetSelectionTreeNameOfType(behaviorSelectionTreeType, i);
-		}
-
-		pGameToEditor->SetUIEnums(behaviorSelectionTreeType, &selectionTreeNames.front(), behaviorSelectionTreeCount + 1);
 	}
 
 	uint32 factionCount = gEnv->pAISystem->GetFactionMap().GetFactionCount();

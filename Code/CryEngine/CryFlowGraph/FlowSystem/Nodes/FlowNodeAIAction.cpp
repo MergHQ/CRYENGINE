@@ -28,7 +28,7 @@
 
 #define DEF_CLONE(CLASS) IFlowNodePtr CLASS::Clone(SActivationInfo * pActInfo){ CLASS* p = new CLASS(pActInfo); p->m_bNeedsExec = m_bNeedsExec; p->m_bNeedsSink = m_bNeedsSink; return p; }
 
-static const char* FORCE_UICONFIG = "enum_int:No=0,KeepPerception=1,IgnoreAll=2";
+static const char* FORCE_UICONFIG = "enum_int:No=0,IgnoreAll=1";
 
 #if !defined(RELEASE)
 #define CRYACTION_AI_VERBOSITY
@@ -731,29 +731,22 @@ template<bool TBlocking> void CFlowNode_AIForceableBase<TBlocking >::SetForceMet
 	if (!pAIActor)
 		return;
 
-	if (m_LastForceMethod == eIgnoreAll)
-		pAIActor->EnablePerception(true);
-
 	IAIActorProxy* pAIProxy = pAIActor->GetProxy();
-
-	switch (method)
+	if (pAIProxy)
 	{
-	case eIgnoreAll:
-		pAIActor->ResetPerception();
-		pAIActor->EnablePerception(false);
-	case eKeepPerception:
-		if (pAIProxy)
+		switch (method)
+		{
+		case eIgnoreAll:
 			pAIProxy->SetForcedExecute(true);
-		break;
-	case eNoForce:
-		if (pAIProxy)
+			break;
+		case eNoForce:
 			pAIProxy->SetForcedExecute(false);
-		break;
-	default:
-		assert(0);
-		break;
+			break;
+		default:
+			assert(0);
+			break;
+		}
 	}
-
 	m_LastForceMethod = method;
 }
 

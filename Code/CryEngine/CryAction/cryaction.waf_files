@@ -126,7 +126,6 @@
       "VehicleSystem/VehicleSeatActionMovement.cpp",
       "VehicleSystem/VehicleSeatActionPassengerIK.cpp",
       "VehicleSystem/VehicleSeatActionRotateTurret.cpp",
-      "VehicleSystem/VehicleSeatActionSound.cpp",
       "VehicleSystem/VehicleSeatActionSteeringWheel.cpp",
       "VehicleSystem/VehicleSeatActionWeapons.cpp",
       "VehicleSystem/VehicleSeatActionOrientateBoneToView.cpp",
@@ -147,7 +146,6 @@
       "VehicleSystem/VehicleSeatActionMovement.h",
       "VehicleSystem/VehicleSeatActionPassengerIK.h",
       "VehicleSystem/VehicleSeatActionRotateTurret.h",
-      "VehicleSystem/VehicleSeatActionSound.h",
       "VehicleSystem/VehicleSeatActionSteeringWheel.h",
       "VehicleSystem/VehicleSeatActionWeapons.h"
     ],

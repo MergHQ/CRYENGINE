@@ -6,6 +6,7 @@
 #pragma once
 
 #include "DeferredActionQueue.h"
+#include <CryPhysics/physinterface.h>
 
 struct RayCastResult
 {

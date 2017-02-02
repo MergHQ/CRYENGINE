@@ -43,7 +43,6 @@
 #include "VehicleSeatActionMovement.h"
 #include "VehicleSeatActionPassengerIK.h"
 #include "VehicleSeatActionRotateTurret.h"
-#include "VehicleSeatActionSound.h"
 #include "VehicleSeatActionSteeringWheel.h"
 #include "VehicleSeatActionWeapons.h"
 #include "VehicleSeatActionWeaponsBone.h"
@@ -201,7 +200,6 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 	REGISTER_VEHICLEOBJECT("Movement", CVehicleSeatActionMovement);
 	REGISTER_VEHICLEOBJECT("PassengerIK", CVehicleSeatActionPassengerIK);
 	REGISTER_VEHICLEOBJECT("RotateTurret", CVehicleSeatActionRotateTurret);
-	REGISTER_VEHICLEOBJECT("Sound", CVehicleSeatActionSound);
 	REGISTER_VEHICLEOBJECT("SteeringWheel", CVehicleSeatActionSteeringWheel);
 	REGISTER_VEHICLEOBJECT("Weapons", CVehicleSeatActionWeapons);
 	REGISTER_VEHICLEOBJECT("WeaponsBone", CVehicleSeatActionWeaponsBone);

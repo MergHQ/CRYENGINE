@@ -38,6 +38,7 @@
 #include "ItemScheduler.h"
 #include "Utility/CryWatch.h"
 
+#include <CryExtension/ICryPluginManager.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CryString/CryPath.h>
 #include <IActionMapManager.h>
@@ -104,7 +105,6 @@
 #include "VehicleClient.h"
 #include "AI/TacticalPointLanguageExtender.h"
 #include "AI/GameAISystem.h"
-#include "AI/GameAIEnv.h"
 #include "AI/AICorpse.h"
 
 #include "Network/Lobby/GameUserPackets.h"
@@ -186,6 +186,8 @@
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 #include <CrySystem/CryUnitTest.h>
+
+#include <IPerceptionManager.h>
 
 #ifdef ENABLE_STATS_AGENT
 	#include "StatsAgent.h"
@@ -976,6 +978,12 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 		}
 	}
 
+	//perception system plugin must be loaded here by default (cryplugin.csv cannot be used because GameSDK doesn't exist as cry project yet)
+	if (!gEnv->pSystem->GetIPluginManager()->LoadPluginFromDisk(ICryPluginManager::EPluginType::EPluginType_CPP, "CryPerceptionSystem", "Plugin_CryPerceptionSystem"))
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error loading Perception System!");
+	}
+
 	m_pGameAchievements = new CGameAchievements;  //Should be after GameLobbyManager
 	CRY_ASSERT(m_pGameAchievements);
 
@@ -1291,6 +1299,24 @@ void CGame::OnEditorGameInitComplete()
 {
 	//This will load the parameters in shared storage
 	m_pWeaponSystem->Reload();
+}
+
+void CGame::RegisterPhysicsCallbacks()
+{
+	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
+	if (!pPhysicalWorld)
+		return;
+
+	pPhysicalWorld->AddEventClient(EventPhysCreateEntityPart::id, OnCreatePhysicalEntityLogged, 1, 0.1f);
+}
+
+void CGame::UnregisterPhysicsCallbacks()
+{
+	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
+	if (!pPhysicalWorld)
+		return;
+
+	pPhysicalWorld->RemoveEventClient(EventPhysCreateEntityPart::id, OnCreatePhysicalEntityLogged, 1);
 }
 
 CRevertibleConfigLoader& CGame::GetGameModeCVars()
@@ -3858,6 +3884,7 @@ void CGame::ReleaseScriptBinds()
 	SAFE_DELETE(m_pScriptBindBoids);
 	SAFE_DELETE(m_pScriptBindTurret);
 	SAFE_DELETE(m_pScriptBindProtected);
+	SAFE_DELETE(m_pScriptBindGameAI);
 }
 
 void CGame::CheckReloadLevel()
@@ -6027,6 +6054,49 @@ float CGame::GetPowerSprintTargetFov() const
 	}
 	else
 		return g_pGameCVars->pl_movement.power_sprint_targetFov;
+}
+
+int CGame::OnCreatePhysicalEntityLogged(const EventPhys* pEvent)
+{
+	const EventPhysCreateEntityPart* pCEvent = static_cast<const EventPhysCreateEntityPart*>(pEvent);
+	
+	if (pCEvent->iForeignData != PHYS_FOREIGN_ID_STATIC)
+		return 1;
+
+	IRenderNode* rn = static_cast<IRenderNode*>(pCEvent->pForeignData);
+	if (eERType_Vegetation == rn->GetRenderNodeType())
+	{
+		// notify PerceptionManager
+		IPerceptionManager* perceptionManager = IPerceptionManager::GetInstance();
+		if (perceptionManager)
+		{
+			IEntity* pNewEnt = static_cast<IEntity*>(pCEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
+			if (pNewEnt)
+			{
+				// Classify the collision type.
+				SAICollisionObjClassification type = AICOL_LARGE;
+				if (pCEvent->breakSize < 0.5f)
+					type = AICOL_SMALL;
+				else if (pCEvent->breakSize < 2.0f)
+					type = AICOL_MEDIUM;
+				else
+					type = AICOL_LARGE;
+
+				// Magic formula to calculate the reaction and sound radii.
+				const float impulse = pCEvent->breakImpulse.GetLength();
+				const float reactionRadius = pCEvent->breakSize * 2.0f;
+				const float soundRadius = 10.0f + sqrtf(clamp_tpl(impulse / 800.0f, 0.0f, 1.0f)) * 60.0f;
+
+				SAIStimulus stim(AISTIM_COLLISION, type, pNewEnt ? pNewEnt->GetId() : 0, 0, rn->GetPos(), ZERO, reactionRadius);
+				SAIStimulus stimSound(AISTIM_SOUND, type == AICOL_SMALL ? AISOUND_COLLISION : AISOUND_COLLISION_LOUD,
+					pNewEnt ? pNewEnt->GetId() : 0, 0, rn->GetPos(), ZERO, soundRadius, AISTIMPROC_FILTER_LINK_WITH_PREVIOUS);
+				
+				perceptionManager->RegisterStimulus(stim);
+				perceptionManager->RegisterStimulus(stimSound);
+			}
+		}
+	}
+	return 1;
 }
 
 static void OnChangedStereoRenderDevice(ICVar* pStereoRenderDevice)

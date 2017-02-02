@@ -24,7 +24,6 @@
 #include "SmartObjects.h"
 #include "PathFollower.h"
 #include "FireCommand.h"
-#include "PerceptionManager.h"
 #include "ObjectContainer.h"
 
 #include "CentralInterestManager.h"
@@ -436,12 +435,12 @@ float CPuppet::AdjustTargetVisibleRange(const CAIActor& observer, float fVisible
 //===================================================================
 // Update
 //===================================================================
-void CPuppet::Update(EObjectUpdate type)
+void CPuppet::Update(EUpdateType type)
 {
 	CCCPOINT(CPuppet_Update);
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
-	m_bDryUpdate = (type != AIUPDATE_FULL);
+	m_bDryUpdate = (type != EUpdateType::Full);
 
 	if (!IsEnabled())
 	{
@@ -640,7 +639,7 @@ void CPuppet::Update(EObjectUpdate type)
 	m_State.fForcedNavigationSpeed = m_fForcedNavigationSpeed;
 }
 
-void CPuppet::UpdateProxy(EObjectUpdate type)
+void CPuppet::UpdateProxy(EUpdateType type)
 {
 	IAIActorProxy* pAIActorProxy = GetProxy();
 	// There should never be Puppets without proxies.
@@ -739,7 +738,7 @@ void CPuppet::UpdateProxy(EObjectUpdate type)
 	}
 
 	// Make sure we haven't played with that value during our update
-	assert(m_bDryUpdate == (type == AIUPDATE_DRY));
+	assert(m_bDryUpdate == (type == EUpdateType::Dry));
 
 #ifdef CRYAISYSTEM_DEBUG
 	if (!m_bDryUpdate)
@@ -1336,8 +1335,6 @@ void CPuppet::Event(unsigned short eType, SAIEVENT* pEvent)
 				SetCoverRegister(CoverID());
 				m_coverUser.SetCoverID(CoverID());
 			}
-
-			ResetBehaviorSelectionTree(AIOBJRESET_SHUTDOWN);
 
 			pAISystem->NotifyTargetDead(this);
 
@@ -5270,19 +5267,6 @@ void CPuppet::SetDelayedStance(int stance)
 bool CPuppet::GetPosAlongPath(float dist, bool extrapolateBeyond, Vec3& retPos) const
 {
 	return m_Path.GetPosAlongPath(retPos, dist, !m_movementAbility.b3DMove, extrapolateBeyond);
-}
-
-//===================================================================
-// CheckCloseContact
-//===================================================================
-void CPuppet::CheckCloseContact(IAIObject* pTarget, float fDistSq)
-{
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
-
-	if (GetAttentionTarget() == pTarget)
-	{
-		CPipeUser::CheckCloseContact(pTarget, fDistSq);
-	}
 }
 
 //

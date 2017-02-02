@@ -2439,7 +2439,7 @@ EGoalOpResult COPCrysis2Fly::CalculateTarget(CPipeUser* pPipeUser)
 bool COPCrysis2Fly::HandleThreat(CPipeUser* pPipeUser, const Vec3& moveDir)
 {
 	bool ret = false;
-
+	/*
 	if (pPipeUser->IsPerceptionEnabled())
 	{
 		if (m_Threat.threatId)
@@ -2493,7 +2493,7 @@ bool COPCrysis2Fly::HandleThreat(CPipeUser* pPipeUser, const Vec3& moveDir)
 			}
 		}
 	}
-
+	*/
 	return ret;
 }
 

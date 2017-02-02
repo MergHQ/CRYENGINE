@@ -1010,11 +1010,13 @@ add_sources("CryGameSDKDLL_uber_23.cpp"
 		"VehicleActionDeployRope.cpp"
 		"VehicleActionEntityAttachment.cpp"
 		"VehicleActionLandingGears.cpp"
+		"VehicleSeatActionSound.cpp"
 		"VehicleActionAutomaticDoor.h"
 		"VehicleActionAutoTarget.h"
 		"VehicleActionDeployRope.h"
 		"VehicleActionEntityAttachment.h"
 		"VehicleActionLandingGears.h"
+		"VehicleSeatActionSound.h"
 )
 
 add_sources("CryGameSDKDLL_uber_24.cpp"
@@ -1364,12 +1366,14 @@ end_sources()
 #END-FILE-LIST
 
 add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryLobby "${CMAKE_CURRENT_BINARY_DIR}/CryLobby")
+add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryPerceptionSystem/Module "${CMAKE_CURRENT_BINARY_DIR}/CryPerceptionSystem")
 
 CryGameModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
 
 target_include_directories( ${THIS_PROJECT} PRIVATE ${CRYENGINE_DIR}/Code/CryEngine/CryAction )
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
+target_link_libraries( ${THIS_PROJECT} PRIVATE CryPerceptionSystem )
 
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )

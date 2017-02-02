@@ -132,7 +132,6 @@ protected:
 	enum EForceMethod
 	{
 		eNoForce = 0,
-		eKeepPerception,
 		eIgnoreAll,
 	};
 

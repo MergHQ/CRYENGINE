@@ -16,8 +16,8 @@ public:
 	CAIVehicle();
 	~CAIVehicle(void);
 
-	virtual void     Update(EObjectUpdate type) override;
-	virtual void     UpdateDisabled(EObjectUpdate type) override;
+	virtual void     Update(EUpdateType type) override;
+	virtual void     UpdateDisabled(EUpdateType type) override;
 	void             Navigate(CAIObject* pTarget);
 	virtual void     Event(unsigned short eType, SAIEVENT* pEvent) override;
 

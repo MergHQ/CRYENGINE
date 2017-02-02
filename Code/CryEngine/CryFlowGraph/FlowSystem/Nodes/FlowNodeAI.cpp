@@ -1833,7 +1833,7 @@ void CFlowNode_AISetNavCostFactor::ProcessEvent(EFlowEvent event, SActivationInf
 		float factor = GetPortFloat(pActInfo, 1);
 		const string& pathName = GetPortString(pActInfo, 2);
 
-		gEnv->pAISystem->GetINavigation()->ModifyNavCostFactor(pathName.c_str(), factor);
+		//gEnv->pAISystem->GetINavigation()->ModifyNavCostFactor(pathName.c_str(), factor);
 
 		ActivateOutput(pActInfo, 0, 1);
 	}
@@ -1888,192 +1888,6 @@ void CFlowNode_AIEnableShape::ProcessEvent(EFlowEvent event, SActivationInfo* pA
 		}
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
-// AI Event Listener
-//////////////////////////////////////////////////////////////////////////
-class CFlowNode_AIEventListener : public CFlowBaseNode<eNCT_Instanced>, IAIEventListener
-{
-public:
-	CFlowNode_AIEventListener(SActivationInfo* pActInfo)
-		: m_pos(0, 0, 0), m_radius(0.0f),
-		m_thresholdSound(0.5f),
-		m_thresholdCollision(0.5f),
-		m_thresholdBullet(0.5f),
-		m_thresholdExplosion(0.5f)
-	{
-		m_nodeID = pActInfo->myID;
-		m_pGraph = pActInfo->pGraph;
-	}
-	~CFlowNode_AIEventListener()
-	{
-		if (gEnv->pAISystem)
-			gEnv->pAISystem->UnregisterAIEventListener(this);
-	}
-	IFlowNodePtr Clone(SActivationInfo* pActInfo)
-	{
-		return new CFlowNode_AIEventListener(pActInfo);
-	}
-	void Serialize(SActivationInfo* pActInfo, TSerialize ser)
-	{
-		ser.Value("pos", m_pos);
-		ser.Value("radius", m_radius);
-		ser.Value("m_thresholdSound", m_thresholdSound);
-		ser.Value("m_thresholdCollision", m_thresholdCollision);
-		ser.Value("m_thresholdBullet", m_thresholdBullet);
-		ser.Value("m_thresholdExplosion", m_thresholdExplosion);
-	}
-	virtual void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig_Void("Sound"),
-			OutputPortConfig_Void("Collision"),
-			OutputPortConfig_Void("Bullet"),
-			OutputPortConfig_Void("Explosion"),
-			{ 0 }
-		};
-		static const SInputPortConfig in_config[] = {
-			InputPortConfig<Vec3>("Pos",                 _HELP("Position of the listener")),
-			InputPortConfig<float>("Radius",             0.0f,                              _HELP("Radius of the listener")),
-			InputPortConfig<float>("ThresholdSound",     0.5f,                              _HELP("Sensitivity of the sound output")),
-			InputPortConfig<float>("ThresholdCollision", 0.5f,                              _HELP("Sensitivity of the collision output")),
-			InputPortConfig<float>("ThresholdBullet",    0.5f,                              _HELP("Sensitivity of the bullet output")),
-			InputPortConfig<float>("ThresholdExplosion", 0.5f,                              _HELP("Sensitivity of the explosion output")),
-			{ 0 }
-		};
-		config.sDescription = _HELP("The highest level of alertness of any agent in the level");
-		config.pInputPorts = in_config;
-		config.pOutputPorts = out_config;
-		config.SetCategory(EFLN_ADVANCED);
-	}
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		const int stimFlags = (1 << AISTIM_SOUND) | (1 << AISTIM_EXPLOSION) | (1 << AISTIM_BULLET_HIT) | (1 << AISTIM_COLLISION);
-
-		if (event == eFE_Initialize)
-		{
-			m_pos = GetPortVec3(pActInfo, 0);
-			m_radius = GetPortFloat(pActInfo, 1);
-			gEnv->pAISystem->RegisterAIEventListener(this, m_pos, m_radius, stimFlags);
-
-			m_thresholdSound = GetPortFloat(pActInfo, 2);
-			m_thresholdCollision = GetPortFloat(pActInfo, 3);
-			m_thresholdBullet = GetPortFloat(pActInfo, 4);
-			m_thresholdExplosion = GetPortFloat(pActInfo, 5);
-		}
-
-		if (event == eFE_Activate)
-		{
-			if (IsPortActive(pActInfo, 0))
-			{
-				// Change pos
-				Vec3 pos = GetPortVec3(pActInfo, 0);
-				if (Distance::Point_PointSq(m_pos, pos) > sqr(0.01f))
-				{
-					m_pos = pos;
-					gEnv->pAISystem->RegisterAIEventListener(this, m_pos, m_radius, stimFlags);
-				}
-			}
-			else if (IsPortActive(pActInfo, 1))
-			{
-				// Change radius
-				float rad = GetPortFloat(pActInfo, 1);
-				if (fabsf(rad - m_radius) > 0.0001f)
-				{
-					m_radius = rad;
-					gEnv->pAISystem->RegisterAIEventListener(this, m_pos, m_radius, stimFlags);
-				}
-			}
-			else if (IsPortActive(pActInfo, 2))
-			{
-				// Change threshold
-				m_thresholdSound = GetPortFloat(pActInfo, 2);
-			}
-			else if (IsPortActive(pActInfo, 3))
-			{
-				// Change threshold
-				m_thresholdCollision = GetPortFloat(pActInfo, 3);
-			}
-			else if (IsPortActive(pActInfo, 4))
-			{
-				// Change threshold
-				m_thresholdBullet = GetPortFloat(pActInfo, 4);
-			}
-			else if (IsPortActive(pActInfo, 5))
-			{
-				// Change threshold
-				m_thresholdExplosion = GetPortFloat(pActInfo, 5);
-			}
-		}
-	}
-	virtual void OnAIEvent(EAIStimulusType type, const Vec3& pos, float radius, float threat, EntityId sender)
-	{
-		CRY_ASSERT(m_pGraph->IsEnabled() && !m_pGraph->IsSuspended() && m_pGraph->IsActive());
-
-		float dist = Distance::Point_Point(m_pos, pos);
-		float u = 0.0f;
-
-		if (radius > 0.001f)
-			u = (1.0f - clamp_tpl((dist - m_radius) / radius, 0.0f, 1.0f)) * threat;
-
-		float thr = 0.0f;
-
-		switch (type)
-		{
-		case AISTIM_SOUND:
-			thr = m_thresholdSound;
-			break;
-		case AISTIM_COLLISION:
-			thr = m_thresholdCollision;
-			break;
-		case AISTIM_BULLET_HIT:
-			thr = m_thresholdBullet;
-			break;
-		case AISTIM_EXPLOSION:
-			thr = m_thresholdExplosion;
-			break;
-		default:
-			return;
-		}
-
-		if (thr > 0.0f && u > thr)
-		{
-			int i = 0;
-			switch (type)
-			{
-			case AISTIM_SOUND:
-				i = 0;
-				break;
-			case AISTIM_COLLISION:
-				i = 1;
-				break;
-			case AISTIM_BULLET_HIT:
-				i = 2;
-				break;
-			case AISTIM_EXPLOSION:
-				i = 3;
-				break;
-			default:
-				return;
-			}
-			SFlowAddress addr(m_nodeID, i, true);
-			m_pGraph->ActivatePort(addr, true);
-		}
-	}
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-private:
-	Vec3 m_pos;
-	float m_radius;
-	float m_thresholdSound;
-	float m_thresholdCollision;
-	float m_thresholdBullet;
-	float m_thresholdExplosion;
-	IFlowGraph* m_pGraph;
-	TFlowNodeId m_nodeID;
-};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2884,7 +2698,6 @@ REGISTER_FLOW_NODE("AI:PerceptionScale", CFlowNode_AIPerceptionScale)
 REGISTER_FLOW_NODE("AI:NavCostFactor", CFlowNode_AISetNavCostFactor)
 REGISTER_FLOW_NODE("AI:AutoDisable", CFlowNode_AIAutoDisable)
 REGISTER_FLOW_NODE("AI:ShapeState", CFlowNode_AIEnableShape)
-REGISTER_FLOW_NODE("Game:EventListener", CFlowNode_AIEventListener)
 REGISTER_FLOW_NODE("AI:Communication", CFlowNode_AICommunication)
 REGISTER_FLOW_NODE("AI:IsAliveCheck", CFlowNode_AIIsAliveCheck)
 REGISTER_FLOW_NODE("AI:AIGlobalPerceptionScaling", CFlowNode_AIGlobalPerceptionScaling)

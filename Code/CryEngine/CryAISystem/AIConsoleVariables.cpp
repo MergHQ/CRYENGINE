@@ -69,9 +69,6 @@ void AIConsoleVars::Init()
 	               "on which to focus.");
 	DefineConstIntCVarName("ai_DebugDrawPhysicsAccess", DebugDrawPhysicsAccess, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Displays current physics access statistics for the AI module.");
-	REGISTER_CVAR2("ai_DebugBehaviorSelection", &DebugBehaviorSelection, "", VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "Display behavior selection information for a specific agent\n"
-	               "Usage: ai_DebugBehaviorSelection <name>");
 
 	DefineConstIntCVarName("ai_RayCasterQuota", RayCasterQuota, 12, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Amount of deferred rays allowed to be cast per frame!");
@@ -143,16 +140,6 @@ void AIConsoleVars::Init()
 	               "In seconds the amount of time between two full updates for AI  \n"
 	               "Usage: ai_UpdateInterval <number>\n"
 	               "Default is 0.1. Number is time in seconds");
-	REGISTER_CVAR2("ai_DynamicWaypointUpdateTime", &DynamicWaypointUpdateTime, 0.00035f, VF_NULL,
-	               "How long (max) to spend updating dynamic waypoint regions per AI update (in sec)\n"
-	               "0 disables dynamic updates. 0.0005 is a sensible value");
-	REGISTER_CVAR2("ai_DynamicVolumeUpdateTime", &DynamicVolumeUpdateTime, 0.000175f, VF_NULL,
-	               "How long (max) to spend updating dynamic volume regions per AI update (in sec)\n"
-	               "0 disables dynamic updates. 0.002 is a sensible value");
-	REGISTER_CVAR2("ai_LayerSwitchDynamicLinkBump", &LayerSwitchDynamicLinkBump, 8.0f, VF_NULL,
-	               "Multiplier for the dynamic link update budget when layer switch occurs.");
-	REGISTER_CVAR2("ai_LayerSwitchDynamicLinkBumpDuration", &LayerSwitchDynamicLinkBumpDuration, 60, VF_NULL,
-	               "Duration of the dynamic link update budget bump in frames.");
 	DefineConstIntCVarName("ai_AdjustPathsAroundDynamicObstacles", AdjustPathsAroundDynamicObstacles, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Set to 1/0 to enable/disable AI path adjustment around dynamic obstacles");
 	// is not cheat protected because it changes during game, depending on your settings
@@ -699,8 +686,6 @@ void AIConsoleVars::Init()
 	                       "Draws indicators showing enemy view intersection with perception modifiers");
 	DefineConstIntCVarName("ai_DrawPerceptionModifiers", DrawPerceptionModifiers, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Draws perception modifier areas in game mode");
-	DefineConstIntCVarName("ai_DebugPerceptionManager", DebugPerceptionManager, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Draws perception manager performance overlay. 0=disable, 1=vis checks, 2=stimulus");
 	DefineConstIntCVarName("ai_DebugGlobalPerceptionScale", DebugGlobalPerceptionScale, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Draws global perception scale multipliers on screen");
 	DefineConstIntCVarName("ai_TargetTracking", TargetTracking, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -749,17 +734,6 @@ void AIConsoleVars::Init()
 	                       "Usage: ai_DebugDrawReinforcements <groupid>, or -1 to disable.");
 	DefineConstIntCVarName("ai_DebugDrawPlayerActions", DebugDrawPlayerActions, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Debug draw special player actions.");
-
-	DefineConstIntCVarName("ai_DrawCollisionEvents", DrawCollisionEvents, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Debug draw the collision events the AI system processes. 0=disable, 1=enable.");
-	DefineConstIntCVarName("ai_DrawBulletEvents", DrawBulletEvents, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Debug draw the bullet events the AI system processes. 0=disable, 1=enable.");
-	DefineConstIntCVarName("ai_DrawSoundEvents", DrawSoundEvents, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Debug draw the sound events the AI system processes. 0=disable, 1=enable.");
-	DefineConstIntCVarName("ai_DrawGrenadeEvents", DrawGrenadeEvents, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Debug draw the grenade events the AI system processes. 0=disable, 1=enable.");
-	DefineConstIntCVarName("ai_DrawExplosions", DrawExplosions, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
-	                       "Debug draw the explosion events the AI system processes. 0=disable, 1=enable.");
 
 	DefineConstIntCVarName("ai_EnableWaterOcclusion", WaterOcclusionEnable, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Enables applying water occlusion to AI target visibility checks");

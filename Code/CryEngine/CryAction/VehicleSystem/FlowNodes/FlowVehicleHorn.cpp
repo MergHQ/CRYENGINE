@@ -17,7 +17,6 @@
 #include "FlowVehicleBase.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
-#include "VehicleSystem/VehicleSeatActionSound.h"
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowVehicleHonk

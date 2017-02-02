@@ -105,8 +105,6 @@ History:
 #include "Melee.h"
 #include "FireMode.h"
 
-#include "AI/GameAIEnv.h"
-
 #include "ActorImpulseHandler.h"
 #include "EquipmentLoadout.h"
 
@@ -143,6 +141,8 @@ History:
 
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
+
+#include <IPerceptionManager.h>
 
 DEFINE_STATE_MACHINE( CPlayer, Movement ); 
 
@@ -6471,7 +6471,7 @@ bool CPlayer::MustBreakGlass() const
 //////////////////////////////////////////////////////////////////////////
 void CPlayer::ExecuteFootStepsAIStimulus(const float relativeSpeed, const float noiseSupression)
 {
-	if (gEnv->pAISystem)
+	if (IPerceptionManager::GetInstance())
 	{
 		//handle AI sound recognition *************************************************
 		float fStandingRadius = g_pGameCVars->ai_perception.movement_standingRadiusDefault;
@@ -6515,7 +6515,7 @@ void CPlayer::ExecuteFootStepsAIStimulus(const float relativeSpeed, const float 
 			{
 				SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT, GetEntityId(), 0,
 					GetEntity()->GetWorldPos() + GetEyeOffset(), ZERO, fFootstepRadius);
-				gEnv->pAISystem->RegisterStimulus(stim);
+				IPerceptionManager::GetInstance()->RegisterStimulus(stim);
 			}
 		}
 	}

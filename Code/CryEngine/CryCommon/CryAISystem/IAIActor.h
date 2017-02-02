@@ -46,6 +46,9 @@ struct IAIActor : public IAIPathAgent
 
 	// <interfuscator:shuffle>
 	virtual ~IAIActor() {}
+	
+	virtual const IAIObject*            CastToIAIObject() const = 0;
+	virtual IAIObject*                  CastToIAIObject() = 0;
 
 	virtual SOBJECTSTATE&               GetState() = 0;
 	virtual const SOBJECTSTATE&         GetState() const = 0;
@@ -68,9 +71,6 @@ struct IAIActor : public IAIPathAgent
 
 	//! \return the maximum visible range to the target.
 	virtual float           GetMaxTargetVisibleRange(const IAIObject* pTarget, bool bCheckCloak = true) const = 0;
-
-	virtual void            EnablePerception(bool enable) = 0;
-	virtual bool            IsPerceptionEnabled() const = 0;
 
 	virtual void            RegisterBehaviorListener(IActorBehaviorListener* listener) = 0;
 	virtual void            UnregisterBehaviorListener(IActorBehaviorListener* listener) = 0;
@@ -118,6 +118,8 @@ struct IAIActor : public IAIPathAgent
 	virtual const char* GetWaveName() const = 0;
 	virtual bool        IsPointInsideTerritoryShape(const Vec3& vPos, bool bCheckHeight) const = 0;
 	virtual bool        ConstrainInsideTerritoryShape(Vec3& vPos, bool bCheckHeight) const = 0;
+
+	virtual bool        HasThrown(EntityId entity) const = 0;
 
 	//! Populates list of physics entities to skip for raycasting.
 	virtual void                  GetPhysicalSkipEntities(PhysSkipList& skipList) const {}
