@@ -25,6 +25,7 @@
 #if defined(WWISE_USE_OCULUS)
 	#include <OculusSpatializer.h>
 	#include <CryCore/Platform/CryLibrary.h>
+	#define OCULUS_SPATIALIZER_DLL "OculusSpatializerWwise.dll"
 #endif // WWISE_USE_OCULUS
 
 #if !defined(WWISE_FOR_RELEASE)
@@ -484,7 +485,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 #endif // !WWISE_FOR_RELEASE
 
 #if defined(WWISE_USE_OCULUS)
-	m_pOculusSpatializerLibrary = CryLoadLibrary("OculusSpatializer.dll");
+	m_pOculusSpatializerLibrary = CryLoadLibrary(OCULUS_SPATIALIZER_DLL);
 
 	if (m_pOculusSpatializerLibrary != nullptr)
 	{
@@ -514,7 +515,7 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Error, "Failed call to AkGetSoundEngineCallbacks in OculusSpatializer.dll");
+				g_audioImplLogger.Log(eAudioLogType_Error, "Failed call to AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
 			}
 
 			// Register plugin attachment (for data attachment on individual sounds, like frequency hints etc.)
@@ -529,17 +530,17 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 			}
 			else
 			{
-				g_audioImplLogger.Log(eAudioLogType_Error, "Failed call to AkGetSoundEngineCallbacks in OculusSpatializer.dll");
+				g_audioImplLogger.Log(eAudioLogType_Error, "Failed call to AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
 			}
 		}
 		else
 		{
-			g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load functions AkGetSoundEngineCallbacks in OculusSpatializer.dll");
+			g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load functions AkGetSoundEngineCallbacks in " OCULUS_SPATIALIZER_DLL);
 		}
 	}
 	else
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load OculusSpatializer.dll");
+		g_audioImplLogger.Log(eAudioLogType_Error, "Failed to load " OCULUS_SPATIALIZER_DLL);
 	}
 #endif // WWISE_USE_OCULUS
 
@@ -1148,7 +1149,6 @@ void CAudioImpl::GetMemoryInfo(SAudioImplMemoryInfo& memoryInfo) const
 		memoryInfo.poolUsedMemory = mem.nUsed;
 		memoryInfo.poolAllocatedMemory = mem.nAlloc;
 	}
-
 	{
 		auto& allocator = SAudioEvent::GetAllocator();
 		auto mem = allocator.GetTotalMemory();
