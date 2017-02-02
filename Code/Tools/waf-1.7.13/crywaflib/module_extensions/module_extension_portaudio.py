@@ -35,7 +35,7 @@ def feature_copy_audio_portaudio_binaries(self):
 		files_to_copy = ['portaudio_x86.dll', 'portaudio_x86.pdb']
 		portaudio_libfolder = libsndfile_libfolder = 'win32'
 	
-	portaudio_configuration = ('release' if configuration == 'profile' else 'debug')
+	portaudio_configuration = ('release' if configuration != 'debug' else 'debug')
 	
 	portaudio_libpath = bld.CreateRootRelativePath('Code/SDKs/Audio/portaudio/lib') + os.sep + portaudio_libfolder + os.sep + portaudio_configuration
 	output_folder = bld.get_output_folders(platform, configuration)[0]
