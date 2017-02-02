@@ -6,6 +6,20 @@
 
 struct IUtilityRenderPass
 {
+	enum class EPassId : uint32
+	{
+		StretchRectPass = 0,
+		StretchRegionPass,
+		StableDownsamplePass,
+		DepthDownsamplePass,
+		GaussianBlurPass,
+		MipmapGenPass,
+		ClearRegionPass,
+		AnisotropicVerticalBlurPass,
+
+		MaxPassCount,
+	};
+
 	virtual ~IUtilityRenderPass() {};
 };
 
@@ -16,6 +30,8 @@ class CStretchRectPass : public IUtilityRenderPass
 {
 public:
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT);
+
+	static EPassId GetPassId() { return EPassId::StretchRectPass; }
 
 protected:
 	CFullscreenPass m_pass;
@@ -36,6 +52,8 @@ public:
 	static CStretchRegionPass &GetPass();
 	static void Shutdown();
 
+	static EPassId GetPassId() { return EPassId::StretchRegionPass; }
+
 protected:
 	CPrimitiveRenderPass m_pass;
 
@@ -53,6 +71,8 @@ class CStableDownsamplePass : public IUtilityRenderPass
 public:
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bKillFireflies);
 
+	static EPassId GetPassId() { return EPassId::StableDownsamplePass; }
+
 private:
 	CFullscreenPass m_pass;
 };
@@ -64,6 +84,8 @@ class CDepthDownsamplePass : public IUtilityRenderPass
 {
 public:
 	void Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLinearizeSrcDepth, bool bFromSingleChannel);
+
+	static EPassId GetPassId() { return EPassId::DepthDownsamplePass; }
 
 private:
 	CFullscreenPass m_pass;
@@ -81,6 +103,8 @@ public:
 	{
 	}
 	void Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly = false);
+
+	static EPassId GetPassId() { return EPassId::GaussianBlurPass; }
 
 protected:
 	float GaussianDistribution1D(float x, float rho);
@@ -104,9 +128,14 @@ class CMipmapGenPass : public IUtilityRenderPass
 public:
 	void Execute(CTexture* pScrDestRT, int mipCount = 0);
 
+	static EPassId GetPassId() { return EPassId::MipmapGenPass; }
+
 protected:
 	std::array<CFullscreenPass, 13> m_downsamplePasses;
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class CClearRegionPass : public IUtilityRenderPass
 {
@@ -116,6 +145,8 @@ public:
 
 	void Execute(SDepthTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects);
 	void Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects);
+
+	static EPassId GetPassId() { return EPassId::ClearRegionPass; }
 
 protected:
 	void PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport);
@@ -132,6 +163,8 @@ class CAnisotropicVerticalBlurPass : public IUtilityRenderPass
 {
 public:
 	void Execute(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly);
+
+	static EPassId GetPassId() { return EPassId::AnisotropicVerticalBlurPass; }
 
 private:
 	CFullscreenPass m_passBlurAnisotropicVertical[2];

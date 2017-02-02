@@ -769,17 +769,8 @@ void CStandardGraphicsPipeline::RenderPostAA()
 
 void CStandardGraphicsPipeline::ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly)
 {
-	static CAnisotropicVerticalBlurPass* s_passVerticalBlur = nullptr;
-
-	if (!s_passVerticalBlur)
-	{
-		s_passVerticalBlur = CreateStaticUtilityPass<CAnisotropicVerticalBlurPass>();
-	}
-
-	if (s_passVerticalBlur)
-	{
-		s_passVerticalBlur->Execute(pTex, nAmount, fScale, fDistribution, bAlphaOnly);
-	}
+	auto* pPassVerticalBlur = GetOrCreateUtilityPass<CAnisotropicVerticalBlurPass>();
+	pPassVerticalBlur->Execute(pTex, nAmount, fScale, fDistribution, bAlphaOnly);
 }
 
 void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
@@ -816,10 +807,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 
 	// Note: MB uses s_ptexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
 	{
-		static CStretchRectPass* s_passCopyRT = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passCopyRT = CreateStaticUtilityPass<CStretchRectPass>();
-
-		s_passCopyRT->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetPrev);
+		GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetPrev);
 	}
 
 	m_pDepthOfFieldStage->Execute();
@@ -831,29 +819,21 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	// Half resolution downsampling
 	{
 		PROFILE_LABEL_SCOPE("HALFRES_DOWNSAMPLE_HDRTARGET");
-		static CStableDownsamplePass* s_passStableDownsample = nullptr;
-		static CStretchRectPass* s_passSimpleDownsample = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passStableDownsample = CreateStaticUtilityPass<CStableDownsamplePass>();
-		if (!m_bUtilityPassesInitialized) s_passSimpleDownsample = CreateStaticUtilityPass<CStretchRectPass>();
 
 		if (CRenderer::CV_r_HDRBloomQuality > 1)
-			s_passStableDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
+			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
 		else
-			s_passSimpleDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0]);
+			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0]);
 	}
 
 	// Quarter resolution downsampling
 	{
 		PROFILE_LABEL_SCOPE("QUARTER_RES_DOWNSAMPLE_HDRTARGET");
-		static CStableDownsamplePass* s_passStableDownsample = nullptr;
-		static CStretchRectPass* s_passSimpleDownsample = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passStableDownsample = CreateStaticUtilityPass<CStableDownsamplePass>();
-		if (!m_bUtilityPassesInitialized) s_passSimpleDownsample = CreateStaticUtilityPass<CStretchRectPass>();
 
 		if (CRenderer::CV_r_HDRBloomQuality > 0)
-			s_passStableDownsample->Execute(CTexture::s_ptexHDRTargetScaled[0], CTexture::s_ptexHDRTargetScaled[1], CRenderer::CV_r_HDRBloomQuality >= 1);
+			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CTexture::s_ptexHDRTargetScaled[0], CTexture::s_ptexHDRTargetScaled[1], CRenderer::CV_r_HDRBloomQuality >= 1);
 		else
-			s_passSimpleDownsample->Execute(CTexture::s_ptexHDRTargetScaled[0], CTexture::s_ptexHDRTargetScaled[1]);
+			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CTexture::s_ptexHDRTargetScaled[0], CTexture::s_ptexHDRTargetScaled[1]);
 	}
 
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
@@ -949,23 +929,14 @@ void CStandardGraphicsPipeline::Execute()
 	{
 		CTexture* pZTexture = gcpRendD3D->m_DepthBufferOrigMSAA.pTexture;
 
-		static CDepthDownsamplePass* s_passDepthDownsample2 = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passDepthDownsample2 = CreateStaticUtilityPass<CDepthDownsamplePass>();
-
-		static CDepthDownsamplePass* s_passDepthDownsample4 = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passDepthDownsample4 = CreateStaticUtilityPass<CDepthDownsamplePass>();
-
-		static CDepthDownsamplePass* s_passDepthDownsample8 = nullptr;
-		if (!m_bUtilityPassesInitialized) s_passDepthDownsample8 = CreateStaticUtilityPass<CDepthDownsamplePass>();
-
 		CTexture* pSourceDepth = CTexture::s_ptexZTarget;
 #if CRY_PLATFORM_DURANGO
 		pSourceDepth = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
 #endif
 
-		s_passDepthDownsample2->Execute(pSourceDepth, CTexture::s_ptexZTargetScaled, (pSourceDepth == pZTexture), true);
-		s_passDepthDownsample4->Execute(CTexture::s_ptexZTargetScaled, CTexture::s_ptexZTargetScaled2, false, false);
-		s_passDepthDownsample8->Execute(CTexture::s_ptexZTargetScaled2, CTexture::s_ptexZTargetScaled3, false, false);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(pSourceDepth, CTexture::s_ptexZTargetScaled, (pSourceDepth == pZTexture), true);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled, CTexture::s_ptexZTargetScaled2, false, false);
+		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CTexture::s_ptexZTargetScaled2, CTexture::s_ptexZTargetScaled3, false, false);
 	}
 
 	SwitchToLegacyPipeline();
@@ -1170,6 +1141,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	m_pVolumetricFogStage->ResetFrame();
 
-	m_bUtilityPassesInitialized = true;
+	ResetUtilityPassCache();
 	m_pCurrentRenderView = nullptr;
 }
