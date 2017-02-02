@@ -294,11 +294,6 @@ const float CAIProxy::GetFmodCharacterTypeParam() const
 	return m_FmodCharacterTypeParam;
 }
 
-const char* CAIProxy::GetBehaviorSelectionTreeName() const
-{
-	return m_behaviorSelectionTreeName.c_str();
-}
-
 const char* CAIProxy::GetNavigationTypeName() const
 {
 	return m_agentTypeName.c_str();
@@ -1637,11 +1632,6 @@ void CAIProxy::ReloadScriptProperties()
 				m_commConfigName = commConfigName;
 
 			props->GetValue("fFmodCharacterTypeParam", m_FmodCharacterTypeParam);
-
-			const char* behaviorSelectionTreeName;
-			if (props->GetValue("esBehaviorSelectionTree", behaviorSelectionTreeName)
-			    && stricmp(behaviorSelectionTreeName, "None"))
-				m_behaviorSelectionTreeName = behaviorSelectionTreeName;
 
 			const char* agentTypeName;
 			if (props->GetValue("esNavigationType", agentTypeName)

@@ -135,6 +135,8 @@ void CRenderer::InitRenderer()
 	m_bVolumetricFogEnabled = false;
 	m_bVolumetricCloudsEnabled = false;
 	m_bDeferredRainEnabled = false;
+	m_bDeferredRainOcclusionEnabled = false;
+	m_bDeferredSnowEnabled = false;
 
 	m_nDisableTemporalEffects = 0;
 

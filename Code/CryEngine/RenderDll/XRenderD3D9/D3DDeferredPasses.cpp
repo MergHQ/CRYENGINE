@@ -136,7 +136,7 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 	SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
 	SSnowParams& snowVolParams = m_p3DEngineCommon.m_SnowInfo;
 
-	bool bRenderSnow = ((snowVolParams.m_fSnowAmount > 0.05f || snowVolParams.m_fFrostAmount > 0.05f) && snowVolParams.m_fRadius > 0.05f && CV_r_snow > 0);
+	bool bRenderSnow = m_bDeferredSnowEnabled;
 	bool bRenderRain = m_bDeferredRainEnabled;
 
 	bool bRender = bRenderSnow || bRenderRain;
@@ -144,7 +144,7 @@ bool CD3D9Renderer::FX_DeferredRainPreprocess()
 		return false;
 
 	bool bRet = true;
-	if (rainVolParams.bApplyOcclusion && ((CV_r_snow == 2 && bRenderSnow) || (CV_r_rain == 2 && bRenderRain)))
+	if (m_bDeferredRainOcclusionEnabled)
 	{
 		bRet = FX_DeferredRainOcclusion();
 	}
@@ -321,7 +321,11 @@ bool CD3D9Renderer::FX_DeferredSnowLayer()
 	CShader* pShader = CShaderMan::s_ShaderDeferredSnow;
 	const CRenderCamera& cCam = gcpRendD3D->m_RP.m_TI[m_RP.m_nProcessThreadID].m_rcam;
 
-	if ((CRenderer::CV_r_snow < 1) || (snowVolParams.m_fSnowAmount < 0.05f && snowVolParams.m_fFrostAmount < 0.05f && snowVolParams.m_fSurfaceFreezing < 0.05f) || snowVolParams.m_fRadius < 0.05f)
+	if ((CRenderer::CV_r_snow < 1)
+	    || (snowVolParams.m_fSnowAmount < 0.05f
+	        && snowVolParams.m_fFrostAmount < 0.05f
+	        && snowVolParams.m_fSurfaceFreezing < 0.05f)
+	    || snowVolParams.m_fRadius < 0.05f)
 		return false;
 
 	PROFILE_LABEL_SCOPE("DEFERRED_SNOW_ACCUMULATION");

@@ -1499,6 +1499,16 @@ void CD3D9Renderer::RT_BeginFrame()
 		                          && rainVolParams.fRadius > 0.05f
 		                          && CV_r_rain > 0);
 
+		SSnowParams& snowVolParams = m_p3DEngineCommon.m_SnowInfo;
+		m_bDeferredSnowEnabled = ((snowVolParams.m_fSnowAmount > 0.05f || snowVolParams.m_fFrostAmount > 0.05f)
+		                          && snowVolParams.m_fRadius > 0.05f
+		                          && CV_r_snow > 0);
+
+		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[m_RP.m_nProcessThreadID];
+		m_bDeferredRainOcclusionEnabled = (rainVolParams.bApplyOcclusion
+		                                   && ((CV_r_snow == 2 && m_bDeferredSnowEnabled) || (CV_r_rain == 2 && m_bDeferredRainEnabled))
+		                                   && !arrOccluders.empty());
+
 		m_nGraphicsPipeline = CV_r_GraphicsPipeline;
 	}
 

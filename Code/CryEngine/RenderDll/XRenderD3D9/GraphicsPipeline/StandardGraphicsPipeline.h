@@ -33,6 +33,8 @@ class CColorGradingStage;
 class CSceneCustomStage;
 class CLensOpticsStage;
 class CPostEffectStage;
+class CRainStage;
+class CSnowStage;
 class CRenderCamera;
 class CCamera;
 
@@ -72,6 +74,8 @@ enum EStandardGraphicsPipelineStage
 	eStage_ColorGrading,
 	eStage_LensOptics,
 	eStage_PostEffet,
+	eStage_Rain,
+	eStage_Snow,
 
 	eStage_Count
 };
@@ -200,6 +204,8 @@ private:
 	CSceneCustomStage*            m_pSceneCustomStage = nullptr;
 	CLensOpticsStage*             m_pLensOpticsStage = nullptr;
 	CPostEffectStage*             m_pPostEffectStage = nullptr;
+	CRainStage*                   m_pRainStage = nullptr;
+	CSnowStage*                   m_pSnowStage = nullptr;
 
 	CConstantBufferPtr            m_pPerViewConstantBuffer = nullptr;
 	CDeviceResourceSetPtr         m_pDefaultMaterialResources = nullptr;

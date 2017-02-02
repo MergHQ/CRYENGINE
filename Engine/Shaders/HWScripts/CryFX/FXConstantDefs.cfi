@@ -131,6 +131,7 @@ cbuffer CBPerViewGlobal : register(b13)
 	float4x4  CV_PrevViewProjNearestMatr;
 	float3x4  CV_ScreenToWorldBasis;
 	float4    CV_TessInfo;
+	float4    CV_CameraRightVector;
 	float4    CV_CameraFrontVector;
 	float4    CV_CameraUpVector;
 	

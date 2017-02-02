@@ -27,6 +27,7 @@
 
 #include "AI/HazardModule/HazardModule.h"
 #include "AI/GameAIEnv.h"
+#include <IPerceptionManager.h>
 
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 #include "Weapon.h"
@@ -1478,10 +1479,12 @@ void CProjectile::FlashbangEffect(const SFlashbangParams* flashbang)
 {
 	if (!flashbang)
 		return;
-	const float radius = flashbang->maxRadius;
 
-	if (!gEnv->pAISystem)
+	IPerceptionManager* pPerceptionManager = IPerceptionManager::GetInstance();
+	if (!pPerceptionManager)
 		return;
+
+	const float radius = flashbang->maxRadius;
 
 	// Associate event with vehicle if the shooter is in a vehicle (tank cannon shot, etc)
 	EntityId ownerId = m_ownerId;
@@ -1491,11 +1494,11 @@ void CProjectile::FlashbangEffect(const SFlashbangParams* flashbang)
 
 	SAIStimulus stim(AISTIM_GRENADE, AIGRENADE_FLASH_BANG, ownerId, GetEntityId(),
 	                 GetEntity()->GetWorldPos(), ZERO, radius);
-	gEnv->pAISystem->RegisterStimulus(stim);
+	pPerceptionManager->RegisterStimulus(stim);
 
 	SAIStimulus stimSound(AISTIM_SOUND, AISOUND_WEAPON, ownerId, 0,
 	                      GetEntity()->GetWorldPos(), ZERO, radius * 3.0f);
-	gEnv->pAISystem->RegisterStimulus(stimSound);
+	pPerceptionManager->RegisterStimulus(stimSound);
 }
 
 //------------------------------------------------------------------------

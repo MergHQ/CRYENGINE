@@ -1775,7 +1775,7 @@ CStatoscope::CStatoscope()
 	m_pStatoscopeScreenshotCapturePeriodCVar = REGISTER_FLOAT("e_StatoscopeScreenshotCapturePeriod", -1.0f, VF_NULL, "How many seconds between Statoscope screenshot captures (-1 to disable).");
 	m_pStatoscopeFilenameUseBuildInfoCVar = REGISTER_INT("e_StatoscopeFilenameUseBuildInfo", 1, VF_NULL, "Set to include the platform and build number in the log filename.");
 	m_pStatoscopeFilenameUseMapCVar = REGISTER_INT("e_StatoscopeFilenameUseMap", 0, VF_NULL, "Set to include the map name in the log filename.");
-	m_pStatoscopeFilenameUseTagCvar = REGISTER_STRING("e_StatoscopeFilenameUseTag", "", VF_NULL, "Set to include tag in the log file name.");
+	m_pStatoscopeFilenameUseTagCvar = REGISTER_STRING_CB("e_StatoscopeFilenameUseTag", "", VF_NULL, "Set to include tag in the log file name.", OnTagCVarChange);
 	m_pStatoscopeFilenameUseTimeCVar = REGISTER_INT("e_StatoscopeFilenameUseTime", 0, VF_NULL, "Set to include the time and date in the log filename.");
 	m_pStatoscopeFilenameUseDatagroupsCVar = REGISTER_INT("e_StatoscopeFilenameUseDatagroups", 0, VF_NULL, "Set to include the datagroup and date in the log filename.");
 	m_pStatoscopeMinFuncLengthMsCVar = REGISTER_FLOAT("e_StatoscopeMinFuncLengthMs", 0.01f, VF_NULL, "Min func duration (ms) to be logged by statoscope.");
@@ -1935,7 +1935,10 @@ void CStatoscope::Tick()
 	else if (IsRunning())
 	{
 		CryLogAlways("Flushing Statoscope log\n");
-		m_pDataWriter->Close();
+		if (m_pDataWriter)
+		{
+			m_pDataWriter->Close();
+		}
 
 		for (IntervalGroupVec::const_iterator it = m_intervalGroups.begin(), itEnd = m_intervalGroups.end(); it != itEnd; ++it)
 			(*it)->Disable();
@@ -2594,6 +2597,19 @@ void CStatoscope::OnLogDestinationCVarChange(ICVar* pVar)
 	CStatoscope* pStatoscope = (CStatoscope*)gEnv->pStatoscope;
 	SAFE_DELETE(pStatoscope->m_pDataWriter);
 	pStatoscope->m_pServer->CloseConnection();
+}
+
+void CStatoscope::OnTagCVarChange(ICVar* pVar)
+{
+	CStatoscope* pStatoscope = (CStatoscope*)gEnv->pStatoscope;
+	if (pStatoscope->m_pDataWriter)
+	{
+		pStatoscope->m_pDataWriter->Close();
+	}
+	SAFE_DELETE(pStatoscope->m_pDataWriter);
+	pStatoscope->m_pServer->CloseConnection();
+
+	pStatoscope->SetLogFilename();
 }
 
 bool CStatoscope::IsLoggingForTelemetry()

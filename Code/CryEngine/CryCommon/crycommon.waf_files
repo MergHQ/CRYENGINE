@@ -356,6 +356,7 @@
 	  "CryMono/IMonoNativeToManagedInterface.h"
     ],
     "CryAISystem":[
+	  "CryAISystem/IActorLookUp.h",
       "CryAISystem/IAIMannequin.h",
       "CryAISystem/IClusterDetector.h",
       "CryAISystem/INavigationSystem.h",
@@ -385,7 +386,7 @@
       "CryAISystem/AgentParams.h",
       "CryAISystem/IAIActionSequence.h",
       "CryAISystem/AIFormationDescriptor.h",
-      "CryAISystem/AISystemListener.h",
+      "CryAISystem/IAISystemComponent.h",
       "CryAISystem/IMovementSystem.h",
       "CryAISystem/MovementRequestID.h",
       "CryAISystem/MovementUpdateContext.h",
@@ -398,10 +399,10 @@
       "CryAISystem/IGoalPipe.h",
       "CryAISystem/IInterestSystem.h",
       "CryAISystem/ITacticalPointSystem.h",
-      "CryAISystem/ISelectionTreeManager.h",
       "CryAISystem/VisionMapTypes.h",
       "CryAISystem/MovementStyle.h",
       "CryAISystem/IAIBubblesSystem.h",
+	  "CryAISystem/ValueHistory.h",
       {
         "BehaviorTree":[
           "CryAISystem/BehaviorTree/IBehaviorTree.h",

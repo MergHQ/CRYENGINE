@@ -132,9 +132,6 @@ struct GoalParams;
 #define AIEVENT_PLAYER_STUNT_ARMORED   109
 #define AIEVENT_PLAYER_STAMP_MELEE     110
 
-// System Events types.
-#define AISYSEVENT_DISABLEMODIFIER   1
-
 #define AIREADIBILITY_INTERESTING    5
 #define AIREADIBILITY_SEEN           10
 #define AIREADIBILITY_LOST           20
@@ -1203,6 +1200,7 @@ struct IPuppet
 	virtual void       UpTargetPriority(const IAIObject* pTarget, float fPriorityIncrement) = 0;
 	virtual void       UpdateBeacon() = 0;
 
+	virtual void       SetAlarmed() = 0;
 	virtual bool       IsAlarmed() const = 0;
 	virtual float      GetPerceptionAlarmLevel() const = 0;
 
@@ -1229,6 +1227,8 @@ struct IPuppet
 	virtual bool                 IsCoverFireEnabled() const = 0;
 	virtual bool                 GetPosAlongPath(float dist, bool extrapolateBeyond, Vec3& retPos) const = 0;
 	virtual IFireCommandHandler* GetFirecommandHandler() const = 0;
+
+	virtual const AIWeaponDescriptor& GetCurrentWeaponDescriptor() const = 0;
 
 	//! Changes flag so this puppet can be shoot or not.
 	virtual void SetCanBeShot(bool bCanBeShot) {; }

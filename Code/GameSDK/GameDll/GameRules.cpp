@@ -146,6 +146,8 @@
 
 #include "UI/UIMultiPlayer.h"
 
+#include <IPerceptionManager.h>
+
 #if NUM_ASPECTS > 8
 	#define GAMERULES_LIMITS_ASPECT				eEA_GameServerC
 	#define GAMERULES_TEAMS_SCORE_ASPECT	eEA_GameServerA
@@ -5684,6 +5686,10 @@ void CGameRules::OnCollision_NotifyAI( const EventPhys * pEvent )
 	IF_UNLIKELY (!pActorSystem)
 		return;
 
+	IPerceptionManager* pPerceptionManager = IPerceptionManager::GetInstance();
+	if (!pPerceptionManager)
+		return;
+
 	const EventPhysCollision* pCEvent = (const EventPhysCollision *) pEvent;
 	IEntity* pColliderEntity = pCEvent->iForeignData[0] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*) pCEvent->pForeignData[0] : NULL;
 	IEntity* pTargetEntity = pCEvent->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*) pCEvent->pForeignData[1] : NULL;
@@ -5778,11 +5784,11 @@ void CGameRules::OnCollision_NotifyAI( const EventPhys * pEvent )
 					assert(colliderId != 0);
 					
 					SAIStimulus stim(AISTIM_COLLISION, type, colliderId, targetId, pCEvent->pt, ZERO, reactionRadius);
-					gEnv->pAISystem->RegisterStimulus(stim);
+					pPerceptionManager->RegisterStimulus(stim);
 
 					SAIStimulus stimSound(AISTIM_SOUND, type == AICOL_SMALL ? AISOUND_COLLISION : AISOUND_COLLISION_LOUD, colliderId, 0,
 						pCEvent->pt, ZERO, soundRadius, AISTIMPROC_FILTER_LINK_WITH_PREVIOUS);
-					gEnv->pAISystem->RegisterStimulus(stimSound);
+					pPerceptionManager->RegisterStimulus(stimSound);
 				}
 			}
 		}

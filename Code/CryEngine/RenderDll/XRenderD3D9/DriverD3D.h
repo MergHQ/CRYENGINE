@@ -1341,6 +1341,9 @@ public:
 	int m_nMaterialAnisoSamplerBorder;
 	int m_nPointWrapSampler;
 	int m_nPointClampSampler;
+	int m_nPointBorderWhiteSampler;
+	int m_nLinearWrapSampler;
+	int m_nLinearClampSampler;
 	int m_nLinearClampComparisonSampler;
 	int m_nBilinearWrapSampler;
 	int m_nBilinearClampSampler;
@@ -1348,8 +1351,6 @@ public:
 	int m_nTrilinearWrapSampler;
 	int m_nTrilinearClampSampler;
 	int m_nTrilinearBorderSampler;
-	int m_nLinearWrapSampler;
-	int m_nLinearClampSampler;
 
 	CCryNameR m_nmInstancingParams;
 	CCryNameR m_nmInstancingData;

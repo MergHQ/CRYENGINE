@@ -643,6 +643,9 @@ public:
 	const GUID* GetPlayerSessionId() const { return &m_playerSessionId; }
 #endif
 
+	void RegisterPhysicsCallbacks();
+	void UnregisterPhysicsCallbacks();
+
 protected:
 
 	//! Difficulty config loading helper
@@ -901,6 +904,8 @@ public:
 	TStringStringMap* GetVariantOptions() { return &m_variantOptions; }
 
 private:
+	static int OnCreatePhysicalEntityLogged(const EventPhys* pEvent);
+
 	TStringStringMap m_variantOptions;
 
 	typedef std::map<CryFixedStringT<128>, int> TRichPresenceMap;

@@ -77,7 +77,6 @@ void AISIGNALS_CRC::Init()
 	m_nOnGroupTurnAttack = CCrc32::Compute("OnGroupTurnAttack");
 	m_nOnShapeEnabled = CCrc32::Compute("OnShapeEnabled");
 	m_nOnShapeDisabled = CCrc32::Compute("OnShapeDisabled");
-	m_nOnCloseContact = CCrc32::Compute("OnCloseContact");
 	m_nOnTargetDead = CCrc32::Compute("OnTargetDead");
 	m_nOnEndPathOffset = CCrc32::Compute("OnEndPathOffset");
 	m_nOnPathFindAtStart = CCrc32::Compute("OnPathFindAtStart");

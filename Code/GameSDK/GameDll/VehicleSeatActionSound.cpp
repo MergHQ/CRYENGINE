@@ -13,9 +13,11 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "IVehicleSystem.h"
-#include "Vehicle.h"
-#include "VehicleSeat.h"
 #include "VehicleSeatActionSound.h"
+
+#include <IPerceptionManager.h>
+
+const NetworkAspectType ASPECT_SEAT_ACTION = eEA_GameClientDynamic;
 
 CVehicleSeatActionSound::CVehicleSeatActionSound()
 	: m_pVehicle(nullptr)
@@ -31,7 +33,7 @@ CVehicleSeatActionSound::CVehicleSeatActionSound()
 bool CVehicleSeatActionSound::Init(IVehicle* pVehicle, IVehicleSeat* pSeat, const CVehicleParams& table)
 {
 	m_pVehicle = pVehicle;
-	m_pSeat = static_cast<CVehicleSeat*>(pSeat);
+	m_pSeat = pSeat;
 
 	CVehicleParams soundTable = table.findChild("Audio");
 	if (!soundTable)
@@ -53,7 +55,7 @@ bool CVehicleSeatActionSound::Init(IVehicle* pVehicle, IVehicleSeat* pSeat, cons
 //------------------------------------------------------------------------
 void CVehicleSeatActionSound::Serialize(TSerialize ser, EEntityAspects aspects)
 {
-	if (aspects & CVehicle::ASPECT_SEAT_ACTION)
+	if (aspects & ASPECT_SEAT_ACTION)
 	{
 		NET_PROFILE_SCOPE("SeatAction_Sound", ser.IsReading());
 
@@ -107,28 +109,29 @@ void CVehicleSeatActionSound::ExecuteTrigger(const CryAudio::ControlId& controlI
 		return;
 
 	if (m_pSeat)
-		m_pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
+		m_pSeat->ChangedNetworkState(ASPECT_SEAT_ACTION);
 
 	IEntityAudioComponent* pIEntityAudioComponent = m_pVehicle->GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 	assert(pIEntityAudioComponent);
 
 	pIEntityAudioComponent->ExecuteTrigger(controlID);
 
-	// Report the AI system about the vehicle movement sound.
+	// Report the Perception system about the vehicle movement sound.
 	if (!gEnv->bMultiplayer && gEnv->pAISystem)
 	{
-		Vec3 pos = m_pHelper->GetVehicleSpaceTranslation();
-		SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT_LOUD, m_pVehicle->GetEntityId(), 0, pos, ZERO, 200.0f);
-		gEnv->pAISystem->RegisterStimulus(stim);
+		if (IPerceptionManager::GetInstance())
+		{
+			SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT_LOUD, m_pVehicle->GetEntityId(), 0, m_pHelper->GetVehicleSpaceTranslation(), ZERO, 200.0f);
+			IPerceptionManager::GetInstance()->RegisterStimulus(stim);
+		}
 	}
-
 	m_enabled = true;
 }
 
 void CVehicleSeatActionSound::StopTrigger()
 {
 	if (m_pSeat)
-		m_pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
+		m_pSeat->ChangedNetworkState(ASPECT_SEAT_ACTION);
 
 	if (m_audioTriggerStopId != CryAudio::InvalidControlId)
 	{

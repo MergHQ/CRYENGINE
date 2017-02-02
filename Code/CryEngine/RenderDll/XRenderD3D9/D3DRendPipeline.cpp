@@ -499,6 +499,9 @@ void CD3D9Renderer::EF_Init()
 	m_nMaterialAnisoSamplerBorder = CTexture::GetTexState(STexState(FILTER_ANISO16X, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
 	m_nPointClampSampler          = CTexture::GetTexState(STexState(FILTER_POINT, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_nPointWrapSampler           = CTexture::GetTexState(STexState(FILTER_POINT, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nPointBorderWhiteSampler    = CTexture::GetTexState(STexState(FILTER_POINT, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0xFFFFFFFF));
+	m_nLinearWrapSampler          = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
+	m_nLinearClampSampler         = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	STexState texState(FILTER_LINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0);
 	texState.SetComparisonFilter(true);
 	m_nLinearClampComparisonSampler = CTexture::GetTexState(texState);
@@ -508,8 +511,6 @@ void CD3D9Renderer::EF_Init()
 	m_nTrilinearWrapSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
 	m_nTrilinearClampSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_nTrilinearBorderSampler = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
-	m_nLinearWrapSampler = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));
-	m_nLinearClampSampler = CTexture::GetTexState(STexState(FILTER_LINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 
 	CDeferredShading::CreateDeferredShading();
 

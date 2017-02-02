@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "Group.h"
 #include "GroupManager.h"
-#include "SelectionTree/SelectionTreeManager.h"
 #include "ObjectContainer.h"
 #include "PipeUser.h"
 

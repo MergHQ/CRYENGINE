@@ -63,6 +63,7 @@ History:
 #include "VehicleActionEntityAttachment.h"
 #include "VehicleActionLandingGears.h"
 #include "VehicleActionAutoTarget.h"
+#include "VehicleSeatActionSound.h"
 #include "VehicleDamageBehaviorBurn.h"
 #include "VehicleDamageBehaviorCameraShake.h"
 #include "VehicleDamageBehaviorExplosion.h"
@@ -288,6 +289,7 @@ void InitGameFactory(IGameFramework *pFramework)
 
 	//seat actions
 	REGISTER_VEHICLEOBJECT("DeployRope", CVehicleActionDeployRope);
+	REGISTER_VEHICLEOBJECT("Sound", CVehicleSeatActionSound);
 
 	// vehicle movements
 	REGISTER_FACTORY(pVehicleSystem, "DummyMovement", CVehicleMovementDummy, false);

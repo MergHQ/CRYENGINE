@@ -47,7 +47,7 @@ protected:
 
 	IVehicle*           m_pVehicle;
 	IVehicleHelper*     m_pHelper;
-	CVehicleSeat*       m_pSeat;
+	IVehicleSeat*       m_pSeat;
 
 	bool                m_enabled;
 

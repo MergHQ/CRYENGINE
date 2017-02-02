@@ -98,6 +98,7 @@ hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b13), 13) //eConsta
 	hlsl_matrix44(CV_PrevViewProjNearestMatr);
 	hlsl_matrix34(CV_ScreenToWorldBasis);
 	hlsl_float4(CV_TessInfo);
+	hlsl_float4(CV_CamRightVector);
 	hlsl_float4(CV_CamFrontVector);
 	hlsl_float4(CV_CamUpVector);
 

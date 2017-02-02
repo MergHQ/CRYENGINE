@@ -1354,64 +1354,24 @@ technique DisplayColorCharts
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// SceneRain Occlusion technique //////////////////////////////////////////////////////////////////
 
-sampler2D rainOccSampler : register(s0) = sampler_state
-{
-  Texture = $RainOcclusion;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;
-};
+Texture2D roDepthTex : register(t0) = $ZTarget;
+Texture2D roRainOcclusionTex : register(t1) = TS_RainOcclusion;
+Texture2D roNoiseTex : register(t2) = "EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds";
 
-sampler2D rainDistOccSampler : register(s2);
+SamplerState roPointClampSampler : register(s0) = SS_PointClamp;
+SamplerState roTrilinearWrapSampler : register(s1) = SS_MaterialTrilinearWrap;
 
-sampler2D rainfallSampler  : register(s3) = sampler_state
-{
-  Texture = EngineAssets/Textures/Rain/rainfall.tif;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR; 
-  AddressU = Wrap;
-  AddressV = Wrap;	
-  sRGBLookup = true; 
-};
-
-sampler2D rainfallNormSampler : register(s4) = sampler_state
-{
-  Texture = EngineAssets/Textures/Rain/rainfall_ddn.tif;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR; 
-  AddressU = Wrap;
-  AddressV = Wrap;	
-};
-
-sampler2D perlinNoiseSampler2 : register(s6) = sampler_state
-{
-  Texture = EngineAssets/Textures/perlinNoise2d.tif;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR;
-  AddressU = Wrap;
-  AddressV = Wrap;
-};
-
-half4 sceneRainParams0;
-half4 sceneRainParams1;
-half4 unscaledFactor;
 float4x4 sceneRainOccMtx;
-float4x4 sceneRainMtx;
 
 #define gRainOccMin		1.0f
 #define gRainOccMax		64.0f
 
 struct vtxOutRainOcc
 {
-	float4 HPosition	: POSITION;
-	float4 baseTC			: TEXCOORDN;
-	float3 occCoords0	: TEXCOORDN;
-	float3 occCoords1	: TEXCOORDN;
+	float4 HPosition    : POSITION;
+	float4 baseTC       : TEXCOORDN;
+	float3 occCoords0   : TEXCOORDN;
+	float3 occCoords1   : TEXCOORDN;
 };
 
 vtxOutRainOcc SceneRainOccAccumulateVS(vtxInWPOS IN)
@@ -1439,62 +1399,71 @@ vtxOutRainOcc SceneRainOccAccumulateVS(vtxInWPOS IN)
 pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 {
 	pixout OUT = (pixout)0;
-			
-	const float fDepth = GetLinearDepth(sceneLinearDepthTex, IN.baseTC.xy, true);
-	const half fNoise = tex2Dlod(noiseSampler, float4(IN.baseTC.zw, 0,0)).x;
-	float fOcc = 0;
-	
+
+	const float fDepth = CV_NearFarClipDist.y * roDepthTex.Load(int3(IN.HPosition.xy, 0)).x;
+	const half fNoise = roNoiseTex.SampleLevel(roTrilinearWrapSampler, IN.baseTC.zw, 0.0f).x;
+
 	const int nNumSamples = 40;
 	const half fOccFalloff = 12.h;
 
 	const half fInvNumSamples = 1.h / (float)nNumSamples;
 	const half fOccStep = (gRainOccMax - gRainOccMin) * fInvNumSamples;
 	const half fOccStrength = 0.9h;
-		
+
 	half fOccLerp = fNoise * 0.06h;
 	half fOccDepth = gRainOccMin;
-	
+	float fOcc = 0.0f;
+
 	for (int i = 0; i < nNumSamples; ++i)
-	{	
+	{
 		// Accumulate average occlusion along camera vector
 		half3 occTC = lerp(IN.occCoords0, IN.occCoords1, fOccLerp);
-		
-		half fRainOccDepth = tex2Dlod(rainOccSampler, float4(occTC.xy,0,0)).x;
+
+		half fRainOccDepth = roRainOcclusionTex.SampleLevel(roPointClampSampler, occTC.xy, 0.0f).x;
 		half bOcc = (fRainOccDepth==1.0) ? fOccFalloff : saturate((fRainOccDepth + (1.h/256.h) - occTC.z) * fOccFalloff);
-		
+
 		// Only visible samples are valid	
 		half bOccValid = saturate(fDepth - fOccDepth);
 		fOcc += max(bOcc, step(1.h, occTC.z)) * bOccValid;
-		
+
 		// Step
 		fOccLerp += fInvNumSamples;
 		fOccDepth += fOccStep;
 	}
-	
+
 	// Output occlusion w/ compressed near depth
 	OUT.Color.r = saturate(fOcc * fOccStrength);
-	
+
 	return OUT;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 /// SceneRain technique //////////////////////////////////////////////////////////////////////
 
-sampler2D rainHDRSampler = sampler_state
+Texture2D rnDepthTex : register(t0) = $ZTarget;
+Texture2D rnRainfallTex : register(t1) = "EngineAssets/Textures/Rain/rainfall.tif";
+Texture2D rnRainfallNormTex : register(t2) = "EngineAssets/Textures/Rain/rainfall_ddn.tif";
+Texture2D rnHDRFinalBloomTex : register(t3) = $HDR_FinalBloom;
+Texture2D rnRainDistOccTex : register(t4);
+Texture2D rnHDRToneMapTex : register(t5);
+
+SamplerState rnTrilinearWrapSampler : register(s0) = SS_TrilinearWrap;
+SamplerState rnTrilinearClampSampler : register(s1) = SS_TrilinearClamp;
+SamplerState rnPointClampSampler : register(s2) = SS_PointClamp;
+
+cbuffer SceneRainCB : register(b0)
 {
-  Texture = $HDR_FinalBloom;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;
+	float4x4 sceneRainMtx;
+	float4 unscaledFactor;
+	float4 sceneRainParams0;
+	float4 sceneRainParams1;
 };
 
 struct vtxOutRain
 {
   float4 HPosition    : POSITION;
   float4 tcProj	      : TEXCOORDN;
-  float4 scaledTCProj : TEXCOORDN;  
+  float4 scaledTCProj : TEXCOORDN;
   float4 baseTC       : TEXCOORDN;
   float4 baseTC2      : TEXCOORDN;
   float4 blendWeights : TEXCOORDN;
@@ -1519,9 +1488,9 @@ vtxOutRain SceneRainVS(vtxIn IN)
 	vPos.xyz = mul((float3x3)sceneRainMtx, vCone.xyz);
 	vPos.xyz += vWVPos.xyz;
 
-	OUT.HPosition = mul(vpMatrix, vPos);
-	OUT.tcProj = HPosToScreenTC(OUT.HPosition, false)*unscaledFactor;
-	OUT.scaledTCProj = OUT.tcProj*float4(g_VS_HPosScale.xy, 1, 1);
+	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
+	OUT.tcProj = HPosToScreenTC(OUT.HPosition, false) * unscaledFactor;
+	OUT.scaledTCProj = OUT.tcProj * float4(g_VS_HPosScale.xy, 1, 1);
 
 	half4 vBaseTC = vCone.yzxz;
 	OUT.blendWeights.xy = abs(normalize(vCone.xy));
@@ -1545,39 +1514,41 @@ vtxOutRain SceneRainVS(vtxIn IN)
 
 pixout SceneRainPS(vtxOutRain IN)
 {
-  pixout OUT;
-  
-	const float fDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.scaledTCProj);       
-	const float fSoftIsec = saturate((fDepth-IN.scaledTCProj.w)*2);
+	pixout OUT;
+
+	const float2 scaledTC = IN.scaledTCProj.xy / IN.scaledTCProj.w;
+	const float fDepth = CV_NearFarClipDist.y * rnDepthTex.SampleLevel(rnPointClampSampler, scaledTC.xy, 0.0f).x;
+
+	const float fSoftIsec = saturate((fDepth - IN.scaledTCProj.w) * 2);
 
 	// Soft intersection with depth, attenuate top to minimize artefacts, and soften bottom
 	const float fAtten = fSoftIsec * saturate(IN.blendWeights.z) * saturate(10.h * (1.h - IN.blendWeights.z));
 
-	OUT.Color.a = tex2D(rainfallSampler, IN.baseTC.xy).x * IN.blendWeights.x;
-	OUT.Color.a += tex2D(rainfallSampler, IN.baseTC.zw).x * IN.blendWeights.y;
+	OUT.Color.a = rnRainfallTex.Sample(rnTrilinearWrapSampler, IN.baseTC.xy).x * IN.blendWeights.x;
+	OUT.Color.a += rnRainfallTex.Sample(rnTrilinearWrapSampler, IN.baseTC.zw).x * IN.blendWeights.y;
 	OUT.Color.a *= fAtten;
-	
+
 	// Rain occlusion
 	float2 tcProj = IN.tcProj.xy / IN.tcProj.w;
 #if %_RT_SAMPLE0
-	float2 rainDistOcc = tex2D(rainDistOccSampler, tcProj).xy;
+	float2 rainDistOcc = rnRainDistOccTex.SampleLevel(rnTrilinearClampSampler, tcProj, 0.0f).xy;
 	OUT.Color.a *= rainDistOcc.x;
 	OUT.Color.a *= saturate(IN.blendWeights.z + 1.h);
 #endif
-	
+
 	// Elliptical Screen-space refraction
-	float2 refraction = GetXYNormalMap(rainfallNormSampler,IN.baseTC.xy) * IN.blendWeights.x;
-	refraction += GetXYNormalMap(rainfallNormSampler,IN.baseTC.zw) * IN.blendWeights.y;
+	float2 refraction = GetXYNormalMap(rnRainfallNormTex, rnTrilinearWrapSampler, IN.baseTC.xy) * IN.blendWeights.x;
+	refraction += GetXYNormalMap(rnRainfallNormTex, rnTrilinearWrapSampler, IN.baseTC.zw) * IN.blendWeights.y;
 
 	const float2 refractionStr = float2(0.1f, 0.2f) * 0.3;
 	tcProj += refraction * refractionStr;
 
 	// Use average scene luminance as base color for rain to make it more visible
-	OUT.Color.rgb = sceneRainParams0.x * tex2D(_tex0, tcProj).x;
-	
+	OUT.Color.rgb = sceneRainParams1.y * rnHDRToneMapTex.SampleLevel(rnTrilinearClampSampler, tcProj.xy, 0.0f).x;
+
 	// Sample rain lighting
-	OUT.Color.rgb += tex2D(rainHDRSampler, tcProj).rgb * sceneRainParams1.x;
-	
+	OUT.Color.rgb += rnHDRFinalBloomTex.SampleLevel(rnPointClampSampler, tcProj.xy, 0.0f).rgb * sceneRainParams1.x;
+
 	return OUT;
 }
 
@@ -1588,8 +1559,8 @@ technique SceneRainOccAccumulate
   pass p0
   {
     VertexShader = SceneRainOccAccumulateVS();
-    PixelShader = SceneRainOccAccumulatePS();    
-    CullMode = None;        
+    PixelShader = SceneRainOccAccumulatePS();
+    CullMode = None;
   }
 }
 
@@ -1598,57 +1569,30 @@ technique SceneRain
   pass p0
   {
     VertexShader = SceneRainVS();
-    PixelShader = SceneRainPS();    
-    CullMode = None;        
+    PixelShader = SceneRainPS();
+    CullMode = None;
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// SceneSnow technique //////////////////////////////////////////////////////////////////////
 
-half4 vSnowFlakeParams;
-half4 vSnowClusterPos;
-half4 vSnowClusterPosPrev;
-
-half4 vWaterLevel : PB_WaterLevel;
-float4 CameraUpVector : PB_CameraUp;
-float4 CameraRightVector : PB_CameraRight;
-
-float4x4 mViewProjI : PB_UnProjMatrix;
-float4x4 mViewProjPrev;
-float3x4 mSnowOccMatr;
-
-sampler2D snowOccMap = sampler_state
+cbuffer SnowClusterCB : register(b0)
 {
-  Texture = $RainOcclusion;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;
+	float4   vWaterLevel;
+	float4   vSnowFlakeParams;
+	float4   vSnowClusterPos;
+	float4   vSnowClusterPosPrev;
+	float3x4 mSnowOccMatr;
 };
 
-sampler2D snowFlakesSampler : register (s6)
-{
-  Texture = EngineAssets/Textures/snowflakes.tif;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR; 
-  AddressU = Wrap;
-  AddressV = Wrap;	
-  sRGBLookup = false; 
-};
+Texture2D snSceneTargetTex : register(t0) = $SceneTarget;
+Texture2D snDepthTex : register(t1) = $ZTarget;
+Texture2D snSnowOcclusionTex : register(t2) = $RainOcclusion;
+Texture2D snSnowFlakesTex : register(t3) = "EngineAssets/Textures/snowflakes.tif";
 
-
-sampler2D sceneMapSampler = sampler_state
-{
-  Texture = $SceneTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
+SamplerState snPointClampSampler : register(s0) = SS_PointClamp;
+SamplerState snTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
 
 struct vtxInSnow
 {
@@ -1657,14 +1601,13 @@ struct vtxInSnow
 	float3 ScalePhase : TEXCOORD1;
 };
 
-
 struct vtxOutSnow
 {
   float4 HPosition  : POSITION;
   float4 baseTC     : TEXCOORDN;
   float4 screenProj : TEXCOORDN;
   float4 vVelocity	: TEXCOORDN;
-  
+
 #if %_RT_SAMPLE0
   float4 occCoords  : TEXCOORDN;
 #endif
@@ -1679,7 +1622,7 @@ struct pixoutSnow
 void SnowParticle_ApplyTurbulence( inout float4 vPos, inout float4 vPosPrev, in half fRandPhase )
 {
 	// Compute turbulence for variation.
-	const float fTurbulence = fRandPhase + vSnowFlakeParams.w * (g_VS_AnimGenParams.x*2.h-1.h);
+	const float fTurbulence = fRandPhase + vSnowFlakeParams.w * (CV_AnimGenParams.x * 2.h - 1.h);
 	const float2 vTurbulence = float2(sin(fTurbulence), cos(fTurbulence)) * vSnowFlakeParams.z;
 	float4 vPosVec = float4(vPos.xy, vPosPrev.xy); // some simple vectorization to speed it up a bit.
 	vPosVec += vTurbulence.xyxy;
@@ -1690,18 +1633,18 @@ void SnowParticle_ApplyTurbulence( inout float4 vPos, inout float4 vPosPrev, in 
 void SnowParticle_ApplyMotionBlur( in float4 vPos, in float4 vPosPrev, in float2 vSpriteExpand, out float4 HPositionFinal, inout float4 vVelocity, inout float fConserveRatio )
 {
 	// Current and previous homogenous position.
-	float4 HPosition = mul(g_VS_ViewProjMatr, vPos);  
-	float4 HPositionPrev = mul(mViewProjPrev, vPosPrev);  
-	
+	float4 HPosition = mul(CV_ViewProjMatr, vPos);  
+	float4 HPositionPrev = mul(CV_PrevViewProjMatr, vPosPrev);  
+
 	// Expanded current and previous positions (vectorized for a small alu decrease).
-	float4 vDistScale = float4(HPosition.ww, HPositionPrev.ww);
+	const float4 vDistScale = float4(HPosition.ww, HPositionPrev.ww);
 	float4 vScreenPos = float4(HPosition.xy, HPositionPrev.xy);
 	vScreenPos += vSpriteExpand.xyxy * sqrt(sqrt(vDistScale));
-		
+
 	// Motion blur.
 	half fBlendRatio = 1.h;
 	float2 vSSMotionVec = (vScreenPos.xy - vScreenPos.zw);
-	float fSSMotionLength = length(vSSMotionVec);
+	float fSSMotionLength = length(vSSMotionVec.xy);
 	if (fSSMotionLength > 1e-4h)
 	{
 		const half2 vSSRadius = vScreenPos.xy - HPosition.xy;
@@ -1709,22 +1652,22 @@ void SnowParticle_ApplyMotionBlur( in float4 vPos, in float4 vPosPrev, in float2
 		fSSMotionLength = min(fSSMotionLength, 0.35h);
 		fSSMotionLength *= fSSMotionLength;
 		vSSMotionVec = vSSMotionDir * fSSMotionLength;
-		
+
 		const half2 vVertPosLocal = normalize(vSSRadius);
 		const half fPrevCurrBlend = dot(vVertPosLocal, vSSMotionVec);
-		fBlendRatio = 0.5h + 0.5h * fPrevCurrBlend;		
-		
+		fBlendRatio = 0.5h + 0.5h * fPrevCurrBlend;
+
 		// Extend stretch
-		static const half fFwdBwdRatio = 0.75h;
-		HPositionPrev.xy = HPositionPrev - vSSMotionVec * fFwdBwdRatio;
-		HPosition.xy = HPosition + vSSMotionVec * (1.h - fFwdBwdRatio);
-		
+		const half fFwdBwdRatio = 0.75h;
+		HPositionPrev.xy = HPositionPrev.xy - vSSMotionVec.xy * fFwdBwdRatio;
+		HPosition.xy = HPosition.xy + vSSMotionVec.xy * (1.h - fFwdBwdRatio);
+
 		// Rough estimate of screen space area change of a particle
 		const half fConserveMin = 0.2h;
 		fConserveRatio = max(saturate(length(vSSRadius) / fSSMotionLength), fConserveMin);
 	}
 	vVelocity.xy = vSSMotionVec;
-		
+
 	// Blend between current and previous position using velocity.
 	HPositionFinal = lerp( HPositionPrev, HPosition, fBlendRatio );
 }
@@ -1732,12 +1675,12 @@ void SnowParticle_ApplyMotionBlur( in float4 vPos, in float4 vPosPrev, in float2
 void SnowParticle_ComputeTexCoords( in float2 baseTC, in half fRandPhase, inout vtxOutSnow OUT )
 {
 	// Compute atlas texture coordinates.
-	static const int nTileCount = 2;
-	static const float2 vTileSize = 1.0f/nTileCount;
+	const int nTileCount = 2;
+	const float2 vTileSize = 1.0f / nTileCount;
 	OUT.baseTC.xy = baseTC * vTileSize;
-	
+
 	// Fetch a random tile for this snowflake.
-	float tileX = floor(nTileCount + fRandPhase * nTileCount) * vTileSize.x;
+	const float tileX = floor(nTileCount + fRandPhase * nTileCount) * vTileSize.x;
 	OUT.baseTC.x += frac(tileX);
 	OUT.baseTC.y += floor(tileX) * vTileSize.y;
 }
@@ -1745,14 +1688,14 @@ void SnowParticle_ComputeTexCoords( in float2 baseTC, in half fRandPhase, inout 
 void SnowParticle_ComputeNormal( in half4 vPos, in half2 vSpriteExpand, out half3 vNormal )
 {
 	// Get the expanded world space position.
-	half3 vPosExpand = vPos + CameraRightVector * vSpriteExpand.x + CameraUpVector * vSpriteExpand.y;
+	half3 vPosExpand = vPos.xyz + CV_CameraRightVector.xyz * vSpriteExpand.x + CV_CameraUpVector.xyz * vSpriteExpand.y;
 
 	// Camera facing normal.
 	vNormal = normalize( g_VS_WorldViewPos.xyz - vPosExpand.xyz );
 
 	// Rotate tangents for fake round geometry
-	float3 vRightVector = normalize(cross( CameraUpVector, vNormal ));
-	float3 vUpVector = -normalize(cross( vNormal, vRightVector ));      
+	float3 vRightVector = normalize(cross( CV_CameraUpVector, vNormal ));
+	float3 vUpVector = -normalize(cross( vNormal, vRightVector ));
 	float3 vOffset = vRightVector * vSpriteExpand.x - vUpVector * vSpriteExpand.y;
 	float3 vAxis = ( cross(vNormal, vOffset) );
 	vNormal = lerp( vNormal, normalize(cross( vAxis, vNormal )), 0.75 );
@@ -1761,7 +1704,7 @@ void SnowParticle_ComputeNormal( in half4 vPos, in half2 vSpriteExpand, out half
 vtxOutSnow SceneSnowVS(vtxInSnow IN)
 {
 	vtxOutSnow OUT = (vtxOutSnow)0; 
-	
+
 	// Snow flake information.
 	const float fRandPhase = IN.ScalePhase.z;
 	const float2 vExpansion = IN.Expansion.xy;
@@ -1769,9 +1712,9 @@ vtxOutSnow SceneSnowVS(vtxInSnow IN)
 	const float2 vSpriteExpand = vSnowFlakeParams.y * vScale * vExpansion;
 
 	// World space positions.
-	float4 vPos = IN.Position + half4(vSnowClusterPos.xyz, 0.h);
-	float4 vPosPrev = IN.Position + half4(vSnowClusterPosPrev.xyz, 0.h);
-	
+	float4 vPos = IN.Position + float4(vSnowClusterPos.xyz, 0.0f);
+	float4 vPosPrev = IN.Position + float4(vSnowClusterPosPrev.xyz, 0.0f);
+
 	// Random turbulence.
 	SnowParticle_ApplyTurbulence( vPos, vPosPrev, fRandPhase );
 
@@ -1779,31 +1722,31 @@ vtxOutSnow SceneSnowVS(vtxInSnow IN)
 	half fConserveRatio = 1.h;
 	SnowParticle_ApplyMotionBlur( vPos, vPosPrev, vSpriteExpand, OUT.HPosition, OUT.vVelocity, fConserveRatio );
 	OUT.HPosition.xy += vSpriteExpand.xy * sqrt(sqrt(OUT.HPosition.w));
-	
+
 	// Screen coordinates, for reading gbuffer.
 	OUT.screenProj = HPosToScreenTC(OUT.HPosition);
-	
+
 	// Compute texture coordinates for this flake.
 	SnowParticle_ComputeTexCoords( vExpansion.xy * 0.5h + 0.5h, fRandPhase, OUT );
-	
+
 	// Output fading parameters.
-	const float fCameraNear = 1.h-saturate(OUT.HPosition.w - g_VS_NearFarClipDist.x);
+	const float fCameraNear = 1.h - saturate(OUT.HPosition.w - CV_NearFarClipDist.x);
 	OUT.baseTC.wz = half2(fCameraNear, fConserveRatio);
 	OUT.screenProj.z = vPos.z;
 
 	// Compute normal and per vertex lighting.
 	half3 vNormal;
-	SnowParticle_ComputeNormal( vPos, vSpriteExpand, vNormal );	
-	OUT.vVelocity.w = saturate(dot( g_VS_SunLightDir, vNormal ) * 0.75 + 0.25);
-	  	
+	SnowParticle_ComputeNormal( vPos, vSpriteExpand, vNormal );
+	OUT.vVelocity.w = saturate(dot( CV_SunLightDir.xyz, vNormal.xyz ) * 0.75 + 0.25);
+
 	// occlusion coords
 #if %_RT_SAMPLE0
-	half3 tcWeights = mul(mSnowOccMatr, float4(vPos.xyz, 1.h));
+	half3 tcWeights = mul(mSnowOccMatr, float4(vPos.xyz, 1.0f));
 	tcWeights.y = 1.h - tcWeights.y;
 	OUT.occCoords.xy = tcWeights.xy;
 	OUT.occCoords.z = tcWeights.z;
 #endif
-	
+
 	return OUT;
 }
 
@@ -1812,72 +1755,82 @@ pixoutSnow SceneSnowPS(vtxOutSnow IN)
 	pixoutSnow OUT = (pixoutSnow) 0;
 
 	// Soft intersection with environment.
-	const half cDepth = GetLinearDepthScaledProj(sceneLinearDepthTex, IN.screenProj);
+	const float2 screenTC = IN.screenProj.xy / IN.screenProj.w;
+	int3 vPixCoord = int3(screenTC * CV_ScreenSize.xy, 0);
+	float cDepth = CV_NearFarClipDist.y * snDepthTex.Load(vPixCoord).x;
 	const half fWaterAtten = saturate((IN.screenProj.z - (vWaterLevel.x - 0.125h)) * 4.h);
-	const half fSoftIsec = saturate((cDepth-IN.screenProj.w)*2) * fWaterAtten * fWaterAtten;
+	const half fSoftIsec = saturate((cDepth - IN.screenProj.w) * 2.0f) * fWaterAtten * fWaterAtten;
 
 	// Sample snowflake texture.
-	float4 cSnowMap = tex2D(snowFlakesSampler, IN.baseTC.xy);
-	
+	float4 cSnowMap = snSnowFlakesTex.Sample(snTrilinearWrapSampler, IN.baseTC.xy);
+
 	// Blend into bokeh near camera.
 	half fSnowFlake = lerp(cSnowMap.x, cSnowMap.y, IN.baseTC.w);
 	half3 cSnowFlake = fSnowFlake * vSnowFlakeParams.x;
 
 	// Compute normal map for refraction.
 	half2 vSnowBump = EXPAND(cSnowMap.zw);
-	vSnowBump *= (1.0f-IN.baseTC.w);
-	
+	vSnowBump *= (1.0f - IN.baseTC.w);
+
 	// Read the initial scene with refracted bump for a somewhat glassy snowflake look.
-	OUT.Color = tex2D(sceneMapSampler, (IN.screenProj.xy/IN.screenProj.w) + vSnowBump.xy * 0.25h);
-	
+	OUT.Color = snSceneTargetTex.SampleLevel(snPointClampSampler, screenTC.xy + vSnowBump.xy * 0.25h, 0.0f);
+
 	// Apply snow flake lighting and texture.
-	OUT.Color.xyz += cSnowFlake * (IN.vVelocity.w * g_PS_SunColor.xyz + g_PS_SkyColor.xyz);
+	OUT.Color.xyz += cSnowFlake * (IN.vVelocity.w * CV_SunColor.xyz + CV_SkyColor.xyz);
 	OUT.Color.w = fSnowFlake * fSoftIsec * IN.baseTC.z;
-	
+
 #if %_RT_SAMPLE0
 	// Snow occlusion
-	const half fOccDepth = tex2D(snowOccMap, IN.occCoords.xy).x;
+	const half fOccDepth = snSnowOcclusionTex.SampleLevel(snPointClampSampler, IN.occCoords.xy, 0.0f).x;
 	OUT.Color *= (fOccDepth==1.0f) ? 1.h : (255.h/256.h - fOccDepth) < IN.occCoords.z;
 #endif
 
 	// Output motion vectors for PostAA (avoid ghosting on particles).
 	OUT.Velocity.xy = EncodeMotionVector(IN.vVelocity.xy);
-	OUT.Velocity.zw = half2(0.0f, saturate(fSnowFlake*1000.0f));
+	OUT.Velocity.zw = half2(0.0f, saturate(fSnowFlake * 1000.0f));
 
 	return OUT;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Texture2D shTargetScaledTex : register(t0);
+Texture2D shVelocityScaledTex : register(t1);
+
+SamplerState shTrilinearClampSampler : register(s0) = SS_TrilinearClamp;
+SamplerState shPointClampSampler : register(s1) = SS_PointClamp;
 
 pixoutSnow SnowHalfResCompositePS(vtxOut IN)
 {
 	pixoutSnow OUT = (pixoutSnow)0;
 
 	// Bilinear upsampling.
-	const float2 vTexelSize = PS_ScreenSize.zw*2.0h;
-	half2 vFrac = frac( IN.baseTC.xy / vTexelSize );
-	
-	float4 vBilinearTC = float4(IN.baseTC.xy + vTexelSize * float2( 1.0, 0.0 ),
-								IN.baseTC.xy + vTexelSize * float2( 0.0, 1.0 ) );
-	
-	// Color
-	half4 c00 = tex2D( _tex0, IN.baseTC.xy );
-	half4 c10 = tex2D( _tex0, vBilinearTC.xy );
-	half4 cA = lerp( c00, c10, vFrac.x );
+	const float2 vTexelSize = CV_ScreenSize.zw * 2.0h;
+	const half2 vFrac = frac( IN.baseTC.xy / vTexelSize );
 
-	half4 c01 = tex2D( _tex0, vBilinearTC.zw );
-	half4 c11 = tex2D( _tex0, vBilinearTC.xw );
-	half4 cB = lerp( c01, c11, vFrac.x );
-	
+	const float4 vBilinearTC = float4(IN.baseTC.xy + vTexelSize * float2( 1.0, 0.0 ),
+	                                  IN.baseTC.xy + vTexelSize * float2( 0.0, 1.0 ) );
+
+	// Color
+	const half4 c00 = shTargetScaledTex.SampleLevel( shTrilinearClampSampler, IN.baseTC.xy, 0.0f );
+	const half4 c10 = shTargetScaledTex.SampleLevel( shTrilinearClampSampler, vBilinearTC.xy, 0.0f );
+	const half4 cA = lerp( c00, c10, vFrac.x );
+
+	const half4 c01 = shTargetScaledTex.SampleLevel( shTrilinearClampSampler, vBilinearTC.zw, 0.0f );
+	const half4 c11 = shTargetScaledTex.SampleLevel( shTrilinearClampSampler, vBilinearTC.xw, 0.0f );
+	const half4 cB = lerp( c01, c11, vFrac.x );
+
 	OUT.Color = lerp( cA, cB, vFrac.y );
 	OUT.Color = saturate(OUT.Color * 10.0); // small brightness boost as half-res introduces some smoothing/darkening
-	
+
 	// Velocity
-	half4 v00 = tex2D( _tex1, IN.baseTC.xy );
-	half4 v10 = tex2D( _tex1, vBilinearTC.xy );
-	half4 v01 = tex2D( _tex1, vBilinearTC.zw );
-	half4 v11 = tex2D( _tex1, vBilinearTC.xw );
-	
+	const half4 v00 = shVelocityScaledTex.Sample( shPointClampSampler, IN.baseTC.xy );
+	const half4 v10 = shVelocityScaledTex.Sample( shPointClampSampler, vBilinearTC.xy );
+	const half4 v01 = shVelocityScaledTex.Sample( shPointClampSampler, vBilinearTC.zw );
+	const half4 v11 = shVelocityScaledTex.Sample( shPointClampSampler, vBilinearTC.xw );
+
 	OUT.Velocity = max(v00, max(v10, max(v01, v11)));
-		
+
 	return OUT;
 }
 
@@ -1885,28 +1838,28 @@ pixoutSnow SnowHalfResCompositePS(vtxOut IN)
 
 technique SceneSnow
 {
-  pass p0
-  {
-    VertexShader = SceneSnowVS();
-    PixelShader = SceneSnowPS();
+	pass p0
+	{
+		VertexShader = SceneSnowVS();
+		PixelShader = SceneSnowPS();
 
-    ZEnable = true;
-    ZWriteEnable = false;
-    CullMode = None;
-    
-    SrcBlend = SrcAlpha;
-	DestBlend = InvSrcAlpha;
-	AlphaBlendEnable = true;
-  }
+		ZEnable = true;
+		ZWriteEnable = false;
+		CullMode = None;
+
+		SrcBlend = SrcAlpha;
+		DestBlend = InvSrcAlpha;
+		AlphaBlendEnable = true;
+	}
 }
 
 technique SnowHalfResComposite
 {
-  pass p0
-  {
-    VertexShader = BaseVS();
-    PixelShader = SnowHalfResCompositePS();     
-  }
+	pass p0
+	{
+		VertexShader = FullscreenTriVS();
+		PixelShader = SnowHalfResCompositePS();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

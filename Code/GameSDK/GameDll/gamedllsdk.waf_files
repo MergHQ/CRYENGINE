@@ -1343,11 +1343,13 @@
          "VehicleActionDeployRope.cpp",
          "VehicleActionEntityAttachment.cpp",
          "VehicleActionLandingGears.cpp",
+		 "VehicleSeatActionSound.cpp",
          "VehicleActionAutomaticDoor.h",
          "VehicleActionAutoTarget.h",
          "VehicleActionDeployRope.h",
          "VehicleActionEntityAttachment.h",
-         "VehicleActionLandingGears.h"
+         "VehicleActionLandingGears.h",
+		 "VehicleSeatActionSound.h"
       ]
 		},
 		"CryGameSDKDLL_uber_24.cpp":{

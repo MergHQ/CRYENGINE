@@ -19,7 +19,7 @@
 
 static const char* RUN_SPEED_UICONFIG = "enum_int:VerySlow=0,Walk=1,Run=2,Sprint=3";
 static const char* STANCE_UICONFIG = "enum_int:Prone=0,Crouch=1,Combat=2,CombatAlerted=3,Relaxed=4,Stealth=5";
-static const char* FORCE_UICONFIG = "enum_int:No=0,KeepPerception=1,IgnoreAll=2";
+static const char* FORCE_UICONFIG = "enum_int:No=0,IgnoreAll=1";
 static const char* SECONDARY_UICONFIG = "enum_int:No=0,Any=1,Left=2,Right=3";
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,7 +138,6 @@ protected:
 	enum EForceMethod
 	{
 		eNoForce = 0,
-		eKeepPerception,
 		eIgnoreAll,
 	};
 
@@ -846,17 +845,11 @@ template<bool TBlocking> void CFlowNode_AIForceableBase<TBlocking >::SetForceMet
 	if (!pAIActor)
 		return;
 
-	if (m_LastForceMethod == eIgnoreAll)
-		pAIActor->EnablePerception(true);
-
 	IAIActorProxy* pAIProxy = pAIActor->GetProxy();
 
 	switch (method)
 	{
 	case eIgnoreAll:
-		pAIActor->ResetPerception();
-		pAIActor->EnablePerception(false);
-	case eKeepPerception:
 		if (pAIProxy)
 			pAIProxy->SetForcedExecute(true);
 		break;

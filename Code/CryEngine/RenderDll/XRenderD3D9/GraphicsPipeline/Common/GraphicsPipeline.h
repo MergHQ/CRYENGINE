@@ -10,12 +10,17 @@ class CGraphicsPipelineStage;
 
 class CGraphicsPipeline
 {
+private:
+	struct SUtilityPassCache
+	{
+		uint32 numUsed = 0;
+		std::vector<std::unique_ptr<IUtilityRenderPass>> utilityPasses;
+	};
+
 public:
 	CGraphicsPipeline()
-		: m_numUtilityPasses(0)
 	{
 		m_pipelineStages.fill(nullptr);
-		m_utilityPasses.fill(nullptr);
 	}
 
 	virtual ~CGraphicsPipeline()
@@ -23,10 +28,6 @@ public:
 		for (auto pStage : m_pipelineStages)
 		{
 			SAFE_DELETE(pStage);
-		}
-		for (auto pPass : m_utilityPasses)
-		{
-			SAFE_DELETE(pPass);
 		}
 	}
 
@@ -63,20 +64,28 @@ protected:
 		RegisterStage<T>(pPipelineStage, stageID);
 	}
 
-	template<class T> T* CreateStaticUtilityPass()
+	template<class T> T* GetOrCreateUtilityPass()
 	{
-		assert(m_numUtilityPasses < m_utilityPasses.size());
-		if (m_numUtilityPasses < m_utilityPasses.size())
+		IUtilityRenderPass::EPassId id = T::GetPassId();
+		auto& cache = m_utilityPassCaches[uint32(id)];
+		if (cache.numUsed >= cache.utilityPasses.size())
 		{
-			T* pUtilityPass = new T();
-			m_utilityPasses[m_numUtilityPasses++] = pUtilityPass;
-			return pUtilityPass;
+			cache.utilityPasses.emplace_back(new T);
 		}
-		return nullptr;
+		return static_cast<T*>(cache.utilityPasses[cache.numUsed++].get());
+	}
+
+	void ResetUtilityPassCache()
+	{
+		for (auto& it : m_utilityPassCaches)
+		{
+			it.numUsed = 0;
+		}
 	}
 
 protected:
 	std::array<CGraphicsPipelineStage*, 32> m_pipelineStages;
-	std::array<IUtilityRenderPass*, 32>     m_utilityPasses;
-	uint32 m_numUtilityPasses;
+
+private:
+	std::array<SUtilityPassCache, uint32(IUtilityRenderPass::EPassId::MaxPassCount)> m_utilityPassCaches;
 };

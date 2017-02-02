@@ -8,6 +8,6 @@ def build(bld):
 		win_file_list   = 'launcher.waf_files', 
 		features    = [ 'copy_dbghelp' ],
 
-		lib                  = ['Shell32','Ws2_32', 'Crypt32'], 
-		additional_manifests = 'DPIAware.xml', 		
+		lib                  = [ 'Shell32', 'Ws2_32', 'Crypt32', 'oleaut32' ],
+		additional_manifests = 'DPIAware.xml',
 	)	

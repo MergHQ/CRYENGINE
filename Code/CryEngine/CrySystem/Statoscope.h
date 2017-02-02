@@ -735,6 +735,7 @@ public:
 
 	static void ConsoleAddUserMarker(IConsoleCmdArgs* pParams);
 	static void OnLogDestinationCVarChange(ICVar* pVar);
+	static void OnTagCVarChange(ICVar* pVar);
 
 	//Screenshot capturing
 	virtual bool OnNeedFrameData(unsigned char*& pConvertedTextureBuf);

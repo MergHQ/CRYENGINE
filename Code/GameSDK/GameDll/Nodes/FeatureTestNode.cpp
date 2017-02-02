@@ -818,7 +818,6 @@ public:
 		Log("ActorMaxHealth", pProxy->GetActorMaxHealth(), depth);
 		Log("ActorTargetPhase", pProxy->GetActorTargetPhase(), depth);
 		Log("AndResetShotBulletCount", pProxy->GetAndResetShotBulletCount(), depth);
-		Log("BehaviorSelectionTreeName", pProxy->GetBehaviorSelectionTreeName(), depth);
 		Log("CommunicationConfigName", pProxy->GetCommunicationConfigName(), depth);
 		//Log("CommunicationHandler", pProxy->GetCommunicationHandler(), depth);
 		Log("CurrentBehaviorName", pProxy->GetCurrentBehaviorName(), depth);

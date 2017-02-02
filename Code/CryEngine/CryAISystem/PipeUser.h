@@ -312,7 +312,7 @@ public:
 	bool         IsSOLinkInvalidated(CSmartObject* pObject, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper) const;
 	bool         ConvertPathToSpline(IAISystem::ENavigationType navType);
 
-	void         Update(EObjectUpdate type) override;
+	void         Update(EUpdateType type) override;
 
 	// Cover
 	void           SetCoverID(const CoverID& coverID);
