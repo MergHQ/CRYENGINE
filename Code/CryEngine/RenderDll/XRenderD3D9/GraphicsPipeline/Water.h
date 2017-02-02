@@ -111,7 +111,7 @@ private:
 	bool  PrepareResourceLayout();
 	bool  PrepareDefaultPerInstanceResources();
 	bool  PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderView, bool bOnInit, EPass passId);
-	void  UpdatePerPassResources(CRenderView& renderView);
+	void  UpdatePerPassResources(CRenderView& renderView, EPass passId);
 
 	void  ExecuteWaterNormalGen();
 	void  ExecuteOceanMaskGen(CRenderView* pRenderView);
@@ -145,8 +145,8 @@ private:
 
 	CDeviceResourceLayoutPtr                  m_pResourceLayout;
 	CDeviceResourceSetPtr                     m_pDefaultPerInstanceResources;
-	CDeviceResourceSetPtr                     m_pPerPassResources;
-	CConstantBufferPtr                        m_pPerPassCB;
+	CDeviceResourceSetPtr                     m_pPerPassResources[ePass_Count];
+	CConstantBufferPtr                        m_pPerPassCB[ePass_Count];
 
 	CRenderPrimitive                          m_causticsGridPrimitive;
 	CRenderPrimitive                          m_deferredOceanStencilPrimitive[2];
