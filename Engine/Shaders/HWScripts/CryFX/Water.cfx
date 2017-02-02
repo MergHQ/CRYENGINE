@@ -453,8 +453,7 @@ void GetGridVertexPos( inout float4 vPos )
 		// Set a 45 degree rotation to the grid
 		vPos.xy = 0.707f * vPos.xy + 0.707f * float2( - vPos.y, vPos.x);
 
-		float3 cameraRightVector = cross(CV_CameraUpVector.xyz, CV_CameraFrontVector.xyz);
-		float3x3 mCam = float3x3( cameraRightVector.xyz, CV_CameraUpVector.xyz, CV_CameraFrontVector.xyz);
+		float3x3 mCam = float3x3( CV_CameraRightVector.xyz, CV_CameraUpVector.xyz, CV_CameraFrontVector.xyz);
 
 		// select better projection axis if front angle too steep
 		const float fFrontThreshold = 0.75f;

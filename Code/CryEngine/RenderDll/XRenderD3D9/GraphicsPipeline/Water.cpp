@@ -1483,7 +1483,6 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 					pass.SetRenderTarget(0, pTargetTex);
 					pass.SetViewport(viewport);
 
-					prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
 					prim.SetCullMode(eCULL_None);
 					prim.SetRenderState(GS_NODEPTHTEST | GS_NOCOLMASK_R | GS_NOCOLMASK_G | GS_NOCOLMASK_A);
 

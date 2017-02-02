@@ -31,6 +31,8 @@
 #include "WaterRipples.h"
 #include "LensOptics.h"
 #include "PostEffects.h"
+#include "Rain.h"
+#include "Snow.h"
 
 #include "Common/TypedConstantBuffer.h"
 #include "Common/Textures/TextureHelpers.h"
@@ -285,6 +287,8 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CColorGradingStage>(m_pColorGradingStage, eStage_ColorGrading);
 	RegisterStage<CLensOpticsStage>(m_pLensOpticsStage, eStage_LensOptics);
 	RegisterStage<CPostEffectStage>(m_pPostEffectStage, eStage_PostEffet);
+	RegisterStage<CRainStage>(m_pRainStage, eStage_Rain);
+	RegisterStage<CSnowStage>(m_pSnowStage, eStage_Snow);
 }
 
 void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags)
@@ -513,6 +517,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 
 		cb.CV_DecalZFightingRemedy = Vec4(perFrameConstants.pDecalZFightingRemedy, 0);
 
+		cb.CV_CamRightVector = Vec4(viewInfo.pRenderCamera->vX.GetNormalized(), 0);
 		cb.CV_CamFrontVector = Vec4(viewInfo.pRenderCamera->vZ.GetNormalized(), 0);
 		cb.CV_CamUpVector = Vec4(viewInfo.pRenderCamera->vY.GetNormalized(), 0);
 
@@ -805,18 +810,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		pRenderer->RT_SetViewport(0, 0, pDstRT->GetWidth(), pDstRT->GetHeight());
 	}
 
-	// Rain
-	{
-		CSceneRain* pSceneRain = (CSceneRain*)PostEffectMgr()->GetEffect(ePFX_SceneRain);
-		const SRainParams& rainInfo = gcpRendD3D->m_p3DEngineCommon.m_RainInfo;
-		if (pSceneRain && pSceneRain->IsActive() && rainInfo.fRainDropsAmount > 0.01f)
-		{
-			SwitchToLegacyPipeline();
-			pSceneRain->Render();
-		}
-	}
-
 	SwitchFromLegacyPipeline();
+
+	m_pRainStage->Execute();
 
 	// Note: MB uses s_ptexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
 	{
@@ -830,16 +826,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 
 	m_pMotionBlurStage->Execute();
 
-	// Snow
-	{
-		CSceneSnow* pSceneSnow = (CSceneSnow*)PostEffectMgr()->GetEffect(ePFX_SceneSnow);
-		if (pSceneSnow->IsActiveSnow())
-		{
-			SwitchToLegacyPipeline();
-			pSceneSnow->Render();
-			SwitchFromLegacyPipeline();
-		}
-	}
+	m_pSnowStage->Execute();
 
 	// Half resolution downsampling
 	{
@@ -913,10 +900,9 @@ void CStandardGraphicsPipeline::Execute()
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{
 		m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
-		SwitchToLegacyPipeline();
-		pRenderer->FX_DeferredRainPreprocess();
+		m_pRainStage->ExecuteRainPreprocess();
+		m_pSnowStage->ExecuteSnowPreprocess();
 		m_pComputeSkinningStage->Execute(m_pCurrentRenderView);
-		SwitchFromLegacyPipeline();
 	}
 
 	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
@@ -1002,13 +988,13 @@ void CStandardGraphicsPipeline::Execute()
 		pRenderer->FX_ZTargetReadBack();
 	}
 
+	SwitchFromLegacyPipeline();
+
 	// GBuffer modifiers
 	{
-		pRenderer->FX_DeferredRainGBuffer();
-		pRenderer->FX_DeferredSnowLayer();
+		m_pRainStage->ExecuteDeferredRainGBuffer();
+		m_pSnowStage->ExecuteDeferredSnowGBuffer();
 	}
-
-	SwitchFromLegacyPipeline();
 
 	// Generate cloud volume textures for shadow mapping.
 	m_pVolumetricCloudsStage->ExecuteShadowGen();
@@ -1126,7 +1112,11 @@ void CStandardGraphicsPipeline::Execute()
 	// Insert fence which is used on consoles to prevent overwriting video memory
 	pRenderer->InsertParticleVideoDataFence();
 
-	pRenderer->FX_DeferredSnowDisplacement();
+	SwitchFromLegacyPipeline();
+
+	m_pSnowStage->ExecuteDeferredSnowDisplacement();
+
+	SwitchToLegacyPipeline();
 
 	// Pop HDR target from RT stack
 	{
