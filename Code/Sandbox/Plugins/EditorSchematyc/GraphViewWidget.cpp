@@ -6,6 +6,8 @@
 #include "PropertiesWidget.h"
 #include "GraphViewModel.h"
 
+#include <QtUtil.h>
+
 namespace CrySchematycEditor {
 
 CNodeGraphView::CNodeGraphView()

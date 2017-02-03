@@ -13,6 +13,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphReturnNode::CScriptGraphReturnNode() {}
 
 SGUID CScriptGraphReturnNode::GetTypeGUID() const
@@ -38,7 +39,7 @@ void CScriptGraphReturnNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				CAnyConstPtr pData = scriptFunction.GetOutputData(functionOutputIdx);
 				if (pData)
 				{
-					layout.AddInputWithData(scriptFunction.GetOutputName(functionOutputIdx), scriptFunction.GetOutputTypeId(functionOutputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+					layout.AddInputWithData(CUniqueId::FromGUID(scriptFunction.GetOutputGUID(functionOutputIdx)), scriptFunction.GetOutputName(functionOutputIdx), scriptFunction.GetOutputTypeId(functionOutputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 				}
 			}
 			break;
@@ -129,7 +130,7 @@ SRuntimeResult CScriptGraphReturnNode::Execute(SRuntimeContext& context, const S
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			context.params.SetOutput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			context.params.SetOutput(context.node.GetInputId(inputIdx), *context.node.GetInputData(inputIdx));
 		}
 	}
 
@@ -137,6 +138,7 @@ SRuntimeResult CScriptGraphReturnNode::Execute(SRuntimeContext& context, const S
 }
 
 const SGUID CScriptGraphReturnNode::ms_typeGUID = "f898c51c-717b-408d-aca0-75129b2ec4cf"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphReturnNode::Register)

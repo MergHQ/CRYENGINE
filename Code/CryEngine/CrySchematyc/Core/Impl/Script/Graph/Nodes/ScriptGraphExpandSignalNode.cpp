@@ -22,6 +22,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphExpandSignalNode::CScriptGraphExpandSignalNode() {}
 
 CScriptGraphExpandSignalNode::CScriptGraphExpandSignalNode(const SElementId& typeId)
@@ -60,7 +61,7 @@ void CScriptGraphExpandSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 						if (pDefaultValue)
 						{
 							const CCommonTypeDesc& signalMemberTypeDesc = signalMemberDesc.GetTypeDesc();
-							layout.AddOutputWithData(CGraphPortId::FromUniqueId(signalMemberDesc.GetId()), signalMemberDesc.GetLabel(), signalMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, CAnyConstRef(signalMemberTypeDesc, pDefaultValue));
+							layout.AddOutputWithData(CUniqueId::FromUInt32(signalMemberDesc.GetId()), signalMemberDesc.GetLabel(), signalMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, CAnyConstRef(signalMemberTypeDesc, pDefaultValue));
 						}
 					}
 				}
@@ -231,7 +232,7 @@ SRuntimeResult CScriptGraphExpandSignalNode::Execute(SRuntimeContext& context, c
 	{
 		if (context.node.IsDataOutput(outputIdx))
 		{
-			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx).AsUniqueId());
+			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx));
 			if (pSrcData)
 			{
 				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcData);
@@ -247,6 +248,7 @@ SRuntimeResult CScriptGraphExpandSignalNode::Execute(SRuntimeContext& context, c
 }
 
 const SGUID CScriptGraphExpandSignalNode::ms_typeGUID = "f4b52ef8-18ec-4f82-bf61-42429b85ebf6"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphExpandSignalNode::Register)

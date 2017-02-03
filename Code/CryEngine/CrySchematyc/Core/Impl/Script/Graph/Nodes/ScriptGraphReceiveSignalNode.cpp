@@ -71,7 +71,7 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 						if (pDefaultValue)
 						{
 							const CCommonTypeDesc& signalMemberTypeDesc = signalMemberDesc.GetTypeDesc();
-							layout.AddOutputWithData(CGraphPortId::FromUniqueId(signalMemberDesc.GetId()), signalMemberDesc.GetLabel(), signalMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, CAnyConstRef(signalMemberTypeDesc, pDefaultValue));
+							layout.AddOutputWithData(CUniqueId::FromUInt32(signalMemberDesc.GetId()), signalMemberDesc.GetLabel(), signalMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, CAnyConstRef(signalMemberTypeDesc, pDefaultValue));
 						}
 					}
 				}
@@ -98,7 +98,7 @@ void CScriptGraphReceiveSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 								SCHEMATYC_CORE_ASSERT(pData);
 								if (pData)
 								{
-									layout.AddOutputWithData(CGraphPortId::FromGUID(scriptSignal.GetInputGUID(signalInputIdx)), scriptSignal.GetInputName(signalInputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+									layout.AddOutputWithData(CUniqueId::FromGUID(scriptSignal.GetInputGUID(signalInputIdx)), scriptSignal.GetInputName(signalInputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 								}
 							}
 							break;
@@ -379,7 +379,7 @@ SRuntimeResult CScriptGraphReceiveSignalNode::ExecuteReceiveEnvSignal(SRuntimeCo
 	{
 		if (context.node.IsDataOutput(outputIdx))
 		{
-			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx).AsUniqueId());
+			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx));
 			if (pSrcData)
 			{
 				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcData);
@@ -400,7 +400,7 @@ SRuntimeResult CScriptGraphReceiveSignalNode::ExecuteReceiveScriptSignal(SRuntim
 	{
 		if (context.node.IsDataOutput(outputIdx))
 		{
-			CAnyConstPtr pSrcData = context.params.GetInput(outputIdx - EOutputIdx::FirstParam);
+			CAnyConstPtr pSrcData = context.params.GetInput(context.node.GetOutputId(outputIdx));
 			if (pSrcData)
 			{
 				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcData);

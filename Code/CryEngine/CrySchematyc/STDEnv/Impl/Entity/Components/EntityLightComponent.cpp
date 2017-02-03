@@ -14,48 +14,6 @@
 
 namespace Schematyc
 {
-CEntityLightComponent::SProperties::SProperties()
-	: bOn(true)
-	, color(Col_White)
-	, diffuseMultiplier(1.0f)
-	, specularMultiplier(1.0f)
-	, hdrDynamicMultiplier(1.0f)
-	, radius(10.0f)
-	, frustumAngle(45.0f)
-	, attenuationBulbSize(0.05f)
-{}
-
-void CEntityLightComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(bOn, "on", "On");
-	archive.doc("Initial on/off state");
-
-	archive(color, "color", "Color");
-	archive.doc("Color");
-
-	archive(Serialization::Range(diffuseMultiplier, 0.01f, 999.0f), "diffuseMultiplier", "Diffuse Multiplier");
-	archive.doc("Diffuse Multiplier");
-
-	archive(Serialization::Range(specularMultiplier, 0.01f, 999.0f), "specularMultiplier", "Specular Multiplier");
-	archive.doc("Specular Multiplier");
-
-	archive(Serialization::Range(hdrDynamicMultiplier, 0.01f, 999.0f), "hdrDynamicMultiplier", "HDR Dynamic Multiplier");
-	archive.doc("HDR Dynamic Multiplier");
-
-	archive(Serialization::Slider(radius, 0.01f, 100.0f), "radius", "Radius");
-	archive.doc("Radius");
-
-	archive(Serialization::Slider(frustumAngle, 0.01f, 90.0f), "frustumAngle", "Frustum Angle");
-	archive.doc("Frustum Angle");
-
-	archive(Serialization::Slider(attenuationBulbSize, 0.01f, 100.0f), "attenuationBulbSize", "Attenuation Bulb Size");
-	archive.doc("Attenuation Bulb Size");
-}
-
-CEntityLightComponent::CEntityLightComponent()
-	: m_slot(EmptySlot)
-	, m_bOn(false)
-{}
 
 bool CEntityLightComponent::Init()
 {
@@ -64,8 +22,7 @@ bool CEntityLightComponent::Init()
 
 void CEntityLightComponent::Run(ESimulationMode simulationMode)
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	if (pProperties->bOn)
+	if (m_bInitOn)
 	{
 		SwitchOn();
 	}
@@ -110,20 +67,25 @@ void CEntityLightComponent::Switch(bool bOn)
 void CEntityLightComponent::ReflectType(CTypeDesc<CEntityLightComponent>& desc)
 {
 	desc.SetGUID("ed123a98-462f-49a0-8d1b-362d6449d81a"_schematyc_guid);
+	desc.SetLabel("Light");
+	desc.SetDescription("Entity light component");
+	desc.SetIcon("icons:schematyc/entity_light_component.png");
+	desc.SetComponentFlags({ EComponentFlags::Transform, EComponentFlags::Socket, EComponentFlags::Attach });
+	desc.AddMember(&CEntityLightComponent::m_bInitOn, 'on', "on", "On", "Initial on/off state", true);
+	desc.AddMember(&CEntityLightComponent::m_color, 'col', "color", "Color", "Color", Col_White);
+	desc.AddMember(&CEntityLightComponent::m_diffuseMultiplier, 'diff', "diffuseMultiplier", "Diffuse Multiplier", "Diffuse Multiplier", 1.0f);
+	desc.AddMember(&CEntityLightComponent::m_specularMultiplier, 'spec', "specularMultiplier", "Specular Multiplier", "Specular Multiplier", 1.0f);
+	desc.AddMember(&CEntityLightComponent::m_hdrDynamicMultiplier, 'hdr', "hdrDynamicMultiplier", "HDR Dynamic Multiplier", "HDR Dynamic Multiplier", 1.0f);
+	desc.AddMember(&CEntityLightComponent::m_radius, 'rad', "radius", "Radius", "Radius", 10.0f);
+	desc.AddMember(&CEntityLightComponent::m_frustumAngle, 'ang', "frustumAngle", "Frustum Angle", "Frustum Angle", 45.0f);
+	desc.AddMember(&CEntityLightComponent::m_attenuationBulbSize, 'bulb', "attenuationBulbSize", "Attenuation Bulb Size", "Attenuation Bulb Size", 0.05f);
 }
 
 void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityLightComponent, "Light");
-		pComponent->SetDescription("Entity light component");
-		pComponent->SetIcon("icons:schematyc/entity_light_component.png");
-		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
-		pComponent->SetProperties(SProperties());
-		scope.Register(pComponent);
-
-		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityLightComponent));
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityLightComponent::SetTransform, "729721c4-a09e-4903-a8a6-fa69388acfc6"_schematyc_guid, "SetTransform");
@@ -144,21 +106,20 @@ void CEntityLightComponent::Register(IEnvRegistrar& registrar)
 
 void CEntityLightComponent::SwitchOn()
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
 	CComponent* pParent = CComponent::GetParent();
 
-	ColorF color = pProperties->color;
-	color.r *= pProperties->diffuseMultiplier;
-	color.g *= pProperties->diffuseMultiplier;
-	color.b *= pProperties->diffuseMultiplier;
+	ColorF color = m_color;
+	color.r *= m_diffuseMultiplier;
+	color.g *= m_diffuseMultiplier;
+	color.b *= m_diffuseMultiplier;
 
 	CDLight light;
 	light.SetLightColor(color);
-	light.SetSpecularMult(pProperties->specularMultiplier);
-	light.m_fHDRDynamic = pProperties->hdrDynamicMultiplier;
-	light.m_fRadius = pProperties->radius;
-	light.m_fLightFrustumAngle = pProperties->frustumAngle;
-	light.m_fAttenuationBulbSize = pProperties->attenuationBulbSize;
+	light.SetSpecularMult(m_specularMultiplier);
+	light.m_fHDRDynamic = m_hdrDynamicMultiplier;
+	light.m_fRadius = m_radius;
+	light.m_fLightFrustumAngle = m_frustumAngle;
+	light.m_fAttenuationBulbSize = m_attenuationBulbSize;
 
 	IEntity& entity = EntityUtils::GetEntity(*this);
 
@@ -191,6 +152,7 @@ void CEntityLightComponent::FreeSlot()
 		m_slot = EmptySlot;
 	}
 }
+
 } // Schematyc
 
 SCHEMATYC_AUTO_REGISTER(&Schematyc::CEntityLightComponent::Register)

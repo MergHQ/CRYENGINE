@@ -21,19 +21,16 @@ public:
 		ePhysicType_Living
 	};
 
-	struct SProperties
+	struct SCollider
 	{
-		void Serialize(Serialization::IArchive& archive);
+		static void ReflectType(CTypeDesc<SCollider>& desc);
 
-		bool bEnabled = true;
-		float mass = -1.0f;
-		float density = -1.0f;
 		ePhysicType type = ePhysicType_Rigid;
-		
+
 		//only needed for ePhysicType_Living
-		float colliderHeight = 0.45f;
-		float colliderRadius = 0.45f;
-		float colliderVerticalOffset = 0.0f;
+		float height = 0.45f;
+		float radius = 0.45f;
+		float verticalOffset = 0.0f;
 		float friction = 0.95f;
 		float gravity = 9.81f;
 	};
@@ -43,16 +40,22 @@ public:
 	virtual bool Init() override;
 	virtual void Shutdown() override;
 	// ~CComponent
-		
-	void OnGeometryChanged();
-	void SetPhysicalize(bool bActive);
-	void SetEnabled(bool bEnable);
+
+	void        OnGeometryChanged();
+	void        SetPhysicalize(bool bActive);
+	void        SetEnabled(bool bEnable);
 
 	static void ReflectType(CTypeDesc<CEntityPhysicsComponent>& desc);
 	static void Register(IEnvRegistrar& registrar);
 
 private:
-	CConnectionScope    m_connectionScope;
+
+	float            m_mass = -1.0f;
+	float            m_density = -1.0f;
+	bool             m_bEnabled = true;
+	SCollider        m_collider;
+
+	CConnectionScope m_connectionScope;
 };
 
 } // Schematyc

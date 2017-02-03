@@ -62,13 +62,7 @@ void CEntityAudioComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityAudioComponent, "Audio");
-		pComponent->SetDescription("Entity audio component");
-		pComponent->SetIcon("icons:schematyc/entity_audio_component.ico");
-		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::Transform, Schematyc::EEnvComponentFlags::Attach });
-		scope.Register(pComponent);
-
-		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityAudioComponent));
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAudioComponent::ExecuteTrigger, "0D58AF22-775A-4FBE-BC5C-3A7CE250EF98"_schematyc_guid, "ExecuteAudioTrigger");
@@ -154,6 +148,10 @@ void CEntityAudioComponent::SetSwitchState(const SAudioSwitchWithStateSerializeH
 void CEntityAudioComponent::ReflectType(CTypeDesc<CEntityAudioComponent>& desc)
 {
 	desc.SetGUID("7E792283-20BB-4D18-B3DD-08ADF38C92BE"_schematyc_guid);
+	desc.SetLabel("Audio");
+	desc.SetDescription("Entity audio component");
+	desc.SetIcon("icons:schematyc/entity_audio_component.ico");
+	desc.SetComponentFlags({ Schematyc::EComponentFlags::Transform, Schematyc::EComponentFlags::Attach });
 }
 
 void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const pAudioRequestInfo)
@@ -164,11 +162,11 @@ void CEntityAudioComponent::OnAudioCallback(CryAudio::SRequestInfo const* const 
 
 	if (pAudioRequestInfo->requestResult == CryAudio::eRequestResult_Failure)  //failed to start/finish
 	{
-		pAudioComp->GetObject().ProcessSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, false));
+		pAudioComp->OutputSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, false));
 	}
 	else if (pAudioRequestInfo->audioSystemEvent == CryAudio::eSystemEvent_TriggerFinished)  //finished successful
 	{
-		pAudioComp->GetObject().ProcessSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, true));
+		pAudioComp->OutputSignal(SAudioTriggerFinishedSignal(instanceId, triggerId, true));
 	}
 }
 

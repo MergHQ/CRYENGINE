@@ -8,9 +8,9 @@
 #include <CrySerialization/STL.h>
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/IProperties.h>
 
 #include "ObjectProperties.h"
 
@@ -111,13 +111,13 @@ SRuntimeClassTimer::SRuntimeClassTimer(const SGUID& _guid, const char* _szName, 
 	, params(_params)
 {}
 
-SRuntimeClassComponentInstance::SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx)
+SRuntimeClassComponentInstance::SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const CClassProperties& _properties, uint32 _parentIdx)
 	: guid(_guid)
 	, name(_szName)
 	, bPublic(_bPublic)
 	, componentTypeGUID(_componentTypeGUID)
 	, transform(_transform)
-	, pProperties(_pProperties ? _pProperties->Clone() : IPropertiesPtr())
+	, properties(_properties)
 	, parentIdx(_parentIdx)
 {}
 
@@ -173,7 +173,7 @@ CAnyConstPtr CRuntimeClass::GetEnvClassProperties() const
 
 const CScratchpad& CRuntimeClass::GetScratchpad() const
 {
-	return m_scratchPad;
+	return m_scratchpad;
 }
 
 uint32 CRuntimeClass::AddGraph(const SGUID& guid, const char* szName)
@@ -367,7 +367,7 @@ uint32 CRuntimeClass::AddVariable(const SGUID& guid, const char* szName, bool bP
 		m_pDefaultProperties->AddVariable(guid, szName, value);
 	}
 
-	const uint32 pos = m_scratchPad.Add(value);
+	const uint32 pos = m_scratchpad.Add(value);
 	m_variables.reserve(20);
 	m_variables.emplace_back(guid, szName, bPublic, pos);
 	return m_variables.size() - 1;
@@ -402,15 +402,15 @@ const RuntimeClassTimers& CRuntimeClass::GetTimers() const
 	return m_timers;
 }
 
-uint32 CRuntimeClass::AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx)
+uint32 CRuntimeClass::AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const CClassProperties& properties, uint32 parentIdx)
 {
-	if (bPublic && pProperties)
+	if (bPublic)
 	{
-		m_pDefaultProperties->AddComponent(guid, szName, *pProperties);
+		m_pDefaultProperties->AddComponent(guid, szName, properties);
 	}
 
 	m_componentInstances.reserve(10);
-	m_componentInstances.emplace_back(guid, szName, bPublic, componentTypeGUID, transform, pProperties, parentIdx);
+	m_componentInstances.emplace_back(guid, szName, bPublic, componentTypeGUID, transform, properties, parentIdx);
 	return m_componentInstances.size() - 1;
 }
 
@@ -495,13 +495,15 @@ void CRuntimeClass::FinalizeComponentInstances()
 		const IEnvComponent* pEnvComponent = envRegistry.GetComponent(componentInstance.componentTypeGUID);
 		if (pEnvComponent)
 		{
+			const CComponentDesc& componentDesc = pEnvComponent->GetDesc();
+
 			SComponentInstanceSortRef& componentInstanceSortRef = componentInstanceSortRefs.back();
-			const uint32 componentDependencyCount = pEnvComponent->GetDependencyCount();
+			const uint32 componentDependencyCount = componentDesc.GetDependencyCount();
 			componentInstanceSortRef.dependencies.reserve(componentDependencyCount);
 
 			for (uint32 componentDependencyIdx = 0; componentDependencyIdx < componentDependencyCount; ++componentDependencyIdx)
 			{
-				const SGUID componentDependencyGUID = pEnvComponent->GetDependency(componentDependencyIdx)->guid;
+				const SGUID componentDependencyGUID = componentDesc.GetDependency(componentDependencyIdx)->guid;
 				for (uint32 otherComponentInstanceIdx = 0; otherComponentInstanceIdx < componentInstanceCount; ++otherComponentInstanceIdx)
 				{
 					if (m_componentInstances[otherComponentInstanceIdx].componentTypeGUID == componentDependencyGUID)
@@ -552,7 +554,7 @@ void CRuntimeClass::FinalizeComponentInstances()
 
 void CRuntimeClass::Finalize()
 {
-	m_scratchPad.ShrinkToFit();
+	m_scratchpad.ShrinkToFit();
 
 	m_graphs.shrink_to_fit();
 	m_functions.shrink_to_fit();

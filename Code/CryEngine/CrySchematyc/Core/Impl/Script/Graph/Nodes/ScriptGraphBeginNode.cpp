@@ -6,11 +6,8 @@
 #include <Schematyc/Compiler/CompilerContext.h>
 #include <Schematyc/Compiler/IGraphNodeCompiler.h>
 #include <Schematyc/Env/IEnvRegistry.h>
-#include <Schematyc/Env/Elements/IEnvSignal.h>
 #include <Schematyc/Script/IScriptRegistry.h>
 #include <Schematyc/Script/Elements/IScriptFunction.h>
-#include <Schematyc/Script/Elements/IScriptSignal.h>
-#include <Schematyc/Script/Elements/IScriptSignalReceiver.h>
 #include <Schematyc/Utils/Any.h>
 
 #include "Runtime/RuntimeClass.h"
@@ -19,6 +16,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphBeginNode::CScriptGraphBeginNode() {}
 
 void CScriptGraphBeginNode::Init()
@@ -48,47 +46,7 @@ void CScriptGraphBeginNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				CAnyConstPtr pData = scriptFunction.GetInputData(functionInputIdx);
 				if (pData)
 				{
-					layout.AddOutputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(functionInputIdx)), scriptFunction.GetInputName(functionInputIdx), scriptFunction.GetInputTypeId(functionInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
-				}
-			}
-			break;
-		}
-	case EScriptElementType::SignalReceiver:
-		{
-			const IScriptSignalReceiver& scriptSignalReceiver = DynamicCast<IScriptSignalReceiver>(scriptElement);
-			switch (scriptSignalReceiver.GetSignalReceiverType())
-			{
-			case EScriptSignalReceiverType::EnvSignal:
-				{
-					const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(scriptSignalReceiver.GetSignalGUID());
-					if (pEnvSignal)
-					{
-						/*for (uint32 signalInputIdx = 0, signalInputCount = pEnvSignal->GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)
-						   {
-						   CAnyConstPtr pData = pEnvSignal->GetInputData(signalInputIdx);
-						   if (pData)
-						   {
-						    layout.AddOutputWithData(CGraphPortId::FromUniqueId(pEnvSignal->GetInputId(signalInputIdx)), pData->GetTypeDesc().guid, pEnvSignal->GetInputTypeId(signalInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
-						   }
-						   }*/
-					}
-					break;
-				}
-			case EScriptSignalReceiverType::ScriptSignal:
-				{
-					const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(scriptSignalReceiver.GetSignalGUID()));
-					if (pScriptSignal)
-					{
-						for (uint32 signalInputIdx = 0, signalInputCount = pScriptSignal->GetInputCount(); signalInputIdx < signalInputCount; ++signalInputIdx)
-						{
-							CAnyConstPtr pData = pScriptSignal->GetInputData(signalInputIdx);
-							if (pData)
-							{
-								layout.AddOutputWithData(CGraphPortId::FromGUID(pScriptSignal->GetInputGUID(signalInputIdx)), pScriptSignal->GetInputName(signalInputIdx), pScriptSignal->GetInputTypeId(signalInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
-							}
-						}
-					}
-					break;
+					layout.AddOutputWithData(CUniqueId::FromGUID(scriptFunction.GetInputGUID(functionInputIdx)), scriptFunction.GetInputName(functionInputIdx), scriptFunction.GetInputTypeId(functionInputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 				}
 			}
 			break;
@@ -171,24 +129,7 @@ SRuntimeResult CScriptGraphBeginNode::ExecuteFunction(SRuntimeContext& context, 
 	{
 		if (context.node.IsDataOutput(outputIdx))
 		{
-			CAnyConstPtr pSrcValue = context.params.GetInput(outputIdx - EOutputIdx::FirstParam);
-			if (pSrcValue)
-			{
-				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcValue);
-			}
-		}
-	}
-
-	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
-}
-
-SRuntimeResult CScriptGraphBeginNode::ExecuteSignalReceiver(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
-{
-	for (uint8 outputIdx = EOutputIdx::FirstParam, outputCount = context.node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
-	{
-		if (context.node.IsDataOutput(outputIdx))
-		{
-			CAnyConstPtr pSrcValue = context.params.GetInput(outputIdx - EOutputIdx::FirstParam);
+			CAnyConstPtr pSrcValue = context.params.GetInput(context.node.GetOutputId(outputIdx));
 			if (pSrcValue)
 			{
 				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcValue);
@@ -200,6 +141,7 @@ SRuntimeResult CScriptGraphBeginNode::ExecuteSignalReceiver(SRuntimeContext& con
 }
 
 const SGUID CScriptGraphBeginNode::ms_typeGUID = "12bdfa06-ba95-4e48-bb2d-bb48a7080abc"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphBeginNode::Register)

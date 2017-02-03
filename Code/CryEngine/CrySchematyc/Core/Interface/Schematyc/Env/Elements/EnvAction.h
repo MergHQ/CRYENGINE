@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryNetwork/ISerialize.h>
-#include <CryMemory/CrySizer.h>
 #include <CryMemory/STLPoolAllocator.h>
 
 #include "Schematyc/Action.h"
@@ -11,9 +9,6 @@
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvAction.h"
 #include "Schematyc/Reflection/ActionDesc.h"
-#include "Schematyc/Utils/Any.h"
-#include "Schematyc/Utils/GUID.h"
-#include "Schematyc/Utils/Properties.h"
 
 #define SCHEMATYC_MAKE_ENV_ACTION(type) Schematyc::EnvAction::MakeShared<type>(SCHEMATYC_SOURCE_FILE_INFO)
 
@@ -27,10 +22,10 @@ public:
 	inline CEnvAction(const SSourceFileInfo& sourceFileInfo)
 		: CEnvElementBase(sourceFileInfo)
 	{
-		const CCommonTypeDesc& typeDesc = Schematyc::GetTypeDesc<TYPE>();
-		CEnvElementBase::SetGUID(typeDesc.GetGUID());
-		CEnvElementBase::SetName(typeDesc.GetLabel());
-		CEnvElementBase::SetDescription(typeDesc.GetDescription());
+		const CCommonTypeDesc& desc = Schematyc::GetTypeDesc<TYPE>();
+		CEnvElementBase::SetGUID(desc.GetGUID());
+		CEnvElementBase::SetName(desc.GetLabel());
+		CEnvElementBase::SetDescription(desc.GetDescription());
 	}
 
 	// IEnvElement

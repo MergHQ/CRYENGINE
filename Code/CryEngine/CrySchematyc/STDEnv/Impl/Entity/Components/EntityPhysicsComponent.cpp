@@ -21,24 +21,29 @@ namespace Schematyc
 		SERIALIZATION_ENUM(CEntityPhysicsComponent::ePhysicType_Living, "Living", "Living")
 	SERIALIZATION_ENUM_END()
 
-	void CEntityPhysicsComponent::SProperties::Serialize(Serialization::IArchive& archive)
+	void CEntityPhysicsComponent::SCollider::ReflectType(CTypeDesc<CEntityPhysicsComponent::SCollider>& desc)
 	{
-		archive(mass, "mass", "Mass");
-		archive(density, "density", "Density");
-		archive(bEnabled, "enabled", "Enabled");
-		archive(type, "type", "Type");
-		if (type == ePhysicType_Living)
+		desc.SetGUID("80b27999-22f4-475f-b3c3-a56e2767a23b"_schematyc_guid);
+	}
+
+	// N.B. Non-intrusive serialization is used here only to ensure backward compatibility.
+	//      If files were patched we could instead reflect members and let the system serialize them automatically.
+	inline bool Serialize(Serialization::IArchive& archive, CEntityPhysicsComponent::SCollider& value, const char* szName, const char* szLabel)
+	{
+		archive(value.type, "type", "Type");
+		if (value.type == CEntityPhysicsComponent::ePhysicType_Living)
 		{
 			if (archive.openBlock("collider", "Collision Proxy"))
 			{
-				archive(colliderHeight, "height", "Height");
-				archive(colliderRadius, "radius", "Radius");
-				archive(colliderVerticalOffset, "verticalOffset", "VerticalOffset");
-				archive(gravity, "gravity", "Gravity");
-				archive(Serialization::Range(friction, 0.01f, 1.0f), "friction", "Friction");
+				archive(value.height, "height", "Height");
+				archive(value.radius, "radius", "Radius");
+				archive(value.verticalOffset, "verticalOffset", "VerticalOffset");
+				archive(value.gravity, "gravity", "Gravity");
+				archive(Serialization::Range(value.friction, 0.01f, 1.0f), "friction", "Friction");
 				archive.closeBlock();
 			}
 		}
+		return true;
 	}
 
 //////////////////////////////////////////////////////////////////////////
@@ -67,14 +72,7 @@ namespace Schematyc
 	{
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
-			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent, "Physics");
-			pComponent->SetDescription("Entity physics component");
-			pComponent->SetIcon("icons:schematyc/entity_physics_component.ico");
-			pComponent->SetFlags(EEnvComponentFlags::None);
-			pComponent->SetProperties(CEntityPhysicsComponent::SProperties());
-			scope.Register(pComponent);
-
-			CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+			CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityPhysicsComponent));
 			// Functions
 			{				
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::SetEnabled, "4DC3B15A-D143-4161-8C1F-F6FEE627A85A"_schematyc_guid, "SetPhysicsEnabled");
@@ -96,6 +94,13 @@ namespace Schematyc
 	void CEntityPhysicsComponent::ReflectType(CTypeDesc<CEntityPhysicsComponent>& desc)
 	{
 		desc.SetGUID("178287AF-CFD5-4757-93FA-2CDE64FB633C"_schematyc_guid);
+		desc.SetLabel("Physics");
+		desc.SetDescription("Entity physics component");
+		desc.SetIcon("icons:schematyc/entity_physics_component.ico");
+		desc.AddMember(&CEntityPhysicsComponent::m_mass, 'mass', "mass", "Mass", nullptr, -1.0f);
+		desc.AddMember(&CEntityPhysicsComponent::m_density, 'dens', "density", "Density", nullptr, -1.0f);
+		desc.AddMember(&CEntityPhysicsComponent::m_bEnabled, 'ena', "enabled", "Enabled", nullptr, true);
+		desc.AddMember(&CEntityPhysicsComponent::m_collider, 'call', "properties", "Properties", nullptr);
 	}
 	
 	void CEntityPhysicsComponent::SetEnabled(bool bEnable)
@@ -115,28 +120,25 @@ namespace Schematyc
 
 		if (bActive)
 		{
-			const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-			CRY_ASSERT_MESSAGE(pProperties, "No properties provided to create physics object");
-
 			SEntityPhysicalizeParams params;
 			pe_player_dimensions playerDim;
 			pe_player_dynamics playerDyn;
 
-			if (pProperties->type == ePhysicType_Living)
+			if (m_collider.type == ePhysicType_Living)
 			{
 				params.type = PE_LIVING;
-				params.mass = pProperties->mass;
-				params.density = pProperties->density;
+				params.mass = m_mass;
+				params.density = m_density;
 
 				IPhysicalEntity* pPhysicalEntity = entity.GetPhysics();
 				if (pPhysicalEntity)
 				{
 					pPhysicalEntity->GetParams(&playerDyn);
 				}
-				playerDyn.gravity = Vec3(0, 0, -pProperties->gravity);
-				playerDyn.kAirControl = pProperties->friction;
+				playerDyn.gravity = Vec3(0, 0, -m_collider.gravity);
+				playerDyn.kAirControl = m_collider.friction;
 				playerDyn.kAirResistance = 1.0f;
-				playerDyn.mass = pProperties->mass;
+				playerDyn.mass = m_mass;
 				playerDyn.minSlideAngle = 45;
 				playerDyn.maxClimbAngle = 40;
 				playerDyn.minFallAngle = 50;
@@ -144,21 +146,21 @@ namespace Schematyc
 				params.pPlayerDynamics = &playerDyn;
 
 				playerDim.bUseCapsule = 0;
-				playerDim.sizeCollider.x = pProperties->colliderRadius;
+				playerDim.sizeCollider.x = m_collider.radius;
 				playerDim.sizeCollider.y = 0.5f;
-				playerDim.sizeCollider.z = pProperties->colliderHeight;
+				playerDim.sizeCollider.z = m_collider.height;
 				// make sure that player_dimensions heightCollider > sizeCollider.z + sizeCollider.x
 				const float minHeightCollider = playerDim.sizeCollider.z + playerDim.sizeCollider.x;
-				if (pProperties->colliderVerticalOffset <= minHeightCollider)
+				if (m_collider.verticalOffset <= minHeightCollider)
 				{
-					playerDim.heightCollider = pProperties->colliderHeight + 0.05f;
+					playerDim.heightCollider = m_collider.height + 0.05f;
 				}
 				playerDim.heightPivot = 0.0f;
 				playerDim.maxUnproj = 0.0f;
 				//playerDim.bUseCapsule = true;
 				params.pPlayerDimensions = &playerDim;
 			}
-			else if (pProperties->type == ePhysicType_Static)
+			else if (m_collider.type == ePhysicType_Static)
 			{
 				params.type = PE_STATIC;
 			}
@@ -167,11 +169,11 @@ namespace Schematyc
 				params.type = PE_RIGID;
 			}
 
-			params.mass = pProperties->mass;
-			params.density = pProperties->density;
+			params.mass = m_mass;
+			params.density = m_density;
 			entity.Physicalize(params);
 
-			SetEnabled(pProperties->bEnabled);
+			SetEnabled(m_bEnabled);
 		}
 		else
 		{

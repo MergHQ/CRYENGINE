@@ -15,11 +15,14 @@
 
 namespace Schematyc
 {
+
 static CScriptGraphNodeFactory g_scriptGraphNodeFactory;
+
 } // Schematyc
 
 namespace std // In order to resolve ADL, std type serialization overrides must be placed in std namespace.
 {
+
 inline bool Serialize(Serialization::IArchive& archive, shared_ptr<Schematyc::IScriptGraphNode>& value, const char* szName, const char* szLabel)
 {
 	if (!value && archive.isInput())
@@ -55,10 +58,12 @@ bool Serialize(Serialization::IArchive& archive, shared_ptr<Schematyc::CScriptGr
 	archive(*value, szName, szLabel);
 	return true;
 }
+
 } // std
 
 namespace Schematyc
 {
+
 void RegisterScriptGraphNodeCreators()
 {
 	static bool bRegister = true;
@@ -78,7 +83,7 @@ CScriptGraphLink::CScriptGraphLink(const SGUID& srcNodeGUID, const char* szSrcOu
 	, m_dstInputName(szDstInputName)
 {}
 
-CScriptGraphLink::CScriptGraphLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId)
+CScriptGraphLink::CScriptGraphLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId)
 	: m_srcNodeGUID(srcNodeGUID)
 	, m_srcOutputId(srcOutputId)
 	, m_dstNodeGUID(dstNodeGUID)
@@ -95,7 +100,7 @@ SGUID CScriptGraphLink::GetSrcNodeGUID() const
 	return m_srcNodeGUID;
 }
 
-CGraphPortId CScriptGraphLink::GetSrcOutputId() const
+CUniqueId CScriptGraphLink::GetSrcOutputId() const
 {
 	return m_srcOutputId;
 }
@@ -110,7 +115,7 @@ SGUID CScriptGraphLink::GetDstNodeGUID() const
 	return m_dstNodeGUID;
 }
 
-CGraphPortId CScriptGraphLink::GetDstInputId() const
+CUniqueId CScriptGraphLink::GetDstInputId() const
 {
 	return m_dstInputId;
 }
@@ -126,7 +131,7 @@ void CScriptGraphLink::Serialize(Serialization::IArchive& archive)
 	}
 }
 
-void CScriptGraphLink::SetSrcOutputId(const CGraphPortId& id)
+void CScriptGraphLink::SetSrcOutputId(const CUniqueId& id)
 {
 	m_srcOutputId = id;
 }
@@ -136,7 +141,7 @@ const char* CScriptGraphLink::GetSrcOutputName() const
 	return m_srcOutputName.c_str();
 }
 
-void CScriptGraphLink::SetDstInputId(const CGraphPortId& id)
+void CScriptGraphLink::SetDstInputId(const CUniqueId& id)
 {
 	m_dstInputId = id;
 }
@@ -363,7 +368,7 @@ void CScriptGraph::VisitNodes(const ScriptGraphNodeConstVisitor& visitor) const
 	}
 }
 
-bool CScriptGraph::CanAddLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const
+bool CScriptGraph::CanAddLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const
 {
 	const CScriptGraphLink link(srcNodeGUID, srcOutputId, dstNodeGUID, dstInputId);
 
@@ -451,7 +456,7 @@ bool CScriptGraph::CanAddLink(const SGUID& srcNodeGUID, const CGraphPortId& srcO
 	return true;
 }
 
-IScriptGraphLink* CScriptGraph::AddLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId)
+IScriptGraphLink* CScriptGraph::AddLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId)
 {
 	if (FindLink(srcNodeGUID, srcOutputId, dstNodeGUID, dstInputId) == InvalidIdx)
 	{
@@ -498,7 +503,7 @@ const IScriptGraphLink* CScriptGraph::GetLink(uint32 linkIdx) const
 	return linkIdx < m_links.size() ? m_links[linkIdx].get() : nullptr;
 }
 
-uint32 CScriptGraph::FindLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const
+uint32 CScriptGraph::FindLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const
 {
 	for (Links::const_iterator itBeginLink = m_links.begin(), itEndLink = m_links.end(), itLink = itBeginLink; itLink != itEndLink; ++itLink)
 	{
@@ -559,7 +564,7 @@ EVisitResult CScriptGraph::VisitLinks(const ScriptGraphLinkConstVisitor& visitor
 	return EVisitResult::Complete;
 }
 
-EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId)
+EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& dstNodeGUID, const CUniqueId& dstInputId)
 {
 	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
 	if (!visitor.IsEmpty())
@@ -586,7 +591,7 @@ EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkVisitor& visitor
 	return EVisitResult::Complete;
 }
 
-EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const
+EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const
 {
 	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
 	if (!visitor.IsEmpty())
@@ -613,7 +618,7 @@ EVisitResult CScriptGraph::VisitInputLinks(const ScriptGraphLinkConstVisitor& vi
 	return EVisitResult::Complete;
 }
 
-EVisitResult CScriptGraph::VisitOutputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId)
+EVisitResult CScriptGraph::VisitOutputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& srcNodeGUID, const CUniqueId& srcOutputId)
 {
 	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
 	if (!visitor.IsEmpty())
@@ -640,7 +645,7 @@ EVisitResult CScriptGraph::VisitOutputLinks(const ScriptGraphLinkVisitor& visito
 	return EVisitResult::Complete;
 }
 
-EVisitResult CScriptGraph::VisitOutputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId) const
+EVisitResult CScriptGraph::VisitOutputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& srcNodeGUID, const CUniqueId& srcOutputId) const
 {
 	SCHEMATYC_CORE_ASSERT(!visitor.IsEmpty());
 	if (!visitor.IsEmpty())
@@ -752,35 +757,70 @@ void CScriptGraph::PatchLinks()
 {
 	for (CScriptGraphLinkPtr& pLink : m_links)
 	{
-		const CGraphPortId srcOutputId = pLink->GetSrcOutputId();
-		if (srcOutputId.IsEmpty())
 		{
-			Nodes::const_iterator itSrcNode = m_nodes.find(pLink->GetSrcNodeGUID());
-			if (itSrcNode != m_nodes.end())
+			const CUniqueId srcOutputId = pLink->GetSrcOutputId();
+			if (srcOutputId.IsEmpty())
 			{
-				const CScriptGraphNode& srcNode = static_cast<const CScriptGraphNode&>(*itSrcNode->second);
-				const uint32 srcOutputIdx = srcNode.FindOutputByName(pLink->GetSrcOutputName());
-				if (srcOutputIdx != InvalidIdx)
+				Nodes::const_iterator itSrcNode = m_nodes.find(pLink->GetSrcNodeGUID());
+				if (itSrcNode != m_nodes.end())
 				{
-					pLink->SetSrcOutputId(srcNode.GetOutputId(srcOutputIdx));
+					const CScriptGraphNode& srcNode = static_cast<const CScriptGraphNode&>(*itSrcNode->second);
+					const uint32 srcOutputIdx = srcNode.FindOutputByName(pLink->GetSrcOutputName());
+					if (srcOutputIdx != InvalidIdx)
+					{
+						pLink->SetSrcOutputId(srcNode.GetOutputId(srcOutputIdx));
+					}
 				}
 			}
+#if SCHEMATYC_PATCH_UNIQUE_IDS
+			else if (srcOutputId.IsIdx())
+			{
+				Nodes::const_iterator itSrcNode = m_nodes.find(pLink->GetSrcNodeGUID());
+				if (itSrcNode != m_nodes.end())
+				{
+					const uint32 srcOutputIdx = srcOutputId.GetIdx();
+					const CUniqueId trueOutputId = itSrcNode->second->GetOutputId(srcOutputIdx);
+					if (srcOutputId != trueOutputId)
+					{
+						pLink->SetSrcOutputId(trueOutputId);
+					}
+				}
+			}
+#endif
 		}
 
-		const CGraphPortId dstInputId = pLink->GetDstInputId();
-		if (dstInputId.IsEmpty())
 		{
-			Nodes::const_iterator itDstNode = m_nodes.find(pLink->GetDstNodeGUID());
-			if (itDstNode != m_nodes.end())
+			const CUniqueId dstInputId = pLink->GetDstInputId();
+			if (dstInputId.IsEmpty())
 			{
-				const CScriptGraphNode& dstNode = static_cast<const CScriptGraphNode&>(*itDstNode->second);
-				const uint32 dstInputIdx = dstNode.FindInputByName(pLink->GetDstInputName());
-				if (dstInputIdx != InvalidIdx)
+				Nodes::const_iterator itDstNode = m_nodes.find(pLink->GetDstNodeGUID());
+				if (itDstNode != m_nodes.end())
 				{
-					pLink->SetDstInputId(dstNode.GetInputId(dstInputIdx));
+					const CScriptGraphNode& dstNode = static_cast<const CScriptGraphNode&>(*itDstNode->second);
+					const uint32 dstInputIdx = dstNode.FindInputByName(pLink->GetDstInputName());
+					if (dstInputIdx != InvalidIdx)
+					{
+						pLink->SetDstInputId(dstNode.GetInputId(dstInputIdx));
+					}
 				}
 			}
+#if SCHEMATYC_PATCH_UNIQUE_IDS
+			else if (dstInputId.IsIdx())
+			{
+				Nodes::const_iterator itDstNode = m_nodes.find(pLink->GetDstNodeGUID());
+				if (itDstNode != m_nodes.end())
+				{
+					const uint32 dstInputIdx = dstInputId.GetIdx();
+					const CUniqueId trueInputId = itDstNode->second->GetInputId(dstInputIdx);
+					if (dstInputId != trueInputId)
+					{
+						pLink->SetDstInputId(trueInputId);
+					}
+				}
+			}
+#endif
 		}
 	}
 }
+
 } // Schematyc

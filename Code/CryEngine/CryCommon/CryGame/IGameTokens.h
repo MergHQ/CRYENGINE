@@ -122,7 +122,7 @@ struct IGameTokenEventListener
 };
 
 //! Manages collection of game tokens.
-//! Responsible for saving/loading and acessing game tokens.
+//! Responsible for saving/loading and accessing game tokens.
 struct IGameTokenSystem
 {
 	// <interfuscator:shuffle>
@@ -131,6 +131,7 @@ struct IGameTokenSystem
 
 	//! Create a new token.
 	virtual IGameToken* SetOrCreateToken(const char* sTokenName, const TFlowInputData& defaultValue) = 0;
+	virtual IGameToken* SetOrCreateToken(const char* sTokenName, const char* szValue) = 0;
 
 	//! Deletes existing game token.
 	virtual void DeleteToken(IGameToken* pToken) = 0;

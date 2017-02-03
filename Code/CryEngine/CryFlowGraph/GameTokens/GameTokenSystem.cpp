@@ -168,13 +168,45 @@ IGameToken* CGameTokenSystem::SetOrCreateToken(const char* sTokenName, const TFl
 	if (pToken)
 	{
 		pToken->SetValue(defaultValue);
-		// Should we also output a warning here?
-		// GameWarning( "Game Token 0x%p %s already exist. New value %s", pToken, sTokenName, pToken->GetValueAsString());
 		return pToken;
 	}
 	pToken = new CGameToken;
 	pToken->m_name = sTokenName;
 	pToken->m_value = defaultValue;
+	(*m_pGameTokensMap)[pToken->m_name.c_str()] = pToken;
+
+	return pToken;
+}
+
+IGameToken* CGameTokenSystem::SetOrCreateToken(const char* sTokenName, const char* szValue)
+{
+	CRY_ASSERT(sTokenName);
+	if (*sTokenName == 0) // empty string
+	{
+		GameWarning(_HELP("Creating game token with empty name"));
+		return 0;
+	}
+
+#ifdef DEBUG_GAME_TOKENS
+	GameTokensMap::iterator iter(m_pGameTokensMap->begin());
+	CryLogAlways("GT 0x%p: DEBUG looking for token '%s'", this, sTokenName);
+	while (iter != m_pGameTokensMap->end())
+	{
+		CryLogAlways("GT 0x%p: Token key='%s' name='%s' Val='%s'", this, (*iter).first, (*iter).second->GetName(), (*iter).second->GetValueAsString());
+		++iter;
+	}
+#endif
+
+	// Check if token already exist, if it is return existing token.
+	CGameToken* pToken = stl::find_in_map(*m_pGameTokensMap, sTokenName, NULL);
+	if (pToken)
+	{
+		pToken->SetValueAsString(szValue);
+		return pToken;
+	}
+	pToken = new CGameToken;
+	pToken->m_name = sTokenName;
+	pToken->SetValueAsString(szValue, true);
 	(*m_pGameTokensMap)[pToken->m_name.c_str()] = pToken;
 
 	return pToken;

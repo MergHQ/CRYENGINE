@@ -8,11 +8,9 @@
 
 namespace Schematyc
 {
-// Forward declare interfaces.
-struct IProperties;
-// Forward declare structures.
 
 // Forward declare classes.
+class CClassProperties;
 class CTransform;
 
 enum class EScriptComponentInstanceFlags
@@ -32,6 +30,7 @@ struct IScriptComponentInstance : public IScriptElementBase<EScriptElementType::
 	virtual bool                         HasTransform() const = 0;
 	virtual void                         SetTransform(const CTransform& transform) = 0;
 	virtual const CTransform&            GetTransform() const = 0;
-	virtual const IProperties*           GetProperties() const = 0;
+	virtual const CClassProperties&      GetProperties() const = 0;
 };
+
 } // Schematyc

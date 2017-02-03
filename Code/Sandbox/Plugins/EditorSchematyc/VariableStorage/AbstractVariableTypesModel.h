@@ -20,12 +20,29 @@ public:
 
 	const Schematyc::SGUID& GetGUID() const  { return m_guid; }
 
+	bool                    operator==(const CDataTypeItem& other) const;
+	bool                    operator!=(const CDataTypeItem& other) const;
+
 protected:
 	QString          m_name;
 	QColor           m_color;
 
 	Schematyc::SGUID m_guid;
 };
+
+inline bool CDataTypeItem::operator==(const CDataTypeItem& other) const
+{
+	if (this != &other || m_guid != other.m_guid)
+	{
+		return false;
+	}
+	return true;
+}
+
+inline bool CDataTypeItem::operator!=(const CDataTypeItem& other) const
+{
+	return !(*this == other);
+}
 
 class CDataTypesModel
 {
@@ -38,8 +55,6 @@ public:
 	uint32                  GetTypeItemsCount() const { return m_typesByIndex.size(); }
 	CDataTypeItem*          GetTypeItemByIndex(uint32 index) const;
 	CDataTypeItem*          GetTypeItemByGuid(const Schematyc::SGUID& guid) const;
-	//CDataTypeItem*       CreateType();
-	//virtual bool         RemoveType(CDataTypeItem& type);
 
 private:
 	CDataTypesModel();

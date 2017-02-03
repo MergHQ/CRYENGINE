@@ -28,6 +28,7 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc
 {
+
 CScriptGraphSendSignalNode::SRuntimeData::SRuntimeData(const SGUID& _signalGUID)
 	: signalGUID(_signalGUID)
 {}
@@ -80,7 +81,7 @@ void CScriptGraphSendSignalNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				CAnyConstPtr pData = pScriptSignal->GetInputData(inputIdx);
 				if (pData)
 				{
-					layout.AddInputWithData(CGraphPortId::FromGUID(pScriptSignal->GetInputGUID(inputIdx)), pScriptSignal->GetInputName(inputIdx), pScriptSignal->GetInputTypeId(inputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+					layout.AddInputWithData(CUniqueId::FromGUID(pScriptSignal->GetInputGUID(inputIdx)), pScriptSignal->GetInputName(inputIdx), pScriptSignal->GetInputTypeId(inputIdx).guid, { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 				}
 			}
 		}
@@ -267,14 +268,13 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteSendToSelf(SRuntimeContext& co
 	};
 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
-
 	SObjectSignal signal(data.signalGUID);
 
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.BindInput(context.node.GetInputId(inputIdx), context.node.GetInputData(inputIdx));
 		}
 	}
 
@@ -297,14 +297,13 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteSendToObject(SRuntimeContext& 
 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
 	const ObjectId objectId = DynamicCast<ObjectId>(*context.node.GetInputData(EInputIdx::ObjectId));
-
 	SObjectSignal signal(data.signalGUID);
 
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.BindInput(context.node.GetInputId(inputIdx), context.node.GetInputData(inputIdx));
 		}
 	}
 
@@ -325,14 +324,13 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteBroadcast(SRuntimeContext& con
 	};
 
 	const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
-
 	SObjectSignal signal(data.signalGUID);
 
 	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
 	{
 		if (context.node.IsDataInput(inputIdx))
 		{
-			signal.params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
+			signal.params.BindInput(context.node.GetInputId(inputIdx), context.node.GetInputData(inputIdx));
 		}
 	}
 
@@ -342,6 +340,7 @@ SRuntimeResult CScriptGraphSendSignalNode::ExecuteBroadcast(SRuntimeContext& con
 }
 
 const SGUID CScriptGraphSendSignalNode::ms_typeGUID = "bfcebe12-b479-4cd4-90e2-5ceab24ea12e"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphSendSignalNode::Register)

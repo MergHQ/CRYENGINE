@@ -6,12 +6,13 @@
 #include <Schematyc/IObjectProperties.h>
 #include <Schematyc/Runtime/IRuntimeClass.h>
 #include <Schematyc/Services/ITimerSystem.h>
+#include <Schematyc/Utils/ClassProperties.h>
 #include <Schematyc/Utils/GUID.h>
-#include <Schematyc/Utils/IProperties.h>
 #include <Schematyc/Utils/Scratchpad.h>
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CAnyConstRef;
 class CAnyRef;
@@ -26,7 +27,7 @@ private:
 	struct SComponent
 	{
 		SComponent();
-		SComponent(const char* _szName, const IPropertiesPtr& _pProperties, EOverridePolicy _overridePolicy);
+		SComponent(const char* _szName, const CClassProperties& _properties, EOverridePolicy _overridePolicy);
 		SComponent(const SComponent& rhs);
 
 		void Serialize(Serialization::IArchive& archive);
@@ -34,9 +35,9 @@ private:
 		void Edit();
 		void Revert();
 
-		string          name;
-		IPropertiesPtr  pProperties;
-		EOverridePolicy overridePolicy = EOverridePolicy::Default;
+		string           name;
+		CClassProperties properties;
+		EOverridePolicy  overridePolicy = EOverridePolicy::Default;
 	};
 
 	typedef std::map<SGUID, SComponent>                                        Components;
@@ -67,13 +68,13 @@ public:
 	CObjectProperties(const CObjectProperties& rhs);
 
 	// IObjectProperties
-	virtual IObjectPropertiesPtr Clone() const override;
-	virtual void                 Serialize(Serialization::IArchive& archive) override;
-	virtual const IProperties*   GetComponentProperties(const SGUID& guid) const override;
-	virtual bool                 ReadVariable(const CAnyRef& value, const SGUID& guid) const override;
+	virtual IObjectPropertiesPtr    Clone() const override;
+	virtual void                    Serialize(Serialization::IArchive& archive) override;
+	virtual const CClassProperties* GetComponentProperties(const SGUID& guid) const override;
+	virtual bool                    ReadVariable(const CAnyRef& value, const SGUID& guid) const override;
 	// ~IObjectProperties
 
-	void AddComponent(const SGUID& guid, const char* szName, const IProperties& properties);
+	void AddComponent(const SGUID& guid, const char* szName, const CClassProperties& properties);
 	void AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value);
 
 private:
@@ -81,4 +82,5 @@ private:
 	Components m_components;
 	Variables  m_variables;
 };
+
 } // Schematyc

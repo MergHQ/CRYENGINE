@@ -13,6 +13,7 @@
 #include <Schematyc/Env/Elements/IEnvComponent.h>
 #include <Schematyc/Env/Elements/IEnvDataType.h>
 #include <Schematyc/Env/Elements/IEnvFunction.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/Script/IScriptGraph.h>
 #include <Schematyc/Script/IScriptRegistry.h>
 #include <Schematyc/Script/Elements/IScriptActionInstance.h>
@@ -452,7 +453,7 @@ void CScriptView::VisitEnvComponents(const EnvComponentConstVisitor& visitor) co
 		auto visitScriptComponentInstances = [&visitor, &exclusions](const IScriptComponentInstance& componentInstance) -> EVisitStatus
 		{
 			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
-			if (pEnvComponent && pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Singleton))
+			if (pEnvComponent && pEnvComponent->GetDesc().GetComponentFlags().Check(EComponentFlags::Singleton))
 			{
 				exclusions.push_back(pEnvComponent);
 			}

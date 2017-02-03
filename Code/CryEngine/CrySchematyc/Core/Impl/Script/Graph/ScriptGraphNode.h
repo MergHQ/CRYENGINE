@@ -8,15 +8,16 @@
 
 namespace Schematyc
 {
+
 // Forward declare classes.
 class CScriptGraphNodeModel;
 
 struct SScriptGraphNodePort
 {
 	SScriptGraphNodePort();
-	SScriptGraphNodePort(const CGraphPortId& _id, const char* _szName, const SGUID& _typeGUID, const ScriptGraphPortFlags& _flags, const CAnyValuePtr& _pData);
+	SScriptGraphNodePort(const CUniqueId& _id, const char* _szName, const SGUID& _typeGUID, const ScriptGraphPortFlags& _flags, const CAnyValuePtr& _pData);
 
-	CGraphPortId         id;
+	CUniqueId            id;
 	string               name;
 	SGUID                typeGUID;
 	ScriptGraphPortFlags flags;
@@ -42,48 +43,48 @@ public:
 
 	inline void                 AddInput(const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
 	{
-		AddInput(CGraphPortId::FromIdx(m_inputs.size()), szName, typeGUID, flags, CAnyValuePtr());
+		AddInput(CUniqueId::FromIdx(m_inputs.size()), szName, typeGUID, flags, CAnyValuePtr());
 	}
 
-	inline void AddInput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
+	inline void AddInput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
 	{
 		AddInput(id, szName, typeGUID, flags, CAnyValuePtr());
 	}
 
 	inline void AddInputWithData(const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
 	{
-		AddInput(CGraphPortId::FromIdx(m_inputs.size()), szName, typeGUID, flags, CAnyValue::CloneShared(value));
+		AddInput(CUniqueId::FromIdx(m_inputs.size()), szName, typeGUID, flags, CAnyValue::CloneShared(value));
 	}
 
-	inline void AddInputWithData(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
+	inline void AddInputWithData(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
 	{
 		AddInput(id, szName, typeGUID, flags, CAnyValue::CloneShared(value));
 	}
 
 	inline void AddOutput(const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
 	{
-		AddOutput(CGraphPortId::FromIdx(m_outputs.size()), szName, typeGUID, flags, CAnyValuePtr());
+		AddOutput(CUniqueId::FromIdx(m_outputs.size()), szName, typeGUID, flags, CAnyValuePtr());
 	}
 
-	inline void AddOutput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
+	inline void AddOutput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags)
 	{
 		AddOutput(id, szName, typeGUID, flags, CAnyValuePtr());
 	}
 
 	inline void AddOutputWithData(const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
 	{
-		AddOutput(CGraphPortId::FromIdx(m_outputs.size()), szName, typeGUID, flags, CAnyValue::CloneShared(value));
+		AddOutput(CUniqueId::FromIdx(m_outputs.size()), szName, typeGUID, flags, CAnyValue::CloneShared(value));
 	}
 
-	inline void AddOutputWithData(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
+	inline void AddOutputWithData(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyConstRef& value)
 	{
 		AddOutput(id, szName, typeGUID, flags, CAnyValue::CloneShared(value));
 	}
 
 private:
 
-	void AddInput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData);
-	void AddOutput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData);
+	void AddInput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData);
+	void AddOutput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData);
 
 private:
 
@@ -112,16 +113,16 @@ public:
 	virtual void                 SetPos(Vec2 pos) override;
 	virtual Vec2                 GetPos() const override;
 	virtual uint32               GetInputCount() const override;
-	virtual uint32               FindInputById(const CGraphPortId& id) const override;
-	virtual CGraphPortId         GetInputId(uint32 inputIdx) const override;
+	virtual uint32               FindInputById(const CUniqueId& id) const override;
+	virtual CUniqueId            GetInputId(uint32 inputIdx) const override;
 	virtual const char*          GetInputName(uint32 inputIdx) const override;
 	virtual SGUID                GetInputTypeGUID(uint32 inputIdx) const override;
 	virtual ScriptGraphPortFlags GetInputFlags(uint32 inputIdx) const override;
 	virtual CAnyConstPtr         GetInputData(uint32 inputIdx) const override;
 	virtual ColorB               GetInputColor(uint32 inputIdx) const override;
 	virtual uint32               GetOutputCount() const override;
-	virtual uint32               FindOutputById(const CGraphPortId& id) const override;
-	virtual CGraphPortId         GetOutputId(uint32 outputIdx) const override;
+	virtual uint32               FindOutputById(const CUniqueId& id) const override;
+	virtual CUniqueId            GetOutputId(uint32 outputIdx) const override;
 	virtual const char*          GetOutputName(uint32 outputIdx) const override;
 	virtual SGUID                GetOutputTypeGUID(uint32 outputIdx) const override;
 	virtual ScriptGraphPortFlags GetOutputFlags(uint32 outputIdx) const override;
@@ -158,4 +159,5 @@ private:
 	CScriptGraphNodeLayout                 m_layout;
 	IScriptGraph*                          m_pGraph = nullptr;
 };
+
 } // Schematyc

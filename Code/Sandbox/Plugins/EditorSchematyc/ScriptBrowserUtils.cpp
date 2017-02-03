@@ -64,6 +64,7 @@ static const char* g_szScriptVariableIcon = "icons:schematyc/element_variable.ic
 static const char* g_szScriptTimerIcon = "icons:schematyc/element_timer.ico";
 static const char* g_szScriptSignalReceiverIcon = "icons:schematyc/element_signalreceiver.ico";
 static const char* g_szScriptComponentIcon = "icons:schematyc/element_componentinstance.ico";
+static const char* g_szScriptActionIcon = "icons:schematyc/element_actioninstance.ico";
 
 struct SBase
 {
@@ -393,7 +394,7 @@ public:
 				const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(pScriptComponentInstance->GetTypeGUID());
 				if (pEnvComponent)
 				{
-					if (pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Socket))
+					if (pEnvComponent->GetDesc().GetComponentFlags().Check(EComponentFlags::Socket))
 					{
 						bAttach = true;
 					}
@@ -407,7 +408,7 @@ public:
 			IScriptViewPtr pScriptView = gEnv->pSchematyc->CreateScriptView(pScriptScope->GetGUID());
 			auto visitEnvComponent = [this, bAttach, &pScriptView](const IEnvComponent& envComponent) -> EVisitStatus
 			{
-				if (!bAttach || envComponent.GetComponentFlags().Check(EEnvComponentFlags::Attach))
+				if (!bAttach || envComponent.GetDesc().GetComponentFlags().Check(EComponentFlags::Attach))
 				{
 					CStackString fullName;
 					pScriptView->QualifyName(envComponent, fullName);
@@ -893,7 +894,7 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(guid);
 			if (pEnvComponent)
 			{
-				const char* szIcon = pEnvComponent->GetIcon();
+				const char* szIcon = pEnvComponent->GetDesc().GetIcon();
 				if (szIcon && szIcon[0])
 				{
 					return szIcon;
@@ -901,20 +902,20 @@ const char* GetScriptElementIcon(const IScriptElement& scriptElement)
 			}
 			return g_szScriptComponentIcon;
 		}
-	/*case EScriptElementType::ActionInstance:
+	case EScriptElementType::ActionInstance:
 	   {
-	    const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
-	    const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
-	    if (pEnvAction)
-	    {
-	      const char* szIcon = pEnvAction->GetIcon();
-	      if (szIcon && szIcon[0])
-	      {
-	        return szIcon;
-	      }
-	    }
-	    return g_szScriptActionIcon;
-	   }*/
+			const SGUID guid = DynamicCast<IScriptActionInstance>(scriptElement).GetActionTypeGUID();
+			const IEnvAction* pEnvAction = gEnv->pSchematyc->GetEnvRegistry().GetAction(guid);
+			if (pEnvAction)
+			{
+				const char* szIcon = pEnvAction->GetDesc().GetIcon();
+				if (szIcon && szIcon[0])
+				{
+					return szIcon;
+				}
+			}
+			return g_szScriptActionIcon;
+	   }
 	default:
 		{
 			return "";

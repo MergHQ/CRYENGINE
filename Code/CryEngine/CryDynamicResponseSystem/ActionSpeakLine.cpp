@@ -127,10 +127,10 @@ void CActionSpeakLineInstance::Cancel()
 //--------------------------------------------------------------------------------------------------
 bool CActionSpeakLineInstance::OnLineAboutToStart(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID)
 {
-	if (m_pSpeaker == pSpeaker && lineID == m_lineID && ((m_flags& CActionSpeakLine::ESpeakLineFlags_ReevaluteConditionsAfterQueue) > 0))
+	if (m_currentState == CS_RUNNING && m_pSpeaker == pSpeaker && lineID == m_lineID && ((m_flags& CActionSpeakLine::ESpeakLineFlags_ReevaluteConditionsAfterQueue) > 0))
 	{
 		//if a queued-line is started, we re-check the conditions again
-		if (m_pResponseInstance->GetCurrentSegment() && m_currentState == CS_RUNNING)
+		if (m_pResponseInstance->GetCurrentSegment())
 		{
 			return m_pResponseInstance->GetCurrentSegment()->AreConditionsMet(m_pResponseInstance);
 		}
@@ -142,11 +142,12 @@ bool CActionSpeakLineInstance::OnLineAboutToStart(const DRS::IResponseActor* pSp
 //--------------------------------------------------------------------------------------------------
 void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
+	//TODO: speaker and lineId is maybe not enough, we should check for a LineInstanceId
 	if (pSpeaker == m_pSpeaker && m_lineID == lineID)
 	{
 		if (lineEvent == eLineEvent_Started)
 		{
-			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
+			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
@@ -157,18 +158,19 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		{
 			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-finished' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_FINISHED;
-			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnFinish) > 0)
+			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnFinish) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
 				m_pSpeaker->QueueSignal(s_signalOnLineFinish, contextVariablesPtr);
 			}
+			CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
 		}
 		else if (lineEvent == eLineEvent_Canceled)
 		{
 			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-canceled' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_CANCELED;
-			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnCancel) > 0)
+			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnCancel) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
@@ -178,6 +180,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 			{
 				m_pResponseInstance->Cancel();  //remark: This will call 'cancel' on our own instance as well, so we need to handle that.
 			}
+			CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
 		}
 		else if ((lineEvent & eLineEvent_WasNotStartedForAnyReason) > 0)
 		{
@@ -192,6 +195,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 			{
 				m_pResponseInstance->Cancel();  //remark: This will call 'cancel' on our own instance as well, so we need to handle that.
 			}
+			CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
 		}
 	}
 }

@@ -26,20 +26,25 @@ public:
 		Sphere
 	};
 
-private:
-
-	struct SProperties
+	struct SDimensions
 	{
-		SProperties();
+		static void ReflectType(Schematyc::CTypeDesc<SDimensions>& desc);
 
-		void Serialize(Serialization::IArchive& archive);
+		EVolumeShape   shape = EVolumeShape::Box;
+		Vec3           size = Vec3(1.0f);
+		float          radius = 1.0f;
+	};
+
+	struct STags
+	{
+		static void ReflectType(Schematyc::CTypeDesc<STags>& desc);
 
 		SensorTagNames attributeTags;
 		SensorTagNames listenerTags;
-		EVolumeShape   shape;
-		Vec3           size;
-		float          radius;
+		EVolumeShape   shape = EVolumeShape::Box;
 	};
+
+private:
 
 	struct SPreviewProperties
 	{
@@ -61,8 +66,6 @@ private:
 
 		SPreviewProperties m_properties;
 	};
-
-	typedef std::vector<EntityId> EntityIds;
 
 	struct SEnteringSignal
 	{
@@ -109,7 +112,7 @@ private:
 	void          OnEntityEvent(const SEntityEvent& event);
 	void          OnSensorEvent(const SSensorEvent& event);
 
-	CSensorBounds CreateBounds(const Matrix34& worldTM, const Schematyc::CTransform& transform, const SProperties& properties) const;
+	CSensorBounds CreateBounds(const Matrix34& worldTM, const Schematyc::CTransform& transform) const;
 	CSensorBounds CreateOBBBounds(const Matrix34& worldTM, const Vec3& pos, const Vec3& size, const Matrix33& rot) const;
 	CSensorBounds CreateSphereBounds(const Matrix34& worldTM, const Vec3& pos, float radius) const;
 
@@ -119,8 +122,10 @@ private:
 
 private:
 
-	SensorVolumeId                         m_volumeId;
+	SDimensions                            m_dimensions;
+	STags                                  m_tags;
 
+	SensorVolumeId                         m_volumeId = SensorVolumeId::Invalid;
 	Schematyc::EntityNotHiddenUpdateFilter m_updateFilter;
 	Schematyc::CConnectionScope            m_connectionScope;
 };

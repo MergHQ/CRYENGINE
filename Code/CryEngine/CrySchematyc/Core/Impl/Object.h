@@ -4,7 +4,6 @@
 
 #include <Schematyc/IObject.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
-#include <Schematyc/Runtime/RuntimeParams.h>
 #include <Schematyc/Services/ITimerSystem.h>
 #include <Schematyc/Utils/Transform.h>
 
@@ -16,22 +15,55 @@ namespace Schematyc
 // Forward declare interfaces.
 struct IComponentPreviewer;
 struct IObjectProperties;
-struct IProperties;
 // Forward declare structures.
 struct SUpdateContext;
 // Forward declare classes.
 class CAction;
 class CActionDesc;
 class CComponent;
+class CComponentDesc;
+class CRuntimeParamMap;
 class CScratchpad;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IObjectProperties)
-DECLARE_SHARED_POINTERS(IProperties)
 DECLARE_SHARED_POINTERS(CAction)
 DECLARE_SHARED_POINTERS(CComponent)
 DECLARE_SHARED_POINTERS(CRuntimeClass)
 
-typedef std::deque<SObjectSignal> ObjectSignalQueue;
+struct SQueuedObjectSignal
+{
+	inline SQueuedObjectSignal() {}
+
+	inline SQueuedObjectSignal(const SQueuedObjectSignal& rhs)
+		: signal(rhs.signal)
+		, scratchpad(rhs.scratchpad)
+	{}
+
+	inline SQueuedObjectSignal(const SObjectSignal& rhs)
+		: signal(rhs.typeGUID, rhs.senderGUID)
+	{
+		auto visitInput = [this](const CUniqueId& id, const CAnyConstRef& value)
+		{
+			const uint32 pos = scratchpad.Add(value);
+			const CAnyPtr pValue = scratchpad.Get(pos);
+			signal.params.BindInput(id, pValue);
+		};
+		rhs.params.VisitInputs(visitInput);
+
+		auto visitOutput = [this](const CUniqueId& id, const CAnyConstRef& value)
+		{
+			const uint32 pos = scratchpad.Add(value);
+			const CAnyPtr pValue = scratchpad.Get(pos);
+			signal.params.BindOutput(id, pValue);
+		};
+		rhs.params.VisitOutputs(visitOutput);
+	}
+
+	SObjectSignal   signal;
+	StackScratchpad scratchpad;
+};
+
+typedef std::deque<SQueuedObjectSignal> ObjectSignalQueue;
 
 class CObject : public IObject
 {
@@ -48,16 +80,16 @@ private:
 
 	typedef std::vector<SStateMachine> StateMachines;
 
-	struct SComponent
+	struct SComponent // #SchematycTODO : Can we refactor this structure to look more like SAction?
 	{
-		SComponent(const SGUID& guid, const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx);
+		SComponent(const SGUID& _guid, const CComponentDesc& _desc, const CComponentPtr& _pComponent, const CTransform& _transform, IComponentPreviewer* _pPreviewer, uint32 _parentIdx);
 
-		SGUID                guid;        // #SchematycTODO : Can we avoid duplicating this (stored both here and in the component itself)?
-		CComponentPtr        pComponent;
-		CTransform           transform;
-		IPropertiesPtr       pProperties; // #SchematycTODO : Can we avoid duplicating this (stored both here and in the component itself)?
-		IComponentPreviewer* pPreviewer;  // #SchematycTODO : Can we avoid duplicating this (stored both here and in the component itself)?
-		uint32               parentIdx;   // #SchematycTODO : Can we store a raw pointer to the component rather than referencing by index?
+		SGUID                 guid;
+		const CComponentDesc& desc;
+		CComponentPtr         pComponent;
+		CTransform            transform;
+		IComponentPreviewer*  pPreviewer;
+		uint32                parentIdx; // #SchematycTODO : Can we store a raw pointer to the component rather than referencing by index?
 	};
 
 	typedef std::vector<SComponent> Components;
@@ -121,8 +153,8 @@ public:
 
 	CScratchpad& GetScratchpad();
 	CComponent*  GetComponent(uint32 componentIdx);
-	bool         ExecuteFunction(uint32 functionIdx, CRuntimeParams& params);
-	bool         StartAction(uint32 actionIdx, CRuntimeParams& params);
+	bool         ExecuteFunction(uint32 functionIdx, CRuntimeParamMap& params);
+	bool         StartAction(uint32 actionIdx, CRuntimeParamMap& params);
 
 private:
 
@@ -170,8 +202,8 @@ private:
 	bool EvaluateStateTransitions(uint32 stateMachineIdx, const SObjectSignal& signal);
 	void ChangeState(uint32 stateMachineIdx, uint32 stateIdx);
 
-	void ExecuteFunction(const SRuntimeFunction& function, CRuntimeParams& params);
-	void ExecuteFunction(uint32 graphIdx, CRuntimeParams& params, SRuntimeActivationParams activationParams);
+	void ExecuteFunction(const SRuntimeFunction& function, CRuntimeParamMap& params);
+	void ExecuteFunction(uint32 graphIdx, CRuntimeParamMap& params, SRuntimeActivationParams activationParams);
 	void ProcessSignalQueue();
 
 private:
@@ -183,7 +215,7 @@ private:
 	IObjectPropertiesConstPtr m_pProperties;
 	ESimulationMode           m_simulationMode;
 
-	HeapScratchpad            m_scratchPad;
+	HeapScratchpad            m_scratchpad;
 	Graphs                    m_graphs;
 
 	StateMachines             m_stateMachines;

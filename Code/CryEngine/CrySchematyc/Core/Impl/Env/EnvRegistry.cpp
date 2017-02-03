@@ -12,6 +12,7 @@
 #include <Schematyc/Env/Elements/IEnvFunction.h>
 #include <Schematyc/Env/Elements/IEnvModule.h>
 #include <Schematyc/Env/Elements/IEnvSignal.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/StackString.h>
 
@@ -554,18 +555,20 @@ bool CEnvRegistry::ValidateComponentDependencies() const
 
 	for (const Components::value_type& component : m_components)
 	{
-		for (uint32 dependencyIdx = 0, dependencyCount = component.second->GetDependencyCount(); dependencyIdx < dependencyCount; ++dependencyIdx)
+		const CComponentDesc& componentDesc = component.second->GetDesc();
+		for (uint32 dependencyIdx = 0, dependencyCount = componentDesc.GetDependencyCount(); dependencyIdx < dependencyCount; ++dependencyIdx)
 		{
-			const SGUID dependencyGUID = component.second->GetDependency(dependencyIdx)->guid;
+			const SGUID dependencyGUID = componentDesc.GetDependency(dependencyIdx)->guid;
 			const IEnvComponent* pDependencyComponent = GetComponent(dependencyGUID);
 			if (pDependencyComponent)
 			{
-				if (!pDependencyComponent->GetComponentFlags().Check(EEnvComponentFlags::Singleton))
+				const CComponentDesc& dependencyComponentDesc = pDependencyComponent->GetDesc();
+				if (!dependencyComponentDesc.GetComponentFlags().Check(EComponentFlags::Singleton))
 				{
 					SCHEMATYC_CORE_CRITICAL_ERROR("Non-singleton component detected as dependency: component = %s, dependency = %s", component.second->GetName(), pDependencyComponent->GetName());
 					bError = true;
 				}
-				if (pDependencyComponent->IsDependency(component.first))
+				if (dependencyComponentDesc.IsDependency(component.first))
 				{
 					SCHEMATYC_CORE_CRITICAL_ERROR("Circular dependency detected between components: component = %s, dependency = %s", component.second->GetName(), pDependencyComponent->GetName());
 					bError = true;

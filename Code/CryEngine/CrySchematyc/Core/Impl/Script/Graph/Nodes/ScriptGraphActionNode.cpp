@@ -66,13 +66,13 @@ void CScriptGraphActionNode::CreateLayout(CScriptGraphNodeLayout& layout)
 			if (pDefaultValue)
 			{
 				const CCommonTypeDesc& actionMemberTypeDesc = actionMemberDesc.GetTypeDesc();
-				layout.AddInputWithData(CGraphPortId::FromUniqueId(actionMemberDesc.GetId()), actionMemberDesc.GetLabel(), actionMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, CAnyConstRef(actionMemberTypeDesc, pDefaultValue));
+				layout.AddInputWithData(CUniqueId::FromUInt32(actionMemberDesc.GetId()), actionMemberDesc.GetLabel(), actionMemberTypeDesc.GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, CAnyConstRef(actionMemberTypeDesc, pDefaultValue));
 			}
 		}
 
 		auto visitEnvSignal = [&layout](const IEnvSignal& envSignal)
 		{
-			layout.AddOutput(CGraphPortId::FromGUID(envSignal.GetGUID()), envSignal.GetName(), envSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+			layout.AddOutput(CUniqueId::FromGUID(envSignal.GetGUID()), envSignal.GetName(), envSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 		};
 		EnvUtils::VisitChildren(*pEnvAction, CDelegate<void(const IEnvSignal&)>::FromLambda(visitEnvSignal));
 	}
@@ -249,15 +249,9 @@ SRuntimeResult CScriptGraphActionNode::Execute(SRuntimeContext& context, const S
 		const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
 		CObject* pObject = static_cast<CObject*>(context.pObject);
 
-		StackRuntimeParams params;
-		for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
-		{
-			if (context.node.IsDataInput(inputIdx))
-			{
-				params.SetInput(context.node.GetInputId(inputIdx).AsUniqueId(), *context.node.GetInputData(inputIdx));
-			}
-		}
-		
+		StackRuntimeParamMap params;
+		context.node.BindParams(params);
+
 		pObject->StartAction(data.actionIdx, params);
 
 		return SRuntimeResult(ERuntimeStatus::Break);

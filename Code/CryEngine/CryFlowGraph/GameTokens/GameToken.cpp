@@ -100,7 +100,7 @@ const char* CGameToken::GetValueAsString() const
 {
 	static string temp;
 	temp = ConvertToString(m_value);
-	return temp;
+	return temp.c_str();
 }
 
 void CGameToken::GetMemoryStatistics(ICrySizer* s)

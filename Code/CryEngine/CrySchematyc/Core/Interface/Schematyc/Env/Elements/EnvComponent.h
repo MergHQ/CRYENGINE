@@ -4,31 +4,29 @@
 
 #include <CryMemory/STLPoolAllocator.h>
 
+#include "Schematyc/Component.h"
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvComponent.h"
-#include "Schematyc/Utils/GUID.h"
-#include "Schematyc/Utils/Properties.h"
+#include "Schematyc/Reflection/ComponentDesc.h"
 
-#define SCHEMATYC_MAKE_ENV_COMPONENT(component, name) Schematyc::EnvComponent::MakeShared<component>(name, SCHEMATYC_SOURCE_FILE_INFO)
+#define SCHEMATYC_MAKE_ENV_COMPONENT(component) Schematyc::EnvComponent::MakeShared<component>(SCHEMATYC_SOURCE_FILE_INFO)
 
 namespace Schematyc
 {
 
-// Forward declare interfaces.
-struct INetworkSpawnParams;
-
 template<typename COMPONENT> class CEnvComponent : public CEnvElementBase<IEnvComponent>
 {
-private:
-
-	typedef std::vector<SEnvComponentDependency> Dependencies;
-
 public:
 
-	inline CEnvComponent(const char* szName, const SSourceFileInfo& sourceFileInfo)
-		: CEnvElementBase(Schematyc::GetTypeDesc<COMPONENT>().GetGUID(), szName, sourceFileInfo)
-	{}
+	inline CEnvComponent(const SSourceFileInfo& sourceFileInfo)
+		: CEnvElementBase(sourceFileInfo)
+	{
+		const CComponentDesc& desc = Schematyc::GetTypeDesc<COMPONENT>();
+		CEnvElementBase::SetGUID(desc.GetGUID());
+		CEnvElementBase::SetName(desc.GetLabel());
+		CEnvElementBase::SetDescription(desc.GetDescription());
+	}
 
 	// IEnvElement
 
@@ -52,109 +50,32 @@ public:
 
 	// IEnvComponent
 
-	virtual const char* GetIcon() const override
+	virtual const CComponentDesc& GetDesc() const override
 	{
-		return m_icon.c_str();
+		return GetTypeDesc<COMPONENT>();
 	}
 
-	virtual EnvComponentFlags GetComponentFlags() const override
-	{
-		return m_flags;
-	}
-
-	virtual uint32 GetDependencyCount() const override
-	{
-		return m_dependencies.size();
-	}
-
-	virtual const SEnvComponentDependency* GetDependency(uint32 dependencyIdx) const override
-	{
-		return dependencyIdx < m_dependencies.size() ? &m_dependencies[dependencyIdx] : nullptr;
-	}
-
-	virtual bool IsDependency(const SGUID& guid) const override
-	{
-		for (const SEnvComponentDependency& dependency : m_dependencies)
-		{
-			if (dependency.guid == guid)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	virtual CComponentPtr Create() const override
+	virtual CComponentPtr CreateFromPool() const override
 	{
 		return std::allocate_shared<COMPONENT>(m_allocator);
 	}
 
-	virtual const IProperties* GetProperties() const override
-	{
-		return m_pProperties.get();
-	}
-
-	virtual const INetworkSpawnParams* GetNetworkSpawnParams() const override
-	{
-		return m_pNetworkSpawnParams.get();
-	}
-
-	virtual IComponentPreviewer* GetPreviewer() const override
-	{
-		return m_pPreviewer.get();
-	}
-
 	// ~IEnvComponent
-
-	inline void SetIcon(const char* szIcon)
-	{
-		m_icon = szIcon;
-	}
-
-	inline void SetFlags(EnvComponentFlags flags)
-	{
-		m_flags = flags;
-	}
-
-	inline void AddDependency(EEnvComponentDependencyType type, const SGUID& guid)
-	{
-		m_dependencies.emplace_back(type, guid);
-	}
-
-	template<typename TYPE> inline void SetProperties(const TYPE& properties)
-	{
-		m_pProperties = Properties::MakeShared(properties);
-	}
-
-	template<typename TYPE> inline void SetNetworkSpawnParams(const INetworkSpawnParams& networkSpawnParams)
-	{
-		m_pNetworkSpawnParams.reset(new TYPE(networkSpawnParams));
-	}
-
-	template<typename TYPE> inline void SetPreviewer(const TYPE& previewer)
-	{
-		m_pPreviewer.reset(new TYPE(previewer));
-	}
 
 private:
 
-	string                               m_icon;
-	EnvComponentFlags                    m_flags;
-	Dependencies                         m_dependencies;
-	stl::STLPoolAllocator<COMPONENT>     m_allocator;
-	IPropertiesPtr                       m_pProperties; // #SchematycTODO : Store using std::unique_ptr?
-	std::unique_ptr<INetworkSpawnParams> m_pNetworkSpawnParams;
-	std::unique_ptr<IComponentPreviewer> m_pPreviewer;
+	stl::STLPoolAllocator<COMPONENT> m_allocator;
 };
 
 namespace EnvComponent
 {
 
-template<typename TYPE> inline std::shared_ptr<CEnvComponent<TYPE>> MakeShared(const char* szName, const SSourceFileInfo& sourceFileInfo)
+template<typename TYPE> inline std::shared_ptr<CEnvComponent<TYPE>> MakeShared(const SSourceFileInfo& sourceFileInfo)
 {
+	static_assert(std::is_base_of<CComponent, TYPE>::value, "Type must be derived from Schematyc::CComponent!");
 	SCHEMATYC_VERIFY_TYPE_IS_REFLECTED(TYPE);
 
-	return std::make_shared<CEnvComponent<TYPE>>(szName, sourceFileInfo);
+	return std::make_shared<CEnvComponent<TYPE>>(sourceFileInfo);
 }
 
 } // EnvComponent

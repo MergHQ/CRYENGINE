@@ -79,19 +79,17 @@ namespace Schematyc
 	void CEntityMovementComponent::ReflectType(CTypeDesc<CEntityMovementComponent>& desc)
 	{
 		desc.SetGUID("04e1520c-be32-420d-9857-c39b2f7f7d4a"_schematyc_guid);
+		desc.SetLabel("Movement");
+		desc.SetDescription("Entity movement component");
+		desc.SetIcon("icons:Navigation/Move_Classic.ico");
+		desc.SetComponentFlags(EComponentFlags::Singleton);
 	}
 
 	void CEntityMovementComponent::Register(IEnvRegistrar& registrar)
 	{
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
-			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityMovementComponent, "Movement");
-			pComponent->SetDescription("Entity movement component");
-			pComponent->SetIcon("icons:Navigation/Move_Classic.ico");
-			pComponent->SetFlags(EEnvComponentFlags::Singleton);
-			scope.Register(pComponent);
-
-			CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+			CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityMovementComponent));
 			// Functions
 			{
 				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityMovementComponent::Move, "07209f7e-db47-4e2b-86a8-d6ea01ccf22c"_schematyc_guid, "Move");

@@ -14,42 +14,33 @@
 
 namespace Schematyc
 {
-CEntityParticleEmitterComponent::SProperties::SProperties()
-	: scale(1.0f)
-	, bVisible(true)
-	, bPrime(false)
-	, countScale(1.0f)
-	, speedScale(1.0f)
-	, timeScale(1.0f)
-	, pulsePeriod(0.0f)
-	, strength(-1.0f)
-{}
 
-void CEntityParticleEmitterComponent::SProperties::Serialize(Serialization::IArchive& archive)
+void CEntityParticleEmitterComponent::SAdvancedProperties::ReflectType(Schematyc::CTypeDesc<CEntityParticleEmitterComponent::SAdvancedProperties>& desc)
 {
-	archive(effectName, "effectName", "Effect");
-	archive.doc("Effect");
-	archive(bVisible, "visible", "Visible");
-	archive.doc("Effect is initially visible");
-	archive(bPrime, "prime", "Prime");
-	archive.doc("Advance emitter age to its equilibrium state");
+	desc.SetGUID("da718fa6-6484-4b52-8069-2af728e70b79"_schematyc_guid);
+}
 
+// N.B. Non-intrusive serialization is used here only to ensure backward compatibility.
+//      If files were patched we could instead reflect members and let the system serialize them automatically.
+inline bool Serialize(Serialization::IArchive& archive, CEntityParticleEmitterComponent::SAdvancedProperties& value, const char* szName, const char* szLabel)
+{
 	if (archive.openBlock("advanced", "Advanced"))
 	{
-		archive(scale, "scale", "Uniform Scale");
+		archive(value.scale, "scale", "Uniform Scale");
 		archive.doc("Emitter uniform scale");
-		archive(countScale, "countScale", "Count Scale");
+		archive(value.countScale, "countScale", "Count Scale");
 		archive.doc("Particle count multiplier");
-		archive(speedScale, "speedScale", "Speed Scale");
+		archive(value.speedScale, "speedScale", "Speed Scale");
 		archive.doc("Particle emission speed multiplier");
-		archive(timeScale, "timeScale", "Time Scale");
+		archive(value.timeScale, "timeScale", "Time Scale");
 		archive.doc("Emitter time multiplier");
-		archive(pulsePeriod, "pulsePeriod", "Pulse Period");
+		archive(value.pulsePeriod, "pulsePeriod", "Pulse Period");
 		archive.doc("How often to restart emitter");
-		archive(strength, "strength", "Strength");
+		archive(value.strength, "strength", "Strength");
 		archive.doc("Strength curve parameter");
 		archive.closeBlock();
 	}
+	return true;
 }
 
 bool CEntityParticleEmitterComponent::Init()
@@ -59,14 +50,13 @@ bool CEntityParticleEmitterComponent::Init()
 
 void CEntityParticleEmitterComponent::Run(ESimulationMode simulationMode)
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	if (!pProperties->effectName.value.empty())
+	if (!m_effectName.value.empty())
 	{
 		if (m_slot == EmptySlot)
 		{
 			LoadParticleEmitter();
 		}
-		SetVisible(pProperties->bVisible);
+		SetVisible(m_bInitVisible);
 	}
 }
 
@@ -129,20 +119,21 @@ bool CEntityParticleEmitterComponent::IsVisible() const
 void CEntityParticleEmitterComponent::ReflectType(CTypeDesc<CEntityParticleEmitterComponent>& desc)
 {
 	desc.SetGUID("bf9503cf-d25c-4923-a1cb-8658847aa9a6"_schematyc_guid);
+	desc.SetLabel("ParticleEmitter");
+	desc.SetDescription("Particle emitter component");
+	desc.SetIcon("icons:schematyc/entity_particle_emitter_component.png");
+	desc.SetComponentFlags({ EComponentFlags::Transform, EComponentFlags::Socket, EComponentFlags::Attach });
+	desc.AddMember(&CEntityParticleEmitterComponent::m_effectName, 'name', "effectName", "Effect", "Effect");
+	desc.AddMember(&CEntityParticleEmitterComponent::m_bInitVisible, 'vis', "visible", "Visible", "Effect is initially visible", true);
+	desc.AddMember(&CEntityParticleEmitterComponent::m_bPrime, 'prim', "prime", "Prime", "Advance emitter age to its equilibrium state", false);
+	desc.AddMember(&CEntityParticleEmitterComponent::m_advancedProperties, 'adv', "advanced", "Advanced", nullptr);
 }
 
 void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityParticleEmitterComponent, "ParticleEmitter");
-		pComponent->SetDescription("Particle emitter component");
-		pComponent->SetIcon("icons:schematyc/entity_particle_emitter_component.png");
-		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
-		pComponent->SetProperties(SProperties());
-		scope.Register(pComponent);
-
-		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityParticleEmitterComponent));
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityParticleEmitterComponent::SetTransform, "97af940e-6a2c-4374-a43d-74d90ec385e2"_schematyc_guid, "SetTransform");
@@ -170,18 +161,17 @@ void CEntityParticleEmitterComponent::Register(IEnvRegistrar& registrar)
 
 void CEntityParticleEmitterComponent::LoadParticleEmitter()
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	IParticleEffect* pParticleEffect = gEnv->pParticleManager->FindEffect(pProperties->effectName.value.c_str(), "Schematyc::GameEntity::CEntityParticleEmitterComponent::LoadParticleEmitter");
+	IParticleEffect* pParticleEffect = gEnv->pParticleManager->FindEffect(m_effectName.value.c_str(), "Schematyc::GameEntity::CEntityParticleEmitterComponent::LoadParticleEmitter");
 	if (pParticleEffect)
 	{
 		SpawnParams spawnParams;
 
-		spawnParams.fCountScale = pProperties->bVisible ? pProperties->countScale : 0.0f;
-		spawnParams.fSpeedScale = pProperties->speedScale;
-		spawnParams.fTimeScale = pProperties->timeScale;
-		spawnParams.fPulsePeriod = pProperties->pulsePeriod;
-		spawnParams.fStrength = pProperties->strength;
-		spawnParams.bPrime = pProperties->bPrime;
+		spawnParams.fCountScale = m_bInitVisible ? m_advancedProperties.countScale : 0.0f;
+		spawnParams.fSpeedScale = m_advancedProperties.speedScale;
+		spawnParams.fTimeScale = m_advancedProperties.timeScale;
+		spawnParams.fPulsePeriod = m_advancedProperties.pulsePeriod;
+		spawnParams.fStrength = m_advancedProperties.strength;
+		spawnParams.bPrime = m_bPrime;
 
 		IEntity& entity = EntityUtils::GetEntity(*this);
 		m_slot = entity.LoadParticleEmitter(m_slot, pParticleEffect, &spawnParams);
@@ -200,6 +190,7 @@ void CEntityParticleEmitterComponent::LoadParticleEmitter()
 		m_bVisible = false;
 	}
 }
+
 } // Schematyc
 
 SCHEMATYC_AUTO_REGISTER(&Schematyc::CEntityParticleEmitterComponent::Register)

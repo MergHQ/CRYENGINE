@@ -9,12 +9,12 @@
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
 #include <Schematyc/Env/Elements/IEnvInterface.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/SerializationUtils/ISerializationContext.h>
 #include <Schematyc/SerializationUtils/SerializationUtils.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/IGUIDRemapper.h>
-#include <Schematyc/Utils/IProperties.h>
 
 #include "CVars.h"
 #include "Script/Graph/ScriptGraph.h"
@@ -28,6 +28,7 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc
 {
+
 CScriptComponentInstance::CScriptComponentInstance()
 	: CScriptElementBase(EScriptElementFlags::None)
 {}
@@ -36,7 +37,7 @@ CScriptComponentInstance::CScriptComponentInstance(const SGUID& guid, const char
 	: CScriptElementBase(guid, szName, EScriptElementFlags::None)
 	, m_typeGUID(typeGUID)
 {
-	ApplyComponent();   // #SchematycTODO : Do this on EScriptEventId::Add?
+	ApplyComponent(); // #SchematycTODO : Do this on EScriptEventId::Add?
 }
 
 EScriptElementAccessor CScriptComponentInstance::GetAccessor() const
@@ -89,9 +90,9 @@ const CTransform& CScriptComponentInstance::GetTransform() const
 	return m_transform;
 }
 
-const IProperties* CScriptComponentInstance::GetProperties() const
+const CClassProperties& CScriptComponentInstance::GetProperties() const
 {
-	return m_pProperties.get();
+	return m_properties;
 }
 
 void CScriptComponentInstance::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)
@@ -104,10 +105,7 @@ void CScriptComponentInstance::Load(Serialization::IArchive& archive, const ISer
 	ApplyComponent();
 	archive(m_accessor, "accessor");
 	archive(m_transform, "transform");
-	if (m_pProperties)
-	{
-		archive(*m_pProperties, "properties");
-	}
+	archive(m_properties, "properties", "Properties");
 }
 
 void CScriptComponentInstance::Save(Serialization::IArchive& archive, const ISerializationContext& context)
@@ -115,15 +113,12 @@ void CScriptComponentInstance::Save(Serialization::IArchive& archive, const ISer
 	archive(m_accessor, "accessor");
 	archive(m_typeGUID, "typeGUID");
 	archive(m_transform, "transform");
-	if (m_pProperties)
-	{
-		archive(*m_pProperties, "properties");
-	}
+	archive(m_properties, "properties", "Properties");
 }
 
 void CScriptComponentInstance::Edit(Serialization::IArchive& archive, const ISerializationContext& context)
 {
-	if (m_pProperties)
+	if (!m_properties.IsEmpty())
 	{
 		bool bPublic = m_accessor == EScriptElementAccessor::Public;
 		archive(bPublic, "bPublic", "Public");
@@ -136,9 +131,9 @@ void CScriptComponentInstance::Edit(Serialization::IArchive& archive, const ISer
 	{
 		archive(m_transform, "transform", "Transform");
 	}
-	if (m_pProperties)
+	if(!m_properties.IsEmpty())
 	{
-		archive(*m_pProperties, "properties", "Properties");
+		archive(m_properties, "properties", "Properties");
 	}
 }
 
@@ -162,13 +157,10 @@ void CScriptComponentInstance::ApplyComponent()
 	const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(m_typeGUID);
 	if (pEnvComponent)
 	{
-		m_bHasTransform = pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Transform);
-
-		const IProperties* pEnvComponentProperties = pEnvComponent->GetProperties();
-		if (pEnvComponentProperties)
-		{
-			m_pProperties = pEnvComponentProperties->Clone();
-		}
+		const CComponentDesc& componentDesc = pEnvComponent->GetDesc();
+		m_bHasTransform = componentDesc.GetComponentFlags().Check(EComponentFlags::Transform);
+		m_properties.Set(componentDesc);
 	}
 }
+
 } // Schematyc

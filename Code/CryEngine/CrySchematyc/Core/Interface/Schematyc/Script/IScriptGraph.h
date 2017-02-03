@@ -6,13 +6,14 @@
 #include "Schematyc/Script/IScriptExtension.h"
 #include "Schematyc/Script/ScriptDependencyEnumerator.h"
 #include "Schematyc/Utils/EnumFlags.h"
-#include "Schematyc/Utils/GraphPortId.h"
 #include "Schematyc/Utils/GUID.h"
 #include "Schematyc/Utils/Signal.h"
+#include "Schematyc/Utils/UniqueId.h"
 #include "Schematyc/Utils/Validator.h"
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IGraphNodeCompiler;
 struct IScriptGraph;
@@ -79,16 +80,16 @@ struct IScriptGraphNode // #SchematycTODO : Move to separate header?
 	virtual void                 SetPos(Vec2 pos) = 0;
 	virtual Vec2                 GetPos() const = 0;
 	virtual uint32               GetInputCount() const = 0;
-	virtual uint32               FindInputById(const CGraphPortId& id) const = 0;
-	virtual CGraphPortId         GetInputId(uint32 inputIdx) const = 0;
+	virtual uint32               FindInputById(const CUniqueId& id) const = 0;
+	virtual CUniqueId            GetInputId(uint32 inputIdx) const = 0;
 	virtual const char*          GetInputName(uint32 inputIdx) const = 0;
 	virtual SGUID                GetInputTypeGUID(uint32 inputIdx) const = 0;
 	virtual ScriptGraphPortFlags GetInputFlags(uint32 inputIdx) const = 0;
 	virtual CAnyConstPtr         GetInputData(uint32 inputIdx) const = 0;
 	virtual ColorB               GetInputColor(uint32 inputIdx) const = 0;
 	virtual uint32               GetOutputCount() const = 0;
-	virtual uint32               FindOutputById(const CGraphPortId& id) const = 0;
-	virtual CGraphPortId         GetOutputId(uint32 outputIdx) const = 0;
+	virtual uint32               FindOutputById(const CUniqueId& id) const = 0;
+	virtual CUniqueId            GetOutputId(uint32 outputIdx) const = 0;
 	virtual const char*          GetOutputName(uint32 outputIdx) const = 0;
 	virtual SGUID                GetOutputTypeGUID(uint32 outputIdx) const = 0;
 	virtual ScriptGraphPortFlags GetOutputFlags(uint32 outputIdx) const = 0;
@@ -113,13 +114,13 @@ struct IScriptGraphLink // #SchematycTODO : Once all ports are referenced by id 
 {
 	virtual ~IScriptGraphLink() {}
 
-	virtual void         SetSrcNodeGUID(const SGUID& guid) = 0;
-	virtual SGUID        GetSrcNodeGUID() const = 0;
-	virtual CGraphPortId GetSrcOutputId() const = 0;
-	virtual void         SetDstNodeGUID(const SGUID& guid) = 0;
-	virtual SGUID        GetDstNodeGUID() const = 0;
-	virtual CGraphPortId GetDstInputId() const = 0;
-	virtual void         Serialize(Serialization::IArchive& archive) = 0;
+	virtual void      SetSrcNodeGUID(const SGUID& guid) = 0;
+	virtual SGUID     GetSrcNodeGUID() const = 0;
+	virtual CUniqueId GetSrcOutputId() const = 0;
+	virtual void      SetDstNodeGUID(const SGUID& guid) = 0;
+	virtual SGUID     GetDstNodeGUID() const = 0;
+	virtual CUniqueId GetDstInputId() const = 0;
+	virtual void      Serialize(Serialization::IArchive& archive) = 0;
 };
 
 DECLARE_SHARED_POINTERS(IScriptGraphLink)
@@ -191,20 +192,20 @@ struct IScriptGraph : public IScriptExtensionBase<EScriptExtensionType::Graph>
 	virtual void                                 VisitNodes(const ScriptGraphNodeVisitor& visitor) = 0;
 	virtual void                                 VisitNodes(const ScriptGraphNodeConstVisitor& visitor) const = 0;
 
-	virtual bool                                 CanAddLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const = 0;
-	virtual IScriptGraphLink*                    AddLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) = 0;
+	virtual bool                                 CanAddLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const = 0;
+	virtual IScriptGraphLink*                    AddLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) = 0;
 	virtual void                                 RemoveLink(uint32 iLink) = 0;
 	virtual void                                 RemoveLinks(const SGUID& nodeGUID) = 0;
 	virtual uint32                               GetLinkCount() const = 0;
 	virtual IScriptGraphLink*                    GetLink(uint32 linkIdx) = 0;
 	virtual const IScriptGraphLink*              GetLink(uint32 linkIdx) const = 0;
-	virtual uint32                               FindLink(const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const = 0;
+	virtual uint32                               FindLink(const SGUID& srcNodeGUID, const CUniqueId& srcOutputId, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const = 0;
 	virtual EVisitResult                         VisitLinks(const ScriptGraphLinkVisitor& visitor) = 0;
 	virtual EVisitResult                         VisitLinks(const ScriptGraphLinkConstVisitor& visitor) const = 0;
-	virtual EVisitResult                         VisitInputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) = 0;
-	virtual EVisitResult                         VisitInputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& dstNodeGUID, const CGraphPortId& dstInputId) const = 0;
-	virtual EVisitResult                         VisitOutputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId) = 0;
-	virtual EVisitResult                         VisitOutputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& srcNodeGUID, const CGraphPortId& srcOutputId) const = 0;
+	virtual EVisitResult                         VisitInputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) = 0;
+	virtual EVisitResult                         VisitInputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& dstNodeGUID, const CUniqueId& dstInputId) const = 0;
+	virtual EVisitResult                         VisitOutputLinks(const ScriptGraphLinkVisitor& visitor, const SGUID& srcNodeGUID, const CUniqueId& srcOutputId) = 0;
+	virtual EVisitResult                         VisitOutputLinks(const ScriptGraphLinkConstVisitor& visitor, const SGUID& srcNodeGUID, const CUniqueId& srcOutputId) const = 0;
 	virtual bool                                 GetLinkSrc(const IScriptGraphLink& link, IScriptGraphNode*& pNode, uint32& outputIdx) = 0;
 	virtual bool                                 GetLinkSrc(const IScriptGraphLink& link, const IScriptGraphNode*& pNode, uint32& outputIdx) const = 0;
 	virtual bool                                 GetLinkDst(const IScriptGraphLink& link, IScriptGraphNode*& pNode, uint32& inputIdx) = 0;
@@ -213,4 +214,5 @@ struct IScriptGraph : public IScriptExtensionBase<EScriptExtensionType::Graph>
 	virtual void                                 RemoveBrokenLinks() = 0;
 	virtual ScriptGraphLinkRemovedSignal::Slots& GetLinkRemovedSignalSlots() = 0;
 };
+
 } // Schematyc

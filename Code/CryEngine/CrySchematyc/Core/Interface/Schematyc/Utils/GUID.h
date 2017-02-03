@@ -58,7 +58,7 @@ inline void ToString(IString& output, const SGUID& guid)
 {
 	static_assert(sizeof(SGUID_mapped) == sizeof(SGUID), "SGUID_mapped and SGUID must be the same size");
 
-	const SGUID_mapped* pMappedGUID = reinterpret_cast<const SGUID_mapped*>(&guid);
+	const SGUID_mapped* pMappedGUID = alias_cast<SGUID_mapped*>(&guid);
 
 	unsigned int Data1;
 	unsigned int Data2;

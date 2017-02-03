@@ -21,22 +21,6 @@ namespace Schematyc
 static const float g_maxCameraPitchDeg = 80.0f;
 static const float g_maxCameraPitchRad = DEG2RAD(g_maxCameraPitchDeg);
 
-void CEntityOrbitCameraControllerComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(yaw, "yaw", "Yaw");
-	archive.doc("Yaw (degrees)");
-	archive(Serialization::Range(pitch, -g_maxCameraPitchDeg, g_maxCameraPitchDeg), "pitch", "Pitch");
-	archive.doc("Pitch (degrees)");
-	archive(distance, "distance", "Distance");
-	archive.doc("Orbit distance from entity");
-	archive(fov, "fov", "Field of View");
-	archive.doc("Field of view (degrees)");
-	archive(bActive, "bActive", "Active");
-	archive.doc("Activate camera");
-	archive(bAlwaysUpdate, "bAlwaysUpdate", "Always Update");
-	archive.doc("Update camera every frame");
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 CEntityOrbitCameraControllerComponent::~CEntityOrbitCameraControllerComponent()
@@ -74,14 +58,11 @@ void CEntityOrbitCameraControllerComponent::Run(ESimulationMode simulationMode)
 			pGameObject->CaptureView(this);
 		}
 
-		const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-		m_rotation.x = DEG2RAD(pProperties->pitch);
-		m_rotation.y = DEG2RAD(pProperties->roll);
-		m_rotation.z = DEG2RAD(pProperties->yaw);
-		m_distance = pProperties->distance;
-		m_fov = DEG2RAD(pProperties->fov);
-		m_bAlwaysUpdate = pProperties->bAlwaysUpdate;
-		SetActive(pProperties->bActive);
+		m_rotation.x = DEG2RAD(m_pitch);
+		m_rotation.y = DEG2RAD(m_roll);
+		m_rotation.z = DEG2RAD(m_yaw);
+		m_fov = DEG2RAD(m_fov);
+		SetActive(m_bActive);
 	}
 }
 
@@ -93,20 +74,23 @@ void CEntityOrbitCameraControllerComponent::QueueUpdate()
 void CEntityOrbitCameraControllerComponent::ReflectType(CTypeDesc<CEntityOrbitCameraControllerComponent>& desc)
 {
 	desc.SetGUID("AED0875B-0B8A-4961-AE6F-CE613956529F"_schematyc_guid);
+	desc.SetLabel("OrbitCameraController");
+	desc.SetDescription("Orbit camera controller component");
+	desc.SetIcon("icons:schematyc/camera.ico");
+	desc.SetComponentFlags(EComponentFlags::Singleton);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_yaw, 'yaw', "yaw", "Yaw", "Yaw (degrees)", 0.0f);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_pitch, 'pit', "pitch", "Pitch", "Pitch (degrees)", 45.0f);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_distance, 'dist', "distance", "Distance", "Orbit distance from entity", 10.0f);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_fov, 'fov', "fov", "Field of View", "Field of view (degrees)", 60.0f);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_bActive, 'act', "bActive", "Active", "Activate camera", true);
+	desc.AddMember(&CEntityOrbitCameraControllerComponent::m_bAlwaysUpdate, 'updt', "bAlwaysUpdate", "Always Update", "Update camera every frame", false);
 }
 
 void CEntityOrbitCameraControllerComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityOrbitCameraControllerComponent, "OrbitCameraController");
-		pComponent->SetDescription("Orbit camera controller component");
-		pComponent->SetIcon("icons:schematyc/camera.ico");
-		pComponent->SetFlags(EEnvComponentFlags::Singleton);
-		pComponent->SetProperties(CEntityOrbitCameraControllerComponent::SProperties());
-		scope.Register(pComponent);
-
-		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityOrbitCameraControllerComponent));
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityOrbitCameraControllerComponent::SetDistance, "8D75BD31-8BD6-4468-A531-630B11790FB4"_schematyc_guid, "SetDistance");

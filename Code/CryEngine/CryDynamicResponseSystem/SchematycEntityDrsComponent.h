@@ -8,13 +8,6 @@
 class CSchematycEntityDrsComponent final : public Schematyc::CComponent, DRS::IResponseManager::IListener, DRS::ISpeakerManager::IListener
 {
 public:
-	struct SProperties
-	{
-		void Serialize(Serialization::IArchive& archive);
-
-		string name;
-	};
-
 	struct SResponseStartedSignal
 	{
 		static void ReflectType(Schematyc::CTypeDesc<SResponseStartedSignal>& typeInfo);
@@ -42,7 +35,7 @@ public:
 
 		Schematyc::CSharedString  m_text;
 		Schematyc::CSharedString  m_speakerName;
-		bool    m_bWasCanceled ;
+		bool    m_bWasCanceled;
 		//animation, audioTrigger... do we need these as well?
 	};
 
@@ -67,7 +60,6 @@ public:
 	static void ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
 
-
 private:
 
 	void SendSignal(const Schematyc::CSharedString& signalName, const Schematyc::CSharedString& contextFloatName, float contextFloatValue, const Schematyc::CSharedString& contextStringName, const Schematyc::CSharedString& contextStringValue);
@@ -78,6 +70,9 @@ private:
 
 	DRS::IVariableCollection* GetVariableCollection(const Schematyc::CSharedString& collectionName);
 
-	DRS::IResponseActor* m_pDrsActor;
+	Schematyc::CSharedString m_name;
+
+	IEntityDynamicResponseComponent* m_pDrsEntityComp;
+	//DRS::IResponseActor* m_pDrsActor;
 	//Schematyc::CConnectionScope            m_connectionScope;
 };

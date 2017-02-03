@@ -14,23 +14,18 @@ struct IEnvRegistrar;
 
 class CEntityParticleEmitterComponent final : public CComponent
 {
-private:
+public:
 
-	struct SProperties
+	struct SAdvancedProperties
 	{
-		SProperties();
+		static void ReflectType(CTypeDesc<SAdvancedProperties>& desc);
 
-		void Serialize(Serialization::IArchive& archive);
-
-		ParticleEffectName effectName;
-		float              scale;
-		bool               bVisible;
-		bool               bPrime;
-		float              countScale;
-		float              speedScale;
-		float              timeScale;
-		float              pulsePeriod;
-		float              strength;
+		float scale = 1.0f;
+		float countScale = 1.0f;
+		float speedScale = 1.0f;
+		float timeScale = 1.0f;
+		float pulsePeriod = 0.0f;
+		float strength = -1.0f;
 	};
 
 public:
@@ -55,8 +50,13 @@ private:
 
 private:
 
-	int  m_slot = EmptySlot;
-	bool m_bVisible = false;
+	ParticleEffectName  m_effectName;
+	bool                m_bInitVisible = true;
+	bool                m_bPrime = false;
+	SAdvancedProperties m_advancedProperties;
+
+	int                m_slot = EmptySlot;
+	bool               m_bVisible = false;
 };
 
 } // Schematyc

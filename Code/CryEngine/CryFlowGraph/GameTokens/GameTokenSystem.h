@@ -33,32 +33,33 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IGameTokenSystem
 	//////////////////////////////////////////////////////////////////////////
-	virtual IGameToken*   SetOrCreateToken(const char* sTokenName, const TFlowInputData& defaultValue);
-	virtual void          DeleteToken(IGameToken* pToken);
-	virtual IGameToken*   FindToken(const char* sTokenName);
-	virtual void          RenameToken(IGameToken* pToken, const char* sNewName);
+	virtual IGameToken*   SetOrCreateToken(const char* sTokenName, const TFlowInputData& defaultValue) override;
+	virtual IGameToken*   SetOrCreateToken(const char* sTokenName, const char* szValue) override;
+	virtual void          DeleteToken(IGameToken* pToken) override;
+	virtual IGameToken*   FindToken(const char* sTokenName) override;
+	virtual void          RenameToken(IGameToken* pToken, const char* sNewName) override;
 
-	virtual IGameTokenIt* GetGameTokenIterator();
+	virtual IGameTokenIt* GetGameTokenIterator() override;
 
-	virtual void          RegisterListener(const char* sGameToken, IGameTokenEventListener* pListener, bool bForceCreate, bool bImmediateCallback);
-	virtual void          UnregisterListener(const char* sGameToken, IGameTokenEventListener* pListener);
+	virtual void          RegisterListener(const char* sGameToken, IGameTokenEventListener* pListener, bool bForceCreate, bool bImmediateCallback) override;
+	virtual void          UnregisterListener(const char* sGameToken, IGameTokenEventListener* pListener) override;
 
-	virtual void          RegisterListener(IGameTokenEventListener* pListener);
-	virtual void          UnregisterListener(IGameTokenEventListener* pListener);
+	virtual void          RegisterListener(IGameTokenEventListener* pListener) override;
+	virtual void          UnregisterListener(IGameTokenEventListener* pListener) override;
 
-	virtual void          Reset();
-	virtual void          Unload();
-	virtual void          Serialize(TSerialize ser);
+	virtual void          Reset() override;
+	virtual void          Unload() override;
+	virtual void          Serialize(TSerialize ser) override;
 
-	virtual void          DebugDraw();
+	virtual void          DebugDraw() override;
 
-	virtual void          LoadLibs(const char* sFileSpec);
-	virtual void          RemoveLibrary(const char* sPrefix);
+	virtual void          LoadLibs(const char* sFileSpec) override;
+	virtual void          RemoveLibrary(const char* sPrefix) override;
 
-	virtual void          SerializeSaveLevelToLevel(const char** ppGameTokensList, uint32 numTokensToSave);
-	virtual void          SerializeReadLevelToLevel();
+	virtual void          SerializeSaveLevelToLevel(const char** ppGameTokensList, uint32 numTokensToSave) override;
+	virtual void          SerializeReadLevelToLevel() override;
 
-	virtual void          GetMemoryStatistics(ICrySizer* s);
+	virtual void          GetMemoryStatistics(ICrySizer* s) override;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -109,8 +110,8 @@ private:
 	const char* GetTokenDebugString(CGameToken* pToken);
 
 public:
-	virtual void AddTokenToDebugList(const char* pToken);
-	virtual void RemoveTokenFromDebugList(const char* pToken);
+	virtual void AddTokenToDebugList(const char* pToken) override;
+	virtual void RemoveTokenFromDebugList(const char* pToken) override;
 
 #endif
 

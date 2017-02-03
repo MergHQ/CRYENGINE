@@ -33,16 +33,16 @@ enum class EVisitResult
 	Error       // Visit was stopped before completion error occurred.
 };
 
-// In-place memory allocation parameters.
-struct SInPlaceAllocationParams
+// In-place storage parameters.
+struct SInPlaceStorageParams
 {
-	explicit inline SInPlaceAllocationParams(uint32 _capacity, void* _pStorage)
+	explicit inline SInPlaceStorageParams(uint32 _capacity, void* _pData)
 		: capacity(_capacity)
-		, pStorage(_pStorage)
+		, pData(_pData)
 	{}
 
 	uint32 capacity;
-	void*  pStorage;
+	void*  pData;
 };
 
 struct SSourceFileInfo

@@ -13,27 +13,7 @@ struct IEnvRegistrar;
 
 class CEntityLightComponent final : public CComponent
 {
-private:
-
-	struct SProperties
-	{
-		SProperties();
-
-		void Serialize(Serialization::IArchive& archive);
-
-		bool   bOn;
-		ColorF color;
-		float  diffuseMultiplier;
-		float  specularMultiplier;
-		float  hdrDynamicMultiplier;
-		float  radius;
-		float  frustumAngle;
-		float  attenuationBulbSize;
-	};
-
 public:
-
-	CEntityLightComponent();
 
 	// CComponent
 	virtual bool Init() override;
@@ -57,8 +37,17 @@ private:
 
 private:
 
-	int  m_slot;
-	bool m_bOn;
+	bool   m_bInitOn = true;
+	ColorF m_color = Col_White;
+	float  m_diffuseMultiplier = 1.0f;
+	float  m_specularMultiplier = 1.0f;
+	float  m_hdrDynamicMultiplier = 1.0f;
+	float  m_radius = 10.0f;
+	float  m_frustumAngle = 45.0f;
+	float  m_attenuationBulbSize = 0.05f;
+
+	int    m_slot = EmptySlot;
+	bool   m_bOn = false;
 };
 
 } // Schematyc

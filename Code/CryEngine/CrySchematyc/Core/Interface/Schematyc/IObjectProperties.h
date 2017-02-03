@@ -6,23 +6,23 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IObjectProperties;
-struct IProperties;
-// Forward declare structures.
-
 // Forward declare classes.
 class CAnyRef;
+class CClassProperties;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IObjectProperties)
 
-struct IObjectProperties // #SchematycTODO : Derive from IProperties?
+struct IObjectProperties
 {
 	virtual ~IObjectProperties() {}
 
-	virtual IObjectPropertiesPtr Clone() const = 0;
-	virtual void                 Serialize(Serialization::IArchive& archive) = 0;
-	virtual const IProperties*   GetComponentProperties(const SGUID& guid) const = 0;
-	virtual bool                 ReadVariable(const CAnyRef& value, const SGUID& guid) const = 0;
+	virtual IObjectPropertiesPtr    Clone() const = 0;
+	virtual void                    Serialize(Serialization::IArchive& archive) = 0;
+	virtual const CClassProperties* GetComponentProperties(const SGUID& guid) const = 0;
+	virtual bool                    ReadVariable(const CAnyRef& value, const SGUID& guid) const = 0;
 };
+
 } // Schematyc

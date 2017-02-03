@@ -84,7 +84,7 @@ public:
 		return true;
 	}
 
-	virtual void Start(const CRuntimeParams& params) override
+	virtual void Start() override
 	{
 		STimerParams timerParams(m_duration);
 		if (m_bAutoStart)
@@ -116,7 +116,7 @@ public:
 	{
 		desc.SetGUID("6937eddc-f25c-44dc-a759-501d2e5da0df"_schematyc_guid);
 		desc.SetIcon("icons:schematyc/entity_timer_action.png");
-		desc.AddMember(&CEntityTimerAction::m_duration, 'dur', "duration", "Duration", "Timer duration", STimerDuration());
+		desc.AddMember(&CEntityTimerAction::m_duration, 'dur', "duration", "Duration", "Timer duration", STimerDuration(0.0f));
 		desc.AddMember(&CEntityTimerAction::m_bAutoStart, 'auto', "bAutoStart", "AutoStart", "Start timer automatically", true);
 		desc.AddMember(&CEntityTimerAction::m_bRepeat, 'rep', "bRepeat", "Repeat", "Repeat timer", false);
 	}
@@ -145,7 +145,7 @@ private:
 
 private:
 
-	STimerDuration m_duration;
+	STimerDuration m_duration = STimerDuration(0.0f);
 	bool           m_bAutoStart = true;
 	bool           m_bRepeat = false;
 
@@ -163,7 +163,7 @@ public:
 		return true;
 	}
 
-	virtual void Start(const CRuntimeParams& params) override
+	virtual void Start() override
 	{
 		gEnv->pSchematyc->GetUpdateScheduler().Connect(SUpdateParams(SCHEMATYC_MEMBER_DELEGATE(&CEntityDebugTextAction::Update, *this), m_connectionScope));
 	}

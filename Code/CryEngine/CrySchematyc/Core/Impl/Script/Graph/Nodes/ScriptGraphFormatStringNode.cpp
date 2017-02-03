@@ -19,6 +19,7 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc
 {
+
 CScriptGraphFormatStringNode::SElement::SElement()
 	: form(EElementForm::Const)
 {}
@@ -290,6 +291,7 @@ SRuntimeResult CScriptGraphFormatStringNode::Execute(SRuntimeContext& context, c
 }
 
 const SGUID CScriptGraphFormatStringNode::ms_typeGUID = "7de077fd-97bb-4f98-955c-1a165d0e5efb"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphFormatStringNode::Register)

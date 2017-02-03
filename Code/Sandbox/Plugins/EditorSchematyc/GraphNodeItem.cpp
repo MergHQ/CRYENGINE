@@ -14,78 +14,6 @@
 
 namespace CrySchematycEditor {
 
-CNodeStyles CNodeStyles::s_instance;
-
-CNodeStyles::CNodeStyles()
-	: m_createdStyles(0)
-{
-
-}
-
-const CNodeStyle* CNodeStyles::GetStyleById(const char* szStyleId)
-{
-	s_instance.LoadIcons();
-	if (szStyleId)
-	{
-		return static_cast<const CNodeStyle*>(s_instance.GetStyle(szStyleId));
-	}
-	return static_cast<const CNodeStyle*>(s_instance.GetStyle(""));
-}
-
-void CNodeStyles::LoadIcons()
-{
-	static bool iconsLoaded = false;
-	if (iconsLoaded == false)
-	{
-		CreateStyle("", "icons:schematyc/node_default.ico", QColor(255, 0, 0));
-		CreateStyle("Core::FlowControl::Begin", "icons:schematyc/core_flowcontrol_begin.ico", QColor(26, 26, 26));
-		CreateStyle("Core::FlowControl::End", "icons:schematyc/core_flowcontrol_end.ico", QColor(26, 26, 26));
-		CreateStyle("Core::FlowControl", "icons:schematyc/core_flowcontrol.ico", QColor(255, 255, 255));
-		CreateStyle("Core::SendSignal", "icons:schematyc/core_sendsignal.ico", QColor(100, 193, 98));
-		CreateStyle("Core::ReceiveSignal", "icons:schematyc/core_receivesignal.ico", QColor(100, 193, 98));
-		CreateStyle("Core::Function", "icons:schematyc/core_function.ico", QColor(193, 98, 98));
-		CreateStyle("Core::Data", "icons:schematyc/core_data.ico", QColor(156, 98, 193));
-		CreateStyle("Core::Utility", "icons:schematyc/core_utility.ico", QColor(153, 153, 153));
-		CreateStyle("Core::State", "icons:schematyc/core_state.ico", QColor(192, 193, 98));
-
-		iconsLoaded = true;
-	}
-}
-
-void CNodeStyles::CreateStyle(const char* szStyleId, const char* szIcon, QColor color)
-{
-	CRY_ASSERT_MESSAGE(m_createdStyles < s_NumStyles, "Not enough space in styles array");
-	if (m_createdStyles < s_NumStyles)
-	{
-		CryIcon* pIcon = new CryIcon(szIcon, {
-				{ QIcon::Mode::Normal, color }
-		  });
-
-		CNodeStyle& style = *(new(&m_nodeStyles[m_createdStyles++])CNodeStyle(szStyleId));
-		style.SetHeaderTextColor(color);
-		style.SetIcon(szIcon, color, CNodeStyle::Icon_NodeType);
-		style.SetMenuIcon(pIcon);
-
-		s_instance.AddStyle(&style);
-	}
-}
-
-CNodeTypeIcon::CNodeTypeIcon(CryGraphEditor::CNodeWidget& nodeWidget)
-	: CNodeHeaderIcon(nodeWidget)
-{
-	CNodeItem& nodeItem = static_cast<CNodeItem&>(nodeWidget.GetItem());
-
-	if (const CNodeStyle* pStyle = CNodeStyles::GetStyleById(nodeItem.GetStyleId()))
-	{
-		if (const QPixmap* pIcon = pStyle->GetHeaderTypeIcon())
-			SetDisplayIcon(pIcon);
-	}
-}
-
-CNodeTypeIcon::~CNodeTypeIcon()
-{
-}
-
 CNodeItem::CNodeItem(Schematyc::IScriptGraphNode& scriptNode, CryGraphEditor::CNodeGraphViewModel& model)
 	: CAbstractNodeItem(model)
 	, m_scriptNode(scriptNode)
@@ -108,14 +36,7 @@ CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphV
 	CryGraphEditor::CNodeWidget* pNodeWidget = new CryGraphEditor::CNodeWidget(*this, view);
 	CryGraphEditor::CPinGridNodeContentWidget* pContent = new CryGraphEditor::CPinGridNodeContentWidget(*pNodeWidget, view);
 
-	pNodeWidget->AddHeaderIcon(new CNodeTypeIcon(*pNodeWidget), CryGraphEditor::CNodeHeader::EIconSlot::Left);
-
 	return pNodeWidget;
-}
-
-const CryGraphEditor::CNodeWidgetStyle* CNodeItem::GetStyle() const
-{
-	return CNodeStyles::GetStyleById(GetStyleId());
 }
 
 void CNodeItem::Serialize(Serialization::IArchive& archive)
@@ -314,7 +235,8 @@ void CNodeItem::Refresh(bool forceRefresh)
 void CNodeItem::LoadFromScriptElement()
 {
 	// TODO: Just call RefreshLayout(...) here?!
-	m_scriptNode.ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorRefresh)); // N.B. After the release of 5.3 we should figure out whether it's really necessary to refresh elements upon initial selection (as opposed to only refreshing when changes are made).
+	m_scriptNode.ProcessEvent(Schematyc::SScriptEvent(Schematyc::EScriptEventId::EditorRefresh));
+	// N.B. After the release of 5.3 we should figure out whether it's really necessary to refresh elements upon initial selection (as opposed to only refreshing when changes are made).
 	// ~TODO
 
 	RefreshName();
@@ -323,16 +245,6 @@ void CNodeItem::LoadFromScriptElement()
 	SetPosition(QPoint(pos.x, pos.y));
 
 	const QString styleId(GetStyleId());
-	if (styleId != "Core::FlowControl::Begin" && styleId != "Core::FlowControl::End")
-	{
-		m_headerGradientColorL = CryGraphEditor::CNodeStyle::GetHeaderDefaultColorLeft();
-		m_headerGradientColorR = CryGraphEditor::CNodeStyle::GetHeaderDefaultColorRight();
-	}
-	else
-	{
-		m_headerGradientColorL = QColor(97, 172, 236);
-		m_headerGradientColorR = m_headerGradientColorL;
-	}
 
 	const uint32 numInputs = m_scriptNode.GetInputCount();
 	for (uint32 i = 0; i < numInputs; ++i)

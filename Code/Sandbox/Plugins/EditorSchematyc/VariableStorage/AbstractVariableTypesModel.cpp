@@ -71,13 +71,13 @@ void CDataTypesModel::GenerateTypeInfo()
     m_typesByGuid.emplace(typeDesc.GetGUID(), pTypeItem);                                                    \
   }
 
-	CREATE_TYPE_ITEM(bool, QColor(17, 100, 100));
-	CREATE_TYPE_ITEM(int32, QColor(125, 19, 19));
-	CREATE_TYPE_ITEM(uint32, QColor(125, 40, 19));
-	CREATE_TYPE_ITEM(float, QColor(196, 137, 0));
-	CREATE_TYPE_ITEM(Vec3, QColor(140, 133, 38));
-	CREATE_TYPE_ITEM(Schematyc::SGUID, QColor(38, 184, 33));
-	CREATE_TYPE_ITEM(Schematyc::CSharedString, QColor(128, 100, 162));
-	CREATE_TYPE_ITEM(Schematyc::ObjectId, QColor(70, 60, 120));
+	CREATE_TYPE_ITEM(bool, QColor(53, 213, 22));
+	CREATE_TYPE_ITEM(int32, QColor(255, 72, 29));
+	CREATE_TYPE_ITEM(uint32, QColor(255, 72, 29));
+	CREATE_TYPE_ITEM(float, QColor(68, 249, 183));
+	CREATE_TYPE_ITEM(Vec3, QColor(205, 151, 23));
+	CREATE_TYPE_ITEM(Schematyc::SGUID, QColor(192, 192, 98));
+	CREATE_TYPE_ITEM(Schematyc::CSharedString, QColor(210, 42, 252));
+	CREATE_TYPE_ITEM(Schematyc::ObjectId, QColor(0, 156, 255));
 	//CREATE_TYPE_ITEM(Schematyc::ExplicitEntityId, QColor(110, 180, 160));
 }

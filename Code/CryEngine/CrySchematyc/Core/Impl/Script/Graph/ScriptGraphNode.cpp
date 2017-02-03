@@ -39,7 +39,7 @@ inline bool Serialize(Serialization::IArchive& archive, SInputSerializer& value,
 	return false;
 }
 
-typedef std::map<CGraphPortId, SInputSerializer> InputSerializers;
+typedef std::map<CUniqueId, SInputSerializer> InputSerializers;
 } // Anonymous
 
 // #SchematycTODO: This is just a temporary solution to provide colors.
@@ -75,7 +75,7 @@ inline ColorB GetPortColor(const SGUID& typeGUID)
 
 SScriptGraphNodePort::SScriptGraphNodePort() {}
 
-SScriptGraphNodePort::SScriptGraphNodePort(const CGraphPortId& _id, const char* _szName, const SGUID& _typeGUID, const ScriptGraphPortFlags& _flags, const CAnyValuePtr& _pData)
+SScriptGraphNodePort::SScriptGraphNodePort(const CUniqueId& _id, const char* _szName, const SGUID& _typeGUID, const ScriptGraphPortFlags& _flags, const CAnyValuePtr& _pData)
 	: id(_id)
 	, name(_szName)
 	, typeGUID(_typeGUID)
@@ -159,13 +159,13 @@ void CScriptGraphNodeLayout::Exchange(CScriptGraphNodeLayout& rhs)
 	std::swap(m_outputs, rhs.m_outputs);
 }
 
-void CScriptGraphNodeLayout::AddInput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData)
+void CScriptGraphNodeLayout::AddInput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData)
 {
 	// #SchematycTODO : Check for id collisions!!!
 	m_inputs.push_back(SScriptGraphNodePort(id, szName, typeGUID, flags, pData));
 }
 
-void CScriptGraphNodeLayout::AddOutput(const CGraphPortId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData)
+void CScriptGraphNodeLayout::AddOutput(const CUniqueId& id, const char* szName, const SGUID& typeGUID, const ScriptGraphPortFlags& flags, const CAnyValuePtr& pData)
 {
 	// #SchematycTODO : Check for id collisions!!!
 	m_outputs.push_back(SScriptGraphNodePort(id, szName, typeGUID, flags, pData));
@@ -255,7 +255,7 @@ uint32 CScriptGraphNode::GetInputCount() const
 	return m_layout.GetInputs().size();
 }
 
-uint32 CScriptGraphNode::FindInputById(const CGraphPortId& id) const
+uint32 CScriptGraphNode::FindInputById(const CUniqueId& id) const
 {
 	const ScriptGraphNodePorts& inputs = m_layout.GetInputs();
 	for (uint32 inputIdx = 0, inputCount = inputs.size(); inputIdx < inputCount; ++inputIdx)
@@ -268,10 +268,10 @@ uint32 CScriptGraphNode::FindInputById(const CGraphPortId& id) const
 	return InvalidIdx;
 }
 
-CGraphPortId CScriptGraphNode::GetInputId(uint32 inputIdx) const
+CUniqueId CScriptGraphNode::GetInputId(uint32 inputIdx) const
 {
 	const ScriptGraphNodePorts& inputs = m_layout.GetInputs();
-	return inputIdx < inputs.size() ? inputs[inputIdx].id : CGraphPortId();
+	return inputIdx < inputs.size() ? inputs[inputIdx].id : CUniqueId();
 }
 
 const char* CScriptGraphNode::GetInputName(uint32 inputIdx) const
@@ -309,7 +309,7 @@ uint32 CScriptGraphNode::GetOutputCount() const
 	return outputs.size();
 }
 
-uint32 CScriptGraphNode::FindOutputById(const CGraphPortId& id) const
+uint32 CScriptGraphNode::FindOutputById(const CUniqueId& id) const
 {
 	const ScriptGraphNodePorts& outputs = m_layout.GetOutputs();
 	for (uint32 outputIdx = 0, outputCount = outputs.size(); outputIdx < outputCount; ++outputIdx)
@@ -322,10 +322,10 @@ uint32 CScriptGraphNode::FindOutputById(const CGraphPortId& id) const
 	return InvalidIdx;
 }
 
-CGraphPortId CScriptGraphNode::GetOutputId(uint32 outputIdx) const
+CUniqueId CScriptGraphNode::GetOutputId(uint32 outputIdx) const
 {
 	const ScriptGraphNodePorts& outputs = m_layout.GetOutputs();
-	return outputIdx < outputs.size() ? outputs[outputIdx].id : CGraphPortId();
+	return outputIdx < outputs.size() ? outputs[outputIdx].id : CUniqueId();
 }
 
 const char* CScriptGraphNode::GetOutputName(uint32 outputIdx) const

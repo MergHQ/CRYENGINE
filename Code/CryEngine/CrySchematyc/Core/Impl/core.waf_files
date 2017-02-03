@@ -71,7 +71,10 @@
 			"../Interface/Schematyc/Runtime/IRuntimeClass.h",			
 			"../Interface/Schematyc/Runtime/IRuntimeRegistry.h",
 			"../Interface/Schematyc/Runtime/RuntimeGraph.h",
-			"../Interface/Schematyc/Runtime/RuntimeParams.h"
+			"../Interface/Schematyc/Runtime/RuntimeParamMap.h",
+			"../Interface/Schematyc/Runtime/RuntimeParamMap.inl",
+			"../Interface/Schematyc/Runtime/RuntimeParams.h",
+			"../Interface/Schematyc/Runtime/RuntimeParams.inl"
 		],
 		"Interface/Script":
 		[
@@ -134,17 +137,16 @@
 			"../Interface/Schematyc/Utils/AnyArray.h",
 			"../Interface/Schematyc/Utils/Array.h",
 			"../Interface/Schematyc/Utils/Assert.h",
+			"../Interface/Schematyc/Utils/ClassProperties.h",
 			"../Interface/Schematyc/Utils/CryLinkUtils.h",
 			"../Interface/Schematyc/Utils/Delegate.h",
 			"../Interface/Schematyc/Utils/EnumFlags.h",
-			"../Interface/Schematyc/Utils/GraphPortId.h",
 			"../Interface/Schematyc/Utils/GUID.h",
+			"../Interface/Schematyc/Utils/HybridArray.h",
 			"../Interface/Schematyc/Utils/IGUIDRemapper.h",
 			"../Interface/Schematyc/Utils/IInterfaceMap.h",
-			"../Interface/Schematyc/Utils/IProperties.h",
 			"../Interface/Schematyc/Utils/IString.h",
 			"../Interface/Schematyc/Utils/PreprocessorUtils.h",
-			"../Interface/Schematyc/Utils/Properties.h",
 			"../Interface/Schematyc/Utils/RingBuffer.h",
 			"../Interface/Schematyc/Utils/Rotation.h",
 			"../Interface/Schematyc/Utils/ScopedConnection.h",
@@ -158,6 +160,7 @@
 			"../Interface/Schematyc/Utils/Transform.h",
 			"../Interface/Schematyc/Utils/TypeName.h",
 			"../Interface/Schematyc/Utils/TypeUtils.h",
+			"../Interface/Schematyc/Utils/UniqueId.h",
 			"../Interface/Schematyc/Utils/Validator.h"
 		]
 	},

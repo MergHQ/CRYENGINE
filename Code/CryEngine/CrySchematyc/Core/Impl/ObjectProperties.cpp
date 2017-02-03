@@ -11,17 +11,18 @@
 
 namespace Schematyc
 {
+
 CObjectProperties::SComponent::SComponent() {}
 
-CObjectProperties::SComponent::SComponent(const char* _szName, const IPropertiesPtr& _pProperties, EOverridePolicy _overridePolicy)
+CObjectProperties::SComponent::SComponent(const char* _szName, const CClassProperties& _properties, EOverridePolicy _overridePolicy)
 	: name(_szName)
-	, pProperties(_pProperties)
+	, properties(_properties)
 	, overridePolicy(_overridePolicy)
 {}
 
 CObjectProperties::SComponent::SComponent(const SComponent& rhs)
 	: name(rhs.name)
-	, pProperties(rhs.pProperties->Clone())
+	, properties(rhs.properties)
 	, overridePolicy(rhs.overridePolicy)
 {}
 
@@ -36,12 +37,12 @@ void CObjectProperties::SComponent::Serialize(Serialization::IArchive& archive)
 		else
 		{
 			archive(Serialization::ActionButton(functor(*this, &CObjectProperties::SComponent::Revert)), "revert", "^Revert");
-			pProperties->Serialize(archive);
+			properties.Serialize(archive);
 		}
 	}
 	else
 	{
-		archive(*pProperties, "properties");
+		archive(properties, "properties");
 		archive(overridePolicy, "overridePolicy");
 	}
 }
@@ -185,10 +186,10 @@ void CObjectProperties::Serialize(Serialization::IArchive& archive)
 	}
 }
 
-const IProperties* CObjectProperties::GetComponentProperties(const SGUID& guid) const
+const CClassProperties* CObjectProperties::GetComponentProperties(const SGUID& guid) const
 {
 	Components::const_iterator itComponent = m_components.find(guid);
-	return itComponent != m_components.end() ? itComponent->second.pProperties.get() : nullptr;
+	return itComponent != m_components.end() ? &itComponent->second.properties : nullptr;
 }
 
 bool CObjectProperties::ReadVariable(const CAnyRef& value, const SGUID& guid) const
@@ -205,13 +206,14 @@ bool CObjectProperties::ReadVariable(const CAnyRef& value, const SGUID& guid) co
 	return false;
 }
 
-void CObjectProperties::AddComponent(const SGUID& guid, const char* szName, const IProperties& properties)
+void CObjectProperties::AddComponent(const SGUID& guid, const char* szName, const CClassProperties& properties)
 {
-	m_components.insert(Components::value_type(guid, SComponent(szName, properties.Clone(), EOverridePolicy::Default)));
+	m_components.insert(Components::value_type(guid, SComponent(szName, properties, EOverridePolicy::Default)));
 }
 
 void CObjectProperties::AddVariable(const SGUID& guid, const char* szName, const CAnyConstRef& value)
 {
 	m_variables.insert(Variables::value_type(guid, SVariable(szName, CAnyValue::CloneShared(value), EOverridePolicy::Default)));
 }
+
 } // Schematyc

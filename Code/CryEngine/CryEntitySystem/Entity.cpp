@@ -1334,7 +1334,8 @@ IEntityComponent* CEntity::AddComponent(CryInterfaceID typeId, std::shared_ptr<I
 			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same pointer");
 			return nullptr;
 		}
-		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>())
+		if (!bAllowDuplicate && componentRecord.typeId == typeId && typeId != cryiidof<ICryUnknown>()
+			&& componentRecord.pComponent.get() != nullptr) //checks if the component was just removed
 		{
 			CRY_ASSERT_MESSAGE(0, "AddComponent called twice with the same interface type");
 			return nullptr;
