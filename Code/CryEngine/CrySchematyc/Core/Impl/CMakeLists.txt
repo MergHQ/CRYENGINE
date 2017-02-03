@@ -336,7 +336,7 @@ end_sources()
 #END-FILE-LIST
 
 if(PLUGIN_SCHEMATYC)
-	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	
 	target_compile_definitions(${THIS_PROJECT}
 		PRIVATE -DSCHEMATYC_EXPORTS

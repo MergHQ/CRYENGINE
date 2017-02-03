@@ -1,5 +1,5 @@
-option(OPTION_SAMPLEPLUGIN "Build SamplePlugin" OFF)
-if (NOT OPTION_SAMPLEPLUGIN)
+option(PLUGIN_SAMPLE_EDITOR_PLUGIN "Build SamplePlugin" OFF)
+if (NOT PLUGIN_SAMPLE_EDITOR_PLUGIN)
 	return()
 endif()
 

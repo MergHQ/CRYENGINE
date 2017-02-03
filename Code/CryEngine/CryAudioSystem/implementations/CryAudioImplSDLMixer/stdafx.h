@@ -7,6 +7,7 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
+#include <CrySystem/ISystem.h>
 
 #if !defined(_RELEASE)
 // Define this to enable logging via CAudioLogger.

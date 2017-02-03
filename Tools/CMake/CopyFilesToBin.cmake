@@ -157,8 +157,13 @@ macro(deploy_pyside)
 endmacro()
 
 macro(copy_binary_files_to_target)
-  message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
-  
+	if (DEFINED PROJECT_BUILD_CRYENGINE AND NOT PROJECT_BUILD_CRYENGINE)
+		# When engine is not to be Build do not deploy anything either
+		return()
+	endif()
+
+	message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
+
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
@@ -202,9 +207,9 @@ macro(copy_binary_files_to_target)
 			list(GET DEPLOY_FILES ${idx} source)
 			list(GET DEPLOY_FILES ${idxIncr} source_file)
 			list(GET DEPLOY_FILES ${idxIncr2} destination)
-      
+
 			add_custom_command(OUTPUT ${destination} 
-				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${CRYENGINE_DIR}/Tools/CMake/deploy_runtime_files.cmake
+				COMMAND ${CMAKE_COMMAND} -DSOURCE=${source} -DDESTINATION=${destination} -P ${TOOLS_CMAKE_DIR}/deploy_runtime_files.cmake
 				COMMENT "Deploying ${source_file}"
 				DEPENDS ${source_file})
 
@@ -212,6 +217,7 @@ macro(copy_binary_files_to_target)
 		endforeach(idx)
 
 		add_custom_target(deployrt ALL DEPENDS ${DEPLOY_DESTINATIONS})
+		set_solution_folder("Deploy" deployrt)
 	endif()
   message( STATUS "copy_binary_files_to_target end" )
 endmacro()
