@@ -211,6 +211,7 @@ private:
 	// Return current node in binary data.
 	const XMLBinary::Node* _node() const
 	{
+		// cppcheck-suppress thisSubtraction
 		return &m_pData->pNodes[this - m_pData->pBinaryNodes];
 	}
 

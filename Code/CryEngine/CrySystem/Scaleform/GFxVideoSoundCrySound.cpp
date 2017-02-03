@@ -1022,7 +1022,7 @@ GFxVideoCrySoundSystem::~GFxVideoCrySoundSystem()
 GFxVideoSound* GFxVideoCrySoundSystem::Create(GFxVideoPlayer::SoundTrack type)
 {
 	VideoSoundTimer::InitFrequency();
-	return m_pImpl ? GHEAP_NEW(GetHeap()) GFxVideoCrySound(GetHeap(), m_pImpl, type) : 0;
+	return m_pImpl ? (GHEAP_NEW(GetHeap()) GFxVideoCrySound(GetHeap(), m_pImpl, type)) : 0;
 }
 
 	#endif // #if defined(USE_GFX_VIDEO)

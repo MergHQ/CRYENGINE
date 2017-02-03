@@ -348,7 +348,7 @@ private:
 		m_end = pBlock->s + blockSize;
 	}
 
-	char* FindExistingString(const char* szString, int nStrLen)
+	char* FindExistingString(const char* szString, int nStrLen) const
 	{
 		SStringData testData(szString, nStrLen);
 		char* szResult = stl::find_in_map(m_stringToExistingStringMap, testData, NULL);
