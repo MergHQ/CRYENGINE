@@ -9,7 +9,7 @@
 
 #include "Schematyc/FundamentalTypes.h"
 #include "Schematyc/Reflection/TypeDesc.h"
-#include "Schematyc/Runtime/RuntimeParams.h"
+#include "Schematyc/Runtime/RuntimeParamMap.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/Delegate.h"
 #include "Schematyc/Utils/EnumFlags.h"
@@ -54,17 +54,14 @@ enum class EObjectResetPolicy
 
 struct SObjectSignal
 {
-	inline SObjectSignal(const SGUID& _typeGUID, const SGUID& _senderGUID = SGUID())
+public:
+
+	inline SObjectSignal() {}
+
+	explicit inline SObjectSignal(const SGUID& _typeGUID, const SGUID& _senderGUID = SGUID())
 		: typeGUID(_typeGUID)
 		, senderGUID(_senderGUID)
 	{}
-
-	template <typename SIGNAL> inline SObjectSignal(const SIGNAL& _signal, const SGUID& _senderGUID = SGUID())
-		: typeGUID(GetTypeDesc<SIGNAL>().GetGUID())
-		, senderGUID(_senderGUID)
-	{
-		RuntimeParams::FromInputClass(params, _signal);
-	}
 
 	inline SObjectSignal(const SObjectSignal& rhs)
 		: typeGUID(rhs.typeGUID)
@@ -72,9 +69,25 @@ struct SObjectSignal
 		, params(rhs.params)
 	{}
 
-	SGUID              typeGUID;
-	SGUID              senderGUID;
-	StackRuntimeParams params;
+	template <typename SIGNAL> static inline SObjectSignal FromSignalClass(const SIGNAL& _signal, const SGUID& _senderGUID = SGUID())
+	{
+		return SObjectSignal(_signal, GetTypeDesc<SIGNAL>().GetGUID(), _senderGUID);
+	}
+
+private:
+
+	template <typename SIGNAL> inline SObjectSignal(const SIGNAL& _signal, const SGUID& _typeGUID, const SGUID& _senderGUID)
+		: typeGUID(_typeGUID)
+		, senderGUID(_senderGUID)
+	{
+		RuntimeParamMap::FromInputClass(params, _signal);
+	}
+
+public:
+
+	SGUID                typeGUID;
+	SGUID                senderGUID;
+	StackRuntimeParamMap params;
 };
 
 typedef CDelegate<EVisitStatus(const CComponent&)> ObjectComponentConstVisitor;
@@ -166,7 +179,7 @@ struct IObject
 
 	template<typename SIGNAL> inline void ProcessSignal(const SIGNAL& signal, const SGUID& senderGUID = SGUID())
 	{
-		ProcessSignal(SObjectSignal(signal, senderGUID));
+		ProcessSignal(SObjectSignal::FromSignalClass(signal, senderGUID));
 	}
 };
 

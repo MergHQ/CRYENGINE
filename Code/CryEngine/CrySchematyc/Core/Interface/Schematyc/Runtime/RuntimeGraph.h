@@ -1,14 +1,19 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+// #SchematycTODO : Move functions to .inl file?
+
 #pragma once
 
-#include "Schematyc/Runtime/RuntimeParams.h"
+#include "Schematyc/Runtime/RuntimeParamMap.h"
 #include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Services/ILog.h"
 #include "Schematyc/Utils/Any.h"
-#include "Schematyc/Utils/GraphPortId.h"
 #include "Schematyc/Utils/Scratchpad.h"
+#include "Schematyc/Utils/UniqueId.h"
 
 namespace Schematyc
 {
+
 struct SRuntimeContext;
 
 typedef uint16 RuntimeGraphNodeIdx;
@@ -104,7 +109,7 @@ struct SRuntimeGraphPort
 		, flags(ERuntimeGraphPortFlags::Unused)
 	{}
 
-	CGraphPortId        id;
+	CUniqueId           id;
 	uint32              dataPos;
 	RuntimeGraphNodeIdx linkNodeIdx;
 	RuntimeGraphPortIdx linkPortIdx;
@@ -153,7 +158,7 @@ public:
 		return m_dataPos;
 	}
 
-	inline void SetInputId(RuntimeGraphPortIdx inputIdx, const CGraphPortId& inputId)
+	inline void SetInputId(RuntimeGraphPortIdx inputIdx, const CUniqueId& inputId)
 	{
 		// Validate parameters.
 
@@ -196,7 +201,7 @@ public:
 		return !m_inputs.empty() ? &m_inputs[0] : nullptr;
 	}
 
-	inline void SetOutputId(RuntimeGraphPortIdx outputIdx, const CGraphPortId& outputId)
+	inline void SetOutputId(RuntimeGraphPortIdx outputIdx, const CUniqueId& outputId)
 	{
 		// Validate parameters.
 
@@ -265,9 +270,9 @@ class CRuntimeGraphNodeInstance
 {
 public:
 
-	inline CRuntimeGraphNodeInstance(const CRuntimeGraphNode& node, CScratchpad& scratchPad)
+	inline CRuntimeGraphNodeInstance(const CRuntimeGraphNode& node, CScratchpad& scratchpad)
 		: m_node(node)
-		, m_scratchPad(scratchPad)
+		, m_scratchpad(scratchpad)
 	{}
 
 	inline const SGUID GetGUID() const
@@ -277,7 +282,7 @@ public:
 
 	inline CAnyPtr GetData()
 	{
-		return m_scratchPad.Get(m_node.GetDataPos());
+		return m_scratchpad.Get(m_node.GetDataPos());
 	}
 
 	inline RuntimeGraphPortIdx GetInputCount() const
@@ -285,23 +290,10 @@ public:
 		return m_node.GetInputCount();
 	}
 
-	inline CGraphPortId GetInputId(RuntimeGraphPortIdx inputIdx) const
+	inline CUniqueId GetInputId(RuntimeGraphPortIdx inputIdx) const
 	{
 		const SRuntimeGraphPort& input = GetInput(inputIdx);
 		return input.id;
-	}
-
-	inline RuntimeGraphPortIdx FindInput(const CGraphPortId& inputId) const
-	{
-		const SRuntimeGraphPort* pInputs = m_node.GetInputs();
-		for (uint32 inputIdx = 0, inputCount = m_node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
-		{
-			if (pInputs[inputIdx].id == inputId)
-			{
-				return inputIdx;
-			}
-		}
-		return InvalidRuntimeGraphPortIdx;
 	}
 
 	inline bool IsDataInput(RuntimeGraphPortIdx inputIdx) const
@@ -318,7 +310,7 @@ public:
 	inline CAnyConstPtr GetInputData(RuntimeGraphPortIdx inputIdx) const
 	{
 		const SRuntimeGraphPort& input = GetInput(inputIdx);
-		return m_scratchPad.Get(input.dataPos);
+		return m_scratchpad.Get(input.dataPos);
 	}
 
 	inline RuntimeGraphPortIdx GetOutputCount() const
@@ -326,23 +318,10 @@ public:
 		return m_node.GetOutputCount();
 	}
 
-	inline CGraphPortId GetOutputId(RuntimeGraphPortIdx outputIdx) const
+	inline CUniqueId GetOutputId(RuntimeGraphPortIdx outputIdx) const
 	{
 		const SRuntimeGraphPort& output = GetOutput(outputIdx);
 		return output.id;
-	}
-
-	inline RuntimeGraphPortIdx FindOutput(const CGraphPortId& outputId) const
-	{
-		const SRuntimeGraphPort* pOutputs = m_node.GetOutputs();
-		for (uint32 outputIdx = 0, outputCount = m_node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
-		{
-			if (pOutputs[outputIdx].id == outputId)
-			{
-				return outputIdx;
-			}
-		}
-		return InvalidRuntimeGraphPortIdx;
 	}
 
 	inline bool IsDataOutput(RuntimeGraphPortIdx outputIdx) const
@@ -359,7 +338,26 @@ public:
 	inline CAnyPtr GetOutputData(RuntimeGraphPortIdx outputIdx)
 	{
 		const SRuntimeGraphPort& output = GetOutput(outputIdx);
-		return m_scratchPad.Get(output.dataPos);
+		return m_scratchpad.Get(output.dataPos);
+	}
+
+	inline void BindParams(CRuntimeParamMap& params) const
+	{
+		// #SchematycTODO : Rather than populating the runtime parameter map every time we reference a node it might make more sense to pre-allocate node instances every time we instantiate a graph.
+		for (const SRuntimeGraphPort* pInput = m_node.GetInputs(), *pEndInput = pInput + m_node.GetInputCount(); pInput != pEndInput; ++pInput)
+		{
+			if (pInput->flags & ERuntimeGraphPortFlags::Data)
+			{
+				params.BindInput(pInput->id, m_scratchpad.Get(pInput->dataPos));
+			}
+		}
+		for (const SRuntimeGraphPort* pOutput = m_node.GetOutputs(), *pEndOutput = pOutput + m_node.GetOutputCount(); pOutput != pEndOutput; ++pOutput)
+		{
+			if (pOutput->flags & ERuntimeGraphPortFlags::Data)
+			{
+				params.BindOutput(pOutput->id, m_scratchpad.Get(pOutput->dataPos));
+			}
+		}
 	}
 
 private:
@@ -379,7 +377,7 @@ private:
 private:
 
 	const CRuntimeGraphNode& m_node;
-	CScratchpad&             m_scratchPad;
+	CScratchpad&             m_scratchpad;
 };
 
 class CRuntimeGraph
@@ -414,7 +412,7 @@ public:
 		return true;
 	}
 
-	inline void SetNodeInputId(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx inputIdx, const CGraphPortId& inputId)
+	inline void SetNodeInputId(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx inputIdx, const CUniqueId& inputId)
 	{
 		if (nodeIdx >= m_nodeLookup.size())
 		{
@@ -425,7 +423,7 @@ public:
 		node.SetInputId(inputIdx, inputId);
 	}
 
-	inline void SetNodeOutputId(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx outputIdx, const CGraphPortId& outputId)
+	inline void SetNodeOutputId(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx outputIdx, const CUniqueId& outputId)
 	{
 		if (nodeIdx >= m_nodeLookup.size())
 		{
@@ -445,7 +443,7 @@ public:
 		}
 
 		CRuntimeGraphNode& node = m_nodes[m_nodeLookup[nodeIdx]];
-		node.SetDataPos(m_scratchPad.Add(value));
+		node.SetDataPos(m_scratchpad.Add(value));
 	}
 
 	inline bool SetNodeInputData(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx inputIdx, const CAnyConstRef& value)
@@ -457,7 +455,7 @@ public:
 		}
 
 		CRuntimeGraphNode& node = m_nodes[m_nodeLookup[nodeIdx]];
-		return node.ConfigureInput(inputIdx, m_scratchPad.Add(value), InvalidRuntimeGraphNodeIdx, InvalidRuntimeGraphPortIdx, ERuntimeGraphPortFlags::Data);
+		return node.ConfigureInput(inputIdx, m_scratchpad.Add(value), InvalidRuntimeGraphNodeIdx, InvalidRuntimeGraphPortIdx, ERuntimeGraphPortFlags::Data);
 	}
 
 	inline bool SetNodeOutputData(RuntimeGraphNodeIdx nodeIdx, RuntimeGraphPortIdx outputIdx, const CAnyConstRef& value)
@@ -469,7 +467,7 @@ public:
 		}
 
 		CRuntimeGraphNode& node = m_nodes[m_nodeLookup[nodeIdx]];
-		return node.ConfigureOutput(outputIdx, m_scratchPad.Add(value), InvalidRuntimeGraphNodeIdx, InvalidRuntimeGraphPortIdx, ERuntimeGraphPortFlags::Data);
+		return node.ConfigureOutput(outputIdx, m_scratchpad.Add(value), InvalidRuntimeGraphNodeIdx, InvalidRuntimeGraphPortIdx, ERuntimeGraphPortFlags::Data);
 	}
 
 	inline bool AddSignalLink(RuntimeGraphNodeIdx srcNodeIdx, RuntimeGraphPortIdx outputIdx, RuntimeGraphNodeIdx dstNodeIdx, RuntimeGraphPortIdx inputIdx)
@@ -565,7 +563,7 @@ public:
 
 	inline const CScratchpad& GetScratchpad() const
 	{
-		return m_scratchPad;
+		return m_scratchpad;
 	}
 
 private:
@@ -574,7 +572,7 @@ private:
 	string      m_name;
 	Nodes       m_nodes;
 	NodeLookup  m_nodeLookup;
-	CScratchpad m_scratchPad;
+	CScratchpad m_scratchpad;
 };
 
 class CRuntimeGraphInstance
@@ -594,7 +592,7 @@ public:
 
 	inline CRuntimeGraphInstance(const CRuntimeGraph& graph)
 		: m_graph(graph)
-		, m_scratchPad(graph.GetScratchpad())
+		, m_scratchpad(graph.GetScratchpad())
 	{}
 
 	inline const SGUID GetGUID() const
@@ -602,27 +600,27 @@ public:
 		return m_graph.GetGUID();
 	}
 
-	bool Execute(void* pObject, CRuntimeParams& params, SRuntimeActivationParams activationParams);
+	bool Execute(void* pObject, CRuntimeParamMap& params, SRuntimeActivationParams activationParams);
 
 	void Reset()
 	{
-		m_scratchPad = m_graph.GetScratchpad();
+		m_scratchpad = m_graph.GetScratchpad();
 	}
 
 private:
 
-	ERuntimeStatus PullNodesRecursive(void* pObject, CRuntimeParams& params, const CRuntimeGraphNode& node);
+	ERuntimeStatus PullNodesRecursive(void* pObject, CRuntimeParamMap& params, const CRuntimeGraphNode& node);
 	ELinkResult    Link(const CRuntimeGraphNode& node, RuntimeGraphPortIdx outputIdx, SRuntimeActivationParams& activationParams) const;
 
 private:
 
 	const CRuntimeGraph& m_graph;
-	CScratchpad          m_scratchPad;
+	CScratchpad          m_scratchpad;
 };
 
 struct SRuntimeContext
 {
-	inline SRuntimeContext(void* _pObject, CRuntimeParams& _params, const CRuntimeGraphInstance& _graph, CRuntimeGraphNodeInstance& _node)
+	inline SRuntimeContext(void* _pObject, CRuntimeParamMap& _params, const CRuntimeGraphInstance& _graph, CRuntimeGraphNodeInstance& _node)
 		: pObject(_pObject)
 		, params(_params)
 		, graph(_graph)
@@ -630,12 +628,12 @@ struct SRuntimeContext
 	{}
 
 	void*                        pObject;
-	CRuntimeParams&              params;
+	CRuntimeParamMap&            params;
 	const CRuntimeGraphInstance& graph;
 	CRuntimeGraphNodeInstance&   node;
 };
 
-inline bool CRuntimeGraphInstance::Execute(void* pObject, CRuntimeParams& params, SRuntimeActivationParams activationParams)
+inline bool CRuntimeGraphInstance::Execute(void* pObject, CRuntimeParamMap& params, SRuntimeActivationParams activationParams)
 {
 	const CRuntimeGraphNode* pNode = m_graph.GetNode(activationParams.nodeIdx);
 	if (!pNode)
@@ -676,7 +674,7 @@ inline bool CRuntimeGraphInstance::Execute(void* pObject, CRuntimeParams& params
 			logMetaData.Set(ELogMetaField::DetailGUID, pNode->GetGUID());
 			SCHEMATYC_LOG_SCOPE(logMetaData);
 
-			CRuntimeGraphNodeInstance nodeInstance(*pNode, m_scratchPad);
+			CRuntimeGraphNodeInstance nodeInstance(*pNode, m_scratchpad);
 			SRuntimeContext context(pObject, params, *this, nodeInstance);
 
 			result = (*pCallback)(context, activationParams);
@@ -729,7 +727,7 @@ inline bool CRuntimeGraphInstance::Execute(void* pObject, CRuntimeParams& params
 	return true;
 }
 
-inline ERuntimeStatus CRuntimeGraphInstance::PullNodesRecursive(void* pObject, CRuntimeParams& params, const CRuntimeGraphNode& node)
+inline ERuntimeStatus CRuntimeGraphInstance::PullNodesRecursive(void* pObject, CRuntimeParamMap& params, const CRuntimeGraphNode& node)
 {
 	const SRuntimeGraphPort* pInputs = node.GetInputs();
 	for (uint32 inputIdx = 0, inputCount = node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
@@ -748,7 +746,7 @@ inline ERuntimeStatus CRuntimeGraphInstance::PullNodesRecursive(void* pObject, C
 					return status;
 				}
 
-				CRuntimeGraphNodeInstance nodeInstance(*pPullNode, m_scratchPad);
+				CRuntimeGraphNodeInstance nodeInstance(*pPullNode, m_scratchpad);
 				SRuntimeContext context(pObject, params, *this, nodeInstance);
 				RuntimeGraphNodeCallbackPtr pCallback = pPullNode->GetCallback();
 
@@ -784,4 +782,5 @@ inline CRuntimeGraphInstance::ELinkResult CRuntimeGraphInstance::Link(const CRun
 	}
 	return ELinkResult::Invalid;
 }
+
 } // Schematyc

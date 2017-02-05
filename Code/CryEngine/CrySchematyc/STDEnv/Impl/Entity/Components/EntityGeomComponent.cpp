@@ -11,15 +11,6 @@
 
 namespace Schematyc
 {
-void CEntityGeomComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(fileName, "fileName", "FileName");
-	archive.doc("Name of .cgf file to load");
-}
-
-CEntityGeomComponent::CEntityGeomComponent()
-	: m_slot(EmptySlot)
-{}
 
 bool CEntityGeomComponent::Init()
 {
@@ -28,22 +19,18 @@ bool CEntityGeomComponent::Init()
 
 void CEntityGeomComponent::Run(ESimulationMode simulationMode)
 {
-	const SProperties* pProperties = static_cast<const SProperties*>(CComponent::GetProperties());
-	if (!pProperties->fileName.value.empty())
+	IEntity& entity = EntityUtils::GetEntity(*this);
+	m_slot = entity.LoadGeometry(m_slot, m_fileName.value.c_str());
+
+	CComponent* pParent = CComponent::GetParent();
+	if (pParent)
 	{
-		IEntity& entity = EntityUtils::GetEntity(*this);
-		m_slot = entity.LoadGeometry(m_slot, pProperties->fileName.value.c_str());
-
-		CComponent* pParent = CComponent::GetParent();
-		if (pParent)
-		{
-			entity.SetParentSlot(pParent->GetSlot(), m_slot);
-		}
-
-		entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
-		
-		EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
+		entity.SetParentSlot(pParent->GetSlot(), m_slot);
 	}
+
+	entity.SetSlotLocalTM(m_slot, CComponent::GetTransform().ToMatrix34());
+
+	EntityUtils::GetEntityObject(*this).GetGeomUpdateSignal().Send();
 }
 
 void CEntityGeomComponent::Shutdown()
@@ -62,8 +49,7 @@ int CEntityGeomComponent::GetSlot() const
 
 void CEntityGeomComponent::Set(const GeomFileName& fileName)
 {
-	SProperties* pProperties = static_cast<SProperties*>(CComponent::GetProperties());
-	pProperties->fileName = fileName;
+	m_fileName = fileName;
 
 	if (CComponent::GetObject().GetSimulationMode() != ESimulationMode::Idle)
 	{
@@ -90,30 +76,31 @@ void CEntityGeomComponent::SetTransform(const CTransform& transform)
 	}
 }
 
-void CEntityGeomComponent::SetVisible(bool bVisible) {}
+void CEntityGeomComponent::SetVisible(bool bVisible) 
+{
+	EntityUtils::GetEntity(*this).Invisible(!bVisible);
+}
 
 bool CEntityGeomComponent::IsVisible() const
 {
-	return true;
+	return !EntityUtils::GetEntity(*this).IsInvisible();
 }
 
 void CEntityGeomComponent::ReflectType(CTypeDesc<CEntityGeomComponent>& desc)
 {
 	desc.SetGUID("d2474675-c67c-42b2-af33-5c5ace2d1d8c"_schematyc_guid);
+	desc.SetLabel("Geom");
+	desc.SetDescription("Entity geometry component");
+	desc.SetIcon("icons:schematyc/entity_geom_component.png");
+	desc.SetComponentFlags({ EComponentFlags::Transform, EComponentFlags::Socket, EComponentFlags::Attach });
+	desc.AddMember(&CEntityGeomComponent::m_fileName, 'file', "fileName", "FileName", "Name of .cgf file to load");
 }
 
 void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityGeomComponent, "Geom");
-		pComponent->SetDescription("Entity geometry component");
-		pComponent->SetIcon("icons:schematyc/entity_geom_component.png");
-		pComponent->SetFlags({ EEnvComponentFlags::Transform, EEnvComponentFlags::Socket, EEnvComponentFlags::Attach });
-		pComponent->SetProperties(SProperties());
-		scope.Register(pComponent);
-
-		CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityGeomComponent));
 		// Functions
 		{
 			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityGeomComponent::Set, "112b2aec-7c52-44b8-a16d-84c98c70d910"_schematyc_guid, "SetGeom");
@@ -145,6 +132,7 @@ void CEntityGeomComponent::Register(IEnvRegistrar& registrar)
 		}
 	}
 }
+
 } // Schematyc
 
 SCHEMATYC_AUTO_REGISTER(&Schematyc::CEntityGeomComponent::Register)

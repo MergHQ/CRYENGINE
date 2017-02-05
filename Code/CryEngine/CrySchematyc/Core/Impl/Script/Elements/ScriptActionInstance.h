@@ -4,13 +4,12 @@
 
 #include <Schematyc/Script/Elements/IScriptActionInstance.h>
 #include <Schematyc/SerializationUtils/MultiPassSerializer.h>
+#include <Schematyc/Utils/ClassProperties.h>
 
 #include "Script/ScriptElementBase.h"
 
 namespace Schematyc
 {
-// Forward declare shared pointers.
-DECLARE_SHARED_POINTERS(IProperties)
 
 class CScriptActionInstance : public CScriptElementBase<IScriptActionInstance>, public CMultiPassSerializer
 {
@@ -27,9 +26,9 @@ public:
 	// ~IScriptElement
 
 	// IScriptActionInstance
-	virtual SGUID              GetActionTypeGUID() const override;
-	virtual SGUID              GetComponentInstanceGUID() const override;
-	virtual const IProperties* GetProperties() const override;
+	virtual SGUID                   GetActionTypeGUID() const override;
+	virtual SGUID                   GetComponentInstanceGUID() const override;
+	virtual const CClassProperties& GetProperties() const override;
 	// ~IScriptActionInstance
 
 protected:
@@ -48,8 +47,9 @@ private:
 
 private:
 
-	SGUID          m_actionTypeGUID;
-	SGUID          m_componentInstanceGUID;
-	IPropertiesPtr m_pProperties;
+	SGUID            m_actionTypeGUID;
+	SGUID            m_componentInstanceGUID;
+	CClassProperties m_properties;
 };
+
 } // Schematyc

@@ -8,13 +8,11 @@
 
 namespace Schematyc
 {
-// Forward declare structures.
 
-struct SRuntimeContext;
 // Forward declare classes.
 class CAnyConstPtr;
 class CCommonTypeDesc;
-class CTypeName;
+class CRuntimeParamMap;
 
 enum class EEnvFunctionFlags
 {
@@ -44,8 +42,9 @@ struct IEnvFunction : public IEnvElementBase<EEnvElementType::Function>
 	virtual const char*            GetOutputName(uint32 outputIdx) const = 0;
 	virtual const char*            GetOutputDescription(uint32 outputIdx) const = 0;
 	virtual CAnyConstPtr           GetOutputData(uint32 outputIdx) const = 0;
-	virtual void                   Execute(SRuntimeContext& context, void* pObject) const = 0; // #SchematycTODO : Can we return some kind of function pointer / proxy object here to avoid virtual function at runtime?
+	virtual void                   Execute(CRuntimeParamMap& params, void* pObject) const = 0;
 };
 
 DECLARE_SHARED_POINTERS(IEnvFunction)
+
 } // Schematyc

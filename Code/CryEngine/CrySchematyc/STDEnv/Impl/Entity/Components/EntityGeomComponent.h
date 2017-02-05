@@ -8,23 +8,13 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IEnvRegistrar;
 
 class CEntityGeomComponent final : public CComponent
 {
-private:
-
-	struct SProperties
-	{
-		void Serialize(Serialization::IArchive& archive);
-
-		GeomFileName fileName;
-	};
-
 public:
-
-	CEntityGeomComponent();
 
 	// CComponent
 	virtual bool Init() override;
@@ -43,6 +33,9 @@ public:
 
 private:
 
-	int m_slot;
+	GeomFileName m_fileName;
+
+	int          m_slot = EmptySlot;
 };
+
 } // Schematyc

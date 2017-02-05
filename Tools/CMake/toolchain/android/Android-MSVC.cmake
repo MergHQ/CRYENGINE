@@ -11,7 +11,9 @@ set(VC_MDD_ANDROID_API_LEVEL "android-${CMAKE_ANDROID_API}")
 set(VC_MDD_ANDROID_PLATFORM_TOOLSET "Clang_3_8") # "Clang_3_6","Clang_3_8","Gcc_4_9"
 #set(VC_MDD_ANDROID_USE_OF_STL "c++_static")
 
-set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
+if (NOT DEFINED OUTPUT_DIRECTORY)
+	set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
+endif()
 
 set(CMAKE_CONFIGURATION_TYPES Debug Profile Release)
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to what we need" FORCE)
@@ -28,10 +30,10 @@ set(OPTION_STATIC_LINKING TRUE)
 
 if("${VC_MDD_ANDROID_PLATFORM_TOOLSET}" MATCHES "Clang" OR ${VC_MDD_ANDROID_PLATFORM_TOOLSET} EQUAL 0)
 	MESSAGE(STATUS "COMPILER = CLANG" )
-	include (${CMAKE_MODULE_PATH}/../CRYENGINE-CLANG.cmake)	
+	include (${CMAKE_CURRENT_LIST_DIR}/../../CRYENGINE-CLANG.cmake)	
 elseif("${VC_MDD_ANDROID_PLATFORM_TOOLSET}" MATCHES "Gcc")
 	MESSAGE(STATUS "COMPILER = GCC" )
-	include (${CMAKE_MODULE_PATH}/../CRYENGINE-GCC.cmake)
+	include (${CMAKE_CURRENT_LIST_DIR}/../../CRYENGINE-GCC.cmake)
 else()
 	MESSAGE(FATAL_ERROR "COMPILER: Unsupported Compiler detected" )
 endif()
@@ -98,7 +100,18 @@ set(CMAKE_EXE_LINKER_FLAGS_PROFILE "/debug /INCREMENTAL" CACHE STRING "C++ Flags
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE ${CMAKE_EXE_LINKER_FLAGS_RELEASE} CACHE STRING "C++ Flags" FORCE)
 # -------------------------------------------------------------------
 
-
+if (ANDROID AND ${CMAKE_GENERATOR} MATCHES "Visual Studio")
+	# Write out a profile for Incredibuild so it won't try to link remotely
+	file(WRITE ${CMAKE_BINARY_DIR}/${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM}
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>"
+		"<Profile FormatVersion=\"1\">"
+		"  <Tools>"
+		"    <Tool Filename=\"clang\" AllowRemoteIf=\"-c,/c\" AllowIntercept=\"false\" DeriveCaptionFrom=\"lastparam\" AllowRestartOnLocal=\"false\"/>"
+		"	<Tool Filename=\"clang++\" AllowRemoteIf=\"-c,/c\" AllowIntercept=\"false\" DeriveCaptionFrom=\"lastparam\" AllowRestartOnLocal=\"false\"/>"
+		"  </Tools>"
+		"</Profile>"
+	)
+endif()
 
 macro(configure_android_build)
 	set(options DEBUGGABLE)

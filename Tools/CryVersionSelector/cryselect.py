@@ -19,6 +19,7 @@ def command_title (args):
 	return {
 	'upgrade': 'Upgrade project',
 	'projgen': 'Generate solution',
+	'cmake-gui': 'Open CMake GUI',
 	'build': 'Build solution',
 	'edit': 'Launch editor',
 	'open': 'Launch game',
@@ -131,6 +132,7 @@ def cmd_install (args):
 			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			(False, '_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
+			(False, '_cmake-gui', 'Open CMake GUI Application', '"%s" cmake-gui "%%1"' % ScriptPath),			
 			(False, '_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
 			(True, 'metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % ScriptPath),
 		)
@@ -146,7 +148,8 @@ def cmd_install (args):
 			(False, 'open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
 			(False, 'monodev', 'Edit code', '"%s" monodev "%%1"' % ScriptPath),
 			(False, '_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
-			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
+			(False, '_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),		
+			(False, '_cmake-gui', 'Open CMake GUI Application', '"%s" cmake-gui "%%1"' % (PythonPath, ScriptPath)),
 			(False, '_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
 			(True, 'metagen', 'Generate/repair metadata','"%s" "%s" metagen "%%1"' % (PythonPath, ScriptPath)),
 		)
@@ -560,6 +563,11 @@ if __name__ == '__main__':
 	parser_upgrade.set_defaults(func=cmd_upgrade)
 	
 	parser_projgen= subparsers.add_parser ('projgen')
+	parser_projgen.add_argument ('project_file')
+	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_projgen.set_defaults(func=cmd_run)
+
+	parser_projgen= subparsers.add_parser ('cmake-gui')
 	parser_projgen.add_argument ('project_file')
 	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_projgen.set_defaults(func=cmd_run)

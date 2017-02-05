@@ -3,9 +3,6 @@
 #pragma once
 
 #include "Schematyc/IObject.h"
-#include "Schematyc/Reflection/TypeDesc.h"
-#include "Schematyc/Runtime/RuntimeParams.h"
-#include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Utils/GUID.h"
 
@@ -26,7 +23,6 @@ struct SActionParams
 
 	const SGUID& guid;
 	IObject&     object;
-	void*        pProperties = nullptr;
 	CComponent*  pComponent = nullptr;
 };
 
@@ -39,15 +35,14 @@ public:
 		return true;
 	}
 
-	virtual void Start(const CRuntimeParams& params) {}
-	virtual void Stop()                              {}
-	virtual void Shutdown()                          {}
+	virtual void Start()    {}
+	virtual void Stop()     {}
+	virtual void Shutdown() {}
 
 	inline void  PreInit(const SActionParams& params)
 	{
 		m_guid = params.guid;
 		m_pObject = &params.object;
-		m_pProperties = params.pProperties;
 		m_pComponent = params.pComponent;
 	}
 
@@ -67,11 +62,6 @@ public:
 		return *m_pObject;
 	}
 
-	inline void* GetProperties() const
-	{
-		return m_pProperties;
-	}
-
 	inline CComponent* GetComponent() const
 	{
 		return m_pComponent;
@@ -81,7 +71,6 @@ private:
 
 	SGUID       m_guid;
 	IObject*    m_pObject = nullptr;
-	void*       m_pProperties = nullptr;
 	CComponent* m_pComponent = nullptr;
 };
 

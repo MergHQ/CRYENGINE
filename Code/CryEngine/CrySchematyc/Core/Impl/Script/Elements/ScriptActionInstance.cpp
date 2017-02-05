@@ -13,7 +13,6 @@
 #include <Schematyc/SerializationUtils/SerializationUtils.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/IGUIDRemapper.h>
-#include <Schematyc/Utils/Properties.h>
 
 namespace Schematyc
 {
@@ -55,9 +54,9 @@ SGUID CScriptActionInstance::GetComponentInstanceGUID() const
 	return m_componentInstanceGUID;
 }
 
-const IProperties* CScriptActionInstance::GetProperties() const
+const CClassProperties& CScriptActionInstance::GetProperties() const
 {
-	return m_pProperties.get();
+	return m_properties;
 }
 
 void CScriptActionInstance::LoadDependencies(Serialization::IArchive& archive, const ISerializationContext& context)

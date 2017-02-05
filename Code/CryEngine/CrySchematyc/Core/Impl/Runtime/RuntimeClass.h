@@ -11,6 +11,7 @@
 #include <Schematyc/Runtime/IRuntimeClass.h>
 #include <Schematyc/Runtime/RuntimeGraph.h>
 #include <Schematyc/Services/ITimerSystem.h>
+#include <Schematyc/Utils/ClassProperties.h>
 #include <Schematyc/Utils/GUID.h>
 #include <Schematyc/Utils/Scratchpad.h>
 #include <Schematyc/Utils/Transform.h>
@@ -18,15 +19,12 @@
 namespace Schematyc
 {
 
-// Forward declare interfaces.
-struct IProperties;
 // Forward declare classes.
 class CAnyConstPtr;
 class CAnyConstRef;
 class CAnyValue;
 class CObjectProperties;
 // Forward declare shared pointers.
-DECLARE_SHARED_POINTERS(IProperties)
 DECLARE_SHARED_POINTERS(CAnyValue)
 DECLARE_SHARED_POINTERS(CRuntimeGraph)
 
@@ -146,15 +144,15 @@ typedef std::vector<SRuntimeClassTimer> RuntimeClassTimers;
 
 struct SRuntimeClassComponentInstance
 {
-	SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const IProperties* _pProperties, uint32 _parentIdx);
+	SRuntimeClassComponentInstance(const SGUID& _guid, const char* _szName, bool _bPublic, const SGUID& _componentTypeGUID, const CTransform& _transform, const CClassProperties& _properties, uint32 _parentIdx);
 
-	SGUID          guid;
-	string         name;
-	bool           bPublic;
-	SGUID          componentTypeGUID; // #SchematycTODO : Can we store a raw pointer to the env component rather than referencing by GUID?
-	CTransform     transform;
-	IPropertiesPtr pProperties;
-	uint32         parentIdx;
+	SGUID            guid;
+	string           name;
+	bool             bPublic;
+	SGUID            componentTypeGUID;    // #SchematycTODO : Can we store a raw pointer to the env component rather than referencing by GUID?
+	CTransform       transform;
+	CClassProperties properties;
+	uint32           parentIdx;
 };
 
 typedef std::vector<SRuntimeClassComponentInstance> RuntimeClassComponentInstances;
@@ -237,7 +235,7 @@ public:
 	uint32                                AddTimer(const SGUID& guid, const char* szName, const STimerParams& params);
 	const RuntimeClassTimers&             GetTimers() const;
 
-	uint32                                AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const IProperties* pProperties, uint32 parentIdx);
+	uint32                                AddComponentInstance(const SGUID& guid, const char* szName, bool bPublic, const SGUID& componentTypeGUID, const CTransform& transform, const CClassProperties& properties, uint32 parentIdx);
 	uint32                                FindComponentInstance(const SGUID& guid) const;
 	const RuntimeClassComponentInstances& GetComponentInstances() const;
 
@@ -261,7 +259,7 @@ private:
 	SGUID                          m_envClassGUID;
 	CAnyValuePtr                   m_pEnvClassProperties;
 
-	HeapScratchpad                 m_scratchPad;
+	HeapScratchpad                 m_scratchpad;
 	Graphs                         m_graphs;
 
 	RuntimeClassFunctions          m_functions;

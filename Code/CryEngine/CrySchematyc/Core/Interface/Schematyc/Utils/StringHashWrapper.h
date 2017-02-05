@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryCore/CryCrc32.h>
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/TypeID.h>
 #include <CrySerialization/Serializer.h>

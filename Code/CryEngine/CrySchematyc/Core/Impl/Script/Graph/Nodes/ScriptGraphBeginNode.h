@@ -39,7 +39,6 @@ private:
 
 	static SRuntimeResult Execute(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
 	static SRuntimeResult ExecuteFunction(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
-	static SRuntimeResult ExecuteSignalReceiver(SRuntimeContext& context, const SRuntimeActivationParams& activationParams);
 
 public:
 

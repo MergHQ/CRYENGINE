@@ -14,7 +14,6 @@
 #include <Schematyc/Script/Elements/IScriptFunction.h>
 #include <Schematyc/Utils/Any.h>
 #include <Schematyc/Utils/IGUIDRemapper.h>
-#include <Schematyc/Utils/Properties.h>
 #include <Schematyc/Utils/StackString.h>
 
 #include "Object.h"
@@ -26,6 +25,7 @@
 
 namespace Schematyc
 {
+
 CScriptGraphFunctionNode::SEnvGlobalFunctionRuntimeData::SEnvGlobalFunctionRuntimeData(const IEnvFunction* _pEnvFunction)
 	: pEnvFunction(_pEnvFunction)
 {}
@@ -445,7 +445,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = envFunction.GetInputData(inputIdx);
 		if (pData)
 		{
-			layout.AddInputWithData(CGraphPortId::FromUniqueId(envFunction.GetInputId(inputIdx)), envFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+			layout.AddInputWithData(CUniqueId::FromUInt32(envFunction.GetInputId(inputIdx)), envFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 		}
 	}
 
@@ -454,7 +454,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = envFunction.GetOutputData(outputIdx);
 		if (pData)
 		{
-			layout.AddOutputWithData(CGraphPortId::FromUniqueId(envFunction.GetOutputId(outputIdx)), envFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+			layout.AddOutputWithData(CUniqueId::FromUInt32(envFunction.GetOutputId(outputIdx)), envFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 		}
 	}
 }
@@ -466,7 +466,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = scriptFunction.GetInputData(inputIdx);
 		if (pData)
 		{
-			layout.AddInputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(inputIdx)), scriptFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
+			layout.AddInputWithData(CUniqueId::FromGUID(scriptFunction.GetInputGUID(inputIdx)), scriptFunction.GetInputName(inputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::Persistent, EScriptGraphPortFlags::Editable }, *pData);
 		}
 	}
 
@@ -475,7 +475,7 @@ void CScriptGraphFunctionNode::CreateInputsAndOutputs(CScriptGraphNodeLayout& la
 		CAnyConstPtr pData = scriptFunction.GetOutputData(outputIdx);
 		if (pData)
 		{
-			layout.AddOutputWithData(CGraphPortId::FromGUID(scriptFunction.GetInputGUID(outputIdx)), scriptFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
+			layout.AddOutputWithData(CUniqueId::FromGUID(scriptFunction.GetOutputGUID(outputIdx)), scriptFunction.GetOutputName(outputIdx), pData->GetTypeDesc().GetGUID(), { EScriptGraphPortFlags::Data, EScriptGraphPortFlags::MultiLink }, *pData);
 		}
 	}
 }
@@ -489,7 +489,10 @@ SRuntimeResult CScriptGraphFunctionNode::ExecuteEnvGlobalFunction(SRuntimeContex
 {
 	SEnvGlobalFunctionRuntimeData& data = DynamicCast<SEnvGlobalFunctionRuntimeData>(*context.node.GetData());
 
-	data.pEnvFunction->Execute(context, nullptr);
+	StackRuntimeParamMap params;
+	context.node.BindParams(params); // #SchematycTODO : Rather than populating the runtime parameter map every time we reference a node it might make more sense to pre-allocate node instances every time we instantiate a graph.
+
+	data.pEnvFunction->Execute(params, nullptr);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
@@ -497,9 +500,12 @@ SRuntimeResult CScriptGraphFunctionNode::ExecuteEnvGlobalFunction(SRuntimeContex
 SRuntimeResult CScriptGraphFunctionNode::ExecuteEnvComponentFunction(SRuntimeContext& context, const SRuntimeActivationParams& activationParams)
 {
 	SEnvComponentFunctionRuntimeData& data = DynamicCast<SEnvComponentFunctionRuntimeData>(*context.node.GetData());
-	CComponent* pEnvComponent = static_cast<CObject*>(context.pObject)->GetComponent(data.componentIdx);  // #SchematycTODO : How can we ensure this pointer is correct for the implementation, not just the interface?
+	CComponent* pEnvComponent = static_cast<CObject*>(context.pObject)->GetComponent(data.componentIdx); // #SchematycTODO : How can we ensure this pointer is correct for the implementation, not just the interface?
 
-	data.pEnvFunction->Execute(context, pEnvComponent);
+	StackRuntimeParamMap params;
+	context.node.BindParams(params); // #SchematycTODO : Rather than populating the runtime parameter map every time we reference a node it might make more sense to pre-allocate node instances every time we instantiate a graph.
+
+	data.pEnvFunction->Execute(params, pEnvComponent);
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
@@ -508,33 +514,16 @@ SRuntimeResult CScriptGraphFunctionNode::ExecuteScriptFunction(SRuntimeContext& 
 {
 	SScriptFunctionRuntimeData& data = DynamicCast<SScriptFunctionRuntimeData>(*context.node.GetData());
 
-	CRuntimeParams params;
-	for (uint8 inputIdx = EInputIdx::FirstParam, inputCount = context.node.GetInputCount(); inputIdx < inputCount; ++inputIdx)
-	{
-		if (context.node.IsDataInput(inputIdx))
-		{
-			params.SetInput(inputIdx - EInputIdx::FirstParam, *context.node.GetInputData(inputIdx));
-		}
-	}
+	StackRuntimeParamMap params;
+	context.node.BindParams(params); // #SchematycTODO : Rather than populating the runtime parameter map every time we reference a node it might make more sense to pre-allocate node instances every time we instantiate a graph.
 
 	static_cast<CObject*>(context.pObject)->ExecuteFunction(data.functionIdx, params);
-
-	for (uint8 outputIdx = EOutputIdx::FirstParam, outputCount = context.node.GetOutputCount(); outputIdx < outputCount; ++outputIdx)
-	{
-		if (context.node.IsDataOutput(outputIdx))
-		{
-			CAnyConstPtr pSrcValue = params.GetOutput(outputIdx - EOutputIdx::FirstParam);
-			if (pSrcValue)
-			{
-				Any::CopyAssign(*context.node.GetOutputData(outputIdx), *pSrcValue);
-			}
-		}
-	}
 
 	return SRuntimeResult(ERuntimeStatus::Continue, EOutputIdx::Out);
 }
 
 const SGUID CScriptGraphFunctionNode::ms_typeGUID = "1bcfd811-b8b7-4032-a90c-311dfa4454c6"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphFunctionNode::Register)

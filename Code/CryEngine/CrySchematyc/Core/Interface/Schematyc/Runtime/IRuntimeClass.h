@@ -4,10 +4,9 @@
 
 namespace Schematyc
 {
+
 // Forward declare interfaces.
 struct IObjectProperties;
-// Forward declare structures.
-
 // Forward declare classes.
 class CAnyConstPtr;
 class CScratchpad;
@@ -25,4 +24,5 @@ struct IRuntimeClass
 	virtual CAnyConstPtr             GetEnvClassProperties() const = 0;
 	virtual const CScratchpad&       GetScratchpad() const = 0;
 };
+
 } // Schematyc

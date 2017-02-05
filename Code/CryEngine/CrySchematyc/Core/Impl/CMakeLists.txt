@@ -66,7 +66,10 @@ add_sources("Schematyc_Uber_Core_0.cpp"
 		"../Interface/Schematyc/Runtime/IRuntimeClass.h"
 		"../Interface/Schematyc/Runtime/IRuntimeRegistry.h"
 		"../Interface/Schematyc/Runtime/RuntimeGraph.h"
+		"../Interface/Schematyc/Runtime/RuntimeParamMap.h"
+		"../Interface/Schematyc/Runtime/RuntimeParamMap.inl"
 		"../Interface/Schematyc/Runtime/RuntimeParams.h"
+		"../Interface/Schematyc/Runtime/RuntimeParams.inl"
 	SOURCE_GROUP "Interface\\\\Script"
 		"../Interface/Schematyc/Script/IScript.h"
 		"../Interface/Schematyc/Script/IScriptElement.h"
@@ -119,17 +122,16 @@ add_sources("Schematyc_Uber_Core_0.cpp"
 		"../Interface/Schematyc/Utils/AnyArray.h"
 		"../Interface/Schematyc/Utils/Array.h"
 		"../Interface/Schematyc/Utils/Assert.h"
+		"../Interface/Schematyc/Utils/ClassProperties.h"
 		"../Interface/Schematyc/Utils/CryLinkUtils.h"
 		"../Interface/Schematyc/Utils/Delegate.h"
 		"../Interface/Schematyc/Utils/EnumFlags.h"
-		"../Interface/Schematyc/Utils/GraphPortId.h"
 		"../Interface/Schematyc/Utils/GUID.h"
+		"../Interface/Schematyc/Utils/HybridArray.h"
 		"../Interface/Schematyc/Utils/IGUIDRemapper.h"
 		"../Interface/Schematyc/Utils/IInterfaceMap.h"
-		"../Interface/Schematyc/Utils/IProperties.h"
 		"../Interface/Schematyc/Utils/IString.h"
 		"../Interface/Schematyc/Utils/PreprocessorUtils.h"
-		"../Interface/Schematyc/Utils/Properties.h"
 		"../Interface/Schematyc/Utils/RingBuffer.h"
 		"../Interface/Schematyc/Utils/Rotation.h"
 		"../Interface/Schematyc/Utils/ScopedConnection.h"
@@ -143,6 +145,7 @@ add_sources("Schematyc_Uber_Core_0.cpp"
 		"../Interface/Schematyc/Utils/Transform.h"
 		"../Interface/Schematyc/Utils/TypeName.h"
 		"../Interface/Schematyc/Utils/TypeUtils.h"
+		"../Interface/Schematyc/Utils/UniqueId.h"
 		"../Interface/Schematyc/Utils/Validator.h"
 )
 
@@ -333,7 +336,7 @@ end_sources()
 #END-FILE-LIST
 
 if(PLUGIN_SCHEMATYC)
-	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	CryEngineModule(CrySchematycCore PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	
 	target_compile_definitions(${THIS_PROJECT}
 		PRIVATE -DSCHEMATYC_EXPORTS

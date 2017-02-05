@@ -10,10 +10,12 @@
 #include <Schematyc/Env/Elements/IEnvAction.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
 #include <Schematyc/Reflection/ActionDesc.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/Runtime/IRuntimeClass.h>
+#include <Schematyc/Runtime/RuntimeParamMap.h>
+#include <Schematyc/Runtime/RuntimeParams.h>
 #include <Schematyc/Services/IUpdateScheduler.h>
 #include <Schematyc/Utils/Assert.h>
-#include <Schematyc/Utils/IProperties.h>
 #include <Schematyc/Utils/STLUtils.h>
 
 #include "Core.h"
@@ -28,11 +30,11 @@ CObject::SStateMachine::SStateMachine()
 	: stateIdx(InvalidIdx)
 {}
 
-CObject::SComponent::SComponent(const SGUID& _guid, const CComponentPtr& _pComponent, const CTransform& _transform, const IProperties* _pProperties, IComponentPreviewer* _pPreviewer, uint32 _parentIdx)
+CObject::SComponent::SComponent(const SGUID& _guid, const CComponentDesc& _desc, const CComponentPtr& _pComponent, const CTransform& _transform, IComponentPreviewer* _pPreviewer, uint32 _parentIdx)
 	: guid(_guid)
+	, desc(_desc)
 	, pComponent(_pComponent)
 	, transform(_transform)
-	, pProperties(_pProperties ? _pProperties->Clone() : IPropertiesPtr())
 	, pPreviewer(_pPreviewer)
 	, parentIdx(_parentIdx)
 {}
@@ -237,7 +239,7 @@ void CObject::Dump(IObjectDump& dump, const ObjectDumpFlags& flags) const
 		const RuntimeClassVariables& classVariables = m_pClass->GetVariables();
 		for (const SRuntimeClassVariable& classVariable : classVariables)
 		{
-			const IObjectDump::SVariable dumpVariable(classVariable.guid, classVariable.name.c_str(), *m_scratchPad.Get(classVariable.pos));
+			const IObjectDump::SVariable dumpVariable(classVariable.guid, classVariable.name.c_str(), *m_scratchpad.Get(classVariable.pos));
 			dump(dumpVariable);
 		}
 	}
@@ -257,7 +259,7 @@ void CObject::Dump(IObjectDump& dump, const ObjectDumpFlags& flags) const
 
 CScratchpad& CObject::GetScratchpad()
 {
-	return m_scratchPad;
+	return m_scratchpad;
 }
 
 CComponent* CObject::GetComponent(uint32 componentIdx)
@@ -265,7 +267,7 @@ CComponent* CObject::GetComponent(uint32 componentIdx)
 	return componentIdx < m_components.size() ? m_components[componentIdx].pComponent.get() : nullptr;
 }
 
-bool CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParams& params)
+bool CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParamMap& params)
 {
 	const RuntimeClassFunctions& classFunctions = m_pClass->GetFunctions();
 	if (functionIdx < classFunctions.size())
@@ -287,17 +289,16 @@ bool CObject::ExecuteFunction(uint32 functionIdx, CRuntimeParams& params)
 	return false;
 }
 
-bool CObject::StartAction(uint32 actionIdx, CRuntimeParams& params)
+bool CObject::StartAction(uint32 actionIdx, CRuntimeParamMap& params)
 {
 	if (actionIdx < m_actions.size())
 	{
 		SAction& action = m_actions[actionIdx];
 		if (!action.bRunning)
 		{
-			RuntimeParams::ToInputClass(action.desc, action.ptr.get(), params);
-			action.ptr->Start(params);
+			RuntimeParamMap::ToInputClass(action.desc, action.ptr.get(), params);
+			action.ptr->Start();
 			action.bRunning = true;
-
 			return true;
 		}
 	}
@@ -324,7 +325,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 	m_timers.clear();
 
 	m_pClass = pClass;
-	m_scratchPad = pClass->GetScratchpad(); // #SchematycTODO : Do we still need to do this here? We also reset the scratchpad in the start function.
+	m_scratchpad = pClass->GetScratchpad(); // #SchematycTODO : Do we still need to do this here? We also reset the scratchpad in the start function.
 
 	CreateGraphs();
 
@@ -355,7 +356,7 @@ bool CObject::SetClass(const CRuntimeClassConstPtr& pClass)
 
 bool CObject::Start(ESimulationMode simulationMode)
 {
-	m_scratchPad = m_pClass->GetScratchpad();
+	m_scratchpad = m_pClass->GetScratchpad();
 
 	ResetGraphs();
 
@@ -381,7 +382,7 @@ bool CObject::Start(ESimulationMode simulationMode)
 	{
 	case ESimulationMode::Game:
 		{
-			ExecuteSignalReceivers(SStartSignal());
+			ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStartSignal()));
 
 			StartStateMachines(simulationMode);
 			StartTimers(simulationMode);
@@ -403,7 +404,7 @@ void CObject::Stop()
 	{
 	case ESimulationMode::Game:
 		{
-			ExecuteSignalReceivers(SStopSignal());
+			ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStopSignal()));
 			break;
 		}
 	}
@@ -416,7 +417,7 @@ void CObject::Stop()
 
 void CObject::Update(const SUpdateContext& updateContext)
 {
-	ProcessSignal(SUpdateSignal(updateContext.frameTime));
+	ProcessSignal(SObjectSignal::FromSignalClass(SUpdateSignal(updateContext.frameTime)));
 }
 
 void CObject::CreateGraphs()
@@ -442,11 +443,8 @@ bool CObject::ReadProperties()
 	const RuntimeClassComponentInstances& classComponentInstances = m_pClass->GetComponentInstances();
 	for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
 	{
-		const IPropertiesPtr& pComponentProperties = classComponentInstances[componentIdx].pProperties;
-		if (pComponentProperties)
-		{
-			m_components[componentIdx].pProperties = pComponentProperties->Clone();
-		}
+		SComponent& component = m_components[componentIdx];
+		classComponentInstances[componentIdx].properties.Apply(component.desc, component.pComponent.get());
 	}
 
 	if (m_pProperties)
@@ -455,12 +453,13 @@ bool CObject::ReadProperties()
 		for (uint32 componentIdx = 0, componentCount = m_components.size(); componentIdx < componentCount; ++componentIdx)
 		{
 			const SRuntimeClassComponentInstance& classComponentInstance = classComponentInstances[componentIdx];
+			SComponent& component = m_components[componentIdx];
 			if (classComponentInstance.bPublic)
 			{
-				const IProperties* pComponentProperties = m_pProperties->GetComponentProperties(classComponentInstance.guid);
+				const CClassProperties* pComponentProperties = m_pProperties->GetComponentProperties(classComponentInstance.guid);
 				if (pComponentProperties)
 				{
-					m_components[componentIdx].pProperties = pComponentProperties->Clone();
+					pComponentProperties->Apply(component.desc, component.pComponent.get());
 				}
 				else
 				{
@@ -474,7 +473,7 @@ bool CObject::ReadProperties()
 		{
 			if (variable.bPublic)
 			{
-				if (!m_pProperties->ReadVariable(*m_scratchPad.Get(variable.pos), variable.guid))
+				if (!m_pProperties->ReadVariable(*m_scratchpad.Get(variable.pos), variable.guid))
 				{
 					SCHEMATYC_CORE_ERROR("Failed to initialize variable: class = %s, variable = %s", m_pClass->GetName(), variable.name.c_str());
 					return false;
@@ -488,7 +487,7 @@ bool CObject::ReadProperties()
 
 void CObject::ExecuteConstructors(ESimulationMode simulationMode)
 {
-	StackRuntimeParams params;
+	CRuntimeParamMap params;
 	for (const SRuntimeClassConstructor& classConstructor : m_pClass->GetConstructors())
 	{
 		ExecuteFunction(classConstructor.graphIdx, params, classConstructor.activationParams);
@@ -533,14 +532,15 @@ void CObject::StartStateMachines(ESimulationMode simulationMode)
 	const RuntimeClassStateMachines& classStateMachines = m_pClass->GetStateMachines();
 	for (uint32 stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 	{
-		StackRuntimeParams params;
+		StackRuntimeParamMap params;
+		uint32 stateIdx = InvalidIdx;
+		params.BindOutput(CUniqueId::FromUInt32(0), CAnyPtr(&stateIdx));
 
 		ExecuteFunction(classStateMachines[stateMachineIdx].beginFunction, params);
 
-		const uint32* pStateIdx = DynamicCast<uint32>(params.GetOutput(0));
-		if (pStateIdx)
+		if (stateIdx != InvalidIdx)
 		{
-			ChangeState(stateMachineIdx, *pStateIdx);
+			ChangeState(stateMachineIdx, stateIdx);
 		}
 	}
 }
@@ -583,13 +583,14 @@ bool CObject::CreateComponents()
 			return false;
 		}
 
-		CComponentPtr pComponent = pEnvComponent->Create();
+		CComponentPtr pComponent = pEnvComponent->CreateFromPool();
 		if (!pComponent)
 		{
 			return false;
 		}
 
-		m_components.emplace_back(classComponentInstance.guid, pComponent, classComponentInstance.transform, classComponentInstance.pProperties.get(), pEnvComponent->GetPreviewer(), classComponentInstance.parentIdx);
+		const CComponentDesc& componentDesc = pEnvComponent->GetDesc();
+		m_components.emplace_back(classComponentInstance.guid, componentDesc, pComponent, classComponentInstance.transform, componentDesc.GetPreviewer(), classComponentInstance.parentIdx);
 	}
 	return true;
 }
@@ -599,7 +600,6 @@ bool CObject::InitComponents()
 	for (SComponent& component : m_components)
 	{
 		SComponentParams componentParams(component.guid, *this, component.transform);
-		componentParams.pProperties = component.pProperties ? component.pProperties->GetValue() : nullptr;
 		componentParams.pPreviewer = component.pPreviewer;
 		componentParams.pParent = component.parentIdx != InvalidIdx ? m_components[component.parentIdx].pComponent.get() : nullptr;
 		//componentParams.pNetworkSpawnParams = pNetworkSpawnParams ? pNetworkSpawnParams->GetComponentSpawnParams(componentInstanceIdx) : INetworkSpawnParamsPtr();
@@ -766,12 +766,30 @@ void CObject::RegisterForUpdate()
 
 void CObject::ExecuteSignalReceivers(const SObjectSignal& signal)
 {
-	StackRuntimeParams outputs;
 	for (const SRuntimeClassSignalReceiver& classSignalReceiver : m_pClass->GetSignalReceivers())
 	{
-		if ((classSignalReceiver.signalGUID == signal.typeGUID) && (GUID::IsEmpty(classSignalReceiver.senderGUID) || (classSignalReceiver.senderGUID == signal.senderGUID))) // #SchematycTODO : How can we optimize this query?
+		bool bExecute = false;
+		if (classSignalReceiver.signalGUID == signal.typeGUID)
 		{
-			ExecuteFunction(classSignalReceiver.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classSignalReceiver.activationParams); // #SchematycTODO : How can we eliminate the const cast without having to copy parameters?
+			// #SchematycTODO : How can we optimize this query?
+			if (GUID::IsEmpty(classSignalReceiver.senderGUID))
+			{
+				bExecute = true;
+			}
+			else if(classSignalReceiver.senderGUID == signal.senderGUID)
+			{
+				bExecute = true;
+			}
+			else if (GUID::IsEmpty(signal.senderGUID))
+			{
+				SCHEMATYC_CORE_CRITICAL_ERROR("Signal sender guid expected!");
+			}
+		}
+		
+		if (bExecute)
+		{
+			StackRuntimeParamMap params(signal.params); // #SchematycTODO : How can we avoid copying signal parameters?
+			ExecuteFunction(classSignalReceiver.graphIdx, params, classSignalReceiver.activationParams);
 		}
 	}
 }
@@ -813,9 +831,28 @@ void CObject::ExecuteStateSignalReceivers(uint32 stateMachineIdx, const SObjectS
 		const RuntimeClassStates& classStates = m_pClass->GetStates();
 		for (const SRuntimeClassStateSignalReceiver& classStateSignalReceiver : classStates[stateIdx].signalReceivers)
 		{
-			if ((classStateSignalReceiver.signalGUID == signal.typeGUID) && (GUID::IsEmpty(classStateSignalReceiver.senderGUID) || (classStateSignalReceiver.senderGUID == signal.senderGUID))) // #SchematycTODO : How can we optimize this query?
+			bool bExecute = false;
+			if (classStateSignalReceiver.signalGUID == signal.typeGUID)
 			{
-				ExecuteFunction(classStateSignalReceiver.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classStateSignalReceiver.activationParams); // #SchematycTODO : How can we eliminate the const cast without having to copy parameters?
+				// #SchematycTODO : How can we optimize this query?
+				if (GUID::IsEmpty(classStateSignalReceiver.senderGUID))
+				{
+					bExecute = true;
+				}
+				else if (classStateSignalReceiver.senderGUID == signal.senderGUID)
+				{
+					bExecute = true;
+				}
+				else if (GUID::IsEmpty(signal.senderGUID))
+				{
+					SCHEMATYC_CORE_CRITICAL_ERROR("Signal sender guid expected!");
+				}
+			}
+
+			if (bExecute)
+			{
+				StackRuntimeParamMap params(signal.params); // #SchematycTODO : How can we avoid copying signal parameters?
+				ExecuteFunction(classStateSignalReceiver.graphIdx, params, classStateSignalReceiver.activationParams);
 			}
 		}
 	}
@@ -831,12 +868,15 @@ bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SObjectSign
 		{
 			if (classStateTransition.signalGUID == signal.typeGUID)
 			{
-				ExecuteFunction(classStateTransition.graphIdx, const_cast<StackRuntimeParams&>(signal.params), classStateTransition.activationParams);
+				StackRuntimeParamMap params(signal.params); // #SchematycTODO : How can we avoid copying signal parameters?
+				uint32 stateIdx = InvalidIdx;
+				params.BindOutput(CUniqueId::FromUInt32(0), CAnyPtr(&stateIdx));
 
-				const uint32* pStateIdx = DynamicCast<uint32>(signal.params.GetOutput(0));
-				if (pStateIdx)
+				ExecuteFunction(classStateTransition.graphIdx, params, classStateTransition.activationParams);
+
+				if (stateIdx != InvalidIdx)
 				{
-					ChangeState(stateMachineIdx, *pStateIdx);
+					ChangeState(stateMachineIdx, stateIdx);
 					return true;
 				}
 			}
@@ -848,13 +888,13 @@ bool CObject::EvaluateStateTransitions(uint32 stateMachineIdx, const SObjectSign
 void CObject::ChangeState(uint32 stateMachineIdx, uint32 stateIdx)
 {
 	StopStateTimers(stateMachineIdx);
-	ExecuteStateSignalReceivers(stateMachineIdx, SStopSignal());
+	ExecuteStateSignalReceivers(stateMachineIdx, SObjectSignal::FromSignalClass(SStopSignal()));
 	m_stateMachines[stateMachineIdx].stateIdx = stateIdx;
-	ExecuteStateSignalReceivers(stateMachineIdx, SStartSignal());
+	ExecuteStateSignalReceivers(stateMachineIdx, SObjectSignal::FromSignalClass(SStartSignal()));
 	StartStateTimers(stateMachineIdx);
 }
 
-void CObject::ExecuteFunction(const SRuntimeFunction& function, CRuntimeParams& params)
+void CObject::ExecuteFunction(const SRuntimeFunction& function, CRuntimeParamMap& params)
 {
 	if (function.graphIdx != InvalidIdx)
 	{
@@ -862,7 +902,7 @@ void CObject::ExecuteFunction(const SRuntimeFunction& function, CRuntimeParams& 
 	}
 }
 
-void CObject::ExecuteFunction(uint32 graphIdx, CRuntimeParams& params, SRuntimeActivationParams activationParams)
+void CObject::ExecuteFunction(uint32 graphIdx, CRuntimeParamMap& params, SRuntimeActivationParams activationParams)
 {
 	m_graphs[graphIdx].Execute(this, params, activationParams);
 }
@@ -871,9 +911,9 @@ void CObject::ProcessSignalQueue()
 {
 	while (!m_signalQueue.empty())
 	{
-		SObjectSignal signal = m_signalQueue.front();
+		SQueuedObjectSignal queuedSignal = m_signalQueue.front();
 		m_signalQueue.pop_front();
-		ProcessSignal(signal);
+		ProcessSignal(queuedSignal.signal);
 	}
 }
 

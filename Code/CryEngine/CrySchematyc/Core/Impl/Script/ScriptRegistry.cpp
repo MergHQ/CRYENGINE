@@ -9,6 +9,7 @@
 #include <CrySystem/File/ICryPak.h>
 #include <Schematyc/Env/IEnvRegistry.h>
 #include <Schematyc/Env/Elements/IEnvComponent.h>
+#include <Schematyc/Reflection/ComponentDesc.h>
 #include <Schematyc/Services/ILog.h>
 #include <Schematyc/Utils/Assert.h>
 #include <Schematyc/Utils/StackString.h>
@@ -235,7 +236,7 @@ bool CScriptRegistry::IsValidScope(EScriptElementType elementType, IScriptElemen
 					const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
 					if (pEnvComponent)
 					{
-						if (pEnvComponent->GetComponentFlags().Check(EEnvComponentFlags::Socket))
+						if (pEnvComponent->GetDesc().GetComponentFlags().Check(EComponentFlags::Socket))
 						{
 							return true;
 						}

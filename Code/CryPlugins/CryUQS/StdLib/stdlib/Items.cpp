@@ -1,6 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CrySerialization/Math.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 

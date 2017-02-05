@@ -6,7 +6,7 @@
 #include "Schematyc/Services/ITimerSystem.h"
 #include "Schematyc/Script/IScriptElement.h"
 #include "Schematyc/Script/Elements/IScriptSignalReceiver.h"
-#include "Schematyc/Utils/GraphPortId.h"
+#include "Schematyc/Utils/UniqueId.h"
 
 SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, EDomain, "Schematyc Domain")
 SERIALIZATION_ENUM(Schematyc::EDomain::Env, "Env", "Environment")
@@ -31,10 +31,14 @@ SERIALIZATION_ENUM(Schematyc::ETimerFlags::AutoStart, "AutoStart", "Auto Start")
 SERIALIZATION_ENUM(Schematyc::ETimerFlags::Repeat, "Repeat", "Repeat")
 SERIALIZATION_ENUM_END()
 
-SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc, CGraphPortId, EType, "Schematyc Graph Port Id Type")
-SERIALIZATION_ENUM(Schematyc::CGraphPortId::EType::Idx, "Idx", "Index")
-SERIALIZATION_ENUM(Schematyc::CGraphPortId::EType::UniqueId, "UniqueId", "Unique Id")
-SERIALIZATION_ENUM(Schematyc::CGraphPortId::EType::GUID, "GUID", "Globally unique Id")
+SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc, CUniqueId, EType, "Schematyc Unique Port Id Type")
+#if SCHEMATYC_PATCH_UNIQUE_IDS
+SERIALIZATION_ENUM(Schematyc::CUniqueId::EType::UInt32, "UniqueId", "UniqueId")
+#endif
+SERIALIZATION_ENUM(Schematyc::CUniqueId::EType::Idx, "Idx", "Idx")
+SERIALIZATION_ENUM(Schematyc::CUniqueId::EType::UInt32, "UInt32", "UInt32")
+SERIALIZATION_ENUM(Schematyc::CUniqueId::EType::StringHash, "StringHash", "StringHash")
+SERIALIZATION_ENUM(Schematyc::CUniqueId::EType::GUID, "GUID", "GUID")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc, EScriptElementType, "Schematyc Script Element Type")

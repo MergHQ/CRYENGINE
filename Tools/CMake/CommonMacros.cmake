@@ -39,12 +39,18 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
     # Now only support precompiled headers for the Visual Studio projects
     return()
   endif()
-  if (OPTION_PCH AND MSVC AND NOT OPTION_UNITY_BUILD)
+
+  if (OPTION_UNITY_BUILD AND UBERFILES)
+	return()
+  endif()
+  
+  if (OPTION_PCH AND MSVC)
+		#message("Enable PCH for ${TargetProject}")
 		if (WIN32 OR DURANGO)
 			if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
 				# Inside Visual Studio
 				set(PCH_FILE "$(IntDir)$(TargetName).pch")
-				else()
+			else()
 				get_filename_component(PCH_NAME "${PrecompiledSource}" NAME_WE)
 				set(PCH_FILE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${TargetProject}.dir/${PCH_NAME}.pch")
 			endif()
@@ -53,7 +59,8 @@ function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader Precompiled
 			set_source_files_properties(${PrecompiledSource} PROPERTIES COMPILE_FLAGS " /Yc\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" ")
 			# Disable Precompiled Header on all C files
 
-			foreach(sourcefile ${SOURCES})
+			get_target_property(TARGET_SOURCES ${TargetProject} SOURCES)
+			foreach(sourcefile ${TARGET_SOURCES})
 				if ("${sourcefile}" MATCHES ".*\\.\\cpp$")
 				  if (NOT ${sourcefile} STREQUAL "${PrecompiledSource}")
 					set_property(SOURCE "${sourcefile}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Yu\"${PrecompiledHeader}\" /Fp\"${PCH_FILE}\" ")
@@ -80,7 +87,19 @@ ENDMACRO(EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER)
 # Organize projects into solution folders
 macro(set_solution_folder folder target)
 	if(TARGET ${target})
-		set_property(TARGET ${target} PROPERTY FOLDER "${folder}")
+		if (NOT "${folder}" MATCHES "^Projects")
+			set_property(TARGET ${target} PROPERTY FOLDER "${VS_FOLDER_PREFIX}/${folder}")
+		else()
+			set_property(TARGET ${target} PROPERTY FOLDER "${folder}")
+		endif()
+	endif()
+endmacro()
+
+# Helper macro to set default StartUp Project in Visual Studio
+macro(set_solution_startup_target target)
+	if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
+		# Set startup project to launch Game.exe with this project
+		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${target})
 	endif()
 endmacro()
 
@@ -376,7 +395,13 @@ macro(apply_compile_settings)
 	SET_PLATFORM_TARGET_PROPERTIES( ${THIS_PROJECT} )	
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
-	endif()	
+	endif()
+	
+	if (DEFINED PROJECT_BUILD_CRYENGINE AND NOT PROJECT_BUILD_CRYENGINE)
+		# If option to not build engine modules is selected they are excluded from the build
+		set_target_properties(${THIS_PROJECT} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+		set_target_properties(${THIS_PROJECT} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+	endif()
 endmacro()
 
 function(CryEngineModule target)
@@ -404,7 +429,9 @@ function(CryEngineModule target)
 		target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	endif()
 
-	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
+		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	endif()
 endfunction()
 
 function(CryGameModule target)
@@ -423,7 +450,9 @@ function(CryGameModule target)
 		generate_rc_file()
 	endif()
 
-	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
+		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	endif()
 endfunction()
 
 function(CreateDynamicModule target)
@@ -474,7 +503,9 @@ function(CryLauncher target)
 	apply_compile_settings()	
 
 	if(NOT ANDROID)
-		install(TARGETS ${target} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+		if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
+			install(TARGETS ${target} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+		endif()
 	endif()
 endfunction()
 
@@ -615,8 +646,8 @@ function(CryPipelineModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	set_rc_flags()
-	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CRYENGINE_DIR}/Tools/rc)
-	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CRYENGINE_DIR}/Tools/rc)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY Tools/rc)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY Tools/rc)
 	if(WIN32)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
 	endif()
@@ -727,7 +758,7 @@ macro(process_csharp output_module platformAssembly languageVersion)
 			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${f}
 			DEPENDS ${swig_deps}
 		)
-	set_property(DIRECTORY ${CRYENGINE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
+		set_property(DIRECTORY ${CRYENGINE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
 		set(secondary_defs -DSWIG_CXX_EXCLUDE_SWIG_INTERFACE_FUNCTIONS -DSWIG_CSHARP_EXCLUDE_STRING_HELPER -DSWIG_CSHARP_EXCLUDE_EXCEPTION_HELPER)
 		target_sources(${THIS_PROJECT} PRIVATE ${f_cpp} ${f_h})
 		EXCLUDE_FILE_FROM_MSVC_PRECOMPILED_HEADER(${f_cpp})
@@ -1021,4 +1052,20 @@ endfunction()
 
 function(add_subdirectories)
 	add_subdirectories_glob("*")
+endfunction()
+
+function(set_visual_studio_debugger_command TARGET_NAME EXE_PATH CMD_LINE)
+	if (WIN32 AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.vcxproj.user")
+		#Configure default Visual Studio debugger settings
+		file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.vcxproj.user"
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?>
+			<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
+				<PropertyGroup>
+					<LocalDebuggerCommand>\"${EXE_PATH}\"</LocalDebuggerCommand>
+					<LocalDebuggerCommandArguments>\"${CMD_LINE}\"</LocalDebuggerCommandArguments>
+					<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+				</PropertyGroup>
+			</Project>"
+		)
+	endif()
 endfunction()

@@ -497,5 +497,5 @@ struct IParticleEntityComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE(IParticleEntityComponent, 0x68E3655DDDD34390, 0xAAD5448264E74461)
 
-	virtual void SetParticleEffectName(cstr effectName) = 0;
+	virtual void SetParticleEffectName(const char* szEffectName) = 0;
 };

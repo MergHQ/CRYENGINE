@@ -27,13 +27,10 @@ struct ITimerSystem;
 struct IUpdateScheduler;
 struct IValidatorArchive;
 // Forward declare structures.
-
 struct SObjectParams;
 struct SObjectSignal;
 struct SSerializationContextParams;
 struct SValidatorArchiveParams;
-// Forward declare classes.
-class CRuntimeParams;
 // Forward declare shared pointers.
 DECLARE_SHARED_POINTERS(IScriptView)
 DECLARE_SHARED_POINTERS(ISerializationContext)

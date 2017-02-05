@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+// #SchematycTODO : Move functions to .inl file?
 // #SchematycTODO : Do we need to worry about data alignment?
-// #SchematycTODO : Implement move semantics?
 
 #pragma once
 
@@ -15,6 +15,7 @@
 
 namespace Schematyc
 {
+
 class CScratchpad
 {
 private:
@@ -30,25 +31,23 @@ private:
 
 public:
 
-	inline CScratchpad()
-		: m_size(0)
-		, m_capacity(0)
-		, m_pData(nullptr)
-		, m_bInPlace(false)
-	{}
+	inline CScratchpad() {}
 
-	inline CScratchpad(const SInPlaceAllocationParams& params)
-		: m_size(0)
-		, m_capacity(params.capacity)
-		, m_pData(static_cast<uint8*>(params.pStorage))
+	inline CScratchpad(const CScratchpad& rhs)
+	{
+		Copy(rhs);
+	}
+
+	explicit inline CScratchpad(const SInPlaceStorageParams& storage)
+		: m_capacity(storage.capacity)
+		, m_pData(static_cast<uint8*>(storage.pData))
 		, m_bInPlace(true)
 	{}
 
-	inline CScratchpad(const CScratchpad& rhs)
-		: m_size(0)
-		, m_capacity(0)
-		, m_pData(nullptr)
-		, m_bInPlace(false)
+	inline CScratchpad(const SInPlaceStorageParams& storage, const CScratchpad& rhs)
+		: m_capacity(storage.capacity)
+		, m_pData(static_cast<uint8*>(storage.pData))
+		, m_bInPlace(true)
 	{
 		Copy(rhs);
 	}
@@ -56,7 +55,6 @@ public:
 	inline ~CScratchpad()
 	{
 		Clear();
-
 		if (m_pData && !m_bInPlace)
 		{
 			CryModuleFree(m_pData);
@@ -67,16 +65,19 @@ public:
 	{
 		if (capacity > m_capacity)
 		{
-			static const uint32 minCapacity = 256;
+			static const uint32 minCapacity = 16;
 			static const uint32 growthFactor = 2;
 			m_capacity = max(max(capacity, m_capacity * growthFactor), minCapacity);
 
 			uint8* pData = static_cast<uint8*>(CryModuleMalloc(m_capacity));
-			MoveData(pData, m_pData, m_size);
 
-			if (!m_bInPlace)
+			if (m_pData)
 			{
-				CryModuleFree(m_pData);
+				MoveData(pData, m_pData, m_size);
+				if (!m_bInPlace)
+				{
+					CryModuleFree(m_pData);
+				}
 			}
 
 			m_pData = pData;
@@ -111,7 +112,7 @@ public:
 
 	inline void ShrinkToFit()
 	{
-		if (!m_bInPlace)
+		if (m_pData && !m_bInPlace)
 		{
 			static const uint32 shrinkThreshold = 64;
 			if ((m_capacity - m_size) >= shrinkThreshold)
@@ -184,10 +185,10 @@ private:
 
 private:
 
-	uint32 m_size;
-	uint32 m_capacity;
-	uint8* m_pData;
-	bool   m_bInPlace;
+	uint32 m_capacity = 0;
+	uint32 m_size = 0;
+	uint8* m_pData = nullptr;
+	bool   m_bInPlace = false;
 };
 
 template<uint32 CAPACITY> class CInPlaceScratchpad : public CScratchpad
@@ -195,14 +196,20 @@ template<uint32 CAPACITY> class CInPlaceScratchpad : public CScratchpad
 public:
 
 	inline CInPlaceScratchpad()
-		: CScratchpad(SInPlaceAllocationParams(CAPACITY, m_storage))
+		: CScratchpad(SInPlaceStorageParams(CAPACITY, m_storage))
 	{}
 
 	inline CInPlaceScratchpad(const CScratchpad& rhs)
-		: CScratchpad(SInPlaceAllocationParams(CAPACITY, m_storage))
-	{
-		CScratchpad::Copy(rhs);
-	}
+		: CScratchpad(SInPlaceStorageParams(CAPACITY, m_storage), rhs)
+	{}
+
+	inline CInPlaceScratchpad(const CInPlaceScratchpad& rhs)
+		: CScratchpad(SInPlaceStorageParams(CAPACITY, m_storage), rhs)
+	{}
+
+	template <uint32 RHS_CAPACITY> inline CInPlaceScratchpad(const CInPlaceScratchpad<RHS_CAPACITY>& rhs)
+		: CScratchpad(SInPlaceStorageParams(CAPACITY, m_storage), rhs)
+	{}
 
 private:
 
@@ -211,4 +218,5 @@ private:
 
 typedef CScratchpad             HeapScratchpad;
 typedef CInPlaceScratchpad<256> StackScratchpad;
+
 } // Schematyc

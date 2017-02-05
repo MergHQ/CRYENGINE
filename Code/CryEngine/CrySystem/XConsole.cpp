@@ -261,7 +261,7 @@ int CXConsole::con_restricted = 0;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CXConsole::CXConsole()
-	:m_managedConsoleCommandListeners(1)
+	: m_managedConsoleCommandListeners(1)
 {
 	m_fRepeatTimer = 0;
 	m_pSysDeactivateConsole = 0;
@@ -446,22 +446,33 @@ void CXConsole::Init(CSystem* pSystem)
 		con_restricted = 0;
 
 	// test cases -----------------------------------------------
+
+	// cppcheck-suppress assertWithSideEffect
 	assert(GetCVar("con_debug") != 0);                    // should be registered a few lines above
+	// cppcheck-suppress assertWithSideEffect
 	assert(GetCVar("Con_Debug") == GetCVar("con_debug")); // different case
 
 	// editor
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("con_"), "con_debug") == 0);
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("CON_"), "con_debug") == 0);
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("con_debug"), "con_display_last_messages") == 0);   // actually we should reconsider this behavior
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(AutoComplete("Con_Debug"), "con_display_last_messages") == 0);   // actually we should reconsider this behavior
 
 	// game
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("con_"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("CON_"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("con_debug"), "con_debug ") == 0);
 	ResetAutoCompletion();
+	// cppcheck-suppress assertWithSideEffect
 	assert(strcmp(ProcessCompletion("Con_Debug"), "con_debug ") == 0);
 	ResetAutoCompletion();
 	m_sInputBuffer = "";
@@ -2531,7 +2542,7 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 				notifier->OnManagedConsoleCommandEvent(cmd.m_sName.c_str(), &cmdArgs);
 			}
 		}
-		
+
 		return;
 	}
 
@@ -3492,7 +3503,7 @@ char* CXConsole::GetCheatVarAt(uint32 nOffset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix,int nListTypes)
+size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix, int nListTypes)
 {
 	size_t i = 0;
 	size_t iPrefixLen = szPrefix ? strlen(szPrefix) : 0;
@@ -3570,7 +3581,7 @@ void CXConsole::FindVar(const char* substr)
 					if (isCheat)
 						continue;
 				}
-#endif // _RELEASE
+#endif  // _RELEASE
 
 				DisplayVarValue(pCvar);
 			}

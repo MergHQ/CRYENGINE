@@ -4,14 +4,13 @@
 
 #include <Schematyc/Script/Elements/IScriptComponentInstance.h>
 #include <Schematyc/SerializationUtils/MultiPassSerializer.h>
+#include <Schematyc/Utils/ClassProperties.h>
 #include <Schematyc/Utils/Transform.h>
 
 #include "Script/ScriptElementBase.h"
 
 namespace Schematyc
 {
-// Forward declare shared pointers.
-DECLARE_SHARED_POINTERS(IProperties)
 
 class CScriptComponentInstance : public CScriptElementBase<IScriptComponentInstance>, public CMultiPassSerializer
 {
@@ -33,8 +32,8 @@ public:
 	virtual ScriptComponentInstanceFlags GetComponentInstanceFlags() const override;
 	virtual bool                         HasTransform() const override;
 	virtual void                         SetTransform(const CTransform& transform) override;
-	virtual const CTransform&  GetTransform() const override;
-	virtual const IProperties* GetProperties() const override;
+	virtual const CTransform&            GetTransform() const override;
+	virtual const CClassProperties&      GetProperties() const override;
 	// ~IScriptComponentInstance
 
 protected:
@@ -58,6 +57,7 @@ private:
 	ScriptComponentInstanceFlags m_flags;
 	bool                         m_bHasTransform = false;
 	CTransform                   m_transform;
-	IPropertiesPtr               m_pProperties;
+	CClassProperties             m_properties;
 };
+
 } // Schematyc

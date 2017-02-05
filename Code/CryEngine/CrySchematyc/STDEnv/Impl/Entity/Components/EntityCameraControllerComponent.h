@@ -15,19 +15,6 @@ struct IEnvRegistrar;
 class CEntityOrbitCameraControllerComponent final : public CComponent, IGameObjectView
 {
 public:
-	struct SProperties
-	{
-		void Serialize(Serialization::IArchive& archive);
-
-		float yaw = 0.0f;
-		float pitch = 45.0f;
-		float roll = 0.0f;
-		float fov = 60.0f;
-		float distance = 10.0f;
-		bool  bActive = true;
-		bool  bAlwaysUpdate = false;
-	};
-
 	virtual ~CEntityOrbitCameraControllerComponent();
 
 	// CComponent
@@ -55,11 +42,16 @@ private:
 
 private:
 
-	unsigned int m_viewId = -1;
-	float        m_distance;
-	float        m_fov;
-	Ang3         m_rotation;
+	float        m_yaw = 0.0f;
+	float        m_pitch = 45.0f;
+	float        m_roll = 0.0f;
+	float        m_distance = 10.0f;
+	float        m_fov = 60.0f;
+	bool         m_bActive = true;
 	bool         m_bAlwaysUpdate = false;
+
+	unsigned int m_viewId = -1;
+	Ang3         m_rotation = Ang3(ZERO);
 	bool         m_bNeedUpdate = true;
 };
 

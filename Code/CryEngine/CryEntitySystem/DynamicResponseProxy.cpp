@@ -27,7 +27,7 @@ void CEntityComponentDynamicResponse::Initialize()
 	m_pResponseActor = gEnv->pDynamicResponseSystem->GetResponseActor(szEntityName);
 	if (m_pResponseActor)
 	{
-		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR_DBGBRK, "DrsActor with name '%s' already exists. Actors need to have unique names to be referenced correctly", szEntityName);
+		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "DrsActor with name '%s' already exists. Actors need to have unique names to be referenced correctly", szEntityName);
 	}
 	else
 	{

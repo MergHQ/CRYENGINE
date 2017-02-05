@@ -836,7 +836,7 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 	CVariableCollection* pLocalCollection = pSpeakerInfoToUse->pActor->GetLocalVariables();
 	pLocalCollection->SetVariableValue(s_isTalkingVariableName, true);
 	pLocalCollection->SetVariableValue(s_lastLineId, pSpeakerInfoToUse->lineID);
-	float pointInFarFuture = (((int)CResponseSystem::GetInstance()->GetCurrentDrsTime() % 5000) + 1) * 5000.0f; //we set the 'LastFinishTime' to a point in the far future, so that conditions like 'if TimeSince LastFinishTime > 3' (to detect longer pauses) will savely work.
+	float pointInFarFuture = (((int)CResponseSystem::GetInstance()->GetCurrentDrsTime() / 5000) + 1) * 5000.0f; //we set the 'LastFinishTime' to a point in the far future, so that conditions like 'if TimeSince LastFinishTime > 3' (to detect longer pauses) will savely work.
 	pLocalCollection->SetVariableValue(s_lastLineFinishTime, pointInFarFuture);
 	pLocalCollection->SetVariableValue(s_currentLinePriority, pSpeakerInfoToUse->priority);
 	SetNumActiveSpeaker((int)m_activeSpeakers.size());

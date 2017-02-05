@@ -1,16 +1,17 @@
-cmake_minimum_required (VERSION 3.6.0)
-project (Game VERSION 1.0 LANGUAGES CXX)
+cmake_minimum_required (VERSION 3.6.2)
 
-if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
-	# Set startup project to launch Game.exe with this project
-	configure_file ("Game.vcxproj.user.in" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.vcxproj.user")
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+#Validations of the Input parameters
+if (NOT DEFINED CRYENGINE_DIR)
+	message( FATAL_ERROR "CRYENGINE_DIR variable must be defined and point to a valid path to CryEngine root folder." )
+endif()
+if (NOT DEFINED PROJECT_FILE)
+	message( FATAL_ERROR "PROJECT_FILE variable must be defined and point to a valid .cryproject file." )
 endif()
 
-find_package (CryCommon REQUIRED)
-find_package (CryAction REQUIRED)
+# Include Common CMake macros used by CRYENGINE cmake files
+include(${CRYENGINE_DIR}/Tools/CMake/Project.cmake)
 
-option(OPTION_PCH "Enable Precompiled headers" ON)
+project (Game VERSION 1.0 LANGUAGES CXX)
 
 set (SourceGroup_PluginMain
 	"StdAfx.cpp"
@@ -26,17 +27,12 @@ set (SourceGroup_Game
 )
 source_group("Game" FILES ${SourceGroup_Game})
 
-
-set (SourceGroup_GameplayEntities
-	"Entities/Gameplay/SpawnPoint.cpp"
-	"Entities/Gameplay/SpawnPoint.h"
-)
-source_group("Entities\\Gameplay" FILES ${SourceGroup_GameplayEntities})
-
 set (SourceGroup_EntityHelpers
+	"Entities/Gameplay/SpawnPoint.h"
+	"Entities/Gameplay/SpawnPoint.cpp"
 	"Entities/Helpers/ISimpleExtension.h"
 )
-source_group("Entities\\Helpers" FILES ${SourceGroup_EntityHelpers})
+source_group("Entities" FILES ${SourceGroup_EntityHelpers})
 
 set (SourceGroup_Player
 	"Player/Player.cpp"
@@ -66,7 +62,6 @@ source_group("Player\\View" FILES ${SourceGroup_PlayerView})
 set (SOURCE
 	${SourceGroup_PluginMain}
 	${SourceGroup_Game}
-	${SourceGroup_GameplayEntities}
 	${SourceGroup_EntityHelpers}
 	${SourceGroup_Player}
 	${SourceGroup_PlayerInput}
@@ -74,18 +69,22 @@ set (SOURCE
 	${SourceGroup_PlayerView}
 )
 
-if(OPTION_PCH AND MSVC)	
-	set (PRECOMPILED_SOURCE ${SOURCE})
-	list(REMOVE_ITEM PRECOMPILED_SOURCE "StdAfx.cpp")
-	set (PRECOMPILED_BINARY ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pch)
-	set_source_files_properties (${PRECOMPILED_SOURCE} PROPERTIES COMPILE_FLAGS "/Yu\"StdAfx.h\" /Fp\"${PRECOMPILED_BINARY}\"" OBJECT_DEPENDS "${PRECOMPILED_BINARY}")
-	set_source_files_properties (StdAfx.cpp PROPERTIES COMPILE_FLAGS "/Yc\"StdAfx.h\" /Fp\"${PRECOMPILED_BINARY}\"" OBJECT_OUTPUTS "${PRECOMPILED_BINARY}")
-endif (OPTION_PCH AND MSVC)
-
 add_library(${PROJECT_NAME} MODULE ${SOURCE})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE CryCommon CryAction)
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (WIN32)
 	target_link_libraries(${PROJECT_NAME} PRIVATE Ntdll)
 endif(WIN32)
+
+
+# Set Visual Studio solution project name
+set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER "Project")
+# Set StartUp project in Visual Studio
+set_solution_startup_target(${PROJECT_NAME} )
+
+#Enable Precompiled Headers
+USE_MSVC_PRECOMPILED_HEADER(${PROJECT_NAME} "StdAfx.h" "StdAfx.cpp")
+
+if (WIN32 AND DEFINED PROJECT_FILE)
+	set_visual_studio_debugger_command( ${PROJECT_NAME} "${CRYENGINE_DIR}\\bin\\win_x64\\GameLauncher.exe" "-project \"${PROJECT_FILE}\"" )
+endif()

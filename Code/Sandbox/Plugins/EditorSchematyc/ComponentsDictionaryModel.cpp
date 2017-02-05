@@ -93,7 +93,7 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 			const Schematyc::IEnvComponent* pEnvComponent = registry.GetComponent(pScriptComponentInstance->GetTypeGUID());
 			if (pEnvComponent)
 			{
-				if (pEnvComponent->GetComponentFlags().Check(Schematyc::EEnvComponentFlags::Socket))
+				if (pEnvComponent->GetDesc().GetComponentFlags().Check(Schematyc::EComponentFlags::Socket))
 				{
 					bAttach = true;
 				}
@@ -116,11 +116,11 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 
 		auto visitEnvComponentFactory = [this, bAttach, &singletonExclusions, &pScriptView](const Schematyc::IEnvComponent& envComponent) -> Schematyc::EVisitStatus
 		{
-			const Schematyc::EnvComponentFlags envComponentFlags = envComponent.GetComponentFlags();
-			if (!bAttach || envComponentFlags.Check(Schematyc::EEnvComponentFlags::Attach))
+			const Schematyc::ComponentFlags componentFlags = envComponent.GetDesc().GetComponentFlags();
+			if (!bAttach || componentFlags.Check(Schematyc::EComponentFlags::Attach))
 			{
 				const Schematyc::SGUID envComponentGUID = envComponent.GetGUID();
-				if (!envComponentFlags.Check(Schematyc::EEnvComponentFlags::Singleton) || (singletonExclusions.find(envComponentGUID) == singletonExclusions.end()))
+				if (!componentFlags.Check(Schematyc::EComponentFlags::Singleton) || (singletonExclusions.find(envComponentGUID) == singletonExclusions.end()))
 				{
 					Schematyc::CStackString fullName;
 					pScriptView->QualifyName(envComponent, fullName);

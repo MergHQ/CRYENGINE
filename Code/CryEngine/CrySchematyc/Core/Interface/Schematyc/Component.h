@@ -4,9 +4,10 @@
 
 #include <CrySerialization/Forward.h>
 
-#include "Schematyc/Utils/Assert.h"
 #include "Schematyc/FundamentalTypes.h"
+#include "Schematyc/IObject.h"
 #include "Schematyc/Network/INetworkSpawnParams.h"
+#include "Schematyc/Utils/Assert.h"
 
 // Forward declare structures.
 struct SRendParams;
@@ -33,7 +34,6 @@ struct SComponentParams
 	const SGUID&           guid;
 	IObject&               object;
 	CTransform&            transform;
-	void*                  pProperties = nullptr;
 	IComponentPreviewer*   pPreviewer = nullptr;
 	CComponent*            pParent = nullptr;
 	INetworkSpawnParamsPtr pNetworkSpawnParams; // #SchematycTODO : Should this also be a raw pointer?
@@ -75,7 +75,6 @@ public:
 		m_guid = params.guid;
 		m_pObject = &params.object;
 		m_pTransform = &params.transform;
-		m_pProperties = params.pProperties;
 		m_pPreviewer = params.pPreviewer;
 		m_pParent = params.pParent;
 	}
@@ -104,11 +103,6 @@ public:
 		return *m_pTransform;
 	}
 
-	inline void* GetProperties() const
-	{
-		return m_pProperties;
-	}
-
 	inline IComponentPreviewer* GetPreviewer() const
 	{
 		return m_pPreviewer;
@@ -124,7 +118,6 @@ private:
 	SGUID                m_guid;
 	IObject*             m_pObject = nullptr;
 	CTransform*          m_pTransform = nullptr;
-	void*                m_pProperties = nullptr;
 	IComponentPreviewer* m_pPreviewer = nullptr;
 	CComponent*          m_pParent = nullptr;
 };

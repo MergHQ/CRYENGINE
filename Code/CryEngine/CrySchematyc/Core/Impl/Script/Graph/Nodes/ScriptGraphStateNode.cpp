@@ -29,6 +29,7 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc
 {
+
 CScriptGraphStateNode::SRuntimeData::SRuntimeData(uint32 _stateIdx)
 	: stateIdx(_stateIdx)
 {}
@@ -94,13 +95,13 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 	auto visitScriptSignal = [&layout, &scriptView](const IScriptSignal& scriptSignal)
 	{
-		layout.AddOutput(CGraphPortId::FromGUID(scriptSignal.GetGUID()), scriptSignal.GetName(), scriptSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+		layout.AddOutput(CUniqueId::FromGUID(scriptSignal.GetGUID()), scriptSignal.GetName(), scriptSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 	};
 	scriptView.VisitEnclosedSignals(ScriptSignalConstVisitor::FromLambda(visitScriptSignal));
 
 	auto visitScriptTimer = [&layout, &scriptView](const IScriptTimer& scriptTimer)
 	{
-		layout.AddOutput(CGraphPortId::FromGUID(scriptTimer.GetGUID()), scriptTimer.GetName(), scriptTimer.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+		layout.AddOutput(CUniqueId::FromGUID(scriptTimer.GetGUID()), scriptTimer.GetName(), scriptTimer.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 	};
 	scriptView.VisitEnclosedTimers(ScriptTimerConstVisitor::FromLambda(visitScriptTimer));
 
@@ -113,7 +114,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IEnvSignal* pEnvSignal = gEnv->pSchematyc->GetEnvRegistry().GetSignal(output.value.guid);
 				if (pEnvSignal)
 				{
-					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pEnvSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CUniqueId::FromGUID(output.value.guid), pEnvSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 				break;
 			}
@@ -122,7 +123,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IScriptSignal* pScriptSignal = DynamicCast<IScriptSignal>(gEnv->pSchematyc->GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptSignal)
 				{
-					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CUniqueId::FromGUID(output.value.guid), pScriptSignal->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 			}
 		case EOutputType::ScriptTimer:
@@ -130,7 +131,7 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 				const IScriptTimer* pScriptTimer = DynamicCast<IScriptTimer>(gEnv->pSchematyc->GetScriptRegistry().GetElement(output.value.guid));
 				if (pScriptTimer)
 				{
-					layout.AddOutput(CGraphPortId::FromGUID(output.value.guid), pScriptTimer->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
+					layout.AddOutput(CUniqueId::FromGUID(output.value.guid), pScriptTimer->GetName(), output.value.guid, { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 				}
 				break;
 			}
@@ -344,7 +345,7 @@ SRuntimeResult CScriptGraphStateNode::Execute(SRuntimeContext& context, const SR
 	if (activationParams.IsInput(EInputIdx::In))
 	{
 		const SRuntimeData& data = DynamicCast<SRuntimeData>(*context.node.GetData());
-		context.params.SetOutput(0, data.stateIdx); // #SchematycTODO : Create enum of transition function input and output ids!
+		context.params.SetOutput(CUniqueId::FromUInt32(0), data.stateIdx); // #SchematycTODO : Create enum of transition function input and output ids!
 		return SRuntimeResult(ERuntimeStatus::Return);
 	}
 	else
@@ -354,6 +355,7 @@ SRuntimeResult CScriptGraphStateNode::Execute(SRuntimeContext& context, const SR
 }
 
 const SGUID CScriptGraphStateNode::ms_typeGUID = "4e1f8b82-1a47-4679-9f29-7f28df27cf35"_schematyc_guid;
+
 } // Schematyc
 
 SCHEMATYC_REGISTER_SCRIPT_GRAPH_NODE(Schematyc::CScriptGraphStateNode::Register)

@@ -2,13 +2,9 @@
 
 #include "stdafx.h"
 #include "SchematycEntityDrsComponent.h"
+#include "../CryEntitySystem/DynamicResponseProxy.h"
 
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
-
-void CSchematycEntityDrsComponent::SProperties::Serialize(Serialization::IArchive& archive)
-{
-	archive(name, "actorName", "ActorName");
-}
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -28,54 +24,46 @@ CSchematycEntityDrsComponent::~CSchematycEntityDrsComponent()
 bool CSchematycEntityDrsComponent::Init()
 {
 	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-
-	const SProperties* pProperties = static_cast<const SProperties*>(Schematyc::CComponent::GetProperties());
-	const char* szDrsActorName = (pProperties->name.empty()) ? entity.GetName() : pProperties->name.c_str();
-
-	m_pDrsActor = gEnv->pDynamicResponseSystem->GetResponseActor(szDrsActorName);
-	if (m_pDrsActor)
-	{
-		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR_DBGBRK, "DrsActor with name '%s' already exists. Actors need to have unique names to be referenced correctly", szDrsActorName);
-	}
-	else
-	{
-		m_pDrsActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szDrsActorName, entity.GetId());
-	}
-	SET_DRS_USER_SCOPED("DrsProxy Initialize");
-
-	m_pDrsActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szDrsActorName));
-	gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
+	m_pDrsEntityComp = entity.GetOrCreateComponent<CEntityComponentDynamicResponse>();
 	return true;
 }
 
 void CSchematycEntityDrsComponent::Run(Schematyc::ESimulationMode simulationMode)
 {
+	if (simulationMode != Schematyc::ESimulationMode::Idle && simulationMode != Schematyc::ESimulationMode::Preview)
+	{
+		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
+		const char* szDrsActorName = (m_name.empty()) ? entity.GetName() : m_name.c_str();
+		SET_DRS_USER_SCOPED("DrsProxy via Schematyc Initialize"); //this line is just for the editor, so that the name-variable change can be associated with a reason
+		m_pDrsEntityComp->GetLocalVariableCollection()->SetVariableValue("Name", CHashedString(szDrsActorName));
+		gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
+	}
 }
 
 void CSchematycEntityDrsComponent::Shutdown()
 {
-	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pDrsActor);
 	gEnv->pDynamicResponseSystem->GetSpeakerManager()->RemoveListener(this);
-	m_pDrsActor = nullptr;
+
+	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
+	entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
+	m_pDrsEntityComp = nullptr;
 }
 
 void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc)
 {
 	desc.SetGUID("25854445-cd59-4257-827d-aef984790598"_schematyc_guid);
+	desc.SetLabel("DRS");
+	desc.SetDescription("Dynamic Response System component");
+	desc.SetIcon("icons:Dialogs/notification_text.ico");
+	desc.SetComponentFlags(Schematyc::EComponentFlags::Singleton);
+	desc.AddMember(&CSchematycEntityDrsComponent::m_name, 'name', "actorName", "ActorName", nullptr);
 }
 
 void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(Schematyc::g_entityClassGUID);
 	{
-		auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycEntityDrsComponent, "DRS");
-		pComponent->SetDescription("Dynamic Response System component");
-		pComponent->SetIcon("icons:Dialogs/notification_text.ico");
-		pComponent->SetFlags({ Schematyc::EEnvComponentFlags::None });
-		pComponent->SetProperties(CSchematycEntityDrsComponent::SProperties());
-		scope.Register(pComponent);
-
-		Schematyc::CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+		Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CSchematycEntityDrsComponent));
 		// Functions
 		
 		//TODO: Send Signal (With context variables) (for now just hardcoded string/hash/float/int)
@@ -143,10 +131,8 @@ void CSchematycEntityDrsComponent::SendSignal(const CSharedString& signalName, c
 			pCollection->CreateVariable(contextStringName.c_str(), CHashedString(contextStringValue.c_str()));
 		}
 	}
-	if (m_pDrsActor)
-	{
-		m_pDrsActor->QueueSignal(signalName.c_str(), pCollection, this);
-	}
+
+	m_pDrsEntityComp->GetResponseActor()->QueueSignal(signalName.c_str(), pCollection, this);
 }
 
 void CSchematycEntityDrsComponent::SetFloatVariable(const CSharedString& collectionName, const CSharedString& variableName, float value)
@@ -180,36 +166,37 @@ void CSchematycEntityDrsComponent::SetIntVariable(const CSharedString& collectio
 IVariableCollection* CSchematycEntityDrsComponent::GetVariableCollection(const CSharedString& collectionName)
 {
 	if (collectionName == "Local" || collectionName == "local")
-		return m_pDrsActor->GetLocalVariables();
+		return m_pDrsEntityComp->GetLocalVariableCollection();
 	else
 		return gEnv->pDynamicResponseSystem->GetCollection(collectionName.c_str());
 }
 
 void CSchematycEntityDrsComponent::OnSignalProcessingStarted(SSignalInfos& signal, IResponseInstance* pStartedResponse)
 {
-	GetObject().ProcessSignal(SResponseStartedSignal{(int)signal.id});
+	OutputSignal(SResponseStartedSignal{(int)signal.id});
 }
 
 void CSchematycEntityDrsComponent::OnSignalProcessingFinished(SSignalInfos& signal, IResponseInstance* pFinishedResponse, eProcessingResult outcome)
 {	
-	GetObject().ProcessSignal(SResponseFinishedSignal{ signal.id, outcome });
+	OutputSignal(SResponseFinishedSignal{ signal.id, outcome });
 }
 
 void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine)
 {
+	//remark: every DRS Component will currently receive events for any Speaker
 	const Schematyc::CSharedString text = (pLine) ? pLine->GetText().c_str() : lineID.GetText().c_str();
 	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName().GetText().c_str() : "No Actor";
 
 	if (lineEvent == ISpeakerManager::IListener::eLineEvent_HasEndedInAnyWay)
 	{
-		GetObject().ProcessSignal(SLineEndedSignal{
+		OutputSignal(SLineEndedSignal{
 			text,
 			speakerName,
 			(lineEvent == ISpeakerManager::IListener::eLineEvent_Canceled) });
 	}
 	else if (lineEvent == ISpeakerManager::IListener::eLineEvent_Started)
 	{
-		GetObject().ProcessSignal(SLineStartedSignal{
+		OutputSignal(SLineStartedSignal{
 			text,
 			speakerName });
 	}

@@ -8,7 +8,7 @@
 #include "GamePlugin.h"
 #include "Game/GameRules.h"
 
-#include <CryRenderer/IRenderAuxGeom.h>
+
 
 class CPlayerRegistrator
 	: public IEntityRegistrator

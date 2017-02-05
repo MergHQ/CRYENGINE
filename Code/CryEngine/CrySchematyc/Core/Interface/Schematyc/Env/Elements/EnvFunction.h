@@ -8,7 +8,7 @@
 #include "Schematyc/Env/EnvElementBase.h"
 #include "Schematyc/Env/Elements/IEnvFunction.h"
 #include "Schematyc/Reflection/TypeDesc.h"
-#include "Schematyc/Runtime/RuntimeGraph.h"
+#include "Schematyc/Runtime/RuntimeParamMap.h"
 #include "Schematyc/Utils/Assert.h"
 #include "Schematyc/Utils/Any.h"
 #include "Schematyc/Utils/EnumFlags.h"
@@ -39,7 +39,7 @@ enum class EParamFlags
 
 typedef CEnumFlags<EParamFlags> ParamFlags;
 
-typedef void (* StubPtr)(const SBinding&, SRuntimeContext& context, void* pObject);
+typedef void (* StubPtr)(const SBinding&, CRuntimeParamMap& params, void* pObject);
 
 enum : uint32
 {
@@ -238,11 +238,11 @@ template<typename TYPE> struct SParamReader
 {
 	typedef const TYPE& ReturnType;
 
-	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, SRuntimeContext& context)
+	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, CRuntimeParamMap& params)
 	{
 		const SParamBinding& param = binding.params[paramIdx];
 		SCHEMATYC_CORE_ASSERT_FATAL(param.flags.Check(EParamFlags::BoundToInput));
-		return DynamicCast<TYPE>(*context.node.GetInputData(context.node.FindInput(CGraphPortId::FromUniqueId(param.id))));
+		return DynamicCast<TYPE>(*params.GetInput(CUniqueId::FromUInt32(param.id)));
 	}
 };
 
@@ -250,11 +250,11 @@ template<typename TYPE> struct SParamReader<TYPE&>
 {
 	typedef TYPE& ReturnType;
 
-	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, SRuntimeContext& context)
+	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, CRuntimeParamMap& params)
 	{
 		const SParamBinding& param = binding.params[paramIdx];
 		SCHEMATYC_CORE_ASSERT_FATAL(param.flags.Check(EParamFlags::BoundToOutput));
-		return DynamicCast<TYPE>(*context.node.GetOutputData(context.node.FindOutput(CGraphPortId::FromUniqueId(param.id))));
+		return DynamicCast<TYPE>(*params.GetOutput(CUniqueId::FromUInt32(param.id)));
 	}
 };
 
@@ -262,24 +262,24 @@ template<typename TYPE> struct SParamReader<const TYPE&>
 {
 	typedef const TYPE& ReturnType;
 
-	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, SRuntimeContext& context)
+	static inline ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, CRuntimeParamMap& params)
 	{
 		const SParamBinding& param = binding.params[paramIdx];
 		SCHEMATYC_CORE_ASSERT_FATAL(param.flags.Check(EParamFlags::BoundToInput));
-		return DynamicCast<TYPE>(*context.node.GetInputData(context.node.FindInput(CGraphPortId::FromUniqueId(param.id))));
+		return DynamicCast<TYPE>(*params.GetInput(CUniqueId::FromUInt32(param.id)));
 	}
 };
 
-template<typename TYPE> inline typename SParamReader<TYPE>::ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, SRuntimeContext& context)
+template<typename TYPE> inline typename SParamReader<TYPE>::ReturnType ReadParam(const SBinding& binding, uint32 paramIdx, CRuntimeParamMap& params)
 {
-	return SParamReader<TYPE>::ReadParam(binding, paramIdx, context);
+	return SParamReader<TYPE>::ReadParam(binding, paramIdx, params);
 }
 
-template<typename TYPE> inline void WriteParam(const SBinding& binding, uint32 paramIdx, SRuntimeContext& context, const TYPE& value)
+template<typename TYPE> inline void WriteParam(const SBinding& binding, uint32 paramIdx, CRuntimeParamMap& params, const TYPE& value)
 {
 	const SParamBinding& param = binding.params[paramIdx];
 	SCHEMATYC_CORE_ASSERT_FATAL(param.flags.Check(EParamFlags::BoundToOutput));
-	DynamicCast<typename SParamTraits<TYPE>::UnqualifiedType>(*context.node.GetOutputData(context.node.FindOutput(CGraphPortId::FromUniqueId(param.id)))) = value;
+	DynamicCast<typename SParamTraits<TYPE>::UnqualifiedType>(*params.GetOutput(CUniqueId::FromUInt32(param.id))) = value;
 }
 
 template<typename FUNCTION_PTR_TYPE> struct SBinder
@@ -301,7 +301,7 @@ struct SBinder<void (*)()>
 		*reinterpret_cast<FunctionPtr*>(binding.pFunction) = pFunction;
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)();
@@ -310,7 +310,7 @@ struct SBinder<void (*)()>
 	static const bool IsSupported = true;
 };
 
-// void (CONTEXT::*)()
+// void (OBJECT::*)()
 template<typename OBJECT>
 struct SBinder<void (OBJECT::*)()>
 {
@@ -327,7 +327,7 @@ struct SBinder<void (OBJECT::*)()>
 		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)();
@@ -353,7 +353,7 @@ struct SBinder<void (OBJECT::*)() const>
 		binding.pObjectTypeDesc = &GetTypeDesc<OBJECT>();
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)();
@@ -379,10 +379,10 @@ struct SBinder<PARAM0 (*)()>
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)());
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)());
 	}
 
 	static const bool IsSupported = true;
@@ -407,10 +407,10 @@ struct SBinder<PARAM0 (OBJECT::*)()>
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)());
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)());
 	}
 
 	static const bool IsSupported = true;
@@ -435,10 +435,10 @@ struct SBinder<PARAM0 (OBJECT::*)() const>
 		InitReturnParamBinding<PARAM0>(binding.params[0]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)());
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)());
 	}
 
 	static const bool IsSupported = true;
@@ -461,9 +461,9 @@ struct SBinder<void (*)(PARAM1)>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1);
@@ -491,9 +491,9 @@ struct SBinder<void (OBJECT::*)(PARAM1)>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1);
@@ -523,9 +523,9 @@ struct SBinder<void (OBJECT::*)(PARAM1) const>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1);
@@ -553,12 +553,12 @@ struct SBinder<PARAM0 (*)(PARAM1)>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1));
 	}
 
 	static const bool IsSupported = true;
@@ -585,12 +585,12 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1)>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1));
 	}
 
 	static const bool IsSupported = true;
@@ -617,12 +617,12 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1) const>
 		InitParamBinding<PARAM1>(binding.params[1]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1));
 	}
 
 	static const bool IsSupported = true;
@@ -646,10 +646,10 @@ struct SBinder<void (*)(PARAM1, PARAM2)>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2);
@@ -678,10 +678,10 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2)>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2);
@@ -710,10 +710,10 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2) const>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2);
@@ -742,13 +742,13 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2)>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2));
 	}
 
 	static const bool IsSupported = true;
@@ -776,13 +776,13 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2)>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2));
 	}
 
 	static const bool IsSupported = true;
@@ -810,13 +810,13 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2) const>
 		InitParamBinding<PARAM2>(binding.params[2]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2));
 	}
 
 	static const bool IsSupported = true;
@@ -841,11 +841,11 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3)>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3);
@@ -875,11 +875,11 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3)>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3);
@@ -909,11 +909,11 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param2);
@@ -943,14 +943,14 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3)>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3));
 	}
 
 	static const bool IsSupported = true;
@@ -979,14 +979,14 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3)>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3));
 	}
 
 	static const bool IsSupported = true;
@@ -1015,14 +1015,14 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 		InitParamBinding<PARAM3>(binding.params[3]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param2));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param2));
 	}
 
 	static const bool IsSupported = true;
@@ -1048,12 +1048,12 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4);
@@ -1084,12 +1084,12 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4);
@@ -1120,12 +1120,12 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4) const>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4);
@@ -1156,15 +1156,15 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4));
 	}
 
 	static const bool IsSupported = true;
@@ -1194,15 +1194,15 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4)>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4));
 	}
 
 	static const bool IsSupported = true;
@@ -1232,15 +1232,15 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4) const>
 		InitParamBinding<PARAM4>(binding.params[4]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4));
 	}
 
 	static const bool IsSupported = true;
@@ -1267,13 +1267,13 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4, param5);
@@ -1305,13 +1305,13 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5);
@@ -1343,13 +1343,13 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5);
@@ -1381,16 +1381,16 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4, param5));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4, param5));
 	}
 
 	static const bool IsSupported = true;
@@ -1421,16 +1421,16 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5)>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5));
 	}
 
 	static const bool IsSupported = true;
@@ -1461,16 +1461,16 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const>
 		InitParamBinding<PARAM5>(binding.params[5]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5));
 	}
 
 	static const bool IsSupported = true;
@@ -1498,14 +1498,14 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6)>
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4, param5, param6);
@@ -1538,14 +1538,14 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6)>
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6);
@@ -1578,14 +1578,14 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6) 
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6);
@@ -1618,17 +1618,17 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6)>
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4, param5, param6));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4, param5, param6));
 	}
 
 	static const bool IsSupported = true;
@@ -1660,17 +1660,17 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6));
 	}
 
 	static const bool IsSupported = true;
@@ -1702,17 +1702,17 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM6>(binding.params[6]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6));
 	}
 
 	static const bool IsSupported = true;
@@ -1741,15 +1741,15 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7)>
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4, param5, param6, param7);
@@ -1783,15 +1783,15 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7);
@@ -1825,15 +1825,15 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7);
@@ -1867,18 +1867,18 @@ struct SBinder<PARAM0 (*)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4, param5, param6, param7));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4, param5, param6, param7));
 	}
 
 	static const bool IsSupported = true;
@@ -1911,18 +1911,18 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7));
 	}
 
 	static const bool IsSupported = true;
@@ -1955,18 +1955,18 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM7>(binding.params[7]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7));
 	}
 
 	static const bool IsSupported = true;
@@ -1996,16 +1996,16 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, 
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8);
@@ -2040,16 +2040,16 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8);
@@ -2084,16 +2084,16 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8);
@@ -2128,19 +2128,19 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
 	}
 
 	static const bool IsSupported = true;
@@ -2174,19 +2174,19 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
 	}
 
 	static const bool IsSupported = true;
@@ -2220,19 +2220,19 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM8>(binding.params[8]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8));
 	}
 
 	static const bool IsSupported = true;
@@ -2263,17 +2263,17 @@ struct SBinder<void (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, 
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9);
@@ -2309,17 +2309,17 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9);
@@ -2355,17 +2355,17 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, 
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
 		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9);
@@ -2401,20 +2401,20 @@ struct SBinder<PARAM0 (*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
+		WriteParam<PARAM0>(binding, 0, params, (*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
 	}
 
 	static const bool IsSupported = true;
@@ -2449,20 +2449,20 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
 	}
 
 	static const bool IsSupported = true;
@@ -2497,20 +2497,20 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6
 		InitParamBinding<PARAM9>(binding.params[9]);
 	}
 
-	static void Stub(const SBinding& binding, SRuntimeContext& context, void* pObject)
+	static void Stub(const SBinding& binding, CRuntimeParamMap& params, void* pObject)
 	{
-		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, context);
-		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, context);
-		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, context);
-		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, context);
-		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, context);
-		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, context);
-		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, context);
-		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, context);
-		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, context);
+		typename SParamTraits<PARAM1>::ProxyType param1 = ReadParam<PARAM1>(binding, 1, params);
+		typename SParamTraits<PARAM2>::ProxyType param2 = ReadParam<PARAM2>(binding, 2, params);
+		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
+		typename SParamTraits<PARAM4>::ProxyType param4 = ReadParam<PARAM4>(binding, 4, params);
+		typename SParamTraits<PARAM5>::ProxyType param5 = ReadParam<PARAM5>(binding, 5, params);
+		typename SParamTraits<PARAM6>::ProxyType param6 = ReadParam<PARAM6>(binding, 6, params);
+		typename SParamTraits<PARAM7>::ProxyType param7 = ReadParam<PARAM7>(binding, 7, params);
+		typename SParamTraits<PARAM8>::ProxyType param8 = ReadParam<PARAM8>(binding, 8, params);
+		typename SParamTraits<PARAM9>::ProxyType param9 = ReadParam<PARAM9>(binding, 9, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, context, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3, param4, param5, param6, param7, param8, param9));
 	}
 
 	static const bool IsSupported = true;
@@ -2622,11 +2622,11 @@ public:
 		return outputIdx < m_binding.outputCount ? m_binding.params[m_binding.outputs[outputIdx]].pData.get() : nullptr;
 	}
 
-	virtual void Execute(SRuntimeContext& context, void* pObject) const override
+	virtual void Execute(CRuntimeParamMap& params, void* pObject) const override
 	{
 		if (m_binding.pStub)
 		{
-			(*m_binding.pStub)(m_binding, context, pObject);
+			(*m_binding.pStub)(m_binding, params, pObject);
 		}
 	}
 

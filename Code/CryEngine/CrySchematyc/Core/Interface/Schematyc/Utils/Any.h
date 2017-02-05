@@ -1,5 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+// #SchematycTODO : Move functions to .inl file?
 // #SchematycTODO : Create cast functions for CAnyValue&, CAnyValue* and CAnyValuePtr?
 // #SchematycTODO : Create typed version of CAnyValue for faster construction (avoid type info lookup)?
 
@@ -124,6 +125,7 @@ public:
 	CAnyRef(CAnyValue& rhs);
 	CAnyRef(const CAnyRef& rhs);
 
+	bool                   IsValid() const;
 	const CCommonTypeDesc& GetTypeDesc() const;
 	void*                  GetValue() const;
 
@@ -131,7 +133,6 @@ protected:
 
 	CAnyRef();
 
-	bool IsValid() const;
 	void Reset(const CAnyRef& rhs);
 
 private:
@@ -155,6 +156,7 @@ public:
 	CAnyConstRef(const CAnyRef& rhs);
 	CAnyConstRef(const CAnyConstRef& rhs);
 
+	bool IsValid() const;
 	const CCommonTypeDesc& GetTypeDesc() const;
 	const void*            GetValue() const;
 
@@ -162,7 +164,6 @@ protected:
 
 	CAnyConstRef();
 
-	bool IsValid() const;
 	void Reset(const CAnyConstRef& rhs);
 
 private:
@@ -333,6 +334,11 @@ inline CAnyRef::CAnyRef(const CAnyRef& rhs)
 	, m_pValue(rhs.m_pValue)
 {}
 
+inline bool CAnyRef::IsValid() const
+{
+	return m_pValue != nullptr;
+}
+
 inline const CCommonTypeDesc& CAnyRef::GetTypeDesc() const
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
@@ -349,11 +355,6 @@ inline CAnyRef::CAnyRef()
 	: m_pTypeDesc(nullptr)
 	, m_pValue(nullptr)
 {}
-
-inline bool CAnyRef::IsValid() const
-{
-	return m_pValue != nullptr;
-}
 
 inline void CAnyRef::Reset(const CAnyRef& rhs)
 {
@@ -390,6 +391,11 @@ inline CAnyConstRef::CAnyConstRef(const CAnyConstRef& rhs)
 	, m_pValue(rhs.m_pValue)
 {}
 
+inline bool CAnyConstRef::IsValid() const
+{
+	return m_pValue != nullptr;
+}
+
 inline const CCommonTypeDesc& CAnyConstRef::GetTypeDesc() const
 {
 	SCHEMATYC_CORE_ASSERT(IsValid());
@@ -405,11 +411,6 @@ inline CAnyConstRef::CAnyConstRef()
 	: m_pTypeDesc(nullptr)
 	, m_pValue(nullptr)
 {}
-
-inline bool CAnyConstRef::IsValid() const
-{
-	return m_pValue != nullptr;
-}
 
 inline void CAnyConstRef::Reset(const CAnyConstRef& rhs)
 {
@@ -447,7 +448,7 @@ inline CAnyPtr::CAnyPtr(const CAnyPtr& rhs)
 
 inline CAnyPtr::operator bool() const
 {
-	return m_ref.GetValue() != nullptr;
+	return m_ref.IsValid();
 }
 
 inline const CAnyRef* CAnyPtr::operator->() const
@@ -506,7 +507,7 @@ inline CAnyConstPtr::CAnyConstPtr(const CAnyConstPtr& rhs)
 
 inline CAnyConstPtr::operator bool() const
 {
-	return m_ref.GetValue() != nullptr;
+	return m_ref.IsValid();
 }
 
 inline const CAnyConstRef* CAnyConstPtr::operator->() const

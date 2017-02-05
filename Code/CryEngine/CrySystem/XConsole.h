@@ -41,7 +41,11 @@ struct CConsoleCommand
 	bool               m_isManagedExternally;// true if console command is added from C# and the notification of console commands will be through C# class method invocation via mono
 
 	//////////////////////////////////////////////////////////////////////////
-	CConsoleCommand() : m_func(0), m_nFlags(0) {}
+	CConsoleCommand()
+		: m_func(0)
+		, m_nFlags(0)
+		, m_isManagedExternally(false)
+	{}
 	size_t sizeofThis() const { return sizeof(*this) + m_sName.capacity() + 1 + m_sCommand.capacity() + 1; }
 	void   GetMemoryUsage(class ICrySizer* pSizer) const
 	{
@@ -173,7 +177,7 @@ public:
 	virtual void                   Exit(const char* command, ...) PRINTF_PARAMS(2, 3);
 	virtual bool                   IsOpened();
 	virtual int                    GetNumVars(bool bIncludeCommands = false);
-	virtual size_t                 GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0,int nListTypes=0);
+	virtual size_t                 GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0, int nListTypes = 0);
 	virtual int                    GetNumCheatVars();
 	virtual void                   SetCheatVarHashRange(size_t firstVar, size_t lastVar);
 	virtual void                   CalcCheatVarHash();
@@ -210,8 +214,7 @@ public:
 	virtual bool OnInputEventUI(const SUnicodeEvent& event);
 
 	virtual void SetReadOnly(bool readonly) { m_readOnly = readonly; }
-	virtual bool IsReadOnly() { return m_readOnly; }
-
+	virtual bool IsReadOnly()               { return m_readOnly; }
 
 	// interface IRemoteConsoleListener ------------------------------------------------------------------
 
@@ -284,7 +287,7 @@ private: // ----------------------------------------------------------
 
 	typedef std::vector<std::pair<const char*, ICVar*>>     ConsoleVariablesVector;
 
-	typedef CListenerSet<IManagedConsoleCommandListener*> TManagedConsoleCommandListener;
+	typedef CListenerSet<IManagedConsoleCommandListener*>   TManagedConsoleCommandListener;
 	TManagedConsoleCommandListener m_managedConsoleCommandListeners;
 
 	void LogChangeMessage(const char* name, const bool isConst, const bool isCheat, const bool isReadOnly, const bool isDeprecated,
@@ -396,7 +399,7 @@ private: // ----------------------------------------------------------
 
 	ELoadConfigurationType         m_currentLoadConfigType;
 
-	bool m_readOnly;
+	bool                           m_readOnly;
 
 	static int                     con_display_last_messages;
 	static int                     con_line_buffer_size;

@@ -289,6 +289,10 @@ namespace Schematyc
 	void CEntityInputComponent::ReflectType(CTypeDesc<CEntityInputComponent>& desc)
 	{
 		desc.SetGUID("528CBD7D-D334-4653-9B68-9C2AB30B2861"_schematyc_guid);
+		desc.SetLabel("Input");
+		desc.SetDescription("Entity input component");
+		desc.SetIcon("icons:Game/Game_Play.ico");
+		desc.SetComponentFlags(EComponentFlags::Singleton);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -333,13 +337,7 @@ namespace Schematyc
 	{
 		CEnvRegistrationScope scope = registrar.Scope(g_entityClassGUID);
 		{
-			auto pComponent = SCHEMATYC_MAKE_ENV_COMPONENT(CEntityInputComponent, "Input");
-			pComponent->SetDescription("Entity input component");
-			pComponent->SetIcon("icons:Game/Game_Play.ico");
-			pComponent->SetFlags(EEnvComponentFlags::Singleton);
-			scope.Register(pComponent);
-
-			CEnvRegistrationScope componentScope = registrar.Scope(pComponent->GetGUID());
+			CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityInputComponent));
 
 			// Types
 			{

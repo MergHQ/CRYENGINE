@@ -17,7 +17,7 @@
 
 namespace CrySchematycEditor {
 
-	CryIcon CStateMachineItem::s_icon = CryIcon("icons:schematyc/script_state_machine.png");
+CryIcon CStateMachineItem::s_icon = CryIcon("icons:schematyc/script_state_machine.png");
 
 CStateMachineItem::CStateMachineItem(Schematyc::IScriptStateMachine& scriptStateMachine, CAbstractObjectStructureModel& model)
 	: CAbstractObjectStructureModelItem(model)
@@ -129,7 +129,7 @@ CStateItem* CStateMachineItem::CreateState()
 
 bool CStateMachineItem::RemoveState()
 {
-	// TODO: !
+	// TODO: Missing implementation.
 	CRY_ASSERT_MESSAGE(false, "Missing impl.");
 	return false;
 }

@@ -69,6 +69,8 @@ add_sources("Schematyc_Uber_STDEnv_1.cpp"
 		"Entity/Components/EntityPhysicsComponent.h"
 		"Entity/Components/EntityUtilsComponent.cpp"
 		"Entity/Components/EntityUtilsComponent.h"
+		"Entity/Components/EntitySystemsComponent.cpp"
+		"Entity/Components/EntitySystemsComponent.h"
 	SOURCE_GROUP "Impl\\\\Entity\\\\Functions"
 		"Entity/Functions/EntityUtilFunctions.cpp"
 	SOURCE_GROUP "Impl\\\\Functions"
@@ -88,7 +90,7 @@ end_sources()
 #END-FILE-LIST
 
 if(PLUGIN_SCHEMATYC)
-	CryEngineModule(CrySchematycSTDEnv PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine/CrySchematyc")
+	CryEngineModule(CrySchematycSTDEnv PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_compile_definitions(${THIS_PROJECT}
 	PRIVATE
 		-DSCHEMATYC_EXPORTS INTERFACE

@@ -262,6 +262,31 @@ def csharp_userfile (args, csharp):
 </Project>'''.format (engine_path, tool_path, projectfile_path))
 		file.close()
 
+def cmd_cmake_gui(args):
+	if not os.path.isfile (args.project_file):
+		error_project_not_found (args.project_file)
+	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	dirname= os.path.dirname (os.path.abspath (args.project_file))
+
+	#--- cpp
+	cmakelists_dir= cryproject.cmakelists_dir(project)
+	if cmakelists_dir is not None:
+		cmake_path= get_cmake_path()
+		if cmake_path is None:
+			error_cmake_not_found()
+			
+		project_path= os.path.abspath (os.path.dirname (args.project_file))
+		solution_path= os.path.join (project_path, get_solution_dir (args))
+
+		cmake_gui_path = cmake_path.replace('cmake.exe','cmake-gui.exe')
+
+		subcmd= (cmake_gui_path)
+		pid = subprocess.Popen([cmake_gui_path],cwd= solution_path)
+
+
 def cmd_projgen(args):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
@@ -326,12 +351,12 @@ def cmd_projgen(args):
 			'-Wno-dev',
 			{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
 			'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
-			'-DCryEngine_DIR:PATH=%s' % engine_path,
+			'-DCRYENGINE_DIR:PATH=%s' % engine_path,
 			'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
+			'-DOUTPUT_DIRECTORY:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, '')),
 			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
 			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
-			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
-			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
+			'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_PROFILE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Profile')),
 			os.path.join (project_path, cmakelists_dir)
 		)
 		
@@ -341,9 +366,10 @@ def cmd_projgen(args):
 		print_subprocess (subcmd)
 		errcode= subprocess.call(subcmd, cwd= solution_path)
 		if errcode != 0:
+			cmd_cmake_gui(args)
 			sys.exit (errcode)
 			
-	cmd_build (args)
+	cmd_cmake_gui(args)
 	
 #--- OPEN ---
 
@@ -697,6 +723,10 @@ if __name__ == '__main__':
 	parser_projgen= subparsers.add_parser ('projgen')
 	parser_projgen.add_argument ('project_file')
 	parser_projgen.set_defaults(func=cmd_projgen)
+
+	parser_projgen= subparsers.add_parser ('cmake-gui')
+	parser_projgen.add_argument ('project_file')
+	parser_projgen.set_defaults(func=cmd_cmake_gui)
 	
 	parser_build= subparsers.add_parser ('build')
 	parser_build.add_argument ('project_file')

@@ -53,6 +53,7 @@ struct SThreadMetaData : public CMultiThreadRefCount
 {
 	SThreadMetaData()
 		: m_pThreadTask(0)
+		, m_pThreadMngr(nullptr)
 		, m_threadHandle(0)
 		, m_threadId(0)
 		, m_threadName("Cry_UnnamedThread")

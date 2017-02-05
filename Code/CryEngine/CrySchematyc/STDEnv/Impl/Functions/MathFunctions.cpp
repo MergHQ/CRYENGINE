@@ -268,7 +268,7 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		scope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&ToInt32, "6e6356f3-7cf6-4746-9ef7-e8031c2a4117"_schematyc_guid, "ToInt32");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&ToInt32, "6e6356f3-7cf6-4746-9ef7-e8031c2a4117"_schematyc_guid, "ToInt32");  //#SchematycTODO: parameter to define how to round
 		pFunction->SetDescription("Convert to Int32");
 		pFunction->BindInput(1, 'val', "Input"); // #SchematycTODO : Rename 'Value'!
 		pFunction->BindOutput(0, 'res', "Output"); // #SchematycTODO : Rename 'Result'!
