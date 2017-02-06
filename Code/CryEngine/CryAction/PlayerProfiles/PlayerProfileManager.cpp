@@ -692,6 +692,9 @@ bool CPlayerProfileManager::SaveProfile(const char* userId, IPlayerProfileManage
 
 	result = ePOR_Success;
 
+	// ignore invalid file access for now since we do not support async save games yet - Feb. 2017
+	CDebugAllowFileAccess ignoreInvalidFileAccess;
+
 	// notify game systems that the profile is about to be saved
 	const int listenerSize = m_listeners.size();
 	for (int i = 0; i < listenerSize; i++)

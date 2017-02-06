@@ -279,6 +279,9 @@ bool CItem::Init( IGameObject *pGameObject )
 	// attach script bind
 	g_pGame->GetItemScriptBind()->AttachTo(this);
 
+	// ignore invalid file access for CItem initialization
+	CDebugAllowFileAccess ignoreInvalidFileAccess;
+
 	if(!ResetParams())
 	{
 		//failed to find all appropriate shared parameters bailing out

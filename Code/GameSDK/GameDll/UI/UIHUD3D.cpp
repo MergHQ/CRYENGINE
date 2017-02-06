@@ -117,7 +117,13 @@ void CUIHUD3D::UpdateView(const SViewParams &viewParams)
 
 	// When you die we destroy the HUD, so this will make sure it re-spawns when you respawned
 	if (!gEnv->IsEditor() && !m_pHUDRootEntity)
+	{
+		// ignore invalid file access when reloading HUD after dying
+		// this is not ideal - better try to load all resources in the beginning
+		CDebugAllowFileAccess ignoreInvalidFileAccess;
+
 		SpawnHudEntities();
+	}
 	
 	const CUICVars* pCVars = g_pGame->GetUI()->GetCVars();
 	if (m_pHUDRootEntity && pLocalPlayer)

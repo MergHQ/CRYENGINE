@@ -940,7 +940,7 @@ void CTimeDemoRecorder::AddFrameRecord(const FrameRecord& rec)
 //////////////////////////////////////////////////////////////////////////
 bool CTimeDemoRecorder::Load(const char* filename)
 {
-	// ignore invalid file access fro time demo playback
+	// ignore invalid file access for time demo playback
 	CDebugAllowFileAccess ignoreInvalidFileAccess;
 
 	stl::free_container(m_records);

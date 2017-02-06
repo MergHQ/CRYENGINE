@@ -503,7 +503,17 @@ bool CCryPak::CheckFileAccessDisabled(const char* name, const char* mode)
 				{
 					char acTmp[2048];
 					cry_sprintf(acTmp, "Invalid File Access: %s '%s'", nameShort, mode);
-					gEnv->pSystem->DisplayErrorMessage(acTmp, 5.f);
+					gEnv->pSystem->DisplayErrorMessage(acTmp, 5.0f);
+
+					static bool bPrintOnce = true;
+
+					if (bPrintOnce)
+					{
+						gEnv->pSystem->DisplayErrorMessage("FILE ACCESS FROM MAIN OR RENDER THREAD DETECTED", 60.0f, 0, false);
+						gEnv->pSystem->DisplayErrorMessage("THIS IMPACTS PERFORMANCE AND NEEDS TO BE REVISED", 60.0f, 0, false);
+						gEnv->pSystem->DisplayErrorMessage("To disable this message set sys_PakLogInvalidFileAccess = 0 (not recommended)", 60.0f, 0, false);
+						bPrintOnce = false;
+					}
 				}
 
 				CryPerfHUDWarning(5.f, "File Access: %s '%s'", nameShort, mode);

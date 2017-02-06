@@ -592,11 +592,7 @@ void CSystem::DisplayErrorMessage(const char* acMessage,
 		message.m_Color[3] = 1.0f;
 	}
 	message.m_HardFailure = bHardError;
-#ifdef _RELEASE
 	message.m_fTimeToShow = fTime;
-#else
-	message.m_fTimeToShow = 1.0f;
-#endif
 	m_ErrorMessages.push_back(message);
 }
 
