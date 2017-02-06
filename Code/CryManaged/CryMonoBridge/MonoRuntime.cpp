@@ -77,7 +77,7 @@ CMonoRuntime::~CMonoRuntime()
 		// Get the equivalent of gEnv
 		auto pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
 		CRY_ASSERT(pEngineClass != nullptr);
-
+	
 		// Call the static Shutdown function
 		pEngineClass->InvokeMethod("OnEngineShutdown");
 	}
@@ -294,27 +294,8 @@ void CMonoRuntime::RegisterManagedActor(const char* actorClassName)
 		return;
 	}
 
-	const char* rulesName = "ManagedGameRules";
-
-	if (gEnv->pEntitySystem->GetClassRegistry()->FindClass(rulesName) != nullptr)
-	{
-		HandleException((MonoObject*)mono_get_exception_argument("className", "Tried to register actor twice!"));
-		return;
-	}
-
-	IEntityClassRegistry::SEntityClassDesc clsDesc;
-	
-	static CEntityComponentCreator<CManagedGameRules> gameRulesCreator;
-	clsDesc.sName = rulesName;
-	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &gameRulesCreator, &clsDesc);
-
-	CManagedGameRules::s_actorClassName = actorClassName;
-	gEnv->pGameFramework->GetIGameRulesSystem()->RegisterGameRules(rulesName, rulesName, false);
-
-	gEnv->pConsole->GetCVar("sv_gamerulesdefault")->Set(rulesName);
-	gEnv->pConsole->GetCVar("sv_gamerules")->Set(rulesName);
-
 	static CEntityComponentCreator<CManagedActor> actorCreator;
+	IEntityClassRegistry::SEntityClassDesc clsDesc;
 	clsDesc.sName = actorClassName;
 	gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(clsDesc.sName, &actorCreator, &clsDesc);
 }

@@ -50,7 +50,7 @@ namespace CryEngine.Sydewinder
             foreach (DestroyableBase gameObj in _gameObjects.Values)
                 gameObj.Move();
 
-			Player.LocalPlayer.Move();
+            SydewinderApp.Instance.Playership.Move();
 
 			// Remove not needed objects.
 			foreach (uint id in _flagedForPurge)
@@ -70,7 +70,7 @@ namespace CryEngine.Sydewinder
             foreach (DestroyableBase gameObj in _gameObjects.Values)
                 gameObj.KeepPosition();
 
-			Player.LocalPlayer.KeepPosition();
+            SydewinderApp.Instance.Playership.KeepPosition();
         }
 
         public static void Clear()

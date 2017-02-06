@@ -8,7 +8,7 @@ namespace CryEngine.Sydewinder
 	public class Plane : EntityComponent
 	{
 		[EntityProperty(EntityPropertyType.Object)]
-		public string Geometry { get; set; } = "objects/default/primitive_plane_small.cgf";
+		public string Geometry { get; set; } = "objects/default/primitive_box.cgf";
 
 		public Plane()
 		{

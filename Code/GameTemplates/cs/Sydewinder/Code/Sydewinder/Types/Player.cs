@@ -10,8 +10,6 @@ namespace CryEngine.Sydewinder
 	[PlayerEntity]
 	public class Player : DestroyableBase
 	{
-		public static Player LocalPlayer { get; private set; }
-
 		// *** Player Translation Speed ***.
 		private float _maxSpeed = 17f;
 		private float _acceleration = 54f;
@@ -46,13 +44,8 @@ namespace CryEngine.Sydewinder
 		/// <param name="position">Position</param>
 		public Player()
 		{
-            if (LocalPlayer == null)
-            {
-                LocalPlayer = this;
-            }
-
-            // Fires as fast as spacebar is hit.
-            _weapons.Add(Gun.Create(new Vector3(0, 25f, 0)));
+			// Fires as fast as spacebar is hit.
+			_weapons.Add(Gun.Create(new Vector3(0, 25f, 0)));
 			ExplosionTrigger = "player_explosion";
 
 			// Use different explosion as the blue explosion in the base class is only used for enemies
@@ -65,6 +58,8 @@ namespace CryEngine.Sydewinder
 		public void Revive(Vector3 pos)
 		{
 			Revive();
+
+			Entity.NativeHandle.Hide(false);
 
 			Entity.Position = pos;
 			Entity.Scale = 10;
@@ -85,22 +80,22 @@ namespace CryEngine.Sydewinder
 			// Rotate Z-Axis of player ship in degrees.
 			Entity.Rotation = Quaternion.CreateRotationZ(MathHelpers.DegreesToRadians(180.0f));
 
-			Hud.CurrentHud.SetEnergy (MaxLife);
+			SydewinderApp.Instance.HUD.SetEnergy(MaxLife);
 			//GamePool.AddObjectToPool(this);
 		}
 
 		public override void OnCollision(CryEngine.EntitySystem.CollisionEvent collisionEvent)
 		{
 			var hitEntity = collisionEvent.Source.OwnerEntity;
-			if(hitEntity == Entity)
+			if (hitEntity == Entity)
 			{
 				hitEntity = collisionEvent.Target.OwnerEntity;
 			}
 
-			if(hitEntity != null)
+			if (hitEntity != null)
 			{
 				// Handle player collision with lower tunnel by changing the player location.
-				if(hitEntity.HasComponent<Tunnel>())
+				if (hitEntity.HasComponent<Tunnel>())
 				{
 					// As the only colliding tunnel is a lower tunnel, always change player position.
 					Vector3 playerPos = Entity.Position;
@@ -111,7 +106,7 @@ namespace CryEngine.Sydewinder
 				var defaultAmmo = hitEntity.GetComponent<DefaultAmmo>();
 
 				// Don't let player collide with own projectiles.
-				if(defaultAmmo != null && !defaultAmmo.IsHostile)
+				if (defaultAmmo != null && !defaultAmmo.IsHostile)
 					return;
 
 				ProcessHit(hitEntity.HasComponent<Door>());
@@ -123,8 +118,8 @@ namespace CryEngine.Sydewinder
 			// Roll - to Right side.
 			_rollAngle = _rollAngle * 0.8f + (_maxRollAngle * (_upSpeed / _maxSpeed)) * 0.2f;
 			Ang3 newRotation = new Ang3();
-			newRotation.x = MathHelpers.DegreesToRadians (_pitchAngle);
-			newRotation.y = MathHelpers.DegreesToRadians (_rollAngle);
+			newRotation.x = MathHelpers.DegreesToRadians(_pitchAngle);
+			newRotation.y = MathHelpers.DegreesToRadians(_rollAngle);
 			newRotation.z = _yawDeg;
 			Entity.Rotation = Quaternion.CreateRotationXYZ(newRotation);
 		}
@@ -175,9 +170,9 @@ namespace CryEngine.Sydewinder
 
 			// In case there is an eyetracker enabled, we use it.
 			var eyePos = Input.GetAxis("EyeTracker");
-			if (eyePos != null) 
+			if (eyePos != null)
 			{
-				var currentScreenPos = Camera.ProjectToScreen (Entity.Position);
+				var currentScreenPos = Camera.ProjectToScreen(Entity.Position);
 				_upSpeed = 1 - (eyePos - currentScreenPos).Normalized.y * 20;
 			}
 
@@ -185,9 +180,9 @@ namespace CryEngine.Sydewinder
 			// ProjectToScreen returns a Vector3. Each value between 0 and 100 means it is visible on screen in this dimension.
 			Vector3 nextPos = Entity.Position + new Vector3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
 			var screenPosition = Camera.ProjectToScreen(nextPos);
-			
+
 			// In case new position on screen is outside of bounds
-			if (screenPosition.x <=0.05f || screenPosition.x >= 0.95f)
+			if (screenPosition.x <= 0.05f || screenPosition.x >= 0.95f)
 				_forwardSpeed = 0.001f;
 
 			if (screenPosition.y <= 0.15f || screenPosition.y >= 0.75f)
@@ -214,8 +209,8 @@ namespace CryEngine.Sydewinder
 							Entity.LoadGeometry(2, "objects/ships/Impact.cgf");
 					}
 				}
-				
-				_impactCoolDownFrameCount -=1;
+
+				_impactCoolDownFrameCount -= 1;
 
 				// Clean up cooldown
 				if (_impactCoolDownFrameCount == 0)
@@ -230,11 +225,11 @@ namespace CryEngine.Sydewinder
 		public void Fire()
 		{
 			// Fire all weapons.
-			foreach (WeaponBase weapon in _weapons) 
+			foreach (WeaponBase weapon in _weapons)
 			{
 				// Spawn projectile in front of Ship to avoid collision with self.
-				weapon.Fire (Entity.Position + new Vector3(0, 1.2f, 0));
-				SydewinderApp.Instance.MakeScore (1 * Hud.CurrentHud.Stage);
+				weapon.Fire(Entity.Position + new Vector3(0.0f, 1.6f, 0.0f));
+				SydewinderApp.Instance.MakeScore(1 * SydewinderApp.Instance.HUD.Stage);
 			}
 		}
 
@@ -244,13 +239,15 @@ namespace CryEngine.Sydewinder
 				return;
 
 			DrainLife(HitDamage);
-			DestroyParticleEffect.Spawn (Entity.Position);
+			DestroyParticleEffect.Spawn(Entity.Position);
 			if (lethal)
 				DrainLife(MaxLife);
-			Hud.CurrentHud.SetEnergy(Life);
+			SydewinderApp.Instance.HUD.SetEnergy(Life);
 
 			if (Life == 0)
 			{
+				Entity.NativeHandle.Hide(true);
+				Entity.Position = new Vector3(0, 0, 0);
 				Destroy();
 			}
 			else

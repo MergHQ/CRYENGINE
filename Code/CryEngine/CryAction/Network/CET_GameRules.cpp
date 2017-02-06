@@ -194,7 +194,7 @@ public:
 		IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
 		if (!pGameRules)
 		{
-			GameWarning("No game rules");
+			CryLog("[GameRules]No game rules");
 			return eCETR_Ok; // Editor without gamedll can have no gamerules.
 		}
 		//CryLog( "Spawn player for channel %d%s", channelId, m_isReset? " as reset" : "" );

@@ -37,7 +37,7 @@ CManagedEntityComponentFactory::CManagedEntityComponentFactory(std::shared_ptr<I
 	{
 		m_eventMask |= BIT64(ENTITY_EVENT_UNHIDE);
 	}
-	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnCollision(System.IntPtr, System.IntPtr)"))
+	if (m_pClass->IsMethodImplemented(pEntityComponentClass, "OnCollision(CollisionEvent)"))
 	{
 		m_eventMask |= BIT64(ENTITY_EVENT_COLLISION);
 	}
@@ -124,12 +124,12 @@ void CManagedEntityComponent::ProcessEvent(SEntityEvent &event)
 		case ENTITY_EVENT_COLLISION:
 			{
 				EventPhysCollision* pCollision = (EventPhysCollision*)event.nParam[0];
-				
-				void* pParams[2];
-				pParams[0] = pCollision->pEntity[0];
-				pParams[1] = pCollision->pEntity[1];
 
-				m_pMonoObject->InvokeMethod("OnCollision", pParams, 2);
+				void* pParams[2];
+				pParams[0] = &pCollision->pEntity[0];
+				pParams[1] = &pCollision->pEntity[1];
+
+				m_pMonoObject->InvokeMethod("OnCollisionInternal", pParams, 2);
 			}
 			break;
 		case ENTITY_EVENT_PREPHYSICSUPDATE:
