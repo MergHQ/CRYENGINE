@@ -82,7 +82,7 @@ if(WIN32 OR WIN64)
 	option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
 endif()
 
-if(WIN64 AND EXISTS "Code/Sandbox/EditorQt")
+if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
 	option(OPTION_SANDBOX "Enable Sandbox" ON)
 	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		set(OPTION_SANDBOX OFF)

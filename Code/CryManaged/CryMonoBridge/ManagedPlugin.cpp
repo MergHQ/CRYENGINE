@@ -104,11 +104,18 @@ void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 			if (pluginInitialized)
 			{
 				// scans for console command attributes
-				auto attributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
+				std::shared_ptr<IMonoClass> attributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleCommandAttributeManager");
 				CRY_ASSERT(attributeManager != nullptr);
 				void* args[1];
-				args[0] = m_pLibrary->GetManagedObject();; //load the plugin assembly to scans for ConsoleCommandRegisterAttribute
+				args[0] = m_pLibrary->GetManagedObject(); //load the plugin assembly to scans for ConsoleCommandRegisterAttribute
 				attributeManager->InvokeMethod("RegisterAttribute", nullptr, args, 1);
+
+				//scans for console variable attributes
+				std::shared_ptr<IMonoClass> consoleVariableAttributeManager = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetTemporaryClass("CryEngine.Attributes", "ConsoleVariableAttributeManager");
+				CRY_ASSERT(consoleVariableAttributeManager != nullptr);
+				void* args2[1];
+				args2[0] = m_pLibrary->GetManagedObject(); //load the plugin assembly to scans for ConsoleVariableAttribute
+				consoleVariableAttributeManager->InvokeMethod("RegisterAttribute", nullptr, args2, 1);
 			}
 		}
 	}

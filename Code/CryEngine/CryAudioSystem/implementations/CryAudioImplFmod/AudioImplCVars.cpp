@@ -108,7 +108,6 @@ void CAudioImplCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
-		pConsole->UnregisterVariable("s_FmodPrimaryPoolSize");
 		pConsole->UnregisterVariable("s_FmodMaxChannels");
 		pConsole->UnregisterVariable("s_FmodEnableLiveUpdate");
 		pConsole->UnregisterVariable("s_FmodEnableSynchronousUpdate");
