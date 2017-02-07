@@ -150,7 +150,7 @@ PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData fdWheel, PxFilterData fd
 
 bool PhysXVehicle::SetupPxVehicle()
 {
-	if (!m_vehicle && m_wheels.size() != 4) // at the moment, only allow 4-wheeled vehicles
+	if (!m_vehicle && m_wheels.size() < 4) // at the moment, only allow 4 or more-wheeled vehicles
 		return false;
 	if (m_vehicle)
 		return true;
@@ -166,6 +166,7 @@ bool PhysXVehicle::SetupPxVehicle()
 	Vec3 wpos[4];
 	for(int i=0; i<nwheels; i++) 
 		ptsusp[i] = V(m_wheels[i].pivot);
+
 	PxVehicleComputeSprungMasses(m_wheels.size(), ptsusp, pRD->getCMassLocalPose().p, pRD->getMass(), 2, wmass);
 	m_fric = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(nwheels,1);
 	PxVehicleDrivableSurfaceType surf; surf.mType=0;
@@ -236,9 +237,9 @@ bool PhysXVehicle::SetupPxVehicle()
 	m_vehicle->setup(g_cryPhysX.Physics(), pRD, *wsd, dsd, max(nwheels-4,0));
 	wsd->free();
 	m_vehicle->mDriveDynData.setUseAutoGears(true);
-	PxBatchQueryDesc sqDesc(4,0,0);
-	m_rayHits.resize(4);
-	m_wheelsQuery.resize(4);
+	PxBatchQueryDesc sqDesc(nwheels,0,0);
+	m_rayHits.resize(nwheels);
+	m_wheelsQuery.resize(nwheels);
 	sqDesc.queryMemory.userRaycastResultBuffer = &m_rayHits[0];
 	sqDesc.preFilterShader = WheelRaycastPreFilter;
 	m_rayCaster = g_cryPhysX.Scene()->createBatchQuery(sqDesc);

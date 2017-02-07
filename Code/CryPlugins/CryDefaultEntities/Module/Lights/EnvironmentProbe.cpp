@@ -37,7 +37,7 @@ void CEnvironmentProbeEntity::OnResetState()
 		m_lightSlot = -1;
 	}
 
-	if (!m_bActive)
+	if (!m_bActive || gEnv->IsDedicated())
 		return;
 
 	m_light.m_nLightStyle = 0;
