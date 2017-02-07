@@ -61,6 +61,12 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 }
 
 ///////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioImpl::OnBeforeShutDown()
+{
+	return eRequestStatus_Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ShutDown()
 {
 	PaError const err = Pa_Terminate();

@@ -1325,8 +1325,8 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
 		g_audioLogger.Log(eAudioLogType_Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pImpl->GetImplementationNameString());
 
-		result = m_pImpl->ShutDown(); // Shut down the audio middleware.
-		CRY_ASSERT(result == eRequestStatus_Success);
+		// There's no need to call Shutdown when the initialization failed as
+		// we expect the implementation to clean-up itself if it couldn't be initialized
 
 		result = m_pImpl->Release(); // Release the engine specific data.
 		CRY_ASSERT(result == eRequestStatus_Success);
@@ -1376,6 +1376,8 @@ void CAudioTranslationLayer::ReleaseImpl()
 {
 	// During audio middleware shutdown we do not allow for any new requests originating from the "dying" audio middleware!
 	m_flags |= eAudioInternalStates_AudioMiddlewareShuttingDown;
+
+	m_pImpl->OnBeforeShutDown();
 
 	m_audioStandaloneFileMgr.Release();
 	m_audioEventMgr.Release();

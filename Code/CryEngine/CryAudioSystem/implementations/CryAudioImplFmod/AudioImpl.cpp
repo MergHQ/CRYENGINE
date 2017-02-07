@@ -158,6 +158,12 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 }
 
 ///////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioImpl::OnBeforeShutDown()
+{
+	return eRequestStatus_Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ShutDown()
 {
 	FMOD_RESULT fmodResult = FMOD_OK;
@@ -473,8 +479,7 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 			char const* const szFmodEventType = pAudioTriggerNode->getAttr(s_szFmodEventTypeAttribute);
 
 			if (szFmodEventType != nullptr &&
-			    szFmodEventType[0] != '\0' &&
-			    _stricmp(szFmodEventType, "stop") == 0)
+			    szFmodEventType[0] != '\0' && _stricmp(szFmodEventType, "stop") == 0)
 			{
 				eventType = eFmodEventType_Stop;
 			}

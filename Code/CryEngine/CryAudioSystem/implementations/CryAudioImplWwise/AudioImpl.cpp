@@ -578,6 +578,26 @@ ERequestStatus CAudioImpl::Init(uint32 const audioObjectPoolSize, uint32 const e
 }
 
 ///////////////////////////////////////////////////////////////////////////
+ERequestStatus CAudioImpl::OnBeforeShutDown()
+{
+	AK::SoundEngine::Query::AkGameObjectsList objectList;
+	AK::SoundEngine::Query::GetActiveGameObjects(objectList);
+	AkUInt32 playingIdsCount = 256;
+	AkPlayingID playingIds[256];
+	AkUInt32 const length = objectList.Length();
+	for (AkUInt32 i = 0; i < length; ++i)
+	{
+		AK::SoundEngine::Query::GetPlayingIDsFromGameObject(objectList[i], playingIdsCount, playingIds);
+		for (AkUInt32 j = 0; j < playingIdsCount; ++j)
+		{
+			AK::SoundEngine::CancelEventCallback(playingIds[j]);
+		}
+	}
+
+	return eRequestStatus_Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioImpl::ShutDown()
 {
 	AKRESULT wwiseResult = AK_Fail;
