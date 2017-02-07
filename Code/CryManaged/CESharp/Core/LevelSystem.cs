@@ -73,7 +73,10 @@ namespace CryEngine
 
 		public override void Dispose()
 		{
-			Engine.GameFramework.GetILevelSystem().RemoveListener(this);
+			if(Engine.GameFramework.GetILevelSystem() != null)
+			{
+				Engine.GameFramework.GetILevelSystem().RemoveListener(this);
+			}
 
 			base.Dispose();
 		}

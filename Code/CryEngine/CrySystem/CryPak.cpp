@@ -476,7 +476,8 @@ bool CCryPak::CheckFileAccessDisabled(const char* name, const char* mode)
 			}
 			if (logInvalidFileAccess && name)
 			{
-				CDebugAllowFileAccess afa;
+				SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "File: %s opened when runtime file access is disabled (mode %s)", name, mode);
 
 				//strip off dir to reduce warning size

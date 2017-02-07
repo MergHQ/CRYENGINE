@@ -673,20 +673,20 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		return 0;
 }
 
-class CDebugAllowFileAccess
+class CScopedAllowFileAccessFromThisThread
 {
 public:
 #if defined(_RELEASE)
-	ILINE CDebugAllowFileAccess() {}
-	ILINE void End() {}
+	CScopedAllowFileAccessFromThisThread() = default;
+	void End() {}
 #else
-	CDebugAllowFileAccess()
+	CScopedAllowFileAccessFromThisThread()
 	{
 		m_threadId = CryGetCurrentThreadId();
 		m_oldDisable = gEnv->pCryPak ? gEnv->pCryPak->DisableRuntimeFileAccess(false, m_threadId) : false;
 		m_active = true;
 	}
-	ILINE ~CDebugAllowFileAccess()
+	~CScopedAllowFileAccessFromThisThread()
 	{
 		End();
 	}
@@ -707,6 +707,8 @@ protected:
 	bool     m_active;
 #endif
 };
+
+#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD() CScopedAllowFileAccessFromThisThread allowFileAccess
 
 //////////////////////////////////////////////////////////////////////////
 

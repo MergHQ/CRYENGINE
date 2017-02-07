@@ -509,7 +509,6 @@ int64 CryGetTicks()
 // Support for automatic FlowNode types registration
 //////////////////////////////////////////////////////////////////////////
 #if !defined(_LIB) || defined(_LAUNCHER)
-#pragma message(	"Define CAutoRegFlowNodeBase::m_pFirst" )
 CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
 CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
 bool                  CAutoRegFlowNodeBase::m_bNodesRegistered = false;

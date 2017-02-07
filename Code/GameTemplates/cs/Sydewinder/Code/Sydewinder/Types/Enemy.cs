@@ -26,7 +26,7 @@ namespace CryEngine.Sydewinder.Types
 
 		public static Enemy Create(int type, Vector3 pos)
 		{
-			var enemy = Entity.SpawnWithComponent<Enemy>(pos, Quaternion.Identity, 0.5f);
+			var enemy = Entity.SpawnWithComponent<Enemy>(pos, Quaternion.Identity, 0.65f);
 
 			enemy.Entity.LoadGeometry(0, EnemyTypes[type].Geometry);
 
@@ -102,7 +102,7 @@ namespace CryEngine.Sydewinder.Types
 			if(Life <= 0)
 				Destroy();
 
-			SydewinderApp.Instance.MakeScore(100 * Hud.CurrentHud.Stage);
+			SydewinderApp.Instance.MakeScore(100 * SydewinderApp.Instance.HUD.Stage);
 		}
 
 		public override void Destroy(bool withEffect = true)

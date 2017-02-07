@@ -70,6 +70,13 @@ struct IAudioImpl
 	virtual ERequestStatus ShutDown() = 0;
 
 	/**
+	 * Called before the middleware is shutdown to give it time to clean up. After this call all the ATL audio objects and events will be released.
+	 * @return eAudioRequestResult_Success if the action was successful, eAudioRequestResult_Failure otherwise.
+	 * @see ShutDown, Release, Init
+	 */
+	virtual ERequestStatus OnBeforeShutDown() = 0;
+
+	/**
 	 * Frees all of the resources used by the class and destroys the instance. This action is not reversible.
 	 * @return eAudioRequestResult_Success if the action was successful, eAudioRequestResult_Failure otherwise.
 	 * @see ShutDown, Init

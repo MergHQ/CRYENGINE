@@ -1874,7 +1874,7 @@ void CGame::ReloadPlayerParamFiles()
 
 void CGame::SetDifficultyLevel(EDifficulty difficulty)
 {
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	assert(!gEnv->bMultiplayer);
 

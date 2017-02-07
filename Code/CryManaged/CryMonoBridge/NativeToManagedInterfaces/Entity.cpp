@@ -79,13 +79,13 @@ static MonoObject* GetOrCreateComponent(IEntity* pEntity, MonoReflectionType* pT
 	auto it = s_entityComponentFactoryMap.find(pType);
 	CRY_ASSERT(it != s_entityComponentFactoryMap.end());
 
-	if (auto* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.GetId())))
+	CManagedEntityComponent* pComponent = static_cast<CManagedEntityComponent*>(pEntity->GetComponentByTypeId(it->second.GetId()));
+	if (pComponent == nullptr)
 	{
-		return (MonoObject*)pComponent->GetObject()->GetHandle();
+		pComponent = static_cast<CManagedEntityComponent*>(pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), false));
 	}
 
-	pEntity->AddComponent(it->second.GetId(), std::make_shared<CManagedEntityComponent>(it->second), false);
-	return nullptr;
+	return static_cast<MonoObject*>(pComponent->GetObject()->GetHandle());
 }
 
 static void RegisterComponentProperty(MonoReflectionType* pComponentType, MonoReflectionProperty* pProperty, MonoString* pPropertyName, MonoString* pPropertyLabel, MonoString* pPropertyDescription, EEntityPropertyType type)

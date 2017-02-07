@@ -940,7 +940,7 @@ protected:
 		virtual int  FindNext(intptr_t handle, _finddata_t* fd) { return gEnv->pCryPak->FindNext(handle, fd); }
 		virtual void GetMemoryUsage(ICrySizer* pSizer) const    { pSizer->Add(*this); }
 	private:
-		CDebugAllowFileAccess m_allowFileAccess;
+		CScopedAllowFileAccessFromThisThread m_allowFileAccess;
 	};
 
 	//! Class to watch FPS until it becomes stable.

@@ -706,10 +706,13 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 		// compare date of destination and source , recompile if needed
 		// load dds header, check hash-value of the compile settings in the dds file, recompile if needed (not done yet)
 
-		CDebugAllowFileAccess dafa;
-		FILE* pDestFile = gEnv->pCryPak->FOpen(sDestFile, "rb");
-		FILE* pSrcFile = gEnv->pCryPak->FOpen(sSrcFile, "rb");
-		dafa.End();
+		FILE* pDestFile = nullptr;
+		FILE* pSrcFile = nullptr;
+		{
+			SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+			pDestFile = gEnv->pCryPak->FOpen(sDestFile, "rb");
+			pSrcFile = gEnv->pCryPak->FOpen(sSrcFile, "rb");
+		}
 
 		// files from the pak file do not count as date comparison do not seem to work there
 		if (pDestFile)

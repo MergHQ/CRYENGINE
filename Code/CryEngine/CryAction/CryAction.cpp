@@ -2661,8 +2661,6 @@ void CCryAction::ShutdownEngine()
 	if (gEnv && gEnv->pFlashUI)
 		gEnv->pFlashUI->Shutdown();
 
-	//NOTE: m_pGFListeners->erase got commented out in UnregisterListener
-	//	CRY_ASSERT(0 == m_pGFListeners->size());
 	SAFE_DELETE(m_pGFListeners);
 
 	XMLCPB::CDebugUtils::Destroy();
@@ -4746,16 +4744,11 @@ void CCryAction::RegisterListener(IGameFrameworkListener* pGameFrameworkListener
 
 void CCryAction::UnregisterListener(IGameFrameworkListener* pGameFrameworkListener)
 {
-	if (!m_pGFListeners)
+	if (m_pGFListeners == nullptr)
+	{
 		return;
-	/*for (TGameFrameworkListeners::iterator iter = m_pGFListeners->begin(); iter != m_pGFListeners->end(); ++iter)
-	   {
-	   if (iter->pListener == pGFListener)
-	   {
-	    m_pGFListeners->erase(iter);
-	    return;
-	   }
-	   }*/
+	}
+
 	for (int i = 0; i < m_pGFListeners->size(); i++)
 	{
 		if ((*m_pGFListeners)[i].pListener == pGameFrameworkListener)

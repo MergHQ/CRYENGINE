@@ -3193,7 +3193,7 @@ bool CFileDataWriter::Open()
 {
 	if (!m_pFile)
 	{
-		CDebugAllowFileAccess afa;
+		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 		const char* modeStr = m_bAppend ? "ab" : "wb";
 		m_bAppend = true;

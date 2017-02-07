@@ -913,6 +913,9 @@ CLevelSystem::~CLevelSystem()
 {
 	// register with system to get loading progress events
 	m_pSystem->SetLoadingProgressListener(0);
+
+	// clean up the listeners
+	stl::free_container(m_listeners);
 }
 
 //------------------------------------------------------------------------
@@ -1782,7 +1785,7 @@ void CLevelSystem::LogLoadingTime()
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	string filename = gEnv->pSystem->GetRootFolder();
 	filename += "Game_LevelLoadTime.log";

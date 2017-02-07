@@ -24,6 +24,7 @@ public:
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
 	virtual ERequestStatus           Init(uint32 const audioObjectPoolSize, uint32 const eventPoolSize) override;
+	virtual ERequestStatus           OnBeforeShutDown() override;
 	virtual ERequestStatus           ShutDown() override;
 	virtual ERequestStatus           Release() override;
 	virtual void                     OnAudioSystemRefresh() override;

@@ -24,6 +24,14 @@ namespace CryEngine.Sydewinder
 
 		public void OnGameStop()
 		{
+            //Only clean up the data if the game will be stopped while playing in editor, so the game won't crash if restarted
+            if (SydewinderApp.Instance != null && SydewinderApp.Instance.State != GameState.Finished)
+            {
+                    SydewinderApp.Instance.State = GameState.Finished;
+                    SydewinderApp.Instance.HUD.Hide();
+                    GamePool.Clear();
+            }
+
 			AudioManager.PlayTrigger("game_stop");
 			UI.MainMenu.DestroyMenu();
 		}
