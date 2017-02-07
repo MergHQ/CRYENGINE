@@ -6306,7 +6306,8 @@ void CGameRules::Restart()
 	CGameMechanismManager::GetInstance()->Inform(kGMEvent_GameRulesRestart);
 
 #if defined(USE_PERFHUD)
-	CDebugAllowFileAccess afa;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+
 	ICryPerfHUD* pPerfHud = gEnv->pSystem->GetPerfHUD();
 	if (pPerfHud)
 	{

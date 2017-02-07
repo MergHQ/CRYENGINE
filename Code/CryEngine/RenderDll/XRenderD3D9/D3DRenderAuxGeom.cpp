@@ -994,7 +994,8 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 				if( !m_pAuxGeomShader )
 				{
 					// allow invalid file access for this shader because it shouldn't be used in the final build anyway
-					CDebugAllowFileAccess ignoreInvalidFileAccess;
+					SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+
 					m_pAuxGeomShader = m_renderer.m_cEF.mfForName("AuxGeom", EF_SYSTEM);
 					assert(0 != m_pAuxGeomShader);
 				}

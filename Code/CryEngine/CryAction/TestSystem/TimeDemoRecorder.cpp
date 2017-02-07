@@ -941,7 +941,7 @@ void CTimeDemoRecorder::AddFrameRecord(const FrameRecord& rec)
 bool CTimeDemoRecorder::Load(const char* filename)
 {
 	// ignore invalid file access for time demo playback
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	stl::free_container(m_records);
 	m_recordedDemoTime.SetMilliSeconds(0);
@@ -2039,7 +2039,7 @@ void CTimeDemoRecorder::EraseLogFile()
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::LogInfo(const char* format, ...)
 {
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	va_list ArgList;
 	char szBuffer[1024];

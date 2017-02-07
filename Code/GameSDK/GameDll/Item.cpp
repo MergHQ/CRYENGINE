@@ -280,7 +280,7 @@ bool CItem::Init( IGameObject *pGameObject )
 	g_pGame->GetItemScriptBind()->AttachTo(this);
 
 	// ignore invalid file access for CItem initialization
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	if(!ResetParams())
 	{

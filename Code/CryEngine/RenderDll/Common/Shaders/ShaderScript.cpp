@@ -128,7 +128,7 @@ bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW)
 		gRenDev->FlushRTCommands(true, true, true);
 	}
 
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	// Check include changing
 	if (m_ShadersPath && !CRenderer::CV_r_shadersignoreincludeschanging)
@@ -813,7 +813,7 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ParseShader");
 
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	bool bSuccess = false;
 #ifdef SHADERS_SERIALIZING

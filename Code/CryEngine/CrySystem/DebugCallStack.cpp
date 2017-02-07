@@ -1079,7 +1079,7 @@ void ReportJiraBug()
 //////////////////////////////////////////////////////////////////////////
 void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 {
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	static char errorString[s_iCallStackSize];
 	errorString[0] = 0;

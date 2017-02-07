@@ -4151,7 +4151,7 @@ static void SaveLevelStats(IConsoleCmdArgs* pArgs)
 #if !defined(_RELEASE)
 	CryLog("Execute SaveLevelStats");
 
-	CDebugAllowFileAccess allowFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	{
 		string levelName = "no_level";

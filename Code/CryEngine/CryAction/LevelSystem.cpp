@@ -1782,7 +1782,7 @@ void CLevelSystem::LogLoadingTime()
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	string filename = gEnv->pSystem->GetRootFolder();
 	filename += "Game_LevelLoadTime.log";

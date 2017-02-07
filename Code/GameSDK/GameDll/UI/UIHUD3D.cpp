@@ -120,7 +120,7 @@ void CUIHUD3D::UpdateView(const SViewParams &viewParams)
 	{
 		// ignore invalid file access when reloading HUD after dying
 		// this is not ideal - better try to load all resources in the beginning
-		CDebugAllowFileAccess ignoreInvalidFileAccess;
+		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 		SpawnHudEntities();
 	}

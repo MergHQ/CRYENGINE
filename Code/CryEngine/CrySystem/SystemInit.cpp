@@ -484,7 +484,8 @@ struct SysSpecOverrideSinkConsole : public ILoadConfigurationEntrySink
 
 static void OnSysSpecChange(ICVar* pVar)
 {
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
+
 	SysSpecOverrideSink sysSpecOverrideSink;
 	ILoadConfigurationEntrySink* pSysSpecOverrideSinkConsole = NULL;
 

@@ -219,7 +219,7 @@ void IDebugCallStack::FatalError(const char* description)
 
 void IDebugCallStack::WriteLineToLog(const char* format, ...)
 {
-	CDebugAllowFileAccess allowFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	if (gEnv && gEnv->pLog)
 	{

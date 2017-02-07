@@ -1973,7 +1973,7 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 
 void CD3D9Renderer::CaptureFrameBuffer()
 {
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	CacheCaptureCVars();
 	if (!CV_capture_frames || !CV_capture_folder || !CV_capture_file_format || !CV_capture_frame_once ||
@@ -4740,7 +4740,7 @@ void CD3D9Renderer::FX_DrawPrimitive(const ERenderPrimitiveType eType, const int
 bool CD3D9Renderer::ScreenShotInternal(const char* filename, int width, EScreenShotMode eScreenShotMode)
 {
 	// ignore invalid file access for screenshots
-	CDebugAllowFileAccess ignoreInvalidFileAccess;
+	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 	bool bRet = true;
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)

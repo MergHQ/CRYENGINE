@@ -1087,8 +1087,8 @@ void WriteToStreamingLog(const char* str)
 #ifdef STREAMENGINE_ENABLE_STATS
 	if (g_cvars.sys_streaming_debug == 4)
 	{
-		// ignore invalid file access when logging steaming data
-		CDebugAllowFileAccess ignoreInvalidFileAccess;
+		// ignore invalid file access when logging streaming data
+		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
 		static string sFileName;
 		static bool bFirstTime = true;
