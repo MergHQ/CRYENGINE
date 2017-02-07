@@ -153,7 +153,7 @@ std::shared_ptr<IMonoObject> CMonoClass::CreateInstanceWithDesc(const char* para
 
 std::shared_ptr<IMonoObject> CMonoClass::InvokeMethod(const char *methodName, const IMonoObject* pObject, void **pParams, int numParams) const
 {
-	if (MonoMethod* pMethod = mono_class_get_method_from_name(m_pClass, methodName, numParams))
+	if (MonoMethod* pMethod = GetMethodFromNameRecursive(m_pClass, methodName, numParams))
 	{
 		MonoObject* pObjectHandle = pObject != nullptr ? (MonoObject*)pObject->GetHandle() : nullptr;
 
@@ -183,6 +183,22 @@ std::shared_ptr<IMonoObject> CMonoClass::InvokeMethodWithDesc(const char* method
 
 	static_cast<CMonoRuntime*>(gEnv->pMonoRuntime)->HandleException((MonoObject*)mono_get_exception_missing_method(GetName(), methodDesc));
 	return nullptr;
+}
+
+MonoMethod* CMonoClass::GetMethodFromNameRecursive(MonoClass* pClass, const char* szName, int numParams) const
+{
+	MonoMethod* pMethod = nullptr;
+	while (pClass != nullptr && pMethod == nullptr) 
+	{
+		pMethod = mono_class_get_method_from_name(pClass, szName, numParams);
+		
+		if (pMethod == nullptr)
+		{
+			pClass = mono_class_get_parent(pClass);
+		}
+	}
+	
+	return pMethod;
 }
 
 std::shared_ptr<IMonoObject> CMonoClass::InvokeMethod(MonoMethod* pMethod, MonoObject* pObjectHandle, void** pParams, bool bHadException) const

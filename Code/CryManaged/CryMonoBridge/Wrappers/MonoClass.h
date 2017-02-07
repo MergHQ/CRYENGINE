@@ -42,6 +42,7 @@ public:
 
 protected:
 	std::shared_ptr<IMonoObject> InvokeMethod(MonoMethod* pMethod, MonoObject* pObjectHandle, void** pParams, bool bHadException) const;
+	MonoMethod* GetMethodFromNameRecursive(MonoClass *pClass, const char *szName, int numParams) const;
 
 protected:
 	MonoClass* m_pClass;

@@ -29,9 +29,7 @@ namespace CryEngine.Sydewinder
 
 		private Canvas _canvas = null;
 		private Color ?_backgroundColor = null;
-		private Color ?_foregroundColor = null;
-
-		public static Hud CurrentHud { get; private set; }
+        private Color? _foregroundColor = null;
 
 		// The stats are currently simple Text elements but might be changed
 		// into more interactive elements in the future.
@@ -44,12 +42,7 @@ namespace CryEngine.Sydewinder
 		private Panel _gamePausedDialogPanel;
 		private TextInput _nameTextInput;
 
-		public static void InitializeMainHud(SceneObject root, Color backgroundColor, Color foregroundColor)
-		{
-			CurrentHud = new Hud(root, backgroundColor, foregroundColor);
-		}
-
-		private Hud(SceneObject root, Color backgroundColor, Color foregroundColor)
+		public Hud(SceneObject root, Color backgroundColor, Color foregroundColor)
 		{	
 			_canvas = SceneObject.Instantiate<Canvas>(root);
 

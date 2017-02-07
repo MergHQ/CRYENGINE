@@ -22,7 +22,10 @@ namespace CryEngine.Sydewinder
 
         public event EventHandler<bool> GameOver;
 
-        public GameState State { get; private set; }
+        public GameState State { get; set; }
+
+        public Player Playership;
+        public Hud HUD;
 
         // Create random enemies every x s.
         private const int SPAWN_EVERY_SECONDS = 3;
@@ -62,11 +65,11 @@ namespace CryEngine.Sydewinder
             Engine.Console.ExecuteString("e_TimeOfDay 24");
 
             // We are in space, so use (almost) zero gravity (zero gravity would disable physics)
-            Engine.Console.ExecuteString("p_gravity_z 0.001");
+            Engine.Console.ExecuteString("p_gravity_z 0.0001");
 
             // Hook on to Key input.
             Input.OnKey += Input_OnKey;
-			
+
             _totalGameTime = 0;
             State = GameState.Finished;
 
@@ -79,14 +82,14 @@ namespace CryEngine.Sydewinder
 			GameOver += showHighscore =>
 			{
 				// Reset field of view to ehance 3D look.
-				Camera.FieldOfView = 60f;
+				Camera.FieldOfView = 30f;
 
 				UI.MainMenu.SetInactive();
-				if (showHighscore)
-					UI.MainMenu.SetupHighscoreMenuPerspective();
-				else
-					UI.MainMenu.SetupMainMenuPerspective();
-			};
+                if (showHighscore)
+                    UI.MainMenu.SetupHighscoreMenuPerspective();
+                else
+                    UI.MainMenu.SetupMainMenuPerspective();
+            };
 
 			InitializeMainMenu();
 		}
@@ -95,9 +98,13 @@ namespace CryEngine.Sydewinder
         {
             Camera.FieldOfView = 20f;
 
-            // Init Head Up Display
-            InitializeHud();
-            Hud.CurrentHud.Show();
+            if(HUD == null)
+            {
+                // Init Head Up Display
+                InitializeHud();
+            }
+
+            HUD.Show();
 
             _gameData.Score = 0;
             _gameOverTime = DateTime.MinValue;
@@ -105,7 +112,12 @@ namespace CryEngine.Sydewinder
             // Searches for inital tunnel in level and initializes movement of other tunnel elements.
             _levelElements = new LevelGeometry();
 
-            Player.LocalPlayer.Revive(new Vector3(65, 633, 69));
+            if(Playership == null)
+            {
+                Playership = Entity.SpawnWithComponent<Player>(new Vector3(0, 0, 0), Quaternion.Identity);
+            }
+
+            Playership.Revive(new Vector3(65, 633, 69));
 
             // Set camera forth/back based on FOV.
             Camera.Position = new Vector3(145f, 635f, 70f);
@@ -139,13 +151,14 @@ namespace CryEngine.Sydewinder
 
 		private void InitializeHud()
         {
-            Hud.InitializeMainHud(SceneManager.RootObject, Color.SkyBlue.WithAlpha(0.5f), Color.White);
-            Hud.CurrentHud.ResumeGameClicked += () =>
+            HUD = new Hud(SceneManager.RootObject, Color.SkyBlue.WithAlpha(0.5f), Color.White);
+
+            HUD.ResumeGameClicked += () =>
             {
-                Hud.CurrentHud.HideGamePauseDialog();
+                HUD.HideGamePauseDialog();
                 State = GameState.Running;
             };
-            Hud.CurrentHud.GameExited += ExitRunningGame;
+            HUD.GameExited += ExitRunningGame;
         }
 
 		public void Dispose()
@@ -174,10 +187,10 @@ namespace CryEngine.Sydewinder
 
             // Increase level every 30 seconds.
             _totalGameTime += FrameTime.Delta;
-            Hud.CurrentHud.SetStage((int)_totalGameTime / 30 + 1);
+            HUD.SetStage((int)_totalGameTime / 30 + 1);
 
             // Go Game Over if player destroyed.
-            if (Player.LocalPlayer.IsAlive == false)
+            if (Playership.IsAlive == false)
             {
                 // Avoid counting scores.
                 State = GameState.Paused;
@@ -187,7 +200,7 @@ namespace CryEngine.Sydewinder
                     _gameOverTime = DateTime.Now;
 
                     Mouse.ShowCursor();
-                    Hud.CurrentHud.ShowGameOverDialog();
+                    HUD.ShowGameOverDialog();
                 }
             }
 
@@ -195,20 +208,20 @@ namespace CryEngine.Sydewinder
             _levelElements.UpdateGeometry();
 
             // Check Key input and update player speed.
-			if (Player.LocalPlayer.Entity.Exists)
+			if (Playership.Entity.Exists)
             {
-				Player.LocalPlayer.CheckCoolDown();
-				Player.LocalPlayer.UpdateSpeed();
+                Playership.CheckCoolDown();
+                Playership.UpdateSpeed();
 
-				// Rotation while moving makes the game more dynamic.
-				// Might be explained in an advanced tutorial.
-				Player.LocalPlayer.UpdateRotation();
+                // Rotation while moving makes the game more dynamic.
+                // Might be explained in an advanced tutorial.
+                Playership.UpdateRotation();
             }
 
             // Update position of game objects including player.
             GamePool.UpdatePool();
 
-            Hud.CurrentHud.SetScore(_gameData.Score);
+            HUD.SetScore(_gameData.Score);
 
             // Add frame time and check if greater than or equal timer.
             _spawnTimer += FrameTime.Delta;
@@ -221,7 +234,7 @@ namespace CryEngine.Sydewinder
                 int enemyType = Random.Next(3);
 
                 // Increase speed for each difficulty level.
-                Vector3 waveSpeed = new Vector3(0f, -11f - (Hud.CurrentHud.Stage * 2), 0f);
+                Vector3 waveSpeed = new Vector3(0f, -11f - (HUD.Stage * 2), 0f);
 
                 if ((Enemy.WaveType)waveType == Enemy.WaveType.VerticalLine)
                 {
@@ -256,8 +269,8 @@ namespace CryEngine.Sydewinder
             if (State == GameState.Running)
             {
                 // Fire primary player weapon.
-				if ((e.KeyPressed(EKeyId.eKI_Space) || e.KeyPressed(EKeyId.eKI_XI_A)) && Player.LocalPlayer.Entity.Exists)
-					Player.LocalPlayer.Fire();
+				if ((e.KeyPressed(EKeyId.eKI_Space) || e.KeyPressed(EKeyId.eKI_XI_A)) && Playership.Entity.Exists)
+                    Playership.Fire();
             }
 
             if ((State != GameState.Finished) && (e.KeyPressed(EKeyId.eKI_Escape) || e.KeyPressed(EKeyId.eKI_XI_Start)))
@@ -267,9 +280,9 @@ namespace CryEngine.Sydewinder
                     State = State == GameState.Paused ? GameState.Running : GameState.Paused;
 
                     if (State == GameState.Paused)
-                        Hud.CurrentHud.ShowGamePauseDialog();
+                        HUD.ShowGamePauseDialog();
                     else
-                        Hud.CurrentHud.HideGamePauseDialog();
+                        HUD.HideGamePauseDialog();
                 }
             }
         }
@@ -280,7 +293,7 @@ namespace CryEngine.Sydewinder
                 Highscore.CurrentScore.TryAddScore(new GameData() { Score = score, Name = name });
 
             _totalGameTime = 0;
-            Hud.CurrentHud.Hide();
+            HUD.Hide();
             GamePool.Clear();
 
             State = GameState.Finished;

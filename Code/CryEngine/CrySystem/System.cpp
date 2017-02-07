@@ -555,7 +555,7 @@ void LvlRes_export(IConsoleCmdArgs* pParams);
 ///////////////////////////////////////////////////
 void CSystem::ShutDown()
 {
-	CryLogAlways("System Shutdown");
+	CryLogAlways("System Shutdown");  
 
 	m_FrameProfileSystem.Enable(false, false);
 
@@ -660,6 +660,8 @@ void CSystem::ShutDown()
 	}
 
 	SAFE_DELETE(m_pPluginManager);
+
+	SAFE_DELETE(gEnv->pMonoRuntime);
 
 	SAFE_DELETE(m_pUserAnalyticsSystem);
 

@@ -88,8 +88,11 @@ namespace CryEngine.Sydewinder.UI
 		_mainMenuPage = SceneObject.Instantiate<Canvas>(Root);
 
 		// Get Entity placed in level.
-		Entity ent = Entity.Find("UIPlane");
-		_mainMenuPage.SetupTargetEntity(ent, TEXTURE_RESOLUTION);
+		Entity menuEntity = Entity.Find("UIPlane");
+		 if (menuEntity != null)
+		 {
+			 _mainMenuPage.SetupTargetEntity(menuEntity, TEXTURE_RESOLUTION);
+		 }
 
 		_mainMenuWindow = SceneObject.Instantiate<Window>(_mainMenuPage);
 
@@ -130,7 +133,11 @@ namespace CryEngine.Sydewinder.UI
 		_highscorePage = SceneObject.Instantiate<Canvas>(Root);
 
 		// Get plane entity for highscore menu item.
-		_highscorePage.SetupTargetEntity(Entity.Find("UIPlane_Highscore"), TEXTURE_RESOLUTION);
+		var highscoreEntity = Entity.Find("UIPlane_Highscore");
+		if (highscoreEntity != null)
+		{
+			_highscorePage.SetupTargetEntity(highscoreEntity, TEXTURE_RESOLUTION);
+		}
 
 		Window highscoreWindow = SceneObject.Instantiate<Window>(_highscorePage);
 
