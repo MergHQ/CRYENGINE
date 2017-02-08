@@ -29,24 +29,6 @@ template<typename T> struct Vec3Constants
 	static const Vec3_tpl<T> fVec3_One;
 };
 
-template<typename T>
-struct VecPrecisionValues
-{
-	ILINE static bool CheckGreater(const T value)
-	{
-		return value > 0;
-	}
-};
-
-template<>
-struct VecPrecisionValues<float>
-{
-	ILINE static bool CheckGreater(const float value)
-	{
-		return value > FLT_EPSILON;
-	}
-};
-
 template<typename F> struct Vec3s_tpl
 {
 	F x, y, z;
@@ -105,7 +87,7 @@ template<typename F> struct Vec3_tpl
 
 	explicit ILINE Vec3_tpl(F f) : x(f), y(f), z(f) { CRY_MATH_ASSERT(this->IsValid()); }
 
-	//! The copy/casting/assignement constructor.
+	//! The copy/casting/assignment constructor.
 	//! Example:
 	//!   Vec3 v0=v1;
 	//!   Vec3 v0=Vec3(angle);
@@ -204,11 +186,11 @@ template<typename F> struct Vec3_tpl
 	//! Euclidean distance
 	ILINE bool IsEquivalent(const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON) const
 	{
-		return ::IsEquivalent(*this, v1, epsilon);
+		return IsEquivalent(*this, v1, epsilon);
 	}
 	ILINE static bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
 	{
-		return ::IsEquivalent(v0, v1, epsilon);
+		return sqr(v0 - v1) <= sqr(epsilon);
 	}
 
 	ILINE bool IsUnit(f32 epsilon = VEC_EPSILON) const
@@ -330,13 +312,13 @@ template<typename F> struct Vec3_tpl
 	}
 
 	//! Normalize the vector.
-	//! Check for null vector - set to the passed in vector (which should be normalised!) if it is null vector.
+	//! Check for null vector - set to the passed in vector (which should be normalized!) if it is null vector.
 	//! \return The original length of the vector.
 	ILINE F NormalizeSafe(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_Zero)
 	{
 		CRY_MATH_ASSERT(this->IsValid());
 		F fLen2 = x * x + y * y + z * z;
-		IF (VecPrecisionValues<F>::CheckGreater(fLen2), 1)
+		IF (fLen2 > std::numeric_limits<F>::epsilon(), 1)
 		{
 			F fInvLen = isqrt_tpl(fLen2);
 			x *= fInvLen;
@@ -365,11 +347,11 @@ template<typename F> struct Vec3_tpl
 		return *this * fInvLen;
 	}
 
-	//! return a safely normalized vector - returns safe vector (should be normalised) if original is zero length
+	//! return a safely normalized vector - returns safe vector (should be normalized) if original is zero length
 	ILINE Vec3_tpl GetNormalizedSafe(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_OneX) const
 	{
 		F fLen2 = x * x + y * y + z * z;
-		IF (VecPrecisionValues<F>::CheckGreater(fLen2), 1)
+		IF (fLen2 > std::numeric_limits<F>::epsilon(), 1)
 		{
 			F fInvLen = isqrt_tpl(fLen2);
 			return *this * fInvLen;
@@ -668,6 +650,12 @@ template<typename F> struct Vec3_tpl
 
 	AUTO_STRUCT_INFO;
 };
+
+//specialization of the generic version from Cry_Math with adjusted epsilon
+template<class F> ILINE bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
+{
+	return Vec3_tpl<F>::IsEquivalent(v0, v1, epsilon);
+}
 
 //! Dot product (2 versions).
 template<class F1, class F2> ILINE F1 operator*(const Vec3_tpl<F1>& v0, const Vec3_tpl<F2>& v1)
