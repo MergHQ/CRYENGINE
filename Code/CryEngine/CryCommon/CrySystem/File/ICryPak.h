@@ -708,7 +708,11 @@ protected:
 #endif
 };
 
-#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD() CScopedAllowFileAccessFromThisThread allowFileAccess
+#if defined(_RELEASE)
+	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD()
+#else
+	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD() CScopedAllowFileAccessFromThisThread allowFileAccess
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
