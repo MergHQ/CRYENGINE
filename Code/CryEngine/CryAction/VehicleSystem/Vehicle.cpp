@@ -1231,6 +1231,10 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
 	{
+	case ENTITY_EVENT_START_GAME:
+		Reset(true);
+		break;
+
 	case ENTITY_EVENT_RESET:
 		Reset(entityEvent.nParam[0] == 1 ? true : false);
 		break;
@@ -1303,6 +1307,7 @@ uint64 CVehicle::GetEventMask() const
 	  BIT64(ENTITY_EVENT_HIDE) |
 	  BIT64(ENTITY_EVENT_UNHIDE) |
 	  BIT64(ENTITY_EVENT_ANIM_EVENT) |
+	  BIT64(ENTITY_EVENT_START_GAME) |
 	  BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
