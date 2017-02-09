@@ -391,7 +391,7 @@ protected:
 
 private:
 	// change extension activation/reference somehow
-	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change, TSerialize* pSpawnSerializer = 0) = 0;
+	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change) = 0;
 	// invoke an RMI call
 	virtual void                  DoInvokeRMI(_smart_ptr<CRMIBody> pBody, unsigned where, int channel) = 0;
 };

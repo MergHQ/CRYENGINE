@@ -1058,7 +1058,8 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 		float3 vRayDirABS = normalize(abs(r.direction));
 
-		while(1)
+		const int nMaxSamples = VOX_BRICK_TEXRES * 2;
+		for (int nSample = 0; nSample < nMaxSamples; nSample++) 
 		{
 			float fStepSize = bAirOnlyMode ? 1.f : 0.5f; // todo: pass from outside
 

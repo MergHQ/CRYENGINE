@@ -103,9 +103,6 @@ bool SPostEffectsUtils::Create()
 
 		CreateRenderTarget("$RainOcclusion", CTexture::s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Unknown, false, false, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
 
-		// Water phys simulation requires data overframes, need to handle for each GPU in MGPU mode
-		CreateRenderTarget("$WaterRipplesDDN_0", CTexture::s_ptexWaterRipplesDDN, 256, 256, Clr_Unknown, 1, true, eTF_R8G8B8A8);
-		//CTexture::s_ptexWaterRipplesDDN->DisableMgpuSync();
 		CreateRenderTarget("$WaterVolumeDDN", CTexture::s_ptexWaterVolumeDDN, 64, 64, Clr_Unknown, 1, true, eTF_R16G16B16A16F, TO_WATERVOLUMEMAP);
 		//CTexture::s_ptexWaterVolumeDDN->DisableMgpuSync();
 
@@ -173,7 +170,6 @@ void SPostEffectsUtils::Release()
 	SAFE_RELEASE(CTexture::s_ptexCached3DHudScaled);
 
 	SAFE_RELEASE(CTexture::s_ptexPrevFrameScaled);
-	SAFE_RELEASE(CTexture::s_ptexWaterRipplesDDN);
 
 	SAFE_RELEASE(CTexture::s_ptexRainDropsRT[0]);
 	SAFE_RELEASE(CTexture::s_ptexRainDropsRT[1]);

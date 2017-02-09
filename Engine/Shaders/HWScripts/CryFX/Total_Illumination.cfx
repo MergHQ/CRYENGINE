@@ -17,7 +17,6 @@
 #define VOX_COMPUTE_NUM_THREADS 16
 #define VOX_DEPTH_BIAS 0
 #define VOX_DEPTH_SCALE 1
-#define VOX_REPROJECT 1
 
 #define vSkyColorTop float3(SvoTreeSettings5.z, SvoTreeSettings5.w, SvoParamsSpecular.y)
 
@@ -938,11 +937,9 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	float4 vALD1 = 0;
 	float4 vRGB1 = 0;
 
-#if VOX_REPROJECT
 	// blend with prev frame ALD in order to remove flickering
 	float fDepthC = SampleLinearDepth(sceneDepth, IN.baseTC.xy);
 	float3 vReprojTC = Reproject(vLowResBestTC.xy, fDepthC, SVO_ReprojectionMatrix);
-#endif
 
 	int GI_DIFFUSE_KERNEL_TILING;
 	GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, 0);
@@ -1175,8 +1172,8 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
 
-	float fBlendMin = saturate(fOut_Min + fMinBlend + abs(1 - fDepthMin / fDepthMinPrev) * 8);
-	float fBlendMax = saturate(fOut_Max + fMinBlend + abs(1 - fDepthMax / fDepthMaxPrev) * 8);
+	float fBlendMin = saturate(fOut_Min + fMinBlend + abs(1 - fDepthMin / fDepthMinPrev) * 4);
+	float fBlendMax = saturate(fOut_Max + fMinBlend + abs(1 - fDepthMax / fDepthMaxPrev) * 4);
 
 	OUT.Diffuse = clamp(lerp(tex2DlodLC(sceneRgbMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Diffuse, fBlendMin), -8, 8);
 	OUT.Specular = clamp(lerp(tex2DlodLC(sceneAldMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Specular, fBlendMin), -8, 8);
@@ -1565,32 +1562,9 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 #endif
 
-#if VOX_REPROJECT
-	half2 vReprojTC = Reproject(IN.baseTC.xy, vRGB.w, SVO_ReprojectionMatrix);
-
-	half2 TSRadius = 0;
-	const float2 bValid = (vReprojTC > TSRadius) && (vReprojTC < (1.h - TSRadius));
-
-	// blend with prev values
-	float fOldDepth = tex2DlodLC(sceneRgb, float4(vReprojTC.xy, 0, 0)).w;
-	float4 vALDPrev = tex2DlodLC(sceneAld, float4(vReprojTC.xy, 0, 0));
-	float4 vRGBPrev = tex2DlodLC(sceneRgb, float4(vReprojTC.xy, 0, 0));
-	float fPrevDepth = SampleLinearDepth(sceneDepth, vReprojTC.xy);
-
-	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, vAverReflectance, fAverSmoothness, fNewDepth);
-
-	float fBlendRatio = (bValid.x && bValid.y) ? saturate(fMinBlend + abs(1 - vRGB.w / fOldDepth) * 4) : 1;
-
-	{
-		OUT.Diffuse = lerp(vALDPrev, vALD, fBlendRatio);
-		OUT.Specular = lerp(vRGBPrev, vRGB, fBlendRatio);
-		OUT.Specular.w = vRGB.w;
-	}
-#else	
 	OUT.Diffuse = vALD;
 	OUT.Specular = vRGB;
 	OUT.Specular.w = vRGB.w;
-#endif
 
 	return OUT;
 }
@@ -2545,7 +2519,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
 
-	float fBlend = saturate(fOut + fMinBlend + abs(1 - fDepthC / valPrev.w) * 16);
+	float fBlend = saturate(fOut + fMinBlend + abs(1 - fDepthC / valPrev.w) * 8);
 
 	// detect high contrast difference
 	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3(0.33f, 0.33f, 0.33f));

@@ -306,30 +306,27 @@ bool CSvoEnv::Render()
 
 	CollectAnalyticalOccluders();
 
-	//if(m_pDiffCM == (ITexture *)-1)
+	if (Get3DEngine()->m_pObjectsTree[0])
 	{
 		m_pGlobalSpecCM = 0;
 		m_fGlobalSpecCM_Mult = 0;
 
-		if (int nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_Light, m_worldBox, (IRenderNode**)0))
+		PodArray<IRenderNode*> arrObjects;
+		Get3DEngine()->m_pObjectsTree[0]->GetObjectsByType(arrObjects, eERType_Light, &m_worldBox, 0, false);
+
+		float fMaxRadius = 999;
+
+		for (int nL = 0; nL < arrObjects.Count(); nL++)
 		{
-			PodArray<IRenderNode*> arrObjects(nCount, nCount);
-			nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_Light, m_worldBox, arrObjects.GetElements());
+			ILightSource* pRN = (ILightSource*)arrObjects[nL];
 
-			float fMaxRadius = 999;
+			CDLight& rLight = pRN->GetLightProperties();
 
-			for (int nL = 0; nL < nCount; nL++)
+			if (rLight.m_fRadius > fMaxRadius && rLight.m_Flags & DLF_DEFERRED_CUBEMAPS)
 			{
-				ILightSource* pRN = (ILightSource*)arrObjects[nL];
-
-				CDLight& rLight = pRN->GetLightProperties();
-
-				if (rLight.m_fRadius > fMaxRadius && rLight.m_Flags & DLF_DEFERRED_CUBEMAPS)
-				{
-					fMaxRadius = rLight.m_fRadius;
-					m_pGlobalSpecCM = rLight.GetSpecularCubemap();
-					m_fGlobalSpecCM_Mult = rLight.m_SpecMult;
-				}
+				fMaxRadius = rLight.m_fRadius;
+				m_pGlobalSpecCM = rLight.GetSpecularCubemap();
+				m_fGlobalSpecCM_Mult = rLight.m_SpecMult;
 			}
 		}
 	}
@@ -474,32 +471,30 @@ bool CSvoEnv::Render()
 			int nNumNodesToDelete = 4 + Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests;//CVoxelSegment::m_arrLoadedSegments.Count()/1000;
 
 			int nNodesUnloaded = 0;
+
 			while ((nNodesUnloaded < nNumNodesToDelete) &&
-			       (CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->m_eStreamingStatus != ecss_InProgress) &&
-			       (CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->m_nLastRendFrameId < (GetCurrPassMainFrameID() - 32)))
+				(CVoxelSegment::m_arrLoadedSegments[0]->m_eStreamingStatus != ecss_InProgress) &&
+				(CVoxelSegment::m_arrLoadedSegments[0]->m_nLastRendFrameId < (GetCurrPassMainFrameID() - 32)))
 			{
-				CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->FreeRenderData();
-				CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->m_eStreamingStatus = ecss_NotLoaded;
+				CVoxelSegment * pSeg = CVoxelSegment::m_arrLoadedSegments[0];
 
-				if (CSvoNode* pNode = CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->m_pNode)
+				pSeg->FreeRenderData();
+				pSeg->m_eStreamingStatus = ecss_NotLoaded;
+
+				CSvoNode** ppChilds = pSeg->m_pParentCloud->m_pNode->m_ppChilds;
+
+				for (int nChildId = 0; nChildId < 8; nChildId++)
 				{
-					CSvoNode** ppChilds = CVoxelSegment::m_arrLoadedSegments[nNodesUnloaded]->m_pParentCloud->m_pNode->m_ppChilds;
-
-					for (int nChildId = 0; nChildId < 8; nChildId++)
+					if (ppChilds[nChildId] == pSeg->m_pNode)
 					{
-						if (ppChilds[nChildId] == pNode)
-						{
-							ppChilds[nChildId] = 0;
-						}
+						SAFE_DELETE(ppChilds[nChildId]); // this also deletes pSeg and unregister it from CVoxelSegment::m_arrLoadedSegments
 					}
-
-					SAFE_DELETE(pNode);
 				}
+
+				assert(CVoxelSegment::m_arrLoadedSegments.Find(pSeg) < 0);
 
 				nNodesUnloaded++;
 			}
-
-			CVoxelSegment::m_arrLoadedSegments.Delete(0, nNodesUnloaded);
 		}
 	}
 

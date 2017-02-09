@@ -22,6 +22,8 @@ public:
 		return m_lookupParam;
 	}
 
+	CTexture* GetWaterRippleTex() const;
+
 	bool IsVisible(CRenderView* pRenderView) const;
 
 private:
@@ -49,6 +51,7 @@ private:
 
 private:
 	CFullscreenPass               m_passSnapToCenter;
+	CStretchRectPass              m_passCopy;
 	CFullscreenPass               m_passWaterWavePropagation;
 	CPrimitiveRenderPass          m_passAddWaterRipples;
 	CMipmapGenPass                m_passMipmapGen;
@@ -56,6 +59,7 @@ private:
 	CRenderPrimitive              m_ripplePrimitive[SWaterRippleInfo::MaxWaterRipplesInScene];
 	buffer_handle_t               m_vertexBuffer; // stored all ripples' vertices.
 
+	CTexture*                     m_pTexWaterRipplesDDN; // xy: wave propagation normals, z: frame t-2, w: frame t-1
 	CTexture*                     m_pTempTexture;
 
 	ICVar*                        m_pCVarWaterRipplesDebug;

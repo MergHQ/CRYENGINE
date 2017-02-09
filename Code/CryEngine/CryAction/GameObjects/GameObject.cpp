@@ -359,11 +359,8 @@ void CGameObject::OnInitEvent()
 		// this loop repopulates m_extensions
 		for (TExtensions::const_iterator iter = preExtensions.begin(); iter != preExtensions.end(); ++iter)
 		{
-			auto *pParams = m_pUserData ?
-				static_cast<IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension*>(m_pUserData) : nullptr;
-
 			const char* szExtensionName = pGOS->GetName(iter->id);
-			if (!ChangeExtension(szExtensionName, eCE_Activate, pParams ? pParams->pSpawnSerializer : nullptr))
+			if (!ChangeExtension(szExtensionName, eCE_Activate))
 			{
 				if (szExtensionName)
 				{
@@ -1385,7 +1382,7 @@ bool CGameObject::SetExtensionParams(const char* extension, SmartScriptTable par
 }
 
 //------------------------------------------------------------------------
-IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExtension change, TSerialize* pSpawnSerializer)
+IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExtension change)
 {
 	IGameObjectExtension* pRet = NULL;
 
@@ -1415,7 +1412,7 @@ IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExte
 				{
 					ext.refCount += (change == eCE_Acquire);
 					ext.activated |= (change == eCE_Activate);
-					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this, pSpawnSerializer);
+					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this);
 					assert(ext.pExtension);
 					if (ext.pExtension)
 					{

@@ -4245,7 +4245,6 @@ void CTexture::ReleaseSystemTargets()
 	SAFE_RELEASE_FORCE(s_ptexWaterOcean);
 	SAFE_RELEASE_FORCE(s_ptexWaterVolumeTemp[0]);
 	SAFE_RELEASE_FORCE(s_ptexWaterVolumeTemp[1]);
-	SAFE_RELEASE_FORCE(s_ptexWaterRipplesDDN);
 
 	SAFE_RELEASE_FORCE(s_ptexSceneNormalsMap);
 	SAFE_RELEASE_FORCE(s_ptexSceneNormalsBent);

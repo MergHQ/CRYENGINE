@@ -3599,7 +3599,7 @@ void COctreeNode::GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObj
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady, uint64 dwFlags)
+void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady, uint64 dwFlags, bool bRecursive)
 {
 	if (objType == eERType_Light && !m_bHasLights)
 		return;
@@ -3642,9 +3642,12 @@ void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType o
 		}
 	}
 
-	for (int i = 0; i < 8; i++)
-		if (m_arrChilds[i])
-			m_arrChilds[i]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamCheckReady, dwFlags);
+	if (bRecursive)
+	{
+		for (int i = 0; i < 8; i++)
+			if (m_arrChilds[i])
+				m_arrChilds[i]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamCheckReady, dwFlags);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
