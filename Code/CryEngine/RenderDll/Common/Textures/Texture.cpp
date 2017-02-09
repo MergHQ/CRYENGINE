@@ -141,7 +141,6 @@ CTexture* CTexture::s_ptexWaterVolumeTemp[2];
 CTexture* CTexture::s_ptexWaterVolumeDDN;
 CTexture* CTexture::s_ptexWaterVolumeRefl[2] = { NULL };
 CTexture* CTexture::s_ptexWaterCaustics[2] = { NULL };
-CTexture* CTexture::s_ptexWaterRipplesDDN;
 CTexture* CTexture::s_ptexRainOcclusion;
 CTexture* CTexture::s_ptexRainSSOcclusion[2];
 
@@ -2977,7 +2976,6 @@ void CTexture::LoadDefaultSystemTextures()
 			s_ptexBackBuffer = CTexture::CreateTextureObject("$BackBuffer", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
 
 			s_ptexPrevFrameScaled = CTexture::CreateTextureObject("$PrevFrameScale", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-			s_ptexWaterRipplesDDN = CTexture::CreateTextureObject("$WaterRipplesDDN_0", 256, 256, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown);
 
 			s_ptexBackBufferScaled[0] = CTexture::CreateTextureObject("$BackBufferScaled_d2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D2);
 			s_ptexBackBufferScaled[1] = CTexture::CreateTextureObject("$BackBufferScaled_d4", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D4);

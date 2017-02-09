@@ -4638,12 +4638,6 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
-		case ECGT_WaterRipplesDDN:
-			{
-				CTexture* tex = CTexture::s_ptexWaterRipplesDDN;
-				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
-			}
-			break;
 		case ECGT_WaterVolumeDDN:
 			{
 				CTexture* tex = CTexture::s_ptexWaterVolumeDDN;

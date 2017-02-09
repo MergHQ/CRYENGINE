@@ -740,7 +740,6 @@ static STextureDB sTextures[] =
 	STextureDB(PARAM(TS_VolumetricFogShadow1,         ECGT_VolumetricFogShadow1),         0),
 
 	STextureDB(PARAM(TS_WaterOceanMap,                ECGT_WaterOceanMap),                0),
-	STextureDB(PARAM(TS_WaterRipplesDDN,              ECGT_WaterRipplesDDN),              0),
 	STextureDB(PARAM(TS_WaterVolumeDDN,               ECGT_WaterVolumeDDN),               0),
 	STextureDB(PARAM(TS_WaterVolumeCaustics,          ECGT_WaterVolumeCaustics),          0),
 	STextureDB(PARAM(TS_WaterVolumeRefl,              ECGT_WaterVolumeRefl),              0),

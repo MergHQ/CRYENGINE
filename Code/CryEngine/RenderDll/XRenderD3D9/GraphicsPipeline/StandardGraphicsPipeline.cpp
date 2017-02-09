@@ -270,8 +270,8 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CVolumetricFogStage>(m_pVolumetricFogStage, eStage_VolumetricFog);
 	RegisterStage<CFogStage>(m_pFogStage, eStage_Fog);
 	RegisterStage<CVolumetricCloudsStage>(m_pVolumetricCloudsStage, eStage_VolumetricClouds);
-	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CWaterRipplesStage>(m_pWaterRipplesStage, eStage_WaterRipples);
+	RegisterStage<CWaterStage>(m_pWaterStage, eStage_Water);
 	RegisterStage<CMotionBlurStage>(m_pMotionBlurStage, eStage_MotionBlur);
 	RegisterStage<CDepthOfFieldStage>(m_pDepthOfFieldStage, eStage_DepthOfField);
 	RegisterStage<CAutoExposureStage>(m_pAutoExposureStage, eStage_AutoExposure);

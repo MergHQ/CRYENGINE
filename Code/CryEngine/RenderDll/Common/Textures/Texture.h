@@ -2257,7 +2257,6 @@ public:
 	static CTexture*           s_ptexWaterOcean;         // water ocean vertex texture
 	static CTexture*           s_ptexWaterVolumeDDN;     // water volume heightmap
 	static CTexture*           s_ptexWaterVolumeTemp[2]; // water volume heightmap
-	static CTexture*           s_ptexWaterRipplesDDN;    // xy: wave propagation normals, z: frame t-2, w: frame t-1
 	static CTexture*           s_ptexWaterVolumeRefl[2]; // water volume reflections buffer
 	static CTexture*           s_ptexWaterCaustics[2];   // caustics buffers
 	static CTexture*           s_ptexRainOcclusion;      // top-down rain occlusion

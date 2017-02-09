@@ -608,7 +608,6 @@ enum ECGTexture : uint8
 	ECGT_VolumetricFogShadow1,
 
 	ECGT_WaterOceanMap,
-	ECGT_WaterRipplesDDN,
 	ECGT_WaterVolumeDDN,
 	ECGT_WaterVolumeCaustics,
 	ECGT_WaterVolumeRefl,

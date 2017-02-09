@@ -60,8 +60,8 @@ enum EStandardGraphicsPipelineStage
 	eStage_ScreenSpaceSSS,
 	eStage_VolumetricFog,
 	eStage_Fog,
-	eStage_Water,
 	eStage_WaterRipples,
+	eStage_Water,
 	eStage_MotionBlur,
 	eStage_DepthOfField,
 	eStage_AutoExposure,
@@ -188,8 +188,8 @@ private:
 	CVolumetricFogStage*          m_pVolumetricFogStage = nullptr;
 	CFogStage*                    m_pFogStage = nullptr;
 	CVolumetricCloudsStage*       m_pVolumetricCloudsStage = nullptr;
-	CWaterStage*                  m_pWaterStage;
-	CWaterRipplesStage*           m_pWaterRipplesStage;
+	CWaterRipplesStage*           m_pWaterRipplesStage = nullptr;
+	CWaterStage*                  m_pWaterStage = nullptr;
 	CMotionBlurStage*             m_pMotionBlurStage = nullptr;
 	CDepthOfFieldStage*           m_pDepthOfFieldStage = nullptr;
 	CSunShaftsStage*              m_pSunShaftsStage = nullptr;

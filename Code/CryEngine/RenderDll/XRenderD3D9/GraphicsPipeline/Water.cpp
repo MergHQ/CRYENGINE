@@ -373,10 +373,14 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	const bool bEmpty = waterRenderItems.empty() && waterVolumeRenderItems.empty();
 
 	// process water ripples
-	if (!bEmpty && bWaterRipple && pWaterRipplesStage)
+	if (pWaterRipplesStage)
 	{
 		pWaterRipplesStage->Prepare(pRenderView);
-		pWaterRipplesStage->Execute(pRenderView);
+
+		if (!bEmpty && bWaterRipple)
+		{
+			pWaterRipplesStage->Execute(pRenderView);
+		}
 	}
 
 	// generate normal texture for water volumes and ocean.
@@ -1073,7 +1077,8 @@ bool CWaterStage::PreparePerPassResources(CRenderView* RESTRICT_POINTER pRenderV
 		pResSet->SetTexture(ePerPassTexture_VolFogGlobalEnvProbe0, pVolFogStage->GetGlobalEnvProbeTex0(), SResourceView::DefaultView, EShaderStage_Pixel);
 		pResSet->SetTexture(ePerPassTexture_VolFogGlobalEnvProbe1, pVolFogStage->GetGlobalEnvProbeTex1(), SResourceView::DefaultView, EShaderStage_Pixel);
 
-		pResSet->SetTexture(ePerPassTexture_WaterRipple, CTexture::s_ptexWaterRipplesDDN, SResourceView::DefaultView, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
+		auto* pRippleStage = pRenderer->GetGraphicsPipeline().GetWaterRipplesStage();
+		pResSet->SetTexture(ePerPassTexture_WaterRipple, pRippleStage->GetWaterRippleTex(), SResourceView::DefaultView, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
 		pResSet->SetTexture(ePerPassTexture_WaterNormal, pWaterNormalTex, SResourceView::DefaultView, EShaderStage_Pixel | EShaderStage_Domain);
 
 		if (passId == ePass_ReflectionGen)

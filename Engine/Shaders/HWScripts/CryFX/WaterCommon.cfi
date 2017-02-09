@@ -396,7 +396,7 @@ Texture3D<float4> volFogSamplingTex : register(t24) = TS_VolumetricFog;
 TextureCube<float4> volFogGlobalEnvProbeTex0 : register(t25) = TS_VolumetricFogGlobalEnvProbe0;
 TextureCube<float4> volFogGlobalEnvProbeTex1 : register(t26) = TS_VolumetricFogGlobalEnvProbe1;
 
-Texture2D WaterDynRipplesTex : register(t27) = TS_WaterRipplesDDN;
+Texture2D WaterDynRipplesTex : register(t27);
 Texture2D WaterNormalTex : register(t28) = TS_WaterVolumeDDN;
 
 Texture2D sceneDepthTex : register(t29) = TS_ZTarget;
