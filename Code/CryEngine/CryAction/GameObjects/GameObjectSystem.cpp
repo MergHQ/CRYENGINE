@@ -82,6 +82,8 @@ bool CGameObjectSystem::Init()
 		}
 	}
 
+	m_spawnSerializers.reserve(8);
+
 	LoadSerializationOrderFile();
 
 	return true;
@@ -350,7 +352,7 @@ IEntityComponent* CGameObjectSystem::CreateGameObjectEntityProxy(IEntity& entity
 	return pGameObject;
 }
 
-IGameObjectExtension* CGameObjectSystem::Instantiate(ExtensionID id, IGameObject* pObject, TSerialize* pSpawnSerializer)
+IGameObjectExtension* CGameObjectSystem::Instantiate(ExtensionID id, IGameObject* pObject)
 {
 	if (id > m_extensionInfo.size())
 		return nullptr;
@@ -360,6 +362,7 @@ IGameObjectExtension* CGameObjectSystem::Instantiate(ExtensionID id, IGameObject
 	if (!pExt)
 		return nullptr;
 
+	TSerialize* pSpawnSerializer = GetSpawnSerializerForEntity(pEntity->GetId());
 	if (pSpawnSerializer)
 		pExt->SerializeSpawnInfo(*pSpawnSerializer);
 
@@ -432,6 +435,34 @@ const SEntitySchedulingProfiles* CGameObjectSystem::GetEntitySchedulerProfiles(I
 		return &m_defaultProfiles;
 	}
 	return &iter->second;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CGameObjectSystem::SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer)
+{
+	CryLogAlways("Spawnserializers: %d, set", m_spawnSerializers.size());
+	CRY_ASSERT(GetSpawnSerializerForEntity(entityId) == NULL);
+	if (GetSpawnSerializerForEntity(entityId) != NULL)
+	{
+		__debugbreak();
+	}
+
+	m_spawnSerializers.push_back(SSpawnSerializer(entityId, pSerializer));
+}
+
+void CGameObjectSystem::ClearSpawnSerializerForEntity(const EntityId entityId)
+{
+	stl::find_and_erase(m_spawnSerializers, entityId);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+TSerialize* CGameObjectSystem::GetSpawnSerializerForEntity(const EntityId entityId) const
+{
+	TSpawnSerializers::const_iterator it = std::find(m_spawnSerializers.begin(), m_spawnSerializers.end(), entityId);
+
+	return (it != m_spawnSerializers.end()) ? (*it).pSerializer : NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////

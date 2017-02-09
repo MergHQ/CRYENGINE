@@ -160,7 +160,7 @@ public:
 
 	virtual bool                  SetExtensionParams(const char* extension, SmartScriptTable params);
 	virtual bool                  GetExtensionParams(const char* extension, SmartScriptTable params);
-	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change, TSerialize* pSpawnSerializer = nullptr);
+	virtual IGameObjectExtension* ChangeExtension(const char* extension, EChangeExtension change);
 	virtual void                  SendEvent(const SGameObjectEvent&);
 	virtual void                  SetChannelId(uint16 id);
 	virtual uint16                GetChannelId() const { return m_channelId; }
