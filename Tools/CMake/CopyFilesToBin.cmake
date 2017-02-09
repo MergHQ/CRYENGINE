@@ -2,12 +2,14 @@
 set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
 set (BinaryFileList_Win64
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbgcore.dll"
 	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
 	)
 
 set (BinaryFileList_Win32
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbghelp.dll"
+	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbgcore.dll"
 	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
 	)
 

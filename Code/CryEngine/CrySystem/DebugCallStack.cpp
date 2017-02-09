@@ -298,6 +298,19 @@ public:
 		}
 	}
 
+	static void FatalError()
+	{
+		CR_EXCEPTION_INFO ei;
+		memset(&ei, 0, sizeof(CR_EXCEPTION_INFO));
+		ei.cb = sizeof(CR_EXCEPTION_INFO);
+		ei.exctype = CR_CPP_TERMINATE_CALL;
+		ei.code = 1;
+		ei.pexcptrs = NULL;
+		ei.bManual = TRUE;
+		crGenerateErrorReport(&ei);
+		_exit(1); // Immediate termination of process.
+	}
+
 	static void ReInstallCrashRptHandler(ICVar*)
 	{
 		UninstallHandler();
@@ -755,6 +768,23 @@ bool DebugCallStack::LookupFunctionName(void* address, bool fileInfo, string& pr
 	#endif
 
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DebugCallStack::FatalError(const char* message)
+{
+#ifdef CRY_USE_CRASHRPT
+	if (g_bCrashRptInstalled)
+	{
+		m_bIsFatalError = true;
+		WriteLineToLog(message);
+		CCrashRpt::FatalError();
+	}
+	else
+		IDebugCallStack::FatalError(message);
+#else
+		IDebugCallStack::FatalError(message);
+#endif // CRY_USE_CRASHRPT
 }
 
 void DebugCallStack::installErrorHandler(ISystem* pSystem)

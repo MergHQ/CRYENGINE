@@ -63,7 +63,7 @@ public:
 	//! Dumps Current Call Stack to log.
 	virtual void LogCallstack();
 	//triggers a fatal error, so the DebugCallstack can create the error.log and terminate the application
-	void         FatalError(const char*);
+	virtual void FatalError(const char*);
 
 	//Reports a bug and continues execution
 	virtual void ReportBug(const char*) {}
