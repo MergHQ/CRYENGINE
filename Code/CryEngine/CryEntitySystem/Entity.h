@@ -469,13 +469,6 @@ private:
 
 private:
 	//////////////////////////////////////////////////////////////////////////
-	// Member variables
-	//////////////////////////////////////////////////////////////////////////
-
-	// Name of the entity.
-	string m_szName;
-
-	//////////////////////////////////////////////////////////////////////////
 	// Internal entity flags (must be first member var of CEntity) (Reduce cache misses on access to entity data).
 	//////////////////////////////////////////////////////////////////////////
 	unsigned int         m_bActive        : 1;      // Active Entities are updated every frame.
@@ -498,24 +491,15 @@ private:
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
 	unsigned int m_bInShutDown          : 1;        // Entity is being shut down.
 
-	mutable bool m_bDirtyForwardDir     : 1;    // Cached world transformed forward vector
+	mutable unsigned int m_bDirtyForwardDir     : 1;    // Cached world transformed forward vector
 	unsigned int m_bLoadedFromLevelFile : 1;    // Entity was loaded from level file
 	#ifdef SEG_WORLD
 	unsigned int m_eSwObjDebugFlag      : 2;
-	bool         m_bLocalSeg            : 1;
+	unsigned int m_bLocalSeg            : 1;
 	#endif //SEG_WORLD
 
-	// Unique ID of the entity.
-	EntityId m_nID;
-
-	// Optional entity guid.
-	EntityGUID m_guid;
-
-	// Entity flags. any combination of EEntityFlags values.
-	uint32 m_flags;
-
-	// Entity extended flags. any combination of EEntityFlagsExtended values.
-	uint32 m_flagsExtended;
+	// Name of the entity.
+	string m_szName;
 
 	// Pointer to the class that describe this entity.
 	IEntityClass* m_pClass;
@@ -523,25 +507,11 @@ private:
 	// Pointer to the entity archetype.
 	IEntityArchetype* m_pArchetype;
 
-	// Position of the entity in local space.
-	Vec3             m_vPos;
-	// Rotation of the entity in local space.
-	Quat             m_qRotation;
-	// Scale of the entity in local space.
-	Vec3             m_vScale;
-	// World transformation matrix of this entity.
-	mutable Matrix34 m_worldTM;
-
-	mutable Vec3     m_vForwardDir;
-
 	// Pointer to hierarchical binding structure.
 	// It contains array of child entities and pointer to the parent entity.
 	// Because entity attachments are not used very often most entities do not need it,
 	// and space is preserved by keeping it separate structure.
 	STransformHierarchy m_hierarchy;
-
-	// The representation of this entity in the AI system.
-	tAIObjectID m_aiObjectID;
 
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
@@ -557,16 +527,42 @@ private:
 	// For tracking entity inside proximity trigger system.
 	SProximityElement* m_pProximityEntity;
 
+	std::unique_ptr<SEventListeners> m_pEventListeners;
+
+	CEntityRender                    m_render;
+	CEntityPhysics                   m_physics;
+
+	// Optional entity guid.
+	EntityGUID m_guid;
+
+	// Unique ID of the entity.
+	EntityId m_nID;
+
+	// The representation of this entity in the AI system.
+	tAIObjectID m_aiObjectID;
+
+	// Entity flags. any combination of EEntityFlags values.
+	uint32 m_flags;
+
+	// Entity extended flags. any combination of EEntityFlagsExtended values.
+	uint32 m_flagsExtended;
+
+	// Position of the entity in local space.
+	Vec3             m_vPos;
+	// Rotation of the entity in local space.
+	Quat             m_qRotation;
+	// Scale of the entity in local space.
+	Vec3             m_vScale;
+	// World transformation matrix of this entity.
+	mutable Matrix34 m_worldTM;
+
+	mutable Vec3     m_vForwardDir;
+
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint32 m_nKeepAliveCounter;
 
 	// If this entity is part of a layer that was cloned at runtime, this is the cloned layer
 	// id (not related to the layer id)
 	int                              m_cloneLayerId;
-
-	std::unique_ptr<SEventListeners> m_pEventListeners;
-
-	CEntityRender                    m_render;
-	CEntityPhysics                   m_physics;
 	uint32                           m_objectID;
 };
