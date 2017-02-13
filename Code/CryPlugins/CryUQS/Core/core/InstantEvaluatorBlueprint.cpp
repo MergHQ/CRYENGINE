@@ -17,7 +17,7 @@ namespace uqs
 		//===================================================================================
 
 		CTextualInstantEvaluatorBlueprint::CTextualInstantEvaluatorBlueprint()
-			: m_weight("1.0")
+			: m_weight(1.0)
 		{
 		}
 
@@ -41,14 +41,14 @@ namespace uqs
 			return m_rootInput;
 		}
 
-		void CTextualInstantEvaluatorBlueprint::SetWeight(const char* weight)
+		void CTextualInstantEvaluatorBlueprint::SetWeight(float weight)
 		{
 			m_weight = weight;
 		}
 
-		const char* CTextualInstantEvaluatorBlueprint::GetWeight() const
+		float CTextualInstantEvaluatorBlueprint::GetWeight() const
 		{
-			return m_weight.c_str();
+			return m_weight;
 		}
 
 		void CTextualInstantEvaluatorBlueprint::SetSyntaxErrorCollector(datasource::SyntaxErrorCollectorUniquePtr ptr)
@@ -86,18 +86,7 @@ namespace uqs
 				return false;
 			}
 
-			bool parsedWeightSuccessfully = true;
-			const char* weight = source.GetWeight();
-			if (sscanf(weight, "%f", &m_weight) != 1)
-			{
-				if (datasource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
-				{
-					pSE->AddErrorMessage("Could not parse the weight from its textual representation into a float: '%s'", weight);
-				}
-
-				// having failed to parse the weight is not critical in the sense that it prevents parsing further data, but we need to remember its failure for the return value
-				parsedWeightSuccessfully = false;
-			}
+			m_weight = source.GetWeight();
 
 			CInputBlueprint inputRoot;
 			const ITextualInputBlueprint& textualInputRoot = source.GetInputRoot();
@@ -110,9 +99,7 @@ namespace uqs
 
 			ResolveInputs(inputRoot);
 
-			// if we're here, then the only parse failure that could have happened is a bad weight, so the final result depends only on that particular outcome
-
-			return parsedWeightSuccessfully;
+			return true;
 		}
 
 		client::IInstantEvaluatorFactory& CInstantEvaluatorBlueprint::GetFactory() const

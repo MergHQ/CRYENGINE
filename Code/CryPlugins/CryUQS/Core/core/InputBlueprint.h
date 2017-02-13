@@ -32,14 +32,14 @@ namespace uqs
 			virtual const char*                         GetParamName() const override;
 			virtual const char*                         GetFuncName() const override;
 			virtual const char*                         GetFuncReturnValueLiteral() const override;
-			virtual const char*                         GetAddReturnValueToDebugRenderWorldUponExecution() const override;
+			virtual bool                                GetAddReturnValueToDebugRenderWorldUponExecution() const override;
 
 			virtual void                                SetParamName(const char* szParamName) override;
 			virtual void                                SetFuncName(const char* szFuncName) override;
 			virtual void                                SetFuncReturnValueLiteral(const char* szValue) override;
-			virtual void                                SetAddReturnValueToDebugRenderWorldUponExecution(const char* szAddReturnValueToDebugRenderWorldUponExecution) override;
+			virtual void                                SetAddReturnValueToDebugRenderWorldUponExecution(bool bAddReturnValueToDebugRenderWorldUponExecution) override;
 
-			virtual ITextualInputBlueprint&             AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, const char* addReturnValueToDebugRenderWorldUponExecution) override;
+			virtual ITextualInputBlueprint&             AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) override;
 			virtual size_t                              GetChildCount() const override;
 			virtual const ITextualInputBlueprint&       GetChild(size_t index) const override;
 			virtual const ITextualInputBlueprint*       FindChildByParamName(const char* paramName) const override;
@@ -48,7 +48,7 @@ namespace uqs
 			virtual datasource::ISyntaxErrorCollector*  GetSyntaxErrorCollector() const override;
 
 		private:
-			explicit                                    CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, const char* addReturnValueToDebugRenderWorldUponExecution);
+			explicit                                    CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
 			                                            UQS_NON_COPYABLE(CTextualInputBlueprint);
 
@@ -56,7 +56,7 @@ namespace uqs
 			string                                      m_paramName;
 			string                                      m_funcName;
 			string                                      m_funcReturnValueLiteral;
-			string                                      m_addReturnValueToDebugRenderWorldUponExecution;
+			bool                                        m_bAddReturnValueToDebugRenderWorldUponExecution;
 			std::vector<CTextualInputBlueprint*>        m_children;
 			datasource::SyntaxErrorCollectorUniquePtr   m_pSyntaxErrorCollector;
 		};

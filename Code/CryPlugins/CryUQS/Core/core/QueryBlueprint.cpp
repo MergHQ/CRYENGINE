@@ -17,7 +17,7 @@ namespace uqs
 		//===================================================================================
 
 		CTextualQueryBlueprint::CTextualQueryBlueprint()
-			: m_bExpectedShuttleTypeHasBeenProvided(false)
+			: m_maxItemsToKeepInResultSet(0)
 		{
 			// nothing
 		}
@@ -50,15 +50,9 @@ namespace uqs
 			m_queryFactoryName = factoryName;
 		}
 
-		void CTextualQueryBlueprint::SetMaxItemsToKeepInResultSet(const char* maxItems)
+		void CTextualQueryBlueprint::SetMaxItemsToKeepInResultSet(size_t maxItems)
 		{
 			m_maxItemsToKeepInResultSet = maxItems;
-		}
-
-		void CTextualQueryBlueprint::SetExpectedShuttleType(const char* shuttleTypeName)
-		{
-			m_expectedShuttleType.Format("%s", shuttleTypeName);
-			m_bExpectedShuttleTypeHasBeenProvided = true;
 		}
 
 		ITextualGlobalConstantParamsBlueprint& CTextualQueryBlueprint::GetGlobalConstantParams()
@@ -118,14 +112,9 @@ namespace uqs
 			return m_queryFactoryName.c_str();
 		}
 
-		const char* CTextualQueryBlueprint::GetMaxItemsToKeepInResultSet() const
+		size_t CTextualQueryBlueprint::GetMaxItemsToKeepInResultSet() const
 		{
-			return m_maxItemsToKeepInResultSet.c_str();
-		}
-
-		const shared::IUqsString* CTextualQueryBlueprint::GetExpectedShuttleType() const
-		{
-			return m_bExpectedShuttleTypeHasBeenProvided ? &m_expectedShuttleType : nullptr;
+			return m_maxItemsToKeepInResultSet;
 		}
 
 		const ITextualGlobalConstantParamsBlueprint& CTextualQueryBlueprint::GetGlobalConstantParams() const
@@ -185,7 +174,6 @@ namespace uqs
 		CQueryBlueprint::CQueryBlueprint()
 			: m_pQueryFactory(nullptr)
 			, m_maxItemsToKeepInResultSet(0)
-			, m_pExpectedShuttleType(nullptr)
 			, m_pParent(nullptr)
 		{
 			// nothing
@@ -252,34 +240,7 @@ namespace uqs
 			}
 
 			// max. items to keep in result set
-			{
-				const char* maxItemsAsString = source.GetMaxItemsToKeepInResultSet();
-				if (sscanf(maxItemsAsString, "%d", &m_maxItemsToKeepInResultSet) != 1)	// using %d to allow only decimal representation (no hex or octal)
-				{
-					if (datasource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
-					{
-						pSE->AddErrorMessage("The maximum number of items could not be parsed into an int (value = '%s')", maxItemsAsString);
-					}
-					bResolveSucceeded = false;
-				}
-			}
-
-			// shuttle type (optional)
-			if (const shared::IUqsString* pShuttleTypeAsString = source.GetExpectedShuttleType())
-			{
-				if (const client::IItemFactory* pItemFactory = g_hubImpl->GetItemFactoryDatabase().FindFactoryByName(pShuttleTypeAsString->c_str()))
-				{
-					m_pExpectedShuttleType = &pItemFactory->GetItemType();
-				}
-				else
-				{
-					if (datasource::ISyntaxErrorCollector* pSE = source.GetSyntaxErrorCollector())
-					{
-						pSE->AddErrorMessage("Unknown item type for the shuttled items: '%s'", pShuttleTypeAsString->c_str());
-					}
-					bResolveSucceeded = false;
-				}
-			}
+			m_maxItemsToKeepInResultSet = source.GetMaxItemsToKeepInResultSet();
 
 			// ensure no duplicates between constant-params and runtime-params
 			for (size_t i1 = 0; i1 < source.GetGlobalConstantParams().GetParameterCount(); ++i1)
@@ -491,6 +452,16 @@ namespace uqs
 			return m_children[index];
 		}
 
+		int CQueryBlueprint::GetChildIndex(const CQueryBlueprint* pChildToSearchFor) const
+		{
+			for (size_t i = 0; i < m_children.size(); ++i)
+			{
+				if (m_children[i].get() == pChildToSearchFor)
+					return (int)i;
+			}
+			return -1;
+		}
+
 		QueryBaseUniquePtr CQueryBlueprint::CreateQuery(const CQueryBase::SCtorContext& ctorContext) const
 		{
 			assert(m_pQueryFactory);
@@ -500,11 +471,6 @@ namespace uqs
 		int CQueryBlueprint::GetMaxItemsToKeepInResultSet() const
 		{
 			return m_maxItemsToKeepInResultSet;
-		}
-
-		const shared::CTypeInfo* CQueryBlueprint::GetExpectedShuttleType() const
-		{
-			return m_pExpectedShuttleType;
 		}
 
 		const CGlobalConstantParamsBlueprint& CQueryBlueprint::GetGlobalConstantParamsBlueprint() const
@@ -538,7 +504,7 @@ namespace uqs
 			// ensure that all required runtime-params have been passed in and that their data types match those in this query-blueprint
 			//
 
-			const std::map<string, client::IItemFactory*>& expectedRuntimeParams = m_globalRuntimeParams.GetParams();
+			const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& expectedRuntimeParams = m_globalRuntimeParams.GetParams();
 
 			for (const auto& pair : expectedRuntimeParams)
 			{
@@ -551,7 +517,7 @@ namespace uqs
 					return false;
 				}
 
-				const client::IItemFactory* pExpectedItemFactory = pair.second;
+				const client::IItemFactory* pExpectedItemFactory = pair.second.pItemFactory;
 				assert(pExpectedItemFactory);
 
 				if (pFoundItemFactory != pExpectedItemFactory)
@@ -571,6 +537,18 @@ namespace uqs
 			}
 
 			return true;
+		}
+
+		const shared::CTypeInfo* CQueryBlueprint::GetTypeOfShuttledItemsToExpect() const
+		{
+			assert(m_pQueryFactory);
+			return m_pQueryFactory->GetTypeOfShuttledItemsToExpect(*this);
+		}
+
+		const CQueryFactoryBase& CQueryBlueprint::GetQueryFactory() const
+		{
+			assert(m_pQueryFactory);
+			return *m_pQueryFactory;
 		}
 
 		void CQueryBlueprint::PrintToConsole(CLogger& logger) const
@@ -758,12 +736,12 @@ namespace uqs
 
 		void CQueryBlueprint::GrabRuntimeParamsRecursively(std::map<string, client::IItemFactory*>& out) const
 		{
-			const std::map<string, client::IItemFactory*>& params = m_globalRuntimeParams.GetParams();
+			const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& params = m_globalRuntimeParams.GetParams();
 
 			for (const auto& pair : params)
 			{
 				const char* paramName = pair.first.c_str();
-				client::IItemFactory* pItemFactory = pair.second;
+				client::IItemFactory* pItemFactory = pair.second.pItemFactory;
 				assert(pItemFactory);
 				out[paramName] = pItemFactory;	// potentially overwrite the param from a parent; we presume here that both have the same item type (this is ensured by CGlobalRuntimeParamsBlueprint::Resolve())
 			}

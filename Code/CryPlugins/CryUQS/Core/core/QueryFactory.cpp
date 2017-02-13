@@ -82,7 +82,7 @@ namespace uqs
 				std::shared_ptr<const CQueryBlueprint> childB = parentQueryBlueprint.GetChild(i + 1);
 
 				// grab the expected type of the succeeding child's input
-				const shared::CTypeInfo* pInputType = childB->GetExpectedShuttleType();
+				const shared::CTypeInfo* pInputType = childB->GetTypeOfShuttledItemsToExpect();
 
 				if (!pInputType)
 				{
@@ -134,6 +134,51 @@ namespace uqs
 
 		//===================================================================================
 		//
+		// specializations for CQueryFactory<>::GetShuttleTypeFromPrecedingSibling()
+		//
+		//===================================================================================
+
+		// specialization for CQuery_Regular: according to how GetTypeOfShuttledItemsToExpect() works, this method should never get called at all
+		template <>
+		const shared::CTypeInfo* CQueryFactory<CQuery_Regular>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		{
+			assert(0);  // we should never get called
+			return nullptr;
+		}
+
+		// specialization for CQuery_Chained: given the child's query blueprint, this method will inspect its sibling for the type of potentially shuttled items
+		template <>
+		const shared::CTypeInfo* CQueryFactory<CQuery_Chained>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		{
+			const CQueryBlueprint* pParentQueryBlueprint = childQueryBlueprint.GetParent();
+			assert(pParentQueryBlueprint);
+
+			int childIndex = pParentQueryBlueprint->GetChildIndex(&childQueryBlueprint);
+			assert(childIndex != -1);
+
+			// if given child query blueprint is the first in the chain, then there cannot be a shuttle type (because there is no preceding query that could have generated items)
+			if (childIndex == 0)
+			{
+				// first in the chain => no shuttle type possible
+				return nullptr;
+			}
+			else
+			{
+				// the preceding one dictates the shuttle type
+				const CQueryBlueprint* pPrecedingQueryBlueprint = pParentQueryBlueprint->GetChild((size_t)childIndex - 1).get();
+				return &pPrecedingQueryBlueprint->GetOutputType();
+			}
+		}
+
+		// specialization for CQuery_Fallbacks: fallback-queries never propagate the resulting items from one child to the next
+		template <>
+		const shared::CTypeInfo* CQueryFactory<CQuery_Fallbacks>::GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const
+		{
+			return nullptr;
+		}
+
+		//===================================================================================
+		//
 		// CQueryFactoryBase
 		//
 		//===================================================================================
@@ -180,6 +225,18 @@ namespace uqs
 		size_t CQueryFactoryBase::GetMaxAllowedChildren() const
 		{
 			return m_maxAllowedChildren;
+		}
+
+		const shared::CTypeInfo* CQueryFactoryBase::GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const
+		{
+			const CQueryBlueprint* pParentQueryBlueprint = queryBlueprintAskingForThis.GetParent();
+
+			if (!pParentQueryBlueprint)
+				return nullptr;
+
+			const CQueryFactoryBase& parentQueryFactory = pParentQueryBlueprint->GetQueryFactory();
+
+			return parentQueryFactory.GetShuttleTypeFromPrecedingSibling(queryBlueprintAskingForThis);
 		}
 
 		void CQueryFactoryBase::RegisterAllInstancesInDatabase(QueryFactoryDatabase& databaseToRegisterIn)

@@ -165,6 +165,9 @@ namespace uqs
 		{
 			m_queryCreatedTimestamp = gEnv->pTimer->GetAsyncTime();
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsAlive;
+
+			// notify the top-level query-history-manager that the underlying query has just been created/started
+			m_pOwningHistoryManager->UnderlyingQueryJustGotCreated(m_queryID);
 		}
 
 		void CHistoricQuery::OnQueryBlueprintInstantiationStarted(const char* queryBlueprintName)
@@ -705,7 +708,7 @@ namespace uqs
 				numGeneratedItems,
 				numItemsInFinalResultSet,
 				elapsedTime);
-			consumer.AddHistoricQuery(overview);
+			consumer.AddOrUpdateHistoricQuery(overview);
 		}
 
 		void CHistoricQuery::FillQueryHistoryConsumerWithDetailedInfoAboutQuery(IQueryHistoryConsumer& consumer) const

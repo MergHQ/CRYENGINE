@@ -39,11 +39,11 @@ public:
 	// ~IEditorNotifyListener
 
 	// ~IQueryHistoryListener
-	virtual void OnQueryHistoryEvent(EEvent ev) override;
+	virtual void OnQueryHistoryEvent(const uqs::core::IQueryHistoryListener::SEvent& ev) override;
 	// ~IQueryHistoryListener
 
 	// IQueryHistoryConsumer
-	virtual void AddHistoricQuery(const SHistoricQueryOverview& overview) override;
+	virtual void AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview) override;
 	virtual void AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...) override;
 	virtual void AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) override;
 	virtual void AddInstantEvaluatorName(const char* szInstantEvaluatorName) override;
@@ -59,7 +59,7 @@ private:
 
 private:
 	uqs::core::IQueryHistoryManager* m_pQueryHistoryManager;
-	SQuery*                          m_pFreshlyAddedQuery;
+	SQuery*                          m_pFreshlyAddedOrUpdatedQuery;
 	CHistoricQueryTreeView*          m_pTreeView;
 	CHistoricQueryTreeModel*         m_pTreeModel;
 	QTextEdit*                       m_pTextQueryDetails;

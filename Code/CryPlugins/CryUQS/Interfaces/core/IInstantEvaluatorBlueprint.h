@@ -19,8 +19,8 @@ namespace uqs
 		{
 			virtual                                       ~ITextualInstantEvaluatorBlueprint() {}
 			virtual void                                  SetEvaluatorName(const char* evaluatorName) = 0;
-			virtual void                                  SetWeight(const char* weight) = 0;
-			virtual const char*                           GetWeight() const = 0;
+			virtual void                                  SetWeight(float weight) = 0;
+			virtual float                                 GetWeight() const = 0;
 			virtual ITextualInputBlueprint&               GetInputRoot() = 0;
 			virtual const char*                           GetEvaluatorName() const = 0;
 			virtual const ITextualInputBlueprint&         GetInputRoot() const = 0;

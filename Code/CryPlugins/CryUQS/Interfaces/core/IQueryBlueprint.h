@@ -23,8 +23,7 @@ namespace uqs
 			//
 			virtual void                                                SetName(const char* name) = 0;
 			virtual void                                                SetQueryFactoryName(const char* factoryName) = 0;
-			virtual void                                                SetMaxItemsToKeepInResultSet(const char* maxItems) = 0;
-			virtual void                                                SetExpectedShuttleType(const char* shuttleTypeName) = 0;
+			virtual void                                                SetMaxItemsToKeepInResultSet(size_t maxItems) = 0;
 			virtual ITextualGlobalConstantParamsBlueprint&              GetGlobalConstantParams() = 0;
 			virtual ITextualGlobalRuntimeParamsBlueprint&               GetGlobalRuntimeParams() = 0;
 			virtual ITextualGeneratorBlueprint&                         SetGenerator() = 0;             // GetGenerator() returns a nullptr until SetGenerator() gets called
@@ -38,8 +37,7 @@ namespace uqs
 
 			virtual const char*                                         GetName() const = 0;
 			virtual const char*                                         GetQueryFactoryName() const = 0;
-			virtual const char*                                         GetMaxItemsToKeepInResultSet() const = 0;
-			virtual const shared::IUqsString*                           GetExpectedShuttleType() const = 0;
+			virtual size_t                                              GetMaxItemsToKeepInResultSet() const = 0;
 			virtual const ITextualGlobalConstantParamsBlueprint&        GetGlobalConstantParams() const = 0;
 			virtual const ITextualGlobalRuntimeParamsBlueprint&         GetGlobalRuntimeParams() const = 0;
 			virtual const ITextualGeneratorBlueprint*                   GetGenerator() const = 0;

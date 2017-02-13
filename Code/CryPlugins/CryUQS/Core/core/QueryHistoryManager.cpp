@@ -80,7 +80,7 @@ namespace uqs
 
 					if (m_indexOfFocusedItem != indexOfPreviouslyFocusedItem)
 					{
-						NotifyListeners(IQueryHistoryListener::EEvent::FocusedItemChanged);
+						NotifyListeners(IQueryHistoryListener::EEventType::FocusedItemChanged);
 					}
 				}
 			}
@@ -137,7 +137,7 @@ namespace uqs
 				{
 					m_indexOfFocusedItem = s_noItemFocusedIndex;
 				}
-				NotifyListeners(IQueryHistoryListener::EEvent::QueryHistoryDeserialized);
+				NotifyListeners(IQueryHistoryListener::EEventType::QueryHistoryDeserialized);
 				return true;
 			}
 			else
@@ -153,7 +153,7 @@ namespace uqs
 			{
 				m_historyToManage = whichHistory;
 				m_indexOfFocusedItem = s_noItemFocusedIndex;
-				NotifyListeners(IQueryHistoryListener::EEvent::CurrentQueryHistorySwitched);
+				NotifyListeners(IQueryHistoryListener::EEventType::CurrentQueryHistorySwitched);
 			}
 		}
 
@@ -175,15 +175,27 @@ namespace uqs
 			switch (whichHistory)
 			{
 			case EHistoryOrigin::Live:
-				NotifyListeners(IQueryHistoryListener::EEvent::LiveQueryHistoryCleared);
+				NotifyListeners(IQueryHistoryListener::EEventType::LiveQueryHistoryCleared);
 				break;
 
 			case EHistoryOrigin::Deserialized:
-				NotifyListeners(IQueryHistoryListener::EEvent::DeserializedQueryHistoryCleared);
+				NotifyListeners(IQueryHistoryListener::EEventType::DeserializedQueryHistoryCleared);
 				break;
 
 			default:
 				assert(0);
+			}
+		}
+
+		void CQueryHistoryManager::EnumerateSingleHistoricQuery(EHistoryOrigin whichHistory, const CQueryID& queryIDToEnumerate, IQueryHistoryConsumer& receiver) const
+		{
+			const CQueryHistory& history = m_queryHistories[whichHistory];
+
+			if (const CHistoricQuery* pHistoricQuery = history.FindHistoryEntryByQueryID(queryIDToEnumerate))
+			{
+				const bool bHighlight = (whichHistory == m_historyToManage) && (m_queryIDOfCurrentHistoricQuery[whichHistory] == queryIDToEnumerate);
+
+				pHistoricQuery->FillQueryHistoryConsumerWithShortInfoAboutQuery(receiver, bHighlight);
 			}
 		}
 
@@ -207,7 +219,7 @@ namespace uqs
 			{
 				m_queryIDOfCurrentHistoricQuery[whichHistory] = queryIDToMakeCurrent;
 				m_indexOfFocusedItem = s_noItemFocusedIndex;
-				NotifyListeners(IQueryHistoryListener::EEvent::DifferentHistoricQuerySelected);
+				NotifyListeners(IQueryHistoryListener::EEventType::DifferentHistoricQuerySelected);
 			}
 		}
 
@@ -274,15 +286,30 @@ namespace uqs
 			return newHistoricQuery;
 		}
 
-		void CQueryHistoryManager::UnderlyingQueryIsGettingDestroyed(const CQueryID& queryID)
+		void CQueryHistoryManager::UnderlyingQueryJustGotCreated(const CQueryID& queryID)
 		{
-			NotifyListeners(IQueryHistoryListener::EEvent::HistoricQueryJustFinishedInLiveQueryHistory);
+			NotifyListeners(IQueryHistoryListener::EEventType::HistoricQueryJustGotCreatedInLiveQueryHistory, queryID);
 		}
 
-		void CQueryHistoryManager::NotifyListeners(IQueryHistoryListener::EEvent ev) const
+		void CQueryHistoryManager::UnderlyingQueryIsGettingDestroyed(const CQueryID& queryID)
+		{
+			NotifyListeners(IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory, queryID);
+		}
+
+		void CQueryHistoryManager::NotifyListeners(IQueryHistoryListener::EEventType eventType) const
 		{
 			if (!m_listeners.empty())
 			{
+				NotifyListeners(eventType, CQueryID::CreateInvalid());
+			}
+		}
+
+		void CQueryHistoryManager::NotifyListeners(IQueryHistoryListener::EEventType eventType, const CQueryID& relatedQueryID) const
+		{
+			if (!m_listeners.empty())
+			{
+				const IQueryHistoryListener::SEvent ev(eventType, relatedQueryID);
+
 				for (IQueryHistoryListener* pListener : m_listeners)
 				{
 					pListener->OnQueryHistoryEvent(ev);

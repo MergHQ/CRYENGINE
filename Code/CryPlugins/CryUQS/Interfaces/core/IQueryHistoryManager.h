@@ -113,6 +113,12 @@ namespace uqs
 			virtual void                    ClearQueryHistory(EHistoryOrigin whichHistory) = 0;
 
 			//
+			// outputs information of given query to the receiver
+			//
+
+			virtual void                    EnumerateSingleHistoricQuery(EHistoryOrigin whichHistory, const CQueryID& queryIDToEnumerate, IQueryHistoryConsumer& receiver) const = 0;
+
+			//
 			// outputs a list of all historic queries of given query history into the receiver
 			//
 

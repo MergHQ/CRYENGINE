@@ -29,8 +29,7 @@ namespace uqs
 
 			virtual void                                               SetName(const char* name) override;
 			virtual void                                               SetQueryFactoryName(const char* factoryName) override;
-			virtual void                                               SetMaxItemsToKeepInResultSet(const char* maxItems) override;
-			virtual void                                               SetExpectedShuttleType(const char* shuttleTypeName) override;
+			virtual void                                               SetMaxItemsToKeepInResultSet(size_t maxItems) override;
 			virtual ITextualGlobalConstantParamsBlueprint&             GetGlobalConstantParams() override;
 			virtual ITextualGlobalRuntimeParamsBlueprint&              GetGlobalRuntimeParams() override;
 			virtual ITextualGeneratorBlueprint&                        SetGenerator() override;
@@ -46,8 +45,7 @@ namespace uqs
 
 			virtual const char*                                        GetName() const override;
 			virtual const char*                                        GetQueryFactoryName() const override;
-			virtual const char*                                        GetMaxItemsToKeepInResultSet() const override;
-			virtual const shared::IUqsString*                          GetExpectedShuttleType() const override;
+			virtual size_t                                             GetMaxItemsToKeepInResultSet() const override;
 			virtual const ITextualGlobalConstantParamsBlueprint&       GetGlobalConstantParams() const override;
 			virtual const ITextualGlobalRuntimeParamsBlueprint&        GetGlobalRuntimeParams() const override;
 			virtual const ITextualGeneratorBlueprint*                  GetGenerator() const override;
@@ -71,9 +69,7 @@ namespace uqs
 		private:
 			string                                                     m_name;
 			string                                                     m_queryFactoryName;
-			string                                                     m_maxItemsToKeepInResultSet;
-			shared::CUqsString                                         m_expectedShuttleType;
-			bool                                                       m_bExpectedShuttleTypeHasBeenProvided;
+			size_t                                                     m_maxItemsToKeepInResultSet;
 			CTextualGlobalConstantParamsBlueprint                      m_globalConstantParams;
 			CTextualGlobalRuntimeParamsBlueprint                       m_globalRuntimeParams;
 			std::unique_ptr<CTextualGeneratorBlueprint>                m_pGenerator;
@@ -108,12 +104,12 @@ namespace uqs
 			const CQueryBlueprint*                             GetParent() const;
 			size_t                                             GetChildCount() const;
 			std::shared_ptr<const CQueryBlueprint>             GetChild(size_t index) const;
+			int                                                GetChildIndex(const CQueryBlueprint* pChildToSearchFor) const;  // returns -1 if given child is not among m_children
 
 			QueryBaseUniquePtr                                 CreateQuery(const CQueryBase::SCtorContext& ctorContext) const;
 
 			// these are called during the instantiation of a "live" Query
 			int                                                GetMaxItemsToKeepInResultSet() const;
-			const shared::CTypeInfo*                           GetExpectedShuttleType() const;
 			const CGlobalConstantParamsBlueprint&              GetGlobalConstantParamsBlueprint() const;
 			const CGlobalRuntimeParamsBlueprint&               GetGlobalRuntimeParamsBlueprint() const;
 			const CGeneratorBlueprint*                         GetGeneratorBlueprint() const;
@@ -121,6 +117,9 @@ namespace uqs
 			const std::vector<CDeferredEvaluatorBlueprint*>&   GetDeferredEvaluatorBlueprints() const;
 			// TODO: secondary-generator blueprints?
 			bool                                               CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(const shared::IVariantDict& runtimeParamsToValidate, shared::CUqsString& error) const;
+
+			const shared::CTypeInfo*                           GetTypeOfShuttledItemsToExpect() const;
+			const CQueryFactoryBase&                           GetQueryFactory() const;
 
 			// debugging: dumps query-blueprint details to the console
 			void                                               PrintToConsole(CLogger& logger) const;
@@ -135,7 +134,6 @@ namespace uqs
 			string                                             m_name;
 			CQueryFactoryBase*                                 m_pQueryFactory;
 			int                                                m_maxItemsToKeepInResultSet;		// item limitation gets only effective if this is > 0
-			const shared::CTypeInfo*                           m_pExpectedShuttleType;
 			CGlobalConstantParamsBlueprint                     m_globalConstantParams;
 			CGlobalRuntimeParamsBlueprint                      m_globalRuntimeParams;
 			std::unique_ptr<CGeneratorBlueprint>               m_pGenerator;

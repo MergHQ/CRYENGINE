@@ -21,9 +21,9 @@ namespace uqs
 			// nothing
 		}
 
-		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* name, const char* type, datasource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
+		void CTextualGlobalRuntimeParamsBlueprint::AddParameter(const char* name, const char* type, bool bAddToDebugRenderWorld, datasource::SyntaxErrorCollectorUniquePtr syntaxErrorCollector)
 		{
-			m_parameters.emplace_back(name, type, std::move(syntaxErrorCollector));
+			m_parameters.emplace_back(name, type, bAddToDebugRenderWorld, std::move(syntaxErrorCollector));
 		}
 
 		size_t CTextualGlobalRuntimeParamsBlueprint::GetParameterCount() const
@@ -35,7 +35,7 @@ namespace uqs
 		{
 			assert(index < m_parameters.size());
 			const SStoredParameterInfo& pi = m_parameters[index];
-			return SParameterInfo(pi.name.c_str(), pi.type.c_str(), pi.pSyntaxErrorCollector.get());
+			return SParameterInfo(pi.name.c_str(), pi.type.c_str(), pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
 		}
 
 		//===================================================================================
@@ -123,13 +123,13 @@ namespace uqs
 					}
 				}
 
-				m_runtimeParameters[p.name] = pItemFactory;
+				m_runtimeParameters.insert(std::map<string, SParamInfo>::value_type(p.name, SParamInfo(pItemFactory, p.bAddToDebugRenderWorld)));
 			}
 
 			return bResolveSucceeded;
 		}
 
-		const std::map<string, client::IItemFactory*>& CGlobalRuntimeParamsBlueprint::GetParams() const
+		const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& CGlobalRuntimeParamsBlueprint::GetParams() const
 		{
 			return m_runtimeParameters;
 		}
@@ -147,7 +147,7 @@ namespace uqs
 				for (const auto& entry : m_runtimeParameters)
 				{
 					const char* paramName = entry.first.c_str();
-					const client::IItemFactory* pItemFactory = entry.second;
+					const client::IItemFactory* pItemFactory = entry.second.pItemFactory;
 					logger.Printf("\"%s\" [%s]", paramName, pItemFactory->GetName());
 				}
 			}
@@ -156,12 +156,12 @@ namespace uqs
 		const client::IItemFactory* CGlobalRuntimeParamsBlueprint::FindItemFactoryByParamNameInParentRecursively(const char* paramNameToSearchFor, const CQueryBlueprint& parentalQueryBlueprint) const
 		{
 			const CGlobalRuntimeParamsBlueprint& parentGlobalRuntimeParamsBP = parentalQueryBlueprint.GetGlobalRuntimeParamsBlueprint();
-			const std::map<string, client::IItemFactory*>& params = parentGlobalRuntimeParamsBP.GetParams();
+			const std::map<string, SParamInfo>& params = parentGlobalRuntimeParamsBP.GetParams();
 			auto it = params.find(paramNameToSearchFor);
 
 			if (it != params.end())
 			{
-				return it->second;
+				return it->second.pItemFactory;
 			}
 
 			if (const CQueryBlueprint* pGrandParent = parentalQueryBlueprint.GetParent())

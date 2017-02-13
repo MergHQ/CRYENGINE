@@ -18,14 +18,15 @@ namespace uqs
 		//===================================================================================
 
 		CTextualInputBlueprint::CTextualInputBlueprint()
+			: m_bAddReturnValueToDebugRenderWorldUponExecution(false)
 		{
 		}
 
-		CTextualInputBlueprint::CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, const char* addReturnValueToDebugRenderWorldUponExecution)
+		CTextualInputBlueprint::CTextualInputBlueprint(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 			: m_paramName(paramName)
 			, m_funcName(funcName)
 			, m_funcReturnValueLiteral(funcReturnValueLiteral)
-			, m_addReturnValueToDebugRenderWorldUponExecution(addReturnValueToDebugRenderWorldUponExecution)
+			, m_bAddReturnValueToDebugRenderWorldUponExecution(bAddReturnValueToDebugRenderWorldUponExecution)
 		{
 		}
 
@@ -52,9 +53,9 @@ namespace uqs
 			return m_funcReturnValueLiteral.c_str();
 		}
 
-		const char* CTextualInputBlueprint::GetAddReturnValueToDebugRenderWorldUponExecution() const
+		bool CTextualInputBlueprint::GetAddReturnValueToDebugRenderWorldUponExecution() const
 		{
-			return m_addReturnValueToDebugRenderWorldUponExecution.c_str();
+			return m_bAddReturnValueToDebugRenderWorldUponExecution;
 		}
 
 		void CTextualInputBlueprint::SetParamName(const char* szParamName)
@@ -72,14 +73,14 @@ namespace uqs
 			m_funcReturnValueLiteral = szValue;
 		}
 
-		void CTextualInputBlueprint::SetAddReturnValueToDebugRenderWorldUponExecution(const char* szAddReturnValueToDebugRenderWorldUponExecution)
+		void CTextualInputBlueprint::SetAddReturnValueToDebugRenderWorldUponExecution(bool bAddReturnValueToDebugRenderWorldUponExecution)
 		{
-			m_addReturnValueToDebugRenderWorldUponExecution = szAddReturnValueToDebugRenderWorldUponExecution;
+			m_bAddReturnValueToDebugRenderWorldUponExecution = bAddReturnValueToDebugRenderWorldUponExecution;
 		}
 
-		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, const char* addReturnValueToDebugRenderWorldUponExecution)
+		ITextualInputBlueprint& CTextualInputBlueprint::AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution)
 		{
-			CTextualInputBlueprint* b = new CTextualInputBlueprint(paramName, funcName, funcReturnValueLiteral, addReturnValueToDebugRenderWorldUponExecution);
+			CTextualInputBlueprint* b = new CTextualInputBlueprint(paramName, funcName, funcReturnValueLiteral, bAddReturnValueToDebugRenderWorldUponExecution);
 			m_children.push_back(b);
 			return *b;
 		}
@@ -215,23 +216,7 @@ namespace uqs
 				// see if the function is configured to output debug stuff into the debug-render-world every time it will be called at runtime
 				//
 
-				const char* szAddReturnValueToDebugRenderWorldUponExecution = pSourceChild->GetAddReturnValueToDebugRenderWorldUponExecution();
-				if (strcmp(szAddReturnValueToDebugRenderWorldUponExecution, "true") == 0)
-				{
-					pNewChild->m_bAddReturnValueToDebugRenderWorldUponExecution = true;
-				}
-				else if (strcmp(szAddReturnValueToDebugRenderWorldUponExecution, "false") == 0)
-				{
-					pNewChild->m_bAddReturnValueToDebugRenderWorldUponExecution = false;
-				}
-				else
-				{
-					if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
-					{
-						pSE->AddErrorMessage("The value of the property AddReturnValueToDebugRenderWorldUponExecution could not be parsed into a bool from its textual value: '%s' (only 'true' and 'false' are allowed)", szAddReturnValueToDebugRenderWorldUponExecution);
-					}
-					bResolveSucceeded = false;
-				}
+				pNewChild->m_bAddReturnValueToDebugRenderWorldUponExecution = pSourceChild->GetAddReturnValueToDebugRenderWorldUponExecution();
 
 				//
 				// - if this function returns the iterated item, ensure that the function is not part of a generator
@@ -286,19 +271,23 @@ namespace uqs
 					// search among the global constant-params
 					{
 						const CGlobalConstantParamsBlueprint& constantParamsBP = queryBlueprintForGlobalParamChecking.GetGlobalConstantParamsBlueprint();
-						const shared::CVariantDict& params = constantParamsBP.GetParams();
-						pItemFactoryOfThatGlobalParam = params.FindItemFactory(nameOfGlobalParam);	// may still be a nullptr
+						const std::map<string, CGlobalConstantParamsBlueprint::SParamInfo>& params = constantParamsBP.GetParams();
+						auto it = params.find(nameOfGlobalParam);
+						if (it != params.cend())
+						{
+							pItemFactoryOfThatGlobalParam = it->second.pItemFactory;
+						}
 					}
 
 					// search among the global runtime-params
 					if(!pItemFactoryOfThatGlobalParam)
 					{
 						const CGlobalRuntimeParamsBlueprint& runtimeParamsBP = queryBlueprintForGlobalParamChecking.GetGlobalRuntimeParamsBlueprint();
-						const std::map<string, client::IItemFactory*>& params = runtimeParamsBP.GetParams();
+						const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& params = runtimeParamsBP.GetParams();
 						auto it = params.find(nameOfGlobalParam);
 						if (it != params.cend())
 						{
-							pItemFactoryOfThatGlobalParam = it->second;
+							pItemFactoryOfThatGlobalParam = it->second.pItemFactory;
 						}
 					}
 
@@ -387,12 +376,12 @@ namespace uqs
 				}
 
 				//
-				// if the function returns the shuttled items (ELeafFunctionKind::ShuttledItems), then make sure that the query has been provided with an expected type of these items and that this type matches the function's return value
+				// if the function returns the shuttled items (ELeafFunctionKind::ShuttledItems), then make sure that the query will be provided (at runtime) with shuttled items that match the type of the function's return value
 				//
 
 				if (pNewChild->m_pFunctionFactory->GetLeafFunctionKind() == client::IFunctionFactory::ELeafFunctionKind::ShuttledItems)
 				{
-					if (const shared::CTypeInfo* pExpectedShuttleType = queryBlueprintForGlobalParamChecking.GetExpectedShuttleType())
+					if (const shared::CTypeInfo* pTypeOfPossiblyShuttledItems = queryBlueprintForGlobalParamChecking.GetTypeOfShuttledItemsToExpect())
 					{
 						// notice: the type of the shuttle actually specifies the *container* type of items, hence we need access to the *contained* type
 						const shared::CTypeInfo* pContainedType = pNewChild->m_pFunctionFactory->GetContainedType();
@@ -400,11 +389,11 @@ namespace uqs
 						// if this assert fails, then something must have become inconsistent between client::internal::CFunc_ShuttledItems<> and client::internal::SContainedTypeRetriever<>
 						assert(pContainedType);
 
-						if (*pContainedType != *pExpectedShuttleType)
+						if (*pContainedType != *pTypeOfPossiblyShuttledItems)
 						{
 							if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 							{
-								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pExpectedShuttleType->name(), pContainedType->name());
+								pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems and expects the shuttled items to be of type '%s', but they are actually of type '%s'", pNewChild->m_pFunctionFactory->GetName(), pTypeOfPossiblyShuttledItems->name(), pContainedType->name());
 							}
 							bResolveSucceeded = false;
 						}
@@ -417,7 +406,7 @@ namespace uqs
 					{
 						if (datasource::ISyntaxErrorCollector* pSE = pSourceChild->GetSyntaxErrorCollector())
 						{
-							pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems, but the query has not specified what type the shuttled items are expected to be", pNewChild->m_pFunctionFactory->GetName());
+							pSE->AddErrorMessage("Function '%s' is of kind ELeafFunctionKind::ShuttledItems, but the query does not support shuttled items in this context", pNewChild->m_pFunctionFactory->GetName());
 						}
 						bResolveSucceeded = false;
 					}

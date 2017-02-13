@@ -34,6 +34,7 @@ namespace uqs
 			virtual const void*                 GetItemAtIndex(const void* pItems, size_t index) const = 0;
 			virtual const char*                 GetName() const = 0;
 			virtual void                        AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const = 0;
+			virtual bool                        CanBeRepresentedInDebugRenderWorld() const = 0;
 			virtual void                        CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const = 0;
 
 			virtual bool                        CanBePersistantlySerialized() const = 0;

@@ -57,7 +57,7 @@ namespace uqs
 				return EUpdateState::ExceptionOccurred;
 			}
 
-			// we assume the following: if there are more children that could potentially run, then the derived should have already instantiated the next one in its HandleChildQueryFinishedWithSuccess()
+			// we assume the following: if there are more children that could potentially run, then the derived class should have already instantiated the next one in its HandleChildQueryFinishedWithSuccess()
 			// -> in other words: if none is running now, then this composite query counts as finished
 			if (!m_queryIDOfCurrentlyRunningChild.IsValid())
 			{

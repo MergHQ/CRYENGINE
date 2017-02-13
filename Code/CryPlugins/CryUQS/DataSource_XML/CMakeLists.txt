@@ -22,6 +22,8 @@ add_sources("UQS_uber_datasource_xml.cpp"
 		"datasource_xml/QueryBlueprintSaver_XML.cpp"
 		"datasource_xml/QueryBlueprintFileLibrary.h"
 		"datasource_xml/QueryBlueprintFileLibrary.cpp"
+		"datasource_xml/XMLDatasource.h"
+		"datasource_xml/XMLDatasource.cpp"
 )
 
 end_sources()

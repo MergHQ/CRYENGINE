@@ -180,9 +180,15 @@ namespace uqs
 			// merge constant-params and runtime-params into global params
 			//
 
-			const shared::CVariantDict& constantParams = m_queryBlueprint->GetGlobalConstantParamsBlueprint().GetParams();
-			constantParams.AddSelfToOtherAndReplace(m_globalParams);
+			const CGlobalConstantParamsBlueprint& constantParamsBlueprint = m_queryBlueprint->GetGlobalConstantParamsBlueprint();
+			constantParamsBlueprint.AddSelfToDictAndReplace(m_globalParams); // TODO: don't duplicate the already present constant parameters, but then again, we need to both, constant- and runtime-params, to reside in the m_globalParams container
 			runtimeParams.AddSelfToOtherAndReplace(m_globalParams);
+
+			//
+			// debug-draw all global parameters that want to be shown
+			//
+
+			AddItemsFromGlobalParametersToDebugRenderWorld();
 
 			//
 			// allow the derived class to do further custom instantiation
@@ -324,6 +330,58 @@ namespace uqs
 		QueryResultSetUniquePtr CQueryBase::ClaimResultSet()
 		{
 			return std::move(m_pResultSet);
+		}
+
+		void CQueryBase::AddItemsFromGlobalParametersToDebugRenderWorld() const
+		{
+			if (m_pHistory)
+			{
+				CDebugRenderWorldPersistent& debugRW = m_pHistory->GetDebugRenderWorldPersistent();
+				const std::map<string, shared::CVariantDict::SDataEntry>& globalParamsAsMap = m_globalParams.GetEntries();
+
+				//
+				// add all items from the global constant-parameters to the debug-render-world that want to be shown
+				//
+
+				{
+					const std::map<string, CGlobalConstantParamsBlueprint::SParamInfo>& constantParamsBlueprint = m_queryBlueprint->GetGlobalConstantParamsBlueprint().GetParams();
+
+					for (const auto& pair : constantParamsBlueprint)
+					{
+						if (pair.second.bAddToDebugRenderWorld)
+						{
+							const string& paramName = pair.first;
+							auto it = globalParamsAsMap.find(paramName);
+							assert(it != globalParamsAsMap.cend());
+
+							const shared::CVariantDict::SDataEntry& entry = it->second;
+							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);
+						}
+					}
+				}
+
+				//
+				// add all items from the global runtime-parameters to the debug-render-world that want to be shown
+				//
+
+				{
+					const std::map<string, CGlobalRuntimeParamsBlueprint::SParamInfo>& runtimeParamsBlueprint = m_queryBlueprint->GetGlobalRuntimeParamsBlueprint().GetParams();
+
+					for (const auto& pair : runtimeParamsBlueprint)
+					{
+						if (pair.second.bAddToDebugRenderWorld)
+						{
+							const string& paramName = pair.first;
+							auto it = globalParamsAsMap.find(paramName);
+							assert(it != globalParamsAsMap.cend());
+
+							const shared::CVariantDict::SDataEntry& entry = it->second;
+							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);
+						}
+					}
+				}
+
+			}
 		}
 
 	}

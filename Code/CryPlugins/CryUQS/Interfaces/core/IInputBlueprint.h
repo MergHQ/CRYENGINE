@@ -25,14 +25,14 @@ namespace uqs
 			virtual const char*                           GetParamName() const = 0;
 			virtual const char*                           GetFuncName() const = 0;
 			virtual const char*                           GetFuncReturnValueLiteral() const = 0;
-			virtual const char*                           GetAddReturnValueToDebugRenderWorldUponExecution() const = 0;
+			virtual bool                                  GetAddReturnValueToDebugRenderWorldUponExecution() const = 0;
 
 			virtual void                                  SetParamName(const char* szParamName) = 0;
 			virtual void                                  SetFuncName(const char* szFuncName) = 0;
 			virtual void                                  SetFuncReturnValueLiteral(const char* szValue) = 0;
-			virtual void                                  SetAddReturnValueToDebugRenderWorldUponExecution(const char* szAddReturnValueToDebugRenderWorldUponExecution) = 0;
+			virtual void                                  SetAddReturnValueToDebugRenderWorldUponExecution(bool bAddReturnValueToDebugRenderWorldUponExecution) = 0;
 
-			virtual ITextualInputBlueprint&               AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, const char* addReturnValueToDebugRenderWorldUponExecution) = 0;
+			virtual ITextualInputBlueprint&               AddChild(const char* paramName, const char* funcName, const char* funcReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution) = 0;
 			virtual size_t                                GetChildCount() const = 0;
 			virtual const ITextualInputBlueprint&         GetChild(size_t index) const = 0;
 			virtual const ITextualInputBlueprint*         FindChildByParamName(const char* paramName) const = 0;
