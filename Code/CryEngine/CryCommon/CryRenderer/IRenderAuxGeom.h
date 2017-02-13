@@ -119,6 +119,8 @@ struct IRenderAuxGeom
 	virtual void DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) = 0;
 	//! ##@}
 
+	virtual void DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) {}
+
 	//! Draw a Axis-aligned Bounding Boxes (AABB).
 	//! ##@{
 	virtual void DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) = 0;
@@ -212,6 +214,8 @@ struct IRenderAuxGeom
 	//! \param mat  Contains the matrix that will be used for trasforms of further primitives
 	//! \return     Index of previous used matrix index in the matrix buffer, as set internally or by SetMatrixIndex!
 	virtual int PushMatrix(const Matrix34& mat) = 0;
+
+	virtual int SetTexture(int idTexture) { return -1; }
 
 	//! Get the world matrix for the next primitives
 	//! \return active matrix in the matrix buffer.
