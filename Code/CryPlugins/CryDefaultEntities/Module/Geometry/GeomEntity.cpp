@@ -58,6 +58,7 @@ YASLI_ENUM_BEGIN_NESTED(CGeomEntity, EPhysicalizationType, "PhysicalizationType"
 YASLI_ENUM_VALUE_NESTED(CGeomEntity, ePhysicalizationType_None, "None")
 YASLI_ENUM_VALUE_NESTED(CGeomEntity, ePhysicalizationType_Static, "Static")
 YASLI_ENUM_VALUE_NESTED(CGeomEntity, ePhysicalizationType_Rigid, "Rigid")
+YASLI_ENUM_VALUE_NESTED(CGeomEntity, ePhysicalizationType_Area, "Area")
 YASLI_ENUM_END()
 
 CRYREGISTER_CLASS(CGeomEntity);
@@ -126,6 +127,8 @@ void CGeomEntity::OnResetState()
 		ActivateFlowNodeOutput(eOutputPort_OnGeometryChanged, TFlowInputData(m_model));
 
 		SEntityPhysicalizeParams physicalizationParams;
+		SEntityPhysicalizeParams::AreaDefinition areaDef;
+		pe_params_buoyancy buoy;
 
 		switch (m_physicalizationType)
 		{
@@ -137,6 +140,13 @@ void CGeomEntity::OnResetState()
 				break;
 			case ePhysicalizationType_Rigid:
 				physicalizationParams.type = PE_RIGID;
+				break;
+			case ePhysicalizationType_Area:
+				physicalizationParams.type = PE_AREA;
+				physicalizationParams.pAreaDef = &areaDef;
+				areaDef.areaType = SEntityPhysicalizeParams::AreaDefinition::AREA_GEOMETRY;
+				physicalizationParams.nSlot = 0;
+				physicalizationParams.pBuoyancy = &buoy;
 				break;
 		}
 
