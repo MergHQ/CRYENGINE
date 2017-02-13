@@ -1671,6 +1671,187 @@ public:
 	std::map<int,IEntity*> g_mapSkels;
 };
 
+
+struct STableLogger : IScriptTable
+{
+	STableLogger() {}
+	virtual IScriptSystem* GetScriptSystem() const { return gEnv->pScriptSystem; }
+	virtual void AddRef() {}
+	virtual void  Release() {}
+	virtual void  Delegate(IScriptTable* pObj) {}
+	virtual void* GetUserDataValue() { return nullptr; }
+	virtual void SetValueAny(const char* sKey, const ScriptAnyValue& any, bool bChain = false) {}
+	virtual bool BeginSetGetChain() { return true; }
+	virtual void EndSetGetChain() {}
+	virtual ScriptVarType GetValueType(const char* sKey) { return svtNull; }
+	virtual ScriptVarType GetAtType(int nIdx) { return svtNull; }
+	virtual void SetAtAny(int nIndex, const ScriptAnyValue& any) {}
+	virtual bool GetAtAny(int nIndex, ScriptAnyValue& any) { return false; }
+	virtual IScriptTable::Iterator BeginIteration(bool resolvePrototypeTableAsWell = false) { return Iterator(); }
+	virtual bool MoveNext(Iterator& iter) { return false; }
+	virtual void EndIteration(const Iterator& iter) {}
+	virtual void Clear() {}
+	virtual int Count() { return 0; }
+	virtual bool Clone(IScriptTable* pSrcTable, bool bDeepCopy = false, bool bCopyByReference = false) { return false; }
+	virtual void Dump(IScriptTableDumpSink* p) {}
+	virtual bool AddFunction(const SUserFunctionDesc& fd)  { return false; }
+
+	std::vector<string> m_fields;
+	virtual bool GetValueAny(const char* sKey, ScriptAnyValue& any, bool bChain = false) { m_fields.push_back(string(sKey)); return false; }
+};
+
+
+#define PP(name) ("Physics:Params:" name)
+static const char *s_PhysParamNames[] = 
+{	// correspond to PHYSICPARAM_... constants in ScriptBind_Entity.cpp, in order
+	PP("Particle"), PP("Vehicle"), PP("PlayerDynamics"), PP("PlayerDimensions"), PP("Simulation"), PP("ArticulatedBody"), "", PP("Rope"), PP("Buoyancy"), PP("Constraint"), 
+	PP("ConstraintRemove"), PP("Flags"), PP("Wheel"), PP("Cloth"), PP("Velocity"), PP("PartFlags"), "", PP("GroundPlane"), "", PP("AutoDetachment"), PP("CollisionClass")
+};
+#undef PP
+
+class CFlowNode_PhysParams2 : public CFlowBaseNode<eNCT_Instanced>
+{
+public:
+	CFlowNode_PhysParams2(int type, SActivationInfo *pActInfo, SInputPortConfig* inputs, string* params) : m_type(type), m_inputs(inputs), m_params(params)
+	{
+		m_outputs.push_back(OutputPortConfig_Void("Done"));
+		m_outputs.push_back(SOutputPortConfig({ nullptr }));
+	}
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)	{	return new CFlowNode_PhysParams2(m_type, pActInfo, m_inputs, m_params);	}
+	virtual void GetMemoryUsage(ICrySizer* s) const	{	s->Add(*this); }
+
+	virtual void GetConfiguration(SFlowNodeConfig& config)
+	{
+		config.nFlags |= EFLN_TARGET_ENTITY;
+		config.sDescription = _HELP("Sets physical parameters");
+		config.pInputPorts = &m_inputs[0];
+		config.pOutputPorts = &m_outputs[0];
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		if (event == eFE_Activate)
+		{
+			for(int i=1; m_inputs[i].name; m_activeMask |= (uint64)IsPortActive(pActInfo,i) << (i-1), i++)
+				;
+			if (IsPortActive(pActInfo, 0) && pActInfo->pEntity)
+			{
+				static IScriptTable* params = nullptr;
+				if (!params)
+					(params = gEnv->pScriptSystem->CreateTable())->AddRef();
+				params->Clear();
+				for(int i=1; m_inputs[i].name; i++)
+					if (m_activeMask & 1ull << (i-1))
+						switch (GetPortType(pActInfo, i))
+						{
+							case eFDT_Int    : params->SetValue(m_params[i-1], GetPortInt(pActInfo, i)); break;
+							case eFDT_Float  : params->SetValue(m_params[i-1], GetPortFloat(pActInfo, i)); break;
+							case eFDT_Vec3   : params->SetValue(m_params[i-1], GetPortVec3(pActInfo, i)); break;
+							case eFDT_Bool   : params->SetValue(m_params[i-1], GetPortBool(pActInfo, i)); break;
+							case eFDT_String : params->SetValue(m_params[i-1], GetPortString(pActInfo, i).c_str()); break;
+						}
+				pActInfo->pEntity->GetComponent<IEntityScriptComponent>()->SetPhysParams(m_type+1, params);
+				ActivateOutput(pActInfo, 0, 0);
+			}
+		}
+	}
+
+	int          m_type;
+	uint64       m_activeMask = 0;
+
+	SInputPortConfig*              m_inputs;
+	std::vector<SOutputPortConfig> m_outputs;
+	string*                        m_params;
+};
+
+class CAutoRegParamsNode : public CAutoRegFlowNodeBase
+{
+public:
+	static CAutoRegParamsNode s_Params[CRY_ARRAY_COUNT(s_PhysParamNames)];
+	int GetType() const { return (int)(this-s_Params); }
+
+	CAutoRegParamsNode() : CAutoRegFlowNodeBase(s_PhysParamNames[GetType()]) 
+	{
+		if (!*m_sClassName)
+			this->~CAutoRegParamsNode();
+	}
+	IFlowNodePtr Create(IFlowNode::SActivationInfo* pActInfo)	
+	{ 
+		int type = GetType();
+		if (m_inputs.empty())
+		{
+			if (!g_dummyEnt)
+			{
+				SEntitySpawnParams esp;
+				esp.sName = "PhysParamsDummy";
+				esp.nFlags = 0;
+				esp.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Default");
+				g_dummyEnt = gEnv->pEntitySystem->SpawnEntity(esp);
+				SEntityPhysicalizeParams pp;
+				pp.type = PE_STATIC;
+				g_dummyEnt->Physicalize(pp);
+			}
+			g_dummyEnt->GetOrCreateComponent<IEntityScriptComponent>()->SetPhysParams(type+1, &m_table);
+
+			m_inputs.push_back(InputPortConfig_Void("Set"));
+			for(const auto& str : m_table.m_fields)
+			{
+				stack_string buf = str;
+				char *dst = (char*)buf.data();
+				bool caps = str[0] != 'k';
+				for(const char *src=str.c_str(); *src; src++)
+				{
+					if (*src != '_')
+					{
+						*dst++ = caps ? toupper(*src) : *src;
+						caps = false;
+					}
+					else
+						caps = true;
+				}
+				*dst = 0;
+				m_inputNames.push_back(buf.c_str());
+				const char *subs;
+				SInputPortConfig input = InputPortConfig<float>(m_inputNames.back());
+				if (str[0]=='b' && isupper(str[1]) || !strncmp(str,"is_",3))
+				{
+					input.defaultData = TFlowInputData::CreateDefaultInitialized<bool>(true);
+					input.name += 1 + (str[0] == 'i');
+				}
+				else if (strstr(str, "Class") || strstr(str, "id") || strstr(str, "mask") || strstr(str, "flags") || strstr(str, "index") || strstr(str, "type") || strstr(str, "num"))
+					input.defaultData = TFlowInputData::CreateDefaultInitialized<int>(true);
+				else if (type != 3 && (
+					strstr(str, "heading") || strstr(str, "normal") || strstr(str, "origin") || (subs = (char*)strstr(str, "end")) && subs[-1] != 'b' || 
+					strstr(str, "pivot") || *(short*)&str[0] == 'v' || *(short*)&str[0] == 'w' || !strcmp(str, "wind") ||
+					(subs = strstr(str, "gravity")) && subs[7] != 'x' && subs[7] != 'y' && subs[7] != 'z'))
+					input.defaultData = TFlowInputData::CreateDefaultInitialized<Vec3>(true);
+				else if (strstr(str, "name"))
+					input.defaultData = TFlowInputData::CreateDefaultInitialized<string>(true);
+				m_inputs.push_back(input);
+			}
+			m_inputs.push_back(SInputPortConfig({ nullptr }));
+		}
+
+		if (g_dummyEnt && type == CRY_ARRAY_COUNT(s_PhysParamNames)-1)
+		{
+			gEnv->pEntitySystem->RemoveEntity(g_dummyEnt->GetId(), true);
+			g_dummyEnt = nullptr;
+		}
+
+		return new CFlowNode_PhysParams2(GetType(), pActInfo, m_inputs.data(), m_table.m_fields.data()); 
+	}
+
+	STableLogger                  m_table;
+	std::vector<SInputPortConfig> m_inputs;
+	std::vector<string>           m_inputNames;
+
+	static IEntity* g_dummyEnt;
+};
+IEntity *CAutoRegParamsNode::g_dummyEnt = nullptr;
+
+CAutoRegParamsNode CAutoRegParamsNode::s_Params[CRY_ARRAY_COUNT(s_PhysParamNames)];
+
 REGISTER_FLOW_NODE("Physics:Dynamics", CFlowNode_Dynamics);
 REGISTER_FLOW_NODE("Physics:ActionImpulse", CFlowNode_ActionImpulse);
 REGISTER_FLOW_NODE("Physics:PartIdConversion", CFlowNode_PartIdConversion);

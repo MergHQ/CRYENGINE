@@ -1051,3 +1051,9 @@ void CEntityComponentLuaScript::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 }
+
+void CEntityComponentLuaScript::SetPhysParams(int type, IScriptTable *params) 
+{ 
+	if (IPhysicalEntity *phys = GetEntity()->GetPhysics())
+		((CEntitySystem*)gEnv->pEntitySystem)->GetScriptBindEntity()->SetEntityPhysicParams(nullptr, phys, type, params);
+}
