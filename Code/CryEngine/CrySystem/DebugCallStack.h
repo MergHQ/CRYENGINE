@@ -48,6 +48,7 @@ public:
 	virtual string GetCurrentFilename();
 	virtual void   InitSymbols() { initSymbols(); }
 	virtual void   DoneSymbols() { doneSymbols(); }
+	virtual void   FatalError(const char* message);
 
 	void           installErrorHandler(ISystem* pSystem);
 	void           uninstallErrorHandler();
