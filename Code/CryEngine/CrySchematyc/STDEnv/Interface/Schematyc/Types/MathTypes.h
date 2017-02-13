@@ -16,7 +16,7 @@ inline void Ang3ToString(IString& output, const Ang3& input)
 inline void QuatToString(IString& output, const Quat& input)
 {
 	char temp[208] = "";
-	cry_sprintf(temp, sizeof(temp), "%.8f, %.8f, %.8f", input.v.x, input.v.y, input.v.z, input.w);
+	cry_sprintf(temp, sizeof(temp), "%.8f, %.8f, %.8f, %.8f", input.v.x, input.v.y, input.v.z, input.w);
 	output.assign(temp);
 }
 } // Schematyc
