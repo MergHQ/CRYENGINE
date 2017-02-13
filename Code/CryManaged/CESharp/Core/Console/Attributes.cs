@@ -73,7 +73,7 @@ namespace CryEngine.Attributes
 				StringBuilder msg = new StringBuilder();
 				foreach (var filteredAttribute in filteredAttributes)
 				{
-					msg.Append("Attribute on method").Append(filteredAttribute.Name).Append(" is not processed").AppendLine();
+					msg.Append("Attribute on method ").Append(filteredAttribute.Name).Append(" is not processed").AppendLine();
 				}
 				throw new ConsoleCommandConfigurationException(msg.ToString());
 			}
@@ -210,6 +210,26 @@ namespace CryEngine.Attributes
 				}
 			}
 		}
+
+		public static ConsoleVariableAttributeIntegerProperty CreateConsoleVariableIntegerProperty(string name, int value, string comments, uint flags)
+		{
+			return new ConsoleVariableAttributeIntegerProperty(name, value, comments, flags);
+		}
+
+		public static ConsoleVariableAttributeInteger64Property CreateConsoleVariableInteger64Property(string name, long value, string comments, uint flags)
+		{
+			return new ConsoleVariableAttributeInteger64Property(name, value, comments, flags);
+		}
+
+		public static ConsoleVariableAttributeStringProperty CreateConsoleVariableStringProperty(string name, string value, string comments, uint flags)
+		{
+			return new ConsoleVariableAttributeStringProperty(name, value, comments, flags);
+		}
+
+		public static ConsoleVariableAttributeFloatProperty CreateConsoleVariableFloatProperty(string name, float value, string comments, uint flags)
+		{
+			return new ConsoleVariableAttributeFloatProperty(name, value, comments, flags);
+		}
 	}
 	
 	/// <summary>
@@ -315,10 +335,32 @@ namespace CryEngine.Attributes
 	/// <summary>
 	/// 
 	/// </summary>
-	public class ConsoleVariableAttributeFloatProperty
+	public class ConsoleVariableAttributeFloatProperty : IDisposable
 	{
 		public ConsoleVariableAttributeFloatProperty()
 		{
+		}
+
+		internal ConsoleVariableAttributeFloatProperty(string name, float value, string comments, uint flags)
+		{
+			ICVar icVar = null;
+			bool registered = ConsoleVariable.Register(name, value, flags, comments, OnValueChanged, out icVar);
+			if (!registered)
+			{
+				throw new ConsoleVariableConfigurationException(this.GetType() + " cannot be created for attribute name " + name);
+			}
+			SetInternalContent(value, icVar);
+		}
+
+		~ConsoleVariableAttributeFloatProperty()
+		{
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public float Content
@@ -331,6 +373,17 @@ namespace CryEngine.Attributes
 			{
 				NotifyOnChanged(value);
 			}
+		}
+
+		protected virtual void Dispose(bool isDisposing)
+		{
+			if (m_disposed) return;
+			//unregister from c++ 
+			if (m_icVar != null)
+			{
+				ConsoleVariable.UnRegister(ref m_icVar);
+			}
+			m_disposed = true;
 		}
 
 		internal void OnValueChanged(ICVar var)
@@ -358,17 +411,40 @@ namespace CryEngine.Attributes
 
 		private float m_value;
 		private ICVar m_icVar;
+		private bool m_disposed;
 	}
 
 
 	/// <summary>
 	/// 
 	/// </summary>
-	public class ConsoleVariableAttributeInteger64Property
+	public class ConsoleVariableAttributeInteger64Property : IDisposable
 	{
 		public ConsoleVariableAttributeInteger64Property()
 		{
 			m_valueInText = new StringBuilder(20); //reserve capacity to hold 64-bit integer
+		}
+
+		internal ConsoleVariableAttributeInteger64Property(string name, long value, string comments, uint flags):this()
+		{
+			ICVar icVar = null;
+			bool registered = ConsoleVariable.Register(name, value, flags, comments, OnValueChanged, out icVar);
+			if (!registered)
+			{
+				throw new ConsoleVariableConfigurationException(this.GetType() + " cannot be created for attribute name " + name);
+			}
+			SetInternalContent(value, icVar);
+		}
+
+		~ConsoleVariableAttributeInteger64Property()
+		{
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public long Content
@@ -381,6 +457,21 @@ namespace CryEngine.Attributes
 			{
 				NotifyOnChanged(value);
 			}
+		}
+
+		protected virtual void Dispose(bool isDisposing)
+		{
+			if (m_disposed) return;
+			if(m_icVar != null)
+			{
+				ConsoleVariable.UnRegister(ref m_icVar);
+			}
+			if(isDisposing)
+			{
+				m_valueInText.Clear();
+				m_valueInText = null;
+			}
+			m_disposed = true;
 		}
 
 		internal void OnValueChanged(ICVar var)
@@ -411,15 +502,39 @@ namespace CryEngine.Attributes
 		private long m_value;
 		private ICVar m_icVar;
 		private StringBuilder m_valueInText;
+		private bool m_disposed;
 	}
 
 	/// <summary>
 	/// 
 	/// </summary>
-	public class ConsoleVariableAttributeIntegerProperty
+	public class ConsoleVariableAttributeIntegerProperty : IDisposable
 	{
 		public ConsoleVariableAttributeIntegerProperty()
 		{
+		}
+
+		internal ConsoleVariableAttributeIntegerProperty(string name, int value, string comments, uint flags)
+		{
+			ICVar icVar = null;
+			bool registered = ConsoleVariable.Register(name, value, flags, comments, OnValueChanged, out icVar);
+			if(!registered)
+			{
+				throw new ConsoleVariableConfigurationException(this.GetType() + " cannot be created for attribute name " + name);
+			}
+			SetInternalContent(value, icVar);
+		}
+
+
+		~ConsoleVariableAttributeIntegerProperty()
+		{
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public int Content
@@ -432,6 +547,16 @@ namespace CryEngine.Attributes
 			{
 				NotifyOnChanged(value);
 			}
+		}
+
+		protected virtual void Dispose(bool isDisposing)
+		{
+			if (m_disposed) return;
+			if(m_icVar != null)
+			{
+				ConsoleVariable.UnRegister(ref m_icVar);
+			}
+			m_disposed = true;
 		}
 
 		internal void OnValueChanged(ICVar var)
@@ -459,15 +584,38 @@ namespace CryEngine.Attributes
 
 		private int m_value;
 		private ICVar m_icVar;
+		private bool m_disposed;
 	}
 
 	/// <summary>
 	/// 
 	/// </summary>
-	public class ConsoleVariableAttributeStringProperty
+	public class ConsoleVariableAttributeStringProperty : IDisposable
 	{
 		public ConsoleVariableAttributeStringProperty()
 		{
+		}
+
+		internal ConsoleVariableAttributeStringProperty(string name, string value, string comments, uint flags)
+		{
+			ICVar icVar = null;
+			bool registered = ConsoleVariable.Register(name, value, flags, comments, OnValueChanged, out icVar);
+			if (!registered)
+			{
+				throw new ConsoleVariableConfigurationException(this.GetType() + " cannot be created for attribute name " + name);
+			}
+			SetInternalContent(value, icVar);
+		}
+
+		~ConsoleVariableAttributeStringProperty()
+		{
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public String Content
@@ -480,6 +628,20 @@ namespace CryEngine.Attributes
 			{
 				NotifyOnChanged(value);
 			}
+		}
+
+		protected virtual void Dispose(bool isDisposing)
+		{
+			if (m_disposed) return;
+			if (m_icVar != null)
+			{
+				ConsoleVariable.UnRegister(ref m_icVar);
+			}
+			if(isDisposing)
+			{
+				m_value = null;
+			}
+			m_disposed = true;
 		}
 
 		internal void OnValueChanged(ICVar var)
@@ -507,6 +669,7 @@ namespace CryEngine.Attributes
 
 		private String m_value;
 		private ICVar m_icVar;
+		private bool m_disposed;
 	}
 
 	/// <summary>
