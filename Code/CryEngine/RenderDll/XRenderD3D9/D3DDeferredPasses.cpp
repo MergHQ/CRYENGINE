@@ -330,14 +330,19 @@ bool CD3D9Renderer::FX_DeferredSnowLayer()
 
 	PROFILE_LABEL_SCOPE("DEFERRED_SNOW_ACCUMULATION");
 
+	CTexture* pSceneSpecular = CTexture::s_ptexSceneSpecular;
+#if defined(DURANGO_USE_ESRAM)
+	pSceneSpecular = CTexture::s_ptexSceneSpecularESRAM;
+#endif
+
 	// TODO: Try avoiding the copy by directly accessing UAVs
 	PostProcessUtils().StretchRect(CTexture::s_ptexSceneDiffuse, CTexture::s_ptexStereoL);
 	PostProcessUtils().StretchRect(CTexture::s_ptexSceneNormalsMap, CTexture::s_ptexBackBuffer);
-	PostProcessUtils().StretchRect(CTexture::s_ptexSceneSpecular, CTexture::s_ptexSceneNormalsBent);
+	PostProcessUtils().StretchRect(pSceneSpecular, CTexture::s_ptexSceneNormalsBent);
 
 	gcpRendD3D->FX_PushRenderTarget(0, CTexture::s_ptexSceneDiffuse, &gcpRendD3D->m_DepthBufferOrigMSAA);
 	gcpRendD3D->FX_PushRenderTarget(1, CTexture::s_ptexSceneNormalsMap, NULL);
-	gcpRendD3D->FX_PushRenderTarget(2, CTexture::s_ptexSceneSpecular, NULL);
+	gcpRendD3D->FX_PushRenderTarget(2, pSceneSpecular, NULL);
 
 	if (CRenderer::CV_r_snow_displacement)
 		gcpRendD3D->FX_PushRenderTarget(3, CTexture::s_ptexStereoR, NULL);

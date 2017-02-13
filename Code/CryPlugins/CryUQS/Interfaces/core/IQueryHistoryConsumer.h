@@ -21,7 +21,7 @@ namespace uqs
 
 		struct IQueryHistoryConsumer
 		{
-			// passed in to AddHistoricQuery()
+			// passed in to AddOrUpdateHistoricQuery()
 			struct SHistoricQueryOverview
 			{
 				explicit                  SHistoricQueryOverview(const ColorF& _color, const char *_querierName, const CQueryID& _queryID, const CQueryID& _parentQueryID, const char* _queryBlueprintName, size_t _numGeneratedItems, size_t _numResultingItems, CTimeValue _timeElapsedUntilResult);
@@ -41,8 +41,8 @@ namespace uqs
 			virtual                       ~IQueryHistoryConsumer() {}
 
 			// - called when requesting to enumerate all historic queries via IQueryHistoryManager::EnumerateHistoricQueries()
-			// - the passed in format string will contain some short info about the historic query
-			virtual void                  AddHistoricQuery(const SHistoricQueryOverview& overview) = 0;
+			// - also called when requesting information of a specific query via IQueryHistoryManager::EnumerateSingleHistricQuery()
+			virtual void                  AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview) = 0;
 
 			// - called when requesting details about a specific historic query via IQueryHistoryManager::GetDetailsOfHistoricQuery()
 			// - details about the historic query may be comprised of multiple text lines, hence this method may get called multiple times in a row

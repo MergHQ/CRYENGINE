@@ -789,6 +789,7 @@ macro(create_mono_compiler_settings)
 		set(MONO_LIB_PATH ${SDK_DIR}/Mono/lib/mono/x64)
 		set(MONO_PREPROCESSOR_DEFINE WIN64)
 	endif()
+	set(MONO_PREPROCESSOR_DEFINE ${MONO_PREPROCESSOR_DEFINE}$<SEMICOLON>$<UPPER_CASE:$<CONFIG>>)
 endmacro()
 
 macro(generate_rc_file)

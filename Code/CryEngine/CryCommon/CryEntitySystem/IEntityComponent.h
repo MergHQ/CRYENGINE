@@ -190,6 +190,11 @@ struct IEntityScriptComponent : public IEntityComponent
 	//! \param pScript an entity script object that has already been loaded with the new script.
 	//! \param params parameters used to set the properties table if required.
 	virtual void ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params) = 0;
+
+	//! Sets physics parameters from an existing script table
+	//! \param type - one of PHYSICPARAM_... values
+	//! \param params script table containing the values to set
+	virtual void SetPhysParams(int type, IScriptTable *params) = 0;
 };
 
 //! Proximity trigger component interface.

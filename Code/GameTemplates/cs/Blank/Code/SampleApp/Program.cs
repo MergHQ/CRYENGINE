@@ -9,7 +9,7 @@ namespace CryEngine.SampleApp
 	{
         public void Initialize()
         {
-			SampleApp.Instance = new SampleApp();
+			new SampleApp();
         }
 
 		public void OnLevelLoaded()

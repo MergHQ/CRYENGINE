@@ -36,10 +36,12 @@ namespace CryEngine
 		#region Methods
 		public void Log(string message)
 		{
-			if (_updateContext != null)
-			{
-				_updateContext.behaviorLog.AddMessage(message);
-			}
+			#if (!RELEASE && (WIN32 || WIN64))
+				if (_updateContext != null)
+				{
+					_updateContext.behaviorLog.AddMessage(message);
+				}
+			#endif
 		}
 		#endregion
 	}
@@ -212,7 +214,9 @@ namespace CryEngine
 		{
 			Status returnStatus = Status.Running;
 
-			context.debugTree.Push(this);
+			#if (!RELEASE && (WIN32 || WIN64))
+				context.debugTree.Push(this);
+			#endif
 
 			UInt64 runtimeDataId = MakeRuntimeDataId(context.entityId, _nodeId);
 			bool needsToBeInitialized = false;
@@ -247,7 +251,10 @@ namespace CryEngine
 				updateContext.Log(_failureLog);
 			}
 
-			context.debugTree.Pop(returnStatus);
+			#if (!RELEASE && (WIN32 || WIN64))
+				context.debugTree.Pop(returnStatus);
+			#endif
+
 
 			return returnStatus;
 		}

@@ -141,6 +141,8 @@ namespace uqs
 			virtual void                                OnCancel() = 0;
 			virtual void                                OnGetStatistics(SStatistics& out) const = 0;
 
+			void                                        AddItemsFromGlobalParametersToDebugRenderWorld() const;
+
 		protected:
 			// debugging
 			string                                      m_querierName;                    // debug name that the caller passed in to re-identify his query for debugging purposes

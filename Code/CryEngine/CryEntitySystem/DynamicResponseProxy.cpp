@@ -44,7 +44,7 @@ void CEntityComponentDynamicResponse::Initialize()
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentDynamicResponse::ProcessEvent(SEntityEvent& event)
 {
-	if (event.event == ENTITY_EVENT_RESET)
+	if (m_pResponseActor && event.event == ENTITY_EVENT_RESET)
 	{
 		SET_DRS_USER_SCOPED("DrsProxy Reset Event");
 		DRS::IVariableCollection* pVariables = m_pResponseActor->GetLocalVariables();

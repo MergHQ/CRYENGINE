@@ -119,7 +119,7 @@ private:
 public:
 
 	CFunctionSerializationHelper();
-	CFunctionSerializationHelper(const char* szFunctionName, const char* szParamOrReturnValue);
+	CFunctionSerializationHelper(const char* szFunctionName, const char* szParamOrReturnValue, bool bAddReturnValueToDebugRenderWorldUponExecution);
 	CFunctionSerializationHelper(const uqs::client::IFunctionFactory& functionFactory, const CUqsDocSerializationContext& context);
 
 	void Reset(const SItemTypeName& typeName, const CUqsDocSerializationContext& context);
@@ -135,12 +135,17 @@ public:
 		Serialization::IArchive& archive,
 		const CUqsDocSerializationContext& context);
 
+	void SerializeAddReturnValueToDebugRenderWorldUponExecution(
+		Serialization::IArchive& archive);
+
 	const string&                  GetFunctionInternalName() const;
 	const string&                  GetFunctionParamOrReturnValue() const;
 	uqs::client::IFunctionFactory* GetFunctionFactory() const;
 	const SFunction*               GetSelectedFunction() const;
 
 	const SItemTypeName&           GetExpectedType() const { return m_typeName; }
+
+	bool                           GetAddReturnValueToDebugRenderWorldUponExecution() const { return m_bAddReturnValueToDebugRenderWorldUponExecution; }
 
 private:
 
@@ -155,6 +160,10 @@ private:
 	string           m_funcParam;
 	CItemLiteral     m_itemLiteral;
 	mutable string   m_itemCachedLiteral;
+
+	bool             m_bAddReturnValueToDebugRenderWorldUponExecution;
+	string           m_labelAddReturnValueToDebugRenderWorldUponExecution; // for keeping the label around during the whole serialization process (yasli doesn't make copies of strings)
+	string           m_docAddReturnValueToDebugRenderWorldUponExecution;   // for keeping tooltip around during the whole serialization process (yasli doesn't make copies of strings)
 
 	CFunctionList    m_functionsList;
 	int              m_selectedFunctionIdx;
@@ -260,14 +269,14 @@ public:
 	const char*            GetParamName() const;
 	const char*            GetFuncName() const;
 	const char*            GetFuncReturnValueLiteral() const;
-	const char*            GetAddReturnValueToDebugRenderWorldUponExecution() const;
-	CInputBlueprint&       AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, const char* szAddReturnValueToDebugRenderWorldUponExecution);
+	bool                   GetAddReturnValueToDebugRenderWorldUponExecution() const;
+	CInputBlueprint&       AddChild(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 	size_t                 GetChildCount() const;
 	const CInputBlueprint& GetChild(size_t index) const;
 	const CInputBlueprint* FindChildByParamName(const char* szParamName) const;
 
 	CInputBlueprint();
-	CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, const char* szAddReturnValueToDebugRenderWorldUponExecution);
+	CInputBlueprint(const char* szParamName, const char* szFuncName, const char* szFuncReturnValueLiteral, bool bAddReturnValueToDebugRenderWorldUponExecution);
 
 	CInputBlueprint(const char* szParamName);
 
@@ -311,7 +320,7 @@ private:
 private:
 
 	string                                   m_paramName;
-	string                                   m_addReturnValueToDebugRenderWorldUponExecution;
+	bool                                     m_bAddReturnValueToDebugRenderWorldUponExecution;
 
 	CFunctionSerializationHelper             m_functionHelper;
 
@@ -327,9 +336,9 @@ private:
 class CConstParamBlueprint
 {
 public:
-	void   AddParameter(const char* szName, const char* szType, CItemLiteral&& value);
+	void   AddParameter(const char* szName, const char* szType, CItemLiteral&& value, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, string& szValue, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, string& szValue, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -342,7 +351,7 @@ private:
 	struct SConstParam
 	{
 		SConstParam();
-		SConstParam(const char* szName, const char* szType, CItemLiteral&& value);
+		SConstParam(const char* szName, const char* szType, CItemLiteral&& value, bool _bAddToDebugRenderWorld);
 		SConstParam(SConstParam&& other);
 		SConstParam& operator=(SConstParam&& other);
 
@@ -356,6 +365,7 @@ private:
 		string                                   name;
 		SItemTypeName                            type;
 		CItemLiteral                             value;
+		bool                                     bAddToDebugRenderWorld;
 		mutable std::shared_ptr<CErrorCollector> pErrorCollector;
 	};
 
@@ -365,9 +375,9 @@ private:
 class CRuntimeParamBlueprint
 {
 public:
-	void   AddParameter(const char* szName, const char* szType);
+	void   AddParameter(const char* szName, const char* szType, bool bAddToDebugRenderWorld);
 	size_t GetParameterCount() const;
-	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
+	void   GetParameterInfo(size_t index, const char*& szName, const char*& szType, bool& bAddToDebugRenderWorld, std::shared_ptr<CErrorCollector>& pErrorCollector) const;
 
 	void   Serialize(Serialization::IArchive& archive);
 	void   PrepareHelpers(CUqsDocSerializationContext& context);
@@ -380,7 +390,7 @@ private:
 	struct SRuntimeParam
 	{
 		SRuntimeParam();
-		SRuntimeParam(const char* szName, const char* szType);
+		SRuntimeParam(const char* szName, const char* szType, bool _bAddToDebugRenderWorld);
 		SRuntimeParam(SRuntimeParam&& other);
 		SRuntimeParam& operator=(SRuntimeParam&& other);
 
@@ -393,6 +403,7 @@ private:
 
 		string                                   name;
 		SItemTypeName                            type;
+		bool                                     bAddToDebugRenderWorld;
 		mutable std::shared_ptr<CErrorCollector> pErrorCollector;
 	};
 
@@ -455,8 +466,8 @@ class CInstantEvaluatorBlueprint
 {
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
-	void                   SetWeight(const char* szWeight);
-	const char*            GetWeight() const;
+	void                   SetWeight(float weight);
+	float                  GetWeight() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
@@ -471,8 +482,8 @@ class CDeferredEvaluatorBlueprint
 {
 public:
 	void                   SetEvaluatorName(const char* szEvaluatorName);
-	void                   SetWeight(const char* szWeight);
-	const char*            GetWeight() const;
+	void                   SetWeight(float weight);
+	float                  GetWeight() const;
 	CInputBlueprint&       GetInputRoot();
 	const CInputBlueprint& GetInputRoot() const;
 	const char*            GetEvaluatorName() const;
@@ -497,8 +508,8 @@ public:
 	static CEvaluator            CreateDeferred();
 
 	void                         SetEvaluatorName(const char* szEvaluatorName);
-	void                         SetWeight(const char* szWeight);
-	const char*                  GetWeight() const;
+	void                         SetWeight(float weight);
+	float                        GetWeight() const;
 	CInputBlueprint&             GetInputRoot();
 	const CInputBlueprint&       GetInputRoot() const;
 	const char*                  GetEvaluatorName() const;
@@ -535,7 +546,6 @@ private:
 
 	string                                      m_name;
 	float                                       m_weight;
-	mutable string                              m_weightString;
 	CInputBlueprint                             m_inputs;
 	mutable std::shared_ptr<CErrorCollector>    m_pErrorCollector;
 
@@ -665,7 +675,6 @@ private:
 	CGeneratorBlueprint                      m_generator;
 	CEvaluators                              m_evaluators;
 	QueryBlueprintChildren                   m_queryChildren;
-	SItemTypeName                            m_expectedShuttledType;
 	mutable std::shared_ptr<CErrorCollector> m_pErrorCollector;
 };
 } // uqseditor

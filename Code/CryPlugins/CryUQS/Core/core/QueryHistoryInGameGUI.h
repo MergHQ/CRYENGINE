@@ -28,11 +28,11 @@ namespace uqs
 			                                             ~CQueryHistoryInGameGUI();
 
 			// IQueryHistoryListener
-			virtual void                                 OnQueryHistoryEvent(EEvent ev) override;
+			virtual void                                 OnQueryHistoryEvent(const IQueryHistoryListener::SEvent& ev) override;
 			// ~IQueryHistoryListener
 
 			// IQueryHistoryConsumer
-			virtual void                                 AddHistoricQuery(const SHistoricQueryOverview& overview) override;
+			virtual void                                 AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview) override;
 			virtual void                                 AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* fmt, ...) override;
 			virtual void                                 AddTextLineToFocusedItem(const ColorF& color, const char* fmt, ...) override;
 			virtual void                                 AddInstantEvaluatorName(const char* szInstantEvaluatorName) override;

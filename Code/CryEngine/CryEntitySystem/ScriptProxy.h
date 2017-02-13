@@ -95,6 +95,8 @@ public:
 	void         RegisterForAreaEvents(bool bEnable);
 	bool         IsRegisteredForAreaEvents() const;
 
+	virtual void SetPhysParams(int type, IScriptTable *params) final;
+
 	void         SerializeProperties(TSerialize ser);
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const final;

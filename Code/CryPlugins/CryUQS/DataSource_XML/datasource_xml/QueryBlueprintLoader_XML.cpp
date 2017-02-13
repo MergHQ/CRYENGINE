@@ -71,15 +71,9 @@ namespace uqs
 			m_query->SetQueryFactoryName(factory);
 
 			// "maxItemsToKeepInResultSet" attribute
-			const char* maxItemsToKeepInResultSet = queryElement->getAttr("maxItemsToKeepInResultSet");
-			m_query->SetMaxItemsToKeepInResultSet(maxItemsToKeepInResultSet);
-
-			// "expectedShuttleType" attribute (optional attribute)
-			const char* expectedShuttleType;
-			if (queryElement->getAttr("expectedShuttleType", &expectedShuttleType))
-			{
-				m_query->SetExpectedShuttleType(expectedShuttleType);
-			}
+			unsigned int maxItemsToKeepInResultSet = 0;  // notice: getAttrib() doesn't support size_t, so we use unsigned int
+			queryElement->getAttr("maxItemsToKeepInResultSet", maxItemsToKeepInResultSet);
+			m_query->SetMaxItemsToKeepInResultSet((size_t)maxItemsToKeepInResultSet);
 
 			for (int i = 0; i < queryElement->getChildCount(); ++i)
 			{
@@ -163,7 +157,11 @@ namespace uqs
 						return false;
 					}
 
-					m_query->GetGlobalConstantParams().AddParameter(name, type, value, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
+					// "addToDebugRenderWorld" attribute (optional because it got introduced after some query blueprints were already in use; default to 'false')
+					bool bAddToDebugRenderWorld = false;
+					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
+
+					m_query->GetGlobalConstantParams().AddParameter(name, type, value, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
 				}
 				else if (child->isTag("RuntimeParam"))
 				{
@@ -183,7 +181,11 @@ namespace uqs
 						return false;
 					}
 
-					m_query->GetGlobalRuntimeParams().AddParameter(name, type, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
+					// "addToDebugRenderWorld" attribute (optional because it got introduced after some query blueprints were already in use; default to 'false')
+					bool bAddToDebugRenderWorld = false;
+					child->getAttr("addToDebugRenderWorld", bAddToDebugRenderWorld);
+
+					m_query->GetGlobalRuntimeParams().AddParameter(name, type, bAddToDebugRenderWorld, MakeNewSyntaxErrorCollectorUniquePtr(child->getLine(), m_dataErrorCollector));
 				}
 				else
 				{
@@ -250,8 +252,8 @@ namespace uqs
 			textualInstantEvaluatorBP.SetEvaluatorName(evaluatorName);
 
 			// "weight" attribute
-			const char* weight;
-			if (!instantEvaluatorElement->getAttr("weight", &weight))
+			float weight = 1.0f;
+			if (!instantEvaluatorElement->getAttr("weight", weight))
 			{
 				error.Format("line #%i: <InstantEvaluator> is missing the attribute 'weight'", instantEvaluatorElement->getLine());
 				return false;
@@ -297,8 +299,8 @@ namespace uqs
 			textualDeferredEvaluatorBP.SetEvaluatorName(evaluatorName);
 
 			// "weight" attribute
-			const char* weight;
-			if (!deferredEvaluatorElement->getAttr("weight", &weight))
+			float weight = 1.0f;
+			if (!deferredEvaluatorElement->getAttr("weight", weight))
 			{
 				error.Format("line #%i: <DeferredEvaluator> is missing the attribute 'weight'", deferredEvaluatorElement->getLine());
 				return false;
@@ -388,12 +390,15 @@ namespace uqs
 				error.Format("line #%i: <Function> is missing the attribute 'name'", functionElement->getLine());
 				return false;
 			}
-			const char* functionReturnValue = functionElement->getAttr("returnValue");   // optional attribute; defaults to ""
-			const char* addReturnValueToDebugRenderWorldUponExecution = functionElement->getAttr("addReturnValueToDebugRenderWorldUponExecution"); // optional attribute; default is "false"
-			if (addReturnValueToDebugRenderWorldUponExecution[0] == '\0')	// FIXME: detect properly whether this attribute was really missing (and only then default it to "false")
-				addReturnValueToDebugRenderWorldUponExecution = "false";
 
-			core::ITextualInputBlueprint& newChild = parentInput.AddChild(paramName, functionName, functionReturnValue, addReturnValueToDebugRenderWorldUponExecution);
+			//  "returnValue"
+			const char* functionReturnValue = functionElement->getAttr("returnValue");   // optional attribute; defaults to ""
+
+			// "addReturnValueToDebugRenderWorldUponExecution"
+			bool bAddReturnValueToDebugRenderWorldUponExecution = false;
+			functionElement->getAttr("addReturnValueToDebugRenderWorldUponExecution", bAddReturnValueToDebugRenderWorldUponExecution);
+
+			core::ITextualInputBlueprint& newChild = parentInput.AddChild(paramName, functionName, functionReturnValue, bAddReturnValueToDebugRenderWorldUponExecution);
 			newChild.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(functionElement->getLine(), m_dataErrorCollector));
 
 			return ParseFunctionElement(functionElement, newChild, error);

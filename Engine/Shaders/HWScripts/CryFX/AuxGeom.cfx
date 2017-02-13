@@ -51,6 +51,19 @@ AuxGeomVS( SAuxGeomApp2VS IN )
   return OUT;
 }
 
+// Default vertex shader to transform auxiliary 3D geometries
+SAuxGeomApp2VS
+AuxGeomTextureVS( SAuxGeomApp2VS IN )
+{
+  SAuxGeomApp2VS OUT;
+
+  OUT.pos = mul( matViewProj, IN.pos );
+  OUT.col = GetInputColor( IN.col );
+  OUT.tex = IN.tex;
+
+  return OUT;
+}
+
 
 // Default vertex shader to transform auxiliary 3D geometry objects
 SAuxVS2PS
@@ -59,7 +72,7 @@ AuxGeomObjVS( SAuxGeomObjApp2VS IN )
   SAuxVS2PS OUT = (SAuxVS2PS) 0;
 
   OUT.pos = mul( matWorldViewProj, IN.pos );
-  
+
   float shading = dot( IN.normal, globalLightLocal );
   shading = auxGeomObjShading.x * shading + auxGeomObjShading.y;
   OUT.col = float4( auxGeomObjColor.rgb * shading, auxGeomObjColor.a );
@@ -73,6 +86,18 @@ float4
 AuxGeomPS( SAuxVS2PS IN ) : COLOR0
 {
   return IN.col;
+}
+
+
+Texture2D    texAux : register(t0);
+SamplerState smpAux : register(s0);
+
+
+// Default pixel shader to render auxiliary 2D/3D geometries and geometry objects with texture
+float4
+AuxGeomTexturePS( SAuxGeomApp2VS IN ) : COLOR0
+{
+  return GetTexture2D(texAux, smpAux, IN.tex.xy);
 }
 
 SAuxGeomApp2VS
@@ -126,7 +151,7 @@ void AuxThickLineGS(line SAuxGeomApp2VS points[2], inout TriangleStream<SAuxVS2P
     // scale by inverse screen dimensions to scale thickness from pixel values to clip space
     dir = normalize(dir) * 0.5 * invScreenDim;
 
-    vert.col = vertsArray[0].col;            
+    vert.col = vertsArray[0].col;
 
     vert.pos = vertsArray[0].pos + dir * vertsArray[0].pos.w * vertsArray[0].tex.x;
     OutStream.Append(vert);
@@ -154,6 +179,16 @@ technique AuxGeometry
   {
     VertexShader = AuxGeomVS();
     PixelShader = AuxGeomPS();
+  }
+}
+
+// Default technique for auxiliary geometry rendering with texturing
+technique AuxGeometryTexture
+{
+  pass p0
+  {
+    VertexShader = AuxGeomTextureVS();
+    PixelShader = AuxGeomTexturePS();
   }
 }
 

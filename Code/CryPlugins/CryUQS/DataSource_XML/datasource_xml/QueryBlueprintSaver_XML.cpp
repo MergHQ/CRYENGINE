@@ -50,12 +50,6 @@ namespace uqs
 			// "maxItemsToKeepInResultSet" attribute
 			queryElementToSaveTo->setAttr("maxItemsToKeepInResultSet", m_query->GetMaxItemsToKeepInResultSet());
 
-			// "shuttleType" attribute
-			if (const shared::IUqsString* shuttleType = m_query->GetExpectedShuttleType())
-			{
-				queryElementToSaveTo->setAttr("expectedShuttleType", shuttleType->c_str());
-			}
-
 			// <GlobalParams>
 			SaveGlobalParamsElement(queryElementToSaveTo->newChild("GlobalParams"));
 
@@ -109,6 +103,7 @@ namespace uqs
 					constantParamElement->setAttr("name", pi.name);
 					constantParamElement->setAttr("type", pi.type);
 					constantParamElement->setAttr("value", pi.value);
+					constantParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
 			}
 
@@ -121,6 +116,7 @@ namespace uqs
 					XmlNodeRef runtimeParamElement = globalParamsElementToSaveTo->newChild("RuntimeParam");
 					runtimeParamElement->setAttr("name", pi.name);
 					runtimeParamElement->setAttr("type", pi.type);
+					runtimeParamElement->setAttr("addToDebugRenderWorld", pi.bAddToDebugRenderWorld);
 				}
 			}
 		}
@@ -198,8 +194,8 @@ namespace uqs
 			// <Function>'s "name" attribute (name of the function)
 			functionElementToSaveTo->setAttr("name", parentInput.GetFuncName());
 
-			// <Function>'s "addReturnValueToDebugRenderWorldUponExecution" attribute ("true" / "false")
-			functionElementToSaveTo->setAttr("addReturnValueToDebugRenderWorldUponExecution", parentInput.GetAddReturnValueToDebugRenderWorldUponExecution());
+			// <Function>'s "addReturnValueToDebugRenderWorldUponExecution" attribute
+			functionElementToSaveTo->setAttr("addReturnValueToDebugRenderWorldUponExecution", parentInput.GetAddReturnValueToDebugRenderWorldUponExecution());  // notice: setAttr() will convert the passed in bool to an int
 
 			// <Function>'s "returnValue" attribute (only if we are a leaf-function!)
 			if (parentInput.GetChildCount() == 0)

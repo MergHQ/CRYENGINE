@@ -2536,7 +2536,7 @@ void CTriMesh::PrepareForRayTest(float raylen)
 
 		iPlane = isneg(bbox.size.y*bbox.size.z-bbox.size.x*bbox.size.z); // initially set iPlane correspond to the bbox axis w/ max. face area
 		iPlane |= isneg(bbox.size[inc_mod3[iPlane]]*bbox.size[dec_mod3[iPlane]]-bbox.size.x*bbox.size.y)<<1; iPlane&=~(iPlane>>1);
-		b2Planes = isneg(raylen-szOrg[iPlane]*2);
+		b2Planes = isneg((raylen>0 ? raylen*0.5f : (szOrg.x+szOrg.y+szOrg.z)*0.2f)-szOrg[iPlane]);
 		for(i=0; i<1+b2Planes; i++,iPlane=inc_mod3[iPlane]) {
 			hashplane.n = bbox.Basis.GetRow(iPlane);
 			hashplane.axes[0] = bbox.Basis.GetRow(inc_mod3[iPlane]);

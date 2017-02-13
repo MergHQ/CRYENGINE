@@ -20,8 +20,8 @@ namespace uqs
 		public:
 			explicit                                            CTextualInstantEvaluatorBlueprint();
 
-			virtual void                                        SetWeight(const char* weight) override;
-			virtual const char*                                 GetWeight() const override;
+			virtual void                                        SetWeight(float weight) override;
+			virtual float                                       GetWeight() const override;
 
 			// called by a loader that reads from an abstract data source to build the blueprint in textual form
 			virtual void                                        SetEvaluatorName(const char* evaluatorName) override;
@@ -39,7 +39,7 @@ namespace uqs
 
 		private:
 			string                                              m_evaluatorName;
-			string                                              m_weight;
+			float                                               m_weight;
 			CTextualInputBlueprint                              m_rootInput;
 			datasource::SyntaxErrorCollectorUniquePtr           m_pSyntaxErrorCollector;
 		};

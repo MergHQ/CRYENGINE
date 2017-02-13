@@ -33,7 +33,8 @@ public:
 	{
 		ePhysicalizationType_None = 0,
 		ePhysicalizationType_Static,
-		ePhysicalizationType_Rigid
+		ePhysicalizationType_Rigid,
+		ePhysicalizationType_Area
 	};
 
 public:

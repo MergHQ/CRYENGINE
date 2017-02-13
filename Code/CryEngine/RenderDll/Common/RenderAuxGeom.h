@@ -54,6 +54,8 @@ public:
 	virtual void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col);
 	virtual void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col);
 
+	virtual void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured);
+
 	virtual void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle);
 	virtual void                DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle);
 	virtual void                DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle);
@@ -70,6 +72,7 @@ public:
 	virtual void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text);
 	virtual void                DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
 
+	virtual int                 SetTexture(int texID);
 	virtual int                 PushMatrix(const Matrix34&  mat);
 	virtual Matrix34*           GetMatrix();
 	virtual void                SetMatrixIndex(int matID);
@@ -127,11 +130,11 @@ public:
 
 	struct SAuxPushBufferEntry
 	{
-		SAuxPushBufferEntry()
+		SAuxPushBufferEntry() : m_textureID(-1)
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags)
+		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1)
 			: m_numVertices(numVertices)
 			, m_numIndices(numIndices)
 			, m_vertexOffs(vertexOffs)
@@ -139,10 +142,11 @@ public:
 			, m_transMatrixIdx(transMatrixIdx)
 			, m_worldMatrixIdx(worldMatrixIdx)
 			, m_renderFlags(renderFlags)
+			, m_textureID(texID)
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags)
+		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1)
 			: m_numVertices(0)
 			, m_numIndices(0)
 			, m_vertexOffs(drawParamOffs)
@@ -150,6 +154,7 @@ public:
 			, m_transMatrixIdx(transMatrixIdx)
 			, m_worldMatrixIdx(worldMatrixIdx)
 			, m_renderFlags(renderFlags)
+			, m_textureID(texID)
 		{
 			assert(e_Obj == GetPrimType(m_renderFlags));
 		}
@@ -174,6 +179,7 @@ public:
 		uint32              m_indexOffs;
 		int                 m_transMatrixIdx;
 		int                 m_worldMatrixIdx;
+		int                 m_textureID;
 		SAuxGeomRenderFlags m_renderFlags;
 	};
 
@@ -193,6 +199,7 @@ public:
 			, m_curRenderFlags(e_Def3DPublicRenderflags)
 			, m_curTransMatIdx(-1)
 			, m_curWorldMatIdx(-1)
+			, m_textureID(-1)
 			, m_uCount(0)
 		{}
 
@@ -212,6 +219,7 @@ public:
 			m_curRenderFlags = e_Def3DPublicRenderflags;
 			m_curTransMatIdx = -1;
 			m_curWorldMatIdx = -1;
+			m_textureID      = -1;
 			m_uCount = 0;
 		}
 
@@ -246,6 +254,7 @@ public:
 		SAuxGeomRenderFlags   m_curRenderFlags;
 		int                   m_curTransMatIdx;
 		int                   m_curWorldMatIdx;
+		int                   m_textureID;
 		uint                  m_uCount;
 		bool                  m_isUsed;
 	};
@@ -260,6 +269,7 @@ public:
 	static bool            IsThickLine(const SAuxGeomRenderFlags& renderFlags);
 	static EAuxDrawObjType GetAuxObjType(const SAuxGeomRenderFlags& renderFlags);
 	static uint8           GetPointSize(const SAuxGeomRenderFlags& renderFlags);
+	static bool            IsTextured  (const SAuxGeomRenderFlags& renderFlags);
 
 	// memory usage
 	void GetMemoryUsage(ICrySizer* pSizer) const
@@ -316,7 +326,7 @@ private:
 private:
 	uint32 CreatePointRenderFlags(uint8 size);
 	uint32 CreateLineRenderFlags(bool indexed);
-	uint32 CreateTriangleRenderFlags(bool indexed);
+	uint32 CreateTriangleRenderFlags(bool indexed, bool textured = false);
 	uint32 CreateObjectRenderFlags(const EAuxDrawObjType& objType);
 
 	void   DrawThickLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness);
@@ -430,16 +440,12 @@ inline uint32 CAuxGeomCB::CreateLineRenderFlags(bool indexed)
 	}
 }
 
-inline uint32 CAuxGeomCB::CreateTriangleRenderFlags(bool indexed)
+inline uint32 CAuxGeomCB::CreateTriangleRenderFlags(bool indexed, bool textured)
 {
-	if (false != indexed)
-	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_TriListInd << e_PrimTypeShift));
-	}
-	else
-	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_TriList << e_PrimTypeShift));
-	}
+	uint32 idx = indexed ? e_TriListInd : e_TriList;
+	uint32 tex = textured ? 1 : 0;
+
+	return m_cbCurrent->m_curRenderFlags.m_renderFlags | (idx << e_PrimTypeShift) | tex;
 }
 
 inline uint32 CAuxGeomCB::CreateObjectRenderFlags(const EAuxDrawObjType& objType)
@@ -536,6 +542,13 @@ inline uint8 CAuxGeomCB::GetPointSize(const SAuxGeomRenderFlags& renderFlags)
 	{
 		return(0);
 	}
+}
+
+inline bool CAuxGeomCB::IsTextured(const SAuxGeomRenderFlags& renderFlags)
+{
+	EPrimType primType = GetPrimType(renderFlags);
+
+	return (e_TriList == primType || e_TriListInd == primType) && (renderFlags.m_renderFlags & e_PrivateRenderflagsMask) ? true : false;
 }
 
 #endif // #if defined(ENABLE_RENDER_AUX_GEOM)

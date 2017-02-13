@@ -402,6 +402,16 @@ void CAuxGeomCB::DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* i
 	memcpy(pIndices, ind, sizeof(pIndices[0]) * numIndices);
 }
 
+void CAuxGeomCB::DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured)
+{
+	assert((numVertices >= 3) && (0 == (numVertices % 3)));
+
+	SAuxVertex* bufVertices(0);
+	AddPrimitive(bufVertices, numVertices, CreateTriangleRenderFlags(false, textured));
+
+	memcpy(bufVertices, inVertices, numVertices * sizeof(SAuxVertex));
+}
+
 void CAuxGeomCB::DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
 {
 	SAuxVertex* pVertices(0);
@@ -1969,6 +1979,13 @@ int32 CAuxGeomCB::PushMatrix(const Matrix34& mat)
 	return curIndex;
 }
 
+int CAuxGeomCB::SetTexture(int texID)
+{
+	int prev = m_cbCurrent->m_textureID;
+	m_cbCurrent->m_textureID = texID;
+	return prev;
+}
+
 Matrix34* CAuxGeomCB::GetMatrix()
 {
 	return &m_cbCurrent->m_auxWorldMatrices[m_cbCurrent->m_curWorldMatIdx];
@@ -2093,8 +2110,17 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 
 	AuxPushBuffer& auxPushBuffer(AccessData()->m_auxPushBuffer);
 
-	EPrimType primType(GetPrimType(renderFlags));
+	if( GetWorldMatrixIndex() == -1 )
+	{
+		perror("");
+	}
+
+
+	EPrimType primType = GetPrimType(renderFlags);
+	int textureID      = IsTextured(renderFlags) ? AccessData()->m_textureID : -1;
+
 	if (false == auxPushBuffer.empty() &&
+		auxPushBuffer[auxPushBuffer.size() - 1].m_textureID   == textureID   &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags == renderFlags &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx == GetTransMatrixIndex() &&
 		auxPushBuffer[auxPushBuffer.size() - 1].m_worldMatrixIdx == GetWorldMatrixIndex() &&
@@ -2107,7 +2133,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 		// Only done for non-indexed primitives as otherwise there would be the additional overhead of patching
 		// the indices for each push buffer entry. Indices already and still have to be patched during rendering
 		// anyway (merging) so in case of indexed primitives there'd be no real benefit. Also, merging up too many
-		// indexed primitves could potentially produce a push buffer entry which cannot be rendered as it exceeds
+		// indexed primitives could potentially produce a push buffer entry which cannot be rendered as it exceeds
 		// the vb/ib buffer size for auxiliary geometries in the renderer.
 		SAuxPushBufferEntry& lastPBEntry(auxPushBuffer[auxPushBuffer.size() - 1]);
 		lastPBEntry.m_numVertices += numVertices;
@@ -2116,8 +2142,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 	else
 	{
 		// create new push buffer entry
-		auxPushBuffer.push_back(SAuxPushBufferEntry(numVertices, numIndices,
-		                                            AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags));
+		auxPushBuffer.emplace_back(numVertices, numIndices, AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, textureID);
 	}
 }
 
@@ -2125,7 +2150,7 @@ void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const 
 {
 	assert(numVertices > 0);
 
-	// add push buffer entry to allow later merging of batches commited via DP
+	// add push buffer entry to allow later merging of batches committed via DP
 	AddPushBufferEntry(numVertices, 0, renderFlags);
 
 	// get vertex ptr
@@ -2140,7 +2165,7 @@ void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices,
 	assert(numVertices > 0);
 	assert(numIndices > 0);
 
-	// add push buffer entry to allow later merging of batches commited via DIP
+	// add push buffer entry to allow later merging of batches committed via DIP
 	AddPushBufferEntry(numVertices, numIndices, renderFlags);
 
 	// get vertex ptr

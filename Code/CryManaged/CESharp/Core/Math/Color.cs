@@ -3,7 +3,6 @@
 using System;
 using System.Linq;
 using System.Reflection;
-
 using CryEngine.Common;
 
 namespace CryEngine

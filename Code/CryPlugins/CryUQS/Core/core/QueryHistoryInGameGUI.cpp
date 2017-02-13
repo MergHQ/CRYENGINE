@@ -70,11 +70,11 @@ namespace uqs
 			}
 		}
 
-		void CQueryHistoryInGameGUI::OnQueryHistoryEvent(EEvent ev)
+		void CQueryHistoryInGameGUI::OnQueryHistoryEvent(const IQueryHistoryListener::SEvent& ev)
 		{
-			switch (ev)
+			switch (ev.type)
 			{
-			case EEvent::QueryHistoryDeserialized:
+			case IQueryHistoryListener::EEventType::QueryHistoryDeserialized:
 				if (m_queryHistoryManager.GetCurrentQueryHistory() == IQueryHistoryManager::EHistoryOrigin::Deserialized)
 				{
 					RefreshListOfHistoricQueries();
@@ -83,14 +83,14 @@ namespace uqs
 				}
 				break;
 
-			case EEvent::HistoricQueryJustFinishedInLiveQueryHistory:
+			case IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
 				if (m_queryHistoryManager.GetCurrentQueryHistory() == IQueryHistoryManager::EHistoryOrigin::Live)
 				{
 					RefreshListOfHistoricQueries();
 				}
 				break;
 
-			case EEvent::LiveQueryHistoryCleared:
+			case IQueryHistoryListener::EEventType::LiveQueryHistoryCleared:
 				if (m_queryHistoryManager.GetCurrentQueryHistory() == IQueryHistoryManager::EHistoryOrigin::Live)
 				{
 					RefreshListOfHistoricQueries();
@@ -99,7 +99,7 @@ namespace uqs
 				}
 				break;
 
-			case EEvent::DeserializedQueryHistoryCleared:
+			case IQueryHistoryListener::EEventType::DeserializedQueryHistoryCleared:
 				if (m_queryHistoryManager.GetCurrentQueryHistory() == IQueryHistoryManager::EHistoryOrigin::Deserialized)
 				{
 					RefreshListOfHistoricQueries();
@@ -108,25 +108,25 @@ namespace uqs
 				}
 				break;
 
-			case EEvent::CurrentQueryHistorySwitched:
+			case IQueryHistoryListener::EEventType::CurrentQueryHistorySwitched:
 				RefreshListOfHistoricQueries();
 				RefreshDetailedInfoAboutCurrentHistoricQuery();
 				RefreshDetailedInfoAboutFocusedItem();
 				break;
 
-			case EEvent::DifferentHistoricQuerySelected:
+			case IQueryHistoryListener::EEventType::DifferentHistoricQuerySelected:
 				RefreshListOfHistoricQueries();	// little hack to get the color of the currently selected historic query also updated
 				RefreshDetailedInfoAboutCurrentHistoricQuery();
 				RefreshDetailedInfoAboutFocusedItem();
 				break;
 
-			case EEvent::FocusedItemChanged:
+			case IQueryHistoryListener::EEventType::FocusedItemChanged:
 				RefreshDetailedInfoAboutFocusedItem();
 				break;
 			}
 		}
 
-		void CQueryHistoryInGameGUI::AddHistoricQuery(const SHistoricQueryOverview& overview)
+		void CQueryHistoryInGameGUI::AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview)
 		{
 			shared::CUqsString queryIdAsString;
 			overview.queryID.ToString(queryIdAsString);

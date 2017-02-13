@@ -599,7 +599,7 @@ CRenderPrimitive& CRenderAuxGeomD3D::PreparePrimitive(const SAuxGeomRenderFlags&
 }
 
 
-void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj)
+void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID)
 {
 	ERenderPrimitiveType topology;
 
@@ -616,11 +616,22 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 	}
 
 	static CCryNameTSCRC tGeom("AuxGeometry");
+	static CCryNameTSCRC tGeomTexture("AuxGeometryTexture");
 	static CCryNameTSCRC tGeomThickLines("AuxGeometryThickLines");
 
-	CRenderPrimitive& prim = PreparePrimitive(flags, (CAuxGeomCB::IsThickLine(flags) ? tGeomThickLines : tGeom), topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), ~0u, &mViewProj);
+	static CCryNameTSCRC technique = texID != -1 ? tGeomTexture : tGeom;
+
+	CRenderPrimitive& prim = PreparePrimitive(flags, (CAuxGeomCB::IsThickLine(flags) ? tGeomThickLines : technique), topology, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F), m_bufman.GetVB(), ~0u, &mViewProj);
 
 	prim.SetDrawInfo(topology, 0, (*itBegin)->m_vertexOffs, (*itBegin)->m_numVertices);
+
+	if( texID != -1 )
+	{
+		static int sampler = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
+
+		prim.SetTexture(0, CTexture::GetByID(texID));
+		prim.SetSampler(0, sampler);
+	}
 
 	for( CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(itBegin); ++it != itEnd; )
 	{
@@ -971,18 +982,19 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 
 				// get current render flags
 				const SAuxGeomRenderFlags& curRenderFlags((*itCur)->m_renderFlags);
+				int curTexture = (*itCur)->m_textureID;
 				m_curTransMatrixIdx = (*itCur)->m_transMatrixIdx;
 				m_curWorldMatrixIdx = (*itCur)->m_worldMatrixIdx;
 
 				// get prim type
 				CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(curRenderFlags));
 
-				// find all entries sharing the same render flags
+				// find all entries sharing the same render flags and texture
 				while (true)
 				{
 					++it;
 					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
-						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx))
+						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx) || ((*it)->m_textureID != curTexture) )
 					{
 						break;
 					}
@@ -990,6 +1002,11 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 
 				// set appropriate rendering data
 				Prepare(curRenderFlags, mViewProj);
+
+				if( CAuxGeomCB::IsTextured(curRenderFlags) )
+				{
+					curTexture = -1;
+				}
 
 				if( !m_pAuxGeomShader )
 				{
@@ -1014,19 +1031,19 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 						if (bStereoEnabled)
 						{
 							stereoRenderer.BeginRenderingTo(LEFT_EYE);
-							DrawAuxPrimitives(itCur, it, mViewProj);
+							DrawAuxPrimitives(itCur, it, mViewProj, curTexture);
 							stereoRenderer.EndRenderingTo(LEFT_EYE);
 
 							if (bStereoSequentialMode)
 							{
 								stereoRenderer.BeginRenderingTo(RIGHT_EYE);
-								DrawAuxPrimitives(itCur, it, mViewProj);
+								DrawAuxPrimitives(itCur, it, mViewProj, curTexture);
 								stereoRenderer.EndRenderingTo(RIGHT_EYE);
 							}
 						}
 						else
 						{
-							DrawAuxPrimitives(itCur, it, mViewProj);
+							DrawAuxPrimitives(itCur, it, mViewProj, curTexture);
 						}
 					}
 					break;

@@ -29,6 +29,7 @@ namespace uqs
 			virtual void                       MakeQueryHistoryCurrent(EHistoryOrigin whichHistory) override;
 			virtual EHistoryOrigin             GetCurrentQueryHistory() const override;
 			virtual void                       ClearQueryHistory(EHistoryOrigin whichHistory) override;
+			virtual void                       EnumerateSingleHistoricQuery(EHistoryOrigin whichHistory, const CQueryID& queryIDToEnumerate, IQueryHistoryConsumer& receiver) const override;
 			virtual void                       EnumerateHistoricQueries(EHistoryOrigin whichHistory, IQueryHistoryConsumer& receiver) const override;
 			virtual void                       MakeHistoricQueryCurrentForInWorldRendering(EHistoryOrigin whichHistory, const CQueryID& queryIDToMakeCurrent) override;
 			virtual void                       EnumerateInstantEvaluatorNames(EHistoryOrigin fromWhichHistory, const CQueryID& idOfQueryUsingTheseEvaluators, IQueryHistoryConsumer& receiver) override;
@@ -41,12 +42,14 @@ namespace uqs
 			// ~IQueryHistoryManager
 
 			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* querierName, const CQueryID& parentQueryID);
+			void                               UnderlyingQueryJustGotCreated(const CQueryID& queryID);
 			void                               UnderlyingQueryIsGettingDestroyed(const CQueryID& queryID);
 
 		private:
 			                                   UQS_NON_COPYABLE(CQueryHistoryManager);
 
-			void                               NotifyListeners(IQueryHistoryListener::EEvent ev) const;
+			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType) const;
+			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType, const CQueryID& relatedQueryID) const;
 
 		private:
 			CQueryHistory                      m_queryHistories[2];                  // "live" and "deserialized" query history; the live one gets filled by ongoing queries from the CQueryManager

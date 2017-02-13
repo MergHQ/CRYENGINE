@@ -49,7 +49,12 @@ namespace uqs
 			virtual const shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const = 0;
 			virtual bool                        CheckOutputTypeCompatibilityAmongChildQueryBlueprints(const CQueryBlueprint& parentQueryBlueprint, string& error, size_t& childIndexCausingTheError) const = 0;
 
+			const shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
+
 			static void                         RegisterAllInstancesInDatabase(QueryFactoryDatabase& databaseToRegisterIn);
+
+		private:
+			virtual const shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const = 0;
 
 		protected:
 			explicit                            CQueryFactoryBase(const char* name, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
@@ -81,6 +86,11 @@ namespace uqs
 			virtual QueryBaseUniquePtr          CreateQuery(const CQueryBase::SCtorContext& ctorContext) override;
 			virtual const shared::CTypeInfo&    GetQueryBlueprintType(const CQueryBlueprint& queryBlueprint) const override;
 			virtual bool                        CheckOutputTypeCompatibilityAmongChildQueryBlueprints(const CQueryBlueprint& parentQueryBlueprint, string& error, size_t& childIndexCausingTheError) const override;
+			// ~CQueryFactoryBase
+
+		private:
+			// CQueryFactoryBase
+			virtual const shared::CTypeInfo*    GetShuttleTypeFromPrecedingSibling(const CQueryBlueprint& childQueryBlueprint) const override;
 			// ~CQueryFactoryBase
 		};
 

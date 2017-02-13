@@ -99,6 +99,7 @@ namespace uqs
 				virtual void*                        GetItemAtIndex(void* pItems, size_t index) const override = 0;
 				virtual const void*                  GetItemAtIndex(const void* pItems, size_t index) const override = 0;
 				virtual void                         AddItemToDebugRenderWorld(const void* pItem, core::IDebugRenderWorldPersistent& debugRW) const override = 0;
+				virtual bool                         CanBeRepresentedInDebugRenderWorld() const override = 0;
 				virtual void                         CreateItemDebugProxyForItem(const void* pItem, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override = 0;
 				virtual bool                         CanBePersistantlySerialized() const override = 0;
 				virtual bool                         TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override = 0;
@@ -171,6 +172,7 @@ namespace uqs
 				virtual void*                       GetItemAtIndex(void* pItems, size_t index) const override;
 				virtual const void*                 GetItemAtIndex(const void* pItems, size_t index) const override;
 				virtual void                        AddItemToDebugRenderWorld(const void* item, core::IDebugRenderWorldPersistent& debugRW) const override;
+				virtual bool                        CanBeRepresentedInDebugRenderWorld() const override;
 				virtual void                        CreateItemDebugProxyForItem(const void* item, core::IItemDebugProxyFactory& itemDebugProxyFactory) const override;
 				virtual bool                        CanBePersistantlySerialized() const override;
 				virtual bool                        TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const override;
@@ -499,6 +501,12 @@ namespace uqs
 				{
 					(*m_callbacks.pAddItemToDebugRenderWorld)(*static_cast<const TItem*>(pItem), debugRW);
 				}
+			}
+
+			template <class TItem>
+			bool CItemFactoryInternal<TItem>::CanBeRepresentedInDebugRenderWorld() const
+			{
+				return (m_callbacks.pAddItemToDebugRenderWorld != nullptr);
 			}
 
 			template <class TItem>

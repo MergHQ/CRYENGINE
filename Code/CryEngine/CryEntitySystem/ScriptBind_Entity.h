@@ -1428,6 +1428,7 @@ protected:
 	int CreateDRSProxy(IFunctionHandler* pH);
 
 private: // -------------------------------------------------------------------------------
+	friend class CEntityComponentLuaScript;
 
 	// Helper function to get IEntity pointer from IFunctionHandler
 	IEntity* GetEntity(IFunctionHandler* pH);
