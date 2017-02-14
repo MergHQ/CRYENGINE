@@ -575,13 +575,6 @@ struct IAudioSystem
 	virtual void GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) = 0;
 
 	/**
-	 * Set's the thread ID from which the audio system will be serviced. Used during production to invoke asserts accordingly.
-	 * @param id - id of the allowed thread.
-	 * @return void
-	 */
-	virtual void SetAllowedThreadId(threadID id) = 0;
-
-	/**
 	 * This method is called by the LevelSystem whenever a level is loaded.
 	 * It allows the AudioSystem to handle its data accordingly.
 	 * @param szLevelName - name of the level that is being loaded.

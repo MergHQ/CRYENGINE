@@ -32,9 +32,7 @@ class CSystemEventListner_Sound : public ISystemEventListener
 {
 public:
 
-	CSystemEventListner_Sound()
-		: m_requestUserData(eRequestFlags_PriorityHigh)
-	{}
+	CSystemEventListner_Sound() = default;
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 	{
@@ -122,7 +120,7 @@ void PrepareAudioSystem(CSystem* const pAudioSystem)
 	CryFixedStringT<MaxFilePathLength> const temp(pAudioSystem->GetConfigPath());
 
 	// Must be blocking requests.
-	SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking);
+	SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 	pAudioSystem->ParseControlsData(temp.c_str(), eDataScope_Global, data);
 	pAudioSystem->ParsePreloadsData(temp.c_str(), eDataScope_Global, data);
 	pAudioSystem->PreloadSingleRequest(SATLInternalControlIDs::globalPreloadRequestId, false, data);
@@ -180,7 +178,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			else
 			{
 				// In case of a failure set the null-implementation.
-				SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking);
+				SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 				static_cast<CSystem*>(env.pAudioSystem)->SetImpl(nullptr, data);
 			}
 
@@ -209,7 +207,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 		if (!previousModuleName.empty())
 		{
 			// Set the null impl
-			SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking);
+			SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 			pAudioSystem->SetImpl(nullptr, data);
 
 			// Unload the previous module
@@ -220,7 +218,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 		// This will release the currently running implementation but only if the library loaded successfully.
 		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl", false))
 		{
-			SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking);
+			SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 
 			// Then load global controls data and preloads.
 			PrepareAudioSystem(pAudioSystem);
@@ -255,7 +253,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			// Either the module did not load in which case unloading of s_currentModuleName is redundant
 			// or the module did not initialize in which case setting the null implementation is redundant.
 			// As we currently do not know here how exactly the module failed we play safe and always set the null implementation and unload the modules.
-			SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking);
+			SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 			pAudioSystem->SetImpl(nullptr, data);
 
 			// The module failed to initialize, unload both as we are running the null implementation now.

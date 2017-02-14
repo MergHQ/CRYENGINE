@@ -155,19 +155,3 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 
 	return pResult;
 }
-
-//////////////////////////////////////////////////////////////////////////
-void SAudioRequestData::Release()
-{
-	int const numReferences = CryInterlockedDecrement(&m_nRefCounter);
-	CRY_ASSERT(numReferences >= 0);
-
-	if (numReferences == 0)
-	{
-		delete this;
-	}
-	else if (numReferences < 0)
-	{
-		CryFatalError("Deleting Reference Counted Object Twice");
-	}
-}

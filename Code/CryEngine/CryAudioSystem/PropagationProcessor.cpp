@@ -68,7 +68,6 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 			SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> requestData(pRayInfo);
 			CAudioRequest request(&requestData);
 			request.pObject = pRayInfo->pAudioObject;
-			request.flags = eRequestFlags_ThreadSafePush;
 			CATLAudioObject::s_pAudioSystem->PushRequest(request);
 		}
 		else

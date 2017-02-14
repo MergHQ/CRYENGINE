@@ -56,7 +56,7 @@ public:
 
 	~mpmc_bounded_queue_t()
 	{
-		delete[] _buffer;
+		delete[] reinterpret_cast<aligned_node_t*>(_buffer);
 	}
 
 	bool enqueue(const T& data)
@@ -80,10 +80,16 @@ public:
 				// which in this instance is OK, because it's in the loop
 				if (_head_seq.compare_exchange_weak(head_seq, head_seq + 1, std::memory_order_relaxed))
 				{
+					// new buffer_node_aligned_t is equivalent to malloc(...), see std::aligned_storage
+					// placement-new constructor for specified T must be called
+					new(&node->data) T();
+
 					// set the data
 					node->data = data;
+
 					// increment the sequence so that the tail knows it's accessible
 					node->seq.store(head_seq + 1, std::memory_order_release);
+
 					return true;
 				}
 			}
@@ -124,6 +130,9 @@ public:
 				{
 					// set the output
 					data = node->data;
+					// destruct the copied T
+					node->data.~T();
+
 					// set the sequence to what the head sequence should be next time around
 					node->seq.store(tail_seq + _mask + 1, std::memory_order_release);
 					return true;

@@ -41,21 +41,26 @@ public:
 		: _head(reinterpret_cast<node_t*>(new node_aligned_t))
 		, _tail(_head)
 	{
-		_head->next = NULL;
+		_head->next = nullptr;
 	}
 
 	~spsc_queue_t()
 	{
 		T output;
 		while (this->dequeue(output)) {}
-		delete _head;
+		delete reinterpret_cast<node_aligned_t*>(_head);
 	}
 
 	bool enqueue(const T& input)
 	{
+		// new node_aligned_t is equivalent to malloc(...), see std::aligned_storage
+		// placement-new constructor for specified T must be called
 		node_t* node = reinterpret_cast<node_t*>(new node_aligned_t);
+		new(&node->data) T();
+
+		// set the data
 		node->data = input;
-		node->next = NULL;
+		node->next = nullptr;
 
 		std::atomic_thread_fence(std::memory_order_acq_rel);
 		_head->next = node;
@@ -71,12 +76,16 @@ public:
 			return false;
 		}
 
+		// set the output
 		output = _tail->next->data;
+		// destruct the copied T
+		_tail->next->data.~T();
+
 		std::atomic_thread_fence(std::memory_order_acq_rel);
 		_back = _tail;
 		_tail = _back->next;
 
-		delete _back;
+		delete reinterpret_cast<node_aligned_t*>(_back);
 		return true;
 	}
 

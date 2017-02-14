@@ -13,7 +13,7 @@ public:
 		: m_flags(eFlowNodeAudioTriggerFlags_None)
 		, m_playTriggerId(InvalidControlId)
 		, m_stopTriggerId(InvalidControlId)
-		, m_requestUserData(eRequestFlags_PriorityNormal, this)
+		, m_requestUserData(eRequestFlags_None, this)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ private:
 			{
 			case ePlayMode_Play:
 				{
-					SRequestUserData const userData(eRequestFlags_PriorityNormal | eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
+					SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
 					pIEntityAudioComponent->SetCurrentEnvironments();
 					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId, DefaultAuxObjectId, userData);
 

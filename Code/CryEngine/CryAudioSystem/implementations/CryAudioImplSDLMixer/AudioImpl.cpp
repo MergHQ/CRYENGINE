@@ -34,15 +34,13 @@ char const* const CAudioImpl::s_szSDLEventLoopCountTag = "loop_count";
 ///////////////////////////////////////////////////////////////////////////
 void OnEventFinished(CATLEvent& audioEvent)
 {
-	SRequestUserData const data(eRequestFlags_ThreadSafePush);
-	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true, data);
+	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void OnStandaloneFileFinished(CATLStandaloneFile& standaloneFile, const char* szFile)
 {
-	SRequestUserData const data(eRequestFlags_ThreadSafePush);
-	gEnv->pAudioSystem->ReportStoppedFile(standaloneFile, data);
+	gEnv->pAudioSystem->ReportStoppedFile(standaloneFile);
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -79,7 +79,6 @@ public:
 	virtual void        ReleaseObject(IObject* const pIObject) override                                                                                                                              {}
 	virtual void        GetAudioFileData(char const* const szFilename, SFileData& audioFileData) override                                                                                            {}
 	virtual void        GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) override                                                                                 {}
-	virtual void        SetAllowedThreadId(threadID id) override                                                                                                                                     {}
 	virtual void        OnLoadLevel(char const* const szLevelName) override                                                                                                                          {}
 	virtual void        OnUnloadLevel() override                                                                                                                                                     {}
 	virtual void        OnLanguageChanged() override                                                                                                                                                 {}

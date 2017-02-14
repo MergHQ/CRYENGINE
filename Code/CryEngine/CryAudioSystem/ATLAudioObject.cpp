@@ -565,7 +565,7 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 	SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 	SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance> requestData(audioTriggerInstanceState.audioTriggerId);
 	CAudioRequest request(&requestData);
-	request.flags = eRequestFlags_PriorityHigh | eRequestFlags_ThreadSafePush | eRequestFlags_SyncCallback;
+	request.flags = eRequestFlags_SyncCallback;
 	request.pObject = this;
 	request.pOwner = audioTriggerInstanceState.pOwnerOverride;
 	request.pUserData = audioTriggerInstanceState.pUserData;
@@ -828,7 +828,6 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectDopplerParameterId, relativeVelocity);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
-			request.flags = eRequestFlags_ThreadSafePush;
 			s_pAudioSystem->PushRequest(request);
 
 			m_flags |= eAudioObjectFlags_NeedsDopplerUpdate;
@@ -840,7 +839,6 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectDopplerParameterId, 0.0f);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
-			request.flags = eRequestFlags_ThreadSafePush;
 			s_pAudioSystem->PushRequest(request);
 
 			m_flags &= ~eAudioObjectFlags_NeedsDopplerUpdate;
@@ -861,7 +859,6 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 				SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectVelocityParameterId, currentVelocity);
 				CAudioRequest request(&requestData);
 				request.pObject = this;
-				request.flags = eRequestFlags_ThreadSafePush;
 				s_pAudioSystem->PushRequest(request);
 			}
 		}
@@ -873,7 +870,6 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectVelocityParameterId, 0.0f);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
-			request.flags = eRequestFlags_ThreadSafePush;
 			s_pAudioSystem->PushRequest(request);
 
 			m_flags &= ~eAudioObjectFlags_NeedsVelocityUpdate;

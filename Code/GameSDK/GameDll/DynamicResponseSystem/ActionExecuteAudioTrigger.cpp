@@ -23,7 +23,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 
 			if (m_bWaitToBeFinished)
 			{
-				SRequestUserData const userData(eRequestFlags_PriorityNormal | eRequestFlags_SyncFinishedCallback, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
+				SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
 				if (pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, DefaultAuxObjectId, userData))
 				{
 					return pActionInstance;

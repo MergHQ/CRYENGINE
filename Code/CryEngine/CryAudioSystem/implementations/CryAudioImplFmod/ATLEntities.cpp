@@ -98,15 +98,13 @@ CAudioFileBase::~CAudioFileBase()
 //////////////////////////////////////////////////////////////////////////
 void CAudioFileBase::ReportFileStarted()
 {
-	SRequestUserData const data(eRequestFlags_ThreadSafePush);
-	gEnv->pAudioSystem->ReportStartedFile(m_atlStandaloneFile, true, data);
+	gEnv->pAudioSystem->ReportStartedFile(m_atlStandaloneFile, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioFileBase::ReportFileFinished()
 {
-	SRequestUserData const data(eRequestFlags_ThreadSafePush);
-	gEnv->pAudioSystem->ReportStoppedFile(m_atlStandaloneFile, data);
+	gEnv->pAudioSystem->ReportStoppedFile(m_atlStandaloneFile);
 }
 
 //////////////////////////////////////////////////////////////////////////

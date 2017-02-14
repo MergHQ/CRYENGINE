@@ -32,8 +32,7 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 
 		if (pAudioEvent != nullptr)
 		{
-			SRequestUserData const data(eRequestFlags_ThreadSafePush);
-			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->GetATLEvent(), true, data);
+			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->GetATLEvent(), true);
 		}
 	}
 

@@ -5,6 +5,7 @@
 #include "ATL.h"
 #include <CrySystem/TimeValue.h>
 #include <CryThreading/IThreadManager.h>
+#include <concqueue/concqueue.hpp>
 
 namespace CryAudio
 {
@@ -21,7 +22,7 @@ public:
 	CMainThread& operator=(CMainThread const&) = delete;
 	CMainThread& operator=(CMainThread&&) = delete;
 
-	void         Init(CSystem* const pAudioSystem);
+	void         Init(CSystem* const pSystem);
 
 	// IThread
 	virtual void ThreadEntry();
@@ -92,7 +93,6 @@ public:
 	virtual void        ReleaseObject(IObject* const pIObject) override;
 	virtual void        GetAudioFileData(char const* const szFilename, SFileData& audioFileData) override;
 	virtual void        GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) override;
-	virtual void        SetAllowedThreadId(threadID id) override { m_allowedThreadId = id; }
 	virtual void        OnLoadLevel(char const* const szLevelName) override;
 	virtual void        OnUnloadLevel() override;
 	virtual void        OnLanguageChanged() override;
@@ -110,22 +110,21 @@ public:
 
 	void InternalUpdate();
 
+	threadID m_mainAudioThreadId;
+
 private:
 
-	typedef std::deque<CAudioRequest> TAudioRequests;
+	typedef ConcQueue<UnboundMPSC, CAudioRequest> AudioRequests;
+	typedef ConcQueue<UnboundSPSC, CAudioRequest> AudioRequestsSyncCallbacks;
 
-	void   UpdateTime();
-	bool   ProcessRequests(TAudioRequests& requestQueue);
-	void   ProcessRequest(CAudioRequest& request);
-	bool   ExecuteSyncCallbacks(TAudioRequests& requestQueue);
-	void   ExtractSyncCallbacks(TAudioRequests& requestQueue, TAudioRequests& syncCallbacksQueue);
-	uint32 MoveAudioRequests(TAudioRequests& from, TAudioRequests& to);
+	void UpdateTime();
+	bool ProcessRequests(AudioRequests& requestQueue);
+	void ProcessRequest(CAudioRequest& request);
 
 	bool        m_bSystemInitialized;
 	CTimeValue  m_lastUpdateTime;
 	float       m_deltaTime;
 	CMainThread m_mainThread;
-	threadID    m_allowedThreadId;
 
 	enum EAudioRequestQueueType : EnumFlagsType
 	{
@@ -152,19 +151,12 @@ private:
 		eAudioRequestQueueIndex_Count
 	};
 
-	TAudioRequests                     m_requestQueues[eAudioRequestQueueType_Count][eAudioRequestQueuePriority_Count][eAudioRequestQueueIndex_Count];
-	TAudioRequests                     m_syncCallbacks;
-	TAudioRequests                     m_syncCallbacksPending;
-	TAudioRequests                     m_internalRequests[eAudioRequestQueueIndex_Count];
-
 	CAudioTranslationLayer             m_atl;
-
+	AudioRequests                     m_requestQueue;
+	AudioRequestsSyncCallbacks        m_syncCallbacks;
+	CAudioRequest                      m_syncRequest;
 	CryEvent                           m_mainEvent;
 	CryEvent                           m_audioThreadWakeupEvent;
-	CryCriticalSection                 m_mainCS;
-	CryCriticalSection                 m_syncCallbacksPendingCS;
-	CryCriticalSection                 m_internalRequestsCS[eAudioRequestQueueIndex_Count];
-
 	CryFixedStringT<MaxFilePathLength> m_configPath;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
