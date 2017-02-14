@@ -42,7 +42,7 @@ public:
 		, _tail(_head.load(std::memory_order_relaxed))
 	{
 		buffer_node_t* front = _head.load(std::memory_order_relaxed);
-		front->next.store(NULL, std::memory_order_relaxed);
+		front->next.store(nullptr, std::memory_order_relaxed);
 	}
 
 	~mpsc_queue_t()
@@ -50,14 +50,19 @@ public:
 		T output;
 		while (this->dequeue(output)) {}
 		buffer_node_t* front = _head.load(std::memory_order_relaxed);
-		delete front;
+		delete reinterpret_cast<buffer_node_aligned_t*>(front);
 	}
 
 	bool enqueue(const T& input)
 	{
+		// new buffer_node_aligned_t is equivalent to malloc(...), see std::aligned_storage
+		// placement-new constructor for specified T must be called
 		buffer_node_t* node = reinterpret_cast<buffer_node_t*>(new buffer_node_aligned_t);
+		new(&node->data) T();
+
+		// set the data
 		node->data = input;
-		node->next.store(NULL, std::memory_order_relaxed);
+		node->next.store(nullptr, std::memory_order_relaxed);
 
 		buffer_node_t* prev_head = _head.exchange(node, std::memory_order_acq_rel);
 		prev_head->next.store(node, std::memory_order_release);
@@ -69,14 +74,19 @@ public:
 		buffer_node_t* tail = _tail.load(std::memory_order_relaxed);
 		buffer_node_t* next = tail->next.load(std::memory_order_acquire);
 
-		if (next == NULL)
+		if (next == nullptr)
 		{
 			return false;
 		}
 
+		// set the output
 		output = next->data;
+		// destruct the copied T
+		next->data.~T();
+
 		_tail.store(next, std::memory_order_release);
-		delete tail;
+		delete reinterpret_cast<buffer_node_aligned_t*>(tail);
+
 		return true;
 	}
 
@@ -85,7 +95,7 @@ public:
 		buffer_node_t* tail = _tail.load(std::memory_order_relaxed);
 		buffer_node_t* next = tail->next.load(std::memory_order_acquire);
 
-		return next != NULL;
+		return next != nullptr;
 	}
 
 private:

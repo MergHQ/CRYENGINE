@@ -47,13 +47,10 @@ class CATLStandaloneFile;
 enum ERequestFlags : EnumFlagsType
 {
 	eRequestFlags_None                 = 0,
-	eRequestFlags_PriorityNormal       = BIT(0),
-	eRequestFlags_PriorityHigh         = BIT(1),
-	eRequestFlags_ExecuteBlocking      = BIT(2),
-	eRequestFlags_SyncCallback         = BIT(3),
-	eRequestFlags_SyncFinishedCallback = BIT(4),
-	eRequestFlags_StayInMemory         = BIT(5),
-	eRequestFlags_ThreadSafePush       = BIT(6),
+	eRequestFlags_ExecuteBlocking      = BIT(0),
+	eRequestFlags_SyncCallback         = BIT(1),
+	eRequestFlags_SyncFinishedCallback = BIT(2),
+	eRequestFlags_StayInMemory         = BIT(3),
 };
 
 /**
@@ -135,7 +132,7 @@ static const CObjectTransformation s_nullAudioObjectTransformation;
 struct SRequestUserData
 {
 	explicit SRequestUserData(
-	  EnumFlagsType const _flags = eRequestFlags_PriorityNormal,
+	  EnumFlagsType const _flags = eRequestFlags_None,
 	  void* const _pOwner = nullptr,
 	  void* const _pUserData = nullptr,
 	  void* const _pUserDataOwner = nullptr)

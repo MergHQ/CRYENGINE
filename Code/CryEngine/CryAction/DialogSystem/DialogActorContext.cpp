@@ -438,7 +438,7 @@ bool CDialogActorContext::Update(float dt)
 						}
 						UpdateAuxProxyPosition();
 
-						SRequestUserData const userData(eRequestFlags_PriorityNormal | eRequestFlags_SyncFinishedCallback, nullptr, (void*)CDialogActorContext::GetClassIdentifier(), reinterpret_cast<void*>(static_cast<intptr_t>(m_ContextID)));
+						SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, nullptr, (void*)CDialogActorContext::GetClassIdentifier(), reinterpret_cast<void*>(static_cast<intptr_t>(m_ContextID)));
 						if (!pActorAudioProxy->ExecuteTrigger(m_pCurLine->m_audioID, m_SpeechAuxObject, userData))
 						{
 							m_bSoundStarted = false;

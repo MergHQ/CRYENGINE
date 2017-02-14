@@ -108,7 +108,7 @@ void CEntityAudioComponent::ExecuteTrigger(const SAudioTriggerSerializeHelper tr
 	{
 		_triggerId = static_cast<uint32>(trigger.m_triggerId);
 		static uint32 currentInstanceId = 1;
-		CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_PriorityNormal | CryAudio::eRequestFlags_SyncFinishedCallback, this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId));
+		CryAudio::SRequestUserData const userData(CryAudio::eRequestFlags_SyncFinishedCallback, this, (void*)static_cast<UINT_PTR>(currentInstanceId), (void*)static_cast<UINT_PTR>(_triggerId));
 		if (m_pAudioProxy->ExecuteTrigger(trigger.m_triggerId, m_audioProxyId, userData))
 		{
 			_instanceId = currentInstanceId++;

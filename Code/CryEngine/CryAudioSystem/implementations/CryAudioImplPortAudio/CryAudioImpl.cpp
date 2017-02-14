@@ -32,7 +32,7 @@ class CEngineModule_CryAudioImplPortAudio : public IEngineModule
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplPortAudio::OnAudioEvent, nullptr, eSystemEvent_ImplSet);
-		SRequestUserData const data(eRequestFlags_PriorityHigh | eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
+		SRequestUserData const data(eRequestFlags_ExecuteBlocking | eRequestFlags_SyncCallback);
 		gEnv->pAudioSystem->SetImpl(new CAudioImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplPortAudio::OnAudioEvent, nullptr);
 

@@ -212,7 +212,6 @@ void CAudioEvent::Update()
 		}
 		else
 		{
-			SRequestUserData const data(eRequestFlags_ThreadSafePush);
 			gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
 		}
 
@@ -223,7 +222,6 @@ void CAudioEvent::Update()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CAudioEvent::Stop()
 {
-	SRequestUserData const data(eRequestFlags_ThreadSafePush);
 	gEnv->pAudioSystem->ReportFinishedEvent(audioEvent, true);
 	return eRequestStatus_Success;
 }

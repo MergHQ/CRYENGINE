@@ -4335,7 +4335,7 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 
 	if (pIEntityAudioComponent)
 	{
-		SRequestUserData const userData(eRequestFlags_PriorityNormal | eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
+		SRequestUserData const userData(eRequestFlags_SyncFinishedCallback, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
 		pIEntityAudioComponent->StopTrigger(HandleToInt<ControlId>(hTriggerID), HandleToInt<AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 

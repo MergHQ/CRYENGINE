@@ -21,22 +21,6 @@ enum EAudioRequestType : EnumFlagsType
 	eAudioRequestType_AudioListenerRequest,
 };
 
-struct SAudioRequestDataBase
-{
-	explicit SAudioRequestDataBase(EAudioRequestType const _type)
-		: type(_type)
-	{}
-
-	virtual ~SAudioRequestDataBase() = default;
-
-	SAudioRequestDataBase(SAudioRequestDataBase const&) = delete;
-	SAudioRequestDataBase(SAudioRequestDataBase&&) = delete;
-	SAudioRequestDataBase& operator=(SAudioRequestDataBase const&) = delete;
-	SAudioRequestDataBase& operator=(SAudioRequestDataBase&&) = delete;
-
-	EAudioRequestType const type;
-};
-
 enum EAudioRequestInfoFlags : EnumFlagsType
 {
 	eAudioRequestInfoFlags_None              = 0,
@@ -148,10 +132,6 @@ struct SAudioRequestData : public _i_multithread_reference_target_t
 	SAudioRequestData(SAudioRequestData&&) = delete;
 	SAudioRequestData& operator=(SAudioRequestData const&) = delete;
 	SAudioRequestData& operator=(SAudioRequestData&&) = delete;
-
-	// _i_multithread_reference_target_t
-	virtual void Release() override;
-	// ~_i_multithread_reference_target_t
 
 	EAudioRequestType const type;
 };
@@ -1069,7 +1049,7 @@ public:
 		, pData(AllocateRequestData(_pRequestData))
 	{}
 
-	_smart_ptr<SAudioRequestData> GetData() const { return pData; }
+	SAudioRequestData* GetData() const { return pData.get(); }
 
 	EnumFlagsType    flags = eRequestFlags_None;
 	CATLAudioObject* pObject = nullptr;

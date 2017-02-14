@@ -289,7 +289,7 @@ void CAudioControlsEditorWindow::Save()
 				szLevelName = nullptr;
 			}
 
-			CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_PriorityHigh | CryAudio::eRequestFlags_ExecuteBlocking);
+			CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_ExecuteBlocking);
 			gEnv->pAudioSystem->RefreshAudioSystem(szLevelName);
 		}
 	}
@@ -331,8 +331,7 @@ void CAudioControlsEditorWindow::UpdateAudioSystemData()
 {
 	string levelPath = CRY_NATIVE_PATH_SEPSTR "levels" CRY_NATIVE_PATH_SEPSTR;
 	levelPath += GetIEditor()->GetLevelName();
-	CryAudio::SRequestUserData const data(CryAudio::eRequestFlags_PriorityHigh);
-	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str(), data);
+	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
 }
 
 void CAudioControlsEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)

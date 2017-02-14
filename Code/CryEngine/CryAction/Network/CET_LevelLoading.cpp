@@ -104,12 +104,10 @@ public:
 	{
 		const threadID levelLoadingThreadId = CryGetCurrentThreadId();
 		gEnv->pRenderer->SetLevelLoadingThreadId(levelLoadingThreadId);
-		gEnv->pAudioSystem->SetAllowedThreadId(levelLoadingThreadId);
 
 		const ILevelInfo* pLoadedLevelInfo = m_pLevelSystem->LoadLevel(m_levelName.c_str());
 		const bool bResult = (pLoadedLevelInfo != NULL);
 		gEnv->pRenderer->SetLevelLoadingThreadId(0);
-		gEnv->pAudioSystem->SetAllowedThreadId(gEnv->mMainThreadId);
 
 		m_state = bResult ? eState_Succeeded : eState_Failed;
 	}

@@ -26,8 +26,7 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 
 		if (pAudioEvent != nullptr)
 		{
-			SRequestUserData const data(eRequestFlags_ThreadSafePush);
-			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, true, data);
+			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, true);
 		}
 	}
 }
@@ -44,8 +43,7 @@ void PrepareEventCallback(
 	if (pAudioEvent != nullptr)
 	{
 		pAudioEvent->id = eventId;
-		SRequestUserData const data(eRequestFlags_ThreadSafePush);
-		gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, wwiseResult == AK_Success, data);
+		gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->atlEvent, wwiseResult == AK_Success);
 	}
 }
 

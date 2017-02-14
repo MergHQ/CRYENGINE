@@ -1,6 +1,8 @@
 
 #options
 
+option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin" ON)
+
 #Renderer modules
 if(NOT (ORBIS OR ANDROID))
 	OPTION(RENDERER_DX11 "Renderer for DirectX 11" ON)

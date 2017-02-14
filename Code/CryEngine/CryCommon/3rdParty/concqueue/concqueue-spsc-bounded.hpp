@@ -55,7 +55,7 @@ public:
 
 	~spsc_bounded_queue_t()
 	{
-		delete[] _buffer;
+		delete[] reinterpret_cast<aligned_t*>(_buffer);
 	}
 
 	bool enqueue(T& input)
@@ -64,10 +64,18 @@ public:
 
 		if (((_tail.load(std::memory_order_acquire) - (head + 1)) & _mask) >= 1)
 		{
-			_buffer[head & _mask] = input;
+			// new aligned_t is equivalent to malloc(...), see std::aligned_storage
+			// placement-new constructor for specified T must be called
+			T* node = &_buffer[head & _mask];
+			new(node) T();
+
+			// set the data
+			*node = input;
 			_head.store(head + 1, std::memory_order_release);
+
 			return true;
 		}
+
 		return false;
 	}
 
@@ -77,10 +85,18 @@ public:
 
 		if (((_head.load(std::memory_order_acquire) - tail) & _mask) >= 1)
 		{
-			output = _buffer[_tail & _mask];
+			T* node = & _buffer[_tail & _mask];
+
+			// set the output
+			output = *node;
+			// destruct the copied T
+			node->~T();
+
 			_tail.store(tail + 1, std::memory_order_release);
+
 			return true;
 		}
+
 		return false;
 	}
 
