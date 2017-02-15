@@ -31,12 +31,16 @@ set(CMAKE_LINKER       ${TOOLCHAIN_LINKER_BIN}/bin/arm-linux-androideabi-ld.exe 
 
 set(CMAKE_C_COMPILER_ID_RUN TRUE)
 set(CMAKE_CXX_COMPILER_ID_RUN TRUE)
-set(CMAKE_C_COMPILER_ID "GNU")
-set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_C_COMPILER_ID Clang)
+set(CMAKE_CXX_COMPILER_ID Clang)
 set(CMAKE_C_COMPILER_TARGET armv7-none-linux-androideabi)
 set(CMAKE_CXX_COMPILER_TARGET armv7-none-linux-androideabi)
 set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN ${TOOLCHAIN_LINKER_BIN})
 set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN ${TOOLCHAIN_LINKER_BIN})
+
+# required for CMake to generate valid response files
+set(CMAKE_C_SIMULATE_ID GNU)
+set(CMAKE_CXX_SIMULATE_ID GNU)
 
 set(CMAKE_SYSROOT ${NDKROOT}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-arm)
 include_directories(${NDKROOT}/sources/cxx-stl/llvm-libc++/include)

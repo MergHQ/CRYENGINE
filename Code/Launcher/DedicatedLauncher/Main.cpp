@@ -144,17 +144,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 {
 	// we need pass the full command line, including the filename
 	// lpCmdLine does not contain the filename.
-
+	string cmdLine = CryStringUtils::ANSIToUTF8(lpCmdLine);
 #if CAPTURE_REPLAY_LOG
 #ifndef _LIB
 	CryLoadLibrary("CrySystem.dll");
 #endif
-	CryGetIMemReplay()->StartOnCommandLine(lpCmdLine);
+	CryGetIMemReplay()->StartOnCommandLine(cmdLine.c_str());
 #endif
 
-	char cmdLine[2048];
-	cry_strcpy(cmdLine, GetCommandLineA());
-
+	// Read the full command line, including executable line
+	cmdLine = CryStringUtils::ANSIToUTF8(GetCommandLineA());
+	
 /*
 	unsigned buf[4];
                  //  0123456789abcdef
@@ -164,7 +164,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		hash[i] = Hash(((unsigned*)secret)[i]);
 */
 
-	return RunGame(cmdLine);
+	return RunGame(cmdLine.c_str());
 }
 
 #ifdef _LIB

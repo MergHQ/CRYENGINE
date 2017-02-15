@@ -204,27 +204,28 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 {
 	// we need pass the full command line, including the filename
 	// lpCmdLine does not contain the filename.
+	string cmdLine = CryStringUtils::ANSIToUTF8(lpCmdLine);
 #if CAPTURE_REPLAY_LOG
 	#ifndef _LIB
 		CryLoadLibrary("CrySystem.dll");
 	#endif
-	CryGetIMemReplay()->StartOnCommandLine(lpCmdLine);
+	CryGetIMemReplay()->StartOnCommandLine(cmdLine.c_str());
 #endif
 
 	//check for a restart
-	const char* pos = strstr(lpCmdLine, "restart");
+	const char* pos = strstr(cmdLine.c_str(), "restart");
 	if (pos != NULL)
 	{
 		Sleep(5000);               //wait for old instance to be deleted
-		return RunGame(lpCmdLine); //pass the restart level if restarting
+		return RunGame(cmdLine.c_str()); //pass the restart level if restarting
 	}
 	else
-		pos = strstr(lpCmdLine, " -load ");// commandLine.find("load");
+		pos = strstr(cmdLine.c_str(), " -load ");// commandLine.find("load");
 
 	if (pos != NULL)
-		RunGame(lpCmdLine);
+		RunGame(cmdLine.c_str());
 
-	int nRes = RunGame(GetCommandLineA());
+	int nRes = RunGame(CryStringUtils::ANSIToUTF8(GetCommandLineA()).c_str());
 
 	//////////////////////////////////////////////////////////////////////////
 	// Support relaunching for windows media center edition.
