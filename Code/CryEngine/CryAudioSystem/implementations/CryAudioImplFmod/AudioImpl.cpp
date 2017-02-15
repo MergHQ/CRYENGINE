@@ -919,13 +919,13 @@ bool CAudioImpl::LoadMasterBanks()
 
 			FMOD_STUDIO_BANK_INFO bankInfo;
 			ZeroStruct(bankInfo);
-			bankInfo.closeCallback = &FmodFileCloseCallback;
-			bankInfo.openCallback = &FmodFileOpenCallback;
-			bankInfo.readCallback = &FmodFileReadCallback;
-			bankInfo.seekCallback = &FmodFileSeekCallback;
+			bankInfo.closecallback = &FmodFileCloseCallback;
+			bankInfo.opencallback = &FmodFileOpenCallback;
+			bankInfo.readcallback = &FmodFileReadCallback;
+			bankInfo.seekcallback = &FmodFileSeekCallback;
 			bankInfo.size = sizeof(bankInfo);
-			bankInfo.userData = static_cast<void*>(&fileData);
-			bankInfo.userDataLength = sizeof(SFmodFileData);
+			bankInfo.userdata = static_cast<void*>(&fileData);
+			bankInfo.userdatalength = sizeof(SFmodFileData);
 
 			fmodResult = m_pSystem->loadBankCustom(&bankInfo, FMOD_STUDIO_LOAD_BANK_NORMAL, &m_pMasterBank);
 			ASSERT_FMOD_OK;
