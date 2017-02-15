@@ -3691,10 +3691,10 @@ CStatObjFoliage::~CStatObjFoliage()
 	m_prev->m_next = m_next;
 	if (m_pStatObj)
 		m_pStatObj->Release();
+	if (*m_ppThis == this)
+		*m_ppThis = nullptr;
 	if (!m_bDelete)
 	{
-		if (*m_ppThis == this)
-			*m_ppThis = 0;
 		if (m_pRenderObject)
 		{
 			m_pRenderObject->m_ObjFlags &= ~(FOB_SKINNED);
