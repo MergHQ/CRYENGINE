@@ -24,11 +24,14 @@ public:
 	QWidget* contents() { return m_contents; }
 	void setContents(QWidget*);
 
+	void setCloseButtonVisible(bool bVisible);
+
 private slots:
 	void closeWidget();
 private:
 	virtual void closeEvent(QCloseEvent* e) Q_DECL_OVERRIDE;
 	virtual void changeEvent(QEvent *ev) Q_DECL_OVERRIDE;
+	QIcon getCloseButtonIcon() const;
 	QGridLayout* m_layout;
 	QToolWindowManager* m_manager;
 	QPushButton* m_closeButton;

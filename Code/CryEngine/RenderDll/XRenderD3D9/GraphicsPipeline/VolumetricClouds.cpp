@@ -405,8 +405,8 @@ CVolumetricCloudsStage::~CVolumetricCloudsStage()
 
 void CVolumetricCloudsStage::Init()
 {
-	m_pCloudMiePhaseFuncTex = CTexture::ForName("EngineAssets/Shading/cloud_mie_phase_function.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
-	m_pNoiseTex = CTexture::ForName("EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
+	m_pCloudMiePhaseFuncTex = CTexture::ForName("%ENGINE%/EngineAssets/Shading/cloud_mie_phase_function.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
+	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 
 	m_samplerTrilinearClamp = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0));
 	m_samplerTrilinearWrap = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0));

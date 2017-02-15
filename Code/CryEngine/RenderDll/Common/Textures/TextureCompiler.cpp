@@ -88,17 +88,17 @@ void CTextureCompiler::GetInputFilename(
 //////////////////////////////////////////////////////////////////////////
 // choose a specialized imposter, because otherwise file-format
 // constraints for specific texture-types may be violated
-	#define COMPILE_DELAYED_REGULAR "EngineAssets/TextureMsg/TextureCompiling.dds"
-	#define COMPILE_DELAYED_CUBEMAP "EngineAssets/TextureMsg/TextureCompiling_cm.dds"
-	#define COMPILE_DELAYED_CUBEDIF "EngineAssets/TextureMsg/TextureCompiling_cm_diff.dds"
-	#define COMPILE_DELAYED_NORMAL  "EngineAssets/TextureMsg/TextureCompiling_ddn.dds"
-	#define COMPILE_DELAYED_NORMALA "EngineAssets/TextureMsg/TextureCompiling_ddna.dds"
+	#define COMPILE_DELAYED_REGULAR "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling.dds"
+	#define COMPILE_DELAYED_CUBEMAP "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_cm.dds"
+	#define COMPILE_DELAYED_CUBEDIF "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_cm_diff.dds"
+	#define COMPILE_DELAYED_NORMAL  "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_ddn.dds"
+	#define COMPILE_DELAYED_NORMALA "%ENGINE%/EngineAssets/TextureMsg/TextureCompiling_ddna.dds"
 
-	#define COMPILE_FAILED_REGULAR  "EngineAssets/TextureMsg/RCError.dds"
-	#define COMPILE_FAILED_CUBEMAP  "EngineAssets/TextureMsg/RCError_cm.dds"
-	#define COMPILE_FAILED_CUBEDIF  "EngineAssets/TextureMsg/RCError_cm_diff.dds"
-	#define COMPILE_FAILED_NORMAL   "EngineAssets/TextureMsg/RCError_ddn.dds"
-	#define COMPILE_FAILED_NORMALA  "EngineAssets/TextureMsg/RCError_ddna.dds"
+	#define COMPILE_FAILED_REGULAR  "%ENGINE%/EngineAssets/TextureMsg/RCError.dds"
+	#define COMPILE_FAILED_CUBEMAP  "%ENGINE%/EngineAssets/TextureMsg/RCError_cm.dds"
+	#define COMPILE_FAILED_CUBEDIF  "%ENGINE%/EngineAssets/TextureMsg/RCError_cm_diff.dds"
+	#define COMPILE_FAILED_NORMAL   "%ENGINE%/EngineAssets/TextureMsg/RCError_ddn.dds"
+	#define COMPILE_FAILED_NORMALA  "%ENGINE%/EngineAssets/TextureMsg/RCError_ddna.dds"
 
 static const char* GetDelayedTexture(const char* szFile)
 {
@@ -393,7 +393,9 @@ private:
 		}
 
 		std::vector<string> files;
-		const XmlNodeRef pMetadata = pXml->findChild("AssetMetadata");
+
+		// Find "AssetMetadata" node. It may be either the root node or a child of the root.
+		const XmlNodeRef pMetadata = pXml->isTag("AssetMetadata") ? pXml : pXml->findChild("AssetMetadata");
 		if (pMetadata)
 		{
 			const XmlNodeRef pFiles = pMetadata->findChild("Files");

@@ -460,13 +460,13 @@ CUnderwaterGodRaysPass::~CUnderwaterGodRaysPass()
 void CUnderwaterGodRaysPass::Init()
 {
 	CRY_ASSERT(m_pWavesTex == nullptr);
-	m_pWavesTex = CTexture::ForName("EngineAssets/Textures/oceanwaves_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pWavesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/oceanwaves_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pCausticsTex == nullptr);
-	m_pCausticsTex = CTexture::ForName("EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pCausticsTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pUnderwaterBumpTex == nullptr);
-	m_pUnderwaterBumpTex = CTexture::ForName("EngineAssets/Textures/screen_noisy_bump.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pUnderwaterBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/screen_noisy_bump.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
 void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
@@ -582,7 +582,7 @@ CWaterDropletsPass::~CWaterDropletsPass()
 void CWaterDropletsPass::Init()
 {
 	CRY_ASSERT(m_pWaterDropletsBumpTex == nullptr);
-	m_pWaterDropletsBumpTex = CTexture::ForName("EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pWaterDropletsBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
 void CWaterDropletsPass::Execute(const CPostEffectContext& context)
@@ -645,7 +645,7 @@ CWaterFlowPass::~CWaterFlowPass()
 void CWaterFlowPass::Init()
 {
 	CRY_ASSERT(m_pWaterFlowBumpTex == nullptr);
-	m_pWaterFlowBumpTex = CTexture::ForName("EngineAssets/Textures/perlinNoiseNormal_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pWaterFlowBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/perlinNoiseNormal_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 }
 
 void CWaterFlowPass::Execute(const CPostEffectContext& context)
@@ -1116,7 +1116,7 @@ CKillCameraPass::~CKillCameraPass()
 void CKillCameraPass::Init()
 {
 	CRY_ASSERT(m_pNoiseTex == nullptr);
-	m_pNoiseTex = CTexture::ForName("EngineAssets/Textures/vector_noise.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/vector_noise.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
 void CKillCameraPass::Execute(const CPostEffectContext& context)
@@ -1250,7 +1250,7 @@ CScreenBloodPass::~CScreenBloodPass()
 void CScreenBloodPass::Init()
 {
 	CRY_ASSERT(m_pWaterDropletsBumpTex == nullptr);
-	m_pWaterDropletsBumpTex = CTexture::ForName("EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pWaterDropletsBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
 void CScreenBloodPass::Execute(const CPostEffectContext& context)

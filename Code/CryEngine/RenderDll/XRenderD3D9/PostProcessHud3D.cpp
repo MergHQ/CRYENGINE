@@ -68,7 +68,7 @@ int C3DHud::CreateResources()
 {
 	SAFE_RELEASE(m_pNoise);
 
-	m_pNoise = CTexture::ForName("EngineAssets/Textures/vector_noise.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pNoise = CTexture::ForName("%ENGINE%/EngineAssets/Textures/vector_noise.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	return true;
 }

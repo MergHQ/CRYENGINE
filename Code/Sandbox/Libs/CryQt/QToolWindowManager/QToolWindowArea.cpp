@@ -353,7 +353,15 @@ void QToolWindowArea::adjustDragVisuals()
 		cornerWidget()->show();
 	}
 
-	if (m_manager->isMainWrapper(parentWidget()) && count() == 1)
+	const bool bMainWidget = m_manager->isMainWrapper(parentWidget());
+	if (m_manager->config().value(QTWM_SINGLE_TAB_FRAME, true).toBool() && count() == 1)
+	{
+		// Instead of multiple tabs, the single tab frame is visible. So we need to toggle the visibility
+		// of its close button. The close button is hidden, when the tab frame is the only widget in
+		// its tool window wrapper.
+		m_tabFrame->setCloseButtonVisible(!bMainWidget);
+	}
+	else if (bMainWidget && count() == 1)
 	{
 		if (m_useCustomTabCloseButton)
 		{
@@ -476,7 +484,7 @@ QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager*
 		m_closeButton = new QPushButton(this);
 		m_closeButton->setObjectName("closeButton");
 		m_closeButton->setFocusPolicy(Qt::NoFocus);
-		m_closeButton->setIcon(getIcon(m_manager->config(), QTWM_SINGLE_TAB_FRAME_CLOSE_ICON, QIcon(":/QtDockLibrary/gfx/close.png")));
+		m_closeButton->setIcon(getCloseButtonIcon());
 		connect(m_closeButton, SIGNAL(clicked()), this, SLOT(closeWidget()));
 #if QT_VERSION >= 0x050000 // Qt 4 does not have signals for icon and title changes, so need to use the events.
 		connect(this, SIGNAL(windowTitleChanged(const QString &)), m_caption, SLOT(setText(const QString &)));
@@ -485,6 +493,11 @@ QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager*
 	}
 	m_layout->setColumnStretch(0, 1);
 	m_layout->setRowStretch(1, 1);
+}
+
+QIcon QToolWindowSingleTabAreaFrame::getCloseButtonIcon() const
+{
+	return getIcon(m_manager->config(), QTWM_SINGLE_TAB_FRAME_CLOSE_ICON, QIcon(":/QtDockLibrary/gfx/close.png"));
 }
 
 void QToolWindowSingleTabAreaFrame::setContents(QWidget* w)
@@ -502,6 +515,25 @@ void QToolWindowSingleTabAreaFrame::setContents(QWidget* w)
 		setWindowTitle(w->windowTitle());
 	}
 	m_contents = w;
+}
+
+void QToolWindowSingleTabAreaFrame::setCloseButtonVisible(bool bVisible)
+{
+	// Instead of actually hiding the close button, we set an empty icon and disable signals.
+	// This way, the containing layout will retain its size, and the button will still draw its
+	// background.
+	// Setting the buttons visibility to false, on the other hand, would cause a black square hole
+	// in the layout.
+	if (bVisible)
+	{
+		m_closeButton->setIcon(getCloseButtonIcon());
+		m_closeButton->blockSignals(false);
+	}
+	else
+	{
+		m_closeButton->setIcon(QIcon());
+		m_closeButton->blockSignals(true);
+	}
 }
 
 void QToolWindowSingleTabAreaFrame::closeWidget()

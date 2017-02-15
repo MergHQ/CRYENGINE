@@ -1301,9 +1301,9 @@ float4 PI_GodRaysParamsVS;
 float4 PI_GodRaysParamsPS;
 
 Texture2D CausticsScreenTex : register(t0) = TS_BackBuffer;
-Texture2D WavesTex : register(t1) = "EngineAssets/Textures/oceanwaves_ddn.tif";
-Texture2D CausticsTex : register(t2) = "EngineAssets/Textures/caustics_sampler.dds";
-Texture2D UnderwaterBumpTex : register(t1) = "EngineAssets/Textures/screen_noisy_bump.dds";
+Texture2D WavesTex : register(t1) = "%ENGINE%/EngineAssets/Textures/oceanwaves_ddn.tif";
+Texture2D CausticsTex : register(t2) = "%ENGINE%/EngineAssets/Textures/caustics_sampler.dds";
+Texture2D UnderwaterBumpTex : register(t1) = "%ENGINE%/EngineAssets/Textures/screen_noisy_bump.dds";
 Texture2D ScreenScaledTex : register(t2) = TS_BackBufferScaled_d4;
 
 SamplerState ugLinearClampSampler : register(s0) = SS_TrilinearClamp;
@@ -1485,7 +1485,7 @@ float4 VolumetricScatteringColor;
 
 sampler3D volumeMapSampler = sampler_state
 {  
-  Texture = EngineAssets/Textures/Noise3D.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/Noise3D.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 

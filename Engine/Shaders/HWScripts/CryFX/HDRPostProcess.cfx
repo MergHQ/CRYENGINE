@@ -441,8 +441,8 @@ struct fragInShadowFog
 };
 
 Texture2D fogShadowDepthTex : register(t0) = TS_ZTarget;
-Texture2D fogShadowInterleaveTex : register(t1) = "EngineAssets/Textures/FogVolShadowJitter.dds";
-Texture2D fogShadowRotTex : register(t2) = "EngineAssets/Textures/rotrandom.dds";
+Texture2D fogShadowInterleaveTex : register(t1) = "%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.dds";
+Texture2D fogShadowRotTex : register(t2) = "%ENGINE%/EngineAssets/Textures/rotrandom.dds";
 Texture2D fogCloudShadowTex : register(t3) = TS_CloudShadow;
 Texture2D fogShadowMap0Tex : register(t4) = TS_Shadow0;
 Texture2D fogShadowMap1Tex : register(t5) = TS_Shadow2;

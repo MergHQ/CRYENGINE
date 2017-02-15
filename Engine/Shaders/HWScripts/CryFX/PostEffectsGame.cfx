@@ -17,7 +17,7 @@ float Script : STANDARDSGLOBAL
 
 sampler2D noiseSampler : register (s5)
 {
-  Texture = EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds;
   MinFilter = POINT;
   MagFilter = POINT;
   MipFilter = POINT; 
@@ -27,7 +27,7 @@ sampler2D noiseSampler : register (s5)
 
 sampler2D perlinNoiseSampler : register (s6)
 {
-  Texture = EngineAssets/Textures/perlinNoise_sum.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/perlinNoise_sum.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = POINT;
@@ -146,10 +146,19 @@ technique AlienInterference
 float4 waterDropletsParams;
 
 Texture2D wdScreenTex : register(t0) = TS_BackBuffer;
-Texture2D wdWaterDropletsBumpTex : register(t1) = "EngineAssets/Textures/water_droplets.dds";
+Texture2D wdWaterDropletsBumpTex : register(t1) = "%ENGINE%/EngineAssets/Textures/water_droplets.dds";
 
 SamplerState wdPointClampSampler : register(s0) = SS_PointClamp;
 SamplerState wdTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
+sampler2D waterDropletsBumpSampler : register (s5)
+{
+  Texture = %ENGINE%/EngineAssets/Textures/water_droplets.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
 
 ///////////////// vertex shader //////////////////
 
@@ -228,7 +237,7 @@ technique WaterDroplets
 float4 waterFlowParams;
 
 Texture2D wfScreenTex : register(t0) = TS_BackBuffer;
-Texture2D wfWaterFlowBumpTex : register(t1) = "EngineAssets/Textures/perlinNoiseNormal_ddn.tif";
+Texture2D wfWaterFlowBumpTex : register(t1) = "%ENGINE%/EngineAssets/Textures/perlinNoiseNormal_ddn.tif";
 
 SamplerState wfPointClampSampler : register(s0) = SS_PointClamp;
 SamplerState wfTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
@@ -329,7 +338,7 @@ float4 screenFrostParamsPS;
 
 sampler2D frostBumpSampler = sampler_state
 {    
-  Texture = EngineAssets/Textures/screenfrost_ddn.tif;
+  Texture = %ENGINE%/EngineAssets/Textures/screenfrost_ddn.tif;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -339,7 +348,7 @@ sampler2D frostBumpSampler = sampler_state
 
 sampler2D frostAlphaSampler = sampler_state
 {    
-  Texture = EngineAssets/Textures/screenfrost_alpha.tif;
+  Texture = %ENGINE%/EngineAssets/Textures/screenfrost_alpha.tif;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -985,7 +994,7 @@ half4 mColorGradingMatrix[3];
 
 sampler2D grainSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/vector_noise.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/vector_noise.dds;
   MinFilter = POINT;  
   MagFilter = POINT;
   MipFilter = POINT; 
@@ -1356,7 +1365,7 @@ technique DisplayColorCharts
 
 Texture2D roDepthTex : register(t0) = $ZTarget;
 Texture2D roRainOcclusionTex : register(t1) = TS_RainOcclusion;
-Texture2D roNoiseTex : register(t2) = "EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds";
+Texture2D roNoiseTex : register(t2) = "%ENGINE%/EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds";
 
 SamplerState roPointClampSampler : register(s0) = SS_PointClamp;
 SamplerState roTrilinearWrapSampler : register(s1) = SS_MaterialTrilinearWrap;
@@ -1441,8 +1450,8 @@ pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 /// SceneRain technique //////////////////////////////////////////////////////////////////////
 
 Texture2D rnDepthTex : register(t0) = $ZTarget;
-Texture2D rnRainfallTex : register(t1) = "EngineAssets/Textures/Rain/rainfall.tif";
-Texture2D rnRainfallNormTex : register(t2) = "EngineAssets/Textures/Rain/rainfall_ddn.tif";
+Texture2D rnRainfallTex : register(t1) = "%ENGINE%/EngineAssets/Textures/Rain/rainfall.tif";
+Texture2D rnRainfallNormTex : register(t2) = "%ENGINE%/EngineAssets/Textures/Rain/rainfall_ddn.tif";
 Texture2D rnHDRFinalBloomTex : register(t3) = $HDR_FinalBloom;
 Texture2D rnRainDistOccTex : register(t4);
 Texture2D rnHDRToneMapTex : register(t5);
@@ -1589,7 +1598,7 @@ cbuffer SnowClusterCB : register(b0)
 Texture2D snSceneTargetTex : register(t0) = $SceneTarget;
 Texture2D snDepthTex : register(t1) = $ZTarget;
 Texture2D snSnowOcclusionTex : register(t2) = $RainOcclusion;
-Texture2D snSnowFlakesTex : register(t3) = "EngineAssets/Textures/snowflakes.tif";
+Texture2D snSnowFlakesTex : register(t3) = "%ENGINE%/EngineAssets/Textures/snowflakes.tif";
 
 SamplerState snPointClampSampler : register(s0) = SS_PointClamp;
 SamplerState snTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
@@ -1866,7 +1875,7 @@ technique SnowHalfResComposite
 /// Kill Camera Filter technique ///////////////////////////////////////////////////////////////////
 
 Texture2D kcScreenTex : register(t0) = TS_BackBuffer;
-Texture2D kcNoiseTex : register(t1) = "EngineAssets/Textures/vector_noise.dds";
+Texture2D kcNoiseTex : register(t1) = "%ENGINE%/EngineAssets/Textures/vector_noise.dds";
 
 SamplerState kcPointClampSampler : register(s0) = SS_PointClamp;
 SamplerState kcPointWrapSampler : register(s1) = SS_PointWrap;
@@ -2371,7 +2380,7 @@ technique NanoGlass
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Screen blood technique /////////////////////////////////////////////////////////////////////////
 
-Texture2D sbWaterDropletsBumpTex : register(t0) = "EngineAssets/Textures/water_droplets.dds";
+Texture2D sbWaterDropletsBumpTex : register(t0) = "%ENGINE%/EngineAssets/Textures/water_droplets.dds";
 
 SamplerState sbTrilinearWrapSampler : register(s0) = SS_TrilinearWrap;
 

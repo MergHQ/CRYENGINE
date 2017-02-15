@@ -51,7 +51,7 @@ CTexture* CLensGhost::GetTexture()
 {
 	if (!m_pTex)
 	{
-		m_pTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/default-flare.tif", FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown));
+		m_pTex = std::move(CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/default-flare.tif", FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown));
 	}
 
 	return m_pTex;

@@ -23,47 +23,56 @@ set (BinaryFileList_LINUX64
 	${SDK_DIR}/ncurses/lib/libncursesw.so.6
 	)
 
+	
+macro(add_optional_runtime_files)
 
-if (OPTION_ENABLE_BROFILER)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Brofiler/ProfilerCore64.dll)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Brofiler/ProfilerCore32.dll)
-endif()
-if(OPTION_ENABLE_CRASHRPT)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/crashrpt_lang.ini)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/CrashSender1403.exe)
-endif()
-if (OPTION_CRYMONO)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Mono/bin/x64/mono-2.0.dll)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Mono/bin/x86/mono-2.0.dll)
-endif()
-if (PLUGIN_VR_OCULUS OR AUDIO_HRTF)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializerWwise.dll)
-	set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll)
-endif()
-if (PLUGIN_VR_OPENVR)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OpenVR/bin/win64/*.*)
-endif()
-if (PLUGIN_VR_OSVR)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
-endif()
-if (OPTION_SANDBOX)
-	set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
-	)
-	set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
-		${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
-	)
-	set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
-		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
-		${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
-		${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
-	)
-endif()
+	if (OPTION_ENABLE_BROFILER)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Brofiler/ProfilerCore64.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Brofiler/ProfilerCore32.dll)
+	endif()
+	
+	if(OPTION_ENABLE_CRASHRPT)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/crashrpt_lang.ini)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/CrashRpt/1403/bin/x64/CrashSender1403.exe)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/crashrpt_lang.ini)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/CrashRpt/1403/bin/x86/CrashSender1403.exe)
+	endif()
+	
+	if (OPTION_CRYMONO)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/Mono/bin/x64/mono-2.0.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/Mono/bin/x86/mono-2.0.dll)
+	endif()
+
+	if (PLUGIN_VR_OCULUS OR AUDIO_HRTF)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializerWwise.dll)
+		set (BinaryFileList_Win32 ${BinaryFileList_Win32};${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll)
+	endif()
+	
+	if (PLUGIN_VR_OPENVR)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OpenVR/bin/win64/*.*)
+	endif()
+	
+	if (PLUGIN_VR_OSVR)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64};${SDK_DIR}/OSVR/dll/*.dll)
+	endif()
+	
+	if (OPTION_SANDBOX)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll
+		)
+		set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
+			${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll
+		)
+		set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
+			${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll
+			${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll
+			${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb
+		)
+	endif()
+endmacro()
 
 macro(deploy_runtime_file source destination)
 	if(USE_CONFIG)
@@ -165,6 +174,8 @@ macro(copy_binary_files_to_target)
 	endif()
 
 	message( STATUS "copy_binary_files_to_target start ${BUILD_PLATFORM}" )
+	
+	add_optional_runtime_files()
 
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )

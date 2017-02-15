@@ -1955,6 +1955,9 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 		case SCaptureFormatInfo::eCaptureFormat_JPEG:
 			frameCaptureSuccessful = ::WriteJPG(pDest, bbDesc.Width, bbDesc.Height, pFilePath, 8 * OUTPUT_BYTES_PER_PIXEL, 90);
 			break;
+		case SCaptureFormatInfo::eCaptureFormat_PNG:
+			frameCaptureSuccessful = ::WritePNG(pDest, bbDesc.Width, bbDesc.Height, pFilePath);
+			break;
 		default:
 			frameCaptureSuccessful = false;
 			break;

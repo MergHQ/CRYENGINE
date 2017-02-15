@@ -101,7 +101,7 @@ Texture2D<uint2>  StencilTex     : register(t4);
 Texture2DMS<float4> DepthTexMS   : register(t3);
 Texture2DMS<uint2>  StencilTexMS : register(t4);
 
-Texture2D shadowNoiseTex         : register(t7) = "EngineAssets/Textures/rotrandom.dds"; 
+Texture2D shadowNoiseTex         : register(t7) = "%ENGINE%/EngineAssets/Textures/rotrandom.dds"; 
 
 SamplerComparisonState ssShadowComparison     : register(s3) = SS_Shadow2;
 SamplerState           ssShadowPointWrap      : register(s7) = SS_PointWrap;

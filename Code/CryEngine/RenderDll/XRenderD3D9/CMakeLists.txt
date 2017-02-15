@@ -708,6 +708,7 @@ add_sources("CryRenderer_textures_uber.cpp"
 		"../Common/Textures/Image/DDSImage.cpp"
 		"../Common/Textures/Image/JpgImage.cpp"
 		"../Common/Textures/Image/TgaImage.cpp"
+		"../Common/Textures/Image/PngImage.cpp"
 		"../Common/Textures/Image/CImage.h"
 		"../Common/Textures/Image/DDSImage.h"
 )
@@ -1060,7 +1061,7 @@ if (RENDERER_DX11)
 
 	if (WIN32 OR WIN64)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32)
+		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32 png16)
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3dcompiler dxguid xg_x uuid kernelx)
 	elseif(ORBIS)
@@ -1082,7 +1083,7 @@ if (RENDERER_OPENGL)
 	if (WIN32 OR WIN64)
 		target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/squish-ccr ${CRYENGINE_DIR}/Code/Tools/LibTIFF ${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32)
+		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32 png16)
 		if(WIN64)
 			find_library(LIBHLSLCC libHLSLcc PATHS "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
 		elseif(WIN32)
@@ -1122,7 +1123,7 @@ if (RENDERER_DX12)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDIRECT3D10 -DCRY_USE_DX12 -DXRENDERD3D10_EXPORTS -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR} ${SDK_DIR}/squish-ccr ${CRYENGINE_DIR}/Code/Tools/LibTIFF ${CRYENGINE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32)
+	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16)
 else()
 	CryFileContainer(CryRenderD3D12 SOLUTION_FOLDER "CryEngine")
 endif()

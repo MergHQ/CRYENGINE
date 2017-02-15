@@ -486,7 +486,7 @@ void CXConsole::Init(CSystem* pSystem)
 		ITexture* pTex = 0;
 
 		// This texture is already loaded by the renderer. It's ref counted so there is no wasted space.
-		pTex = pSystem->GetIRenderer()->EF_LoadTexture("EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
+		pTex = pSystem->GetIRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
 		if (pTex)
 			m_nWhiteTexID = pTex->GetTextureID();
 	}

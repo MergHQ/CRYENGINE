@@ -1638,7 +1638,7 @@ void CStatObj::CheckCreateBillboardMaterial()
 	// create billboard material and cgf
 	if (nBillboardTexturesFound == 2)
 	{
-		m_pBillboardMaterial = GetMatMan()->LoadMaterial("EngineAssets/Materials/billboard_default", false);
+		m_pBillboardMaterial = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/billboard_default", false);
 
 		if (m_pBillboardMaterial)
 		{

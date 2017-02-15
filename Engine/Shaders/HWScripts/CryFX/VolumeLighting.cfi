@@ -687,7 +687,7 @@ Texture2DArray<float> VolumetricClipVolumeStencil : register(t0) = TS_Volumetric
 #else
 Texture2DArray<uint2> VolumetricClipVolumeStencil : register(t0) = TS_VolumetricClipVolumeStencil;
 #endif
-Texture2D FogNoiseTexture : register(t1) = "EngineAssets/Textures/rotrandomcm.dds";
+Texture2D FogNoiseTexture : register(t1) = "%ENGINE%/EngineAssets/Textures/rotrandomcm.dds";
 StructuredBuffer<SFogVolumeInjectInfo> FogVolumeInjectInfo : register(t8);
 StructuredBuffer<SFogVolumeCullInfo> FogVolumeCullInfo : register(t9);
 Texture2D<float> InjectFogDensityMaxDepthInput : register(t10);

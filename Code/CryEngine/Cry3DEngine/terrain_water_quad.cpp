@@ -46,11 +46,11 @@ COcean::COcean(IMaterial* pMat)
 
 	m_nLastVisibleFrameId = 0;
 
-	m_pBottomCapMaterial = GetMatMan()->LoadMaterial("EngineAssets/Materials/Water/WaterOceanBottom", false);
-	m_pFogIntoMat = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/OceanInto", false);
-	m_pFogOutofMat = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/OceanOutof", false);
-	m_pFogIntoMatLowSpec = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/OceanIntoLowSpec", false);
-	m_pFogOutofMatLowSpec = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/OceanOutofLowSpec", false);
+	m_pBottomCapMaterial = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Water/WaterOceanBottom", false);
+	m_pFogIntoMat = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/OceanInto", false);
+	m_pFogOutofMat = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/OceanOutof", false);
+	m_pFogIntoMatLowSpec = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/OceanIntoLowSpec", false);
+	m_pFogOutofMatLowSpec = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/OceanOutofLowSpec", false);
 
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 	{

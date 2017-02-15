@@ -25,8 +25,8 @@
 #define WIND_GRID_MAP         Texture2D   windGridTex         : register(t27)                                   = TS_WindGrid;  
 #define	TERRAIN_NORM_MAP      Texture2D   terrainNormTex      : register(t28)                                   = TS_TerrainNormMap;
 #define	TERRAIN_BASE_MAP      Texture2D   terrainBaseTex      : register(t29)                                   = TS_TerrainBaseMap;
-#define NORMALS_FITTING_MAP   Texture2D   normalsFittingTex   : register(t30)                                   = "EngineAssets/ScreenSpace/NormalsFitting.dds";
-#define DISSOLVE_NOISE_MAP    Texture2D   dissolveNoiseTex    : register(t31)                                   = "EngineAssets/Textures/noise.dds";  
+#define NORMALS_FITTING_MAP   Texture2D   normalsFittingTex   : register(t30)                                   = "%ENGINE%/EngineAssets/ScreenSpace/NormalsFitting.dds";
+#define DISSOLVE_NOISE_MAP    Texture2D   dissolveNoiseTex    : register(t31)                                   = "%ENGINE%/EngineAssets/Textures/noise.dds";  
 // NOTE: DXOrbis only supports 32 shader slots at this time, don't use t32 or higher if DXOrbis support is desired!
 
 // Forward etc
@@ -71,7 +71,7 @@ sampler2D cloudShadowMap = sampler_state \
 #define DEFAULT_CUBE_MAP \
 samplerCUBE defaultProbeSamplerCUBE = sampler_state \
 { \
-  Texture = EngineAssets/Shading/defaultProbe_cm.tif; \
+  Texture = %ENGINE%/EngineAssets/Shading/defaultProbe_cm.tif; \
   MinFilter = LINEAR; \
   MagFilter = LINEAR; \
   MipFilter = LINEAR; \

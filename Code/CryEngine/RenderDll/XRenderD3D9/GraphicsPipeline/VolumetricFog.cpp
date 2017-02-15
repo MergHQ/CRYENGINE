@@ -375,7 +375,7 @@ void CVolumetricFogStage::Init()
 	m_pMaxDepthTemp = CTexture::CreateTextureObject("$VolFogMaxDepthTemp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pNoiseTexture == nullptr);
-	m_pNoiseTexture = CTexture::ForName("EngineAssets/Textures/rotrandomcm.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pNoiseTexture = CTexture::ForName("%ENGINE%/EngineAssets/Textures/rotrandomcm.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	{
 		const char* texName[CVolumetricFogStage::ShadowCascadeNum] =

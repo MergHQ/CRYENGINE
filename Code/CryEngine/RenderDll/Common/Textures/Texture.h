@@ -2357,6 +2357,7 @@ public:
 };
 
 bool  WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel);
+bool  WritePNG(byte* dat, int wdt, int hgt, const char* name);
 bool  WriteJPG(byte* dat, int wdt, int hgt, const char* name, int bpp, int nQuality = 100);
 #if CRY_PLATFORM_WINDOWS
 byte* WriteDDS(byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory = false, int* nSize = NULL);

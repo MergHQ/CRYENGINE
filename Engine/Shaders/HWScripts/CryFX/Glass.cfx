@@ -83,7 +83,7 @@ Texture2D tintColorTex : register(9)
 
 sampler2D decalSampler = sampler_state 
 { 
-  Texture = EngineAssets/Textures/glass_decalatlas_diff.dds; 
+  Texture = %ENGINE%/EngineAssets/Textures/glass_decalatlas_diff.dds; 
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -94,7 +94,7 @@ sampler2D decalSampler = sampler_state
 
 sampler2D decalNormSampler = sampler_state 
 { 
-  Texture = EngineAssets/Textures/glass_decalatlas_ddn.dds; 
+  Texture = %ENGINE%/EngineAssets/Textures/glass_decalatlas_ddn.dds; 
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 

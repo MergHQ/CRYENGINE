@@ -51,7 +51,7 @@ Texture2D reflexSightSampler : register(t0) =  TM_Diffuse;
 
 sampler2D noiseMapSampler
 {
-  Texture = EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds;
   MinFilter = POINT;
   MagFilter = POINT;
   MipFilter = POINT; 

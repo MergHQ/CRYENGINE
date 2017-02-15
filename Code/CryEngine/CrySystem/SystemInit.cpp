@@ -1787,6 +1787,9 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 		CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
 		string engineRootDir = PathUtil::RemoveSlash(szEngineRootDir);
 		m_env.pCryPak->SetAlias("%ENGINEROOT%", engineRootDir.c_str(), true);
+
+		const CryPathString engineDir = PathUtil::Make(CryPathString(engineRootDir.c_str()), CryPathString(CRYENGINE_ENGINE_FOLDER));
+		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
 	}
 
 	bool bRes = m_env.pCryPak->Init("");
@@ -2147,13 +2150,16 @@ void CSystem::OpenBasicPaks()
 	// Open Paks from Engine folder
 	//////////////////////////////////////////////////////////////////////////
 	// After game paks to have same search order as with files on disk
-	if (buildFolder.empty())
 	{
-		m_env.pCryPak->OpenPacks(PathUtil::GetGameFolder(), "%ENGINEROOT%/Engine/*.pak");
-	}
-	else
-	{
-		m_env.pCryPak->OpenPacks(PathUtil::GetGameFolder(), buildFolder + "Engine/*.pak");
+		const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
+		if (buildFolder.empty())
+		{
+			m_env.pCryPak->OpenPacks(szBindRoot, "%ENGINEROOT%/Engine/*.pak");
+		}
+		else
+		{
+			m_env.pCryPak->OpenPacks(szBindRoot, buildFolder + "Engine/*.pak");
+		}
 	}
 
 	InlineInitializationProcessing("CSystem::OpenBasicPaks OpenPacks( Engine... )");

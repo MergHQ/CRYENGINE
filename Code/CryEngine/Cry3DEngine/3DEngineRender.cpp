@@ -868,8 +868,8 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		if (GetCVars()->e_DefaultMaterial)
 		{
-			_smart_ptr<IMaterial> pMat = GetMaterialManager()->LoadMaterial("EngineAssets/Materials/material_default");
-			_smart_ptr<IMaterial> pTerrainMat = GetMaterialManager()->LoadMaterial("EngineAssets/Materials/material_terrain_default");
+			_smart_ptr<IMaterial> pMat = GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/Materials/material_default");
+			_smart_ptr<IMaterial> pTerrainMat = GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/Materials/material_terrain_default");
 			GetRenderer()->SetDefaultMaterials(pMat, pTerrainMat);
 		}
 		else

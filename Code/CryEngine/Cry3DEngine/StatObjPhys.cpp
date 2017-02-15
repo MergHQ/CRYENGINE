@@ -127,7 +127,7 @@ void CStatObj::PhysicalizeCompiled(CNodeCGF* pNode, int bAppend)
 				FileWarning(0, GetFilePath(), "Phys proxy rejected due to triangle count limit, %d > %d (%s)", pmd->nTris, GetCVars()->e_PhysProxyTriLimit, GetFilePath());
 				GetPhysicalWorld()->GetGeomManager()->UnregisterGeometry(pPhysGeom);
 				m_isProxyTooBig = true;
-				m_pMaterial = Get3DEngine()->GetMaterialManager()->LoadMaterial("EngineAssets/Materials/PhysProxyTooBig");
+				m_pMaterial = Get3DEngine()->GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/Materials/PhysProxyTooBig");
 			}
 			else
 				AssignPhysGeom(nPhysGeomType + PHYS_GEOM_TYPE_DEFAULT, pPhysGeom, bAppend, /*bLoading*/ 1);
@@ -3691,10 +3691,10 @@ CStatObjFoliage::~CStatObjFoliage()
 	m_prev->m_next = m_next;
 	if (m_pStatObj)
 		m_pStatObj->Release();
+	if (*m_ppThis == this)
+		*m_ppThis = nullptr;
 	if (!m_bDelete)
 	{
-		if (*m_ppThis == this)
-			*m_ppThis = 0;
 		if (m_pRenderObject)
 		{
 			m_pRenderObject->m_ObjFlags &= ~(FOB_SKINNED);
