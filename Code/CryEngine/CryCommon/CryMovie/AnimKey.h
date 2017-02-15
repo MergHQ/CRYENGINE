@@ -684,6 +684,7 @@ struct SCaptureFormatInfo
 	{
 		eCaptureFormat_TGA,
 		eCaptureFormat_JPEG,
+		eCaptureFormat_PNG,
 		eCaptureFormat_Num
 	};
 
@@ -692,7 +693,8 @@ struct SCaptureFormatInfo
 		const char* captureFormatNames[eCaptureFormat_Num] =
 		{
 			"tga",
-			"jpg"
+			"jpg",
+			"png"
 		};
 		return captureFormatNames[captureFormat];
 	};

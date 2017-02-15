@@ -21,10 +21,10 @@ Texture2D drLinearDepthTex : register(t0) = TS_ZTarget;
 Texture2D drSceneNormalTex : register(t1);
 Texture2D drSceneSpecularTex : register(t2);
 Texture2D drSceneDiffuseTex : register(t3);
-Texture2D drSurfaceFlowTex : register(t4) = "EngineAssets/Textures/Rain/surface_flow_ddn.tif";
-Texture2D drRainSpatterTex : register(t5) = "EngineAssets/Textures/Rain/rain_spatter.tif";
-Texture2D drPuddleMaskTex : register(t6) = "EngineAssets/Textures/Rain/puddle_mask.tif";
-Texture2D drRainRipplesTex : register(t7) = "EngineAssets/Textures/Rain/Ripple/ripple#01_24_ddn.tif";
+Texture2D drSurfaceFlowTex : register(t4) = "%ENGINE%/EngineAssets/Textures/Rain/surface_flow_ddn.tif";
+Texture2D drRainSpatterTex : register(t5) = "%ENGINE%/EngineAssets/Textures/Rain/rain_spatter.tif";
+Texture2D drPuddleMaskTex : register(t6) = "%ENGINE%/EngineAssets/Textures/Rain/puddle_mask.tif";
+Texture2D drRainRipplesTex : register(t7) = "%ENGINE%/EngineAssets/Textures/Rain/Ripple/ripple#01_24_ddn.tif";
 Texture2D drRainOcclusionTex : register(t8) = $RainOcclusion;
 Texture2D<uint2> drStencilTex : register(t9);
 
@@ -34,7 +34,7 @@ SamplerState drPointBorderWhiteSampler : register(s2);
 SamplerState drBilinearWrapSampler : register(s3) = SS_MaterialBilinearWrap;
 
 // Those texture and sampler are used in EncodeGBuffer().
-//Texture2D normalsFittingTex : register(t30) = "EngineAssets/ScreenSpace/NormalsFitting.dds";
+//Texture2D normalsFittingTex : register(t30) = "%ENGINE%/EngineAssets/ScreenSpace/NormalsFitting.dds";
 //SamplerState ssPointClamp : register(s9) = SS_PointClamp;
 
 half4 g_fWaterLevel : PB_WaterLevel;

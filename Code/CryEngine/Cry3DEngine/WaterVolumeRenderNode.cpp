@@ -241,8 +241,8 @@ CWaterVolumeRenderNode::CWaterVolumeRenderNode()
 {
 	GetInstCount(GetRenderNodeType())++;
 
-	m_pWaterBodyIntoMat = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/WaterFogVolumeInto", false);
-	m_pWaterBodyOutofMat = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/WaterFogVolumeOutof", false);
+	m_pWaterBodyIntoMat = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/WaterFogVolumeInto", false);
+	m_pWaterBodyOutofMat = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/WaterFogVolumeOutof", false);
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 	{
 		m_pVolumeRE[i] = GetRenderer() ?

@@ -17,8 +17,8 @@ struct PostAAConstants
 
 void CPostAAStage::Init()
 {
-	m_pTexAreaSMAA.Assign_NoAddRef(CTexture::ForName("EngineAssets/ScreenSpace/AreaTex.dds", FT_DONT_STREAM, eTF_Unknown));
-	m_pTexSearchSMAA.Assign_NoAddRef(CTexture::ForName("EngineAssets/ScreenSpace/SearchTex.dds", FT_DONT_STREAM, eTF_Unknown));
+	m_pTexAreaSMAA.Assign_NoAddRef(CTexture::ForName("%ENGINE%/EngineAssets/ScreenSpace/AreaTex.dds", FT_DONT_STREAM, eTF_Unknown));
+	m_pTexSearchSMAA.Assign_NoAddRef(CTexture::ForName("%ENGINE%/EngineAssets/ScreenSpace/SearchTex.dds", FT_DONT_STREAM, eTF_Unknown));
 	m_lastFrameID = -1;
 
 	m_samplerPoint = CTexture::GetTexState(STexState(FILTER_POINT, true));

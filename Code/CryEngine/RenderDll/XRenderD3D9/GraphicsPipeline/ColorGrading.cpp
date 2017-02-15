@@ -6,7 +6,7 @@
 #include "DriverD3D.h"
 #include "../Common/PostProcess/PostEffects.h"
 
-const char* COLORCHART_DEF_TEX = "EngineAssets/Textures/default_cch.tif";
+const char* COLORCHART_DEF_TEX = "%ENGINE%/EngineAssets/Textures/default_cch.tif";
 const ETEX_Format COLORCHART_FORMAT = eTF_R8G8B8A8;
 
 CColorGradingStage::CColorGradingStage()

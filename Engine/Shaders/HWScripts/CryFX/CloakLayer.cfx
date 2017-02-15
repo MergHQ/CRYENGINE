@@ -105,7 +105,7 @@ sampler2D envMapSamplerRefr
 
 sampler2D cloakPaletteMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/palette/cloak_palette.tif;
+  Texture = %ENGINE%/EngineAssets/Textures/palette/cloak_palette.tif;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -115,7 +115,7 @@ sampler2D cloakPaletteMapSampler = sampler_state
 
 sampler2D cloakInterlationMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/palette/cloak_interlation.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/palette/cloak_interlation.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -125,7 +125,7 @@ sampler2D cloakInterlationMapSampler = sampler_state
 
 sampler2D cloakTransitionMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/palette/cloak_transition.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/palette/cloak_transition.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -135,7 +135,7 @@ sampler2D cloakTransitionMapSampler = sampler_state
 
 sampler2D cloakSparksMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/palette/cloak_sparks.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/palette/cloak_sparks.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -145,7 +145,7 @@ sampler2D cloakSparksMapSampler = sampler_state
 
 sampler3D volumeNoiseSampler = sampler_state
 {  
-  Texture = EngineAssets/Textures/Noise3D.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/Noise3D.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -156,7 +156,7 @@ sampler3D volumeNoiseSampler = sampler_state
 
 sampler2D nanoPatternBumpMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/hex_ddn.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/hex_ddn.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = NONE; 
@@ -166,7 +166,7 @@ sampler2D nanoPatternBumpMapSampler = sampler_state
 
 sampler2D perlinNoiseSampler
 {
-  Texture = EngineAssets/Textures/perlinNoise_sum.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/perlinNoise_sum.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = POINT;

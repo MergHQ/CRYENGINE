@@ -15,7 +15,7 @@ float Script : STANDARDSGLOBAL
 >; 
 
 Texture2D shadowDepthTex                : register(t0) = TS_Shadow0;
-Texture2D noiseTex                      : register(t1) = "EngineAssets/Textures/rotrandom.dds"; 
+Texture2D noiseTex                      : register(t1) = "%ENGINE%/EngineAssets/Textures/rotrandom.dds"; 
 Texture2D           sceneDepthTexture   : register(t2) = TS_ZTarget ;
 Texture2DMS<float4> sceneDepthTextureMS : register(t3) = TS_ZTargetMS;
 

@@ -1115,4 +1115,16 @@ inline void Color_tpl<T >::grey(const Color_tpl<T>& c)
 #define Clr_Unused            ColorF(0.0f, 0.0f, 0.0f, 0.0f)
 #define Clr_Debug             ColorF(1.0f, 0.0f, 0.0f, 1.0f)
 
+
+inline ColorF ColorGammaToLinear(const ColorF& col)
+{
+	float r = col.r / 255.0f;
+	float g = col.g / 255.0f;
+	float b = col.b / 255.0f;
+
+	return ColorF((float)(r <= 0.04045 ? (r / 12.92) : pow(((double)r + 0.055) / 1.055, 2.4)),
+		(float)(g <= 0.04045 ? (g / 12.92) : pow(((double)g + 0.055) / 1.055, 2.4)),
+		(float)(b <= 0.04045 ? (b / 12.92) : pow(((double)b + 0.055) / 1.055, 2.4)));
+}
+
 #endif // CRYTEK_CRYCOLOR_H

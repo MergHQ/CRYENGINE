@@ -89,7 +89,7 @@ sampler2D TexSampler = sampler_state
 
 sampler3D noiseMapSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/Noise3D.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/Noise3D.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -100,7 +100,7 @@ sampler3D noiseMapSampler = sampler_state
 
 sampler2D noise2DSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/perlinnoise2d.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/perlinnoise2d.dds;
   MinFilter = POINT;
   MagFilter = POINT;
   MipFilter = POINT; 

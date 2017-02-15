@@ -40,7 +40,7 @@ CSvoRenderer::CSvoRenderer()
 	m_nTexStatePoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
 	m_nTexStateLinearWrap = CTexture::GetTexState(STexState(FILTER_LINEAR, false));
 
-	m_pNoiseTex = CTexture::ForName("EngineAssets/Textures/noise.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise.dds", FT_DONT_STREAM, eTF_Unknown);
 	m_pRsmNormlMap = m_pRsmColorMap = 0;
 	m_pRsmPoolNor = m_pRsmPoolCol = 0;
 

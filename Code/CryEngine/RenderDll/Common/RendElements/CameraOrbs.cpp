@@ -229,7 +229,7 @@ CTexture* CameraOrbs::GetOrbTex()
 {
 	if (!m_pOrbTex)
 	{
-		m_pOrbTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/default-orb.tif", FT_DONT_STREAM, eTF_Unknown));
+		m_pOrbTex = std::move(CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/default-orb.tif", FT_DONT_STREAM, eTF_Unknown));
 	}
 
 	return m_pOrbTex;
@@ -239,7 +239,7 @@ CTexture* CameraOrbs::GetLensTex()
 {
 	if (!m_pLensTex)
 	{
-		m_pLensTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/Smudgy.tif", FT_DONT_STREAM, eTF_Unknown));
+		m_pLensTex = std::move(CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/Smudgy.tif", FT_DONT_STREAM, eTF_Unknown));
 	}
 
 	return m_pLensTex;

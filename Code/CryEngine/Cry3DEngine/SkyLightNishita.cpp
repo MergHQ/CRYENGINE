@@ -38,7 +38,7 @@ const f32 c_pif(3.1415926535897932384626433832795f);
 // constants for optical LUT serialization
 const uint32 c_lutFileTag(0x4C594B53);          // "SKYL"
 const uint32 c_lutFileVersion(0x00010002);
-const char c_lutFileName[] = "engineassets/sky/optical.lut";
+const char c_lutFileName[] = "%ENGINE%/engineassets/sky/optical.lut";
 
 static inline f64 MapSaveExpArg(f64 arg)
 {

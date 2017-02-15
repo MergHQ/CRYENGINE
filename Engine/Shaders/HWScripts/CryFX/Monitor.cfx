@@ -30,7 +30,7 @@ Texture2D glowDecalTex : register(t7) = TM_DecalOverlay;
 
 sampler2D deformMapSampler
 {
-  Texture = EngineAssets/Textures/perlinNoiseNormal_ddn.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/perlinNoiseNormal_ddn.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 
@@ -40,7 +40,7 @@ sampler2D deformMapSampler
 
 sampler2D noiseMap
 {
-  Texture = EngineAssets/ScreenSpace/grain_bayer_mul.tif;
+  Texture = %ENGINE%/EngineAssets/ScreenSpace/grain_bayer_mul.tif;
   MinFilter = POINT;
   MagFilter = POINT;
   MipFilter = NONE; 
@@ -50,7 +50,7 @@ sampler2D noiseMap
 
 sampler2D pixelMapSampler = sampler_state 
 { 
-  Texture = EngineAssets/Textures/pixeltex.dds; 
+  Texture = %ENGINE%/EngineAssets/Textures/pixeltex.dds; 
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR; 

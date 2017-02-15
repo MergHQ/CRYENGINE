@@ -375,7 +375,7 @@ float GetOpticalThickness(in float3 rayOriginWS, in float3 rayDir, in float exti
 
 RWTexture3D< float3 > VolShadowRW : register( u0 );
 
-Texture3D CloudShadowNoiseTex : register(t0) = "EngineAssets/Textures/noise3d.dds";
+Texture3D CloudShadowNoiseTex : register(t0) = "%ENGINE%/EngineAssets/Textures/noise3d.dds";
 SamplerState CloudShadowTrilinearWrapSState : register(s0) = SS_TrilinearWrap;
 
 cbuffer CloudShadowConstantBuffer : register(b3)
@@ -500,7 +500,7 @@ technique CloudShadowGen
 #ifdef ENABLE_CIRRUS_CLOUD_LAYER
 sampler2D cloudDetailSampler = sampler_state
 {
-	Texture = EngineAssets/Textures/cloud/stratus_clouds_mask.tif;
+	Texture = %ENGINE%/EngineAssets/Textures/cloud/stratus_clouds_mask.tif;
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	MipFilter = LINEAR;
@@ -510,7 +510,7 @@ sampler2D cloudDetailSampler = sampler_state
 
 sampler2D PlaneCloudsDiff = sampler_state
 {
-	Texture = EngineAssets/Textures/cloud/stratus_clouds_diff.tif;
+	Texture = %ENGINE%/EngineAssets/Textures/cloud/stratus_clouds_diff.tif;
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	MipFilter = LINEAR;
@@ -520,7 +520,7 @@ sampler2D PlaneCloudsDiff = sampler_state
 
 sampler2D PlaneCloudsNorm = sampler_state
 {
-	Texture = EngineAssets/Textures/cloud/stratus_clouds_ddn.tif;
+	Texture = %ENGINE%/EngineAssets/Textures/cloud/stratus_clouds_ddn.tif;
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	MipFilter = LINEAR;
@@ -538,8 +538,8 @@ Texture3D<float> VolCloudDensity : register(t3);
 Texture3D<float3> VolCloudShadow : register(t4);
 
 Texture3D VolCloudGlobalShadowTex : register(t5) = TS_VolCloudShadow;
-Texture3D VolCloudNoiseTex : register(t6) = "EngineAssets/Textures/noise3d.dds";
-Texture2D VolCloudMiePhaseTex : register(t7) = "EngineAssets/Shading/cloud_mie_phase_function.dds";
+Texture3D VolCloudNoiseTex : register(t6) = "%ENGINE%/EngineAssets/Textures/noise3d.dds";
+Texture2D VolCloudMiePhaseTex : register(t7) = "%ENGINE%/EngineAssets/Shading/cloud_mie_phase_function.dds";
 
 Texture2D VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
 

@@ -66,7 +66,7 @@ sampler3D volShadSampler = sampler_state
 
 sampler3D noise3Dsampler = sampler_state
 {  
-	Texture = EngineAssets/Textures/Noise3D.dds;
+	Texture = %ENGINE%/EngineAssets/Textures/Noise3D.dds;
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	MipFilter = LINEAR; 
@@ -79,7 +79,7 @@ sampler3D noise3Dsampler = sampler_state
 
 sampler2D jitterSampler = sampler_state
 {
-	Texture = EngineAssets/Textures/Vector_Noise.dds;
+	Texture = %ENGINE%/EngineAssets/Textures/Vector_Noise.dds;
 	MinFilter = POINT;  
 	MagFilter = POINT;
 	MipFilter = POINT; 

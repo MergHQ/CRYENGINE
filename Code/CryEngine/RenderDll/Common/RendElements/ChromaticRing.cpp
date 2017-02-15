@@ -123,7 +123,7 @@ CTexture* ChromaticRing::GetOrLoadSpectrumTex()
 {
 	if (m_pSpectrumTex == nullptr)
 	{
-		m_pSpectrumTex = std::move(CTexture::ForName("EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown));
+		m_pSpectrumTex = std::move(CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown));
 	}
 
 	return m_pSpectrumTex;

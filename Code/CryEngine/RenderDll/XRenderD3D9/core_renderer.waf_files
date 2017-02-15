@@ -304,6 +304,7 @@
 			"../Common/Textures/Image/DDSImage.cpp",
 			"../Common/Textures/Image/JpgImage.cpp",
 			"../Common/Textures/Image/TgaImage.cpp",
+			"../Common/Textures/Image/PngImage.cpp",
       "../Common/Textures/Image/CImage.h",
 			"../Common/Textures/Image/DDSImage.h"
 		]

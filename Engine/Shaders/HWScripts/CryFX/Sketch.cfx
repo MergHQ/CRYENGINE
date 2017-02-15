@@ -24,7 +24,7 @@ float4 TexelDensityColor  : PB_TexelDensityColor;
 
 sampler2D gradientSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/TexelsPerMeterGrad.tif;
+  Texture = %ENGINE%/EngineAssets/Textures/TexelsPerMeterGrad.tif;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = NONE; 

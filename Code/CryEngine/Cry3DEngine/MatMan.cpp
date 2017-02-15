@@ -35,11 +35,11 @@ int CMatMan::e_pre_sketch_spec = 0;
 int CMatMan::e_texeldensity = 0;
 
 #if !defined(_RELEASE)
-static const char* szReplaceMe = "EngineAssets/TextureMsg/ReplaceMe.tif";
-static const char* szGeomNotBreakable = "EngineAssets/TextureMsg/GeomNotBreakable.tif";
+static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
+static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/GeomNotBreakable.tif";
 #else
-static const char* szReplaceMe = "EngineAssets/TextureMsg/ReplaceMeRelease.tif";
-static const char* szGeomNotBreakable = "EngineAssets/TextureMsg/ReplaceMeRelease.tif";
+static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
+static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
 #endif
 
 static void OnSketchModeChange(ICVar* pVar)
@@ -731,7 +731,7 @@ bool CMatMan::LoadMaterialLayerSlot(uint32 nSlot, IMaterial* pMtl, const char* s
 
 	if (pInputResources->m_Textures[EFTT_NORMALS].m_Name.empty())
 	{
-		pInputResources->m_Textures[EFTT_NORMALS].m_Name = "EngineAssets/Textures/white_ddn.dds";
+		pInputResources->m_Textures[EFTT_NORMALS].m_Name = "%ENGINE%/EngineAssets/Textures/white_ddn.dds";
 	}
 
 	// Load layer shader item

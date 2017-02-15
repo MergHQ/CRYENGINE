@@ -72,11 +72,11 @@ Texture2D sceneDiffuseTex : register(t0);
 Texture2D sceneNormalTex : register(t1);
 Texture2D sceneSpecularTex : register(t2);
 Texture2D depthTex : register(t3) = $ZTarget;
-Texture2D snowDerivativesTex : register(t4) = "EngineAssets/Textures/perlinNoiseDerivatives.tif";
-Texture2D snowSpatterTex : register(t5) = "EngineAssets/Textures/Frozen/snow_spatter.tif";
-Texture2D frostBubblesBumpTex : register(t6) = "EngineAssets/Textures/Frozen/frost_noise4.tif";
-Texture2D snowFrostBumpTex : register(t7) = "EngineAssets/Textures/Frozen/frost_noise3.dds";
-Texture3D volumeNoiseTex : register(t8) = "EngineAssets/Textures/noise3d.dds";
+Texture2D snowDerivativesTex : register(t4) = "%ENGINE%/EngineAssets/Textures/perlinNoiseDerivatives.tif";
+Texture2D snowSpatterTex : register(t5) = "%ENGINE%/EngineAssets/Textures/Frozen/snow_spatter.tif";
+Texture2D frostBubblesBumpTex : register(t6) = "%ENGINE%/EngineAssets/Textures/Frozen/frost_noise4.tif";
+Texture2D snowFrostBumpTex : register(t7) = "%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds";
+Texture3D volumeNoiseTex : register(t8) = "%ENGINE%/EngineAssets/Textures/noise3d.dds";
 Texture2D snowOcclusionTex : register(t9) = $RainOcclusion;
 
 SamplerState pointClampSampler : register(s0) = SS_PointClamp;

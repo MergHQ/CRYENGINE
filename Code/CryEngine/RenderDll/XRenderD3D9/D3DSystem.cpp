@@ -1493,7 +1493,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		m_deskheight = rc.bottom - rc.top;
 	}
 
-	REGISTER_STRING_CB("r_WindowIconTexture", "EngineAssets/Textures/default_icon.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_STRING_CB("r_WindowIconTexture", "%ENGINE%/EngineAssets/Textures/default_icon.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
 	                   "Sets the image (dds file) to be displayed as the window and taskbar icon",
 	                   SetWindowIconCVar);
 #else
@@ -1501,7 +1501,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 #endif
 
 #if CRY_PLATFORM_DESKTOP
-	REGISTER_STRING_CB("r_MouseCursorTexture", "EngineAssets/Textures/Cursor_Green.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
 	                   "Sets the image (dds file) to be displayed as the mouse cursor",
 	                   SetMouseCursorIconCVar);
 #endif

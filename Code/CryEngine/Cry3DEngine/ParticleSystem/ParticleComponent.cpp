@@ -122,7 +122,7 @@ void SComponentParams::Reset()
 	m_meshCentered = false;
 	m_isValid = false;
 	m_parentId = gInvalidId;
-	m_diffuseMap = "EngineAssets/Textures/white.dds";
+	m_diffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
 	m_pMaterial = 0;
 	m_particleObjFlags = 0;
 	m_renderObjectSortBias = 0.0f;

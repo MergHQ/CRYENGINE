@@ -32,7 +32,7 @@ Texture2D<float4> depthMapSampler3 : TS_Shadow6;
 
 sampler2D sRotSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/rotrandom.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/rotrandom.dds;
   MinFilter = POINT;
   MagFilter = POINT;
   MipFilter = POINT; 

@@ -677,7 +677,7 @@ bool CShaderMan::mfLoadResourceTexture(EEfResTextures Id, SInputShaderResources&
 
 		if (!(bReturn = RS.m_Textures[Id].m_Sampler.m_pTex->IsTextureLoaded()) && bReplaceMeOnFail)
 		{
-			RS.m_Textures[Id].m_Sampler.m_pTex = mfLoadResourceTexture("EngineAssets/TextureMsg/ReplaceMe.tif", RS.m_TexturePath.c_str(), RS.m_Textures[Id].m_Sampler.GetTexFlags() | CustomFlags, &RS.m_Textures[Id]);
+			RS.m_Textures[Id].m_Sampler.m_pTex = mfLoadResourceTexture("%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif", RS.m_TexturePath.c_str(), RS.m_Textures[Id].m_Sampler.GetTexFlags() | CustomFlags, &RS.m_Textures[Id]);
 		}
 	}
 
@@ -703,7 +703,7 @@ bool CShaderMan::mfLoadResourceTexture(EEfResTextures Id, CShaderResources& RS, 
 
 		if (!(bTextureLoaded = RS.m_Textures[Id]->m_Sampler.m_pTex->IsTextureLoaded()) && bReplaceMeOnFail)
 		{
-			RS.m_Textures[Id]->m_Sampler.m_pTex = mfLoadResourceTexture("EngineAssets/TextureMsg/ReplaceMe.tif", RS.m_TexturePath.c_str(), RS.m_Textures[Id]->m_Sampler.GetTexFlags() | CustomFlags, RS.m_Textures[Id]);
+			RS.m_Textures[Id]->m_Sampler.m_pTex = mfLoadResourceTexture("%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif", RS.m_TexturePath.c_str(), RS.m_Textures[Id]->m_Sampler.GetTexFlags() | CustomFlags, RS.m_Textures[Id]);
 		}
 	}
 
@@ -861,7 +861,7 @@ void CShaderMan::mfRefreshResources(CShaderResources* Res, const IRenderer::SLoa
 				}
 				else
 				{
-					Tex->m_Sampler.m_pTex = mfLoadResourceTexture("EngineAssets/TextureMsg/NotFound.tif", Res->m_TexturePath.c_str(), Res->m_Textures[i]->m_Sampler.GetTexFlags() | Flags, Res->m_Textures[i]);
+					Tex->m_Sampler.m_pTex = mfLoadResourceTexture("%ENGINE%/EngineAssets/TextureMsg/NotFound.tif", Res->m_TexturePath.c_str(), Res->m_Textures[i]->m_Sampler.GetTexFlags() | Flags, Res->m_Textures[i]);
 				}
 			}
 			else if (!Tex->m_Sampler.m_pTex)

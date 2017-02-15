@@ -196,9 +196,9 @@ void CWaterStage::Init()
 	}
 
 	CRY_ASSERT(m_pFoamTex == nullptr);
-	m_pFoamTex = CTexture::ForName("EngineAssets/Shading/WaterFoam.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pFoamTex = CTexture::ForName("%ENGINE%/EngineAssets/Shading/WaterFoam.tif", FT_DONT_STREAM, eTF_Unknown);
 
-	const string fileNamePath = "EngineAssets/Textures/Rain/Ripple/ripple";
+	const string fileNamePath = "%ENGINE%/EngineAssets/Textures/Rain/Ripple/ripple";
 	const string fileNameExt = "_ddn.tif";
 	uint32 index = 1;
 	for (auto& pTex : m_pRainRippleTex)
@@ -210,19 +210,19 @@ void CWaterStage::Init()
 	}
 
 	CRY_ASSERT(m_pPerlinNoiseTex == nullptr);
-	m_pPerlinNoiseTex = CTexture::ForName("EngineAssets/Textures/perlinNoise2d.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pPerlinNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/perlinNoise2d.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pJitterTex == nullptr);
-	m_pJitterTex = CTexture::ForName("EngineAssets/Textures/FogVolShadowJitter.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pJitterTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pWaterGlossTex == nullptr);
-	m_pWaterGlossTex = CTexture::ForName("EngineAssets/Textures/water_gloss.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pWaterGlossTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/water_gloss.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pOceanWavesTex == nullptr);
-	m_pOceanWavesTex = CTexture::ForName("EngineAssets/Textures/oceanwaves_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pOceanWavesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/oceanwaves_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pOceanCausticsTex == nullptr);
-	m_pOceanCausticsTex = CTexture::ForName("EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pOceanCausticsTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pOceanMaskTex == nullptr);
 	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;

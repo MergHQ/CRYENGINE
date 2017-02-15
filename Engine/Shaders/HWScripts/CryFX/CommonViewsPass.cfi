@@ -8,7 +8,7 @@ Texture2D<float4> SceneLinearDepthTex : register(t24) = $ZTarget;
 
 sampler2D PNoiseSampler = sampler_state
 {
-  Texture = EngineAssets/Textures/perlinNoise2D.dds;
+  Texture = %ENGINE%/EngineAssets/Textures/perlinNoise2D.dds;
   MinFilter = LINEAR;
   MagFilter = LINEAR;
   MipFilter = LINEAR;

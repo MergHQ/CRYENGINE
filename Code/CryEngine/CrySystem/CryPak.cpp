@@ -861,6 +861,7 @@ void CCryPak::SetAlias(const char* szName, const char* szAlias, bool bAdd)
 #if !CRY_PLATFORM_IOS && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
 		strlwr(tNew->szAlias);
 #endif
+		std::replace(tNew->szAlias, tNew->szAlias + tNew->nLen2 + 1, g_cNonNativeSlash, g_cNativeSlash);
 		m_arrAliases.push_back(tNew);
 	}
 }

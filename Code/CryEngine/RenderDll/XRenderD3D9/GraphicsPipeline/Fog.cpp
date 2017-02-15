@@ -36,7 +36,7 @@ CFogStage::~CFogStage()
 
 void CFogStage::Init()
 {
-	m_pTexInterleaveSamplePattern = CTexture::ForName("EngineAssets/Textures/FogVolShadowJitter.tif", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
+	m_pTexInterleaveSamplePattern = CTexture::ForName("%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.tif", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 
 	m_samplerPointClamp = CTexture::GetTexState(STexState(FILTER_POINT, true));
 }

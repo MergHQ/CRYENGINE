@@ -29,7 +29,7 @@ sampler2D particlesThicknessSampler
 
 sampler2D gradientMapSampler = sampler_state
 {
-	Texture = EngineAssets/Textures/TexelsPerMeterGrad.dds;
+	Texture = %ENGINE%/EngineAssets/Textures/TexelsPerMeterGrad.dds;
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	MipFilter = NONE; 

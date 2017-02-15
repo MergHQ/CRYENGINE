@@ -51,24 +51,24 @@ CRainStage::~CRainStage()
 void CRainStage::Init()
 {
 	CRY_ASSERT(m_pSurfaceFlowTex == nullptr);
-	m_pSurfaceFlowTex = CTexture::ForName("EngineAssets/Textures/Rain/surface_flow_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSurfaceFlowTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Rain/surface_flow_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pRainSpatterTex == nullptr);
-	m_pRainSpatterTex = CTexture::ForName("EngineAssets/Textures/Rain/rain_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pRainSpatterTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Rain/rain_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pPuddleMaskTex == nullptr);
-	m_pPuddleMaskTex = CTexture::ForName("EngineAssets/Textures/Rain/puddle_mask.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pPuddleMaskTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Rain/puddle_mask.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pHighFreqNoiseTex == nullptr);
-	m_pHighFreqNoiseTex = CTexture::ForName("EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pHighFreqNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/JumpNoiseHighFrequency_x27y19.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pRainfallTex == nullptr);
-	m_pRainfallTex = CTexture::ForName("EngineAssets/Textures/Rain/rainfall.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pRainfallTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Rain/rainfall.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pRainfallNormalTex == nullptr);
-	m_pRainfallNormalTex = CTexture::ForName("EngineAssets/Textures/Rain/rainfall_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pRainfallNormalTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Rain/rainfall_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
-	const string fileNamePath = "EngineAssets/Textures/Rain/Ripple/ripple";
+	const string fileNamePath = "%ENGINE%/EngineAssets/Textures/Rain/Ripple/ripple";
 	const string fileNameExt = "_ddn.tif";
 	uint32 index = 1;
 	for (auto& pTex : m_pRainRippleTex)

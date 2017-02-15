@@ -86,9 +86,9 @@ void C3DEngine::LoadDefaultAssets()
 	if (GetRenderer())
 	{
 		GetRenderer()->InitSystemResources(FRR_SYSTEM_RESOURCES);
-		m_nBlackTexID = GetRenderer()->EF_LoadTexture("EngineAssets/Textures/black.dds", FT_DONT_STREAM)->GetTextureID();
-		m_nBlackCMTexID = GetRenderer()->EF_LoadTexture("EngineAssets/Textures/BlackCM.dds", FT_DONT_RELEASE | FT_DONT_STREAM)->GetTextureID();
-		m_nWhiteTexID = GetRenderer()->EF_LoadTexture("EngineAssets/Textures/white.dds", FT_DONT_STREAM)->GetTextureID();
+		m_nBlackTexID = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/black.dds", FT_DONT_STREAM)->GetTextureID();
+		m_nBlackCMTexID = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/BlackCM.dds", FT_DONT_RELEASE | FT_DONT_STREAM)->GetTextureID();
+		m_nWhiteTexID = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/white.dds", FT_DONT_STREAM)->GetTextureID();
 	}
 
 	//Add a call to refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
@@ -100,8 +100,8 @@ void C3DEngine::LoadDefaultAssets()
 
 	GetMatMan()->InitDefaults();
 
-	m_pMatFogVolEllipsoid = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/FogVolumeEllipsoid", false);
-	m_pMatFogVolBox = GetMatMan()->LoadMaterial("EngineAssets/Materials/Fog/FogVolumeBox", false);
+	m_pMatFogVolEllipsoid = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/FogVolumeEllipsoid", false);
+	m_pMatFogVolBox = GetMatMan()->LoadMaterial("%ENGINE%/EngineAssets/Materials/Fog/FogVolumeBox", false);
 
 	if (GetRenderer())
 	{
@@ -121,22 +121,22 @@ void C3DEngine::LoadDefaultAssets()
 
 		if (!m_ptexIconLowMemoryUsage)
 		{
-			m_ptexIconLowMemoryUsage = GetRenderer()->EF_LoadTexture("EngineAssets/Icons/LowMemoryUsage.tif", FT_DONT_STREAM);
+			m_ptexIconLowMemoryUsage = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/LowMemoryUsage.tif", FT_DONT_STREAM);
 		}
 
 		if (!m_ptexIconAverageMemoryUsage)
 		{
-			m_ptexIconAverageMemoryUsage = GetRenderer()->EF_LoadTexture("EngineAssets/Icons/AverageMemoryUsage.tif", FT_DONT_STREAM);
+			m_ptexIconAverageMemoryUsage = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/AverageMemoryUsage.tif", FT_DONT_STREAM);
 		}
 
 		if (!m_ptexIconHighMemoryUsage)
 		{
-			m_ptexIconHighMemoryUsage = GetRenderer()->EF_LoadTexture("EngineAssets/Icons/HighMemoryUsage.tif", FT_DONT_STREAM);
+			m_ptexIconHighMemoryUsage = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/HighMemoryUsage.tif", FT_DONT_STREAM);
 		}
 
 		if (!m_ptexIconEditorConnectedToConsole)
 		{
-			m_ptexIconEditorConnectedToConsole = GetRenderer()->EF_LoadTexture("EngineAssets/Icons/LivePreview.TIF", FT_DONT_STREAM);
+			m_ptexIconEditorConnectedToConsole = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/LivePreview.TIF", FT_DONT_STREAM);
 		}
 	}
 }
@@ -1259,7 +1259,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 
 	// set terrain water, sun road and bottom shaders
 	char szTerrainWaterMatName[256];
-	cry_strcpy(szTerrainWaterMatName, GetXMLAttribText(pInputNode, "Ocean", "Material", "EngineAssets/Materials/Water/Ocean_default"));
+	cry_strcpy(szTerrainWaterMatName, GetXMLAttribText(pInputNode, "Ocean", "Material", "%ENGINE%/EngineAssets/Materials/Water/Ocean_default"));
 	m_pTerrainWaterMat = szTerrainWaterMatName[0] ? GetMatMan()->LoadMaterial(szTerrainWaterMatName, false) : NULL;
 
 	if (m_pTerrain)

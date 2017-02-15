@@ -45,22 +45,22 @@ CSnowStage::~CSnowStage()
 void CSnowStage::Init()
 {
 	CRY_ASSERT(m_pSnowFlakesTex == nullptr);
-	m_pSnowFlakesTex = CTexture::ForName("EngineAssets/Textures/snowflakes.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowFlakesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/snowflakes.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowDerivativesTex == nullptr);
-	m_pSnowDerivativesTex = CTexture::ForName("EngineAssets/Textures/perlinNoiseDerivatives.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowDerivativesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/perlinNoiseDerivatives.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowSpatterTex == nullptr);
-	m_pSnowSpatterTex = CTexture::ForName("EngineAssets/Textures/Frozen/snow_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowSpatterTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/snow_spatter.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pFrostBubblesBumpTex == nullptr);
-	m_pFrostBubblesBumpTex = CTexture::ForName("EngineAssets/Textures/Frozen/frost_noise4.tif", FT_DONT_STREAM, eTF_Unknown);
+	m_pFrostBubblesBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise4.tif", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowFrostBumpTex == nullptr);
-	m_pSnowFrostBumpTex = CTexture::ForName("EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pSnowFrostBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pVolumeNoiseTex == nullptr);
-	m_pVolumeNoiseTex = CTexture::ForName("EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM, eTF_Unknown);
+	m_pVolumeNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/noise3d.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CRY_ASSERT(m_pSnowDisplacementTex == nullptr);
 	m_pSnowDisplacementTex = CTexture::CreateTextureObject("$SnowDisplacement", 0, 0, 0, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
