@@ -67,7 +67,9 @@
 		"CryRenderD3D11",
 		"CryRenderD3D12",
 
-		"CryScaleformHelper"
+		"CryScaleformHelper",
+
+		"CryMonoBridge"
 	],
 
 	"win_modules": [
