@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using CryEngine.Common;
 
 namespace CryEngine
@@ -36,31 +35,53 @@ namespace CryEngine
 		/// </summary>
 		public override bool OnInputEvent(SInputEvent e)
 		{
-			if (e.deviceType == EInputDeviceType.eIDT_Keyboard)
+			if(e.deviceType == EInputDeviceType.eIDT_Keyboard)
 			{
-				if (e.state == EInputState.eIS_Down)
-					SInputEventExtensions.KeyDownLog[e.keyId] = true;
-				if (e.state == EInputState.eIS_Released)
-					SInputEventExtensions.KeyDownLog[e.keyId] = false;
+				switch(e.state)
+				{
+					case EInputState.eIS_Down:
+						SInputEventExtensions.KeyDownLog[e.keyId] = true;
+						break;
 
-				if (e.KeyDown(EKeyId.eKI_LShift))
+					case EInputState.eIS_Released:
+						SInputEventExtensions.KeyDownLog[e.keyId] = false;
+						break;
+				}
+
+				if(e.KeyDown(EKeyId.eKI_LShift))
+				{
 					_lShiftDown = true;
-				if (e.KeyUp(EKeyId.eKI_LShift))
+				}
+				if(e.KeyUp(EKeyId.eKI_LShift))
+				{
 					_lShiftDown = false;
-				if (e.KeyDown(EKeyId.eKI_RShift))
+				}
+				if(e.KeyDown(EKeyId.eKI_RShift))
+				{
 					_rShiftDown = true;
-				if (e.KeyUp(EKeyId.eKI_RShift))
+				}
+				if(e.KeyUp(EKeyId.eKI_RShift))
+				{
 					_rShiftDown = false;
+				}
 
 				// Preprocess keyName to contain valid Chars
-				if (e.keyId == EKeyId.eKI_Space)
-					e.keyName.key = " ";
-				if (e.keyName.key.Length == 1)
+				if(e.keyId == EKeyId.eKI_Space)
 				{
-					if (ShiftDown)
+					e.keyName.key = " ";
+				}
+
+				if(e.keyName.key.Length == 1)
+				{
+					if(ShiftDown)
+					{
 						e.keyName.key = e.keyName.key.ToUpper();
-					if (ShiftDown && Char.IsDigit(e.keyName.key[0]))
+					}
+
+					if(ShiftDown && Char.IsDigit(e.keyName.key[0]))
+					{
 						e.keyName.key = "=!\"§$%&/()".Substring(e.keyName.key[0] - '0', 1);
+					}
 				}
 				else
 				{
@@ -68,33 +89,45 @@ namespace CryEngine
 					e.keyName.key = _charByDescription.TryGetValue(e.keyName.key, out res) ? res : string.Empty;
 				}
 
-				if (OnKey != null)
+				if(OnKey != null)
+				{
 					OnKey(e);
+				}
 			}
-			else if (e.deviceType == EInputDeviceType.eIDT_Gamepad)
+			else if(e.deviceType == EInputDeviceType.eIDT_Gamepad || e.deviceType == EInputDeviceType.eIDT_Mouse)
 			{
 				// Set keyName.key = string.Empty to avoid showing up gamepad
 				// presses controller keys in text input forms
 				e.keyName.key = string.Empty;
 
-				if (e.state == EInputState.eIS_Down)
-					SInputEventExtensions.KeyDownLog[e.keyId] = true;
-				if (e.state == EInputState.eIS_Released)
-					SInputEventExtensions.KeyDownLog[e.keyId] = false;
-				if (e.state == EInputState.eIS_Changed)
-					SInputEventExtensions.KeyInputValueLog[e.keyId] = e.value;
+				switch(e.state)
+				{
+					case EInputState.eIS_Down:
+						SInputEventExtensions.KeyDownLog[e.keyId] = true;
+						break;
 
-				if (OnKey != null)
+					case EInputState.eIS_Released:
+						SInputEventExtensions.KeyDownLog[e.keyId] = false;
+						break;
+
+					case EInputState.eIS_Changed:
+						SInputEventExtensions.KeyInputValueLog[e.keyId] = e.value;
+						break;
+				}
+
+				if(OnKey != null)
+				{
 					OnKey(e);
+				}
 			}
-			else if (e.deviceType == EInputDeviceType.eIDT_EyeTracker)
+			else if(e.deviceType == EInputDeviceType.eIDT_EyeTracker)
 			{
-				if (e.keyId == EKeyId.eKI_EyeTracker_X)
+				if(e.keyId == EKeyId.eKI_EyeTracker_X)
 				{
 					var axis = GetAxis("EyeTracker");
 					_axisByName["EyeTracker"] = new Vector2(e.value, axis != null ? axis.y : 0);
 				}
-				if (e.keyId == EKeyId.eKI_EyeTracker_Y)
+				if(e.keyId == EKeyId.eKI_EyeTracker_Y)
 				{
 					var axis = GetAxis("EyeTracker");
 					_axisByName["EyeTracker"] = new Vector2(axis != null ? axis.x : 0, e.value);

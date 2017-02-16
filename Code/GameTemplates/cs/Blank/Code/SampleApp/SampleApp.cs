@@ -12,7 +12,7 @@ namespace CryEngine.SampleApp
 	/// </summary>
 	public class SampleApp : IGameUpdateReceiver, IDisposable
     {
-        public static SampleApp Instance { get; set; }
+        public static SampleApp Instance { get; private set; }
 
         private DateTime _updateFPSTime = DateTime.MinValue;
 		private int _frameCount = 0;
@@ -60,12 +60,16 @@ namespace CryEngine.SampleApp
 
 		void OnKey(SInputEvent e)
 		{
-			if (e.KeyPressed(EKeyId.eKI_Escape) && !Engine.IsSandbox)
+			if(e.KeyPressed(EKeyId.eKI_Escape) && !Engine.IsSandbox)
+			{
 				Engine.Console.ExecuteString("quit");
+			}
 
 			// Show/Hide FPS Label on F5.
-			if (e.KeyPressed(EKeyId.eKI_F5))
+			if(e.KeyPressed(EKeyId.eKI_F5))
+			{
 				_fpsText.Active = !_fpsText.Active;
+			}
 		}
 	}
 }
