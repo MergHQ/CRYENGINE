@@ -39,7 +39,7 @@ public:
 
 	//! Gives access to object components.
 	virtual IMaterial*          GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) final { return m_pMaterial; }
-	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final    { return m_pCharacterInstance; }
+	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) final {  if(pMatrix) *pMatrix = m_matrix; return m_pCharacterInstance; }
 
 	//! Get physical entity.
 	virtual struct IPhysicalEntity* GetPhysics() const final                 { return m_pPhysicsEntity; };

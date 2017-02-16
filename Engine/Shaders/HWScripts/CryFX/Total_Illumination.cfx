@@ -849,23 +849,23 @@ void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoot
 	vAverReflectance /= fSummW;
 }
 
-float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness, float fDepth)
+float GetBlendMin(float2 tc0, float2 tc1, float fAverSmoothness, float fDepth0, float fDepth1)
 {
-	float fMinBlend = SVO_TargetResScale.z;
-
-	fMinBlend /= fDepth*PS_NearFarClipDist.y / 2.f + 1.f;
-
-	fMinBlend += SVO_TargetResScale.w + 0.05f;
+	float fMinBlend = SVO_TargetResScale.z * 0.25f + SVO_TargetResScale.w;
 
 	if (!IsDiffuseMode())
 	{
-		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .025f);
+		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tc0 - tc1) / .025f);
 
 		// reduce ghosting for mirrors
-		fMinBlend = saturate(max(fMinBlend + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
+		fMinBlend = saturate(max(fMinBlend + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(fAverSmoothness)));
 	}
 
-	return fMinBlend;
+	fMinBlend += saturate(abs(fDepth0 - fDepth1) * PS_NearFarClipDist.y - .25);
+
+	fMinBlend += 0.25f * (tc0.x < 0 || tc0.x > 1 || tc0.y < 0 || tc0.y > 1);
+
+	return saturate(fMinBlend);
 }
 
 #define SVO_MAX_PORTALS 8
@@ -1167,13 +1167,8 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	float fDepthMinPrev = tex2DlodLC(sceneRgbMinPrev, float4(vReprojTC_Min.xy, 0, 0)).w;
 	float fDepthMaxPrev = tex2DlodLC(sceneRgbMaxPrev, float4(vReprojTC_Max.xy, 0, 0)).w;
 
-	float fOut_Min = vReprojTC_Min.x < 0 || vReprojTC_Min.x > 1 || vReprojTC_Min.y < 0 || vReprojTC_Min.y > 1;
-	float fOut_Max = vReprojTC_Max.x < 0 || vReprojTC_Max.x > 1 || vReprojTC_Max.y < 0 || vReprojTC_Max.y > 1;
-
-	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
-
-	float fBlendMin = saturate(fOut_Min + fMinBlend + abs(1 - fDepthMin / fDepthMinPrev) * 4);
-	float fBlendMax = saturate(fOut_Max + fMinBlend + abs(1 - fDepthMax / fDepthMaxPrev) * 4);
+	float fBlendMin = GetBlendMin(vReprojTC_Min.xy, IN.baseTC.xy, fAverSmoothness, fDepthMin, fDepthMinPrev);
+	float fBlendMax = GetBlendMin(vReprojTC_Max.xy, IN.baseTC.xy, fAverSmoothness, fDepthMax, fDepthMaxPrev);
 
 	OUT.Diffuse = clamp(lerp(tex2DlodLC(sceneRgbMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Diffuse, fBlendMin), -8, 8);
 	OUT.Specular = clamp(lerp(tex2DlodLC(sceneAldMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Specular, fBlendMin), -8, 8);
@@ -2515,11 +2510,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 	float4 valPrev = tex2DlodPC(sceneFinOutPrev, float4(vReprojTC.xy, 0, 0));
 
-	float fOut = vReprojTC.x < 0 || vReprojTC.x > 1 || vReprojTC.y < 0 || vReprojTC.y > 1;
-
-	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
-
-	float fBlend = saturate(fOut + fMinBlend + abs(1 - fDepthC / valPrev.w) * 8);
+	float fBlend = GetBlendMin(vReprojTC.xy, IN.baseTC.xy, fAverSmoothness, fDepthC, valPrev.w);
 
 	// detect high contrast difference
 	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3(0.33f, 0.33f, 0.33f));
