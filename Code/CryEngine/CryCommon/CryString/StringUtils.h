@@ -300,10 +300,9 @@ inline wstring UTF8ToWStr(const char* str)
 //! Converts a string from the local Windows codepage to UTF-8.
 inline string ANSIToUTF8(const char* str)
 {
-	int len = strlen(str);
-	int wideLen = MultiByteToWideChar(CP_ACP, 0, str, len, 0, 0);
+	int wideLen = MultiByteToWideChar(CP_ACP, 0, str, -1, 0, 0);
 	wchar_t* unicode = (wchar_t*)malloc(wideLen * sizeof(wchar_t));
-	MultiByteToWideChar(CP_ACP, 0, str, len, unicode, 0);
+	MultiByteToWideChar(CP_ACP, 0, str, -1, unicode, wideLen);
 	string utf = CryStringUtils::WStrToUTF8(unicode);
 	free(unicode);
 	return utf;
