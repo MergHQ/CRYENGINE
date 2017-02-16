@@ -3288,9 +3288,9 @@ void CXConsole::Paste()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CXConsole::GetNumVars(bool bIncludeCommands)
+size_t CXConsole::GetNumVars(bool bIncludeCommands) const
 {
-	return (int)m_mapVariables.size() + (bIncludeCommands ? (int)m_mapCommands.size() : 0);
+	return m_mapVariables.size() + (bIncludeCommands ? m_mapCommands.size() : 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3503,61 +3503,59 @@ char* CXConsole::GetCheatVarAt(uint32 nOffset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix, int nListTypes)
+size_t CXConsole::GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix, int nListTypes) const
 {
-	size_t i = 0;
+	CRY_ASSERT(pszArray != nullptr);
+	if (pszArray == nullptr)
+		return 0;
+
+	size_t itemAdded = 0;
 	size_t iPrefixLen = szPrefix ? strlen(szPrefix) : 0;
 
 	// variables
 	if (nListTypes == 0 || nListTypes == 1)
 	{
-		ConsoleVariablesMap::const_iterator it, end = m_mapVariables.end();
-		for (it = m_mapVariables.begin(); it != end; ++it)
+		for (auto& it : m_mapVariables)
 		{
-			if (pszArray && i >= numItems)
+			if (itemAdded >= numItems)
 				break;
 
-			if (szPrefix)
-				if (strnicmp(it->first, szPrefix, iPrefixLen) != 0)
-					continue;
-
-			if (it->second->GetFlags() & VF_INVISIBLE)
+			if (szPrefix && strnicmp(it.first, szPrefix, iPrefixLen) != 0)
 				continue;
 
-			if (pszArray)
-				pszArray[i] = it->first;
+			if (it.second->GetFlags() & VF_INVISIBLE)
+				continue;
 
-			i++;
+			pszArray[itemAdded] = it.first;
+
+			itemAdded++;
 		}
 	}
 
 	// commands
 	if (nListTypes == 0 || nListTypes == 2)
 	{
-		ConsoleCommandsMap::iterator it, end = m_mapCommands.end();
-		for (it = m_mapCommands.begin(); it != end; ++it)
+		for (auto& it : m_mapCommands)
 		{
-			if (pszArray && i >= numItems)
+			if (itemAdded >= numItems)
 				break;
 
-			if (szPrefix)
-				if (strnicmp(it->first.c_str(), szPrefix, iPrefixLen) != 0)
-					continue;
-
-			if (it->second.m_nFlags & VF_INVISIBLE)
+			if (szPrefix && strnicmp(it.first.c_str(), szPrefix, iPrefixLen) != 0)
 				continue;
 
-			if (pszArray)
-				pszArray[i] = it->first.c_str();
+			if (it.second.m_nFlags & VF_INVISIBLE)
+				continue;
 
-			i++;
+			pszArray[itemAdded] = it.first.c_str();
+
+			itemAdded++;
 		}
 	}
 
-	if (i != 0 && pszArray)
-		std::sort(pszArray, pszArray + i, less_CVar);
+	if (itemAdded != 0)
+		std::sort(pszArray, pszArray + itemAdded, less_CVar);
 
-	return i;
+	return itemAdded;
 }
 
 //////////////////////////////////////////////////////////////////////////
