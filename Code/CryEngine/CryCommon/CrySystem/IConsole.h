@@ -367,12 +367,12 @@ struct IConsole
 	virtual bool IsOpened() = 0;
 
 	//! Auto completion.
-	virtual int GetNumVars(bool bIncludeCommands = false) = 0;
+	virtual size_t GetNumVars(bool bIncludeCommands = false) const = 0;
 
 	//! \param szPrefix - 0 or prefix e.g. "sys_spec_".
 	//! \return Used size.
 	//! nListType = 0 get all values, nListTypes=1 return only cvars, nListTypes=2 return only console commands
-	virtual size_t      GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0,int nListTypes=0) = 0;
+	virtual size_t      GetSortedVars(const char** pszArray, size_t numItems, const char* szPrefix = 0, int nListTypes = 0) const = 0;
 	virtual const char* AutoComplete(const char* substr) = 0;
 	virtual const char* AutoCompletePrev(const char* substr) = 0;
 	virtual const char* ProcessCompletion(const char* szInputBuffer) = 0;

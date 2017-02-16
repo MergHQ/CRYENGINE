@@ -367,7 +367,7 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	FUNCTION_PROFILER_3DENGINE;
 
 	// anything to render?
-	if (passInfo.IsRecursivePass())
+	if (!passInfo.IsGeneralPass())
 		return;
 
 	if (!m_pMatFogVolBox || !m_pMatFogVolEllipsoid || GetCVars()->e_Fog == 0 || GetCVars()->e_FogVolumes == 0)

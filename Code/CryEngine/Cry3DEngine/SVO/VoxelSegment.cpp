@@ -155,7 +155,7 @@ public:
 			SetThreadPriority(m_thread, THREAD_PRIORITY_BELOW_NORMAL);
 			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0 >= 0)
 			{
-				SetThreadAffinityMask(m_thread, BIT(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
+				SetThreadAffinityMask(m_thread, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
 			}
 
 			m_threadId = 0;
@@ -163,7 +163,7 @@ public:
 			SetThreadPriority(m_thread, THREAD_PRIORITY_BELOW_NORMAL);
 			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1 >= 0)
 			{
-				SetThreadAffinityMask(m_thread, BIT(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1));
+				SetThreadAffinityMask(m_thread, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1));
 			}
 	#elif CRY_PLATFORM_ORBIS
 			ScePthread m_thread0;
@@ -171,7 +171,7 @@ public:
 			::scePthreadSetprio(m_thread0, THREAD_PRIORITY_BELOW_NORMAL);
 			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0 >= 0)
 			{
-				::scePthreadSetaffinity(m_thread0, BIT(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
+				::scePthreadSetaffinity(m_thread0, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
 			}
 
 			ScePthread m_thread1;
@@ -179,7 +179,7 @@ public:
 			::scePthreadSetprio(m_thread1, THREAD_PRIORITY_BELOW_NORMAL);
 			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1 >= 0)
 			{
-				::scePthreadSetaffinity(m_thread1, BIT(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1));
+				::scePthreadSetaffinity(m_thread1, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity1));
 			}
 	#else
 			_beginthread(FileReadThreadFunc, 0, (void*)this);

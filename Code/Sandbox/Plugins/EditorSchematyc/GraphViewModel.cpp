@@ -124,7 +124,10 @@ bool CNodeGraphViewModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 	NodesByIndex::iterator result = std::find(m_nodesByIndex.begin(), m_nodesByIndex.end(), pNodeItem);
 	if (result != m_nodesByIndex.end())
 	{
+		// TODO: We should only emit one signal here.
+		pNodeItem->SignalDeletion(pNodeItem);
 		SignalRemoveNode(*pNodeItem);
+		// ~TODO
 		m_nodesByIndex.erase(result);
 		m_scriptGraph.RemoveNode(pNodeItem->GetGUID());
 
@@ -199,7 +202,10 @@ bool CNodeGraphViewModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 		const ConnectionsByIndex::iterator result = std::find(m_connectionsByIndex.begin(), m_connectionsByIndex.end(), &connection);
 		if (result != m_connectionsByIndex.end())
 		{
+			// TODO: We should emit only one signal here.
+			connection.SignalDeletion(&connection);
 			SignalRemoveConnection(connection);
+			// ~TODO
 			m_connectionsByIndex.erase(result);
 			m_scriptGraph.RemoveLink(linkIndex);
 

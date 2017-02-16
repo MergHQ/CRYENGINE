@@ -70,7 +70,7 @@ CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items)
 	for (CryGraphEditor::CAbstractNodeGraphViewModelItem* pAbstractItem : items)
 	{
 		m_structs.push_back(Serialization::SStruct(*pAbstractItem));
-		//pAbstractItem->SignalDeletion.Connect(this, &CPropertiesWidget::OnContentDeleted);
+		pAbstractItem->SignalDeletion.Connect(this, &CPropertiesWidget::OnContentDeleted);
 	}
 	m_pPropertyTree->attach(m_structs);
 
@@ -80,31 +80,26 @@ CPropertiesWidget::CPropertiesWidget(CryGraphEditor::GraphItemSet& items)
 	addWidget(m_pPropertyTree);
 }
 
-void CPropertiesWidget::OnContentDeleted(CryGraphEditor::CAbstractNodeGraphViewModelItem* deletedItem)
+void CPropertiesWidget::OnContentDeleted(CryGraphEditor::CAbstractNodeGraphViewModelItem* pDeletedItem)
 {
-	//// check for deleted objects
-	//size_t inumitems = m_structs.size();
-	//vector<CryGraphEditor::CAbstractNodeGraphViewModelItem*> newitems;
-	//newitems.reserve(inumitems);
+	pDeletedItem->SignalDeletion.DisconnectObject(this);
 
-	//deletedItem->SignalDeletion.DisconnectObject(this);
-	//m_pPropertyTree->detach();
+	m_pPropertyTree->detach();
+	auto iter = std::find_if(m_structs.begin(), m_structs.end(), [pDeletedItem](const Serialization::SStruct& a)
+		{
+			return a.cast<CryGraphEditor::CAbstractNodeGraphViewModelItem>() == pDeletedItem;
+	  });
+	CRY_ASSERT(iter != m_structs.end());
+	m_structs.erase(iter);
 
-	//auto iter = std::find_if(m_structs.begin(), m_structs.end(), 
-	//	[deletedItem] (const Serialization::SStruct& a) 
-	//{ 
-	//	return a.cast <CryGraphEditor::CAbstractNodeGraphViewModelItem>() == deletedItem;
-	//});
-	//m_structs.erase(iter);
-
-	//if (m_structs.size() > 0)
-	//{
-	//	m_pPropertyTree->attach(m_structs);
-	//}
-	//else
-	//{
-	//	deleteLater();
-	//}
+	if (m_structs.size() > 0)
+	{
+		m_pPropertyTree->attach(m_structs);
+	}
+	else
+	{
+		deleteLater();
+	}
 }
 
 CPropertiesWidget::CPropertiesWidget(IDetailItem& item, Schematyc::CPreviewWidget* pPreview)
@@ -138,6 +133,13 @@ CPropertiesWidget::~CPropertiesWidget()
 		QObject::disconnect(m_pPreview);
 	}
 	delete m_pContextList;
+
+	auto iter = std::for_each(m_structs.begin(), m_structs.end(), [this](Serialization::SStruct& a)
+		{
+			CryGraphEditor::CAbstractNodeGraphViewModelItem* pDeletedItem = a.cast<CryGraphEditor::CAbstractNodeGraphViewModelItem>();
+			if (pDeletedItem)
+				pDeletedItem->SignalDeletion.DisconnectObject(this);
+	  });
 }
 
 void CPropertiesWidget::SetupTree()
