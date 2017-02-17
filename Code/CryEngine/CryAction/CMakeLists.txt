@@ -80,6 +80,15 @@ add_sources("CryAction_flashui_uber.cpp"
 		"FlashUI/ScriptBind_UIAction.h"
 )
 
+add_sources("CryAction_flowsystem_uber.cpp"
+	PROJECTS CryAction
+	SOURCE_GROUP "Flow System\\\\Nodes"
+		"FlowSystem/Nodes/FlowGameNodes.cpp"
+		"FlowSystem/Nodes/FlowWeaponNodes.cpp"
+		"FlowSystem/Nodes/FlowInventoryNodes.cpp"
+		"FlowSystem/Nodes/FlowOnlineStatsNodes.cpp"
+)
+
 add_sources("CryAction_game_objects_uber.cpp"
 	PROJECTS CryAction
 	SOURCE_GROUP "Game Objects"
