@@ -213,7 +213,8 @@ public:
 		m_ucViewDistRatio = 100;
 		m_ucLodRatio = 100;
 		m_pOcNode = 0;
-		m_fWSMaxViewDist = 0;
+		m_nHUDSilhouettesParam = 0;
+		m_fWSMaxViewDist = 0;		
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
 		m_pTempData = NULL;
@@ -265,7 +266,7 @@ public:
 	virtual IMaterial* GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible = false, bool* pbDrawNear = NULL) { return NULL; }
 	virtual void       SetEntityStatObj(unsigned int nSlot, IStatObj* pStatObj, const Matrix34A* pMatrix = NULL)             {};
 
-	// Retrieve access to the character instance of the the RenderNode
+	//! Retrieve access to the character instance of the the RenderNode
 	virtual ICharacterInstance* GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return 0; }
 
 #if defined(USE_GEOM_CACHES)
@@ -371,6 +372,7 @@ public:
 
 	void CopyIRenderNodeData(IRenderNode* pDest) const
 	{
+		pDest->m_nHUDSilhouettesParam = m_nHUDSilhouettesParam;
 		pDest->m_fWSMaxViewDist = m_fWSMaxViewDist;
 		pDest->m_dwRndFlags = m_dwRndFlags;
 		//pDest->m_pOcNode						= m_pOcNode;		// Removed to stop the registering from earlying out.
@@ -504,6 +506,9 @@ public:
 
 	//! Pointer to temporary data allocated only for currently visible objects.
 	struct SRenderNodeTempData* m_pTempData;
+	
+	//! Hud silhouette parameter, default is black with alpha zero
+	uint32 m_nHUDSilhouettesParam;
 
 	//! Max view distance.
 	float m_fWSMaxViewDist;

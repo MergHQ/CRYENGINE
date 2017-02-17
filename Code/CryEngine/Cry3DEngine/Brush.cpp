@@ -150,6 +150,8 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	//rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_NEAREST) ? FOB_NEAREST : 0;
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
 
+	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
+
 	m_pStatObj->Render(rParms, passInfo);
 }
 

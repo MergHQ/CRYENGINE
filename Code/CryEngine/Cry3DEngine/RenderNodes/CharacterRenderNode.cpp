@@ -75,6 +75,8 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 	rParms.dwFObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
 	rParms.dwFObjFlags |= (GetRndFlags() & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
 
+	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
+	
 	if (GetRndFlags() & ERF_FOB_NEAREST)
 	{
 		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
