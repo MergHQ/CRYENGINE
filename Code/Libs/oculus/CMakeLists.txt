@@ -121,7 +121,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(MSVC_VERSION EQUAL 1900 AND (WIN32 OR WIN64))
+if(NOT MSVC_VERSION LESS 1900 AND (WIN32 OR WIN64))
 	CryEngineStaticModule(oculus SOLUTION_FOLDER "Libs")
 	if(WIN32 OR WIN64)
 		target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /W0 /Wv:18)
@@ -132,7 +132,7 @@ if(MSVC_VERSION EQUAL 1900 AND (WIN32 OR WIN64))
 	target_include_directories(${THIS_PROJECT} INTERFACE ${SDK_DIR}/OculusSDK/LibOVR/Include)
 else()
 	if (WIN32 OR WIN64)
-		message(STATUS "MSVC 14.0 is not being used - oculus cannot be built.")
+		message(STATUS "MSVC 14.0 or above is required to build oculus.")
 	endif()
 	CryFileContainer(oculus SOLUTION_FOLDER "Libs")
 endif()
