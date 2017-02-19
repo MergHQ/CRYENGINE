@@ -80,7 +80,6 @@ public:
 
 protected:
 	CCamera          m_camera;
-	IRenderAuxGeom*  m_pAuxRenderer;
 	IRenderer*       m_pRenderer;
 	SRayRec*         m_rayBuf;
 	int              m_szRayBuf, m_iFirstRay, m_iLastRay, m_nRays;

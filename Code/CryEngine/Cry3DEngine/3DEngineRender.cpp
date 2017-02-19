@@ -688,7 +688,7 @@ void C3DEngine::DebugDraw_Draw()
 
 	CTimeValue CurrentTime = gEnv->pTimer->GetFrameStartTime();
 
-	IRenderAuxGeom* pAux = gEnv->pAuxGeomRenderer;
+	IRenderAuxGeom* pAux = IRenderAuxGeom::GetAux();
 
 	SAuxGeomRenderFlags oldFlags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags newFlags;

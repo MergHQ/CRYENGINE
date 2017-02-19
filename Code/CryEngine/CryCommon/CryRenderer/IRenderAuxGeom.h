@@ -238,17 +238,18 @@ struct IRenderAuxGeom
 	//! for render and main thread this parameter has no effect
 	virtual void Commit(uint frames = 0) = 0;
 	// </interfuscator:shuffle>
+
+
+	static IRenderAuxGeom* GetAux()
+	{
+		return gEnv->pRenderer->GetIRenderAuxGeom();
+	}
 };
 
 
 
 class IRenderAuxText
 {
-	static IRenderAuxGeom* GetAux()
-	{
-		return gEnv->pRenderer->GetIRenderAuxGeom();
-	}
-
 public:
 	struct AColor
 	{
@@ -313,7 +314,7 @@ public:
 
 	static void DrawText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 	{
-		GetAux()->RenderTextQueued(pos, ti, text);
+		IRenderAuxGeom::GetAux()->RenderTextQueued(pos, ti, text);
 	}
 
 	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* text)
@@ -436,7 +437,7 @@ public:
 
 	static void DrawString(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 	{
-		GetAux()->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
+		IRenderAuxGeom::GetAux()->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 	}
 };
 
