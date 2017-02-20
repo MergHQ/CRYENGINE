@@ -925,7 +925,6 @@ unsigned sizeOfMapS(Map& map)
 // All handled render elements (except common ones included in "RendElement.h")
 #include "Common/RendElements/CREBeam.h"
 #include "Common/RendElements/CRELensOptics.h"
-#include "Common/RendElements/CREHDRProcess.h"
 #include "Common/RendElements/CRECloud.h"
 #include "Common/RendElements/CREDeferredShading.h"
 #include "Common/RendElements/CREMeshImpl.h"

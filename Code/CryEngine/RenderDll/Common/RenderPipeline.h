@@ -853,9 +853,7 @@ struct SRenderPipeline
 	//================================================================
 	// Render elements..
 
-	class CREHDRProcess*      m_pREHDR;
 	class CREDeferredShading* m_pREDeferredShading;
-	class CREPostProcess*     m_pREPostProcess;
 
 	//=================================================================
 	// WaveForm tables

@@ -937,19 +937,13 @@ public:
 
 	void FX_RefractionPartialResolve();
 
-  bool FX_HDRScene(bool bEnable, bool bClear = true);
+  bool FX_HDRScene(bool bEnable, int32 shaderRenderingFlags, bool bClear = true);
 	void FX_HDRRangeAdaptUpdate();
 
   void FX_RenderForwardOpaque(void (*RenderFunc)(), const bool bLighting, const bool bAllowDeferred);
 
   bool FX_ZScene(bool bEnable, bool bUseHDR, bool bClearZBuffer, bool bRenderNormalsOnly = false, bool bZPrePass = false);  
   bool FX_FogScene();
-	bool FX_DeferredRainOcclusionMap(const N3DEngineCommon::ArrOccluders & arrOccluders, const SRainParams & rainVolParams);
-	bool FX_DeferredRainOcclusion();
-	bool FX_DeferredRainPreprocess();
-	bool FX_DeferredRainGBuffer();
-	bool FX_DeferredSnowLayer();
-	bool FX_DeferredSnowDisplacement();
   bool FX_DisplayFogScene();  
   bool FX_MotionVectorGeneration(bool bEnable);  
   bool FX_CustomRenderScene(bool bEnable);  
@@ -1104,8 +1098,6 @@ public:
   int GetAAFormat(TArray<SAAFormat>& Formats);
 
   void EF_SetColorOp(byte eCo, byte eAo, byte eCa, byte eAa);
-
-  void FX_HDRPostProcessing();
 
   void FX_PreRender(int Stage);
   void FX_PostRender();

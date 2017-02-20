@@ -463,13 +463,8 @@ void CD3D9Renderer::EF_Init()
 		CPermanentRenderObject::SetStaticPools(m_RP.m_renderObjectsPools.get());
 	}
 
-	// create hdr element
-	m_RP.m_pREHDR = (CREHDRProcess*)EF_CreateRE(eDATA_HDRProcess);
 	// create deferred shading element
 	m_RP.m_pREDeferredShading = (CREDeferredShading*)EF_CreateRE(eDATA_DeferredShading);
-
-	// Create post process render element
-	m_RP.m_pREPostProcess = (CREPostProcess*)EF_CreateRE(eDATA_PostProcess);
 
 	// Initialize posteffects manager
 	if (!m_pPostProcessMgr)
@@ -614,9 +609,7 @@ void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 
 	m_RP.m_D3DVertexDeclaration.Free();
 
-	SAFE_RELEASE(m_RP.m_pREHDR);
 	SAFE_RELEASE(m_RP.m_pREDeferredShading);
-	SAFE_RELEASE(m_RP.m_pREPostProcess);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);
 
@@ -675,11 +668,6 @@ void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 
 void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 {
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeDDN);
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[0]);
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[1]);
-	SAFE_DELETE(CTexture::s_pMipperWaterRipplesDDN);
-	
 	CStretchRegionPass::Shutdown();
 
 	SAFE_DELETE(m_pGraphicsPipeline);
@@ -1762,7 +1750,7 @@ void CD3D9Renderer::FX_DepthFixupMerge()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, bool bClear)
+bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, int32 shaderRenderingFlags, bool bClear)
 {
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
 
@@ -1774,9 +1762,12 @@ bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, bool bClear)
 		if (!CTexture::s_ptexHDRTarget || CTexture::s_ptexHDRTarget->IsMSAAChanged() || CTexture::s_ptexHDRTarget->GetWidth() != GetWidth() || CTexture::s_ptexHDRTarget->GetHeight() != GetHeight())
 			CTexture::GenerateHDRMaps();
 
-		bool bEmpty = SRendItem::IsListEmpty(EFSLIST_HDRPOSTPROCESS);
-		if (bEmpty)
+		const bool bIsRightEye = (shaderRenderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == SHDF_STEREO_RIGHT_EYE;
+		if (bIsRightEye || CV_r_measureoverdraw || (shaderRenderingFlags & SHDF_BILLBOARDS))
+		{
+			// HDR post process isn't used.
 			return false;
+		}
 
 		FX_HDRRangeAdaptUpdate();
 
@@ -2351,9 +2342,7 @@ static char* sDescList[] =
 	"WaterVolume",
 	"Transparent",
 	"Water",
-	"HDRPostProcess",
 	"AfterHDRPostProcess",
-	"PostProcess",
 	"AfterPostProcess",
 	"ShadowPass",
 	"DeferredPreprocess",
@@ -3771,13 +3760,13 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	if (!nRecurse && bHDRRendering)
 	{
 		m_RP.m_bUseHDR = true;
-		if (FX_HDRScene(m_RP.m_bUseHDR, false))
+		if (FX_HDRScene(m_RP.m_bUseHDR, nFlags, false))
 			m_RP.m_PersFlags2 |= RBPF2_HDR_FP16;
 	}
 	else
 	{
 		m_RP.m_bUseHDR = false;
-		FX_HDRScene(false);
+		FX_HDRScene(false, nFlags);
 
 		if ((pShaderThreadInfo->m_PersFlags & RBPF_DRAWTOTEXTURE) && bHDRRendering)
 			m_RP.m_PersFlags2 |= RBPF2_HDR_FP16;
@@ -3941,9 +3930,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	}
 	else
 	{
-		if ((nFlags & SHDF_ALLOWPOSTPROCESS) && !nRecurse && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE))
-			FX_DeferredRainPreprocess();
-
 		static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
 		if (cvar_gd && cvar_gd->GetIVal())
 			FX_ProcessCharDeformation(pRenderView);
@@ -3954,9 +3940,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 			if ((nFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)) && !nRecurse && CV_r_usezpass)
 			{
 				FX_ProcessZPassRenderLists();
-
-				FX_DeferredRainGBuffer();
-				FX_DeferredSnowLayer();
 			}
 
 #if defined(FEATURE_SVO_GI)
@@ -4034,16 +4017,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 			// insert fence which is used on consoles to prevent overwriting VideoMemory
 			InsertParticleVideoDataFence();
 
-			if (bAllowDeferred && !nRecurse)
-				FX_DeferredSnowDisplacement();
-
 			if (!nRecurse)
 			{
 				gcpRendD3D->m_RP.m_PersFlags1 &= ~RBPF1_SKIP_AFTER_POST_PROCESS;
 
-				FX_ProcessRenderList(EFSLIST_HDRPOSTPROCESS, RenderFunc, false);         // Sorted list without preprocess of all fog passes and screen shaders
 				FX_ProcessRenderList(EFSLIST_AFTER_HDRPOSTPROCESS, RenderFunc, false);   // for specific cases where rendering after tone mapping is needed
-				FX_ProcessRenderList(EFSLIST_POSTPROCESS, RenderFunc, false);            // Sorted list without preprocess of all fog passes and screen shaders
 
 				bool bDrawAfterPostProcess = !(gcpRendD3D->m_RP.m_PersFlags1 & RBPF1_SKIP_AFTER_POST_PROCESS);
 
@@ -4337,30 +4315,6 @@ void CD3D9Renderer::EF_Scene3D(SViewport& VP, int nFlags, const SRenderingPassIn
 				SRenderingPassInfo passInfoDeferredSort(passInfo);
 				passInfoDeferredSort.OverrideRenderItemSorter(SRendItemSorter(SRendItemSorter::eDeferredShadingPass));
 				EF_AddEf(m_RP.m_pREDeferredShading, shItem, pObj, passInfoDeferredSort, EFSLIST_DEFERRED_PREPROCESS, 0);
-			}
-		}
-
-		if ((nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(nFlags & SHDF_BILLBOARDS))
-		{
-			SShaderItem shItem(CShaderMan::s_shHDRPostProcess);
-			CRenderObject* pObj = EF_GetObject_Temp(passInfo.ThreadID());
-			if (pObj)
-			{
-				pObj->m_II.m_Matrix.SetIdentity();
-				EF_AddEf(m_RP.m_pREHDR, shItem, pObj, passInfo, EFSLIST_HDRPOSTPROCESS, 0);
-			}
-		}
-
-		bool bAllowPostProcess = (nFlags & SHDF_ALLOWPOSTPROCESS) && (CV_r_PostProcess) && !(nFlags & SHDF_BILLBOARDS);
-		bAllowPostProcess &= (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_MIRRORCULL) == 0;
-		if (bAllowPostProcess)
-		{
-			SShaderItem shItem(CShaderMan::s_shPostEffects);
-			CRenderObject* pObj = EF_GetObject_Temp(passInfo.ThreadID());
-			if (pObj)
-			{
-				pObj->m_II.m_Matrix.SetIdentity();
-				EF_AddEf(m_RP.m_pREPostProcess, shItem, pObj, passInfo, EFSLIST_POSTPROCESS, 0);
 			}
 		}
 	}

@@ -81,7 +81,6 @@ enum ERenderCommand
 	eRC_CreateDeviceTexture,
 	eRC_CopyDataToTexture,
 	eRC_ClearTarget,
-	eRC_CreateREPostProcess,
 	eRC_ParseShader,
 	eRC_SetShaderQuality,
 	eRC_UpdateShaderItem,
@@ -549,7 +548,6 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ReleaseOptics(IOpticsElementBase* pOpticsElement);
 	void RC_RelinkTexture(CTexture * pTex);
 	void RC_UnlinkTexture(CTexture * pTex);
-	void RC_CreateREPostProcess(CRenderElement * *re);
 	bool RC_CheckUpdate2(CRenderMesh * pMesh, CRenderMesh * pVContainer, EVertexFormat eVF, uint32 nStreamMask);
 	void RC_ReleaseCB(void* pCB);
 	void RC_ReleaseRS(std::shared_ptr<CDeviceResourceSet> &pRS);

@@ -1952,9 +1952,7 @@ enum ERenderListID
 	EFSLIST_WATER_VOLUMES,           //!< After decals.
 	EFSLIST_TRANSP,                  //!< Sorted by distance under-water render items.
 	EFSLIST_WATER,                   //!< Water-ocean render items.
-	EFSLIST_HDRPOSTPROCESS,          //!< Hdr post-processing screen effects.
 	EFSLIST_AFTER_HDRPOSTPROCESS,    //!< After hdr post-processing screen effects.
-	EFSLIST_POSTPROCESS,             //!< Post-processing screen effects.
 	EFSLIST_AFTER_POSTPROCESS,       //!< After post-processing screen effects.
 	EFSLIST_SHADOW_PASS,             //!< Shadow mask generation (usually from from shadow maps).
 	EFSLIST_DEFERRED_PREPROCESS,     //!< Pre-process before deferred passes.

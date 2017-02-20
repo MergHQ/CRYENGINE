@@ -393,8 +393,6 @@ int CPostEffectsMgr::Init()
 	AddParamFloat("Global_User_ColorHue", m_pUserColorHue, 0.0f);  // image hue rotation
 
 	// Register all post processes
-	AddEffect(CSceneSnow);
-	AddEffect(CSceneRain);
 	AddEffect(CSunShafts);
 	AddEffect(CDepthOfField);
 	AddEffect(CMotionBlur);
@@ -414,7 +412,6 @@ int CPostEffectsMgr::Init()
 	AddEffect(CSonarVision);
 	AddEffect(CThermalVision);
 	AddEffect(CImageGhosting);
-	AddEffect(CWaterVolume);
 	AddEffect(CPostAA);
 	AddEffect(CPostStereo);
 	AddEffect(C3DHud);

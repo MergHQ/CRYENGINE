@@ -572,7 +572,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 //////////////////////////////////////////////////////////////////////////
 CRenderView::RenderItems& CRenderView::GetRenderItems(int nRenderList)
 {
-	assert(m_usageMode != eUsageModeWriting || (nRenderList == EFSLIST_PREPROCESS || nRenderList == EFSLIST_HDRPOSTPROCESS || nRenderList == EFSLIST_POSTPROCESS)); // While writing we must not read back items.
+	assert(m_usageMode != eUsageModeWriting || (nRenderList == EFSLIST_PREPROCESS)); // While writing we must not read back items.
 
 	m_renderItems[nRenderList].CoalesceMemory();
 	return m_renderItems[nRenderList];
@@ -613,7 +613,7 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
                                 SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward)
 {
-	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || (nList == EFSLIST_PREPROCESS || nList == EFSLIST_HDRPOSTPROCESS || nList == EFSLIST_POSTPROCESS));  // Adding items only in writing mode
+	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || nList == EFSLIST_PREPROCESS);  // Adding items only in writing mode
 
 	CShader* RESTRICT_POINTER pShader = (CShader*)shaderItem.m_pShader;
 
@@ -1203,8 +1203,6 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		break;
 
 	case EFSLIST_DEFERRED_PREPROCESS:
-	case EFSLIST_HDRPOSTPROCESS:
-	case EFSLIST_POSTPROCESS:
 	case EFSLIST_FOG_VOLUME:
 		break;
 

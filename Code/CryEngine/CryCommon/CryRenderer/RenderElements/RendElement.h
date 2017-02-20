@@ -29,8 +29,6 @@ enum EDataType
 	eDATA_FarTreeSprites,
 	eDATA_OcclusionQuery,
 	eDATA_Particle,
-	eDATA_PostProcess,
-	eDATA_HDRProcess,
 	eDATA_Cloud,
 	eDATA_HDRSky,
 	eDATA_FogVolume,
@@ -275,7 +273,6 @@ public:
 #include "CREOcclusionQuery.h"
 #include "CREImposter.h"
 #include "CREBaseCloud.h"
-#include "CREPostProcess.h"
 #include "CREFogVolume.h"
 #include "CREWaterVolume.h"
 #include "CREWaterOcean.h"

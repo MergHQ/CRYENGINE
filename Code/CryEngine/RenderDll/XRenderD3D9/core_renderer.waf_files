@@ -6,7 +6,6 @@
 			"D3DAmbientOcclusion.cpp",
 			"D3DColorGradingController.cpp",
 			"D3DDebug.cpp",
-			"D3DDeferredPasses.cpp",
 			"D3DDeferredRender.cpp",
 			"D3DDeferredShading.cpp",
 			"D3DFont.cpp",
@@ -80,11 +79,9 @@
 			"PostProcessHud3D.cpp",
 			"PostProcessMisc.cpp",
 			"PostProcessMotionBlur.cpp",
-			"PostProcessRain.cpp",
 			"PostProcessRenderModes.cpp",
 			"PostProcessSunShafts.cpp",
-			"PostProcessWater.cpp",
-			"PostProcessSnow.cpp"
+			"PostProcessWater.cpp"
 		]
 	},
 	"CryRenderer_uber_3.cpp":
@@ -201,7 +198,6 @@
       "../Common/RendElements/CREFarTreeSprites.cpp",
       "../Common/RendElements/CREFogVolume.cpp",
       "../Common/RendElements/CREGameEffect.cpp",
-      "../Common/RendElements/CREHDRProcess.cpp",
       "../Common/RendElements/CREImposter.cpp",
       "../Common/RendElements/CREMesh.cpp",
       "../Common/RendElements/CREOclusionQuery.cpp",
@@ -213,7 +209,6 @@
 		"Common/RendElements":
 		[
 			"../Common/RendElements/CREParticle.cpp",
-			"../Common/RendElements/CREPostProcess.cpp",
 			"../Common/RendElements/CRESky.cpp",
 			"../Common/RendElements/CREVolumeObject.cpp",
 			"../Common/RendElements/CREWaterOcean.cpp",
@@ -224,7 +219,6 @@
 			"../Common/RendElements/CREClientPoly.h",
 			"../Common/RendElements/CRECloud.h",
 			"../Common/RendElements/CREDeferredShading.h",
-			"../Common/RendElements/CREHDRProcess.h",
 			"../Common/RendElements/Stars.h",
 			"../Common/RendElements/CREMeshImpl.h"
 		],

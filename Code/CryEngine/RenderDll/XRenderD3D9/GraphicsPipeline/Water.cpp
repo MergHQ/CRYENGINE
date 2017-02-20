@@ -334,17 +334,8 @@ void CWaterStage::Prepare(CRenderView* pRenderView)
 		}
 	}
 
-	// Activate puddle generation
+	// Activate normal generation
 	m_bWaterNormalGen = (rd->m_RP.m_eQuality > eRQ_Low && !isEmpty) ? true : false;
-	// TODO: remove after old graphics pipeline is removed.
-	if (m_bWaterNormalGen)
-	{
-		CEffectParam* pParam = PostEffectMgr()->GetByName("WaterVolume_Amount");
-		CRY_ASSERT(pParam);
-
-		if (pParam)
-			pParam->SetParam(1.0f);
-	}
 }
 
 void CWaterStage::ExecuteWaterVolumeCaustics()
