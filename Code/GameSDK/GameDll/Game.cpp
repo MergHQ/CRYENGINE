@@ -1267,31 +1267,6 @@ bool CGame::CompleteInit()
 	DumpMemInfo("CGame::CompleteInit");
 #endif
 
-#if defined(CRY_UNIT_TESTING)
-	// Register All unit tests of this module.
-	// run unit tests
-	if (CryUnitTest::IUnitTestManager* pTestManager = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager())
-	{
-	#if defined(_LIB)
-		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
-	#endif
-
-		const ICmdLineArg* pSkipUnitTest = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests");
-		if (pSkipUnitTest == nullptr)
-		{
-			const ICmdLineArg* pUseUnitTestExcelReporter = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "use_unit_test_excel_reporter");
-			if (pUseUnitTestExcelReporter)
-			{
-				gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::ExcelReporter);
-			}
-			else // default is the minimal reporter
-			{
-				gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::MinimalReporter);
-			}
-		}
-	}
-#endif // CRY_UNIT_TESTING
-
 	return true;
 }
 

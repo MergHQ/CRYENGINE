@@ -197,10 +197,6 @@ const char*        CRenderElement::mfTypeString()
 		return "OcclusionQuery";
 	case eDATA_Particle:
 		return "Particle";
-	case eDATA_PostProcess:
-		return "PostProcess";
-	case eDATA_HDRProcess:
-		return "HDRProcess";
 	case eDATA_Cloud:
 		return "Cloud";
 	case eDATA_HDRSky:

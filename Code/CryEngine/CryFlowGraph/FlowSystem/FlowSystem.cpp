@@ -26,6 +26,7 @@
 #include "../GameTokens/GameTokenSystem.h"
 
 #define BLACKLIST_FILE_PATH     "Libs/FlowNodes/FlownodeBlacklist.xml"
+#define ENTITY_NODE_PREFIX      "entity:"
 
 #define GRAPH_RESERVED_CAPACITY 8
 
@@ -171,7 +172,7 @@ CFlowSystem::CFlowSystem()
 	LoadBlacklistedFlownodeXML();
 
 	m_pGameTokenSystem = new CGameTokenSystem;
-
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterListener(this);
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CFlowSystem");
 }
 
@@ -188,6 +189,7 @@ void CFlowSystem::PreInit()
 CFlowSystem::~CFlowSystem()
 {
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
+	gEnv->pEntitySystem->GetClassRegistry()->UnregisterListener(this);
 
 	for (TGraphs::Notifier itGraph(m_graphs); itGraph.IsValid(); itGraph.Next())
 	{
@@ -758,15 +760,14 @@ void CFlowSystem::RegisterEntityTypes()
 	IEntityClassRegistry* pClassRegistry = gEnv->pEntitySystem->GetClassRegistry();
 	IEntityClass* pEntityClass = 0;
 	pClassRegistry->IteratorMoveFirst();
-	string entityPrefixStr = "entity:";
+	string entityPrefixStr = ENTITY_NODE_PREFIX;
 	while (pEntityClass = pClassRegistry->IteratorNext())
 	{
 		string classname = entityPrefixStr + pEntityClass->GetName();
-
 		INDENT_LOG_DURING_SCOPE(true, "Flow system is registering entity type '%s'", classname.c_str());
 
 		// if the entity lua script does not have input/outputs defined, and there is already an FG node defined for that entity in c++, do not register the empty lua one
-		if (pEntityClass->GetEventCount() == 0 && GetTypeId(classname) != InvalidFlowNodeTypeId)
+		if (pEntityClass->GetEventCount() == 0 || GetTypeId(classname) != InvalidFlowNodeTypeId)
 			continue;
 
 		RegisterType(classname, new CFlowEntityClass(pEntityClass));
@@ -861,6 +862,38 @@ void CFlowSystem::NotifyFlow(CFlowGraphBase* pGraph, const SFlowAddress from, co
 void CFlowSystem::NotifyProcessEvent(CFlowGraphBase* pGraph, IFlowNode::EFlowEvent event, IFlowNode::SActivationInfo* pActInfo, IFlowNode* pImpl)
 {
 	if (!m_bInspectingEnabled) return;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CFlowSystem::OnEntityClassRegistryEvent(EEntityClassRegistryEvent event, const IEntityClass* pEntityClass)
+{
+	string entityPrefixStr = ENTITY_NODE_PREFIX;
+	string className = entityPrefixStr + pEntityClass->GetName();
+
+	switch (event)
+	{
+	case ECRE_CLASS_MODIFIED:
+	case ECRE_CLASS_REGISTERED:
+		{
+			INDENT_LOG_DURING_SCOPE(true, "Flow system is registering entity type '%s'", className.c_str());
+			IEntityClass* pClass = const_cast<IEntityClass*>(pEntityClass);
+			
+			// if the entity lua script does not have input/outputs defined, and there is already an FG node defined for that entity in c++, do not register the empty lua one
+			if (pClass->GetEventCount() == 0 || GetTypeId(className) != InvalidFlowNodeTypeId)
+				return;
+
+			RegisterType(className, new CFlowEntityClass(pClass));
+			break;
+		}
+
+	case ECRE_CLASS_UNREGISTERED:
+		{
+		INDENT_LOG_DURING_SCOPE(true, "Flow system is unregistering entity type '%s'", classname.c_str());
+		
+		UnregisterType(className);
+		break;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

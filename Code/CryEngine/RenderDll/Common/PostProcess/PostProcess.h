@@ -20,12 +20,9 @@ class CTexture;
 enum EPostEffectID
 {
 	ePFX_Invalid     = -1,
-	ePFX_WaterVolume = 0,
-
-	ePFX_SceneRain,
 
 	// Don't change order of post processes before sunshafts (on pc we doing some trickery to avoid redundant stretchrects)
-	ePFX_SunShafts,
+	ePFX_SunShafts = 0,
 	ePFX_eMotionBlur,
 	ePFX_ColorGrading,
 	ePFX_eDepthOfField,
@@ -34,7 +31,6 @@ enum EPostEffectID
 	ePFX_eSoftAlphaTest,
 
 	ePFX_PostAA,
-	ePFX_SceneSnow,
 
 	ePFX_eUnderwaterGodRays,
 	ePFX_eVolumetricScattering,

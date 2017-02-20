@@ -107,6 +107,8 @@ public:
 	bool                         CreatePipelineStates(uint32 passMask, DevicePipelineStatesArray& pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool                         CreatePipelineState(CDeviceGraphicsPSOPtr& outPSO, const SGraphicsPipelineStateDescription& desc, EPass passID, std::function<void(CDeviceGraphicsPSODesc& psoDesc)> modifier);
 
+	bool                         IsNormalGenActive() const { return m_bWaterNormalGen; }
+
 private:
 	bool  PrepareResourceLayout();
 	bool  PrepareDefaultPerInstanceResources();

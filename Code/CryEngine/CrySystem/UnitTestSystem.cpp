@@ -1,5 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+//! Implementation of the CryEngine Unit Testing framework
+//! Also contains core engine tests
+
 #include "StdAfx.h"
 #include "UnitTestSystem.h"
 #include <CryMemory/HeapAllocator.h>
@@ -27,106 +30,74 @@ jmp_buf* GetAssertJmpBuf()
 
 struct SAutoTestsContext
 {
-	float                           fStartTime;
-	float                           fCurrTime;
-	string                          sSuiteName;
-	string                          sTestName;
-	int                             waitAfterMSec;
-	int                             iter;
-	int                             runCount;
-	CryUnitTest::UnitTestRunContext context;
-
-	SAutoTestsContext() : fStartTime(0), fCurrTime(0), waitAfterMSec(0), iter(-1), runCount(1) { memset(&context, 0, sizeof(context)); }
+	float               fStartTime     = 0;
+	float               fCurrTime      = 0;
+	string              sSuiteName;    
+	string              sTestName;     
+	int                 waitAfterMSec  = 0;
+	int                 iter           = -1;
+	int                 runCount       = 1;
+	SUnitTestRunContext context;
 };
 
+//////////////////////////////////////////////////////////////////////////
+
 CUnitTestManager::CUnitTestManager()
-	: m_pCurrentTest(nullptr)
 {
-	m_failureMsg[0] = '\0';
-	m_pAutoTestsContext = new SAutoTestsContext;
-	assert(m_pAutoTestsContext);
+	m_pAutoTestsContext = stl::make_unique<SAutoTestsContext>();
+	CRY_ASSERT(m_pAutoTestsContext != nullptr);
 
 	// Register tests defined in this module
-	CreateTests(CryUnitTest::Test::m_pFirst, "CrySystem");
+	CreateTests("CrySystem");
 }
 
 CUnitTestManager::~CUnitTestManager()
 {
-	delete m_pAutoTestsContext;
-	m_pAutoTestsContext = 0;
-
-	RemoveTests();
 }
 
-void CUnitTestManager::RemoveTests()
+IUnitTest* CUnitTestManager::GetTestInstance(const SUnitTestInfo& info)
 {
-	for (size_t i = 0; i < m_tests.size(); ++i)
-		delete m_tests[i];
-
-	m_tests.clear();
-}
-
-IUnitTest* CUnitTestManager::CreateTest(const UnitTestInfo& info)
-{
-	for (size_t i = 0; i < m_tests.size(); ++i)
+	for (auto& pt : m_tests)
 	{
-		CUnitTest* pt = m_tests[i];
-
-		if (pt->m_info.pTestImpl == info.pTestImpl)
-			return pt;
+		if (pt->GetInfo() == info)
+			return pt.get();
 	}
 
-	CUnitTest* pTest = new CUnitTest(info);
-	m_tests.push_back(pTest);
-	return pTest;
+	auto pTest = stl::make_unique<CUnitTest>(info);
+	CUnitTest* pTestRaw = pTest.get();
+	m_tests.push_back(std::move(pTest));
+	return pTestRaw;
 }
 
-int CUnitTestManager::RunAllTests(CryUnitTest::TReporterToUse reporterToUse)
+int CUnitTestManager::RunAllTests(EReporterType reporterType)
 {
-	CryUnitTest::UnitTestRunContext context;
-	StartTesting(context, reporterToUse);
+	SUnitTestRunContext context;
+	StartTesting(context, reporterType);
 
-	for (uint32 i = 0; i < m_tests.size(); i++)
+	for (auto& pt : m_tests)
 	{
-		m_tests[i]->Init();
-		RunTest(m_tests[i], context);
-		m_tests[i]->Done();
+		RunTest(*pt, context);
 	}
 
 	EndTesting(context);
-	return (context.failedTestCount == 0) ? 0 : 1;
+	return (context.failedTestCount == 0) ? 0 : 1; //non-zero for error exit code
 }
 
-void CUnitTestManager::RunMatchingTests(const char* sName, UnitTestRunContext& context)
-{
-	StartTesting(context, CryUnitTest::ExcelReporter);
-
-	for (uint32 i = 0; i < m_tests.size(); i++)
-	{
-		if (strstr(m_tests[i]->m_info.name, sName) != 0 || strcmp(m_tests[i]->m_info.suite, sName) == 0 || strcmp(m_tests[i]->m_info.module, sName) == 0)
-		{
-			m_tests[i]->Init();
-			RunTest(m_tests[i], context);
-			m_tests[i]->Done();
-		}
-	}
-
-	EndTesting(context);
-}
-
-void CUnitTestManager::RunAutoTests(const char* sSuiteName, const char* sTestName)
+void CUnitTestManager::RunAutoTests(const char* szSuiteName, const char* szTestName)
 {
 	// prepare auto tests context
 	// tests actually will be called during Update call
 	m_pAutoTestsContext->fStartTime = gEnv->pTimer->GetFrameStartTime().GetMilliSeconds();
 	m_pAutoTestsContext->fCurrTime = m_pAutoTestsContext->fStartTime;
-	m_pAutoTestsContext->sSuiteName = sSuiteName;
-	m_pAutoTestsContext->sTestName = sTestName;
+	m_pAutoTestsContext->sSuiteName = szSuiteName;
+	m_pAutoTestsContext->sTestName = szTestName;
 	m_pAutoTestsContext->waitAfterMSec = 0;
 	m_pAutoTestsContext->iter = 0;
+
+	// Note this requires cvar "ats_loop" be defined to work.
 	m_pAutoTestsContext->runCount = max(gEnv->pConsole->GetCVar("ats_loop")->GetIVal(), 1);
 
-	StartTesting(m_pAutoTestsContext->context, CryUnitTest::ExcelReporter);
+	StartTesting(m_pAutoTestsContext->context, EReporterType::Excel);
 }
 
 void CUnitTestManager::Update()
@@ -141,14 +112,11 @@ void CUnitTestManager::Update()
 
 			for (size_t i = m_pAutoTestsContext->iter; i < m_tests.size(); i++)
 			{
-				if (IsTestMatch(m_tests[i], m_pAutoTestsContext->sSuiteName, m_pAutoTestsContext->sTestName))
+				if (IsTestMatch(*m_tests[i], m_pAutoTestsContext->sSuiteName, m_pAutoTestsContext->sTestName))
 				{
-					m_tests[i]->Init();
-					RunTest(m_tests[i], m_pAutoTestsContext->context);
-					m_tests[i]->Done();
+					RunTest(*m_tests[i], m_pAutoTestsContext->context);
 
-					AutoTestInfo info;
-					m_tests[i]->GetAutoTestInfo(info);
+					const SAutoTestInfo& info = m_tests[i]->GetAutoTestInfo();
 					m_pAutoTestsContext->waitAfterMSec = info.waitMSec;
 					m_pAutoTestsContext->iter = i;
 
@@ -169,7 +137,7 @@ void CUnitTestManager::Update()
 					EndTesting(m_pAutoTestsContext->context);
 					m_pAutoTestsContext->iter = -1;
 
-					if (gEnv->pConsole->GetCVar("ats_exit")->GetIVal())
+					if (gEnv->pConsole->GetCVar("ats_exit")->GetIVal())// Note this requires cvar "ats_exit" be defined to work.
 						exit(0);
 				}
 				else
@@ -184,7 +152,7 @@ void CUnitTestManager::Update()
 	}
 }
 
-void CUnitTestManager::StartTesting(UnitTestRunContext& context, CryUnitTest::TReporterToUse reporterToUse)
+void CUnitTestManager::StartTesting(SUnitTestRunContext& context, EReporterType reporterToUse)
 {
 	context.testCount = 0;
 	context.failedTestCount = 0;
@@ -192,45 +160,41 @@ void CUnitTestManager::StartTesting(UnitTestRunContext& context, CryUnitTest::TR
 
 	switch (reporterToUse)
 	{
-	case ExcelReporter:
-		context.pReporter = new CUnitTestExcelReporter;
+	case EReporterType::Excel:
+		context.pReporter = stl::make_unique<CUnitTestExcelReporter>();
 		break;
-	case MinimalReporter:
-		context.pReporter = new CMinimalLogUnitTestReporter;
+	case EReporterType::Minimal:
+		context.pReporter = stl::make_unique<CMinimalLogUnitTestReporter>();
 		break;
-	case RegularReporter:
-		context.pReporter = new CLogUnitTestReporter;
+	case EReporterType::Regular:
+		context.pReporter = stl::make_unique<CLogUnitTestReporter>();
 		break;
 	default:
-		assert(0);
+		CRY_ASSERT(false);
+		break;
 	}
+	CRY_ASSERT(context.pReporter != nullptr);
 
-	if (context.pReporter)
-		context.pReporter->OnStartTesting(context);
+	context.pReporter->OnStartTesting(context);
 }
 
-void CUnitTestManager::EndTesting(UnitTestRunContext& context)
+void CUnitTestManager::EndTesting(SUnitTestRunContext& context)
 {
-	if (context.pReporter)
-		context.pReporter->OnFinishTesting(context);
+	context.pReporter->OnFinishTesting(context);
 }
 
-void CUnitTestManager::RunTest(IUnitTest* pTest, UnitTestRunContext& context)
+void CUnitTestManager::RunTest(CUnitTest& test, SUnitTestRunContext& context)
 {
-
-	m_failureMsg[0] = 0;
-
 	bool bFail = false;
 
-	if (context.pReporter)
-		context.pReporter->OnTestStart(pTest);
-
+	test.Init();
+	context.pReporter->OnSingleTestStart(test);
 	context.testCount++;
 
 	CTimeValue t0 = gEnv->pTimer->GetAsyncTime();
 
 #if defined(CRY_UNIT_TESTING)
-	m_pCurrentTest = pTest; // store test to be able to handle exception cause callbacks
+	m_bRunningTest = true;
 
 	#if !defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
 	if (setjmp(*GetAssertJmpBuf()) == 0)
@@ -238,7 +202,7 @@ void CUnitTestManager::RunTest(IUnitTest* pTest, UnitTestRunContext& context)
 	try
 	#endif
 	{
-		pTest->Run(context);
+		test.Run();
 		context.succedTestCount++;
 	}
 	#if !defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
@@ -248,7 +212,7 @@ void CUnitTestManager::RunTest(IUnitTest* pTest, UnitTestRunContext& context)
 		bFail = true;
 	}
 	#else
-	catch (assert_exception const& e)
+	catch (CryUnitTest::assert_exception const& e)
 	{
 		context.failedTestCount++;
 		bFail = true;
@@ -256,10 +220,9 @@ void CUnitTestManager::RunTest(IUnitTest* pTest, UnitTestRunContext& context)
 
 		// copy filename and line number of unit test assert
 		// will be used later for test reporting
-		CUnitTest* pT = static_cast<CUnitTest*>(pTest);
-		pT->m_info.sFilename = e.m_filename;
-		pT->m_info.filename = pT->m_info.sFilename.c_str();
-		pT->m_info.lineNumber = e.m_lineNumber;
+		test.m_info.sFilename = e.m_filename;
+		test.m_info.filename = test.m_info.sFilename.c_str();
+		test.m_info.lineNumber = e.m_lineNumber;
 	}
 	catch (std::exception const& e)
 	{
@@ -278,109 +241,104 @@ void CUnitTestManager::RunTest(IUnitTest* pTest, UnitTestRunContext& context)
 	}
 	#endif
 
-	m_pCurrentTest = NULL;
+	m_bRunningTest = false;
 #endif
 	CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
 
 	float fRunTimeInMs = (t1 - t0).GetMilliSeconds();
 
-	if (context.pReporter)
-		context.pReporter->OnTestFinish(pTest, fRunTimeInMs, !bFail, m_failureMsg);
+	context.pReporter->OnSingleTestFinish(test, fRunTimeInMs, !bFail, m_failureMsg);
+
+	test.Done();
 }
 
-void CUnitTestManager::SetExceptionCause(const char* expression, const char* file, int line)
+void CUnitTestManager::SetExceptionCause(const char* szExpression, const char* szFile, int line)
 {
-	CUnitTest* pT = static_cast<CUnitTest*>(m_pCurrentTest);
-	if (pT)
+	if (m_bRunningTest)
 	{
-		pT->m_info.sFilename = file;
-		pT->m_info.filename = file;
-		pT->m_info.lineNumber = line;
-		cry_strcpy(m_failureMsg, expression);
+		cry_strcpy(m_failureMsg, szExpression);
 	}
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-	throw CryUnitTest::assert_exception(expression, file, line);
+	throw CryUnitTest::assert_exception(szExpression, szFile, line);
 #else
 	longjmp(*GetAssertJmpBuf(), 1);
 #endif
 }
 
-bool CUnitTestManager::IsTestMatch(CUnitTest* pTest, const string& sSuiteName, const string& sTestName)
+bool CUnitTestManager::IsTestMatch(const CUnitTest& test, const string& sSuiteName, const string& sTestName) const
 {
-	assert(pTest);
-
 	bool isMatch = true; // by default test is match
 
 	if (sSuiteName != "" && sSuiteName != "*")
 	{
-		isMatch &= (strcmp(sSuiteName.c_str(), pTest->m_info.suite) == 0);
+		isMatch &= (sSuiteName == test.GetInfo().suite);
 	}
 	if (sTestName != "" && sTestName != "*")
 	{
-		isMatch &= (strcmp(sTestName.c_str(), pTest->m_info.name) == 0);
+		isMatch &= (sTestName == test.GetInfo().name);
 	}
 	return isMatch;
 }
 
-void CLogUnitTestReporter::OnStartTesting(UnitTestRunContext& context)
+//////////////////////////////////////////////////////////////////////////
+
+void CryUnitTest::CLogUnitTestReporter::OnStartTesting(const SUnitTestRunContext& context)
 {
 	CryLog("UnitTesting Started");
 }
 
-void CLogUnitTestReporter::OnFinishTesting(UnitTestRunContext& context)
+void CryUnitTest::CLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContext& context)
 {
 	CryLog("UnitTesting Finished");
 }
 
-void CLogUnitTestReporter::OnTestStart(IUnitTest* pTest)
+void CryUnitTest::CLogUnitTestReporter::OnSingleTestStart(const IUnitTest& test)
 {
-	UnitTestInfo info;
-	pTest->GetInfo(info);
+	auto& info = test.GetInfo();
 	CryLog("UnitTestStart:  [%s]%s:%s", info.module, info.suite, info.name);
 }
 
-void CLogUnitTestReporter::OnTestFinish(IUnitTest* pTest, float fRunTimeInMs, bool bSuccess, char const* failureDescription)
+void CryUnitTest::CLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
-	UnitTestInfo info;
-	pTest->GetInfo(info);
+	auto& info = test.GetInfo();
 	if (bSuccess)
 		CryLog("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.module, info.suite, info.name, fRunTimeInMs);
 	else
-		CryLog("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.module, info.suite, info.name, failureDescription);
+		CryLog("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.module, info.suite, info.name, szFailureDescription);
 }
 
-void CMinimalLogUnitTestReporter::OnStartTesting(UnitTestRunContext& context)
+//////////////////////////////////////////////////////////////////////////
+
+void CryUnitTest::CMinimalLogUnitTestReporter::OnStartTesting(const SUnitTestRunContext& context)
 {
 	m_nRunTests = 0;
 	m_nSucceededTests = 0;
 	m_nFailedTests = 0;
-	m_fTimeTaken = 0.0f;
+	m_fTimeTaken = 0.f;
 }
 
-void CMinimalLogUnitTestReporter::OnFinishTesting(UnitTestRunContext& context)
+void CryUnitTest::CMinimalLogUnitTestReporter::OnFinishTesting(const SUnitTestRunContext& context)
 {
 	CryLog("UnitTesting Finished Tests: %d Succeeded: %d, Failed: %d, Time: %5.2f ms", m_nRunTests, m_nSucceededTests, m_nFailedTests, m_fTimeTaken);
 }
 
-void CMinimalLogUnitTestReporter::OnTestStart(IUnitTest* pTest)
+void CryUnitTest::CMinimalLogUnitTestReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
 {
-}
-
-void CMinimalLogUnitTestReporter::OnTestFinish(IUnitTest* pTest, float fRunTimeInMs, bool bSuccess, char const* failureDescription)
-{
-	m_nRunTests += 1;
-	m_nSucceededTests += (bSuccess == true);
-	m_nFailedTests += (bSuccess == false);
+	++m_nRunTests;
+	if (bSuccess)
+		++m_nSucceededTests;
+	else
+		++m_nFailedTests;
 	m_fTimeTaken += fRunTimeInMs;
 
 	if (!bSuccess)
 	{
-		UnitTestInfo info;
-		pTest->GetInfo(info);
-		CryLog("-- FAIL (%s): [%s]%s:%s (%s:%d)", failureDescription, info.module, info.suite, info.name, info.filename, info.lineNumber);
+		auto& info = test.GetInfo();
+		CryLog("-- FAIL (%s): [%s]%s:%s (%s:%d)", szFailureDescription, info.module, info.suite, info.name, info.filename, info.lineNumber);
 	}
-
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 #if defined(CRY_UNIT_TESTING)
 
@@ -902,7 +860,7 @@ CRY_UNIT_TEST_SUITE(Strings)
 			const auto test = [](const bool bNull, int charCount, const char* src, const char* initBuffer, const char* resultBuffer, bool resultBool)
 			{
 				char buffer[3] = { initBuffer[0], initBuffer[1], initBuffer[2] };
-				assert(charCount >= 0 && charCount <= CRY_ARRAY_COUNT(buffer));
+				CRY_ASSERT(charCount >= 0 && charCount <= CRY_ARRAY_COUNT(buffer));
 				const bool b = cry_sprintf(bNull ? nullptr : buffer, charCount * sizeof(buffer[0]), src);
 				CRY_UNIT_TEST_ASSERT(b == resultBool && !memcmp(buffer, resultBuffer, sizeof(buffer)));
 			};
@@ -1141,7 +1099,6 @@ static Counts delta_counts()
 	s_counts = Counts();
 	return delta;
 }
-
 
 struct Tracker
 {
@@ -1388,7 +1345,8 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 			{ "../../abc",                   true,  "..\\..\\abc",               true,  "../../abc"              },
 			{ "bar/../../../abc",            true,  "..\\..\\abc",               true,  "../../abc"              },
 			{ "/abc/foo/bar",                true,  "\\abc\\foo\\bar",           true,  "/abc/foo/bar"           },
-			{ "abc",                         true,  "abc",                       true,  "abc"                    },{ "abc/.", true, "abc", true, "abc" },
+			{ "abc",                         true,  "abc",                       true,  "abc"                    },
+			{ "abc/.",                       true,  "abc",                       true,  "abc"                    },
 			{ "abc/..",                      true,  "",                          true,  ""                       },
 			{ "abc/../..",                   true,  "..",                        true,  ".."                     },
 			{ "abc/foo/bar",                 true,  "abc\\foo\\bar",             true,  "abc/foo/bar"            },
@@ -1508,7 +1466,7 @@ CRY_UNIT_TEST(CUT_Variant)
 	// Emplace & Get
 	{
 		CryVariant<int, string> v;
-		
+
 		v.emplace<int>(5);
 		CRY_UNIT_TEST_ASSERT(stl::get<int>(v) == 5);
 		CRY_UNIT_TEST_ASSERT(stl::get<0>(v) == 5);
@@ -1553,7 +1511,7 @@ CRY_UNIT_TEST(CUT_Variant)
 	// Equals
 	{
 		CryVariant<bool, int> v1, v2;
-		
+
 		v1.emplace<bool>(true);
 		v2.emplace<bool>(true);
 		CRY_UNIT_TEST_ASSERT(v1 == v2);

@@ -9,8 +9,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __UnitTestExcelReporter_h__
-#define __UnitTestExcelReporter_h__
 #pragma once
 
 #include <CrySystem/CryUnitTest.h>
@@ -18,26 +16,25 @@
 
 namespace CryUnitTest
 {
-struct CUnitTestExcelReporter : public CExcelExportBase, public IUnitTestReporter
+class CUnitTestExcelReporter : public CExcelExportBase, public IUnitTestReporter
 {
-	virtual void OnStartTesting(UnitTestRunContext& context);
-	virtual void OnFinishTesting(UnitTestRunContext& context);
-	virtual void OnTestStart(IUnitTest* pTest);
-	virtual void OnTestFinish(IUnitTest* pTest, float fRunTimeInMs, bool bSuccess, char const* failureDescription);
+public:
+	virtual void OnStartTesting(const SUnitTestRunContext& context) override {}
+	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
+	virtual void OnSingleTestStart(const IUnitTest& test) override;
+	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* failureDescription) override;
 
 	void         SaveJUnitCompatableXml();
 
 private:
-	struct TestResult
+	struct STestResult
 	{
-		UnitTestInfo testInfo;
-		AutoTestInfo autoTestInfo;
-		float        fRunTimeInMs;
-		bool         bSuccess;
-		string       failureDescription;
+		SUnitTestInfo testInfo;
+		SAutoTestInfo autoTestInfo;
+		float         fRunTimeInMs;
+		bool          bSuccess;
+		string        failureDescription;
 	};
-	std::vector<TestResult> m_results;
+	std::vector<STestResult> m_results;
 };
-};
-
-#endif //__UnitTestExcelReporter_h__
+}

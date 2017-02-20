@@ -18,6 +18,7 @@
 #include "GraphicsPipeline/VolumetricClouds.h"
 #include "GraphicsPipeline/VolumetricFog.h"
 #include "GraphicsPipeline/WaterRipples.h"
+#include "GraphicsPipeline/Water.h"
 
 #include "Common/RenderView.h"
 
@@ -5116,15 +5117,9 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 
 				case TO_WATERVOLUMEMAP:
 					{
-						if (CTexture::s_ptexWaterVolumeDDN)
+						const auto* pStage = rd->GetGraphicsPipeline().GetWaterStage();
+						if (pStage && pStage->IsNormalGenActive() && CTexture::s_ptexWaterVolumeDDN)
 						{
-							CEffectParam* pParam = PostEffectMgr()->GetByName("WaterVolume_Amount");
-							assert(pParam && "Parameter doesn't exist");
-
-							// Activate puddle generation
-							if (pParam)
-								pParam->SetParam(1.0f);
-
 							CTexture::s_ptexWaterVolumeDDN->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit, SResourceView::DefaultView, eSHClass);
 						}
 						else

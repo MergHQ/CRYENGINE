@@ -143,11 +143,6 @@ bool SPostEffectsUtils::Create()
 
 void SPostEffectsUtils::Release()
 {
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeDDN);
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[0]);
-	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[1]);
-	SAFE_DELETE(CTexture::s_pMipperWaterRipplesDDN);
-
 	SAFE_RELEASE(CTexture::s_ptexPrevBackBuffer[0][0]);
 	SAFE_RELEASE(CTexture::s_ptexPrevBackBuffer[1][0]);
 	SAFE_RELEASE(CTexture::s_ptexPrevBackBuffer[0][1]);

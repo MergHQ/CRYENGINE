@@ -2262,10 +2262,6 @@ public:
 	static CTexture*           s_ptexRainOcclusion;      // top-down rain occlusion
 	static CTexture*           s_ptexRainSSOcclusion[2]; // screen-space rain occlusion accumulation
 
-	static CMipmapGenPass*     s_pMipperWaterVolumeDDN;
-	static CMipmapGenPass*     s_pMipperWaterVolumeRefl[2];
-	static CMipmapGenPass*     s_pMipperWaterRipplesDDN;
-
 	static CTexture*           s_ptexRainDropsRT[2];
 
 	static CTexture*           s_ptexRT_ShadowPool;

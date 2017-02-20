@@ -49,8 +49,8 @@ struct SRegFactoryNode* g_pHeadToRegFactories = 0;
 	#undef CRY_PLATFORM_IMPL_H_FILE
 
 // Define UnitTest static variables
-CryUnitTest::Test* CryUnitTest::Test::m_pFirst = 0;
-CryUnitTest::Test* CryUnitTest::Test::m_pLast = 0;
+CryUnitTest::STest* CryUnitTest::STest::m_pFirst = nullptr;
+CryUnitTest::STest* CryUnitTest::STest::m_pLast = nullptr;
 
 	#if CRY_PLATFORM_WINDOWS
 void CryPureCallHandler()
@@ -115,7 +115,7 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 	if (pSystem)
 	{
 		if (CryUnitTest::IUnitTestManager* pTestManager = pSystem->GetITestSystem()->GetIUnitTestManager())
-			pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, moduleName);
+			pTestManager->CreateTests(moduleName);
 	}
 	#endif //CRY_UNIT_TESTING
 }

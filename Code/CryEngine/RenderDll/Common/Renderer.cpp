@@ -1473,11 +1473,6 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 	m_pRT->RC_SubmitWind(pWind);
 }
 
-void CRenderer::RT_CreateREPostProcess(CRenderElement** re)
-{
-	*re = new CREPostProcess;
-}
-
 CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 {
 	CRenderElement* re = NULL;
@@ -1488,9 +1483,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 		break;
 	case eDATA_Imposter:
 		re = new CREImposter;
-		break;
-	case eDATA_HDRProcess:
-		re = new CREHDRProcess;
 		break;
 
 	case eDATA_DeferredShading:
@@ -1525,10 +1517,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 
 	case eDATA_FarTreeSprites:
 		re = new CREFarTreeSprites;
-		break;
-
-	case eDATA_PostProcess:
-		re = new CREPostProcess;
 		break;
 
 	case eDATA_FogVolume:
@@ -4086,7 +4074,6 @@ void CRenderer::ExecuteAsyncDIP()
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bForceValue)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
 	if (!pParam)
 	{
@@ -4104,7 +4091,6 @@ void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bFo
 
 void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue, bool bForceValue)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
@@ -4119,7 +4105,6 @@ void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszArg)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam && pszArg) && "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
@@ -4134,7 +4119,6 @@ void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszA
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
@@ -4149,7 +4133,6 @@ void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
@@ -4164,7 +4147,6 @@ void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& pszArg)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT((pParam && pszArg) && "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
@@ -4179,7 +4161,6 @@ void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& psz
 //////////////////////////////////////////////////////////////////////////
 int32 CRenderer::EF_GetPostEffectID(const char* pPostEffectName)
 {
-	CRY_ASSERT(m_RP.m_pREPostProcess); // TODO: remove after old graphics pipeline is removed.
 	CRY_ASSERT(pPostEffectName && "mfGetParameter: null parameter");
 
 	if (!pPostEffectName)

@@ -1113,21 +1113,6 @@ void SRenderThread::RC_UnlinkTexture(CTexture* pTex)
 	EndCommand(p);
 }
 
-void SRenderThread::RC_CreateREPostProcess(CRenderElement** re)
-{
-	if (IsRenderThread() || IsLevelLoadingThread())
-	{
-		return gRenDev->RT_CreateREPostProcess(re);
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_CreateREPostProcess, sizeof(void*));
-	AddPointer(p, re);
-	EndCommand(p);
-
-	FlushAndWait();
-}
-
 bool SRenderThread::RC_CheckUpdate2(CRenderMesh* pMesh, CRenderMesh* pVContainer, EVertexFormat eVF, uint32 nStreamMask)
 {
 	if (IsRenderThread())
@@ -2749,12 +2734,6 @@ void SRenderThread::ProcessCommands()
 				ColorF kColor = ReadCommand<ColorF>(n);
 
 				RC_ClearTarget(pkTexture, kColor);
-			}
-			break;
-		case eRC_CreateREPostProcess:
-			{
-				CRenderElement** pRE = ReadCommand<CRenderElement**>(n);
-				gRenDev->RT_CreateREPostProcess(pRE);
 			}
 			break;
 

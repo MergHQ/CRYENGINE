@@ -598,7 +598,6 @@ public:
 	virtual void RT_CreateRenderResources() = 0;
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual void RT_ReadFrameBuffer(unsigned char* pRGB, int nImageX, int nSizeX, int nSizeY, ERB_Type eRBType, bool bRGBA, int nScaledX, int nScaledY) = 0;
-	virtual void RT_CreateREPostProcess(CRenderElement** re);
 	virtual void RT_FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) override;
 	virtual void RT_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) override;
 	virtual void RT_FlashRemoveTexture(ITexture* pTexture) override;

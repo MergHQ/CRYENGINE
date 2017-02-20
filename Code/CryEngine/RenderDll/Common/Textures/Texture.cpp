@@ -144,10 +144,6 @@ CTexture* CTexture::s_ptexWaterCaustics[2] = { NULL };
 CTexture* CTexture::s_ptexRainOcclusion;
 CTexture* CTexture::s_ptexRainSSOcclusion[2];
 
-CMipmapGenPass* CTexture::s_pMipperWaterVolumeDDN;
-CMipmapGenPass* CTexture::s_pMipperWaterVolumeRefl[2];
-CMipmapGenPass* CTexture::s_pMipperWaterRipplesDDN;
-
 CTexture* CTexture::s_ptexRainDropsRT[2];
 
 CTexture* CTexture::s_ptexRT_ShadowPool;

@@ -23,6 +23,7 @@ if (OUTPUT_DIRECTORY)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${TOOLS_CMAKE_DIR}/modules")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "CMake module path" FORCE)
 
 # C/C++ languages required.
 enable_language(C)

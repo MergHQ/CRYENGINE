@@ -525,7 +525,6 @@
           "CryRenderer/RenderElements/CREMesh.h",
           "CryRenderer/RenderElements/CREOcclusionQuery.h",
           "CryRenderer/RenderElements/CREParticle.h",
-          "CryRenderer/RenderElements/CREPostProcess.h",
           "CryRenderer/RenderElements/CRESky.h",
           "CryRenderer/RenderElements/CREVolumeObject.h",
           "CryRenderer/RenderElements/CREWaterOcean.h",
