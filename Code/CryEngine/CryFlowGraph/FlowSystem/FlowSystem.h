@@ -34,7 +34,7 @@ private:
 	DynArray<TFlowInputData> m_container;
 };
 
-class CFlowSystem : public IFlowSystem, public IEntitySystemSink, public ISystemEventListener
+class CFlowSystem : public IFlowSystem, public IEntitySystemSink, public ISystemEventListener, public IEntityClassRegistryListener
 {
 public:
 	CFlowSystem();
@@ -80,6 +80,10 @@ public:
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 	// ~ISystemEventListener
+
+	// IEntityClassRegistryListener
+	void OnEntityClassRegistryEvent(EEntityClassRegistryEvent event, const IEntityClass* pEntityClass);
+	// ~IEntityClassRegistryListener
 
 	IFlowNodePtr                   CreateNodeOfType(IFlowNode::SActivationInfo*, TFlowNodeTypeId typeId);
 	void                           NotifyCriticalLoadingError() { m_criticalLoadingErrorHappened = true; }
