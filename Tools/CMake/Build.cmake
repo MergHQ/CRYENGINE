@@ -34,7 +34,7 @@ if (OPTION_SANDBOX AND WIN64)
 endif()
 
 # Run Unit Test
-if (WIN32 OR WIN64)
+if (OPTION_ENGINE AND (WIN32 OR WIN64))
 	add_custom_target(run_unit_tests)
 	set_target_properties(run_unit_tests PROPERTIES EXCLUDE_FROM_ALL TRUE)
 	set_target_properties(run_unit_tests PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
