@@ -232,7 +232,7 @@ void CExcelExportBase::SaveToFile(const char* filename)
 {
 	string xml = GetXmlHeader();
 
-	string sDir = PathUtil::GetParentDirectory(CONST_TEMP_STRING(filename));
+	string sDir = PathUtil::GetParentDirectory(filename);
 	gEnv->pCryPak->MakeDir(sDir.c_str());
 
 	FILE* file = fxopen(filename, "wb");

@@ -43,7 +43,7 @@ void CTestSystemLegacy::Init(IConsole* pConsole)
 //////////////////////////////////////////////////////////////////////////
 void CTestSystemLegacy::RunUnitTests(IConsoleCmdArgs* pArgs)
 {
-	int nExitCode = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::ExcelReporter);
+	int nExitCode = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
 
 	// Check for "noquit" option.
 	for (int a = 1; a < pArgs->GetArgCount(); a++)
@@ -125,6 +125,7 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 	}
 
 	if (stricmp(m_sParameter.c_str(), "LevelStats") == 0)
+	{
 		if (gEnv->pGameFramework)
 		{
 			static CLevelListener listener(*this);
@@ -135,6 +136,7 @@ void CTestSystemLegacy::ApplicationTest(const char* szParam)
 				gEnv->pGameFramework->GetILevelSystem()->AddListener(&listener);
 			}
 		}
+	}
 
 	gEnv->pConsole->ShowConsole(false);
 

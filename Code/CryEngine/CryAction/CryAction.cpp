@@ -2439,25 +2439,11 @@ bool CCryAction::CompleteInit()
 	}
 
 #if defined(CRY_UNIT_TESTING)
-	if (CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager())
+	const ICmdLineArg* pRunUnitTest = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "run_unit_tests");
+	if (pRunUnitTest)
 	{
-	#if defined(_LIB)
-		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
-	#endif
-
-		const ICmdLineArg* pSkipUnitTest = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests");
-		if (!pSkipUnitTest)
-		{
-			const ICmdLineArg* pUseUnitTestExcelReporter = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "use_unit_test_excel_reporter");
-			if (pUseUnitTestExcelReporter)
-			{
-				GetISystem()->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::ExcelReporter);
-			}
-			else
-			{
-				GetISystem()->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::MinimalReporter);
-			}
-		}
+		GetISystem()->GetITestSystem()->GetIUnitTestManager()->RunAllTests(CryUnitTest::EReporterType::Excel);
+		gEnv->pConsole->ExecuteString("quit");
 	}
 #endif
 

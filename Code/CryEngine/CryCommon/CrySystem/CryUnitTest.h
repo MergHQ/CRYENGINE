@@ -1,15 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryUnitTest.h
-//  Version:     v1.00
-//  Created:     19/10/2004 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description: Defines namespace PathUtil for operations on files paths.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+//! Defines interfaces and macros for Cry Unit Tests.
+//! CRY_UNIT_TEST_SUITE: Specify a suit name to group tests locally together.
+//! CRY_UNIT_TEST: Specify a new test which is automatically registered.
+//! CRY_UNIT_TEST_ASSERT: Fails and reports if the specified expression evaluates to false.
+//! CRY_UNIT_TEST_CHECK_CLOSE: Fails and reports if the specified floating pointer values are not equal with respect to epsilon.
+//! CRY_UNIT_TEST_CHECK_EQUAL: Fails and reports if the specified values are not equal.
 
 #pragma once
 
@@ -20,114 +16,126 @@
 	#include <exception>
 #endif
 
-//! Supported Interface macros for Cry Unit Tests.
-//! CRY_UNIT_TEST_SUITE: Specify a suit name to group tests locally together.
-//! CRY_UNIT_TEST: Specify a new test which is automatically registered.
-//! CRY_UNIT_TEST_ASSERT: Fails and reports if the specified expression evaluates to false.
-//! CRY_UNIT_TEST_CHECK_CLOSE: Fails and reports if the specified floating pointer values are not equal with respect to epsilon.
-//! CRY_UNIT_TEST_CHECK_EQUAL: Fails and reports if the specified values are not equal.
 namespace CryUnitTest
 {
-struct Test;
+struct STest;
 struct IUnitTestReporter;
 
-enum TReporterToUse
+//! Describes in what way the test result is reported
+enum class EReporterType
 {
-	ExcelReporter,
-	MinimalReporter,
-	RegularReporter
+	Excel,   //!< Writes multiple excel documents for detailed results
+	Minimal, //!< Writes minimal logs
+	Regular, //!< Writes detailed logs for every test
 };
 
-struct UnitTestInfo
+struct SUnitTestInfo
 {
-	char const* module;
-	char const* suite;
-	char const* name;
-	char const* filename;
-	int         lineNumber;
-	Test*       pTestImpl; //!< Pointer to the actual test class implementation.
-	string      sFilename; //!< Storage to keep Lua test file for test reporting.
+	STest&      test;
+	char const* module = "";
+	char const* suite = "";
+	char const* name = "";
+	char const* filename = "";
+	int         lineNumber = 0;
+	string      sFilename;           //!< Storage to keep Lua test file for test reporting. Currently not in use.
 
-	UnitTestInfo() : module(""), suite(""), name(""), filename(""), lineNumber(0), pTestImpl(0) {};
+	//! Instantiates test info bound to a test instance
+	SUnitTestInfo(STest& test)
+		: test(test)
+	{
+	}
+
+	//! Equality comparison. Comparing related test instances is sufficient.
+	friend bool operator==(const SUnitTestInfo& lhs, const SUnitTestInfo& rhs)
+	{
+		return &lhs.test == &rhs.test;
+	}
 };
 
-struct AutoTestInfo
+//! Defines info needed for script bound auto testing.
+//! Currently not in use
+struct SAutoTestInfo
 {
-	bool        runNextTest;  //!< To organize auto tests cycle.
-	int         waitMSec;     //!< Identify waiting period after each auto test.
-	const char* szTaskName;   //!< Current test task.
-
-	AutoTestInfo() : runNextTest(true), waitMSec(0), szTaskName(0) {};
+	bool        runNextTest = true;  //!< To organize auto tests cycle.
+	int         waitMSec = 0;        //!< Identify waiting period after each auto test.
+	const char* szTaskName = 0;      //!< Current test task.
 };
 
-//! Base class for all user tests.
-struct Test
+//! Base class for all user tests expanded through macros
+struct STest
 {
-	virtual ~Test(){}
+	virtual ~STest(){}
 
 	//! Must be implemented by the test creator.
 	virtual void Run() = 0;
 
-	//! Optional methods called by the system at the begining of the testing and at the end of the testing.
+	//! Optional methods called by the system at the beginning of the testing and at the end of the testing.
 	virtual void Init() {};
 	virtual void Done() {};
 
-	UnitTestInfo m_unitTestInfo;
-	AutoTestInfo m_autoTestInfo;
-	Test*        m_pNext;
-	static Test* m_pFirst;
-	static Test* m_pLast;
+	SUnitTestInfo m_unitTestInfo { *this };
+	SAutoTestInfo m_autoTestInfo;//!< Currently not in use
+	STest*        m_pNext = nullptr;
+	static STest* m_pFirst;
+	static STest* m_pLast;
 };
 
-struct UnitTestRunContext
+struct SUnitTestRunContext
 {
-	int                testCount;
-	int                failedTestCount;
-	int                succedTestCount;
-	IUnitTestReporter* pReporter;
-
-	UnitTestRunContext() : testCount(0), failedTestCount(0), succedTestCount(0), pReporter(0) {};
+	int testCount = 0;
+	int failedTestCount = 0;
+	int succedTestCount = 0;
+	std::unique_ptr<IUnitTestReporter> pReporter;
 };
 
 struct IUnitTest
 {
 	virtual ~IUnitTest(){}
-	virtual void GetInfo(UnitTestInfo& info) = 0;
-	virtual void GetAutoTestInfo(AutoTestInfo& info) = 0;
-	virtual void Run(UnitTestRunContext& context) = 0;
-	virtual void Init() = 0;
-	virtual void Done() = 0;
+	virtual const SUnitTestInfo& GetInfo() const = 0;
+	virtual const SAutoTestInfo& GetAutoTestInfo() const = 0;
+	virtual void                 Init() = 0;
+	virtual void                 Run() = 0;
+	virtual void                 Done() = 0;
 };
 
 struct IUnitTestReporter
 {
 	virtual ~IUnitTestReporter(){}
-	virtual void OnStartTesting(UnitTestRunContext& context) = 0;
-	virtual void OnFinishTesting(UnitTestRunContext& context) = 0;
 
-	virtual void OnTestStart(IUnitTest* pTest) = 0;
-	virtual void OnTestFinish(IUnitTest* pTest, float fRunTimeInMs, bool bSuccess, char const* failureDescription) = 0;
+	//! Notify reporter the test system started
+	virtual void OnStartTesting(const SUnitTestRunContext& context) = 0;
+
+	//! Notify reporter the test system finished
+	virtual void OnFinishTesting(const SUnitTestRunContext& context) = 0;
+
+	//! Notify reporter one test started
+	virtual void OnSingleTestStart(const IUnitTest& test) = 0;
+
+	//! Notify reporter one test finished, along with necessary results
+	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription) = 0;
 };
 
 struct IUnitTestManager
 {
 	virtual ~IUnitTestManager(){}
-	virtual IUnitTest* CreateTest(const UnitTestInfo& info) = 0;
 
-	void CreateTests(CryUnitTest::Test* pTest, const char* moduleName = "")
+	virtual IUnitTest* GetTestInstance(const SUnitTestInfo& info) = 0;
+
+	void CreateTests(const char* moduleName = "")
 	{
-		for (; pTest != 0; pTest = pTest->m_pNext)
+		for (STest* pTest = STest::m_pFirst; pTest != nullptr; pTest = pTest->m_pNext)
 		{
 			pTest->m_unitTestInfo.module = moduleName;
-			CreateTest(pTest->m_unitTestInfo);
+			GetTestInstance(pTest->m_unitTestInfo);
 		}
 	}
 
-	virtual int        RunAllTests(CryUnitTest::TReporterToUse) = 0;
-	virtual void       RunMatchingTests(const char* sName, UnitTestRunContext& context) = 0;
-	virtual void       RunAutoTests(const char* sSuiteName, const char* sTestName) = 0;
-	virtual void       Update() = 0;
-	virtual void       RemoveTests() = 0;
+	//! Runs all test instances and returns exit code.
+	//! \return 0 if all succeeded, non-zero when at least one test failed.
+	virtual int  RunAllTests(EReporterType reporterType) = 0;
+
+	virtual void RunAutoTests(const char* sSuiteName, const char* sTestName) = 0; //!< Currently not in use
+	virtual void Update() = 0;//! Currently not in use
 
 	//! 'callback' for failed tests, to prevent storing information in the exception, allowing use of setjmp/longjmp.
 	virtual void SetExceptionCause(const char* expression, const char* file, int line) = 0;
@@ -144,13 +152,13 @@ public:
 	char m_filename[256];
 	int  m_lineNumber;
 public:
-	assert_exception(char const* description, char const* filename, int lineNumber)
+	assert_exception(char const* szDescription, char const* szFilename, int lineNumber)
 	{
-		cry_strcpy(m_description, description);
-		cry_strcpy(m_filename, filename);
+		cry_strcpy(m_description, szDescription);
+		cry_strcpy(m_filename, szFilename);
 		m_lineNumber = lineNumber;
 	}
-	virtual char const* what() const throw() { return m_description; };
+	virtual char const* what() const throw()override { return m_description; };
 };
 #endif
 
@@ -158,32 +166,33 @@ public:
 class CAutoRegisterUnitTest
 {
 public:
-	CAutoRegisterUnitTest(Test* pTest, const char* suite, const char* name, const char* filename, int line)
+	CAutoRegisterUnitTest(STest* pTest, const char* suite, const char* name, const char* filename, int line)
 	{
-		if (!pTest->m_pLast)
-			pTest->m_pFirst = pTest;
+		CRY_ASSERT(pTest != nullptr);
+
+		if (!STest::m_pLast)
+			STest::m_pFirst = pTest;
 		else
-			pTest->m_pLast->m_pNext = pTest;
-		pTest->m_pLast = pTest;
+			STest::m_pLast->m_pNext = pTest;
+		STest::m_pLast = pTest;
 
 		pTest->m_unitTestInfo.module = "";
 		pTest->m_unitTestInfo.suite = suite;
 		pTest->m_unitTestInfo.name = name;
 		pTest->m_unitTestInfo.filename = filename;
 		pTest->m_unitTestInfo.lineNumber = line;
-		pTest->m_unitTestInfo.pTestImpl = pTest;
 	}
 };
-};
+} // namespace CryUnitTest
 
 //! Global Suite for all tests that do not specify suite.
 namespace CryUnitTestSuite
 {
 inline const char* GetSuiteName() { return ""; }
-};
+}
 
 #define CRY_UNIT_TEST_FIXTURE(FixureName) \
-  struct FixureName : public CryUnitTest::Test
+  struct FixureName : public CryUnitTest::STest
 
 #define CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, Fixture)                                                                                                       \
   class ClassName : public Fixture                                                                                                                                          \
@@ -194,7 +203,7 @@ inline const char* GetSuiteName() { return ""; }
   CryUnitTest::CAutoRegisterUnitTest autoreg_unittest_ ## ClassName(&auto_unittest_instance_ ## ClassName, CryUnitTestSuite::GetSuiteName(), TestName, __FILE__, __LINE__); \
   void ClassName::Run()
 
-#define CRY_UNIT_TEST_NAME(ClassName, TestName)            CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, CryUnitTest::Test)
+#define CRY_UNIT_TEST_NAME(ClassName, TestName)            CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, TestName, CryUnitTest::STest)
 #define CRY_UNIT_TEST(ClassName)                           CRY_UNIT_TEST_NAME(ClassName, # ClassName)
 #define CRY_UNIT_TEST_WITH_FIXTURE(ClassName, FixtureName) CRY_UNIT_TEST_NAME_WITH_FIXTURE(ClassName, # ClassName, FixtureName)
 
@@ -226,7 +235,7 @@ inline const char* GetSuiteName() { return ""; }
 #define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)                                                                      \
   do                                                                                                                            \
   {                                                                                                                             \
-    if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                                       \
+    if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                               \
     {                                                                                                                           \
       gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause( # valueA " != " # valueB, __FILE__, __LINE__); \
     }                                                                                                                           \
