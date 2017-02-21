@@ -9,7 +9,7 @@ if(NOT (ORBIS OR ANDROID))
 endif()
 
 if (WIN32 OR WIN64)
-	if (NOT MSVC_VERSION EQUAL 1900)
+	if (MSVC_VERSION LESS 1900)
 		message(STATUS "MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.")
 	else()
 		OPTION(RENDERER_DX12 "Renderer for DirectX 12" ON)
@@ -87,7 +87,9 @@ if(WIN32)
 endif(WIN32)
 
 
-if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+	set(MSVC_LIB_PREFIX vc140)
+elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
 	set(MSVC_LIB_PREFIX vc140)
 elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 	set(MSVC_LIB_PREFIX vc120)
