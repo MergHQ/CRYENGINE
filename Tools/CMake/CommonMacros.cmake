@@ -1015,8 +1015,10 @@ macro(use_scaleform)
 endmacro()
 
 macro(use_xt)
-	if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(XT_VERSION vc14)	
+	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+		set(XT_VERSION vc14)
+	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+		set(XT_VERSION vc14)
 	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 		set(XT_VERSION vc12)
 	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012

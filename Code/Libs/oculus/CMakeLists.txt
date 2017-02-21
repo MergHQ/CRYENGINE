@@ -121,7 +121,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(MSVC_VERSION EQUAL 1900 AND (WIN32 OR WIN64))
+if(NOT MSVC_VERSION LESS 1900 AND (WIN32 OR WIN64))
 	CryEngineStaticModule(oculus SOLUTION_FOLDER "Libs")
 	if(WIN32 OR WIN64)
 		target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /W0 /Wv:18)
