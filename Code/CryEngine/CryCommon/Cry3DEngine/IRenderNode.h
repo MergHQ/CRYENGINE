@@ -1,7 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef IRenderNodeSTATE_H
-#define IRenderNodeSTATE_H
+#pragma once
+
+#include "../CryAudio/IAudioSystem.h"
 
 #define SUPP_HMAP_OCCL
 
@@ -214,7 +215,7 @@ public:
 		m_ucLodRatio = 100;
 		m_pOcNode = 0;
 		m_nHUDSilhouettesParam = 0;
-		m_fWSMaxViewDist = 0;		
+		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
 		m_pTempData = NULL;
@@ -338,12 +339,12 @@ public:
 
 	//! Called immediately when render node becomes visible from any thread.
 	//! Not reentrant, multiple simultaneous calls to this method on the same rendernode from multiple threads is not supported and should not happen
-	virtual void  OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) {}
+	virtual void OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) {}
 
 	//! Called when RenderNode becomes visible or invisible, can only be called from the Main thread
-	virtual void  OnRenderNodeVisible( bool bBecomeVisible ) {}
-	
-	virtual uint8 GetSortPriority()                                             { return 0; }
+	virtual void  OnRenderNodeVisible(bool bBecomeVisible) {}
+
+	virtual uint8 GetSortPriority()                        { return 0; }
 
 	//! Object can be used by GI system in several ways.
 	enum EGIMode
@@ -506,7 +507,7 @@ public:
 
 	//! Pointer to temporary data allocated only for currently visible objects.
 	struct SRenderNodeTempData* m_pTempData;
-	
+
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
 
@@ -1010,6 +1011,17 @@ struct IRopeRenderNode : public IRenderNode
 		Vec3             offset;
 		int              nPartId;
 	};
+	struct SRopeAudioParams
+	{
+		SRopeAudioParams() = default;
+
+		CryAudio::ControlId      startTrigger = CryAudio::InvalidControlId;
+		CryAudio::ControlId      stopTrigger = CryAudio::InvalidControlId;
+		CryAudio::ControlId      angleParameter = CryAudio::InvalidControlId;
+		CryAudio::EOcclusionType occlusionType = CryAudio::eOcclusionType_Ignore;
+		int                      segementToAttachTo = 1;
+		float                    offset = 0.0f;
+	};
 
 	// <interfuscator:shuffle>
 	virtual void                                SetName(const char* sNodeName) = 0;
@@ -1037,10 +1049,8 @@ struct IRopeRenderNode : public IRenderNode
 
 	virtual void ResetPoints() = 0;
 
-	//! Sound related.
-	virtual void SetRopeSound(char const* const pcSoundName, int unsigned const nSegmentToAttachTo, float const fOffset) = 0;
-	virtual void StopRopeSound() = 0;
-	virtual void ResetRopeSound() = 0;
+	virtual void DisableAudio() = 0;
+	virtual void SetAudioParams(SRopeAudioParams const& audioParams) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -1119,5 +1129,3 @@ struct ICharacterRenderNode : public IRenderNode
 	virtual void SetCharacter(struct ICharacterInstance* pCharacter) = 0;
 	virtual void SetCharacterRenderOffset(const QuatTS& renderOffset) = 0;
 };
-
-#endif // IRenderNodeSTATE_H

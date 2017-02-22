@@ -1,16 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   RopeProxy.cpp
-//  Version:     v1.00
-//  Created:     25/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "RopeProxy.h"
 #include "Entity.h"
@@ -113,19 +102,19 @@ void CEntityComponentRope::ProcessEvent(SEntityEvent& event)
 uint64 CEntityComponentRope::GetEventMask() const
 {
 	return
-		BIT64(ENTITY_EVENT_XFORM) |
-		BIT64(ENTITY_EVENT_HIDE) |
-		BIT64(ENTITY_EVENT_UNHIDE) |
-		BIT64(ENTITY_EVENT_VISIBLE) |
-		BIT64(ENTITY_EVENT_INVISIBLE) |
-		BIT64(ENTITY_EVENT_DONE) |
-		BIT64(ENTITY_EVENT_ATTACH) |
-		BIT64(ENTITY_EVENT_DETACH) |
-		BIT64(ENTITY_EVENT_COLLISION) |
-		BIT64(ENTITY_EVENT_PHYS_BREAK) |
-		BIT64(ENTITY_EVENT_MATERIAL) |
-		BIT64(ENTITY_EVENT_LEVEL_LOADED) |
-		BIT64(ENTITY_EVENT_RESET);
+	  BIT64(ENTITY_EVENT_XFORM) |
+	  BIT64(ENTITY_EVENT_HIDE) |
+	  BIT64(ENTITY_EVENT_UNHIDE) |
+	  BIT64(ENTITY_EVENT_VISIBLE) |
+	  BIT64(ENTITY_EVENT_INVISIBLE) |
+	  BIT64(ENTITY_EVENT_DONE) |
+	  BIT64(ENTITY_EVENT_ATTACH) |
+	  BIT64(ENTITY_EVENT_DETACH) |
+	  BIT64(ENTITY_EVENT_COLLISION) |
+	  BIT64(ENTITY_EVENT_PHYS_BREAK) |
+	  BIT64(ENTITY_EVENT_MATERIAL) |
+	  BIT64(ENTITY_EVENT_LEVEL_LOADED) |
+	  BIT64(ENTITY_EVENT_RESET);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -296,17 +285,40 @@ void CEntityComponentRope::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 				m_pRopeRenderNode->SetPoints(&points[0], points.size());
 			}
 
-			// Sound related
-			XmlNodeRef const xmlNodeSound = ropeNode->findChild("Sound");
-			if (xmlNodeSound)
+			XmlNodeRef const xmlNodeAudio = ropeNode->findChild("Audio");
+
+			if (xmlNodeAudio)
 			{
-				char const* pcName = NULL;
-				int unsigned nNumSegmentToAttachTo = 0;
-				float fOffset = 0.0f;
-				xmlNodeSound->getAttr("Name", &pcName);
-				xmlNodeSound->getAttr("SegmentToAttachTo", nNumSegmentToAttachTo);
-				xmlNodeSound->getAttr("Offset", fOffset);
-				m_pRopeRenderNode->SetRopeSound(pcName, nNumSegmentToAttachTo, fOffset);
+				IRopeRenderNode::SRopeAudioParams audioParams;
+				CryAudio::ControlId tempControlId = CryAudio::InvalidControlId;
+				char const* szTemp = nullptr;
+				xmlNodeAudio->getAttr("StartTrigger", &szTemp);
+
+				if (gEnv->pAudioSystem->GetAudioTriggerId(szTemp, tempControlId))
+				{
+					audioParams.startTrigger = tempControlId;
+				}
+
+				xmlNodeAudio->getAttr("StopTrigger", &szTemp);
+
+				if (gEnv->pAudioSystem->GetAudioTriggerId(szTemp, tempControlId))
+				{
+					audioParams.stopTrigger = tempControlId;
+				}
+
+				xmlNodeAudio->getAttr("AngleParameter", &szTemp);
+
+				if (gEnv->pAudioSystem->GetAudioParameterId(szTemp, tempControlId))
+				{
+					audioParams.angleParameter = tempControlId;
+				}
+				
+				CryAudio::EnumFlagsType tempOcclusionType = CryAudio::EOcclusionType::eOcclusionType_Ignore;
+				xmlNodeAudio->getAttr("OcclusionType", tempOcclusionType);
+				audioParams.occlusionType = static_cast<CryAudio::EOcclusionType>(tempOcclusionType);
+				xmlNodeAudio->getAttr("SegmentToAttachTo", audioParams.segementToAttachTo);
+				xmlNodeAudio->getAttr("Offset", audioParams.offset);
+				m_pRopeRenderNode->SetAudioParams(audioParams);
 			}
 		}
 	}

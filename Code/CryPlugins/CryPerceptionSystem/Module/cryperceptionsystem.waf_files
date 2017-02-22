@@ -9,7 +9,7 @@
 		"Module" :
 		[
 			"CryPerceptionSystemPluginDLL.cpp",
-			"PerceptionActor.inl",
+			"PerceptionActor.cpp",
 			"PerceptionActor.h",
 			"PerceptionFlowNodes.cpp",
 			"PerceptionFlowNodes.h",

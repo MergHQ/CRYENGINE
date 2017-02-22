@@ -1118,7 +1118,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 #define STRICT_MODE		" /Ges"
 #define COMPATIBLE_MODE	" /Gec"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
-	const char* pCompilerOrbis   = "ORBIS/V031/DXOrbisShaderCompiler.exe %s %s %s %s";
+	const char* pCompilerOrbis   = "ORBIS/V032/DXOrbisShaderCompiler.exe %s %s %s %s";
 	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 
@@ -1196,13 +1196,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Hull:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "H2D", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.HS.targetStage & 1) ? "H2D" : "H2M", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Domain:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "D2G" : "D2P", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "D2P" : "M2P", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Geometry:
-				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "G2P" : "L2P", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "L2C2P" : "G2C2P", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
 				break;
 			case eHWSC_Pixel:
 				result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "P", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
