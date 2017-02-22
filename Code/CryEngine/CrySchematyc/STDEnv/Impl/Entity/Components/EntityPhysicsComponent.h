@@ -44,6 +44,9 @@ public:
 	void        OnGeometryChanged();
 	void        SetPhysicalize(bool bActive);
 	void        SetEnabled(bool bEnable);
+	void        ApplyImpulse(const Vec3& force);
+	void        ApplyAngularImpulse(const Vec3& force);
+
 
 	static void ReflectType(CTypeDesc<CEntityPhysicsComponent>& desc);
 	static void Register(IEnvRegistrar& registrar);

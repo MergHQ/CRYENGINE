@@ -80,6 +80,16 @@ namespace Schematyc
 				pFunction->SetFlags(EEnvFunctionFlags::Construction);
 				pFunction->BindInput(1, 'ena', "Enabled");
 				componentScope.Register(pFunction);
+
+				auto pImpulseFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::ApplyImpulse, "FB7197A9-9545-46BD-8748-1B5829CA3AFA"_schematyc_guid, "ApplyImpulse");
+				pImpulseFunction->SetDescription("Applies an impulse to the physics object");
+				pImpulseFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+				componentScope.Register(pImpulseFunction);
+
+				auto pAngImpulseFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityPhysicsComponent::ApplyAngularImpulse, "22926748-513F-4566-AE40-455A51600A3D"_schematyc_guid, "ApplyAngularImpulse");
+				pAngImpulseFunction->SetDescription("Applies an angular impulse to the physics object");
+				pAngImpulseFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+				componentScope.Register(pAngImpulseFunction);
 			}
 
 			//// Signals  #TODO
@@ -107,6 +117,36 @@ namespace Schematyc
 	{
 		IEntity& entity = EntityUtils::GetEntity(*this);
 		entity.EnablePhysics(bEnable);
+	}
+
+	void CEntityPhysicsComponent::ApplyImpulse(const Vec3& force)
+	{
+		// Only dispatch the impulse to physics if one was provided
+		if (!force.IsZero())
+		{
+			pe_action_impulse impulseAction;
+			impulseAction.impulse = force;
+
+			IEntity& entity = EntityUtils::GetEntity(*this);
+			IPhysicalEntity* pPhysicalEntity = entity.GetPhysics();
+
+			pPhysicalEntity->Action(&impulseAction);
+		}
+	}
+
+	void CEntityPhysicsComponent::ApplyAngularImpulse(const Vec3& force)
+	{
+		// Only dispatch the impulse to physics if one was provided
+		if (!force.IsZero())
+		{
+			pe_action_impulse impulseAction;
+			impulseAction.angImpulse = force;
+
+			IEntity& entity = EntityUtils::GetEntity(*this);
+			IPhysicalEntity* pPhysicalEntity = entity.GetPhysics();
+
+			pPhysicalEntity->Action(&impulseAction);
+		}
 	}
 
 	void CEntityPhysicsComponent::OnGeometryChanged()
