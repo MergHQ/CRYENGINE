@@ -165,7 +165,6 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'" Label="Configuration">
 		<ConfigurationType>${project.get_project_type()}</ConfigurationType>
 		<OutDir>${b.outdir}</OutDir>		
-		<PlatformToolset>${xml:b.platform_toolset}</PlatformToolset>
 		${if project.is_android_project()}
 			<AndroidAPILevel>android-${xml:b.android_platform_target_version}</AndroidAPILevel>
 			<PlatformToolset>Clang_3_8</PlatformToolset>
@@ -1183,8 +1182,12 @@ class vsnode_build_all(vsnode_alias):
 			waf_configuration = self.ctx.convert_vs_configuration_to_waf_configuration(x.configuration)	
 			
 			current_env = self.ctx.all_envs[waf_platform + '_' + waf_configuration]
-			x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
-			x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else ""
+			if waf_platform == 'orbis':
+				x.platform_toolset = 'Clang'
+				x.android_platform_target_version = ''
+			else:
+				x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
+				x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else "23"
 						
 			x.target_spec = waf_spec
 			x.target_config = waf_platform + '_' + waf_configuration
@@ -1482,8 +1485,12 @@ class vsnode_target(vsnode_alias):
 				waf_configuration = self.ctx.convert_vs_configuration_to_waf_configuration(x.configuration)
 				
 				current_env = self.ctx.all_envs[waf_platform + '_' + waf_configuration]	
-				x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
-				x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else "23"
+				if waf_platform == 'orbis':
+					x.platform_toolset = 'Clang'
+					x.android_platform_target_version = ''
+				else:
+					x.platform_toolset = 'v' + str(current_env['MSVC_VERSION']).replace('.','') if current_env['MSVC_VERSION'] else ""
+					x.android_platform_target_version = str(current_env['ANDROID_TARGET_VERSION']) if current_env['ANDROID_TARGET_VERSION'] else "23"
 								
 				if not hasattr(self.tg ,'link_task') and 'create_static_library' not in self.tg.features:
 					continue
