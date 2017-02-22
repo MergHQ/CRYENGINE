@@ -326,6 +326,8 @@ private:
 
 	// resource usage tracker
 	_smart_ptr<CCachedDataStore> m_pDataStore[3];
+	std::stack<GTextureXRenderTempRT*> m_pTempRTs;
+	std::stack<GTextureXRenderTempRTLockless*> m_pTempRTsLL;
 
 	// lockless rendering
 	threadID m_mainThreadID;
