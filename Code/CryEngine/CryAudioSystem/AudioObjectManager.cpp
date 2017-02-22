@@ -79,7 +79,7 @@ void CAudioObjectManager::Release()
 	m_pImpl = nullptr;
 }
 
-float CAudioObjectManager::s_controlsUpdateInterval = 100.0f;
+float CAudioObjectManager::s_controlsUpdateInterval = 10.0f;
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes const& listenerAttributes)

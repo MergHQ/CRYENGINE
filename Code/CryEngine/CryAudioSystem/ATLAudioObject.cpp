@@ -623,7 +623,6 @@ void CATLAudioObject::Update(
 
 		m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
 	}
-
 }
 
 ///////////////////////////////////////////////////////////////////////////
