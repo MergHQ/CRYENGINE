@@ -1514,9 +1514,9 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	#endif
 #endif //defined(OPENGL) && !DXGL_FULL_EMULATION
 
-#ifdef D3DX_SDK_VERSION
+#if defined(D3DX_SDK_VERSION)
 	iLog->Log("D3DX_SDK_VERSION = %d", D3DX_SDK_VERSION);
-#else
+#elif CRY_RENDERER_DIRECT3D
 	iLog->Log("D3DX_SDK_VERSION = <UNDEFINED>");
 #endif
 

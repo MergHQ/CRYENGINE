@@ -132,11 +132,7 @@ struct vert2fragZ
 #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING || %_RT_ALPHABLEND || %TEMP_EYES || %LEAVES || %GRASS
-	#if ORBIS
-		half4 viewTS   : TEXCOORDN;
-	#else
-		half3 viewTS   : TEXCOORDN;
-	#endif
+	half3 viewTS   : TEXCOORDN;
 #endif
 
 	// deferred shading tdb: double check tessellation paths if all correct

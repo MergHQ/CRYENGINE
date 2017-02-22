@@ -211,7 +211,7 @@ float CRendererCVars::CV_r_ChromaticAberration;
 AllocateConstIntCVar(CRendererCVars, CV_r_geominstancing);
 AllocateConstIntCVar(CRendererCVars, CV_r_geominstancingdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_materialsbatching);
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || defined(CRY_USE_GNM_RENDERER)
 int CRendererCVars::CV_r_SilhouettePOM;
 #endif
 #ifdef WATER_TESSELLATION_RENDERER
@@ -1350,7 +1350,7 @@ void CRendererCVars::InitCVars()
 	               "1 - GPU friendly.\n"
 	               "2 - Automatic.\n");
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || defined(CRY_USE_GNM_RENDERER)
 	REGISTER_CVAR3("r_SilhouettePOM", CV_r_SilhouettePOM, 0, VF_NULL,
 	               "Enables use of silhouette parallax occlusion mapping.\n"
 	               "Usage: r_SilhouettePOM [0/1]");

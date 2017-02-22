@@ -1027,7 +1027,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-set(gnm_compiler_version "ORBIS/V031")
+set(gnm_compiler_version "ORBIS/V032")
 
 set(extra_defines -DCRY_GNM_SHADER_COMPILER_VERSION="${gnm_compiler_version}")
 

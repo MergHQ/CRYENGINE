@@ -3127,7 +3127,7 @@ void CParserBin::SetupFeatureDefines()
 
 	uint32 nEnable[1] = { eT_1 };
 #if defined(MESH_TESSELLATION)
-	if (m_nPlatform == SF_D3D11 || m_nPlatform == SF_DURANGO || m_nPlatform == SF_GL4)
+	if (m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4))
 	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_MESH_TESSELLATION"), nEnable, 1, 0, m_StaticMacros);
 	}

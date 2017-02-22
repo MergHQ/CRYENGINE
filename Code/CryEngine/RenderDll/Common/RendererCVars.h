@@ -73,7 +73,7 @@ public:
 	static int   CV_r_DeferredShadingSortLights;
 	static int   CV_r_DeferredShadingAmbientSClear;
 	static int   CV_r_batchtype;
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || defined(CRY_USE_GNM_RENDERER)
 	//HACK: make sure we can only use it for dx11
 	static int CV_r_SilhouettePOM;
 #else

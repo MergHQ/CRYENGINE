@@ -205,7 +205,7 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
   #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING || %_RT_ALPHABLEND || %TEMP_EYES || %LEAVES || %GRASS
-  OUT.viewTS.xyz = vPos.xyz - g_VS_WorldViewPos.xyz;
+  OUT.viewTS = vPos.xyz - g_VS_WorldViewPos.xyz;
 #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
@@ -362,7 +362,7 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING || %TEMP_EYES
-	half3 vViewTS = normalize(mul((float3x3)mTangentToWS, IN.viewTS.xyz) * pomAdjustRayForNonSquareTexres);
+	half3 vViewTS = normalize(mul((float3x3)mTangentToWS, IN.viewTS) * pomAdjustRayForNonSquareTexres);
 	#if %_RT_ALPHABLEND && %TEMP_TERRAIN 
 		mdDisplacement *= IN.vTangent.w;
 	#endif
@@ -502,7 +502,7 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 	
 	#if %LEAVES || %GRASS
 		// Orient normal of vegetation planes towards viewer to reduce Fresnel gain and mimic some forward scattering 
-		attribs.NormalWorld = normalize(attribs.NormalWorld - normalize(IN.viewTS.xyz) * NormalViewDependency);
+		attribs.NormalWorld = normalize(attribs.NormalWorld - normalize(IN.viewTS) * NormalViewDependency);
 	#endif
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
