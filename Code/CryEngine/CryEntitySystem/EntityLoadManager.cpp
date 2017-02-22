@@ -600,6 +600,11 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				}
 			}
 
+			if (pCSpawnedEntity->GetId() == 1)
+			{
+				CryFatalError("Entity ID 1 is reserved for the gamerules which must not be serialized here. Check your level data.");
+			}
+
 			//////////////////////////////////////////////////////////////////////////
 			// Serialize all entity proxies except Script proxy after initialization.
 			if (pCSpawnedEntity)
