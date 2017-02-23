@@ -144,9 +144,6 @@ void CUserAnalytics::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 				pBuildVersion.ToString(szBuildVersion);
 				attributes.AddAttribute("version", szBuildVersion);
 
-				const char* szUserToken = GetAnonymousUserToken();
-				attributes.AddAttribute("AnonymousToken", szUserToken);
-
 				bool bIsEditor = gEnv->IsEditor();
 				attributes.AddAttribute("Sandbox", bIsEditor);
 
@@ -274,9 +271,11 @@ void CUserAnalytics::TriggerEvent(const char* szEventName, UserAnalytics::Attrib
 	UserAnalytics::AddPairToMessage(message, "name", szEventName);
 	UserAnalytics::AddComma(message);
 
-	// Do not add a timestamp as it is currently using local time - server will add timestamp automatically for now
-	//UserAnalytics::AddPairToMessage(message, "timestamp", GetTimestamp().c_str());
-	//UserAnalytics::AddComma(message);
+	UserAnalytics::AddPairToMessage(message, "localTimestamp", GetTimestamp().c_str());
+	UserAnalytics::AddComma(message);
+
+	UserAnalytics::AddPairToMessage(message, "AnonymousUserToken", m_anonymousUserToken.c_str());
+	UserAnalytics::AddComma(message);
 
 	UserAnalytics::BeginAttributesScope(message);
 	UserAnalytics::AddPairToMessage(message, "sessionId", GetSessionId().c_str());

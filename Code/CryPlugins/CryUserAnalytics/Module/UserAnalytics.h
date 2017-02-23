@@ -38,8 +38,6 @@ private:
 	void    ReadWriteAnonymousToken();
 	void    PrepareAndSendEvents();
 
-	const char* GetAnonymousUserToken() const { return m_anonymousUserToken.c_str(); }
-
 	CryMT::vector<string>     m_messages; // message buffer
 
 	std::vector<string>       m_messagesCopy; // batch of messages which get prepared for sending
