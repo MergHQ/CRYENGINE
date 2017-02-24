@@ -35,7 +35,7 @@ typedef std::shared_ptr<CResponse> ResponsePtr;
 class CResponseManager final : public DRS::IResponseManager
 {
 public:
-	static string s_currentSignal;
+	static string s_currentSignal;  //only needed during serialization
 
 	enum EUsedFileFormat
 	{
@@ -108,7 +108,7 @@ private:
 
 	ResponseInstanceList m_runningResponses;
 
-	ListenerList         m_Listener;
+	ListenerList         m_listeners;
 
 	SignalList           m_currentlyQueuedSignals;
 };

@@ -30,8 +30,6 @@ class CEngineModule_CryDynamicResponseSystem : public IEngineModule
 		env.pDynamicResponseSystem = pResponseSystem;
 
 		pResponseSystem->CreateVariableCollection(CryDRS::CVariableCollection::s_globalCollectionName);
-		pResponseSystem->CreateVariableCollection(CryDRS::CVariableCollection::s_localCollectionName);
-		pResponseSystem->CreateVariableCollection(CryDRS::CVariableCollection::s_contextCollectionName);
 
 		return true;
 	}

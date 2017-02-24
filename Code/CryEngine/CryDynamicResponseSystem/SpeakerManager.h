@@ -78,7 +78,7 @@ private:
 		int                   priority;
 
 		int                   voiceAttachmentIndex;      //cached index of the voice attachment index
-		CryAudio::AuxObjectId speechAuxProxy;
+		CryAudio::AuxObjectId speechAuxObjectId;
 		CryAudio::ControlId   startTriggerID;
 		CryAudio::ControlId   stopTriggerID;
 		string                standaloneFile;
@@ -123,9 +123,9 @@ private:
 	DRS::ISpeakerManager::ILipsyncProvider* m_pLipsyncProvider;
 	CDefaultLipsyncProvider*                m_pDefaultLipsyncProvider;
 
-	int                                            m_numActiveSpeaker;
-	CryAudio::ControlId                            m_audioRtpcIdLocal;
-	CryAudio::ControlId                            m_audioRtpcIdGlobal;
+	int                                     m_numActiveSpeaker;
+	CryAudio::ControlId                     m_audioRtpcIdLocal;
+	CryAudio::ControlId                     m_audioRtpcIdGlobal;
 
 	std::vector<std::pair<CResponseActor*, float>> m_recentlyFinishedSpeakers;
 

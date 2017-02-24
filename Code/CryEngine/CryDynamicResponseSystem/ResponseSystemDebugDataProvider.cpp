@@ -205,7 +205,7 @@ bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc
 		return false;
 	}
 	SExecutedAction newAction;
-	newAction.actorName = (pActor) ? pActor->GetName().GetText() : "NoActor";
+	newAction.actorName = (pActor) ? pActor->GetName() : "NoActor";
 	newAction.actionDesc = actionDesc;
 	newAction.pInstance = pInstance;
 	newAction.bEnded = false;
@@ -461,7 +461,7 @@ void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serializati
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
-	string speakerName = (pSpeaker) ? pSpeaker->GetName().GetText() : "Missing Speaker";
+	string speakerName = (pSpeaker) ? pSpeaker->GetName() : "Missing Speaker";
 	string lineText = (pLine) ? pLine->GetText() : "Missing: " + lineID.GetText();
 
 	switch (lineEvent)

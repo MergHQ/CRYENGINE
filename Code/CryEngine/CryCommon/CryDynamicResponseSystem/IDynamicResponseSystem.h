@@ -317,7 +317,8 @@ public:
 
 	/**
 	 * Will return a new Variable collection that can be used as a context variable collection for sent signals.
-	 * The DRS will not hold a reference to this created collection. So it will be released, when no one is referencing it anymore on the outside.
+	 * The DRS will not hold a reference to this created collection (after the signal processing is finished). So it will be released, when no one is referencing it anymore on the outside.
+	 * There is no way to find a context collection from the outside e.g. by name, it also won`t be serialized.
 	 *
 	 * Note: pDRS->CreateContextCollection()
 	 * @return returns the empty variable collection.
@@ -339,15 +340,17 @@ public:
 
 	/**
 	 * Will create a new Response Actor. This actor is registered in the DRS.
-	 * All actors that will be used in the DRS needs to be created first, otherwise you wont be able to queue Signals for them or set them as a actor by name
+	 * All actors that will be used in the DRS needs to be created first, otherwise you wont be able to queue Signals for them or set them as an actor by name
 	 *
-	 * Note: pDRS->CreateResponseActor("Bob", myGameSpecificEntityGUID)
-	 * @param pActorName - the unique name of the new actor. if a actor with that name already exist the behavior is undefined
+	 * Note: pDRS->CreateResponseActor("Bob", pEntity->GetId(), true)
+	 * @param szActorName - the name of the new actor. REMARK: The name needs to be unique. if it`s not unique then the DRS will make it unique.
 	 * @param userData - this data will be attached to the actor. it can be obtained from the actor with the getUserData method. This is the link between your game-entity and the DRS-actor.
+ 	   @param szGlobalVariableCollectionToUse - Normally each actor has it`s own local variable collection, that is not accessible via name from the outside and is also not serialized. 
+	                                            With this parameter you can change this behavior so that the actor instead uses a global collection.
 	 * @return return the newly created Actor when successful.
-	 * @see ReleaseResponseActor, IResponseActor::GetUserData
+	 * @see ReleaseResponseActor
 	 */
-	virtual IResponseActor* CreateResponseActor(const CHashedString& actorName, EntityId entityID = INVALID_ENTITYID) = 0;
+	virtual IResponseActor* CreateResponseActor(const char* szActorName, EntityId entityID = INVALID_ENTITYID, const char* szGlobalVariableCollectionToUse = nullptr) = 0;
 
 	/**
 	 * Will release the specified Actor. The actor cannot be used/found by the DRS afterwards.
@@ -532,11 +535,11 @@ struct IResponseActor
 	/**
 	 * Will return the name of the Actor in the DRS. This is the name, with which the actor can be found.
 	 *
-	 * Note: string actorNameAsString = pActor->GetName().GetText();
+	 * Note: string actorNameAsString = pActor->GetName();
 	 * @return Returns the identifier that the DRS gave to the Actor.
 	 * @see IDynamicResponseSystem::CreateResponseActor
 	 */
-	virtual const CHashedString& GetName() const = 0;
+	virtual const string& GetName() const = 0;
 
 	/**
 	 * Will return the (local) variable collection for this actor.
@@ -573,6 +576,10 @@ struct IResponseActor
 	 * @see IDynamicResponseSystem::CreateResponseActor
 	 */
 	virtual IEntity* GetLinkedEntity() const = 0;
+
+	// with this method you can specify an aux proxy that should be used by the DRS to use for audio playback (if not called or called with CryAudio::InvalidAuxObjectId, then the Drs::SpeakerManager will create it`s own aux-proxy)
+	virtual void SetAuxAudioObjectID(CryAudio::AuxObjectId overrideAuxProxy) = 0;
+	virtual CryAudio::AuxObjectId GetAuxAudioObjectID() const = 0;
 
 	/**
 	 * Will queue a new signal. it will be handled in the next update of the DRS. The DRS will determine if there is a response for the signal.

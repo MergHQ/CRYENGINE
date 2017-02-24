@@ -13,6 +13,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CrySystem/TimeValue.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 #if defined (DRS_COLLECT_DEBUG_DATA)
 	#include "ResponseSystemDebugDataProvider.h"
@@ -34,22 +35,32 @@ class CDialogLineDatabase;
 class CResponseActor final : public DRS::IResponseActor
 {
 public:
-	CResponseActor(const CHashedString& name, EntityId linkedEntityID);
+	CResponseActor(const string& name, EntityId linkedEntityID, const char* szGlobalVariableCollectionToUse);
 	virtual ~CResponseActor();
 
 	//////////////////////////////////////////////////////////
 	// IResponseActor implementation
-	virtual const CHashedString&       GetName() const override;
+	virtual const string&              GetName() const override { return m_name; }
 	virtual CVariableCollection*       GetLocalVariables() override;
 	virtual const CVariableCollection* GetLocalVariables() const override;
 	virtual EntityId                   GetLinkedEntityID() const override { return m_linkedEntityID; }
 	virtual IEntity*                   GetLinkedEntity() const override;
+	virtual void                       SetAuxAudioObjectID(CryAudio::AuxObjectId overrideAuxProxy) override { m_AuxProxyToUse = overrideAuxProxy; }
+	virtual CryAudio::AuxObjectId      GetAuxAudioObjectID() const override { return m_AuxProxyToUse; }
 	virtual DRS::SignalInstanceId      QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override;
 	//////////////////////////////////////////////////////////
 
+	const CHashedString&               GetNameHashed() const { return m_nameHashed; }
+	const CHashedString&               GetCollectionName() const { return m_variableCollectionName; }
+	VariableCollectionSharedPtr        GetNonGlobalVariableCollection() { return m_pNonGlobalVariableCollection; }  //for editor only
+
 private:
-	const EntityId      m_linkedEntityID;
-	const CHashedString m_localVariablesCollectionName;    //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
+	const EntityId              m_linkedEntityID;
+	const CHashedString         m_nameHashed;
+	const CHashedString         m_variableCollectionName;
+	const string                m_name;
+	VariableCollectionSharedPtr m_pNonGlobalVariableCollection;
+	CryAudio::AuxObjectId       m_AuxProxyToUse;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -78,7 +89,7 @@ public:
 
 	virtual bool                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender = nullptr, DRS::SignalInstanceId instanceToSkip = DRS::s_InvalidSignalId) override;
 
-	virtual CResponseActor*                          CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override;
+	virtual CResponseActor*                          CreateResponseActor(const char* szActorName, EntityId entityID = INVALID_ENTITYID, const char* szGlobalVariableCollectionToUse = nullptr) override;
 	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override;
 	virtual CResponseActor*                          GetResponseActor(const CHashedString& actorName) override;
 
@@ -104,6 +115,8 @@ public:
 	// ISystemEventListener implementation
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR pWparam, UINT_PTR pLparam) override;
 	//////////////////////////////////////////////////////////
+
+	VariableCollectionSharedPtr CreateLocalCollection(const string& name);  //remark: name not really relevant, since we do not allow GetCollectionByName for local collections
 
 	CVariableCollectionManager* GetVariableCollectionManager() const { return m_pVariableCollectionManager; }
 	//we store the current time for the DRS ourselves in a variable, so that we can use this variable in conditions and it allows us to save/load/modify the current DRS time easily

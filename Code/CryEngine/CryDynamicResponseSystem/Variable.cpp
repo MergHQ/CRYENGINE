@@ -29,7 +29,7 @@ CVariableCollection* IVariableUsingBase::GetCurrentCollection(CResponseInstance*
 	{
 		CResponseActor* const pCurrentActor = pResponseInstance->GetCurrentActor();
 #if defined(DRS_COLLECT_DEBUG_DATA)
-		s_lastTestedObjectName = pCurrentActor->GetName().GetText();
+		s_lastTestedObjectName = pCurrentActor->GetName();
 #endif
 		return pCurrentActor->GetLocalVariables();
 	}

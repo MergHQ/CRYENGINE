@@ -485,7 +485,8 @@ struct IEntityDynamicResponseComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE(IEntityDynamicResponseComponent, 0x6799464783DD41B8, 0xA098E26B4B2C95FD)
 
-	virtual DRS::IResponseActor * GetResponseActor() const = 0;
+	virtual void ReInit(const char* szName, const char* szGlobalVariableCollectionToUse) = 0;
+	virtual DRS::IResponseActor* GetResponseActor() const = 0;
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const = 0;
 };
 
