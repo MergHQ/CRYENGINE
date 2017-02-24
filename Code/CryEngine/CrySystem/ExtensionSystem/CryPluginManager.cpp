@@ -106,6 +106,7 @@ struct SPluginContainer
 	bool Shutdown()
 	{
 		m_pPlugin->UnregisterFlowNodes();
+		CRY_ASSERT_MESSAGE(m_pPlugin.use_count() == 2, m_pPlugin->GetName()); // Referenced here and in the factory
 		m_pPlugin.reset();
 
 		return m_module.Shutdown();

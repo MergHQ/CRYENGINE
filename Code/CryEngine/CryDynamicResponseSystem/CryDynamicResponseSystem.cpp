@@ -16,7 +16,10 @@ class CEngineModule_CryDynamicResponseSystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryDynamicResponseSystem, "EngineModule_CryDynamicResponseSystem", 0xd1ed34dda44c4c17, 0x959a46df79af5db3)
 
-	virtual ~CEngineModule_CryDynamicResponseSystem() {}
+	virtual ~CEngineModule_CryDynamicResponseSystem()
+	{
+		SAFE_DELETE(gEnv->pDynamicResponseSystem);
+	}
 
 	virtual const char* GetName() const override { return "CryDynamicResponseSystem"; }
 	virtual const char* GetCategory() const override { return "CryEngine"; }

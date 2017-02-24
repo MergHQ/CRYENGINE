@@ -67,7 +67,11 @@ CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider()
 //--------------------------------------------------------------------------------------------------
 CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
 {
-	CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
+	if (auto pResponseSystem = CResponseSystem::GetInstance())
+	{
+		pResponseSystem->GetSpeakerManager()->RemoveListener(this);
+	}
+	gEnv->pConsole->UnregisterVariable("drs_loggingOptions", true);
 }
 
 //--------------------------------------------------------------------------------------------------

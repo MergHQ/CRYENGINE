@@ -1065,9 +1065,11 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 		RemoveCheckedCVar(m_randomCheckedVariables, *itor);
 	}
 
-	m_mapVariables.erase(sVarName);
+	m_mapVariables.erase(itor);
 
 	delete pCVar;
+
+	UnRegisterAutoComplete(sVarName);
 }
 
 void CXConsole::RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value)
@@ -1897,6 +1899,8 @@ void CXConsole::RemoveCommand(const char* sName)
 	ConsoleCommandsMap::iterator ite = m_mapCommands.find(sName);
 	if (ite != m_mapCommands.end())
 		m_mapCommands.erase(ite);
+
+	UnRegisterAutoComplete(sName);
 }
 
 //////////////////////////////////////////////////////////////////////////

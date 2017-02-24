@@ -120,11 +120,15 @@ class CEngineModule_Cry3DEngine : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_Cry3DEngine, "EngineModule_Cry3DEngine", 0x2d38f12a521d43cf, 0xba18fd1fa7ea5020)
 
-	virtual ~CEngineModule_Cry3DEngine() {}
+	virtual ~CEngineModule_Cry3DEngine()
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_engine);
+		SAFE_RELEASE(gEnv->p3DEngine);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual const char* GetName() const override { return "Cry3DEngine"; };
-	virtual const char* GetCategory() const override { return "CryEngine"; };
+	virtual const char* GetName() const override { return "Cry3DEngine"; }
+	virtual const char* GetCategory() const override { return "CryEngine"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override

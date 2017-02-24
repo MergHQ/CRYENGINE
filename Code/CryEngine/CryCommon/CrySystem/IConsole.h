@@ -151,6 +151,8 @@ struct IManagedConsoleCommandListener
 	virtual void OnManagedConsoleCommandEvent(const char* commandName, IConsoleCmdArgs* consoleCommandArguments) = 0;
 };
 
+namespace Detail { struct ConsoleRegistrationHelper; }
+
 //! Interface to the engine console.
 //! The engine console allow to manipulate the internal engine parameters and to invoke commands.
 //! This interface allow external modules to integrate their functionalities into the console as commands or variables.
@@ -163,71 +165,6 @@ struct IConsole
 
 	//! Deletes the console.
 	virtual void Release() = 0;
-
-	//! Create a new console variable that store the value in a string.
-	//! \param sName Console variable name.
-	//! \param sValue Default value.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help Help text that is shown when you use "<sName> ?" in the console.
-	//! \return Pointer to the interface ICVar.
-	virtual ICVar* RegisterString(const char* sName, const char* sValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
-
-	//! Create a new console variable that store the value in a int.
-	//! \param sName Console variable name.
-	//! \param iValue Default value.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param Help help text that is shown when you use "<sName> ?" in the console.
-	//! \return Pointer to the interface ICVar.
-	virtual ICVar* RegisterInt(const char* sName, int iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
-
-	//! Create a new console variable that store the value in a int64.
-	//! \param sName Console variable name.
-	//! \param iValue Default value.
-	//! \param nFlags Her defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help - help text that is shown when you use "<sName> ?" in the console.
-	//! \return Pointer to the interface ICVar.
-	virtual ICVar* RegisterInt64(const char* sName, int64 iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
-
-	//! Create a new console variable that store the value in a float.
-	//! \param sName Console variable name.
-	//! \param fValue Default value.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help help text that is shown when you use "<sName> ?" in the console.
-	//! \return Pointer to the interface ICVar.
-	virtual ICVar* RegisterFloat(const char* sName, float fValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
-
-	//! Create a new console variable that will update the user defined float.
-	//! \param sName Console variable name.
-	//! \param src Pointer to the memory that will be updated.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help Help text that is shown when you use "<sName> ?" in the console.
-	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
-	//! \return pointer to the interface ICVar.
-	virtual ICVar* Register(const char* name, float* src, float defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
-
-	//! Create a new console variable that will update the user defined float.
-	//! \param sName Console variable name.
-	//! \param src Pointer to the memory that will be updated.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help Help text that is shown when you use "<sName> ?" in the console.
-	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
-	//! \return pointer to the interface ICVar.
-	virtual ICVar* Register(const char* name, int* src, int defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
-
-	//! Create a new console variable that will update the user defined float.
-	//! \param sName Console variable name.
-	//! \param src Pointer to the memory that will be updated.
-	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
-	//! \param help Help text that is shown when you use "<sName> ?" in the console.
-	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
-	//! \return pointer to the interface ICVar.
-	virtual ICVar* Register(const char* name, const char** src, const char* defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
-
-	//! Registers an existing console variable.
-	//! Should only be used with static duration objects, object is never freed.
-	//! \param pVar The existing console variable.
-	//! \return Pointer to the interface ICVar (that was passed in)
-	virtual ICVar* Register(ICVar* pVar) = 0;
 
 	//! Remove a variable from the console.
 	//! \param sVarName Console variable name.
@@ -331,22 +268,6 @@ struct IConsole
 
 	virtual void RegisterListener(IManagedConsoleCommandListener* pListener, const char* name) = 0;
 	virtual void UnregisterListener(IManagedConsoleCommandListener* pListener) = 0;
-
-	//! Register a new console command.
-	//! \param sCommand Command name.
-	//! \param func     Pointer to the console command function to be called when command is invoked.
-	//! \param nFlags   Bitfield consisting of VF_ flags (e.g. VF_CHEAT).
-	//! \param sHelp    Help string, will be displayed when typing in console "command ?".
-	virtual void AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManaged=false) = 0;
-
-	//! Register a new console command that execute script function.
-	//! EG "Game.Connect(%1)" the symbol "%1" will be replaced with the command parameter 1
-	//! writing in the console "connect 127.0.0.1" will invoke Game.Connect("127.0.0.1").
-	//! \param sCommand    Command name.
-	//! \param sScriptFunc Script function to be executed when command is invoked.
-	//! \param nFlags      Bitfield consist of VF_ flags (e.g. VF_CHEAT).
-	//! \param sHelp       Help string, will be displayed when typing in console "command ?".
-	virtual void AddCommand(const char* sName, const char* sScriptFunc, int nFlags = 0, const char* sHelp = NULL) = 0;
 
 	//! Removes a console command which was previously registered with AddCommand.
 	//! \param sCommand Command name.
@@ -458,6 +379,90 @@ struct IConsole
 #if defined(DEDICATED_SERVER)
 	virtual void SetClientDataProbeString(const char* pName, const char* pValue) = 0;
 #endif
+
+protected:
+	friend struct ConsoleRegistrationHelper;
+
+	//! Register a new console command.
+	//! \param sCommand Command name.
+	//! \param func     Pointer to the console command function to be called when command is invoked.
+	//! \param nFlags   Bitfield consisting of VF_ flags (e.g. VF_CHEAT).
+	//! \param sHelp    Help string, will be displayed when typing in console "command ?".
+	virtual void AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManaged = false) = 0;
+
+	//! Register a new console command that execute script function.
+	//! EG "Game.Connect(%1)" the symbol "%1" will be replaced with the command parameter 1
+	//! writing in the console "connect 127.0.0.1" will invoke Game.Connect("127.0.0.1").
+	//! \param sCommand    Command name.
+	//! \param sScriptFunc Script function to be executed when command is invoked.
+	//! \param nFlags      Bitfield consist of VF_ flags (e.g. VF_CHEAT).
+	//! \param sHelp       Help string, will be displayed when typing in console "command ?".
+	virtual void AddCommand(const char* sName, const char* sScriptFunc, int nFlags = 0, const char* sHelp = NULL) = 0;
+
+	//! Create a new console variable that store the value in a string.
+	//! \param sName Console variable name.
+	//! \param sValue Default value.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help Help text that is shown when you use "<sName> ?" in the console.
+	//! \return Pointer to the interface ICVar.
+	virtual ICVar* RegisterString(const char* sName, const char* sValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
+
+	//! Create a new console variable that store the value in a int.
+	//! \param sName Console variable name.
+	//! \param iValue Default value.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param Help help text that is shown when you use "<sName> ?" in the console.
+	//! \return Pointer to the interface ICVar.
+	virtual ICVar* RegisterInt(const char* sName, int iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
+
+	//! Create a new console variable that store the value in a int64.
+	//! \param sName Console variable name.
+	//! \param iValue Default value.
+	//! \param nFlags Her defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help - help text that is shown when you use "<sName> ?" in the console.
+	//! \return Pointer to the interface ICVar.
+	virtual ICVar* RegisterInt64(const char* sName, int64 iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
+
+	//! Create a new console variable that store the value in a float.
+	//! \param sName Console variable name.
+	//! \param fValue Default value.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help help text that is shown when you use "<sName> ?" in the console.
+	//! \return Pointer to the interface ICVar.
+	virtual ICVar* RegisterFloat(const char* sName, float fValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0) = 0;
+
+	//! Create a new console variable that will update the user defined float.
+	//! \param sName Console variable name.
+	//! \param src Pointer to the memory that will be updated.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help Help text that is shown when you use "<sName> ?" in the console.
+	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
+	//! \return pointer to the interface ICVar.
+	virtual ICVar* Register(const char* name, float* src, float defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
+
+	//! Create a new console variable that will update the user defined float.
+	//! \param sName Console variable name.
+	//! \param src Pointer to the memory that will be updated.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help Help text that is shown when you use "<sName> ?" in the console.
+	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
+	//! \return pointer to the interface ICVar.
+	virtual ICVar* Register(const char* name, int* src, int defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
+
+	//! Create a new console variable that will update the user defined float.
+	//! \param sName Console variable name.
+	//! \param src Pointer to the memory that will be updated.
+	//! \param nFlags User defined flag, this parameter is used by other subsystems and doesn't affect the console variable (basically of user data).
+	//! \param help Help text that is shown when you use "<sName> ?" in the console.
+	//! \param allowModify Allow modification through config vars, prevents missing modifications in release mode.
+	//! \return pointer to the interface ICVar.
+	virtual ICVar* Register(const char* name, const char** src, const char* defaultvalue, int nFlags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true) = 0;
+
+	//! Registers an existing console variable.
+	//! Should only be used with static duration objects, object is never freed.
+	//! \param pVar The existing console variable.
+	//! \return Pointer to the interface ICVar (that was passed in)
+	virtual ICVar* Register(ICVar* pVar) = 0;
 };
 
 //! This interface for the remote console.

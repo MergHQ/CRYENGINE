@@ -296,12 +296,12 @@ CGameLobby::CGameLobby( CGameLobbyManager* pMgr )
 	s_pGameLobbyCVars = CGameLobbyCVars::Get();
 
 #ifndef _RELEASE
-	gEnv->pConsole->AddCommand("g_testMuteTeam", CmdTestMuteTeam);
-	gEnv->pConsole->AddCommand("g_callEnsureBestHost", CmdCallEnsureBestHost);
-	gEnv->pConsole->AddCommand("g_fillReservationSlots", CmdFillReservationSlots);
+	REGISTER_COMMAND("g_testMuteTeam", CmdTestMuteTeam, 0, nullptr);
+	REGISTER_COMMAND("g_callEnsureBestHost", CmdCallEnsureBestHost, 0, nullptr);
+	REGISTER_COMMAND("g_fillReservationSlots", CmdFillReservationSlots, 0, nullptr);
 #endif
-	gEnv->pConsole->AddCommand("gl_advancePlaylist", CmdAdvancePlaylist);
-	gEnv->pConsole->AddCommand("gl_dumpValidMaps", CmdDumpValidMaps);
+	REGISTER_COMMAND("gl_advancePlaylist", CmdAdvancePlaylist, 0, nullptr);
+	REGISTER_COMMAND("gl_dumpValidMaps", CmdDumpValidMaps, 0, nullptr);
 
 	m_hasReceivedMapCommand = false;
 
@@ -430,14 +430,14 @@ CGameLobby::CGameLobby( CGameLobbyManager* pMgr )
 #endif //!defined(_RELEASE)
 
 #if ENABLE_CHAT_MESSAGES
-	gEnv->pConsole->AddCommand("gl_say", CmdChatMessage, 0, "Send a chat message");
-	gEnv->pConsole->AddCommand("gl_teamsay", CmdChatMessageTeam, 0, "Send a chat message to team");
+	REGISTER_COMMAND("gl_say", CmdChatMessage, 0, "Send a chat message");
+	REGISTER_COMMAND("gl_teamsay", CmdChatMessageTeam, 0, "Send a chat message to team");
 #endif
 
-	gEnv->pConsole->AddCommand("gl_StartGame", CmdStartGame, 0, "force start a game");
-	gEnv->pConsole->AddCommand("gl_Map", CmdSetMap, 0, "Set map for the lobby");
-	gEnv->pConsole->AddCommand("gl_GameRules", CmdSetGameRules, 0, "Set the game rules for the lobby");
-	gEnv->pConsole->AddCommand("gl_Vote", CmdVote, 0, "Vote for next map in lobby (left or right)");
+	REGISTER_COMMAND("gl_StartGame", CmdStartGame, 0, "force start a game");
+	REGISTER_COMMAND("gl_Map", CmdSetMap, 0, "Set map for the lobby");
+	REGISTER_COMMAND("gl_GameRules", CmdSetGameRules, 0, "Set the game rules for the lobby");
+	REGISTER_COMMAND("gl_Vote", CmdVote, 0, "Vote for next map in lobby (left or right)");
 	gEnv->pConsole->RegisterAutoComplete("gl_Map", &gl_LevelNameAutoComplete);
 
 	m_isTeamGame = false;

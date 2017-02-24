@@ -157,7 +157,7 @@ const char* SEntityWithCharacterInstanceAutoComplete::GetValue(int index) const
 static SEntityWithCharacterInstanceAutoComplete s_entityWithCharacterInstanceAutoComplete;
 
 //////////////////////////////////////////////////////////////////////////
-void CVar::Init(struct IConsole* pConsole)
+void CVar::Init()
 {
 	assert(gEnv->pConsole);
 	PREFAST_ASSUME(gEnv->pConsole);

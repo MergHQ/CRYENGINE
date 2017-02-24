@@ -16,6 +16,11 @@
 struct CSystemEventListner_Movie : public ISystemEventListener
 {
 public:
+	virtual ~CSystemEventListner_Movie()
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
+
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 	{
 		switch (event)
@@ -36,7 +41,11 @@ class CEngineModule_CryMovie : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryMovie, "EngineModule_CryMovie", 0xdce26beebdc6400f, 0xa0e9b42839f2dd5b)
 
-	virtual ~CEngineModule_CryMovie()	{}
+	virtual ~CEngineModule_CryMovie()
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_movie);
+		SAFE_RELEASE(gEnv->pMovieSystem);
+	}
 
 	virtual const char* GetName() const override { return "CryMovie"; };
 	virtual const char* GetCategory() const override { return "CryEngine"; };

@@ -9,7 +9,6 @@
 #endif
 
 #include <CryCore/Platform/platform.h> // Needed for LARGE_INTEGER (for consoles).
-
 #include <CryCore/Assert/CryAssert.h>
 
 #include <CrySystem/XML/IXml.h> // <> required for Interfuscator
@@ -30,7 +29,6 @@ struct IEntity;
 struct ICryPak;
 struct IKeyboard;
 struct IMouse;
-struct IConsole;
 struct IRemoteConsole;
 struct IInput;
 struct IRenderer;
@@ -1782,6 +1780,121 @@ inline void CryWarning(EValidatorModule module, EValidatorSeverity severity, con
 	#define CONST_CVAR_FLAGS (VF_CHEAT)
 #endif
 
+#include <CrySystem/IConsole.h>
+
+#if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
+extern std::vector<const char*> g_moduleCommands;
+extern std::vector<const char*> g_moduleCVars;
+#define MODULE_REGISTER_COMMAND(name) g_moduleCommands.push_back(name)
+#define MODULE_REGISTER_CVAR(name) g_moduleCVars.push_back(name)
+#else
+#define MODULE_REGISTER_COMMAND(name) static_cast<void>(0)
+#define MODULE_REGISTER_CVAR(name) static_cast<void>(0)
+#endif
+
+struct ConsoleRegistrationHelper
+{
+	static CRY_FORCE_INLINE void AddCommand(const char* szCommand, ConsoleCommandFunc func, int flags = 0, const char* szHelp = nullptr, bool bIsManagedExternally = false)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		MODULE_REGISTER_COMMAND(szCommand);
+		gEnv->pConsole->AddCommand(szCommand, func, flags, szHelp, bIsManagedExternally);
+	}
+	static CRY_FORCE_INLINE void AddCommand(const char* szName, const char* szScriptFunc, int flags = 0, const char* szHelp = nullptr)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		MODULE_REGISTER_COMMAND(szName);
+		gEnv->pConsole->AddCommand(szName, szScriptFunc, flags, szHelp);
+	}
+
+	static CRY_FORCE_INLINE ICVar* RegisterString(const char* szName, const char* szValue, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->RegisterString(szName, szValue, flags, szHelp, pChangeFunc);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	static CRY_FORCE_INLINE ICVar* RegisterInt(const char* szName, int value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->RegisterInt(szName, value, flags, szHelp, pChangeFunc);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	static CRY_FORCE_INLINE ICVar* RegisterInt64(const char* szName, int64 value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->RegisterInt64(szName, value, flags, szHelp, pChangeFunc);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	static CRY_FORCE_INLINE ICVar* RegisterFloat(const char* szName, float value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->RegisterFloat(szName, value, flags, szHelp, pChangeFunc);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+	template<class T, class U>
+	static CRY_FORCE_INLINE ICVar* Register(const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	{
+		static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, const char*>::value, "Invalid template type!");
+		static_assert(std::is_convertible<U, T>::value, "Invalid default value type!");
+
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(szName);
+			return gEnv->pConsole->Register(szName, pSrc, static_cast<T>(defaultValue), flags, szHelp, pChangeFunc, bAllowModify);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	static CRY_FORCE_INLINE ICVar* Register(ICVar* pVar)
+	{
+		CRY_ASSERT(gEnv && gEnv->pConsole);
+		if (gEnv && gEnv->pConsole)
+		{
+			MODULE_REGISTER_CVAR(pVar->GetName());
+			return gEnv->pConsole->Register(pVar);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+};
+
+#undef MODULE_REGISTER_COMMAND
+#undef MODULE_REGISTER_CVAR
+
 #if defined(_RELEASE) && !CRY_PLATFORM_DESKTOP
 	#ifndef LOG_CONST_CVAR_ACCESS
 		#error LOG_CONST_CVAR_ACCESS should be defined in ProjectDefines.h
@@ -1867,18 +1980,18 @@ struct SDummyCVar : ICVar
 };
 }
 
-	#define REGISTER_DUMMY_CVAR(type, name, value)                                       \
-	  do {                                                                               \
-	    static struct DummyCVar : Detail::SDummyCVar<type>                               \
-	    {                                                                                \
-	      DummyCVar() : Detail::SDummyCVar<type>(value) {}                               \
-	      const char* GetName() const { return name; }                                   \
-	    } DummyStaticInstance;                                                           \
-	    if (!(gEnv->pConsole != 0 ? gEnv->pConsole->Register(&DummyStaticInstance) : 0)) \
-	    {                                                                                \
-	      __debugbreak();                                                                \
-	      CryFatalError("Can not register dummy CVar");                                  \
-	    }                                                                                \
+	#define REGISTER_DUMMY_CVAR(type, name, value)                                                        \
+	  do {                                                                                                \
+	    static struct DummyCVar : Detail::SDummyCVar<type>                                                \
+	    {                                                                                                 \
+	      DummyCVar() : Detail::SDummyCVar<type>(value) {}                                                \
+	      const char* GetName() const { return name; }                                                    \
+	    } DummyStaticInstance;                                                                            \
+	    if (!(gEnv->pConsole != nullptr ? ConsoleRegistrationHelper::Register(&DummyStaticInstance) : 0)) \
+	    {                                                                                                 \
+	      __debugbreak();                                                                                 \
+	      CryFatalError("Can not register dummy CVar");                                                   \
+	    }                                                                                                 \
 	  } while (0)
 
 	#define CONSOLE_CONST_CVAR_MODE
@@ -1900,73 +2013,62 @@ struct SDummyCVar : ICVar
 
 	#define DeclareConstIntCVar(name, defaultValue)       int name
 	#define DeclareStaticConstIntCVar(name, defaultValue) static int name
-	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) \
-	  (gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(strname, &name, defaultValue, flags | CONST_CVAR_FLAGS, CVARHELP(help)))
-	#define DefineConstIntCVar(name, defaultValue, flags, help) \
-	  (gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(( # name), &name, defaultValue, flags | CONST_CVAR_FLAGS, CVARHELP(help), 0, false))
+	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) ConsoleRegistrationHelper::Register(strname, &name, defaultValue, flags | CONST_CVAR_FLAGS, CVARHELP(help))
+	#define DefineConstIntCVar(name, defaultValue, flags, help) ConsoleRegistrationHelper::Register(( # name), &name, defaultValue, flags | CONST_CVAR_FLAGS, CVARHELP(help), nullptr, false)
 
 //! DefineConstIntCVar2 is deprecated, any such instance can be converted to the 3 variant by removing the quotes around the first parameter.
-	#define DefineConstIntCVar3(_name, _var, _def_val, _flags, help) \
-	  (gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(_name, &(_var), (_def_val), (_flags) | CONST_CVAR_FLAGS, CVARHELP(help), 0, false))
+	#define DefineConstIntCVar3(_name, _var, _def_val, _flags, help) ConsoleRegistrationHelper::Register(_name, &(_var), (_def_val), (_flags) | CONST_CVAR_FLAGS, CVARHELP(help), nullptr, false)
 	#define AllocateConstIntCVar(scope, name) int scope::name
 
-	#define DefineConstFloatCVar(name, flags, help) \
-	  (gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(( # name), &name, name ## Default, flags | CONST_CVAR_FLAGS, CVARHELP(help), 0, false))
+	#define DefineConstFloatCVar(name, flags, help) ConsoleRegistrationHelper::Register(( # name), &name, name ## Default, flags | CONST_CVAR_FLAGS, CVARHELP(help), nullptr, false)
 	#define DeclareConstFloatCVar(name)         float name
 	#define DeclareStaticConstFloatCVar(name)   static float name
 	#define AllocateConstFloatCVar(scope, name) float scope::name
 #endif
 
-#if defined(USE_CRY_ASSERT)
-static void AssertConsoleExists(void)
-{
-	CRY_ASSERT(gEnv->pConsole != NULL);
-}
-	#define ASSERT_CONSOLE_EXISTS AssertConsoleExists()
-#else
-	#define ASSERT_CONSOLE_EXISTS 0
-#endif // defined(USE_CRY_ASSERT)
-
 //! The following macros allow the help text to be easily stripped out.
 
 //! Preferred way to register a CVar
-#define REGISTER_CVAR(_var, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(( # _var), &(_var), (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_CVAR(_var, _def_val, _flags, _comment) ConsoleRegistrationHelper::Register(( # _var), &(_var), (_def_val), (_flags), CVARHELP(_comment))
 
 //! Preferred way to register a CVar with a callback
-#define REGISTER_CVAR_CB(_var, _def_val, _flags, _comment, _onchangefunction) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(( # _var), &(_var), (_def_val), (_flags), CVARHELP(_comment), _onchangefunction))
+#define REGISTER_CVAR_CB(_var, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::Register(( # _var), &(_var), (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
 
 //! Preferred way to register a string CVar
-#define REGISTER_STRING(_name, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterString(_name, (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_STRING(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterString(_name, (_def_val), (_flags), CVARHELP(_comment))
 
 //! Preferred way to register a string CVar with a callback
-#define REGISTER_STRING_CB(_name, _def_val, _flags, _comment, _onchangefunction) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterString(_name, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction))
+#define REGISTER_STRING_CB(_name, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::RegisterString(_name, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
 
 //! Preferred way to register an int CVar
-#define REGISTER_INT(_name, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterInt(_name, (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_INT(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterInt(_name, (_def_val), (_flags), CVARHELP(_comment))
 
 //! Preferred way to register an int CVar with a callback
-#define REGISTER_INT_CB(_name, _def_val, _flags, _comment, _onchangefunction) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterInt(_name, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction))
+#define REGISTER_INT_CB(_name, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::RegisterInt(_name, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
 
 //! Preferred way to register an int64 CVar
-#define REGISTER_INT64(_name, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterInt64(_name, (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_INT64(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterInt64(_name, (_def_val), (_flags), CVARHELP(_comment))
 
 //! Preferred way to register a float CVar
-#define REGISTER_FLOAT(_name, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->RegisterFloat(_name, (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_FLOAT(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterFloat(_name, (_def_val), (_flags), CVARHELP(_comment))
 
 //! Offers more flexibility but more code is required
-#define REGISTER_CVAR2(_name, _var, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(_name, _var, (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_CVAR2(_name, _var, _def_val, _flags, _comment) ConsoleRegistrationHelper::Register(_name, _var, (_def_val), (_flags), CVARHELP(_comment))
 
 //! Offers more flexibility but more code is required
-#define REGISTER_CVAR2_CB(_name, _var, _def_val, _flags, _comment, _onchangefunction) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(_name, _var, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction))
+#define REGISTER_CVAR2_CB(_name, _var, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::Register(_name, _var, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
 
 //! Offers more flexibility but more code is required, explicit address taking of destination variable
-#define REGISTER_CVAR3(_name, _var, _def_val, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(_name, &(_var), (_def_val), (_flags), CVARHELP(_comment)))
+#define REGISTER_CVAR3(_name, _var, _def_val, _flags, _comment) ConsoleRegistrationHelper::Register(_name, &(_var), (_def_val), (_flags), CVARHELP(_comment))
 
 //! Offers more flexibility but more code is required, explicit address taking of destination variable
-#define REGISTER_CVAR3_CB(_name, _var, _def_val, _flags, _comment, _onchangefunction) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? 0 : gEnv->pConsole->Register(_name, &(_var), (_def_val), (_flags), CVARHELP(_comment), _onchangefunction))
+#define REGISTER_CVAR3_CB(_name, _var, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::Register(_name, &(_var), (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
 
 //! Preferred way to register a console command
-#define REGISTER_COMMAND(_name, _func, _flags, _comment) (ASSERT_CONSOLE_EXISTS, gEnv->pConsole == 0 ? (void)0 : gEnv->pConsole->AddCommand(_name, _func, (_flags), CVARHELP(_comment)))
+#define REGISTER_COMMAND(_name, _func, _flags, _comment) ConsoleRegistrationHelper::AddCommand(_name, _func, (_flags), CVARHELP(_comment))
+
+//! Preferred way to register an externally managed console command
+#define REGISTER_MANAGED_COMMAND(_name, _func, _flags, _comment) ConsoleRegistrationHelper::AddCommand(_name, _func, (_flags), CVARHELP(_comment), true)
 
 ////////////////////////////////////////////////////////////////////////////////
 //! Development only cvars.

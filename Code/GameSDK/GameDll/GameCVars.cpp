@@ -1232,7 +1232,7 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(pl_movement.mp_slope_speed_multiplier_minHill, 0.f, 0, "Minimum threshold for the slope steepness before speed is affected (in degrees).");
 
 #ifdef STATE_DEBUG
-	pConsole->RegisterString( "pl_state_debug", "", VF_CHEAT, "For PlayerMovement StateMachine Debugging", ChangeDebugState );
+	REGISTER_STRING_CB( "pl_state_debug", "", VF_CHEAT, "For PlayerMovement StateMachine Debugging", ChangeDebugState );
 #endif
 
 	REGISTER_CVAR(mp_ctfParams.carryingFlag_SpeedScale, 0.8f, 0, "Speed multiplier whilst carrying the flag in Capture the Flag game mode.");

@@ -202,7 +202,11 @@ class CEngineModule_CryPhysics : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryPhysics, "EngineModule_CryPhysics", 0x526cabf3d776407f, 0xaa2338545bb6ae7f)
 
-	virtual ~CEngineModule_CryPhysics() {}
+	virtual ~CEngineModule_CryPhysics()
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_physics);
+		SAFE_RELEASE(gEnv->pPhysicalWorld);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char *GetName() const override { return "CryPhysics"; };

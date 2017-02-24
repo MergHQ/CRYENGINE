@@ -16,7 +16,10 @@ class CEngineModule_CryScriptSystem : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryScriptSystem, "EngineModule_CryScriptSystem", 0xd032b16449784f82, 0xa99e7dc6b6338c5c)
 
-	virtual ~CEngineModule_CryScriptSystem() {}
+	virtual ~CEngineModule_CryScriptSystem()
+	{
+		SAFE_DELETE(gEnv->pScriptSystem);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() const override { return "CryScriptSystem"; };

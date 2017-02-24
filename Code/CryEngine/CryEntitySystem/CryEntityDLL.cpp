@@ -60,6 +60,8 @@ class CEngineModule_EntitySystem : public IEngineModule
 
 	virtual ~CEngineModule_EntitySystem() 
 	{
+		GetISystem()->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_entity);
+		SAFE_RELEASE(gEnv->pEntitySystem);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

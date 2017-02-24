@@ -2977,7 +2977,7 @@ void CShaderMan::FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& com
 	};
 	bool combinationFilter[kCombinationCount] = { false };
 
-	static const char* const szFilter = gEnv->pConsole->RegisterString("r_ShadersOrbisFiltering", "L", VF_NULL)->GetString();
+	static const char* const szFilter = REGISTER_STRING("r_ShadersOrbisFiltering", "L", VF_NULL, "")->GetString();
 	for (const char* szFilterItem = szFilter; szFilterItem && *szFilterItem; ++szFilterItem)
 	{
 		switch (*szFilterItem)

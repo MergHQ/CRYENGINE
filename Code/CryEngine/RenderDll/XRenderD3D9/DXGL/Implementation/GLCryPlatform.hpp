@@ -182,7 +182,7 @@ struct STraceFile
 
 inline void RegisterConfigVariable(const char* szName, int* piVariable, int iDefaultValue)
 {
-	gEnv->pConsole->Register(szName, piVariable, iDefaultValue);
+	REGISTER_CVAR2(szName, piVariable, iDefaultValue, 0, "");
 }
 
 inline void Memcpy(void* pDst, const void* pSrc, size_t uLength)

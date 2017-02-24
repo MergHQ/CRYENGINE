@@ -40,7 +40,10 @@ class CEngineModule_CryNetwork : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryNetwork, "EngineModule_CryNetwork", 0x7dc5c3b8bb374063, 0xa29ac2d6dd718e0f)
 
-	virtual ~CEngineModule_CryNetwork() {}
+	virtual ~CEngineModule_CryNetwork()
+	{
+		SAFE_RELEASE(gEnv->pNetwork);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName() const override { return "CryNetwork"; };

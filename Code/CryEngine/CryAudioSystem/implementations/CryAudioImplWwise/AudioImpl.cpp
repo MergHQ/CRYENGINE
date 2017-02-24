@@ -593,6 +593,7 @@ ERequestStatus CAudioImpl::OnBeforeShutDown()
 			AK::SoundEngine::CancelEventCallback(playingIds[j]);
 		}
 	}
+	objectList.Term();
 
 	return eRequestStatus_Success;
 }
