@@ -3938,10 +3938,10 @@ void CCryAction::InitCVars()
 	REGISTER_INT("g_breakage_particles_limit", 200, 0, "Imposes a limit on particles generated during 2d surfaces breaking");
 	REGISTER_FLOAT("c_shakeMult", 1.0f, VF_CHEAT, "");
 
-	m_pDebugSignalTimers = pC->RegisterInt("ai_DebugSignalTimers", 0, VF_CHEAT, "Enable Signal Timers Debug Screen");
-	m_pDebugRangeSignaling = pC->RegisterInt("ai_DebugRangeSignaling", 0, VF_CHEAT, "Enable Range Signaling Debug Screen");
+	m_pDebugSignalTimers = REGISTER_INT("ai_DebugSignalTimers", 0, VF_CHEAT, "Enable Signal Timers Debug Screen");
+	m_pDebugRangeSignaling = REGISTER_INT("ai_DebugRangeSignaling", 0, VF_CHEAT, "Enable Range Signaling Debug Screen");
 
-	m_pAsyncLevelLoad = pC->RegisterInt("g_asynclevelload", 0, VF_CONST_CVAR, "Enable asynchronous level loading");
+	m_pAsyncLevelLoad = REGISTER_INT("g_asynclevelload", 0, VF_CONST_CVAR, "Enable asynchronous level loading");
 
 	REGISTER_INT("cl_packetRate", 30, 0, "Packet rate on client");
 	REGISTER_INT("sv_packetRate", 30, 0, "Packet rate on server");
@@ -3992,11 +3992,11 @@ void CCryAction::InitCVars()
 	REGISTER_FLOAT("sv_timeofdaystart", 12.0f, VF_DUMPTODISK, "Sets time of day start time.");
 	REGISTER_INT("sv_timeofdayenable", 0, VF_DUMPTODISK, "Enables time of day simulation.");
 
-	pC->RegisterInt("g_immersive", 1, 0, "If set, multiplayer physics will be enabled");
+	REGISTER_INT("g_immersive", 1, 0, "If set, multiplayer physics will be enabled");
 
-	pC->RegisterInt("sv_dumpstats", 1, 0, "Enables/disables dumping of level and player statistics, positions, etc. to files");
-	pC->RegisterInt("sv_dumpstatsperiod", 1000, 0, "Time period of statistics dumping in milliseconds");
-	pC->RegisterInt("g_EnableLoadSave", 1, 0, "Enables/disables saving and loading of savegames");
+	REGISTER_INT("sv_dumpstats", 1, 0, "Enables/disables dumping of level and player statistics, positions, etc. to files");
+	REGISTER_INT("sv_dumpstatsperiod", 1000, 0, "Time period of statistics dumping in milliseconds");
+	REGISTER_INT("g_EnableLoadSave", 1, 0, "Enables/disables saving and loading of savegames");
 
 	REGISTER_STRING("http_password", "password", 0, "Password for http administration");
 	REGISTER_STRING("rcon_password", "", 0, "Sets password for the RCON system");

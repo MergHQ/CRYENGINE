@@ -5,6 +5,7 @@
 #include <CrySystem/ISystem.h>
 #include <CryExtension/ClassWeaver.h>
 #include <CryExtension/ICryUnknown.h>
+#include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 struct SSystemInitParams;
@@ -24,6 +25,38 @@ struct IPluginUpdateListener
 struct ICryPlugin : public ICryUnknown, IPluginUpdateListener
 {
 	CRYINTERFACE_DECLARE(ICryPlugin, 0xF491A0DB38634FCA, 0xB6E6BCFE2D98EEA2);
+
+	virtual ~ICryPlugin()
+	{
+#ifndef _LIB
+		if (gEnv)
+		{
+			if (auto pSystem = gEnv->pSystem)
+			{
+				ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
+				pCryFactoryImpl->UnregisterFactories(g_pHeadToRegFactories);
+			}
+#if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
+			if (auto pConsole = gEnv->pConsole)
+			{
+				// Unregister all commands that were registered from within the plugin
+				for (auto& it : g_moduleCommands)
+				{
+					pConsole->RemoveCommand(it);
+				}
+				g_moduleCommands.clear();
+
+				// Unregister all CVars that were registered from within the plugin
+				for (auto& it : g_moduleCVars)
+				{
+					pConsole->UnregisterVariable(it);
+				}
+				g_moduleCVars.clear();
+			}
+#endif
+		}
+#endif
+	}
 
 	//! Retrieve name of the plugin.
 	virtual const char* GetName() const = 0;

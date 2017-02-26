@@ -164,7 +164,7 @@ bool CResponseManager::SaveToFiles(const char* szDataPath)
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::QueueSignal(const SSignal& signal)
 {
-	DRS_DEBUG_DATA_ACTION(AddSignalFired(signal.m_signalName.GetText(), (signal.m_pSender) ? signal.m_pSender->GetName().GetText() : "no sender", (signal.m_pSignalContext) ? signal.m_pSignalContext->GetVariablesAsString() : "(no context variables)"));
+	DRS_DEBUG_DATA_ACTION(AddSignalFired(signal.m_signalName.GetText(), (signal.m_pSender) ? signal.m_pSender->GetName() : "no sender", (signal.m_pSignalContext) ? signal.m_pSignalContext->GetVariablesAsString() : "(no context variables)"));
 
 	m_currentlyQueuedSignals.push_back(signal);
 }
@@ -526,18 +526,18 @@ ResponsePtr CResponseManager::GetResponse(const CHashedString& signalName)
 //--------------------------------------------------------------------------------------------------
 bool CResponseManager::AddListener(DRS::IResponseManager::IListener* pNewListener, DRS::SignalInstanceId signalID /* = DRS::s_InvalidSignalID */)
 {
-	m_Listener.push_back(std::make_pair(pNewListener, signalID));
+	m_listeners.push_back(std::make_pair(pNewListener, signalID));
 	return true;
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseManager::RemoveListener(DRS::IResponseManager::IListener* pListenerToRemove)
 {
-	for (ListenerList::iterator it = m_Listener.begin(); it != m_Listener.end(); ++it)
+	for (ListenerList::iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
 	{
 		if (it->first == pListenerToRemove)
 		{
-			m_Listener.erase(it);
+			m_listeners.erase(it);
 			return true;
 		}
 	}
@@ -549,7 +549,7 @@ void CResponseManager::InformListenerAboutSignalProcessingStarted(const SSignal&
 {
 	DRS::IResponseManager::IListener::SSignalInfos signalInfo(signal.m_signalName, signal.m_pSender, signal.m_pSignalContext, signal.m_id);
 
-	for (std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>& current : m_Listener)
+	for (std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>& current : m_listeners)
 	{
 		if (current.second == signal.m_id || current.second == DRS::s_InvalidSignalId)
 		{
@@ -569,12 +569,12 @@ void CResponseManager::InformListenerAboutSignalProcessingFinished(
 {
 	DRS::IResponseManager::IListener::SSignalInfos signalInfo(signalName, pSender, pSignalContext, signalID);
 
-	for (ListenerList::iterator it = m_Listener.begin(); it != m_Listener.end(); )
+	for (ListenerList::iterator it = m_listeners.begin(); it != m_listeners.end(); )
 	{
 		if (it->second == signalID)
 		{
 			it->first->OnSignalProcessingFinished(signalInfo, pInstance, outcome);
-			it = m_Listener.erase(it);  //the processing for this signalId has finished, no need to keep the listener around.
+			it = m_listeners.erase(it);  //the processing for this signalId has finished, no need to keep the listener around.
 		}
 		else
 		{
@@ -615,7 +615,7 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		ar(responseStates, "_internal", "-_Internal");
+		ar(responseStates, "ResponsesData", "-Responses Data");
 		for (SResponseStateInfo& current : responseStates)
 		{
 			ResponsePtr pResponse = GetResponse(current.responsename);
@@ -639,7 +639,7 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 			responseStates[i].lastEndTime = it->second->GetLastEndTime();
 			++i;
 		}
-		ar(responseStates, "_internal", "_Internal");
+		ar(responseStates, "ResponsesData", "Responses Data");
 	}
 }
 

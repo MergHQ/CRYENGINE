@@ -70,9 +70,8 @@ private:
 
 	DRS::IVariableCollection* GetVariableCollection(const Schematyc::CSharedString& collectionName);
 
-	Schematyc::CSharedString m_name;
+	Schematyc::CSharedString m_nameOverride;
+	Schematyc::CSharedString m_globalVariableCollectionToUse;
 
 	IEntityDynamicResponseComponent* m_pDrsEntityComp;
-	//DRS::IResponseActor* m_pDrsActor;
-	//Schematyc::CConnectionScope            m_connectionScope;
 };

@@ -145,7 +145,11 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", 0xec73cf4362ca4a7f, 0x8b451076dc6fdb8b)
 
 	CEngineModule_CryAudioSystem();
-	virtual ~CEngineModule_CryAudioSystem() {}
+	virtual ~CEngineModule_CryAudioSystem()
+	{
+		SAFE_RELEASE(gEnv->pAudioSystem);
+		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str(), "EngineModule_AudioImpl");
+	}
 
 	virtual const char* GetName() const override     { return "CryAudioSystem"; }
 	virtual const char* GetCategory() const override { return "CryEngine"; }

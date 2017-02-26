@@ -135,13 +135,11 @@ void CEntityComponentAudio::OnListenerMoveNear(Vec3 const& closestPointToArea)
 uint64 CEntityComponentAudio::GetEventMask() const
 {
 	return
-	  BIT64(ENTITY_EVENT_DONE) |
 	  BIT64(ENTITY_EVENT_XFORM) |
 	  BIT64(ENTITY_EVENT_ENTERAREA) |
 	  BIT64(ENTITY_EVENT_MOVENEARAREA) |
 	  BIT64(ENTITY_EVENT_ENTERNEARAREA) |
-	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA) |
-	  BIT64(ENTITY_EVENT_ANIM_EVENT);
+	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,41 +228,6 @@ void CEntityComponentAudio::ProcessEvent(SEntityEvent& event)
 						}
 					}
 				}
-
-				break;
-			}
-		case ENTITY_EVENT_ANIM_EVENT:
-			{
-				REINST("reintroduce anim event voice playing in EntityAudioProxy");
-				/*if (!IsSoundAnimEventsHandledExternally())
-				   {
-				   const AnimEventInstance* pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
-				   ICharacterInstance* pCharacter = reinterpret_cast<ICharacterInstance*>(event.nParam[1]);
-				   const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
-				   if (eventName && stricmp(eventName, "sound") == 0)
-				   {
-				    Vec3 offset(ZERO);
-				    if (pAnimEvent->m_BonePathName && pAnimEvent->m_BonePathName[0])
-				    {
-				      if (pCharacter)
-				      {
-				        IDefaultSkeleton& rIDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
-				        int id = rIDefaultSkeleton.GetJointIDByName(pAnimEvent->m_BonePathName);
-				        if (id >= 0)
-				        {
-				          ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
-				          QuatT boneQuat(pSkeletonPose->GetAbsJointByID(id));
-				          offset = boneQuat.t;
-				        }
-				      }
-				    }
-
-				    int flags = FLAG_SOUND_DEFAULT_3D;
-				    if (strchr(pAnimEvent->m_CustomParameter, ':') == nullptr)
-				      flags |= FLAG_SOUND_VOICE;
-				    PlaySound(pAnimEvent->m_CustomParameter, offset, FORWARD_DIRECTION, flags, 0, eSoundSemantic_Animation, 0, 0);
-				   }
-				   }*/
 
 				break;
 			}

@@ -709,6 +709,8 @@ CGame::~CGame()
 		}
 	}
 
+	gEnv->pSystem->UnloadEngineModule("CryLobby", "EngineModule_CryLobby");
+
 	GAME_FX_SYSTEM.Destroy();
 
 	ScreenResolution::ReleaseScreenResolutions();

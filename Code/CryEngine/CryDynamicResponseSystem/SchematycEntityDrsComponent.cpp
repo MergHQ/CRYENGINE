@@ -2,8 +2,6 @@
 
 #include "stdafx.h"
 #include "SchematycEntityDrsComponent.h"
-#include "../CryEntitySystem/DynamicResponseProxy.h"
-
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -24,7 +22,11 @@ CSchematycEntityDrsComponent::~CSchematycEntityDrsComponent()
 bool CSchematycEntityDrsComponent::Init()
 {
 	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-	m_pDrsEntityComp = entity.GetOrCreateComponent<CEntityComponentDynamicResponse>();
+	m_pDrsEntityComp = entity.GetOrCreateComponent<IEntityDynamicResponseComponent>();
+	if (!m_nameOverride.empty() || !m_globalVariableCollectionToUse.empty())  //the default DrsComponent will create a non-global drs actor, named like the entity. if this is not what we want, we need to re-init.
+	{
+		m_pDrsEntityComp->ReInit((m_nameOverride.empty()) ? nullptr : m_nameOverride.c_str(), (m_globalVariableCollectionToUse.empty()) ? nullptr : m_globalVariableCollectionToUse.c_str());
+	}
 	return true;
 }
 
@@ -33,10 +35,13 @@ void CSchematycEntityDrsComponent::Run(Schematyc::ESimulationMode simulationMode
 	if (simulationMode != Schematyc::ESimulationMode::Idle && simulationMode != Schematyc::ESimulationMode::Preview)
 	{
 		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-		const char* szDrsActorName = (m_name.empty()) ? entity.GetName() : m_name.c_str();
-		SET_DRS_USER_SCOPED("DrsProxy via Schematyc Initialize"); //this line is just for the editor, so that the name-variable change can be associated with a reason
-		m_pDrsEntityComp->GetLocalVariableCollection()->SetVariableValue("Name", CHashedString(szDrsActorName));
 		gEnv->pDynamicResponseSystem->GetSpeakerManager()->AddListener(this);
+	}
+	else if (simulationMode == Schematyc::ESimulationMode::Preview)  //workaround to not keep a drs actor for the preview object...
+	{
+		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
+		entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
+		m_pDrsEntityComp = nullptr;
 	}
 }
 
@@ -44,9 +49,12 @@ void CSchematycEntityDrsComponent::Shutdown()
 {
 	gEnv->pDynamicResponseSystem->GetSpeakerManager()->RemoveListener(this);
 
-	IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
-	entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
-	m_pDrsEntityComp = nullptr;
+	if (m_pDrsEntityComp)
+	{
+		IEntity& entity = Schematyc::EntityUtils::GetEntity(*this);
+		entity.RemoveComponent(m_pDrsEntityComp);  //we assume no one else needs it anymore
+		m_pDrsEntityComp = nullptr;
+	}
 }
 
 void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEntityDrsComponent>& desc)
@@ -56,7 +64,8 @@ void CSchematycEntityDrsComponent::ReflectType(Schematyc::CTypeDesc<CSchematycEn
 	desc.SetDescription("Dynamic Response System component");
 	desc.SetIcon("icons:Dialogs/notification_text.ico");
 	desc.SetComponentFlags(Schematyc::EComponentFlags::Singleton);
-	desc.AddMember(&CSchematycEntityDrsComponent::m_name, 'name', "actorName", "ActorName", nullptr);
+	desc.AddMember(&CSchematycEntityDrsComponent::m_nameOverride, 'name', "actorNameOverride", "ActorNameOverride", "Override for the DRS actor name. If empty, entity name will be used. Remark: This name has to be unique, therefore the DRS will alter it, if there is already an actor with that name.");
+	desc.AddMember(&CSchematycEntityDrsComponent::m_globalVariableCollectionToUse, 'glob', "globalCollectionToUse", "GlobalCollectionToUse", "Normally each actor has it`s own local variable collection, that is not accessible (via name) from the outside and is also not serialized .With this property you can change this behavior so that the actor instead uses a global collection.");
 }
 
 void CSchematycEntityDrsComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -184,8 +193,8 @@ void CSchematycEntityDrsComponent::OnSignalProcessingFinished(SSignalInfos& sign
 void CSchematycEntityDrsComponent::OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine)
 {
 	//remark: every DRS Component will currently receive events for any Speaker
-	const Schematyc::CSharedString text = (pLine) ? pLine->GetText().c_str() : lineID.GetText().c_str();
-	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName().GetText().c_str() : "No Actor";
+	const Schematyc::CSharedString text = (pLine) ? pLine->GetText() : lineID.GetText();
+	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName() : "No Actor";
 
 	if (lineEvent == ISpeakerManager::IListener::eLineEvent_HasEndedInAnyWay)
 	{

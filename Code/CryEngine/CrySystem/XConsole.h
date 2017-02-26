@@ -136,14 +136,6 @@ public:
 	// interface IConsole ---------------------------------------------------------
 
 	virtual void                   Release();
-	virtual ICVar*                 RegisterString(const char* sName, const char* sValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
-	virtual ICVar*                 RegisterInt(const char* sName, int iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
-	virtual ICVar*                 RegisterInt64(const char* sName, int64 iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
-	virtual ICVar*                 RegisterFloat(const char* sName, float fValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
-	virtual ICVar*                 Register(const char* name, float* src, float defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
-	virtual ICVar*                 Register(const char* name, int* src, int defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
-	virtual ICVar*                 Register(const char* name, const char** src, const char* defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
-	virtual ICVar*                 Register(ICVar* pVar) { RegisterVar(pVar); return pVar; }
 
 	virtual void                   UnregisterVariable(const char* sVarName, bool bDelete = false);
 	virtual void                   SetScrollMax(int value);
@@ -170,8 +162,6 @@ public:
 	virtual void                   Draw();
 	virtual void                   RegisterListener(IManagedConsoleCommandListener* pListener, const char* name);
 	virtual void                   UnregisterListener(IManagedConsoleCommandListener* pListener);
-	virtual void                   AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManagedExternally = false);
-	virtual void                   AddCommand(const char* sName, const char* sScriptFunc, int nFlags = 0, const char* sHelp = NULL);
 	virtual void                   RemoveCommand(const char* sName);
 	virtual void                   ExecuteString(const char* command, const bool bSilentMode, const bool bDeferExecution = false);
 	virtual void                   Exit(const char* command, ...) PRINTF_PARAMS(2, 3);
@@ -297,6 +287,19 @@ private: // ----------------------------------------------------------
 	void        RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value);
 	static void AddCVarsToHash(ConsoleVariablesVector::const_iterator begin, ConsoleVariablesVector::const_iterator end, CCrc32& runningNameCrc32, CCrc32& runningNameValueCrc32);
 	static bool CVarNameLess(const std::pair<const char*, ICVar*>& lhs, const std::pair<const char*, ICVar*>& rhs);
+
+
+	virtual void AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags = 0, const char* sHelp = NULL, bool bIsManagedExternally = false);
+	virtual void AddCommand(const char* sName, const char* sScriptFunc, int nFlags = 0, const char* sHelp = NULL);
+
+	virtual ICVar* RegisterString(const char* sName, const char* sValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
+	virtual ICVar* RegisterInt(const char* sName, int iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
+	virtual ICVar* RegisterInt64(const char* sName, int64 iValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
+	virtual ICVar* RegisterFloat(const char* sName, float fValue, int nFlags, const char* help = "", ConsoleVarFunc pChangeFunc = 0);
+	virtual ICVar* Register(const char* name, float* src, float defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
+	virtual ICVar* Register(const char* name, int* src, int defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
+	virtual ICVar* Register(const char* name, const char** src, const char* defaultvalue, int flags = 0, const char* help = "", ConsoleVarFunc pChangeFunc = 0, bool allowModify = true);
+	virtual ICVar* Register(ICVar* pVar) { RegisterVar(pVar); return pVar; }
 
 	typedef std::map<string, CConsoleCommand, string_nocase_lt>                        ConsoleCommandsMap;
 	typedef ConsoleCommandsMap::iterator                                               ConsoleCommandsMapItor;

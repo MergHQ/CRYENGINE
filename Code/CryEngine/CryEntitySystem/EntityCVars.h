@@ -100,7 +100,7 @@ struct CVar
 	static int    es_MaxJointFx;
 
 	// Initialize console variables.
-	static void Init(struct IConsole* pConsole);
+	static void Init();
 
 	// Dump Entities
 	static void DumpEntities(IConsoleCmdArgs*);

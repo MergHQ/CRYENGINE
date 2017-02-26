@@ -82,7 +82,11 @@ class CEngineModule_CryAnimation : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryAnimation, "EngineModule_CryAnimation", 0x9c73d2cd142c4256, 0xa8f0706d80cd7ad2)
 
-	virtual ~CEngineModule_CryAnimation()	{}
+	virtual ~CEngineModule_CryAnimation()
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_anim);
+		SAFE_RELEASE(gEnv->pCharacterManager);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const char* GetName()  const override { return "CryAnimation"; };

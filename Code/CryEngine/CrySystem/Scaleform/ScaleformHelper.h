@@ -25,6 +25,7 @@ public:
 
 	virtual void Destroy() override
 	{
+		CSharedFlashPlayerResources::Shutdown();
 		delete this;
 	}
 

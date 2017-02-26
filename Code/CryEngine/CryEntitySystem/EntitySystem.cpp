@@ -224,7 +224,7 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	m_pClassRegistry = 0;
 	m_pEntityScriptBinding = NULL;
 
-	CVar::Init(gEnv->pConsole);
+	CVar::Init();
 
 	m_bTimersPause = false;
 	m_nStartPause.SetSeconds(-1.0f);

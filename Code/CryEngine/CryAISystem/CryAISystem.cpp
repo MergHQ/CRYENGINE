@@ -35,6 +35,7 @@ class CEngineModule_CryAISystem : public IEngineModule
 	virtual ~CEngineModule_CryAISystem()
 	{
 		CryUnregisterFlowNodes();
+		SAFE_RELEASE(gEnv->pAISystem);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

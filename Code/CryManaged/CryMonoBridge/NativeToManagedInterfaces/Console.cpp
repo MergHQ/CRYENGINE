@@ -16,7 +16,10 @@ static void AddConsoleCommandFunction(ConsoleCommandFunc consoleCommandFunc, Mon
 {
 	const char* consoleCommandName = mono_string_to_utf8(commandName);
 	const char* consoleCommandHelp = mono_string_to_utf8(sHelp);
-	gEnv->pConsole->AddCommand(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp, isManaged);
+	if (isManaged)
+		REGISTER_MANAGED_COMMAND(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp);
+	else
+		REGISTER_COMMAND(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp);
 }
 
 static void AddConsoleVariableString(ConsoleVarFunc consoleVariableFunc, MonoString* variableName, MonoString* variableValue, int nFlags, MonoString* sHelp)

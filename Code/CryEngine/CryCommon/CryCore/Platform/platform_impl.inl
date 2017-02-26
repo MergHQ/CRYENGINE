@@ -24,12 +24,14 @@ SSystemGlobalEnvironment gEnv;
 extern SSystemGlobalEnvironment gEnv;
 	#endif
 #else
-struct SSystemGlobalEnvironment* gEnv = NULL;
+struct SSystemGlobalEnvironment* gEnv = nullptr;
 #endif
 
-#if defined(_LAUNCHER) && (defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
+#if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project
-struct SRegFactoryNode* g_pHeadToRegFactories = 0;
+struct SRegFactoryNode* g_pHeadToRegFactories = nullptr;
+std::vector<const char*> g_moduleCommands;
+std::vector<const char*> g_moduleCVars;
 #endif
 
 #if !defined(_LIB) || defined(_LAUNCHER)

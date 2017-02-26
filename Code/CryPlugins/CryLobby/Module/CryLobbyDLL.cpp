@@ -14,7 +14,10 @@ class CEngineModule_CryLobby : public IEngineModule
 	CRYINTERFACE_SIMPLE(IEngineModule)
 	CRYGENERATE_SINGLETONCLASS(CEngineModule_CryLobby, "EngineModule_CryLobby", 0x2c5cc5ec41f7451c, 0xa785857ca7731c28)
 
-	virtual ~CEngineModule_CryLobby() {}
+	virtual ~CEngineModule_CryLobby()
+	{
+		SAFE_DELETE(gEnv->pLobby);
+	}
 	virtual const char* GetName() const override { return "CryLobby"; }
 	virtual const char* GetCategory() const override { return "CryEngine"; }
 
