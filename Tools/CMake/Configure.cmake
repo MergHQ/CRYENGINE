@@ -93,6 +93,7 @@ if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
 	endif()
 endif()
 
+option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
 option(OPTION_RC "Include RC in the build" OFF)
 option(OPTION_PCH "Enable Precompiled Headers" ON)
 
@@ -218,7 +219,9 @@ if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER)
 	endif()
 endif()
 
-include(${TOOLS_CMAKE_DIR}/modules/SDL2.cmake)
+if (OPTION_ENGINE)
+	include(${TOOLS_CMAKE_DIR}/modules/SDL2.cmake)
+endif()
 include(${TOOLS_CMAKE_DIR}/modules/Boost.cmake)
 include(${TOOLS_CMAKE_DIR}/modules/ncurses.cmake)
 

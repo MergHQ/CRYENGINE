@@ -91,6 +91,10 @@ if (OPTION_SHADERCACHEGEN)
 	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen)
 endif()
 
+if (OPTION_PAKTOOLS AND EXISTS "Code/Tools/PakEncrypt")
+	add_subdirectory(Code/Tools/PakEncrypt)
+endif()
+
 if (OPTION_RC AND EXISTS "Code/Tools/rc")
 	include(ExternalProject)
 	ExternalProject_Add(RC
