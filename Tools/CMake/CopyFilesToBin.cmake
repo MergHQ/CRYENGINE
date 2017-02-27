@@ -1,17 +1,19 @@
 # Copy required additional files from 3rdparty to the binary folder
 set(DEPLOY_FILES  CACHE INTERNAL "List of files to deploy before running")
 
-set (BinaryFileList_Win64
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbghelp.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbgcore.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
-	)
+if (OPTION_ENGINE OR OPTION_SANDBOX OR OPTION_SHADERCACHEGEN)
+	set (BinaryFileList_Win64
+		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbghelp.dll"
+		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x64/srcsrv/dbgcore.dll"
+		"${SDK_DIR}/Microsoft Windows SDK/10/bin/x64/d3dcompiler_47.dll"
+		)
 
-set (BinaryFileList_Win32
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbghelp.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbgcore.dll"
-	"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
-	)
+	set (BinaryFileList_Win32
+		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbghelp.dll"
+		"${SDK_DIR}/Microsoft Windows SDK/10/Debuggers/x86/srcsrv/dbgcore.dll"
+		"${SDK_DIR}/Microsoft Windows SDK/10/bin/x86/d3dcompiler_47.dll"
+		)
+endif()
 
 file(TO_CMAKE_PATH "${DURANGO_SDK}" DURANGO_SDK_CMAKE)
 set (BinaryFileList_Durango
@@ -193,8 +195,10 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_files(${SDK_DIR}/Orbis/target/sce_module/*.prx app/sce_module)
 	endif()
 
-	if (WIN64) 
-		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+	if (WIN64)
+		if (OPTION_ENGINE)
+			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+		endif()
 		if (OPTION_SANDBOX)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll platforms)
 			deploy_runtime_files(${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll imageformats)
@@ -206,7 +210,9 @@ macro(copy_binary_files_to_target)
 			deploy_pyside()
 		endif()
 	elseif(WIN32)
-		deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
+		if (OPTION_ENGINE)
+			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
+		endif()
 	endif ()
 
 	if(DEPLOY_FILES)

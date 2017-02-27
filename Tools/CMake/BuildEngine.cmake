@@ -186,8 +186,11 @@ if (OPTION_SCALEFORMHELPER OR OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	endif ()
 endif()
 
-if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
+if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_PAKTOOLS)
 	add_subdirectory ("Code/Libs/tomcrypt")
+endif()
+
+if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/Libs/md5")
 	add_subdirectory ("Code/Libs/lz4")
 	add_subdirectory ("Code/Libs/jsmn")
