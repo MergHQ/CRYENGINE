@@ -50,7 +50,7 @@ private:
 
 	string                   m_parameterName;
 
-	CryAudio::EOcclusionType m_obstructionType = CryAudio::eOcclusionType_Ignore;
+	CryAudio::EOcclusionType m_occlusionType = CryAudio::eOcclusionType_Ignore;
 
 	bool                     m_bTriggerAreasOnMove = false;
 	bool                     m_bMoveWithEntity = false;

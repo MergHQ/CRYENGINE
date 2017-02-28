@@ -123,7 +123,7 @@ void PrepareAudioSystem(CSystem* const pAudioSystem)
 	SRequestUserData const data(eRequestFlags_ExecuteBlocking);
 	pAudioSystem->ParseControlsData(temp.c_str(), eDataScope_Global, data);
 	pAudioSystem->ParsePreloadsData(temp.c_str(), eDataScope_Global, data);
-	pAudioSystem->PreloadSingleRequest(SATLInternalControlIDs::globalPreloadRequestId, false, data);
+	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false, data);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////

@@ -22,12 +22,12 @@ using namespace CryAudio;
  */
 #define TEMPORARY_SOUND_FLAGS
 
-SERIALIZATION_ENUM_BEGIN(EOcclusionType, "SoundObstructionType");
-SERIALIZATION_ENUM(eOcclusionType_Ignore, "Ignore", "Ignore");
-SERIALIZATION_ENUM(eOcclusionType_Adaptive, "Adaptive", "Adaptive");
-SERIALIZATION_ENUM(eOcclusionType_Low, "Low", "Low");
-SERIALIZATION_ENUM(eOcclusionType_Medium, "Medium", "Medium");
-SERIALIZATION_ENUM(eOcclusionType_High, "High", "High");
+SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Ignore, "ignore_state_name", "Ignore");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Adaptive, "adaptive_state_name", "Adaptive");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Low, "low_state_name", "Low");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Medium, "medium_state_name", "Medium");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_High, "high_state_name", "High");
 SERIALIZATION_ENUM_END();
 
 class CAudioContext : public IProceduralContext
@@ -128,7 +128,7 @@ struct SAudioParams : public IProceduralParams
 		ar(Serialization::AudioTrigger<TProcClipString>(stopTrigger), "StopTrigger", "Stop Trigger");
 		ar(Serialization::AudioRTPC<TProcClipString>(audioParameter), "AudioParameter", "Audio Parameter");
 		ar(audioParameterValue, "AudioParameterValue", "Audio Parameter Value");
-		ar(audioOcclusionType, "SoundObstructionType", "Sound Obstruction Type");
+		ar(audioOcclusionType, "OcclusionType", "Occlusion Type");
 		ar(Serialization::Decorators::JointName<SProcDataCRC>(attachmentJoint), "AttachmentJoint", "Joint Name");
 		if (!ar.isEdit())
 		{

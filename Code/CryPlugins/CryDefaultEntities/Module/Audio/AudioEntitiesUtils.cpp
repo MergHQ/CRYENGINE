@@ -10,19 +10,19 @@ using namespace CryAudio;
 
 CryAudio::ControlId AudioEntitiesUtils::m_obstructionOcclusionSwitch = CryAudio::InvalidControlId;
 
-YASLI_ENUM_BEGIN(EOcclusionType, "SoundObstructionType")
-YASLI_ENUM_VALUE(eOcclusionType_Ignore, "Ignore")
-YASLI_ENUM_VALUE(eOcclusionType_Adaptive, "Adaptive")
-YASLI_ENUM_VALUE(eOcclusionType_Low, "Low")
-YASLI_ENUM_VALUE(eOcclusionType_Medium, "Medium")
-YASLI_ENUM_VALUE(eOcclusionType_High, "High")
-YASLI_ENUM_END()
+SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Ignore, "ignore_state_name", "Ignore");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Adaptive, "adaptive_state_name", "Adaptive");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Low, "low_state_name", "Low");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_Medium, "medium_state_name", "Medium");
+SERIALIZATION_ENUM(CryAudio::eOcclusionType_High, "high_state_name", "High");
+SERIALIZATION_ENUM_END();
 
-YASLI_ENUM_BEGIN(EPlayBehavior, "PlayBehavior")
-YASLI_ENUM_VALUE(ePlayBehavior_Single, "Single")
-YASLI_ENUM_VALUE(ePlayBehavior_Delay, "Delay")
-YASLI_ENUM_VALUE(ePlayBehavior_TriggerRate, "TriggerRate")
-YASLI_ENUM_END()
+SERIALIZATION_ENUM_BEGIN(EPlayBehavior, "PlayBehavior")
+SERIALIZATION_ENUM(ePlayBehavior_Single, "single_state_name", "Single")
+SERIALIZATION_ENUM(ePlayBehavior_Delay, "delay_state_name", "Delay")
+SERIALIZATION_ENUM(ePlayBehavior_TriggerRate, "trigger_rate_state_name", "TriggerRate")
+SERIALIZATION_ENUM_END()
 
 CryAudio::ControlId AudioEntitiesUtils::GetObstructionOcclusionSwitch()
 {
@@ -60,7 +60,7 @@ void AudioEntitiesUtils::Init()
 }
 
 std::array<const char*, numOcclusionTypes> AudioEntitiesUtils::m_obstructionNames = {
-	{ "ignore", "adaptive", "low", "medium", "high" }
+	{ IgnoreStateName, AdaptiveStateName, LowStateName, MediumStateName, HighStateName }
 };
 
 std::array<ControlId, numOcclusionTypes> AudioEntitiesUtils::m_obstructionStateIds = {

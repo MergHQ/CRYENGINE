@@ -48,7 +48,7 @@ bool CVehicleMovementTank::Init(IVehicle* pVehicle, const CVehicleParams& table)
 		pIAudioSystem->GetAudioParameterId("vehicle_rotation_speed", m_turretTurnRtpcId);
 
 		pIAudioSystem->GetAudioTriggerId("Play_w_tank_cannon_fire", m_audioControlIDs[eSID_VehiclePrimaryWeapon]);
-		pIAudioSystem->GetAudioTriggerId("do_nothing", m_audioControlIDs[eSID_VehicleStopPrimaryWeapon]);
+		m_audioControlIDs[eSID_VehicleStopPrimaryWeapon] = CryAudio::DoNothingTriggerId;
 		pIAudioSystem->GetAudioTriggerId("Play_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleSecondaryWeapon]);
 		pIAudioSystem->GetAudioTriggerId("Stop_w_tank_machinegun_fire", m_audioControlIDs[eSID_VehicleStopSecondaryWeapon]);
 	}

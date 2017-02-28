@@ -158,7 +158,7 @@ void CAudioAreaRandom::OnResetState()
 	// Update values
 	audioEntityComponent.SetFadeDistance(m_parameterDistance);
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
+	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_occlusionType]);
 
 	audioEntityComponent.SetCurrentEnvironments(InvalidAuxObjectId);
 	audioEntityComponent.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
@@ -288,7 +288,7 @@ void CAudioAreaRandom::SerializeProperties(Serialization::IArchive& archive)
 	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
 	archive(m_bMoveWithEntity, "Move with Entity", "MoveWithEntity");
 
-	archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+	archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
 	archive(Serialization::AudioRTPC(m_parameterName), "Rtpc", "Rtpc");
 	archive(m_parameterDistance, "RTPC Distance", "RTPCDistance");

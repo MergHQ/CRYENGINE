@@ -21,16 +21,6 @@ CSystem* CryAudio::CATLAudioObject::s_pAudioSystem = nullptr;
 CAudioEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
 CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager = nullptr;
 
-ControlId CryAudio::CATLAudioObject::s_occlusionTypeSwitchId = InvalidControlId;
-SwitchStateId CryAudio::CATLAudioObject::s_occlusionTypeStateIds[eOcclusionType_Count] = {
-	InvalidSwitchStateId,
-	InvalidSwitchStateId,
-	InvalidSwitchStateId,
-	InvalidSwitchStateId,
-	InvalidSwitchStateId,
-	InvalidSwitchStateId
-};
-
 //////////////////////////////////////////////////////////////////////////
 CATLAudioObject::CATLAudioObject(Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition)
 	: m_pImplData(pImplData)
@@ -824,7 +814,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			Vec3 const relativeVelocityVec(m_attributes.velocity - listenerAttributes.velocity);
 			float const relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetNormalized());
 
-			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectDopplerParameterId, relativeVelocity);
+			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(RelativeVelocityParameterId, relativeVelocity);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
@@ -835,7 +825,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 		{
 			m_attributes.velocity = ZERO;
 
-			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectDopplerParameterId, 0.0f);
+			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(RelativeVelocityParameterId, 0.0f);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
@@ -855,7 +845,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			{
 				m_previousVelocity = currentVelocity;
 
-				SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectVelocityParameterId, currentVelocity);
+				SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(AbsoluteVelocityParameterId, currentVelocity);
 				CAudioRequest request(&requestData);
 				request.pObject = this;
 				s_pAudioSystem->PushRequest(request);
@@ -866,7 +856,7 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SObject3DAttributes 
 			m_attributes.velocity = ZERO;
 			m_previousVelocity = 0.0f;
 
-			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(SATLInternalControlIDs::objectVelocityParameterId, 0.0f);
+			SAudioObjectRequestData<eAudioObjectRequestType_SetParameter> requestData(AbsoluteVelocityParameterId, 0.0f);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
@@ -1437,7 +1427,7 @@ void CATLAudioObject::SetOcclusionType(EOcclusionType const occlusionType, SRequ
 
 	if (index < eOcclusionType_Count)
 	{
-		SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> requestData(s_occlusionTypeSwitchId, s_occlusionTypeStateIds[index]);
+		SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> requestData(OcclusionTypeSwitchId, OcclusionTypeStateIds[index]);
 		PushRequest(requestData, userData);
 	}
 }
