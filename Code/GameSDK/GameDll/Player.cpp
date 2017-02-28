@@ -1137,21 +1137,10 @@ void CPlayer::InitLocalPlayer()
 		m_pIEntityAudioComponent = GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
 		//m_pIEntityAudioComponent->SetFlags(m_pIEntityAudioComponent->GetFlags()|IEntityAudioComponent::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
 
-		if (m_pIEntityAudioComponent != NULL)
+		if (m_pIEntityAudioComponent != nullptr)
 		{
-			CryAudio::ControlId nObjectSpeedSwitchID = CryAudio::InvalidControlId;
-			CryAudio::SwitchStateId nObjectSpeedTrackingOnStateID = CryAudio::InvalidSwitchStateId;
-
-			gEnv->pAudioSystem->GetAudioSwitchId("object_velocity_tracking", nObjectSpeedSwitchID);
-			if (nObjectSpeedSwitchID != CryAudio::InvalidControlId)
-			{
-				gEnv->pAudioSystem->GetAudioSwitchStateId(nObjectSpeedSwitchID, "on", nObjectSpeedTrackingOnStateID);
-				if(nObjectSpeedTrackingOnStateID != CryAudio::InvalidSwitchStateId)
-				{
-					// This enables automatic updates of the object_speed ATLRtpc on the Player Character.
-					m_pIEntityAudioComponent->SetSwitchState(nObjectSpeedSwitchID, nObjectSpeedTrackingOnStateID);
-				}
-			}
+			// This enables automatic updates of the "absolute_velocity" audio parameter on the Player Character.
+			m_pIEntityAudioComponent->SetSwitchState(CryAudio::AbsoluteVelocityTrackingSwitchId, CryAudio::OnStateId);
 		}
 
 		m_netPlayerProgression.OwnClientConnected();

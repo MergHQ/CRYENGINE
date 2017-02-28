@@ -63,7 +63,7 @@ private:
 	EAreaState               m_areaState = EAreaState::Outside;
 	float                    m_fadeDistance = 5.0f;
 	float                    m_environmentFadeDistance = 5.0f;
-	CryAudio::EOcclusionType m_obstructionType = CryAudio::eOcclusionType_Ignore;
+	CryAudio::EOcclusionType m_occlusionType = CryAudio::eOcclusionType_Ignore;
 
 	string                   m_environmentName;
 

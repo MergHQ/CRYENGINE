@@ -46,7 +46,7 @@ public:
 		archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
 		archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
 
-		archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+		archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
 		if (archive.openBlock("PlayMode", "Play Mode"))
 		{
@@ -97,7 +97,7 @@ protected:
 	string                   m_playTriggerName;
 	string                   m_stopTriggerName;
 
-	CryAudio::EOcclusionType m_obstructionType = CryAudio::eOcclusionType_Ignore;
+	CryAudio::EOcclusionType m_occlusionType = CryAudio::eOcclusionType_Ignore;
 
 	EPlayBehavior            m_behavior = ePlayBehavior_Single;
 

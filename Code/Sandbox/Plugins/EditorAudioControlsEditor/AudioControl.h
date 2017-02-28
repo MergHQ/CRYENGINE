@@ -61,7 +61,7 @@ public:
 	void            SetOcclusionFadeOutDistance(float fadeOutArea);
 
 	size_t          ChildCount() const                      { return m_children.size(); }
-	CATLControl*    GetChild(uint index) const              { return m_children[index]; }
+	CATLControl*    GetChild(size_t const index) const      { return m_children[index]; }
 	void            AddChild(CATLControl* pChildControl)    { m_children.push_back(pChildControl); }
 	void            RemoveChild(CATLControl* pChildControl) { m_children.erase(std::remove(m_children.begin(), m_children.end(), pChildControl), m_children.end()); }
 

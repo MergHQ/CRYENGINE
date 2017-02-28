@@ -150,7 +150,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	gEnv->pAudioSystem->GetAudioEnvironmentId(m_environmentName, m_environmentId);
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_obstructionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[m_occlusionType]);
 
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);
@@ -257,7 +257,7 @@ void CAudioAreaAmbienceEntity::SerializeProperties(Serialization::IArchive& arch
 	archive(Serialization::AudioEnvironment(m_environmentName), "Environment", "Environment");
 	archive(m_environmentDistance, "EnvironmentDistance", "EnvironmentDistance");
 
-	archive(m_obstructionType, "SoundObstructionType", "SoundObstructionType");
+	archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
 	if (archive.isInput())
 	{

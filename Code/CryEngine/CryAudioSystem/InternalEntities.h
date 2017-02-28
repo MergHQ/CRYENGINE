@@ -4,7 +4,6 @@
 
 #include "ATLEntityData.h"
 #include "ATLEntities.h"
-#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio
 {

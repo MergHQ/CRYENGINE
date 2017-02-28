@@ -18,8 +18,10 @@
 #include "IEditor.h"
 #include <ConfigurationManager.h>
 #include "AudioControlsEditorPlugin.h"
+#include <CryAudio/IAudioSystem.h>
 
 using namespace PathUtil;
+using namespace CryAudio;
 
 namespace ACE
 {
@@ -339,58 +341,153 @@ void CAudioControlsLoader::CreateDefaultControls()
 	QStandardItem* pFolder = AddFolder(m_pLayout->ControlsRootItem(), "default_controls");
 	if (pFolder)
 	{
-		CATLControl* pControl = m_pModel->FindControl("get_focus", eACEControlType_Trigger, m_pModel->GetGlobalScope());
+		CATLControl* pControl = m_pModel->FindControl(GetFocusTriggerName, eACEControlType_Trigger, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("get_focus", eACEControlType_Trigger), pFolder);
+			AddControl(m_pModel->CreateControl(GetFocusTriggerName, eACEControlType_Trigger), pFolder);
 		}
 
-		pControl = m_pModel->FindControl("lose_focus", eACEControlType_Trigger, m_pModel->GetGlobalScope());
+		pControl = m_pModel->FindControl(LoseFocusTriggerName, eACEControlType_Trigger, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("lose_focus", eACEControlType_Trigger), pFolder);
+			AddControl(m_pModel->CreateControl(LoseFocusTriggerName, eACEControlType_Trigger), pFolder);
 		}
 
-		pControl = m_pModel->FindControl("mute_all", eACEControlType_Trigger, m_pModel->GetGlobalScope());
+		pControl = m_pModel->FindControl(MuteAllTriggerName, eACEControlType_Trigger, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("mute_all", eACEControlType_Trigger), pFolder);
+			AddControl(m_pModel->CreateControl(MuteAllTriggerName, eACEControlType_Trigger), pFolder);
 		}
 
-		pControl = m_pModel->FindControl("unmute_all", eACEControlType_Trigger, m_pModel->GetGlobalScope());
+		pControl = m_pModel->FindControl(UnmuteAllTriggerName, eACEControlType_Trigger, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("unmute_all", eACEControlType_Trigger), pFolder);
+			AddControl(m_pModel->CreateControl(UnmuteAllTriggerName, eACEControlType_Trigger), pFolder);
 		}
 
-		pControl = m_pModel->FindControl("do_nothing", eACEControlType_Trigger, m_pModel->GetGlobalScope());
+		pControl = m_pModel->FindControl(DoNothingTriggerName, eACEControlType_Trigger, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("do_nothing", eACEControlType_Trigger), pFolder);
+			AddControl(m_pModel->CreateControl(DoNothingTriggerName, eACEControlType_Trigger), pFolder);
 		}
 
-		pControl = m_pModel->FindControl("object_speed", eACEControlType_RTPC, m_pModel->GetGlobalScope());
+		/*
+		   Following audio controls
+
+		   object_doppler_tracking
+		   object_velocity_tracking
+		   object_doppler
+		   object_speed
+
+		   are handled for backwards compatibility reasons.
+		   Introduced in March 2017, remove this code at a feasible point in the future.
+		 */
+		pControl = m_pModel->FindControl(AbsoluteVelocityParameterName, eACEControlType_RTPC, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("object_speed", eACEControlType_RTPC), pFolder);
+			pControl = m_pModel->FindControl("object_speed", eACEControlType_RTPC, m_pModel->GetGlobalScope());
+			if (pControl == nullptr)
+			{
+				AddControl(m_pModel->CreateControl(AbsoluteVelocityParameterName, eACEControlType_RTPC), pFolder);
+			}
+			else
+			{
+				auto pItem = m_pLayout->GetItemFromControlID(pControl->GetId());
+				pControl->SetName(AbsoluteVelocityParameterName);
+				pItem->setData(AbsoluteVelocityParameterName, Qt::DisplayRole);
+				pItem->setData(true, eDataRole_Modified);
+			}
 		}
 
-		pControl = m_pModel->FindControl("object_doppler", eACEControlType_RTPC, m_pModel->GetGlobalScope());
+		pControl = m_pModel->FindControl(RelativeVelocityParameterName, eACEControlType_RTPC, m_pModel->GetGlobalScope());
 		if (pControl == nullptr)
 		{
-			AddControl(m_pModel->CreateControl("object_doppler", eACEControlType_RTPC), pFolder);
+			pControl = m_pModel->FindControl("object_doppler", eACEControlType_RTPC, m_pModel->GetGlobalScope());
+			if (pControl == nullptr)
+			{
+				AddControl(m_pModel->CreateControl(RelativeVelocityParameterName, eACEControlType_RTPC), pFolder);
+			}
+			else
+			{
+				auto pItem = m_pLayout->GetItemFromControlID(pControl->GetId());
+				pControl->SetName(RelativeVelocityParameterName);
+				pItem->setData(RelativeVelocityParameterName, Qt::DisplayRole);
+				pItem->setData(true, eDataRole_Modified);
+			}
 		}
 
 		{
-			const char* arr[] = { "ignore", "adaptive", "low", "medium", "high" };
-			SwitchStates states(arr, arr + sizeof(arr) / sizeof(arr[0]));
-			CreateDefaultSwitch(pFolder, "ObstrOcclCalcType", "ObstructionOcclusionCalculationType", states);
+			char const* const arr[] = { IgnoreStateName, AdaptiveStateName, LowStateName, MediumStateName, HighStateName };
+			SwitchStates const states(arr, arr + sizeof(arr) / sizeof(arr[0]));
+			CreateDefaultSwitch(pFolder, "ObstrOcclCalcType", OcclusionCalcSwitchName, states);
 		}
 		{
-			const char* arr[] = { "on", "off" };
-			SwitchStates states(arr, arr + sizeof(arr) / sizeof(arr[0]));
-			CreateDefaultSwitch(pFolder, "object_velocity_tracking", "object_velocity_tracking", states);
-			CreateDefaultSwitch(pFolder, "object_doppler_tracking", "object_doppler_tracking", states);
+			char const* const arr[] = { OnStateName, OffStateName };
+			SwitchStates const states(arr, arr + sizeof(arr) / sizeof(arr[0]));
+
+			pControl = m_pModel->FindControl(AbsoluteVelocityTrackingSwitchName, eACEControlType_Switch, m_pModel->GetGlobalScope());
+			if (pControl == nullptr)
+			{
+				pControl = m_pModel->FindControl("object_velocity_tracking", eACEControlType_Switch, m_pModel->GetGlobalScope());
+				if (pControl == nullptr)
+				{
+					CreateDefaultSwitch(pFolder, AbsoluteVelocityTrackingSwitchName, AbsoluteVelocityTrackingSwitchName, states);
+				}
+				else
+				{
+					auto pItem = m_pLayout->GetItemFromControlID(pControl->GetId());
+					pControl->SetName(AbsoluteVelocityTrackingSwitchName);
+					pItem->setData(AbsoluteVelocityTrackingSwitchName, Qt::DisplayRole);
+					pItem->setData(true, eDataRole_Modified);
+
+					size_t const numChildren = pControl->ChildCount();
+					for (size_t i = 0; i < numChildren; ++i)
+					{
+						CATLControl* const pChild = pControl->GetChild(i);
+						XMLNodeList const& nodeList = pChild->GetRawXMLConnections();
+
+						for (auto const& node : nodeList)
+						{
+							if (_stricmp(node.xmlNode->getTag(), "ATLSwitchRequest") == 0)
+							{
+								node.xmlNode->setAttr("atl_name", AbsoluteVelocityTrackingSwitchName);
+							}
+						}
+					}
+				}
+			}
+
+			pControl = m_pModel->FindControl(RelativeVelocityTrackingSwitchName, eACEControlType_Switch, m_pModel->GetGlobalScope());
+			if (pControl == nullptr)
+			{
+				pControl = m_pModel->FindControl("object_doppler_tracking", eACEControlType_Switch, m_pModel->GetGlobalScope());
+				if (pControl == nullptr)
+				{
+					CreateDefaultSwitch(pFolder, RelativeVelocityTrackingSwitchName, RelativeVelocityTrackingSwitchName, states);
+				}
+				else
+				{
+					auto pItem = m_pLayout->GetItemFromControlID(pControl->GetId());
+					pControl->SetName(RelativeVelocityTrackingSwitchName);
+					pItem->setData(RelativeVelocityTrackingSwitchName, Qt::DisplayRole);
+					pItem->setData(true, eDataRole_Modified);
+
+					size_t const numChildren = pControl->ChildCount();
+					for (size_t i = 0; i < numChildren; ++i)
+					{
+						CATLControl* const pChild = pControl->GetChild(i);
+						XMLNodeList const& nodeList = pChild->GetRawXMLConnections();
+
+						for (auto const& node : nodeList)
+						{
+							if (_stricmp(node.xmlNode->getTag(), "ATLSwitchRequest") == 0)
+							{
+								node.xmlNode->setAttr("atl_name", RelativeVelocityTrackingSwitchName);
+							}
+						}
+					}
+				}
+			}
 		}
 
 		if (!pFolder->hasChildren())

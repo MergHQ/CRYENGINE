@@ -21,24 +21,24 @@ ERequestStatus COcclusionObstructionState::Set(CATLAudioObject& audioObject) con
 	if (&audioObject != &m_globalAudioObject)
 	{
 		Vec3 const& audioListenerPosition = m_audioListenerManager.GetActiveListenerAttributes().transformation.GetPosition();
-		if (m_stateId == SATLInternalControlIDs::ignoreStateId)
+		if (m_stateId == IgnoreStateId)
 		{
 			audioObject.HandleSetOcclusionType(eOcclusionType_Ignore, audioListenerPosition);
 			audioObject.SetObstructionOcclusion(0.0f, 0.0f);
 		}
-		else if (m_stateId == SATLInternalControlIDs::adaptiveStateId)
+		else if (m_stateId == AdaptiveStateId)
 		{
 			audioObject.HandleSetOcclusionType(eOcclusionType_Adaptive, audioListenerPosition);
 		}
-		else if (m_stateId == SATLInternalControlIDs::lowStateId)
+		else if (m_stateId == LowStateId)
 		{
 			audioObject.HandleSetOcclusionType(eOcclusionType_Low, audioListenerPosition);
 		}
-		else if (m_stateId == SATLInternalControlIDs::mediumStateId)
+		else if (m_stateId == MediumStateId)
 		{
 			audioObject.HandleSetOcclusionType(eOcclusionType_Medium, audioListenerPosition);
 		}
-		else if (m_stateId == SATLInternalControlIDs::highStateId)
+		else if (m_stateId == HighStateId)
 		{
 			audioObject.HandleSetOcclusionType(eOcclusionType_High, audioListenerPosition);
 		}
@@ -64,11 +64,11 @@ ERequestStatus CDopplerTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
-		if (m_stateId == SATLInternalControlIDs::onStateId)
+		if (m_stateId == OnStateId)
 		{
 			audioObject.SetDopplerTracking(true);
 		}
-		else if (m_stateId == SATLInternalControlIDs::offStateId)
+		else if (m_stateId == OffStateId)
 		{
 			audioObject.SetDopplerTracking(false);
 		}
@@ -93,11 +93,11 @@ ERequestStatus CVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
-		if (m_stateId == SATLInternalControlIDs::onStateId)
+		if (m_stateId == OnStateId)
 		{
 			audioObject.SetVelocityTracking(true);
 		}
-		else if (m_stateId == SATLInternalControlIDs::offStateId)
+		else if (m_stateId == OffStateId)
 		{
 			audioObject.SetVelocityTracking(false);
 		}

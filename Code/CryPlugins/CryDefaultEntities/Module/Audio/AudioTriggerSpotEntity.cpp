@@ -106,7 +106,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 	// Get properties
 	gEnv->pAudioSystem->GetAudioTriggerId(m_playTriggerName, m_playTriggerId);
 	gEnv->pAudioSystem->GetAudioTriggerId(m_stopTriggerName, m_stopTriggerId);
-	const EOcclusionType soundObstructionType = static_cast<EOcclusionType>(m_obstructionType);
+	const EOcclusionType occlusionType = static_cast<EOcclusionType>(m_occlusionType);
 
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
@@ -125,7 +125,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 	}
 
 	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[soundObstructionType]);
+	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[occlusionType]);
 
 	if (m_bEnabled)
 	{

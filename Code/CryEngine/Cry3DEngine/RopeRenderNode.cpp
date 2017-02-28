@@ -1781,18 +1781,7 @@ void CRopeRenderNode::OnPhysicsPostStep()
 		{
 			CryAudio::SCreateObjectData const objectData("RopeyMcRopeFace", m_audioParams.occlusionType);
 			m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-
-			CryAudio::ControlId objectVelocityTrackingSwitchId = CryAudio::InvalidControlId;
-			CryAudio::SwitchStateId objectVelocityTrackingOnStateId = CryAudio::InvalidSwitchStateId;
-
-			if (gEnv->pAudioSystem->GetAudioSwitchId("object_velocity_tracking", objectVelocityTrackingSwitchId))
-			{
-				if (gEnv->pAudioSystem->GetAudioSwitchStateId(objectVelocityTrackingSwitchId, "on", objectVelocityTrackingOnStateId))
-				{
-					m_pIAudioObject->SetSwitchState(objectVelocityTrackingSwitchId, objectVelocityTrackingOnStateId);
-				}
-			}
-
+			m_pIAudioObject->SetSwitchState(CryAudio::AbsoluteVelocityTrackingSwitchId, CryAudio::OnStateId);
 			UpdateAudio();
 			m_pIAudioObject->ExecuteTrigger(m_audioParams.startTrigger);
 		}

@@ -14,6 +14,16 @@ struct IRenderAuxGeom;
 
 namespace CryAudio
 {
+static constexpr ControlId OcclusionTypeSwitchId = CCrc32::ComputeLowercase_CompileTime("ObstrOcclCalcType");
+static constexpr SwitchStateId OcclusionTypeStateIds[eOcclusionType_Count] = {
+	InvalidSwitchStateId,
+	IgnoreStateId,
+	AdaptiveStateId,
+	LowStateId,
+	MediumStateId,
+	HighStateId
+};
+
 class CSystem;
 class CAudioEventManager;
 class CAudioListenerManager;
@@ -155,8 +165,6 @@ public:
 	static CSystem*                     s_pAudioSystem;
 	static CAudioEventManager*          s_pEventManager;
 	static CAudioStandaloneFileManager* s_pStandaloneFileManager;
-	static ControlId                    s_occlusionTypeSwitchId;
-	static SwitchStateId                s_occlusionTypeStateIds[eOcclusionType_Count];
 
 private:
 

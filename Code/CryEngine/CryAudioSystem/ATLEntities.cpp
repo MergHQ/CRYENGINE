@@ -59,47 +59,7 @@ char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occ
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
-ControlId SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = InvalidControlId;
-ControlId SATLInternalControlIDs::objectDopplerTrackingSwitchId = InvalidControlId;
-ControlId SATLInternalControlIDs::objectVelocityTrackingSwitchId = InvalidControlId;
-ControlId SATLInternalControlIDs::loseFocusTriggerId = InvalidControlId;
-ControlId SATLInternalControlIDs::getFocusTriggerId = InvalidControlId;
-ControlId SATLInternalControlIDs::muteAllTriggerId = InvalidControlId;
-ControlId SATLInternalControlIDs::unmuteAllTriggerId = InvalidControlId;
-ControlId SATLInternalControlIDs::objectDopplerParameterId = InvalidControlId;
-ControlId SATLInternalControlIDs::objectVelocityParameterId = InvalidControlId;
-SwitchStateId SATLInternalControlIDs::ignoreStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::adaptiveStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::lowStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::mediumStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::highStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::onStateId = InvalidSwitchStateId;
-SwitchStateId SATLInternalControlIDs::offStateId = InvalidSwitchStateId;
-PreloadRequestId SATLInternalControlIDs::globalPreloadRequestId = InvalidPreloadRequestId;
-
 IAudioImpl* CATLControlImpl::s_pImpl = nullptr;
-
-//////////////////////////////////////////////////////////////////////////
-void CryAudio::InitATLControlIDs()
-{
-	SATLInternalControlIDs::loseFocusTriggerId = AudioStringToId("lose_focus");
-	SATLInternalControlIDs::getFocusTriggerId = AudioStringToId("get_focus");
-	SATLInternalControlIDs::muteAllTriggerId = AudioStringToId("mute_all");
-	SATLInternalControlIDs::unmuteAllTriggerId = AudioStringToId("unmute_all");
-	SATLInternalControlIDs::objectDopplerParameterId = AudioStringToId("object_doppler");
-	SATLInternalControlIDs::objectVelocityParameterId = AudioStringToId("object_speed");
-	SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = AudioStringToId("ObstructionOcclusionCalculationType");
-	SATLInternalControlIDs::ignoreStateId = AudioStringToId("ignore");
-	SATLInternalControlIDs::adaptiveStateId = AudioStringToId("adaptive");
-	SATLInternalControlIDs::lowStateId = AudioStringToId("low");
-	SATLInternalControlIDs::mediumStateId = AudioStringToId("medium");
-	SATLInternalControlIDs::highStateId = AudioStringToId("high");
-	SATLInternalControlIDs::objectDopplerTrackingSwitchId = AudioStringToId("object_doppler_tracking");
-	SATLInternalControlIDs::objectVelocityTrackingSwitchId = AudioStringToId("object_velocity_tracking");
-	SATLInternalControlIDs::onStateId = AudioStringToId("on");
-	SATLInternalControlIDs::offStateId = AudioStringToId("off");
-	SATLInternalControlIDs::globalPreloadRequestId = AudioStringToId("global_atl_preloads");
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -144,7 +104,7 @@ ERequestStatus CATLListener::HandleSetTransformation(CObjectTransformation const
 		m_previousAttributes = m_attributes;
 		m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
 	}
-	else if (deltaTime < 0.0f) //to handle time resets (e.g. loading a savegame might revert the gametime to a previous value)
+	else if (deltaTime < 0.0f) //to handle time resets (e.g. loading a save-game might revert the game-time to a previous value)
 	{
 		m_attributes.transformation = transformation;
 		m_previousTime = g_lastMainThreadFrameStartTime;

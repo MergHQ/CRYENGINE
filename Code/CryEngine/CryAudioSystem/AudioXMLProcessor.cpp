@@ -345,22 +345,22 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 
 		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), SATLXMLTags::szATLPreloadRequestTag) == 0)
 		{
-			PreloadRequestId audioPreloadRequestID = SATLInternalControlIDs::globalPreloadRequestId;
-			char const* szAudioPreloadRequestName = "global_atl_preloads";
+			PreloadRequestId audioPreloadRequestId = GlobalPreloadRequestId;
+			char const* szAudioPreloadRequestName = GlobalPreloadRequestName;
 			bool const bAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(SATLXMLTags::szATLTypeAttribute), SATLXMLTags::szATLDataLoadType) == 0);
 
 			if (!bAutoLoad)
 			{
 				szAudioPreloadRequestName = pPreloadRequestNode->getAttr(SATLXMLTags::szATLNameAttribute);
-				audioPreloadRequestID = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
+				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
 			}
 			else if (dataScope == eDataScope_LevelSpecific)
 			{
 				szAudioPreloadRequestName = szFolderName;
-				audioPreloadRequestID = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
+				audioPreloadRequestId = static_cast<PreloadRequestId>(AudioStringToId(szAudioPreloadRequestName));
 			}
 
-			if (audioPreloadRequestID != CryAudio::InvalidPreloadRequestId)
+			if (audioPreloadRequestId != CryAudio::InvalidPreloadRequestId)
 			{
 				XmlNodeRef pFileListParentNode = nullptr;
 				if (version >= 2)
@@ -441,15 +441,15 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 						}
 					}
 
-					CATLPreloadRequest* pPreloadRequest = stl::find_in_map(m_preloadRequests, audioPreloadRequestID, nullptr);
+					CATLPreloadRequest* pPreloadRequest = stl::find_in_map(m_preloadRequests, audioPreloadRequestId, nullptr);
 
 					if (pPreloadRequest == nullptr)
 					{
-						pPreloadRequest = new CATLPreloadRequest(audioPreloadRequestID, dataScope, bAutoLoad, cFileEntryIDs);
+						pPreloadRequest = new CATLPreloadRequest(audioPreloadRequestId, dataScope, bAutoLoad, cFileEntryIDs);
 
 						if (pPreloadRequest != nullptr)
 						{
-							m_preloadRequests[audioPreloadRequestID] = pPreloadRequest;
+							m_preloadRequests[audioPreloadRequestId] = pPreloadRequest;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 							pPreloadRequest->m_name = szAudioPreloadRequestName;

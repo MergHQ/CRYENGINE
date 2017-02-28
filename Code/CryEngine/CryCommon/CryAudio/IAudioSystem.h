@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IAudioInterfacesCommonData.h"
+#include "../CryCore/CryCrc32.h"
 
 // General macros.
 //#define ENABLE_AUDIO_PORT_MESSAGES
@@ -30,6 +31,44 @@ typedef unsigned int EntityId;
  */
 namespace CryAudio
 {
+static constexpr char* RelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
+static constexpr char* RelativeVelocityParameterName = "relative_velocity";
+static constexpr char* AbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
+static constexpr char* AbsoluteVelocityParameterName = "absolute_velocity";
+static constexpr char* LoseFocusTriggerName = "lose_focus";
+static constexpr char* GetFocusTriggerName = "get_focus";
+static constexpr char* MuteAllTriggerName = "mute_all";
+static constexpr char* UnmuteAllTriggerName = "unmute_all";
+static constexpr char* DoNothingTriggerName = "do_nothing";
+static constexpr char* OcclusionCalcSwitchName = "ObstructionOcclusionCalculationType";
+static constexpr char* IgnoreStateName = "ignore";
+static constexpr char* AdaptiveStateName = "adaptive";
+static constexpr char* LowStateName = "low";
+static constexpr char* MediumStateName = "medium";
+static constexpr char* HighStateName = "high";
+static constexpr char* OnStateName = "on";
+static constexpr char* OffStateName = "off";
+static constexpr char* GlobalPreloadRequestName = "global_atl_preloads";
+
+static constexpr ControlId RelativeVelocityTrackingSwitchId = CCrc32::ComputeLowercase_CompileTime(RelativeVelocityTrackingSwitchName);
+static constexpr ControlId RelativeVelocityParameterId = CCrc32::ComputeLowercase_CompileTime(RelativeVelocityParameterName);
+static constexpr ControlId AbsoluteVelocityTrackingSwitchId = CCrc32::ComputeLowercase_CompileTime(AbsoluteVelocityTrackingSwitchName);
+static constexpr ControlId AbsoluteVelocityParameterId = CCrc32::ComputeLowercase_CompileTime(AbsoluteVelocityParameterName);
+static constexpr ControlId LoseFocusTriggerId = CCrc32::ComputeLowercase_CompileTime(LoseFocusTriggerName);
+static constexpr ControlId GetFocusTriggerId = CCrc32::ComputeLowercase_CompileTime(GetFocusTriggerName);
+static constexpr ControlId MuteAllTriggerId = CCrc32::ComputeLowercase_CompileTime(MuteAllTriggerName);
+static constexpr ControlId UnmuteAllTriggerId = CCrc32::ComputeLowercase_CompileTime(UnmuteAllTriggerName);
+static constexpr ControlId DoNothingTriggerId = CCrc32::ComputeLowercase_CompileTime(DoNothingTriggerName);
+static constexpr ControlId OcclusionCalcSwitchId = CCrc32::ComputeLowercase_CompileTime(OcclusionCalcSwitchName);
+static constexpr SwitchStateId IgnoreStateId = CCrc32::ComputeLowercase_CompileTime(IgnoreStateName);
+static constexpr SwitchStateId AdaptiveStateId = CCrc32::ComputeLowercase_CompileTime(AdaptiveStateName);
+static constexpr SwitchStateId LowStateId = CCrc32::ComputeLowercase_CompileTime(LowStateName);
+static constexpr SwitchStateId MediumStateId = CCrc32::ComputeLowercase_CompileTime(MediumStateName);
+static constexpr SwitchStateId HighStateId = CCrc32::ComputeLowercase_CompileTime(HighStateName);
+static constexpr SwitchStateId OnStateId = CCrc32::ComputeLowercase_CompileTime(OnStateName);
+static constexpr SwitchStateId OffStateId = CCrc32::ComputeLowercase_CompileTime(OffStateName);
+static constexpr PreloadRequestId GlobalPreloadRequestId = CCrc32::ComputeLowercase_CompileTime(GlobalPreloadRequestName);
+
 // Forward declarations.
 namespace Impl
 {

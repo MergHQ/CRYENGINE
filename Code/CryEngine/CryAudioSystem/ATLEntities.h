@@ -52,29 +52,6 @@ struct SATLXMLTags
 	static char const* const szATLDataLoadType;
 };
 
-struct SATLInternalControlIDs
-{
-	static ControlId        obstructionOcclusionCalcSwitchId;
-	static ControlId        objectDopplerTrackingSwitchId;
-	static ControlId        objectVelocityTrackingSwitchId;
-	static ControlId        loseFocusTriggerId;
-	static ControlId        getFocusTriggerId;
-	static ControlId        muteAllTriggerId;
-	static ControlId        unmuteAllTriggerId;
-	static ControlId        objectDopplerParameterId;
-	static ControlId        objectVelocityParameterId;
-	static SwitchStateId    ignoreStateId;
-	static SwitchStateId    adaptiveStateId;
-	static SwitchStateId    lowStateId;
-	static SwitchStateId    mediumStateId;
-	static SwitchStateId    highStateId;
-	static SwitchStateId    onStateId;
-	static SwitchStateId    offStateId;
-	static PreloadRequestId globalPreloadRequestId;
-};
-
-void InitATLControlIDs();   // initializes the values in SATLInternalControlIDs
-
 namespace Impl
 {
 struct IAudioObject;
