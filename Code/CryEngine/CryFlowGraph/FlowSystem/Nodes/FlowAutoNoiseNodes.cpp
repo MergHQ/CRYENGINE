@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "FlowFrameworkBaseNode.h"
 #include <CryMath/PNoise3.h>
 
 //////////////////////////////////////////////////////////////////////////
