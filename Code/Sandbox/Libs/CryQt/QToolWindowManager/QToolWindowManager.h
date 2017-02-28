@@ -258,6 +258,7 @@ protected slots:
 // Preserves sizes as much as possible when a child is removed, only distributing the left over space to immediate neighbors.
 class QTOOLWINDOWMANAGER_EXPORT QSizePreservingSplitter : public QSplitter
 {
+	Q_OBJECT;
 public:
 	QSizePreservingSplitter(QWidget * parent = 0);
 	QSizePreservingSplitter(Qt::Orientation orientation, QWidget * parent = 0);
