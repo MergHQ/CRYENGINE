@@ -804,6 +804,12 @@ void CCryPak::SetLocalizationFolder(char const* const szLocalizationFolder)
 //////////////////////////////////////////////////////////////////////////
 void CCryPak::SetAlias(const char* szName, const char* szAlias, bool bAdd)
 {
+	// Strip ./ or .\ at the beginning of the szAlias path.
+	if (szAlias && szAlias[0] == '.' && (szAlias[1] == '/' || szAlias[1] == '\\'))
+	{
+		szAlias += 2;
+	}
+
 	// find out if it is already there
 	TAliasList::iterator it;
 	tNameAlias* tPrev = NULL;
