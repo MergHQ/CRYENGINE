@@ -16,10 +16,7 @@ static void AddConsoleCommandFunction(ConsoleCommandFunc consoleCommandFunc, Mon
 {
 	const char* consoleCommandName = mono_string_to_utf8(commandName);
 	const char* consoleCommandHelp = mono_string_to_utf8(sHelp);
-	if (isManaged)
-		REGISTER_MANAGED_COMMAND(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp);
-	else
-		REGISTER_COMMAND(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp);
+	ConsoleRegistrationHelper::AddCommand(consoleCommandName, consoleCommandFunc, nFlags, consoleCommandHelp, isManaged);
 }
 
 static void AddConsoleVariableString(ConsoleVarFunc consoleVariableFunc, MonoString* variableName, MonoString* variableValue, int nFlags, MonoString* sHelp)
@@ -27,28 +24,28 @@ static void AddConsoleVariableString(ConsoleVarFunc consoleVariableFunc, MonoStr
 	const char* szConsoleVariableName = mono_string_to_utf8(variableName);
 	const char* sZConsoleVariableValue = mono_string_to_utf8(variableValue);
 	const char* szConsoleVariableHelp = mono_string_to_utf8(sHelp);
-	gEnv->pConsole->RegisterString(szConsoleVariableName, sZConsoleVariableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
+	ConsoleRegistrationHelper::RegisterString(szConsoleVariableName, sZConsoleVariableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
 }
 
 static void AddConsoleVariableInt64(ConsoleVarFunc consoleVariableFunc, MonoString* variableName, int64 variableValue, int nFlags, MonoString* sHelp)
 {
 	const char* szConsoleVariableName = mono_string_to_utf8(variableName);
 	const char* szConsoleVariableHelp = mono_string_to_utf8(sHelp);
-	gEnv->pConsole->RegisterInt64(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
+	ConsoleRegistrationHelper::RegisterInt64(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
 }
 
 static void AddConsoleVariableInt(ConsoleVarFunc consoleVariableFunc, MonoString* variableName, int variableValue, int nFlags, MonoString* sHelp)
 {
 	const char* szConsoleVariableName = mono_string_to_utf8(variableName);
 	const char* szConsoleVariableHelp = mono_string_to_utf8(sHelp);
-	gEnv->pConsole->RegisterInt(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
+	ConsoleRegistrationHelper::RegisterInt(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
 }
 
 static void AddConsoleVariableFloat(ConsoleVarFunc consoleVariableFunc, MonoString* variableName, float variableValue, int nFlags, MonoString* sHelp)
 {
 	const char* szConsoleVariableName = mono_string_to_utf8(variableName);
 	const char* szConsoleVariableHelp = mono_string_to_utf8(sHelp);
-	gEnv->pConsole->RegisterFloat(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
+	ConsoleRegistrationHelper::RegisterFloat(szConsoleVariableName, variableValue, nFlags, szConsoleVariableHelp, consoleVariableFunc);
 }
 
 void CConsoleCommandInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* szMethodName)> func)
