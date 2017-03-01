@@ -311,7 +311,6 @@ public:
 	void                         Quit() override;
 	bool                         IsQuitting() const override;
 	bool                         IsShaderCacheGenMode() const override { return m_bShaderCacheGenMode; }
-	void                         SetAffinity();
 	virtual const char*          GetUserName() override;
 	virtual int                  GetApplicationInstance() override;
 	virtual sUpdateTimes&        GetCurrentUpdateTimeStats() override;
