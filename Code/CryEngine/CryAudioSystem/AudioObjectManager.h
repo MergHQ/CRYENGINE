@@ -24,9 +24,9 @@ public:
 	using ConstructedAudioObjectsList = std::list<CATLAudioObject*>;
 
 	explicit CAudioObjectManager(
-		CAudioEventManager& audioEventMgr,
-		CAudioStandaloneFileManager& audioStandaloneFileMgr,
-		CAudioListenerManager const& listenerManager);
+	  CAudioEventManager& audioEventMgr,
+	  CAudioStandaloneFileManager& audioStandaloneFileMgr,
+	  CAudioListenerManager const& listenerManager);
 	~CAudioObjectManager();
 
 	CAudioObjectManager(CAudioObjectManager const&) = delete;
@@ -37,8 +37,7 @@ public:
 	void                 Init(Impl::IAudioImpl* const pImpl);
 	void                 Release();
 	void                 Update(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
-	CATLAudioObject*     ConstructAudioObject(char const* const szName);
-	void                 ReleaseAudioObject(CATLAudioObject* const pAudioObject);
+	void                 RegisterObject(CATLAudioObject* const pObject);
 
 	void                 ReportStartedEvent(CATLEvent* const pEvent);
 	void                 ReportFinishedEvent(CATLEvent* const pEvent, bool const bSuccess);

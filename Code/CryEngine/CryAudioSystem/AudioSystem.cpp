@@ -682,15 +682,18 @@ void CSystem::ReleaseListener(IListener* const pIListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IObject* CSystem::CreateObject(SCreateObjectData const& objectData /* = SCreateObjectData::GetEmptyObject() */)
+IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	CATLAudioObject* pAudioObject = nullptr;
-	SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioObject> requestData(&pAudioObject, objectData);
+	CATLAudioObject* const pObject = new CATLAudioObject;
+	SAudioObjectRequestData<eAudioObjectRequestType_RegisterObject> requestData(objectData);
 	CAudioRequest request(&requestData);
-	request.flags = eRequestFlags_ExecuteBlocking;
+	request.flags = userData.flags;
+	request.pObject = pObject;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
 	PushRequest(request);
-
-	return static_cast<IObject*>(pAudioObject);
+	return static_cast<IObject*>(pObject);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -47,10 +47,9 @@ class CATLStandaloneFile;
 enum ERequestFlags : EnumFlagsType
 {
 	eRequestFlags_None                 = 0,
-	eRequestFlags_ExecuteBlocking      = BIT(0),
-	eRequestFlags_SyncCallback         = BIT(1),
-	eRequestFlags_SyncFinishedCallback = BIT(2),
-	eRequestFlags_StayInMemory         = BIT(3),
+	eRequestFlags_ExecuteBlocking      = BIT(0), // Blocks the calling thread until the requests has been processed.
+	eRequestFlags_SyncCallback         = BIT(1), // Issues a callback on the same thread as the caller is on.
+	eRequestFlags_SyncFinishedCallback = BIT(2), // Issues a callback upon a trigger instance finishing playback of all connected events on the same thread as the caller is on.
 };
 
 /**

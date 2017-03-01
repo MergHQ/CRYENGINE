@@ -16,7 +16,7 @@ namespace Impl
 namespace Wwise
 {
 
-class CAudioObject final : public IAudioObject, public CPoolObject<CAudioObject>
+class CAudioObject final : public IAudioObject, public CPoolObject<CAudioObject, stl::PSyncNone>
 {
 public:
 
@@ -219,7 +219,7 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	};
 };
 
-struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent>
+struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, stl::PSyncNone>
 {
 	explicit SAudioEvent(CATLEvent& _atlEvent)
 		: audioEventState(eAudioEventState_None)

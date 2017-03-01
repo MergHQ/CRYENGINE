@@ -89,7 +89,7 @@ public:
 	virtual char const* GetConfigPath() const override;
 	virtual IListener*  CreateListener() override;
 	virtual void        ReleaseListener(IListener* const pIListener) override;
-	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override;
+	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReleaseObject(IObject* const pIObject) override;
 	virtual void        GetAudioFileData(char const* const szFilename, SFileData& audioFileData) override;
 	virtual void        GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) override;
@@ -152,8 +152,8 @@ private:
 	};
 
 	CAudioTranslationLayer             m_atl;
-	AudioRequests                     m_requestQueue;
-	AudioRequestsSyncCallbacks        m_syncCallbacks;
+	AudioRequests                      m_requestQueue;
+	AudioRequestsSyncCallbacks         m_syncCallbacks;
 	CAudioRequest                      m_syncRequest;
 	CryEvent                           m_mainEvent;
 	CryEvent                           m_audioThreadWakeupEvent;

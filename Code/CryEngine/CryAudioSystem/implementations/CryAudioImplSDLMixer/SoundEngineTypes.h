@@ -83,7 +83,7 @@ struct SAudioEnvironment final : public IAudioEnvironment
 	SAudioEnvironment& operator=(SAudioEnvironment&&) = delete;
 };
 
-struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent>
+struct SAudioEvent final : public IAudioEvent, public CPoolObject<SAudioEvent, stl::PSyncNone>
 {
 	explicit SAudioEvent(CATLEvent& event)
 		: audioEvent(event)
@@ -129,7 +129,7 @@ public:
 typedef std::vector<SAudioEvent*>          EventInstanceList;
 typedef std::vector<CAudioStandaloneFile*> StandAloneFileInstanceList;
 
-struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject>
+struct SAudioObject final : public IAudioObject, public CPoolObject<SAudioObject, stl::PSyncNone>
 {
 	explicit SAudioObject(uint32 id)
 		: audioObjectId(id)

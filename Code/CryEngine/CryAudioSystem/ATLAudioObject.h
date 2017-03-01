@@ -83,11 +83,11 @@ typedef std::map<ControlId, SwitchStateId>                      ObjectStateMap;
 typedef std::map<ControlId, float>                              ObjectParameterMap;
 typedef std::map<EnvironmentId, float>                          ObjectEnvironmentMap;
 
-class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject>
+class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject, stl::PSyncMultiThread>
 {
 public:
 
-	explicit CATLAudioObject(Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
+	CATLAudioObject();
 
 	CATLAudioObject(CATLAudioObject const&) = delete;
 	CATLAudioObject(CATLAudioObject&&) = delete;
@@ -119,6 +119,7 @@ public:
 	ERequestStatus HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
 	ERequestStatus HandleStopFile(char const* const szFile);
 
+	void           Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition);
 	void           Release();
 
 	// Callbacks
@@ -179,15 +180,15 @@ private:
 	ObjectEnvironmentMap      m_environments;
 	ObjectStateMap            m_switchStates;
 	Impl::IAudioObject*       m_pImplData;
-	float                     m_maxRadius = 0.0f;
-	EnumFlagsType             m_flags = eAudioObjectFlags_None;
-	float                     m_previousVelocity = 0.0f;
+	float                     m_maxRadius;
+	EnumFlagsType             m_flags;
+	float                     m_previousVelocity;
 	Vec3                      m_velocity;
 	Impl::SObject3DAttributes m_attributes;
 	Impl::SObject3DAttributes m_previousAttributes;
 	CTimeValue                m_previousTime;
 	CPropagationProcessor     m_propagationProcessor;
-	float                     m_occlusionFadeOutDistance = 0.0f;
+	float                     m_occlusionFadeOutDistance;
 
 	static TriggerInstanceId  s_triggerInstanceIdCounter;
 

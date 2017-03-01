@@ -28,7 +28,7 @@ namespace Fmod
 class CAudioEnvironment;
 class CAudioObjectBase;
 
-class CAudioEvent final : public IAudioEvent, public CPoolObject<CAudioEvent>
+class CAudioEvent final : public IAudioEvent, public CPoolObject<CAudioEvent, stl::PSyncNone>
 {
 public:
 

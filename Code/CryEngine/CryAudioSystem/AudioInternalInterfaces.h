@@ -42,27 +42,26 @@ enum EAudioManagerRequestType : EnumFlagsType
 	eAudioManagerRequestType_ReleaseAudioImpl       = BIT(1),
 	eAudioManagerRequestType_RefreshAudioSystem     = BIT(2),
 	eAudioManagerRequestType_ConstructAudioListener = BIT(3),
-	eAudioManagerRequestType_ConstructAudioObject   = BIT(4),
-	eAudioManagerRequestType_LoseFocus              = BIT(5),
-	eAudioManagerRequestType_GetFocus               = BIT(6),
-	eAudioManagerRequestType_MuteAll                = BIT(7),
-	eAudioManagerRequestType_UnmuteAll              = BIT(8),
-	eAudioManagerRequestType_StopAllSounds          = BIT(9),
-	eAudioManagerRequestType_ParseControlsData      = BIT(10),
-	eAudioManagerRequestType_ParsePreloadsData      = BIT(11),
-	eAudioManagerRequestType_ClearControlsData      = BIT(12),
-	eAudioManagerRequestType_ClearPreloadsData      = BIT(13),
-	eAudioManagerRequestType_PreloadSingleRequest   = BIT(14),
-	eAudioManagerRequestType_UnloadSingleRequest    = BIT(15),
-	eAudioManagerRequestType_UnloadAFCMDataByScope  = BIT(16),
-	eAudioManagerRequestType_DrawDebugInfo          = BIT(17),
-	eAudioManagerRequestType_AddRequestListener     = BIT(18),
-	eAudioManagerRequestType_RemoveRequestListener  = BIT(19),
-	eAudioManagerRequestType_ChangeLanguage         = BIT(20),
-	eAudioManagerRequestType_RetriggerAudioControls = BIT(21),
-	eAudioManagerRequestType_ReleasePendingRays     = BIT(22),
-	eAudioManagerRequestType_ReloadControlsData     = BIT(23),
-	eAudioManagerRequestType_GetAudioFileData       = BIT(24),
+	eAudioManagerRequestType_LoseFocus              = BIT(4),
+	eAudioManagerRequestType_GetFocus               = BIT(5),
+	eAudioManagerRequestType_MuteAll                = BIT(6),
+	eAudioManagerRequestType_UnmuteAll              = BIT(7),
+	eAudioManagerRequestType_StopAllSounds          = BIT(8),
+	eAudioManagerRequestType_ParseControlsData      = BIT(9),
+	eAudioManagerRequestType_ParsePreloadsData      = BIT(10),
+	eAudioManagerRequestType_ClearControlsData      = BIT(11),
+	eAudioManagerRequestType_ClearPreloadsData      = BIT(12),
+	eAudioManagerRequestType_PreloadSingleRequest   = BIT(13),
+	eAudioManagerRequestType_UnloadSingleRequest    = BIT(14),
+	eAudioManagerRequestType_UnloadAFCMDataByScope  = BIT(15),
+	eAudioManagerRequestType_DrawDebugInfo          = BIT(16),
+	eAudioManagerRequestType_AddRequestListener     = BIT(17),
+	eAudioManagerRequestType_RemoveRequestListener  = BIT(18),
+	eAudioManagerRequestType_ChangeLanguage         = BIT(19),
+	eAudioManagerRequestType_RetriggerAudioControls = BIT(20),
+	eAudioManagerRequestType_ReleasePendingRays     = BIT(21),
+	eAudioManagerRequestType_ReloadControlsData     = BIT(22),
+	eAudioManagerRequestType_GetAudioFileData       = BIT(23),
 };
 
 enum EAudioCallbackManagerRequestType : EnumFlagsType
@@ -94,8 +93,9 @@ enum EAudioObjectRequestType : EnumFlagsType
 	eAudioObjectRequestType_SetCurrentEnvironments = BIT(11),
 	eAudioObjectRequestType_SetEnvironment         = BIT(12),
 	eAudioObjectRequestType_ResetEnvironments      = BIT(13),
-	eAudioObjectRequestType_ReleaseObject          = BIT(14),
-	eAudioObjectRequestType_ProcessPhysicsRay      = BIT(15),
+	eAudioObjectRequestType_RegisterObject         = BIT(14),
+	eAudioObjectRequestType_ReleaseObject          = BIT(15),
+	eAudioObjectRequestType_ProcessPhysicsRay      = BIT(16),
 };
 
 enum EAudioListenerRequestType : EnumFlagsType
@@ -200,28 +200,6 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioListener>
 	virtual ~SAudioManagerRequestData() override = default;
 
 	CATLListener** const ppListener;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioObject> final : public SAudioManagerRequestDataBase
-{
-	explicit SAudioManagerRequestData(CATLAudioObject** const _ppAudioObject, SCreateObjectData const& _objectData)
-		: SAudioManagerRequestDataBase(eAudioManagerRequestType_ConstructAudioObject)
-		, ppAudioObject(_ppAudioObject)
-		, objectData(_objectData)
-	{}
-
-	explicit SAudioManagerRequestData(SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioObject> const* const pAMRData)
-		: SAudioManagerRequestDataBase(eAudioManagerRequestType_ConstructAudioObject)
-		, ppAudioObject(pAMRData->ppAudioObject)
-		, objectData(pAMRData->objectData)
-	{}
-
-	virtual ~SAudioManagerRequestData() override = default;
-
-	CATLAudioObject** const ppAudioObject;
-	SCreateObjectData const objectData;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -782,19 +760,34 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> final : p
 template<>
 struct SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTriggerEx> final : public SAudioObjectRequestDataBase
 {
-	explicit SAudioObjectRequestData(SExecuteTriggerData const& _data)
+	explicit SAudioObjectRequestData(SExecuteTriggerData const& data)
 		: SAudioObjectRequestDataBase(eAudioObjectRequestType_ExecuteTriggerEx)
-		, data(_data)
+		, name(data.szName)
+		, occlusionType(data.occlusionType)
+		, transformation(data.transformation)
+		, entityToIgnore(data.entityToIgnore)
+		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
+		, triggerId(data.triggerId)
 	{}
 
 	explicit SAudioObjectRequestData(SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTriggerEx> const* const pAORData)
 		: SAudioObjectRequestDataBase(eAudioObjectRequestType_ExecuteTriggerEx)
-		, data(pAORData->data)
+		, name(pAORData->name)
+		, occlusionType(pAORData->occlusionType)
+		, transformation(pAORData->transformation)
+		, entityToIgnore(pAORData->entityToIgnore)
+		, bSetCurrentEnvironments(pAORData->bSetCurrentEnvironments)
+		, triggerId(pAORData->triggerId)
 	{}
 
 	virtual ~SAudioObjectRequestData() override = default;
 
-	SExecuteTriggerData const data;
+	CryFixedStringT<MaxObjectNameLength> const name;
+	EOcclusionType const                       occlusionType;
+	CObjectTransformation const                transformation;
+	EntityId const                             entityToIgnore;
+	bool const bSetCurrentEnvironments;
+	ControlId const                            triggerId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -921,6 +914,37 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironment> final : p
 
 	EnvironmentId const audioEnvironmentId;
 	float const         amount;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<eAudioObjectRequestType_RegisterObject> final : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(SCreateObjectData const& data)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_RegisterObject)
+		, name(data.szName)
+		, occlusionType(data.occlusionType)
+		, transformation(data.transformation)
+		, entityToIgnore(data.entityToIgnore)
+		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
+	{}
+
+	explicit SAudioObjectRequestData(SAudioObjectRequestData<eAudioObjectRequestType_RegisterObject> const* const pAMRData)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_RegisterObject)
+		, name(pAMRData->name)
+		, occlusionType(pAMRData->occlusionType)
+		, transformation(pAMRData->transformation)
+		, entityToIgnore(pAMRData->entityToIgnore)
+		, bSetCurrentEnvironments(pAMRData->bSetCurrentEnvironments)
+	{}
+
+	virtual ~SAudioObjectRequestData() override = default;
+
+	CryFixedStringT<MaxObjectNameLength> const name;
+	EOcclusionType const                       occlusionType;
+	CObjectTransformation const                transformation;
+	EntityId const                             entityToIgnore;
+	bool const bSetCurrentEnvironments;
 };
 
 //////////////////////////////////////////////////////////////////////////

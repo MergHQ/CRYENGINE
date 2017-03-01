@@ -84,7 +84,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation, Vec3 const& audioListenerPosition)
+CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation)
 	: m_obstruction(0.0f)
 	, m_occlusion(0.0f)
 	, m_occlusionMultiplier(1.0f)
@@ -166,7 +166,6 @@ CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transf
 		s_numRaySamplePositionsHigh = s_raySamplePositionsHigh.size();
 	}
 
-	m_currentListenerDistance = audioListenerPosition.GetDistance(m_transformation.GetPosition());
 	m_raysOcclusion.resize(s_numRaySamplePositionsHigh, 0.0f);
 	m_raysInfo.reserve(s_numConcurrentRaysHigh);
 }
@@ -178,12 +177,14 @@ CPropagationProcessor::~CPropagationProcessor()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::Init(CATLAudioObject* pAudioObject)
+void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const& audioListenerPosition)
 {
 	for (size_t i = 0; i < s_numConcurrentRaysHigh; ++i)
 	{
 		m_raysInfo.push_back(CAudioRayInfo(pAudioObject));
 	}
+
+	m_currentListenerDistance = audioListenerPosition.GetDistance(m_transformation.GetPosition());
 }
 
 ///////////////////////////////////////////////////////////////////////////

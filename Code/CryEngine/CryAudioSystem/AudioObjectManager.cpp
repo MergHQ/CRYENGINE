@@ -27,8 +27,7 @@ CAudioObjectManager::CAudioObjectManager(
 	, m_audioEventMgr(audioEventMgr)
 	, m_audioStandaloneFileMgr(audioStandaloneFileMgr)
 	, m_listenerManager(listenerManager)
-{
-}
+{}
 
 //////////////////////////////////////////////////////////////////////////
 CAudioObjectManager::~CAudioObjectManager()
@@ -42,8 +41,8 @@ CAudioObjectManager::~CAudioObjectManager()
 	{
 		delete pAudioObject;
 	}
-	m_constructedAudioObjects.clear();
 
+	m_constructedAudioObjects.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -51,9 +50,7 @@ void CAudioObjectManager::Init(IAudioImpl* const pImpl)
 {
 	m_pImpl = pImpl;
 
-	ERequestStatus result = eRequestStatus_None;
-
-	for (auto pAudioObject : m_constructedAudioObjects)
+	for (auto const pAudioObject : m_constructedAudioObjects)
 	{
 		CRY_ASSERT(pAudioObject->GetImplDataPtr() == nullptr);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -67,12 +64,9 @@ void CAudioObjectManager::Init(IAudioImpl* const pImpl)
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::Release()
 {
-	ERequestStatus result = eRequestStatus_None;
-
-	for (auto pAudioObject : m_constructedAudioObjects)
+	for (auto const pAudioObject : m_constructedAudioObjects)
 	{
 		m_pImpl->DestructAudioObject(pAudioObject->GetImplDataPtr());
-		pAudioObject->SetImplDataPtr(nullptr);
 		pAudioObject->Release();
 	}
 
@@ -162,26 +156,9 @@ void CAudioObjectManager::Update(float const deltaTime, SObject3DAttributes cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLAudioObject* CAudioObjectManager::ConstructAudioObject(char const* const szName)
+void CAudioObjectManager::RegisterObject(CATLAudioObject* const pObject)
 {
-	CATLAudioObject* const pAudioObject = new CATLAudioObject(m_pImpl->ConstructAudioObject(szName), m_listenerManager.GetActiveListenerAttributes().transformation.GetPosition());
-	pAudioObject->SetFlag(eAudioObjectFlags_DoNotRelease);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	pAudioObject->m_name = szName;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	m_constructedAudioObjects.push_back(pAudioObject);
-	return pAudioObject;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::ReleaseAudioObject(CATLAudioObject* const pAudioObject)
-{
-	if (pAudioObject != nullptr)
-	{
-		pAudioObject->RemoveFlag(eAudioObjectFlags_DoNotRelease);
-	}
+	m_constructedAudioObjects.push_back(pObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
