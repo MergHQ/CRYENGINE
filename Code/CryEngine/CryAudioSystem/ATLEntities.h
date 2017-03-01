@@ -376,7 +376,7 @@ public:
 	ImplPtrVec const m_implPtrs;
 };
 
-class CATLStandaloneFile final : public CPoolObject<CATLStandaloneFile>
+class CATLStandaloneFile final : public CPoolObject<CATLStandaloneFile, stl::PSyncNone>
 {
 public:
 
@@ -401,7 +401,7 @@ public:
 
 };
 
-class CATLEvent final : public CPoolObject<CATLEvent>
+class CATLEvent final : public CPoolObject<CATLEvent, stl::PSyncNone>
 {
 public:
 	ERequestStatus Reset();

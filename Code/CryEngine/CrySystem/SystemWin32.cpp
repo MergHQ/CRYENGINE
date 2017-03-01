@@ -103,35 +103,6 @@ const char* g_szModuleGroups[][2] = {
 	{ "CryFlowGraph.dll",    g_szGroupCore }
 };
 
-//////////////////////////////////////////////////////////////////////////
-void CSystem::SetAffinity()
-{
-	// the following code is only for Windows
-#if CRY_PLATFORM_WINDOWS
-	// set the process affinity
-	ICVar* pcvAffinityMask = GetIConsole()->GetCVar("sys_affinity");
-	if (!pcvAffinityMask)
-		pcvAffinityMask = REGISTER_INT("sys_affinity", 0, VF_NULL, "");
-
-	if (pcvAffinityMask)
-	{
-		unsigned nAffinity = pcvAffinityMask->GetIVal();
-		if (nAffinity)
-		{
-			typedef BOOL (WINAPI * FnSetProcessAffinityMask)(IN HANDLE hProcess, IN DWORD_PTR dwProcessAffinityMask);
-			HMODULE hKernel = CryLoadLibrary("kernel32.dll");
-			if (hKernel)
-			{
-				FnSetProcessAffinityMask SetProcessAffinityMask = (FnSetProcessAffinityMask)GetProcAddress(hKernel, "SetProcessAffinityMask");
-				if (SetProcessAffinityMask && !SetProcessAffinityMask(GetCurrentProcess(), nAffinity))
-					GetILog()->LogError("Error: Cannot set affinity mask %d, error code %d", nAffinity, GetLastError());
-				FreeLibrary(hKernel);
-			}
-		}
-	}
-#endif
-}
-
 //! dumps the memory usage statistics to the log
 //////////////////////////////////////////////////////////////////////////
 void CSystem::DumpMemoryUsageStatistics(bool bUseKB)

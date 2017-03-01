@@ -3494,9 +3494,7 @@ L_done:;
 		//////////////////////////////////////////////////////////////////////////
 		if (!m_env.IsDedicated())
 		{
-			SetAffinity();
 			assert(IsHeapValid());
-
 			RegisterEngineStatistics();
 		}
 

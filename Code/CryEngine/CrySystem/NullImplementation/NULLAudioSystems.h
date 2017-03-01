@@ -75,7 +75,7 @@ public:
 	virtual char const* GetConfigPath() const override                                                                                                                                               { return ""; }
 	virtual IListener*  CreateListener() override                                                                                                                                                    { return nullptr; }
 	virtual void        ReleaseListener(IListener* const pIListener) override                                                                                                                        {}
-	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override                                                                             { return static_cast<IObject*>(&m_object); }
+	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override      { return static_cast<IObject*>(&m_object); }
 	virtual void        ReleaseObject(IObject* const pIObject) override                                                                                                                              {}
 	virtual void        GetAudioFileData(char const* const szFilename, SFileData& audioFileData) override                                                                                            {}
 	virtual void        GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) override                                                                                 {}

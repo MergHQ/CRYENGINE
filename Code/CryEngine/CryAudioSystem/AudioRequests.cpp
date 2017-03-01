@@ -37,7 +37,6 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ReleaseAudioImpl)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_RefreshAudioSystem)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_ConstructAudioListener)
-				AM_REQUEST_BLOCK(eAudioManagerRequestType_ConstructAudioObject)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_LoseFocus)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_GetFocus)
 				AM_REQUEST_BLOCK(eAudioManagerRequestType_MuteAll)
@@ -89,6 +88,7 @@ SAudioRequestData* CryAudio::AllocateRequestData(SAudioRequestData const* const 
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetCurrentEnvironments)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetEnvironment)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ResetEnvironments)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_RegisterObject)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
 			default:

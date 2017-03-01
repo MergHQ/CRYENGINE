@@ -25,9 +25,7 @@
 //!
 //////////////////////////////////////////////////////////////////////////
 
-using SyncMechanism = stl::PSyncNone;
-
-template<typename T>
+template<typename T, typename SyncMechanism>
 class CPoolObject
 {
 public:

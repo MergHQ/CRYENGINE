@@ -126,9 +126,15 @@ struct SCreateObjectData
 
 	char const* const               szName;
 	EOcclusionType const            occlusionType;
-	CObjectTransformation const     transformation; // reference?
-	EntityId const                  entityToIgnore;
-	bool const                      bSetCurrentEnvironments;
+
+	// We opt for copying the transformation instead of storing a reference in order to prevent a potential dangling-reference bug.
+	// Callers might pass a vector or matrix to the constructor, which implicitly convert to CAudioObjectTransformation.
+	// Implicit conversion introduces a temporary object, and a reference could potentially dangle,
+	// as the temporary gets destroyed before this request gets passed to the AudioSystem where it gets ultimately copied for internal processing.
+	CObjectTransformation const transformation;
+
+	EntityId const              entityToIgnore;
+	bool const                  bSetCurrentEnvironments;
 };
 
 struct SExecuteTriggerData : public SCreateObjectData
@@ -138,15 +144,12 @@ struct SExecuteTriggerData : public SCreateObjectData
 	  EOcclusionType const _occlusionType,
 	  CObjectTransformation const& _transformation,
 	  bool const _bSetCurrentEnvironments,
-	  ControlId const _triggerId,
-	  SRequestUserData const& _userData = SRequestUserData::GetEmptyObject())
+	  ControlId const _triggerId)
 		: SCreateObjectData(_szName, _occlusionType, _transformation, _bSetCurrentEnvironments)
 		, triggerId(_triggerId)
-		, userData(_userData)
 	{}
 
-	ControlId const        triggerId;
-	SRequestUserData const userData;   // reference?
+	ControlId const triggerId;
 };
 
 /**
@@ -584,10 +587,11 @@ struct IAudioSystem
 	 * Constructs an instance of an audio object.
 	 * Note: Retrieving an object this way requires the object to be freed via ReleaseObject once not needed anymore!
 	 * @param objectData - optional data used during audio object construction.
+	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return Pointer to a freshly constructed CryAudio::IObject instance.
 	 * @see ReleaseObject
 	 */
-	virtual IObject* CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) = 0;
+	virtual IObject* CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject(), SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Destructs the passed audio object instance.

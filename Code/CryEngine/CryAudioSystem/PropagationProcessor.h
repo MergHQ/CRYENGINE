@@ -52,10 +52,10 @@ public:
 	typedef std::vector<CAudioRayInfo> RayInfoVec;
 	typedef std::vector<float>         RayOcclusionVec;
 
-	CPropagationProcessor(CObjectTransformation const& transformation, Vec3 const& audioListenerPosition);
+	CPropagationProcessor(CObjectTransformation const& transformation);
 	~CPropagationProcessor();
 
-	void Init(CATLAudioObject* pAudioObject);
+	void Init(CATLAudioObject* const pAudioObject, Vec3 const& audioListenerPosition);
 
 	// PhysicsSystem callback
 	static int OnObstructionTest(EventPhys const* pEvent);

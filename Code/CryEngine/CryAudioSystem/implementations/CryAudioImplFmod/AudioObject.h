@@ -65,7 +65,7 @@ public:
 
 using AudioObjects = std::vector<CAudioObjectBase*>;
 
-class CAudioObject final : public CAudioObjectBase, public CPoolObject<CAudioObject>
+class CAudioObject final : public CAudioObjectBase, public CPoolObject<CAudioObject, stl::PSyncNone>
 {
 
 public:

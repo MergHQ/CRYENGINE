@@ -19,7 +19,7 @@ namespace PortAudio
 {
 class CAudioObject;
 
-class CAudioEvent final : public IAudioEvent, public CPoolObject<CAudioEvent>
+class CAudioEvent final : public IAudioEvent, public CPoolObject<CAudioEvent, stl::PSyncNone>
 {
 public:
 

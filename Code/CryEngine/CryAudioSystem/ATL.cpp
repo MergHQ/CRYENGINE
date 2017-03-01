@@ -478,48 +478,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 
 			break;
 		}
-	case eAudioManagerRequestType_ConstructAudioObject:
-		{
-			SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioObject> const* const pRequestData = static_cast<SAudioManagerRequestData<eAudioManagerRequestType_ConstructAudioObject> const*>(request.GetData());
-			CATLAudioObject* pObject = nullptr;
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pObject = m_audioObjectMgr.ConstructAudioObject(pRequestData->objectData.szName);
-#else
-			pObject = m_audioObjectMgr.ConstructAudioObject(nullptr);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			result = pObject->HandleSetTransformation(pRequestData->objectData.transformation, 0.0f);
-			CRY_ASSERT(result == eRequestStatus_Success);
-
-			if (pRequestData->objectData.bSetCurrentEnvironments)
-			{
-				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->objectData.transformation.GetPosition());
-			}
-
-			EnumFlagsType const index = static_cast<EnumFlagsType>(pRequestData->objectData.occlusionType);
-
-			if (index < eOcclusionType_Count)
-			{
-				// TODO: Can we prevent these lookups and access the switch and state directly?
-				CATLSwitch const* const pSwitch = stl::find_in_map(m_switches, OcclusionTypeSwitchId, nullptr);
-
-				if (pSwitch != nullptr)
-				{
-					CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, OcclusionTypeStateIds[index], nullptr);
-
-					if (pState != nullptr)
-					{
-						result = pObject->HandleSetSwitchState(pSwitch, pState);
-						CRY_ASSERT(result == eRequestStatus_Success);
-					}
-				}
-			}
-
-			*pRequestData->ppAudioObject = pObject;
-			result = eRequestStatus_Success;
-
-			break;
-		}
 	case eAudioManagerRequestType_AddRequestListener:
 		{
 			SAudioManagerRequestData<eAudioManagerRequestType_AddRequestListener> const* const pRequestData = static_cast<SAudioManagerRequestData<eAudioManagerRequestType_AddRequestListener> const*>(request.GetData());
@@ -1045,20 +1003,27 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTriggerEx> const* const pRequestData =
 			  static_cast<SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTriggerEx> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->data.triggerId, nullptr);
+			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				CATLAudioObject* const pObject = static_cast<CATLAudioObject*>(m_audioObjectMgr.ConstructAudioObject(pRequestData->data.szName));
+				CATLAudioObject* const pObject = new CATLAudioObject;
+				m_audioObjectMgr.RegisterObject(pObject);
 
-				result = pObject->HandleSetTransformation(pRequestData->data.transformation, 0.0f);
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+				pObject->Init(pRequestData->name.c_str(), m_pImpl->ConstructAudioObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+#else
+				pObject->Init(nullptr, m_pImpl->ConstructAudioObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-				if (pRequestData->data.bSetCurrentEnvironments)
+				result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
+
+				if (pRequestData->bSetCurrentEnvironments)
 				{
-					SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->data.transformation.GetPosition());
+					SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
 				}
 
-				EnumFlagsType const index = static_cast<EnumFlagsType>(pRequestData->data.occlusionType);
+				EnumFlagsType const index = static_cast<EnumFlagsType>(pRequestData->occlusionType);
 
 				if (index < eOcclusionType_Count)
 				{
@@ -1077,7 +1042,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 
 				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				m_audioObjectMgr.ReleaseAudioObject(pObject);
+				pObject->RemoveFlag(eAudioObjectFlags_DoNotRelease);
 			}
 			else
 			{
@@ -1200,11 +1165,54 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			result = pObject->HandleResetEnvironments(m_environments);
 			break;
 		}
+	case eAudioObjectRequestType_RegisterObject:
+		{
+			SAudioObjectRequestData<eAudioObjectRequestType_RegisterObject> const* const pRequestData =
+			  static_cast<SAudioObjectRequestData<eAudioObjectRequestType_RegisterObject> const*>(request.GetData());
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pObject->Init(pRequestData->name.c_str(), m_pImpl->ConstructAudioObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+#else
+			pObject->Init(nullptr, m_pImpl->ConstructAudioObject(nullptr), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition());
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
+			CRY_ASSERT(result == eRequestStatus_Success);
+
+			if (pRequestData->bSetCurrentEnvironments)
+			{
+				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
+			}
+
+			EnumFlagsType const index = static_cast<EnumFlagsType>(pRequestData->occlusionType);
+
+			if (index < eOcclusionType_Count)
+			{
+				// TODO: Can we prevent these lookups and access the switch and state directly?
+				CATLSwitch const* const pSwitch = stl::find_in_map(m_switches, OcclusionTypeSwitchId, nullptr);
+
+				if (pSwitch != nullptr)
+				{
+					CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, OcclusionTypeStateIds[index], nullptr);
+
+					if (pState != nullptr)
+					{
+						result = pObject->HandleSetSwitchState(pSwitch, pState);
+						CRY_ASSERT(result == eRequestStatus_Success);
+					}
+				}
+			}
+
+			m_audioObjectMgr.RegisterObject(pObject);
+			result = eRequestStatus_Success;
+
+			break;
+		}
 	case eAudioObjectRequestType_ReleaseObject:
 		{
 			if (pObject != m_pGlobalAudioObject)
 			{
-				m_audioObjectMgr.ReleaseAudioObject(pObject);
+				pObject->RemoveFlag(eAudioObjectFlags_DoNotRelease);
 				result = eRequestStatus_Success;
 			}
 			else
@@ -1328,20 +1336,16 @@ ERequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 		m_pImpl = pNullImpl;
 	}
 
-	if (!m_pGlobalAudioObject)
+	if (m_pGlobalAudioObject == nullptr)
 	{
-		//! \note We create the global audio object lazily to make sure it
-		//! gets created on the audio thread so that we can assert that all
-		//! pooled allocations happen on the audio thread (and that it is
-		//! therefore safe to use single-threaded pool allocator
-		//! implementations).
-		m_pGlobalAudioObject = new CATLAudioObject(nullptr, ZERO);
+		m_pGlobalAudioObject = new CATLAudioObject;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		m_pGlobalAudioObject->m_name = "Global Audio Object";
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 	}
+
+	CRY_ASSERT(m_pGlobalAudioObject->GetImplDataPtr() == nullptr);
 	m_pGlobalAudioObject->SetImplDataPtr(m_pImpl->ConstructGlobalAudioObject());
 
 	m_audioObjectMgr.Init(m_pImpl);
@@ -1589,18 +1593,30 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		                      "[ATL] Total Memory Used: %uKiB",
 		                      static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
 
-		auto const printPoolAllocatorInfo = [&](char const* const szName, CPoolObject<CATLAudioObject>::Allocator& allocator)
+		posX += indentation;
 		{
+			CPoolObject<CATLAudioObject, stl::PSyncMultiThread>::Allocator& allocator = CATLAudioObject::GetAllocator();
 			posY += lineHeight;
 			auto mem = allocator.GetTotalMemory();
 			auto pool = allocator.GetCounts();
-			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", szName, pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
-		};
+			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Objects", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+		}
 
-		posX += indentation;
-		printPoolAllocatorInfo("Objects", CATLAudioObject::GetAllocator());
-		printPoolAllocatorInfo("Events", CATLEvent::GetAllocator());
-		printPoolAllocatorInfo("Files", CATLStandaloneFile::GetAllocator());
+		{
+			CPoolObject<CATLEvent, stl::PSyncNone>::Allocator& allocator = CATLEvent::GetAllocator();
+			posY += lineHeight;
+			auto mem = allocator.GetTotalMemory();
+			auto pool = allocator.GetCounts();
+			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Events", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+		}
+
+		{
+			CPoolObject<CATLStandaloneFile, stl::PSyncNone>::Allocator& allocator = CATLStandaloneFile::GetAllocator();
+			posY += lineHeight;
+			auto mem = allocator.GetTotalMemory();
+			auto pool = allocator.GetCounts();
+			pAuxGeom->Draw2dLabel(posX, posY, 1.35f, s_colorWhite, false, "[%s] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", "Files", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+		}
 		posX -= indentation;
 
 		if (m_pImpl != nullptr)

@@ -22,12 +22,14 @@ CAudioEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
 CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CATLAudioObject(Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition)
-	: m_pImplData(pImplData)
-	, m_propagationProcessor(m_attributes.transformation, audioListenerPosition)
-{
-	m_propagationProcessor.Init(this);
-}
+CATLAudioObject::CATLAudioObject()
+	: m_pImplData(nullptr)
+	, m_maxRadius(0.0f)
+	, m_flags(eAudioObjectFlags_DoNotRelease)
+	, m_previousVelocity(0.0f)
+	, m_propagationProcessor(m_attributes.transformation)
+	, m_occlusionFadeOutDistance(0.0f)
+{}
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Release()
@@ -773,6 +775,17 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 	}
 
 	return status;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::Init(char const* const szName, Impl::IAudioObject* const pImplData, Vec3 const& audioListenerPosition)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	m_pImplData = pImplData;
+	m_propagationProcessor.Init(this, audioListenerPosition);
 }
 
 //////////////////////////////////////////////////////////////////////////
