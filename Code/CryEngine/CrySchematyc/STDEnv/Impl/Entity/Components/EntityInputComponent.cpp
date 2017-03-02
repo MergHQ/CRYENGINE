@@ -255,8 +255,8 @@ namespace Schematyc
 		desc.SetLabel("ActionPressed");
 		desc.SetDescription("Sent when input action is pressed.");
 		desc.AddMember(&SActionPressedSignal::deviceType, 'type', "deviceType", "DeviceType", "Device type");
-		desc.AddMember(&SActionPressedSignal::keyId, 'id', "keyId", "Key", "Key identifier");
-		desc.AddMember(&SActionPressedSignal::deviceIndex, 'dev', "deviceIndex", "DeviceIndex", "Device index");
+		desc.AddMember(&SActionPressedSignal::keyId, 'id', "KeyId", "KeyId", "Key identifier");
+		desc.AddMember(&SActionPressedSignal::deviceIndex, 'dIdx', "deviceIndex", "DeviceIndex", "Device index");
 	}
 
 	void CEntityInputComponent::SActionReleasedSignal::ReflectType(CTypeDesc<SActionReleasedSignal>& desc)
@@ -265,7 +265,8 @@ namespace Schematyc
 		desc.SetLabel("ActionReleased");
 		desc.SetDescription("Sent when input action is released.");
 		desc.AddMember(&SActionReleasedSignal::deviceType, 'type', "deviceType", "DeviceType", "Device type");
-		desc.AddMember(&SActionReleasedSignal::keyId, 'id', "Key", "keyId", "Key identifier");
+		desc.AddMember(&SActionReleasedSignal::keyId, 'id', "KeyId", "KeyId", "Key identifier");
+		desc.AddMember(&SActionReleasedSignal::deviceIndex, 'dIdx', "deviceIndex", "DeviceIndex", "Device index");
 	}
 
 	void ReflectType(Schematyc::CTypeDesc<EInputDeviceType>& desc)
@@ -321,14 +322,15 @@ namespace Schematyc
 			temp.deviceType = event.deviceType;
 			temp.keyId = event.keyId;
 			temp.deviceIndex = event.deviceIndex;
-			CComponent::GetObject().ProcessSignal(temp);
+			OutputSignal(temp);
 		}
 		else if (event.state == eIS_Released)
 		{
 			SActionReleasedSignal temp;
 			temp.deviceType = event.deviceType;
 			temp.keyId = event.keyId;
-			CComponent::GetObject().ProcessSignal(temp);
+			temp.deviceIndex = event.deviceIndex;
+			OutputSignal(temp);
 		}
 		return false;
 	}
