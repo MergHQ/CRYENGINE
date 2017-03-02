@@ -965,6 +965,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 			}
 		}
 
+		pObj->m_data.m_nHUDSilhouetteParams = m_nHUDSilhouettesParam;
+		
 		m_pStatObj->RenderInternal(pObj, m_nSubObjHideMask, lodValue, passInfo);
 	}
 }
