@@ -68,13 +68,19 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 			m_arrRemapTable[js]=nID;
 #ifdef EDITOR_PCDEBUGCODE
 		else
-			NotMatchingNames++,g_pILog->LogWarning ("Extending Skeleton, because the joint-name (%s) of SKIN (%s) was not found in SKEL:  %s",m_pModelSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(),pSkinFilePath,pSkelFilePath);
+		{
+			NotMatchingNames++;
+			if (nLogWarnings)
+			{
+				g_pILog->LogWarning("Extending Skeleton, because the joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pModelSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+			}
+		}
 #endif
 	} //for loop
 
 	if (NotMatchingNames)
 	{
-		if (pInstanceSkel->m_CharEditMode)
+		if (pInstanceSkel->m_CharEditMode || nLoadingFlags & CA_ImmediateMode)
 		{
 		  //for now limited to CharEdit
 			RecreateDefaultSkeleton(pInstanceSkel,nLoadingFlags); 

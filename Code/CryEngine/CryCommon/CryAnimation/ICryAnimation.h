@@ -63,6 +63,7 @@ enum CHRLOADINGFLAGS
 	CA_SkipSkelRecreation       = BIT(4),
 	CA_DisableLogWarnings       = BIT(5),
 	CA_SkipBoneRemapping        = BIT(6),
+	CA_ImmediateMode            = BIT(7)
 };
 
 enum EReloadCAFResult
