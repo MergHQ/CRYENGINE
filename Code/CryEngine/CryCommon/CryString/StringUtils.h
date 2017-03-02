@@ -6,6 +6,10 @@
 #include "CryString.h"
 #include "UnicodeFunctions.h"
 
+#ifndef NOT_USE_CRY_STRING
+#include <CryCore/Platform/CryWindows.h>
+#endif
+
 #if !defined(RESOURCE_COMPILER)
 	#include <CryCore/CryCrc32.h>
 #endif
@@ -292,12 +296,27 @@ inline wstring UTF8ToWStr(const char* str)
 	return Unicode::Convert<wstring>(str);
 }
 
+
 //! Converts an UTF-8 string to wide string (can be UTF-16 or UTF-32 depending on platform).
 //! This function is Unicode aware and locale agnostic.
 inline wstring UTF8ToWStrSafe(const char* szString)
 {
 	return Unicode::ConvertSafe<Unicode::eErrorRecovery_FallbackWin1252ThenReplace, wstring>(szString);
 }
+
+#ifdef CRY_PLATFORM_WINAPI
+//! Converts a string from the local Windows codepage to UTF-8.
+inline string ANSIToUTF8(const char* str)
+{
+	int wideLen = MultiByteToWideChar(CP_ACP, 0, str, -1, 0, 0);
+	wchar_t* unicode = (wchar_t*)malloc(wideLen * sizeof(wchar_t));
+	MultiByteToWideChar(CP_ACP, 0, str, -1, unicode, wideLen);
+	string utf = CryStringUtils::WStrToUTF8(unicode);
+	free(unicode);
+	return utf;
+}
+#endif
+
 
 #endif // NOT_USE_CRY_STRING
 

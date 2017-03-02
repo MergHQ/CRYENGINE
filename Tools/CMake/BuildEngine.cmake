@@ -10,7 +10,7 @@ endif()
 
 if (WIN32 OR WIN64)
 	if (MSVC_VERSION LESS 1900)
-		message(STATUS "MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.")
+		message(STATUS "MSVC 14.0 or above is required to build CryRenderD3D12.")
 	else()
 		OPTION(RENDERER_DX12 "Renderer for DirectX 12" ON)
 	endif()
