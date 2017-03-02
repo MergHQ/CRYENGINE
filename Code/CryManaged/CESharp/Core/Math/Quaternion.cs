@@ -1,7 +1,8 @@
-using CryEngine.Common;
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Globalization;
+using CryEngine.Common;
 
 namespace CryEngine
 {
@@ -17,14 +18,14 @@ namespace CryEngine
 		public float z { get { return _v.z; } set { _v.z = value; } }
 		public float w { get { return _w; } set { _w = value; } }
 
-		public Vector3 v { get { return _v; } set { v = value; } }
+		public Vector3 v { get { return _v; } set { _v = value; } }
 
 		public float X { get { return _v.x; } set { _v.x = value; } }
 		public float Y { get { return _v.y; } set { _v.y = value; } }
 		public float Z { get { return _v.z; } set { _v.z = value; } }
 		public float W { get { return _w; } set { _w = value; } }
 
-		public Vector3 V { get { return _v; } set { v = value; } }
+		public Vector3 V { get { return _v; } set { _v = value; } }
 
 		public Quaternion(Vector3 vector, float scalar)
 		{
@@ -47,8 +48,8 @@ namespace CryEngine
 		public Quaternion(Matrix3x4 matrix)
 		{
 			float s, p, tr = matrix.m00 + matrix.m11 + matrix.m22;
-			
-			if (tr > 0)
+
+			if(tr > 0)
 			{
 				s = (float)Math.Sqrt(tr + 1.0f);
 				p = 0.5f / s;
@@ -57,7 +58,7 @@ namespace CryEngine
 								 (matrix.m02 - matrix.m20) * p,
 								 (matrix.m10 - matrix.m01) * p);
 			}
-			else if ((matrix.m00 >= matrix.m11) && (matrix.m00 >= matrix.m22))
+			else if((matrix.m00 >= matrix.m11) && (matrix.m00 >= matrix.m22))
 			{
 				s = (float)Math.Sqrt(matrix.m00 - matrix.m11 - matrix.m22 + 1.0f);
 				p = 0.5f / s;
@@ -66,7 +67,7 @@ namespace CryEngine
 								(matrix.m10 + matrix.m01) * p,
 								(matrix.m20 + matrix.m02) * p);
 			}
-			else if ((matrix.m11 >= matrix.m00) && (matrix.m11 >= matrix.m22))
+			else if((matrix.m11 >= matrix.m00) && (matrix.m11 >= matrix.m22))
 			{
 				s = (float)Math.Sqrt(matrix.m11 - matrix.m22 - matrix.m00 + 1.0f);
 				p = 0.5f / s;
@@ -75,7 +76,7 @@ namespace CryEngine
 								  s * 0.5f,
 								 (matrix.m21 + matrix.m12) * p);
 			}
-			else if ((matrix.m22 >= matrix.m00) && (matrix.m22 >= matrix.m11))
+			else if((matrix.m22 >= matrix.m00) && (matrix.m22 >= matrix.m11))
 			{
 				s = (float)Math.Sqrt(matrix.m22 - matrix.m00 - matrix.m11 + 1.0f);
 				p = 0.5f / s;
@@ -97,7 +98,7 @@ namespace CryEngine
 			_w = 0.70710676908493042f;
 			_v = new Vector3(forwardDirection.z * 0.70710676908493042f, 0, 0);
 			float l = (float)Math.Sqrt(forwardDirection.x * forwardDirection.x + forwardDirection.y * forwardDirection.y);
-			if (l > 0.00001f)
+			if(l > 0.00001f)
 			{
 				//calculate LookAt quaternion
 				var hv = new Vector3(forwardDirection.x / l, forwardDirection.y / l + 1.0f, l + 1.0f);
@@ -106,7 +107,7 @@ namespace CryEngine
 				//generate the half-angle sine&cosine
 				float hacos0 = 0.0f;
 				float hasin0 = -1.0f;
-				if (r > 0.00001f) { hacos0 = hv.y / r; hasin0 = -hv.x / r; }  //yaw
+				if(r > 0.00001f) { hacos0 = hv.y / r; hasin0 = -hv.x / r; }  //yaw
 				float hacos1 = hv.z / s;
 				float hasin1 = forwardDirection.z / s;                        //pitch
 				_w = hacos0 * hacos1;
@@ -138,7 +139,7 @@ namespace CryEngine
 			_w = 1;
 			_v = new Vector3();
 
-			if (tr > 0)
+			if(tr > 0)
 			{
 				s = (float)Math.Sqrt(tr + 1.0f);
 				p = 0.5f / s;
@@ -147,7 +148,7 @@ namespace CryEngine
 				_v.y = (up.x - right.z) * p;
 				_v.z = (right.y - forward.x) * p;
 			}
-			else if ((right.x >= forward.y) && (right.x >= up.z))
+			else if((right.x >= forward.y) && (right.x >= up.z))
 			{
 				s = (float)Math.Sqrt(right.x - forward.y - up.z + 1.0f);
 				p = 0.5f / s;
@@ -156,7 +157,7 @@ namespace CryEngine
 				_v.y = (right.y + forward.x) * p;
 				_v.z = (right.z + up.x) * p;
 			}
-			else if ((forward.y >= right.x) && (forward.y >= up.z))
+			else if((forward.y >= right.x) && (forward.y >= up.z))
 			{
 				s = (float)Math.Sqrt(forward.y - up.z - right.x + 1.0f);
 				p = 0.5f / s;
@@ -165,7 +166,7 @@ namespace CryEngine
 				_v.y = s * 0.5f;
 				_v.z = (forward.z + up.y) * p;
 			}
-			else if ((up.z >= right.x) && (up.z >= forward.y))
+			else if((up.z >= right.x) && (up.z >= forward.y))
 			{
 				s = (float)Math.Sqrt(up.z - right.x - forward.y + 1.0f);
 				p = 0.5f / s;
@@ -194,10 +195,10 @@ namespace CryEngine
 
 		public override bool Equals(object obj)
 		{
-			if (obj == null)
+			if(obj == null)
 				return false;
 
-			if (obj is Quaternion || obj is Quat)
+			if(obj is Quaternion || obj is Quat)
 				return this == (Quaternion)obj;
 
 			return false;
@@ -217,7 +218,7 @@ namespace CryEngine
 
 		public static implicit operator Quaternion(Quat nativeQuat)
 		{
-			if (nativeQuat == null)
+			if(nativeQuat == null)
 			{
 				return Quaternion.Identity;
 			}
@@ -241,7 +242,7 @@ namespace CryEngine
 		{
 			return new Quaternion(q.W, -q.V);
 		}
-		
+
 		public static Quaternion operator *(Quaternion left, Quaternion right)
 		{
 			return new Quaternion(
@@ -255,11 +256,11 @@ namespace CryEngine
 		{
 			return (!right * left);
 		}
-		
+
 		public static Quaternion operator %(Quaternion left, Quaternion right)
 		{
 			var p = right;
-			if ((p.Dot(left)) < 0) p = -p;
+			if((p.Dot(left)) < 0) p = -p;
 			return new Quaternion(left.W + p.W, left.V + p.V);
 		}
 
@@ -303,7 +304,7 @@ namespace CryEngine
 
 		public static bool operator ==(Quaternion left, Quaternion right)
 		{
-			if ((object)right == null)
+			if((object)right == null)
 				return (object)left == null;
 
 			return ((left.X == right.X) && (left.Y == right.Y) && (left.Z == right.Z) && (left.W == right.W));
@@ -345,11 +346,11 @@ namespace CryEngine
 		{
 			return new Quaternion(right, forward, up);
 		}
-		
+
 		public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection)
 		{
 			float dot = fromDirection.x * toDirection.x + fromDirection.y * toDirection.y + fromDirection.z * toDirection.z + 1.0f;
-			if (dot > 0.0001f)
+			if(dot > 0.0001f)
 			{
 				float vx = fromDirection.y * toDirection.z - fromDirection.z * toDirection.y;
 				float vy = fromDirection.z * toDirection.x - fromDirection.x * toDirection.z;
@@ -428,18 +429,18 @@ namespace CryEngine
 			var q2 = new Quaternion();
 
 			float cosine = p.Dot(q);
-			if (cosine < 0.0f) { cosine = -cosine; q = -q; } //take shortest arc
-			if (cosine > 0.9999f)
+			if(cosine < 0.0f) { cosine = -cosine; q = -q; } //take shortest arc
+			if(cosine > 0.9999f)
 			{
 				return Lerp(p, q, timeRatio);
 			}
-			
+
 			q2.w = q.w - p.w * cosine;
 			q2._v.x = q.v.x - p.v.x * cosine;
 			q2._v.y = q.v.y - p.v.y * cosine;
 			q2._v.z = q.v.z - p.v.z * cosine;
 			float sine = (float)Math.Sqrt(q2.Dot(q2));
-			
+
 			float s, c;
 			MathHelpers.SinCos((float)Math.Atan2(sine, cosine) * timeRatio, out s, out c);
 
@@ -462,8 +463,8 @@ namespace CryEngine
 		public static Quaternion Lerp(Quaternion start, Quaternion end, float timeRatio)
 		{
 			var returnValue = new Quaternion();
-			
-			if (start.Dot(end) < 0)
+
+			if(start.Dot(end) < 0)
 			{
 				end = -end;
 			}
@@ -483,9 +484,9 @@ namespace CryEngine
 		public Vector3 Forward { get { return new Vector3(2 * (v.x * v.y - v.z * w), 2 * (v.y * v.y + w * w) - 1, 2 * (v.z * v.y + v.x * w)); } }
 		public Vector3 Up { get { return new Vector3(2 * (v.x * v.z + v.y * w), 2 * (v.y * v.z - v.x * w), 2 * (v.z * v.z + w * w) - 1); } }
 
-		public Angles3 EulerAngles {  get { return new Angles3(this); } }
+		public Angles3 EulerAngles { get { return new Angles3(this); } }
 
-		public Quaternion Inverted {  get { return !this; } }
+		public Quaternion Inverted { get { return !this; } }
 
 		public Quaternion Normalized
 		{
@@ -503,7 +504,7 @@ namespace CryEngine
 
 		public float LengthSquared { get { return W * W + X * X + Y * Y + Z * Z; } }
 
-		public bool IsIdentity {  get { return w == 1 && x == 0 && y == 0 && z == 0; } }
+		public bool IsIdentity { get { return w == 1 && x == 0 && y == 0 && z == 0; } }
 
 		public Angles3 YawPitchRoll
 		{

@@ -53,8 +53,8 @@ CryGFxFileOpener::CryGFxFileOpener()
 
 CryGFxFileOpener& CryGFxFileOpener::GetAccess()
 {
-	static CryGFxFileOpener s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxFileOpener();
+	return *s_inst;
 }
 
 CryGFxFileOpener::~CryGFxFileOpener()
@@ -105,8 +105,8 @@ CryGFxURLBuilder::CryGFxURLBuilder()
 
 CryGFxURLBuilder& CryGFxURLBuilder::GetAccess()
 {
-	static CryGFxURLBuilder s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxURLBuilder();
+	return *s_inst;
 }
 
 CryGFxURLBuilder::~CryGFxURLBuilder()
@@ -162,19 +162,21 @@ CryGFxTextClipboard::CryGFxTextClipboard()
 		HandleMessage(reinterpret_cast<HWND>(pSystem->GetHWND()), WM_CLIPBOARDUPDATE, 0, 0, nullptr); // Sync current clipboard content with Scaleform
 #endif // CRY_PLATFORM_WINDOWS
 		pSystem->RegisterWindowMessageHandler(this);
-		pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 	}
 }
 
 CryGFxTextClipboard::~CryGFxTextClipboard()
 {
-	OnSystemEvent(ESYSTEM_EVENT_FAST_SHUTDOWN, 0, 0);
+	if (gEnv && gEnv->pSystem)
+	{
+		gEnv->pSystem->UnregisterWindowMessageHandler(this);
+	}
 }
 
 CryGFxTextClipboard& CryGFxTextClipboard::GetAccess()
 {
-	static CryGFxTextClipboard s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxTextClipboard();
+	return *s_inst;
 }
 
 void CryGFxTextClipboard::OnTextStore(const wchar_t* szText, UPInt length)
@@ -233,19 +235,6 @@ bool CryGFxTextClipboard::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 }
 #endif // CRY_PLATFORM_WINDOWS
 
-void CryGFxTextClipboard::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-{
-	if (event == ESYSTEM_EVENT_FAST_SHUTDOWN
-		|| event == ESYSTEM_EVENT_FULL_SHUTDOWN)
-	{
-		if (gEnv && gEnv->pSystem)
-		{
-			gEnv->pSystem->UnregisterWindowMessageHandler(this);
-			gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-		}
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 // CryGFxTranslator
 
@@ -256,8 +245,8 @@ CryGFxTranslator::CryGFxTranslator()
 
 CryGFxTranslator& CryGFxTranslator::GetAccess()
 {
-	static CryGFxTranslator s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxTranslator();
+	return *s_inst;
 }
 
 void CryGFxTranslator::SetWordWrappingMode(const char* pLanguage)
@@ -346,8 +335,8 @@ CryGFxLog::CryGFxLog()
 
 CryGFxLog& CryGFxLog::GetAccess()
 {
-	static CryGFxLog s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxLog();
+	return *s_inst;
 }
 
 CryGFxLog::~CryGFxLog()
@@ -449,8 +438,8 @@ CryGFxFSCommandHandler::CryGFxFSCommandHandler()
 
 CryGFxFSCommandHandler& CryGFxFSCommandHandler::GetAccess()
 {
-	static CryGFxFSCommandHandler s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxFSCommandHandler();
+	return *s_inst;
 }
 
 CryGFxFSCommandHandler::~CryGFxFSCommandHandler()
@@ -474,8 +463,8 @@ CryGFxExternalInterface::CryGFxExternalInterface()
 
 CryGFxExternalInterface& CryGFxExternalInterface::GetAccess()
 {
-	static CryGFxExternalInterface s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxExternalInterface();
+	return *s_inst;
 }
 
 CryGFxExternalInterface::~CryGFxExternalInterface()
@@ -500,8 +489,8 @@ CryGFxUserEventHandler::CryGFxUserEventHandler()
 
 CryGFxUserEventHandler& CryGFxUserEventHandler::GetAccess()
 {
-	static CryGFxUserEventHandler s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxUserEventHandler();
+	return *s_inst;
 }
 
 CryGFxUserEventHandler::~CryGFxUserEventHandler()
@@ -522,8 +511,8 @@ CryGFxImageCreator::CryGFxImageCreator()
 
 CryGFxImageCreator& CryGFxImageCreator::GetAccess()
 {
-	static CryGFxImageCreator s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxImageCreator();
+	return *s_inst;
 }
 
 CryGFxImageCreator::~CryGFxImageCreator()
@@ -573,8 +562,8 @@ CryGFxImageLoader::CryGFxImageLoader()
 
 CryGFxImageLoader& CryGFxImageLoader::GetAccess()
 {
-	static CryGFxImageLoader s_inst;
-	return s_inst;
+	static auto s_inst = new CryGFxImageLoader();
+	return *s_inst;
 }
 
 CryGFxImageLoader::~CryGFxImageLoader()

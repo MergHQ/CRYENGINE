@@ -1,0 +1,26 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ]
+    },
+    "csharp": {
+        "monodev": {
+            "solution": "Code/RollingBall.sln",
+            "user": "Code/RollingBall/RollingBall.csproj.user"
+        },
+        "msdev": {
+            "solution": "Code/RollingBall_VS.sln",
+            "user": "Code/RollingBall/RollingBall.ceproj.user"
+        }
+    },
+    "info": {
+        "name": "CE# Framework - Rolling Ball"
+    },
+    "require": {
+        "engine": "engine-5.3"
+    }
+}

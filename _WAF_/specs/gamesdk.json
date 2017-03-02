@@ -67,7 +67,9 @@
 		"CryRenderD3D11",
 		"CryRenderD3D12",
 
-		"CryScaleformHelper"
+		"CryScaleformHelper",
+
+		"CryMonoBridge"
 	],
 	
 	"durango_force_shared_monolithic_build_modules" : 

@@ -1,19 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectTypeGuids>{E7562513-36BA-4D11-A927-975E5375ED10};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ProjectGuid>{7B3F1234-1CFE-4CCF-B1CB-12345F8606F1}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <OutputName>CryEngine.Sydewinder</OutputName>
-    <RootNamespace>CryEngine.Sydewinder</RootNamespace>
-    <AssemblyName>CryEngine.Sydewinder</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-	<UseMSBuildEngine>False</UseMSBuildEngine>
+    <OutputName>CryEngine.RollingBall</OutputName>
+    <RootNamespace>CryEngine.RollingBall</RootNamespace>
+    <AssemblyName>CryEngine.RollingBall</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Name>CryEngine.Sydewinder</Name>
+    <Name>CryEngine.RollingBall</Name>
     <OutputPath>..\..\bin\win_x64</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <ErrorReport>prompt</ErrorReport>
@@ -57,28 +55,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="Types\Player.cs" />
-    <Compile Include="Types\Enemy.cs" />
-    <Compile Include="Types\Weapon.cs" />
-    <Compile Include="Ui\MainMenu.cs" />
-    <Compile Include="SydewinderApp.cs" />
-    <Compile Include="Ui\Hud.cs" />
-    <Compile Include="Types\GameObjectBase.cs" />
-    <Compile Include="Types\LevelGeometry.cs" />
-    <Compile Include="GameData.cs" />
-    <Compile Include="Ui\Table.cs" />
-    <Compile Include="GamePool.cs" />
-    <Compile Include="Types\Plane.cs" />
+    <Compile Include="RollingBall.cs" />
+    <Compile Include="Player\Player.cs" />
+    <Compile Include="Player\PlayerView.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <ProjectCapabilities>
       <ProjectConfigurationsDeclaredAsItems />
     </ProjectCapabilities>
-    <MonoDevelop>
-      <Properties>
-        <CryEngineParameters BuildLocation="..\.." Launcher="Game" />
-      </Properties>
-    </MonoDevelop>
   </ProjectExtensions>
+  <ItemGroup>
+    <Folder Include="Player\" />
+  </ItemGroup>
 </Project>

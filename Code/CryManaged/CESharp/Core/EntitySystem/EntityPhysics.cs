@@ -1,88 +1,100 @@
-﻿using CryEngine.Common;
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System;
+using CryEngine.Common;
 
 namespace CryEngine.EntitySystem
 {
-    public struct CollisionEvent
-    {
-        public PhysicsObject Source { get; set; }
-        public PhysicsObject Target { get; set; }
-    }
+	public struct CollisionEvent
+	{
+		public PhysicsObject Source { get; set; }
+		public PhysicsObject Target { get; set; }
+	}
 
-    /// <summary>
-    /// Representation of an object in the physics engine
-    /// </summary>
-    public class PhysicsObject
-    {
-        protected Entity _entity;
+	/// <summary>
+	/// Representation of an object in the physics engine
+	/// </summary>
+	public class PhysicsObject
+	{
+		protected Entity _entity;
 
-        public virtual IPhysicalEntity NativeHandle { get; private set; }
+		public virtual IPhysicalEntity NativeHandle { get; private set; }
 
-        public virtual Entity OwnerEntity
-        {
-            get
-            {
-                if (_entity == null)
-                {
-                    var entityHandle = Global.gEnv.pEntitySystem.GetEntityFromPhysics(NativeHandle);
-                    if (entityHandle != null)
-                    {
-                        _entity = new Entity(entityHandle, entityHandle.GetId());
-                    }
-                }
+		public virtual Entity OwnerEntity
+		{
+			get
+			{
+				if (_entity == null)
+				{
+					var entityHandle = Global.gEnv.pEntitySystem.GetEntityFromPhysics(NativeHandle);
+					if (entityHandle != null)
+					{
+						_entity = new Entity(entityHandle, entityHandle.GetId());
+					}
+				}
 
-                return _entity;
-            }
-        }
+				return _entity;
+			}
+		}
 
-        public Vector3 Velocity
-        {
-            set
-            {
-                var action = new pe_action_set_velocity();
-                action.v = value;
-                NativeHandle.Action(action);
-            }
-        }
+		public Vector3 Velocity
+		{
+			set
+			{
+				var action = new pe_action_set_velocity();
+				action.v = value;
+				NativeHandle.Action(action);
+			}
+		}
 
-        internal PhysicsObject() { }
+		public Vector3 Impulse
+		{
+			set
+			{
+				var action = new pe_action_impulse();
+				action.impulse = value;
+				NativeHandle.Action(action);
+			}
+		}
 
-        internal PhysicsObject(IPhysicalEntity handle)
-        {
-            NativeHandle = handle;
-        }
+		internal PhysicsObject() { }
 
-        /// <summary>
+		internal PhysicsObject(IPhysicalEntity handle)
+		{
+			NativeHandle = handle;
+		}
+
+		/// <summary>
 		/// Adds and executes a physics action of type T.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="setParams">Sets the parameters of the action to be performed.</param>
 		public void Action<T>(Action<T> setParams) where T : pe_action
-        {
-            var actionParams = Activator.CreateInstance<T>();
-            setParams(actionParams);
-            NativeHandle.Action(actionParams);
-        }
-    }
+		{
+			var actionParams = Activator.CreateInstance<T>();
+			setParams(actionParams);
+			NativeHandle.Action(actionParams);
+		}
+	}
 
-    /// <summary>
-    /// Representation of an Entity in the physics engine
-    /// </summary>
+	/// <summary>
+	/// Representation of an Entity in the physics engine
+	/// </summary>
 	public sealed class PhysicsEntity : PhysicsObject
-    {
+	{
 		public override Entity OwnerEntity { get { return _entity; } }
 
-        public override IPhysicalEntity NativeHandle
-        {
-            get
-            {
-                return OwnerEntity.NativeHandle.GetPhysicalEntity();
-            }
-        }
-
-        public PhysicsEntity(Entity entity)
+		public override IPhysicalEntity NativeHandle
 		{
-            _entity = entity;
+			get
+			{
+				return OwnerEntity.NativeHandle.GetPhysicalEntity();
+			}
+		}
+
+		public PhysicsEntity(Entity entity)
+		{
+			_entity = entity;
 		}
 
 		public void Physicalize(float mass, EPhysicalizationType type)

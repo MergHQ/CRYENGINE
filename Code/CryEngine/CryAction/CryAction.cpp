@@ -2678,8 +2678,6 @@ void CCryAction::ShutdownEngine()
 		m_pSystem->SetIFlowSystem(nullptr);
 	}
 
-	//NOTE: m_pGFListeners->erase got commented out in UnregisterListener
-	//	CRY_ASSERT(0 == m_pGFListeners->size());
 	SAFE_DELETE(m_pGFListeners);
 
 	XMLCPB::CDebugUtils::Destroy();
@@ -4774,14 +4772,11 @@ void CCryAction::RegisterListener(IGameFrameworkListener* pGameFrameworkListener
 
 void CCryAction::UnregisterListener(IGameFrameworkListener* pGameFrameworkListener)
 {
-	/*for (TGameFrameworkListeners::iterator iter = m_pGFListeners->begin(); iter != m_pGFListeners->end(); ++iter)
-	   {
-	   if (iter->pListener == pGFListener)
-	   {
-	    m_pGFListeners->erase(iter);
-	    return;
-	   }
-	   }*/
+	if (m_pGFListeners == nullptr)
+	{
+		return;
+	}
+
 	for (int i = 0; i < m_pGFListeners->size(); i++)
 	{
 		if ((*m_pGFListeners)[i].pListener == pGameFrameworkListener)

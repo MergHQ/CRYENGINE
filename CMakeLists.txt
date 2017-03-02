@@ -143,7 +143,7 @@ include(${CRYENGINE_DIR}/Tools/CMake/CopyFilesToBin.cmake)
 # custom defines
 set(global_defines "CRYENGINE_DEFINE")
 
-if(EXISTS ${SDK_DIR}/Scaleform AND NOT ANDROID AND NOT ORBIS)
+if(NOT ANDROID AND NOT ORBIS)
 	option(OPTION_SCALEFORMHELPER "Use Scaleform Helper" ON)
 endif()
 

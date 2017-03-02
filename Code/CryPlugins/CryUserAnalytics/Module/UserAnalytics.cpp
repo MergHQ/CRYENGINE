@@ -10,11 +10,15 @@
 	#include <CryThreading/IThreadManager.h>
 	#include <CryExtension/CryGUID.h>
 	#include <CryExtension/CryGUIDHelper.h>
+	#include <CrySystem/CryVersion.h>
 
 	#include <winsock2.h>
 	#include <curl/curl.h>
+	#include <shlobj.h>
 
 	#define UA_FULL_SERVER_URL "https://www.cryengine.com/useranalytics/" // slash at the end to avoid redirect
+
+ICVar* CUserAnalytics::m_userAnalyticsServerAddress;
 
 ///////////////////////////////////////////////////////////////////////////
 class CUserAnalyticsSendThread : public IThread
@@ -58,7 +62,7 @@ namespace UserAnalytics
 ///////////////////////////////////////////////////////////////////////////
 static int DebugCurl(CURL* handle, curl_infotype type, char* data, size_t size, void* userp)
 {
-	CryLogAlways("[User Analytics] %s", data);
+	CryLogAlways("[User Analytics DebugCurl] %s", data);
 	return 0;
 }
 
@@ -103,20 +107,7 @@ CUserAnalytics::CUserAnalytics()
 	: m_curl(nullptr)
 	, m_curlHeaderList(nullptr)
 {
-	InitializeCURL();
-
-	m_pUserAnalyticsSendThread = new CUserAnalyticsSendThread(this);
-
-	if (!gEnv->pThreadManager->SpawnThread(m_pUserAnalyticsSendThread, "UserAnalytics"))
-	{
-		CRY_ASSERT_MESSAGE(false, "Error spawning \"UserAnalytics\" thread.");
-		delete m_pUserAnalyticsSendThread;
-		m_pUserAnalyticsSendThread = nullptr;
-	}
-
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
-
-	TriggerEvent("UserAnalyticsSessionStart"); // note: this will not show up in log
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -129,6 +120,38 @@ void CUserAnalytics::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 {
 	switch (event)
 	{
+	case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+		{
+			ReadWriteAnonymousToken();
+
+			m_userAnalyticsServerAddress = REGISTER_STRING("sys_UserAnalyticsServerAddress", UA_FULL_SERVER_URL, VF_NULL, "User Analytics Server address");
+
+			InitializeCURL();
+
+			m_pUserAnalyticsSendThread = new CUserAnalyticsSendThread(this);
+
+			if (!gEnv->pThreadManager->SpawnThread(m_pUserAnalyticsSendThread, "UserAnalytics"))
+			{
+				CRY_ASSERT_MESSAGE(false, "Error spawning \"UserAnalytics\" thread.");
+				delete m_pUserAnalyticsSendThread;
+				m_pUserAnalyticsSendThread = nullptr;
+			}
+
+			{
+				UserAnalytics::Attributes attributes;
+				const SFileVersion& pBuildVersion = gEnv->pSystem->GetBuildVersion();
+				char szBuildVersion[64];
+				pBuildVersion.ToString(szBuildVersion);
+				attributes.AddAttribute("version", szBuildVersion);
+
+				bool bIsEditor = gEnv->IsEditor();
+				attributes.AddAttribute("Sandbox", bIsEditor);
+
+				USER_ANALYTICS_EVENT_ARG("UserAnalyticsSessionStart", &attributes); // note: this will not show up in log
+			}
+
+			break;
+		}
 	case ESYSTEM_EVENT_FAST_SHUTDOWN:
 	case ESYSTEM_EVENT_FULL_SHUTDOWN:
 		{
@@ -156,6 +179,11 @@ void CUserAnalytics::Shutdown()
 	delete m_pUserAnalyticsSendThread;
 
 	ShutdownCURL();
+
+	if (IConsole* const pConsole = gEnv->pConsole)
+	{
+		pConsole->UnregisterVariable("sys_UserAnalyticsServerAddress");
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -198,7 +226,7 @@ bool CUserAnalytics::InitializeCURL()
 
 	if (m_curl)
 	{
-		curl_easy_setopt(m_curl, CURLOPT_URL, UA_FULL_SERVER_URL);
+		curl_easy_setopt(m_curl, CURLOPT_URL, m_userAnalyticsServerAddress ? m_userAnalyticsServerAddress->GetString() : UA_FULL_SERVER_URL);
 		curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
 		//curl_easy_setopt(m_curl, CURLOPT_DEBUGFUNCTION, UserAnalytics::DebugCurl);
 		curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
@@ -242,7 +270,11 @@ void CUserAnalytics::TriggerEvent(const char* szEventName, UserAnalytics::Attrib
 	UserAnalytics::BeginScope(message);
 	UserAnalytics::AddPairToMessage(message, "name", szEventName);
 	UserAnalytics::AddComma(message);
-	UserAnalytics::AddPairToMessage(message, "timestamp", GetTimestamp().c_str());
+
+	UserAnalytics::AddPairToMessage(message, "localTimestamp", GetTimestamp().c_str());
+	UserAnalytics::AddComma(message);
+
+	UserAnalytics::AddPairToMessage(message, "AnonymousUserToken", m_anonymousUserToken.c_str());
 	UserAnalytics::AddComma(message);
 
 	UserAnalytics::BeginAttributesScope(message);
@@ -270,6 +302,77 @@ void CUserAnalytics::TriggerEvent(const char* szEventName, UserAnalytics::Attrib
 
 	// Event message is now complete - push it to message buffer
 	m_messages.push_back(message);
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CUserAnalytics::ReadWriteAnonymousToken()
+{
+	PWSTR pLocalDirectoryPath = nullptr;
+	HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_CREATE | KF_FLAG_DONT_UNEXPAND, NULL, &pLocalDirectoryPath);
+	bool success = true;
+	if (SUCCEEDED(hr))
+	{
+		// Convert from UNICODE to UTF-8
+		char szLocalDirectoryPath[MAX_PATH];
+		cry_strcpy(szLocalDirectoryPath, MAX_PATH, CryStringUtils::WStrToUTF8(pLocalDirectoryPath));
+
+		string sFilePath = szLocalDirectoryPath;
+		sFilePath.append("\\Crytek\\CRYENGINE\\");
+
+		CryCreateDirectory(sFilePath.c_str());
+		sFilePath.append("AnonymousToken");
+
+		FILE* pFile = fopen(sFilePath, "r");
+		if (!pFile)
+		{
+			// File does not exists, so let's create it
+			pFile = fopen(sFilePath, "w");
+
+			if (pFile)
+			{
+				// Store a random GUID in the file
+				CryGUID guid = CryGUID::Create();
+				m_anonymousUserToken = CryGUIDHelper::PrintGuid(guid);
+
+				fwrite(m_anonymousUserToken.c_str(), sizeof(char), m_anonymousUserToken.size(), pFile);
+				fclose(pFile);
+			}
+			else
+			{
+				success = false;
+			}
+		}
+		else
+		{
+			// File already exists, so let's read the token
+
+			// Get file size
+			fseek(pFile, 0, SEEK_END);
+			int size = ftell(pFile);
+			rewind(pFile);
+
+			// Read token from file
+			char guid[64];
+			fread(guid, sizeof(char), size, pFile);
+			fclose(pFile);
+			guid[size] = '\0';
+
+			m_anonymousUserToken = guid;
+		}
+
+		CoTaskMemFree(pLocalDirectoryPath);
+	}
+	else
+	{
+		success = false;
+	}
+
+	const ICVar* const cv_logging = gEnv->pConsole->GetCVar("sys_UserAnalyticsLogging");
+
+	if (!success && cv_logging->GetIVal() > 0)
+	{
+		CryLogAlways("[User Analytics] Could not read or write anonymous user token");
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -323,7 +426,7 @@ void CUserAnalytics::PrepareAndSendEvents()
 
 			if (cv_logging && cv_logging->GetIVal() > 0)
 			{
-				CryLogAlways("[User Analytics] Successfully pushed %d event(s) to %s", eventsCount, UA_FULL_SERVER_URL);
+				CryLogAlways("[User Analytics] Successfully pushed %d event(s) to %s", eventsCount, m_userAnalyticsServerAddress ? m_userAnalyticsServerAddress->GetString() : UA_FULL_SERVER_URL);
 
 				CryLogAlways("[User Analytics] Queuing Event: SessionAlive");
 			}

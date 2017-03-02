@@ -5,12 +5,11 @@ from waflib import Logs
 
 def build(bld):
 
-	# If Scaleform SDK is available, compile the integration code into CrySystem
 	scaleform_file_list = []
-	scaleform_module_extension_list = []
 	if os.path.isdir(Path('Code/SDKs/Scaleform')):
+		# If Scaleform SDK is available, compile the integration into CrySystem.
+		# If not, we still support loading it dynamically from a dedicated helper library.
 		scaleform_file_list = ['Scaleform/scaleform.waf_files']
-		scaleform_module_extension_list = ['scaleform']
 		bld.recurse(['Scaleform'])
 
 	bld.CryEngineModule(
@@ -26,7 +25,7 @@ def build(bld):
 
 		pch  = 'StdAfx.cpp',
 
-		module_extensions       = scaleform_module_extension_list,
+		module_extensions       = [ 'scaleform' ], # If no scaleform support is needed at all, this can be removed.
 		linux_module_extensions = [ 'ncurses' ],
 
 		use_module = [

@@ -21,12 +21,10 @@ def build(bld):
 				Path('Code/SDKs/OculusSDK/LibOVR/Include'),
 				Path('Code/SDKs/OculusSDK/Logging/Include'),
 				],
-			win_lib = ['oleaut32'],
 
 			module_provides = dict(
 				includes = [ Path('Code/SDKs/OculusSDK/LibOVR/Include'), ],
 				defines = [ 'INCLUDE_OCULUS_SDK' ],
-				win_lib = ['oleaut32'],
 			),
 		)
 	else:
