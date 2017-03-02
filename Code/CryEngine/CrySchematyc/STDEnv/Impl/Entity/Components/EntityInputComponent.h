@@ -52,6 +52,7 @@ private:
 
 		EInputDeviceType deviceType = eIDT_Unknown;   //!< Device type from which the event originated.
 		EKeyId           keyId = eKI_Unknown;         //!< Device-specific id corresponding to the event.
+		int              deviceIndex = 0;             //!< Local index of this particular controller type.
 	};
 };
 } // Schematyc

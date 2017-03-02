@@ -259,7 +259,7 @@ private:
 	};
 
 	static const int EstablishmentFlags_InitialLoad = eEF_LoadNewLevel;
-	static const int EstablishmentFlags_LoadNextLevel = eEF_LoadNewLevel;
+	static const int EstablishmentFlags_LoadNextLevel = eEF_LoadNewLevel | eEF_LevelLoaded;
 	static const int EstablishmentFlags_ResetMap = eEF_LevelLoaded;
 
 	int              m_loadFlags;

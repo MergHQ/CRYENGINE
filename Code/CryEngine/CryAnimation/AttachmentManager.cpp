@@ -15,6 +15,12 @@
 #include "Command_Commands.h"
 #include "Command_Buffer.h"
 
+bool IsSkinFile(const string& fileName)
+{
+	const char* fileExt = PathUtil::GetExt(fileName.c_str());
+	return cry_strcmp(fileExt, CRY_SKIN_FILE_EXT) == 0;
+}
+
 uint32 CAttachmentManager::LoadAttachmentList(const char* pathname)
 {
 
@@ -890,6 +896,91 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 	m_TypeSortingRequired++;
 	return 0;
 };
+
+IAttachment* CAttachmentManager::CreateVClothAttachment(const SVClothAttachmentParams& params)
+{
+	CAttachmentVCLOTH* pAttachmentVCloth = static_cast<CAttachmentVCLOTH*>(CreateAttachment(params.attachmentName.c_str(), CA_VCLOTH));
+	if (!pAttachmentVCloth)
+		return nullptr;
+
+	const bool log = (params.skinLoadingFlags & CA_DisableLogWarnings) != 0;
+	const char* renderMeshSkin = params.vclothParams.renderBinding.c_str();
+	const char* simMeshSkin = params.vclothParams.simBinding.c_str();
+	const char* pathName = GetSkelInstance()->GetFilePath();
+
+	const bool isRenderMeshSkinFile = IsSkinFile(renderMeshSkin);
+	if (!isRenderMeshSkinFile && log)
+		g_pILog->LogError("CryAnimation[VCloth]: a rendermesh (%s) for vertex-cloth must be a SKIN-file. You can't use this file: %s", renderMeshSkin, pathName);
+
+	const bool isSimMeshSkinFile = IsSkinFile(simMeshSkin);
+	if (!isSimMeshSkinFile && log)
+		g_pILog->LogError("CryAnimation[VCloth]: a simulation-mesh (%s) must be a SKIN-file. You can't use this file: %s", simMeshSkin, pathName);
+
+	if (isRenderMeshSkinFile && isSimMeshSkinFile)
+	{
+		ISkin* pModelSKIN = g_pCharacterManager->LoadModelSKIN(params.vclothParams.renderBinding.c_str(), params.skinLoadingFlags);
+		if (!pModelSKIN && log)
+		{
+			g_pILog->LogError("CryAnimation[VCloth]: skin-attachment not created: CDF: %s  SKIN: %s", pathName, renderMeshSkin);
+		}
+
+		ISkin* pModelSimSKIN = g_pCharacterManager->LoadModelSKIN(params.vclothParams.simBinding.c_str(), params.skinLoadingFlags);
+		if (!pModelSimSKIN && log)
+		{
+			g_pILog->LogError("CryAnimation[VCloth]: skin-attachment not created: CDF: %s  SKIN: %s", pathName, simMeshSkin);
+		}
+
+		if (pModelSKIN && pModelSimSKIN)
+		{
+			CSKINAttachment* pSkinInstance = new CSKINAttachment();
+			pSkinInstance->m_pIAttachmentSkin = pAttachmentVCloth;
+			IAttachmentObject* pAttachmentObject = static_cast<IAttachmentObject*>(pSkinInstance);
+			if (pAttachmentVCloth->Immediate_AddBinding(pAttachmentObject, pModelSKIN, params.skinLoadingFlags))
+			{
+				pAttachmentVCloth->SetFlags(params.flags | FLAGS_ATTACH_SW_SKINNING);
+				pAttachmentVCloth->HideAttachment(params.flags & FLAGS_ATTACH_HIDE_ATTACHMENT);
+
+				if (pAttachmentObject)
+				{
+					
+					if (!params.vclothParams.material.empty())
+					{
+						if (IMaterial* pMaterial = g_pISystem->GetI3DEngine()->GetMaterialManager()->LoadMaterial(params.vclothParams.material.c_str(), false))
+						{
+							for (uint32 nLOD = 0; nLOD < g_nMaxGeomLodLevels; ++nLOD)
+							{
+								pAttachmentObject->SetReplacementMaterial(pMaterial, nLOD);
+							}
+						}
+					}
+					
+					for (uint32 nLOD = 0; nLOD < g_nMaxGeomLodLevels; ++nLOD)
+					{
+						if (!params.vclothParams.materialLods[nLOD].empty())
+						{
+							if (IMaterial* pMaterial = params.vclothParams.material.empty() ? nullptr : g_pISystem->GetI3DEngine()->GetMaterialManager()->LoadMaterial(params.vclothParams.material.c_str(), false))
+							{
+								pAttachmentObject->SetReplacementMaterial(pMaterial, nLOD);
+							}
+						}
+					}
+
+					if (const CModelMesh* pModelMesh = static_cast<CSkin*>(pModelSKIN)->GetModelMesh(0))
+					{
+						pAttachmentVCloth->m_vertexAnimation.CreateFrameStates(pModelMesh->m_softwareMesh.GetVertexFrames(), *(m_pSkelInstance->m_pDefaultSkeleton.get()));
+					}
+				}
+				pAttachmentVCloth->AddSimBinding(*pModelSimSKIN, params.skinLoadingFlags);
+				pAttachmentVCloth->AddClothParams(params.vclothParams);
+				pAttachmentVCloth->ComputeClothCacheKey();
+
+				m_pSkelInstance->SetHasVertexAnimation(true);
+			}
+		}
+	}
+
+	return pAttachmentVCloth;
+}
 
 ICharacterInstance* CAttachmentManager::GetSkelInstance() const
 {

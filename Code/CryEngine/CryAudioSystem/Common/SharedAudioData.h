@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryCore/CryCrc32.h>
 
 #define AUDIO_INVALID_CRC32 (0xFFFFffff)
 
