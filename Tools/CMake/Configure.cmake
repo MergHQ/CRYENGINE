@@ -148,6 +148,8 @@ set(global_defines "CRYENGINE_DEFINE")
 
 if(NOT ANDROID AND NOT ORBIS)
 	option(OPTION_SCALEFORMHELPER "Use Scaleform Helper" ON)
+else()
+	set(OPTION_SCALEFORMHELPER ON)
 endif()
 
 if(OPTION_STATIC_LINKING)
