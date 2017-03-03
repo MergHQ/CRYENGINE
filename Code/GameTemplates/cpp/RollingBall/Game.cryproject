@@ -5,7 +5,7 @@
     "code": [ "Code" ],
     "libs": [
       {
-        "name": "Blank",
+        "name": "Rolling Ball",
         "shared": {
           "win_x64": "bin/win_x64/Game.dll",
           "win_x86": "bin/win_x86/Game.dll"
@@ -14,7 +14,7 @@
     ]
   },
   "info": {
-    "name": "Blank Game Template"
+    "name": "Rolling Ball Game Template"
   },
   "require": {
     "engine": "engine-5.3"
