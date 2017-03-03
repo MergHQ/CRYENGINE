@@ -14,19 +14,17 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 	enum EPerPassTexture
 	{
 		ePerPassTexture_SceneLinearDepth = 24,
-		ePerPassTexture_SceneDepthBuffer = 25,
-		ePerPassTexture_TerrainElevMap = 26,
+		ePerPassTexture_PerlinNoiseMap,
+		ePerPassTexture_TerrainElevMap,
 		ePerPassTexture_WindGrid,
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
+		ePerPassTexture_SceneDepthBuffer,
 
 		ePerPassTexture_Count
 	};
-
-	// NOTE: DXOrbis only supports 32 shader slots at this time, don't use t32 or higher if DXOrbis support is desired!
-	static_assert(ePerPassTexture_Count <= 32, "Bind slot too high for DXOrbis");
 	
 	enum EPass
 	{

@@ -104,6 +104,7 @@ CTexture* CTexture::s_ptexSvoNorm;
 CTexture* CTexture::s_ptexSvoOpac;
 CTexture* CTexture::s_ptexRT_2D;
 CTexture* CTexture::s_ptexNormalsFitting;
+CTexture* CTexture::s_ptexPerlinNoiseMap;
 
 CTexture* CTexture::s_ptexSceneNormalsMap;
 CTexture* CTexture::s_ptexSceneNormalsMapMS;
@@ -2867,6 +2868,7 @@ void CTexture::LoadDefaultSystemTextures()
 			{ s_ptexAOJitter,                    "%ENGINE%/EngineAssets/ScreenSpace/PointsOnSphere4x4.tif",          FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexAOVOJitter,                  "%ENGINE%/EngineAssets/ScreenSpace/PointsOnSphereVO4x4.tif",        FT_DONT_RELEASE | FT_DONT_STREAM                     },
 			{ s_ptexNormalsFitting,              "%ENGINE%/EngineAssets/ScreenSpace/NormalsFitting.dds",             FT_DONT_RELEASE | FT_DONT_STREAM                     },
+			{ s_ptexPerlinNoiseMap,              "%ENGINE%/EngineAssets/Textures/perlinNoise2D.dds",                 FT_DONT_RELEASE | FT_DONT_STREAM					  },
 
 #if !defined(_RELEASE)
 			{ s_ptexNoTexture,                   "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif",                   FT_DONT_RELEASE | FT_DONT_STREAM                     },

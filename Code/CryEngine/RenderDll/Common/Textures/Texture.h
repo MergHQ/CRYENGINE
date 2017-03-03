@@ -2222,6 +2222,7 @@ public:
 	static CTexture* s_ptexRT_2D;
 	static CTexture* s_ptex16_PointsOnSphere;
 	static CTexture* s_ptexNormalsFitting;
+	static CTexture* s_ptexPerlinNoiseMap;
 
 	static CTexture* s_ptexSceneNormalsMap;           // RT with normals for deferred shading
 	static CTexture* s_ptexSceneNormalsMapMS;         // Dummy normals target for binding multisampled rt
@@ -2261,7 +2262,7 @@ public:
 	static CTexture*           s_ptexWaterCaustics[2];   // caustics buffers
 	static CTexture*           s_ptexRainOcclusion;      // top-down rain occlusion
 	static CTexture*           s_ptexRainSSOcclusion[2]; // screen-space rain occlusion accumulation
-
+	
 	static CTexture*           s_ptexRainDropsRT[2];
 
 	static CTexture*           s_ptexRT_ShadowPool;
