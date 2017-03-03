@@ -650,6 +650,20 @@ const char* CLevelInfo::GetDisplayName() const
 }
 
 //------------------------------------------------------------------------
+size_t CLevelInfo::GetGameRules(const char** pszGameRules, size_t numGameRules) const
+{
+	if (pszGameRules == nullptr)
+		return 0;
+
+	numGameRules = std::min(m_gamerules.size(), numGameRules);
+	for (size_t i = 0; i < numGameRules; ++i)
+	{
+		pszGameRules[i] = m_gamerules[i].c_str();
+	}
+	return numGameRules;
+}
+
+//------------------------------------------------------------------------
 bool CLevelInfo::GetAttribute(const char* name, TFlowInputData& val) const
 {
 	TAttributeList::const_iterator it = m_levelAttributes.find(name);
