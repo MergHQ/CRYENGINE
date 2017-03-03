@@ -33,16 +33,13 @@ protected:
 	void                 ClearAllBits();
 	void                 ClearTmpAreas() { m_areasTmp.clear(); }
 
-#ifndef _RELEASE
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 	void Debug_CheckBB(Vec2 const& vBBCentre, Vec2 const& vBBExtent, CArea const* const pArea);
-#endif
-
-	static const uint32 GRID_CELL_SIZE;
-	static const float  GRID_CELL_SIZE_R;
+#endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 
 	CEntitySystem*      m_pEntitySystem;
 
-	uint32              m_numCells;
+	uint32              m_numCellsPerAxis;
 
 	uint32*             m_pbitFieldX;      // start of the X bit field
 	uint32*             m_pbitFieldY;      // start of the Y bit field

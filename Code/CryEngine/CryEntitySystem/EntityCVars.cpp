@@ -1,16 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   EntityCVars.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
 #include "EntityCVars.h"
 #include "EntitySystem.h"
@@ -52,6 +41,7 @@ ICVar* CVar::pNotSeenTimeout = NULL;
 ICVar* CVar::pDebugNotSeenTimeout = NULL;
 ICVar* CVar::pDrawAreas = NULL;
 ICVar* CVar::pDrawAreaGrid = NULL;
+ICVar* CVar::pDrawAreaGridCells = NULL;
 ICVar* CVar::pDrawAreaDebug = NULL;
 ICVar* CVar::pDrawAudioProxyZRay = NULL;
 
@@ -292,6 +282,7 @@ void CVar::Init()
 
 	pDrawAreas = REGISTER_INT("es_DrawAreas", 0, VF_CHEAT, "Enables drawing of Areas");
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");
+	pDrawAreaGridCells = REGISTER_INT("es_DrawAreaGridCells", 0, VF_CHEAT, "Enables drawing of Area Grid Cells' number and coordinates. Requires \"es_DrawAreaGrid\" to be enabled!");
 	pDrawAreaDebug = REGISTER_INT("es_DrawAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
 	pDrawAudioProxyZRay = REGISTER_INT("es_DrawAudioProxyZRay", 0, VF_CHEAT, "Enables drawing of Z ray on check for Z visibility");
 
