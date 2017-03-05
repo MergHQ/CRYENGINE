@@ -25,16 +25,19 @@ void CShadowMapStage::Init()
 		m_pPerPassResourceSetTemplate = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 
 		const EShaderStage shaderStages = EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel;
+		m_pPerPassResourceSetTemplate->SetTexture(EPerPassTexture_PerlinNoiseMap, CTexture::s_pTexNULL, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResourceSetTemplate->SetTexture(EPerPassTexture_WindGrid, CTexture::s_pTexNULL, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResourceSetTemplate->SetTexture(EPerPassTexture_TerrainElevMap, CTexture::s_pTexNULL, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResourceSetTemplate->SetTexture(EPerPassTexture_TerrainBaseMap, CTexture::s_pTexNULL, SResourceView::DefaultViewSRGB, shaderStages);
 		m_pPerPassResourceSetTemplate->SetTexture(EPerPassTexture_DissolveNoise, CTexture::s_pTexNULL, SResourceView::DefaultView, shaderStages);
+
 		m_pPerPassResourceSetTemplate->SetConstantBuffer(eConstantBufferShaderSlot_PerPass, CDeviceBufferManager::CreateNullConstantBuffer(), shaderStages);
 		m_pPerPassResourceSetTemplate->SetConstantBuffer(eConstantBufferShaderSlot_PerView, CDeviceBufferManager::CreateNullConstantBuffer(), shaderStages);
 
 		auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
 		for (size_t i = 0; i < materialSamplers.size(); ++i)
 			m_pPerPassResourceSetTemplate->SetSampler(EEfResSamplers(i), materialSamplers[i], shaderStages);
+
 		// hardcoded point samplers
 		m_pPerPassResourceSetTemplate->SetSampler(8, gcpRendD3D->m_nPointWrapSampler, shaderStages);
 		m_pPerPassResourceSetTemplate->SetSampler(9, gcpRendD3D->m_nPointClampSampler, shaderStages);
@@ -674,6 +677,7 @@ void CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)
 		if (pTerrain)
 			pTerrain->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
+		m_pPerPassResources->SetTexture(EPerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResources->SetTexture(EPerPassTexture_WindGrid, CTexture::s_ptexWindGrid, SResourceView::DefaultView, shaderStages);
 		m_pPerPassResources->SetTexture(EPerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), SResourceView::DefaultViewSRGB, shaderStages);
 		m_pPerPassResources->SetTexture(EPerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), SResourceView::DefaultView, shaderStages);

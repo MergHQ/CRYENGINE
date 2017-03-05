@@ -187,6 +187,7 @@ half4 GetSceneTex(Texture2D tex, float2 texTC)                                  
 half4 GetSceneTexProj(Texture2D tex, float4 texTC)                                                  { return GetTexture2DProj(tex, ssPointClamp, texTC.xyzw); } // TODO: convert to load
 half4 GetDissolveTex(Texture2D tex, float2 texTC)                                                   { return GetTexture2D(tex, ssPointWrap, texTC.xy); }
 half4 GetDissolveTexLod(Texture2D tex, float4 texTC)                                                { return GetTexture2DLod(tex, ssPointWrap, texTC.xyzw); }
+half4 GetPerlinNoiseTexLod(Texture2D tex, float4 texTC)                                             { return GetTexture2DLod(tex, ssMaterialTrilinear, texTC.xyzw); }
 half4 GetTerrainTex(Texture2D tex, float2 terrainTC)                                                { return GetTexture2D(tex, ssMaterialBilinearClamp, terrainTC) * g_PS_TerrainInfo.x; }
 half3 GetTerrainNormal(Texture2D tex, float2 terrainTC) 
 { 

@@ -22,10 +22,10 @@ float Script : STANDARDSGLOBAL
 #if %VERTCOLORS
            "VertexColors"
 #endif
-#if %DETAIL_BENDING
+#if %DETAIL_BENDING || %VEGETATION_EXT_BENDING
   #if %GRASS
 					 "VT_DetailBendingGrass;"
-  #elif %LEAVES
+  #elif %LEAVES || %VEGETATION_EXT_BENDING
 					 "VT_DetailBending;"
   #endif
 #endif

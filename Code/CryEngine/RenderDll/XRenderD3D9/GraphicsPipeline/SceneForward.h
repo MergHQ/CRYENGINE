@@ -11,7 +11,8 @@ class CSceneForwardStage : public CGraphicsPipelineStage
 {
 	enum EPerPassTexture
 	{
-		ePerPassTexture_TerrainElevMap = 26,
+		ePerPassTexture_PerlinNoiseMap = 25,
+		ePerPassTexture_TerrainElevMap,
 		ePerPassTexture_WindGrid,
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
@@ -20,9 +21,6 @@ class CSceneForwardStage : public CGraphicsPipelineStage
 
 		ePerPassTexture_Count
 	};
-
-	// NOTE: DXOrbis only supports 32 shader slots at this time, don't use t32 or higher if DXOrbis support is desired!
-	static_assert(ePerPassTexture_Count <= 32, "Bind slot too high for DXOrbis");
 	
 	enum EPass
 	{

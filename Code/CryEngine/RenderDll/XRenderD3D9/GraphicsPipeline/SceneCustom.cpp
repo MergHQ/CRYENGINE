@@ -180,12 +180,13 @@ bool CSceneCustomStage::PreparePerPassResources(bool bOnInit)
 		// TODO: This is fragile though and there should be a way to allocate unused IDs for this
 		m_pPerPassResources->SetTexture(ePerPassTexture_SceneDepthBuffer, pRenderer->m_DepthBufferOrigMSAA.pTexture, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 
+		m_pPerPassResources->SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), SResourceView::DefaultViewSRGB, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
-		
+
 		// Overwrite standard dissolve noise slot with gradient
 		m_pPerPassResources->SetTexture(ePerPassTexture_DissolveNoise, CTexture::s_ptexPaletteTexelsPerMeter, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 	}

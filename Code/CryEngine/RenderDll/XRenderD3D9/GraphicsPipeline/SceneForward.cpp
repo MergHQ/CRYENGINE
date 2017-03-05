@@ -99,7 +99,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit)
 	{
 		CDeviceResourceSetPtr pResourceSet = (i == 0) ? m_pOpaquePassResources : m_pTransparentPassResources;
 		pResourceSet->Clear();
-
+	
 		// Samplers
 		{
 			auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
@@ -117,7 +117,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit)
 			int nTerrainTex0 = 0, nTerrainTex1 = 0, nTerrainTex2 = 0;
 			if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
 				gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
-
+	
+			pResourceSet->SetTexture(ePerPassTexture_PerlinNoiseMap, CTexture::s_ptexPerlinNoiseMap, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 			pResourceSet->SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 			pResourceSet->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 			pResourceSet->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);

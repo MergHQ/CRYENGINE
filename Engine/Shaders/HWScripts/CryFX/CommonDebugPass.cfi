@@ -67,7 +67,7 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN_common)
   return OUT;            
 }
 
-Texture2D<float4> SceneDepthTex : register(t25);
+Texture2D<float4> SceneDepthTex : register(t32);
 
 pixout Common_DebugPassPS(vert2fragDebug IN)
 {
