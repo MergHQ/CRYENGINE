@@ -1773,7 +1773,7 @@ public:
 
 	CAutoRegParamsNode() : CAutoRegFlowNodeBase(s_PhysParamNames[GetType()]) 
 	{
-		if (!*m_sClassName)
+		if (!*m_szClassName)
 			this->~CAutoRegParamsNode();
 	}
 	IFlowNodePtr Create(IFlowNode::SActivationInfo* pActInfo)	

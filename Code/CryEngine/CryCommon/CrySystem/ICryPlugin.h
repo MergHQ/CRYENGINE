@@ -86,22 +86,20 @@ protected:
 #endif
 
 #ifndef _LIB
-	#define PLUGIN_FLOWNODE_REGISTER                                                        \
-	  virtual bool RegisterFlowNodes() override                                             \
-	  {                                                                                     \
-	    m_registeredFlowNodeIds.clear();                                                    \
-	                                                                                        \
-	    CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;                    \
-	    while (pFactory && gEnv->pFlowSystem)                                               \
-	    {                                                                                   \
-	      TFlowNodeTypeId nodeId = gEnv->pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory); \
-	      m_registeredFlowNodeIds.push_back(nodeId);                                        \
-	      CryLog("Successfully registered flownode '%s'", pFactory->m_sClassName);          \
-	                                                                                        \
-	      pFactory = pFactory->m_pNext;                                                     \
-	    }                                                                                   \
-	                                                                                        \
-	    return (m_registeredFlowNodeIds.size() > 0);                                        \
+	#define PLUGIN_FLOWNODE_REGISTER                                                                   \
+	  virtual bool RegisterFlowNodes() override                                                        \
+	  {                                                                                                \
+	    m_registeredFlowNodeIds.clear();                                                               \
+	                                                                                                   \
+	    CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::s_pFirst;                               \
+	    while (pFactory && gEnv->pFlowSystem)                                                          \
+	    {                                                                                              \
+	      TFlowNodeTypeId nodeId = gEnv->pFlowSystem->RegisterType(pFactory->m_szClassName, pFactory); \
+	      m_registeredFlowNodeIds.push_back(nodeId);                                                   \
+	      CryLog("Successfully registered flownode '%s'", pFactory->m_szClassName);                    \
+	      pFactory = pFactory->m_pNext;                                                                \
+	    }                                                                                              \
+	    return (m_registeredFlowNodeIds.size() > 0);                                                   \
 	  }
 #else
 	#define PLUGIN_FLOWNODE_REGISTER
