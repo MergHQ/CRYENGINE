@@ -4,6 +4,7 @@
 #include <IActionMapManager.h>
 
 class CPlayer;
+struct SvInputParams;
 
 ////////////////////////////////////////////////////////
 // Player extension to manage input
@@ -21,6 +22,8 @@ class CPlayerInput
 		eInputFlagType_Toggle
 	};
 
+	const EEntityAspects kInputAspect = eEA_GameClientD;
+
 public:
 	typedef uint8 TInputFlags;
 
@@ -34,13 +37,15 @@ public:
 	};
 
 public:
-	virtual ~CPlayerInput() {}
+	virtual ~CPlayerInput();
 
 	// IEntityComponent
 	virtual void Initialize() override;
 	virtual void ProcessEvent(SEntityEvent& entityEvent) override;
 	virtual uint64 GetEventMask() const override;
 	void Update(SEntityUpdateContext &ctx);
+
+	void InitLocalPlayer();
 
 	// IActionListener
 	virtual void OnAction(const ActionId &action, int activationMode, float value) override;
@@ -53,10 +58,13 @@ public:
 
 	const Quat &GetLookOrientation() const { return m_lookOrientation; }
 
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
+	virtual NetworkAspectType GetNetSerializeAspectMask() const { return kInputAspect; };
+
 protected:
 	void InitializeActionHandler();
 
-	void HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type = eInputFlagType_Hold);
+	void HandleInputFlagChange(TInputFlags flags, int activationMode, EInputFlagType type = eInputFlagType_Hold);
 
 	// Start actions below
 protected:
@@ -67,7 +75,11 @@ protected:
 
 	bool OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+
+	bool OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	
+	bool SvInput(SvInputParams&& p, INetChannel *);
+
 protected:
 	CPlayer *m_pPlayer;
 

@@ -450,8 +450,7 @@
     "Network/Helpers":[
       "Network/ObjectSelector.cpp",
       "Network/NetActionSync.h",
-      "Network/ObjectSelector.h",
-      "Network/SensedInclusionSet.h"
+      "Network/ObjectSelector.h"
     ],
     "Network/Core":[
       "Network/ClassRegistryReplicator.cpp",

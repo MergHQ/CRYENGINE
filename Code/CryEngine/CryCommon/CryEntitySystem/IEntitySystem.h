@@ -148,9 +148,10 @@ struct IAreaManager
 	virtual IArea const* const GetArea(size_t const nAreaIndex) const = 0;
 	virtual size_t             GetOverlappingAreas(const AABB& bb, PodArray<IArea*>& list) const = 0;
 
-	//! Additional Query based on position. Returns only the areas that have AudioProxies and valid AudioEnvironmentIDs.
-	//! Needs preallocated space to write nMaxResults to pResults.
-	//! The actual number of results filled is returned in rNumResults.
+	//! Additional Query based on position. Returns only the areas that provide audio environments.
+	//! Needs preallocated space to write numMaxResults to pResults.
+	//! The number of found areas is returned in numResults.
+	//! Note: This method is currently only called by the audio thread and not thread safe!
 	//! \return True on success or false on error or if provided structure was too small.
 	virtual bool QueryAudioAreas(Vec3 const& pos, SAudioAreaInfo* const pResults, size_t const numMaxResults, size_t& numResults) = 0;
 

@@ -287,10 +287,6 @@ void CTornado::ProcessEvent(SEntityEvent &event)
 }
 
 //------------------------------------------------------------------------
-void CTornado::SetAuthority(bool auth)
-{
-}
-
 void CTornado::SetTarget(IEntity* pTargetEntity)
 {
 	m_pTargetEntity = pTargetEntity;

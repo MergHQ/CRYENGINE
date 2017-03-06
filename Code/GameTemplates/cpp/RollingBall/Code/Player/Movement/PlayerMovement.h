@@ -1,8 +1,17 @@
 #pragma once
-
 #include <CryEntitySystem/IEntityComponent.h>
 
 class CPlayer;
+
+// Declared in the header so PlayerInput could send them.
+struct MovementParams
+{
+	Vec3 pos;
+	void SerializeWith(TSerialize ser)
+	{
+		ser.Value("pos", pos, 'wrld');
+	}
+};
 
 ////////////////////////////////////////////////////////
 // Player extension to manage movement
@@ -22,6 +31,9 @@ public:
 
 	void Update(SEntityUpdateContext& ctx);
 	void Physicalize();
+
+	bool SvMovement(MovementParams&& p, INetChannel *);
+	bool ClMovementFinal(MovementParams&& p, INetChannel *);
 
 protected:
 	CPlayer *m_pPlayer;

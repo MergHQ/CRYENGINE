@@ -8,8 +8,6 @@
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
-USE_CRYPLUGIN_FLOWNODES
-
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
 

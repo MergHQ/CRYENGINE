@@ -556,6 +556,11 @@ void CEntityPhysics::Serialize(TSerialize ser)
 				m_pPhysicalEntity->GetStateSnapshot(ser);
 			}
 		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(ser.GetSerializationTarget() != eST_Network,
+				"Attempting to serialize physics without physical entity");
+		}
 
 		if (ser.GetSerializationTarget() != eST_Network) // no folieage over network for now.
 		{

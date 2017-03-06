@@ -15,7 +15,9 @@ CCryPluginManager* CCryPluginManager::s_pThis = 0;
 // This is separate since a plugin does not necessarily have to come from a binary, for example if static linking is used.
 struct SPluginModule
 {
-	SPluginModule() {}
+	SPluginModule()
+	{
+	}
 
 	SPluginModule(const char* path, const char* className)
 		: m_engineModulePath(path)
@@ -56,9 +58,9 @@ struct SPluginModule
 	bool Shutdown()
 	{
 		bool bSuccess = false;
-		if (m_engineModulePath.size() > 0)
+		if (!m_engineModulePath.empty())
 		{
-			bSuccess = GetISystem()->UnloadEngineModule(m_engineModulePath, m_className);
+			bSuccess = GetISystem()->UnloadEngineModule(m_engineModulePath);
 
 			// Prevent Shutdown twice
 			m_engineModulePath.clear();
@@ -88,7 +90,9 @@ struct SPluginContainer
 
 	// Constructor for managed (Mono) plug-ins, or statically linked ones
 	SPluginContainer(const std::shared_ptr<ICryPlugin>& plugin)
-		: m_pPlugin(plugin) {}
+		: m_pPlugin(plugin)
+	{
+	}
 
 	bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 	{
@@ -114,12 +118,7 @@ struct SPluginContainer
 
 	ICryPlugin* GetPluginPtr() const
 	{
-		if (m_pPlugin)
-		{
-			return m_pPlugin.get();
-		}
-
-		return nullptr;
+		return m_pPlugin ? m_pPlugin.get() : nullptr;
 	}
 
 	friend bool operator==(const SPluginContainer& left, const SPluginContainer& right)
@@ -173,9 +172,9 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 	{
 	case ESYSTEM_EVENT_REGISTER_FLOWNODES:
 		{
-			for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
+			for (auto& it : m_pluginContainer)
 			{
-				it->GetPluginPtr()->RegisterFlowNodes();
+				it.GetPluginPtr()->RegisterFlowNodes();
 			}
 		}
 		break;
@@ -385,15 +384,15 @@ bool CCryPluginManager::LoadPluginFromDisk(EPluginType type, const char* path, c
 bool CCryPluginManager::UnloadAllPlugins()
 {
 	bool bError = false;
-	for (auto it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+	for (auto& it : m_pluginContainer)
 	{
-		if (!it->Shutdown())
+		if (!it.Shutdown())
 		{
 			bError = true;
 		}
 
 		// notification to listeners, that plugin got un-initialized
-		NotifyEventListeners(it->m_pluginClassId, IPluginEventListener::EPluginEvent::Unloaded);
+		NotifyEventListeners(it.m_pluginClassId, IPluginEventListener::EPluginEvent::Unloaded);
 	}
 
 	m_pluginContainer.clear();
@@ -403,36 +402,39 @@ bool CCryPluginManager::UnloadAllPlugins()
 
 void CCryPluginManager::NotifyEventListeners(const CryClassID& classID, IPluginEventListener::EPluginEvent event)
 {
-	for (auto it = m_pluginListenerMap.cbegin(); it != m_pluginListenerMap.cend(); ++it)
+	for (const auto& it : m_pluginListenerMap)
 	{
-		if (std::find(it->second.begin(), it->second.end(), classID) != it->second.end())
+		const auto& classIDs = it.second;
+		if (std::find(classIDs.cbegin(), classIDs.cend(), classID) != classIDs.cend())
 		{
-			it->first->OnPluginEvent(classID, event);
+			it.first->OnPluginEvent(classID, event);
 		}
 	}
 }
 
 void CCryPluginManager::Update(IPluginUpdateListener::EPluginUpdateType updateFlags)
 {
-	for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
+	for (const auto& it : m_pluginContainer)
 	{
-		if (it->GetPluginPtr()->GetUpdateFlags() & updateFlags)
+		auto pPlugin = it.GetPluginPtr();
+		CRY_ASSERT(pPlugin != nullptr);
+		if ((pPlugin->GetUpdateFlags() & updateFlags) != 0)
 		{
-			it->GetPluginPtr()->OnPluginUpdate(updateFlags);
+			pPlugin->OnPluginUpdate(updateFlags);
 		}
 	}
 }
 
 std::shared_ptr<ICryPlugin> CCryPluginManager::QueryPluginById(const CryClassID& classID) const
 {
-	for (auto it = m_pluginContainer.cbegin(); it != m_pluginContainer.cend(); ++it)
+	for (const auto& it : m_pluginContainer)
 	{
-		ICryFactory* pFactory = it->GetPluginPtr()->GetFactory();
+		ICryFactory* pFactory = it.GetPluginPtr()->GetFactory();
 		if (pFactory)
 		{
 			if (pFactory->GetClassID() == classID || pFactory->ClassSupports(classID))
 			{
-				return it->m_pPlugin;
+				return it.m_pPlugin;
 			}
 		}
 	}

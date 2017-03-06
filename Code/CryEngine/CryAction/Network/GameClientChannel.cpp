@@ -228,6 +228,7 @@ void CGameClientChannel::DefineProtocol(IProtocolBuilder* pBuilder)
 		cca->GetIGameObjectSystem()->DefineProtocol(false, pBuilder);
 	if (cca->GetGameContext())
 		cca->GetGameContext()->DefineContextProtocols(pBuilder, false);
+	cca->DefineProtocolRMI(pBuilder);
 }
 
 // message implementation
@@ -363,15 +364,19 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			return false;
 		}
 
-		CGameObject* pGameObject = (CGameObject*)CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity(pEntity->GetId());
-		CRY_ASSERT(pGameObject);
 		if (param.bClientActor)
 		{
 			SetPlayerId(entityId);
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
-		pGameObject->PostRemoteSpawn();
+
+		CGameObject* pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
+		if (pGameObject)
+		{
+			pGameObject->PostRemoteSpawn();
+		}
+
 		return true;
 	}
 
@@ -465,6 +470,9 @@ void CGameClientChannel::CallOnSetPlayerId()
 
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(GetPlayerId()))
 		pActor->InitLocalPlayer();
+
+	SEntityEvent becomeLocalPlayer(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER);
+	pPlayer->SendEvent(becomeLocalPlayer);
 
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
 	if (m_pVoiceController)

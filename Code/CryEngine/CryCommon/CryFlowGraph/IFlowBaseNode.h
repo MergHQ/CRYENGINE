@@ -22,42 +22,41 @@ enum ENodeCloneType
 class CAutoRegFlowNodeBase : public IFlowNodeFactory
 {
 public:
-	CAutoRegFlowNodeBase(const char* sClassName)
+	CAutoRegFlowNodeBase(const char* szClassName)
 	{
-		m_sClassName = sClassName;
+		m_szClassName = szClassName;
 		m_pNext = 0;
-		if (!m_pLast)
+		if (!s_pLast)
 		{
-			m_pFirst = this;
+			s_pFirst = this;
 		}
 		else
 		{
-			m_pLast->m_pNext = this;
+			s_pLast->m_pNext = this;
 		}
 
-		m_pLast = this;
+		s_pLast = this;
 	}
 
 	virtual ~CAutoRegFlowNodeBase()
 	{
-		CAutoRegFlowNodeBase* node = m_pFirst;
-		CAutoRegFlowNodeBase* prev = nullptr;
-		while (node && node != this)
+		CAutoRegFlowNodeBase* pNode = s_pFirst;
+		CAutoRegFlowNodeBase* pPrev = nullptr;
+		while (pNode && pNode != this)
 		{
-			prev = node;
-			node = node->m_pNext;
+			pPrev = pNode;
+			pNode = pNode->m_pNext;
 		}
 
-		assert(node);
-		if (node)
+		if (pNode)
 		{
-			if (prev)
-				prev->m_pNext = m_pNext;
+			if (pPrev)
+				pPrev->m_pNext = m_pNext;
 			else
-				m_pFirst = m_pNext;
+				s_pFirst = m_pNext;
 
-			if (m_pLast == this)
-				m_pLast = prev;
+			if (s_pLast == this)
+				s_pLast = pPrev;
 		}
 	}
 
@@ -72,11 +71,11 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	const char*                  m_sClassName;
+	const char*                  m_szClassName;
 	CAutoRegFlowNodeBase*        m_pNext;
-	static CAutoRegFlowNodeBase* m_pFirst;
-	static CAutoRegFlowNodeBase* m_pLast;
-	static bool                  m_bNodesRegistered;
+	static CAutoRegFlowNodeBase* s_pFirst;
+	static CAutoRegFlowNodeBase* s_pLast;
+	static bool                  s_bNodesRegistered;
 	//////////////////////////////////////////////////////////////////////////
 };
 
@@ -85,8 +84,8 @@ template<class T>
 class CAutoRegFlowNode : public CAutoRegFlowNodeBase
 {
 public:
-	CAutoRegFlowNode(const char* sClassName)
-		: CAutoRegFlowNodeBase(sClassName)
+	CAutoRegFlowNode(const char* szClassName)
+		: CAutoRegFlowNodeBase(szClassName)
 	{
 	}
 
@@ -106,7 +105,7 @@ public:
 		}
 		else
 		{
-			assert(false);
+			CRY_ASSERT_MESSAGE(false, "Unsupported CloneType!");
 		}
 	}
 
@@ -212,28 +211,28 @@ public:
 
 inline void CryRegisterFlowNodes()
 {
-	if (gEnv->pFlowSystem && !CAutoRegFlowNodeBase::m_bNodesRegistered)
+	if (gEnv->pFlowSystem && !CAutoRegFlowNodeBase::s_bNodesRegistered)
 	{
-		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::s_pFirst;
 		while (pFactory)
 		{
-			gEnv->pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
+			gEnv->pFlowSystem->RegisterType(pFactory->m_szClassName, pFactory);
 			pFactory = pFactory->m_pNext;
 		}
-		CAutoRegFlowNodeBase::m_bNodesRegistered = true;
+		CAutoRegFlowNodeBase::s_bNodesRegistered = true;
 	}
 }
 
 inline void CryUnregisterFlowNodes()
 {
-	if (gEnv->pFlowSystem && CAutoRegFlowNodeBase::m_bNodesRegistered)
+	if (gEnv && gEnv->pFlowSystem && CAutoRegFlowNodeBase::s_bNodesRegistered)
 	{
-		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::s_pFirst;
 		while (pFactory)
 		{
-			gEnv->pFlowSystem->UnregisterType(pFactory->m_sClassName);
+			gEnv->pFlowSystem->UnregisterType(pFactory->m_szClassName);
 			pFactory = pFactory->m_pNext;
 		}
-		CAutoRegFlowNodeBase::m_bNodesRegistered = false;
+		CAutoRegFlowNodeBase::s_bNodesRegistered = false;
 	}
 }

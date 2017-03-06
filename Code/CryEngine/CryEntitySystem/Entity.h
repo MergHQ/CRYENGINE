@@ -394,6 +394,9 @@ public:
 	void SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
 	int  GetCloneLayerId() const           { return m_cloneLayerId; }
 
+	virtual INetEntity* AssignNetEntityLegacy(INetEntity* ptr) final;
+	virtual INetEntity* GetNetEntity() final;
+
 	//////////////////////////////////////////////////////////////////////////
 	void AddEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
 	void RemoveEntityEventListener(EEntityEvent event, IEntityEventListener* pListener);
@@ -428,6 +431,7 @@ private:
 	friend class CEntityRender;         // For faster access to internals.
 	friend class CEntityComponentTriggerBounds;
 	friend class CEntityPhysics;
+	friend class CNetEntity; // CNetEntity iterates all components on serialization.
 
 	enum class EBindingType
 	{
@@ -528,6 +532,9 @@ private:
 	SProximityElement* m_pProximityEntity;
 
 	std::unique_ptr<SEventListeners> m_pEventListeners;
+	
+	// NetEntity stores the network serialization configuration.
+	std::unique_ptr<INetEntity> m_pNetEntity;
 
 	CEntityRender                    m_render;
 	CEntityPhysics                   m_physics;

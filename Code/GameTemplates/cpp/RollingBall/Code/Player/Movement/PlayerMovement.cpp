@@ -5,6 +5,8 @@
 #include "Player/Input/PlayerInput.h"
 #include "Player/View/PlayerView.h"
 
+#include <CryNetwork/Rmi.h>
+
 CRYREGISTER_CLASS(CPlayerMovement);
 
 CPlayerMovement::CPlayerMovement()
@@ -14,6 +16,11 @@ CPlayerMovement::CPlayerMovement()
 void CPlayerMovement::Initialize()
 {
 	m_pPlayer = GetEntity()->GetComponent<CPlayer>();
+
+	MovementParams p{ Vec3{0} };
+
+	SRmi<RMI_WRAP(&CPlayerMovement::SvMovement)>::Register(this, eRAT_NoAttach, true, eNRT_ReliableOrdered);
+	SRmi<RMI_WRAP(&CPlayerMovement::ClMovementFinal)>::Register(this, eRAT_NoAttach, true, eNRT_ReliableOrdered);
 }
 
 void CPlayerMovement::Physicalize()
@@ -26,11 +33,17 @@ void CPlayerMovement::Physicalize()
 	physParams.mass = m_pPlayer->GetCVars().m_mass;
 
 	GetEntity()->Physicalize(physParams);
+
+	// By default, the server delegates authority to a single Player-entity on the client.
+	// However, we want the player physics to be simulated server-side, so we need
+	// to prevent physics aspect delegation.
+	GetEntity()->GetNetEntity()->EnableDelegatableAspect(eEA_Physics, false);
 }
 
 uint64 CPlayerMovement::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_UPDATE);
+	return BIT64(ENTITY_EVENT_UPDATE)
+	;
 };
 
 void CPlayerMovement::ProcessEvent(SEntityEvent& event)
@@ -53,12 +66,20 @@ void CPlayerMovement::Update(SEntityUpdateContext &ctx)
 	if(pPhysicalEntity == nullptr)
 		return;
 
+	// Don't update movement when view isn't there: player spawned, but hasn't become local player.
+	if (!m_pPlayer->GetView())
+		return;
+
+	// Simulate physics only on the server for now.
+	if (!gEnv->bServer)
+		return;
+
 	// Update movement
 	pe_action_impulse impulseAction;
 	impulseAction.impulse = ZERO;
 
-	auto inputFlags = m_pPlayer->GetInput()->GetInputFlags();
-	auto &viewRotation = m_pPlayer->GetView()->GetViewRotation();
+	const auto inputFlags = m_pPlayer->GetInput()->GetInputFlags();
+	const auto &viewRotation = m_pPlayer->GetInput()->GetLookOrientation();
 
 	// Go through the inputs and apply an impulse corresponding to view rotation
 	if (inputFlags & CPlayerInput::eInputFlag_MoveForward)
@@ -86,4 +107,18 @@ void CPlayerMovement::Update(SEntityUpdateContext &ctx)
 
 		pPhysicalEntity->Action(&impulseAction);
 	}
+}
+
+bool CPlayerMovement::SvMovement(MovementParams&& p, INetChannel *pChannel)
+{
+	SRmi<RMI_WRAP(&CPlayerMovement::ClMovementFinal)>::Invoke(this,
+		std::move(p), eRMI_ToAllClients);
+	return true;
+}
+
+bool CPlayerMovement::ClMovementFinal(MovementParams&& p, INetChannel *)
+{
+	m_pPlayer->DisplayText(p.pos, stack_string().Format("%s -> Everyone",
+		GetEntity()->GetName()));
+	return true;
 }

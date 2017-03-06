@@ -485,10 +485,6 @@ void CLipSync_TransitionQueue::SetChannelId(uint16 id)
 {
 }
 
-void CLipSync_TransitionQueue::SetAuthority(bool auth)
-{
-}
-
 void CLipSync_TransitionQueue::PostUpdate(float frameTime)
 {
 }

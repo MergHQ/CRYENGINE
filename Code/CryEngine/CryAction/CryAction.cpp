@@ -2662,14 +2662,17 @@ void CCryAction::ShutdownEngine()
 	if (m_systemDll)
 	{
 		CryFreeLibrary(m_systemDll);
-		m_systemDll = 0;
+		m_systemDll = nullptr;
 	}
 
 	SAFE_DELETE(m_nextFrameCommand);
 	SAFE_DELETE(m_pPhysicsQueues);
 
-	m_pThis = 0;
-	gEnv->pGameFramework = nullptr;
+	m_pThis = nullptr;
+	if (gEnv)
+	{
+		gEnv->pGameFramework = nullptr;
+	}
 }
 
 //------------------------------------------------------------------------
@@ -3065,8 +3068,6 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 
 	if (ITextModeConsole* pTextModeConsole = gEnv->pSystem->GetITextModeConsole())
 		pTextModeConsole->EndDraw();
-
-	CGameObject::UpdateSchedulingProfiles();
 
 	gEnv->p3DEngine->SyncProcessStreamingUpdate();
 
@@ -4190,26 +4191,6 @@ INetChannel* CCryAction::GetClientChannel() const
 	return NULL;
 }
 
-void CCryAction::DelegateAuthority(EntityId entityId, uint16 channelId)
-{
-	CGameContext* pGameContext = GetGameContext();
-	if (!pGameContext)
-		return;
-	INetContext* pNetContext = pGameContext->GetNetContext();
-	if (!pNetContext)
-		return;
-
-	INetChannel* pNetChannel = NULL;
-	if (channelId != 0)
-	{
-		pNetChannel = GetNetChannel(channelId);
-		if (!pNetChannel)
-			return;
-	}
-
-	pNetContext->DelegateAuthority(entityId, pNetChannel);
-}
-
 IGameObject* CCryAction::GetGameObject(EntityId id)
 {
 	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
@@ -4252,11 +4233,6 @@ IGameObjectExtension* CCryAction::QueryGameObjectExtension(EntityId id, const ch
 		return pObj->QueryExtension(name);
 	else
 		return NULL;
-}
-
-bool CCryAction::ControlsEntity(EntityId id) const
-{
-	return m_pGame ? m_pGame->ControlsEntity(id) : false;
 }
 
 #if defined(GAME_CHANNEL_SYNC_CLIENT_SERVER_TIME)
@@ -4315,6 +4291,21 @@ INetChannel* CCryAction::GetNetChannel(uint16 channelId)
 	}
 
 	return 0;
+}
+
+void CCryAction::SetServerChannelPlayerId(uint16 channelId, EntityId id)
+{
+	CGameServerNub* pServerNub = GetGameServerNub();
+	CGameServerChannel* pServerChannel = pServerNub ? pServerNub->GetChannel(channelId) : nullptr;
+	if (pServerChannel)
+	{
+		pServerChannel->SetPlayerId(id);
+	}
+}
+
+const SEntitySchedulingProfiles* CCryAction::GetEntitySchedulerProfiles(IEntity* pEnt)
+{
+	return m_pGameObjectSystem->GetEntitySchedulerProfiles(pEnt);
 }
 
 bool CCryAction::IsChannelOnHold(uint16 channelId)

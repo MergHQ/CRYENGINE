@@ -1775,11 +1775,6 @@ void CGameRules::ProcessEvent( SEntityEvent& event)
 }
 
 //------------------------------------------------------------------------
-void CGameRules::SetAuthority( bool auth )
-{
-}
-
-//------------------------------------------------------------------------
 void CGameRules::PostUpdate( float frameTime )
 {
 	INDENT_LOG_DURING_SCOPE(true, "During CGameRules::PostUpdate");
@@ -3574,7 +3569,7 @@ void CGameRules::RenamePlayer(IActor *pActor, const char *name)
 
 		GetGameObject()->InvokeRMIWithDependentObject(ClRenameEntity(), params, eRMI_ToAllClients, params.entityId);
 
-		if (INetChannel* pNetChannel = pActor->GetGameObject()->GetNetChannel())
+		if (INetChannel* pNetChannel = gEnv->pGameFramework->GetNetChannel(pActor->GetChannelId()))
 			pNetChannel->SetNickname(fixed.c_str());
 
 		m_pGameplayRecorder->Event(pActorEntity, GameplayEvent(eGE_Renamed, fixed));

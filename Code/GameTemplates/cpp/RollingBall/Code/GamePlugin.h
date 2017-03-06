@@ -57,15 +57,6 @@ public:
 
 		gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(name, &_creator, &clsDesc);
 	}
-
-	template<class T>
-	static void RegisterEntityComponent(const char *name)
-	{
-		static CObjectCreator<T> _creator;
-
-		gEnv->pGameFramework->GetIGameObjectSystem()->RegisterExtension(name, &_creator, nullptr);
-		T::SetExtensionId(gEnv->pGameFramework->GetIGameObjectSystem()->GetID(name));
-	}
 };
 
 struct IEntityRegistrator

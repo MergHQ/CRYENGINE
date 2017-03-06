@@ -664,7 +664,7 @@ void CSystem::ShutDown()
 	SAFE_DELETE(gEnv->pMonoRuntime);
 
 	SAFE_DELETE(m_pUserAnalyticsSystem);
-	UnloadEngineModule(m_sys_dll_response_system->GetString(), "EngineModule_CryDynamicResponseSystem");
+	UnloadEngineModule(m_sys_dll_response_system->GetString());
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (m_env.pRenderer)
@@ -690,19 +690,19 @@ void CSystem::ShutDown()
 	SAFE_DELETE(m_env.pLiveCreateHost);
 	SAFE_DELETE(m_env.pLiveCreateManager);
 	SAFE_RELEASE(m_env.pHardwareMouse);
-	UnloadEngineModule("CryMovie", "EngineModule_CryMovie");
+	UnloadEngineModule("CryMovie");
 	SAFE_DELETE(m_env.pServiceNetwork);
-	UnloadEngineModule("CryAISystem", "EngineModule_CryAISystem");
-	UnloadEngineModule("CryFont", "EngineModule_CryFont");
-	UnloadEngineModule("CryNetwork", "EngineModule_CryNetwork");
-	UnloadEngineModule("CryLobby", "EngineModule_CryLobby");
+	UnloadEngineModule("CryAISystem");
+	UnloadEngineModule("CryFont");
+	UnloadEngineModule("CryNetwork");
+	UnloadEngineModule("CryLobby");
 	//	SAFE_RELEASE(m_env.pCharacterManager);
-	UnloadEngineModule("CryAnimation", "EngineModule_CryAnimation");
-	UnloadEngineModule("Cry3DEngine", "EngineModule_Cry3DEngine"); // depends on EntitySystem
-	UnloadEngineModule("CryEntitySystem", "EngineModule_CryEntitySystem");
+	UnloadEngineModule("CryAnimation");
+	UnloadEngineModule("Cry3DEngine"); // depends on EntitySystem
+	UnloadEngineModule("CryEntitySystem");
 
 	SAFE_DELETE(m_pPhysRenderer); // Must be destroyed before unloading CryPhysics as it holds memory that was allocated by that module
-	UnloadEngineModule("CryPhysics", "EngineModule_CryPhysics");
+	UnloadEngineModule("CryPhysics");
 	if (m_env.pConsole)
 		((CXConsole*)m_env.pConsole)->FreeRenderResources();
 	SAFE_RELEASE(m_pIZLibCompressor);
@@ -712,15 +712,15 @@ void CSystem::ShutDown()
 
 	SAFE_RELEASE(m_env.pRenderer);
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	UnloadEngineModule("CryRenderD3D11", "EngineModule_CryRenderer");
+	UnloadEngineModule("CryRenderD3D11");
 #else
 	auto r_driver = m_env.pConsole->GetCVar("r_driver")->GetString();
 	if (stricmp(r_driver, "DX11") == 0)
-		UnloadEngineModule("CryRenderD3D11", "EngineModule_CryRenderer");
+		UnloadEngineModule("CryRenderD3D11");
 	else if (stricmp(r_driver, "DX12") == 0)
-		UnloadEngineModule("CryRenderD3D12", "EngineModule_CryRenderer");
+		UnloadEngineModule("CryRenderD3D12");
 	else if (stricmp(r_driver, "GL") == 0)
-		UnloadEngineModule("CryRenderOpenGL", "EngineModule_CryRenderer");
+		UnloadEngineModule("CryRenderOpenGL");
 #endif
 
 	SAFE_RELEASE(m_env.pCodeCheckpointMgr);
@@ -776,10 +776,10 @@ void CSystem::ShutDown()
 		m_env.pInput->ShutDown();
 		m_env.pInput = NULL;
 	}
-	UnloadEngineModule("CryInput", "EngineModule_CryInput");
+	UnloadEngineModule("CryInput");
 
 	SAFE_RELEASE(m_pNotificationNetwork);
-	UnloadEngineModule("CryScriptSystem", "EngineModule_CryScriptSystem");
+	UnloadEngineModule("CryScriptSystem");
 
 	SAFE_DELETE(m_pMemStats);
 	SAFE_DELETE(m_pSizer);
@@ -811,7 +811,7 @@ void CSystem::ShutDown()
 
 	// Shut down audio as late as possible but before the streaming system and console get released!
 	SAFE_RELEASE(m_env.pAudioSystem);
-	UnloadEngineModule("CryAudioSystem", "EngineModule_CryAudioSystem");
+	UnloadEngineModule("CryAudioSystem");
 
 	SAFE_DELETE(m_pProjectManager);
 

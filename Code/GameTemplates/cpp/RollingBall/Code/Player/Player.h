@@ -53,6 +53,7 @@ public:
 	virtual uint64 GetEventMask() const override;
 
 	void Respawn();
+	void DisplayText(const Vec3 &pos, const char *text);
 
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
@@ -69,6 +70,4 @@ protected:
 	CPlayerMovement *m_pMovement;
 	CPlayerView *m_pView;
 	CPlayerAnimations *m_pAnimations;
-
-	bool m_bAlive;
 };

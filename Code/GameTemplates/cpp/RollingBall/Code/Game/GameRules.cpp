@@ -53,18 +53,21 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 	// Called when a new client connects to the server
 	// Occurs during level load for the local player
 	// In this case we create a player called "DefaultPlayer", and use the "Player" entity class registered in Player.cpp
-
 	SEntitySpawnParams params;
-	params.id = LOCAL_PLAYER_ENTITY_ID;
-	params.sName = "DefaultPlayer";
-	params.nFlags = ENTITY_FLAG_LOCAL_PLAYER;
+
+	string player_name = string().Format("Player%d", m_players.size());
+	params.sName = player_name;
 	params.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Player");
 	CRY_ASSERT(params.pClass);
 
 	IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(params);
 	if (pEntity)
 	{
+		// channelId: GameServerChannelId.
 		m_players[channelId] = pEntity->GetId();
+
+		pEntity->GetNetEntity()->SetChannelId(channelId);
+		pEntity->GetNetEntity()->BindToNetwork();
 	}
 	return pEntity ? true : false;
 }
@@ -76,15 +79,13 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
-	// Trigger actor revive, but never do this outside of game mode in the Editor
-	if (!gEnv->IsEditing())
-	{
-		// This is a quick hack. Previously there has been pActorSystem->GetActorByChannelId(channelId)
-		// It makes sense to call this in ENTITY_EVENT_SET_AUTHORITY for the player,
-		// but it's not network-bound yet, so that will fail.
-		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(m_players[channelId]);
-		pEntity->GetComponent<CPlayer>()->Respawn();
-	}
+	// Ignore loading the map in the editor.
+	if (gEnv->IsEditing())
+		return true;
+
+	// Respawn the player.
+	IEntity *pEntity = gEnv->pEntitySystem->GetEntity(m_players[channelId]);
+	pEntity->GetComponent<CPlayer>()->Respawn();
 
 	return true;
 }

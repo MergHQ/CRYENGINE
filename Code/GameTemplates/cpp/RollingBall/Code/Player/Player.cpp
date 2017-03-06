@@ -66,7 +66,6 @@ CPlayer::CPlayer()
 	: m_pInput(nullptr)
 	, m_pMovement(nullptr)
 	, m_pView(nullptr)
-	, m_bAlive(false)
 {
 }
 
@@ -84,11 +83,17 @@ void CPlayer::Initialize()
 	m_pMovement = GetEntity()->CreateComponent<CPlayerMovement>();
 	m_pInput = GetEntity()->CreateComponent<CPlayerInput>();
 	m_pView = GetEntity()->CreateComponent<CPlayerView>();
+	
+	// Set the player geometry, this also triggers physics proxy creation.
+	// Has to be done before binding to network to replicate physics.
+	SetPlayerModel();
 }
 
 uint64 CPlayer::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET);
+	return BIT64(ENTITY_EVENT_RESET)
+		| BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER)
+	;
 }
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
@@ -104,6 +109,12 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			}
 		}
 		break;
+		case ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER:
+		{
+			m_pInput->OnPlayerRespawn();
+			GetEntity()->Activate(true);
+		}
+		break;
 	}
 }
 
@@ -114,20 +125,18 @@ void CPlayer::Respawn()
 	// Find a spawn point and move the entity there
 	SelectSpawnPoint();
 
-	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.
-	if (m_bAlive)
-		return;
-
-	m_bAlive = true;
-
 	// Unhide the entity in case hidden by the Editor
 	GetEntity()->Hide(false);
 
-	// Set the player geometry, this also triggers physics proxy creation
-	SetPlayerModel();
-
 	// Notify input that the player respawned
 	m_pInput->OnPlayerRespawn();
+}
+
+void CPlayer::DisplayText(const Vec3 &pos, const char *text)
+{
+	IPersistantDebug *dbg = gEnv->pGameFramework->GetIPersistantDebug();
+	dbg->Begin("PlayerText", false);
+	dbg->AddText3D(pos + Vec3(0, 0, 1.4), 1.5f, Vec3(0, 1, 0), 5.0, text);
 }
 
 void CPlayer::SelectSpawnPoint()
@@ -142,8 +151,6 @@ void CPlayer::SelectSpawnPoint()
 	pEntityIterator->MoveFirst();
 
 	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-	auto extensionId = gEnv->pGameFramework->GetIGameObjectSystem()->GetID("SpawnPoint");
-
 	while (!pEntityIterator->IsEnd())
 	{
 		IEntity *pEntity = pEntityIterator->Next();
@@ -151,16 +158,10 @@ void CPlayer::SelectSpawnPoint()
 		if (pEntity->GetClass() != pSpawnerClass)
 			continue;
 
-		auto *pGameObject = gEnv->pGameFramework->GetGameObject(pEntity->GetId());
-		if (pGameObject == nullptr)
-			continue;
-
-		auto *pSpawner = static_cast<CSpawnPoint *>(pGameObject->QueryExtension(extensionId));
-		if (pSpawner == nullptr)
-			continue;
-
-		pSpawner->SpawnEntity(*GetEntity());
-
+		if (auto* pSpawner = pEntity->GetComponent<CSpawnPoint>())
+		{
+			pSpawner->SpawnEntity(*GetEntity());
+		}
 		break;
 	}
 }

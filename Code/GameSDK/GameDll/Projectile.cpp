@@ -867,11 +867,6 @@ void CProjectile::ProcessEvent(SEntityEvent& event)
 }
 
 //------------------------------------------------------------------------
-void CProjectile::SetAuthority(bool auth)
-{
-}
-
-//------------------------------------------------------------------------
 void CProjectile::LoadGeometry()
 {
 	if (m_pAmmoParams && !m_pAmmoParams->fpGeometryName.empty())

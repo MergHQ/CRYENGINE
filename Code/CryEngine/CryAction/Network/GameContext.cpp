@@ -99,7 +99,6 @@ CGameContext::CGameContext(CCryAction* pFramework, CScriptRMI* pScriptRMI, CActi
 	m_pNetContext(0),
 	m_pEntitySystem(0),
 	m_pGame(pGame),
-	m_controlledObjects(false),
 	m_isInLevelLoad(false),
 	m_pScriptRMI(pScriptRMI),
 	m_bStarted(false),
@@ -329,7 +328,6 @@ void CGameContext::AddLoadLevelTasks(IContextEstablisher* pEst, bool isServer, i
 
 		AddSetValue(pEst, eCVS_EstablishContext, &m_isInLevelLoad, false, "EndLevelLoad");
 		AddEstablishedContext(pEst, eCVS_EstablishContext, establishedToken);
-		AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	}
 }
 
@@ -383,8 +381,6 @@ void CGameContext::AddLoadingCompleteTasks(IContextEstablisher* pEst, int flags,
 				}
 			}
 		}
-
-		AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	}
 }
 
@@ -490,7 +486,6 @@ void AddWaitForPendingConnections(IContextEstablisher* pEst, EContextViewState s
 
 bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int establishedToken)
 {
-	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
 	if (gEnv->IsEditor())
@@ -609,8 +604,6 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 		return true;
 
 	// add normal channel establishment tasks here
-
-	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 
 	if (isServer)
 	{
@@ -757,30 +750,6 @@ void CGameContext::ResetMap(bool isServer)
    }
  */
 
-void CGameContext::LockResources()
-{
-	/*
-	   if (1 == ++m_resourceLocks)
-	   {
-	   gEnv->p3DEngine->LockCGFResources();
-	   gEnv->pCharacterManager->LockResources();
-	   gEnv->pSoundSystem->LockResources();
-	   }
-	 */
-}
-
-void CGameContext::UnlockResources()
-{
-	/*
-	   if (0 == --m_resourceLocks)
-	   {
-	   gEnv->p3DEngine->UnlockCGFResources();
-	   gEnv->pCharacterManager->UnlockResources();
-	   gEnv->pSoundSystem->UnlockResources();
-	   }
-	 */
-}
-
 bool CGameContext::HasSpawnPoint()
 {
 	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
@@ -826,25 +795,6 @@ void CGameContext::CallOnSpawnComplete(IEntity* pEntity)
 			}
 		}
 	}
-}
-
-uint8 CGameContext::GetDefaultProfileForAspect(EntityId id, NetworkAspectType aspectID)
-{
-	IEntity* pEntity = m_pEntitySystem->GetEntity(id);
-	if (!pEntity)
-	{
-		if (!gEnv->IsEditor())
-			GameWarning("Trying to get default profile for aspect %d on unknown entity %d", aspectID, id);
-		return ~uint8(0);
-	}
-
-	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (pProxy)
-	{
-		CGameObject* pGameObject = (CGameObject*)pProxy;
-		return pGameObject->GetDefaultProfile((EEntityAspects)aspectID);
-	}
-	return 0;
 }
 
 ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectType nAspect, uint8 profile, TSerialize serialize, bool verboseLogging)
@@ -893,19 +843,9 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 	case eEA_GameServerE:
 	case eEA_Aspect31:
 		{
-			IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-			if (!pProxy)
-			{
-				if (verboseLogging)
-					GameWarning("CGameContext::SynchObject: No user proxy with eEA_GameObject");
-				NET_PROFILE_COUNT_READ_BITS(false);
-				return eSOR_Failed;
-			}
-
 			NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
 
-			CGameObject* pGameObject = (CGameObject*)pProxy;
-			if (!pGameObject->NetSerialize(serialize, (EEntityAspects)nAspect, profile, 0))
+			if (!pEntity->GetNetEntity()->NetSerializeEntity(serialize, (EEntityAspects)nAspect, profile, 0))
 			{
 				if (verboseLogging)
 					GameWarning("CGameContext::SynchObject: game fails to serialize aspect %d on profile %d", BitIndex(nAspect), int(profile));
@@ -933,9 +873,7 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 			if (pProxy)
 			{
 				NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
-
-				CGameObject* pGameObject = (CGameObject*)pProxy;
-				if (!pGameObject->NetSerialize(serialize, eEA_Physics, profile, pflags))
+				if (!pEntity->GetNetEntity()->NetSerializeEntity(serialize, eEA_Physics, profile, pflags))
 				{
 					if (verboseLogging)
 						GameWarning("CGameContext::SynchObject: game fails to serialize physics aspect on profile %d", int(profile));
@@ -978,27 +916,6 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 	}
 	NET_PROFILE_COUNT_READ_BITS(false);
 	return eSOR_Ok;
-}
-
-bool CGameContext::SetAspectProfile(EntityId id, NetworkAspectType aspectBit, uint8 profile)
-{
-	IEntity* pEntity = m_pEntitySystem->GetEntity(id);
-	if (!pEntity)
-	{
-		GameWarning("Trying to set the profile of a non-existant entity %d", id);
-		return true;
-	}
-
-	CRY_ASSERT(0 == (aspectBit & (aspectBit - 1)));
-
-	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (pProxy)
-	{
-		CGameObject* pGameObject = (CGameObject*)pProxy;
-		if (pGameObject->SetAspectProfile((EEntityAspects)aspectBit, profile, true))
-			return true;
-	}
-	return false;
 }
 
 class CSpawnMsg : public INetSendableHook, private SBasicSpawnParams
@@ -1053,8 +970,6 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
 
 	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-	assert(pGameObject);
-	PREFAST_ASSUME(pGameObject);
 
 	SBasicSpawnParams params;
 	params.name = pEntity->GetName();
@@ -1069,7 +984,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 	params.pos = pEntity->GetPos();
 	params.scale = pEntity->GetScale();
 	params.rotation = pEntity->GetRotation();
-	params.nChannelId = pGameObject ? pGameObject->GetChannelId() : 0;
+	params.nChannelId = pEntity->GetNetEntity()->GetChannelId();
 	params.flags = pEntity->GetFlags();
 
 	params.bClientActor = pChannel ?
@@ -1080,7 +995,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		pChannel->DeclareWitness(entityId);
 	}
 
-	return new CSpawnMsg(params, pGameObject->GetSpawnInfo());
+	return new CSpawnMsg(params, pGameObject ? pGameObject->GetSpawnInfo() : nullptr);
 }
 
 void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)
@@ -1134,23 +1049,6 @@ bool CGameContext::SendPostSpawnObject(EntityId id, INetChannel* pINetChannel)
 
 void CGameContext::ControlObject(EntityId id, bool bHaveControl)
 {
-	m_controlledObjects.Set(id, bHaveControl);
-
-	if (IEntity* pEntity = m_pEntitySystem->GetEntity(id))
-	{
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
-		{
-			pGameObject->SetAuthority(bHaveControl);
-		}
-		{
-			IPhysicalEntity* pPhysicalEntity = pEntity->GetPhysicalEntity();
-			if (pPhysicalEntity)
-			{
-				pPhysicalEntity->SetNetworkAuthority(bHaveControl ? 1 : 0);
-			}
-		}
-	}
-
 	SDelegateCallbackIndex idx = { id, bHaveControl };
 	DelegateCallbacks::iterator iter = m_delegateCallbacks.lower_bound(idx);
 	IScriptSystem* pSS = gEnv->pScriptSystem;
@@ -1511,30 +1409,6 @@ bool CGameContext::ClassNameFromId(string& name, uint16 id) const
 	return m_classRegistry.ClassNameFromId(name, id);
 }
 
-void CGameContext::EnablePhysics(EntityId id, bool enable)
-{
-	EEntityAspects aspect;
-	aspect = eEA_Physics;
-	// disabled... see OnSpawn
-	//	m_pNetContext->EnableAspects( id, eEA_Volatile, !enable );
-	EnableAspects(id, aspect, enable);
-}
-
-void CGameContext::BoundObject(EntityId id, NetworkAspectType nAspects)
-{
-	// called by net system only on the client when a new object has been bound
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
-	if (!pEntity)
-	{
-		GameWarning("[net] notification of binding non existant entity %.8x received", id);
-		return;
-	}
-	CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (!pGameObject)
-		return; // not a game object, things are ok
-	pGameObject->BecomeBound();
-}
-
 bool CGameContext::ChangeContext(bool isServer, const SGameContextParams* params)
 {
 	if (CCryAction::GetCryAction()->GetILevelSystem()->IsLevelLoaded())
@@ -1883,21 +1757,6 @@ XmlNodeRef CGameContext::GetGameState()
 	return root;
 }
 
-void CGameContext::EnableAspects(EntityId id, NetworkAspectType aspects, bool bEnable)
-{
-	if (bEnable)
-	{
-		IEntity* pEntity = m_pEntitySystem->GetEntity(id);
-		CRY_ASSERT(pEntity);
-		CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-		if (pGameObject)
-		{
-			aspects &= pGameObject->GetEnabledAspects();
-		}
-	}
-	m_pNetContext->EnableAspects(id, aspects, bEnable);
-}
-
 IGameRules* CGameContext::GetGameRules()
 {
 	IEntity* pGameRules = m_pFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity();
@@ -1969,7 +1828,6 @@ void CGameContext::GetMemoryUsage(ICrySizer* s) const
 		m_pVoiceController->GetMemoryStatistics(s);
 #endif
 	m_classRegistry.GetMemoryStatistics(s);
-	m_controlledObjects.GetMemoryStatistics(s);
 	if (m_pBreakReplicator.get())
 		m_pBreakReplicator->GetMemoryStatistics(s);
 	s->AddObject(m_levelName);

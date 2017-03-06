@@ -709,7 +709,7 @@ CGame::~CGame()
 		}
 	}
 
-	gEnv->pSystem->UnloadEngineModule("CryLobby", "EngineModule_CryLobby");
+	gEnv->pSystem->UnloadEngineModule("CryLobby");
 
 	GAME_FX_SYSTEM.Destroy();
 
@@ -1237,6 +1237,8 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	{
 		// register the custom DRS actions and conditions
 		REGISTER_DRS_CUSTOM_ACTION(CActionExecuteAudioTrigger);
+		REGISTER_DRS_CUSTOM_ACTION(CActionSetAudioSwitch);
+		REGISTER_DRS_CUSTOM_ACTION(CActionSetAudioParameter);
 		REGISTER_DRS_CUSTOM_ACTION(CActionSpeakLineBasedOnVariable);
 		REGISTER_DRS_CUSTOM_CONDITION(CConditionDistanceToEntity);
 

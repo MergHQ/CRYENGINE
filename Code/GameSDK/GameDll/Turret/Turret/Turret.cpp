@@ -477,12 +477,6 @@ void CTurret::SetChannelId( uint16 id )
 }
 
 
-void CTurret::SetAuthority( bool authority )
-{
-
-}
-
-
 void CTurret::GetMemoryUsage( ICrySizer* pSizer ) const
 {
 	pSizer->Add( *this );
